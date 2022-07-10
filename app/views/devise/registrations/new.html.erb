@@ -1,0 +1,23 @@
+<article class="devise">
+  <header>
+    <h2><%= t('devise.registrations.sign_up') %></h2>
+  </header>
+
+  <%= bootstrap_form_for resource, as: resource_name, url: registration_path(resource_name) do |f| %>
+    <%= render partial: '/shared/form_errors', locals: { errors: f.object.errors } if f.object&.errors.any? %>
+
+    <div class="row">
+      <div class="col-lg-8 mb-3">
+        <div class="row">
+          <div class="col-12 mb-3"><%= f.email_field :email, minlength: 5, autocomplete: 'username', required: true %></div>
+          <div class="col-12 mb-3"><%= f.password_field :password, minlength: 6, autocomplete: 'new-password', required: true %></div>
+          <div class="col-12 mb-3"><%= f.password_field :password_confirmation, minlength: 6, autocomplete: 'new-password', required: true %></div>
+          <div class="col-12 mb-3"><%= f.submit t('devise.registrations.sign_up_button') %></div>
+        </div>
+      </div>
+      <div class="col-lg-4 mb-3">
+        <%= render 'devise/shared/links' %>
+      </div>
+    </div>
+  <% end %>
+</article>

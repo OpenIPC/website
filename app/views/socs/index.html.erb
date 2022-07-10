@@ -1,18 +1,21 @@
-<h2>Supported Hardware by SoC</h2>
+<article class="hardware">
+  <header>
+    <h2>Supported Hardware by SoC</h2>
+  </header>
 
-<ul class="nav nav-tabs mb-4">
-  <li class="nav-item"><%= link_to "Full list", socs_path, class: "nav-link#{" active" if @_vendor.blank?}" %></li>
-<% Vendor.order(:name).each do |v| %>
-  <li class="nav-item">
-    <%= link_to v.name, socs_path(vendor: v.name), class: "nav-link#{" active" if @_vendor.eql?(v.name)}" %>
-  </li>
-<% end %>
-</ul>
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item"><%= link_to "Full list", socs_path, class: "nav-link#{" active" if @_vendor.blank?}" %></li>
+    <% Vendor.order(:name).each do |v| %>
+      <li class="nav-item">
+        <%= link_to v.name, socs_path(vendor: v.name), class: "nav-link#{" active" if @_vendor.eql?(v.name)}" %>
+      </li>
+    <% end %>
+  </ul>
 
-<h3><%= @page_title %></h3>
+  <h3><%= @page_title %></h3>
 
-<table class="table socs">
-  <thead>
+  <table class="table socs">
+    <thead>
     <tr>
       <th>Status</th>
       <th>Vendor</th>
@@ -22,8 +25,9 @@
       <th>Bootloader URL</th>
       <th>Firmware URL</th>
     </tr>
-  </thead>
-  <tbody>
+    </thead>
+    <tbody>
     <%= render @socs %>
-  </tbody>
-</table>
+    </tbody>
+  </table>
+</article>

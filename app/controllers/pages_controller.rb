@@ -5,5 +5,4 @@ class PagesController < ApplicationController
   def calc
     render "pages/calc"
   end
-
 end

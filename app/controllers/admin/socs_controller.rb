@@ -1,4 +1,4 @@
-module Admin
+class Admin
   class SocsController < AdminController
     def index
       @socs = Soc.all

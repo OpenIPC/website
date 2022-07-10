@@ -1,0 +1,21 @@
+<article class="devise unlock">
+  <header>
+    <h2><%= t('devise.unlocks.resend_unlock') %></h2>
+  </header>
+
+  <%= bootstrap_form_for resource, as: resource_name, url: unlock_path(resource_name) do |f| %>
+    <%= render partial: '/shared/form_errors', locals: { errors: f.object.errors } if f.object&.errors.any? %>
+
+    <div class="row">
+      <div class="col-lg-8 mb-3">
+        <div class="row">
+          <div class="col-12 mb-3"><%= f.email_field :email, minlength: 5, autocomplete: 'username', required: true %></div>
+          <div class="col-12 mb-3"><%= f.submit t('devise.unlocks.resend_unlock_button') %></div>
+        </div>
+      </div>
+      <div class="col-lg-4 mb-3">
+        <%= render 'devise/shared/links' %>
+      </div>
+    </div>
+  <% end %>
+</article>

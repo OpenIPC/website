@@ -1,20 +1,24 @@
-<h2>Editing SoC</h2>
+<article class="hardware">
+  <header>
+    <h2>Editing SoC</h2>
+  </header>
 
-<div class="row row-cols-lg-3">
-  <div class="col">
-    <%= bootstrap_form_for @soc, url: admin_soc_path(@soc) do |f| %>
-      <%= f.collection_select :vendor_id, Vendor.all, :id, :name %>
-      <%= f.text_field :model %>
-      <%= f.text_field :version %>
-      <%= f.select :status, options_from_collection_for_select(Soc::STATUS, :first, :last) %>
-      <%= f.text_field :load_address %>
-      <%= f.text_field :sdk %>
-      <%= f.text_field :kernel %>
-      <%= f.text_field :uboot_filename %>
-      <%= f.text_field :linux_filename %>
-      <%= f.text_area :notes %>
+  <div class="row row-cols-lg-3">
+    <div class="col">
+      <%= bootstrap_form_for @soc, url: admin_soc_path(@soc) do |f| %>
+        <%= f.collection_select :vendor_id, Vendor.all, :id, :name %>
+        <%= f.text_field :model %>
+        <%= f.text_field :version %>
+        <%= f.select :status, options_from_collection_for_select(Soc::STATUS, :first, :last) %>
+        <%= f.text_field :load_address %>
+        <%= f.text_field :sdk %>
+        <%= f.text_field :kernel %>
+        <%= f.text_field :uboot_filename %>
+        <%= f.text_field :linux_filename %>
+        <%= f.text_area :notes %>
 
-      <%= f.submit %>
-    <% end %>
+        <%= f.submit %>
+      <% end %>
+    </div>
   </div>
-</div>
+</article>

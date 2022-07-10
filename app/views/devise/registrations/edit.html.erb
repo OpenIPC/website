@@ -1,0 +1,23 @@
+<article class="devise">
+  <header>
+    <h2><%= t('devise.registrations.update_profile') %></h2>
+  </header>
+
+  <%= bootstrap_form_for resource, as: resource_name, url: registration_path(resource_name), method: 'put' do |f| %>
+    <%= render partial: '/shared/form_errors', locals: { errors: f.object.errors } if f.object&.errors.any? %>
+
+    <div class="row">
+      <div class="col-lg-8 mb-3">
+        <div class="row">
+          <div class="col-12 mb-3"><%= f.password_field :current_password, minlength: 6, autocomplete: 'current-password', required: true %></div>
+          <div class="col-12 mb-3"><%= f.password_field :password, minlength: 6, autocomplete: 'new-password', required: true %></div>
+          <div class="col-12 mb-3"><%= f.password_field :password_confirmation, minlength: 6, autocomplete: 'new-password', required: true %></div>
+          <div class="col-12 mb-3"><%= f.submit t('devise.registrations.update_profile_button') %></div>
+        </div>
+      </div>
+      <div class="col-lg-4 mb-3">
+        <%= render 'devise/shared/links' %>
+      </div>
+    </div>
+  <% end %>
+</article>

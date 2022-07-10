@@ -25,6 +25,10 @@ class SocsController < ApplicationController
     render "socs/update", status: :unprocessable_entity
   end
 
+  def legend
+    render "socs/legend"
+  end
+
   private
     def permitted_params
       params.require(:camera).permit(:ipaddr, :serverip, :flash_size, :flash_type)
