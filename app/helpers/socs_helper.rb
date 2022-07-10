@@ -1,0 +1,2 @@
+module SocsHelper
+end

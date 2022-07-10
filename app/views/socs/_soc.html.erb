@@ -1,0 +1,9 @@
+<tr class="<%= soc.status %>">
+  <td><%= content_tag :span, soc.status.upcase, title: Soc::STATUS[soc.status.to_sym] %></td>
+  <td><%= soc.vendor.name %></td>
+  <td><%= soc.instructable? ? link_to(soc.model, soc_path(soc)) : soc.model %></td>
+  <td><%= soc.family %></td>
+  <td><%= soc.load_address %></td>
+  <td><%= link_to soc.uboot_filename, soc.bl_url unless soc.uboot_filename.blank? %></td>
+  <td><%= link_to soc.linux_filename, soc.fw_url unless soc.linux_filename.blank? %></td>
+</tr>

@@ -1,0 +1,24 @@
+<h2>Flashing <%= @soc.full_name %> with OpenIPC firmware</h2>
+
+<h3>Flashing OpenIPC bootloader</h3>
+<p>Download bootloader binary file from <%= link_to @soc.uboot_filename, @soc.bl_url %> and save it to the root directory of your TFTP server.</p>
+<pre class="bg-light p-4">
+setenv ipaddr <%= @ipaddr %>
+setenv serverip <%= @serverip %>
+mw.b <%= @soc.load_address %> ff 0x1000000
+tftpboot <%= @soc.load_address %> <%= @soc.uboot_filename %>
+sf probe 0; sf erase 0x0 0x50000; sf write <%= @soc.load_address %> 0x0 0x50000
+run set<%= @flash_type %><%= @flash_size %>m
+</pre>
+
+<h3>Flashing OpenIPC firmware</h3>
+<p>Download firmware bundle from <%= link_to @soc.linux_filename, @soc.fw_url %> and unpack it into the root directory of your TFTP server.</p>
+<pre class="bg-light p-4">
+setenv ipaddr <%= @ipaddr %>
+setenv serverip <%= @serverip %>
+saveenv
+run uk<%= @flash_type %><%= @flash_size %>m; run ur<%= @flash_type %><%= @flash_size %>m; reset
+</pre>
+
+<p>If you want to learn more about what <code>uknor*</code>, <code>urnor*</code>, <code>setnor*</code> commands do, run <code>printenv</code> in
+  bootloader console.</p>

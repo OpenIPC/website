@@ -1,0 +1,151 @@
+@import "bootstrap";
+@import "rails_bootstrap_forms";
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans:wght@400;700&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css");
+
+/* debugging start */
+@media (max-width: 575.98px) {
+  body.debug:before {
+    content: "xs"
+  }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+  body.debug:before {
+    content: "sm"
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  body.debug:before {
+    content: "md"
+  }
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  body.debug:before {
+    content: "lg"
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1399.98px) {
+  body.debug:before {
+    content: "xl"
+  }
+}
+
+@media (min-width: 1400px) {
+  body.debug:before {
+    content: "xxl"
+  }
+}
+
+body.debug:before {
+  color: #4c60d811;
+  display: block;
+  font-size: 10rem;
+  font-variant: all-small-caps;
+  font-weight: 700;
+  line-height: 1;
+  position: fixed;
+  right: 3rem;
+  top: 3rem;
+  z-index: -1
+}
+
+/*body.debug .col {border: solid 1px #f3f4fc;}*/
+.offcanvas {
+  --bs-offcanvas-width: 30vw;
+  min-width: 25rem;
+}
+
+/* debugging end */
+
+:root {
+  --bs-body-font-family: "IBM Plex Sans", sans-serif;
+  --bs-font-monospace: "IBM Plex Mono", monospace;
+  --bs-blue: #4c60d8;
+}
+
+body > main > .container > h2 {
+  font-weight: 700;
+  color: var(--bs-blue);
+  margin: 1rem 0 1.5rem;
+}
+
+body > nav.navbar,
+body > header {
+  background: var(--bs-blue);
+  color: #ffffff;
+}
+
+table.socs tr td:first-child {
+  text-align: center;
+}
+
+table.socs tr.neq td:first-child {
+  background-color: #00000033
+}
+
+table.socs tr.hlp td:first-child {
+  background-color: #ffffff33
+}
+
+table.socs tr.rnd td:first-child {
+  background-color: #0000ff33
+}
+
+table.socs tr.wip td:first-child {
+  background-color: #00ffff33
+}
+
+table.socs tr.mvp td:first-child {
+  background-color: #ffff0033
+}
+
+table.socs tr.done td:first-child {
+  background-color: #00ff0033
+}
+
+i.bi-github {
+  font-size: 2.5rem;
+}
+
+/*input:focus { outline: none; }*/
+/*input:invalid { border-color: red; }*/
+/*input:valid { border-color: green; }*/
+
+article.calculator {
+  input.dec,
+  input.hex {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: 1;
+    padding: 0;
+    text-align: right;
+  }
+
+  input:read-only {
+    font-size: 3.0rem;
+    width: 18rem;
+  }
+
+  table.partitions {
+    tbody td {
+      border-bottom: solid 1px lightgray;
+    }
+
+    td:not(:first-child) {
+      text-align: right;
+      width: auto;
+    }
+
+    input[readonly] {
+      border: none;
+      color: var(--bs-blue);
+      outline: none;
+    }
+  }
+}

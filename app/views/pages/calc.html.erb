@@ -1,0 +1,93 @@
+<article class="calculator">
+  <h2>Firmware Partitions Calculation</h2>
+
+  <div class="row">
+    <div class="col">
+      <div class="form-floating mb-3" style="max-width: 10rem;">
+        <input type="text" class="form-control hex start" id="offset" value="0">
+        <label class="form-label" for="offset">Initial offset, hex</label>
+      </div>
+
+      <table class="table partitions">
+        <thead>
+        <tr>
+          <td>Size of partition, KB</td>
+          <td>Hex size, bytes</td>
+          <td>Start address</td>
+          <td>End address</td>
+        </tr>
+        </thead>
+        <tbody>
+        <% (1..5).each do |i| %>
+          <tr class="partition" data-number="<%= i %>">
+            <td>
+              <div class="form-floating" style="max-width: 10rem;">
+                <input type="text" class="form-control dec size" id="p<%= i %>size" value="">
+                <label class="form-label" for="p<%= i %>size">Partition <%= i %>, KB</label>
+              </div>
+            </td>
+            <td><input type="text" class="hex size" readonly></td>
+            <td><input type="text" class="hex start" readonly></td>
+            <td><input type="text" class="hex end" readonly></td>
+          </tr>
+        <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <button type="button" class="btn btn-primary" id="recalculate">Recalculate</button>
+
+  <script>
+      function $(n) {
+          return document.querySelector(n);
+      }
+
+      function $$(n) {
+          return document.querySelectorAll(n);
+      }
+
+      function recalculate() {
+          const hexOffset = $('input#offset').value;
+          const decOffset = hexOffset.toString(10) / 1;
+          let value;
+
+          $$('tr.partition').forEach(row => {
+              const n = parseInt(row.dataset.number);
+
+              // size
+              let decSize = parseInt($('tr[data-number="' + n + '"] input.dec.size').value) * 1024;
+              if (isNaN(decSize)) return;
+              let hexSize = '0x' + decSize.toString(16);
+              $('tr[data-number="' + n + '"] input.hex.size').value = (isNaN(hexSize)) ? '' : hexSize;
+
+              // start
+              let decStart = decOffset;
+              for (i = 1; i < n; i++) decStart = decStart + parseInt($('tr[data-number="' + i + '"] input.dec.size').value) * 1024;
+              let hexStart = '0x' + decStart.toString(16);
+              $('tr[data-number="' + n + '"] input.hex.start').value = (isNaN(hexStart)) ? '' : hexStart;
+
+              // end
+              let decEnd = decStart;
+              decEnd = decEnd + parseInt($('tr[data-number="' + n + '"] input.dec.size').value) * 1024 - 1;
+              let hexEnd = '0x' + decEnd.toString(16);
+              $('tr[data-number="' + n + '"] input.hex.end').value = (isNaN(hexEnd)) ? '' : hexEnd;
+          });
+      }
+
+      function initPage() {
+          $('input#offset').addEventListener('change', (event) => {
+              event.target.value = '0x' + parseInt(event.target.value.replace('0x', ''));
+              recalculate();
+          });
+          $('button#recalculate').addEventListener('click', recalculate);
+          $$('table.partitions input').forEach((el) => el.addEventListener('change', recalculate));
+
+          $$('input[readonly]').forEach((el) => {
+              el.tabIndex = -1;
+          });
+      }
+
+      window.addEventListener('load', initPage);
+  </script>
+</article>

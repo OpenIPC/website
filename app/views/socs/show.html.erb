@@ -1,0 +1,47 @@
+<h2 class="display-3"><%= @soc.full_name %></h2>
+
+<div class="row row-cols-lg-3">
+  <div class="col">
+    <h3>Downloads</h3>
+
+    <div class="alert alert-primary github">
+      <i class="bi bi-github float-end"></i>
+      <h4>OpenIPC Bootloader</h4>
+      <p class="mb-0"><%= link_to @soc.uboot_filename, @soc.bl_url unless @soc.uboot_filename.blank? %></p>
+    </div>
+
+    <div class="alert alert-primary github">
+      <i class="bi bi-github float-end"></i>
+      <h4>OpenIPC Linux</h4>
+      <p class="mb-0"><%= link_to @soc.linux_filename, @soc.fw_url unless @soc.linux_filename.blank? %></p>
+    </div>
+  </div>
+
+  <div class="col">
+    <h3>Installation Instruction</h3>
+    <p>In order to get a personalized installation instruction, please enter your network configuration below:</p>
+
+    <%= form_for :camera, url: soc_path(@soc), method: 'put' do |f| %>
+      <div class="mb-3">
+        <%= f.label :ipaddr, "Camera IP address", class: "form-label" %>
+        <%= f.text_field :ipaddr, pattern: ipaddr_pattern, title: "four 8-bit fields separated by periods", class: "form-control" %>
+      </div>
+      <div class="mb-3">
+        <%= f.label :serverip, "TFTP server IP address", class: "form-label" %>
+        <%= f.text_field :serverip, pattern: ipaddr_pattern, title: "four 8-bit fields separated by periods", class: "form-control" %>
+      </div>
+      <div class="mb-3">
+        <%= f.label :flash_size, "Camera flash memory size", class: "form-label" %>
+        <%= f.select :flash_size, %w[8 16], class: "form-select" %> MB
+        <div><i class="text-black-50 small">If not sure, leave 8.</i></div>
+      </div>
+      <div class="mb-3">
+        <%= f.label :flash_type, "Camera flash memory type", class: "form-label" %>
+        <%= f.select :flash_type, %w[NOR NAND], class: "form-select" %>
+        <div><i class="text-black-50 small">If not sure, leave NOR.</i></div>
+      </div>
+
+      <p><%= f.submit "Generate commands", class: "btn btn-primary" %></p>
+    <% end %>
+  </div>
+</div>

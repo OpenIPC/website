@@ -1,0 +1,29 @@
+<h2>Supported Hardware by SoC</h2>
+
+<ul class="nav nav-tabs mb-4">
+  <li class="nav-item"><%= link_to "Full list", socs_path, class: "nav-link#{" active" if @_vendor.blank?}" %></li>
+<% Vendor.order(:name).each do |v| %>
+  <li class="nav-item">
+    <%= link_to v.name, socs_path(vendor: v.name), class: "nav-link#{" active" if @_vendor.eql?(v.name)}" %>
+  </li>
+<% end %>
+</ul>
+
+<h3><%= @page_title %></h3>
+
+<table class="table socs">
+  <thead>
+    <tr>
+      <th>Status</th>
+      <th>Vendor</th>
+      <th>Model</th>
+      <th>Family</th>
+      <th>Load Address</th>
+      <th>Bootloader URL</th>
+      <th>Firmware URL</th>
+    </tr>
+  </thead>
+  <tbody>
+    <%= render @socs %>
+  </tbody>
+</table>
