@@ -11,7 +11,11 @@ setenv ipaddr <%= @ipaddr %>
 setenv serverip <%= @serverip %>
 mw.b <%= @soc.load_address %> ff 0x1000000
 tftpboot <%= @soc.load_address %> <%= @soc.uboot_filename %>
-sf probe 0; sf erase 0x0 0x50000; sf write <%= @soc.load_address %> 0x0 0x50000
+sf probe 0; sf erase 0x0 0x50000; sf write <%= @soc.load_address %> 0x0 0x50000; reset
+</pre>
+
+  <h3>Setting up environment for OpenIPC firmware</h3>
+  <pre class="bg-light p-4">
 run set<%= @flash_type %><%= @flash_size %>m
 </pre>
 
