@@ -20,8 +20,7 @@ class SocsController < ApplicationController
     @soc = Soc.find(params[:id])
     @ipaddr = permitted_params[:ipaddr]
     @serverip = permitted_params[:serverip]
-    @flash_size = permitted_params[:flash_size]
-    @flash_type = permitted_params[:flash_type].downcase
+    @flash_type = permitted_params[:flash_type]
     render "socs/update", status: :unprocessable_entity
   end
 

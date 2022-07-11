@@ -27,21 +27,18 @@
       <%= form_for :camera, url: soc_path(@soc), method: 'put' do |f| %>
         <div class="mb-3">
           <%= f.label :ipaddr, "Camera IP address", class: "form-label" %>
-          <%= f.text_field :ipaddr, pattern: ipaddr_pattern, title: "four 8-bit fields separated by periods", class: "form-control" %>
+          <%= f.text_field :ipaddr, pattern: ipaddr_pattern, value: "192.168.1.10",
+            title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
         </div>
         <div class="mb-3">
           <%= f.label :serverip, "TFTP server IP address", class: "form-label" %>
-          <%= f.text_field :serverip, pattern: ipaddr_pattern, title: "four 8-bit fields separated by periods", class: "form-control" %>
-        </div>
-        <div class="mb-3">
-          <%= f.label :flash_size, "Camera flash memory size", class: "form-label" %>
-          <%= f.select :flash_size, %w[8 16], class: "form-select" %> MB
-          <div><i class="text-black-50 small">If not sure, leave 8.</i></div>
+          <%= f.text_field :serverip, pattern: ipaddr_pattern, value: "192.168.1.254",
+            title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
         </div>
         <div class="mb-3">
           <%= f.label :flash_type, "Camera flash memory type", class: "form-label" %>
-          <%= f.select :flash_type, %w[NOR NAND], class: "form-select" %>
-          <div><i class="text-black-50 small">If not sure, leave NOR.</i></div>
+          <%= f.select :flash_type, [['NOR 8M', 'nor8m'], ['NOR 16M', 'nor16m'], ['NAND', 'nand']], class: "form-select" %>
+          <div><i class="text-black-50 small">If not sure, leave NOR 8M.</i></div>
         </div>
 
         <p><%= f.submit "Generate commands", class: "btn btn-primary" %></p>
