@@ -3,42 +3,61 @@
     <h2>Firmware Partitions Calculation</h2>
   </header>
 
-  <div class="row">
+  <div class="row row-cols-1 row-cols-md-5">
     <div class="col">
-      <div class="form-floating mb-3" style="max-width: 10rem;">
-        <input type="text" class="form-control hex start" id="offset" value="0">
-        <label class="form-label" for="offset">Initial offset, hex</label>
+      <div class="form-floating mb-3">
+        <input type="text" class="form-control" id="mtddevice" value="hi_sfc">
+        <label class="form-label" for="mtddevice">MTD device name</label>
       </div>
-
-      <table class="table partitions">
-        <thead>
-        <tr>
-          <td>Size of partition, KB</td>
-          <td>Hex size, bytes</td>
-          <td>Start address</td>
-          <td>End address</td>
-        </tr>
-        </thead>
-        <tbody>
-        <% (1..5).each do |i| %>
-          <tr class="partition" data-number="<%= i %>">
-            <td>
-              <div class="form-floating" style="max-width: 10rem;">
-                <input type="text" class="form-control dec size" id="p<%= i %>size" value="">
-                <label class="form-label" for="p<%= i %>size">Partition <%= i %>, KB</label>
-              </div>
-            </td>
-            <td><input type="text" class="hex size" readonly></td>
-            <td><input type="text" class="hex start" readonly></td>
-            <td><input type="text" class="hex end" readonly></td>
-          </tr>
-        <% end %>
-        </tbody>
-      </table>
+    </div>
+    <div class="col"></div>
+    <div class="col">
+      <div class="form-floating hex mb-3">
+        <input type="text" class="form-control hex start" id="offset" value="0">
+        <label class="form-label" for="offset">Initial offset, dec or hex</label>
+      </div>
+    </div>
+    <div class="col"></div>
+    <div class="col">
+      <button type="button" class="btn btn-primary" id="recalculate">Recalculate</button>
     </div>
   </div>
+  <% (1..5).each do |i| %>
+    <div class="row row-cols-1 row-cols-lg-5 partition" data-number="<%= i %>">
+      <div class="col mb-3 name">
+        <div class="form-floating">
+          <input type="text" class="form-control" id="p<%= i %>name" value="<%= partition_names[i - 1] %>">
+          <label class="form-label" for="p<%= i %>name">Partition <%= i %> name</label>
+        </div>
+      </div>
+      <div class="col mb-3">
+        <div class="form-floating size dec">
+          <input type="text" class="form-control" id="p<%= i %>size" value="<%= partition_sizes[i - 1] %>">
+          <label class="form-label" for="p<%= i %>size">Partition <%= i %> size, KB</label>
+        </div>
+      </div>
+      <div class="col mb-3 start hex">
+        <div class="form-floating">
+          <input type="text" class="form-control" id="s<%= i %>" readonly>
+          <label class="form-label" for="s<%= i %>">Start address</label>
+        </div>
+      </div>
+      <div class="col mb-3">
+        <div class="form-floating size hex">
+          <input type="text" class="form-control" id="h<%= i %>" readonly>
+          <label class="form-label" for="h<%= i %>">Hex size, bytes</label>
+        </div>
+      </div>
+      <div class="col mb-3 end hex">
+        <div class="form-floating">
+          <input type="text" class="form-control" id="e<%= i %>" readonly>
+          <label for="e<%= i %>">End address</label>
+        </div>
+      </div>
+    </div>
+  <% end %>
 
-  <button type="button" class="btn btn-primary" id="recalculate">Recalculate</button>
+  <div id="mtdparts" class="alert alert-info text-center"></div>
 
   <script>
       function $(n) {
@@ -50,44 +69,72 @@
       }
 
       function recalculate() {
-          const hexOffset = $('input#offset').value;
-          const decOffset = hexOffset.toString(10) / 1;
-          let value;
+          const elOffset = $('input#offset');
+          const offset = elOffset.value;
+          let hexOffset;
+          let decOffset;
 
-          $$('tr.partition').forEach(row => {
+          if (offset.startsWith('0x')) {
+              hexOffset = offset;
+              decOffset = hexOffset.toString(10) / 1;
+          } else {
+              decOffset = parseInt(offset);
+              hexOffset = '0x' + decOffset.toString(16).toUpperCase();
+          }
+          elOffset.value = (isNaN(hexOffset)) ? '0x0' : hexOffset;
+
+          let mtdparts = "mtdparts=sfc:";
+          mtdparts = $('#mtddevice').value + ':';
+
+          $$('div.partition').forEach(row => {
               const n = parseInt(row.dataset.number);
 
+              const elSizeDec = $('div[data-number="' + n + '"] div.size.dec input')
+              const elSizeHex = $('div[data-number="' + n + '"] div.size.hex input')
+              const elAddrStart = $('div[data-number="' + n + '"] div.start input')
+              const elAddrEnd = $('div[data-number="' + n + '"] div.end input')
+
+              // reset hex values
+              $$('div[data-number="' + n + '"] div.hex input').forEach(el => el.value = "");
+
               // size
-              let decSize = parseInt($('tr[data-number="' + n + '"] input.dec.size').value) * 1024;
-              if (isNaN(decSize)) return;
-              let hexSize = '0x' + decSize.toString(16);
-              $('tr[data-number="' + n + '"] input.hex.size').value = (isNaN(hexSize)) ? '' : hexSize;
+              let decSize;
+              if (elSizeDec.value === '-') {
+                  mtdparts += '-(' + $('#p' + n + 'name').value + '),';
+              } else {
+                  decSize = parseInt(elSizeDec.value) * 1024;
+                  if (isNaN(decSize)) return;
+                  let hexSize = '0x' + decSize.toString(16).toUpperCase();
+                  elSizeHex.value = (isNaN(hexSize)) ? '' : hexSize;
+                  mtdparts += decSize / 1024 + 'k(' + $('#p' + n + 'name').value + '),';
+              }
 
               // start
               let decStart = decOffset;
-              for (i = 1; i < n; i++) decStart = decStart + parseInt($('tr[data-number="' + i + '"] input.dec.size').value) * 1024;
-              let hexStart = '0x' + decStart.toString(16);
-              $('tr[data-number="' + n + '"] input.hex.start').value = (isNaN(hexStart)) ? '' : hexStart;
+              for (let i = 1; i < n; i++) {
+                  let s = $('div[data-number="' + i + '"] div.size.dec input');
+                  decStart += parseInt(s.value) * 1024;
+              }
+              let hexStart = '0x' + decStart.toString(16).toUpperCase();
+              elAddrStart.value = (isNaN(hexStart)) ? '' : hexStart;
 
               // end
-              let decEnd = decStart;
-              decEnd = decEnd + parseInt($('tr[data-number="' + n + '"] input.dec.size').value) * 1024 - 1;
-              let hexEnd = '0x' + decEnd.toString(16);
-              $('tr[data-number="' + n + '"] input.hex.end').value = (isNaN(hexEnd)) ? '' : hexEnd;
+              let decEnd = decStart + decSize - 1;
+              let hexEnd = '0x' + decEnd.toString(16).toUpperCase();
+              elAddrEnd.value = (isNaN(hexEnd)) ? '' : hexEnd;
           });
+
+          $('#mtdparts').textContent = mtdparts;
       }
 
       function initPage() {
-          $('input#offset').addEventListener('change', (event) => {
-              event.target.value = '0x' + parseInt(event.target.value.replace('0x', ''));
-              recalculate();
-          });
           $('button#recalculate').addEventListener('click', recalculate);
-          $$('table.partitions input').forEach((el) => el.addEventListener('change', recalculate));
-
-          $$('input[readonly]').forEach((el) => {
-              el.tabIndex = -1;
+          $$('input').forEach(el => {
+              el.addEventListener('focus', evt => { evt.preventDefault(); evt.target.select(); });
+              el.addEventListener('change', recalculate);
           });
+          $$('input[readonly]').forEach(el => el.tabIndex = -1);
+          recalculate();
       }
 
       window.addEventListener('load', initPage);
