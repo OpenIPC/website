@@ -21,6 +21,11 @@ class SocsController < ApplicationController
     @ipaddr = permitted_params[:ipaddr]
     @serverip = permitted_params[:serverip]
     @flash_type = permitted_params[:flash_type]
+    if @flash_type.eql?("nor16m")
+      @flash_size_hex = "0x1000000" # 16M
+    else
+      @flash_size_hex = "0x800000" # 8M
+    end
     render "socs/update", status: :unprocessable_entity
   end
 

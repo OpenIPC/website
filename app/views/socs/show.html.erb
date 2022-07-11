@@ -36,7 +36,7 @@
             title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
         </div>
         <div class="mb-3">
-          <%= f.label :flash_type, "Camera flash memory type", class: "form-label" %>
+          <%= f.label :flash_type, "Camera flash memory type and size", class: "form-label" %>
           <%= f.select :flash_type, [['NOR 8M', 'nor8m'], ['NOR 16M', 'nor16m'], ['NAND', 'nand']], class: "form-select" %>
           <div><i class="text-black-50 small">If not sure, leave NOR 8M.</i></div>
         </div>

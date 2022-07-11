@@ -6,6 +6,13 @@
   <p class="alert alert-danger">ATTENTION! Commands should be entered line by line!
     Do not copy and paste whole block of commands at once!</p>
 
+  <h3>Saving original firmware</h3>
+  <pre class="bg-light p-4">
+setenv ipaddr <%= @ipaddr %>; setenv serverip <%= @serverip %>
+mw.b <%= @soc.load_address %> ff 0x1000000; sf probe 0; sf read <%= @soc.load_address %> 0x0 <%= @flash_size_hex %>
+tftpput <%= @soc.load_address %> <%= @flash_size_hex %> backup-<%= @soc.model %>-<%= @flash_type %>.bin
+</pre>
+
   <h3>Flashing OpenIPC bootloader</h3>
   <p>Download bootloader binary file from <%= link_to @soc.uboot_filename, @soc.bl_url %> and save it to the root
     directory of your TFTP server.</p>
@@ -19,17 +26,24 @@ reset
   <h3>Flashing OpenIPC firmware</h3>
   <p>Download firmware bundle from <%= link_to @soc.linux_filename, @soc.fw_url %> and unpack it into the root directory
     of your TFTP server.</p>
-<% unless @flash_type.eql?("nor8m") %>
   <pre class="bg-light p-4">
 run set<%= @flash_type %>
 </pre>
   <p>Camera automatically restarts to apply changes.</p>
-<% end %>
   <pre class="bg-light p-4">
 setenv ipaddr <%= @ipaddr %>; setenv serverip <%= @serverip %>; saveenv
 run uk<%= @flash_type %>; run ur<%= @flash_type %>
 reset
 </pre>
+
+<% unless @flash_type.eql?("nand") %>
+  <h3>Restoring camera from original firmware backup</h3>
+<pre class="bg-light p-4">
+setenv ipaddr <%= @ipaddr %>; setenv serverip <%= @serverip %>
+mw.b <%= @soc.load_address %> ff 0x1000000; tftpboot <%= @soc.load_address %> backup-<%= @soc.model %>-<%= @flash_type %>.bin
+sf probe 0; sf erase 0x0 <%= @flash_size_hex %>; sf write <%= @soc.load_address %> 0x0 <%= @flash_size_hex %>
+</pre>
+<% end %>
 
   <p>If you want to learn more about what <code>uknor*</code>, <code>urnor*</code>, <code>setnor*</code> commands do,
     run <code>printenv</code> in bootloader console.</p>
