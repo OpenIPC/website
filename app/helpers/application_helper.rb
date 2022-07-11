@@ -15,6 +15,6 @@ module ApplicationHelper
     %w[boot env kernel rootfs rootfs_data]
   end
   def partition_sizes
-    %w[512 64 2048 5120 -]
+    %w[256 64 2048 5120 -]
   end
 end
