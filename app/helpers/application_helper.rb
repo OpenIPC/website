@@ -19,6 +19,18 @@ module ApplicationHelper
     ]
   end
 
+  def link_to_github_profile(username)
+    link_to "@#{username}", "https://github.com/#{username}/", class:"github"
+  end
+
+  def link_to_telegram_profile(username)
+    link_to "@#{username}", "https://t.me/#{username}", class: "telegram"
+  end
+
+  def link_to_telegram_webchat(username)
+    link_to "@#{username}", "https://web.telegram.org/k/@#{username}", class: "telegram"
+  end
+
   def network_ifaces
     [
       ['Camera only has Ethernet network', 'eth'],

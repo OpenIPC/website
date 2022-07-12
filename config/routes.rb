@@ -1,7 +1,8 @@
 Rails.application.routes.draw do
-  root "pages#about"
+  root "pages#introduction"
 
   get '/about', to: 'pages#about'
+  get '/introduction', to:'pages#introduction'
   get '/tools/firmware-partitions-calculation', to: 'pages#calc'
   get '/socs/legend', to: 'socs#legend'
   get '/sponsor', to: redirect('/support-open-source')
