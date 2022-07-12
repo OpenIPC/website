@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
-  root "socs#index"
+  root "pages#about"
+
   get '/about', to: 'pages#about'
   get '/tools/firmware-partitions-calculation', to: 'pages#calc'
   get '/socs/legend', to: 'socs#legend'
