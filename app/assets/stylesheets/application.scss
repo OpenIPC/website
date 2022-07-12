@@ -1,18 +1,63 @@
-@import "bootstrap";
 @import "rails_bootstrap_forms";
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans:wght@400;700&display=swap");
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css");
 
 /* debugging start */
-@media (max-width: 575.98px) { body.debug:before { content: "xs" }}
-@media (min-width: 576px) and (max-width: 767.98px) { body.debug:before { content: "sm" }}
-@media (min-width: 768px) and (max-width: 991.98px) { body.debug:before { content: "md" }}
-@media (min-width: 992px) and (max-width: 1199.98px) { body.debug:before { content: "lg" }}
-@media (min-width: 1200px) and (max-width: 1399.98px) { body.debug:before { content: "xl" }}
-@media (min-width: 1400px) { body.debug:before { content: "xxl" }}
-body.debug:before {color: #4c60d811;display: block;font-size: 10rem;font-variant: all-small-caps;font-weight: 700;line-height: 1;position: fixed;right: 3rem;top: 3rem;z-index: -1}
-.offcanvas { --bs-offcanvas-width: 30vw; min-width: 25rem; }
+@media (max-width: 575.98px) {
+  body.debug:before {
+    content: "xs"
+  }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+  body.debug:before {
+    content: "sm"
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  body.debug:before {
+    content: "md"
+  }
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  body.debug:before {
+    content: "lg"
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1399.98px) {
+  body.debug:before {
+    content: "xl"
+  }
+}
+
+@media (min-width: 1400px) {
+  body.debug:before {
+    content: "xxl"
+  }
+}
+
+body.debug:before {
+  color: #4c60d811;
+  display: block;
+  font-size: 10rem;
+  font-variant: all-small-caps;
+  font-weight: 700;
+  line-height: 1;
+  position: fixed;
+  right: 3rem;
+  top: 3rem;
+  z-index: -1
+}
+
+.offcanvas {
+  --bs-offcanvas-width: 30vw;
+  min-width: 25rem;
+}
+
 /* debugging end */
 
 :root {
@@ -81,41 +126,64 @@ article.calculator {
   .form-floating > label {
     padding: 0.5rem 0.25rem;
   }
+
   .form-control:not(:placeholder-shown) {
     padding-bottom: 0.5rem;
   }
+
   .col:not(:first-child) {
     text-align: right;
   }
+
   input {
     font-family: 'Share Tech Mono', monospace;
     font-size: 1.4rem;
     font-weight: 400;
   }
+
   .dec, .hex {
     input {
       font-size: 2.0rem;
       text-align: right;
     }
   }
+
   input.start[readonly] {
     background-color: #4c60d8;
     color: white;
   }
+
   input[readonly] {
     border: none;
     color: var(--bs-blue);
     outline: none;
   }
+
   #mtdparts {
     font-size: 1.75rem;
     word-break: break-all;
   }
 }
 
+.card-body {
+  position: relative;
+}
+
 .social {
-  a {display: block; margin-bottom: 0.125rem; }
-  a:before { margin-right: 0.5rem; }
-  a.github:before { content: url("/assets/github.svg"); }
-  a.telegram:before { content: url("/assets/telegram.svg"); }
+  position: absolute;
+  right: 0.25rem;
+  top: -0.75rem;
+  text-align: right;
+
+  a {
+    background: white;
+    border-radius: 50%;
+    display: inline-flex;
+    padding: 2px;
+
+    img {
+      height: 1.25rem;
+      vertical-align: text-bottom;
+    }
+  }
 }
