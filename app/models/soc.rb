@@ -14,6 +14,18 @@ class Soc < ApplicationRecord
     "wip": "Work in progress",
   }.freeze
 
+  def self.find(id)
+    find_by(['lower(model) = ?', id]) || find_by_id(id)
+  end
+
+  def to_param
+    urlname
+  end
+
+  def urlname
+    model.downcase
+  end
+
   def bl_url
     format GH_DL_ROOT, uboot_filename
   end

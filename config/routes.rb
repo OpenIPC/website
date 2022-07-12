@@ -1,9 +1,17 @@
 Rails.application.routes.draw do
   root "socs#index"
+  get '/about', to: 'pages#about'
   get '/tools/firmware-partitions-calculation', to: 'pages#calc'
   get '/socs/legend', to: 'socs#legend'
+  get '/sponsor', to: redirect('/support-open-source')
+  get '/support-open-source', to: 'pages#support-open-source'
+  get '/supported-hardware', to: 'cameras/socs#index'
 
-  resources :socs
+  namespace :cameras do
+    resources :vendors do
+      resources :socs
+    end
+  end
 
   devise_for :admin
   namespace :admin do
@@ -12,7 +20,5 @@ Rails.application.routes.draw do
   as :admin do
     get "/admin", to: "admin/dashboard#show", as: "admin_root"
     get "/admin/sign_out", to: "devise/sessions#destroy"
-    # match "/admin/stats/monthly(/:year(/:month))", to: "admin/stats#monthly", as: "admin_monthly_stats", via: [:get, :post]
-    # match "/admin/stats/totals(/:year(/:month))", to: "admin/stats#totals", as: "admin_totals_stats", via: [:get, :post]
   end
 end

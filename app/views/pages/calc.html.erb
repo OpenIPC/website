@@ -100,7 +100,7 @@
               // size
               let decSize;
               if (elSizeDec.value === '-') {
-                  mtdparts += '-(' + $('#p' + n + 'name').value + '),';
+                  mtdparts += '-(' + $('#p' + n + 'name').value + ')';
               } else {
                   decSize = parseInt(elSizeDec.value) * 1024;
                   if (isNaN(decSize)) return;

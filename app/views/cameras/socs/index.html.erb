@@ -4,10 +4,10 @@
   </header>
 
   <ul class="nav nav-tabs mb-4">
-    <li class="nav-item"><%= link_to "Full list", socs_path, class: "nav-link#{" active" if @_vendor.blank?}" %></li>
+    <li class="nav-item"><%= link_to "Full list", cameras_vendors_path, class: "nav-link#{" active" if @vendor.blank?}" %></li>
     <% Vendor.order(:name).each do |v| %>
       <li class="nav-item">
-        <%= link_to v.name, socs_path(vendor: v.name), class: "nav-link#{" active" if @_vendor.eql?(v.name)}" %>
+        <%= link_to v.name, cameras_vendor_path(v), class: "nav-link#{" active" if @vendor.eql?(v.name)}" %>
       </li>
     <% end %>
   </ul>

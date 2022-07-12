@@ -11,10 +11,34 @@ module ApplicationHelper
     '^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$'
   end
 
+  def flash_type_sizes
+    [
+      ['NOR 8M', 'nor8m'],
+      ['NOR 16M', 'nor16m'],
+      ['NAND', 'nand']
+    ]
+  end
+
+  def network_ifaces
+    [
+      ['Camera only has Ethernet network', 'eth'],
+      ['Camera only has Wireless network', 'wifi'],
+      ['Camera has both Ethernet and Wireless networks', 'both']
+    ]
+  end
+
   def partition_names
     %w[boot env kernel rootfs rootfs_data]
   end
+
   def partition_sizes
     %w[256 64 2048 5120 -]
+  end
+
+  def cd_card
+    [
+      ['Camera has an SD card slot', 'sd'],
+      ['Camera does not have an SD card slot', 'nosd']
+    ]
   end
 end
