@@ -8,11 +8,12 @@ Rails.application.routes.draw do
   get '/telemetry', to: redirect('https://openipc.github.io/telemetry/')
   get '/yaml-cli', to: redirect('https://openipc.github.io/yaml-cli/')
 
+  get '/sponsor', to: redirect('/support-open-source')
+
   get '/about', to: 'pages#about'
   get '/introduction', to:'pages#introduction'
-  get '/tools/firmware-partitions-calculation', to: 'pages#calc'
-  get '/socs/legend', to: 'socs#legend'
-  get '/sponsor', to: redirect('/support-open-source')
+  get '/tools/firmware-partitions-calculation', to: 'pages#firmware-partitions-calculation'
+  get '/stages-of-firmware-development', to: 'pages#stages-of-firmware-development'
   get '/support-open-source', to: 'pages#support-open-source'
   get '/supported-hardware', to: 'cameras/socs#index'
 
