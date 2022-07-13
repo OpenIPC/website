@@ -34,7 +34,7 @@ Soc.create([
              { vendor_id: 3, model: 'FH8632V100',  status: 'neq',  load_address: '',           uboot_filename: '', linux_filename: '' },
              { vendor_id: 3, model: 'FH8652V100',  status: 'hlp',  load_address: '',           uboot_filename: '', linux_filename: '' },
              { vendor_id: 3, model: 'FH8852V100',  status: 'wip',  load_address: '',           uboot_filename: '', linux_filename: 'openipc.fh8852v100-br.tgz' },
-             { vendor_id: 3, model: 'FH8852V200',  status: 'wip',  load_address: '',           uboot_filename: '', linux_filename: 'openipc.fh8852v200-br.tgz' },
+             { vendor_id: 3, model: 'FH8852V200',  status: 'wip',  load_address: '0xA1000000', uboot_filename: '', linux_filename: 'openipc.fh8852v200-br.tgz' },
              { vendor_id: 3, model: 'FH8852V210',  status: 'neq',  load_address: '',           uboot_filename: '', linux_filename: '' },
              { vendor_id: 3, model: 'FH8856V100',  status: 'neq',  load_address: '',           uboot_filename: '', linux_filename: '' },
              { vendor_id: 3, model: 'FH8856V200',  status: 'wip',  load_address: '',           uboot_filename: '', linux_filename: 'openipc.fh8856v200-br.tgz' },
