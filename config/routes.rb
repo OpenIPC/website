@@ -1,6 +1,8 @@
 Rails.application.routes.draw do
   root "pages#introduction"
 
+  get '/coupler', to: redirect('https://openipc.github.io/coupler/')
+
   get '/about', to: 'pages#about'
   get '/introduction', to:'pages#introduction'
   get '/tools/firmware-partitions-calculation', to: 'pages#calc'
