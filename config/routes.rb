@@ -2,6 +2,11 @@ Rails.application.routes.draw do
   root "pages#introduction"
 
   get '/coupler', to: redirect('https://openipc.github.io/coupler/')
+  get '/firmware', to: redirect('https://openipc.github.io/firmware/')
+  get '/ipctool', to: redirect('https://openipc.github.io/ipctool/')
+  get '/smolrtsp', to: redirect('https://openipc.github.io/smolrtsp')
+  get '/telemetry', to: redirect('https://openipc.github.io/telemetry/')
+  get '/yaml-cli', to: redirect('https://openipc.github.io/yaml-cli/')
 
   get '/about', to: 'pages#about'
   get '/introduction', to:'pages#introduction'
