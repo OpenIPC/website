@@ -57,6 +57,14 @@
     </div>
   <% end %>
 
+  <div class="progress mb-4" style="width: 1280px">
+    <div class="progress-bar pb" role="progressbar" aria-valuenow="3.125" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="progress-bar pe" role="progressbar" aria-valuenow="0.78125" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="progress-bar pk" role="progressbar" aria-valuenow="24.99" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="progress-bar pl" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="progress-bar po" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+  </div>
+
   <div id="mtdparts" class="alert alert-info text-center"></div>
 
   <script>
@@ -115,6 +123,8 @@
               let hexEnd = '0x' + decEnd.toString(16).toUpperCase();
               elAddrEnd.value = (isNaN(hexEnd)) ? '' : hexEnd;
           });
+
+          // TODO: recalculate visuals on size changes.
 
           $('#mtdparts').textContent = mtdparts;
       }
