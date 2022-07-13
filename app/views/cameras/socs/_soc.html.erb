@@ -1,5 +1,5 @@
 <tr class="<%= soc.status %>">
-  <td><%= content_tag :span, soc.status.upcase, title: Soc::STATUS[soc.status.to_sym] %></td>
+  <td><%= content_tag :span, link_to(soc.status.upcase, '/stages-of-firmware-development'), title: Soc::STATUS[soc.status.to_sym] %></td>
   <td><%= soc.vendor.name %></td>
   <td><%= soc.instructable? ? link_to(soc.model, cameras_vendor_soc_path(soc.vendor, soc)) : soc.model %></td>
   <td><%= soc.family %></td>
