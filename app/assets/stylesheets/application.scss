@@ -187,3 +187,20 @@ article.calculator {
     }
   }
 }
+// SPI 8192K, 1% = 81.92K
+//  256K =  3.125%
+//   64K =  0.78125%
+// 2048K = 25.0%
+// 5120K = 62.5%
+
+#p1name { border-color: #ff0000; border-width: 3px; }
+#p2name { border-color: #ffa500; border-width: 3px; }
+#p3name { border-color: #00ff00; border-width: 3px; }
+#p4name { border-color: #0000ff; border-width: 3px; }
+
+.progress { height: 2rem; }
+.progress-bar.pb { background: #ff0000; width: calc(100% * 0.03125); }
+.progress-bar.pe { background: #ffa500; width: calc(100% * 0.0078125); }
+.progress-bar.pk { background: #00ff00; width: calc(100% * 0.25); }
+.progress-bar.pl { background: #0000ff; width: calc(100% * 0.625); }
+.progress-bar.po { background: #808080; }
