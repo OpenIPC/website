@@ -4,6 +4,7 @@ Rails.application.routes.draw do
   get '/coupler', to: redirect('https://openipc.github.io/coupler/')
   get '/firmware', to: redirect('https://openipc.github.io/firmware/')
   get '/ipctool', to: redirect('https://openipc.github.io/ipctool/')
+  get '/microbe-web', to: redirect('https://openipc.github.io/microbe-web/')
   get '/smolrtsp', to: redirect('https://openipc.github.io/smolrtsp')
   get '/telemetry', to: redirect('https://openipc.github.io/telemetry/')
   get '/yaml-cli', to: redirect('https://openipc.github.io/yaml-cli/')
