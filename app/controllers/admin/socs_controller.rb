@@ -23,5 +23,10 @@ class Admin
         render "admin/socs/edit"
       end
     end
+
+    private
+      def permitted_params
+        params.require(:soc).permit(:model)
+      end
   end
 end
