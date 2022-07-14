@@ -14,5 +14,14 @@ class Admin
       @soc = Soc.find(params[:id])
       render "admin/socs/edit"
     end
+
+    def update
+      @soc = Soc.find(params[:id])
+      if @soc.update(permitted_params)
+        redirect_to admin_socs_path, alert: 'SoC updated.'
+      else
+        render "admin/socs/edit"
+      end
+    end
   end
 end
