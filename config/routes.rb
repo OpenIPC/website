@@ -8,9 +8,11 @@ Rails.application.routes.draw do
   get '/smolrtsp', to: redirect('https://openipc.github.io/smolrtsp')
   get '/telemetry', to: redirect('https://openipc.github.io/telemetry/')
   get '/yaml-cli', to: redirect('https://openipc.github.io/yaml-cli/')
+  get '/wiki', to: redirect('https://openipc.github.io/wiki/')
 
+  get '/SDK', to: redirect('/supported-hardware')
   get '/sponsor', to: redirect('/support-open-source')
-
+  
   get '/about', to: 'pages#about'
   get '/introduction', to:'pages#introduction'
   get '/tools/firmware-partitions-calculation', to: 'pages#firmware-partitions-calculation'
