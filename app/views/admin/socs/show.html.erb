@@ -3,7 +3,46 @@
     <h2>SoC</h2>
   </header>
 
-  <%= @soc.inspect %>
+  <div class="row row-cols-md-4">
+    <div class="col">
+      <dl>
+        <dt>Vendor</dt>
+        <dd><%= value_or_na @soc.vendor.name %>
+        <dt>SoC Model</dt>
+        <dd><%= value_or_na @soc.model %></dd>
+        <dt>SoC Family</dt>
+        <dd><%= value_or_na @soc.family %></dd>
+        <dt>SoC Version</dt>
+        <dd><%= value_or_na @soc.version %></dd>
+      </dl>
+    </div>
+    <div class="col">
+      <dl>
+        <dt>Development Status</dt>
+        <dd><%= value_or_na @soc.status %></dd>
+        <dt>SDK version</dt>
+        <dd><%= value_or_na @soc.sdk %></dd>
+        <dt>Load Address</dt>
+        <dd><%= value_or_na @soc.load_address %></dd>
+      </dl>
+    </div>
+    <div class="col">
+      <dl>
+        <dt>Kernel file name</dt>
+        <dd><%= value_or_na @soc.kernel %></dd>
+        <dt>U-Boot file name</dt>
+        <dd><%= value_or_na @soc.uboot_filename %></dd>
+        <dt>Linux file name</dt>
+        <dd><%= value_or_na @soc.linux_filename %></dd>
+      </dl>
+    </div>
+    <div class="col">
+      <dl>
+        <dt>Notes</dt>
+        <dd><%= value_or_na @soc.notes %></dd>
+      </dl>
+    </div>
+  </div>
 
-  <p><%= link_to 'Edit', edit_admin_soc_path(@soc) %></p>
+  <p><%= link_to 'Edit SoC', edit_admin_soc_path(@soc), class: "btn btn-primary" %></p>
 </article>
