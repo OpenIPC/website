@@ -10,7 +10,12 @@
         <label class="form-label" for="mtddevice">MTD device name</label>
       </div>
     </div>
-    <div class="col"></div>
+    <div class="col">
+      <div class="form-floating hex mb-3">
+        <input name="flash_size" id="flash_size" class="form-control" value="8">
+        <label class="form-label" for="flash_size">Flash size, MB</label>
+      </div>
+    </div>
     <div class="col">
       <div class="form-floating hex mb-3">
         <input type="text" class="form-control hex start" id="offset" value="0">
@@ -19,7 +24,7 @@
     </div>
     <div class="col"></div>
     <div class="col">
-      <button type="button" class="btn btn-primary" id="recalculate">Recalculate</button>
+      <button type="button" class="btn btn-primary mb-3" id="recalculate">Recalculate</button>
     </div>
   </div>
   <% (1..5).each do |i| %>
@@ -57,12 +62,13 @@
     </div>
   <% end %>
 
-  <div class="progress mb-4" style="width: 1280px">
-    <div class="progress-bar pb" role="progressbar" aria-valuenow="3.125" aria-valuemin="0" aria-valuemax="100"></div>
-    <div class="progress-bar pe" role="progressbar" aria-valuenow="0.78125" aria-valuemin="0" aria-valuemax="100"></div>
-    <div class="progress-bar pk" role="progressbar" aria-valuenow="24.99" aria-valuemin="0" aria-valuemax="100"></div>
-    <div class="progress-bar pl" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
-    <div class="progress-bar po" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+  <div class="progress mb-4 w-100">
+    <div class="progress-bar" id="pbp0" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="progress-bar" id="pbp1" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="progress-bar" id="pbp2" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="progress-bar" id="pbp3" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="progress-bar" id="pbp4" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="progress-bar" id="pbp5" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
   </div>
 
   <div id="mtdparts" class="alert alert-info text-center"></div>
@@ -86,6 +92,12 @@
           let mtdparts = "mtdparts=sfc:";
           mtdparts = $('#mtddevice').value + ':';
 
+          const flFullSizeDec = $('input#flash_size').value * 1024 * 1024;
+          const pbFullWidth = $('.progress').clientWidth;
+          let firstEmpty = 0;
+
+          $('#pbp0').style.width = (decOffset / flFullSizeDec * pbFullWidth) + 'px';
+
           $$('div.partition').forEach(row => {
               const n = parseInt(row.dataset.number);
 
@@ -101,8 +113,10 @@
               let decSize;
               if (elSizeDec.value === '-') {
                   mtdparts += '-(' + $('#p' + n + 'name').value + ')';
+                  decSize = flFullSizeDec - firstEmpty;
               } else {
                   decSize = parseInt(elSizeDec.value) * 1024;
+                  firstEmpty += decSize;
                   if (isNaN(decSize)) return;
                   let hexSize = '0x' + decSize.toString(16).toUpperCase();
                   elSizeHex.value = (isNaN(hexSize)) ? '' : hexSize;
@@ -122,9 +136,9 @@
               let decEnd = decStart + decSize - 1;
               let hexEnd = '0x' + decEnd.toString(16).toUpperCase();
               elAddrEnd.value = (isNaN(hexEnd)) ? '' : hexEnd;
-          });
 
-          // TODO: recalculate visuals on size changes.
+              $('#pbp' + n).style.width = (decSize / flFullSizeDec * pbFullWidth) + 'px';
+          });
 
           $('#mtdparts').textContent = mtdparts;
       }
