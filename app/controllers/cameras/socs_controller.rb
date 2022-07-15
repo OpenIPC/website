@@ -14,6 +14,7 @@ module Cameras
 
     def show
       @soc = Soc.find(params[:id])
+      @page_title = "SoC #{@soc.full_name}"
       render "cameras/socs/show"
     end
 
@@ -29,11 +30,8 @@ module Cameras
       else
         @flash_size_hex = "0x800000" # 8M
       end
+      @page_title = "SoC #{@soc.full_name}"
       render "cameras/socs/update", status: :unprocessable_entity
-    end
-
-    def legend
-      render "cameras/socs/legend"
     end
 
     private
