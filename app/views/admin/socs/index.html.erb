@@ -3,7 +3,18 @@
     <h2>SoCs</h2>
   </header>
 
-  <ul>
-    <%= render @socs %>
-  </ul>
+  <table class="table table-sm">
+    <thead>
+    <tr>
+      <th>Model</th>
+      <th>Load address</th>
+      <th>U-Boot filename</th>
+      <th>Linux filename</th>
+      <th>Stage</th>
+    </tr>
+    </thead>
+    <tbody>
+      <%= render @socs %>
+    </tbody>
+  </table>
 </article>

@@ -1,1 +1,7 @@
-<li><%= link_to soc.full_name, admin_soc_path(soc) %></li>
+<tr>
+  <td><%= link_to soc.full_name, admin_soc_path(soc) %></td>
+  <td><%= soc.load_address %></td>
+  <td><%= soc.uboot_filename %></td>
+  <td><%= soc.linux_filename %></td>
+  <td><%= soc.status %></td>
+</tr>
