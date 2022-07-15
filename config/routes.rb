@@ -12,12 +12,12 @@ Rails.application.routes.draw do
 
   get '/SDK', to: redirect('/supported-hardware')
   get '/sponsor', to: redirect('/support-open-source')
-  
+
   get '/about', to: 'pages#about'
   get '/introduction', to:'pages#introduction'
-  get '/tools/firmware-partitions-calculation', to: 'pages#firmware-partitions-calculation'
-  get '/stages-of-firmware-development', to: 'pages#stages-of-firmware-development'
-  get '/support-open-source', to: 'pages#support-open-source'
+  get '/tools/firmware-partitions-calculation', to: 'pages#firmware_partitions_calculation'
+  get '/stages-of-firmware-development', to: 'pages#stages_of_firmware_development'
+  get '/support-open-source', to: 'pages#support_open_source'
   get '/supported-hardware', to: 'cameras/socs#index'
 
   namespace :cameras do
