@@ -15,10 +15,13 @@ Rails.application.routes.draw do
 
   get '/about', to: 'pages#about'
   get '/introduction', to:'pages#introduction'
-  get '/tools/firmware-partitions-calculation', to: 'pages#firmware_partitions_calculation'
+  get '/our-projects', to: 'pages#our_projects'
+  get '/our-team', to: 'pages#our_team'
+  get '/our-telegram-channels', to: 'pages#our_telegram_channels'
   get '/stages-of-firmware-development', to: 'pages#stages_of_firmware_development'
   get '/support-open-source', to: 'pages#support_open_source'
   get '/supported-hardware', to: 'cameras/socs#index'
+  get '/tools/firmware-partitions-calculation', to: 'pages#firmware_partitions_calculation'
 
   namespace :cameras do
     resources :vendors do

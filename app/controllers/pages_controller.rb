@@ -4,7 +4,7 @@ class PagesController < ApplicationController
 
   def about
     @page_title = "About Us"
-    render "pages/about"
+    render "pages/our-telegram-channels"
   end
 
   def firmware_partitions_calculation
@@ -15,6 +15,21 @@ class PagesController < ApplicationController
   def introduction
     @page_title = "Introduction"
     render "pages/introduction"
+  end
+
+  def our_projects
+    @page_title = "Our Projects"
+    render "pages/our-projects"
+  end
+
+  def our_team
+    @page_title = "Team"
+    render "pages/our-team"
+  end
+
+  def our_telegram_channels
+    @page_title = "Our Telegram channels"
+    render "pages/our-telegram-channels"
   end
 
   def stages_of_firmware_development
