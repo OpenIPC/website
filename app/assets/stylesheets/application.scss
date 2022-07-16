@@ -134,7 +134,11 @@ ol.breadcrumb { font-size: 0.86rem; padding: 0.5rem 0; }
 table.socs {
   .stage { width: 4rem; text-align: center; }
   .name { width: auto; }
-  .url { width: 8rem; text-align: center;  img { height: 20px; }}
+  .url { width: 8rem; text-align: center;
+    img { height: 20px;
+      filter: invert(38%) sepia(63%) saturate(5330%) hue-rotate(225deg) brightness(92%) contrast(83%);
+    }
+  }
   .address { width: 9rem; text-align: right; }
   .doc { width: 14rem; }
 
