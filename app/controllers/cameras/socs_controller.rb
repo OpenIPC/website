@@ -7,7 +7,7 @@ module Cameras
         @page_title = "Supported SoCs: filtered by #{@_vendor}"
       else
         @socs = Soc.left_joins(:vendor).order(:name, :model)
-        @page_title = "Supported SoCs: full List"
+        @page_title = "Supported SoCs: full list"
       end
       render "cameras/socs/index"
     end
