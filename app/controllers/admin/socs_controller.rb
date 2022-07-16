@@ -12,6 +12,22 @@ class Admin
       render "admin/socs/show"
     end
 
+    def new
+      @soc = Soc.new
+      @page_title = "Admin: Adding new SoC"
+      render "admin/socs/edit"
+    end
+
+    def create
+      @soc = Soc.new
+      @page_title = "Admin: Creating new SoC"
+      if @soc.update(permitted_params)
+        redirect_to admin_soc_path(@soc), alert: 'SoC updated.'
+      else
+        render "admin/socs/edit"
+      end
+    end
+
     def edit
       @soc = Soc.find(params[:id])
       @page_title = "Admin: Editing SoC #{@soc.full_name}"
@@ -22,7 +38,7 @@ class Admin
       @soc = Soc.find(params[:id])
       @page_title = "Admin: Updating SoC #{@soc.full_name}"
       if @soc.update(permitted_params)
-        redirect_to admin_socs_path, alert: 'SoC updated.'
+        redirect_to admin_soc_path(@soc), alert: 'SoC updated.'
       else
         render "admin/socs/edit"
       end

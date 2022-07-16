@@ -4,7 +4,7 @@
   </header>
 
 <!--  layout: :horizontal, label_col: "col-sm-4", control_col: "col-sm-8",-->
-  <%= bootstrap_form_for @soc, url: admin_soc_path(@soc) do |f| %>
+  <%= bootstrap_form_for @soc, url: [:admin, @soc] do |f| %>
     <%= f.alert_message "Please fix the errors below." %>
     <div class="row row-cols-lg-4">
       <div class="col">
