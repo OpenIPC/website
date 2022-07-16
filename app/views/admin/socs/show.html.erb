@@ -46,5 +46,11 @@
     </div>
   </div>
 
+  <dl>
+  <dt>Build status URL</dt>
+    <dd><%= value_or_na @soc.build_status_url %></dd>
+    <dd><%= image_tag @soc.build_status_url unless @soc.build_status_url.blank? %></dd>
+  </dl>
+
   <p><%= link_to 'Edit SoC', edit_admin_soc_path(@soc), class: "btn btn-primary" %></p>
 </article>

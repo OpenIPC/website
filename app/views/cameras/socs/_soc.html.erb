@@ -27,4 +27,7 @@
   <td class="address hex"><%= soc.load_address %></td>
   <td class="doc"><%= link_to "Installation instructions", cameras_vendor_soc_path(soc.vendor, soc) if soc.instructable? %></td>
   <td class="stage <%= soc.status %>"><%= content_tag :span, link_to(soc.status.upcase, '/stages-of-firmware-development'), title: Soc::STATUS[soc.status.to_sym] %></td>
+  <td class="status">
+    <%= image_tag soc.build_status_url unless soc.build_status_url.blank? %>
+  </td>
 </tr>
