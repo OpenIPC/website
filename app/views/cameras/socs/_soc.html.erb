@@ -1,9 +1,27 @@
-<tr class="<%= soc.status %>" id="<%= soc.urlname %>">
-  <td><%= content_tag :span, link_to(soc.status.upcase, '/stages-of-firmware-development'), title: Soc::STATUS[soc.status.to_sym] %></td>
-  <td><%= soc.vendor.name %></td>
-  <td><%= soc.instructable? ? link_to(soc.model, cameras_vendor_soc_path(soc.vendor, soc)) : soc.model %></td>
-  <td><%= soc.family %></td>
-  <td class="hex"><%= soc.load_address %></td>
-  <td><%= link_to soc.uboot_filename, soc.bl_url unless soc.uboot_filename.blank? %></td>
-  <td><%= link_to soc.linux_filename, soc.fw_url unless soc.linux_filename.blank? %></td>
+<tr id="<%= soc.urlname %>">
+  <td class="stage <%= soc.status %>"><%= content_tag :span, link_to(soc.status.upcase, '/stages-of-firmware-development'), title: Soc::STATUS[soc.status.to_sym] %></td>
+  <td class="name vendor"><%= soc.full_name %></td>
+  <td class="url">
+    <% if soc.uboot_filename.blank? %>
+      <%= image_tag "square-line.svg", alt: "Image: empty square" %>
+    <% else %>
+      <%= link_to icon_download, soc.bl_url, title: soc.uboot_filename %>
+    <% end %>
+  </td>
+  <td class="url">
+    <% if soc.linux_filename.blank? %>
+      <%= image_tag "square-line.svg", alt: "Image: empty square" %>
+    <% else %>
+      <%= link_to icon_download, soc.fw_url, title: soc.linux_filename %>
+    <% end %>
+  </td>
+  <td class="url">
+    <% if soc.toolchain_filename.blank? %>
+      <%= image_tag "square-line.svg", alt: "Image: empty square" %>
+    <% else %>
+      <%= link_to icon_download, soc.tc_url, title: soc.toolchain_filename %>
+    <% end %>
+  </td>
+  <td class="address hex"><%= soc.load_address %></td>
+  <td class="doc"><%= link_to "Installation instructions", cameras_vendor_soc_path(soc.vendor, soc) if soc.instructable? %></td>
 </tr>

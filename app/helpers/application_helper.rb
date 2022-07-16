@@ -7,6 +7,10 @@ module ApplicationHelper
     debug_mode? ? "debug" : nil
   end
 
+  def icon_download
+    image_tag 'download.svg', alt: 'Image: download'
+  end
+
   def ipaddr_pattern
     '^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$'
   end
