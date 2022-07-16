@@ -1,6 +1,8 @@
 Rails.application.routes.draw do
   root "pages#introduction"
 
+  get '/aaa', to: 'pages#aaa'
+
   get '/coupler', to: redirect('https://openipc.github.io/coupler/')
   get '/firmware', to: redirect('https://openipc.github.io/firmware/')
   get '/ipctool', to: redirect('https://openipc.github.io/ipctool/')
