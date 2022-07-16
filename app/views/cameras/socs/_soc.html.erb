@@ -3,7 +3,7 @@
   <td><%= soc.vendor.name %></td>
   <td><%= soc.instructable? ? link_to(soc.model, cameras_vendor_soc_path(soc.vendor, soc)) : soc.model %></td>
   <td><%= soc.family %></td>
-  <td><%= soc.load_address %></td>
+  <td class="hex"><%= soc.load_address %></td>
   <td><%= link_to soc.uboot_filename, soc.bl_url unless soc.uboot_filename.blank? %></td>
   <td><%= link_to soc.linux_filename, soc.fw_url unless soc.linux_filename.blank? %></td>
 </tr>
