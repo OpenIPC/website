@@ -1,6 +1,8 @@
 <tr id="<%= soc.urlname %>">
-  <td class="stage <%= soc.status %>"><%= content_tag :span, link_to(soc.status.upcase, '/stages-of-firmware-development'), title: Soc::STATUS[soc.status.to_sym] %></td>
-  <td class="name vendor"><%= soc.full_name %></td>
+  <td class="name vendor">
+    <%= soc.full_name %>
+    <%= link_to "#", "/supported-hardware##{soc.urlname}", class: "anchor" %>
+  </td>
   <td class="url">
     <% if soc.uboot_filename.blank? %>
       <%= image_tag "square-line.svg", alt: "Image: empty square" %>
@@ -24,4 +26,5 @@
   </td>
   <td class="address hex"><%= soc.load_address %></td>
   <td class="doc"><%= link_to "Installation instructions", cameras_vendor_soc_path(soc.vendor, soc) if soc.instructable? %></td>
+  <td class="stage <%= soc.status %>"><%= content_tag :span, link_to(soc.status.upcase, '/stages-of-firmware-development'), title: Soc::STATUS[soc.status.to_sym] %></td>
 </tr>

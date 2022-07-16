@@ -144,6 +144,9 @@ table.socs {
   .stage.wip { background-color: #00ffff33 }
   .stage.mvp { background-color: #ffff0033 }
   .stage.done { background-color: #00ff0033 }
+
+  td.name a.anchor { display: none; }
+  td.name:hover a.anchor { display: inline; }
 }
 
 .stage.neq { background-color: #000033 }
