@@ -1,7 +1,7 @@
 class Admin
   class SocsController < AdminController
     def index
-      @socs = Soc.all
+      @socs = Soc.left_joins(:vendor).order(:name, :model)
       @page_title = "Admin: List of SoCs"
       render "admin/socs/index"
     end
