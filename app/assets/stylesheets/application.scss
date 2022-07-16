@@ -41,6 +41,10 @@ body.debug:before {
   font-size: 0.8125rem;
 }
 
+body > main > .container {
+  min-height: 85vh;
+}
+
 body > main > .container > article > header > h2 {
   font-weight: 700;
   color: var(--bs-blue);
