@@ -4,41 +4,12 @@
 @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css");
 
 /* debugging start */
-@media (max-width: 575.98px) {
-  body.debug:before {
-    content: "xs"
-  }
-}
-
-@media (min-width: 576px) and (max-width: 767.98px) {
-  body.debug:before {
-    content: "sm"
-  }
-}
-
-@media (min-width: 768px) and (max-width: 991.98px) {
-  body.debug:before {
-    content: "md"
-  }
-}
-
-@media (min-width: 992px) and (max-width: 1199.98px) {
-  body.debug:before {
-    content: "lg"
-  }
-}
-
-@media (min-width: 1200px) and (max-width: 1399.98px) {
-  body.debug:before {
-    content: "xl"
-  }
-}
-
-@media (min-width: 1400px) {
-  body.debug:before {
-    content: "xxl"
-  }
-}
+@media (max-width: 575.98px) { body.debug:before {content: "xs"} }
+@media (min-width: 576px) and (max-width: 767.98px) { body.debug:before {content: "sm"} }
+@media (min-width: 768px) and (max-width: 991.98px) { body.debug:before {content: "md"} }
+@media (min-width: 992px) and (max-width: 1199.98px) { body.debug:before {content: "lg"} }
+@media (min-width: 1200px) and (max-width: 1399.98px) { body.debug:before {content: "xl"} }
+@media (min-width: 1400px) { body.debug:before {content: "xxl"} }
 
 body.debug:before {
   color: #4c60d811;
@@ -68,10 +39,6 @@ body.debug:before {
 
 .x-small {
   font-size: 0.8125rem;
-}
-
-body {
-  margin-bottom: 5rem;
 }
 
 body > main > .container > article > header > h2 {
