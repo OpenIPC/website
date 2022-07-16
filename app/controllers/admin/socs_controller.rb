@@ -31,9 +31,8 @@ class Admin
     private
       def permitted_params
         params.require(:soc).permit(
-          :model, :vendor_id, :version, :status,
-          :load_address, :sdk, :kernel, :uboot_filename,
-          :linux_filename, :notes
+          :model, :vendor_id, :version, :status, :load_address, :sdk, :kernel,
+          :uboot_filename, :linux_filename, :toolchain_filename, :notes
         )
       end
   end
