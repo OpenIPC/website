@@ -1,7 +1,9 @@
 class Soc < ApplicationRecord
   belongs_to :vendor
 
+  before_validation :generate_urlname
   validates :model, uniqueness: { scope: :vendor_id }
+  validates :urlname, uniqueness: true
 
   GH_DL_ROOT="https://github.com/OpenIPC/firmware/releases/download/latest/%s"
 
@@ -15,15 +17,11 @@ class Soc < ApplicationRecord
   }.freeze
 
   def self.find(id)
-    find_by(['lower(model) = ?', id]) || find_by_id(id)
+    find_by_urlname(id) || find_by_id(id)
   end
 
   def to_param
     urlname
-  end
-
-  def urlname
-    model.downcase
   end
 
   def bl_url
@@ -41,4 +39,10 @@ class Soc < ApplicationRecord
   def instructable?
     !uboot_filename.empty? && !linux_filename.empty?
   end
+
+  private
+
+    def generate_urlname
+      self.urlname = model.downcase.gsub(' ', '-')
+    end
 end
