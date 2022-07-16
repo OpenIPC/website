@@ -15,6 +15,7 @@ class Vendor < ApplicationRecord
   end
 
   private
+
     def generate_urlname
       self.urlname = name.downcase.gsub(' ', '-')
     end
