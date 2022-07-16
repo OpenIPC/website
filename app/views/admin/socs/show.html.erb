@@ -6,7 +6,7 @@
   <div class="row row-cols-md-4">
     <div class="col">
       <dl>
-        <dt>Vendor</dt>
+        <dt>SoC Vendor</dt>
         <dd><%= value_or_na @soc.vendor.name %>
         <dt>SoC Model</dt>
         <dd><%= value_or_na @soc.model %></dd>
@@ -20,20 +20,22 @@
       <dl>
         <dt>Development Status</dt>
         <dd><%= value_or_na @soc.status %></dd>
-        <dt>SDK version</dt>
-        <dd><%= value_or_na @soc.sdk %></dd>
         <dt>Load Address</dt>
         <dd><%= value_or_na @soc.load_address %></dd>
+        <dt>Kernel</dt>
+        <dd><%= value_or_na @soc.kernel %></dd>
+        <dt>SDK version</dt>
+        <dd><%= value_or_na @soc.sdk %></dd>
       </dl>
     </div>
     <div class="col">
       <dl>
-        <dt>Kernel file name</dt>
-        <dd><%= value_or_na @soc.kernel %></dd>
         <dt>U-Boot file name</dt>
         <dd><%= value_or_na @soc.uboot_filename %></dd>
         <dt>Linux file name</dt>
         <dd><%= value_or_na @soc.linux_filename %></dd>
+        <dt>Toolchain file name</dt>
+        <dd><%= value_or_na @soc.toolchain_filename %></dd>
       </dl>
     </div>
     <div class="col">
