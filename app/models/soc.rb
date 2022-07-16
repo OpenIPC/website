@@ -5,9 +5,9 @@ class Soc < ApplicationRecord
   validates :model, uniqueness: { scope: :vendor_id }
   validates :urlname, uniqueness: true
 
-  GH_DL_ROOT="https://github.com/OpenIPC/firmware/releases/download/latest/%s"
+  GH_DL_ROOT = "https://github.com/OpenIPC/firmware/releases/download/latest/%s"
 
-  STATUS={
+  STATUS = {
     "done": "All functions are supported",
     "hlp": "Looking for help",
     "neq": "No equipment on hands",
