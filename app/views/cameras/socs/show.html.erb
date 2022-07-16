@@ -14,12 +14,12 @@
             <div class="mb-3">
               <%= f.label :ipaddr, "Camera IP address", class: "form-label" %>
               <%= f.text_field :ipaddr, pattern: ipaddr_pattern, value: "192.168.1.10",
-                title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
+                               title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
             </div>
             <div class="mb-3">
               <%= f.label :serverip, "TFTP server IP address", class: "form-label" %>
               <%= f.text_field :serverip, pattern: ipaddr_pattern, value: "192.168.1.254",
-                title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
+                               title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
             </div>
           </div>
           <div class="col">
@@ -44,19 +44,32 @@
     <div class="col-md-6 col-xl-5 col-xxl-4">
       <h3>Downloads</h3>
 
-      <div class="alert alert-primary github">
-        <i class="bi bi-github float-end"></i>
-        <h4 class="mb-1">OpenIPC Bootloader</h4>
-        <p class="small">for <%= @soc.full_name %></p>
-        <p class="mb-0"><%= link_to @soc.uboot_filename, @soc.bl_url unless @soc.uboot_filename.blank? %></p>
-      </div>
+      <% unless @soc.uboot_filename.blank? %>
+        <div class="alert alert-primary github">
+          <i class="bi bi-github float-end"></i>
+          <h4 class="mb-1">OpenIPC Bootloader</h4>
+          <p class="small">for <%= @soc.full_name %></p>
+          <p class="mb-0"><%= link_to @soc.uboot_filename, @soc.bl_url %></p>
+        </div>
+      <% end %>
 
-      <div class="alert alert-primary github">
-        <i class="bi bi-github float-end"></i>
-        <h4 class="mb-1">OpenIPC Linux</h4>
-        <p class="small">for <%= @soc.full_name %></p>
-        <p class="mb-0"><%= link_to @soc.linux_filename, @soc.fw_url unless @soc.linux_filename.blank? %></p>
-      </div>
+      <% unless @soc.linux_filename.blank? %>
+        <div class="alert alert-primary github">
+          <i class="bi bi-github float-end"></i>
+          <h4 class="mb-1">OpenIPC Linux</h4>
+          <p class="small">for <%= @soc.full_name %></p>
+          <p class="mb-0"><%= link_to @soc.linux_filename, @soc.fw_url %></p>
+        </div>
+      <% end %>
+
+      <% unless @soc.toolchain_filename.blank? %>
+        <div class="alert alert-primary github">
+          <i class="bi bi-github float-end"></i>
+          <h4 class="mb-1">OpenIPC Toolchain</h4>
+          <p class="small">for <%= @soc.full_name %></p>
+          <p class="mb-0"><%= link_to @soc.toolchain_filename, @soc.tc_url %></p>
+        </div>
+      <% end %>
     </div>
   </div>
 </article>
