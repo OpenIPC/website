@@ -12,7 +12,7 @@ module ApplicationHelper
   end
 
   def icon_download
-    image_tag "download2.svg", alt: "Image: download icon", class: "icon img-fluid"
+    image_tag "download.svg", alt: "Image: download icon", class: "icon img-fluid"
   end
 
   def icon_instruction
