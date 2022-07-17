@@ -56,57 +56,20 @@
   </div>
 </main>
 
-<footer class="bg-light x-small">
-  <button type="button" class="btn btn-primary btn-sm m-2 float-start" data-bs-toggle="offcanvas"
-          data-bs-target="#offcanvasDebug" aria-controls="offcanvasDebug">Debug
-  </button>
-
-  <div class="container pt-1">
+<footer class="bg-light small p-4 mt-4">
+  <div class="container">
     <div class="row justify-content-between">
-      <div class="col pt-2">
-        <p>Copyright 2022 <a href="https://openipc.org/">OpenIPC</a>.</p>
-      </div>
+      <div class="col"><p>Copyright 2022 <a href="https://openipc.org/">OpenIPC</a>.</p></div>
       <div class="col text-end">
         <div class="btn-group">
-          <a class="btn" href="https://github.com/openipc" title="OpenIPC on GitHub"><img
-            src="/assets/github.svg" alt="Image: GitHub logo"></a>
-          <a class="btn" href="https://twitter.com/openipc" title="OpenIPC on Twitter"><img
-            src="/assets/twitter.svg" alt="Image: Twitter logo"></a>
-          <a class="btn" href="https://www.youtube.com/channel/UCaXlbR2uGTRFh8jQ2lCFd2g" title="OpenIPC on YouTube"><img
-            src="/assets/youtube.svg" alt="Image: YouTube logo"></a>
-          <a class="btn" href="https://opencollective.com/openipc" title="OpenIPC on OpenCollective"><img
-            src="/assets/opencollective.svg" alt="Image: OpenCollective logo"></a>
+          <a class="btn" href="https://github.com/openipc" title="OpenIPC on GitHub"><img src="/assets/github.svg" alt="Image: GitHub logo"></a>
+          <a class="btn" href="https://twitter.com/openipc" title="OpenIPC on Twitter"><img src="/assets/twitter.svg" alt="Image: Twitter logo"></a>
+          <a class="btn" href="https://www.youtube.com/channel/UCaXlbR2uGTRFh8jQ2lCFd2g" title="OpenIPC on YouTube"><img src="/assets/youtube.svg" alt="Image: YouTube logo"></a>
+          <a class="btn" href="https://opencollective.com/openipc" title="OpenIPC on OpenCollective"><img src="/assets/opencollective.svg" alt="Image: OpenCollective logo"></a>
         </div>
       </div>
     </div>
   </div>
-
-  <% if debug_mode? %>
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasDebug" aria-labelledby="offcanvasDebugLabel">
-      <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasDebugLabel">Debug Info</h5>
-        <%= form_for :debug, url: root_path do |f| %>
-          <%= f.hidden_field :action, value: "init" %>
-          <%= f.submit "Refresh Environment" %>
-        <% end %>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-      </div>
-      <div class="offcanvas-body x-small">
-        <ul class="nav nav-tabs" role="tablist">
-          <%= tab_lap "t1", "sysinfo", "active" %>
-          <%= tab_lap "t2", "env" %>
-        </ul>
-        <div class="tab-content p-2" id="tab-content">
-          <div id="t1-tab-pane" role="tabpanel" class="tab-pane fade active show" aria-labelledby="t1-tab" tabindex="0">
-            Hi there
-          </div>
-          <div id="t2-tab-pane" role="tabpanel" class="tab-pane fade" aria-labelledby="t2-tab" tabindex="0">
-            And here, too
-          </div>
-        </div>
-      </div>
-    </div>
-  <% end %>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
