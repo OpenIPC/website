@@ -10,13 +10,17 @@
     Do not copy and paste multiple lines of commands at once!</p>
 
   <h3>Saving original firmware</h3>
+<% unless @camera.flash_type.eql?("nand") %>
   <pre class="bg-light p-4">
 <% unless @camera.network_interface.eql?("wifi") -%>
 setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>
 <% end -%>
-mw.b <%= @soc.load_address %> ff 0x1000000; sf probe 0; sf read <%= @soc.load_address %> 0x0 <%= @camera.flash_size_hex %>
+mw.b <%= @soc.load_address %> ff <%= @camera.flash_size_hex %>; sf probe 0; sf read <%= @soc.load_address %> 0x0 <%= @camera.flash_size_hex %>
 tftpput <%= @soc.load_address %> <%= @camera.flash_size_hex %> <%= @backup_filename %>
 </pre>
+<% else %>
+  <p>Back up solution for NAND chips is currently under development.</p>
+<% end %>
 
   <h3>Flashing OpenIPC bootloader</h3>
   <p>Download bootloader binary file from <%= link_to @soc.uboot_filename, @soc.bl_url %> and save it to the root directory of your TFTP server.</p>
@@ -24,7 +28,7 @@ tftpput <%= @soc.load_address %> <%= @camera.flash_size_hex %> <%= @backup_filen
 <% unless @camera.network_interface.eql?("wifi") -%>
 setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>
 <% end -%>
-mw.b <%= @soc.load_address %> ff 0x1000000; tftpboot <%= @soc.load_address %> <%= @soc.uboot_filename %>
+mw.b <%= @soc.load_address %> ff 0x50000; tftpboot <%= @soc.load_address %> <%= @soc.uboot_filename %>
 sf probe 0; sf erase 0x0 0x50000; sf write <%= @soc.load_address %> 0x0 0x50000
 reset
 </pre>
@@ -43,13 +47,13 @@ run uk<%= @flash_type_command %>; run ur<%= @flash_type_command %>
 reset
 </pre>
 
-<% unless @camera.flash_type.eql?("nand") %>
+  <% unless @camera.flash_type.eql?("nand") %>
   <h3>Restoring camera from original firmware backup</h3>
 <pre class="bg-light p-4">
 <% unless @camera.network_interface.eql?("wifi") -%>
 setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>
 <% end -%>
-mw.b <%= @soc.load_address %> ff 0x1000000; tftpboot <%= @soc.load_address %> <%= @backup_filename %>
+mw.b <%= @soc.load_address %> ff <%= @camera.flash_size_hex %>; tftpboot <%= @soc.load_address %> <%= @backup_filename %>
 sf probe 0; sf erase 0x0 <%= @camera.flash_size_hex %>; sf write <%= @soc.load_address %> 0x0 <%= @camera.flash_size_hex %>
 </pre>
 <% end %>
