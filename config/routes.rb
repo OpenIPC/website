@@ -19,7 +19,7 @@ Rails.application.routes.draw do
   get '/introduction', to:'pages#introduction'
   get '/our-projects', to: 'pages#our_projects'
   get '/our-team', to: 'pages#our_team'
-  get '/our-telegram-channels', to: 'pages#our_telegram_channels'
+  get '/our-channels', to: 'pages#our_channels'
   get '/stages-of-firmware-development', to: 'pages#stages_of_firmware_development'
   get '/support-open-source', to: 'pages#support_open_source'
   get '/supported-hardware', to: 'cameras/socs#index'

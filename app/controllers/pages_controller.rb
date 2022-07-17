@@ -17,6 +17,11 @@ class PagesController < ApplicationController
     render "pages/introduction"
   end
 
+  def our_channels
+    @page_title = "Our channels"
+    render "pages/our-channels"
+  end
+
   def our_projects
     @page_title = "Our Projects"
     render "pages/our-projects"
@@ -25,11 +30,6 @@ class PagesController < ApplicationController
   def our_team
     @page_title = "Team"
     render "pages/our-team"
-  end
-
-  def our_telegram_channels
-    @page_title = "Our Telegram channels"
-    render "pages/our-telegram-channels"
   end
 
   def stages_of_firmware_development
