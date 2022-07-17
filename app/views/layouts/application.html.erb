@@ -23,27 +23,24 @@
     </button>
     <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
       <ul class="navbar-nav">
-        <li class="nav-item"><a class="nav-link" href="/introduction">Introduction</a></li>
-        <li class="nav-item"><a class="nav-link" href="/supported-hardware">Supported Hardware</a></li>
-        <li class="nav-item"><a class="nav-link" href="/support-open-source">Support Open Source</a></li>
+        <%= navbar_link("Introduction", "/introduction") %>
+        <%= navbar_link("Supported Hardware", "/supported-hardware") %>
+        <%= navbar_link("Support Open Source", "/support-open-source") %>
 
         <li class="nav-item dropdown">
-          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#"
-             id="dropdownAbout" role="button">About</a>
+          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownAbout" role="button">About</a>
           <ul aria-labelledby="dropdownAbout" class="dropdown-menu dropdown-menu-lg-end">
-            <li><a class="dropdown-item" href="/our-team">Our Team</a></li>
-            <li><a class="dropdown-item" href="/our-projects">Our Projects</a></li>
-            <li><a class="dropdown-item" href="/our-channels">Our Channels</a></li>
-            <li><a class="dropdown-item" href="https://openipc.github.io/wiki">Our Wiki</a></li>
+            <%= dropdown_link "Our Team", "/our-team" %>
+            <%= dropdown_link "Our Projects", "/our-projects" %>
+            <%= dropdown_link "Our Channels", "/our-channels" %>
+            <%= dropdown_link "Our Wiki", "https://openipc.github.io/wiki" %>
           </ul>
         </li>
 
         <li class="nav-item dropdown">
-          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#"
-             id="dropdownTools" role="button">Tools</a>
+          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownTools" role="button">Tools</a>
           <ul aria-labelledby="dropdownTools" class="dropdown-menu dropdown-menu-lg-end">
-            <li><a class="dropdown-item" href="/tools/firmware-partitions-calculation">Firmware Partition Calculator</a>
-            </li>
+            <%= dropdown_link "Firmware Partition Calculator", "/tools/firmware-partitions-calculation" %>
           </ul>
         </li>
       </ul>

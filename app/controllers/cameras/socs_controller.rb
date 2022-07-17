@@ -1,13 +1,15 @@
 module Cameras
   class SocsController < ApplicationController
+    # include InstallationInstructionConcern
+
     def index
-      @_vendor = params[:vendor] || "all"
-      if @_vendor.eql?("all")
+      @vendor = params[:vendor] || "all"
+      if @vendor.eql?("all")
         @socs = Soc.left_joins(:vendor).order(:name, :model)
         @page_title = "Full List"
-      elsif @_vendor.in?(Vendor.all.map(&:name))
-        @socs = Soc.left_joins(:vendor).where(vendors: { name: @_vendor }).order(:model)
-        @page_title = "Filtered by #{@_vendor}"
+      elsif @vendor.in?(Vendor.all.map(&:name))
+        @socs = Soc.left_joins(:vendor).where(vendors: { name: @vendor }).order(:model)
+        @page_title = "Filtered by #{@vendor}"
       else
         @socs = []
         @page_title = "Unknown vendor"
@@ -32,6 +34,10 @@ module Cameras
       @soc = Soc.find_by_urlname(params[:id])
       @vendor = @soc.vendor
       render "cameras/socs/show"
+    end
+
+    def legend
+      render "cameras/socs/legend"
     end
 
     def update

@@ -7,7 +7,7 @@
     <li class="nav-item"><%= link_to "Full list", cameras_vendors_path, class: "nav-link#{" active" if @vendor.blank?}" %></li>
     <% Vendor.order(:name).each do |v| %>
       <li class="nav-item">
-        <%= link_to v.name, cameras_vendor_path(v), class: "nav-link#{" active" if @vendor.eql?(v.name)}" %>
+        <%= link_to v.name, cameras_vendor_path(v), class: "nav-link#{" active" if @vendor&.name.eql?(v.name)}" %>
       </li>
     <% end %>
   </ul>
