@@ -7,18 +7,6 @@ module ApplicationHelper
     debug_mode? ? "debug" : nil
   end
 
-  def icon_nothing
-    image_tag "square-line.svg", alt: "Image: empty icon", class: "icon img-fluid"
-  end
-
-  def icon_download
-    image_tag "download.svg", alt: "Image: download icon", class: "icon img-fluid"
-  end
-
-  def icon_instruction
-    image_tag "instruction.svg", alt: "Image: information icon", class: "icon img-fluid", title: "Installation instruction"
-  end
-
   def ipaddr_pattern
     '^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$'
   end
@@ -42,6 +30,11 @@ module ApplicationHelper
   def partition_sizes
     %w[256 64 2048 5120 -]
   end
+
+  def mtd_names
+    %w[hi_sfc hinand jz_sfc nor-flash NOR_FLASH sfc spi0.0 spi_flash xm_sfc]
+  end
+
 
   def under_development
     content_tag "p", "This part is currently under development. Stay tuned.", class: "alert alert-warning"
