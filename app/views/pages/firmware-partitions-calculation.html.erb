@@ -6,7 +6,7 @@
   <div class="row row-cols-1 row-cols-md-5">
     <div class="col">
       <div class="form-floating mb-3">
-        <input type="text" class="form-control" id="mtddevice" value="hi_sfc">
+        <input type="text" class="form-control" id="mtddevice" value="">
         <label class="form-label" for="mtddevice">MTD device name</label>
       </div>
     </div>
@@ -89,8 +89,11 @@
           }
           elOffset.value = (isNaN(hexOffset)) ? '0x0' : hexOffset;
 
+          const valid_mtd_names = <%= raw mtd_names.to_a %>;
+
           let mtdparts = "mtdparts=sfc:";
-          mtdparts = $('#mtddevice').value + ':';
+          const mtddevice = $('#mtddevice').value;
+          mtdparts = mtddevice + ':';
 
           const flFullSizeDec = $('input#flash_size').value * 1024 * 1024;
           const pbFullWidth = $('.progress').clientWidth;
@@ -140,7 +143,16 @@
               $('#pbp' + n).style.width = (decSize / flFullSizeDec * pbFullWidth) + 'px';
           });
 
-          $('#mtdparts').textContent = mtdparts;
+          console.log(mtdparts.startsWith(":"));
+          if (mtddevice === "") {
+              $('#mtdparts').textContent = "Please enter MTD device name to generate mtdparts string";
+              $('#mtddevice').focus();
+          } else if (valid_mtd_names.includes(mtddevice)) {
+              $('#mtdparts').textContent = mtdparts;
+          } else {
+              $('#mtdparts').innerHTML = "<b>Unknown MTD device name " + mtddevice + "!</b><br>Valid values are: <%= mtd_names.join(', ') %>";
+              $('#mtddevice').focus();
+          }
       }
 
       function initPage() {
