@@ -48,6 +48,10 @@ module Cameras
       @camera.network_interface = permitted_params[:network_interface]
       @camera.sd_card_slot      = permitted_params[:sd_card_slot]
 
+      # to handle nor32m size still using nor16m command
+      @flash_type_command = @camera.flash_type
+      @flash_type_command = "nor16m" if @camera.flash_type.eql?("nor32m")
+
       @soc = Soc.find(params[:id])
       @backup_filename = "backup-#{@soc.model.downcase}-#{@camera.flash_type}.bin"
 
