@@ -11,9 +11,9 @@
           <div class="col-md-3"><%= image_tag "stage-neq.svg", alt: "Image: stage NEQ", class: "card-image" %></div>
           <div class="col-md-9">
             <div class="card-body">
-              <p><b>NEQ</b><br>"No Equipment". We have an SDK for the platform, but we don't have specific hardware to
-                continue development, you can donate it to our R&D guys (especially older boards which are past
-                <abbr title="End-Of-Life">EOL</abbr> and there is no way to buy them anymore).</p>
+              <p><b>NEQ</b><br>No Equipment. We have an SDK for the platform, but we don't have specific hardware to
+                continue development, you can donate it to our R&D guys (especially old boards that passed
+                <abbr title="End-Of-Life">EOL</abbr> and can not longer be bought).</p>
             </div>
           </div>
         </div>
@@ -24,35 +24,9 @@
           <div class="col-md-3"><%= image_tag "stage-rnd.svg", alt: "Image: stage R&D", class: "card-image" %></div>
           <div class="col-md-9">
             <div class="card-body">
-              <p><b>R&D</b><br>"Research & Development" stage, when we already have the platform SDK, and probably
-                even hardware boards, but we only starting tinkering with the platform, learning its specifics and
-                peculiarities. There is a lot of work lies ahead.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card mb-3 border-0">
-        <div class="row g-4">
-          <div class="col-md-3"><%= image_tag "stage-wip.svg", alt: "Image: stage WIP", class: "card-image" %></div>
-          <div class="col-md-9">
-            <div class="card-body">
-              <p><b>WIP</b><br>"Work In Progress". We learned some major stuff about platform's hardware and code,
-                and probably early adopters could even test first public binary builds on their boards to provide
-                feedback and help us to move further.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card mb-3 border-0">
-        <div class="row g-4">
-          <div class="col-md-3"><%= image_tag "stage-mvp.svg", alt: "Image: stage MVP", class: "card-image" %></div>
-          <div class="col-md-9">
-            <div class="card-body">
-              <p><b>MVP</b><br>"Minimal Viable Product". Basic system is built (video at least on the main channel),
-                hardware and software design are clear in our mind, but due to lack of human resources development
-                is stalled. Here goes the next stage, where help is needed.</p>
+              <p><b>R&D</b><br>The Research and Development stage, when we already have the platform SDK and maybe
+                even the hardware boards, but we are starting to fiddle with the platform, studying its specifics and
+                features. There is still a lot of work ahead.</p>
             </div>
           </div>
         </div>
@@ -63,9 +37,35 @@
           <div class="col-md-3"><%= image_tag "stage-hlp.svg", alt: "Image: stage HLP", class: "card-image" %></div>
           <div class="col-md-9">
             <div class="card-body">
-              <p><b>HLP</b><br>"Help needed". We have the hardware, we have SDK, basic stuff is done. At this stage,
-                help from an experienced embedded developer, or a contribution from a interested sponsors could boost
-                the work on that particular platform.</p>
+              <p><b>HLP</b><br>Help wanted. We have the hardware, we have the SDK, the basic stuff is learned and done.
+                But we are stuck. This is where we are looking for help from experienced embedded developers to overcome
+                the obstacles and move on to the next stage.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3 border-0">
+        <div class="row g-4">
+          <div class="col-md-3"><%= image_tag "stage-wip.svg", alt: "Image: stage WIP", class: "card-image" %></div>
+          <div class="col-md-9">
+            <div class="card-body">
+              <p><b>WIP</b><br>Work in progress. We learned a lot about the platform hardware and code base,
+                prepared the first public binary build, and are waiting for the first adopters to test it on their
+                boards and provide feedback to help us move forward.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3 border-0">
+        <div class="row g-4">
+          <div class="col-md-3"><%= image_tag "stage-mvp.svg", alt: "Image: stage MVP", class: "card-image" %></div>
+          <div class="col-md-9">
+            <div class="card-body">
+              <p><b>MVP</b><br>A minimal viable product. The basic system is built, the platform can produce video,
+                at least on the main channel, but due to a lack of human resources, development is delayed or halted.
+                A financial infusion could push the development to the final stage.</p>
             </div>
           </div>
         </div>
@@ -76,8 +76,9 @@
           <div class="col-md-3"><%= image_tag "stage-done.svg", alt: "Image: stage DONE", class: "card-image" %></div>
           <div class="col-md-9">
             <div class="card-body">
-              <p><b>DONE</b><br>"Done and done!" Everything seems works just like in original firmware. Although, we are
-                still looking for feedback from you, guys.</p></div>
+              <p><b>DONE</b><br>"Done and done!" Everything works just as it did in the original firmware.
+                We're still waiting for feedback from you guys, though.</p>
+            </div>
           </div>
         </div>
       </div>
