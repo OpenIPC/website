@@ -4,7 +4,7 @@ class PagesController < ApplicationController
 
   def about
     @page_title = "About Us"
-    render "pages/our-telegram-channels"
+    render "pages/our-channels"
   end
 
   def firmware_partitions_calculation
