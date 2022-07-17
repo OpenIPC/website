@@ -42,4 +42,8 @@ module ApplicationHelper
   def partition_sizes
     %w[256 64 2048 5120 -]
   end
+
+  def under_development
+    content_tag "p", "This part is currently under development. Stay tuned.", class: "alert alert-warning"
+  end
 end
