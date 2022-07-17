@@ -3,16 +3,13 @@ module Cameras
     # include InstallationInstructionConcern
 
     def index
-      @vendor = params[:vendor] || "all"
-      if @vendor.eql?("all")
-        @socs = Soc.left_joins(:vendor).order(:name, :model)
-        @page_title = "Full List"
-      elsif @vendor.in?(Vendor.all.map(&:name))
+      @vendor = Vendor.find(params[:vendor])
+      if @vendor
         @socs = Soc.left_joins(:vendor).where(vendors: { name: @vendor }).order(:model)
         @page_title = "Filtered by #{@vendor}"
       else
-        @socs = []
-        @page_title = "Unknown vendor"
+        @socs = Soc.left_joins(:vendor).order(:name, :model)
+        @page_title = "Full List"
       end
       render "cameras/socs/index"
     end
