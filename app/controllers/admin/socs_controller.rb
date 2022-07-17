@@ -3,7 +3,7 @@ class Admin
     def index
       if params[:q]
         @q = params[:q]
-        @socs = Soc.left_joins(:vendor).where('modelw LIKE ?', "%#{@q}%").order(:name, :model)
+        @socs = Soc.left_joins(:vendor).where('model LIKE ?', "%#{@q}%").order(:name, :model)
       else
         @socs = Soc.left_joins(:vendor).order(:name, :model)
       end
