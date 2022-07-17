@@ -3,33 +3,59 @@
     <h2>Our Projects</h2>
   </header>
 
-  <dl>
-    <dt><a href="https://github.com/OpenIPC/firmware">Firmware</a></dt>
-    <dd>The Holy Grail of the community. Universal firmware for IP-cameras to replace proprietary, outdated and often
-      insecure vendor pre-installed firmware.
-    </dd>
-    <dt><a href="https://github.com/OpenIPC/majestic">Majestic</a></dt>
-    <dd>A universal IP-camera streamer. This project is the major part of the OpenIPC Firmware. Although it is not fully
-      open source at this stage of development, we are considering opening up the codebase when the project matures
-      enough and gets enough funding for open development.</dd>
-    <dt><a href="https://github.com/OpenIPC/ipctool">IPC tool</a></dt>
-    <dd>An IP-camera hardware inspector on steroids. This tool will not only identify your camera's processor, sensor,
-      flash chip, but also help you with backing up the original firmware and more.</dd>
-    <dt><a href="https://github.com/OpenIPC/coupler">Coupler</a></dt>
-    <dd>A tool that allows you a smooth transition from the IP-camera manufacturer's pre-installed proprietary firmware
-      to OpenIPC Firmware. No special skills are required.</dd>
-    <dt><a href="https://github.com/OpenIPC/smolrtsp">SmolRTSP</a></dt>
-    <dd>A simple RTSP 1.0 server library tailored for embedded devices, such as IP cameras. It supports both TCP and
-      UDP, allows any payload format, and provides a convenient and flexible API.</dd>
-    <dt><a href="https://github.com/OpenIPC/mini">Mini</a></dt>
-    <dd>An open source IP-camera streamer. Think of it as Majestic's little brother.</dd>
-    <!--
-    <dt><a href="https://team.openipc.org/exipcam">ExIPCam</a></dt>
-    <dd>XM Device Explorer. Utility for repairing IPCam (Russian UI. Runs on Windows, Linux via Wine)</dd>
-    <dt><a href="https://team.openipc.org/ipcam_dms">IPCam DMS</a></dt>
-    <dd>IPCam Device Management System (Russian UI. Runs on Windows, Linux via Wine)</dd>
-    -->
-  </dl>
+  <div class="row row-cols-lg-2">
+    <div class="col">
+      <h3>Core projects</h3>
+      <dl>
+        <dt><a href="https://github.com/OpenIPC/firmware">Firmware</a></dt>
+        <dd>The Holy Grail of the community. Universal firmware for IP-cameras to replace proprietary, outdated and
+          often insecure vendor pre-installed firmware.
+        </dd>
+        <dt><a href="https://github.com/OpenIPC/majestic">Majestic</a></dt>
+        <dd>A universal IP-camera streamer. This project is the major part of the OpenIPC Firmware. Although it is not
+          fully open source at this stage of development, we are considering opening up the codebase when the project
+          matures enough and gets enough funding for open development.
+        </dd>
+        <dt><a href="https://github.com/OpenIPC/ipctool">IPC tool</a></dt>
+        <dd>An IP-camera hardware inspector on steroids. This tool will not only identify your camera's processor,
+          sensor, flash chip, but also help you with backing up the original firmware and more.
+        </dd>
+        <dt><a href="https://github.com/OpenIPC/coupler">Coupler</a></dt>
+        <dd>A tool that allows you a smooth transition from the IP-camera manufacturer's pre-installed proprietary
+          firmware to OpenIPC Firmware. No special skills are required.
+        </dd>
+        <dt><a href="https://github.com/OpenIPC/smolrtsp">SmolRTSP</a></dt>
+        <dd>A simple RTSP 1.0 server library tailored for embedded devices, such as IP cameras. It supports both TCP and
+          UDP, allows any payload format, and provides a convenient and flexible API.
+        </dd>
+        <dt><a href="https://github.com/OpenIPC/mini">Mini</a></dt>
+        <dd>An open source IP-camera streamer. Think of it as Majestic's little brother.</dd>
+      </dl>
+    </div>
+    <div class="col">
+      <h3>OpenIPC umbrella projects</h3>
+      <p class="alert alert-info">The OpenIPC is also an umbrella brand for other small projects that are useful
+        components of our ecosystem. We welcome everyone willing to contribute to the project, in any way they
+        find useful!</p>
+
+      <dl>
+        <dt><a href="https://github.com/OpenIPC/motors">motors</a></dt>
+        <dd>Various code to manage motor hardware.</dd>
+        <dt><a href="https://github.com/OpenIPC/yaml-cli">yaml-cli</a></dt>
+        <dd>Simple YAML console tool.</dd>
+        <dt><a href="https://github.com/OpenIPC/hisi-trace">hisi-trace</a></dt>
+        <dd>An utility to run Sofia from XM in a non-stock environment.</dd>
+        <dt><a href="https://github.com/OpenIPC/openxiongmai">openxiongmai</a></dt>
+        <dd>Opensource Xiongmai SoCs SDK.</dd>
+        <dt><a href="https://team.openipc.org/exipcam">ExIPCam</a></dt>
+        <dd class="mb-0">XM Device Explorer. Utility for repairing IPCam</dd>
+        <dd class="fst-italic">Russian UI. Runs on Windows, Linux via Wine.</dd>
+        <dt><a href="https://team.openipc.org/ipcam_dms">IPCam DMS</a></dt>
+        <dd class="mb-0">IPCam Device Management System</dd>
+        <dd class="fst-italic">(Russian UI. Runs on Windows, Linux via Wine)</dd>
+      </dl>
+    </div>
+  </div>
 
   <%= render "pages/opencollective" %>
 </article>
