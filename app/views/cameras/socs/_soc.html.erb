@@ -1,33 +1,27 @@
-<tr id="<%= soc.urlname %>">
-  <td class="name vendor">
+<dl id="<%= soc.urlname %>" class="row mb-3 border-bottom">
+  <dd class="col-2 col-md-1 stage <%= soc.status %>">
+    <%= link_to image_tag("stage-#{soc.status}"), '/stages-of-firmware-development', title: Soc::STATUS[soc.status.to_sym] %>
+  </dd>
+  <dd class="col-10 col-md-3 model">
     <%= soc.full_name %>
     <%= link_to "#", "/supported-hardware##{soc.urlname}", class: "anchor" %>
-  </td>
-  <td class="url">
-    <% if soc.uboot_filename.blank? %>
-      <%= image_tag "square-line.svg", alt: "Image: empty square" %>
-    <% else %>
-      <%= link_to icon_download, soc.bl_url, title: soc.uboot_filename %>
-    <% end %>
-  </td>
-  <td class="url">
-    <% if soc.linux_filename.blank? %>
-      <%= image_tag "square-line.svg", alt: "Image: empty square" %>
-    <% else %>
-      <%= link_to icon_download, soc.fw_url, title: soc.linux_filename %>
-    <% end %>
-  </td>
-  <td class="url">
-    <% if soc.toolchain_filename.blank? %>
-      <%= image_tag "square-line.svg", alt: "Image: empty square" %>
-    <% else %>
-      <%= link_to icon_download, soc.tc_url, title: soc.toolchain_filename %>
-    <% end %>
-  </td>
-  <td class="address hex"><%= soc.load_address %></td>
-  <td class="doc"><%= link_to "Installation instructions", cameras_vendor_soc_path(soc.vendor, soc) if soc.instructable? %></td>
-  <td class="stage <%= soc.status %>"><%= content_tag :span, link_to(soc.status.upcase, '/stages-of-firmware-development'), title: Soc::STATUS[soc.status.to_sym] %></td>
-  <td class="status">
+  </dd>
+  <dd class="col-2 col-md-1 url">
+    <%= soc.instructable? ? link_to(icon_instruction, cameras_soc_path(soc), title: "Installation instructions") : icon_nothing %>
+  </dd>
+  <dd class="col-2 col-md-1 url">
+    <%= soc.uboot_filename.blank? ? link_to(icon_download, soc.bl_url, title: soc.uboot_filename) : icon_nothing  %>
+  </dd>
+  <dd class="col-2 col-md-1 url">
+    <%= soc.linux_filename.blank? ? link_to(icon_download, soc.fw_url, title: soc.linux_filename) : icon_nothing %>
+  </dd>
+  <dd class="col-2 col-md-1 url">
+    <%= soc.toolchain_filename.blank? ? link_to(icon_download, soc.tc_url, title: soc.toolchain_filename) : icon_nothing %>
+  </dd>
+  <dd class="col-4 col-md-2 hex_address">
+    <%= soc.load_address %>
+  </dd>
+  <dd class="col-12 col-md-2 status">
     <%= image_tag soc.build_status_url unless soc.build_status_url.blank? %>
-  </td>
-</tr>
+  </dd>
+</dl>

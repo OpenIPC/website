@@ -16,21 +16,18 @@
 
   <p><a href="/stages-of-firmware-development">Stages of firmware development explained</a></p>
 
-  <table class="table socs">
-    <thead>
-    <tr>
-      <th class="name">Manufacturer / Model</th>
-      <th class="url">Bootloader</th>
-      <th class="url">Firmware</th>
-      <th class="url">Toolchain</th>
-      <th class="address">Load Address</th>
-      <th class="doc">Documentation</th>
-      <th class="stage">Stage</th>
-      <th class="status">Build status</th>
-    </tr>
-    </thead>
-    <tbody>
+  <div class="socs">
+    <dl class="row mb-3 border-bottom small fw-bold">
+      <dd class="col-2 col-md-1 stage">Stage</dd>
+      <dd class="col-10 col-md-3 model">SoC Model</dd>
+      <dd class="col-2 col-md-1 url">Docs</dd>
+      <dd class="col-2 col-md-1 url">U-Boot</dd>
+      <dd class="col-2 col-md-1 url">Linux</dd>
+      <dd class="col-2 col-md-1 url">SDK</dd>
+      <dd class="col-4 col-md-2 hex_address">Load address</dd>
+      <dd class="col-12 col-md-2">Build status</dd>
+    </dl>
+
     <%= render @socs %>
-    </tbody>
-  </table>
+  </div>
 </article>
