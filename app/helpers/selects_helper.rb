@@ -7,7 +7,8 @@ module SelectsHelper
 
   def list_of_flash_type_sizes_for_select
     [['NOR 8M', 'nor8m'],
-     ['NOR 16M+', 'nor16m'],
+     ['NOR 16M', 'nor16m'],
+     ['NOR 32M', 'nor32m'],
      ['NAND', 'nand']]
   end
 

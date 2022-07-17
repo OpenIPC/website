@@ -4,6 +4,8 @@
     <p class="lead fw-bold">on a camera with <%= @soc.full_name %> SoC and <%= @camera.flash_type %> SPI flash chip</p>
   </header>
 
+  <p><a href="?cip=<%= @camera.camera_ip_address %>&sip=<%= @camera.server_ip_address %>&net=<%= @camera.network_interface %>&rom=<%= @camera.flash_type %>&sd=<%= @camera.sd_card_slot %>">Permanent link to this configuration</a></p>
+
   <p class="alert alert-danger">ATTENTION! Commands should be entered line by line!
     Do not copy and paste multiple lines of commands at once!</p>
 
@@ -30,14 +32,14 @@ reset
   <h3>Flashing OpenIPC firmware</h3>
   <p>Download firmware bundle from <%= link_to @soc.linux_filename, @soc.fw_url %> and unpack it into the root directory of your TFTP server.</p>
   <pre class="bg-light p-4">
-run set<%= @camera.flash_type %>
+run set<%= @flash_type_command %>
 </pre>
   <p>Camera automatically restarts to apply changes.</p>
   <pre class="bg-light p-4">
 <% unless @camera.network_interface.eql?("wifi") -%>
 setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>; saveenv
 <% end -%>
-run uk<%= @camera.flash_type %>; run ur<%= @camera.flash_type %>
+run uk<%= @flash_type_command %>; run ur<%= @flash_type_command %>
 reset
 </pre>
 
