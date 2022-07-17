@@ -32,15 +32,16 @@
       <div class="col-lg-3">
         <%= f.collection_select :vendor_id, Vendor.all, :id, :name %>
         <%= f.text_field :model %>
+        <%= f.text_field :family %>
         <%#= f.text_field :version %>
         <%#= f.text_field :kernel %>
         <%#= f.text_field :sdk %>
-        <%= f.text_field :load_address %>
       </div>
       <div class="col-lg-3">
-        <%= f.select :status, list_of_stages_for_select %>
         <%= f.text_field :uboot_filename %>
         <%= f.text_field :linux_filename %>
+        <%= f.text_field :load_address %>
+        <%= f.select :status, list_of_stages_for_select %>
       </div>
       <div class="col-lg-6">
         <%= f.text_field :toolchain_filename %>
