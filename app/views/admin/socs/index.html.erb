@@ -1,9 +1,27 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Admin", "/admin" %></li>
+    <li class="breadcrumb-item"><%= link_to "SoCs", admin_socs_path %></li>
+  </ol>
+</nav>
+
 <article class="hardware">
   <header>
     <h2>SoCs</h2>
   </header>
 
-  <p><%= link_to 'Add another SoC', new_admin_soc_path, class: "btn btn-primary" %></p>
+  <nav class="navbar">
+    <p><%= link_to 'Add another SoC', new_admin_soc_path, class: "btn btn-primary" %></p>
+    <form action="/admin/socs" method="get" class="row g-3">
+      <div class="col-auto">
+        <label for="soc" class="visually-hidden">SoC</label>
+        <input type="text" class="form-control" id="q" name="q" value="<%= @q %>">
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary mb-3">Find</button>
+      </div>
+    </form>
+  </nav>
 
   <table class="table table-sm">
     <thead>

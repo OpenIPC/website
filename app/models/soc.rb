@@ -8,12 +8,12 @@ class Soc < ApplicationRecord
   GH_DL_ROOT = "https://github.com/OpenIPC/firmware/releases/download/latest/%s"
 
   STATUS = {
-    "done": "All functions are supported",
-    "hlp": "Looking for help",
     "neq": "No equipment on hands",
-    "mvp": "Minimum viable product",
     "rnd": "Research and development",
+    "hlp": "Looking for help",
     "wip": "Work in progress",
+    "mvp": "Minimum viable product",
+    "done": "Done and done!",
   }.freeze
 
   def self.find(id)

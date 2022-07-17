@@ -1,7 +1,12 @@
 class Admin
   class SocsController < AdminController
     def index
-      @socs = Soc.left_joins(:vendor).order(:name, :model)
+      if params[:q]
+        @q = params[:q]
+        @socs = Soc.left_joins(:vendor).where('modelw LIKE ?', "%#{@q}%").order(:name, :model)
+      else
+        @socs = Soc.left_joins(:vendor).order(:name, :model)
+      end
       @page_title = "Admin: List of SoCs"
       render "admin/socs/index"
     end
