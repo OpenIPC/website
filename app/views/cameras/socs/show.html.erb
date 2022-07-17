@@ -7,35 +7,16 @@
     <div class="col-md-6 col-xl-7 col-xxl-8">
       <h3>Installation Instruction</h3>
       <p>In order to get a personalized installation instruction, please enter your network configuration below:</p>
-      <%= form_for :camera, url: cameras_vendor_soc_path(@soc.vendor, @soc), method: 'put' do |f| %>
-
+      <%= bootstrap_form_for @camera, url: cameras_vendor_soc_path(@soc.vendor, @soc), method: 'put' do |f| %>
         <div class="row row-cols-1 row-cols-xl-2">
           <div class="col">
-            <div class="mb-3">
-              <%= f.label :ipaddr, "Camera IP address", class: "form-label" %>
-              <%= f.text_field :ipaddr, pattern: ipaddr_pattern, value: "192.168.1.10",
-                               title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
-            </div>
-            <div class="mb-3">
-              <%= f.label :serverip, "TFTP server IP address", class: "form-label" %>
-              <%= f.text_field :serverip, pattern: ipaddr_pattern, value: "192.168.1.254",
-                               title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
-            </div>
+            <%= f.text_field :camera_ip_address, pattern: ipaddr_pattern, title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
+            <%= f.text_field :server_ip_address, pattern: ipaddr_pattern, title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
           </div>
           <div class="col">
-            <div class="mb-3">
-              <%= f.label :flash_type, "Camera flash memory type and size", class: "form-label" %>
-              <%= f.select :flash_type, flash_type_sizes, {}, class: "form-select" %>
-              <div><i class="text-black-50 small">If not sure, leave NOR 8M.</i></div>
-            </div>
-            <div class="mb-3">
-              <%= f.label :flash_type, "Network interfaces", class: "form-label" %>
-              <%= f.select :network_ifaces, network_ifaces, {}, class: "form-select" %>
-            </div>
-            <div class="mb-3">
-              <%= f.label :flash_type, "SD card", class: "form-label" %>
-              <%= f.select :cd_card, cd_card, {}, class: "form-select" %>
-            </div>
+            <%= f.select :flash_type, list_of_flash_type_sizes_for_select %>
+            <%= f.select :network_interface, list_of_network_interfaces_for_select %>
+            <%= f.select :sd_card_slot, list_of_sd_card_for_select %>
           </div>
         </div>
         <p><%= f.submit "Generate installation instruction", class: "btn btn-primary" %></p>

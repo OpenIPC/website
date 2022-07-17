@@ -16,31 +16,49 @@ module Cameras
     end
 
     def show
+      @camera = Camera.new(
+        camera_ip_address: "192.168.1.10",
+        server_ip_address: "192.168.1.254",
+        flash_type: "nor8m",
+        network_interface: "eth",
+        sd_card_slot: "nosd"
+      )
+      @camera.camera_ip_address = params[:cip] if params[:cip]
+      @camera.server_ip_address = params[:sip] if params[:sip]
+      @camera.flash_type        = params[:rom] if params[:rom]
+      @camera.network_interface = params[:net] if params[:net]
+      @camera.sd_card_slot      = params[:sd]  if params[:sd]
+
       @soc = Soc.find_by_urlname(params[:id])
       @vendor = @soc.vendor
       render "cameras/socs/show"
     end
 
     def update
+      @camera = Camera.new(
+        camera_ip_address: "192.168.1.10",
+        server_ip_address: "192.168.1.254",
+        flash_type: "nor8m",
+        network_interface: "eth",
+        sd_card_slot: "nosd"
+      )
+      @camera.camera_ip_address = permitted_params[:camera_ip_address]
+      @camera.server_ip_address = permitted_params[:server_ip_address]
+      @camera.flash_type        = permitted_params[:flash_type]
+      @camera.network_interface = permitted_params[:network_interface]
+      @camera.sd_card_slot      = permitted_params[:sd_card_slot]
+
       @soc = Soc.find(params[:id])
-      @ipaddr = permitted_params[:ipaddr]
-      @serverip = permitted_params[:serverip]
-      @flash_type = permitted_params[:flash_type]
-      @network_ifaces = permitted_params[:network_ifaces]
-      @backup_filename = "backup-#{@soc.model.downcase}-#{@flash_type}.bin"
-      if @flash_type.eql?("nor16m")
-        @flash_size_hex = "0x1000000" # 16M
-      else
-        @flash_size_hex = "0x800000" # 8M
-      end
+      @backup_filename = "backup-#{@soc.model.downcase}-#{@camera.flash_type}.bin"
+
       @page_title = "SoC #{@soc.full_name}"
-      render "cameras/socs/update", status: :unprocessable_entity
+      render "cameras/socs/update"
     end
 
     private
 
       def permitted_params
-        params.require(:camera).permit(:ipaddr, :serverip, :flash_size, :flash_type, :network_ifaces)
+        params.require(:camera).permit(:flash_type, :sd_card_slot, :network_interface, :camera_ip_address, :server_ip_address)
       end
   end
 end

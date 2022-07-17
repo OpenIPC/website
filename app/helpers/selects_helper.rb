@@ -7,13 +7,13 @@ module SelectsHelper
 
   def list_of_flash_type_sizes_for_select
     [['NOR 8M', 'nor8m'],
-     ['NOR 16M', 'nor16m'],
+     ['NOR 16M+', 'nor16m'],
      ['NAND', 'nand']]
   end
 
   def list_of_sd_card_for_select
-    [['Camera has an SD card slot', 'sd'],
-     ['Camera does not have an SD card slot', 'nosd']]
+    [['Camera does not have an SD card slot', 'nosd'],
+     ['Camera has an SD card slot', 'sd']]
   end
 
   def list_of_socs_for_select

@@ -1,26 +1,26 @@
 <article class="firmware">
   <header>
-    <h2>Flashing <%= @soc.full_name %> with OpenIPC firmware</h2>
+    <h2 class="mb-0">Flashing OpenIPC firmware</h2>
+    <p class="lead fw-bold">on a camera with <%= @soc.full_name %> SoC and <%= @camera.flash_type %> SPI flash chip</p>
   </header>
 
   <p class="alert alert-danger">ATTENTION! Commands should be entered line by line!
-    Do not copy and paste whole block of commands at once!</p>
+    Do not copy and paste multiple lines of commands at once!</p>
 
   <h3>Saving original firmware</h3>
   <pre class="bg-light p-4">
-<% unless @network_ifaces.eql?("wifi") -%>
-setenv ipaddr <%= @ipaddr %>; setenv serverip <%= @serverip %>
+<% unless @camera.network_interface.eql?("wifi") -%>
+setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>
 <% end -%>
-mw.b <%= @soc.load_address %> ff 0x1000000; sf probe 0; sf read <%= @soc.load_address %> 0x0 <%= @flash_size_hex %>
-tftpput <%= @soc.load_address %> <%= @flash_size_hex %> <%= @backup_filename %>
+mw.b <%= @soc.load_address %> ff 0x1000000; sf probe 0; sf read <%= @soc.load_address %> 0x0 <%= @camera.flash_size_hex %>
+tftpput <%= @soc.load_address %> <%= @camera.flash_size_hex %> <%= @backup_filename %>
 </pre>
 
   <h3>Flashing OpenIPC bootloader</h3>
-  <p>Download bootloader binary file from <%= link_to @soc.uboot_filename, @soc.bl_url %> and save it to the root
-    directory of your TFTP server.</p>
+  <p>Download bootloader binary file from <%= link_to @soc.uboot_filename, @soc.bl_url %> and save it to the root directory of your TFTP server.</p>
   <pre class="bg-light p-4">
-<% unless @network_ifaces.eql?("wifi") -%>
-setenv ipaddr <%= @ipaddr %>; setenv serverip <%= @serverip %>
+<% unless @camera.network_interface.eql?("wifi") -%>
+setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>
 <% end -%>
 mw.b <%= @soc.load_address %> ff 0x1000000; tftpboot <%= @soc.load_address %> <%= @soc.uboot_filename %>
 sf probe 0; sf erase 0x0 0x50000; sf write <%= @soc.load_address %> 0x0 0x50000
@@ -28,28 +28,27 @@ reset
 </pre>
 
   <h3>Flashing OpenIPC firmware</h3>
-  <p>Download firmware bundle from <%= link_to @soc.linux_filename, @soc.fw_url %> and unpack it into the root directory
-    of your TFTP server.</p>
+  <p>Download firmware bundle from <%= link_to @soc.linux_filename, @soc.fw_url %> and unpack it into the root directory of your TFTP server.</p>
   <pre class="bg-light p-4">
-run set<%= @flash_type %>
+run set<%= @camera.flash_type %>
 </pre>
   <p>Camera automatically restarts to apply changes.</p>
   <pre class="bg-light p-4">
-<% unless @network_ifaces.eql?("wifi") -%>
-setenv ipaddr <%= @ipaddr %>; setenv serverip <%= @serverip %>; saveenv
+<% unless @camera.network_interface.eql?("wifi") -%>
+setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>; saveenv
 <% end -%>
-run uk<%= @flash_type %>; run ur<%= @flash_type %>
+run uk<%= @camera.flash_type %>; run ur<%= @camera.flash_type %>
 reset
 </pre>
 
-<% unless @flash_type.eql?("nand") %>
+<% unless @camera.flash_type.eql?("nand") %>
   <h3>Restoring camera from original firmware backup</h3>
 <pre class="bg-light p-4">
-<% unless @network_ifaces.eql?("wifi") -%>
-setenv ipaddr <%= @ipaddr %>; setenv serverip <%= @serverip %>
+<% unless @camera.network_interface.eql?("wifi") -%>
+setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>
 <% end -%>
 mw.b <%= @soc.load_address %> ff 0x1000000; tftpboot <%= @soc.load_address %> <%= @backup_filename %>
-sf probe 0; sf erase 0x0 <%= @flash_size_hex %>; sf write <%= @soc.load_address %> 0x0 <%= @flash_size_hex %>
+sf probe 0; sf erase 0x0 <%= @camera.flash_size_hex %>; sf write <%= @soc.load_address %> 0x0 <%= @camera.flash_size_hex %>
 </pre>
 <% end %>
 
