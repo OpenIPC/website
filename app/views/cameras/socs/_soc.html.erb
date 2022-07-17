@@ -7,7 +7,7 @@
     <%= link_to "#", "/supported-hardware##{soc.urlname}", class: "anchor" %>
   </dd>
   <dd class="col-2 col-md-1 url">
-    <%= soc.instructable? ? link_to(icon_instruction, cameras_soc_path(soc), title: "Installation instructions") : icon_nothing %>
+    <%= soc.instructable? ? link_to(icon_instruction, cameras_vendor_soc_path(soc.vendor, soc), title: "Installation instructions") : icon_nothing %>
   </dd>
   <dd class="col-2 col-md-1 url">
     <%= soc.uboot_filename.blank? ? link_to(icon_download, soc.bl_url, title: soc.uboot_filename) : icon_nothing  %>
