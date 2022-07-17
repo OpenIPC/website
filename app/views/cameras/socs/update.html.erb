@@ -11,6 +11,9 @@
 
   <h3>Saving original firmware</h3>
 <% unless @camera.flash_type.eql?("nand") %>
+  <% if @camera.flash_type.eql?("nor32m") %>
+    <p class="alert alert-warning">Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM.</p>
+  <% end %>
   <pre class="bg-light p-4">
 <% unless @camera.network_interface.eql?("wifi") -%>
 setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>
