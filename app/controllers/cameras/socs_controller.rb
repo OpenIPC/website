@@ -1,8 +1,8 @@
 module Cameras
   class SocsController < ApplicationController
     def index
-      @_vendor = params[:vendor]
-      if @_vendor.eql?(:all)
+      @_vendor = params[:vendor] || "all"
+      if @_vendor.eql?("all")
         @socs = Soc.left_joins(:vendor).order(:name, :model)
         @page_title = "Full List"
       elsif @_vendor.in?(Vendor.all.map(&:name))
