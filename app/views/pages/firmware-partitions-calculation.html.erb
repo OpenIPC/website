@@ -150,7 +150,7 @@
           } else if (valid_mtd_names.includes(mtddevice)) {
               $('#mtdparts').textContent = mtdparts;
           } else {
-              $('#mtdparts').innerHTML = "<b>Unknown MTD device name " + mtddevice + "!</b><br>Valid values are: <%= mtd_names.join(', ') %>";
+              $('#mtdparts').innerHTML = "<b>Unknown MTD device name " + mtddevice + "!</b><br>Valid values are: <%= mtd_names.join(', ') %>.";
               $('#mtddevice').focus();
           }
       }
