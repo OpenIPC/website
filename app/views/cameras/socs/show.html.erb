@@ -1,4 +1,13 @@
-<article class="hardware">
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Home", "/" %></li>
+    <li class="breadcrumb-item"><%= link_to "Vendors", cameras_vendors_path %></li>
+    <li class="breadcrumb-item"><%= link_to @vendor.name, cameras_vendor_path(@vendor) %></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= link_to @soc.model, cameras_vendor_soc_path(@vendor, @soc) %></li>
+  </ol>
+</nav>
+
+<article class="sensor">
   <header>
     <h2 class="display-3"><%= @soc.full_name %></h2>
   </header>
