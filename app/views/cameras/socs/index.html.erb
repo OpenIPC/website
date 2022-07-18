@@ -14,15 +14,14 @@
 
   <h3><%= @page_title %></h3>
 
-  <p>If access to bootloader console on your camera is password-protected by manufacturer,
+  <p class="alert alert-warning">If access to bootloader console on your camera is password-protected by manufacturer,
     consider replacing the bootloader with our version of U-Boot.</p>
 
   <div class="alert alert-danger">
-    <h3>IMPORTANT! Backup your original firmware!</h3>
-    <p class="lead">We supply our own advanced version of U-Boot bootloader
-      which, once installed, will overwrite your original crypto partition,
-      making it impossible to revert back to the original factory firmware
-      unless you have a full flash memory backup for the particular camera!</p>
+    <h5 class="fw-bold">IMPORTANT! Backup your original firmware!</h5>
+    <p class="mb-0">We ship our own upgraded version of the U-Boot boot loader which, once installed, overwrites your original crypto
+      partition, making it impossible to revert to the original factory firmware unless you have a full flash backup for
+      a specific camera!</p>
   </div>
 
   <p><a href="/stages-of-firmware-development">Stages of firmware development explained</a></p>
