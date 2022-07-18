@@ -3,22 +3,23 @@ Rails.application.routes.draw do
 
   get '/aaa', to: 'pages#aaa'
 
-  get '/coupler(/*any)',
-      to: redirect('https://openipc.github.io/coupler/%{any}')
-  get '/firmware(/*any)',
-      to: redirect('https://openipc.github.io/firmware/%{any}')
-  get '/ipctool(/*any)',
-      to: redirect('https://openipc.github.io/ipctool/%{any}')
-  get '/microbe-web(/*any)',
-      to: redirect('https://openipc.github.io/microbe-web/%{any}')
-  get '/smolrtsp(/*any)',
-      to: redirect('https://openipc.github.io/smolrtsp/%{any}')
-  get '/telemetry(/*any)',
-      to: redirect('https://openipc.github.io/telemetry/%{any}')
-  get '/yaml-cli(/*any)',
-      to: redirect('https://openipc.github.io/yaml-cli/%{any}')
-  get '/wiki(/*any)',
-      to: redirect('https://openipc.github.io/wiki/%{any}')
+  get '/coupler',     to: redirect('https://openipc.github.io/coupler/')
+  get '/firmware',    to: redirect('https://openipc.github.io/firmware/')
+  get '/ipctool',     to: redirect('https://openipc.github.io/ipctool/')
+  get '/microbe-web', to: redirect('https://openipc.github.io/microbe-web/')
+  get '/smolrtsp',    to: redirect('https://openipc.github.io/smolrtsp/')
+  get '/telemetry',   to: redirect('https://openipc.github.io/telemetry/')
+  get '/yaml-cli',    to: redirect('https://openipc.github.io/yaml-cli/')
+  get '/wiki',        to: redirect('https://openipc.github.io/wiki/')
+  # FIXME: combine with above
+  get '/coupler(/*any)',     to: redirect('https://openipc.github.io/coupler/%{any}')
+  get '/firmware(/*any)',    to: redirect('https://openipc.github.io/firmware/%{any}')
+  get '/ipctool(/*any)',     to: redirect('https://openipc.github.io/ipctool/%{any}')
+  get '/microbe-web(/*any)', to: redirect('https://openipc.github.io/microbe-web/%{any}')
+  get '/smolrtsp(/*any)',    to: redirect('https://openipc.github.io/smolrtsp/%{any}')
+  get '/telemetry(/*any)',   to: redirect('https://openipc.github.io/telemetry/%{any}')
+  get '/yaml-cli(/*any)',    to: redirect('https://openipc.github.io/yaml-cli/%{any}')
+  get '/wiki(/*any)',        to: redirect('https://openipc.github.io/wiki/%{any}')
 
   get '/SDK', to: redirect('/supported-hardware')
   get '/sponsor', to: redirect('/support-open-source')
