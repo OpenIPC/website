@@ -7,12 +7,23 @@
     <li class="nav-item"><%= link_to "Full list", cameras_vendors_path, class: "nav-link#{" active" if @vendor.blank?}" %></li>
     <% Vendor.order(:name).each do |v| %>
       <li class="nav-item">
-        <%= link_to v.name, cameras_vendor_path(v), class: "nav-link#{" active" if @vendor&.name.eql?(v.name)}" %>
+        <%= link_to v.name, cameras_vendor_path(v), class: "nav-link#{" active" if @vendor.eql?(v.name)}" %>
       </li>
     <% end %>
   </ul>
 
   <h3><%= @page_title %></h3>
+
+  <p>If access to bootloader console on your camera is password-protected by manufacturer,
+    consider replacing the bootloader with our version of U-Boot.</p>
+
+  <div class="alert alert-danger">
+    <h3>IMPORTANT! Backup your original firmware!</h3>
+    <p class="lead">We supply our own advanced version of U-Boot bootloader
+      which, once installed, will overwrite your original crypto partition,
+      making it impossible to revert back to the original factory firmware
+      unless you have a full flash memory backup for the particular camera!</p>
+  </div>
 
   <p><a href="/stages-of-firmware-development">Stages of firmware development explained</a></p>
 
