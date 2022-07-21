@@ -70,10 +70,10 @@
         </div>
       </div>
     </div>
-    <p>The information contained on this site is for general informational purposes only and is not intended to be
-      relied upon by the visitor. All software and firmware available on this site is provided AS IS and for research
-      purposes only. OpenIPC shall not be liable for any loss or damage caused by the use of these files or the use of,
-      or reliance upon, any information contained in this site.</p>
+    <p class="small">The information contained on this site is for general informational purposes only and is not
+      intended to be relied upon by the visitor. All software and firmware available on this site is provided AS IS and
+      for research purposes only. OpenIPC shall not be liable for any loss or damage caused by the use of these files or
+      the use of, or reliance upon, any information contained in this site.</p>
   </div>
 </footer>
 
@@ -82,17 +82,17 @@
         crossorigin="anonymous"></script>
 
 <% unless debug_mode? %>
-<script>
-    (function (m, e, t, r, i, k, a) {
-        m[i] = m[i] || function () {
-            (m[i].a = m[i].a || []).push(arguments)
-        };
-        m[i].l = 1 * new Date();
-        k = e.createElement(t), a = e.getElementsByTagName(t)[0], k.async = 1, k.src = r, a.parentNode.insertBefore(k, a)
-    })
-    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-    ym(52704274, "init", {clickmap: true, trackLinks: true, accurateTrackBounce: true});
-</script>
+  <script>
+      (function (m, e, t, r, i, k, a) {
+          m[i] = m[i] || function () {
+              (m[i].a = m[i].a || []).push(arguments)
+          };
+          m[i].l = 1 * new Date();
+          k = e.createElement(t), a = e.getElementsByTagName(t)[0], k.async = 1, k.src = r, a.parentNode.insertBefore(k, a)
+      })
+      (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+      ym(52704274, "init", {clickmap: true, trackLinks: true, accurateTrackBounce: true});
+  </script>
 <% end %>
 </body>
 </html>
