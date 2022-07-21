@@ -25,10 +25,10 @@ class Admin
 
     def create
       @soc = Soc.new
-      @page_title = "Admin: Creating new SoC"
       if @soc.update(permitted_params)
         redirect_to admin_soc_path(@soc), alert: 'SoC updated.'
       else
+        @page_title = "Admin: Creating new SoC"
         render "admin/socs/edit"
       end
     end
@@ -41,10 +41,10 @@ class Admin
 
     def update
       @soc = Soc.find(params[:id])
-      @page_title = "Admin: Updating SoC #{@soc.full_name}"
       if @soc.update(permitted_params)
         redirect_to admin_soc_path(@soc), alert: 'SoC updated.'
       else
+        @page_title = "Admin: Updating SoC #{@soc.full_name}"
         render "admin/socs/edit"
       end
     end
