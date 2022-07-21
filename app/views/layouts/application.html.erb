@@ -81,6 +81,7 @@
         integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
         crossorigin="anonymous"></script>
 
+<% unless debug_mode? %>
 <script>
     (function (m, e, t, r, i, k, a) {
         m[i] = m[i] || function () {
@@ -92,5 +93,6 @@
     (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
     ym(52704274, "init", {clickmap: true, trackLinks: true, accurateTrackBounce: true});
 </script>
+<% end %>
 </body>
 </html>
