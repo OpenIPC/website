@@ -4,30 +4,36 @@
     <p class="lead fw-bold">on a camera with <%= @soc.full_name %> SoC and <%= @camera.flash_type %> SPI flash chip</p>
   </header>
 
-  <p><a href="?cip=<%= @camera.camera_ip_address %>&sip=<%= @camera.server_ip_address %>&net=<%= @camera.network_interface %>&rom=<%= @camera.flash_type %>&sd=<%= @camera.sd_card_slot %>">Permanent link to this configuration</a></p>
-
-  <p class="alert alert-danger">ATTENTION! Commands should be entered line by line!
-    Do not copy and paste multiple lines of commands at once!</p>
+  <p class="text-end"><a href="?cip=<%= @camera.camera_ip_address %>&sip=<%= @camera.server_ip_address %>&net=<%= @camera.network_interface %>&rom=<%= @camera.flash_type %>&sd=<%= @camera.sd_card_slot %>">Permanent link to this configuration</a></p>
+<!--  <p class="alert alert-success">If access to bootloader console on your camera is password-protected by manufacturer, consider replacing the bootloader with our version of U-Boot.</p>-->
 
   <h3>Saving original firmware</h3>
-<% unless @camera.flash_type.eql?("nand") %>
+<% if @camera.flash_type.eql?("nand") %>
+  <%= under_development %>
+<% else %>
   <% if @camera.flash_type.eql?("nor32m") %>
     <p class="alert alert-warning">Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM.</p>
   <% end %>
-  <pre class="bg-light p-4">
+    <pre class="bg-light p-4">
+<span class="text-danger"># Enter commands line by line! Do not copy and paste multiple lines at once!</span>
 <% unless @camera.network_interface.eql?("wifi") -%>
 setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>
 <% end -%>
 mw.b <%= @soc.load_address %> ff <%= @camera.flash_size_hex %>; sf probe 0; sf read <%= @soc.load_address %> 0x0 <%= @camera.flash_size_hex %>
 tftpput <%= @soc.load_address %> <%= @camera.flash_size_hex %> <%= @backup_filename %>
 </pre>
-<% else %>
-<%= under_development %>
 <%  end %>
 
   <h3>Flashing OpenIPC bootloader</h3>
   <p>Download bootloader binary file from <%= link_to @soc.uboot_filename, @soc.bl_url %> and save it to the root directory of your TFTP server.</p>
+  <div class="alert alert-danger">
+    <h5 class="fw-bold">IMPORTANT! Back up your original firmware!</h5>
+    <p class="mb-0">We ship our own upgraded version of the U-Boot boot loader which, once installed, overwrites your
+      original crypto partition, making it impossible to revert to the original factory firmware unless you have a full
+      flash backup for a specific camera!</p>
+  </div>
   <pre class="bg-light p-4">
+<span class="text-danger"># Enter commands line by line! Do not copy and paste multiple lines at once!</span>
 <% unless @camera.network_interface.eql?("wifi") -%>
 setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>
 <% end -%>
@@ -38,11 +44,10 @@ reset
 
   <h3>Flashing OpenIPC firmware</h3>
   <p>Download firmware bundle from <%= link_to @soc.linux_filename, @soc.fw_url %> and unpack it into the root directory of your TFTP server.</p>
-  <pre class="bg-light p-4">
-run set<%= @flash_type_command %>
-</pre>
+  <pre class="bg-light p-4">run set<%= @flash_type_command %></pre>
   <p>Camera automatically restarts to apply changes.</p>
   <pre class="bg-light p-4">
+<span class="text-danger"># Enter commands line by line! Do not copy and paste multiple lines at once!</span>
 <% unless @camera.network_interface.eql?("wifi") -%>
 setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>; saveenv
 <% end -%>
@@ -52,7 +57,8 @@ reset
 
 <% unless @camera.flash_type.eql?("nand") %>
   <h3>Restoring camera from original firmware backup</h3>
-<pre class="bg-light p-4">
+  <pre class="bg-light p-4">
+<span class="text-danger"># Enter commands line by line! Do not copy and paste multiple lines at once!</span>
 <% unless @camera.network_interface.eql?("wifi") -%>
 setenv ipaddr <%= @camera.camera_ip_address %>; setenv serverip <%= @camera.server_ip_address %>
 <% end -%>

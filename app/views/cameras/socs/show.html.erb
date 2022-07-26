@@ -37,27 +37,27 @@
       <% unless @soc.uboot_filename.blank? %>
         <div class="alert alert-primary github">
           <i class="bi bi-github float-end"></i>
-          <h4 class="mb-1">OpenIPC Bootloader</h4>
-          <p class="small">for <%= @soc.full_name %></p>
-          <p class="mb-0"><%= link_to @soc.uboot_filename, @soc.bl_url %></p>
+          <h5 class="mb-1"><%= link_to "OpenIPC Bootloader", @soc.bl_url %></h5>
+          <p class="mb-0 small">for <%= @soc.full_name %></p>
+<!--<p class="mb-0"><%#= link_to @soc.uboot_filename, @soc.bl_url %></p>-->
         </div>
       <% end %>
 
       <% unless @soc.linux_filename.blank? %>
         <div class="alert alert-primary github">
           <i class="bi bi-github float-end"></i>
-          <h4 class="mb-1">OpenIPC Linux</h4>
-          <p class="small">for <%= @soc.full_name %></p>
-          <p class="mb-0"><%= link_to @soc.linux_filename, @soc.fw_url %></p>
+          <h5 class="mb-1"><%= link_to "OpenIPC Linux", @soc.fw_url %></h5>
+          <p class="mb-0 small">for <%= @soc.full_name %></p>
+<!--<p class="mb-0"><%#= link_to @soc.linux_filename, @soc.fw_url %></p>-->
         </div>
       <% end %>
 
       <% unless @soc.toolchain_filename.blank? %>
-        <div class="alert alert-primary github">
+        <div class="alert alert-warning github">
           <i class="bi bi-github float-end"></i>
-          <h4 class="mb-1">OpenIPC Toolchain</h4>
-          <p class="small">for <%= @soc.full_name %></p>
-          <p class="mb-0"><%= link_to @soc.toolchain_filename, @soc.tc_url %></p>
+          <h5 class="mb-1"><%= link_to "OpenIPC Toolchain", @soc.tc_url %></h5>
+          <p class="mb-0 small">for <%= @soc.full_name %></p>
+<!--<p class="mb-0"><%#= link_to @soc.toolchain_filename, @soc.tc_url %></p>-->
         </div>
       <% end %>
     </div>

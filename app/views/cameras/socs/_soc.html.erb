@@ -10,13 +10,13 @@
     <%= soc.instructable? ? link_to(icon_instruction, cameras_vendor_soc_path(soc.vendor, soc), title: "Installation instructions") : icon_nothing %>
   </dd>
   <dd class="col-2 col-md-1 url">
-    <%= soc.uboot_filename.blank? ? icon_nothing : link_to(icon_download, soc.bl_url, title: soc.uboot_filename) %>
+    <%= soc.uboot_filename.blank? ? icon_nothing : link_to(icon_download, cameras_vendor_soc_path(soc.vendor, soc), title: "Installation instructions") %>
   </dd>
   <dd class="col-2 col-md-1 url">
-    <%= soc.linux_filename.blank? ? icon_nothing : link_to(icon_download, soc.fw_url, title: soc.linux_filename) %>
+    <%= soc.linux_filename.blank? ? icon_nothing : link_to(icon_download, cameras_vendor_soc_path(soc.vendor, soc), title: "Installation instructions") %>
   </dd>
   <dd class="col-2 col-md-1 url">
-    <%= soc.toolchain_filename.blank? ? icon_nothing : link_to(icon_download, soc.tc_url, title: soc.toolchain_filename) %>
+    <%= soc.toolchain_filename.blank? ? icon_nothing : link_to(icon_download, cameras_vendor_soc_path(soc.vendor, soc), title: "Installation instructions") %>
   </dd>
   <dd class="col-4 col-md-2 hex_address">
     <%= soc.load_address %>
