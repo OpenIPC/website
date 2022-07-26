@@ -6,10 +6,10 @@ module Cameras
       @vendor = Vendor.find(params[:vendor])
       if @vendor
         @socs = Soc.left_joins(:vendor).where(vendors: { name: @vendor }).order(:model)
-        @page_title = "Filtered by #{@vendor}"
+        @page_title = "SoC: Filtered by #{@vendor}"
       else
         @socs = Soc.left_joins(:vendor).order(:name, :model)
-        @page_title = "Full List"
+        @page_title = "SoC: Full List"
       end
       render "cameras/socs/index"
     end
@@ -31,7 +31,7 @@ module Cameras
       @soc = Soc.find_by_urlname(params[:id])
       @vendor = @soc.vendor
 
-      @page_title = "SoC #{@soc.full_name}"
+      @page_title = "SoC: #{@soc.full_name}"
       render "cameras/socs/show"
     end
 
@@ -60,7 +60,7 @@ module Cameras
       @soc = Soc.find(params[:id])
       @backup_filename = "backup-#{@soc.model.downcase}-#{@camera.flash_type}.bin"
 
-      @page_title = "SoC #{@soc.full_name}"
+      @page_title = "SoC: #{@soc.full_name}"
       render "cameras/socs/update"
     end
 
