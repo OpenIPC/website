@@ -30,6 +30,8 @@ module Cameras
 
       @soc = Soc.find_by_urlname(params[:id])
       @vendor = @soc.vendor
+
+      @page_title = "SoC #{@soc.full_name}"
       render "cameras/socs/show"
     end
 
