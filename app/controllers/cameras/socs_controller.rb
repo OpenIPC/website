@@ -6,10 +6,10 @@ module Cameras
       @vendor = Vendor.find(params[:vendor])
       if @vendor
         @socs = Soc.left_joins(:vendor).where(vendors: { name: @vendor }).order(:model)
-        @page_title = "SoC: Filtered by #{@vendor}"
+        @page_title = "SoC: filtered by #{@vendor}"
       else
         @socs = Soc.left_joins(:vendor).order(:name, :model)
-        @page_title = "SoC: Full List"
+        @page_title = "SoC: full list"
       end
       render "cameras/socs/index"
     end
