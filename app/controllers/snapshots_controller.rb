@@ -3,7 +3,7 @@ class SnapshotsController < ApplicationController
 
   def index
     page = params[:page] || 1
-    @snapshots = Snapshot.order(created_at: :desc).page(page).per(9)
+    @snapshots = Snapshot.where('created_at > ?', 1.day.ago).group(:mac_address).order(created_at: :desc).page(page).per(9)
     @page_title = "Open Wall, page #{page}"
     render "snapshots/index"
   end
@@ -21,7 +21,7 @@ class SnapshotsController < ApplicationController
 
   def show
     @snapshot = Snapshot.find(params[:id])
-    # @snapshots = Snapshot.order(created_at: :desc).page(params[:page]).per(1)
+    @snapshots = Snapshot.where(mac_address: @snapshot.mac_address).order(created_at: :desc).page(params[:page])
     @page_title = "Open Wall, image ##{params[:id]}"
     render "snapshots/show"
   end
