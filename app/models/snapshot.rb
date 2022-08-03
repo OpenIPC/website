@@ -13,7 +13,7 @@ class Snapshot < ApplicationRecord
   private
     def time_interval
       s = Snapshot.select(:created_at).where(mac_address: mac_address).order(:created_at).last
-      if s&.created_at > INTERVAL_LIMIT.ago + 2.minutes # hysteresis
+      if s && s.created_at > INTERVAL_LIMIT.ago + 2.minutes # hysteresis
         errors.add :base, "Please keep interval between photos at 15 minutes or more."
       end
     end
