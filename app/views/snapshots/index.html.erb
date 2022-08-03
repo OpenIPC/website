@@ -1,0 +1,26 @@
+<article>
+  <header>
+    <h2>Open Wall</h2>
+    <p>Images from real IP-cameras running on OpenIPC firmware, provided by their owners.</p>
+  </header>
+
+  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-4">
+    <%= render @snapshots %>
+    <% (9 - @snapshots.size).times do %>
+      <div class="col">
+        <div class="card">
+          <%= image_tag default_image_path, alt: "Snapshot", class: "card-img-top" %>
+          <div class="card-body small">
+            <p class="card-title fw-bold mb-1">No signal</p>
+            <p class="card-subtitle mb-2 text-muted small">OpenIPC</p>
+            <p class="card-text small">stay tuned</p>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="d-flex justify-content-center">
+    <%= paginate @snapshots, theme: 'bootstrap-5' %>
+  </div>
+</article>

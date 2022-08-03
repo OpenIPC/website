@@ -7,8 +7,16 @@ module ApplicationHelper
     debug_mode? ? "debug" : nil
   end
 
+  def default_image_path
+    "/assets/no-signal.jpg"
+  end
+
   def ipaddr_pattern
     '^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$'
+  end
+
+  def macaddr_pattern
+    '^([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}$'
   end
 
   def link_to_github_profile(username)

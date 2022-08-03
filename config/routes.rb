@@ -34,6 +34,10 @@ Rails.application.routes.draw do
   get '/supported-hardware', to: 'cameras/socs#index'
   get '/tools/firmware-partitions-calculation', to: 'pages#firmware_partitions_calculation'
 
+  get '/open-wall(/:page)', to: 'snapshots#index'
+
+  resources :snapshots
+
   namespace :cameras do
     resources :vendors do
       resources :socs

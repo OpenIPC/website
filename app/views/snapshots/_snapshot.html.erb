@@ -1,0 +1,11 @@
+<div class="col">
+  <div class="card">
+    <%= link_to image_tag(snapshot.file.variant(:thumb) || default_image_path, alt: "Snapshot", class: "card-img-top"), snapshot_path(snapshot) %>
+    <div class="card-body small">
+      <span class="float-end x-small text-muted"><%= snapshot.created_at %></span>
+      <p class="card-title fw-bold mb-1"><%= snapshot.soc.upcase %> + <%= snapshot.sensor.upcase %></p>
+      <p class="card-subtitle mb-2 text-primary small">OpenIPC <%= snapshot.firmware %></p>
+      <p class="card-text small">Uptime: <%= snapshot.uptime %>, SoC temperature: <%= snapshot.soc_temperature %>°C.</p>
+    </div>
+  </div>
+</div>
