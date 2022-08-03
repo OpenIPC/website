@@ -3,7 +3,7 @@ class SnapshotsController < ApplicationController
 
   def index
     page = params[:page] || 1
-    @snapshots = Snapshot.where('created_at > ?', 1.day.ago).group(:mac_address).order(created_at: :desc).page(page).per(9)
+    @snapshots = Snapshot.where('created_at > ?', 1.day.ago).group(:mac_address).order(created_at: :desc).page(page).per(12)
     @page_title = "Open Wall, page #{page}"
     render "snapshots/index"
   end
