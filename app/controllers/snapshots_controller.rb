@@ -3,10 +3,11 @@ class SnapshotsController < ApplicationController
 
   def index
     page = params[:page] || 1
-    @snapshots = Kaminari.paginate_array(
-      Snapshot.find_by_sql("SELECT s1.* FROM snapshots s1 LEFT JOIN snapshots s2
-ON (s1.mac_address = s2.mac_address AND s1.created_at < s2.created_at)
-WHERE s2.id IS NULL AND s1.created_at > SUBDATE(NOW(), INTERVAL 1 DAY) ORDER BY mac_address")).page(page).per(12)
+    sql = "SELECT s1.* FROM snapshots s1 LEFT JOIN snapshots s2" \
+      " ON (s1.mac_address = s2.mac_address AND s1.created_at < s2.created_at)" \
+      " WHERE s2.id IS NULL AND s1.created_at > SUBDATE(NOW(), INTERVAL 1 DAY)" \
+      " ORDER BY created_at DESC"
+    @snapshots = Kaminari.paginate_array(Snapshot.find_by_sql(sql)).page(page).per(12)
     @page_title = "Open Wall, page #{page}"
     render "snapshots/index"
   end
@@ -30,6 +31,7 @@ WHERE s2.id IS NULL AND s1.created_at > SUBDATE(NOW(), INTERVAL 1 DAY) ORDER BY 
   end
 
   private
+
     def permitted_params
       params.permit(:file, :flash_size, :mac_address, :hostname, :soc, :sensor, :firmware, :uptime, :soc_temperature)
     end
