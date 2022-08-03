@@ -2,6 +2,7 @@ class Snapshot < ApplicationRecord
   INTERVAL_LIMIT = 15.minutes
 
   has_one_attached :file do |attachable|
+    attachable.variant :icon, resize_to_limit: [90, 60]
     attachable.variant :thumb, resize_to_limit: [480, 360]
     attachable.variant :fullhd, resize_to_limit: [1920, 1080]
   end
