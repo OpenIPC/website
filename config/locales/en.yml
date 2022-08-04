@@ -31,3 +31,15 @@ en:
         flash_type: "If not sure, select NOR 8M."
     models:
       soc: "SoC"
+  flash_chip:
+    nor8m: NOR 8M
+    nor16m: NOR 16M
+    nor32m: NOR 32M
+    nand: NAND
+  net_iface:
+    both: "Camera has both Ethernet and Wireless networks"
+    eth: "Camera only has Ethernet network"
+    wifi: "Camera only has Wireless network"
+  sd_card:
+    nosd: "Camera does not have an SD card slot"
+    sd: "Camera has an SD card slot"
