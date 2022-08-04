@@ -8,7 +8,7 @@ class Snapshot < ApplicationRecord
   end
 
   validates :mac_address, presence: true, format: MAC_ADDRESS_FORMAT
-  validates :file, presence: true, blob: { content_type: :image, size_range: (15.kilobytes)..(5.megabytes) }
+  validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }
   validate :time_interval
 
   private
