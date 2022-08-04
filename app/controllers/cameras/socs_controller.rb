@@ -64,6 +64,12 @@ module Cameras
       render "cameras/socs/update"
     end
 
+    def download_full_image
+      @camera.soc = Soc.find(params[:id])
+      @camera.soc.generate_full_firmware
+      send_file @camera.soc.firmware_file, disposition: :attachment
+    end
+
     private
 
       def permitted_params

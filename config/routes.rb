@@ -42,7 +42,9 @@ Rails.application.routes.draw do
 
   namespace :cameras do
     resources :vendors do
-      resources :socs
+      resources :socs do
+        get :download_full_image, on: :member
+      end
     end
   end
 
