@@ -18,7 +18,7 @@ class SnapshotsController < ApplicationController
     if @snapshot.update(permitted_params)
       head :created, location: snapshot_path(@snapshot)
     else
-      s = Snapshot.select(:created_at).where(mac_address: @snapshot.mac_address).order(:created_at).last
+      s = Snapshot.select(:created_at).where(mac_address: permitted_params[:mac_address]).order(:created_at).last
       head :too_many_requests, retry_after: (Snapshot::INTERVAL_LIMIT - (Time.now - s.created_at)).to_i
     end
   end
