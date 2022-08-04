@@ -17,8 +17,8 @@
 
   <span class="float-end text-end text-muted">
     <%= @snapshot.created_at %><br>
-    <%= @snapshot.file.metadata['width'] %>x<%= @snapshot.file.metadata['height'] %>,
-    <%= @snapshot.file.byte_size %> bytes
+    <%= @snapshot.image_dimensions %>, <%= @snapshot.file.byte_size %> bytes<br>
+    <%= link_to 'Download original image', download_snapshot_path(@snapshot) %>
   </span>
   <p class="fw-bold mb-1"><%= @snapshot.soc.upcase %> + <%= @snapshot.sensor.upcase %></p>
   <p class="mb-2 text-primary">OpenIPC <%= @snapshot.firmware %></p>
@@ -28,7 +28,7 @@
     <% end %></p>
 
   <h4>Archive</h4>
-  <div class="archive row row-cols-4 g-2">
+  <div class="archive row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-2">
     <%= render partial: 'icon', collection: @snapshots %>
   </div>
 </article>

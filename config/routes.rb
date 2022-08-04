@@ -36,7 +36,9 @@ Rails.application.routes.draw do
 
   get '/open-wall(/:page)', to: 'snapshots#index'
 
-  resources :snapshots
+  resources :snapshots do
+    get :download, on: :member
+  end
 
   namespace :cameras do
     resources :vendors do

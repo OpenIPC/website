@@ -11,6 +11,14 @@ class Snapshot < ApplicationRecord
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }
   validate :time_interval
 
+  def filename_for_download
+    "openipc-#{firmware}-#{soc}-#{sensor}-#{created_at.to_i}.jpg"
+  end
+
+  def image_dimensions
+    [file.metadata['width'], file.metadata['height']].join('x')
+  end
+
   private
     def time_interval
       s = Snapshot.select(:created_at).where(mac_address: mac_address).order(:created_at).last

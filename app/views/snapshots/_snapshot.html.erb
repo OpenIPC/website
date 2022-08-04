@@ -7,8 +7,8 @@
       <span class="float-end x-small text-muted"><%= snapshot.created_at %></span>
       <p class="card-title fw-bold mb-1"><%= snapshot.soc.upcase %> + <%= snapshot.sensor.upcase %></p>
       <p class="card-subtitle mb-2 text-primary small">OpenIPC <%= snapshot.firmware %></p>
-      <p class="card-text small">Uptime: <%= snapshot.uptime %>, SoC temperature: <%= snapshot.soc_temperature %>°C.</p>
-      <p class="card-text small"><%= snapshot.file.metadata['width'] %>x<%= snapshot.file.metadata['height'] %>, <%= snapshot.file.byte_size %> bytes</p>
+      <p class="card-text small">Uptime: <%= snapshot.uptime %>.<% unless snapshot.soc_temperature.blank? %> SoC temperature: <%= snapshot.soc_temperature %>°C.<% end %></p>
+      <p class="card-text small"><%= snapshot.image_dimensions %>, <%= snapshot.file.byte_size %> bytes</p>
     </div>
   </div>
 </div>

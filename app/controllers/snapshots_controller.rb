@@ -33,6 +33,11 @@ class SnapshotsController < ApplicationController
     render "snapshots/show"
   end
 
+  def download
+    @snapshot = Snapshot.find(params[:id])
+    send_data @snapshot.file.download, disposition: "attachment", filename: @snapshot.filename_for_download
+  end
+
   private
 
     def permitted_params
