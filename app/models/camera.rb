@@ -2,14 +2,13 @@ class Camera
   include ActiveModel::Model
   include ActiveModel::Validations
 
-  require "resolv"
 
   attr_accessor :soc_id, :needs_instruction, :flash_type, :sd_card_slot, :network_interface, :camera_ip_address, :server_ip_address
 
   validates :soc_id, presence: true
   validates :flash_type, presence: true
-  validates :camera_ip_address, format: { with: Regexp.union(Resolv::IPv4::Regex, Resolv::IPv6::Regex) }
-  validates :server_ip_address, format: { with: Regexp.union(Resolv::IPv4::Regex, Resolv::IPv6::Regex) }
+  validates :camera_ip_address, format: { with: IP_ADDRESS_FORMAT }
+  validates :server_ip_address, format: { with: IP_ADDRESS_FORMAT }
 
   def camera_ip_address
     @camera_ip_address ||= "192.168.1.10"
