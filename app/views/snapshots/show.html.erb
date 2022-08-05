@@ -11,24 +11,26 @@
     <h2>Open Wall</h2>
   </header>
 
-  <div id="carouselSnapshots" class="carousel slide carousel-fade" data-bs-ride="carousel">
-    <div class="carousel-indicators">
-    <% @snapshots.each_with_index do |s, idx| %>
-      <button type="button" data-bs-target="#carouselSnapshots" data-bs-slide-to="<%= idx %>"<% if idx.eql?(0) %>class="active" aria-current="true"<% end %> aria-label="Slide <%= idx + 1 %>"></button>
-    <% end %>
-    </div>
-    <div class="carousel-inner">
-      <%= render partial: 'slide', collection: @snapshots %>
-    </div>
-    <button class="carousel-control-prev" type="button" data-bs-target="#carouselSnapshots" data-bs-slide="prev">
-      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Previous</span>
-    </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#carouselSnapshots" data-bs-slide="next">
-      <span class="carousel-control-next-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Next</span>
-    </button>
+  <div class="ratio ratio-16x9 mb-4">
+    <%= image_tag @snapshot.file.variant(:fullhd), class: "img-fluid" %>
   </div>
 
-  <p class="text-muted">Place mouse cursor over a snapshot to pause automatic transitions.</p>
+  <span class="float-end text-end text-muted">
+    <%= @snapshot.created_at %><br>
+    <%= @snapshot.image_dimensions %>, <%= @snapshot.file.byte_size %> bytes<br>
+    <%= link_to 'Download original image', download_snapshot_path(@snapshot) %>
+  </span>
+  <p class="fw-bold mb-1"><%= @snapshot.soc.upcase %> + <%= @snapshot.sensor.upcase %></p>
+  <p class="mb-2 text-primary">OpenIPC <%= @snapshot.firmware %></p>
+  <p><span>Uptime: <%= @snapshot.uptime %>.</span>
+    <% unless @snapshot.soc_temperature.blank? %>
+      <span>SoC temperature: <%= @snapshot.soc_temperature %>°C.</span>
+    <% end %></p>
+
+  <h4>Last 24 hours</h4>
+  <p><%= link_to "Watch as a slideshow", oneday_snapshot_path(@snapshot), class: "btn btn-primary" %></p>
+
+  <div class="archive row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-2">
+    <%= render partial: 'icon', collection: @snapshots %>
+  </div>
 </article>

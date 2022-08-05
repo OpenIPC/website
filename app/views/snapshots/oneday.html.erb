@@ -1,0 +1,34 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Home", "/" %></li>
+    <li class="breadcrumb-item"><%= link_to "Latest snapshots", "/open-wall" %></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= link_to "Snapshot ##{@snapshot.id}", snapshot_path(@snapshot) %></li>
+  </ol>
+</nav>
+
+<article>
+  <header>
+    <h2>Open Wall</h2>
+  </header>
+
+  <div id="carouselSnapshots" class="carousel slide carousel-fade" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+    <% @snapshots.each_with_index do |s, idx| %>
+      <button type="button" data-bs-target="#carouselSnapshots" data-bs-slide-to="<%= idx %>"<% if idx.eql?(0) %>class="active" aria-current="true"<% end %> aria-label="Slide <%= idx + 1 %>"></button>
+    <% end %>
+    </div>
+    <div class="carousel-inner">
+      <%= render partial: 'slide', collection: @snapshots %>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#carouselSnapshots" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#carouselSnapshots" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Next</span>
+    </button>
+  </div>
+
+  <p class="text-muted">Place mouse cursor over a snapshot to pause automatic transitions.</p>
+</article>

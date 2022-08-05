@@ -26,19 +26,33 @@ class SnapshotsController < ApplicationController
     end
   end
 
+  def oneday
+    find_snapshot
+    one_day_worth_of_snapshots
+    @page_title = "Open Wall, one day in life..."
+    render "snapshots/oneday"
+  end
+
   def show
-    @snapshot = Snapshot.find(params[:id])
-    @snapshots = Snapshot.where(mac_address: @snapshot.mac_address, created_at: [1.day.ago..Time.now]).order(created_at: :desc)
+    find_snapshot
+    one_day_worth_of_snapshots
     @page_title = "Open Wall, image ##{params[:id]}"
     render "snapshots/show"
   end
 
   def download
-    @snapshot = Snapshot.find(params[:id])
+    find_snapshot
     send_data @snapshot.file.download, disposition: "attachment", filename: @snapshot.filename_for_download
   end
 
   private
+    def find_snapshot
+      @snapshot = Snapshot.find(params[:id])
+    end
+
+    def one_day_worth_of_snapshots
+      @snapshots = Snapshot.where(mac_address: @snapshot.mac_address, created_at: [1.day.ago..Time.now]).order(created_at: :desc)
+    end
 
     def permitted_params
       params.permit(:file, :flash_size, :mac_address, :hostname, :soc, :sensor, :firmware, :uptime, :soc_temperature)

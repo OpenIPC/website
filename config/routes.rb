@@ -37,6 +37,7 @@ Rails.application.routes.draw do
   get '/open-wall(/:page)', to: 'snapshots#index'
 
   resources :snapshots do
+    get :oneday, on: :member
     get :download, on: :member
   end
 
