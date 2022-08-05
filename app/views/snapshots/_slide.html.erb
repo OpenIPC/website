@@ -1,0 +1,15 @@
+<div class="carousel-item<%= " active" if slide.eql?(@snapshots.first) %>">
+  <%= image_tag(slide.file.variant(:fullhd) || default_image_path, alt: "Snapshot", class: "d-block w-100") %>
+  <div class="carousel-caption d-none d-md-block p-3 x-small">
+    <p class="mb-0 fw-bold"><%= slide.created_at %>, <%= slide.soc.upcase %> + <%= slide.sensor.upcase %>, OpenIPC <%= slide.firmware %></p>
+    <p class="mb-0">
+      <span>Uptime: <%= slide.uptime %>.</span>
+      <% unless slide.soc_temperature.blank? %>
+        <span>SoC temperature: <%= slide.soc_temperature %>°C.</span>
+      <% end %>
+      <span>Dimensions: <%= slide.image_dimensions %></span>
+      <span>Size: <%= slide.file.byte_size %> bytes.</span>
+      <%= link_to "Download original image", download_snapshot_path(slide) %>
+    </p>
+  </div>
+</div>

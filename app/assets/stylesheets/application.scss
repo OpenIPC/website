@@ -20,6 +20,8 @@ body.debug:before {color: #4c60d811;display: block;font-size: 10rem;font-variant
   --bs-blue: #4c60d8;
 }
 
+$carousel-transition-duration: .3s;
+
 .x-small {
   font-size: 0.8125rem;
 }
@@ -143,4 +145,16 @@ label.required:after {
   content:"*";
   color: red;
   margin-left: 0.125rem;
+}
+
+.carousel-item .carousel-caption {
+  background-color: #1e1e1e66;
+  color: #f1f1f166;
+  a { color: #f1f1f166; }
+}
+
+.carousel-item.active:hover .carousel-caption {
+  background-color: #1e1e1eff;
+  color: #f1f1f1ff;
+  a { color: #ffcc00; }
 }
