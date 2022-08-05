@@ -28,7 +28,7 @@ class SnapshotsController < ApplicationController
 
   def show
     @snapshot = Snapshot.find(params[:id])
-    @snapshots = Snapshot.where(mac_address: @snapshot.mac_address).order(created_at: :desc).page(params[:page])
+    @snapshots = Snapshot.where(mac_address: @snapshot.mac_address, created_at: [1.day.ago..Time.now]).order(created_at: :desc)
     @page_title = "Open Wall, image ##{params[:id]}"
     render "snapshots/show"
   end
