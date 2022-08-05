@@ -9,6 +9,9 @@
       <% end %>
       <span>Dimensions: <%= slide.image_dimensions %></span>
       <span>Size: <%= slide.file.byte_size %> bytes.</span>
+    </p>
+    <p>
+      <%= link_to "Link to this snapshot", snapshot_path(slide) %> |
       <%= link_to "Download original image", download_snapshot_path(slide) %>
     </p>
   </div>
