@@ -2,8 +2,12 @@
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><%= link_to "Admin", "/admin" %></li>
     <li class="breadcrumb-item"><%= link_to "SoCs", admin_socs_path %></li>
-    <li class="breadcrumb-item"><%= link_to @soc.model, admin_soc_path(@soc) %></li>
-    <li class="breadcrumb-item active" aria-current="page"><%= link_to "Editing", edit_admin_soc_path(@soc) %></li>
+    <% if @soc.persisted? %>
+      <li class="breadcrumb-item"><%= link_to @soc.model, admin_soc_path(@soc) %></li>
+      <li class="breadcrumb-item active" aria-current="page"><%= link_to "Editing", edit_admin_soc_path(@soc) %></li>
+    <% else %>
+      <li class="breadcrumb-item active" aria-current="page"><%= link_to "Addin a SoC", new_admin_soc_path %></li>
+    <% end %>
   </ol>
 </nav>
 
