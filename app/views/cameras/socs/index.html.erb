@@ -5,15 +5,18 @@
 
   <ul class="nav nav-tabs mb-4">
     <li class="nav-item">
-      <%= link_to "Recommended", '/supported-hardware/featured', class: "nav-link#{" active" if @vendor.blank?}" %>
+      <%= link_to "Recommended", '/supported-hardware/featured',
+                  class: "nav-link#{" active" if action_name.eql?('featured')}" %>
     </li>
     <% Vendor.order(:name).each do |v| %>
       <li class="nav-item">
-        <%= link_to v.name, cameras_vendor_path(v), class: "nav-link#{" active" if @vendor.eql?(v.name)}" %>
+        <%= link_to v.name, cameras_vendor_path(v),
+                    class: "nav-link#{" active" if @vendor.eql?(v.name)}" %>
       </li>
     <% end %>
     <li class="nav-item">
-      <%= link_to "Full list", '/supported-hardware/full-list', class: "nav-link#{" active" if @vendor.blank?}" %>
+      <%= link_to "Full list", '/supported-hardware/full-list',
+                  class: "nav-link#{" active" if action_name.eql?('full_list')}" %>
     </li>
   </ul>
 
