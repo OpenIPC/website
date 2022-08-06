@@ -3,10 +3,10 @@
     <h2>Supported Hardware by SoC</h2>
   </header>
 
-  <ul class="nav nav-tabs mb-4">
+  <ul class="nav nav-tabs mb-4 small">
     <li class="nav-item">
       <%= link_to "Recommended", '/supported-hardware/featured',
-                  class: "nav-link#{" active" if action_name.eql?('featured')}" %>
+                  class: "nav-link fw-bold #{" active" if action_name.eql?('featured')}" %>
     </li>
     <% Vendor.order(:name).each do |v| %>
       <li class="nav-item">
@@ -16,13 +16,17 @@
     <% end %>
     <li class="nav-item">
       <%= link_to "Full list", '/supported-hardware/full-list',
-                  class: "nav-link#{" active" if action_name.eql?('full_list')}" %>
+                  class: "nav-link text-muted #{" active" if action_name.eql?('full_list')}" %>
     </li>
   </ul>
 
   <h3><%= @page_title %></h3>
 
-  <p><a href="/stages-of-firmware-development">Stages of firmware development explained</a></p>
+  <div class="alert alert-info">
+    <p class="mb-0">
+      Please note. Support for different SoCs is at different stages of development.
+      <a href="/supported-hardware/featured">This list</a> shows the most fully supported and, therefore, the most recommended ones.</p>
+  </div>
 
   <div class="socs">
     <dl class="row mb-3 border-bottom small fw-bold">
@@ -38,4 +42,6 @@
 
     <%= render @socs %>
   </div>
+
+  <p><a href="/stages-of-firmware-development">Stages of firmware development explained</a></p>
 </article>
