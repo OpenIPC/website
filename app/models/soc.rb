@@ -2,8 +2,8 @@ class Soc < ApplicationRecord
   belongs_to :vendor
 
   before_validation :generate_urlname
-  validates :model, uniqueness: { scope: :vendor_id }
-  validates :urlname, uniqueness: true
+  validates :model, presence: true, uniqueness: { scope: :vendor_id }
+  validates :urlname, presence: true, uniqueness: true
 
   GH_DL_ROOT = "https://github.com/OpenIPC/firmware/releases/download/latest/%s"
 
