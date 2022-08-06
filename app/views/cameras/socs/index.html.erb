@@ -4,12 +4,17 @@
   </header>
 
   <ul class="nav nav-tabs mb-4">
-    <li class="nav-item"><%= link_to "Full list", cameras_vendors_path, class: "nav-link#{" active" if @vendor.blank?}" %></li>
+    <li class="nav-item">
+      <%= link_to "Recommended", '/supported-hardware/featured', class: "nav-link#{" active" if @vendor.blank?}" %>
+    </li>
     <% Vendor.order(:name).each do |v| %>
       <li class="nav-item">
         <%= link_to v.name, cameras_vendor_path(v), class: "nav-link#{" active" if @vendor.eql?(v.name)}" %>
       </li>
     <% end %>
+    <li class="nav-item">
+      <%= link_to "Full list", '/supported-hardware/full-list', class: "nav-link#{" active" if @vendor.blank?}" %>
+    </li>
   </ul>
 
   <h3><%= @page_title %></h3>

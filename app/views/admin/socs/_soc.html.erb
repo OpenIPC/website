@@ -1,4 +1,4 @@
-<tr>
+<tr class="<%= "featured" if soc.featured? %>">
   <td>
     <%= link_to soc.full_name, admin_soc_path(soc) %><br>
     <%= image_tag soc.build_status_url unless soc.build_status_url.blank? %>

@@ -7,9 +7,6 @@ module Cameras
       if @vendor
         @socs = Soc.left_joins(:vendor).where(vendors: { name: @vendor }).order(:model)
         @page_title = "SoC: filtered by #{@vendor}"
-      else
-        @socs = Soc.left_joins(:vendor).order(:name, :model)
-        @page_title = "SoC: full list"
       end
       render "cameras/socs/index"
     end
@@ -68,6 +65,18 @@ module Cameras
       @camera.soc = Soc.find(params[:id])
       @camera.soc.generate_full_firmware
       send_file @camera.soc.firmware_file, disposition: :attachment
+    end
+
+    def featured
+      @socs = Soc.left_joins(:vendor).where(featured: true).order(:name, :model)
+      @page_title = "List of recommended SoCs"
+      render "cameras/socs/index"
+    end
+
+    def full_list
+      @socs = Soc.left_joins(:vendor).order(:name, :model)
+      @page_title = "SoC: full list"
+      render "cameras/socs/index"
     end
 
     private
