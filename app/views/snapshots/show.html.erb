@@ -27,6 +27,12 @@
       <span>SoC temperature: <%= @snapshot.soc_temperature %>°C.</span>
     <% end %></p>
 
+  <% if admin_signed_in? %>
+  <div class="alert alert-warning">
+    <p class="mb-0">IP: <%= @snapshot.ip_address %>, MAC: <%= @snapshot.mac_address %>.</p>
+  </div>
+  <% end %>
+
   <h4>Last 24 hours</h4>
   <p><%= link_to "Watch as a slideshow", oneday_snapshot_path(@snapshot), class: "btn btn-primary" %></p>
 
