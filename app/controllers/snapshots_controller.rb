@@ -51,7 +51,8 @@ class SnapshotsController < ApplicationController
     end
 
     def one_day_worth_of_snapshots
-      @snapshots = Snapshot.where(mac_address: @snapshot.mac_address, created_at: [1.day.ago..Time.now]).order(created_at: :desc)
+      @snapshots = Snapshot.where(mac_address: @snapshot.mac_address, created_at: [1.day.ago..Time.now])
+                           .order(:created_at)
     end
 
     def permitted_params
