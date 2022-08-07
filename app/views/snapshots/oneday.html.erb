@@ -30,5 +30,17 @@
     </button>
   </div>
 
-  <p class="text-muted">Place mouse cursor over a snapshot to pause automatic transitions.</p>
+  <p class="hstack gap-3 my-3">
+    <span class="text-muted">Place mouse cursor over a snapshot to pause automatic transitions.</span>
+    <span class="ms-auto"><input type="range" id="speed" min="0" max="4.5" step="0.5" value="2" title="Speed"></span>
+  </p>
 </article>
+
+<script>
+  function setSpeed() {
+      const ms = (5 - $('#speed').valueAsNumber) * 1000;
+      $$('.carousel-item').forEach(el => el.dataset["bsInterval"] = ms);
+  }
+  $("#speed").addEventListener("input", setSpeed);
+  setSpeed();
+</script>
