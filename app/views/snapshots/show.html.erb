@@ -11,8 +11,8 @@
     <h2>Open Wall</h2>
   </header>
 
-  <div class="ratio ratio-16x9 mb-4">
-    <%= image_tag @snapshot.file.variant(:fullhd), class: "img-fluid" %>
+  <div class="ratio ratio-16x9 bg-black mb-4">
+    <%= image_tag @snapshot.file.variant(:fullhd), class: "h-100 position-absolute top-50 start-50 translate-middle" %>
   </div>
 
   <span class="float-end text-end text-muted">
@@ -30,6 +30,7 @@
   <% if admin_signed_in? %>
   <div class="alert alert-warning">
     <p class="mb-0">IP: <%= @snapshot.ip_address %>, MAC: <%= @snapshot.mac_address %>.</p>
+    <%= button_to "Delete", admin_snapshot_path(@snapshot), method: "delete" %>
   </div>
   <% end %>
 
