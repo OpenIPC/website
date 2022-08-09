@@ -32,10 +32,6 @@ module Cameras
       render "cameras/socs/show"
     end
 
-    def legend
-      render "cameras/socs/legend"
-    end
-
     def update
       @camera = Camera.new(
         camera_ip_address: "192.168.1.10",
