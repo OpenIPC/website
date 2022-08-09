@@ -2,7 +2,9 @@
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><%= link_to "Home", "/" %></li>
     <li class="breadcrumb-item"><%= link_to "Latest snapshots", "/open-wall" %></li>
-    <li class="breadcrumb-item active" aria-current="page"><%= link_to "Snapshot ##{@snapshot.id}", snapshot_path(@snapshot) %></li>
+    <li class="breadcrumb-item active" aria-current="page">
+      <%= link_to "Snapshot ##{@snapshot.id}", snapshot_path(@snapshot) %>
+    </li>
   </ol>
 </nav>
 
@@ -13,12 +15,14 @@
 
   <div id="carouselSnapshots" class="carousel slide carousel-fade" data-bs-ride="carousel">
     <div class="carousel-indicators">
-    <% @snapshots.each_with_index do |s, idx| %>
-      <button type="button" data-bs-target="#carouselSnapshots" data-bs-slide-to="<%= idx %>"<% if idx.eql?(0) %>class="active" aria-current="true"<% end %> aria-label="Slide <%= idx + 1 %>"></button>
+    <% @snapshots.each_with_index do |_, idx| %>
+      <button type="button" data-bs-target="#carouselSnapshots" data-bs-slide-to="<%= idx %>"
+              <%= "class=\"active\" aria-current=\"true\"" if idx.eql?(0) %>
+              aria-label="Slide <%= idx + 1 %>"></button>
     <% end %>
     </div>
     <div class="carousel-inner ratio ratio-16x9 bg-light">
-      <%= render partial: 'slide', collection: @snapshots %>
+      <%= render partial: "slide", collection: @snapshots %>
     </div>
     <button class="carousel-control-prev" type="button" data-bs-target="#carouselSnapshots" data-bs-slide="prev">
       <span class="carousel-control-prev-icon" aria-hidden="true"></span>
