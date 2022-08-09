@@ -4,7 +4,7 @@
   </header>
 
   <%= bootstrap_form_for resource, as: resource_name, url: registration_path(resource_name) do |f| %>
-    <%= render partial: '/shared/form_errors', locals: { errors: f.object.errors } if f.object&.errors.any? %>
+    <%= f.alert_message "Please fix the errors below." %>
 
     <div class="row">
       <div class="col-lg-8 mb-3">
