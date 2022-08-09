@@ -12,8 +12,7 @@
   </header>
 
   <div class="ratio ratio-16x9 bg-light mb-4">
-    <%= image_tag @snapshot.file.variant(:fullhd),
-                  class: "h-100 w-auto position-absolute top-50 start-50 translate-middle" %>
+    <%= image_tag @snapshot.file.variant(:fullhd), class: "h-100 w-auto position-absolute top-50 start-50 translate-middle" %>
   </div>
 
   <span class="float-end text-end text-muted">
@@ -43,9 +42,9 @@
   <% end %>
 
   <h4>Last 24 hours</h4>
-  <p><%= link_to "Watch as a slideshow", oneday_snapshot_path(@snapshot), class: "btn btn-primary" %></p>
+  <p><%= link_to "Watch as slideshow", oneday_snapshot_path(@snapshot), class: "btn btn-primary" %></p>
 
-  <div class="archive row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-2">
+  <div class="archive row row-cols-2 row-cols-sm-3 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2">
     <%= render partial: 'icon', collection: @snapshots %>
   </div>
 </article>

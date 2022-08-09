@@ -1,11 +1,8 @@
 <div class="col">
-  <div class="row g-0 position-relative <%= icon.eql?(@snapshot) ? "bg-warning" : "bg-light" %>">
-    <div class="col-6 mb-0 p-4">
-      <%= image_tag(icon.file.variant(:icon) || default_image_path, alt: "Snapshot", class: "img-fluid") %>
-    </div>
-    <div class="col-6 p-4 ps-0">
-      <%= link_to icon.created_at.to_date, snapshot_path(icon), class: 'stretched-link' %><br>
-      <%= link_to icon.created_at.to_fs(:time), snapshot_path(icon) %>
+  <div class="card text-bg-dark <%= icon.eql?(@snapshot) ? "bg-warning" : "bg-light" %>">
+    <%= link_to image_tag(icon.file.variant(:icon2) || default_image_path, alt: "Snapshot", class: "card-img"), snapshot_path(icon), class: 'stretched-link' %>
+    <div class="card-img-overlay">
+      <div class="text-center text-white fw-bold px-2 x-small" style="background-color: #00000099; text-shadow: 1px 1px 2px black"><%= icon.created_at %></div>
     </div>
   </div>
 </div>
