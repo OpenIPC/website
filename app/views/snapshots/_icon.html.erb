@@ -5,7 +5,7 @@
     </div>
     <div class="col-6 p-4 ps-0">
       <%= link_to icon.created_at.to_date, snapshot_path(icon), class: 'stretched-link' %><br>
-      <%= link_to icon.created_at.to_s(:time), snapshot_path(icon) %>
+      <%= link_to icon.created_at.to_fs(:time), snapshot_path(icon) %>
     </div>
   </div>
 </div>
