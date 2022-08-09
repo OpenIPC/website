@@ -2,7 +2,12 @@ class Admin
   class SnapshotsController < AdminController
     def destroy
       find_snapshot
-      @snapshot.delete
+      case params[:scope]
+      when "mac"
+        Snapshot.where(mac_address: @snapshot.mac_address).delete_all
+      else
+        @snapshot.delete
+      end
       redirect_to "/open-wall"
     end
 
