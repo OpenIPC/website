@@ -1,0 +1,32 @@
+<article class="calculator">
+  <header>
+    <h2>Timelaps Interval Calculator</h2>
+  </header>
+
+  <div class="row row-cols-1 row-cols-md-5">
+    <div class="col">
+      <div class="form-floating mb-3">
+        <input type="text" class="form-control" id="video_length" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}:[0-9]{2}" value="00:00:00:00" title="Write a duration in the format hh:mm:ss:ms">
+        <label class="form-label" for="video_length">Clip Length</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="fps_24" value="24">
+        <label class="form-check-label" for="fps_24">24 fps</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="fps_30" value="30">
+        <label class="form-check-label" for="fps_30">30 fps</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="fps_60" value="60">
+        <label class="form-check-label" for="fps_60">60 fps</label>
+      </div>
+
+      <div class="form-floating mb-3">
+        <input type="text" class="form-control" id="video_fps" value="">
+        <label class="form-label" for="video_fps">FPS</label>
+      </div>
+
+    </div>
+  </div>
+</article>
