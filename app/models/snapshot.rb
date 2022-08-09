@@ -3,6 +3,7 @@ class Snapshot < ApplicationRecord
 
   has_one_attached :file do |attachable|
     attachable.variant :icon, resize_to_limit: [90, 60]
+    attachable.variant :icon2, resize_to_limit: [240, 135]
     attachable.variant :thumb, resize_to_limit: [480, 360]
     attachable.variant :fullhd, resize_to_limit: [1920, 1080]
   end
