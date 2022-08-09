@@ -21,7 +21,7 @@ class SnapshotsController < ApplicationController
       offset = 0
       s = Snapshot.where(mac_address: permitted_params[:mac_address])
                   .order(created_at: :desc).first
-      offset = (Time.now - s.created_at).to_i unless s.nil?
+      offset = (Time.now.utc - s.created_at.utc).to_i unless s.nil?
       head :too_many_requests, retry_after: Snapshot::INTERVAL_LIMIT - offset
     end
   end
