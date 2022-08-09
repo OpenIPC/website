@@ -29,9 +29,9 @@
     <% end %></p>
 
   <% if admin_signed_in? %>
-  <div class="alert alert-warning">
+  <div class="hstack alert alert-warning">
     <p class="mb-0">IP: <%= @snapshot.ip_address %>, MAC: <%= @snapshot.mac_address %>.</p>
-    <%= button_to "Delete", admin_snapshot_path(@snapshot), method: "delete" %>
+    <span class="ms-auto"><%= button_to "Delete", admin_snapshot_path(@snapshot), method: "delete", class: 'btn btn-danger' %></span>
   </div>
   <% end %>
 
