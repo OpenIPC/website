@@ -1,5 +1,7 @@
 class SnapshotsController < ApplicationController
   skip_before_action :verify_authenticity_token
+  before_action :find_snapshot, only: [:oneday, :show, :download]
+  before_action :find_camera, only: [:camera]
 
   def index
     page = params[:page] || 1
@@ -27,27 +29,46 @@ class SnapshotsController < ApplicationController
   end
 
   def oneday
-    find_snapshot
     one_day_worth_of_snapshots
     @page_title = "Open Wall, one day in life..."
     render "snapshots/oneday"
   end
 
   def show
-    find_snapshot
     one_day_worth_of_snapshots
     @page_title = "Open Wall, image ##{params[:id]}"
     render "snapshots/show"
   end
 
   def download
-    find_snapshot
     send_data @snapshot.file.download, disposition: "attachment", filename: @snapshot.filename_for_download
+  end
+
+  def camera
+    respond_to do |format|
+      format.jpg do
+        send_data @snapshot.file.download, disposition: "inline", filename: @snapshot.filename_for_download
+      end
+      format.html do
+        one_day_worth_of_snapshots
+        @page_title = "Open Wall, image ##{params[:id]}"
+        render "snapshots/show"
+      end
+    end
   end
 
   private
     def find_snapshot
       @snapshot = Snapshot.find(params[:id])
+    rescue ActiveRecord::RecordNotFound
+      redirect_to '/open-wall', alert: "No such a shaphot here."
+    end
+
+    def find_camera
+      mac_address_dec = params[:id].to_i
+      mac_address = mac_address_dec.to_s(16).rjust(12, "0").reverse.gsub(/(.{2})(?=.)/, '\\1:').reverse
+      @snapshot = Snapshot.where(mac_address: mac_address).order(created_at: :desc).first
+      redirect_to '/open-wall', alert: "No camera with ID #{mac_address_dec} here." if @snapshot.nil?
     end
 
     def one_day_worth_of_snapshots

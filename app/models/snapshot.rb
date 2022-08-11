@@ -12,6 +12,10 @@ class Snapshot < ApplicationRecord
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }
   validate :time_interval
 
+  def mac_address_dec
+    mac_address.gsub(':', '').to_i(16)
+  end
+
   def filename_for_download
     "openipc-#{firmware}-#{soc}-#{sensor}-#{created_at.to_i}.jpg"
   end

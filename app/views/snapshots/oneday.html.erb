@@ -2,9 +2,7 @@
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><%= link_to "Home", "/" %></li>
     <li class="breadcrumb-item"><%= link_to "Latest snapshots", "/open-wall" %></li>
-    <li class="breadcrumb-item active" aria-current="page">
-      <%= link_to "Snapshot ##{@snapshot.id}", snapshot_path(@snapshot) %>
-    </li>
+    <li class="breadcrumb-item active" aria-current="page"><%= link_to "Snapshot ##{@snapshot.id}", snapshot_path(@snapshot) %></li>
   </ol>
 </nav>
 

@@ -18,10 +18,9 @@
   <span class="float-end text-end text-muted">
     <%= @snapshot.created_at %><br>
     <%= @snapshot.image_dimensions %>, <%= @snapshot.file.byte_size %> bytes<br>
-    <%= link_to 'Download original image', download_snapshot_path(@snapshot) %>
   </span>
   <p class="fw-bold mb-1"><%= @snapshot.soc.upcase %> + <%= @snapshot.sensor.upcase %></p>
-  <p class="mb-2 text-primary">OpenIPC <%= @snapshot.firmware %></p>
+  <p class="mb-2 text-secondary">OpenIPC <%= @snapshot.firmware %></p>
   <p><span>Uptime: <%= @snapshot.uptime %>.</span>
     <% unless @snapshot.soc_temperature.blank? %>
       <span>SoC temperature: <%= @snapshot.soc_temperature %>°C.</span>
@@ -31,20 +30,25 @@
   <div class="hstack alert alert-warning">
     <p class="mb-0">IP: <%= @snapshot.ip_address %>, MAC: <%= @snapshot.mac_address %>.</p>
     <span class="ms-auto">
-      <%= button_to "Delete this one", admin_snapshot_path(@snapshot),
-                    method: "delete", class: 'btn btn-danger' %>
+      <%= button_to "Delete this one", admin_snapshot_path(@snapshot), method: "delete", class: 'btn btn-danger' %>
     </span>
     <span class="ms-2">
-      <%= button_to "Delete all by MAC", admin_snapshot_path(@snapshot, scope: :mac),
-                    method: "delete", class: 'btn btn-danger' %>
+      <%= button_to "Delete all by MAC", admin_snapshot_path(@snapshot, scope: :mac), method: "delete", class: 'btn btn-danger' %>
     </span>
   </div>
   <% end %>
 
-  <h4>Last 24 hours</h4>
-  <p><%= link_to "Watch as slideshow", oneday_snapshot_path(@snapshot), class: "btn btn-primary" %></p>
+  <p>
+    <%= link_to 'Download original image', download_snapshot_path(@snapshot) %><br>
+    <%= link_to 'Permanent link to this camera', openwall_camera_path(@snapshot.mac_address_dec) %><br>
+    <%= link_to 'Permanent link to the latest snapshot from this camera', openwall_camera_path(@snapshot.mac_address_dec, format: :jpg) %></p>
 
-  <div class="archive row row-cols-2 row-cols-sm-3 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2">
-    <%= render partial: 'icon', collection: @snapshots %>
-  </div>
+  <% if @snapshots && @snapshots.any? %>
+    <h4>Last 24 hours</h4>
+    <p><%= link_to "Watch as slideshow", oneday_snapshot_path(@snapshot), class: "btn btn-primary" %></p>
+
+    <div class="archive row row-cols-2 row-cols-sm-3 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2">
+      <%= render partial: 'icon', collection: @snapshots %>
+    </div>
+  <% end %>
 </article>

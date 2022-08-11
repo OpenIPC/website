@@ -39,8 +39,10 @@ Rails.application.routes.draw do
   get '/tools/firmware-partitions-calculation', to: 'pages#firmware_partitions_calculation'
 
   get '/open-wall(/:page)', to: 'snapshots#index'
+  get '/open-wall/camera/:id', to: 'snapshots#camera', as: 'openwall_camera'
 
   resources :snapshots do
+    get :camera, on: :collection
     get :oneday, on: :member
     get :download, on: :member
   end

@@ -11,6 +11,16 @@ module ApplicationHelper
     "/assets/no-signal.jpg"
   end
 
+  def display_flashes
+    html = flash.keys.map do |k|
+      css = k.in?(%w[alert error]) ? "danger" : "info"
+      content_tag "div", flash.discard(k), class: "mt-4 alert alert-#{css}", role: "alert"
+    end.join("\n")
+    return if html.blank?
+
+    content_tag "div", raw(html), class: "alerts"
+  end
+
   def ipaddr_pattern
     '^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$'
   end
