@@ -1,4 +1,9 @@
 class Snapshot < ApplicationRecord
+
+  class TooSoon < StandardError
+    #
+  end
+
   INTERVAL_LIMIT = 15.minutes
 
   has_one_attached :file do |attachable|
@@ -29,6 +34,7 @@ class Snapshot < ApplicationRecord
       s = Snapshot.select(:created_at).where(mac_address: mac_address).order(:created_at).last
       if s && s.created_at > INTERVAL_LIMIT.ago + 2.minutes # hysteresis
         errors.add :base, "Please keep interval between photos at 15 minutes or more."
+        raise TooSoon
       end
     end
 end

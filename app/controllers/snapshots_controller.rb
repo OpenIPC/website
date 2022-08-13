@@ -20,12 +20,13 @@ class SnapshotsController < ApplicationController
     if @snapshot.update(permitted_params)
       head :created, location: snapshot_path(@snapshot)
     else
-      offset = 0
-      s = Snapshot.where(mac_address: permitted_params[:mac_address])
-                  .order(created_at: :desc).first
-      offset = (Time.now.utc - s.created_at.utc).to_i unless s.nil?
-      head :too_many_requests, retry_after: Snapshot::INTERVAL_LIMIT - offset
+      head :unsupported_media_type, error: @snapshot.errors.full_messages.join(". ")
     end
+  rescue Snapshot::TooSoon
+    offset = 0
+    s = Snapshot.where(mac_address: permitted_params[:mac_address]).order(created_at: :desc).first
+    offset = (Time.now.utc - s.created_at.utc).to_i unless s.nil?
+    head :too_many_requests, retry_after: Snapshot::INTERVAL_LIMIT - offset
   end
 
   def oneday
