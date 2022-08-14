@@ -1,5 +1,9 @@
 class Soc < ApplicationRecord
+  COMMAND_BLOCKS = %w[backup bootloader firmware restore].freeze
+
   belongs_to :vendor
+  has_many :custom_commands
+  accepts_nested_attributes_for :custom_commands
 
   before_validation :generate_urlname
   validates :model, presence: true, uniqueness: { scope: :vendor_id }

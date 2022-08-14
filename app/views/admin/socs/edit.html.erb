@@ -54,6 +54,19 @@
       </div>
     </div>
     <%= f.text_field :build_status_url %>
+
+    <h4>Custom commands</h4>
+    <div class="row">
+      <%= f.fields_for :custom_commands do |f2| %>
+        <div class="col">
+          <h5><%= f2.object.command_block %></h5>
+          <%= f2.hidden_field :command_block %>
+          <%= f2.text_area :text, rows: 4 %>
+        </div>
+      <% end %>
+    </div>
+
+
     <%= f.submit %>
   <% end %>
 </article>
