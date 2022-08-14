@@ -12,7 +12,10 @@
   </header>
 
   <nav class="navbar">
-    <p><%= link_to 'Add another SoC', new_admin_soc_path, class: "btn btn-primary" %></p>
+    <p>
+      <%= link_to 'Add another SoC', new_admin_soc_path, class: "btn btn-primary" %>
+      <%= link_to 'Clone this SoC', new_admin_soc_path(from: @soc.id), class: "btn btn-primary" %>
+    </p>
     <form action="/admin/socs" method="get" class="row g-3">
       <div class="col-auto">
         <label for="soc" class="visually-hidden">SoC</label>

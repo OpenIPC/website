@@ -7,20 +7,26 @@ class Admin
       else
         @socs = Soc.left_joins(:vendor).order(:name, :model)
       end
-      @page_title = "Admin: List of SoCs"
+      @page_title = "List of SoCs"
       render "admin/socs/index"
     end
 
     def show
       @soc = Soc.find(params[:id])
-      @page_title = "Admin: SoC #{@soc.full_name}"
+      @page_title = "SoC #{@soc.full_name}"
       render "admin/socs/show"
     end
 
     def new
-      @soc = Soc.new
+      if params[:from]
+        _soc = Soc.find(params[:from])
+        @soc = _soc.dup
+        @page_title = "Clonning SoC #{_soc.full_name}"
+      else
+        @soc = Soc.new
+        @page_title = "Adding new SoC"
+      end
       build_command_blocks
-      @page_title = "Admin: Adding new SoC"
       render "admin/socs/edit"
     end
 
@@ -30,7 +36,7 @@ class Admin
       if @soc.update(permitted_params)
         redirect_to admin_soc_path(@soc), alert: 'SoC updated.'
       else
-        @page_title = "Admin: Creating new SoC"
+        @page_title = "Creating new SoC"
         render "admin/socs/edit"
       end
     end
@@ -38,7 +44,7 @@ class Admin
     def edit
       @soc = Soc.find(params[:id])
       build_command_blocks
-      @page_title = "Admin: Editing SoC #{@soc.full_name}"
+      @page_title = "Editing SoC #{@soc.full_name}"
       render "admin/socs/edit"
     end
 
@@ -47,7 +53,7 @@ class Admin
       if @soc.update(permitted_params)
         redirect_to admin_soc_path(@soc), alert: 'SoC updated.'
       else
-        @page_title = "Admin: Updating SoC #{@soc.full_name}"
+        @page_title = "Updating SoC #{@soc.full_name}"
         render "admin/socs/edit"
       end
     end
