@@ -20,7 +20,7 @@ class SnapshotsController < ApplicationController
     if @snapshot.update(permitted_params)
       head :created, location: snapshot_path(@snapshot)
     else
-      head :unsupported_media_type, error: @snapshot.errors.full_messages.join(". ")
+      head :unsupported_media_type, "X-Error": @snapshot.errors.full_messages.join(". ")
     end
   rescue Snapshot::TooSoon
     offset = 0

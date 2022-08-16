@@ -5,6 +5,7 @@ class Snapshot < ApplicationRecord
   end
 
   INTERVAL_LIMIT = 15.minutes
+  MAC_ADDRESS_BLACKLIST = %w[00:00:00:00:00:00 00:00:23:34:45:66]
 
   has_one_attached :file do |attachable|
     attachable.variant :icon, resize_to_limit: [90, 60]
@@ -13,7 +14,8 @@ class Snapshot < ApplicationRecord
     attachable.variant :fullhd, resize_to_limit: [1920, 1080]
   end
 
-  validates :mac_address, presence: true, format: MAC_ADDRESS_FORMAT
+  validates :mac_address, presence: true, format: MAC_ADDRESS_FORMAT,
+            exclusion: { in: MAC_ADDRESS_BLACKLIST, message: "is fake. Restore camera's original MAC address." }
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }
   validate :time_interval
 

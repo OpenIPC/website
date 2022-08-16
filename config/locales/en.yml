@@ -4,6 +4,7 @@ en:
     attributes:
       camera:
         camera_ip_address: "Camera IP address"
+        camera_mac_address: "Camera MAC address"
         server_ip_address: "TFTP server IP address"
         flash_type: "Type and size of flash memory chip"
         network_interfaces: "Network interfaces"
@@ -13,6 +14,8 @@ en:
       camera: "Camera"
   activerecord:
     attributes:
+      snapshot:
+        mac_address: "MAC address"
       soc:
         build_status_url: "Build status URL"
         kernel: "Kernel"
@@ -30,7 +33,16 @@ en:
       camera:
         flash_type: "If not sure, select NOR 8M."
     models:
+      snapshot: "Snapshot"
       soc: "SoC"
+  firmware:
+    installation:
+      backup_32: ATTENTION! Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM.
+    version:
+      fpv: FPV
+      lite: Lite
+      nand: NAND
+      ultimate: Ultimate
   flash_chip:
     nor8m: NOR 8M
     nor16m: NOR 16M
