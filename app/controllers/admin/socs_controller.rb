@@ -34,7 +34,7 @@ class Admin
       @soc = Soc.new
       build_command_blocks
       if @soc.update(permitted_params)
-        redirect_to admin_soc_path(@soc), alert: 'SoC updated.'
+        redirect_to admin_soc_path(@soc), notice: 'SoC updated.'
       else
         @page_title = "Creating new SoC"
         render "admin/socs/edit"
@@ -51,7 +51,7 @@ class Admin
     def update
       @soc = Soc.find(params[:id])
       if @soc.update(permitted_params)
-        redirect_to admin_soc_path(@soc), alert: 'SoC updated.'
+        redirect_to admin_soc_path(@soc), notice: 'SoC updated.'
       else
         @page_title = "Updating SoC #{@soc.full_name}"
         render "admin/socs/edit"
