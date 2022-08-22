@@ -6,7 +6,7 @@
                   snapshot_path(snapshot) %>
     </div>
     <div class="card-body small">
-      <span class="float-end x-small text-muted"><%= snapshot.created_at %></span>
+      <span class="float-end x-small text-muted" data-timestamp="<%= snapshot.created_at.to_i %>"><%= snapshot.created_at %></span>
       <p class="card-title fw-bold mb-1"><%= snapshot.soc.upcase %> + <%= snapshot.sensor.upcase %></p>
       <p class="card-subtitle mb-2 text-primary small">OpenIPC <%= snapshot.firmware %></p>
       <p class="card-text small">Uptime: <%= snapshot.uptime %>.<% unless snapshot.soc_temperature.blank? %> SoC temperature: <%= snapshot.soc_temperature %>°C.<% end %></p>
