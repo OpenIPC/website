@@ -29,20 +29,10 @@ class SnapshotsController < ApplicationController
     head :too_many_requests, retry_after: Snapshot::INTERVAL_LIMIT - offset
   end
 
-  def oneday
-    one_day_worth_of_snapshots
-    @page_title = "Open Wall, one day in life..."
-    render "snapshots/oneday"
-  end
-
   def show
-    one_day_worth_of_snapshots
+    daily_snapshots_new_to_old
     @page_title = "Open Wall, image ##{params[:id]}"
     render "snapshots/show"
-  end
-
-  def download
-    send_data @snapshot.file.download, disposition: "attachment", filename: @snapshot.filename_for_download
   end
 
   def camera
@@ -51,18 +41,30 @@ class SnapshotsController < ApplicationController
         send_data @snapshot.file.download, disposition: "inline", filename: @snapshot.filename_for_download
       end
       format.html do
-        one_day_worth_of_snapshots
+        daily_snapshots_new_to_old
         @page_title = "Open Wall, image ##{params[:id]}"
         render "snapshots/show"
       end
     end
   end
 
+  def download
+    send_data @snapshot.file.download, disposition: "attachment", filename: @snapshot.filename_for_download
+  end
+
+  def oneday
+    daily_snapshots_old_to_new
+    @page_title = "Open Wall, one day in life..."
+    render "snapshots/oneday"
+  end
+
   private
-    def find_snapshot
-      @snapshot = Snapshot.find(params[:id])
-    rescue ActiveRecord::RecordNotFound
-      redirect_to '/open-wall', alert: "No such a shaphot here."
+    def daily_snapshots_new_to_old
+      @snapshots = Snapshot.where(mac_address: @snapshot.mac_address, created_at: [1.day.ago..Time.now]).order(created_at: :desc)
+    end
+
+    def daily_snapshots_old_to_new
+      @snapshots = Snapshot.where(mac_address: @snapshot.mac_address, created_at: [1.day.ago..Time.now]).order(:created_at)
     end
 
     def find_camera
@@ -72,9 +74,10 @@ class SnapshotsController < ApplicationController
       redirect_to '/open-wall', alert: "No camera with ID #{mac_address_dec} here." if @snapshot.nil?
     end
 
-    def one_day_worth_of_snapshots
-      @snapshots = Snapshot.where(mac_address: @snapshot.mac_address, created_at: [1.day.ago..Time.now])
-                           .order(:created_at)
+    def find_snapshot
+      @snapshot = Snapshot.find(params[:id])
+    rescue ActiveRecord::RecordNotFound
+      redirect_to '/open-wall', alert: "No such a shaphot here."
     end
 
     def permitted_params
