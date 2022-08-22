@@ -2,7 +2,9 @@
   <div class="card text-bg-dark <%= icon.eql?(@snapshot) ? "bg-warning" : "bg-light" %>">
     <%= link_to image_tag(icon.file.variant(:icon2) || default_image_path, alt: "Snapshot", class: "card-img"), snapshot_path(icon), class: 'stretched-link' %>
     <div class="card-img-overlay">
-      <div class="text-center text-white fw-bold px-2 x-small" style="background-color: #00000099; text-shadow: 1px 1px 2px black"><%= icon.created_at %></div>
+      <div class="text-center text-white fw-bold px-2 x-small" style="background-color: #00000099; text-shadow: 1px 1px 2px black" data-timestamp="<%= icon.created_at.to_i %>">
+        <%= icon.created_at %>
+      </div>
     </div>
   </div>
 </div>

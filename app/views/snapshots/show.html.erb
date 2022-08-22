@@ -51,4 +51,12 @@
       <%= render partial: 'icon', collection: @snapshots %>
     </div>
   <% end %>
+
+  <script>
+      $$('div[data-timestamp]').forEach(el => {
+          const ts = el.dataset["timestamp"];
+          let date = new Date(ts * 1000);
+          el.textContent = date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+      });
+  </script>
 </article>

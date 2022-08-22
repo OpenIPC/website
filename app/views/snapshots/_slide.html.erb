@@ -1,7 +1,10 @@
 <div class="carousel-item<%= " active" if slide.eql?(@snapshots.first) %>">
   <%= image_tag(slide.file.variant(:fullhd) || default_image_path, alt: "Snapshot", class: "d-block h-100 w-auto position-absolute top-50 start-50 translate-middle") %>
   <div class="carousel-caption d-none d-md-block p-3 x-small">
-    <p class="mb-0 fw-bold"><%= slide.created_at %>, <%= slide.soc.upcase %> + <%= slide.sensor.upcase %>, OpenIPC <%= slide.firmware %></p>
+    <p class="mb-0 fw-bold">
+      <span data-timestamp="<%= slide.created_at.to_i %>"><%= slide.created_at %></span>,
+      <%= slide.soc.upcase %> + <%= slide.sensor.upcase %>, OpenIPC <%= slide.firmware %>
+    </p>
     <p class="mb-0">
       <span>Uptime: <%= slide.uptime %>.</span>
       <% unless slide.soc_temperature.blank? %>
