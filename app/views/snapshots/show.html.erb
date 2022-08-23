@@ -16,7 +16,7 @@
   </div>
 
   <span class="float-end text-end text-muted">
-    <%= @snapshot.created_at %><br>
+    <span data-timestamp="<%= @snapshot.created_at.to_i %>"><%= @snapshot.created_at %></span><br>
     <%= @snapshot.image_dimensions %>, <%= @snapshot.file.byte_size %> bytes<br>
   </span>
   <p class="fw-bold mb-1"><%= @snapshot.soc.upcase %> + <%= @snapshot.sensor.upcase %></p>
