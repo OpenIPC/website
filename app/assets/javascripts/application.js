@@ -12,6 +12,12 @@ window.onload = (event) => {
         el.classList.add('external-link');
     });
 
+    $$('snap[data-timestamp]').forEach(el => {
+        const ts = el.dataset["timestamp"];
+        let date = new Date(ts * 1000);
+        el.textContent = date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+    });
+
     // For .warning and .danger buttons, ask confirmation on action.
     $$('.btn-danger, .btn-warning, .confirm').forEach(el => {
         // for input or button, find parent form and attach listener to its submit event

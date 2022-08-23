@@ -43,11 +43,6 @@
       const ms = (5 - $('#speed').valueAsNumber) * 1000;
       $$('.carousel-item').forEach(el => el.dataset["bsInterval"] = ms);
   }
-  $$('span[data-timestamp]').forEach(el => {
-      const ts = el.dataset["timestamp"];
-      let date = new Date(ts * 1000);
-      el.textContent = date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
-  });
   $("#speed").addEventListener("input", setSpeed);
   setSpeed();
 </script>
