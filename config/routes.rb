@@ -37,6 +37,7 @@ Rails.application.routes.draw do
   get '/supported-hardware/full-list', to: 'cameras/socs#full_list'
 
   get '/tools/firmware-partitions-calculation', to: 'pages#firmware_partitions_calculation'
+  get '/tools/timelaps-interval-calculator', to: 'pages#timelaps-interval-calculator'
 
   get '/open-wall(/:page)', to: 'snapshots#index'
   get '/open-wall/camera/:id', to: 'snapshots#camera', as: 'openwall_camera'

@@ -11,6 +11,12 @@ module SelectsHelper
     end
   end
 
+  def list_of_firmware_versions_for_select
+    Camera::FW_VERSION.map do |v|
+      [t("firmware.version.#{v}"), v]
+    end
+  end
+
   def list_of_sd_card_for_select
     Camera::SD_CARD.map do |v|
       [t("sd_card.#{v}"), v]

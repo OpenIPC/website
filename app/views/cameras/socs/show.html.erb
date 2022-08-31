@@ -3,34 +3,36 @@
     <li class="breadcrumb-item"><%= link_to "Home", "/" %></li>
     <li class="breadcrumb-item"><%= link_to "Vendors", cameras_vendors_path %></li>
     <li class="breadcrumb-item"><%= link_to @vendor.name, cameras_vendor_path(@vendor) %></li>
-    <li class="breadcrumb-item active" aria-current="page"><%= link_to @soc.model, cameras_vendor_soc_path(@vendor, @soc) %></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= link_to @camera.soc.model, cameras_vendor_soc_path(@vendor, @camera.soc) %></li>
   </ol>
 </nav>
 
 <article class="sensor">
   <header>
-    <h2 class="display-3"><%= @soc.full_name %></h2>
+    <h2 class="display-3"><%= @camera.soc.full_name %></h2>
   </header>
 
   <div class="row">
     <div class="col-md-6 col-xl-7 col-xxl-8">
-      <% if @soc.uboot_filename.blank? || @soc.linux_filename.blank? || @soc.load_address.blank? %>
+      <% if @camera.soc.uboot_filename.blank? || @camera.soc.linux_filename.blank? || @camera.soc.load_address.blank? %>
         <div class="alert alert-info">
-          <p class="mb-0">The installation instructions for the <%= @soc.full_name %> SoC are not yet ready.
-            Although we are working hard to release OpenIPC firmware for the <%= @soc.full_name %>.
+          <p class="mb-0">The installation instructions for the <%= @camera.soc.full_name %> SoC are not yet ready.
+            Although we are working hard to release OpenIPC firmware for the <%= @camera.soc.full_name %>.
             Please stay tuned and <a href="/support-open-source">support Open Source</a>.</p>
         </div>
       <% else %>
         <h3>Installation Instruction</h3>
         <p>In order to get a personalized installation instruction, please enter your network configuration below:</p>
-        <%= bootstrap_form_for @camera, url: cameras_vendor_soc_path(@soc.vendor, @soc), method: 'put' do |f| %>
+        <%= bootstrap_form_for @camera, url: cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc), method: 'put' do |f| %>
           <div class="row row-cols-1 row-cols-xl-2">
             <div class="col">
+              <%= f.text_field :camera_mac_address, pattern: macaddr_pattern, title: "eight 8-bit hex fields separated by columns or dashes", class: "form-control", required: true %>
               <%= f.text_field :camera_ip_address, pattern: ipaddr_pattern, title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
               <%= f.text_field :server_ip_address, pattern: ipaddr_pattern, title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
             </div>
             <div class="col">
               <%= f.select :flash_type, list_of_flash_type_sizes_for_select %>
+              <%= f.select :firmware_version, list_of_firmware_versions_for_select %>
               <%= f.select :network_interface, list_of_network_interfaces_for_select %>
               <%= f.select :sd_card_slot, list_of_sd_card_for_select %>
             </div>
@@ -41,28 +43,11 @@
     </div>
     <div class="col-md-6 col-xl-5 col-xxl-4">
       <h3>Downloads</h3>
-
-      <% unless @soc.uboot_filename.blank? %>
-        <div class="alert alert-primary github">
-          <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to "OpenIPC Bootloader", @soc.bl_url %></h5>
-          <p class="mb-0 small">for <%= @soc.full_name %></p>
-        </div>
-      <% end %>
-
-      <% unless @soc.linux_filename.blank? %>
-        <div class="alert alert-primary github">
-          <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to "OpenIPC Linux", @soc.fw_url %></h5>
-          <p class="mb-0 small">for <%= @soc.full_name %></p>
-        </div>
-      <% end %>
-
-      <% unless @soc.toolchain_filename.blank? %>
+      <% unless @camera.soc.toolchain_filename.blank? %>
         <div class="alert alert-warning github">
           <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to "OpenIPC Toolchain", @soc.tc_url %></h5>
-          <p class="mb-0 small">for <%= @soc.full_name %></p>
+          <h5 class="mb-1"><%= link_to "OpenIPC Toolchain", @camera.soc.tc_url %></h5>
+          <p class="mb-0 small">for <%= @camera.soc.full_name %></p>
         </div>
       <% end %>
     </div>

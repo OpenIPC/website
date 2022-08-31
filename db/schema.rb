@@ -10,8 +10,36 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2022_07_10_124348) do
-  create_table "admins", force: :cascade do |t|
+ActiveRecord::Schema[7.0].define(version: 2022_08_03_015523) do
+  create_table "active_storage_attachments", charset: "utf8mb4", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "record_type", null: false
+    t.bigint "record_id", null: false
+    t.bigint "blob_id", null: false
+    t.datetime "created_at", null: false
+    t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
+    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
+  end
+
+  create_table "active_storage_blobs", charset: "utf8mb4", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "filename", null: false
+    t.string "content_type"
+    t.text "metadata"
+    t.string "service_name", null: false
+    t.bigint "byte_size", null: false
+    t.string "checksum"
+    t.datetime "created_at", null: false
+    t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
+  end
+
+  create_table "active_storage_variant_records", charset: "utf8mb4", force: :cascade do |t|
+    t.bigint "blob_id", null: false
+    t.string "variation_digest", null: false
+    t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "admins", charset: "utf8mb4", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
     t.string "reset_password_token"
@@ -37,8 +65,51 @@ ActiveRecord::Schema[7.0].define(version: 2022_07_10_124348) do
     t.index ["unlock_token"], name: "index_admins_on_unlock_token", unique: true
   end
 
-  create_table "socs", force: :cascade do |t|
-    t.integer "vendor_id"
+  create_table "sensors", charset: "utf8mb4", force: :cascade do |t|
+    t.string "urlname"
+    t.bigint "vendor_id"
+    t.string "model"
+    t.string "mode"
+    t.string "optical_format"
+    t.string "imager_size"
+    t.string "active_pixels"
+    t.string "pixel_size"
+    t.string "color_filter_array"
+    t.string "max_data_rate"
+    t.string "max_fps_full"
+    t.string "max_fps_vga"
+    t.string "adc_resolution"
+    t.string "responsivity"
+    t.string "pixel_dynamic_range"
+    t.string "snr_max"
+    t.string "voltage"
+    t.string "power_consumption"
+    t.string "operating_temp"
+    t.string "packaging"
+    t.string "status"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["urlname"], name: "index_sensors_on_urlname", unique: true
+    t.index ["vendor_id"], name: "index_sensors_on_vendor_id"
+  end
+
+  create_table "snapshots", charset: "utf8mb4", force: :cascade do |t|
+    t.string "mac_address"
+    t.string "ip_address"
+    t.string "hostname"
+    t.string "soc"
+    t.string "sensor"
+    t.string "flash_size"
+    t.string "firmware"
+    t.string "uptime"
+    t.string "soc_temperature"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "socs", charset: "utf8mb4", force: :cascade do |t|
+    t.bigint "vendor_id"
     t.string "family"
     t.string "model"
     t.string "version"
@@ -51,13 +122,24 @@ ActiveRecord::Schema[7.0].define(version: 2022_07_10_124348) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "urlname"
+    t.string "toolchain_filename"
+    t.string "build_status_url"
+    t.index ["urlname"], name: "index_socs_on_urlname", unique: true
     t.index ["vendor_id"], name: "index_socs_on_vendor_id"
   end
 
-  create_table "vendors", force: :cascade do |t|
+  create_table "vendors", charset: "utf8mb4", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "urlname"
+    t.string "full_name"
+    t.string "website_url"
+    t.text "notes"
+    t.index ["urlname"], name: "index_vendors_on_urlname", unique: true
   end
 
+  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
 end

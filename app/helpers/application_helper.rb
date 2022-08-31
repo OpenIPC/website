@@ -29,6 +29,17 @@ module ApplicationHelper
     '^([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}$'
   end
 
+  def firmware_filename(soc, version)
+    filename = soc.linux_filename.dup
+    filename.gsub!("-br.tgz", "-#{version}-br.tgz") unless version.eql?("lite")
+    filename
+  end
+
+  def firmware_url(soc, version)
+    filename = firmware_filename(soc, version)
+    "https://github.com/OpenIPC/firmware/releases/download/latest/#{filename}"
+  end
+
   def link_to_github_profile(username)
     link_to "@#{username}", "https://github.com/#{username}/", class: "github"
   end
