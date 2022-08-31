@@ -69,9 +69,9 @@ module Cameras
     end
 
     def download_full_image
-      @camera.soc = Soc.find(params[:id])
-      @camera.soc.generate_full_firmware
-      send_file @camera.soc.firmware_file, disposition: :attachment
+      @soc = Soc.find(params[:id])
+      @soc.generate_full_firmware
+      send_file @soc.firmware_file, disposition: :attachment
     end
 
     def featured
