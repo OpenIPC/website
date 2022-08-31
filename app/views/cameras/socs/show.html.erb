@@ -50,6 +50,13 @@
           <p class="mb-0 small">for <%= @camera.soc.full_name %></p>
         </div>
       <% end %>
+      <% unless @camera.soc.linux_filename.blank? %>
+        <div class="alert alert-primary github">
+          <i class="bi bi-github float-end"></i>
+          <h5 class="mb-1"><%= link_to "OpenIPC Linux #{@camera.firmware_version_name}", firmware_url(@camera.soc, @camera.firmware_version), title: firmware_filename(@camera.soc, @camera.firmware_version) %></h5>
+          <p class="small">for <%= @camera.soc.full_name %></p>
+        </div>
+      <% end %>
     </div>
   </div>
 </article>
