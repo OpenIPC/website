@@ -43,7 +43,7 @@
     </div>
     <div class="col-md-6 col-xl-5 col-xxl-4">
       <h3>Downloads</h3>
-      <% unless @soc.uboot_filename.blank? %>
+      <% unless @camera.soc.uboot_filename.blank? %>
         <div class="alert alert-primary github">
           <i class="bi bi-github float-end"></i>
           <h5 class="mb-1"><%= link_to "OpenIPC Bootloader", @camera.soc.bl_url %></h5>
