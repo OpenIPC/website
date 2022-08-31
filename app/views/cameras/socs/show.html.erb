@@ -43,10 +43,10 @@
     </div>
     <div class="col-md-6 col-xl-5 col-xxl-4">
       <h3>Downloads</h3>
-      <% unless @camera.soc.toolchain_filename.blank? %>
-        <div class="alert alert-warning github">
+      <% unless @soc.uboot_filename.blank? %>
+        <div class="alert alert-primary github">
           <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to "OpenIPC Toolchain", @camera.soc.tc_url %></h5>
+          <h5 class="mb-1"><%= link_to "OpenIPC Bootloader", @camera.soc.bl_url %></h5>
           <p class="mb-0 small">for <%= @camera.soc.full_name %></p>
         </div>
       <% end %>
@@ -55,6 +55,13 @@
           <i class="bi bi-github float-end"></i>
           <h5 class="mb-1"><%= link_to "OpenIPC Linux #{@camera.firmware_version_name}", firmware_url(@camera.soc, @camera.firmware_version), title: firmware_filename(@camera.soc, @camera.firmware_version) %></h5>
           <p class="small">for <%= @camera.soc.full_name %></p>
+        </div>
+      <% end %>
+      <% unless @camera.soc.toolchain_filename.blank? %>
+        <div class="alert alert-warning github">
+          <i class="bi bi-github float-end"></i>
+          <h5 class="mb-1"><%= link_to "OpenIPC Toolchain", @camera.soc.tc_url %></h5>
+          <p class="mb-0 small">for <%= @camera.soc.full_name %></p>
         </div>
       <% end %>
     </div>
