@@ -76,6 +76,7 @@
           let o = el.options.item(i);
           if (o.value !== 'lite') o.disabled = status;
       }
+      if (status) el.value = 'lite';
   }
 
   $('#camera_flash_type').addEventListener('change', checkFlashSize);
