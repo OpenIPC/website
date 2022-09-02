@@ -67,3 +67,18 @@
     </div>
   </div>
 </article>
+
+<script>
+  function checkFlashSize() {
+      let el = $('#camera_firmware_version');
+      let status = ($('#camera_flash_type').value === 'nor8m');
+      for (let i = 0; i < el.options.length; i++) {
+          let o = el.options.item(i);
+          if (o.value !== 'lite') o.disabled = status;
+      }
+  }
+
+  $('#camera_flash_type').addEventListener('change', checkFlashSize);
+
+  checkFlashSize();
+</script>
