@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   root "pages#introduction"
 
   get '/aaa', to: 'pages#aaa'
+  get '/majestic-endpoints', to: 'pages#majestic-endpoints'
 
   get '/coupler',     to: redirect('https://openipc.github.io/coupler/')
   get '/firmware',    to: redirect('https://openipc.github.io/firmware/')
