@@ -22,6 +22,12 @@ body.debug:before {color: #4c60d811;display: block;font-size: 10rem;font-variant
 
 $carousel-transition-duration: .3s;
 
+.col > h3 {
+  color: var(--bs-blue);
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+}
+
 .x-small {
   font-size: 0.8125rem;
 }
