@@ -17,6 +17,11 @@ class PagesController < ApplicationController
     render "pages/introduction"
   end
 
+  def majestic_endpoints
+    @page_title = "Majestic Endpoints"
+    render "pages/majestic-endpoints"
+  end
+
   def our_channels
     @page_title = "Our channels"
     render "pages/our-channels"
