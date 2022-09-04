@@ -26,7 +26,8 @@
         <%= bootstrap_form_for @camera, url: cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc), method: 'put' do |f| %>
           <div class="row row-cols-1 row-cols-xl-2">
             <div class="col">
-              <%= f.text_field :camera_mac_address, pattern: macaddr_pattern, title: "six 8-bit hex fields separated by columns or dashes", class: "form-control", required: true %>
+              <%= f.text_field :camera_mac_address, pattern: macaddr_pattern, title: "six 8-bit hex fields separated by columns or dashes", class: "form-control", required: true,
+                               help: raw('<a id="generate-mac-address" href="#">Generate valid random MAC address.</a>') %>
               <%= f.text_field :camera_ip_address, pattern: ipaddr_pattern, title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
               <%= f.text_field :server_ip_address, pattern: ipaddr_pattern, title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
             </div>
@@ -79,7 +80,27 @@
       if (status) el.value = 'lite';
   }
 
-  $('#camera_flash_type').addEventListener('change', checkFlashSize);
+  function generateMacAddress(ev) {
+      ev.preventDefault();
+      const el = $('#camera_camera_mac_address');
+      if (el.value == "") {
+          let mac = "";
+          for (let i = 1; i <= 6; i++) {
+              let b = ((Math.random() * 255) >>> 0);
+              if (i === 1) { // this time it's personal!
+                  b = b | 2;
+                  b = b & ~1;
+              }
+              mac += b.toString(16).toUpperCase().padStart(2, '0');
+              if (i < 6) mac += ":";
+          }
+          el.value = mac;
+      } else {
+          alert("There's a value in MAC address field. Please empty the field and try again.");
+      }
+  }
 
+  $('#generate-mac-address').addEventListener('click', generateMacAddress);
+  $('#camera_flash_type').addEventListener('change', checkFlashSize);
   checkFlashSize();
 </script>
