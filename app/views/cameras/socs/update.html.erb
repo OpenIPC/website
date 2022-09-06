@@ -34,6 +34,30 @@
     </div>
   </div>
 
+  <% if @camera.soc.instructable? %>
+    <p>
+      <a class="btn btn-secondary" data-bs-toggle="collapse" href="#collapseAltInstall" role="button" aria-expanded="false" aria-controls="collapseAltInstall">
+        Alternative method of flashing memory chip via a programmer.
+      </a>
+    </p>
+    <div class="collapse" id="collapseAltInstall">
+      <div class="card card-body bg-danger">
+        <div class="row">
+          <div class="col col-lg-4">
+            <div class="alert alert-danger mb-0">
+              <h5 class="mb-1"><%= link_to "Full image of OpenIPC Firmware", download_full_image_cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc), class: 'text-danger' %></h5>
+              <p class="mb-0 small">for <%= @camera.soc.full_name %> with 8MB NOR flash</p>
+            </div>
+          </div>
+          <div class="col">
+            <h4 class="m-0 text-white display-5">Highly experimental!</h4>
+            <h5 class="m-0 text-white">Use at your own risk.</h5>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
   <h3 class="mt-4 mb-2 fw-bold">Flashing OpenIPC U-Boot</h3>
   <div class="row">
     <div class="col col-lg-4">
@@ -68,13 +92,6 @@
   <h3 class="mt-4 mb-2 fw-bold">Flashing OpenIPC Linux</h3>
   <div class="row">
     <div class="col col-lg-4">
-      <% if @camera.soc.instructable? %>
-        <div class="alert alert-success github">
-          <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to "OpenIPC Firmware", download_full_image_cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc) %></h5>
-          <p class="mb-0 small">for <%= @camera.soc.full_name %> with 8MB NOR flash</p>
-        </div>
-      <% end if false %>
       <% unless @camera.soc.linux_filename.blank? %>
         <div class="alert alert-primary github">
           <i class="bi bi-github float-end"></i>
