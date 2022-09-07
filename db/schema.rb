@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2022_08_03_015523) do
+ActiveRecord::Schema[7.0].define(version: 2022_08_06_130659) do
   create_table "active_storage_attachments", charset: "utf8mb4", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -63,6 +63,15 @@ ActiveRecord::Schema[7.0].define(version: 2022_08_03_015523) do
     t.index ["email"], name: "index_admins_on_email", unique: true
     t.index ["reset_password_token"], name: "index_admins_on_reset_password_token", unique: true
     t.index ["unlock_token"], name: "index_admins_on_unlock_token", unique: true
+  end
+
+  create_table "custom_commands", charset: "utf8mb4", force: :cascade do |t|
+    t.bigint "soc_id"
+    t.string "command_block"
+    t.text "text"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["soc_id"], name: "index_custom_commands_on_soc_id"
   end
 
   create_table "sensors", charset: "utf8mb4", force: :cascade do |t|
@@ -125,6 +134,7 @@ ActiveRecord::Schema[7.0].define(version: 2022_08_03_015523) do
     t.string "urlname"
     t.string "toolchain_filename"
     t.string "build_status_url"
+    t.boolean "featured", default: false, null: false
     t.index ["urlname"], name: "index_socs_on_urlname", unique: true
     t.index ["vendor_id"], name: "index_socs_on_vendor_id"
   end

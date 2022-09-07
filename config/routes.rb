@@ -1,6 +1,8 @@
 Rails.application.routes.draw do
   root "pages#introduction"
 
+  post '/map_toolchain' => 'github#create'
+
   get '/aaa', to: 'pages#aaa'
   get '/majestic-endpoints', to: 'pages#majestic_endpoints'
 
@@ -37,6 +39,7 @@ Rails.application.routes.draw do
   get '/supported-hardware/featured', to: 'cameras/socs#featured'
   get '/supported-hardware/full-list', to: 'cameras/socs#full_list'
 
+  get '/tools/bandwidth-calculator', to: 'pages#bandwidth_calculator'
   get '/tools/firmware-partitions-calculation', to: 'pages#firmware_partitions_calculation'
   get '/tools/timelaps-interval-calculator', to: 'pages#timelaps-interval-calculator'
 
@@ -50,6 +53,7 @@ Rails.application.routes.draw do
   end
 
   namespace :cameras do
+    resources :socs
     resources :vendors do
       resources :socs do
         get :download_full_image, on: :member
