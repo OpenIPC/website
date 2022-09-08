@@ -3,6 +3,7 @@
     <%= link_to soc.full_name, admin_soc_path(soc) %><br>
     <%= image_tag soc.build_status_url unless soc.build_status_url.blank? %>
   </td>
+  <td><%= soc.family %></td>
   <td><%= soc.load_address %></td>
   <td class="small">
     U-Boot: <%= soc.uboot_filename %><br>
