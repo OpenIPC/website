@@ -44,8 +44,9 @@
     </div>
     <div class="col-md-6 col-xl-5 col-xxl-4">
       <h3>Downloads</h3>
+      <p class="fst-italic">If you know what you are doing.</p>
       <% unless @camera.soc.uboot_filename.blank? %>
-        <div class="alert alert-primary github">
+        <div class="alert alert-info github">
           <i class="bi bi-github float-end"></i>
           <h5 class="mb-1"><%= link_to "OpenIPC Bootloader", @camera.soc.bl_url %></h5>
           <p class="mb-0 small">for <%= @camera.soc.full_name %></p>
