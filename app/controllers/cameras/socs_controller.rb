@@ -21,7 +21,7 @@ module Cameras
         sd_card_slot: "nosd"
       )
       @camera.camera_ip_address  = params[:cip] if params[:cip]
-      @camera.camera_mac_address = params[:mac].downcase.gsub('-', ':') if params[:mac]
+      @camera.camera_mac_address = params[:mac].to_s.downcase.gsub('-', ':')
       @camera.server_ip_address  = params[:sip] if params[:sip]
       @camera.flash_type         = params[:rom] if params[:rom]
       @camera.firmware_version   = params[:ver] if params[:ver]
@@ -45,7 +45,7 @@ module Cameras
         sd_card_slot: "nosd"
       )
       @camera.camera_ip_address  = permitted_params[:camera_ip_address]
-      @camera.camera_mac_address = permitted_params[:camera_mac_address].downcase.gsub('-', ':')
+      @camera.camera_mac_address = permitted_params[:camera_mac_address].to_s.downcase.gsub('-', ':')
       @camera.server_ip_address  = permitted_params[:server_ip_address]
       @camera.flash_type         = permitted_params[:flash_type]
       @camera.firmware_version   = permitted_params[:firmware_version]
