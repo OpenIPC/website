@@ -69,9 +69,16 @@ module Cameras
     end
 
     def download_full_image
+      permitted_params = params.permit(:id, :vendor_id, :flash_size, :fw_release)
+      flash_size = permitted_params[:flash_size]
+      fw_release = permitted_params[:fw_release]
       @soc = Soc.find(params[:id])
-      @soc.generate_full_firmware
-      send_file @soc.firmware_file, disposition: :attachment
+      fw = Firmware.new(size: flash_size, release: fw_release, soc: @soc)
+      fw.generate
+      send_file fw.filepath, name: fw.filename, disposition: :attachment
+    rescue ActionController::MissingFile
+      flash.alert = "This firmware does not exist."
+      redirect_back(fallback_location: "/")
     end
 
     def featured

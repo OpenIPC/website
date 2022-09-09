@@ -81,4 +81,15 @@
   </dl>
 
   <p><%= link_to 'Edit SoC', edit_admin_soc_path(@soc), class: "btn btn-primary" %></p>
+
+  <h4>Download full-size binaries</h4>
+  <p>
+    <% %w[mini lite].each do |release| %>
+      <%= link_to "8MB #{release}", download_full_image_cameras_vendor_soc_path(@soc.vendor, @soc, fw_release: release, flash_size: 8), class: "btn btn-primary" %>
+    <% end %>
+    <% %w[ultimate fpv].each do |release| %>
+      <%= link_to "16MB #{release}", download_full_image_cameras_vendor_soc_path(@soc.vendor, @soc, fw_release: release, flash_size: 16), class: "btn btn-primary" %>
+    <% end %>
+  </p>
+
 </article>

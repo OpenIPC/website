@@ -20,7 +20,7 @@ class Soc < ApplicationRecord
     "hlp": "Looking for help",
     "wip": "Work in progress",
     "mvp": "Minimum viable product",
-    "done": "Done and done!",
+    "done": "Done and done!"
   }.freeze
 
   def self.find(id)
@@ -53,14 +53,6 @@ class Soc < ApplicationRecord
     [vendor.name, model].join(" ")
   end
 
-  def firmware_filename
-    @firmware_filename ||= "openipc.#{model_downcase}.8mb.bin"
-  end
-
-  def firmware_file
-    @firmware_file ||= File.join(Rails.root, 'public', 'files', firmware_filename)
-  end
-
   def instructable?
     !uboot_filename.empty? && !linux_filename.empty?
   end
@@ -69,12 +61,15 @@ class Soc < ApplicationRecord
     @kernel_file ||= "uImage.#{model_downcase}"
   end
 
-  def linux_file
-    @rootfs_file ||= File.join(RELEASES_ROOT, linux_filename)
+  def linux_file(release)
+    linux_filename = "openipc.#{model_downcase}"
+    linux_filename = "#{linux_filename}-#{release}" unless release.eql?("lite")
+    linux_filename = "#{linux_filename}-br.tgz"
+    @linux_file ||= File.join(RELEASES_ROOT, linux_filename)
   end
 
   def rootfs_file
-    @kernel_file ||= "rootfs.squashfs.#{model_downcase}"
+    @rootfs_file ||= "rootfs.squashfs.#{model_downcase}"
   end
 
   def uboot_file
@@ -83,28 +78,6 @@ class Soc < ApplicationRecord
 
   def full_firmware_path
     @full_firmware_path ||= "/tmp/openipc.#{model_downcase}.8mb.bin"
-  end
-
-  def generate_full_firmware
-    unless File.exist?(uboot_file)
-      puts "File #{uboot_file} not found"
-      return
-    end
-
-    unless File.exist?(linux_file)
-      puts "File #{linux_file} not found"
-      return
-    end
-
-    if !File.exist?(firmware_file) || File.mtime(uboot_file) > File.mtime(firmware_file) || File.mtime(linux_file) > File.mtime(firmware_file)
-      FileUtils.mkdir_p File.dirname(firmware_file)
-      IO.binwrite firmware_file, ("\xFF" * 0x800000)
-      IO.binwrite firmware_file, IO.binread(uboot_file), 0
-      Gem::Package::TarReader.new(Zlib::GzipReader.open(linux_file)) do |tar|
-        tar.seek("uImage.#{model_downcase}") { |f| IO.binwrite firmware_file, f.read, 0x50000 }
-        tar.seek("rootfs.squashfs.#{model_downcase}") { |f| IO.binwrite firmware_file, f.read, 0x250000 }
-      end
-    end
   end
 
   private

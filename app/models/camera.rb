@@ -33,6 +33,21 @@ class Camera
     @backup_filename ||= "backup-#{model.downcase}-#{@flash_type}.bin"
   end
 
+  def flash_size
+    @flash_size ||= case @flash_type
+                    when "nor8m"
+                      8
+                    when "nor16m"
+                      16
+                    when "nor32m"
+                      32
+                    # when "nand"
+                    #   ??
+                    else
+                      8
+                    end
+  end
+
   def flash_size_hex
     @flash_size_hex ||= case @flash_type
                         when "nor8m"
@@ -42,7 +57,7 @@ class Camera
                         when "nor32m"
                           "0x2000000"
                         # when "nand"
-                        #   "0x800000"
+                        #   ??
                         else
                           "0x800000"
                         end
