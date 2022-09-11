@@ -62,9 +62,7 @@ class Soc < ApplicationRecord
   end
 
   def linux_file(release)
-    linux_filename = "openipc.#{model_downcase}"
-    linux_filename = "#{linux_filename}-#{release}" unless release.eql?("lite")
-    linux_filename = "#{linux_filename}-br.tgz"
+    linux_filename.gsub!('-br.tgz', "-#{release}-br.tgz") unless release.eql?("lite")
     @linux_file ||= File.join(RELEASES_ROOT, linux_filename)
   end
 
