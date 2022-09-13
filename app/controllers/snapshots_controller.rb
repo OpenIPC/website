@@ -38,7 +38,8 @@ class SnapshotsController < ApplicationController
   def camera
     respond_to do |format|
       format.jpg do
-        send_data @snapshot.file.download, disposition: "inline", filename: @snapshot.filename_for_download
+        send_data @snapshot.file.download, disposition: "inline",
+                  filename: @snapshot.filename_for_download
       end
       format.html do
         daily_snapshots_new_to_old
@@ -49,7 +50,8 @@ class SnapshotsController < ApplicationController
   end
 
   def download
-    send_data @snapshot.file.download, disposition: "attachment", filename: @snapshot.filename_for_download
+    send_data @snapshot.file.download, disposition: "attachment",
+              filename: @snapshot.filename_for_download
   end
 
   def oneday
@@ -60,11 +62,13 @@ class SnapshotsController < ApplicationController
 
   private
     def daily_snapshots_new_to_old
-      @snapshots = Snapshot.where(mac_address: @snapshot.mac_address, created_at: [1.day.ago..Time.now]).order(created_at: :desc)
+      @snapshots = Snapshot.where(mac_address: @snapshot.mac_address,
+                                  created_at: [1.day.ago..Time.now]).order(created_at: :desc)
     end
 
     def daily_snapshots_old_to_new
-      @snapshots = Snapshot.where(mac_address: @snapshot.mac_address, created_at: [1.day.ago..Time.now]).order(:created_at)
+      @snapshots = Snapshot.where(mac_address: @snapshot.mac_address,
+                                  created_at: [1.day.ago..Time.now]).order(:created_at)
     end
 
     def find_camera

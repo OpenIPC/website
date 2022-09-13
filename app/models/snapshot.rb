@@ -24,7 +24,7 @@ class Snapshot < ApplicationRecord
   end
 
   def filename_for_download
-    "openipc-#{firmware}-#{soc}-#{sensor}-#{created_at.to_i}.jpg"
+    "openipc-#{firmware}-#{soc}-#{sensor}-#{created_at.to_i}-#{file.filename}"
   end
 
   def image_dimensions
