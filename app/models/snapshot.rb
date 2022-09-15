@@ -19,6 +19,12 @@ class Snapshot < ApplicationRecord
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }
   validate :time_interval
 
+  after_commit :process_images
+
+  def process_images
+    ProcessImagesJob.perform_later(self)
+  end
+
   def mac_address_dec
     mac_address.gsub(':', '').to_i(16)
   end
