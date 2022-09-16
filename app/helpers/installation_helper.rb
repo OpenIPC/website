@@ -39,6 +39,7 @@ module InstallationHelper
       text << "saveenv"
     end
     text << "run uk#{c2}; run ur#{c2}"
+    text << "sf erase 0x750000 0xb0000" if c2.eql?("nor8m")
     text << "reset"
     list_of_commands text
   end
