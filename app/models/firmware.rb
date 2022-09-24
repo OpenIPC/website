@@ -54,8 +54,17 @@ class Firmware
     IO.binwrite tmp_file, ("\xFF" * firmware_size)
     IO.binwrite tmp_file, IO.binread(uboot_file), 0
     Gem::Package::TarReader.new(Zlib::GzipReader.open(linux_file)) do |tar|
-      tar.seek("uImage.#{soc_model}") { |f| IO.binwrite tmp_file, f.read, kernel_offset }
-      tar.seek("rootfs.squashfs.#{soc_model}") { |f| IO.binwrite tmp_file, f.read, rootfs_offset }
+      kernel_file = "uImage.#{soc_model}"
+      rootfs_file = "rootfs.squashfs.#{soc_model}"
+
+      # workaround for Ingenic T31 where there's the same file for all models
+      if @soc.family.eql?('T31')
+        kernel_file = "uImage.t31"
+        rootfs_file = "rootfs.squashfs.t31"
+      end
+
+      tar.seek(kernel_file) { |f| IO.binwrite tmp_file, f.read, kernel_offset }
+      tar.seek(rootfs_file) { |f| IO.binwrite tmp_file, f.read, rootfs_offset }
     end
     FileUtils.mv tmp_file, filepath
   end
