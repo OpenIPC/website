@@ -76,7 +76,7 @@ module Cameras
       fw = Firmware.new(size: flash_size, release: fw_release, soc: @soc)
       fw.generate
       send_file fw.filepath, name: fw.filename, disposition: :attachment
-    rescue ActionController::MissingFile
+    rescue ActionController::MissingFile => e
       flash.alert = "This firmware does not exist."
       redirect_back(fallback_location: "/")
     end
