@@ -41,7 +41,7 @@
   <p>
     <%= link_to 'Download original image', download_snapshot_path(@snapshot) %><br>
     <%= link_to 'Permanent link to this camera', openwall_camera_path(@snapshot.mac_address_dec) %><br>
-    <%= link_to 'Permanent link to the latest snapshot from this camera', openwall_camera_path(@snapshot.mac_address_dec, format: :jpg) %></p>
+    <%= link_to 'Permanent link to the latest snapshot from this camera (JPEG)', openwall_camera_path(@snapshot.mac_address_dec, format: :jpg) %></p>
 
   <% if @snapshots && @snapshots.any? %>
     <h4>Last 24 hours</h4>
