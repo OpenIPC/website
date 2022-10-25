@@ -61,30 +61,31 @@ class SnapshotsController < ApplicationController
   end
 
   private
-    def daily_snapshots_new_to_old
-      @snapshots = Snapshot.where(mac_address: @snapshot.mac_address,
-                                  created_at: [1.day.ago..Time.now]).order(created_at: :desc)
-    end
 
-    def daily_snapshots_old_to_new
-      @snapshots = Snapshot.where(mac_address: @snapshot.mac_address,
-                                  created_at: [1.day.ago..Time.now]).order(:created_at)
-    end
+  def daily_snapshots_new_to_old
+    @snapshots = Snapshot.where(mac_address: @snapshot.mac_address,
+                                created_at: [1.day.ago..Time.now]).order(created_at: :desc)
+  end
 
-    def find_camera
-      mac_address_dec = params[:id].to_i
-      mac_address = mac_address_dec.to_s(16).rjust(12, "0").reverse.gsub(/(.{2})(?=.)/, '\\1:').reverse
-      @snapshot = Snapshot.where(mac_address: mac_address).order(created_at: :desc).first
-      redirect_to '/open-wall', alert: "No camera with ID #{mac_address_dec} here." if @snapshot.nil?
-    end
+  def daily_snapshots_old_to_new
+    @snapshots = Snapshot.where(mac_address: @snapshot.mac_address,
+                                created_at: [1.day.ago..Time.now]).order(:created_at)
+  end
 
-    def find_snapshot
-      @snapshot = Snapshot.find(params[:id])
-    rescue ActiveRecord::RecordNotFound
-      redirect_to '/open-wall', alert: "No such a shaphot here."
-    end
+  def find_camera
+    mac_address_dec = params[:id].to_i
+    mac_address = mac_address_dec.to_s(16).rjust(12, "0").reverse.gsub(/(.{2})(?=.)/, '\\1:').reverse
+    @snapshot = Snapshot.where(mac_address: mac_address).order(created_at: :desc).first
+    redirect_to '/open-wall', alert: "No camera with ID #{mac_address_dec} here." if @snapshot.nil?
+  end
 
-    def permitted_params
-      params.permit(:file, :flash_size, :mac_address, :hostname, :soc, :sensor, :streamer, :firmware, :uptime, :soc_temperature)
-    end
+  def find_snapshot
+    @snapshot = Snapshot.find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    redirect_to '/open-wall', alert: "No such a shaphot here."
+  end
+
+  def permitted_params
+    params.permit(:file, :flash_size, :mac_address, :hostname, :soc, :sensor, :streamer, :firmware, :uptime, :soc_temperature)
+  end
 end
