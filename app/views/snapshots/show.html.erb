@@ -20,7 +20,7 @@
     <%= @snapshot.image_dimensions %>, <%= @snapshot.file.byte_size %> bytes<br>
   </span>
   <p class="fw-bold mb-1"><%= @snapshot.soc.upcase %> + <%= @snapshot.sensor.upcase %></p>
-  <p class="mb-2 text-secondary">OpenIPC <%= @snapshot.firmware %>, <%= snapshot.streamer %></p>
+  <p class="mb-2 text-secondary">OpenIPC <%= @snapshot.firmware %>, <%= @snapshot.streamer %></p>
   <p><span>Uptime: <%= @snapshot.uptime %>.</span>
     <% unless @snapshot.soc_temperature.blank? %>
       <span>SoC temperature: <%= @snapshot.soc_temperature %>°C.</span>
