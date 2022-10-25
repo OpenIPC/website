@@ -38,7 +38,7 @@ class SnapshotsController < ApplicationController
   def camera
     respond_to do |format|
       format.jpg do
-        send_data @snapshot.file.variant(format: :jpg).download, disposition: "inline",
+        send_data @snapshot.file.representation(format: :jpeg).download, disposition: "attachment",
                   filename: @snapshot.filename_for_download.sub(/heif$/, 'jpg')
       end
       format.html do
