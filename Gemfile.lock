@@ -93,7 +93,7 @@ GEM
     childprocess (4.1.0)
     concurrent-ruby (1.1.10)
     crass (1.0.6)
-    debug (1.6.2)
+    debug (1.6.3)
       irb (>= 1.3.6)
       reline (>= 0.3.1)
     devise (4.8.1)
@@ -151,7 +151,7 @@ GEM
     net-smtp (0.3.2)
       net-protocol
     nio4r (2.5.8)
-    nokogiri (1.13.8-x86_64-linux)
+    nokogiri (1.13.9-x86_64-linux)
       racc (~> 1.4)
     orm_adapter (0.5.0)
     public_suffix (5.0.0)
@@ -223,6 +223,8 @@ GEM
     timeout (0.3.0)
     tzinfo (2.0.5)
       concurrent-ruby (~> 1.0)
+    vips (8.12.2)
+      ffi (~> 1.12)
     warden (1.2.9)
       rack (>= 2.0.9)
     web-console (4.2.0)
@@ -263,6 +265,7 @@ DEPENDENCIES
   selenium-webdriver
   sprockets-rails
   tzinfo-data
+  vips (~> 8.12)
   web-console
   webdrivers
 
