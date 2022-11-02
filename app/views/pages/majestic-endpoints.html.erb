@@ -19,6 +19,8 @@
         <dd>RTSP substream (video1).</dd>
         <dt>http://<%= network_address %>/hls</dt>
         <dd>HLS live-streaming in web browser.</dd>
+        <dt>http://<%= network_address %>/webrtc</dt>
+        <dd>WebRTC live-streaming in web browser.</dd>
         <dt>http://<%= network_address %>/mjpeg.html</dt>
         <dd>MJPEG & MP3 live-streaming in web browser.</dd>
       </dl>
@@ -39,7 +41,7 @@
         <dt>http://<%= network_address %>/audio.g711a</dt>
         <dd>G.711 A-law audio stream.</dd>
         <dt>http://<%= network_address %>/play_audio</dt>
-        <dd>Play audio file on camera's speaker.<sup>1,2</sup><br>
+        <dd>Play audio file on camera's speaker.<sup>1,3</sup><br>
           <div class="small">Accepts POST requests with audio file as a parameter.</div>
         </dd>
       </dl>
@@ -49,7 +51,7 @@
       <dl>
         <dt>http://<%= network_address %>/image.jpg</dt>
         <dd>Snapshot in JPEG format.<br>
-          Optional parameters:<sup>2</sup>
+          Optional parameters:<sup>2,4</sup>
           <ul class="small">
             <li>width, height - size of resulting image</li>
             <li>qfactor - JPEG quality factor (1-99)</li>
@@ -85,7 +87,10 @@
 
   <ol class="footnotes small">
     <li class="text-muted">Only HiSilicon and Goke SoCs.</li>
-    <li class="text-muted">Examples available <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">in our wiki</a>.</li>
     <li class="text-muted">Only HiSilicon SoCs v2 and up.</li>
+    <li class="text-muted">E.g. <i>ffplay -ar 48000 -ac 1 -f s16le http://192.168.1.10/audio.pcm</i></li>
+    <li class="text-muted">E.g. <i>http://192.168.1.10/image.jpg?width=640&height=480&qfactor=50&color2gray=1&crop=80x32x512x400</i></li>
   </ol>
+
+  <p class="text-muted">More examples available <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">in our wiki</a>.</p>
 </article>
