@@ -14,6 +14,7 @@ Rails.application.routes.draw do
   get '/telemetry',   to: redirect('https://openipc.github.io/telemetry/')
   get '/yaml-cli',    to: redirect('https://openipc.github.io/yaml-cli/')
   get '/wiki',        to: redirect('https://openipc.github.io/wiki/')
+
   # FIXME: combine with above
   get '/coupler(/*any)',     to: redirect('https://openipc.github.io/coupler/%{any}')
   get '/firmware(/*any)',    to: redirect('https://openipc.github.io/firmware/%{any}')
@@ -41,6 +42,7 @@ Rails.application.routes.draw do
 
   get '/tools/bandwidth-calculator', to: 'pages#bandwidth_calculator'
   get '/tools/firmware-partitions-calculation', to: 'pages#firmware_partitions_calculation'
+  get '/tools/high-resolution-timer', to: 'pages#high_resolution_timer'
   get '/tools/timelaps-interval-calculator', to: 'pages#timelaps-interval-calculator'
 
   get '/open-wall(/:page)', to: 'snapshots#index'
