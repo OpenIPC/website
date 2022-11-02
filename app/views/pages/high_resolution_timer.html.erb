@@ -3,15 +3,15 @@
     <h2>High-Resolution Timer</h2>
   </header>
 
-  <div class="my-5 text-center" style="font-size: 10vw" id="time">000000</div>
+  <div class="text-center" style="font-size: 10vw" id="time">000000</div>
 
   <p>Time shown in milliseconds. Reload page to reset the counter</p>
 </article>
 
 <script>
-  function updateTime() {
-      $('#time').textContent = Math.ceil(performance.now());
-      setInterval(updateTime, 1);
-  }
-  updateTime()
+    const t = $('#time');
+    function updateTime() {
+        t.textContent = Math.ceil(performance.now());
+    }
+    let x = setInterval(updateTime, 1);
 </script>
