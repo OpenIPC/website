@@ -12,6 +12,11 @@ class PagesController < ApplicationController
     render "pages/firmware-partitions-calculation"
   end
 
+  def high_resolution_timer
+    @page_title = "High-Resolution Timer"
+    render "pages/high_resolution_timer"
+  end
+
   def introduction
     @page_title = "Introduction"
     render "pages/introduction"
