@@ -26,10 +26,13 @@
         <%= bootstrap_form_for @camera, url: cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc), method: 'put' do |f| %>
           <div class="row row-cols-1 row-cols-xl-2">
             <div class="col">
-              <%= f.text_field :camera_mac_address, pattern: macaddr_pattern, title: "six 8-bit hex fields separated by columns or dashes", class: "form-control", required: true,
+              <%= f.text_field :camera_mac_address, pattern: macaddr_pattern, required: true,
+                               title: "six 8-bit hex fields separated by columns or dashes", class: "form-control",
                                help: raw('<a id="generate-mac-address" href="#">Generate valid random MAC address.</a>') %>
-              <%= f.text_field :camera_ip_address, pattern: ipaddr_pattern, title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
-              <%= f.text_field :server_ip_address, pattern: ipaddr_pattern, title: "four 8-bit fields separated by periods", class: "form-control", required: true %>
+              <%= f.text_field :camera_ip_address, pattern: ipaddr_pattern, required: true,
+                               title: "four 8-bit fields separated by periods", class: "form-control" %>
+              <%= f.text_field :server_ip_address, pattern: ipaddr_pattern, required: true,
+                               title: "four 8-bit fields separated by periods", class: "form-control" %>
             </div>
             <div class="col">
               <%= f.select :flash_type, list_of_flash_type_sizes_for_select %>
@@ -55,7 +58,8 @@
       <% unless @camera.soc.linux_filename.blank? %>
         <div class="alert alert-primary github">
           <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to "OpenIPC Linux #{@camera.firmware_version_name}", firmware_url(@camera.soc, @camera.firmware_version), title: firmware_filename(@camera.soc, @camera.firmware_version) %></h5>
+          <h5 class="mb-1"><%= link_to "OpenIPC Linux #{@camera.firmware_version_name}",
+                                       firmware_url(@camera), title: firmware_filename(@camera) %></h5>
           <p class="small">for <%= @camera.soc.full_name %></p>
         </div>
       <% end %>

@@ -29,14 +29,12 @@ module ApplicationHelper
     '^([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}$'
   end
 
-  def firmware_filename(soc, version)
-    filename = soc.linux_filename.dup
-    filename.gsub!("-br.tgz", "-#{version}-br.tgz") unless version.eql?("lite")
-    filename
+  def firmware_filename(camera)
+    "openipc.#{camera.soc.model.downcase}-#{camera.firmware_version}-#{camera.flash_type_type}.tgz"
   end
 
-  def firmware_url(soc, version)
-    filename = firmware_filename(soc, version)
+  def firmware_url(camera)
+    filename = firmware_filename(camera)
     "https://github.com/OpenIPC/firmware/releases/download/latest/#{filename}"
   end
 

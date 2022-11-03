@@ -7,7 +7,8 @@ class Camera
   NET_IFACE = %w[eth wifi both].freeze
   SD_CARD = %w[nosd sd].freeze
 
-  attr_accessor :soc_id, :needs_instruction, :flash_type, :sd_card_slot, :network_interface, :camera_ip_address, :server_ip_address,
+  attr_accessor :soc_id, :needs_instruction, :flash_type, :sd_card_slot,
+                :network_interface, :camera_ip_address, :server_ip_address,
                 :firmware_version, :camera_mac_address, :soc, :backup_filename
 
   validates :soc_id, presence: true
@@ -33,34 +34,45 @@ class Camera
     @backup_filename ||= "backup-#{model.downcase}-#{@flash_type}.bin"
   end
 
+  def flash_type_type
+    case @flash_type
+    when "nor8m", "nor16m", "nor32m"
+      "nor"
+    when "nand"
+      "nand"
+    else
+      ""
+    end
+  end
+
   def flash_size
-    @flash_size ||= case @flash_type
-                    when "nor8m"
-                      8
-                    when "nor16m"
-                      16
-                    when "nor32m"
-                      32
-                    # when "nand"
-                    #   ??
-                    else
-                      8
-                    end
+    case @flash_type
+    when "nor8m"
+      8
+    when "nor16m"
+      16
+    when "nor32m"
+      32
+      # when "nand"
+      #   ??
+    else
+      8
+    end
   end
 
   def flash_size_hex
-    @flash_size_hex ||= case @flash_type
-                        when "nor8m"
-                          "0x800000"
-                        when "nor16m"
-                          "0x1000000"
-                        when "nor32m"
-                          "0x2000000"
-                        # when "nand"
-                        #   ??
-                        else
-                          "0x800000"
-                        end
+    case @flash_type
+    when "nor8m"
+      "0x800000"
+    when "nor16m"
+      "0x1000000"
+    when "nor32m"
+      "0x2000000"
+    # when "nand"
+    #   ??
+    else
+      "0x800000"
+    end
   end
 
   def firmware_version_name
