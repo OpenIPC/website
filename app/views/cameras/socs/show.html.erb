@@ -41,7 +41,7 @@
               <%= f.select :sd_card_slot, list_of_sd_card_for_select %>
             </div>
           </div>
-            <p><%= f.submit "Generate installation instruction", class: "btn btn-primary" %></p>
+          <p><%= f.submit "Generate installation instruction", class: "btn btn-primary" %></p>
         <% end %>
       <% end %>
     </div>
@@ -75,37 +75,50 @@
 </article>
 
 <script>
-  function checkFlashSize() {
-      let el = $('#camera_firmware_version');
-      let status = ($('#camera_flash_type').value === 'nor8m');
-      for (let i = 0; i < el.options.length; i++) {
-          let o = el.options.item(i);
-          if (o.value !== 'lite') o.disabled = status;
-      }
-      if (status) el.value = 'lite';
-  }
+    function checkFlashSize() {
+        let el = $('#camera_firmware_version');
 
-  function generateMacAddress(ev) {
-      ev.preventDefault();
-      const el = $('#camera_camera_mac_address');
-      if (el.value == "") {
-          let mac = "";
-          for (let i = 1; i <= 6; i++) {
-              let b = ((Math.random() * 255) >>> 0);
-              if (i === 1) { // this time it's personal!
-                  b = b | 2;
-                  b = b & ~1;
-              }
-              mac += b.toString(16).toUpperCase().padStart(2, '0');
-              if (i < 6) mac += ":";
-          }
-          el.value = mac;
-      } else {
-          alert("There's a value in MAC address field. Please empty the field and try again.");
-      }
-  }
+        if ($('#camera_flash_type').value === 'nor8m') {
+            for (let i = 0; i < el.options.length; i++) {
+                let o = el.options.item(i);
+                o.disabled = (o.value !== 'lite');
+            }
+            el.value = 'lite';
+        } else if ($('#camera_flash_type').value === 'nand') {
+            for (let i = 0; i < el.options.length; i++) {
+                let o = el.options.item(i);
+                o.disabled = (o.value !== 'ultimate');
+            }
+            el.value = 'ultimate';
+        } else {
+            for (let i = 0; i < el.options.length; i++) {
+                let o = el.options.item(i);
+                o.disabled = false;
+            }
+        }
+    }
 
-  $('#generate-mac-address').addEventListener('click', generateMacAddress);
-  $('#camera_flash_type').addEventListener('change', checkFlashSize);
-  checkFlashSize();
+    function generateMacAddress(ev) {
+        ev.preventDefault();
+        const el = $('#camera_camera_mac_address');
+        if (el.value == "") {
+            let mac = "";
+            for (let i = 1; i <= 6; i++) {
+                let b = ((Math.random() * 255) >>> 0);
+                if (i === 1) { // this time it's personal!
+                    b = b | 2;
+                    b = b & ~1;
+                }
+                mac += b.toString(16).toUpperCase().padStart(2, '0');
+                if (i < 6) mac += ":";
+            }
+            el.value = mac;
+        } else {
+            alert("There's a value in MAC address field. Please empty the field and try again.");
+        }
+    }
+
+    $('#generate-mac-address').addEventListener('click', generateMacAddress);
+    $('#camera_flash_type').addEventListener('change', checkFlashSize);
+    checkFlashSize();
 </script>
