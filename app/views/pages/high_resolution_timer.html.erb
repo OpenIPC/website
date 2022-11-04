@@ -2,16 +2,32 @@
   <header>
     <h2>High-Resolution Timer</h2>
   </header>
-
-  <div class="text-center" style="font-size: 10vw" id="time">000000</div>
-
-  <p>Time shown in milliseconds. Reload page to reset the counter</p>
+  <div class="text-center">
+      <p style="font-size:10vw;font-weight:700;line-height:1" id="time">000000</p>
+      <p style="font-size:4vw"><span id="fps">0</span> fps</p>
+      <p class="small">Time shown in milliseconds. Reload page to reset the counter.</p>
+  </div>
 </article>
 
 <script>
     const t = $('#time');
-    function updateTime() {
-        t.textContent = Math.ceil(performance.now());
+    const f = $('#fps');
+    const times = [];
+    let fps;
+
+    function refreshLoop() {
+        window.requestAnimationFrame(() => {
+            const now = performance.now();
+            t.textContent = Math.ceil(now);
+            while (times.length > 0 && times[0] <= now - 1000) {
+                times.shift();
+            }
+            times.push(now);
+            fps = times.length;
+            refreshLoop();
+        });
     }
-    let x = setInterval(updateTime, 1);
+    refreshLoop();
+
+    setInterval(() => {f.textContent = fps;}, 1000)
 </script>
