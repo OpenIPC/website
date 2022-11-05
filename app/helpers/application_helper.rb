@@ -33,7 +33,7 @@ module ApplicationHelper
     soc_name = camera.soc.model.downcase
     soc_name = 't31' if soc_name.start_with?('t31')
 
-    "openipc.#{soc_name}-#{camera.firmware_version}-#{camera.flash_type_type}.tgz"
+    "openipc.#{soc_name}-#{camera.flash_type_type}-#{camera.firmware_version}.tgz"
   end
 
   def firmware_url(camera)
@@ -64,7 +64,6 @@ module ApplicationHelper
   def mtd_names
     %w[hi_sfc hinand jz_sfc nor-flash NOR_FLASH sfc spi0.0 spi_flash xm_sfc]
   end
-
 
   def under_development
     content_tag "p", "This part is currently under development. Stay tuned.", class: "alert alert-warning"
