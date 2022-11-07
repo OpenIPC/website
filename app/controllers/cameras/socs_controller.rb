@@ -69,11 +69,12 @@ module Cameras
     end
 
     def download_full_image
-      permitted_params = params.permit(:id, :vendor_id, :flash_size, :fw_release)
+      permitted_params = params.permit(:id, :vendor_id, :flash_size, :fw_release, :flash_type)
       flash_size = permitted_params[:flash_size]
+      flash_type = permitted_params[:flash_type]
       fw_release = permitted_params[:fw_release]
       @soc = Soc.find(params[:id])
-      fw = Firmware.new(size: flash_size, release: fw_release, soc: @soc)
+      fw = Firmware.new(size: flash_size, flash_type: flash_type, release: fw_release, soc: @soc)
       fw.generate
       send_file fw.filepath, name: fw.filename, disposition: :attachment
     rescue ActionController::MissingFile => e
@@ -96,7 +97,10 @@ module Cameras
     private
 
       def permitted_params
-        params.require(:camera).permit(:flash_type, :sd_card_slot, :network_interface, :camera_ip_address, :server_ip_address, :firmware_version, :sd_card_slot, :camera_mac_address)
+        params.require(:camera).permit(
+          :flash_type, :sd_card_slot, :network_interface, :camera_ip_address,
+          :server_ip_address, :firmware_version, :sd_card_slot, :camera_mac_address
+        )
       end
   end
 end

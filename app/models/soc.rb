@@ -61,8 +61,11 @@ class Soc < ApplicationRecord
     @kernel_file ||= "uImage.#{model_downcase}"
   end
 
-  def linux_file(release)
-    linux_filename.gsub!('-br.tgz', "-#{release}-br.tgz") unless release.eql?("lite")
+  def linux_file(release, flash_type)
+    soc_name = model.downcase
+    soc_name = 't31' if soc_name.start_with?('t31')
+    linux_filename = "openipc.#{soc_name}-#{flash_type}-#{release}.tgz"
+
     @linux_file ||= File.join(RELEASES_ROOT, linux_filename)
   end
 

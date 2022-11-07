@@ -1,8 +1,9 @@
 class Firmware
-  def initialize(size: 8, soc: nil, release: 'lite')
+  def initialize(size: 8, flash_type: 'nor', release: 'lite', soc: nil)
     super()
     @soc = soc
     @size = size.to_i
+    @flash_type = flash_type
     @release = release
   end
 
@@ -22,7 +23,7 @@ class Firmware
       return
     end
 
-    linux_file = @soc.linux_file(@release)
+    linux_file = @soc.linux_file(@release, @flash_type)
     unless File.exist?(linux_file)
       puts "File #{linux_file} not found."
       return
