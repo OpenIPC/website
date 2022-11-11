@@ -77,5 +77,7 @@ Rails.application.routes.draw do
     get "/admin/sign_out", to: "devise/sessions#destroy"
   end
 
-  match "*unmatched", to: "application#route_not_found", via: :all
+  match "*unmatched", to: "application#route_not_found",
+        constraints: lambda { |req| req.path.exclude? 'rails/active_storage' },
+        via: :all
 end
