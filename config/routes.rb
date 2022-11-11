@@ -15,6 +15,8 @@ Rails.application.routes.draw do
   get '/yaml-cli',    to: redirect('https://openipc.github.io/yaml-cli/')
   get '/wiki',        to: redirect('https://openipc.github.io/wiki/')
 
+  get '/install_switcam_hs303', to: redirect('https://wiki.openipc.org/ru/hardware-hs303.html')
+
   # FIXME: combine with above
   get '/coupler(/*any)',     to: redirect('https://openipc.github.io/coupler/%{any}')
   get '/firmware(/*any)',    to: redirect('https://openipc.github.io/firmware/%{any}')
