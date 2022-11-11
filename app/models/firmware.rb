@@ -30,7 +30,9 @@ class Firmware
     end
 
     # file exists and it is newer than any of its parts
-    if File.exist?(filepath) && File.mtime(uboot_file) < File.mtime(filepath) && File.mtime(linux_file) < File.mtime(filepath)
+    if File.exist?(filepath) && 
+        File.mtime(uboot_file) < File.mtime(filepath) &&
+        File.mtime(linux_file) < File.mtime(filepath)
       puts "File #{filepath} exists and is fresh."
       return
     end

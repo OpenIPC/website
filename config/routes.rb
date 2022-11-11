@@ -48,6 +48,8 @@ Rails.application.routes.draw do
   get '/open-wall(/:page)', to: 'snapshots#index'
   get '/open-wall/camera/:id', to: 'snapshots#camera', as: 'openwall_camera'
 
+  resources :binaries
+
   resources :snapshots do
     get :camera, on: :collection
     get :oneday, on: :member

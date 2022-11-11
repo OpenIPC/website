@@ -1,0 +1,25 @@
+<article>
+  <header>
+    <h2>RootFS file sizes</h2>
+  </header> 
+
+<table class="table binaries">
+  <thead>
+    <tr>
+      <th>File name</th>
+      <th>RootFS file size</th>
+      <th>Maximum space</th>
+      <th>Available space</th>
+  </thead>
+  <tbody>
+    <% @binaries.each do |b| %>
+      <tr class="<%= css_highlight(b) %>">
+        <td><%= b[:name] %></td>
+        <td><%= number_with_delimiter b[:size] %></td>
+        <td><%= number_with_delimiter b[:limit] %></td>
+        <td><%= number_with_delimiter b[:free] %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+</article>

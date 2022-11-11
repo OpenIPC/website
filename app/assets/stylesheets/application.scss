@@ -169,3 +169,11 @@ label.required:after {
 table.socs tr.featured {
   background-color: #4c60d822;
 }
+
+table.binaries {
+    td:not(:first-child),
+    th:not(:first-child) {width: 10rem; text-align: right;}
+    tr.oversize { td:nth-child(2) {background-color: red; color: white;} }
+    tr.bloated  { td:nth-child(2) {background-color: yellow;} }
+    tr.slim     { td:nth-child(2) {color: green;} }
+}
