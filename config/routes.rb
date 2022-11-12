@@ -15,6 +15,10 @@ Rails.application.routes.draw do
   get '/yaml-cli',    to: redirect('https://openipc.github.io/yaml-cli/')
   get '/wiki',        to: redirect('https://openipc.github.io/wiki/')
 
+  get '/hardware',    to: redirect('/supported-hardware/featured')
+  get '/ru/installation.md', to: redirect('https://wiki.openipc.org/ru/installation.html')
+  get '/images/logo_openipc.png', to: redirect('https://cdn.themactep.com/images/logo_openipc.png')
+  get '/devices/hs303/', to: redirect('https://wiki.openipc.org/ru/hardware-hs303.html')
   get '/install_switcam_hs303', to: redirect('https://wiki.openipc.org/ru/hardware-hs303.html')
 
   # FIXME: combine with above
