@@ -61,7 +61,7 @@ class Firmware
       rootfs_file = "rootfs.squashfs.#{soc_model}"
 
       # workaround for Ingenic T31 where there's the same file for all models
-      if @soc.family.eql?('T31')
+      if soc_model.starts_with?('t31')
         kernel_file = "uImage.t31"
         rootfs_file = "rootfs.squashfs.t31"
       end
