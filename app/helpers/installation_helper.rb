@@ -25,7 +25,11 @@ module InstallationHelper
       text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
     end
     text << "mw.b #{c.soc.load_address} ff 0x50000; tftpboot #{c.soc.load_address} #{c.soc.uboot_filename}"
-    text << "sf probe 0; sf erase 0x0 0x50000; sf write #{c.soc.load_address} 0x0 0x50000"
+    if c.flash_type.eql?("nand")
+      text << "nand erase 0x0 0x50000; nand write #{c.soc.load_address} 0x0 0x50000"
+    else
+      text << "sf probe 0; sf erase 0x0 0x50000; sf write #{c.soc.load_address} 0x0 0x50000"
+    end
     text << "reset"
     list_of_commands text
   end
