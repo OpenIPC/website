@@ -24,7 +24,7 @@ module Cameras
                     version: s.version,
                     uboot: s.uboot_filename,
                     kernel: s.kernel,
-                    footfs: s.linux_filename,
+                    rootfs: s.linux_filename,
                     sdk: s.sdk,
                     toolchain: s.toolchain_filename,
                     load_address: s.load_address,
