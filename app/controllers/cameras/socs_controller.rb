@@ -3,12 +3,40 @@ module Cameras
     # include InstallationInstructionConcern
 
     def index
-      @vendor = Vendor.find(params[:vendor])
-      if @vendor
-        @socs = Soc.left_joins(:vendor).where(vendors: { name: @vendor }).order(:model)
-        @page_title = "Full list of processors"
+      respond_to do |format|
+        format.html {
+          @vendor = Vendor.find(params[:vendor])
+          if @vendor
+            @socs = Soc.left_joins(:vendor).where(vendors: { name: @vendor }).order(:model)
+            @page_title = "Full list of processors"
+          end
+          render "cameras/socs/index"
+        }
+        format.json do
+          @data = {
+            vendors: Vendor.order(:name).map do |v|
+              {
+                name: v.name,
+                socs: v.socs.order(:model).map do |s|
+                  {
+                    family: s.family,
+                    model: s.model,
+                    version: s.version,
+                    uboot: s.uboot_filename,
+                    kernel: s.kernel,
+                    footfs: s.linux_filename,
+                    sdk: s.sdk,
+                    toolchain: s.toolchain_filename,
+                    load_address: s.load_address,
+                    status: s.status,
+                  }
+                end
+              }
+            end
+          }
+          render json: @data #.to_json
+        end
       end
-      render "cameras/socs/index"
     end
 
     def show
