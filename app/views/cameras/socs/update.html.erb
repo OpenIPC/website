@@ -1,114 +1,127 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Home", "/" %></li>
+    <li class="breadcrumb-item"><%= link_to "Vendors", cameras_vendors_path %></li>
+    <li class="breadcrumb-item"><%= link_to @vendor.name, cameras_vendor_path(@vendor) %></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= link_to @camera.soc.model, cameras_vendor_soc_path(@vendor, @camera.soc) %></li>
+  </ol>
+</nav>
+
 <article class="firmware">
   <header>
+    <%= link_to image_tag("stage-#{@camera.soc.status}", width: 64), '/stages-of-firmware-development',
+                title: Soc::STATUS[@camera.soc.status.to_sym], class: 'float-end' %>
     <h2 class="mb-0">Flashing OpenIPC Firmware <%= @camera.firmware_version_name %></h2>
-    <p class="lead fw-bold">on a camera with <%= @camera.soc.full_name %> SoC and <%= @camera.flash_type_name %> SPI flash chip</p>
+    <p class="lead fw-bold">on a camera with <%= @camera.soc.full_name %> SoC and
+      <%= @camera.flash_type_name %> SPI flash chip</p>
   </header>
 
   <p class="text-end"><a href="<%= @camera.permalink %>">Permanent link to this configuration</a></p>
-  <!--
-  <p class="alert alert-success">If access to bootloader console on your camera is password-protected by
-    manufacturer, consider replacing the bootloader with our version of U-Boot.</p>
-  -->
 
   <% flash.each do |type, msg| %>
     <div class="alert alert-<%= type %>"><%= msg %></div>
   <% end %>
 
-  <h3 class="mt-4 mb-2 fw-bold">Saving original firmware</h3>
-  <div class="row">
-    <div class="col col-lg-4">
-      <div class="alert alert-danger">
-        <h5 class="fw-bold">Back up your original firmware!</h5>
-        <p class="mb-0">Our version of U-Boot, once installed, overwrites original crypto partition, making it
-          impossible to revert to the original factory firmware unless you have a full flash backup for a specific
-          camera!</p>
+  <div class="alert alert-danger">
+    <h3 class="fw-bold">Save the original firmware</h3>
+    <h5 class="mb-4 fw-bold">Back up your stock firmware, don't skip this part of the installation process!</h5>
+    <div class="row">
+      <div class="col col-lg-4">
+        <div>
+          <p class="mb-0">OpenIPC U-Boot overwrites the original crypto partition making it impossible to revert to the
+            factory firmware unless you have a full flash backup for this particular camera! To create a full firmware
+            backup start a TFTP server and run these commands in bootloader shell.</p></p>
+        </div>
+      </div>
+      <div class="col col-lg-8">
+      <% if @camera.flash_type.eql?("nand") %>
+        <%= under_development %>
+      <% else %>
+        <%= firmware_backup(@camera) %>
+        <%= content_tag :p, t('firmware.installation.backup_32'), class: "alert alert-warning" if @camera.flash_type.eql?("nor32m") %>
+      <% end %>
       </div>
     </div>
-    <div class="col col-lg-8">
-    <% if @camera.flash_type.eql?("nand") %>
-      <%= under_development %>
-    <% else %>
-      <%= firmware_backup(@camera) %>
-      <%= content_tag :p, t('firmware.installation.backup_32'), class: "alert alert-warning" if @camera.flash_type.eql?("nor32m") %>
-    <% end %>
-    </div>
+    <p class="mb-0">Please refer to <a href="https://github.com/themactep/openipc-wiki/blob/master/en/installation.md">Installation
+    instructions</a> in the project's wiki for more information.</p>
   </div>
 
   <% if @camera.soc.instructable? %>
-    <p>
-      <a class="btn btn-secondary" data-bs-toggle="collapse" href="#collapseAltInstall" role="button" aria-expanded="false" aria-controls="collapseAltInstall">
-        Alternative method of flashing memory chip via a programmer.
-      </a>
-    </p>
-    <div class="collapse" id="collapseAltInstall">
-      <div class="card card-body bg-danger">
-        <div class="row">
-          <div class="col col-lg-4">
-            <div class="alert alert-danger mb-0">
-              <h5 class="mb-1">
-                <%= link_to "OpenIPC #{@camera.firmware_version.to_s.titleize} Firmware Full",
-                            download_full_image_cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc,
-                                                                        fw_release: @camera.firmware_version,
-                                                                        flash_size: @camera.flash_size,
-                                                                        flash_type: @camera.flash_type_type),
-                            class: 'text-danger' %></h5>
-              <p class="mb-0 small">for <%= @camera.soc.full_name %> with <%= @camera.flash_size %>MB NOR flash</p>
-            </div>
+    <div class="alert alert-secondary">
+      <h3 class="mb-4 fw-bold">Flash full OpenIPC firmware image</h3>
+      <div class="row">
+        <div class="col col-lg-4">
+          <div class="github">
+            <i class="bi bi-github float-start me-2"></i>
+            <h6 class="mb-0"><%= link_to "Download OpenIPC #{@camera.firmware_version.to_s.titleize} Firmware",
+              download_full_image_cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc,
+                                                          fw_release: @camera.firmware_version,
+                                                          flash_size: @camera.flash_size,
+                                                          flash_type: @camera.flash_type_type) %></h6>
+            <p>for <%= @camera.soc.full_name %> with <%= @camera.flash_size %>MB NOR flash</p>
+            <p class="mb-0">The full firmware image consists of bootloader, kernel and root filesystem,
+              and is also suitable for flashing memory chip using a programmer.</p>
           </div>
-          <div class="col">
-            <h4 class="m-0 text-white display-5">Highly experimental!</h4>
-            <h5 class="m-0 text-white">Use at your own risk.</h5>
-          </div>
+        </div>
+        <div class="col">
+          <%= flashing_everything(@camera) %>
         </div>
       </div>
     </div>
   <% end %>
 
-  <h3 class="mt-4 mb-2 fw-bold">Flashing OpenIPC U-Boot</h3>
-  <div class="row">
-    <div class="col col-lg-4">
-      <% unless @camera.soc.uboot_filename.blank? %>
-        <div class="alert alert-primary github">
-          <i class="bi bi-github float-end"></i>
-          <h5 class="mb-2"><%= link_to "OpenIPC U-Boot", @camera.soc.bl_url, title: @camera.soc.uboot_filename %></h5>
-          <p class="small">for <%= @camera.soc.full_name %></p>
-          <p class="mb-0">Download bootloader binary file and save it to the root directory of your TFTP server.</p>
-        </div>
-      <% end %>
-    </div>
-    <div class="col col-lg-8">
-      <%= flashing_uboot(@camera) %>
-      <p>Camera boots into the newly flashed bootloader.<br>
-        Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader console.</p>
-    </div>
-  </div>
+  <h3>Alternatively, flash OpenIPC firmware by its parts</h3>
 
-  <h3 class="mt-4 mb-2 fw-bold">Preparing camera for OpenIPC Linux</h3>
-  <div class="row">
-    <div class="col col-lg-4">
+  <div class="alert alert-secondary">
+    <h3 class="mb-4 fw-bold">Flash OpenIPC U-Boot</h3>
+    <div class="row">
+      <div class="col col-lg-4">
+        <% unless @camera.soc.uboot_filename.blank? %>
+          <div class="github">
+            <i class="bi bi-github float-start me-2"></i>
+            <h6 class="mb-0"><%= link_to "Download OpenIPC U-Boot binary file", @camera.soc.bl_url,
+                            title: @camera.soc.uboot_filename %></h6>
+            <p>for <%= @camera.soc.full_name %></p>
+            <p class="mb-0">Download bootloader binary file and save it to the root directory of your
+              TFTP server.</p>
+          </div>
+        <% end %>
+      </div>
+      <div class="col col-lg-8">
+        <%= flashing_uboot(@camera) %>
+        <p>The camera will boot into the newly flashed bootloader.<br>
+          Stay focused and prepare to interrupt the booting sequence in order to get back
+          into the bootloader shell.</p>
+      </div>
+    </div>
 
+    <h3 class="mb-4 fw-bold">Prepare the camera for OpenIPC Linux</h3>
+    <div class="row">
+      <div class="col col-lg-4">
+      </div>
+      <div class="col col-lg-8">
+        <%= preparing_environment(@flash_type_command) %>
+        <p>The camera will automatically restart to apply changes.<br>
+          Stay focused and prepare to interrupt the booting sequence in order to get back
+          into the bootloader shell.</p>
+      </div>
     </div>
-    <div class="col col-lg-8">
-      <%= preparing_environment(@flash_type_command) %>
-      <p>Camera automatically restarts to apply changes.<br>
-        Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader console.</p>
-    </div>
-  </div>
 
-  <h3 class="mt-4 mb-2 fw-bold">Flashing OpenIPC Linux</h3>
-  <div class="row">
-    <div class="col col-lg-4">
-      <% unless @camera.soc.linux_filename.blank? %>
-        <div class="alert alert-primary github">
-          <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to "OpenIPC Linux #{@camera.firmware_version_name}", firmware_url(@camera), title: firmware_filename(@camera) %></h5>
-          <p class="small">for <%= @camera.soc.full_name %></p>
-          <p class="mb-0">Download firmware bundle and unpack it into the root directory of your TFTP server.</p>
-        </div>
-      <% end %>
-    </div>
-    <div class="col col-lg-8">
-      <%= flashing_linux(@camera, @flash_type_command) %>
+    <h3 class="mb-4 fw-bold">Flash OpenIPC Linux kernel and root filesystem</h3>
+    <div class="row">
+      <div class="col col-lg-4">
+        <% unless @camera.soc.linux_filename.blank? %>
+          <div class="github">
+            <i class="bi bi-github float-start me-2"></i>
+            <h6 class="mb-0"><%= link_to "Download OpenIPC #{@camera.firmware_version_name} firmware bundle", firmware_url(@camera), title: firmware_filename(@camera) %></h6>
+            <p>for <%= @camera.soc.full_name %></p>
+            <p class="mb-0">Download firmware bundle and unpack it into the root directory of your TFTP server.</p>
+          </div>
+        <% end %>
+      </div>
+      <div class="col col-lg-8">
+        <%= flashing_linux(@camera, @flash_type_command) %>
+      </div>
     </div>
   </div>
 
@@ -119,12 +132,16 @@
   </div>
 
 <% unless @camera.flash_type.eql?("nand") %>
-  <h3 class="mt-4 mb-2 fw-bold">Restoring camera from original firmware backup</h3>
-  <div class="row">
-    <div class="col col-lg-4">
-    </div>
-    <div class="col col-lg-8">
-      <%= restore_from_backup(@camera) %>
+  <div class="alert alert-warning">
+    <h3 class="mb-4 fw-bold">Restore camera stock firmware</h3>
+    <div class="row">
+      <div class="col col-lg-4">
+        <p>If you need to restore the original firmware, use the backup file you have created using the commands above.
+          Place the backup file into the root directory of your TFTP server and run these commands in bootloader shell.</p>
+      </div>
+      <div class="col col-lg-8">
+        <%= restore_from_backup(@camera) %>
+      </div>
     </div>
   </div>
 <% end %>

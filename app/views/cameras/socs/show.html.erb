@@ -9,11 +9,13 @@
 
 <article class="sensor">
   <header>
+    <%= link_to image_tag("stage-#{@camera.soc.status}", width: 64), '/stages-of-firmware-development',
+                title: Soc::STATUS[@camera.soc.status.to_sym], class: 'float-end' %>
     <h2 class="display-3"><%= @camera.soc.full_name %></h2>
   </header>
 
   <div class="row">
-    <div class="col-md-6 col-xl-7 col-xxl-8">
+    <div class="col-md-6 col-xl-7 col-xxl-8 mb-3">
       <% if @camera.soc.uboot_filename.blank? || @camera.soc.linux_filename.blank? || @camera.soc.load_address.blank? %>
         <div class="alert alert-info">
           <p class="mb-0">The installation instructions for the <%= @camera.soc.full_name %> SoC are not yet ready.
@@ -45,7 +47,7 @@
         <% end %>
       <% end %>
     </div>
-    <div class="col-md-6 col-xl-5 col-xxl-4">
+    <div class="col-md-6 col-xl-5 col-xxl-4 mb-3">
       <h3>Downloads</h3>
       <p class="fst-italic">If you know what you are doing.</p>
       <% unless @camera.soc.uboot_filename.blank? %>
