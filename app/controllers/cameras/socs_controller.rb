@@ -48,13 +48,13 @@ module Cameras
         network_interface: "eth",
         sd_card_slot: "nosd"
       )
-      @camera.camera_ip_address  = params[:cip] if params[:cip]
+      @camera.camera_ip_address = params[:cip] if params[:cip]
       @camera.camera_mac_address = params[:mac].to_s.downcase.gsub('-', ':')
-      @camera.server_ip_address  = params[:sip] if params[:sip]
-      @camera.flash_type         = params[:rom] if params[:rom]
-      @camera.firmware_version   = params[:ver] if params[:ver]
-      @camera.network_interface  = params[:net] if params[:net]
-      @camera.sd_card_slot       = params[:sd]  if params[:sd]
+      @camera.server_ip_address = params[:sip] if params[:sip]
+      @camera.flash_type = params[:rom] if params[:rom]
+      @camera.firmware_version = params[:ver] if params[:ver]
+      @camera.network_interface = params[:net] if params[:net]
+      @camera.sd_card_slot = params[:sd] if params[:sd]
 
       @camera.soc = Soc.find_by_urlname(params[:id])
       @vendor = @camera.soc.vendor
@@ -72,13 +72,13 @@ module Cameras
         network_interface: "eth",
         sd_card_slot: "nosd"
       )
-      @camera.camera_ip_address  = permitted_params[:camera_ip_address]
+      @camera.camera_ip_address = permitted_params[:camera_ip_address]
       @camera.camera_mac_address = permitted_params[:camera_mac_address].to_s.downcase.gsub('-', ':')
-      @camera.server_ip_address  = permitted_params[:server_ip_address]
-      @camera.flash_type         = permitted_params[:flash_type]
-      @camera.firmware_version   = permitted_params[:firmware_version]
-      @camera.network_interface  = permitted_params[:network_interface]
-      @camera.sd_card_slot       = permitted_params[:sd_card_slot]
+      @camera.server_ip_address = permitted_params[:server_ip_address]
+      @camera.flash_type = permitted_params[:flash_type]
+      @camera.firmware_version = permitted_params[:firmware_version]
+      @camera.network_interface = permitted_params[:network_interface]
+      @camera.sd_card_slot = permitted_params[:sd_card_slot]
 
       # to handle nor32m size still using nor16m command
       @flash_type_command = @camera.flash_type
@@ -90,6 +90,7 @@ module Cameras
       end
 
       @camera.soc = Soc.find(params[:id])
+      @vendor = @camera.soc.vendor
       @camera.backup_filename = "backup-#{@camera.soc.model.downcase}-#{@camera.flash_type}.bin"
 
       @page_title = "SoC: #{@camera.soc.full_name}"
@@ -124,11 +125,11 @@ module Cameras
 
     private
 
-      def permitted_params
-        params.require(:camera).permit(
-          :flash_type, :sd_card_slot, :network_interface, :camera_ip_address,
-          :server_ip_address, :firmware_version, :sd_card_slot, :camera_mac_address
-        )
-      end
+    def permitted_params
+      params.require(:camera).permit(
+        :flash_type, :sd_card_slot, :network_interface, :camera_ip_address,
+        :server_ip_address, :firmware_version, :sd_card_slot, :camera_mac_address
+      )
+    end
   end
 end
