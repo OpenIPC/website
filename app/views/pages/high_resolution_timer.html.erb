@@ -15,6 +15,7 @@
     const times = [];
     let fps;
 
+    /* based on https://blog.bullgare.com/2019/03/simple-way-to-detect-browsers-fps-via-js/ */
     function refreshLoop() {
         window.requestAnimationFrame(() => {
             const now = performance.now();
