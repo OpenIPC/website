@@ -37,17 +37,73 @@ en:
       soc: "SoC"
   firmware:
     installation:
-      backup_32: ATTENTION! Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM.
+      backup_32: "ATTENTION! Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM."
+      permanent_link: "Permanent link to this configuration"
+      subtitle: "on a camera with %{soc_name} SoC and %{flash_type} SPI flash chip"
+      title: "Flashing OpenIPC Firmware"
+      backup:
+        info: |
+          OpenIPC U-Boot overwrites the original crypto partition making it impossible to revert to the factory 
+          firmware unless you have a full flash backup for this particular camera! To create a full firmware backup
+          start a TFTP server and run these commands in bootloader shell.
+        subtitle: "Back up your stock firmware, don't skip this part of the installation process!"
+        title: "Save the original firmware"
+        more_info_html: |
+          Please refer to <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">Installation
+          instructions</a> in the project's wiki for more information.
+      flashing:
+        alternative: "Alternatively, flash OpenIPC Firmware by its parts"
+      flashing_full:
+        continue: |
+          The camera will automatically restart and boot with the brand new bootloader.
+          Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
+        continue2: When in the bootloader shell, remap ROM partitioning according to your flash size and type.
+        info: |
+          The full firmware image consists of bootloader, kernel and root filesystem, and is also suitable for flashing
+          memory chip using a programmer.
+        link: "Download OpenIPC Firmware (%{name}) image"
+        title: "Flash full OpenIPC Firmware image"
+      flashing_uboot:
+        continue: |
+          The camera will boot into the newly flashed bootloader.
+          Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
+        info: "Download bootloader binary file and save it to the root directory of your TFTP server."
+        link: "Download OpenIPC U-Boot binary file"
+        title: "Flash OpenIPC U-Boot"
+      flashing_footfs:
+        continue: |
+          The camera will automatically restart to apply changes.
+          Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
+        info: "When in the bootloader shell, remap ROM partitioning according to your flash size and type."
+        title: "Prepare the camera for OpenIPC Linux"
+      flashing_footfs2:
+        info: "Download firmware bundle and unpack it into the root directory of your TFTP server."
+        link: "Download OpenIPC Firmware (%{name}) bundle"
+        title: "Flash OpenIPC Linux kernel and root filesystem"
+      success:
+        title: "Congratulations! At this moment, you have OpenIPC Firmware (%{name}) installed."
+        info_html: |
+          Open <a href="http://#{@camera.camera_ip_address}:85/">camera's web interface on port 85</a>.
+          Use login <b>admin</b> and password <b>12345</b> to sign in. You will be asked to set up your own secure 
+          password once signed in.
+    info_html: |
+      If you want to learn more about what <code>uknor*</code>, <code>urnor*</code>, <code>setnor*</code> commands do,
+      run <code>printenv</code> in bootloader console.
     version:
-      fpv: FPV
-      lite: Lite
-      nand: NAND
-      ultimate: Ultimate
+      fpv: "FPV"
+      lite: "Lite"
+      nand: "NAND"
+      ultimate: "Ultimate"
+    restore:
+      info: |
+        If you need to restore the original firmware, use the backup file you have created using the commands above. 
+        Place the backup file into the root directory of your TFTP server and run these commands in bootloader shell.
+      title: "Restore camera stock firmware"
   flash_chip:
-    nor8m: NOR 8M
-    nor16m: NOR 16M
-    nor32m: NOR 32M
-    nand: NAND
+    nor8m: "NOR 8M"
+    nor16m: "NOR 16M"
+    nor32m: "NOR 32M"
+    nand: "NAND"
   net_iface:
     both: "Camera has both Ethernet and Wireless networks"
     eth: "Camera only has Ethernet network"
@@ -55,3 +111,6 @@ en:
   sd_card:
     nosd: "Camera does not have an SD card slot"
     sd: "Camera has an SD card slot"
+  site:
+    home: "Home"
+    vendors: "Vendors"
