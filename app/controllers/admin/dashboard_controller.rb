@@ -1,7 +1,7 @@
 class Admin
   class DashboardController < AdminController
     def index
-      @page_title = "Admin Dashboard"
+      @page_title = t('pages.admin.dashboard.title')
       render "admin/dashboard/show"
     end
   end

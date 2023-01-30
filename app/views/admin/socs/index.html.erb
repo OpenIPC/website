@@ -1,7 +1,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><%= link_to "Admin", "/admin" %></li>
-    <li class="breadcrumb-item"><%= link_to "SoCs", admin_socs_path %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.admin'), "/admin" %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.socs'), admin_socs_path %></li>
   </ol>
 </nav>
 
@@ -11,14 +11,14 @@
   </header>
 
   <nav class="navbar">
-    <p><%= link_to 'Add another SoC', new_admin_soc_path, class: "btn btn-primary" %></p>
+    <p><%= link_to t('nav.add_soc'), new_admin_soc_path, class: "btn btn-primary" %></p>
     <form action="/admin/socs" method="get" class="row g-3">
       <div class="col-auto">
         <label for="soc" class="visually-hidden">SoC</label>
         <input type="text" class="form-control" id="q" name="q" value="<%= @q %>">
       </div>
       <div class="col-auto">
-        <button type="submit" class="btn btn-primary mb-3">Find</button>
+        <button type="submit" class="btn btn-primary mb-3"><%= t('button.find') %></button>
       </div>
     </form>
   </nav>

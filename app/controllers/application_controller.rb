@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   include RubyMineHacks if Rails.env.development?
+  include Multilang
   include RescueHandler
 
   protect_from_forgery unless: -> { request.format.json? }

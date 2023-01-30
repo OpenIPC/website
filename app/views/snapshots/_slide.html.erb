@@ -1,21 +1,21 @@
 <div class="carousel-item<%= " active" if slide.eql?(@snapshots.first) %>">
-  <%= image_tag(slide.file.variant(:fullhd) || default_image_path, alt: "Snapshot", class: "d-block h-100 w-auto position-absolute top-50 start-50 translate-middle") %>
+  <%= image_tag(slide.file.variant(:fullhd) || default_image_path, alt: t('.snapshot_alt'), class: "d-block h-100 w-auto position-absolute top-50 start-50 translate-middle") %>
   <div class="carousel-caption d-none d-md-block p-3 x-small">
     <p class="mb-0 fw-bold">
       <span data-timestamp="<%= slide.created_at.to_i %>"><%= slide.created_at %></span>,
       <%= slide.soc.upcase %> + <%= slide.sensor.upcase %>, OpenIPC <%= slide.firmware %>
     </p>
     <p class="mb-0">
-      <span>Uptime: <%= slide.uptime %>.</span>
+      <span><%= t('.uptime') %>: <%= slide.uptime %>.</span>
       <% unless slide.soc_temperature.blank? %>
-        <span>SoC temperature: <%= slide.soc_temperature %>°C.</span>
+        <span><%= t('.temperature') %>: <%= slide.soc_temperature %>°C.</span>
       <% end %>
-      <span>Dimensions: <%= slide.image_dimensions %></span>
-      <span>Size: <%= slide.file.byte_size %> bytes.</span>
+      <span><%= t('.dimensions') %>: <%= slide.image_dimensions %></span>
+      <span><%= t('.size') %>: <%= slide.file.byte_size %> <%= t('.bytes') %>.</span>
     </p>
     <p>
-      <%= link_to "Link to this snapshot", snapshot_path(slide) %> |
-      <%= link_to "Download original image", download_snapshot_path(slide) %>
+      <%= link_to t('.link_to_this'), snapshot_path(slide) %> |
+      <%= link_to t('.download_original'), download_snapshot_path(slide) %>
     </p>
   </div>
 </div>

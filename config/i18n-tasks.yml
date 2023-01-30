@@ -1,0 +1,104 @@
+# i18n-tasks finds and manages missing and unused translations: https://github.com/glebm/i18n-tasks
+
+locales: [en, ru]
+base_locale: en
+internal_locale: en
+
+data:
+  adapter: I18n::Tasks::Data::FileSystem
+  read:
+    - config/locales/%{locale}.yml
+    - config/locales/**/*.%{locale}.yml
+
+  # Locale files to write new keys to, based on a list of key pattern => file rules. Matched from top to bottom:
+  # `i18n-tasks normalize -p` will force move the keys according to these rules
+  write:
+    - ["{activerecord, activemodel, admin, devise, form, pages}.*", 'config/locales/\1.%{locale}.yml']
+    - config/locales/%{locale}.yml
+
+  external:
+    - devise/config/locales/%{locale}.yml
+
+  router: conservative_router
+
+  yaml:
+    write:
+      line_width: -1
+
+  json:
+    write:
+      indent: '  '
+      space: ' '
+      object_nl: "\n"
+      array_nl: "\n"
+
+search:
+  paths:
+    - app/
+
+  relative_roots:
+    - app/controllers
+    - app/helpers
+    - app/mailers
+    - app/presenters
+    - app/views
+
+  exclude:
+    - tmp/*
+    - app/assets/images
+    - app/assets/fonts
+    - app/assets/videos
+
+  ## Alternatively, the only files or `File.fnmatch patterns` to search in `paths`:
+  ## If specified, this settings takes priority over `exclude`, but `exclude` still applies.
+  # only: ["*.rb", "*.html.slim"]
+
+  ## If `strict` is `false`, guess usages such as t("categories.#{category}.title"). The default is `true`.
+  # strict: true
+
+  ## Multiple scanners can be used. Their results are merged.
+  ## The options specified above are passed down to each scanner. Per-scanner options can be specified as well.
+  ## See this example of a custom scanner: https://github.com/glebm/i18n-tasks/wiki/A-custom-scanner-example
+
+## Translation Services
+translation:
+  google_translate_api_key: <%= ENV['GOOGLE_TRANSLATE_API_KEY'] %>
+  deepl_api_key: <%= ENV['DEEPL_TRANSLATE_API_KEY'] %>
+
+## Do not consider these keys missing:
+ignore_missing:
+  - i18n.plural.keys
+# - 'errors.messages.{accepted,blank,invalid,too_short,too_long}'
+# - '{devise,simple_form}.*'
+
+## Consider these keys used:
+ignore_unused:
+  - 'activerecord.{attributes,models}.*'
+  - '{devise,formtastic,kaminari,will_paginate}.*'
+# - 'simple_form.{yes,no}'
+# - 'simple_form.{placeholders,hints,labels}.*'
+# - 'simple_form.{error_notification,required}.:'
+
+## Exclude these keys from the `i18n-tasks eq-base' report:
+# ignore_eq_base:
+#   all:
+#     - common.ok
+#   fr,es:
+#     - common.brand
+
+## Ignore these keys completely:
+# ignore:
+#  - kaminari.*
+
+## Sometimes, it isn't possible for i18n-tasks to match the key correctly,
+## e.g. in case of a relative key defined in a helper method.
+## In these cases you can use the built-in PatternMapper to map patterns to keys, e.g.:
+#
+# <%# I18n::Tasks.add_scanner 'I18n::Tasks::Scanners::PatternMapper',
+#       only: %w(*.html.haml *.html.slim),
+#       patterns: [['= title\b', '.page_title']] %>
+#
+# The PatternMapper can also match key literals via a special %{key} interpolation, e.g.:
+#
+# <%# I18n::Tasks.add_scanner 'I18n::Tasks::Scanners::PatternMapper',
+#       patterns: [['\bSpree\.t[( ]\s*%{key}', 'spree.%{key}']] %>

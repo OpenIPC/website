@@ -1,7 +1,7 @@
 <div class="col">
   <div class="card">
     <div class="ratio ratio-16x9 bg-light">
-      <%= link_to image_tag(snapshot.file.variant(:thumb) || default_image_path, alt: "Snapshot",
+      <%= link_to image_tag(snapshot.file.variant(:thumb) || default_image_path, alt: t('.snapshot_alt'),
                             class: "h-100 w-auto position-absolute top-50 start-50 translate-middle"),
                   snapshot_path(snapshot) %>
     </div>
@@ -9,7 +9,8 @@
       <span class="float-end x-small text-muted" data-timestamp="<%= snapshot.created_at.to_i %>"><%= snapshot.created_at %></span>
       <p class="card-title fw-bold mb-1"><%= snapshot.soc.upcase %> + <%= snapshot.sensor.upcase %></p>
       <p class="card-subtitle mb-2 text-primary small">OpenIPC <%= snapshot.firmware %>, <%= snapshot.streamer %></p>
-      <p class="card-text small">Uptime: <%= snapshot.uptime %>.<% unless snapshot.soc_temperature.blank? %> SoC temperature: <%= snapshot.soc_temperature %>°C.<% end %></p>
+      <p class="card-text small"><%= t('.uptime') %>: <%= snapshot.uptime %>.<% unless snapshot.soc_temperature.blank? %>
+          <%= t('.temperature') %>: <%= snapshot.soc_temperature %>°C.<% end %></p>
       <p class="card-text small"><%= snapshot.image_dimensions %>, <%= snapshot.file.byte_size %> bytes</p>
     </div>
   </div>

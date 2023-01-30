@@ -1,7 +1,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><%= link_to "Home", "/" %></li>
-    <li class="breadcrumb-item"><%= link_to "Vendors", cameras_vendors_path %></li>
+    <li class="breadcrumb-item"><%= link_to t('site.home'), "/" %></li>
+    <li class="breadcrumb-item"><%= link_to t('site.vendors'), cameras_vendors_path %></li>
     <li class="breadcrumb-item"><%= link_to @vendor.name, cameras_vendor_path(@vendor) %></li>
     <li class="breadcrumb-item active" aria-current="page"><%= link_to @camera.soc.model, cameras_vendor_soc_path(@vendor, @camera.soc) %></li>
   </ol>
@@ -74,6 +74,9 @@
       <% end %>
     </div>
   </div>
+
+  <h4>Notes</h4>
+  <p><%= @camera.soc.notes %></p>
 </article>
 
 <script>

@@ -1,0 +1,76 @@
+<article class="hardware">
+  <header>
+    <h2><%= t('.title') %></h2>
+  </header>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card mb-3 border-0">
+        <div class="row g-4">
+          <div class="col-md-3"><%= image_tag "stage-neq.svg", alt: t('.neq_alt'), class: "card-image" %></div>
+          <div class="col-md-9">
+            <div class="card-body">
+              <p><b>NEQ</b><br><%= t('.neq_info_html') %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3 border-0">
+        <div class="row g-4">
+          <div class="col-md-3"><%= image_tag "stage-rnd.svg", alt: t('.rnd_alt'), class: "card-image" %></div>
+          <div class="col-md-9">
+            <div class="card-body">
+              <p><b>R&D</b><br><%= t('.rnd_info') %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3 border-0">
+        <div class="row g-4">
+          <div class="col-md-3"><%= image_tag "stage-hlp.svg", alt: t('.hlp_alt'), class: "card-image" %></div>
+          <div class="col-md-9">
+            <div class="card-body">
+              <p><b>HLP</b><br><%= t('.hlp_info') %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3 border-0">
+        <div class="row g-4">
+          <div class="col-md-3"><%= image_tag "stage-wip.svg", alt: t('.wip_alt'), class: "card-image" %></div>
+          <div class="col-md-9">
+            <div class="card-body">
+              <p><b>WIP</b><br><%= t('.wip_info') %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3 border-0">
+        <div class="row g-4">
+          <div class="col-md-3"><%= image_tag "stage-mvp.svg", alt: t('.mvp_alt'), class: "card-image" %></div>
+          <div class="col-md-9">
+            <div class="card-body">
+              <p><b>MVP</b><br><%= t('.mvp_info') %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3 border-0">
+        <div class="row g-4">
+          <div class="col-md-3"><%= image_tag "stage-done.svg", alt: t('.done_alt'), class: "card-image" %></div>
+          <div class="col-md-9">
+            <div class="card-body">
+              <p><b>DONE</b><br><%= t('.done_info') %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <h3><%= t('.subtitle') %></h3>
+      <p><%= t('.paragraph1') %></p>
+      <p><%= t('.paragraph2') %></p>
+      <p><%= t('.paragraph3') %></p>
+    </div>
+  </div>
+</article>

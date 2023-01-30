@@ -1,55 +1,33 @@
 <article class="introduction">
   <header>
-    <h2>Introduction</h2>
+    <h2><%= t('.title') %></h2>
   </header>
 
   <div class="row g-5">
     <div class="col-lg-8 col-xl-8 col-xxl-9 mb-3">
-      <h3 class="mb-4">OpenIPC is an alternative open firmware for your IP camera.</h3>
-      <p>OpenIPC is a Linux operating system targeting IP cameras with processors from several manufacturers in order to
-        replace that closed, opaque, insecure, often abandoned and unsupported firmware pre-installed by a vendor.</p>
-      <p>OpenIPC Firmware comes as binary pre-compiled files for easy installation by end-user. Also, we provide full
-        access to the source files for further development and improvement by any capable programmer willing to
-        contribute to the project. OpenIPC source code is released under one of the most simple open source license
-        agreements: <a href="https://opensource.org/licenses/MIT">MIT License</a>, giving users express permission to
-        reuse code for any purpose, even as part of a proprietary software. We only ask you politely to contribute
-        your improvements back to us. We would be grateful for any feedback and suggestions.</p>
-
+      <h3 class="mb-4"><%= t('.subtitle1') %></h3>
+      <p><%= t('.paragraph1_html') %></p>
+      <p><%= t('.paragraph2_html') %></p>
       <p class="text-center">
-        <a href="https://github.com/OpenIPC/wiki/blob/master/en/installation.md" class="btn btn-danger btn-lg my-4">Installation Instructions</a>
-        <a href="/supported-hardware" class="btn btn-primary btn-lg my-4">Precompiled binary files</a>
-        <a href="https://github.com/OpenIPC" class="btn btn-primary btn-lg my-4">Source code on GitHub</a>
+        <a href="https://github.com/OpenIPC/wiki/blob/master/en/installation.md" class="btn btn-danger btn-lg my-4"><%= t('.installation_button') %></a>
+        <a href="/supported-hardware" class="btn btn-primary btn-lg my-4"><%= t('.binaries_button') %></a>
+        <a href="https://github.com/OpenIPC" class="btn btn-primary btn-lg my-4"><%= t('.sources_button') %></a>
       </p>
+      <p><%= t('.paragraph3_html') %></p>
 
-      <p>OpenIPC Firmware utilizes <a href="https://buildroot.org/">Buildroot</a> to build its Linux distro, and uses
-        <a href="https://github.com/OpenIPC/majestic">Majestic streamer</a> which while not yet fully open, provides
-        unprecedented performance and capabilities for a wide range of hardware. The author of Majestic streamer is
-        looking into possibilities to open-source the codebase after he secures enough funds to support further open
-        development. You can <a href="/support-open-source">help</a> to make it happen sooner.</p>
-
-      <h3>Why OpenIPC Firmware?</h3>
-      <p>First of all, OpenIPC Firmware brings you freedom. With OpenIPC on your camera you are the master of your
-        streams. You have full access to the system and can control what, where, and how you want your camera to behave.
-        There are no backdoors, no botnets, no crypto-mining malware, no keyloggers, no password sniffers, nothing you
-        could possibly expect in a closed binary system with no access to its source code.</p>
-      <p>As for the Firmware capabilities, we strive to provide universal support for a wide range of cameras, thus we
-        are focused on basic functionality first, allowing end-users to upgrade their cameras' firmware and stream video
-        and audio (where supported) without too much hassle.</p>
-      <p>We have some interesting bits though. Our Firmware supports IPEYE cloud storage, streaming video to Youtube and
-        Telegram, using SOCKS5 proxy, setting up a Virtual Tunnel, and more. We also have a few projects focused on
-        premium or specialized hardware, e.g. cameras for drones.</p>
+      <h3 class="mb-4"><%= t('.subtitle2') %></h3>
+      <p><%= t('.paragraph4_html') %></p>
+      <p><%= t('.paragraph5_html') %></p>
+      <p><%= t('.paragraph6_html') %></p>
     </div>
     <div class="col-lg-4 col-xl-4 col-xxl-3">
-      <h3 class="mb-3">Alliance</h3>
+      <h3 class="mb-3"><%= t('.subtitle3') %></h3>
       <div class="row row-cols-2 g-3">
-        <div class="col"><a href="https://github.com/OpenIPC">
-          <img src="/assets/openipc-community.svg" class="img-fluid" alt="Image: OpenIPC Community logo"></a></div>
-        <div class="col"><a href="https://github.com/OpenIPC/majestic">
-          <img src="/assets/majestic-logo2.svg" class="img-fluid" data-link="https://majestic.cam/" alt="Image: Majestic streamer logo"></a>
-        </div>
+        <div class="col"><a href="https://github.com/OpenIPC"><img src="/assets/openipc-community.svg" class="img-fluid" alt="<%= t('.openipc_alt') %>"></a></div>
+        <div class="col"><a href="https://github.com/OpenIPC/majestic"><img src="/assets/majestic-logo2.svg" class="img-fluid" data-link="https://majestic.cam/" alt="<%= t('.majestic_alt') %>"></a></div>
       </div>
 
-      <h4 class="mt-4 mb-3">Supporters</h4>
+      <h4 class="mt-4 mb-3"><%= t('.subtitle4') %></h4>
       <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-2 g-3">
         <div class="col"><a href="https://www.oscollective.org/"><img src="/assets/partners/osc_mini.png" alt="OSC logo" class="img-fluid"></a></div>
         <div class="col"><a href="https://skycam.cam/"><img src="/assets/partners/skycam_mini.png" alt="SKYCAM logo" class="img-fluid"></a></div>

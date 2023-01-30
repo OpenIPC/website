@@ -1,12 +1,12 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><%= link_to "Admin", "/admin" %></li>
-    <li class="breadcrumb-item"><%= link_to "SoCs", admin_socs_path %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.admin'), "/admin" %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.socs'), admin_socs_path %></li>
     <% if @soc.persisted? %>
       <li class="breadcrumb-item"><%= link_to @soc.model, admin_soc_path(@soc) %></li>
-      <li class="breadcrumb-item active" aria-current="page"><%= link_to "Editing", edit_admin_soc_path(@soc) %></li>
+      <li class="breadcrumb-item active" aria-current="page"><%= link_to t('nav.editing'), edit_admin_soc_path(@soc) %></li>
     <% else %>
-      <li class="breadcrumb-item active" aria-current="page"><%= link_to "Addin a SoC", new_admin_soc_path %></li>
+      <li class="breadcrumb-item active" aria-current="page"><%= link_to t('nav.adding_soc'), new_admin_soc_path %></li>
     <% end %>
   </ol>
 </nav>
@@ -17,21 +17,21 @@
   </header>
 
   <nav class="navbar">
-    <p><%= link_to 'Add another SoC', new_admin_soc_path, class: "btn btn-primary" %></p>
+    <p><%= link_to t('nav.add_soc'), new_admin_soc_path, class: "btn btn-primary" %></p>
     <form action="/admin/socs" method="get" class="row g-3">
       <div class="col-auto">
         <label for="soc" class="visually-hidden">SoC</label>
         <input type="text" class="form-control" id="q" name="q" value="<%= @q %>">
       </div>
       <div class="col-auto">
-        <button type="submit" class="btn btn-primary mb-3">Find</button>
+        <button type="submit" class="btn btn-primary mb-3"><%= t('button.find') %></button>
       </div>
     </form>
   </nav>
 
   <!--  layout: :horizontal, label_col: "col-sm-4", control_col: "col-sm-8",-->
   <%= bootstrap_form_for @soc, url: [:admin, @soc] do |f| %>
-    <%= f.alert_message "Please fix the errors below." %>
+    <%= f.alert_message t('error.please_fix') %>
     <div class="row">
       <div class="col-lg-3">
         <%= f.collection_select :vendor_id, Vendor.all, :id, :name %>
@@ -65,7 +65,6 @@
         </div>
       <% end %>
     </div>
-
 
     <%= f.submit %>
   <% end %>

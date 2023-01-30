@@ -1,0 +1,14 @@
+---
+ru:
+  activemodel:
+    attributes:
+      camera:
+        camera_ip_address: IP-адрес камеры
+        camera_mac_address: MAC-адрес камеры
+        flash_type: Тип и размер микросхемы флэш-памяти
+        network_interfaces: Сетевые интерфейсы
+        sd_card_slot: Слот для SD-карты
+        server_ip_address: IP-адрес TFTP-сервера
+        soc_id: Система-на-чипе
+    models:
+      camera: Камера

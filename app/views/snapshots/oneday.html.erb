@@ -1,14 +1,14 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><%= link_to "Home", "/" %></li>
-    <li class="breadcrumb-item"><%= link_to "Latest snapshots", "/open-wall" %></li>
-    <li class="breadcrumb-item active" aria-current="page"><%= link_to "Snapshot ##{@snapshot.id}", snapshot_path(@snapshot) %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.home'), "/" %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.snapshots'), "/open-wall" %></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= link_to t('nav.snapshot', number: @snapshot.id), snapshot_path(@snapshot) %></li>
   </ol>
 </nav>
 
 <article>
   <header>
-    <h2>Open Wall</h2>
+    <h2><%= t('title.openwall') %></h2>
   </header>
 
   <div id="carouselSnapshots" class="carousel slide carousel-fade" data-bs-ride="carousel">
@@ -24,17 +24,17 @@
     </div>
     <button class="carousel-control-prev" type="button" data-bs-target="#carouselSnapshots" data-bs-slide="prev">
       <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Previous</span>
+      <span class="visually-hidden"><%= t('nav.previous') %></span>
     </button>
     <button class="carousel-control-next" type="button" data-bs-target="#carouselSnapshots" data-bs-slide="next">
       <span class="carousel-control-next-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Next</span>
+      <span class="visually-hidden"><%= t('nav.next') %></span>
     </button>
   </div>
 
   <p class="hstack gap-3 my-3">
-    <span class="text-muted">Place mouse cursor over a snapshot to pause automatic transitions.</span>
-    <span class="ms-auto"><input type="range" id="speed" min="0" max="4.5" step="0.5" value="2" title="Speed"></span>
+    <span class="text-muted"><%= t('nav.pause_transitions') %></span>
+    <span class="ms-auto"><input type="range" id="speed" min="0" max="4.5" step="0.5" value="2" title="<%= t('.speed') %>"></span>
   </p>
 </article>
 

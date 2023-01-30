@@ -1,58 +1,57 @@
 ---
 en:
-  activemodel:
-    attributes:
-      camera:
-        camera_ip_address: "Camera IP address"
-        camera_mac_address: "Camera MAC address"
-        server_ip_address: "TFTP server IP address"
-        flash_type: "Type and size of flash memory chip"
-        network_interfaces: "Network interfaces"
-        sd_card_slot: "SD card slot"
-        soc_id: "System-on-Chip"
-    models:
-      camera: "Camera"
-  activerecord:
-    attributes:
-      snapshot:
-        mac_address: "MAC address"
-      soc:
-        build_status_url: "Build status URL"
-        kernel: "Kernel"
-        linux_filename: "Linux file"
-        load_address: "Load address"
-        model: "SoC Model"
-        notes: "Notes"
-        sdk: "SDK"
-        status: "Stage"
-        toolchain_filename: "Toolchain file"
-        uboot_filename: "U-Boot file"
-        vendor_id: "SoC Vendor"
-        version: "Version"
-    help:
-      camera:
-        flash_type: "If not sure, select NOR 8M."
-    models:
-      snapshot: "Snapshot"
-      soc: "SoC"
+  button:
+    find: Find
+  cameras:
+    socs:
+      index:
+        featured: Recommended
+        full_list: Full list
+        recommended_alert_html: Please note. Support for different SoCs is at different stages of development. <a href="/supported-hardware/featured">This list</a> shows the most fully supported and, therefore, the most recommended ones.
+        stages_of_development: Stages of firmware development explained
+        th_baseaddr: Load address
+        th_docs: Docs
+        th_soc_model: SoC Model
+        th_stage: Stage
+        th_status: Build status
+        title: Supported Hardware by SoC
+  error:
+    please_fix: Please fix the errors below.
+  errors:
+    messages:
+      already_confirmed: was already confirmed, please try signing in
+      confirmation_period_expired: needs to be confirmed within %{period}, please request a new one
+      expired: has expired, please request a new one
+      not_found: not found
+      not_locked: was not locked
+      not_saved:
+        one: '1 error prohibited this %{resource} from being saved:'
+        other: "%{count} errors prohibited this %{resource} from being saved:"
   firmware:
+    info_html: |
+      If you want to learn more about what <code>uknor*</code>, <code>urnor*</code>, <code>setnor*</code> commands do,
+      run <code>printenv</code> in bootloader console.
     installation:
-      backup_32: "ATTENTION! Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM."
-      permanent_link: "Permanent link to this configuration"
-      subtitle: "on a camera with %{soc_name} SoC and %{flash_type} SPI flash chip"
-      title: "Flashing OpenIPC Firmware"
       backup:
-        info: |
-          OpenIPC U-Boot overwrites the original crypto partition making it impossible to revert to the factory 
-          firmware unless you have a full flash backup for this particular camera! To create a full firmware backup
-          start a TFTP server and run these commands in bootloader shell.
-        subtitle: "Back up your stock firmware, don't skip this part of the installation process!"
-        title: "Save the original firmware"
+        info: OpenIPC U-Boot overwrites the original crypto partition making it impossible to revert to the factory firmware unless you have a full flash backup for this particular camera! To create a full firmware backup start a TFTP server and run these commands in bootloader shell.
         more_info_html: |
           Please refer to <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">Installation
           instructions</a> in the project's wiki for more information.
+        subtitle: Back up your stock firmware, don't skip this part of the installation process!
+        title: Save the original firmware
+      backup_32: ATTENTION! Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM.
       flashing:
-        alternative: "Alternatively, flash OpenIPC Firmware by its parts"
+        alternative: Alternatively, flash OpenIPC Firmware by its parts
+      flashing_footfs:
+        continue: |
+          The camera will automatically restart to apply changes.
+          Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
+        info: When in the bootloader shell, remap ROM partitioning according to your flash size and type.
+        title: Prepare the camera for OpenIPC Linux
+      flashing_footfs2:
+        info: Download firmware bundle and unpack it into the root directory of your TFTP server.
+        link: Download OpenIPC Firmware (%{name}) bundle
+        title: Flash OpenIPC Linux kernel and root filesystem
       flashing_full:
         continue: |
           The camera will automatically restart and boot with the brand new bootloader.
@@ -61,56 +60,117 @@ en:
         info: |
           The full firmware image consists of bootloader, kernel and root filesystem, and is also suitable for flashing
           memory chip using a programmer.
-        link: "Download OpenIPC Firmware (%{name}) image"
-        title: "Flash full OpenIPC Firmware image"
+        link: Download OpenIPC Firmware (%{name}) image
+        title: Flash full OpenIPC Firmware image
       flashing_uboot:
         continue: |
           The camera will boot into the newly flashed bootloader.
           Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
-        info: "Download bootloader binary file and save it to the root directory of your TFTP server."
-        link: "Download OpenIPC U-Boot binary file"
-        title: "Flash OpenIPC U-Boot"
-      flashing_footfs:
-        continue: |
-          The camera will automatically restart to apply changes.
-          Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
-        info: "When in the bootloader shell, remap ROM partitioning according to your flash size and type."
-        title: "Prepare the camera for OpenIPC Linux"
-      flashing_footfs2:
-        info: "Download firmware bundle and unpack it into the root directory of your TFTP server."
-        link: "Download OpenIPC Firmware (%{name}) bundle"
-        title: "Flash OpenIPC Linux kernel and root filesystem"
+        info: Download bootloader binary file and save it to the root directory of your TFTP server.
+        link: Download OpenIPC U-Boot binary file
+        title: Flash OpenIPC U-Boot
+      permanent_link: Permanent link to this configuration
+      subtitle: on a camera with %{soc_name} SoC and %{flash_type} SPI flash chip
       success:
-        title: "Congratulations! At this moment, you have OpenIPC Firmware (%{name}) installed."
-        info_html: |
-          Open <a href="http://#{@camera.camera_ip_address}:85/">camera's web interface on port 85</a>.
-          Use login <b>admin</b> and password <b>12345</b> to sign in. You will be asked to set up your own secure 
-          password once signed in.
-    info_html: |
-      If you want to learn more about what <code>uknor*</code>, <code>urnor*</code>, <code>setnor*</code> commands do,
-      run <code>printenv</code> in bootloader console.
-    version:
-      fpv: "FPV"
-      lite: "Lite"
-      nand: "NAND"
-      ultimate: "Ultimate"
+        info_html: Open camera's web interface on port 85 (<a href="http://%{address}:85/">http://%{address}:85/</a>) and sign in using login <b>admin</b> and password <b>12345</b> to sign in. You will be asked to set up your own secure password once signed in.
+        title: Congratulations! At this moment, you have OpenIPC Firmware (%{name}) installed.
+      title: Flashing OpenIPC Firmware
     restore:
-      info: |
-        If you need to restore the original firmware, use the backup file you have created using the commands above. 
-        Place the backup file into the root directory of your TFTP server and run these commands in bootloader shell.
-      title: "Restore camera stock firmware"
+      info: If you need to restore the original firmware, use the backup file you have created using the commands above. Place the backup file into the root directory of your TFTP server and run these commands in bootloader shell.
+      title: Restore camera stock firmware
+    version:
+      fpv: FPV
+      lite: Lite
+      nand: NAND
+      ultimate: Ultimate
   flash_chip:
-    nor8m: "NOR 8M"
-    nor16m: "NOR 16M"
-    nor32m: "NOR 32M"
-    nand: "NAND"
+    nand: NAND
+    nor16m: NOR 16M
+    nor32m: NOR 32M
+    nor8m: NOR 8M
+  locales:
+    de: Deutsch
+    en: English
+    es: Español
+    fr: Français
+    ja: 日本語
+    pl: Polska
+    pt-br: Português brasileiro
+    ru: Русский
+  nav:
+    about: About
+    add_soc: Add another SoC
+    adding_soc: Addin a SoC
+    admin: Admin
+    channels: Our Channels
+    clone_soc: Clone this SoC
+    dashboard: Dashboard
+    editing: Editing
+    endpoints: Majestic Endpoints
+    hires_timer: High-Resolution Timer
+    home: Home
+    introduction: Introduction
+    next: Next
+    openwall: Open Wall
+    partition_calc: Firmware Partition Calculator
+    pause_transitions: Place mouse cursor over a snapshot to pause automatic transitions.
+    previous: Previous
+    projects: Our Projects
+    snapshot: 'Snapshot #%{number}'
+    snapshots: Latest Snapshots
+    socs: SoCs
+    support_opensource: Support Open Source Programming
+    supported_hardware: Supported Hardware
+    team: Our Team
+    tools: Tools
+    vendors: Vendors
+    view_soc: View SoC page
+    wiki: Our Wiki
   net_iface:
-    both: "Camera has both Ethernet and Wireless networks"
-    eth: "Camera only has Ethernet network"
-    wifi: "Camera only has Wireless network"
+    both: Camera has both Ethernet and Wireless networks
+    eth: Camera only has Ethernet network
+    wifi: Camera only has Wireless network
   sd_card:
-    nosd: "Camera does not have an SD card slot"
-    sd: "Camera has an SD card slot"
+    nosd: Camera does not have an SD card slot
+    sd: Camera has an SD card slot
   site:
-    home: "Home"
-    vendors: "Vendors"
+    disclaimer: The information contained on this site is for general informational purposes only and is not intended to be relied upon by the visitor. All software and firmware available on this site is provided AS IS and for research purposes only. OpenIPC shall not be liable for any loss or damage caused by the use of these files or the use of, or reliance upon, any information contained in this site.
+    snapshot:
+      download: Download original image
+      link_to_camera: Permanent link to this camera
+      link_to_last_jpeg: Permanent link to the latest snapshot from this camera (JPEG)
+  snapshots:
+    icon:
+      snapshot_alt: 'Image: Snapshot'
+    index:
+      no_signal: No signal
+      snapshot_alt: 'Image: Snapshot'
+      stay_tuned: stay tuned
+      subtitle: Images from real IP-cameras running on OpenIPC firmware, provided by their owners.
+    oneday:
+      speed: Speed
+    show:
+      delete_by_mac: Delete all by MAC
+      delete_one: Delete this one
+      last_24h: Last 24 hours
+      show_slideshow: Watch as slideshow
+      snapshot_alt: 'Image: Snapshot'
+      temperature: SoC temperature
+      uptime: Uptime
+    slide:
+      bytes: bytes
+      dimensions: Dimensions
+      download_original: Download original image
+      link_to_this: Link to this snapshot
+      size: Size
+      snapshot_alt: 'Image: Snapshot'
+      temperature: SoC temperature
+      uptime: Uptime
+    snapshot:
+      snapshot_alt: 'Image: Snapshot'
+      temperature: SoC temperature
+      uptime: Uptime
+  str:
+    language: Language
+  title:
+    openwall: Open Wall

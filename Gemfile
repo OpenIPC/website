@@ -76,7 +76,8 @@ end
 
 gem 'activestorage-validator', '~> 0.2.2'
 gem 'bootstrap_form', '~> 5.1'
-gem 'kaminari', '~> 1.2'
 gem 'bootstrap5-kaminari-views', '~> 0.0.1'
 gem 'devise', '~> 4.8'
+gem 'i18n-tasks'
+gem 'kaminari', '~> 1.2'
 gem 'vips', '~> 8.12'

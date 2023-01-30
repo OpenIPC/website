@@ -24,32 +24,33 @@
     </button>
     <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
       <ul class="navbar-nav">
-        <%= navbar_link("Introduction", "/introduction") %>
-        <%= navbar_link("Supported Hardware", "/supported-hardware") %>
-        <%= navbar_link("Support Open Source", "/support-open-source") %>
-        <%= navbar_link("Open Wall", "/open-wall") %>
+        <%= navbar_link(t('nav.introduction'), "/introduction") %>
+        <%= navbar_link(t('nav.supported_hardware'), "/supported-hardware") %>
+        <%= navbar_link(t('nav.support_opensource'), "/support-open-source") %>
+        <%= navbar_link(t('nav.openwall'), "/open-wall") %>
 
         <li class="nav-item dropdown">
           <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#"
-             id="dropdownAbout" role="button">About</a>
+             id="dropdownAbout" role="button"><%= t('nav.about') %></a>
           <ul aria-labelledby="dropdownAbout" class="dropdown-menu dropdown-menu-lg-end">
-            <%= dropdown_link "Our Team", "/our-team" %>
-            <%= dropdown_link "Our Projects", "/our-projects" %>
-            <%= dropdown_link "Our Channels", "/our-channels" %>
-            <%= dropdown_link "Majestic Endpoints", "/majestic-endpoints" %>
-            <%= dropdown_link "Our Wiki", "https://openipc.github.io/wiki" %>
+            <%= dropdown_link t('nav.team'), "/our-team" %>
+            <%= dropdown_link t('nav.projects'), "/our-projects" %>
+            <%= dropdown_link t('nav.channels'), "/our-channels" %>
+            <%= dropdown_link t('nav.endpoints'), "/majestic-endpoints" %>
+            <%= dropdown_link t('nav.wiki'), "https://openipc.github.io/wiki" %>
           </ul>
         </li>
 
         <li class="nav-item dropdown">
           <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#"
-             id="dropdownTools" role="button">Tools</a>
+             id="dropdownTools" role="button"><%= t('nav.tools') %></a>
           <ul aria-labelledby="dropdownTools" class="dropdown-menu dropdown-menu-lg-end">
-            <%= dropdown_link "Firmware Partition Calculator", "/tools/firmware-partitions-calculation" %>
-            <%= dropdown_link "High-Resolution Timer", "/tools/high-resolution-timer" %>
+            <%= dropdown_link t('nav.partition_calc'), "/tools/firmware-partitions-calculation" %>
+            <%= dropdown_link t('nav.hires_timer'), "/tools/high-resolution-timer" %>
           </ul>
         </li>
       </ul>
+      <%= locale_switcher %>
     </div>
   </div>
 </nav>
@@ -57,7 +58,6 @@
 <main>
   <div class="container mb-4">
     <%= display_flashes %>
-
     <%= yield %>
   </div>
 </main>
@@ -81,10 +81,7 @@
         </div>
       </div>
     </div>
-    <p class="small">The information contained on this site is for general informational purposes only and is not
-      intended to be relied upon by the visitor. All software and firmware available on this site is provided AS IS and
-      for research purposes only. OpenIPC shall not be liable for any loss or damage caused by the use of these files or
-      the use of, or reliance upon, any information contained in this site.</p>
+    <p class="small"><%= t('site.disclaimer') %></p>
   </div>
 </footer>
 

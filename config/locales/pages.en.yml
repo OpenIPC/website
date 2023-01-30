@@ -1,0 +1,151 @@
+---
+en:
+  pages:
+    about_us:
+      title: About Us
+    admin:
+      dashboard:
+        title: Admin Dashboard
+    bandwidth_calculator:
+      title: Bandwidth calculator
+    firmware_partitions_calculation:
+      end_address: End address
+      flash_size_mb: Flash size, MB
+      mtd_name: MTD device name
+      offset: Initial offset, dec or hex
+      partition_name: Partition %{number} name
+      partition_size: Partition %{number} size, KB
+      recalculate: Recalculate
+      size_hex: Hex size, bytes
+      start_address: Start address
+      title: Firmware Partitions Calculation
+    high_resolution_timer:
+      reload_to_reset: Time shown in milliseconds. Reload page to reset the counter.
+      title: High-Resolution Timer
+    introduction:
+      binaries_button: Precompiled binary files
+      installation_button: Installation Instructions
+      majestic_alt: 'Image: Majestic streamer logo'
+      openipc_alt: 'Image: OpenIPC Community logo'
+      paragraph1_html: OpenIPC is a Linux operating system targeting IP cameras with processors from several manufacturers in order to replace that closed, opaque, insecure, often abandoned and unsupported firmware pre-installed by a vendor.
+      paragraph2_html: OpenIPC Firmware comes as binary pre-compiled files for easy installation by end-user. Also, we provide full access to the source files for further development and improvement by any capable programmer willing to contribute to the project. OpenIPC source code is released under one of the most simple open source license agreements, <a href="https://opensource.org/licenses/MIT">MIT License</a>, giving users express permission to reuse code for any purpose, even as part of a proprietary software. We only ask you politely to contribute your improvements back to us. We would be grateful for any feedback and suggestions.
+      paragraph3_html: OpenIPC Firmware utilizes <a href="https://buildroot.org/">Buildroot</a> to build its Linux distro, and uses <a href="https://github.com/OpenIPC/majestic">Majestic streamer</a> which while not yet fully open, provides unprecedented performance and capabilities for a wide range of hardware. The author of Majestic streamer is looking into possibilities to open-source the codebase after he secures enough funds to support further open development. You can <a href="/support-open-source">help</a> to make it happen sooner.
+      paragraph4_html: First of all, OpenIPC Firmware brings you freedom. With OpenIPC on your camera you are the master of your streams. You have full access to the system and can control what, where, and how you want your camera to behave. There are no backdoors, no botnets, no crypto-mining malware, no keyloggers, no password sniffers, nothing you could possibly expect in a closed binary system with no access to its source code.
+      paragraph5_html: As for the Firmware capabilities, we strive to provide universal support for a wide range of cameras, thus we are focused on basic functionality first, allowing end-users to upgrade their cameras' firmware and stream video and audio (where supported) without too much hassle.
+      paragraph6_html: We have some interesting bits though. Our Firmware supports IPEYE cloud storage, streaming video to Youtube and Telegram, using SOCKS5 proxy, setting up a Virtual Tunnel, and more. We also have a few projects focused on premium or specialized hardware, e.g. cameras for drones.
+      sources_button: Source code on GitHub
+      subtitle1: OpenIPC is an alternative open firmware for your IP camera.
+      subtitle2: Why OpenIPC Firmware?
+      subtitle3: Alliance
+      subtitle4: Supporters
+      title: Introduction
+    majestic_endpoints:
+      aac: AAC audio stream.
+      accepts_post: Accepts POST requests with audio file as a parameter.
+      alaw: A-law compressed audio stream.
+      audio: Audio
+      dng: Snapshot in Adobe DNG format (raw).
+      fmp4: fMP4 video stream.
+      footnote_1: Only HiSilicon and Goke SoCs.
+      footnote_2: Only HiSilicon SoCs v2 and up.
+      footnote_3_html: E.g. <i>ffplay -ar 48000 -ac 1 -f s16le http://192.168.1.10/audio.pcm</i>
+      footnote_4_html: E.g. <i>http://192.168.1.10/image.jpg?width=640&height=480&qfactor=50&color2gray=1&crop=80x32x512x400</i>
+      g711: G.711 A-law audio stream.
+      heif: Snapshot in HEIF format.
+      hls: HLS live-streaming in web browser.
+      images: Still Images
+      jpeg: Snapshot in JPEG format.
+      jpeg_params1: width, height - size of resulting image
+      jpeg_params2: qfactor - JPEG quality factor (1-99)
+      jpeg_params3: color2gray - convert to grayscale
+      jpeg_params4: crop - crop resulting image as 16x16x320x320
+      majestic_json: Actual Majestic config in JSON format.
+      mjpeg: MJPEG video stream.
+      mjpeg_player: MJPEG & MP3 live-streaming in web browser.
+      monitoring: Monitoring
+      more_examples_html: More examples available <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">in our wiki</a>.
+      mp3: MP3 audio stream.
+      night: Night API
+      night_off: Turn off night mode.
+      night_on: Turn on night mode.
+      night_toggle: Toggle current night mode.
+      optional_params: Optional parameters
+      opus: Opus audio stream.
+      play_on_speaker: Play audio file on camera's speaker.
+      prometheus_html: Node exporter for <a href="https://prometheus.io/">Prometheus</a>.
+      raw_pcm: Raw PCM audio stream.
+      rtsp0: RTSP main stream (video0).
+      rtsp1: RTSP substream (video1).
+      title: Majestic Endpoints
+      ulaw: μ-law compressed audio stream.
+      video: Video
+      webrtc: WebRTC live-streaming in web browser.
+      yuv420: Snapshot in YUV420 format.
+    our_channels:
+      paragraph1_html: Please note, while we do have gateways to Gitter and Discord we strongly suggest you to install a native <a href="https://telegram.org/">Telegram Messenger</a> for your platform and use our Telegram channels.
+      title: Our channels
+    our_projects:
+      burn_info: An opensource tool to unbrick HiSilicon devices.
+      community: Something related to OpenIPC. User generated content.
+      coupler_info: A tool that allows you a smooth transition from the IP-camera manufacturer's pre-installed proprietary firmware to OpenIPC Firmware. No special skills are required.
+      exipcam_info: XM Device Explorer. Utility for repairing IPCam
+      exipcam_info_extra: Russian UI. Runs on Windows, Linux via Wine.
+      firmware_info: The Holy Grail of the community. Universal firmware for IP-cameras to replace proprietary, outdated and often insecure vendor pre-installed firmware.
+      hisitrace_info: An utility to run Sofia from XM in a non-stock environment.
+      ipcamdms_info: IPCam Device Management System
+      ipcamdms_info_extra: Russian UI. Runs on Windows, Linux via Wine.
+      ipctool_info: An IP-camera hardware inspector on steroids. This tool will not only identify your camera's processor, sensor, flash chip, but also help you with backing up the original firmware and more.
+      majestic_info: A universal IP-camera streamer. This project is the major part of the OpenIPC Firmware. Although it is not fully open source at this stage of development, we are considering opening up the codebase when the project matures enough and gets enough funding for open development.
+      mini_info: An open source IP-camera streamer. Think of it as Majestic's little brother.
+      motors_info: Various code to manage motor hardware.
+      openhisi_info: Opensource SDK for Hisilicon SoCs.
+      openxm_info: Opensource SDK for Xiongmai SoCs.
+      printables_info: Models for 3D printing tagged with "openipc".
+      smolrtsp_info: A simple RTSP 1.0 server library tailored for embedded devices, such as IP cameras. It supports both TCP and UDP, allows any payload format, and provides a convenient and flexible API.
+      subtitle1: Core projects
+      subtitle2: OpenIPC umbrella projects
+      subtitle3: OpenIPC community projects
+      title: Our Projects
+      umbrella_info: The OpenIPC is also an umbrella brand for other small projects that are useful components of our ecosystem. We welcome everyone willing to contribute to the project, in any way they find useful!
+      webui_info: Web interface for OpenIPC Firmware. Written on Ash and tears of the developer.
+      yamlcli_info: Simple YAML console tool.
+    our_team:
+      contributors_link: List of all GitHub contributors
+      paragraph1_html: 'OpenIPC is a community-driven open source project, and many people contribute to its codebase. Koodos to them! There is also a core team of skilled developers who work hard to expand the list of <a href="/supported-hardware">supported hardware platforms</a>, extend the functionality and stability of the firmware, review submitted code, and coordinate community efforts. Get to know the team and their areas of expertise:
+
+        '
+      title: Our Team
+    stages_of_firmware_development:
+      done_alt: 'Image: stage DONE'
+      done_info: Done and done! Bootloader boots, Linux loads, streamer can stream video and produce snaphots. You can have yourself a working platform open for tinkering and further improvements. We still expect feedback and patches from you guys, though.
+      hlp_alt: 'Image: stage HLP'
+      hlp_info: Help wanted. We have the hardware, we have the SDK, the basic stuff is learned and done. But we are stuck. This is where we are looking for help from experienced embedded developers to overcome the obstacles and move on to the next stage.
+      mvp_alt: 'Image: stage MVP'
+      mvp_info: A minimal viable product. The basic system is built, the platform can produce video, at least on the main channel, but due to a lack of human resources, development is delayed or halted. A financial infusion could push the development to the final stage.
+      neq_alt: 'Image: stage NEQ'
+      neq_info_html: No Equipment. We have an SDK for the platform, but we don't have specific hardware to continue development, you can donate it to our R&D guys (especially old boards that passed <abbr title="End-Of-Life">EOL</abbr> and can not longer be bought).
+      paragraph1: After we acquire an SDK for a new SoC, we add the SoC to the table of supported hardware. We assign either NEQ (No Equipment) status, if we do not have particular hardware modules, or HLP (Help Needed) status, if we have the hardware but are looking for a developer who would lead the development for that SoC. This is considered an official start of development.
+      paragraph2: There is no reason to have SoC in the table without having its SDK.
+      paragraph3: As work on the SoC progresses, its status changes, gradually. First to RND, then to WIP, then further to MVP, and, finally, to DONE.
+      rnd_alt: 'Image: stage R&D'
+      rnd_info: The Research and Development stage, when we already have the platform SDK and maybe even the hardware boards, but we are starting to fiddle with the platform, studying its specifics and features. There is still a lot of work ahead.
+      subtitle: Typical development lifecycle
+      title: Stages of Firmware development
+      wip_alt: 'Image: stage WIP'
+      wip_info: Work in progress. We learned a lot about the platform hardware and code base, prepared the first public binary build, and are waiting for the first adopters to test it on their boards and provide feedback to help us move forward.
+    support_open_source:
+      donate_alt: 'Image: OpenCollective donate button'
+      paragraph1: Let's support open-source cameras together!
+      paragraph2: OpenIPC is asking your to support our development, to help us to attract enough funds to cover our expenses and secure long-term maintenance of what we believe is going to be a stable, flexible and most importantly, open source Open IP Network Camera Framework, for all users worldwide.
+      paragraph3: The funds are generally intended to compensate the work of part-time and full-time maintainers. Many core team members contribute their knowledge and spend their free time to work on projects codebase, and often use personal funds to purchase new cameras in order to extend the poll of supported hardware. Your donation could help us to ease the burden on their personal finances while keeping the development supplied with the most modern hardware.
+      paragraph4: We also need funds to organize meetings and attend events with hardware manufacturers, to monitor trends in cameras ingeneering and to get access to SDK and other supporting materials which are often expensive.
+      paragraph5: Your contribution will help us advance development forward, and interact with the community on a regular basis.
+      paragraph6: In recognition of your recurring donations, you will be permanently added to the Backers/Sponsors section on our GitHub page!
+      paragraph7: We are committed to open and transparent accounting, and are grateful for any support you're able to provide for our efforts, so that we could advance OpenIPC and our mission towards a sustainable future.
+      paragraph8_html: If you have issues getting access or download files, feel free to contact us on our <a href="https://t.me/openipc">Telegram channel</a>.
+      paragraph9_html: If you like our work, please consider supporting us on <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout">Open Collective</a>
+      sponsors_alt: 'Image: ninja-sponsors'
+      subtitle1: Become a Sponsor
+      subtitle2: Donations
+      thank_you: Thanks you, it means a lot to us!
+      title: Support Open Source

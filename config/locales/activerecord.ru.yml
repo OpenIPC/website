@@ -1,0 +1,25 @@
+---
+ru:
+  activerecord:
+    attributes:
+      snapshot:
+        mac_address: MAC-адрес
+      soc:
+        build_status_url: URL-адрес статуса сборки
+        kernel: ядро
+        linux_filename: Linux-файл
+        load_address: Загрузить адрес
+        model: Модель SoC
+        notes: Ноты
+        sdk: SDK
+        status: стадия
+        toolchain_filename: Файл цепочки инструментов
+        uboot_filename: U-загрузочный файл
+        vendor_id: Поставщик SoC
+        version: Версия
+    help:
+      camera:
+        flash_type: Если вы не уверены, выберите NOR 8M.
+    models:
+      snapshot: Снимок
+      soc: SoC

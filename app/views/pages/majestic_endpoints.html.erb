@@ -1,0 +1,94 @@
+<% network_address="192.168.1.10" %>
+
+<article class="majestic endpoins">
+  <header>
+    <h2><%= t('.title') %></h2>
+  </header>
+
+  <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">
+    <div class="col">
+      <h3><%= t('.video') %></h3>
+      <dl>
+        <dt>http://<%= network_address %>/mjpeg</dt>
+        <dd><%= t('.mjpeg') %></dd>
+        <dt>http://<%= network_address %>/video.mp4</dt>
+        <dd><%= t('.fmp4') %></dd>
+        <dt>rtsp://username:password@<%= network_address %>/stream=0</dt>
+        <dd><%= t('.rtsp0') %></dd>
+        <dt>rtsp://username:password@<%= network_address %>/stream=1</dt>
+        <dd><%= t('.rtsp1') %></dd>
+        <dt>http://<%= network_address %>/hls</dt>
+        <dd><%= t('.hls') %></dd>
+        <dt>http://<%= network_address %>/webrtc</dt>
+        <dd><%= t('.webrtc') %></dd>
+        <dt>http://<%= network_address %>/mjpeg.html</dt>
+        <dd><%= t('.mjpeg_player') %></dd>
+      </dl>
+      <h3><%= t('.audio') %></h3>
+      <dl>
+        <dt>http://<%= network_address %>/audio.opus</dt>
+        <dd><%= t('.opus') %></dd>
+        <dt>http://<%= network_address %>/audio.pcm</dt>
+        <dd><%= t('.raw_pcm') %></dd>
+        <dt>http://<%= network_address %>/audio.m4a</dt>
+        <dd><%= t('.aac') %></dd>
+        <dt class="ult">http://<%= network_address %>/audio.mp3</dt>
+        <dd class="ult"><%= t('.mp3') %></dd>
+        <dt>http://<%= network_address %>/audio.alaw</dt>
+        <dd><%= t('.alaw') %></dd>
+        <dt>http://<%= network_address %>/audio.ulaw</dt>
+        <dd><%= t('.ulaw') %></dd>
+        <dt>http://<%= network_address %>/audio.g711a</dt>
+        <dd><%= t('.g711') %></dd>
+        <dt>http://<%= network_address %>/play_audio</dt>
+        <dd><%= t('.play_on_speaker') %><sup>1,3</sup>
+          <div class="small"><%= t('.accepts_post') %></div></dd>
+      </dl>
+    </div>
+    <div class="col">
+      <h3><%= t('.images') %></h3>
+      <dl>
+        <dt>http://<%= network_address %>/image.jpg</dt>
+        <dd><%= t('.jpeg') %><br><%= t('.optional_params') %>:<sup>2,4</sup>
+          <ul class="small">
+            <li><%= t('.jpeg_params1') %></li>
+            <li><%= t('.jpeg_params2') %></li>
+            <li><%= t('.jpeg_params3') %></li>
+            <li><%= t('.jpeg_params4') %></li>
+          </ul>
+        </dd>
+        <dt>http://<%= network_address %>/image.heif</dt>
+        <dd><%= t('.heif') %></dd>
+        <dt>http://<%= network_address %>/image.yuv420</dt>
+        <dd><%= t('.yuv420') %></dd>
+        <dt>http://<%= network_address %>/image.dng</dt>
+        <dd><%= t('.dng') %><sup>3</sup></dd>
+      </dl>
+      <h3><%= t('.night') %></h3>
+      <dl>
+        <dt>http://<%= network_address %>/night/on</dt>
+        <dd><%= t('.night_on') %></dd>
+        <dt>http://<%= network_address %>/night/off</dt>
+        <dd><%= t('.night_off') %></dd>
+        <dt>http://<%= network_address %>/night/toggle</dt>
+        <dd><%= t('.night_toggle') %></dd>
+      </dl>
+      <h3><%= t('.monitoring') %></h3>
+      <dl>
+        <dt>http://<%= network_address %>/api/v1/config.json</dt>
+        <dd><%= t('.majestic_json') %></dd>
+        <dt>http://<%= network_address %>/metrics</dt>
+        <dd><%= t('.prometheus_html') %></dd>
+      </dl>
+    </div>
+  </div>
+
+  <ol class="footnotes small">
+    <li class="text-muted"><%= t('.footnote_1') %></li>
+    <li class="text-muted"><%= t('.footnote_2') %></li>
+    <li class="text-muted"><%= t('.footnote_3_html') %></li>
+    <li class="text-muted"><%= t('.footnote_4_html') %></li>
+  </ol>
+
+  <p class="text-muted"><%= t('.more_examples_html') %></p>
+</article>

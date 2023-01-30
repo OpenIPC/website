@@ -1,47 +1,41 @@
 <article class="hardware">
   <header>
-    <h2>Supported Hardware by SoC</h2>
+    <h2><%= t('.title') %></h2>
   </header>
 
   <ul class="nav nav-tabs mb-4 small">
     <li class="nav-item">
-      <%= link_to "Recommended", '/supported-hardware/featured',
-                  class: "nav-link fw-bold #{" active" if action_name.eql?('featured')}" %>
+      <%= link_to t('.featured'), '/supported-hardware/featured', class: "nav-link fw-bold#{" active" if action_name.eql?('featured')}" %>
     </li>
     <% Vendor.order(:name).each do |v| %>
       <li class="nav-item">
-        <%= link_to v.name, cameras_vendor_path(v),
-                    class: "nav-link#{" active" if @vendor.eql?(v.name)}" %>
+        <%= link_to v.name, cameras_vendor_path(v), class: "nav-link#{" active" if @vendor.eql?(v.name)}" %>
       </li>
     <% end %>
     <li class="nav-item">
-      <%= link_to "Full list", '/supported-hardware/full-list',
-                  class: "nav-link text-muted #{" active" if action_name.eql?('full_list')}" %>
+      <%= link_to t('.full_list'), '/supported-hardware/full-list', class: "nav-link text-muted#{" active" if action_name.eql?('full_list')}" %>
     </li>
   </ul>
 
   <h3><%= @page_title %></h3>
 
   <div class="alert alert-info">
-    <p class="mb-0">
-      Please note. Support for different SoCs is at different stages of development.
-      <a href="/supported-hardware/featured">This list</a> shows the most fully supported and, therefore, the most recommended ones.</p>
+    <p class="mb-0"><%= t('.recommended_alert_html') %></p>
   </div>
 
   <div class="socs">
     <dl class="row mb-3 border-bottom small fw-bold">
-      <dd class="col-2 col-md-1 stage">Stage</dd>
-      <dd class="col-10 col-md-3 model">SoC Model</dd>
-      <dd class="col-2 col-md-1 url">Docs</dd>
+      <dd class="col-2 col-md-1 stage"><%= t('.th_stage') %></dd>
+      <dd class="col-10 col-md-3 model"><%= t('.th_soc_model') %></dd>
+      <dd class="col-2 col-md-1 url"><%= t('.th_docs') %></dd>
       <dd class="col-2 col-md-1 url">U-Boot</dd>
       <dd class="col-2 col-md-1 url">Linux</dd>
       <dd class="col-2 col-md-1 url">SDK</dd>
-      <dd class="col-4 col-md-2 hex_address">Load address</dd>
-      <dd class="col-12 col-md-2">Build status</dd>
+      <dd class="col-4 col-md-2 hex_address"><%= t('.th_baseaddr') %></dd>
     </dl>
 
     <%= render @socs %>
   </div>
 
-  <p><a href="/stages-of-firmware-development">Stages of firmware development explained</a></p>
+  <p><%= link_to t('.stages_of_development'), "/stages-of-firmware-development" %></p>
 </article>

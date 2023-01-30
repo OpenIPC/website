@@ -124,7 +124,7 @@
 
   <div class="alert alert-success p-5">
     <h3><%= t('firmware.installation.success.title', name: @camera.firmware_version_name) %></h3>
-    <p class="mb-0"><%= t('firmware.installation.success.info_html') %></p>
+    <p class="mb-0"><%= t('firmware.installation.success.info_html', address: @camera.camera_ip_address) %></p>
   </div>
 
   <% unless @camera.flash_type.eql?("nand") %>
