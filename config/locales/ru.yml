@@ -76,14 +76,14 @@ ru:
       title: Восстановить стоковую прошивку камеры
     version:
       fpv: FPV
-      lite: Лайт
-      nand: И-НЕ
-      ultimate: Окончательный
+      lite: Lite
+      nand: Nand
+      ultimate: Ultimate
   flash_chip:
-    nand: И-НЕ
-    nor16m: НОРМ 16М
-    nor32m: НО 32M
-    nor8m: НИ 8М
+    nand: NAND
+    nor16m: NOR 16М
+    nor32m: NOR 32M
+    nor8m: NOR 8М
   locales:
     de: Deutsch
     en: English

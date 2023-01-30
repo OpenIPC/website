@@ -6,16 +6,16 @@ ru:
         mac_address: MAC-адрес
       soc:
         build_status_url: URL-адрес статуса сборки
-        kernel: ядро
-        linux_filename: Linux-файл
-        load_address: Загрузить адрес
+        kernel: Ядро
+        linux_filename: Linuх
+        load_address: Адрес загрузки
         model: Модель SoC
-        notes: Ноты
+        notes: Заметки
         sdk: SDK
-        status: стадия
-        toolchain_filename: Файл цепочки инструментов
-        uboot_filename: U-загрузочный файл
-        vendor_id: Поставщик SoC
+        status: Стадия
+        toolchain_filename: Тулчейн
+        uboot_filename: Загрузчик
+        vendor_id: Производитель SoC
         version: Версия
     help:
       camera:
