@@ -5,8 +5,9 @@ en:
       camera:
         camera_ip_address: Camera IP address
         camera_mac_address: Camera MAC address
+        firmware_version: Firmware version
         flash_type: Type and size of flash memory chip
-        network_interfaces: Network interfaces
+        network_interface: Network interface
         sd_card_slot: SD card slot
         server_ip_address: TFTP server IP address
         soc_id: System-on-Chip
