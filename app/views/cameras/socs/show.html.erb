@@ -1,7 +1,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><%= link_to t('site.home'), "/" %></li>
-    <li class="breadcrumb-item"><%= link_to t('site.vendors'), cameras_vendors_path %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.home'), "/" %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.vendors'), cameras_vendors_path %></li>
     <li class="breadcrumb-item"><%= link_to @vendor.name, cameras_vendor_path(@vendor) %></li>
     <li class="breadcrumb-item active" aria-current="page"><%= link_to @camera.soc.model, cameras_vendor_soc_path(@vendor, @camera.soc) %></li>
   </ol>
@@ -18,13 +18,11 @@
     <div class="col-md-6 col-xl-7 col-xxl-8 mb-3">
       <% if @camera.soc.uboot_filename.blank? || @camera.soc.linux_filename.blank? || @camera.soc.load_address.blank? %>
         <div class="alert alert-info">
-          <p class="mb-0">The installation instructions for the <%= @camera.soc.full_name %> SoC are not yet ready.
-            Although we are working hard to release OpenIPC firmware for the <%= @camera.soc.full_name %>.
-            Please stay tuned and <a href="/support-open-source">support Open Source</a>.</p>
+          <p class="mb-0"><%= t('.not_ready_alert_html', name: @camera.soc.full_name) %></p>
         </div>
       <% else %>
-        <h3>Installation Instruction</h3>
-        <p>In order to get a personalized installation instruction, please enter your network configuration below:</p>
+        <h3><%= t('.title') %></h3>
+        <p><%= t('.paragraph1') %></p>
         <%= bootstrap_form_for @camera, url: cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc), method: 'put' do |f| %>
           <div class="row row-cols-1 row-cols-xl-2">
             <div class="col">
@@ -43,39 +41,38 @@
               <%= f.select :sd_card_slot, list_of_sd_card_for_select %>
             </div>
           </div>
-          <p><%= f.submit "Generate installation instruction", class: "btn btn-primary" %></p>
+          <p><%= f.submit t('.generate_button'), class: "btn btn-primary" %></p>
         <% end %>
       <% end %>
     </div>
     <div class="col-md-6 col-xl-5 col-xxl-4 mb-3">
-      <h3>Downloads</h3>
-      <p class="fst-italic">If you know what you are doing.</p>
+      <h3><%= t('.subtitle') %></h3>
+      <p class="fst-italic"><%= t('.paragraph2') %></p>
       <% unless @camera.soc.uboot_filename.blank? %>
         <div class="alert alert-info github">
           <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to "OpenIPC Bootloader", @camera.soc.bl_url %></h5>
-          <p class="mb-0 small">for <%= @camera.soc.full_name %></p>
+          <h5 class="mb-1"><%= link_to t('.bootloader'), @camera.soc.bl_url %></h5>
+          <p class="mb-0 small"><%= t('.for', name: @camera.soc.full_name) %></p>
         </div>
       <% end %>
       <% unless @camera.soc.linux_filename.blank? %>
         <div class="alert alert-primary github">
           <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to "OpenIPC Linux #{@camera.firmware_version_name}",
-                                       firmware_url(@camera), title: firmware_filename(@camera) %></h5>
-          <p class="small">for <%= @camera.soc.full_name %></p>
+          <h5 class="mb-1"><%= link_to t('.bundle', name: @camera.firmware_version_name), firmware_url(@camera), title: firmware_filename(@camera) %></h5>
+          <p class="mb-0 small"><%= t('.for', name: @camera.soc.full_name) %></p>
         </div>
       <% end %>
       <% unless @camera.soc.toolchain_filename.blank? %>
         <div class="alert alert-warning github">
           <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to "OpenIPC Toolchain", @camera.soc.tc_url %></h5>
-          <p class="mb-0 small">for <%= @camera.soc.full_name %></p>
+          <h5 class="mb-1"><%= link_to t('.toolchain'), @camera.soc.tc_url %></h5>
+          <p class="mb-0 small"><%= t('.for', name: @camera.soc.full_name) %></p>
         </div>
       <% end %>
     </div>
   </div>
 
-  <h4>Notes</h4>
+  <h4><%= t('.notes') %></h4>
   <p><%= @camera.soc.notes %></p>
 </article>
 

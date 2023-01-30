@@ -15,6 +15,18 @@ ru:
         th_stage: Стадия
         th_status: Статус сборки
         title: Поддерживаемые SoC
+      show:
+        bootloader: Загрузчик OpenIPC
+        bundle: OpenIPC Linux (%{name})
+        for: для %{name}
+        generate_button: Сгенерировать инструкцию по установке
+        not_ready_alert_html: Инструкция по установке %{name} SoC еще не готова. Хотя мы прилагаем все усилия, чтобы выпустить прошивку OpenIPC для <%= @camera.soc.full_name %>. Пожалуйста, следите за обновлениями и <a href="/support-open-source">поддержите Open Source</a> .
+        notes: Заметки
+        paragraph1: 'Чтобы получить индивидуальную инструкцию по установке, впишите в форму конфигурацию вашей сети:'
+        paragraph2: Если вы знаете, что делаете.
+        subtitle: Файлы для скачивания
+        title: Инструкция по установке
+        toolchain: Тулчейн OpenIPC
   error:
     please_fix: Пожалуйста, исправьте ошибки ниже.
   errors:
@@ -104,7 +116,7 @@ ru:
     editing: Редактирование
     endpoints: Majestic
     hires_timer: Шустрый таймер
-    home: Дом
+    home: Начало
     introduction: Вступление
     next: Следующий
     openwall: Стена
