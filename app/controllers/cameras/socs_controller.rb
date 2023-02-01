@@ -84,9 +84,9 @@ module Cameras
       @flash_type_command = @camera.flash_type
       @flash_type_command = "nor16m" if @camera.flash_type.eql?("nor32m")
 
-      if @camera.flash_type.eql?("nor8m") && !@camera.firmware_version.eql?("lite")
+      if @camera.flash_type.eql?("nor8m") && @camera.firmware_version.eql?("ultimate")
         @camera.firmware_version = "lite"
-        flash.now[:warning] = "8MB Flash ROM can only be flashed with Lite edition!"
+        flash.now[:warning] = "8MB Flash ROM can only be flashed with Lite or FPV edition!"
       end
 
       @camera.soc = Soc.find(params[:id])
