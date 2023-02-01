@@ -83,7 +83,7 @@
         if ($('#camera_flash_type').value === 'nor8m') {
             for (let i = 0; i < el.options.length; i++) {
                 let o = el.options.item(i);
-                o.disabled = (o.value !== 'lite');
+                o.disabled = (o.value == 'ultimate');
             }
             el.value = 'lite';
         } else if ($('#camera_flash_type').value === 'nand') {
