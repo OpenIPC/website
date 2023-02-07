@@ -39,13 +39,18 @@ module Multilang
 
   def locale_switcher
     html = []
-    html << '<ul class="navbar-nav text-uppercase"><li class="nav-item dropdown">'
-    html << format('<a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">%<language>s [%<locale>s]</a>', { language: t("str.language"), locale: I18n.locale })
-    html << '<ul class="dropdown-menu">'
+    html << '<ul class="navbar-nav text-uppercase">'
+    html << '<li class="nav-item dropdown">'
+    html << '<a aria-expanded="false" class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" id="dropsownLanguage" role="button">'
+    #html << format('%<language>s [%<locale>s]', { language: t("str.language"), locale: I18n.locale })
+    html << '<img src="/assets/translate.svg" alt="Image: language icon" class="icon img-fluid" title="Language selection">'
+    html << '</a>'
+    html << '<ul aria-labelledby="dropdownLanguage" class="dropdown-menu dropdown-menu-lg-end">'
     I18n.available_locales.sort.each do |l|
-      # on = I18n.locale.eql?(l) ? 'active' : nil
-      html << format('<li class="dropdown-item"><a href="?locale=%<locale>s">%<name>s</a></li>',
-                     { locale: l, name: t("locales.#{l}") })
+      html << '<li class="dropdown-item">'
+      html << format('<a href="?locale=%<locale>s" class="%<active>s">%<name>s</a>',
+                     { active: I18n.locale.eql?(l) ? ' fw-bold' : nil, locale: l, name: t("locales.#{l}") })
+      html << '</li>'
     end
     html << '</ul></li></ul>'
     html.join("\n").html_safe
