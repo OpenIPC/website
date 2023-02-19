@@ -27,12 +27,12 @@
           <div class="row row-cols-1 row-cols-xl-2">
             <div class="col">
               <%= f.text_field :camera_mac_address, pattern: macaddr_pattern, required: true,
-                               title: "six 8-bit hex fields separated by columns or dashes", class: "form-control",
-                               help: raw('<a id="generate-mac-address" href="#">Generate valid random MAC address.</a>') %>
+                               title: t('.camera_mac_address_title'), class: "form-control",
+                               help: link_to(t('.generate_mac'), '#', id: 'generate-mac-address') %>
               <%= f.text_field :camera_ip_address, pattern: ipaddr_pattern, required: true,
-                               title: "four 8-bit fields separated by periods", class: "form-control" %>
+                               title: t('.camera_ip_address_title'), class: "form-control" %>
               <%= f.text_field :server_ip_address, pattern: ipaddr_pattern, required: true,
-                               title: "four 8-bit fields separated by periods", class: "form-control" %>
+                               title: t('.server_ip_address_title'), class: "form-control" %>
             </div>
             <div class="col">
               <%= f.select :flash_type, list_of_flash_type_sizes_for_select %>
