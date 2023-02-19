@@ -18,12 +18,16 @@ en:
       show:
         bootloader: OpenIPC Bootloader
         bundle: OpenIPC Linux (%{name})
+        camera_ip_address_title: four 8-bit fields separated by periods
+        camera_mac_address_title: six 8-bit hex fields separated by columns or dashes
         for: for %{name}
         generate_button: Generate installation instruction
-        not_ready_alert_html: The installation instructions for the %{name} SoC are not yet ready. Although we are working hard to release OpenIPC firmware for the <%= @camera.soc.full_name %>. Please stay tuned and <a href="/support-open-source">support Open Source</a>.
+        generate_mac: Generate a valid random MAC address.
+        not_ready_alert_html: The installation instructions for the %{name} SoC are not yet ready. Although we are working hard to release OpenIPC firmware for the %{name}. Please stay tuned and <a href="/support-open-source">support Open Source</a>.
         notes: Notes
         paragraph1: 'In order to get a personalized installation instruction, please enter your network configuration below:'
         paragraph2: If you know what you are doing.
+        server_ip_address_title: four 8-bit fields separated by periods
         subtitle: Downloads
         title: Installation Instruction
         toolchain: OpenIPC Toolchain

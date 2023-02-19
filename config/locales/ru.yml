@@ -18,12 +18,16 @@ ru:
       show:
         bootloader: Загрузчик OpenIPC
         bundle: OpenIPC Linux (%{name})
+        camera_ip_address_title: четыре 8-битных поля, разделенных точками
+        camera_mac_address_title: шесть 8-битных шестнадцатеричных полей, разделенных столбцами или тире
         for: для %{name}
         generate_button: Сгенерировать инструкцию по установке
-        not_ready_alert_html: Инструкция по установке %{name} SoC еще не готова. Хотя мы прилагаем все усилия, чтобы выпустить прошивку OpenIPC для <%= @camera.soc.full_name %>. Пожалуйста, следите за обновлениями и <a href="/support-open-source">поддержите Open Source</a> .
+        generate_mac: Создайте допустимый случайный MAC-адрес.
+        not_ready_alert_html: Инструкция по установке %{name} SoC еще не готова. Хотя мы прилагаем все усилия, чтобы выпустить прошивку OpenIPC для %{name}. Пожалуйста, следите за обновлениями и <a href="/support-open-source">поддержите Open Source</a> .
         notes: Заметки
         paragraph1: 'Чтобы получить индивидуальную инструкцию по установке, впишите в форму конфигурацию вашей сети:'
         paragraph2: Если вы знаете, что делаете.
+        server_ip_address_title: четыре 8-битных поля, разделенных точками
         subtitle: Файлы для скачивания
         title: Инструкция по установке
         toolchain: Тулчейн OpenIPC
