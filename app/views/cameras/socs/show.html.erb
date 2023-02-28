@@ -15,14 +15,42 @@
   </header>
 
   <div class="row">
-    <div class="col-md-6 col-xl-7 col-xxl-8 mb-3">
-      <% if @camera.soc.uboot_filename.blank? || @camera.soc.linux_filename.blank? || @camera.soc.load_address.blank? %>
+    <% if @camera.soc.uboot_filename.blank? || @camera.soc.linux_filename.blank? || @camera.soc.load_address.blank? %>
+      <div class="col-md-6 col-xl-7 col-xxl-8 mb-3">
         <div class="alert alert-info">
           <p class="mb-0"><%= t('.not_ready_alert_html', name: @camera.soc.full_name) %></p>
         </div>
-      <% else %>
-        <h3><%= t('.title') %></h3>
-        <p><%= t('.paragraph1') %></p>
+      </div>
+
+      <div class="col">
+        <% unless @camera.soc.uboot_filename.blank? %>
+          <div class="alert alert-info github">
+            <i class="bi bi-github float-end"></i>
+            <h5 class="mb-1"><%= link_to t('.bootloader'), @camera.soc.bl_url %></h5>
+            <p class="mb-0 small"><%= t('.for', name: @camera.soc.full_name) %></p>
+          </div>
+        <% end %>
+        <% unless @camera.soc.linux_filename.blank? %>
+          <div class="alert alert-primary github">
+            <i class="bi bi-github float-end"></i>
+            <h5 class="mb-1"><%= link_to t('.bundle', name: @camera.firmware_version_name), firmware_url(@camera), title: firmware_filename(@camera) %></h5>
+            <p class="mb-0 small"><%= t('.for', name: @camera.soc.full_name) %></p>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="col-md-6 col-xl-5 col-xxl-4 mb-3">
+        <div class="alert alert-info">
+          <h3><%= t('.title') %></h3>
+          <p class="mb-0"><%= t('.paragraph1') %></p>
+        </div>
+        <div class="alert alert-danger">
+          <h3><%= t('.title2') %></h3>
+          <p class="mb-0"><%= t('.paragraph2') %></p>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-7 col-xxl-8 mb-3">
         <%= bootstrap_form_for @camera, url: cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc), method: 'put' do |f| %>
           <div class="row row-cols-1 row-cols-xl-2">
             <div class="col">
@@ -43,37 +71,14 @@
           </div>
           <p><%= f.submit t('.generate_button'), class: "btn btn-primary" %></p>
         <% end %>
-      <% end %>
-    </div>
-    <div class="col-md-6 col-xl-5 col-xxl-4 mb-3">
-      <h3><%= t('.subtitle') %></h3>
-      <p class="fst-italic"><%= t('.paragraph2') %></p>
-      <% unless @camera.soc.uboot_filename.blank? %>
-        <div class="alert alert-info github">
-          <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to t('.bootloader'), @camera.soc.bl_url %></h5>
-          <p class="mb-0 small"><%= t('.for', name: @camera.soc.full_name) %></p>
-        </div>
-      <% end %>
-      <% unless @camera.soc.linux_filename.blank? %>
-        <div class="alert alert-primary github">
-          <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to t('.bundle', name: @camera.firmware_version_name), firmware_url(@camera), title: firmware_filename(@camera) %></h5>
-          <p class="mb-0 small"><%= t('.for', name: @camera.soc.full_name) %></p>
-        </div>
-      <% end %>
-      <% unless @camera.soc.toolchain_filename.blank? %>
-        <div class="alert alert-warning github">
-          <i class="bi bi-github float-end"></i>
-          <h5 class="mb-1"><%= link_to t('.toolchain'), @camera.soc.tc_url %></h5>
-          <p class="mb-0 small"><%= t('.for', name: @camera.soc.full_name) %></p>
-        </div>
-      <% end %>
-    </div>
+      </div>
+    <% end %>
   </div>
-
+  </div>
+  <!--
   <h4><%= t('.notes') %></h4>
   <p><%= @camera.soc.notes %></p>
+-->
 </article>
 
 <script>
