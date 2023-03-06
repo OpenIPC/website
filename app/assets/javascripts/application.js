@@ -12,7 +12,7 @@ window.onload = (event) => {
         el.classList.add('external-link');
     });
 
-    if (document.documentElement.lang === 'ru') {
+    if (document.documentElement.lang !== 'ru') {
         $$('.lang-ru').forEach(el => el.classList.add('d-none'));
     }
 
