@@ -6,14 +6,14 @@ Rails.application.routes.draw do
   get '/aaa', to: 'pages#aaa'
   get '/majestic-endpoints', to: 'pages#majestic_endpoints'
 
-  get '/coupler',     to: redirect('https://openipc.github.io/coupler/')
-  get '/firmware',    to: redirect('https://openipc.github.io/firmware/')
-  get '/ipctool',     to: redirect('https://openipc.github.io/ipctool/')
-  get '/microbe-web', to: redirect('https://openipc.github.io/microbe-web/')
-  get '/smolrtsp',    to: redirect('https://openipc.github.io/smolrtsp/')
-  get '/telemetry',   to: redirect('https://openipc.github.io/telemetry/')
-  get '/yaml-cli',    to: redirect('https://openipc.github.io/yaml-cli/')
-  get '/wiki',        to: redirect('https://openipc.github.io/wiki/')
+  get '/coupler',     to: redirect('https://github.com/openipc//coupler/')
+  get '/firmware',    to: redirect('https://github.com/openipc//firmware/')
+  get '/ipctool',     to: redirect('https://github.com/openipc/ipctool/')
+  get '/microbe-web', to: redirect('https://github.com/openipc/microbe-web/')
+  get '/smolrtsp',    to: redirect('https://github.com/openipc/smolrtsp/')
+  get '/telemetry',   to: redirect('https://github.com/openipc/telemetry/')
+  get '/yaml-cli',    to: redirect('https://github.com/openipc/yaml-cli/')
+  get '/wiki',        to: redirect('https://github.com/openipc/wiki/')
 
   get '/hardware',    to: redirect('/supported-hardware/featured')
   get '/ru/installation.md', to: redirect('https://wiki.openipc.org/ru/installation.html')
@@ -22,14 +22,14 @@ Rails.application.routes.draw do
   get '/install_switcam_hs303', to: redirect('https://wiki.openipc.org/ru/hardware-hs303.html')
 
   # FIXME: combine with above
-  get '/coupler(/*any)',     to: redirect('https://openipc.github.io/coupler/%{any}')
-  get '/firmware(/*any)',    to: redirect('https://openipc.github.io/firmware/%{any}')
-  get '/ipctool(/*any)',     to: redirect('https://openipc.github.io/ipctool/%{any}')
-  get '/microbe-web(/*any)', to: redirect('https://openipc.github.io/microbe-web/%{any}')
-  get '/smolrtsp(/*any)',    to: redirect('https://openipc.github.io/smolrtsp/%{any}')
-  get '/telemetry(/*any)',   to: redirect('https://openipc.github.io/telemetry/%{any}')
-  get '/yaml-cli(/*any)',    to: redirect('https://openipc.github.io/yaml-cli/%{any}')
-  get '/wiki(/*any)',        to: redirect('https://openipc.github.io/wiki/%{any}')
+  get '/coupler(/*any)',     to: redirect('https://github.com/openipc//coupler')
+  get '/firmware(/*any)',    to: redirect('https://github.com/openipc/firmware')
+  get '/ipctool(/*any)',     to: redirect('https://github.com/openipc/ipctool')
+  get '/microbe-web(/*any)', to: redirect('https://github.com/openipc/microbe-web')
+  get '/smolrtsp(/*any)',    to: redirect('https://github.com/openipc/smolrtsp')
+  get '/telemetry(/*any)',   to: redirect('https://github.com/openipc/telemetry')
+  get '/yaml-cli(/*any)',    to: redirect('https://github.com/openipc/yaml-cli')
+  get '/wiki(/*any)',        to: redirect('https://github.com/openipc/wiki')
 
   get '/SDK', to: redirect('/supported-hardware')
   get '/sponsor', to: redirect('/support-open-source')
