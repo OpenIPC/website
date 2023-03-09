@@ -60,9 +60,7 @@ i.bi-github { font-size: 2.3rem; line-height: 1; }
 .discord img,
 .gitter img { height: 2.5rem; }
 
-/*input:focus { outline: none; }*/
-/*input:invalid { border-color: red; }*/
-/*input:valid { border-color: green; }*/
+html:not([lang="ru"]) article.introduction .col.logo.ru { display: none; }
 
 article.calculator {
   .form-floating > label {
@@ -172,9 +170,9 @@ table.socs tr.featured {
 }
 
 table.binaries {
-    td:not(:first-child),
-    th:not(:first-child) {width: 10rem; text-align: right;}
-    tr.oversize { td:nth-child(2) {background-color: red; color: white;} }
-    tr.bloated  { td:nth-child(2) {background-color: yellow;} }
-    tr.slim     { td:nth-child(2) {color: green;} }
+  td:not(:first-child),
+  th:not(:first-child) {width: 10rem; text-align: right;}
+  tr.oversize { td:nth-child(2) {background-color: red; color: white;} }
+  tr.bloated  { td:nth-child(2) {background-color: yellow;} }
+  tr.slim     { td:nth-child(2) {color: green;} }
 }

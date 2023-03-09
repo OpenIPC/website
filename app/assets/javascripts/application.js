@@ -12,10 +12,6 @@ window.onload = (event) => {
         el.classList.add('external-link');
     });
 
-    if (document.documentElement.lang !== 'ru') {
-        $$('.lang-ru').forEach(el => el.classList.add('d-none'));
-    }
-
     $$('span[data-timestamp]').forEach(el => {
         const ts = el.dataset['timestamp'];
         let date = new Date(ts * 1000);
