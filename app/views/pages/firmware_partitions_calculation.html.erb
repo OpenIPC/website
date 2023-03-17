@@ -3,6 +3,11 @@
     <h2><%= t('.title') %></h2>
   </header>
 
+  <p>
+    <%= button_tag "Lite", data: { flavor: 'lite' }, class: 'btn btn-primary preset', style: 'min-width:10rem' %>
+    <%= button_tag "Ultimate", data: { flavor: 'ultimate' }, class: 'btn btn-primary preset', style: 'min-width:10rem' %>
+  </p>
+
   <div class="row row-cols-1 row-cols-md-5">
     <div class="col">
       <div class="form-floating mb-3">
@@ -12,7 +17,7 @@
     </div>
     <div class="col">
       <div class="form-floating hex mb-3">
-        <input name="flash_size" id="flash_size" class="form-control" value="8">
+        <input name="flash_size" id="flash_size" class="form-control" value="">
         <label class="form-label" for="flash_size"><%= t('.flash_size_mb') %></label>
       </div>
     </div>
@@ -31,13 +36,13 @@
     <div class="row row-cols-1 row-cols-lg-5 partition" data-number="<%= i %>">
       <div class="col mb-3 name">
         <div class="form-floating">
-          <input type="text" class="form-control" id="p<%= i %>name" value="<%= partition_names[i - 1] %>">
+          <input type="text" class="form-control" id="p<%= i %>name" value="">
           <label class="form-label" for="p<%= i %>name"><%= t('.partition_name', number: i) %></label>
         </div>
       </div>
       <div class="col mb-3">
         <div class="form-floating size dec">
-          <input type="text" class="form-control" id="p<%= i %>size" value="<%= partition_sizes[i - 1] %>">
+          <input type="text" class="form-control" id="p<%= i %>size" value="">
           <label class="form-label" for="p<%= i %>size"><%= t('.partition_size', number: i) %></label>
         </div>
       </div>
@@ -74,6 +79,37 @@
   <div id="mtdparts" class="alert alert-info text-center"></div>
 
   <script>
+      const Partitioning = {
+        'lite': {
+          'sizemb': 8,
+          'partitions': [
+            { 'name': 'boot', 'sizekb': '256' },
+            { 'name': 'env', 'sizekb': '64' },
+            { 'name': 'kernel', 'sizekb': '2048' },
+            { 'name': 'rootfs', 'sizekb': '5120' },
+            { 'name': 'rootf_data', 'sizekb': '-' }
+        ]},
+        'ultimate': {
+          'sizemb': 16,
+          'partitions': [
+            { 'name': 'boot', 'sizekb': '256' },
+            { 'name': 'env', 'sizekb': '64' },
+            { 'name': 'kernel', 'sizekb': '3072' },
+            { 'name': 'rootfs', 'sizekb': '10240' },
+            { 'name': 'rootf_data', 'sizekb': '-' }
+        ]}
+      }
+
+      function populate(ev) {
+        const p = Partitioning[ev.target.dataset.flavor];
+        $('#flash_size').value = p.sizemb;
+        p.partitions.forEach((i, x) => {
+          $('#p'+(x+1)+'name').value = i.name;
+          $('#p'+(x+1)+'size').value = i.sizekb;
+        });
+        recalculate();
+      }
+
       function recalculate() {
           const elOffset = $('input#offset');
           const offset = elOffset.value;
@@ -156,6 +192,7 @@
       }
 
       function initPage() {
+          $$('button.preset').forEach(el => el.addEventListener('click', populate));
           $('button#recalculate').addEventListener('click', recalculate);
           $$('input').forEach(el => {
               el.addEventListener('focus', evt => { evt.preventDefault(); evt.target.select(); });
