@@ -82,7 +82,7 @@ en:
       webrtc: WebRTC live-streaming in web browser.
       yuv420: Snapshot in YUV420 format.
     our_channels:
-      paragraph1_html: Please note, while we do have gateways to Gitter and Discord we strongly suggest you to install a native <a href="https://telegram.org/">Telegram Messenger</a> for your platform and use our Telegram channels.
+      paragraph1_html: We strongly suggest you to install a native <a href="https://telegram.org/">Telegram Messenger</a> for your platform and use our Telegram channels.
       title: Our channels
     our_projects:
       burn_info: An opensource tool to unbrick HiSilicon devices.

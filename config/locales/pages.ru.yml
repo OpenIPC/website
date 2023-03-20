@@ -82,7 +82,7 @@ ru:
       webrtc: Прямая трансляция WebRTC в веб-браузере.
       yuv420: Снимок в формате YUV420.
     our_channels:
-      paragraph1_html: Хоть у нас и есть шлюзы для Gitter и Discord, мы настоятельно рекомендуем вам установить <a href="https://telegram.org/">Telegram Messenger</a> для вашей платформы и общаться непосредственно в наших каналах в Telegram.
+      paragraph1_html: Мы настоятельно рекомендуем вам установить <a href="https://telegram.org/">Telegram Messenger</a> для вашей платформы и общаться непосредственно в наших каналах в Telegram.
       title: Наши каналы
     our_projects:
       burn_info: Инструмент с открытым исходным кодом для разблокировки устройств HiSilicon.
