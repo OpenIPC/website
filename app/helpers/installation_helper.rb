@@ -14,7 +14,11 @@ module InstallationHelper
       text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
     end
     text << "mw.b #{c.soc.load_address} 0xff #{c.flash_size_hex}; sf probe 0; sf read #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
-    text << "tftpput #{c.soc.load_address} #{c.flash_size_hex} #{c.backup_filename}"
+    if c.sd_card_slot.eql?("sd") && c.network_interface.eql?("wifi")
+      text << "mmc dev 0; mmc erase 0x10 #{c.flash_size_blocks}; mmc write #{c.soc.load_address} 0x10 #{c.flash_size_blocks}"
+    else
+      text << "tftpput #{c.soc.load_address} #{c.flash_size_hex} #{c.backup_filename}"
+    end
     list_of_commands text
   end
 
@@ -23,7 +27,12 @@ module InstallationHelper
     text = []
     text << do_not_copy_paste
     text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
-    text << "mw.b #{c.soc.load_address} 0xff #{c.flash_size_hex}; tftpboot #{c.soc.load_address} #{fw_filename}"
+    text << "mw.b #{c.soc.load_address} 0xff #{c.flash_size_hex}"
+    if c.sd_card_slot.eql?("sd") && c.network_interface.eql?("wifi")
+      text << "fatload mmc 0:1 #{c.soc.load_address} #{fw_filename}"
+    else
+      text << "tftpboot #{c.soc.load_address} #{fw_filename}"
+    end
     text << "sf probe 0; sf erase 0x0 #{c.flash_size_hex}; sf write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
     text << "reset"
     list_of_commands text
@@ -35,7 +44,12 @@ module InstallationHelper
     unless c.network_interface.eql?("wifi")
       text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
     end
-    text << "mw.b #{c.soc.load_address} 0xff 0x50000; tftpboot #{c.soc.load_address} #{c.soc.uboot_filename}"
+    text << "mw.b #{c.soc.load_address} 0xff 0x50000"
+    if c.sd_card_slot.eql?("sd") && c.network_interface.eql?("wifi")
+      text << "fatload mmc 0:1 #{c.soc.load_address} #{c.soc.uboot_filename}"
+    else
+      text << "tftpboot #{c.soc.load_address} #{c.soc.uboot_filename}"
+    end
     if c.flash_type.eql?("nand")
       text << "nand erase 0x0 0x50000; nand write #{c.soc.load_address} 0x0 0x50000"
     else
@@ -53,8 +67,19 @@ module InstallationHelper
       text << "setenv ethaddr #{c.camera_mac_address}"
       text << "saveenv"
     end
-    text << "run uk#{c2}; run ur#{c2}"
-    text << "sf erase 0x750000 0xb0000" if c2.eql?("nor8m")
+    if c.sd_card_slot.eql?("sd") && c.network_interface.eql?("wifi")
+      text << "mw.b #{c.soc.load_address} 0xff 0x200000"
+      text << "fatload mmc 0:1 #{c.soc.load_address} #{c.soc.kernel_file}"
+      text << "sf probe 0; sf erase #{c.kernel_offset} #{c.kernel_max_size}; sf write #{c.soc.load_address} #{c.kernel_offset} ${filesize}"
+      text << ""
+      text << "mw.b #{c.soc.load_address} 0xff 0x500000"
+      text << "fatload mmc 0:1 #{c.soc.load_address} #{c.soc.rootfs_file}"
+      text << "sf probe 0; sf erase #{c.rootfs_offset} #{c.rootfs_max_size}; sf write #{c.soc.load_address} #{c.rootfs_offset} ${filesize}"
+      text << ""
+    else
+      text << "run uk#{c2}; run ur#{c2}"
+    end
+    text << "sf erase #{c.overlay_offset} #{c.overlay_max_size}"
     text << "reset"
     list_of_commands text
   end
@@ -72,7 +97,12 @@ module InstallationHelper
     unless c.network_interface.eql?("wifi")
       text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
     end
-    text << "mw.b #{c.soc.load_address} 0xff #{c.flash_size_hex}; tftpboot #{c.soc.load_address} #{c.backup_filename}"
+    text << "mw.b #{c.soc.load_address} 0xff #{c.flash_size_hex}"
+    if c.sd_card_slot.eql?("sd") && c.network_interface.eql?("wifi")
+      text << "fatload mmc 0:1 #{c.soc.load_address} #{c.backup_filename}"
+    else
+      text << "tftpboot #{c.soc.load_address} #{c.backup_filename}"
+    end
     text << "sf probe 0; sf erase 0x0 #{c.flash_size_hex}; sf write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
     list_of_commands text
   end

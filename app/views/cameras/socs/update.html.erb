@@ -30,6 +30,11 @@
         <p><%= t('firmware.installation.backup.info') %></p>
       </div>
       <div class="col col-lg-8">
+        <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
+          <div class="alert alert-warning">
+            <p class="mb-0">You will need an SD card to perform this step. Existing content of the SD card will be destroyed.</p>
+          </div>
+        <% end %>
         <% if @camera.flash_type.eql?("nand") %>
           <%= under_development %>
         <% else %>
@@ -61,6 +66,11 @@
           </div>
         </div>
         <div class="col">
+          <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
+            <div class="alert alert-warning">
+              <p class="mb-0">You will need an SD card to perform this step. Format the SD card into VFAT and copy the downloaded file to the root directory on the card.</p>
+            </div>
+          <% end %>
           <%= flashing_everything(@camera) %>
           <p><%= t('firmware.installation.flashing_full.continue') %></p>
           <p><%= t('firmware.installation.flashing_full.continue2') %></p>
@@ -87,6 +97,11 @@
         <% end %>
       </div>
       <div class="col col-lg-8">
+        <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
+          <div class="alert alert-warning">
+            <p class="mb-0">You will need an SD card to perform this step. Format the SD card into VFAT and copy the downloaded file to the root directory on the card.</p>
+          </div>
+        <% end %>
         <%= flashing_uboot(@camera) %>
         <p><%= t('firmware.installation.flashing_uboot.continue') %></p>
       </div>
@@ -117,6 +132,11 @@
         <% end %>
       </div>
       <div class="col col-lg-8">
+        <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
+          <div class="alert alert-warning">
+            <p class="mb-0">You will need an SD card to perform this step. Format the SD card into VFAT and extract files from the downloaded bundle to the root directory on the card.</p>
+          </div>
+        <% end %>
         <%= flashing_linux(@camera, @flash_type_command) %>
       </div>
     </div>
