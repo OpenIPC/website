@@ -60,6 +60,21 @@ class Camera
     end
   end
 
+  def flash_size_blocks
+    case @flash_type
+    when "nor8m"
+      '0x4000'
+    when "nor16m"
+      '0x8000'
+    when "nor32m"
+      '0x16000'
+      # when "nand"
+      #   ??
+    else
+      '0x4000'
+    end
+  end
+
   def flash_size_hex
     case @flash_type
     when "nor8m"
@@ -77,6 +92,72 @@ class Camera
 
   def firmware_version_name
     @firmware_version_name ||= I18n.t("firmware.version.#{firmware_version}")
+  end
+
+  def kernel_max_size
+    case firmware_version
+    when "lite"
+      "0x200000"
+    when "ultimate"
+      "0x300000"
+    else
+      "0x200000"
+    end
+  end
+
+  def kernel_offset
+    case firmware_version
+    when "lite"
+      "0x50000"
+    when "ultimate"
+      "0x50000"
+    else
+      "0x50000"
+    end
+  end
+
+  def rootfs_max_size
+    case firmware_version
+    when "lite"
+      "0x500000"
+    when "ultimate"
+      "0xA00000"
+    else
+      "0x500000"
+    end
+  end
+
+  def rootfs_offset
+    case firmware_version
+    when "lite"
+      "0x250000"
+    when "ultimate"
+      "0x350000"
+    else
+      "0x250000"
+    end
+  end
+
+  def overlay_max_size
+    case firmware_version
+    when "lite"
+      "0xB0000"
+    when "ultimate"
+      "0x2B0000"
+    else
+      "0xB0000"
+    end
+  end
+
+  def overlay_offset
+    case firmware_version
+    when "lite"
+      "0x750000"
+    when "ultimate"
+      "0xD50000"
+    else
+      "0x750000"
+    end
   end
 
   def permalink
