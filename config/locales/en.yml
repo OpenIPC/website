@@ -76,7 +76,8 @@ en:
         continue2: When in the bootloader shell, remap ROM partitioning according to your flash size and type.
         info: |
           The full firmware image consists of bootloader, kernel and root filesystem, and is also suitable for flashing
-          memory chip using a programmer.
+          memory chip using a programmer. Please note, the full image does not contain pre-set environment. You still
+          need to add your own MAC address, IP address and other settings.
         link: Download OpenIPC Firmware (%{name}) image
         title: Flash full OpenIPC Firmware image
       flashing_uboot:
