@@ -15,6 +15,8 @@ class SnapshotsController < ApplicationController
   end
 
   def create
+    PurgeImagesJob.perform_later
+
     @snapshot = Snapshot.new
     @snapshot.ip_address = request.remote_ip
     if @snapshot.update(permitted_params)
