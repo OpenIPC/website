@@ -100,7 +100,7 @@
         } else {
             for (let i = 0; i < el.options.length; i++) {
                 let o = el.options.item(i);
-                o.disabled = false;
+                o.disabled = (o.value == 'fpv');
             }
         }
     }
