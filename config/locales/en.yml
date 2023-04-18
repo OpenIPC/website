@@ -202,7 +202,7 @@ en:
       description_8: "Group for paid technical support."
       description_9: "تیم OpenIPC برای کاربران ایرانی"
     formatting:
-      header: "Meassage Formatting"
+      header: "Message Formatting"
       info: "Select a text fragment and press a key combo:"
       bold: "Bold"
       italic: "Italic"
