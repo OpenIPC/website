@@ -190,5 +190,25 @@ en:
       uptime: Uptime
   str:
     language: Language
+  telegram:
+    channels:
+      description_1: "International channel about OpenIPC"
+      description_2: "GitHub notifications on the latest builds"
+      description_3: "OpenIPC Telegram Bot demo"
+      description_4: "Russian-speaking OpenIPC users channel"
+      description_5: "Channel for OpenIPC developers"
+      description_6: "Everthing for devices repairing."
+      description_7: "OpenIPC for building FPV systems."
+      description_8: "Group for paid technical support."
+      description_9: "تیم OpenIPC برای کاربران ایرانی"
+    formatting:
+      header: "Meassage Formatting"
+      info: "Select a text fragment and press a key combo:"
+      bold: "Bold"
+      italic: "Italic"
+      underline: "Underline"
+      strikeout: "Strikeout"
+      monospace: "Monospace"
+      hyperlink: "Hypelink"
   title:
     openwall: Open Wall

@@ -5,83 +5,100 @@
 
   <p><%= t('.paragraph1_html') %></p>
 
-  <div class="row row-cols-1 row-cols-lg-3">
+  <div class="row row-cols-1 row-cols-lg-4">
     <div class="col">
       <div class="alert alert-primary gitter">
         <%= image_tag "telegram.svg", class: "float-end" %>
         <h5><a href="https://t.me/OpenIPC">OpenIPC (EN)</a></h5>
-        <p class="mb-0">International channel about OpenIPC</p>
+        <p class="mb-0"><%= t('telegram.channels.description_1') %></p>
       </div>
       <div class="alert alert-primary gitter">
         <%= image_tag "telegram.svg", class: "float-end" %>
         <h5><a href="https://t.me/s/openipc_dev">OpenIPC dev</a></h5>
-        <p class="mb-0">GitHub notifications on the latest builds</p>
+        <p class="mb-0"><%= t('telegram.channels.description_2') %></p>
       </div>
       <div class="alert alert-primary gitter">
         <%= image_tag "telegram.svg", class: "float-end" %>
         <h5><a href="https://t.me/openipc_demo">OpenIPC demo</a></h5>
-        <p class="mb-0">OpenIPC Telegram Bot demo</p>
+        <p class="mb-0"><%= t('telegram.channels.description_3') %></p>
       </div>
     </div>
     <div class="col">
       <div class="alert alert-primary gitter">
         <%= image_tag "telegram.svg", class: "float-end" %>
         <h5><a href="https://t.me/openipc_modding">OpenIPC users (RU)</a></h5>
-        <p class="mb-0">Russian-speaking OpenIPC users channel</p>
+        <p class="mb-0"><%= t('telegram.channels.description_4') %></p>
       </div>
       <div class="alert alert-primary gitter">
         <%= image_tag "telegram.svg", class: "float-end" %>
         <h5><a href="https://t.me/openipc_software">OpenIPC development (RU)</a></h5>
-        <p class="mb-0">Channel for OpenIPC developers</p>
+        <p class="mb-0"><%= t('telegram.channels.description_5') %></p>
       </div>
       <div class="alert alert-primary gitter">
         <%= image_tag "telegram.svg", class: "float-end" %>
-        <h5><a href="https://t.me/openipc_repairs">OpenIPC repair devices (RU)</a></h5>
-        <p class="mb-0">Hardware/software for devices repairing.</p>
+        <h5><a href="https://t.me/openipc_repairs">OpenIPC devices repair (RU)</a></h5>
+        <p class="mb-0"><%= t('telegram.channels.description_6') %></p>
       </div>
     </div>
     <div class="col">
       <div class="alert alert-primary gitter">
         <%= image_tag "telegram.svg", class: "float-end" %>
         <h5><a href="https://t.me/+BMyMoolVOpkzNWUy">OpenIPC & FPV (RU)</a></h5>
-        <p class="mb-0">OpenIPC for building FPV systems.</p>
+        <p class="mb-0"><%= t('telegram.channels.description_7') %></p>
       </div>
       <div class="alert alert-primary gitter">
         <%= image_tag "telegram.svg", class: "float-end" %>
         <h5><a href="https://paywall.pw/openipc">OpenIPC paywall (RU)</a></h5>
-        <p class="mb-0">Paid technical support group</p>
+        <p class="mb-0"><%= t('telegram.channels.description_8') %></p>
       </div>
       <div class="alert alert-primary gitter">
         <%= image_tag "telegram.svg", class: "float-end" %>
         <h5><a href="https://t.me/joinchat/T_GwQUBTJdfXJrFb">OpenIPC Iranian</a></h5>
-        <p class="mb-0">تیم OpenIPC برای کاربران ایرانی</p>
+        <p class="mb-0"><%= t('telegram.channels.description_9') %></p>
       </div>
     </div>
-    <!--
     <div class="col">
-      <div class="alert alert-primary gitter">
-        <%= image_tag "gitter.svg", class: "float-end" %>
-        <h5 class="mb-1">English Chat in Gitter</h5>
-        <p class="mb-0"><%= link_to "https://app.gitter.im/#/room/%23OpenIPC_english:gitter.im", "https://app.gitter.im/#/room/%23OpenIPC_english:gitter.im" %></p>
-      </div>
-      <div class="alert alert-primary gitter">
-        <%= image_tag "gitter.svg", class: "float-end" %>
-        <h5 class="mb-1">Russian Chat in Gitter</h5>
-        <p class="mb-0"><%= link_to "https://app.gitter.im/#/room/%23OpenIPC_russian:gitter.im", "https://app.gitter.im/#/room/%23OpenIPC_russian:gitter.im" %></p>
-      </div>
-      <div class="alert alert-primary discord">
-        <%= image_tag "discord.svg", class: "float-end" %>
-        <h5 class="mb-1">English Chat in Discord</h5>
-        <p class="mb-0"><%= link_to "https://discord.gg/m7gMuUS65k", "https://discord.gg/m7gMuUS65k" %></p>
-      </div>
-      <div class="alert alert-primary discord">
-        <%= image_tag "discord.svg", class: "float-end" %>
-        <h5 class="mb-1">Russian Chat in Discord</h5>
-        <p class="mb-0"><%= link_to "https://discord.gg/KTrNzXjzAy", "https://discord.gg/KTrNzXjzAy" %></p>
+      <div class="alert alert-info">
+        <h4><%= t('telegram.formatting.header') %></h4>
+        <p><%= t('telegram.formatting.info') %></p>
+        <dl class="row row-cols-2 mb-0">
+          <dt><%= t('telegram.formatting.bold') %></dt>
+          <dd><span class="kb_key">Ctrl</span><span class="kb_key">B</span></dd>
+          <dt><%= t('telegram.formatting.italic') %></dt>
+          <dd><span class="kb_key">Ctrl</span><span class="kb_key">I</span></dd>
+          <dt><%= t('telegram.formatting.underline') %></dt>
+          <dd><span class="kb_key">Ctrl</span><span class="kb_key">U</span></dd>
+          <dt><%= t('telegram.formatting.strikeout') %></dt>
+          <dd><span class="kb_key">Ctrl</span><span class="kb_key">Shift</span><span class="kb_key">X</span></dd>
+          <dt><%= t('telegram.formatting.monospace') %></dt>
+          <dd><span class="kb_key">Ctrl</span><span class="kb_key">Shift</span><span class="kb_key">M</span></dd>
+          <dt><%= t('telegram.formatting.hyperlink') %></dt>
+          <dd><span class="kb_key">Ctrl</span><span class="kb_key">K</span></dd>
+        </dl>
       </div>
     </div>
--->
   </div>
+
 
   <%= render "pages/opencollective" %>
 </article>
+
+<style>
+    h5 {
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    .kb_key {
+        background: -webkit-linear-gradient(top, #f9f9f9 0%, #D2D2D2 80%, #c0c0c0 100%);
+        border-radius: 5px;
+        border: 1px solid #888;
+        color: #555;
+        display: inline-block;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin: 0 0.25em 0 0;
+        min-width: 2em;
+        padding: 0.125em 0.5em;
+        text-align: center;
+    }
+</style>
