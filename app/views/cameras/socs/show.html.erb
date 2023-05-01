@@ -83,15 +83,15 @@
 
 <script>
     function checkFlashSize() {
-        let el = $('#camera_firmware_version');
+        let el = document.querySelector('#camera_firmware_version');
 
-        if ($('#camera_flash_type').value === 'nor8m') {
+        if (document.querySelector('#camera_flash_type').value === 'nor8m') {
             for (let i = 0; i < el.options.length; i++) {
                 let o = el.options.item(i);
                 o.disabled = (o.value == 'ultimate');
             }
             el.value = 'lite';
-        } else if ($('#camera_flash_type').value === 'nand') {
+        } else if (document.querySelector('#camera_flash_type').value === 'nand') {
             for (let i = 0; i < el.options.length; i++) {
                 let o = el.options.item(i);
                 o.disabled = (o.value !== 'ultimate');
@@ -107,7 +107,7 @@
 
     function generateMacAddress(ev) {
         ev.preventDefault();
-        const el = $('#camera_camera_mac_address');
+        const el = document.querySelector('#camera_camera_mac_address');
         if (el.value == "") {
             let mac = "";
             for (let i = 1; i <= 6; i++) {
@@ -125,7 +125,7 @@
         }
     }
 
-    $('#generate-mac-address').addEventListener('click', generateMacAddress);
-    $('#camera_flash_type').addEventListener('change', checkFlashSize);
+    document.querySelector('#generate-mac-address').addEventListener('click', generateMacAddress);
+    document.querySelector('#camera_flash_type').addEventListener('change', checkFlashSize);
     checkFlashSize();
 </script>
