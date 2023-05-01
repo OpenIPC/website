@@ -1,12 +1,10 @@
-# frozen_string_literal: true
-
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
 ruby '3.1.2'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails', branch: 'main'
-gem 'rails', '~> 7.0.4'
+gem 'rails', '~> 7.0.4', '>= 7.0.4.3'
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem 'sprockets-rails'
@@ -17,14 +15,17 @@ gem 'mysql2', '~> 0.5'
 # Use the Puma web server [https://github.com/puma/puma]
 gem 'puma', '~> 5.0'
 
-# Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
-# gem 'importmap-rails'
+# Bundle and transpile JavaScript [https://github.com/rails/jsbundling-rails]
+gem 'jsbundling-rails'
 
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
-# gem 'turbo-rails'
+gem 'turbo-rails'
 
 # Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
-# gem 'stimulus-rails'
+gem 'stimulus-rails'
+
+# Bundle and process CSS [https://github.com/rails/cssbundling-rails]
+gem 'cssbundling-rails'
 
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem 'jbuilder'
@@ -39,7 +40,7 @@ gem 'jbuilder'
 # gem 'bcrypt', '~> 3.1.7'
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem 'tzinfo-data', platforms: %i[ mingw mswin x64_mingw jruby ]
+gem 'tzinfo-data', platforms: %i[mingw mswin x64_mingw jruby]
 
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', require: false
@@ -52,8 +53,7 @@ gem 'image_processing', '~> 1.2'
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
-  gem 'debug', platforms: %i[ mri mingw x64_mingw ]
-  # gem 'rubocop'
+  gem 'debug', platforms: %i[mri mingw x64_mingw]
 end
 
 group :development do
@@ -65,6 +65,15 @@ group :development do
 
   # Speed up commands on slow machines / big apps [https://github.com/rails/spring]
   # gem 'spring'
+
+  gem 'activerecord-reset-pk-sequence'
+  gem 'i18n-tasks'
+  # gem 'rubocop'
+  # gem 'rubocop-minitest'
+  # gem 'rubocop-packaging'
+  # gem 'rubocop-performance'
+  # gem 'rubocop-rails'
+  # gem 'ruby-debug-ide'
 end
 
 group :test do
@@ -78,6 +87,5 @@ gem 'activestorage-validator', '~> 0.2.2'
 gem 'bootstrap_form', '~> 5.1'
 gem 'bootstrap5-kaminari-views', '~> 0.0.1'
 gem 'devise', '~> 4.8'
-gem 'i18n-tasks'
 gem 'kaminari', '~> 1.2'
 gem 'vips', '~> 8.12'

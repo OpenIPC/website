@@ -1,0 +1,4 @@
+require: rubocop-performance
+
+Layout/LineLength:
+  Max: 120

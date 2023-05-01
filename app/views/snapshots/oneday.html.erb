@@ -40,9 +40,9 @@
 
 <script>
   function setSpeed() {
-      const ms = (5 - $('#speed').valueAsNumber) * 1000;
-      $$('.carousel-item').forEach(el => el.dataset["bsInterval"] = ms);
+      const ms = (5 - document.querySelector('#speed').valueAsNumber) * 1000;
+      document.querySelectorAll('.carousel-item').forEach(el => el.dataset["bsInterval"] = ms);
   }
-  $("#speed").addEventListener("input", setSpeed);
+  document.querySelector("#speed").addEventListener("input", setSpeed);
   setSpeed();
 </script>

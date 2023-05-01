@@ -32,11 +32,11 @@
       <button type="button" class="btn btn-primary mb-3" id="recalculate"><%= t('.recalculate') %></button>
     </div>
   </div>
-  <% (1..5).each do |i| %>
+  <% (1..8).each do |i| %>
     <div class="row row-cols-1 row-cols-lg-5 partition" data-number="<%= i %>">
       <div class="col mb-3 name">
         <div class="form-floating">
-          <input type="text" class="form-control" id="p<%= i %>name" value="">
+          <input type="text" class="form-control border-color" data-color="<%= i %>" id="p<%= i %>name" value="">
           <label class="form-label" for="p<%= i %>name"><%= t('.partition_name', number: i) %></label>
         </div>
       </div>
@@ -68,17 +68,15 @@
   <% end %>
 
   <div class="progress mb-4 w-100">
-    <div class="progress-bar" id="pbp0" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
-    <div class="progress-bar" id="pbp1" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
-    <div class="progress-bar" id="pbp2" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
-    <div class="progress-bar" id="pbp3" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
-    <div class="progress-bar" id="pbp4" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
-    <div class="progress-bar" id="pbp5" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
+    <% (0..8).each do |i| %>
+      <div class="progress-bar" data-color="<%= i %>" id="pbp<%= i %>" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
+    <% end %>
   </div>
 
   <div id="mtdparts" class="alert alert-info text-center"></div>
 
   <script>
+      const Palette = ['#000000', '#ff6961', '#ffb480', '#f8f38d', '#42d6a4', '#08cad1', '#59adf6', '#9d94ff', '#c780e8'];
       const Partitioning = {
         'lite': {
           'sizemb': 8,
@@ -102,16 +100,16 @@
 
       function populate(ev) {
         const p = Partitioning[ev.target.dataset.flavor];
-        $('#flash_size').value = p.sizemb;
+        document.querySelector('#flash_size').value = p.sizemb;
         p.partitions.forEach((i, x) => {
-          $('#p'+(x+1)+'name').value = i.name;
-          $('#p'+(x+1)+'size').value = i.sizekb;
+          document.querySelector('#p'+(x+1)+'name').value = i.name;
+          document.querySelector('#p'+(x+1)+'size').value = i.sizekb;
         });
         recalculate();
       }
 
       function recalculate() {
-          const elOffset = $('input#offset');
+          const elOffset = document.querySelector('input#offset');
           const offset = elOffset.value;
           let hexOffset;
           let decOffset;
@@ -128,30 +126,30 @@
           const valid_mtd_names = <%= raw mtd_names.to_a %>;
 
           let mtdparts = "mtdparts=sfc:";
-          const mtddevice = $('#mtddevice').value;
+          const mtddevice = document.querySelector('#mtddevice').value;
           mtdparts = mtddevice + ':';
 
-          const flFullSizeDec = $('input#flash_size').value * 1024 * 1024;
-          const pbFullWidth = $('.progress').clientWidth;
+          const flFullSizeDec = document.querySelector('input#flash_size').value * 1024 * 1024;
+          const pbFullWidth = document.querySelector('.progress').clientWidth;
           let firstEmpty = 0;
 
-          $('#pbp0').style.width = (decOffset / flFullSizeDec * pbFullWidth) + 'px';
+          document.querySelector('#pbp0').style.width = (decOffset / flFullSizeDec * pbFullWidth) + 'px';
 
-          $$('div.partition').forEach(row => {
+          document.querySelectorAll('div.partition').forEach(row => {
               const n = parseInt(row.dataset.number);
 
-              const elSizeDec = $('div[data-number="' + n + '"] div.size.dec input')
-              const elSizeHex = $('div[data-number="' + n + '"] div.size.hex input')
-              const elAddrStart = $('div[data-number="' + n + '"] div.start input')
-              const elAddrEnd = $('div[data-number="' + n + '"] div.end input')
+              const elSizeDec = document.querySelector('div[data-number="' + n + '"] div.size.dec input')
+              const elSizeHex = document.querySelector('div[data-number="' + n + '"] div.size.hex input')
+              const elAddrStart = document.querySelector('div[data-number="' + n + '"] div.start input')
+              const elAddrEnd = document.querySelector('div[data-number="' + n + '"] div.end input')
 
               // reset hex values
-              $$('div[data-number="' + n + '"] div.hex input').forEach(el => el.value = "");
+              document.querySelectorAll('div[data-number="' + n + '"] div.hex input').forEach(el => el.value = "");
 
               // size
               let decSize;
               if (elSizeDec.value === '-') {
-                  mtdparts += '-(' + $('#p' + n + 'name').value + ')';
+                  mtdparts += '-(' + document.querySelector('#p' + n + 'name').value + ')';
                   decSize = flFullSizeDec - firstEmpty;
               } else {
                   decSize = parseInt(elSizeDec.value) * 1024;
@@ -159,13 +157,13 @@
                   if (isNaN(decSize)) return;
                   let hexSize = '0x' + decSize.toString(16).toUpperCase();
                   elSizeHex.value = (isNaN(hexSize)) ? '' : hexSize;
-                  mtdparts += decSize / 1024 + 'k(' + $('#p' + n + 'name').value + '),';
+                  mtdparts += decSize / 1024 + 'k(' + document.querySelector('#p' + n + 'name').value + '),';
               }
 
               // start
               let decStart = decOffset;
               for (let i = 1; i < n; i++) {
-                  let s = $('div[data-number="' + i + '"] div.size.dec input');
+                  let s = document.querySelector('div[data-number="' + i + '"] div.size.dec input');
                   decStart += parseInt(s.value) * 1024;
               }
               let hexStart = '0x' + decStart.toString(16).toUpperCase();
@@ -176,29 +174,30 @@
               let hexEnd = '0x' + decEnd.toString(16).toUpperCase();
               elAddrEnd.value = (isNaN(hexEnd)) ? '' : hexEnd;
 
-              $('#pbp' + n).style.width = (decSize / flFullSizeDec * pbFullWidth) + 'px';
+              document.querySelector('#pbp' + n).style.width = (decSize / flFullSizeDec * pbFullWidth) + 'px';
           });
 
-          console.log(mtdparts.startsWith(":"));
           if (mtddevice === "") {
-              $('#mtdparts').textContent = "Please enter MTD device name to generate mtdparts string";
-              $('#mtddevice').focus();
+              document.querySelector('#mtdparts').textContent = "Please enter MTD device name to generate mtdparts string";
+              document.querySelector('#mtddevice').focus();
           } else if (valid_mtd_names.includes(mtddevice)) {
-              $('#mtdparts').textContent = mtdparts;
+              document.querySelector('#mtdparts').textContent = mtdparts;
           } else {
-              $('#mtdparts').innerHTML = "<b>Unknown MTD device name " + mtddevice + "!</b><br>Valid values are: <%= mtd_names.join(', ') %>.";
-              $('#mtddevice').focus();
+              document.querySelector('#mtdparts').innerHTML = "<b>Unknown MTD device name " + mtddevice + "!</b><br>Valid values are: <%= mtd_names.join(', ') %>.";
+              document.querySelector('#mtddevice').focus();
           }
       }
 
       function initPage() {
-          $$('button.preset').forEach(el => el.addEventListener('click', populate));
-          $('button#recalculate').addEventListener('click', recalculate);
-          $$('input').forEach(el => {
+          document.querySelectorAll('button.preset').forEach(el => el.addEventListener('click', populate));
+          document.querySelector('button#recalculate').addEventListener('click', recalculate);
+          document.querySelectorAll('input').forEach(el => {
               el.addEventListener('focus', evt => { evt.preventDefault(); evt.target.select(); });
               el.addEventListener('change', recalculate);
           });
-          $$('input[readonly]').forEach(el => el.tabIndex = -1);
+          document.querySelectorAll('input[readonly]').forEach(el => el.tabIndex = -1);
+          document.querySelectorAll('input[data-color]').forEach(el => el.style.borderColor = Palette[el.dataset['color']]);
+          document.querySelectorAll('div[data-color]').forEach(el => el.style.backgroundColor = Palette[el.dataset['color']]);
           recalculate();
       }
 
