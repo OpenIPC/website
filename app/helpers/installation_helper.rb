@@ -33,7 +33,11 @@ module InstallationHelper
     else
       text << "tftpboot #{c.soc.load_address} #{fw_filename}"
     end
-    text << "sf probe 0; sf erase 0x0 #{c.flash_size_hex}; sf write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+    if c.flash_type.eql?("nand")
+      text << "nand erase 0x0 #{c.flash_size_hex}; nand write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+    else
+      text << "sf probe 0; sf erase 0x0 #{c.flash_size_hex}; sf write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+    end
     text << "reset"
     list_of_commands text
   end
@@ -70,16 +74,28 @@ module InstallationHelper
     if c.sd_card_slot.eql?("sd") && c.network_interface.eql?("wifi")
       text << "mw.b #{c.soc.load_address} 0xff 0x200000"
       text << "fatload mmc 0:1 #{c.soc.load_address} #{c.soc.kernel_file}"
-      text << "sf probe 0; sf erase #{c.kernel_offset} #{c.kernel_max_size}; sf write #{c.soc.load_address} #{c.kernel_offset} ${filesize}"
+      if c.flash_type.eql?("nand")
+        text << "nand erase #{c.kernel_offset} #{c.kernel_max_size}; nand write #{c.soc.load_address} #{c.kernel_offset} ${filesize}"
+      else
+        text << "sf probe 0; sf erase #{c.kernel_offset} #{c.kernel_max_size}; sf write #{c.soc.load_address} #{c.kernel_offset} ${filesize}"
+      end
       text << ""
       text << "mw.b #{c.soc.load_address} 0xff 0x500000"
       text << "fatload mmc 0:1 #{c.soc.load_address} #{c.soc.rootfs_file}"
-      text << "sf probe 0; sf erase #{c.rootfs_offset} #{c.rootfs_max_size}; sf write #{c.soc.load_address} #{c.rootfs_offset} ${filesize}"
+      if c.flash_type.eql?("nand")
+        text << "nand erase #{c.rootfs_offset} #{c.rootfs_max_size}; nand write #{c.soc.load_address} #{c.rootfs_offset} ${filesize}"
+      else
+        text << "sf probe 0; sf erase #{c.rootfs_offset} #{c.rootfs_max_size}; sf write #{c.soc.load_address} #{c.rootfs_offset} ${filesize}"
+      end
       text << ""
     else
       text << "run uk#{c2}; run ur#{c2}"
     end
-    text << "sf erase #{c.overlay_offset} #{c.overlay_max_size}"
+    if c.flash_type.eql?("nand")
+      text << "nand erase #{c.overlay_offset} #{c.overlay_max_size}"
+    else
+      text << "sf erase #{c.overlay_offset} #{c.overlay_max_size}"
+    end
     text << "reset"
     list_of_commands text
   end
@@ -103,7 +119,11 @@ module InstallationHelper
     else
       text << "tftpboot #{c.soc.load_address} #{c.backup_filename}"
     end
-    text << "sf probe 0; sf erase 0x0 #{c.flash_size_hex}; sf write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+    if c.flash_type.eql?("nand")
+      text << "nand erase 0x0 #{c.flash_size_hex}; nand write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+    else
+      text << "sf probe 0; sf erase 0x0 #{c.flash_size_hex}; sf write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+    end
     list_of_commands text
   end
 end
