@@ -26,13 +26,11 @@ class Admin
         @soc = Soc.new
         @page_title = "Adding new SoC"
       end
-      build_command_blocks
       render "admin/socs/edit"
     end
 
     def create
       @soc = Soc.new
-      build_command_blocks
       if @soc.update(permitted_params)
         redirect_to admin_soc_path(@soc), notice: 'SoC updated.'
       else
@@ -43,7 +41,6 @@ class Admin
 
     def edit
       @soc = Soc.find(params[:id])
-      build_command_blocks
       @page_title = "Editing SoC #{@soc.full_name}"
       render "admin/socs/edit"
     end
@@ -59,20 +56,12 @@ class Admin
     end
 
     private
-      def build_command_blocks
-        Soc::COMMAND_BLOCKS.each do |block|
-          if @soc.custom_commands.where(command_block: block).empty?
-            @soc.custom_commands.build(command_block: block)
-          end
-        end
-      end
 
-      def permitted_params
-        params.require(:soc).permit(
-          :model, :family, :vendor_id, :version, :status, :load_address, :sdk, :kernel,
-          :uboot_filename, :linux_filename, :toolchain_filename, :notes, :build_status_url, :featured,
-          custom_commands_attributes: [:id, :command_block, :text]
-        )
-      end
+    def permitted_params
+      params.require(:soc).permit(
+        :model, :family, :vendor_id, :version, :status, :load_address, :sdk, :kernel,
+        :uboot_filename, :linux_filename, :toolchain_filename, :notes, :build_status_url, :featured
+      )
+    end
   end
 end
