@@ -13,7 +13,13 @@ module InstallationHelper
     unless c.network_interface.eql?("wifi")
       text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
     end
-    text << "mw.b #{c.soc.load_address} 0xff #{c.flash_size_hex}; sf probe 0; sf read #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+    text << "mw.b #{c.soc.load_address} 0xff #{c.flash_size_hex};"
+    if c.flash_type.eql?("nand")
+      text << " nand read #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+    else
+      text << " sf probe 0; sf read #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+    end
+
     if c.sd_card_slot.eql?("sd") && c.network_interface.eql?("wifi")
       text << "mmc dev 0; mmc erase 0x10 #{c.flash_size_blocks}; mmc write #{c.soc.load_address} 0x10 #{c.flash_size_blocks}"
     else
