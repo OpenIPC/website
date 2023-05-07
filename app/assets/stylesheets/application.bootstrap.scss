@@ -38,12 +38,12 @@ $carousel-transition-duration: .3s;
 
 body > main > .container {
   min-height: 85vh;
-}
 
-body > main > .container > article > header > h2 {
-  font-weight: 700;
-  color: var(--bs-blue);
-  margin: 1rem 0 1.5rem;
+  > article > header > h2 {
+    font-weight: 700;
+    color: var(--bs-blue);
+    margin: 1rem 0 1.5rem;
+  }
 }
 
 body > nav.navbar,
@@ -110,6 +110,12 @@ article.calculator {
     .bg-color-6 { background: #226 }
     .bg-color-7 { background: #a13 }
     .bg-color-8 { background: #b72 }
+  }
+}
+
+article.hardware {
+  > ul.nav {
+    --bs-nav-link-padding-x: 0.3rem;
   }
 }
 

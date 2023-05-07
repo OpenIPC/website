@@ -4,8 +4,8 @@ class Vendor < ApplicationRecord
 
   before_validation :generate_urlname
 
-  validates :name, uniqueness: true
-  validates :urlname, uniqueness: true
+  validates :name, presence: true, uniqueness: true
+  validates :urlname, presence: true, uniqueness: true
 
   scope :soc_vendors, -> { left_joins(:socs).where.not(socs: { id: nil }) }
 

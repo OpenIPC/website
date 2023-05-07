@@ -1,0 +1,36 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to t('nav.admin'), "/admin" %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.vendors'), admin_vendors_path %></li>
+    <% if @vendor.persisted? %>
+      <li class="breadcrumb-item"><%= link_to @vendor.name, admin_vendor_path(@vendor) %></li>
+      <li class="breadcrumb-item active" aria-current="page"><%= link_to t('nav.editing'), edit_admin_vendor_path(@vendor) %></li>
+    <% else %>
+      <li class="breadcrumb-item active" aria-current="page"><%= link_to t('nav.adding_vendor'), new_admin_vendor_path %></li>
+    <% end %>
+  </ol>
+</nav>
+
+<article class="hardware">
+  <header>
+    <h2><%= @page_title %></h2>
+  </header>
+
+  <nav class="navbar">
+    <p><%= link_to t('nav.add_vendor'), new_admin_vendor_path, class: "btn btn-primary" %></p>
+  </nav>
+
+  <!--  layout: :horizontal, label_col: "col-sm-4", control_col: "col-sm-8",-->
+  <%= bootstrap_form_for @vendor, url: [:admin, @vendor] do |f| %>
+    <%= f.alert_message t('error.please_fix') %>
+    <%= f.text_field :name %>
+    <%= f.text_field :full_name %>
+    <%= f.text_field :urlname %>
+    <%= f.text_field :website_url %>
+    <%= f.submit %>
+  <% end %>
+</article>
+
+<% if debug_mode? %>
+<div class="bg-light p-4 my-4"><code><%= @vendor.inspect %></code></div>
+<% end %>

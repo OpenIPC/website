@@ -1,0 +1,18 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to t('nav.admin'), "/admin" %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.vendors'), admin_vendors_path %></li>
+  </ol>
+</nav>
+
+<article class="hardware">
+  <header>
+    <h2><%= @page_title %></h2>
+  </header>
+
+  <p><%= link_to 'Add a Vendor', new_admin_vendor_path, class: "btn btn-primary" %></p>
+
+  <ul>
+    <%= render @vendors %>
+  </ul>
+</article>

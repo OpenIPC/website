@@ -75,6 +75,7 @@ Rails.application.routes.draw do
   namespace :admin do
     resources :snapshots
     resources :socs
+    resources :vendors
   end
   as :admin do
     get "/admin", to: "admin/dashboard#show", as: "admin_root"

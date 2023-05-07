@@ -1,0 +1,31 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to t('nav.admin'), "/admin" %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.vendors'), admin_vendors_path %></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= link_to @vendor.name, admin_vendors_path(@vendor) %></li>
+  </ol>
+</nav>
+
+<article class="hardware">
+  <header>
+    <h2><%= @page_title %></h2>
+  </header>
+
+  <nav class="navbar">
+    <p>
+      <%= link_to t('nav.view_vendor'), cameras_vendor_path(@vendor), class: "btn btn-success" %>
+      <%= link_to t('nav.add_vendor'), new_admin_vendor_path, class: "btn btn-primary" %>
+    </p>
+  </nav>
+
+  <div class="row row-cols-md-4">
+    <div class="col">
+      <dl>
+        <dt>Vendor Name</dt>
+        <dd><%= value_or_na @vendor.name %>
+      </dl>
+    </div>
+  </div>
+
+  <p><%= link_to 'Edit Vendor', edit_admin_vendor_path(@vendor), class: "btn btn-primary" %></p>
+</article>
