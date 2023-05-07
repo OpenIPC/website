@@ -41,10 +41,6 @@ class Soc < ApplicationRecord
     format GH_DL_ROOT, filename
   end
 
-  def tc_url
-    format GH_DL_ROOT, toolchain_filename
-  end
-
   def full_name
     [vendor.name, model].join(" ")
   end

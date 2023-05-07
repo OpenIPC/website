@@ -15,9 +15,6 @@
   <dd class="col-2 col-md-1 url">
     <%= soc.linux_filename.blank? ? icon_nothing : link_to(icon_download, cameras_vendor_soc_path(soc.vendor, soc), title: "Installation instructions") %>
   </dd>
-  <dd class="col-2 col-md-1 url">
-    <%= soc.toolchain_filename.blank? ? icon_nothing : link_to(icon_download, cameras_vendor_soc_path(soc.vendor, soc), title: "Installation instructions") %>
-  </dd>
   <dd class="col-4 col-md-2 hex_address">
     <%= soc.load_address %>
   </dd>

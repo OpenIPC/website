@@ -26,7 +26,6 @@ module Cameras
                     kernel: s.kernel,
                     rootfs: s.linux_filename,
                     sdk: s.sdk,
-                    toolchain: s.toolchain_filename,
                     load_address: s.load_address,
                     status: s.status,
                   }

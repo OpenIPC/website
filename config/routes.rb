@@ -1,8 +1,6 @@
 Rails.application.routes.draw do
   root "pages#introduction"
 
-  post '/map_toolchain' => 'github#create'
-
   get '/aaa', to: 'pages#aaa'
   get '/majestic-endpoints', to: 'pages#majestic_endpoints'
 
