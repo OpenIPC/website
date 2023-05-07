@@ -26,6 +26,8 @@
       <span><%= t('.temperature') %>: <%= @snapshot.soc_temperature %>°C.</span>
     <% end %></p>
 
+  <%= tag 'p', @snapshot.caption if @snapshot.caption %>
+
   <% if admin_signed_in? %>
     <div class="hstack alert alert-warning">
       <p class="mb-0">IP: <%= @snapshot.ip_address %>, MAC: <%= @snapshot.mac_address %>.</p>

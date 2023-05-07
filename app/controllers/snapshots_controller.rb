@@ -89,6 +89,7 @@ class SnapshotsController < ApplicationController
   end
 
   def permitted_params
-    params.permit(:file, :flash_size, :mac_address, :hostname, :soc, :sensor, :streamer, :firmware, :uptime, :soc_temperature)
+    params.permit(:caption, :file, :firmware, :flash_size, :hostname, :mac_address,
+                  :sensor, :soc, :soc_temperature, :streamer, :uptime)
   end
 end
