@@ -56,6 +56,7 @@ class Soc < ApplicationRecord
   def linux_file(release, flash_type)
     soc_name = model.downcase
     soc_name = 't31' if soc_name.start_with?('t31')
+    soc_name = 't40' if soc_name.start_with?('t40')
     linux_filename = "openipc.#{soc_name}-#{flash_type}-#{release}.tgz"
 
     @linux_file ||= File.join(RELEASES_ROOT, linux_filename)
