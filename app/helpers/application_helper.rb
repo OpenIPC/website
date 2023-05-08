@@ -32,6 +32,7 @@ module ApplicationHelper
   def firmware_filename(camera)
     soc_name = camera.soc.model.downcase
     soc_name = 't31' if soc_name.start_with?('t31')
+    soc_name = 't40' if soc_name.start_with?('t40')
 
     "openipc.#{soc_name}-#{camera.flash_type_type}-#{camera.firmware_version}.tgz"
   end
