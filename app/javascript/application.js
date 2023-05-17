@@ -1,4 +1,4 @@
-import * as bootstrap from "bootstrap"
+import * as bootstrap from 'bootstrap'
 
 window.onload = (event) => {
     if (window.navigator.language == 'ru' && document.documentElement.lang !== 'ru') {

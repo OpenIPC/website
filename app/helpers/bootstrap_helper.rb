@@ -10,8 +10,8 @@ module BootstrapHelper
 
   def tab_lap(tab_name, tab_text, active = nil)
     content_tag :li, button_tag(tab_text, type: 'button', role: 'tab', id: "##{tab_name}-tab", class: "nav-link #{active}",
-                                data: { "bs-toggle": "tab", "bs-target": "##{tab_name}-tab-pane" },
-                                aria: { controls: "#{tab_name}-tab-pane", selected: active.nil? ? "false" : "true" }),
+                                data: { 'bs-toggle': 'tab', 'bs-target': "##{tab_name}-tab-pane" },
+                                aria: { controls: "#{tab_name}-tab-pane", selected: active.nil? ? 'false' : 'true' }),
                 class: "nav-item", role: "presentation"
 
     # raw "<li class=\"nav-item\" role=\"presentation\">" \

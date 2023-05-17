@@ -15,7 +15,7 @@ class Snapshot < ApplicationRecord
   end
 
   validates :mac_address, presence: true, format: MAC_ADDRESS_FORMAT,
-            exclusion: { in: MAC_ADDRESS_BLACKLIST, message: "is fake. Restore camera's original MAC address." }
+            exclusion: { in: MAC_ADDRESS_BLACKLIST, message: 'is fake. Restore original MAC address.' }
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }
   validate :time_interval
 
@@ -42,7 +42,7 @@ class Snapshot < ApplicationRecord
     FileUtils.mkdir_p in_dir
 
     command = []
-    command << "melt 0.jpg out=5"
+    command << 'melt 0.jpg out=5'
     Snapshot.where(mac_address: mac_address).each_with_index do |s, idx|
       s.file.open do |f|
         in_file = "#{idx}.jpg"
@@ -51,10 +51,10 @@ class Snapshot < ApplicationRecord
         command << "#{in_file} out=5 -mix 3 -mixer luma"
       end
     end
-    command << "-consumer avformat:out.mp4"
-    command << "width=1920 height=1080 frame_rate_num=30 sample_aspect_num=1 sample_aspect_den=1"
-    command << "-video-track -quiet"
-    command = command.join(" ")
+    command << '-consumer avformat:out.mp4'
+    command << 'width=1920 height=1080 frame_rate_num=30 sample_aspect_num=1 sample_aspect_den=1'
+    command << '-video-track -quiet'
+    command = command.join(' ')
 
     Dir.chdir in_dir do
       %x[#{command}]
@@ -72,7 +72,7 @@ class Snapshot < ApplicationRecord
 
     s = Snapshot.select(:created_at).where(mac_address: mac_address).order(:created_at).last
     if s && s.created_at > INTERVAL_LIMIT.ago + 2.minutes # hysteresis
-      errors.add :base, "Please keep interval between photos at 15 minutes or more."
+      errors.add :base, 'Please keep interval between photos at 15 minutes or more.'
       raise TooSoon
     end
   end
