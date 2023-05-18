@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module SelectsHelper
   def list_of_network_interfaces_for_select
     Camera::NET_IFACE.map do |v|

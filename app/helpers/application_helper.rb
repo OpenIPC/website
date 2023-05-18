@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module ApplicationHelper
   def css_debug
     debug_mode? ? 'debug' : nil

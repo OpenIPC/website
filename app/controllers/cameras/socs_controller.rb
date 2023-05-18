@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Cameras
   class SocsController < ApplicationController
     # include InstallationInstructionConcern

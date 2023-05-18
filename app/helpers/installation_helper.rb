@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module InstallationHelper
   def list_of_commands(text)
     content_tag 'pre', text.join('<br>').html_safe, class: 'bg-light p-4'

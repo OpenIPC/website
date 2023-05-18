@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class BinariesController < ApplicationController
 
   FIRMWARE_ROOT = "/srv/github-releases"

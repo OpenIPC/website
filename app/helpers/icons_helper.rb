@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module IconsHelper
   def icon_download
     image_tag 'download.svg', alt: 'Image: download icon',

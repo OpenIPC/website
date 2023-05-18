@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module BinariesHelper
   def css_highlight(b)
     free = b[:free]

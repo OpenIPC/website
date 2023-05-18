@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module SocsHelper
   def na
     content_tag(:span, "n/a", class: "text-black-50")

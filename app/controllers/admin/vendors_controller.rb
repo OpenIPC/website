@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Admin
   class VendorsController < AdminController
     def index

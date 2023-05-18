@@ -1,4 +1,6 @@
-require "rubygems/package"
+# frozen_string_literal: true
+
+require 'rubygems/package'
 
 class Soc < ApplicationRecord
   belongs_to :vendor

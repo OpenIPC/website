@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Vendor < ApplicationRecord
   has_many :socs
   has_many :sensors

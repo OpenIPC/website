@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Firmware
   def initialize(size: 8, flash_type: 'nor', release: 'lite', soc: nil)
     super()
