@@ -6,12 +6,12 @@ module BinariesHelper
     full = b[:size]
     css = []
     if free.negative?
-      css << "oversize"
+      css << 'oversize'
     elsif free < full / 10.0
-      css << "bloated"
+      css << 'bloated'
     else
-      css << "slim"
+      css << 'slim'
     end
-    css.join(" ")
+    css.join(' ')
   end
 end

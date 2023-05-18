@@ -64,8 +64,8 @@ class Firmware
 
       # workaround for Ingenic T31 where there's the same file for all models
       if soc_model.starts_with?('t31')
-        kernel_file = "uImage.t31"
-        rootfs_file = "rootfs.squashfs.t31"
+        kernel_file = 'uImage.t31'
+        rootfs_file = 'rootfs.squashfs.t31'
       end
 
       tar.seek(kernel_file) { |f| IO.binwrite tmp_file, f.read, kernel_offset }

@@ -16,7 +16,7 @@ class Admin
 
     def new
       @vendor = Vendor.new
-      @page_title = "Adding new Vendor"
+      @page_title = 'Adding new Vendor'
       render 'admin/vendors/edit'
     end
 
