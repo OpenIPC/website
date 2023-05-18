@@ -26,6 +26,8 @@ module InstallationHelper
       text << "mmc dev 0; mmc erase 0x10 #{c.flash_size_blocks}; mmc write #{c.soc.load_address} 0x10 #{c.flash_size_blocks}"
     else
       text << "tftpput #{c.soc.load_address} #{c.flash_size_hex} #{c.backup_filename}"
+      text << '# if there is no tftpput but tftp then run this instead'
+      text << "tftp #{c.soc.load_address} #{c.backup_filename} #{c.flash_size_hex}"
     end
     list_of_commands text
   end
@@ -40,6 +42,8 @@ module InstallationHelper
       text << "fatload mmc 0:1 #{c.soc.load_address} #{fw_filename}"
     else
       text << "tftpboot #{c.soc.load_address} #{fw_filename}"
+      text << '# if there is no tftpboot but tftp then run this instead'
+      text << "tftp #{c.soc.load_address} #{fw_filename}"
     end
     if c.flash_type.eql?('nand')
       text << "nand erase 0x0 #{c.flash_size_hex}; nand write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
@@ -61,6 +65,8 @@ module InstallationHelper
       text << "fatload mmc 0:1 #{c.soc.load_address} #{c.soc.uboot_filename}"
     else
       text << "tftpboot #{c.soc.load_address} #{c.soc.uboot_filename}"
+      text << '# if there is no tftpboot but tftp then run this instead'
+      text << "tftp #{c.soc.load_address} #{c.soc.uboot_filename}"
     end
     if c.flash_type.eql?('nand')
       text << "nand erase 0x0 0x50000; nand write #{c.soc.load_address} 0x0 0x50000"
