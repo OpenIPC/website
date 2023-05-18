@@ -7,13 +7,13 @@ class SnapshotsController < ApplicationController
 
   def index
     page = params[:page] || 1
-    sql = "SELECT s1.* FROM snapshots s1 LEFT JOIN snapshots s2" \
-      " ON (s1.mac_address = s2.mac_address AND s1.created_at < s2.created_at)" \
-      " WHERE s2.id IS NULL AND s1.created_at > SUBDATE(NOW(), INTERVAL 1 DAY)" \
-      " ORDER BY created_at DESC"
+    sql = 'SELECT s1.* FROM snapshots s1 LEFT JOIN snapshots s2' \
+      ' ON (s1.mac_address = s2.mac_address AND s1.created_at < s2.created_at)' \
+      ' WHERE s2.id IS NULL AND s1.created_at > SUBDATE(NOW(), INTERVAL 1 DAY)' \
+      ' ORDER BY created_at DESC'
     @snapshots = Kaminari.paginate_array(Snapshot.find_by_sql(sql)).page(page).per(18)
     @page_title = "Open Wall, page #{page}"
-    render "snapshots/index"
+    render 'snapshots/index'
   end
 
   def create
@@ -24,7 +24,7 @@ class SnapshotsController < ApplicationController
     if @snapshot.update(permitted_params)
       head :created, location: snapshot_path(@snapshot)
     else
-      head :unsupported_media_type, "X-Error": @snapshot.errors.full_messages.join(". ")
+      head :unsupported_media_type, 'X-Error': @snapshot.errors.full_messages.join('. ')
     end
   rescue Snapshot::TooSoon
     offset = 0
@@ -36,33 +36,33 @@ class SnapshotsController < ApplicationController
   def show
     daily_snapshots_new_to_old
     @page_title = "Open Wall, image ##{params[:id]}"
-    render "snapshots/show"
+    render 'snapshots/show'
   end
 
   def camera
     respond_to do |format|
       format.jpg do
         @snapshot.file.representation(format: :jpeg).process
-        send_data @snapshot.file.representation(format: :jpeg).download, disposition: "attachment",
+        send_data @snapshot.file.representation(format: :jpeg).download, disposition: 'attachment',
                   filename: @snapshot.filename_for_download.sub(/heif$/, 'jpg')
       end
       format.html do
         daily_snapshots_new_to_old
         @page_title = "Open Wall, image ##{params[:id]}"
-        render "snapshots/show"
+        render 'snapshots/show'
       end
     end
   end
 
   def download
-    send_data @snapshot.file.download, disposition: "attachment",
+    send_data @snapshot.file.download, disposition: 'attachment',
               filename: @snapshot.filename_for_download
   end
 
   def oneday
     daily_snapshots_old_to_new
-    @page_title = "Open Wall, one day in life..."
-    render "snapshots/oneday"
+    @page_title = 'Open Wall, one day in life...'
+    render 'snapshots/oneday'
   end
 
   private
@@ -79,7 +79,7 @@ class SnapshotsController < ApplicationController
 
   def find_camera
     mac_address_dec = params[:id].to_i
-    mac_address = mac_address_dec.to_s(16).rjust(12, "0").reverse.gsub(/(.{2})(?=.)/, '\\1:').reverse
+    mac_address = mac_address_dec.to_s(16).rjust(12, '0').reverse.gsub(/(.{2})(?=.)/, '\\1:').reverse
     @snapshot = Snapshot.where(mac_address: mac_address).order(created_at: :desc).first
     redirect_to '/open-wall', alert: "No camera with ID #{mac_address_dec} here." if @snapshot.nil?
   end
@@ -87,7 +87,7 @@ class SnapshotsController < ApplicationController
   def find_snapshot
     @snapshot = Snapshot.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    redirect_to '/open-wall', alert: "No such a shaphot here."
+    redirect_to '/open-wall', alert: 'No such a shaphot here.'
   end
 
   def permitted_params

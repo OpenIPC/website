@@ -14,11 +14,6 @@ module BootstrapHelper
     content_tag :li, button_tag(tab_text, type: 'button', role: 'tab', id: "##{tab_name}-tab", class: "nav-link #{active}",
                                 data: { 'bs-toggle': 'tab', 'bs-target': "##{tab_name}-tab-pane" },
                                 aria: { controls: "#{tab_name}-tab-pane", selected: active.nil? ? 'false' : 'true' }),
-                class: "nav-item", role: "presentation"
-
-    # raw "<li class=\"nav-item\" role=\"presentation\">" \
-    #   "<button role=\"tab\" id=\"##{tab_name}-tab\" class=\"nav-link #{active}\" data-bs-toggle=\"tab\"" \
-    #   " data-bs-target=\"##{tab_name}-tab-pane\" aria-controls=\"#{tab_name}-tab-pane\" aria-selected=\"#{s}\">#{tab_text}</button>" \
-    #   "</li>"
+                class: 'nav-item', role: 'presentation'
   end
 end

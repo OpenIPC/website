@@ -9,16 +9,16 @@ class Soc < ApplicationRecord
   validates :model, presence: true, uniqueness: { scope: :vendor_id }
   validates :urlname, presence: true, uniqueness: true
 
-  RELEASES_ROOT = "/srv/github-releases"
-  GH_DL_ROOT = "https://github.com/OpenIPC/firmware/releases/download/latest/%s"
+  RELEASES_ROOT = '/srv/github-releases'
+  GH_DL_ROOT = 'https://github.com/OpenIPC/firmware/releases/download/latest/%s'
 
   STATUS = {
-    "neq": "No equipment on hands",
-    "rnd": "Research and development",
-    "hlp": "Looking for help",
-    "wip": "Work in progress",
-    "mvp": "Minimum viable product",
-    "done": "Done and done!"
+    "neq": 'No equipment on hands',
+    "rnd": 'Research and development',
+    "hlp": 'Looking for help',
+    "wip": 'Work in progress',
+    "mvp": 'Minimum viable product',
+    "done": 'Done and done!'
   }.freeze
 
   def self.find(id)
@@ -39,12 +39,12 @@ class Soc < ApplicationRecord
 
   def fw_url(version)
     filename = linux_filename.dup
-    filename.gsub("-br.tgz", "-#{version}-br.tgz") unless version.eql?("lite")
+    filename.gsub('-br.tgz', "-#{version}-br.tgz") unless version.eql?('lite')
     format GH_DL_ROOT, filename
   end
 
   def full_name
-    [vendor.name, model].join(" ")
+    [vendor.name, model].join(' ')
   end
 
   def instructable?

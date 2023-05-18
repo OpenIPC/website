@@ -10,9 +10,9 @@ module Cameras
           @vendor = Vendor.find(params[:vendor])
           if @vendor
             @socs = Soc.left_joins(:vendor).where(vendors: { name: @vendor }).order(:model)
-            @page_title = "Full list of processors"
+            @page_title = 'Full list of processors'
           end
-          render "cameras/socs/index"
+          render 'cameras/socs/index'
         }
         format.json do
           @data = {
@@ -42,12 +42,12 @@ module Cameras
 
     def show
       @camera = Camera.new(
-        camera_ip_address: "192.168.1.10",
-        server_ip_address: "192.168.1.254",
-        flash_type: "nor8m",
-        firmware_version: "lite",
-        network_interface: "eth",
-        sd_card_slot: "nosd"
+        camera_ip_address: '192.168.1.10',
+        server_ip_address: '192.168.1.254',
+        flash_type: 'nor8m',
+        firmware_version: 'lite',
+        network_interface: 'eth',
+        sd_card_slot: 'nosd'
       )
       @camera.camera_ip_address = params[:cip] if params[:cip]
       @camera.camera_mac_address = params[:mac].to_s.downcase.gsub('-', ':')
@@ -61,17 +61,17 @@ module Cameras
       @vendor = @camera.soc.vendor
 
       @page_title = "SoC: #{@camera.soc.full_name}"
-      render "cameras/socs/show"
+      render 'cameras/socs/show'
     end
 
     def update
       @camera = Camera.new(
-        camera_ip_address: "192.168.1.10",
-        server_ip_address: "192.168.1.254",
-        flash_type: "nor8m",
-        firmware_version: "lite",
-        network_interface: "eth",
-        sd_card_slot: "nosd"
+        camera_ip_address: '192.168.1.10',
+        server_ip_address: '192.168.1.254',
+        flash_type: 'nor8m',
+        firmware_version: 'lite',
+        network_interface: 'eth',
+        sd_card_slot: 'nosd'
       )
       @camera.camera_ip_address = permitted_params[:camera_ip_address]
       @camera.camera_mac_address = permitted_params[:camera_mac_address].to_s.downcase.gsub('-', ':')
@@ -83,11 +83,11 @@ module Cameras
 
       # to handle nor32m size still using nor16m command
       @flash_type_command = @camera.flash_type
-      @flash_type_command = "nor16m" if @camera.flash_type.eql?("nor32m")
+      @flash_type_command = 'nor16m' if @camera.flash_type.eql?('nor32m')
 
-      if @camera.flash_type.eql?("nor8m") && @camera.firmware_version.eql?("ultimate")
-        @camera.firmware_version = "lite"
-        flash.now[:warning] = "8MB Flash ROM can only be flashed with Lite or FPV edition!"
+      if @camera.flash_type.eql?('nor8m') && @camera.firmware_version.eql?('ultimate')
+        @camera.firmware_version = 'lite'
+        flash.now[:warning] = '8MB Flash ROM can only be flashed with Lite or FPV edition!'
       end
 
       @camera.soc = Soc.find(params[:id])
@@ -95,7 +95,7 @@ module Cameras
       @camera.backup_filename = "backup-#{@camera.soc.model.downcase}-#{@camera.flash_type}.bin"
 
       @page_title = "SoC: #{@camera.soc.full_name}"
-      render "cameras/socs/update"
+      render 'cameras/socs/update'
     end
 
     def download_full_image
@@ -108,20 +108,20 @@ module Cameras
       fw.generate
       send_file fw.filepath, name: fw.filename, disposition: :attachment
     rescue ActionController::MissingFile => e
-      flash.alert = "This firmware does not exist."
-      redirect_back(fallback_location: "/")
+      flash.alert = 'This firmware does not exist.'
+      redirect_back(fallback_location: '/')
     end
 
     def featured
       @socs = Soc.left_joins(:vendor).where(featured: true).order(:name, :model)
-      @page_title = "List of recommended SoCs"
-      render "cameras/socs/index"
+      @page_title = 'List of recommended SoCs'
+      render 'cameras/socs/index'
     end
 
     def full_list
       @socs = Soc.left_joins(:vendor).order(:name, :model)
-      @page_title = "SoC: full list"
-      render "cameras/socs/index"
+      @page_title = 'SoC: full list'
+      render 'cameras/socs/index'
     end
 
     private

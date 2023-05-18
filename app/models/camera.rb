@@ -25,11 +25,11 @@ class Camera
   end
 
   def camera_ip_address
-    @camera_ip_address ||= "192.168.1.10"
+    @camera_ip_address ||= '192.168.1.10'
   end
 
   def server_ip_address
-    @server_ip_address ||= "192.168.1.254"
+    @server_ip_address ||= '192.168.1.254'
   end
 
   def backup_filename
@@ -38,24 +38,24 @@ class Camera
 
   def flash_type_type
     case @flash_type
-    when "nor8m", "nor16m", "nor32m"
-      "nor"
-    when "nand"
-      "nand"
+    when 'nor8m', 'nor16m', 'nor32m'
+      'nor'
+    when 'nand'
+      'nand'
     else
-      ""
+      ''
     end
   end
 
   def flash_size
     case @flash_type
-    when "nor8m"
+    when 'nor8m'
       8
-    when "nor16m"
+    when 'nor16m'
       16
-    when "nor32m"
+    when 'nor32m'
       32
-      # when "nand"
+      # when 'nand'
       #   ??
     else
       8
@@ -64,13 +64,13 @@ class Camera
 
   def flash_size_blocks
     case @flash_type
-    when "nor8m"
+    when 'nor8m'
       '0x4000'
-    when "nor16m"
+    when 'nor16m'
       '0x8000'
-    when "nor32m"
+    when 'nor32m'
       '0x16000'
-      # when "nand"
+      # when 'nand'
       #   ??
     else
       '0x4000'
@@ -79,16 +79,16 @@ class Camera
 
   def flash_size_hex
     case @flash_type
-    when "nor8m"
-      "0x800000"
-    when "nor16m"
-      "0x1000000"
-    when "nor32m"
-      "0x2000000"
-    # when "nand"
+    when 'nor8m'
+      '0x800000'
+    when 'nor16m'
+      '0x1000000'
+    when 'nor32m'
+      '0x2000000'
+    # when 'nand'
     #   ??
     else
-      "0x800000"
+      '0x800000'
     end
   end
 
@@ -98,79 +98,79 @@ class Camera
 
   def kernel_max_size
     case firmware_version
-    when "lite"
-      "0x200000"
-    when "ultimate"
-      "0x300000"
+    when 'lite'
+      '0x200000'
+    when 'ultimate'
+      '0x300000'
     else
-      "0x200000"
+      '0x200000'
     end
   end
 
   def kernel_offset
     case firmware_version
-    when "lite"
-      "0x50000"
-    when "ultimate"
-      "0x50000"
+    when 'lite'
+      '0x50000'
+    when 'ultimate'
+      '0x50000'
     else
-      "0x50000"
+      '0x50000'
     end
   end
 
   def rootfs_max_size
     case firmware_version
-    when "lite"
-      "0x500000"
-    when "ultimate"
-      "0xA00000"
+    when 'lite'
+      '0x500000'
+    when 'ultimate'
+      '0xA00000'
     else
-      "0x500000"
+      '0x500000'
     end
   end
 
   def rootfs_offset
     case firmware_version
-    when "lite"
-      "0x250000"
-    when "ultimate"
-      "0x350000"
+    when 'lite'
+      '0x250000'
+    when 'ultimate'
+      '0x350000'
     else
-      "0x250000"
+      '0x250000'
     end
   end
 
   def overlay_max_size
     case firmware_version
-    when "lite"
-      "0xB0000"
-    when "ultimate"
-      "0x2B0000"
+    when 'lite'
+      '0xB0000'
+    when 'ultimate'
+      '0x2B0000'
     else
-      "0xB0000"
+      '0xB0000'
     end
   end
 
   def overlay_offset
     case firmware_version
-    when "lite"
-      "0x750000"
-    when "ultimate"
-      "0xD50000"
+    when 'lite'
+      '0x750000'
+    when 'ultimate'
+      '0xD50000'
     else
-      "0x750000"
+      '0x750000'
     end
   end
 
   def permalink
     [
-      "?mac=", camera_mac_address.gsub(':', '-'),
-      "&cip=", camera_ip_address,
-      "&sip=", server_ip_address,
-      "&net=", network_interface,
-      "&rom=", flash_type,
-      "&var=", firmware_version,
-      "&sd=", sd_card_slot
+      '?mac=', camera_mac_address.gsub(':', '-'),
+      '&cip=', camera_ip_address,
+      '&sip=', server_ip_address,
+      '&net=', network_interface,
+      '&rom=', flash_type,
+      '&var=', firmware_version,
+      '&sd=', sd_card_slot
     ].join('').html_safe
   end
 end
