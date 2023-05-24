@@ -23,21 +23,6 @@ en:
       reload_to_reset: Time shown in milliseconds. Reload page to reset the counter.
       title: High-Resolution Timer
     introduction:
-      binaries_button: Precompiled binary files
-      installation_button: Installation Instructions
-      majestic_alt: 'Image: Majestic streamer logo'
-      openipc_alt: 'Image: OpenIPC Community logo'
-      paragraph1_html: OpenIPC is an open-source operating system targeting IP cameras with ARM and MIPS processors from several manufacturers in order to replace that closed, opaque, insecure, often abandoned and unsupported firmware pre-installed by a vendor.
-      paragraph2_html: OpenIPC Firmware comes as binary pre-compiled files for easy installation by end-user. Also, we provide full access to the source files for further development and improvement by any capable programmer willing to contribute to the project. OpenIPC source code is released under one of the most simple open source license agreements, <a href="https://opensource.org/licenses/MIT">MIT License</a>, giving users express permission to reuse code for any purpose, even as part of a proprietary software. We only ask you politely to contribute your improvements back to us. We would be grateful for any feedback and suggestions.
-      paragraph3_html: OpenIPC Firmware utilizes <a href="https://buildroot.org/">Buildroot</a> to build its Linux distro, and uses <a href="https://github.com/OpenIPC/majestic">Majestic streamer</a> which while not yet fully open, provides unprecedented performance and capabilities for a wide range of hardware. The author of Majestic streamer is looking into possibilities to open-source the codebase after he secures enough funds to support further open development. You can <a href="/support-open-source">help</a> to make it happen sooner.
-      paragraph4_html: First of all, OpenIPC Firmware brings you freedom. With OpenIPC on your camera you are the master of your streams. You have full access to the system and can control what, where, and how you want your camera to behave. There are no backdoors, no botnets, no crypto-mining malware, no keyloggers, no password sniffers, nothing you could possibly expect in a closed binary system with no access to its source code.
-      paragraph5_html: As for the Firmware capabilities, we strive to provide universal support for a wide range of cameras, thus we are focused on basic functionality first, allowing end-users to upgrade their cameras' firmware and stream video and audio (where supported) without too much hassle.
-      paragraph6_html: We have some interesting bits though. Our Firmware supports IPEYE cloud storage, streaming video to Youtube and Telegram, using SOCKS5 proxy, setting up a Virtual Tunnel, and more. We also have a few projects focused on premium or specialized hardware, e.g. cameras for drones.
-      sources_button: Source code on GitHub
-      subtitle1: OpenIPC is an alternative open firmware for your IP camera.
-      subtitle2: Why OpenIPC Firmware?
-      subtitle3: Alliance
-      subtitle4: Supporters
       title: Introduction
     majestic_endpoints:
       aac: AAC audio stream.
@@ -107,6 +92,7 @@ en:
       subtitle3: OpenIPC community projects
       title: Our Projects
       umbrella_info: The OpenIPC is also an umbrella brand for other small projects that are useful components of our ecosystem. We welcome everyone willing to contribute to the project, in any way they find useful!
+      venc_info: A streamer for IP cameras using Goke SoC, focused primarily on FPV.
       webui_info: Web interface for OpenIPC Firmware. Written on Ash and tears of the developer.
       yamlcli_info: Simple YAML console tool.
     our_team:
