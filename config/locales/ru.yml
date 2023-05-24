@@ -139,6 +139,7 @@ ru:
     tools: Инструменты
     vendors: Продавцы
     view_soc: Посмотреть страницу SoC
+    webui: Веб интерфейс
     wiki: Wiki
   net_iface:
     both: Камера имеет как Ethernet, так и беспроводную сеть.
@@ -208,3 +209,6 @@ ru:
       hyperlink: "Гиперссылка"
   title:
     openwall: Стена
+  pages:
+    web_interface:
+      title: "Скриншоты веб интерфейса"

@@ -143,6 +143,7 @@ en:
     tools: Tools
     vendors: Vendors
     view_soc: View SoC page
+    webui: Web Interface
     wiki: Our Wiki
   net_iface:
     both: Camera has both Ethernet and Wireless networks
