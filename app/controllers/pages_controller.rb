@@ -55,7 +55,7 @@ class PagesController < ApplicationController
   end
 
   def web_interface
-    @page_title = t('pages.stages_of_firmware_development.title')
+    @page_title = t('pages.web_interface.title')
     render 'pages/web_interface'
   end
 end
