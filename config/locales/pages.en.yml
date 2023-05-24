@@ -131,3 +131,5 @@ en:
       title: Stages of Firmware development
       wip_alt: 'Image: stage WIP'
       wip_info: Work in progress. We learned a lot about the platform hardware and code base, prepared the first public binary build, and are waiting for the first adopters to test it on their boards and provide feedback to help us move forward.
+    support_open_source:
+      title: Support Open Source
