@@ -39,6 +39,7 @@ Rails.application.routes.draw do
   get '/our-channels', to: 'pages#our_channels'
   get '/stages-of-firmware-development', to: 'pages#stages_of_firmware_development'
   get '/support-open-source', to: 'pages#support_open_source'
+  get '/web-interface', to: 'pages#web_interface'
 
   get '/supported-hardware', to: redirect('/supported-hardware/featured')
   get '/supported-hardware/featured', to: 'cameras/socs#featured'
