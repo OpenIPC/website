@@ -188,14 +188,14 @@ ru:
     language: Язык
   telegram:
     channels:
-      description_1: "International channel about OpenIPC"
-      description_2: "GitHub notifications on the latest builds"
-      description_3: "OpenIPC Telegram Bot demo"
-      description_4: "Russian-speaking OpenIPC users channel"
-      description_5: "Channel for OpenIPC developers"
-      description_6: "Everthing for devices repairing."
-      description_7: "OpenIPC for building FPV systems."
-      description_8: "Group for paid technical support."
+      description_1: "Основная международная группа по OpenIPC (EN)"
+      description_2: "Уведомления от GitHub о последних сборках"
+      description_3: "Демонстрационный Telegram бот"
+      description_4: "Основная группа русскоязычных пользователей OpenIPC"
+      description_5: "Группа для разработчиков прошивки OpenIPC"
+      description_6: "Всё по ремонту IP камер и NVR"
+      description_7: "Группа по созданию FPV систем на базе OpenIPC"
+      description_8: "Группа для платной технической поддержки"
       description_9: "تیم OpenIPC برای کاربران ایرانی"
     formatting:
       header: "Форматирование"
