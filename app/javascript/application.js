@@ -1,9 +1,9 @@
 import * as bootstrap from 'bootstrap'
 
 window.onload = (event) => {
-    if ((window.navigator.language == 'ru' || window.navigator.language == 'ru-RU') && document.documentElement.lang !== 'ru') {
-        location.href = location.href.replace(location.search, '').concat('?locale=ru');
-    }
+//    if ((window.navigator.language == 'ru' || window.navigator.language == 'ru-RU') && document.documentElement.lang !== 'ru') {
+//        location.href = location.href.replace(location.search, '').concat('?locale=ru');
+//    }
 
     document.querySelectorAll('a[href^="http"], a[rel^="external"]').forEach(el => {
         el.target = '_blank';

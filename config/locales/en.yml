@@ -137,7 +137,7 @@ en:
     snapshot: 'Snapshot #%{number}'
     snapshots: Latest Snapshots
     socs: SoCs
-    support_opensource: Support Open Source Programming
+    support_opensource: It's Open Source
     supported_hardware: Supported Hardware
     team: Our Team
     tools: Tools

@@ -6,8 +6,16 @@ module Multilang
   included do
     before_action :set_locale
 
+    helper_method :browser_locale
     helper_method :locales_for_select
     helper_method :locale_switcher
+  end
+
+  def browser_locale
+    locales = request.env['HTTP_ACCEPT_LANGUAGE'] || ''
+    locales.scan(/[a-z]{2}(?=;)/).find do |locale|
+      I18n.available_locales.include?(locale.to_sym)
+    end
   end
 
   def self.default_url_options
@@ -15,6 +23,9 @@ module Multilang
   end
 
   def set_locale
+    # detect locale from browser languages
+    session[:locale] ||= browser_locale
+
     # save session locale value to default if not valid
     old_locale = session[:locale].to_s.to_sym
     unless I18n.available_locales.include?(old_locale)
