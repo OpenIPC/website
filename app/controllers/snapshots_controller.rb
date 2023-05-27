@@ -26,6 +26,8 @@ class SnapshotsController < ApplicationController
     else
       head :unsupported_media_type, 'X-Error': @snapshot.errors.full_messages.join('. ')
     end
+  rescue Snapshot::BlacklistedMac
+    head :forbidden
   rescue Snapshot::TooSoon
     offset = 0
     s = Snapshot.where(mac_address: permitted_params[:mac_address]).order(created_at: :desc).first
