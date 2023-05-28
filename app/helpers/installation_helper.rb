@@ -48,7 +48,8 @@ module InstallationHelper
     if c.flash_type.eql?('nand')
       text << "nand erase 0x0 #{c.flash_size_hex}; nand write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
     else
-      text << "sf probe 0; sf erase 0x0 #{c.flash_size_hex}; sf write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+      text << 'sf probe 0; sf lock 0;'
+      text << "sf erase 0x0 #{c.flash_size_hex}; sf write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
     end
     text << 'reset'
     list_of_commands text
@@ -71,7 +72,8 @@ module InstallationHelper
     if c.flash_type.eql?('nand')
       text << "nand erase 0x0 0x50000; nand write #{c.soc.load_address} 0x0 0x50000"
     else
-      text << "sf probe 0; sf erase 0x0 0x50000; sf write #{c.soc.load_address} 0x0 0x50000"
+      text << 'sf probe 0; sf lock 0;'
+      text << "sf erase 0x0 0x50000; sf write #{c.soc.load_address} 0x0 0x50000"
     end
     text << 'reset'
     list_of_commands text
@@ -91,7 +93,8 @@ module InstallationHelper
       if c.flash_type.eql?('nand')
         text << "nand erase #{c.kernel_offset} #{c.kernel_max_size}; nand write #{c.soc.load_address} #{c.kernel_offset} ${filesize}"
       else
-        text << "sf probe 0; sf erase #{c.kernel_offset} #{c.kernel_max_size}; sf write #{c.soc.load_address} #{c.kernel_offset} ${filesize}"
+        text << 'sf probe 0; sf lock 0;'
+        text << "sf erase #{c.kernel_offset} #{c.kernel_max_size}; sf write #{c.soc.load_address} #{c.kernel_offset} ${filesize}"
       end
       text << ''
       text << "mw.b #{c.soc.load_address} 0xff 0x500000"
@@ -99,7 +102,8 @@ module InstallationHelper
       if c.flash_type.eql?('nand')
         text << "nand erase #{c.rootfs_offset} #{c.rootfs_max_size}; nand write #{c.soc.load_address} #{c.rootfs_offset} ${filesize}"
       else
-        text << "sf probe 0; sf erase #{c.rootfs_offset} #{c.rootfs_max_size}; sf write #{c.soc.load_address} #{c.rootfs_offset} ${filesize}"
+        text << 'sf probe 0; sf lock 0;'
+        text << "sf erase #{c.rootfs_offset} #{c.rootfs_max_size}; sf write #{c.soc.load_address} #{c.rootfs_offset} ${filesize}"
       end
       text << ''
     else
@@ -136,7 +140,8 @@ module InstallationHelper
     if c.flash_type.eql?('nand')
       text << "nand erase 0x0 #{c.flash_size_hex}; nand write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
     else
-      text << "sf probe 0; sf erase 0x0 #{c.flash_size_hex}; sf write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+      text << 'sf probe 0; sf lock 0;'
+      text << "sf erase 0x0 #{c.flash_size_hex}; sf write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
     end
     list_of_commands text
   end
