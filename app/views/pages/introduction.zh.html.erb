@@ -1,0 +1,41 @@
+<article class="introduction">
+  <header>
+    <h2><%= t('.title') %></h2>
+  </header>
+
+  <div class="row g-5">
+    <div class="col-lg-8 col-xl-8 col-xxl-9 mb-3">
+      <h3 class="mb-4">OpenIPC是为你的网络摄像机提供的另一种开放式固件。</h3>
+      <p>OpenIPC是一个开源的操作系统，针对的是一些制造商的ARM和MIPS处理器的IP摄像机，以取代供应商预装的那种封闭的、不透明的、不安全的、经常被放弃的、不支持的固件。</p>
+      <p>OpenIPC固件以二进制预编译文件的形式出现，便于终端用户的安装。此外，我们提供了对源文件的完全访问权，以便任何愿意为该项目做出贡献的有能力的程序员进行进一步的开发和改进。OpenIPC的源代码是在最简单的开源许可协议之一，即MIT许可下发布的，给用户一个明确的许可，可以为任何目的重新使用这些代码，甚至作为专利软件的一部分。我们只是礼貌地要求你将你的改进贡献给我们。我们将感谢任何反馈和建议。</p>
+      <p class="text-center">
+        <a href="https://github.com/OpenIPC/wiki/blob/master/en/installation.md" class="btn btn-danger btn-lg my-4">安装说明</a>
+        <a href="/supported-hardware" class="btn btn-primary btn-lg my-4">预编译的二进制文件</a>
+        <a href="https://github.com/OpenIPC" class="btn btn-primary btn-lg my-4">源代码在GitHub上</a>
+      </p>
+      <p>OpenIPC固件使用<a href="https://buildroot.org/">Buildroot</a>构建其Linux发行版，并利用<a href="https://github.com/OpenIPC/majestic">Majestic</a>、<a href="https://github.com/OpenIPC/mini">Mini</a>或<a href="https://github.com/OpenIPC/silicon_research">Venc</a>流处理器。</p>
+      <p class="small text-muted">Majestic代码虽然没有开放，但为各种硬件提供了前所未有的性能和能力。Majestic流媒体的作者正在研究在他获得足够的资金支持进一步的开放开发之后将代码库开源的可能性。你可以帮助使之更快实现。</p>
+
+      <h3 class="mb-4">为什么是OpenIPC固件？</h3>
+      <p>首先，OpenIPC固件带给你自由。有了OpenIPC在你的相机上，你就是你流媒体的主人。你可以完全访问该系统，并可以控制你想让你的相机做什么、在哪里做、如何做。没有后门，没有僵尸网络，没有加密挖掘的恶意软件，没有键盘记录器，没有密码嗅探器，在一个封闭的二进制系统中，没有任何你可能期望的，无法访问其源代码。</p>
+      <p>至于固件功能，我们努力为各种相机提供普遍支持，因此我们首先关注基本功能，使最终用户能够升级其相机的固件，并在没有太多麻烦的情况下流传视频和音频（如支持）。</p>
+      <p>不过我们有一些有趣的地方。我们的固件支持IPEYE云存储，向Youtube和Telegram传输视频，使用SOCKS5代理，设置虚拟隧道，以及其他。</p>
+      <p>还有几个项目专注于专业设备，如安装在无人机上的相机，用于安装在建筑头盔上，用于测量工具，用于视觉器官的医学研究，水下捕鱼等。</p>
+    </div>
+    <div class="col-lg-4 col-xl-4 col-xxl-3">
+      <h3 class="mb-3">联盟</h3>
+      <div class="row row-cols-2 g-3">
+        <div class="col"><a href="https://github.com/OpenIPC"><img src="/assets/openipc-community.svg" class="img-fluid" alt="图片： OpenIPC社区标志"></a></div>
+        <div class="col"><a href="https://github.com/OpenIPC/majestic"><img src="/assets/majestic-logo2.svg" class="img-fluid" data-link="https://majestic.cam/" alt="图片： 马捷克斯特流线型标志"></a></div>
+      </div>
+
+      <h4 class="mt-4 mb-3">支持者</h4>
+      <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-2 g-3">
+        <div class="col logo"><a href="https://www.oscollective.org/"><img src="/assets/partners/osc_mini.png" alt="OSC logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://www.goodcam.io/"><img src="/assets/partners/goodcam_mini.png" alt="GOODCAM logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://linux-chenxing.org/"><img src="/assets/partners/linuxchenxing_mini.png" alt="LINUXCHENXING logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://anycam.io/"><img src="/assets/partners/anycam_mini.png" alt="ANYCAM logo" class="img-fluid"></a></div>
+      </div>
+    </div>
+  </div>
+</article>
