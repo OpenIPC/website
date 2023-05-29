@@ -111,6 +111,7 @@ ru:
     pl: Polska
     pt-br: Português brasileiro
     ru: Русский
+    zh: 中文
   nav:
     about: О нас
     add_soc: Добавьте еще одну SoC
@@ -189,26 +190,23 @@ ru:
     language: Язык
   telegram:
     channels:
-      description_1: "Основная международная группа по OpenIPC (EN)"
-      description_2: "Уведомления от GitHub о последних сборках"
-      description_3: "Демонстрационный Telegram бот"
-      description_4: "Группа русскоязычных пользователей OpenIPC"
-      description_5: "Группа для разработчиков прошивки OpenIPC"
-      description_6: "Всё по ремонту IP камер и NVR"
-      description_7: "Группа по созданию FPV систем на базе OpenIPC"
-      description_8: "Группа для платной технической поддержки"
-      description_9: "تیم OpenIPC برای کاربران ایرانی"
+      description_1: Основная международная группа по OpenIPC (EN)
+      description_2: Уведомления от GitHub о последних сборках
+      description_3: Демонстрационный Telegram бот
+      description_4: Группа русскоязычных пользователей OpenIPC
+      description_5: Группа для разработчиков прошивки OpenIPC
+      description_6: Всё по ремонту IP камер и NVR
+      description_7: Группа по созданию FPV систем на базе OpenIPC
+      description_8: Группа для платной технической поддержки
+      description_9: تیم OpenIPC برای کاربران ایرانی
     formatting:
-      header: "Форматирование"
-      info: "Выделить фрагмент текста и нажать нужное сочетание клавиш:"
-      bold: "Жирный"
-      italic: "Курсив"
-      underline: "Подчеркнутый"
-      strikeout: "Зачеркнутый"
-      monospace: "Моноширинный"
-      hyperlink: "Гиперссылка"
+      bold: Жирный
+      header: Форматирование
+      hyperlink: Гиперссылка
+      info: 'Выделить фрагмент текста и нажать нужное сочетание клавиш:'
+      italic: Курсив
+      monospace: Моноширинный
+      strikeout: Зачеркнутый
+      underline: Подчеркнутый
   title:
     openwall: Стена
-  pages:
-    web_interface:
-      title: "Скриншоты веб интерфейса"

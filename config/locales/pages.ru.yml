@@ -1,5 +1,7 @@
 ---
 ru:
+  alerts:
+    downloads: Если у вас возникли проблемы с доступом или загрузкой файлов, не стесняйтесь обращаться к нам на нашем <a href="https://t.me/openipc_modding">канале Telegram</a> .
   pages:
     about_us:
       title: О нас
@@ -120,6 +122,4 @@ ru:
     support_open_source:
       title: Поддержите программирование с открытым исходным кодом
     web_interface:
-      title: "Веб интерфейс"
-  alerts:
-    downloads: Если у вас возникли проблемы с доступом или загрузкой файлов, не стесняйтесь обращаться к нам на нашем <a href="https://t.me/openipc_modding">канале Telegram</a> .
+      title: Веб интерфейс
