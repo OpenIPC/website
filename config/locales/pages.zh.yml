@@ -1,0 +1,123 @@
+---
+zh:
+  pages:
+    about_us:
+      title: 关于我们
+    admin:
+      dashboard:
+        title: 管理仪表板
+    bandwidth_calculator:
+      title: 带宽计算器
+    firmware_partitions_calculation:
+      end_address: 结束地址
+      flash_size_mb: 闪存大小，MB
+      mtd_name: MTD 设备名称
+      offset: 初始偏移量，十进制或十六进制
+      partition_name: 分区 %{number} 名称
+      partition_size: 分区 %{number} 大小，KB
+      recalculate: 重新计算
+      size_hex: 十六进制大小，字节
+      start_address: 起始地址
+      title: 固件分区计算
+    high_resolution_timer:
+      reload_to_reset: 以毫秒为单位显示的时间。重新加载页面以重置计数器。
+      title: 高分辨率定时器
+    introduction:
+      title: 介绍
+    majestic_endpoints:
+      aac: AAC 音频流。
+      accepts_post: 接受带有音频文件作为参数的 POST 请求。
+      alaw: A-law 压缩音频流。
+      audio: 声音的
+      dng: Adobe DNG 格式的快照（原始）。
+      fmp4: fMP4 视频流。
+      footnote_1: 只有 HiSilicon 和 Goke SoC。
+      footnote_2: 仅限 HiSilicon SoC v2 及更高版本。
+      footnote_3_html: 例如<i>ffplay -ar 48000 -ac 1 -f s16le http://192.168.1.10/audio.pcm</i>
+      footnote_4_html: 例如<i>http://192.168.1.10/image.jpg?width=640&height=480&qfactor=50&color2gray=1&crop=80x32x512x400</i>
+      g711: G.711 A-law 音频流。
+      heif: HEIF 格式的快照。
+      hls: Web 浏览器中的 HLS 直播。
+      images: 静止图像
+      jpeg: JPEG 格式的快照。
+      jpeg_params1: width, height - 结果图像的大小
+      jpeg_params2: qfactor - JPEG 质量因子 (1-99)
+      jpeg_params3: color2gray - 转换为灰度
+      jpeg_params4: crop - 将生成的图像裁剪为 16x16x320x320
+      majestic_json: JSON 格式的实际 Majestic 配置。
+      mjpeg: MJPEG 视频流。
+      mjpeg_player: MJPEG 和 MP3 在 Web 浏览器中实时流式传输。
+      monitoring: 监控
+      more_examples_html: <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">我们的 wiki 中</a>提供了更多示例。
+      mp3: MP3 音频流。
+      night: 夜间API
+      night_off: 关闭夜间模式。
+      night_on: 开启夜间模式。
+      night_toggle: 切换当前夜间模式。
+      optional_params: 可选参数
+      opus: 作品音频流。
+      play_on_speaker: 在相机的扬声器上播放音频文件。
+      prometheus_html: <a href="https://prometheus.io/">Prometheus</a>的节点导出器。
+      raw_pcm: 原始 PCM 音频流。
+      rtsp0: RTSP 主流 (video0)。
+      rtsp1: RTSP 子流（视频 1）。
+      title: 宏伟的终点
+      ulaw: μ-law 压缩音频流。
+      video: 视频
+      webrtc: 网络浏览器中的 WebRTC 直播。
+      yuv420: YUV420 格式的快照。
+    our_channels:
+      paragraph1_html: 我们强烈建议您为您的平台安装原生<a href="https://telegram.org/">Telegram Messenger</a>并使用我们的 Telegram 频道。
+      title: 我们的渠道
+    our_projects:
+      burn_info: 一个开源工具，用于解除 HiSilicon 设备的阻塞。
+      community: 与 OpenIPC 有关的东西。用户生成内容。
+      coupler_info: 一种工具，可让您从 IP 摄像机制造商预装的专有固件平稳过渡到 OpenIPC 固件。不需要特殊技能。
+      exipcam_info: XM 设备资源管理器。修复 IPCam 的实用程序
+      exipcam_info_extra: 俄语用户界面。通过 Wine 在 Windows、Linux 上运行。
+      firmware_info: 社区的圣杯。用于 IP 摄像机的通用固件，用于替换专有、过时且通常不安全的供应商预装固件。
+      hisitrace_info: 在非库存环境中从 XM 运行 Sofia 的实用程序。
+      ipcamdms_info: IPCam设备管理系统
+      ipcamdms_info_extra: 俄语用户界面。通过 Wine 在 Windows、Linux 上运行。
+      ipctool_info: 类固醇的 IP 摄像机硬件检查员。此工具不仅可以识别您相机的处理器、传感器、闪存芯片，还可以帮助您备份原始固件等。
+      majestic_info: 通用 IP 摄像机流媒体。该项目是 OpenIPC 固件的主要部分。虽然现阶段还没有完全开源，但我们正在考虑在项目足够成熟，获得足够的资金进行开放开发时开放代码库。
+      mini_info: 一个开源网络摄像机流媒体。将其视为 Majestic 的弟弟。
+      motors_info: 管理电机硬件的各种代码。
+      openhisi_info: 用于海思 SoC 的开源 SDK。
+      openxm_info: 用于雄迈 SoC 的开源 SDK。
+      printables_info: 标有“openipc”的 3D 打印模型。
+      smolrtsp_info: 一个简单的 RTSP 1.0 服务器库，专为 IP 摄像机等嵌入式设备量身定制。它同时支持 TCP 和 UDP，允许任何负载格式，并提供方便灵活的 API。
+      subtitle1: 核心项目
+      subtitle2: OpenIPC 伞式项目
+      subtitle3: OpenIPC 社区项目
+      title: 我们的计划
+      umbrella_info: OpenIPC 也是其他小型项目的伞形品牌，这些项目是我们生态系统的有用组成部分。我们欢迎所有愿意为该项目做出贡献的人，以他们认为有用的任何方式！
+      venc_info: 使用 Goke SoC 的 IP 摄像机流媒体，主要专注于 FPV。
+      webui_info: OpenIPC 固件的 Web 界面。写在开发者的灰烬与泪水上。
+      yamlcli_info: 简单的 YAML 控制台工具。
+    our_team:
+      contributors_link: 所有 GitHub 贡献者列表
+      paragraph1_html: OpenIPC 是一个社区驱动的开源项目，许多人为其代码库做出贡献。对他们好！还有一个由熟练的开发人员组成的核心团队，他们努力扩展<a href="/supported-hardware">支持的硬件平台</a>列表、扩展固件的功能和稳定性、审查提交的代码并协调社区工作。了解团队及其专业领域：
+      title: 我们的队伍
+    stages_of_firmware_development:
+      done_alt: 图片：阶段完成
+      done_info: 完成了！ Bootloader 引导，Linux 加载，流媒体可以流式传输视频并生成快照。您可以拥有一个开放的工作平台，用于修补和进一步改进。不过，我们仍然期待你们的反馈和补丁。
+      hlp_alt: 图片：舞台 HLP
+      hlp_info: 把招工广告。我们有硬件，我们有 SDK，基本的东西都学完了。但是我们被困住了。这就是我们寻求经验丰富的嵌入式开发人员帮助克服障碍并进入下一阶段的地方。
+      mvp_alt: 图片：舞台MVP
+      mvp_info: 一个最小可行的产品。基础系统搭建好了，平台可以制作视频，至少在主频道是这样，但由于缺乏人力资源，开发被推迟或停止。资金注入可以将开发推向最后阶段。
+      neq_alt: 图片：舞台NEQ
+      neq_info_html: 没有设备。我们有这个平台的SDK，但是我们没有具体的硬件可以继续开发，你可以把它捐给我们的研发人员（尤其是已经过<abbr title="生命尽头">EOL</abbr> ，不能再买的旧板）。
+      paragraph1: 在我们为新的 SoC 获取 SDK 后，我们将 SoC 添加到支持的硬件表中。如果我们没有特定的硬件模块，我们会分配 NEQ（无设备）状态，如果我们有硬件但正在寻找领导该 SoC 开发的开发人员，我们会分配 HLP（需要帮助）状态。这被认为是开发的正式开始。
+      paragraph2: 没有它的 SDK，没有理由在表中有 SoC。
+      paragraph3: 随着 SoC 工作的进展，其状态会逐渐发生变化。首先是 RND，然后是 WIP，然后是 MVP，最后是 DONE。
+      rnd_alt: 图片：舞台研发
+      rnd_info: 研发阶段，此时我们已经有了平台 SDK，甚至可能是硬件板，但我们开始摆弄平台，研究其细节和功能。前面还有很多工作要做。
+      subtitle: 典型的开发生命周期
+      title: 固件开发阶段
+      wip_alt: 图片：舞台 WIP
+      wip_info: 工作正在进行中。我们了解了很多关于平台硬件和代码库的知识，准备了第一个公共二进制版本，并等待第一批采用者在他们的主板上对其进行测试并提供反馈以帮助我们前进。
+    support_open_source:
+      title: 支持开源
+    web_interface:
+      title: 网络界面

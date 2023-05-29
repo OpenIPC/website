@@ -1,0 +1,15 @@
+---
+zh:
+  activemodel:
+    attributes:
+      camera:
+        camera_ip_address: 摄像机IP地址
+        camera_mac_address: 相机MAC地址
+        firmware_version: 固件版本
+        flash_type: 闪存芯片的类型和大小
+        network_interface: 网络接口
+        sd_card_slot: SD卡槽
+        server_ip_address: TFTP服务器IP地址
+        soc_id: 片上系统
+    models:
+      camera: 相机

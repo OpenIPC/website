@@ -1,0 +1,25 @@
+---
+zh:
+  activerecord:
+    attributes:
+      snapshot:
+        mac_address: MAC地址
+      soc:
+        build_status_url: 构建状态 URL
+        kernel: 核心
+        linux_filename: 文件
+        load_address: 加载地址
+        model: 芯片型号
+        notes: 笔记
+        sdk: 开发工具包
+        status: 阶段
+        toolchain_filename: 工具链文件
+        uboot_filename: U-Boot文件
+        vendor_id: SoC供应商
+        version: 版本
+    help:
+      camera:
+        flash_type: 如果不确定，请选择 NOR 8M。
+    models:
+      snapshot: 快照
+      soc: 片上系统
