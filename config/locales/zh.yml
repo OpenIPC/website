@@ -126,7 +126,7 @@ zh:
     home: 主页
     introduction: 介绍
     next: 下一个
-    openwall: 公开
+    openwall: 公开展板
     partition_calc: 固件分区计算器
     pause_transitions: 将鼠标光标放在快照上可以暂停自动转换。
     previous: 以前的
@@ -211,4 +211,4 @@ zh:
       strikeout: 删除线
       underline: 下划线
   title:
-    openwall: 公开
+    openwall: 公开展板
