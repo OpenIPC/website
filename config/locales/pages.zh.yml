@@ -38,7 +38,7 @@ zh:
       g711: G.711 A-law 音频流。
       heif: HEIF 格式的快照。
       hls: Web 浏览器中的 HLS 直播。
-      images: 静止图像
+      images: 图像
       jpeg: JPEG 格式的快照。
       jpeg_params1: width, height - 结果图像的大小
       jpeg_params2: qfactor - JPEG 质量因子 (1-99)
@@ -50,7 +50,7 @@ zh:
       monitoring: 监控
       more_examples_html: <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">我们的 wiki 中</a>提供了更多示例。
       mp3: MP3 音频流。
-      night: 夜间API
+      night: 夜间模式API
       night_off: 关闭夜间模式。
       night_on: 开启夜间模式。
       night_toggle: 切换当前夜间模式。
