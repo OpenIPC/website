@@ -5,8 +5,8 @@ zh:
   cameras:
     socs:
       index:
-        featured: 受到推崇的
-        full_list: 完整列表
+        featured: 推荐的
+        full_list: 所有列表
         recommended_alert_html: 请注意。对不同 SoC 的支持处于不同的开发阶段。<a href="/supported-hardware/featured">此列表</a>显示了最受支持的，因此也是最推荐的。
         stages_of_development: 固件开发阶段说明
         th_baseaddr: 加载地址
@@ -18,145 +18,144 @@ zh:
       show:
         bootloader: OpenIPC 引导程序
         bundle: OpenIPC Linux (%{name})
-        camera_ip_address_title: 由句点分隔的四个 8 位字段
-        camera_mac_address_title: 六个 8 位十六进制字段，由列或破折号分隔
+        camera_ip_address_title: 由小数点分隔的四个数字
+        camera_mac_address_title: 六个 8 位十六进制字段，用冒号或横线分隔
         for: 对于 %{name}
         generate_button: 生成安装指南
-        generate_mac: 生成有效的随机 MAC 地址。
-        not_ready_alert_html: '%{name} SoC 的安装说明尚未准备好。尽管我们正在努力发布 %{name} 的 OpenIPC 固件。请继续关注并<a href="/support-open-source">支持开源</a>。'
+        generate_mac: 随机生成有效的 MAC 地址。
+        not_ready_alert_html: '%{name} SoC 的安装说明尚未准备好。但是我们正在努力发布 %{name} 的 OpenIPC 固件。请继续关注并<a href="/support-open-source">支持开源</a>。'
         notes: 笔记
-        paragraph1: 请在提供的表格中输入相机配置，然后按“生成安装指南”按钮。在下一页，您将找到二进制文件和在摄像机上安装 OpenIPC 固件时必须执行的命令。
-        paragraph2: 不要忽视这部分。您可能认为没有必要，因为您不会回到黑暗的过去，但我们向您保证，仍然需要库存固件来恢复丢失的设置、驱动程序和进一步研究。
-        server_ip_address_title: 由句点分隔的四个 8 位字段
+        paragraph1: 请在右侧输入摄像机配置，然后点击“生成安装指南”按钮。在下一页中，您将找到二进制文件和在摄像机上安装 OpenIPC 固件时必须执行的命令。
+        paragraph2: 请不要忽视这部分。您可能认为没有必要，因为您不会回复到原来的系统，但我们向您保证，仍然需要原始固件来恢复丢失的设置、驱动程序，并且用来进一步研究。
+        server_ip_address_title: 由小数点分隔的四个数字
         subtitle: 下载
         title: 安装指南
-        title2: 保存您的库存固件！
+        title2: 保存您的原始固件！
         toolchain: OpenIPC 工具链
   error:
     please_fix: 请修正以下的错误。
   errors:
     messages:
       already_confirmed: 已确认，请尝试登录
-      confirmation_period_expired: 需要在%{period}内确认，请申请新的
-      expired: 已过期，请申请新的
+      confirmation_period_expired: 需要在%{period}内确认，请重新申请
+      expired: 已过期，请重新申请
       not_found: 未找到
       not_locked: 没有上锁
       not_saved:
         one: 1 个错误禁止保存此 %{resource}：
         other: "%{count} 错误禁止保存此 %{resource}："
   firmware:
-    info_html: 如果您想详细了解<code>uknor*</code> 、 <code>urnor*</code> 、 <code>setnor*</code>命令的作用，请在引导加载程序控制台中运行<code>printenv</code> 。
+    info_html: 如果您想详细了解<code>uknor*</code> 、 <code>urnor*</code> 、 <code>setnor*</code>命令的作用，请在引导加载程序控制台中执行<code>printenv</code> 。
     installation:
       backup:
-        info: OpenIPC U-Boot 会覆盖原始的加密分区，因此无法恢复为出厂固件，除非您拥有此特定相机的完整闪存备份！要创建完整的固件备份，请启动 TFTP 服务器并在引导加载程序 shell 中运行这些命令。
+        info: OpenIPC U-Boot 会覆盖原始的加密分区，因此无法恢复为出厂固件，除非您拥有此特定摄像机的完整闪存备份！要创建完整的固件备份，请启动 TFTP 服务器并在引导加载程序 shell 中执行这些命令。
         more_info_html: 有关详细信息，请参阅项目 wiki 中的<a href="https://github.com/openipc/wiki/blob/master/en/installation.md">安装说明</a>。
-        subtitle: 备份您的库存固件，不要跳过这部分安装过程！
-        title: 保存原固件
-      backup_32: 注意力！在备份 32M 闪存之前，请确保相机至少有 64M 的 RAM。
+        subtitle: 备份您的原始固件，请不要跳过这个步骤！
+        title: 保存原始固件
+      backup_32: 请注意！在备份 32M 闪存之前，请确保摄像机至少有 64M 的 RAM。
       flashing:
         alternative: 或者，通过其部分刷新 OpenIPC 固件
       flashing_footfs:
         continue: |
-          相机将自动重启以应用更改。
-          保持专注并准备中断引导顺序以返回引导加载程序外壳。
-        info: 在引导加载程序外壳中时，根据您的闪存大小和类型重新映射 ROM 分区。
-        title: 为 OpenIPC Linux 准备相机
+          摄像机将自动重启并应用更改。
+          注意准备中断并进入引导程序的命令行。
+        info: 在引导加载程序的命令行中，根据您的闪存大小和类型重新映射 ROM 分区。
+        title: 为 OpenIPC Linux 准备摄像机
       flashing_footfs2:
         info: 下载固件包并将其解压缩到 TFTP 服务器的根目录中。
         link: 下载 OpenIPC 固件 (%{name}) 包
         title: Flash OpenIPC Linux 内核和根文件系统
       flashing_full:
         continue: |
-          相机将自动重启并使用全新的引导加载程序启动。
-          保持专注并准备中断引导顺序以返回引导加载程序外壳。
-        continue2: 在引导加载程序外壳中时，根据您的闪存大小和类型重新映射 ROM 分区。
+          摄像机将自动重启并使用全新的引导加载程序启动。
+          注意准备中断并进入引导程序的命令行。
+        continue2: 在引导加载程序的命令行中，根据您的闪存大小和类型重新映射 ROM 分区。
         info: |
-          完整的固件映像由引导加载程序、内核和根文件系统组成，也适合刷写
-          使用编程器的存储芯片。请注意，完整图像不包含预设环境。你还在
-          需要添加自己的MAC地址、IP地址等设置。
-        link: 下载 OpenIPC 固件 (%{name}) 映像
-        title: 闪存完整的 OpenIPC 固件映像
+          完整的固件映像由引导加载程序、内核和根文件系统组成，也适用于使用编程器烧写内存芯片。
+          请注意，完整镜像不包含预设环境。你还需要添加自己的MAC地址、IP地址等设置。
+        link: 下载 OpenIPC 固件 (%{name}) 镜像
+        title: 闪存完整的 OpenIPC 固件镜像
       flashing_uboot:
         continue: |
-          相机将启动到新闪烁的引导加载程序。
-          保持专注并准备中断引导顺序以返回引导加载程序外壳。
+          摄像机将引导到新烧写的引导加载程序中。
+          注意准备中断并进入引导程序的命令行。
         info: 下载引导加载程序二进制文件并将其保存到 TFTP 服务器的根目录。
         link: 下载 OpenIPC U-Boot 二进制文件
         title: Flash OpenIPC U-Boot
-      permanent_link: 此配置的永久链接
-      subtitle: 在带有 %{soc_name} SoC 和 %{flash_type} SPI 闪存芯片的相机上
+      permanent_link: 当前配置的永久链接
+      subtitle: 在带有 %{soc_name} SoC 和 %{flash_type} SPI 闪存芯片的摄像机上
       success:
-        info_html: 在端口 85 ( <a href=\"http://%{address}:85/\">http://%{address}:85/</a> ) 上打开摄像头的 Web 界面并使用登录<b>root</b>和密码<b>12345</b>登录。登录后将要求您设置自己的安全密码。通过以下方式访问摄像头ssh 或 UART 使用与上述相同的登录名和密码。
+        info_html: 在端口 85 ( <a href=\"http://%{address}:85/\">http://%{address}:85/</a> ) 上打开摄像机的 Web 界面并使用登录<b>root</b>和密码<b>12345</b>登录。登录后将要求您设置自己的安全密码。通过以下方式访问摄像机ssh 或 UART 使用与上述相同的登录名和密码。
         title: 恭喜！此时，您已经安装了 OpenIPC 固件 (%{name})。
       title: 刷新 OpenIPC 固件
     restore:
-      info: 如果您需要恢复原始固件，请使用您使用上述命令创建的备份文件。将备份文件放入 TFTP 服务器的根目录，并在引导加载程序 shell 中运行这些命令。
-      title: 恢复相机库存固件
+      info: 如果您需要恢复原始固件，请使用您使用上述命令创建的备份文件。将备份文件放入 TFTP 服务器的根目录，并在引导加载程序 shell 中执行这些命令。
+      title: 恢复摄像机原始固件
     version:
-      fpv: 飞行器
-      lite: 精简版
-      nand: 与非门
-      ultimate: 最终的
+      fpv: FPV
+      lite: Lite
+      nand: NAND
+      ultimate: Ultimate
   flash_chip:
-    nand: 与非门
-    nor16m: 或非16M
-    nor32m: 或非32M
-    nor8m: 或非8M
+    nand: NAND
+    nor16m: NOR 16M
+    nor32m: NOR 32M
+    nor8m: NOR 8M
   go: 进行
   locales:
-    de: Deutsch
-    en: English
-    es: Español
-    fr: Français
-    ja: 日本語
-    pl: Polska
-    pt-br: Português brasileiro
+    de: 德语
+    en: 英语
+    es: 西班牙语
+    fr: 法语
+    ja: 日本语
+    pl: 波兰语
+    pt-br: 巴西葡萄牙语
     ru: Русский
     zh: 中文
   nav:
     about: 关于
     add_soc: 添加另一个 SoC
     adding_soc: 添加 SoC
-    admin: 行政
-    channels: 我们的渠道
+    admin: 管理
+    channels: 我们的频道
     clone_soc: 克隆此 SoC
     dashboard: 仪表板
     editing: 编辑
     endpoints: 宏伟的终点
-    hires_timer: 高分辨率定时器
-    home: 家
+    hires_timer: 高精度计时器
+    home: 主页
     introduction: 介绍
     next: 下一个
-    openwall: 开墙
+    openwall: 公开
     partition_calc: 固件分区计算器
-    pause_transitions: 将鼠标光标放在快照上以暂停自动转换。
+    pause_transitions: 将鼠标光标放在快照上可以暂停自动转换。
     previous: 以前的
-    projects: 我们的计划
+    projects: 我们的项目
     snapshot: '快照 #%{number}'
     snapshots: 最新快照
     socs: SoC
     support_opensource: 它是开源的
     supported_hardware: 支持的硬件
-    team: 我们的队伍
+    team: 我们的团队
     tools: 工具
     vendors: 供应商
     view_soc: 查看 SoC 页面
-    webui: 网络界面
+    webui: 网站画面
     wiki: 我们的维基
   net_iface:
-    both: 相机同时具有以太网和无线网络
-    eth: 相机只有以太网络
-    wifi: 相机只有无线网络
+    both: 摄像机同时拥有以太网和无线网络
+    eth: 摄像机只有以太网络
+    wifi: 摄像机只有无线网络
   out: 退出
   sd_card:
-    nosd: 相机没有 SD 卡槽
-    sd: 相机有一个 SD 卡槽
+    nosd: 摄像机没有 SD 卡槽
+    sd: 摄像机有一个 SD 卡槽
   site:
-    disclaimer: 本网站包含的信息仅供一般参考之用，访问者不应依赖这些信息。本网站上提供的所有软件和固件均按原样提供，仅供研究使用。对于因使用这些文件或使用或依赖本网站中包含的任何信息而造成的任何损失或损害，OpenIPC 概不负责。
+    disclaimer: 本网站包含的信息仅供一般参考之用，访问者不应依赖这些信息。本网站上提供的所有软件和固件均按原样提供，仅供研究使用。对于因使用这些文件或依赖本网站中包含的任何信息而造成的任何损失或损害，OpenIPC 概不负责。
     snapshot:
       download: 下载原图
-      link_to_camera: 永久链接到此相机
-      link_to_last_jpeg: 此相机的最新快照 (JPEG) 的永久链接
+      link_to_camera: 此摄像机的固定链接
+      link_to_last_jpeg: 此摄像机最新快照 (JPEG) 的固定链接
   snapshots:
     icon:
       snapshot_alt: 图片：快照
@@ -164,7 +163,7 @@ zh:
       no_signal: 没信号
       snapshot_alt: 图片：快照
       stay_tuned: 敬请关注
-      subtitle: 来自在 OpenIPC 固件上运行的真实 IP 摄像机的图像，由其所有者提供。
+      subtitle: 来自在 OpenIPC 固件上运行的真实 IP 摄像机图像，由其所有者提供。
     oneday:
       speed: 速度
     show:
@@ -192,24 +191,24 @@ zh:
     language: 语言
   telegram:
     channels:
-      description_1: 关于 OpenIPC 的国际频道
+      description_1: OpenIPC 的国际频道
       description_2: 关于最新版本的 GitHub 通知
       description_3: OpenIPC Telegram 机器人演示
-      description_4: 俄语 OpenIPC 用户频道
+      description_4: OpenIPC 的俄语频道
       description_5: OpenIPC 开发者通道
-      description_6: 设备维修的一切
-      description_7: 用于构建 FPV 系统的 OpenIPC
-      description_8: 组付费技术支持。
+      description_6: 维修一切设备。
+      description_7: 用于构建 FPV 系统的 OpenIPC。
+      description_8: 有偿技术支持频道
       description_9: 面向伊朗用戶的 OpenIPC 團隊
       description_10: OpenIPC中文讨论组
     formatting:
-      bold: 大胆的
+      bold: 粗体
       header: 消息格式
       hyperlink: 超级链接
-      info: 选择一个文本片段并按下组合键：
+      info: 选中文本并按下组合键：
       italic: 斜体
       monospace: 等宽
-      strikeout: 三振
-      underline: 强调
+      strikeout: 删除线
+      underline: 下划线
   title:
-    openwall: 开墙
+    openwall: 公开
