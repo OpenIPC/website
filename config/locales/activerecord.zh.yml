@@ -10,7 +10,7 @@ zh:
         linux_filename: 文件
         load_address: 加载地址
         model: 芯片型号
-        notes: 笔记
+        notes: 备注
         sdk: 开发工具包
         status: 阶段
         toolchain_filename: 工具链文件
@@ -22,4 +22,4 @@ zh:
         flash_type: 如果不确定，请选择 NOR 8M。
     models:
       snapshot: 快照
-      soc: 系统级芯片
+      soc: 芯片型号
