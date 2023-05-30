@@ -22,11 +22,11 @@ zh:
         camera_mac_address_title: 六个 8 位十六进制字段，用冒号或横线分隔
         for: 对于 %{name}
         generate_button: 生成安装指南
-        generate_mac: 随机生成有效的 MAC 地址。
+        generate_mac: 生成有效的随机 MAC 地址。
         not_ready_alert_html: '%{name} SoC 的安装说明尚未准备好。但是我们正在努力发布 %{name} 的 OpenIPC 固件。请继续关注并<a href="/support-open-source">支持开源</a>。'
-        notes: 笔记
+        notes: 备注
         paragraph1: 请在右侧输入摄像机配置，然后点击“生成安装指南”按钮。在下一页中，您将找到二进制文件和在摄像机上安装 OpenIPC 固件时必须执行的命令。
-        paragraph2: 请不要忽视这部分。您可能认为没有必要，因为您不会回复到原来的系统，但我们向您保证，仍然需要原始固件来恢复丢失的设置、驱动程序，并且用来进一步研究。
+        paragraph2: 请不要忽视这部分。您可能认为没有必要，但我们向您保证，仍然需要原始固件来恢复丢失的设置、驱动程序，并且用来进一步研究。
         server_ip_address_title: 由小数点分隔的四个数字
         subtitle: 下载
         title: 安装指南
@@ -40,7 +40,7 @@ zh:
       confirmation_period_expired: 需要在%{period}内确认，请重新申请
       expired: 已过期，请重新申请
       not_found: 未找到
-      not_locked: 没有上锁
+      not_locked: 未锁定
       not_saved:
         one: 1 个错误禁止保存此 %{resource}：
         other: "%{count} 错误禁止保存此 %{resource}："
@@ -54,7 +54,7 @@ zh:
         title: 保存原始固件
       backup_32: 请注意！在备份 32M 闪存之前，请确保摄像机至少有 64M 的 RAM。
       flashing:
-        alternative: 或者，通过其部分刷新 OpenIPC 固件
+        alternative: 或者，通过其烧录部分 OpenIPC 固件
       flashing_footfs:
         continue: |
           摄像机将自动重启并应用更改。
@@ -64,7 +64,7 @@ zh:
       flashing_footfs2:
         info: 下载固件包并将其解压缩到 TFTP 服务器的根目录中。
         link: 下载 OpenIPC 固件 (%{name}) 包
-        title: Flash OpenIPC Linux 内核和根文件系统
+        title: 烧录 OpenIPC Linux 内核和根文件系统
       flashing_full:
         continue: |
           摄像机将自动重启并使用全新的引导加载程序启动。
@@ -81,7 +81,7 @@ zh:
           注意准备中断并进入引导程序的命令行。
         info: 下载引导加载程序二进制文件并将其保存到 TFTP 服务器的根目录。
         link: 下载 OpenIPC U-Boot 二进制文件
-        title: Flash OpenIPC U-Boot
+        title: 烧录 OpenIPC U-Boot
       permanent_link: 当前配置的永久链接
       subtitle: 在带有 %{soc_name} SoC 和 %{flash_type} SPI 闪存芯片的摄像机上
       success:
@@ -121,7 +121,7 @@ zh:
     clone_soc: 克隆此 SoC
     dashboard: 仪表板
     editing: 编辑
-    endpoints: 宏伟的终点
+    endpoints: Majestic
     hires_timer: 高精度计时器
     home: 主页
     introduction: 介绍

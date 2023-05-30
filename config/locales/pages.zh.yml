@@ -28,8 +28,8 @@ zh:
       aac: AAC 音频流。
       accepts_post: 接受带有音频文件作为参数的 POST 请求。
       alaw: A-law 压缩音频流。
-      audio: 声音的
-      dng: Adobe DNG 格式的快照（原始）。
+      audio: 音频
+      dng: Adobe DNG 格式的快照（raw）。
       fmp4: fMP4 视频流。
       footnote_1: 只有 HiSilicon 和 Goke SoC。
       footnote_2: 仅限 HiSilicon SoC v2 及更高版本。
@@ -44,7 +44,7 @@ zh:
       jpeg_params2: qfactor - JPEG 质量因子 (1-99)
       jpeg_params3: color2gray - 转换为灰度
       jpeg_params4: crop - 将生成的图像裁剪为 16x16x320x320
-      majestic_json: JSON 格式的实际 Majestic 配置。
+      majestic_json: JSON 格式的 Majestic 配置。
       mjpeg: MJPEG 视频流。
       mjpeg_player: MJPEG 和 MP3 在 Web 浏览器中实时流式传输。
       monitoring: 监控
@@ -55,32 +55,32 @@ zh:
       night_on: 开启夜间模式。
       night_toggle: 切换当前夜间模式。
       optional_params: 可选参数
-      opus: 作品音频流。
+      opus: Opus音频流。
       play_on_speaker: 在相机的扬声器上播放音频文件。
       prometheus_html: <a href="https://prometheus.io/">Prometheus</a>的节点导出器。
       raw_pcm: 原始 PCM 音频流。
       rtsp0: RTSP 主流 (video0)。
       rtsp1: RTSP 子流（视频 1）。
-      title: 宏伟的终点
+      title: Majestic
       ulaw: μ-law 压缩音频流。
       video: 视频
       webrtc: 网络浏览器中的 WebRTC 直播。
       yuv420: YUV420 格式的快照。
     our_channels:
-      paragraph1_html: 我们强烈建议您为您的平台安装原生<a href="https://telegram.org/">Telegram Messenger</a>并使用我们的 Telegram 频道。
-      title: 我们的渠道
+      paragraph1_html: 我们强烈建议您使用<a href="https://telegram.org/">Telegram Messenger</a>并加入我们的 Telegram 频道。
+      title: 我们的频道
     our_projects:
       burn_info: 一个开源工具，用于解除 HiSilicon 设备的阻塞。
       community: 与 OpenIPC 有关的东西。用户生成内容。
       coupler_info: 一种工具，可让您从 IP 摄像机制造商预装的专有固件平稳过渡到 OpenIPC 固件。不需要特殊技能。
       exipcam_info: XM 设备资源管理器。修复 IPCam 的实用程序
       exipcam_info_extra: 俄语用户界面。通过 Wine 在 Windows、Linux 上运行。
-      firmware_info: 社区的圣杯。用于 IP 摄像机的通用固件，用于替换专有、过时且通常不安全的供应商预装固件。
-      hisitrace_info: 在非库存环境中从 XM 运行 Sofia 的实用程序。
+      firmware_info: 社区的圣杯。网络摄像机的通用固件，用于替换专有、过时且通常不安全的供应商预装固件。
+      hisitrace_info: 在非官方固件环境中从 XM 运行 Sofia 的实用程序。
       ipcamdms_info: IPCam设备管理系统
       ipcamdms_info_extra: 俄语用户界面。通过 Wine 在 Windows、Linux 上运行。
-      ipctool_info: 类固醇的 IP 摄像机硬件检查员。此工具不仅可以识别您相机的处理器、传感器、闪存芯片，还可以帮助您备份原始固件等。
-      majestic_info: 通用 IP 摄像机流媒体。该项目是 OpenIPC 固件的主要部分。虽然现阶段还没有完全开源，但我们正在考虑在项目足够成熟，获得足够的资金进行开放开发时开放代码库。
+      ipctool_info: 实用的网络摄像机硬件检查工具。此工具不仅可以识别您相机的处理器、传感器、闪存芯片，还可以帮助您备份原始固件等。
+      majestic_info: 通用的网络摄像机流媒体组件。该项目是 OpenIPC 固件的主要部分。虽然现阶段还没有完全开源，但我们正在考虑在项目足够成熟，获得足够的资金进行开放开发时开放代码库。
       mini_info: 一个开源网络摄像机流媒体。将其视为 Majestic 的弟弟。
       motors_info: 管理电机硬件的各种代码。
       openhisi_info: 用于海思 SoC 的开源 SDK。
@@ -100,11 +100,11 @@ zh:
       paragraph1_html: OpenIPC 是一个社区驱动的开源项目，许多人为其代码库做出贡献。对他们好！还有一个由熟练的开发人员组成的核心团队，他们努力扩展<a href="/supported-hardware">支持的硬件平台</a>列表、扩展固件的功能和稳定性、审查提交的代码并协调社区工作。了解团队及其专业领域：
       title: 我们的队伍
     stages_of_firmware_development:
-      done_alt: 图片：阶段完成
-      done_info: 完成了！ Bootloader 引导，Linux 加载，流媒体可以流式传输视频并生成快照。您可以拥有一个开放的工作平台，用于修补和进一步改进。不过，我们仍然期待你们的反馈和补丁。
-      hlp_alt: 图片：舞台 HLP
-      hlp_info: 把招工广告。我们有硬件，我们有 SDK，基本的东西都学完了。但是我们被困住了。这就是我们寻求经验丰富的嵌入式开发人员帮助克服障碍并进入下一阶段的地方。
-      mvp_alt: 图片：舞台MVP
+      done_alt: 图片：阶段 已完成
+      done_info: 完成了！ Bootloader 引导 Linux 加载，流媒体可以流式传输视频并生成快照。您可以拥有一个开放的工作平台，用于修补和进一步改进。不过，我们仍然期待你们的反馈和补丁。
+      hlp_alt: 图片：阶段 HLP
+      hlp_info: 需要帮助。我们有硬件，我们有 SDK，基本的东西都学完了。但是我们被困住了。这就是我们寻求经验丰富的嵌入式开发人员帮助克服障碍并进入下一阶段的地方。
+      mvp_alt: 图片：阶段 MVP
       mvp_info: 一个最小可行的产品。基础系统搭建好了，平台可以制作视频，至少在主频道是这样，但由于缺乏人力资源，开发被推迟或停止。资金注入可以将开发推向最后阶段。
       neq_alt: 图片：舞台NEQ
       neq_info_html: 没有设备。我们有这个平台的SDK，但是我们没有具体的硬件可以继续开发，你可以把它捐给我们的研发人员（尤其是已经过<abbr title="生命尽头">EOL</abbr> ，不能再买的旧板）。
@@ -115,7 +115,7 @@ zh:
       rnd_info: 研发阶段，此时我们已经有了平台 SDK，甚至可能是硬件板，但我们开始摆弄平台，研究其细节和功能。前面还有很多工作要做。
       subtitle: 典型的开发生命周期
       title: 固件开发阶段
-      wip_alt: 图片：舞台 WIP
+      wip_alt: 图片：阶段 WIP
       wip_info: 工作正在进行中。我们了解了很多关于平台硬件和代码库的知识，准备了第一个公共二进制版本，并等待第一批采用者在他们的主板上对其进行测试并提供反馈以帮助我们前进。
     support_open_source:
       title: 支持开源
