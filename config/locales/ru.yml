@@ -198,7 +198,8 @@ ru:
       description_6: Всё по ремонту IP камер и NVR
       description_7: Группа по созданию FPV систем на базе OpenIPC
       description_8: Группа для платной технической поддержки
-      description_9: تیم OpenIPC برای کاربران ایرانی
+      description_9: Группа пользователей OpenIPC из Ирана
+      description_10: Группа пользователей OpenIPC из Китая
     formatting:
       bold: Жирный
       header: Форматирование

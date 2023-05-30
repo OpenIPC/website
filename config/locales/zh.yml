@@ -197,10 +197,10 @@ zh:
       description_3: OpenIPC Telegram 机器人演示
       description_4: 俄语 OpenIPC 用户频道
       description_5: OpenIPC 开发者通道
-      description_6: 设备维修的一切。
-      description_7: 用于构建 FPV 系统的 OpenIPC。
+      description_6: 设备维修的一切
+      description_7: 用于构建 FPV 系统的 OpenIPC
       description_8: 组付费技术支持。
-      description_9: تیم OpenIPC برای 带
+      description_9: 面向伊朗用戶的 OpenIPC 團隊
     formatting:
       bold: 大胆的
       header: 消息格式
