@@ -71,7 +71,7 @@ zh:
       title: 我们的频道
     our_projects:
       burn_info: 一个开源工具，用于解除 HiSilicon 设备的阻塞。
-      community: 与 OpenIPC 有关的东西。用户生成内容。
+      community: 与 OpenIPC 有关的，由用户创建的内容。
       coupler_info: 一种工具，可让您从 IP 摄像机制造商预装的专有固件平稳过渡到 OpenIPC 固件。不需要特殊技能。
       exipcam_info: XM 设备资源管理器。修复 IPCam 的实用程序
       exipcam_info_extra: 俄语用户界面。通过 Wine 在 Windows、Linux 上运行。
@@ -88,35 +88,35 @@ zh:
       printables_info: 标有“openipc”的 3D 打印模型。
       smolrtsp_info: 一个简单的 RTSP 1.0 服务器库，专为 IP 摄像机等嵌入式设备量身定制。它同时支持 TCP 和 UDP，允许任何负载格式，并提供方便灵活的 API。
       subtitle1: 核心项目
-      subtitle2: OpenIPC 伞式项目
+      subtitle2: OpenIPC 保护伞项目
       subtitle3: OpenIPC 社区项目
       title: 我们的计划
-      umbrella_info: OpenIPC 也是其他小型项目的伞形品牌，这些项目是我们生态系统的有用组成部分。我们欢迎所有愿意为该项目做出贡献的人，以他们认为有用的任何方式！
+      umbrella_info: OpenIPC 也是其他小型项目的品牌保护伞，这些项目是我们整个生态系统中的一部分。我们欢迎所有愿意为该项目做出贡献的人，以他们认为有用的任何方式！
       venc_info: 使用 Goke SoC 的 IP 摄像机流媒体，主要专注于 FPV。
       webui_info: OpenIPC 固件的 Web 界面。写在开发者的灰烬与泪水上。
       yamlcli_info: 简单的 YAML 控制台工具。
     our_team:
       contributors_link: 所有 GitHub 贡献者列表
-      paragraph1_html: OpenIPC 是一个社区驱动的开源项目，许多人为其代码库做出贡献。对他们好！还有一个由熟练的开发人员组成的核心团队，他们努力扩展<a href="/supported-hardware">支持的硬件平台</a>列表、扩展固件的功能和稳定性、审查提交的代码并协调社区工作。了解团队及其专业领域：
+      paragraph1_html: OpenIPC 是一个社区驱动的开源项目，许多人为其代码库做出贡献。赞美他们！还有一个由熟练的开发人员组成的核心团队，他们努力扩展<a href="/supported-hardware">支持的硬件平台</a>列表、扩展固件的功能和稳定性、审查提交的代码并协调社区工作。了解团队及其专业领域：
       title: 我们的队伍
     stages_of_firmware_development:
-      done_alt: 图片：阶段 已完成
+      done_alt: 图片：阶段 DONE
       done_info: 完成了！ Bootloader 引导 Linux 加载，流媒体可以流式传输视频并生成快照。您可以拥有一个开放的工作平台，用于修补和进一步改进。不过，我们仍然期待你们的反馈和补丁。
       hlp_alt: 图片：阶段 HLP
       hlp_info: 需要帮助。我们有硬件，我们有 SDK，基本的东西都学完了。但是我们被困住了。这就是我们寻求经验丰富的嵌入式开发人员帮助克服障碍并进入下一阶段的地方。
       mvp_alt: 图片：阶段 MVP
       mvp_info: 一个最小可行的产品。基础系统搭建好了，平台可以制作视频，至少在主频道是这样，但由于缺乏人力资源，开发被推迟或停止。资金注入可以将开发推向最后阶段。
-      neq_alt: 图片：舞台NEQ
-      neq_info_html: 没有设备。我们有这个平台的SDK，但是我们没有具体的硬件可以继续开发，你可以把它捐给我们的研发人员（尤其是已经过<abbr title="生命尽头">EOL</abbr> ，不能再买的旧板）。
+      neq_alt: 图片：阶段 NEQ
+      neq_info_html: 没有设备。我们有这个平台的 SDK，但是我们没有具体的硬件可以继续开发，你可以把它捐赠给我们的研发人员（尤其是已经到了<abbr title="生命尽头">EOL</abbr> ，市面上基本买不到的产品）。
       paragraph1: 在我们为新的 SoC 获取 SDK 后，我们将 SoC 添加到支持的硬件表中。如果我们没有特定的硬件模块，我们会分配 NEQ（无设备）状态，如果我们有硬件但正在寻找领导该 SoC 开发的开发人员，我们会分配 HLP（需要帮助）状态。这被认为是开发的正式开始。
       paragraph2: 没有它的 SDK，没有理由在表中有 SoC。
       paragraph3: 随着 SoC 工作的进展，其状态会逐渐发生变化。首先是 RND，然后是 WIP，然后是 MVP，最后是 DONE。
-      rnd_alt: 图片：舞台研发
-      rnd_info: 研发阶段，此时我们已经有了平台 SDK，甚至可能是硬件板，但我们开始摆弄平台，研究其细节和功能。前面还有很多工作要做。
+      rnd_alt: 图片：阶段 RND
+      rnd_info: 研发阶段，此时我们已经有了平台 SDK，亦或是开发板，我们会开始调试硬件，研究其细节和功能，为后续的固件适配工作做准备。当然在此之前还有很多工作要做。
       subtitle: 典型的开发生命周期
       title: 固件开发阶段
       wip_alt: 图片：阶段 WIP
-      wip_info: 工作正在进行中。我们了解了很多关于平台硬件和代码库的知识，准备了第一个公共二进制版本，并等待第一批采用者在他们的主板上对其进行测试并提供反馈以帮助我们前进。
+      wip_info: 工作正在进行中。我们了解了很多关于平台硬件和代码库的知识，准备了第一个公共二进制版本，并等待第一批试用者在他们的硬件上对其进行测试并提供反馈以帮助我们改进。
     support_open_source:
       title: 支持开源
     web_interface:
