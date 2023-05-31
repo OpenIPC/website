@@ -140,7 +140,7 @@ zh:
     tools: 工具
     vendors: 供应商
     view_soc: 查看 SoC 页面
-    webui: 网站画面
+    webui: 页面展示
     wiki: 我们的维基
   net_iface:
     both: 摄像机同时拥有以太网和无线网络
@@ -163,7 +163,7 @@ zh:
       no_signal: 没信号
       snapshot_alt: 图片：快照
       stay_tuned: 敬请关注
-      subtitle: 来自在 OpenIPC 固件上运行的真实 IP 摄像机图像，由其所有者提供。
+      subtitle: 所有图像均由用户上传，请注意保护个人隐私！
     oneday:
       speed: 速度
     show:
