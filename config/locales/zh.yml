@@ -71,10 +71,10 @@ zh:
           注意准备中断并进入引导程序的命令行。
         continue2: 在引导加载程序的命令行中，根据您的闪存大小和类型重新映射 ROM 分区。
         info: |
-          完整的固件映像由引导加载程序、内核和根文件系统组成，也适用于使用编程器烧写内存芯片。
-          请注意，完整镜像不包含预设环境。你还需要添加自己的MAC地址、IP地址等设置。
-        link: 下载 OpenIPC 固件 (%{name}) 镜像
-        title: 闪存完整的 OpenIPC 固件镜像
+          完整的固件由引导加载程序、内核和根文件系统组成，也适用于使用编程器烧写闪存芯片。
+          请注意，完整固件不包含预设环境。你还需要添加自己的MAC地址、IP地址等设置。
+        link: 下载 OpenIPC 固件 (%{name})
+        title: 烧录完整的 OpenIPC 固件
       flashing_uboot:
         continue: |
           摄像机将引导到新烧写的引导加载程序中。
@@ -87,7 +87,7 @@ zh:
       success:
         info_html: 在端口 85 ( <a href=\"http://%{address}:85/\">http://%{address}:85/</a> ) 上打开摄像机的 Web 界面并使用登录<b>root</b>和密码<b>12345</b>登录。登录后将要求您设置自己的安全密码。通过以下方式访问摄像机ssh 或 UART 使用与上述相同的登录名和密码。
         title: 恭喜！此时，您已经安装了 OpenIPC 固件 (%{name})。
-      title: 刷新 OpenIPC 固件
+      title: 刷写 OpenIPC 固件
     restore:
       info: 如果您需要恢复原始固件，请使用您使用上述命令创建的备份文件。将备份文件放入 TFTP 服务器的根目录，并在引导加载程序 shell 中执行这些命令。
       title: 恢复摄像机原始固件

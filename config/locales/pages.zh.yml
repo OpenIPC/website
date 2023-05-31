@@ -29,7 +29,7 @@ zh:
       accepts_post: 接受带有音频文件作为参数的 POST 请求。
       alaw: A-law 压缩音频流。
       audio: 音频
-      dng: Adobe DNG 格式的快照（raw）。
+      dng: Adobe DNG 格式的快照 (raw)。
       fmp4: fMP4 视频流。
       footnote_1: 只有 HiSilicon 和 Goke SoC。
       footnote_2: 仅限 HiSilicon SoC v2 及更高版本。
@@ -60,7 +60,7 @@ zh:
       prometheus_html: <a href="https://prometheus.io/">Prometheus</a>的节点导出器。
       raw_pcm: 原始 PCM 音频流。
       rtsp0: RTSP 主流 (video0)。
-      rtsp1: RTSP 子流（视频 1）。
+      rtsp1: RTSP 子流 (video1)。
       title: Majestic
       ulaw: μ-law 压缩音频流。
       video: 视频
