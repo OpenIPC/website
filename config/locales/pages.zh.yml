@@ -90,15 +90,15 @@ zh:
       subtitle1: 核心项目
       subtitle2: OpenIPC 保护伞项目
       subtitle3: OpenIPC 社区项目
-      title: 我们的计划
+      title: 我们的项目
       umbrella_info: OpenIPC 也是其他小型项目的品牌保护伞，这些项目是我们整个生态系统中的一部分。我们欢迎所有愿意为该项目做出贡献的人，以他们认为有用的任何方式！
       venc_info: 使用 Goke SoC 的 IP 摄像机流媒体，主要专注于 FPV。
-      webui_info: OpenIPC 固件的 Web 界面。写在开发者的灰烬与泪水上。
+      webui_info: OpenIPC 固件的 Web 界面。
       yamlcli_info: 简单的 YAML 控制台工具。
     our_team:
       contributors_link: 所有 GitHub 贡献者列表
       paragraph1_html: OpenIPC 是一个社区驱动的开源项目，许多人为其代码库做出贡献。赞美他们！还有一个由熟练的开发人员组成的核心团队，他们努力扩展<a href="/supported-hardware">支持的硬件平台</a>列表、扩展固件的功能和稳定性、审查提交的代码并协调社区工作。了解团队及其专业领域：
-      title: 我们的队伍
+      title: 我们的团队
     stages_of_firmware_development:
       done_alt: 图片：阶段 DONE
       done_info: 完成了！ Bootloader 引导 Linux 加载，流媒体可以流式传输视频并生成快照。您可以拥有一个开放的工作平台，用于修补和进一步改进。不过，我们仍然期待你们的反馈和补丁。
