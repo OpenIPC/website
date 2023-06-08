@@ -32,6 +32,8 @@ zh:
         title: 安装指南
         title2: 保存您的原始固件！
         toolchain: OpenIPC 工具链
+      update:
+        files_download_alert: 如果你在访问可下载文件时有任何问题，请随时在我们的Telegram频道与我们联系。
   error:
     please_fix: 请修正以下的错误。
   errors:

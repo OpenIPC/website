@@ -32,6 +32,8 @@ en:
         title: Installation Guide
         title2: Save your stock firmware!
         toolchain: OpenIPC Toolchain
+      update:
+        files_download_alert: If you have any problems accessing downloadable files, please feel free to contact us on our Telegram channel.
   error:
     please_fix: Please fix the errors below.
   errors:

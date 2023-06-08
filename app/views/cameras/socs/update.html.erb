@@ -18,7 +18,7 @@
 
   <p class="text-end"><%= link_to t('firmware.installation.permanent_link'), @camera.permalink %></p>
 
-  <div class="alert alert-warning">If you have any problems accessing downloadable files, please feel free to contact us on our Telegram channel.</div>
+  <div class="alert alert-warning"><%= t('.files_download_alert') %></div>
   <% flash.each do |type, msg| %>
     <div class="alert alert-<%= type %>"><%= msg %></div>
   <% end %>
