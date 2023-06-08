@@ -69,7 +69,7 @@
         <div class="col">
           <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
             <div class="alert alert-warning">
-              <p class="mb-0">You will need an SD card to perform this step. Format the SD card into VFAT and copy the downloaded file to the root directory on the card.</p>
+              <p class="mb-0">You will need an SD card to perform this step. Format the SD card to FAT32 and copy the downloaded file to the root directory on the card.</p>
             </div>
           <% end %>
           <%= flashing_everything(@camera) %>
@@ -100,7 +100,7 @@
       <div class="col col-lg-8">
         <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
           <div class="alert alert-warning">
-            <p class="mb-0">You will need an SD card to perform this step. Format the SD card into VFAT and copy the downloaded file to the root directory on the card.</p>
+            <p class="mb-0">You will need an SD card to perform this step. Format the SD card to FAT32 and copy the downloaded file to the root directory on the card.</p>
           </div>
         <% end %>
         <%= flashing_uboot(@camera) %>
@@ -135,7 +135,7 @@
       <div class="col col-lg-8">
         <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
           <div class="alert alert-warning">
-            <p class="mb-0">You will need an SD card to perform this step. Format the SD card into VFAT and extract files from the downloaded bundle to the root directory on the card.</p>
+            <p class="mb-0">You will need an SD card to perform this step. Format the SD card to FAT32 and extract files from the downloaded bundle to the root directory on the card.</p>
           </div>
         <% end %>
         <%= flashing_linux(@camera, @flash_type_command) %>
