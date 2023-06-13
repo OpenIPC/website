@@ -141,14 +141,7 @@ class Camera
   end
 
   def overlay_max_size
-    case firmware_version
-    when 'lite'
-      '0xB0000'
-    when 'ultimate'
-      '0x2B0000'
-    else
-      '0xB0000'
-    end
+    "0x#{(flash_size_hex.to_i(16) - overlay_offset.to_i(16)).to_s(16)}"
   end
 
   def overlay_offset
