@@ -1,5 +1,7 @@
 ---
 zh:
+  alerts:
+    downloads: 如果您在访问或下载文件时遇到任何问题，请随时通过我们的<a href="https://t.me/openipc_modding">电报频道</a>与我们联系。
   button:
     find: 寻找
   cameras:
@@ -117,7 +119,9 @@ zh:
   nav:
     about: 关于
     add_soc: 添加另一个 SoC
+    add_vendor: 添加供应商
     adding_soc: 添加 SoC
+    adding_vendor: 加供应商
     admin: 管理
     channels: 我们的频道
     clone_soc: 克隆此 SoC
@@ -142,6 +146,7 @@ zh:
     tools: 工具
     vendors: 供应商
     view_soc: 查看 SoC 页面
+    view_vendor: 查看供应商
     webui: 页面展示
     wiki: 我们的维基
   net_iface:
@@ -194,6 +199,7 @@ zh:
   telegram:
     channels:
       description_1: OpenIPC 的国际频道
+      description_10: OpenIPC中文讨论组
       description_2: 关于最新版本的 GitHub 通知
       description_3: OpenIPC Telegram 机器人演示
       description_4: OpenIPC 的俄语频道
@@ -202,15 +208,20 @@ zh:
       description_7: 用于构建 FPV 系统的 OpenIPC。
       description_8: 有偿技术支持频道
       description_9: 面向伊朗用戶的 OpenIPC 團隊
-      description_10: OpenIPC中文讨论组
     formatting:
       bold: 粗体
       header: 消息格式
       hyperlink: 超级链接
-      info: 选中文本并按下组合键：
       italic: 斜体
       monospace: 等宽
       strikeout: 删除线
+      text_html: |-
+        <p>知道 Telegram Messenger 允许您使用格式来强调信息的重要部分并使信息更容易掌握吗？</p>
+        <p>选择一个文本片段，然后按组合键：</p>
       underline: 下划线
+    translation:
+      header: 聊天翻译
+      text_html: |-
+        <p>知道 Telegram 信使有一个内置翻译引擎，可以让你阅读用外语书写的信息吗？拥有高级账户的用户可以即时翻译整个聊天内容，但即使是普通账户，也可以通过点击按钮翻译单条信息。</p>
   title:
     openwall: 公开展板

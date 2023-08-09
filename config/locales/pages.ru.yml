@@ -1,7 +1,5 @@
 ---
 ru:
-  alerts:
-    downloads: Если у вас возникли проблемы с доступом или загрузкой файлов, не стесняйтесь обращаться к нам на нашем <a href="https://t.me/openipc_modding">канале Telegram</a> .
   pages:
     about_us:
       title: О нас
@@ -69,7 +67,7 @@ ru:
       webrtc: Прямая трансляция WebRTC в веб-браузере.
       yuv420: Снимок в формате YUV420.
     our_channels:
-      paragraph1_html: Мы настоятельно рекомендуем вам установить <a href="https://telegram.org/">Telegram Messenger</a> для вашей платформы и общаться непосредственно в наших каналах в Telegram.
+      paragraph1_html: Мы настоятельно рекомендуем вам установить <a href="https://telegram.org/">мессенджер Telegram</a> для вашей платформы и общаться непосредственно в наших каналах в Telegram.
       title: Наши каналы
     our_projects:
       burn_info: Инструмент с открытым исходным кодом для разблокировки устройств HiSilicon.

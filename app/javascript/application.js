@@ -5,6 +5,20 @@ window.onload = (event) => {
 //        location.href = location.href.replace(location.search, '').concat('?locale=ru');
 //    }
 
+    const modalZoom = document.getElementById('modalZoom');
+    const zoom = new bootstrap.Modal(modalZoom, {});
+    document.querySelectorAll('.img-zoom').forEach(el => {
+        el.addEventListener('click', ev => {
+          let b = modalZoom.querySelector('.modal-body');
+          b.textContent = '';
+          let i = document.createElement('img');
+          i.src = ev.target.src;
+          i.classList.add('img-fluid');
+          b.appendChild(i);
+          zoom.show();
+        });
+    });
+
     document.querySelectorAll('a[href^="http"], a[rel^="external"]').forEach(el => {
         el.target = '_blank';
         el.classList.add('external-link');
@@ -20,7 +34,7 @@ window.onload = (event) => {
     document.querySelectorAll('.btn-danger, .btn-warning, .confirm').forEach(el => {
         // for input or button, find parent form and attach listener to its submit event
         if (el.nodeName === 'INPUT' || el.nodeName === 'BUTTON') {
-            while (el.nodeName !== "FORM") el = el.parentNode
+            while (el.nodeName !== 'FORM') el = el.parentNode
             el.addEventListener('submit', ev => (!confirm('Are you sure?')) ? ev.preventDefault() : null)
         } else {
             el.addEventListener('click', ev => (!confirm('Are you sure?')) ? ev.preventDefault() : null)

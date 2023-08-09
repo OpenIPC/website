@@ -4,7 +4,7 @@
 
 @import 'bootstrap/scss/bootstrap';
 @import 'bootstrap-icons/font/bootstrap-icons';
-//@import "rails_bootstrap_forms";
+//@import 'rails_bootstrap_forms';
 
 /* debugging start */
 @media (max-width: 575.98px) { body.debug:before {content: "xs"} }
@@ -60,8 +60,7 @@ body.admin > header {
 
 i.bi-github { font-size: 2.3rem; line-height: 1; }
 
-.discord img,
-.gitter img { height: 2.5rem; }
+.tg img { height: 2.5rem; }
 
 html:not([lang="ru"]) article.introduction .col.logo.ru { display: none; }
 
@@ -191,4 +190,8 @@ table.binaries {
   tr.oversize { td:nth-child(2) {background-color: red; color: white;} }
   tr.bloated  { td:nth-child(2) {background-color: yellow;} }
   tr.slim     { td:nth-child(2) {color: green;} }
+}
+
+.img-zoom:hover {
+  cursor: zoom-in;
 }

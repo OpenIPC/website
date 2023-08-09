@@ -60,6 +60,7 @@ zh:
       signed_up_but_unconfirmed: 带有确认链接的消息已发送到您的电子邮件地址。请点击链接激活您的帐户。
       update_needs_confirmation: 您已成功更新帐户，但我们需要验证您的新电子邮件地址。请检查您的电子邮件并点击确认链接以确认您的新电子邮件地址。
       update_profile: 更新个人信息
+      update_profile_button: 更新个人信息
       updated: 您的帐户已成功更新。
       updated_but_not_signed_in: 您的帐号已更新成功，但由于您的密码已更改，您需要重新登录。
     sessions:

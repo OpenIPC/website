@@ -1,5 +1,7 @@
 ---
 ru:
+  alerts:
+    downloads: Если у вас возникли проблемы с доступом или загрузкой файлов, не стесняйтесь обращаться к нам на нашем <a href="https://t.me/openipc_modding">канале Telegram</a> .
   button:
     find: Находить
   cameras:
@@ -104,6 +106,7 @@ ru:
     nor16m: NOR 16М
     nor32m: NOR 32M
     nor8m: NOR 8М
+  go: Go
   locales:
     de: Deutsch
     en: English
@@ -117,7 +120,9 @@ ru:
   nav:
     about: О нас
     add_soc: Добавьте еще одну SoC
+    add_vendor: Добавить вендора
     adding_soc: Добавление SoC
+    adding_vendor: Добавление вендора
     admin: Администратор
     channels: Каналы
     clone_soc: Клонировать SoC
@@ -142,12 +147,14 @@ ru:
     tools: Инструменты
     vendors: Продавцы
     view_soc: Посмотреть страницу SoC
+    view_vendor: Просмотр вендора
     webui: Веб интерфейс
     wiki: Wiki
   net_iface:
     both: Камера имеет как Ethernet, так и беспроводную сеть.
     eth: Камера имеет только сеть Ethernet
     wifi: Камера имеет только беспроводную сеть
+  out: Out
   sd_card:
     nosd: Камера не имеет слота для SD-карты
     sd: Камера имеет слот для SD-карты
@@ -193,6 +200,7 @@ ru:
   telegram:
     channels:
       description_1: Основная международная группа по OpenIPC (EN)
+      description_10: Группа пользователей OpenIPC из Китая
       description_2: Уведомления от GitHub о последних сборках
       description_3: Демонстрационный Telegram бот
       description_4: Группа русскоязычных пользователей OpenIPC
@@ -201,15 +209,19 @@ ru:
       description_7: Группа по созданию FPV систем на базе OpenIPC
       description_8: Группа для платной технической поддержки
       description_9: Группа пользователей OpenIPC из Ирана
-      description_10: Группа пользователей OpenIPC из Китая
     formatting:
       bold: Жирный
       header: Форматирование
       hyperlink: Гиперссылка
-      info: 'Выделить фрагмент текста и нажать нужное сочетание клавиш:'
       italic: Курсив
       monospace: Моноширинный
       strikeout: Зачеркнутый
+      text_html: |-
+        <p>Знаете ли вы, что мессенджер Telegram позволяет форматировать сообщения, чтобы подчеркнуть важное и сделать информацию более удобной для восприятия?</p>
+        <p>Перед отправкой сообщения выделите фрагмент текста и нажмите нужное сочетание клавиш:</p>
       underline: Подчеркнутый
+    translation:
+      header: Перевод сообщений
+      text_html: <p>Знаете ли вы, что в мессенджере Telegram есть встроенный механизм перевода, позволяющий читать сообщения, написанные на других языках? Пользователи с премиум-аккаунтами могут <a href="https://telegram.org/blog/profile-pics-emoji-translations#translating-entire-chats">переводить целые чаты</a> "на лету", но даже в обычном аккаунте можно <a href="https://telegram.org/blog/reactions-spoilers-translations#message-translation">переводить отдельные сообщения</a> одним нажатием кнопки.</p>
   title:
     openwall: Стена
