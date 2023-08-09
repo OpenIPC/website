@@ -54,6 +54,11 @@ class PagesController < ApplicationController
     render 'pages/support_open_source'
   end
 
+  def utilities
+    @page_title = t('pages.utilities.title')
+    render 'pages/utilities'
+  end
+
   def web_interface
     @page_title = t('pages.web_interface.title')
     render 'pages/web_interface'

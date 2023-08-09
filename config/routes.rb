@@ -38,6 +38,7 @@ Rails.application.routes.draw do
   get '/our-team', to: 'pages#our_team'
   get '/our-channels', to: 'pages#our_channels'
   get '/stages-of-firmware-development', to: 'pages#stages_of_firmware_development'
+  get '/utilities', to: 'pages#utilities'
   get '/support-open-source', to: 'pages#support_open_source'
   get '/web-interface', to: 'pages#web_interface'
 

@@ -119,5 +119,8 @@ zh:
       wip_info: 工作正在进行中。我们了解了很多关于平台硬件和代码库的知识，准备了第一个公共二进制版本，并等待第一批试用者在他们的硬件上对其进行测试并提供反馈以帮助我们改进。
     support_open_source:
       title: 支持开源
+    utilities:
+      paragraph1: 实用工具和实用程序集。
+      title: 公用设施
     web_interface:
       title: 页面展示
