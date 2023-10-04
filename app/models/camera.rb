@@ -92,6 +92,19 @@ class Camera
     end
   end
 
+  def flash_size_sectors
+    case @flash_type
+    when 'nor8m'
+      '16384'
+    when 'nor16m'
+      '32768'
+    when 'nor32m'
+      '65536'
+      # when 'nand'
+      #   ??
+    end
+  end
+
   def firmware_version_name
     @firmware_version_name ||= I18n.t("firmware.version.#{firmware_version}")
   end

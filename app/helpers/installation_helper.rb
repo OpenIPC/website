@@ -24,6 +24,10 @@ module InstallationHelper
 
     if c.sd_card_slot.eql?('sd') && c.network_interface.eql?('wifi')
       text << "mmc dev 0; mmc erase 0x10 #{c.flash_size_blocks}; mmc write #{c.soc.load_address} 0x10 #{c.flash_size_blocks}"
+      text << ""
+      text << "# Use the following command to restore the backup to a file on a PC"
+      text << "# (replace /dev/sdc with your SD card device):"
+      text << "# sudo dd bs=512 skip=16 count=#{c.flash_size_sectors} if=/dev/sdc of=./fulldump.bin"
     else
       text << "tftpput #{c.soc.load_address} #{c.flash_size_hex} #{c.backup_filename}"
       text << '# if there is no tftpput but tftp then run this instead'
