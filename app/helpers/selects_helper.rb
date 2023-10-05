@@ -14,7 +14,9 @@ module SelectsHelper
   end
 
   def list_of_firmware_versions_for_select
-    Camera::FW_VERSION.map do |v|
+    data = Camera::FW_VERSION.dup
+    data.delete('venc') unless @camera.soc.vendor.name.eql?('SigmaStar')
+    data.map do |v|
       [t("firmware.version.#{v}"), v]
     end
   end

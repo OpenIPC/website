@@ -4,7 +4,7 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 ruby '3.1.2'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails', branch: 'main'
-gem 'rails', '~> 7.0.5'
+gem 'rails', '~> 7.0.8'
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem 'sprockets-rails'
@@ -67,8 +67,9 @@ group :development do
   # gem 'spring'
 
   gem 'activerecord-reset-pk-sequence'
+  gem 'easy_translate', '~> 0.5.1'
   gem 'i18n-tasks'
-  # gem 'rubocop'
+  gem 'rubocop'
   # gem 'rubocop-minitest'
   # gem 'rubocop-packaging'
   # gem 'rubocop-performance'
@@ -80,7 +81,6 @@ group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem 'capybara'
   gem 'selenium-webdriver'
-  gem 'webdrivers'
 end
 
 gem 'activestorage-validator', '~> 0.2.2'

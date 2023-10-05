@@ -101,6 +101,7 @@ ru:
       lite: Lite
       nand: Nand
       ultimate: Ultimate
+      venc: VENC
   flash_chip:
     nand: NAND
     nor16m: NOR 16М
