@@ -94,13 +94,13 @@
         } else if (document.querySelector('#camera_flash_type').value === 'nor16m') {
             for (let i = 0; i < el.options.length; i++) {
                 let o = el.options.item(i);
-                o.disabled = (o.value == 'fpv');
+                o.disabled = (o.value == 'fpv' || o.value == 'venc');
             }
             el.value = 'ultimate';
         } else if (document.querySelector('#camera_flash_type').value === 'nor32m') {
             for (let i = 0; i < el.options.length; i++) {
                 let o = el.options.item(i);
-                o.disabled = (o.value == 'fpv');
+                o.disabled = (o.value == 'fpv' || o.value == 'venc');
             }
             el.value = 'ultimate';
         } else if (document.querySelector('#camera_flash_type').value === 'nand') {
