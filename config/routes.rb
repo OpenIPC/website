@@ -35,6 +35,7 @@ Rails.application.routes.draw do
   get '/about', to: 'pages#about'
   get '/introduction', to:'pages#introduction'
   get '/our-projects', to: 'pages#our_projects'
+  get '/our-software', to: 'pages#our_software'
   get '/our-team', to: 'pages#our_team'
   get '/our-channels', to: 'pages#our_channels'
   get '/stages-of-firmware-development', to: 'pages#stages_of_firmware_development'

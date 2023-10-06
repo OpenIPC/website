@@ -34,6 +34,11 @@ class PagesController < ApplicationController
     render 'pages/our_channels'
   end
 
+  def our_software
+    @page_title = t('pages.our_software.title')
+    render 'pages/our_software'
+  end
+
   def our_projects
     @page_title = t('pages.our_projects.title')
     render 'pages/our_projects'

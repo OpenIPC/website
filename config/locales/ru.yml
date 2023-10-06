@@ -142,6 +142,7 @@ ru:
     snapshot: Снимок № %{number}
     snapshots: Последние снимки
     socs: SoC
+    software: Программы
     support_opensource: Открытый код
     supported_hardware: Оборудование
     team: Команда

@@ -70,6 +70,8 @@ zh:
       paragraph1_html: 我们强烈建议您使用<a href="https://telegram.org/">Telegram Messenger</a>并加入我们的 Telegram 频道。
       title: 我们的频道
     our_projects:
+      title: 我们的项目
+    our_software:
       burn_info: 一个开源工具，用于解锁海思平台设备的引导加载程序。
       community: 与 OpenIPC 有关的，由用户创建的内容。
       coupler_info: 一种工具，可让您从 IP 摄像机制造商预装的专有固件平稳过渡到 OpenIPC 固件。不需要特殊技能。

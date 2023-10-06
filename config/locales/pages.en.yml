@@ -70,6 +70,8 @@ en:
       paragraph1_html: We strongly suggest you to install a native <a href="https://telegram.org/">Telegram Messenger</a> for your platform and use our Telegram channels.
       title: Our channels
     our_projects:
+      title: Out projects
+    our_software:
       burn_info: An opensource tool to unbrick HiSilicon devices.
       community: Something related to OpenIPC. User generated content.
       coupler_info: A tool that allows you a smooth transition from the IP-camera manufacturer's pre-installed proprietary firmware to OpenIPC Firmware. No special skills are required.
@@ -90,7 +92,7 @@ en:
       subtitle1: Core projects
       subtitle2: OpenIPC umbrella projects
       subtitle3: OpenIPC community projects
-      title: Our Projects
+      title: Our Software
       umbrella_info: The OpenIPC is also an umbrella brand for other small projects that are useful components of our ecosystem. We welcome everyone willing to contribute to the project, in any way they find useful!
       venc_info: A streamer for IP cameras using Goke SoC, focused primarily on FPV.
       webui_info: Web interface for OpenIPC Firmware. Written on Ash and tears of the developer.
