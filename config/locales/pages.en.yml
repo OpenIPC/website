@@ -70,7 +70,7 @@ en:
       paragraph1_html: We strongly suggest you to install a native <a href="https://telegram.org/">Telegram Messenger</a> for your platform and use our Telegram channels.
       title: Our channels
     our_projects:
-      title: Out projects
+      title: Our projects
     our_software:
       burn_info: An opensource tool to unbrick HiSilicon devices.
       community: Something related to OpenIPC. User generated content.
@@ -82,18 +82,18 @@ en:
       ipcamdms_info: IPCam Device Management System
       ipcamdms_info_extra: Russian UI. Runs on Windows, Linux via Wine.
       ipctool_info: An IP-camera hardware inspector on steroids. This tool will not only identify your camera's processor, sensor, flash chip, but also help you with backing up the original firmware and more.
-      majestic_info: A universal IP-camera streamer. This project is the major part of the OpenIPC Firmware. Although it is not fully open source at this stage of development, we are considering opening up the codebase when the project matures enough and gets enough funding for open development.
+      majestic_info: A universal IP-camera streamer. This software is the major part of the OpenIPC Firmware. Although it is not fully open source at this stage of development, we are considering opening up the codebase when the software matures enough and gets enough funding for open development.
       mini_info: An open source IP-camera streamer. Think of it as Majestic's little brother.
       motors_info: Various code to manage motor hardware.
       openhisi_info: Opensource SDK for Hisilicon SoCs.
       openxm_info: Opensource SDK for Xiongmai SoCs.
       printables_info: Models for 3D printing tagged with "openipc".
       smolrtsp_info: A simple RTSP 1.0 server library tailored for embedded devices, such as IP cameras. It supports both TCP and UDP, allows any payload format, and provides a convenient and flexible API.
-      subtitle1: Core projects
-      subtitle2: OpenIPC umbrella projects
+      subtitle1: Core software
+      subtitle2: OpenIPC umbrella software
       subtitle3: OpenIPC community projects
       title: Our Software
-      umbrella_info: The OpenIPC is also an umbrella brand for other small projects that are useful components of our ecosystem. We welcome everyone willing to contribute to the project, in any way they find useful!
+      umbrella_info: The OpenIPC is also an umbrella brand for other small software that are useful components of our ecosystem. We welcome everyone willing to contribute to the software, in any way they find useful!
       venc_info: A streamer for IP cameras using Goke SoC, focused primarily on FPV.
       webui_info: Web interface for OpenIPC Firmware. Written on Ash and tears of the developer.
       yamlcli_info: Simple YAML console tool.
