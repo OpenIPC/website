@@ -1,0 +1,19 @@
+<div class="alert alert-info small">
+  <h4><%= t('pages.stages_of_firmware_development.title') %></h4>
+  <dl>
+    <dt><%= image_tag "stage-neq.svg", alt: t('pages.stages_of_firmware_development.neq_alt'), size: 32, class: 'me-2' %> NEQ</dt>
+    <dd><%= t('pages.stages_of_firmware_development.neq_info_html') %></dd>
+    <dt><%= image_tag "stage-rnd.svg", alt: t('pages.stages_of_firmware_development.rnd_alt'), size: 32, class: 'me-2' %> R&D</dt>
+    <dd><%= t('pages.stages_of_firmware_development.rnd_info') %></dd>
+    <dt><%= image_tag "stage-hlp.svg", alt: t('pages.stages_of_firmware_development.hlp_alt'), size: 32, class: 'me-2' %> HLP</dt>
+    <dd><%= t('pages.stages_of_firmware_development.hlp_info') %></dd>
+    <dt><%= image_tag "stage-wip.svg", alt: t('pages.stages_of_firmware_development.wip_alt'), size: 32, class: 'me-2' %> WIP</dt>
+    <dd><%= t('pages.stages_of_firmware_development.wip_info') %></dd>
+    <dt><%= image_tag "stage-mvp.svg", alt: t('pages.stages_of_firmware_development.mvp_alt'), size: 32, class: 'me-2' %> MVP</dt>
+    <dd><%= t('pages.stages_of_firmware_development.mvp_info') %></dd>
+    <dt><%= image_tag "stage-done.svg", alt: t('pages.stages_of_firmware_development.done_alt'), size: 32, class: 'me-2' %> DONE</dt>
+    <dd><%= t('pages.stages_of_firmware_development.done_info') %></dd>
+  </dl>
+</div>
+
+<p><%= link_to t('cameras.socs.index.stages_of_development'), "/stages-of-firmware-development" %></p>

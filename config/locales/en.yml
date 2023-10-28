@@ -12,7 +12,7 @@ en:
         recommended_alert_html: Please note. Support for different SoCs is at different stages of development. <a href="/supported-hardware/featured">This list</a> shows the most fully supported and, therefore, the most recommended ones.
         stages_of_development: Stages of firmware development explained
         th_baseaddr: Load address
-        th_docs: Docs
+        th_docs: Installation
         th_soc_model: SoC Model
         th_stage: Stage
         th_status: Build status
@@ -34,8 +34,16 @@ en:
         title: Installation Guide
         title2: Save your stock firmware!
         toolchain: OpenIPC Toolchain
+      soc:
+        generate_guide: Generate an installation guide
+        no_solution_yet: There is no ready solution yet.
       update:
+        advanced_instruction_link: Advanced installation instruction for experts
         files_download_alert: If you have any problems accessing downloadable files, please feel free to contact us on our Telegram channel.
+        sdcard_required_0: You will need an SD card to perform this step. Existing content of the SD card will be destroyed.
+        sdcard_required_1: You will need an SD card to perform this step. Format the SD card to FAT32 and copy the downloaded file to the root directory on the card.
+        sdcard_required_2: You will need an SD card to perform this step. Format the SD card to FAT32 and copy the downloaded file to the root directory on the card.
+        sdcard_required_3: You will need an SD card to perform this step. Format the SD card to FAT32 and extract files from the downloaded bundle to the root directory on the card.
   error:
     please_fix: Please fix the errors below.
   errors:

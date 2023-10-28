@@ -34,8 +34,16 @@ zh:
         title: 安装指南
         title2: 保存您的原始固件！
         toolchain: OpenIPC 工具链
+      soc:
+        generate_guide: 生成安装指南
+        no_solution_yet: 目前还没有现成的解决方案。
       update:
+        advanced_instruction_link: 为专家提供的高级安装指导
         files_download_alert: 如果你在访问可下载文件时有任何问题，请随时在我们的Telegram频道与我们联系。
+        sdcard_required_0: 您将需要一张 SD 卡来执行此步骤。 SD 卡的现有内容将被破坏。
+        sdcard_required_1: 您将需要一张 SD 卡来执行此步骤。将SD卡格式化为FAT32，并将下载的文件复制到卡的根目录下。
+        sdcard_required_2: 您将需要一张 SD 卡来执行此步骤。将SD卡格式化为FAT32，并将下载的文件复制到卡的根目录下。
+        sdcard_required_3: 您将需要一张 SD 卡来执行此步骤。将 SD 卡格式化为 FAT32，并将下载的捆绑包中的文件提取到卡上的根目录。
   error:
     please_fix: 请修正以下的错误。
   errors:

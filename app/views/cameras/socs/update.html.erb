@@ -33,7 +33,7 @@
       <div class="col col-lg-8">
         <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
           <div class="alert alert-warning">
-            <p class="mb-0">You will need an SD card to perform this step. Existing content of the SD card will be destroyed.</p>
+            <p class="mb-0"><%= t('.sdcard_required_0') %></p>
           </div>
         <% end %>
         <% if @camera.flash_type.eql?("nand") %>
@@ -56,12 +56,7 @@
         <div class="col col-lg-4">
           <div class="github">
             <i class="bi bi-github float-start me-2"></i>
-            <h6 class="mb-0"><%= link_to t('firmware.installation.flashing_full.link',
-                                           name: @camera.firmware_version.to_s.titleize),
-                                         download_full_image_cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc,
-                                                                                     fw_release: @camera.firmware_version,
-                                                                                     flash_size: @camera.flash_size,
-                                                                                     flash_type: @camera.flash_type_type) %></h6>
+            <h6 class="mb-0"><%= link_to t('firmware.installation.flashing_full.link', name: @camera.firmware_version.to_s.titleize), download_full_image_cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc, fw_release: @camera.firmware_version, flash_size: @camera.flash_size, flash_type: @camera.flash_type_type) %></h6>
             <p>for <%= @camera.soc.full_name %> with <%= @camera.flash_size %>MB NOR flash</p>
             <p class="mb-0"><%= t('firmware.installation.flashing_full.info') %></p>
           </div>
@@ -69,7 +64,7 @@
         <div class="col">
           <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
             <div class="alert alert-warning">
-              <p class="mb-0">You will need an SD card to perform this step. Format the SD card to FAT32 and copy the downloaded file to the root directory on the card.</p>
+              <p class="mb-0"><%= t('.sdcard_required_1') %></p>
             </div>
           <% end %>
           <%= flashing_everything(@camera) %>
@@ -81,86 +76,88 @@
     </div>
   <% end %>
 
-  <h3><%= t('firmware.installation.flashing.alternative') %></h3>
-
-  <div class="alert alert-secondary">
-    <h3 class="mb-4 fw-bold"><%= t('firmware.installation.flashing_uboot.title') %></h3>
-    <div class="row">
-      <div class="col col-lg-4">
-        <% unless @camera.soc.uboot_filename.blank? %>
-          <div class="github">
-            <i class="bi bi-github float-start me-2"></i>
-            <h6 class="mb-0"><%= link_to t('firmware.installation.flashing_uboot.link'),
-                                         @camera.soc.bl_url, title: @camera.soc.uboot_filename %></h6>
-            <p>for <%= @camera.soc.full_name %></p>
-            <p class="mb-0"><%= t('firmware.installation.flashing_uboot.info') %></p>
-          </div>
-        <% end %>
-      </div>
-      <div class="col col-lg-8">
-        <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
-          <div class="alert alert-warning">
-            <p class="mb-0">You will need an SD card to perform this step. Format the SD card to FAT32 and copy the downloaded file to the root directory on the card.</p>
-          </div>
-        <% end %>
-        <%= flashing_uboot(@camera) %>
-        <p><%= t('firmware.installation.flashing_uboot.continue') %></p>
-      </div>
-    </div>
-
-    <h3 class="mb-4 fw-bold"><%= t('firmware.installation.flashing_footfs.title') %></h3>
-    <div class="row">
-      <div class="col col-lg-4">
-      </div>
-      <div class="col col-lg-8">
-        <p><%= t('firmware.installation.flashing_footfs.info') %></p>
-        <%= preparing_environment(@flash_type_command) %>
-        <p><%= t('firmware.installation.flashing_footfs.continue') %></p>
-      </div>
-    </div>
-
-    <h3 class="mb-4 fw-bold"><%= t('firmware.installation.flashing_footfs2.title') %></h3>
-    <div class="row">
-      <div class="col col-lg-4">
-        <% unless @camera.soc.linux_filename.blank? %>
-          <div class="github">
-            <i class="bi bi-github float-start me-2"></i>
-            <h6 class="mb-0"><%= link_to t('firmware.installation.flashing_footfs2.link', name: @camera.firmware_version_name),
-                                         firmware_url(@camera), title: firmware_filename(@camera) %></h6>
-            <p>for <%= @camera.soc.full_name %></p>
-            <p class="mb-0"><%= t('firmware.installation.flashing_footfs2.info') %></p>
-          </div>
-        <% end %>
-      </div>
-      <div class="col col-lg-8">
-        <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
-          <div class="alert alert-warning">
-            <p class="mb-0">You will need an SD card to perform this step. Format the SD card to FAT32 and extract files from the downloaded bundle to the root directory on the card.</p>
-          </div>
-        <% end %>
-        <%= flashing_linux(@camera, @flash_type_command) %>
-      </div>
-    </div>
-  </div>
-
   <div class="alert alert-success p-5">
     <h3><%= t('firmware.installation.success.title', name: @camera.firmware_version_name) %></h3>
     <p class="mb-0"><%= t('firmware.installation.success.info_html', address: @camera.camera_ip_address) %></p>
   </div>
 
-  <% unless @camera.flash_type.eql?("nand") %>
-    <div class="alert alert-warning">
-      <h3 class="mb-4 fw-bold"><%= t('firmware.restore.title') %></h3>
+  <div class="collapsing collapsed" id="collapseExperts">
+    <h3><%= t('firmware.installation.flashing.alternative') %></h3>
+
+    <div class="alert alert-secondary">
+      <h3 class="mb-4 fw-bold"><%= t('firmware.installation.flashing_uboot.title') %></h3>
       <div class="row">
         <div class="col col-lg-4">
-          <p><%= t('firmware.restore.info') %></p>
+          <% unless @camera.soc.uboot_filename.blank? %>
+            <div class="github">
+              <i class="bi bi-github float-start me-2"></i>
+              <h6 class="mb-0"><%= link_to t('firmware.installation.flashing_uboot.link'),
+                                           @camera.soc.bl_url, title: @camera.soc.uboot_filename %></h6>
+              <p>for <%= @camera.soc.full_name %></p>
+              <p class="mb-0"><%= t('firmware.installation.flashing_uboot.info') %></p>
+            </div>
+          <% end %>
         </div>
         <div class="col col-lg-8">
-          <%= restore_from_backup(@camera) %>
+          <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
+            <div class="alert alert-warning">
+              <p class="mb-0"><%= t('.sdcard_required_2') %></p>
+            </div>
+          <% end %>
+          <%= flashing_uboot(@camera) %>
+          <p><%= t('firmware.installation.flashing_uboot.continue') %></p>
+        </div>
+      </div>
+
+      <h3 class="mb-4 fw-bold"><%= t('firmware.installation.flashing_footfs.title') %></h3>
+      <div class="row">
+        <div class="col col-lg-4"></div>
+        <div class="col col-lg-8">
+          <p><%= t('firmware.installation.flashing_footfs.info') %></p>
+          <%= preparing_environment(@flash_type_command) %>
+          <p><%= t('firmware.installation.flashing_footfs.continue') %></p>
+        </div>
+      </div>
+
+      <h3 class="mb-4 fw-bold"><%= t('firmware.installation.flashing_footfs2.title') %></h3>
+      <div class="row">
+        <div class="col col-lg-4">
+          <% unless @camera.soc.linux_filename.blank? %>
+            <div class="github">
+              <i class="bi bi-github float-start me-2"></i>
+              <h6 class="mb-0"><%= link_to t('firmware.installation.flashing_footfs2.link', name: @camera.firmware_version_name), firmware_url(@camera), title: firmware_filename(@camera) %></h6>
+              <p>for <%= @camera.soc.full_name %></p>
+              <p class="mb-0"><%= t('firmware.installation.flashing_footfs2.info') %></p>
+            </div>
+          <% end %>
+        </div>
+        <div class="col col-lg-8">
+          <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
+            <div class="alert alert-warning">
+              <p class="mb-0"><%= t('.sdcard_required_3') %></p>
+            </div>
+          <% end %>
+          <%= flashing_linux(@camera, @flash_type_command) %>
         </div>
       </div>
     </div>
-  <% end %>
+
+    <% unless @camera.flash_type.eql?("nand") %>
+      <div class="alert alert-warning">
+        <h3 class="mb-4 fw-bold"><%= t('firmware.restore.title') %></h3>
+        <div class="row">
+          <div class="col col-lg-4">
+            <p><%= t('firmware.restore.info') %></p>
+          </div>
+          <div class="col col-lg-8">
+            <%= restore_from_backup(@camera) %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
 
   <p><%= t('firmware.info_html') %></p>
+
+  <a data-bs-toggle="collapse" href="#collapseExperts" role="button" aria-expanded="false" aria-controls="collapseExperts"><%= t('.advanced_instruction_link') %></a>
 </article>

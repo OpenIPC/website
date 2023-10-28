@@ -23,18 +23,21 @@
     <p class="mb-0"><%= t('.recommended_alert_html') %></p>
   </div>
 
-  <div class="socs">
-    <dl class="row mb-3 border-bottom small fw-bold">
-      <dd class="col-2 col-md-1 stage"><%= t('.th_stage') %></dd>
-      <dd class="col-10 col-md-3 model"><%= t('.th_soc_model') %></dd>
-      <dd class="col-2 col-md-1 url"><%= t('.th_docs') %></dd>
-      <dd class="col-2 col-md-1 url">U-Boot</dd>
-      <dd class="col-2 col-md-1 url">Linux</dd>
-      <dd class="col-4 col-md-2 hex_address"><%= t('.th_baseaddr') %></dd>
-    </dl>
+  <div class="row">
+    <div class="col col-12 col-xl-7">
+      <div class="socs">
+        <dl class="row mb-3 border-bottom small fw-bold">
+          <dd class="col-8 col-sm-7 col-md-4 col-xl-4 model"><%= t('.th_soc_model') %></dd>
+          <dd class="col-4 col-md-2 col-xl-2 hex_address"><%= t('.th_baseaddr') %></dd>
+          <dd class="col-2 col-sm-1 col-md-1 stage"><%= t('.th_stage') %></dd>
+          <dd class="col-10 col-md-5"><%= t('.th_docs') %></dd>
+        </dl>
 
-    <%= render @socs %>
+        <%= render @socs %>
+      </div>
+    </div>
+    <div class="col col-12 col-lg-5">
+      <%= render 'cameras/socs/stages' %>
+    </div>
   </div>
-
-  <p><%= link_to t('.stages_of_development'), "/stages-of-firmware-development" %></p>
 </article>
