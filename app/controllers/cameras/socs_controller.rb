@@ -85,17 +85,22 @@ module Cameras
       @flash_type_command = @camera.flash_type
       @flash_type_command = 'nor16m' if @camera.flash_type.eql?('nor32m')
 
-      if @camera.flash_type.eql?('nor8m') && @camera.firmware_version.eql?('ultimate')
-        @camera.firmware_version = 'lite'
-        flash.now[:warning] = '8MB Flash ROM can only be flashed with Lite or FPV edition!'
-      end
-
       @camera.soc = Soc.find(params[:id])
       @vendor = @camera.soc.vendor
-      @camera.backup_filename = "backup-#{@camera.soc.model.downcase}-#{@camera.flash_type}.bin"
 
-      @page_title = "SoC: #{@camera.soc.full_name}"
-      render 'cameras/socs/update'
+      if @vendor.name.eql?("SigmaStar") && @camera.flash_type.eql?("nand")
+        render 'cameras/socs/sigmastar_nand_is_weird'
+      else
+        if @camera.flash_type.eql?('nor8m') && @camera.firmware_version.eql?('ultimate')
+          @camera.firmware_version = 'lite'
+          flash.now[:warning] = '8MB Flash ROM can only be flashed with Lite or FPV edition!'
+        end
+
+        @camera.backup_filename = "backup-#{@camera.soc.model.downcase}-#{@camera.flash_type}.bin"
+
+        @page_title = "SoC: #{@camera.soc.full_name}"
+        render 'cameras/socs/update'
+      end
     end
 
     def download_full_image

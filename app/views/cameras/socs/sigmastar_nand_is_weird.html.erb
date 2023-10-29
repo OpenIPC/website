@@ -1,0 +1,32 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to t('nav.home'), "/" %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.vendors'), cameras_vendors_path %></li>
+    <li class="breadcrumb-item"><%= link_to @vendor.name, cameras_vendor_path(@vendor) %></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= link_to @camera.soc.model, cameras_vendor_soc_path(@vendor, @camera.soc) %></li>
+  </ol>
+</nav>
+
+<article class="firmware">
+  <header>
+    <%= link_to image_tag("stage-#{@camera.soc.status}", width: 64), '/stages-of-firmware-development',
+                title: Soc::STATUS[@camera.soc.status.to_sym], class: 'float-end' %>
+    <h2 class="mb-0"><%= t('firmware.installation.title') %> (<%= @camera.firmware_version_name %>)</h2>
+    <p class="lead fw-bold"><%= t('firmware.installation.subtitle',
+                                  soc_name: @camera.soc.full_name, flash_type: @camera.flash_type_name) %></p>
+  </header>
+
+  <div class="row">
+    <div class="col col-12 col-lg-4 col-xl-3">
+      <%= image_tag 'icons/pose/warning_front.png' %>
+    </div>
+    <div class="col col-lg-7 col-xl-6 col-xxl-5">
+      <h2 class="mt-5 mb-3">Attention!</h2>
+      <p class="lead">The installation of OpenIPC firmware on a SigmaStar module with NAND
+        flash memory requires a specific procedure that is not included in this guide.</p>
+      <p>Please refer to the detailed instructions available on our Wiki at
+        <a href="https://github.com/OpenIPC/wiki/blob/master/en/fpv-sigmastar.md"
+           target="_blank">https://github.com/OpenIPC/wiki/blob/master/en/fpv-sigmastar.md</a></p>
+    </div>
+  </div>
+</article>
