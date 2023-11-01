@@ -66,6 +66,12 @@ ru:
       video: видео
       webrtc: Прямая трансляция WebRTC в веб-браузере.
       yuv420: Снимок в формате YUV420.
+    merchandise:
+      order_from_weededwords: Заказать на WeededWords.com
+      shirt_1:
+        description: Высококачественный Gildan Hammer™ 6 унций. Классическая футболка с круглым вырезом цвета Flo Blue. 100 % чесаный хлопок кольцевого прядения, предварительно усаженный, с логотипом из белого термотрансферного винила.
+        title: Футболка OpenIPC
+      title: Товары
     our_channels:
       paragraph1_html: Мы настоятельно рекомендуем вам установить <a href="https://telegram.org/">мессенджер Telegram</a> для вашей платформы и общаться непосредственно в наших каналах в Telegram.
       title: Наши каналы

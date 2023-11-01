@@ -66,6 +66,12 @@ zh:
       video: 视频
       webrtc: 网络浏览器中的 WebRTC 直播。
       yuv420: YUV420 格式的快照。
+    merchandise:
+      order_from_weededwords: 从 WeededWords.com 订购
+      shirt_1:
+        description: 高品质 Gildan Hammer™ 6 盎司。 Flo 蓝色圆领经典版型 T 恤。 100% 精梳环锭纺棉，预缩，带有白色热转印乙烯基徽标。
+        title: OpenIPC T 恤
+      title: 商品
     our_channels:
       paragraph1_html: 我们强烈建议您使用<a href="https://telegram.org/">Telegram Messenger</a>并加入我们的 Telegram 频道。
       title: 我们的频道
