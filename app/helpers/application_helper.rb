@@ -10,7 +10,7 @@ module ApplicationHelper
   end
 
   def default_image_path
-    '/assets/no-signal.jpg'
+    '/assets/no-signal.webp'
   end
 
   def display_flashes
