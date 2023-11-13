@@ -6,6 +6,10 @@ en:
     find: Find
   cameras:
     socs:
+      hi3536dv100_is_weird:
+        paragraph1: The installation of OpenIPC firmware on a HiSilicon NVR requires a specific procedure that is not included in this guide.
+        paragraph2: Please refer to the detailed instructions available on our Wiki at
+        subtitle: on an NVR with %{soc_name} SoC and %{flash_type} SPI flash chip
       index:
         featured: Recommended
         full_list: Full list
@@ -34,6 +38,9 @@ en:
         title: Installation Guide
         title2: Save your stock firmware!
         toolchain: OpenIPC Toolchain
+      sigmastar_nand_is_weird:
+        paragraph1: The installation of OpenIPC firmware on a SigmaStar module with NAND flash memory requires a specific procedure that is not included in this guide.
+        paragraph2: Please refer to the detailed instructions available on our Wiki at
       soc:
         generate_guide: Generate an installation guide
         no_solution_yet: There is no ready solution yet.

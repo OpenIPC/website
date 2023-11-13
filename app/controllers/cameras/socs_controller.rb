@@ -90,6 +90,8 @@ module Cameras
 
       if @vendor.name.eql?("SigmaStar") && @camera.flash_type.eql?("nand")
         render 'cameras/socs/sigmastar_nand_is_weird'
+      elsif @camera.soc.model.in?(%w[HI3536CV100 HI3536DV100])
+        render 'cameras/socs/hi3536dv100_is_weird'
       else
         if @camera.flash_type.eql?('nor8m') && @camera.firmware_version.eql?('ultimate')
           @camera.firmware_version = 'lite'

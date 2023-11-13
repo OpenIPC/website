@@ -6,6 +6,10 @@ zh:
     find: 寻找
   cameras:
     socs:
+      hi3536dv100_is_weird:
+        paragraph1: 在 HiSilicon NVR 上安装 OpenIPC 固件需要特定的过程，本指南中未包含该过程。
+        paragraph2: 请参阅我们的 Wiki 上提供的详细说明：
+        subtitle: 在具有 %{soc_name} SoC 和 %{flash_type} SPI 闪存芯片的 NVR 上
       index:
         featured: 推荐的
         full_list: 所有列表
@@ -34,6 +38,9 @@ zh:
         title: 安装指南
         title2: 保存您的原始固件！
         toolchain: OpenIPC 工具链
+      sigmastar_nand_is_weird:
+        paragraph1: 在具有 NAND 闪存的 SigmaStar 模块上安装 OpenIPC 固件需要特定的过程，本指南中未包含该过程。
+        paragraph2: 请参阅我们的 Wiki 上提供的详细说明：
       soc:
         generate_guide: 生成安装指南
         no_solution_yet: 目前还没有现成的解决方案。
