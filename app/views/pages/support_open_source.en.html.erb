@@ -8,8 +8,9 @@
       <img src="/assets/ninja-sponsors.webp" alt="Image: Support Open Source" class="img-fluid mb-3">
       <p>If you like our work, please consider supporting us on
         <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout">Open Collective</a></p>
-      <p><a href="https://opencollective.com/openipc/contribute/backer-14335/checkout"><img
-          src="https://opencollective.com/webpack/donate/button.png?color=blue" alt="Image: OpenCollective donate button"></a></p>
+      <p><a href="https://opencollective.com/openipc">
+        <%= image_tag '/files/donatetoopencollectivebutton.webp', size: 300, class: 'img-fluid',
+                      alt: 'Image: OpenCollective donation button', title: 'Donate to our collective' %></a></p>
       <p class="small">Many core team members donate their knowledge and their free time to work on the project, often
         using their personal funds to buy cameras to expand the list of supported hardware. Your donation help us to
         ease the burden on their personal finances while keeping the development on the latest hardware. We also use the
@@ -18,7 +19,7 @@
         are often expensive. Your contributions help us to continue development and provide technical support to the
         community.</p>
     </div>
-    <div class="col-md-9 mb-3">
+    <div class="col-md-6 mb-3">
       <h3>Price of the Firmware</h3>
       <p>The right to use the OpenIPC firmware and its components is granted to all users free of charge and only for
         personal, non-commercial purposes. If you are interested in using OpenIPC for your business projects, please
@@ -59,10 +60,52 @@
       </dl>
 
       <p>We're committed to open and transparent accounting, and are grateful for any support you can provide to our
-        efforts to advance OpenIPC and our mission toward a sustainable
-        future.</p>
+        efforts to advance OpenIPC and our mission toward a sustainable future.</p>
 
       <h4>Thank you, it means a lot to us!</h4>
+    </div>
+
+    <div class="col-md-3 mb-3">
+      <h3 class="mb-3">Donate Cryptocurrency</h3>
+
+      <div class="row row-cols-1 g-2 mb-3">
+        <div class="col">
+          <div class="card">
+            <div class="card-body bg-light">
+              <%= image_tag 'icons/crypto-bitcoin.svg', size: 24, alt: 'Image: Bitcoin Logo',
+                            title: '1Gu9xVdXKs5T9TTe2zJn4oSiJs4Dz9Vi6J',
+                            class: 'float-end' %>
+              <h5 class="card-title fw-bold">Bitcoin - BTC</h5>
+              <p class="card-text">1Gu9xVdXKs5T9TTe2zJn4oSiJs4Dz9Vi6J</p>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="card-body bg-light">
+              <%= image_tag 'icons/crypto-tron.svg', size: 24, alt: 'Image: TRON Logo',
+                            title: 'TDNf6HW54MA6JrmLWM85h3ewxZgvpSqSGN',
+                            class: 'float-end' %>
+              <h5 class="card-title fw-bold">TRON (TRC20) - USDT</h5>
+              <p class="card-text">TDNf6HW54MA6JrmLWM85h3ewxZgvpSqSGN</p>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="card-body bg-light">
+              <%= image_tag 'icons/crypto-ton.svg', size: 24, alt: 'Image: TON Logo',
+                            title: 'UQBw0ZTdMLqUozkt1gLhl7xQ57Qa_RCcjmD0leQEANGvBSLd',
+                            class: 'float-end' %>
+              <h5 class="card-title fw-bold">The Open Network - TON</h5>
+              <p class="card-text">UQBw0ZTdMLqUozkt1gLhl7xQ57Qa_RCcjmD0leQEANGvBSLd</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="small text-muted">Using TON cryptocurrency, donations can be made right
+        inside the Telegram using <a href="https://t.me/wallet">@wallet</a>.</p>
     </div>
   </div>
 </article>

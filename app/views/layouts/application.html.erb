@@ -15,8 +15,7 @@
 <nav class="navbar navbar-dark navbar-expand-lg">
   <div class="container">
     <a class="navbar-brand" href="/"><%= image_tag 'openipc-logo-white.svg', alt: 'Image: OpenIPC logo', height: 32 %></a>
-    <button aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler"
-            data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
+    <button aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
@@ -27,8 +26,7 @@
         <%= navbar_link(t('nav.openwall'), '/open-wall') %>
 
         <li class="nav-item dropdown">
-          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#"
-             id="dropdownAbout" role="button"><%= t('nav.about') %></a>
+          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownAbout" role="button"><%= t('nav.about') %></a>
           <ul aria-labelledby="dropdownAbout" class="dropdown-menu dropdown-menu-lg-end">
             <%= dropdown_link t('nav.team'), '/our-team' %>
             <%= dropdown_link t('nav.projects'), '/our-projects' %>
@@ -42,8 +40,7 @@
         </li>
 
         <li class="nav-item dropdown">
-          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#"
-             id="dropdownTools" role="button"><%= t('nav.tools') %></a>
+          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownTools" role="button"><%= t('nav.tools') %></a>
           <ul aria-labelledby="dropdownTools" class="dropdown-menu dropdown-menu-lg-end">
             <%= dropdown_link t('nav.partition_calc'), '/tools/firmware-partitions-calculation' %>
             <%= dropdown_link t('nav.hires_timer'), '/tools/high-resolution-timer' %>
@@ -62,6 +59,12 @@
   </div>
 </main>
 
+<div class="">
+  <div class="container">
+    <%= render "pages/donate" %>
+  </div>
+</div>
+
 <footer class="bg-light small p-4 mt-4">
   <div class="container">
     <div class="row justify-content-between mb-3">
@@ -70,16 +73,11 @@
       </div>
       <div class="col text-end">
         <div class="btn-group">
-          <a class="btn" href="https://github.com/openipc" title="OpenIPC on GitHub"><img
-            src="/assets/github.svg" alt="Image: GitHub logo"></a>
-          <a class="btn" href="https://twitter.com/openipc" title="OpenIPC on Twitter"><img
-            src="/assets/twitter.svg" alt="Image: Twitter logo"></a>
-          <a class="btn" href="https://www.facebook.com/groups/956912811789726" title="OpenIPC on Facebook"><img
-            src="/assets/facebook.svg" alt="Image: Facebook logo"></a>
-          <a class="btn" href="https://www.youtube.com/@openipc" title="OpenIPC on YouTube"><img
-            src="/assets/youtube.svg" alt="Image: YouTube logo"></a>
-          <a class="btn" href="https://opencollective.com/openipc" title="OpenIPC on OpenCollective"><img
-            src="/assets/opencollective.svg" alt="Image: OpenCollective logo"></a>
+          <a class="btn" href="https://github.com/openipc" title="OpenIPC on GitHub"><img src="/assets/github.svg" alt="Image: GitHub logo"></a>
+          <a class="btn" href="https://twitter.com/openipc" title="OpenIPC on Twitter"><img src="/assets/twitter.svg" alt="Image: Twitter logo"></a>
+          <a class="btn" href="https://www.facebook.com/groups/956912811789726" title="OpenIPC on Facebook"><img src="/assets/facebook.svg" alt="Image: Facebook logo"></a>
+          <a class="btn" href="https://www.youtube.com/@openipc" title="OpenIPC on YouTube"><img src="/assets/youtube.svg" alt="Image: YouTube logo"></a>
+          <a class="btn" href="https://opencollective.com/openipc" title="OpenIPC on OpenCollective"><img src="/assets/opencollective.svg" alt="Image: OpenCollective logo"></a>
         </div>
       </div>
     </div>

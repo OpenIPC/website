@@ -4,7 +4,7 @@
   </header>
 
   <div class="row row-cols-1 row-cols-lg-2">
-    <div class="col">
+    <div class="col mb-3">
       <h3>FPV</h3>
       <p><%= t('.paragraph1_html') %></p>
       <p><%= t('.paragraph2') %></p>
@@ -14,7 +14,13 @@
       <p><%= t('.paragraph4') %></p>
       <p><%= t('.paragraph5') %></p>
     </div>
+    <div class="col mb-3">
+      <h3><%= t('.subtitle3') %></h3>
+      <p class="alert alert-info"><%= t('.community') %></p>
+      <dl>
+        <dt><a href="https://www.printables.com/search/models?q=tag:openipc">tag:openipc at printables.com</a></dt>
+        <dd><%= t('.printables_info') %></dd>
+      </dl>
+    </div>
   </div>
-
-  <%= render "pages/donate" %>
 </article>

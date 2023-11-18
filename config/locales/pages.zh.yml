@@ -76,15 +76,17 @@ zh:
       paragraph1_html: 我们强烈建议您使用<a href="https://telegram.org/">Telegram Messenger</a>并加入我们的 Telegram 频道。
       title: 我们的频道
     our_projects:
+      community: 与 OpenIPC 有关的，由用户创建的内容。
       paragraph1_html: 包括有关为机载和地面站设备构建和使用 FPV 套件和软件的所有信息。我们强烈建议您阅读<a href="https://github.com/OpenIPC/wiki/blob/master/en/fpv.md">基础文章</a>、点击链接并观看飞行视频。
       paragraph2: 项目正在积极开发中，加入我们吧！
       paragraph3: 这是我们新的音视频通信系统项目，正处于设计阶段。
       paragraph4: 我们正在致力于创建一个方便的在线固件生成器，使您可以使用所需的参数更灵活、更立即地创建它们。
       paragraph5: 请关注网站更新！
+      printables_info: 标有“openipc”的 3D 打印模型。
+      subtitle3: OpenIPC 社区项目
       title: 我们的项目
     our_software:
       burn_info: 一个开源工具，用于解锁海思平台设备的引导加载程序。
-      community: 与 OpenIPC 有关的，由用户创建的内容。
       coupler_info: 一种工具，可让您从 IP 摄像机制造商预装的专有固件平稳过渡到 OpenIPC 固件。不需要特殊技能。
       exipcam_info: XM 设备资源管理器。修复 IPCam 的实用程序
       exipcam_info_extra: 俄语用户界面。通过 Wine 在 Windows、Linux 上运行。
@@ -98,11 +100,9 @@ zh:
       motors_info: 管理电机硬件的各种代码。
       openhisi_info: 用于海思 SoC 的开源 SDK。
       openxm_info: 用于雄迈 SoC 的开源 SDK。
-      printables_info: 标有“openipc”的 3D 打印模型。
       smolrtsp_info: 一个简单的 RTSP 1.0 服务器库，专为 IP 摄像机等嵌入式设备量身定制。它同时支持 TCP 和 UDP，允许任何负载格式，并提供方便灵活的 API。
       subtitle1: 核心项目
       subtitle2: OpenIPC 保护伞项目
-      subtitle3: OpenIPC 社区项目
       title: 我们的项目
       umbrella_info: OpenIPC 也是其他小型项目的品牌保护伞，这些项目是我们整个生态系统中的一部分。我们欢迎所有愿意为该项目做出贡献的人，以他们认为有用的任何方式！
       venc_info: 使用 Goke SoC 的 IP 摄像机流媒体，主要专注于 FPV。
