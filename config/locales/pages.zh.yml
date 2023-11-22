@@ -74,6 +74,7 @@ zh:
       title: 商品
     our_channels:
       paragraph1_html: 我们强烈建议您使用<a href="https://telegram.org/">Telegram Messenger</a>并加入我们的 Telegram 频道。
+      spam_bot_warning: 请注意，加入群组后，您必须通过我们的欢迎机器人的测试。测试很简单，只需回答两个问题。如果您错过了测试并发现无法在群组中发帖，请退出群组并重新加入。密切关注欢迎机器人消息，单击该消息并回答问题。
       title: 我们的频道
     our_projects:
       community: 与 OpenIPC 有关的，由用户创建的内容。
