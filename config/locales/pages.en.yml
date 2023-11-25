@@ -19,6 +19,8 @@ en:
       size_hex: Hex size, bytes
       start_address: Start address
       title: Firmware Partitions Calculation
+    green_life:
+      title: Green Life
     high_resolution_timer:
       reload_to_reset: Time shown in milliseconds. Reload page to reset the counter.
       title: High-Resolution Timer
