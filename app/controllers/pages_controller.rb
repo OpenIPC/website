@@ -14,6 +14,11 @@ class PagesController < ApplicationController
     render 'pages/firmware_partitions_calculation'
   end
 
+  def green_life
+    @page_title = t('pages.green_life.title')
+    render 'pages/green_life'
+  end
+
   def high_resolution_timer
     @page_title = t('pages.high_resolution_timer.title')
     render 'pages/high_resolution_timer'

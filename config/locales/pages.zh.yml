@@ -19,6 +19,8 @@ zh:
       size_hex: 十六进制大小，字节
       start_address: 起始地址
       title: 固件分区计算
+    green_life:
+      title: 绿色生活
     high_resolution_timer:
       reload_to_reset: 以毫秒为单位显示的时间。重新加载页面以重置计数器。
       title: 高分辨率定时器

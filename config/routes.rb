@@ -33,6 +33,7 @@ Rails.application.routes.draw do
   get '/sponsor', to: redirect('/support-open-source')
 
   get '/about', to: 'pages#about'
+  get '/green_life', to:'pages#green_life'
   get '/introduction', to:'pages#introduction'
   get '/merchandise', to: 'pages#merchandise'
   get '/our-projects', to: 'pages#our_projects'
