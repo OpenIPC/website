@@ -8,6 +8,9 @@ en:
         title: Admin Dashboard
     bandwidth_calculator:
       title: Bandwidth calculator
+    donate:
+      please_support: Please consider supporting our projects
+      title: Do you like what we do?
     firmware_partitions_calculation:
       end_address: End address
       flash_size_mb: Flash size, MB

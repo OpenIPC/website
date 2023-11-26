@@ -8,6 +8,9 @@ ru:
         title: Панель администратора
     bandwidth_calculator:
       title: Калькулятор пропускной способности
+    donate:
+      please_support: Узнайте, как вы можете его поддержать
+      title: Нравится проект?
     firmware_partitions_calculation:
       end_address: Конечный адрес
       flash_size_mb: Размер флешки, МБ

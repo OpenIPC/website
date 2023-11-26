@@ -8,6 +8,9 @@ zh:
         title: 管理仪表板
     bandwidth_calculator:
       title: 带宽计算器
+    donate:
+      please_support: 请考虑支持我们
+      title: 喜欢我们的项目吗？
     firmware_partitions_calculation:
       end_address: 结束地址
       flash_size_mb: 闪存大小，MB
