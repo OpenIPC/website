@@ -155,6 +155,7 @@ ru:
     pause_transitions: Наведите курсор мыши на снимок, чтобы приостановить автоматические переходы.
     previous: Предыдущий
     projects: Проекты
+    qr_code_generator: Генератор QR-кода
     snapshot: Снимок № %{number}
     snapshots: Последние снимки
     socs: SoC

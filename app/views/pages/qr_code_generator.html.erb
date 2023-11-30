@@ -1,0 +1,47 @@
+<article class="about">
+  <header>
+    <h2><%= t('.title') %></h2>
+  </header>
+
+  <p><%= t('.paragraph1_html') %></p>
+
+  <div class="row row-cols-3">
+    <div class="col">
+      <form id="qrcode_generator">
+        <p>
+          <label for="wlanssid" class="form-label">SSID</label>
+          <input type="text" id="wlanssid" placeholder="OpenIPC_HotSpot" class="form-control">
+        </p>
+        <p>
+          <label for="wlanpass" class="form-label">Password</label>
+          <input type="password" id="wlanpass" placeholder="IaMaKo0lHak3r" class="form-control">
+        </p>
+        <input type="submit" value="Generate QR Code" class="btn btn-primary">
+        <input type="reset" value="Reset form" class="btn btn-secondary">
+      </form>
+    </div>
+    <div class="col">
+      <img src="/assets/qrcode.png" id="qr" alt="Image: QR Code" class="border img-fluid">
+    </div>
+    <div class="col">
+      <div class="alert alert-info">
+        <p class="lead"><%= t('.alert_title') %></p>
+        <p><%= t('.alert_text') %></p>
+      </div>
+    </div>
+  </div>
+</article>
+
+<script>
+  document.querySelector('#qrcode_generator').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const wlanssid = document.querySelector('#wlanssid').value;
+    const wlanpass = document.querySelector('#wlanpass').value;
+    const data = encodeURIComponent('wlanssid=' + wlanssid + "\n" + 'wlanpass=' + wlanpass);
+    const url = 'https://chart.googleapis.com/chart?cht=qr&chs=512x512&choe=utf-8&chld=l&chl=' + data;
+    document.querySelector('#qr').src = url;
+  });
+  document.querySelector('#qrcode_generator').addEventListener('reset', (ev) => {
+    document.querySelector('#qr').src = '/assets/qrcode.png';
+  });
+</script>

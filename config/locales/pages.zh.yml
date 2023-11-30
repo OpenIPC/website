@@ -118,6 +118,11 @@ zh:
       contributors_link: 所有 GitHub 贡献者列表
       paragraph1_html: OpenIPC 是一个社区驱动的开源项目，许多人为其代码库做出贡献。赞美他们！还有一个由熟练的开发人员组成的核心团队，他们努力扩展<a href="/supported-hardware">支持的硬件平台</a>列表、扩展固件的功能和稳定性、审查提交的代码并协调社区工作。了解团队及其专业领域：
       title: 我们的团队
+    qr_code_generator:
+      alert_text: 请注意，您的数据将被发送到 Google 服务器以生成代码。如果您不同意，请不要使用本服务。
+      alert_title: 我们使用谷歌二维码生成器
+      paragraph1_html: 生成包含用于访问无线网络的凭据的二维码。
+      title: 无线网络二维码生成器
     stages_of_firmware_development:
       done_alt: 图片：阶段 DONE
       done_info: 完成了！ Bootloader 引导 Linux 加载，流媒体可以流式传输视频并生成快照。您可以拥有一个开放的工作平台，用于修补和进一步改进。不过，我们仍然期待你们的反馈和补丁。

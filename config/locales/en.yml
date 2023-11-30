@@ -149,6 +149,7 @@ en:
     dashboard: Dashboard
     editing: Editing
     endpoints: Majestic Endpoints
+    green_life: Green Life
     hires_timer: High-Resolution Timer
     home: Home
     introduction: Introduction
@@ -158,6 +159,7 @@ en:
     pause_transitions: Place mouse cursor over a snapshot to pause automatic transitions.
     previous: Previous
     projects: Our Projects
+    qr_code_generator: QR Code Generator
     snapshot: 'Snapshot #%{number}'
     snapshots: Latest Snapshots
     socs: SoCs

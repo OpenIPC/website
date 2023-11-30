@@ -52,7 +52,8 @@ Rails.application.routes.draw do
   get '/tools/bandwidth-calculator', to: 'pages#bandwidth_calculator'
   get '/tools/firmware-partitions-calculation', to: 'pages#firmware_partitions_calculation'
   get '/tools/high-resolution-timer', to: 'pages#high_resolution_timer'
-  get '/tools/timelaps-interval-calculator', to: 'pages#timelaps-interval-calculator'
+  get '/tools/qr-code-generator', to: 'pages#qr_code_generator'
+  get '/tools/timelaps-interval-calculator', to: 'pages#timelaps_interval_calculator'
 
   get '/open-wall(/:page)', to: 'snapshots#index'
   get '/open-wall/camera/:id', to: 'snapshots#camera', as: 'openwall_camera'

@@ -118,6 +118,11 @@ en:
       contributors_link: List of all GitHub contributors
       paragraph1_html: 'OpenIPC is a community-driven open source project, and many people contribute to its codebase. Kudos to them! There is also a core team of skilled developers who work hard to expand the list of <a href="/supported-hardware">supported hardware platforms</a>, extend the functionality and stability of the firmware, review submitted code, and coordinate community efforts. Get to know the team and their areas of expertise:'
       title: Our Team
+    qr_code_generator:
+      alert_text: Please be aware that your data will be sent to a Google server to generate the code. If you do not agree with this, please do not use this service.
+      alert_title: We use Google QR Code Generator
+      paragraph1_html: Generate a QR code with credentials for accessing your wireless network.
+      title: Wireless Network QR Code Generator
     stages_of_firmware_development:
       done_alt: 'Image: stage DONE'
       done_info: Done and done! Bootloader boots, Linux loads, streamer can stream video and produce snaphots. You can have yourself a working platform open for tinkering and further improvements. We still expect feedback and patches from you guys, though.

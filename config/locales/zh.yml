@@ -154,6 +154,7 @@ zh:
     pause_transitions: 将鼠标光标放在快照上可以暂停自动转换。
     previous: 以前的
     projects: 我们的项目
+    qr_code_generator: 二维码生成器
     snapshot: '快照 #%{number}'
     snapshots: 最新快照
     socs: SoC

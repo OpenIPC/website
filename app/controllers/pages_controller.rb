@@ -59,6 +59,11 @@ class PagesController < ApplicationController
     render 'pages/our_team'
   end
 
+  def qr_code_generator
+    @page_title =   t('pages.qr_code.title')
+    render 'pages/qr_code_generator'
+  end
+
   def stages_of_firmware_development
     @page_title = t('pages.stages_of_firmware_development.title')
     render 'pages/stages_of_firmware_development'
