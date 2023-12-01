@@ -64,15 +64,11 @@ en:
         one: '1 error prohibited this %{resource} from being saved:'
         other: "%{count} errors prohibited this %{resource} from being saved:"
   firmware:
-    info_html: |
-      If you want to learn more about what <code>uknor*</code>, <code>urnor*</code>, <code>setnor*</code> commands do,
-      run <code>printenv</code> in bootloader console.
+    info_html: If you want to learn more about what <code>uknor*</code>, <code>urnor*</code>, <code>setnor*</code> commands do, run <code>printenv</code> in bootloader console.
     installation:
       backup:
         info: OpenIPC U-Boot overwrites the original crypto partition making it impossible to revert to the factory firmware unless you have a full flash backup for this particular camera! To create a full firmware backup start a TFTP server and run these commands in bootloader shell.
-        more_info_html: |
-          Please refer to <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">Installation
-          instructions</a> in the project's wiki for more information.
+        more_info_html: Please refer to <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">Installation instructions</a> in the project's wiki for more information.
         subtitle: Back up your stock firmware, don't skip this part of the installation process!
         title: Save the original firmware
       backup_32: ATTENTION! Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM.
@@ -231,16 +227,10 @@ en:
       italic: Italic
       monospace: Monospace
       strikeout: Strikeout
-      text_html: |-
-        <p>Did you know that Telegram Messenger allows you to use formatting to emphasize important parts of the message and make information easier to grasp?</p>
-        <p>Select a text fragment and press a key combo:</p>
+      text_html: "<p>Did you know that Telegram Messenger allows you to use formatting to emphasize important parts of the message and make information easier to grasp?</p><p>Select a text fragment and press a key combo:</p>"
       underline: Underline
     translation:
       header: Chat Translation
-      text_html: |-
-        <p>Did you know that Telegram messenger has a built-in translation engine that allows you to read messages
-        written in foreign languages? Users with premium accounts can <a href="https://telegram.org/blog/profile-pics-emoji-translations#translating-entire-chats">translate
-        entire chats</a> on the fly, but even a regular account can <a href="https://telegram.org/blog/reactions-spoilers-translations#message-translation">translate
-        individual messages</a> with the click of a button.</p>
+      text_html: <p>Did you know that Telegram messenger has a built-in translation engine that allows you to read messages written in foreign languages? Users with premium accounts can <a href="https://telegram.org/blog/profile-pics-emoji-translations#translating-entire-chats">translate entire chats</a> on the fly, but even a regular account can <a href="https://telegram.org/blog/reactions-spoilers-translations#message-translation">translate individual messages</a> with the click of a button.</p>
   title:
     openwall: Open Wall
