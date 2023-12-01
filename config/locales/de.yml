@@ -116,13 +116,13 @@ de:
   go: 进行
   locales:
     de: Deutsch
-    en: Englisch
-    es: Spanisch
-    fr: Französisch
+    en: English
+    es: Español
+    fr: Français
     ja: 日本語
-    pl: Polen
-    pt-br: Portugiesisch Brasileiro
-    ru: Russisch
+    pl: Polska
+    pt-br: Português brasileiro
+    ru: Русский
     zh: 中文
   nav:
     about: Um
