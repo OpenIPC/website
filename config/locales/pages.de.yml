@@ -1,0 +1,150 @@
+---
+de:
+  pages:
+    about_us:
+      title: Über uns
+    admin:
+      dashboard:
+        title: Admin-Dashboard
+    bandwidth_calculator:
+      title: Bandbreitenrechner
+    donate:
+      please_support: Bitte denken Sie darüber nach, unsere Projekte zu unterstützen
+      title: Gefällt Ihnen, was wir tun?
+    firmware_partitions_calculation:
+      end_address: Endadresse
+      flash_size_mb: Flash-Größe, MB
+      mtd_name: MTD-Gerätename
+      offset: Anfangsoffset, dez oder hex
+      partition_name: Name der Partition %{number}
+      partition_size: Partitionsgröße %{number}, KB
+      recalculate: Neu berechnen
+      size_hex: Hex-Größe, Bytes
+      start_address: Startadresse
+      title: Berechnung der Firmware-Partitionen
+    green_life:
+      title: Grünes Leben
+    high_resolution_timer:
+      reload_to_reset: Zeit wird in Millisekunden angezeigt. Seite neu laden, um den Zähler zurückzusetzen.
+      title: Hochauflösender Timer
+    introduction:
+      title: Einführung
+    majestic_endpoints:
+      aac: AAC-Audiostream.
+      accepts_post: Akzeptiert POST-Anfragen mit Audiodatei als Parameter.
+      alaw: A-Law-komprimierter Audiostream.
+      audio: Audio
+      dng: Schnappschuss im Adobe DNG-Format (roh).
+      fmp4: fMP4-Videostream.
+      footnote_1: Nur HiSilicon- und Goke-SoCs.
+      footnote_2: Nur HiSilicon SoCs v2 und höher.
+      footnote_3_html: ZB <i>ffplay -ar 48000 -ac 1 -f s16le http://192.168.1.10/audio.pcm</i>
+      footnote_4_html: ZB <i>http://192.168.1.10/image.jpg?width=640&height=480&qfactor=50&color2gray=1&crop=80x32x512x400</i>
+      g711: G.711 A-Law-Audiostream.
+      heif: Schnappschuss im HEIF-Format.
+      hls: HLS-Live-Streaming im Webbrowser.
+      images: Standbilder
+      jpeg: Schnappschuss im JPEG-Format.
+      jpeg_params1: Breite, Höhe – Größe des resultierenden Bildes
+      jpeg_params2: qfactor – JPEG-Qualitätsfaktor (1-99)
+      jpeg_params3: color2gray – in Graustufen konvertieren
+      jpeg_params4: Zuschneiden – Das resultierende Bild wird auf 16x16x320x320 zugeschnitten
+      majestic_json: Tatsächliche Majestic-Konfiguration im JSON-Format.
+      mjpeg: MJPEG-Videostream.
+      mjpeg_player: MJPEG- und MP3-Live-Streaming im Webbrowser.
+      monitoring: Überwachung
+      more_examples_html: Weitere Beispiele finden Sie <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">in unserem Wiki</a> .
+      mp3: MP3-Audiostream.
+      night: Nacht-API
+      night_off: Schalten Sie den Nachtmodus aus.
+      night_on: Schalten Sie den Nachtmodus ein.
+      night_toggle: Aktuellen Nachtmodus umschalten.
+      optional_params: Optionale Parameter
+      opus: Opus-Audiostream.
+      play_on_speaker: Spielen Sie die Audiodatei über den Lautsprecher der Kamera ab.
+      prometheus_html: Knotenexporter für <a href="https://prometheus.io/">Prometheus</a> .
+      raw_pcm: Roher PCM-Audiostream.
+      rtsp0: RTSP-Hauptstream (video0).
+      rtsp1: RTSP-Substream (Video1).
+      title: Majestätische Endpunkte
+      ulaw: μ-Law-komprimierter Audiostream.
+      video: Video
+      webrtc: WebRTC-Live-Streaming im Webbrowser.
+      yuv420: Schnappschuss im YUV420-Format.
+    merchandise:
+      order_from_weededwords: Bestellen Sie bei WeededWords.com
+      shirt_1:
+        description: Hochwertiger Gildan Hammer™ 6 oz. T-Shirt mit klassischer Passform und Rundhalsausschnitt in Flo Blue. 100 % gekämmte, ringgesponnene Baumwolle, vorgeschrumpft, mit Logo aus weißem Heißtransfer-Vinyl.
+        title: OpenIPC-T-Shirt
+      title: Fan-Shop
+    our_channels:
+      paragraph1_html: Wir empfehlen Ihnen dringend, einen nativen <a href="https://telegram.org/">Telegram Messenger</a> für Ihre Plattform zu installieren und unsere Telegram-Gruppen zu nutzen.
+      spam_bot_warning: Bitte beachten Sie, dass Sie beim Beitritt zu einer Gruppe einen Test von unserem Welcome Bot bestehen müssen. Der Test ist so einfach wie die Beantwortung zweier Fragen. Wenn Sie den Test verpasst haben und feststellen, dass Sie nicht in der Gruppe posten können, verlassen Sie die Gruppe und treten Sie ihr erneut bei. Achten Sie genau auf die Willkommens-Bot-Nachricht, klicken Sie auf die Nachricht und beantworten Sie die Fragen.
+      title: Unsere Gruppen
+    our_projects:
+      community: Etwas im Zusammenhang mit OpenIPC. Nutzergenerierte Inhalte.
+      paragraph1_html: Enthält alle Informationen zum Bau und zur Verwendung von FPV-Kits und Software für Flug- und Bodenstationsgeräte. Wir empfehlen Ihnen dringend, den <a href="https://github.com/OpenIPC/wiki/blob/master/en/fpv.md">Basisartikel</a> zu lesen, den Links zu folgen und sich die Flugvideos anzusehen.
+      paragraph2: Das Projekt entwickelt sich aktiv weiter, machen Sie mit!
+      paragraph3: Dies ist unser neues Audio- und Videokommunikationssystemprojekt, das sich in der Entwurfsphase befindet.
+      paragraph4: Wir arbeiten an der Entwicklung eines praktischen OnLine-Firmware-Builders, mit dem Sie diese flexibler und sofort mit den gewünschten Parametern erstellen können.
+      paragraph5: Bitte folgen Sie den Aktualisierungen auf der Website!
+      printables_info: Modelle für den 3D-Druck mit dem Tag „openipc“.
+      subtitle3: OpenIPC-Community-Projekte
+      title: Unsere Projekte
+    our_software:
+      burn_info: Ein Open-Source-Tool zum Unbricking von HiSilicon-Geräten.
+      coupler_info: Ein Tool, das Ihnen einen reibungslosen Übergang von der vorinstallierten proprietären Firmware des IP-Kameraherstellers zur OpenIPC-Firmware ermöglicht. Es sind keine besonderen Fähigkeiten erforderlich.
+      exipcam_info: XM-Geräte-Explorer. Dienstprogramm zur Reparatur von IPCam
+      exipcam_info_extra: Russische Benutzeroberfläche. Läuft unter Windows, Linux über Wine.
+      firmware_info: Der Heilige Gral der Gemeinschaft. Universelle Firmware für IP-Kameras als Ersatz für proprietäre, veraltete und oft unsichere, vom Hersteller vorinstallierte Firmware.
+      hisitrace_info: Ein Dienstprogramm zum Ausführen von Sofia über XM in einer nicht standardmäßigen Umgebung.
+      ipcamdms_info: IPCam-Geräteverwaltungssystem
+      ipcamdms_info_extra: Russische Benutzeroberfläche. Läuft unter Windows, Linux über Wine.
+      ipctool_info: Ein IP-Kamera-Hardware-Inspektor für Steroide. Dieses Tool identifiziert nicht nur den Prozessor, den Sensor und den Flash-Chip Ihrer Kamera, sondern hilft Ihnen auch beim Sichern der Original-Firmware und mehr.
+      majestic_info: Ein universeller IP-Kamera-Streamer. Diese Software ist der Hauptbestandteil der OpenIPC-Firmware. Obwohl es sich in diesem Entwicklungsstadium noch nicht vollständig um Open Source handelt, erwägen wir die Öffnung der Codebasis, wenn die Software ausgereift genug ist und genügend Mittel für die offene Entwicklung erhält.
+      mini_info: Ein Open-Source-IP-Kamera-Streamer. Betrachten Sie es als den kleinen Bruder von Majestic.
+      motors_info: Verschiedene Codes zur Verwaltung der Motorhardware.
+      openhisi_info: Open-Source-SDK für Hisilicon-SoCs.
+      openxm_info: Open-Source-SDK für Xiongmai-SoCs.
+      smolrtsp_info: Eine einfache RTSP 1.0-Serverbibliothek, die auf eingebettete Geräte wie IP-Kameras zugeschnitten ist. Es unterstützt sowohl TCP als auch UDP, ermöglicht jedes Nutzlastformat und bietet eine praktische und flexible API.
+      subtitle1: Kernsoftware
+      subtitle2: OpenIPC-Umbrella-Software
+      title: Unsere Software
+      umbrella_info: Der OpenIPC ist auch eine Dachmarke für andere kleine Software, die nützliche Bestandteile unseres Ökosystems sind. Wir freuen uns über jeden, der bereit ist, einen Beitrag zur Software zu leisten, und zwar auf jede Art und Weise, die er für nützlich hält!
+      venc_info: Ein Streamer für IP-Kameras mit Goke SoC, der sich hauptsächlich auf FPV konzentriert.
+      webui_info: Webschnittstelle für OpenIPC-Firmware. Geschrieben auf Asche und Tränen des Entwicklers.
+      yamlcli_info: Einfaches YAML-Konsolentool.
+    our_team:
+      contributors_link: Liste aller GitHub-Mitwirkenden
+      paragraph1_html: 'OpenIPC ist ein von der Community betriebenes Open-Source-Projekt, zu dessen Codebasis viele Menschen beitragen. Ein großes Lob an sie! Außerdem gibt es ein Kernteam aus erfahrenen Entwicklern, die hart daran arbeiten, die Liste der <a href="/supported-hardware">unterstützten Hardwareplattformen</a> zu erweitern, die Funktionalität und Stabilität der Firmware zu erweitern, eingereichten Code zu prüfen und die Community-Bemühungen zu koordinieren. Lernen Sie das Team und seine Fachgebiete kennen:'
+      title: Unser Team
+    qr_code_generator:
+      alert_text: Bitte beachten Sie, dass Ihre Daten zur Generierung des Codes an einen Google-Server gesendet werden. Wenn Sie damit nicht einverstanden sind, nutzen Sie diesen Service bitte nicht.
+      alert_title: Wir verwenden den Google QR Code Generator
+      paragraph1_html: Generieren Sie einen QR-Code mit Anmeldeinformationen für den Zugriff auf Ihr drahtloses Netzwerk.
+      title: QR-Code-Generator für drahtlose Netzwerke
+    stages_of_firmware_development:
+      done_alt: 'Bild: Bühne FERTIG'
+      done_info: Gemacht und gemacht! Bootloader bootet, Linux lädt, Streamer kann Videos streamen und Snapshots erstellen. Sie können sich eine offene Arbeitsplattform zum Basteln und für weitere Verbesserungen schaffen. Wir erwarten jedoch weiterhin Feedback und Patches von euch.
+      hlp_alt: 'Bild: Bühne HLP'
+      hlp_info: Stellenangebote. Wir haben die Hardware, wir haben das SDK, die grundlegenden Dinge sind gelernt und erledigt. Aber wir stecken fest. Hier suchen wir Hilfe von erfahrenen Embedded-Entwicklern, um die Hindernisse zu überwinden und zur nächsten Stufe überzugehen.
+      mvp_alt: 'Bild: Bühnen-MVP'
+      mvp_info: Ein minimal lebensfähiges Produkt. Das Grundsystem ist aufgebaut, die Plattform kann zumindest auf dem Hauptkanal Videos produzieren, aber aufgrund fehlender Personalressourcen verzögert sich die Entwicklung oder wird gestoppt. Eine Finanzspritze könnte die Entwicklung in die Endphase bringen.
+      neq_alt: 'Bild: Bühne NEQ'
+      neq_info_html: Keine Ausrüstung. Wir haben ein SDK für die Plattform, aber wir haben keine spezielle Hardware, um die Entwicklung fortzusetzen. Sie können es unseren F&E-Mitarbeitern spenden (insbesondere alte Boards, die <abbr title="Ende des Lebens">das EOL</abbr> überschritten haben und nicht mehr gekauft werden können).
+      paragraph1: Nachdem wir ein SDK für ein neues SoC erworben haben, fügen wir das SoC zur Tabelle der unterstützten Hardware hinzu. Wir vergeben entweder den NEQ-Status (No Equipment), wenn wir keine bestimmten Hardwaremodule haben, oder den HLP-Status (Help Needed), wenn wir über die Hardware verfügen, aber einen Entwickler suchen, der die Entwicklung für diesen SoC leitet. Dies gilt als offizieller Entwicklungsbeginn.
+      paragraph2: Es gibt keinen Grund, SoC ohne sein SDK in der Tabelle zu haben.
+      paragraph3: Während die Arbeit am SoC voranschreitet, ändert sich sein Status schrittweise. Zuerst zu RND, dann zu WIP, dann weiter zu MVP und schließlich zu FERTIG.
+      rnd_alt: 'Bild: Bühne F&E'
+      rnd_info: Die Forschungs- und Entwicklungsphase, in der wir bereits über das Plattform-SDK und vielleicht sogar über die Hardware-Boards verfügen, aber wir beginnen, mit der Plattform herumzuspielen und ihre Besonderheiten und Funktionen zu untersuchen. Es liegt noch viel Arbeit vor uns.
+      subtitle: Typischer Entwicklungslebenszyklus
+      title: Phasen der Firmware-Entwicklung
+      wip_alt: 'Bild: Bühne WIP'
+      wip_info: In Arbeit. Wir haben viel über die Plattform-Hardware und die Codebasis gelernt, den ersten öffentlichen Binär-Build vorbereitet und warten darauf, dass die ersten Anwender ihn auf ihren Boards testen und Feedback geben, um uns weiterzuentwickeln.
+    support_open_source:
+      title: Unterstützen Sie Open Source
+    utilities:
+      paragraph1: Eine Sammlung nützlicher Tools und Dienstprogramme.
+      title: Dienstprogramme
+    web_interface:
+      title: Webinterface

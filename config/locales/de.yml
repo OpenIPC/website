@@ -1,0 +1,236 @@
+---
+de:
+  alerts:
+    downloads: Wenn Sie Probleme mit dem Posteingang oder dem Herunterladen von Dateien haben, können Sie sich nicht an Ihren <a href="https://t.me/openipc_modding">Telegram-Kanal</a> wenden.
+  button:
+    find: Finden
+  cameras:
+    socs:
+      hi3536dv100_is_weird:
+        paragraph1: Die Installation der OpenIPC-Firmware auf einem HiSilicon NVR erfordert ein spezielles Verfahren, das in diesem Handbuch nicht enthalten ist.
+        paragraph2: Bitte beachten Sie die detaillierten Anweisungen in unserem Wiki unter
+        subtitle: auf einem NVR mit %{soc_name} SoC und %{flash_type} SPI-Flash-Chip
+      index:
+        featured: Empfohlen
+        full_list: Volle Liste
+        recommended_alert_html: Bitte beachten Sie. Die Unterstützung für verschiedene SoCs befindet sich in unterschiedlichen Entwicklungsstadien. <a href="/supported-hardware/featured">Diese Liste</a> zeigt die am umfassendsten unterstützten und daher am meisten empfohlenen.
+        stages_of_development: Erklärte Phasen der Firmware-Entwicklung
+        th_baseaddr: Adresse laden
+        th_docs: Installation
+        th_soc_model: SoC-Modell
+        th_stage: Bühne
+        th_status: Build-Status
+        title: Unterstützte Hardware durch SoC
+      show:
+        bootloader: OpenIPC-Bootloader
+        bundle: OpenIPC Linux (%{name})
+        camera_ip_address_title: vier durch Punkte getrennte 8-Bit-Felder
+        camera_mac_address_title: sechs 8-Bit-Hexfelder, getrennt durch Spalten oder Bindestriche
+        for: für %{name}
+        generate_button: Generieren Sie eine Installationsanleitung
+        generate_mac: Generieren Sie eine gültige zufällige MAC-Adresse.
+        not_ready_alert_html: Die Installationsanleitung für den %{name} SoC ist noch nicht fertig. Obwohl wir hart daran arbeiten, OpenIPC-Firmware für den %{name} zu veröffentlichen. Bitte bleiben Sie dran und <a href="/support-open-source">unterstützen Sie Open Source</a> .
+        notes: Anmerkungen
+        paragraph1: Bitte geben Sie die Kamerakonfiguration in das bereitgestellte Formular ein und klicken Sie auf die Schaltfläche „Installationsanleitung generieren“. Auf der nächsten Seite finden Sie die Binärdateien und die Befehle, die Sie für die Installation der OpenIPC-Firmware auf der Kamera ausführen müssen.
+        paragraph2: Übersehen Sie diesen Teil nicht. Sie denken vielleicht, dass dies nicht notwendig ist, da Sie nicht in die dunkle Vergangenheit zurückkehren werden, aber wir versichern Ihnen, dass die Standard-Firmware weiterhin zum Wiederherstellen fehlender Einstellungen und Treiber und für weitere Recherchen benötigt wird.
+        server_ip_address_title: vier durch Punkte getrennte 8-Bit-Felder
+        subtitle: Downloads
+        title: Installationsanleitung
+        title2: Speichern Sie Ihre Standard-Firmware!
+        toolchain: OpenIPC-Toolchain
+      sigmastar_nand_is_weird:
+        paragraph1: Die Installation der OpenIPC-Firmware auf einem SigmaStar-Modul mit NAND-Flash-Speicher erfordert ein spezielles Verfahren, das nicht in dieser Anleitung enthalten ist.
+        paragraph2: Bitte beachten Sie die detaillierten Anweisungen in unserem Wiki unter
+      soc:
+        generate_guide: Erstellen Sie eine Installationsanleitung
+        no_solution_yet: Es gibt noch keine fertige Lösung.
+      update:
+        advanced_instruction_link: Erweiterte Installationsanleitung für Experten
+        files_download_alert: Wenn Sie Probleme beim Zugriff auf herunterladbare Dateien haben, können Sie uns gerne über unseren Telegram-Kanal kontaktieren.
+        sdcard_required_0: Für diesen Schritt benötigen Sie eine SD-Karte. Vorhandener Inhalt der SD-Karte wird zerstört.
+        sdcard_required_1: Für diesen Schritt benötigen Sie eine SD-Karte. Formatieren Sie die SD-Karte auf FAT32 und kopieren Sie die heruntergeladene Datei in das Stammverzeichnis der Karte.
+        sdcard_required_2: Für diesen Schritt benötigen Sie eine SD-Karte. Formatieren Sie die SD-Karte auf FAT32 und kopieren Sie die heruntergeladene Datei in das Stammverzeichnis der Karte.
+        sdcard_required_3: Für diesen Schritt benötigen Sie eine SD-Karte. Formatieren Sie die SD-Karte auf FAT32 und extrahieren Sie Dateien aus dem heruntergeladenen Paket in das Stammverzeichnis auf der Karte.
+  error:
+    please_fix: Bitte korrigiere die folgenden Fehler.
+  errors:
+    messages:
+      already_confirmed: wurde bereits bestätigt, bitte versuchen Sie, sich anzumelden
+      confirmation_period_expired: muss innerhalb von %{period} bestätigt werden, bitte fordern Sie eine neue an
+      expired: abgelaufen ist, fordern Sie bitte ein neues an
+      not_found: nicht gefunden
+      not_locked: war nicht gesperrt
+      not_saved:
+        one: '1 Fehler verhinderte das Speichern dieses %{resource}:'
+        other: "%{count}-Fehler verhinderten das Speichern dieses %{resource}:"
+  firmware:
+    info_html: Wenn Sie mehr darüber erfahren möchten, was die Befehle <code>uknor*</code> , <code>urnor*</code> <code>setnor*</code> bewirken, führen Sie <code>printenv</code> in der Bootloader-Konsole aus.
+    installation:
+      backup:
+        info: OpenIPC U-Boot überschreibt die ursprüngliche Kryptopartition und macht es unmöglich, zur werkseitigen Firmware zurückzukehren, es sei denn, Sie haben ein vollständiges Flash-Backup für diese bestimmte Kamera! Um ein vollständiges Firmware-Backup zu erstellen, starten Sie einen TFTP-Server und führen Sie diese Befehle in der Bootloader-Shell aus.
+        more_info_html: Weitere Informationen finden Sie in den <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">Installationsanweisungen</a> im Wiki des Projekts.
+        subtitle: Sichern Sie Ihre Standard-Firmware. Überspringen Sie diesen Teil des Installationsprozesses nicht!
+        title: Speichern Sie die Original-Firmware
+      backup_32: AUFMERKSAMKEIT! Stellen Sie vor dem Sichern von 32 MB Flash-ROM sicher, dass die Kamera über mindestens 64 MB RAM verfügt.
+      flashing:
+        alternative: Alternativ können Sie die OpenIPC-Firmware einzeln flashen
+      flashing_footfs:
+        continue: Die Kamera wird automatisch neu gestartet, um die Änderungen zu übernehmen. Bleiben Sie konzentriert und bereiten Sie sich darauf vor, die Boot-Sequenz zu unterbrechen, um wieder in die Bootloader-Shell zu gelangen.
+        info: Ordnen Sie in der Bootloader-Shell die ROM-Partitionierung entsprechend Ihrer Flash-Größe und Ihrem Flash-Typ neu zu.
+        title: Bereiten Sie die Kamera für OpenIPC Linux vor
+      flashing_footfs2:
+        info: Laden Sie das Firmware-Bundle herunter und entpacken Sie es in das Stammverzeichnis Ihres TFTP-Servers.
+        link: Laden Sie das OpenIPC-Firmware-Paket (%{name}) herunter
+        title: Flash OpenIPC Linux-Kernel und Root-Dateisystem
+      flashing_full:
+        continue: Die Kamera wird automatisch neu gestartet.
+        continue2: Bleiben Sie konzentriert und bereiten Sie sich darauf vor, die Boot-Sequenz zu unterbrechen, um wieder in die Bootloader-Shell zu gelangen. Ordnen Sie in der Bootloader-Shell die ROM-Partitionierung entsprechend Ihrer Flash-Größe und Ihrem Flash-Typ neu zu.
+        info: Das vollständige Firmware-Image besteht aus Bootloader, Kernel und Root-Dateisystem und eignet sich auch zum Flashen des Speicherchips mit einem Programmierer. Bitte beachten Sie, dass das vollständige Bild keine voreingestellte Umgebung enthält. Sie müssen noch Ihre eigene MAC-Adresse, IP-Adresse und andere Einstellungen hinzufügen.
+        link: Laden Sie das OpenIPC-Firmware-Image (%{name}) herunter
+        title: Flashen Sie das vollständige OpenIPC-Firmware-Image
+      flashing_uboot:
+        continue: Die Kamera startet mit dem neu geflashten Bootloader. Bleiben Sie konzentriert und bereiten Sie sich darauf vor, die Boot-Sequenz zu unterbrechen, um wieder in die Bootloader-Shell zu gelangen.
+        info: Laden Sie die Bootloader-Binärdatei herunter und speichern Sie sie im Stammverzeichnis Ihres TFTP-Servers.
+        link: Laden Sie die OpenIPC U-Boot-Binärdatei herunter
+        title: Flash OpenIPC U-Boot
+      permanent_link: Permanenter Link zu dieser Konfiguration
+      subtitle: auf einer Kamera mit %{soc_name} SoC und %{flash_type} SPI-Flash-Chip
+      success:
+        info_html: Öffnen Sie die Webschnittstelle der Kamera an Port 85 ( <a href=\"http://%{address}:85/\">http://%{address}:85/</a> ) und melden Sie sich mit dem Login- <b>Root</b> und dem Passwort <b>12345</b> an. Sobald Sie sich angemeldet haben, werden Sie aufgefordert, Ihr eigenes sicheres Passwort einzurichten. Um auf die Kamera zuzugreifen über ssh oder UART verwenden denselben Login und dasselbe Passwort wie oben.
+        title: Glückwunsch! Zu diesem Zeitpunkt ist die OpenIPC-Firmware (%{name}) installiert.
+      title: Flashen der OpenIPC-Firmware
+    restore:
+      info: Wenn Sie die ursprüngliche Firmware wiederherstellen müssen, verwenden Sie die Sicherungsdatei, die Sie mit den oben genannten Befehlen erstellt haben. Legen Sie die Sicherungsdatei im Stammverzeichnis Ihres TFTP-Servers ab und führen Sie diese Befehle in der Bootloader-Shell aus.
+      title: Stellen Sie die Firmware der Kamera wieder her
+    version:
+      fpv: FPV
+      lite: Lite
+      nand: NAND
+      ultimate: Ultimativ
+      venc: VENC
+  flash_chip:
+    nand: NAND
+    nor16m: NOCH 16M
+    nor32m: NOCH 32M
+    nor8m: NOCH 8M
+  go: 进行
+  locales:
+    de: Deutsch
+    en: Englisch
+    es: Spanisch
+    fr: Französisch
+    ja: 日本語
+    pl: Polen
+    pt-br: Portugiesisch Brasileiro
+    ru: Russisch
+    zh: 中文
+  nav:
+    about: Um
+    add_soc: Fügen Sie einen weiteren SoC hinzu
+    add_vendor: Anbieter hinzufügen
+    adding_soc: SoC hinzufügen
+    adding_vendor: Anbieter hinzufügen
+    admin: Administrator
+    channels: Unser Telegramm
+    clone_soc: Klonen Sie diesen SoC
+    dashboard: Armaturenbrett
+    editing: Bearbeitung
+    endpoints: Majestätische Endpunkte
+    green_life: Grünes Leben
+    hires_timer: Hochauflösender Timer
+    home: Heim
+    introduction: Einführung
+    next: Nächste
+    openwall: Offene Wand
+    partition_calc: Firmware-Partitionsrechner
+    pause_transitions: Platzieren Sie den Mauszeiger über einem Schnappschuss, um automatische Übergänge anzuhalten.
+    previous: Vorherige
+    projects: Unsere Projekte
+    qr_code_generator: QR-Code-Generator
+    snapshot: 'Schnappschuss #%{number}'
+    snapshots: Neueste Schnappschüsse
+    socs: SoCs
+    software: Unsere Software
+    support_opensource: Es ist Open Source
+    supported_hardware: Unterstützte Hardware
+    team: Unser Team
+    tools: Werkzeuge
+    utilities: Dienstprogramme
+    vendors: Anbieter
+    view_soc: SoC-Seite anzeigen
+    view_vendor: Anbieter ansehen
+    webui: Webinterface
+    wiki: Unser Wiki
+  net_iface:
+    both: Die Kamera verfügt sowohl über Ethernet- als auch über WLAN-Netzwerke
+    eth: Die Kamera verfügt nur über ein Ethernet-Netzwerk
+    wifi: Die Kamera verfügt nur über ein drahtloses Netzwerk
+  out: 退出
+  sd_card:
+    nosd: Die Kamera verfügt nicht über einen SD-Kartensteckplatz
+    sd: Die Kamera verfügt über einen SD-Kartensteckplatz
+  site:
+    disclaimer: Die auf dieser Website enthaltenen Informationen dienen nur allgemeinen Informationszwecken und sind nicht dazu gedacht, dass sich der Besucher darauf verlassen kann. Die gesamte auf dieser Website verfügbare Software und Firmware wird ohne Mängelgewähr und nur zu Forschungszwecken bereitgestellt. OpenIPC haftet nicht für Verluste oder Schäden, die durch die Verwendung dieser Dateien oder die Verwendung oder das Vertrauen auf die auf dieser Website enthaltenen Informationen entstehen.
+    snapshot:
+      download: Originalbild herunterladen
+      link_to_camera: Permanenter Link zu dieser Kamera
+      link_to_last_jpeg: Permanenter Link zum neuesten Schnappschuss dieser Kamera (JPEG)
+  snapshots:
+    icon:
+      snapshot_alt: 'Bild: Schnappschuss'
+    index:
+      no_signal: Kein Signal
+      snapshot_alt: 'Bild: Schnappschuss'
+      stay_tuned: bleiben Sie dran
+      subtitle: Bilder von echten IP-Kameras, die auf OpenIPC-Firmware laufen und von ihren Besitzern bereitgestellt werden.
+    oneday:
+      speed: Geschwindigkeit
+    show:
+      delete_by_mac: Alles per MAC löschen
+      delete_one: Löschen Sie dieses
+      last_24h: Letzte 24 Stunden
+      show_slideshow: Als Diashow ansehen
+      snapshot_alt: 'Bild: Schnappschuss'
+      temperature: SoC-Temperatur
+      uptime: Betriebszeit
+    slide:
+      bytes: Bytes
+      dimensions: Maße
+      download_original: Originalbild herunterladen
+      link_to_this: Link zu diesem Schnappschuss
+      size: Größe
+      snapshot_alt: 'Bild: Schnappschuss'
+      temperature: SoC-Temperatur
+      uptime: Betriebszeit
+    snapshot:
+      snapshot_alt: 'Bild: Schnappschuss'
+      temperature: SoC-Temperatur
+      uptime: Betriebszeit
+  str:
+    language: Sprache
+  telegram:
+    channels:
+      description_1: Internationaler Kanal über OpenIPC
+      description_10: Mandarinsprachiger OpenIPC-Benutzerkanal
+      description_2: GitHub-Benachrichtigungen zu den neuesten Builds
+      description_3: OpenIPC Telegram Bot-Demo
+      description_4: Russischsprachiger OpenIPC-Benutzerkanal
+      description_5: Kanal für OpenIPC-Entwickler
+      description_6: Alles für die Reparatur von Geräten
+      description_7: OpenIPC zum Aufbau von FPV-Systemen.
+      description_8: Gruppe für kostenpflichtigen technischen Support
+      description_9: Persischsprachiger OpenIPC-Benutzerkanal
+    formatting:
+      bold: Deutlich
+      header: Nachrichtenformatierung
+      hyperlink: Hyperlink
+      italic: Kursiv
+      monospace: Monospace
+      strikeout: Durchgestrichen
+      text_html: "<p>Wussten Sie, dass Sie mit Telegram Messenger Formatierungen verwenden können, um wichtige Teile der Nachricht hervorzuheben und Informationen leichter verständlich zu machen?</p><p> Wählen Sie ein Textfragment aus und drücken Sie eine Tastenkombination:</p>"
+      underline: Unterstreichen
+    translation:
+      header: Chat-Übersetzung
+      text_html: <p>Wussten Sie, dass der Telegram-Messenger über eine integrierte Übersetzungsmaschine verfügt, mit der Sie in Fremdsprachen verfasste Nachrichten lesen können? Benutzer mit Premium-Konten können <a href="https://telegram.org/blog/profile-pics-emoji-translations#translating-entire-chats">ganze Chats im Handumdrehen übersetzen</a> , aber selbst ein reguläres Konto kann <a href="https://telegram.org/blog/reactions-spoilers-translations#message-translation">einzelne Nachrichten per Knopfdruck übersetzen</a> .</p>
+  title:
+    openwall: Offene Wand
