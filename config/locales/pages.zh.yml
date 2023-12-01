@@ -121,7 +121,10 @@ zh:
     qr_code_generator:
       alert_text: 请注意，您的数据将被发送到 Google 服务器以生成代码。如果您不同意，请不要使用本服务。
       alert_title: 我们使用谷歌二维码生成器
+      generate_qr_code: 生成二维码
       paragraph1_html: 生成包含用于访问无线网络的凭据的二维码。
+      password: 密码
+      reset_form: 重置表格
       title: 无线网络二维码生成器
     stages_of_firmware_development:
       done_alt: 图片：阶段 DONE

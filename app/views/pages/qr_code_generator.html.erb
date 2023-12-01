@@ -5,7 +5,7 @@
 
   <p><%= t('.paragraph1_html') %></p>
 
-  <div class="row row-cols-3">
+  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-2">
     <div class="col">
       <form id="qrcode_generator">
         <p>
@@ -13,11 +13,11 @@
           <input type="text" id="wlanssid" placeholder="OpenIPC_HotSpot" class="form-control">
         </p>
         <p>
-          <label for="wlanpass" class="form-label">Password</label>
+          <label for="wlanpass" class="form-label"><%= t('.password') %></label>
           <input type="password" id="wlanpass" placeholder="IaMaKo0lHak3r" class="form-control">
         </p>
-        <input type="submit" value="Generate QR Code" class="btn btn-primary">
-        <input type="reset" value="Reset form" class="btn btn-secondary">
+        <input type="submit" value="<%= t('.generate_qr_code') %>" class="btn btn-primary">
+        <input type="reset" value="<%= t('.reset_form') %>" class="btn btn-secondary">
       </form>
     </div>
     <div class="col">

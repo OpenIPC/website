@@ -121,7 +121,10 @@ en:
     qr_code_generator:
       alert_text: Please be aware that your data will be sent to a Google server to generate the code. If you do not agree with this, please do not use this service.
       alert_title: We use Google QR Code Generator
+      generate_qr_code: Generate QR Code
       paragraph1_html: Generate a QR code with credentials for accessing your wireless network.
+      password: Password
+      reset_form: Reset form
       title: Wireless Network QR Code Generator
     stages_of_firmware_development:
       done_alt: 'Image: stage DONE'

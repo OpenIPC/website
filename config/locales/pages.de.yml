@@ -121,7 +121,10 @@ de:
     qr_code_generator:
       alert_text: Bitte beachten Sie, dass Ihre Daten zur Generierung des Codes an einen Google-Server gesendet werden. Wenn Sie damit nicht einverstanden sind, nutzen Sie diesen Service bitte nicht.
       alert_title: Wir verwenden den Google QR Code Generator
+      generate_qr_code: QR-Code generieren
       paragraph1_html: Generieren Sie einen QR-Code mit Anmeldeinformationen für den Zugriff auf Ihr drahtloses Netzwerk.
+      password: Passwort
+      reset_form: Formular leeren
       title: QR-Code-Generator für drahtlose Netzwerke
     stages_of_firmware_development:
       done_alt: 'Bild: Bühne FERTIG'
