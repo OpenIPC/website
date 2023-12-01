@@ -28,7 +28,7 @@ module ApplicationHelper
   end
 
   def macaddr_pattern
-    '^([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}$'
+    '^([a-fA-F\d]{2}[:\-]){5}[a-fA-F\d]{2}$'
   end
 
   def firmware_filename(camera)

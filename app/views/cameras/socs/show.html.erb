@@ -88,19 +88,19 @@
         if (document.querySelector('#camera_flash_type').value === 'nor8m') {
             for (let i = 0; i < el.options.length; i++) {
                 let o = el.options.item(i);
-                o.disabled = (o.value == 'ultimate');
+                o.disabled = (o.value == 'ultimate'<%= raw " || o.value == 'fpv'" if @camera.soc.vendor.name.eql?('SigmaStar') %>);
             }
             el.value = 'lite';
         } else if (document.querySelector('#camera_flash_type').value === 'nor16m') {
             for (let i = 0; i < el.options.length; i++) {
                 let o = el.options.item(i);
-                o.disabled = (o.value == 'fpv' || o.value == 'venc');
+                o.disabled = (o.value == 'venc'<%= raw " || o.value == 'fpv'" unless @camera.soc.vendor.name.eql?('SigmaStar') %>);
             }
             el.value = 'ultimate';
         } else if (document.querySelector('#camera_flash_type').value === 'nor32m') {
             for (let i = 0; i < el.options.length; i++) {
                 let o = el.options.item(i);
-                o.disabled = (o.value == 'fpv' || o.value == 'venc');
+                o.disabled = (o.value == 'venc'<%= raw " || o.value == 'fpv'" unless @camera.soc.vendor.name.eql?('SigmaStar') %>);
             }
             el.value = 'ultimate';
         } else if (document.querySelector('#camera_flash_type').value === 'nand') {

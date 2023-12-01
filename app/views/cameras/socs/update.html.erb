@@ -69,8 +69,10 @@
           <% end %>
           <%= flashing_everything(@camera) %>
           <p><%= t('firmware.installation.flashing_full.continue') %></p>
-          <p><%= t('firmware.installation.flashing_full.continue2') %></p>
-          <%= preparing_environment(@flash_type_command) %>
+          <% unless @camera.soc.vendor.name.eql?('SigmaStar') || @flash_type_command.eql?('nor8m') %>
+            <p><%= t('firmware.installation.flashing_full.continue2') %></p>
+            <%= preparing_environment(@flash_type_command) %>
+          <% end %>
         </div>
       </div>
     </div>

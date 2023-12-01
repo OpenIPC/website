@@ -79,9 +79,7 @@ en:
       flashing:
         alternative: Alternatively, flash OpenIPC Firmware by its parts
       flashing_footfs:
-        continue: |
-          The camera will automatically restart to apply changes.
-          Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
+        continue: The camera will automatically restart to apply changes. Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
         info: When in the bootloader shell, remap ROM partitioning according to your flash size and type.
         title: Prepare the camera for OpenIPC Linux
       flashing_footfs2:
@@ -89,20 +87,13 @@ en:
         link: Download OpenIPC Firmware (%{name}) bundle
         title: Flash OpenIPC Linux kernel and root filesystem
       flashing_full:
-        continue: |
-          The camera will automatically restart and boot with the brand new bootloader.
-          Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
-        continue2: When in the bootloader shell, remap ROM partitioning according to your flash size and type.
-        info: |
-          The full firmware image consists of bootloader, kernel and root filesystem, and is also suitable for flashing
-          memory chip using a programmer. Please note, the full image does not contain pre-set environment. You still
-          need to add your own MAC address, IP address and other settings.
+        continue: The camera will automatically restart.
+        continue2: Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell. When in the bootloader shell, remap ROM partitioning according to your flash size and type.
+        info: The full firmware image consists of bootloader, kernel and root filesystem, and is also suitable for flashing memory chip using a programmer. Please note, the full image does not contain pre-set environment. You still need to add your own MAC address, IP address and other settings.
         link: Download OpenIPC Firmware (%{name}) image
         title: Flash full OpenIPC Firmware image
       flashing_uboot:
-        continue: |
-          The camera will boot into the newly flashed bootloader.
-          Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
+        continue: The camera will boot into the newly flashed bootloader. Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
         info: Download bootloader binary file and save it to the root directory of your TFTP server.
         link: Download OpenIPC U-Boot binary file
         title: Flash OpenIPC U-Boot

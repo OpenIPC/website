@@ -75,9 +75,7 @@ zh:
       flashing:
         alternative: 或者，通过其烧录部分 OpenIPC 固件
       flashing_footfs:
-        continue: |
-          摄像机将自动重启并应用更改。
-          注意准备中断并进入引导程序的命令行。
+        continue: 摄像机将自动重启并应用更改。 注意准备中断并进入引导程序的命令行。
         info: 在引导加载程序的命令行中，根据您的闪存大小和类型重新映射 ROM 分区。
         title: 为 OpenIPC Linux 准备摄像机
       flashing_footfs2:
@@ -85,19 +83,13 @@ zh:
         link: 下载 OpenIPC 固件 (%{name}) 包
         title: 烧录 OpenIPC Linux 内核和根文件系统
       flashing_full:
-        continue: |
-          摄像机将自动重启并使用全新的引导加载程序启动。
-          注意准备中断并进入引导程序的命令行。
-        continue2: 在引导加载程序的命令行中，根据您的闪存大小和类型重新映射 ROM 分区。
-        info: |
-          完整的固件由引导加载程序、内核和根文件系统组成，也适用于使用编程器烧写闪存芯片。
-          请注意，完整固件不包含预设环境。你还需要添加自己的MAC地址、IP地址等设置。
+        continue: 摄像机将自动重启并使用全新的引导加载程序启动。
+        continue2: 注意准备中断并进入引导程序的命令行。 在引导加载程序的命令行中，根据您的闪存大小和类型重新映射 ROM 分区。
+        info: 完整的固件由引导加载程序、内核和根文件系统组成，也适用于使用编程器烧写闪存芯片。 请注意，完整固件不包含预设环境。你还需要添加自己的MAC地址、IP地址等设置。
         link: 下载 OpenIPC 固件 (%{name})
         title: 烧录完整的 OpenIPC 固件
       flashing_uboot:
-        continue: |
-          摄像机将引导到新烧写的引导加载程序中。
-          注意准备中断并进入引导程序的命令行。
+        continue: 摄像机将引导到新烧写的引导加载程序中。 注意准备中断并进入引导程序的命令行。
         info: 下载引导加载程序二进制文件并将其保存到 TFTP 服务器的根目录。
         link: 下载 OpenIPC U-Boot 二进制文件
         title: 烧录 OpenIPC U-Boot
