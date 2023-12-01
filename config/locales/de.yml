@@ -106,26 +106,16 @@ de:
       fpv: FPV
       lite: Lite
       nand: NAND
-      ultimate: Ultimativ
+      ultimate: Ultimate
       venc: VENC
   flash_chip:
     nand: NAND
-    nor16m: NOCH 16M
-    nor32m: NOCH 32M
-    nor8m: NOCH 8M
-  go: 进行
-  locales:
-    de: Deutsch
-    en: English
-    es: Español
-    fr: Français
-    ja: 日本語
-    pl: Polska
-    pt-br: Português brasileiro
-    ru: Русский
-    zh: 中文
+    nor16m: NOR 16M
+    nor32m: NOR 32M
+    nor8m: NOR 8M
+  go: Weiter
   nav:
-    about: Um
+    about: Über uns
     add_soc: Fügen Sie einen weiteren SoC hinzu
     add_vendor: Anbieter hinzufügen
     adding_soc: SoC hinzufügen

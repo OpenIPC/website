@@ -1,0 +1,25 @@
+---
+it:
+  activerecord:
+    attributes:
+      snapshot:
+        mac_address: Indirizzo MAC
+      soc:
+        build_status_url: Crea URL di stato
+        kernel: Nocciolo
+        linux_filename: File Linux
+        load_address: Carica indirizzo
+        model: Modello SoC
+        notes: Appunti
+        sdk: SDK
+        status: Palcoscenico
+        toolchain_filename: File della catena degli strumenti
+        uboot_filename: File U-Boot
+        vendor_id: Fornitore del SoC
+        version: Versione
+    help:
+      camera:
+        flash_type: Se non sei sicuro, seleziona NOR 8M.
+    models:
+      snapshot: Istantanea
+      soc: SoC

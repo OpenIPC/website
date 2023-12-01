@@ -1,0 +1,15 @@
+---
+es:
+  activemodel:
+    attributes:
+      camera:
+        camera_ip_address: Dirección IP de la cámara
+        camera_mac_address: Dirección MAC de la cámara
+        firmware_version: Versión de firmware
+        flash_type: Tipo y tamaño de chip de memoria flash
+        network_interface: Interfaz de red
+        sd_card_slot: ranura para tarjetas SD
+        server_ip_address: Dirección IP del servidor TFTP
+        soc_id: Sistema en chip
+    models:
+      camera: Cámara

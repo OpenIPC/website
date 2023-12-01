@@ -1,0 +1,25 @@
+---
+pt:
+  activerecord:
+    attributes:
+      snapshot:
+        mac_address: Endereço MAC
+      soc:
+        build_status_url: URL de status de compilação
+        kernel: Núcleo
+        linux_filename: arquivo Linux
+        load_address: Carregar endereço
+        model: Modelo SoC
+        notes: Notas
+        sdk: SDK
+        status: Estágio
+        toolchain_filename: Arquivo de conjunto de ferramentas
+        uboot_filename: Arquivo U-Boot
+        vendor_id: Fornecedor de SoC
+        version: Versão
+    help:
+      camera:
+        flash_type: Se não tiver certeza, selecione NOR 8M.
+    models:
+      snapshot: Instantâneo
+      soc: SoC

@@ -1,0 +1,200 @@
+---
+pt:
+  pages:
+    about_us:
+      title: Sobre nós
+    admin:
+      dashboard:
+        title: Painel de administração
+    bandwidth_calculator:
+      title: Calculadora de largura de banda
+    donate:
+      please_support: Por favor, considere apoiar nossos projetos
+      title: Você gosta do que fazemos?
+    firmware_partitions_calculation:
+      end_address: Endereço final
+      flash_size_mb: Tamanho do flash, MB
+      mtd_name: Nome do dispositivo MTD
+      offset: Deslocamento inicial, dec ou hexadecimal
+      partition_name: Nome da partição %{number}
+      partition_size: Tamanho da partição %{number}, KB
+      recalculate: Recalcular
+      size_hex: Tamanho hexadecimal, bytes
+      start_address: Endereço inicial
+      title: Cálculo de partições de firmware
+    green_life:
+      paragraph1: OpenIPC contribui para a sustentabilidade fornecendo principalmente firmware aberto para câmeras IP, engajando-se diretamente no uso eficiente e na reaproveitamento do hardware existente.
+      paragraph2: Ao estender a vida útil das câmeras por meio de atualizações e recursos de firmware personalizáveis, o OpenIPC reduz o desperdício eletrônico.
+      paragraph3: Isto alinha-se com os objetivos de sustentabilidade, promovendo a reutilização e reaproveitamento de tecnologia, minimizando o impacto ambiental associado à produção e eliminação de dispositivos eletrónicos.
+      paragraph4: Além disso, o compromisso da OpenIPC com a transparência e o desenvolvimento orientado para a comunidade promove uma abordagem colaborativa à tecnologia, incentivando os utilizadores a envolverem-se ativamente e a contribuírem para o crescimento e a sustentabilidade do projeto.
+      title: Vida Verde
+    high_resolution_timer:
+      reload_to_reset: Tempo mostrado em milissegundos. Recarregue a página para zerar o contador.
+      title: Temporizador de alta resolução
+    introduction:
+      alliance: Aliança
+      button_binaries: Arquivos binários pré-compilados
+      button_instructions: instruções de instalação
+      button_sources: Código fonte no GitHub
+      img_majestic_alt: 'Imagem: logotipo do streamer majestoso'
+      img_openipc_alt: 'Imagem: logotipo da comunidade OpenIPC'
+      paragraph1: OpenIPC é um sistema operacional de código aberto direcionado a câmeras IP com processadores ARM e MIPS de diversos fabricantes, a fim de substituir aquele firmware fechado, opaco, inseguro, muitas vezes abandonado e sem suporte pré-instalado por um fornecedor.
+      paragraph2_html: O Firmware OpenIPC vem como arquivos binários pré-compilados para fácil instalação pelo usuário final. Além disso, fornecemos acesso total aos arquivos de origem para desenvolvimento e melhoria adicionais por qualquer programador capaz e disposto a contribuir com o projeto. O código-fonte OpenIPC é lançado sob um dos contratos de licença de código aberto mais simples, <a href="https://opensource.org/licenses/MIT">a Licença MIT</a> , dando aos usuários permissão expressa para reutilizar o código para qualquer finalidade, mesmo como parte de um software proprietário. Pedimos apenas que você educadamente contribua com suas melhorias para nós. Ficaríamos gratos por quaisquer comentários e sugestões.
+      paragraph3_html: OpenIPC Firmware usa <a href="https://buildroot.org/">Buildroot</a> para construir sua distribuição Linux e utiliza streamer <a href="https://github.com/OpenIPC/majestic">Majestic</a> , <a href="https://github.com/OpenIPC/mini">Mini</a> ou <a href="https://github.com/OpenIPC/silicon_research">Venc</a> .
+      paragraph4_html: O código Majestic, embora não seja aberto, oferece desempenho e recursos sem precedentes para uma ampla variedade de hardware. O autor do streamer Majestic está estudando possibilidades de abrir o código-fonte da base de código depois de garantir fundos suficientes para apoiar o desenvolvimento aberto. Você pode <a href="/support-open-source">ajudar</a> a fazer isso acontecer mais cedo.
+      paragraph5: Em primeiro lugar, o OpenIPC Firmware traz liberdade para você. Com OpenIPC em sua câmera você é o mestre de suas transmissões. Você tem acesso total ao sistema e pode controlar o que, onde e como deseja que sua câmera se comporte. Não há backdoors, botnets, malware de mineração de criptografia, keyloggers, sniffers de senha, nada que você possa esperar de um sistema binário fechado sem acesso ao seu código-fonte.
+      paragraph6: Quanto aos recursos de firmware, nos esforçamos para fornecer suporte universal para uma ampla gama de câmeras, portanto, estamos focados primeiro na funcionalidade básica, permitindo que os usuários finais atualizem o firmware de suas câmeras e transmitam vídeo e áudio (quando suportado) sem muito esforço. problema.
+      paragraph7: No entanto, temos algumas partes interessantes. Nosso firmware suporta armazenamento externo em nuvem IPEYE, streaming de vídeo para Youtube e Telegram, usando proxy SOCKS5, configuração de um túnel virtual e muito mais.
+      paragraph8: Existem também vários projetos focados em equipamentos especializados, como uma câmera para montagem em drone, para montagem em capacetes de construção, para utilização em ferramentas de topografia, para pesquisas médicas dos órgãos da visão, pesca submarina, etc.
+      subtitle1: OpenIPC é um firmware alternativo aberto para sua câmera IP.
+      subtitle2: Por que firmware OpenIPC?
+      supporters: Apoiadores
+      title: Introdução
+    majestic_endpoints:
+      aac: Fluxo de áudio AAC.
+      accepts_post: Aceita solicitações POST com arquivo de áudio como parâmetro.
+      alaw: Fluxo de áudio compactado A-law.
+      audio: Áudio
+      dng: Instantâneo em formato Adobe DNG (bruto).
+      fmp4: Fluxo de vídeo fMP4.
+      footnote_1: Apenas SoCs HiSilicon e Goke.
+      footnote_2: Apenas HiSilicon SoCs v2 e superior.
+      footnote_3_html: Por exemplo <i>, ffplay -ar 48000 -ac 1 -f s16le http://192.168.1.10/audio.pcm</i>
+      footnote_4_html: Por exemplo, <i>http://192.168.1.10/image.jpg?width=640&height=480&qfactor=50&color2gray=1&crop=80x32x512x400</i>
+      g711: Fluxo de áudio G.711 A-law.
+      heif: Instantâneo em formato HEIF.
+      hls: Transmissão ao vivo HLS no navegador da web.
+      images: Imagens estáticas
+      jpeg: Instantâneo em formato JPEG.
+      jpeg_params1: largura, altura - tamanho da imagem resultante
+      jpeg_params2: qfactor - fator de qualidade JPEG (1-99)
+      jpeg_params3: color2gray - converte para escala de cinza
+      jpeg_params4: cortar - cortar a imagem resultante como 16x16x320x320
+      majestic_json: Configuração real do Majestic no formato JSON.
+      mjpeg: Fluxo de vídeo MJPEG.
+      mjpeg_player: Transmissão ao vivo de MJPEG e MP3 no navegador da web.
+      monitoring: Monitoramento
+      more_examples_html: Mais exemplos disponíveis <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">em nosso wiki</a> .
+      mp3: Fluxo de áudio MP3.
+      night: API noturna
+      night_off: Desligue o modo noturno.
+      night_on: Ative o modo noturno.
+      night_toggle: Alternar o modo noturno atual.
+      optional_params: Parâmetros opcionais
+      opus: Fluxo de áudio Opus.
+      play_on_speaker: Reproduza o arquivo de áudio no alto-falante da câmera.
+      prometheus_html: Exportador de nós para <a href="https://prometheus.io/">Prometheus</a> .
+      raw_pcm: Fluxo de áudio PCM bruto.
+      rtsp0: Fluxo principal RTSP (vídeo0).
+      rtsp1: Substream RTSP (vídeo1).
+      title: Terminais majestosos
+      ulaw: Fluxo de áudio compactado μ-law.
+      video: Vídeo
+      webrtc: Transmissão ao vivo WebRTC no navegador da web.
+      yuv420: Instantâneo no formato YUV420.
+    merchandise:
+      order_from_weededwords: Encomende em WeededWords.com
+      shirt_1:
+        description: Gildan Hammer™ de alta qualidade 6 onças. Camiseta de ajuste clássico com gola redonda em Flo Blue. 100% algodão penteado ring spun, pré-encolhido, com logo em vinil branco termotransferido.
+        title: Camiseta OpenIPC
+      title: Mercadoria
+    our_channels:
+      paragraph1_html: Sugerimos fortemente que você instale um <a href="https://telegram.org/">Telegram Messenger</a> nativo para sua plataforma e utilize nossos grupos de Telegram.
+      spam_bot_warning: Observe que você terá que passar em um teste do nosso Welcome Bot ao ingressar em um grupo. O teste é simples, pois responde a duas perguntas. Se você perdeu o teste e descobriu que não pode postar no grupo, saia do grupo e entre novamente. Observe atentamente a mensagem do Welcome Bot, clique na mensagem e responda às perguntas.
+      title: Nossos grupos
+    our_projects:
+      community: Algo relacionado ao OpenIPC. Conteúdo gerado por usuários.
+      paragraph1_html: Inclui todas as informações sobre a construção e uso de kits e software FPV para dispositivos de estações aéreas e terrestres. Recomendamos fortemente que você leia o <a href="https://github.com/OpenIPC/wiki/blob/master/en/fpv.md">artigo básico</a> , siga os links e assista aos vídeos dos voos.
+      paragraph2: O projeto está em desenvolvimento ativo, junte-se a nós!
+      paragraph3: Este é o nosso novo projeto de sistema de comunicação de áudio e vídeo que está em fase de concepção.
+      paragraph4: Estamos trabalhando na criação de um construtor de firmware OnLine conveniente que permitirá criá-los de forma mais flexível e imediata com os parâmetros desejados.
+      paragraph5: Acompanhe as atualizações do site!
+      printables_info: Modelos para impressão 3D marcados com "openipc".
+      subtitle3: Projetos da comunidade OpenIPC
+      title: Nossos projetos
+    our_software:
+      burn_info: Uma ferramenta de código aberto para desbloquear dispositivos HiSilicon.
+      coupler_info: Uma ferramenta que permite uma transição suave do firmware proprietário pré-instalado do fabricante da câmera IP para o firmware OpenIPC. Não são necessárias habilidades especiais.
+      exipcam_info: Explorador de dispositivos XM. Utilitário para reparar IPCam
+      exipcam_info_extra: IU russa. Roda em Windows, Linux via Wine.
+      firmware_info: O Santo Graal da comunidade. Firmware universal para câmeras IP para substituir firmware pré-instalado de fornecedores proprietários, desatualizados e muitas vezes inseguros.
+      hisitrace_info: Um utilitário para executar o Sofia do XM em um ambiente sem estoque.
+      ipcamdms_info: Sistema de gerenciamento de dispositivos IPCam
+      ipcamdms_info_extra: IU russa. Roda em Windows, Linux via Wine.
+      ipctool_info: Um inspetor de hardware de câmeras IP com esteróides. Esta ferramenta não apenas identificará o processador, sensor, chip flash da sua câmera, mas também ajudará você a fazer backup do firmware original e muito mais.
+      majestic_info: Um streamer universal de câmera IP. Este software é a maior parte do firmware OpenIPC. Embora não seja totalmente de código aberto neste estágio de desenvolvimento, estamos considerando abrir a base de código quando o software amadurecer o suficiente e receber financiamento suficiente para o desenvolvimento aberto.
+      mini_info: Um streamer de câmera IP de código aberto. Pense nele como o irmão mais novo do Majestic.
+      motors_info: Vários códigos para gerenciar o hardware do motor.
+      openhisi_info: SDK de código aberto para SoCs Hisilicon.
+      openxm_info: SDK de código aberto para SoCs Xiongmai.
+      smolrtsp_info: Uma biblioteca de servidor RTSP 1.0 simples adaptada para dispositivos incorporados, como câmeras IP. Ele suporta TCP e UDP, permite qualquer formato de carga útil e fornece uma API conveniente e flexível.
+      subtitle1: Software principal
+      subtitle2: Software guarda-chuva OpenIPC
+      title: Nosso Software
+      umbrella_info: O OpenIPC também é uma marca guarda-chuva para outros pequenos softwares que são componentes úteis do nosso ecossistema. Damos as boas-vindas a todos os que desejam contribuir com o software, da forma que acharem útil!
+      venc_info: Um streamer para câmeras IP usando Goke SoC, focado principalmente em FPV.
+      webui_info: Interface web para firmware OpenIPC. Escrito em Ash e lágrimas do desenvolvedor.
+      yamlcli_info: Ferramenta de console YAML simples.
+    our_team:
+      contributors_link: Lista de todos os contribuidores do GitHub
+      paragraph1_html: 'OpenIPC é um projeto de código aberto conduzido pela comunidade e muitas pessoas contribuem para sua base de código. Parabéns a eles! Há também uma equipe principal de desenvolvedores qualificados que trabalham duro para expandir a lista de <a href="/supported-hardware">plataformas de hardware suportadas</a> , estender a funcionalidade e estabilidade do firmware, revisar o código enviado e coordenar os esforços da comunidade. Conheça a equipe e suas áreas de atuação:'
+      title: Nosso time
+    qr_code_generator:
+      alert_text: Esteja ciente de que seus dados serão enviados a um servidor do Google para geração do código. Se você não concorda com isso, por favor não utilize este serviço.
+      alert_title: Usamos o gerador de código QR do Google
+      generate_qr_code: Gerar código QR
+      paragraph1_html: Gere um código QR com credenciais para acessar sua rede sem fio.
+      password: Senha
+      reset_form: Redefinir formulário
+      title: Gerador de código QR de rede sem fio
+    stages_of_firmware_development:
+      done_alt: 'Imagem: palco CONCLUÍDO'
+      done_info: Feito e feito! Inicializa o bootloader, carrega o Linux, o streamer pode transmitir vídeo e produzir instantâneos. Você pode ter uma plataforma de trabalho aberta para ajustes e melhorias adicionais. Ainda esperamos feedback e patches de vocês.
+      hlp_alt: 'Imagem: palco HLP'
+      hlp_info: Procura-se ajuda. Temos o hardware, temos o SDK, o básico é aprendido e feito. Mas estamos presos. É aqui que procuramos a ajuda de desenvolvedores embarcados experientes para superar os obstáculos e passar para a próxima fase.
+      mvp_alt: 'Imagem: palco MVP'
+      mvp_info: Um produto mínimo viável. O sistema básico está construído, a plataforma pode produzir vídeo, pelo menos no canal principal, mas por falta de recursos humanos o desenvolvimento é atrasado ou interrompido. Uma infusão financeira poderia levar o desenvolvimento à fase final.
+      neq_alt: 'Imagem: palco NEQ'
+      neq_info_html: Nenhum equipamento. Temos um SDK para a plataforma, mas não temos hardware específico para continuar o desenvolvimento, você pode doá-lo para nosso pessoal de P&D (especialmente placas antigas que passaram <abbr title="Fim da vida">no EOL</abbr> e não podem mais ser compradas).
+      paragraph1: Depois de adquirirmos um SDK para um novo SoC, adicionamos o SoC à tabela de hardware suportado. Atribuímos o status NEQ (Sem equipamento), se não tivermos módulos de hardware específicos, ou o status HLP (Ajuda necessária), se tivermos o hardware, mas estivermos procurando por um desenvolvedor que lideraria o desenvolvimento desse SoC. Este é considerado um início oficial de desenvolvimento.
+      paragraph2: Não há razão para ter SoC na tabela sem ter seu SDK.
+      paragraph3: À medida que o trabalho no SoC avança, seu status muda gradualmente. Primeiro para RND, depois para WIP, depois para MVP e, finalmente, para DONE.
+      rnd_alt: 'Imagem: estágio de P&D'
+      rnd_info: A etapa de Pesquisa e Desenvolvimento, quando já temos o SDK da plataforma e talvez até as placas de hardware, mas estamos começando a mexer na plataforma, estudando suas especificidades e funcionalidades. Ainda há muito trabalho pela frente.
+      subtitle: Ciclo de vida de desenvolvimento típico
+      title: Estágios de desenvolvimento de firmware
+      wip_alt: 'Imagem: estágio WIP'
+      wip_info: Trabalho em progresso. Aprendemos muito sobre o hardware da plataforma e a base de código, preparamos a primeira compilação binária pública e estamos aguardando que os primeiros adotantes a testem em suas placas e forneçam feedback para nos ajudar a seguir em frente.
+    support_open_source:
+      contribute: Contribuir
+      contribute_how1: Relatar problemas
+      contribute_how1_text_html: Se você se deparar com um bug, registre um relatório de bug no <a href="https://github.com/OpenIPC/">repositório apropriado no GitHub</a> .
+      contribute_how2: Envie novas ideias
+      contribute_how2_text_html: Se achar que falta um recurso útil, você pode enviar uma <a href="https://github.com/OpenIPC/firmware/issues">solicitação de recurso no GitHub</a> .
+      contribute_how3: Melhore o código
+      contribute_how3_text_html: Bifurque o código, faça suas melhorias e envie uma solicitação pull para nosso repositório no GitHub.
+      contribute_how4: Escreva documentação
+      contribute_how4_text_html: Criar ou atualizar documentação para nossos projetos. Preencha <a href="http://wiki.openipc.org/">o Wiki</a> , revise o site, faça com que pareça nativo do seu idioma.
+      contribute_how5: Espalhe a palavra
+      contribute_how5_text_html: Fale sobre OpenIPC e compartilhe suas experiências com outras pessoas. Escreva um post no blog, faça um vídeo, inicie um tópico no Reddit, compartilhe no Twitter, poste em outras redes sociais...
+      contribute_how6: Torne-se um patrocinador
+      contribute_how6_text_html: Apoie nosso desenvolvimento, ajude-nos a arrecadar fundos suficientes para cobrir nossas despesas e garantir a manutenção a longo prazo do que acreditamos que será uma estrutura de câmera de rede IP aberta estável, flexível e, o mais importante, de código aberto, para todos os usuários em todo o mundo. Em reconhecimento às suas doações recorrentes, você será adicionado permanentemente à seção Apoiadores/Patrocinadores em nossa página do GitHub.
+      contribute_text1: Open Source significa compartilhar, criar algo incrível juntos e contribuir para um bem maior! Sempre que você fizer uma melhoria da qual acha que outra pessoa poderia se beneficiar, contribua de volta para o projeto.
+      contribute_text2: 'Se você já ficou curioso ou confuso sobre algo no projeto, enfrentou um problema e não conseguiu encontrar a resposta, provavelmente alguém ainda está. Ajude-os compartilhando seus pensamentos, percepções e descobertas. Existem muitas maneiras de contribuir para o projeto e aqui estão alguns exemplos:'
+      contribute_text3: Estamos comprometidos com uma contabilidade aberta e transparente e somos gratos por qualquer apoio que você possa fornecer aos nossos esforços para promover o OpenIPC e nossa missão em direção a um futuro sustentável.
+      donate_crypto: Doe criptomoeda
+      if_you_like_donate_html: Se você gosta do nosso trabalho, considere nos apoiar no <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout">Open Collective</a>
+      img1_alt: 'Imagem: Suporte para código aberto'
+      oc_button_alt: 'Imagem: botão de doação OpenCollective'
+      oc_button_title: Doe para nosso coletivo
+      paragraph1: Muitos membros da equipe principal doam seu conhecimento e seu tempo livre para trabalhar no projeto, muitas vezes usando seus fundos pessoais para comprar câmeras e expandir a lista de hardware suportado. Sua doação nos ajuda a aliviar o peso de suas finanças pessoais, mantendo o desenvolvimento no hardware mais recente. Também usamos os fundos para compensar o trabalho de mantenedores de meio período e período integral, e para participar de feiras comerciais, reunir-nos com fornecedores de hardware, monitorar tendências em tecnologia de câmeras e obter acesso a SDK e outros materiais de suporte, que muitas vezes são caros. Suas contribuições nos ajudam a continuar o desenvolvimento e a fornecer suporte técnico à comunidade.
+      price_of_firmware: Preço do Firmware
+      price_of_firmware_p1_html: O direito de uso do firmware OpenIPC e seus componentes é concedido a todos os usuários gratuitamente e apenas para fins pessoais e não comerciais. Se você estiver interessado em usar OpenIPC para seus projetos empresariais, entre em contato com <a href="/our-team">nossa equipe</a> .
+      thank_you: Obrigado, isso significa muito para nós!
+      title: Apoie o código aberto
+      tron_in_telegram_html: Usando a criptomoeda TON, as doações podem ser feitas diretamente no Telegram usando <a href="https://t.me/wallet">@wallet</a> .
+    utilities:
+      paragraph1: Uma coleção de ferramentas e utilitários úteis.
+      title: Serviços de utilidade pública
+    web_interface:
+      title: Interface web

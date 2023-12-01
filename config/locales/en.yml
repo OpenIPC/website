@@ -113,17 +113,7 @@ en:
     nor16m: NOR 16M
     nor32m: NOR 32M
     nor8m: NOR 8M
-  go: 进行
-  locales:
-    de: Deutsch
-    en: English
-    es: Español
-    fr: Français
-    ja: 日本語
-    pl: Polska
-    pt-br: Português brasileiro
-    ru: Русский
-    zh: 中文
+  go: Go
   nav:
     about: About
     add_soc: Add another SoC
@@ -165,7 +155,7 @@ en:
     both: Camera has both Ethernet and Wireless networks
     eth: Camera only has Ethernet network
     wifi: Camera only has Wireless network
-  out: 退出
+  out: Out
   sd_card:
     nosd: Camera does not have an SD card slot
     sd: Camera has an SD card slot

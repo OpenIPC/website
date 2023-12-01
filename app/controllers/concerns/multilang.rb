@@ -3,6 +3,20 @@
 module Multilang
   extend ActiveSupport::Concern
 
+  LOCALES = {
+    de: 'Deutsch',
+    en: 'English',
+    es: 'Español',
+    fa: 'الفارسية',
+    fr: 'Français',
+    it: 'Italiano',
+    ja: '日本語',
+    pl: 'Polska',
+    pt: 'Português',
+    ru: 'Русский',
+    zh: '中文'
+  }
+
   included do
     before_action :set_locale
 
@@ -60,7 +74,7 @@ module Multilang
     I18n.available_locales.sort.each do |l|
       html << '<li class="dropdown-item">'
       html << format('<a href="?locale=%<locale>s" class="%<active>s">%<name>s</a>',
-                     { active: I18n.locale.eql?(l) ? ' fw-bold' : nil, locale: l, name: t("locales.#{l}") })
+                     { active: I18n.locale.eql?(l) ? ' fw-bold' : nil, locale: l, name: LOCALES[l] })
       html << '</li>'
     end
     html << '</ul></li></ul>'

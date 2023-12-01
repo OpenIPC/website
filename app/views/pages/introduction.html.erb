@@ -1,0 +1,70 @@
+<article class="introduction">
+  <header>
+    <h2><%= t('.title') %></h2>
+  </header>
+
+  <div class="row g-5">
+    <div class="col-lg-8 col-xl-8 col-xxl-9 mb-3">
+      <h3 class="mb-4"><%= t('.subtitle1') %></h3>
+      <p><%= t('.paragraph1') %></p>
+      <p><%= t('.paragraph2_html') %></p>
+      <p class="text-center">
+        <a href="https://github.com/OpenIPC/wiki/blob/master/en/installation.md" class="btn btn-danger btn-lg my-4"><%= t('.button_instructions') %></a>
+        <a href="/supported-hardware" class="btn btn-primary btn-lg my-4"><%= t('.button_binaries') %></a>
+        <a href="https://github.com/OpenIPC" class="btn btn-primary btn-lg my-4"><%= t('.button_sources') %></a>
+      </p>
+      <p><%= t('.paragraph3_html') %></p>
+      <p class="small text-muted"><%= t('.paragraph4_html') %></p>
+
+      <h3 class="mb-4"><%= t('.subtitle2') %></h3>
+      <p><%= t('.paragraph5') %></p>
+      <p><%= t('.paragraph6') %></p>
+      <p><%= t('.paragraph7') %></p>
+      <p><%= t('.paragraph8') %></p>
+    </div>
+    <div class="col-lg-4 col-xl-4 col-xxl-3">
+      <h3 class="mb-3"><%= t('.alliance') %></h3>
+      <div class="row row-cols-2 g-3">
+        <div class="col"><a href="https://github.com/OpenIPC"><img src="/assets/openipc-community.svg" class="img-fluid" alt="<%= t('.img_openipc_alt') %>"></a></div>
+        <div class="col"><a href="https://github.com/OpenIPC/majestic"><img src="/assets/majestic-logo2.svg" class="img-fluid" data-link="https://majestic.cam/" alt="<%= t('.img_majestic_alt') %>"></a></div>
+      </div>
+
+      <h4 class="mt-4 mb-3"><%= t('.supporters') %></h4>
+      <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-2 g-3">
+      <% if I18n.locale.eql?(:ru) %>
+        <div class="col logo"><a href="https://www.oscollective.org/"><img src="/assets/partners/osc_mini.png" alt="OSC logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://expoelectronica.ru/en/"><img src="/assets/partners/expo-electronica_mini.png" alt="EXPO_ELECTRONICA logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://www.goodcam.io/"><img src="/assets/partners/goodcam_mini.png" alt="GOODCAM logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://linux-chenxing.org/"><img src="/assets/partners/linuxchenxing_mini.png" alt="LINUXCHENXING logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://skycam.cam/"><img src="/assets/partners/skycam_mini.png" alt="SKYCAM logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://3it.ru/"><img src="/assets/partners/improve_mini.png" alt="IMPROVE_IT logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://dvor24.ru/"><img src="/assets/partners/dvor24_mini.png" alt="DVOR24 logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://ipeye.ru/"><img src="/assets/partners/ipeye_mini.png" alt="IPEYE logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://megacam.kz/"><img src="/assets/partners/megacam_mini.png" alt="MEGACAM logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://xn--80aaaf0bh2e7a5c.xn--p1ai/"><img src="/assets/partners/mywifi-cc_mini.png" alt="MYWIFI-CC logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://keytele.com/"><img src="/assets/partners/keytelecom_mini.png" alt="KEYTELECOM logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://sputnik.systems/"><img src="/assets/partners/sputnik_mini.png" alt="SPUTNIK logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://msvoko.ru/"><img src="/assets/partners/techno-shield_mini.png" alt="TECHNO_SCHIELD logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://vixand.ru/"><img src="/assets/partners/vixand_mini.png" alt="VIXAND logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://webglazok.com/"><img src="/assets/partners/webglazok_mini.png" alt="WEBGLAZOK logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://yucca.app/en"><img src="/assets/partners/yucca_mini.png" alt="YUCCA logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://www.cctvsp.ru/cctv/openipc"><img src="/assets/partners/s-video_mini.png" alt="S-Video logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://www.ufanet.ru/"><img src="/assets/partners/ufanet_mini.png" alt="UFANET logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://vtl.su/#rec35109538"><img src="/assets/partners/vtl_mini.png" alt="VTL logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://dozor-smart.ru/"><img src="/assets/partners/dozor_mini.png" alt="DOZOR logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://alarmsystem-cctv.ru/product-category/cctv-products/cctv-cameras/ip-cameras-cctv/?swoof=1&product_brands=openipc&really_curr_tax=189-product_cat"><img src="/assets/partners/alarmsystem_mini.png" alt="ALARMSYSTEM logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://flagman.org/"><img src="/assets/partners/flagman_mini.png" alt="FLAGMAN logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://anycam.io/"><img src="/assets/partners/anycam_mini.png" alt="ANYCAM logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://meldana.com/"><img src="/assets/partners/meldana_mini.png" alt="MELDANA logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://bmachines.ru/"><img src="/assets/partners/binary-machines_mini.png" alt="BINARY_MACHINES logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://gains.company/"><img src="/assets/partners/gain_mini.png" alt="GAINS logo" class="img-fluid"></a></div>
+      <% else %>
+        <div class="col logo"><a href="https://www.oscollective.org/"><img src="/assets/partners/osc_mini.png" alt="OSC logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://www.goodcam.io/"><img src="/assets/partners/goodcam_mini.png" alt="GOODCAM logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://linux-chenxing.org/"><img src="/assets/partners/linuxchenxing_mini.png" alt="LINUXCHENXING logo" class="img-fluid"></a></div>
+        <div class="col logo"><a href="https://anycam.io/"><img src="/assets/partners/anycam_mini.png" alt="ANYCAM logo" class="img-fluid"></a></div>
+      <% end %>
+      </div>
+    </div>
+  </div>
+</article>

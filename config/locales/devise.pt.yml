@@ -1,0 +1,77 @@
+---
+pt:
+  devise:
+    confirmations:
+      confirm: Confirmar minha conta
+      confirmed: Seu endereço de e-mail foi confirmado com sucesso.
+      resend_confirmation: Reenviar instruções de confirmação
+      resend_confirmation_button: Reenviar instruções de confirmação
+      send_instructions: Você receberá um e-mail com instruções sobre como confirmar seu endereço de e-mail em alguns minutos.
+      send_paranoid_instructions: Se o seu endereço de e-mail existir em nosso banco de dados, você receberá um e-mail com instruções sobre como confirmar seu endereço de e-mail em alguns minutos.
+    failure:
+      already_authenticated: Você já está inscrito.
+      inactive: Sua conta Ainda não esta ativada.
+      invalid: "%{authentication_keys} ou senha inválida."
+      last_attempt: Você tem mais uma tentativa antes que sua conta seja bloqueada.
+      locked: Sua conta está bloqueada.
+      not_found_in_database: "%{authentication_keys} ou senha inválida."
+      timeout: Sua sessão expirou. Faça login novamente para continuar.
+      unauthenticated: Você precisa entrar ou se inscrever antes de continuar.
+      unconfirmed: Você deve confirmar seu endereço de e-mail antes de continuar.
+    links:
+      resend_confirmation: Confirmar e-mail
+      resend_unlock: Desbloquear acesso
+      reset_password: Redefinir senha
+      sign_in: Entrar
+      sign_in_with: Faça login com %{name}
+      sign_out: Sair
+      sign_up: Inscrever-se
+      signed_in_as: Conectado como %{name}
+    mailer:
+      confirmation_instructions:
+        subject: Instruções de confirmação
+      email_changed:
+        subject: E-mail alterado
+      password_change:
+        subject: Senha alterada
+      reset_password_instructions:
+        subject: Instruções para redefinir senha
+      unlock_instructions:
+        subject: Instruções de desbloqueio
+    omniauth_callbacks:
+      failure: Não foi possível autenticá-lo em %{kind} porque \%{reason}\.
+      success: Autenticado com sucesso na conta %{kind}.
+    passwords:
+      new_password: Nova Senha
+      no_token: Você não pode acessar esta página sem receber um e-mail de redefinição de senha. Se você recebeu um e-mail de redefinição de senha, certifique-se de usar o URL completo fornecido.
+      reset_password: Esqueceu sua senha?
+      reset_password_button: Redefinir senha
+      send_instructions: Você receberá um e-mail com instruções sobre como redefinir sua senha em alguns minutos.
+      send_paranoid_instructions: Se o seu endereço de e-mail existir em nosso banco de dados, você receberá um link de recuperação de senha em seu endereço de e-mail em alguns minutos.
+      updated: Sua senha foi alterada com sucesso. Agora você está conectado.
+      updated_not_active: Sua senha foi alterada com sucesso.
+    registrations:
+      destroyed: Tchau! Sua conta foi cancelada com sucesso. Esperamos te ver novamente em breve.
+      sign_up: Inscrever-se
+      sign_up_button: Inscrever-se
+      signed_up: Bem-vindo! Você se inscreveu com sucesso.
+      signed_up_but_inactive: Você se inscreveu com sucesso. No entanto, não foi possível fazer login porque sua conta ainda não está ativada.
+      signed_up_but_locked: Você se inscreveu com sucesso. No entanto, não foi possível fazer login porque sua conta está bloqueada.
+      signed_up_but_unconfirmed: Uma mensagem com um link de confirmação foi enviada para seu endereço de e-mail. Por favor, siga o link para ativar sua conta.
+      update_needs_confirmation: Você atualizou sua conta com sucesso, mas precisamos verificar seu novo endereço de e-mail. Verifique seu e-mail e siga o link de confirmação para confirmar seu novo endereço de e-mail.
+      update_profile: Atualizar perfil
+      update_profile_button: Atualizar perfil
+      updated: Sua conta foi atualizada com sucesso.
+      updated_but_not_signed_in: Sua conta foi atualizada com sucesso, mas como sua senha foi alterada, você precisa fazer login novamente.
+    sessions:
+      already_signed_out: Desconectado com sucesso.
+      sign_in_as_admin: Entrar
+      sign_in_button: Entrar
+      signed_in: Login realizado com sucesso.
+      signed_out: Desconectado com sucesso.
+    unlocks:
+      resend_unlock: Reenviar instruções de desbloqueio
+      resend_unlock_button: Reenviar instruções de desbloqueio
+      send_instructions: Você receberá um e-mail com instruções sobre como desbloquear sua conta em alguns minutos.
+      send_paranoid_instructions: Se sua conta existir, você receberá um e-mail com instruções sobre como desbloqueá-la em alguns minutos.
+      unlocked: Sua conta foi desbloqueada com sucesso. Faça login para continuar.

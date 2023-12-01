@@ -1,0 +1,226 @@
+---
+pl:
+  alerts:
+    downloads: Если у вас возникли проблемы с доступом или загрузкой файлов, не стесняйтесь обращаться к нам на нашем <a href="https://t.me/openipc_modding">kanał telegramu</a> .
+  button:
+    find: Znajdować
+  cameras:
+    socs:
+      hi3536dv100_is_weird:
+        paragraph1: Instalacja oprogramowania sprzętowego OpenIPC na rejestratorze HiSilicon NVR wymaga określonej procedury, która nie jest uwzględniona w tym przewodniku.
+        paragraph2: Prosimy o zapoznanie się ze szczegółowymi instrukcjami dostępnymi na naszej Wiki pod adresem
+        subtitle: na NVR z układem flash %{soc_name} SoC i %{flash_type} SPI
+      index:
+        featured: Zalecana
+        full_list: Pełna lista
+        recommended_alert_html: Proszę zanotować. Wsparcie dla różnych SoC jest na różnych etapach rozwoju. <a href="/supported-hardware/featured">Na tej liście</a> znajdują się te, które są w pełni obsługiwane i dlatego najbardziej zalecane.
+        stages_of_development: Wyjaśniono etapy tworzenia oprogramowania sprzętowego
+        th_baseaddr: Załaduj adres
+        th_docs: Instalacja
+        th_soc_model: Model SoC
+        th_stage: Scena
+        th_status: Stan kompilacji
+        title: Obsługiwany sprzęt przez SoC
+      show:
+        bootloader: Program ładujący OpenIPC
+        bundle: OpenIPC Linux (%{name})
+        camera_ip_address_title: cztery 8-bitowe pola oddzielone kropkami
+        camera_mac_address_title: sześć 8-bitowych pól szesnastkowych oddzielonych kolumnami lub myślnikami
+        for: dla %{name}
+        generate_button: Wygeneruj podręcznik instalacji
+        generate_mac: Wygeneruj prawidłowy losowy adres MAC.
+        not_ready_alert_html: Instrukcje instalacji SoC %{name} nie są jeszcze gotowe. Chociaż ciężko pracujemy nad wydaniem oprogramowania sprzętowego OpenIPC dla %{name}. Bądź na bieżąco i <a href="/support-open-source">wspieraj Open Source</a> .
+        notes: Notatki
+        paragraph1: Wprowadź konfigurację kamery w dostępnym formularzu i naciśnij przycisk „Generuj instrukcję instalacji”. Na następnej stronie znajdziesz pliki binarne i polecenia, które należy wykonać, aby zainstalować oprogramowanie OpenIPC w kamerze.
+        paragraph2: Nie przeocz tej części. Możesz pomyśleć, że nie jest to konieczne, ponieważ nie wrócisz do mrocznej przeszłości, ale zapewniamy, że standardowe oprogramowanie będzie nadal potrzebne do przywrócenia brakujących ustawień, sterowników i dalszych badań.
+        server_ip_address_title: cztery 8-bitowe pola oddzielone kropkami
+        subtitle: Pliki do pobrania
+        title: Przewodnik instalacji
+        title2: Zapisz swoje oprogramowanie sprzętowe!
+        toolchain: Łańcuch narzędzi OpenIPC
+      sigmastar_nand_is_weird:
+        paragraph1: Instalacja oprogramowania OpenIPC na module SigmaStar z pamięcią flash NAND wymaga specjalnej procedury, która nie jest uwzględniona w tym przewodniku.
+        paragraph2: Prosimy o zapoznanie się ze szczegółowymi instrukcjami dostępnymi na naszej Wiki pod adresem
+      soc:
+        generate_guide: Wygeneruj przewodnik instalacji
+        no_solution_yet: Nie ma jeszcze gotowego rozwiązania.
+      update:
+        advanced_instruction_link: Zaawansowana instrukcja instalacji dla ekspertów
+        files_download_alert: Jeśli masz problemy z dostępem do plików do pobrania, skontaktuj się z nami za pośrednictwem naszego kanału Telegram.
+        sdcard_required_0: Aby wykonać ten krok, będziesz potrzebować karty SD. Istniejąca zawartość karty SD zostanie zniszczona.
+        sdcard_required_1: Aby wykonać ten krok, będziesz potrzebować karty SD. Sformatuj kartę SD w systemie FAT32 i skopiuj pobrany plik do katalogu głównego na karcie.
+        sdcard_required_2: Aby wykonać ten krok, będziesz potrzebować karty SD. Sformatuj kartę SD w systemie FAT32 i skopiuj pobrany plik do katalogu głównego na karcie.
+        sdcard_required_3: Aby wykonać ten krok, będziesz potrzebować karty SD. Sformatuj kartę SD w systemie FAT32 i wyodrębnij pliki z pobranego pakietu do katalogu głównego na karcie.
+  error:
+    please_fix: Popraw poniższe błędy.
+  errors:
+    messages:
+      already_confirmed: zostało już potwierdzone, spróbuj się zalogować
+      confirmation_period_expired: musi zostać potwierdzony w ciągu %{period}, poproś o nowy
+      expired: wygasł, poproś o nowy
+      not_found: nie znaleziono
+      not_locked: nie był zamknięty
+      not_saved:
+        one: '1 błąd uniemożliwiał zapisanie tego %{resource}:'
+        other: 'Błędy %{count} uniemożliwiają zapisanie tego %{resource}:'
+  firmware:
+    info_html: Jeśli chcesz dowiedzieć się więcej o działaniu poleceń <code>uknor*</code> , <code>urnor*</code> , <code>setnor*</code> , uruchom <code>printenv</code> w konsoli bootloadera.
+    installation:
+      backup:
+        info: OpenIPC U-Boot zastępuje oryginalną partycję kryptograficzną, uniemożliwiając powrót do fabrycznego oprogramowania, chyba że masz pełną kopię zapasową flash dla tej konkretnej kamery! Aby utworzyć pełną kopię zapasową oprogramowania sprzętowego, uruchom serwer TFTP i uruchom te polecenia w powłoce programu ładującego.
+        more_info_html: Aby uzyskać więcej informacji, zapoznaj się z <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">instrukcjami instalacji</a> na wiki projektu.
+        subtitle: Utwórz kopię zapasową oprogramowania sprzętowego, nie pomijaj tej części procesu instalacji!
+        title: Zapisz oryginalne oprogramowanie sprzętowe
+      backup_32: UWAGA! Przed utworzeniem kopii zapasowej pamięci flash ROM o pojemności 32 MB upewnij się, że aparat ma co najmniej 64 MB pamięci RAM.
+      flashing:
+        alternative: Alternatywnie, flashuj oprogramowanie sprzętowe OpenIPC według jego części
+      flashing_footfs:
+        continue: Kamera automatycznie uruchomi się ponownie, aby zastosować zmiany. Skoncentruj się i przygotuj się na przerwanie sekwencji rozruchowej, aby wrócić do powłoki programu ładującego.
+        info: Będąc w powłoce programu ładującego, zmień partycję ROM zgodnie z rozmiarem i typem pamięci flash.
+        title: Przygotuj kamerę do obsługi OpenIPC Linux
+      flashing_footfs2:
+        info: Pobierz pakiet oprogramowania sprzętowego i rozpakuj go w katalogu głównym serwera TFTP.
+        link: Pobierz pakiet oprogramowania sprzętowego OpenIPC (%{name}).
+        title: Flashowanie jądra OpenIPC Linux i głównego systemu plików
+      flashing_full:
+        continue: Kamera automatycznie uruchomi się ponownie.
+        continue2: Skoncentruj się i przygotuj się na przerwanie sekwencji rozruchowej, aby wrócić do powłoki programu ładującego. Będąc w powłoce programu ładującego, zmień partycję ROM zgodnie z rozmiarem i typem pamięci flash.
+        info: Pełny obraz oprogramowania sprzętowego składa się z programu ładującego, jądra i głównego systemu plików, a także nadaje się do flashowania układu pamięci za pomocą programatora. Należy pamiętać, że pełny obraz nie zawiera wstępnie ustawionego środowiska. Nadal musisz dodać własny adres MAC, adres IP i inne ustawienia.
+        link: Pobierz obraz oprogramowania sprzętowego OpenIPC (%{name}).
+        title: Flashuj pełny obraz oprogramowania sprzętowego OpenIPC
+      flashing_uboot:
+        continue: Kamera uruchomi się z nowo wgranym bootloaderem. Skoncentruj się i przygotuj się na przerwanie sekwencji rozruchowej, aby wrócić do powłoki programu ładującego.
+        info: Pobierz plik binarny programu ładującego i zapisz go w katalogu głównym serwera TFTP.
+        link: Pobierz plik binarny OpenIPC U-Boot
+        title: Flashowanie U-Boota OpenIPC
+      permanent_link: Stałe łącze do tej konfiguracji
+      subtitle: w aparacie z układem flash %{soc_name} SoC i %{flash_type} SPI
+      success:
+        info_html: Otwórz interfejs sieciowy kamery na porcie 85 ( <a href=\"http://%{address}:85/\">http://%{address}:85/</a> ) i zaloguj się przy użyciu loginu <b>root</b> i hasła <b>12345.</b> Po zalogowaniu zostaniesz poproszony o ustawienie własnego bezpiecznego hasła. Aby uzyskać dostęp do kamery poprzez ssh lub UART używają tego samego loginu i hasła, co powyżej.
+        title: Gratulacje! W tej chwili masz zainstalowane oprogramowanie sprzętowe OpenIPC (%{name}).
+      title: Flashowanie oprogramowania sprzętowego OpenIPC
+    restore:
+      info: Jeśli chcesz przywrócić oryginalne oprogramowanie sprzętowe, użyj pliku kopii zapasowej utworzonego za pomocą powyższych poleceń. Umieść plik kopii zapasowej w katalogu głównym serwera TFTP i uruchom te polecenia w powłoce programu ładującego.
+      title: Przywróć oprogramowanie sprzętowe aparatu
+    version:
+      fpv: FPV
+      lite: Lite
+      nand: NAND
+      ultimate: Ostateczny
+      venc: VENC
+  flash_chip:
+    nand: NAND
+    nor16m: NOR 16M
+    nor32m: NOR 32M
+    nor8m: NOR 8M
+  go: Iść
+  nav:
+    about: O
+    add_soc: Dodaj kolejny SoC
+    add_vendor: Dodaj dostawcę
+    adding_soc: Dodanie SoC
+    adding_vendor: Dodawanie dostawcy
+    admin: Admin
+    channels: Nasz telegram
+    clone_soc: Sklonuj ten SoC
+    dashboard: Panel
+    editing: Redagowanie
+    endpoints: Majestatyczne punkty końcowe
+    green_life: Zielone życie
+    hires_timer: Timer o wysokiej rozdzielczości
+    home: Dom
+    introduction: Wstęp
+    next: Następny
+    openwall: Otwarta ściana
+    partition_calc: Kalkulator partycji oprogramowania sprzętowego
+    pause_transitions: Umieść kursor myszy nad migawką, aby wstrzymać automatyczne przejścia.
+    previous: Poprzedni
+    projects: Nasz projekt
+    qr_code_generator: Generator kodów QR
+    snapshot: 'Zrzut ekranu #%{number}'
+    snapshots: Najnowsze migawki
+    socs: SoC
+    software: Nasze oprogramowanie
+    support_opensource: To otwarte oprogramowanie
+    supported_hardware: Obsługiwany sprzęt
+    team: Nasz zespół
+    tools: Narzędzia
+    utilities: Narzędzia
+    vendors: Sprzedawcy
+    view_soc: Wyświetl stronę SoC
+    view_vendor: Zobacz dostawcę
+    webui: Interfejs sieciowy
+    wiki: Nasza Wiki
+  net_iface:
+    both: Kamera obsługuje zarówno sieci Ethernet, jak i bezprzewodowe
+    eth: Kamera ma tylko sieć Ethernet
+    wifi: Kamera ma tylko sieć bezprzewodową
+  out: Na zewnątrz
+  sd_card:
+    nosd: Kamera nie posiada slotu na kartę SD
+    sd: Kamera posiada slot na kartę SD
+  site:
+    disclaimer: Informacje zawarte na tej stronie służą wyłącznie ogólnym celom informacyjnym i odwiedzający nie mogą na nich polegać. Całe oprogramowanie i oprogramowanie sprzętowe dostępne na tej stronie jest dostarczane w stanie, w jakim się znajduje, i wyłącznie do celów badawczych. OpenIPC nie ponosi odpowiedzialności za jakiekolwiek straty lub szkody spowodowane użyciem tych plików lub wykorzystaniem lub poleganiem na jakichkolwiek informacjach zawartych w tej witrynie.
+    snapshot:
+      download: Pobierz oryginalny obraz
+      link_to_camera: Stałe łącze do tej kamery
+      link_to_last_jpeg: Stały link do najnowszego zdjęcia z tej kamery (JPEG)
+  snapshots:
+    icon:
+      snapshot_alt: 'Obraz: Migawka'
+    index:
+      no_signal: Brak sygnału
+      snapshot_alt: 'Obraz: Migawka'
+      stay_tuned: czekać na dalsze informacje
+      subtitle: Obrazy z prawdziwych kamer IP działających na oprogramowaniu OpenIPC, dostarczone przez ich właścicieli.
+    oneday:
+      speed: Prędkość
+    show:
+      delete_by_mac: Usuń wszystko przez MAC
+      delete_one: Usuń ten
+      last_24h: Ostatnie 24 godziny
+      show_slideshow: Oglądaj jako pokaz slajdów
+      snapshot_alt: 'Obraz: Migawka'
+      temperature: Temperatura SoC
+      uptime: Czas pracy
+    slide:
+      bytes: bajty
+      dimensions: Wymiary
+      download_original: Pobierz oryginalny obraz
+      link_to_this: Link do tej migawki
+      size: Rozmiar
+      snapshot_alt: 'Obraz: Migawka'
+      temperature: Temperatura SoC
+      uptime: Czas pracy
+    snapshot:
+      snapshot_alt: 'Obraz: Migawka'
+      temperature: Temperatura SoC
+      uptime: Czas pracy
+  str:
+    language: Język
+  telegram:
+    channels:
+      description_1: Międzynarodowy kanał o OpenIPC
+      description_10: Kanał użytkowników OpenIPC mówiących po mandaryńsku
+      description_2: Powiadomienia GitHub o najnowszych kompilacjach
+      description_3: Demo bota telegramowego OpenIPC
+      description_4: Rosyjskojęzyczny kanał użytkowników OpenIPC
+      description_5: Kanał dla programistów OpenIPC
+      description_6: Wszystko do naprawy urządzeń
+      description_7: OpenIPC do budowy systemów FPV.
+      description_8: Grupa płatnego wsparcia technicznego
+      description_9: Perskojęzyczny kanał użytkowników OpenIPC
+    formatting:
+      bold: Pogrubiony
+      header: Formatowanie wiadomości
+      hyperlink: Hypelink
+      italic: italski
+      monospace: Monoprzestrzeń
+      strikeout: Skreślony
+      text_html: "<p>Czy wiesz, że Telegram Messenger umożliwia użycie formatowania w celu podkreślenia ważnych części wiadomości i ułatwienia zrozumienia informacji?</p><p> Wybierz fragment tekstu i naciśnij kombinację klawiszy:</p>"
+      underline: Podkreślać
+    translation:
+      header: Tłumaczenie czatu
+      text_html: <p>Czy wiesz, że komunikator Telegram ma wbudowany silnik tłumaczący, który pozwala na czytanie wiadomości napisanych w językach obcych? Użytkownicy posiadający konta premium mogą <a href="https://telegram.org/blog/profile-pics-emoji-translations#translating-entire-chats">tłumaczyć całe czaty</a> na bieżąco, ale nawet zwykłe konto może <a href="https://telegram.org/blog/reactions-spoilers-translations#message-translation">tłumaczyć pojedyncze wiadomości</a> jednym kliknięciem.</p>
+  title:
+    openwall: Otwarta ściana

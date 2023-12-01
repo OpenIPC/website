@@ -1,0 +1,25 @@
+---
+fa:
+  activerecord:
+    attributes:
+      snapshot:
+        mac_address: آدرس مک
+      soc:
+        build_status_url: URL وضعیت ساخت
+        kernel: هسته
+        linux_filename: فایل لینوکس
+        load_address: آدرس را بارگیری کنید
+        model: مدل SoC
+        notes: یادداشت
+        sdk: SDK
+        status: صحنه
+        toolchain_filename: فایل زنجیره ابزار
+        uboot_filename: فایل U-Boot
+        vendor_id: فروشنده SoC
+        version: نسخه
+    help:
+      camera:
+        flash_type: اگر مطمئن نیستید، NOR 8M را انتخاب کنید.
+    models:
+      snapshot: عکس فوری
+      soc: SoC

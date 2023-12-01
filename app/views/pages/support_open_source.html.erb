@@ -1,0 +1,77 @@
+<article class="sponsors">
+  <header>
+    <h2><%= t('.title') %></h2>
+  </header>
+
+  <div class="row">
+    <div class="col-md-3 mb-3">
+      <%= image_tag "ninja-sponsors.webp", alt: t('.img1_alt'), class: "img-fluid mb-3" %>
+      <p><%= t('.if_you_like_donate_html') %></p>
+    <% if I18n.locale.eql?(:ru) %>
+      <iframe src="https://yoomoney.ru/quickpay/fundraise/button?billNumber=wlCrTwOHxTM.230330&" width="300" height="40"></iframe>
+    <% else %>
+      <p><a href="https://opencollective.com/openipc"><%= image_tag '/files/donatetoopencollectivebutton.webp', size: 300, class: 'img-fluid', alt: t('.oc_button_alt'), title: t('.oc_button_title') %></a></p>
+    <% end %>
+      <p class="small"><%= t('.paragraph1') %></p>
+    </div>
+    <div class="col-md-6 mb-3">
+      <h3><%= t('.price_of_firmware') %></h3>
+      <p><%= t('.price_of_firmware_p1_html') %></p>
+      <h3><%= t('.contribute') %></h3>
+      <p><%= t('.contribute_text1') %></p>
+      <p><%= t('.contribute_text2') %></p>
+      <dl>
+        <dt><%= t('.contribute_how1') %></dt>
+        <dd><%= t('.contribute_how1_text_html') %></dd>
+        <dt><%= t('.contribute_how2') %></dt>
+        <dd><%= t('.contribute_how2_text_html') %></dd>
+        <dt><%= t('.contribute_how3') %></dt>
+        <dd><%= t('.contribute_how3_text_html') %></dd>
+        <dt><%= t('.contribute_how4') %></dt>
+        <dd><%= t('.contribute_how4_text_html') %></dd>
+        <dt><%= t('.contribute_how5') %></dt>
+        <dd><%= t('.contribute_how5_text_html') %></dd>
+        <dt><%= t('.contribute_how6') %></dt>
+        <dd><%= t('.contribute_how6_text_html') %></dd>
+      </dl>
+      <p><%= t('.contribute_text3') %></p>
+
+      <h4><%= t('.thank_you') %></h4>
+    </div>
+
+    <div class="col-md-3 mb-3">
+      <h3 class="mb-3"><%= t('.donate_crypto') %></h3>
+      <div class="row row-cols-1 g-2 mb-3">
+        <div class="col">
+          <div class="card">
+            <div class="card-body bg-light">
+              <%= image_tag 'icons/crypto-bitcoin.svg', size: 24, alt: 'Image: Bitcoin Logo', title: '1Gu9xVdXKs5T9TTe2zJn4oSiJs4Dz9Vi6J', class: 'float-end' %>
+              <h5 class="card-title fw-bold">Bitcoin - BTC</h5>
+              <p class="card-text">1Gu9xVdXKs5T9TTe2zJn4oSiJs4Dz9Vi6J</p>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="card-body bg-light">
+              <%= image_tag 'icons/crypto-tron.svg', size: 24, alt: 'Image: TRON Logo', title: 'TDNf6HW54MA6JrmLWM85h3ewxZgvpSqSGN', class: 'float-end' %>
+              <h5 class="card-title fw-bold">TRON (TRC20) - USDT</h5>
+              <p class="card-text">TDNf6HW54MA6JrmLWM85h3ewxZgvpSqSGN</p>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="card-body bg-light">
+              <%= image_tag 'icons/crypto-ton.svg', size: 24, alt: 'Image: TON Logo', title: 'UQBw0ZTdMLqUozkt1gLhl7xQ57Qa_RCcjmD0leQEANGvBSLd', class: 'float-end' %>
+              <h5 class="card-title fw-bold">The Open Network - TON</h5>
+              <p class="card-text">UQBw0ZTdMLqUozkt1gLhl7xQ57Qa_RCcjmD0leQEANGvBSLd</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="small text-muted"><%= t('.tron_in_telegram_html') %></p>
+    </div>
+  </div>
+</article>

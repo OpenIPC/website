@@ -1,0 +1,15 @@
+---
+fa:
+  activemodel:
+    attributes:
+      camera:
+        camera_ip_address: آدرس IP دوربین
+        camera_mac_address: آدرس مک دوربین
+        firmware_version: نسخه سیستم عامل
+        flash_type: نوع و اندازه تراشه فلش مموری
+        network_interface: رابط شبکه
+        sd_card_slot: اسلات کارت SD
+        server_ip_address: آدرس IP سرور TFTP
+        soc_id: سیستم روی تراشه
+    models:
+      camera: دوربین

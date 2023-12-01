@@ -1,0 +1,77 @@
+---
+it:
+  devise:
+    confirmations:
+      confirm: Conferma il mio account
+      confirmed: Il tuo indirizzo email è stato confermato con successo.
+      resend_confirmation: Invia nuovamente le istruzioni di conferma
+      resend_confirmation_button: Invia nuovamente le istruzioni di conferma
+      send_instructions: Entro pochi minuti riceverai un'e-mail con le istruzioni su come confermare il tuo indirizzo e-mail.
+      send_paranoid_instructions: Se il tuo indirizzo email esiste nel nostro database, riceverai un'email con le istruzioni su come confermare il tuo indirizzo email in pochi minuti.
+    failure:
+      already_authenticated: Sei già iscritto.
+      inactive: Il tuo account non è ancora attivato.
+      invalid: "%{authentication_keys} o password non validi."
+      last_attempt: Hai ancora un tentativo prima che il tuo account venga bloccato.
+      locked: Il tuo account è bloccato.
+      not_found_in_database: "%{authentication_keys} o password non validi."
+      timeout: La tua sessione è scaduta. Accedi nuovamente per continuare.
+      unauthenticated: È necessario accedere o registrarsi prima di continuare.
+      unconfirmed: Devi confermare il tuo indirizzo email prima di continuare.
+    links:
+      resend_confirmation: Conferma email
+      resend_unlock: Sblocca l'accesso
+      reset_password: Resetta la password
+      sign_in: Registrazione
+      sign_in_with: Accedi con %{name}
+      sign_out: Disconnessione
+      sign_up: Iscrizione
+      signed_in_as: Accesso effettuato come %{name}
+    mailer:
+      confirmation_instructions:
+        subject: Istruzioni di conferma
+      email_changed:
+        subject: E-mail modificata
+      password_change:
+        subject: Password cambiata
+      reset_password_instructions:
+        subject: Istruzioni per reimpostare la password
+      unlock_instructions:
+        subject: Istruzioni per sbloccare
+    omniauth_callbacks:
+      failure: Impossibile autenticarti da %{kind} perché \%{reason}\.
+      success: Autenticazione riuscita dall'account %{kind}.
+    passwords:
+      new_password: Nuova password
+      no_token: Non è possibile accedere a questa pagina senza ricevere un'e-mail di reimpostazione della password. Se provieni da un'e-mail di reimpostazione della password, assicurati di aver utilizzato l'URL completo fornito.
+      reset_password: Ha dimenticato la password?
+      reset_password_button: Resetta la password
+      send_instructions: Entro pochi minuti riceverai un'e-mail con le istruzioni su come reimpostare la password.
+      send_paranoid_instructions: Se il tuo indirizzo email esiste nel nostro database, riceverai un collegamento per il recupero della password al tuo indirizzo email entro pochi minuti.
+      updated: La tua password è stata cambiata con successo. Ora hai effettuato l'accesso.
+      updated_not_active: La tua password è stata cambiata con successo.
+    registrations:
+      destroyed: Ciao! Il tuo account è stato cancellato con successo. Speriamo di rivedervi presto.
+      sign_up: Iscrizione
+      sign_up_button: Iscrizione
+      signed_up: Benvenuto! Ti sei registrato con successo.
+      signed_up_but_inactive: Ti sei registrato con successo. Tuttavia, non siamo riusciti a farti accedere perché il tuo account non è ancora attivato.
+      signed_up_but_locked: Ti sei registrato con successo. Tuttavia, non siamo riusciti a farti accedere perché il tuo account è bloccato.
+      signed_up_but_unconfirmed: Un messaggio con un link di conferma è stato inviato al tuo indirizzo email. Segui il collegamento per attivare il tuo account.
+      update_needs_confirmation: Hai aggiornato il tuo account correttamente, ma dobbiamo verificare il tuo nuovo indirizzo email. Controlla la tua email e segui il link di conferma per confermare il tuo nuovo indirizzo email.
+      update_profile: Aggiorna il profilo
+      update_profile_button: Aggiorna il profilo
+      updated: Il tuo account è stato aggiornato con successo.
+      updated_but_not_signed_in: Il tuo account è stato aggiornato correttamente, ma poiché la password è stata modificata, devi accedere nuovamente.
+    sessions:
+      already_signed_out: Disconnessione riuscita.
+      sign_in_as_admin: Registrazione
+      sign_in_button: Registrazione
+      signed_in: Accesso effettuato con successo.
+      signed_out: Disconnessione riuscita.
+    unlocks:
+      resend_unlock: Invia nuovamente le istruzioni di sblocco
+      resend_unlock_button: Invia nuovamente le istruzioni di sblocco
+      send_instructions: Riceverai un'e-mail con le istruzioni su come sbloccare il tuo account in pochi minuti.
+      send_paranoid_instructions: Se il tuo account esiste, riceverai entro pochi minuti un'e-mail con le istruzioni su come sbloccarlo.
+      unlocked: Il tuo account è stato sbloccato con successo. Accedi per continuare.

@@ -1,0 +1,77 @@
+---
+pl:
+  devise:
+    confirmations:
+      confirm: Potwierdź moje konto
+      confirmed: Twój adres e-mail został pomyślnie potwierdzony.
+      resend_confirmation: Wyślij ponownie instrukcje dotyczące potwierdzenia
+      resend_confirmation_button: Wyślij ponownie instrukcje dotyczące potwierdzenia
+      send_instructions: W ciągu kilku minut otrzymasz wiadomość e-mail z instrukcjami dotyczącymi potwierdzenia adresu e-mail.
+      send_paranoid_instructions: Jeśli Twój adres e-mail istnieje w naszej bazie danych, w ciągu kilku minut otrzymasz wiadomość e-mail z instrukcją potwierdzania adresu e-mail.
+    failure:
+      already_authenticated: Jesteś już zalogowany.
+      inactive: Twoje konto nie zostało jeszcze aktywowane.
+      invalid: Nieprawidłowe %{authentication_keys} lub hasło.
+      last_attempt: Masz jeszcze jedną próbę, zanim Twoje konto zostanie zablokowane.
+      locked: Twoje konto jest zablokowane.
+      not_found_in_database: Nieprawidłowe %{authentication_keys} lub hasło.
+      timeout: Twoja sesja wygasła. Aby kontynuować, zaloguj się ponownie.
+      unauthenticated: Aby kontynuować, musisz się zalogować lub zarejestrować.
+      unconfirmed: Zanim będziesz kontynuować, musisz potwierdzić swój adres e-mail.
+    links:
+      resend_confirmation: Potwierdź email
+      resend_unlock: Odblokuj dostęp
+      reset_password: Zresetuj hasło
+      sign_in: Zalogować się
+      sign_in_with: Zaloguj się za pomocą %{name}
+      sign_out: Wyloguj się
+      sign_up: Zapisać się
+      signed_in_as: Zalogowano się jako %{name}
+    mailer:
+      confirmation_instructions:
+        subject: Instrukcje dotyczące potwierdzenia
+      email_changed:
+        subject: Adres e-mail zmieniony
+      password_change:
+        subject: Hasło zostało zmienione
+      reset_password_instructions:
+        subject: Instrukcje resetowania hasła
+      unlock_instructions:
+        subject: Odblokuj instrukcje
+    omniauth_callbacks:
+      failure: Nie można uwierzytelnić Cię z %{kind}, ponieważ \%{reason}\.
+      success: Pomyślnie uwierzytelniono z konta %{kind}.
+    passwords:
+      new_password: Nowe hasło
+      no_token: Nie możesz uzyskać dostępu do tej strony bez otrzymania wiadomości e-mail dotyczącej resetowania hasła. Jeśli otrzymałeś wiadomość e-mail dotyczącą resetowania hasła, upewnij się, że użyłeś pełnego podanego adresu URL.
+      reset_password: Zapomniałeś hasła?
+      reset_password_button: Zresetuj hasło
+      send_instructions: W ciągu kilku minut otrzymasz e-mail z instrukcją resetowania hasła.
+      send_paranoid_instructions: Jeśli Twój adres e-mail istnieje w naszej bazie danych, w ciągu kilku minut otrzymasz na swój adres e-mail link do odzyskiwania hasła.
+      updated: Twoje hasło zostało zmienione. Jesteś teraz zalogowany.
+      updated_not_active: Twoje hasło zostało zmienione.
+    registrations:
+      destroyed: Do widzenia! Twoje konto zostało pomyślnie anulowane. Mamy nadzieję zobaczyć Cię ponownie wkrótce.
+      sign_up: Zapisać się
+      sign_up_button: Zapisać się
+      signed_up: Powitanie! Zarejestrowałeś się pomyślnie.
+      signed_up_but_inactive: Zarejestrowałeś się pomyślnie. Nie mogliśmy Cię jednak zalogować, ponieważ Twoje konto nie zostało jeszcze aktywowane.
+      signed_up_but_locked: Zarejestrowałeś się pomyślnie. Nie mogliśmy Cię jednak zalogować, ponieważ Twoje konto jest zablokowane.
+      signed_up_but_unconfirmed: Na Twój adres e-mail została wysłana wiadomość zawierająca link potwierdzający. Kliknij link, aby aktywować swoje konto.
+      update_needs_confirmation: Pomyślnie zaktualizowałeś swoje konto, ale musimy zweryfikować Twój nowy adres e-mail. Sprawdź swoją pocztę e-mail i kliknij link potwierdzający, aby potwierdzić nowy adres e-mail.
+      update_profile: Zaktualizować profil
+      update_profile_button: Zaktualizować profil
+      updated: Twoje konto zostało pomyślnie zaktualizowane.
+      updated_but_not_signed_in: Twoje konto zostało pomyślnie zaktualizowane, ale ze względu na zmianę hasła musisz zalogować się ponownie.
+    sessions:
+      already_signed_out: Wylogowano się pomyślnie.
+      sign_in_as_admin: Zalogować się
+      sign_in_button: Zalogować się
+      signed_in: Zalogowano się pomyślnie.
+      signed_out: Wylogowano się pomyślnie.
+    unlocks:
+      resend_unlock: Wyślij ponownie instrukcje odblokowania
+      resend_unlock_button: Wyślij ponownie instrukcje odblokowania
+      send_instructions: Za kilka minut otrzymasz e-mail z instrukcją odblokowania konta.
+      send_paranoid_instructions: Jeśli Twoje konto istnieje, w ciągu kilku minut otrzymasz wiadomość e-mail z instrukcją odblokowania.
+      unlocked: Twoje konto zostało pomyślnie odblokowane. Zaloguj się, aby kontynuować.

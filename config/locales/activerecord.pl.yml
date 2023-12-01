@@ -1,0 +1,25 @@
+---
+pl:
+  activerecord:
+    attributes:
+      snapshot:
+        mac_address: Adres MAC
+      soc:
+        build_status_url: Utwórz adres URL stanu
+        kernel: Jądro
+        linux_filename: Plik Linuxa
+        load_address: Załaduj adres
+        model: Model SoC
+        notes: Notatki
+        sdk: SDK
+        status: Scena
+        toolchain_filename: Plik łańcucha narzędzi
+        uboot_filename: Plik U-Boota
+        vendor_id: Dostawca SoC
+        version: Wersja
+    help:
+      camera:
+        flash_type: Jeśli nie jesteś pewien, wybierz NOR 8M.
+    models:
+      snapshot: Migawka
+      soc: SoC

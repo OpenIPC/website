@@ -23,11 +23,32 @@ de:
       start_address: Startadresse
       title: Berechnung der Firmware-Partitionen
     green_life:
-      title: Grünes Leben
+      paragraph1: OpenIPC trägt zur Nachhaltigkeit bei, indem es in erster Linie offene Firmware für IP-Kameras bereitstellt und so direkt zur effizienten Nutzung und Wiederverwendung vorhandener Hardware beiträgt.
+      paragraph2: Indem OpenIPC die Lebensdauer von Kameras durch anpassbare Firmware-Updates und Funktionen verlängert, reduziert es den Elektroschrott.
+      paragraph3: Dies steht im Einklang mit den Nachhaltigkeitszielen, da die Wiederverwendung und Wiederverwertung von Technologien gefördert und die mit der Herstellung und Entsorgung von elektronischen Geräten verbundenen Umweltauswirkungen minimiert werden.
+      paragraph4: Darüber hinaus fördert das Engagement von OpenIPC für Transparenz und gemeinschaftsgetriebene Entwicklung einen gemeinschaftlichen Technologieansatz, der die Benutzer dazu ermutigt, sich aktiv zu beteiligen und zum Wachstum und zur Nachhaltigkeit des Projekts beizutragen.
+      title: Green Life
     high_resolution_timer:
       reload_to_reset: Zeit wird in Millisekunden angezeigt. Seite neu laden, um den Zähler zurückzusetzen.
       title: Hochauflösender Timer
     introduction:
+      alliance: Allianz
+      button_binaries: Vorkompilierte Binärdateien
+      button_instructions: Installationsanleitung
+      button_sources: Quellcode auf GitHub
+      img_majestic_alt: 'Bild: Majestic-Streamer-Logo'
+      img_openipc_alt: 'Bild: Logo der OpenIPC-Community'
+      paragraph1: OpenIPC ist ein Open-Source-Betriebssystem für IP-Kameras mit ARM- und MIPS-Prozessoren verschiedener Hersteller, um die geschlossene, undurchsichtige, unsichere, oft aufgegebene und nicht unterstützte Firmware zu ersetzen, die von einem Anbieter vorinstalliert wurde.
+      paragraph2_html: Die OpenIPC-Firmware wird als binäre vorkompilierte Dateien geliefert, die eine einfache Installation durch den Endbenutzer ermöglichen. Darüber hinaus bieten wir jedem fähigen Programmierer, der bereit ist, zum Projekt beizutragen, vollständigen Zugriff auf die Quelldateien zur weiteren Entwicklung und Verbesserung. Der OpenIPC-Quellcode wird unter einer der einfachsten Open-Source-Lizenzvereinbarungen veröffentlicht, der <a href="https://opensource.org/licenses/MIT">MIT-Lizenz</a>, die Benutzern die ausdrückliche Erlaubnis gibt, Code für beliebige Zwecke wiederzuverwenden Zweck, auch als Teil einer proprietären Software. Wir bitten Sie lediglich höflich, Ihre Verbesserungen an uns zurückzugeben. Für Rückmeldungen und Anregungen wären wir dankbar.
+      paragraph3_html: OpenIPC Firmware verwendet <a href="https://buildroot.org/">Buildroot</a> zum Erstellen seiner Linux-Distribution und verwendet entweder <a href="https://github.com/OpenIPC/majestic">den Majestic-</a> , <a href="https://github.com/OpenIPC/mini">Mini-</a> oder <a href="https://github.com/OpenIPC/silicon_research">Venc-</a> Streamer.
+      paragraph4_html: Majestic-Code ist zwar nicht offen, bietet aber beispiellose Leistung und Funktionen für eine breite Palette von Hardware. Der Autor des Majestic-Streamers prüft Möglichkeiten, die Codebasis als Open Source bereitzustellen, nachdem er genügend Mittel zur Unterstützung der weiteren offenen Entwicklung gesichert hat. Sie können dazu <a href="/support-open-source">beitragen</a> , dass dies früher geschieht.
+      paragraph5: Erstens bringt Ihnen die OpenIPC-Firmware Freiheit. Mit OpenIPC auf Ihrer Kamera sind Sie der Herr Ihrer Streams. Sie haben vollen Zugriff auf das System und können steuern, was, wo und wie sich Ihre Kamera verhalten soll. Es gibt keine Hintertüren, keine Botnets, keine Krypto-Mining-Malware, keine Keylogger, keine Passwort-Sniffer, nichts, was man in einem geschlossenen Binärsystem ohne Zugriff auf seinen Quellcode erwarten könnte.
+      paragraph6: Was die Firmware-Funktionen betrifft, streben wir danach, universelle Unterstützung für eine breite Palette von Kameras bereitzustellen. Daher konzentrieren wir uns zunächst auf die Grundfunktionen, die es Endbenutzern ermöglichen, die Firmware ihrer Kameras zu aktualisieren und Video und Audio (sofern unterstützt) ohne großen Aufwand zu streamen Ärger.
+      paragraph7: Wir haben jedoch einige interessante Teile. Unsere Firmware unterstützt externen IPEYE-Cloud-Speicher, das Streamen von Videos auf YouTube und Telegram, die Verwendung des SOCKS5-Proxys, die Einrichtung eines virtuellen Tunnels und mehr.
+      paragraph8: Es gibt auch mehrere Projekte, die sich auf Spezialausrüstung konzentrieren, beispielsweise eine Kamera zur Montage an einer Drohne, zur Montage an Bauhelmen, zur Verwendung in Vermessungswerkzeugen, zur medizinischen Forschung der Sehorgane, zum Unterwasserfischen usw.
+      subtitle1: OpenIPC ist eine alternative offene Firmware für Ihre IP-Kamera.
+      subtitle2: Warum OpenIPC-Firmware?
+      supporters: Unterstützer
       title: Einführung
     majestic_endpoints:
       aac: AAC-Audiostream.
@@ -145,7 +166,33 @@ de:
       wip_alt: 'Bild: Bühne WIP'
       wip_info: In Arbeit. Wir haben viel über die Plattform-Hardware und die Codebasis gelernt, den ersten öffentlichen Binär-Build vorbereitet und warten darauf, dass die ersten Anwender ihn auf ihren Boards testen und Feedback geben, um uns weiterzuentwickeln.
     support_open_source:
-      title: Unterstützen Sie Open Source
+      contribute: Beitragen
+      contribute_how1: Melden Sie Probleme
+      contribute_how1_text_html: Wenn Sie auf einen Fehler stoßen, reichen Sie bitte einen Fehlerbericht im <a href="https://github.com/OpenIPC/">entsprechenden Repository auf GitHub</a> ein.
+      contribute_how2: Reichen Sie neue Ideen ein
+      contribute_how2_text_html: Wenn Sie das Gefühl haben, dass eine nützliche Funktion fehlt, können Sie <a href="https://github.com/OpenIPC/firmware/issues">auf GitHub eine Funktionsanfrage</a> stellen.
+      contribute_how3: Verbessern Sie den Code
+      contribute_how3_text_html: Forken Sie den Code, nehmen Sie Ihre Verbesserungen vor und senden Sie eine Pull-Anfrage an unser Repository auf GitHub.
+      contribute_how4: Dokumentation schreiben
+      contribute_how4_text_html: Erstellen oder aktualisieren Sie Dokumentationen für unsere Projekte. Füllen Sie <a href="http://wiki.openipc.org/">das Wiki</a> aus, lesen Sie die Website Korrektur und lassen Sie sie muttersprachlich in Ihrer Sprache klingen.
+      contribute_how5: Verbreiten Sie es weiter
+      contribute_how5_text_html: Sprechen Sie über OpenIPC und teilen Sie Ihre Erfahrungen mit anderen. Schreiben Sie einen Blog-Beitrag, erstellen Sie ein Video, starten Sie einen Thread auf Reddit, teilen Sie ihn auf Twitter, veröffentlichen Sie ihn in anderen sozialen Medien ...
+      contribute_how6: Werden Sie Sponsor
+      contribute_how6_text_html: Unterstützen Sie unsere Entwicklung, helfen Sie uns, genügend Mittel zu sammeln, um unsere Ausgaben zu decken, und stellen Sie die langfristige Aufrechterhaltung dessen sicher, was unserer Meinung nach ein stabiles, flexibles und vor allem Open-Source-Open-IP-Netzwerkkamera-Framework für alle Benutzer weltweit sein wird. Als Anerkennung für Ihre wiederkehrenden Spenden werden Sie dauerhaft zum Abschnitt „Unterstützer/Sponsoren“ auf unserer GitHub-Seite hinzugefügt.
+      contribute_text1: Bei Open Source geht es darum, zu teilen, gemeinsam etwas Großartiges zu schaffen und zum Wohl der Allgemeinheit beizutragen! Wenn Sie eine Verbesserung vornehmen, von der Sie glauben, dass jemand anderes davon profitieren könnte, tragen Sie diese bitte wieder in das Projekt ein.
+      contribute_text2: 'Wenn Sie jemals neugierig oder verwirrt über etwas im Projekt waren, auf ein Problem gestoßen sind und keine Antwort finden konnten, ist es wahrscheinlich noch jemand anderes. Helfen Sie ihnen, indem Sie Ihre Gedanken, Erkenntnisse und Entdeckungen teilen. Es gibt viele Möglichkeiten, zum Projekt beizutragen. Hier einige Beispiele:'
+      contribute_text3: Wir setzen uns für eine offene und transparente Buchhaltung ein und sind dankbar für jede Unterstützung, die Sie uns bei unseren Bemühungen zur Weiterentwicklung von OpenIPC und unserer Mission für eine nachhaltige Zukunft zukommen lassen können.
+      donate_crypto: Spenden Sie Kryptowährung
+      if_you_like_donate_html: Wenn Ihnen unsere Arbeit gefällt, unterstützen Sie uns bitte auf <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout">Open Collective</a>
+      img1_alt: 'Bild: Open Source unterstützen'
+      oc_button_alt: 'Bild: OpenCollective-Spendenschaltfläche'
+      oc_button_title: Spenden Sie für unser Kollektiv
+      paragraph1: Viele Mitglieder des Kernteams spenden ihr Wissen und ihre Freizeit, um an dem Projekt zu arbeiten, und verwenden ihr persönliches Geld häufig für den Kauf von Kameras, um die Liste der unterstützten Hardware zu erweitern. Ihre Spende hilft uns, ihre persönlichen Finanzen zu entlasten und gleichzeitig die Entwicklung auf der neuesten Hardware zu halten. Wir verwenden die Mittel auch, um die Arbeit von Teilzeit- und Vollzeit-Wartungsdienstleistern zu vergüten, um Messen zu besuchen, uns mit Hardware-Anbietern zu treffen, Trends in der Kameratechnologie zu beobachten und Zugang zu SDK und anderen Supportmaterialien zu erhalten, die oft teuer sind. Ihre Beiträge helfen uns, die Entwicklung fortzusetzen und der Community technische Unterstützung zu bieten.
+      price_of_firmware: Preis der Firmware
+      price_of_firmware_p1_html: Das Recht zur Nutzung der OpenIPC-Firmware und ihrer Komponenten wird allen Nutzern unentgeltlich und nur für persönliche, nichtkommerzielle Zwecke eingeräumt. Wenn Sie daran interessiert sind, OpenIPC für Ihre Geschäftsprojekte zu nutzen, wenden Sie sich bitte an <a href="/our-team">unser Team</a>.
+      thank_you: Vielen Dank, es bedeutet uns sehr viel!
+      title: Es ist Open Source
+      tron_in_telegram_html: Mit der Kryptowährung TON können Spenden direkt im Telegram über <a href="https://t.me/wallet">@wallet</a> getätigt werden.
     utilities:
       paragraph1: Eine Sammlung nützlicher Tools und Dienstprogramme.
       title: Dienstprogramme

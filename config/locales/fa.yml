@@ -1,5 +1,226 @@
 ---
 fa:
+  alerts:
+    downloads: اگر شما در آن مشکل دارید با تاستوپم یا برایگروزکوی فایل، نمی توانید از طریق <a href="https://t.me/openipc_modding">کانال تلگرام</a> استفاده کنید.
+  button:
+    find: پیدا کردن
+  cameras:
+    socs:
+      hi3536dv100_is_weird:
+        paragraph1: نصب سفت‌افزار OpenIPC بر روی HiSilicon NVR به روش خاصی نیاز دارد که در این راهنما گنجانده نشده است.
+        paragraph2: لطفاً به دستورالعمل های دقیق موجود در ویکی ما در آدرس مراجعه کنید
+        subtitle: در NVR با %{soc_name} SoC و %{flash_type} SPI تراشه فلش
+      index:
+        featured: توصیه شده
+        full_list: لیست کامل
+        recommended_alert_html: لطفا توجه داشته باشید. پشتیبانی از SoC های مختلف در مراحل مختلف توسعه است. <a href="/supported-hardware/featured">این لیست</a> بیشترین پشتیبانی را نشان می دهد و بنابراین، بیشترین موارد توصیه شده را نشان می دهد.
+        stages_of_development: مراحل توسعه سیستم عامل توضیح داده شده است
+        th_baseaddr: آدرس را بارگیری کنید
+        th_docs: نصب و راه اندازی
+        th_soc_model: مدل SoC
+        th_stage: صحنه
+        th_status: وضعیت ساخت
+        title: سخت افزار پشتیبانی شده توسط SoC
+      show:
+        bootloader: بوت لودر OpenIPC
+        bundle: OpenIPC Linux (%{name})
+        camera_ip_address_title: چهار فیلد 8 بیتی که با نقطه از هم جدا شده اند
+        camera_mac_address_title: شش فیلد هگز 8 بیتی که با ستون یا خط تیره جدا شده اند
+        for: برای %{name}
+        generate_button: ایجاد راهنمای نصب
+        generate_mac: یک آدرس MAC تصادفی معتبر ایجاد کنید.
+        not_ready_alert_html: دستورالعمل نصب %{name} SoC هنوز آماده نیست. اگرچه ما سخت کار می کنیم تا سیستم عامل OpenIPC را برای %{name} منتشر کنیم. لطفا با ما همراه باشید و <a href="/support-open-source">از منبع باز حمایت کنید</a> .
+        notes: یادداشت
+        paragraph1: لطفاً پیکربندی دوربین را در فرم ارائه شده وارد کنید و دکمه "Generate Installation Guide" را فشار دهید. در صفحه بعد، فایل های باینری و دستوراتی را که باید برای نصب فریمور OpenIPC روی دوربین اجرا کنید، پیدا خواهید کرد.
+        paragraph2: از این قسمت غافل نشوید. ممکن است فکر کنید که لازم نیست زیرا قرار نیست به گذشته تاریک بازگردید، اما ما به شما اطمینان می دهیم که سیستم عامل موجود برای بازیابی تنظیمات، درایورها و تحقیقات بیشتر مورد نیاز است.
+        server_ip_address_title: چهار فیلد 8 بیتی که با نقطه از هم جدا شده اند
+        subtitle: دانلودها
+        title: راهنمای نصب
+        title2: سیستم عامل سهام خود را ذخیره کنید!
+        toolchain: OpenIPC Toolchain
+      sigmastar_nand_is_weird:
+        paragraph1: نصب سفت‌افزار OpenIPC بر روی یک ماژول SigmaStar با حافظه فلش NAND به روش خاصی نیاز دارد که در این راهنما گنجانده نشده است.
+        paragraph2: لطفاً به دستورالعمل های دقیق موجود در ویکی ما در آدرس مراجعه کنید
+      soc:
+        generate_guide: یک راهنمای نصب ایجاد کنید
+        no_solution_yet: هنوز راه حل آماده ای وجود ندارد.
+      update:
+        advanced_instruction_link: آموزش نصب پیشرفته برای کارشناسان
+        files_download_alert: در صورت بروز هرگونه مشکل در دسترسی به فایل های دانلودی، لطفا با ما در کانال تلگرام ما تماس بگیرید.
+        sdcard_required_0: برای انجام این مرحله به کارت SD نیاز دارید. محتوای موجود کارت SD از بین خواهد رفت.
+        sdcard_required_1: برای انجام این مرحله به کارت SD نیاز دارید. کارت SD را به FAT32 فرمت کنید و فایل دانلود شده را در فهرست اصلی روی کارت کپی کنید.
+        sdcard_required_2: برای انجام این مرحله به کارت SD نیاز دارید. کارت SD را به FAT32 فرمت کنید و فایل دانلود شده را در فهرست اصلی روی کارت کپی کنید.
+        sdcard_required_3: برای انجام این مرحله به کارت SD نیاز دارید. کارت SD را به FAT32 فرمت کنید و فایل ها را از بسته دانلود شده به دایرکتوری ریشه روی کارت استخراج کنید.
+  error:
+    please_fix: لطفا اشکالات پایین را بر طرف کنید.
+  errors:
+    messages:
+      already_confirmed: قبلاً تأیید شده است، لطفاً وارد سیستم شوید
+      confirmation_period_expired: باید در %{period} تأیید شود، لطفاً یک مورد جدید درخواست کنید
+      expired: منقضی شده است، لطفا یک مورد جدید درخواست کنید
+      not_found: پیدا نشد
+      not_locked: قفل نشده بود
+      not_saved:
+        one: '1 خطا ذخیره این %{resource} را ممنوع کرد:'
+        other: 'خطاهای %{count} ذخیره این %{resource} را ممنوع کردند:'
+  firmware:
+    info_html: اگر می‌خواهید درباره کارهایی که دستورات <code>uknor*</code> ، <code>urnor*</code> ، <code>setnor*</code> انجام می‌دهند بیشتر بدانید، <code>printenv</code> در کنسول بوت‌لودر اجرا کنید.
+    installation:
+      backup:
+        info: OpenIPC U-Boot پارتیشن کریپتو اصلی را بازنویسی می کند و بازگشت به سیستم عامل کارخانه را غیرممکن می کند مگر اینکه یک نسخه پشتیبان کامل از فلش برای این دوربین خاص داشته باشید! برای ایجاد یک نسخه پشتیبان کامل از سیستم عامل، یک سرور TFTP را راه اندازی کنید و این دستورات را در پوسته بوت لودر اجرا کنید.
+        more_info_html: لطفاً برای اطلاعات بیشتر به <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">دستورالعمل‌های نصب</a> در ویکی پروژه مراجعه کنید.
+        subtitle: از سیستم عامل استوک خود نسخه پشتیبان تهیه کنید، این قسمت از فرآیند نصب را نادیده نگیرید!
+        title: سیستم عامل اصلی را ذخیره کنید
+      backup_32: توجه! قبل از پشتیبان گیری از رام فلش 32M، مطمئن شوید که دوربین حداقل 64M رم دارد.
+      flashing:
+        alternative: یا، فریمور OpenIPC را با قطعات آن فلش کنید
+      flashing_footfs:
+        continue: برای اعمال تغییرات، دوربین به طور خودکار راه اندازی مجدد می شود. متمرکز بمانید و آماده شوید تا دنباله بوت شدن را قطع کنید تا به پوسته بوت لودر بازگردید.
+        info: هنگامی که در پوسته بوت لودر هستید، پارتیشن بندی رام را با توجه به اندازه و نوع فلش خود مجددا مپ کنید.
+        title: دوربین را برای OpenIPC Linux آماده کنید
+      flashing_footfs2:
+        info: بسته نرم افزاری را دانلود کنید و آن را در پوشه اصلی سرور TFTP خود باز کنید.
+        link: بسته نرم افزار OpenIPC (%{name}) را دانلود کنید
+        title: فایل سیستم فایل روت و هسته لینوکس OpenIPC
+      flashing_full:
+        continue: دوربین به طور خودکار راه اندازی مجدد خواهد شد.
+        continue2: متمرکز بمانید و آماده شوید تا دنباله بوت شدن را قطع کنید تا به پوسته بوت لودر بازگردید. هنگامی که در پوسته بوت لودر هستید، پارتیشن بندی رام را با توجه به اندازه و نوع فلش خود مجددا مپ کنید.
+        info: تصویر کامل سیستم عامل شامل بوت لودر، هسته و فایل سیستم ریشه است و همچنین برای فلش کردن تراشه حافظه با استفاده از برنامه نویس مناسب است. لطفا توجه داشته باشید، تصویر کامل شامل محیط از پیش تنظیم شده نیست. هنوز باید آدرس MAC، آدرس IP و سایر تنظیمات خود را اضافه کنید.
+        link: تصویر OpenIPC Firmware (%{name}) را دانلود کنید
+        title: تصویر کامل OpenIPC Firmware را فلش کنید
+      flashing_uboot:
+        continue: دوربین در بوت لودر تازه فلش شده بوت می شود. متمرکز بمانید و آماده شوید تا دنباله بوت شدن را قطع کنید تا به پوسته بوت لودر بازگردید.
+        info: فایل باینری بوت لودر را دانلود کرده و در دایرکتوری ریشه سرور TFTP خود ذخیره کنید.
+        link: فایل باینری OpenIPC U-Boot را دانلود کنید
+        title: فلش OpenIPC U-Boot
+      permanent_link: پیوند دائمی به این پیکربندی
+      subtitle: روی دوربینی با %{soc_name} SoC و تراشه فلش %{flash_type} SPI
+      success:
+        info_html: رابط وب دوربین را در پورت 85 باز کنید ( <a href=\"http://%{address}:85/\">http://%{address}:85/</a> ) و با استفاده از <b>root root</b> و رمز عبور <b>12345</b> وارد سیستم شوید. پس از ورود به سیستم از شما خواسته می شود رمز عبور امن خود را تنظیم کنید. برای دسترسی به دوربین از طریق ssh یا UART از همان لاگین و رمز عبور استفاده می کنند.
+        title: تبریک می گویم! در حال حاضر، سیستم عامل OpenIPC (%{name}) را نصب کرده اید.
+      title: نرم افزار OpenIPC در حال فلش
+    restore:
+      info: اگر نیاز به بازیابی سیستم عامل اصلی دارید، از فایل پشتیبان ایجاد شده با استفاده از دستورات بالا استفاده کنید. فایل پشتیبان را در دایرکتوری ریشه سرور TFTP خود قرار دهید و این دستورات را در پوسته بوت لودر اجرا کنید.
+      title: بازیابی سیستم عامل استوک دوربین
+    version:
+      fpv: FPV
+      lite: ساده
+      nand: NAND
+      ultimate: نهایی
+      venc: VENC
+  flash_chip:
+    nand: NAND
+    nor16m: NOR 16M
+    nor32m: NOR 32M
+    nor8m: NOR 8M
+  go: برو
+  nav:
+    about: در باره
+    add_soc: SoC دیگری اضافه کنید
+    add_vendor: فروشنده اضافه کنید
+    adding_soc: SoC اضافه کنید
+    adding_vendor: افزودن فروشنده
+    admin: مدیر
+    channels: تلگرام ما
+    clone_soc: این SoC را شبیه سازی کنید
+    dashboard: داشبورد
+    editing: ویرایش
+    endpoints: نقاط پایانی با شکوه
+    green_life: زندگی سبز
+    hires_timer: تایمر با وضوح بالا
+    home: صفحه اصلی
+    introduction: معرفی
+    next: بعد
+    openwall: دیوار باز
+    partition_calc: ماشین حساب پارتیشن سفت افزار
+    pause_transitions: مکان نما ماوس را روی یک عکس فوری قرار دهید تا انتقال خودکار متوقف شود.
+    previous: قبلی
+    projects: پروژه های ما
+    qr_code_generator: تولید کننده کد QR
+    snapshot: 'عکس فوری #%{number}'
+    snapshots: آخرین عکس های فوری
+    socs: SoC ها
+    software: نرم افزار ما
+    support_opensource: منبع باز است
+    supported_hardware: سخت افزار پشتیبانی شده
+    team: تیم ما
+    tools: ابزار
+    utilities: خدمات رفاهی
+    vendors: فروشندگان
+    view_soc: صفحه SoC را مشاهده کنید
+    view_vendor: مشاهده فروشنده
+    webui: رابط وب
+    wiki: ویکی ما
+  net_iface:
+    both: دوربین دارای هر دو شبکه اترنت و بی سیم است
+    eth: دوربین فقط شبکه اترنت دارد
+    wifi: دوربین فقط شبکه بی سیم دارد
+  out: بیرون
+  sd_card:
+    nosd: دوربین دارای اسلات کارت SD نیست
+    sd: دوربین دارای اسلات کارت SD است
+  site:
+    disclaimer: اطلاعات موجود در این سایت صرفاً برای مقاصد اطلاعاتی عمومی است و بازدیدکنندگان به آن اعتماد نمی کنند. تمامی نرم افزارها و سیستم عامل موجود در این سایت همانطور که هست و فقط برای اهداف تحقیقاتی ارائه شده است. OpenIPC هیچ مسئولیتی در قبال ضرر و زیان ناشی از استفاده از این فایل ها یا استفاده یا اتکا به اطلاعات موجود در این سایت ندارد.
+    snapshot:
+      download: دانلود تصویر اصلی
+      link_to_camera: لینک دائمی این دوربین
+      link_to_last_jpeg: پیوند دائمی به آخرین عکس فوری از این دوربین (JPEG)
+  snapshots:
+    icon:
+      snapshot_alt: 'تصویر: عکس فوری'
+    index:
+      no_signal: بدون سیگنال
+      snapshot_alt: 'تصویر: عکس فوری'
+      stay_tuned: گوش به زنگ باشید
+      subtitle: تصاویری از دوربین‌های IP واقعی که روی سیستم‌افزار OpenIPC اجرا می‌شوند و توسط صاحبان آن‌ها ارائه شده‌اند.
+    oneday:
+      speed: سرعت
+    show:
+      delete_by_mac: همه را توسط MAC حذف کنید
+      delete_one: این یکی رو پاک کن
+      last_24h: 24 ساعت گذشته
+      show_slideshow: به صورت نمایش اسلاید تماشا کنید
+      snapshot_alt: 'تصویر: عکس فوری'
+      temperature: دمای SoC
+      uptime: آپتایم
+    slide:
+      bytes: بایت ها
+      dimensions: ابعاد
+      download_original: دانلود تصویر اصلی
+      link_to_this: پیوند به این عکس فوری
+      size: اندازه
+      snapshot_alt: 'تصویر: عکس فوری'
+      temperature: دمای SoC
+      uptime: آپتایم
+    snapshot:
+      snapshot_alt: 'تصویر: عکس فوری'
+      temperature: دمای SoC
+      uptime: آپتایم
+  str:
+    language: زبان
   telegram:
     channels:
+      description_1: کانال بین المللی درباره OpenIPC
+      description_10: کانال کاربران OpenIPC به زبان ماندارین
+      description_2: اعلان‌های GitHub در آخرین ساخت‌ها
+      description_3: نسخه ی نمایشی ربات تلگرام OpenIPC
+      description_4: کانال کاربران OpenIPC روسی زبان
+      description_5: کانال برای توسعه دهندگان OpenIPC
+      description_6: همه چیز برای تعمیر دستگاه ها
+      description_7: OpenIPC برای ساخت سیستم های FPV.
+      description_8: گروه پشتیبانی فنی پولی
       description_9: تیم OpenIPC برای کاربران ایرانی
+    formatting:
+      bold: پررنگ
+      header: قالب بندی پیام
+      hyperlink: هایپ لینک
+      italic: کج
+      monospace: تک فضا
+      strikeout: ضربه زدن
+      text_html: <p style=";text-align:right;direction:rtl">آیا می‌دانستید که پیام‌رسان تلگرام به شما امکان می‌دهد از قالب‌بندی برای تأکید بر بخش‌های مهم پیام استفاده کنید و اطلاعات را راحت‌تر درک کنید؟</p><p style=";text-align:right;direction:rtl"> یک قطعه متن را انتخاب کنید و یک ترکیب کلیدی را فشار دهید:</p>
+      underline: زیر خط بکشید
+    translation:
+      header: ترجمه چت
+      text_html: <p style=";text-align:right;direction:rtl">آیا می دانستید که پیام رسان تلگرام دارای موتور ترجمه داخلی است که به شما امکان می دهد پیام های نوشته شده به زبان های خارجی را بخوانید؟ کاربرانی که دارای حساب‌های پریمیوم هستند می‌توانند <a href="https://telegram.org/blog/profile-pics-emoji-translations#translating-entire-chats">کل چت‌ها را در لحظه ترجمه کنند</a> ، اما حتی یک حساب معمولی نیز می‌تواند <a href="https://telegram.org/blog/reactions-spoilers-translations#message-translation">پیام‌های فردی را با کلیک یک دکمه ترجمه کند</a> .</p>
+  title:
+    openwall: دیوار باز
