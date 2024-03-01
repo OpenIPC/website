@@ -202,6 +202,7 @@ pt:
     channels:
       description_1: Canal internacional sobre OpenIPC
       description_10: Canal de usuários do OpenIPC que falam mandarim
+      description_11: Informações oficiais, notícias e links do OpenIPC
       description_2: Notificações do GitHub sobre as versões mais recentes
       description_3: Demonstração do bot de telegrama OpenIPC
       description_4: Canal de usuários OpenIPC de língua russa

@@ -202,6 +202,7 @@ ru:
     channels:
       description_1: Основная международная группа по OpenIPC (EN)
       description_10: Группа пользователей OpenIPC из Китая
+      description_11: Официальная информация, новости и ссылки от OpenIPC
       description_2: Уведомления от GitHub о последних сборках
       description_3: Демонстрационный Telegram бот
       description_4: Группа русскоязычных пользователей OpenIPC

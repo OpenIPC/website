@@ -202,6 +202,7 @@ es:
     channels:
       description_1: Canal internacional sobre OpenIPC
       description_10: Canal de usuarios de OpenIPC de habla mandarín
+      description_11: Información oficial, noticias y enlaces de OpenIPC
       description_2: Notificaciones de GitHub sobre las últimas versiones
       description_3: Demostración de OpenIPC Telegram Bot
       description_4: Canal de usuarios de OpenIPC de habla rusa

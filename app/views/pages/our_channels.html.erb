@@ -13,18 +13,13 @@
     <div class="col">
       <div class="alert alert-primary tg">
         <%= image_tag "telegram.svg", class: "float-end" %>
-        <h5><a href="https://t.me/OpenIPC">OpenIPC (EN)</a></h5>
+        <h5><a href="https://t.me/OpenIPC">OpenIPC Users (EN)</a></h5>
         <p class="mb-0"><%= t('telegram.channels.description_1') %></p>
       </div>
       <div class="alert alert-primary tg">
         <%= image_tag "telegram.svg", class: "float-end" %>
-        <h5><a href="https://t.me/s/openipc_dev">OpenIPC Development</a></h5>
+        <h5><a href="https://t.me/s/openipc_dev">OpenIPC Development (EN)</a></h5>
         <p class="mb-0"><%= t('telegram.channels.description_2') %></p>
-      </div>
-      <div class="alert alert-primary tg">
-        <%= image_tag "telegram.svg", class: "float-end" %>
-        <h5><a href="https://t.me/+BMyMoolVOpkzNWUy">OpenIPC & FPV</a></h5>
-        <p class="mb-0"><%= t('telegram.channels.description_7') %></p>
       </div>
       <div class="alert alert-primary tg">
         <%= image_tag "telegram.svg", class: "float-end" %>
@@ -33,8 +28,13 @@
       </div>
       <div class="alert alert-primary tg">
         <%= image_tag "telegram.svg", class: "float-end" %>
-        <h5><a href="https://t.me/openipc_cn">OpenIPC (CN)</a></h5>
-        <p class="mb-0"><%= t('telegram.channels.description_10') %></p>
+        <h5><a href="https://t.me/openipc_info">OpenIPC Info</a></h5>
+        <p class="mb-0"><%= t('telegram.channels.description_11') %></p>
+      </div>
+      <div class="alert alert-primary tg">
+        <%= image_tag "telegram.svg", class: "float-end" %>
+        <h5><a href="https://t.me/+BMyMoolVOpkzNWUy">OpenIPC & FPV</a></h5>
+        <p class="mb-0"><%= t('telegram.channels.description_7') %></p>
       </div>
     </div>
     <div class="col">
@@ -55,8 +55,8 @@
       </div>
       <div class="alert alert-primary tg">
         <%= image_tag "telegram.svg", class: "float-end" %>
-        <h5><a href="https://paywall.pw/openipc">OpenIPC Paywall (RU)</a></h5>
-        <p class="mb-0"><%= t('telegram.channels.description_8') %></p>
+        <h5><a href="https://t.me/openipc_cn">OpenIPC (CN)</a></h5>
+        <p class="mb-0"><%= t('telegram.channels.description_10') %></p>
       </div>
       <div class="alert alert-primary tg">
         <%= image_tag "telegram.svg", class: "float-end" %>
@@ -65,11 +65,11 @@
       </div>
     </div>
     <div class="col">
-      <h3><%= t('telegram.translation.header') %></h3>
-      <%= t('telegram.translation.text_html') %>
-      <%= image_tag 'telegram-translation.webp', class: 'border img-fluid img-zoom' %>
-    </div>
-    <div class="col">
+      <div class="alert alert-primary tg">
+        <%= image_tag "telegram.svg", class: "float-end" %>
+        <h5><a href="https://paywall.pw/openipc">OpenIPC Paywall (RU)</a></h5>
+        <p class="mb-0"><%= t('telegram.channels.description_8') %></p>
+      </div>
       <h3><%= t('telegram.formatting.header') %></h3>
       <%= t('telegram.formatting.text_html') %>
       <dl class="row row-cols-2 mb-0">
@@ -86,6 +86,11 @@
         <dt><%= t('telegram.formatting.hyperlink') %></dt>
         <dd><span class="kb_key">Ctrl</span><span class="kb_key">K</span></dd>
       </dl>
+    </div>
+    <div class="col">
+      <h3 class="mt-1"><%= t('telegram.translation.header') %></h3>
+      <%= t('telegram.translation.text_html') %>
+      <%= image_tag 'telegram-translation.webp', class: 'border img-fluid img-zoom' %>
     </div>
   </div>
 </article>
