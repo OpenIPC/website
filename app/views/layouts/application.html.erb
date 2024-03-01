@@ -20,11 +20,11 @@
     </button>
     <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
       <ul class="navbar-nav">
-        <%= navbar_link(t('nav.introduction'), '/introduction') %>
-        <%= navbar_link(t('nav.supported_hardware'), '/supported-hardware') %>
-        <%= navbar_link(t('nav.support_opensource'), '/support-open-source') %>
-        <%= navbar_link(t('nav.openwall'), '/open-wall') %>
-
+        <%= navbar_link t('nav.introduction'), '/introduction' %>
+        <%= navbar_link t('nav.supported_hardware'), '/supported-hardware' %>
+        <%= navbar_link t('nav.support_opensource'), '/support-open-source' %>
+        <%= navbar_link t('nav.openwall'), '/open-wall' %>
+        <%= navbar_link t('nav.store'), "https://store.openipc.org/" %>
         <li class="nav-item dropdown">
           <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownAbout" role="button"><%= t('nav.about') %></a>
           <ul aria-labelledby="dropdownAbout" class="dropdown-menu dropdown-menu-lg-end">
