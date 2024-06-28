@@ -52,7 +52,7 @@ class Firmware
       raise StandardError, 'Unknown flash size'
     end
 
-    rootfs_offset = 0x250000 if @soc.vendor.name.eql?('SigmaStar')
+    rootfs_offset = 0x250000 if @soc.vendor.name.eql?('SigmaStar') || @soc.vendor.name.eql?('Ingenic')
 
     # create directory
     FileUtils.mkdir_p File.dirname(filepath)
