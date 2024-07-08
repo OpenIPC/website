@@ -140,8 +140,8 @@ es:
       paragraph1_html: 'OpenIPC es un proyecto de código abierto impulsado por la comunidad y muchas personas contribuyen a su código base. Felicitaciones a ellos! También hay un equipo central de desarrolladores capacitados que trabajan arduamente para ampliar la lista de <a href="/supported-hardware">plataformas de hardware compatibles</a> , ampliar la funcionalidad y estabilidad del firmware, revisar el código enviado y coordinar los esfuerzos de la comunidad. Conozca al equipo y sus áreas de especialización:'
       title: Nuestro equipo
     qr_code_generator:
-      alert_text: Tenga en cuenta que sus datos se enviarán a un servidor de Google para generar el código. Si no está de acuerdo con esto, no utilice este servicio.
-      alert_title: Usamos el generador de códigos QR de Google
+      alert_text: Tenga en cuenta que sus datos se enviarán a un servidor de TEC-IT para generar el código. Si no está de acuerdo con esto, no utilice este servicio.
+      alert_title: Usamos el generador de códigos QR de TEC-IT
       generate_qr_code: Generar código QR
       paragraph1_html: Genera un código QR con credenciales para acceder a tu red inalámbrica.
       password: Contraseña
