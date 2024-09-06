@@ -38,7 +38,7 @@
     const wlanssid = document.querySelector('#wlanssid').value;
     const wlanpass = document.querySelector('#wlanpass').value;
     const data = encodeURIComponent('wlanssid=' + wlanssid + "\n" + 'wlanpass=' + wlanpass);
-    const url = 'https://chart.googleapis.com/chart?cht=qr&chs=512x512&choe=utf-8&chld=l&chl=' + data;
+    const url = 'https://qrcode.tec-it.com/API/QRCode?data=' + data;
     document.querySelector('#qr').src = url;
   });
   document.querySelector('#qrcode_generator').addEventListener('reset', (ev) => {
