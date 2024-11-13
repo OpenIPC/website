@@ -96,7 +96,7 @@ en:
       permanent_link: Permanent link to this configuration
       subtitle: on a camera with %{soc_name} SoC and %{flash_type} SPI flash chip
       success:
-        info_html: Open camera's web interface on port 85 (<a href=\"http://%{address}:85/\">http://%{address}:85/</a>) and sign in using login <b>root</b> and password <b>12345</b> to sign in. You will be asked to set up your own secure password once signed in. To access the camera via ssh or UART use same login and password as above.
+        info_html: Open camera's web interface on <a href=\"http://%{address}:85/\">http://%{address}/</a> and sign in using login <b>root</b> and password <b>12345</b>. You will be asked to set up your own secure password once signed in. To access the camera via ssh or UART use same login and password as above.
         title: Congratulations! At this moment, you have OpenIPC Firmware (%{name}) installed.
       title: Flashing OpenIPC Firmware
     restore:
