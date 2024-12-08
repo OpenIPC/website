@@ -96,7 +96,7 @@ zh:
       permanent_link: 当前配置的永久链接
       subtitle: 在带有 %{soc_name} SoC 和 %{flash_type} SPI 闪存芯片的摄像机上
       success:
-        info_html: 在端口 85 ( <a href=\"http://%{address}:85/\">http://%{address}:85/</a> ) 上打开摄像机的 Web 界面并使用登录<b>root</b>和密码<b>12345</b>登录。登录后将要求您设置自己的安全密码。通过以下方式访问摄像机ssh 或 UART 使用与上述相同的登录名和密码。
+        info_html: 在端口 80 ( <a href=\"http://%{address}/\">http://%{address}/</a> ) 上打开摄像机的 Web 界面并使用登录<b>root</b>和密码<b>12345</b>登录。登录后将要求您设置自己的安全密码。通过以下方式访问摄像机ssh 或 UART 使用与上述相同的登录名和密码。
         title: 恭喜！此时，您已经安装了 OpenIPC 固件 (%{name})。
       title: 刷写 OpenIPC 固件
     restore:

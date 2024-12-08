@@ -96,7 +96,7 @@ fr:
       permanent_link: Lien permanent vers cette configuration
       subtitle: sur un appareil photo avec %{soc_name} SoC et %{flash_type} SPI flash chip
       success:
-        info_html: Ouvrez l'interface Web de la caméra sur le port 85 ( <a href=\"http://%{address}:85/\">http://%{address}:85/</a> ) et connectez-vous en utilisant <b>la racine</b> de connexion et le mot de passe <b>12345</b> pour vous connecter. Il vous sera demandé de configurer votre propre mot de passe sécurisé une fois connecté. Pour accéder à la caméra via ssh ou UART utilisent les mêmes identifiant et mot de passe que ci-dessus.
+        info_html: Ouvrez l'interface Web de la caméra sur le port 80 ( <a href=\"http://%{address}/\">http://%{address}/</a> ) et connectez-vous en utilisant <b>la racine</b> de connexion et le mot de passe <b>12345</b> pour vous connecter. Il vous sera demandé de configurer votre propre mot de passe sécurisé une fois connecté. Pour accéder à la caméra via ssh ou UART utilisent les mêmes identifiant et mot de passe que ci-dessus.
         title: Toutes nos félicitations! À l’heure actuelle, le micrologiciel OpenIPC (%{name}) est installé.
       title: Flashage du micrologiciel OpenIPC
     restore:

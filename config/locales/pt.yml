@@ -96,7 +96,7 @@ pt:
       permanent_link: Link permanente para esta configuração
       subtitle: em uma câmera com %{soc_name} SoC e chip flash %{flash_type} SPI
       success:
-        info_html: Abra a interface web da câmera na porta 85 ( <a href=\"http://%{address}:85/\">http://%{address}:85/</a> ) e faça login usando o login <b>root</b> e a senha <b>12345</b> para entrar. ssh ou UART usam o mesmo login e senha acima.
+        info_html: Abra a interface web da câmera na porta 80 ( <a href=\"http://%{address}/\">http://%{address}/</a> ) e faça login usando o login <b>root</b> e a senha <b>12345</b> para entrar. ssh ou UART usam o mesmo login e senha acima.
         title: Parabéns! Neste momento, você tem o firmware OpenIPC (%{name}) instalado.
       title: Firmware OpenIPC piscando
     restore:

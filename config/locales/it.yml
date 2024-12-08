@@ -96,7 +96,7 @@ it:
       permanent_link: Collegamento permanente a questa configurazione
       subtitle: su una fotocamera con SoC %{soc_name} e chip flash SPI %{flash_type}
       success:
-        info_html: Apri l'interfaccia web della telecamera sulla porta 85 ( <a href=\"http://%{address}:85/\">http://%{address}:85/</a> ) e accedi utilizzando <b>root</b> di accesso e password <b>12345</b> per accedere. Ti verrà chiesto di impostare la tua password sicura una volta effettuato l'accesso. Per accedere alla telecamera tramite ssh o UART utilizzano lo stesso login e password di cui sopra.
+        info_html: Apri l'interfaccia web della telecamera sulla porta 80 ( <a href=\"http://%{address}/\">http://%{address}/</a> ) e accedi utilizzando <b>root</b> di accesso e password <b>12345</b> per accedere. Ti verrà chiesto di impostare la tua password sicura una volta effettuato l'accesso. Per accedere alla telecamera tramite ssh o UART utilizzano lo stesso login e password di cui sopra.
         title: Congratulazioni! In questo momento hai installato il firmware OpenIPC (%{name}).
       title: Firmware OpenIPC lampeggiante
     restore:

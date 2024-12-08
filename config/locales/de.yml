@@ -96,7 +96,7 @@ de:
       permanent_link: Permanenter Link zu dieser Konfiguration
       subtitle: auf einer Kamera mit %{soc_name} SoC und %{flash_type} SPI-Flash-Chip
       success:
-        info_html: Öffnen Sie die Webschnittstelle der Kamera an Port 85 ( <a href=\"http://%{address}:85/\">http://%{address}:85/</a> ) und melden Sie sich mit dem Login- <b>Root</b> und dem Passwort <b>12345</b> an. Sobald Sie sich angemeldet haben, werden Sie aufgefordert, Ihr eigenes sicheres Passwort einzurichten. Um auf die Kamera zuzugreifen über ssh oder UART verwenden denselben Login und dasselbe Passwort wie oben.
+        info_html: Öffnen Sie die Webschnittstelle der Kamera an Port 80 ( <a href=\"http://%{address}/\">http://%{address}/</a> ) und melden Sie sich mit dem Login- <b>Root</b> und dem Passwort <b>12345</b> an. Sobald Sie sich angemeldet haben, werden Sie aufgefordert, Ihr eigenes sicheres Passwort einzurichten. Um auf die Kamera zuzugreifen über ssh oder UART verwenden denselben Login und dasselbe Passwort wie oben.
         title: Glückwunsch! Zu diesem Zeitpunkt ist die OpenIPC-Firmware (%{name}) installiert.
       title: Flashen der OpenIPC-Firmware
     restore:

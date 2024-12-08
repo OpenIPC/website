@@ -96,7 +96,7 @@ pl:
       permanent_link: Stałe łącze do tej konfiguracji
       subtitle: w aparacie z układem flash %{soc_name} SoC i %{flash_type} SPI
       success:
-        info_html: Otwórz interfejs sieciowy kamery na porcie 85 ( <a href=\"http://%{address}:85/\">http://%{address}:85/</a> ) i zaloguj się przy użyciu loginu <b>root</b> i hasła <b>12345.</b> Po zalogowaniu zostaniesz poproszony o ustawienie własnego bezpiecznego hasła. Aby uzyskać dostęp do kamery poprzez ssh lub UART używają tego samego loginu i hasła, co powyżej.
+        info_html: Otwórz interfejs sieciowy kamery na porcie 80 ( <a href=\"http://%{address}/\">http://%{address}/</a> ) i zaloguj się przy użyciu loginu <b>root</b> i hasła <b>12345.</b> Po zalogowaniu zostaniesz poproszony o ustawienie własnego bezpiecznego hasła. Aby uzyskać dostęp do kamery poprzez ssh lub UART używają tego samego loginu i hasła, co powyżej.
         title: Gratulacje! W tej chwili masz zainstalowane oprogramowanie sprzętowe OpenIPC (%{name}).
       title: Flashowanie oprogramowania sprzętowego OpenIPC
     restore:
