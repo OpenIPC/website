@@ -140,8 +140,6 @@ zh:
       paragraph1_html: OpenIPC 是一个社区驱动的开源项目，许多人为其代码库做出贡献。赞美他们！还有一个由熟练的开发人员组成的核心团队，他们努力扩展<a href="/supported-hardware">支持的硬件平台</a>列表、扩展固件的功能和稳定性、审查提交的代码并协调社区工作。了解团队及其专业领域：
       title: 我们的团队
     qr_code_generator:
-      alert_text: 请注意，您的数据将被发送到 TEC-IT 服务器以生成代码。如果您不同意，请不要使用本服务。
-      alert_title: 我们使用谷歌二维码生成器
       generate_qr_code: 生成二维码
       paragraph1_html: 生成包含用于访问无线网络的凭据的二维码。
       password: 密码

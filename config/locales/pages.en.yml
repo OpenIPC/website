@@ -140,8 +140,8 @@ en:
       paragraph1_html: 'OpenIPC is a community-driven open source project, and many people contribute to its codebase. Kudos to them! There is also a core team of skilled developers who work hard to expand the list of <a href="/supported-hardware">supported hardware platforms</a>, extend the functionality and stability of the firmware, review submitted code, and coordinate community efforts. Get to know the team and their areas of expertise:'
       title: Our Team
     qr_code_generator:
-      alert_text: Please be aware that your data will be sent to a TEC-IT server to generate the code. If you do not agree with this, please do not use this service.
-      alert_title: We use TEC-IT QR Code Generator
+      alert_text: The QR Code is generated in your web browser. Your data is not sent or stored anywhere.
+      alert_title: Note
       generate_qr_code: Generate QR Code
       paragraph1_html: Generate a QR code with credentials for accessing your wireless network.
       password: Password
