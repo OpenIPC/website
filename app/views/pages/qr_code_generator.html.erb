@@ -38,7 +38,7 @@
     const wlanssid = document.querySelector('#wlanssid').value;
     const wlanpass = document.querySelector('#wlanpass').value;
     const data = 'wlanssid=' + wlanssid + "\n" + 'wlanpass=' + wlanpass;
-    QRCode.toDataURL(data, { width: 400 }).then(url => {
+    QRCode.toDataURL(data, { width: 400, errorCorrectionLevel: 'Q' }).then(url => {
       document.querySelector('#qr').src = url;
     });
   });
