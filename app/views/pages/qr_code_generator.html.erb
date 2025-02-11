@@ -37,11 +37,16 @@
     ev.preventDefault();
     const wlanssid = document.querySelector('#wlanssid').value;
     const wlanpass = document.querySelector('#wlanpass').value;
-    const data = encodeURIComponent('wlanssid=' + wlanssid + "\n" + 'wlanpass=' + wlanpass);
-    const url = 'https://qrcode.tec-it.com/API/QRCode?data=' + data;
-    document.querySelector('#qr').src = url;
+    const data = 'wlanssid=' + wlanssid + "\n" + 'wlanpass=' + wlanpass;
+    QRCode.toDataURL(data, { width: 400, errorCorrectionLevel: 'Q' }).then(url => {
+      document.querySelector('#qr').src = url;
+    });
   });
   document.querySelector('#qrcode_generator').addEventListener('reset', (ev) => {
     document.querySelector('#qr').src = '/assets/qrcode.png';
   });
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.js"
+        integrity="sha256-uliN+vc4v4mA5do7aAqxzj8gWvdXdFTBb5wFBv50TfQ="
+        crossorigin="anonymous"></script>
