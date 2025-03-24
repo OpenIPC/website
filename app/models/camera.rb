@@ -4,8 +4,8 @@ class Camera
   include ActiveModel::Model
   include ActiveModel::Validations
 
-  FW_VERSION = %w[lite ultimate fpv rubyfpv venc].freeze
-  FLASH_CHIP = %w[nor8m nor16m nor32m nand].freeze
+  FW_VERSION = %w[lite ultimate].freeze
+  FLASH_CHIP = %w[nor8m nor16m nand].freeze
   NET_IFACE = %w[eth wifi both].freeze
   SD_CARD = %w[nosd sd].freeze
 
