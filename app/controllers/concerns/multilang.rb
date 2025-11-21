@@ -4,17 +4,17 @@ module Multilang
   extend ActiveSupport::Concern
 
   LOCALES = {
-    #de: 'Deutsch',
+    de: 'Deutsch',
     en: 'English',
-    #es: 'Español',
-    #fa: 'الفارسية',
-    #fr: 'Français',
-    #it: 'Italiano',
-    #ja: '日本語',
-    #pl: 'Polska',
-    #pt: 'Português',
-    #ru: 'Русский',
-    #zh: '中文'
+    es: 'Español',
+    fa: 'الفارسية',
+    fr: 'Français',
+    it: 'Italiano',
+    ja: '日本語',
+    pl: 'Polska',
+    pt: 'Português',
+    ru: 'Русский',
+    zh: '中文'
   }
 
   included do
