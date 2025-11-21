@@ -12,7 +12,7 @@ module Multilang
     it: 'Italiano',
     ja: '日本語',
     pl: 'Polska',
-    pt: 'Português',
+    # pt: 'Português',
     ru: 'Русский',
     zh: '中文'
   }
