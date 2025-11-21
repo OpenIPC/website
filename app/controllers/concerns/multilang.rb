@@ -4,17 +4,17 @@ module Multilang
   extend ActiveSupport::Concern
 
   LOCALES = {
-    de: 'Deutsch',
+    #de: 'Deutsch',
     en: 'English',
-    es: 'Español',
-    fa: 'الفارسية',
-    fr: 'Français',
-    it: 'Italiano',
-    ja: '日本語',
-    pl: 'Polska',
-    pt: 'Português',
-    ru: 'Русский',
-    zh: '中文'
+    #es: 'Español',
+    #fa: 'الفارسية',
+    #fr: 'Français',
+    #it: 'Italiano',
+    #ja: '日本語',
+    #pl: 'Polska',
+    #pt: 'Português',
+    #ru: 'Русский',
+    #zh: '中文'
   }
 
   included do
@@ -22,7 +22,7 @@ module Multilang
 
     helper_method :browser_locale
     helper_method :locales_for_select
-#    helper_method :locale_switcher
+    helper_method :locale_switcher
   end
 
   def browser_locale
@@ -62,22 +62,22 @@ module Multilang
     I18n.available_locales.map { |l| [t("locales.#{l}"), l] }
   end
 
-#  def locale_switcher
-#    html = []
-#    html << '<ul class="navbar-nav text-uppercase">'
-#    html << '<li class="nav-item dropdown">'
-#    html << '<a aria-expanded="false" class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" id="dropsownLanguage" role="button">'
-#    #html << format('%<language>s [%<locale>s]', { language: t("str.language"), locale: I18n.locale })
-#    html << '<img src="/assets/translate.svg" alt="Image: language icon" class="icon img-fluid" title="Language selection">'
-#    html << '</a>'
-#    html << '<ul aria-labelledby="dropdownLanguage" class="dropdown-menu dropdown-menu-lg-end">'
-#    I18n.available_locales.sort.each do |l|
-#      html << '<li class="dropdown-item">'
-#      html << format('<a href="?locale=%<locale>s" class="%<active>s">%<name>s</a>',
-#                     { active: I18n.locale.eql?(l) ? ' fw-bold' : nil, locale: l, name: LOCALES[l] })
-#      html << '</li>'
-#    end
-#    html << '</ul></li></ul>'
-#    html.join("\n").html_safe
-#  end
+  def locale_switcher
+    html = []
+    html << '<ul class="navbar-nav text-uppercase">'
+    html << '<li class="nav-item dropdown">'
+    html << '<a aria-expanded="false" class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" id="dropsownLanguage" role="button">'
+    #html << format('%<language>s [%<locale>s]', { language: t("str.language"), locale: I18n.locale })
+    html << '<img src="/assets/translate.svg" alt="Image: language icon" class="icon img-fluid" title="Language selection">'
+    html << '</a>'
+    html << '<ul aria-labelledby="dropdownLanguage" class="dropdown-menu dropdown-menu-lg-end">'
+    I18n.available_locales.sort.each do |l|
+      html << '<li class="dropdown-item">'
+      html << format('<a href="?locale=%<locale>s" class="%<active>s">%<name>s</a>',
+                     { active: I18n.locale.eql?(l) ? ' fw-bold' : nil, locale: l, name: LOCALES[l] })
+      html << '</li>'
+    end
+    html << '</ul></li></ul>'
+    html.join("\n").html_safe
+  end
 end
