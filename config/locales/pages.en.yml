@@ -189,7 +189,7 @@ en:
       oc_button_title: Donate to our collective
       paragraph1: Many core team members donate their knowledge and their free time to work on the project, often using their personal funds to buy cameras to expand the list of supported hardware. Your donation help us to ease the burden on their personal finances while keeping the development on the latest hardware. We also use the funds to compensate the work of part-time and full-time maintainers, and to attend trade shows, meet with hardware vendors, monitor trends in camera technology and gain access to SDK and other support materials, which are often expensive. Your contributions help us to continue development and provide technical support to the community.
       price_of_firmware: Price of the Firmware
-      price_of_firmware_p1_html: The right to use the OpenIPC firmware and its components is granted to all users free of charge and only for personal, non-commercial purposes. If you are interested in using OpenIPC for your business projects, please contact <a href="/our-team">our team</a>.
+      price_of_firmware_p1_html: The right to use OpenIPC firmware and its components is, in most cases, granted to all users free of charge for personal and non-commercial purposes. If you are interested in using OpenIPC for your business projects, please contact <a href="/our-team">our team</a> for details, as some firmware components may have a licence different from <a href="https://opensource.org/licenses/MIT">MIT</a>.
       thank_you: Thank you, it means a lot to us!
       title: Support Open Source
       tron_in_telegram_html: Using TON cryptocurrency, donations can be made right inside the Telegram using <a href="https://t.me/wallet">@wallet</a>.

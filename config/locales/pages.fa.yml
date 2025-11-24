@@ -187,7 +187,7 @@ fa:
       oc_button_title: به جمع ما کمک کنید
       paragraph1: بسیاری از اعضای اصلی تیم دانش و زمان آزاد خود را برای کار بر روی پروژه اهدا می کنند و اغلب از سرمایه شخصی خود برای خرید دوربین برای گسترش لیست سخت افزارهای پشتیبانی شده استفاده می کنند. کمک مالی شما به ما کمک می کند تا بار مالی شخصی آنها را کاهش دهیم و در عین حال توسعه را بر روی جدیدترین سخت افزار حفظ کنیم. ما همچنین از این بودجه برای جبران کار نگهبانان پاره وقت و تمام وقت و حضور در نمایشگاه های تجاری، ملاقات با فروشندگان سخت افزار، نظارت بر روند فناوری دوربین و دسترسی به SDK و سایر مواد پشتیبانی که اغلب گران هستند استفاده می کنیم. کمک های شما به ما کمک می کند تا توسعه را ادامه دهیم و پشتیبانی فنی را برای جامعه ارائه دهیم.
       price_of_firmware: قیمت فریمور
-      price_of_firmware_p1_html: حق استفاده از سیستم عامل OpenIPC و اجزای آن به همه کاربران رایگان و فقط برای مقاصد شخصی و غیرتجاری اعطا می شود. اگر علاقه مند به استفاده از OpenIPC برای پروژه های تجاری خود هستید، لطفا با <a href="/our-team">تیم ما</a> تماس بگیرید.
+      price_of_firmware_p1_html: The right to use OpenIPC firmware and its components is, in most cases, granted to all users free of charge for personal and non-commercial purposes. If you are interested in using OpenIPC for your business projects, please contact <a href="/our-team">our team</a> for details, as some firmware components may have a licence different from <a href="https://opensource.org/licenses/MIT">MIT</a>.
       thank_you: متشکرم، برای ما بسیار مهم است!
       title: پشتیبانی از منبع باز
       tron_in_telegram_html: با استفاده از ارز دیجیتال TON، می‌توان کمک‌های مالی را مستقیماً در تلگرام با استفاده از <a href="https://t.me/wallet">کیف پول @</a> انجام داد.

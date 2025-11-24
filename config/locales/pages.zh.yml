@@ -187,7 +187,7 @@ zh:
       oc_button_title: 为我们的集体捐款
       paragraph1: 许多核心团队成员将他们的知识和空余时间奉献给这个项目，经常用他们的个人资金来购买摄像机，以便支持更多的硬件设备。您的捐款可以帮助我们减轻他们的个人经济负担，同时维持在最新的硬件平台上的继续该项目的开发。我们还用这些资金来补偿兼职和全职维护人员的工作，届时还会参加贸易展，与硬件供应商会面合作，了解网络摄像机技术的发展趋势，并获得SDK和其他技术文档，这些资料往往很昂贵。您的捐助可以帮助我们继续开发并为社区提供技术支持。
       price_of_firmware: 固件的价格
-      price_of_firmware_p1_html: 所有用户都可以免费使用OpenIPC固件及其组件，但仅限于个人、非商业目的。如果您有兴趣在您的商业项目中使用OpenIPC，请联系我们的团队。
+      price_of_firmware_p1_html: 在多数情况下，所有用户均可免费获得OpenIPC固件及其组件的使用权，用于个人及非商业用途。若您有意将OpenIPC应用于商业项目，请联系<a href="/our-team">我们的团队</a>获取详情，因部分固件组件可能采用与<a href="https://opensource.org/licenses/MIT">MIT许可</a>不同的授权协议。
       thank_you: 非常感谢，这对我们来说意义重大!
       title: 是开源的
       tron_in_telegram_html: 使用 TON 加密货币，可以在 Telegram 在 Telegram 中使用 <a href="https://t.me/wallet">@wallet</a> 进行捐赠。
