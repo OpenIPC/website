@@ -51,6 +51,10 @@ zh:
       supporters: 支持者
       manufacturers: Manufacturers
       research: Research
+      partners: Partners
+      projects: Projects
+      integrators: Integrators
+      development: Development
       title: 介绍
     majestic_endpoints:
       aac: AAC 音频流。

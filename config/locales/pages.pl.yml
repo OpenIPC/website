@@ -51,6 +51,10 @@ pl:
       supporters: Zwolennicy
       manufacturers: Manufacturers
       research: Research
+      partners: Partners
+      projects: Projects
+      integrators: Integrators
+      development: Development
       title: Wstęp
     majestic_endpoints:
       aac: Strumień audio AAC.

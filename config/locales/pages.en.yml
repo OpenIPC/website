@@ -51,6 +51,10 @@ en:
       supporters: Supporters
       manufacturers: Manufacturers
       research: Research
+      partners: Partners
+      projects: Projects
+      integrators: Integrators
+      development: Development
       title: Introduction
     majestic_endpoints:
       aac: AAC audio stream.

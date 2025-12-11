@@ -51,6 +51,10 @@ fr:
       supporters: Partisans
       manufacturers: Manufacturers
       research: Research
+      partners: Partners
+      projects: Projects
+      integrators: Integrators
+      development: Development
       title: Introduction
     majestic_endpoints:
       aac: Flux audio AAC.
