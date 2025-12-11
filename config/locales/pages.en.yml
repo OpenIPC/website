@@ -49,6 +49,7 @@ en:
       subtitle1: OpenIPC is an alternative open firmware for your IP camera.
       subtitle2: Why OpenIPC Firmware?
       supporters: Supporters
+      manufacturers: Manufacturers
       title: Introduction
     majestic_endpoints:
       aac: AAC audio stream.
