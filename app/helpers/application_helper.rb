@@ -6,7 +6,7 @@ module ApplicationHelper
   end
 
   def debug_mode?
-    request.remote_addr.eql?('127.0.0.1')
+    request.remote_addr.eql?('10.10.255.255')
   end
 
   def default_image_path

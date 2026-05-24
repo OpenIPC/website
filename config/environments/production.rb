@@ -50,10 +50,14 @@ Rails.application.configure do
 
   # Include generic and useful information about system operation, but avoid logging too much
   # information to avoid inadvertent exposure of personally identifiable information (PII).
-  config.log_level = :info
+  config.log_level = :debug
 
   # Prepend all log lines with the following tags.
   config.log_tags = [:request_id]
+
+  config.hosts << "openipc.org"
+
+
 
   # Use a different cache store in production.
   # config.cache_store = :mem_cache_store
@@ -87,6 +91,10 @@ Rails.application.configure do
     logger.formatter = config.log_formatter
     config.logger    = ActiveSupport::TaggedLogging.new(logger)
   end
+
+  config.default_url_options = { host: 'openipc.org' }
+  config.action_mailer.default_url_options = { host: 'openipc.org' }
+  config.action_mailer.delivery_method = :sendmail
 
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false

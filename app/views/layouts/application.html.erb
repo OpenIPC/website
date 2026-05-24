@@ -23,8 +23,8 @@
         <%= navbar_link t('nav.introduction'), '/introduction' %>
         <%= navbar_link t('nav.supported_hardware'), '/supported-hardware' %>
         <%= navbar_link t('nav.support_opensource'), '/support-open-source' %>
-        <%= navbar_link t('nav.openwall'), '/open-wall' %>
-        <%= navbar_link t('nav.store'), "https://store.openipc.org/" %>
+        <!-- %= navbar_link t('nav.openwall'), '/open-wall' % -->
+        <!-- %= navbar_link t('nav.store'), "https://store.openipc.org/" % -->
         <li class="nav-item dropdown">
           <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownAbout" role="button"><%= t('nav.about') %></a>
           <ul aria-labelledby="dropdownAbout" class="dropdown-menu dropdown-menu-lg-end">
@@ -36,7 +36,6 @@
             <%= dropdown_link t('nav.webui'), '/web-interface' %>
             <%= dropdown_link t('nav.endpoints'), '/majestic-endpoints' %>
             <%= dropdown_link t('nav.wiki'), 'https://github.com/openipc/wiki' %>
-            <%= dropdown_link t('nav.utilities'), '/utilities' %>
           </ul>
         </li>
         <li class="nav-item dropdown">
@@ -45,10 +44,11 @@
             <%= dropdown_link t('nav.partition_calc'), '/tools/firmware-partitions-calculation' %>
             <%= dropdown_link t('nav.hires_timer'), '/tools/high-resolution-timer' %>
             <%= dropdown_link t('nav.qr_code_generator'), '/tools/qr-code-generator' %>
+            <%= dropdown_link t('nav.utilities'), '/utilities' %>
           </ul>
         </li>
       </ul>
-      <%= locale_switcher %>
+      <!-- %= locale_switcher % -->
     </div>
   </div>
 </nav>

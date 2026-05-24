@@ -18,7 +18,7 @@ module Multilang
   }
 
   included do
-    before_action :set_locale
+    # before_action :set_locale
 
     helper_method :browser_locale
     helper_method :locales_for_select
