@@ -4,9 +4,11 @@ class ProcessImagesJob < ApplicationJob
   queue_as :default
 
   def perform(snapshot)
-    [[90, 60], [240, 135], [480, 360], [1920, 1080]].each do |w, h|
-      variant = snapshot.file.representation(resize_to_limit: [w, h])
-      variant.processed
+    # Pre-process the named variants the wall actually renders. This also forces
+    # HEIF uploads to be decoded once here, in the background, instead of on the
+    # first page view.
+    %i[icon icon2 thumb fullhd].each do |name|
+      snapshot.file.variant(name).processed
     end
   end
 end
