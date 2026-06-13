@@ -12,11 +12,15 @@ class Snapshot < ApplicationRecord
 
   INTERVAL_LIMIT = 15.minutes
 
+  # Uploads may be HEIF (HEVC/AVC) as well as JPEG. Render every variant as JPEG
+  # so the wall displays in all browsers (HEIF is decodable only by Safari) and
+  # stays small. Decoding HEIF sources requires the server's libvips to be built
+  # with libheif support.
   has_one_attached :file do |attachable|
-    attachable.variant :icon, resize_to_limit: [90, 60]
-    attachable.variant :icon2, resize_to_limit: [240, 135]
-    attachable.variant :thumb, resize_to_limit: [480, 360]
-    attachable.variant :fullhd, resize_to_limit: [1920, 1080]
+    attachable.variant :icon,   resize_to_limit: [90, 60],     format: :jpeg, saver: { quality: 80, strip: true }
+    attachable.variant :icon2,  resize_to_limit: [240, 135],   format: :jpeg, saver: { quality: 80, strip: true }
+    attachable.variant :thumb,  resize_to_limit: [480, 360],   format: :jpeg, saver: { quality: 80, strip: true }
+    attachable.variant :fullhd, resize_to_limit: [1920, 1080], format: :jpeg, saver: { quality: 85, strip: true }
   end
 
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }

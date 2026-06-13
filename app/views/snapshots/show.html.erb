@@ -15,6 +15,16 @@
     <%= image_tag @snapshot.file.variant(:fullhd), alt: t('.snapshot_alt'), class: "h-100 w-auto position-absolute top-50 start-50 translate-middle" %>
   </div>
 
+  <% if @snapshot.file.content_type.to_s.start_with?('image/hei') %>
+    <p data-heif-original="<%= rails_blob_path(@snapshot.file, disposition: 'inline') %>">
+      <button type="button" class="btn btn-sm btn-outline-secondary" data-heif-view>
+        <%= t('site.snapshot.view_heif', default: 'View original HEIF in your browser') %>
+      </button>
+      <span class="small text-muted ms-2" data-heif-status></span>
+      <canvas class="d-none w-100 mt-2" data-heif-canvas></canvas>
+    </p>
+  <% end %>
+
   <span class="float-end text-end text-muted">
     <span data-timestamp="<%= @snapshot.created_at.to_i %>"><%= @snapshot.created_at %></span><br>
     <%= @snapshot.image_dimensions %>, <%= @snapshot.file.byte_size %> bytes<br>
