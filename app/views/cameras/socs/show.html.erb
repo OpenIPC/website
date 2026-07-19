@@ -65,8 +65,8 @@
             <div class="col">
               <%= f.select :flash_type, list_of_flash_type_sizes_for_select %>
               <%= f.select :firmware_version, list_of_firmware_versions_for_select %>
-              <%= f.select :network_interface, list_of_network_interfaces_for_select %>
-              <%= f.select :sd_card_slot, list_of_sd_card_for_select %>
+              <!-- %= f.select :network_interface, list_of_network_interfaces_for_select % -->
+              <!-- %= f.select :sd_card_slot, list_of_sd_card_for_select % -->
             </div>
           </div>
           <p><%= f.submit t('.generate_button'), class: "btn btn-primary" %></p>
@@ -88,19 +88,19 @@
         if (document.querySelector('#camera_flash_type').value === 'nor8m') {
             for (let i = 0; i < el.options.length; i++) {
                 let o = el.options.item(i);
-                o.disabled = (o.value == 'ultimate'<%= raw " || o.value == 'fpv'" if @camera.soc.vendor.name.eql?('SigmaStar') %>);
+                o.disabled = (o.value !== 'lite');
             }
             el.value = 'lite';
         } else if (document.querySelector('#camera_flash_type').value === 'nor16m') {
             for (let i = 0; i < el.options.length; i++) {
                 let o = el.options.item(i);
-                o.disabled = (o.value == 'venc'<%= raw " || o.value == 'fpv'" unless @camera.soc.vendor.name.eql?('SigmaStar') %>);
+                o.disabled = (o.value !== 'lite');
             }
-            el.value = 'ultimate';
+            el.value = 'lite';
         } else if (document.querySelector('#camera_flash_type').value === 'nor32m') {
             for (let i = 0; i < el.options.length; i++) {
                 let o = el.options.item(i);
-                o.disabled = (o.value == 'venc'<%= raw " || o.value == 'fpv'" unless @camera.soc.vendor.name.eql?('SigmaStar') %>);
+                o.disabled = (o.value == 'fabricator'<%= raw " || o.value == 'fpv'" unless @camera.soc.vendor.name.eql?('SigmaStar') %>);
             }
             el.value = 'ultimate';
         } else if (document.querySelector('#camera_flash_type').value === 'nand') {
