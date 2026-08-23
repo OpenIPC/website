@@ -55,8 +55,16 @@ STATE_FILE = '.mirror-state.json'
 # mirroring `_manifest.json`, a real asset that had been on disk since July:
 # guessing at the character set upstream is allowed to use is how you refuse
 # files you meant to keep.
+#
+# Control characters are the one character rule worth keeping. Every name that
+# gets this far is interpolated into a log line, and a name carrying a newline
+# could forge entries in the cron log. Rejecting them here means the log lines
+# below can stay readable instead of being wrapped in .inspect.
 def plain_filename?(name)
-  !name.empty? && name == File.basename(name) && !name.start_with?('.')
+  !name.empty? &&
+    name == File.basename(name) &&
+    !name.start_with?('.') &&
+    !name.match?(/[[:cntrl:]]/)
 end
 
 # One page of releases, newest first. The rolling `nightly` and `latest` tags
