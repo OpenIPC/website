@@ -9,6 +9,40 @@ module InstallationHelper
     content_tag 'span', '# Enter commands line by line! Do not copy and paste multiple lines at once!', class: 'text-danger'
   end
 
+  # `sf probe` has to run before any erase, and `sf lock 0` clears the status
+  # register block protection some vendors arm. Kept as its own line rather
+  # than chained into the flashing command: plenty of vendor U-Boots have no
+  # `sf lock` subcommand at all, and a chain would abort on their error
+  # instead of going on to flash.
+  def unlock_flash(text, c)
+    text << 'sf probe 0; sf lock 0;' unless c.flash_type.eql?('nand')
+  end
+
+  # Build one line that only erases if the transfer before it succeeded.
+  #
+  # Both halves matter. U-Boot's `&&` stops a failed `tftpboot`/`tftp`/
+  # `fatload` from reaching the erase, and `${filesize}` bounds the write to
+  # what actually arrived. Without them a transfer that fails, or one whose
+  # load address was mistyped -- U-Boot's hex parser stops at the first
+  # non-hex character, so `0mx82000000` silently becomes `0` -- still erased
+  # the chip and wrote back the `mw.b` fill, putting 0xff over the
+  # bootloader while reporting success. See OpenIPC/website#55 and the
+  # camera it destroyed in OpenIPC/firmware#2299.
+  #
+  # It must stay a single line, because the block above it tells the user to
+  # enter commands one at a time.
+  def guarded_flash(c, transfer, offset, erase_size, write_size)
+    cmd = c.flash_type.eql?('nand') ? 'nand' : 'sf'
+    "#{transfer} && #{cmd} erase #{offset} #{erase_size} " \
+      "&& #{cmd} write #{c.soc.load_address} #{offset} #{write_size}"
+  end
+
+  # NOR writes only what arrived. NAND keeps the fixed partition size it has
+  # always used, since `${filesize}` is not guaranteed to be page-aligned.
+  def write_size_for(c, fixed)
+    c.flash_type.eql?('nand') ? fixed : '${filesize}'
+  end
+
   def firmware_backup(c)
     text = []
     text << do_not_copy_paste
@@ -31,6 +65,7 @@ module InstallationHelper
     else
       text << "tftpput #{c.soc.load_address} #{c.flash_size_hex} #{c.backup_filename}"
       text << '# if there is no tftpput but tftp then run this instead'
+      text << '# (the third argument is what makes tftp upload rather than download)'
       text << "tftp #{c.soc.load_address} #{c.backup_filename} #{c.flash_size_hex}"
     end
     list_of_commands text
@@ -38,46 +73,44 @@ module InstallationHelper
 
   def flashing_everything(c)
     fw_filename = "openipc-#{c.soc.model_downcase}-#{c.firmware_version}-#{c.flash_size}mb.bin"
+    write_size = write_size_for(c, c.flash_size_hex)
     text = []
     text << do_not_copy_paste
     text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
     text << "mw.b #{c.soc.load_address} 0xff #{c.flash_size_hex}"
+    unlock_flash text, c
     if c.sd_card_slot.eql?('sd') && c.network_interface.eql?('wifi')
-      text << "fatload mmc 0:1 #{c.soc.load_address} #{fw_filename}"
+      text << guarded_flash(c, "fatload mmc 0:1 #{c.soc.load_address} #{fw_filename}",
+                            '0x0', c.flash_size_hex, write_size)
     else
-      text << "tftpboot #{c.soc.load_address} #{fw_filename}"
+      text << guarded_flash(c, "tftpboot #{c.soc.load_address} #{fw_filename}",
+                            '0x0', c.flash_size_hex, write_size)
       text << '# if there is no tftpboot but tftp then run this instead'
-      text << "tftp #{c.soc.load_address} #{fw_filename}"
-    end
-    if c.flash_type.eql?('nand')
-      text << "nand erase 0x0 #{c.flash_size_hex}; nand write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
-    else
-      text << 'sf probe 0; sf lock 0;'
-      text << "sf erase 0x0 #{c.flash_size_hex}; sf write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+      text << guarded_flash(c, "tftp #{c.soc.load_address} #{fw_filename}",
+                            '0x0', c.flash_size_hex, write_size)
     end
     text << 'reset'
     list_of_commands text
   end
 
   def flashing_uboot(c)
+    write_size = write_size_for(c, '0x50000')
     text = []
     text << do_not_copy_paste
     unless c.network_interface.eql?('wifi')
       text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
     end
     text << "mw.b #{c.soc.load_address} 0xff 0x50000"
+    unlock_flash text, c
     if c.sd_card_slot.eql?('sd') && c.network_interface.eql?('wifi')
-      text << "fatload mmc 0:1 #{c.soc.load_address} #{c.soc.uboot_filename}"
+      text << guarded_flash(c, "fatload mmc 0:1 #{c.soc.load_address} #{c.soc.uboot_filename}",
+                            '0x0', '0x50000', write_size)
     else
-      text << "tftpboot #{c.soc.load_address} #{c.soc.uboot_filename}"
+      text << guarded_flash(c, "tftpboot #{c.soc.load_address} #{c.soc.uboot_filename}",
+                            '0x0', '0x50000', write_size)
       text << '# if there is no tftpboot but tftp then run this instead'
-      text << "tftp #{c.soc.load_address} #{c.soc.uboot_filename}"
-    end
-    if c.flash_type.eql?('nand')
-      text << "nand erase 0x0 0x50000; nand write #{c.soc.load_address} 0x0 0x50000"
-    else
-      text << 'sf probe 0; sf lock 0;'
-      text << "sf erase 0x0 0x50000; sf write #{c.soc.load_address} 0x0 0x50000"
+      text << guarded_flash(c, "tftp #{c.soc.load_address} #{c.soc.uboot_filename}",
+                            '0x0', '0x50000', write_size)
     end
     text << 'reset'
     list_of_commands text
@@ -93,22 +126,14 @@ module InstallationHelper
     end
     if c.sd_card_slot.eql?('sd') && c.network_interface.eql?('wifi')
       text << "mw.b #{c.soc.load_address} 0xff 0x200000"
-      text << "fatload mmc 0:1 #{c.soc.load_address} #{c.soc.kernel_file}"
-      if c.flash_type.eql?('nand')
-        text << "nand erase #{c.kernel_offset} #{c.kernel_max_size}; nand write #{c.soc.load_address} #{c.kernel_offset} ${filesize}"
-      else
-        text << 'sf probe 0; sf lock 0;'
-        text << "sf erase #{c.kernel_offset} #{c.kernel_max_size}; sf write #{c.soc.load_address} #{c.kernel_offset} ${filesize}"
-      end
+      unlock_flash text, c
+      text << guarded_flash(c, "fatload mmc 0:1 #{c.soc.load_address} #{c.soc.kernel_file}",
+                            c.kernel_offset, c.kernel_max_size, '${filesize}')
       text << ''
       text << "mw.b #{c.soc.load_address} 0xff 0x500000"
-      text << "fatload mmc 0:1 #{c.soc.load_address} #{c.soc.rootfs_file}"
-      if c.flash_type.eql?('nand')
-        text << "nand erase #{c.rootfs_offset} #{c.rootfs_max_size}; nand write #{c.soc.load_address} #{c.rootfs_offset} ${filesize}"
-      else
-        text << 'sf probe 0; sf lock 0;'
-        text << "sf erase #{c.rootfs_offset} #{c.rootfs_max_size}; sf write #{c.soc.load_address} #{c.rootfs_offset} ${filesize}"
-      end
+      unlock_flash text, c
+      text << guarded_flash(c, "fatload mmc 0:1 #{c.soc.load_address} #{c.soc.rootfs_file}",
+                            c.rootfs_offset, c.rootfs_max_size, '${filesize}')
       text << ''
     else
       text << "run uk#{c2}; run ur#{c2}"
@@ -130,22 +155,20 @@ module InstallationHelper
   end
 
   def restore_from_backup(c)
+    write_size = write_size_for(c, c.flash_size_hex)
     text = []
     text << do_not_copy_paste
     unless c.network_interface.eql?('wifi')
       text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
     end
     text << "mw.b #{c.soc.load_address} 0xff #{c.flash_size_hex}"
+    unlock_flash text, c
     if c.sd_card_slot.eql?('sd') && c.network_interface.eql?('wifi')
-      text << "fatload mmc 0:1 #{c.soc.load_address} #{c.backup_filename}"
+      text << guarded_flash(c, "fatload mmc 0:1 #{c.soc.load_address} #{c.backup_filename}",
+                            '0x0', c.flash_size_hex, write_size)
     else
-      text << "tftpboot #{c.soc.load_address} #{c.backup_filename}"
-    end
-    if c.flash_type.eql?('nand')
-      text << "nand erase 0x0 #{c.flash_size_hex}; nand write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
-    else
-      text << 'sf probe 0; sf lock 0;'
-      text << "sf erase 0x0 #{c.flash_size_hex}; sf write #{c.soc.load_address} 0x0 #{c.flash_size_hex}"
+      text << guarded_flash(c, "tftpboot #{c.soc.load_address} #{c.backup_filename}",
+                            '0x0', c.flash_size_hex, write_size)
     end
     list_of_commands text
   end
