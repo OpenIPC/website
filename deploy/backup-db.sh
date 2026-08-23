@@ -91,7 +91,22 @@ mysqldump --single-transaction --quick --routines --triggers \
   || fail "mysqldump failed"
 
 SIZE=$(stat -c %s "${WORK}/${DB}.sql.zst")
-[ "$SIZE" -gt 100000 ] || fail "dump is only ${SIZE} bytes — refusing to upload a truncated backup"
+
+# Sanity floor. This was 100000 when the database still carried ~93,000 orphaned
+# ActiveStorage rows and dumps were ~6.6 MB; after the orphan reap a healthy dump
+# is around 135 KB, which left almost no margin. Compare against the previous
+# successful dump instead of a fixed number: a sudden collapse in size is the
+# signal worth catching, and an absolute floor cannot track a shrinking schema.
+LAST_SIZE_FILE=/srv/www/.last-backup-size
+[ "$SIZE" -gt 20000 ] || fail "dump is only ${SIZE} bytes — refusing to upload a truncated backup"
+
+if [ -r "$LAST_SIZE_FILE" ]; then
+  LAST=$(cat "$LAST_SIZE_FILE")
+  # Halving between nightly runs means something deleted a lot; stop and ask.
+  if [ -z "${FORCE_SHRINK:-}" ] && [ "$LAST" -gt 0 ] && [ "$((SIZE * 2))" -lt "$LAST" ]; then
+    fail "dump shrank from ${LAST} to ${SIZE} bytes (more than half) — refusing to overwrite good backups until this is explained; re-run with FORCE_SHRINK=1 if intended"
+  fi
+fi
 log "dump ok, ${SIZE} bytes compressed"
 
 # Verify the dump is readable before trusting it. zstd -t catches truncation
@@ -138,5 +153,7 @@ if [ "$DRY_RUN" = 0 ]; then
   [ "$REMOTE" = "$SIZE" ] || fail "size mismatch: local ${SIZE}, remote ${REMOTE}"
   log "verified remote object: ${REMOTE} bytes"
 fi
+
+echo "$SIZE" > "$LAST_SIZE_FILE"
 
 log "backup complete"
