@@ -31,7 +31,19 @@ esac
 
 trap 'rm -rf "$WORK"' EXIT
 log() { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
-fail() { log "FAILED: $*"; exit 1; }
+fail() {
+  log "FAILED: $*"
+  # A failed dev refresh means the nightly restore-from-S3 check stopped
+  # running, which is the early warning that the backup itself is broken.
+  # Worth an email for the same reason backup-db.sh sends one.
+  if [ -n "${ALERT_EMAIL:-}" ]; then
+    printf 'To: %s\nFrom: openipc-backup@openipc.org\nSubject: [openipc.org] dev refresh FAILED\n\n%s\n\nHost: %s\nTime: %s\n' \
+      "$ALERT_EMAIL" "$*" "$(hostname)" "$(date -u)" | sendmail -t \
+      && log "alert sent to ${ALERT_EMAIL}" \
+      || log "WARNING: could not send alert to ${ALERT_EMAIL}"
+  fi
+  exit 1
+}
 
 # ------------------------------------------------------------ acquire
 if [ "$FROM_LOCAL" = 1 ]; then

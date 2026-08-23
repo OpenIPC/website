@@ -77,8 +77,23 @@ do_deploy() {
   docker pull "${REGISTRY_IMAGE}:${sha}" >/dev/null \
     || die "no such image tag '${sha}' — has the Actions build finished?"
 
-  # Resolve floating tags to an immutable digest-backed SHA so that a later
-  # rollback names a specific build rather than whatever 'latest' has become.
+  # Resolve floating tags (latest, a branch name) to the commit SHA the image
+  # was actually built from, and record THAT. Recording 'latest' would make a
+  # later rollback point at whatever latest has become by then rather than at
+  # this build -- which is the opposite of what rollback is for.
+  local resolved
+  resolved=$(docker image inspect "${REGISTRY_IMAGE}:${sha}" \
+    --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || true)
+  if [[ ! "$resolved" =~ ^[0-9a-f]{40}$ ]]; then
+    die "image '${sha}' has no usable org.opencontainers.image.revision label (got '${resolved:-none}') — refusing to deploy something that cannot be rolled back to"
+  fi
+  if [ "$resolved" != "$sha" ]; then
+    info "resolved ${sha} -> ${resolved:0:12}"
+    # Tag it locally so Compose can address the immutable SHA without a re-pull.
+    docker tag "${REGISTRY_IMAGE}:${sha}" "${REGISTRY_IMAGE}:${resolved}"
+    sha=$resolved
+  fi
+
   env_set "$tag_key" "$sha"
 
   info "running migrations"

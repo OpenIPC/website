@@ -52,8 +52,16 @@ log() { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 fail() {
   log "FAILED: $*"
   if [ -n "${ALERT_EMAIL:-}" ]; then
-    printf 'Subject: [openipc.org] nightly backup FAILED\n\n%s\n\nHost: %s\nTime: %s\n' \
-      "$*" "$(hostname)" "$(date -u)" | sendmail -t "$ALERT_EMAIL" 2>/dev/null || true
+    # sendmail -t takes its recipients from the message HEADERS. Passing the
+    # address as an argument alongside -t is ignored, and without a To: header
+    # exim discards the message with "no recipients found in headers" -- so the
+    # alert silently never arrived. Verified against the live MTA.
+    if printf 'To: %s\nFrom: openipc-backup@openipc.org\nSubject: [openipc.org] nightly backup FAILED\n\n%s\n\nHost: %s\nTime: %s\n' \
+         "$ALERT_EMAIL" "$*" "$(hostname)" "$(date -u)" | sendmail -t; then
+      log "alert sent to ${ALERT_EMAIL}"
+    else
+      log "WARNING: could not send alert to ${ALERT_EMAIL} (exit $?)"
+    fi
   fi
   exit 1
 }
