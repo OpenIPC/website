@@ -9,7 +9,7 @@
 
 <article class="firmware">
   <header>
-    <%= link_to image_tag("stage-#{@camera.soc.status}", width: 64), '/stages-of-firmware-development',
+    <%= link_to image_tag("stage-#{@camera.soc.status}.svg", width: 64), '/stages-of-firmware-development',
                 title: Soc::STATUS[@camera.soc.status.to_sym], class: 'float-end' %>
     <h2 class="mb-0"><%= t('firmware.installation.title') %> (<%= @camera.firmware_version_name %>)</h2>
     <p class="lead fw-bold"><%= t('firmware.installation.subtitle',
