@@ -21,9 +21,8 @@ class VendorTest < ActiveSupport::TestCase
     assert_raises(ActiveRecord::RecordNotFound) { Vendor.find('no-such-vendor') }
   end
 
-  # The supported-hardware index takes ?vendor= as an optional filter, so it
-  # asks with find_by_param and renders the unfiltered list when nothing is
-  # given. If it used find, the plain page would 404.
+  # find is built on find_by_param; this is the half that answers nil, for
+  # anywhere an identifier may legitimately be absent.
   test 'find_by_param answers nil instead of raising' do
     assert_equal @vendor, Vendor.find_by_param('test-vendor')
     assert_nil Vendor.find_by_param('no-such-vendor')

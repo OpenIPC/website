@@ -9,7 +9,7 @@
     </li>
     <% Vendor.order(:name).each do |v| %>
       <li class="nav-item">
-        <%= link_to v.name, cameras_vendor_path(v), class: "nav-link#{" active" if @vendor.eql?(v.name)}" %>
+        <%= link_to v.name, cameras_vendor_path(v), class: "nav-link#{" active" if @vendor.eql?(v)}" %>
       </li>
     <% end %>
     <li class="nav-item">

@@ -7,13 +7,19 @@ module Cameras
     def index
       respond_to do |format|
         format.html {
-          # Optional filter -- no vendor means the unfiltered list, not a 404.
-          @vendor = Vendor.find_by_param(params[:vendor])
-          if @vendor
-            @socs = Soc.left_joins(:vendor).where(vendors: { name: @vendor }).order(:model)
-            @page_title = 'Full list of processors'
+          # ?vendor= is the only thing this action does. Without it there is no
+          # list to render -- the template calls `render @socs` unconditionally,
+          # so leaving it unset answered 500 -- and /supported-hardware already
+          # treats "no filter" as meaning the featured page.
+          if params[:vendor].blank?
+            redirect_to '/supported-hardware/featured'
+          else
+            # Present but unknown is a bad address, not an empty list.
+            @vendor = Vendor.find(params[:vendor])
+            @socs = @vendor.socs.order(:model)
+            @page_title = "List of #{@vendor.name} SoCs"
+            render 'cameras/socs/index'
           end
-          render 'cameras/socs/index'
         }
         format.json do
           @data = {
