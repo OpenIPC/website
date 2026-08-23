@@ -17,26 +17,6 @@ The OpenIPC project website — a Rails 7.0 app (Ruby 3.1.2, MySQL) that serves 
 - `i18n-tasks missing` / `i18n-tasks unused` — audit translations (config in `config/i18n-tasks.yml`); `easy_translate` provides machine translation via `GOOGLE_TRANSLATE_API_KEY`/`DEEPL_TRANSLATE_API_KEY`.
 - Asset bundling (normally run by `bin/dev`): `yarn build` (JS → `app/assets/builds/`), `yarn build:css` (sass + autoprefixer). `app/assets/builds/` is gitignored — rebuild after JS/SCSS changes.
 
-## Deploying
-
-The app runs as a container behind the host's nginx; the checkout in
-`/srv/www/org-openipc` is no longer what serves traffic. Actions builds every
-branch to `ghcr.io/openipc/website:<sha>`, and `openipc-deploy` on the host
-installs a tag.
-
-**Validate on dev.openipc.org before production — always.** The procedure, the
-verification techniques, and the traps that have cost time here are in
-`deploy/DEV-VALIDATION.md`. Read it before your first deploy.
-
-- `openipc-deploy dev <sha>` / `openipc-deploy prod <sha>` — deploy
-- `openipc-deploy rollback prod` — back one release, ~13s
-- `openipc-deploy status` — tags, rollback target, health
-- `deploy/RESTORE.md` — rebuilding from the S3 backup
-
-Two things that bite: `config.assets.compile = false`, so any asset reference
-not going through the pipeline 404s in production; and rollback restores the
-image but never the schema, so keep migrations additive.
-
 ## Architecture
 
 ### Domain model
