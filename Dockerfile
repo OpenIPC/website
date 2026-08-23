@@ -57,11 +57,19 @@ RUN yarn install --immutable
 COPY . .
 
 # esbuild + sass produce app/assets/builds/, which Sprockets then digests.
-# SECRET_KEY_BASE_DUMMY relaxes require_master_key for this step only (see
-# config/environments/production.rb) so the real key is never needed to build.
+#
+# Two throwaway values are needed for this step and only this step:
+#   SECRET_KEY_BASE_DUMMY  relaxes require_master_key (see production.rb)
+#   SECRET_KEY_BASE        satisfies the production environment itself --
+#                          Rails 7.0 has no dummy-secret mechanism, that
+#                          arrived in 7.1
+# Neither is baked into the image or used at runtime; the real key arrives
+# as RAILS_MASTER_KEY from the host env file.
 RUN yarn build \
   && yarn build:css \
-  && SECRET_KEY_BASE_DUMMY=1 bundle exec rails assets:precompile \
+  && SECRET_KEY_BASE_DUMMY=1 \
+     SECRET_KEY_BASE=precompile_placeholder_not_used_at_runtime \
+     bundle exec rails assets:precompile \
   && rm -rf node_modules tmp/cache
 
 # --------------------------------------------------------------------------
