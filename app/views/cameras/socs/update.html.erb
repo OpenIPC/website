@@ -57,8 +57,11 @@
           <div class="github">
             <i class="bi bi-github float-start me-2"></i>
             <h6 class="mb-0"><%= link_to t('firmware.installation.flashing_full.link', name: @camera.firmware_version.to_s.titleize), download_full_image_cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc, fw_release: @camera.firmware_version, flash_size: @camera.flash_size, flash_type: @camera.flash_type_type) %></h6>
-            <p>for <%= @camera.soc.full_name %> with <%= @camera.flash_size %>MB NOR flash</p>
+            <p>for <%= @camera.soc.full_name %> with <%= @camera.flash_size %>MB <%= @camera.flash_type_type.upcase %> flash</p>
             <p class="mb-0"><%= t('firmware.installation.flashing_full.info') %></p>
+            <% if @camera.nand? %>
+              <p class="mb-0 mt-2 small"><%= t('firmware.installation.flashing_full.nand_caveat') %></p>
+            <% end %>
           </div>
         </div>
         <div class="col">

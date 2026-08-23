@@ -9,6 +9,26 @@ class Camera
   NET_IFACE = %w[eth wifi both].freeze
   SD_CARD = %w[nosd sd].freeze
 
+  # NAND geometry. The parts OpenIPC ships NAND builds for are 1Gbit SPI-NAND:
+  # 128MiB, 2KiB page, 128KiB erase block. The layout below is the HiSilicon /
+  # Goke `mtdpartsubi` one -- 256k(boot),768k(wtf),3072k(kernel),-(ubi) -- as
+  # read from a real `printenv` in OpenIPC/firmware#695. It is family specific,
+  # not universal; SigmaStar and Rockchip carry their kernel inside the UBI
+  # image instead and are refused by Firmware#generate.
+  NAND_SIZE_HEX = '0x8000000'
+  NAND_KERNEL_OFFSET = '0x100000'
+  NAND_KERNEL_MAX_SIZE = '0x300000'
+  NAND_ROOTFS_OFFSET = '0x400000'
+  NAND_ROOTFS_MAX_SIZE = '0x7c00000'
+
+  # What `mw.b` pre-fills before a transfer, i.e. how much RAM the image needs.
+  # It is the flash size on NOR, but it cannot be on NAND: the chip is 128MiB
+  # and these cameras have 64MB of RAM. A NAND full image stops after the UBI
+  # payload, so it is at most 0x400000 + the 16384KB rootfs.ubi cap the
+  # firmware Makefile enforces = 20MB exactly. 24MB leaves headroom for a cap
+  # bump and still fits at the load address.
+  NAND_STAGING_SIZE_HEX = '0x1800000'
+
   attr_accessor :soc_id, :needs_instruction, :flash_type, :sd_card_slot,
                 :network_interface, :camera_ip_address, :server_ip_address,
                 :firmware_version, :camera_mac_address, :soc, :backup_filename
@@ -36,6 +56,10 @@ class Camera
     @backup_filename ||= "backup-#{model.downcase}-#{@flash_type}.bin"
   end
 
+  def nand?
+    @flash_type.eql?('nand')
+  end
+
   def flash_type_type
     case @flash_type
     when 'nor8m', 'nor16m', 'nor32m'
@@ -55,8 +79,8 @@ class Camera
       16
     when 'nor32m'
       32
-      # when 'nand'
-      #   ??
+    when 'nand'
+      128
     else
       8
     end
@@ -70,8 +94,8 @@ class Camera
       '0x8000'
     when 'nor32m'
       '0x16000'
-      # when 'nand'
-      #   ??
+    when 'nand'
+      '0x40000'
     else
       '0x4000'
     end
@@ -85,11 +109,15 @@ class Camera
       '0x1000000'
     when 'nor32m'
       '0x2000000'
-    # when 'nand'
-    #   ??
+    when 'nand'
+      NAND_SIZE_HEX
     else
       '0x800000'
     end
+  end
+
+  def staging_size_hex
+    nand? ? NAND_STAGING_SIZE_HEX : flash_size_hex
   end
 
   def flash_size_sectors
@@ -100,8 +128,8 @@ class Camera
       '32768'
     when 'nor32m'
       '65536'
-      # when 'nand'
-      #   ??
+    when 'nand'
+      '262144'
     end
   end
 
@@ -110,9 +138,9 @@ class Camera
   end
 
   def kernel_max_size
+    return NAND_KERNEL_MAX_SIZE if nand?
+
     case firmware_version
-    when 'lite'
-      '0x200000'
     when 'ultimate'
       '0x300000'
     else
@@ -121,20 +149,13 @@ class Camera
   end
 
   def kernel_offset
-    case firmware_version
-    when 'lite'
-      '0x50000'
-    when 'ultimate'
-      '0x50000'
-    else
-      '0x50000'
-    end
+    nand? ? NAND_KERNEL_OFFSET : '0x50000'
   end
 
   def rootfs_max_size
+    return NAND_ROOTFS_MAX_SIZE if nand?
+
     case firmware_version
-    when 'lite'
-      '0x500000'
     when 'ultimate'
       '0xA00000'
     else
@@ -143,9 +164,9 @@ class Camera
   end
 
   def rootfs_offset
+    return NAND_ROOTFS_OFFSET if nand?
+
     case firmware_version
-    when 'lite'
-      '0x250000'
     when 'ultimate'
       '0x350000'
     else
@@ -153,14 +174,19 @@ class Camera
     end
   end
 
+  # Guards the arithmetic that used to render `nand erase 0xD50000 0x-550000`:
+  # NAND fell through to the 8MB NOR default, so flash_size_hex was smaller
+  # than overlay_offset and the subtraction went negative. U-Boot's
+  # simple_strtoul stops at the '-', silently turning the size into 0.
   def overlay_max_size
-    "0x#{(flash_size_hex.to_i(16) - overlay_offset.to_i(16)).to_s(16)}"
+    size = flash_size_hex.to_i(16) - overlay_offset.to_i(16)
+    raise StandardError, "overlay_offset #{overlay_offset} is beyond flash size #{flash_size_hex}" if size <= 0
+
+    "0x#{size.to_s(16)}"
   end
 
   def overlay_offset
     case firmware_version
-    when 'lite'
-      '0x750000'
     when 'ultimate'
       '0xD50000'
     else
