@@ -71,11 +71,16 @@ jobs:
             GRANT ALL PRIVILEGES ON *.* TO 'www'@'%' WITH GRANT OPTION;
             FLUSH PRIVILEGES;"
 
-      # db:test:prepare expects the database to exist; create it explicitly and
-      # load db/schema.rb. The usual flow regenerates the test database from
-      # development, which does not exist here.
+      # Create explicitly (db:test:prepare assumes the database exists), load
+      # db/schema.rb, then migrate.
+      #
+      # The migrate is not redundant: db/schema.rb is pinned at
+      # 2022_08_06_130659 while db/migrate/ runs to 2023_05_07_193639, so five
+      # migrations were never dumped into it and loading the schema alone leaves
+      # the suite refusing to start with "Migrations are pending". Regenerating
+      # schema.rb is the real fix and belongs in its own change.
       - name: Prepare schema
-        run: bin/rails db:create db:schema:load
+        run: bin/rails db:create db:schema:load db:migrate
 
       - name: Run tests
         run: bin/rails test
