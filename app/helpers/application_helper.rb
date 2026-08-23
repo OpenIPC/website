@@ -10,7 +10,9 @@ module ApplicationHelper
   end
 
   def default_image_path
-    '/assets/no-signal.webp'
+    # asset_path, not a literal /assets/ URL: with assets.compile = false only
+    # digested filenames exist in the manifest.
+    asset_path('no-signal.webp')
   end
 
   def display_flashes

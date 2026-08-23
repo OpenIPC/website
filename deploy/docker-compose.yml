@@ -1,0 +1,64 @@
+# openipc.org — production and dev/staging containers.
+#
+# nginx and MariaDB stay on the host. These containers publish only on
+# loopback; nginx terminates TLS and proxies to them, exactly as it did to the
+# bare-metal Puma.
+#
+# Tags come from deploy/.env (written by deploy.sh), never edited by hand.
+
+x-common: &common
+  restart: unless-stopped
+  # Reach MariaDB over the bind-mounted Unix socket rather than TCP, so the
+  # database gains no new network exposure.
+  volumes: &common-volumes
+    - /run/mysqld:/run/mysqld
+    - /srv/github-releases:/srv/github-releases:ro
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+  healthcheck:
+    test: ["CMD", "curl", "-fsS", "http://localhost:3000/up"]
+    interval: 30s
+    timeout: 5s
+    start_period: 40s
+    retries: 3
+
+services:
+  web-prod:
+    <<: *common
+    container_name: openipc-web-prod
+    image: ghcr.io/openipc/website:${PROD_TAG:?PROD_TAG must be set}
+    # format: raw disables Compose's ${...} interpolation of the env file.
+    # Without it Compose expands the $ in the database password and the
+    # container receives a truncated value (24 chars became 15).
+    env_file:
+      - path: /srv/www/.env.prod
+        format: raw
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - /run/mysqld:/run/mysqld
+      - /srv/github-releases:/srv/github-releases:ro
+      - /mnt/HC_Volume_103161270/storage:/rails/storage
+      - /srv/www/shared/files:/rails/public/files
+      - /srv/www/shared/dl:/rails/public/dl:ro
+
+  web-dev:
+    <<: *common
+    container_name: openipc-web-dev
+    image: ghcr.io/openipc/website:${DEV_TAG:?DEV_TAG must be set}
+    env_file:
+      - path: /srv/www/.env.dev
+        format: raw
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - /run/mysqld:/run/mysqld
+      - /srv/github-releases:/srv/github-releases:ro
+      # Dev gets its own blob tree so a dev purge can never touch production
+      # snapshots, and its own firmware cache so a bad build is isolated.
+      - /srv/www/shared/dev-storage:/rails/storage
+      - /srv/www/shared/dev-files:/rails/public/files
+      - /srv/www/shared/dl:/rails/public/dl:ro

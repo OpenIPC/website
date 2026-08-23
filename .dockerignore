@@ -1,0 +1,32 @@
+.git
+.github
+.gitignore
+.gitattributes
+
+# Secrets never belong in the image -- they arrive as env at runtime.
+config/master.key
+config/credentials/*.key
+config/production.env
+config/ssl
+
+# Rebuilt inside the image.
+node_modules
+app/assets/builds/*
+public/assets
+
+# Host state, bind-mounted at runtime.
+log/*
+tmp/*
+storage
+public/files
+public/dl
+db/*.sqlite3
+
+# Not needed to run.
+test
+.rubocop.yml
+README.md
+LICENSE
+CLAUDE.md
+Procfile.dev
+.foreman

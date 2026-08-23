@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-ruby '3.1.2'
+ruby '3.1.7'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails', branch: 'main'
 gem 'rails', '~> 7.0.8'
@@ -84,4 +84,6 @@ gem 'bootstrap5-kaminari-views', '~> 0.0.1'
 gem 'devise', '~> 4.8'
 gem 'kaminari', '~> 1.2'
 gem 'sassc-rails'
-gem 'vips', '~> 8.12'
+# libvips comes from the OS package (libvips42 + libheif1), not from a gem.
+# The 'vips' gem ships prebuilt libvips binaries and shadowed the system copy;
+# it also compiles from source at install time, which needs wget in the image.

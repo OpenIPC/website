@@ -17,8 +17,9 @@ class SnapshotsController < ApplicationController
   end
 
   def create
-    PurgeImagesJob.perform_later
-
+    # Retention is handled by a nightly cron (openipc-purge-snapshots), not on
+    # the upload path. Enqueuing it per-request meant a full table scan for
+    # every camera POST.
     @snapshot = Snapshot.new
     @snapshot.ip_address = request.remote_ip
     if @snapshot.update(permitted_params)

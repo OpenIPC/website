@@ -6,7 +6,7 @@
   <dd class="col-4 col-md-2 col-xl-2 hex_address">
     <%= soc.load_address %>
   </dd>
-  <dd class="col-2 col-sm-1 col-md-1 stage <%= soc.status %>"><%= image_tag("stage-#{soc.status}") %></dd>
+  <dd class="col-2 col-sm-1 col-md-1 stage <%= soc.status %>"><%= image_tag("stage-#{soc.status}.svg") %></dd>
   <dd class="col-10 col-md-5 col-xl-5">
     <% if soc.instructable? %>
       <%= link_to t('.generate_guide'), cameras_vendor_soc_path(soc.vendor, soc) %>

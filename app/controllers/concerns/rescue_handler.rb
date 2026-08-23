@@ -23,8 +23,24 @@ module RescueHandler
     else
       raise exception unless Rails.env.production?
 
-      ApplicationMailer.with(error: exception).experror.deliver
+      notify_of(exception)
       render file: Rails.public_path.join('500.html'), layout: false, status: 500
     end
+  end
+
+  # Notifying about a failure must never itself become a failure. Without this,
+  # any delivery problem (no MTA, unroutable relay) turns a handled exception
+  # into an unhandled one and the 500.html below is never rendered.
+  #
+  # Always log first. Mailing the error but never logging it means a broken
+  # page is invisible in the logs, which is how the missing "stage-*" asset
+  # went unnoticed until the container parity check.
+  def notify_of(exception)
+    Rails.logger.error("[rescue_ladder] #{exception.class}: #{exception.message}")
+    Rails.logger.error(exception.backtrace&.first(20)&.join("\n")) if exception.backtrace
+
+    ApplicationMailer.with(error: exception).experror.deliver
+  rescue StandardError => e
+    Rails.logger.error("[rescue_ladder] could not send error mail: #{e.class}: #{e.message}")
   end
 end

@@ -21,7 +21,7 @@
       </form>
     </div>
     <div class="col">
-      <img src="/assets/qrcode.png" id="qr" alt="Image: QR Code" class="border img-fluid">
+      <img src="<%= asset_path("qrcode.png") %>" id="qr" alt="Image: QR Code" class="border img-fluid">
     </div>
     <div class="col">
       <div class="alert alert-info">
@@ -43,7 +43,7 @@
     });
   });
   document.querySelector('#qrcode_generator').addEventListener('reset', (ev) => {
-    document.querySelector('#qr').src = '/assets/qrcode.png';
+    document.querySelector('#qr').src = "<%= asset_path("qrcode.png") %>";
   });
 </script>
 

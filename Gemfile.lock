@@ -299,8 +299,6 @@ GEM
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     unicode-display_width (2.5.0)
-    vips (8.12.2)
-      ffi (~> 1.12)
     warden (1.2.9)
       rack (>= 2.0.9)
     web-console (4.2.1)
@@ -346,11 +344,10 @@ DEPENDENCIES
   stimulus-rails
   turbo-rails
   tzinfo-data
-  vips (~> 8.12)
   web-console
 
 RUBY VERSION
-   ruby 3.1.2p20
+   ruby 3.1.7p261
 
 BUNDLED WITH
-   2.4.4
+   2.4.20

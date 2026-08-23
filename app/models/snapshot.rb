@@ -16,12 +16,29 @@ class Snapshot < ApplicationRecord
   # so the wall displays in all browsers (HEIF is decodable only by Safari) and
   # stays small. Decoding HEIF sources requires the server's libvips to be built
   # with libheif support.
+  # dependent stays at the default :purge_later. purge_file_now below does the
+  # real work inline, and by the time purge_later runs there is nothing left to
+  # do -- but keeping it means a second chance if that hook ever fails. The
+  # alternative, dependent: false, makes Rails call detach instead, which drops
+  # the attachment and leaves the blob behind: the exact bug being fixed.
   has_one_attached :file do |attachable|
     attachable.variant :icon,   resize_to_limit: [90, 60],     format: :jpeg, saver: { quality: 80, strip: true }
     attachable.variant :icon2,  resize_to_limit: [240, 135],   format: :jpeg, saver: { quality: 80, strip: true }
     attachable.variant :thumb,  resize_to_limit: [480, 360],   format: :jpeg, saver: { quality: 80, strip: true }
     attachable.variant :fullhd, resize_to_limit: [1920, 1080], format: :jpeg, saver: { quality: 85, strip: true }
   end
+
+  # Purge the blob synchronously, before Rails' own after_destroy_commit hook
+  # gets the chance to do it with purge_later.
+  #
+  # has_one_attached's default cleanup is purge_later, which only detaches the
+  # attachment and enqueues ActiveStorage::PurgeJob for the blob. No durable
+  # queue adapter is configured, so that job runs on :async -- an in-process
+  # thread pool that is simply dropped on restart. The result is a detached
+  # blob, its variant records and its file left behind with nothing referencing
+  # them, which is how ~93,000 orphans accumulated. purge does the same work
+  # inline and cannot be lost.
+  before_destroy :purge_file_now, prepend: true
 
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }
   validates :mac_address, presence: true, format: MAC_ADDRESS_FORMAT
@@ -75,6 +92,28 @@ class Snapshot < ApplicationRecord
   end
 
   private
+
+  def purge_file_now
+    return unless file.attached?
+
+    # Purge the variant images first, explicitly. Destroying the parent blob
+    # cascades to its variant_records, but each of those is an
+    # ActiveStorage::VariantRecord whose own has_one_attached :image defers to
+    # purge_later -- framework-internal and not configurable from here. On the
+    # :async adapter that deferred work is routinely lost, leaving one orphan
+    # blob and one file per materialised variant. Measured on production: a
+    # snapshot with a single icon variant leaked a 756-byte blob on destroy.
+    file.blob.variant_records.each do |variant_record|
+      variant_record.image.purge if variant_record.image.attached?
+    rescue ActiveStorage::FileNotFoundError
+      variant_record.image.attachment&.purge
+    end
+
+    file.purge
+  rescue ActiveStorage::FileNotFoundError
+    # Row outlived its file; still drop the attachment and blob rows.
+    file.attachment&.purge
+  end
 
   def blacklisted_mac
     return unless mac_address.in?(Rails.application.credentials.mac.blacklisted)
