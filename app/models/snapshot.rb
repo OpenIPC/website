@@ -45,7 +45,14 @@ class Snapshot < ApplicationRecord
   validate :blacklisted_mac
   validate :time_interval
 
-  after_create :process_images
+  # after_create fires inside the transaction, and perform_later on the :async
+  # adapter hands the job to a thread pool that can pick it up before the
+  # commit lands -- GlobalID then cannot find the row and ActiveJob discards
+  # the job with a DeserializationError. It happened in bursts on the
+  # quarter-hour, matching the cameras' cron upload cadence, and cost those
+  # snapshots their pre-built variants: the wall fell back to generating them
+  # on the first page view instead.
+  after_create_commit :process_images
 
   def process_images
     ProcessImagesJob.perform_later(self)
