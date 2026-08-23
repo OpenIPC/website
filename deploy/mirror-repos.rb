@@ -38,6 +38,7 @@ end
 
 # Non-blocking: skip this hour rather than queue behind the run in progress.
 def with_lock
+  FileUtils.mkdir_p(File.dirname(LOCK))
   lock = File.open(LOCK, File::CREAT | File::RDWR, 0o644)
   unless lock.flock(File::LOCK_EX | File::LOCK_NB)
     log 'previous run still going, skipping this hour'
