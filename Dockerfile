@@ -35,8 +35,13 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y \
       zlib1g-dev \
   && curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
   && apt-get install --no-install-recommends -y nodejs \
-  && npm install -g yarn@1.22.22 \
   && rm -rf /var/lib/apt/lists/*
+
+# The project is on Yarn 4 (Berry) -- yarn.lock carries the __metadata header,
+# and a v1 yarn cannot read it. corepack resolves the exact version from the
+# "packageManager" field in package.json.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable
 
 WORKDIR /rails
 
@@ -45,9 +50,9 @@ COPY Gemfile Gemfile.lock ./
 RUN bundle install \
   && rm -rf "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git
 
-# Then JS deps, same reasoning.
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+# Then JS deps, same reasoning. --immutable is Berry's --frozen-lockfile.
+COPY package.json yarn.lock .yarnrc.yml ./
+RUN yarn install --immutable
 
 COPY . .
 

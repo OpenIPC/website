@@ -42,3 +42,6 @@
 
 /config/credentials/production.key
 /config/credentials/development.key
+
+# Yarn Berry install state (regenerated locally).
+/.yarn/install-state.gz
