@@ -86,11 +86,29 @@ Page byte-size is not a signal. When the partner logos broke, the before and
 after pages were *identical in length* — only the URL inside `src` changed. The
 check that works is requesting each asset and asserting 200:
 
+> **`force_ssl` is on.** Anything you request straight from the container on
+> `127.0.0.1:3001` **must** carry `-H "X-Forwarded-Proto: https"`, or Rails
+> answers `301` to every request — the page *and* every asset — and the check
+> below reports a wall of failures on a perfectly healthy deploy. Going through
+> nginx on `https://dev.openipc.org` is fine; nginx sets the header for you.
+
+Through nginx:
+
 ```bash
 PW=$(ssh -p 35242 root@openipc.org 'cat /srv/www/.dev-basic-auth-password')
 curl -s -u "openipc:$PW" https://dev.openipc.org/ -o /tmp/p.html
 for a in $(grep -oE '/assets/[^"]+' /tmp/p.html | sort -u); do
   printf '%s %s\n' "$(curl -s -u "openipc:$PW" -o /dev/null -w '%{http_code}' "https://dev.openipc.org$a")" "$a"
+done | grep -v '^200' || echo "all assets 200"
+```
+
+Straight at the container — note the header on **both** requests:
+
+```bash
+H=(-H "Host: dev.openipc.org" -H "X-Forwarded-Proto: https")
+curl -s "${H[@]}" http://127.0.0.1:3001/ -o /tmp/p.html
+for a in $(grep -oE '/assets/[^"]+' /tmp/p.html | sort -u); do
+  printf '%s %s\n' "$(curl -s "${H[@]}" -o /dev/null -w '%{http_code}' "http://127.0.0.1:3001$a")" "$a"
 done | grep -v '^200' || echo "all assets 200"
 ```
 
@@ -124,6 +142,32 @@ To diff old against new, run the same script against both image tags with
 `docker run --rm --env-file /srv/www/.env.prod` and compare. That is how the
 flashing-instruction fix was verified.
 
+**`bin/rails test` does not work in a deployed container.** `.dockerignore`
+excludes `test/`, so the production image does not ship it:
+
+```
+$ docker exec openipc-web-dev sh -lc 'ls test/'
+ls: cannot access 'test/': No such file or directory
+```
+
+Run the suite locally instead. Against a deployed container, pipe an assertion
+script to `rails runner -`, which reads from stdin:
+
+```bash
+cat <<'RUBY' | ssh -p 35242 root@openipc.org 'docker exec -i openipc-web-dev bundle exec rails runner -'
+soc = Soc.find_by(urlname: "hi3518ev200")
+out = ApplicationController.helpers.flashing_everything(
+  Camera.new(soc_id: soc.id, soc: soc, flash_type: "nor16m", firmware_version: "lite",
+             network_interface: "eth", sd_card_slot: "nosd",
+             camera_mac_address: "00:11:22:33:44:55")).to_s
+abort "FAIL: erase not guarded" unless out.include?("&&")
+puts "OK"
+RUBY
+```
+
+That exercises the real deployed code against the real dev database and the real
+tarballs in `/srv/github-releases`, which a local unit test cannot.
+
 ### Read the container log
 
 `RescueHandler` catches exceptions and renders `500.html`, so a broken page can
@@ -138,17 +182,31 @@ what the page looked like.
 
 ### Compare against production when behaviour should not change
 
-Normalise the CSRF token and the asset digest — those legitimately differ:
+Three things legitimately differ every request and must be normalised first.
+There are **two** distinct CSRF values per page — the `csrf-token` meta tag and
+the `authenticity_token` hidden field `form_for` emits — plus the asset digest.
+Normalising only the meta tag leaves every page containing a form reporting as
+different, which includes the SoC page, the single most useful one to compare.
 
 ```bash
 ssh -p 35242 root@openipc.org '
-H=(-H "Host: openipc.org" -H "X-Forwarded-Proto: https")
-for p in / /supported-hardware/featured /binaries; do
-  a=$(curl -s "${H[@]}" -o /tmp/a -w "%{http_code}" "http://127.0.0.1:3000$p")
-  b=$(curl -s -H "Host: dev.openipc.org" -H "X-Forwarded-Proto: https" -o /tmp/b -w "%{http_code}" "http://127.0.0.1:3001$p")
-  echo "$p prod=$a dev=$b $(cmp -s /tmp/a /tmp/b && echo same || echo differs)"
+norm() {
+  sed -E "s/name=\"csrf-token\" content=\"[^\"]*\"/CSRF/g;
+          s/name=\"authenticity_token\" value=\"[^\"]*\"/TOKEN/g;
+          s/-[0-9a-f]{64}\./-DIGEST./g" "$1"
+}
+H=(-H "X-Forwarded-Proto: https")
+for p in / /supported-hardware/featured /binaries \
+         /cameras/vendors/hisilicon/socs/hi3518ev200; do
+  a=$(curl -s "${H[@]}" -H "Host: openipc.org"     -o /tmp/a -w "%{http_code}" "http://127.0.0.1:3000$p")
+  b=$(curl -s "${H[@]}" -H "Host: dev.openipc.org" -o /tmp/b -w "%{http_code}" "http://127.0.0.1:3001$p")
+  if diff -q <(norm /tmp/a) <(norm /tmp/b) >/dev/null; then r=same; else r=DIFFERS; fi
+  echo "$p prod=$a dev=$b $r"
 done'
 ```
+
+A remaining `DIFFERS` is a real difference. Inspect it with
+`diff <(norm /tmp/a) <(norm /tmp/b) | head`.
 
 ---
 
