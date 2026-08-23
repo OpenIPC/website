@@ -5,11 +5,12 @@ that has not been rendered and fetched on dev first.** Reading a diff is not
 validation — several bugs shipped here were invisible in the diff and obvious in
 the output.
 
-Everything below runs as `root` on `webber-eu` over SSH:
+Commands are marked by where they run. Getting this wrong is the first way the
+loop goes sideways.
 
-```bash
-ssh -p 35242 root@openipc.org
-```
+- **[local]** — your machine: `git`, `gh`, and `curl` against the public URL.
+- **[host]** — `webber-eu` as root: `openipc-deploy`, `docker`, and `curl`
+  against `127.0.0.1`. Reach it with `ssh -p 35242 root@openipc.org`.
 
 ---
 
@@ -88,29 +89,53 @@ check that works is requesting each asset and asserting 200:
 
 > **`force_ssl` is on.** Anything you request straight from the container on
 > `127.0.0.1:3001` **must** carry `-H "X-Forwarded-Proto: https"`, or Rails
-> answers `301` to every request — the page *and* every asset — and the check
-> below reports a wall of failures on a perfectly healthy deploy. Going through
+> answers `301` to every request — the page *and* every asset. Going through
 > nginx on `https://dev.openipc.org` is fine; nginx sets the header for you.
 
-Through nginx:
+**[host]** — preferred, because it needs no credentials at all:
 
 ```bash
-PW=$(ssh -p 35242 root@openipc.org 'cat /srv/www/.dev-basic-auth-password')
-curl -s -u "openipc:$PW" https://dev.openipc.org/ -o /tmp/p.html
-for a in $(grep -oE '/assets/[^"]+' /tmp/p.html | sort -u); do
-  printf '%s %s\n' "$(curl -s -u "openipc:$PW" -o /dev/null -w '%{http_code}' "https://dev.openipc.org$a")" "$a"
-done | grep -v '^200' || echo "all assets 200"
-```
-
-Straight at the container — note the header on **both** requests:
-
-```bash
+set -uo pipefail
 H=(-H "Host: dev.openipc.org" -H "X-Forwarded-Proto: https")
-curl -s "${H[@]}" http://127.0.0.1:3001/ -o /tmp/p.html
-for a in $(grep -oE '/assets/[^"]+' /tmp/p.html | sort -u); do
-  printf '%s %s\n' "$(curl -s "${H[@]}" -o /dev/null -w '%{http_code}' "http://127.0.0.1:3001$a")" "$a"
-done | grep -v '^200' || echo "all assets 200"
+curl -fsS "${H[@]}" http://127.0.0.1:3001/ -o /tmp/p.html \
+  || { echo "FAIL: page fetch failed"; exit 1; }
+mapfile -t A < <(grep -oE '/assets/[^"]+' /tmp/p.html | sort -u)
+(( ${#A[@]} )) || { echo "FAIL: no assets on page — wrong URL, or the page errored"; exit 1; }
+bad=0
+for a in "${A[@]}"; do
+  c=$(curl -s "${H[@]}" -o /dev/null -w '%{http_code}' "http://127.0.0.1:3001$a")
+  [ "$c" = 200 ] || { echo "  $c $a"; bad=$((bad+1)); }
+done
+echo "checked ${#A[@]} assets, ${bad} not 200"
+(( bad == 0 )) || exit 1
 ```
+
+**[local]** — through nginx. Basic auth goes in a `-K` config file, never on the
+command line where `ps` and shell history can see it:
+
+```bash
+set -uo pipefail
+umask 077
+PW=$(ssh -p 35242 root@openipc.org 'cat /srv/www/.dev-basic-auth-password')
+printf 'user = "openipc:%s"\n' "$PW" > /tmp/devrc
+trap 'rm -f /tmp/devrc' EXIT
+curl -fsS -K /tmp/devrc https://dev.openipc.org/ -o /tmp/p.html \
+  || { echo "FAIL: page fetch failed"; exit 1; }
+mapfile -t A < <(grep -oE '/assets/[^"]+' /tmp/p.html | sort -u)
+(( ${#A[@]} )) || { echo "FAIL: no assets on page"; exit 1; }
+bad=0
+for a in "${A[@]}"; do
+  c=$(curl -s -K /tmp/devrc -o /dev/null -w '%{http_code}' "https://dev.openipc.org$a")
+  [ "$c" = 200 ] || { echo "  $c $a"; bad=$((bad+1)); }
+done
+echo "checked ${#A[@]} assets, ${bad} not 200"
+(( bad == 0 )) || exit 1
+```
+
+> Both snippets fail loudly on an empty asset list. An earlier version ended in
+> `| grep -v '^200' || echo "all assets 200"`, which printed success when the
+> page fetch 401'd and produced no assets to check at all — a false pass in the
+> document whose entire purpose is preventing them.
 
 `config.assets.compile = false` in production, so anything not resolved through
 the asset pipeline 404s (or 500s, if it went through `image_tag`). Grep for
@@ -200,10 +225,16 @@ for p in / /supported-hardware/featured /binaries \
          /cameras/vendors/hisilicon/socs/hi3518ev200; do
   a=$(curl -s "${H[@]}" -H "Host: openipc.org"     -o /tmp/a -w "%{http_code}" "http://127.0.0.1:3000$p")
   b=$(curl -s "${H[@]}" -H "Host: dev.openipc.org" -o /tmp/b -w "%{http_code}" "http://127.0.0.1:3001$p")
-  if diff -q <(norm /tmp/a) <(norm /tmp/b) >/dev/null; then r=same; else r=DIFFERS; fi
+  if [ "$a" != 200 ] || [ "$b" != 200 ]; then r="NOT-200"
+  elif diff -q <(norm /tmp/a) <(norm /tmp/b) >/dev/null; then r=same
+  else r=DIFFERS; fi
   echo "$p prod=$a dev=$b $r"
 done'
 ```
+
+> The status check is not decoration. Without it two identical error pages —
+> two `301`s with empty bodies, or two `500.html` — compare byte-identical and
+> get reported as `same`.
 
 A remaining `DIFFERS` is a real difference. Inspect it with
 `diff <(norm /tmp/a) <(norm /tmp/b) | head`.
