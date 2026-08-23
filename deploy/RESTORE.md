@@ -94,6 +94,20 @@ openipc-deploy prod <sha>      # or 'latest'
 The image comes from `ghcr.io/openipc/website` and the repo is public, so no
 registry credentials are needed.
 
+### 5a. Blob tree ownership
+
+The containers run as **uid 1000**. If `storage/` was ever written by a
+root-running process (the pre-2026-08-23 bare-metal service did exactly this),
+the blobs will be `root:root` and the container can read them but not create or
+unlink — new uploads and `ActiveStorage::PurgeJob` both fail with `EACCES`:
+
+```bash
+chown -R 1000:1000 /mnt/HC_Volume_103161270/storage
+```
+
+Do this **before** cutting traffic over, not after. On ~94k blobs it takes
+several minutes.
+
 ### 6. Host prerequisites
 
 Only needed on a rebuilt host:
