@@ -110,4 +110,8 @@ if docker ps --format '{{.Names}}' | grep -qx openipc-web-dev; then
   docker restart openipc-web-dev >/dev/null
 fi
 
-log "dev refresh complete (source: ${FROM_LOCAL:+production}${FROM_LOCAL:-daily/$WHEN})"
+if [ "$FROM_LOCAL" = 1 ]; then
+  log "dev refresh complete (source: production, bootstrap mode)"
+else
+  log "dev refresh complete (source: s3 daily/${WHEN})"
+fi

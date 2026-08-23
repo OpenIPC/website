@@ -18,7 +18,10 @@
 set -euo pipefail
 
 REGISTRY_IMAGE="ghcr.io/openipc/website"
-COMPOSE_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/docker-compose.yml"
+# readlink -f, not dirname $BASH_SOURCE: this script is normally invoked
+# through the /usr/local/sbin/openipc-deploy symlink.
+SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+COMPOSE_FILE="$(dirname "$SELF")/docker-compose.yml"
 ENV_FILE="$(dirname "$COMPOSE_FILE")/.env"
 STATE_DIR="/srv/www"
 HEALTH_TIMEOUT=90
@@ -137,5 +140,5 @@ case "${1:-}" in
   prod|dev)  do_deploy "$1" "${2:-}" ;;
   rollback)  do_rollback "${2:-prod}" ;;
   status)    do_status ;;
-  *)         sed -n '3,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  *)         sed -n '3,17p' "$SELF" | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac
