@@ -17,7 +17,9 @@ worker_timeout 3600 if ENV.fetch("RAILS_ENV", "development") == "development"
 #
 # port ENV.fetch("PORT") { 3000 }
 
-bind "tcp://127.0.0.1:#{ENV['PORT'] || 3000}"
+# Bind on all interfaces: inside a container the host reaches us via the
+# published port, so a loopback bind would make the app unreachable.
+bind "tcp://#{ENV.fetch('BIND', '0.0.0.0')}:#{ENV['PORT'] || 3000}"
 
 
 # Specifies the `environment` that Puma will run in.

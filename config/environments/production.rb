@@ -18,7 +18,12 @@ Rails.application.configure do
 
   # Ensures that a master key has been made available in either ENV['RAILS_MASTER_KEY']
   # or in config/master.key. This key is used to decrypt credentials (and other encrypted files).
-  config.require_master_key = true
+  #
+  # SECRET_KEY_BASE_DUMMY lets `assets:precompile` run during the Docker build
+  # without the real key, so RAILS_MASTER_KEY never has to be a CI secret. This
+  # is the Rails 7.1 convention, backported by hand -- 7.0 has no such escape
+  # hatch. It is only ever set in the image build, never at runtime.
+  config.require_master_key = ENV['SECRET_KEY_BASE_DUMMY'].blank?
 
   # Disable serving static files from the `/public` folder by default since
   # Apache or NGINX already handles this.
@@ -28,7 +33,9 @@ Rails.application.configure do
   # config.assets.css_compressor = :sass
 
   # Do not fallback to assets pipeline if a precompiled asset is missed.
-  config.assets.compile = true
+  # Assets are precompiled into the image; compiling in-process is what made
+  # the old bare-metal Puma sit at 2.4 GB RSS.
+  config.assets.compile = false
 
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = 'http://assets.example.com'
@@ -48,16 +55,26 @@ Rails.application.configure do
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
   config.force_ssl = true
 
+  # ...but not the healthcheck: the container probe speaks plain HTTP to the
+  # published port and would otherwise get a 301 instead of a 200.
+  config.ssl_options = {
+    redirect: { exclude: ->(request) { request.path == '/up' } }
+  }
+
   # Include generic and useful information about system operation, but avoid logging too much
   # information to avoid inadvertent exposure of personally identifiable information (PII).
-  config.log_level = :debug
+  config.log_level = ENV.fetch('RAILS_LOG_LEVEL') { 'info' }.to_sym
 
   # Prepend all log lines with the following tags.
   config.log_tags = [:request_id]
 
-  config.hosts << "openipc.org"
-
-
+  # The same image serves openipc.org and dev.openipc.org, so the permitted
+  # host comes from the environment. The healthcheck is exempted because
+  # container probes hit it by IP, which HostAuthorization would otherwise 403.
+  config.hosts << ENV.fetch('APP_HOST') { 'openipc.org' }
+  config.host_authorization = {
+    exclude: ->(request) { request.path == '/up' }
+  }
 
   # Use a different cache store in production.
   # config.cache_store = :mem_cache_store
@@ -86,14 +103,17 @@ Rails.application.configure do
   # require 'syslog/logger'
   # config.logger = ActiveSupport::TaggedLogging.new(Syslog::Logger.new 'app-name')
 
-  if ENV['RAILS_LOG_TO_STDOUT'].present?
+  # Default to STDOUT: in a container the log belongs to the runtime, not to a
+  # file inside an ephemeral filesystem layer. Set RAILS_LOG_TO_STDOUT=0 to opt out.
+  if ENV.fetch('RAILS_LOG_TO_STDOUT', '1') != '0'
     logger           = ActiveSupport::Logger.new(STDOUT)
     logger.formatter = config.log_formatter
     config.logger    = ActiveSupport::TaggedLogging.new(logger)
   end
 
-  config.default_url_options = { host: 'openipc.org' }
-  config.action_mailer.default_url_options = { host: 'openipc.org' }
+  app_host = ENV.fetch('APP_HOST') { 'openipc.org' }
+  config.default_url_options = { host: app_host }
+  config.action_mailer.default_url_options = { host: app_host }
   config.action_mailer.delivery_method = :sendmail
 
   # Do not dump schema after migrations.

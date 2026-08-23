@@ -1,4 +1,9 @@
 Rails.application.routes.draw do
+  # Healthcheck for the container runtime and the deploy script. Must stay above
+  # the "*unmatched" catch-all below, which redirects instead of 404ing and
+  # appends every miss to public/notfound.txt.
+  get "/up", to: proc { [200, { "Content-Type" => "text/plain" }, ["ok"]] }
+
   root "pages#introduction"
 
   get '/aaa', to: 'pages#aaa'

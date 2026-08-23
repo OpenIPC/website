@@ -12,7 +12,7 @@
 default: &default
   adapter: mysql2
   encoding: utf8mb4
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 16 } %>
   username: www
   password: www
   socket: /run/mysqld/mysqld.sock
@@ -48,8 +48,11 @@ test:
 # Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
 # for a full overview on how database connection configuration can be specified.
 #
+# OPENIPC_DATABASE lets the same image serve production and the dev/staging
+# site: the containers share one MariaDB over the bind-mounted socket and
+# differ only in which schema they open.
 production:
   <<: *default
-  database: openipc_production
+  database: <%= ENV.fetch("OPENIPC_DATABASE") { "openipc_production" } %>
   username: openipc
   password: <%= ENV["OPENIPC_DATABASE_PASSWORD"] %>
