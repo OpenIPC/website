@@ -22,6 +22,15 @@ log() { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 
 [ -n "$IMAGE_TAG" ] || { log "FAILED: no PROD_TAG in ${COMPOSE_DIR}/.env"; exit 1; }
 
+# Cron reaches this before a deploy does on a rebuilt host. Docker would create
+# a missing bind-mount source root-owned, and the container -- which runs as uid
+# 1000 -- would then fail every write with EACCES.
+install -d -o 1000 -g 1000 -m 0755 "$BLOB_ROOT" \
+  || { log "FAILED: cannot create ${BLOB_ROOT}"; exit 1; }
+owner=$(stat -c '%u:%g' "$BLOB_ROOT")
+[ "$owner" = "1000:1000" ] \
+  || { log "FAILED: ${BLOB_ROOT} is owned by ${owner}, expected 1000:1000"; exit 1; }
+
 log "purging snapshots past retention (image ${IMAGE_TAG:0:12})"
 
 # A one-off container rather than `docker exec` into web-prod: purging is IO

@@ -102,11 +102,18 @@ the blobs will be `root:root` and the container can read them but not create or
 unlink — new uploads and `ActiveStorage::PurgeJob` both fail with `EACCES`:
 
 ```bash
+install -d -o 1000 -g 1000 -m 0755 /srv/www/shared/storage
 chown -R 1000:1000 /srv/www/shared/storage
 ```
 
-Do this **before** cutting traffic over, not after. On ~94k blobs it takes
-several minutes.
+Do this **before** cutting traffic over, not after. On ~94k blobs the recursive
+chown takes several minutes.
+
+`deploy.sh` and `purge-snapshots.sh` both run the `install -d` line themselves
+and refuse to continue if the directory is owned by anyone else, so a rebuilt
+host cannot quietly end up with a root-owned blob tree that Docker created on
+first mount. The recursive chown is still yours to run if you restore blobs
+from somewhere.
 
 ### 6. Host prerequisites
 
