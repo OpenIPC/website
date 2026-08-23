@@ -94,7 +94,22 @@ class Snapshot < ApplicationRecord
   private
 
   def purge_file_now
-    file.purge if file.attached?
+    return unless file.attached?
+
+    # Purge the variant images first, explicitly. Destroying the parent blob
+    # cascades to its variant_records, but each of those is an
+    # ActiveStorage::VariantRecord whose own has_one_attached :image defers to
+    # purge_later -- framework-internal and not configurable from here. On the
+    # :async adapter that deferred work is routinely lost, leaving one orphan
+    # blob and one file per materialised variant. Measured on production: a
+    # snapshot with a single icon variant leaked a 756-byte blob on destroy.
+    file.blob.variant_records.each do |variant_record|
+      variant_record.image.purge if variant_record.image.attached?
+    rescue ActiveStorage::FileNotFoundError
+      variant_record.image.attachment&.purge
+    end
+
+    file.purge
   rescue ActiveStorage::FileNotFoundError
     # Row outlived its file; still drop the attachment and blob rows.
     file.attachment&.purge
