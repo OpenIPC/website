@@ -35,8 +35,17 @@ namespace :storage do
   end
 
   # A blob with no attachment row at all.
+  #
+  # Skip anything created recently. A blob is written before its attachment row
+  # commits, so an upload in flight looks exactly like an orphan for a moment.
+  # An hour is far longer than that window and costs nothing -- these have been
+  # accumulating since 2023.
+  GRACE = 1.hour
+
   def unattached_blobs
-    ActiveStorage::Blob.where.missing(:attachments)
+    ActiveStorage::Blob
+      .where.missing(:attachments)
+      .where(created_at: ...GRACE.ago)
   end
 
   def report
