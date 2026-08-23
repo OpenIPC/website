@@ -162,12 +162,20 @@ class FirmwareTest < ActiveSupport::TestCase
                members: { 'uImage.hi3516ev300' => KERNEL, 'rootfs.ubi.hi3516ev300' => UBI })
     fw.generate
 
-    assert_equal 0x400000 + UBI.bytesize, File.size(fw.filepath),
+    # Sized from the payload, then rounded up to a whole page: U-Boot's
+    # `nand write` rejects a length that is not a multiple of the page size,
+    # and the generated image is written with ${filesize}.
+    expected = ((0x400000 + UBI.bytesize) + 2047) / 2048 * 2048
+    assert_equal expected, File.size(fw.filepath),
                  'a NAND image is sized from its payload, never from the parameter'
+    assert_equal 0, File.size(fw.filepath) % 2048, 'image length must be page aligned'
   end
 
   test 'only the members needed are read into memory' do
-    big = "\x00".b * (4 * 1024 * 1024)
+    # A distinctive sentinel, not a run of NULs: a firmware blob can legitimately
+    # contain long zero runs, so searching for those would fail on a clean image.
+    sentinel = 'UNWANTED-MEMBER-DO-NOT-COPY'.b
+    big = sentinel * (4 * 1024 * 1024 / sentinel.bytesize)
     fw = build(model: 'hi3516ev300', vendor: 'HiSilicon', flash_type: 'nand', size: 128,
                members: { 'uImage.hi3516ev300' => KERNEL, 'rootfs.ubi.hi3516ev300' => UBI,
                           'unrelated.blob' => big })
@@ -175,7 +183,14 @@ class FirmwareTest < ActiveSupport::TestCase
 
     # The unrelated member must not appear anywhere in the assembled image.
     assert_equal UBI, IO.binread(fw.filepath)[0x400000, UBI.bytesize]
-    assert File.size(fw.filepath) < big.bytesize, 'an unwanted member leaked into the image'
+
+    # Size is the tell: it is fixed by the rootfs offset plus the UBI payload,
+    # so anything else finding its way in would move it. Comparing against
+    # big.bytesize cannot work -- the rootfs offset alone is 4 MiB, so a NAND
+    # image is always at least that large.
+    expected = ((0x400000 + UBI.bytesize) + 2047) / 2048 * 2048
+    assert_equal expected, File.size(fw.filepath), 'an unwanted member leaked into the image'
+    refute_includes IO.binread(fw.filepath), sentinel, 'unwanted member content is present'
   end
 
   test 'the missing-member error still names what the tarball does hold' do

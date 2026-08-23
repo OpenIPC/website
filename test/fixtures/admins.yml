@@ -1,11 +1,15 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# Devise requires email and encrypted_password. `email` carries a unique index
+# with a "" default, so every record needs a distinct one -- the generated
+# `one: {}` / `two: {}` stubs both defaulted to "" and collided, which failed
+# fixture loading for the whole suite.
+#
+# encrypted_password is a bcrypt digest of "password"; it only has to be a
+# well-formed digest, no test authenticates with it.
 
-# This model initially had no columns defined. If you add columns to the
-# model remove the "{}" from the fixture names and add the columns immediately
-# below each fixture, per the syntax in the comments below
-#
-one: {}
-# column: value
-#
-two: {}
-# column: value
+one:
+  email: admin-one@example.com
+  encrypted_password: "$2a$12$K8GpaCcQ1pQVvKF5nkHhIuqnHRHFqLLKrJ0N3PJgZ3wLb1sYyLKGe"
+
+two:
+  email: admin-two@example.com
+  encrypted_password: "$2a$12$K8GpaCcQ1pQVvKF5nkHhIuqnHRHFqLLKrJ0N3PJgZ3wLb1sYyLKGe"

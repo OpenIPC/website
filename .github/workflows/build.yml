@@ -21,6 +21,74 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # Runs alongside build rather than gating it: a broken test should not stop an
+  # image existing for a branch, but it must stop the merge. Add "test" to the
+  # required status checks on master once this has been green for a few runs.
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+
+    env:
+      RAILS_ENV: test
+      OPENIPC_DATABASE_HOST: 127.0.0.1
+      OPENIPC_DATABASE_PORT: 3306
+      # error_highlight is a development-group gem, and the version in
+      # Gemfile.lock needs Ruby >= 3.2 while this app is on 3.1. The image never
+      # hit it because it excludes development:test entirely; here we need the
+      # test group but not development.
+      BUNDLE_WITHOUT: development
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Before setup-ruby, because bundler-cache runs bundle install and mysql2
+      # needs libmysqlclient headers to compile. It passes today only because
+      # the hosted runner happens to ship them; the Dockerfile installs the OS
+      # packages first for the same reason and this now matches that order.
+      - name: Install libraries the gems bind to
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            default-libmysqlclient-dev libvips42 libheif1
+
+      # Matches the Dockerfile, so a gem that compiles there compiles here.
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1.7'
+          bundler-cache: true
+
+      # database.yml authenticates as www/www. Grant it globally rather than on
+      # one schema: test_helper parallelizes, and each worker creates its own
+      # openipc_test-N database.
+      - name: Create the test database user
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -proot -e "
+            CREATE USER IF NOT EXISTS 'www'@'%' IDENTIFIED BY 'www';
+            GRANT ALL PRIVILEGES ON *.* TO 'www'@'%' WITH GRANT OPTION;
+            FLUSH PRIVILEGES;"
+
+      # Create explicitly (db:test:prepare assumes the database exists), load
+      # db/schema.rb, then migrate.
+      #
+      # The migrate is not redundant: db/schema.rb is pinned at
+      # 2022_08_06_130659 while db/migrate/ runs to 2023_05_07_193639, so five
+      # migrations were never dumped into it and loading the schema alone leaves
+      # the suite refusing to start with "Migrations are pending". Regenerating
+      # schema.rb is the real fix and belongs in its own change.
+      - name: Prepare schema
+        run: bin/rails db:create db:schema:load db:migrate
+
+      - name: Run tests
+        run: bin/rails test
+
   build:
     runs-on: ubuntu-latest
     permissions:
