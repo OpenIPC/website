@@ -72,12 +72,16 @@ module InstallationHelper
   end
 
   def flashing_everything(c)
-    fw_filename = "openipc-#{c.soc.model_downcase}-#{c.firmware_version}-#{c.flash_size}mb.bin"
-    write_size = write_size_for(c, c.flash_size_hex)
+    fw_filename = Firmware.filename_for(soc_model: c.soc.model_downcase, flash_type: c.flash_type_type,
+                                        release: c.firmware_version, size: c.flash_size)
+    # The full image is exactly the size it claims on NOR and page-aligned by
+    # construction on NAND, so ${filesize} is always a safe write length here --
+    # unlike the u-boot-only block below, where the binary is neither.
+    write_size = '${filesize}'
     text = []
     text << do_not_copy_paste
     text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
-    text << "mw.b #{c.soc.load_address} 0xff #{c.flash_size_hex}"
+    text << "mw.b #{c.soc.load_address} 0xff #{c.staging_size_hex}"
     unlock_flash text, c
     if c.sd_card_slot.eql?('sd') && c.network_interface.eql?('wifi')
       text << guarded_flash(c, "fatload mmc 0:1 #{c.soc.load_address} #{fw_filename}",
@@ -138,11 +142,12 @@ module InstallationHelper
     else
       text << "run uk#{c2}; run ur#{c2}"
     end
-    if c.flash_type.eql?('nand')
-      text << "nand erase #{c.overlay_offset} #{c.overlay_max_size}"
-    else
-      text << "sf erase #{c.overlay_offset} #{c.overlay_max_size}"
-    end
+    # No overlay erase on NAND: with mtdpartsubi everything past the kernel is
+    # one `ubi` partition and rootfs_data is a volume inside it, so a raw erase
+    # at an offset would cut into UBI. `urnand` already erases that whole
+    # partition before writing. This is also what used to render the malformed
+    # `nand erase 0xD50000 0x-550000`.
+    text << "sf erase #{c.overlay_offset} #{c.overlay_max_size}" unless c.flash_type.eql?('nand')
     text << 'reset'
     list_of_commands text
   end
@@ -161,7 +166,7 @@ module InstallationHelper
     unless c.network_interface.eql?('wifi')
       text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
     end
-    text << "mw.b #{c.soc.load_address} 0xff #{c.flash_size_hex}"
+    text << "mw.b #{c.soc.load_address} 0xff #{c.staging_size_hex}"
     unlock_flash text, c
     if c.sd_card_slot.eql?('sd') && c.network_interface.eql?('wifi')
       text << guarded_flash(c, "fatload mmc 0:1 #{c.soc.load_address} #{c.backup_filename}",

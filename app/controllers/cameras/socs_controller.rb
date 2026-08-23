@@ -114,7 +114,11 @@ module Cameras
       fw = Firmware.new(size: flash_size, flash_type: flash_type, release: fw_release, soc: @soc)
       fw.generate
       send_file fw.filepath, name: fw.filename, disposition: :attachment
-    rescue ActionController::MissingFile => e
+    rescue ActionController::MissingFile, Firmware::MissingMember => e
+      # MissingMember means the release tarball does not carry what this flash
+      # type needs -- a NAND build with no kernel member, say. Better a missing
+      # download than an image with a hole where the rootfs should be.
+      Rails.logger.warn "full image unavailable for #{params[:id]}: #{e.message}"
       flash.alert = 'This firmware does not exist.'
       redirect_back(fallback_location: '/')
     end
