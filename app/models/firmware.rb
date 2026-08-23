@@ -11,8 +11,10 @@ class Firmware
   NAND_ROOTFS_OFFSET = 0x400000
 
   NOR_KERNEL_OFFSET = 0x50000
+  NOR_SIZES = [8, 16, 32].freeze
 
   class MissingMember < StandardError; end
+  class InvalidFlashSize < StandardError; end
 
   def initialize(size: 8, flash_type: 'nor', release: 'lite', soc: nil)
     super()
@@ -44,6 +46,8 @@ class Firmware
   end
 
   def generate
+    validate_size!
+
     uboot_file = @soc.uboot_file
     unless File.exist?(uboot_file)
       puts "File #{uboot_file} not found."
@@ -64,32 +68,60 @@ class Firmware
       return
     end
 
-    members = read_members(linux_file)
-    kernel = fetch_member!(members, kernel_member, linux_file)
-    rootfs = fetch_member!(members, rootfs_member, linux_file)
+    data, present = read_members(linux_file, [kernel_member, rootfs_member])
+    kernel = fetch_member!(data, kernel_member, linux_file, present)
+    rootfs = fetch_member!(data, rootfs_member, linux_file, present)
+
+    # Resolve every offset and the length before allocating anything, so an
+    # unsupported size cannot get as far as filling a buffer with it.
+    k_offset = kernel_offset
+    r_offset = rootfs_offset
+    size = image_size(rootfs)
 
     # create directory
     FileUtils.mkdir_p File.dirname(filepath)
 
     tmp_file = Tempfile.create
-    IO.binwrite tmp_file, ("\xFF" * image_size(rootfs))
+    IO.binwrite tmp_file, ("\xFF" * size)
     IO.binwrite tmp_file, IO.binread(uboot_file), 0
-    IO.binwrite tmp_file, kernel, kernel_offset
-    IO.binwrite tmp_file, rootfs, rootfs_offset
+    IO.binwrite tmp_file, kernel, k_offset
+    IO.binwrite tmp_file, rootfs, r_offset
     FileUtils.mv tmp_file, filepath
   end
 
   private
 
-  # Read the archive once into name => bytes. TarReader#seek scans forward from
-  # the current position, so two successive seeks only work while the members
-  # happen to be in the order asked for; a hash does not care.
-  def read_members(linux_file)
-    {}.tap do |members|
-      Gem::Package::TarReader.new(Zlib::GzipReader.open(linux_file)) do |tar|
-        tar.each { |entry| members[entry.full_name] = entry.read if entry.file? }
+  # size is a request parameter, so it has to be checked before it can be turned
+  # into an allocation. Guarding here rather than relying on rootfs_offset to
+  # raise later keeps a crafted ?flash_size=<huge> from filling a buffer first.
+  # NAND ignores it entirely: that image is sized from its payload.
+  def validate_size!
+    return if nand?
+    return if NOR_SIZES.include?(@size)
+
+    raise InvalidFlashSize, "unsupported NOR flash size #{@size}MB (expected #{NOR_SIZES.join(', ')})"
+  end
+
+  # One pass, reading only the two bodies we need -- rootfs.ubi runs to 16MB and
+  # buffering every member would hold far more than the image itself. Names are
+  # collected for the error message, which costs nothing: skipped entries are
+  # stepped over by header, not read.
+  #
+  # A pass rather than two TarReader#seek calls because seek scans forward from
+  # the current position, so successive seeks only worked while the members
+  # happened to be in the order asked for.
+  def read_members(linux_file, wanted)
+    data = {}
+    present = []
+    Gem::Package::TarReader.new(Zlib::GzipReader.open(linux_file)) do |tar|
+      tar.each do |entry|
+        next unless entry.file?
+
+        present << entry.full_name
+        data[entry.full_name] = entry.read if wanted.include?(entry.full_name)
       end
     end
+    [data, present]
   end
 
   # The bug this class shipped for years: TarReader#seek yields nothing when the
@@ -99,12 +131,12 @@ class Firmware
   # Refusing loudly is also what keeps SigmaStar and Rockchip out: their NAND
   # tarballs carry no kernel member, because the kernel is a volume inside the
   # UBI image rather than a partition of its own.
-  def fetch_member!(members, name, linux_file)
-    data = members[name]
-    return data if data
+  def fetch_member!(data, name, linux_file, present)
+    body = data[name]
+    return body if body
 
-    present = members.keys.reject { |k| k.end_with?('.md5sum') }.join(', ')
-    raise MissingMember, "#{name} is not in #{File.basename(linux_file)} (members: #{present})"
+    listed = present.reject { |k| k.end_with?('.md5sum') }.join(', ')
+    raise MissingMember, "#{name} is not in #{File.basename(linux_file)} (members: #{listed})"
   end
 
   def soc_model
@@ -141,7 +173,7 @@ class Firmware
     when 16, 32
       0x350000
     else
-      raise StandardError, 'Unknown flash size'
+      raise InvalidFlashSize, "unsupported NOR flash size #{@size}MB"
     end
   end
 

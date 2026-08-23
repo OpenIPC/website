@@ -4,6 +4,7 @@ require 'test_helper'
 require 'rubygems/package'
 require 'zlib'
 require 'tmpdir'
+require 'benchmark'
 
 class FirmwareTest < ActiveSupport::TestCase
   StubVendor = Struct.new(:name)
@@ -133,6 +134,56 @@ class FirmwareTest < ActiveSupport::TestCase
 
     error = assert_raises(Firmware::MissingMember) { fw.generate }
     assert_match(/rootfs\.squashfs\.hi3516ev300/, error.message)
+  end
+
+  # --- flash_size arrives straight from the query string ---
+
+  test 'an unsupported nor size is refused before anything is allocated' do
+    fw = build(model: 'hi3516ev300', vendor: 'HiSilicon', flash_type: 'nor', size: 999_999,
+               members: { 'uImage.hi3516ev300' => KERNEL, 'rootfs.squashfs.hi3516ev300' => SQUASHFS })
+
+    # Must raise on the size itself, not after filling 999999MB of buffer.
+    elapsed = Benchmark.realtime { assert_raises(Firmware::InvalidFlashSize) { fw.generate } }
+    assert elapsed < 5, "took #{elapsed}s -- the size was allocated before it was checked"
+    assert_not File.exist?(fw.filepath)
+  end
+
+  test 'every supported nor size is accepted' do
+    [8, 16, 32].each do |size|
+      fw = build(model: 'hi3516ev300', vendor: 'HiSilicon', flash_type: 'nor', size: size,
+                 members: { 'uImage.hi3516ev300' => KERNEL, 'rootfs.squashfs.hi3516ev300' => SQUASHFS })
+      fw.generate
+      assert_equal size.megabytes, File.size(fw.filepath), "size #{size} did not generate"
+    end
+  end
+
+  test 'nand ignores the size parameter entirely' do
+    fw = build(model: 'hi3516ev300', vendor: 'HiSilicon', flash_type: 'nand', size: 999_999,
+               members: { 'uImage.hi3516ev300' => KERNEL, 'rootfs.ubi.hi3516ev300' => UBI })
+    fw.generate
+
+    assert_equal 0x400000 + UBI.bytesize, File.size(fw.filepath),
+                 'a NAND image is sized from its payload, never from the parameter'
+  end
+
+  test 'only the members needed are read into memory' do
+    big = "\x00".b * (4 * 1024 * 1024)
+    fw = build(model: 'hi3516ev300', vendor: 'HiSilicon', flash_type: 'nand', size: 128,
+               members: { 'uImage.hi3516ev300' => KERNEL, 'rootfs.ubi.hi3516ev300' => UBI,
+                          'unrelated.blob' => big })
+    fw.generate
+
+    # The unrelated member must not appear anywhere in the assembled image.
+    assert_equal UBI, IO.binread(fw.filepath)[0x400000, UBI.bytesize]
+    assert File.size(fw.filepath) < big.bytesize, 'an unwanted member leaked into the image'
+  end
+
+  test 'the missing-member error still names what the tarball does hold' do
+    fw = build(model: 'ssc338q', vendor: 'SigmaStar', flash_type: 'nand', size: 128,
+               members: { 'rootfs.ubi.ssc338q' => UBI })
+
+    error = assert_raises(Firmware::MissingMember) { fw.generate }
+    assert_match(/members: rootfs\.ubi\.ssc338q/, error.message)
   end
 
   test 'member order in the tarball does not matter' do
