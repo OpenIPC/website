@@ -23,6 +23,18 @@ class Snapshot < ApplicationRecord
     attachable.variant :fullhd, resize_to_limit: [1920, 1080], format: :jpeg, saver: { quality: 85, strip: true }
   end
 
+  # Purge the blob synchronously, before Rails' own after_destroy_commit hook
+  # gets the chance to do it with purge_later.
+  #
+  # has_one_attached's default cleanup is purge_later, which only detaches the
+  # attachment and enqueues ActiveStorage::PurgeJob for the blob. No durable
+  # queue adapter is configured, so that job runs on :async -- an in-process
+  # thread pool that is simply dropped on restart. The result is a detached
+  # blob, its variant records and its file left behind with nothing referencing
+  # them, which is how ~93,000 orphans accumulated. purge does the same work
+  # inline and cannot be lost.
+  before_destroy :purge_file_now, prepend: true
+
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }
   validates :mac_address, presence: true, format: MAC_ADDRESS_FORMAT
   validate :blacklisted_mac
@@ -75,6 +87,13 @@ class Snapshot < ApplicationRecord
   end
 
   private
+
+  def purge_file_now
+    file.purge if file.attached?
+  rescue ActiveStorage::FileNotFoundError
+    # Row outlived its file; still drop the attachment and blob rows.
+    file.attachment&.purge
+  end
 
   def blacklisted_mac
     return unless mac_address.in?(Rails.application.credentials.mac.blacklisted)
