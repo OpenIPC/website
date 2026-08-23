@@ -110,7 +110,7 @@ COPY --from=build /rails /rails
 # paul-owned tree for no reason; do not carry that forward.
 RUN groupadd --system --gid 1000 rails \
   && useradd --system --uid 1000 --gid 1000 --create-home rails \
-  && mkdir -p log tmp storage public/files \
+  && mkdir -p log tmp/pids tmp/cache storage public/files \
   && chown -R rails:rails log tmp storage public/files
 USER rails:rails
 

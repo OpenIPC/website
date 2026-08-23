@@ -55,4 +55,6 @@ production:
   <<: *default
   database: <%= ENV.fetch("OPENIPC_DATABASE") { "openipc_production" } %>
   username: openipc
-  password: <%= ENV["OPENIPC_DATABASE_PASSWORD"] %>
+  # to_json so the value is emitted as a quoted YAML scalar: the password
+  # contains characters (\, ", $, #) that break a bare scalar.
+  password: <%= ENV["OPENIPC_DATABASE_PASSWORD"].to_s.to_json %>
