@@ -47,8 +47,8 @@ env_set() {
 
 target_for() {
   case "$1" in
-    prod) echo "web-prod 3000 PROD_TAG .last-good-prod" ;;
-    dev)  echo "web-dev  3001 DEV_TAG  .last-good-dev" ;;
+    prod) echo "web-prod 3000 PROD_TAG .previous-prod" ;;
+    dev)  echo "web-dev  3001 DEV_TAG  .previous-dev" ;;
     *)    die "unknown target '$1' (expected prod or dev)" ;;
   esac
 }
@@ -66,11 +66,9 @@ wait_healthy() {
 }
 
 do_deploy() {
-  local env_name=$1 sha=${2:-}
-  read -r service port tag_key good_file <<<"$(target_for "$env_name")"
-  local good_path="${STATE_DIR}/${good_file}"
-
-  [ -n "$sha" ] || sha=$([ "$env_name" = prod ] && echo latest || echo latest)
+  local env_name=$1 sha=${2:-latest}
+  read -r service port tag_key prev_file <<<"$(target_for "$env_name")"
+  local prev_path="${STATE_DIR}/${prev_file}"
 
   local previous
   previous=$(env_get "$tag_key")
@@ -91,7 +89,11 @@ do_deploy() {
   compose up -d --no-deps "$service"
 
   if wait_healthy "$port"; then
-    echo "$sha" > "$good_path"
+    # Record what was running BEFORE this deploy, so `rollback` steps back one
+    # release. Recording the current tag would make rollback a no-op.
+    if [ -n "$previous" ] && [ "$previous" != "$sha" ]; then
+      echo "$previous" > "$prev_path"
+    fi
     ok "${env_name} is serving ${sha}"
     compose ps "$service"
   else
@@ -109,22 +111,22 @@ do_deploy() {
 
 do_rollback() {
   local env_name=${1:-prod}
-  read -r service port tag_key good_file <<<"$(target_for "$env_name")"
-  local good_path="${STATE_DIR}/${good_file}"
-  [ -f "$good_path" ] || die "no known-good image recorded for ${env_name}"
-  local good current
-  good=$(cat "$good_path")
+  read -r service port tag_key prev_file <<<"$(target_for "$env_name")"
+  local prev_path="${STATE_DIR}/${prev_file}"
+  [ -f "$prev_path" ] || die "no previous image recorded for ${env_name} — pass a SHA explicitly"
+  local previous current
+  previous=$(cat "$prev_path")
   current=$(env_get "$tag_key")
-  [ "$good" != "$current" ] || die "${env_name} is already on the last known-good image (${good})"
-  info "rolling ${env_name} back to ${good}"
-  do_deploy "$env_name" "$good"
+  [ "$previous" != "$current" ] || die "${env_name} is already on ${previous}"
+  info "rolling ${env_name} back from ${current:0:12} to ${previous:0:12}"
+  do_deploy "$env_name" "$previous"
 }
 
 do_status() {
   printf 'configured tags:\n'
   [ -f "$ENV_FILE" ] && sed 's/^/  /' "$ENV_FILE" || printf '  (no %s yet)\n' "$ENV_FILE"
-  printf '\nlast known-good:\n'
-  for f in "${STATE_DIR}"/.last-good-*; do
+  printf '\nrollback target (previous release):\n'
+  for f in "${STATE_DIR}"/.previous-*; do
     [ -e "$f" ] && printf '  %s = %s\n' "$(basename "$f")" "$(cat "$f")"
   done
   printf '\ncontainers:\n'
