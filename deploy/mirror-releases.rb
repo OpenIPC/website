@@ -45,11 +45,19 @@ TMP_PREFIX = '.tmp-mirror-'
 # rebuilt asset from the one already here means hashing 4.3 GB every hour.
 STATE_FILE = '.mirror-state.json'
 
-# Asset names come from the API and are pasted straight into a path. Anything
-# with a slash, or a leading dot, is refused rather than sanitised -- a plain
-# filename is the only thing this should ever see, and the leading-dot rule
-# also stops an asset colliding with the state file or the size manifests.
-SAFE_NAME = /\A[A-Za-z0-9][A-Za-z0-9._+-]*\z/.freeze
+# Asset names come from the API and are pasted straight into a path, so a name
+# is refused rather than sanitised unless it is a plain filename: unchanged by
+# basename (which rules out slashes, `..` and `.`) and not starting with a dot
+# (which keeps an asset from colliding with the state file or the manifests).
+#
+# This is a structural test rather than a list of permitted characters. The
+# first attempt spelled it as /\A[A-Za-z0-9][...]/ and quietly stopped
+# mirroring `_manifest.json`, a real asset that had been on disk since July:
+# guessing at the character set upstream is allowed to use is how you refuse
+# files you meant to keep.
+def plain_filename?(name)
+  !name.empty? && name == File.basename(name) && !name.start_with?('.')
+end
 
 # One page of releases, newest first. The rolling `nightly` and `latest` tags
 # sort first and carry the current build; older dated nightlies behind them
@@ -107,7 +115,7 @@ def newest_assets
       next if name.include?('sdk')
       next if chosen.key?(name)
 
-      unless SAFE_NAME.match?(name)
+      unless plain_filename?(name)
         log "  refusing #{name.inspect} from #{release.tag_name}: not a plain filename"
         next
       end
