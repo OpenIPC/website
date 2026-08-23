@@ -41,7 +41,7 @@ services:
     volumes:
       - /run/mysqld:/run/mysqld
       - /srv/github-releases:/srv/github-releases:ro
-      - /mnt/HC_Volume_103161270/storage:/rails/storage
+      - /srv/www/shared/storage:/rails/storage
       - /srv/www/shared/files:/rails/public/files
       - /srv/www/shared/dl:/rails/public/dl:ro
 

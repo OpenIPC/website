@@ -29,7 +29,7 @@ log "purging snapshots past retention (image ${IMAGE_TAG:0:12})"
 docker run --rm \
   --env-file /srv/www/.env.prod \
   -v /run/mysqld:/run/mysqld \
-  -v /mnt/HC_Volume_103161270/storage:/rails/storage \
+  -v /srv/www/shared/storage:/rails/storage \
   "ghcr.io/openipc/website:${IMAGE_TAG}" \
   bundle exec rails runner 'puts "purged #{PurgeImagesJob.new.perform} snapshots"' \
   || { log "FAILED: purge job errored"; exit 1; }
@@ -40,7 +40,7 @@ log "sweeping orphans"
 docker run --rm \
   --env-file /srv/www/.env.prod \
   -v /run/mysqld:/run/mysqld \
-  -v /mnt/HC_Volume_103161270/storage:/rails/storage \
+  -v /srv/www/shared/storage:/rails/storage \
   -e LIMIT=20000 \
   "ghcr.io/openipc/website:${IMAGE_TAG}" \
   bundle exec rails storage:reap 2>&1 | grep -vE '^I, |Disk Storage|^D, ' | tail -12

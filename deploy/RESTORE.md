@@ -102,7 +102,7 @@ the blobs will be `root:root` and the container can read them but not create or
 unlink — new uploads and `ActiveStorage::PurgeJob` both fail with `EACCES`:
 
 ```bash
-chown -R 1000:1000 /mnt/HC_Volume_103161270/storage
+chown -R 1000:1000 /srv/www/shared/storage
 ```
 
 Do this **before** cutting traffic over, not after. On ~94k blobs it takes
@@ -116,8 +116,9 @@ Only needed on a rebuilt host:
 - `/run/mysqld` bind-mounted into the containers (the socket, not TCP)
 - `/srv/github-releases` — recreated by `~paul/bin/openipc-backup-releases.rb`
   within the hour; the site degrades gracefully until then
-- The Hetzner volume for `storage/`. Blobs are **not** in the backup; the Open
-  Wall will simply be empty until cameras re-upload.
+- `/srv/www/shared/storage` — the blob tree, on the system disk. Blobs are
+  **not** in the backup; the Open Wall will simply be empty until cameras
+  re-upload, so an empty directory owned by uid 1000 is a complete restore.
 
 ## Expected timings
 
