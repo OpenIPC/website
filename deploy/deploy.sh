@@ -47,10 +47,26 @@ env_set() {
 
 target_for() {
   case "$1" in
-    prod) echo "web-prod 3000 PROD_TAG .previous-prod" ;;
-    dev)  echo "web-dev  3001 DEV_TAG  .previous-dev" ;;
+    prod) echo "web-prod 3000 PROD_TAG .previous-prod /srv/www/shared/storage" ;;
+    dev)  echo "web-dev  3001 DEV_TAG  .previous-dev  /srv/www/shared/dev-storage" ;;
     *)    die "unknown target '$1' (expected prod or dev)" ;;
   esac
+}
+
+# The image runs as uid 1000, and the blob tree is a plain host directory since
+# the block volume was retired. If it is missing -- a rebuilt host, a restore --
+# Docker happily creates it root-owned, and then every upload and every purge
+# fails with EACCES while the container still reports healthy. Create it with
+# the right ownership before anything mounts it, and refuse to deploy if it is
+# there but wrong.
+ensure_blob_root() {
+  local root=$1
+  install -d -o 1000 -g 1000 -m 0755 "$root" \
+    || die "cannot create blob root ${root}"
+  local owner
+  owner=$(stat -c '%u:%g' "$root")
+  [ "$owner" = "1000:1000" ] \
+    || die "${root} is owned by ${owner}, expected 1000:1000 — the container runs as uid 1000 and would fail with EACCES"
 }
 
 wait_healthy() {
@@ -67,8 +83,10 @@ wait_healthy() {
 
 do_deploy() {
   local env_name=$1 sha=${2:-latest}
-  read -r service port tag_key prev_file <<<"$(target_for "$env_name")"
+  read -r service port tag_key prev_file blob_root <<<"$(target_for "$env_name")"
   local prev_path="${STATE_DIR}/${prev_file}"
+
+  ensure_blob_root "$blob_root"
 
   local previous
   previous=$(env_get "$tag_key")
@@ -126,8 +144,9 @@ do_deploy() {
 
 do_rollback() {
   local env_name=${1:-prod}
-  read -r service port tag_key prev_file <<<"$(target_for "$env_name")"
+  read -r service port tag_key prev_file blob_root <<<"$(target_for "$env_name")"
   local prev_path="${STATE_DIR}/${prev_file}"
+
   [ -f "$prev_path" ] || die "no previous image recorded for ${env_name} — pass a SHA explicitly"
   local previous current
   previous=$(cat "$prev_path")
