@@ -7,7 +7,8 @@ module Cameras
     def index
       respond_to do |format|
         format.html {
-          @vendor = Vendor.find(params[:vendor])
+          # Optional filter -- no vendor means the unfiltered list, not a 404.
+          @vendor = Vendor.find_by_param(params[:vendor])
           if @vendor
             @socs = Soc.left_joins(:vendor).where(vendors: { name: @vendor }).order(:model)
             @page_title = 'Full list of processors'
