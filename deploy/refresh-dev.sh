@@ -105,9 +105,18 @@ log "scrub verified: $(mysql -N -e 'SELECT COUNT(*) FROM admins;' "$DST_DB") adm
 $(mysql -N -e 'SELECT COUNT(*) FROM snapshots;' "$DST_DB") snapshots"
 
 # ------------------------------------------------------------- restart
+# Wait for the container to answer again rather than exiting the moment the
+# restart is issued. Otherwise a container that fails to come back leaves dev
+# dead until someone happens to look, and the nightly log says "complete".
 if docker ps --format '{{.Names}}' | grep -qx openipc-web-dev; then
   log "restarting web-dev"
   docker restart openipc-web-dev >/dev/null
+  deadline=$((SECONDS + 120))
+  until curl -fsS --max-time 3 http://127.0.0.1:3001/up >/dev/null 2>&1; do
+    [ "$SECONDS" -lt "$deadline" ] || fail "web-dev did not come back within 120s after refresh"
+    sleep 3
+  done
+  log "web-dev healthy again"
 fi
 
 if [ "$FROM_LOCAL" = 1 ]; then
