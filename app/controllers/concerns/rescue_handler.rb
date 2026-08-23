@@ -39,8 +39,22 @@ module RescueHandler
     Rails.logger.error("[rescue_ladder] #{exception.class}: #{exception.message}")
     Rails.logger.error(exception.backtrace&.first(20)&.join("\n")) if exception.backtrace
 
+    return unless error_mail_enabled?
+
     ApplicationMailer.with(error: exception).experror.deliver
   rescue StandardError => e
     Rails.logger.error("[rescue_ladder] could not send error mail: #{e.class}: #{e.message}")
+  end
+
+  # Off by default. One email per unhandled exception is unusable on a public
+  # site: crawlers hit the app continuously, so a transient fault -- a database
+  # restart during a package upgrade, say -- turns into a mail flood. This was
+  # invisible for years only because delivery was broken; the moment routing was
+  # fixed it produced dozens of messages a minute.
+  #
+  # Every exception is logged above regardless, which is the durable record.
+  # Set ERROR_MAIL=1 to opt back in.
+  def error_mail_enabled?
+    ENV['ERROR_MAIL'].present?
   end
 end
