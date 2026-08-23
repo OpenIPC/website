@@ -10,7 +10,11 @@ on:
 
 concurrency:
   group: build-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel on the default branch. Rollback addresses images by commit
+  # SHA, so a cancelled master build leaves a hole in the rollback history --
+  # exactly the release you want back may have no image. Feature branches can
+  # be superseded freely.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 env:
   REGISTRY: ghcr.io
