@@ -16,10 +16,12 @@ class Snapshot < ApplicationRecord
   # so the wall displays in all browsers (HEIF is decodable only by Safari) and
   # stays small. Decoding HEIF sources requires the server's libvips to be built
   # with libheif support.
-  # dependent: false -- purge_file_now below does the cleanup inline. Without
-  # this, Rails also enqueues its own purge_later, which then errors on every
-  # deletion because the blob is already gone.
-  has_one_attached :file, dependent: false do |attachable|
+  # dependent stays at the default :purge_later. purge_file_now below does the
+  # real work inline, and by the time purge_later runs there is nothing left to
+  # do -- but keeping it means a second chance if that hook ever fails. The
+  # alternative, dependent: false, makes Rails call detach instead, which drops
+  # the attachment and leaves the blob behind: the exact bug being fixed.
+  has_one_attached :file do |attachable|
     attachable.variant :icon,   resize_to_limit: [90, 60],     format: :jpeg, saver: { quality: 80, strip: true }
     attachable.variant :icon2,  resize_to_limit: [240, 135],   format: :jpeg, saver: { quality: 80, strip: true }
     attachable.variant :thumb,  resize_to_limit: [480, 360],   format: :jpeg, saver: { quality: 80, strip: true }
