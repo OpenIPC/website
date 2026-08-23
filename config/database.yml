@@ -15,7 +15,15 @@ default: &default
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 16 } %>
   username: www
   password: www
+<%- if ENV["OPENIPC_DATABASE_HOST"].present? -%>
+  # CI and any other host that reaches MariaDB over TCP rather than the local
+  # socket. The socket below is unreachable from a service container, which is
+  # why the suite could not run in CI at all.
+  host: <%= ENV["OPENIPC_DATABASE_HOST"] %>
+  port: <%= ENV.fetch("OPENIPC_DATABASE_PORT") { 3306 } %>
+<%- else -%>
   socket: /run/mysqld/mysqld.sock
+<%- end -%>
 
 development:
   <<: *default
