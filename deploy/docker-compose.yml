@@ -30,7 +30,12 @@ services:
     <<: *common
     container_name: openipc-web-prod
     image: ghcr.io/openipc/website:${PROD_TAG:?PROD_TAG must be set}
-    env_file: /srv/www/.env.prod
+    # format: raw disables Compose's ${...} interpolation of the env file.
+    # Without it Compose expands the $ in the database password and the
+    # container receives a truncated value (24 chars became 15).
+    env_file:
+      - path: /srv/www/.env.prod
+        format: raw
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
@@ -44,7 +49,9 @@ services:
     <<: *common
     container_name: openipc-web-dev
     image: ghcr.io/openipc/website:${DEV_TAG:?DEV_TAG must be set}
-    env_file: /srv/www/.env.dev
+    env_file:
+      - path: /srv/www/.env.dev
+        format: raw
     ports:
       - "127.0.0.1:3001:3000"
     volumes:
