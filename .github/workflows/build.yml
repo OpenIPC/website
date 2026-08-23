@@ -71,10 +71,11 @@ jobs:
             GRANT ALL PRIVILEGES ON *.* TO 'www'@'%' WITH GRANT OPTION;
             FLUSH PRIVILEGES;"
 
-      # Load db/schema.rb directly. The usual flow regenerates the test database
-      # from development, which does not exist here.
+      # db:test:prepare expects the database to exist; create it explicitly and
+      # load db/schema.rb. The usual flow regenerates the test database from
+      # development, which does not exist here.
       - name: Prepare schema
-        run: bin/rails db:test:prepare
+        run: bin/rails db:create db:schema:load
 
       - name: Run tests
         run: bin/rails test
