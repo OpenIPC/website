@@ -23,8 +23,19 @@ module RescueHandler
     else
       raise exception unless Rails.env.production?
 
-      ApplicationMailer.with(error: exception).experror.deliver
+      notify_of(exception)
       render file: Rails.public_path.join('500.html'), layout: false, status: 500
     end
+  end
+
+  # Notifying about a failure must never itself become a failure. Without this,
+  # any delivery problem (no MTA, unroutable relay) turns a handled exception
+  # into an unhandled one and the 500.html below is never rendered.
+  def notify_of(exception)
+    ApplicationMailer.with(error: exception).experror.deliver
+  rescue StandardError => e
+    Rails.logger.error("[rescue_ladder] could not send error mail: #{e.class}: #{e.message}")
+    Rails.logger.error("[rescue_ladder] original error: #{exception.class}: #{exception.message}")
+    Rails.logger.error(exception.backtrace&.first(20)&.join("\n"))
   end
 end

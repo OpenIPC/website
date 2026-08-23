@@ -114,7 +114,20 @@ Rails.application.configure do
   app_host = ENV.fetch('APP_HOST') { 'openipc.org' }
   config.default_url_options = { host: app_host }
   config.action_mailer.default_url_options = { host: app_host }
-  config.action_mailer.delivery_method = :sendmail
+  # Bare metal had a local exim, so :sendmail worked. A container has no MTA
+  # worth configuring, so relay to the host's exim over the docker bridge when
+  # SMTP_HOST is set, and keep :sendmail as the fallback.
+  if ENV['SMTP_HOST'].present?
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.smtp_settings = {
+      address: ENV['SMTP_HOST'],
+      port: ENV.fetch('SMTP_PORT', '25').to_i,
+      domain: app_host,
+      enable_starttls_auto: false
+    }
+  else
+    config.action_mailer.delivery_method = :sendmail
+  end
 
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false

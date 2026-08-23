@@ -111,7 +111,7 @@ COPY --from=build /rails /rails
 RUN groupadd --system --gid 1000 rails \
   && useradd --system --uid 1000 --gid 1000 --create-home rails \
   && mkdir -p log tmp/pids tmp/cache storage public/files \
-  && chown -R rails:rails log tmp storage public/files
+  && chown -R rails:rails log tmp storage public
 USER rails:rails
 
 EXPOSE 3000
