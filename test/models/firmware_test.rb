@@ -172,7 +172,10 @@ class FirmwareTest < ActiveSupport::TestCase
   end
 
   test 'only the members needed are read into memory' do
-    big = "\x00".b * (4 * 1024 * 1024)
+    # A distinctive sentinel, not a run of NULs: a firmware blob can legitimately
+    # contain long zero runs, so searching for those would fail on a clean image.
+    sentinel = 'UNWANTED-MEMBER-DO-NOT-COPY'.b
+    big = sentinel * (4 * 1024 * 1024 / sentinel.bytesize)
     fw = build(model: 'hi3516ev300', vendor: 'HiSilicon', flash_type: 'nand', size: 128,
                members: { 'uImage.hi3516ev300' => KERNEL, 'rootfs.ubi.hi3516ev300' => UBI,
                           'unrelated.blob' => big })
@@ -187,7 +190,7 @@ class FirmwareTest < ActiveSupport::TestCase
     # image is always at least that large.
     expected = ((0x400000 + UBI.bytesize) + 2047) / 2048 * 2048
     assert_equal expected, File.size(fw.filepath), 'an unwanted member leaked into the image'
-    refute_includes IO.binread(fw.filepath), big[0, 4096], 'unwanted member content is present'
+    refute_includes IO.binread(fw.filepath), sentinel, 'unwanted member content is present'
   end
 
   test 'the missing-member error still names what the tarball does hold' do

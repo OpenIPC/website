@@ -49,17 +49,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Matches the Dockerfile, so a gem that compiles there compiles here.
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.1.7'
-          bundler-cache: true
-
+      # Before setup-ruby, because bundler-cache runs bundle install and mysql2
+      # needs libmysqlclient headers to compile. It passes today only because
+      # the hosted runner happens to ship them; the Dockerfile installs the OS
+      # packages first for the same reason and this now matches that order.
       - name: Install libraries the gems bind to
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             default-libmysqlclient-dev libvips42 libheif1
+
+      # Matches the Dockerfile, so a gem that compiles there compiles here.
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1.7'
+          bundler-cache: true
 
       # database.yml authenticates as www/www. Grant it globally rather than on
       # one schema: test_helper parallelizes, and each worker creates its own
