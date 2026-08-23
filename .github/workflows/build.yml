@@ -40,6 +40,11 @@ jobs:
       RAILS_ENV: test
       OPENIPC_DATABASE_HOST: 127.0.0.1
       OPENIPC_DATABASE_PORT: 3306
+      # error_highlight is a development-group gem, and the version in
+      # Gemfile.lock needs Ruby >= 3.2 while this app is on 3.1. The image never
+      # hit it because it excludes development:test entirely; here we need the
+      # test group but not development.
+      BUNDLE_WITHOUT: development
 
     steps:
       - uses: actions/checkout@v4
