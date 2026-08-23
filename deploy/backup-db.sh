@@ -29,6 +29,8 @@
 #   AGE_RECIPIENT       age public key; the private key lives ONLY in the
 #                       password manager, so this host can encrypt its own
 #                       secrets but cannot read them back
+#
+# Every value in that file must be single-quoted -- it is sourced by bash.
 # Optional:
 #   S3_ENDPOINT_URL     set for Hetzner Object Storage / Backblaze B2 / MinIO
 #   ALERT_EMAIL         where to shout if a run fails
@@ -57,6 +59,9 @@ fail() {
 }
 
 [ -r "$CONFIG" ] || fail "missing config $CONFIG"
+# Values in this file must be single-quoted: it is sourced, so an unquoted
+# bcrypt digest ($2b$12$...) expands as positional parameters and, under
+# set -u, aborts the script.
 # shellcheck disable=SC1090
 set -a; . "$CONFIG"; set +a
 
