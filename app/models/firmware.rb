@@ -103,12 +103,26 @@ class Firmware
 
   private
 
-  # file exists, is the size it claims to be, and is newer than any of its parts
+  # file exists, can be served, is the size it claims to be, and is newer than
+  # any of its parts
   def fresh?(uboot_file, linux_file)
     File.exist?(filepath) &&
+      web_readable? &&
       right_size? &&
       File.mtime(uboot_file) < File.mtime(filepath) &&
       File.mtime(linux_file) < File.mtime(filepath)
+  end
+
+  # nginx serves this directory and runs as neither the owner nor the group, so
+  # an image it cannot read is not usable even though it is present. Counting
+  # that as stale rebuilds the images published at 0600 before the mode was
+  # fixed, instead of needing a chmod by hand -- and closes the gap between the
+  # rename and the chmod above, where the file exists but is not yet servable.
+  def web_readable?
+    return true if (File.stat(filepath).mode & 0o004).positive?
+
+    Rails.logger.warn "firmware: rebuilding #{filename}, the web server cannot read the cached copy"
+    false
   end
 
   # A NOR image is exactly its flash size by construction, so anything else is
@@ -178,10 +192,16 @@ class Firmware
     # published here was readable only by the app's own user. nginx runs as
     # www-data and serves this directory, so /files/ answered 403 for all of
     # them -- and nothing could hand a download off to nginx while that was
-    # true. Set before the rename, so the file is readable the moment it
-    # appears under its real name.
-    File.chmod(0o644, tmp.path)
+    # true.
+    #
+    # Widened after the rename rather than before it. The temporary file lives
+    # in the same served directory, and there is no reason for a half-built
+    # image to be readable by anything, however unguessable its name and
+    # however short its life. `fresh?` refuses an image the web server cannot
+    # read, so the moment between the two is not one another request can be
+    # served out of.
     File.rename(tmp.path, filepath)
+    File.chmod(0o644, filepath)
   ensure
     # `ensure` rather than `rescue StandardError`, so an Interrupt or a
     # SignalException clears up after itself too. After the rename the path is

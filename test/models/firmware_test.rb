@@ -381,6 +381,36 @@ class FirmwareTest < ActiveSupport::TestCase
     assert_equal '644', format('%o', File.stat(fw.filepath).mode & 0o777)
   end
 
+  test 'a cached image the web server cannot read is rebuilt, not served' do
+    # Thirty images were published at 0600 before the mode was fixed. Counting
+    # those as stale mends them on first request rather than by hand.
+    fw = build(model: 'ssc30kq', vendor: 'SigmaStar', flash_type: 'nor', size: 8, release: 'lite',
+               members: { 'uImage.ssc30kq' => KERNEL, 'rootfs.squashfs.ssc30kq' => SQUASHFS })
+    fw.generate
+    File.chmod(0o600, fw.filepath)
+
+    fw.generate
+
+    assert_equal '644', format('%o', File.stat(fw.filepath).mode & 0o777)
+  end
+
+  test 'a half-built image is never readable by the web server' do
+    # The temporary file shares the served directory with the image, so it must
+    # not be widened until it is complete and has its real name.
+    fw = build(model: 'hi3516cv200', vendor: 'HiSilicon', flash_type: 'nor', size: 8, release: 'lite',
+               members: { 'uImage.hi3516cv200' => KERNEL, 'rootfs.squashfs.hi3516cv200' => SQUASHFS })
+
+    seen = []
+    original = File.method(:rename)
+    File.stub(:rename, lambda { |from, to|
+      seen << (File.stat(from).mode & 0o004)
+      original.call(from, to)
+    }) { fw.generate }
+
+    assert_equal [0], seen, 'the temporary file was world-readable before it was published'
+    assert_equal '644', format('%o', File.stat(fw.filepath).mode & 0o777)
+  end
+
   test 'a second generate reuses the cached image instead of rebuilding it' do
     fw = build(model: 'ssc337', vendor: 'SigmaStar', flash_type: 'nor', size: 8, release: 'lite',
                members: { 'uImage.ssc337' => KERNEL, 'rootfs.squashfs.ssc337' => SQUASHFS })
