@@ -36,6 +36,14 @@ services:
     env_file:
       - path: /srv/www/.env.prod
         format: raw
+    environment:
+      # Where assets fetched on demand are kept.
+      RELEASE_CACHE_ROOT: /srv/release-cache
+      # While this is set and holds the file, the hourly mirror wins and
+      # nothing is fetched on demand. Deleting this line is the cutover, and
+      # putting it back is the way back -- a compose change and a restart, no
+      # new image, and reviewable in a diff rather than edited on the host.
+      RELEASE_MIRROR_ROOT: /srv/github-releases
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
@@ -44,6 +52,10 @@ services:
       - /srv/www/shared/storage:/rails/storage
       - /srv/www/shared/files:/rails/public/files
       - /srv/www/shared/dl:/rails/public/dl:ro
+      # Release assets fetched on demand. Writable, unlike the mirror above,
+      # and separate from dev's so a staging experiment cannot poison what
+      # production serves.
+      - /srv/www/shared/release-cache:/srv/release-cache
 
   web-dev:
     <<: *common
@@ -52,6 +64,14 @@ services:
     env_file:
       - path: /srv/www/.env.dev
         format: raw
+    environment:
+      # Where assets fetched on demand are kept.
+      RELEASE_CACHE_ROOT: /srv/release-cache
+      # While this is set and holds the file, the hourly mirror wins and
+      # nothing is fetched on demand. Deleting this line is the cutover, and
+      # putting it back is the way back -- a compose change and a restart, no
+      # new image, and reviewable in a diff rather than edited on the host.
+      RELEASE_MIRROR_ROOT: /srv/github-releases
     ports:
       - "127.0.0.1:3001:3000"
     volumes:
@@ -62,3 +82,4 @@ services:
       - /srv/www/shared/dev-storage:/rails/storage
       - /srv/www/shared/dev-files:/rails/public/files
       - /srv/www/shared/dl:/rails/public/dl:ro
+      - /srv/www/shared/dev-release-cache:/srv/release-cache
