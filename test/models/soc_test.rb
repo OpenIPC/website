@@ -80,6 +80,23 @@ class SocTest < ActiveSupport::TestCase
     assert_equal 'ts3516ev200', soc.board, 'a legacy name must not be parsed for a board'
   end
 
+  test 'the family rule still answers for a legacy filename' do
+    # db/seeds.rb carries the pre-2023 openipc.<soc>-br.tgz name for all 48 of
+    # its entries, so a fresh install has nothing modern to read. Without the
+    # fallback T31X would ask for a t31x build, which upstream has never
+    # published -- the very regression this change exists to fix.
+    %w[T31X T40XP T30L T23N].each do |model|
+      soc = Soc.create!(vendor: @vendor, model: model,
+                        linux_filename: "openipc.#{model.downcase}-br.tgz")
+      assert_equal model.downcase[0, 3], soc.board, "#{model} lost its family build"
+    end
+  end
+
+  test 'the family rule leaves an unrelated model alone' do
+    soc = Soc.create!(vendor: @vendor, model: 'TS3518EV300', linux_filename: '')
+    assert_equal 'ts3518ev300', soc.board
+  end
+
   test 'linux_file answers each release and flash type it is asked for' do
     # `@linux_file ||=` returned the first call's path for every later one, so
     # asking one Soc for two variants handed back the same tarball twice.

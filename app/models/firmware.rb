@@ -92,11 +92,29 @@ class Firmware
 
   private
 
-  # file exists and it is newer than any of its parts
+  # file exists, is the size it claims to be, and is newer than any of its parts
   def fresh?(uboot_file, linux_file)
     File.exist?(filepath) &&
+      right_size? &&
       File.mtime(uboot_file) < File.mtime(filepath) &&
       File.mtime(linux_file) < File.mtime(filepath)
+  end
+
+  # A NOR image is exactly its flash size by construction, so anything else is
+  # a leftover from before that was enforced: the 9,465,856-byte
+  # openipc-hi3516ev200-nor-ultimate-8mb.bin, or a partial image from the
+  # cross-filesystem copy this class used to publish with. public/files is a
+  # host mount that outlives deploys and nothing prunes it, so checking only
+  # mtimes would go on serving those until their source tarball happened to
+  # change. NAND is sized from its payload and has no equivalent invariant.
+  def right_size?
+    return true if nand?
+
+    actual = File.size(filepath)
+    return true if actual == @size.megabytes
+
+    Rails.logger.warn "firmware: rebuilding #{filename}, cached copy is #{actual} bytes, expected #{@size.megabytes}"
+    false
   end
 
   # The build itself. Everything here happens on a temporary file; `filepath`
@@ -154,7 +172,7 @@ class Firmware
 
   # Debris used to land in Dir.tmpdir, which the container discards on restart.
   # It now lands beside the image, in a directory nginx serves and nothing
-  # prunes, so a build killed outrightly -- SIGKILL, OOM, a container stopped
+  # prunes, so a build killed outright -- SIGKILL, OOM, a container stopped
   # mid-write -- would leave a partial image there for good.
   #
   # Running under the lock is what makes this safe: no other process is

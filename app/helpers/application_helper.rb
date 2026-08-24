@@ -33,12 +33,15 @@ module ApplicationHelper
     '^([a-fA-F\d]{2}[:\-]){5}[a-fA-F\d]{2}$'
   end
 
+  # The board rule lives on Soc, which reads it from the name upstream
+  # publishes. This used to carry its own copy -- model.downcase with t31 and
+  # t40 collapsed -- so the tarball this linked to and the one the server
+  # assembled from could disagree: for T23N it offered openipc.t23n-*.tgz,
+  # which 404s, and for AK3916EV301 it offered ak3916ev301 while the server
+  # built from ak3918ev200. It also contradicted the member names in the
+  # SD-card instructions, which come from Soc#kernel_file and Soc#rootfs_file.
   def firmware_filename(camera)
-    soc_name = camera.soc.model.downcase
-    soc_name = 't31' if soc_name.start_with?('t31')
-    soc_name = 't40' if soc_name.start_with?('t40')
-
-    "openipc.#{soc_name}-#{camera.flash_type_type}-#{camera.firmware_version}.tgz"
+    "openipc.#{camera.soc.board}-#{camera.flash_type_type}-#{camera.firmware_version}.tgz"
   end
 
   def firmware_url(camera)

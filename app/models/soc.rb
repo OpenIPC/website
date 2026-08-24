@@ -88,8 +88,21 @@ class Soc < ApplicationRecord
   # fortnight, the largest single cause. T30L was the same bug.
   BOARD_FROM_FILENAME = /\Aopenipc\.(.+)-(?:nor|nand)-[a-z0-9]+\.tgz\z/
 
+  # Families that ship one build for every model in them. Only consulted when
+  # linux_filename cannot answer; it covers more cases than this list can.
+  FAMILY_BUILDS = %w[t31 t40 t30 t23].freeze
+
   def board
-    @board ||= linux_filename.to_s[BOARD_FROM_FILENAME, 1] || model_downcase
+    @board ||= linux_filename.to_s[BOARD_FROM_FILENAME, 1] || family_board
+  end
+
+  # Reached when linux_filename is blank or still in the pre-2023
+  # openipc.<soc>-br.tgz scheme, which is what db/seeds.rb carries for all 48
+  # of its entries. Production rows are all on the current scheme, but a fresh
+  # install has no modern name to read, so dropping this rule would have T31X
+  # ask for a t31x build that upstream has never published.
+  def family_board
+    FAMILY_BUILDS.find { |family| model_downcase.start_with?(family) } || model_downcase
   end
 
   # Not memoised: it takes arguments, and `@linux_file ||=` returned the first

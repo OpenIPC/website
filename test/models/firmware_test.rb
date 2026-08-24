@@ -345,6 +345,23 @@ class FirmwareTest < ActiveSupport::TestCase
     assert_empty leftover_temp_files(fw), 'the interrupted build was left behind'
   end
 
+  test 'a cached image that is not its declared size is rebuilt, not served' do
+    # openipc-hi3516ev200-nor-ultimate-8mb.bin sat in the production cache at
+    # 9,465,856 bytes. public/files is a host mount that outlives deploys and
+    # nothing prunes it, so a check on mtimes alone would have gone on serving
+    # it until its source tarball happened to change.
+    fw = build(model: 'hi3516dv100', vendor: 'HiSilicon', flash_type: 'nor', size: 8, release: 'lite',
+               members: { 'uImage.hi3516dv100' => KERNEL, 'rootfs.squashfs.hi3516dv100' => SQUASHFS })
+    FileUtils.mkdir_p File.dirname(fw.filepath)
+    IO.binwrite(fw.filepath, "\x00".b * (8.megabytes + 1024))
+    FileUtils.touch(fw.filepath)
+
+    fw.generate
+
+    assert_equal 8.megabytes, File.size(fw.filepath), 'the oversized cache entry was served instead of rebuilt'
+    assert_equal SQUASHFS, IO.binread(fw.filepath)[0x250000, SQUASHFS.bytesize]
+  end
+
   test 'a second generate reuses the cached image instead of rebuilding it' do
     fw = build(model: 'ssc337', vendor: 'SigmaStar', flash_type: 'nor', size: 8, release: 'lite',
                members: { 'uImage.ssc337' => KERNEL, 'rootfs.squashfs.ssc337' => SQUASHFS })
