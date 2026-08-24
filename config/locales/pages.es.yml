@@ -168,4 +168,5 @@ es:
       paragraph1: Una colección de herramientas y utilidades útiles.
       title: Utilidades
     web_interface:
+      intro: 'Cada cámara con OpenIPC sirve esta interfaz por sí misma, en su propia dirección: sin cuenta en la nube y sin ninguna aplicación intermedia. Estas son las páginas de una cámara con una compilación actual.'
       title: Interfaz web

@@ -168,4 +168,5 @@ pt:
       paragraph1: Uma coleção de ferramentas e utilitários úteis.
       title: Serviços de utilidade pública
     web_interface:
+      intro: 'Cada câmara com OpenIPC serve esta interface por si própria, no seu próprio endereço: sem conta na nuvem e sem qualquer aplicação pelo meio. Estas são as páginas de uma câmara com uma compilação atual.'
       title: Interface web

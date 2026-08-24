@@ -1,21 +1,48 @@
-<article class="about">
+<%# Shot from a lab hi3516av300 running a current build. The captions are the
+    page titles as the camera prints them: the WebUI is not translated, so
+    quoting them is what a reader will actually match against on the device.
+
+    Two files per screenshot. The tile loads the 1200px one, and the zoom modal
+    swaps in the 2560px original from data-zoom -- both are 2x for the size they
+    are shown at, because a 1x capture is what made the old gallery look soft on
+    every Retina display. %>
+<article class="webinterface">
   <header>
     <h2><%= t('.title') %></h2>
   </header>
 
-  <div id="screens" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-2">
-    <div class="col"><%= image_tag 'webui/status.jpg', class: 'border img-fluid img-zoom' %></div>
-    <div class="col"><%= image_tag 'webui/preview.jpg', class: 'border img-fluid img-zoom'  %></div>
-    <div class="col"><%= image_tag 'webui/majestic.jpg', class: 'border img-fluid img-zoom'  %></div>
-    <div class="col"><%= image_tag 'webui/dmesg.jpg', class: 'border img-fluid img-zoom'  %></div>
-    <div class="col"><%= image_tag 'webui/network.jpg', class: 'border img-fluid img-zoom'  %></div>
-    <div class="col"><%= image_tag 'webui/timezone.jpg', class: 'border img-fluid img-zoom'  %></div>
-    <div class="col"><%= image_tag 'webui/telegram-bot.jpg', class: 'border img-fluid img-zoom'  %></div>
-    <div class="col"><%= image_tag 'webui/motion-guard.jpg', class: 'border img-fluid img-zoom'  %></div>
-    <div class="col"><%= image_tag 'webui/update-firmware.jpg', class: 'border img-fluid img-zoom'  %></div>
-    <div class="col"><%= image_tag 'webui/debugging.jpg', class: 'border img-fluid img-zoom'  %></div>
-    <div class="col"><%= image_tag 'webui/send2email.jpg', class: 'border img-fluid img-zoom'  %></div>
-    <div class="col"><%= image_tag 'webui/reset.jpg', class: 'border img-fluid img-zoom'  %></div>
+  <p class="lead col-lg-8"><%= t('.intro') %></p>
+
+  <%
+    screens = [
+      ['status',                  'Device Status'],
+      ['preview',                 'Camera Preview'],
+      ['majestic-settings',       'Majestic Settings'],
+      ['majestic-endpoints',      'Majestic Endpoints'],
+      ['majestic-configuration',  'Majestic Configuration'],
+      ['logs',                    'Logs'],
+      ['network',                 'Network Settings'],
+      ['time',                    'Time Settings'],
+      ['firmware-update',         'Firmware Update'],
+      ['console',                 'Console'],
+      ['file-manager',            'File Manager'],
+      ['telegram',                'Telegram'],
+    ]
+  %>
+
+  <div id="screens" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+    <% screens.each do |slug, caption| %>
+      <div class="col">
+        <figure class="mb-0">
+          <%= image_tag "webui/#{slug}-thumb.webp",
+                        class: 'border img-fluid img-zoom',
+                        alt: "#{caption} page of the OpenIPC web interface",
+                        loading: 'lazy', decoding: 'async',
+                        data: { zoom: image_path("webui/#{slug}.webp") } %>
+          <figcaption class="small text-muted mt-1"><%= caption %></figcaption>
+        </figure>
+      </div>
+    <% end %>
   </div>
 </article>
 

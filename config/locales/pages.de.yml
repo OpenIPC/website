@@ -168,4 +168,5 @@ de:
       paragraph1: Eine Sammlung nützlicher Tools und Dienstprogramme.
       title: Dienstprogramme
     web_interface:
+      intro: 'Jede OpenIPC-Kamera liefert diese Oberfläche selbst aus, über ihre eigene Adresse — ohne Cloud-Konto und ohne App dazwischen. Gezeigt sind die Seiten einer Kamera mit einem aktuellen Build.'
       title: Webinterface

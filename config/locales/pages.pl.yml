@@ -168,4 +168,5 @@ pl:
       paragraph1: Zbiór przydatnych narzędzi i narzędzi.
       title: Narzędzia
     web_interface:
+      intro: 'Każda kamera z OpenIPC udostępnia ten interfejs samodzielnie, pod własnym adresem — bez konta w chmurze i bez aplikacji pośredniczącej. Poniżej strony kamery z aktualną wersją oprogramowania.'
       title: Interfejs sieciowy

@@ -171,4 +171,5 @@ en:
       paragraph1: A collection of useful tools and utilities.
       title: Utilities
     web_interface:
+      intro: 'Every OpenIPC camera serves this interface itself, over its own address — there is no cloud account and no app in between. These are the pages of a camera running a current build.'
       title: Web Interface

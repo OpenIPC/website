@@ -168,4 +168,5 @@ fr:
       paragraph1: Une collection d'outils et d'utilitaires utiles.
       title: Utilitaires
     web_interface:
+      intro: 'Chaque caméra OpenIPC sert cette interface elle-même, à sa propre adresse : sans compte cloud ni application intermédiaire. Voici les pages d’une caméra équipée d’une version récente.'
       title: Interface Web

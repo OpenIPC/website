@@ -13,7 +13,9 @@ window.onload = (event) => {
           let b = modalZoom.querySelector('.modal-body');
           b.textContent = '';
           let i = document.createElement('img');
-          i.src = ev.target.src;
+          // The tile is a downscaled copy; data-zoom, where present, names the
+          // full-resolution file so the modal is not an upscale of the thumbnail.
+          i.src = ev.target.dataset.zoom || ev.target.src;
           i.classList.add('img-fluid');
           b.appendChild(i);
           zoom.show();

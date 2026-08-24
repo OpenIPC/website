@@ -168,4 +168,5 @@ it:
       paragraph1: Una raccolta di strumenti e utilità utili.
       title: Utilità
     web_interface:
+      intro: 'Ogni telecamera OpenIPC serve questa interfaccia da sé, al proprio indirizzo: nessun account cloud e nessuna app di mezzo. Queste sono le pagine di una telecamera con una build aggiornata.'
       title: Interfaccia web
