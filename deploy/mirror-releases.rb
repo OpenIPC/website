@@ -67,7 +67,7 @@ end
 
 # Files this script makes rather than mirrors.
 def ours?(name)
-  name == STATE_FILE || name.start_with?(TMP_PREFIX)
+  [STATE_FILE, INDEX_FILE].include?(name) || name.start_with?(TMP_PREFIX)
 end
 
 # The leading token, so a run reports "skipping 31 toolchain.*" rather than 31
@@ -79,6 +79,9 @@ end
 # What we last put on disk, as {name => {size, digest}}. Without it, telling a
 # rebuilt asset from the one already here means hashing 4.3 GB every hour.
 STATE_FILE = '.mirror-state.json'
+
+# Where the app looks to find out what exists upstream and how to fetch it.
+INDEX_FILE = '.index.json'
 
 # Asset names come from the API and are pasted straight into a path, so a name
 # is refused rather than sanitised unless it is a plain filename: unchanged by
@@ -176,11 +179,21 @@ def newest_assets
         next
       end
 
+      # The tag goes into the index and from there into a URL path segment.
+      # Same reasoning as plain_filename? above, applied to the other half of
+      # the address.
+      tag = release.tag_name.to_s
+      unless tag.match?(/\A[A-Za-z0-9._-]+\z/)
+        log "  refusing #{name.inspect}: tag #{tag.inspect} is not a plain tag"
+        next
+      end
+
       chosen[name] = {
         name: name,
         url: asset['browser_download_url'],
         size: asset['size'],
         digest: asset['digest'],
+        updated_at: asset['updated_at'],
         release: release.tag_name
       }
     end
@@ -249,6 +262,44 @@ def fetch(asset, state)
   true
 end
 
+# What the site is allowed to ask for, and where each thing lives upstream.
+#
+# The app reads this rather than calling the API itself: the API is
+# unauthenticated at 60 requests an hour, shared by every container on the
+# host, and a request path that can exhaust that is a request path that can
+# take downloads out for the rest of the hour. One call an hour from here
+# leaves the whole budget spare.
+#
+# It is also the allowlist. A name that is not in here is one upstream is not
+# publishing, so the app refuses it before it can reach a path or a URL --
+# which matters because those names come from a database column an admin can
+# edit.
+#
+# The download URL is deliberately absent. The reader builds it from a constant
+# base, the release tag and the asset name, all three of which are checked
+# where they are cheap to check -- rather than following a URL handed over by
+# the API. Constructing beats validating.
+#
+# Written .tmp-then-rename so a reader never sees half an index.
+def write_index(assets)
+  path = File.join(ROOT, INDEX_FILE)
+  tmp = "#{path}.tmp"
+  index = {
+    'generated_at' => Time.now.utc.strftime('%Y-%m-%dT%H:%M:%SZ'),
+    'assets' => assets.values.sort_by { |a| a[:name] }.to_h do |a|
+      [a[:name], {
+        'size' => a[:size],
+        'digest' => a[:digest],
+        'updated_at' => a[:updated_at],
+        'release' => a[:release]
+      }]
+    end
+  }
+  File.write(tmp, JSON.pretty_generate(index))
+  File.rename(tmp, path)
+  log "wrote #{INDEX_FILE} (#{index['assets'].size} assets)"
+end
+
 # Anything in ROOT the site does not read and this script did not write.
 #
 # Two things end up here. Families skipped on purpose -- 3.1GB of toolchains,
@@ -312,6 +363,10 @@ with_lock do
   state = load_state
   assets = newest_assets
   wanted = assets.values.reject { |a| current?(File.join(ROOT, a[:name]), a, state) }
+  # Every run, and before the fetches: the index is what the app reads, and it
+  # is cheap. A run that fails to download anything still leaves it current.
+  write_index(assets) unless DRY_RUN
+
   log "#{wanted.size} to fetch"
 
   if DRY_RUN
