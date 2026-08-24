@@ -25,4 +25,16 @@ class RetiredRoutesTest < ActionDispatch::IntegrationTest
     get '/no-such-page-at-all'
     assert_redirected_to '/'
   end
+
+  test 'an unmatched route writes nothing into the served directory' do
+    # public/notfound.txt used to collect every unmatched URL and its referer in
+    # the directory the app serves, and answered 200 to anyone who asked for it.
+    # nginx's own log keeps that record, so nothing here replaces it.
+    served = Rails.public_path.join('notfound.txt')
+    FileUtils.rm_f(served)
+
+    get '/no-such-page-at-all', headers: { 'HTTP_REFERER' => 'https://example.test/private/page' }
+
+    assert_not File.exist?(served), 'the referer was written into a publicly served file'
+  end
 end
