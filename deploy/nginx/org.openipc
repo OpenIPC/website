@@ -114,7 +114,7 @@ server {
     # checkout because there is no copy under /srv/www/shared; moving them is a
     # loose end, not a blocker.
     location /images/ {
-        alias /srv/www/org-openipc/public/images/;
+        alias /srv/www/shared/images/;
     }
 
     location / {
