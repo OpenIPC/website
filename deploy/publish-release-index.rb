@@ -5,9 +5,10 @@
 # /srv/github-releases/.index.json -- what ReleaseIndex reads to learn what
 # upstream has, how big each asset is and what it should hash to.
 #
-#   publish-release-index.rb            normal run: index only
-#   publish-release-index.rb --mirror   also keep a local copy of every asset
-#   publish-release-index.rb --dry-run  report, write nothing
+#   publish-release-index.rb                  normal run: index only
+#   publish-release-index.rb --mirror         also fetch and keep every asset
+#   publish-release-index.rb --retire-mirror  delete the local copies
+#   publish-release-index.rb --dry-run        report, write nothing
 #
 # Cron:  5 * * * *  paul  /usr/local/sbin/openipc-publish-release-index
 #
@@ -18,7 +19,11 @@
 #
 # --mirror is the way back. Restoring RELEASE_MIRROR_ROOT in
 # deploy/docker-compose.yml makes the app prefer local copies again, and one
-# run with this flag puts them there.
+# run with this flag puts them there -- and the hourly run leaves them alone
+# afterwards, so the rollback stays rolled back without touching cron.
+#
+# --retire-mirror is the one-time counterpart that removes them. An ordinary
+# run never does, precisely so that the two flags cannot fight each other.
 #
 # This replaces ~paul/bin/openipc-backup-releases.rb, which unlinked and
 # re-downloaded every asset on every run: about 4 GB an hour, ~100 GB a day,
@@ -125,6 +130,12 @@ DRY_RUN = ARGV.include?('--dry-run')
 # Keeping local copies is the exception now. See the header: they were unread
 # from the moment production started fetching on demand.
 MIRROR = ARGV.include?('--mirror')
+
+# Deleting them is a separate, deliberate act rather than something the hourly
+# run does. The first version had the ordinary run prune them, which quietly
+# broke the rollback it advertised: --mirror would put the copies back and the
+# next run, an hour later, would take them away again.
+RETIRE_MIRROR = ARGV.include?('--retire-mirror')
 
 def log(message)
   warn format('%s  %s', Time.now.utc.strftime('%Y-%m-%dT%H:%M:%SZ'), message)
@@ -381,7 +392,9 @@ def prune
   sizes = {}
   Dir.children(ROOT).each do |name|
     next if ours?(name)
-    next if MIRROR && consumed?(name)
+    # Consumed assets survive every ordinary run, whether or not this one
+    # fetched them. Only --retire-mirror takes them away.
+    next if consumed?(name) && !RETIRE_MIRROR
 
     path = File.join(ROOT, name)
     sizes[name] = File.size(path) if File.file?(path)
