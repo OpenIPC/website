@@ -43,7 +43,7 @@
         <%# for the visitor, off-site, with no message from this site to explain %>
         <%# it. Arguably worse than the failed download, since they cannot tell  %>
         <%# whether we are broken or their camera is unsupported.                %>
-        <% @camera.soc.release_availability.each do |flash_type, releases| %>
+        <% @camera.soc.published_availability.each do |flash_type, releases| %>
           <% releases.each do |release| %>
             <div class="alert alert-primary github">
               <i class="bi bi-github float-end"></i>
@@ -133,7 +133,21 @@
         return fits.length ? fits : published;
     }
 
+    // A flash type upstream builds nothing for is disabled in its own menu, so
+    // landing on one -- from ?rom= in a shared link, or a stale bookmark --
+    // would leave the edition list empty with nothing to say why. Move to the
+    // first type that is offered instead.
+    function useAnOfferedFlashType() {
+        const chips = document.querySelector('#camera_flash_type');
+        const chosen = chips.options[chips.selectedIndex];
+        if (!chosen || !chosen.disabled) return;
+
+        const usable = Array.from(chips.options).find(o => !o.disabled);
+        if (usable) chips.value = usable.value;
+    }
+
     function checkFlashSize() {
+        useAnOfferedFlashType();
         const el = document.querySelector('#camera_firmware_version');
         const chip = document.querySelector('#camera_flash_type').value;
         const allowed = allowedEditions(chip);

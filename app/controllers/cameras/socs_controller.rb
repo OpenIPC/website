@@ -73,6 +73,12 @@ module Cameras
       @camera.soc = Soc.find(params[:id])
       @vendor = @camera.soc.vendor
 
+      # nor8m is the default for almost every SoC and wrong for the ones
+      # upstream builds only a NAND image for -- rv1109 and rv1126 here today.
+      # Their NOR sizes are disabled in the menu, so the form opened on a
+      # disabled flash type with no edition to go with it.
+      @camera.flash_type = @camera.soc.default_flash_chip if params[:rom].blank?
+
       @page_title = "SoC: #{@camera.soc.full_name}"
       render 'cameras/socs/show'
     end
@@ -101,6 +107,12 @@ module Cameras
       @camera.soc = Soc.find(params[:id])
       @vendor = @camera.soc.vendor
 
+      # nor8m is the default for almost every SoC and wrong for the ones
+      # upstream builds only a NAND image for -- rv1109 and rv1126 here today.
+      # Their NOR sizes are disabled in the menu, so the form opened on a
+      # disabled flash type with no edition to go with it.
+      @camera.flash_type = @camera.soc.default_flash_chip if params[:rom].blank?
+
       if @vendor.name.eql?("SigmaStar") && @camera.flash_type.eql?("nand")
         render 'cameras/socs/sigmastar_nand_is_weird'
       elsif @camera.soc.model.in?(%w[HI3536CV100 HI3536DV100])
@@ -115,6 +127,13 @@ module Cameras
            @camera.soc.available_releases('nor').include?('lite')
           @camera.firmware_version = 'lite'
           flash.now[:warning] = '8MB Flash ROM can only be flashed with Lite or FPV edition!'
+        end
+
+        # Everything above this point can be set from the query string.
+        if (asked = @camera.use_published_release!)
+          flash.now[:warning] =
+            "OpenIPC does not publish a #{asked.to_s.capitalize} build for this SoC on " \
+            "#{@camera.flash_type_type.upcase} flash. Showing #{@camera.firmware_version_name} instead."
         end
 
         @camera.backup_filename = "backup-#{@camera.soc.model.downcase}-#{@camera.flash_type}.bin"

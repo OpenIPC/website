@@ -141,16 +141,48 @@ class Camera
     end
   end
 
-  # What this SoC actually has, when there is one to ask. Unioning with
-  # FW_VERSION here would have made the rule say nothing: ultimate would be
-  # permitted for the 42 SoCs upstream does not build it for, which is the
-  # thing being fixed.
-  def permitted_firmware_versions
-    soc.nil? ? FW_VERSION : soc.offerable_releases
+  # What this SoC has for the flash type actually chosen. The union across flash
+  # types would let a NAND-only edition through for a NOR part and back again:
+  # sixteen boards have a NAND build, eleven of those are Ultimate-only and five
+  # are Lite-only, so the two lists genuinely differ.
+  #
+  # Unioning with FW_VERSION would have made the rule say nothing at all --
+  # Ultimate permitted for the 42 SoCs upstream does not build it for, which is
+  # the thing being fixed.
+  # Move to an edition upstream publishes for the chosen flash type, and answer
+  # what was asked for so the caller can say what it did. nil when nothing
+  # needed changing.
+  #
+  # Nothing calls valid? on a Camera -- these pages are rendered, never saved --
+  # and every field arrives from the request, so without this a hand-edited
+  # query string produces a full page of installation steps for a tarball that
+  # was never built. The same shape as the 8MB downgrade that has always been
+  # here, applied to what exists rather than to what fits.
+  def use_published_release!
+    return nil if soc.nil?
+
+    available = soc.available_releases(flash_type_type)
+    return nil if available.empty? || available.include?(firmware_version)
+
+    asked = firmware_version
+    self.firmware_version = available.first
+    @firmware_version_name = nil
+    asked
   end
 
+  def permitted_firmware_versions
+    return FW_VERSION if soc.nil?
+
+    soc.available_releases(flash_type_type).presence || soc.offerable_releases
+  end
+
+  # The same default as the selector. Without it an edition upstream publishes
+  # that this site has no translation for is picked from the menu by its proper
+  # name and then rendered as a translation_missing span everywhere else on the
+  # installation page.
   def firmware_version_name
-    @firmware_version_name ||= I18n.t("firmware.version.#{firmware_version}")
+    @firmware_version_name ||= I18n.t("firmware.version.#{firmware_version}",
+                                      default: firmware_version.to_s.capitalize)
   end
 
   # The NOR numbers come from FlashLayout, which reads them off the bootloader

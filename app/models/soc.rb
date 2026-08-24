@@ -93,10 +93,21 @@ class Soc < ApplicationRecord
   # Falling back to the known list keeps the old behaviour when the index
   # cannot be read, rather than emptying the menu.
   def available_releases(flash_type)
-    found = ReleaseIndex.current.releases_for(board, flash_type)
-    found.sort_by { |release| [RELEASE_ORDER.index(release) || RELEASE_ORDER.size, release] }
+    published_releases(flash_type)
   rescue ReleaseIndex::Missing
+    # Offer the usual three rather than an empty menu. Some of them may not
+    # exist for this board -- that is the whole problem being fixed -- but a
+    # menu with nothing in it makes every SoC unusable for as long as the index
+    # is unreadable, and the download path answers "could not be fetched right
+    # now" rather than pretending. Anything that would put a bare GitHub URL in
+    # front of a visitor uses published_releases instead, which stays silent.
     RELEASE_ORDER
+  end
+
+  # Strictly what the index says, and nothing when it cannot be read.
+  def published_releases(flash_type)
+    ReleaseIndex.current.releases_for(board, flash_type)
+                .sort_by { |release| [RELEASE_ORDER.index(release) || RELEASE_ORDER.size, release] }
   end
 
   # Every edition offerable for this SoC, across flash types. The menu carries
@@ -112,6 +123,23 @@ class Soc < ApplicationRecord
   # flash type, for this SoC.
   def release_availability
     FLASH_TYPES.to_h { |flash_type| [flash_type, available_releases(flash_type)] }
+  end
+
+  # nor8m suits almost every SoC and is wrong for the ones upstream builds only
+  # a NAND image for -- rv1109 and rv1126 here today. Their NOR sizes are
+  # disabled in the menu, so opening the form on one left it with a flash type
+  # that cannot be chosen and no edition to go with it.
+  def default_flash_chip
+    available_releases('nor').any? ? 'nor8m' : 'nand'
+  end
+
+  # For the links out to GitHub, which have to name a file that is there. An
+  # unreadable index means no links rather than links built on a guess: a 404 on
+  # github.com is off-site, with nothing from this site to explain it.
+  def published_availability
+    FLASH_TYPES.to_h { |flash_type| [flash_type, published_releases(flash_type)] }
+  rescue ReleaseIndex::Missing
+    FLASH_TYPES.to_h { |flash_type| [flash_type, []] }
   end
 
   # A flash image starts with a bootloader, and for twenty-one of the SoCs on

@@ -140,4 +140,66 @@ class CameraTest < ActiveSupport::TestCase
       end
     end
   end
+
+  # --- editions that are not published ---
+
+  test 'an edition upstream does not build is replaced, and says what was asked for' do
+    vendor = Vendor.create!(name: 'Testco2')
+    soc = Soc.create!(vendor: vendor, model: 'TS377D',
+                      linux_filename: 'openipc.ts377d-nor-lite.tgz')
+    camera = Camera.new(soc: soc, flash_type: 'nor16m', firmware_version: 'ultimate')
+
+    with_index(['openipc.ts377d-nor-lite.tgz']) do
+      assert_equal 'ultimate', camera.use_published_release!
+      assert_equal 'lite', camera.firmware_version
+      assert_equal 'Lite', camera.firmware_version_name
+    end
+  end
+
+  test 'an edition that is published is left alone' do
+    vendor = Vendor.create!(name: 'Testco3')
+    soc = Soc.create!(vendor: vendor, model: 'TS338Q',
+                      linux_filename: 'openipc.ts338q-nor-lite.tgz')
+    camera = Camera.new(soc: soc, flash_type: 'nor32m', firmware_version: 'ultimate')
+
+    with_index(['openipc.ts338q-nor-lite.tgz', 'openipc.ts338q-nor-ultimate.tgz']) do
+      assert_nil camera.use_published_release!
+      assert_equal 'ultimate', camera.firmware_version
+    end
+  end
+
+  test 'the flash type decides which list is consulted' do
+    vendor = Vendor.create!(name: 'Testco4')
+    soc = Soc.create!(vendor: vendor, model: 'TS1109',
+                      linux_filename: 'openipc.ts1109-nand-lite.tgz')
+
+    with_index(['openipc.ts1109-nand-lite.tgz', 'openipc.ts1109-nor-ultimate.tgz']) do
+      nand = Camera.new(soc: soc, flash_type: 'nand', firmware_version: 'ultimate')
+      assert_equal 'ultimate', nand.use_published_release!
+      assert_equal 'lite', nand.firmware_version
+
+      nor = Camera.new(soc: soc, flash_type: 'nor32m', firmware_version: 'ultimate')
+      assert_nil nor.use_published_release!
+    end
+  end
+
+  test 'an edition with no translation is labelled by its own name' do
+    camera = Camera.new(firmware_version: 'zephyr')
+
+    assert_equal 'Zephyr', camera.firmware_version_name
+  end
+
+  def with_index(assets)
+    root = Dir.mktmpdir
+    ENV['RELEASE_INDEX_ROOT'] = root
+    File.write(File.join(root, '.index.json'),
+               JSON.generate('generated_at' => '2026-08-24T00:00:00Z', 'aliases' => {},
+                             'assets' => assets.to_h { |n| [n, { 'size' => 1 }] }))
+    ReleaseIndex.reset!
+    yield
+  ensure
+    ENV.delete('RELEASE_INDEX_ROOT')
+    ReleaseIndex.reset!
+    FileUtils.remove_entry(root) if root
+  end
 end

@@ -336,4 +336,27 @@ class SocTest < ActiveSupport::TestCase
     assert_match(/openipc\.ts3516ev304-nor-ultimate\.tgz\z/, soc.fw_url('ultimate'))
     assert_match(/openipc\.ts3516ev304-nand-lite\.tgz\z/, soc.fw_url('lite', 'nand'))
   end
+
+  test 'the GitHub links stay silent when the index cannot be read' do
+    # available_releases guesses so the menu is not empty; these become bare
+    # URLs on github.com, so they must not be guesses.
+    soc = Soc.create!(vendor: @vendor, model: 'TS3516EV305',
+                      linux_filename: 'openipc.ts3516ev305-nor-lite.tgz')
+
+    ReleaseIndex.reset!
+    assert_equal({ 'nor' => [], 'nand' => [] }, soc.published_availability)
+    assert_equal Soc::RELEASE_ORDER, soc.available_releases('nor')
+  end
+
+  test 'the wizard opens on a flash type the SoC actually has' do
+    nand_only = Soc.create!(vendor: @vendor, model: 'TS1109',
+                            linux_filename: 'openipc.ts1109-nand-lite.tgz')
+    ordinary = Soc.create!(vendor: @vendor, model: 'TS338Q',
+                           linux_filename: 'openipc.ts338q-nor-lite.tgz')
+
+    with_index(assets: ['openipc.ts1109-nand-lite.tgz', 'openipc.ts338q-nor-lite.tgz']) do
+      assert_equal 'nand', nand_only.default_flash_chip
+      assert_equal 'nor8m', ordinary.default_flash_chip
+    end
+  end
 end
