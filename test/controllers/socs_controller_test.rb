@@ -62,19 +62,30 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     soc = Soc.create!(vendor: @vendor, model: 'TS550', status: 'done',
                       uboot_filename: '', linux_filename: 'openipc.ts550-nor-lite.tgz')
 
+    root = Dir.mktmpdir
+    ENV['RELEASE_INDEX_ROOT'] = root
+    File.write(File.join(root, '.index.json'),
+               JSON.generate('generated_at' => '2026-08-24T00:00:00Z', 'aliases' => {},
+                             'assets' => { 'openipc.ts550-nor-lite.tgz' => { 'size' => 1 } }))
+    ReleaseIndex.reset!
+
     get "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}/download_full_image",
         params: { flash_size: 8, flash_type: 'nor', fw_release: 'lite' }
 
     assert_response :redirect
     assert_match(/does not publish a bootloader/, flash[:alert])
     assert_no_match(/does not exist/, flash[:alert])
+  ensure
+    ENV.delete('RELEASE_INDEX_ROOT')
+    ReleaseIndex.reset!
+    FileUtils.remove_entry(root) if root
   end
 
-  test 'a SoC whose firmware is genuinely absent still says the firmware does not exist' do
-    # HI3536DV100 and MSC313E name a bootloader upstream no longer publishes,
-    # and the tarball is the missing half here -- so the bootloader-specific
-    # wording would be wrong. The u-boot is served from a stub so the request
-    # gets past it to the failure being tested.
+  test 'an edition upstream does not build keeps the plain does-not-exist wording' do
+    # Both halves of this SoC are published; Ultimate for it is not. That is
+    # the case the plain wording is right about, and it is the only one left
+    # for it. The u-boot is served from a stub so the request gets past it to
+    # the failure being tested.
     soc = Soc.create!(vendor: @vendor, model: 'TS9999', status: 'done',
                       uboot_filename: 'u-boot-ts9999-universal.bin',
                       linux_filename: 'openipc.ts9999-nor-lite.tgz')
@@ -84,7 +95,8 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     ENV['RELEASE_INDEX_ROOT'] = root
     File.write(File.join(root, '.index.json'),
                JSON.generate('generated_at' => '2026-08-24T00:00:00Z', 'aliases' => {},
-                             'assets' => { 'u-boot-ts9999-universal.bin' => { 'size' => 4 } }))
+                             'assets' => { 'u-boot-ts9999-universal.bin' => { 'size' => 4 },
+                                           'openipc.ts9999-nor-lite.tgz' => { 'size' => 4 } }))
     ReleaseIndex.reset!
     ReleaseCache.root = cache
     ReleaseCache.downloader = lambda { |_url, dest|
@@ -93,7 +105,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     }
 
     get "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}/download_full_image",
-        params: { flash_size: 8, flash_type: 'nor', fw_release: 'lite' }
+        params: { flash_size: 8, flash_type: 'nor', fw_release: 'ultimate' }
 
     assert_response :redirect
     assert_equal 'This firmware does not exist.', flash[:alert]
@@ -104,5 +116,31 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     ReleaseCache.downloader = nil
     FileUtils.remove_entry(root) if root
     FileUtils.remove_entry(cache) if cache
+  end
+
+  test 'a SoC with nothing published says so rather than promising a bundle' do
+    # MSC313E: a bootloader named that upstream does not publish, and no
+    # firmware either. The bootloader wording would tell this visitor to go and
+    # find a bundle on the SoC page that is not there.
+    soc = Soc.create!(vendor: @vendor, model: 'TS313E', status: 'done',
+                      uboot_filename: 'u-boot-ts313e-universal.bin',
+                      linux_filename: 'openipc.ts313e-nor-lite.tgz')
+
+    root = Dir.mktmpdir
+    ENV['RELEASE_INDEX_ROOT'] = root
+    File.write(File.join(root, '.index.json'),
+               JSON.generate('generated_at' => '2026-08-24T00:00:00Z',
+                             'aliases' => {}, 'assets' => {}))
+    ReleaseIndex.reset!
+
+    get "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}/download_full_image",
+        params: { flash_size: 8, flash_type: 'nor', fw_release: 'lite' }
+
+    assert_response :redirect
+    assert_equal 'OpenIPC does not publish firmware for this SoC yet.', flash[:alert]
+  ensure
+    ENV.delete('RELEASE_INDEX_ROOT')
+    ReleaseIndex.reset!
+    FileUtils.remove_entry(root) if root
   end
 end
