@@ -120,6 +120,9 @@ module Cameras
       @soc = Soc.find(params[:id])
       fw = Firmware.new(size: flash_size, flash_type: flash_type, release: fw_release, soc: @soc)
       fw.generate
+      # Recorded here rather than in Firmware, because a cached image is sent
+      # without being rebuilt and it is the sending that is worth counting.
+      Download.record(firmware: fw, soc: @soc, bytes: File.size(fw.filepath))
       send_file fw.filepath, filename: fw.filename, disposition: :attachment
     rescue Firmware::PayloadTooLarge => e
       # The combination is real but does not fit -- Ultimate on 8MB flash is
