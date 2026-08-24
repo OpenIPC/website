@@ -120,7 +120,16 @@ module Cameras
       @soc = Soc.find(params[:id])
       fw = Firmware.new(size: flash_size, flash_type: flash_type, release: fw_release, soc: @soc)
       fw.generate
-      send_file fw.filepath, name: fw.filename, disposition: :attachment
+      send_file fw.filepath, filename: fw.filename, disposition: :attachment
+    rescue Firmware::PayloadTooLarge => e
+      # The combination is real but does not fit -- Ultimate on 8MB flash is
+      # the one users actually hit. The wizard downgrades it to Lite and says
+      # so, but this action takes flash_size and fw_release from the query
+      # string, so say the same thing here rather than claiming the firmware
+      # does not exist.
+      Rails.logger.warn "full image does not fit for #{params[:id]}: #{e.message}"
+      flash.alert = 'This edition is too large for that flash size. Try the Lite edition, or a larger flash.'
+      redirect_back(fallback_location: '/')
     rescue ActionController::MissingFile, Firmware::MissingMember, Firmware::InvalidFlashSize => e
       # MissingMember means the release tarball does not carry what this flash
       # type needs -- a NAND build with no kernel member, say. Better a missing
@@ -130,6 +139,12 @@ module Cameras
       # can be turned into an allocation.
       Rails.logger.warn "full image unavailable for #{params[:id]}: #{e.message}"
       flash.alert = 'This firmware does not exist.'
+      redirect_back(fallback_location: '/')
+    rescue Firmware::LockTimeout => e
+      # Another request has been building this image for a minute. Saying so is
+      # better than reporting it missing, because retrying will work.
+      Rails.logger.error "full image lock timeout for #{params[:id]}: #{e.message}"
+      flash.alert = 'This firmware is being prepared right now. Please try again in a moment.'
       redirect_back(fallback_location: '/')
     end
 
