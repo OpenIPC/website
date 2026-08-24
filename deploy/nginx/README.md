@@ -35,30 +35,32 @@ away. Without it the request falls through to `location /`, reaches Rails, and
 Rails serves the file itself: `RAILS_SERVE_STATIC_FILES=1`, and `public/files`
 is inside `public/`. Every assembled image would be fetchable by name.
 
-## X-Accel-Redirect is off, and why
+## X-Accel-Redirect, and the outage that shaped it
 
-Handing the download to nginx would keep a slow client on an nginx connection
-instead of one of Puma's sixteen threads. It was switched on 2026-08-24 and
-switched off again the same day, because it took the CSS and images down with
-it on both sites.
-
-The two headers looked local to firmware:
+Handing the download to nginx keeps a slow client on an nginx connection
+instead of one of Puma's sixteen threads. The headers that arrange it are
+**scoped to the download action**, and that scoping is the whole point:
 
 ```nginx
-proxy_set_header X-Sendfile-Type X-Accel-Redirect;
-proxy_set_header X-Accel-Mapping /rails/public/files/=/protected-files/;
+location ~ ^/cameras/vendors/[^/]+/socs/[^/]+/download_full_image {
+    proxy_pass http://127.0.0.1:3000;          # no URI part: nginx forbids
+    ...                                        # one in a regex location
+    proxy_set_header X-Sendfile-Type X-Accel-Redirect;
+    proxy_set_header X-Accel-Mapping /rails/public/files/=/protected-files/;
+}
 ```
 
-They are not. `proxy_set_header` applies to every request through
-`location /`, and `Rack::Sendfile` acts on **any** response whose body responds
-to `to_path` — which, with `RAILS_SERVE_STATIC_FILES=1`, is every file under
-`public/assets` as well.
+They were first put in `location /`, which took the CSS and images down on
+both sites on 2026-08-24. `proxy_set_header` applies to everything a location
+serves, and `Rack::Sendfile` acts on **any** response whose body responds to
+`to_path` — which, with `RAILS_SERVE_STATIC_FILES=1`, is every file under
+`public/assets`.
 
-The trap is in what happens when the mapping does not match. Reading
+The trap is what happens when the mapping does not match. Reading
 `rack-2.2.8/lib/rack/sendfile.rb`, `map_accel_path` looks like it returns nil
-and lets the response through untouched. It does that only when the header is
-*absent*. When the header is present and no prefix matches, the loop falls off
-the end and it returns **the path unchanged**:
+and leaves the response alone. It does that only when the header is *absent*.
+When the header is present and no prefix matches, the loop falls off the end
+and it returns **the path unchanged**:
 
 ```ruby
 elsif mapping = env['HTTP_X_ACCEL_MAPPING']
@@ -71,15 +73,20 @@ elsif mapping = env['HTTP_X_ACCEL_MAPPING']
 end
 ```
 
-So a stylesheet came back as `X-Accel-Redirect: /rails/public/assets/…css`,
+A stylesheet therefore came back as `X-Accel-Redirect: /rails/public/assets/…css`,
 nginx redirected internally to a URI with no matching location, that fell to
 `location /`, went back to Rails, hit the catch-all and answered 302 to the
 homepage. Every page rendered as unstyled text.
 
-Turning it back on safely means the headers must reach only requests that can
-produce a firmware image — a location matching the download action, not
-`location /`. Assets cannot simply be given a mapping of their own: they live
-inside the container image and the host has no copy to serve.
+Assets cannot be given a mapping of their own: they live inside the container
+image and the host has no copy to serve. Scoping the headers is the only fix.
+
+**If you change any of this, fetch a stylesheet, not just a page.** The pages
+answered 200 throughout the outage; only their assets did not. The check that
+matters is every `/assets/…` URL the homepage references.
+
+To revert in a hurry: delete the two `proxy_set_header X-…` lines and reload.
+Downloads fall back to being streamed by Puma, which is where they were before.
 
 ## Two things that are not here
 
