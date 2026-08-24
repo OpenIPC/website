@@ -571,4 +571,17 @@ class FirmwareTest < ActiveSupport::TestCase
       Firmware.new(size: 8, flash_type: 'nor', release: 'lite', soc: gone).generate
     end
   end
+
+  test 'an image deleted while being examined is not usable, and does not escape as ENOENT' do
+    # purge-firmware-cache.sh deletes images older than fourteen days and
+    # nothing coordinates with it, so the file can go between the exist? and the
+    # stat. Letting that escape would turn "try again shortly" into a 500.
+    good, offline = built_then_unreachable
+    assert_equal 8.megabytes, File.size(good.filepath)
+
+    vanishing = ->(_path) { raise Errno::ENOENT, offline.filepath }
+    File.stub(:stat, vanishing) do
+      assert_raises(ReleaseCache::Unavailable) { offline.generate }
+    end
+  end
 end

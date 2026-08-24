@@ -138,8 +138,17 @@ class Firmware
   # Present, servable, and the size it claims to be. Everything fresh? asks
   # except whether it is newer than its parts -- which is the one question that
   # needs the parts, and therefore the index.
+  #
+  # Three separate stats, so the file can go between them: deploy/purge-firmware
+  # -cache.sh deletes images older than fourteen days and nothing coordinates
+  # with it. An ENOENT escaping here would turn a handled "try again shortly"
+  # into a 500, and on the fallback path it would replace an accurate message
+  # with a crash. Gone is simply not usable.
   def usable?
     File.exist?(filepath) && web_readable? && right_size?
+  rescue SystemCallError => e
+    Rails.logger.warn "firmware: cannot examine the cached #{filename}: #{e.class}: #{e.message}"
+    false
   end
 
   # file exists, can be served, is the size it claims to be, and is newer than
