@@ -67,11 +67,8 @@ services:
     environment:
       # Where assets fetched on demand are kept.
       RELEASE_CACHE_ROOT: /srv/release-cache
-      # While this is set and holds the file, the hourly mirror wins and
-      # nothing is fetched on demand. Deleting this line is the cutover, and
-      # putting it back is the way back -- a compose change and a restart, no
-      # new image, and reviewable in a diff rather than edited on the host.
-      RELEASE_MIRROR_ROOT: /srv/github-releases
+      # Cut over: dev fetches on demand. Production still has the line above
+      # while this is watched; putting it back here is the way back.
     ports:
       - "127.0.0.1:3001:3000"
     volumes:
