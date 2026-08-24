@@ -118,3 +118,43 @@ enough: that directory is host-only and in no backup, so a host rebuilt from
 
 The certificates and `/etc/nginx/.htpasswd-dev` are referenced by path only.
 Neither is in this repository and neither should be.
+
+## wiki.openipc.org
+
+`org.openipc.wiki` **redirects**; it does not serve or proxy anything.
+
+The wiki used to live behind a `proxy_pass` from this host to an upstream at
+`212.47.227.69`, which presents `CN=openipc.cloud`. That host is now a
+commercial cloud-video product, and because the request was proxied rather than
+redirected, visitors were served a shop under `wiki.openipc.org` — our domain,
+our certificate, no outward sign that it was somebody else's site. Our own
+error log shows wiki traffic still being proxied there on 2026-08-23. It was
+changed to proxy `openipc.org` on 2026-08-24 at 18:06, which stopped the harm
+but landed every wiki URL on the marketing homepage.
+
+The domain itself was never lost: `wiki.openipc.org` is a CNAME to
+`openipc.org` on the project's own Hetzner nameservers. This was a line of our
+own configuration pointing at a host that had changed purpose, which is the
+whole reason it was ours to fix.
+
+It now returns `301` to `github.com/OpenIPC/wiki`, which is where the wiki
+source is and where the site navigation has pointed for some time. The old path
+is carried across rather than dropped:
+
+```
+/en/installation.html    ->  .../blob/master/en/installation.md
+/ru/hardware-hs303.html  ->  .../blob/master/ru/hardware-hs303.md
+/ru/installation.md      ->  .../blob/master/ru/installation.md
+anything else            ->  the repository root
+```
+
+Two things to know before editing it:
+
+- The `^~ /.well-known/acme-challenge` location in the port-80 block is what
+  dehydrated renews this certificate through. `^~` beats both the regex
+  locations and the prefix one; turning it into a redirect breaks renewal
+  silently, and you find out about sixty days later.
+- `301` is cached by browsers more or less permanently. If a real wiki is ever
+  restored at this hostname, visitors who followed one of these will keep going
+  to GitHub until they clear their cache. Use `302` instead if a restoration is
+  planned.
