@@ -181,7 +181,9 @@ def newest_assets
 
       # The tag goes into the index and from there into a URL path segment.
       # Same reasoning as plain_filename? above, applied to the other half of
-      # the address.
+      # the address. `tag` rather than release.tag_name is what gets stored
+      # below: these are Hashie mashes, and checking one object while keeping
+      # another is how `asset.size` came to mean the key count.
       tag = release.tag_name.to_s
       unless tag.match?(/\A[A-Za-z0-9._-]+\z/)
         log "  refusing #{name.inspect}: tag #{tag.inspect} is not a plain tag"
@@ -194,7 +196,7 @@ def newest_assets
         size: asset['size'],
         digest: asset['digest'],
         updated_at: asset['updated_at'],
-        release: release.tag_name
+        release: tag
       }
     end
   end
@@ -296,6 +298,15 @@ def write_index(assets)
     end
   }
   File.write(tmp, JSON.pretty_generate(index))
+
+  # Stated rather than inherited from whatever umask cron happens to run with.
+  # It is readable today only because the container runs as the same uid this
+  # script does, which is a coincidence of the deployment rather than a
+  # guarantee -- and firmware images spent years at 0600 for exactly that kind
+  # of reason. Set before the rename, unlike public/files: nothing serves this
+  # directory, so there is no half-written file to expose, and the index is
+  # readable the instant it appears under its real name.
+  File.chmod(0o644, tmp)
   File.rename(tmp, path)
   log "wrote #{INDEX_FILE} (#{index['assets'].size} assets)"
 end
