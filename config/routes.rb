@@ -19,7 +19,13 @@ Rails.application.routes.draw do
 
   get '/hardware',    to: redirect('/supported-hardware/featured')
   get '/ru/installation.md', to: redirect('https://wiki.openipc.org/ru/installation.html')
-  get '/images/logo_openipc.png', to: redirect('https://cdn.themactep.com/images/logo_openipc.png')
+  # A legacy URL people still embed elsewhere -- five hits a fortnight, but
+  # they are somebody else's pages and should not break. It used to redirect to
+  # cdn.themactep.com, which is a maintainer's personal domain rather than
+  # anything this project runs; the image is now ours and served from our own
+  # assets. Resolved per request so it follows the fingerprint.
+  get '/images/logo_openipc.png',
+      to: redirect { |_params, _request| ActionController::Base.helpers.asset_path('logo_openipc.png') }
   get '/devices/hs303/', to: redirect('https://wiki.openipc.org/ru/hardware-hs303.html')
   get '/install_switcam_hs303', to: redirect('https://wiki.openipc.org/ru/hardware-hs303.html')
 
