@@ -36,12 +36,19 @@ class FirmwareTest < ActiveSupport::TestCase
 
   def setup
     @dir = Dir.mktmpdir
-    @generated = []
+    # Each test caches into a directory of its own. The suite parallelises
+    # across processes that share one filesystem, and several tests generate
+    # the same filename -- five of them produce
+    # openipc-hi3516ev300-nand-ultimate.bin -- so without this one test's
+    # teardown deletes a file another is still reading.
+    @cache = Dir.mktmpdir
+    Firmware.cache_dir = @cache
   end
 
   def teardown
+    Firmware.cache_dir = nil
     FileUtils.remove_entry(@dir)
-    @generated.each { |f| FileUtils.rm_f(f) }
+    FileUtils.remove_entry(@cache)
   end
 
   def write_tgz(name, members)
@@ -63,11 +70,7 @@ class FirmwareTest < ActiveSupport::TestCase
   def build(model:, vendor:, members:, flash_type:, size:, release: 'ultimate', board: nil)
     soc = StubSoc.new(model: model, vendor: vendor, board: board, uboot_file: uboot_path,
                       linux_file: write_tgz("openipc.#{board || model}-#{flash_type}-#{release}.tgz", members))
-    fw = Firmware.new(size: size, flash_type: flash_type, release: release, soc: soc)
-    @generated << fw.filepath
-    @generated << File.join(File.dirname(fw.filepath), ".#{fw.filename}.lock")
-    FileUtils.rm_f(fw.filepath)
-    fw
+    Firmware.new(size: size, flash_type: flash_type, release: release, soc: soc)
   end
 
   # Half-built images are named for their target, so a leftover is attributable
