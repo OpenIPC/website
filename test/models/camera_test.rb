@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'test_helper'
+require 'minitest/mock'
 
 class CameraTest < ActiveSupport::TestCase
   def camera(flash_type:, firmware_version: 'ultimate')
@@ -78,13 +79,65 @@ class CameraTest < ActiveSupport::TestCase
   test 'overlay_max_size refuses to return a negative length' do
     # This is what rendered `nand erase 0xD50000 0x-550000`: an overlay offset
     # past the end of the flash. U-Boot parses that size as 0 and erases nothing.
-    c = camera(flash_type: 'nor8m', firmware_version: 'ultimate')
-    assert c.overlay_offset.to_i(16) > c.flash_size_hex.to_i(16)
-    assert_raises(StandardError) { c.overlay_max_size }
+    #
+    # No combination of flash type and edition produces that any more -- the
+    # layout is chosen by chip size, so the overlay always lands inside the
+    # chip -- so the guard is exercised directly rather than through a pairing
+    # that used to be incoherent.
+    c = camera(flash_type: 'nor8m', firmware_version: 'lite')
+    c.stub(:overlay_offset, '0xD50000') do
+      assert c.overlay_offset.to_i(16) > c.flash_size_hex.to_i(16)
+      assert_raises(StandardError) { c.overlay_max_size }
+    end
   end
 
   test 'overlay_max_size is positive where the layout is coherent' do
     c = camera(flash_type: 'nor16m', firmware_version: 'ultimate')
     assert_equal '0x2b0000', c.overlay_max_size
+  end
+
+  # --- the layout follows the chip, not the edition ---
+
+  test 'a 16MB chip gets the 16MB layout whatever edition is selected' do
+    # The wizard forces Lite on 16MB, so this is what every 16MB NOR camera
+    # gets. It used to be handed the 8MB layout, while `run urnor16m` wrote the
+    # rootfs at 0x350000 and the page then erased from 0x750000 -- 733,184
+    # bytes into what had just been written.
+    %w[lite ultimate].each do |edition|
+      c = camera(flash_type: 'nor16m', firmware_version: edition)
+      assert_equal '0x350000', c.rootfs_offset, "16MB/#{edition} rootfs offset"
+      assert_equal '0xA00000', c.rootfs_max_size, "16MB/#{edition} rootfs max"
+      assert_equal '0x300000', c.kernel_max_size, "16MB/#{edition} kernel max"
+      assert_equal '0xD50000', c.overlay_offset, "16MB/#{edition} overlay offset"
+    end
+  end
+
+  test 'an 8MB chip gets the 8MB layout whatever edition is selected' do
+    %w[lite ultimate].each do |edition|
+      c = camera(flash_type: 'nor8m', firmware_version: edition)
+      assert_equal '0x250000', c.rootfs_offset, "8MB/#{edition} rootfs offset"
+      assert_equal '0x500000', c.rootfs_max_size, "8MB/#{edition} rootfs max"
+      assert_equal '0x200000', c.kernel_max_size, "8MB/#{edition} kernel max"
+      assert_equal '0x750000', c.overlay_offset, "8MB/#{edition} overlay offset"
+    end
+  end
+
+  test 'a 32MB chip uses the 16MB layout, as the nor16m commands it is given do' do
+    # Cameras::SocsController rewrites nor32m to the nor16m command set because
+    # upstream defines no mtdpartsnor32m; the offsets have to follow.
+    c = camera(flash_type: 'nor32m', firmware_version: 'ultimate')
+    assert_equal '0x350000', c.rootfs_offset
+    assert_equal '0xD50000', c.overlay_offset
+  end
+
+  test 'every nor layout leaves the overlay inside the chip' do
+    %w[nor8m nor16m nor32m].each do |flash|
+      %w[lite ultimate].each do |edition|
+        c = camera(flash_type: flash, firmware_version: edition)
+        assert c.overlay_offset.to_i(16) < c.flash_size_hex.to_i(16),
+               "#{flash}/#{edition} puts the overlay past the end of the chip"
+        assert_nothing_raised { c.overlay_max_size }
+      end
+    end
   end
 end

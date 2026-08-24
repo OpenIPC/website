@@ -137,41 +137,36 @@ class Camera
     @firmware_version_name ||= I18n.t("firmware.version.#{firmware_version}")
   end
 
+  # The NOR numbers come from FlashLayout, which reads them off the bootloader
+  # environment. They used to be spelled out here keyed on firmware_version,
+  # which agreed with the bootloader only for 8MB+Lite and 16MB+Ultimate; see
+  # FlashLayout for what that cost on 16MB.
+  def nor_layout
+    FlashLayout.nor(flash_size, soc&.vendor&.name)
+  end
+
   def kernel_max_size
     return NAND_KERNEL_MAX_SIZE if nand?
 
-    case firmware_version
-    when 'ultimate'
-      '0x300000'
-    else
-      '0x200000'
-    end
+    hex nor_layout[:kernel_max_size]
   end
 
   def kernel_offset
-    nand? ? NAND_KERNEL_OFFSET : '0x50000'
+    return NAND_KERNEL_OFFSET if nand?
+
+    hex nor_layout[:kernel_offset]
   end
 
   def rootfs_max_size
     return NAND_ROOTFS_MAX_SIZE if nand?
 
-    case firmware_version
-    when 'ultimate'
-      '0xA00000'
-    else
-      '0x500000'
-    end
+    hex nor_layout[:rootfs_max_size]
   end
 
   def rootfs_offset
     return NAND_ROOTFS_OFFSET if nand?
 
-    case firmware_version
-    when 'ultimate'
-      '0x350000'
-    else
-      '0x250000'
-    end
+    hex nor_layout[:rootfs_offset]
   end
 
   # Guards the arithmetic that used to render `nand erase 0xD50000 0x-550000`:
@@ -185,13 +180,20 @@ class Camera
     "0x#{size.to_s(16)}"
   end
 
+  # rootfs_data: everything past the rootfs partition. Keyed on the chip, like
+  # the rest of the layout -- this is the value that used to erase into a
+  # freshly written 16MB rootfs.
   def overlay_offset
-    case firmware_version
-    when 'ultimate'
-      '0xD50000'
-    else
-      '0x750000'
-    end
+    hex nor_layout[:overlay_offset]
+  end
+
+  # These are pasted into U-Boot verbatim, so the 0x prefix is not optional.
+  # The case of the digits is: simple_strtoul takes either, and this class is
+  # not consistent about it -- the offsets below come out upper-case and
+  # overlay_max_size computes its length lower-case. Matching the literals this
+  # replaced, rather than changing what every existing page renders.
+  def hex(value)
+    format('0x%X', value)
   end
 
   def permalink

@@ -10,7 +10,6 @@ class Firmware
   NAND_KERNEL_OFFSET = 0x100000
   NAND_ROOTFS_OFFSET = 0x400000
 
-  NOR_KERNEL_OFFSET = 0x50000
   NOR_SIZES = [8, 16, 32].freeze
 
   LOCK_POLL = 0.1
@@ -315,22 +314,22 @@ class Firmware
     "rootfs.squashfs.#{board}"
   end
 
+  # Same table the installation page renders from, so the image and the
+  # instructions cannot describe different partition layouts.
+  def nor_layout
+    @nor_layout ||= FlashLayout.nor(@size, @soc.vendor.name)
+  end
+
   def kernel_offset
-    nand? ? NAND_KERNEL_OFFSET : NOR_KERNEL_OFFSET
+    return NAND_KERNEL_OFFSET if nand?
+
+    nor_layout[:kernel_offset]
   end
 
   def rootfs_offset
     return NAND_ROOTFS_OFFSET if nand?
-    return 0x250000 if @soc.vendor.name.eql?('SigmaStar') || @soc.vendor.name.eql?('Ingenic')
 
-    case @size
-    when 8
-      0x250000
-    when 16, 32
-      0x350000
-    else
-      raise InvalidFlashSize, "unsupported NOR flash size #{@size}MB"
-    end
+    nor_layout[:rootfs_offset]
   end
 
   def image_size(rootfs)
