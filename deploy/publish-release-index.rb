@@ -368,10 +368,23 @@ def previous_index
   path = File.join(ROOT, INDEX_FILE)
   return {} unless File.exist?(path)
 
-  JSON.parse(File.read(path))
-rescue JSON::ParserError, SystemCallError, IOError => e
+  document = JSON.parse(File.read(path))
+  return document if document.is_a?(Hash)
+
+  log "  previous index is #{document.class}, not an object; ignoring it"
+  {}
+rescue JSON::ParserError, SystemCallError, IOError, TypeError => e
   log "  cannot read the previous index: #{e.class}: #{e.message}"
   {}
+end
+
+# A sub-object of a document that came off a disk or a network, and is therefore
+# not ours to assume the shape of. Anything that is not an object reads as
+# absent, because every caller here wants to carry on without it rather than
+# stop -- publishing a fresh index matters more than any of these fields.
+def object_at(document, key)
+  value = document[key]
+  value.is_a?(Hash) ? value : {}
 end
 
 # The SoC alias map, and the ETag to ask about next time.
@@ -387,15 +400,30 @@ end
 # keep working, so it is never dropped merely because GitHub was unreachable for
 # a minute.
 def upstream_aliases(previous)
-  kept = [previous['aliases'] || {}, previous['manifest_etag']]
-  response = fetch_manifest(previous['manifest_etag'])
+  etag = previous['manifest_etag']
+  etag = nil unless etag.is_a?(String)
+  kept = [object_at(previous, 'aliases'), etag]
+
+  response = fetch_manifest(etag)
   return kept if response.nil? || response.is_a?(Net::HTTPNotModified)
 
-  aliases = plain_aliases(JSON.parse(response.body).fetch('aliases', {}))
+  document = JSON.parse(response.body)
+  # A 200 carrying something that is not a manifest must not be read as "there
+  # are no aliases any more". That would empty the map and break exactly the
+  # SoCs it exists to keep working -- the same outcome as the outage this
+  # carry-forward was written for, reached by a quieter route. An aliases object
+  # that is genuinely empty is a different thing and is honoured; the count in
+  # the log line is what makes that visible.
+  unless document.is_a?(Hash) && document['aliases'].is_a?(Hash)
+    log '  manifest carries no aliases object; keeping the aliases we have'
+    return kept
+  end
+
+  aliases = plain_aliases(document['aliases'])
   log "aliases: #{aliases.size} from the upstream manifest"
   [aliases, response['etag']]
-rescue JSON::ParserError => e
-  log "  manifest is not readable JSON (#{e.message}); keeping the aliases we have"
+rescue JSON::ParserError, TypeError => e
+  log "  manifest is not readable JSON (#{e.class}: #{e.message}); keeping the aliases we have"
   kept
 end
 
@@ -441,7 +469,7 @@ end
 # chip upstream has aliased away, which the map above now handles -- but the log
 # line is what tells us to go and look.
 def report_dropped(previous, assets)
-  gone = previous.fetch('assets', {}).keys - assets.keys
+  gone = object_at(previous, 'assets').keys - assets.keys
   return if gone.empty?
 
   log "#{gone.size} name(s) in the previous index are not in this one:"
