@@ -11,13 +11,16 @@ module RescueHandler
 
   def rescue_ladder(exception)
     case exception
-    when ActiveRecord::RecordNotFound
-      redirect_to root_path, alert: 'Record not found.'
-    when ActionView::MissingTemplate
+    # A URL naming a record that is not there, a template that is not there,
+    # a format nothing can render: one answer for all three.
+    #
+    # RecordNotFound used to redirect to the homepage with a flash instead,
+    # which is kind to someone who mistyped and a lie to everything else -- a
+    # crawler, a stale link and a monitor all saw 302-then-200 for a dead SoC
+    # page. The other two already answered 404.
+    when ActiveRecord::RecordNotFound, ActionView::MissingTemplate,
+         ActionController::UnknownFormat
       render file: Rails.public_path.join('404.html'), layout: false, status: :not_found
-    when ActionController::UnknownFormat
-      render file: Rails.public_path.join('404.html'), layout: false, status: :not_found
-      # render plain: 'Wrong request', status: 404
     when ActionController::InvalidAuthenticityToken
       redirect_to root_path, alert: 'Session expired. Please sign in..'
     else
