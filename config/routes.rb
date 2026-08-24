@@ -89,6 +89,14 @@ Rails.application.routes.draw do
     get "/admin/sign_out", to: "devise/sessions#destroy"
   end
 
+  # Retired 2026-08. Falling through to the catch-all below would answer
+  # 302-then-200 at the homepage, which for a page whose remaining traffic is
+  # entirely scripted is a lie -- the fortnight before it went, 25 of its 26
+  # fetches carried a curl or Wget agent. 410 tells them to stop asking, and
+  # keeps them out of the public notfound.txt the catch-all appends to.
+  match "/binaries", to: proc { [410, { "Content-Type" => "text/plain" }, ["Gone\n"]] },
+        via: :all, as: :retired_binaries
+
   match "*unmatched", to: "application#route_not_found",
         constraints: lambda { |req| req.path.exclude? 'rails/active_storage' },
         via: :all
