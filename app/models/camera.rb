@@ -187,8 +187,11 @@ class Camera
     hex nor_layout[:overlay_offset]
   end
 
-  # The rest of this class renders offsets as upper-case hex strings, and the
-  # installation commands are pasted into U-Boot verbatim, so the shape matters.
+  # These are pasted into U-Boot verbatim, so the 0x prefix is not optional.
+  # The case of the digits is: simple_strtoul takes either, and this class is
+  # not consistent about it -- the offsets below come out upper-case and
+  # overlay_max_size computes its length lower-case. Matching the literals this
+  # replaced, rather than changing what every existing page renders.
   def hex(value)
     format('0x%X', value)
   end
