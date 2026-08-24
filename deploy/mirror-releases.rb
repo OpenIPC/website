@@ -168,13 +168,18 @@ def newest_assets
       name = asset['name']
       next if chosen.key?(name) || skipped.key?(name)
 
-      unless consumed?(name)
-        skipped[name] = family_of(name)
+      # Before anything is decided about a name, and before any of it reaches a
+      # log line. The skip path below reports the family it belongs to, and an
+      # asset that never passed this check could put a newline in that line and
+      # forge cron log entries -- which is the exact thing plain_filename?
+      # exists to prevent, so it has to come first.
+      unless plain_filename?(name)
+        log "  refusing #{name.inspect} from #{release.tag_name}: not a plain filename"
         next
       end
 
-      unless plain_filename?(name)
-        log "  refusing #{name.inspect} from #{release.tag_name}: not a plain filename"
+      unless consumed?(name)
+        skipped[name] = family_of(name)
         next
       end
 
@@ -283,19 +288,37 @@ end
 # upstream happens to rebuild it. So a consumed asset is never removed here,
 # however old it gets.
 def prune
-  doomed = Dir.children(ROOT).reject { |name| consumed?(name) || ours?(name) }
-              .select { |name| File.file?(File.join(ROOT, name)) }
-  return if doomed.empty?
+  # Sized once, in one pass, and tolerant of a name that is gone by the time we
+  # stat it. Nothing else should be writing here -- the lock sees to that --
+  # but this runs last, after the fetches, and taking the whole run down over
+  # one unreadable file would lose the state file written below it and force
+  # 4GB of re-hashing on the next run.
+  sizes = {}
+  Dir.children(ROOT).each do |name|
+    next if consumed?(name) || ours?(name)
 
-  bytes = doomed.sum { |name| File.size(File.join(ROOT, name)) }
-  doomed.group_by { |name| family_of(name) }.sort_by { |_, names| -names.size }.each do |family, names|
+    path = File.join(ROOT, name)
+    sizes[name] = File.size(path) if File.file?(path)
+  rescue SystemCallError => e
+    log "  cannot stat #{name.inspect}: #{e.message}"
+  end
+  return if sizes.empty?
+
+  sizes.keys.group_by { |name| family_of(name) }.sort_by { |_, names| -names.size }.each do |family, names|
     log format('  %s %d %s* (%.1f MB)', DRY_RUN ? 'would remove' : 'removing', names.size, family,
-               names.sum { |n| File.size(File.join(ROOT, n)) } / 1048576.0)
+               names.sum { |n| sizes[n] } / 1048576.0)
   end
   return if DRY_RUN
 
-  doomed.each { |name| FileUtils.rm_f(File.join(ROOT, name)) }
-  log format('removed %d file(s), %.1f MB', doomed.size, bytes / 1048576.0)
+  removed = sizes.keys.count do |name|
+    FileUtils.rm_f(File.join(ROOT, name))
+    true
+  rescue SystemCallError => e
+    log "  cannot remove #{name.inspect}: #{e.message}"
+    false
+  end
+  log format('removed %d of %d file(s), %.1f MB', removed, sizes.size,
+             sizes.values.sum / 1048576.0)
 end
 
 def manifest_missing?(filename)
@@ -341,11 +364,12 @@ with_lock do
   fetched = wanted.count { |a| fetch(a, state) }
   log "fetched #{fetched} of #{wanted.size}"
 
-  prune
-
   # Forget assets the org no longer publishes, so the state file tracks the
   # release set rather than growing forever.
   save_state(state.slice(*assets.keys))
+
+  # Last, so that nothing it might do can cost us the digests just written.
+  prune
 
   # Rebuilding a manifest means listing every tarball, which is the expensive
   # part of a run where nothing changed -- but a manifest that is missing or
