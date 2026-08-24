@@ -139,13 +139,46 @@ class Soc < ApplicationRecord
   # UnknownAsset for a name upstream is not publishing, Unavailable when it
   # cannot be had right now. Cameras::SocsController answers for both.
   def release_asset(name)
+    plain_asset_name!(name)
+
     root = ENV['RELEASE_MIRROR_ROOT'].presence
     if root
       mirrored = File.join(root, name)
-      return mirrored if File.exist?(mirrored)
+      return mirrored if File.exist?(mirrored) && within?(root, mirrored)
     end
 
     ReleaseCache.path(name)
+  end
+
+  # uboot_filename and linux_filename are columns an admin edits, and both end
+  # up here. The cache branch refuses a name that is not in the release index,
+  # but the mirror branch has no index to consult, so it needs its own answer:
+  # without one, uboot_filename of "../../../etc/passwd" resolves outside the
+  # mirror root, Firmware#assemble reads it as the bootloader, and
+  # download_full_image sends the result.
+  #
+  # The rule is the one deploy/mirror-releases.rb applies at the other end --
+  # unchanged by basename, so no separators and no ".." or "."; no leading dot,
+  # so nothing collides with the index or the state file; no control
+  # characters. Structural rather than a list of permitted characters, for the
+  # reason recorded there: guessing at the character set upstream is allowed to
+  # use is how you refuse files you meant to keep.
+  def plain_asset_name!(name)
+    value = name.to_s
+    ok = !value.empty? &&
+         value == File.basename(value) &&
+         !value.start_with?('.') &&
+         !value.match?(/[[:cntrl:]]/)
+    return if ok
+
+    raise ReleaseCache::UnknownAsset, "#{value.inspect} is not a plain asset name"
+  end
+
+  # Belt and braces behind the check above: whatever File.join produced has to
+  # sit under the root it was joined to.
+  def within?(root, path)
+    base = File.expand_path(root)
+    File.expand_path(path).start_with?("#{base}/")
   end
 
   def full_firmware_path

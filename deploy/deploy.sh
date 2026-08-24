@@ -65,7 +65,7 @@ target_for() {
 ensure_uid_1000_root() {
   local root=$1
   install -d -o 1000 -g 1000 -m 0755 "$root" \
-    || die "cannot create blob root ${root}"
+    || die "cannot create ${root}"
   local owner
   owner=$(stat -c '%u:%g' "$root")
   [ "$owner" = "1000:1000" ] \
