@@ -1,5 +1,0 @@
-http://www.example.com/no-such-page from 
-http://www.example.com/no-such-page-at-all from 
-http://www.example.com/no-such-page-at-all from 
-http://www.example.com/no-such-page-at-all from 
-http://www.example.com/no-such-page-at-all from 

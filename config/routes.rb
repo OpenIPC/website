@@ -1,7 +1,6 @@
 Rails.application.routes.draw do
   # Healthcheck for the container runtime and the deploy script. Must stay above
-  # the "*unmatched" catch-all below, which redirects instead of 404ing and
-  # appends every miss to public/notfound.txt.
+  # the "*unmatched" catch-all below, which redirects instead of 404ing.
   get "/up", to: proc { [200, { "Content-Type" => "text/plain" }, ["ok"]] }
 
   root "pages#introduction"
@@ -92,8 +91,7 @@ Rails.application.routes.draw do
   # Retired 2026-08. Falling through to the catch-all below would answer
   # 302-then-200 at the homepage, which for a page whose remaining traffic is
   # entirely scripted is a lie -- the fortnight before it went, 25 of its 26
-  # fetches carried a curl or Wget agent. 410 tells them to stop asking, and
-  # keeps them out of the public notfound.txt the catch-all appends to.
+  # fetches carried a curl or Wget agent. 410 tells them to stop asking.
   match "/binaries", to: proc { [410, { "Content-Type" => "text/plain" }, ["Gone\n"]] },
         via: :all, as: :retired_binaries
 
