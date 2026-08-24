@@ -30,6 +30,10 @@
 # Ignore generated binaries
 /public/files/*.bin
 
+# Written by an older route_not_found; kept ignored so a stale copy on a
+# developer machine is never committed again.
+/public/notfound.txt
+
 # Ignore master key for decrypting credentials and more.
 /config/master.key
 /config/apache*.conf
