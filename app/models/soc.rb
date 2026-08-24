@@ -93,7 +93,28 @@ class Soc < ApplicationRecord
   FAMILY_BUILDS = %w[t31 t40 t30 t23].freeze
 
   def board
-    @board ||= linux_filename.to_s[BOARD_FROM_FILENAME, 1] || family_board
+    @board ||= canonical_board(linux_filename.to_s[BOARD_FROM_FILENAME, 1] || family_board)
+  end
+
+  # What linux_filename names is the chip this SoC is; what upstream builds may
+  # be another board entirely. GK7205V210 has not been built since 2026-06-07 --
+  # it is firmware-identical to GK7205V200 and served from it -- so a row saying
+  # openipc.gk7205v210-nor-lite.tgz names a tarball that no longer exists, and
+  # asking for it is a dead download rather than a stale one.
+  #
+  # Resolving here rather than at the point of download is deliberate: the board
+  # also names the members inside the tarball (uImage.<board>,
+  # rootfs.squashfs.<board>) and the bundle link on the SoC page. Substituting
+  # only the filename would fetch the right tarball and then fail to find
+  # anything in it.
+  #
+  # Unresolvable is not an error. Without an index this answers what the column
+  # says, which is what it did before the map existed and is right for every SoC
+  # that has no alias.
+  def canonical_board(board)
+    ReleaseIndex.current.canonical_board(board)
+  rescue ReleaseIndex::Missing
+    board
   end
 
   # Reached when linux_filename is blank or still in the pre-2023
