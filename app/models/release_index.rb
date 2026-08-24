@@ -44,12 +44,49 @@ class ReleaseIndex
       @current = nil if @stamp != stamp
       @stamp = stamp
       @current ||= new(JSON.parse(File.read(path)))
+      warn_if_stale(@current)
+      @current
     rescue JSON::ParserError, SystemCallError, IOError => e
       # Everything from here reaches the caller as "no usable index", which is
       # what ReleaseCache turns into Unavailable. Without the IO arms, a file
       # that vanishes between the exist? and the read -- the mirror renames a
       # new one into place every hour -- escapes as an unhandled error instead.
       raise Missing, "#{path} is unreadable: #{e.class}: #{e.message}"
+    end
+
+    # An index frozen by a cron that stopped running looks exactly like a
+    # current one: every name it lists still resolves, and nothing new ever
+    # appears. `generated_at` has been written into the file all along and
+    # nothing has ever read it.
+    #
+    # Warned about rather than refused. A stale index is still the best
+    # information there is, and every download it can answer still works; what
+    # is wanted is for somebody to notice. Throttled, because this is reached
+    # several times per request.
+    STALE_AFTER = 6.hours
+    WARN_EVERY = 1.hour
+
+    def warn_if_stale(index)
+      raw = index.generated_at
+      return if raw.blank?
+
+      generated = Time.zone.parse(raw.to_s)
+      return warn_once("release index: generated_at #{raw.inspect} is not a timestamp") if generated.nil?
+      return if generated > STALE_AFTER.ago
+
+      warn_once("release index: generated #{generated.utc.iso8601}, " \
+                "#{((Time.current - generated) / 3600).round} hours ago -- " \
+                'is the publisher still running?')
+    rescue ArgumentError, TypeError => e
+      warn_once("release index: generated_at is unreadable: #{e.class}: #{e.message}")
+    end
+
+    def warn_once(message)
+      return if @warned_at && @warned_at > WARN_EVERY.ago
+
+      @warned_at = Time.current
+      Rails.logger.warn message
+      nil
     end
 
     def index_path
@@ -59,6 +96,7 @@ class ReleaseIndex
     def reset!
       @current = nil
       @stamp = nil
+      @warned_at = nil
     end
   end
 
