@@ -35,16 +35,10 @@ require 'digest'
 require 'fileutils'
 require 'github_api'
 require 'json'
-require 'open3'
 
 ROOT = '/srv/github-releases'
 LOCK = '/run/lock/openipc-mirror-releases.lock'
 TMP_PREFIX = '.tmp-mirror-'
-
-# Generated here from the mirrored tarballs, not fetched. `.kernel.sizes` used
-# to be written alongside and was read by nothing, so it is gone; the prune
-# below removes the copy left on disk.
-MANIFESTS = { '.rootfs.sizes' => 'rootfs' }.freeze
 
 # What the site actually opens. Everything upstream publishes that is not here
 # is skipped, and removed if it is already on disk.
@@ -64,7 +58,6 @@ CONSUMED = [
   /\Aopenipc\..+\.tgz\z/,  # Firmware#generate: the kernel and rootfs members
   /\Au-boot-.+\.bin\z/,     # Firmware#generate: written at offset 0
   /\Aboot-.+\.bin\z/,       # the same, for parts that name it this way
-  /\Asizes\..+\.json\z/,   # BinariesController
   /\A_manifest\.json\z/     # which build this is
 ].freeze
 
@@ -74,7 +67,7 @@ end
 
 # Files this script makes rather than mirrors.
 def ours?(name)
-  name == STATE_FILE || MANIFESTS.key?(name) || name.start_with?(TMP_PREFIX)
+  name == STATE_FILE || name.start_with?(TMP_PREFIX)
 end
 
 # The leading token, so a run reports "skipping 31 toolchain.*" rather than 31
@@ -256,22 +249,6 @@ def fetch(asset, state)
   true
 end
 
-# `tar -tv` prints size in the third field. Members are matched the way the
-# original did, so .rootfs.sizes keeps the shape BinariesController parses:
-# "<tarball> <bytes>", and an absent member leaves the size blank (nil.to_i).
-def member_size(tarball, needle)
-  out, status = Open3.capture2('tar', '-tvf', tarball)
-  return nil unless status.success?
-
-  out.each_line do |line|
-    next unless line.include?(needle)
-    next if line.include?('md5sum')
-
-    return line.split[2]
-  end
-  nil
-end
-
 # Anything in ROOT the site does not read and this script did not write.
 #
 # Two things end up here. Families skipped on purpose -- 3.1GB of toolchains,
@@ -321,23 +298,6 @@ def prune
              sizes.values.sum / 1048576.0)
 end
 
-def manifest_missing?(filename)
-  path = File.join(ROOT, filename)
-  !File.exist?(path) || File.size(path).zero?
-end
-
-def write_manifest(filename, needle)
-  path = File.join(ROOT, filename)
-  tmp = "#{path}.tmp"
-  File.open(tmp, 'w') do |f|
-    Dir.glob(File.join(ROOT, 'openipc.*.tgz')).sort.each do |tarball|
-      f.puts "#{File.basename(tarball)} #{member_size(tarball, needle)}"
-    end
-  end
-  File.rename(tmp, path)
-  log "  wrote #{filename} (#{File.readlines(path).size} entries)"
-end
-
 with_lock do
   FileUtils.mkdir_p(ROOT)
 
@@ -370,18 +330,6 @@ with_lock do
 
   # Last, so that nothing it might do can cost us the digests just written.
   prune
-
-  # Rebuilding a manifest means listing every tarball, which is the expensive
-  # part of a run where nothing changed -- but a manifest that is missing or
-  # empty has to be rebuilt whether or not anything was downloaded, or the
-  # binaries page stays broken until the next night's build happens to land.
-  missing = MANIFESTS.keys.select { |m| manifest_missing?(m) }
-  if fetched.positive? || !missing.empty?
-    log "rebuilding manifests (#{missing.empty? ? 'assets changed' : "#{missing.join(', ')} missing"})"
-    MANIFESTS.each { |filename, needle| write_manifest(filename, needle) }
-  else
-    log 'nothing changed, manifests left alone'
-  end
 
   log 'done'
 end

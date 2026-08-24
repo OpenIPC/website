@@ -221,7 +221,7 @@ norm() {
           s/-[0-9a-f]{64}\./-DIGEST./g" "$1"
 }
 H=(-H "X-Forwarded-Proto: https")
-for p in / /supported-hardware/featured /binaries \
+for p in / /supported-hardware/featured \
          /cameras/vendors/hisilicon/socs/hi3518ev200; do
   a=$(curl -s "${H[@]}" -H "Host: openipc.org"     -o /tmp/a -w "%{http_code}" "http://127.0.0.1:3000$p")
   b=$(curl -s "${H[@]}" -H "Host: dev.openipc.org" -o /tmp/b -w "%{http_code}" "http://127.0.0.1:3001$p")
