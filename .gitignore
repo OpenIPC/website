@@ -28,7 +28,12 @@
 /public/assets
 
 # Ignore generated binaries
+# Firmware#generate writes here: the assembled images, and a lock file per
+# image so two requests cannot build the same one at once. *.bin already
+# covers the images and the half-built .tmp-<image>-*.bin files; the locks are
+# named .<image>.bin.lock and need their own line.
 /public/files/*.bin
+/public/files/*.lock
 
 # Written by an older route_not_found; kept ignored so a stale copy on a
 # developer machine is never committed again.
