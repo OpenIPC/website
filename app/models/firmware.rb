@@ -139,16 +139,34 @@ class Firmware
   # A rename within one directory is atomic, so filepath only ever names a
   # complete image.
   def publish(size, parts)
+    purge_stale_builds
     tmp = Tempfile.create([tmp_prefix, '.bin'], File.dirname(filepath))
-    begin
-      tmp.close
-      IO.binwrite tmp.path, ("\xFF" * size)
-      parts.each { |part| IO.binwrite tmp.path, part.bytes, part.offset }
-      File.rename(tmp.path, filepath)
-    rescue StandardError
-      FileUtils.rm_f(tmp.path)
-      raise
-    end
+    tmp.close
+    IO.binwrite tmp.path, ("\xFF" * size)
+    parts.each { |part| IO.binwrite tmp.path, part.bytes, part.offset }
+    File.rename(tmp.path, filepath)
+  ensure
+    # `ensure` rather than `rescue StandardError`, so an Interrupt or a
+    # SignalException clears up after itself too. After the rename the path is
+    # gone, so this is a no-op on the happy path.
+    FileUtils.rm_f(tmp.path) if tmp && File.exist?(tmp.path)
+  end
+
+  # Debris used to land in Dir.tmpdir, which the container discards on restart.
+  # It now lands beside the image, in a directory nginx serves and nothing
+  # prunes, so a build killed outrightly -- SIGKILL, OOM, a container stopped
+  # mid-write -- would leave a partial image there for good.
+  #
+  # Running under the lock is what makes this safe: no other process is
+  # building this image, so any temporary file bearing its prefix is from a
+  # build that is already over. Each image clears its own debris on its next
+  # build, which bounds the leftovers at one per image never built again.
+  def purge_stale_builds
+    stale = Dir.glob(File.join(File.dirname(filepath), "#{tmp_prefix}*"))
+    return if stale.empty?
+
+    Rails.logger.warn "firmware: clearing #{stale.size} abandoned build(s) of #{filename}"
+    FileUtils.rm_f(stale)
   end
 
   # size is a request parameter, so it has to be checked before it can be turned

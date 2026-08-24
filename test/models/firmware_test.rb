@@ -313,6 +313,38 @@ class FirmwareTest < ActiveSupport::TestCase
     assert_equal 8.megabytes, File.size(fw.filepath)
   end
 
+  test 'an abandoned build is cleared by the next build of the same image' do
+    # A SIGKILL or an OOM leaves the temporary file behind: no rescue and no
+    # ensure runs. Debris used to land in Dir.tmpdir, which the container
+    # discards on restart; it now lands in the directory nginx serves and
+    # nothing prunes, so the next build has to clear it.
+    fw = build(model: 'hi3516cv500', vendor: 'HiSilicon', flash_type: 'nor', size: 8, release: 'lite',
+               members: { 'uImage.hi3516cv500' => KERNEL, 'rootfs.squashfs.hi3516cv500' => SQUASHFS })
+    FileUtils.mkdir_p File.dirname(fw.filepath)
+    abandoned = File.join(File.dirname(fw.filepath), ".tmp-#{fw.filename}-orphan.bin")
+    IO.binwrite(abandoned, 'partial')
+
+    fw.generate
+
+    assert_not File.exist?(abandoned), 'an abandoned build was left in the served directory'
+    assert_empty leftover_temp_files(fw)
+    assert_equal 8.megabytes, File.size(fw.filepath)
+  end
+
+  test 'a build interrupted by a signal does not leave a partial image behind' do
+    fw = build(model: 'ssc335', vendor: 'SigmaStar', flash_type: 'nor', size: 8, release: 'lite',
+               members: { 'uImage.ssc335' => KERNEL, 'rootfs.squashfs.ssc335' => SQUASHFS })
+
+    # Interrupt is not a StandardError, so `rescue StandardError` would have
+    # let it through with the temporary file still on disk.
+    File.stub(:rename, ->(*) { raise Interrupt }) do
+      assert_raises(Interrupt) { fw.generate }
+    end
+
+    assert_not File.exist?(fw.filepath)
+    assert_empty leftover_temp_files(fw), 'the interrupted build was left behind'
+  end
+
   test 'a second generate reuses the cached image instead of rebuilding it' do
     fw = build(model: 'ssc337', vendor: 'SigmaStar', flash_type: 'nor', size: 8, release: 'lite',
                members: { 'uImage.ssc337' => KERNEL, 'rootfs.squashfs.ssc337' => SQUASHFS })
