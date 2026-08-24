@@ -1,14 +1,29 @@
 #!/usr/bin/ruby
 # frozen_string_literal: true
 
-# Mirror the OpenIPC firmware release assets into /srv/github-releases -- the
-# directory Soc::RELEASES_ROOT reads and Firmware#generate assembles images
-# from.
+# Publish an index of the OpenIPC firmware release assets into
+# /srv/github-releases/.index.json -- what ReleaseIndex reads to learn what
+# upstream has, how big each asset is and what it should hash to.
 #
-#   mirror-releases.rb            normal run
-#   mirror-releases.rb --dry-run  report what would change, download nothing
+#   publish-release-index.rb                  normal run: index only
+#   publish-release-index.rb --mirror         also fetch and keep every asset
+#   publish-release-index.rb --retire-mirror  delete the local copies
+#   publish-release-index.rb --dry-run        report, write nothing
 #
-# Cron:  5 * * * *  paul  /usr/local/sbin/openipc-mirror-releases
+# Cron:  5 * * * *  paul  /usr/local/sbin/openipc-publish-release-index
+#
+# It used to download all of them, every hour, against the chance somebody
+# would ask. ReleaseCache now fetches an asset the first time it is wanted and
+# keeps it, so those copies went unread the moment production cut over -- 872MB
+# of them. Only the index is still needed.
+#
+# --mirror is the way back. Restoring RELEASE_MIRROR_ROOT in
+# deploy/docker-compose.yml makes the app prefer local copies again, and one
+# run with this flag puts them there -- and the hourly run leaves them alone
+# afterwards, so the rollback stays rolled back without touching cron.
+#
+# --retire-mirror is the one-time counterpart that removes them. An ordinary
+# run never does, precisely so that the two flags cannot fight each other.
 #
 # This replaces ~paul/bin/openipc-backup-releases.rb, which unlinked and
 # re-downloaded every asset on every run: about 4 GB an hour, ~100 GB a day,
@@ -111,6 +126,16 @@ end
 RELEASES_PER_PAGE = 30
 
 DRY_RUN = ARGV.include?('--dry-run')
+
+# Keeping local copies is the exception now. See the header: they were unread
+# from the moment production started fetching on demand.
+MIRROR = ARGV.include?('--mirror')
+
+# Deleting them is a separate, deliberate act rather than something the hourly
+# run does. The first version had the ordinary run prune them, which quietly
+# broke the rollback it advertised: --mirror would put the copies back and the
+# next run, an hour later, would take them away again.
+RETIRE_MIRROR = ARGV.include?('--retire-mirror')
 
 def log(message)
   warn format('%s  %s', Time.now.utc.strftime('%Y-%m-%dT%H:%M:%SZ'), message)
@@ -366,7 +391,10 @@ def prune
   # 4GB of re-hashing on the next run.
   sizes = {}
   Dir.children(ROOT).each do |name|
-    next if consumed?(name) || ours?(name)
+    next if ours?(name)
+    # Consumed assets survive every ordinary run, whether or not this one
+    # fetched them. Only --retire-mirror takes them away.
+    next if consumed?(name) && !RETIRE_MIRROR
 
     path = File.join(ROOT, name)
     sizes[name] = File.size(path) if File.file?(path)
@@ -405,29 +433,26 @@ with_lock do
 
   state = load_state
   assets = newest_assets
-  wanted = assets.values.reject { |a| current?(File.join(ROOT, a[:name]), a, state) }
-  # Every run, and before the fetches: the index is what the app reads, and it
-  # is cheap. A run that fails to download anything still leaves it current.
+
+  # The index is the point of this script, and it is cheap. Written before
+  # anything else, so a run that fails later still leaves it current.
   write_index(assets) unless DRY_RUN
 
-  log "#{wanted.size} to fetch"
-
-  if DRY_RUN
-    wanted.each { |a| log "  would fetch #{a[:name]} (#{a[:size]} bytes, #{a[:release]})" }
-    prune
-    log 'dry run, nothing written'
-    exit 0
+  if MIRROR
+    wanted = assets.values.reject { |a| current?(File.join(ROOT, a[:name]), a, state) }
+    log "#{wanted.size} to fetch"
+    if DRY_RUN
+      wanted.each { |a| log "  would fetch #{a[:name]} (#{a[:size]} bytes, #{a[:release]})" }
+    else
+      log "fetched #{wanted.count { |a| fetch(a, state) }} of #{wanted.size}"
+      # Forget assets the org no longer publishes, so the state file tracks the
+      # release set rather than growing forever.
+      save_state(state.slice(*assets.keys))
+    end
   end
 
-  fetched = wanted.count { |a| fetch(a, state) }
-  log "fetched #{fetched} of #{wanted.size}"
-
-  # Forget assets the org no longer publishes, so the state file tracks the
-  # release set rather than growing forever.
-  save_state(state.slice(*assets.keys))
-
-  # Last, so that nothing it might do can cost us the digests just written.
+  # Last, so that nothing it might do can cost us anything written above.
   prune
 
-  log 'done'
+  log(DRY_RUN ? 'dry run, nothing written' : 'done')
 end
