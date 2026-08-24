@@ -64,7 +64,13 @@ module Cameras
       @camera.network_interface = params[:net] if params[:net]
       @camera.sd_card_slot = params[:sd] if params[:sd]
 
-      @camera.soc = Soc.find_by_urlname(params[:id])
+      # Soc.find, like every other action. find_by_urlname answers nil for a
+      # slug that does not exist, and the next line then raises NoMethodError on
+      # nil -- so /cameras/vendors/rockchip/socs/rv1106, a SoC this site has no
+      # row for, is a 500 rather than a 404. That is the exact failure Soc.find
+      # was overridden to prevent, and this action was the one place still
+      # bypassing it. RescueHandler turns RecordNotFound into the 404 page.
+      @camera.soc = Soc.find(params[:id])
       @vendor = @camera.soc.vendor
 
       @page_title = "SoC: #{@camera.soc.full_name}"
