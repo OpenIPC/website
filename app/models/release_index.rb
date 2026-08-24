@@ -44,8 +44,12 @@ class ReleaseIndex
       @current = nil if @stamp != stamp
       @stamp = stamp
       @current ||= new(JSON.parse(File.read(path)))
-    rescue JSON::ParserError => e
-      raise Missing, "#{path} is unreadable: #{e.message}"
+    rescue JSON::ParserError, SystemCallError, IOError => e
+      # Everything from here reaches the caller as "no usable index", which is
+      # what ReleaseCache turns into Unavailable. Without the IO arms, a file
+      # that vanishes between the exist? and the read -- the mirror renames a
+      # new one into place every hour -- escapes as an unhandled error instead.
+      raise Missing, "#{path} is unreadable: #{e.class}: #{e.message}"
     end
 
     def index_path

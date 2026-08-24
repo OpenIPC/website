@@ -50,8 +50,12 @@ class ReleaseCache
 
     # Where blobs live. A directory the app writes, unlike the mirror root,
     # which is mounted read-only and belongs to the host's cron.
+    # `.presence`, not `fetch`: RELEASE_CACHE_ROOT set but empty would make
+    # File.join('', 'blobs') into "/blobs" and write at the root of the
+    # filesystem. Set-but-empty is how an unset variable looks in a compose
+    # file with a missing interpolation, so it has to mean unset here too.
     def root
-      @root ||= ENV.fetch('RELEASE_CACHE_ROOT') { Rails.root.join('tmp/release-cache').to_s }
+      @root ||= ENV['RELEASE_CACHE_ROOT'].presence || Rails.root.join('tmp/release-cache').to_s
     end
 
     attr_writer :root
@@ -133,8 +137,18 @@ class ReleaseCache
 
   # Built from a constant, the tag and the name -- all three checked before
   # they get here -- rather than following a URL handed over by the API.
+  #
+  # The name is escaped as a path segment even so. plain_filename? upstream
+  # rejects slashes, leading dots and control characters, but it does not
+  # reject a space, and an unescaped space makes URI.parse raise rather than
+  # fetch. Nothing published today carries one; the day something does is not
+  # the day to find out this way.
   def url_for(entry)
-    "#{DOWNLOAD_BASE}/#{entry.release}/#{entry.name}"
+    "#{DOWNLOAD_BASE}/#{escape_segment(entry.release)}/#{escape_segment(entry.name)}"
+  end
+
+  def escape_segment(value)
+    URI::DEFAULT_PARSER.escape(value.to_s, /[^A-Za-z0-9\-._~]/)
   end
 
   def verify!(entry, tmp, sha)
@@ -156,7 +170,12 @@ class ReleaseCache
 
   def self.http_get(url, dest)
     sha = Digest::SHA256.new
-    follow(URI.parse(url), MAX_REDIRECTS) do |response|
+    begin
+      uri = URI.parse(url)
+    rescue URI::InvalidURIError => e
+      raise Unavailable, "#{url}: #{e.message}"
+    end
+    follow(uri, MAX_REDIRECTS) do |response|
       File.open(dest, 'wb') do |out|
         response.read_body do |chunk|
           sha << chunk
@@ -181,7 +200,8 @@ class ReleaseCache
         end
       end
     end
-  rescue SystemCallError, Net::OpenTimeout, Net::ReadTimeout, OpenSSL::SSL::SSLError => e
+  rescue SystemCallError, Net::OpenTimeout, Net::ReadTimeout, OpenSSL::SSL::SSLError,
+         URI::InvalidURIError, Net::HTTPBadResponse => e
     raise Unavailable, "#{uri}: #{e.class}: #{e.message}"
   end
 

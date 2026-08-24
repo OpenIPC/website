@@ -179,4 +179,59 @@ class ReleaseCacheTest < ActiveSupport::TestCase
       holder.close
     end
   end
+
+  # --- configuration that is set but empty ---
+
+  test 'a blank cache root is treated as unset, not as the filesystem root' do
+    ReleaseCache.root = nil
+    ENV['RELEASE_CACHE_ROOT'] = ''
+    begin
+      assert_not_equal '/blobs', File.join(ReleaseCache.root, 'blobs')
+      assert ReleaseCache.root.start_with?(Rails.root.to_s), "fell back to #{ReleaseCache.root}"
+    ensure
+      ENV.delete('RELEASE_CACHE_ROOT')
+      ReleaseCache.root = @cache_root
+    end
+  end
+
+  # --- names that are legal upstream but not in a URL ---
+
+  test 'a name with a space is escaped rather than breaking the fetch' do
+    body = 'spaced'.b
+    write_index('u-boot odd name.bin' => {
+                  'size' => body.bytesize, 'digest' => nil,
+                  'updated_at' => '2024-01-01T00:00:00Z', 'release' => 'latest'
+                })
+    serve(body)
+
+    ReleaseCache.path('u-boot odd name.bin')
+    assert_equal ['https://github.com/OpenIPC/firmware/releases/download/latest/u-boot%20odd%20name.bin'],
+                 @fetches
+  end
+
+  test 'a url that cannot be parsed is unavailable rather than an unhandled error' do
+    write_index('u-boot-bad.bin' => {
+                  'size' => 4, 'digest' => nil,
+                  'updated_at' => '2024-01-01T00:00:00Z', 'release' => "bad\ntag"
+                })
+    ReleaseCache.downloader = nil # exercise the real http_get, which parses the URL
+
+    assert_raises(ReleaseCache::Unavailable) { ReleaseCache.path('u-boot-bad.bin') }
+  end
+
+  # --- the index going away underneath us ---
+
+  test 'an unreadable index is unavailable rather than an IO error' do
+    path = File.join(@index_root, '.index.json')
+    File.write(path, '{ not json')
+    ReleaseIndex.reset!
+    assert_raises(ReleaseCache::Unavailable) { ReleaseCache.path('openipc.ts3516ev300-nor-lite.tgz') }
+  end
+
+  test 'an index that vanishes between the check and the read is unavailable' do
+    ReleaseIndex.reset!
+    File.stub(:read, ->(*) { raise Errno::ENOENT, 'gone' }) do
+      assert_raises(ReleaseCache::Unavailable) { ReleaseCache.path('openipc.ts3516ev300-nor-lite.tgz') }
+    end
+  end
 end
