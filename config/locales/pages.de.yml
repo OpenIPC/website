@@ -57,7 +57,7 @@ de:
       development: Development
       title: Einführung
     majestic_endpoints:
-      moved_html: 'Die Liste der Endpunkte, die Ihre Kamera bereitstellt, befindet sich jetzt in der Weboberfläche der Kamera selbst, auf der Seite <b>Majestic Endpoints</b>. Öffnen Sie <code>http://&lt;Kamera-Adresse&gt;/</code> im Browser und wählen Sie sie im Menü aus.'
+      moved_html: 'Die Liste der Endpunkte, die Ihre Kamera bereitstellt, befindet sich jetzt in der Weboberfläche der Kamera selbst, unter <b>Majestic &rarr; Endpoints</b>. Öffnen Sie <code>http://&lt;Kamera-Adresse&gt;/</code> im Browser und wählen Sie den Eintrag im Menü.'
       reason_address: 'die echte Adresse Ihrer Kamera ist eingesetzt, sodass sich eine URL direkt in einen Player kopieren lässt;'
       reason_auth: 'es ist ersichtlich, ob die Endpunkte ein Passwort verlangen oder ob die Authentifizierung ganz abgeschaltet ist.'
       reason_scheme: 'das Schema passt zu Ihrer Einrichtung, http oder https und ws oder wss;'

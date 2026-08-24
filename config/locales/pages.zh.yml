@@ -57,7 +57,7 @@ zh:
       development: Development
       title: 介绍
     majestic_endpoints:
-      moved_html: '摄像机提供的接口列表现在位于摄像机自身的 Web 界面中，即 <b>Majestic Endpoints</b> 页面。在浏览器中打开 <code>http://&lt;摄像机地址&gt;/</code>，然后从菜单中选择该页面。'
+      moved_html: '摄像机提供的接口列表现在位于摄像机自身的 Web 界面中，菜单路径为 <b>Majestic &rarr; Endpoints</b>。在浏览器中打开 <code>http://&lt;摄像机地址&gt;/</code>，然后从菜单中选择该项。'
       reason_address: '页面中填入的是您摄像机的真实地址，可以直接把链接复制到播放器；'
       reason_auth: '页面会说明这些接口是否需要密码，以及认证是否被完全关闭。'
       reason_scheme: '协议与您的配置一致，http 或 https、ws 或 wss；'

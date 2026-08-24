@@ -18,12 +18,25 @@ class MajesticEndpointsTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  # Both assertions here are scoped to the article on purpose. Unscoped, the
+  # first was satisfied by the About dropdown in the layout, which links
+  # /web-interface on every page of the site, and the second by the <title>,
+  # which PagesController sets from the same key as the heading. Either would
+  # have gone on passing with the button and the heading deleted.
   test 'it sends the reader to the interface on the camera' do
     get '/majestic-endpoints'
-    assert_select 'a[href=?]', '/web-interface'
-    assert_select 'article' do
-      assert_match(/Majestic Endpoints/, response.body)
-    end
+
+    assert_select 'article h2', text: 'Majestic Endpoints'
+    assert_select 'article a[href=?]', '/web-interface'
+  end
+
+  test 'it names the menu path the camera actually shows' do
+    get '/majestic-endpoints'
+
+    # The WebUI menu reads Majestic > Endpoints; "Majestic Endpoints" is only
+    # the heading on the page it opens, so telling a reader to look for that
+    # string in the menu sends them hunting for something that is not there.
+    assert_select 'article', /Majestic\s*→\s*Endpoints/
   end
 
   test 'it no longer serves a copy of the list' do
