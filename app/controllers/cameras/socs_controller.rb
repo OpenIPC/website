@@ -100,7 +100,13 @@ module Cameras
       elsif @camera.soc.model.in?(%w[HI3536CV100 HI3536DV100])
         render 'cameras/socs/hi3536dv100_is_weird'
       else
-        if @camera.flash_type.eql?('nor8m') && @camera.firmware_version.eql?('ultimate')
+        # Only when there is a Lite build to fall back to. hi3516cv6xx and
+        # hi3519dv500 are published as Ultimate and nothing else, so downgrading
+        # unconditionally would answer with instructions for a tarball that does
+        # not exist -- swapping a size problem the visitor can see for a missing
+        # file they cannot.
+        if @camera.flash_type.eql?('nor8m') && @camera.firmware_version.eql?('ultimate') &&
+           @camera.soc.available_releases('nor').include?('lite')
           @camera.firmware_version = 'lite'
           flash.now[:warning] = '8MB Flash ROM can only be flashed with Lite or FPV edition!'
         end

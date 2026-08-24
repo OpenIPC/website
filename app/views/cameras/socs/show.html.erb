@@ -120,7 +120,17 @@
     function allowedEditions(chip) {
         const published = availability[chip.startsWith('nand') ? 'nand' : 'nor'] || [];
         const limit = sizeLimits[chip];
-        return limit ? published.filter(v => limit.includes(v)) : published;
+        if (!limit) return published;
+
+        // The size rule narrows what exists; it must not empty the menu. No SoC
+        // listed today can hit this -- every board with a NOR build has a Lite
+        // one -- but hi3516cv6xx and hi3519dv500 are built only as Ultimate, so
+        // the first of those to be added here would otherwise offer nothing at
+        // all on 8M and 16M. Offering what exists and letting the server answer
+        // PayloadTooLarge, which it does with its own message, beats a menu with
+        // every entry greyed out and no explanation.
+        const fits = published.filter(v => limit.includes(v));
+        return fits.length ? fits : published;
     }
 
     function checkFlashSize() {
