@@ -50,7 +50,6 @@ image but never the schema, so keep migrations additive.
 - `PagesController` — static, i18n marketing/tool pages. `root` is `pages#introduction`. Most actions just set `@page_title` and render. `config/routes.rb` also contains many redirects to `github.com/openipc/*` repos and `wiki.openipc.org`.
 - `Cameras::SocsController` / `Cameras::VendorsController` — the supported-hardware browser (`/supported-hardware/...`, HTML + JSON), the per-SoC installation wizard (`show`/`update` build a `Camera` and render instruction partials), and firmware image download. Note special-case rendering for SigmaStar NAND and HI3536DV100, and the 8MB-flash forces `lite` edition.
 - `SnapshotsController` — public Open Wall API + gallery. **CSRF is skipped** (`verify_authenticity_token`) because cameras POST directly. `create` enqueues `PurgeImagesJob` (deletes snapshots >2 days old) and processes images async via `ProcessImagesJob`. `index` uses a raw correlated SQL query to get the latest snapshot per MAC in the last 24h.
-- `BinariesController` — reads `/srv/github-releases/.rootfs.sizes` and reports each firmware's size against its flash-partition limit.
 - `Admin::*` — Devise-authenticated CRUD (Socs, Vendors, Snapshots) + dashboard. All inherit `AdminController`, which is just `before_action :authenticate_admin!`. Auth model is `Admin` (Devise); there is no public user model.
 
 ### Cross-cutting concerns (`app/controllers/concerns/`)
