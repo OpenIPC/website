@@ -13,7 +13,6 @@ es:
         notes: Notas
         sdk: SDK
         status: Escenario
-        toolchain_filename: Archivo de cadena de herramientas
         uboot_filename: Archivo de arranque U
         vendor_id: Proveedor de SoC
         version: Versión

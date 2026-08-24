@@ -13,7 +13,6 @@ ru:
         notes: Заметки
         sdk: SDK
         status: Стадия
-        toolchain_filename: Тулчейн
         uboot_filename: Загрузчик
         vendor_id: Производитель SoC
         version: Версия

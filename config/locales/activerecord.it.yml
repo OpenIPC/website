@@ -13,7 +13,6 @@ it:
         notes: Appunti
         sdk: SDK
         status: Palcoscenico
-        toolchain_filename: File della catena degli strumenti
         uboot_filename: File U-Boot
         vendor_id: Fornitore del SoC
         version: Versione

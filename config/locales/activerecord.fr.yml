@@ -13,7 +13,6 @@ fr:
         notes: Remarques
         sdk: SDK
         status: Scène
-        toolchain_filename: Fichier de chaîne d'outils
         uboot_filename: Fichier U-Boot
         vendor_id: Fournisseur de SoC
         version: Version

@@ -13,7 +13,6 @@ de:
         notes: Anmerkungen
         sdk: SDK
         status: Bühne
-        toolchain_filename: Toolchain-Datei
         uboot_filename: U-Boot-Datei
         vendor_id: SoC-Anbieter
         version: Ausführung
