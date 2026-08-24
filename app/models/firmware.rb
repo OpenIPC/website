@@ -22,6 +22,18 @@ class Firmware
   # testable without a minute-long test, and tunable on a host without a deploy.
   class << self
     attr_accessor :lock_timeout
+
+    # Where assembled images are cached. Settable so each test gets a
+    # directory of its own: the suite parallelises across processes that share
+    # one filesystem, and five tests generate the same NAND filename, so one
+    # test's teardown was deleting a file another was still asserting on.
+    # Resolved lazily -- Rails.root is not available while this class body runs
+    # under eager loading.
+    def cache_dir
+      @cache_dir ||= Rails.root.join('public', 'files')
+    end
+
+    attr_writer :cache_dir
   end
   self.lock_timeout = 60
 
@@ -56,7 +68,7 @@ class Firmware
   end
 
   def filepath
-    @filepath ||= File.join(Rails.root, 'public', 'files', filename)
+    @filepath ||= File.join(self.class.cache_dir, filename)
   end
 
   def nand?
