@@ -29,11 +29,21 @@ MAX_AGE_DAYS=${MAX_AGE_DAYS:-14}
 DRY_RUN=0
 [ "${1:-}" = "--dry-run" ] && DRY_RUN=1
 
-# A build takes about a second, so a lock older than this is from a process
-# that is gone. Kept far above that: unlinking a lock somebody still holds
-# would let the next request create a fresh inode and lose the mutual
-# exclusion the lock exists for.
-LOCK_MAX_AGE_DAYS=1
+# Lock files are deliberately left alone. The first version of this swept them
+# by age, on the reasoning that a build takes about a second so anything old
+# must be finished. That reasoning is wrong: Firmware#with_lock only opens the
+# lock file, never writes to it, so its mtime is when it was first created and
+# says nothing about whether it is held right now. A lock made weeks ago is
+# held every time that image is rebuilt.
+#
+# Unlinking a held lock is not harmless. flock is per inode, so the next
+# request creates a fresh inode at the same path and takes a second, separate
+# lock -- and then two builders run at once, each calling purge_stale_builds,
+# each deleting the other's half-built image by prefix.
+#
+# Checking with `flock -n` before deleting only narrows that window rather than
+# closing it. They are empty files, bounded by the number of image names that
+# can exist -- about 340 -- so there is nothing to gain by removing them.
 
 log() { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 
@@ -41,8 +51,11 @@ purge() {
   local root=$1
   [ -d "$root" ] || { log "  ${root} is not there, skipping"; return 0; }
 
-  local before images locks
-  before=$(du -sh "$root" 2>/dev/null | cut -f1)
+  local before images
+  # Best effort, and only for the log line: under `set -euo pipefail` a
+  # transient failure here would abort the run before anything was purged, and
+  # take the second root down with it.
+  before=$(du -sh "$root" 2>/dev/null | cut -f1 || echo '?')
 
   # -mtime, not -atime: the filesystem may well be mounted relatime, and an
   # image's mtime is when it was built, which is what "stale" means here.
@@ -51,9 +64,8 @@ purge() {
   if [ "$DRY_RUN" = 1 ]; then action=(-print); verb="would remove"; fi
 
   images=$(find "$root" -maxdepth 1 -type f -name '*.bin' -mtime "+${MAX_AGE_DAYS}" "${action[@]}" | wc -l)
-  locks=$(find "$root" -maxdepth 1 -type f -name '.*.bin.lock' -mtime "+${LOCK_MAX_AGE_DAYS}" "${action[@]}" | wc -l)
 
-  log "  ${root}: ${verb} ${images} image(s) older than ${MAX_AGE_DAYS}d and ${locks} stale lock(s); ${before} -> $(du -sh "$root" 2>/dev/null | cut -f1)"
+  log "  ${root}: ${verb} ${images} image(s) older than ${MAX_AGE_DAYS}d; ${before} -> $(du -sh "$root" 2>/dev/null | cut -f1 || echo '?')"
 }
 
 log "purging the assembled-firmware cache${DRY_RUN:+}$([ "$DRY_RUN" = 1 ] && echo ' (dry run)')"
