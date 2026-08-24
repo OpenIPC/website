@@ -1,0 +1,70 @@
+
+server {
+    listen 80;
+    server_name wiki.openipc.org;
+    #
+    access_log /var/log/nginx/org.openipc.wiki.access.log;
+    error_log /var/log/nginx/org.openipc.wiki.error.log info;
+    #
+    # Stays ahead of everything below: dehydrated renews this certificate over
+    # HTTP-01 on port 80, and `^~` beats the regex locations as well as the
+    # prefix one. A redirect here would fail every renewal.
+    location ^~ /.well-known/acme-challenge {
+        proxy_redirect off;
+        default_type "text/plain";
+        alias   /var/lib/dehydrated/acme-challenges;
+        allow all;
+    }
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+
+server {
+    listen 443 ssl http2;
+    server_name wiki.openipc.org;
+    #
+    # Its own log. This block wrote into org.openipc.access.log until 2026-08-24,
+    # so every HTTPS request to the wiki was filed under the main site and the
+    # only wiki traffic anyone could see was the port-80 redirects.
+    access_log /var/log/nginx/org.openipc.wiki.access.log;
+    error_log /var/log/nginx/org.openipc.wiki.error.log info;
+    #
+    ssl_certificate /var/lib/dehydrated/certs/wiki.openipc.org/fullchain.pem;
+    ssl_certificate_key /var/lib/dehydrated/certs/wiki.openipc.org/privkey.pem;
+    #
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_dhparam /etc/ssl/certs/dhparam.pem;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_stapling off;
+    ssl_stapling_verify on;
+    ssl_session_tickets off;
+    add_header Strict-Transport-Security max-age=15768000;
+    #
+    # No `resolver` any more: it was here for proxy_pass, and nothing is
+    # proxied from this server block now.
+
+    # A page that was named keeps being named. The wiki moved to a repository
+    # whose paths are the ones this host already used -- en/ and ru/ at the top,
+    # the same filenames -- so the old URL can be carried across instead of
+    # dropping every visitor on an index and asking them to search again.
+    location ~ ^/(en|ru)/(.+)\.html$ {
+        return 301 https://github.com/OpenIPC/wiki/blob/master/$1/$2.md;
+    }
+
+    # Some links were published against the source filename rather than the
+    # rendered one.
+    location ~ ^/(en|ru)/(.+)\.md$ {
+        return 301 https://github.com/OpenIPC/wiki/blob/master/$1/$2.md;
+    }
+
+    # Everything else -- the root, a directory, an image, a path from a wiki
+    # layout that no longer exists.
+    location / {
+        return 301 https://github.com/OpenIPC/wiki;
+    }
+}

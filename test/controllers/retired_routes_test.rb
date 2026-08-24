@@ -37,4 +37,33 @@ class RetiredRoutesTest < ActionDispatch::IntegrationTest
 
     assert_not File.exist?(served), 'the referer was written into a publicly served file'
   end
+
+  # --- the retired wiki host ---
+  #
+  # wiki.openipc.org proxied to openipc.cloud, which was repurposed into a
+  # commercial product site -- so every one of these sent visitors to a shop
+  # under our own domain and our own certificate. The wiki source itself never
+  # went anywhere: it is github.com/OpenIPC/wiki, which the site navigation has
+  # pointed at for some time.
+
+  test 'the wiki redirects go to the wiki source, not the retired host' do
+    { '/ru/installation.md' => 'https://github.com/OpenIPC/wiki/blob/master/ru/installation.md',
+      '/devices/hs303/' => 'https://github.com/OpenIPC/wiki/blob/master/ru/hardware-hs303.md',
+      '/install_switcam_hs303' => 'https://github.com/OpenIPC/wiki/blob/master/ru/hardware-hs303.md' }
+      .each do |path, target|
+      get path
+      assert_redirected_to target
+    end
+  end
+
+  test 'nothing anywhere in the app points at the retired wiki host' do
+    # Nine locale files carried it as well as the three routes, so a test that
+    # only walked the routes would have passed while the invitation to "fill up
+    # the Wiki" still led to the shop.
+    offenders = Dir.glob(Rails.root.join('{app,config}/**/*'))
+                   .select { |f| File.file?(f) }
+                   .select { |f| File.read(f).include?('wiki.openipc.org') }
+
+    assert_empty offenders, "still pointing at the retired wiki host: #{offenders.join(', ')}"
+  end
 end
