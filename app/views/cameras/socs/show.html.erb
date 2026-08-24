@@ -18,7 +18,14 @@
     <% if @camera.soc.uboot_filename.blank? || @camera.soc.linux_filename.blank? || @camera.soc.load_address.blank? %>
       <div class="col-md-6 col-xl-7 col-xxl-8 mb-3">
         <div class="alert alert-info">
-          <p class="mb-0"><%= t('.not_ready_alert_html', name: @camera.soc.full_name) %></p>
+          <%# Firmware published but no bootloader is a different thing from not %>
+          <%# being supported yet, and saying "we are working hard to release   %>
+          <%# firmware" beside a link to that very firmware helps nobody.       %>
+          <% if @camera.soc.firmware_published? && !@camera.soc.bootloader_published? %>
+            <p class="mb-0"><%= t('.no_bootloader_alert', name: @camera.soc.full_name) %></p>
+          <% else %>
+            <p class="mb-0"><%= t('.not_ready_alert_html', name: @camera.soc.full_name) %></p>
+          <% end %>
         </div>
       </div>
 

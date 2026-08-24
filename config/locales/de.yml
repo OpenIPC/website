@@ -29,6 +29,7 @@ de:
         for: für %{name}
         generate_button: Generieren Sie eine Installationsanleitung
         generate_mac: Generieren Sie eine gültige zufällige MAC-Adresse.
+        no_bootloader_alert: OpenIPC veröffentlicht Firmware für den %{name}, aber keinen Bootloader dafür. Sowohl die geführte Installation als auch das fertige Flash-Image beginnen damit, einen OpenIPC-Bootloader zu schreiben, daher kann für diesen SoC keines von beiden angeboten werden. Das Firmware-Paket unten ist der Teil, den es gibt.
         not_ready_alert_html: Die Installationsanleitung für den %{name} SoC ist noch nicht fertig. Obwohl wir hart daran arbeiten, OpenIPC-Firmware für den %{name} zu veröffentlichen. Bitte bleiben Sie dran und <a href="/support-open-source">unterstützen Sie Open Source</a> .
         notes: Anmerkungen
         paragraph1: Bitte geben Sie die Kamerakonfiguration in das bereitgestellte Formular ein und klicken Sie auf die Schaltfläche „Installationsanleitung generieren“. Auf der nächsten Seite finden Sie die Binärdateien und die Befehle, die Sie für die Installation der OpenIPC-Firmware auf der Kamera ausführen müssen.

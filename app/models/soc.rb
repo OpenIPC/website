@@ -71,6 +71,41 @@ class Soc < ApplicationRecord
     !uboot_filename.empty? && !linux_filename.empty?
   end
 
+  # Everything upstream builds, for asking whether it builds anything at all for
+  # a board. Two flash types times three editions is six lookups in a hash that
+  # is already in memory.
+  PUBLISHED_RELEASES = %w[lite ultimate neo].freeze
+  FLASH_TYPES = %w[nor nand].freeze
+
+  # A flash image starts with a bootloader, and for twenty-one of the SoCs on
+  # this site there is not one. Every Xiongmai part is like this, and the whole
+  # GK7102 family: OpenIPC builds and publishes firmware for them, but no
+  # u-boot, so the installation instructions and the assembled image cannot be
+  # offered however much of the rest exists.
+  #
+  # Worth distinguishing from "not supported yet", which is what the SoC page
+  # used to say for all of them. It is wrong twice over -- it claims firmware is
+  # coming when it is already published and linked on that same page, and it
+  # hides the one thing a visitor could act on, which is that they will need
+  # their camera's own bootloader.
+  def bootloader_published?
+    return false if uboot_filename.blank?
+
+    !ReleaseIndex.current.fetch(uboot_filename).nil?
+  rescue ReleaseIndex::Missing
+    # No index is not evidence of absence, and claiming a bootloader is missing
+    # when we simply cannot see it would be worse than saying nothing.
+    true
+  end
+
+  def firmware_published?
+    PUBLISHED_RELEASES.any? do |release|
+      FLASH_TYPES.any? { |flash_type| ReleaseIndex.current.fetch(linux_filename_for(release, flash_type)) }
+    end
+  rescue ReleaseIndex::Missing
+    linux_filename.present?
+  end
+
   def kernel_file
     @kernel_file ||= "uImage.#{board}"
   end

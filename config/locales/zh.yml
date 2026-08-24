@@ -29,6 +29,7 @@ zh:
         for: 对于 %{name}
         generate_button: 生成安装指南
         generate_mac: 生成有效的随机 MAC 地址。
+        no_bootloader_alert: OpenIPC 为 %{name} 提供固件，但没有为它提供引导加载程序。引导式安装和现成的刷机镜像都要先写入 OpenIPC 引导加载程序，因此这两者都无法为该 SoC 提供。下方的固件包是确实存在的部分。
         not_ready_alert_html: '%{name} SoC 的安装说明尚未准备好。但是我们正在努力发布 %{name} 的 OpenIPC 固件。请继续关注并<a href="/support-open-source">支持开源</a>。'
         notes: 备注
         paragraph1: 请在右侧输入摄像机配置，然后点击“生成安装指南”按钮。在下一页中，您将找到二进制文件和在摄像机上安装 OpenIPC 固件时必须执行的命令。
