@@ -493,4 +493,82 @@ class FirmwareTest < ActiveSupport::TestCase
                    "#{vendor}: the image does not match the page"
     end
   end
+
+  # --- the index going away must not refuse an image that is already built ---
+
+  # Stands in for a Soc whose parts cannot be reached: no index, GitHub
+  # unreachable, bytes that did not match. ReleaseCache raises Unavailable for
+  # all three and Soc passes it straight through.
+  class UnreachableSoc < StubSoc
+    def uboot_file
+      raise ReleaseCache::Unavailable, 'no release index: /srv/github-releases/.index.json is not there'
+    end
+  end
+
+  # The same SoC, with its parts out of reach.
+  def unreachable
+    UnreachableSoc.new(model: 'ts3516ev300', vendor: 'HiSilicon', uboot_file: nil, linux_file: nil)
+  end
+
+  # A built, complete 8MB NOR image, and a Firmware pointing at it whose parts
+  # cannot be reached.
+  def built_then_unreachable
+    good = build(model: 'ts3516ev300', vendor: 'HiSilicon', flash_type: 'nor', size: 8,
+                 release: 'lite',
+                 members: { 'uImage.ts3516ev300' => KERNEL, 'rootfs.squashfs.ts3516ev300' => SQUASHFS })
+    good.generate
+    [good, Firmware.new(size: 8, flash_type: 'nor', release: 'lite', soc: unreachable)]
+  end
+
+  test 'an image already built is served when its parts cannot be reached' do
+    # Verified on dev before this changed: a complete, current 8MB image was
+    # refused with "no release index" because generate resolved both sources
+    # before asking whether it needed them.
+    good, offline = built_then_unreachable
+    assert_equal 8.megabytes, File.size(good.filepath)
+
+    assert_nil offline.generate
+    assert_equal 8.megabytes, File.size(offline.filepath)
+  end
+
+  test 'nothing built means the failure still reaches the caller' do
+    offline = Firmware.new(size: 8, flash_type: 'nor', release: 'lite',
+                           soc: UnreachableSoc.new(model: 'ts3516ev999', vendor: 'HiSilicon',
+                                                   uboot_file: nil, linux_file: nil))
+
+    assert_raises(ReleaseCache::Unavailable) { offline.generate }
+  end
+
+  test 'an image of the wrong size is not served in place of building one' do
+    # The 9,465,856-byte 8MB image that was live on this host is why right_size?
+    # exists. Unreachable parts must not become a reason to serve it.
+    good, offline = built_then_unreachable
+    IO.binwrite(good.filepath, 'x' * 1024)
+
+    assert_raises(ReleaseCache::Unavailable) { offline.generate }
+  end
+
+  test 'an image the web server cannot read is not served either' do
+    good, offline = built_then_unreachable
+    File.chmod(0o600, good.filepath)
+
+    assert_raises(ReleaseCache::Unavailable) { offline.generate }
+  end
+
+  test 'an asset upstream does not publish is still refused, cached image or not' do
+    # UnknownAsset is permanent, not a bad minute. A leftover image for a name
+    # that has since been aliased away is exactly what must not be served.
+    good, = built_then_unreachable
+    assert_equal 8.megabytes, File.size(good.filepath)
+
+    gone = Class.new(StubSoc) do
+      def uboot_file
+        raise ReleaseCache::UnknownAsset, '"openipc.gone-nor-lite.tgz" is not in the release index'
+      end
+    end.new(model: 'ts3516ev300', vendor: 'HiSilicon', uboot_file: nil, linux_file: nil)
+
+    assert_raises(ReleaseCache::UnknownAsset) do
+      Firmware.new(size: 8, flash_type: 'nor', release: 'lite', soc: gone).generate
+    end
+  end
 end

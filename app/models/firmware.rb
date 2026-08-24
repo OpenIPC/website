@@ -83,9 +83,34 @@ class Firmware
     @size
   end
 
+  # Build if it needs building, and serve what is already there if the parts
+  # cannot be reached.
+  #
+  # The order used to be fixed: resolve both sources, then ask whether the image
+  # was fresh. Resolving goes through ReleaseIndex, so losing .index.json
+  # refused images that were already built, complete and current on disk --
+  # verified, not theorised: an 8,388,608-byte ssc338q image was refused with
+  # `no release index`. The index is one 44KB file written by an hourly cron,
+  # and every firmware download on the site depended on it being readable.
+  #
+  # Unavailable means the parts cannot be had *right now* -- no index, GitHub
+  # unreachable, bytes that did not match. If a usable image is already on disk,
+  # that is the whole answer to the request, so give it. UnknownAsset is not
+  # caught: it means upstream does not publish this at all, and a leftover image
+  # for a name that has been aliased away is exactly what should not be served.
   def generate
     validate_size!
+    build_if_needed
+  rescue ReleaseCache::Unavailable => e
+    raise unless usable?
 
+    Rails.logger.warn "firmware: serving the cached #{filename}, its parts are unavailable: #{e.message}"
+    nil
+  end
+
+  private
+
+  def build_if_needed
     uboot_file = @soc.uboot_file
     unless File.exist?(uboot_file)
       Rails.logger.warn "firmware: #{uboot_file} not found"
@@ -110,14 +135,17 @@ class Firmware
     end
   end
 
-  private
+  # Present, servable, and the size it claims to be. Everything fresh? asks
+  # except whether it is newer than its parts -- which is the one question that
+  # needs the parts, and therefore the index.
+  def usable?
+    File.exist?(filepath) && web_readable? && right_size?
+  end
 
   # file exists, can be served, is the size it claims to be, and is newer than
   # any of its parts
   def fresh?(uboot_file, linux_file)
-    File.exist?(filepath) &&
-      web_readable? &&
-      right_size? &&
+    usable? &&
       File.mtime(uboot_file) < File.mtime(filepath) &&
       File.mtime(linux_file) < File.mtime(filepath)
   end
@@ -130,7 +158,7 @@ class Firmware
   def web_readable?
     return true if (File.stat(filepath).mode & 0o004).positive?
 
-    Rails.logger.warn "firmware: rebuilding #{filename}, the web server cannot read the cached copy"
+    Rails.logger.warn "firmware: the web server cannot read the cached #{filename}"
     false
   end
 
@@ -147,7 +175,7 @@ class Firmware
     actual = File.size(filepath)
     return true if actual == @size.megabytes
 
-    Rails.logger.warn "firmware: rebuilding #{filename}, cached copy is #{actual} bytes, expected #{@size.megabytes}"
+    Rails.logger.warn "firmware: cached #{filename} is #{actual} bytes, expected #{@size.megabytes}"
     false
   end
 
