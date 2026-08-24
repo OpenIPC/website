@@ -4,7 +4,11 @@ class Camera
   include ActiveModel::Model
   include ActiveModel::Validations
 
-  FW_VERSION = %w[lite ultimate fabricator].freeze
+  # What this model will accept, rather than what any particular SoC offers --
+  # Soc#available_releases answers that, and the form is built from it.
+  # `fabricator` is gone: upstream publishes no fabricator build for any SoC and
+  # never has. `neo` is here because it does exist, for seven boards.
+  FW_VERSION = %w[lite ultimate neo].freeze
   FLASH_CHIP = %w[nor8m nor16m nor32m nand].freeze
   NET_IFACE = %w[eth wifi both].freeze
   SD_CARD = %w[nosd sd].freeze
@@ -35,7 +39,11 @@ class Camera
 
   validates :soc_id, presence: true
   validates :flash_type, presence: true
-  validates :firmware_version, inclusion: { in: FW_VERSION }
+  # Against what the SoC actually has when there is one, so a hand-edited form
+  # cannot ask for an edition upstream does not build. FW_VERSION is the answer
+  # when there is no SoC to ask, and when the index cannot be read
+  # available_releases returns the known list, so this never becomes unsatisfiable.
+  validates :firmware_version, inclusion: { in: ->(camera) { camera.permitted_firmware_versions } }
   validates :camera_mac_address, format: { with: MAC_ADDRESS_FORMAT }
   validates :camera_ip_address, format: { with: IP_ADDRESS_FORMAT }
   validates :server_ip_address, format: { with: IP_ADDRESS_FORMAT }
@@ -131,6 +139,14 @@ class Camera
     when 'nand'
       '262144'
     end
+  end
+
+  # What this SoC actually has, when there is one to ask. Unioning with
+  # FW_VERSION here would have made the rule say nothing: ultimate would be
+  # permitted for the 42 SoCs upstream does not build it for, which is the
+  # thing being fixed.
+  def permitted_firmware_versions
+    soc.nil? ? FW_VERSION : soc.offerable_releases
   end
 
   def firmware_version_name

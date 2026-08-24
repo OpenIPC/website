@@ -254,4 +254,86 @@ class SocTest < ActiveSupport::TestCase
     ReleaseIndex.reset!
     assert_not_predicate soc, :bootloader_published?
   end
+
+  # --- which editions are offered ---
+
+  test 'only the editions upstream publishes are offered' do
+    # Ultimate does not exist for 42 of the SoCs this site lists and fabricator
+    # exists for none of them, yet all three were offered for every SoC.
+    soc = Soc.create!(vendor: @vendor, model: 'TS377D',
+                      linux_filename: 'openipc.ts377d-nor-lite.tgz')
+
+    with_index(assets: ['openipc.ts377d-nor-lite.tgz']) do
+      assert_equal %w[lite], soc.available_releases('nor')
+      assert_empty soc.available_releases('nand')
+      assert_equal %w[lite], soc.offerable_releases
+    end
+  end
+
+  test 'an edition the site has never heard of is offered anyway' do
+    # neo shipped for seven boards and nothing here could reach it, because the
+    # list was a constant. Reading the names means the next one does not wait
+    # on a deploy.
+    soc = Soc.create!(vendor: @vendor, model: 'TS3516EV301',
+                      linux_filename: 'openipc.ts3516ev301-nor-lite.tgz')
+
+    with_index(assets: ['openipc.ts3516ev301-nor-lite.tgz',
+                        'openipc.ts3516ev301-nor-neo.tgz',
+                        'openipc.ts3516ev301-nor-zephyr.tgz']) do
+      assert_equal %w[lite neo zephyr], soc.offerable_releases
+    end
+  end
+
+  test 'editions are ordered lite, ultimate, neo, then whatever else' do
+    soc = Soc.create!(vendor: @vendor, model: 'TS3516EV302',
+                      linux_filename: 'openipc.ts3516ev302-nor-lite.tgz')
+
+    with_index(assets: ['openipc.ts3516ev302-nor-neo.tgz',
+                        'openipc.ts3516ev302-nor-lite.tgz',
+                        'openipc.ts3516ev302-nor-ultimate.tgz']) do
+      assert_equal %w[lite ultimate neo], soc.available_releases('nor')
+    end
+  end
+
+  test 'nand and nor are answered separately' do
+    # Five NAND boards are lite-only while the page forced Ultimate for NAND,
+    # and most SoCs have no NAND build at all.
+    soc = Soc.create!(vendor: @vendor, model: 'TS1106',
+                      linux_filename: 'openipc.ts1106-nand-lite.tgz')
+
+    with_index(assets: ['openipc.ts1106-nand-lite.tgz']) do
+      assert_empty soc.available_releases('nor')
+      assert_equal %w[lite], soc.available_releases('nand')
+      assert_equal({ 'nor' => [], 'nand' => %w[lite] }, soc.release_availability)
+    end
+  end
+
+  test 'the alias decides which board the editions are read from' do
+    soc = Soc.create!(vendor: @vendor, model: 'TS7205V210',
+                      linux_filename: 'openipc.ts7205v210-nor-lite.tgz')
+
+    with_index(aliases: { 'ts7205v210' => 'ts7205v200' },
+               assets: ['openipc.ts7205v200-nor-lite.tgz',
+                        'openipc.ts7205v200-nor-ultimate.tgz']) do
+      assert_equal %w[lite ultimate], soc.offerable_releases
+    end
+  end
+
+  test 'no index offers the editions it always used to' do
+    # An empty menu would be worse than the problem being fixed.
+    soc = Soc.create!(vendor: @vendor, model: 'TS3516EV303',
+                      linux_filename: 'openipc.ts3516ev303-nor-lite.tgz')
+
+    ReleaseIndex.reset!
+    assert_equal Soc::RELEASE_ORDER, soc.available_releases('nor')
+  end
+
+  test 'fw_url names the release it was asked for' do
+    # It returned the lite filename for every version, in the pre-2023 naming.
+    soc = Soc.create!(vendor: @vendor, model: 'TS3516EV304',
+                      linux_filename: 'openipc.ts3516ev304-nor-lite.tgz')
+
+    assert_match(/openipc\.ts3516ev304-nor-ultimate\.tgz\z/, soc.fw_url('ultimate'))
+    assert_match(/openipc\.ts3516ev304-nand-lite\.tgz\z/, soc.fw_url('lite', 'nand'))
+  end
 end

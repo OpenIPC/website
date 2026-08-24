@@ -107,6 +107,7 @@ fa:
       fpv: FPV
       lite: ساده
       nand: NAND
+      neo: Neo
       ultimate: نهایی
       venc: VENC
   flash_chip:

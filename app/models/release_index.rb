@@ -97,4 +97,29 @@ class ReleaseIndex
   def size
     @assets.size
   end
+
+  # Which editions upstream publishes for a board and flash type, read out of
+  # the asset names rather than from a list kept here. A variant this site has
+  # never heard of therefore becomes offerable the hour it first appears, which
+  # is how `neo` should have arrived instead of shipping to seven boards that
+  # nothing here could reach.
+  ASSET_NAME = /\Aopenipc\.(.+)-(nor|nand)-([a-z0-9]+)\.tgz\z/
+
+  def releases_for(board, flash_type)
+    builds[[board.to_s, flash_type.to_s]] || []
+  end
+
+  private
+
+  # Built once per index document, which is itself memoised until the file on
+  # disk moves on. One pass over ~200 names.
+  def builds
+    @builds ||= @assets.each_key.with_object({}) do |name, map|
+      match = ASSET_NAME.match(name)
+      next unless match
+
+      (map[[match[1], match[2]]] ||= []) << match[3]
+    end
+  end
+
 end

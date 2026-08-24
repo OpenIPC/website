@@ -15,7 +15,7 @@
   </header>
 
   <div class="row">
-    <% if @camera.soc.uboot_filename.blank? || @camera.soc.linux_filename.blank? || @camera.soc.load_address.blank? %>
+    <% if @camera.soc.uboot_filename.blank? || @camera.soc.linux_filename.blank? || @camera.soc.load_address.blank? || !@camera.soc.firmware_published? %>
       <div class="col-md-6 col-xl-7 col-xxl-8 mb-3">
         <div class="alert alert-info">
           <%# Firmware published but no bootloader is a different thing from not %>
@@ -37,12 +37,22 @@
             <p class="mb-0 small"><%= t('.for', name: @camera.soc.full_name) %></p>
           </div>
         <% end %>
-        <% unless @camera.soc.linux_filename.blank? %>
-          <div class="alert alert-primary github">
-            <i class="bi bi-github float-end"></i>
-            <h5 class="mb-1"><%= link_to t('.bundle', name: @camera.firmware_version_name), firmware_url(@camera), title: firmware_filename(@camera) %></h5>
-            <p class="mb-0 small"><%= t('.for', name: @camera.soc.full_name) %></p>
-          </div>
+        <%# One link per edition upstream actually publishes. This used to be a %>
+        <%# single link built by string template from whatever the form had     %>
+        <%# selected, with no existence check at all -- a bare 404 on github.com %>
+        <%# for the visitor, off-site, with no message from this site to explain %>
+        <%# it. Arguably worse than the failed download, since they cannot tell  %>
+        <%# whether we are broken or their camera is unsupported.                %>
+        <% @camera.soc.release_availability.each do |flash_type, releases| %>
+          <% releases.each do |release| %>
+            <div class="alert alert-primary github">
+              <i class="bi bi-github float-end"></i>
+              <h5 class="mb-1"><%= link_to t('.bundle', name: "#{t("firmware.version.#{release}", default: release.capitalize)} #{flash_type.upcase}"),
+                                           @camera.soc.fw_url(release, flash_type),
+                                           title: @camera.soc.linux_filename_for(release, flash_type) %></h5>
+              <p class="mb-0 small"><%= t('.for', name: @camera.soc.full_name) %></p>
+            </div>
+          <% end %>
         <% end %>
       </div>
     <% else %>
@@ -71,7 +81,8 @@
             </div>
             <div class="col">
               <%= f.select :flash_type, list_of_flash_type_sizes_for_select %>
-              <%= f.select :firmware_version, list_of_firmware_versions_for_select %>
+              <%= f.select :firmware_version, list_of_firmware_versions_for_select,
+                           {}, data: { availability: @camera.soc.release_availability.to_json } %>
               <!-- %= f.select :network_interface, list_of_network_interfaces_for_select % -->
               <!-- %= f.select :sd_card_slot, list_of_sd_card_for_select % -->
             </div>
@@ -89,38 +100,41 @@
 </article>
 
 <script>
-    function checkFlashSize() {
-        let el = document.querySelector('#camera_firmware_version');
+    // Which editions go with which flash type, for this SoC, straight from the
+    // release index. What this replaces was a fixed table: nand meant ultimate,
+    // nor8m and nor16m meant lite, and nor32m meant everything-but-fabricator,
+    // for all 126 SoCs alike. Upstream builds nand for sixteen boards and five
+    // of those are lite-only, so the nand rule was wrong in both directions.
+    const availability = JSON.parse(
+        document.querySelector('#camera_firmware_version').dataset.availability
+    );
 
-        if (document.querySelector('#camera_flash_type').value === 'nor8m') {
-            for (let i = 0; i < el.options.length; i++) {
-                let o = el.options.item(i);
-                o.disabled = (o.value !== 'lite');
-            }
-            el.value = 'lite';
-        } else if (document.querySelector('#camera_flash_type').value === 'nor16m') {
-            for (let i = 0; i < el.options.length; i++) {
-                let o = el.options.item(i);
-                o.disabled = (o.value !== 'lite');
-            }
-            el.value = 'lite';
-        } else if (document.querySelector('#camera_flash_type').value === 'nor32m') {
-            for (let i = 0; i < el.options.length; i++) {
-                let o = el.options.item(i);
-                o.disabled = (o.value == 'fabricator'<%= raw " || o.value == 'fpv'" unless @camera.soc.vendor.name.eql?('SigmaStar') %>);
-            }
-            el.value = 'ultimate';
-        } else if (document.querySelector('#camera_flash_type').value === 'nand') {
-            for (let i = 0; i < el.options.length; i++) {
-                let o = el.options.item(i);
-                o.disabled = (o.value !== 'ultimate');
-            }
-            el.value = 'ultimate';
-        } else {
-            for (let i = 0; i < el.options.length; i++) {
-                let o = el.options.item(i);
-                o.disabled = (o.value == 'fpv');
-            }
+    // Flash size still constrains the edition independently of what exists:
+    // an 8MB part cannot hold Ultimate whether or not it is published. Kept
+    // exactly as it was.
+    const sizeLimits = {nor8m: ['lite'], nor16m: ['lite']};
+
+    // What to land on when the current choice is no longer available.
+    const preferred = {nor32m: 'ultimate', nand: 'ultimate'};
+
+    function allowedEditions(chip) {
+        const published = availability[chip.startsWith('nand') ? 'nand' : 'nor'] || [];
+        const limit = sizeLimits[chip];
+        return limit ? published.filter(v => limit.includes(v)) : published;
+    }
+
+    function checkFlashSize() {
+        const el = document.querySelector('#camera_firmware_version');
+        const chip = document.querySelector('#camera_flash_type').value;
+        const allowed = allowedEditions(chip);
+
+        for (let i = 0; i < el.options.length; i++) {
+            const o = el.options.item(i);
+            o.disabled = !allowed.includes(o.value);
+        }
+
+        if (!allowed.includes(el.value)) {
+            el.value = allowed.includes(preferred[chip]) ? preferred[chip] : (allowed[0] || '');
         }
     }
 

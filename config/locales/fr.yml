@@ -107,6 +107,7 @@ fr:
       fpv: FPV
       lite: léger
       nand: NON-ET
+      neo: Neo
       ultimate: Ultime
       venc: VENC
   flash_chip:
