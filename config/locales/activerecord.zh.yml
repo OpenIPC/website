@@ -13,7 +13,6 @@ zh:
         notes: 备注
         sdk: 开发工具包
         status: 阶段
-        toolchain_filename: 工具链文件
         uboot_filename: U-Boot文件
         vendor_id: SoC供应商
         version: 版本

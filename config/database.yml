@@ -12,6 +12,12 @@
 default: &default
   adapter: mysql2
   encoding: utf8mb4
+  # Pinned, not inherited. MariaDB's default collation for utf8mb4 changed from
+  # utf8mb4_general_ci to utf8mb4_uca1400_ai_ci in 11.8, so a database built by
+  # db:create + db:migrate would silently differ from production, which is
+  # general_ci throughout. db/schema.rb records it per table for the
+  # schema:load path; this covers the migration path.
+  collation: utf8mb4_general_ci
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 16 } %>
   username: www
   password: www

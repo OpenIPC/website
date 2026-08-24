@@ -13,7 +13,6 @@ pl:
         notes: Notatki
         sdk: SDK
         status: Scena
-        toolchain_filename: Plik łańcucha narzędzi
         uboot_filename: Plik U-Boota
         vendor_id: Dostawca SoC
         version: Wersja

@@ -13,7 +13,6 @@ fa:
         notes: یادداشت
         sdk: SDK
         status: صحنه
-        toolchain_filename: فایل زنجیره ابزار
         uboot_filename: فایل U-Boot
         vendor_id: فروشنده SoC
         version: نسخه

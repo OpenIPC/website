@@ -13,7 +13,6 @@ pt:
         notes: Notas
         sdk: SDK
         status: Estágio
-        toolchain_filename: Arquivo de conjunto de ferramentas
         uboot_filename: Arquivo U-Boot
         vendor_id: Fornecedor de SoC
         version: Versão

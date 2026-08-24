@@ -13,7 +13,6 @@ en:
         notes: Notes
         sdk: SDK
         status: Stage
-        toolchain_filename: Toolchain file
         uboot_filename: U-Boot file
         vendor_id: SoC Vendor
         version: Version
