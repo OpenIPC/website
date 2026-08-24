@@ -88,6 +88,32 @@ matters is every `/assets/…` URL the homepage references.
 To revert in a hurry: delete the two `proxy_set_header X-…` lines and reload.
 Downloads fall back to being streamed by Puma, which is where they were before.
 
+## Host directories these serve from
+
+All of them are under `/srv/www/shared`, which is what the containers mount and
+what the backup and restore procedure knows about:
+
+| location | host directory |
+|---|---|
+| `/dl/` | `/srv/www/shared/dl` |
+| `/images/` | `/srv/www/shared/images` |
+| `/protected-files/` | `/srv/www/shared/files` (prod), `dev-files` (dev) |
+
+None of them reaches through `/srv/www/org-openipc`, the checkout that stopped
+serving traffic when the app moved into a container. Two did until 2026-08-24:
+`/dl/` worked only via an undocumented symlink, and `/images/` pointed at a
+directory that exists nowhere else. Both would have gone missing on a rebuilt
+host.
+
+`/images/` holds four files from 2022–2023 — badges and logos embedded on pages
+this project does not control. Nothing on this site references them, so nobody
+here would notice them vanishing.
+
+They live in the repository under `deploy/legacy-images` and `deploy.sh`
+installs them on every deploy. Moving them into `/srv/www/shared` alone was not
+enough: that directory is host-only and in no backup, so a host rebuilt from
+`deploy/RESTORE.md` would still have served 404s for URLs published years ago.
+
 ## Two things that are not here
 
 The certificates and `/etc/nginx/.htpasswd-dev` are referenced by path only.
