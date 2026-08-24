@@ -165,12 +165,19 @@ class Soc < ApplicationRecord
   # use is how you refuse files you meant to keep.
   def plain_asset_name!(name)
     value = name.to_s
+    # Control characters first, and not merely for tidiness: a NUL is one, and
+    # File.basename raises ArgumentError on a string containing one rather than
+    # returning something to compare. Checking here means the cheap test
+    # rejects it before any path arithmetic sees it.
     ok = !value.empty? &&
+         !value.match?(/[[:cntrl:]]/) &&
          value == File.basename(value) &&
-         !value.start_with?('.') &&
-         !value.match?(/[[:cntrl:]]/)
+         !value.start_with?('.')
     return if ok
 
+    raise ReleaseCache::UnknownAsset, "#{value.inspect} is not a plain asset name"
+  rescue ArgumentError
+    # Whatever else File.basename dislikes about it, the answer is the same.
     raise ReleaseCache::UnknownAsset, "#{value.inspect} is not a plain asset name"
   end
 

@@ -234,4 +234,27 @@ class ReleaseCacheTest < ActiveSupport::TestCase
       assert_raises(ReleaseCache::Unavailable) { ReleaseCache.path('openipc.ts3516ev300-nor-lite.tgz') }
     end
   end
+
+  # --- the cache root is a mount, and mounts go wrong ---
+
+  test 'a cache root that cannot be created is unavailable, not a crash' do
+    # A missing or root-owned mount is exactly what a cutover gets wrong, and
+    # the visitor should be told to try again rather than shown a 500.
+    #
+    # A root under a regular file rather than a chmod: this suite runs as root
+    # in CI and in the container, and root ignores directory permissions, so a
+    # mode-based test would pass for the wrong reason. ENOTDIR nobody can
+    # override.
+    blocker = File.join(@cache_root, 'not-a-directory')
+    File.write(blocker, 'x')
+    ReleaseCache.root = File.join(blocker, 'cache')
+
+    assert_raises(ReleaseCache::Unavailable) { ReleaseCache.path('openipc.ts3516ev300-nor-lite.tgz') }
+  end
+
+  test 'a rename that fails is unavailable rather than an unhandled error' do
+    File.stub(:rename, ->(*) { raise Errno::ENOSPC, 'no space left on device' }) do
+      assert_raises(ReleaseCache::Unavailable) { ReleaseCache.path('openipc.ts3516ev300-nor-lite.tgz') }
+    end
+  end
 end

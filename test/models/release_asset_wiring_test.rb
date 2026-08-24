@@ -99,4 +99,15 @@ class ReleaseAssetWiringTest < ActiveSupport::TestCase
     FileUtils.touch(File.join(@mirror, 'u-boot-ts3516ev300-nor.bin'))
     assert_equal File.join(@mirror, 'u-boot-ts3516ev300-nor.bin'), @soc.uboot_file
   end
+
+  test 'a name with a null byte is refused rather than crashing the request' do
+    # A NUL is a control character, so the check catches it -- but only if it
+    # runs before File.basename, which raises ArgumentError on one instead of
+    # returning something to compare against.
+    ENV['RELEASE_MIRROR_ROOT'] = @mirror
+    soc = Soc.new(vendor: @vendor, model: 'X',
+                  uboot_filename: "u-boot\0.bin", linux_filename: 'openipc.x-nor-lite.tgz')
+
+    assert_raises(ReleaseCache::UnknownAsset) { soc.uboot_file }
+  end
 end
