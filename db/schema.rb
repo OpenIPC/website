@@ -10,8 +10,8 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2022_08_06_130659) do
-  create_table "active_storage_attachments", charset: "utf8mb4", force: :cascade do |t|
+ActiveRecord::Schema[7.0].define(version: 2023_05_07_193639) do
+  create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
     t.bigint "record_id", null: false
@@ -21,7 +21,7 @@ ActiveRecord::Schema[7.0].define(version: 2022_08_06_130659) do
     t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
   end
 
-  create_table "active_storage_blobs", charset: "utf8mb4", force: :cascade do |t|
+  create_table "active_storage_blobs", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "key", null: false
     t.string "filename", null: false
     t.string "content_type"
@@ -33,13 +33,13 @@ ActiveRecord::Schema[7.0].define(version: 2022_08_06_130659) do
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
   end
 
-  create_table "active_storage_variant_records", charset: "utf8mb4", force: :cascade do |t|
+  create_table "active_storage_variant_records", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
-  create_table "admins", charset: "utf8mb4", force: :cascade do |t|
+  create_table "admins", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
     t.string "reset_password_token"
@@ -65,16 +65,7 @@ ActiveRecord::Schema[7.0].define(version: 2022_08_06_130659) do
     t.index ["unlock_token"], name: "index_admins_on_unlock_token", unique: true
   end
 
-  create_table "custom_commands", charset: "utf8mb4", force: :cascade do |t|
-    t.bigint "soc_id"
-    t.string "command_block"
-    t.text "text"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["soc_id"], name: "index_custom_commands_on_soc_id"
-  end
-
-  create_table "sensors", charset: "utf8mb4", force: :cascade do |t|
+  create_table "sensors", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "urlname"
     t.bigint "vendor_id"
     t.string "model"
@@ -103,7 +94,7 @@ ActiveRecord::Schema[7.0].define(version: 2022_08_06_130659) do
     t.index ["vendor_id"], name: "index_sensors_on_vendor_id"
   end
 
-  create_table "snapshots", charset: "utf8mb4", force: :cascade do |t|
+  create_table "snapshots", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "mac_address"
     t.string "ip_address"
     t.string "hostname"
@@ -115,9 +106,17 @@ ActiveRecord::Schema[7.0].define(version: 2022_08_06_130659) do
     t.string "soc_temperature"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "streamer"
+    t.string "caption"
+    t.index ["created_at"], name: "index_snapshots_on_created_at"
+    t.index ["flash_size"], name: "index_snapshots_on_flash_size"
+    t.index ["ip_address"], name: "index_snapshots_on_ip_address"
+    t.index ["mac_address"], name: "index_snapshots_on_mac_address"
+    t.index ["sensor"], name: "index_snapshots_on_sensor"
+    t.index ["soc"], name: "index_snapshots_on_soc"
   end
 
-  create_table "socs", charset: "utf8mb4", force: :cascade do |t|
+  create_table "socs", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "vendor_id"
     t.string "family"
     t.string "model"
@@ -132,14 +131,13 @@ ActiveRecord::Schema[7.0].define(version: 2022_08_06_130659) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "urlname"
-    t.string "toolchain_filename"
     t.string "build_status_url"
     t.boolean "featured", default: false, null: false
     t.index ["urlname"], name: "index_socs_on_urlname", unique: true
     t.index ["vendor_id"], name: "index_socs_on_vendor_id"
   end
 
-  create_table "vendors", charset: "utf8mb4", force: :cascade do |t|
+  create_table "vendors", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
