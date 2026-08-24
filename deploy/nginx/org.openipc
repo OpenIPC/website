@@ -44,7 +44,7 @@ server {
     resolver 1.1.1.1;
 
     location /dl/ {
-        alias /srv/www/org-openipc/public/dl/;
+        alias /srv/www/shared/dl/;
         allow all;
     }
 
@@ -97,6 +97,22 @@ server {
         alias /srv/www/shared/files/;
     }
 
+    # config/routes.rb redirects this one to the CDN, and the /images/ alias
+    # below would otherwise swallow it: the file is not in that directory, so
+    # nginx answered 404 where the app meant to redirect. An exact-match
+    # location outranks a prefix one, so this reaches the app.
+    location = /images/logo_openipc.png {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Four legacy files from 2022-2023 that nothing on this site references --
+    # badges and logos embedded elsewhere. Still served out of the retired
+    # checkout because there is no copy under /srv/www/shared; moving them is a
+    # loose end, not a blocker.
     location /images/ {
         alias /srv/www/org-openipc/public/images/;
     }
