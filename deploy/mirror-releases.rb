@@ -41,6 +41,48 @@ ROOT = '/srv/github-releases'
 LOCK = '/run/lock/openipc-mirror-releases.lock'
 TMP_PREFIX = '.tmp-mirror-'
 
+# Generated here from the mirrored tarballs, not fetched. `.kernel.sizes` used
+# to be written alongside and was read by nothing, so it is gone; the prune
+# below removes the copy left on disk.
+MANIFESTS = { '.rootfs.sizes' => 'rootfs' }.freeze
+
+# What the site actually opens. Everything upstream publishes that is not here
+# is skipped, and removed if it is already on disk.
+#
+# An allowlist rather than a list of things to skip: a skip list has to grow
+# every time upstream adds a family, and nobody notices it has not until the
+# disk is full. The opposite failure -- a family we do want that nobody added
+# here -- is the one that bit `plain_filename?` above, so it is made loud
+# rather than left to chance: every skipped family is named in the run's log,
+# once, so a new one appears in the cron mail the morning it first ships.
+#
+# boot-*.bin is here although no SoC currently names one. It is the bootloader
+# under the name the newer parts use, it costs two megabytes, and guessing that
+# upstream will not start using it is the same guess this file already regrets
+# making once.
+CONSUMED = [
+  /\Aopenipc\..+\.tgz\z/,  # Firmware#generate: the kernel and rootfs members
+  /\Au-boot-.+\.bin\z/,     # Firmware#generate: written at offset 0
+  /\Aboot-.+\.bin\z/,       # the same, for parts that name it this way
+  /\Asizes\..+\.json\z/,   # BinariesController
+  /\A_manifest\.json\z/     # which build this is
+].freeze
+
+def consumed?(name)
+  CONSUMED.any? { |pattern| name.match?(pattern) }
+end
+
+# Files this script makes rather than mirrors.
+def ours?(name)
+  name == STATE_FILE || MANIFESTS.key?(name) || name.start_with?(TMP_PREFIX)
+end
+
+# The leading token, so a run reports "skipping 31 toolchain.*" rather than 31
+# lines -- and so a family nobody has seen before is still named.
+def family_of(name)
+  name[/\A[A-Za-z_]+[.-]/] || name
+end
+
 # What we last put on disk, as {name => {size, digest}}. Without it, telling a
 # rebuilt asset from the one already here means hashing 4.3 GB every hour.
 STATE_FILE = '.mirror-state.json'
@@ -117,11 +159,19 @@ def newest_assets
   releases = github.repos.releases.list('openipc', 'firmware',
                                         per_page: RELEASES_PER_PAGE)
   chosen = {}
+  # Names, not counts: an asset published by several releases must be counted
+  # once. `chosen` stays exactly the set we intend to mirror, because its keys
+  # are what the state file is pruned to and what the disk is pruned against.
+  skipped = {}
   releases.each do |release|
     release.assets.each do |asset|
       name = asset['name']
-      next if name.include?('sdk')
-      next if chosen.key?(name)
+      next if chosen.key?(name) || skipped.key?(name)
+
+      unless consumed?(name)
+        skipped[name] = family_of(name)
+        next
+      end
 
       unless plain_filename?(name)
         log "  refusing #{name.inspect} from #{release.tag_name}: not a plain filename"
@@ -137,6 +187,12 @@ def newest_assets
       }
     end
   end
+
+  log format('%d assets published, %d of them consumed here', chosen.size + skipped.size, chosen.size)
+  skipped.values.tally
+         .sort_by { |_, count| -count }
+         .each { |family, count| log format('  skipping %d %s* (nothing here reads them)', count, family) }
+
   chosen
 end
 
@@ -211,6 +267,37 @@ def member_size(tarball, needle)
   nil
 end
 
+# Anything in ROOT the site does not read and this script did not write.
+#
+# Two things end up here. Families skipped on purpose -- 3.1GB of toolchains,
+# the kconfig dumps -- and assets upstream has stopped publishing: 52
+# openipc-<soc>-<flash>-<release>.bin totalling 393MB, all last written
+# 2026-06-13 and carried by no release on the page any more. Without a prune
+# the directory only grows, because nothing here has ever taken a file away.
+#
+# Keyed on what the site reads, deliberately, and not on what upstream still
+# offers. The first attempt did the latter, and its dry run showed it taking
+# openipc.gk7205v210-nor-lite.tgz -- the seventh most requested SoC on the
+# site -- because that build had aged off the first page of releases. A stale
+# tarball still flashes a camera; a missing one is a broken download until
+# upstream happens to rebuild it. So a consumed asset is never removed here,
+# however old it gets.
+def prune
+  doomed = Dir.children(ROOT).reject { |name| consumed?(name) || ours?(name) }
+              .select { |name| File.file?(File.join(ROOT, name)) }
+  return if doomed.empty?
+
+  bytes = doomed.sum { |name| File.size(File.join(ROOT, name)) }
+  doomed.group_by { |name| family_of(name) }.sort_by { |_, names| -names.size }.each do |family, names|
+    log format('  %s %d %s* (%.1f MB)', DRY_RUN ? 'would remove' : 'removing', names.size, family,
+               names.sum { |n| File.size(File.join(ROOT, n)) } / 1048576.0)
+  end
+  return if DRY_RUN
+
+  doomed.each { |name| FileUtils.rm_f(File.join(ROOT, name)) }
+  log format('removed %d file(s), %.1f MB', doomed.size, bytes / 1048576.0)
+end
+
 def manifest_missing?(filename)
   path = File.join(ROOT, filename)
   !File.exist?(path) || File.size(path).zero?
@@ -228,8 +315,6 @@ def write_manifest(filename, needle)
   log "  wrote #{filename} (#{File.readlines(path).size} entries)"
 end
 
-MANIFESTS = { '.rootfs.sizes' => 'rootfs', '.kernel.sizes' => 'uImage' }.freeze
-
 with_lock do
   FileUtils.mkdir_p(ROOT)
 
@@ -244,16 +329,19 @@ with_lock do
   state = load_state
   assets = newest_assets
   wanted = assets.values.reject { |a| current?(File.join(ROOT, a[:name]), a, state) }
-  log "#{assets.size} assets published, #{wanted.size} to fetch"
+  log "#{wanted.size} to fetch"
 
   if DRY_RUN
     wanted.each { |a| log "  would fetch #{a[:name]} (#{a[:size]} bytes, #{a[:release]})" }
+    prune
     log 'dry run, nothing written'
     exit 0
   end
 
   fetched = wanted.count { |a| fetch(a, state) }
   log "fetched #{fetched} of #{wanted.size}"
+
+  prune
 
   # Forget assets the org no longer publishes, so the state file tracks the
   # release set rather than growing forever.
