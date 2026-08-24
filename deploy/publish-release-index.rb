@@ -120,10 +120,27 @@ def plain_filename?(name)
     !name.match?(/[[:cntrl:]]/)
 end
 
-# One page of releases, newest first. The rolling `nightly` and `latest` tags
-# sort first and carry the current build; older dated nightlies behind them
-# fill in assets those two happen not to publish.
-RELEASES_PER_PAGE = 30
+# Every release, newest first. The rolling `nightly` and `latest` tags sort
+# first and carry the current build; older dated nightlies behind them fill in
+# assets those two happen not to publish.
+#
+# All of them, not just the first page. Thirty releases was enough until it was
+# not: openipc.gk7205v210-nor-lite.tgz and openipc.xm550-nor-lite.tgz were last
+# built on 2026-06-06 and have since drifted past position 30, so they dropped
+# out of the index. While the mirror existed that was survivable -- the local
+# copy was still there and the app preferred it. With the mirror retired, an
+# asset missing from the index is a download the site refuses outright, and
+# both were still downloadable from GitHub the whole time. GK7205V210 is the
+# seventh most requested SoC here.
+#
+# Covering everything costs nothing: 65 releases is one request at 100 per
+# page, where 30 releases was one request at 30.
+RELEASES_PER_PAGE = 100
+
+# A backstop, not a policy. If the release list ever outgrows this, the run
+# still indexes what it fetched -- but it says so, rather than quietly
+# indexing a prefix, which is the failure this whole change exists to fix.
+MAX_RELEASE_PAGES = 10
 
 DRY_RUN = ARGV.include?('--dry-run')
 
@@ -194,23 +211,38 @@ end
 # that three attempts cannot overrun the hour between runs.
 API_RETRY_WAITS = [5, 15].freeze
 
-def releases_page
+def releases_page(page)
   attempt = 0
   begin
-    Github.new.repos.releases.list('openipc', 'firmware', per_page: RELEASES_PER_PAGE)
+    Github.new.repos.releases.list('openipc', 'firmware', per_page: RELEASES_PER_PAGE, page: page).to_a
   rescue StandardError => e
     wait = API_RETRY_WAITS[attempt]
     raise if wait.nil?
 
     attempt += 1
-    log "  releases list failed (#{e.class}: #{e.message.to_s.lines.first.to_s.strip}), retrying in #{wait}s"
+    log "  releases list page #{page} failed " \
+        "(#{e.class}: #{e.message.to_s.lines.first.to_s.strip}), retrying in #{wait}s"
     sleep wait
     retry
   end
 end
 
+# Pages until one comes back short, which is the end of the list.
+def all_releases
+  releases = []
+  (1..MAX_RELEASE_PAGES).each do |page|
+    batch = releases_page(page)
+    releases.concat(batch)
+    return releases if batch.size < RELEASES_PER_PAGE
+  end
+
+  log "  release list is still going after #{MAX_RELEASE_PAGES} pages; " \
+      "indexing the newest #{releases.size}"
+  releases
+end
+
 def newest_assets
-  releases = releases_page
+  releases = all_releases
   chosen = {}
   # Names, not counts: an asset published by several releases must be counted
   # once. `chosen` stays exactly the set we intend to mirror, because its keys
@@ -339,6 +371,29 @@ end
 # where they are cheap to check -- rather than following a URL handed over by
 # the API. Constructing beats validating.
 #
+# Names the last index carried that this run did not find.
+#
+# Silent until it happens, and worth breaking that silence: with the mirror
+# retired, a name leaving the index is a download that stops working, and the
+# only other way to notice is a user reporting it. Two ordinary causes -- the
+# release carrying an asset was deleted upstream, or the asset genuinely is no
+# longer built -- and one that is a bug here, an incomplete walk of the release
+# list. The log line does not distinguish them; it just makes the event visible.
+def report_dropped(assets)
+  path = File.join(ROOT, INDEX_FILE)
+  return unless File.exist?(path)
+
+  gone = JSON.parse(File.read(path)).fetch('assets', {}).keys - assets.keys
+  return if gone.empty?
+
+  log "#{gone.size} name(s) in the previous index are not in this one:"
+  gone.sort.each { |name| log "  dropped #{name}" }
+rescue JSON::ParserError, SystemCallError, IOError => e
+  # Never fatal. The index this run is about to write is the valuable output;
+  # failing to compare it with the last one is not worth losing that over.
+  log "  cannot read the previous index to compare: #{e.class}: #{e.message}"
+end
+
 # Written .tmp-then-rename so a reader never sees half an index.
 def write_index(assets)
   path = File.join(ROOT, INDEX_FILE)
@@ -433,6 +488,10 @@ with_lock do
 
   state = load_state
   assets = newest_assets
+
+  # Compared with the index still on disk, so it has to happen before the new
+  # one replaces it.
+  report_dropped(assets)
 
   # The index is the point of this script, and it is cheap. Written before
   # anything else, so a run that fails later still leaves it current.
