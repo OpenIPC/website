@@ -1,0 +1,117 @@
+
+server {
+    listen 80;
+    server_name dev.openipc.org;
+    #
+    access_log /var/log/nginx/org.openipc.dev.access.log;
+    error_log /var/log/nginx/org.openipc.dev.error.log info;
+
+    # limit_conn perip 10;
+
+    #
+    location ^~ /.well-known/acme-challenge {
+        proxy_redirect off;
+        default_type "text/plain";
+        alias   /var/lib/dehydrated/acme-challenges;
+        allow all;
+    }
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+
+server {
+    listen 443 ssl http2;
+    server_name dev.openipc.org;
+    #
+    access_log /var/log/nginx/org.openipc.dev.access.log;
+    error_log /var/log/nginx/org.openipc.dev.error.log info;
+    #
+    ssl_certificate /var/lib/dehydrated/certs/dev.openipc.org/fullchain.pem;
+    ssl_certificate_key /var/lib/dehydrated/certs/dev.openipc.org/privkey.pem;
+    #
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_dhparam /etc/ssl/certs/dhparam.pem;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_stapling off;
+    ssl_stapling_verify on;
+    ssl_session_tickets off;
+    add_header Strict-Transport-Security max-age=15768000;
+    resolver 1.1.1.1;
+
+   # Real staging site: the dev container on :3001, not a mirror of production.
+   auth_basic           "openipc.org staging";
+   auth_basic_user_file /etc/nginx/.htpasswd-dev;
+
+   add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+
+   # Assembled firmware images. Rails decides who may have one and names the
+   # file; nginx sends the bytes, so a slow client holds an nginx connection
+   # instead of one of Puma's sixteen threads.
+   #
+   # `internal` means this is reachable only through X-Accel-Redirect, never by
+   # asking for it. The browsable listing that used to be at /files/ goes with
+   # it: images are reached through the download action, which is what applies
+   # the flash-size and edition rules.
+   # Nothing serves /files/ any more. Without this the request falls through to
+   # the app, which serves public/ itself (RAILS_SERVE_STATIC_FILES=1), so every
+   # image would still be fetchable by name -- straight through a Puma thread,
+   # which is the cost handing them to nginx above exists to avoid.
+   location /files/ {
+       return 404;
+   }
+
+    # Only the action that produces a firmware image. NOT `location /`:
+    # proxy_set_header applies to everything a location serves, and
+    # Rack::Sendfile acts on any response whose body responds to to_path --
+    # which with RAILS_SERVE_STATIC_FILES=1 is every file under public/assets.
+    # Setting these globally answered every stylesheet with an X-Accel-Redirect
+    # to a path nginx has no location for, and took both sites down to unstyled
+    # text on 2026-08-24.
+    #
+    # No URI part on proxy_pass: nginx forbids one in a regex location, and the
+    # full original URI is what should reach the app anyway.
+    location ~ ^/cameras/vendors/[^/]+/socs/[^/]+/download_full_image {
+        proxy_buffer_size 128k;
+        proxy_buffers 8 128k;
+
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_set_header X-Sendfile-Type X-Accel-Redirect;
+        proxy_set_header X-Accel-Mapping /rails/public/files/=/protected-files/;
+
+        proxy_connect_timeout 120;
+        proxy_send_timeout 120;
+        proxy_read_timeout 180;
+    }
+
+   location /protected-files/ {
+       internal;
+       alias /srv/www/shared/dev-files/;
+   }
+
+   location / {
+        proxy_buffer_size 128k;
+        proxy_buffers 8 128k;
+
+        proxy_pass http://127.0.0.1:3001/;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 120;
+        proxy_send_timeout 120;
+        proxy_read_timeout 180;
+   }
+
+}
