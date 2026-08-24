@@ -150,10 +150,42 @@ end
 
 # The newest release that publishes each asset name wins. `list` returns
 # releases newest-first, so the first sighting of a name is the freshest.
+# The whole run turns on this one call, and it is the only part of the script
+# with no second chance: curl already retries a download three times, but a
+# release list that fails takes the index with it. Seen on 2026-08-24 --
+#
+#   GET https://api.github.com/repos/openipc/firmware/releases?per_page=30:
+#   504 - Gateway Time-out
+#
+# -- which was transient, and the next attempt succeeded. It was not the rate
+# limit; that showed 57 of 60 remaining.
+#
+# A stale index is harmless, because the app reads whatever is on disk and an
+# asset that has not changed is still addressed correctly by it. A missing one
+# is not, and once the mirror is retired the index is the only thing standing
+# between a visitor and a download.
+#
+# Waits of 5s and 15s: long enough for a gateway hiccup to pass, short enough
+# that three attempts cannot overrun the hour between runs.
+API_RETRY_WAITS = [5, 15].freeze
+
+def releases_page
+  attempt = 0
+  begin
+    Github.new.repos.releases.list('openipc', 'firmware', per_page: RELEASES_PER_PAGE)
+  rescue StandardError => e
+    wait = API_RETRY_WAITS[attempt]
+    raise if wait.nil?
+
+    attempt += 1
+    log "  releases list failed (#{e.class}: #{e.message.to_s.lines.first.to_s.strip}), retrying in #{wait}s"
+    sleep wait
+    retry
+  end
+end
+
 def newest_assets
-  github = Github.new
-  releases = github.repos.releases.list('openipc', 'firmware',
-                                        per_page: RELEASES_PER_PAGE)
+  releases = releases_page
   chosen = {}
   # Names, not counts: an asset published by several releases must be counted
   # once. `chosen` stays exactly the set we intend to mirror, because its keys
