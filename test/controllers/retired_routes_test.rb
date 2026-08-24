@@ -26,9 +26,10 @@ class RetiredRoutesTest < ActionDispatch::IntegrationTest
     assert_redirected_to '/'
   end
 
-  test 'an unmatched route is logged, not written into the served directory' do
+  test 'an unmatched route writes nothing into the served directory' do
     # public/notfound.txt used to collect every unmatched URL and its referer in
     # the directory the app serves, and answered 200 to anyone who asked for it.
+    # nginx's own log keeps that record, so nothing here replaces it.
     served = Rails.public_path.join('notfound.txt')
     FileUtils.rm_f(served)
 
