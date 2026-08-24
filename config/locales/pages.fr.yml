@@ -57,47 +57,14 @@ fr:
       development: Development
       title: Introduction
     majestic_endpoints:
-      aac: Flux audio AAC.
-      accepts_post: Accepte les requêtes POST avec un fichier audio comme paramètre.
-      alaw: Flux audio compressé conforme à la loi A.
-      audio: l'audio
-      dng: Instantané au format Adobe DNG (brut).
-      fmp4: Flux vidéo fMP4.
-      footnote_1: Uniquement les SoC HiSilicon et Goke.
-      footnote_2: Uniquement les SoC HiSilicon v2 et versions ultérieures.
-      footnote_3_html: Par exemple, <i>ffplay -ar 48000 -ac 1 -f s16le http://192.168.1.10/audio.pcm</i>
-      footnote_4_html: Par exemple <i>http://192.168.1.10/image.jpg?width=640&height=480&qfactor=50&color2gray=1&crop=80x32x512x400</i>
-      g711: Flux audio G.711 loi A.
-      heif: Instantané au format HEIF.
-      hls: Diffusion en direct HLS dans un navigateur Web.
-      images: Images fixes
-      jpeg: Instantané au format JPEG.
-      jpeg_params1: largeur, hauteur - taille de l'image résultante
-      jpeg_params2: qfactor - Facteur de qualité JPEG (1-99)
-      jpeg_params3: color2gray - convertir en niveaux de gris
-      jpeg_params4: recadrer - recadrer l'image résultante en 16x16x320x320
-      majestic_json: Configuration Majestic réelle au format JSON.
-      mjpeg: Flux vidéo MJPEG.
-      mjpeg_player: Diffusion en direct MJPEG et MP3 dans un navigateur Web.
-      monitoring: Surveillance
-      more_examples_html: Plus d'exemples disponibles <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">dans notre wiki</a> .
-      mp3: Flux audio MP3.
-      night: API de nuit
-      night_off: Désactivez le mode nuit.
-      night_on: Activez le mode nuit.
-      night_toggle: Basculer le mode nuit actuel.
-      optional_params: Paramètres facultatifs
-      opus: Flux audio Opus.
-      play_on_speaker: Lisez le fichier audio sur le haut-parleur de la caméra.
-      prometheus_html: Exportateur de nœuds pour <a href="https://prometheus.io/">Prometheus</a> .
-      raw_pcm: Flux audio PCM brut.
-      rtsp0: Flux principal RTSP (vidéo0).
-      rtsp1: Sous-flux RTSP (vidéo1).
-      title: Points de terminaison majestueux
-      ulaw: Flux audio compressé selon la loi µ.
-      video: Vidéo
-      webrtc: Diffusion en direct WebRTC dans un navigateur Web.
-      yuv420: Instantané au format YUV420.
+      moved_html: 'La liste des points de terminaison servis par votre caméra se trouve désormais dans l’interface web de la caméra elle-même, sur la page <b>Majestic Endpoints</b>. Ouvrez <code>http://&lt;adresse-de-la-caméra&gt;/</code> dans un navigateur et sélectionnez-la dans le menu.'
+      reason_address: 'l’adresse réelle de votre caméra y est renseignée, de sorte qu’une URL peut être copiée directement dans un lecteur ;'
+      reason_auth: 'elle indique si les points de terminaison demandent un mot de passe ou si l’authentification est entièrement désactivée.'
+      reason_scheme: 'le schéma correspond à votre installation, http ou https et ws ou wss ;'
+      see_webui: 'Voir l’interface web'
+      see_wiki: 'Majestic dans le wiki'
+      title: 'Majestic Endpoints'
+      why: 'Elle y est générée à partir du micrologiciel réellement en cours d’exécution, ce qu’une page de ce site ne peut pas faire :'
     merchandise:
       order_from_weededwords: Commandez sur WeededWords.com
       shirt_1:

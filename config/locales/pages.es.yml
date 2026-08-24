@@ -57,47 +57,14 @@ es:
       development: Development
       title: Introducción
     majestic_endpoints:
-      aac: Transmisión de audio AAC.
-      accepts_post: Acepta solicitudes POST con archivo de audio como parámetro.
-      alaw: Transmisión de audio comprimida según la ley A.
-      audio: Audio
-      dng: Instantánea en formato Adobe DNG (sin formato).
-      fmp4: Transmisión de vídeo fMP4.
-      footnote_1: Solo SoC HiSilicon y Goke.
-      footnote_2: Solo HiSilicon SoC v2 y superiores.
-      footnote_3_html: Por ejemplo <i>, ffplay -ar 48000 -ac 1 -f s16le http://192.168.1.10/audio.pcm</i>
-      footnote_4_html: Por ejemplo, <i>http://192.168.1.10/image.jpg?width=640&height=480&qfactor=50&color2gray=1&crop=80x32x512x400</i>
-      g711: Transmisión de audio de ley A G.711.
-      heif: Instantánea en formato HEIF.
-      hls: Transmisión en vivo de HLS en el navegador web.
-      images: Imágenes fijas
-      jpeg: Instantánea en formato JPEG.
-      jpeg_params1: 'ancho, alto: tamaño de la imagen resultante'
-      jpeg_params2: qfactor - factor de calidad JPEG (1-99)
-      jpeg_params3: color2gray - convertir a escala de grises
-      jpeg_params4: 'crop: recorta la imagen resultante como 16x16x320x320'
-      majestic_json: Configuración real de Majestic en formato JSON.
-      mjpeg: Transmisión de vídeo MJPEG.
-      mjpeg_player: Transmisión en vivo de MJPEG y MP3 en el navegador web.
-      monitoring: Supervisión
-      more_examples_html: Más ejemplos disponibles <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">en nuestra wiki</a> .
-      mp3: Transmisión de audio MP3.
-      night: API nocturna
-      night_off: Desactiva el modo nocturno.
-      night_on: Activa el modo nocturno.
-      night_toggle: Alternar el modo nocturno actual.
-      optional_params: Parámetros opcionales
-      opus: Transmisión de audio de obra.
-      play_on_speaker: Reproduzca archivos de audio en el altavoz de la cámara.
-      prometheus_html: Exportador de nodos para <a href="https://prometheus.io/">Prometheus</a> .
-      raw_pcm: Transmisión de audio PCM sin formato.
-      rtsp0: Transmisión principal RTSP (video0).
-      rtsp1: Subtransmisión RTSP (video1).
-      title: Puntos finales majestuosos
-      ulaw: Flujo de audio comprimido según la ley μ.
-      video: Video
-      webrtc: Transmisión en vivo WebRTC en el navegador web.
-      yuv420: Instantánea en formato YUV420.
+      moved_html: 'La lista de puntos de acceso que sirve su cámara ahora vive en la interfaz web de la propia cámara, en la página <b>Majestic Endpoints</b>. Abra <code>http://&lt;dirección-de-la-cámara&gt;/</code> en el navegador y elíjala en el menú.'
+      reason_address: 'aparece la dirección real de su cámara, de modo que una URL puede copiarse directamente a un reproductor;'
+      reason_auth: 'indica si los puntos de acceso piden contraseña o si la autenticación está desactivada por completo.'
+      reason_scheme: 'el esquema coincide con su configuración, http o https y ws o wss;'
+      see_webui: 'Ver la interfaz web'
+      see_wiki: 'Majestic en la wiki'
+      title: 'Majestic Endpoints'
+      why: 'Allí se genera a partir del firmware que realmente está en ejecución, algo que una página de este sitio no puede hacer:'
     merchandise:
       order_from_weededwords: Haga su pedido desde WeededWords.com
       shirt_1:

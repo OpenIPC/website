@@ -65,6 +65,22 @@ jobs:
           ruby-version: '3.1.7'
           bundler-cache: true
 
+      # app/assets/builds/ is gitignored, so a fresh checkout has no
+      # application.js and sprockets raises "the asset is not present in the
+      # asset pipeline" for any test that renders a page through the layout.
+      # Until this step existed the suite could only test redirects and
+      # exceptions. Node 20 + corepack + `yarn install --immutable` is what the
+      # Dockerfile does, so what builds here builds in the image.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Build the assets the layout references
+        run: |
+          corepack enable
+          yarn install --immutable
+          yarn build
+          yarn build:css
+
       # database.yml authenticates as www/www. Grant it globally rather than on
       # one schema: test_helper parallelizes, and each worker creates its own
       # openipc_test-N database.
