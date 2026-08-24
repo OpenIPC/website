@@ -112,18 +112,22 @@ class SocTest < ActiveSupport::TestCase
   # Upstream retires a chip by building the board it is identical to and
   # pointing the retired id at it. The site learns the map from the index.
 
-  def with_aliases(aliases)
+  def with_index(aliases: {}, assets: [])
     root = Dir.mktmpdir
     ENV['RELEASE_INDEX_ROOT'] = root
     File.write(File.join(root, '.index.json'),
-               JSON.generate('generated_at' => '2026-08-24T00:00:00Z',
-                             'aliases' => aliases, 'assets' => {}))
+               JSON.generate('generated_at' => '2026-08-24T00:00:00Z', 'aliases' => aliases,
+                             'assets' => assets.to_h { |n| [n, { 'size' => 1 }] }))
     ReleaseIndex.reset!
     yield
   ensure
     ENV.delete('RELEASE_INDEX_ROOT')
     ReleaseIndex.reset!
     FileUtils.remove_entry(root) if root
+  end
+
+  def with_aliases(aliases, &)
+    with_index(aliases: aliases, &)
   end
 
   test 'board follows the alias to the board upstream actually builds' do
@@ -181,5 +185,73 @@ class SocTest < ActiveSupport::TestCase
 
     ReleaseIndex.reset!
     assert_equal 'ts7205v210', soc.board
+  end
+
+  # --- what is missing, and saying which ---
+
+  test 'a SoC with firmware but no bootloader row reports exactly that' do
+    # Every Xiongmai part and the whole GK7102 family: OpenIPC builds firmware
+    # for them and publishes no u-boot, so the flash image cannot be assembled
+    # however much of the rest exists.
+    soc = Soc.create!(vendor: @vendor, model: 'TS550', uboot_filename: '',
+                      linux_filename: 'openipc.ts550-nor-lite.tgz')
+
+    with_index(assets: ['openipc.ts550-nor-lite.tgz']) do
+      assert_predicate soc, :firmware_published?
+      assert_not_predicate soc, :bootloader_published?
+    end
+  end
+
+  test 'a bootloader named but not published counts as missing' do
+    soc = Soc.create!(vendor: @vendor, model: 'TS3536DV100',
+                      uboot_filename: 'u-boot-ts3536dv100-universal.bin',
+                      linux_filename: 'openipc.ts3536dv100-nor-lite.tgz')
+
+    with_index(assets: ['openipc.ts3536dv100-nor-lite.tgz']) do
+      assert_not_predicate soc, :bootloader_published?
+    end
+  end
+
+  test 'both published is the ordinary answer' do
+    soc = Soc.create!(vendor: @vendor, model: 'TS3516EV200',
+                      uboot_filename: 'u-boot-ts3516ev200-universal.bin',
+                      linux_filename: 'openipc.ts3516ev200-nor-lite.tgz')
+
+    with_index(assets: ['openipc.ts3516ev200-nor-lite.tgz',
+                        'u-boot-ts3516ev200-universal.bin']) do
+      assert_predicate soc, :bootloader_published?
+      assert_predicate soc, :firmware_published?
+    end
+  end
+
+  test 'firmware_published? looks at every edition and flash type' do
+    # NAND-only and ultimate-only boards are both real, so asking about nor
+    # lite alone would call them unsupported.
+    soc = Soc.create!(vendor: @vendor, model: 'TS3519DV500',
+                      linux_filename: 'openipc.ts3519dv500-nor-lite.tgz')
+
+    with_index(assets: ['openipc.ts3519dv500-nand-ultimate.tgz']) do
+      assert_predicate soc, :firmware_published?
+    end
+  end
+
+  test 'no index never claims a bootloader is missing' do
+    # Not being able to see the index is not evidence of absence, and telling a
+    # visitor their SoC has no bootloader on that basis would be worse than
+    # saying nothing.
+    soc = Soc.create!(vendor: @vendor, model: 'TS3516EV200',
+                      uboot_filename: 'u-boot-ts3516ev200-universal.bin',
+                      linux_filename: 'openipc.ts3516ev200-nor-lite.tgz')
+
+    ReleaseIndex.reset!
+    assert_predicate soc, :bootloader_published?
+  end
+
+  test 'a blank bootloader column is missing whatever the index says' do
+    soc = Soc.create!(vendor: @vendor, model: 'TS550', uboot_filename: '',
+                      linux_filename: 'openipc.ts550-nor-lite.tgz')
+
+    ReleaseIndex.reset!
+    assert_not_predicate soc, :bootloader_published?
   end
 end

@@ -29,6 +29,7 @@ pl:
         for: dla %{name}
         generate_button: Wygeneruj podręcznik instalacji
         generate_mac: Wygeneruj prawidłowy losowy adres MAC.
+        no_bootloader_alert: OpenIPC publikuje oprogramowanie dla %{name}, ale nie publikuje dla niego bootloadera. Zarówno instalacja krok po kroku, jak i gotowy obraz pamięci flash zaczynają się od zapisania bootloadera OpenIPC, więc dla tego układu SoC nie można zaoferować żadnego z nich. Pakiet oprogramowania poniżej to ta część, która istnieje.
         not_ready_alert_html: Instrukcje instalacji SoC %{name} nie są jeszcze gotowe. Chociaż ciężko pracujemy nad wydaniem oprogramowania sprzętowego OpenIPC dla %{name}. Bądź na bieżąco i <a href="/support-open-source">wspieraj Open Source</a> .
         notes: Notatki
         paragraph1: Wprowadź konfigurację kamery w dostępnym formularzu i naciśnij przycisk „Generuj instrukcję instalacji”. Na następnej stronie znajdziesz pliki binarne i polecenia, które należy wykonać, aby zainstalować oprogramowanie OpenIPC w kamerze.

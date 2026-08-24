@@ -147,8 +147,14 @@ module Cameras
       # Upstream does not publish this asset. The name came from the SoC's
       # uboot_filename or linux_filename, so this is a record naming a build
       # that does not exist rather than anything the visitor did.
+      #
+      # Which of the two is missing is worth saying. For every Xiongmai SoC and
+      # the whole GK7102 family it is the bootloader, permanently -- firmware
+      # for them is published and linked on the SoC page -- and "this firmware
+      # does not exist" sends that visitor looking for a fault that is not
+      # there.
       Rails.logger.warn "full image has no upstream asset for #{params[:id]}: #{e.message}"
-      flash.alert = 'This firmware does not exist.'
+      flash.alert = missing_asset_message(@soc)
       redirect_back(fallback_location: '/')
     rescue ReleaseCache::Unavailable => e
       # It exists but cannot be had right now -- GitHub is unreachable, or the
@@ -178,6 +184,26 @@ module Cameras
     end
 
     private
+
+    # Which half is missing, in the visitor's terms.
+    #
+    # "This firmware does not exist" was the answer to all three, and for two
+    # of them it is both untrue and unactionable: firmware for the SoC exists,
+    # is published, and is linked on the page they came from.
+    def missing_asset_message(soc)
+      return 'This firmware does not exist.' if soc.nil?
+
+      if !soc.firmware_published?
+        'OpenIPC does not publish firmware for this SoC yet.'
+      elsif !soc.bootloader_published?
+        'OpenIPC does not publish a bootloader for this SoC, so a full flash image cannot be ' \
+          'assembled for it. The firmware bundle on the SoC page is published and can be ' \
+          'installed with the bootloader your camera already has.'
+      else
+        # Both halves exist; this edition or flash type is the part that does not.
+        'This firmware does not exist.'
+      end
+    end
 
     def permitted_params
       params.require(:camera).permit(

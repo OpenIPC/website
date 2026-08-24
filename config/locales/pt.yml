@@ -29,6 +29,7 @@ pt:
         for: para %{name}
         generate_button: Gerar guia de instalação
         generate_mac: Gere um endereço MAC aleatório válido.
+        no_bootloader_alert: A OpenIPC publica firmware para o %{name}, mas não um bootloader para ele. Tanto a instalação guiada como a imagem de flash pronta a usar começam por gravar um bootloader OpenIPC, pelo que nenhuma das duas pode ser oferecida para este SoC. O pacote de firmware abaixo é a parte que de facto existe.
         not_ready_alert_html: As instruções de instalação do SoC %{name} ainda não estão prontas. Embora estejamos trabalhando duro para lançar o firmware OpenIPC para o %{name}. Fique atento e <a href="/support-open-source">apoie o Open Source</a> .
         notes: Notas
         paragraph1: Insira a configuração da câmera no formulário fornecido e pressione o botão "Gerar Guia de Instalação". Na próxima página você encontrará os arquivos binários e os comandos que deve executar para a instalação do firmware OpenIPC na câmera.
