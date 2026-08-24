@@ -72,20 +72,47 @@ class Soc < ApplicationRecord
   end
 
   def kernel_file
-    @kernel_file ||= "uImage.#{model_downcase}"
+    @kernel_file ||= "uImage.#{board}"
   end
 
-  def linux_file(release, flash_type)
-    soc_name = model.downcase
-    soc_name = 't31' if soc_name.start_with?('t31')
-    soc_name = 't40' if soc_name.start_with?('t40')
-    linux_filename = "openipc.#{soc_name}-#{flash_type}-#{release}.tgz"
+  # The board a firmware is built for, which is not always the SoC model.
+  # Ingenic ships one build per family (T31X, T31N and the rest all flash
+  # openipc.t31-*), Goke does the same across the GK7102 variants, and
+  # AK3916EV301 runs the AK3918EV200 build outright. None of that is derivable
+  # from the model string, so it is read out of linux_filename, which carries
+  # the name upstream actually publishes.
+  #
+  # This used to be guessed as model.downcase with hardcoded exceptions for
+  # t31 and t40 only. T23N therefore asked for openipc.t23n-nor-lite.tgz, a
+  # file that has never existed -- 31 of the 99 failed firmware downloads in a
+  # fortnight, the largest single cause. T30L was the same bug.
+  BOARD_FROM_FILENAME = /\Aopenipc\.(.+)-(?:nor|nand)-[a-z0-9]+\.tgz\z/
 
-    @linux_file ||= File.join(RELEASES_ROOT, linux_filename)
+  # Families that ship one build for every model in them. Only consulted when
+  # linux_filename cannot answer; it covers more cases than this list can.
+  FAMILY_BUILDS = %w[t31 t40 t30 t23].freeze
+
+  def board
+    @board ||= linux_filename.to_s[BOARD_FROM_FILENAME, 1] || family_board
+  end
+
+  # Reached when linux_filename is blank or still in the pre-2023
+  # openipc.<soc>-br.tgz scheme, which is what db/seeds.rb carries for all 48
+  # of its entries. Production rows are all on the current scheme, but a fresh
+  # install has no modern name to read, so dropping this rule would have T31X
+  # ask for a t31x build that upstream has never published.
+  def family_board
+    FAMILY_BUILDS.find { |family| model_downcase.start_with?(family) } || model_downcase
+  end
+
+  # Not memoised: it takes arguments, and `@linux_file ||=` returned the first
+  # call's path for every later one regardless of what was asked for.
+  def linux_file(release, flash_type)
+    File.join(RELEASES_ROOT, "openipc.#{board}-#{flash_type}-#{release}.tgz")
   end
 
   def rootfs_file
-    @rootfs_file ||= "rootfs.squashfs.#{model_downcase}"
+    @rootfs_file ||= "rootfs.squashfs.#{board}"
   end
 
   def uboot_file

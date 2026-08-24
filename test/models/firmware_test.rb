@@ -5,15 +5,20 @@ require 'rubygems/package'
 require 'zlib'
 require 'tmpdir'
 require 'benchmark'
+require 'minitest/mock'
 
 class FirmwareTest < ActiveSupport::TestCase
   StubVendor = Struct.new(:name)
 
   class StubSoc
-    attr_reader :model_downcase, :vendor, :uboot_file
+    attr_reader :model_downcase, :vendor, :uboot_file, :board
 
-    def initialize(model:, vendor:, uboot_file:, linux_file:)
+    # board defaults to the model because for most SoCs they are the same. The
+    # ones where they are not -- T23N on the t23 build, the GK7102 variants,
+    # AK3916EV301 on the AK3918EV200 build -- are what Soc#board exists for.
+    def initialize(model:, vendor:, uboot_file:, linux_file:, board: nil)
       @model_downcase = model
+      @board = board || model
       @vendor = StubVendor.new(vendor)
       @uboot_file = uboot_file
       @linux_file = linux_file
@@ -55,13 +60,20 @@ class FirmwareTest < ActiveSupport::TestCase
     @uboot_path ||= File.join(@dir, 'u-boot.bin').tap { |p| IO.binwrite(p, UBOOT) }
   end
 
-  def build(model:, vendor:, members:, flash_type:, size:, release: 'ultimate')
-    soc = StubSoc.new(model: model, vendor: vendor, uboot_file: uboot_path,
-                      linux_file: write_tgz("openipc.#{model}-#{flash_type}-#{release}.tgz", members))
+  def build(model:, vendor:, members:, flash_type:, size:, release: 'ultimate', board: nil)
+    soc = StubSoc.new(model: model, vendor: vendor, board: board, uboot_file: uboot_path,
+                      linux_file: write_tgz("openipc.#{board || model}-#{flash_type}-#{release}.tgz", members))
     fw = Firmware.new(size: size, flash_type: flash_type, release: release, soc: soc)
     @generated << fw.filepath
+    @generated << File.join(File.dirname(fw.filepath), ".#{fw.filename}.lock")
     FileUtils.rm_f(fw.filepath)
     fw
+  end
+
+  # Half-built images are named for their target, so a leftover is attributable
+  # to one build rather than to the suite as a whole.
+  def leftover_temp_files(firmware)
+    Dir.glob(File.join(File.dirname(firmware.filepath), ".tmp-#{firmware.filename}-*"))
   end
 
   # --- filename ---
@@ -207,5 +219,194 @@ class FirmwareTest < ActiveSupport::TestCase
     fw.generate
 
     assert_equal KERNEL, IO.binread(fw.filepath)[0x100000, KERNEL.bytesize]
+  end
+
+  # --- the board is not always the model ---
+
+  test 'members are named for the board rather than the model' do
+    # T23N flashes the t23 build: the tarball holds uImage.t23 and
+    # rootfs.squashfs.t23. Asking for uImage.t23n found nothing, which is where
+    # 31 of the 99 failed downloads in a fortnight came from.
+    fw = build(model: 't23n', board: 't23', vendor: 'Ingenic', flash_type: 'nor', size: 8,
+               release: 'lite',
+               members: { 'uImage.t23' => KERNEL, 'rootfs.squashfs.t23' => SQUASHFS })
+    fw.generate
+
+    assert_equal 8.megabytes, File.size(fw.filepath)
+    assert_equal KERNEL, IO.binread(fw.filepath)[0x50000, KERNEL.bytesize]
+    assert_equal 'openipc-t23n-nor-lite-8mb.bin', fw.filename,
+                 'the download is still named for the SoC the user chose'
+  end
+
+  test 'a nand board build takes rootfs.ubi named for the board' do
+    fw = build(model: 't31x', board: 't31', vendor: 'Ingenic', flash_type: 'nand', size: 128,
+               members: { 'uImage.t31' => KERNEL, 'rootfs.ubi.t31' => UBI })
+    fw.generate
+
+    assert_equal UBI, IO.binread(fw.filepath)[0x400000, UBI.bytesize]
+  end
+
+  # --- a part too big for its slot ---
+
+  test 'a rootfs too large for the flash is refused rather than written past the end' do
+    # openipc-hi3516ev200-nor-ultimate-8mb.bin was found in the production
+    # cache at 9,465,856 bytes -- 0x250000 plus a 7MB Ultimate rootfs, in a
+    # file whose name promises 8MB. IO.binwrite past the end grows the file
+    # instead of failing, so nothing objected.
+    oversize = "\xC3".b * (8.megabytes - 0x250000 + 1)
+    fw = build(model: 'hi3516ev200', vendor: 'HiSilicon', flash_type: 'nor', size: 8,
+               members: { 'uImage.hi3516ev200' => KERNEL, 'rootfs.squashfs.hi3516ev200' => oversize })
+
+    error = assert_raises(Firmware::PayloadTooLarge) { fw.generate }
+    assert_match(/rootfs/, error.message)
+    assert_not File.exist?(fw.filepath), 'an image larger than its flash must not be left to be served'
+  end
+
+  test 'a rootfs that exactly fills the flash is still built' do
+    exact = "\xC3".b * (8.megabytes - 0x250000)
+    fw = build(model: 'hi3516ev200', vendor: 'HiSilicon', flash_type: 'nor', size: 8,
+               members: { 'uImage.hi3516ev200' => KERNEL, 'rootfs.squashfs.hi3516ev200' => exact })
+    fw.generate
+
+    assert_equal 8.megabytes, File.size(fw.filepath)
+  end
+
+  test 'a kernel that would run into the rootfs is refused' do
+    oversize = "\xA5".b * (0x250000 - 0x50000 + 1)
+    fw = build(model: 'hi3516ev200', vendor: 'HiSilicon', flash_type: 'nor', size: 8,
+               members: { 'uImage.hi3516ev200' => oversize, 'rootfs.squashfs.hi3516ev200' => SQUASHFS })
+
+    error = assert_raises(Firmware::PayloadTooLarge) { fw.generate }
+    assert_match(/kernel/, error.message)
+    assert_not File.exist?(fw.filepath)
+  end
+
+  # --- publishing ---
+
+  test 'a failed build leaves neither an image nor a temporary file behind' do
+    oversize = "\xC3".b * (8.megabytes - 0x250000 + 1)
+    fw = build(model: 'hi3516cv300', vendor: 'HiSilicon', flash_type: 'nor', size: 8,
+               members: { 'uImage.hi3516cv300' => KERNEL, 'rootfs.squashfs.hi3516cv300' => oversize })
+
+    assert_raises(Firmware::PayloadTooLarge) { fw.generate }
+    assert_not File.exist?(fw.filepath)
+    assert_empty leftover_temp_files(fw), 'a half-built image was left in the served directory'
+  end
+
+  test 'the image is built beside its destination so publishing is a rename' do
+    # In the container Dir.tmpdir is the overlay and public/files is a bind
+    # mount, so building in Dir.tmpdir made FileUtils.mv fall back to
+    # copy-then-unlink -- writing megabytes into the live filename, where a
+    # concurrent request could be served the partial result.
+    fw = build(model: 'hi3518ev300', vendor: 'HiSilicon', flash_type: 'nor', size: 8,
+               members: { 'uImage.hi3518ev300' => KERNEL, 'rootfs.squashfs.hi3518ev300' => SQUASHFS })
+
+    seen = []
+    original = Tempfile.method(:create)
+    Tempfile.stub(:create, lambda { |basename, dir = nil|
+      seen << dir
+      original.call(basename, dir || Dir.tmpdir)
+    }) { fw.generate }
+
+    assert_equal [File.dirname(fw.filepath)], seen,
+                 'the temporary file must share a filesystem with the destination'
+    assert_equal 8.megabytes, File.size(fw.filepath)
+  end
+
+  test 'an abandoned build is cleared by the next build of the same image' do
+    # A SIGKILL or an OOM leaves the temporary file behind: no rescue and no
+    # ensure runs. Debris used to land in Dir.tmpdir, which the container
+    # discards on restart; it now lands in the directory nginx serves and
+    # nothing prunes, so the next build has to clear it.
+    fw = build(model: 'hi3516cv500', vendor: 'HiSilicon', flash_type: 'nor', size: 8, release: 'lite',
+               members: { 'uImage.hi3516cv500' => KERNEL, 'rootfs.squashfs.hi3516cv500' => SQUASHFS })
+    FileUtils.mkdir_p File.dirname(fw.filepath)
+    abandoned = File.join(File.dirname(fw.filepath), ".tmp-#{fw.filename}-orphan.bin")
+    IO.binwrite(abandoned, 'partial')
+
+    fw.generate
+
+    assert_not File.exist?(abandoned), 'an abandoned build was left in the served directory'
+    assert_empty leftover_temp_files(fw)
+    assert_equal 8.megabytes, File.size(fw.filepath)
+  end
+
+  test 'a build interrupted by a signal does not leave a partial image behind' do
+    fw = build(model: 'ssc335', vendor: 'SigmaStar', flash_type: 'nor', size: 8, release: 'lite',
+               members: { 'uImage.ssc335' => KERNEL, 'rootfs.squashfs.ssc335' => SQUASHFS })
+
+    # Interrupt is not a StandardError, so `rescue StandardError` would have
+    # let it through with the temporary file still on disk.
+    File.stub(:rename, ->(*) { raise Interrupt }) do
+      assert_raises(Interrupt) { fw.generate }
+    end
+
+    assert_not File.exist?(fw.filepath)
+    assert_empty leftover_temp_files(fw), 'the interrupted build was left behind'
+  end
+
+  test 'a cached image that is not its declared size is rebuilt, not served' do
+    # openipc-hi3516ev200-nor-ultimate-8mb.bin sat in the production cache at
+    # 9,465,856 bytes. public/files is a host mount that outlives deploys and
+    # nothing prunes it, so a check on mtimes alone would have gone on serving
+    # it until its source tarball happened to change.
+    fw = build(model: 'hi3516dv100', vendor: 'HiSilicon', flash_type: 'nor', size: 8, release: 'lite',
+               members: { 'uImage.hi3516dv100' => KERNEL, 'rootfs.squashfs.hi3516dv100' => SQUASHFS })
+    FileUtils.mkdir_p File.dirname(fw.filepath)
+    IO.binwrite(fw.filepath, "\x00".b * (8.megabytes + 1024))
+    FileUtils.touch(fw.filepath)
+
+    fw.generate
+
+    assert_equal 8.megabytes, File.size(fw.filepath), 'the oversized cache entry was served instead of rebuilt'
+    assert_equal SQUASHFS, IO.binread(fw.filepath)[0x250000, SQUASHFS.bytesize]
+  end
+
+  test 'a second generate reuses the cached image instead of rebuilding it' do
+    fw = build(model: 'ssc337', vendor: 'SigmaStar', flash_type: 'nor', size: 8, release: 'lite',
+               members: { 'uImage.ssc337' => KERNEL, 'rootfs.squashfs.ssc337' => SQUASHFS })
+    fw.generate
+    first = File.mtime(fw.filepath)
+
+    fw.generate
+    assert_equal first, File.mtime(fw.filepath), 'a fresh image was rebuilt anyway'
+  end
+
+  # --- concurrency ---
+
+  test 'concurrent requests for one image produce a single complete file' do
+    members = { 'uImage.gk7205v300' => KERNEL, 'rootfs.squashfs.gk7205v300' => SQUASHFS }
+    builders = Array.new(4) do
+      build(model: 'gk7205v300', vendor: 'Goke', flash_type: 'nor', size: 16, release: 'lite',
+            members: members)
+    end
+    FileUtils.rm_f(builders.first.filepath)
+
+    builders.map { |fw| Thread.new { fw.generate } }.each(&:join)
+
+    path = builders.first.filepath
+    assert_equal 16.megabytes, File.size(path), 'the published image is not a whole image'
+    assert_equal KERNEL, IO.binread(path)[0x50000, KERNEL.bytesize]
+    assert_equal SQUASHFS, IO.binread(path)[0x350000, SQUASHFS.bytesize]
+    assert_empty leftover_temp_files(builders.first)
+  end
+
+  test 'a build waiting on a stuck holder gives up rather than holding the thread' do
+    fw = build(model: 'ssc325', vendor: 'SigmaStar', flash_type: 'nor', size: 8, release: 'lite',
+               members: { 'uImage.ssc325' => KERNEL, 'rootfs.squashfs.ssc325' => SQUASHFS })
+    lock_path = File.join(File.dirname(fw.filepath), ".#{fw.filename}.lock")
+    FileUtils.mkdir_p(File.dirname(lock_path))
+
+    holder = File.open(lock_path, File::CREAT | File::RDWR, 0o644)
+    holder.flock(File::LOCK_EX)
+    previous = Firmware.lock_timeout
+    Firmware.lock_timeout = 0.3
+    begin
+      assert_raises(Firmware::LockTimeout) { fw.generate }
+    ensure
+      Firmware.lock_timeout = previous
+      holder.flock(File::LOCK_UN)
+      holder.close
+    end
   end
 end
