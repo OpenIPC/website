@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_05_07_193639) do
+ActiveRecord::Schema[7.0].define(version: 2026_08_24_160000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -63,6 +63,19 @@ ActiveRecord::Schema[7.0].define(version: 2023_05_07_193639) do
     t.index ["email"], name: "index_admins_on_email", unique: true
     t.index ["reset_password_token"], name: "index_admins_on_reset_password_token", unique: true
     t.index ["unlock_token"], name: "index_admins_on_unlock_token", unique: true
+  end
+
+  create_table "downloads", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
+    t.bigint "soc_id"
+    t.string "soc_model", null: false
+    t.string "flash_type", null: false
+    t.string "release", null: false
+    t.integer "flash_size"
+    t.integer "bytes"
+    t.datetime "created_at", null: false
+    t.index ["created_at"], name: "index_downloads_on_created_at"
+    t.index ["soc_id"], name: "index_downloads_on_soc_id"
+    t.index ["soc_model", "created_at"], name: "index_downloads_on_soc_model_and_created_at"
   end
 
   create_table "sensors", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|

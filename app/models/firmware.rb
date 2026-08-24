@@ -74,6 +74,15 @@ class Firmware
     @flash_type.to_s.eql?('nand')
   end
 
+  # What this was asked to build, for the record kept of it. Read rather than
+  # re-derived by the caller, so the two cannot disagree about which image was
+  # actually sent.
+  attr_reader :flash_type, :release
+
+  def flash_size
+    @size
+  end
+
   def generate
     validate_size!
 

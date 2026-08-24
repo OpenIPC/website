@@ -44,6 +44,18 @@ docker run --rm \
   bundle exec rails runner 'puts "purged #{PurgeImagesJob.new.perform} snapshots"' \
   || { log "FAILED: purge job errored"; exit 1; }
 
+# Download rows, past their window. A row is about 60 bytes and the site sends
+# roughly eighty images a day, so two years of them is a few megabytes -- the
+# point of the window is not space but that a record of who fetched what should
+# not be kept for ever. Same container, same run, so it costs nothing extra.
+log "retiring download rows older than ${DOWNLOAD_RETENTION_DAYS:-730} days"
+docker run --rm \
+  --env-file /srv/www/.env.prod \
+  -v /run/mysqld:/run/mysqld \
+  "ghcr.io/openipc/website:${IMAGE_TAG}" \
+  bundle exec rails runner "puts %(retired #{Download.where('created_at < ?', ${DOWNLOAD_RETENTION_DAYS:-730}.days.ago).delete_all} download rows)" \
+  || log "WARNING: download retention errored, continuing"
+
 # Belt and braces. The purge path is fixed, but a sweep is cheap and any orphan
 # that does appear is otherwise unreachable forever.
 log "sweeping orphans"
