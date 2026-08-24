@@ -107,8 +107,16 @@ class Soc < ApplicationRecord
 
   # Not memoised: it takes arguments, and `@linux_file ||=` returned the first
   # call's path for every later one regardless of what was asked for.
+  # The name upstream publishes for this board, edition and flash type. Split
+  # out from linux_file because composing a name and finding the file are two
+  # different questions: the first is pure and worth testing on its own, the
+  # second reaches a disk or the network.
+  def linux_filename_for(release, flash_type)
+    "openipc.#{board}-#{flash_type}-#{release}.tgz"
+  end
+
   def linux_file(release, flash_type)
-    File.join(RELEASES_ROOT, "openipc.#{board}-#{flash_type}-#{release}.tgz")
+    release_asset linux_filename_for(release, flash_type)
   end
 
   def rootfs_file
@@ -116,7 +124,68 @@ class Soc < ApplicationRecord
   end
 
   def uboot_file
-    @uboot_file ||= File.join(RELEASES_ROOT, uboot_filename)
+    @uboot_file ||= release_asset(uboot_filename)
+  end
+
+  # Where an upstream asset can be read from.
+  #
+  # RELEASE_MIRROR_ROOT names the directory the hourly cron fills. While it is
+  # set and holds the file, it wins: that is how this was cut over, and how it
+  # is cut back if the cache turns out to be a mistake -- one line of
+  # environment and a restart, no deploy.
+  #
+  # Without it, or for a file the mirror does not have, ReleaseCache fetches it
+  # on demand. That raises rather than returning a path to nothing:
+  # UnknownAsset for a name upstream is not publishing, Unavailable when it
+  # cannot be had right now. Cameras::SocsController answers for both.
+  def release_asset(name)
+    plain_asset_name!(name)
+
+    root = ENV['RELEASE_MIRROR_ROOT'].presence
+    if root
+      mirrored = File.join(root, name)
+      return mirrored if File.exist?(mirrored) && within?(root, mirrored)
+    end
+
+    ReleaseCache.path(name)
+  end
+
+  # uboot_filename and linux_filename are columns an admin edits, and both end
+  # up here. The cache branch refuses a name that is not in the release index,
+  # but the mirror branch has no index to consult, so it needs its own answer:
+  # without one, uboot_filename of "../../../etc/passwd" resolves outside the
+  # mirror root, Firmware#assemble reads it as the bootloader, and
+  # download_full_image sends the result.
+  #
+  # The rule is the one deploy/mirror-releases.rb applies at the other end --
+  # unchanged by basename, so no separators and no ".." or "."; no leading dot,
+  # so nothing collides with the index or the state file; no control
+  # characters. Structural rather than a list of permitted characters, for the
+  # reason recorded there: guessing at the character set upstream is allowed to
+  # use is how you refuse files you meant to keep.
+  def plain_asset_name!(name)
+    value = name.to_s
+    # Control characters first, and not merely for tidiness: a NUL is one, and
+    # File.basename raises ArgumentError on a string containing one rather than
+    # returning something to compare. Checking here means the cheap test
+    # rejects it before any path arithmetic sees it.
+    ok = !value.empty? &&
+         !value.match?(/[[:cntrl:]]/) &&
+         value == File.basename(value) &&
+         !value.start_with?('.')
+    return if ok
+
+    raise ReleaseCache::UnknownAsset, "#{value.inspect} is not a plain asset name"
+  rescue ArgumentError
+    # Whatever else File.basename dislikes about it, the answer is the same.
+    raise ReleaseCache::UnknownAsset, "#{value.inspect} is not a plain asset name"
+  end
+
+  # Belt and braces behind the check above: whatever File.join produced has to
+  # sit under the root it was joined to.
+  def within?(root, path)
+    base = File.expand_path(root)
+    File.expand_path(path).start_with?("#{base}/")
   end
 
   def full_firmware_path

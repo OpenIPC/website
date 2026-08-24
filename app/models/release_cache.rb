@@ -89,6 +89,13 @@ class ReleaseCache
       fetch(entry, blob)
     end
     blob
+  rescue SystemCallError, IOError => e
+    # The cache root is a mount, so it can be absent, root-owned, read-only or
+    # full -- and the first of those is exactly what a cutover gets wrong.
+    # Network and index failures already arrive as Unavailable; local ones
+    # should say the same thing rather than becoming a 500, because "try again
+    # shortly" is as true of a full disk as of an unreachable GitHub.
+    raise Unavailable, "release cache at #{self.class.root}: #{e.class}: #{e.message}"
   end
 
   private

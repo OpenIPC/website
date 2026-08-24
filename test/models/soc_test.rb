@@ -56,8 +56,7 @@ class SocTest < ActiveSupport::TestCase
     soc = Soc.create!(vendor: @vendor, model: 'T23N',
                       linux_filename: 'openipc.t23-nor-lite.tgz')
     assert_equal 't23', soc.board
-    assert_equal '/srv/github-releases/openipc.t23-nor-lite.tgz',
-                 soc.linux_file('lite', 'nor')
+    assert_equal 'openipc.t23-nor-lite.tgz', soc.linux_filename_for('lite', 'nor')
   end
 
   test 'board handles a build named for something other than the family' do
@@ -103,11 +102,8 @@ class SocTest < ActiveSupport::TestCase
     soc = Soc.create!(vendor: @vendor, model: 'TS3519DV500',
                       linux_filename: 'openipc.ts3519dv500-nor-lite.tgz')
 
-    assert_equal '/srv/github-releases/openipc.ts3519dv500-nor-lite.tgz',
-                 soc.linux_file('lite', 'nor')
-    assert_equal '/srv/github-releases/openipc.ts3519dv500-nor-ultimate.tgz',
-                 soc.linux_file('ultimate', 'nor')
-    assert_equal '/srv/github-releases/openipc.ts3519dv500-nand-ultimate.tgz',
-                 soc.linux_file('ultimate', 'nand')
+    assert_equal 'openipc.ts3519dv500-nor-lite.tgz', soc.linux_filename_for('lite', 'nor')
+    assert_equal 'openipc.ts3519dv500-nor-ultimate.tgz', soc.linux_filename_for('ultimate', 'nor')
+    assert_equal 'openipc.ts3519dv500-nand-ultimate.tgz', soc.linux_filename_for('ultimate', 'nand')
   end
 end

@@ -140,6 +140,20 @@ module Cameras
       Rails.logger.warn "full image unavailable for #{params[:id]}: #{e.message}"
       flash.alert = 'This firmware does not exist.'
       redirect_back(fallback_location: '/')
+    rescue ReleaseCache::UnknownAsset => e
+      # Upstream does not publish this asset. The name came from the SoC's
+      # uboot_filename or linux_filename, so this is a record naming a build
+      # that does not exist rather than anything the visitor did.
+      Rails.logger.warn "full image has no upstream asset for #{params[:id]}: #{e.message}"
+      flash.alert = 'This firmware does not exist.'
+      redirect_back(fallback_location: '/')
+    rescue ReleaseCache::Unavailable => e
+      # It exists but cannot be had right now -- GitHub is unreachable, or the
+      # bytes did not match what the index promised. Saying so is better than
+      # claiming it does not exist, because retrying is the right advice.
+      Rails.logger.error "full image unavailable for #{params[:id]}: #{e.message}"
+      flash.alert = 'This firmware could not be fetched right now. Please try again in a few minutes.'
+      redirect_back(fallback_location: '/')
     rescue Firmware::LockTimeout => e
       # Another request has been building this image for a minute. Saying so is
       # better than reporting it missing, because retrying will work.
