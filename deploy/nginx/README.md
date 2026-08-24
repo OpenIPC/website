@@ -105,8 +105,14 @@ serving traffic when the app moved into a container. Two did until 2026-08-24:
 directory that exists nowhere else. Both would have gone missing on a rebuilt
 host.
 
-`/images/` holds four files from 2022-2023 — badges and logos embedded on pages
-this project does not control. Nothing on this site references them.
+`/images/` holds four files from 2022–2023 — badges and logos embedded on pages
+this project does not control. Nothing on this site references them, so nobody
+here would notice them vanishing.
+
+They live in the repository under `deploy/legacy-images` and `deploy.sh`
+installs them on every deploy. Moving them into `/srv/www/shared` alone was not
+enough: that directory is host-only and in no backup, so a host rebuilt from
+`deploy/RESTORE.md` would still have served 404s for URLs published years ago.
 
 ## Two things that are not here
 

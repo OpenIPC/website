@@ -72,6 +72,27 @@ ensure_uid_1000_root() {
     || die "${root} is owned by ${owner}, expected 1000:1000 — the container runs as uid 1000 and would fail with EACCES"
 }
 
+# Four badges and logos other people embed, served by nginx from
+# /srv/www/shared/images. That directory is host-only and in no backup, so
+# without this a rebuilt host answers 404 for URLs published years ago on pages
+# we do not control. Copied every deploy rather than once, so the repository
+# stays the source of truth.
+install_legacy_images() {
+  # $SELF is resolved above precisely because this runs through the
+  # /usr/local/sbin symlink; the images sit beside this script in the checkout.
+  local src dest=/srv/www/shared/images
+  src="$(dirname "$SELF")/legacy-images"
+  [ -d "$src" ] || return 0
+
+  install -d -o 1000 -g 1000 -m 0755 "$dest" || die "cannot create ${dest}"
+  for f in "$src"/*; do
+    case "$f" in *.md) continue ;; esac
+    [ -f "$f" ] || continue
+    install -o 1000 -g 1000 -m 0644 "$f" "$dest/" \
+      || die "cannot install $(basename "$f") into ${dest}"
+  done
+}
+
 wait_healthy() {
   local port=$1 deadline=$((SECONDS + HEALTH_TIMEOUT))
   info "waiting for http://127.0.0.1:${port}/up"
@@ -91,6 +112,7 @@ do_deploy() {
 
   ensure_uid_1000_root "$blob_root"
   ensure_uid_1000_root "$cache_root"
+  install_legacy_images
 
   local previous
   previous=$(env_get "$tag_key")
