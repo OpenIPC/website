@@ -173,6 +173,14 @@ class Firmware
     tmp.close
     IO.binwrite tmp.path, ("\xFF" * size)
     parts.each { |part| IO.binwrite tmp.path, part.bytes, part.offset }
+
+    # Tempfile creates at 0600 and rename keeps the mode, so every image ever
+    # published here was readable only by the app's own user. nginx runs as
+    # www-data and serves this directory, so /files/ answered 403 for all of
+    # them -- and nothing could hand a download off to nginx while that was
+    # true. Set before the rename, so the file is readable the moment it
+    # appears under its real name.
+    File.chmod(0o644, tmp.path)
     File.rename(tmp.path, filepath)
   ensure
     # `ensure` rather than `rescue StandardError`, so an Interrupt or a

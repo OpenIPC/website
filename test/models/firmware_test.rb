@@ -370,6 +370,17 @@ class FirmwareTest < ActiveSupport::TestCase
     assert_equal SQUASHFS, IO.binread(fw.filepath)[0x250000, SQUASHFS.bytesize]
   end
 
+  test 'the published image is readable by the web server' do
+    # Tempfile creates at 0600 and rename keeps the mode, so every image was
+    # published readable only by the app's own user. nginx runs as a different
+    # one and serves this directory, so /files/ answered 403 for all of them.
+    fw = build(model: 'gk7202v300', vendor: 'Goke', flash_type: 'nor', size: 8, release: 'lite',
+               members: { 'uImage.gk7202v300' => KERNEL, 'rootfs.squashfs.gk7202v300' => SQUASHFS })
+    fw.generate
+
+    assert_equal '644', format('%o', File.stat(fw.filepath).mode & 0o777)
+  end
+
   test 'a second generate reuses the cached image instead of rebuilding it' do
     fw = build(model: 'ssc337', vendor: 'SigmaStar', flash_type: 'nor', size: 8, release: 'lite',
                members: { 'uImage.ssc337' => KERNEL, 'rootfs.squashfs.ssc337' => SQUASHFS })
