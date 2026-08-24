@@ -57,47 +57,14 @@ de:
       development: Development
       title: Einführung
     majestic_endpoints:
-      aac: AAC-Audiostream.
-      accepts_post: Akzeptiert POST-Anfragen mit Audiodatei als Parameter.
-      alaw: A-Law-komprimierter Audiostream.
-      audio: Audio
-      dng: Schnappschuss im Adobe DNG-Format (roh).
-      fmp4: fMP4-Videostream.
-      footnote_1: Nur HiSilicon- und Goke-SoCs.
-      footnote_2: Nur HiSilicon SoCs v2 und höher.
-      footnote_3_html: ZB <i>ffplay -ar 48000 -ac 1 -f s16le http://192.168.1.10/audio.pcm</i>
-      footnote_4_html: ZB <i>http://192.168.1.10/image.jpg?width=640&height=480&qfactor=50&color2gray=1&crop=80x32x512x400</i>
-      g711: G.711 A-Law-Audiostream.
-      heif: Schnappschuss im HEIF-Format.
-      hls: HLS-Live-Streaming im Webbrowser.
-      images: Standbilder
-      jpeg: Schnappschuss im JPEG-Format.
-      jpeg_params1: Breite, Höhe – Größe des resultierenden Bildes
-      jpeg_params2: qfactor – JPEG-Qualitätsfaktor (1-99)
-      jpeg_params3: color2gray – in Graustufen konvertieren
-      jpeg_params4: Zuschneiden – Das resultierende Bild wird auf 16x16x320x320 zugeschnitten
-      majestic_json: Tatsächliche Majestic-Konfiguration im JSON-Format.
-      mjpeg: MJPEG-Videostream.
-      mjpeg_player: MJPEG- und MP3-Live-Streaming im Webbrowser.
-      monitoring: Überwachung
-      more_examples_html: Weitere Beispiele finden Sie <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">in unserem Wiki</a> .
-      mp3: MP3-Audiostream.
-      night: Nacht-API
-      night_off: Schalten Sie den Nachtmodus aus.
-      night_on: Schalten Sie den Nachtmodus ein.
-      night_toggle: Aktuellen Nachtmodus umschalten.
-      optional_params: Optionale Parameter
-      opus: Opus-Audiostream.
-      play_on_speaker: Spielen Sie die Audiodatei über den Lautsprecher der Kamera ab.
-      prometheus_html: Knotenexporter für <a href="https://prometheus.io/">Prometheus</a> .
-      raw_pcm: Roher PCM-Audiostream.
-      rtsp0: RTSP-Hauptstream (video0).
-      rtsp1: RTSP-Substream (Video1).
-      title: Majestätische Endpunkte
-      ulaw: μ-Law-komprimierter Audiostream.
-      video: Video
-      webrtc: WebRTC-Live-Streaming im Webbrowser.
-      yuv420: Schnappschuss im YUV420-Format.
+      moved_html: 'Die Liste der Endpunkte, die Ihre Kamera bereitstellt, befindet sich jetzt in der Weboberfläche der Kamera selbst, auf der Seite <b>Majestic Endpoints</b>. Öffnen Sie <code>http://&lt;Kamera-Adresse&gt;/</code> im Browser und wählen Sie sie im Menü aus.'
+      reason_address: 'die echte Adresse Ihrer Kamera ist eingesetzt, sodass sich eine URL direkt in einen Player kopieren lässt;'
+      reason_auth: 'es ist ersichtlich, ob die Endpunkte ein Passwort verlangen oder ob die Authentifizierung ganz abgeschaltet ist.'
+      reason_scheme: 'das Schema passt zu Ihrer Einrichtung, http oder https und ws oder wss;'
+      see_webui: 'Weboberfläche ansehen'
+      see_wiki: 'Majestic im Wiki'
+      title: 'Majestic Endpoints'
+      why: 'Dort wird sie aus der tatsächlich laufenden Firmware erzeugt, was eine Seite auf dieser Website nicht leisten kann:'
     merchandise:
       order_from_weededwords: Bestellen Sie bei WeededWords.com
       shirt_1:

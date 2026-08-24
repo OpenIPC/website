@@ -57,47 +57,14 @@ fa:
       development: Development
       title: معرفی
     majestic_endpoints:
-      aac: جریان صوتی AAC.
-      accepts_post: درخواست های POST را با فایل صوتی به عنوان پارامتر می پذیرد.
-      alaw: جریان صوتی فشرده A-law.
-      audio: سمعی
-      dng: عکس فوری با فرمت Adobe DNG (خام).
-      fmp4: جریان ویدئو fMP4.
-      footnote_1: فقط HiSilicon و Goke SoC.
-      footnote_2: فقط SoC های HiSilicon نسخه ۲ و بالاتر.
-      footnote_3_html: به عنوان مثال <i>ffplay -ar 48000 -ac 1 -f s16le http://192.168.1.10/audio.pcm</i>
-      footnote_4_html: به عنوان مثال <i>http://192.168.1.10/image.jpg?width=640&height=480&qfactor=50&color2gray=1&crop=80x32x512x400</i>
-      g711: جریان صوتی G.711 A-law.
-      heif: عکس فوری با فرمت HEIF.
-      hls: پخش زنده HLS در مرورگر وب.
-      images: تصاویر ثابت
-      jpeg: عکس فوری با فرمت JPEG.
-      jpeg_params1: عرض، ارتفاع - اندازه تصویر حاصل
-      jpeg_params2: qfactor - فاکتور کیفیت JPEG (1-99)
-      jpeg_params3: color2gray - تبدیل به مقیاس خاکستری
-      jpeg_params4: برش - تصویر حاصل را به صورت 16x16x320x320 برش دهید
-      majestic_json: پیکربندی واقعی Majestic در فرمت JSON.
-      mjpeg: پخش ویدیوی MJPEG.
-      mjpeg_player: پخش زنده MJPEG و MP3 در مرورگر وب.
-      monitoring: نظارت بر
-      more_examples_html: نمونه های بیشتری <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">در ویکی ما</a> موجود است.
-      mp3: پخش صوتی MP3.
-      night: Night API
-      night_off: حالت شب را خاموش کنید.
-      night_on: حالت شب را روشن کنید.
-      night_toggle: حالت شب فعلی را تغییر دهید.
-      optional_params: پارامترهای اختیاری
-      opus: جریان صوتی Opus.
-      play_on_speaker: پخش فایل صوتی روی بلندگوی دوربین
-      prometheus_html: صادرکننده گره برای <a href="https://prometheus.io/">Prometheus</a> .
-      raw_pcm: جریان صوتی PCM خام.
-      rtsp0: جریان اصلی RTSP (video0).
-      rtsp1: جریان فرعی RTSP (video1).
-      title: نقاط پایانی با شکوه
-      ulaw: جریان صوتی فشرده با قانون μ.
-      video: ویدئو
-      webrtc: پخش زنده WebRTC در مرورگر وب.
-      yuv420: عکس فوری با فرمت YUV420.
+      moved_html: 'فهرست نقاط پایانی که دوربین شما ارائه می‌دهد اکنون در رابط وب خود دوربین، در صفحهٔ <b>Majestic Endpoints</b> قرار دارد. نشانی <code>http://&lt;آدرس-دوربین&gt;/</code> را در مرورگر باز کنید و آن صفحه را از منو انتخاب کنید.'
+      reason_address: 'نشانی واقعی دوربین شما در آن درج شده است، بنابراین می‌توان نشانی را مستقیماً در پخش‌کننده کپی کرد؛'
+      reason_auth: 'مشخص می‌کند که آیا نقاط پایانی رمز عبور می‌خواهند یا احراز هویت به‌کلی خاموش شده است.'
+      reason_scheme: 'طرح نشانی با پیکربندی شما هماهنگ است، http یا https و ws یا wss؛'
+      see_webui: 'مشاهدهٔ رابط وب'
+      see_wiki: 'Majestic در ویکی'
+      title: 'Majestic Endpoints'
+      why: 'آنجا این فهرست از میان‌افزاری که واقعاً در حال اجراست ساخته می‌شود، کاری که یک صفحه در این وب‌گاه نمی‌تواند انجام دهد:'
     merchandise:
       order_from_weededwords: از WeededWords.com سفارش دهید
       shirt_1:

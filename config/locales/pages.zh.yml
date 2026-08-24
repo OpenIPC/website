@@ -57,47 +57,14 @@ zh:
       development: Development
       title: 介绍
     majestic_endpoints:
-      aac: AAC 音频流。
-      accepts_post: 接受带有音频文件作为参数的 POST 请求。
-      alaw: A-law 压缩音频流。
-      audio: 音频
-      dng: Adobe DNG 格式的快照 (raw)。
-      fmp4: fMP4 视频流。
-      footnote_1: 只有 HiSilicon 和 Goke SoC。
-      footnote_2: 仅限 HiSilicon SoC v2 及更高版本。
-      footnote_3_html: 例如<i>ffplay -ar 48000 -ac 1 -f s16le http://192.168.1.10/audio.pcm</i>
-      footnote_4_html: 例如<i>http://192.168.1.10/image.jpg?width=640&height=480&qfactor=50&color2gray=1&crop=80x32x512x400</i>
-      g711: G.711 A-law 音频流。
-      heif: HEIF 格式的快照。
-      hls: Web 浏览器中的 HLS 直播。
-      images: 图像
-      jpeg: JPEG 格式的快照。
-      jpeg_params1: width, height - 结果图像的大小
-      jpeg_params2: qfactor - JPEG 质量因子 (1-99)
-      jpeg_params3: color2gray - 转换为灰度
-      jpeg_params4: crop - 将生成的图像裁剪为 16x16x320x320
-      majestic_json: JSON 格式的 Majestic 配置。
-      mjpeg: MJPEG 视频流。
-      mjpeg_player: MJPEG 和 MP3 在 Web 浏览器中实时流式传输。
-      monitoring: 监控
-      more_examples_html: <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">我们的 wiki 中</a>提供了更多示例。
-      mp3: MP3 音频流。
-      night: 夜间模式API
-      night_off: 关闭夜间模式。
-      night_on: 开启夜间模式。
-      night_toggle: 切换当前夜间模式。
-      optional_params: 可选参数
-      opus: Opus音频流。
-      play_on_speaker: 在相机的扬声器上播放音频文件。
-      prometheus_html: <a href="https://prometheus.io/">Prometheus</a>的节点导出器。
-      raw_pcm: 原始 PCM 音频流。
-      rtsp0: RTSP 主流 (video0)。
-      rtsp1: RTSP 子流 (video1)。
-      title: Majestic
-      ulaw: μ-law 压缩音频流。
-      video: 视频
-      webrtc: 网络浏览器中的 WebRTC 直播。
-      yuv420: YUV420 格式的快照。
+      moved_html: '摄像机提供的接口列表现在位于摄像机自身的 Web 界面中，即 <b>Majestic Endpoints</b> 页面。在浏览器中打开 <code>http://&lt;摄像机地址&gt;/</code>，然后从菜单中选择该页面。'
+      reason_address: '页面中填入的是您摄像机的真实地址，可以直接把链接复制到播放器；'
+      reason_auth: '页面会说明这些接口是否需要密码，以及认证是否被完全关闭。'
+      reason_scheme: '协议与您的配置一致，http 或 https、ws 或 wss；'
+      see_webui: '查看 Web 界面'
+      see_wiki: '维基中的 Majestic'
+      title: 'Majestic Endpoints'
+      why: '该页面由实际运行的固件生成，这是本站的静态页面无法做到的：'
     merchandise:
       order_from_weededwords: 从 WeededWords.com 订购
       shirt_1:

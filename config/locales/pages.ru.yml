@@ -57,47 +57,14 @@ ru:
       development: Development
       title: Вступление
     majestic_endpoints:
-      aac: Аудиопоток AAC.
-      accepts_post: Принимает POST-запросы с аудиофайлом в качестве параметра.
-      alaw: Аудиопоток, сжатый по закону А.
-      audio: Аудио
-      dng: Снимок в формате Adobe DNG (сырой).
-      fmp4: Видеопоток fMP4.
-      footnote_1: Только SoC HiSilicon и Goke.
-      footnote_2: Только HiSilicon SoC v2 и выше.
-      footnote_3_html: Например, <i>ffplay -ar 48000 -ac 1 -f s16le http://192.168.1.10/audio.pcm</i>
-      footnote_4_html: Например, <i>http://192.168.1.10/image.jpg?width=640&height=480&qfactor=50&color2gray=1&crop=80x32x512x400</i>
-      g711: Аудиопоток G.711 A-law.
-      heif: Снимок в формате HEIF.
-      hls: Прямая трансляция HLS в веб-браузере.
-      images: Фотографии
-      jpeg: Снимок в формате JPEG.
-      jpeg_params1: ширина, высота - размер результирующего изображения
-      jpeg_params2: qfactor - фактор качества JPEG (1-99)
-      jpeg_params3: color2gray - преобразовать в оттенки серого
-      jpeg_params4: кадрировать - обрезать полученное изображение до размера 16x16x320x320
-      majestic_json: Актуальная конфигурация Majestic в формате JSON.
-      mjpeg: Видеопоток MJPEG.
-      mjpeg_player: Прямая трансляция MJPEG и MP3 в веб-браузере.
-      monitoring: Мониторинг
-      more_examples_html: Другие примеры доступны <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">в нашей вики</a> .
-      mp3: Аудиопоток MP3.
-      night: Ночной API
-      night_off: Выключите ночной режим.
-      night_on: Включите ночной режим.
-      night_toggle: Переключить текущий ночной режим.
-      optional_params: Дополнительные параметры
-      opus: Аудиопоток Opus.
-      play_on_speaker: Воспроизведение аудиофайла на динамике камеры.
-      prometheus_html: Экспортер узлов для <a href="https://prometheus.io/">Prometheus</a>.
-      raw_pcm: Необработанный аудиопоток PCM.
-      rtsp0: Основной поток RTSP (video0).
-      rtsp1: Подпоток RTSP (видео1).
-      title: Величественные конечные точки
-      ulaw: Аудиопоток, сжатый по закону μ.
-      video: видео
-      webrtc: Прямая трансляция WebRTC в веб-браузере.
-      yuv420: Снимок в формате YUV420.
+      moved_html: 'Список эндпоинтов, которые отдаёт камера, теперь живёт в веб-интерфейсе самой камеры, на странице <b>Majestic Endpoints</b>. Откройте в браузере <code>http://&lt;адрес-камеры&gt;/</code> и выберите её в меню.'
+      reason_address: 'подставлен настоящий адрес вашей камеры, поэтому ссылку можно скопировать прямо в плеер;'
+      reason_auth: 'видно, спрашивают ли эндпоинты пароль и не отключена ли аутентификация полностью.'
+      reason_scheme: 'схема соответствует вашей настройке — http или https, ws или wss;'
+      see_webui: 'Посмотреть веб-интерфейс'
+      see_wiki: 'Majestic в вики'
+      title: 'Majestic Endpoints'
+      why: 'Там он собирается из реально работающей прошивки, чем страница на этом сайте быть не может:'
     merchandise:
       order_from_weededwords: Заказать на WeededWords.com
       shirt_1:
