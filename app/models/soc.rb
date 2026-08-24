@@ -57,10 +57,13 @@ class Soc < ApplicationRecord
     format GH_DL_ROOT, uboot_filename
   end
 
-  def fw_url(version)
-    filename = linux_filename.dup
-    filename.gsub('-br.tgz', "-#{version}-br.tgz") unless version.eql?('lite')
-    format GH_DL_ROOT, filename
+  # Not used by any view today. It returned the lite filename for every version
+  # asked for -- `gsub` without `!` and without assigning the result -- and it
+  # still spoke the pre-2023 `-br.tgz` naming, so it would have answered a dead
+  # URL for whoever reached for it next. Built from the same rule as everything
+  # else now.
+  def fw_url(release, flash_type = 'nor')
+    format GH_DL_ROOT, linux_filename_for(release, flash_type)
   end
 
   def full_name
@@ -71,11 +74,73 @@ class Soc < ApplicationRecord
     !uboot_filename.empty? && !linux_filename.empty?
   end
 
-  # Everything upstream builds, for asking whether it builds anything at all for
-  # a board. Two flash types times three editions is six lookups in a hash that
-  # is already in memory.
-  PUBLISHED_RELEASES = %w[lite ultimate neo].freeze
   FLASH_TYPES = %w[nor nand].freeze
+
+  # Display order for the editions we know about. Not a filter: anything else
+  # upstream publishes is offered too, after these, so a new variant does not
+  # wait on a deploy here. `fabricator` is deliberately absent -- it was offered
+  # for every SoC for years and upstream has never published one.
+  RELEASE_ORDER = %w[lite ultimate neo].freeze
+
+  # The editions upstream actually publishes for this board and flash type.
+  #
+  # The site used to offer lite, ultimate and fabricator for all 126 SoCs
+  # regardless. Ultimate does not exist for 42 of them, fabricator exists for
+  # none, and neo -- which does exist, for seven boards -- could not be reached
+  # at all. Every one of those was a dead download the visitor only discovered
+  # after choosing, submitting and clicking.
+  #
+  # Falling back to the known list keeps the old behaviour when the index
+  # cannot be read, rather than emptying the menu.
+  def available_releases(flash_type)
+    published_releases(flash_type)
+  rescue ReleaseIndex::Missing
+    # Offer the usual three rather than an empty menu. Some of them may not
+    # exist for this board -- that is the whole problem being fixed -- but a
+    # menu with nothing in it makes every SoC unusable for as long as the index
+    # is unreadable, and the download path answers "could not be fetched right
+    # now" rather than pretending. Anything that would put a bare GitHub URL in
+    # front of a visitor uses published_releases instead, which stays silent.
+    RELEASE_ORDER
+  end
+
+  # Strictly what the index says, and nothing when it cannot be read.
+  def published_releases(flash_type)
+    ReleaseIndex.current.releases_for(board, flash_type)
+                .sort_by { |release| [RELEASE_ORDER.index(release) || RELEASE_ORDER.size, release] }
+  end
+
+  # Every edition offerable for this SoC, across flash types. The menu carries
+  # the union because the flash type is chosen in the same form, without a
+  # round trip, and the script narrows it from there.
+  def offerable_releases
+    FLASH_TYPES.flat_map { |flash_type| available_releases(flash_type) }
+               .uniq
+               .sort_by { |release| [RELEASE_ORDER.index(release) || RELEASE_ORDER.size, release] }
+  end
+
+  # What the flash-type menu and the script need: which editions go with which
+  # flash type, for this SoC.
+  def release_availability
+    FLASH_TYPES.to_h { |flash_type| [flash_type, available_releases(flash_type)] }
+  end
+
+  # nor8m suits almost every SoC and is wrong for the ones upstream builds only
+  # a NAND image for -- rv1109 and rv1126 here today. Their NOR sizes are
+  # disabled in the menu, so opening the form on one left it with a flash type
+  # that cannot be chosen and no edition to go with it.
+  def default_flash_chip
+    available_releases('nor').any? ? 'nor8m' : 'nand'
+  end
+
+  # For the links out to GitHub, which have to name a file that is there. An
+  # unreadable index means no links rather than links built on a guess: a 404 on
+  # github.com is off-site, with nothing from this site to explain it.
+  def published_availability
+    FLASH_TYPES.to_h { |flash_type| [flash_type, published_releases(flash_type)] }
+  rescue ReleaseIndex::Missing
+    FLASH_TYPES.to_h { |flash_type| [flash_type, []] }
+  end
 
   # A flash image starts with a bootloader, and for twenty-one of the SoCs on
   # this site there is not one. Every Xiongmai part is like this, and the whole
@@ -98,10 +163,13 @@ class Soc < ApplicationRecord
     true
   end
 
+  # Asked against the index directly rather than through available_releases,
+  # which answers optimistically when there is no index. Optimism is right for
+  # a menu -- offer the usual editions rather than an empty one -- and wrong
+  # here, where the answer decides whether to tell somebody firmware exists.
   def firmware_published?
-    PUBLISHED_RELEASES.any? do |release|
-      FLASH_TYPES.any? { |flash_type| ReleaseIndex.current.fetch(linux_filename_for(release, flash_type)) }
-    end
+    index = ReleaseIndex.current
+    FLASH_TYPES.any? { |flash_type| index.releases_for(board, flash_type).any? }
   rescue ReleaseIndex::Missing
     linux_filename.present?
   end

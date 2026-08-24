@@ -107,6 +107,7 @@ it:
       fpv: FPV
       lite: Lite
       nand: NAND
+      neo: Neo
       ultimate: Ultimate
       venc: VENC
   flash_chip:

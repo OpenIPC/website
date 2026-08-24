@@ -7,17 +7,36 @@ module SelectsHelper
     end
   end
 
+  # NAND is offered for every SoC today, and upstream builds a NAND image for
+  # sixteen boards. Choosing it anywhere else produced instructions for a
+  # tarball that does not exist. A flash type upstream builds nothing for is
+  # disabled rather than hidden, so the menu still shows what the part has.
   def list_of_flash_type_sizes_for_select
-    Camera::FLASH_CHIP.map do |v|
-      [t("flash_chip.#{v}"), v]
+    availability = @camera.soc.release_availability
+
+    Camera::FLASH_CHIP.map do |chip|
+      flash_type = chip.start_with?('nand') ? 'nand' : 'nor'
+      option = [t("flash_chip.#{chip}"), chip]
+      availability[flash_type].empty? ? option + [{ disabled: true }] : option
     end
   end
 
+  # Every SoC used to be offered lite, ultimate and fabricator whatever upstream
+  # built. The list comes from the release index now -- the union across flash
+  # types, because the flash type is chosen in the same form without a round
+  # trip and the script on the page narrows it from there.
+  #
+  # The line removed here deleted 'venc' from a list that has never contained
+  # it, guarded by a condition naming GK7205210, which is not a SoC. It had no
+  # effect either way.
+  #
+  # The default label matters: `fabricator` has no translation in any locale, so
+  # `t` rendered a translation_missing span inside an <option> on every SoC page
+  # on the site. An edition upstream invents tomorrow gets its own name rather
+  # than that.
   def list_of_firmware_versions_for_select
-    data = Camera::FW_VERSION.dup
-    data.delete('venc') unless @camera.soc.vendor.name.eql?('Goke') && @camera.soc.model.in?(%w[GK7205V200 GK7205210 GK7205V300])
-    data.map do |v|
-      [t("firmware.version.#{v}"), v]
+    @camera.soc.offerable_releases.map do |release|
+      [t("firmware.version.#{release}", default: release.capitalize), release]
     end
   end
 

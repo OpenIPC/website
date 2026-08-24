@@ -143,4 +143,13 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     ReleaseIndex.reset!
     FileUtils.remove_entry(root) if root
   end
+
+  test 'an unknown SoC slug on the show page is not found rather than a server error' do
+    # /cameras/vendors/rockchip/socs/rv1106 answered 500 in production: RV1106
+    # has no row here, show used the nil-returning finder, and the next line
+    # called .vendor on nil.
+    assert_raises(ActiveRecord::RecordNotFound) do
+      get "/cameras/vendors/#{@vendor.to_param}/socs/no-such-soc"
+    end
+  end
 end
