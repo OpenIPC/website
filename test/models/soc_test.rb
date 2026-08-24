@@ -106,4 +106,80 @@ class SocTest < ActiveSupport::TestCase
     assert_equal 'openipc.ts3519dv500-nor-ultimate.tgz', soc.linux_filename_for('ultimate', 'nor')
     assert_equal 'openipc.ts3519dv500-nand-ultimate.tgz', soc.linux_filename_for('ultimate', 'nand')
   end
+
+  # --- SoC aliases ---
+  #
+  # Upstream retires a chip by building the board it is identical to and
+  # pointing the retired id at it. The site learns the map from the index.
+
+  def with_aliases(aliases)
+    root = Dir.mktmpdir
+    ENV['RELEASE_INDEX_ROOT'] = root
+    File.write(File.join(root, '.index.json'),
+               JSON.generate('generated_at' => '2026-08-24T00:00:00Z',
+                             'aliases' => aliases, 'assets' => {}))
+    ReleaseIndex.reset!
+    yield
+  ensure
+    ENV.delete('RELEASE_INDEX_ROOT')
+    ReleaseIndex.reset!
+    FileUtils.remove_entry(root) if root
+  end
+
+  test 'board follows the alias to the board upstream actually builds' do
+    # GK7205V210 has not been built since 2026-06-07; it is firmware-identical
+    # to GK7205V200 and served from it. Asking for openipc.gk7205v210-*.tgz is a
+    # dead download, not a stale one -- upstream deleted nothing, it simply
+    # stopped publishing a second copy under the old name.
+    soc = Soc.create!(vendor: @vendor, model: 'TS7205V210',
+                      linux_filename: 'openipc.ts7205v210-nor-lite.tgz')
+
+    with_aliases('ts7205v210' => 'ts7205v200') do
+      assert_equal 'ts7205v200', soc.board
+      assert_equal 'openipc.ts7205v200-nor-lite.tgz', soc.linux_filename_for('lite', 'nor')
+    end
+  end
+
+  test 'the alias reaches the tarball members as well as the tarball' do
+    # The board names what is inside the archive too. Substituting only the
+    # filename would fetch the right tarball and then fail to find a kernel in
+    # it, which is a worse failure than the one being fixed.
+    soc = Soc.create!(vendor: @vendor, model: 'TS7205V210',
+                      linux_filename: 'openipc.ts7205v210-nor-lite.tgz')
+
+    with_aliases('ts7205v210' => 'ts7205v200') do
+      assert_equal 'uImage.ts7205v200', soc.kernel_file
+      assert_equal 'rootfs.squashfs.ts7205v200', soc.rootfs_file
+    end
+  end
+
+  test 'a board with no alias is left exactly as it was' do
+    soc = Soc.create!(vendor: @vendor, model: 'TS3516CV500',
+                      linux_filename: 'openipc.ts3516cv500-nor-lite.tgz')
+
+    with_aliases('ts7205v210' => 'ts7205v200') do
+      assert_equal 'ts3516cv500', soc.board
+    end
+  end
+
+  test 'an alias pointing a board at itself is ignored' do
+    # It would say nothing, and taking it literally is how a map like this
+    # becomes a loop.
+    soc = Soc.create!(vendor: @vendor, model: 'TS3516CV500',
+                      linux_filename: 'openipc.ts3516cv500-nor-lite.tgz')
+
+    with_aliases('ts3516cv500' => 'ts3516cv500') do
+      assert_equal 'ts3516cv500', soc.board
+    end
+  end
+
+  test 'no index leaves the board as the column names it' do
+    # Every SoC without an alias is unaffected by the index being unreadable,
+    # and this is what all of them did before the map existed.
+    soc = Soc.create!(vendor: @vendor, model: 'TS7205V210',
+                      linux_filename: 'openipc.ts7205v210-nor-lite.tgz')
+
+    ReleaseIndex.reset!
+    assert_equal 'ts7205v210', soc.board
+  end
 end

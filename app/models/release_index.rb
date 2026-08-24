@@ -65,9 +65,22 @@ class ReleaseIndex
   def initialize(document)
     @generated_at = document['generated_at']
     @assets = document.fetch('assets', {})
+    @aliases = document.fetch('aliases', {})
   end
 
   attr_reader :generated_at
+
+  # The board upstream actually builds for a chip it no longer builds on its
+  # own. GK7205V210 is firmware-identical to GK7205V200 and XM550 to XM530, so
+  # since 2026-06-07 only one of each pair is built and the other is served from
+  # it; hi3516cv610, hi3516cv608 and hi3516dv500 are the same arrangement.
+  #
+  # A chip with no entry is its own board, which is the answer for all but a
+  # handful. One hop only: the map is flat upstream, and following a chain would
+  # turn a bad entry into a loop inside a page render.
+  def canonical_board(board)
+    @aliases[board] || board
+  end
 
   def fetch(name)
     row = @assets[name]
