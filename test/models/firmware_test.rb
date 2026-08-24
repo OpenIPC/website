@@ -63,6 +63,11 @@ class FirmwareTest < ActiveSupport::TestCase
     path
   end
 
+  # Camera only asks a SoC for its vendor name when choosing a layout.
+  def fw_soc(vendor)
+    StubSoc.new(model: 'x', vendor: vendor, uboot_file: '', linux_file: '')
+  end
+
   def uboot_path
     @uboot_path ||= File.join(@dir, 'u-boot.bin').tap { |p| IO.binwrite(p, UBOOT) }
   end
@@ -410,6 +415,41 @@ class FirmwareTest < ActiveSupport::TestCase
       Firmware.lock_timeout = previous
       holder.flock(File::LOCK_UN)
       holder.close
+    end
+  end
+
+  # --- the image and the instructions must describe one layout ---
+
+  test 'the rootfs lands where the installation page says it will' do
+    # Firmware and Camera used to hold separate copies of the partition table,
+    # keyed differently -- Firmware on the chip size, Camera on the edition.
+    # They agreed only where the two happened to coincide.
+    {
+      'nor8m' => 8, 'nor16m' => 16, 'nor32m' => 32
+    }.each do |flash_type, size|
+      fw = build(model: 'hi3518ev200', vendor: 'HiSilicon', flash_type: 'nor', size: size,
+                 release: 'lite',
+                 members: { 'uImage.hi3518ev200' => KERNEL, 'rootfs.squashfs.hi3518ev200' => SQUASHFS })
+      fw.generate
+
+      camera = Camera.new(flash_type: flash_type, firmware_version: 'lite', soc: fw_soc('HiSilicon'))
+      offset = camera.rootfs_offset.to_i(16)
+
+      assert_equal SQUASHFS, IO.binread(fw.filepath)[offset, SQUASHFS.bytesize],
+                   "#{flash_type}: the page points at 0x#{offset.to_s(16)}, the image does not"
+    end
+  end
+
+  test 'the vendors that keep the 8MB offsets keep them in both places' do
+    %w[SigmaStar Ingenic].each do |vendor|
+      fw = build(model: 'ssc338q', vendor: vendor, flash_type: 'nor', size: 16, release: 'lite',
+                 members: { 'uImage.ssc338q' => KERNEL, 'rootfs.squashfs.ssc338q' => SQUASHFS })
+      fw.generate
+
+      camera = Camera.new(flash_type: 'nor16m', firmware_version: 'lite', soc: fw_soc(vendor))
+      assert_equal '0x250000', camera.rootfs_offset, "#{vendor} lost its 8MB rootfs offset"
+      assert_equal SQUASHFS, IO.binread(fw.filepath)[0x250000, SQUASHFS.bytesize],
+                   "#{vendor}: the image does not match the page"
     end
   end
 end
