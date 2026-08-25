@@ -7,7 +7,7 @@ class MultilangTest < ActionDispatch::IntegrationTest
   # says which locale won without needing a translated string to compare.
   def assert_rendering_in(locale)
     assert_response :success
-    assert_match %(<a href="?locale=#{locale}" class=" fw-bold">), response.body
+    assert_match %(<a lang="#{locale}" class="fw-bold" aria-current="true"), response.body
   end
 
   def get_root(accept_language: nil, params: {})
@@ -33,6 +33,35 @@ class MultilangTest < ActionDispatch::IntegrationTest
     Multilang::LOCALES.each_value { |name| assert_match name, response.body }
   end
 
+  # The icon was a hardcoded <img src="/assets/translate.svg">. Production
+  # serves fingerprinted assets with compile off, so that is a 404 on every
+  # page -- and the switcher is in the layout, so on every page of the site.
+  test 'the switcher icon goes through the asset pipeline' do
+    get_root
+
+    assert_match %r{src="/assets/translate-[0-9a-f]{64}\.svg"}, response.body
+    assert_no_match %r{src="/assets/translate\.svg"}, response.body
+  end
+
+  # Every link was a bare "?locale=xx", which replaces the whole query string.
+  # Switching language on a paginated list lost the page, and on a permanent
+  # link to a camera configuration it lost the configuration.
+  test 'switching language keeps the rest of the query string' do
+    get '/supported-hardware/featured?vendor=hisilicon&locale=en'
+
+    assert_response :success
+    assert_match 'href="/supported-hardware/featured?locale=ru&amp;vendor=hisilicon"', response.body
+  end
+
+  # aria-labelledby named "dropdownLanguage" while the button was
+  # id="dropsownLanguage", so it labelled nothing at all.
+  test 'the dropdown label points at the button that opens it' do
+    get_root
+
+    assert_match 'id="dropdownLanguage"', response.body
+    assert_no_match(/dropsownLanguage/, response.body)
+  end
+
   # --- what the browser asks for ---
 
   # The old scan only matched a tag followed by `;`, so the first entry in the
@@ -54,6 +83,32 @@ class MultilangTest < ActionDispatch::IntegrationTest
     get_root accept_language: 'de,zh;q=0.9'
 
     assert_rendering_in 'zh'
+  end
+
+  # q=0 means "not acceptable" (RFC 9110 12.4.2). Keeping those entries let a
+  # language the client had explicitly ruled out win, just because nothing
+  # better was on offer.
+  test 'a language the visitor ruled out is not chosen anyway' do
+    get_root accept_language: 'ru;q=0,de;q=0.9'
+
+    assert_rendering_in 'en'
+  end
+
+  # `;q=` was matched as a literal, and the grammar allows whitespace around
+  # the separator. This header ranked English at 1 and picked it -- the
+  # opposite of what the visitor asked for.
+  test 'a space before the q-value does not turn it into a preference' do
+    get_root accept_language: 'en; q=0.1,ru;q=0.9'
+
+    assert_rendering_in 'ru'
+  end
+
+  # And the parameter name is case-insensitive. Without that, zh would rank at
+  # the default 1 and beat the en it is explicitly ranked below.
+  test 'an uppercase Q is a q-value too' do
+    get_root accept_language: 'de-DE,zh;Q=0.8,en;q=0.9'
+
+    assert_rendering_in 'en'
   end
 
   test 'a header with nothing we serve gets the default' do

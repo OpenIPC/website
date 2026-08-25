@@ -18,7 +18,6 @@ module Multilang
 
     helper_method :browser_locale
     helper_method :locales_for_select
-    helper_method :locale_switcher
   end
 
   # The visitor's most-preferred language that this site can actually render.
@@ -32,23 +31,38 @@ module Multilang
     accepted_languages.find { |tag| I18n.available_locales.include?(tag.to_sym) }
   end
 
-  # The header's language tags, most-preferred first.
+  # The header's language tags, most-preferred first, minus the ones the client
+  # has ruled out. `q=0` means "not acceptable" (RFC 9110 12.4.2), so
+  # `ru;q=0,de;q=0.9` must not answer `ru` merely because `de` is not served.
   def accepted_languages
     entries = request.env['HTTP_ACCEPT_LANGUAGE'].to_s.split(',')
     ranked = entries.map.with_index { |part, index| rank(part, index) }
-    ranked.sort_by { |entry| entry.drop(1) }.map(&:first)
+    ranked.reject { |_, quality, _| quality.zero? }
+          .sort_by { |entry| entry.drop(1) }
+          .map(&:first)
   end
 
   # One header entry, as [tag, -quality, index].
   #
   # The tag is cut to the two letters I18n keys on, so `de-DE` ranks as `de`.
-  # An entry with no `;q=` is the strongest the header carries, so it defaults
+  # An entry with no q-value is the strongest the header carries, so it defaults
   # to 1 rather than being skipped -- skipping it is what the old scan did.
   # index breaks ties, because sort_by is not stable and equal q-values have to
   # keep the order the browser sent them in.
   def rank(part, index)
-    tag, quality = part.split(';q=')
-    [tag.to_s.strip.downcase[0, 2].to_s, -(quality || '1').to_f, index]
+    tag, *parameters = part.split(';')
+    [tag.to_s.strip.downcase[0, 2].to_s, -quality_of(parameters), index]
+  end
+
+  # Splitting on the literal ';q=' missed every header that spells it another
+  # way, and the grammar allows several: whitespace around the separator, and
+  # `Q` as readily as `q`. `en; q=0.1,ru;q=0.9` ranked English at 1 and picked
+  # it -- the opposite of what the visitor asked for.
+  def quality_of(parameters)
+    found = parameters.map(&:strip).find { |parameter| parameter.downcase.start_with?('q=') }
+    return 1.0 if found.nil?
+
+    found[2..].to_f
   end
 
   def self.default_url_options
@@ -81,28 +95,9 @@ module Multilang
 
   # LOCALES, not `t("locales.#{l}")`: there are no `locales.*` keys in any file,
   # so every entry came back as a translation-missing span. A language name is
-  # written the same in every language anyway, which is why the switcher below
-  # has always used LOCALES.
+  # written the same in every language anyway, which is why the switcher
+  # partial uses LOCALES too.
   def locales_for_select
     I18n.available_locales.map { |l| [LOCALES[l], l] }
-  end
-
-  def locale_switcher
-    html = []
-    html << '<ul class="navbar-nav text-uppercase">'
-    html << '<li class="nav-item dropdown">'
-    html << '<a aria-expanded="false" class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" id="dropsownLanguage" role="button">'
-    #html << format('%<language>s [%<locale>s]', { language: t("str.language"), locale: I18n.locale })
-    html << '<img src="/assets/translate.svg" alt="Image: language icon" class="icon img-fluid" title="Language selection">'
-    html << '</a>'
-    html << '<ul aria-labelledby="dropdownLanguage" class="dropdown-menu dropdown-menu-lg-end">'
-    I18n.available_locales.sort.each do |l|
-      html << '<li class="dropdown-item">'
-      html << format('<a href="?locale=%<locale>s" class="%<active>s">%<name>s</a>',
-                     { active: I18n.locale.eql?(l) ? ' fw-bold' : nil, locale: l, name: LOCALES[l] })
-      html << '</li>'
-    end
-    html << '</ul></li></ul>'
-    html.join("\n").html_safe
   end
 end
