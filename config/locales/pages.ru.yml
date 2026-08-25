@@ -168,4 +168,6 @@ ru:
       paragraph1: Коллекция полезных программ и утилит.
       title: Утилиты
     web_interface:
+      intro: 'Каждая камера с OpenIPC отдаёт этот интерфейс сама, по собственному адресу: ни облачного аккаунта, ни приложения-посредника. Ниже — страницы камеры с актуальной сборкой.'
+      scene_credit_html: 'Пляж на снимках Camera Preview и Majestic Settings — это вид с камеры пользователя OpenIPC <a href="https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706">@usa-</a>, опубликован с разрешения владельца.'
       title: Веб интерфейс

@@ -168,4 +168,6 @@ zh:
       paragraph1: 实用工具和实用程序集。
       title: 公用设施
     web_interface:
+      intro: '每台运行 OpenIPC 的摄像机都由自身提供这个界面，通过它自己的地址访问：无需云端账户，也不需要任何中间应用。以下是一台运行当前版本固件的摄像机的页面。'
+      scene_credit_html: '“Camera Preview”和“Majestic Settings”截图中的海滩，来自 OpenIPC 用户 <a href="https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706">@usa-</a> 的摄像机画面，已获授权发布。'
       title: 页面展示

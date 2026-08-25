@@ -168,4 +168,6 @@ it:
       paragraph1: Una raccolta di strumenti e utilità utili.
       title: Utilità
     web_interface:
+      intro: 'Ogni telecamera OpenIPC serve questa interfaccia da sé, al proprio indirizzo: nessun account cloud e nessuna app di mezzo. Queste sono le pagine di una telecamera con una build aggiornata.'
+      scene_credit_html: 'La spiaggia nelle immagini Camera Preview e Majestic Settings è la vista di una telecamera dell’utente OpenIPC <a href="https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706">@usa-</a>, pubblicata con il suo permesso.'
       title: Interfaccia web

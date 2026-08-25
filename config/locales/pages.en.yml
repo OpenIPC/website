@@ -171,4 +171,6 @@ en:
       paragraph1: A collection of useful tools and utilities.
       title: Utilities
     web_interface:
+      intro: 'Every OpenIPC camera serves this interface itself, over its own address — there is no cloud account and no app in between. These are the pages of a camera running a current build.'
+      scene_credit_html: 'The beach in the Camera Preview and Majestic Settings shots is the view from a camera belonging to <a href="https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706">@usa-</a>, an OpenIPC user, published with permission.'
       title: Web Interface

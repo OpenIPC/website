@@ -168,4 +168,6 @@ fa:
       paragraph1: مجموعه ای از ابزارها و ابزارهای مفید.
       title: خدمات رفاهی
     web_interface:
+      intro: 'هر دوربین با OpenIPC این رابط را خودش و روی نشانی خودش ارائه می‌دهد؛ نه حساب ابری لازم است و نه برنامه‌ای در میانه. آنچه می‌بینید صفحه‌های دوربینی است که نسخهٔ به‌روز را اجرا می‌کند.'
+      scene_credit_html: 'ساحلی که در تصویرهای Camera Preview و Majestic Settings دیده می‌شود، نمای دوربین <a href="https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706">@usa-</a>، یکی از کاربران OpenIPC است و با اجازهٔ ایشان منتشر شده است.'
       title: رابط وب

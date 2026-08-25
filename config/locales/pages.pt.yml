@@ -168,4 +168,6 @@ pt:
       paragraph1: Uma coleção de ferramentas e utilitários úteis.
       title: Serviços de utilidade pública
     web_interface:
+      intro: 'Cada câmara com OpenIPC serve esta interface por si própria, no seu próprio endereço: sem conta na nuvem e sem qualquer aplicação pelo meio. Estas são as páginas de uma câmara com uma compilação atual.'
+      scene_credit_html: 'A praia nas capturas Camera Preview e Majestic Settings é a vista de uma câmara do utilizador do OpenIPC <a href="https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706">@usa-</a>, publicada com a sua autorização.'
       title: Interface web
