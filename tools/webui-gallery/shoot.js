@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const dns = require('dns').promises;
 const yaml = require('js-yaml');
-const { redactInPage, config } = require('./redact');
+const { redactInPage, readInPage, survivors, config } = require('./redact');
 const { connect } = require('./session');
 
 const BASE = required('CAM_BASE');
@@ -105,13 +105,21 @@ async function unlisted(page, listed) {
   }
 
   const host = new URL(BASE).hostname;
-  const { address: ip } = await dns.lookup(host).catch(() => ({ address: null }));
-  const cfg = config({ host, ip, maps: MAPS });
-  console.log(`camera ${host}${ip && ip !== host ? ` (${ip})` : ''}`
+  // Every family, not the first answer: a camera on both stacks renders its
+  // IPv6 address on the network page even when this tool reached it over v4.
+  const resolved = await dns.lookup(host, { all: true }).catch(() => []);
+  const cfg = config({ host, ips: resolved.map((r) => r.address), maps: MAPS });
+  console.log(`camera ${host}${cfg.ips.length ? ` (${cfg.ips.join(', ')})` : ''}`
     + ` -> ${cfg.hostname} / ${cfg.cameraIp}, ${MAPS.length} extra substitution(s)`);
 
-  const scene = SCENE ? `data:image/jpeg;base64,${fs.readFileSync(SCENE).toString('base64')}` : null;
-  console.log(scene ? `scene: ${SCENE}` : "scene: none, the camera's own picture will be published");
+  const sceneUri = SCENE ? `data:image/jpeg;base64,${fs.readFileSync(SCENE).toString('base64')}` : null;
+  if (sceneUri) {
+    console.log(`scene: ${SCENE}`);
+  } else if (screens.some((s) => s.scene)) {
+    console.log(`\n!! no scene given, so ${screens.filter((s) => s.scene).map((s) => s.slug).join(', ')}`
+      + ' will publish whatever this camera is pointed at.'
+      + '\n!! look at those captures before committing them.\n');
+  }
 
   const { home, open, close } = await connect({ base: BASE, user: USER, pass: PASS });
   console.log(`signed in as ${USER}, landed on "${await home.title()}"`);
@@ -120,15 +128,30 @@ async function unlisted(page, listed) {
 
   fs.mkdirSync(OUT, { recursive: true });
   let failed = 0;
-  for (const { slug, cgi, settle } of screens) {
+  for (const { slug, cgi, settle, scene: needsScene } of screens) {
     let page;
     try {
       page = await open(cgi, settle);
       const hits = await page.evaluate(redactInPage, cfg);
-      const scenes = scene ? await substituteScene(page, scene) : 0;
+      const covered = sceneUri ? await substituteScene(page, sceneUri) : 0;
+
+      // The manifest says this page shows live video. If the overlay found no
+      // player, the WebUI has changed shape and the picture about to be taken
+      // is the camera's own view -- which is the one outcome a scene exists to
+      // prevent, and it would otherwise be installed without a word.
+      if (needsScene && sceneUri && covered === 0) {
+        throw new Error('no live player found to cover -- the page has changed shape');
+      }
+
+      // Checked here, against the very page that is about to be photographed,
+      // rather than only on the second pass in verify.js: a page reloaded a
+      // minute later is not the artifact being installed.
+      const left = survivors(await page.evaluate(readInPage), cfg);
+      if (left.length) throw new Error(`would publish ${left.join('; ')}`);
+
       await page.screenshot({ path: path.join(OUT, `${slug}.png`) });
       console.log(`ok   ${slug.padEnd(24)} ${cgi.padEnd(22)} "${await page.title()}"`
-        + ` (${hits} redacted, ${scenes} scene)`);
+        + ` (${hits} redacted, ${covered} scene)`);
     } catch (e) {
       console.log(`FAIL ${slug.padEnd(24)} ${cgi.padEnd(22)} ${e.message.split('\n')[0]}`);
       failed++;

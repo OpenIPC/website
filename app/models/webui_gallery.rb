@@ -11,7 +11,7 @@
 class WebuiGallery
   MANIFEST = Rails.root.join('config/webui_gallery.yml')
 
-  Screen = Struct.new(:slug, :caption, :cgi, :settle, keyword_init: true) do
+  Screen = Struct.new(:slug, :caption, :cgi, :settle, :scene, keyword_init: true) do
     # The two files the tool produces for this screen. The tile is the
     # downscaled copy; the full-size one is only fetched when a visitor zooms.
     def tile
@@ -24,6 +24,12 @@ class WebuiGallery
 
     def alt
       "#{caption} page of the OpenIPC web interface"
+    end
+
+    # Shows live video, so the tool has to cover the picture with a scene the
+    # project is allowed to publish before it takes the shot.
+    def scene?
+      scene == true
     end
   end
 

@@ -73,11 +73,22 @@ connected to becomes `camera.local`, the address it resolved to becomes
 address becomes `192.168.1.50`. Add `--map OLD=NEW` for anything specific to
 your network that deserves a tidier stand-in — a gateway, say.
 
-`verify.js` then re-opens every page, applies the same rewriting, reads the
-rendered text back, and fails the run if anything identifying survived. It is
-written as the opposite question — "is anything still here?" — rather than as a
-restatement of the rules, so a rule that quietly stopped matching is still
-caught. It runs before anything is installed, on purpose.
+The same question is then asked twice. Once inside `shoot.js`, against the very
+page that is about to be photographed — a page reloaded a minute later is not
+the artifact being installed — and again in `verify.js`, which re-opens every
+page from scratch. Both read the page the way a screenshot does: `innerText`
+plus the values shown inside inputs and selects, because `fw-network.cgi` is
+almost nothing but those and auditing text alone would have exactly the blind
+spot the redaction has a second pass to cover.
+
+Both are written as the opposite question — "is anything still here?" — rather
+than as a restatement of the rules, so a rule that quietly stopped matching is
+still caught. Both run before anything is installed, on purpose.
+
+IPv6 is handled by prefix, not by a general literal match: the camera's own
+resolved addresses in any family, plus link-local and unique-local peers. A
+regex loose enough to catch every valid IPv6 form also eats clock times and MAC
+addresses.
 
 None of this inspects the pixels. Look at the captures before you commit them.
 
@@ -90,9 +101,20 @@ text — fitted to the element's content box so the player's own border and corn
 radius still frame it, and cropped with `object-fit: cover` the way real video
 fills the element.
 
-The default is `scene/beach-usa.jpg`; see `scene/CREDIT.md` before changing it,
-because the page credits it by name. `--scene none` publishes the camera's own
-view, which is fine if you have checked what it is looking at.
+Pages that show live video are marked `scene: true` in the manifest. That mark
+is what turns a change in the WebUI into a failure rather than a leak: if the
+overlay finds no player to cover on a page that claims to have one, the run
+stops instead of photographing the camera's own view.
+
+The default scene is `scene/beach-usa.jpg`; see `scene/CREDIT.md` before
+changing it, because the page credits it by name.
+
+`--scene none` publishes the camera's own view. It stays because it is
+sometimes the right answer — a camera pointed at a test chart, or at something
+the project owns and wants to show — and because forcing a substitution on
+somebody who has a better picture is not safety, it is a nuisance. The tool
+names the pages this affects and tells you to look at those captures before
+committing them. Do look.
 
 ## Traps
 
@@ -124,6 +146,12 @@ photographed at all; the old gallery's `reset.jpg` cannot be retaken. `shoot.js`
 refuses to open them even if the manifest names them. Before adding a page to
 the manifest, check it with `grep -l data-cmd *.cgi` in the majestic-webui
 checkout.
+
+**Pages that answer 404.** A page the WebUI has dropped still answers at the
+address it used to live at, and an error document photographs perfectly well.
+This tool exists to be run after redesigns that delete pages, so that is not an
+exotic case — it is the case. The tool checks the response status, not only
+that the browser stayed on the URL it asked for.
 
 **A second subnet.** A rule written for the camera's own `/24` is not enough:
 the log viewer surfaces peers from elsewhere on the network. That is why the

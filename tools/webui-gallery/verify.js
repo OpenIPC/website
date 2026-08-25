@@ -13,7 +13,7 @@
 const fs = require('fs');
 const dns = require('dns').promises;
 const yaml = require('js-yaml');
-const { redactInPage, survivors, config } = require('./redact');
+const { redactInPage, readInPage, survivors, config } = require('./redact');
 const { connect } = require('./session');
 
 const BASE = process.env.CAM_BASE;
@@ -35,8 +35,8 @@ const MAPS = (process.env.MAPS || '').split(',').filter(Boolean).map((m) => {
   if (!screens.length) throw new Error('nothing to verify: no screen matched');
 
   const host = new URL(BASE).hostname;
-  const { address: ip } = await dns.lookup(host).catch(() => ({ address: null }));
-  const cfg = config({ host, ip, maps: MAPS });
+  const resolved = await dns.lookup(host, { all: true }).catch(() => []);
+  const cfg = config({ host, ips: resolved.map((r) => r.address), maps: MAPS });
 
   const { home, open, close } = await connect({ base: BASE, user: USER, pass: PASS });
   await home.close();
@@ -45,10 +45,7 @@ const MAPS = (process.env.MAPS || '').split(',').filter(Boolean).map((m) => {
   for (const { slug, cgi, settle } of screens) {
     const page = await open(cgi, settle);
     await page.evaluate(redactInPage, cfg);
-    // innerText, not innerHTML: what a reader sees is what a screenshot shows,
-    // and an attribute nobody renders is not in the picture.
-    const text = await page.evaluate(() => document.body.innerText);
-    const left = survivors(text, cfg);
+    const left = survivors(await page.evaluate(readInPage), cfg);
     if (left.length) {
       console.log(`LEAK ${slug} (${cgi}): ${left.join('; ')}`);
       leaking++;

@@ -36,13 +36,18 @@ async function goto(page, url, attempts = 4) {
 
 async function connect({ base, user, pass }) {
   const { browser, ctx } = await launch();
+  // Built with the URL constructor rather than by concatenation: --camera
+  // accepts a URL, and "http://cam/" or "http://cam/prefix" would otherwise
+  // become "http://cam//login.html" and "http://cam/prefix/cgi-bin/...". The
+  // WebUI serves these from the root whatever path the operator typed.
+  const at = (path) => new URL(path, base).href;
 
   // The WebUI redirects unauthenticated *browsers* to /login.html rather than
   // answering 401, so Playwright's httpCredentials never gets a challenge to
   // respond to. Sign in through the form and the cookie carries the run.
   const signIn = async () => {
     const page = await ctx.newPage();
-    await goto(page, `${base}/login.html`);
+    await goto(page, at('/login.html'));
     await page.fill('#username', user);
     await page.fill('#password', pass);
     await page.click('#submit');
@@ -62,17 +67,24 @@ async function connect({ base, user, pass }) {
   // has nothing to hide, and a gallery of sign-in forms gets installed. So:
   // never accept a page that is not the page that was asked for.
   const open = async (cgi, settle) => {
-    const want = `/cgi-bin/${cgi}`;
+    const want = new URL(`/cgi-bin/${cgi}`, base).pathname;
     const page = await ctx.newPage();
     try {
-      await goto(page, `${base}${want}`);
+      let response = await goto(page, at(`/cgi-bin/${cgi}`));
       if (new URL(page.url()).pathname !== want) {
         const fresh = await signIn();
         await fresh.close();
-        await goto(page, `${base}${want}`);
+        response = await goto(page, at(`/cgi-bin/${cgi}`));
       }
       const landed = new URL(page.url()).pathname;
       if (landed !== want) throw new Error(`${cgi} answered with ${landed} -- not signed in`);
+      // A page the WebUI has dropped answers 404 at the address it used to
+      // live at, and an error document photographs perfectly well. This tool
+      // exists to be run after redesigns that delete pages, so that is not an
+      // exotic case -- it is the case.
+      if (response && !response.ok()) {
+        throw new Error(`${cgi} answered ${response.status()} -- the manifest is out of date`);
+      }
       return await settled(page, settle);
     } catch (e) {
       if (!page.isClosed()) await page.close();

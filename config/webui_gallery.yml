@@ -20,6 +20,11 @@
 #            Pages that fetch and render their own content need more: the log
 #            viewer and the settings form build themselves from API calls, and
 #            the player needs time to negotiate a stream and paint a frame.
+#   scene    true if the page shows live video. Whatever the camera is pointed
+#            at goes on the public site, so the tool lays a still picture over
+#            the player -- and fails the run if it cannot find one to cover,
+#            rather than quietly photographing the camera's own view when the
+#            WebUI changes shape.
 screens:
   - slug: status
     caption: Device Status
@@ -30,11 +35,13 @@ screens:
     caption: Camera Preview
     cgi: preview.cgi
     settle: 14000
+    scene: true
 
   - slug: majestic-settings
     caption: Majestic Settings
     cgi: mj-settings.cgi
     settle: 6000
+    scene: true
 
   - slug: majestic-endpoints
     caption: Majestic Endpoints

@@ -45,6 +45,21 @@ class WebuiGalleryTest < ActiveSupport::TestCase
       assert_match(/\A[a-z0-9-]+\.cgi\z/, screen.cgi.to_s)
       assert_kind_of Integer, screen.settle
       assert_operator screen.settle, :>, 0
+      # A misspelt or truthy-but-not-true value would read as "no live player
+      # here" and the tool would photograph the camera's own view.
+      assert_includes [nil, true], screen.scene, "#{screen.slug}: scene must be true or absent"
+    end
+  end
+
+  test 'the pages that show live video are marked as such' do
+    # The mark is what makes the tool fail rather than publish the camera's own
+    # view when it cannot find a player to cover. Losing it is silent, so it is
+    # asserted here against the pages that are known to carry one.
+    %w[preview majestic-settings].each do |slug|
+      screen = WebuiGallery.screens.find { |s| s.slug == slug }
+      next if screen.nil?
+
+      assert_predicate screen, :scene?, "#{slug} shows a live player and must be marked scene: true"
     end
   end
 end
