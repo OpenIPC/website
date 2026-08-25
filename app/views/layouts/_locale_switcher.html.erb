@@ -1,0 +1,34 @@
+<%#
+  Was a string-building helper in the Multilang concern. Two things it could not
+  do from there, both of which only started mattering when the switcher was
+  turned on:
+
+  - the icon was a hardcoded <img src="/assets/translate.svg">, and production
+    serves fingerprinted assets with compile off, so that is a 404 on every
+    page. icon_language has rendered it through image_tag all along.
+  - every link was a bare "?locale=xx", which replaces the whole query string.
+    Switching language on /snapshots?page=2 lost the page, and on a permanent
+    link to a camera configuration it lost the configuration.
+
+  aria-labelledby also pointed at "dropdownLanguage" while the button was
+  id="dropsownLanguage", so it labelled nothing.
+%>
+<ul class="navbar-nav text-uppercase">
+  <li class="nav-item dropdown">
+    <a aria-expanded="false" class="nav-link dropdown-toggle" href="#"
+       data-bs-toggle="dropdown" id="dropdownLanguage" role="button">
+      <%= icon_language %>
+    </a>
+    <ul aria-labelledby="dropdownLanguage" class="dropdown-menu dropdown-menu-lg-end">
+      <% Multilang::LOCALES.each do |locale, name| %>
+        <% current = I18n.locale.eql?(locale) %>
+        <li class="dropdown-item">
+          <%= link_to name,
+                      "#{request.path}?#{request.query_parameters.merge('locale' => locale).to_query}",
+                      lang: locale, class: (current ? 'fw-bold' : nil),
+                      aria: { current: (current ? 'true' : nil) } %>
+        </li>
+      <% end %>
+    </ul>
+  </li>
+</ul>

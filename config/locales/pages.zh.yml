@@ -36,6 +36,7 @@ zh:
       button_binaries: 预编译的二进制文件
       button_instructions: 安装说明
       button_sources: 项目源码
+      gaming: 游戏解决方案
       img_majestic_alt: 图片：雄伟的飘带标志
       img_openipc_alt: 图片：OpenIPC 社区徽标
       paragraph1: OpenIPC是一个开源的操作系统，针对一些使用ARM和MIPS处理器的网络摄像机，以替代供应商预装的那种封闭的、不透明的、不安全的、不再更新的、不支持的固件。
@@ -113,6 +114,8 @@ zh:
       paragraph1_html: OpenIPC 是一个社区驱动的开源项目，许多人为其代码库做出贡献。赞美他们！还有一个由熟练的开发人员组成的核心团队，他们努力扩展<a href="/supported-hardware">支持的硬件平台</a>列表、扩展固件的功能和稳定性、审查提交的代码并协调社区工作。了解团队及其专业领域：
       title: 我们的团队
     qr_code_generator:
+      alert_text: 二维码在您的浏览器中生成。您的数据不会被发送或存储到任何地方。
+      alert_title: 注意
       generate_qr_code: 生成二维码
       paragraph1_html: 生成包含用于访问无线网络的凭据的二维码。
       password: 密码
