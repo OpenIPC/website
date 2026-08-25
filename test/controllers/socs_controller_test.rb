@@ -551,6 +551,54 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     assert_told_to_remap_partitions('Ingenic')
   end
 
+  # --- the pages that send the visitor to the wiki instead ---
+
+  # These two render their own template and no commands at all. The heading was
+  # a hardcoded English "Attention!" on both, and the SigmaStar one carried a
+  # stray `>` after the ERB tag that reached the page as literal text --
+  # "...not included in this guide.>". Both are visible on openipc.org today.
+  # Asserted in Russian on purpose. The English translation of this heading is
+  # the word that was hardcoded, so an English assertion passes either way and
+  # proves nothing.
+  def assert_heading_is_translated
+    assert_match %(<h2 class="mt-5 mb-3">Внимание!</h2>), response.body
+  end
+
+  # I18n.with_locale rather than ?locale=ru, because the param does nothing:
+  # Multilang's `before_action :set_locale` is commented out (multilang.rb:21),
+  # so nothing reads it and every request renders in English. That is worth
+  # knowing separately; here it just means the switch has to be made directly.
+  def submit_in_russian(soc, flash_type, firmware_version)
+    I18n.with_locale(:ru) { submit(soc, flash_type, firmware_version:) }
+  end
+
+  test 'the SigmaStar NAND page translates its heading and has no stray markup' do
+    vendor = Vendor.create!(name: 'SigmaStar')
+    soc = Soc.create!(vendor:, model: 'TS338Q', status: 'done', load_address: '0x22000000',
+                      uboot_filename: 'u-boot-ts338q-universal.bin',
+                      linux_filename: 'openipc.ts338q-nor-lite.tgz')
+
+    with_release_index("openipc.#{soc.board}-nand-ultimate.tgz") do
+      submit(soc, 'nand', firmware_version: 'ultimate')
+
+      assert_match 'not included in this guide.</p>', response.body
+      assert_no_match(/guide\.(&gt;|>)/, response.body)
+
+      submit_in_russian(soc, 'nand', 'ultimate')
+      assert_heading_is_translated
+    end
+  end
+
+  test 'the HI3536 NVR page translates its heading too' do
+    soc = instructable_soc('HI3536DV100')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit_in_russian(soc, 'nor8m', 'lite')
+
+      assert_heading_is_translated
+    end
+  end
+
   # --- the permanent link ---
 
   def permalink_for(**attrs)

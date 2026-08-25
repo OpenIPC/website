@@ -67,6 +67,7 @@ es:
   firmware:
     info_html: Si desea obtener más información sobre lo que hacen los comandos %{commands}, ejecute <code>printenv</code> en la consola del gestor de arranque.
     installation:
+      attention: ¡Atención!
       backup:
         info: OpenIPC U-Boot sobrescribe la partición criptográfica original, lo que hace imposible volver al firmware de fábrica a menos que tenga una copia de seguridad flash completa para esta cámara en particular. Para crear una copia de seguridad completa del firmware, inicie un servidor TFTP y ejecute estos comandos en el shell del gestor de arranque.
         more_info_html: Consulte <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">las instrucciones de instalación</a> en la wiki del proyecto para obtener más información.

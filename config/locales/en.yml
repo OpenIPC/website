@@ -67,6 +67,7 @@ en:
   firmware:
     info_html: If you want to learn more about what the %{commands} commands do, run <code>printenv</code> in the bootloader console.
     installation:
+      attention: Attention!
       backup:
         info: OpenIPC U-Boot overwrites the original crypto partition making it impossible to revert to the factory firmware unless you have a full flash backup for this particular camera! To create a full firmware backup start a TFTP server and run these commands in bootloader shell.
         more_info_html: Please refer to <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">Installation instructions</a> in the project's wiki for more information.

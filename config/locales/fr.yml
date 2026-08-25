@@ -67,6 +67,7 @@ fr:
   firmware:
     info_html: Si vous souhaitez en savoir plus sur ce que font les commandes %{commands}, exécutez <code>printenv</code> dans la console du chargeur de démarrage.
     installation:
+      attention: Attention !
       backup:
         info: OpenIPC U-Boot écrase la partition cryptographique d'origine, ce qui rend impossible le retour au micrologiciel d'usine à moins que vous ne disposiez d'une sauvegarde flash complète pour cet appareil photo particulier ! Pour créer une sauvegarde complète du micrologiciel, démarrez un serveur TFTP et exécutez ces commandes dans le shell du chargeur de démarrage.
         more_info_html: Veuillez vous référer aux <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">instructions d'installation</a> dans le wiki du projet pour plus d'informations.

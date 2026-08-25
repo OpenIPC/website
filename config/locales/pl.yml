@@ -67,6 +67,7 @@ pl:
   firmware:
     info_html: Jeśli chcesz dowiedzieć się więcej o działaniu poleceń %{commands}, uruchom <code>printenv</code> w konsoli bootloadera.
     installation:
+      attention: Uwaga!
       backup:
         info: OpenIPC U-Boot zastępuje oryginalną partycję kryptograficzną, uniemożliwiając powrót do fabrycznego oprogramowania, chyba że masz pełną kopię zapasową flash dla tej konkretnej kamery! Aby utworzyć pełną kopię zapasową oprogramowania sprzętowego, uruchom serwer TFTP i uruchom te polecenia w powłoce programu ładującego.
         more_info_html: Aby uzyskać więcej informacji, zapoznaj się z <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">instrukcjami instalacji</a> na wiki projektu.
