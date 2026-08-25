@@ -117,10 +117,16 @@ say "checking that nothing identifying survived"
 run node verify.js
 
 say "converting to webp"
-run bash -c 'for png in "$OUT"/*.png; do
+# set -e inside the loop, and both files checked: without it a cwebp that failed
+# on one capture would be shrugged off, the pair for that screen would be half
+# written or missing, and the install would quietly leave the previous tile in
+# place -- a stale screenshot being exactly what this tool exists to replace.
+run bash -c 'set -e
+for png in "$OUT"/*.png; do
   slug=$(basename "$png" .png)
   cwebp -q 82 -m 6 -quiet "$png" -o "$OUT/$slug.webp"
   cwebp -q 82 -m 6 -quiet -resize 1200 0 "$png" -o "$OUT/$slug-thumb.webp"
+  [ -s "$OUT/$slug.webp" ] && [ -s "$OUT/$slug-thumb.webp" ]
 done'
 
 if [ "$keep" = no ]; then rm -f "$out"/*.png; fi
