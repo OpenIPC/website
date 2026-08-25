@@ -47,6 +47,18 @@ services:
       # tree, and a root context would ship node_modules to the daemon.
       context: ./docker
       dockerfile: Dockerfile.dev
+      args:
+        DEV_UID: ${DEV_UID:-1000}
+        DEV_GID: ${DEV_GID:-1000}
+    # Matched to the build args above so files written into the bind-mounted
+    # tree belong to you. If `id -u` is not 1000, put your ids in a .env file
+    # beside this one and rebuild:
+    #
+    #   printf 'DEV_UID=%s\\nDEV_GID=%s\\n' "$(id -u)" "$(id -g)" > .env
+    #   docker compose build web
+    #
+    # Compose reads .env automatically; it is gitignored.
+    user: ${DEV_UID:-1000}:${DEV_GID:-1000}
     command: bash -c 'bundle check || bundle install; exec bin/rails server -b 0.0.0.0 -p 3010'
     environment:
       # Setting this is what makes config/database.yml connect over TCP instead
@@ -57,10 +69,17 @@ services:
       - '3010:3010'
     volumes:
       - .:/app
+      # /bundle is a named volume rather than part of the tree, so `bundle
+      # install` survives a rebuild. It works with the non-root user above
+      # because the image creates and chowns /bundle before the volume is
+      # populated from it -- Docker seeds an empty named volume from the image,
+      # ownership included.
+      #
+      # node_modules deliberately gets no such volume: an empty named volume is
+      # created root-owned with nothing in the image to seed it from, so yarn
+      # would fail with EACCES on the first link step. It lives in the bind mount
+      # instead, where it belongs to you and is already gitignored.
       - bundle:/bundle
-      # node_modules is Linux-native and must not be shadowed by, or written
-      # back to, whatever the host happens to have installed.
-      - node-modules:/app/node_modules
     depends_on:
       db:
         condition: service_healthy
@@ -68,4 +87,3 @@ services:
 volumes:
   bundle:
   db-data:
-  node-modules:

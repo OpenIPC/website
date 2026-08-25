@@ -71,4 +71,24 @@ ENV BUNDLE_PATH=/bundle \
     PATH=/bundle/bin:$PATH \
     RUBYOPT=--disable-error_highlight
 
+# Run as the developer, not as root.
+#
+# Everything this container writes into the bind-mounted tree -- app/assets/builds,
+# log/, tmp/, and anything `yarn build:fonts` produces -- lands on the host with
+# the writer's ownership. As root that means files the developer cannot delete or
+# edit, which is how public/fonts/ ended up owned by nobody:nogroup the first time
+# this stack was used in anger.
+#
+# The uid has to exist in the image and own /bundle, or bundler cannot install
+# into the volume. 1000 is the usual first user on a Linux desktop; override with
+# DEV_UID/DEV_GID when it is not (see compose.yaml).
+ARG DEV_UID=1000
+ARG DEV_GID=1000
+RUN groupadd --gid ${DEV_GID} dev 2>/dev/null || true \
+  && useradd --uid ${DEV_UID} --gid ${DEV_GID} --create-home --shell /bin/bash dev 2>/dev/null || true \
+  && mkdir -p /bundle \
+  && chown -R ${DEV_UID}:${DEV_GID} /bundle
+
+USER ${DEV_UID}:${DEV_GID}
+
 WORKDIR /app
