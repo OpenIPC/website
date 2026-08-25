@@ -342,4 +342,106 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       assert_match '<code>uknor8m</code>, <code>urnor8m</code>, <code>setnor8m</code>', response.body
     end
   end
+
+  # --- the size rule sees the edition that is actually rendered ---
+
+  test 'the 8MB rule is applied after the edition has settled, not before' do
+    # A SoC published as Ultimate and nothing else. A `lite` submission arrives
+    # as Lite, use_published_release! moves it to Ultimate because that is all
+    # there is, and the 8MB rule had already looked and seen Lite -- so nor8m +
+    # Ultimate rendered with nothing said about it. The same
+    # read-before-it-settled mistake the flash type itself had.
+    soc = instructable_soc('TS9911EV300')
+
+    with_release_index("openipc.#{soc.board}-nor-ultimate.tgz") do
+      submit(soc, 'nor8m', firmware_version: 'lite')
+
+      assert_match(/does not fit an 8MB flash chip/, response.body)
+    end
+  end
+
+  test 'a SoC with no NOR firmware at all is not told to buy a larger NOR chip' do
+    # rv1109 and rv1126 are like this. A larger chip does not help: there is no
+    # NOR build for the part at any size.
+    soc = Soc.create!(vendor: @vendor, model: 'TS1109', status: 'done',
+                      load_address: '0x82000000',
+                      uboot_filename: 'u-boot-ts1109-universal.bin',
+                      linux_filename: 'openipc.ts1109-nand-ultimate.tgz')
+
+    with_release_index('openipc.ts1109-nand-ultimate.tgz') do
+      submit(soc, 'nor8m', firmware_version: 'ultimate')
+
+      assert_match(/publishes no NOR firmware for this SoC/, response.body)
+      assert_no_match(/needs a larger chip/, response.body)
+    end
+  end
+
+  test 'a flash message is rendered once, at the severity it was raised with' do
+    # display_flashes mapped everything but alert/error to alert-info, and
+    # update.html.erb separately iterated flash.each -- flash.discard marks a
+    # key for sweeping without removing it from the current request -- so the
+    # page carried the same sentence twice, once calm blue and once red.
+    soc = instructable_soc('TS9912EV300')
+
+    with_release_index("openipc.#{soc.board}-nor-ultimate.tgz") do
+      submit(soc, 'nor8m', firmware_version: 'ultimate')
+
+      assert_equal 1, response.body.scan(/does not fit an 8MB flash chip/).size
+      assert_select 'div.alert-danger', /does not fit an 8MB flash chip/
+      assert_select 'div.alert-info', { count: 0, text: /does not fit an 8MB flash chip/ }
+    end
+  end
+
+  # --- a chip with nothing published for it says so ---
+
+  test 'NAND on a SoC with no NAND build says so instead of naming the tarball' do
+    # use_published_release! moves the visitor onto a published edition, but
+    # returns without a word when there is none to move to -- `return nil if
+    # available.empty?`. That silence was unreachable while every submission was
+    # forced onto default_flash_chip, which picks a flash type that has builds.
+    # ~110 SoCs here have no NAND build; this rendered `run uknand; run urnand`,
+    # a bundle link and a download link for all of them.
+    soc = instructable_soc('TS3516EV100')
+
+    with_release_index("openipc.#{soc.board}-nor-lite.tgz") do
+      submit(soc, 'nand')
+
+      assert_match(/publishes no NAND firmware for this SoC/, response.body)
+    end
+  end
+
+  test 'a larger NOR size on a NAND-only SoC says so too, not just 8MB Ultimate' do
+    # The first cut of this guard sat inside the 8MB rule, so it only fired for
+    # nor8m plus Ultimate. Every other edition and every other NOR size on the
+    # same SoC still rendered NOR instructions in silence.
+    soc = Soc.create!(vendor: @vendor, model: 'TS1127', status: 'done',
+                      load_address: '0x82000000',
+                      uboot_filename: 'u-boot-ts1127-universal.bin',
+                      linux_filename: 'openipc.ts1127-nand-ultimate.tgz')
+
+    with_release_index('openipc.ts1127-nand-ultimate.tgz') do
+      submit(soc, 'nor16m')
+
+      assert_match(/publishes no NOR firmware for this SoC/, response.body)
+    end
+  end
+
+  test 'an unreadable release index is not reported as nothing being published' do
+    # available_releases answers the known list rather than [] when the index
+    # cannot be read, so an index outage must not turn every SoC into "OpenIPC
+    # publishes nothing for this part".
+    soc = instructable_soc('TS3516EV400')
+
+    root = Dir.mktmpdir
+    ENV['RELEASE_INDEX_ROOT'] = root
+    ReleaseIndex.reset!
+
+    submit(soc, 'nor8m')
+
+    assert_no_match(/publishes no NOR firmware/, response.body)
+  ensure
+    ENV.delete('RELEASE_INDEX_ROOT')
+    ReleaseIndex.reset!
+    FileUtils.remove_entry(root) if root
+  end
 end

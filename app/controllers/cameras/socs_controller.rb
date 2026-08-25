@@ -137,14 +137,24 @@ module Cameras
       elsif @camera.soc.model.in?(%w[HI3536CV100 HI3536DV100])
         render 'cameras/socs/hi3536dv100_is_weird'
       else
-        enforce_eight_meg_limit
-
         # Everything above this point can be set from the query string.
         if (asked = @camera.use_published_release!)
           flash.now[:warning] =
             "OpenIPC does not publish a #{asked.to_s.capitalize} build for this SoC on " \
             "#{@camera.flash_type_type.upcase} flash. Showing #{@camera.firmware_version_name} instead."
         end
+
+        warn_if_nothing_published
+
+        # After use_published_release!, not before. The size rule has to be
+        # applied to the edition that is actually going to be rendered, and this
+        # is the call that settles it: on a SoC published as Ultimate and nothing
+        # else, a `lite` submission arrives here as Lite, leaves as Ultimate, and
+        # the size rule had already looked and seen Lite. nor8m + Ultimate then
+        # rendered with no mention of it.
+        #
+        # The same read-before-it-settled mistake the flash type had above.
+        enforce_eight_meg_limit
 
         @camera.backup_filename = "backup-#{@camera.soc.model.downcase}-#{@camera.flash_type}.bin"
 
@@ -262,15 +272,44 @@ module Cameras
     def enforce_eight_meg_limit
       return unless @camera.flash_type.eql?('nor8m') && @camera.firmware_version.eql?('ultimate')
 
-      if @camera.soc.available_releases('nor').include?('lite')
+      published = @camera.soc.available_releases('nor')
+      # Nothing on NOR at any size is a different problem, and
+      # warn_if_nothing_published has already named it. "Needs a larger chip"
+      # would be wrong advice here: no NOR size helps a NAND-only part.
+      return if published.empty?
+
+      if published.include?('lite')
         @camera.firmware_version = 'lite'
         flash.now[:warning] = '8MB Flash ROM can only be flashed with Lite or FPV edition!'
       else
-        flash.now[:danger] =
+        flash.now[:alert] =
           'The Ultimate edition does not fit an 8MB flash chip, and OpenIPC publishes no Lite build ' \
           'for this SoC on NOR. These instructions cannot produce a working camera on 8MB flash -- ' \
           'this SoC needs a larger chip.'
       end
+    end
+
+    # Nothing published for the chip that was chosen, at any edition.
+    #
+    # Distinct from use_published_release!, which moves the visitor onto a
+    # published edition and deliberately says nothing when there is no edition
+    # to move them to -- `return nil if available.empty?`. That silence was
+    # invisible while update forced every submission onto default_flash_chip,
+    # which picks a flash type that has builds. Honouring the submitted chip
+    # made it reachable: NAND on any of the ~110 SoCs with no NAND build, or
+    # NOR on a NAND-only part like rv1109, rendered `run uknand; run urnand`,
+    # a bundle link and a download link, all naming a tarball upstream never
+    # built and all 404ing off-site with nothing here to explain why.
+    #
+    # available_releases answers the known list rather than [] when the index
+    # cannot be read, so an unreachable index does not turn into "OpenIPC
+    # publishes nothing for this SoC".
+    def warn_if_nothing_published
+      return if @camera.soc.available_releases(@camera.flash_type_type).any?
+
+      flash.now[:alert] =
+        "OpenIPC publishes no #{@camera.flash_type_type.upcase} firmware for this SoC. These " \
+        'instructions cannot produce a working camera -- the files they name have never been built.'
     end
 
     def permitted_params

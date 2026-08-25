@@ -15,9 +15,17 @@ module ApplicationHelper
     asset_path('no-signal.webp')
   end
 
+  # Bootstrap has no `alert-alert` or `alert-error`, so the keys Rails ships
+  # under have to be mapped. Everything unrecognised stays informational, but
+  # warning and success are contextual classes in their own right -- mapping
+  # them to info too rendered the wizard's "does not fit an 8MB flash chip" as
+  # a calm blue notice.
+  FLASH_CLASSES = { 'alert' => 'danger', 'error' => 'danger', 'danger' => 'danger',
+                    'warning' => 'warning', 'success' => 'success' }.freeze
+
   def display_flashes
     html = flash.keys.map do |k|
-      css = k.in?(%w[alert error]) ? 'danger' : 'info'
+      css = FLASH_CLASSES.fetch(k.to_s, 'info')
       content_tag 'div', flash.discard(k), class: "mt-4 alert alert-#{css}", role: 'alert'
     end.join("\n")
     return if html.blank?
