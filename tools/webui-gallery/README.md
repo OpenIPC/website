@@ -90,6 +90,17 @@ resolved addresses in any family, plus link-local and unique-local peers. A
 regex loose enough to catch every valid IPv6 form also eats clock times and MAC
 addresses.
 
+`selftest.js` checks the rules themselves — what counts as a hostname, what a
+bare label means, which addresses are identifying — and runs before the camera
+is touched. It exists because every defect found in this logic so far has been
+invisible in a successful run: the rules had simply stopped covering something,
+and everything still reported clean.
+
+A hostname is only rewritten when it is qualified. A bare label identifies
+nothing — the device's own hostname is on every page the gallery publishes
+anyway — and rewriting one would eat ordinary words: a camera reached as
+`camera` would turn the heading "Camera Preview" into "camera.local Preview".
+
 None of this inspects the pixels. Look at the captures before you commit them.
 
 ## The scene

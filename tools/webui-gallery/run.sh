@@ -103,6 +103,11 @@ run() { docker run --rm --env-file "$env_file" -v "$repo:/repo" -w /repo/tools/w
 say "installing node dependencies"
 run npm install --silent --no-audit --no-fund
 
+# Before the camera is touched, because a rule that has quietly stopped
+# covering something is invisible in a successful run.
+say "checking the redaction rules"
+run node selftest.js
+
 say "photographing the camera"
 run node shoot.js
 

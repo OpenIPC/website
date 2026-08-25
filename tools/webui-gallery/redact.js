@@ -58,8 +58,12 @@ function redactInPage(cfg) {
     // Operator-supplied literal substitutions run first: they are the specific
     // ones, and the sweeps below would otherwise swallow what they target.
     for (const [from, to] of cfg.maps) out = out.split(from).join(to);
+    // Anchored to host boundaries: an unanchored replacement of, say,
+    // "torturelabs.com" would also rewrite it inside "nottorturelabs.com".
     for (const [from, to] of [[cfg.host, cfg.hostname], [cfg.domain, 'local']]) {
-      if (from) out = out.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), to);
+      if (!from) continue;
+      const lit = from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      out = out.replace(new RegExp(`(?<![\\w.-])${lit}(?![\\w.-])`, 'gi'), to);
     }
     // Every address the camera's own name resolves to, whatever family and
     // whatever range -- a device on a public address would otherwise be
@@ -120,7 +124,13 @@ function readInPage() {
 // rule that silently stopped matching would still be caught.
 function survivors(text, cfg) {
   const found = new Set();
-  const has = (needle) => needle && text.toLowerCase().includes(needle.toLowerCase());
+  // Anchored the same way the replacement is. Substring matching would report
+  // the stand-in as a leak of the thing it stands in for.
+  const has = (needle) => {
+    if (!needle) return false;
+    const lit = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?<![\\w.-])${lit}(?![\\w.-])`, 'i').test(text);
+  };
 
   if (has(cfg.host)) found.add(`hostname ${cfg.host}`);
   if (has(cfg.domain)) found.add(`domain ${cfg.domain}`);
@@ -154,11 +164,21 @@ function config({ host, ips = [], maps = [] }) {
   const looksNumeric = host ? /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(':') : false;
   const name = looksNumeric ? null : host;
   const dot = name ? name.indexOf('.') : -1;
+  const domain = dot > 0 ? name.slice(dot + 1) : null;
+  // Only qualified names are rewritten, and never one that already *is* the
+  // stand-in. A bare label identifies nothing -- the device's own hostname is
+  // on every page the gallery publishes already -- while rewriting one would
+  // eat ordinary words: a camera reached as "camera" would turn the heading
+  // "Camera Preview" into "camera.local Preview", and a camera reached as
+  // "camera.local" would have the audit report its own stand-in as a leak and
+  // fail every capture.
+  const qualified = (s) => !!s && s.includes('.') && s.toLowerCase() !== HOSTNAME;
   return {
-    host: name,
+    host: qualified(name) ? name : null,
     // A lab or corporate suffix is as identifying as the full name, and it
-    // turns up on its own in search domains and in log lines.
-    domain: dot > 0 ? name.slice(dot + 1) : null,
+    // turns up on its own in search domains and in log lines. A single-label
+    // suffix -- lan, home, local -- is not, and is a word a UI may well use.
+    domain: qualified(domain) ? domain : null,
     ips: [...new Set([...(looksNumeric ? [host] : []), ...ips])],
     maps,
     hostname: HOSTNAME,
