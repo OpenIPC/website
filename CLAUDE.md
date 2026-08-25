@@ -15,6 +15,7 @@ The OpenIPC project website — a Rails 7.0 app (Ruby 3.1.2, MySQL) that serves 
 - `bin/rails test:system` — Capybara + selenium system tests.
 - `rubocop` — lint (config in `.rubocop.yml`: `rubocop-performance`, line length 120).
 - `i18n-tasks missing` / `i18n-tasks unused` — audit translations (config in `config/i18n-tasks.yml`); `easy_translate` provides machine translation via `GOOGLE_TRANSLATE_API_KEY`/`DEEPL_TRANSLATE_API_KEY`.
+- `tools/webui-gallery/run.sh --camera <host>` — rebuild the WebUI screenshots on `/web-interface` from a real camera. Needs Docker and network access to the camera; everything else is in the image it builds. Run it when the WebUI changes shape (every few months). It redacts the camera's identity, substitutes a scene over the live player, refuses to open the CGIs that reset or reboot on render, and fails the run rather than installing if anything identifying survives. `tools/webui-gallery/README.md` has the traps.
 - Asset bundling (normally run by `bin/dev`): `yarn build` (JS → `app/assets/builds/`), `yarn build:css` (sass + autoprefixer). `app/assets/builds/` is gitignored — rebuild after JS/SCSS changes.
 
 ## Deploying
@@ -48,6 +49,7 @@ image but never the schema, so keep migrations additive.
 - `Snapshot` is an ActiveRecord model with an ActiveStorage attached `file` (variants: icon/icon2/thumb/fullhd via libvips). It powers the Open Wall. Validations enforce MAC/IP format, a credentials-driven MAC blacklist, and a **15-minute per-MAC rate limit** (`INTERVAL_LIMIT`); the latter two raise `Snapshot::BlacklistedMac` / `Snapshot::TooSoon` which the controller maps to HTTP 403/429.
 
 ### Controller areas
+- The `/web-interface` gallery is built from `config/webui_gallery.yml` through `WebuiGallery`, and `tools/webui-gallery` photographs a camera from the same manifest, so the page and the pictures cannot drift apart.
 - `PagesController` — static, i18n marketing/tool pages. `root` is `pages#introduction`. Most actions just set `@page_title` and render. `config/routes.rb` also contains many redirects to `github.com/openipc/*` repos, including the wiki at `github.com/OpenIPC/wiki` — the old `wiki.openipc.org` host is retired and no route should point at it.
 - `Cameras::SocsController` / `Cameras::VendorsController` — the supported-hardware browser (`/supported-hardware/...`, HTML + JSON), the per-SoC installation wizard (`show`/`update` build a `Camera` and render instruction partials), and firmware image download. Note special-case rendering for SigmaStar NAND and HI3536DV100, and the 8MB-flash forces `lite` edition.
 - `SnapshotsController` — public Open Wall API + gallery. **CSRF is skipped** (`verify_authenticity_token`) because cameras POST directly. `create` enqueues `PurgeImagesJob` (deletes snapshots >2 days old) and processes images async via `ProcessImagesJob`. `index` uses a raw correlated SQL query to get the latest snapshot per MAC in the last 24h.

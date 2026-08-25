@@ -1,9 +1,10 @@
-<%# Shot from a lab hi3516av300 running a current build. The captions are the
-    page titles as the camera prints them: the WebUI is not translated, so
-    quoting them is what a reader will actually match against on the device.
+<%# Shot from a real camera by tools/webui-gallery; run it again when the WebUI
+    changes shape. The list of screens, and the captions, come from
+    config/webui_gallery.yml so that the tool and this page cannot disagree
+    about what the gallery contains.
 
-    The two pages with a live player show a beach rather than the lab bench of
-    cables the camera actually points at -- see the credit under the grid. The
+    The two pages with a live player show a beach rather than the bench of
+    cables the lab camera actually faces -- see the credit under the grid. The
     scene is laid over the <video> in the DOM at capture time, the same way the
     lab's address and MAC are rewritten out of the text.
 
@@ -18,33 +19,16 @@
 
   <p class="lead col-lg-8"><%= t('.intro') %></p>
 
-  <%
-    screens = [
-      ['status',                  'Device Status'],
-      ['preview',                 'Camera Preview'],
-      ['majestic-settings',       'Majestic Settings'],
-      ['majestic-endpoints',      'Majestic Endpoints'],
-      ['majestic-configuration',  'Majestic Configuration'],
-      ['logs',                    'Logs'],
-      ['network',                 'Network Settings'],
-      ['time',                    'Time Settings'],
-      ['firmware-update',         'Firmware Update'],
-      ['console',                 'Console'],
-      ['file-manager',            'File Manager'],
-      ['telegram',                'Telegram'],
-    ]
-  %>
-
   <div id="screens" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
-    <% screens.each do |slug, caption| %>
+    <% WebuiGallery.screens.each do |screen| %>
       <div class="col">
         <figure class="mb-0">
-          <%= image_tag "webui/#{slug}-thumb.webp",
+          <%= image_tag screen.tile,
                         class: 'border img-fluid img-zoom',
-                        alt: "#{caption} page of the OpenIPC web interface",
+                        alt: screen.alt,
                         loading: 'lazy', decoding: 'async',
-                        data: { zoom: image_path("webui/#{slug}.webp") } %>
-          <figcaption class="small text-muted mt-1"><%= caption %></figcaption>
+                        data: { zoom: image_path(screen.full) } %>
+          <figcaption class="small text-muted mt-1"><%= screen.caption %></figcaption>
         </figure>
       </div>
     <% end %>

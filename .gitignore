@@ -54,3 +54,6 @@
 
 # Yarn Berry install state (regenerated locally).
 /.yarn/install-state.gz
+
+# tools/webui-gallery installs its own node_modules; the tool is not part of the app build.
+/tools/webui-gallery/node_modules
