@@ -60,7 +60,13 @@ while [ $# -gt 0 ]; do
 done
 
 [ -n "$camera" ] || { usage; exit 1; }
-case "$camera" in http://*|https://*) base=$camera ;; *) base="http://$camera" ;; esac
+# A bare IPv6 literal has to be bracketed before it is a URL. Two or more
+# colons distinguishes one from a host:port, which needs no bracketing.
+case "$camera" in
+  http://*|https://*) base=$camera ;;
+  *:*:*)              base="http://[$camera]" ;;
+  *)                  base="http://$camera" ;;
+esac
 if [ "$scene" = none ]; then
   scene=""
 elif [ ! -f "$scene" ]; then

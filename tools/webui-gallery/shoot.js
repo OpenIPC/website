@@ -104,7 +104,9 @@ async function unlisted(page, listed) {
       + 'these pages act on render and would reset or reboot the camera');
   }
 
-  const host = new URL(BASE).hostname;
+  // WHATWG keeps the brackets on an IPv6 host; the WebUI renders the address
+  // without them, so strip them or the substitution never matches.
+  const host = new URL(BASE).hostname.replace(/^\[|\]$/g, '');
   // Every family, not the first answer: a camera on both stacks renders its
   // IPv6 address on the network page even when this tool reached it over v4.
   const resolved = await dns.lookup(host, { all: true }).catch(() => []);

@@ -36,6 +36,12 @@ const byIp = config({ host: '10.1.2.3', ips: ['10.1.2.3'] });
 check('numeric host is not a name', byIp.host, null);
 check('numeric host is an address', byIp.ips, ['10.1.2.3']);
 
+// A camera reached at a bare IPv6 literal, brackets already stripped.
+const byV6 = config({ host: 'fd00::1', ips: ['fd00::1'] });
+check('IPv6 host is not a name', byV6.host, null);
+check('IPv6 host is an address', byV6.ips, ['fd00::1']);
+check('its address is a leak', survivors('addr fd00::1', byV6), ['address fd00::1', 'IPv6 fd00::1']);
+
 // Nothing identifying in redacted text.
 const clean = 'Camera Preview\ncamera.local 192.168.1.10 gw 192.168.1.1 00:11:22:33:44:55';
 check('clean page', survivors(clean, lab), []);

@@ -34,7 +34,9 @@ const MAPS = (process.env.MAPS || '').split(',').filter(Boolean).map((m) => {
   // answer to no question.
   if (!screens.length) throw new Error('nothing to verify: no screen matched');
 
-  const host = new URL(BASE).hostname;
+  // WHATWG keeps the brackets on an IPv6 host; the WebUI renders the address
+  // without them, so strip them or the substitution never matches.
+  const host = new URL(BASE).hostname.replace(/^\[|\]$/g, '');
   const resolved = await dns.lookup(host, { all: true }).catch(() => []);
   const cfg = config({ host, ips: resolved.map((r) => r.address), maps: MAPS });
 
