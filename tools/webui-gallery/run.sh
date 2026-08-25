@@ -140,11 +140,12 @@ if [ -z "$only" ]; then
   # Built forwards, from the manifest to the two filenames each slug implies,
   # rather than backwards by stripping -thumb off what is on disk: a slug that
   # itself ends in -thumb would unpick to a different name and its own full-size
-  # image would be deleted as an orphan.
+  # image would be deleted as an orphan. And read by the same YAML parser the
+  # rest of the tool uses, rather than by a grep that would disagree with it
+  # over ordinary things like a quoted value.
   keep=$(mktemp)
   trap 'rm -f "$env_file" "$work/scene.jpg" "$keep"' EXIT
-  grep -oE '^[[:space:]]*-[[:space:]]+slug:[[:space:]]*[a-z0-9-]+' "$repo/$manifest" | awk '{print $NF}' |
-    while read -r slug; do printf '%s.webp\n%s-thumb.webp\n' "$slug" "$slug"; done > "$keep"
+  run node manifest.js > "$keep"
   for f in "$repo/$images"/*; do
     grep -qxF "$(basename "$f")" "$keep" ||
       { echo "  removing $(basename "$f") -- not in the manifest"; rm -f "$f"; }
