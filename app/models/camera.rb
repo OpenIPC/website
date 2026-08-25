@@ -190,7 +190,7 @@ class Camera
   # which agreed with the bootloader only for 8MB+Lite and 16MB+Ultimate; see
   # FlashLayout for what that cost on 16MB.
   def nor_layout
-    FlashLayout.nor(flash_size, soc&.vendor&.name)
+    FlashLayout.nor(flash_size)
   end
 
   def kernel_max_size

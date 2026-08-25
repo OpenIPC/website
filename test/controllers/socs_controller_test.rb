@@ -195,7 +195,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
   end
 
   def submit(soc, flash_type, firmware_version: 'lite')
-    put "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}",
+    put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
         params: { camera: { flash_type:, firmware_version:,
                             network_interface: 'eth', sd_card_slot: 'nosd',
                             camera_ip_address: '192.168.1.10',
@@ -443,5 +443,111 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     ENV.delete('RELEASE_INDEX_ROOT')
     ReleaseIndex.reset!
     FileUtils.remove_entry(root) if root
+  end
+
+  # --- Ultimate on a 16MB chip ---
+
+  # The edition menu forbade Ultimate on 16MB, and 16MB is the only chip
+  # Ultimate is built for: every *_ultimate_defconfig upstream carries
+  # BR2_OPENIPC_FLASH_SIZE="16". The rule hid the edition from the hardware it
+  # targets. It cannot overflow either -- the build caps a NOR rootfs at 8192KB
+  # and the 16MB layout gives it 10240KB.
+  test 'the edition menu no longer withholds Ultimate from a 16MB chip' do
+    soc = instructable_soc('TS3516EV500')
+
+    with_release_index(*every_edition_for(soc)) do
+      get "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}"
+
+      assert_response :success
+      assert_match(/const sizeLimits = \{nor8m: \['lite'\]\};/, response.body)
+    end
+  end
+
+  test 'Ultimate on 16MB is rendered as Ultimate, not quietly downgraded' do
+    soc = instructable_soc('TS3516EV600')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m', firmware_version: 'ultimate')
+
+      assert_match 'openipc-ts3516ev600-nor-ultimate-16mb.bin', response.body
+      assert_no_match(/8MB Flash ROM can only be flashed/, response.body)
+      assert_no_match(/does not fit an 8MB flash chip/, response.body)
+    end
+  end
+
+  test '8MB still refuses Ultimate, so the size rule was narrowed and not dropped' do
+    soc = instructable_soc('TS3516EV700')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m', firmware_version: 'ultimate')
+
+      assert_match(/8MB Flash ROM can only be flashed/, response.body)
+      assert_match 'openipc-ts3516ev700-nor-lite-8mb.bin', response.body
+    end
+  end
+
+  # --- SigmaStar and Ingenic on 16MB ---
+
+  # FlashLayout pinned these two vendors to the 8MB offsets whatever chip was
+  # picked, so the page told a 16MB camera to `run uknor16m; run urnor16m` --
+  # writing the rootfs to 0x350000..0xd50000 using the bootloader's own macros
+  # -- and then erased from 0x750000, 733,184 bytes inside it. u-boot-msc313e,
+  # u-boot-t20 and u-boot-t40 all define mtdpartsnor16m identically to the
+  # Hisilicon and Goke ones, so there was never a reason to treat them apart.
+  def soc_of(vendor_name)
+    vendor = Vendor.create!(name: vendor_name)
+    Soc.create!(vendor:, model: 'TS338Q', status: 'done', load_address: '0x82000000',
+                uboot_filename: 'u-boot-ts338q-universal.bin',
+                linux_filename: 'openipc.ts338q-nor-lite.tgz')
+  end
+
+  # FlashLayout pinned these two vendors to the 8MB offsets whatever chip was
+  # picked, so the page told a 16MB camera to `run uknor16m; run urnor16m` --
+  # writing the rootfs to 0x350000..0xd50000 using the bootloader's own macros
+  # -- and then erased from 0x750000, 733,184 bytes inside it.
+  def assert_sixteen_meg_offsets(vendor_name)
+    soc = soc_of(vendor_name)
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m', firmware_version: 'ultimate')
+
+      assert_match 'sf erase 0xD50000', response.body
+      assert_no_match(/sf erase 0x750000/, response.body)
+    end
+  end
+
+  # Those offsets are only right if the camera is running the 16MB mtdparts, and
+  # every one of these bootloaders defaults to the 8MB one. A full-image flash
+  # leaves the env erased, so that default is what boots. These two vendors used
+  # to be the only ones not told to run setnor16m afterwards.
+  def assert_told_to_remap_partitions(vendor_name)
+    soc = soc_of(vendor_name)
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m')
+
+      # The expert section further down emits `run setnor16m` for everybody and
+      # always has, so matching the string alone proves nothing. What was
+      # suppressed is the copy of it in the full-image section, which arrives
+      # with the flashing_full.continue2 sentence in front of it.
+      assert_match 'remap ROM partitioning according to your flash size', response.body
+      assert_equal 2, response.body.scan('run setnor16m').size
+    end
+  end
+
+  test 'a 16MB SigmaStar submission gets the 16MB layout like everyone else' do
+    assert_sixteen_meg_offsets('SigmaStar')
+  end
+
+  test 'a 16MB Ingenic submission gets the 16MB layout like everyone else' do
+    assert_sixteen_meg_offsets('Ingenic')
+  end
+
+  test 'a 16MB SigmaStar camera is told to run setnor16m after a full flash' do
+    assert_told_to_remap_partitions('SigmaStar')
+  end
+
+  test 'a 16MB Ingenic camera is told to run setnor16m after a full flash' do
+    assert_told_to_remap_partitions('Ingenic')
   end
 end

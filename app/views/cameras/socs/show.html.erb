@@ -110,9 +110,17 @@
     );
 
     // Flash size still constrains the edition independently of what exists:
-    // an 8MB part cannot hold Ultimate whether or not it is published. Kept
-    // exactly as it was.
-    const sizeLimits = {nor8m: ['lite'], nor16m: ['lite']};
+    // an 8MB part cannot hold Ultimate whether or not it is published.
+    //
+    // 16MB used to be listed here too, and that was wrong. Ultimate is built
+    // for 16MB and for nothing else -- all 28 *_ultimate_defconfig files
+    // upstream carry BR2_OPENIPC_FLASH_SIZE="16" -- and the build caps a NOR
+    // rootfs at 8192KB against a 10240KB partition, so it cannot overflow. The
+    // published images run 6728-7928KB. Listing 16MB here hid the edition from
+    // exactly the hardware it targets. With the entry gone, allowedEditions
+    // falls through to what the release index says is published, which is the
+    // rule: both editions on 16MB where an Ultimate image exists.
+    const sizeLimits = {nor8m: ['lite']};
 
     // What to land on when the current choice is no longer available.
     const preferred = {nor32m: 'ultimate', nand: 'ultimate'};
