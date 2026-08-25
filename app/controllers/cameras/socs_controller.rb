@@ -137,14 +137,22 @@ module Cameras
       elsif @camera.soc.model.in?(%w[HI3536CV100 HI3536DV100])
         render 'cameras/socs/hi3536dv100_is_weird'
       else
-        enforce_eight_meg_limit
-
         # Everything above this point can be set from the query string.
         if (asked = @camera.use_published_release!)
           flash.now[:warning] =
             "OpenIPC does not publish a #{asked.to_s.capitalize} build for this SoC on " \
             "#{@camera.flash_type_type.upcase} flash. Showing #{@camera.firmware_version_name} instead."
         end
+
+        # After use_published_release!, not before. The size rule has to be
+        # applied to the edition that is actually going to be rendered, and this
+        # is the call that settles it: on a SoC published as Ultimate and nothing
+        # else, a `lite` submission arrives here as Lite, leaves as Ultimate, and
+        # the size rule had already looked and seen Lite. nor8m + Ultimate then
+        # rendered with no mention of it.
+        #
+        # The same read-before-it-settled mistake the flash type had above.
+        enforce_eight_meg_limit
 
         @camera.backup_filename = "backup-#{@camera.soc.model.downcase}-#{@camera.flash_type}.bin"
 
@@ -262,11 +270,20 @@ module Cameras
     def enforce_eight_meg_limit
       return unless @camera.flash_type.eql?('nor8m') && @camera.firmware_version.eql?('ultimate')
 
-      if @camera.soc.available_releases('nor').include?('lite')
+      published = @camera.soc.available_releases('nor')
+
+      if published.include?('lite')
         @camera.firmware_version = 'lite'
         flash.now[:warning] = '8MB Flash ROM can only be flashed with Lite or FPV edition!'
+      elsif published.empty?
+        # No NOR firmware at all, at any size -- rv1109 and rv1126 are like this.
+        # Saying "needs a larger chip" here would send the visitor to buy one
+        # that will not help either.
+        flash.now[:alert] =
+          'OpenIPC publishes no NOR firmware for this SoC at all. These instructions cannot produce ' \
+          'a working camera; this SoC is supported on NAND flash only.'
       else
-        flash.now[:danger] =
+        flash.now[:alert] =
           'The Ultimate edition does not fit an 8MB flash chip, and OpenIPC publishes no Lite build ' \
           'for this SoC on NOR. These instructions cannot produce a working camera on 8MB flash -- ' \
           'this SoC needs a larger chip.'

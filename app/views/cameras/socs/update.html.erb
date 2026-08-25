@@ -19,9 +19,6 @@
   <p class="text-end"><%= link_to t('firmware.installation.permanent_link'), @camera.permalink %></p>
 
   <div class="alert alert-warning"><%= t('.files_download_alert') %></div>
-  <% flash.each do |type, msg| %>
-    <div class="alert alert-<%= type %>"><%= msg %></div>
-  <% end %>
 
   <div class="alert alert-danger">
     <h3 class="fw-bold"><%= t('firmware.installation.backup.title') %></h3>

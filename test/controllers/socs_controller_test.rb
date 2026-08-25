@@ -342,4 +342,53 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       assert_match '<code>uknor8m</code>, <code>urnor8m</code>, <code>setnor8m</code>', response.body
     end
   end
+
+  # --- the size rule sees the edition that is actually rendered ---
+
+  test 'the 8MB rule is applied after the edition has settled, not before' do
+    # A SoC published as Ultimate and nothing else. A `lite` submission arrives
+    # as Lite, use_published_release! moves it to Ultimate because that is all
+    # there is, and the 8MB rule had already looked and seen Lite -- so nor8m +
+    # Ultimate rendered with nothing said about it. The same
+    # read-before-it-settled mistake the flash type itself had.
+    soc = instructable_soc('TS9911EV300')
+
+    with_release_index("openipc.#{soc.board}-nor-ultimate.tgz") do
+      submit(soc, 'nor8m', firmware_version: 'lite')
+
+      assert_match(/does not fit an 8MB flash chip/, response.body)
+    end
+  end
+
+  test 'a SoC with no NOR firmware at all is not told to buy a larger NOR chip' do
+    # rv1109 and rv1126 are like this. A larger chip does not help: there is no
+    # NOR build for the part at any size.
+    soc = Soc.create!(vendor: @vendor, model: 'TS1109', status: 'done',
+                      load_address: '0x82000000',
+                      uboot_filename: 'u-boot-ts1109-universal.bin',
+                      linux_filename: 'openipc.ts1109-nand-ultimate.tgz')
+
+    with_release_index('openipc.ts1109-nand-ultimate.tgz') do
+      submit(soc, 'nor8m', firmware_version: 'ultimate')
+
+      assert_match(/no NOR firmware for this SoC at all/, response.body)
+      assert_no_match(/needs a larger chip/, response.body)
+    end
+  end
+
+  test 'a flash message is rendered once, at the severity it was raised with' do
+    # display_flashes mapped everything but alert/error to alert-info, and
+    # update.html.erb separately iterated flash.each -- flash.discard marks a
+    # key for sweeping without removing it from the current request -- so the
+    # page carried the same sentence twice, once calm blue and once red.
+    soc = instructable_soc('TS9912EV300')
+
+    with_release_index("openipc.#{soc.board}-nor-ultimate.tgz") do
+      submit(soc, 'nor8m', firmware_version: 'ultimate')
+
+      assert_equal 1, response.body.scan(/does not fit an 8MB flash chip/).size
+      assert_select 'div.alert-danger', /does not fit an 8MB flash chip/
+      assert_select 'div.alert-info', { count: 0, text: /does not fit an 8MB flash chip/ }
+    end
+  end
 end
