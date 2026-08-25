@@ -82,8 +82,11 @@ class PageMetadataTest < ActionDispatch::IntegrationTest
   # Pages that lay out their own full-bleed sections opt out of the wrapper.
   # Existing pages set nothing and must keep it.
   test 'pages that do not ask for full width keep the container wrapper' do
-    get '/introduction'
+    get '/our-team'
 
-    assert_select 'main > div.container'
+    # The layout's own wrapper, not any .container: the full-bleed pages open
+    # containers of their own directly under <main>, so a bare .container would
+    # match whether the switch worked or not.
+    assert_not_empty css_select('main > div.container.mb-4')
   end
 end

@@ -1,7 +1,7 @@
 ---
 en:
   alerts:
-    downloads: If you have any problems accessing or downloading files, please feel free to contact us on our <a href="https://openipc.org/our-channels">Telegram channel</a>.
+    downloads: If you have any problems accessing or downloading files, please feel free to contact us on our <a href="/community">Telegram channel</a>.
   button:
     find: Find
   cameras:
@@ -30,7 +30,7 @@ en:
         generate_button: Generate Installation Guide
         generate_mac: Generate a valid random MAC address.
         no_bootloader_alert: OpenIPC publishes firmware for the %{name}, but not a bootloader for it. Both the guided installation and the ready-made flash image begin by writing an OpenIPC bootloader, so neither can be offered for this SoC. The firmware bundle below is the part that does exist.
-        not_ready_alert_html: The installation instructions for the %{name} SoC are not yet ready. Although we are working hard to release OpenIPC firmware for the %{name}. Please stay tuned and <a href="/support-open-source">support Open Source</a>.
+        not_ready_alert_html: The installation instructions for the %{name} SoC are not yet ready. Although we are working hard to release OpenIPC firmware for the %{name}. Please stay tuned and <a href="/donate">support Open Source</a>.
         notes: Notes
         paragraph1: Please enter the camera configuration in the provided form and press the "Generate Installation Guide" button. On the next page, you will find the binary files and the commands you have to execute for the installation of the OpenIPC firmware on the camera.
         paragraph2: Do not overlook this part. You may think that it is not necessary since you are not going to return to the dark past, but we assure you that the stock firmware will still be needed for restoring missing settings, drivers, and further research.
@@ -119,37 +119,49 @@ en:
     nor32m: NOR 32M
     nor8m: NOR 8M
   go: Go
+  footer:
+    column_community: Community
+    column_ecosystem: Ecosystem
+    column_platform: Platform
+    column_project: Project
+    firmware_source: Firmware source code
+    license_note: MIT core; some components are licensed separately.
+    tagline: No backdoors. No subscriptions. No nonsense.
   nav:
-    about: About
     add_soc: Add another SoC
     add_vendor: Add vendor
     adding_soc: Addin a SoC
     adding_vendor: Adding vendor
     admin: Admin
-    channels: Our Telegram
+    business: For Business
     clone_soc: Clone this SoC
+    community: Community
+    community_chat: Chat & Support
     dashboard: Dashboard
+    donate: Donate
+    ecosystem: Ecosystem
+    ecosystem_overview: Project Overview
     editing: Editing
+    get_started: Get Started
     green_life: Green Life
+    hardware: Hardware
+    header_web_tools: Web tools
     hires_timer: High-Resolution Timer
     home: Home
-    introduction: Introduction
+    low_latency: Low Latency
     next: Next
     openwall: Open Wall
     partition_calc: Firmware Partition Calculator
     pause_transitions: Place mouse cursor over a snapshot to pause automatic transitions.
     previous: Previous
-    projects: Our Projects
     qr_code_generator: QR Code Generator
     snapshot: 'Snapshot #%{number}'
     snapshots: Latest Snapshots
     socs: SoCs
-    software: Our Software
+    stages: Development stages
     store: Store
-    support_opensource: It's Open Source
     supported_hardware: Supported Hardware
     team: Our Team
-    tools: Tools
     utilities: Utilities
     vendors: Vendors
     view_soc: View SoC page
@@ -205,30 +217,5 @@ en:
       uptime: Uptime
   str:
     language: Language
-  telegram:
-    channels:
-      description_1: International channel about OpenIPC
-      description_10: Mandarin-speaking OpenIPC users channel (disbanded)
-      description_11: Some info, news and links from OpenIPC users
-      description_2: GitHub notifications on the latest builds
-      description_3: OpenIPC Telegram Bot demo (disbanded)
-      description_4: Russian-speaking OpenIPC users channel
-      description_5: Channel for OpenIPC developers (disbanded)
-      description_6: Everthing for devices repairing (disbanded)
-      description_7: OpenIPC for building FPV systems
-      description_8: Group for paid technical support (disbanded)
-      description_9: Persian-speaking OpenIPC users channel (disbanded)
-    formatting:
-      bold: Bold
-      header: Message Formatting
-      hyperlink: Hypelink
-      italic: Italic
-      monospace: Monospace
-      strikeout: Strikeout
-      text_html: "<p>Did you know that Telegram Messenger allows you to use formatting to emphasize important parts of the message and make information easier to grasp?</p><p>Select a text fragment and press a key combo:</p>"
-      underline: Underline
-    translation:
-      header: Chat Translation
-      text_html: <p>Did you know that Telegram messenger has a built-in translation engine that allows you to read messages written in foreign languages? Users with premium accounts can <a href="https://telegram.org/blog/profile-pics-emoji-translations#translating-entire-chats">translate entire chats</a> on the fly, but even a regular account can <a href="https://telegram.org/blog/reactions-spoilers-translations#message-translation">translate individual messages</a> with the click of a button.</p>
   title:
     openwall: Open Wall

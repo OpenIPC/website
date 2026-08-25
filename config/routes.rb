@@ -3,21 +3,32 @@ Rails.application.routes.draw do
   # the "*unmatched" catch-all below, which redirects instead of 404ing.
   get "/up", to: proc { [200, { "Content-Type" => "text/plain" }, ["ok"]] }
 
-  root "pages#introduction"
+  root 'pages#home'
 
-  get '/aaa', to: 'pages#aaa'
-
-  # The relaunched pages. They answer on their own URLs from here, so they can be
-  # reviewed and deployed on their own, but nothing links to them yet: the root
-  # route and the navigation still serve the pre-relaunch structure. The cutover
-  # is a separate change.
   get '/get-started', to: 'pages#get_started'
   get '/low-latency', to: 'pages#low_latency'
   get '/ecosystem',   to: 'pages#ecosystem'
   get '/business',    to: 'pages#business'
   get '/community',   to: 'pages#community'
   get '/donate',      to: 'pages#donate'
-  get '/home',        to: 'pages#home'
+
+  # The pre-relaunch structure, redirected rather than dropped. These URLs are
+  # in search results, in forum posts and in the wiki, and none of that is ours
+  # to edit. 301 so the ones that are indexed transfer rather than compete.
+  #
+  # /home was the temporary URL the homepage answered on while it was being
+  # built and nothing linked to it; it is the root now.
+  get '/home',                to: redirect('/')
+  get '/introduction',        to: redirect('/')
+  get '/aaa',                 to: redirect('/')
+  get '/fpv',                 to: redirect('/low-latency')
+  get '/our-projects',        to: redirect('/ecosystem')
+  get '/our-software',        to: redirect('/ecosystem')
+  get '/our-channels',        to: redirect('/community')
+  get '/support-open-source', to: redirect('/donate')
+  # 302, not 301: /about is meant to become a page of its own, and a 301 is
+  # cached by browsers indefinitely -- it would outlive the decision.
+  get '/about',               to: redirect('/community', status: 302)
   get '/majestic-endpoints', to: 'pages#majestic_endpoints'
 
   get '/coupler',     to: redirect('https://github.com/openipc//coupler/')
@@ -52,30 +63,34 @@ Rails.application.routes.draw do
   get '/wiki(/*any)',        to: redirect('https://github.com/openipc/wiki')
 
   get '/SDK', to: redirect('/supported-hardware')
-  get '/sponsor', to: redirect('/support-open-source')
+  get '/sponsor', to: redirect('/donate')
 
-  get '/about', to: 'pages#about'
   get '/green_life', to:'pages#green_life'
-  get '/introduction', to:'pages#introduction'
   get '/merchandise', to: 'pages#merchandise'
-  get '/our-projects', to: 'pages#our_projects'
-  get '/our-software', to: 'pages#our_software'
   get '/our-team', to: 'pages#our_team'
-  get '/our-channels', to: 'pages#our_channels'
   get '/stages-of-firmware-development', to: 'pages#stages_of_firmware_development'
   get '/utilities', to: 'pages#utilities'
-  get '/support-open-source', to: 'pages#support_open_source'
   get '/web-interface', to: 'pages#web_interface'
 
   get '/supported-hardware', to: redirect('/supported-hardware/featured')
   get '/supported-hardware/featured', to: 'cameras/socs#featured'
   get '/supported-hardware/full-list', to: 'cameras/socs#full_list'
 
-  get '/tools/bandwidth-calculator', to: 'pages#bandwidth_calculator'
+  # /tools/bandwidth-calculator is deliberately absent. It routed to
+  # pages#bandwidth_calculator, which has never existed -- no action, no
+  # template -- so every request raised AbstractController::ActionNotFound and
+  # answered 500 in production. Falling through to the catch-all sends the
+  # visitor to the homepage, which is at least a page.
   get '/tools/firmware-partitions-calculation', to: 'pages#firmware_partitions_calculation'
   get '/tools/high-resolution-timer', to: 'pages#high_resolution_timer'
   get '/tools/qr-code-generator', to: 'pages#qr_code_generator'
-  get '/tools/timelaps-interval-calculator', to: 'pages#timelaps_interval_calculator'
+  # /tools/timelaps-interval-calculator is deliberately absent, for the same
+  # reason as the bandwidth calculator above: pages#timelaps_interval_calculator
+  # has no action and no template under that name, so the route has answered 500
+  # for its whole life. app/views/pages/timelaps-interval-calculator.html.erb is
+  # left in the tree -- it is an unfinished draft with hardcoded English and no
+  # calculation, and finishing it is a decision for whoever started it, not
+  # something to be done by a routing change.
 
   # Commented out in ed0e025, a bulk tidy-up, while five places that redirect to
   # /open-wall were left in: snapshots_controller.rb twice,

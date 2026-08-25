@@ -7,7 +7,7 @@ require 'test_helper'
 # exactly why they are tested before the cutover rather than after it.
 class RelaunchPagesTest < ActionDispatch::IntegrationTest
   PAGES = {
-    '/home' => 'home',
+    '/' => 'home',
     '/get-started' => 'get_started',
     '/low-latency' => 'low_latency',
     '/ecosystem' => 'ecosystem',
@@ -50,7 +50,7 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     assert_equal 0, Snapshot.count
     assert_equal 0, Soc.count
 
-    get '/home'
+    get '/'
 
     assert_response :success
   end
@@ -72,8 +72,8 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
 
   # The inverse, so the switch is pinned from both sides: a page that asks for
   # nothing must still get the wrapper.
-  test 'a pre-relaunch page still gets the layout wrapper' do
-    get '/introduction'
+  test 'a page that does not ask for full width still gets the layout wrapper' do
+    get '/our-team'
 
     assert_not_empty css_select('main > div.container.mb-4')
   end
@@ -108,12 +108,12 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
   test 'Russian integrators appear for ru and for nobody else' do
     marker = PagesHelper::RU_INTEGRATORS.first[:img]
 
-    get '/home?locale=ru'
+    get '/?locale=ru'
 
     assert_includes response.body, marker.sub('.png', '')
 
     %w[en zh].each do |locale|
-      get "/home?locale=#{locale}"
+      get "/?locale=#{locale}"
 
       assert_not_includes response.body, marker.sub('.png', ''),
                           "RU integrators leaked into #{locale}"

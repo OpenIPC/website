@@ -140,14 +140,19 @@ class Snapshot < ApplicationRecord
     file.attachment&.purge
   end
 
+  # dig, not credentials.mac.blacklisted. Without config/master.key -- which is
+  # what a fresh checkout and the test environment have -- credentials.mac is
+  # nil, and the reader raised NoMethodError on every upload rather than simply
+  # having nothing to blacklist. Production has the key, so this never showed
+  # there; it made the API impossible to exercise anywhere else.
   def blacklisted_mac
-    return unless mac_address.in?(Rails.application.credentials.mac.blacklisted)
+    return unless mac_address.in?(Rails.application.credentials.dig(:mac, :blacklisted) || [])
     errors.add :base, 'This IP address is blacklisted.'
     raise BlacklistedMac
   end
 
   def time_interval
-    return if ip_address.in?(Rails.application.credentials.ip.whitelisted)
+    return if ip_address.in?(Rails.application.credentials.dig(:ip, :whitelisted) || [])
 
     s = Snapshot.select(:created_at).where(mac_address: mac_address).order(:created_at).last
     if s && s.created_at > INTERVAL_LIMIT.ago + 2.minutes # hysteresis

@@ -1,27 +1,73 @@
 <%#
-  Lifted out of application.html.erb unchanged, for the same reason as the
-  navbar. Every icon resolves through asset_path -- production runs with
-  config.assets.compile = false, so a literal /assets/... path is a 404, which
-  is what 2ec9baa fixed here and what any rewrite of this file has to preserve.
+  Four columns on dark, replacing the single copyright line.
+
+  Two links from the draft of this footer are not here, both for reasons that
+  postdate it:
+
+    /binaries answers 410 since 2cf8bc9. Linking a retired URL from every page
+    on the site would be a curious way to retire it.
+
+    /majestic-endpoints left the menu in 3f0753c. The page is a pointer to the
+    camera's own WebUI now rather than somewhere to browse to; its URL stays for
+    inbound links, and the site does not advertise it.
+
+  Every icon resolves through asset_path. Production runs with
+  config.assets.compile = false, so a literal /assets/... path is a 404 -- which
+  is exactly what 2ec9baa fixed in the footer this one replaces, and what the
+  draft would have reintroduced.
 %>
-<footer class="small p-4 mt-4 text-secondary">
+<footer class="site-footer small pt-6 pb-4" data-bs-theme="dark">
   <div class="container">
-    <div class="row justify-content-between mb-3">
-      <div class="col">
-        <p>Copyright 2019-<%= Date.today.year %> <a href="https://openipc.org/">OpenIPC</a>.</p>
+    <div class="row g-4 mb-5">
+      <div class="col-6 col-lg-3">
+        <h2><%= t('footer.column_platform') %></h2>
+        <ul>
+          <li><a href="/get-started"><%= t('nav.get_started') %></a></li>
+          <li><a href="/supported-hardware"><%= t('nav.supported_hardware') %></a></li>
+          <li><a href="https://github.com/OpenIPC/firmware"><%= t('footer.firmware_source') %></a></li>
+          <li><a href="/web-interface"><%= t('nav.webui') %></a></li>
+          <li><a href="/stages-of-firmware-development"><%= t('nav.stages') %></a></li>
+        </ul>
       </div>
-      <div class="col text-end">
-        <div class="btn-group">
-          <a class="btn" href="https://github.com/openipc" title="OpenIPC on GitHub"><img src="<%= asset_path("github-black.svg") %>" alt="Image: GitHub logo"></a>
-          <a class="btn" href="https://opencollective.com/openipc" title="OpenIPC on OpenCollective"><img src="<%= asset_path("opencollective-black.svg") %>" alt="Image: OpenCollective logo"></a>
-          <a class="btn" href="https://t.me/openipc" title="OpenIPC on Telegram"><img src="<%= asset_path("telegram-black.svg") %>" alt="Image: Telegram logo"></a>
-          <a class="btn" href="https://www.google.com/search?q=WeChat+ID%3A+OpenIPC" title="OpenIPC on WeChat"><img src="<%= asset_path("wechat-black.svg") %>" alt="Image: WeChat logo"></a>
-          <a class="btn" href="https://www.youtube.com/@openipc" title="OpenIPC on YouTube"><img src="<%= asset_path("youtube-black.svg") %>" alt="Image: YouTube logo"></a>
-          <a class="btn" href="https://twitter.com/openipc" title="OpenIPC on Twitter"><img src="<%= asset_path("twitter-black.svg") %>" alt="Image: Twitter logo"></a>
-          <a class="btn" href="https://www.instagram.com/openipc/" title="OpenIPC on Instagram"><img src="<%= asset_path("instagram-black.svg") %>" alt="Image: Instagram logo"></a>
+      <div class="col-6 col-lg-3">
+        <h2><%= t('footer.column_ecosystem') %></h2>
+        <ul>
+          <li><a href="/ecosystem"><%= t('nav.ecosystem_overview') %></a></li>
+          <li><a href="/low-latency"><%= t('nav.low_latency') %></a></li>
+          <li><a href="/open-wall"><%= t('nav.openwall') %></a></li>
+          <li><a href="/utilities"><%= t('nav.utilities') %></a></li>
+          <li><a href="https://github.com/openipc/wiki"><%= t('nav.wiki') %></a></li>
+        </ul>
+      </div>
+      <div class="col-6 col-lg-3">
+        <h2><%= t('footer.column_project') %></h2>
+        <ul>
+          <li><a href="/business"><%= t('nav.business') %></a></li>
+          <li><a href="/donate"><%= t('nav.donate') %></a></li>
+          <li><a href="/our-team"><%= t('nav.team') %></a></li>
+          <li><a href="/green_life"><%= t('nav.green_life') %></a></li>
+          <li><a href="/merchandise"><%= t('pages.merchandise.title') %></a></li>
+        </ul>
+      </div>
+      <div class="col-6 col-lg-3">
+        <h2><%= t('footer.column_community') %></h2>
+        <ul>
+          <li><a href="/community"><%= t('nav.community_chat') %></a></li>
+        </ul>
+        <div class="social-links d-flex flex-wrap gap-1 mt-3">
+          <a class="btn btn-sm" href="https://github.com/openipc" title="OpenIPC on GitHub"><img src="<%= asset_path('github-black.svg') %>" alt="Image: GitHub logo"></a>
+          <a class="btn btn-sm" href="https://opencollective.com/openipc" title="OpenIPC on OpenCollective"><img src="<%= asset_path('opencollective-black.svg') %>" alt="Image: OpenCollective logo"></a>
+          <a class="btn btn-sm" href="https://t.me/openipc" title="OpenIPC on Telegram"><img src="<%= asset_path('telegram-black.svg') %>" alt="Image: Telegram logo"></a>
+          <a class="btn btn-sm" href="https://www.google.com/search?q=WeChat+ID%3A+OpenIPC" title="OpenIPC on WeChat"><img src="<%= asset_path('wechat-black.svg') %>" alt="Image: WeChat logo"></a>
+          <a class="btn btn-sm" href="https://www.youtube.com/@openipc" title="OpenIPC on YouTube"><img src="<%= asset_path('youtube-black.svg') %>" alt="Image: YouTube logo"></a>
+          <a class="btn btn-sm" href="https://twitter.com/openipc" title="OpenIPC on Twitter"><img src="<%= asset_path('twitter-black.svg') %>" alt="Image: Twitter logo"></a>
+          <a class="btn btn-sm" href="https://www.instagram.com/openipc/" title="OpenIPC on Instagram"><img src="<%= asset_path('instagram-black.svg') %>" alt="Image: Instagram logo"></a>
         </div>
       </div>
     </div>
-    <p class="small"><%= t('site.disclaimer') %></p>
+    <div class="footer-bottom pt-4">
+      <p class="mb-1">Copyright 2019-<%= Date.today.year %> <a href="https://openipc.org/">OpenIPC</a>. <%= t('footer.license_note') %> <span class="text-data"><%= t('footer.tagline') %></span></p>
+      <p class="x-small mb-0"><%= t('site.disclaimer') %></p>
+    </div>
   </div>
 </footer>
