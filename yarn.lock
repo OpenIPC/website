@@ -159,27 +159,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hotwired/stimulus@npm:^3.2.2":
-  version: 3.2.2
-  resolution: "@hotwired/stimulus@npm:3.2.2"
-  checksum: 3793919e353d28424f57d07e6b634bf6e8821c227acfa2a608aaa8bdfe7e80479acef12705168ca866f3c231399f4a939fb0cd089aaae04c406b3d885a3b35ea
+"@fontsource/ibm-plex-mono@npm:^5.2.7":
+  version: 5.3.0
+  resolution: "@fontsource/ibm-plex-mono@npm:5.3.0"
+  checksum: 4aaf5a3c9efc7c32de4fa46ff3187ac63720904beab825f331ac01800038899761da23270f09d3fb5cff22f7cdc366904834854e2107229ad60833bba71c223d
   languageName: node
   linkType: hard
 
-"@hotwired/turbo-rails@npm:^7.3.0":
-  version: 7.3.0
-  resolution: "@hotwired/turbo-rails@npm:7.3.0"
-  dependencies:
-    "@hotwired/turbo": "npm:^7.3.0"
-    "@rails/actioncable": "npm:^7.0"
-  checksum: 1b2a5bc8767f0366c91a80a6bac178b8b02ca607add5b14b637f128d9ff08629bf3761931cc892acd46175782649ebdffa76dd45fc7e23f44bff8c06ca452d0b
-  languageName: node
-  linkType: hard
-
-"@hotwired/turbo@npm:^7.3.0":
-  version: 7.3.0
-  resolution: "@hotwired/turbo@npm:7.3.0"
-  checksum: be7d273808d64e06682f413ea007b555ecc0077cfd846754fe3b1bca06ca1b9473184d95528f7de0f3002bbc7895d58a067845ba363c549229c3bc5870c981e2
+"@fontsource/ibm-plex-sans@npm:^5.2.8":
+  version: 5.3.0
+  resolution: "@fontsource/ibm-plex-sans@npm:5.3.0"
+  checksum: 8e4c7a849e8167c8de1905282a62ff312a4266e364e3c436fa6d89d650bbb30b3386157ae31af3783e00f85fa64fd7e26bee7ca232db7d22fdc082f6b531edb5
   languageName: node
   linkType: hard
 
@@ -260,13 +250,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rails/actioncable@npm:^7.0":
-  version: 7.0.8
-  resolution: "@rails/actioncable@npm:7.0.8"
-  checksum: e9bf7cfcfc6877d320e8b637952f0fac227212631c1c169f9daaf5da545c863aea3d5a9837e661930303003c5885e6d0050b9d6d2b976d34722d9296dedd4f71
-  languageName: node
-  linkType: hard
-
 "abbrev@npm:1":
   version: 1.1.1
   resolution: "abbrev@npm:1.1.1"
@@ -344,8 +327,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "app@workspace:."
   dependencies:
-    "@hotwired/stimulus": "npm:^3.2.2"
-    "@hotwired/turbo-rails": "npm:^7.3.0"
+    "@fontsource/ibm-plex-mono": "npm:^5.2.7"
+    "@fontsource/ibm-plex-sans": "npm:^5.2.8"
     "@popperjs/core": "npm:^2.11.8"
     autoprefixer: "npm:^10.4.16"
     bootstrap: "npm:^5.3.2"

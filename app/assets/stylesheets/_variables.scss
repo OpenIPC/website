@@ -1,0 +1,88 @@
+// Theme: "engineering workbench" — light body, dark ink anchor sections, brand indigo.
+// These overrides MUST load after bootstrap/scss/functions and before the main bootstrap import.
+
+// --- Brand palette ---
+$indigo:  #4c60d8; // brand color (5.3:1 on white — AA for text)
+$primary: $indigo;
+// Bootstrap emits --bs-blue from $blue, and the pre-relaunch rules in
+// pages/_legacy.scss colour headings with var(--bs-blue). Left at Bootstrap's
+// default those rules would render #0d6efd -- the same "two blues" split this
+// file exists to close, just from the other side.
+$blue:    $indigo;
+$ink:     #0f1422; // navbar, hero, stats/CTA bands, footer
+$ink-2:   #1a2236; // raised surfaces on ink
+$accent:  #ffb454; // warm amber: Labs, live-dot, highlights; never text-on-white
+$success: #33a867; // matches stage-done.svg
+$danger:  #d6453d;
+$warning: #e8a13c;
+$info:    #3e8ed0;
+
+// --- Neutrals (cool, indigo-tinted) ---
+$body-bg:              #ffffff;
+$body-color:           #1c2333;
+$body-secondary-color: #5a6377;
+$body-tertiary-bg:     #f4f6fa;
+$border-color:         #e3e7f0;
+
+// --- Typography ---
+$font-family-sans-serif: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+$font-family-monospace:  'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+$font-size-base:       1rem;
+$line-height-base:     1.6;
+$headings-font-weight: 600; // 700 reserved for hero/display
+$display-font-weight:  700;
+$h1-font-size: 2.25rem;
+$h2-font-size: 1.75rem;
+$h3-font-size: 1.375rem;
+$code-color: #b23a78;
+
+// --- Spacing (Bootstrap defaults + 6/7 for section rhythm: py-6/py-7) ---
+$spacer: 1rem;
+$spacers: (
+  0: 0,
+  1: $spacer * .25,
+  2: $spacer * .5,
+  3: $spacer,
+  4: $spacer * 1.5,
+  5: $spacer * 3,
+  6: $spacer * 4.5,
+  7: $spacer * 6,
+);
+
+// --- Shape ---
+$border-radius:    .375rem;
+$border-radius-sm: .25rem;
+$border-radius-lg: .625rem;
+$border-radius-xl: 1rem;
+$box-shadow-sm: 0 1px 2px rgba(15, 20, 34, .06);
+$box-shadow:    0 8px 24px rgba(15, 20, 34, .10);
+$card-border-color: $border-color;
+$card-cap-bg: transparent;
+
+// --- Links / buttons / focus ---
+$link-color: $indigo;
+$link-decoration: underline;
+$btn-font-weight: 600;
+$btn-padding-x: 1.125rem;
+$btn-padding-y: .5rem;
+$btn-padding-x-lg: 1.5rem;
+$btn-padding-y-lg: .75rem;
+$focus-ring-color: rgba($indigo, .3);
+
+// --- Components ---
+$carousel-transition-duration: .3s; // carried over; the Open Wall slideshow relies on it
+$enable-dark-mode: true; // needed for scoped data-bs-theme="dark" sections
+$navbar-dark-color: rgba(#fff, .78);
+$navbar-dark-hover-color: #fff;
+$badge-font-weight: 600;
+$table-cell-padding-y: .6rem;
+
+// --- Project status stages (NEQ/R&D/HLP/WIP/MVP/DONE) ---
+$stage-colors: (
+  'neq':  #8a93a6,
+  'rnd':  #7a5cd6,
+  'hlp':  #3e8ed0,
+  'wip':  #0fa3a3,
+  'mvp':  #e8a13c,
+  'done': #33a867,
+);

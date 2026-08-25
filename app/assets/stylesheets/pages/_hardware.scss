@@ -1,0 +1,23 @@
+// Supported-hardware browser. The table.binaries block that used to live here
+// went with /binaries itself in 2cf8bc9; do not reintroduce it.
+article.hardware {
+  > ul.nav {
+    --bs-nav-link-padding-x: 0.3rem;
+  }
+}
+
+.socs {
+  .stage { text-align: center; }
+  .url { text-align: center; }
+  .address { text-align: right; }
+
+  .stage img { height: 1.25rem; }
+  .icon { max-height: 30px; }
+
+  dd a.anchor { display: none; }
+  dd:hover a.anchor { display: inline; }
+}
+
+table.socs tr.featured {
+  background-color: rgba($indigo, .13);
+}

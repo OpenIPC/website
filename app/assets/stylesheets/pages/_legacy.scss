@@ -1,0 +1,39 @@
+// Rules belonging to the pre-relaunch pages. They are kept intact, and separate,
+// so the cutover that removes those pages can delete this file rather than pick
+// rules out of the ones above.
+
+// Section headings inside a grid column. Fifteen existing pages rely on this --
+// our-team, our-channels, the calculators, majestic-endpoints and the rest --
+// so it cannot go until they do. The new pages do not use it: their headings
+// take their colour from the body, not the brand.
+.col > h3 {
+  color: var(--bs-blue);
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  margin-top: 1.5rem;
+}
+
+// Territory-gating for the partner wall on /introduction, done in CSS because
+// that page hardcodes every logo in the markup. The integrators in the .ru
+// group serve Russia and are shown only to Russian-language visitors.
+//
+// The replacement is PagesHelper#partner_logos, which makes the same split in
+// Ruby and can therefore be tested. Until /introduction goes, this rule is what
+// enforces it -- deleting it early would show the Russian integrators to
+// everyone, which is precisely what the maintainers asked not to happen.
+html:not([lang="ru"]) article.introduction .col.logo.ru {
+  display: none;
+}
+
+// Page titles on the pre-relaunch pages: brand-coloured and 700, as they have
+// always been. _base.scss styles `article > header > h2` at 600 and inherits
+// the body colour, which is the new design; this selector is longer, so it wins
+// wherever it applies -- and it applies exactly to pages rendered inside the
+// .container wrapper, which is every page that is not full-bleed. The two rules
+// therefore split cleanly along the same line as the layout's fullwidth switch,
+// and this one disappears when the pages it belongs to do.
+body > main > .container > article > header > h2 {
+  color: var(--bs-blue);
+  font-weight: 700;
+  margin: 1rem 0 1.5rem;
+}

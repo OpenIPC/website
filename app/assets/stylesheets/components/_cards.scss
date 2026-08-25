@@ -1,0 +1,23 @@
+// Team member cards: the social icons float over the top edge of the card.
+.card-body {
+  position: relative;
+}
+
+.social {
+  position: absolute;
+  right: .25rem;
+  top: -.75rem;
+  text-align: right;
+
+  a {
+    background: white;
+    border-radius: 50%;
+    display: inline-flex;
+    padding: 2px;
+
+    img {
+      height: 1.25rem;
+      vertical-align: text-bottom;
+    }
+  }
+}
