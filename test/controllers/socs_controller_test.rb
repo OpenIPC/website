@@ -599,6 +599,35 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # --- the way out when the bootloader has no `&&` ---
+
+  # guarded_flash joins the transfer to the erase with `&&` so a failed transfer
+  # cannot reach the erase. `&&` is a hush feature, and the bootloader people
+  # are running when they first follow this page is the stock vendor one -- the
+  # reporter in OpenIPC/firmware#2299 got "the help entry for the first command"
+  # back from theirs. Nothing is erased in that case, but nothing explains it
+  # either, so the block that uses `&&` says what to do instead.
+  test 'a block built with && carries the note about bootloaders that lack it' do
+    soc = instructable_soc('TS3516EVD00')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m')
+
+      assert_match '&& sf erase', response.body
+      assert_match 'it does not understand <code>&amp;&amp;</code>', response.body
+    end
+  end
+
+  test 'the note is translated, not another hardcoded English string' do
+    soc = instructable_soc('TS3516EVD10')
+
+    with_release_index(*every_edition_for(soc)) do
+      I18n.with_locale(:ru) { submit(soc, 'nor8m') }
+
+      assert_match 'не понимает <code>&amp;&amp;</code>', response.body
+    end
+  end
+
   # --- the permanent link ---
 
   def permalink_for(**attrs)
