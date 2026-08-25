@@ -38,8 +38,24 @@
 
   pre {
     margin: 0;
-    overflow-x: auto;
     padding: .875rem 1rem;
+
+    // Wrap, do not scroll.
+    //
+    // This block sits in a one-third column on /get-started and the ipctool
+    // URL is longer than the column is wide, so overflow-x: auto ended the
+    // visible line at "https://github.com/OpenI" and put the rest behind a
+    // horizontal scrollbar -- which most systems do not draw until you touch
+    // it, so there was nothing to suggest the command continued at all.
+    //
+    // The command being clipped is one a reader is about to paste into a root
+    // shell on their camera. Being able to read it to the end before running
+    // it is the whole point of showing it rather than just linking a script.
+    white-space: pre-wrap;
+    // Break inside the URL when there is nowhere else to break. `anywhere`
+    // rather than `break-all`, so ordinary prose still breaks at spaces and
+    // only an unbreakable token is split.
+    overflow-wrap: anywhere;
 
     code {
       color: inherit;
