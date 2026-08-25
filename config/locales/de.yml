@@ -74,7 +74,7 @@ de:
         subtitle: Sichern Sie Ihre Standard-Firmware. Überspringen Sie diesen Teil des Installationsprozesses nicht!
         title: Speichern Sie die Original-Firmware
       backup_32: AUFMERKSAMKEIT! Stellen Sie vor dem Sichern von 32 MB Flash-ROM sicher, dass die Kamera über mindestens 64 MB RAM verfügt.
-      compound_caveat_html: Wenn der Bootloader einen Hinweis zur Verwendung ausgibt, statt die Zeile auszuführen, versteht er <code>&amp;&amp;</code> nicht. Geben Sie die Teile einzeln ein und führen Sie Löschen und Schreiben erst aus, nachdem die Übertragung Erfolg gemeldet hat — genau diese Prüfung nimmt Ihnen <code>&amp;&amp;</code> ab.
+      compound_caveat_html: Wenn der Bootloader einen Hinweis zur Verwendung ausgibt, statt die Zeile auszuführen, versteht er <code>&amp;&amp;</code> nicht. Geben Sie die Teile einzeln ein und führen Sie jeden erst aus, nachdem der vorhergehende Erfolg gemeldet hat — genau diese Prüfung nimmt Ihnen <code>&amp;&amp;</code> ab.
       flashing:
         alternative: Alternativ können Sie die OpenIPC-Firmware einzeln flashen
       flashing_footfs:

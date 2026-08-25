@@ -74,7 +74,7 @@ fr:
         subtitle: Sauvegardez votre firmware d'origine, ne sautez pas cette partie du processus d'installation !
         title: Enregistrez le firmware d'origine
       backup_32: ATTENTION! Avant de sauvegarder une ROM flash de 32 Mo, assurez-vous que l'appareil photo dispose d'au moins 64 Mo de RAM.
-      compound_caveat_html: Si le chargeur d'amorçage affiche un message d'utilisation au lieu d'exécuter la ligne, c'est qu'il ne comprend pas <code>&amp;&amp;</code>. Saisissez les parties une par une et n'exécutez l'effacement et l'écriture qu'après que le transfert a signalé une réussite — c'est exactement la vérification que <code>&amp;&amp;</code> effectue pour vous.
+      compound_caveat_html: Si le chargeur d'amorçage affiche un message d'utilisation au lieu d'exécuter la ligne, c'est qu'il ne comprend pas <code>&amp;&amp;</code>. Saisissez les parties une par une et n'exécutez chacune qu'après que la précédente a signalé une réussite — c'est exactement la vérification que <code>&amp;&amp;</code> effectue pour vous.
       flashing:
         alternative: Vous pouvez également flasher le micrologiciel OpenIPC par ses pièces.
       flashing_footfs:
