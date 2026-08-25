@@ -65,7 +65,7 @@ pl:
         one: '1 błąd uniemożliwiał zapisanie tego %{resource}:'
         other: 'Błędy %{count} uniemożliwiają zapisanie tego %{resource}:'
   firmware:
-    info_html: Jeśli chcesz dowiedzieć się więcej o działaniu poleceń <code>uknor*</code> , <code>urnor*</code> , <code>setnor*</code> , uruchom <code>printenv</code> w konsoli bootloadera.
+    info_html: Jeśli chcesz dowiedzieć się więcej o działaniu poleceń %{commands}, uruchom <code>printenv</code> w konsoli bootloadera.
     installation:
       backup:
         info: OpenIPC U-Boot zastępuje oryginalną partycję kryptograficzną, uniemożliwiając powrót do fabrycznego oprogramowania, chyba że masz pełną kopię zapasową flash dla tej konkretnej kamery! Aby utworzyć pełną kopię zapasową oprogramowania sprzętowego, uruchom serwer TFTP i uruchom te polecenia w powłoce programu ładującego.

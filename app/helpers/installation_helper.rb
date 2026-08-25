@@ -152,6 +152,18 @@ module InstallationHelper
     list_of_commands text
   end
 
+  # The three bootloader variables the instructions above actually named, for
+  # the hint that tells the reader to go and look them up. preparing_environment
+  # emits `run set…` and flashing_linux emits `run uk…; run ur…`, all from the
+  # same flash_type_command, so building the hint from it too keeps the three
+  # in step -- including the nor32m -> nor16m rewrite the controller does.
+  #
+  # It used to be a fixed `uknor*, urnor*, setnor*`, which named nothing a NAND
+  # reader had been given and nothing they could find in their own printenv.
+  def bootloader_variables_html(flash_type_command)
+    safe_join(%w[uk ur set].map { |prefix| tag.code("#{prefix}#{flash_type_command}") }, ', ')
+  end
+
   def preparing_environment(c2)
     text = []
     text << do_not_copy_paste
