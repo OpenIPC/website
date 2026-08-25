@@ -56,13 +56,7 @@ module Cameras
         network_interface: 'eth',
         sd_card_slot: 'nosd'
       )
-      @camera.camera_ip_address = params[:cip] if params[:cip]
-      @camera.camera_mac_address = params[:mac].to_s.downcase.gsub('-', ':')
-      @camera.server_ip_address = params[:sip] if params[:sip]
-      @camera.flash_type = params[:rom] if params[:rom]
-      @camera.firmware_version = params[:ver] if params[:ver]
-      @camera.network_interface = params[:net] if params[:net]
-      @camera.sd_card_slot = params[:sd] if params[:sd]
+      apply_permalink_to(@camera)
 
       # Soc.find, like every other action. find_by_urlname answers nil for a
       # slug that does not exist, and the next line then raises NoMethodError on
@@ -73,13 +67,7 @@ module Cameras
       @camera.soc = Soc.find(params[:id])
       @vendor = @camera.soc.vendor
 
-      # nor8m is the default for almost every SoC and wrong for the ones
-      # upstream builds only a NAND image for -- rv1109 and rv1126 here today.
-      # Their NOR sizes are disabled in the menu, so the form opened on a
-      # disabled flash type with no edition to go with it. Unrecognised is the
-      # same as unset: ?rom=nor64m otherwise opened the form on a chip that
-      # matches no option in it.
-      @camera.flash_type = @camera.soc.default_flash_chip unless @camera.flash_type.in?(Camera::FLASH_CHIP)
+      narrow_to_what_the_menu_offers(@camera)
 
       @page_title = "SoC: #{@camera.soc.full_name}"
       render 'cameras/socs/show'
@@ -235,6 +223,59 @@ module Cameras
     end
 
     private
+
+    # Read a configuration back out of the query string Camera#permalink writes.
+    #
+    # The keys are the permanent link's, and they have to stay in step with it:
+    # `permalink` emitted `var` for as long as it existed against a `ver` that
+    # was never written, so the edition was the one field the link dropped and
+    # an Ultimate link reopened as Lite. `permalink` now writes `ver`; `var`
+    # stays readable here because every link anyone has shared carries it, and
+    # `ver` wins if a link somehow has both.
+    # One table rather than seven near-identical lines, because the drift was
+    # between a key and a field and a table is where that is visible. Insertion
+    # order is the precedence: `var` is applied first so `ver` overwrites it.
+    PERMALINK_FIELDS = { cip: :camera_ip_address, sip: :server_ip_address, rom: :flash_type,
+                         var: :firmware_version, ver: :firmware_version,
+                         net: :network_interface, sd: :sd_card_slot }.freeze
+
+    def apply_permalink_to(camera)
+      # Not in the table: unlike the rest, the MAC is rewritten rather than
+      # copied, and it is applied whether or not the link carried one.
+      camera.camera_mac_address = params[:mac].to_s.downcase.gsub('-', ':')
+
+      PERMALINK_FIELDS.each do |key, field|
+        camera.public_send("#{field}=", params[key]) if params[key]
+      end
+    end
+
+    # Bring a configuration that arrived in the query string back inside what the
+    # menu on this page actually offers. Both rules below are the menu's; it
+    # applies them in JavaScript, after this action has already decided which
+    # options open selected.
+    #
+    # Silent, unlike the equivalents in `update`. There the choice decides what
+    # gets flashed and the visitor is told when it changes; here it only decides
+    # where a form opens, and they are about to press the button anyway.
+    def narrow_to_what_the_menu_offers(camera)
+      # nor8m is the default for almost every SoC and wrong for the ones upstream
+      # builds only a NAND image for -- rv1109 and rv1126 here today. Their NOR
+      # sizes are disabled in the menu, so the form opened on a disabled flash
+      # type with no edition to go with it. Unrecognised is the same as unset:
+      # ?rom=nor64m otherwise opened the form on a chip that matches no option.
+      camera.flash_type = camera.soc.default_flash_chip unless camera.flash_type.in?(Camera::FLASH_CHIP)
+
+      # Ultimate does not fit an 8MB chip. Reading `var` back made this
+      # reachable: ?rom=nor8m&var=ultimate opened the form on a combination
+      # enforce_eight_meg_limit refuses. Same carve-out as that method -- a SoC
+      # published as Ultimate and nothing else, hi3516cv6xx and hi3519dv500,
+      # keeps it, because naming a Lite tarball upstream never built is worse
+      # than the size warning `update` will give.
+      return unless camera.flash_type.eql?('nor8m') && camera.firmware_version.eql?('ultimate')
+      return unless camera.soc.available_releases('nor').include?('lite')
+
+      camera.firmware_version = 'lite'
+    end
 
     # Which half is missing, in the visitor's terms.
     #

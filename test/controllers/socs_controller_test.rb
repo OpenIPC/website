@@ -550,4 +550,90 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
   test 'a 16MB Ingenic camera is told to run setnor16m after a full flash' do
     assert_told_to_remap_partitions('Ingenic')
   end
+
+  # --- the permanent link ---
+
+  def permalink_for(**attrs)
+    Camera.new(camera_mac_address: 'aa:bb:cc:dd:ee:ff', camera_ip_address: '10.0.0.5',
+               server_ip_address: '10.0.0.1', network_interface: 'eth',
+               sd_card_slot: 'nosd', **attrs).permalink
+  end
+
+  # Five of the seven fields, because five is what the form has. `net` and `sd`
+  # are set on the camera by the link and then rendered nowhere: the selects for
+  # them are commented out at show.html.erb:86-87, so the form posts neither and
+  # `update` falls back to its own eth/nosd defaults whatever the link said.
+  # Asserting them here would need `assigns`, which this app has no
+  # rails-controller-testing for -- and it would assert a value that goes no
+  # further than this request. That the link carries them at all is covered in
+  # camera_test.rb; that they survive to the next page is not true today.
+  def assert_form_reopened_on(chip, edition)
+    assert_response :success
+    assert_match 'value="aa:bb:cc:dd:ee:ff"', response.body
+    assert_match 'value="10.0.0.5"', response.body
+    assert_match 'value="10.0.0.1"', response.body
+    assert_match %(<option selected="selected" value="#{chip}">), response.body
+    assert_match %(<option selected="selected" value="#{edition}">), response.body
+  end
+
+  test 'a permanent link reopens the wizard on the configuration it names' do
+    soc = instructable_soc('TS3516EV800')
+
+    with_release_index(*every_edition_for(soc)) do
+      # net and sd carry values the form has no field for, so this also covers
+      # `show` accepting a link that names them rather than raising on one.
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}" \
+          "#{permalink_for(flash_type: 'nor32m', firmware_version: 'ultimate',
+                           network_interface: 'wifi', sd_card_slot: 'sd')}"
+
+      assert_form_reopened_on('nor32m', 'ultimate')
+    end
+  end
+
+  # permalink wrote `var` and this action read `ver`, so the edition was the one
+  # field that did not survive the round trip -- a link for Ultimate reopened as
+  # Lite. Every link anyone has shared was built by the old spelling, so `var`
+  # stays readable rather than being swapped out.
+  # The menu forbids Ultimate on an 8MB chip, but does it in JavaScript, after
+  # this action has chosen which option opens selected. Reading `var` back made
+  # that reachable: an old link for 8MB + Ultimate rendered the form on exactly
+  # the combination `update` refuses.
+  test 'an 8MB link does not open the form on an edition that does not fit' do
+    soc = instructable_soc('TS3516EVA00')
+
+    with_release_index(*every_edition_for(soc)) do
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}" \
+          "#{permalink_for(flash_type: 'nor8m', firmware_version: 'ultimate')}"
+
+      assert_response :success
+      assert_match %(<option selected="selected" value="lite">), response.body
+      assert_no_match(/<option selected="selected" value="ultimate">/, response.body)
+    end
+  end
+
+  # The same carve-out enforce_eight_meg_limit makes. hi3516cv6xx and
+  # hi3519dv500 are published as Ultimate and nothing else, so forcing Lite
+  # would open the form on a build upstream has never produced.
+  test 'an 8MB link keeps Ultimate where it is the only edition published' do
+    soc = instructable_soc('TS3516EVB00')
+
+    with_release_index("openipc.#{soc.board}-nor-ultimate.tgz") do
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}" \
+          "#{permalink_for(flash_type: 'nor8m', firmware_version: 'ultimate')}"
+
+      assert_response :success
+      assert_match %(<option selected="selected" value="ultimate">), response.body
+    end
+  end
+
+  test 'a link shared before the spelling was fixed still carries its edition' do
+    soc = instructable_soc('TS3516EV900')
+
+    with_release_index(*every_edition_for(soc)) do
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}" \
+          '?mac=aa-bb-cc-dd-ee-ff&cip=10.0.0.5&sip=10.0.0.1&net=eth&rom=nor32m&var=ultimate&sd=nosd'
+
+      assert_form_reopened_on('nor32m', 'ultimate')
+    end
+  end
 end
