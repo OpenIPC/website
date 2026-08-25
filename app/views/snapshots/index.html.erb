@@ -9,6 +9,11 @@
   <header>
     <h2><%= t('title.openwall') %></h2>
     <p><%=t('.subtitle') %></p>
+    <%# The wall is in the navigation and the footer now, so it gets visitors who
+        have not seen it before and cannot tell from a grid of stills whether
+        these were collected or volunteered. Two days is the retention
+        PurgeImagesJob::RETENTION actually enforces. %>
+    <p class="text-body-secondary small" style="max-width: 70ch"><i class="bi bi-camera-video me-1"></i><%= t('.intro_html') %></p>
   </header>
 
   <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-4">

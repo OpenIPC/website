@@ -1,35 +1,12 @@
+<%# One product. The card below was pasted three times -- same image, same
+    .shirt_1 keys, same link -- so the page advertised a single T-shirt as
+    though it were a catalogue. A test below holds it to one. %>
 <article class="merchandise">
   <header>
     <h2><%= t('.title') %></h2>
   </header>
 
   <div class="row row-cols-md-2 row-cols-xl-3 g-3">
-    <div class="col">
-      <div class="card">
-        <%= image_tag 'OpenIPC-t-shirt-flo-blue.webp',
-                      alt: "Image: Model in an OpenIPC T-Shirt",
-                      title: "OpenIPC Official T-shirt in Florida Blue and White",
-                      class: 'card-image' %>
-        <div class="card-body">
-          <h2 class="card-title"><%= t('.shirt_1.title') %></h2>
-          <p><%= t('.shirt_1.description') %></p>
-          <a href="https://weededwords.com/product/openipc-t-shirt/"><%= t('.order_from_weededwords') %></a>
-        </div>
-      </div>
-    </div>
-    <div class="col">
-      <div class="card">
-        <%= image_tag 'OpenIPC-t-shirt-flo-blue.webp',
-                      alt: "Image: Model in an OpenIPC T-Shirt",
-                      title: "OpenIPC Official T-shirt in Florida Blue and White",
-                      class: 'card-image' %>
-        <div class="card-body">
-          <h2 class="card-title"><%= t('.shirt_1.title') %></h2>
-          <p><%= t('.shirt_1.description') %></p>
-          <a href="https://weededwords.com/product/openipc-t-shirt/"><%= t('.order_from_weededwords') %></a>
-        </div>
-      </div>
-    </div>
     <div class="col">
       <div class="card">
         <%= image_tag 'OpenIPC-t-shirt-flo-blue.webp',
