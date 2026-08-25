@@ -194,8 +194,8 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
                 linux_filename: "openipc.#{model.downcase}-nor-lite.tgz")
   end
 
-  def submit(soc, flash_type, firmware_version: 'lite')
-    put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
+  def submit(soc, flash_type, firmware_version: 'lite', locale: nil)
+    put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}#{"?locale=#{locale}" if locale}",
         params: { camera: { flash_type:, firmware_version:,
                             network_interface: 'eth', sd_card_slot: 'nosd',
                             camera_ip_address: '192.168.1.10',
@@ -564,12 +564,12 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     assert_match %(<h2 class="mt-5 mb-3">Внимание!</h2>), response.body
   end
 
-  # I18n.with_locale rather than ?locale=ru, because the param does nothing:
-  # Multilang's `before_action :set_locale` is commented out (multilang.rb:21),
-  # so nothing reads it and every request renders in English. That is worth
-  # knowing separately; here it just means the switch has to be made directly.
+  # ?locale=ru, the way a visitor switches. This used to have to go through
+  # I18n.with_locale because the parameter did nothing -- set_locale was
+  # commented out of Multilang and every request rendered in English whatever it
+  # asked for. Now that it is wired up, the test can use the real path.
   def submit_in_russian(soc, flash_type, firmware_version)
-    I18n.with_locale(:ru) { submit(soc, flash_type, firmware_version:) }
+    submit(soc, flash_type, firmware_version:, locale: 'ru')
   end
 
   test 'the SigmaStar NAND page translates its heading and has no stray markup' do
@@ -622,7 +622,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     soc = instructable_soc('TS3516EVD10')
 
     with_release_index(*every_edition_for(soc)) do
-      I18n.with_locale(:ru) { submit(soc, 'nor8m') }
+      submit(soc, 'nor8m', locale: 'ru')
 
       assert_match 'не понимает <code>&amp;&amp;</code>', response.body
     end
