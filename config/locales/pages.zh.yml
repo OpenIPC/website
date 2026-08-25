@@ -8,9 +8,116 @@ zh:
         title: 管理仪表板
     bandwidth_calculator:
       title: 带宽计算器
+    business:
+      contact_alt_html: 更喜欢即时沟通？在 <a href="https://t.me/openipc">Telegram</a> 上给我们发消息。
+      contact_text: 告诉我们你正在做什么产品。回复你的是工程师，不是销售话术。
+      contact_title: 与团队沟通
+      hero_lede: 由核心团队提供商业支持、定制开发与 OEM 授权。
+      hero_title: 在 OpenIPC 上打造你的产品——与开发 OpenIPC 的人一起。
+      how1: 你把产品和遇到的问题写信告诉我们。
+      how2: 与工程师进行一次需求梳理沟通。
+      how3: 一个交付物明确的试点项目。
+      how4: 按你的需要提供持续的支持或开发。
+      how_title: 合作是怎样进行的
+      licensing_html: 平台核心采用 MIT 许可证，欢迎商业使用。Majestic 推流器以二进制形式在 Prosperity 许可证下分发，可另行商谈商业条款。不允许将 OpenIPC 及其组件用于军事用途。
+      licensing_title: 授权，直说
+      offer1_text: 优先修复、有保障的响应时间，以及对你产品所依赖平台的长期维护。
+      offer1_title: 商业支持
+      offer2_text: SoC 移植、传感器调优、NPU 功能、定制视频链路、白牌固件——由最熟悉这套技术栈的人按你的规格来做。
+      offer2_title: 定制开发
+      offer3_text: Majestic 的商业授权、定制品牌固件，以及为出货 OpenIPC 产品的制造商提供集成支持。
+      offer3_title: OEM 与授权
+      partners_title: 已经基于 OpenIPC 开发的公司
+      title: 面向企业
+      why1_text: 原厂 SDK 给你的是一个内核和一个演示程序。OpenIPC 给你的是一套可出货的固件，包含推流、Web 界面和更新——你从 90% 起步，而不是从零开始。
+      why1_title: 比原始 SDK 更快
+      why2_text: 我们在主线内核上的工作让原厂放弃后的平台继续得到维护。你的产品寿命不再受原厂路线图的限制。
+      why2_title: 芯片停产后依然可用
+      why3_text: 设备无需依赖我们的服务器，也不依赖任何人的服务器。你的成本结构仍然由你掌握。
+      why3_title: 没有按台收取的云费用
+      why4_text: 核心是开放的。无论任何公司（包括我们）发生什么，你的产品都能继续构建。
+      why4_title: 开源就是你的托管保障
+      why_title: 企业为什么选择 OpenIPC
+    community:
+      bot_warning: 新成员加入后需要回答欢迎机器人提出的两个简单问题。如果你错过了提示且无法发言，请退出并重新加入群组，然后留意机器人的消息。
+      channel_dev: 直接来自 GitHub 的构建通知。
+      channel_en: OpenIPC 国际群组。
+      channel_fpv: 关于基于 OpenIPC 的 FPV 与视频链路的一切。
+      channel_ru: OpenIPC 俄语群组。
+      channels_title: 我们在哪里活动
+      contrib1_text_html: 发现了缺陷？请到对应的仓库<a href="https://github.com/OpenIPC/">提交 issue</a>——一份好的报告本身就是贡献。
+      contrib1_title: 报告缺陷
+      contrib2_text: Fork 代码，做出改进，提交 pull request。小修小补同样受欢迎——我们大多数人都是这样开始的。
+      contrib2_title: 改进代码
+      contrib3_text: 在你的硬件上运行开发中的版本，并告诉我们哪里出了问题。第一批尝鲜者正是推动平台从 WIP 走向 DONE 的力量。
+      contrib3_title: 测试早期版本
+      contrib4_text_html: 完善<a href="https://github.com/OpenIPC/wiki">维基</a>，校对网站文字，让它读起来像母语。
+      contrib4_title: 撰写与翻译
+      contrib5_text_html: 停产的老板子对我们非常宝贵——标记为 NEQ 的平台等的正是这类硬件。<a href="/stages-of-firmware-development">了解各阶段的含义</a>。
+      contrib5_title: 捐赠退役硬件
+      contrib6_text: 写一篇文章、录一段视频、展示你的作品。真实用户的真实故事，是我们永远买不到的最好宣传。
+      contrib6_title: 帮我们传播
+      contribute_title: 参与贡献的方式
+      cta_join: 加入主 Telegram 群组
+      help1_html: 先查阅<a href="https://github.com/OpenIPC/wiki">维基</a>——安装、FPV 和排障指南都在那里。
+      help2: 搜索聊天记录；大多数新手问题此前都已有人解答。
+      help3: 提问时请附上 SoC、传感器、你已经尝试过的做法，以及启动日志（如果有）。问题问得好，答案来得快。
+      help_title: 怎样提问才会有人回答
+      hero_lede: OpenIPC 由每天都在回答问题的人们公开构建。来打个招呼吧。
+      hero_title: 来和我们聊聊。
+      money_band_html: 更愿意用资金支持？<a href="/donate">资助这项工作</a>。
+      title: 社区
     donate:
+      business_band_html: 如果贵公司依赖 OpenIPC，更可持续的支持方式是建立商业合作关系。<a href="/business">看看我们能提供什么</a>。
+      crypto_text_html: TON 捐赠可以直接在 Telegram 中通过 <a href="https://t.me/wallet">@wallet</a> 完成。
+      crypto_title: 加密货币
+      hero_lede: OpenIPC 使用免费，制作昂贵。捐款用于购买新平台的摄像机、支付维护者的报酬，并维持项目运转。
+      hero_title: 资助这项工作。
+      oc_button: 在 Open Collective 上捐赠
+      oc_text_html: 可定期或一次性捐赠，账目公开透明。定期支持者会被长期列入我们 GitHub 页面的 Sponsors 板块。
+      oc_title: Open Collective
+      thanks: 谢谢你。这比你想象的更有意义。
+      title: 捐赠
+      where_text: 核心团队成员自掏腰包购买摄像机和 SDK 授权，以扩展硬件支持。资金可以减轻这一负担，为兼职维护者提供补偿，并支付促成硬件合作的展会与厂商会面开销。
+      where_title: 钱用在哪里
+    donate_band:
       please_support: 请考虑支持我们
       title: 喜欢我们的项目吗？
+    ecosystem:
+      contribute_cta_html: 选一个项目，把它做得更好。<a href="/community">从这里开始</a>。
+      hero_lede: 'OpenIPC 是一个由一百多个开放仓库组成的生态：固件本身、视频管线、周边工具，以及让老芯片继续存活的研究工作。'
+      hero_title: 不只是固件。
+      proj_aviateur: '跨平台接收端：在 Windows、Linux 或 macOS 上观看链路画面。'
+      proj_burn: 通过串口解救变砖的海思设备。
+      proj_coupler: 在原厂固件与 OpenIPC 之间平滑迁移、并可回退的方案。无需焊接，也不需要特殊技能。
+      proj_devourer: 基于廉价 Wi-Fi 硬件构建类 SDR 接收端的开放基础。
+      proj_divinus: 面向不断增加的平台的开源推流器。
+      proj_firmware: 基于 Buildroot 的通用 IP 摄像机固件——在数十个 SoC 系列上取代已被弃用的原厂系统。
+      proj_ipctool: 识别几乎任何摄像机的 SoC、传感器和闪存芯片——并在你做任何改动之前备份原厂固件。
+      proj_majestic: '固件核心中的推流器：RTSP、ONVIF、WebRTC、HLS、音频、夜视模式。以二进制形式在 Prosperity 许可证下分发，可另行商谈商业条款。'
+      proj_microbe: 固件的 Web 界面。
+      proj_onvif_tt: 'ONVIF 一致性测试工具：验证一台摄像机究竟实现了哪些功能。免费。'
+      proj_openhisilicon: 让海思原厂 SDK 在主线内核上继续存活——在厂商撒手之后，仍能获得 CVE 修复与现代特性。
+      proj_openxiongmai: '面向雄迈 SoC 的同类工作：一套开放的 SDK 替代方案。'
+      proj_pixelpilot: '接收端：把一块 Rockchip 板子变成带显示输出的专用地面站。'
+      proj_qemu: 基于 QEMU 的完整海思 IP 摄像机模拟器——桌面上没有硬件也能开发和测试固件。
+      proj_rnd_player: '为媒体工程师打造的播放器：以开发者需要的方式检视码流。'
+      proj_smolrtsp: 可嵌入的 RTSP 1.0 服务端库，适用于摄像机等资源受限设备。支持 TCP 与 UDP，任意负载格式。
+      proj_telemetry: 在飞控与地面之间桥接遥测数据。
+      proj_waybeam: '链路的发送端：面向 FPV 无人机与 URLLC 设备的灵活视频编码器。'
+      proj_yamlcli: 一个用于在脚本中编辑 YAML 配置的小型命令行工具。
+      section_community_text_html: 社区自制的硬件、支架与配件——例如在 <a href="https://www.printables.com/search/models?q=tag%3Aopenipc">Printables 上标记为 openipc</a> 的可 3D 打印模型。
+      section_community_title: 社区项目
+      section_core_text: 操作系统、推流器，以及把你从原厂固件带到 OpenIPC 的各种工具。
+      section_core_title: 核心固件
+      section_longevity_text: '原厂 SDK 默认搭配原厂内核：陈旧、未打补丁、无人维护。我们把它们移植到主线内核——在停产很久之后仍能获得 CVE 修复与现代内核特性。'
+      section_longevity_title: 长期维护与安全
+      section_lowlat_text_html: 面向无人机、机器人与遥操作的开放视频链路。<a href="/low-latency">阅读概览</a>。
+      section_lowlat_title: 低延迟与 URLLC
+      section_tools_text: 为摄像机与媒体工程师提供的免费工具——即使你从不刷入我们的固件，它们同样有用。
+      section_tools_title: 专业工具
+      stage_legend_html: 每个项目都带有诚实的状态标记——与我们用于固件平台的是同一套说法。<a href="/stages-of-firmware-development">各阶段是怎么划分的</a>。
+      title: 生态
     firmware_partitions_calculation:
       end_address: 结束地址
       flash_size_mb: 闪存大小，MB
@@ -22,6 +129,28 @@ zh:
       size_hex: 十六进制大小，字节
       start_address: 起始地址
       title: 固件分区计算
+    get_started:
+      cta_find_soc: 查找你的 SoC
+      editions_text: Lite 版适配 8 MB 闪存，覆盖基本功能。Ultimate 版增加了云推流、隧道和更多编解码器等扩展功能，需要 16 MB 闪存。
+      editions_title: 两个版本
+      hero_lede: 从原厂固件到 OpenIPC，大约半小时——并附上为你的具体芯片生成的指南。
+      hero_title: 给你的摄像机第二次生命。
+      step1_text_html: 在摄像机上运行 <a href="https://github.com/OpenIPC/ipctool">ipctool</a>（通过 telnet 或串口终端），确认 SoC、传感器和闪存芯片。查看标签或搜索 FCC ID 也可以作为备选办法。
+      step1_title: 确认你的硬件
+      step2_text: 在支持硬件列表中查找你的芯片。向导会直接在浏览器里为你的具体配置组装固件镜像并生成分步安装指南。
+      step2_title: 找到你的 SoC
+      step3_text: 按生成的指南操作。第一步就是完整备份原厂固件——不要跳过。
+      step3_title: 先备份，再刷机
+      stuck_text_html: 社区每天都在回答问题。<a href="/community">到聊天群里提问</a>——请附上你的 SoC、传感器，以及启动日志（如果有）。
+      stuck_title: 卡住了？
+      title: 快速上手
+      wall_text_html: 在 Web 界面里打开一个开关，你的摄像机快照就会出现在我们的实时<a href="/open-wall">开放墙</a>上——来和社区打个招呼。
+      wall_title: 然后加入开放墙
+      warning_text_html: 刷机有可能让摄像机变砖。指南会先教你做完整备份，在受支持的型号上 <a href="https://github.com/OpenIPC/coupler">Coupler</a> 也能走更安全的路径。如果没有把握，请在刷机前<a href="/community">到聊天群里问一问</a>。
+      warning_title: 老实提醒
+      webui_title: Web 界面
+      what_text: '一套干净的 Linux 系统，搭配 Majestic 推流器：开箱即用的 RTSP、ONVIF、WebRTC 和 HLS，一个 Web 界面，以及完整的 root 权限。你的摄像机，真正属于你。'
+      what_title: 你会得到什么
     green_life:
       paragraph1: OpenIPC 主要为 IP 摄像机提供开放式固件，直接参与现有硬件的有效利用和再利用，从而为可持续发展做出贡献。
       paragraph2: 通过可定制的固件更新和功能，OpenIPC 延长了摄像机的使用寿命，减少了电子垃圾。
@@ -31,6 +160,48 @@ zh:
     high_resolution_timer:
       reload_to_reset: 以毫秒为单位显示的时间。重新加载页面以重置计数器。
       title: 高分辨率定时器
+    home:
+      business_cta: 与团队沟通
+      business_text: 商业支持、定制开发与 OEM 授权——由构建这个平台的人提供。
+      business_title: 正在基于 OpenIPC 打造产品？
+      cta_donate_html: 更愿意直接支持这项工作？<a href="/donate">捐赠</a>。
+      cta_primary: 快速上手
+      cta_secondary: 加入我们的 Telegram
+      cta_title: 这个周末就刷好你的第一台摄像机。
+      hero_cta_low_latency: 低延迟视频
+      hero_cta_start: 快速上手
+      hero_lede: 面向 IP 摄像机、FPV 无人机以及介于两者之间的设备的开放固件与工具。你的硬件应当听你的，而不是听某个厂商云端的。
+      hero_microline: 140+ 个仓库 · 数十个 SoC 系列 · 无需云端
+      hero_title: 面向嵌入式视频的开放平台。
+      partners_title: 制造商、集成商与研究团队的共同选择
+      pillar_firmware_text: 面向数十个 SoC 系列的 IP 摄像机开放固件，基于 Buildroot，核心是 Majestic 推流器。
+      pillar_firmware_title: 摄像机固件
+      pillar_longevity_text: '我们让原厂 SDK 在主线内核上继续存活：在厂商撒手很久之后，依然提供 CVE 修复与现代特性。'
+      pillar_longevity_title: 长期维护与安全
+      pillar_low_latency_text: 面向 FPV 无人机、机器人与遥操作的开放视频链路。在受支持的硬件上，端到端延迟低至约 60 毫秒。
+      pillar_low_latency_title: 低延迟视频链路
+      pillar_tools_text: ONVIF 一致性测试、摄像机模拟、硬件检测——我们为自己打造并与所有人分享的免费工具。
+      pillar_tools_title: 专业工具
+      pillars_lede: OpenIPC 不只是固件——它是一个由亲自在自己硬件上运行它的人们构建的生态。
+      pillars_title: 一个平台，四条战线
+      silicon_title: 支持的芯片厂商
+      stats_languages: 种语言
+      stats_repos: 个开放仓库
+      stats_since: 年起公开开发
+      stats_socs: 款支持的 SoC
+      stats_vendors: 家芯片厂商
+      story_cta: 让你的摄像机复活
+      story_step1_text: 固件更新停了。安全漏洞还在。App 从应用商店里消失了。
+      story_step1_title: 厂商转身离开
+      story_step2_text: 服务器被关掉，一台还能用的摄像机就变成了无事可做的塑料和硅片。
+      story_step2_title: 云端熄灯
+      story_step3_text: 摄像机启动了一套开放且持续维护的系统——并且听你的。没有后门，没有订阅，也少了一件电子垃圾。
+      story_step3_title: 你刷入 OpenIPC
+      story_title: 摄像机不该随着它的云一起死去。
+      title: 面向嵌入式视频的开放平台
+      wall_cta: "+ 把你的摄像机放这里"
+      wall_live: '正在直播：世界各地运行 OpenIPC 的摄像机'
+      wall_snapshot_alt: '图片：来自社区摄像机的实时快照'
     introduction:
       alliance: 联盟
       button_binaries: 预编译的二进制文件
@@ -57,6 +228,37 @@ zh:
       integrators: Integrators
       development: Development
       title: 介绍
+    low_latency:
+      business_bridge_html: 想基于这条链路做产品？<a href="/business">和我们谈谈</a>——我们承接定制开发与 OEM 合作。
+      credits_text: 这条无线链路得益于 wfb-ng，整个生态也在 RubyFPV、Mario FPV 等伙伴的参与下不断成长。开源是一项团队运动。
+      credits_title: 站在开放的肩膀上
+      cta_chat: 加入 FPV 聊天群
+      cta_guide: 阅读搭建指南
+      fpv_text: '一套完全开放的数字 FPV 系统：没有封闭生态，没有配对绑定的硬件，也没有固件上限。用受支持的摄像机搭建天空端，挑选你的地面站，并可调节管线的每一个环节。'
+      fpv_title: 'FPV：从镜头到眼镜'
+      hardware_text_html: 天空端由受支持的摄像机和 AIO 板搭建——请从<a href="/supported-hardware">支持硬件列表</a>开始。RunCam 与 EMAX 出厂即提供基于 OpenIPC 的 FPV 硬件。
+      hardware_title: 硬件
+      hero_lede: 'FPV 无人机、机器人、遥操作：一套从摄像机到屏幕的开放超低延迟视频方案。在受支持的硬件上，端到端延迟低至约 60 毫秒。'
+      hero_title: 为等不起的机器提供开放视频链路。
+      how_link_text_html: <a href="https://github.com/svpcom/wfb-ng">wfb-ng</a> 在普通 Wi-Fi 硬件上广播视频、遥测与控制信号——无需关联，也不会因重传而卡顿。
+      how_link_title: 无线链路
+      how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> 把一块 Rockchip 板子变成专用地面站，<a href="https://github.com/OpenIPC/aviateur">Aviateur</a> 则可在 Windows、Linux 和 macOS 上接收。
+      how_rx_title: 接收端——你这一侧
+      how_title: 这条链路是怎么工作的
+      how_tx_text_html: 一台装有 <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> 编码器的 OpenIPC 摄像机负责产生码流并送入无线链路。
+      how_tx_title: 发送端——天空这一侧
+      latency_1080p30: 1080p30
+      latency_1080p60: 1080p60
+      latency_720p60: 720p60
+      latency_column_config: 配置
+      latency_column_g2g: 典型端到端延迟
+      latency_intro: '具体数值取决于 SoC、传感器、分辨率、曝光和温度。以下是我们自己实测得到的典型值，而不是最理想情况下的宣传数字：'
+      latency_note: 使用我们自己的开源硬件延迟测量仪测得——它正是为这件事而造的。
+      latency_title: 延迟，实话实说
+      robotics_text1: 同一条链路也为工业机器人、AGV、巡检设备和远程操作传输视频——凡是封闭视频系统会把你锁死、或者绕行云端会带来数秒延迟的场合，都用得上。
+      robotics_text2: 在受支持的 SoC 上，画面帧会携带与传感器曝光起始对齐的挂钟时间戳——无需额外硬件即可实现多摄像机毫秒级同步。
+      robotics_title: '不止于无人机：机器人与遥操作'
+      title: 低延迟视频
     majestic_endpoints:
       moved_html: '摄像机提供的接口列表现在位于摄像机自身的 Web 界面中，菜单路径为 <b>Majestic &rarr; Endpoints</b>。在浏览器中打开 <code>http://&lt;摄像机地址&gt;/</code>，然后从菜单中选择该项。'
       reason_address: '页面中填入的是您摄像机的真实地址，可以直接把链接复制到播放器；'

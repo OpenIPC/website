@@ -1,0 +1,71 @@
+<% content_for :fullwidth, 'yes' %>
+
+<%= render 'shared/page_header', title: t('.hero_title'), lede: t('.hero_lede') %>
+
+<div class="container">
+  <article>
+    <%# Offerings %>
+    <div class="row g-4 mb-6">
+      <% [%w[offer1 bi-life-preserver], %w[offer2 bi-code-square], %w[offer3 bi-box-seam]].each do |key, icon| %>
+        <div class="col-md-4">
+          <div class="card h-100 p-2">
+            <div class="card-body">
+              <span class="icon-chip mb-3"><i class="bi <%= icon %>"></i></span>
+              <h2 class="h5"><%= t(".#{key}_title") %></h2>
+              <p class="text-body-secondary mb-0"><%= t(".#{key}_text") %></p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%# Why %>
+    <h2 class="h4 mb-4"><%= t('.why_title') %></h2>
+    <div class="row g-4 mb-6">
+      <% (1..4).each do |i| %>
+        <div class="col-md-6">
+          <h3 class="h6"><i class="bi bi-check-circle text-success me-2"></i><%= t(".why#{i}_title") %></h3>
+          <p class="text-body-secondary mb-0"><%= t(".why#{i}_text") %></p>
+        </div>
+      <% end %>
+    </div>
+
+    <%# Who builds on it (territory-specific integrator set) %>
+    <h2 class="h4 mb-4"><%= t('.partners_title') %></h2>
+    <%= render 'shared/logo_wall', logos: partner_logos %>
+
+    <%# Engagement steps %>
+    <h2 class="h4 mt-6 mb-4"><%= t('.how_title') %></h2>
+    <div class="row g-4 mb-6">
+      <% (1..4).each do |i| %>
+        <div class="col-md-3">
+          <div class="story-step">
+            <div class="story-index mb-2">0<%= i %></div>
+            <p class="text-body-secondary mb-0"><%= t(".how#{i}") %></p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%# Licensing clarity %>
+    <div class="alert alert-light border d-flex gap-3">
+      <i class="bi bi-file-earmark-text fs-4"></i>
+      <div>
+        <h2 class="h6 mb-1"><%= t('.licensing_title') %></h2>
+        <p class="mb-0 small"><%= t('.licensing_html') %></p>
+      </div>
+    </div>
+  </article>
+</div>
+
+<%# Contact %>
+<section class="section--ink py-6 mt-6" data-bs-theme="dark">
+  <div class="container text-center">
+    <h2 class="mb-2"><%= t('.contact_title') %></h2>
+    <p class="text-body-secondary mb-4"><%= t('.contact_text') %></p>
+    <p class="mb-3">
+      <a href="mailto:business@openipc.org" class="btn btn-primary btn-lg text-data">business@openipc.org</a>
+    </p>
+    <p class="small text-body-secondary mb-0"><%= t('.contact_alt_html') %></p>
+  </div>
+</section>

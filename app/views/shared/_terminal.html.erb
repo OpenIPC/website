@@ -1,0 +1,11 @@
+<%# Terminal-style code block. Locals: code, title (optional), id (required for copy). %>
+<div class="terminal my-3">
+  <div class="terminal-header">
+    <span class="dots"><span></span><span></span><span></span></span>
+    <span class="text-data"><%= local_assigns[:title] || 'shell' %></span>
+    <button type="button" class="btn btn-sm btn-copy" data-copy-target="#<%= id %>" title="Copy" aria-label="Copy to clipboard">
+      <i class="bi bi-clipboard"></i>
+    </button>
+  </div>
+  <pre><code id="<%= id %>"><%= code %></code></pre>
+</div>

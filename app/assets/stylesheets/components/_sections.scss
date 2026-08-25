@@ -1,0 +1,26 @@
+// Full-bleed homepage/landing sections. Mark dark ones with data-bs-theme="dark"
+// in the markup so Bootstrap color tokens flip accordingly.
+.section--ink {
+  background: $ink;
+  color: rgba(255, 255, 255, .85);
+
+  // Faint engineering dot-grid, used on the hero.
+  &.section--grid {
+    background-image: radial-gradient(rgba(255, 255, 255, .07) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  :focus-visible {
+    outline-color: #fff;
+  }
+}
+
+.section--alt {
+  background: $body-tertiary-bg;
+}
+
+// Standard inner-page header band.
+.page-header {
+  background: $body-tertiary-bg;
+  border-bottom: 1px solid $border-color;
+}

@@ -21,6 +21,7 @@ import initExternalLinks from './src/external-links'
 import initTimestamps from './src/timestamps'
 import initConfirms from './src/confirms'
 import initHeifViewer from './src/heif-viewer'
+import initCopy from './src/copy'
 
 // DOMContentLoaded, not window.onload, which waits for every image and on the
 // Open Wall meant the page sat unresponsive until the whole gallery had loaded.
@@ -32,4 +33,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initTimestamps()
   initConfirms()
   initHeifViewer()
+  initCopy()
 })

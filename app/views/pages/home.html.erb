@@ -1,0 +1,144 @@
+<% content_for :fullwidth, 'yes' %>
+
+<%# ---- Hero: tagline + live Open Wall mosaic ---- %>
+<section class="hero section--ink section--grid py-6 py-lg-7" data-bs-theme="dark">
+  <div class="container">
+    <div class="row g-5 align-items-center">
+      <div class="col-lg-6">
+        <h1 class="mb-3"><%= t('.hero_title') %></h1>
+        <p class="hero-lede lead mb-4"><%= t('.hero_lede') %></p>
+        <p class="d-flex flex-wrap gap-2 mb-4">
+          <a href="/get-started" class="btn btn-primary btn-lg"><%= t('.hero_cta_start') %></a>
+          <a href="/low-latency" class="btn btn-outline-light btn-lg"><%= t('.hero_cta_low_latency') %></a>
+        </p>
+        <p class="hero-microline cursor-blink mb-0">$ <%= t('.hero_microline') %> </p>
+      </div>
+      <div class="col-lg-6">
+        <div class="wall-mosaic">
+          <% @wall_snapshots.each_with_index do |snapshot, idx| %>
+            <a href="<%= snapshot_path(snapshot) %>" class="wall-tile">
+              <%= image_tag snapshot.file.variant(:thumb), alt: t('.wall_snapshot_alt'),
+                            loading: (idx.zero? ? 'eager' : 'lazy') %>
+              <span class="wall-caption"><%= snapshot.soc.upcase %> · <%= snapshot.sensor.upcase %></span>
+            </a>
+          <% end %>
+          <% (5 - @wall_snapshots.size).times do %>
+            <span class="wall-tile">
+              <%= image_tag 'no-signal.webp', alt: t('snapshots.index.no_signal'), loading: 'lazy' %>
+            </span>
+          <% end %>
+          <a href="/open-wall" class="wall-tile wall-tile--cta"><%= t('.wall_cta') %></a>
+        </div>
+        <p class="small mt-3 mb-0 text-body-secondary">
+          <span class="live-dot me-1"></span>
+          <a href="/open-wall" class="link-light"><%= t('.wall_live') %></a>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%# ---- Silicon strip ---- %>
+<% if @vendor_names.any? %>
+  <section class="border-bottom py-4">
+    <div class="container">
+      <div class="silicon-strip d-flex flex-wrap column-gap-4 row-gap-2 justify-content-center">
+        <span><%= t('.silicon_title') %>:</span>
+        <% @vendor_names.each do |name| %>
+          <span class="text-data"><%= name %></span>
+        <% end %>
+      </div>
+    </div>
+  </section>
+<% end %>
+
+<%# ---- Liberation story ---- %>
+<section class="py-6">
+  <div class="container">
+    <h2 class="text-center mb-5"><%= t('.story_title') %></h2>
+    <div class="row g-4">
+      <% (1..3).each do |i| %>
+        <div class="col-md-4">
+          <div class="story-step h-100">
+            <div class="story-index mb-2">0<%= i %></div>
+            <h3 class="h5"><%= t(".story_step#{i}_title") %></h3>
+            <p class="text-body-secondary mb-0"><%= t(".story_step#{i}_text") %></p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <p class="text-center mt-5 mb-0">
+      <a href="/get-started" class="btn btn-primary"><%= t('.story_cta') %></a>
+    </p>
+  </div>
+</section>
+
+<%# ---- Platform pillars ---- %>
+<section class="section--alt py-6">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2><%= t('.pillars_title') %></h2>
+      <p class="text-body-secondary mx-auto" style="max-width: 60ch"><%= t('.pillars_lede') %></p>
+    </div>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
+      <div class="col"><%= render 'shared/pillar_card', icon: 'bi-cpu', title: t('.pillar_firmware_title'), text: t('.pillar_firmware_text'), href: '/get-started' %></div>
+      <div class="col"><%= render 'shared/pillar_card', icon: 'bi-broadcast', title: t('.pillar_low_latency_title'), text: t('.pillar_low_latency_text'), href: '/low-latency' %></div>
+      <div class="col"><%= render 'shared/pillar_card', icon: 'bi-wrench-adjustable', title: t('.pillar_tools_title'), text: t('.pillar_tools_text'), href: '/ecosystem' %></div>
+      <div class="col"><%= render 'shared/pillar_card', icon: 'bi-shield-check', title: t('.pillar_longevity_title'), text: t('.pillar_longevity_text'), href: '/ecosystem', accent: true %></div>
+    </div>
+  </div>
+</section>
+
+<%# ---- Stats band (live numbers from the database; evergreen floors elsewhere) ---- %>
+<section class="section--ink py-5" data-bs-theme="dark">
+  <div class="container">
+    <div class="row row-cols-2 row-cols-lg-<%= @soc_count.positive? ? 5 : 3 %> g-4 text-center">
+      <% if @soc_count.positive? %>
+        <div class="col stat-figure">
+          <div class="stat-value"><%= @soc_count %></div>
+          <div class="stat-label"><%= t('.stats_socs') %></div>
+        </div>
+        <div class="col stat-figure">
+          <div class="stat-value"><%= @vendor_names.size %></div>
+          <div class="stat-label"><%= t('.stats_vendors') %></div>
+        </div>
+      <% end %>
+      <div class="col stat-figure">
+        <div class="stat-value">140+</div>
+        <div class="stat-label"><%= t('.stats_repos') %></div>
+      </div>
+      <div class="col stat-figure">
+        <div class="stat-value"><%= I18n.available_locales.size %></div>
+        <div class="stat-label"><%= t('.stats_languages') %></div>
+      </div>
+      <div class="col stat-figure">
+        <div class="stat-value">2019</div>
+        <div class="stat-label"><%= t('.stats_since') %></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%# ---- Partners (integrator set is territory-specific) ---- %>
+<section class="py-6">
+  <div class="container">
+    <h2 class="h4 text-center text-body-secondary mb-5"><%= t('.partners_title') %></h2>
+    <%= render 'shared/logo_wall', logos: partner_logos %>
+  </div>
+</section>
+
+<%# ---- For Business teaser ---- %>
+<section class="section--alt py-6">
+  <div class="container text-center">
+    <h2><%= t('.business_title') %></h2>
+    <p class="text-body-secondary mx-auto mb-4" style="max-width: 60ch"><%= t('.business_text') %></p>
+    <a href="/business" class="btn btn-outline-primary"><%= t('.business_cta') %></a>
+  </div>
+</section>
+
+<%# ---- Closing CTA ---- %>
+<%= render 'shared/cta_band',
+           title: t('.cta_title'),
+           primary_label: t('.cta_primary'), primary_href: '/get-started',
+           secondary_label: t('.cta_secondary'), secondary_href: 'https://t.me/openipc',
+           note_html: t('.cta_donate_html') %>

@@ -1,0 +1,80 @@
+<% content_for :fullwidth, 'yes' %>
+
+<%= render 'shared/page_header', title: t('.hero_title'), lede: t('.hero_lede') %>
+
+<%
+  gh = 'https://github.com/OpenIPC'
+  sections = [
+    {
+      title: t('.section_core_title'), text: t('.section_core_text'),
+      projects: [
+        { name: 'firmware',    desc: t('.proj_firmware'),      repo: "#{gh}/firmware",    stage: 'done' },
+        { name: 'majestic',    desc: t('.proj_majestic'),      repo: "#{gh}/majestic",    stage: 'done' },
+        { name: 'divinus',     desc: t('.proj_divinus'),       repo: "#{gh}/divinus",     stage: 'wip' },
+        { name: 'ipctool',     desc: t('.proj_ipctool'),       repo: "#{gh}/ipctool",     stage: 'done' },
+        { name: 'coupler',     desc: t('.proj_coupler'),       repo: "#{gh}/coupler",     stage: 'done' },
+        { name: 'smolrtsp',    desc: t('.proj_smolrtsp'),      repo: "#{gh}/smolrtsp",    stage: 'done' },
+        { name: 'microbe-web', desc: t('.proj_microbe'),       repo: "#{gh}/microbe-web", stage: 'done' },
+        { name: 'yaml-cli',    desc: t('.proj_yamlcli'),       repo: "#{gh}/yaml-cli",    stage: 'done' },
+        { name: 'burn',        desc: t('.proj_burn'),          repo: "#{gh}/burn",        stage: 'done' }
+      ]
+    },
+    {
+      title: t('.section_longevity_title'), text: t('.section_longevity_text'),
+      projects: [
+        { name: 'openhisilicon',  desc: t('.proj_openhisilicon'), repo: "#{gh}/openhisilicon", stage: 'wip' },
+        { name: 'openxiongmai',   desc: t('.proj_openxiongmai'),  repo: "#{gh}/openxiongmai",  stage: 'rnd' },
+        { name: 'qemu-hisilicon', desc: t('.proj_qemu'),          repo: 'https://github.com/widgetii/qemu-hisilicon', stage: 'wip' }
+      ]
+    },
+    {
+      title: t('.section_lowlat_title'), text: t('.section_lowlat_text_html'),
+      projects: [
+        { name: 'waybeam_venc',  desc: t('.proj_waybeam'),    repo: "#{gh}/waybeam_venc",  stage: 'done' },
+        { name: 'PixelPilot_rk', desc: t('.proj_pixelpilot'), repo: "#{gh}/PixelPilot_rk", stage: 'done' },
+        { name: 'aviateur',      desc: t('.proj_aviateur'),   repo: "#{gh}/aviateur",      stage: 'done' },
+        { name: 'telemetry',     desc: t('.proj_telemetry'),  repo: "#{gh}/telemetry",     stage: 'done' },
+        { name: 'devourer',      desc: t('.proj_devourer'),   repo: "#{gh}/devourer",      stage: 'rnd' }
+      ]
+    },
+    {
+      title: t('.section_tools_title'), text: t('.section_tools_text'),
+      projects: [
+        { name: 'onvif-tt',   desc: t('.proj_onvif_tt'),   repo: "#{gh}/onvif-tt",   stage: 'done' },
+        { name: 'rnd-player', desc: t('.proj_rnd_player'), repo: "#{gh}/rnd-player", stage: 'done' }
+      ]
+    }
+  ]
+%>
+
+<div class="container">
+  <article>
+    <p class="text-body-secondary mb-5"><%= t('.stage_legend_html') %></p>
+
+    <% sections.each do |section| %>
+      <section class="mb-5">
+        <h2 class="h4"><%= section[:title] %></h2>
+        <p class="text-body-secondary" style="max-width: 70ch"><%= section[:text] %></p>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+          <% section[:projects].each do |project| %>
+            <div class="col">
+              <%= render 'shared/project_card', name: project[:name], desc: project[:desc],
+                         repo: project[:repo], stage: project[:stage] %>
+            </div>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+
+    <section class="mb-4">
+      <h2 class="h4"><%= t('.section_community_title') %></h2>
+      <p class="text-body-secondary" style="max-width: 70ch"><%= t('.section_community_text_html') %></p>
+    </section>
+  </article>
+</div>
+
+<%= render 'shared/cta_band',
+           title: t('pages.community.contribute_title'),
+           primary_label: t('pages.community.title'), primary_href: '/community',
+           secondary_label: 'GitHub', secondary_href: 'https://github.com/OpenIPC',
+           note_html: t('.contribute_cta_html') %>

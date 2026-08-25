@@ -1,0 +1,26 @@
+// Partner/integrator logo wall: white tiles normalize the mixed PNG set.
+.logo-wall {
+  .logo-tile {
+    align-items: center;
+    background: #fff;
+    border: 1px solid $border-color;
+    border-radius: $border-radius;
+    display: flex;
+    height: 4.5rem;
+    justify-content: center;
+    padding: .75rem 1rem;
+
+    img {
+      filter: grayscale(1) opacity(.7);
+      max-height: 100%;
+      max-width: 100%;
+      object-fit: contain;
+      transition: filter .15s ease-out;
+    }
+
+    &:hover img,
+    &:focus-within img {
+      filter: none;
+    }
+  }
+}

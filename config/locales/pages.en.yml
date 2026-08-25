@@ -8,9 +8,116 @@ en:
         title: Admin Dashboard
     bandwidth_calculator:
       title: Bandwidth calculator
+    business:
+      contact_alt_html: Prefer chat? Message us on <a href="https://t.me/openipc">Telegram</a>.
+      contact_text: Tell us what you are building. An engineer answers, not a sales script.
+      contact_title: Talk to the team
+      hero_lede: Commercial support, custom development, and OEM licensing from the core team.
+      hero_title: Build your product on OpenIPC — with the people who build OpenIPC.
+      how1: You write to us with the product and the problem.
+      how2: A scoping call with an engineer.
+      how3: A pilot with clear deliverables.
+      how4: Ongoing support or development, sized to your needs.
+      how_title: How an engagement works
+      licensing_html: The core of the platform is MIT-licensed — commercial use is welcome. The Majestic streamer is distributed in binary form under the Prosperity license; commercial terms are available. The use of OpenIPC and its components for military purposes is not permitted.
+      licensing_title: Licensing, plainly
+      offer1_text: Priority fixes, guaranteed response times, and long-term maintenance of the platforms your product depends on.
+      offer1_title: Commercial support
+      offer2_text: SoC bring-up, sensor tuning, NPU features, custom video links, white-label firmware — built to your specification by the people who know the stack best.
+      offer2_title: Custom development
+      offer3_text: Commercial licensing for Majestic, branded builds, and integration help for manufacturers shipping OpenIPC-based products.
+      offer3_title: OEM & licensing
+      partners_title: Companies already building on OpenIPC
+      title: For Business
+      why1_text: Vendor SDKs give you a kernel and a demo. OpenIPC gives you a shipping firmware with streaming, web interface, and updates — you start from 90%, not from zero.
+      why1_title: Faster than a raw SDK
+      why2_text: Our mainline-kernel work keeps platforms maintained after vendors abandon them. Your product's lifespan is not capped by a vendor's roadmap.
+      why2_title: Survives silicon EOL
+      why3_text: Devices work without our servers — or anyone's. Your cost structure stays yours.
+      why3_title: No per-unit cloud tax
+      why4_text: The core is open. Whatever happens to any company, including ours, your product keeps building.
+      why4_title: Open source is your escrow
+      why_title: Why companies build on OpenIPC
+    community:
+      bot_warning: New members answer two quick questions from our Welcome Bot after joining. If you miss the prompt and cannot post, leave and re-join the group, then watch for the bot's message.
+      channel_dev: Build notifications straight from GitHub.
+      channel_en: The international OpenIPC group.
+      channel_fpv: Everything about OpenIPC-based FPV and video links.
+      channel_ru: The Russian-speaking OpenIPC group.
+      channels_title: Where we live
+      contrib1_text_html: Found a bug? <a href="https://github.com/OpenIPC/">File an issue</a> in the right repository — a good report is a contribution.
+      contrib1_title: Report bugs
+      contrib2_text: Fork the code, make your improvement, send a pull request. Small fixes are welcome — that is how most of us started.
+      contrib2_title: Improve the code
+      contrib3_text: Run work-in-progress builds on your hardware and tell us what breaks. First adopters are what moves a platform from WIP to DONE.
+      contrib3_title: Test early builds
+      contrib4_text_html: Improve the <a href="https://github.com/OpenIPC/wiki">wiki</a>, proofread the website, make it sound native in your language.
+      contrib4_title: Write and translate
+      contrib5_text_html: Old boards past end-of-life are gold to us — platforms marked NEQ wait for exactly that hardware. <a href="/stages-of-firmware-development">What the stages mean</a>.
+      contrib5_title: Donate retired hardware
+      contrib6_text: Write a post, record a video, show your build. Real stories from real users are the best advertising we will never buy.
+      contrib6_title: Spread the word
+      contribute_title: Ways to contribute
+      cta_join: Join the main Telegram group
+      help1_html: Check the <a href="https://github.com/OpenIPC/wiki">wiki</a> first — installation, FPV, and troubleshooting guides live there.
+      help2: Search the chat history; most first questions have been answered before.
+      help3: When you ask, include the SoC, the sensor, what you tried, and a boot log if you have one. Good questions get fast answers.
+      help_title: Getting help that gets answered
+      hero_lede: OpenIPC is built in the open by people who answer questions every day. Come say hi.
+      hero_title: Talk to us.
+      money_band_html: Prefer to help with money? <a href="/donate">Fund the work</a>.
+      title: Community
     donate:
+      business_band_html: If your company depends on OpenIPC, the sustainable way to support it is a commercial relationship. <a href="/business">See what we offer</a>.
+      crypto_text_html: TON donations work right inside Telegram via <a href="https://t.me/wallet">@wallet</a>.
+      crypto_title: Cryptocurrency
+      hero_lede: OpenIPC is free to use and expensive to make. Donations buy cameras for new platforms, pay maintainers, and keep the lights on.
+      hero_title: Fund the work.
+      oc_button: Donate on Open Collective
+      oc_text_html: Recurring or one-time, with open and transparent accounting. Recurring backers are permanently listed in the Sponsors section on our GitHub page.
+      oc_title: Open Collective
+      thanks: Thank you. It means more than you think.
+      title: Donate
+      where_text: Core team members spend their own money on cameras and SDK access to expand hardware support. Funds ease that burden, compensate part-time maintainers, and cover trade shows and vendor meetings where hardware partnerships actually happen.
+      where_title: Where the money goes
+    donate_band:
       please_support: Please consider supporting our projects
       title: Do you like what we do?
+    ecosystem:
+      contribute_cta_html: Pick a project and make it better. <a href="/community">Start here</a>.
+      hero_lede: 'OpenIPC is an ecosystem of more than a hundred open repositories: the firmware itself, the video pipeline, the tools around it, and the research that keeps old silicon alive.'
+      hero_title: More than firmware.
+      proj_aviateur: 'Cross-platform receiver: watch the link on Windows, Linux, or macOS.'
+      proj_burn: Unbricks HiSilicon devices over serial.
+      proj_coupler: The smooth migration path from vendor firmware to OpenIPC and back. No soldering, no special skills.
+      proj_devourer: An open foundation for SDR-like receivers built on cheap Wi-Fi hardware.
+      proj_divinus: An open-source streamer for a growing set of platforms.
+      proj_firmware: Universal, Buildroot-based firmware for IP cameras — replaces abandoned vendor systems on dozens of SoC families.
+      proj_ipctool: Identifies the SoC, sensor, and flash chip of nearly any camera — and backs up the stock firmware before you change anything.
+      proj_majestic: 'The streamer at the heart of the firmware: RTSP, ONVIF, WebRTC, HLS, audio, night modes. Distributed as a binary under the Prosperity license; commercial terms available.'
+      proj_microbe: The web interface of the firmware.
+      proj_onvif_tt: 'An ONVIF conformance test tool: verify what a camera actually implements. Free.'
+      proj_openhisilicon: Keeps the HiSilicon vendor SDK alive on mainline kernels — CVE fixes and modern features after the vendor walks away.
+      proj_openxiongmai: 'The same idea for Xiongmai SoCs: an open SDK replacement.'
+      proj_pixelpilot: 'The RX side: turns a Rockchip board into a dedicated ground station with display output.'
+      proj_qemu: A full HiSilicon IP camera emulator on QEMU — develop and test firmware without hardware on your desk.
+      proj_rnd_player: 'A player built for media engineers: inspect streams the way a developer needs to.'
+      proj_smolrtsp: An embeddable RTSP 1.0 server library for cameras and other constrained devices. TCP and UDP, any payload format.
+      proj_telemetry: Telemetry bridging between flight controllers and the ground.
+      proj_waybeam: 'The TX side of the link: a flexible video encoder for FPV drones and URLLC devices.'
+      proj_yamlcli: A small console tool for editing YAML configs from scripts.
+      section_community_text_html: User-made hardware, mounts, and accessories — like the 3D-printable models tagged <a href="https://www.printables.com/search/models?q=tag%3Aopenipc">openipc on Printables</a>.
+      section_community_title: Community projects
+      section_core_text: The operating system, the streamer, and the tools that get you from stock firmware to OpenIPC.
+      section_core_title: Core firmware
+      section_longevity_text: 'Vendor SDKs assume vendor kernels: ancient, unpatched, abandoned. We port them to mainline — CVE fixes and modern kernel features long after end-of-life.'
+      section_longevity_title: Longevity & security
+      section_lowlat_text_html: The open video link for drones, robots, and teleoperation. <a href="/low-latency">Read the overview</a>.
+      section_lowlat_title: Low latency & URLLC
+      section_tools_text: Free tools for camera and media engineers — useful even if you never flash our firmware.
+      section_tools_title: Pro tools
+      stage_legend_html: Every project carries an honest status badge — the same vocabulary we use for firmware platforms. <a href="/stages-of-firmware-development">How stages work</a>.
+      title: Ecosystem
     firmware_partitions_calculation:
       end_address: End address
       flash_size_mb: Flash size, MB
@@ -22,6 +129,28 @@ en:
       size_hex: Hex size, bytes
       start_address: Start address
       title: Firmware Partitions Calculation
+    get_started:
+      cta_find_soc: Find your SoC
+      editions_text: Lite fits 8 MB flash chips and covers the essentials. Ultimate adds extras like cloud streaming, tunnels, and more codecs — it needs 16 MB flash.
+      editions_title: Two editions
+      hero_lede: From stock firmware to OpenIPC in about half an hour — with a guide generated for your exact chip.
+      hero_title: Give your camera a second life.
+      step1_text_html: Run <a href="https://github.com/OpenIPC/ipctool">ipctool</a> on the camera (telnet or serial console) to learn the SoC, the sensor, and the flash chip. A label or FCC ID search works as a fallback.
+      step1_title: Identify your hardware
+      step2_text: Look your chip up in the supported hardware table. The wizard assembles a firmware image and a step-by-step installation guide for your exact configuration, right in your browser.
+      step2_title: Find your SoC
+      step3_text: Follow the generated guide. It starts with a full backup of the stock firmware — do not skip it.
+      step3_title: Back up, then flash
+      stuck_text_html: The community answers questions every day. <a href="/community">Ask in the chat</a> — include your SoC, sensor, and a boot log if you have one.
+      stuck_title: Stuck?
+      title: Get Started
+      wall_text_html: One setting in the web interface puts your camera's snapshots on our live <a href="/open-wall">Open Wall</a> — say hello to the community.
+      wall_title: Then join the Open Wall
+      warning_text_html: Flashing can brick a camera. The guide shows you how to make a full backup first, and <a href="https://github.com/OpenIPC/coupler">Coupler</a> can handle the safe path on supported models. If in doubt, <a href="/community">ask in the chat</a> before you flash.
+      warning_title: Honest warning
+      webui_title: The web interface
+      what_text: 'A clean Linux system with the Majestic streamer: RTSP, ONVIF, WebRTC, and HLS out of the box, a web interface, and full root access. Your camera, actually yours.'
+      what_title: What you get
     green_life:
       paragraph1: OpenIPC contributes to sustainability by primarily providing open firmware for IP cameras, directly engaging in the efficient use and repurposing of existing hardware.
       paragraph2: By extending the lifespan of cameras through customizable firmware updates and features, OpenIPC reduces electronic waste.
@@ -31,6 +160,48 @@ en:
     high_resolution_timer:
       reload_to_reset: Time shown in milliseconds. Reload page to reset the counter.
       title: High-Resolution Timer
+    home:
+      business_cta: Talk to the team
+      business_text: Commercial support, custom development, and OEM licensing — from the people who build the platform.
+      business_title: Building a product on OpenIPC?
+      cta_donate_html: Prefer to support the work directly? <a href="/donate">Donate</a>.
+      cta_primary: Get started
+      cta_secondary: Join our Telegram
+      cta_title: Flash your first camera this weekend.
+      hero_cta_low_latency: Low-latency video
+      hero_cta_start: Get started
+      hero_lede: Open firmware and tools for IP cameras, FPV drones, and the devices in between. Your hardware should answer to you — not to a vendor's cloud.
+      hero_microline: 140+ repositories · dozens of SoC families · no cloud required
+      hero_title: The open platform for embedded video.
+      partners_title: Trusted by manufacturers, integrators, and research teams
+      pillar_firmware_text: An open, Buildroot-based OS for IP cameras across dozens of SoC families, with the Majestic streamer at its core.
+      pillar_firmware_title: Camera firmware
+      pillar_longevity_text: 'We keep vendor SDKs alive on mainline kernels: CVE fixes and modern features long after the vendor walks away.'
+      pillar_longevity_title: Longevity & security
+      pillar_low_latency_text: An open video link for FPV drones, robots, and teleoperation. Glass-to-glass from about 60 ms on supported hardware.
+      pillar_low_latency_title: Low-latency video links
+      pillar_tools_text: ONVIF conformance testing, camera emulation, hardware inspection — free tools we built for ourselves and share with everyone.
+      pillar_tools_title: Pro tools
+      pillars_lede: OpenIPC is more than firmware — it is an ecosystem built by people who run it on their own hardware.
+      pillars_title: One platform, four fronts
+      silicon_title: Runs on silicon by
+      stats_languages: languages
+      stats_repos: open repositories
+      stats_since: building openly since
+      stats_socs: supported SoCs
+      stats_vendors: chip vendors
+      story_cta: Revive your camera
+      story_step1_text: Firmware updates stop. Security holes stay. The app disappears from the store.
+      story_step1_title: The vendor moves on
+      story_step2_text: Servers get switched off, and a working camera turns into plastic and silicon with nothing to do.
+      story_step2_title: The cloud goes dark
+      story_step3_text: The camera boots an open, maintained system — and answers to you. No backdoors. No subscriptions. Less e-waste.
+      story_step3_title: You flash OpenIPC
+      story_title: Cameras shouldn't die when their cloud does.
+      title: The open platform for embedded video
+      wall_cta: "+ your camera here"
+      wall_live: 'Live now: cameras running OpenIPC around the world'
+      wall_snapshot_alt: 'Image: live snapshot from a community camera'
     introduction:
       alliance: Alliance
       button_binaries: Precompiled binary files
@@ -57,6 +228,37 @@ en:
       development: Development
       gaming: Gaming solutions
       title: Introduction
+    low_latency:
+      business_bridge_html: Building a product on this link? <a href="/business">Talk to us</a> — we do custom development and OEM work.
+      credits_text: The radio link exists thanks to wfb-ng, and the ecosystem grows with friends like RubyFPV and Mario FPV. Open source is a team sport.
+      credits_title: Standing on open shoulders
+      cta_chat: Join the FPV chat
+      cta_guide: Read the build guide
+      fpv_text: 'A fully open digital FPV system: no locked ecosystem, no paired hardware, no firmware ceiling. Build the air unit from a supported camera, pick your ground station, and tune every stage of the pipeline.'
+      fpv_title: 'FPV: from lens to goggles'
+      hardware_text_html: Air units are built from supported cameras and AIO boards — start from the <a href="/supported-hardware">supported hardware list</a>. RunCam and EMAX ship OpenIPC-based FPV hardware out of the box.
+      hardware_title: Hardware
+      hero_lede: 'FPV drones, robots, teleoperation: an open ultra-low-latency video stack from camera to screen. Glass-to-glass from about 60 ms on supported hardware.'
+      hero_title: Open video links for machines that can't wait.
+      how_link_text_html: <a href="https://github.com/svpcom/wfb-ng">wfb-ng</a> broadcasts video, telemetry, and control over commodity Wi-Fi hardware — no association, no retransmit stalls.
+      how_link_title: The radio link
+      how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> turns a Rockchip board into a dedicated ground station, and <a href="https://github.com/OpenIPC/aviateur">Aviateur</a> receives on Windows, Linux, and macOS.
+      how_rx_title: RX — your side
+      how_title: How the link works
+      how_tx_text_html: An OpenIPC camera with the <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> encoder produces the stream and feeds the radio link.
+      how_tx_title: TX — the air side
+      latency_1080p30: 1080p30
+      latency_1080p60: 1080p60
+      latency_720p60: 720p60
+      latency_column_config: Configuration
+      latency_column_g2g: Typical glass-to-glass
+      latency_intro: 'Numbers depend on SoC, sensor, resolution, exposure, and heat. These are typical figures from our own measurements, not best-case marketing:'
+      latency_note: Measured with our own open hardware latency meter — built for exactly this job.
+      latency_title: Latency, honestly
+      robotics_text1: The same link carries video for industrial robots, AGVs, inspection rigs, and remote operation — anywhere a closed video system would lock you in or a cloud hop would add seconds.
+      robotics_text2: On supported SoCs, frames carry wall-clock timestamps tied to the sensor frame start — millisecond-class synchronization for multi-camera rigs without extra hardware.
+      robotics_title: 'Beyond drones: robots and teleoperation'
+      title: Low-Latency Video
     majestic_endpoints:
       moved_html: 'The list of endpoints your camera serves now lives in the camera''s own web interface, under <b>Majestic &rarr; Endpoints</b>. Open <code>http://&lt;camera-address&gt;/</code> in a browser and pick it from the menu.'
       reason_address: 'your camera''s real address is filled in, so a URL can be copied straight into a player;'

@@ -10,3 +10,11 @@
   color: #f1f1f1ff;
   a { color: #ffcc00; }
 }
+
+// Snapshot card metadata in mono, for the data-plate look.
+.snapshot-card {
+  .card-title {
+    font-family: $font-family-monospace;
+    font-size: .9375rem;
+  }
+}

@@ -1,0 +1,9 @@
+<%# Homepage pillar card. Locals: icon, title, text, href, accent (optional). %>
+<div class="card pillar-card p-2">
+  <div class="card-body d-flex flex-column">
+    <span class="icon-chip <%= 'icon-chip--accent' if local_assigns[:accent] %> mb-3"><i class="bi <%= icon %>"></i></span>
+    <h3 class="h5"><%= title %></h3>
+    <p class="text-body-secondary mb-3"><%= text %></p>
+    <a href="<%= href %>" class="stretched-link mt-auto fs-5" aria-label="<%= title %>"><i class="bi bi-arrow-right"></i></a>
+  </div>
+</div>

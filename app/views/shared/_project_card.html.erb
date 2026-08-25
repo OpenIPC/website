@@ -1,0 +1,15 @@
+<%# Ecosystem/Labs project card. Locals: name, desc, repo (optional), stage (optional). %>
+<div class="card project-card">
+  <div class="card-body">
+    <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+      <h4 class="card-title mb-0 text-data"><%= name %></h4>
+      <% if local_assigns[:stage].present? %>
+        <%= render 'shared/stage_badge', stage: stage %>
+      <% end %>
+    </div>
+    <p class="text-body-secondary small mb-2"><%= desc %></p>
+    <% if local_assigns[:repo].present? %>
+      <a href="<%= repo %>" class="small text-data"><i class="bi bi-github me-1" style="font-size: 1em"></i><%= repo.sub('https://github.com/', '') %></a>
+    <% end %>
+  </div>
+</div>

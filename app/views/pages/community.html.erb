@@ -1,0 +1,56 @@
+<% content_for :fullwidth, 'yes' %>
+
+<%= render 'shared/page_header', title: t('.hero_title'), lede: t('.hero_lede') %>
+
+<div class="container">
+  <article>
+    <%# Channels %>
+    <h2 class="h4 mb-4"><%= t('.channels_title') %></h2>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3 mb-4">
+      <% [['OpenIPC Users (EN)', 'https://t.me/+7LL2kc32SOo5YWYy', t('.channel_en')],
+          ['OpenIPC & FPV',      'https://t.me/+BMyMoolVOpkzNWUy', t('.channel_fpv')],
+          ['OpenIPC Users (RU)', 'https://t.me/+Sl2GPoR9G2iJAOCr', t('.channel_ru')],
+          ['OpenIPC Firmware',   'https://t.me/s/openipc_dev',     t('.channel_dev')]].each do |name, url, desc| %>
+        <div class="col">
+          <div class="card h-100">
+            <div class="card-body">
+              <h3 class="h6"><i class="bi bi-telegram text-primary me-2"></i><a href="<%= url %>" class="text-reset"><%= name %></a></h3>
+              <p class="text-body-secondary small mb-0"><%= desc %></p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <div class="alert alert-warning d-flex gap-3 mb-6">
+      <i class="bi bi-robot fs-4"></i>
+      <p class="mb-0"><%= t('.bot_warning') %></p>
+    </div>
+
+    <%# Help etiquette %>
+    <h2 class="h4 mb-3"><%= t('.help_title') %></h2>
+    <ul class="text-body-secondary mb-6">
+      <li><%= t('.help1_html') %></li>
+      <li><%= t('.help2') %></li>
+      <li><%= t('.help3') %></li>
+    </ul>
+
+    <%# Ways to contribute %>
+    <h2 class="h4 mb-4"><%= t('.contribute_title') %></h2>
+    <div class="row g-4 mb-4">
+      <% [%w[contrib1 bi-bug], %w[contrib2 bi-git], %w[contrib3 bi-cpu],
+          %w[contrib4 bi-translate], %w[contrib5 bi-box2-heart], %w[contrib6 bi-megaphone]].each do |key, icon| %>
+        <div class="col-md-6 col-xl-4">
+          <h3 class="h6"><i class="bi <%= icon %> text-primary me-2"></i><%= t(".#{key}_title") %></h3>
+          <p class="text-body-secondary small mb-0"><%= t(".#{key}_text", default: '').presence || t(".#{key}_text_html") %></p>
+        </div>
+      <% end %>
+    </div>
+
+    <p class="text-body-secondary"><%= t('.money_band_html') %></p>
+  </article>
+</div>
+
+<%= render 'shared/cta_band',
+           title: t('.hero_title'),
+           primary_label: t('.cta_join'), primary_href: 'https://t.me/+7LL2kc32SOo5YWYy',
+           note_html: t('.money_band_html') %>
