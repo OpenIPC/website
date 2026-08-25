@@ -189,6 +189,36 @@ class CameraTest < ActiveSupport::TestCase
     assert_equal 'Zephyr', camera.firmware_version_name
   end
 
+  # --- the permanent link ---
+
+  # permalink emitted `var` while Cameras::SocsController#show has only ever
+  # read `ver`, so the edition was the single field the link dropped: a link
+  # for Ultimate on a 32MB chip reopened as Lite. Nothing else diverged, which
+  # is why it went unnoticed -- so this pins the whole key set rather than the
+  # one key, against the reader in `show`.
+  test 'the permanent link is spelled with the keys show reads back' do
+    camera = Camera.new(camera_mac_address: 'aa:bb:cc:dd:ee:ff', camera_ip_address: '10.0.0.5',
+                        server_ip_address: '10.0.0.1', network_interface: 'wifi',
+                        flash_type: 'nor32m', firmware_version: 'ultimate', sd_card_slot: 'sd')
+
+    keys = Rack::Utils.parse_query(camera.permalink.delete_prefix('?')).keys
+
+    assert_equal %w[mac cip sip net rom ver sd].sort, keys.sort
+  end
+
+  test 'the permanent link carries every value it was built from' do
+    camera = Camera.new(camera_mac_address: 'aa:bb:cc:dd:ee:ff', camera_ip_address: '10.0.0.5',
+                        server_ip_address: '10.0.0.1', network_interface: 'wifi',
+                        flash_type: 'nor32m', firmware_version: 'ultimate', sd_card_slot: 'sd')
+
+    query = Rack::Utils.parse_query(camera.permalink.delete_prefix('?'))
+
+    # The MAC is the one field that changes shape: colons are not legal in a
+    # query string unescaped, and `show` turns the dashes back.
+    assert_equal({ 'mac' => 'aa-bb-cc-dd-ee-ff', 'cip' => '10.0.0.5', 'sip' => '10.0.0.1',
+                   'net' => 'wifi', 'rom' => 'nor32m', 'ver' => 'ultimate', 'sd' => 'sd' }, query)
+  end
+
   def with_index(assets)
     root = Dir.mktmpdir
     ENV['RELEASE_INDEX_ROOT'] = root

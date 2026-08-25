@@ -550,4 +550,47 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
   test 'a 16MB Ingenic camera is told to run setnor16m after a full flash' do
     assert_told_to_remap_partitions('Ingenic')
   end
+
+  # --- the permanent link ---
+
+  def permalink_for(**attrs)
+    Camera.new(camera_mac_address: 'aa:bb:cc:dd:ee:ff', camera_ip_address: '10.0.0.5',
+               server_ip_address: '10.0.0.1', network_interface: 'eth',
+               sd_card_slot: 'nosd', **attrs).permalink
+  end
+
+  def assert_form_reopened_on(chip, edition)
+    assert_response :success
+    assert_match 'value="aa:bb:cc:dd:ee:ff"', response.body
+    assert_match 'value="10.0.0.5"', response.body
+    assert_match 'value="10.0.0.1"', response.body
+    assert_match %(<option selected="selected" value="#{chip}">), response.body
+    assert_match %(<option selected="selected" value="#{edition}">), response.body
+  end
+
+  test 'a permanent link reopens the wizard on the configuration it names' do
+    soc = instructable_soc('TS3516EV800')
+
+    with_release_index(*every_edition_for(soc)) do
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}" \
+          "#{permalink_for(flash_type: 'nor32m', firmware_version: 'ultimate')}"
+
+      assert_form_reopened_on('nor32m', 'ultimate')
+    end
+  end
+
+  # permalink wrote `var` and this action read `ver`, so the edition was the one
+  # field that did not survive the round trip -- a link for Ultimate reopened as
+  # Lite. Every link anyone has shared was built by the old spelling, so `var`
+  # stays readable rather than being swapped out.
+  test 'a link shared before the spelling was fixed still carries its edition' do
+    soc = instructable_soc('TS3516EV900')
+
+    with_release_index(*every_edition_for(soc)) do
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}" \
+          '?mac=aa-bb-cc-dd-ee-ff&cip=10.0.0.5&sip=10.0.0.1&net=eth&rom=nor32m&var=ultimate&sd=nosd'
+
+      assert_form_reopened_on('nor32m', 'ultimate')
+    end
+  end
 end

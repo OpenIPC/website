@@ -56,13 +56,7 @@ module Cameras
         network_interface: 'eth',
         sd_card_slot: 'nosd'
       )
-      @camera.camera_ip_address = params[:cip] if params[:cip]
-      @camera.camera_mac_address = params[:mac].to_s.downcase.gsub('-', ':')
-      @camera.server_ip_address = params[:sip] if params[:sip]
-      @camera.flash_type = params[:rom] if params[:rom]
-      @camera.firmware_version = params[:ver] if params[:ver]
-      @camera.network_interface = params[:net] if params[:net]
-      @camera.sd_card_slot = params[:sd] if params[:sd]
+      apply_permalink_to(@camera)
 
       # Soc.find, like every other action. find_by_urlname answers nil for a
       # slug that does not exist, and the next line then raises NoMethodError on
@@ -235,6 +229,31 @@ module Cameras
     end
 
     private
+
+    # Read a configuration back out of the query string Camera#permalink writes.
+    #
+    # The keys are the permanent link's, and they have to stay in step with it:
+    # `permalink` emitted `var` for as long as it existed against a `ver` that
+    # was never written, so the edition was the one field the link dropped and
+    # an Ultimate link reopened as Lite. `permalink` now writes `ver`; `var`
+    # stays readable here because every link anyone has shared carries it, and
+    # `ver` wins if a link somehow has both.
+    # One table rather than seven near-identical lines, because the drift was
+    # between a key and a field and a table is where that is visible. Insertion
+    # order is the precedence: `var` is applied first so `ver` overwrites it.
+    PERMALINK_FIELDS = { cip: :camera_ip_address, sip: :server_ip_address, rom: :flash_type,
+                         var: :firmware_version, ver: :firmware_version,
+                         net: :network_interface, sd: :sd_card_slot }.freeze
+
+    def apply_permalink_to(camera)
+      # Not in the table: unlike the rest, the MAC is rewritten rather than
+      # copied, and it is applied whether or not the link carried one.
+      camera.camera_mac_address = params[:mac].to_s.downcase.gsub('-', ':')
+
+      PERMALINK_FIELDS.each do |key, field|
+        camera.public_send("#{field}=", params[key]) if params[key]
+      end
+    end
 
     # Which half is missing, in the visitor's terms.
     #

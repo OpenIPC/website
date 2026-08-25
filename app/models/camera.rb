@@ -251,7 +251,11 @@ class Camera
       '&sip=', server_ip_address,
       '&net=', network_interface,
       '&rom=', flash_type,
-      '&var=', firmware_version,
+      # `ver`, not `var`. This emitted `var` while show has always read `ver`,
+      # so the edition was the one field the permanent link dropped: reopening
+      # a link for Ultimate on a 32MB chip came back as Lite. show still
+      # accepts `var` too, because every link anyone has shared carries it.
+      '&ver=', firmware_version,
       '&sd=', sd_card_slot
     ].join('').html_safe
   end
