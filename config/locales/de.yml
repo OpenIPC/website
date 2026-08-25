@@ -67,6 +67,7 @@ de:
   firmware:
     info_html: Wenn Sie mehr darüber erfahren möchten, was die Befehle %{commands} bewirken, führen Sie <code>printenv</code> in der Bootloader-Konsole aus.
     installation:
+      attention: Achtung!
       backup:
         info: OpenIPC U-Boot überschreibt die ursprüngliche Kryptopartition und macht es unmöglich, zur werkseitigen Firmware zurückzukehren, es sei denn, Sie haben ein vollständiges Flash-Backup für diese bestimmte Kamera! Um ein vollständiges Firmware-Backup zu erstellen, starten Sie einen TFTP-Server und führen Sie diese Befehle in der Bootloader-Shell aus.
         more_info_html: Weitere Informationen finden Sie in den <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">Installationsanweisungen</a> im Wiki des Projekts.
