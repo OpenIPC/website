@@ -100,10 +100,6 @@ module Cameras
       @camera.network_interface = permitted_params[:network_interface]
       @camera.sd_card_slot = permitted_params[:sd_card_slot]
 
-      # to handle nor32m size still using nor16m command
-      @flash_type_command = @camera.flash_type
-      @flash_type_command = 'nor16m' if @camera.flash_type.eql?('nor32m')
-
       @camera.soc = Soc.find(params[:id])
       @vendor = @camera.soc.vendor
 
@@ -111,7 +107,20 @@ module Cameras
       # upstream builds only a NAND image for -- rv1109 and rv1126 here today.
       # Their NOR sizes are disabled in the menu, so the form opened on a
       # disabled flash type with no edition to go with it.
-      @camera.flash_type = @camera.soc.default_flash_chip if params[:rom].blank?
+      #
+      # `show` guards this on params[:rom] because a query string is where its
+      # choice arrives. This action is reached by PUT from the form, which sends
+      # camera[flash_type] and never sends rom -- so the same guard here was
+      # always true and threw away every choice the visitor made.
+      @camera.flash_type = @camera.soc.default_flash_chip if permitted_params[:flash_type].blank?
+
+      # to handle nor32m size still using nor16m command. After the default
+      # above, not before: the commands name the chip, so reading the flash type
+      # first left the page telling a 16MB camera to `run urnor16m` and then
+      # erasing from the 8MB overlay offset, 733,184 bytes into what it had just
+      # written. That is the failure #60 described, by another route.
+      @flash_type_command = @camera.flash_type
+      @flash_type_command = 'nor16m' if @camera.flash_type.eql?('nor32m')
 
       if @vendor.name.eql?("SigmaStar") && @camera.flash_type.eql?("nand")
         render 'cameras/socs/sigmastar_nand_is_weird'

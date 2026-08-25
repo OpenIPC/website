@@ -152,4 +152,120 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       get "/cameras/vendors/#{@vendor.to_param}/socs/no-such-soc"
     end
   end
+
+  # --- the wizard renders the chip the visitor chose ---
+  #
+  # These render the whole installation page. That used to be impossible here --
+  # app/assets/builds/ is gitignored and sprockets raises on a missing
+  # application.css -- but CI now builds the assets before `bin/rails test`, and
+  # web_interface_test.rb and majestic_endpoints_test.rb already rely on it.
+
+  # Stub the release index with exactly these assets for the duration of the
+  # block. The installation page asks it what upstream publishes, and
+  # use_published_release! moves the visitor off an edition that is not there.
+  def with_release_index(*filenames)
+    root = Dir.mktmpdir
+    ENV['RELEASE_INDEX_ROOT'] = root
+    write_index(root, filenames)
+    ReleaseIndex.reset!
+    yield
+  ensure
+    ENV.delete('RELEASE_INDEX_ROOT')
+    ReleaseIndex.reset!
+    FileUtils.remove_entry(root) if root
+  end
+
+  def write_index(root, filenames)
+    assets = filenames.to_h { |name| [name, { 'size' => 1 }] }
+    File.write(File.join(root, '.index.json'),
+               JSON.generate('generated_at' => '2026-08-24T00:00:00Z', 'aliases' => {}, 'assets' => assets))
+  end
+
+  # Both editions on both flash types, so use_published_release! leaves the
+  # submitted choice alone and the assertions are about flash type and nothing
+  # else.
+  def every_edition_for(soc)
+    %w[nor nand].product(%w[lite ultimate]).map { |flash, release| "openipc.#{soc.board}-#{flash}-#{release}.tgz" }
+  end
+
+  def instructable_soc(model)
+    Soc.create!(vendor: @vendor, model:, status: 'done', load_address: '0x82000000',
+                uboot_filename: "u-boot-#{model.downcase}-universal.bin",
+                linux_filename: "openipc.#{model.downcase}-nor-lite.tgz")
+  end
+
+  def submit(soc, flash_type, firmware_version: 'lite')
+    put "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}",
+        params: { camera: { flash_type:, firmware_version:,
+                            network_interface: 'eth', sd_card_slot: 'nosd',
+                            camera_ip_address: '192.168.1.10',
+                            server_ip_address: '192.168.1.254',
+                            camera_mac_address: '00:11:22:33:44:55' } }
+    assert_response :success
+  end
+
+  test 'a 16MB submission gets the 16MB layout, not the SoC default' do
+    # update guarded the default_flash_chip fallback on params[:rom], which is
+    # how `show` receives a choice and not how this action does: the form PUTs
+    # camera[flash_type] and never sends rom, so the guard was always true and
+    # every visitor was silently moved to nor8m. @flash_type_command was read
+    # before that happened, so the page said `run urnor16m` -- which writes the
+    # rootfs to 0x350000..0xd50000 -- and then erased from the 8MB overlay
+    # offset, 733,184 bytes inside it. Issue #60, by another route.
+    soc = instructable_soc('TS3516EV200')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m')
+
+      assert_match 'run setnor16m', response.body
+      assert_match 'run uknor16m; run urnor16m', response.body
+      assert_match 'sf erase 0xD50000', response.body
+      assert_no_match(/sf erase 0x750000/, response.body)
+    end
+  end
+
+  test 'an 8MB submission still gets the 8MB layout' do
+    soc = instructable_soc('TS3518EV200')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m')
+
+      assert_match 'run uknor8m; run urnor8m', response.body
+      assert_match 'sf erase 0x750000', response.body
+    end
+  end
+
+  test 'a NAND submission is not turned into a NOR one' do
+    # default_flash_chip answers nor8m for any SoC with a NOR build, so this
+    # combination rendered `run uknand; run urnand` followed by an `sf erase`:
+    # Camera#nand? was false, and the erase is meaningless on a UBI partition.
+    soc = instructable_soc('TS3516CV500')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nand')
+
+      assert_match 'run setnand', response.body
+      assert_match 'run uknand; run urnand', response.body
+      assert_no_match(/sf erase/, response.body)
+    end
+  end
+
+  test 'a submission with no flash type still falls back to what the SoC has' do
+    # What the guard was there for: rv1109 and rv1126 publish only a NAND image,
+    # their NOR sizes are disabled in the menu, and nor8m is the wrong place to
+    # start. Nothing on NOR here, so default_flash_chip answers nand -- and the
+    # commands have to follow it, which is why @flash_type_command is read after
+    # the fallback rather than before. It used to render a bare `run set`.
+    soc = Soc.create!(vendor: @vendor, model: 'TS1126', status: 'done',
+                      load_address: '0x82000000',
+                      uboot_filename: 'u-boot-ts1126-universal.bin',
+                      linux_filename: 'openipc.ts1126-nand-ultimate.tgz')
+
+    with_release_index('openipc.ts1126-nand-ultimate.tgz') do
+      submit(soc, '', firmware_version: 'ultimate')
+
+      assert_match 'run setnand', response.body
+      assert_match 'run uknand; run urnand', response.body
+    end
+  end
 end
