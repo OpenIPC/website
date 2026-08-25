@@ -244,8 +244,15 @@ module Cameras
       # copied, and it is applied whether or not the link carried one.
       camera.camera_mac_address = params[:mac].to_s.downcase.gsub('-', ':')
 
+      # present?, not just presence of the key. A permanent link carries every
+      # field whether or not it has a value, so `?...&ver=&sd=` is what a link
+      # built from a camera with no edition chosen looks like -- and the menu
+      # can produce exactly that, since allowedEditions falls back to '' when a
+      # chip has nothing published for it. Treating the empty string as an
+      # answer blanked the dropdown; blank means "not specified", so the
+      # constructor default stands.
       PERMALINK_FIELDS.each do |key, field|
-        camera.public_send("#{field}=", params[key]) if params[key]
+        camera.public_send("#{field}=", params[key]) if params[key].present?
       end
     end
 
