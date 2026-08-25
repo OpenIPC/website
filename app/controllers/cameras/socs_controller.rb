@@ -76,8 +76,10 @@ module Cameras
       # nor8m is the default for almost every SoC and wrong for the ones
       # upstream builds only a NAND image for -- rv1109 and rv1126 here today.
       # Their NOR sizes are disabled in the menu, so the form opened on a
-      # disabled flash type with no edition to go with it.
-      @camera.flash_type = @camera.soc.default_flash_chip if params[:rom].blank?
+      # disabled flash type with no edition to go with it. Unrecognised is the
+      # same as unset: ?rom=nor64m otherwise opened the form on a chip that
+      # matches no option in it.
+      @camera.flash_type = @camera.soc.default_flash_chip unless @camera.flash_type.in?(Camera::FLASH_CHIP)
 
       @page_title = "SoC: #{@camera.soc.full_name}"
       render 'cameras/socs/show'
@@ -112,7 +114,15 @@ module Cameras
       # choice arrives. This action is reached by PUT from the form, which sends
       # camera[flash_type] and never sends rom -- so the same guard here was
       # always true and threw away every choice the visitor made.
-      @camera.flash_type = @camera.soc.default_flash_chip if permitted_params[:flash_type].blank?
+      #
+      # Against FLASH_CHIP rather than for blankness, because a chip this site
+      # does not know is not a choice either. Camera#flash_size_hex and friends
+      # fall through to their 8MB branch for anything unrecognised, while
+      # @flash_type_command below would go on to render `run setnor64m` and a
+      # printenv hint naming three variables no bootloader defines. Nothing
+      # calls valid? on a Camera, so this is the only thing standing between the
+      # query string and the commands.
+      @camera.flash_type = @camera.soc.default_flash_chip unless @camera.flash_type.in?(Camera::FLASH_CHIP)
 
       # to handle nor32m size still using nor16m command. After the default
       # above, not before: the commands name the chip, so reading the flash type

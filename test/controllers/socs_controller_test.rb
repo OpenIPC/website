@@ -325,4 +325,21 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       assert_no_match(/uknor32m/, response.body)
     end
   end
+
+  test 'a flash chip this site does not know is treated as no choice at all' do
+    # Nothing calls valid? on a Camera and every field arrives from the request,
+    # so before this the submitted string went straight into the rendered
+    # commands: `run setnor64m`, `run uknor64m; run urnor64m`, and a printenv
+    # hint naming three variables no bootloader defines -- while flash_size_hex
+    # and friends quietly fell through to their 8MB branch alongside them.
+    soc = instructable_soc('TS3520DV200')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor64m')
+
+      assert_no_match(/nor64m/, response.body)
+      assert_match 'run uknor8m; run urnor8m', response.body
+      assert_match '<code>uknor8m</code>, <code>urnor8m</code>, <code>setnor8m</code>', response.body
+    end
+  end
 end
