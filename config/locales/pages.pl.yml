@@ -169,4 +169,5 @@ pl:
       title: Narzędzia
     web_interface:
       intro: 'Każda kamera z OpenIPC udostępnia ten interfejs samodzielnie, pod własnym adresem — bez konta w chmurze i bez aplikacji pośredniczącej. Poniżej strony kamery z aktualną wersją oprogramowania.'
+      scene_credit_html: 'Plaża na zrzutach Camera Preview i Majestic Settings to widok z kamery użytkownika OpenIPC <a href="https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706">@usa-</a>, opublikowany za zgodą właściciela.'
       title: Interfejs sieciowy

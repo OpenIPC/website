@@ -169,4 +169,5 @@ de:
       title: Dienstprogramme
     web_interface:
       intro: 'Jede OpenIPC-Kamera liefert diese Oberfläche selbst aus, über ihre eigene Adresse — ohne Cloud-Konto und ohne App dazwischen. Gezeigt sind die Seiten einer Kamera mit einem aktuellen Build.'
+      scene_credit_html: 'Der Strand auf den Aufnahmen „Camera Preview“ und „Majestic Settings“ ist die Sicht einer Kamera des OpenIPC-Nutzers <a href="https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706">@usa-</a>, mit freundlicher Genehmigung veröffentlicht.'
       title: Webinterface

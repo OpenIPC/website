@@ -69,4 +69,16 @@ class WebInterfaceTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  test 'the borrowed preview scene is credited on the page' do
+    # Two of the twelve shots do not show what the lab camera is pointed at:
+    # the beach in the player belongs to somebody else, given to us for this.
+    # A reader has no way to tell a substituted scene from a real one, so the
+    # page has to say whose it is and link the permission. Scoped to the
+    # article, and to a URL that appears nowhere else, so neither half of this
+    # can be satisfied by the layout.
+    assert_select 'article p a[href=?]',
+                  'https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706'
+    assert_select 'article', /@usa-/
+  end
 end
