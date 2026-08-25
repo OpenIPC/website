@@ -626,6 +626,32 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # A permanent link names every field whether or not it has a value, so
+  # `&ver=` is what a link built with no edition chosen looks like -- and the
+  # menu produces exactly that, because allowedEditions falls back to '' for a
+  # chip with nothing published. OpenIPC/firmware#1912 carries a real one.
+  # Reading the empty string as an answer left the dropdown with nothing
+  # selected at all.
+  def assert_blank_edition_key_ignored(key, model)
+    soc = instructable_soc(model)
+
+    with_release_index(*every_edition_for(soc)) do
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}" \
+          "?mac=aa-bb-cc-dd-ee-ff&cip=10.0.0.5&sip=10.0.0.1&net=both&rom=nor16m&#{key}=&sd=sd"
+
+      assert_response :success
+      assert_match %(<option selected="selected" value="lite">), response.body
+    end
+  end
+
+  test 'an empty var= in a link is no edition rather than a blank one' do
+    assert_blank_edition_key_ignored('var', 'TS3516EVC00')
+  end
+
+  test 'an empty ver= in a link is no edition rather than a blank one' do
+    assert_blank_edition_key_ignored('ver', 'TS3516EVC10')
+  end
+
   test 'a link shared before the spelling was fixed still carries its edition' do
     soc = instructable_soc('TS3516EV900')
 
