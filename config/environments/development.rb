@@ -19,6 +19,17 @@ Rails.application.configure do
 
   config.hosts << "openipc.org"
 
+  # Reach the dev server from other devices on the LAN -- a phone, or a second
+  # machine -- rather than only from localhost.
+  #
+  # Rails 7 already ships IPAddr 0.0.0.0/0 in the development defaults, so bare
+  # IP literals are allowed out of the box; only NAMED hosts need listing.
+  #
+  # The port suffix in the regex is not decoration. HostAuthorization matches
+  # String and IPAddr entries against the Host header with the port stripped,
+  # but Regexp entries against the header INCLUDING it. Written as
+  # /.*\.local\z/ this rule would 403 every request to trainer-arch.local:3010.
+  config.hosts << /.*\.local(:\d+)?\z/
 
   # Enable/disable caching. By default caching is disabled.
   # Run rails dev:cache to toggle caching.
@@ -61,6 +72,12 @@ Rails.application.configure do
 
   # Suppress logger output for asset requests.
   config.assets.quiet = true
+
+  # Behave like production: a key missing from ru or zh falls back to the
+  # English text. Without this, development is the only environment that renders
+  # a "translation missing" span, so a gap looks broken here and invisible there
+  # -- or worse, the reverse, and a gap gets shipped because it looked fine.
+  config.i18n.fallbacks = true
 
   # Raises error for missing translations.
   # config.i18n.raise_on_missing_translations = true

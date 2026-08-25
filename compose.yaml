@@ -1,0 +1,71 @@
+# Local development and test stack.
+#
+# This is the stack you develop against; it is not how the site is deployed.
+# Production runs the root Dockerfile as a container behind the host's nginx --
+# see deploy/docker-compose.yml and deploy/DEV-VALIDATION.md.
+#
+#   docker compose run --rm web bundle install     # first time, and after Gemfile changes
+#   docker compose run --rm web yarn install --immutable
+#   docker compose run --rm web bin/rails db:prepare
+#   docker compose run --rm web bin/rails test
+#   docker compose run --rm web bundle exec rubocop
+#   docker compose run --rm web bundle exec i18n-tasks missing
+#
+# `bundle exec` for the development-group tools: BUNDLE_BIN puts binstubs on
+# PATH, but bundler only writes one for a gem that ships an executable it knows
+# about at install time, and rubocop's is not there.
+#
+# `docker compose up web` serves http://localhost:3010, but the JS and CSS
+# bundles are built separately -- app/assets/builds/ is gitignored, and
+# Sprockets raises on any page that goes through the layout until they exist:
+#
+#   docker compose run --rm web yarn build
+#   docker compose run --rm web yarn build:css
+services:
+  db:
+    # Matches the MariaDB that CI runs the suite against. 11.8 defaults utf8mb4
+    # to uca1400_ai_ci rather than general_ci, which is why config/database.yml
+    # pins the collation rather than inheriting it.
+    image: mariadb:11.8
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_USER: www
+      MARIADB_PASSWORD: www
+      MARIADB_DATABASE: openipc_development
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./docker/db-init.sql:/docker-entrypoint-initdb.d/90-grants.sql:ro
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build:
+      # ./docker, not the repository root: the image copies nothing from the
+      # tree, and a root context would ship node_modules to the daemon.
+      context: ./docker
+      dockerfile: Dockerfile.dev
+    command: bash -c 'bundle check || bundle install; exec bin/rails server -b 0.0.0.0 -p 3010'
+    environment:
+      # Setting this is what makes config/database.yml connect over TCP instead
+      # of the /run/mysqld socket, which does not exist in this container.
+      OPENIPC_DATABASE_HOST: db
+      OPENIPC_DATABASE_PORT: 3306
+    ports:
+      - '3010:3010'
+    volumes:
+      - .:/app
+      - bundle:/bundle
+      # node_modules is Linux-native and must not be shadowed by, or written
+      # back to, whatever the host happens to have installed.
+      - node-modules:/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  bundle:
+  db-data:
+  node-modules:

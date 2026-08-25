@@ -68,6 +68,9 @@ group :development do
   gem 'easy_translate', '~> 0.5.1'
   gem 'i18n-tasks'
   gem 'rubocop'
+  # .rubocop.yml has `require: rubocop-performance`, so rubocop cannot start
+  # without this -- it was required by the config but never listed here.
+  gem 'rubocop-performance'
   # gem 'rubocop-rails'
   # gem 'ruby-debug-ide'
 end
