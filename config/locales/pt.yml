@@ -65,7 +65,7 @@ pt:
         one: '1 erro proibiu que este %{resource} fosse salvo:'
         other: 'Erros %{count} proibiram que este %{resource} fosse salvo:'
   firmware:
-    info_html: Se você quiser saber mais sobre o que os comandos <code>uknor*</code> , <code>urnor*</code> , <code>setnor*</code> fazem, execute <code>printenv</code> no console do bootloader.
+    info_html: Se você quiser saber mais sobre o que os comandos %{commands} fazem, execute <code>printenv</code> no console do bootloader.
     installation:
       backup:
         info: O OpenIPC U-Boot substitui a partição criptografada original, tornando impossível reverter para o firmware de fábrica, a menos que você tenha um backup flash completo para esta câmera em particular! Para criar um backup completo do firmware, inicie um servidor TFTP e execute estes comandos no shell do bootloader.

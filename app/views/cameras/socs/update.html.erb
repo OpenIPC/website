@@ -162,7 +162,7 @@
     <% end %>
   </div>
 
-  <p><%= t('firmware.info_html') %></p>
+  <p><%= t('firmware.info_html', commands: bootloader_variables_html(@flash_type_command)) %></p>
 
   <a data-bs-toggle="collapse" href="#collapseExperts" role="button" aria-expanded="false" aria-controls="collapseExperts"><%= t('.advanced_instruction_link') %></a>
 </article>

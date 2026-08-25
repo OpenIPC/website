@@ -65,7 +65,7 @@ zh:
         one: 1 个错误禁止保存此 %{resource}：
         other: "%{count} 错误禁止保存此 %{resource}："
   firmware:
-    info_html: 如果您想详细了解<code>uknor*</code> 、 <code>urnor*</code> 、 <code>setnor*</code>命令的作用，请在引导加载程序控制台中执行<code>printenv</code> 。
+    info_html: 如果您想详细了解 %{commands} 命令的作用，请在引导加载程序控制台中执行<code>printenv</code> 。
     installation:
       backup:
         info: OpenIPC U-Boot 会覆盖原始的加密分区，因此无法恢复为出厂固件，除非您拥有此特定摄像机的完整闪存备份！要创建完整的固件备份，请启动 TFTP 服务器并在引导加载程序 shell 中执行这些命令。

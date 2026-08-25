@@ -65,7 +65,7 @@ fr:
         one: '1 erreur a empêché la sauvegarde de ce %{resource} :'
         other: 'Les erreurs %{count} ont empêché la sauvegarde de ce %{resource} :'
   firmware:
-    info_html: Si vous souhaitez en savoir plus sur ce que font les commandes <code>uknor*</code> , <code>urnor*</code> , <code>setnor*</code> , exécutez <code>printenv</code> dans la console du chargeur de démarrage.
+    info_html: Si vous souhaitez en savoir plus sur ce que font les commandes %{commands}, exécutez <code>printenv</code> dans la console du chargeur de démarrage.
     installation:
       backup:
         info: OpenIPC U-Boot écrase la partition cryptographique d'origine, ce qui rend impossible le retour au micrologiciel d'usine à moins que vous ne disposiez d'une sauvegarde flash complète pour cet appareil photo particulier ! Pour créer une sauvegarde complète du micrologiciel, démarrez un serveur TFTP et exécutez ces commandes dans le shell du chargeur de démarrage.

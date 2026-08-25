@@ -284,4 +284,45 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       assert_match(/does not fit an 8MB flash chip/, response.body)
     end
   end
+
+  # --- the printenv hint names the variables the page just used ---
+
+  test 'the printenv hint names the NAND variables when NAND was chosen' do
+    # It was a fixed `uknor*, urnor*, setnor*` in all ten locales, so a NAND
+    # reader was pointed at three variables that appear nowhere in their own
+    # instructions and none of the three that do. OpenIPC/website#63.
+    soc = instructable_soc('TS3516DV300')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nand')
+
+      assert_match '<code>uknand</code>, <code>urnand</code>, <code>setnand</code>', response.body
+      assert_no_match(/uknor/, response.body)
+    end
+  end
+
+  test 'the printenv hint names the chip-sized NOR variables' do
+    soc = instructable_soc('TS3519AV100')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m')
+
+      assert_match '<code>uknor16m</code>, <code>urnor16m</code>, <code>setnor16m</code>', response.body
+    end
+  end
+
+  test 'a 32MB chip is pointed at the nor16m variables it was told to run' do
+    # The controller rewrites nor32m to the nor16m command set -- there is no
+    # mtdpartsnor32m upstream -- and the hint has to follow that rewrite rather
+    # than name a variable no bootloader defines.
+    soc = instructable_soc('TS3521DV100')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor32m')
+
+      assert_match 'run uknor16m; run urnor16m', response.body
+      assert_match '<code>uknor16m</code>, <code>urnor16m</code>, <code>setnor16m</code>', response.body
+      assert_no_match(/uknor32m/, response.body)
+    end
+  end
 end

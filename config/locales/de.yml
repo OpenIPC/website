@@ -65,7 +65,7 @@ de:
         one: '1 Fehler verhinderte das Speichern dieses %{resource}:'
         other: "%{count}-Fehler verhinderten das Speichern dieses %{resource}:"
   firmware:
-    info_html: Wenn Sie mehr darüber erfahren möchten, was die Befehle <code>uknor*</code> , <code>urnor*</code> <code>setnor*</code> bewirken, führen Sie <code>printenv</code> in der Bootloader-Konsole aus.
+    info_html: Wenn Sie mehr darüber erfahren möchten, was die Befehle %{commands} bewirken, führen Sie <code>printenv</code> in der Bootloader-Konsole aus.
     installation:
       backup:
         info: OpenIPC U-Boot überschreibt die ursprüngliche Kryptopartition und macht es unmöglich, zur werkseitigen Firmware zurückzukehren, es sei denn, Sie haben ein vollständiges Flash-Backup für diese bestimmte Kamera! Um ein vollständiges Firmware-Backup zu erstellen, starten Sie einen TFTP-Server und führen Sie diese Befehle in der Bootloader-Shell aus.
