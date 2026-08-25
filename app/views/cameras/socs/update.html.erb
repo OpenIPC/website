@@ -69,7 +69,15 @@
           <% end %>
           <%= flashing_everything(@camera) %>
           <p><%= t('firmware.installation.flashing_full.continue') %></p>
-          <% unless @camera.soc.vendor.name.eql?('SigmaStar') || @camera.soc.vendor.name.eql?('Ingenic') || @flash_type_command.eql?('nor8m') %>
+          <%# SigmaStar and Ingenic were exempted here in 64d37db and 00332d1 and
+              are not any more. Their bootloaders default mtdparts to the 8MB
+              layout like every other one, a full-image flash leaves the env
+              erased so that default is what the camera boots with, and the
+              expert section below has always told them to run setnor16m
+              regardless -- so the exemption made this page contradict itself.
+              It also cannot coexist with Ultimate on 16MB: that rootfs is
+              7820KB on ssc338q against the 5120KB the 8MB layout allows. %>
+          <% unless @flash_type_command.eql?('nor8m') %>
             <p><%= t('firmware.installation.flashing_full.continue2') %></p>
             <%= preparing_environment(@flash_type_command) %>
           <% end %>

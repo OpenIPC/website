@@ -33,19 +33,30 @@ class FlashLayout
             overlay_offset: 0xD50000 }.freeze
   }.freeze
 
-  # These two keep the 8MB offsets whatever the chip size. The rule is carried
-  # over unchanged from Firmware#rootfs_offset, which has applied it for as long
-  # as the method has existed; it is preserved rather than revisited because
-  # neither u-boot-sigmastar nor u-boot-ingenic defines the uknor/urnor macros
-  # the others do, so there is nothing upstream to check it against. Worth
-  # confirming with the firmware maintainers before anyone relies on it further.
-  # The view already treats the same two vendors specially when rendering the
-  # environment-preparation step.
-  EIGHT_MEG_LAYOUT_VENDORS = %w[SigmaStar Ingenic].freeze
-
-  def self.nor(flash_size_mb, vendor_name = nil)
-    return NOR[8] if EIGHT_MEG_LAYOUT_VENDORS.include?(vendor_name)
-
+  # SigmaStar and Ingenic used to be pinned to the 8MB offsets whatever chip was
+  # chosen, on the grounds that their bootloaders defined no uknor/urnor macros
+  # to check against. They do. The repositories checked were u-boot-sigmastar
+  # and u-boot-ingenic, which are not what those SoCs ship; the real ones are
+  # per-SoC, and u-boot-t20, u-boot-t40 and u-boot-msc313e all carry the same
+  # pair as the Hisilicon and Goke bootloaders above, down to the byte:
+  #
+  #   mtdpartsnor16m = 256k(boot),64k(env),3072k(kernel),10240k(rootfs),-(rootfs_data)
+  #   uknor16m : sf erase 0x50000 0x300000    urnor16m : sf erase 0x350000 0xa00000
+  #
+  # Only the mtd device name differs -- jz_sfc, NOR_FLASH, sfc.
+  #
+  # The pin also could not survive Ultimate on 16MB. Ultimate's NOR rootfs is
+  # 7820KB on ssc338q and 6752KB on t31, and the 8MB layout gives rootfs 5120KB.
+  # There is no arrangement in which those two vendors offer Ultimate on a 16MB
+  # chip and keep the 8MB geometry.
+  #
+  # This is the one place the chip size decides, for every vendor. What has to
+  # travel with it is the instruction to run `setnor16m`: every one of these
+  # bootloaders defaults mtdparts to the 8MB layout, and flashing a full image
+  # leaves the env erased, so a 16MB camera that is never told to switch boots
+  # with 8MB partitions. update.html.erb used to suppress that instruction for
+  # these same two vendors and no longer does.
+  def self.nor(flash_size_mb)
     flash_size_mb.to_i <= 8 ? NOR[8] : NOR[16]
   end
 end

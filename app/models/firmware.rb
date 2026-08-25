@@ -391,7 +391,7 @@ class Firmware
   # Same table the installation page renders from, so the image and the
   # instructions cannot describe different partition layouts.
   def nor_layout
-    @nor_layout ||= FlashLayout.nor(@size, @soc.vendor.name)
+    @nor_layout ||= FlashLayout.nor(@size)
   end
 
   def kernel_offset
