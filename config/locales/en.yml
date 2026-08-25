@@ -170,6 +170,7 @@ en:
       download: Download original image
       link_to_camera: Permanent link to this camera
       link_to_last_jpeg: Permanent link to the latest snapshot from this camera (JPEG)
+      view_heif: View original HEIF in your browser
   snapshots:
     icon:
       snapshot_alt: 'Image: Snapshot'

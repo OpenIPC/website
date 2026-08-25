@@ -170,6 +170,7 @@ zh:
       download: 下载原图
       link_to_camera: 此摄像机的固定链接
       link_to_last_jpeg: 此摄像机最新快照 (JPEG) 的固定链接
+      view_heif: 在浏览器中查看 HEIF 原图
   snapshots:
     icon:
       snapshot_alt: 图片：快照

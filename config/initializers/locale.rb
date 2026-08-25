@@ -1,6 +1,10 @@
 # Where the I18n library should search for translation files
 I18n.load_path += Dir[Rails.root.join('lib', 'locale', '*.{rb,yml}')]
 
+# Without this, an `i18n.plural.rule` in lib/locale is read and ignored, and
+# every locale gets the built-in one/other split. Russian needs four forms.
+I18n::Backend::Simple.include I18n::Backend::Pluralization
+
 # Permitted locales available for the application.
 #
 # Three, not ten. The site carried ten locale files and served none of them,

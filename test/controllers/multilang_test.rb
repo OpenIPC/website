@@ -102,6 +102,55 @@ class MultilangTest < ActionDispatch::IntegrationTest
     assert_match '<html dir="ltr" lang="zh">', response.body
   end
 
+  # --- keys that were missing rather than untranslated ---
+
+  # The controller asked for pages.qr_code.title; the key is
+  # pages.qr_code_generator.title. Nothing had that name in any locale, so the
+  # browser tab has been reading "translation missing: en.pages.qr_code.title".
+  test 'the QR generator page has a title rather than a missing-translation notice' do
+    get '/tools/qr-code-generator'
+
+    assert_response :success
+    assert_match '<title>Wireless Network QR Code Generator - OpenIPC</title>', response.body
+    assert_no_match(/translation missing/i, response.body)
+  end
+
+  # site.snapshot.view_heif existed only as an inline English default in the
+  # view, so it read as English on a Russian page and i18n-tasks could not see
+  # it was untranslated.
+  test 'the HEIF button is a translation, not an inline English default' do
+    ru = I18n.t('site.snapshot.view_heif', locale: :ru)
+
+    assert_equal 'View original HEIF in your browser', I18n.t('site.snapshot.view_heif', locale: :en)
+    assert_no_match(/translation missing/i, ru)
+    assert_not_equal I18n.t('site.snapshot.view_heif', locale: :en), ru
+  end
+
+  # --- Russian counts ---
+
+  # Russian has four plural forms and I18n's default pluralizer knows two, so
+  # every count from 2 up took the `other` string: "5 ошибки" where Russian
+  # wants "5 ошибок", and "21 ошибки" where it wants "21 ошибка". Adding the
+  # forms to the locale file does nothing on its own -- lib/locale/plurals.rb
+  # is what selects them.
+  test 'Russian error counts pick the right one of four forms' do
+    said = ->(n) { I18n.t('errors.messages.not_saved', count: n, resource: 'запись', locale: :ru) }
+
+    assert_match(/\bошибка не позволила\b/, said[1])
+    assert_match(/\bошибка не позволила\b/, said[21])
+    assert_match(/\bошибки не позволили\b/, said[2])
+    assert_match(/\bошибки не позволили\b/, said[22])
+    assert_match(/\bошибок не позволили\b/, said[5])
+    assert_match(/\bошибок не позволили\b/, said[11])
+  end
+
+  test 'English counts are unaffected by the Russian rule' do
+    said = ->(n) { I18n.t('errors.messages.not_saved', count: n, resource: 'record', locale: :en) }
+
+    assert_match(/1 error prohibited/, said[1])
+    assert_match(/5 errors prohibited/, said[5])
+  end
+
   # I18n.locale is per-thread and nothing resets it after a request, so
   # set_locale wraps the action in with_locale rather than assigning.
   test 'the request does not leave the process in another language' do

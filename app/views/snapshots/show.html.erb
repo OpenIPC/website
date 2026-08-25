@@ -18,7 +18,7 @@
   <% if @snapshot.file.content_type.to_s.start_with?('image/hei') %>
     <p data-heif-original="<%= rails_blob_path(@snapshot.file, disposition: 'inline') %>">
       <button type="button" class="btn btn-sm btn-outline-secondary" data-heif-view>
-        <%= t('site.snapshot.view_heif', default: 'View original HEIF in your browser') %>
+        <%= t('site.snapshot.view_heif') %>
       </button>
       <span class="small text-muted ms-2" data-heif-status></span>
       <canvas class="d-none w-100 mt-2" data-heif-canvas></canvas>
