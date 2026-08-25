@@ -127,16 +127,7 @@ module Cameras
       elsif @camera.soc.model.in?(%w[HI3536CV100 HI3536DV100])
         render 'cameras/socs/hi3536dv100_is_weird'
       else
-        # Only when there is a Lite build to fall back to. hi3516cv6xx and
-        # hi3519dv500 are published as Ultimate and nothing else, so downgrading
-        # unconditionally would answer with instructions for a tarball that does
-        # not exist -- swapping a size problem the visitor can see for a missing
-        # file they cannot.
-        if @camera.flash_type.eql?('nor8m') && @camera.firmware_version.eql?('ultimate') &&
-           @camera.soc.available_releases('nor').include?('lite')
-          @camera.firmware_version = 'lite'
-          flash.now[:warning] = '8MB Flash ROM can only be flashed with Lite or FPV edition!'
-        end
+        enforce_eight_meg_limit
 
         # Everything above this point can be set from the query string.
         if (asked = @camera.use_published_release!)
@@ -242,6 +233,33 @@ module Cameras
       else
         # Both halves exist; this edition or flash type is the part that does not.
         'This firmware does not exist.'
+      end
+    end
+
+    # Ultimate does not fit an 8MB chip: its rootfs is larger than the 5120k
+    # `rootfs` partition mtdpartsnor8m defines, so `run urnor8m` cannot write it.
+    #
+    # Downgrade to Lite when there is a Lite build to downgrade to. Doing it
+    # unconditionally would be wrong -- hi3516cv6xx and hi3519dv500 are
+    # published as Ultimate and nothing else, and naming a Lite tarball upstream
+    # never built swaps a size problem the visitor can see for a missing file
+    # they cannot.
+    #
+    # When there is nothing to fall back to, say so rather than going quiet. The
+    # page otherwise rendered a full set of 8MB Ultimate instructions -- a
+    # download link for `flash_size=8&fw_release=ultimate`, and `run uknor8m;
+    # run urnor8m` -- with no indication that none of it can work.
+    def enforce_eight_meg_limit
+      return unless @camera.flash_type.eql?('nor8m') && @camera.firmware_version.eql?('ultimate')
+
+      if @camera.soc.available_releases('nor').include?('lite')
+        @camera.firmware_version = 'lite'
+        flash.now[:warning] = '8MB Flash ROM can only be flashed with Lite or FPV edition!'
+      else
+        flash.now[:danger] =
+          'The Ultimate edition does not fit an 8MB flash chip, and OpenIPC publishes no Lite build ' \
+          'for this SoC on NOR. These instructions cannot produce a working camera on 8MB flash -- ' \
+          'this SoC needs a larger chip.'
       end
     end
 

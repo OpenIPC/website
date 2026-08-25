@@ -268,4 +268,20 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       assert_match 'run uknand; run urnand', response.body
     end
   end
+
+  test '8MB with only an Ultimate build says so instead of rendering it silently' do
+    # Ultimate does not fit 8MB. The downgrade to Lite is conditional on a Lite
+    # build existing, which is right -- hi3516cv6xx and hi3519dv500 publish
+    # Ultimate and nothing else, and downgrading regardless would name a tarball
+    # upstream never built. But with nothing to fall back to the page went on to
+    # render `run urnor8m`, which erases a 5120k rootfs partition, for a rootfs
+    # that cannot fit in it, and said nothing about it.
+    soc = instructable_soc('TS3519DV500')
+
+    with_release_index("openipc.#{soc.board}-nor-ultimate.tgz") do
+      submit(soc, 'nor8m', firmware_version: 'ultimate')
+
+      assert_match(/does not fit an 8MB flash chip/, response.body)
+    end
+  end
 end
