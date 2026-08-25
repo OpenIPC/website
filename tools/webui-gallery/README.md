@@ -47,6 +47,17 @@ not mention. That list is the answer to "what did the redesign add?".
 A full run also deletes images the manifest no longer names, so retiring a page
 is one deletion in the YAML.
 
+It replaces every tile, too, and one of them can come out badly through no
+fault of the camera's software — the log viewer filling with warnings from
+something misconfigured on that particular device, say. Keep the previous one:
+
+```bash
+git checkout master -- app/assets/images/webui/logs.webp app/assets/images/webui/logs-thumb.webp
+```
+
+Nothing depends on the gallery being one moment in time. Say so in the commit
+message, so the next person is not puzzled by a tile whose clock disagrees.
+
 ## What gets removed, and why it matters
 
 The camera is a real device on a real network, and its address, gateway,
