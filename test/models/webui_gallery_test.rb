@@ -22,8 +22,12 @@ class WebuiGalleryTest < ActiveSupport::TestCase
     # A full run of the tool deletes these. One left here is a page that was
     # dropped from the manifest by hand, and it costs the repository a file
     # nobody will ever look at again.
-    on_disk = Dir.children(IMAGES).map { |f| f.sub(/(-thumb)?\.webp\z/, '') }.uniq
-    assert_equal WebuiGallery.slugs.sort, on_disk.sort
+    # Compared as filenames rather than by stripping -thumb back to a slug: a
+    # slug that itself ended in -thumb would unpick to a different name, and
+    # this test would report a mismatch that is not there while missing one
+    # that is.
+    expected = WebuiGallery.screens.flat_map { |s| ["#{s.slug}.webp", "#{s.slug}-thumb.webp"] }
+    assert_equal expected.sort, Dir.children(IMAGES).sort
   end
 
   test 'it does not name a page that acts on being rendered' do

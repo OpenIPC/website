@@ -34,7 +34,12 @@ const V6_PREFIXES = [
 // this function to source and evaluates it in the browser, so it must not
 // reference anything outside itself -- every value it needs arrives in `cfg`.
 function redactInPage(cfg) {
-  const macRe = /\b(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\b/gi;
+  // Colons are how this WebUI writes a MAC, but a MAC is the one thing that
+  // must not get through, and other renderings exist -- hyphens, and the
+  // three-group Cisco form. Over-redacting here shows up as an obviously wrong
+  // string in a screenshot somebody looks at; under-redacting shows up as a
+  // camera's Open Wall history.
+  const macRe = /\b(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}\b|\b(?:[0-9a-f]{4}\.){2}[0-9a-f]{4}\b/gi;
   const ipRe = /\b(?:\d{1,3}\.){3}\d{1,3}\b/g;
 
   const isPrivate = (ip) => {
@@ -122,7 +127,7 @@ function survivors(text, cfg) {
   for (const own of cfg.ips) {
     if (text.includes(own)) found.add(`address ${own}`);
   }
-  for (const mac of text.match(/\b(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\b/gi) || []) {
+  for (const mac of text.match(/\b(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}\b|\b(?:[0-9a-f]{4}\.){2}[0-9a-f]{4}\b/gi) || []) {
     if (mac.toLowerCase() !== cfg.mac.toLowerCase()) found.add(`MAC ${mac}`);
   }
   for (const [source, flags] of cfg.v6) {

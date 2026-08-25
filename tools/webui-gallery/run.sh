@@ -132,10 +132,17 @@ cp "$out"/*.webp "$repo/$images/"
 # gallery, so anything in the directory it does not name is a page the WebUI no
 # longer has.
 if [ -z "$only" ]; then
-  slugs=$(grep -oE '^[[:space:]]*-[[:space:]]+slug:[[:space:]]*[a-z0-9-]+' "$repo/$manifest" | awk '{print $NF}')
+  # Built forwards, from the manifest to the two filenames each slug implies,
+  # rather than backwards by stripping -thumb off what is on disk: a slug that
+  # itself ends in -thumb would unpick to a different name and its own full-size
+  # image would be deleted as an orphan.
+  keep=$(mktemp)
+  trap 'rm -f "$env_file" "$work/scene.jpg" "$keep"' EXIT
+  grep -oE '^[[:space:]]*-[[:space:]]+slug:[[:space:]]*[a-z0-9-]+' "$repo/$manifest" | awk '{print $NF}' |
+    while read -r slug; do printf '%s.webp\n%s-thumb.webp\n' "$slug" "$slug"; done > "$keep"
   for f in "$repo/$images"/*; do
-    slug=$(basename "$f"); slug=${slug%.webp}; slug=${slug%-thumb}
-    grep -qx "$slug" <<<"$slugs" || { echo "  removing $(basename "$f") -- not in the manifest"; rm -f "$f"; }
+    grep -qxF "$(basename "$f")" "$keep" ||
+      { echo "  removing $(basename "$f") -- not in the manifest"; rm -f "$f"; }
   done
 fi
 
