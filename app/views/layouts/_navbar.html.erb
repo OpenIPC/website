@@ -1,0 +1,45 @@
+<%#
+  Lifted out of application.html.erb unchanged. The links, their order and the
+  locale switcher are exactly what the layout carried; only the wrapper moved,
+  so that the relaunch can rewrite the navigation in one reviewable file rather
+  than inside a diff that also touches <head> and the footer.
+%>
+<nav class="navbar navbar-dark navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand" href="/"><%= image_tag 'openipc-logo-white.svg', alt: 'Image: OpenIPC logo', height: 32 %></a>
+    <button aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+      <ul class="navbar-nav">
+        <%= navbar_link t('nav.introduction'), '/introduction' %>
+        <%= navbar_link t('nav.supported_hardware'), '/supported-hardware' %>
+        <%= navbar_link t('nav.support_opensource'), '/support-open-source' %>
+        <!-- %= navbar_link t('nav.openwall'), '/open-wall' % -->
+        <!-- %= navbar_link t('nav.store'), "https://store.openipc.org/" % -->
+        <li class="nav-item dropdown">
+          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownAbout" role="button"><%= t('nav.about') %></a>
+          <ul aria-labelledby="dropdownAbout" class="dropdown-menu dropdown-menu-lg-end">
+            <%= dropdown_link t('nav.team'), '/our-team' %>
+            <%= dropdown_link t('nav.projects'), '/our-projects' %>
+            <%= dropdown_link t('nav.software'), '/our-software' %>
+            <%= dropdown_link t('nav.green_life'), '/green_life' %>
+            <%= dropdown_link t('nav.channels'), '/our-channels' %>
+            <%= dropdown_link t('nav.webui'), '/web-interface' %>
+            <%= dropdown_link t('nav.wiki'), 'https://github.com/openipc/wiki' %>
+          </ul>
+        </li>
+        <li class="nav-item dropdown">
+          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownTools" role="button"><%= t('nav.tools') %></a>
+          <ul aria-labelledby="dropdownTools" class="dropdown-menu dropdown-menu-lg-end">
+            <%= dropdown_link t('nav.partition_calc'), '/tools/firmware-partitions-calculation' %>
+            <%= dropdown_link t('nav.hires_timer'), '/tools/high-resolution-timer' %>
+            <%= dropdown_link t('nav.qr_code_generator'), '/tools/qr-code-generator' %>
+            <%= dropdown_link t('nav.utilities'), '/utilities' %>
+          </ul>
+        </li>
+      </ul>
+      <%= render 'layouts/locale_switcher' %>
+    </div>
+  </div>
+</nav>

@@ -4,59 +4,64 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><%= page_title %></title>
+
+  <%# Every page had a title and nothing else, so a link shared anywhere -- a
+      search result, Telegram, a forum post -- showed the URL and no summary.
+      @meta_description lets a controller say something specific; the fallback
+      describes the project. %>
+  <meta name="description" content="<%= @meta_description || t('site.default_meta_description') %>">
+  <meta name="theme-color" content="#0f1422">
+
+  <%# Path only, no query string: ?locale=ru is a rendering of the same page,
+      not a separate one, and pointing every translation at the same canonical
+      is what stops them competing with each other in search results. %>
+  <link rel="canonical" href="<%= request.base_url + request.path %>">
+
+  <meta property="og:site_name" content="OpenIPC">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="<%= page_title %>">
+  <meta property="og:description" content="<%= @meta_description || t('site.default_meta_description') %>">
+  <meta property="og:url" content="<%= request.base_url + request.path %>">
+  <%# Absolute, because crawlers do not resolve relative og:image. In public/
+      rather than the pipeline: OG images are fetched once and cached by URL by
+      every consumer, so a fingerprint would only invalidate those caches. %>
+  <meta property="og:image" content="<%= request.base_url %>/og-default.png">
+  <meta name="twitter:card" content="summary_large_image">
+
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
   <link rel="icon" type="image/x-icon" href="<%= asset_path 'favicon.png' %>">
+  <%# The two faces every page renders body text in. Without the hint they are
+      discovered only when the stylesheet has parsed, which is a round trip of
+      invisible text. crossorigin is required even same-origin: fonts are
+      fetched in CORS mode, and a preload without it is fetched twice. %>
+  <link rel="preload" href="/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/ibm-plex-sans-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
   <%= stylesheet_link_tag 'application' %>
   <%= javascript_include_tag 'application', defer: true %>
 </head>
 
 <body id="page-top" class="<%= css_debug %>">
-<nav class="navbar navbar-dark navbar-expand-lg">
-  <div class="container">
-    <a class="navbar-brand" href="/"><%= image_tag 'openipc-logo-white.svg', alt: 'Image: OpenIPC logo', height: 32 %></a>
-    <button aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-      <ul class="navbar-nav">
-        <%= navbar_link t('nav.introduction'), '/introduction' %>
-        <%= navbar_link t('nav.supported_hardware'), '/supported-hardware' %>
-        <%= navbar_link t('nav.support_opensource'), '/support-open-source' %>
-        <!-- %= navbar_link t('nav.openwall'), '/open-wall' % -->
-        <!-- %= navbar_link t('nav.store'), "https://store.openipc.org/" % -->
-        <li class="nav-item dropdown">
-          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownAbout" role="button"><%= t('nav.about') %></a>
-          <ul aria-labelledby="dropdownAbout" class="dropdown-menu dropdown-menu-lg-end">
-            <%= dropdown_link t('nav.team'), '/our-team' %>
-            <%= dropdown_link t('nav.projects'), '/our-projects' %>
-            <%= dropdown_link t('nav.software'), '/our-software' %>
-            <%= dropdown_link t('nav.green_life'), '/green_life' %>
-            <%= dropdown_link t('nav.channels'), '/our-channels' %>
-            <%= dropdown_link t('nav.webui'), '/web-interface' %>
-            <%= dropdown_link t('nav.wiki'), 'https://github.com/openipc/wiki' %>
-          </ul>
-        </li>
-        <li class="nav-item dropdown">
-          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownTools" role="button"><%= t('nav.tools') %></a>
-          <ul aria-labelledby="dropdownTools" class="dropdown-menu dropdown-menu-lg-end">
-            <%= dropdown_link t('nav.partition_calc'), '/tools/firmware-partitions-calculation' %>
-            <%= dropdown_link t('nav.hires_timer'), '/tools/high-resolution-timer' %>
-            <%= dropdown_link t('nav.qr_code_generator'), '/tools/qr-code-generator' %>
-            <%= dropdown_link t('nav.utilities'), '/utilities' %>
-          </ul>
-        </li>
-      </ul>
-      <%= render 'layouts/locale_switcher' %>
-    </div>
-  </div>
-</nav>
+<a class="visually-hidden-focusable" href="#main">Skip to content</a>
+<%= render 'layouts/navbar' %>
 
-<main>
-  <div class="container mb-4">
-    <%= display_flashes %>
+<main id="main">
+  <%# Pages opt out of the .container wrapper with `content_for :fullwidth` when
+      they lay out their own full-bleed sections. Flash messages still need the
+      wrapper, or they would run edge to edge. Existing pages set nothing and
+      keep the wrapper they have always had. %>
+  <% if content_for?(:fullwidth) %>
+    <% flashes = display_flashes %>
+    <% if flashes.present? %>
+      <div class="container"><%= flashes %></div>
+    <% end %>
     <%= yield %>
-  </div>
+  <% else %>
+    <div class="container mb-4">
+      <%= display_flashes %>
+      <%= yield %>
+    </div>
+  <% end %>
 </main>
 
 <div class="">
@@ -65,26 +70,6 @@
   </div>
 </div>
 
-<footer class="small p-4 mt-4 text-secondary">
-  <div class="container">
-    <div class="row justify-content-between mb-3">
-      <div class="col">
-        <p>Copyright 2019-<%= Date.today.year %> <a href="https://openipc.org/">OpenIPC</a>.</p>
-      </div>
-      <div class="col text-end">
-        <div class="btn-group">
-          <a class="btn" href="https://github.com/openipc" title="OpenIPC on GitHub"><img src="<%= asset_path("github-black.svg") %>" alt="Image: GitHub logo"></a>
-          <a class="btn" href="https://opencollective.com/openipc" title="OpenIPC on OpenCollective"><img src="<%= asset_path("opencollective-black.svg") %>" alt="Image: OpenCollective logo"></a>
-          <a class="btn" href="https://t.me/openipc" title="OpenIPC on Telegram"><img src="<%= asset_path("telegram-black.svg") %>" alt="Image: Telegram logo"></a>
-          <a class="btn" href="https://www.google.com/search?q=WeChat+ID%3A+OpenIPC" title="OpenIPC on WeChat"><img src="<%= asset_path("wechat-black.svg") %>" alt="Image: WeChat logo"></a>
-          <a class="btn" href="https://www.youtube.com/@openipc" title="OpenIPC on YouTube"><img src="<%= asset_path("youtube-black.svg") %>" alt="Image: YouTube logo"></a>
-          <a class="btn" href="https://twitter.com/openipc" title="OpenIPC on Twitter"><img src="<%= asset_path("twitter-black.svg") %>" alt="Image: Twitter logo"></a>
-          <a class="btn" href="https://www.instagram.com/openipc/" title="OpenIPC on Instagram"><img src="<%= asset_path("instagram-black.svg") %>" alt="Image: Instagram logo"></a>
-        </div>
-      </div>
-    </div>
-    <p class="small"><%= t('site.disclaimer') %></p>
-  </div>
-</footer>
+<%= render 'layouts/footer' %>
 </body>
 </html>
