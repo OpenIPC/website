@@ -57,7 +57,7 @@ fr:
       development: Development
       title: Introduction
     majestic_endpoints:
-      moved_html: 'La liste des points de terminaison servis par votre caméra se trouve désormais dans l’interface web de la caméra elle-même, sur la page <b>Majestic Endpoints</b>. Ouvrez <code>http://&lt;adresse-de-la-caméra&gt;/</code> dans un navigateur et sélectionnez-la dans le menu.'
+      moved_html: 'La liste des points de terminaison servis par votre caméra se trouve désormais dans l’interface web de la caméra elle-même, sous <b>Majestic &rarr; Endpoints</b>. Ouvrez <code>http://&lt;adresse-de-la-caméra&gt;/</code> dans un navigateur et sélectionnez cette entrée du menu.'
       reason_address: 'l’adresse réelle de votre caméra y est renseignée, de sorte qu’une URL peut être copiée directement dans un lecteur ;'
       reason_auth: 'elle indique si les points de terminaison demandent un mot de passe ou si l’authentification est entièrement désactivée.'
       reason_scheme: 'le schéma correspond à votre installation, http ou https et ws ou wss ;'

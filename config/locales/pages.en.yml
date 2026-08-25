@@ -58,7 +58,7 @@ en:
       gaming: Gaming solutions
       title: Introduction
     majestic_endpoints:
-      moved_html: 'The list of endpoints your camera serves now lives in the camera''s own web interface, on the <b>Majestic Endpoints</b> page. Open <code>http://&lt;camera-address&gt;/</code> in a browser and choose it from the menu.'
+      moved_html: 'The list of endpoints your camera serves now lives in the camera''s own web interface, under <b>Majestic &rarr; Endpoints</b>. Open <code>http://&lt;camera-address&gt;/</code> in a browser and pick it from the menu.'
       reason_address: 'your camera''s real address is filled in, so a URL can be copied straight into a player;'
       reason_auth: 'it says whether the endpoints ask for a password, or whether authentication has been switched off entirely.'
       reason_scheme: 'the scheme matches your setup, http or https and ws or wss;'
