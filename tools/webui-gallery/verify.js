@@ -29,6 +29,10 @@ const MAPS = (process.env.MAPS || '').split(',').filter(Boolean).map((m) => {
 (async () => {
   const screens = yaml.load(fs.readFileSync(MANIFEST, 'utf8')).screens
     .filter((s) => !ONLY.length || ONLY.includes(s.slug));
+  // A verifier with nothing to verify reports "clean" and lets the run install.
+  // That is the shape of every false pass worth having: not a wrong answer, an
+  // answer to no question.
+  if (!screens.length) throw new Error('nothing to verify: no screen matched');
 
   const host = new URL(BASE).hostname;
   const { address: ip } = await dns.lookup(host).catch(() => ({ address: null }));
