@@ -8,22 +8,21 @@ require 'test_helper'
 # anything -- it 404s, and the page renders as a wall of broken images. Fetching
 # every URL the page emits is the only check that catches that before deploy.
 class WebInterfaceTest < ActionDispatch::IntegrationTest
-  # Number of screenshots the view is built from.
-  SCREENS = 12
-
   setup do
     get '/web-interface'
     assert_response :success
     @body = response.body
+    @screens = WebuiGallery.screens
   end
 
-  test 'it shows one tile per screenshot' do
-    assert_select 'figure img.img-zoom', SCREENS
+  test 'it shows one tile per screenshot in the manifest' do
+    assert_operator @screens.size, :>, 0, 'the manifest lists no screenshots'
+    assert_select 'figure img.img-zoom', @screens.size
   end
 
   test 'every thumbnail the page references is served' do
     srcs = @body.scan(/<img[^>]+src="([^"]+)"/).flatten.select { |s| s.include?('webui/') }
-    assert_equal SCREENS, srcs.size, 'expected one thumbnail per screenshot'
+    assert_equal @screens.size, srcs.size, 'expected one thumbnail per screenshot'
 
     srcs.each do |src|
       get src
@@ -33,7 +32,7 @@ class WebInterfaceTest < ActionDispatch::IntegrationTest
 
   test 'every zoom target the page references is served' do
     zooms = @body.scan(/data-zoom="([^"]+)"/).flatten
-    assert_equal SCREENS, zooms.size, 'expected one full-size image per screenshot'
+    assert_equal @screens.size, zooms.size, 'expected one full-size image per screenshot'
 
     zooms.each do |zoom|
       get zoom
@@ -70,13 +69,21 @@ class WebInterfaceTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test 'the captions are the page titles the camera prints' do
+    # Not translated on purpose: the WebUI is English-only, so the caption is
+    # what a reader matches against on the device.
+    @screens.each do |screen|
+      assert_select 'figcaption', text: screen.caption
+    end
+  end
+
   test 'the borrowed preview scene is credited on the page' do
-    # Two of the twelve shots do not show what the lab camera is pointed at:
-    # the beach in the player belongs to somebody else, given to us for this.
-    # A reader has no way to tell a substituted scene from a real one, so the
-    # page has to say whose it is and link the permission. Scoped to the
-    # article, and to a URL that appears nowhere else, so neither half of this
-    # can be satisfied by the layout.
+    # Two of the shots do not show what the lab camera is pointed at: the beach
+    # in the player belongs to somebody else, given to us for this. A reader has
+    # no way to tell a substituted scene from a real one, so the page has to say
+    # whose it is and link the permission. Scoped to the article, and to a URL
+    # that appears nowhere else, so neither half of this can be satisfied by the
+    # layout.
     assert_select 'article p a[href=?]',
                   'https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706'
     assert_select 'article', /@usa-/

@@ -1,0 +1,9 @@
+{
+  "name": "openipc-webui-gallery",
+  "private": true,
+  "description": "Photographs a camera's WebUI for the gallery on /web-interface",
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "playwright": "^1.49.0"
+  }
+}

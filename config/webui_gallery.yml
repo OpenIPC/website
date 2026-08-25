@@ -1,0 +1,89 @@
+# The WebUI screenshot gallery shown on /web-interface.
+#
+# One entry per screenshot, in the order the page lays them out. Two things read
+# this file and they must not drift apart:
+#
+#   * app/views/pages/web_interface.html.erb, through WebuiGallery, to build the
+#     tiles;
+#   * tools/webui-gallery, to know which pages of a camera to photograph.
+#
+# Adding a screenshot is therefore one edit here plus a run of the tool. See
+# tools/webui-gallery/README.md.
+#
+#   slug     basename of the pair in app/assets/images/webui/ --
+#            <slug>.webp is the full 2560px capture, <slug>-thumb.webp the tile.
+#   caption  the page title as the camera prints it. Deliberately not
+#            translated: the WebUI is English-only, so quoting it is what a
+#            reader can actually match against on the device.
+#   cgi      the page under /cgi-bin/ to photograph.
+#   settle   milliseconds to wait after the page has loaded before the shutter.
+#            Pages that fetch and render their own content need more: the log
+#            viewer and the settings form build themselves from API calls, and
+#            the player needs time to negotiate a stream and paint a frame.
+#   scene    true if the page shows live video. Whatever the camera is pointed
+#            at goes on the public site, so the tool lays a still picture over
+#            the player -- and fails the run if it cannot find one to cover,
+#            rather than quietly photographing the camera's own view when the
+#            WebUI changes shape.
+screens:
+  - slug: status
+    caption: Device Status
+    cgi: status.cgi
+    settle: 2500
+
+  - slug: preview
+    caption: Camera Preview
+    cgi: preview.cgi
+    settle: 14000
+    scene: true
+
+  - slug: majestic-settings
+    caption: Majestic Settings
+    cgi: mj-settings.cgi
+    settle: 6000
+    scene: true
+
+  - slug: majestic-endpoints
+    caption: Majestic Endpoints
+    cgi: mj-endpoints.cgi
+    settle: 3000
+
+  - slug: majestic-configuration
+    caption: Majestic Configuration
+    cgi: mj-configuration.cgi
+    settle: 3000
+
+  - slug: logs
+    caption: Logs
+    cgi: info-logs.cgi
+    settle: 6000
+
+  - slug: network
+    caption: Network Settings
+    cgi: fw-network.cgi
+    settle: 3000
+
+  - slug: time
+    caption: Time Settings
+    cgi: fw-time.cgi
+    settle: 3500
+
+  - slug: firmware-update
+    caption: Firmware Update
+    cgi: fw-update.cgi
+    settle: 8000
+
+  - slug: console
+    caption: Console
+    cgi: tool-console.cgi
+    settle: 5000
+
+  - slug: file-manager
+    caption: File Manager
+    cgi: tool-files.cgi
+    settle: 4000
+
+  - slug: telegram
+    caption: Telegram
+    cgi: ext-telegram.cgi
+    settle: 3000
