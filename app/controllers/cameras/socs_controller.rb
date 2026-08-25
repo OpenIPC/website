@@ -67,13 +67,7 @@ module Cameras
       @camera.soc = Soc.find(params[:id])
       @vendor = @camera.soc.vendor
 
-      # nor8m is the default for almost every SoC and wrong for the ones
-      # upstream builds only a NAND image for -- rv1109 and rv1126 here today.
-      # Their NOR sizes are disabled in the menu, so the form opened on a
-      # disabled flash type with no edition to go with it. Unrecognised is the
-      # same as unset: ?rom=nor64m otherwise opened the form on a chip that
-      # matches no option in it.
-      @camera.flash_type = @camera.soc.default_flash_chip unless @camera.flash_type.in?(Camera::FLASH_CHIP)
+      narrow_to_what_the_menu_offers(@camera)
 
       @page_title = "SoC: #{@camera.soc.full_name}"
       render 'cameras/socs/show'
@@ -253,6 +247,34 @@ module Cameras
       PERMALINK_FIELDS.each do |key, field|
         camera.public_send("#{field}=", params[key]) if params[key]
       end
+    end
+
+    # Bring a configuration that arrived in the query string back inside what the
+    # menu on this page actually offers. Both rules below are the menu's; it
+    # applies them in JavaScript, after this action has already decided which
+    # options open selected.
+    #
+    # Silent, unlike the equivalents in `update`. There the choice decides what
+    # gets flashed and the visitor is told when it changes; here it only decides
+    # where a form opens, and they are about to press the button anyway.
+    def narrow_to_what_the_menu_offers(camera)
+      # nor8m is the default for almost every SoC and wrong for the ones upstream
+      # builds only a NAND image for -- rv1109 and rv1126 here today. Their NOR
+      # sizes are disabled in the menu, so the form opened on a disabled flash
+      # type with no edition to go with it. Unrecognised is the same as unset:
+      # ?rom=nor64m otherwise opened the form on a chip that matches no option.
+      camera.flash_type = camera.soc.default_flash_chip unless camera.flash_type.in?(Camera::FLASH_CHIP)
+
+      # Ultimate does not fit an 8MB chip. Reading `var` back made this
+      # reachable: ?rom=nor8m&var=ultimate opened the form on a combination
+      # enforce_eight_meg_limit refuses. Same carve-out as that method -- a SoC
+      # published as Ultimate and nothing else, hi3516cv6xx and hi3519dv500,
+      # keeps it, because naming a Lite tarball upstream never built is worse
+      # than the size warning `update` will give.
+      return unless camera.flash_type.eql?('nor8m') && camera.firmware_version.eql?('ultimate')
+      return unless camera.soc.available_releases('nor').include?('lite')
+
+      camera.firmware_version = 'lite'
     end
 
     # Which half is missing, in the visitor's terms.
