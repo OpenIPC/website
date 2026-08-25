@@ -57,7 +57,7 @@ es:
       development: Development
       title: Introducción
     majestic_endpoints:
-      moved_html: 'La lista de puntos de acceso que sirve su cámara ahora vive en la interfaz web de la propia cámara, en la página <b>Majestic Endpoints</b>. Abra <code>http://&lt;dirección-de-la-cámara&gt;/</code> en el navegador y elíjala en el menú.'
+      moved_html: 'La lista de puntos de acceso que sirve su cámara ahora vive en la interfaz web de la propia cámara, en <b>Majestic &rarr; Endpoints</b>. Abra <code>http://&lt;dirección-de-la-cámara&gt;/</code> en el navegador y elija esa entrada del menú.'
       reason_address: 'aparece la dirección real de su cámara, de modo que una URL puede copiarse directamente a un reproductor;'
       reason_auth: 'indica si los puntos de acceso piden contraseña o si la autenticación está desactivada por completo.'
       reason_scheme: 'el esquema coincide con su configuración, http o https y ws o wss;'

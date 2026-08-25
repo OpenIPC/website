@@ -57,7 +57,7 @@ it:
       development: Development
       title: introduzione
     majestic_endpoints:
-      moved_html: 'L''elenco degli endpoint serviti dalla telecamera si trova ora nell''interfaccia web della telecamera stessa, nella pagina <b>Majestic Endpoints</b>. Apri <code>http://&lt;indirizzo-telecamera&gt;/</code> nel browser e selezionala dal menu.'
+      moved_html: 'L''elenco degli endpoint serviti dalla telecamera si trova ora nell''interfaccia web della telecamera stessa, in <b>Majestic &rarr; Endpoints</b>. Apri <code>http://&lt;indirizzo-telecamera&gt;/</code> nel browser e scegli quella voce dal menu.'
       reason_address: 'è già inserito l''indirizzo reale della telecamera, quindi un URL può essere copiato direttamente in un player;'
       reason_auth: 'indica se gli endpoint richiedono una password o se l''autenticazione è disattivata del tutto.'
       reason_scheme: 'lo schema corrisponde alla tua configurazione, http o https e ws o wss;'
