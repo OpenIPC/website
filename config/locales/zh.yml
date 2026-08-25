@@ -74,6 +74,7 @@ zh:
         subtitle: 备份您的原始固件，请不要跳过这个步骤！
         title: 保存原始固件
       backup_32: 请注意！在备份 32M 闪存之前，请确保摄像机至少有 64M 的 RAM。
+      compound_caveat_html: 如果引导程序输出的是命令用法说明而不是执行该行，说明它不支持 <code>&amp;&amp;</code>。请逐条输入各个部分，并且只有在传输报告成功之后才执行擦除和写入——这正是 <code>&amp;&amp;</code> 替你做的检查。
       flashing:
         alternative: 或者，通过其烧录部分 OpenIPC 固件
       flashing_footfs:

@@ -1,8 +1,25 @@
 # frozen_string_literal: true
 
 module InstallationHelper
+  # The block, plus a way out for the readers whose bootloader cannot run it.
+  #
+  # guarded_flash joins the transfer to the erase and the write with `&&` so a
+  # failed transfer cannot reach the erase -- see the comment on that method for
+  # the camera that cost. But `&&` is a hush feature, and stock vendor
+  # bootloaders are what people are running when they follow this page for the
+  # first time. At least one does not have it: the reporter in
+  # OpenIPC/firmware#2299 got "the help entry for the first command" back and
+  # had to enter each part by hand.
+  #
+  # That failure is safe -- nothing is transferred, nothing is erased -- but it
+  # is silent about why, and the line is not one a reader can take apart
+  # unaided. So say it, next to the block it applies to, and only there.
   def list_of_commands(text)
-    content_tag 'pre', text.join('<br>').html_safe, class: 'bg-light p-4'
+    block = content_tag 'pre', text.join('<br>').html_safe, class: 'bg-light p-4'
+    return block unless text.any? { |line| line.to_s.include?('&&') }
+
+    safe_join([block, content_tag('p', t('firmware.installation.compound_caveat_html'),
+                                  class: 'small text-muted')])
   end
 
   def do_not_copy_paste

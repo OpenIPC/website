@@ -74,6 +74,7 @@ en:
         subtitle: Back up your stock firmware, don't skip this part of the installation process!
         title: Save the original firmware
       backup_32: ATTENTION! Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM.
+      compound_caveat_html: If your bootloader answers with a usage message instead of running the line, it does not understand <code>&amp;&amp;</code>. Enter the parts one at a time, and run the erase and the write only after the transfer has reported success — checking that is what <code>&amp;&amp;</code> does for you.
       flashing:
         alternative: Alternatively, flash OpenIPC Firmware by its parts
       flashing_footfs:

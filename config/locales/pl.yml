@@ -74,6 +74,7 @@ pl:
         subtitle: Utwórz kopię zapasową oprogramowania sprzętowego, nie pomijaj tej części procesu instalacji!
         title: Zapisz oryginalne oprogramowanie sprzętowe
       backup_32: UWAGA! Przed utworzeniem kopii zapasowej pamięci flash ROM o pojemności 32 MB upewnij się, że aparat ma co najmniej 64 MB pamięci RAM.
+      compound_caveat_html: Jeśli bootloader zamiast wykonać wiersz wypisuje sposób użycia polecenia, nie rozumie <code>&amp;&amp;</code>. Wprowadzaj części pojedynczo i uruchom kasowanie oraz zapis dopiero wtedy, gdy transfer zgłosi powodzenie — to właśnie tę kontrolę wykonuje za ciebie <code>&amp;&amp;</code>.
       flashing:
         alternative: Alternatywnie, flashuj oprogramowanie sprzętowe OpenIPC według jego części
       flashing_footfs:

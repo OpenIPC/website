@@ -74,6 +74,7 @@ pt:
         subtitle: Faça backup do seu firmware padrão, não pule esta parte do processo de instalação!
         title: Salve o firmware original
       backup_32: ATENÇÃO! Antes de fazer backup de ROM flash de 32M, certifique-se de que a câmera tenha pelo menos 64M de RAM.
+      compound_caveat_html: Se o bootloader responder com uma mensagem de utilização em vez de executar a linha, não reconhece <code>&amp;&amp;</code>. Introduza as partes uma de cada vez e execute o apagamento e a escrita apenas depois de a transferência indicar sucesso — é essa verificação que <code>&amp;&amp;</code> faz por si.
       flashing:
         alternative: Como alternativa, atualize o firmware OpenIPC por suas partes
       flashing_footfs:

@@ -74,6 +74,7 @@ es:
         subtitle: Haga una copia de seguridad de su firmware original, ¡no se salte esta parte del proceso de instalación!
         title: Guarde el firmware original
       backup_32: "¡ATENCIÓN! Antes de realizar una copia de seguridad de la ROM flash de 32 M, asegúrese de que la cámara tenga al menos 64 M de RAM."
+      compound_caveat_html: Si el gestor de arranque responde con un mensaje de uso en lugar de ejecutar la línea, no entiende <code>&amp;&amp;</code>. Introduzca las partes de una en una y ejecute el borrado y la escritura solo después de que la transferencia indique que ha tenido éxito — esa comprobación es lo que <code>&amp;&amp;</code> hace por usted.
       flashing:
         alternative: Alternativamente, actualice el firmware OpenIPC por sus partes
       flashing_footfs:
