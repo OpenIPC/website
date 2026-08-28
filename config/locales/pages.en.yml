@@ -67,8 +67,6 @@ en:
       title: Community
     donate:
       business_band_html: If your company depends on OpenIPC, the sustainable way to support it is a commercial relationship. <a href="/business">See what we offer</a>.
-      crypto_text_html: TON donations work right inside Telegram via <a href="https://t.me/wallet">@wallet</a>.
-      crypto_title: Cryptocurrency
       accounting: We're committed to open and transparent accounting, and are grateful for any support you can provide to our efforts to advance OpenIPC and our mission toward a sustainable future.
       hero_lede: OpenIPC is free to use and expensive to make. Donations buy cameras for new platforms, pay maintainers, and keep the lights on.
       hero_title: Fund the work.
@@ -99,7 +97,6 @@ en:
       proj_qemu: A full HiSilicon IP camera emulator on QEMU — develop and test firmware without hardware on your desk.
       proj_rnd_player: 'A player built for media engineers: inspect streams the way a developer needs to.'
       proj_smolrtsp: An embeddable RTSP 1.0 server library for cameras and other constrained devices. TCP and UDP, any payload format.
-      proj_telemetry: Telemetry bridging between flight controllers and the ground.
       proj_waybeam: 'The TX side of the link: a flexible video encoder for FPV drones and URLLC devices.'
       proj_yamlcli: A small console tool for editing YAML configs from scripts.
       section_community_text_html: User-made hardware, mounts, and accessories — like the 3D-printable models tagged <a href="https://www.printables.com/search/models?q=tag%3Aopenipc">openipc on Printables</a>.
@@ -167,10 +164,10 @@ en:
       hero_cta_low_latency: Low-latency video
       hero_cta_start: Get started
       hero_lede: Open firmware and tools for IP cameras, FPV drones, and the devices in between. Your hardware should answer to you — not to a vendor's cloud.
-      hero_microline: 140+ repositories · dozens of SoC families · no cloud required
+      hero_microline: 140+ repositories · dozens of SoC families · since 2019
       hero_title: The open platform for embedded video.
       partners_title: Trusted by manufacturers, integrators, and research teams
-      pillar_firmware_text: An open, Buildroot-based OS for IP cameras across dozens of SoC families, with the Majestic streamer at its core.
+      pillar_firmware_text_html: An open, Buildroot-based OS for IP cameras across dozens of SoC families, with the <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">Majestic</a> streamer at its core.
       pillar_firmware_title: Camera firmware
       pillar_longevity_text: 'We keep vendor SDKs alive on mainline kernels: CVE fixes and modern features long after the vendor walks away.'
       pillar_longevity_title: Longevity & security
@@ -181,7 +178,6 @@ en:
       pillars_lede: OpenIPC is more than firmware — it is an ecosystem built by people who run it on their own hardware.
       pillars_title: One platform, four fronts
       silicon_title: Runs on silicon by
-      stats_languages: languages
       stats_repos: open repositories
       stats_since: building openly since
       stats_socs: supported SoCs
@@ -190,7 +186,7 @@ en:
       story_step1_text: Firmware updates stop. Security holes stay. The app disappears from the store.
       story_step1_title: The vendor moves on
       story_step2_text: Servers get switched off, and a working camera turns into plastic and silicon with nothing to do.
-      story_step2_title: The cloud goes dark
+      story_step2_title: The servers go quiet
       story_step3_text: The camera boots an open, maintained system — and answers to you. No backdoors. No subscriptions. Less e-waste.
       story_step3_title: You flash OpenIPC
       story_title: Cameras shouldn't die when their cloud does.
@@ -200,13 +196,13 @@ en:
       wall_snapshot_alt: 'Image: live snapshot from a community camera'
     low_latency:
       business_bridge_html: Building a product on this link? <a href="/business">Talk to us</a> — we do custom development and OEM work.
-      credits_text: The radio link exists thanks to wfb-ng and devourer, and the ecosystem grows with friends like RubyFPV and Mario FPV. Open source is a team sport.
+      credits_text_html: The radio link exists thanks to wfb-ng and devourer, and the ecosystem grows with friends like <a href="https://rubyfpv.com/">RubyFPV</a> and <a href="https://www.youtube.com/@mariofpv">Mario FPV</a>. Open source is a team sport.
       credits_title: Standing on open shoulders
       cta_chat: Join the FPV chat
       cta_guide: Read the build guide
       fpv_text: 'A fully open digital FPV system: no locked ecosystem, no paired hardware, no firmware ceiling. Build the air unit from a supported camera, pick your ground station, and tune every stage of the pipeline.'
       fpv_title: 'FPV: from lens to goggles'
-      hardware_text_html: Air units are built from supported cameras and AIO boards — start from the <a href="/supported-hardware">supported hardware list</a>. RunCam and EMAX ship OpenIPC-based FPV hardware out of the box.
+      hardware_text_html: Air units are built from supported cameras and AIO boards — start from the <a href="/supported-hardware">supported hardware list</a>. RunCam and other vendors ship OpenIPC-based FPV hardware out of the box.
       hardware_title: Hardware
       hero_lede: 'FPV drones, robots, teleoperation: an open ultra-low-latency video stack from camera to screen. Glass-to-glass from about 30 ms on supported hardware.'
       hero_title: Open video links for machines that can't wait.

@@ -149,9 +149,155 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # /ecosystem is a list of our own projects, so every card links into the
+  # OpenIPC organisation. qemu-hisilicon was still pointing at the personal
+  # account it was developed in, and telemetry was a card for a repository that
+  # has never existed. The selector is the card's own link, not every GitHub
+  # URL on the page: the prose links the wiki too, and that is not a project.
+  test 'every ecosystem project links a repository under OpenIPC' do
+    get '/ecosystem'
+
+    repos = css_select('.project-card a[href*="github.com"]').map { |a| a['href'] }
+
+    assert_not_empty repos
+    repos.each do |href|
+      assert_match %r{\Ahttps://github\.com/OpenIPC/[\w.-]+\z}, href,
+                   "#{href} is not a repository under the OpenIPC organisation"
+    end
+  end
+
   test 'every partner logo the helper names exists as an asset' do
-    (PagesHelper::INTERNATIONAL_PARTNERS + PagesHelper::RU_INTEGRATORS).each do |logo|
+    logos = PagesHelper::PARTNER_GROUPS.values.flatten + PagesHelper::RU_INTEGRATORS
+
+    assert_operator logos.size, :>, 10
+    logos.each do |logo|
       assert_path_exists Rails.root.join('app/assets/images', logo[:img])
+    end
+  end
+
+  # A commercial reader is asking who ships hardware and who installs it. Our
+  # code host, our FPV friends and our university teams are on the homepage
+  # wall for good reasons, none of which are an answer to that question.
+  test '/business shows only manufacturers and integrators' do
+    get '/business'
+
+    shown = PagesHelper.const_get(:PARTNER_GROUPS)
+    %i[manufacturers integrators].each do |key|
+      shown[key].each { |l| assert_includes response.body, l[:img].sub('.png', '') }
+      assert_includes response.body, I18n.t("site.partners.#{key}")
+    end
+    %i[global fpv education research].each do |key|
+      shown[key].each do |logo|
+        assert_not_includes response.body, logo[:img].sub('.png', ''),
+                            "#{logo[:name]} is on /business, which is not the audience for it"
+      end
+    end
+  end
+
+  # Three labelled rows rather than one undifferentiated block of logos -- and
+  # rather than six, half of which were a single logo under a heading.
+  test 'the homepage groups the wall instead of pouring it into one row' do
+    get '/'
+
+    rows = css_select('.logo-wall').size
+    labels = PagesHelper::HOME_PARTNER_ROWS.keys
+
+    assert_equal labels.size, rows
+    # In the declared order, not merely present.
+    shown = css_select('h3.text-uppercase').map { |h| h.text.strip }
+
+    assert_equal labels.map { |l| I18n.t("site.partners.#{l}") }, shown
+
+    # And within a row, the groups are laid out in the order they are listed.
+    PagesHelper::HOME_PARTNER_ROWS.each_value do |keys|
+      next if keys.size < 2
+
+      positions = keys.map { |k| response.body.index(PagesHelper::PARTNER_GROUPS.fetch(k).first[:img].sub('.png', '')) }
+
+      assert_equal positions.sort, positions, "#{keys.join(', ')} are out of order"
+    end
+    # Every group the rows name still reaches the page through one of them.
+    PagesHelper::HOME_PARTNER_ROWS.each_value do |keys|
+      keys.each do |key|
+        PagesHelper::PARTNER_GROUPS.fetch(key).each do |logo|
+          assert_includes response.body, logo[:img].sub('.png', '')
+        end
+      end
+    end
+  end
+
+  # A group with nothing in it must take its heading down with it. Territory
+  # gating means a group can be empty in one locale and not another, and a bare
+  # heading over no logos reads as a broken page rather than an empty category.
+  test 'a row with nothing in it renders neither logos nor a heading' do
+    get '/'
+
+    # partner_rows needs no view context, so it can be exercised directly.
+    helpers = Object.new.extend(PagesHelper)
+
+    assert_empty helpers.partner_rows(empty: [])
+    assert_equal %i[global], helpers.partner_rows(global: %i[global]).map(&:first)
+    # Every heading on the page has a wall under it.
+    assert_equal css_select('.logo-wall').size, css_select('h3.text-uppercase').size
+  end
+
+  # /business asks for its two groups by name, each its own labelled row.
+  test '/business lists manufacturers first, then integrators' do
+    get '/business'
+
+    assert_equal [I18n.t('site.partners.manufacturers'), I18n.t('site.partners.integrators')],
+                 css_select('h3.text-uppercase').map { |h| h.text.strip }
+  end
+
+  # The dark band arriving with no gap under an article on white reads as the
+  # text falling off a cliff. The homepage is the exception: its band follows a
+  # tinted full-bleed section, where the gap is a white stripe between two
+  # coloured bands.
+  test 'the closing band keeps its distance from text on white' do
+    %w[/get-started /low-latency /community /ecosystem].each do |path|
+      get path
+
+      band = css_select('section.section--ink').last
+
+      assert_not_nil band, "#{path} has no closing band"
+      assert_includes band['class'], 'mt-6', "#{path} runs its text straight into the band"
+    end
+
+    get '/'
+    assert_not_includes css_select('section.section--ink').last['class'], 'mt-6',
+                        'the homepage band is separated from the section above it by a white stripe'
+  end
+
+  # Cryptocurrency is off the donation page; Open Collective stays.
+  test '/donate offers Open Collective and nothing crypto' do
+    get '/donate'
+
+    assert_includes response.body, 'opencollective.com/openipc'
+    assert_not_includes response.body, 'bi-currency-bitcoin'
+    assert_not_includes response.body, 't.me/wallet'
+    %w[en ru zh].each do |locale|
+      assert_nil I18n.t('pages.donate.crypto_title', locale: locale, default: nil),
+                 "the crypto copy is still defined in #{locale}"
+    end
+  end
+
+  # :exhibitions is held in the system on purpose and shown on no page. There
+  # is no trade-show page yet; when there is, it asks for the group and the
+  # logo and link are already there. Until then this is what keeps it off the
+  # site -- a group is easy to add to a row by accident.
+  test 'the exhibitions group is kept but rendered nowhere' do
+    held = PagesHelper::PARTNER_GROUPS.fetch(:exhibitions)
+
+    assert_not_empty held
+    assert_not_includes PagesHelper::HOME_PARTNER_ROWS.values.flatten, :exhibitions
+
+    %w[/ /business /ecosystem /community /donate /low-latency /get-started].each do |path|
+      get path
+
+      held.each do |logo|
+        assert_not_includes response.body, logo[:img].sub('.png', ''),
+                            "#{logo[:name]} is being rendered on #{path}"
+      end
     end
   end
 
@@ -165,7 +311,7 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     assert_not_nil card, 'no card on the page names devourer'
     assert_not_empty card.css('a[href="https://github.com/OpenIPC/devourer"]'),
                      'devourer is named but not linked'
-    assert_includes response.body, I18n.t('pages.low_latency.credits_text'),
+    assert_includes response.body, I18n.t('pages.low_latency.credits_text_html'),
                      'the credits no longer thank both projects'
   end
 

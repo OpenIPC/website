@@ -18,6 +18,14 @@
   }
 }
 
+// A link inside the card body sits under .stretched-link's overlay and cannot
+// be clicked. Lifting it above restores it without giving up the whole-card
+// click target -- which is what the arrow at the bottom is for.
+.pillar-card .card-body p a {
+  position: relative;
+  z-index: 2;
+}
+
 .pillar-card .icon-chip {
   align-items: center;
   background: rgba($indigo, .08);

@@ -70,7 +70,7 @@ zh:
       attention: 注意！
       backup:
         info: OpenIPC U-Boot 会覆盖原始的加密分区，因此无法恢复为出厂固件，除非您拥有此特定摄像机的完整闪存备份！要创建完整的固件备份，请启动 TFTP 服务器并在引导加载程序 shell 中执行这些命令。
-        more_info_html: 有关详细信息，请参阅项目 wiki 中的<a href="https://github.com/openipc/wiki/blob/master/en/installation.md">安装说明</a>。
+        more_info_html: 有关详细信息，请参阅项目 wiki 中的<a href="https://github.com/OpenIPC/wiki/blob/master/en/installation.md">安装说明</a>。
         subtitle: 备份您的原始固件，请不要跳过这个步骤！
         title: 保存原始固件
       backup_32: 请注意！在备份 32M 闪存之前，请确保摄像机至少有 64M 的 RAM。
@@ -107,7 +107,6 @@ zh:
       info: 如果您需要恢复原始固件，请使用您使用上述命令创建的备份文件。将备份文件放入 TFTP 服务器的根目录，并在引导加载程序 shell 中执行这些命令。
       title: 恢复摄像机原始固件
     version:
-      fpv: FPV
       lite: Lite
       nand: Nand
       neo: Neo
@@ -177,6 +176,12 @@ zh:
     nosd: 摄像机没有 SD 卡槽
     sd: 摄像机有一个 SD 卡槽
   site:
+    partners:
+      friends: 友好项目
+      global: 全球合作伙伴
+      integrators: 集成商
+      manufacturers: 硬件厂商
+      trade: 厂商与集成商
     default_meta_description: 'OpenIPC 是面向嵌入式视频的开放平台：适用于 IP 摄像机的开源固件、面向无人机与机器人的超低延迟视频链路，以及为摄像机工程师提供的免费工具。'
     disclaimer: 本网站包含的信息仅供一般参考之用，访问者不应依赖这些信息。本网站上提供的所有软件和固件均按原样提供，仅供研究使用。对于因使用这些文件或依赖本网站中包含的任何信息而造成的任何损失或损害，OpenIPC 概不负责。
     snapshot:
@@ -188,7 +193,7 @@ zh:
     icon:
       snapshot_alt: 图片：快照
     index:
-      intro_html: 这些图片是摄像机自己上传的——没有人去采集。每张图片会在上传几天后被删除。想让你的画面出现在这里？在摄像机的 Web 界面中开启 Open Wall 选项即可。
+      intro_html: 这些图片是摄像机自己上传的——没有人去采集。想让你的画面出现在这里？在摄像机的 Web 界面中开启 Open Wall 选项即可。
       no_signal: 没信号
       snapshot_alt: 图片：快照
       stay_tuned: 敬请关注

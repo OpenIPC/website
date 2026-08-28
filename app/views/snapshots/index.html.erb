@@ -13,12 +13,11 @@
         have not seen it before and cannot tell from a grid of stills whether
         these were collected or volunteered.
 
-        The copy says "a couple of days" rather than naming two, and does not
-        claim the uploads are verified. PurgeImagesJob::RETENTION is two days,
-        but it is a cutoff for a sweep that runs once a night, so an image can
-        outlive it by most of a day; and the upload endpoint authenticates
-        nobody, so we cannot promise every image came from a camera whose owner
-        opted in. Both were promised here before, and neither was true. %>
+        The copy makes no claim about how long an image stays. It used to say
+        two days, which PurgeImagesJob::RETENTION cannot promise -- the constant
+        is a cutoff for a sweep that runs once a night, so an image can outlive
+        it by most of a day. Nor does it claim the uploads are verified: the
+        endpoint authenticates nobody. %>
     <p class="text-body-secondary small" style="max-width: 70ch"><i class="bi bi-camera-video me-1"></i><%= t('.intro_html') %></p>
   </header>
 

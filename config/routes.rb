@@ -42,14 +42,13 @@ Rails.application.routes.draw do
   }
   get '/majestic-endpoints', to: 'pages#majestic_endpoints'
 
-  get '/coupler',     to: redirect('https://github.com/openipc//coupler/')
-  get '/firmware',    to: redirect('https://github.com/openipc//firmware/')
-  get '/ipctool',     to: redirect('https://github.com/openipc/ipctool/')
-  get '/microbe-web', to: redirect('https://github.com/openipc/microbe-web/')
-  get '/smolrtsp',    to: redirect('https://github.com/openipc/smolrtsp/')
-  get '/telemetry',   to: redirect('https://github.com/openipc/telemetry/')
-  get '/yaml-cli',    to: redirect('https://github.com/openipc/yaml-cli/')
-  get '/wiki',        to: redirect('https://github.com/openipc/wiki/')
+  get '/coupler',     to: redirect('https://github.com/OpenIPC/coupler/')
+  get '/firmware',    to: redirect('https://github.com/OpenIPC/firmware/')
+  get '/ipctool',     to: redirect('https://github.com/OpenIPC/ipctool/')
+  get '/microbe-web', to: redirect('https://github.com/OpenIPC/microbe-web/')
+  get '/smolrtsp',    to: redirect('https://github.com/OpenIPC/smolrtsp/')
+  get '/yaml-cli',    to: redirect('https://github.com/OpenIPC/yaml-cli/')
+  get '/wiki',        to: redirect('https://github.com/OpenIPC/wiki/')
 
   get '/hardware',    to: redirect('/supported-hardware/featured')
   get '/ru/installation.md', to: redirect('https://github.com/OpenIPC/wiki/blob/master/ru/installation.md')
@@ -64,19 +63,21 @@ Rails.application.routes.draw do
   get '/install_switcam_hs303', to: redirect('https://github.com/OpenIPC/wiki/blob/master/ru/hardware-hs303.md')
 
   # FIXME: combine with above
-  get '/coupler(/*any)',     to: redirect('https://github.com/openipc//coupler')
-  get '/firmware(/*any)',    to: redirect('https://github.com/openipc/firmware')
-  get '/ipctool(/*any)',     to: redirect('https://github.com/openipc/ipctool')
-  get '/microbe-web(/*any)', to: redirect('https://github.com/openipc/microbe-web')
-  get '/smolrtsp(/*any)',    to: redirect('https://github.com/openipc/smolrtsp')
-  get '/telemetry(/*any)',   to: redirect('https://github.com/openipc/telemetry')
-  get '/yaml-cli(/*any)',    to: redirect('https://github.com/openipc/yaml-cli')
-  get '/wiki(/*any)',        to: redirect('https://github.com/openipc/wiki')
+  get '/coupler(/*any)',     to: redirect('https://github.com/OpenIPC/coupler')
+  get '/firmware(/*any)',    to: redirect('https://github.com/OpenIPC/firmware')
+  get '/ipctool(/*any)',     to: redirect('https://github.com/OpenIPC/ipctool')
+  get '/microbe-web(/*any)', to: redirect('https://github.com/OpenIPC/microbe-web')
+  get '/smolrtsp(/*any)',    to: redirect('https://github.com/OpenIPC/smolrtsp')
+  get '/yaml-cli(/*any)',    to: redirect('https://github.com/OpenIPC/yaml-cli')
+  get '/wiki(/*any)',        to: redirect('https://github.com/OpenIPC/wiki')
 
   get '/SDK', to: redirect('/supported-hardware')
   get '/sponsor', to: redirect('/donate')
 
   get '/green_life', to:'pages#green_life'
+  # Not linked from anywhere while there is nothing to sell -- see the footer.
+  # The route and the page stay: the shop is expected back, plausibly through
+  # Open Collective, and deleting them would mean writing it all again.
   get '/merchandise', to: 'pages#merchandise'
   get '/our-team', to: 'pages#our_team'
   get '/stages-of-firmware-development', to: 'pages#stages_of_firmware_development'
@@ -145,6 +146,14 @@ Rails.application.routes.draw do
   # fetches carried a curl or Wget agent. 410 tells them to stop asking.
   match "/binaries", to: proc { [410, { "Content-Type" => "text/plain" }, ["Gone\n"]] },
         via: :all, as: :retired_binaries
+
+  # Same treatment, same reason. /telemetry was a shortcut to
+  # github.com/OpenIPC/telemetry, which does not exist and by all appearances
+  # never has, so it had been bouncing visitors to GitHub's own 404. Deleting
+  # the route is worse rather than better: the catch-all answers unknown paths
+  # with a 302 to the homepage, which tells a crawler the page moved there.
+  match "/telemetry(/*any)", to: proc { [410, { "Content-Type" => "text/plain" }, ["Gone\n"]] },
+        via: :all, as: :retired_telemetry
 
   match "*unmatched", to: "application#route_not_found",
         constraints: lambda { |req| req.path.exclude? 'rails/active_storage' },

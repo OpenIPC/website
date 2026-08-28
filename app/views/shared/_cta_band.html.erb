@@ -1,5 +1,13 @@
-<%# Dark call-to-action band. Locals: title, primary_label, primary_href, secondary_label/secondary_href (optional), note_html (optional). %>
-<section class="section--ink py-6" data-bs-theme="dark">
+<%# Dark call-to-action band. Locals: title, primary_label, primary_href,
+    secondary_label/secondary_href (optional), note_html (optional),
+    flush (optional).
+
+    Most pages end with an article on white, where the band arriving with no
+    gap reads as the text falling off a cliff. So there is one by default.
+    flush: true removes it, for the page that puts the band directly under a
+    full-bleed section -- there the gap is a stripe of white between two
+    coloured bands, which is worse than no gap at all. %>
+<section class="section--ink py-6 <%= 'mt-6' unless local_assigns[:flush] %>" data-bs-theme="dark">
   <div class="container text-center">
     <h2 class="mb-4"><%= title %></h2>
     <p class="d-flex flex-wrap gap-2 justify-content-center mb-0">

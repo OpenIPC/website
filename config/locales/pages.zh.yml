@@ -67,8 +67,6 @@ zh:
       title: 社区
     donate:
       business_band_html: 如果贵公司依赖 OpenIPC，更可持续的支持方式是建立商业合作关系。<a href="/business">看看我们能提供什么</a>。
-      crypto_text_html: TON 捐赠可以直接在 Telegram 中通过 <a href="https://t.me/wallet">@wallet</a> 完成。
-      crypto_title: 加密货币
       accounting: 我们致力于共建一个开放和透明的数字环境，并由衷地感谢你对我们的努力提供的任何支持，以推动OpenIPC和我们的使命走向一个可持续的未来。
       hero_lede: OpenIPC 使用免费，制作昂贵。捐款用于购买新平台的摄像机、支付维护者的报酬，并维持项目运转。
       hero_title: 资助这项工作。
@@ -99,7 +97,6 @@ zh:
       proj_qemu: 基于 QEMU 的完整海思 IP 摄像机模拟器——桌面上没有硬件也能开发和测试固件。
       proj_rnd_player: '为媒体工程师打造的播放器：以开发者需要的方式检视码流。'
       proj_smolrtsp: 可嵌入的 RTSP 1.0 服务端库，适用于摄像机等资源受限设备。支持 TCP 与 UDP，任意负载格式。
-      proj_telemetry: 在飞控与地面之间桥接遥测数据。
       proj_waybeam: '链路的发送端：面向 FPV 无人机与 URLLC 设备的灵活视频编码器。'
       proj_yamlcli: 一个用于在脚本中编辑 YAML 配置的小型命令行工具。
       section_community_text_html: 社区自制的硬件、支架与配件——例如在 <a href="https://www.printables.com/search/models?q=tag%3Aopenipc">Printables 上标记为 openipc</a> 的可 3D 打印模型。
@@ -167,10 +164,10 @@ zh:
       hero_cta_low_latency: 低延迟视频
       hero_cta_start: 快速上手
       hero_lede: 面向 IP 摄像机、FPV 无人机以及介于两者之间的设备的开放固件与工具。你的硬件应当听你的，而不是听某个厂商云端的。
-      hero_microline: 140+ 个仓库 · 数十个 SoC 系列 · 无需云端
+      hero_microline: 140+ 个仓库 · 数十个 SoC 系列 · 自 2019 年
       hero_title: 面向嵌入式视频的开放平台。
       partners_title: 制造商、集成商与研究团队的共同选择
-      pillar_firmware_text: 面向数十个 SoC 系列的 IP 摄像机开放固件，基于 Buildroot，核心是 Majestic 推流器。
+      pillar_firmware_text_html: 面向数十个 SoC 系列的 IP 摄像机开放固件，基于 Buildroot，核心是 <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">Majestic</a> 推流器。
       pillar_firmware_title: 摄像机固件
       pillar_longevity_text: '我们让原厂 SDK 在主线内核上继续存活：在厂商撒手很久之后，依然提供 CVE 修复与现代特性。'
       pillar_longevity_title: 长期维护与安全
@@ -181,7 +178,6 @@ zh:
       pillars_lede: OpenIPC 不只是固件——它是一个由亲自在自己硬件上运行它的人们构建的生态。
       pillars_title: 一个平台，四条战线
       silicon_title: 支持的芯片厂商
-      stats_languages: 种语言
       stats_repos: 个开放仓库
       stats_since: 年起公开开发
       stats_socs: 款支持的 SoC
@@ -190,7 +186,7 @@ zh:
       story_step1_text: 固件更新停了。安全漏洞还在。App 从应用商店里消失了。
       story_step1_title: 厂商转身离开
       story_step2_text: 服务器被关掉，一台还能用的摄像机就变成了无事可做的塑料和硅片。
-      story_step2_title: 云端熄灯
+      story_step2_title: 服务器悄然关停
       story_step3_text: 摄像机启动了一套开放且持续维护的系统——并且听你的。没有后门，没有订阅，也少了一件电子垃圾。
       story_step3_title: 你刷入 OpenIPC
       story_title: 摄像机不该随着它的云一起死去。
@@ -200,13 +196,13 @@ zh:
       wall_snapshot_alt: '图片：来自社区摄像机的实时快照'
     low_latency:
       business_bridge_html: 想基于这条链路做产品？<a href="/business">和我们谈谈</a>——我们承接定制开发与 OEM 合作。
-      credits_text: 这条无线链路得益于 wfb-ng 与 devourer，整个生态也在 RubyFPV、Mario FPV 等伙伴的参与下不断成长。开源是一项团队运动。
+      credits_text_html: 这条无线链路得益于 wfb-ng 与 devourer，整个生态也在 <a href="https://rubyfpv.com/">RubyFPV</a>、<a href="https://www.youtube.com/@mariofpv">Mario FPV</a> 等伙伴的参与下不断成长。开源是一项团队运动。
       credits_title: 站在开放的肩膀上
       cta_chat: 加入 FPV 聊天群
       cta_guide: 阅读搭建指南
       fpv_text: '一套完全开放的数字 FPV 系统：没有封闭生态，没有配对绑定的硬件，也没有固件上限。用受支持的摄像机搭建天空端，挑选你的地面站，并可调节管线的每一个环节。'
       fpv_title: 'FPV：从镜头到眼镜'
-      hardware_text_html: 天空端由受支持的摄像机和 AIO 板搭建——请从<a href="/supported-hardware">支持硬件列表</a>开始。RunCam 与 EMAX 出厂即提供基于 OpenIPC 的 FPV 硬件。
+      hardware_text_html: 天空端由受支持的摄像机和 AIO 板搭建——请从<a href="/supported-hardware">支持硬件列表</a>开始。RunCam 等厂商出厂即提供基于 OpenIPC 的 FPV 硬件。
       hardware_title: 硬件
       hero_lede: 'FPV 无人机、机器人、遥操作：一套从摄像机到屏幕的开放超低延迟视频方案。在受支持的硬件上，端到端延迟低至约 30 毫秒。'
       hero_title: 为等不起的机器提供开放视频链路。

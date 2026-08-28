@@ -70,7 +70,7 @@ en:
       attention: Attention!
       backup:
         info: OpenIPC U-Boot overwrites the original crypto partition making it impossible to revert to the factory firmware unless you have a full flash backup for this particular camera! To create a full firmware backup start a TFTP server and run these commands in bootloader shell.
-        more_info_html: Please refer to <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">Installation instructions</a> in the project's wiki for more information.
+        more_info_html: Please refer to <a href="https://github.com/OpenIPC/wiki/blob/master/en/installation.md">Installation instructions</a> in the project's wiki for more information.
         subtitle: Back up your stock firmware, don't skip this part of the installation process!
         title: Save the original firmware
       backup_32: ATTENTION! Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM.
@@ -107,7 +107,6 @@ en:
       info: If you need to restore the original firmware, use the backup file you have created using the commands above. Place the backup file into the root directory of your TFTP server and run these commands in bootloader shell.
       title: Restore camera stock firmware
     version:
-      fpv: FPV
       lite: Lite
       nand: NAND
       neo: Neo
@@ -177,6 +176,12 @@ en:
     nosd: Camera does not have an SD card slot
     sd: Camera has an SD card slot
   site:
+    partners:
+      friends: Friendly projects
+      global: Global partners
+      integrators: Integrators
+      manufacturers: Manufacturers
+      trade: Manufacturers and integrators
     default_meta_description: 'OpenIPC is the open platform for embedded video: open-source firmware for IP cameras, ultra-low-latency video links for drones and robots, and free tools for camera engineers.'
     disclaimer: The information contained on this site is for general informational purposes only and is not intended to be relied upon by the visitor. All software and firmware available on this site is provided AS IS and for research purposes only. OpenIPC shall not be liable for any loss or damage caused by the use of these files or the use of, or reliance upon, any information contained in this site.
     snapshot:
@@ -188,7 +193,7 @@ en:
     icon:
       snapshot_alt: 'Image: Snapshot'
     index:
-      intro_html: Cameras send these themselves — nobody goes out and collects them. Each image is removed a couple of days after it arrives. Want yours here? Turn on the Open Wall option in your camera's web interface.
+      intro_html: Cameras send these themselves — nobody goes out and collects them. Want yours here? Turn on the Open Wall option in your camera's web interface.
       no_signal: No signal
       snapshot_alt: 'Image: Snapshot'
       stay_tuned: stay tuned

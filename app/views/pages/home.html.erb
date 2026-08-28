@@ -87,7 +87,7 @@
       <p class="text-body-secondary mx-auto" style="max-width: 60ch"><%= t('.pillars_lede') %></p>
     </div>
     <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
-      <div class="col"><%= render 'shared/pillar_card', icon: 'bi-cpu', title: t('.pillar_firmware_title'), text: t('.pillar_firmware_text'), href: '/get-started' %></div>
+      <div class="col"><%= render 'shared/pillar_card', icon: 'bi-cpu', title: t('.pillar_firmware_title'), text: t('.pillar_firmware_text_html'), href: '/get-started' %></div>
       <div class="col"><%= render 'shared/pillar_card', icon: 'bi-broadcast', title: t('.pillar_low_latency_title'), text: t('.pillar_low_latency_text'), href: '/low-latency' %></div>
       <div class="col"><%= render 'shared/pillar_card', icon: 'bi-wrench-adjustable', title: t('.pillar_tools_title'), text: t('.pillar_tools_text'), href: '/ecosystem' %></div>
       <div class="col"><%= render 'shared/pillar_card', icon: 'bi-shield-check', title: t('.pillar_longevity_title'), text: t('.pillar_longevity_text'), href: '/ecosystem', accent: true %></div>
@@ -98,7 +98,7 @@
 <%# ---- Stats band (live numbers from the database; evergreen floors elsewhere) ---- %>
 <section class="section--ink py-5" data-bs-theme="dark">
   <div class="container">
-    <div class="row row-cols-2 row-cols-lg-<%= @soc_count.positive? ? 5 : 3 %> g-4 text-center">
+    <div class="row row-cols-2 row-cols-lg-<%= @soc_count.positive? ? 4 : 2 %> g-4 text-center">
       <% if @soc_count.positive? %>
         <div class="col stat-figure">
           <div class="stat-value"><%= @soc_count %></div>
@@ -114,10 +114,6 @@
         <div class="stat-label"><%= t('.stats_repos') %></div>
       </div>
       <div class="col stat-figure">
-        <div class="stat-value"><%= I18n.available_locales.size %></div>
-        <div class="stat-label"><%= t('.stats_languages') %></div>
-      </div>
-      <div class="col stat-figure">
         <div class="stat-value">2019</div>
         <div class="stat-label"><%= t('.stats_since') %></div>
       </div>
@@ -129,7 +125,9 @@
 <section class="py-6">
   <div class="container">
     <h2 class="h4 text-center text-body-secondary mb-5"><%= t('.partners_title') %></h2>
-    <%= render 'shared/logo_wall', logos: partner_logos %>
+    <% partner_rows(PagesHelper::HOME_PARTNER_ROWS).each do |label, logos| %>
+      <%= render 'shared/logo_wall', logos: logos, title: t("site.partners.#{label}") %>
+    <% end %>
   </div>
 </section>
 
@@ -143,7 +141,7 @@
 </section>
 
 <%# ---- Closing CTA ---- %>
-<%= render 'shared/cta_band',
+<%= render 'shared/cta_band', flush: true,
            title: t('.cta_title'),
            primary_label: t('.cta_primary'), primary_href: '/get-started',
            secondary_label: t('.cta_secondary'), secondary_href: 'https://t.me/openipc',

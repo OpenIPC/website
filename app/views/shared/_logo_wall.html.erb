@@ -1,5 +1,9 @@
-<%# Partner/integrator logo wall. Locals: logos (array of {name:, url:, img:}). %>
-<div class="logo-wall row row-cols-3 row-cols-md-4 row-cols-lg-6 g-3">
+<%# Partner/integrator logo wall. Locals: logos (array of {name:, url:, img:}),
+    title (optional -- the group heading above the row). %>
+<% if local_assigns[:title].present? %>
+  <h3 class="h6 text-body-secondary text-uppercase mb-3"><%= title %></h3>
+<% end %>
+<div class="logo-wall row row-cols-3 row-cols-md-4 row-cols-lg-6 g-3 <%= 'mb-5' if local_assigns[:title].present? %>">
   <% logos.each do |logo| %>
     <div class="col">
       <a href="<%= logo[:url] %>" class="logo-tile" title="<%= logo[:name] %>">
