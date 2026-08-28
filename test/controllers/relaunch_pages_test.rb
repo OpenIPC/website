@@ -115,6 +115,23 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # /get-started shows a command to paste into a root shell on the camera. It
+  # has to reach the page whole -- the URL was being clipped by CSS, and the
+  # tempting fix is to shorten the command rather than let it wrap.
+  test 'the ipctool command reaches the page complete' do
+    get '/get-started'
+
+    block = css_select('#ipctool-cmd').first
+
+    assert_not_nil block, 'the terminal block is gone'
+    command = block.text
+    assert_includes command, 'https://github.com/OpenIPC/ipctool/releases/download/latest/ipctool'
+    assert_includes command, 'chmod +x /tmp/ipctool'
+    # The copy button copies this element, so it must name it correctly.
+    assert_not_empty css_select('[data-copy-target="#ipctool-cmd"]'),
+                     'nothing on the page copies the command'
+  end
+
   # The integrator wall is territory-specific: these companies serve Russia and
   # were explicitly not to be shown to everyone.
   test 'Russian integrators appear for ru and for nobody else' do
