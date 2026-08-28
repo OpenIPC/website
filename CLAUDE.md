@@ -10,10 +10,14 @@ The OpenIPC project website — a Rails 7.0 app (Ruby 3.1.2, MySQL) that serves 
 
 - `bin/dev` — start the full dev stack via foreman (`Procfile.dev`): Rails server on **port 3010** (not 3000), `yarn build --watch` (esbuild JS), and `yarn watch:css` (sass→postcss). Use this, not `bin/rails server` alone, or assets won't rebuild.
 - `bin/setup` — idempotent dev bootstrap (`bundle`, `db:prepare`, clear logs/tmp, restart).
+- `docker compose run --rm web <cmd>` — run anything against Ruby 3.1.7 + MariaDB without
+  installing either. `compose.yaml` + `docker/Dockerfile.dev` are the dev/test stack; the
+  root `Dockerfile` is the unrelated production build. Use this when the host Ruby does not
+  match `.ruby-version` — which is most hosts. Note `bundle exec rubocop`, not bare `rubocop`.
 - `bin/rails test` — run tests (Minitest, parallelized across cores, fixtures auto-loaded). The MySQL `test` DB is regenerated from `development`.
 - `bin/rails test test/models/admin_test.rb` — single file; append `:LINE` to run one test.
 - `bin/rails test:system` — Capybara + selenium system tests.
-- `rubocop` — lint (config in `.rubocop.yml`: `rubocop-performance`, line length 120).
+- `rubocop` — lint (config in `.rubocop.yml`: `rubocop-performance`, line length 120). Baseline on master is 742 offences over 111 files; judge a change by whether it adds any to the files it touches, not by the total.
 - `i18n-tasks missing` / `i18n-tasks unused` — audit translations (config in `config/i18n-tasks.yml`); `easy_translate` provides machine translation via `GOOGLE_TRANSLATE_API_KEY`/`DEEPL_TRANSLATE_API_KEY`.
 - `tools/webui-gallery/run.sh --camera <host>` — rebuild the WebUI screenshots on `/web-interface` from a real camera. Needs Docker and network access to the camera; everything else is in the image it builds. Run it when the WebUI changes shape (every few months). It redacts the camera's identity, substitutes a scene over the live player, refuses to open the CGIs that reset or reboot on render, and fails the run rather than installing if anything identifying survives. `tools/webui-gallery/README.md` has the traps.
 - Asset bundling (normally run by `bin/dev`): `yarn build` (JS → `app/assets/builds/`), `yarn build:css` (sass + autoprefixer). `app/assets/builds/` is gitignored — rebuild after JS/SCSS changes.
