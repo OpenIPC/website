@@ -155,6 +155,20 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # The radio-link card names devourer, OpenIPC's own userspace Realtek driver,
+  # rather than wfb-ng. wfb-ng keeps its place in the credits -- the link exists
+  # because of both -- so the test checks the card, not the whole page.
+  test 'the radio link card names devourer and links it' do
+    get '/low-latency'
+
+    card = css_select('.card').find { |c| c.text.include?('devourer') }
+    assert_not_nil card, 'no card on the page names devourer'
+    assert_not_empty card.css('a[href="https://github.com/OpenIPC/devourer"]'),
+                     'devourer is named but not linked'
+    assert_includes response.body, I18n.t('pages.low_latency.credits_text'),
+                     'the credits no longer thank both projects'
+  end
+
   # The latency table on /low-latency was unchanged 2022 announcement copy. It
   # was keyed on resolution -- which is very nearly free -- and a 2026 audit of
   # the OpenIPC and wfb-ng chat archives found it optimistic by 40-160 ms at the

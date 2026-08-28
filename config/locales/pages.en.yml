@@ -200,7 +200,7 @@ en:
       wall_snapshot_alt: 'Image: live snapshot from a community camera'
     low_latency:
       business_bridge_html: Building a product on this link? <a href="/business">Talk to us</a> — we do custom development and OEM work.
-      credits_text: The radio link exists thanks to wfb-ng, and the ecosystem grows with friends like RubyFPV and Mario FPV. Open source is a team sport.
+      credits_text: The radio link exists thanks to wfb-ng and devourer, and the ecosystem grows with friends like RubyFPV and Mario FPV. Open source is a team sport.
       credits_title: Standing on open shoulders
       cta_chat: Join the FPV chat
       cta_guide: Read the build guide
@@ -210,7 +210,7 @@ en:
       hardware_title: Hardware
       hero_lede: 'FPV drones, robots, teleoperation: an open ultra-low-latency video stack from camera to screen. Glass-to-glass from about 30 ms on supported hardware.'
       hero_title: Open video links for machines that can't wait.
-      how_link_text_html: <a href="https://github.com/svpcom/wfb-ng">wfb-ng</a> broadcasts video, telemetry, and control over commodity Wi-Fi hardware — no association, no retransmit stalls.
+      how_link_text_html: <a href="https://github.com/OpenIPC/devourer">devourer</a> carries video, telemetry, and control over commodity Realtek adapters — no association, no retransmit stalls. Driving the radio from userspace lets it set rate, power, and channel packet by packet, so the link adapts while you fly.
       how_link_title: The radio link
       how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> turns a Rockchip board into a dedicated ground station — the fastest way to receive. <a href="https://github.com/OpenIPC/aviateur">Aviateur</a> runs on the Windows, Linux, or macOS machine you already own.
       how_rx_title: RX — your side

@@ -200,7 +200,7 @@ ru:
       wall_snapshot_alt: 'Изображение: живой снимок с камеры сообщества'
     low_latency:
       business_bridge_html: Строите продукт на этом линке? <a href="/business">Напишите нам</a> — мы делаем заказную разработку и OEM.
-      credits_text: Радиолинк существует благодаря wfb-ng, а экосистема растёт вместе с друзьями — RubyFPV и Mario FPV. Open source — командный спорт.
+      credits_text: Радиолинк существует благодаря wfb-ng и devourer, а экосистема растёт вместе с друзьями — RubyFPV и Mario FPV. Open source — командный спорт.
       credits_title: Стоим на открытых плечах
       cta_chat: FPV-чат
       cta_guide: Гайд по сборке
@@ -210,7 +210,7 @@ ru:
       hardware_title: Железо
       hero_lede: 'FPV-дроны, роботы, телеуправление: открытый видеотракт со сверхнизкой задержкой от камеры до экрана. От ~30 мс «от стекла до стекла» на поддерживаемом железе.'
       hero_title: Открытые видеолинки для машин, которые не умеют ждать.
-      how_link_text_html: <a href="https://github.com/svpcom/wfb-ng">wfb-ng</a> вещает видео, телеметрию и управление поверх обычного Wi-Fi-железа — без ассоциации и без пауз на повторную передачу.
+      how_link_text_html: <a href="https://github.com/OpenIPC/devourer">devourer</a> несёт видео, телеметрию и управление поверх обычных Wi-Fi-адаптеров на Realtek — без ассоциации и без пауз на повторную передачу. Он работает с радио прямо из userspace и задаёт скорость, мощность и канал для каждого пакета, так что линк подстраивается прямо в полёте.
       how_link_title: Радиолинк
       how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> превращает плату на Rockchip в выделенную наземную станцию — самый быстрый способ принимать. <a href="https://github.com/OpenIPC/aviateur">Aviateur</a> работает на том компьютере с Windows, Linux или macOS, который у вас уже есть.
       how_rx_title: RX — ваша сторона
