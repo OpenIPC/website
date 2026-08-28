@@ -190,6 +190,56 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     assert_includes response.body, 'about 30 ms', 'the hero no longer states the real floor'
   end
 
+  # soc and sensor are nullable and the upload endpoint permits both to be
+  # absent, so one such upload used to take the whole homepage down with it.
+  test 'the homepage survives a snapshot that named neither its soc nor its sensor' do
+    snapshot = Snapshot.new(mac_address: '02:00:00:00:00:99', ip_address: '198.51.100.7',
+                            soc: nil, sensor: nil)
+    # The blob validator wants a real image type and at least 10 kilobytes.
+    snapshot.file.attach(io: StringIO.new("\xFF\xD8\xFF#{'x' * 12_000}"),
+                         filename: 'wall.jpg', content_type: 'image/jpeg')
+    snapshot.save!
+
+    get '/'
+
+    assert_response :success
+  end
+
+  # The strip says "runs on silicon by". The vendors table also holds sensor
+  # makers, and listing those claims silicon we do not run on.
+  test 'the silicon strip lists chip vendors, not sensor makers' do
+    chipmaker = Vendor.create!(name: 'Teststar Semiconductor')
+    Soc.create!(model: 'TS1234', vendor: chipmaker)
+    sensor_maker = Vendor.create!(name: 'Testsen Imaging')
+
+    get '/'
+
+    assert_includes response.body, chipmaker.name
+    assert_not_includes response.body, sensor_maker.name,
+                        'a vendor with no SoCs is being counted as silicon we run on'
+  end
+
+  # Locale rides in the query string, and redirect('/path') drops it, so a
+  # localized legacy link used to land in the browser's language instead.
+  test 'legacy redirects keep the locale they were asked for' do
+    { '/introduction' => '/', '/fpv' => '/low-latency',
+      '/our-projects' => '/ecosystem', '/about' => '/community' }.each do |from, to|
+      get "#{from}?locale=ru"
+
+      assert_redirected_to "#{to}?locale=ru"
+    end
+  end
+
+  # The command belongs to step 1. Below the lg breakpoint the steps stack, and
+  # source order is what the reader gets.
+  test 'the ipctool command comes before step two' do
+    get '/get-started'
+
+    body = response.body
+    assert_operator body.index('ipctool-cmd'), :<, body.index(ERB::Util.html_escape(I18n.t('pages.get_started.step2_title'))),
+                    'the command for step 1 renders after step 2'
+  end
+
   # Sighted readers get the unit once, under the axis. A screen reader reaches
   # the numbers one at a time, so each has to carry it -- and the axis and its
   # unit, being decoration for those numbers, must not be read out twice.

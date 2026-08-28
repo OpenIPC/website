@@ -22,10 +22,16 @@ class Snapshot < ApplicationRecord
   # limit is interpolated after to_i, not bound, because it lands in a LIMIT
   # clause where a bind parameter is not accepted; to_i is what makes that safe.
   def self.latest_per_camera(limit: nil)
+    # The tie-break on id matters: two rows for one camera can share a
+    # created_at, and comparing timestamps alone then calls both of them the
+    # latest. On the homepage, where the result is cut to five, that spent two
+    # of the five tiles on one camera.
     sql = 'SELECT s1.* FROM snapshots s1 LEFT JOIN snapshots s2' \
-          ' ON (s1.mac_address = s2.mac_address AND s1.created_at < s2.created_at)' \
+          ' ON (s1.mac_address = s2.mac_address' \
+          '     AND (s1.created_at < s2.created_at' \
+          '          OR (s1.created_at = s2.created_at AND s1.id < s2.id)))' \
           ' WHERE s2.id IS NULL AND s1.created_at > SUBDATE(NOW(), INTERVAL 1 DAY)' \
-          ' ORDER BY created_at DESC'
+          ' ORDER BY created_at DESC, id DESC'
     sql += " LIMIT #{limit.to_i}" if limit
     find_by_sql(sql)
   end

@@ -67,7 +67,10 @@ class RedirectsTest < ActionDispatch::IntegrationTest
     post '/snapshots'
 
     assert_not response.redirect?, 'the camera upload API was shadowed by a redirect'
-    assert_includes [400, 415, 422, 500], response.status,
+    # Not 500: SnapshotsController#create answers an empty upload with 415, and
+    # accepting a server error here would let a controller regression pass as
+    # though the API still worked.
+    assert_includes [400, 415, 422], response.status,
                     "expected a request error for an empty upload, got #{response.status}"
   end
 
