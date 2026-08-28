@@ -174,7 +174,7 @@ zh:
       pillar_firmware_title: 摄像机固件
       pillar_longevity_text: '我们让原厂 SDK 在主线内核上继续存活：在厂商撒手很久之后，依然提供 CVE 修复与现代特性。'
       pillar_longevity_title: 长期维护与安全
-      pillar_low_latency_text: 面向 FPV 无人机、机器人与遥操作的开放视频链路。在受支持的硬件上，端到端延迟低至约 60 毫秒。
+      pillar_low_latency_text: 面向 FPV 无人机、机器人与遥操作的开放视频链路。在受支持的硬件上，端到端延迟低至约 30 毫秒。
       pillar_low_latency_title: 低延迟视频链路
       pillar_tools_text: ONVIF 一致性测试、摄像机模拟、硬件检测——我们为自己打造并与所有人分享的免费工具。
       pillar_tools_title: 专业工具
@@ -208,23 +208,23 @@ zh:
       fpv_title: 'FPV：从镜头到眼镜'
       hardware_text_html: 天空端由受支持的摄像机和 AIO 板搭建——请从<a href="/supported-hardware">支持硬件列表</a>开始。RunCam 与 EMAX 出厂即提供基于 OpenIPC 的 FPV 硬件。
       hardware_title: 硬件
-      hero_lede: 'FPV 无人机、机器人、遥操作：一套从摄像机到屏幕的开放超低延迟视频方案。在受支持的硬件上，端到端延迟低至约 60 毫秒。'
+      hero_lede: 'FPV 无人机、机器人、遥操作：一套从摄像机到屏幕的开放超低延迟视频方案。在受支持的硬件上，端到端延迟低至约 30 毫秒。'
       hero_title: 为等不起的机器提供开放视频链路。
       how_link_text_html: <a href="https://github.com/svpcom/wfb-ng">wfb-ng</a> 在普通 Wi-Fi 硬件上广播视频、遥测与控制信号——无需关联，也不会因重传而卡顿。
       how_link_title: 无线链路
-      how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> 把一块 Rockchip 板子变成专用地面站，<a href="https://github.com/OpenIPC/aviateur">Aviateur</a> 则可在 Windows、Linux 和 macOS 上接收。
+      how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> 把一块 Rockchip 板子变成专用地面站——这是最快的接收方式。<a href="https://github.com/OpenIPC/aviateur">Aviateur</a> 则直接跑在你已有的 Windows、Linux 或 macOS 电脑上。
       how_rx_title: 接收端——你这一侧
       how_title: 这条链路是怎么工作的
       how_tx_text_html: 一台装有 <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> 编码器的 OpenIPC 摄像机负责产生码流并送入无线链路。
       how_tx_title: 发送端——天空这一侧
-      latency_1080p30: 1080p30
-      latency_1080p60: 1080p60
-      latency_720p60: 720p60
-      latency_column_config: 配置
-      latency_column_g2g: 典型端到端延迟
-      latency_intro: '具体数值取决于 SoC、传感器、分辨率、曝光和温度。以下是我们自己实测得到的典型值，而不是最理想情况下的宣传数字：'
-      latency_note: 使用我们自己的开源硬件延迟测量仪测得——它正是为这件事而造的。
-      latency_title: 延迟，实话实说
+      latency_axis_unit: ms 端到端延迟
+      latency_intro: 真正决定这个数字的是地面站，而不是你选的分辨率。以下是真正在用这套方案飞行的人，在自己硬件上报告的结果。
+      latency_note: 来自 OpenIPC 与 wfb-ng 社区聊天，而非我们自己的实测。分辨率几乎不影响这个数字，真正决定它的是帧率和屏幕刷新率——只换一台显示器，同一台摄像机就会相差 120 毫秒。
+      latency_path_desktop: 笔记本或台式机
+      latency_path_goggles: 内置 VRX 的眼镜
+      latency_path_ground_station: 专用地面站
+      latency_path_phone: 手机或平板
+      latency_title: 到底有多快
       robotics_text1: 同一条链路也为工业机器人、AGV、巡检设备和远程操作传输视频——凡是封闭视频系统会把你锁死、或者绕行云端会带来数秒延迟的场合，都用得上。
       robotics_text2: 在受支持的 SoC 上，画面帧会携带与传感器曝光起始对齐的挂钟时间戳——无需额外硬件即可实现多摄像机毫秒级同步。
       robotics_title: '不止于无人机：机器人与遥操作'

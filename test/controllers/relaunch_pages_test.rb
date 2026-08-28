@@ -154,4 +154,55 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
       assert_path_exists Rails.root.join('app/assets/images', logo[:img])
     end
   end
+
+  # The latency table on /low-latency was unchanged 2022 announcement copy. It
+  # was keyed on resolution -- which is very nearly free -- and a 2026 audit of
+  # the OpenIPC and wfb-ng chat archives found it optimistic by 40-160 ms at the
+  # exact configurations it named, while understating the floor by half. It now
+  # compares receive paths, which is what actually decides the number.
+  test 'the low-latency page compares receive paths, not resolutions' do
+    get '/low-latency'
+
+    assert_response :success
+    PagesHelper::LATENCY_PATHS.each do |path|
+      assert_includes response.body, I18n.t("pages.low_latency.latency_path_#{path[:key]}"),
+                      "the #{path[:key]} path is missing"
+      assert_includes response.body, "#{path[:low]}–#{path[:high]}",
+                      "the #{path[:key]} figure is missing"
+    end
+    ['~60 ms', '~80 ms', '~100 ms'].each do |stale|
+      assert_not_includes response.body, stale, "the 2022 figure #{stale} is back on the page"
+    end
+    assert_includes response.body, 'about 30 ms', 'the hero no longer states the real floor'
+  end
+
+  # The bars are positioned by inline percentages against a fixed scale. A
+  # figure edited past that scale would render a bar running off the end of its
+  # track, which no test of the copy would notice.
+  test 'every latency bar fits the scale it is drawn against' do
+    PagesHelper::LATENCY_PATHS.each do |path|
+      assert_operator path[:low], :<, path[:high], "#{path[:key]} is not a range"
+      assert_operator path[:high], :<=, PagesHelper::LATENCY_SCALE_MAX,
+                      "#{path[:key]} runs past the end of the scale"
+    end
+  end
+
+  # Every figure on that page is a user report from a private Telegram group.
+  # The `t.me/c/...` links resolve only for members of those groups, so they
+  # would 404 for a visitor, and the reporters have not been asked whether they
+  # want their names on the marketing site.
+  test 'the low-latency page cites no private Telegram links and no unpublished meter' do
+    %w[en ru zh].each do |locale|
+      get "/low-latency?locale=#{locale}"
+
+      assert_response :success
+      assert_not_includes response.body, 't.me/c/', "a private Telegram link leaked into #{locale}"
+      assert_includes response.body, ERB::Util.html_escape(I18n.t('pages.low_latency.latency_title', locale: locale)),
+                      "the latency section is missing in #{locale}"
+    end
+
+    get '/low-latency?locale=en'
+    assert_not_includes response.body, 'latency meter',
+                        'the page claims a meter whose design and runs are not published'
+  end
 end
