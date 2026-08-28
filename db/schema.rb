@@ -11,7 +11,7 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[7.0].define(version: 2026_08_24_160000) do
-  create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_uca1400_ai_ci", force: :cascade do |t|
+  create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
     t.bigint "record_id", null: false
@@ -21,7 +21,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_160000) do
     t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
   end
 
-  create_table "active_storage_blobs", charset: "utf8mb4", collation: "utf8mb4_uca1400_ai_ci", force: :cascade do |t|
+  create_table "active_storage_blobs", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "key", null: false
     t.string "filename", null: false
     t.string "content_type"
@@ -33,13 +33,13 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_160000) do
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
   end
 
-  create_table "active_storage_variant_records", charset: "utf8mb4", collation: "utf8mb4_uca1400_ai_ci", force: :cascade do |t|
+  create_table "active_storage_variant_records", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
-  create_table "admins", charset: "utf8mb4", collation: "utf8mb4_uca1400_ai_ci", force: :cascade do |t|
+  create_table "admins", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
     t.string "reset_password_token"
@@ -65,7 +65,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_160000) do
     t.index ["unlock_token"], name: "index_admins_on_unlock_token", unique: true
   end
 
-  create_table "downloads", charset: "utf8mb4", collation: "utf8mb4_uca1400_ai_ci", force: :cascade do |t|
+  create_table "downloads", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "soc_id"
     t.string "soc_model", null: false
     t.string "flash_type", null: false
@@ -78,7 +78,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_160000) do
     t.index ["soc_model", "created_at"], name: "index_downloads_on_soc_model_and_created_at"
   end
 
-  create_table "sensors", charset: "utf8mb4", collation: "utf8mb4_uca1400_ai_ci", force: :cascade do |t|
+  create_table "sensors", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "urlname"
     t.bigint "vendor_id"
     t.string "model"
@@ -107,7 +107,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_160000) do
     t.index ["vendor_id"], name: "index_sensors_on_vendor_id"
   end
 
-  create_table "snapshots", charset: "utf8mb4", collation: "utf8mb4_uca1400_ai_ci", force: :cascade do |t|
+  create_table "snapshots", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "mac_address"
     t.string "ip_address"
     t.string "hostname"
@@ -129,7 +129,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_160000) do
     t.index ["soc"], name: "index_snapshots_on_soc"
   end
 
-  create_table "socs", charset: "utf8mb4", collation: "utf8mb4_uca1400_ai_ci", force: :cascade do |t|
+  create_table "socs", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.bigint "vendor_id"
     t.string "family"
     t.string "model"
@@ -150,7 +150,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_160000) do
     t.index ["vendor_id"], name: "index_socs_on_vendor_id"
   end
 
-  create_table "vendors", charset: "utf8mb4", collation: "utf8mb4_uca1400_ai_ci", force: :cascade do |t|
+  create_table "vendors", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
