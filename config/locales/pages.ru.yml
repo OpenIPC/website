@@ -210,12 +210,12 @@ ru:
       hardware_title: Железо
       hero_lede: 'FPV-дроны, роботы, телеуправление: открытый видеотракт со сверхнизкой задержкой от камеры до экрана. От ~30 мс «от стекла до стекла» на поддерживаемом железе.'
       hero_title: Открытые видеолинки для машин, которые не умеют ждать.
-      how_link_text_html: <a href="https://github.com/OpenIPC/devourer">devourer</a> несёт видео, телеметрию и управление поверх обычных Wi-Fi-адаптеров на Realtek — без ассоциации и без пауз на повторную передачу. Он работает с радио прямо из userspace и задаёт скорость, мощность и канал для каждого пакета, так что линк подстраивается прямо в полёте.
+      how_link_text_html: <a href="https://github.com/OpenIPC/devourer">devourer</a> несёт видео, телеметрию и управление поверх обычных Realtek-адаптеров прямо из userspace — без ассоциации, без пауз на повторную передачу, со скоростью, мощностью и каналом для каждого пакета.
       how_link_title: Радиолинк
       how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> превращает плату на Rockchip в выделенную наземную станцию — самый быстрый способ принимать. <a href="https://github.com/OpenIPC/aviateur">Aviateur</a> работает на том компьютере с Windows, Linux или macOS, который у вас уже есть.
       how_rx_title: RX — ваша сторона
       how_title: Как устроен линк
-      how_tx_text_html: Камера с OpenIPC и энкодером <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> формирует поток и отдаёт его в радиолинк.
+      how_tx_text_html: Камера с OpenIPC и энкодером <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> превращает картинку сенсора в поток и отдаёт его прямо в радиолинк. Заданная здесь частота кадров определяет большую часть бюджета задержки.
       how_tx_title: TX — борт
       latency_axis_unit: мс «от стекла до стекла»
       latency_intro: Задержку решает наземная станция, а вовсе не выбранное разрешение. Это цифры, которые присылают те, кто реально летает на этом стеке, на своём железе.

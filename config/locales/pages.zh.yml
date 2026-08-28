@@ -210,12 +210,12 @@ zh:
       hardware_title: 硬件
       hero_lede: 'FPV 无人机、机器人、遥操作：一套从摄像机到屏幕的开放超低延迟视频方案。在受支持的硬件上，端到端延迟低至约 30 毫秒。'
       hero_title: 为等不起的机器提供开放视频链路。
-      how_link_text_html: <a href="https://github.com/OpenIPC/devourer">devourer</a> 在常见的 Realtek Wi-Fi 网卡上承载视频、遥测与控制信号——无需关联，也不会因重传而卡顿。它直接在用户态驱动射频，逐包设定速率、功率与信道，链路在飞行中自我适应。
+      how_link_text_html: <a href="https://github.com/OpenIPC/devourer">devourer</a> 直接在用户态承载视频、遥测与控制信号，运行于常见的 Realtek 网卡——无需关联，不会因重传而卡顿，速率、功率与信道逐包设定。
       how_link_title: 无线链路
       how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> 把一块 Rockchip 板子变成专用地面站——这是最快的接收方式。<a href="https://github.com/OpenIPC/aviateur">Aviateur</a> 则直接跑在你已有的 Windows、Linux 或 macOS 电脑上。
       how_rx_title: 接收端——你这一侧
       how_title: 这条链路是怎么工作的
-      how_tx_text_html: 一台装有 <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> 编码器的 OpenIPC 摄像机负责产生码流并送入无线链路。
+      how_tx_text_html: 装有 <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> 编码器的 OpenIPC 摄像机把传感器画面变成码流，直接送入无线链路。在这里设定的帧率决定了延迟预算的大部分。
       how_tx_title: 发送端——天空这一侧
       latency_axis_unit: ms 端到端延迟
       latency_intro: 真正决定这个数字的是地面站，而不是你选的分辨率。以下是真正在用这套方案飞行的人，在自己硬件上报告的结果。

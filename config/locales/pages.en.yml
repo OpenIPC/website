@@ -210,12 +210,12 @@ en:
       hardware_title: Hardware
       hero_lede: 'FPV drones, robots, teleoperation: an open ultra-low-latency video stack from camera to screen. Glass-to-glass from about 30 ms on supported hardware.'
       hero_title: Open video links for machines that can't wait.
-      how_link_text_html: <a href="https://github.com/OpenIPC/devourer">devourer</a> carries video, telemetry, and control over commodity Realtek adapters — no association, no retransmit stalls. Driving the radio from userspace lets it set rate, power, and channel packet by packet, so the link adapts while you fly.
+      how_link_text_html: <a href="https://github.com/OpenIPC/devourer">devourer</a> carries video, telemetry, and control over commodity Realtek adapters, straight from userspace — no association, no retransmit stalls, and rate, power and channel set per frame.
       how_link_title: The radio link
       how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> turns a Rockchip board into a dedicated ground station — the fastest way to receive. <a href="https://github.com/OpenIPC/aviateur">Aviateur</a> runs on the Windows, Linux, or macOS machine you already own.
       how_rx_title: RX — your side
       how_title: How the link works
-      how_tx_text_html: An OpenIPC camera with the <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> encoder produces the stream and feeds the radio link.
+      how_tx_text_html: An OpenIPC camera runs the <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> encoder, turning the sensor into a stream and handing it straight to the radio. The frame rate set here decides most of your latency budget.
       how_tx_title: TX — the air side
       latency_axis_unit: ms glass-to-glass
       latency_intro: What decides your number is the ground station, far more than the resolution you pick. These are figures people report from flying this stack on their own hardware.
