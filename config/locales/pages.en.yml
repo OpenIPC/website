@@ -67,8 +67,6 @@ en:
       title: Community
     donate:
       business_band_html: If your company depends on OpenIPC, the sustainable way to support it is a commercial relationship. <a href="/business">See what we offer</a>.
-      crypto_text_html: TON donations work right inside Telegram via <a href="https://t.me/wallet">@wallet</a>.
-      crypto_title: Cryptocurrency
       accounting: We're committed to open and transparent accounting, and are grateful for any support you can provide to our efforts to advance OpenIPC and our mission toward a sustainable future.
       hero_lede: OpenIPC is free to use and expensive to make. Donations buy cameras for new platforms, pay maintainers, and keep the lights on.
       hero_title: Fund the work.

@@ -249,6 +249,38 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
                  css_select('h3.text-uppercase').map { |h| h.text.strip }
   end
 
+  # The dark band arriving with no gap under an article on white reads as the
+  # text falling off a cliff. The homepage is the exception: its band follows a
+  # tinted full-bleed section, where the gap is a white stripe between two
+  # coloured bands.
+  test 'the closing band keeps its distance from text on white' do
+    %w[/get-started /low-latency /community /ecosystem].each do |path|
+      get path
+
+      band = css_select('section.section--ink').last
+
+      assert_not_nil band, "#{path} has no closing band"
+      assert_includes band['class'], 'mt-6', "#{path} runs its text straight into the band"
+    end
+
+    get '/'
+    assert_not_includes css_select('section.section--ink').last['class'], 'mt-6',
+                        'the homepage band is separated from the section above it by a white stripe'
+  end
+
+  # Cryptocurrency is off the donation page; Open Collective stays.
+  test '/donate offers Open Collective and nothing crypto' do
+    get '/donate'
+
+    assert_includes response.body, 'opencollective.com/openipc'
+    assert_not_includes response.body, 'bi-currency-bitcoin'
+    assert_not_includes response.body, 't.me/wallet'
+    %w[en ru zh].each do |locale|
+      assert_nil I18n.t('pages.donate.crypto_title', locale: locale, default: nil),
+                 "the crypto copy is still defined in #{locale}"
+    end
+  end
+
   # :exhibitions is held in the system on purpose and shown on no page. There
   # is no trade-show page yet; when there is, it asks for the group and the
   # logo and link are already there. Until then this is what keeps it off the

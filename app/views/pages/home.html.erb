@@ -141,7 +141,7 @@
 </section>
 
 <%# ---- Closing CTA ---- %>
-<%= render 'shared/cta_band',
+<%= render 'shared/cta_band', flush: true,
            title: t('.cta_title'),
            primary_label: t('.cta_primary'), primary_href: '/get-started',
            secondary_label: t('.cta_secondary'), secondary_href: 'https://t.me/openipc',
