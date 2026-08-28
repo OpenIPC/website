@@ -209,14 +209,20 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
   # makers, and listing those claims silicon we do not run on.
   test 'the silicon strip lists chip vendors, not sensor makers' do
     chipmaker = Vendor.create!(name: 'Teststar Semiconductor')
+    # Two SoCs, because the scope joins them: one row per SoC unless it says
+    # distinct, and a vendor with one chip cannot tell the difference.
     Soc.create!(model: 'TS1234', vendor: chipmaker)
+    Soc.create!(model: 'TS5678', vendor: chipmaker)
     sensor_maker = Vendor.create!(name: 'Testsen Imaging')
 
     get '/'
 
-    assert_includes response.body, chipmaker.name
-    assert_not_includes response.body, sensor_maker.name,
-                        'a vendor with no SoCs is being counted as silicon we run on'
+    names = css_select('.silicon-strip span.text-data').map { |s| s.text.strip }
+
+    assert_includes names, chipmaker.name
+    assert_not_includes names, sensor_maker.name,
+                        'a vendor with no SoCs is being listed as silicon we run on'
+    assert_equal names.uniq, names, 'the strip repeats a vendor once per chip it makes'
   end
 
   # Locale rides in the query string, and redirect('/path') drops it, so a

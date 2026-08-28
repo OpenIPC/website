@@ -9,7 +9,10 @@ class Vendor < ApplicationRecord
   validates :name, presence: true, uniqueness: true
   validates :urlname, presence: true, uniqueness: true
 
-  scope :soc_vendors, -> { left_joins(:socs).where.not(socs: { id: nil }) }
+  # distinct is load-bearing, not tidiness: the join produces one row per SoC,
+  # so without it the scope yields HiSilicon twenty-three times and the
+  # homepage's vendor strip prints every name once per chip.
+  scope :soc_vendors, -> { left_joins(:socs).where.not(socs: { id: nil }).distinct }
 
   # Rails hands `find` whatever came out of the URL, and `to_param` returns the
   # slug, so a slug has to resolve first; ids still work, for old links and for
