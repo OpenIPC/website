@@ -30,9 +30,13 @@
       <% end %>
     </div>
 
-    <%# Who builds on it (territory-specific integrator set) %>
+    <%# Who builds on it. Manufacturers and integrators only: a commercial
+        reader is asking who ships and who installs, and our code host and
+        our university teams are not an answer to that. %>
     <h2 class="h4 mb-4"><%= t('.partners_title') %></h2>
-    <%= render 'shared/logo_wall', logos: partner_logos %>
+    <% partner_groups(:manufacturers, :integrators).each do |key, logos| %>
+      <%= render 'shared/logo_wall', logos: logos, title: t("site.partners.#{key}") %>
+    <% end %>
 
     <%# Engagement steps %>
     <h2 class="h4 mt-6 mb-4"><%= t('.how_title') %></h2>

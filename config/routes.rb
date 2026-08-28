@@ -77,6 +77,9 @@ Rails.application.routes.draw do
   get '/sponsor', to: redirect('/donate')
 
   get '/green_life', to:'pages#green_life'
+  # Not linked from anywhere while there is nothing to sell -- see the footer.
+  # The route and the page stay: the shop is expected back, plausibly through
+  # Open Collective, and deleting them would mean writing it all again.
   get '/merchandise', to: 'pages#merchandise'
   get '/our-team', to: 'pages#our_team'
   get '/stages-of-firmware-development', to: 'pages#stages_of_firmware_development'

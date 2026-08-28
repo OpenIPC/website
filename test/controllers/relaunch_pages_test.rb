@@ -150,8 +150,39 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
   end
 
   test 'every partner logo the helper names exists as an asset' do
-    (PagesHelper::INTERNATIONAL_PARTNERS + PagesHelper::RU_INTEGRATORS).each do |logo|
+    logos = PagesHelper::PARTNER_GROUPS.values.flatten + PagesHelper::RU_INTEGRATORS
+
+    assert_operator logos.size, :>, 10
+    logos.each do |logo|
       assert_path_exists Rails.root.join('app/assets/images', logo[:img])
+    end
+  end
+
+  # A commercial reader is asking who ships hardware and who installs it. Our
+  # code host, our FPV friends and our university teams are on the homepage
+  # wall for good reasons, none of which are an answer to that question.
+  test '/business shows only manufacturers and integrators' do
+    get '/business'
+
+    shown = PagesHelper.const_get(:PARTNER_GROUPS)
+    %i[manufacturers integrators].each do |key|
+      shown[key].each { |l| assert_includes response.body, l[:img].sub('.png', '') }
+      assert_includes response.body, I18n.t("site.partners.#{key}")
+    end
+    %i[global fpv education research].each do |key|
+      shown[key].each do |logo|
+        assert_not_includes response.body, logo[:img].sub('.png', ''),
+                            "#{logo[:name]} is on /business, which is not the audience for it"
+      end
+    end
+  end
+
+  # Six rows rather than one undifferentiated block of logos.
+  test 'the homepage groups the wall instead of pouring it into one row' do
+    get '/'
+
+    PagesHelper::PARTNER_GROUPS.each_key do |key|
+      assert_includes response.body, I18n.t("site.partners.#{key}"), "the #{key} row is missing"
     end
   end
 
@@ -165,7 +196,7 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     assert_not_nil card, 'no card on the page names devourer'
     assert_not_empty card.css('a[href="https://github.com/OpenIPC/devourer"]'),
                      'devourer is named but not linked'
-    assert_includes response.body, I18n.t('pages.low_latency.credits_text'),
+    assert_includes response.body, I18n.t('pages.low_latency.credits_text_html'),
                      'the credits no longer thank both projects'
   end
 

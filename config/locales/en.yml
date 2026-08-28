@@ -177,6 +177,13 @@ en:
     nosd: Camera does not have an SD card slot
     sd: Camera has an SD card slot
   site:
+    partners:
+      education: Educational projects
+      fpv: Friendly FPV projects
+      global: Global partners
+      integrators: Integrators
+      manufacturers: Manufacturers
+      research: Research projects
     default_meta_description: 'OpenIPC is the open platform for embedded video: open-source firmware for IP cameras, ultra-low-latency video links for drones and robots, and free tools for camera engineers.'
     disclaimer: The information contained on this site is for general informational purposes only and is not intended to be relied upon by the visitor. All software and firmware available on this site is provided AS IS and for research purposes only. OpenIPC shall not be liable for any loss or damage caused by the use of these files or the use of, or reliance upon, any information contained in this site.
     snapshot:

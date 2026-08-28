@@ -167,10 +167,10 @@ zh:
       hero_cta_low_latency: 低延迟视频
       hero_cta_start: 快速上手
       hero_lede: 面向 IP 摄像机、FPV 无人机以及介于两者之间的设备的开放固件与工具。你的硬件应当听你的，而不是听某个厂商云端的。
-      hero_microline: 140+ 个仓库 · 数十个 SoC 系列 · 无需云端
+      hero_microline: 140+ 个仓库 · 数十个 SoC 系列 · 自 2019 年
       hero_title: 面向嵌入式视频的开放平台。
       partners_title: 制造商、集成商与研究团队的共同选择
-      pillar_firmware_text: 面向数十个 SoC 系列的 IP 摄像机开放固件，基于 Buildroot，核心是 Majestic 推流器。
+      pillar_firmware_text_html: 面向数十个 SoC 系列的 IP 摄像机开放固件，基于 Buildroot，核心是 <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">Majestic</a> 推流器。
       pillar_firmware_title: 摄像机固件
       pillar_longevity_text: '我们让原厂 SDK 在主线内核上继续存活：在厂商撒手很久之后，依然提供 CVE 修复与现代特性。'
       pillar_longevity_title: 长期维护与安全
@@ -181,7 +181,6 @@ zh:
       pillars_lede: OpenIPC 不只是固件——它是一个由亲自在自己硬件上运行它的人们构建的生态。
       pillars_title: 一个平台，四条战线
       silicon_title: 支持的芯片厂商
-      stats_languages: 种语言
       stats_repos: 个开放仓库
       stats_since: 年起公开开发
       stats_socs: 款支持的 SoC
@@ -200,13 +199,13 @@ zh:
       wall_snapshot_alt: '图片：来自社区摄像机的实时快照'
     low_latency:
       business_bridge_html: 想基于这条链路做产品？<a href="/business">和我们谈谈</a>——我们承接定制开发与 OEM 合作。
-      credits_text: 这条无线链路得益于 wfb-ng 与 devourer，整个生态也在 RubyFPV、Mario FPV 等伙伴的参与下不断成长。开源是一项团队运动。
+      credits_text_html: 这条无线链路得益于 wfb-ng 与 devourer，整个生态也在 <a href="https://rubyfpv.com/">RubyFPV</a>、<a href="https://www.youtube.com/@mariofpv">Mario FPV</a> 等伙伴的参与下不断成长。开源是一项团队运动。
       credits_title: 站在开放的肩膀上
       cta_chat: 加入 FPV 聊天群
       cta_guide: 阅读搭建指南
       fpv_text: '一套完全开放的数字 FPV 系统：没有封闭生态，没有配对绑定的硬件，也没有固件上限。用受支持的摄像机搭建天空端，挑选你的地面站，并可调节管线的每一个环节。'
       fpv_title: 'FPV：从镜头到眼镜'
-      hardware_text_html: 天空端由受支持的摄像机和 AIO 板搭建——请从<a href="/supported-hardware">支持硬件列表</a>开始。RunCam 与 EMAX 出厂即提供基于 OpenIPC 的 FPV 硬件。
+      hardware_text_html: 天空端由受支持的摄像机和 AIO 板搭建——请从<a href="/supported-hardware">支持硬件列表</a>开始。RunCam 等厂商出厂即提供基于 OpenIPC 的 FPV 硬件。
       hardware_title: 硬件
       hero_lede: 'FPV 无人机、机器人、遥操作：一套从摄像机到屏幕的开放超低延迟视频方案。在受支持的硬件上，端到端延迟低至约 30 毫秒。'
       hero_title: 为等不起的机器提供开放视频链路。

@@ -2,47 +2,61 @@
 
 # Helpers for the static marketing pages: the page title, and the partner wall.
 module PagesHelper
-  # The partner wall, in Ruby rather than hardcoded into a template.
+  # The partner wall, grouped, because "partners" was doing too much work as one
+  # word. A chip vendor that ships OpenIPC out of the box, a company that
+  # installs cameras for a living, a university team and the host of our
+  # finances are all on the wall for different reasons, and a page usually wants
+  # some of those reasons rather than all of them: /business shows who builds
+  # and integrates hardware, and nobody else.
   #
-  # Both lists were transcribed from the wall on /introduction as it stands
-  # today, not from an older copy: entries that page has commented out are
-  # commented out here too, with the same URLs, so nothing appears or disappears
-  # silently when /introduction is eventually retired. Uncommenting a line here
-  # is how one comes back.
+  # Entries commented out here are commented out on the old /introduction wall
+  # too, with the same URLs, so nothing appears or disappears silently.
+  # Uncommenting a line is how one comes back.
   #
-  # Shown to every visitor.
-  INTERNATIONAL_PARTNERS = [
-    { name: 'Open Source Collective', url: 'https://www.oscollective.org/', img: 'partners/osc_mini.png' },
-    { name: 'GitHub',         url: 'https://github.com/',                 img: 'partners/github_mini.png' },
-    { name: 'RunCam',         url: 'https://runcam.com/',                 img: 'partners/runcam_mini.png' },
-    { name: 'CCDCAM',         url: 'https://ccdcam.com/',                 img: 'partners/ccdcam_mini.png' },
-    { name: 'wfb-ng',         url: 'https://github.com/svpcom/wfb-ng/',   img: 'partners/wfb-ng_mini.png' },
-    { name: 'RubyFPV',        url: 'https://rubyfpv.com/',                img: 'partners/rubyfpv_mini.png' },
-    { name: 'Mario FPV',      url: 'https://www.youtube.com/@mariofpv',   img: 'partners/mariofpv_mini.png' },
-    { name: 'Linux Chenxing', url: 'https://linux-chenxing.org/',         img: 'partners/linuxchenxing_mini.png' },
-    { name: 'TUDSaT',         url: 'https://www.tudsat.space/',           img: 'partners/tudsat_mini.png' },
-    { name: 'WüSpace',        url: 'https://wuespace.de/',                img: 'partners/wuespace_mini.png' },
-    { name: 'Really',         url: 'https://opencollective.com/really-541ee976', img: 'partners/really_mini.png' }
-    # Commented out on /introduction, so commented out here:
-    # { name: 'EMAX',    url: 'https://emaxmodel.com/', img: 'partners/emax_mini.png' },
-    # { name: 'GoodCam', url: 'https://www.goodcam.io/', img: 'partners/goodcam_mini.png' },
-    #
-    # partners/baresip_mini.png exists as an asset but has never been on the
-    # wall. Left off rather than introduced by a refactor.
-  ].freeze
+  # partners/baresip_mini.png exists as an asset but has never been on the wall.
+  # Left off rather than introduced by a refactor.
+  PARTNER_GROUPS = {
+    # Who hosts our money and our code.
+    global: [
+      { name: 'Open Source Collective', url: 'https://www.oscollective.org/', img: 'partners/osc_mini.png' },
+      { name: 'GitHub', url: 'https://github.com/', img: 'partners/github_mini.png' },
+      { name: 'Really', url: 'https://opencollective.com/really-541ee976', img: 'partners/really_mini.png' }
+    ],
+    # Ships hardware with OpenIPC on it.
+    manufacturers: [
+      { name: 'RunCam', url: 'https://runcam.com/',  img: 'partners/runcam_mini.png' },
+      { name: 'CCDCAM', url: 'https://ccdcam.com/', img: 'partners/ccdcam_mini.png' }
+      # Commented out on /introduction, so commented out here:
+      # { name: 'EMAX', url: 'https://emaxmodel.com/', img: 'partners/emax_mini.png' },
+    ],
+    # Builds systems on it for other people. RU_INTEGRATORS is appended to this
+    # group for Russian-speaking visitors only -- see partner_groups.
+    integrators: [
+      { name: 'GoodCam', url: 'https://www.goodcam.io/', img: 'partners/goodcam_mini.png' }
+    ],
+    # The FPV projects we grew up alongside.
+    fpv: [
+      { name: 'wfb-ng',    url: 'https://github.com/svpcom/wfb-ng/', img: 'partners/wfb-ng_mini.png' },
+      { name: 'RubyFPV',   url: 'https://rubyfpv.com/',              img: 'partners/rubyfpv_mini.png' },
+      { name: 'Mario FPV', url: 'https://www.youtube.com/@mariofpv', img: 'partners/mariofpv_mini.png' }
+    ],
+    # Student and university teams flying or teaching on OpenIPC.
+    education: [
+      { name: 'TUDSaT',  url: 'https://www.tudsat.space/', img: 'partners/tudsat_mini.png' },
+      { name: 'WuSpace', url: 'https://wuespace.de/',      img: 'partners/wuespace_mini.png' }
+    ],
+    # Reverse engineering and silicon research we build on.
+    research: [
+      { name: 'Linux Chenxing', url: 'https://linux-chenxing.org/', img: 'partners/linuxchenxing_mini.png' }
+    ]
+  }.freeze
 
   # Integrators are territory-specific: these serve Russia and are shown only to
   # Russian-language visitors. Showing them to everyone was explicitly not
-  # wanted, and the reverse -- gating them in CSS on /introduction with
-  # `html:not([lang="ru"])` -- never worked, because no logo on that page ever
-  # carried the `ru` class the rule selects on.
-  #
-  # NOTE FOR REVIEW: this whole block is currently commented out on
-  # /introduction, so no visitor sees any of it today. Rendering it for :ru
-  # brings it back. That is what the relaunch plan asks for, but it is a content
-  # decision rather than a technical one -- say so if it should stay hidden.
+  # wanted, and the reverse -- gating them in CSS with `html:not([lang="ru"])`
+  # -- never worked, because no logo ever carried the `ru` class the rule
+  # selects on.
   RU_INTEGRATORS = [
-    { name: 'GoodCam',       url: 'https://www.goodcam.io/',      img: 'partners/goodcam_mini.png' },
     { name: 'SkyCam',        url: 'https://skycam.cam/',          img: 'partners/skycam_mini.png' },
     { name: 'Vixand',        url: 'https://vixand.ru/',           img: 'partners/vixand_mini.png' },
     { name: 'Improve IT',    url: 'https://3it.ru/',              img: 'partners/improve_mini.png' },
@@ -108,9 +122,18 @@ module PagesHelper
     [@page_title, 'OpenIPC'].join(' - ')
   end
 
-  def partner_logos
-    logos = INTERNATIONAL_PARTNERS
-    logos += RU_INTEGRATORS if I18n.locale.eql?(:ru)
-    logos
+  # The named groups, in the order asked for, each as [key, logos]. Groups that
+  # would render empty are dropped rather than left as a heading over nothing.
+  def partner_groups(*keys)
+    keys = PARTNER_GROUPS.keys if keys.empty?
+    keys.filter_map do |key|
+      logos = PARTNER_GROUPS.fetch(key)
+      logos += RU_INTEGRATORS if key == :integrators && I18n.locale.eql?(:ru)
+      [key, logos] if logos.any?
+    end
+  end
+
+  def partner_logos(*keys)
+    partner_groups(*keys).flat_map(&:last)
   end
 end
