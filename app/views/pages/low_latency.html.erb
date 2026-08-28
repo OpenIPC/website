@@ -68,7 +68,10 @@
         <div class="latency-bars">
           <% PagesHelper::LATENCY_PATHS.each do |path| %>
             <span class="latency-bars__label"><%= t(".latency_path_#{path[:key]}") %></span>
-            <span class="latency-bars__value text-data"><%= "#{path[:low]}–#{path[:high]}" %></span>
+            <%# The unit is carried per value as well as once under the axis. A
+                screen reader reaches the numbers one at a time and would
+                otherwise hear "26 to 67" with nothing saying what of. %>
+            <span class="latency-bars__value text-data"><%= "#{path[:low]}–#{path[:high]}" %><span class="visually-hidden"> <%= t('.latency_axis_unit') %></span></span>
             <span class="latency-bars__track" aria-hidden="true">
               <span class="latency-bars__range" style="<%= latency_bar_style(path) %>"></span>
             </span>
@@ -77,7 +80,7 @@
             <span>0</span><span><%= PagesHelper::LATENCY_SCALE_MAX / 2 %></span>
             <span><%= PagesHelper::LATENCY_SCALE_MAX %></span>
           </span>
-          <span class="latency-bars__unit small text-body-secondary"><%= t('.latency_axis_unit') %></span>
+          <span class="latency-bars__unit small text-body-secondary" aria-hidden="true"><%= t('.latency_axis_unit') %></span>
         </div>
       </div>
     </div>

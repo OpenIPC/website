@@ -190,6 +190,26 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     assert_includes response.body, 'about 30 ms', 'the hero no longer states the real floor'
   end
 
+  # Sighted readers get the unit once, under the axis. A screen reader reaches
+  # the numbers one at a time, so each has to carry it -- and the axis and its
+  # unit, being decoration for those numbers, must not be read out twice.
+  test 'every latency figure says what unit it is in' do
+    get '/low-latency'
+
+    unit = I18n.t('pages.low_latency.latency_axis_unit')
+    values = css_select('.latency-bars__value')
+
+    assert_equal PagesHelper::LATENCY_PATHS.size, values.size
+    values.each do |value|
+      assert_includes value.text, unit, "#{value.text.strip} does not say what unit it is in"
+    end
+    assert_equal 'true', css_select('.latency-bars__unit').first['aria-hidden']
+    assert_equal 'true', css_select('.latency-bars__axis').first['aria-hidden']
+    css_select('.latency-bars__track').each do |track|
+      assert_equal 'true', track['aria-hidden'], 'a bar is read out as if it were content'
+    end
+  end
+
   # The bars are positioned by inline percentages against a fixed scale. A
   # figure edited past that scale would render a bar running off the end of its
   # track, which no test of the copy would notice.
