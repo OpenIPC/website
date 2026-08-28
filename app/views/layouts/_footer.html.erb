@@ -1,0 +1,27 @@
+<%#
+  Lifted out of application.html.erb unchanged, for the same reason as the
+  navbar. Every icon resolves through asset_path -- production runs with
+  config.assets.compile = false, so a literal /assets/... path is a 404, which
+  is what 2ec9baa fixed here and what any rewrite of this file has to preserve.
+%>
+<footer class="small p-4 mt-4 text-secondary">
+  <div class="container">
+    <div class="row justify-content-between mb-3">
+      <div class="col">
+        <p>Copyright 2019-<%= Date.today.year %> <a href="https://openipc.org/">OpenIPC</a>.</p>
+      </div>
+      <div class="col text-end">
+        <div class="btn-group">
+          <a class="btn" href="https://github.com/openipc" title="OpenIPC on GitHub"><img src="<%= asset_path("github-black.svg") %>" alt="Image: GitHub logo"></a>
+          <a class="btn" href="https://opencollective.com/openipc" title="OpenIPC on OpenCollective"><img src="<%= asset_path("opencollective-black.svg") %>" alt="Image: OpenCollective logo"></a>
+          <a class="btn" href="https://t.me/openipc" title="OpenIPC on Telegram"><img src="<%= asset_path("telegram-black.svg") %>" alt="Image: Telegram logo"></a>
+          <a class="btn" href="https://www.google.com/search?q=WeChat+ID%3A+OpenIPC" title="OpenIPC on WeChat"><img src="<%= asset_path("wechat-black.svg") %>" alt="Image: WeChat logo"></a>
+          <a class="btn" href="https://www.youtube.com/@openipc" title="OpenIPC on YouTube"><img src="<%= asset_path("youtube-black.svg") %>" alt="Image: YouTube logo"></a>
+          <a class="btn" href="https://twitter.com/openipc" title="OpenIPC on Twitter"><img src="<%= asset_path("twitter-black.svg") %>" alt="Image: Twitter logo"></a>
+          <a class="btn" href="https://www.instagram.com/openipc/" title="OpenIPC on Instagram"><img src="<%= asset_path("instagram-black.svg") %>" alt="Image: Instagram logo"></a>
+        </div>
+      </div>
+    </div>
+    <p class="small"><%= t('site.disclaimer') %></p>
+  </div>
+</footer>
