@@ -149,6 +149,23 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # /ecosystem is a list of our own projects, so every card links into the
+  # OpenIPC organisation. qemu-hisilicon was still pointing at the personal
+  # account it was developed in, and telemetry was a card for a repository that
+  # has never existed. The selector is the card's own link, not every GitHub
+  # URL on the page: the prose links the wiki too, and that is not a project.
+  test 'every ecosystem project links a repository under OpenIPC' do
+    get '/ecosystem'
+
+    repos = css_select('.project-card a[href*="github.com"]').map { |a| a['href'] }
+
+    assert_not_empty repos
+    repos.each do |href|
+      assert_match %r{\Ahttps://github\.com/OpenIPC/[\w.-]+\z}, href,
+                   "#{href} is not a repository under the OpenIPC organisation"
+    end
+  end
+
   test 'every partner logo the helper names exists as an asset' do
     (PagesHelper::INTERNATIONAL_PARTNERS + PagesHelper::RU_INTEGRATORS).each do |logo|
       assert_path_exists Rails.root.join('app/assets/images', logo[:img])

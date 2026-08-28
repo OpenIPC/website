@@ -99,7 +99,6 @@ en:
       proj_qemu: A full HiSilicon IP camera emulator on QEMU — develop and test firmware without hardware on your desk.
       proj_rnd_player: 'A player built for media engineers: inspect streams the way a developer needs to.'
       proj_smolrtsp: An embeddable RTSP 1.0 server library for cameras and other constrained devices. TCP and UDP, any payload format.
-      proj_telemetry: Telemetry bridging between flight controllers and the ground.
       proj_waybeam: 'The TX side of the link: a flexible video encoder for FPV drones and URLLC devices.'
       proj_yamlcli: A small console tool for editing YAML configs from scripts.
       section_community_text_html: User-made hardware, mounts, and accessories — like the 3D-printable models tagged <a href="https://www.printables.com/search/models?q=tag%3Aopenipc">openipc on Printables</a>.
