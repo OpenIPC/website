@@ -79,4 +79,34 @@ class RedirectsTest < ActionDispatch::IntegrationTest
 
     assert_response :success
   end
+
+  # These send visitors off to GitHub, so a typo here is a dead end nobody on
+  # this side sees. One of them spelled the organisation `openipc//coupler`,
+  # with the wrong case and a doubled slash, and `/telemetry` pointed at a
+  # repository that has never existed.
+  GITHUB_REDIRECTS = %w[coupler firmware ipctool microbe-web smolrtsp yaml-cli wiki].freeze
+
+  test 'every GitHub shortcut points at a well-formed OpenIPC repository' do
+    GITHUB_REDIRECTS.each do |repo|
+      ['', '/some/deep/path'].each do |suffix|
+        get "/#{repo}#{suffix}"
+
+        assert_response :redirect, "/#{repo}#{suffix} does not redirect"
+        assert_match %r{\Ahttps://github\.com/OpenIPC/#{Regexp.escape(repo)}/?\z},
+                     response.location,
+                     "/#{repo}#{suffix} sends visitors to #{response.location}"
+      end
+    end
+  end
+
+  # The repository behind it does not exist, so bouncing anyone to GitHub's own
+  # 404 was worse than answering here. Deleting the route would be worse still:
+  # unknown paths 302 to the homepage, which claims the page moved there.
+  test '/telemetry says it is gone rather than pretending it moved' do
+    ['/telemetry', '/telemetry/anything'].each do |path|
+      get path
+
+      assert_response :gone, "#{path} answered #{response.status}"
+    end
+  end
 end
