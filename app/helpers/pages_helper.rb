@@ -19,8 +19,7 @@ module PagesHelper
     # Who hosts our money and our code.
     global: [
       { name: 'Open Source Collective', url: 'https://www.oscollective.org/', img: 'partners/osc_mini.png' },
-      { name: 'GitHub', url: 'https://github.com/', img: 'partners/github_mini.png' },
-      { name: 'Really', url: 'https://opencollective.com/really-541ee976', img: 'partners/really_mini.png' }
+      { name: 'GitHub', url: 'https://github.com/', img: 'partners/github_mini.png' }
     ],
     # Ships hardware with OpenIPC on it.
     manufacturers: [
@@ -33,7 +32,9 @@ module PagesHelper
     # group for Russian-speaking visitors only -- see partner_groups.
     integrators: [
       { name: 'GoodCam', url: 'https://www.goodcam.io/', img: 'partners/goodcam_mini.png' },
-      { name: 'Faceter', url: 'https://faceter.cam/',    img: 'partners/faceter_mini.png' }
+      { name: 'AnyCam',  url: 'https://anycam.io/',      img: 'partners/anycam_mini.png' },
+      { name: 'Faceter', url: 'https://faceter.cam/',    img: 'partners/faceter_mini.png' },
+      { name: 'Really',  url: 'https://opencollective.com/really-541ee976', img: 'partners/really_mini.png' }
     ],
     # The FPV projects we grew up alongside.
     fpv: [
@@ -45,6 +46,13 @@ module PagesHelper
     education: [
       { name: 'TUDSaT',  url: 'https://www.tudsat.space/', img: 'partners/tudsat_mini.png' },
       { name: 'WuSpace', url: 'https://wuespace.de/',      img: 'partners/wuespace_mini.png' }
+    ],
+    # Kept in the system, rendered nowhere. There is no page for trade shows and
+    # exhibitions yet; when there is, it asks for :exhibitions and both the logo
+    # and the link are already here. Deliberately absent from HOME_PARTNER_ROWS
+    # and from every partner_groups call -- a test holds it that way.
+    exhibitions: [
+      { name: 'Expo Electronica', url: 'https://expoelectronica.ru/en/', img: 'partners/expo-electronica_mini.png' }
     ],
     # Reverse engineering and silicon research we build on.
     research: [
@@ -66,7 +74,6 @@ module PagesHelper
     { name: 'Sputnik',       url: 'https://sputnik.systems/',     img: 'partners/sputnik_mini.png' },
     { name: 'Techno-Shield', url: 'https://msvoko.ru/',           img: 'partners/techno-shield_mini.png' },
     { name: 'KeyTelecom',    url: 'https://keytele.com/',         img: 'partners/keytelecom_mini.png' },
-    { name: 'AnyCam',        url: 'https://anycam.io/',           img: 'partners/anycam_mini.png' },
     { name: 'WebGlazok',     url: 'https://webglazok.com/',       img: 'partners/webglazok_mini.png' },
     { name: 'Yucca',         url: 'https://yucca.app/en',         img: 'partners/yucca_mini.png' },
     { name: 'IPEYE',         url: 'https://ipeye.ru/',            img: 'partners/ipeye_mini.png' },
@@ -83,7 +90,6 @@ module PagesHelper
     # { name: 'Flagman',          url: 'https://flagman.org/',          img: 'partners/flagman_mini.png' },
     # { name: 'Meldana',          url: 'https://meldana.com/',          img: 'partners/meldana_mini.png' },
     # { name: 'Binary Machines',  url: 'https://bmachines.ru/',         img: 'partners/binary-machines_mini.png' },
-    # { name: 'Expo Electronica', url: 'https://expoelectronica.ru/en/', img: 'partners/expo-electronica_mini.png' },
     # { name: 'GAINS',            url: 'https://gains.company/',        img: 'partners/gain_mini.png' }
   ].freeze
 

@@ -206,9 +206,33 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     labels.each do |label|
       assert_includes response.body, I18n.t("site.partners.#{label}"), "the #{label} row is missing"
     end
-    # Every group still reaches the page through one row or another.
-    PagesHelper::PARTNER_GROUPS.each_value do |logos|
-      logos.each { |l| assert_includes response.body, l[:img].sub('.png', '') }
+    # Every group the rows name still reaches the page through one of them.
+    PagesHelper::HOME_PARTNER_ROWS.each_value do |keys|
+      keys.each do |key|
+        PagesHelper::PARTNER_GROUPS.fetch(key).each do |logo|
+          assert_includes response.body, logo[:img].sub('.png', '')
+        end
+      end
+    end
+  end
+
+  # :exhibitions is held in the system on purpose and shown on no page. There
+  # is no trade-show page yet; when there is, it asks for the group and the
+  # logo and link are already there. Until then this is what keeps it off the
+  # site -- a group is easy to add to a row by accident.
+  test 'the exhibitions group is kept but rendered nowhere' do
+    held = PagesHelper::PARTNER_GROUPS.fetch(:exhibitions)
+
+    assert_not_empty held
+    assert_not_includes PagesHelper::HOME_PARTNER_ROWS.values.flatten, :exhibitions
+
+    %w[/ /business /ecosystem /community /donate /low-latency /get-started].each do |path|
+      get path
+
+      held.each do |logo|
+        assert_not_includes response.body, logo[:img].sub('.png', ''),
+                            "#{logo[:name]} is being rendered on #{path}"
+      end
     end
   end
 
