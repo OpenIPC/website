@@ -1,8 +1,6 @@
 ---
 zh:
   pages:
-    about_us:
-      title: 关于我们
     admin:
       dashboard:
         title: 管理仪表板
@@ -71,6 +69,7 @@ zh:
       business_band_html: 如果贵公司依赖 OpenIPC，更可持续的支持方式是建立商业合作关系。<a href="/business">看看我们能提供什么</a>。
       crypto_text_html: TON 捐赠可以直接在 Telegram 中通过 <a href="https://t.me/wallet">@wallet</a> 完成。
       crypto_title: 加密货币
+      accounting: 我们致力于共建一个开放和透明的数字环境，并由衷地感谢你对我们的努力提供的任何支持，以推动OpenIPC和我们的使命走向一个可持续的未来。
       hero_lede: OpenIPC 使用免费，制作昂贵。捐款用于购买新平台的摄像机、支付维护者的报酬，并维持项目运转。
       hero_title: 资助这项工作。
       oc_button: 在 Open Collective 上捐赠
@@ -80,9 +79,6 @@ zh:
       title: 捐赠
       where_text: 核心团队成员自掏腰包购买摄像机和 SDK 授权，以扩展硬件支持。资金可以减轻这一负担，为兼职维护者提供补偿，并支付促成硬件合作的展会与厂商会面开销。
       where_title: 钱用在哪里
-    donate_band:
-      please_support: 请考虑支持我们
-      title: 喜欢我们的项目吗？
     ecosystem:
       contribute_cta_html: 选一个项目，把它做得更好。<a href="/community">从这里开始</a>。
       hero_lede: 'OpenIPC 是一个由一百多个开放仓库组成的生态：固件本身、视频管线、周边工具，以及让老芯片继续存活的研究工作。'
@@ -202,32 +198,6 @@ zh:
       wall_cta: "+ 把你的摄像机放这里"
       wall_live: '正在直播：世界各地运行 OpenIPC 的摄像机'
       wall_snapshot_alt: '图片：来自社区摄像机的实时快照'
-    introduction:
-      alliance: 联盟
-      button_binaries: 预编译的二进制文件
-      button_instructions: 安装说明
-      button_sources: 项目源码
-      gaming: 游戏解决方案
-      img_majestic_alt: 图片：雄伟的飘带标志
-      img_openipc_alt: 图片：OpenIPC 社区徽标
-      paragraph1: OpenIPC是一个开源的操作系统，针对一些使用ARM和MIPS处理器的网络摄像机，以替代供应商预装的那种封闭的、不透明的、不安全的、不再更新的、不支持的固件。
-      paragraph2_html: OpenIPC固件以二进制预编译文件的形式发布，便于终端用户的安装。此外，我们提供了对源文件的完全访问权，以便任何愿意为该项目做出贡献的有能力的程序员进行进一步的开发和改进。OpenIPC的源代码是在MIT开源许可协议下发布的，给用户一个明确的许可，允许用户任意的使用、复制、修改源代码，甚至作为专利软件的一部分。我们只是礼貌地要求你将你的改进贡献给我们。我们将感谢您的反馈和建议。
-      paragraph3_html: OpenIPC固件使用<a href="https://buildroot.org/">Buildroot</a>构建其Linux发行版，并利用<a href="https://github.com/OpenIPC/majestic">Majestic</a>、<a href="https://github.com/OpenIPC/mini">Mini</a>或<a href="https://github.com/OpenIPC/silicon_research">Venc</a>流处理器。
-      paragraph4_html: Majestic 流媒体仅以二进制形式分发，并采用 <a href="https://github.com/OpenIPC/majestic/blob/master/LICENSE.md">Prosperity Public License 3.0.0</a>.
-      paragraph5: 首先，OpenIPC固件带给你自由。有了OpenIPC在你的摄像机上，你就是你流媒体的主人。你可以完全访问该系统，并可以控制你想让你的摄像机做任何想做的事。没有后门，没有恶意的挖矿软件，没有键盘记录器，没有密码嗅探器，在一个封闭的二进制系统中，不要有任何期望能够访问其源代码。
-      paragraph6: 至于固件功能，我们努力为各种摄像机提供普遍支持，因此我们首先关注基本功能，使终端用户能够升级其摄像机的固件，并在（社区支持下）配置视频流和音频流。
-      paragraph7: 除此之外还有一些有趣的功能。我们的固件支持IPEYE云存储，可以向Youtube和Telegram传输视频，可以使用SOCKS5代理，设置虚拟隧道等。
-      paragraph8: 还有几个项目专注于专业设备，如安装在无人机上的摄像机，用于安装在建筑头盔上，用于测量工具，用于视觉器官的医学研究，水下捕鱼等。
-      subtitle1: OpenIPC是一款专为网络摄像机设计的第三方开源固件。
-      subtitle2: 为什么是OpenIPC固件？
-      supporters: 支持者
-      manufacturers: Manufacturers
-      research: Research
-      partners: Partners
-      projects: Projects
-      integrators: Integrators
-      development: Development
-      title: 介绍
     low_latency:
       business_bridge_html: 想基于这条链路做产品？<a href="/business">和我们谈谈</a>——我们承接定制开发与 OEM 合作。
       credits_text: 这条无线链路得益于 wfb-ng，整个生态也在 RubyFPV、Mario FPV 等伙伴的参与下不断成长。开源是一项团队运动。
@@ -274,43 +244,6 @@ zh:
         description: 高品质 Gildan Hammer™ 6 盎司。 Flo 蓝色圆领经典版型 T 恤。 100% 精梳环锭纺棉，预缩，带有白色热转印乙烯基徽标。
         title: OpenIPC T 恤
       title: 商品
-    our_channels:
-      paragraph1_html: 我们强烈建议您使用<a href="https://telegram.org/">Telegram Messenger</a>并加入我们的 Telegram 频道。
-      spam_bot_warning: 请注意，加入群组后，您必须通过我们的欢迎机器人的测试。测试很简单，只需回答两个问题。如果您错过了测试并发现无法在群组中发帖，请退出群组并重新加入。密切关注欢迎机器人消息，单击该消息并回答问题。
-      title: 我们的频道
-    our_projects:
-      community: 与 OpenIPC 有关的，由用户创建的内容。
-      paragraph1_html: 包括有关为机载和地面站设备构建和使用 FPV 套件和软件的所有信息。我们强烈建议您阅读<a href="https://github.com/OpenIPC/wiki/blob/master/en/fpv.md">基础文章</a>、点击链接并观看飞行视频。
-      paragraph2: 项目正在积极开发中，加入我们吧！
-      paragraph3: 这是我们新的音视频通信系统项目，正处于设计阶段。
-      paragraph4: 我们正在致力于创建一个方便的在线固件生成器，使您可以使用所需的参数更灵活、更立即地创建它们。
-      paragraph5: 请关注网站更新！
-      printables_info: 标有“openipc”的 3D 打印模型。
-      subtitle3: OpenIPC 社区项目
-      title: 我们的项目
-    our_software:
-      burn_info: 一个开源工具，用于解锁海思平台设备的引导加载程序。
-      coupler_info: 一种工具，可让您从 IP 摄像机制造商预装的专有固件平稳过渡到 OpenIPC 固件。不需要特殊技能。
-      exipcam_info: XM 设备资源管理器。修复 IPCam 的实用程序
-      exipcam_info_extra: 俄语用户界面。通过 Wine 在 Windows、Linux 上运行。
-      firmware_info: 社区的圣杯。网络摄像机的通用固件，用于替换专有、过时且通常不安全的供应商预装固件。
-      hisitrace_info: 在非官方固件环境中从 XM 运行 Sofia 的实用程序。
-      ipcamdms_info: IPCam设备管理系统
-      ipcamdms_info_extra: 俄语用户界面。通过 Wine 在 Windows、Linux 上运行。
-      ipctool_info: 实用的网络摄像机硬件检查工具。此工具不仅可以识别您相机的处理器、传感器、闪存芯片，还可以帮助您备份原始固件等。
-      majestic_info: 通用的网络摄像机流媒体组件。该项目是 OpenIPC 固件的主要部分。虽然现阶段还没有完全开源，但我们正在考虑在项目足够成熟，获得足够的资金进行开放开发时开放代码库。
-      mini_info: 一个开源网络摄像机流媒体。将其视为 Majestic 的弟弟。
-      motors_info: 管理电机硬件的各种代码。
-      openhisi_info: 用于海思 SoC 的开源 SDK。
-      openxm_info: 用于雄迈 SoC 的开源 SDK。
-      smolrtsp_info: 一个简单的 RTSP 1.0 服务器库，专为 IP 摄像机等嵌入式设备量身定制。它同时支持 TCP 和 UDP，允许任何负载格式，并提供方便灵活的 API。
-      subtitle1: 核心项目
-      subtitle2: OpenIPC 保护伞项目
-      title: 我们的项目
-      umbrella_info: OpenIPC 也是其他小型项目的品牌保护伞，这些项目是我们整个生态系统中的一部分。我们欢迎所有愿意为该项目做出贡献的人，以他们认为有用的任何方式！
-      venc_info: 使用 Goke SoC 的 IP 摄像机流媒体，主要专注于 FPV。
-      webui_info: OpenIPC 固件的 Web 界面。
-      yamlcli_info: 简单的 YAML 控制台工具。
     our_team:
       contributors_link: 所有 GitHub 贡献者列表
       paragraph1_html: OpenIPC 是一个社区驱动的开源项目，许多人为其代码库做出贡献。赞美他们！还有一个由熟练的开发人员组成的核心团队，他们努力扩展<a href="/supported-hardware">支持的硬件平台</a>列表、扩展固件的功能和稳定性、审查提交的代码并协调社区工作。了解团队及其专业领域：
@@ -341,34 +274,6 @@ zh:
       title: 固件开发阶段
       wip_alt: 图片：阶段 WIP
       wip_info: 工作正在进行中。我们了解了很多关于平台硬件和代码库的知识，准备了第一个公共二进制版本，并等待第一批试用者在他们的硬件上对其进行测试并提供反馈以帮助我们改进。
-    support_open_source:
-      contribute: 贡献
-      contribute_how1: 报告问题
-      contribute_how1_text_html: 如果您发现了一个错误，请在GitHub上<a href="https://github.com/OpenIPC/">对应的仓库</a>中提交一份错误报告。
-      contribute_how2: 提交新的想法
-      contribute_how2_text_html: 如果您觉得缺少一个有用的功能，您可以在GitHub上提交一个<a href="https://github.com/OpenIPC/firmware/issues">功能请求</a>。
-      contribute_how3: 改进代码
-      contribute_how3_text_html: 分叉代码，进行改进，并向我们在GitHub上的存储库提交拉动请求。
-      contribute_how4: 编写文件
-      contribute_how4_text_html: 为我们的项目创建或更新文档。完善Wiki，校对网站等。
-      contribute_how5: 传播信息
-      contribute_how5_text_html: 谈论OpenIPC并与他人分享你的经验。写一篇博文，制作一段视频，在Reddit上发起一个话题，在Twitter上分享，或在其他社交媒体上发布...
-      contribute_how6: 成为赞助商
-      contribute_how6_text_html: 支持我们的发展，帮助我们筹集足够的资金来支持我们，并确保长期维护我们的项目，我们相信OpenIPC将是一个稳定、灵活、开源的网络摄像机框架，为全球所有用户服务。为了表彰您的捐助，您将被永久地加入到我们GitHub页面的支持者/赞助者部分。
-      contribute_text1: 开源是关于分享，一起创造伟大的事物，并为更大的利益做出贡献! 每当你做了一个你认为别人可以从中受益的改进，请把它贡献给项目。
-      contribute_text2: 如果你曾经对项目中的某些东西感到好奇或困惑，面对一个问题而找不到答案，其他人可能也还在找。通过分享你的发现或想法来帮助他们。有很多方法可以为项目做出贡献，这里有几个例子：
-      contribute_text3: 我们致力于共建一个开放和透明的数字环境，并由衷地感谢你对我们的努力提供的任何支持，以推动OpenIPC和我们的使命走向一个可持续的未来。
-      donate_crypto: 赠加密货币
-      if_you_like_donate_html: 如果您喜欢我们的项目，请考虑在<a href="https://opencollective.com/openipc/contribute/backer-14335/checkout">Open Collective</a>上支持我们。
-      img1_alt: 图像： 支持开源
-      oc_button_alt: 图片 OpenCollective 捐赠按钮
-      oc_button_title: 为我们的集体捐款
-      paragraph1: 许多核心团队成员将他们的知识和空余时间奉献给这个项目，经常用他们的个人资金来购买摄像机，以便支持更多的硬件设备。您的捐款可以帮助我们减轻他们的个人经济负担，同时维持在最新的硬件平台上的继续该项目的开发。我们还用这些资金来补偿兼职和全职维护人员的工作，届时还会参加贸易展，与硬件供应商会面合作，了解网络摄像机技术的发展趋势，并获得SDK和其他技术文档，这些资料往往很昂贵。您的捐助可以帮助我们继续开发并为社区提供技术支持。
-      price_of_firmware: 固件的价格
-      price_of_firmware_p1_html: 在多数情况下，所有用户均可免费获得OpenIPC固件及其组件的使用权，用于个人及非商业用途。若您有意将OpenIPC应用于商业项目，请联系<a href="/our-team">我们的团队</a>获取详情，因部分固件组件可能采用与<a href="https://opensource.org/licenses/MIT">MIT许可</a>不同的授权协议。
-      thank_you: 非常感谢，这对我们来说意义重大!
-      title: 是开源的
-      tron_in_telegram_html: 使用 TON 加密货币，可以在 Telegram 在 Telegram 中使用 <a href="https://t.me/wallet">@wallet</a> 进行捐赠。
     utilities:
       paragraph1: 实用工具和实用程序集。
       title: 公用设施

@@ -1,0 +1,49 @@
+footer.site-footer {
+  background: $ink;
+  color: rgba(255, 255, 255, .78);
+
+  h2, h3 {
+    color: #fff;
+    font-size: .875rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  a {
+    color: rgba(255, 255, 255, .78);
+    text-decoration: none;
+
+    &:hover, &:focus {
+      color: #fff;
+      text-decoration: underline;
+    }
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    li {
+      margin-bottom: .375rem;
+    }
+  }
+
+  // Existing social icons are black SVGs — invert them on the dark footer.
+  .social-links img {
+    filter: invert(1);
+    opacity: .75;
+    transition: opacity .15s ease-out;
+  }
+
+  .social-links a:hover img,
+  .social-links a:focus img {
+    opacity: 1;
+  }
+
+  .footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, .08);
+    color: rgba(255, 255, 255, .55);
+  }
+}

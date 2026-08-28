@@ -1,7 +1,7 @@
 ---
 ru:
   alerts:
-    downloads: Если у вас возникли проблемы с доступом или загрузкой файлов, не стесняйтесь обращаться к нам на нашем <a href="https://openipc.org/our-channels">канале Telegram</a>.
+    downloads: Если у вас возникли проблемы с доступом или загрузкой файлов, не стесняйтесь обращаться к нам на нашем <a href="/community">канале Telegram</a>.
   button:
     find: Находить
   cameras:
@@ -30,7 +30,7 @@ ru:
         generate_button: Создать руководство по установке
         generate_mac: Создайте допустимый случайный MAC-адрес.
         no_bootloader_alert: OpenIPC публикует прошивку для %{name}, но не публикует для него загрузчик. И пошаговая установка, и готовый образ флеш-памяти начинаются с записи загрузчика OpenIPC, поэтому для этого SoC нельзя предложить ни то, ни другое. Пакет прошивки ниже — это та часть, которая существует.
-        not_ready_alert_html: Инструкция по установке %{name} SoC еще не готова. Хотя мы прилагаем все усилия, чтобы выпустить прошивку OpenIPC для %{name}. Пожалуйста, следите за обновлениями и <a href="/support-open-source">поддержите Open Source</a> .
+        not_ready_alert_html: Инструкция по установке %{name} SoC еще не готова. Хотя мы прилагаем все усилия, чтобы выпустить прошивку OpenIPC для %{name}. Пожалуйста, следите за обновлениями и <a href="/donate">поддержите Open Source</a> .
         notes: Заметки
         paragraph1: Введите конфигурацию камеры в предоставленную форму и нажмите кнопку «Создать руководство по установке». На следующей странице вы найдете бинарные файлы и команды, которые необходимо выполнить для установки прошивки OpenIPC на камеру.
         paragraph2: Не пренебрегайте этой частью. Вы можете подумать, что это не обязательно, так как вы не собираетесь возвращаться в темное прошлое, но мы вас уверяем, что стоковая прошивка все равно понадобится для восстановления недостающих настроек, драйверов и дальнейших исследований.
@@ -121,37 +121,49 @@ ru:
     nor32m: NOR 32M
     nor8m: NOR 8M
   go: Go
+  footer:
+    column_community: Сообщество
+    column_ecosystem: Экосистема
+    column_platform: Платформа
+    column_project: Проект
+    firmware_source: Исходный код прошивки
+    license_note: Ядро под MIT; отдельные компоненты лицензируются иначе.
+    tagline: Без бэкдоров. Без подписок. Без ерунды.
   nav:
-    about: О нас
     add_soc: Добавьте еще одну SoC
     add_vendor: Добавить вендора
     adding_soc: Добавление SoC
     adding_vendor: Добавление вендора
     admin: Администратор
-    channels: Мы в Телеграме
+    business: Для бизнеса
     clone_soc: Клонировать SoC
+    community: Сообщество
+    community_chat: Чат и поддержка
     dashboard: Приборная панель
+    donate: Поддержать
+    ecosystem: Экосистема
+    ecosystem_overview: Обзор проектов
     editing: Редактирование
+    get_started: Начало работы
     green_life: Зеленая жизнь
+    hardware: Железо
+    header_web_tools: Веб-инструменты
     hires_timer: Шустрый таймер
     home: Начало
-    introduction: Вступление
+    low_latency: Низкая задержка
     next: Следующий
     openwall: Стена
     partition_calc: Калькулятор разделов
     pause_transitions: Наведите курсор мыши на снимок, чтобы приостановить автоматические переходы.
     previous: Предыдущий
-    projects: Проекты
     qr_code_generator: Генератор QR-кода
     snapshot: Снимок № %{number}
     snapshots: Последние снимки
     socs: SoC
-    software: Программы
+    stages: Стадии разработки
     store: Магазин
-    support_opensource: Открытый код
     supported_hardware: Оборудование
     team: Команда
-    tools: Инструменты
     utilities: Утилиты
     vendors: Продавцы
     view_soc: Посмотреть страницу SoC
@@ -207,32 +219,5 @@ ru:
       uptime: Время безотказной работы
   str:
     language: Язык
-  telegram:
-    channels:
-      description_1: Основная международная группа по OpenIPC (EN)
-      description_10: Группа пользователей OpenIPC из Китая
-      description_11: Официальная информация, новости и ссылки от OpenIPC
-      description_2: Уведомления от GitHub о последних сборках
-      description_3: Демонстрационный Telegram бот
-      description_4: Группа русскоязычных пользователей OpenIPC
-      description_5: Группа для разработчиков прошивки OpenIPC
-      description_6: Всё по ремонту IP камер и NVR
-      description_7: Группа по созданию FPV систем на базе OpenIPC
-      description_8: Группа для платной технической поддержки
-      description_9: Группа пользователей OpenIPC из Ирана
-    formatting:
-      bold: Жирный
-      header: Форматирование
-      hyperlink: Гиперссылка
-      italic: Курсив
-      monospace: Моноширинный
-      strikeout: Зачеркнутый
-      text_html: |-
-        <p>Знаете ли вы, что мессенджер Telegram позволяет форматировать сообщения, чтобы подчеркнуть важное и сделать информацию более удобной для восприятия?</p>
-        <p>Перед отправкой сообщения выделите фрагмент текста и нажмите нужное сочетание клавиш:</p>
-      underline: Подчеркнутый
-    translation:
-      header: Перевод сообщений
-      text_html: <p>Знаете ли вы, что в мессенджере Telegram есть встроенный механизм перевода, позволяющий читать сообщения, написанные на других языках? Пользователи с премиум-аккаунтами могут <a href="https://telegram.org/blog/profile-pics-emoji-translations#translating-entire-chats">переводить целые чаты</a> "на лету", но даже в обычном аккаунте можно <a href="https://telegram.org/blog/reactions-spoilers-translations#message-translation">переводить отдельные сообщения</a> одним нажатием кнопки.</p>
   title:
     openwall: Стена

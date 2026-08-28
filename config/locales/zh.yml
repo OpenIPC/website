@@ -1,7 +1,7 @@
 ---
 zh:
   alerts:
-    downloads: 如果您在访问或下载文件时遇到任何问题，请随时通过我们的<a href="https://openipc.org/our-channels">电报频道</a>与我们联系。
+    downloads: 如果您在访问或下载文件时遇到任何问题，请随时通过我们的<a href="/community">电报频道</a>与我们联系。
   button:
     find: 寻找
   cameras:
@@ -30,7 +30,7 @@ zh:
         generate_button: 生成安装指南
         generate_mac: 生成有效的随机 MAC 地址。
         no_bootloader_alert: OpenIPC 为 %{name} 提供固件，但没有为它提供引导加载程序。引导式安装和现成的刷机镜像都要先写入 OpenIPC 引导加载程序，因此这两者都无法为该 SoC 提供。下方的固件包是确实存在的部分。
-        not_ready_alert_html: '%{name} SoC 的安装说明尚未准备好。但是我们正在努力发布 %{name} 的 OpenIPC 固件。请继续关注并<a href="/support-open-source">支持开源</a>。'
+        not_ready_alert_html: '%{name} SoC 的安装说明尚未准备好。但是我们正在努力发布 %{name} 的 OpenIPC 固件。请继续关注并<a href="/donate">支持开源</a>。'
         notes: 备注
         paragraph1: 请在右侧输入摄像机配置，然后点击“生成安装指南”按钮。在下一页中，您将找到二进制文件和在摄像机上安装 OpenIPC 固件时必须执行的命令。
         paragraph2: 请不要忽视这部分。您可能认为没有必要，但我们向您保证，仍然需要原始固件来恢复丢失的设置、驱动程序，并且用来进一步研究。
@@ -119,37 +119,49 @@ zh:
     nor32m: NOR 32M
     nor8m: NOR 8M
   go: 进行
+  footer:
+    column_community: 社区
+    column_ecosystem: 生态
+    column_platform: 平台
+    column_project: 项目
+    firmware_source: 固件源代码
+    license_note: 核心采用 MIT 许可；部分组件另行授权。
+    tagline: 没有后门。没有订阅。不折腾。
   nav:
-    about: 关于
     add_soc: 添加另一个 SoC
     add_vendor: 添加供应商
     adding_soc: 添加 SoC
     adding_vendor: 加供应商
     admin: 管理
-    channels: 我们的频道
+    business: 面向企业
     clone_soc: 克隆此 SoC
+    community: 社区
+    community_chat: 交流与支持
     dashboard: 仪表板
+    donate: 捐赠
+    ecosystem: 生态
+    ecosystem_overview: 项目总览
     editing: 编辑
+    get_started: 快速上手
     green_life: 绿色生活
+    hardware: 硬件
+    header_web_tools: 在线工具
     hires_timer: 高精度计时器
     home: 主页
-    introduction: 介绍
+    low_latency: 低延迟
     next: 下一个
     openwall: 公开展板
     partition_calc: 固件分区计算器
     pause_transitions: 将鼠标光标放在快照上可以暂停自动转换。
     previous: 以前的
-    projects: 我们的项目
     qr_code_generator: 二维码生成器
     snapshot: '快照 #%{number}'
     snapshots: 最新快照
     socs: SoC
-    software: 我们的软件
+    stages: 开发阶段
     store: 店铺
-    support_opensource: 它是开源的
     supported_hardware: 支持的硬件
     team: 我们的团队
-    tools: 工具
     utilities: 公用设施
     vendors: 供应商
     view_soc: 查看 SoC 页面
@@ -205,32 +217,5 @@ zh:
       uptime: 正常运行时间
   str:
     language: 语言
-  telegram:
-    channels:
-      description_1: OpenIPC 的国际频道
-      description_10: OpenIPC中文讨论组
-      description_11: 来自 OpenIPC 的官方信息、新闻和链接
-      description_2: 关于最新版本的 GitHub 通知
-      description_3: OpenIPC Telegram 机器人演示
-      description_4: OpenIPC 的俄语频道
-      description_5: OpenIPC 开发者通道
-      description_6: 维修一切设备。
-      description_7: 用于构建 FPV 系统的 OpenIPC。
-      description_8: 有偿技术支持频道
-      description_9: 面向伊朗用戶的 OpenIPC 團隊
-    formatting:
-      bold: 粗体
-      header: 消息格式
-      hyperlink: 超级链接
-      italic: 斜体
-      monospace: 等宽
-      strikeout: 删除线
-      text_html: |-
-        <p>你知道 Telegram Messenger 允许您使用格式来强调信息的重要部分并使信息更容易理解吗？</p>
-        <p>选择一个文本片段，然后按组合键：</p>
-      underline: 下划线
-    translation:
-      header: 聊天翻译
-      text_html: "<p>你是否知道 Telegram Messenger 有一个内置翻译引擎，可以让你阅读其他语言信息吗？拥有高级账户的用户可以即时翻译整个聊天内容，但即使是普通账户，也可以通过点击按钮翻译单条信息。</p>"
   title:
     openwall: 公开展板

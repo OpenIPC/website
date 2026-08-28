@@ -1,8 +1,6 @@
 ---
 en:
   pages:
-    about_us:
-      title: About Us
     admin:
       dashboard:
         title: Admin Dashboard
@@ -71,6 +69,7 @@ en:
       business_band_html: If your company depends on OpenIPC, the sustainable way to support it is a commercial relationship. <a href="/business">See what we offer</a>.
       crypto_text_html: TON donations work right inside Telegram via <a href="https://t.me/wallet">@wallet</a>.
       crypto_title: Cryptocurrency
+      accounting: We're committed to open and transparent accounting, and are grateful for any support you can provide to our efforts to advance OpenIPC and our mission toward a sustainable future.
       hero_lede: OpenIPC is free to use and expensive to make. Donations buy cameras for new platforms, pay maintainers, and keep the lights on.
       hero_title: Fund the work.
       oc_button: Donate on Open Collective
@@ -80,9 +79,6 @@ en:
       title: Donate
       where_text: Core team members spend their own money on cameras and SDK access to expand hardware support. Funds ease that burden, compensate part-time maintainers, and cover trade shows and vendor meetings where hardware partnerships actually happen.
       where_title: Where the money goes
-    donate_band:
-      please_support: Please consider supporting our projects
-      title: Do you like what we do?
     ecosystem:
       contribute_cta_html: Pick a project and make it better. <a href="/community">Start here</a>.
       hero_lede: 'OpenIPC is an ecosystem of more than a hundred open repositories: the firmware itself, the video pipeline, the tools around it, and the research that keeps old silicon alive.'
@@ -202,32 +198,6 @@ en:
       wall_cta: "+ your camera here"
       wall_live: 'Live now: cameras running OpenIPC around the world'
       wall_snapshot_alt: 'Image: live snapshot from a community camera'
-    introduction:
-      alliance: Alliance
-      button_binaries: Precompiled binary files
-      button_instructions: Installation Instructions
-      button_sources: Source code on GitHub
-      img_majestic_alt: 'Image: Majestic streamer logo'
-      img_openipc_alt: 'Image: OpenIPC Community logo'
-      paragraph1: OpenIPC is an open source operating system from the open community targeting for IP cameras with ARM and MIPS processors from several manufacturers in order to replace that closed, opaque, insecure, often abandoned and unsupported firmware pre-installed by a vendor.
-      paragraph2_html: OpenIPC Firmware comes as binary pre-compiled files for easy installation by end-user. Also, we provide full access to the source files for further development and improvement by any capable programmer willing to contribute to the project. OpenIPC source code is released under one of the most simple open source license agreements, <a href="https://opensource.org/licenses/MIT">MIT License</a>, giving users express permission to reuse code for any purpose, even as part of a proprietary software. We only ask you politely to contribute your improvements back to us and also be sure to contact us if you use our project for <a href="/support-open-source">commercial purposes</a>. We would be grateful for any feedback and suggestions. The use of the OpenIPC project and its components for military purposes is not permitted.
-      paragraph3_html: OpenIPC Firmware uses <a href="https://buildroot.org/">Buildroot</a> to build its Linux distro, and utilizes either <a href="https://github.com/OpenIPC/majestic">Majestic</a>, <a href="https://github.com/OpenIPC/divinus">Divinus</a>, <a href="https://github.com/OpenIPC/mini">Mini</a> or <a href="https://github.com/OpenIPC/silicon_research">Venc</a> streamer.
-      paragraph4_html: The Majestic streamer is distributed only in binary form under the <a href="https://github.com/OpenIPC/majestic/blob/master/LICENSE.md">Prosperity Public License 3.0.0</a>.
-      paragraph5: First of all, OpenIPC Firmware brings you freedom. With OpenIPC on your camera you are the master of your streams. You have full access to the system and can control what, where, and how you want your camera to behave. There are no backdoors, no botnets, no crypto-mining malware, no keyloggers, no password sniffers, nothing you could possibly expect in a closed binary system with no access to its source code.
-      paragraph6: As for the Firmware capabilities, we strive to provide universal support for a wide range of cameras, thus we are focused on basic functionality first, allowing end-users to upgrade their cameras' firmware and stream video and audio (where supported) without too much hassle.
-      paragraph7: We have some interesting bits though. Our Firmware supports external IPEYE cloud storage, streaming video to Youtube and Telegram, using SOCKS5 proxy, setting up a Virtual Tunnel, and more.
-      paragraph8: There are also several projects focused on specialized equipment, such as a camera to be mounted on a drone, for mounting on construction helmets, for use in surveying tools, for medical research of the organs of vision, underwater fishing, etc.
-      subtitle1: OpenIPC is an alternative open firmware for your IP camera.
-      subtitle2: Why OpenIPC Firmware?
-      supporters: Supporters
-      manufacturers: Manufacturers
-      research: Research
-      partners: Partners
-      projects: Projects
-      integrators: Integrators
-      development: Development
-      gaming: Gaming solutions
-      title: Introduction
     low_latency:
       business_bridge_html: Building a product on this link? <a href="/business">Talk to us</a> — we do custom development and OEM work.
       credits_text: The radio link exists thanks to wfb-ng, and the ecosystem grows with friends like RubyFPV and Mario FPV. Open source is a team sport.
@@ -274,43 +244,6 @@ en:
         description: High quality Gildan Hammer™ 6 oz. crew neck classic fit T-shirt in Flo Blue. 100% combed ring spun cotton, pre-shrunk, with logo in white heat-transfer vinyl.
         title: OpenIPC T-Shirt
       title: Merchandise
-    our_channels:
-      paragraph1_html: We strongly suggest you to install a native <a href="https://telegram.org/">Telegram Messenger</a> for your platform and use our Telegram groups.
-      spam_bot_warning: Please note, you will have to pass a test from our Welcome Bot upon joining a group. The test is a simple as answerring two questions. If you missed the test and find out that you cannot post to the group, leave the group and re-join it again. Watch closely for the Welcome Bot message, click the message and answer the questions.
-      title: Our Telegram
-    our_projects:
-      community: Something related to OpenIPC. User generated content.
-      paragraph1_html: Includes all information on building and using FPV kits and software for both airborne and ground station devices. We strongly recommend you to read the <a href="https://github.com/OpenIPC/wiki/blob/master/en/fpv.md">basic article</a>, follow the links and watch the flight videos.
-      paragraph2: The project is actively developing, join us!
-      paragraph3: This is our new audio and video communication system project that is in the design phase.
-      paragraph4: We are working on the creation of a convenient OnLine firmware builder that will allow you to create them more flexibly and immediately with the desired parameters.
-      paragraph5: Please follow the updates on the site!
-      printables_info: Models for 3D printing tagged with "openipc".
-      subtitle3: OpenIPC community projects
-      title: Our projects
-    our_software:
-      burn_info: An opensource tool to unbrick HiSilicon devices.
-      coupler_info: A tool that allows you a smooth transition from the IP-camera manufacturer's pre-installed proprietary firmware to OpenIPC Firmware. No special skills are required.
-      exipcam_info: XM Device Explorer. Utility for repairing IPCam
-      exipcam_info_extra: Russian UI. Runs on Windows, Linux via Wine.
-      firmware_info: The Holy Grail of the community. Universal firmware for IP-cameras to replace proprietary, outdated and often insecure vendor pre-installed firmware.
-      hisitrace_info: An utility to run Sofia from XM in a non-stock environment.
-      ipcamdms_info: IPCam Device Management System
-      ipcamdms_info_extra: Russian UI. Runs on Windows, Linux via Wine.
-      ipctool_info: An IP-camera hardware inspector on steroids. This tool will not only identify your camera's processor, sensor, flash chip, but also help you with backing up the original firmware and more.
-      majestic_info: A universal IP-camera streamer. This software is the major part of the OpenIPC Firmware. Although it is not fully open source at this stage of development, we are considering opening up the codebase when the software matures enough and gets enough funding for open development.
-      mini_info: An open source IP-camera streamer. Think of it as Majestic's little brother.
-      motors_info: Various code to manage motor hardware.
-      openhisi_info: Opensource SDK for Hisilicon SoCs.
-      openxm_info: Opensource SDK for Xiongmai SoCs.
-      smolrtsp_info: A simple RTSP 1.0 server library tailored for embedded devices, such as IP cameras. It supports both TCP and UDP, allows any payload format, and provides a convenient and flexible API.
-      subtitle1: Core software
-      subtitle2: OpenIPC umbrella software
-      title: Our Software
-      umbrella_info: The OpenIPC is also an umbrella brand for other small software that are useful components of our ecosystem. We welcome everyone willing to contribute to the software, in any way they find useful!
-      venc_info: A streamer for IP cameras using Goke SoC, focused primarily on FPV.
-      webui_info: Web interface for OpenIPC Firmware. Written on Ash and tears of the developer.
-      yamlcli_info: Simple YAML console tool.
     our_team:
       contributors_link: List of all GitHub contributors
       paragraph1_html: 'OpenIPC is a community-driven open source project, and many people contribute to its codebase. Kudos to them! There is also a core team of skilled developers who work hard to expand the list of <a href="/supported-hardware">supported hardware platforms</a>, extend the functionality and stability of the firmware, review submitted code, and coordinate community efforts. Get to know the team and their areas of expertise:'
@@ -341,34 +274,6 @@ en:
       title: Stages of Firmware development
       wip_alt: 'Image: stage WIP'
       wip_info: Work in progress. We learned a lot about the platform hardware and code base, prepared the first public binary build, and are waiting for the first adopters to test it on their boards and provide feedback to help us move forward.
-    support_open_source:
-      contribute: Contribute
-      contribute_how1: Report issues
-      contribute_how1_text_html: If you stubmle upon an bug, please file a bug report in the <a href="https://github.com/OpenIPC/">appropriate repository on GitHub</a>.
-      contribute_how2: Submit new ideas
-      contribute_how2_text_html: If you feel that a useful feature is missing, you can submit a <a href="https://github.com/OpenIPC/firmware/issues">feature request on GitHub</a>.
-      contribute_how3: Improve the code
-      contribute_how3_text_html: Fork the code, make your improvements and submit a pull request to our repository on GitHub.
-      contribute_how4: Write documentation
-      contribute_how4_text_html: Create or update documentation for our projects. Fill up <a href="https://github.com/OpenIPC/wiki">the Wiki</a>, proofread the website, make it sound native to your language.
-      contribute_how5: Spread the word
-      contribute_how5_text_html: Talk about OpenIPC and share your experiences with others. Write a blog post, make a video, start a thread on Reddit, share it on Twitter, post it on other social media...
-      contribute_how6: Become a sponsor
-      contribute_how6_text_html: Support our development, help us to raise enough funds to cover our expenses and ensure long-term maintenance of what we believe will be a stable, flexible and most importantly, open source Open IP Network Camera Framework, for all users worldwide. In recognition of your recurring donations, you will be permanently added to the Backers/Sponsors section on our GitHub page.
-      contribute_text1: Open Source is about sharing, creating something great together, and contributing to the greater good! Whenever you do make an improvement that you think someone else could benefit from, please contribute it back to the project.
-      contribute_text2: 'If you''ve ever been curious or confused about something in the project, faced a problem and couldn''t find the answer, someone else probably still is, too. Help them by sharing your thoughts, insights and discoveries. There are many ways to contribute to the project, and here are a few examples:'
-      contribute_text3: We're committed to open and transparent accounting, and are grateful for any support you can provide to our efforts to advance OpenIPC and our mission toward a sustainable future.
-      donate_crypto: Donate Cryptocurrency
-      if_you_like_donate_html: If you like our work, please consider supporting us on <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout">Open Collective</a>
-      img1_alt: 'Image: Support Open Source'
-      oc_button_alt: 'Image: OpenCollective donation button'
-      oc_button_title: Donate to our collective
-      paragraph1: Many core team members donate their knowledge and their free time to work on the project, often using their personal funds to buy cameras to expand the list of supported hardware. Your donation help us to ease the burden on their personal finances while keeping the development on the latest hardware. We also use the funds to compensate the work of part-time and full-time maintainers, and to attend trade shows, meet with hardware vendors, monitor trends in camera technology and gain access to SDK and other support materials, which are often expensive. Your contributions help us to continue development and provide technical support to the community.
-      price_of_firmware: Price of the Firmware
-      price_of_firmware_p1_html: The right to use OpenIPC firmware and its components is, in most cases, granted to all users free of charge for personal and non-commercial purposes. If you are interested in using OpenIPC for your business projects, please contact <a href="/our-team">our team</a> for details, as some firmware components may have a licence different from <a href="https://opensource.org/licenses/MIT">MIT</a>.
-      thank_you: Thank you, it means a lot to us!
-      title: Support Open Source
-      tron_in_telegram_html: Using TON cryptocurrency, donations can be made right inside the Telegram using <a href="https://t.me/wallet">@wallet</a>.
     utilities:
       paragraph1: A collection of useful tools and utilities.
       title: Utilities
