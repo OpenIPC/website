@@ -57,3 +57,6 @@
 
 # tools/webui-gallery installs its own node_modules; the tool is not part of the app build.
 /tools/webui-gallery/node_modules
+
+# Local overrides for the dev compose stack (DEV_UID/DEV_GID); never committed.
+/.env
