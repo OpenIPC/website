@@ -125,6 +125,14 @@ module PagesHelper
     "left: #{left.round(1)}%; width: #{width.round(1)}%"
   end
 
+  # The Russian integrator list is appended here and nowhere else, so every
+  # caller gets the same territory rule whether it asks for a group or a row.
+  def logos_in(key)
+    logos = PARTNER_GROUPS.fetch(key)
+    logos += RU_INTEGRATORS if key == :integrators && I18n.locale.eql?(:ru)
+    logos
+  end
+
   def page_title
     [@page_title, 'OpenIPC'].join(' - ')
   end
@@ -137,27 +145,35 @@ module PagesHelper
   #
   # /business still asks for its two groups directly. Splitting rows out again
   # is a line here, not a rewrite.
+  # Order matters twice over: the rows appear in the order written here, and
+  # within a row the groups are laid out in the order they are listed.
   HOME_PARTNER_ROWS = {
-    trade: %i[manufacturers integrators],
     global: %i[global],
-    friends: %i[fpv education research]
+    trade: %i[manufacturers integrators],
+    friends: %i[research fpv education]
   }.freeze
 
-  # Rows of [label, logos], skipping any that would render empty.
+  # Rows of [label, logos], in the order HOME_PARTNER_ROWS declares. A row whose
+  # groups are all empty is dropped rather than rendered as a heading over
+  # nothing -- which is what a territory-specific group looks like in a locale
+  # that has no entries for it yet.
+  #
+  # Note this does not go through partner_logos: there, no arguments means
+  # every group, so a row that named no groups would quietly render all of them.
   def partner_rows(rows)
     rows.filter_map do |label, keys|
-      logos = partner_logos(*keys)
+      logos = keys.flat_map { |key| logos_in(key) }
       [label, logos] if logos.any?
     end
   end
 
   # The named groups, in the order asked for, each as [key, logos]. Groups that
   # would render empty are dropped rather than left as a heading over nothing.
+  # With no arguments, every group.
   def partner_groups(*keys)
     keys = PARTNER_GROUPS.keys if keys.empty?
     keys.filter_map do |key|
-      logos = PARTNER_GROUPS.fetch(key)
-      logos += RU_INTEGRATORS if key == :integrators && I18n.locale.eql?(:ru)
+      logos = logos_in(key)
       [key, logos] if logos.any?
     end
   end

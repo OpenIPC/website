@@ -203,8 +203,18 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     labels = PagesHelper::HOME_PARTNER_ROWS.keys
 
     assert_equal labels.size, rows
-    labels.each do |label|
-      assert_includes response.body, I18n.t("site.partners.#{label}"), "the #{label} row is missing"
+    # In the declared order, not merely present.
+    shown = css_select('h3.text-uppercase').map { |h| h.text.strip }
+
+    assert_equal labels.map { |l| I18n.t("site.partners.#{l}") }, shown
+
+    # And within a row, the groups are laid out in the order they are listed.
+    PagesHelper::HOME_PARTNER_ROWS.each_value do |keys|
+      next if keys.size < 2
+
+      positions = keys.map { |k| response.body.index(PagesHelper::PARTNER_GROUPS.fetch(k).first[:img].sub('.png', '')) }
+
+      assert_equal positions.sort, positions, "#{keys.join(', ')} are out of order"
     end
     # Every group the rows name still reaches the page through one of them.
     PagesHelper::HOME_PARTNER_ROWS.each_value do |keys|
@@ -214,6 +224,29 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
         end
       end
     end
+  end
+
+  # A group with nothing in it must take its heading down with it. Territory
+  # gating means a group can be empty in one locale and not another, and a bare
+  # heading over no logos reads as a broken page rather than an empty category.
+  test 'a row with nothing in it renders neither logos nor a heading' do
+    get '/'
+
+    # partner_rows needs no view context, so it can be exercised directly.
+    helpers = Object.new.extend(PagesHelper)
+
+    assert_empty helpers.partner_rows(empty: [])
+    assert_equal %i[global], helpers.partner_rows(global: %i[global]).map(&:first)
+    # Every heading on the page has a wall under it.
+    assert_equal css_select('.logo-wall').size, css_select('h3.text-uppercase').size
+  end
+
+  # /business asks for its two groups by name, each its own labelled row.
+  test '/business lists manufacturers first, then integrators' do
+    get '/business'
+
+    assert_equal [I18n.t('site.partners.manufacturers'), I18n.t('site.partners.integrators')],
+                 css_select('h3.text-uppercase').map { |h| h.text.strip }
   end
 
   # :exhibitions is held in the system on purpose and shown on no page. There
