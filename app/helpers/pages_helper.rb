@@ -32,7 +32,8 @@ module PagesHelper
     # Builds systems on it for other people. RU_INTEGRATORS is appended to this
     # group for Russian-speaking visitors only -- see partner_groups.
     integrators: [
-      { name: 'GoodCam', url: 'https://www.goodcam.io/', img: 'partners/goodcam_mini.png' }
+      { name: 'GoodCam', url: 'https://www.goodcam.io/', img: 'partners/goodcam_mini.png' },
+      { name: 'Faceter', url: 'https://faceter.cam/',    img: 'partners/faceter_mini.png' }
     ],
     # The FPV projects we grew up alongside.
     fpv: [
