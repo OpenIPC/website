@@ -103,6 +103,18 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # The link test above proves that whatever the homepage links resolves. It
+  # cannot notice a link that stopped being rendered at all -- a pillar card
+  # losing its href, or a section being dropped in a refactor -- so the
+  # destinations the homepage is *for* are named here explicitly.
+  test 'the homepage links every place it is supposed to send people' do
+    get '/'
+
+    %w[/get-started /low-latency /ecosystem /business /supported-hardware /open-wall /donate].each do |path|
+      assert_not_empty css_select(%(a[href="#{path}"])), "the homepage no longer links #{path}"
+    end
+  end
+
   # The integrator wall is territory-specific: these companies serve Russia and
   # were explicitly not to be shown to everyone.
   test 'Russian integrators appear for ru and for nobody else' do

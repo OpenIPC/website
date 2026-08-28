@@ -188,6 +188,7 @@ en:
     icon:
       snapshot_alt: 'Image: Snapshot'
     index:
+      intro_html: Every image here was uploaded voluntarily by a camera running OpenIPC firmware, and is deleted automatically after two days. Want to join? Enable the Open Wall option in your camera's web interface.
       no_signal: No signal
       snapshot_alt: 'Image: Snapshot'
       stay_tuned: stay tuned

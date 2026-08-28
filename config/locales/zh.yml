@@ -188,6 +188,7 @@ zh:
     icon:
       snapshot_alt: 图片：快照
     index:
+      intro_html: 这里的每一张图片都是由运行 OpenIPC 固件的摄像机自愿上传的，并会在两天后自动删除。想加入吗？在你的摄像机 Web 界面中开启 Open Wall 选项即可。
       no_signal: 没信号
       snapshot_alt: 图片：快照
       stay_tuned: 敬请关注
