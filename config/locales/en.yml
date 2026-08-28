@@ -193,7 +193,7 @@ en:
     icon:
       snapshot_alt: 'Image: Snapshot'
     index:
-      intro_html: Cameras send these themselves — nobody goes out and collects them. Each image is removed a couple of days after it arrives. Want yours here? Turn on the Open Wall option in your camera's web interface.
+      intro_html: Cameras send these themselves — nobody goes out and collects them. Want yours here? Turn on the Open Wall option in your camera's web interface.
       no_signal: No signal
       snapshot_alt: 'Image: Snapshot'
       stay_tuned: stay tuned

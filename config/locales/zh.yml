@@ -193,7 +193,7 @@ zh:
     icon:
       snapshot_alt: 图片：快照
     index:
-      intro_html: 这些图片是摄像机自己上传的——没有人去采集。每张图片会在上传几天后被删除。想让你的画面出现在这里？在摄像机的 Web 界面中开启 Open Wall 选项即可。
+      intro_html: 这些图片是摄像机自己上传的——没有人去采集。想让你的画面出现在这里？在摄像机的 Web 界面中开启 Open Wall 选项即可。
       no_signal: 没信号
       snapshot_alt: 图片：快照
       stay_tuned: 敬请关注
