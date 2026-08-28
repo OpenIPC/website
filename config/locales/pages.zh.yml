@@ -188,7 +188,7 @@ zh:
       story_step1_text: 固件更新停了。安全漏洞还在。App 从应用商店里消失了。
       story_step1_title: 厂商转身离开
       story_step2_text: 服务器被关掉，一台还能用的摄像机就变成了无事可做的塑料和硅片。
-      story_step2_title: 云端熄灯
+      story_step2_title: 服务器悄然关停
       story_step3_text: 摄像机启动了一套开放且持续维护的系统——并且听你的。没有后门，没有订阅，也少了一件电子垃圾。
       story_step3_title: 你刷入 OpenIPC
       story_title: 摄像机不该随着它的云一起死去。
