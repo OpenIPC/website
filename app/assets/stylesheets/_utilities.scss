@@ -1,0 +1,36 @@
+.x-small {
+  font-size: 0.8125rem;
+}
+
+.img-zoom:hover {
+  cursor: zoom-in;
+}
+
+.ratio {
+  overflow: auto;
+}
+
+.offcanvas {
+  --bs-offcanvas-width: 30vw;
+  min-width: 25rem;
+}
+
+// Responsive breakpoint debugger (enabled via body.debug from a fixed IP).
+@media (max-width: 575.98px) { body.debug:before { content: 'xs' } }
+@media (min-width: 576px) and (max-width: 767.98px) { body.debug:before { content: 'sm' } }
+@media (min-width: 768px) and (max-width: 991.98px) { body.debug:before { content: 'md' } }
+@media (min-width: 992px) and (max-width: 1199.98px) { body.debug:before { content: 'lg' } }
+@media (min-width: 1200px) and (max-width: 1399.98px) { body.debug:before { content: 'xl' } }
+@media (min-width: 1400px) { body.debug:before { content: 'xxl' } }
+body.debug:before {
+  color: #4c60d811;
+  display: block;
+  font-size: 10rem;
+  font-variant: all-small-caps;
+  font-weight: 700;
+  line-height: 1;
+  position: fixed;
+  right: 3rem;
+  top: 3rem;
+  z-index: -1;
+}

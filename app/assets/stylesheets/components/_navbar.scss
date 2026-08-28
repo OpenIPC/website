@@ -1,0 +1,33 @@
+body > nav.navbar,
+body > header {
+  background: $ink;
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+
+  .nav-link {
+    text-decoration: none;
+  }
+
+  .dropdown-menu {
+    --bs-dropdown-link-active-bg: #{$indigo};
+
+    a {
+      text-decoration: none;
+    }
+  }
+}
+
+body.admin > nav.navbar,
+body.admin > header {
+  background: #b00100;
+  color: #fff;
+}
+
+i.bi-github {
+  font-size: 2.3rem;
+  line-height: 1;
+}
+
+.tg img {
+  height: 2.5rem;
+}

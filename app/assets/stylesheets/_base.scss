@@ -1,0 +1,37 @@
+body {
+  text-wrap: pretty;
+}
+
+// Keep the footer below the fold on short pages.
+body > main > .container {
+  min-height: 60vh;
+}
+
+// Page titles rendered by the shared page header / article headers.
+article > header > h1,
+article > header > h2 {
+  font-weight: 600;
+  margin: 1rem 0 1.5rem;
+}
+
+// Prose links: keep underline (a11y) with a comfortable offset; nav/cards opt out.
+a {
+  text-underline-offset: .15em;
+}
+
+ol.breadcrumb {
+  font-size: .86rem;
+  padding: .5rem 0;
+}
+
+label.required::after {
+  content: '*';
+  color: var(--bs-danger);
+  margin-inline-start: .125rem;
+}
+
+// Code, MAC/IP addresses, hex values keep LTR order even in RTL locales.
+code, kbd, pre, samp, .text-data {
+  direction: ltr;
+  unicode-bidi: embed;
+}

@@ -1,0 +1,12 @@
+// Open Wall gallery and slideshow.
+.carousel-item .carousel-caption {
+  background-color: #1e1e1e66;
+  color: #f1f1f166;
+  a { color: #f1f1f166; }
+}
+
+.carousel-item.active:hover .carousel-caption {
+  background-color: #1e1e1eff;
+  color: #f1f1f1ff;
+  a { color: #ffcc00; }
+}

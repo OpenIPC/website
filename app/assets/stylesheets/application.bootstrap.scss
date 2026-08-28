@@ -1,193 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans:wght@400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css');
-
+// Entry point for the site stylesheet.
+//
+// The import ORDER is the point of this file. Our theme variables have to be
+// read after Bootstrap's functions (they use rgba(), shade-color() and friends)
+// and before Bootstrap itself, because Bootstrap's own variables are declared
+// !default and the first definition wins. Loading them afterwards -- which is
+// what the single flat stylesheet used to do -- left $primary at Bootstrap's
+// #0d6efd while :root said --bs-blue: #4c60d8, so buttons and links rendered a
+// different blue from everything else on the page.
+@import 'fonts';
+@import 'bootstrap/scss/functions';
+@import 'variables';
 @import 'bootstrap/scss/bootstrap';
+
+// bootstrap-icons resolves its woff2 against this. The variable is
+// $bootstrap-icons-font-dir; $bi-font-path is the name from a different major
+// version and silently does nothing.
+$bootstrap-icons-font-dir: '/fonts';
 @import 'bootstrap-icons/font/bootstrap-icons';
-//@import 'rails_bootstrap_forms';
 
-/* debugging start */
-@media (max-width: 575.98px) { body.debug:before {content: "xs"} }
-@media (min-width: 576px) and (max-width: 767.98px) { body.debug:before {content: "sm"} }
-@media (min-width: 768px) and (max-width: 991.98px) { body.debug:before {content: "md"} }
-@media (min-width: 992px) and (max-width: 1199.98px) { body.debug:before {content: "lg"} }
-@media (min-width: 1200px) and (max-width: 1399.98px) { body.debug:before {content: "xl"} }
-@media (min-width: 1400px) { body.debug:before {content: "xxl"} }
-body.debug:before {color: #4c60d811;display: block;font-size: 10rem;font-variant: all-small-caps;font-weight: 700;line-height: 1;position: fixed;right: 3rem;top: 3rem;z-index: -1}
-.offcanvas {--bs-offcanvas-width: 30vw;min-width: 25rem;}
-/* debugging end */
-
-:root {
-  --bs-body-font-family: "IBM Plex Sans", sans-serif;
-  --bs-font-monospace: "IBM Plex Mono", monospace;
-  --bs-blue: #4c60d8;
-}
-
-$carousel-transition-duration: .3s;
-
-.ratio {
-  overflow: auto;
-}
-
-.col > h3 {
-  color: var(--bs-blue);
-  font-size: 1.3rem;
-  margin-bottom: 1.0rem;
-  margin-top: 1.5rem;
-}
-
-.x-small {
-  font-size: 0.8125rem;
-}
-
-body > main > .container {
-  min-height: 60vh;
-
-  > article > header > h2 {
-    font-weight: 700;
-    color: var(--bs-blue);
-    margin: 1rem 0 1.5rem;
-  }
-}
-
-body > nav.navbar,
-body > header {
-  background: var(--bs-blue);
-  color: #ffffff;
-}
-
-body.admin > nav.navbar,
-body.admin > header {
-  background: #B00100;
-  color: #ffffff;
-}
-
-i.bi-github { font-size: 2.3rem; line-height: 1; }
-
-.tg img { height: 2.5rem; }
-
-html:not([lang="ru"]) article.introduction .col.logo.ru { display: none; }
-
-article.calculator {
-  .form-floating > label {
-    padding: 0.5rem 0.25rem;
-  }
-
-  .form-control:not(:placeholder-shown) {
-    padding-bottom: 0.5rem;
-  }
-
-  .col:not(:first-child) {
-    text-align: right;
-  }
-
-  input, select {
-    background: #f7f7f7;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 1.4rem;
-    font-weight: 400;
-  }
-
-  .dec, .hex {
-    input, select { font-size: 2.0rem; text-align: right; }
-  }
-
-  input.start[readonly] { background-color: #4c60d8; color: white; }
-  input[readonly] { border: none; color: var(--bs-blue); outline: none; }
-
-  #mtdparts { font-size: 1.75rem; word-break: break-all; }
-
-  input.border-color { border-width: 3px; }
-
-  #offset { border-color: #000000; }
-
-  // red,orange,yellow,springgreen,green,turquoise,cyan,ocean,blue,violet,magenta,raspberry
-
-  .progress { height: 2rem;
-    .bg-color-0 { background: #000000 }
-    .bg-color-1 { background: #ff0000 }
-    .bg-color-2 { background: #ffff00 }
-    .bg-color-3 { background: #ff7700 }
-    .bg-color-4 { background: #007700 }
-    .bg-color-5 { background: #261 }
-    .bg-color-6 { background: #226 }
-    .bg-color-7 { background: #a13 }
-    .bg-color-8 { background: #b72 }
-  }
-}
-
-article.hardware {
-  > ul.nav {
-    --bs-nav-link-padding-x: 0.3rem;
-  }
-}
-
-.card-body {
-  position: relative;
-}
-
-.social {
-  position: absolute;
-  right: 0.25rem;
-  top: -0.75rem;
-  text-align: right;
-
-  a {
-    background: white;
-    border-radius: 50%;
-    display: inline-flex;
-    padding: 2px;
-
-    img {
-      height: 1.25rem;
-      vertical-align: text-bottom;
-    }
-  }
-}
-
-ol.breadcrumb { font-size: 0.86rem; padding: 0.5rem 0; }
-
-.socs {
-  .stage { text-align: center; }
-  .url { text-align: center;  }
-  .address { text-align: right; }
-
-  .stage img { height: 1.25rem; }
-  .icon { max-height: 30px; }
-  // filter: invert(38%) sepia(63%) saturate(5330%) hue-rotate(225deg) brightness(92%) contrast(83%);
-  //.stage.neq { background-color: #00000033 }
-  //.stage.hlp { background-color: #ffffff33 }
-  //.stage.rnd { background-color: #0000ff33 }
-  //.stage.wip { background-color: #00ffff33 }
-  //.stage.mvp { background-color: #ffff0033 }
-  //.stage.done { background-color: #00ff0033 }
-
-  dd a.anchor { display: none; }
-  dd:hover a.anchor { display: inline; }
-}
-
-label.required:after {
-  content:"*";
-  color: red;
-  margin-left: 0.125rem;
-}
-
-.carousel-item .carousel-caption {
-  background-color: #1e1e1e66;
-  color: #f1f1f166;
-  a { color: #f1f1f166; }
-}
-
-.carousel-item.active:hover .carousel-caption {
-  background-color: #1e1e1eff;
-  color: #f1f1f1ff;
-  a { color: #ffcc00; }
-}
-
-table.socs tr.featured {
-  background-color: #4c60d822;
-}
-
-.img-zoom:hover {
-  cursor: zoom-in;
-}
+@import 'base';
+@import 'components/navbar';
+@import 'components/cards';
+@import 'pages/hardware';
+@import 'pages/calculator';
+@import 'pages/openwall';
+@import 'pages/legacy';
+@import 'utilities';
