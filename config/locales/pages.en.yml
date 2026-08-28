@@ -86,7 +86,7 @@ en:
       proj_aviateur: 'Cross-platform receiver: watch the link on Windows, Linux, or macOS.'
       proj_burn: Unbricks HiSilicon devices over serial.
       proj_coupler: The smooth migration path from vendor firmware to OpenIPC and back. No soldering, no special skills.
-      proj_devourer: An open foundation for SDR-like receivers built on cheap Wi-Fi hardware.
+      proj_devourer: 'The link itself: a userspace driver for Realtek Wi-Fi adapters, setting rate, power, and channel packet by packet.'
       proj_divinus: An open-source streamer for a growing set of platforms.
       proj_firmware: Universal, Buildroot-based firmware for IP cameras — replaces abandoned vendor systems on dozens of SoC families.
       proj_ipctool: Identifies the SoC, sensor, and flash chip of nearly any camera — and backs up the stock firmware before you change anything.

@@ -30,11 +30,14 @@
     {
       title: t('.section_lowlat_title'), text: t('.section_lowlat_text_html'),
       projects: [
+        # In chain order -- camera, air, ground -- because that is how the three
+        # read together. devourer is not R&D: it is what PixelPilot receives
+        # through on Android today, across five Realtek hardware backends.
         { name: 'waybeam_venc',  desc: t('.proj_waybeam'),    repo: "#{gh}/waybeam_venc",  stage: 'done' },
+        { name: 'devourer',      desc: t('.proj_devourer'),   repo: "#{gh}/devourer",      stage: 'done' },
         { name: 'PixelPilot_rk', desc: t('.proj_pixelpilot'), repo: "#{gh}/PixelPilot_rk", stage: 'done' },
         { name: 'aviateur',      desc: t('.proj_aviateur'),   repo: "#{gh}/aviateur",      stage: 'done' },
-        { name: 'telemetry',     desc: t('.proj_telemetry'),  repo: "#{gh}/telemetry",     stage: 'done' },
-        { name: 'devourer',      desc: t('.proj_devourer'),   repo: "#{gh}/devourer",      stage: 'rnd' }
+        { name: 'telemetry',     desc: t('.proj_telemetry'),  repo: "#{gh}/telemetry",     stage: 'done' }
       ]
     },
     {

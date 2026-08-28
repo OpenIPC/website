@@ -86,7 +86,7 @@ zh:
       proj_aviateur: '跨平台接收端：在 Windows、Linux 或 macOS 上观看链路画面。'
       proj_burn: 通过串口解救变砖的海思设备。
       proj_coupler: 在原厂固件与 OpenIPC 之间平滑迁移、并可回退的方案。无需焊接，也不需要特殊技能。
-      proj_devourer: 基于廉价 Wi-Fi 硬件构建类 SDR 接收端的开放基础。
+      proj_devourer: '链路本身：用户态的 Realtek Wi-Fi 网卡驱动，逐包设定速率、功率与信道。'
       proj_divinus: 面向不断增加的平台的开源推流器。
       proj_firmware: 基于 Buildroot 的通用 IP 摄像机固件——在数十个 SoC 系列上取代已被弃用的原厂系统。
       proj_ipctool: 识别几乎任何摄像机的 SoC、传感器和闪存芯片——并在你做任何改动之前备份原厂固件。
