@@ -1,0 +1,35 @@
+// CSS "browser chrome" wrapper that makes plain screenshots look intentional.
+.browser-frame {
+  border: 1px solid $border-color;
+  border-radius: $border-radius-lg;
+  box-shadow: $box-shadow-sm;
+  overflow: hidden;
+
+  .browser-frame-bar {
+    align-items: center;
+    background: $body-tertiary-bg;
+    border-bottom: 1px solid $border-color;
+    display: flex;
+    gap: .3rem;
+    padding: .45rem .75rem;
+
+    span {
+      background: $border-color;
+      border-radius: 50%;
+      height: .55rem;
+      width: .55rem;
+    }
+
+    .browser-frame-title {
+      color: $body-secondary-color;
+      font-family: $font-family-monospace;
+      font-size: .7rem;
+      margin-inline-start: .5rem;
+    }
+  }
+
+  img {
+    display: block;
+    width: 100%;
+  }
+}

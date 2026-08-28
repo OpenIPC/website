@@ -12,6 +12,24 @@ class Snapshot < ApplicationRecord
 
   INTERVAL_LIMIT = 15.minutes
 
+  # The newest snapshot from each camera seen in the last 24 hours, newest
+  # first. Lived inline in SnapshotsController#index; the homepage mosaic wants
+  # the same list, and two copies of a correlated subquery is one too many.
+  #
+  # The LEFT JOIN ... WHERE s2.id IS NULL is a greatest-n-per-group: a row
+  # survives only when no newer row exists for its MAC.
+  #
+  # limit is interpolated after to_i, not bound, because it lands in a LIMIT
+  # clause where a bind parameter is not accepted; to_i is what makes that safe.
+  def self.latest_per_camera(limit: nil)
+    sql = 'SELECT s1.* FROM snapshots s1 LEFT JOIN snapshots s2' \
+          ' ON (s1.mac_address = s2.mac_address AND s1.created_at < s2.created_at)' \
+          ' WHERE s2.id IS NULL AND s1.created_at > SUBDATE(NOW(), INTERVAL 1 DAY)' \
+          ' ORDER BY created_at DESC'
+    sql += " LIMIT #{limit.to_i}" if limit
+    find_by_sql(sql)
+  end
+
   # Uploads may be HEIF (HEVC/AVC) as well as JPEG. Render every variant as JPEG
   # so the wall displays in all browsers (HEIF is decodable only by Safari) and
   # stays small. Decoding HEIF sources requires the server's libvips to be built

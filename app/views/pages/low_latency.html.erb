@@ -1,0 +1,90 @@
+<% content_for :fullwidth, 'yes' %>
+
+<%= render 'shared/page_header', title: t('.hero_title'), lede: t('.hero_lede') %>
+
+<div class="container">
+  <article>
+    <%# How the link works %>
+    <h2 class="h4 mb-4"><%= t('.how_title') %></h2>
+    <div class="row g-4 align-items-stretch mb-3 text-center">
+      <div class="col-md-4">
+        <div class="card h-100 p-3">
+          <i class="bi bi-camera-video fs-3 text-primary"></i>
+        <h3 class="h6 mt-2"><%= t('.how_tx_title') %></h3>
+          <p class="text-body-secondary small mb-0"><%= t('.how_tx_text_html') %></p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 p-3">
+          <i class="bi bi-broadcast-pin fs-3 text-primary"></i>
+          <h3 class="h6 mt-2"><%= t('.how_link_title') %></h3>
+          <p class="text-body-secondary small mb-0"><%= t('.how_link_text_html') %></p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 p-3">
+          <i class="bi bi-display fs-3 text-primary"></i>
+          <h3 class="h6 mt-2"><%= t('.how_rx_title') %></h3>
+          <p class="text-body-secondary small mb-0"><%= t('.how_rx_text_html') %></p>
+        </div>
+      </div>
+    </div>
+    <p class="text-center text-body-secondary text-data small mb-5">TX&nbsp;&rarr;&nbsp;wfb-ng&nbsp;&rarr;&nbsp;RX</p>
+
+    <%# FPV %>
+    <div class="row g-5 mb-5" id="fpv">
+      <div class="col-lg-6">
+        <h2 class="h4"><%= t('.fpv_title') %></h2>
+        <p class="text-body-secondary"><%= t('.fpv_text') %></p>
+        <p class="d-flex flex-wrap gap-2">
+          <a href="https://github.com/OpenIPC/wiki/blob/master/en/fpv.md" class="btn btn-primary"><%= t('.cta_guide') %></a>
+          <a href="https://t.me/+BMyMoolVOpkzNWUy" class="btn btn-outline-primary"><%= t('.cta_chat') %></a>
+        </p>
+      </div>
+      <div class="col-lg-6">
+        <h2 class="h4"><%= t('.robotics_title') %></h2>
+        <p class="text-body-secondary"><%= t('.robotics_text1') %></p>
+        <p class="text-body-secondary"><%= t('.robotics_text2') %></p>
+        <p class="mb-0"><%= t('.business_bridge_html') %></p>
+      </div>
+    </div>
+
+    <%# Latency, honestly %>
+    <h2 class="h4"><%= t('.latency_title') %></h2>
+    <p class="text-body-secondary"><%= t('.latency_intro') %></p>
+    <div class="table-responsive mb-2" style="max-width: 36rem">
+      <table class="table">
+        <thead>
+          <tr>
+            <th><%= t('.latency_column_config') %></th>
+            <th class="text-end"><%= t('.latency_column_g2g') %></th>
+          </tr>
+        </thead>
+        <tbody class="text-data">
+          <tr><td><%= t('.latency_720p60') %></td><td class="text-end">~60 ms</td></tr>
+          <tr><td><%= t('.latency_1080p60') %></td><td class="text-end">~80 ms</td></tr>
+          <tr><td><%= t('.latency_1080p30') %></td><td class="text-end">~100 ms</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small text-body-secondary mb-5"><i class="bi bi-stopwatch me-1"></i><%= t('.latency_note') %></p>
+
+    <%# Hardware + credits %>
+    <div class="row g-4">
+      <div class="col-md-6">
+        <h2 class="h5"><%= t('.hardware_title') %></h2>
+        <p class="text-body-secondary mb-0"><%= t('.hardware_text_html') %></p>
+      </div>
+      <div class="col-md-6">
+        <h2 class="h5"><%= t('.credits_title') %></h2>
+        <p class="text-body-secondary mb-0"><%= t('.credits_text') %></p>
+      </div>
+    </div>
+  </article>
+</div>
+
+<%= render 'shared/cta_band',
+           title: t('.fpv_title'),
+           primary_label: t('.cta_guide'), primary_href: 'https://github.com/OpenIPC/wiki/blob/master/en/fpv.md',
+           secondary_label: t('.cta_chat'), secondary_href: 'https://t.me/+BMyMoolVOpkzNWUy',
+           note_html: t('.business_bridge_html') %>

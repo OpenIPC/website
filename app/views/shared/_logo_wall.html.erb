@@ -1,0 +1,10 @@
+<%# Partner/integrator logo wall. Locals: logos (array of {name:, url:, img:}). %>
+<div class="logo-wall row row-cols-3 row-cols-md-4 row-cols-lg-6 g-3">
+  <% logos.each do |logo| %>
+    <div class="col">
+      <a href="<%= logo[:url] %>" class="logo-tile" title="<%= logo[:name] %>">
+        <%= image_tag logo[:img], alt: "Image: #{logo[:name]} logo", loading: 'lazy' %>
+      </a>
+    </div>
+  <% end %>
+</div>

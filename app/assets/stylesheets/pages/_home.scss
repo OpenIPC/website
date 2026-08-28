@@ -1,0 +1,108 @@
+// Homepage sections.
+.hero {
+  h1 {
+    font-size: clamp(1.9rem, 4.5vw, 3.2rem);
+    font-weight: 700;
+    text-wrap: balance;
+  }
+
+  .hero-lede {
+    color: rgba(255, 255, 255, .78);
+    max-width: 60ch;
+  }
+
+  .hero-microline {
+    color: rgba(255, 255, 255, .55);
+    font-family: $font-family-monospace;
+    font-size: .875rem;
+  }
+}
+
+// Live Open Wall mosaic (3x2 tiles).
+.wall-mosaic {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+
+  .wall-tile {
+    background: $ink-2;
+    border-radius: $border-radius;
+    display: block;
+    overflow: hidden;
+    position: relative;
+
+    img {
+      aspect-ratio: 16 / 9;
+      display: block;
+      height: 100%;
+      object-fit: cover;
+      width: 100%;
+    }
+
+    &.wall-tile--cta {
+      align-items: center;
+      aspect-ratio: 16 / 9;
+      border: 1px dashed rgba(255, 255, 255, .3);
+      color: rgba(255, 255, 255, .7);
+      display: flex;
+      font-size: .8125rem;
+      justify-content: center;
+      padding: .5rem;
+      text-align: center;
+      text-decoration: none;
+
+      &:hover, &:focus {
+        border-color: $accent;
+        color: #fff;
+      }
+    }
+  }
+
+  .wall-caption {
+    background: linear-gradient(transparent, rgba(15, 20, 34, .85));
+    bottom: 0;
+    color: rgba(255, 255, 255, .85);
+    font-family: $font-family-monospace;
+    font-size: .65rem;
+    inset-inline: 0;
+    overflow: hidden;
+    padding: 1rem .5rem .25rem;
+    position: absolute;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// "Runs on silicon by" strip.
+.silicon-strip {
+  color: $body-secondary-color;
+  font-family: $font-family-monospace;
+  font-size: .875rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+// Stats band figures.
+.stat-figure {
+  .stat-value {
+    color: #fff;
+    font-family: $font-family-monospace;
+    font-size: 2.25rem;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  .stat-label {
+    color: rgba(255, 255, 255, .6);
+    font-size: .875rem;
+  }
+}
+
+// Liberation story panels.
+.story-step .story-index {
+  color: rgba($indigo, .35);
+  font-family: $font-family-monospace;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+}

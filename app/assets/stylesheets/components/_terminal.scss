@@ -1,0 +1,68 @@
+// Terminal-style code block with a copy button. Markup: shared/_terminal partial.
+.terminal {
+  background: $ink;
+  border-radius: $border-radius-lg;
+  color: #e7ebf5;
+  direction: ltr; // shell commands stay LTR even in RTL locales
+  font-family: $font-family-monospace;
+  overflow: hidden;
+  text-align: left;
+
+  .terminal-header {
+    align-items: center;
+    background: $ink-2;
+    color: rgba(255, 255, 255, .55);
+    display: flex;
+    font-size: .75rem;
+    gap: .5rem;
+    padding: .5rem .75rem;
+
+    .dots {
+      display: inline-flex;
+      gap: .3rem;
+
+      span {
+        background: rgba(255, 255, 255, .25);
+        border-radius: 50%;
+        height: .55rem;
+        width: .55rem;
+      }
+    }
+
+    .btn-copy {
+      --bs-btn-color: rgba(255, 255, 255, .55);
+      --bs-btn-hover-color: #fff;
+      margin-inline-start: auto;
+    }
+  }
+
+  pre {
+    margin: 0;
+    overflow-x: auto;
+    padding: .875rem 1rem;
+
+    code {
+      color: inherit;
+      font-size: .875rem;
+    }
+  }
+
+  .prompt {
+    color: rgba(255, 255, 255, .45);
+    user-select: none;
+  }
+}
+
+// Blinking cursor — allowed in exactly one place (hero microline).
+.cursor-blink::after {
+  animation: cursor-blink 1.1s steps(2) infinite;
+  content: '▌';
+}
+
+@keyframes cursor-blink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-blink::after { animation: none; }
+}

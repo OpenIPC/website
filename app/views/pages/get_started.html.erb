@@ -1,0 +1,91 @@
+<% content_for :fullwidth, 'yes' %>
+
+<%= render 'shared/page_header', title: t('.hero_title'), lede: t('.hero_lede') %>
+
+<div class="container">
+  <article>
+    <%# Three steps %>
+    <div class="row g-4 mb-5">
+      <div class="col-lg-4">
+        <h2 class="h5"><span class="text-data text-primary me-2">1</span><%= t('.step1_title') %></h2>
+        <p class="text-body-secondary"><%= t('.step1_text_html') %></p>
+        <%= render 'shared/terminal', id: 'ipctool-cmd', title: 'camera shell',
+                   code: "curl -L -o /tmp/ipctool https://github.com/OpenIPC/ipctool/releases/download/latest/ipctool\nchmod +x /tmp/ipctool && /tmp/ipctool" %>
+      </div>
+      <div class="col-lg-4">
+        <h2 class="h5"><span class="text-data text-primary me-2">2</span><%= t('.step2_title') %></h2>
+        <p class="text-body-secondary"><%= t('.step2_text') %></p>
+        <p><a href="/supported-hardware" class="btn btn-primary"><%= t('.cta_find_soc') %></a></p>
+      </div>
+      <div class="col-lg-4">
+        <h2 class="h5"><span class="text-data text-primary me-2">3</span><%= t('.step3_title') %></h2>
+        <p class="text-body-secondary"><%= t('.step3_text') %></p>
+      </div>
+    </div>
+
+    <%# Honesty box %>
+    <div class="alert alert-warning d-flex gap-3 mb-5">
+      <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+      <div>
+        <h2 class="h6 mb-1"><%= t('.warning_title') %></h2>
+        <p class="mb-0"><%= t('.warning_text_html') %></p>
+      </div>
+    </div>
+
+    <%# What you get %>
+    <div class="row g-5 align-items-start mb-5">
+      <div class="col-lg-5">
+        <h2 class="h4"><%= t('.what_title') %></h2>
+        <p class="text-body-secondary"><%= t('.what_text') %></p>
+        <h3 class="h6 mt-4"><%= t('.editions_title') %></h3>
+        <p class="text-body-secondary mb-0"><%= t('.editions_text') %></p>
+      </div>
+      <div class="col-lg-7">
+        <h2 class="h4 mb-3"><a href="/web-interface" class="text-reset"><%= t('.webui_title') %></a></h2>
+        <%# Four of the screenshots from /web-interface, taken through
+            WebuiGallery rather than named here. The June draft of this page
+            hardcoded webui/preview.jpg and three others; the gallery was
+            reshot in 0f42514 and every one of those filenames stopped
+            existing, which is what a hardcoded list buys you. First() rather
+            than a chosen set, so a screen leaving the manifest cannot leave a
+            hole here either.
+
+            Tile and full-resolution file are a pair: the tile is the 1200px
+            copy, and data-zoom names the 2560px original for the modal, which
+            is what stops the zoom being an upscale of a thumbnail. %>
+        <div class="row g-3">
+          <% WebuiGallery.screens.first(4).each do |screen| %>
+            <div class="col-6">
+              <div class="browser-frame">
+                <div class="browser-frame-bar"><span></span><span></span><span></span>
+                  <span class="browser-frame-title"><%= screen.caption %></span>
+                </div>
+                <%= image_tag screen.tile, class: 'img-zoom', alt: screen.alt,
+                              loading: 'lazy', decoding: 'async',
+                              data: { zoom: image_path(screen.full) } %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <%# Open Wall + help %>
+    <div class="row g-4">
+      <div class="col-md-6">
+        <h2 class="h5"><%= t('.wall_title') %></h2>
+        <p class="text-body-secondary mb-0"><%= t('.wall_text_html') %></p>
+      </div>
+      <div class="col-md-6">
+        <h2 class="h5"><%= t('.stuck_title') %></h2>
+        <p class="text-body-secondary mb-0"><%= t('.stuck_text_html') %></p>
+      </div>
+    </div>
+  </article>
+</div>
+
+<%= render 'shared/cta_band',
+           title: t('.hero_title'),
+           primary_label: t('.cta_find_soc'), primary_href: '/supported-hardware' %>
+
+<%= render 'pages/zoom' %>

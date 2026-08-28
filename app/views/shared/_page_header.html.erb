@@ -1,0 +1,9 @@
+<%# Standard inner-page header band. Locals: title, lede (optional). %>
+<header class="page-header py-4 py-lg-5 mb-4">
+  <div class="container">
+    <h1 class="mb-0"><%= title %></h1>
+    <% if local_assigns[:lede].present? %>
+      <p class="lead text-body-secondary mt-2 mb-0" style="max-width: 60ch"><%= lede %></p>
+    <% end %>
+  </div>
+</header>

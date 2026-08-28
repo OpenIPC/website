@@ -6,6 +6,18 @@ Rails.application.routes.draw do
   root "pages#introduction"
 
   get '/aaa', to: 'pages#aaa'
+
+  # The relaunched pages. They answer on their own URLs from here, so they can be
+  # reviewed and deployed on their own, but nothing links to them yet: the root
+  # route and the navigation still serve the pre-relaunch structure. The cutover
+  # is a separate change.
+  get '/get-started', to: 'pages#get_started'
+  get '/low-latency', to: 'pages#low_latency'
+  get '/ecosystem',   to: 'pages#ecosystem'
+  get '/business',    to: 'pages#business'
+  get '/community',   to: 'pages#community'
+  get '/donate',      to: 'pages#donate'
+  get '/home',        to: 'pages#home'
   get '/majestic-endpoints', to: 'pages#majestic_endpoints'
 
   get '/coupler',     to: redirect('https://github.com/openipc//coupler/')
@@ -65,8 +77,15 @@ Rails.application.routes.draw do
   get '/tools/qr-code-generator', to: 'pages#qr_code_generator'
   get '/tools/timelaps-interval-calculator', to: 'pages#timelaps_interval_calculator'
 
-  # get '/open-wall(/:page)', to: 'snapshots#index'
-  # get '/open-wall/camera/:id', to: 'snapshots#camera', as: 'openwall_camera'
+  # Commented out in ed0e025, a bulk tidy-up, while five places that redirect to
+  # /open-wall were left in: snapshots_controller.rb twice,
+  # admin/snapshots_controller.rb, and the breadcrumb on three views. Every one
+  # of them fell through to the catch-all and answered a 302 to the homepage.
+  #
+  # This exposes nothing new. `resources :snapshots` has served the same gallery
+  # at /snapshots throughout; these are the URLs the site itself uses for it.
+  get '/open-wall/camera/:id', to: 'snapshots#camera', as: 'openwall_camera'
+  get '/open-wall(/:page)', to: 'snapshots#index', as: 'open_wall'
 
   resources :snapshots do
     get :camera, on: :collection

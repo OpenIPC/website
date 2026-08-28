@@ -1,0 +1,43 @@
+// Text badge for project/SoC development stages (NEQ/R&D/HLP/WIP/MVP/DONE).
+// Replaces the raw stage SVGs in tables and cards; SVG pictograms stay in the legend page.
+.stage-badge {
+  align-items: center;
+  border: 1px solid $border-color;
+  border-radius: 50rem;
+  display: inline-flex;
+  font-family: $font-family-monospace;
+  font-size: .6875rem;
+  font-weight: 600;
+  gap: .35em;
+  letter-spacing: .05em;
+  line-height: 1;
+  padding: .25em .65em;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  &::before {
+    border-radius: 50%;
+    content: '';
+    height: .5em;
+    width: .5em;
+  }
+
+  @each $stage, $color in $stage-colors {
+    &.stage-badge--#{$stage} {
+      border-color: rgba($color, .5);
+      color: shade-color($color, 25%);
+
+      &::before {
+        background: $color;
+      }
+    }
+  }
+}
+
+[data-bs-theme='dark'] .stage-badge {
+  @each $stage, $color in $stage-colors {
+    &.stage-badge--#{$stage} {
+      color: tint-color($color, 35%);
+    }
+  }
+}

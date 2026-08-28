@@ -1,0 +1,37 @@
+<% content_for :fullwidth, 'yes' %>
+
+<%= render 'shared/page_header', title: t('.hero_title'), lede: t('.hero_lede') %>
+
+<div class="container">
+  <article>
+    <div class="row g-5 mb-5">
+      <div class="col-lg-6">
+        <h2 class="h4"><%= t('.where_title') %></h2>
+        <p class="text-body-secondary"><%= t('.where_text') %></p>
+        <p class="text-body-secondary mb-0"><%= t('pages.support_open_source.contribute_text3') %></p>
+      </div>
+      <div class="col-lg-6">
+        <div class="card p-2 mb-3">
+          <div class="card-body">
+            <h2 class="h5"><i class="bi bi-heart-fill text-danger me-2"></i><%= t('.oc_title') %></h2>
+            <p class="text-body-secondary"><%= t('.oc_text_html') %></p>
+            <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout" class="btn btn-primary"><%= t('.oc_button') %></a>
+          </div>
+        </div>
+        <div class="card p-2">
+          <div class="card-body">
+            <h2 class="h5"><i class="bi bi-currency-bitcoin text-warning me-2"></i><%= t('.crypto_title') %></h2>
+            <p class="text-body-secondary mb-0"><%= t('.crypto_text_html') %></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-light border d-flex gap-3">
+      <i class="bi bi-briefcase fs-4"></i>
+      <p class="mb-0"><%= t('.business_band_html') %></p>
+    </div>
+
+    <p class="text-center text-body-secondary mt-5"><%= t('.thanks') %></p>
+  </article>
+</div>

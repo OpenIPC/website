@@ -20,7 +20,13 @@ $bootstrap-icons-font-dir: '/fonts';
 
 @import 'base';
 @import 'components/navbar';
+@import 'components/sections';
 @import 'components/cards';
+@import 'components/stage-badge';
+@import 'components/terminal';
+@import 'components/logo-wall';
+@import 'components/browser-frame';
+@import 'pages/home';
 @import 'pages/hardware';
 @import 'pages/calculator';
 @import 'pages/openwall';
