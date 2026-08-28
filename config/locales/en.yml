@@ -70,7 +70,7 @@ en:
       attention: Attention!
       backup:
         info: OpenIPC U-Boot overwrites the original crypto partition making it impossible to revert to the factory firmware unless you have a full flash backup for this particular camera! To create a full firmware backup start a TFTP server and run these commands in bootloader shell.
-        more_info_html: Please refer to <a href="https://github.com/openipc/wiki/blob/master/en/installation.md">Installation instructions</a> in the project's wiki for more information.
+        more_info_html: Please refer to <a href="https://github.com/OpenIPC/wiki/blob/master/en/installation.md">Installation instructions</a> in the project's wiki for more information.
         subtitle: Back up your stock firmware, don't skip this part of the installation process!
         title: Save the original firmware
       backup_32: ATTENTION! Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM.

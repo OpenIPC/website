@@ -99,7 +99,6 @@ zh:
       proj_qemu: 基于 QEMU 的完整海思 IP 摄像机模拟器——桌面上没有硬件也能开发和测试固件。
       proj_rnd_player: '为媒体工程师打造的播放器：以开发者需要的方式检视码流。'
       proj_smolrtsp: 可嵌入的 RTSP 1.0 服务端库，适用于摄像机等资源受限设备。支持 TCP 与 UDP，任意负载格式。
-      proj_telemetry: 在飞控与地面之间桥接遥测数据。
       proj_waybeam: '链路的发送端：面向 FPV 无人机与 URLLC 设备的灵活视频编码器。'
       proj_yamlcli: 一个用于在脚本中编辑 YAML 配置的小型命令行工具。
       section_community_text_html: 社区自制的硬件、支架与配件——例如在 <a href="https://www.printables.com/search/models?q=tag%3Aopenipc">Printables 上标记为 openipc</a> 的可 3D 打印模型。
