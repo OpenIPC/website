@@ -18,17 +18,28 @@ Rails.application.routes.draw do
   #
   # /home was the temporary URL the homepage answered on while it was being
   # built and nothing linked to it; it is the root now.
-  get '/home',                to: redirect('/')
-  get '/introduction',        to: redirect('/')
-  get '/aaa',                 to: redirect('/')
-  get '/fpv',                 to: redirect('/low-latency')
-  get '/our-projects',        to: redirect('/ecosystem')
-  get '/our-software',        to: redirect('/ecosystem')
-  get '/our-channels',        to: redirect('/community')
-  get '/support-open-source', to: redirect('/donate')
+  #
+  # redirect('/path') drops the query string, and locale lives in it: a link to
+  # /introduction?locale=ru landed on the homepage in whatever language the
+  # browser asked for. keep_query preserves it, so a localized legacy link
+  # stays in its language across the move.
+  keep_query = lambda do |to|
+    redirect { |_params, request| request.query_string.present? ? "#{to}?#{request.query_string}" : to }
+  end
+
+  get '/home',                to: keep_query.call('/')
+  get '/introduction',        to: keep_query.call('/')
+  get '/aaa',                 to: keep_query.call('/')
+  get '/fpv',                 to: keep_query.call('/low-latency')
+  get '/our-projects',        to: keep_query.call('/ecosystem')
+  get '/our-software',        to: keep_query.call('/ecosystem')
+  get '/our-channels',        to: keep_query.call('/community')
+  get '/support-open-source', to: keep_query.call('/donate')
   # 302, not 301: /about is meant to become a page of its own, and a 301 is
   # cached by browsers indefinitely -- it would outlive the decision.
-  get '/about',               to: redirect('/community', status: 302)
+  get '/about', to: redirect(status: 302) { |_params, request|
+    request.query_string.present? ? "/community?#{request.query_string}" : '/community'
+  }
   get '/majestic-endpoints', to: 'pages#majestic_endpoints'
 
   get '/coupler',     to: redirect('https://github.com/openipc//coupler/')

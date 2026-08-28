@@ -29,7 +29,7 @@
         </div>
       </div>
     </div>
-    <p class="text-center text-body-secondary text-data small mb-5">TX&nbsp;&rarr;&nbsp;wfb-ng&nbsp;&rarr;&nbsp;RX</p>
+    <p class="text-center text-body-secondary text-data small mb-5">TX&nbsp;&rarr;&nbsp;devourer&nbsp;&rarr;&nbsp;RX</p>
 
     <%# FPV %>
     <div class="row g-5 mb-5" id="fpv">
@@ -49,25 +49,41 @@
       </div>
     </div>
 
-    <%# Latency, honestly %>
-    <h2 class="h4"><%= t('.latency_title') %></h2>
-    <p class="text-body-secondary"><%= t('.latency_intro') %></p>
-    <div class="table-responsive mb-2" style="max-width: 36rem">
-      <table class="table">
-        <thead>
-          <tr>
-            <th><%= t('.latency_column_config') %></th>
-            <th class="text-end"><%= t('.latency_column_g2g') %></th>
-          </tr>
-        </thead>
-        <tbody class="text-data">
-          <tr><td><%= t('.latency_720p60') %></td><td class="text-end">~60 ms</td></tr>
-          <tr><td><%= t('.latency_1080p60') %></td><td class="text-end">~80 ms</td></tr>
-          <tr><td><%= t('.latency_1080p30') %></td><td class="text-end">~100 ms</td></tr>
-        </tbody>
-      </table>
+    <%# How fast, really.
+
+        One measure across four receive paths, so the bars are one hue on a
+        shared scale rather than four colours: the reader is comparing
+        magnitude, not telling series apart. Each bar spans the lowest and
+        highest figures people report for that path -- see
+        PagesHelper::LATENCY_PATHS for why it is a range and not a single
+        number. The track is decoration for the value beside it, so it is
+        hidden from screen readers. %>
+    <div class="row g-4 g-lg-5 align-items-center mb-5">
+      <div class="col-lg-5">
+        <h2 class="h4"><%= t('.latency_title') %></h2>
+        <p class="text-body-secondary"><%= t('.latency_intro') %></p>
+        <p class="small text-body-secondary mb-0"><%= t('.latency_note') %></p>
+      </div>
+      <div class="col-lg-7">
+        <div class="latency-bars">
+          <% PagesHelper::LATENCY_PATHS.each do |path| %>
+            <span class="latency-bars__label"><%= t(".latency_path_#{path[:key]}") %></span>
+            <%# The unit is carried per value as well as once under the axis. A
+                screen reader reaches the numbers one at a time and would
+                otherwise hear "26 to 67" with nothing saying what of. %>
+            <span class="latency-bars__value text-data"><%= "#{path[:low]}–#{path[:high]}" %><span class="visually-hidden"> <%= t('.latency_axis_unit') %></span></span>
+            <span class="latency-bars__track" aria-hidden="true">
+              <span class="latency-bars__range" style="<%= latency_bar_style(path) %>"></span>
+            </span>
+          <% end %>
+          <span class="latency-bars__axis" aria-hidden="true">
+            <span>0</span><span><%= PagesHelper::LATENCY_SCALE_MAX / 2 %></span>
+            <span><%= PagesHelper::LATENCY_SCALE_MAX %></span>
+          </span>
+          <span class="latency-bars__unit small text-body-secondary" aria-hidden="true"><%= t('.latency_axis_unit') %></span>
+        </div>
+      </div>
     </div>
-    <p class="small text-body-secondary mb-5"><i class="bi bi-stopwatch me-1"></i><%= t('.latency_note') %></p>
 
     <%# Hardware + credits %>
     <div class="row g-4">

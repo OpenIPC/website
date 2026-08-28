@@ -86,7 +86,7 @@ en:
       proj_aviateur: 'Cross-platform receiver: watch the link on Windows, Linux, or macOS.'
       proj_burn: Unbricks HiSilicon devices over serial.
       proj_coupler: The smooth migration path from vendor firmware to OpenIPC and back. No soldering, no special skills.
-      proj_devourer: An open foundation for SDR-like receivers built on cheap Wi-Fi hardware.
+      proj_devourer: 'The link itself: a userspace driver for Realtek Wi-Fi adapters, setting rate, power, and channel packet by packet.'
       proj_divinus: An open-source streamer for a growing set of platforms.
       proj_firmware: Universal, Buildroot-based firmware for IP cameras — replaces abandoned vendor systems on dozens of SoC families.
       proj_ipctool: Identifies the SoC, sensor, and flash chip of nearly any camera — and backs up the stock firmware before you change anything.
@@ -174,7 +174,7 @@ en:
       pillar_firmware_title: Camera firmware
       pillar_longevity_text: 'We keep vendor SDKs alive on mainline kernels: CVE fixes and modern features long after the vendor walks away.'
       pillar_longevity_title: Longevity & security
-      pillar_low_latency_text: An open video link for FPV drones, robots, and teleoperation. Glass-to-glass from about 60 ms on supported hardware.
+      pillar_low_latency_text: An open video link for FPV drones, robots, and teleoperation. Glass-to-glass from about 30 ms on supported hardware.
       pillar_low_latency_title: Low-latency video links
       pillar_tools_text: ONVIF conformance testing, camera emulation, hardware inspection — free tools we built for ourselves and share with everyone.
       pillar_tools_title: Pro tools
@@ -200,7 +200,7 @@ en:
       wall_snapshot_alt: 'Image: live snapshot from a community camera'
     low_latency:
       business_bridge_html: Building a product on this link? <a href="/business">Talk to us</a> — we do custom development and OEM work.
-      credits_text: The radio link exists thanks to wfb-ng, and the ecosystem grows with friends like RubyFPV and Mario FPV. Open source is a team sport.
+      credits_text: The radio link exists thanks to wfb-ng and devourer, and the ecosystem grows with friends like RubyFPV and Mario FPV. Open source is a team sport.
       credits_title: Standing on open shoulders
       cta_chat: Join the FPV chat
       cta_guide: Read the build guide
@@ -208,23 +208,23 @@ en:
       fpv_title: 'FPV: from lens to goggles'
       hardware_text_html: Air units are built from supported cameras and AIO boards — start from the <a href="/supported-hardware">supported hardware list</a>. RunCam and EMAX ship OpenIPC-based FPV hardware out of the box.
       hardware_title: Hardware
-      hero_lede: 'FPV drones, robots, teleoperation: an open ultra-low-latency video stack from camera to screen. Glass-to-glass from about 60 ms on supported hardware.'
+      hero_lede: 'FPV drones, robots, teleoperation: an open ultra-low-latency video stack from camera to screen. Glass-to-glass from about 30 ms on supported hardware.'
       hero_title: Open video links for machines that can't wait.
-      how_link_text_html: <a href="https://github.com/svpcom/wfb-ng">wfb-ng</a> broadcasts video, telemetry, and control over commodity Wi-Fi hardware — no association, no retransmit stalls.
+      how_link_text_html: <a href="https://github.com/OpenIPC/devourer">devourer</a> carries video, telemetry, and control over commodity Realtek adapters, straight from userspace — no association, no retransmit stalls, and rate, power and channel set per frame.
       how_link_title: The radio link
-      how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> turns a Rockchip board into a dedicated ground station, and <a href="https://github.com/OpenIPC/aviateur">Aviateur</a> receives on Windows, Linux, and macOS.
+      how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> turns a Rockchip board into a dedicated ground station — the fastest way to receive. <a href="https://github.com/OpenIPC/aviateur">Aviateur</a> runs on the Windows, Linux, or macOS machine you already own.
       how_rx_title: RX — your side
       how_title: How the link works
-      how_tx_text_html: An OpenIPC camera with the <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> encoder produces the stream and feeds the radio link.
+      how_tx_text_html: An OpenIPC camera runs the <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> encoder, turning the sensor into a stream and handing it straight to the radio. The frame rate set here decides most of your latency budget.
       how_tx_title: TX — the air side
-      latency_1080p30: 1080p30
-      latency_1080p60: 1080p60
-      latency_720p60: 720p60
-      latency_column_config: Configuration
-      latency_column_g2g: Typical glass-to-glass
-      latency_intro: 'Numbers depend on SoC, sensor, resolution, exposure, and heat. These are typical figures from our own measurements, not best-case marketing:'
-      latency_note: Measured with our own open hardware latency meter — built for exactly this job.
-      latency_title: Latency, honestly
+      latency_axis_unit: ms glass-to-glass
+      latency_intro: What decides your number is the ground station, far more than the resolution you pick. These are figures people report from flying this stack on their own hardware.
+      latency_note: Reported in the OpenIPC and wfb-ng chats, not measured by us. Resolution barely moves the number; frame rate and screen refresh decide it — change nothing but the monitor and the same camera shifts by 120 ms.
+      latency_path_desktop: Laptop or desktop
+      latency_path_goggles: Goggles with a built-in VRX
+      latency_path_ground_station: Dedicated ground station
+      latency_path_phone: Phone or tablet
+      latency_title: How fast, really
       robotics_text1: The same link carries video for industrial robots, AGVs, inspection rigs, and remote operation — anywhere a closed video system would lock you in or a cloud hop would add seconds.
       robotics_text2: On supported SoCs, frames carry wall-clock timestamps tied to the sensor frame start — millisecond-class synchronization for multi-camera rigs without extra hardware.
       robotics_title: 'Beyond drones: robots and teleoperation'

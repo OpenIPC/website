@@ -19,7 +19,13 @@
             <a href="<%= snapshot_path(snapshot) %>" class="wall-tile">
               <%= image_tag snapshot.file.variant(:thumb), alt: t('.wall_snapshot_alt'),
                             loading: (idx.zero? ? 'eager' : 'lazy') %>
-              <span class="wall-caption"><%= snapshot.soc.upcase %> · <%= snapshot.sensor.upcase %></span>
+              <%# soc and sensor are whatever the camera chose to send: both are
+                  nullable, and the upload endpoint permits either to be absent.
+                  One such upload used to take the whole homepage down with it. %>
+              <% caption = [snapshot.soc, snapshot.sensor].reject(&:blank?).map(&:upcase).join(' · ') %>
+              <% if caption.present? %>
+                <span class="wall-caption"><%= caption %></span>
+              <% end %>
             </a>
           <% end %>
           <% (5 - @wall_snapshots.size).times do %>

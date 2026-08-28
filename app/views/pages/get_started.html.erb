@@ -4,11 +4,27 @@
 
 <div class="container">
   <article>
-    <%# Three steps %>
+    <%# Three steps.
+
+        The terminal is step 1's command, so it sits directly after step 1 in
+        the markup and a narrow screen reads 1, command, 2, 3. order-lg-last
+        moves it to the end of the row on a desktop, where the three steps are
+        side by side and the command wants the full width beneath them.
+
+        It used to live inside the step-1 column, where the ipctool URL is
+        longer than a third of the article is wide: the visible line ended at
+        "https://github.com/OpenI" and the rest sat behind a horizontal
+        scrollbar most systems do not draw. It wraps rather than scrolls now,
+        so nothing is ever hidden -- but at full width it does not have to wrap
+        at all, and two wrapped lines read as two commands. %>
     <div class="row g-4 mb-5">
       <div class="col-lg-4">
         <h2 class="h5"><span class="text-data text-primary me-2">1</span><%= t('.step1_title') %></h2>
         <p class="text-body-secondary"><%= t('.step1_text_html') %></p>
+      </div>
+      <div class="col-12 order-lg-last">
+        <%= render 'shared/terminal', id: 'ipctool-cmd', title: 'camera shell',
+                   code: "curl -L -o /tmp/ipctool https://github.com/OpenIPC/ipctool/releases/download/latest/ipctool\nchmod +x /tmp/ipctool && /tmp/ipctool" %>
       </div>
       <div class="col-lg-4">
         <h2 class="h5"><span class="text-data text-primary me-2">2</span><%= t('.step2_title') %></h2>
@@ -19,20 +35,6 @@
         <h2 class="h5"><span class="text-data text-primary me-2">3</span><%= t('.step3_title') %></h2>
         <p class="text-body-secondary"><%= t('.step3_text') %></p>
       </div>
-    </div>
-
-    <%# The command for step 1, given the full width of the article rather than
-        the third of it the step sits in.
-
-        It was inside the step-1 column, where the ipctool URL is longer than
-        the column is wide: the visible line ended at "https://github.com/OpenI"
-        and the rest sat behind a horizontal scrollbar most systems do not draw.
-        The block wraps rather than scrolls now, so nothing is ever hidden -- but
-        at this width the command does not have to wrap at all on a desktop, and
-        two lines that are two commands read as two commands. %>
-    <div class="mb-5">
-      <%= render 'shared/terminal', id: 'ipctool-cmd', title: 'camera shell',
-                 code: "curl -L -o /tmp/ipctool https://github.com/OpenIPC/ipctool/releases/download/latest/ipctool\nchmod +x /tmp/ipctool && /tmp/ipctool" %>
     </div>
 
     <%# Honesty box %>

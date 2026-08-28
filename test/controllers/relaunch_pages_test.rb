@@ -154,4 +154,139 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
       assert_path_exists Rails.root.join('app/assets/images', logo[:img])
     end
   end
+
+  # The radio-link card names devourer, OpenIPC's own userspace Realtek driver,
+  # rather than wfb-ng. wfb-ng keeps its place in the credits -- the link exists
+  # because of both -- so the test checks the card, not the whole page.
+  test 'the radio link card names devourer and links it' do
+    get '/low-latency'
+
+    card = css_select('.card').find { |c| c.text.include?('devourer') }
+    assert_not_nil card, 'no card on the page names devourer'
+    assert_not_empty card.css('a[href="https://github.com/OpenIPC/devourer"]'),
+                     'devourer is named but not linked'
+    assert_includes response.body, I18n.t('pages.low_latency.credits_text'),
+                     'the credits no longer thank both projects'
+  end
+
+  # The latency table on /low-latency was unchanged 2022 announcement copy. It
+  # was keyed on resolution -- which is very nearly free -- and a 2026 audit of
+  # the OpenIPC and wfb-ng chat archives found it optimistic by 40-160 ms at the
+  # exact configurations it named, while understating the floor by half. It now
+  # compares receive paths, which is what actually decides the number.
+  test 'the low-latency page compares receive paths, not resolutions' do
+    get '/low-latency'
+
+    assert_response :success
+    PagesHelper::LATENCY_PATHS.each do |path|
+      assert_includes response.body, I18n.t("pages.low_latency.latency_path_#{path[:key]}"),
+                      "the #{path[:key]} path is missing"
+      assert_includes response.body, "#{path[:low]}–#{path[:high]}",
+                      "the #{path[:key]} figure is missing"
+    end
+    ['~60 ms', '~80 ms', '~100 ms'].each do |stale|
+      assert_not_includes response.body, stale, "the 2022 figure #{stale} is back on the page"
+    end
+    assert_includes response.body, 'about 30 ms', 'the hero no longer states the real floor'
+  end
+
+  # soc and sensor are nullable and the upload endpoint permits both to be
+  # absent, so one such upload used to take the whole homepage down with it.
+  test 'the homepage survives a snapshot that named neither its soc nor its sensor' do
+    snapshot = Snapshot.new(mac_address: '02:00:00:00:00:99', ip_address: '198.51.100.7',
+                            soc: nil, sensor: nil)
+    # The blob validator wants a real image type and at least 10 kilobytes.
+    snapshot.file.attach(io: StringIO.new("\xFF\xD8\xFF#{'x' * 12_000}"),
+                         filename: 'wall.jpg', content_type: 'image/jpeg')
+    snapshot.save!
+
+    get '/'
+
+    assert_response :success
+  end
+
+  # The strip says "runs on silicon by". The vendors table also holds sensor
+  # makers, and listing those claims silicon we do not run on.
+  test 'the silicon strip lists chip vendors, not sensor makers' do
+    chipmaker = Vendor.create!(name: 'Teststar Semiconductor')
+    Soc.create!(model: 'TS1234', vendor: chipmaker)
+    sensor_maker = Vendor.create!(name: 'Testsen Imaging')
+
+    get '/'
+
+    assert_includes response.body, chipmaker.name
+    assert_not_includes response.body, sensor_maker.name,
+                        'a vendor with no SoCs is being counted as silicon we run on'
+  end
+
+  # Locale rides in the query string, and redirect('/path') drops it, so a
+  # localized legacy link used to land in the browser's language instead.
+  test 'legacy redirects keep the locale they were asked for' do
+    { '/introduction' => '/', '/fpv' => '/low-latency',
+      '/our-projects' => '/ecosystem', '/about' => '/community' }.each do |from, to|
+      get "#{from}?locale=ru"
+
+      assert_redirected_to "#{to}?locale=ru"
+    end
+  end
+
+  # The command belongs to step 1. Below the lg breakpoint the steps stack, and
+  # source order is what the reader gets.
+  test 'the ipctool command comes before step two' do
+    get '/get-started'
+
+    body = response.body
+    assert_operator body.index('ipctool-cmd'), :<, body.index(ERB::Util.html_escape(I18n.t('pages.get_started.step2_title'))),
+                    'the command for step 1 renders after step 2'
+  end
+
+  # Sighted readers get the unit once, under the axis. A screen reader reaches
+  # the numbers one at a time, so each has to carry it -- and the axis and its
+  # unit, being decoration for those numbers, must not be read out twice.
+  test 'every latency figure says what unit it is in' do
+    get '/low-latency'
+
+    unit = I18n.t('pages.low_latency.latency_axis_unit')
+    values = css_select('.latency-bars__value')
+
+    assert_equal PagesHelper::LATENCY_PATHS.size, values.size
+    values.each do |value|
+      assert_includes value.text, unit, "#{value.text.strip} does not say what unit it is in"
+    end
+    assert_equal 'true', css_select('.latency-bars__unit').first['aria-hidden']
+    assert_equal 'true', css_select('.latency-bars__axis').first['aria-hidden']
+    css_select('.latency-bars__track').each do |track|
+      assert_equal 'true', track['aria-hidden'], 'a bar is read out as if it were content'
+    end
+  end
+
+  # The bars are positioned by inline percentages against a fixed scale. A
+  # figure edited past that scale would render a bar running off the end of its
+  # track, which no test of the copy would notice.
+  test 'every latency bar fits the scale it is drawn against' do
+    PagesHelper::LATENCY_PATHS.each do |path|
+      assert_operator path[:low], :<, path[:high], "#{path[:key]} is not a range"
+      assert_operator path[:high], :<=, PagesHelper::LATENCY_SCALE_MAX,
+                      "#{path[:key]} runs past the end of the scale"
+    end
+  end
+
+  # Every figure on that page is a user report from a private Telegram group.
+  # The `t.me/c/...` links resolve only for members of those groups, so they
+  # would 404 for a visitor, and the reporters have not been asked whether they
+  # want their names on the marketing site.
+  test 'the low-latency page cites no private Telegram links and no unpublished meter' do
+    %w[en ru zh].each do |locale|
+      get "/low-latency?locale=#{locale}"
+
+      assert_response :success
+      assert_not_includes response.body, 't.me/c/', "a private Telegram link leaked into #{locale}"
+      assert_includes response.body, ERB::Util.html_escape(I18n.t('pages.low_latency.latency_title', locale: locale)),
+                      "the latency section is missing in #{locale}"
+    end
+
+    get '/low-latency?locale=en'
+    assert_not_includes response.body, 'latency meter',
+                        'the page claims a meter whose design and runs are not published'
+  end
 end
