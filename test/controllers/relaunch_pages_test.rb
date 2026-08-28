@@ -194,12 +194,21 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # Six rows rather than one undifferentiated block of logos.
+  # Three labelled rows rather than one undifferentiated block of logos -- and
+  # rather than six, half of which were a single logo under a heading.
   test 'the homepage groups the wall instead of pouring it into one row' do
     get '/'
 
-    PagesHelper::PARTNER_GROUPS.each_key do |key|
-      assert_includes response.body, I18n.t("site.partners.#{key}"), "the #{key} row is missing"
+    rows = css_select('.logo-wall').size
+    labels = PagesHelper::HOME_PARTNER_ROWS.keys
+
+    assert_equal labels.size, rows
+    labels.each do |label|
+      assert_includes response.body, I18n.t("site.partners.#{label}"), "the #{label} row is missing"
+    end
+    # Every group still reaches the page through one row or another.
+    PagesHelper::PARTNER_GROUPS.each_value do |logos|
+      logos.each { |l| assert_includes response.body, l[:img].sub('.png', '') }
     end
   end
 

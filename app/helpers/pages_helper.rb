@@ -122,6 +122,28 @@ module PagesHelper
     [@page_title, 'OpenIPC'].join(' - ')
   end
 
+  # How the homepage arranges the six groups. At six rows half of them were a
+  # single logo under a heading, which reads as a gap rather than a group --
+  # research is one logo, and integrators is one until the visitor is Russian.
+  # Three rows, in the order the wall is meant to be read: who ships and
+  # installs the hardware, who hosts us, and who we work alongside.
+  #
+  # /business still asks for its two groups directly. Splitting rows out again
+  # is a line here, not a rewrite.
+  HOME_PARTNER_ROWS = {
+    trade: %i[manufacturers integrators],
+    global: %i[global],
+    friends: %i[fpv education research]
+  }.freeze
+
+  # Rows of [label, logos], skipping any that would render empty.
+  def partner_rows(rows)
+    rows.filter_map do |label, keys|
+      logos = partner_logos(*keys)
+      [label, logos] if logos.any?
+    end
+  end
+
   # The named groups, in the order asked for, each as [key, logos]. Groups that
   # would render empty are dropped rather than left as a heading over nothing.
   def partner_groups(*keys)

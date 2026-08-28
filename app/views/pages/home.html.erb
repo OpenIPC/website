@@ -125,8 +125,8 @@
 <section class="py-6">
   <div class="container">
     <h2 class="h4 text-center text-body-secondary mb-5"><%= t('.partners_title') %></h2>
-    <% partner_groups.each do |key, logos| %>
-      <%= render 'shared/logo_wall', logos: logos, title: t("site.partners.#{key}") %>
+    <% partner_rows(PagesHelper::HOME_PARTNER_ROWS).each do |label, logos| %>
+      <%= render 'shared/logo_wall', logos: logos, title: t("site.partners.#{label}") %>
     <% end %>
   </div>
 </section>
