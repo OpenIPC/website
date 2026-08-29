@@ -149,6 +149,34 @@ class FirmwareTest < ActiveSupport::TestCase
     assert_equal ("\xFF".b * 0x100), image[16.megabytes - 0x100, 0x100]
   end
 
+  # The image openipc.org serves for ssc377qe today has "hsqs" at 0x350000 and
+  # 0xff at 0x250000, and its env region at 0x40000 is blank -- so the camera
+  # comes up on the bootloader's compiled-in bootargs, which say the rootfs
+  # starts at 0x250000, finds erased flash there and panics on root mount.
+  # openipc/u-boot-sigmastar has one mtdparts string and the rootfs offset in it
+  # does not move; 16MB means rootmtd=10240k, not a rootfs 1MB further up.
+  test 'a 16MB SigmaStar image keeps the rootfs at the only offset its bootloader reads' do
+    fw = build(model: 'ssc338q', vendor: 'SigmaStar', flash_type: 'nor', size: 16,
+               members: { 'uImage.ssc338q' => KERNEL, 'rootfs.squashfs.ssc338q' => SQUASHFS })
+    fw.generate
+    image = IO.binread(fw.filepath)
+
+    assert_equal 16.megabytes, image.bytesize
+    assert_equal KERNEL, image[0x50000, KERNEL.bytesize]
+    assert_equal SQUASHFS, image[0x250000, SQUASHFS.bytesize]
+    assert_equal ("\xFF".b * 0x100), image[0x350000, 0x100], 'nothing belongs at the HiSilicon offset'
+    # rootfs_data begins after a 10240KB rootfs, not after a 5120KB one.
+    assert_equal ("\xFF".b * 0x100), image[0xC50000, 0x100]
+  end
+
+  test 'a 16MB Ingenic image does the same' do
+    fw = build(model: 't31', vendor: 'Ingenic', flash_type: 'nor', size: 16,
+               members: { 'uImage.t31' => KERNEL, 'rootfs.squashfs.t31' => SQUASHFS })
+    fw.generate
+
+    assert_equal SQUASHFS, IO.binread(fw.filepath)[0x250000, SQUASHFS.bytesize]
+  end
+
   # A request parameter, like the size beside it, so it is refused before it
   # can decide where anything is written.
   test 'a layout larger than the chip is refused' do
@@ -557,22 +585,31 @@ class FirmwareTest < ActiveSupport::TestCase
     end
   end
 
-  # These two used to be pinned to the 8MB offsets whatever chip was chosen, so
-  # this asserted 0x250000. u-boot-msc313e, u-boot-t20 and u-boot-t40 all define
-  # mtdpartsnor16m exactly as the Hisilicon and Goke bootloaders do, and their
-  # Ultimate rootfs -- 7820KB on ssc338q -- does not fit the 5120KB the 8MB
-  # layout allows, so the pin could not survive Ultimate on 16MB either. What
-  # this test is for is unchanged: the image and the page must not describe
-  # different layouts, whichever offsets are right.
-  test 'no vendor gets offsets of its own: image and page agree on 16MB' do
-    %w[SigmaStar Ingenic HiSilicon].each do |vendor|
-      fw = build(model: 'ssc338q', vendor: vendor, flash_type: 'nor', size: 16, release: 'lite',
-                 members: { 'uImage.ssc338q' => KERNEL, 'rootfs.squashfs.ssc338q' => SQUASHFS })
+  # What this test is for is unchanged -- the image and the page must not
+  # describe different layouts -- but what the right offset is depends on the
+  # bootloader, so it is asserted per vendor rather than once for everybody.
+  # 0x350000 where mtdparts switches wholesale between mtdpartsnor8m and
+  # mtdpartsnor16m; 0x250000 where there is one mtdparts string with a fixed
+  # 2048k kernel and only ${rootmtd} behind it, which is what
+  # openipc/u-boot-sigmastar and openipc/u-boot-ingenic ship.
+  #
+  # A model of its own per vendor, not one model wearing three: the cache
+  # filename carries the model and not the vendor, so building the same model
+  # under three vendors in one test has the second and third read back the
+  # first's image. Nothing in production can hit that -- a model belongs to one
+  # vendor -- but a test that did would pass on a stale file.
+  test 'the image and the page agree on 16MB, on whichever offsets the vendor is on' do
+    { 'SigmaStar' => ['ssc338q', 0x250000],
+      'Ingenic' => ['t31x', 0x250000],
+      'HiSilicon' => ['hi3516ev300', 0x350000] }.each do |vendor, (model, offset)|
+      fw = build(model: model, vendor: vendor, flash_type: 'nor', size: 16, release: 'lite',
+                 members: { "uImage.#{model}" => KERNEL, "rootfs.squashfs.#{model}" => SQUASHFS })
       fw.generate
 
       camera = Camera.new(flash_type: 'nor16m', firmware_version: 'lite', soc: fw_soc(vendor))
-      assert_equal '0x350000', camera.rootfs_offset, "#{vendor} is not on the 16MB rootfs offset"
-      assert_equal SQUASHFS, IO.binread(fw.filepath)[0x350000, SQUASHFS.bytesize],
+      assert_equal format('0x%X', offset), camera.rootfs_offset,
+                   "#{vendor} is not on the offset its bootloader reads"
+      assert_equal SQUASHFS, IO.binread(fw.filepath)[offset, SQUASHFS.bytesize],
                    "#{vendor}: the image does not match the page"
     end
   end

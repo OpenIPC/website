@@ -609,12 +609,11 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
 
   # --- SigmaStar and Ingenic on 16MB ---
 
-  # FlashLayout pinned these two vendors to the 8MB offsets whatever chip was
-  # picked, so the page told a 16MB camera to `run uknor16m; run urnor16m` --
-  # writing the rootfs to 0x350000..0xd50000 using the bootloader's own macros
-  # -- and then erased from 0x750000, 733,184 bytes inside it. u-boot-msc313e,
-  # u-boot-t20 and u-boot-t40 all define mtdpartsnor16m identically to the
-  # Hisilicon and Goke ones, so there was never a reason to treat them apart.
+  # The bootloader these two actually ship -- openipc/u-boot-sigmastar and
+  # openipc/u-boot-ingenic, which is what OpenIPC/firmware's uboot.yml builds
+  # the released binaries from -- has one NOR mtdparts string with a fixed
+  # 2048k kernel and ${rootmtd} after it. The rootfs is at 0x250000 at every
+  # chip size, and there is no uknor16m, urnor16m or setnor16m to run.
   def soc_of(vendor_name)
     vendor = Vendor.create!(name: vendor_name)
     Soc.create!(vendor:, model: 'TS338Q', status: 'done', load_address: '0x82000000',
@@ -622,54 +621,88 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
                 linux_filename: 'openipc.ts338q-nor-lite.tgz')
   end
 
-  # FlashLayout pinned these two vendors to the 8MB offsets whatever chip was
-  # picked, so the page told a 16MB camera to `run uknor16m; run urnor16m` --
-  # writing the rootfs to 0x350000..0xd50000 using the bootloader's own macros
-  # -- and then erased from 0x750000, 733,184 bytes inside it.
-  def assert_sixteen_meg_offsets(vendor_name)
+  # A 16MB layout on these two means rootmtd=10240k, not a rootfs 1MB further
+  # up. Handing them the other table put it at 0x350000, where their bootloader
+  # never looks: the full image openipc.org serves for ssc377qe today carries
+  # "hsqs" at 0x350000, 0xff at 0x250000 and a blank env at 0x40000, so the
+  # camera boots on the compiled-in bootargs and panics on root mount.
+  def assert_rootfs_stays_at_250000(vendor_name)
     soc = soc_of(vendor_name)
 
     with_release_index(*every_edition_for(soc)) do
       submit(soc, 'nor16m', firmware_version: 'ultimate')
 
-      assert_match 'sf erase 0xD50000', response.body
+      assert_match 'sf erase 0xC50000', response.body
+      assert_no_match(/sf erase 0xD50000/, response.body)
       assert_no_match(/sf erase 0x750000/, response.body)
     end
   end
 
-  # Those offsets are only right if the camera is running the 16MB mtdparts, and
-  # every one of these bootloaders defaults to the 8MB one. A full-image flash
-  # leaves the env erased, so that default is what boots. These two vendors used
-  # to be the only ones not told to run setnor16m afterwards.
-  def assert_told_to_remap_partitions(vendor_name)
+  # Whatever is run has to exist. `run uknor16m` returns `## Error: "uknor16m"
+  # not defined` on these cameras and flashes nothing, silently.
+  def assert_unsuffixed_macros(vendor_name)
     soc = soc_of(vendor_name)
 
     with_release_index(*every_edition_for(soc)) do
-      submit(soc, 'nor16m')
+      submit(soc, 'nor16m', firmware_version: 'ultimate')
 
-      # The expert section further down emits `run setnor16m` for everybody and
-      # always has, so matching the string alone proves nothing. What was
-      # suppressed is the copy of it in the full-image section, which arrives
-      # with the flashing_full.continue2 sentence in front of it.
-      assert_match 'remap ROM partitioning according to your flash size', response.body
-      assert_equal 2, response.body.scan('run setnor16m').size
+      assert_match 'run uknor; run urnor', response.body
+      assert_no_match(/uknor16m|urnor16m|uknor8m|urnor8m/, response.body)
+      assert_no_match(/setnor/, response.body)
     end
   end
 
-  test 'a 16MB SigmaStar submission gets the 16MB layout like everyone else' do
-    assert_sixteen_meg_offsets('SigmaStar')
+  # The 16MB layout still has to be switched on -- rootmtd defaults to 5120k and
+  # a full-image flash leaves the env erased -- but with the setenv their
+  # bootloader understands rather than a macro it does not define.
+  def assert_told_to_set_rootmtd(vendor_name)
+    soc = soc_of(vendor_name)
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m', firmware_version: 'ultimate')
+
+      assert_match 'remap ROM partitioning according to your flash size', response.body
+      assert_match 'setenv rootmtd 10240k; setenv rootsize 0xA00000', response.body
+    end
   end
 
-  test 'a 16MB Ingenic submission gets the 16MB layout like everyone else' do
-    assert_sixteen_meg_offsets('Ingenic')
+  test 'a 16MB SigmaStar submission keeps the rootfs at 0x250000' do
+    assert_rootfs_stays_at_250000('SigmaStar')
   end
 
-  test 'a 16MB SigmaStar camera is told to run setnor16m after a full flash' do
-    assert_told_to_remap_partitions('SigmaStar')
+  test 'a 16MB Ingenic submission keeps the rootfs at 0x250000' do
+    assert_rootfs_stays_at_250000('Ingenic')
   end
 
-  test 'a 16MB Ingenic camera is told to run setnor16m after a full flash' do
-    assert_told_to_remap_partitions('Ingenic')
+  test 'a SigmaStar camera is given the macros its bootloader defines' do
+    assert_unsuffixed_macros('SigmaStar')
+  end
+
+  test 'an Ingenic camera is given the macros its bootloader defines' do
+    assert_unsuffixed_macros('Ingenic')
+  end
+
+  test 'a 16MB SigmaStar camera is told to set rootmtd after a full flash' do
+    assert_told_to_set_rootmtd('SigmaStar')
+  end
+
+  test 'a 16MB Ingenic camera is told to set rootmtd after a full flash' do
+    assert_told_to_set_rootmtd('Ingenic')
+  end
+
+  # The 8MB layout is what rootmtd=5120k already is, so there is nothing to run
+  # and nothing to tell the reader. This step used to render regardless, under a
+  # heading saying it was required, naming a variable that does not exist.
+  test 'a SigmaStar camera on the default layout is told to run nothing' do
+    soc = soc_of('SigmaStar')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m', partition_layout: 'nor8m')
+
+      assert_match 'sf erase 0x750000', response.body
+      assert_no_match(/setenv rootmtd/, response.body)
+      assert_no_match(/run set/, response.body)
+    end
   end
 
   # --- the pages that send the visitor to the wiki instead ---

@@ -241,6 +241,63 @@ class Camera
     I18n.t("flash_layout.#{partition_layout}")
   end
 
+  # Whether this camera's bootloader carries one NOR mtdparts string and
+  # unsuffixed macros -- see FlashLayout. NAND is a separate environment with
+  # its own uknand/urnand/setnand and is not affected either way.
+  def fixed_mtdparts?
+    !nand? && FlashLayout.fixed_mtdparts?(soc&.vendor&.name)
+  end
+
+  # The suffix this camera's bootloader macros actually carry. `uknor8m` and
+  # friends on HiSilicon and Goke, `uknand` on NAND, and plain `uknor`/`urnor`
+  # on SigmaStar and Ingenic, whose environment has no suffixed macro at all --
+  # the page has been telling those cameras to `run uknor16m` since it first
+  # had an expert section, and U-Boot has been answering `## Error: "uknor16m"
+  # not defined` and flashing nothing.
+  def bootloader_macro_suffix
+    return 'nand' if nand?
+    return 'nor' if fixed_mtdparts?
+
+    partition_layout
+  end
+
+  # Whether the bootloader already boots this layout without being told. Every
+  # one of them defaults to the 8MB partitions, and a full-image flash leaves
+  # the env erased, so that default is what a freshly flashed camera comes up
+  # with.
+  #
+  # NAND is not one of them: mtdpartsubi is not a default anything falls back
+  # to, and a NAND camera has always been told to `run setnand` after a full
+  # image like it is now.
+  def default_bootloader_layout?
+    !nand? && layout_size <= 8
+  end
+
+  # What to run to put the bootloader on this layout, if anything.
+  #
+  # HiSilicon and Goke have a macro for it. SigmaStar and Ingenic do not: their
+  # mtdparts is one string with ${rootmtd} in it, saved unexpanded and expanded
+  # at boot by `cmdnor`, so the layout is changed by setting that variable and
+  # the erase length that goes with it. Empty when there is nothing to change,
+  # which is what rootmtd=5120k already is.
+  def layout_commands
+    return ["run set#{bootloader_macro_suffix}"] unless fixed_mtdparts?
+    return [] if default_bootloader_layout?
+
+    ["setenv rootmtd #{rootfs_max_size.to_i(16) / 1024}k; setenv rootsize #{rootfs_max_size}",
+     'saveenv', 'reset']
+  end
+
+  # The bootloader variables the instructions above actually named, for the hint
+  # that tells the reader to go and look them up. Built from the same suffix the
+  # commands are, so the two cannot drift -- and without a `set…` entry where no
+  # such variable exists, since the reader would not find it in their printenv.
+  def bootloader_variables
+    names = %w[uk ur].map { |prefix| "#{prefix}#{bootloader_macro_suffix}" }
+    names << "set#{bootloader_macro_suffix}" unless fixed_mtdparts?
+    names
+  end
+
   # The NOR numbers come from FlashLayout, which reads them off the bootloader
   # environment. They used to be spelled out here keyed on firmware_version,
   # which agreed with the bootloader only for 8MB+Lite and 16MB+Ultimate; see
@@ -249,8 +306,12 @@ class Camera
   # Keyed on the layout, not on the chip. The two agree for every combination
   # the menu offered before it grew a second field, and the whole point of the
   # second field is the ones where they do not.
+  #
+  # The vendor goes with it because two of them have a bootloader whose rootfs
+  # offset does not move between layouts. Without it a 16MB SigmaStar or Ingenic
+  # camera is handed 0x350000, which its bootloader never reads.
   def nor_layout
-    FlashLayout.nor(layout_size)
+    FlashLayout.nor(layout_size, soc&.vendor&.name)
   end
 
   def kernel_max_size

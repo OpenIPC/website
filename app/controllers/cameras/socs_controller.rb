@@ -107,26 +107,24 @@ module Cameras
       # Against FLASH_CHIP rather than for blankness, because a chip this site
       # does not know is not a choice either. Camera#flash_size_hex and friends
       # fall through to their 8MB branch for anything unrecognised, while
-      # @flash_type_command below would go on to render `run setnor64m` and a
-      # printenv hint naming three variables no bootloader defines. Nothing
+      # Camera#bootloader_macro_suffix would go on to render `run setnor64m` and
+      # a printenv hint naming three variables no bootloader defines. Nothing
       # calls valid? on a Camera, so this is the only thing standing between the
       # query string and the commands.
       @camera.flash_type = @camera.soc.default_flash_chip unless @camera.flash_type.in?(Camera::FLASH_CHIP)
 
-      # The bootloader macros are named after the layout, not the chip. This
-      # used to be the flash type with `nor32m` rewritten to `nor16m`, which is
-      # the same answer for every combination the menu could then produce --
-      # there is no mtdpartsnor32m anywhere upstream, so a 32MB part has always
-      # worn the 16MB layout. Camera#partition_layout says it directly now, and
-      # says it for the 8MB-layout-on-a-larger-chip case too.
-      #
       # After the flash type has settled, not before: the layout defaults to
       # the chip's own, so reading it first left the page telling a 16MB camera
       # to `run urnor16m` and then erasing from the 8MB overlay offset, 733,184
       # bytes into what it had just written. That is the failure #60 described,
       # by another route.
+      #
+      # What the macros are called is Camera's answer now rather than a separate
+      # @flash_type_command read here. It was the layout name, which is right
+      # for the bootloaders that name their macros after the layout and wrong
+      # for the two that do not name them after anything -- and the view read it
+      # four times, so the offsets and the commands could disagree.
       warn_if_layout_changed permitted_params[:partition_layout]
-      @flash_type_command = @camera.partition_layout
 
       if @vendor.name.eql?("SigmaStar") && @camera.flash_type.eql?("nand")
         render 'cameras/socs/sigmastar_nand_is_weird'
