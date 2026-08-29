@@ -76,17 +76,15 @@
           <% end %>
           <%= flashing_everything(@camera) %>
           <p><%= t('firmware.installation.flashing_full.continue') %></p>
-          <%# SigmaStar and Ingenic were exempted here in 64d37db and 00332d1 and
-              are not any more. Their bootloaders default mtdparts to the 8MB
-              layout like every other one, a full-image flash leaves the env
-              erased so that default is what the camera boots with, and the
-              expert section below has always told them to run setnor16m
-              regardless -- so the exemption made this page contradict itself.
-              It also cannot coexist with Ultimate on 16MB: that rootfs is
-              7820KB on ssc338q against the 5120KB the 8MB layout allows. %>
-          <% unless @flash_type_command.eql?('nor8m') %>
+          <%# Every one of these bootloaders defaults mtdparts to the 8MB layout
+              and a full-image flash leaves the env erased, so that default is
+              what the camera boots with and anything else has to be set here.
+              Asked of the camera rather than of the layout name: SigmaStar and
+              Ingenic have no set* macro to run, and what they are given instead
+              is the setenv that macro would have done. %>
+          <% unless @camera.default_bootloader_layout? %>
             <p><%= t('firmware.installation.flashing_full.continue2') %></p>
-            <%= preparing_environment(@flash_type_command) %>
+            <%= preparing_environment(@camera) %>
           <% end %>
         </div>
       </div>
@@ -126,15 +124,21 @@
         </div>
       </div>
 
-      <h3 class="mb-4 fw-bold"><%= t('firmware.installation.flashing_footfs.title') %></h3>
-      <div class="row">
-        <div class="col col-lg-4"></div>
-        <div class="col col-lg-8">
-          <p><%= t('firmware.installation.flashing_footfs.info') %></p>
-          <%= preparing_environment(@flash_type_command) %>
-          <p><%= t('firmware.installation.flashing_footfs.continue') %></p>
+      <%# Skipped where there is nothing to run. This step used to render
+          unconditionally, so a SigmaStar or Ingenic reader was given `run
+          setnor8m` -- a variable their bootloader does not define -- under a
+          heading telling them it was required. %>
+      <% if @camera.layout_commands.any? %>
+        <h3 class="mb-4 fw-bold"><%= t('firmware.installation.flashing_footfs.title') %></h3>
+        <div class="row">
+          <div class="col col-lg-4"></div>
+          <div class="col col-lg-8">
+            <p><%= t('firmware.installation.flashing_footfs.info') %></p>
+            <%= preparing_environment(@camera) %>
+            <p><%= t('firmware.installation.flashing_footfs.continue') %></p>
+          </div>
         </div>
-      </div>
+      <% end %>
 
       <h3 class="mb-4 fw-bold"><%= t('firmware.installation.flashing_footfs2.title') %></h3>
       <div class="row">
@@ -154,7 +158,7 @@
               <p class="mb-0"><%= t('.sdcard_required_3') %></p>
             </div>
           <% end %>
-          <%= flashing_linux(@camera, @flash_type_command) %>
+          <%= flashing_linux(@camera) %>
         </div>
       </div>
     </div>
@@ -174,7 +178,7 @@
     <% end %>
   </div>
 
-  <p><%= t('firmware.info_html', commands: bootloader_variables_html(@flash_type_command)) %></p>
+  <p><%= t('firmware.info_html', commands: bootloader_variables_html(@camera)) %></p>
 
   <a data-bs-toggle="collapse" href="#collapseExperts" role="button" aria-expanded="false" aria-controls="collapseExperts"><%= t('.advanced_instruction_link') %></a>
 </article>

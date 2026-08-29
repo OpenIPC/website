@@ -149,6 +149,34 @@ class FirmwareTest < ActiveSupport::TestCase
     assert_equal ("\xFF".b * 0x100), image[16.megabytes - 0x100, 0x100]
   end
 
+  # The image openipc.org serves for ssc377qe today has "hsqs" at 0x350000 and
+  # 0xff at 0x250000, and its env region at 0x40000 is blank -- so the camera
+  # comes up on the bootloader's compiled-in bootargs, which say the rootfs
+  # starts at 0x250000, finds erased flash there and panics on root mount.
+  # openipc/u-boot-sigmastar has one mtdparts string and the rootfs offset in it
+  # does not move; 16MB means rootmtd=10240k, not a rootfs 1MB further up.
+  test 'a 16MB SigmaStar image keeps the rootfs at the only offset its bootloader reads' do
+    fw = build(model: 'ssc338q', vendor: 'SigmaStar', flash_type: 'nor', size: 16,
+               members: { 'uImage.ssc338q' => KERNEL, 'rootfs.squashfs.ssc338q' => SQUASHFS })
+    fw.generate
+    image = IO.binread(fw.filepath)
+
+    assert_equal 16.megabytes, image.bytesize
+    assert_equal KERNEL, image[0x50000, KERNEL.bytesize]
+    assert_equal SQUASHFS, image[0x250000, SQUASHFS.bytesize]
+    assert_equal ("\xFF".b * 0x100), image[0x350000, 0x100], 'nothing belongs at the HiSilicon offset'
+    # rootfs_data begins after a 10240KB rootfs, not after a 5120KB one.
+    assert_equal ("\xFF".b * 0x100), image[0xC50000, 0x100]
+  end
+
+  test 'a 16MB Ingenic image does the same' do
+    fw = build(model: 't31', vendor: 'Ingenic', flash_type: 'nor', size: 16,
+               members: { 'uImage.t31' => KERNEL, 'rootfs.squashfs.t31' => SQUASHFS })
+    fw.generate
+
+    assert_equal SQUASHFS, IO.binread(fw.filepath)[0x250000, SQUASHFS.bytesize]
+  end
+
   # A request parameter, like the size beside it, so it is refused before it
   # can decide where anything is written.
   test 'a layout larger than the chip is refused' do

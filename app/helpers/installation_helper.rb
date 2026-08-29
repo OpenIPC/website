@@ -147,7 +147,12 @@ module InstallationHelper
     list_of_commands text
   end
 
-  def flashing_linux(c, c2)
+  # The suffix comes off the camera rather than being passed in beside it: the
+  # macros are named for the bootloader's own environment, and on SigmaStar and
+  # Ingenic that is `uknor`/`urnor` with nothing after it whatever layout is
+  # being installed.
+  def flashing_linux(c)
+    c2 = c.bootloader_macro_suffix
     text = []
     text << do_not_copy_paste
     unless c.network_interface.eql?('wifi')
@@ -179,22 +184,26 @@ module InstallationHelper
     list_of_commands text
   end
 
-  # The three bootloader variables the instructions above actually named, for
-  # the hint that tells the reader to go and look them up. preparing_environment
-  # emits `run set…` and flashing_linux emits `run uk…; run ur…`, all from the
-  # same flash_type_command, so building the hint from it too keeps the three
-  # in step -- including the nor32m -> nor16m rewrite the controller does.
+  # The bootloader variables the instructions above actually named, for the hint
+  # that tells the reader to go and look them up. Camera builds the list from
+  # the same suffix the commands are built from, so the two stay in step --
+  # including the nor32m -> nor16m rewrite and the vendors whose macros carry no
+  # suffix and have no `set…` to name.
   #
   # It used to be a fixed `uknor*, urnor*, setnor*`, which named nothing a NAND
   # reader had been given and nothing they could find in their own printenv.
-  def bootloader_variables_html(flash_type_command)
-    safe_join(%w[uk ur set].map { |prefix| tag.code("#{prefix}#{flash_type_command}") }, ', ')
+  def bootloader_variables_html(camera)
+    safe_join(camera.bootloader_variables.map { |name| tag.code(name) }, ', ')
   end
 
-  def preparing_environment(c2)
+  # Put the bootloader on the layout that was just flashed. One macro where
+  # there is one, and the `setenv` that macro would have done where there is
+  # not -- see Camera#layout_commands. Nothing at all when the layout is already
+  # the bootloader's default, which is why every caller checks first.
+  def preparing_environment(camera)
     text = []
     text << do_not_copy_paste
-    text << "run set#{c2}"
+    text.concat(camera.layout_commands)
     list_of_commands text
   end
 

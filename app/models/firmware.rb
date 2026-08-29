@@ -448,9 +448,12 @@ class Firmware
   # Same table the installation page renders from, so the image and the
   # instructions cannot describe different partition layouts. Keyed on the
   # layout rather than the size, which are the same thing for every image built
-  # before the wizard could tell them apart.
+  # before the wizard could tell them apart, and on the vendor, because
+  # SigmaStar and Ingenic have one mtdparts string whose rootfs offset does not
+  # move -- an image that put it where the other table says is one their
+  # bootloader cannot boot.
   def nor_layout
-    @nor_layout ||= FlashLayout.nor(@layout)
+    @nor_layout ||= FlashLayout.nor(@layout, @soc.vendor.name)
   end
 
   def kernel_offset

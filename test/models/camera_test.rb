@@ -196,6 +196,96 @@ class CameraTest < ActiveSupport::TestCase
     end
   end
 
+  # --- bootloaders with one mtdparts string ---
+
+  # openipc/u-boot-sigmastar and openipc/u-boot-ingenic -- the repositories
+  # OpenIPC/firmware's uboot.yml builds the released binaries from -- carry one
+  # NOR mtdparts with a fixed 2048k kernel and ${rootmtd} behind it, plain
+  # uknor/urnor, and no setnor* of any kind.
+  StubVendor = Struct.new(:name)
+  StubSoc = Struct.new(:vendor)
+
+  def camera_of(vendor_name, flash_type:, firmware_version: 'lite', layout: nil)
+    c = camera(flash_type:, firmware_version:)
+    c.soc = StubSoc.new(StubVendor.new(vendor_name))
+    c.partition_layout = layout if layout
+    c
+  end
+
+  test 'a 16MB SigmaStar chip keeps the rootfs where its bootloader looks' do
+    c = camera_of('SigmaStar', flash_type: 'nor16m', firmware_version: 'ultimate')
+
+    assert_equal 16, c.layout_size
+    assert_equal '0x250000', c.rootfs_offset, 'the rootfs does not move on this bootloader'
+    assert_equal '0xA00000', c.rootfs_max_size, 'what a 16MB chip buys is rootmtd=10240k'
+    assert_equal '0x200000', c.kernel_max_size, 'the kernel partition is 2048k in the bootargs'
+    assert_equal '0xC50000', c.overlay_offset
+    assert_equal '0x3b0000', c.overlay_max_size
+  end
+
+  test 'Ingenic gets the same treatment as SigmaStar' do
+    assert_equal '0x250000', camera_of('Ingenic', flash_type: 'nor16m').rootfs_offset
+  end
+
+  test 'a 16MB chip from any other vendor still moves the rootfs to 0x350000' do
+    assert_equal '0x350000', camera_of('HiSilicon', flash_type: 'nor16m').rootfs_offset
+    assert_equal '0x300000', camera_of('HiSilicon', flash_type: 'nor16m').kernel_max_size
+  end
+
+  test 'SigmaStar macros carry no size suffix, and there is no set macro to name' do
+    c = camera_of('SigmaStar', flash_type: 'nor16m')
+
+    assert_equal 'nor', c.bootloader_macro_suffix
+    assert_equal %w[uknor urnor], c.bootloader_variables
+  end
+
+  test 'other vendors keep the suffixed macros they define' do
+    c = camera_of('HiSilicon', flash_type: 'nor16m')
+
+    assert_equal 'nor16m', c.bootloader_macro_suffix
+    assert_equal %w[uknor16m urnor16m setnor16m], c.bootloader_variables
+  end
+
+  # rootmtd=5120k is the 8MB layout, so a camera already on it has nothing to
+  # run. The page used to render `run setnor8m` here, which these bootloaders
+  # answer with `## Error: "setnor8m" not defined`.
+  test 'the default layout asks a SigmaStar camera to run nothing' do
+    c = camera_of('SigmaStar', flash_type: 'nor16m', layout: 'nor8m')
+
+    assert_equal 8, c.layout_size
+    assert_empty c.layout_commands
+    assert_equal '0x750000', c.overlay_offset
+  end
+
+  test 'the 16MB layout is set with the variable the bootloader has' do
+    c = camera_of('SigmaStar', flash_type: 'nor16m', firmware_version: 'ultimate')
+
+    assert_equal ['setenv rootmtd 10240k; setenv rootsize 0xA00000', 'saveenv', 'reset'],
+                 c.layout_commands
+  end
+
+  test 'a macro-defining vendor is still told to run one' do
+    assert_equal ['run setnor16m'], camera_of('HiSilicon', flash_type: 'nor16m').layout_commands
+    assert_equal ['run setnor8m'], camera_of('HiSilicon', flash_type: 'nor8m').layout_commands
+  end
+
+  # NAND is a separate environment -- uknand, urnand, setnand and mtdpartsubi --
+  # and none of this touches it.
+  test 'nand keeps its own macros whatever the vendor' do
+    c = camera_of('SigmaStar', flash_type: 'nand', firmware_version: 'ultimate')
+
+    assert_not c.fixed_mtdparts?
+    assert_equal 'nand', c.bootloader_macro_suffix
+    assert_equal ['run setnand'], c.layout_commands
+  end
+
+  # Every existing test builds a Camera with no SoC at all, and the offsets they
+  # pin have to keep coming out of the table they always did.
+  test 'a camera with no SoC falls through to the layout table it always used' do
+    assert_equal '0x350000', camera(flash_type: 'nor16m').rootfs_offset
+    assert_equal 'nor16m', camera(flash_type: 'nor16m').bootloader_macro_suffix
+  end
+
   # --- editions that are not published ---
 
   test 'an edition upstream does not build is replaced, and says what was asked for' do
