@@ -21,6 +21,13 @@ module SelectsHelper
     end
   end
 
+  # Both layouts, always. Which of them a chip can hold is narrowed on the page,
+  # beside the rule that narrows the editions -- an 8MB part cannot wear the
+  # 16MB layout, whose rootfs partition ends at 0xD50000.
+  def list_of_partition_layouts_for_select
+    Camera::PARTITION_LAYOUT.map { |layout| [t("flash_layout.#{layout}"), layout] }
+  end
+
   # Every SoC used to be offered lite, ultimate and fabricator whatever upstream
   # built. The list comes from the release index now -- the union across flash
   # types, because the flash type is chosen in the same form without a round

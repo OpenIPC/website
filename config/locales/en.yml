@@ -97,6 +97,7 @@ en:
         info: Download bootloader binary file and save it to the root directory of your TFTP server.
         link: Download OpenIPC U-Boot binary file
         title: Flash OpenIPC U-Boot
+      layout_note: 'Partition layout: %{layout}. The image below covers the whole chip, so flashing it clears the overlay as well.'
       permanent_link: Permanent link to this configuration
       subtitle: on a camera with %{soc_name} SoC and %{flash_type} SPI flash chip
       success:
@@ -117,6 +118,10 @@ en:
     nor16m: NOR 16M
     nor32m: NOR 32M
     nor8m: NOR 8M
+  flash_layout:
+    nand: UBI layout
+    nor16m: 16MB (10MB rootfs)
+    nor8m: 8MB (5MB rootfs)
   go: Go
   footer:
     column_community: Community

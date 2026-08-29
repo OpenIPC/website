@@ -19,6 +19,7 @@ zh:
     help:
       camera:
         flash_type: 如果不确定，请选择 NOR 8M。
+        partition_layout: 默认与芯片容量一致。在更大的芯片上使用 8MB 分区布局会把余下的空间留给 overlay，但只能容纳 Lite 版本。
     models:
       snapshot: 快照
       soc: 芯片型号

@@ -130,6 +130,61 @@ class CameraTest < ActiveSupport::TestCase
     assert_equal '0xD50000', c.overlay_offset
   end
 
+  # --- the chip and the layout are two questions ---
+
+  test 'the layout defaults to the one that matches the chip' do
+    assert_equal 'nor8m', camera(flash_type: 'nor8m').partition_layout
+    assert_equal 'nor16m', camera(flash_type: 'nor16m').partition_layout
+    assert_equal 'nor16m', camera(flash_type: 'nor32m').partition_layout
+    assert_equal 'nand', camera(flash_type: 'nand').partition_layout
+  end
+
+  # The configuration the report came from: a 16MB part wearing the 8MB layout,
+  # which is what a camera flashed from the 8MB image already has. The offsets
+  # have to be the 8MB ones and the erase has to be the whole chip, because
+  # rootfs_data is `-` in every mtdparts and so runs to the end of the device
+  # whichever layout is written on it.
+  test 'an 8MB layout on a 16MB chip keeps 8MB offsets and a 16MB erase' do
+    c = camera(flash_type: 'nor16m', firmware_version: 'lite')
+    c.partition_layout = 'nor8m'
+
+    assert_equal 8, c.layout_size
+    assert_equal '0x250000', c.rootfs_offset
+    assert_equal '0x500000', c.rootfs_max_size
+    assert_equal '0x200000', c.kernel_max_size
+    assert_equal '0x750000', c.overlay_offset
+
+    assert_equal 16, c.flash_size
+    assert_equal '0x1000000', c.flash_size_hex
+    # The whole of the rest of the chip: 0x1000000 - 0x750000, not the 0xb0000
+    # an 8MB part would leave. That difference is the untouched half a full
+    # reflash used to leave the old overlay sitting in.
+    assert_equal '0x8b0000', c.overlay_max_size
+  end
+
+  test 'the 16MB layout is refused on an 8MB chip, which cannot hold it' do
+    c = camera(flash_type: 'nor8m')
+    c.partition_layout = 'nor16m'
+
+    assert_equal 'nor8m', c.partition_layout
+    assert_equal '0x250000', c.rootfs_offset
+  end
+
+  test 'an unrecognised layout is the same as none' do
+    c = camera(flash_type: 'nor16m')
+    c.partition_layout = 'nor64m'
+
+    assert_equal 'nor16m', c.partition_layout
+  end
+
+  test 'nand has one layout and does not take a nor one' do
+    c = camera(flash_type: 'nand')
+    c.partition_layout = 'nor8m'
+
+    assert_equal 'nand', c.partition_layout
+    assert_equal '0x400000', c.rootfs_offset
+  end
+
   test 'every nor layout leaves the overlay inside the chip' do
     %w[nor8m nor16m nor32m].each do |flash|
       %w[lite ultimate].each do |edition|
@@ -203,7 +258,15 @@ class CameraTest < ActiveSupport::TestCase
 
     keys = Rack::Utils.parse_query(camera.permalink.delete_prefix('?')).keys
 
-    assert_equal %w[mac cip sip net rom ver sd].sort, keys.sort
+    assert_equal %w[mac cip sip net rom part ver sd].sort, keys.sort
+  end
+
+  test 'the permanent link carries a layout that is not the chip default' do
+    camera = Camera.new(camera_mac_address: 'aa:bb:cc:dd:ee:ff', flash_type: 'nor16m',
+                        firmware_version: 'lite', network_interface: 'eth', sd_card_slot: 'nosd')
+    camera.partition_layout = 'nor8m'
+
+    assert_includes camera.permalink, '&part=nor8m'
   end
 
   test 'the permanent link carries every value it was built from' do
@@ -216,7 +279,8 @@ class CameraTest < ActiveSupport::TestCase
     # The MAC is the one field that changes shape: colons are not legal in a
     # query string unescaped, and `show` turns the dashes back.
     assert_equal({ 'mac' => 'aa-bb-cc-dd-ee-ff', 'cip' => '10.0.0.5', 'sip' => '10.0.0.1',
-                   'net' => 'wifi', 'rom' => 'nor32m', 'ver' => 'ultimate', 'sd' => 'sd' }, query)
+                   'net' => 'wifi', 'rom' => 'nor32m', 'part' => 'nor16m', 'ver' => 'ultimate',
+                   'sd' => 'sd' }, query)
   end
 
   def with_index(assets)

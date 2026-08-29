@@ -72,10 +72,10 @@ class FirmwareTest < ActiveSupport::TestCase
     @uboot_path ||= File.join(@dir, 'u-boot.bin').tap { |p| IO.binwrite(p, UBOOT) }
   end
 
-  def build(model:, vendor:, members:, flash_type:, size:, release: 'ultimate', board: nil)
+  def build(model:, vendor:, members:, flash_type:, size:, release: 'ultimate', board: nil, layout: nil)
     soc = StubSoc.new(model: model, vendor: vendor, board: board, uboot_file: uboot_path,
                       linux_file: write_tgz("openipc.#{board || model}-#{flash_type}-#{release}.tgz", members))
-    Firmware.new(size: size, flash_type: flash_type, release: release, soc: soc)
+    Firmware.new(size:, flash_type:, release:, soc:, layout:)
   end
 
   # Half-built images are named for their target, so a leftover is attributable
@@ -94,6 +94,28 @@ class FirmwareTest < ActiveSupport::TestCase
     assert_not_equal nor, nand
   end
 
+  # The layout only enters the name when it is not the one the chip would have
+  # had anyway. Every image already cached was built before the two could
+  # differ, so the usual combinations have to keep the names they were built
+  # under or the whole cache is orphaned.
+  test 'the layout only enters the filename when it is not the chip default' do
+    natural = Firmware.filename_for(soc_model: 'hi3516ev300', flash_type: 'nor', release: 'lite',
+                                    size: 16, layout: 16)
+    smaller = Firmware.filename_for(soc_model: 'hi3516ev300', flash_type: 'nor', release: 'lite',
+                                    size: 16, layout: 8)
+
+    assert_equal 'openipc-hi3516ev300-nor-lite-16mb.bin', natural
+    assert_equal 'openipc-hi3516ev300-nor-lite-16mb-parts8m.bin', smaller
+  end
+
+  test 'a filename asked for without a layout is spelled as it always was' do
+    { 8 => 'openipc-x-nor-lite-8mb.bin', 16 => 'openipc-x-nor-lite-16mb.bin',
+      32 => 'openipc-x-nor-lite-32mb.bin' }.each do |size, expected|
+      assert_equal expected,
+                   Firmware.filename_for(soc_model: 'x', flash_type: 'nor', release: 'lite', size:)
+    end
+  end
+
   # --- NOR regression ---
 
   test 'nor image keeps its layout' do
@@ -106,6 +128,41 @@ class FirmwareTest < ActiveSupport::TestCase
     assert_equal UBOOT, image[0, UBOOT.bytesize]
     assert_equal KERNEL, image[0x50000, KERNEL.bytesize]
     assert_equal SQUASHFS, image[0x350000, SQUASHFS.bytesize]
+  end
+
+  # A 16MB chip carrying the 8MB layout. The parts go where the 8MB mtdparts
+  # says, and the image is still the size of the chip -- which is what lets the
+  # installation page erase all of it and leave the old overlay nowhere to
+  # survive.
+  test 'a 16MB image can carry the 8MB layout and still fill the chip' do
+    fw = build(model: 'hi3518ev201', vendor: 'HiSilicon', flash_type: 'nor', size: 16, layout: 8,
+               members: { 'uImage.hi3518ev201' => KERNEL, 'rootfs.squashfs.hi3518ev201' => SQUASHFS })
+    fw.generate
+    image = IO.binread(fw.filepath)
+
+    assert_equal 16.megabytes, image.bytesize
+    assert_equal UBOOT, image[0, UBOOT.bytesize]
+    assert_equal KERNEL, image[0x50000, KERNEL.bytesize]
+    assert_equal SQUASHFS, image[0x250000, SQUASHFS.bytesize]
+    # rootfs_data, blank all the way to the end of the chip.
+    assert_equal ("\xFF".b * 0x100), image[0x750000, 0x100]
+    assert_equal ("\xFF".b * 0x100), image[16.megabytes - 0x100, 0x100]
+  end
+
+  # A request parameter, like the size beside it, so it is refused before it
+  # can decide where anything is written.
+  test 'a layout larger than the chip is refused' do
+    fw = build(model: 'hi3518ev202', vendor: 'HiSilicon', flash_type: 'nor', size: 8, layout: 16,
+               members: { 'uImage.hi3518ev202' => KERNEL, 'rootfs.squashfs.hi3518ev202' => SQUASHFS })
+
+    assert_raises(Firmware::InvalidFlashSize) { fw.generate }
+  end
+
+  test 'a layout no bootloader defines is refused' do
+    fw = build(model: 'hi3518ev203', vendor: 'HiSilicon', flash_type: 'nor', size: 32, layout: 32,
+               members: { 'uImage.hi3518ev203' => KERNEL, 'rootfs.squashfs.hi3518ev203' => SQUASHFS })
+
+    assert_raises(Firmware::InvalidFlashSize) { fw.generate }
   end
 
   # --- NAND ---

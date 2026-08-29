@@ -194,14 +194,92 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
                 linux_filename: "openipc.#{model.downcase}-nor-lite.tgz")
   end
 
-  def submit(soc, flash_type, firmware_version: 'lite', locale: nil)
+  # partition_layout is left out unless a test asks for one, so the default path
+  # -- which is what the form sends for every chip whose layout is its own -- is
+  # what the rest of these tests keep exercising.
+  def submit(soc, flash_type, firmware_version: 'lite', partition_layout: nil, locale: nil)
+    camera = { flash_type:, firmware_version:,
+               network_interface: 'eth', sd_card_slot: 'nosd',
+               camera_ip_address: '192.168.1.10',
+               server_ip_address: '192.168.1.254',
+               camera_mac_address: '00:11:22:33:44:55' }
+    camera[:partition_layout] = partition_layout if partition_layout
+
     put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}#{"?locale=#{locale}" if locale}",
-        params: { camera: { flash_type:, firmware_version:,
-                            network_interface: 'eth', sd_card_slot: 'nosd',
-                            camera_ip_address: '192.168.1.10',
-                            server_ip_address: '192.168.1.254',
-                            camera_mac_address: '00:11:22:33:44:55' } }
+        params: { camera: }
     assert_response :success
+  end
+
+  # --- the chip and the layout, separately ---
+
+  # The report this second menu exists for. A 16MB camera with a ruined overlay,
+  # reflashed from the 8MB entry, came back exactly as broken: the erase stopped
+  # at 0x800000 while rootfs_data -- `-` in every mtdparts, so to the end of the
+  # device -- ran to 0x1000000, and /init mounts a jffs2 it finds rather than
+  # reformatting it. The erase has to span the chip whatever layout goes inside.
+  test 'the 8MB layout on a 16MB chip erases the whole chip' do
+    soc = instructable_soc('TS3516EVE00')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m', partition_layout: 'nor8m')
+
+      assert_match 'sf erase 0x0 0x1000000', response.body
+      assert_no_match(/sf erase 0x0 0x800000/, response.body)
+      # One image, laid out the 8MB way and sized for the chip it goes on.
+      assert_match 'openipc-ts3516eve00-nor-lite-16mb-parts8m.bin', response.body
+      assert_match 'layout=8', response.body
+      # ...and the by-parts block underneath agrees with it.
+      assert_match 'run uknor8m; run urnor8m', response.body
+      assert_match 'sf erase 0x750000 0x8b0000', response.body
+    end
+  end
+
+  test 'a chip whose layout is its own is named and flashed exactly as before' do
+    soc = instructable_soc('TS3516EVE10')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m')
+
+      assert_match 'openipc-ts3516eve10-nor-lite-16mb.bin', response.body
+      assert_no_match(/parts8m/, response.body)
+      assert_match 'sf erase 0x0 0x1000000', response.body
+      assert_match 'run uknor16m; run urnor16m', response.body
+    end
+  end
+
+  test 'the 16MB layout is refused on an 8MB chip, and the page says so' do
+    soc = instructable_soc('TS3516EVE20')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m', partition_layout: 'nor16m')
+
+      assert_match 'The 16MB partition layout needs a 16MB chip', response.body
+      assert_match 'sf erase 0x0 0x800000', response.body
+      assert_match 'openipc-ts3516eve20-nor-lite-8mb.bin', response.body
+    end
+  end
+
+  # The rootfs partition is what Ultimate does not fit in, and that is the
+  # layout's doing rather than the chip's: 5120KB is 5120KB on a 32MB part too.
+  test 'Ultimate is refused by the 8MB layout even on a chip with room' do
+    soc = instructable_soc('TS3516EVE30')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m', firmware_version: 'ultimate', partition_layout: 'nor8m')
+
+      assert_match 'The 8MB partition layout leaves 5MB for the rootfs', response.body
+      assert_match 'openipc-ts3516eve30-nor-lite-16mb-parts8m.bin', response.body
+    end
+  end
+
+  test 'the permanent link carries the layout so it can be reopened' do
+    soc = instructable_soc('TS3516EVE40')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m', partition_layout: 'nor8m')
+
+      assert_match(/part=nor8m/, response.body)
+    end
   end
 
   test 'a 16MB submission gets the 16MB layout, not the SoC default' do
@@ -459,7 +537,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       get "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}"
 
       assert_response :success
-      assert_match(/const sizeLimits = \{nor8m: \['lite'\]\};/, response.body)
+      assert_match(/const layoutLimits = \{nor8m: \['lite'\]\};/, response.body)
     end
   end
 

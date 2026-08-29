@@ -90,10 +90,20 @@ module InstallationHelper
 
   def flashing_everything(c)
     fw_filename = Firmware.filename_for(soc_model: c.soc.model_downcase, flash_type: c.flash_type_type,
-                                        release: c.firmware_version, size: c.flash_size)
+                                        release: c.firmware_version, size: c.flash_size,
+                                        layout: c.layout_size)
     # The full image is exactly the size it claims on NOR and page-aligned by
     # construction on NAND, so ${filesize} is always a safe write length here --
     # unlike the u-boot-only block below, where the binary is neither.
+    #
+    # And on NOR that size is the chip's, whatever partition layout is going
+    # inside it, so the erase below spans the whole part. It used to span the
+    # size of the layout instead, which is the same number for every
+    # combination the menu could produce until it grew a second field -- and
+    # then, for an 8MB layout on a 16MB chip, left the top half of the flash
+    # untouched. The overlay ends `-(rootfs_data)` and so runs to the end of
+    # the device: a jffs2 that survives up there is mounted on the next boot
+    # and the camera comes back exactly as broken as it went in.
     write_size = '${filesize}'
     text = []
     text << do_not_copy_paste

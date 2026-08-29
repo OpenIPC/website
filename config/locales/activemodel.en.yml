@@ -8,6 +8,7 @@ en:
         firmware_version: Firmware version
         flash_type: Type and size of flash memory chip
         network_interface: Network interface
+        partition_layout: Partition layout
         sd_card_slot: SD card slot
         server_ip_address: TFTP server IP address
         soc_id: System-on-Chip

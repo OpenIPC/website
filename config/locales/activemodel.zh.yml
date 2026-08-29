@@ -8,6 +8,7 @@ zh:
         firmware_version: 固件版本
         flash_type: 闪存芯片类型和容量大小
         network_interface: 网络接口
+        partition_layout: 分区布局
         sd_card_slot: SD卡槽
         server_ip_address: TFTP服务器IP地址
         soc_id: 芯片型号
