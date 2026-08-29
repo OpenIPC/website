@@ -342,10 +342,7 @@ module Cameras
         @camera.firmware_version = 'lite'
         flash.now[:warning] = eight_meg_warning
       else
-        flash.now[:alert] =
-          'The Ultimate edition does not fit an 8MB flash chip, and OpenIPC publishes no Lite build ' \
-          'for this SoC on NOR. These instructions cannot produce a working camera on 8MB flash -- ' \
-          'this SoC needs a larger chip.'
+        flash.now[:alert] = no_lite_for_eight_meg_alert
       end
     end
 
@@ -353,6 +350,24 @@ module Cameras
     # is written, and that is what Ultimate does not fit in.
     def eight_meg_rootfs_with_ultimate?
       @camera.partition_layout.eql?('nor8m') && @camera.firmware_version.eql?('ultimate')
+    end
+
+    # "This SoC needs a larger chip" is the right advice for an 8MB part and the
+    # wrong advice for a 16MB one wearing the 8MB layout, where the chip is
+    # already big enough and the layout is the thing to change. The guard above
+    # reaches both since it became the layout's, so this has to tell them apart
+    # too -- it is the branch for a SoC published as Ultimate and nothing else,
+    # hi3516cv6xx and hi3519dv500, where there is no Lite to fall back to.
+    def no_lite_for_eight_meg_alert
+      unless @camera.flash_type.eql?('nor8m')
+        return 'The Ultimate edition does not fit the 8MB partition layout, and OpenIPC publishes ' \
+               'no Lite build for this SoC on NOR. Choose the 16MB layout, which this chip is big ' \
+               'enough for.'
+      end
+
+      'The Ultimate edition does not fit an 8MB flash chip, and OpenIPC publishes no Lite build ' \
+        'for this SoC on NOR. These instructions cannot produce a working camera on 8MB flash -- ' \
+        'this SoC needs a larger chip.'
     end
 
     # The chip when the chip is what limits them, and the layout when it is the

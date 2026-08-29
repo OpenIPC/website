@@ -313,7 +313,7 @@ class FirmwareTest < ActiveSupport::TestCase
 
   # --- a part too big for its slot ---
 
-  test 'a rootfs too large for the flash is refused rather than written past the end' do
+  test 'a rootfs too large for its partition is refused rather than written past the end' do
     # openipc-hi3516ev200-nor-ultimate-8mb.bin was found in the production
     # cache at 9,465,856 bytes -- 0x250000 plus a 7MB Ultimate rootfs, in a
     # file whose name promises 8MB. IO.binwrite past the end grows the file
@@ -327,13 +327,32 @@ class FirmwareTest < ActiveSupport::TestCase
     assert_not File.exist?(fw.filepath), 'an image larger than its flash must not be left to be served'
   end
 
-  test 'a rootfs that exactly fills the flash is still built' do
-    exact = "\xC3".b * (8.megabytes - 0x250000)
+  test 'a rootfs that exactly fills its partition is still built' do
+    # 0x250000 to 0x750000 -- the 5120KB the 8MB mtdparts gives the rootfs, not
+    # the 0x5b0000 that is left before the end of an 8MB image. The last
+    # 0xb0000 of the chip is rootfs_data, and a squashfs written into it is one
+    # the kernel cannot mount anyway: root is mtdblock3, which is 5120KB long.
+    exact = "\xC3".b * (0x750000 - 0x250000)
     fw = build(model: 'hi3516ev200', vendor: 'HiSilicon', flash_type: 'nor', size: 8,
                members: { 'uImage.hi3516ev200' => KERNEL, 'rootfs.squashfs.hi3516ev200' => exact })
     fw.generate
 
     assert_equal 8.megabytes, File.size(fw.filepath)
+  end
+
+  # Room in the image is not room in the partition. This one fits a 16MB chip
+  # twice over and does not fit the 8MB layout that was asked for with it --
+  # and download_full_image takes both straight from the query string, so
+  # nothing upstream of here refuses the combination.
+  test 'a rootfs that fits the chip but not its partition is refused' do
+    oversize = "\xC3".b * (0x750000 - 0x250000 + 1)
+    fw = build(model: 'hi3516ev204', vendor: 'HiSilicon', flash_type: 'nor', size: 16, layout: 8,
+               members: { 'uImage.hi3516ev204' => KERNEL, 'rootfs.squashfs.hi3516ev204' => oversize })
+
+    error = assert_raises(Firmware::PayloadTooLarge) { fw.generate }
+    assert_match(/rootfs/, error.message)
+    assert_match(/the rootfs partition/, error.message)
+    assert_not File.exist?(fw.filepath)
   end
 
   test 'a kernel that would run into the rootfs is refused' do

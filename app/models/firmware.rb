@@ -233,8 +233,29 @@ class Firmware
     [
       Part.new('u-boot', uboot, 0, kernel_offset, 'the kernel offset'),
       Part.new('kernel', kernel, kernel_offset, rootfs_offset, 'the rootfs offset'),
-      Part.new('rootfs', rootfs, rootfs_offset, size, 'the end of the image')
+      Part.new('rootfs', rootfs, rootfs_offset, *rootfs_limit(size))
     ]
+  end
+
+  # The rootfs may not run past its own partition, which on NOR is where the
+  # overlay starts and not the end of the image.
+  #
+  # The two were near enough the same number while the layout was the chip: an
+  # 8MB image laid out the 8MB way ends 0xb0000 past the rootfs partition, and
+  # the difference only mattered for a rootfs already too big for the partition
+  # to mount. A 16MB image laid out the 8MB way ends 0x8b0000 past it, and
+  # download_full_image takes the edition and the layout straight from the
+  # query string -- so `?fw_release=ultimate&flash_size=16&layout=8` would have
+  # written a 7MB rootfs from 0x250000 clean through rootfs_data, and the
+  # camera would have mounted a squashfs whose tail the overlay then formatted
+  # over.
+  #
+  # NAND keeps the end of the image, which is where its rootfs ends by
+  # construction: image_size is the rootfs offset plus the payload.
+  def rootfs_limit(size)
+    return [size, 'the end of the image'] if nand?
+
+    [nor_layout[:overlay_offset], 'the rootfs partition']
   end
 
   # Build beside the destination and rename into place.

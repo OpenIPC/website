@@ -272,6 +272,49 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # The other half of that rule, for a SoC with no Lite build to fall back to.
+  # "This SoC needs a larger chip" is right for an 8MB part and wrong here: the
+  # chip is 16MB and it is the layout on it that Ultimate does not fit.
+  test 'a SoC published only as Ultimate is told to change the layout, not the chip' do
+    soc = instructable_soc('TS3516EVE50')
+
+    with_release_index("openipc.#{soc.board}-nor-ultimate.tgz") do
+      submit(soc, 'nor16m', firmware_version: 'ultimate', partition_layout: 'nor8m')
+
+      assert_match 'Choose the 16MB layout, which this chip is big enough for', response.body
+      assert_no_match(/needs a larger chip/, response.body)
+    end
+  end
+
+  test 'an 8MB chip with no Lite build is still told it needs a larger one' do
+    soc = instructable_soc('TS3516EVE60')
+
+    with_release_index("openipc.#{soc.board}-nor-ultimate.tgz") do
+      submit(soc, 'nor8m', firmware_version: 'ultimate')
+
+      assert_match 'needs a larger chip', response.body
+    end
+  end
+
+  # The layout menu follows the chip until the visitor settles it themselves,
+  # so picking a larger chip does not leave the 8MB layout the form opens on
+  # sitting on it -- which would quietly hand a 16MB camera 8MB partitions and
+  # take Ultimate away with them.
+  test 'the layout menu follows the chip until the visitor picks one' do
+    soc = instructable_soc('TS3516EVE70')
+
+    with_release_index(*every_edition_for(soc)) do
+      get "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}"
+
+      assert_response :success
+      assert_match(/el.value = naturalLayout\(chip\);/, response.body)
+      assert_match(/layoutChosen = true;/, response.body)
+      # ...and answers with no layout at all where there is none to choose, so
+      # a hidden menu still holding nor8m cannot take Ultimate off a NAND part.
+      assert_match(/return allowed.length \? el.value : '';/, response.body)
+    end
+  end
+
   test 'the permanent link carries the layout so it can be reopened' do
     soc = instructable_soc('TS3516EVE40')
 
