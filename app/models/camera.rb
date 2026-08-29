@@ -10,6 +10,21 @@ class Camera
   # never has. `neo` is here because it does exist, for seven boards.
   FW_VERSION = %w[lite ultimate neo].freeze
   FLASH_CHIP = %w[nor8m nor16m nor32m nand].freeze
+
+  # How the chip is carved up, which is a different question from how big it
+  # is. Every OpenIPC bootloader carries both mtdpartsnor8m and mtdpartsnor16m
+  # and either can be run on a part large enough to hold it, so a 16MB chip can
+  # perfectly well wear the 8MB layout -- and one flashed from the 8MB image
+  # already does.
+  #
+  # The two were a single menu entry until a camera turned up that could not be
+  # revived by a full reflash. Its chip was 16MB and the 8MB entry had been
+  # chosen, so the instructions erased 0x0..0x800000 and stopped. Every layout
+  # here ends `-(rootfs_data)`, meaning "to the end of the device", so the
+  # overlay ran to 0x1000000 and the half of it above the erase survived intact.
+  # /init mounts jffs2 and only reformats when that mount fails, so the old,
+  # broken overlay came back every time.
+  PARTITION_LAYOUT = %w[nor8m nor16m].freeze
   NET_IFACE = %w[eth wifi both].freeze
   SD_CARD = %w[nosd sd].freeze
 
@@ -36,6 +51,7 @@ class Camera
   attr_accessor :soc_id, :needs_instruction, :flash_type, :sd_card_slot,
                 :network_interface, :camera_ip_address, :server_ip_address,
                 :firmware_version, :camera_mac_address, :soc, :backup_filename
+  attr_writer :partition_layout
 
   validates :soc_id, presence: true
   validates :flash_type, presence: true
@@ -185,12 +201,56 @@ class Camera
                                       default: firmware_version.to_s.capitalize)
   end
 
+  # Which mtdparts this camera is being given. Defaults to the one that matches
+  # the chip, so a visitor who never opens the second menu gets exactly what
+  # this page has always produced, and refuses a layout the chip cannot hold --
+  # the 16MB one ends at 0xD50000, which is past the end of an 8MB part.
+  #
+  # Unrecognised is the same as unset. Like every other field here it can arrive
+  # from a query string, and nothing calls valid? on a Camera.
+  def partition_layout
+    return 'nand' if nand?
+    return default_partition_layout unless @partition_layout.in?(PARTITION_LAYOUT)
+    return default_partition_layout unless layout_fits_chip?(@partition_layout)
+
+    @partition_layout
+  end
+
+  def default_partition_layout
+    return 'nand' if nand?
+
+    flash_size <= 8 ? 'nor8m' : 'nor16m'
+  end
+
+  # The 8MB layout fits anything; the 16MB one needs a 16MB part.
+  def layout_fits_chip?(layout)
+    layout.eql?('nor8m') || flash_size >= 16
+  end
+
+  def layout_size
+    partition_layout.eql?('nor8m') ? 8 : 16
+  end
+
+  # `nand` is not in PARTITION_LAYOUT and cannot be chosen: NAND has one layout,
+  # mtdpartsubi, and the menu is hidden for it. It is what partition_layout
+  # answers there so that the name doubles as the suffix of the bootloader
+  # macros -- `uknand`, `urnand`, `setnand`, and `uknor8m` and friends on NOR.
+  # That is also why a 32MB part has always been told to `run setnor16m`: there
+  # is no mtdpartsnor32m in any bootloader upstream ships.
+  def partition_layout_name
+    I18n.t("flash_layout.#{partition_layout}")
+  end
+
   # The NOR numbers come from FlashLayout, which reads them off the bootloader
   # environment. They used to be spelled out here keyed on firmware_version,
   # which agreed with the bootloader only for 8MB+Lite and 16MB+Ultimate; see
   # FlashLayout for what that cost on 16MB.
+  #
+  # Keyed on the layout, not on the chip. The two agree for every combination
+  # the menu offered before it grew a second field, and the whole point of the
+  # second field is the ones where they do not.
   def nor_layout
-    FlashLayout.nor(flash_size)
+    FlashLayout.nor(layout_size)
   end
 
   def kernel_max_size
@@ -251,6 +311,9 @@ class Camera
       '&sip=', server_ip_address,
       '&net=', network_interface,
       '&rom=', flash_type,
+      # The layout is written whether or not it differs from the chip's own, so
+      # a link says what it means rather than leaning on today's default.
+      '&part=', partition_layout,
       # `ver`, not `var`. This emitted `var` while show has always read `ver`,
       # so the edition was the one field the permanent link dropped: reopening
       # a link for Ultimate on a 32MB chip came back as Lite. show still

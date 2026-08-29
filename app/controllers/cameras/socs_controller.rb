@@ -86,6 +86,7 @@ module Cameras
       @camera.camera_mac_address = permitted_params[:camera_mac_address].to_s.downcase.gsub('-', ':')
       @camera.server_ip_address = permitted_params[:server_ip_address]
       @camera.flash_type = permitted_params[:flash_type]
+      @camera.partition_layout = permitted_params[:partition_layout]
       @camera.firmware_version = permitted_params[:firmware_version]
       @camera.network_interface = permitted_params[:network_interface]
       @camera.sd_card_slot = permitted_params[:sd_card_slot]
@@ -112,13 +113,20 @@ module Cameras
       # query string and the commands.
       @camera.flash_type = @camera.soc.default_flash_chip unless @camera.flash_type.in?(Camera::FLASH_CHIP)
 
-      # to handle nor32m size still using nor16m command. After the default
-      # above, not before: the commands name the chip, so reading the flash type
-      # first left the page telling a 16MB camera to `run urnor16m` and then
-      # erasing from the 8MB overlay offset, 733,184 bytes into what it had just
-      # written. That is the failure #60 described, by another route.
-      @flash_type_command = @camera.flash_type
-      @flash_type_command = 'nor16m' if @camera.flash_type.eql?('nor32m')
+      # The bootloader macros are named after the layout, not the chip. This
+      # used to be the flash type with `nor32m` rewritten to `nor16m`, which is
+      # the same answer for every combination the menu could then produce --
+      # there is no mtdpartsnor32m anywhere upstream, so a 32MB part has always
+      # worn the 16MB layout. Camera#partition_layout says it directly now, and
+      # says it for the 8MB-layout-on-a-larger-chip case too.
+      #
+      # After the flash type has settled, not before: the layout defaults to
+      # the chip's own, so reading it first left the page telling a 16MB camera
+      # to `run urnor16m` and then erasing from the 8MB overlay offset, 733,184
+      # bytes into what it had just written. That is the failure #60 described,
+      # by another route.
+      warn_if_layout_changed permitted_params[:partition_layout]
+      @flash_type_command = @camera.partition_layout
 
       if @vendor.name.eql?("SigmaStar") && @camera.flash_type.eql?("nand")
         render 'cameras/socs/sigmastar_nand_is_weird'
@@ -152,12 +160,15 @@ module Cameras
     end
 
     def download_full_image
-      permitted_params = params.permit(:id, :vendor_id, :flash_size, :fw_release, :flash_type)
+      permitted_params = params.permit(:id, :vendor_id, :flash_size, :fw_release, :flash_type, :layout)
       flash_size = permitted_params[:flash_size]
       flash_type = permitted_params[:flash_type]
       fw_release = permitted_params[:fw_release]
       @soc = Soc.find(params[:id])
-      fw = Firmware.new(size: flash_size, flash_type: flash_type, release: fw_release, soc: @soc)
+      # An absent layout means the chip's own, which is what every link written
+      # before the wizard could tell the two apart meant.
+      fw = Firmware.new(size: flash_size, flash_type: flash_type, release: fw_release, soc: @soc,
+                        layout: permitted_params[:layout])
       fw.generate
       # Recorded here rather than in Firmware, because a cached image is sent
       # without being rebuilt and it is the sending that is worth counting.
@@ -236,6 +247,7 @@ module Cameras
     # between a key and a field and a table is where that is visible. Insertion
     # order is the precedence: `var` is applied first so `ver` overwrites it.
     PERMALINK_FIELDS = { cip: :camera_ip_address, sip: :server_ip_address, rom: :flash_type,
+                         part: :partition_layout,
                          var: :firmware_version, ver: :firmware_version,
                          net: :network_interface, sd: :sd_card_slot }.freeze
 
@@ -278,7 +290,7 @@ module Cameras
       # published as Ultimate and nothing else, hi3516cv6xx and hi3519dv500,
       # keeps it, because naming a Lite tarball upstream never built is worse
       # than the size warning `update` will give.
-      return unless camera.flash_type.eql?('nor8m') && camera.firmware_version.eql?('ultimate')
+      return unless camera.partition_layout.eql?('nor8m') && camera.firmware_version.eql?('ultimate')
       return unless camera.soc.available_releases('nor').include?('lite')
 
       camera.firmware_version = 'lite'
@@ -318,7 +330,7 @@ module Cameras
     # download link for `flash_size=8&fw_release=ultimate`, and `run uknor8m;
     # run urnor8m` -- with no indication that none of it can work.
     def enforce_eight_meg_limit
-      return unless @camera.flash_type.eql?('nor8m') && @camera.firmware_version.eql?('ultimate')
+      return unless eight_meg_rootfs_with_ultimate?
 
       published = @camera.soc.available_releases('nor')
       # Nothing on NOR at any size is a different problem, and
@@ -328,13 +340,45 @@ module Cameras
 
       if published.include?('lite')
         @camera.firmware_version = 'lite'
-        flash.now[:warning] = '8MB Flash ROM can only be flashed with Lite or FPV edition!'
+        flash.now[:warning] = eight_meg_warning
       else
-        flash.now[:alert] =
-          'The Ultimate edition does not fit an 8MB flash chip, and OpenIPC publishes no Lite build ' \
-          'for this SoC on NOR. These instructions cannot produce a working camera on 8MB flash -- ' \
-          'this SoC needs a larger chip.'
+        flash.now[:alert] = no_lite_for_eight_meg_alert
       end
+    end
+
+    # The layout, not the chip: the 8MB one gives the rootfs 5120KB wherever it
+    # is written, and that is what Ultimate does not fit in.
+    def eight_meg_rootfs_with_ultimate?
+      @camera.partition_layout.eql?('nor8m') && @camera.firmware_version.eql?('ultimate')
+    end
+
+    # "This SoC needs a larger chip" is the right advice for an 8MB part and the
+    # wrong advice for a 16MB one wearing the 8MB layout, where the chip is
+    # already big enough and the layout is the thing to change. The guard above
+    # reaches both since it became the layout's, so this has to tell them apart
+    # too -- it is the branch for a SoC published as Ultimate and nothing else,
+    # hi3516cv6xx and hi3519dv500, where there is no Lite to fall back to.
+    def no_lite_for_eight_meg_alert
+      unless @camera.flash_type.eql?('nor8m')
+        return 'The Ultimate edition does not fit the 8MB partition layout, and OpenIPC publishes ' \
+               'no Lite build for this SoC on NOR. Choose the 16MB layout, which this chip is big ' \
+               'enough for.'
+      end
+
+      'The Ultimate edition does not fit an 8MB flash chip, and OpenIPC publishes no Lite build ' \
+        'for this SoC on NOR. These instructions cannot produce a working camera on 8MB flash -- ' \
+        'this SoC needs a larger chip.'
+    end
+
+    # The chip when the chip is what limits them, and the layout when it is the
+    # layout: a 5120KB rootfs partition is a 5120KB rootfs partition whether the
+    # part around it is 8MB or 32MB, and on the larger ones there is something
+    # the reader can actually do about it.
+    def eight_meg_warning
+      return '8MB Flash ROM can only be flashed with Lite or FPV edition!' if @camera.flash_type.eql?('nor8m')
+
+      'The 8MB partition layout leaves 5MB for the rootfs, which only the Lite and FPV editions ' \
+        'fit. Choose the 16MB layout to install Ultimate on this chip.'
     end
 
     # Nothing published for the chip that was chosen, at any edition.
@@ -352,6 +396,22 @@ module Cameras
     # available_releases answers the known list rather than [] when the index
     # cannot be read, so an unreachable index does not turn into "OpenIPC
     # publishes nothing for this SoC".
+    # The layout is refused rather than clamped in silence when the chip cannot
+    # hold it -- reachable only from a hand-edited query string, since the menu
+    # does not offer the 16MB layout on an 8MB part, but it decides where the
+    # rootfs is written and a page that quietly showed the other one would be
+    # describing a different install from the one that was asked for.
+    def warn_if_layout_changed(asked)
+      # Unrecognised is the same as unset, as it is everywhere else here, and
+      # NAND has one layout and no menu to choose it from.
+      return if @camera.nand? || !asked.in?(Camera::PARTITION_LAYOUT)
+      return if asked.eql?(@camera.partition_layout)
+
+      flash.now[:warning] =
+        'The 16MB partition layout needs a 16MB chip -- its rootfs alone ends at 0xD50000. ' \
+        "Showing the #{@camera.layout_size}MB layout instead."
+    end
+
     def warn_if_nothing_published
       return if @camera.soc.available_releases(@camera.flash_type_type).any?
 
@@ -362,7 +422,7 @@ module Cameras
 
     def permitted_params
       params.require(:camera).permit(
-        :flash_type, :sd_card_slot, :network_interface, :camera_ip_address,
+        :flash_type, :partition_layout, :sd_card_slot, :network_interface, :camera_ip_address,
         :server_ip_address, :firmware_version, :sd_card_slot, :camera_mac_address
       )
     end

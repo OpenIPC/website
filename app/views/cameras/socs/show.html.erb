@@ -81,6 +81,11 @@
             </div>
             <div class="col">
               <%= f.select :flash_type, list_of_flash_type_sizes_for_select %>
+              <%# Hidden for NAND, which has one layout -- mtdpartsubi -- and %>
+              <%# nothing to choose. The script below does the hiding.        %>
+              <div id="partition-layout-field">
+                <%= f.select :partition_layout, list_of_partition_layouts_for_select %>
+              </div>
               <%= f.select :firmware_version, list_of_firmware_versions_for_select,
                            {}, data: { availability: @camera.soc.release_availability.to_json } %>
               <!-- %= f.select :network_interface, list_of_network_interfaces_for_select % -->
@@ -109,8 +114,13 @@
         document.querySelector('#camera_firmware_version').dataset.availability
     );
 
-    // Flash size still constrains the edition independently of what exists:
-    // an 8MB part cannot hold Ultimate whether or not it is published.
+    // The partition layout still constrains the edition independently of what
+    // exists: a 5120KB rootfs partition cannot hold Ultimate whether or not it
+    // is published.
+    //
+    // Keyed on the layout rather than the chip, which is the same thing until
+    // someone asks for the 8MB layout on a larger part -- and then it is the
+    // partition that decides, not the chip around it.
     //
     // 16MB used to be listed here too, and that was wrong. Ultimate is built
     // for 16MB and for nothing else -- all 28 *_ultimate_defconfig files
@@ -120,21 +130,73 @@
     // exactly the hardware it targets. With the entry gone, allowedEditions
     // falls through to what the release index says is published, which is the
     // rule: both editions on 16MB where an Ultimate image exists.
-    const sizeLimits = {nor8m: ['lite']};
+    const layoutLimits = {nor8m: ['lite']};
 
     // What to land on when the current choice is no longer available.
     const preferred = {nor32m: 'ultimate', nand: 'ultimate'};
 
-    function allowedEditions(chip) {
+    // Which layouts a chip can wear. The 16MB one puts 10240KB of rootfs at
+    // 0x350000 and so ends at 0xD50000, past the end of an 8MB part; the 8MB
+    // one fits anything, and on a larger chip it simply leaves rootfs_data --
+    // which every mtdparts ends with `-`, meaning to the end of the device --
+    // that much bigger. NAND has mtdpartsubi and no choice to make.
+    function allowedLayouts(chip) {
+        if (chip.startsWith('nand')) return [];
+        return chip === 'nor8m' ? ['nor8m'] : ['nor8m', 'nor16m'];
+    }
+
+    // The layout a chip wears unless it is told otherwise: the largest one it
+    // can hold, which is the last entry allowedLayouts returns.
+    function naturalLayout(chip) {
+        const allowed = allowedLayouts(chip);
+        return allowed.length ? allowed[allowed.length - 1] : '';
+    }
+
+    // Whether the visitor has settled the layout for themselves. Until they
+    // have, it follows the chip, so choosing NOR 16M gets the 16MB layout --
+    // which is what the single menu this replaced always produced.
+    //
+    // Without it the 8MB layout the form opens on survived every later chip
+    // change, because it is a legal choice on a larger part and so never
+    // tripped the not-allowed branch. Picking NOR 16M then quietly gave a 16MB
+    // camera 8MB partitions, and the edition limiter below took Ultimate away
+    // with it.
+    let layoutChosen = false;
+
+    // Narrow the layout menu to the chip, and answer what is now selected.
+    function checkPartitionLayout() {
+        const el = document.querySelector('#camera_partition_layout');
+        const chip = document.querySelector('#camera_flash_type').value;
+        const allowed = allowedLayouts(chip);
+
+        document.querySelector('#partition-layout-field').hidden = allowed.length === 0;
+        for (let i = 0; i < el.options.length; i++) {
+            const o = el.options.item(i);
+            o.disabled = !allowed.includes(o.value);
+        }
+        if (allowed.length && !(layoutChosen && allowed.includes(el.value))) {
+            el.value = naturalLayout(chip);
+        }
+
+        // Nothing, rather than whatever the hidden menu happens to hold, when
+        // the chip has no NOR layout to choose. The menu keeps its value while
+        // it is hidden, so NAND was reading back `nor8m` and having Ultimate
+        // taken off it by a rootfs partition it does not have -- eleven of the
+        // sixteen boards with a NAND build are published as Ultimate and
+        // nothing else.
+        return allowed.length ? el.value : '';
+    }
+
+    function allowedEditions(chip, layout) {
         const published = availability[chip.startsWith('nand') ? 'nand' : 'nor'] || [];
-        const limit = sizeLimits[chip];
+        const limit = layoutLimits[layout];
         if (!limit) return published;
 
-        // The size rule narrows what exists; it must not empty the menu. No SoC
+        // The layout rule narrows what exists; it must not empty the menu. No SoC
         // listed today can hit this -- every board with a NOR build has a Lite
         // one -- but hi3516cv6xx and hi3519dv500 are built only as Ultimate, so
         // the first of those to be added here would otherwise offer nothing at
-        // all on 8M and 16M. Offering what exists and letting the server answer
+        // all on the 8MB layout. Offering what exists and letting the server answer
         // PayloadTooLarge, which it does with its own message, beats a menu with
         // every entry greyed out and no explanation.
         const fits = published.filter(v => limit.includes(v));
@@ -156,9 +218,10 @@
 
     function checkFlashSize() {
         useAnOfferedFlashType();
+        const layout = checkPartitionLayout();
         const el = document.querySelector('#camera_firmware_version');
         const chip = document.querySelector('#camera_flash_type').value;
-        const allowed = allowedEditions(chip);
+        const allowed = allowedEditions(chip, layout);
 
         for (let i = 0; i < el.options.length; i++) {
             const o = el.options.item(i);
@@ -192,5 +255,19 @@
 
     document.querySelector('#generate-mac-address').addEventListener('click', generateMacAddress);
     document.querySelector('#camera_flash_type').addEventListener('change', checkFlashSize);
+    document.querySelector('#camera_partition_layout').addEventListener('change', function () {
+        layoutChosen = true;
+        checkFlashSize();
+    });
+
+    // Settled before the first narrowing, and after the chip has: a page that
+    // opens on a layout that is not its chip's own got there from a permanent
+    // link carrying `part`, and that is as deliberate as using the menu. A link
+    // written before this field existed carries none, so it opens on the chip's
+    // own layout and means exactly what it always did.
+    useAnOfferedFlashType();
+    layoutChosen = allowedLayouts(document.querySelector('#camera_flash_type').value).length > 0 &&
+        document.querySelector('#camera_partition_layout').value
+            !== naturalLayout(document.querySelector('#camera_flash_type').value);
     checkFlashSize();
 </script>

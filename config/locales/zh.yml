@@ -97,6 +97,7 @@ zh:
         info: 下载引导加载程序二进制文件并将其保存到 TFTP 服务器的根目录。
         link: 下载 OpenIPC U-Boot 二进制文件
         title: 烧录 OpenIPC U-Boot
+      layout_note: '分区布局：%{layout}。下面的镜像覆盖整片闪存，因此刷写时也会清除 overlay 分区。'
       permanent_link: 当前配置的永久链接
       subtitle: 在带有 %{soc_name} SoC 和 %{flash_type} SPI 闪存芯片的摄像机上
       success:
@@ -117,6 +118,10 @@ zh:
     nor16m: NOR 16M
     nor32m: NOR 32M
     nor8m: NOR 8M
+  flash_layout:
+    nand: UBI 分区布局
+    nor16m: 16MB（rootfs 10MB）
+    nor8m: 8MB（rootfs 5MB）
   go: 进行
   footer:
     column_community: 社区

@@ -8,6 +8,7 @@ ru:
         firmware_version: Версия прошивки
         flash_type: Тип и размер микросхемы флэш-памяти
         network_interface: Сетевые интерфейсы
+        partition_layout: Разметка флэш-памяти на разделы
         sd_card_slot: Слот для SD-карты
         server_ip_address: IP-адрес TFTP-сервера
         soc_id: Система-на-чипе

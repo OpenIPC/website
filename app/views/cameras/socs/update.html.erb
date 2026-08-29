@@ -14,6 +14,13 @@
     <h2 class="mb-0"><%= t('firmware.installation.title') %> (<%= @camera.firmware_version_name %>)</h2>
     <p class="lead fw-bold"><%= t('firmware.installation.subtitle',
                                   soc_name: @camera.soc.full_name, flash_type: @camera.flash_type_name) %></p>
+    <%# Which mtdparts these commands assume. Worth saying out loud: it is a %>
+    <%# separate choice from the chip now, and the erase below spans the chip %>
+    <%# whichever layout goes inside it.                                     %>
+    <% unless @camera.nand? %>
+      <p class="text-muted"><%= t('firmware.installation.layout_note',
+                                  layout: @camera.partition_layout_name) %></p>
+    <% end %>
   </header>
 
   <p class="text-end"><%= link_to t('firmware.installation.permanent_link'), @camera.permalink %></p>
@@ -53,8 +60,8 @@
         <div class="col col-lg-4">
           <div class="github">
             <i class="bi bi-github float-start me-2"></i>
-            <h6 class="mb-0"><%= link_to t('firmware.installation.flashing_full.link', name: @camera.firmware_version.to_s.titleize), download_full_image_cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc, fw_release: @camera.firmware_version, flash_size: @camera.flash_size, flash_type: @camera.flash_type_type) %></h6>
-            <p>for <%= @camera.soc.full_name %> with <%= @camera.flash_size %>MB <%= @camera.flash_type_type.upcase %> flash</p>
+            <h6 class="mb-0"><%= link_to t('firmware.installation.flashing_full.link', name: @camera.firmware_version.to_s.titleize), download_full_image_cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc, fw_release: @camera.firmware_version, flash_size: @camera.flash_size, flash_type: @camera.flash_type_type, layout: @camera.layout_size) %></h6>
+            <p>for <%= @camera.soc.full_name %> with <%= @camera.flash_size %>MB <%= @camera.flash_type_type.upcase %> flash<%= ", #{@camera.layout_size}MB partitions" unless @camera.nand? || @camera.layout_size == @camera.flash_size %></p>
             <p class="mb-0"><%= t('firmware.installation.flashing_full.info') %></p>
             <% if @camera.nand? %>
               <p class="mb-0 mt-2 small"><%= t('firmware.installation.flashing_full.nand_caveat') %></p>

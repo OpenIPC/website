@@ -12,6 +12,12 @@ class Firmware
 
   NOR_SIZES = [8, 16, 32].freeze
 
+  # The two mtdparts every OpenIPC bootloader carries. The layout is not the
+  # chip: an 8MB layout on a 16MB part is a real configuration, and building it
+  # as a chip-sized image is what lets the installation page erase the whole
+  # part rather than stopping at the end of a smaller one.
+  NOR_LAYOUTS = [8, 16].freeze
+
   LOCK_POLL = 0.1
 
   # Assembly of one image takes about a second. The wait exists only so that
@@ -45,25 +51,41 @@ class Firmware
   class PayloadTooLarge < StandardError; end
   class LockTimeout < StandardError; end
 
-  def initialize(size: 8, flash_type: 'nor', release: 'lite', soc: nil)
+  def initialize(size: 8, flash_type: 'nor', release: 'lite', soc: nil, layout: nil)
     super()
     @soc = soc
     @size = size.to_i
     @flash_type = flash_type
     @release = release
+    # Blank as well as nil, because this arrives from a query string and an
+    # older permanent link carries no layout at all.
+    @layout = layout.to_s.strip.empty? ? self.class.natural_layout(@size) : layout.to_i
+  end
+
+  # The layout a chip of this size wears unless told otherwise, and the one
+  # every image built before there was a choice was built with.
+  def self.natural_layout(size)
+    size.to_i <= 8 ? 8 : 16
   end
 
   # Built here rather than in the view so the TFTP command on the installation
   # page and the file the download actually produces cannot drift apart.
-  def self.filename_for(soc_model:, flash_type:, release:, size:)
+  #
+  # The layout only enters the name when it is not the chip's own. Every image
+  # already on disk was built before the two could differ, so leaving the usual
+  # combinations spelled as they always were keeps that cache valid -- and keeps
+  # the file a visitor downloads named after the chip they told us about.
+  def self.filename_for(soc_model:, flash_type:, release:, size:, layout: nil)
     return "openipc-#{soc_model}-nand-#{release}.bin" if flash_type.to_s.eql?('nand')
 
-    "openipc-#{soc_model}-nor-#{release}-#{size}mb.bin"
+    layout = natural_layout(size) if layout.to_s.strip.empty?
+    suffix = layout.to_i.eql?(natural_layout(size)) ? '' : "-parts#{layout.to_i}m"
+    "openipc-#{soc_model}-nor-#{release}-#{size}mb#{suffix}.bin"
   end
 
   def filename
     @filename ||= self.class.filename_for(soc_model: @soc.model_downcase, flash_type: @flash_type,
-                                          release: @release, size: @size)
+                                          release: @release, size: @size, layout: @layout)
   end
 
   def filepath
@@ -100,6 +122,7 @@ class Firmware
   # for a name that has been aliased away is exactly what should not be served.
   def generate
     validate_size!
+    validate_layout!
     build_if_needed
   rescue ReleaseCache::Unavailable => e
     raise unless usable?
@@ -210,8 +233,29 @@ class Firmware
     [
       Part.new('u-boot', uboot, 0, kernel_offset, 'the kernel offset'),
       Part.new('kernel', kernel, kernel_offset, rootfs_offset, 'the rootfs offset'),
-      Part.new('rootfs', rootfs, rootfs_offset, size, 'the end of the image')
+      Part.new('rootfs', rootfs, rootfs_offset, *rootfs_limit(size))
     ]
+  end
+
+  # The rootfs may not run past its own partition, which on NOR is where the
+  # overlay starts and not the end of the image.
+  #
+  # The two were near enough the same number while the layout was the chip: an
+  # 8MB image laid out the 8MB way ends 0xb0000 past the rootfs partition, and
+  # the difference only mattered for a rootfs already too big for the partition
+  # to mount. A 16MB image laid out the 8MB way ends 0x8b0000 past it, and
+  # download_full_image takes the edition and the layout straight from the
+  # query string -- so `?fw_release=ultimate&flash_size=16&layout=8` would have
+  # written a 7MB rootfs from 0x250000 clean through rootfs_data, and the
+  # camera would have mounted a squashfs whose tail the overlay then formatted
+  # over.
+  #
+  # NAND keeps the end of the image, which is where its rootfs ends by
+  # construction: image_size is the rootfs offset plus the payload.
+  def rootfs_limit(size)
+    return [size, 'the end of the image'] if nand?
+
+    [nor_layout[:overlay_offset], 'the rootfs partition']
   end
 
   # Build beside the destination and rename into place.
@@ -281,6 +325,19 @@ class Firmware
     return if NOR_SIZES.include?(@size)
 
     raise InvalidFlashSize, "unsupported NOR flash size #{@size}MB (expected #{NOR_SIZES.join(', ')})"
+  end
+
+  # Same reasoning as validate_size!, for the same reason: the layout is a
+  # request parameter too, and it decides the offsets everything is written at.
+  # A layout larger than the chip is refused rather than clamped -- the 16MB one
+  # puts the rootfs at 0x350000 with 10240KB to fill, which does not exist on an
+  # 8MB part, and silently substituting the other one would hand back an image
+  # that does not match the name it was asked for.
+  def validate_layout!
+    return if nand?
+    return if NOR_LAYOUTS.include?(@layout) && @layout <= @size
+
+    raise InvalidFlashSize, "unsupported NOR partition layout #{@layout}MB on a #{@size}MB chip"
   end
 
   # IO.binwrite past the end of a file grows it rather than failing, so a part
@@ -389,9 +446,11 @@ class Firmware
   end
 
   # Same table the installation page renders from, so the image and the
-  # instructions cannot describe different partition layouts.
+  # instructions cannot describe different partition layouts. Keyed on the
+  # layout rather than the size, which are the same thing for every image built
+  # before the wizard could tell them apart.
   def nor_layout
-    @nor_layout ||= FlashLayout.nor(@size)
+    @nor_layout ||= FlashLayout.nor(@layout)
   end
 
   def kernel_offset

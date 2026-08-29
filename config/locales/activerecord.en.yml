@@ -19,6 +19,7 @@ en:
     help:
       camera:
         flash_type: If not sure, select NOR 8M.
+        partition_layout: Follows the chip unless you change it. The 8MB layout on a larger chip leaves the rest of the flash to the overlay, but only fits the Lite edition.
     models:
       snapshot: Snapshot
       soc: SoC

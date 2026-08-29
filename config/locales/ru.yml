@@ -99,6 +99,7 @@ ru:
         info: Загрузите двоичный файл загрузчика и сохраните его в корневой каталог вашего TFTP-сервера.
         link: Скачать бинарный файл OpenIPC U-Boot
         title: Прошивка U-Boot OpenIPC
+      layout_note: 'Разметка на разделы: %{layout}. Образ ниже занимает всю флэш-память целиком, поэтому его прошивка стирает и оверлей.'
       permanent_link: Постоянная ссылка на эту конфигурацию
       subtitle: на камере с %{soc_name} SoC и флэш-чипом %{flash_type} SPI
       success:
@@ -119,6 +120,10 @@ ru:
     nor16m: NOR 16M
     nor32m: NOR 32M
     nor8m: NOR 8M
+  flash_layout:
+    nand: Разметка UBI
+    nor16m: 16 МБ (rootfs 10 МБ)
+    nor8m: 8 МБ (rootfs 5 МБ)
   go: Go
   footer:
     column_community: Сообщество
