@@ -14,6 +14,14 @@
 
 set -euo pipefail
 
+# One purge at a time. The container below carries a fixed name and the
+# cleanup after it removes whatever holds that name, so an overlapping run --
+# cron plus a manual invocation, say -- would kill the other's container and
+# then skip its own purge. The lock is released when the script exits and fd 9
+# closes.
+exec 9>/var/lock/openipc-purge-snapshots.lock
+flock -n 9 || { echo "another purge is already running; leaving it to finish"; exit 0; }
+
 COMPOSE_DIR=/srv/www/deploy-src/deploy
 BLOB_ROOT=/srv/www/shared/storage
 IMAGE_TAG=$(sed -n 's/^PROD_TAG=//p' "${COMPOSE_DIR}/.env" | tail -1)
@@ -36,13 +44,26 @@ log "purging snapshots past retention (image ${IMAGE_TAG:0:12})"
 # A one-off container rather than `docker exec` into web-prod: purging is IO
 # heavy and should not compete with request threads for the web process, and a
 # crash here must not take the site down.
-docker run --rm \
+# --name + timeout + rm -f: the runner can deadlock at process exit draining
+# the :async adapter's thread pool (ActiveStorage still enqueues PurgeJobs
+# during destroy despite the inline purge). When that happens the container
+# never exits, --rm never fires, one hung container accumulates per night
+# holding a MySQL connection, and set -e stops every later step of this script
+# from running. The purge work itself finishes in seconds, before the hang, so
+# a bounded lifetime loses nothing; ten minutes is generous.
+# A stale container from an interrupted run -- host reboot, script killed
+# after the timeout fired but before its own cleanup -- would make this run
+# fail on the name collision and cost a night's purge. Under the flock nothing
+# legitimate holds this name, so clear it first.
+docker rm -f openipc-purge-snapshots >/dev/null 2>&1 || true
+timeout 600 docker run --rm --name openipc-purge-snapshots \
   --env-file /srv/www/.env.prod \
   -v /run/mysqld:/run/mysqld \
   -v "$BLOB_ROOT":/rails/storage \
   "ghcr.io/openipc/website:${IMAGE_TAG}" \
   bundle exec rails runner 'puts "purged #{PurgeImagesJob.new.perform} snapshots"' \
-  || { log "FAILED: purge job errored"; exit 1; }
+  || log "WARNING: purge job errored or timed out, continuing"
+docker rm -f openipc-purge-snapshots >/dev/null 2>&1 || true
 
 # Download rows, past their window. A row is about 60 bytes and the site sends
 # roughly eighty images a day, so two years of them is a few megabytes -- the
