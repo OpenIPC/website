@@ -51,6 +51,11 @@ log "purging snapshots past retention (image ${IMAGE_TAG:0:12})"
 # holding a MySQL connection, and set -e stops every later step of this script
 # from running. The purge work itself finishes in seconds, before the hang, so
 # a bounded lifetime loses nothing; ten minutes is generous.
+# A stale container from an interrupted run -- host reboot, script killed
+# after the timeout fired but before its own cleanup -- would make this run
+# fail on the name collision and cost a night's purge. Under the flock nothing
+# legitimate holds this name, so clear it first.
+docker rm -f openipc-purge-snapshots >/dev/null 2>&1 || true
 timeout 600 docker run --rm --name openipc-purge-snapshots \
   --env-file /srv/www/.env.prod \
   -v /run/mysqld:/run/mysqld \
