@@ -36,13 +36,21 @@ log "purging snapshots past retention (image ${IMAGE_TAG:0:12})"
 # A one-off container rather than `docker exec` into web-prod: purging is IO
 # heavy and should not compete with request threads for the web process, and a
 # crash here must not take the site down.
-docker run --rm \
+# --name + timeout + rm -f: the runner can deadlock at process exit draining
+# the :async adapter's thread pool (ActiveStorage still enqueues PurgeJobs
+# during destroy despite the inline purge). When that happens the container
+# never exits, --rm never fires, one hung container accumulates per night
+# holding a MySQL connection, and set -e stops every later step of this script
+# from running. The purge work itself finishes in seconds, before the hang, so
+# a bounded lifetime loses nothing; ten minutes is generous.
+timeout 600 docker run --rm --name openipc-purge-snapshots \
   --env-file /srv/www/.env.prod \
   -v /run/mysqld:/run/mysqld \
   -v "$BLOB_ROOT":/rails/storage \
   "ghcr.io/openipc/website:${IMAGE_TAG}" \
   bundle exec rails runner 'puts "purged #{PurgeImagesJob.new.perform} snapshots"' \
-  || { log "FAILED: purge job errored"; exit 1; }
+  || log "WARNING: purge job errored or timed out, continuing"
+docker rm -f openipc-purge-snapshots >/dev/null 2>&1 || true
 
 # Download rows, past their window. A row is about 60 bytes and the site sends
 # roughly eighty images a day, so two years of them is a few megabytes -- the
