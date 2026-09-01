@@ -32,17 +32,17 @@ pidfile ENV.fetch("PIDFILE") { "tmp/pids/server.pid" }
 # Specifies the number of `workers` to boot in clustered mode.
 # Workers are forked web server processes. If using threads and workers together
 # the concurrency of the application would be max `threads` * `workers`.
-# Workers do not work on JRuby or Windows (both of which do not support
-# processes).
 #
-# workers ENV.fetch("WEB_CONCURRENCY") { 2 }
+# MRI executes Ruby on one core per process, so however many threads run above,
+# a single process caps the whole app at one core. Two workers in production;
+# development keeps single mode, where 0 means no cluster at all.
+default_workers = ENV.fetch('RAILS_ENV', 'development') == 'production' ? 2 : 0
+workers ENV.fetch('WEB_CONCURRENCY') { default_workers }.to_i
 
-# Use the `preload_app!` method when specifying a `workers` number.
-# This directive tells Puma to first boot the application and load code
-# before forking the application. This takes advantage of Copy On Write
-# process behavior so workers use less memory.
-#
-# preload_app!
+# No preload_app!: phased restarts (SIGUSR1) replace workers one at a time with
+# the listener kept open — a restart without dropped requests — and they only
+# work when each worker can boot the app itself rather than inherit it from a
+# fork.
 
 # Allow puma to be restarted by `bin/rails restart` command.
 plugin :tmp_restart
