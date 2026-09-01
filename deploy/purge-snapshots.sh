@@ -14,6 +14,14 @@
 
 set -euo pipefail
 
+# One purge at a time. The container below carries a fixed name and the
+# cleanup after it removes whatever holds that name, so an overlapping run --
+# cron plus a manual invocation, say -- would kill the other's container and
+# then skip its own purge. The lock is released when the script exits and fd 9
+# closes.
+exec 9>/var/lock/openipc-purge-snapshots.lock
+flock -n 9 || { echo "another purge is already running; leaving it to finish"; exit 0; }
+
 COMPOSE_DIR=/srv/www/deploy-src/deploy
 BLOB_ROOT=/srv/www/shared/storage
 IMAGE_TAG=$(sed -n 's/^PROD_TAG=//p' "${COMPOSE_DIR}/.env" | tail -1)
