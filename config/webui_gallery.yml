@@ -12,9 +12,11 @@
 #
 #   slug     basename of the pair in app/assets/images/webui/ --
 #            <slug>.webp is the full 2560px capture, <slug>-thumb.webp the tile.
-#   caption  the page title as the camera prints it. Deliberately not
-#            translated: the WebUI is English-only, so quoting it is what a
-#            reader can actually match against on the device.
+#   caption  the page's name as the camera prints it -- the word in the nav
+#            bar, prefixed by its menu where it has one, exactly as the page's
+#            own browser title reads. Deliberately not translated: the WebUI is
+#            English-only, so quoting it is what a reader can match against on
+#            the device.
 #   cgi      the page under /cgi-bin/ to photograph.
 #   settle   milliseconds to wait after the page has loaded before the shutter.
 #            Pages that fetch and render their own content need more: the log
@@ -26,64 +28,64 @@
 #            rather than quietly photographing the camera's own view when the
 #            WebUI changes shape.
 screens:
-  - slug: status
-    caption: Device Status
-    cgi: status.cgi
+  - slug: dashboard
+    caption: Dashboard
+    cgi: dashboard.cgi
     settle: 2500
 
-  - slug: preview
-    caption: Camera Preview
-    cgi: preview.cgi
+  - slug: live
+    caption: Live
+    cgi: live.cgi
     settle: 14000
     scene: true
 
-  - slug: majestic-settings
-    caption: Majestic Settings
-    cgi: mj-settings.cgi
+  - slug: camera-settings
+    caption: Camera - Settings
+    cgi: camera.cgi
     settle: 6000
     scene: true
 
-  - slug: majestic-endpoints
-    caption: Majestic Endpoints
-    cgi: mj-endpoints.cgi
+  - slug: stream-urls
+    caption: Camera - Stream URLs
+    cgi: stream-urls.cgi
     settle: 3000
 
-  - slug: majestic-configuration
-    caption: Majestic Configuration
-    cgi: mj-configuration.cgi
+  - slug: config-file
+    caption: Camera - Config file
+    cgi: config.cgi
     settle: 3000
 
   - slug: logs
-    caption: Logs
-    cgi: info-logs.cgi
+    caption: System - Logs
+    cgi: logs.cgi
     settle: 6000
 
   - slug: network
-    caption: Network Settings
-    cgi: fw-network.cgi
+    caption: System - Network
+    cgi: network.cgi
     settle: 3000
 
   - slug: time
-    caption: Time Settings
-    cgi: fw-time.cgi
+    caption: System - Time
+    cgi: time.cgi
     settle: 3500
 
   - slug: firmware-update
-    caption: Firmware Update
-    cgi: fw-update.cgi
+    caption: System - Update
+    cgi: update.cgi
     settle: 8000
 
   - slug: console
-    caption: Console
-    cgi: tool-console.cgi
+    caption: System - Console
+    cgi: console.cgi
     settle: 5000
 
   - slug: file-manager
-    caption: File Manager
-    cgi: tool-files.cgi
+    caption: System - File Manager
+    cgi: files.cgi
     settle: 4000
 
   - slug: telegram
-    caption: Telegram
-    cgi: ext-telegram.cgi
+    caption: Services - Telegram
+    cgi: telegram.cgi
     settle: 3000
