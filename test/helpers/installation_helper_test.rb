@@ -26,6 +26,18 @@ class InstallationHelperTest < ActionView::TestCase
     assert_not_includes html, 'after the transfer has reported success'
   end
 
+  # A reader who is entering the parts by hand has to know how many there are.
+  # OpenIPC/firmware#2381 lost a camera to counting two: the transfer and the
+  # write went in, the erase between them did not, and a NOR write onto
+  # unerased flash reports success while storing nothing usable. Nothing in the
+  # bootloader's output names the missing step, so the note has to.
+  test 'the note counts the parts and says the erase cannot be the one dropped' do
+    html = list_of_commands(['tftpboot 0x82000000 f && sf erase 0x0 0x800000 && sf write 0x82000000 0x0 0x1000'])
+
+    assert_includes html, 'the transfer, the erase, then the write'
+    assert_includes html, 'Do not leave the erase out'
+  end
+
   # `run setnor8m`, `run uknand; run urnand`, the mw.b lines -- none of these
   # chain, so the note would be answering a question the block has not raised.
   test 'a block that does not chain is left alone' do
