@@ -101,7 +101,7 @@ zh:
       permanent_link: 当前配置的永久链接
       subtitle: 在带有 %{soc_name} SoC 和 %{flash_type} SPI 闪存芯片的摄像机上
       success:
-        info_html: 在端口 80 ( <a href=\"http://%{address}/\">http://%{address}/</a> ) 上打开摄像机的 Web 界面并使用登录<b>root</b>和密码<b>12345</b>登录。登录后将要求您设置自己的安全密码。通过以下方式访问摄像机ssh 或 UART 使用与上述相同的登录名和密码。
+        info_html: 在 <a href=\"http://%{address}/\">http://%{address}/</a> 打开摄像机的 Web 界面。新摄像机尚未设置密码，在设置密码之前不会推送任何视频流，因此它会首先要求您设置一个密码。该密码属于 <b>root</b> 用户，Web 界面、ssh、UART 和 RTSP 都使用它。ONVIF 也接受该密码，但使用摘要认证的客户端除外，它们需要单独设置 <b>onvif.password</b>。
         title: 恭喜！此时，您已经安装了 OpenIPC 固件 (%{name})。
       title: 刷写 OpenIPC 固件
     restore:
