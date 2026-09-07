@@ -14,6 +14,15 @@ module InstallationHelper
   # That failure is safe -- nothing is transferred, nothing is erased -- but it
   # is silent about why, and the line is not one a reader can take apart
   # unaided. So say it, next to the block it applies to, and only there.
+  #
+  # Saying it was not enough on its own. The note used to leave the reader to
+  # work out how many parts the line has, and the reporter in
+  # OpenIPC/firmware#2381 counted two: they re-entered the transfer and the
+  # write and dropped the `sf erase` between them. NOR programming only clears
+  # bits, so the write stored `old AND new` over the whole chip, said
+  # "100% complete", and left the bootloader unable to run -- no serial output,
+  # no link, and nothing anywhere that named the missing step. Hence the note
+  # counts the parts out and says the erase cannot be the one left out.
   def list_of_commands(text)
     block = content_tag 'pre', text.join('<br>').html_safe, class: 'bg-light p-4'
     return block unless text.any? { |line| line.to_s.include?('&&') }
