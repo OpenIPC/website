@@ -43,6 +43,22 @@ class ReleaseCacheTest < ActiveSupport::TestCase
     ReleaseIndex.reset!
   end
 
+  # The publisher's hourly run, catching up with a rebuilt asset. No `reset!`
+  # here, unlike write_index: that the file on disk is noticed by itself is
+  # exactly what the retry depends on.
+  def republish(body)
+    File.write(File.join(@index_root, '.index.json'),
+               JSON.generate('generated_at' => '2026-08-24T01:00:00Z',
+                             'assets' => {
+                               'openipc.ts3516ev300-nor-lite.tgz' => {
+                                 'size' => body.bytesize,
+                                 'digest' => "sha256:#{Digest::SHA256.hexdigest(body)}",
+                                 'updated_at' => '2026-08-24T00:30:00Z',
+                                 'release' => 'nightly-20260824-abc1234'
+                               }
+                             }))
+  end
+
   # Stands in for the network. Records every call so a test can prove a fetch
   # did or did not happen.
   def serve(body)
@@ -121,6 +137,38 @@ class ReleaseCacheTest < ActiveSupport::TestCase
     ReleaseCache.downloader = ->(_url, dest) { IO.binwrite(dest, 'short'); Digest::SHA256.hexdigest('short') }
     assert_raises(ReleaseCache::Unavailable) { ReleaseCache.path('u-boot-ts3516ev300-nor.bin') }
     assert_empty Dir.glob(File.join(@cache_root, 'blobs', '*'))
+  end
+
+  # --- an index that has moved on ---
+
+  test 'an asset rebuilt between the index and the fetch is fetched again from the entry that now describes it' do
+    rebuilt = (PAYLOAD * 11).b
+    # Upstream replaced the file, and the publisher's next run lands while the
+    # request is in flight. With entries pointing at a rolling tag this was the
+    # ordinary state of things for the hour after every nightly.
+    ReleaseCache.downloader = lambda { |url, dest|
+      @fetches << url
+      republish(rebuilt) if @fetches.one?
+      IO.binwrite(dest, rebuilt)
+      Digest::SHA256.hexdigest(rebuilt)
+    }
+
+    path = ReleaseCache.path('openipc.ts3516ev300-nor-lite.tgz')
+    assert_equal Digest::SHA256.hexdigest(rebuilt), File.basename(path)
+    assert_equal rebuilt, IO.binread(path)
+    assert_equal 2, @fetches.size
+  end
+
+  test 'a body that does not match an index that has not moved on is refused without fetching twice' do
+    serve('something else entirely'.b * 10)
+    assert_raises(ReleaseCache::Unavailable) { ReleaseCache.path('openipc.ts3516ev300-nor-lite.tgz') }
+    assert_equal 1, @fetches.size
+  end
+
+  test 'a mismatch is an Unavailable, which is what Firmware falls back on' do
+    serve('something else entirely'.b * 10)
+    error = assert_raises(ReleaseCache::Mismatch) { ReleaseCache.path('openipc.ts3516ev300-nor-lite.tgz') }
+    assert_kind_of ReleaseCache::Unavailable, error
   end
 
   test 'a failed fetch leaves no temporary file behind' do

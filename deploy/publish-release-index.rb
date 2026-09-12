@@ -264,7 +264,7 @@ def newest_assets
       # below: these are Hashie mashes, and checking one object while keeping
       # another is how `asset.size` came to mean the key count.
       tag = release.tag_name.to_s
-      unless tag.match?(/\A[A-Za-z0-9._-]+\z/)
+      unless plain_tag?(tag)
         log "  refusing #{name.inspect}: tag #{tag.inspect} is not a plain tag"
         next
       end
@@ -285,7 +285,107 @@ def newest_assets
          .sort_by { |_, count| -count }
          .each { |family, count| log format('  skipping %d %s* (nothing here reads them)', count, family) }
 
+  pin_to_immutable(chosen, releases)
   chosen
+end
+
+# Tags whose assets are replaced in place. Both name whatever the last build
+# produced, so neither address means the same bytes for longer than a night.
+ROLLING_TAGS = %w[latest nightly].freeze
+
+# How many unpinnable names a run spells out before it just counts them.
+UNPINNED_NAMED = 10
+
+def plain_tag?(tag)
+  tag.match?(/\A[A-Za-z0-9._-]+\z/)
+end
+
+# Move each entry off a rolling tag and onto a release that publishes the very
+# same file and cannot republish it.
+#
+# The index records where an asset lives *and* what it should hash to, and the
+# app refuses bytes that do not match. Against a rolling tag those two are only
+# true together until the next upload: this runs at five past the hour, the
+# nightly re-uploads over it between 18:20 and 19:05 UTC, and in between,
+# `.../download/nightly/openipc.hi3516ev300-nor-lite.tgz` serves a file the
+# index cannot vouch for. Production, 2026-09-12 18:34 UTC:
+#
+#   firmware: serving the cached openipc-hi3516ev300-nor-lite-8mb.bin, its
+#   parts are unavailable: openipc.hi3516ev300-nor-lite.tgz: got 7212740
+#   bytes, expected 7200262
+#
+# -- and the image it served instead was assembled on 09-11 out of the 09-10
+# build, because that is the one already on disk. A visitor downloading during
+# the window gets firmware two nights older than the page offers, and nothing
+# says so.
+#
+# Every nightly is published twice, to the rolling tag and to a dated one
+# (`nightly-20260912-d87dae1`), and for the assets this site reads the two are
+# byte-identical: 112 of 112 openipc.*.tgz on 2026-09-12. Pinning to the dated
+# copy makes the digest an assertion about an address that cannot move, so the
+# only thing left between the index and upstream is the hour it takes this to
+# notice a newer build -- which serves the previous night's firmware, verified,
+# instead of failing and falling back further.
+#
+# Releases arrive newest-first, so the first immutable sighting of a digest is
+# the newest release carrying it, and therefore the last to be pruned upstream.
+# Anything with no immutable twin keeps the tag it had: the bootloaders live
+# only in `latest`, and they are also the twenty-two assets upstream publishes
+# no digest for, so there is nothing to pin them by. ReleaseCache retries those
+# against a re-read index instead.
+def pin_to_immutable(chosen, releases)
+  wanted = rolling_entries(chosen)
+  return if wanted.empty?
+
+  rolling = wanted.size
+  releases.each do |release|
+    tag = release.tag_name.to_s
+    # Silently, unlike the loop above: a tag nothing is pinned to is a tag
+    # nothing is stored from, so there is nothing to report about it.
+    next if ROLLING_TAGS.include?(tag) || !plain_tag?(tag)
+
+    pin_from(release, tag, wanted)
+    break if wanted.empty?
+  end
+  report_pinning(rolling, wanted)
+end
+
+# The entries a rolling tag is all that stands behind. An asset upstream
+# publishes no digest for is not one of them: there is nothing to recognise the
+# same file by, and those twenty-two are the bootloaders, which have not been
+# rebuilt since 2025.
+def rolling_entries(chosen)
+  chosen.each_value.with_object({}) do |asset, map|
+    next unless ROLLING_TAGS.include?(asset[:release])
+    next unless asset[:digest].to_s.start_with?('sha256:')
+
+    map[[asset[:name], asset[:digest]]] = asset
+  end
+end
+
+# Anything this release publishes byte-for-byte, moved onto it. The whole entry
+# follows the digest, timestamp included: it should describe the copy it points
+# at rather than the one that happened to be found first.
+def pin_from(release, tag, wanted)
+  release.assets.each do |asset|
+    entry = wanted.delete([asset['name'], asset['digest']])
+    next if entry.nil?
+
+    entry[:release] = tag
+    entry[:url] = asset['browser_download_url']
+    entry[:updated_at] = asset['updated_at']
+  end
+end
+
+# What is still on a rolling tag is named, because each one is a download that
+# can still be caught mid-upload -- but capped, because the day upstream stops
+# publishing dated nightlies every asset lands here, and an hourly cron mail is
+# not the place for 113 lines of it.
+def report_pinning(rolling, unpinned)
+  log "#{rolling - unpinned.size} of #{rolling} rolling-tag asset(s) pinned to a dated release"
+  left = unpinned.each_value.map { |asset| asset[:name] }.sort
+  left.first(UNPINNED_NAMED).each { |name| log "  no immutable copy of #{name}" }
+  log "  and #{left.size - UNPINNED_NAMED} more" if left.size > UNPINNED_NAMED
 end
 
 # A local file is current when it is both the size and the content the API
