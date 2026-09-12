@@ -112,7 +112,7 @@ class ReleaseCache
       resolve(entry)
     rescue Mismatch => e
       current = lookup
-      raise if same_asset?(current, entry)
+      raise if same_entry?(current, entry)
 
       Rails.logger.info "release cache: #{@name} moved on while we were fetching it (#{e.message}); " \
                         'retrying against the index as it now reads'
@@ -133,11 +133,24 @@ class ReleaseCache
     blob
   end
 
-  # Same file, as far as anything here can tell. `release` is deliberately not
-  # part of it: the same bytes republished under a dated tag are not a reason
-  # to download them again.
-  def same_asset?(one, other)
-    one.bytes.to_i == other.bytes.to_i && one.digest.to_s == other.digest.to_s
+  # The index still saying what it said, in every part of it a fetch depends
+  # on -- the release included, because that is the address, and the same
+  # digest moved to a different one is a different file to go and ask for.
+  #
+  # That case is not hypothetical: pinning rewrites the release of hundreds of
+  # entries while their digests stay exactly as they were, so a request that
+  # mismatched against a rolling tag moments earlier is one whose retry has
+  # somewhere new to look. Comparing content alone would have refused it and
+  # served the older cached image -- the very thing this is here to stop.
+  #
+  # It costs nothing to be liberal here. A retry only reaches the network when
+  # the blob is not already on disk, and blobs are named for their content, so
+  # bytes this cache has seen before are still not downloaded twice however
+  # many releases republish them.
+  def same_entry?(one, other)
+    one.bytes.to_i == other.bytes.to_i &&
+      one.digest.to_s == other.digest.to_s &&
+      one.release.to_s == other.release.to_s
   end
 
   # Nothing that follows trusts @name: it has to be something upstream is

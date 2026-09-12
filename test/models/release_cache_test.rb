@@ -43,10 +43,11 @@ class ReleaseCacheTest < ActiveSupport::TestCase
     ReleaseIndex.reset!
   end
 
-  # The publisher's hourly run, catching up with a rebuilt asset. No `reset!`
-  # here, unlike write_index: that the file on disk is noticed by itself is
-  # exactly what the retry depends on.
-  def republish(body)
+  # The publisher's hourly run, catching up with a rebuilt asset or pinning one
+  # to the dated release that publishes it. No `reset!` here, unlike
+  # write_index: that the file on disk is noticed by itself is exactly what the
+  # retry depends on.
+  def republish(body, release: 'nightly-20260824-abc1234')
     File.write(File.join(@index_root, '.index.json'),
                JSON.generate('generated_at' => '2026-08-24T01:00:00Z',
                              'assets' => {
@@ -54,7 +55,7 @@ class ReleaseCacheTest < ActiveSupport::TestCase
                                  'size' => body.bytesize,
                                  'digest' => "sha256:#{Digest::SHA256.hexdigest(body)}",
                                  'updated_at' => '2026-08-24T00:30:00Z',
-                                 'release' => 'nightly-20260824-abc1234'
+                                 'release' => release
                                }
                              }))
   end
@@ -157,6 +158,24 @@ class ReleaseCacheTest < ActiveSupport::TestCase
     assert_equal Digest::SHA256.hexdigest(rebuilt), File.basename(path)
     assert_equal rebuilt, IO.binread(path)
     assert_equal 2, @fetches.size
+  end
+
+  test 'an asset pinned to another release while the fetch was in flight is fetched from the new address' do
+    # The bytes never change here: the rolling tag is mid-upload and serving
+    # something else, and the index run that lands meanwhile pins the entry --
+    # same size, same digest -- to the dated release that still has the file.
+    ReleaseCache.downloader = lambda { |url, dest|
+      @fetches << url
+      republish(PAYLOAD, release: 'nightly-20260824-abc1234') if @fetches.one?
+      body = url.include?('/nightly/') ? 'a half-written upload'.b : PAYLOAD
+      IO.binwrite(dest, body)
+      Digest::SHA256.hexdigest(body)
+    }
+
+    path = ReleaseCache.path('openipc.ts3516ev300-nor-lite.tgz')
+    assert_equal PAYLOAD, IO.binread(path)
+    assert_equal 2, @fetches.size
+    assert_includes @fetches.last, '/nightly-20260824-abc1234/'
   end
 
   test 'a body that does not match an index that has not moved on is refused without fetching twice' do
