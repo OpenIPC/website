@@ -29,6 +29,12 @@ class ReleaseCache
   class UnknownAsset < StandardError; end
   class Unavailable < StandardError; end
 
+  # The bytes upstream served are not the bytes the index describes. A subclass
+  # of Unavailable, so every caller that already answers for one answers for
+  # this unchanged; separate, so `path` can tell the one failure worth retrying
+  # from a timeout or a refused host.
+  class Mismatch < Unavailable; end
+
   DOWNLOAD_BASE = 'https://github.com/OpenIPC/firmware/releases/download'
 
   # github.com redirects to the CDN, which is a different host, so redirects
@@ -78,17 +84,7 @@ class ReleaseCache
   end
 
   def path
-    entry = lookup
-    blob = File.join(blobs_dir, key_for(entry))
-    return blob if usable?(blob, entry)
-
-    with_lock(entry) do
-      # Whoever held the lock may have been fetching this very blob.
-      return blob if usable?(blob, entry)
-
-      fetch(entry, blob)
-    end
-    blob
+    current_blob
   rescue SystemCallError, IOError => e
     # The cache root is a mount, so it can be absent, root-owned, read-only or
     # full -- and the first of those is exactly what a cutover gets wrong.
@@ -99,6 +95,63 @@ class ReleaseCache
   end
 
   private
+
+  # One retry, and only when the index has moved on underneath us.
+  #
+  # A mismatch says the index is describing a file that is no longer at the
+  # address it names -- which, while entries could point at a rolling tag, was
+  # every download made in the hour after a nightly upload. The publisher now
+  # pins them to dated releases, so what is left is the assets with no dated
+  # copy (the bootloaders in `latest`) and a fetch that straddles the hourly
+  # index run. Re-reading costs a stat, and the second fetch is only reached
+  # when that stat found a different entry, so a genuinely bad download still
+  # fails once rather than twice.
+  def current_blob
+    entry = lookup
+    begin
+      resolve(entry)
+    rescue Mismatch => e
+      current = lookup
+      raise if same_entry?(current, entry)
+
+      Rails.logger.info "release cache: #{@name} moved on while we were fetching it (#{e.message}); " \
+                        'retrying against the index as it now reads'
+      resolve(current)
+    end
+  end
+
+  def resolve(entry)
+    blob = File.join(blobs_dir, key_for(entry))
+    return blob if usable?(blob, entry)
+
+    with_lock(entry) do
+      # Whoever held the lock may have been fetching this very blob.
+      return blob if usable?(blob, entry)
+
+      fetch(entry, blob)
+    end
+    blob
+  end
+
+  # The index still saying what it said, in every part of it a fetch depends
+  # on -- the release included, because that is the address, and the same
+  # digest moved to a different one is a different file to go and ask for.
+  #
+  # That case is not hypothetical: pinning rewrites the release of hundreds of
+  # entries while their digests stay exactly as they were, so a request that
+  # mismatched against a rolling tag moments earlier is one whose retry has
+  # somewhere new to look. Comparing content alone would have refused it and
+  # served the older cached image -- the very thing this is here to stop.
+  #
+  # It costs nothing to be liberal here. A retry only reaches the network when
+  # the blob is not already on disk, and blobs are named for their content, so
+  # bytes this cache has seen before are still not downloaded twice however
+  # many releases republish them.
+  def same_entry?(one, other)
+    one.bytes.to_i == other.bytes.to_i &&
+      one.digest.to_s == other.digest.to_s &&
+      one.release.to_s == other.release.to_s
+  end
 
   # Nothing that follows trusts @name: it has to be something upstream is
   # publishing before it can become a path or a URL.
@@ -160,12 +213,12 @@ class ReleaseCache
 
   def verify!(entry, tmp, sha)
     actual = File.size(tmp)
-    raise Unavailable, "#{entry.name}: got #{actual} bytes, expected #{entry.bytes}" if actual != entry.bytes.to_i
+    raise Mismatch, "#{entry.name}: got #{actual} bytes, expected #{entry.bytes}" if actual != entry.bytes.to_i
 
     expected = entry.sha256
     return if expected.nil? || sha == expected
 
-    raise Unavailable, "#{entry.name}: sha256 #{sha} does not match #{expected}"
+    raise Mismatch, "#{entry.name}: sha256 #{sha} does not match #{expected}"
   end
 
   def stamp(blob, entry)
