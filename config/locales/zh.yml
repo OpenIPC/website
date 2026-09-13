@@ -25,10 +25,11 @@ zh:
         bootloader: OpenIPC 引导程序
         bundle: OpenIPC Linux (%{name})
         camera_ip_address_title: 由小数点分隔的四个数字
+        camera_mac_address_help: 可选。留空即可 — 摄像机会在首次启动时为自己分配一个固定的唯一地址。只有在想保留摄像机原有地址（即标签上那个）时才需要填写。
         camera_mac_address_title: 六个 8 位十六进制字段，用冒号或横线分隔
         for: 对于 %{name}
         generate_button: 生成安装指南
-        generate_mac: 生成有效的随机 MAC 地址。
+        generate_mac: 或生成一个随机地址。
         no_bootloader_alert: OpenIPC 为 %{name} 提供固件，但没有为它提供引导加载程序。引导式安装和现成的刷机镜像都要先写入 OpenIPC 引导加载程序，因此这两者都无法为该 SoC 提供。下方的固件包是确实存在的部分。
         not_ready_alert_html: '%{name} SoC 的安装说明尚未准备好。但是我们正在努力发布 %{name} 的 OpenIPC 固件。请继续关注并<a href="/donate">支持开源</a>。'
         notes: 备注
@@ -88,9 +89,9 @@ zh:
       flashing_full:
         continue: 摄像机将自动重启并使用全新的引导加载程序启动。
         continue2: 注意准备中断并进入引导程序的命令行。
-        info: 完整的固件由引导加载程序、内核和根文件系统组成，也适用于使用编程器烧写闪存芯片。 请注意，完整固件不包含预设环境。你还需要添加自己的MAC地址、IP地址等设置。
+        info: 完整的固件由引导加载程序、内核和根文件系统组成，也适用于使用编程器烧写闪存芯片。 请注意，完整固件不包含预设环境，因此 IP 地址等设置需要你自行添加。MAC 地址不在此列 — 摄像机会在首次启动时为自己分配一个固定的唯一地址并保留它。
         link: 下载 OpenIPC 固件 (%{name})
-        mac_note_html: "完整镜像不包含环境变量，因此摄像机没有自己的 MAC 地址：在设置之前，它每次启动都会随机取一个，而 Web 界面稍后还会向您索要。您在上面填写的地址正是用在这里——请使用摄像机标签上原有的地址，而不是新编的。如果引导程序回答 <code>Can't overwrite \"ethaddr\"</code>，说明地址已经设置，这里无需再做任何事。"
+        mac_note_html: "完整镜像不包含环境变量，因此你在上面填写的地址正是用在这里。只有在想保留摄像机原有地址（即标签上那个）时才需要它。如果留空，摄像机会在首次启动时为自己选择一个固定的唯一地址并保留它，这里无需设置，之后也不会再向你索要。如果引导程序回答 <code>Can't overwrite \"ethaddr\"</code>，说明地址已经设置，这里无需再做任何事。"
         nand_caveat: 在 NAND 上，该镜像只包含引导程序、内核和 UBI 根文件系统，并非整片闪存，也不适合用编程器烧录——它不含 OOB/ECC 字节，也没有出厂坏块标记。请从 U-Boot 写入，或使用下面的分区命令。
         title: 烧录完整的 OpenIPC 固件
       flashing_uboot:
