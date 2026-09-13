@@ -239,6 +239,17 @@ module InstallationHelper
     list_of_commands text
   end
 
+  # The full-image path's own environment step. Kept apart from
+  # preparing_environment, which the by-parts path uses: there flashing_linux
+  # has already run `setenv ethaddr`, and U-Boot refuses a second one on a
+  # variable that is now set.
+  def post_flash_environment(camera)
+    text = []
+    text << do_not_copy_paste
+    text.concat(camera.post_flash_commands)
+    list_of_commands text
+  end
+
   def restore_from_backup(c)
     write_size = write_size_for(c, c.flash_size_hex)
     text = []

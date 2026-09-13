@@ -826,6 +826,60 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # --- the MAC address the form has always required ---
+
+  # OpenIPC/firmware#2405 follow-up: the field is required, and until now only
+  # the by-parts path spent it. On the 8MB layout -- every bootloader's default
+  # -- the full-image path rendered no post-flash step at all, so the reader
+  # typed a MAC into the form and the camera never got one.
+  test 'the full-image path sets the MAC even when the layout needs nothing' do
+    soc = instructable_soc('TS3516EVF00')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m')
+
+      assert_match 'setenv ethaddr 00:11:22:33:44:55', response.body
+      assert_match 'the camera has no MAC address of its own', response.body
+    end
+  end
+
+  # And where the layout does need changing, the MAC goes in front of it: the
+  # `set…` macro ends in a reset, so anything after it would never run.
+  test 'the MAC is set before the layout macro, not after it' do
+    soc = instructable_soc('TS3516EVF10')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m')
+
+      body = response.body
+      assert_match 'run setnor16m', body
+      assert_operator body.index('setenv ethaddr'), :<, body.index('run setnor16m')
+    end
+  end
+
+  # Twice on the page and no more: once in the full-image step, once in the
+  # by-parts step that has always had it. U-Boot refuses a second `setenv
+  # ethaddr` once the variable is set, so a duplicate would render an error.
+  test 'the MAC is set once per path, not twice in the same one' do
+    soc = instructable_soc('TS3516EVF20')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m')
+
+      assert_equal 2, response.body.scan('setenv ethaddr').length
+    end
+  end
+
+  test 'the MAC note is translated, not another hardcoded English string' do
+    soc = instructable_soc('TS3516EVF30')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m', locale: 'ru')
+
+      assert_match 'у камеры нет собственного MAC-адреса', response.body
+    end
+  end
+
   # --- the permanent link ---
 
   def permalink_for(**attrs)

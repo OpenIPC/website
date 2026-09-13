@@ -76,15 +76,23 @@
           <% end %>
           <%= flashing_everything(@camera) %>
           <p><%= t('firmware.installation.flashing_full.continue') %></p>
-          <%# Every one of these bootloaders defaults mtdparts to the 8MB layout
-              and a full-image flash leaves the env erased, so that default is
-              what the camera boots with and anything else has to be set here.
-              Asked of the camera rather than of the layout name: SigmaStar and
-              Ingenic have no set* macro to run, and what they are given instead
-              is the setenv that macro would have done. %>
-          <% unless @camera.default_bootloader_layout? %>
+          <%# A full-image flash leaves the env erased, so everything the
+              bootloader needs is set at this prompt: the MAC address, which is
+              otherwise never set at all on this path, and the layout, where the
+              bootloader does not already default to it. Every one of them
+              defaults mtdparts to the 8MB layout. Asked of the camera rather
+              than of the layout name: SigmaStar and Ingenic have no set* macro
+              to run, and what they are given instead is the setenv that macro
+              would have done. %>
+          <% if @camera.post_flash_commands.any? %>
             <p><%= t('firmware.installation.flashing_full.continue2') %></p>
-            <%= preparing_environment(@camera) %>
+            <% if @camera.mac_address_command? %>
+              <p><%= t('firmware.installation.flashing_full.mac_note_html') %></p>
+            <% end %>
+            <% unless @camera.default_bootloader_layout? %>
+              <p><%= t('firmware.installation.flashing_footfs.info') %></p>
+            <% end %>
+            <%= post_flash_environment(@camera) %>
           <% end %>
         </div>
       </div>
