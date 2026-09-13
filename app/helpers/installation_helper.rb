@@ -23,12 +23,34 @@ module InstallationHelper
   # "100% complete", and left the bootloader unable to run -- no serial output,
   # no link, and nothing anywhere that named the missing step. Hence the note
   # counts the parts out and says the erase cannot be the one left out.
+  #
+  # `sf lock 0` raises the same question one line earlier, and answering it
+  # matters for the same reason: the reporter in OpenIPC/firmware#2405 got the
+  # `sf` usage help back from a stock hi3516ev200 bootloader and stopped there.
+  # That subcommand is OpenIPC U-Boot's -- a stock one built from mainline has
+  # `sf protect` and no `lock` -- so the failure is expected and harmless, but
+  # nothing on the page said so. What it loses is the check: flash that is
+  # still protected discards an erase and a write while reporting success. So
+  # the note has to name the way out as well -- that bootloader cannot clear
+  # the protection, and a reader who only gets the diagnosis is left with a
+  # camera they still cannot flash.
+  #
   def list_of_commands(text)
+    notes = caveats_for(text).map do |key|
+      content_tag('p', t("firmware.installation.#{key}"), class: 'small text-muted')
+    end
     block = content_tag 'pre', text.join('<br>').html_safe, class: 'bg-light p-4'
-    return block unless text.any? { |line| line.to_s.include?('&&') }
+    notes.empty? ? block : safe_join([block, *notes])
+  end
 
-    safe_join([block, content_tag('p', t('firmware.installation.compound_caveat_html'),
-                                  class: 'small text-muted')])
+  # Which notes a block has earned, in the order the lines they answer appear in
+  # it, so a reader working down the block meets each one where it goes wrong.
+  def caveats_for(text)
+    lines = text.map(&:to_s)
+    keys = []
+    keys << 'lock_caveat_html' if lines.any? { |line| line.include?('sf lock') }
+    keys << 'compound_caveat_html' if lines.any? { |line| line.include?('&&') }
+    keys
   end
 
   def do_not_copy_paste
@@ -39,7 +61,8 @@ module InstallationHelper
   # register block protection some vendors arm. Kept as its own line rather
   # than chained into the flashing command: plenty of vendor U-Boots have no
   # `sf lock` subcommand at all, and a chain would abort on their error
-  # instead of going on to flash.
+  # instead of going on to flash. Those are the bootloaders the note in
+  # list_of_commands is for -- see OpenIPC/firmware#2405.
   def unlock_flash(text, c)
     text << 'sf probe 0; sf lock 0;' unless c.flash_type.eql?('nand')
   end

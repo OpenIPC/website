@@ -98,6 +98,7 @@ zh:
         link: 下载 OpenIPC U-Boot 二进制文件
         title: 烧录 OpenIPC U-Boot
       layout_note: '分区布局：%{layout}。下面的镜像覆盖整片闪存，因此刷写时也会清除 overlay 分区。'
+      lock_caveat_html: "<code>sf lock 0</code> 用于清除某些厂商在闪存状态寄存器中设置的块保护，它是 OpenIPC U-Boot 自带的子命令：由上游 U-Boot 编译的原厂引导程序只有 <code>sf protect</code> 而没有 <code>lock</code>，因此只会输出 <code>sf</code> 的用法说明。这并没有改动任何东西，而且大多数芯片本就没有加保护——请照原样继续输入本段其余的命令，刷写会正常完成。如果确实有 <code>sf protect</code>，可以用与下面 <code>sf erase</code> 相同的偏移和长度试一次，但多数芯片会回答不支持。无论哪种情况，失去的都是一道检查：仍处于保护状态的闪存会悄悄丢弃擦除和写入，却依然报告成功——每条命令都显示 OK、摄像机却仍然启动原厂固件，就是这种情况。该引导程序无法解除这道保护：请用外部编程器烧录芯片，或通过您已经连接的串口使用 <a href=\"https://github.com/OpenIPC/defib\">defib</a>，它的写入代理会自行解锁。"
       permanent_link: 当前配置的永久链接
       subtitle: 在带有 %{soc_name} SoC 和 %{flash_type} SPI 闪存芯片的摄像机上
       success:
