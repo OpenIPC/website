@@ -98,6 +98,7 @@ en:
         link: Download OpenIPC U-Boot binary file
         title: Flash OpenIPC U-Boot
       layout_note: 'Partition layout: %{layout}. The image below covers the whole chip, so flashing it clears the overlay as well.'
+      lock_caveat_html: "<code>sf lock 0</code> clears the block protection some vendors arm in the flash chip's status register, and it is OpenIPC U-Boot's own subcommand — a stock bootloader built from mainline U-Boot has <code>sf protect</code> and no <code>lock</code>, so it answers with the <code>sf</code> usage message instead. Nothing was changed and nothing is wrong; enter the rest of the block exactly as written. What is lost is a check — flash that is still protected discards an erase and a write while reporting success — so if every command says OK and the camera still boots its stock firmware, that protection is why."
       permanent_link: Permanent link to this configuration
       subtitle: on a camera with %{soc_name} SoC and %{flash_type} SPI flash chip
       success:

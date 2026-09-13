@@ -782,6 +782,49 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # --- the way out when the bootloader has no `sf lock` ---
+
+  # `sf lock 0` is the line before the guarded one, and it fails the same way
+  # for the same readers: the subcommand is OpenIPC U-Boot's, a stock
+  # bootloader built from mainline has `sf protect` instead, and the reporter
+  # in OpenIPC/firmware#2405 got the `sf` usage help back from a stock
+  # hi3516ev200 and stopped there. Harmless -- but the page has to say so, and
+  # say what the skipped unlock costs later on.
+  test 'a block that unlocks the flash carries the note about bootloaders that lack it' do
+    soc = instructable_soc('TS3516EVD20')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m')
+
+      assert_match 'sf probe 0; sf lock 0;', response.body
+      assert_match 'Nothing was changed and nothing is wrong', response.body
+      assert_match 'discards an erase and a write while reporting success', response.body
+    end
+  end
+
+  test 'the unlock note is translated, not another hardcoded English string' do
+    soc = instructable_soc('TS3516EVD30')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m', locale: 'ru')
+
+      assert_match 'Ничего не изменилось и ничего не сломалось', response.body
+    end
+  end
+
+  # unlock_flash skips NAND, so a NAND page never renders the line -- and a note
+  # about a command that is not in the block is noise.
+  test 'a NAND page gets no unlock note, because it has no unlock line' do
+    soc = instructable_soc('TS3516EVD40')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nand')
+
+      assert_no_match(/sf lock/, response.body)
+      assert_no_match(/Nothing was changed and nothing is wrong/, response.body)
+    end
+  end
+
   # --- the permanent link ---
 
   def permalink_for(**attrs)
