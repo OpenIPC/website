@@ -87,9 +87,10 @@ en:
         title: Flash OpenIPC Linux kernel and root filesystem
       flashing_full:
         continue: The camera will automatically restart.
-        continue2: Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell. When in the bootloader shell, remap ROM partitioning according to your flash size and type.
+        continue2: Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
         info: The full firmware image consists of bootloader, kernel and root filesystem, and is also suitable for flashing memory chip using a programmer. Please note, the full image does not contain pre-set environment. You still need to add your own MAC address, IP address and other settings.
         link: Download OpenIPC Firmware (%{name}) image
+        mac_note_html: "The full image carries no environment, so the camera has no MAC address of its own: it takes a fresh random one on every boot until one is set, and the web interface asks you for it later. This is where the address you entered above goes — use the one on the camera's own label, not a new one. If the bootloader answers <code>Can't overwrite \"ethaddr\"</code>, an address is already set and there is nothing to do here."
         nand_caveat: On NAND the image covers the bootloader, kernel and UBI root filesystem only, not the whole chip, and it is not suitable for a programmer -- it carries no OOB/ECC bytes and no factory bad-block markers. Write it from U-Boot, or use the per-partition commands below.
         title: Flash full OpenIPC Firmware image
       flashing_uboot:

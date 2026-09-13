@@ -224,7 +224,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       submit(soc, 'nor16m', partition_layout: 'nor8m')
 
       assert_match 'sf erase 0x0 0x1000000', response.body
-      assert_no_match(/sf erase 0x0 0x800000/, response.body)
+      assert_no_match(/setenv bootdelay 0/, response.body)
       # One image, laid out the 8MB way and sized for the chip it goes on.
       assert_match 'openipc-ts3516eve00-nor-lite-16mb-parts8m.bin', response.body
       assert_match 'layout=8', response.body
@@ -823,6 +823,118 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
 
       assert_no_match(/sf lock/, response.body)
       assert_no_match(/Nothing was changed by that/, response.body)
+    end
+  end
+
+  # --- the MAC address the form has always required ---
+
+  # OpenIPC/firmware#2405 follow-up: the field is required, and until now only
+  # the by-parts path spent it. On the 8MB layout -- every bootloader's default
+  # -- the full-image path rendered no post-flash step at all, so the reader
+  # typed a MAC into the form and the camera never got one.
+  test 'the full-image path sets the MAC even when the layout needs nothing' do
+    soc = instructable_soc('TS3516EVF00')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m')
+
+      assert_match 'setenv ethaddr 00:11:22:33:44:55', response.body
+      assert_match 'the camera has no MAC address of its own', response.body
+    end
+  end
+
+  # And where the layout does need changing, the MAC goes in front of it: the
+  # `set…` macro ends in a reset, so anything after it would never run.
+  test 'the MAC is set before the layout macro, not after it' do
+    soc = instructable_soc('TS3516EVF10')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m')
+
+      body = response.body
+      assert_match 'run setnor16m', body
+      assert_operator body.index('setenv ethaddr'), :<, body.index('run setnor16m')
+    end
+  end
+
+  # Twice on the page and no more: once in the full-image step, once in the
+  # by-parts step that has always had it. U-Boot refuses a second `setenv
+  # ethaddr` once the variable is set, so a duplicate would render an error.
+  test 'the MAC is set once per path, not twice in the same one' do
+    soc = instructable_soc('TS3516EVF20')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m')
+
+      assert_equal 2, response.body.scan('setenv ethaddr').length
+    end
+  end
+
+  test 'the MAC note is translated, not another hardcoded English string' do
+    soc = instructable_soc('TS3516EVF30')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m', locale: 'ru')
+
+      assert_match 'у камеры нет собственного MAC-адреса', response.body
+    end
+  end
+
+  # The two doors that reach the command block. A permanent link fills the form
+  # in, and the visitor then presses the button they were going to press, so a
+  # link a stranger sent is as good as a submission. Neither may put anything
+  # but an address into a `setenv`.
+  test 'a submitted MAC that is not an address reaches no command' do
+    soc = instructable_soc('TS3516EVF40')
+
+    with_release_index(*every_edition_for(soc)) do
+      put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
+          params: { camera: { flash_type: 'nor8m', firmware_version: 'lite',
+                              network_interface: 'eth', sd_card_slot: 'nosd',
+                              camera_ip_address: '192.168.1.10',
+                              server_ip_address: '192.168.1.254',
+                              camera_mac_address: '00:11:22:33:44:55; sf erase 0x0 0x1000000' } }
+      assert_response :success
+
+      assert_no_match(/setenv ethaddr/, response.body)
+      assert_no_match(/sf erase 0x0 0x1000000/, response.body)
+    end
+  end
+
+  test 'a submitted IP that is not an address falls back to the default' do
+    soc = instructable_soc('TS3516EVF50')
+
+    with_release_index(*every_edition_for(soc)) do
+      put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
+          params: { camera: { flash_type: 'nor8m', firmware_version: 'lite',
+                              network_interface: 'eth', sd_card_slot: 'nosd',
+                              camera_ip_address: '10.0.0.5; setenv bootdelay 0',
+                              server_ip_address: '192.168.1.254',
+                              camera_mac_address: '00:11:22:33:44:55' } }
+      assert_response :success
+
+      assert_no_match(/setenv bootdelay 0/, response.body)
+      assert_match 'setenv ipaddr 192.168.1.10', response.body
+    end
+  end
+
+  test 'a permanent link cannot fill the form with something that is not an address' do
+    soc = instructable_soc('TS3516EVF60')
+
+    with_release_index(*every_edition_for(soc)) do
+      # %3B, not a bare `;` -- Rack splits a query string on semicolons, so an
+      # unencoded payload arrives already cut back to a valid address and the
+      # test proves nothing.
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}" \
+          '?mac=00%3A11%3A22%3A33%3A44%3A55%3B+sf+erase+0x0+0x1000000' \
+          '&cip=10.0.0.5%3B+setenv+bootdelay+0'
+      assert_response :success
+
+      assert_no_match(/sf erase 0x0 0x1000000/, response.body)
+      assert_no_match(/setenv bootdelay 0/, response.body)
+      assert_match 'name="camera[camera_mac_address]"', response.body
+      assert_no_match(/value="00:11:22:33:44:55;/, response.body)
+      assert_match 'value="192.168.1.10"', response.body
     end
   end
 

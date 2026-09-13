@@ -273,6 +273,42 @@ class Camera
     !nand? && layout_size <= 8
   end
 
+  # Whether the post-flash step sets a MAC address. Wifi cameras are flashed
+  # from an SD card and never had the eth branch's `setenv ethaddr` in the
+  # by-parts path either, so they do not get one here.
+  #
+  # Also the guarantee that no `setenv ethaddr` is ever rendered with something
+  # that is not a MAC after it. The controller keeps a malformed one out, and
+  # this makes it structural: the command exists only when there is an address
+  # to put in it. Review on OpenIPC/website#138.
+  def mac_address_command?
+    return false if network_interface.eql?('wifi')
+
+    camera_mac_address.to_s.match?(MAC_ADDRESS_FORMAT)
+  end
+
+  # What to run once the full image has been written. The image carries no
+  # environment -- flashing_full.info says so -- so anything the bootloader
+  # needs has to be set by hand at this prompt.
+  #
+  # The MAC address is the part that used to be missing. The form has always
+  # required one, but only the by-parts path ever spent it, so a camera flashed
+  # the way the page actually recommends came up with a fresh random address on
+  # every boot and the web interface asked for the real one later. The reporter
+  # in OpenIPC/firmware#2405 flashed a camera, read `using random MAC address`
+  # twice in one boot, and asked why the form had wanted a MAC at all.
+  #
+  # `saveenv` is spelled out rather than left to the `set…` macro below it.
+  # HiSilicon's does save the environment -- the log in #2405 shows `run
+  # setnor16m` printing "Saving Environment to SPI Flash..." -- but an address
+  # the camera is identified by should not rest on what each vendor's macro
+  # happens to do, and on the layout every bootloader already defaults to there
+  # is no macro here at all.
+  def post_flash_commands
+    mac = mac_address_command? ? ["setenv ethaddr #{camera_mac_address}", 'saveenv'] : []
+    mac + (default_bootloader_layout? ? [] : layout_commands)
+  end
+
   # What to run to put the bootloader on this layout, if anything.
   #
   # HiSilicon and Goke have a macro for it. SigmaStar and Ingenic do not: their
@@ -367,7 +403,7 @@ class Camera
 
   def permalink
     [
-      '?mac=', camera_mac_address.gsub(':', '-'),
+      '?mac=', camera_mac_address.to_s.gsub(':', '-'),
       '&cip=', camera_ip_address,
       '&sip=', server_ip_address,
       '&net=', network_interface,

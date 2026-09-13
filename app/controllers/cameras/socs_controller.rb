@@ -82,9 +82,13 @@ module Cameras
         network_interface: 'eth',
         sd_card_slot: 'nosd'
       )
-      @camera.camera_ip_address = permitted_params[:camera_ip_address]
-      @camera.camera_mac_address = permitted_params[:camera_mac_address].to_s.downcase.gsub('-', ':')
-      @camera.server_ip_address = permitted_params[:server_ip_address]
+      # well_formed for the three that end up inside a `setenv`; see it for why
+      # the form's own `pattern` is not enough.
+      @camera.camera_ip_address = well_formed(permitted_params[:camera_ip_address],
+                                              IP_ADDRESS_FORMAT, @camera.camera_ip_address)
+      @camera.camera_mac_address = normalised_mac(permitted_params[:camera_mac_address])
+      @camera.server_ip_address = well_formed(permitted_params[:server_ip_address],
+                                              IP_ADDRESS_FORMAT, @camera.server_ip_address)
       @camera.flash_type = permitted_params[:flash_type]
       @camera.partition_layout = permitted_params[:partition_layout]
       @camera.firmware_version = permitted_params[:firmware_version]
@@ -252,7 +256,15 @@ module Cameras
     def apply_permalink_to(camera)
       # Not in the table: unlike the rest, the MAC is rewritten rather than
       # copied, and it is applied whether or not the link carried one.
-      camera.camera_mac_address = params[:mac].to_s.downcase.gsub('-', ':')
+      #
+      # Validated here as well as in `update`, because a link is the one of the
+      # two doors a stranger can send you. Both reach the same command block --
+      # this one fills the form in, the visitor presses the button they were
+      # going to press, and `update` renders what the form held.
+      camera.camera_mac_address = normalised_mac(params[:mac])
+
+      ip_defaults = { camera_ip_address: camera.camera_ip_address,
+                      server_ip_address: camera.server_ip_address }
 
       # present?, not just presence of the key. A permanent link carries every
       # field whether or not it has a value, so `?...&ver=&sd=` is what a link
@@ -264,6 +276,42 @@ module Cameras
       PERMALINK_FIELDS.each do |key, field|
         camera.public_send("#{field}=", params[key]) if params[key].present?
       end
+
+      keep_only_addresses(camera, ip_defaults)
+    end
+
+    # The two fields the table above copies verbatim that go on to appear inside
+    # a `setenv`. Read back after the loop rather than filtered inside it,
+    # because the loop is where the link's value lands.
+    def keep_only_addresses(camera, defaults)
+      defaults.each do |field, default|
+        camera.public_send("#{field}=", well_formed(camera.public_send(field), IP_ADDRESS_FORMAT, default))
+      end
+    end
+
+    # Upper case and `-` separators are both accepted, from the form and from a
+    # permanent link alike; what comes out is what U-Boot would be given.
+    #
+    # A MAC has no sensible fallback, so a value that is not one falls back to
+    # the empty string and Camera#mac_address_command? then renders no `setenv
+    # ethaddr` at all, rather than one with nothing after it. Empty rather than
+    # nil because `permalink` rewrites the MAC whether or not there is one.
+    def normalised_mac(value)
+      well_formed(value.to_s.downcase.gsub('-', ':'), MAC_ADDRESS_FORMAT)
+    end
+
+    # The value when it matches the format the model declares for it, and the
+    # fallback when it does not.
+    #
+    # The form's `required` and `pattern` guard an ordinary submission and
+    # nothing else: nothing calls valid? on a Camera -- see the flash_type note
+    # in `update` -- so whatever arrives is what the instructions interpolate.
+    # These three land inside `setenv ethaddr`, `setenv ipaddr` and `setenv
+    # serverip`, in a block the page tells the reader to paste into a bootloader
+    # one line at a time, where `; sf erase 0x0 0x1000000` is a command and not
+    # a typo. Found by review on #138.
+    def well_formed(value, format, fallback = '')
+      value.to_s.match?(format) ? value : fallback
     end
 
     # Bring a configuration that arrived in the query string back inside what the

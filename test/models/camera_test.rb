@@ -269,6 +269,77 @@ class CameraTest < ActiveSupport::TestCase
     assert_equal ['run setnor8m'], camera_of('HiSilicon', flash_type: 'nor8m').layout_commands
   end
 
+  # --- what runs after the full image is written ---
+  #
+  # The form has always required a MAC address and, until OpenIPC/firmware#2405,
+  # only the by-parts path ever spent it. A camera flashed the way the page
+  # recommends came up with a fresh random address on every boot, and the web
+  # interface asked for the real one later.
+
+  def flashed(vendor_name, flash_type:, firmware_version: 'lite', layout: nil)
+    c = camera_of(vendor_name, flash_type:, firmware_version:, layout:)
+    c.camera_mac_address = 'aa:bb:cc:dd:ee:ff'
+    c
+  end
+
+  # The 8MB layout is every bootloader's default, so this page used to render no
+  # post-flash step at all -- and these readers were the ones left with no MAC.
+  test 'the default layout still gets a step, because the MAC has to be set' do
+    c = flashed('HiSilicon', flash_type: 'nor8m')
+
+    assert c.default_bootloader_layout?
+    assert_equal ['setenv ethaddr aa:bb:cc:dd:ee:ff', 'saveenv'], c.post_flash_commands
+  end
+
+  test 'a layout that does need changing gets both, with the MAC first' do
+    c = flashed('HiSilicon', flash_type: 'nor16m', firmware_version: 'ultimate')
+
+    assert_equal ['setenv ethaddr aa:bb:cc:dd:ee:ff', 'saveenv', 'run setnor16m'],
+                 c.post_flash_commands
+  end
+
+  # SigmaStar and Ingenic have no set* macro; what they get is the setenv it
+  # would have done, which already ends in saveenv and reset.
+  test 'the vendors with no macro keep their own sequence after the MAC' do
+    c = flashed('SigmaStar', flash_type: 'nor16m', firmware_version: 'ultimate')
+
+    assert_equal ['setenv ethaddr aa:bb:cc:dd:ee:ff', 'saveenv',
+                  'setenv rootmtd 10240k; setenv rootsize 0xA00000', 'saveenv', 'reset'],
+                 c.post_flash_commands
+  end
+
+  test 'nand is told to run setnand after the MAC, as it always was' do
+    c = flashed('HiSilicon', flash_type: 'nand', firmware_version: 'ultimate')
+
+    assert_equal ['setenv ethaddr aa:bb:cc:dd:ee:ff', 'saveenv', 'run setnand'],
+                 c.post_flash_commands
+  end
+
+  # A wifi camera is flashed from an SD card and never had the eth branch's
+  # `setenv ethaddr` in the by-parts path either.
+  test 'a wifi camera is given no MAC command' do
+    c = flashed('HiSilicon', flash_type: 'nor8m')
+    c.network_interface = 'wifi'
+
+    assert_not c.mac_address_command?
+    assert_empty c.post_flash_commands
+  end
+
+  # The command block is pasted into a bootloader a line at a time, so a value
+  # that is not a MAC is not a cosmetic problem: `; sf erase 0x0 0x1000000` is a
+  # command. The controller keeps malformed input out, and this keeps the
+  # command from existing at all without an address to put in it.
+  test 'no setenv ethaddr is built without a well-formed address' do
+    ['', nil, '00:11:22:33:44', 'not-a-mac',
+     '00:11:22:33:44:55; sf erase 0x0 0x1000000'].each do |value|
+      c = camera_of('HiSilicon', flash_type: 'nor8m')
+      c.camera_mac_address = value
+
+      assert_not c.mac_address_command?, "#{value.inspect} was treated as an address"
+      assert_empty c.post_flash_commands, "#{value.inspect} reached the commands"
+    end
+  end
+
   # NAND is a separate environment -- uknand, urnand, setnand and mtdpartsubi --
   # and none of this touches it.
   test 'nand keeps its own macros whatever the vendor' do

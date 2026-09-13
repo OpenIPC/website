@@ -189,7 +189,7 @@ module InstallationHelper
     text << do_not_copy_paste
     unless c.network_interface.eql?('wifi')
       text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
-      text << "setenv ethaddr #{c.camera_mac_address}"
+      text << "setenv ethaddr #{c.camera_mac_address}" if c.mac_address_command?
       text << 'saveenv'
     end
     if c.sd_card_slot.eql?('sd') && c.network_interface.eql?('wifi')
@@ -236,6 +236,17 @@ module InstallationHelper
     text = []
     text << do_not_copy_paste
     text.concat(camera.layout_commands)
+    list_of_commands text
+  end
+
+  # The full-image path's own environment step. Kept apart from
+  # preparing_environment, which the by-parts path uses: there flashing_linux
+  # has already run `setenv ethaddr`, and U-Boot refuses a second one on a
+  # variable that is now set.
+  def post_flash_environment(camera)
+    text = []
+    text << do_not_copy_paste
+    text.concat(camera.post_flash_commands)
     list_of_commands text
   end
 
