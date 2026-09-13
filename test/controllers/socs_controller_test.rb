@@ -797,8 +797,9 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       submit(soc, 'nor8m')
 
       assert_match 'sf probe 0; sf lock 0;', response.body
-      assert_match 'Nothing was changed and nothing is wrong', response.body
+      assert_match 'Nothing was changed by that', response.body
       assert_match 'discards an erase and a write while reporting success', response.body
+      assert_match 'https://github.com/OpenIPC/defib', response.body
     end
   end
 
@@ -808,7 +809,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     with_release_index(*every_edition_for(soc)) do
       submit(soc, 'nor8m', locale: 'ru')
 
-      assert_match 'Ничего не изменилось и ничего не сломалось', response.body
+      assert_match 'Этим ничего не изменено', response.body
     end
   end
 
@@ -821,7 +822,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       submit(soc, 'nand')
 
       assert_no_match(/sf lock/, response.body)
-      assert_no_match(/Nothing was changed and nothing is wrong/, response.body)
+      assert_no_match(/Nothing was changed by that/, response.body)
     end
   end
 

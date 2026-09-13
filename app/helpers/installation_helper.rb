@@ -30,7 +30,10 @@ module InstallationHelper
   # That subcommand is OpenIPC U-Boot's -- a stock one built from mainline has
   # `sf protect` and no `lock` -- so the failure is expected and harmless, but
   # nothing on the page said so. What it loses is the check: flash that is
-  # still protected discards an erase and a write while reporting success.
+  # still protected discards an erase and a write while reporting success. So
+  # the note has to name the way out as well -- that bootloader cannot clear
+  # the protection, and a reader who only gets the diagnosis is left with a
+  # camera they still cannot flash.
   #
   def list_of_commands(text)
     notes = caveats_for(text).map do |key|

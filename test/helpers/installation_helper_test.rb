@@ -61,7 +61,7 @@ class InstallationHelperTest < ActionView::TestCase
     html = list_of_commands(['sf probe 0; sf lock 0;'])
 
     assert_includes html, 'usage message'
-    assert_includes html, 'Nothing was changed and nothing is wrong'
+    assert_includes html, 'Nothing was changed by that'
   end
 
   # Telling the reader to carry on is only half of it. The unlock is there
@@ -71,6 +71,17 @@ class InstallationHelperTest < ActionView::TestCase
     html = list_of_commands(['sf probe 0; sf lock 0;'])
 
     assert_includes html, 'discards an erase and a write while reporting success'
+  end
+
+  # Naming the symptom without naming a way out leaves the reader of a genuinely
+  # protected chip with a diagnosis and no route to a flashed camera -- the
+  # review finding on OpenIPC/website#137. The bootloader cannot clear it, so
+  # the way out is something that does not go through the bootloader.
+  test 'the note names a way out for a chip that really is protected' do
+    html = list_of_commands(['sf probe 0; sf lock 0;'])
+
+    assert_includes html, 'external programmer'
+    assert_includes html, 'https://github.com/OpenIPC/defib'
   end
 
   # Every block that unlocks also chains, so both notes land together. They
