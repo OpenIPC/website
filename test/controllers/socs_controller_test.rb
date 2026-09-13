@@ -197,12 +197,13 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
   # partition_layout is left out unless a test asks for one, so the default path
   # -- which is what the form sends for every chip whose layout is its own -- is
   # what the rest of these tests keep exercising.
-  def submit(soc, flash_type, firmware_version: 'lite', partition_layout: nil, locale: nil)
+  def submit(soc, flash_type, firmware_version: 'lite', partition_layout: nil, locale: nil,
+             mac: '00:11:22:33:44:55')
     camera = { flash_type:, firmware_version:,
                network_interface: 'eth', sd_card_slot: 'nosd',
                camera_ip_address: '192.168.1.10',
                server_ip_address: '192.168.1.254',
-               camera_mac_address: '00:11:22:33:44:55' }
+               camera_mac_address: mac }
     camera[:partition_layout] = partition_layout if partition_layout
 
     put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}#{"?locale=#{locale}" if locale}",
@@ -839,7 +840,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       submit(soc, 'nor8m')
 
       assert_match 'setenv ethaddr 00:11:22:33:44:55', response.body
-      assert_match 'the camera has no MAC address of its own', response.body
+      assert_match 'this is where the address you entered above goes', response.body
     end
   end
 
@@ -876,7 +877,66 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     with_release_index(*every_edition_for(soc)) do
       submit(soc, 'nor8m', locale: 'ru')
 
-      assert_match 'у камеры нет собственного MAC-адреса', response.body
+      assert_match 'именно сюда попадает адрес, который вы ввели выше', response.body
+    end
+  end
+
+  # --- and now it is optional ---
+
+  # OpenIPC/firmware#2408 made the camera assign and persist its own address on
+  # first boot, so the form stopped demanding one. A submission with the field
+  # empty has to render a clean page: no `setenv ethaddr`, and none of the note
+  # that explains an address the visitor did not give.
+  test 'an empty MAC renders no setenv and no note about one' do
+    soc = instructable_soc('TS3516EVF50')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m', mac: '')
+
+      assert_no_match(/setenv ethaddr/, response.body)
+      assert_no_match(/address you entered above/, response.body)
+    end
+  end
+
+  # The layout commands are a separate concern and must survive the MAC going
+  # away -- on a layout that needs changing, the post-flash step still exists.
+  test 'an empty MAC still leaves the layout commands behind' do
+    soc = instructable_soc('TS3516EVF51')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor16m', mac: '')
+
+      assert_no_match(/setenv ethaddr/, response.body)
+      assert_match 'run setnor16m', response.body
+    end
+  end
+
+  # The form itself. `required` would make the browser refuse to submit an empty
+  # field, which is exactly the path this change exists to open.
+  test 'the MAC field is not marked required' do
+    soc = instructable_soc('TS3516EVF52')
+
+    with_release_index(*every_edition_for(soc)) do
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}"
+      assert_response :success
+
+      field = response.body[/<input[^>]*camera\[camera_mac_address\][^>]*>/]
+      assert_not_nil field, 'the MAC field is not on the form at all'
+      assert_no_match(/required/, field)
+    end
+  end
+
+  # A permanent link that carries no MAC is the same case arriving by the other
+  # door, and it must not resurrect one.
+  test 'a permanent link with an empty MAC renders no setenv' do
+    soc = instructable_soc('TS3516EVF53')
+
+    with_release_index(*every_edition_for(soc)) do
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}" \
+          '?mac=&cip=10.0.0.5&sip=10.0.0.1&net=eth&rom=nor8m&ver=lite&sd=nosd'
+      assert_response :success
+
+      assert_no_match(/setenv ethaddr/, response.body)
     end
   end
 

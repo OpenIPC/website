@@ -315,6 +315,25 @@ class CameraTest < ActiveSupport::TestCase
                  c.post_flash_commands
   end
 
+  # OpenIPC/firmware#2408: the camera assigns and persists its own address on
+  # first boot, so an empty field is a legitimate answer rather than an omission.
+  # Nothing calls valid? on a Camera today, but the declaration is what says so.
+  test 'a blank MAC address is valid, because the camera supplies its own' do
+    c = camera(flash_type: 'nor8m')
+    ['', nil].each do |value|
+      c.camera_mac_address = value
+      c.valid?
+      assert_empty c.errors[:camera_mac_address], "#{value.inspect} was rejected"
+    end
+  end
+
+  test 'a malformed MAC address is still rejected' do
+    c = camera(flash_type: 'nor8m')
+    c.camera_mac_address = 'not-a-mac'
+    c.valid?
+    assert_not_empty c.errors[:camera_mac_address]
+  end
+
   # A wifi camera is flashed from an SD card and never had the eth branch's
   # `setenv ethaddr` in the by-parts path either.
   test 'a wifi camera is given no MAC command' do
