@@ -71,9 +71,15 @@
         <%= bootstrap_form_for @camera, url: cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc), method: 'put' do |f| %>
           <div class="row row-cols-1 row-cols-xl-2">
             <div class="col">
-              <%= f.text_field :camera_mac_address, pattern: macaddr_pattern, required: true,
+              <%# Not required: the camera gives itself a stable unique address on
+                  first boot (OpenIPC/firmware#2408), so this is for keeping an
+                  address a camera already has, not for inventing one. An empty
+                  value skips `pattern` too -- HTML5 only applies it to a
+                  non-empty field. %>
+              <%= f.text_field :camera_mac_address, pattern: macaddr_pattern,
                                title: t('.camera_mac_address_title'), class: "form-control",
-                               help: link_to(t('.generate_mac'), '#', id: 'generate-mac-address') %>
+                               help: safe_join([t('.camera_mac_address_help'), ' ',
+                                                link_to(t('.generate_mac'), '#', id: 'generate-mac-address')]) %>
               <%= f.text_field :camera_ip_address, pattern: ipaddr_pattern, required: true,
                                title: t('.camera_ip_address_title'), class: "form-control" %>
               <%= f.text_field :server_ip_address, pattern: ipaddr_pattern, required: true,

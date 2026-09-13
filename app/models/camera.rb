@@ -60,7 +60,12 @@ class Camera
   # when there is no SoC to ask, and when the index cannot be read
   # available_releases returns the known list, so this never becomes unsatisfiable.
   validates :firmware_version, inclusion: { in: ->(camera) { camera.permitted_firmware_versions } }
-  validates :camera_mac_address, format: { with: MAC_ADDRESS_FORMAT }
+  # allow_blank, because a MAC is no longer something the visitor has to invent.
+  # OpenIPC/firmware#2408 made the camera assign and persist its own on first
+  # boot, so the field is for one case only: keeping the address a camera
+  # already had. Blank means "you decide", and post_flash_commands then renders
+  # no `setenv ethaddr` at all -- see mac_address_command?.
+  validates :camera_mac_address, format: { with: MAC_ADDRESS_FORMAT }, allow_blank: true
   validates :camera_ip_address, format: { with: IP_ADDRESS_FORMAT }
   validates :server_ip_address, format: { with: IP_ADDRESS_FORMAT }
 

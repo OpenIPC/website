@@ -25,10 +25,11 @@ en:
         bootloader: OpenIPC Bootloader
         bundle: OpenIPC Linux (%{name})
         camera_ip_address_title: four 8-bit fields separated by periods
+        camera_mac_address_help: Optional. Leave it empty and the camera gives itself a stable unique address on first boot. Fill it in only to keep an address the camera already has — the one on its label.
         camera_mac_address_title: six 8-bit hex fields separated by columns or dashes
         for: for %{name}
         generate_button: Generate Installation Guide
-        generate_mac: Generate a valid random MAC address.
+        generate_mac: Or generate a random one.
         no_bootloader_alert: OpenIPC publishes firmware for the %{name}, but not a bootloader for it. Both the guided installation and the ready-made flash image begin by writing an OpenIPC bootloader, so neither can be offered for this SoC. The firmware bundle below is the part that does exist.
         not_ready_alert_html: The installation instructions for the %{name} SoC are not yet ready. Although we are working hard to release OpenIPC firmware for the %{name}. Please stay tuned and <a href="/donate">support Open Source</a>.
         notes: Notes
@@ -88,9 +89,9 @@ en:
       flashing_full:
         continue: The camera will automatically restart.
         continue2: Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
-        info: The full firmware image consists of bootloader, kernel and root filesystem, and is also suitable for flashing memory chip using a programmer. Please note, the full image does not contain pre-set environment. You still need to add your own MAC address, IP address and other settings.
+        info: The full firmware image consists of bootloader, kernel and root filesystem, and is also suitable for flashing memory chip using a programmer. Please note, the full image does not contain pre-set environment, so the IP addresses and other settings are yours to add. The MAC address is not one of them — the camera assigns itself a stable unique address on first boot and keeps it.
         link: Download OpenIPC Firmware (%{name}) image
-        mac_note_html: "The full image carries no environment, so the camera has no MAC address of its own: it takes a fresh random one on every boot until one is set, and the web interface asks you for it later. This is where the address you entered above goes — use the one on the camera's own label, not a new one. If the bootloader answers <code>Can't overwrite \"ethaddr\"</code>, an address is already set and there is nothing to do here."
+        mac_note_html: "The full image carries no environment, so this is where the address you entered above goes. You only need it to keep an address the camera already has — the one on its own label. Left empty, the camera picks a stable unique address for itself on first boot and keeps it, so there is nothing to set here and nothing will ask you for one later. If the bootloader answers <code>Can't overwrite \"ethaddr\"</code>, an address is already set and there is nothing to do here."
         nand_caveat: On NAND the image covers the bootloader, kernel and UBI root filesystem only, not the whole chip, and it is not suitable for a programmer -- it carries no OOB/ECC bytes and no factory bad-block markers. Write it from U-Boot, or use the per-partition commands below.
         title: Flash full OpenIPC Firmware image
       flashing_uboot:
