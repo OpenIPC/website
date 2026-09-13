@@ -189,7 +189,7 @@ module InstallationHelper
     text << do_not_copy_paste
     unless c.network_interface.eql?('wifi')
       text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
-      text << "setenv ethaddr #{c.camera_mac_address}"
+      text << "setenv ethaddr #{c.camera_mac_address}" if c.mac_address_command?
       text << 'saveenv'
     end
     if c.sd_card_slot.eql?('sd') && c.network_interface.eql?('wifi')

@@ -325,6 +325,21 @@ class CameraTest < ActiveSupport::TestCase
     assert_empty c.post_flash_commands
   end
 
+  # The command block is pasted into a bootloader a line at a time, so a value
+  # that is not a MAC is not a cosmetic problem: `; sf erase 0x0 0x1000000` is a
+  # command. The controller keeps malformed input out, and this keeps the
+  # command from existing at all without an address to put in it.
+  test 'no setenv ethaddr is built without a well-formed address' do
+    ['', nil, '00:11:22:33:44', 'not-a-mac',
+     '00:11:22:33:44:55; sf erase 0x0 0x1000000'].each do |value|
+      c = camera_of('HiSilicon', flash_type: 'nor8m')
+      c.camera_mac_address = value
+
+      assert_not c.mac_address_command?, "#{value.inspect} was treated as an address"
+      assert_empty c.post_flash_commands, "#{value.inspect} reached the commands"
+    end
+  end
+
   # NAND is a separate environment -- uknand, urnand, setnand and mtdpartsubi --
   # and none of this touches it.
   test 'nand keeps its own macros whatever the vendor' do

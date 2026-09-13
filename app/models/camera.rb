@@ -276,8 +276,15 @@ class Camera
   # Whether the post-flash step sets a MAC address. Wifi cameras are flashed
   # from an SD card and never had the eth branch's `setenv ethaddr` in the
   # by-parts path either, so they do not get one here.
+  #
+  # Also the guarantee that no `setenv ethaddr` is ever rendered with something
+  # that is not a MAC after it. The controller keeps a malformed one out, and
+  # this makes it structural: the command exists only when there is an address
+  # to put in it. Review on OpenIPC/website#138.
   def mac_address_command?
-    !network_interface.eql?('wifi')
+    return false if network_interface.eql?('wifi')
+
+    camera_mac_address.to_s.match?(MAC_ADDRESS_FORMAT)
   end
 
   # What to run once the full image has been written. The image carries no
@@ -396,7 +403,7 @@ class Camera
 
   def permalink
     [
-      '?mac=', camera_mac_address.gsub(':', '-'),
+      '?mac=', camera_mac_address.to_s.gsub(':', '-'),
       '&cip=', camera_ip_address,
       '&sip=', server_ip_address,
       '&net=', network_interface,
