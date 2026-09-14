@@ -72,6 +72,7 @@ zh:
       backup:
         info: OpenIPC U-Boot 会覆盖原始的加密分区，因此无法恢复为出厂固件，除非您拥有此特定摄像机的完整闪存备份！要创建完整的固件备份，请启动 TFTP 服务器并在引导加载程序 shell 中执行这些命令。
         more_info_html: 有关详细信息，请参阅项目 wiki 中的<a href="https://github.com/OpenIPC/wiki/blob/master/en/installation.md">安装说明</a>。
+        shared_name: "上面的文件名对本型号、同种闪存的每台摄像机都是一样的，因此备份第二台时会覆盖第一台的备份——而这个文件是回到原厂固件的唯一途径。请给每台摄像机的备份取一个自己的名字，恢复时也使用同一个名字。或者在上面填写 MAC 地址：填写之后它会成为文件名的一部分。"
         subtitle: 备份您的原始固件，请不要跳过这个步骤！
         title: 保存原始固件
       backup_32: 请注意！在备份 32M 闪存之前，请确保摄像机至少有 64M 的 RAM。

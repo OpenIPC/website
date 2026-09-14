@@ -154,8 +154,6 @@ module Cameras
         # The same read-before-it-settled mistake the flash type had above.
         enforce_eight_meg_limit
 
-        @camera.backup_filename = "backup-#{@camera.soc.model.downcase}-#{@camera.flash_type}.bin"
-
         @page_title = "SoC: #{@camera.soc.full_name}"
         render 'cameras/socs/update'
       end

@@ -827,6 +827,74 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # --- the backup file name ---
+
+  # The backup block and the restore block must name the same file, or the
+  # restore instructions send the reader after something that is not there.
+  test 'the backup and restore blocks name the same file' do
+    soc = instructable_soc('TS3516EVG00')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m')
+
+      name = 'backup-ts3516evg00-nor8m-001122334455.bin'
+      assert_match "tftpput 0x82000000 0x800000 #{name}", response.body
+      assert_match "tftpboot 0x82000000 #{name}", response.body
+    end
+  end
+
+  # Without one the name is shared, and the page has to say so -- that is what
+  # cost the reporter in OpenIPC/firmware#2405 every backup but the last.
+  test 'a page with no MAC warns that the backup name is shared' do
+    soc = instructable_soc('TS3516EVG10')
+
+    with_release_index(*every_edition_for(soc)) do
+      put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
+          params: { camera: { flash_type: 'nor8m', firmware_version: 'lite',
+                              network_interface: 'eth', sd_card_slot: 'nosd',
+                              camera_ip_address: '192.168.1.10',
+                              server_ip_address: '192.168.1.254',
+                              camera_mac_address: '' } }
+      assert_response :success
+
+      assert_match 'backup-ts3516evg10-nor8m.bin', response.body
+      assert_match 'writes over the first', response.body
+    end
+  end
+
+  test 'a page with a MAC does not carry the shared-name warning' do
+    soc = instructable_soc('TS3516EVG20')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m')
+
+      assert_no_match(/writes over the first/, response.body)
+    end
+  end
+
+  # The SD-card branch is reachable by a hand-made request -- the form posts
+  # neither net nor sd, but `update` accepts both -- and it had the same
+  # collision plus one of its own: the dd wrote `fulldump.bin` while the restore
+  # block loaded backup_filename, so the two halves named different files.
+  test 'the memory-card branch writes the file its own restore block reads' do
+    soc = instructable_soc('TS3516EVG30')
+
+    with_release_index(*every_edition_for(soc)) do
+      put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
+          params: { camera: { flash_type: 'nor8m', firmware_version: 'lite',
+                              network_interface: 'wifi', sd_card_slot: 'sd',
+                              camera_ip_address: '192.168.1.10',
+                              server_ip_address: '192.168.1.254',
+                              camera_mac_address: '00:11:22:33:44:55' } }
+      assert_response :success
+
+      name = 'backup-ts3516evg30-nor8m-001122334455.bin'
+      assert_match "of=./#{name}", response.body
+      assert_match "fatload mmc 0:1 0x82000000 #{name}", response.body
+      assert_no_match(/fulldump\.bin/, response.body)
+    end
+  end
+
   # --- the MAC address the form has always required ---
 
   # OpenIPC/firmware#2405 follow-up: the field is required, and until now only

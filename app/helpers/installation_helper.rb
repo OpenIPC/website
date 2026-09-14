@@ -110,7 +110,13 @@ module InstallationHelper
       text << ""
       text << "# Use the following command to restore the backup to a file on a PC"
       text << "# (replace /dev/sdc with your SD card device):"
-      text << "# sudo dd bs=512 skip=16 count=#{c.flash_size_sectors} if=/dev/sdc of=./fulldump.bin"
+      # backup_filename, not a fixed `fulldump.bin`. Two reasons, and the
+      # second one predates the first: this path collides across cameras
+      # exactly like the tftpput path did -- see backup_filename and
+      # OpenIPC/firmware#2405 -- and the restore block below has always loaded
+      # `backup_filename` off the card, so a reader who followed both wrote one
+      # name and was then sent after another. Review on #140.
+      text << "# sudo dd bs=512 skip=16 count=#{c.flash_size_sectors} if=/dev/sdc of=./#{c.backup_filename}"
     else
       text << "tftpput #{c.soc.load_address} #{c.flash_size_hex} #{c.backup_filename}"
       text << '# if there is no tftpput but tftp then run this instead'

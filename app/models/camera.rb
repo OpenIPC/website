@@ -81,8 +81,36 @@ class Camera
     @server_ip_address ||= '192.168.1.254'
   end
 
+  # The file the whole backup section exists for, named after the camera where
+  # there is anything to name it after.
+  #
+  # Model and chip alone are the same string for every camera of a kind, so a
+  # second camera's backup lands on top of the first's. The reporter in
+  # OpenIPC/firmware#2405 flashed a batch of hi3516cv200s and found every backup
+  # but the last one gone. This file is the only way back to the stock
+  # firmware, so what that collision costs is not a file.
+  #
+  # A MAC is optional since #139 and the address a camera assigns itself is not
+  # known here, so a blank field still produces the shared name. The backup
+  # section says so rather than pretending otherwise -- see
+  # known_mac_address?.
+  #
+  # `model` used to be called here and Camera has no such method; the controller
+  # assigned this attribute before every render, so the default never ran and
+  # never raised.
   def backup_filename
-    @backup_filename ||= "backup-#{model.downcase}-#{@flash_type}.bin"
+    @backup_filename ||= begin
+      parts = ['backup', soc&.model.to_s.downcase, @flash_type].reject(&:blank?)
+      parts << camera_mac_address.delete(':') if known_mac_address?
+      "#{parts.join('-')}.bin"
+    end
+  end
+
+  # Whether the visitor gave an address to keep. A question about the form, not
+  # about the camera: blank has been legitimate since OpenIPC/firmware#2408 gave
+  # the camera one of its own, and it is why the backup name can still collide.
+  def known_mac_address?
+    camera_mac_address.to_s.match?(MAC_ADDRESS_FORMAT)
   end
 
   def nand?
@@ -289,7 +317,7 @@ class Camera
   def mac_address_command?
     return false if network_interface.eql?('wifi')
 
-    camera_mac_address.to_s.match?(MAC_ADDRESS_FORMAT)
+    known_mac_address?
   end
 
   # What to run once the full image has been written. The image carries no
