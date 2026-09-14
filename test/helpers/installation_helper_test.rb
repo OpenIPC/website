@@ -96,6 +96,34 @@ class InstallationHelperTest < ActionView::TestCase
                     html.index('it does not understand <code>&amp;&amp;</code>')
   end
 
+  # The backup is the only way back to the stock firmware, and after a
+  # whole-chip erase the factory MAC is not in it -- the camera's own recovery
+  # scan has nothing left to read. So the block that takes the backup is where
+  # the address gets written down. OpenIPC/firmware#2405.
+  test 'a block that reads the MAC out of the bootloader is followed by the note' do
+    html = list_of_commands(['printenv ethaddr'])
+
+    assert_includes html, 'Write this address down with the backup'
+    assert_includes html, '<code>set_mac aa:bb:cc:dd:ee:ff</code>'
+  end
+
+  # It answers the `printenv ethaddr` line specifically, so the flashing blocks
+  # -- which have no reason to raise the question -- are left alone.
+  test 'a block that does not read the MAC gets no note about it' do
+    html = list_of_commands(['sf probe 0; sf read 0x42000000 0x0 0x1000000'])
+
+    assert_not_includes html, 'Write this address down'
+  end
+
+  # Ordered by the line each one answers, as the other notes are: the MAC is
+  # read first, so its note comes first.
+  test 'the MAC note precedes the unlock note' do
+    html = list_of_commands(['printenv ethaddr', 'sf probe 0; sf lock 0;'])
+
+    assert_operator html.index('Write this address down'), :<,
+                    html.index('<code>sf lock 0</code>')
+  end
+
   # `sf read` and `sf erase` are not it. The backup block probes the flash
   # without unlocking it, and a note about a command it never ran is noise.
   test 'a block that probes the flash without unlocking it is left alone' do
