@@ -44,6 +44,14 @@
           <%= under_development %>
         <% else %>
           <%= firmware_backup(@camera) %>
+          <%# Without a MAC the name carries nothing that tells one camera from
+              another, and the second backup of a batch overwrites the first --
+              OpenIPC/firmware#2405, where that cost the reporter every backup
+              but the last. Shown only when the name really is shared: with a
+              MAC in it there is nothing to warn about. %>
+          <% unless @camera.known_mac_address? %>
+            <p class="alert alert-warning"><%= t('firmware.installation.backup.shared_name') %></p>
+          <% end %>
           <% if @camera.flash_type.eql?("nor32m") %>
             <p class="alert alert-warning"><%= t('firmware.installation.backup_32') %></p>
           <% end %>

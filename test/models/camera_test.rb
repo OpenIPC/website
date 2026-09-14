@@ -269,6 +269,53 @@ class CameraTest < ActiveSupport::TestCase
     assert_equal ['run setnor8m'], camera_of('HiSilicon', flash_type: 'nor8m').layout_commands
   end
 
+  # --- the name the backup is saved under ---
+  #
+  # OpenIPC/firmware#2405: the model and the chip are the same string for every
+  # camera of a kind, so a batch of them wrote each backup over the last. The
+  # reporter lost every one but the final camera's, and that file is the only
+  # way back to a camera's stock firmware.
+
+  StubModelSoc = Struct.new(:model, :vendor)
+
+  def backup_camera(mac: nil, flash_type: 'nor8m')
+    c = Camera.new(flash_type:, firmware_version: 'lite', camera_mac_address: mac)
+    c.soc = StubModelSoc.new('HI3516CV200', StubVendor.new('HiSilicon'))
+    c
+  end
+
+  test 'the backup name carries the MAC, so two cameras cannot share one' do
+    first = backup_camera(mac: 'aa:bb:cc:dd:ee:ff')
+    second = backup_camera(mac: '00:11:22:33:44:55')
+
+    assert_equal 'backup-hi3516cv200-nor8m-aabbccddeeff.bin', first.backup_filename
+    assert_not_equal first.backup_filename, second.backup_filename
+  end
+
+  # Blank is legitimate since #139, and the address the camera assigns itself is
+  # not knowable here -- so the shared name stands and the page warns instead.
+  test 'without a MAC the name is the shared one, and the camera says so' do
+    c = backup_camera
+
+    assert_not c.known_mac_address?
+    assert_equal 'backup-hi3516cv200-nor8m.bin', c.backup_filename
+  end
+
+  test 'a malformed MAC is not smuggled into the file name' do
+    ['not-a-mac', '00:11:22:33:44', 'aa:bb:cc:dd:ee:ff; rm -rf /'].each do |value|
+      c = backup_camera(mac: value)
+
+      assert_equal 'backup-hi3516cv200-nor8m.bin', c.backup_filename, value.inspect
+    end
+  end
+
+  # It used to interpolate `model`, which Camera does not define. The controller
+  # assigned the attribute before every render, so the default never ran -- and
+  # would have raised NoMethodError the first time it did.
+  test 'the name is built from the SoC the camera carries' do
+    assert_equal 'backup-hi3516cv200-nand.bin', backup_camera(flash_type: 'nand').backup_filename
+  end
+
   # --- what runs after the full image is written ---
   #
   # The form has always required a MAC address and, until OpenIPC/firmware#2405,
