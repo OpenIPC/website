@@ -43,14 +43,19 @@ module InstallationHelper
     notes.empty? ? block : safe_join([block, *notes])
   end
 
-  # Which notes a block has earned, in the order the lines they answer appear in
-  # it, so a reader working down the block meets each one where it goes wrong.
+  # The line that raises a question, and the note that answers it. One table
+  # rather than a growing ladder of ifs, because what has to stay true of this
+  # is a property of the whole set: insertion order is the order the notes come
+  # out in, and it matches the order the lines appear in a block, so a reader
+  # working down one meets each note where it goes wrong.
+  CAVEATS = { 'printenv ethaddr' => 'mac_record_caveat_html',
+              'sf lock' => 'lock_caveat_html',
+              '&&' => 'compound_caveat_html' }.freeze
+
+  # Which notes a block has earned.
   def caveats_for(text)
     lines = text.map(&:to_s)
-    keys = []
-    keys << 'lock_caveat_html' if lines.any? { |line| line.include?('sf lock') }
-    keys << 'compound_caveat_html' if lines.any? { |line| line.include?('&&') }
-    keys
+    CAVEATS.select { |trigger, _| lines.any? { |line| line.include?(trigger) } }.values
   end
 
   def do_not_copy_paste
@@ -92,9 +97,20 @@ module InstallationHelper
     c.flash_type.eql?('nand') ? fixed : '${filesize}'
   end
 
+  # The dump, and the one thing the dump does not carry.
+  #
+  # A full-image install erases the whole chip, so whatever the stock firmware
+  # kept its MAC in goes with it. On first boot the camera looks for an address
+  # of its own, then for the factory one still in flash (`ipcinfo --xm-mac`,
+  # NOR and the Xiongmai layout only), and only then mints itself a locally
+  # administered `02:` one -- so after a whole-chip erase there is nothing left
+  # for step two to find, and the factory address is gone for good unless
+  # somebody wrote it down. It costs one command to write it down here, beside
+  # the backup it belongs with. OpenIPC/firmware#2405.
   def firmware_backup(c)
     text = []
     text << do_not_copy_paste
+    text << 'printenv ethaddr'
     unless c.network_interface.eql?('wifi')
       text << "setenv ipaddr #{c.camera_ip_address}; setenv serverip #{c.server_ip_address}"
     end

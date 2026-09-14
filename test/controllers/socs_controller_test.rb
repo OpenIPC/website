@@ -827,6 +827,29 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # --- writing the factory MAC down before it is erased ---
+
+  test 'the backup block reads the factory MAC out of the bootloader' do
+    soc = instructable_soc('TS3516EVH00')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m')
+
+      assert_match 'printenv ethaddr', response.body
+      assert_match 'Write this address down with the backup', response.body
+    end
+  end
+
+  test 'the factory-MAC note is translated, not another hardcoded English string' do
+    soc = instructable_soc('TS3516EVH10')
+
+    with_release_index(*every_edition_for(soc)) do
+      submit(soc, 'nor8m', locale: 'ru')
+
+      assert_match 'Запишите этот адрес вместе с резервной копией', response.body
+    end
+  end
+
   # --- the backup file name ---
 
   # The backup block and the restore block must name the same file, or the
