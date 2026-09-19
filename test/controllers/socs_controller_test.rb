@@ -1032,7 +1032,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}"
       assert_response :success
 
-      menu = response.body[/<select[^>]*camera\[flash_type\][^>]*>.*?<\/select>/m]
+      menu = response.body[%r{<select[^>]*camera\[flash_type\][^>]*>.*?</select>}m]
       assert_not_nil menu, 'the flash type menu is not on the form at all'
       assert_no_match(/<option[^>]*value=""/, menu,
                       'the flash type menu offers a blank chip')

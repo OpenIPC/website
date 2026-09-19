@@ -3,7 +3,7 @@ source 'https://rubygems.org'
 ruby '3.3.12'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails', branch: 'main'
-gem 'rails', '~> 8.0.0'
+gem 'rails', '~> 8.1.0'
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem 'sprockets-rails'
@@ -19,15 +19,19 @@ gem 'puma'# , '>= 5.0'
 # ("Puma 5 is not compatible with Rack 3"). Taking Rack 3 means taking Puma 6
 # and the header-casing change with it, and this app sets X-Sendfile-Type and
 # X-Accel-Mapping by hand for firmware downloads; getting that location wrong
-# took both sites down to unstyled text on 2026-08-24. Rack 3 is its own change
-# with its own validation, not a side effect of a Rails upgrade -- see #153,
-# which scopes it out of the epic.
+# took both sites down to unstyled text on 2026-08-24.
+#
+# This pin is what makes Rack 3 separable. Rails 8.1 runs against Rack 2.2 and
+# Puma 5 quite happily, so the framework upgrade and the Rack migration do not
+# have to be the same change -- which is the opposite of what #153 assumed when
+# it put Rails 8 outside the epic.
 gem 'rack', '~> 2.2'
 
 # json 2, for the same reason. Ruby 3.3 ships json 2.7 as a default gem, but a
 # transitive dependency resolves 3.x, and json 3.0 removed the `quirks_mode`
-# keyword that ActiveSupport's JSON encoder still passes -- retested on 7.2.3,
-# still broken there. The failure is not obviously about json: `bin/rails`
+# keyword that ActiveSupport's JSON encoder still passes -- retested with the
+# pin lifted on 8.1.3.1, where it fails 27 tests. The failure is not obviously
+# about json: `bin/rails`
 # aborts with "unknown keyword: quirks_mode" while parsing config/database.yml,
 # because the production password goes through to_json there.
 gem 'json', '~> 2.7'
