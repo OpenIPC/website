@@ -120,6 +120,12 @@ from somewhere.
 Only needed on a rebuilt host:
 
 - docker-ce + compose v2, MariaDB, nginx, dehydrated
+- **the nginx configuration**, via `deploy/push-nginx.sh --apply` from a
+  checkout. It installs the vhosts and `conf.d/`, tests and reloads. A host
+  without it answers on the right ports and has none of the caching or
+  admission control the site depends on under load — which is how it can look
+  restored and fall over on the next flood. Run `deploy/push-nginx.sh` with no
+  argument afterwards; it should report that the origin matches
 - `/run/mysqld` bind-mounted into the containers (the socket, not TCP)
 - `/srv/github-releases` — recreated by `~paul/bin/openipc-backup-releases.rb`
   within the hour; the site degrades gracefully until then

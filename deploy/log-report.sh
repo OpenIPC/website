@@ -10,7 +10,7 @@
 # actively mislead: limit_conn sheds BEFORE proxy_pass, so a flood leaves the
 # latency of served requests untouched and shows up in nothing but the counts.
 #
-# Reads the `openipc` log_format (deploy/nginx/openipc-logformat.conf). Lines
+# Reads the `openipc` log_format (deploy/nginx/conf.d/openipc-logformat.conf). Lines
 # still in stock `combined` are counted but contribute no cache or timing
 # figures -- which is what a log spanning the format change looks like.
 #
