@@ -62,8 +62,13 @@ class Snapshot < ApplicationRecord
   # blob, its variant records and its file left behind with nothing referencing
   # them, which is how ~93,000 orphans accumulated. purge does the same work
   # inline and cannot be lost.
-  before_destroy :purge_wall_images, prepend: true
+  # Order matters, and prepend inverts it: the callback declared last is
+  # prepended last and therefore runs first. The wall files go before the blob
+  # does, because purge_file_now can raise on a tree ActiveStorage finds in an
+  # unexpected state, and anything after it would then never run -- leaving
+  # image files nothing references and nothing will ever collect.
   before_destroy :purge_file_now, prepend: true
+  before_destroy :purge_wall_images, prepend: true
 
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }
   validates :mac_address, presence: true, format: MAC_ADDRESS_FORMAT

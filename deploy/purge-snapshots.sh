@@ -40,6 +40,16 @@ owner=$(stat -c '%u:%g' "$BLOB_ROOT")
 [ "$owner" = "1000:1000" ] \
   || { log "FAILED: ${BLOB_ROOT} is owned by ${owner}, expected 1000:1000"; exit 1; }
 
+# Same for the wall tree, and for a sharper reason: this script mounts it below.
+# If it is missing, THIS run is what makes Docker create it root-owned, and
+# deploy.sh then refuses to deploy at all -- a nightly cron job that blocks
+# releases until somebody chowns a directory by hand.
+install -d -o 1000 -g 1000 -m 0755 "$WALL_ROOT" \
+  || { log "FAILED: cannot create ${WALL_ROOT}"; exit 1; }
+owner=$(stat -c '%u:%g' "$WALL_ROOT")
+[ "$owner" = "1000:1000" ] \
+  || { log "FAILED: ${WALL_ROOT} is owned by ${owner}, expected 1000:1000"; exit 1; }
+
 log "purging snapshots past retention (image ${IMAGE_TAG:0:12})"
 
 # A one-off container rather than `docker exec` into web-prod: purging is IO

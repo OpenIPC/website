@@ -71,7 +71,11 @@ class SnapshotsController < ApplicationController
       @snapshot.file.content_type == 'image/jpeg'
 
     representation = @snapshot.file.representation(format: :jpeg).processed
-    send_blob(representation.image, @snapshot.filename_for_download.sub(/heif$/, 'jpg'))
+    # sub(/heif$/) missed the extension cameras actually send. HEIF files are
+    # named .heic far more often than .heif -- every HEIF upload in the test
+    # suite is one -- so the bytes were converted to JPEG and handed over still
+    # claiming to be HEIC.
+    send_blob(representation.image, @snapshot.filename_for_download.sub(/hei[cf]$/i, 'jpg'))
   end
 
   # Stream the bytes rather than reading them into a string first.

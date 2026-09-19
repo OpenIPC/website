@@ -204,19 +204,14 @@ server {
     # No limit_conn. These are sendfile of a small JPEG already in page cache,
     # which is the whole point -- capping them would only reintroduce the
     # queueing this removes.
-    # root, not alias: try_files resolves $uri against the document root, and
-    # combining it with alias is a long-standing nginx trap that resolves the
-    # path twice. /wall/x is wanted at /srv/www/shared/wall/x, so rooting at
-    # the parent gets there with no rewriting.
+    # alias and no try_files. Combining the two is a long-standing nginx trap
+    # that resolves the path twice; alias on its own already answers 404 for a
+    # file that is not there, which is the honest answer here -- a snapshot
+    # whose job has not run is never linked to this path at all, because the
+    # view falls back to ActiveStorage until the column is set.
     location ^~ /wall/ {
-        root /srv/www/shared;
+        alias /srv/www/shared/wall/;
         add_header Cache-Control "public, max-age=31536000, immutable";
-
-        # A snapshot whose job has not run is never linked here -- the view
-        # falls back to ActiveStorage until the column is set -- so a miss is a
-        # genuinely absent image, and 404 is the honest answer rather than a
-        # trip to Rails.
-        try_files $uri =404;
     }
 
     # Open Wall pages and the ActiveStorage image URLs they embed: the paths
