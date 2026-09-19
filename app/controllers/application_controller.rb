@@ -9,6 +9,32 @@ class ApplicationController < ActionController::Base
 
   add_flash_types :alert, :notice, :danger, :info, :success, :warning
 
+  # Tell the cache in front of us that this response was rendered for a
+  # signed-in admin and must not be stored.
+  #
+  # nginx cannot work this out for itself. Devise keeps the admin identity
+  # inside the same encrypted `_openipc_session` cookie that every visitor
+  # gets, so no variable available to it distinguishes an admin's request from
+  # anyone else's -- and refusing to cache every response carrying a session
+  # cookie would mean refusing to cache anything at all, which is what the
+  # microcache exists to avoid.
+  #
+  # Without this, `snapshots/show` -- which renders the uploading camera's IP
+  # and MAC address for admins, and is cached for 300s on the path alone --
+  # stores whatever an admin was shown and serves it to the public until the
+  # entry expires. The same template is reached at /open-wall/camera/<id>,
+  # cached for 60s, so both paths need it.
+  #
+  # It is set for every action rather than that one view, because the rule is
+  # about admin-conditional content in general and the next such block will not
+  # come with a reminder. `proxy_no_cache` in
+  # deploy/nginx/sites-available/org.openipc is the other half.
+  after_action :refuse_shared_caching_for_admins
+
+  def refuse_shared_caching_for_admins
+    response.set_header('X-Admin-View', '1') if admin_signed_in?
+  end
+
   # This used to append every unmatched URL, and the referer that produced it,
   # to public/notfound.txt -- a file in the directory the app serves, so
   # https://openipc.org/notfound.txt answered 200 to anyone who asked. A

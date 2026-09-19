@@ -176,6 +176,15 @@ server {
         proxy_cache_use_stale updating error timeout;
         proxy_ignore_headers Cache-Control Set-Cookie Expires Vary;
         proxy_hide_header Set-Cookie;
+        # Never store a response Rails rendered for a signed-in admin: this page
+        # shows the uploader's IP and MAC to admins, and the cache key is the
+        # path alone, so a cached copy would go to everyone who asks for it. See
+        # ApplicationController#refuse_shared_caching_for_admins. An admin may
+        # in return be served an anonymous copy already in the cache, for up to
+        # the TTL above; reaching the controls then means waiting it out.
+        proxy_no_cache $upstream_http_x_admin_view;
+        proxy_hide_header X-Admin-View;
+
         add_header X-Cache-Status $upstream_cache_status;
     }
 
@@ -210,6 +219,11 @@ server {
         proxy_cache_use_stale updating error timeout;
         proxy_ignore_headers Cache-Control Set-Cookie Expires Vary;
         proxy_hide_header Set-Cookie;
+        # As above: /open-wall/camera/<id> reaches the same template, so an
+        # admin's rendering of it must not be stored either.
+        proxy_no_cache $upstream_http_x_admin_view;
+        proxy_hide_header X-Admin-View;
+
         add_header X-Cache-Status $upstream_cache_status;
     }
 
