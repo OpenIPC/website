@@ -15,7 +15,7 @@ module Openipc
     # at each step. Raising it is what opts in to the new framework defaults, so
     # it is the line that does the actual upgrading -- the gem version alone
     # changes almost nothing.
-    config.load_defaults 7.1
+    config.load_defaults 7.2
 
     # Configuration for the application, engines, and railties goes here.
     #

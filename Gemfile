@@ -3,7 +3,7 @@ source 'https://rubygems.org'
 ruby '3.3.12'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails', branch: 'main'
-gem 'rails', '~> 7.1.5'
+gem 'rails', '~> 7.2.3'
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem 'sprockets-rails'
@@ -26,10 +26,10 @@ gem 'rack', '~> 2.2'
 
 # json 2, for the same reason. Ruby 3.3 ships json 2.7 as a default gem, but a
 # transitive dependency resolves 3.x, and json 3.0 removed the `quirks_mode`
-# keyword that ActiveSupport 7.1's JSON encoder still passes. The failure is not
-# obviously about json: `bin/rails` aborts with "unknown keyword: quirks_mode"
-# while parsing config/database.yml, because the production password goes
-# through to_json there.
+# keyword that ActiveSupport's JSON encoder still passes -- retested on 7.2.3,
+# still broken there. The failure is not obviously about json: `bin/rails`
+# aborts with "unknown keyword: quirks_mode" while parsing config/database.yml,
+# because the production password goes through to_json there.
 gem 'json', '~> 2.7'
 
 # Bundle and transpile JavaScript [https://github.com/rails/jsbundling-rails]
@@ -102,11 +102,20 @@ end
 group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem 'capybara'
+
+  # Minitest 5, pinned, as minitest's own post-install message asks for. Rails
+  # only asks for >= 5.1, so an unpinned bundle takes minitest 6, which moved
+  # minitest/mock out into a gem of its own -- and camera_test.rb and
+  # release_cache_test.rb both require it, for `stub`. Minitest 6 also drops
+  # Minitest::Unit and `assert_equal nil`, so it is its own migration and not a
+  # side effect of a Rails upgrade.
+  gem 'minitest', '~> 5.0'
+
   gem 'selenium-webdriver'
 end
 
 gem 'activestorage-validator', '~> 0.2.2'
-gem 'bootstrap_form', '~> 5.1'
+gem 'bootstrap_form', '~> 5.4'
 gem 'bootstrap5-kaminari-views', '~> 0.0.1'
 # 4.9.4, not 4.8: earlier Devise reads Rails.application.secrets, which Rails 7.1
 # deprecates and 7.2 removes. Nothing in this app calls it -- the warning comes
