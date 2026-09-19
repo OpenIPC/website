@@ -24,6 +24,7 @@ flock -n 9 || { echo "another purge is already running; leaving it to finish"; e
 
 COMPOSE_DIR=/srv/www/deploy-src/deploy
 BLOB_ROOT=/srv/www/shared/storage
+WALL_ROOT=${WALL_ROOT:-/srv/www/shared/wall}
 IMAGE_TAG=$(sed -n 's/^PROD_TAG=//p' "${COMPOSE_DIR}/.env" | tail -1)
 
 log() { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
@@ -108,5 +109,19 @@ find "$BLOB_ROOT" -mindepth 1 -type d -empty -delete
 find "$BLOB_ROOT" -mindepth 1 -type d -empty -delete
 after=$(find "$BLOB_ROOT" -mindepth 1 -type d | wc -l)
 log "shard directories: ${before} -> ${after}"
+
+# The Open Wall's plain-file variants (#146) are ours, not ActiveStorage's, so
+# storage:reap above cannot see them. Snapshot#purge_file_now removes a row's
+# directory as it is destroyed, which is the path that actually keeps this
+# clean; this is the same belt-and-braces sweep as the orphan pass above, for
+# anything a crash or a restore left behind.
+log "sweeping orphan wall directories"
+docker run --rm \
+  --env-file /srv/www/.env.prod \
+  -v /run/mysqld:/run/mysqld \
+  -v "$WALL_ROOT":/rails/public/wall \
+  "ghcr.io/openipc/website:${IMAGE_TAG}" \
+  bundle exec rails wall:prune 2>&1 | tail -3 \
+  || log "WARNING: wall prune errored, continuing"
 
 log "purge complete"

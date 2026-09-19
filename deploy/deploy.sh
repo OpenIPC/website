@@ -47,8 +47,8 @@ env_set() {
 
 target_for() {
   case "$1" in
-    prod) echo "web-prod 3000 PROD_TAG .previous-prod /srv/www/shared/storage /srv/www/shared/release-cache" ;;
-    dev)  echo "web-dev  3001 DEV_TAG  .previous-dev  /srv/www/shared/dev-storage /srv/www/shared/dev-release-cache" ;;
+    prod) echo "web-prod 3000 PROD_TAG .previous-prod /srv/www/shared/storage /srv/www/shared/release-cache /srv/www/shared/wall" ;;
+    dev)  echo "web-dev  3001 DEV_TAG  .previous-dev  /srv/www/shared/dev-storage /srv/www/shared/dev-release-cache /srv/www/shared/dev-wall" ;;
     *)    die "unknown target '$1' (expected prod or dev)" ;;
   esac
 }
@@ -107,11 +107,16 @@ wait_healthy() {
 
 do_deploy() {
   local env_name=$1 sha=${2:-latest}
-  read -r service port tag_key prev_file blob_root cache_root <<<"$(target_for "$env_name")"
+  read -r service port tag_key prev_file blob_root cache_root wall_root <<<"$(target_for "$env_name")"
   local prev_path="${STATE_DIR}/${prev_file}"
 
   ensure_uid_1000_root "$blob_root"
   ensure_uid_1000_root "$cache_root"
+  # The Open Wall's plain-file variants (#146). Same reasoning as the two
+  # above: absent, Docker creates it root-owned and every image write fails
+  # with EACCES while the container still reports healthy -- and the wall
+  # would silently fall back to ActiveStorage for every snapshot.
+  ensure_uid_1000_root "$wall_root"
   install_legacy_images
 
   local previous

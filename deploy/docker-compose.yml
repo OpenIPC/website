@@ -49,6 +49,10 @@ services:
       - /run/mysqld:/run/mysqld
       - /srv/github-releases:/srv/github-releases:ro
       - /srv/www/shared/storage:/rails/storage
+      # The Open Wall's variants as plain files, served by nginx rather
+      # than through ActiveStorage (#146). Under public/ so Rails can
+      # still serve them if nginx is bypassed.
+      - /srv/www/shared/wall:/rails/public/wall
       - /srv/www/shared/files:/rails/public/files
       - /srv/www/shared/dl:/rails/public/dl:ro
       # Release assets fetched on demand. Writable, unlike the mirror above,
@@ -76,6 +80,7 @@ services:
       # Dev gets its own blob tree so a dev purge can never touch production
       # snapshots, and its own firmware cache so a bad build is isolated.
       - /srv/www/shared/dev-storage:/rails/storage
+      - /srv/www/shared/dev-wall:/rails/public/wall
       - /srv/www/shared/dev-files:/rails/public/files
       - /srv/www/shared/dl:/rails/public/dl:ro
       - /srv/www/shared/dev-release-cache:/srv/release-cache
