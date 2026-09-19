@@ -3,7 +3,7 @@ server {
     listen 80;
     server_name openipc.org;
     #
-    access_log /var/log/nginx/org.openipc.access.log;
+    access_log /var/log/nginx/org.openipc.access.log openipc;
     error_log /var/log/nginx/org.openipc.error.log info;
 
     # limit_conn perip 10;
@@ -25,7 +25,7 @@ server {
     listen 443 ssl http2;
     server_name openipc.org;
     #
-    access_log /var/log/nginx/org.openipc.access.log;
+    access_log /var/log/nginx/org.openipc.access.log openipc;
     error_log /var/log/nginx/org.openipc.error.log info;
     #
     ssl_certificate /var/lib/dehydrated/certs/openipc.org/fullchain.pem;

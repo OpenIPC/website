@@ -3,7 +3,7 @@ server {
     listen 80;
     server_name wiki.openipc.org;
     #
-    access_log /var/log/nginx/org.openipc.wiki.access.log;
+    access_log /var/log/nginx/org.openipc.wiki.access.log openipc;
     error_log /var/log/nginx/org.openipc.wiki.error.log info;
     #
     # Stays ahead of everything below: dehydrated renews this certificate over
@@ -28,7 +28,7 @@ server {
     # Its own log. This block wrote into org.openipc.access.log until 2026-08-24,
     # so every HTTPS request to the wiki was filed under the main site and the
     # only wiki traffic anyone could see was the port-80 redirects.
-    access_log /var/log/nginx/org.openipc.wiki.access.log;
+    access_log /var/log/nginx/org.openipc.wiki.access.log openipc;
     error_log /var/log/nginx/org.openipc.wiki.error.log info;
     #
     ssl_certificate /var/lib/dehydrated/certs/wiki.openipc.org/fullchain.pem;
