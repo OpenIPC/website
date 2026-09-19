@@ -86,7 +86,40 @@
                                title: t('.server_ip_address_title'), class: "form-control" %>
             </div>
             <div class="col">
-              <%= f.select :flash_type, list_of_flash_type_sizes_for_select %>
+              <%# required: false is not decoration, and it does not make the
+                  field optional -- Camera still validates presence of
+                  flash_type. It stops bootstrap_form 5.4+ inferring `required`
+                  from that validation and marking the tag, because Rails then
+                  prepends an empty option so `required` has something to
+                  reject, and refuses `include_blank: false` alongside it.
+                  That would give the wizard a state it has never had: a chip of
+                  "", which the script below reads to decide which layouts and
+                  editions to offer, and whose output is pasted into a
+                  bootloader. The menu already opens on a real chip, so the blank
+                  adds nothing and takes away a guarantee.
+
+                  label_class carries the marker back. `required: false` drops
+                  the label's `required` class along with the tag attribute, and
+                  that class is not decoration -- _base.scss draws the asterisk
+                  from `label.required::after`, and it is the only thing telling
+                  a visitor the field is mandatory before they submit.
+                  label_class REPLACES bootstrap_form's default rather than
+                  adding to it, so form-label has to be named here too or the
+                  label loses its Bootstrap styling instead.
+
+                  aria-required carries the same fact to anyone who cannot see
+                  the asterisk. `required` and aria-required are not the same
+                  attribute: only the first makes Rails prepend the blank
+                  option, so this announces the field as mandatory without
+                  reopening the hole above. The field is mandatory -- Camera
+                  validates it -- and before this the only cue was a CSS
+                  ::after, which a screen reader does not read. It goes in the
+                  FOURTH argument: bootstrap_form mirrors Rails' select, where
+                  the third is the select's own options and only the fourth
+                  reaches the tag. %>
+              <%= f.select :flash_type, list_of_flash_type_sizes_for_select,
+                           { required: false, label_class: 'form-label required' },
+                           { aria: { required: true } } %>
               <%# Hidden for NAND, which has one layout -- mtdpartsubi -- and %>
               <%# nothing to choose. The script below does the hiding.        %>
               <div id="partition-layout-field">

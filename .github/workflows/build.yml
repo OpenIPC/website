@@ -40,10 +40,11 @@ jobs:
       RAILS_ENV: test
       OPENIPC_DATABASE_HOST: 127.0.0.1
       OPENIPC_DATABASE_PORT: 3306
-      # error_highlight is a development-group gem, and the version in
-      # Gemfile.lock needs Ruby >= 3.2 while this app is on 3.1. The image never
-      # hit it because it excludes development:test entirely; here we need the
-      # test group but not development.
+      # The test group, not the development one: rubocop and i18n-tasks are
+      # development gems and nothing here runs them, so installing them only
+      # costs time. This used to be load-bearing as well, because the
+      # development group pinned error_highlight at a version Ruby 3.1 could not
+      # activate; that gem is gone from the Gemfile now, so this is only speed.
       BUNDLE_WITHOUT: development
 
     steps:
@@ -62,7 +63,7 @@ jobs:
       # Matches the Dockerfile, so a gem that compiles there compiles here.
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1.7'
+          ruby-version: '3.3.12'
           bundler-cache: true
 
       # app/assets/builds/ is gitignored, so a fresh checkout has no

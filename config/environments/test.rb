@@ -28,7 +28,12 @@ Rails.application.configure do
   config.cache_store = :null_store
 
   # Raise exceptions instead of rendering exception templates.
-  config.action_dispatch.show_exceptions = false
+  #
+  # `:none` rather than `false`: Rails 7.1 deprecated the boolean and 7.2 removes
+  # it. Same behaviour, and four tests in socs_controller_test.rb depend on it --
+  # they assert_raises(ActiveRecord::RecordNotFound) around a `get`, which only
+  # reaches the test because nothing renders it into a 404 first.
+  config.action_dispatch.show_exceptions = :none
 
   # Disable request forgery protection in test environment.
   config.action_controller.allow_forgery_protection = false
@@ -43,8 +48,14 @@ Rails.application.configure do
   # ActionMailer::Base.deliveries array.
   config.action_mailer.delivery_method = :test
 
-  # Print deprecation notices to the stderr.
-  config.active_support.deprecation = :stderr
+  # Raise on deprecations rather than printing them.
+  #
+  # This was :stderr, which meant every deprecation the 7.0 -> 7.2 upgrade
+  # surfaced had already been scrolling past in CI for as long as it existed and
+  # nobody had read it. Two of them were removals scheduled for the next minor.
+  # The suite is clean at 7.2, so the cheapest way to keep it clean is to make
+  # the next one fail rather than print.
+  config.active_support.deprecation = :raise
 
   # Raise exceptions for disallowed deprecations.
   config.active_support.disallowed_deprecation = :raise

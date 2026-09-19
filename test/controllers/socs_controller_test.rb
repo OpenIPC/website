@@ -1017,6 +1017,55 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # The flash-type menu must never offer an empty choice. bootstrap_form 5.4+
+  # infers `required` from Camera's presence validation on flash_type, and Rails
+  # then prepends a blank option so `required` has something to reject -- and
+  # refuses `include_blank: false` alongside it. The blank is not cosmetic here:
+  # the script on this page reads the chip to decide which partition layouts and
+  # which editions to offer, and what it produces is pasted into a bootloader.
+  # The view passes `required: false` to keep the menu closed; this is what says
+  # so, because the next gem bump will not.
+  test 'the flash type menu offers no empty choice' do
+    soc = instructable_soc('TS3516EVF54')
+
+    with_release_index(*every_edition_for(soc)) do
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}"
+      assert_response :success
+
+      menu = response.body[%r{<select[^>]*camera\[flash_type\][^>]*>.*?</select>}m]
+      assert_not_nil menu, 'the flash type menu is not on the form at all'
+      assert_no_match(/<option[^>]*value=""/, menu,
+                      'the flash type menu offers a blank chip')
+      # The standalone attribute, not the word: aria-required below contains it
+      # as a substring and is exactly what we do want here.
+      assert_no_match(/\srequired[=\s>]/, menu[/\A<select[^>]*>/],
+                      'the flash type menu is marked required, which is what adds the blank')
+
+      # The field is still mandatory and the label must still say so -- the
+      # marker is the only thing telling a visitor that before they submit.
+      label = response.body[/<label[^>]*for="camera_flash_type"[^>]*>/]
+      assert_not_nil label, 'the flash type label is missing'
+      # Both classes, not just one: label_class REPLACES bootstrap_form's
+      # default instead of adding to it, so naming the marker alone silently
+      # drops form-label and the label loses its Bootstrap styling.
+      assert_match(/class="[^"]*\brequired\b[^"]*"/, label,
+                   'the flash type label lost its required marker')
+      assert_match(/class="[^"]*\bform-label\b[^"]*"/, label,
+                   'the flash type label lost its Bootstrap class')
+
+      # And the same fact has to reach anyone who cannot see the asterisk the
+      # marker draws. aria-required announces it without being the `required`
+      # attribute, which is the thing that would bring the blank option back.
+      assert_match(/aria-required="true"/, menu[/\A<select[^>]*>/],
+                   'the flash type menu is not announced as required')
+
+      # Passing html_options must not cost the Bootstrap class, the way naming
+      # label_class costs form-label.
+      assert_match(/class="[^"]*\bform-select\b[^"]*"/, menu[/\A<select[^>]*>/],
+                   'the flash type menu lost its Bootstrap class')
+    end
+  end
+
   # A permanent link that carries no MAC is the same case arriving by the other
   # door, and it must not resurrect one.
   test 'a permanent link with an empty MAC renders no setenv' do

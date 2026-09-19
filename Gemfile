@@ -1,9 +1,9 @@
 source 'https://rubygems.org'
 
-ruby '3.1.7'
+ruby '3.3.12'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails', branch: 'main'
-gem 'rails', '~> 7.0.8'
+gem 'rails', '~> 8.1.0'
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem 'sprockets-rails'
@@ -13,6 +13,28 @@ gem 'mysql2', '~> 0.5'
 
 # Use the Puma web server [https://github.com/puma/puma]
 gem 'puma'# , '>= 5.0'
+
+# Rack 2, deliberately. Rails 7.1 widened its constraint to `rack >= 2.2.4`, so
+# an unpinned bundle resolves Rack 3 -- and Puma 5 refuses to boot against it
+# ("Puma 5 is not compatible with Rack 3"). Taking Rack 3 means taking Puma 6
+# and the header-casing change with it, and this app sets X-Sendfile-Type and
+# X-Accel-Mapping by hand for firmware downloads; getting that location wrong
+# took both sites down to unstyled text on 2026-08-24.
+#
+# This pin is what makes Rack 3 separable. Rails 8.1 runs against Rack 2.2 and
+# Puma 5 quite happily, so the framework upgrade and the Rack migration do not
+# have to be the same change -- which is the opposite of what #153 assumed when
+# it put Rails 8 outside the epic.
+gem 'rack', '~> 2.2'
+
+# json 2, for the same reason. Ruby 3.3 ships json 2.7 as a default gem, but a
+# transitive dependency resolves 3.x, and json 3.0 removed the `quirks_mode`
+# keyword that ActiveSupport's JSON encoder still passes -- retested with the
+# pin lifted on 8.1.3.1, where it fails 27 tests. The failure is not obviously
+# about json: `bin/rails`
+# aborts with "unknown keyword: quirks_mode" while parsing config/database.yml,
+# because the production password goes through to_json there.
+gem 'json', '~> 2.7'
 
 # Bundle and transpile JavaScript [https://github.com/rails/jsbundling-rails]
 gem 'jsbundling-rails'
@@ -62,7 +84,13 @@ group :development do
   # Speed up commands on slow machines / big apps [https://github.com/rails/spring]
   # gem 'spring'
 
-  gem 'error_highlight', '>= 0.4.0', platforms: [:ruby]
+  # error_highlight is deliberately absent. It is a default gem from Ruby 3.2
+  # onward, and declaring it means Bundler insisting on the locked version after
+  # Ruby has already activated its own -- which fails in whichever direction the
+  # two disagree. On 3.1 that was "already activated 0.3.0, Gemfile requires
+  # 0.5.1", worked around with RUBYOPT=--disable-error_highlight in
+  # docker/Dockerfile.dev; on 3.3 it was the same error with 0.6.0 and 0.5.1
+  # swapped. Ruby ships a good version; let it.
 
   gem 'activerecord-reset-pk-sequence'
   gem 'easy_translate', '~> 0.5.1'
@@ -78,13 +106,25 @@ end
 group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem 'capybara'
+
+  # Minitest 5, pinned, as minitest's own post-install message asks for. Rails
+  # only asks for >= 5.1, so an unpinned bundle takes minitest 6, which moved
+  # minitest/mock out into a gem of its own -- and camera_test.rb and
+  # release_cache_test.rb both require it, for `stub`. Minitest 6 also drops
+  # Minitest::Unit and `assert_equal nil`, so it is its own migration and not a
+  # side effect of a Rails upgrade.
+  gem 'minitest', '~> 5.0'
+
   gem 'selenium-webdriver'
 end
 
 gem 'activestorage-validator', '~> 0.2.2'
-gem 'bootstrap_form', '~> 5.1'
+gem 'bootstrap_form', '~> 5.4'
 gem 'bootstrap5-kaminari-views', '~> 0.0.1'
-gem 'devise', '~> 4.8'
+# 4.9.4, not 4.8: earlier Devise reads Rails.application.secrets, which Rails 7.1
+# deprecates and 7.2 removes. Nothing in this app calls it -- the warning comes
+# from inside the gem.
+gem 'devise', '~> 4.9.4'
 gem 'kaminari', '~> 1.2'
 gem 'sassc-rails'
 # libvips comes from the OS package (libvips42 + libheif1), not from a gem.

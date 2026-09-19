@@ -3,7 +3,7 @@
 # This is NOT the image that serves traffic -- that is the Dockerfile at the
 # repository root, which is a two-stage production build. This one exists so the
 # suite, rubocop and i18n-tasks can be run on a machine whose system Ruby is not
-# 3.1.7, which is every machine we develop on.
+# the one in .ruby-version, which is every machine we develop on.
 #
 # It carries only the OS libraries the gem set binds to. The application itself
 # is bind-mounted by compose.yaml and gems install at runtime into a persistent
@@ -15,7 +15,7 @@
 
 # Matches the production image and .ruby-version. Do not drift: a gem that
 # compiles here has to compile there.
-FROM ruby:3.1.7-slim-bookworm
+FROM ruby:3.3.12-slim-bookworm
 
 ARG NODE_MAJOR=20
 
@@ -54,22 +54,19 @@ RUN corepack enable
 # Gems live in a named volume so `bundle install` survives a container restart
 # and does not fight the bind-mounted source tree.
 #
-# RUBYOPT is not cosmetic. Ruby 3.1 auto-activates its own bundled
-# error_highlight 0.3.0 before Bundler runs, and the Gemfile's development group
-# asks for >= 0.4.0, which resolves to 0.5.1 -- so `bin/rails` dies at
-# config/boot.rb with "You have already activated error_highlight 0.3.0".
-# Disabling the startup require lets Bundler activate the locked version.
+# The volume is seeded from the image and is NOT invalidated by a rebuild, so a
+# Ruby major bump leaves it holding gems compiled against the old ABI. After
+# changing the base image: `docker compose down -v`, or the first native
+# extension you load will segfault or refuse to load at all.
 #
-# Neither the production image nor CI hits this, because both exclude the
-# development group (BUNDLE_WITHOUT); this container is the only place that
-# installs it, and it has to, because rubocop and i18n-tasks live there.
-#
-# Upgrading RubyGems does NOT fix it -- `gem update --system 3.4.22` was tried
-# and the conflict is unchanged. The flag is the whole fix.
+# There used to be a RUBYOPT=--disable-error_highlight here. Ruby 3.1 activated
+# its own bundled error_highlight 0.3.0 before Bundler ran, and the Gemfile's
+# development group asks for >= 0.4.0, so `bin/rails` died at config/boot.rb
+# with "You have already activated error_highlight 0.3.0". Ruby 3.3 bundles
+# 0.6.0, which satisfies the constraint, so the conflict and the flag are gone.
 ENV BUNDLE_PATH=/bundle \
     BUNDLE_BIN=/bundle/bin \
-    PATH=/bundle/bin:$PATH \
-    RUBYOPT=--disable-error_highlight
+    PATH=/bundle/bin:$PATH
 
 # Run as the developer, not as root.
 #
