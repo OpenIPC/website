@@ -2,3 +2,12 @@ require: rubocop-performance
 
 Layout/LineLength:
   Max: 120
+
+# Test classes here group every case for one subject, which is what makes them
+# readable -- socs_controller_test.rb is 721 lines of wizard rules and
+# firmware_test.rb 437 of assembly behaviour. Eight of the twenty-seven files
+# under test/ exceed the 100-line default, and splitting a cohesive suite into
+# fragments to satisfy it would make the tests harder to follow, not easier.
+Metrics/ClassLength:
+  Exclude:
+    - 'test/**/*'
