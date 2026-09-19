@@ -74,26 +74,77 @@ if [ "$APPLY" -eq 0 ]; then
 fi
 
 STAMP="$(date -u +%Y%m%d-%H%M%S)"
+STAGE="/tmp/openipc-nginx-$STAMP"
 echo
 echo "installing, backups tagged $STAMP"
 
+# Upload everything to a staging directory first. A transfer that dies partway
+# through has then touched nothing under /etc/nginx, which is the difference
+# between "nothing happened" and "half the vhosts are new".
 for f in $(files); do
-  "${SSH[@]}" "test -f '/etc/nginx/$f' && cp -a '/etc/nginx/$f' '/etc/nginx/$f.bak.$STAMP' || true"
-  "${SSH[@]}" "cat > '/etc/nginx/$f'" < "$SRC/$f"
-  echo "  installed $f"
+  "${SSH[@]}" "mkdir -p '$STAGE/$(dirname "$f")'"
+  "${SSH[@]}" "cat > '$STAGE/$f'" < "$SRC/$f"
 done
 
+# From here a failure has to put the old files back, so every exit runs the
+# restore until the reload has succeeded.
+restore() {
+  echo "restoring the previous configuration" >&2
+  "${SSH[@]}" "
+    set -e
+    # files that existed before: put the backup back
+    for b in \$(find /etc/nginx -name '*.bak.$STAMP'); do
+      mv -f \"\$b\" \"\${b%.bak.$STAMP}\"
+    done
+    # files this run created: remove them, or the tree keeps a file that has
+    # never been reviewed and was never running
+    for a in \$(find /etc/nginx -name '*.absent.$STAMP'); do
+      rm -f \"\${a%.absent.$STAMP}\" \"\$a\"
+    done
+    rm -rf '$STAGE'
+  " || echo "restore itself failed -- inspect /etc/nginx by hand" >&2
+  "${SSH[@]}" 'nginx -t' >&2 || true
+}
+trap restore EXIT
+
+# Back up and move into place in one remote pass, so a dropped connection
+# cannot interleave with it. A file with no previous version gets no backup and
+# must be REMOVED rather than restored -- never left behind, never deleted when
+# a backup did exist but the copy failed.
+"${SSH[@]}" "
+  set -e
+  for f in $(files | tr '\n' ' '); do
+    if [ -f \"/etc/nginx/\$f\" ]; then
+      cp -a \"/etc/nginx/\$f\" \"/etc/nginx/\$f.bak.$STAMP\"
+    else
+      touch \"/etc/nginx/\$f.absent.$STAMP\"
+    fi
+    install -m 0644 \"$STAGE/\$f\" \"/etc/nginx/\$f\"
+  done
+"
+echo "  installed $(files | wc -l) files"
+
+# A vhost in sites-available that is not linked into sites-enabled does
+# nothing, and nginx then serves the distribution default page. A rebuilt host
+# following deploy/RESTORE.md has an empty sites-enabled, so this is the step
+# that makes that procedure actually restore the site.
+for f in $(cd "$SRC" && ls sites-available); do
+  "${SSH[@]}" "ln -sfn '/etc/nginx/sites-available/$f' '/etc/nginx/sites-enabled/$f'"
+done
+echo "  enabled $(cd "$SRC" && ls sites-available | wc -l) vhosts"
+
 echo
-if "${SSH[@]}" 'nginx -t' 2>&1 | sed 's/^/  /'; then
-  "${SSH[@]}" 'systemctl reload nginx'
+"${SSH[@]}" 'nginx -t' 2>&1 | sed 's/^/  /'
+
+# Reload is guarded: a configuration that tests clean can still fail to load,
+# and leaving the new files on disk while the old ones keep serving is a
+# divergence nothing would report.
+if "${SSH[@]}" 'systemctl reload nginx'; then
+  trap - EXIT
+  "${SSH[@]}" "rm -rf '$STAGE'; find /etc/nginx -name '*.absent.$STAMP' -delete"
   echo
   echo "reloaded. backups left at *.bak.$STAMP"
 else
-  echo
-  echo "nginx -t FAILED -- restoring and leaving the running config alone" >&2
-  for f in $(files); do
-    "${SSH[@]}" "test -f '/etc/nginx/$f.bak.$STAMP' && mv '/etc/nginx/$f.bak.$STAMP' '/etc/nginx/$f' || rm -f '/etc/nginx/$f'"
-  done
-  "${SSH[@]}" 'nginx -t' >&2
+  echo "systemctl reload failed" >&2
   exit 1
 fi
