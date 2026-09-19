@@ -1,23 +1,51 @@
 # nginx configuration
 
-Copies of what `webber-eu` actually serves, taken from
-`/etc/nginx/sites-available/` on 2026-08-24.
+This directory **is** what `webber-eu` serves. It mirrors `/etc/nginx/` path
+for path:
 
-**Nothing applies these.** `openipc-deploy` does not touch nginx, and there is
-no configuration management on the host. They are here to be read and reviewed,
-and so a rebuilt host has something to restore from — not because editing them
-changes anything.
-
-To change what is running:
-
-```bash
-ssh -p 35242 root@openipc.org
-cp -a /etc/nginx/sites-available/org.openipc /root/org.openipc.bak.$(date -u +%Y%m%d-%H%M%S)
-# edit, then
-nginx -t && systemctl reload nginx
+```
+deploy/nginx/sites-available/org.openipc       ->  /etc/nginx/sites-available/org.openipc
+deploy/nginx/conf.d/openipc-microcache.conf    ->  /etc/nginx/conf.d/openipc-microcache.conf
 ```
 
-and bring the copy here back into step in the same PR.
+`deploy/push-nginx.sh` compares the two and installs this copy:
+
+```bash
+deploy/push-nginx.sh            # diff against the origin, change nothing
+deploy/push-nginx.sh --apply    # install, nginx -t, reload
+```
+
+Applying is not the default, and a failed `nginx -t` restores every file from
+the backup it took first. `nginx -t` runs against the real tree, so a change
+has to be on disk to be tested — which is safe, because nginx keeps serving the
+running configuration until it is reloaded.
+
+The dry run also reports any `conf.d/*.conf` on the origin that is not in here.
+That matters more than it sounds: such a file is running, is not reviewed with
+the rest, and will not come back if the host is rebuilt.
+
+It was not always this way. Until 2026-09 these were read-only copies that
+nothing applied, and they drifted until the repository described a host with no
+caching and no admission control at all — three `proxy_cache` zones, the
+`limit_conn` pool split and the crawler block existed only on the origin, so a
+rebuild from `deploy/RESTORE.md` would have come back without them and nobody
+would have noticed until the next flood.
+
+Certificates and `/etc/nginx/.htpasswd-dev` are still referenced by path only,
+and `nginx.conf` itself is untouched — the stock Debian file already includes
+both directories.
+
+## What is in conf.d
+
+Shared definitions the vhosts reference. nginx includes `conf.d/` before
+`sites-enabled/`, so anything defined here is available to every vhost.
+
+| file | holds |
+|---|---|
+| `openipc-logformat.conf` | the `openipc` log format: combined plus cache status, request and upstream time, and the forwarded address |
+| `openipc-microcache.conf` | the `openipc_micro` cache zone |
+| `openipc-snapshot-conc.conf` | the `snapshot_conc`, `site_conc` and `media_conc` connection pools, sized together to Puma's capacity |
+| `openipc-crawler-block.conf` | the `$openipc_blocked_crawler` map |
 
 ## The firmware download path
 
@@ -27,8 +55,10 @@ location /protected-files/ { internal; alias /srv/www/shared/files/; }
 ```
 
 `/protected-files/` is `internal`, so it is reachable only through an
-`X-Accel-Redirect` header. **Nothing sends that header today**, so the location
-is currently inert — see below.
+`X-Accel-Redirect` header. Rails sends one, through `Rack::Sendfile`, for the
+firmware download action and nothing else — the two `proxy_set_header` lines
+that arrange it are scoped to that location, for the reason in the next
+section.
 
 `location /files/ { return 404; }` is doing real work and should not be tidied
 away. Without it the request falls through to `location /`, reaches Rails, and

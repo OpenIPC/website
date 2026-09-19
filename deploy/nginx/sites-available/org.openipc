@@ -43,6 +43,11 @@ server {
     add_header Strict-Transport-Security max-age=15768000;
     resolver 1.1.1.1;
 
+    # Declared crawlers that ignore robots.txt get the explicit version.
+    if ($openipc_blocked_crawler) {
+        return 403;
+    }
+
     location /dl/ {
         alias /srv/www/shared/dl/;
         allow all;
@@ -75,6 +80,8 @@ server {
     # No URI part on proxy_pass: nginx forbids one in a regex location, and the
     # full original URI is what should reach the app anyway.
     location ~ ^/cameras/vendors/[^/]+/socs/[^/]+/download_full_image {
+        limit_conn site_conc 10;
+        limit_conn_status 429;
         proxy_buffer_size 128k;
         proxy_buffers 8 128k;
 
@@ -117,7 +124,112 @@ server {
         alias /srv/www/shared/images/;
     }
 
+    # Fingerprinted static assets and fonts, served by Rails but cached here
+    # long-term (names change when content does). Deliberately outside the
+    # site_conc cap: an HTTP/2 page load multiplexes many parallel asset
+    # requests, and those must never compete with page renders for slots.
+    location ~ ^/(assets|fonts)/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_cache openipc_micro;
+        proxy_cache_key $scheme$host$uri;
+        proxy_cache_valid 200 7d;
+        proxy_cache_lock on;
+        proxy_ignore_headers Set-Cookie;
+        proxy_hide_header Set-Cookie;
+        add_header X-Cache-Status $upstream_cache_status;
+    }
+
+    # Per-snapshot pages (/snapshots/<id>, /oneday, /camera, /download): the
+    # 2026-09-03 flood iterates ids with a rotating locale param, so keying
+    # the cache on the full request URI never hits. Key on the path alone --
+    # one cached copy per id, whichever locale rendered first; during a flood
+    # that trade is free. Held 5 minutes, and 404s are cached too so probing
+    # dead ids costs Rails one render per id per 2 minutes, not one per hit.
+    location ~ ^/snapshots/[0-9]+ {
+        limit_conn snapshot_conc 10;
+        limit_conn_status 429;
+        proxy_buffer_size 128k;
+        proxy_buffers 8 128k;
+
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 120;
+        proxy_send_timeout 120;
+        proxy_read_timeout 180;
+
+        proxy_cache openipc_micro;
+        proxy_cache_key $scheme$host$uri;
+        proxy_cache_valid 200 301 302 300s;
+        proxy_cache_valid 404 120s;
+        proxy_cache_lock on;
+        proxy_cache_lock_age 30s;
+        proxy_cache_lock_timeout 30s;
+        proxy_cache_use_stale updating error timeout;
+        proxy_ignore_headers Cache-Control Set-Cookie Expires Vary;
+        proxy_hide_header Set-Cookie;
+        # Never store a response Rails rendered for a signed-in admin: this page
+        # shows the uploader's IP and MAC to admins, and the cache key is the
+        # path alone, so a cached copy would go to everyone who asks for it. See
+        # ApplicationController#refuse_shared_caching_for_admins. An admin may
+        # in return be served an anonymous copy already in the cache, for up to
+        # the TTL above; reaching the controls then means waiting it out.
+        proxy_no_cache $upstream_http_x_admin_view;
+        proxy_hide_header X-Admin-View;
+
+        add_header X-Cache-Status $upstream_cache_status;
+    }
+
+    # Open Wall pages and the ActiveStorage image URLs they embed: the paths
+    # the 2026-08-30 flood hammers. Cached 60s for everyone; these pages are
+    # identical for all anonymous visitors. Set-Cookie is stripped so one
+    # visitor's session can never be handed to another from the cache; no
+    # form on these pages needs a session. POST /snapshots (camera uploads)
+    # matches this location too but proxy_cache only ever caches GET/HEAD.
+    location ~ ^/(open-wall|snapshots|rails/active_storage) {
+        limit_conn media_conc 12;
+        limit_conn_status 429;
+        proxy_buffer_size 128k;
+        proxy_buffers 8 128k;
+
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 120;
+        proxy_send_timeout 120;
+        proxy_read_timeout 180;
+
+        proxy_cache openipc_micro;
+        proxy_cache_key $scheme$host$request_uri;
+        proxy_cache_valid 200 301 302 60s;
+        proxy_cache_lock on;
+        proxy_cache_lock_age 30s;
+        proxy_cache_lock_timeout 30s;
+        proxy_cache_use_stale updating error timeout;
+        proxy_ignore_headers Cache-Control Set-Cookie Expires Vary;
+        proxy_hide_header Set-Cookie;
+        # As above: /open-wall/camera/<id> reaches the same template, so an
+        # admin's rendering of it must not be stored either.
+        proxy_no_cache $upstream_http_x_admin_view;
+        proxy_hide_header X-Admin-View;
+
+        add_header X-Cache-Status $upstream_cache_status;
+    }
+
     location / {
+        limit_conn site_conc 10;
+        limit_conn_status 429;
         # Increase the size of the main buffer for the response header/start
         proxy_buffer_size 128k;
 
