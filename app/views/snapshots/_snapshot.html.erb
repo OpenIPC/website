@@ -1,7 +1,7 @@
 <div class="col">
   <div class="card">
     <div class="ratio ratio-16x9 bg-light">
-      <%= link_to image_tag(snapshot.file.variant(:thumb) || default_image_path, alt: t('.snapshot_alt'),
+      <%= link_to image_tag(snapshot.wall_image(:thumb) || default_image_path, alt: t('.snapshot_alt'),
                             class: "h-100 w-auto position-absolute top-50 start-50 translate-middle"),
                   snapshot_path(snapshot) %>
     </div>

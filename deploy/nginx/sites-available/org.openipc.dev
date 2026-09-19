@@ -61,6 +61,15 @@ server {
    # the app, which serves public/ itself (RAILS_SERVE_STATIC_FILES=1), so every
    # image would still be fetchable by name -- straight through a Puma thread,
    # which is the cost handing them to nginx above exists to avoid.
+    # The Open Wall's images as plain files (#146), dev's own tree so a staging
+    # experiment cannot serve production's. Without this the application serves
+    # them out of public/ instead -- it can, the directory is mounted there --
+    # but through a Puma thread, which is the entire cost this removes.
+    location ^~ /wall/ {
+        alias /srv/www/shared/dev-wall/;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
    location /files/ {
        return 404;
    }

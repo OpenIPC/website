@@ -40,11 +40,7 @@ class SnapshotsController < ApplicationController
 
   def camera
     respond_to do |format|
-      format.jpg do
-        @snapshot.file.representation(format: :jpeg).process
-        send_data @snapshot.file.representation(format: :jpeg).download, disposition: 'attachment',
-                  filename: @snapshot.filename_for_download.sub(/heif$/, 'jpg')
-      end
+      format.jpg { send_camera_jpeg }
       format.html do
         daily_snapshots_new_to_old
         @page_title = "Open Wall, image ##{params[:id]}"
@@ -54,8 +50,7 @@ class SnapshotsController < ApplicationController
   end
 
   def download
-    send_data @snapshot.file.download, disposition: 'attachment',
-              filename: @snapshot.filename_for_download
+    send_blob(@snapshot.file, @snapshot.filename_for_download)
   end
 
   def oneday
@@ -65,6 +60,43 @@ class SnapshotsController < ApplicationController
   end
 
   private
+
+  # A JPEG upload is already a JPEG. Asking ActiveStorage to represent it as
+  # one ran libvips on the request thread and loaded the result into a Ruby
+  # string to hand to send_data -- for a file that needed neither. Only HEIF,
+  # which most browsers cannot display, has to be converted, and that is a
+  # conversion ProcessImagesJob has usually done already.
+  def send_camera_jpeg
+    return send_blob(@snapshot.file, @snapshot.filename_for_download) if
+      @snapshot.file.content_type == 'image/jpeg'
+
+    representation = @snapshot.file.representation(format: :jpeg).processed
+    # sub(/heif$/) missed the extension cameras actually send. HEIF files are
+    # named .heic far more often than .heif -- every HEIF upload in the test
+    # suite is one -- so the bytes were converted to JPEG and handed over still
+    # claiming to be HEIC.
+    send_blob(representation.image, @snapshot.filename_for_download.sub(/hei[cf]$/i, 'jpg'))
+  end
+
+  # Stream the bytes rather than reading them into a string first.
+  #
+  # send_data @snapshot.file.download pulled the whole blob -- validated up to
+  # 5 MB -- into a Ruby String on the request thread before sending a byte of
+  # it. With sixteen threads per worker that is a transient peak nothing
+  # accounts for, and it is one of the shapes behind the container's RSS. The
+  # Disk service can say where the file is; anything else still has to
+  # download it.
+  def send_blob(attachment_or_blob, filename)
+    blob = attachment_or_blob.try(:blob) || attachment_or_blob
+    service = ActiveStorage::Blob.service
+
+    if service.respond_to?(:path_for)
+      send_file service.path_for(blob.key), disposition: 'attachment',
+                filename: filename, type: blob.content_type
+    else
+      send_data blob.download, disposition: 'attachment', filename: filename
+    end
+  end
 
   def daily_snapshots_new_to_old
     @snapshots = Snapshot.where(mac_address: @snapshot.mac_address,

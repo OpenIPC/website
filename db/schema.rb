@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_08_24_160000) do
+ActiveRecord::Schema[7.0].define(version: 2026_09_19_190000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -121,6 +121,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_08_24_160000) do
     t.datetime "updated_at", null: false
     t.string "streamer"
     t.string "caption"
+    t.datetime "variants_generated_at"
     t.index ["created_at"], name: "index_snapshots_on_created_at"
     t.index ["flash_size"], name: "index_snapshots_on_flash_size"
     t.index ["ip_address"], name: "index_snapshots_on_ip_address"

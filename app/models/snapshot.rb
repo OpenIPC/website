@@ -62,7 +62,13 @@ class Snapshot < ApplicationRecord
   # blob, its variant records and its file left behind with nothing referencing
   # them, which is how ~93,000 orphans accumulated. purge does the same work
   # inline and cannot be lost.
+  # Order matters, and prepend inverts it: the callback declared last is
+  # prepended last and therefore runs first. The wall files go before the blob
+  # does, because purge_file_now can raise on a tree ActiveStorage finds in an
+  # unexpected state, and anything after it would then never run -- leaving
+  # image files nothing references and nothing will ever collect.
   before_destroy :purge_file_now, prepend: true
+  before_destroy :purge_wall_images, prepend: true
 
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }
   validates :mac_address, presence: true, format: MAC_ADDRESS_FORMAT
@@ -84,6 +90,24 @@ class Snapshot < ApplicationRecord
 
   def mac_address_dec
     mac_address.gsub(':', '').to_i(16)
+  end
+
+  # Where a page should link for one of this snapshot's images.
+  #
+  # Once ProcessImagesJob has written the four variants as plain files, that is
+  # a static path nginx serves without waking Ruby, cacheable forever because a
+  # given snapshot's image never changes. Until then -- a row uploaded seconds
+  # ago, a row predating the backfill, or a job lost to the :async adapter on a
+  # restart -- it is the ActiveStorage variant, which is what the whole site
+  # used before #146 and still works.
+  #
+  # Returning the variant object rather than a URL in the fallback case lets
+  # image_tag do what it did before, including the `|| default_image_path`
+  # guards the gallery partials use for a snapshot whose file has gone.
+  def wall_image(variant)
+    return WallImage.url_for(id, variant) if variants_generated_at?
+
+    file.variant(variant)
   end
 
   def filename_for_download
@@ -123,6 +147,16 @@ class Snapshot < ApplicationRecord
   end
 
   private
+
+  # The plain-file copies of the variants are ours, not ActiveStorage's, so
+  # neither its purge nor storage:reap can see them. Its own callback rather
+  # than a line in purge_file_now: that method is about the blob, and this runs
+  # unconditionally -- a row whose blob has already gone still has a wall
+  # directory, and leaving it behind is how a disk fills with images no row
+  # references.
+  def purge_wall_images
+    WallImage.purge(id)
+  end
 
   def purge_file_now
     return unless file.attached?

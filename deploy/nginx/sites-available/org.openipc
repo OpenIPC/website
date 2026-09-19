@@ -188,6 +188,32 @@ server {
         add_header X-Cache-Status $upstream_cache_status;
     }
 
+    # The Open Wall's images, as plain files (2026-09, issue #146).
+    #
+    # These were 293,785 requests on 2026-09-18 -- 62% of everything the site
+    # served, and 18,041 of the day's 21,291 429s -- because ActiveStorage's
+    # redirect mode answers each one with a 302 to a URL signed with a five
+    # minute expiry. Two Rails requests per image, both private, neither
+    # cacheable by anything. Almost none of it is people: 22,504 addresses
+    # presenting a handful of spoofed mobile user agents.
+    #
+    # ProcessImagesJob now writes the four variants here as ordinary files, so
+    # nginx answers without waking Ruby. immutable is honest: a snapshot's
+    # image never changes, and the id is in the path.
+    #
+    # No limit_conn. These are sendfile of a small JPEG already in page cache,
+    # which is the whole point -- capping them would only reintroduce the
+    # queueing this removes.
+    # alias and no try_files. Combining the two is a long-standing nginx trap
+    # that resolves the path twice; alias on its own already answers 404 for a
+    # file that is not there, which is the honest answer here -- a snapshot
+    # whose job has not run is never linked to this path at all, because the
+    # view falls back to ActiveStorage until the column is set.
+    location ^~ /wall/ {
+        alias /srv/www/shared/wall/;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
     # Open Wall pages and the ActiveStorage image URLs they embed: the paths
     # the 2026-08-30 flood hammers. Cached 60s for everyone; these pages are
     # identical for all anonymous visitors. Set-Cookie is stripped so one
