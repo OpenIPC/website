@@ -10,8 +10,12 @@ Bundler.require(*Rails.groups)
 
 module Openipc
   class Application < Rails::Application
-    # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 7.0
+    # Not the originally generated version any more: the app was generated at 7.0
+    # and this is raised deliberately, one minor at a time, with the suite green
+    # at each step. Raising it is what opts in to the new framework defaults, so
+    # it is the line that does the actual upgrading -- the gem version alone
+    # changes almost nothing.
+    config.load_defaults 7.1
 
     # Configuration for the application, engines, and railties goes here.
     #

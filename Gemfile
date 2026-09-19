@@ -3,7 +3,7 @@ source 'https://rubygems.org'
 ruby '3.1.7'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails', branch: 'main'
-gem 'rails', '~> 7.0.8'
+gem 'rails', '~> 7.1.5'
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem 'sprockets-rails'
@@ -13,6 +13,16 @@ gem 'mysql2', '~> 0.5'
 
 # Use the Puma web server [https://github.com/puma/puma]
 gem 'puma'# , '>= 5.0'
+
+# Rack 2, deliberately. Rails 7.1 widened its constraint to `rack >= 2.2.4`, so
+# an unpinned bundle resolves Rack 3 -- and Puma 5 refuses to boot against it
+# ("Puma 5 is not compatible with Rack 3"). Taking Rack 3 means taking Puma 6
+# and the header-casing change with it, and this app sets X-Sendfile-Type and
+# X-Accel-Mapping by hand for firmware downloads; getting that location wrong
+# took both sites down to unstyled text on 2026-08-24. Rack 3 is its own change
+# with its own validation, not a side effect of a Rails upgrade -- see #153,
+# which scopes it out of the epic.
+gem 'rack', '~> 2.2'
 
 # Bundle and transpile JavaScript [https://github.com/rails/jsbundling-rails]
 gem 'jsbundling-rails'
@@ -84,7 +94,10 @@ end
 gem 'activestorage-validator', '~> 0.2.2'
 gem 'bootstrap_form', '~> 5.1'
 gem 'bootstrap5-kaminari-views', '~> 0.0.1'
-gem 'devise', '~> 4.8'
+# 4.9.4, not 4.8: earlier Devise reads Rails.application.secrets, which Rails 7.1
+# deprecates and 7.2 removes. Nothing in this app calls it -- the warning comes
+# from inside the gem.
+gem 'devise', '~> 4.9.4'
 gem 'kaminari', '~> 1.2'
 gem 'sassc-rails'
 # libvips comes from the OS package (libvips42 + libheif1), not from a gem.

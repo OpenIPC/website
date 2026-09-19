@@ -28,7 +28,12 @@ Rails.application.configure do
   config.cache_store = :null_store
 
   # Raise exceptions instead of rendering exception templates.
-  config.action_dispatch.show_exceptions = false
+  #
+  # `:none` rather than `false`: Rails 7.1 deprecated the boolean and 7.2 removes
+  # it. Same behaviour, and four tests in socs_controller_test.rb depend on it --
+  # they assert_raises(ActiveRecord::RecordNotFound) around a `get`, which only
+  # reaches the test because nothing renders it into a 404 first.
+  config.action_dispatch.show_exceptions = :none
 
   # Disable request forgery protection in test environment.
   config.action_controller.allow_forgery_protection = false
