@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-ruby '3.1.7'
+ruby '3.3.12'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails', branch: 'main'
 gem 'rails', '~> 7.1.5'
@@ -23,6 +23,14 @@ gem 'puma'# , '>= 5.0'
 # with its own validation, not a side effect of a Rails upgrade -- see #153,
 # which scopes it out of the epic.
 gem 'rack', '~> 2.2'
+
+# json 2, for the same reason. Ruby 3.3 ships json 2.7 as a default gem, but a
+# transitive dependency resolves 3.x, and json 3.0 removed the `quirks_mode`
+# keyword that ActiveSupport 7.1's JSON encoder still passes. The failure is not
+# obviously about json: `bin/rails` aborts with "unknown keyword: quirks_mode"
+# while parsing config/database.yml, because the production password goes
+# through to_json there.
+gem 'json', '~> 2.7'
 
 # Bundle and transpile JavaScript [https://github.com/rails/jsbundling-rails]
 gem 'jsbundling-rails'
@@ -72,7 +80,13 @@ group :development do
   # Speed up commands on slow machines / big apps [https://github.com/rails/spring]
   # gem 'spring'
 
-  gem 'error_highlight', '>= 0.4.0', platforms: [:ruby]
+  # error_highlight is deliberately absent. It is a default gem from Ruby 3.2
+  # onward, and declaring it means Bundler insisting on the locked version after
+  # Ruby has already activated its own -- which fails in whichever direction the
+  # two disagree. On 3.1 that was "already activated 0.3.0, Gemfile requires
+  # 0.5.1", worked around with RUBYOPT=--disable-error_highlight in
+  # docker/Dockerfile.dev; on 3.3 it was the same error with 0.6.0 and 0.5.1
+  # swapped. Ruby ships a good version; let it.
 
   gem 'activerecord-reset-pk-sequence'
   gem 'easy_translate', '~> 0.5.1'

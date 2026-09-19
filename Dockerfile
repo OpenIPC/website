@@ -6,7 +6,7 @@
 # pins nokogiri 1.15.4-x86_64-linux, which is the precompiled *glibc* build and
 # will not load against musl.
 
-ARG RUBY_VERSION=3.1.7
+ARG RUBY_VERSION=3.3.12
 ARG NODE_MAJOR=20
 
 # --------------------------------------------------------------------------
