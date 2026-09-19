@@ -86,6 +86,38 @@ class ProcessImagesJobTest < ActiveJob::TestCase
                'a half-written snapshot must keep falling back, not link to files that are missing'
   end
 
+  # Destruction purges the directory. A job still writing when that happens
+  # would recreate it and then update a row that is not there, leaving files
+  # nothing references and nothing would collect until the nightly prune.
+  test 'a snapshot destroyed while the job runs takes its files with it' do
+    purged = []
+    @snapshot.stub(:file, @file) do
+      WallImage.stub(:store, ->(*) { @snapshot.delete }) do
+        WallImage.stub(:purge, ->(id) { purged << id }) do
+          ProcessImagesJob.perform_now(@snapshot)
+        end
+      end
+    end
+
+    assert_equal [@snapshot.id], purged,
+                 'the job must clean up after a row that vanished under it'
+    assert_nil Snapshot.find_by(id: @snapshot.id)
+  end
+
+  test 'a job for a row that is already gone does nothing at all' do
+    id = @snapshot.id
+    @snapshot.delete
+
+    @snapshot.stub(:file, @file) do
+      WallImage.stub(:store, ->(*) { flunk 'must not write for a deleted row' }) do
+        ProcessImagesJob.perform_now(@snapshot)
+      end
+    end
+
+    assert_empty @file.requested
+    assert_nil Snapshot.find_by(id: id)
+  end
+
   # The Disk service can say where a variant already is, so the bytes are
   # copied rather than pulled through Ruby -- #download on a 1920x1080 JPEG
   # would build a String for no reason, on a thread serving a request.
