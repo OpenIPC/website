@@ -1036,7 +1036,9 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       assert_not_nil menu, 'the flash type menu is not on the form at all'
       assert_no_match(/<option[^>]*value=""/, menu,
                       'the flash type menu offers a blank chip')
-      assert_no_match(/\brequired\b/, menu[/\A<select[^>]*>/],
+      # The standalone attribute, not the word: aria-required below contains it
+      # as a substring and is exactly what we do want here.
+      assert_no_match(/\srequired[=\s>]/, menu[/\A<select[^>]*>/],
                       'the flash type menu is marked required, which is what adds the blank')
 
       # The field is still mandatory and the label must still say so -- the
@@ -1050,6 +1052,17 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
                    'the flash type label lost its required marker')
       assert_match(/class="[^"]*\bform-label\b[^"]*"/, label,
                    'the flash type label lost its Bootstrap class')
+
+      # And the same fact has to reach anyone who cannot see the asterisk the
+      # marker draws. aria-required announces it without being the `required`
+      # attribute, which is the thing that would bring the blank option back.
+      assert_match(/aria-required="true"/, menu[/\A<select[^>]*>/],
+                   'the flash type menu is not announced as required')
+
+      # Passing html_options must not cost the Bootstrap class, the way naming
+      # label_class costs form-label.
+      assert_match(/class="[^"]*\bform-select\b[^"]*"/, menu[/\A<select[^>]*>/],
+                   'the flash type menu lost its Bootstrap class')
     end
   end
 

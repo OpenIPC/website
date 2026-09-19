@@ -105,9 +105,21 @@
                   a visitor the field is mandatory before they submit.
                   label_class REPLACES bootstrap_form's default rather than
                   adding to it, so form-label has to be named here too or the
-                  label loses its Bootstrap styling instead. %>
+                  label loses its Bootstrap styling instead.
+
+                  aria-required carries the same fact to anyone who cannot see
+                  the asterisk. `required` and aria-required are not the same
+                  attribute: only the first makes Rails prepend the blank
+                  option, so this announces the field as mandatory without
+                  reopening the hole above. The field is mandatory -- Camera
+                  validates it -- and before this the only cue was a CSS
+                  ::after, which a screen reader does not read. It goes in the
+                  FOURTH argument: bootstrap_form mirrors Rails' select, where
+                  the third is the select's own options and only the fourth
+                  reaches the tag. %>
               <%= f.select :flash_type, list_of_flash_type_sizes_for_select,
-                           required: false, label_class: 'form-label required' %>
+                           { required: false, label_class: 'form-label required' },
+                           { aria: { required: true } } %>
               <%# Hidden for NAND, which has one layout -- mtdpartsubi -- and %>
               <%# nothing to choose. The script below does the hiding.        %>
               <div id="partition-layout-field">
