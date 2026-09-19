@@ -26,14 +26,43 @@ require 'minitest/mock'
 # Where something is arguably wrong the test says so and still asserts what the
 # endpoint does today, because cameras depend on today's behaviour.
 class SnapshotsControllerTest < ActionDispatch::IntegrationTest
-  # A real-shaped JPEG: SOI, JFIF APP0, then a comment segment padded to the
-  # requested size, then EOI. Generated rather than committed as a fixture so a
-  # test can ask for a specific size -- the validator's bounds are the point of
-  # several of these -- and so the suite needs no binary blobs in the repo.
+  # A JPEG comment segment carries a 16-bit length that counts itself, so one
+  # segment holds at most 65_533 bytes of payload.
+  MAX_COMMENT_PAYLOAD = 65_533
+  JPEG_HEAD = "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00".b
+  JPEG_TAIL = "\xFF\xD9".b
+
+  # A real-shaped JPEG of an exact size: SOI, a JFIF APP0, enough comment
+  # segments to reach the requested length, then EOI.
+  #
+  # Generated rather than committed as a fixture because several of these tests
+  # are about the validator's size bounds, and because the suite should not
+  # carry binary blobs. The size has to come out exact for the same reason.
+  #
+  # The padding is split across segments rather than declared in one: a single
+  # 16-bit length cannot describe more than 64 KB, and writing the full figure
+  # into it does not raise -- pack('n') truncates to the low bits, so a 5 MB
+  # file would quietly claim a 1 KB comment and stop being a valid JPEG.
+  # Nothing here decodes it, but a helper that lies about its own output is a
+  # bad thing to leave in a test.
   def jpeg_bytes(size)
-    head = "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00".b
-    pad  = [size - head.bytesize - 4 - 2, 0].max
-    head + "\xFF\xFE".b + [pad + 2].pack('n') + ("\x20".b * pad) + "\xFF\xD9".b
+    budget = size - JPEG_HEAD.bytesize - JPEG_TAIL.bytesize
+    raise ArgumentError, "#{size} is too small to build a JPEG from" if budget < 5
+
+    JPEG_HEAD + comment_payloads(budget).map { |bytes| comment_segment(bytes) }.join.b + JPEG_TAIL
+  end
+
+  def comment_segment(payload)
+    "\xFF\xFE".b + [payload + 2].pack('n') + ("\x20".b * payload)
+  end
+
+  # Payload sizes for the comment segments filling `budget` bytes exactly,
+  # counting the four bytes of marker and length each one costs. Spread evenly
+  # so no segment ends up too small to be worth emitting.
+  def comment_payloads(budget)
+    count = (budget.to_f / (MAX_COMMENT_PAYLOAD + 4)).ceil
+    base, extra = (budget - (4 * count)).divmod(count)
+    Array.new(count) { |i| base + (i < extra ? 1 : 0) }
   end
 
   # An ISO-BMFF ftyp box declaring the heic brand. Marcel identifies HEIF from
@@ -85,6 +114,18 @@ class SnapshotsControllerTest < ActionDispatch::IntegrationTest
 
       nil
     }, &block)
+  end
+
+  # The size bound tests are only meaningful if this comes out exact, and the
+  # multi-segment path only starts above 64 KB.
+  test 'the generated JPEG is exactly the size asked for' do
+    [10.kilobytes, 12.kilobytes, 64.kilobytes + 1, 1.megabyte, 5.megabytes + 1.kilobyte].each do |size|
+      data = jpeg_bytes(size)
+
+      assert_equal size, data.bytesize, "jpeg_bytes(#{size}) produced #{data.bytesize} bytes"
+      assert data.start_with?("\xFF\xD8".b), 'must start with the JPEG SOI marker'
+      assert data.end_with?("\xFF\xD9".b), 'must end with the JPEG EOI marker'
+    end
   end
 
   # --- accepted uploads ---------------------------------------------------
