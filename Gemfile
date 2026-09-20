@@ -42,8 +42,11 @@ gem 'jsbundling-rails'
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
 gem 'turbo-rails'
 
-# Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
-gem 'stimulus-rails'
+# stimulus-rails was here and is gone. It shipped with the generated app and
+# nothing ever used it: no controllers directory, no import, no reference
+# outside this file, while the gem was loaded on every boot. Adding it back is
+# `bundle add stimulus-rails` on the day something needs a controller, which is
+# cheaper than carrying a framework on the promise that one day something will.
 
 # Bundle and process CSS [https://github.com/rails/cssbundling-rails]
 gem 'cssbundling-rails'
