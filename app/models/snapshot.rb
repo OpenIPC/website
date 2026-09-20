@@ -13,10 +13,8 @@ class Snapshot < ApplicationRecord
   INTERVAL_LIMIT = 15.minutes
 
   # The join behind "the newest snapshot from each camera seen in the last 24
-  # hours", with no projection and no order, so that the page query and the
-  # count query below cannot drift apart. They have to agree: a count taken
-  # over different rows than the page paginates to pages that do not exist, or
-  # hides ones that do.
+  # hours", kept apart from the projection and the order so that it reads as
+  # one thing.
   #
   # The LEFT JOIN ... WHERE s2.id IS NULL is a greatest-n-per-group: a row
   # survives only when no newer row exists for its MAC.
@@ -36,9 +34,8 @@ class Snapshot < ApplicationRecord
   # mosaic wants the same list, and two copies of a correlated subquery is one
   # too many.
   #
-  # limit and offset are interpolated after to_i, not bound, because they land
-  # in a LIMIT clause where a bind parameter is not accepted; to_i is what
-  # makes that safe.
+  # limit is interpolated after to_i, not bound, because it lands in a LIMIT
+  # clause where a bind parameter is not accepted; to_i is what makes that safe.
   #
   # The attachment and its blob are preloaded because every caller renders
   # tiles and the tile's caption prints `snapshot.file.byte_size` -- an
@@ -47,24 +44,12 @@ class Snapshot < ApplicationRecord
   # ActiveStorage and left the caption on it. Here rather than in the
   # controller because find_by_sql returns plain records with no relation to
   # chain onto, so a caller that forgets is silently back to a query per tile.
-  def self.latest_per_camera(limit: nil, offset: nil)
-    # MySQL has no OFFSET without a LIMIT, and silently dropping the offset
-    # would serve page 1 under every page number -- which is exactly the bug
-    # this method was changed to fix.
-    raise ArgumentError, 'offset needs a limit' if offset && limit.nil?
-
+  def self.latest_per_camera(limit: nil)
     sql = "SELECT s1.* #{LATEST_PER_CAMERA} ORDER BY created_at DESC, id DESC"
     sql += " LIMIT #{limit.to_i}" if limit
-    sql += " OFFSET #{offset.to_i}" if offset
     rows = find_by_sql(sql)
     ActiveRecord::Associations::Preloader.new(records: rows, associations: { file_attachment: :blob }).call
     rows
-  end
-
-  # How many cameras the wall has, without building a row object for any of
-  # them. The gallery needs this for its page links and nothing else.
-  def self.latest_per_camera_count
-    connection.select_value("SELECT COUNT(*) #{LATEST_PER_CAMERA}").to_i
   end
 
   # Uploads may be HEIF (HEVC/AVC) as well as JPEG. Render every variant as JPEG
