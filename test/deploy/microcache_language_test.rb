@@ -68,6 +68,45 @@ class MicrocacheLanguageTest < ActiveSupport::TestCase
     end
   end
 
+  # Vary covers headers. It says nothing about the query string, and
+  # ?locale= still selects a language on the routes that have no prefixed
+  # form -- the snapshot routes sit outside `scope "(:locale)"` because
+  # positional route helpers break under it, and the Open Wall mosaic links
+  # to them with exactly that parameter. A cache that drops the query from
+  # its key therefore stores one language under a key that claims none:
+  #
+  #   /snapshots/3589409?locale=ru  Accept-Language: en  ->  lang="ru"  MISS
+  #   /snapshots/3589409            Accept-Language: en  ->  lang="ru"  HIT
+  test 'a key that drops the query still accounts for the locale parameter' do
+    cached_rails_blocks.each do |block|
+      next if block.match?(LANGUAGE_INDEPENDENT)
+
+      location = block[/location[^{]*/].to_s.strip
+      key = block[/proxy_cache_key\s+([^;]+);/, 1].to_s
+
+      next if key.include?('$request_uri') # the whole query is in the key already
+
+      assert_includes key, '$locale_key', <<~MESSAGE.chomp
+        #{location} keys its cache on #{key}, which drops the query string,
+        but ?locale= still changes the language of the page it caches.
+
+        Use $locale_key (conf.d/openipc-microcache.conf), which normalises the
+        parameter to the supported set. Keying on $arg_locale raw would let
+        ?locale=<anything> fragment the cache without bound, which is the
+        flood the $uri key exists to absorb.
+      MESSAGE
+    end
+  end
+
+  test 'the locale key is normalised rather than taken raw' do
+    micro = Rails.root.join('deploy/nginx/conf.d/openipc-microcache.conf').read
+
+    assert_match(/map\s+\$arg_locale\s+\$locale_key\s*\{/, micro,
+                 '$locale_key is used in a cache key and has to be defined')
+    assert_match(/default\s+"";/, micro,
+                 'an unrecognised ?locale= must collapse to one bucket, not create its own')
+  end
+
   test 'the guard covers the locations that actually render pages' do
     covered = cached_rails_blocks.reject { |b| b.match?(LANGUAGE_INDEPENDENT) }
 
