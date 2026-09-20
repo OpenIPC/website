@@ -41,19 +41,41 @@ version-controlled until 2026-09-20 — so a host rebuilt from this repository
 got every vhost and every cache zone but **none of the global limits**, and
 nothing would have said so.
 
-The part that surprises people is `limit_conn per_subnet 20`. It sits at http
-level, so it **inherits into every location that does not declare a
-`limit_conn` of its own** — on `org.openipc` that is `/wall/`,
-`/assets|fonts/`, `/dl/`, `/images/`, `/protected-files/` and the
-acme-challenge block. A location that declares one replaces it rather than
-adding to it, which is why `site_conc`, `media_conc` and `snapshot_conc` are
-not also subject to it.
+Two things about it are not what they look like, and both were documented
+wrongly here first:
 
-It counts **connections, not HTTP/2 streams**. A browser pulling eighteen
-thumbnails over one multiplexed connection counts as one and is never shed by
-it; what it catches is a client opening tens of parallel connections. If you
-find 429s in a location you thought was uncapped, this is why — check whether
-real page loads are actually affected before changing it.
+**The key is per address, not per subnet.** nginx does no CIDR masking in a
+`limit_conn_zone` key. `$binary_remote_addr/20` is the binary address with the
+literal characters `/20` appended, so every address gets its own counter and
+the suffix is decoration. The zone names are kept because renaming one changes
+what runs; read `per_subnet` as `per_addr`.
+
+**Concurrent HTTP/2 streams each take a slot.** They are not one connection for
+this purpose. Measured against production with transfers held open:
+
+| in-flight requests from one address | shed |
+|---|---|
+| 12 | 0 |
+| 20 | 0 |
+| 30 | 9 |
+
+So `limit_conn per_subnet 20` binds at about twenty in-flight requests from one
+client, whatever transport they arrive on.
+
+That matters because it sits at **http level**, so it inherits into every
+location that does not declare a `limit_conn` of its own. A location that
+declares one *replaces* it rather than adding to it — which is how
+`site_conc`, `media_conc` and `snapshot_conc` escape it, and why `/wall/` and
+`/assets|fonts/` now declare a generous one of their own. The Open Wall renders
+sixteen thumbnails; with stylesheets, fonts and a favicon, a cold first visit
+comes close enough to twenty that the page could shed its own images. Static
+files served by `sendfile` have no business competing for slots that exist to
+bound how many expensive renders Rails is asked for at once.
+
+If you find 429s in a location you thought was uncapped, this is why. Check
+whether real page loads are actually affected before changing anything — and
+check it with transfers slow enough to genuinely overlap, or the requests
+finish too fast to ever reach the limit and everything looks fine.
 
 `limit_req_zone per_subnet_rate` is defined and referenced by nothing.
 
