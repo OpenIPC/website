@@ -81,4 +81,19 @@ class OpenWallPaginationTest < ActionDispatch::IntegrationTest
   test 'a page past the end renders empty rather than failing' do
     assert_empty ids_on(99)
   end
+
+  # The tile prints `snapshot.file.byte_size`, which is an attachment and a
+  # blob per tile unless they are preloaded -- 32 of the 33 queries this action
+  # used to make. find_by_sql returns records with nothing preloaded, so this
+  # is easy to lose by accident and invisible when you do.
+  test 'a page costs a bounded number of queries, not one per tile' do
+    queries = 0
+    counter = ->(_n, _s, _f, _i, payload) { queries += 1 unless payload[:name].to_s.match?(/SCHEMA|TRANSACTION/) }
+
+    ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') { get '/open-wall' }
+
+    assert_response :success
+    assert_operator queries, :<, PER_PAGE,
+                    "#{queries} queries for #{PER_PAGE} tiles -- the attachment preload has been lost"
+  end
 end
