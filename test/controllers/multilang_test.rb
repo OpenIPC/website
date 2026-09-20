@@ -47,7 +47,7 @@ class MultilangTest < ActionDispatch::IntegrationTest
   # Switching language on a paginated list lost the page, and on a permanent
   # link to a camera configuration it lost the configuration.
   test 'switching language keeps the rest of the query string' do
-    get '/supported-hardware/featured?vendor=hisilicon&locale=en'
+    get '/supported-hardware/featured?vendor=hisilicon'
 
     assert_response :success
     # The switcher swaps the path prefix now rather than merging a query
@@ -129,13 +129,28 @@ class MultilangTest < ActionDispatch::IntegrationTest
 
   # --- what the switcher asks for ---
 
-  test 'the switcher changes the language and it sticks' do
+  # The switcher links to /zh now rather than to ?locale=zh, and the language
+  # comes from the path rather than from a cookie, which is what lets a shared
+  # cache store the page (#154). An old ?locale= link still arrives, by 301.
+  test 'the switcher changes the language, and the address says which' do
     get_root params: { locale: 'zh' }
+
+    assert_response :moved_permanently
+    assert_equal '/zh', URI(response.location).path
+
+    follow_redirect!
+    assert_rendering_in 'zh'
+  end
+
+  # It no longer sticks, and that is the point: the bare path is English for
+  # everyone, so an edge can keep one copy of it.
+  test 'the language does not follow the visitor to an unprefixed path' do
+    get '/zh'
     assert_rendering_in 'zh'
 
     get_root
 
-    assert_rendering_in 'zh'
+    assert_rendering_in 'en'
   end
 
   # de was served until this change. A bookmarked ?locale=de must not leave
@@ -156,7 +171,7 @@ class MultilangTest < ActionDispatch::IntegrationTest
   # only ever said "en" while set_locale was off. It matters now: screen readers
   # pick a voice from it and search engines index by it.
   test 'the page declares the language it is actually in' do
-    get_root params: { locale: 'zh' }
+    get '/zh'
 
     assert_match '<html dir="ltr" lang="zh">', response.body
   end
@@ -213,7 +228,7 @@ class MultilangTest < ActionDispatch::IntegrationTest
   # I18n.locale is per-thread and nothing resets it after a request, so
   # set_locale wraps the action in with_locale rather than assigning.
   test 'the request does not leave the process in another language' do
-    get_root params: { locale: 'ru' }
+    get '/ru'
 
     assert_rendering_in 'ru'
     assert_equal :en, I18n.locale
