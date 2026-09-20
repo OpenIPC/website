@@ -115,16 +115,26 @@ class MicrocacheLanguageTest < ActiveSupport::TestCase
   # localizes the catalogue, at which point /ru/cameras/.../download_full_image
   # would be the same 1s-of-CPU, 8-32MB-of-disk action with no limit_req in
   # front of it.
-  PREFIXABLE = [
-    %r{location ~ \^/\(\?:\(\?:ru\|zh\)/\)\?cameras/vendors},
-    %r{location ~ \^/\(\?:\(\?:ru\|zh\)/\)\?snapshots/},
-    %r{location ~ \^/\(\?:\(\?:ru\|zh\)/\)\?\(open-wall}
-  ].freeze
+  #
+  # Named by the route family they guard, never by the locales they list. An
+  # earlier version of this test hardcoded `ru|zh` in each pattern, which meant
+  # adding a locale could be made to pass by editing the patterns one at a time
+  # while two guards stayed stale -- the test agreeing with itself rather than
+  # with the vhost.
+  GUARDED_ROUTES = ['cameras/vendors', 'snapshots/', '(open-wall'].freeze
+
+  # The optional locale alternation each guarded location actually carries.
+  def guard_locales
+    GUARDED_ROUTES.to_h do |route|
+      line = VHOST.lines.find { |l| l.include?('location ~ ') && l.include?(route) }
+      [route, line&.[](/\(\?:\(\?:([a-z|]+)\)/, 1)&.split('|')&.sort]
+    end
+  end
 
   test 'a locale prefix cannot walk past the rate limits and caches' do
-    PREFIXABLE.each do |pattern|
-      assert_match pattern, VHOST, <<~MESSAGE.chomp
-        A guarded location lost its optional locale prefix.
+    guard_locales.each do |route, locales|
+      assert_not_nil locales, <<~MESSAGE.chomp
+        The location guarding #{route} carries no optional locale prefix.
 
         These regexes are anchored at ^/. Without (?:(?:ru|zh)/)? the rule
         stops applying the moment the route is localized, which for the
@@ -133,18 +143,41 @@ class MicrocacheLanguageTest < ActiveSupport::TestCase
     end
   end
 
-  # The nginx list and the Rails list have no connection, and a disagreement
+  # The nginx lists and the Rails list have no connection, and a disagreement
   # is silent in the direction that matters: a locale Rails serves but nginx
-  # does not know about is an unguarded path.
+  # does not know about is an unguarded path. Checked for every guard, not
+  # whichever one appears first in the file.
   test 'the prefixes nginx knows match the locales Rails puts in a path' do
     rails_locales = Multilang::IN_PATH.source.split('|').sort
-    nginx_locales = VHOST[/\(\?:\(\?:([a-z|]+)\)/, 1].to_s.split('|').sort
 
-    assert_equal rails_locales, nginx_locales, <<~MESSAGE.chomp
-      nginx guards #{nginx_locales.inspect} but Rails serves #{rails_locales.inspect}
-      as path prefixes. A locale in the second list and not the first is a
-      path with no rate limit, no cache and no concurrency cap.
-    MESSAGE
+    guard_locales.each do |route, locales|
+      assert_equal rails_locales, locales, <<~MESSAGE.chomp
+        The location guarding #{route} knows #{locales.inspect} but Rails
+        serves #{rails_locales.inspect} as path prefixes. A locale in the
+        second list and not the first is a path with no rate limit, no cache
+        and no concurrency cap.
+      MESSAGE
+    end
+  end
+
+  # /snapshots/123ru with no parameter and /snapshots/123?locale=ru built the
+  # same key when $locale_key was simply appended, and the first URL resolves:
+  # the location regex is not anchored at the end and MySQL casts "123ru" to
+  # 123. Reproduced on production -- an English render was served for the
+  # Russian page. The bounded field has to be delimited, not concatenated.
+  test 'the locale field in a cache key cannot run into the path' do
+    cached_rails_blocks.each do |block|
+      key = block[/proxy_cache_key\s+([^;]+);/, 1].to_s
+      next unless key.include?('$locale_key')
+
+      assert_match(/\|\$locale_key\|/, key, <<~MESSAGE.chomp)
+        #{block[/location[^{]*/].to_s.strip} builds its key as #{key}.
+
+        $locale_key must be bracketed by delimiters. Appended straight onto
+        the path, /snapshots/123ru and /snapshots/123?locale=ru are the same
+        key, and anyone can seed the Russian entry with an English render.
+      MESSAGE
+    end
   end
 
   test 'the guard covers the locations that actually render pages' do

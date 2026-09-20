@@ -205,7 +205,7 @@ server {
         proxy_read_timeout 180;
 
         proxy_cache openipc_micro;
-        proxy_cache_key $scheme$host$uri$locale_key;
+        proxy_cache_key $scheme$host|$locale_key|$uri;
         proxy_cache_valid 200 301 302 300s;
         proxy_cache_valid 404 120s;
         proxy_cache_lock on;
