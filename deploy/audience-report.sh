@@ -120,7 +120,7 @@ geo=()
 # HTTP/1.1 in the first run of this, which is a fact about clients rather than
 # about what people read.
 goaccess "$work/human.log" -o "$report" \
-  --log-format='%h - %^ [%d:%t %^] "%r" %s %b "%R" "%u" xff="%^" cache=%^ rt=%T urt="%^" al="%^"' \
+  --log-format='%h - %^ [%d:%t %^] "%r" %s %b "%R" "%u" xff="%^" cache=%^ rt=%T urt="%^" al="%^" peer=%^' \
   --date-format='%d/%b/%Y' --time-format='%H:%M:%S' \
   --http-method=no --http-protocol=no \
   --static-file=.webp --static-file=.woff2 --static-file=.woff \

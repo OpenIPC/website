@@ -149,7 +149,32 @@ module Multilang
     session[:locale] = I18n.default_locale unless available?(session[:locale])
     session[:locale] = params[:locale] if available?(params[:locale])
 
-    I18n.with_locale(session[:locale], &)
+    negotiated = I18n.with_locale(session[:locale], &)
+    vary_by_accept_language
+    negotiated
+  end
+
+  # An unprefixed path chooses its language from Accept-Language (and, until
+  # #155, from the session), so one URL answers in three languages depending on
+  # who asks. Rails already sends `Vary: Accept` from format negotiation, and
+  # Accept-Language is not covered by it: a shared cache that stored this
+  # response would be entitled to hand the first visitor's language to everyone
+  # behind it.
+  #
+  # Nothing stores it today -- Cache-Control is `max-age=0, private,
+  # must-revalidate` -- so this changes no behaviour now. It is a precondition
+  # for #155, which adds real cache headers, and for the mirrors gaining
+  # proxy_cache in Phase 7; by then the declaration has to already be true, and
+  # a wrong Vary is invisible until a Russian visitor is served a Chinese page.
+  #
+  # /ru and /zh deliberately do not get this. Their language is in the address,
+  # which is exactly the property that makes them cacheable, and claiming they
+  # vary by a header they ignore would throw that away.
+  def vary_by_accept_language
+    values = response.headers['Vary'].to_s.split(',').map(&:strip).reject(&:empty?)
+    return if values.include?('*') || values.any? { |value| value.casecmp?('Accept-Language') }
+
+    response.headers['Vary'] = (values + ['Accept-Language']).join(', ')
   end
 
   def available?(locale)

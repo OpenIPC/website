@@ -65,6 +65,18 @@ class LogFormatTest < ActiveSupport::TestCase
                  '#178: the only language signal the origin has without a beacon')
   end
 
+  # The point of the field, and the one way to get it wrong: $remote_addr has
+  # already been rewritten to the visitor by set_real_ip_from, so logging it a
+  # second time under another name would record nothing.
+  test 'the mirror the request came through is logged, before the real_ip rewrite' do
+    assert_match(/peer=\$realip_remote_addr/, format_string, <<~MESSAGE.chomp)
+      peer= must be $realip_remote_addr -- the address nginx accepted the
+      connection from. $remote_addr is the visitor after set_real_ip_from has
+      rewritten it, so logging that instead makes every request look direct and
+      the mirror share unmeasurable.
+    MESSAGE
+  end
+
   test 'the fields with list values are quoted' do
     %w[xff urt al].each do |key|
       assert_match(/#{key}="\$/, format_string,
@@ -111,6 +123,11 @@ class LogFormatTest < ActiveSupport::TestCase
                     'the field is written; a reader that stops before it parses nothing'
   end
 
+  test 'the report knows about the peer field' do
+    assert_includes goaccess_format, 'peer=',
+                    'the field is written; a reader that stops before it parses nothing'
+  end
+
   # deploy/log-report.sh reads the labelled tail with one anchored regex. The
   # anchor is deliberate -- it is what stops a user agent containing the text
   # `cache=` from being read as the real field -- but anchored to the END of
@@ -136,6 +153,11 @@ class LogFormatTest < ActiveSupport::TestCase
   test 'the operations report reads a line in the current format' do
     assert_match tail_regexp, log_line("#{BASE_TAIL} al=\"en-US,en;q=0.9\""),
                  'the al= field is live on production; without this the report reads nothing'
+  end
+
+  test 'the operations report reads a line carrying the mirror field' do
+    assert_match tail_regexp, log_line(%(#{BASE_TAIL} al="ru-RU,ru;q=0.9" peer=194.58.109.202)),
+                 'peer= is unquoted and last; the tail regex has to reach past it'
   end
 
   test 'it still reads a line written before the field was added' do
