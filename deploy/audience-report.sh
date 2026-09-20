@@ -90,7 +90,10 @@ awk -v bots="$BOT_UA" -v ceiling="$PAGE_VIEW_CEILING" '
   END { for (ip in candidate) if (!(ip in robot) && pages[ip] <= ceiling) print ip }
 ' "$work/candidates" "$log" | sort -u > "$work/humans"
 
-grep -Ff "$work/humans" "$log" > "$work/human.log" || true
+# Field one, not anywhere in the line. `grep -Ff` would admit a request from
+# 11.2.3.40 because 1.2.3.4 is a substring of it, and any request whose URL,
+# referrer or user agent happens to quote an approved address.
+awk 'NR == FNR { keep[$1]; next } ($1 in keep)' "$work/humans" "$log" > "$work/human.log" || true
 
 mkdir -p "$outdir"
 report="$outdir/${day}.html"

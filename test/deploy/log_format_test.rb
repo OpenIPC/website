@@ -110,4 +110,53 @@ class LogFormatTest < ActiveSupport::TestCase
     assert_includes goaccess_format, 'al=',
                     'the field is written; a reader that stops before it parses nothing'
   end
+
+  # deploy/log-report.sh reads the labelled tail with one anchored regex. The
+  # anchor is deliberate -- it is what stops a user agent containing the text
+  # `cache=` from being read as the real field -- but anchored to the END of
+  # the line it also rejects every line that has a NEW field appended after it.
+  #
+  # That is what happened: #178 appended al="..." and 2,201 lines had already
+  # stopped contributing cache, timing and forwarded-address figures before the
+  # review caught it. The rule from #143 is that fields are appended; this is
+  # the half of the rule that has to keep reading them.
+  REPORT_SH = Rails.root.join('deploy/log-report.sh').read.freeze
+
+  def tail_regexp
+    Regexp.new(REPORT_SH[%r{if \(!match\(line, /(.+?)/\)\) return 0}, 1])
+  end
+
+  # The shape log-report.sh has to read, with and without what comes after it.
+  def log_line(tail)
+    '1.2.3.4 - - [20/Sep/2026:00:00:00 +0000] "GET / HTTP/1.1" 200 5 "-" "Mozilla/5.0" ' + tail
+  end
+
+  BASE_TAIL = 'xff="-" cache=MISS rt=0.010 urt="0.008"'
+
+  test 'the operations report reads a line in the current format' do
+    assert_match tail_regexp, log_line("#{BASE_TAIL} al=\"en-US,en;q=0.9\""),
+                 'the al= field is live on production; without this the report reads nothing'
+  end
+
+  test 'it still reads a line written before the field was added' do
+    assert_match tail_regexp, log_line(BASE_TAIL),
+                 'a day of log spans both formats on the day a change lands'
+  end
+
+  # Whatever gets appended next.
+  test 'it survives a field that does not exist yet' do
+    assert_match tail_regexp, log_line(%(#{BASE_TAIL} al="en" host=openipc.org tls=TLSv1.3)),
+                 'appending is the documented way to change this log'
+  end
+
+  # The reason the regex is anchored at all, from the #143 review.
+  test 'a user agent that quotes the tail does not become the tail' do
+    spoof = '1.2.3.4 - - [20/Sep/2026:00:00:00 +0000] "GET / HTTP/1.1" 200 5 "-" ' \
+            '"Evil xff=\"x\" cache=HIT rt=9.9 urt=\"9.9\"" ' + BASE_TAIL
+    matched = spoof[tail_regexp]
+
+    assert matched, 'the real tail should still be found'
+    assert_includes matched, 'cache=MISS', 'it read the user agent instead of the real field'
+    assert_not_includes matched, 'cache=HIT'
+  end
 end

@@ -83,9 +83,18 @@ function pctls(c,   i, m, arr, tot, t50, t95, cum) {
 # "cache=" wins over the real field, and a comma-separated X-Forwarded-For --
 # the case the quoting exists for -- is split across two fields and silently
 # truncated at the comma.
+#
+# The match stays anchored to the END of the line, which is what stops a user
+# agent containing the text `cache=` from being read as the real one -- but it
+# now allows any number of further key="value" or key=value fields after urt,
+# because the rule set by #143 is that new fields are APPENDED, and this parser
+# has to be the half of that rule which keeps working. It did not: #178 appended
+# al="$http_accept_language" and every line written after that nginx reload
+# stopped contributing cache, timing and forwarded-address figures. 2,201 lines
+# were already invisible by the time the review caught it.
 function tail(line,   s, q) {
   T_xff = ""; T_cache = ""; T_rt = ""
-  if (!match(line, /xff="[^"]*" cache=[^ ]+ rt=[0-9.]+ urt="[^"]*"$/)) return 0
+  if (!match(line, /xff="[^"]*" cache=[^ ]+ rt=[0-9.]+ urt="[^"]*"( [a-z_]+="[^"]*"| [a-z_]+=[^ "]*)*$/)) return 0
   s = substr(line, RSTART, RLENGTH)
   q = index(substr(s, 6), "\"")
   T_xff = substr(s, 6, q - 1)

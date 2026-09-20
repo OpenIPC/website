@@ -27,6 +27,16 @@ reports=/srv/www/shared/reports
 
 [ "$(id -u)" -eq 0 ] || { echo "install-metrics.sh: must run as root" >&2; exit 1; }
 
+# The nightly audience report is useless without this, and its failure is quiet:
+# the job exits at its own dependency check and writes a line into a log nobody
+# reads, every night, until somebody wonders where the reports went. A rebuilt
+# host following RESTORE.md is exactly where that happens.
+if ! command -v goaccess >/dev/null; then
+  echo 'install-metrics.sh: goaccess is not installed, and the nightly audience' >&2
+  echo '  report needs it. On Debian: apt-get install -y goaccess' >&2
+  exit 1
+fi
+
 install -m 0755 -o root -g root "$here/openipc-sample-rss" "$sampler"
 # cron refuses a file in /etc/cron.d that is group- or world-writable, and does
 # so silently -- no entry, no error, no samples.
