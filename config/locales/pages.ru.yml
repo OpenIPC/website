@@ -75,9 +75,9 @@ ru:
       # stopped existing.
       #
       # Roubles only, and three tiers mirroring Open Collective's shape:
-      # 100 / 250 / 500 ₽ with 250 ₽ the default. The fork exists because a
-      # card issued in Russia cannot pay Open Collective, so offering dollars
-      # and euros here would be offering the same problem in a second place.
+      # 100 / 250 / 500 ₽. The fork exists because a card issued in Russia
+      # cannot pay Open Collective, so offering dollars and euros here would be
+      # offering the same problem in a second place.
       #
       # "Разовый платёж" is described as paying one month and cancelling
       # because that is what the service offers -- there is no one-off button,
