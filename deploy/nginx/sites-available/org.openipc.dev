@@ -119,6 +119,24 @@ server {
        alias /srv/www/shared/dev-files/;
    }
 
+    # Fingerprinted assets, carved out of the http-level `limit_conn
+    # per_subnet 20` that every location without one of its own inherits.
+    # That cap counts concurrent HTTP/2 streams, and the homepage alone asks
+    # for the partner logos and social icons together -- more than twenty on a
+    # cold visit -- so dev was shedding its own images and rendering with gaps.
+    # Production carves the same prefix out for the same reason; dev had been
+    # left behind.
+    location ~ ^/(assets|fonts)/ {
+        limit_conn per_subnet 100;
+        limit_conn_status 429;
+
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
    location / {
         proxy_buffer_size 128k;
         proxy_buffers 8 128k;
