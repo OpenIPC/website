@@ -2,9 +2,9 @@
   The relaunched navigation: Get Started | Hardware | Low Latency | Ecosystem |
   For Business | Community.
 
-  Low Latency is a dropdown of two: the FPV video link and the teleoperation
-  page. A seventh top-level entry would not fit either, which is the reason
-  for the dropdown rather than a sibling.
+  Low Latency is a dropdown of three: the FPV video link, the teleoperation
+  page and the edge-AI page. A seventh top-level entry would not fit, which
+  is the reason for the dropdown rather than siblings.
 
   expand-xl rather than expand-lg. Six top-level entries plus the language
   switcher do not fit an lg breakpoint without wrapping, and a wrapped navbar
@@ -30,6 +30,7 @@
           <ul aria-labelledby="dropdownLowLatency" class="dropdown-menu dropdown-menu-xl-end">
             <%= dropdown_link t('nav.low_latency_fpv'), '/low-latency' %>
             <%= dropdown_link t('nav.teleoperation'), '/teleoperation' %>
+            <%= dropdown_link t('nav.edge_ai'), '/edge-ai' %>
           </ul>
         </li>
         <li class="nav-item dropdown">

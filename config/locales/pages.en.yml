@@ -169,6 +169,62 @@ en:
       section_tools_title: Pro tools
       stage_legend_html: Every project carries an honest status badge — the same vocabulary we use for firmware platforms. <a href="/stages-of-firmware-development">How stages work</a>.
       title: Ecosystem
+    edge_ai:
+      bring_driver_text: Cleanroom kernel drivers for HiSilicon's vision and neural engines, built from disassembly and kernel tracing, byte-identical to the vendor's own — and more robust where the vendor's test hangs. Vendor silence is not a blocker.
+      bring_driver_title: Where there is no driver, we write one
+      bring_fit_text: 'Models reshaped so the whole network runs on the accelerator instead of half of it, and retrained on the camera''s own picture: its angle, its image pipeline, its native scale. A model moved to a new camera without that step loses ten to twenty points of accuracy.'
+      bring_fit_title: Fit the model to the chip and the camera
+      bring_map_text: 'We have mapped four NPU families by running models on them, not by reading the vendor''s PDF: what runs on the accelerator, what silently falls back, and what to change before you spend a sprint finding out.'
+      bring_map_title: We know what your NPU cannot run
+      bring_proven_text: The vision engine runs in CI under our own QEMU, validated pixel for pixel against the silicon. Every change is tested overnight on emulated hardware, so the bench is not the bottleneck and your board is not on our desk.
+      bring_proven_title: Proven before it touches a board
+      brings_intro: Four things, each one measured on silicon.
+      brings_title: What we bring
+      cta_note_html: Camera firmware, sensor tuning and custom video links are on the <a href="/business">business page</a>.
+      cta_primary: Write to business@openipc.org
+      cta_secondary: Ask in the chat
+      cta_text: 'One mail with four lines: the model and its format, the target SoC and SDK version, a link to frames from the camera, and the fps and accuracy you need. An engineer answers with a plan, not a sales script.'
+      cta_title: Send the model and the SoC. Get a verdict in a week.
+      engagement_title: How an engagement works
+      eyebrow: Whitepaper · Edge AI · Inference on the camera chip
+      hero_art_alt: A night car park where a neural network converges onto two cars whose licence plates are outlined
+      hero_cta_how: How an engagement works
+      hero_cta_send: Send us your model and your SoC
+      hero_lede: AI inference on camera-SoC NPUs and vision engines, at the speed the silicon was sold for, on hardware nobody hands you the tools for. From the team behind OpenIPC.
+      hero_title: You have the model and the chip. We make them run together.
+      meta_description: 'AI inference on camera-SoC NPUs and vision engines: what four NPU families can run, drivers where the vendor has none, models fitted to the chip and the camera, tested in CI without a board.'
+      platform_arm: ARM cores without an NPU
+      platform_hisi: HiSilicon & Goke
+      platform_ingenic: Ingenic
+      platform_rk: Rockchip
+      platform_sstar: SigmaStar
+      platforms_text: 'We ship firmware on all of them and work under NDA with most camera-SoC vendors, including toolchains that are not distributed outside their home market. If your chip is not on the list, ask: the answer is a yes or a no within 48 hours.'
+      platforms_title: The platforms
+      pull_quote: The wall is the toolchain, not your model.
+      res_cpu_text: On cameras with no accelerator at all, our own integer engine made a neural classifier run five times faster on the camera's single core, with the same answers as the reference. Detection wakes only when the hardware motion engine sees something move, so a quiet scene costs nothing.
+      res_cpu_title: No NPU? It still runs
+      res_faces_text: Detection and recognition in eight milliseconds, entirely on the accelerator, from a model small enough to live beside the video pipeline — and as accurate on the standard benchmark as models many times its size.
+      res_faces_title: Faces
+      res_plates_text: Plates found and read at more than eighty frames a second on a camera chip's accelerator, with nothing given up to make the model fit. Trained on the camera's own picture, so it reads what the lens actually sees, at night, in a car park, at the angle the camera hangs.
+      res_plates_title: Licence plates
+      results_title: Results on real silicon
+      scar_p1: A camera SoC's NPU is not a GPU. It runs its own short list of operators, quantises the way its compiler decides, and the compiler may not be yours to download — some are never distributed outside their home market. The model that trained overnight on a cluster meets a chip that cannot run half of it, and a driver that crashes on the first layer it does not know.
+      scar_p2: The datasheet says TOPS. It does not say which parts of your model will quietly run on the CPU instead, or that the stock driver delivers a quarter of the speed the silicon has. Those answers come from running models on the chip, and we have been doing that since the first camera SoCs with a vision engine — starting on ARM cores with no floating-point unit at all.
+      scar_title: Your model does not run here, and nobody will tell you why
+      stat_fps_l: licence plates read on a camera chip, end to end
+      stat_fps_n: 80 fps
+      stat_gap_l: the speed a stock driver leaves on the table, measured on the same chip
+      stat_gap_n: 4×
+      stat_loss_l: accuracy given up to make a model fit the chip
+      stat_loss_n: '0'
+      stats_source: Measured by us on RK3588 and HiSilicon silicon, on models we fitted and drivers we wrote.
+      step1_text: Fixed price, five working days. You send the model or its architecture, the SoC and SDK version, about fifty frames from the real camera, and the numbers you are judged on. You get a layer-by-layer verdict on what runs, the accuracy at stake in fitting it to the chip and how to keep it, the speed to expect against our measured baselines, and a fixed quote for the next step.
+      step1_title: Feasibility report
+      step2_text: The model reshaped and retrained on your footage, running entirely on the accelerator in a lean native runtime, measured on your board. Acceptance is the numbers agreed in the report.
+      step2_title: Port and fit
+      step3_text: Into OpenIPC or your firmware, CI under QEMU where the chip is covered, driver work where the stack is missing — and a retainer for the SDK churn that locks models to firmware versions.
+      step3_title: Integrate and keep
+      title: Edge AI
     firmware_partitions_calculation:
       end_address: End address
       flash_size_mb: Flash size, MB
