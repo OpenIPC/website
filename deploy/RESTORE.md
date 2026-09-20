@@ -55,7 +55,9 @@ aws s3 ls s3://openipc-org-backup/daily/2026-08-23/
 D=2026-08-23
 aws s3 cp s3://openipc-org-backup/daily/$D/openipc_production.sql.zst .
 aws s3 cp s3://openipc-org-backup/daily/$D/secrets.tar.gz.age .
+aws s3 cp s3://openipc-org-backup/daily/$D/analytics.sqlite3.zst .   # absent before 2026-09-20
 zstd -t openipc_production.sql.zst        # integrity, before trusting it
+zstd -t analytics.sqlite3.zst
 ```
 
 ### 3. Recover the secrets
@@ -67,6 +69,28 @@ tar -xzf secrets.tar.gz                   # -> master.key, production.env
 
 Without `master.key`, `credentials.yml.enc` is undecryptable and the app will
 not boot (`config.require_master_key = true`). This step is not optional.
+
+### 3b. Restore the analytics database
+
+```bash
+install -d -o openipc-analytics -g openipc-analytics -m 750 /srv/www/shared/analytics
+zstd -dc analytics.sqlite3.zst > /srv/www/shared/analytics/db.sqlite3
+chown openipc-analytics:openipc-analytics /srv/www/shared/analytics/db.sqlite3
+```
+
+**Before `install-analytics.sh`, not after.** The installer creates a site and
+an empty database when it finds no file there, and it leaves an existing one
+alone — so running it first gives a host that works, collects from that moment,
+and has quietly lost every visitor figure the project ever had. Nothing rebuilds
+this from anywhere else: MySQL is dumped nightly and the blob tree refills
+itself from cameras, but the audience history exists only in this archive.
+
+The account it belongs to does not exist yet on a rebuilt host either; the
+`install -d` above fails until `install-analytics.sh` has created it, so the
+order is: run the installer with no database present only if you have no
+archive, otherwise create the user first (`useradd --system
+--no-create-home --shell /usr/sbin/nologin openipc-analytics`), restore, then
+run the installer.
 
 ### 4. Load the database
 
@@ -135,9 +159,8 @@ Only needed on a rebuilt host:
 - **analytics**, via `deploy/install-analytics.sh` (#181). It installs
   GoatCounter, its account and its systemd unit, and creates the site on first
   run from `ANALYTICS_EMAIL` and `ANALYTICS_PASSWORD`. The SQLite database is
-  restored from `analytics.sqlite3.zst` in the backup instead, and the
-  installer leaves an existing file alone — so restore the database first, then
-  run the installer, or the site row it creates will be the wrong one.
+  restored from `analytics.sqlite3.zst` in the backup instead — see step 3b,
+  which has to happen before the installer runs.
 
   Two things live outside this repository and a rebuilt host needs both:
   `analytics.openipc.org` must resolve to the host, and it must be listed in

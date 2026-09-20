@@ -16,13 +16,17 @@
 // first -- turbo:load fires on the initial render too, which is why the
 // automatic count has to be off or the first page would be counted twice.
 //
-// The config is assigned here, in the bundle, and the bundle is included
-// BEFORE count.js in the layout. Both tags are `defer`, and deferred scripts
-// run in document order, so this has always run by the time count.js looks for
-// it. An `async` count.js would be a race: it could win, see no config, and
-// count the load event.
+// The config lives in the layout rather than here, in an inline script that
+// runs at parse time. Relying on this bundle to set it worked -- deferred
+// scripts do run in document order -- but it made the guarantee depend on how
+// the bundle is built, and the failure is silent: count.js would count the
+// document load event instead, which Turbo fires once per session.
 export default function initAnalytics() {
-  window.goatcounter = { no_onload: true, endpoint: '/api/a/count' }
+  // window.goatcounter is NOT set here. It is set by an inline script in the
+  // layout, which runs at parse time and therefore before every deferred
+  // script including this bundle -- so count.js cannot read it early whatever
+  // the bundler does with this file. Setting it here as well would overwrite
+  // the object count.js has already attached its count() to.
 
   // Optional chaining throughout: count.js is fetched from the network and a
   // blocked or failed request must not take the rest of the bundle down with

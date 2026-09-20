@@ -36,24 +36,46 @@ class AnalyticsBeaconTest < ActionDispatch::IntegrationTest
                  'the endpoint the beacon reports to must be same-origin too'
   end
 
-  # Both tags are deferred and count.js must come second: src/analytics.js sets
-  # window.goatcounter.no_onload, and count.js reads it when it runs. Deferred
-  # scripts run in document order, so the order in the document IS the
-  # guarantee. Reversed, or made async, count.js wins the race, never sees the
-  # config, and counts the load event -- which under Turbo Drive fires once per
-  # session, so a visitor who reads twenty pages registers one.
-  test 'it is deferred and runs after the bundle that configures it' do
+  # count.js reads window.goatcounter when it runs, and what it finds decides
+  # whether the site counts pages or sessions. `no_onload` off means it counts
+  # the document load event, which under Turbo Drive fires once per SESSION --
+  # so a visitor who reads twenty pages registers one, and the dashboard looks
+  # plausible while being wrong by a factor of twenty.
+  #
+  # The configuration is therefore an INLINE script, which runs at parse time,
+  # and count.js is deferred, which runs after parsing. That ordering holds
+  # whatever the bundler does. It used to live in the bundle and rely on
+  # deferred scripts executing in document order -- true, but it made the
+  # guarantee depend on how application.js is built, which is not something
+  # this file can see.
+  test 'the beacon is deferred, never async' do
     assert beacon.attributes.key?('defer'), 'the beacon must be deferred'
     assert_not beacon.attributes.key?('async'),
-               'async makes the order below a race rather than a guarantee'
+               'async would let count.js run before the page is parsed'
+  end
 
-    scripts = css_select('script[src]').map { |tag| tag['src'] }
-    bundle = scripts.index { |src| src.include?('application') }
-    counter = scripts.index { |src| src.include?('/api/a/') }
+  test 'the configuration is set before count.js can read it' do
+    body = response.body
+    config = body.index('window.goatcounter')
+    counter = body.index('/api/a/c.js')
 
-    assert_not_nil bundle, 'the application bundle is not in the layout'
-    assert_operator bundle, :<, counter,
-                    'count.js runs before the script that sets no_onload, so it counts the load event'
+    assert_not_nil config, 'nothing in the layout sets window.goatcounter'
+    assert_operator config, :<, counter, <<~MESSAGE.chomp
+      The script that configures the counter comes after count.js.
+
+      count.js reads window.goatcounter when it runs. Without no_onload it
+      counts the document load event, which Turbo fires once per session.
+    MESSAGE
+  end
+
+  test 'the configuration script is not deferred, or the ordering means nothing' do
+    config_tag = css_select('script:not([src])').find { |tag| tag.text.include?('window.goatcounter') }
+
+    assert_not_nil config_tag, 'the configuration is not an inline script'
+    assert_not config_tag.attributes.key?('defer'),
+               'a deferred config would run after parsing, alongside count.js rather than before it'
+    assert_includes config_tag.text, 'no_onload',
+                    'without no_onload, count.js counts the load event and Turbo fires it once per session'
   end
 
   test 'counting sets no cookie' do
