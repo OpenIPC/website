@@ -170,6 +170,17 @@ check('the frame-rate timer stops when you leave it',
       framesLater - framesOnLeaving < 5,
       `${framesOnLeaving} -> ${framesLater} frame callbacks across 1.5 s away from the page`)
 
+// ...and starts again on the way back. A restoration visit re-uses the cached
+// DOM without re-running the page's scripts, so a timer that only stopped
+// would come back stopped.
+await page.goBack(); await page.waitForTimeout(1000)
+const framesOnReturn = await page.evaluate(() => window.__frames)
+await page.waitForTimeout(1000)
+check('the frame-rate timer runs again after Back',
+      await page.evaluate(() => window.__frames) - framesOnReturn > 5,
+      `${framesOnReturn} frame callbacks on arrival, ${await page.evaluate(() => window.__frames)} a second later`)
+await goHome()
+
 // The Open Wall slideshow is a Bootstrap carousel, which cycles on an interval
 // that only dispose() clears.
 await page.goto(base + '/open-wall', { waitUntil: 'networkidle' })
