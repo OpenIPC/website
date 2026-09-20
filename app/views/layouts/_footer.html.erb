@@ -22,36 +22,36 @@
       <div class="col-6 col-lg-3">
         <h2><%= t('footer.column_platform') %></h2>
         <ul>
-          <li><a href="/get-started"><%= t('nav.get_started') %></a></li>
-          <li><a href="/supported-hardware"><%= t('nav.supported_hardware') %></a></li>
+          <li><a href="<%= locale_path('/get-started') %>"><%= t('nav.get_started') %></a></li>
+          <li><a href="<%= locale_path('/supported-hardware') %>"><%= t('nav.supported_hardware') %></a></li>
           <li><a href="https://github.com/OpenIPC/firmware"><%= t('footer.firmware_source') %></a></li>
-          <li><a href="/web-interface"><%= t('nav.webui') %></a></li>
-          <li><a href="/stages-of-firmware-development"><%= t('nav.stages') %></a></li>
+          <li><a href="<%= locale_path('/web-interface') %>"><%= t('nav.webui') %></a></li>
+          <li><a href="<%= locale_path('/stages-of-firmware-development') %>"><%= t('nav.stages') %></a></li>
         </ul>
       </div>
       <div class="col-6 col-lg-3">
         <h2><%= t('footer.column_ecosystem') %></h2>
         <ul>
-          <li><a href="/ecosystem"><%= t('nav.ecosystem_overview') %></a></li>
-          <li><a href="/low-latency"><%= t('nav.low_latency') %></a></li>
-          <li><a href="/open-wall"><%= t('nav.openwall') %></a></li>
-          <li><a href="/utilities"><%= t('nav.utilities') %></a></li>
+          <li><a href="<%= locale_path('/ecosystem') %>"><%= t('nav.ecosystem_overview') %></a></li>
+          <li><a href="<%= locale_path('/low-latency') %>"><%= t('nav.low_latency') %></a></li>
+          <li><a href="<%= locale_path('/open-wall') %>"><%= t('nav.openwall') %></a></li>
+          <li><a href="<%= locale_path('/utilities') %>"><%= t('nav.utilities') %></a></li>
           <li><a href="https://github.com/OpenIPC/wiki"><%= t('nav.wiki') %></a></li>
         </ul>
       </div>
       <div class="col-6 col-lg-3">
         <h2><%= t('footer.column_project') %></h2>
         <ul>
-          <li><a href="/business"><%= t('nav.business') %></a></li>
-          <li><a href="/donate"><%= t('nav.donate') %></a></li>
-          <li><a href="/our-team"><%= t('nav.team') %></a></li>
-          <li><a href="/green_life"><%= t('nav.green_life') %></a></li>
+          <li><a href="<%= locale_path('/business') %>"><%= t('nav.business') %></a></li>
+          <li><a href="<%= locale_path('/donate') %>"><%= t('nav.donate') %></a></li>
+          <li><a href="<%= locale_path('/our-team') %>"><%= t('nav.team') %></a></li>
+          <li><a href="<%= locale_path('/green_life') %>"><%= t('nav.green_life') %></a></li>
         </ul>
       </div>
       <div class="col-6 col-lg-3">
         <h2><%= t('footer.column_community') %></h2>
         <ul>
-          <li><a href="/community"><%= t('nav.community_chat') %></a></li>
+          <li><a href="<%= locale_path('/community') %>"><%= t('nav.community_chat') %></a></li>
         </ul>
         <div class="social-links d-flex flex-wrap gap-1 mt-3">
           <a class="btn btn-sm" href="https://github.com/OpenIPC" title="OpenIPC on GitHub"><img src="<%= asset_path('github-black.svg') %>" alt="Image: GitHub logo"></a>

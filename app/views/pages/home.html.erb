@@ -8,8 +8,8 @@
         <h1 class="mb-3"><%= t('.hero_title') %></h1>
         <p class="hero-lede lead mb-4"><%= t('.hero_lede') %></p>
         <p class="d-flex flex-wrap gap-2 mb-4">
-          <a href="/get-started" class="btn btn-primary btn-lg"><%= t('.hero_cta_start') %></a>
-          <a href="/low-latency" class="btn btn-outline-light btn-lg"><%= t('.hero_cta_low_latency') %></a>
+          <a href="<%= locale_path('/get-started') %>" class="btn btn-primary btn-lg"><%= t('.hero_cta_start') %></a>
+          <a href="<%= locale_path('/low-latency') %>" class="btn btn-outline-light btn-lg"><%= t('.hero_cta_low_latency') %></a>
         </p>
         <p class="hero-microline cursor-blink mb-0">$ <%= t('.hero_microline') %> </p>
       </div>
@@ -33,11 +33,11 @@
               <%= image_tag 'no-signal.webp', alt: t('snapshots.index.no_signal'), loading: 'lazy' %>
             </span>
           <% end %>
-          <a href="/open-wall" class="wall-tile wall-tile--cta"><%= t('.wall_cta') %></a>
+          <a href="<%= locale_path('/open-wall') %>" class="wall-tile wall-tile--cta"><%= t('.wall_cta') %></a>
         </div>
         <p class="small mt-3 mb-0 text-body-secondary">
           <span class="live-dot me-1"></span>
-          <a href="/open-wall" class="link-light"><%= t('.wall_live') %></a>
+          <a href="<%= locale_path('/open-wall') %>" class="link-light"><%= t('.wall_live') %></a>
         </p>
       </div>
     </div>
@@ -74,7 +74,7 @@
       <% end %>
     </div>
     <p class="text-center mt-5 mb-0">
-      <a href="/get-started" class="btn btn-primary"><%= t('.story_cta') %></a>
+      <a href="<%= locale_path('/get-started') %>" class="btn btn-primary"><%= t('.story_cta') %></a>
     </p>
   </div>
 </section>
@@ -136,7 +136,7 @@
   <div class="container text-center">
     <h2><%= t('.business_title') %></h2>
     <p class="text-body-secondary mx-auto mb-4" style="max-width: 60ch"><%= t('.business_text') %></p>
-    <a href="/business" class="btn btn-outline-primary"><%= t('.business_cta') %></a>
+    <a href="<%= locale_path('/business') %>" class="btn btn-outline-primary"><%= t('.business_cta') %></a>
   </div>
 </section>
 

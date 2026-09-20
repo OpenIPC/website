@@ -12,10 +12,21 @@
   <meta name="description" content="<%= @meta_description || t('site.default_meta_description') %>">
   <meta name="theme-color" content="#0f1422">
 
-  <%# Path only, no query string: ?locale=ru is a rendering of the same page,
-      not a separate one, and pointing every translation at the same canonical
-      is what stops them competing with each other in search results. %>
+  <%# Path only, no query string. The canonical is now the page's OWN address
+      in its own language: since #154 put the locale in the path, /ru/donate is
+      a different page from /donate rather than a rendering of it, and pointing
+      them all at the English one would ask search engines to drop two thirds
+      of the site -- which is the state this change exists to end. hreflang
+      below is what tells them the three are translations of each other. %>
   <link rel="canonical" href="<%= request.base_url + request.path %>">
+
+  <%# Every alternate names every other AND itself; a set where one page omits
+      itself is not a set, and search engines discard the lot. x-default is the
+      one to serve a visitor whose language is none of these. %>
+  <% locale_alternates.each do |code, path| %>
+    <link rel="alternate" hreflang="<%= code %>" href="<%= request.base_url + path %>">
+  <% end %>
+  <link rel="alternate" hreflang="x-default" href="<%= request.base_url + locale_alternates[I18n.default_locale] %>">
 
   <meta property="og:site_name" content="OpenIPC">
   <meta property="og:type" content="website">

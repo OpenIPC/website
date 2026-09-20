@@ -50,7 +50,11 @@ class MultilangTest < ActionDispatch::IntegrationTest
     get '/supported-hardware/featured?vendor=hisilicon&locale=en'
 
     assert_response :success
-    assert_match 'href="/supported-hardware/featured?locale=ru&amp;vendor=hisilicon"', response.body
+    # The switcher swaps the path prefix now rather than merging a query
+    # parameter (#154). What this test protects is unchanged: the rest of the
+    # query survives the switch, so switching language on a filtered list or a
+    # permanent camera link does not lose the filter or the configuration.
+    assert_match 'href="/ru/supported-hardware/featured?vendor=hisilicon"', response.body
   end
 
   # aria-labelledby named "dropdownLanguage" while the button was
