@@ -40,6 +40,12 @@ class OpenWallPaginationTest < ActionDispatch::IntegrationTest
     css_select('nav .page-link').map(&:text).map(&:strip)
   end
 
+  # The numbered links only -- Kaminari also renders Previous and Next.
+  def numbered_page_links_above(highest)
+    numbers = page_links.grep(/\A[0-9]+\z/).map(&:to_i)
+    numbers.select { |n| n > highest }
+  end
+
   test 'the first page holds one page of cameras' do
     assert_equal PER_PAGE, ids_on(nil).size
   end
@@ -78,8 +84,28 @@ class OpenWallPaginationTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test 'a page past the end renders empty rather than failing' do
+  # Empty was never the whole assertion. An empty page at a positive offset
+  # proves nothing about the total, and inferring one from the offset drew
+  # links to ninety-eight pages that do not exist.
+  test 'a page past the end renders empty and advertises no page beyond the last' do
     assert_empty ids_on(99)
+    assert_not_includes page_links, '3'
+    assert_not_includes page_links, '99'
+    assert_empty numbered_page_links_above(2), 'links to pages the wall does not have'
+  end
+
+  test 'an empty page at a positive offset asks for the real count' do
+    counts = queries_for('/open-wall?page=99').grep(/COUNT\(\*\)/)
+
+    assert_equal 1, counts.size,
+                 'an empty page past the end cannot infer the total from its own offset'
+  end
+
+  test 'an empty wall is empty rather than inferred' do
+    Snapshot.delete_all
+
+    assert_empty ids_on(nil)
+    assert_empty numbered_page_links_above(1)
   end
 
   # The tile prints `snapshot.file.byte_size`, which is an attachment and a

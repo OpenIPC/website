@@ -81,9 +81,12 @@ class SnapshotsController < ApplicationController
 
   # How many cameras there are in total, which the page links need.
   #
-  # A page that comes back short is the last one -- there is nothing after it,
-  # so the total is simply where this page started plus what it holds, and the
-  # count query can be skipped. That is not a micro-optimisation here: the join
+  # A page that comes back short and is not empty is the last one -- there is
+  # nothing after it, so the total is where this page started plus what it
+  # holds, and the count query can be skipped. An EMPTY page proves nothing
+  # unless it is the first: ?page=99 on a sixteen-camera wall would otherwise
+  # infer a total of 1,764 and draw links to ninety-eight pages that do not
+  # exist. An empty first page really is an empty wall. That is not a micro-optimisation here: the join
   # underneath it is the expensive part of this action, and running it a second
   # time for a wall that fits on one page doubled the action from ~300ms to
   # ~600ms on production. It was measured, deployed, caught and rolled back
@@ -92,7 +95,7 @@ class SnapshotsController < ApplicationController
   # The wall has had sixteen cameras on it, against eighteen to a page, so this
   # is the ordinary case rather than the edge one.
   def total_cameras(rows, offset)
-    return offset + rows.size if rows.size < PER_PAGE
+    return offset + rows.size if rows.size < PER_PAGE && (rows.any? || offset.zero?)
 
     Snapshot.latest_per_camera_count
   end
