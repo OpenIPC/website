@@ -42,8 +42,11 @@
   padding: .25rem 0 .25rem 1.25rem;
 }
 
-// Operator -> link -> robot -> recorder -> dataset. Nodes flex to fill the row;
-// below md the row becomes a column and the arrows turn to point down.
+// Operator -> link -> robot -> recorder -> dataset. Nodes flex to fill the row.
+// Five 10rem nodes and four 2rem arrows need about 58rem, which the container
+// only has from lg up; below that the row becomes a column and the arrows turn
+// to point down. At md the row would wrap mid-sequence with its arrows still
+// horizontal, which is worse than a column.
 .flow {
   align-items: stretch;
   display: flex;
@@ -88,7 +91,7 @@
     justify-content: center;
   }
 
-  @include media-breakpoint-down(md) {
+  @include media-breakpoint-down(lg) {
     align-items: center;
     flex-direction: column;
 
