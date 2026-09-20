@@ -44,10 +44,29 @@ class SitemapTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test 'the hardware catalogue is included, because it is what people search for' do
-    soc = Soc.includes(:vendor).find(&:vendor)
+  # The one that matters, and the one that was missing.
+  #
+  # The first version of this listed the 126-page hardware catalogue in three
+  # languages. /ru/cameras/... is not a route -- the catalogue helpers take a
+  # vendor and a SoC positionally and :locale would swallow the first -- so the
+  # sitemap advertised 252 URLs that 302 to the English homepage. Telling a
+  # search engine to crawl a redirect is worse than telling it nothing.
+  test 'every URL it advertises actually renders' do
+    locs = response.body.scan(%r{<loc>http://www\.example\.com(/[^<]*)</loc>}).flatten.uniq
+    refute_empty locs
 
-    skip 'no SoC fixtures' if soc.nil?
-    assert_includes response.body, "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}"
+    redirecting = locs.reject do |path|
+      get path
+      response.successful?
+    end
+
+    assert_empty redirecting, <<~MESSAGE.chomp
+      The sitemap offers URLs that do not render:
+
+      #{redirecting.first(10).map { |p| "  #{p}" }.join("\n")}
+
+      A search engine told to crawl a redirect is worse off than one told
+      nothing. Either localize the route or leave it out of the sitemap.
+    MESSAGE
   end
 end

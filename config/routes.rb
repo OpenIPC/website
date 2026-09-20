@@ -140,8 +140,23 @@ Rails.application.routes.draw do
   #
   # This exposes nothing new. `resources :snapshots` has served the same gallery
   # at /snapshots throughout; these are the URLs the site itself uses for it.
+  # The gallery index is localized; the per-snapshot pages are not, yet.
+  #
+  # `scope '(:locale)'` puts :locale FIRST among a route's dynamic segments,
+  # and Rails fills positional helper arguments in segment order -- so inside
+  # the scope `snapshot_path(@snapshot)` binds the Snapshot to :locale and
+  # raises "missing required keys: [:id]". There are a dozen such call sites
+  # across the snapshot views and the catalogue, and converting them to keyword
+  # form is its own change with its own review. The marketing pages have no
+  # dynamic segments at all, which is why they localize cleanly.
+  #
+  # /open-wall is the address the navbar, the footer and the sitemap use, so it
+  # is the one that has to exist in three languages.
   get '/open-wall/camera/:id', to: 'snapshots#camera', as: 'openwall_camera'
-  get '/open-wall(/:page)', to: 'snapshots#index', as: 'open_wall'
+  scope '(:locale)', locale: Multilang::IN_PATH do
+    get '/open-wall', to: 'snapshots#index', as: 'open_wall'
+  end
+  get '/open-wall(/:page)', to: 'snapshots#index'
 
   resources :snapshots do
     get :camera, on: :collection
@@ -149,6 +164,10 @@ Rails.application.routes.draw do
     get :download, on: :member
   end
 
+  # Not localized, for the positional-argument reason above: every catalogue
+  # helper takes a vendor and a SoC, and :locale would swallow the first of
+  # them. The catalogue is the part of the site with real long-tail search
+  # value, so this is worth doing -- after the call sites are converted.
   namespace :cameras do
     resources :socs
     resources :vendors do

@@ -14,16 +14,23 @@ class SitemapsController < ApplicationController
   # a list rather than a walk over Rails.application.routes: the routes include
   # the admin area, the API, thirty-odd redirects and two 410s, and a sitemap
   # that offers any of those is worse than no sitemap.
-  MARKETING = %w[
+  #
+  # The 126-page hardware catalogue is absent and should not be: it is the part
+  # of the site with real long-tail search value. It is absent because its URLs
+  # are not localized yet -- every catalogue route carries a vendor and a SoC,
+  # and `scope '(:locale)'` would bind the first of them to :locale. Listing
+  # /ru/cameras/... before that is fixed would advertise 252 URLs that redirect
+  # to the English homepage, which is worse than listing none.
+  PAGES = %w[
     / /get-started /low-latency /ecosystem /business /community /donate
     /majestic-endpoints /green_life /our-team /stages-of-firmware-development
     /utilities /web-interface /supported-hardware/featured
     /supported-hardware/full-list /tools/firmware-partitions-calculation
-    /tools/high-resolution-timer /tools/qr-code-generator
+    /tools/high-resolution-timer /tools/qr-code-generator /open-wall
   ].freeze
 
   def show
-    @entries = MARKETING.map { |path| entry(path) } + catalogue_entries
+    @entries = PAGES.map { |path| entry(path) }
     render formats: :xml
   end
 
@@ -32,15 +39,5 @@ class SitemapsController < ApplicationController
   # One URL per locale, each carrying the full alternate set including itself.
   def entry(path)
     { alternates: locale_alternates(path) }
-  end
-
-  # The hardware catalogue, which is the part of the site with genuine long-tail
-  # search value: someone who owns an SSC338Q searches for it by name.
-  def catalogue_entries
-    Soc.includes(:vendor).filter_map do |soc|
-      next if soc.vendor.nil?
-
-      entry("/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}")
-    end
   end
 end
