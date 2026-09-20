@@ -174,3 +174,47 @@ an empty environment, and fails if nothing comes out. `deploy/memory-probe.sh`
 is the other half -- it puts a fixed load on a container and reports what that
 did to its memory and its latency, so two images can be compared in minutes
 instead of by deploying one and waiting a day.
+
+## Search console properties
+
+Things that exist only outside this repository, recorded here because nothing
+else records them and a rebuilt host does not bring them back (#179).
+
+| domain | Google | Yandex | Bing |
+|---|---|---|---|
+| `openipc.org` | verified | verified | registered 2026-09-20 |
+| `openipc.ru` | — | verified | — |
+
+Verification for the first two is by DNS TXT on the Hetzner zone
+(`google-site-verification=0IN-3sAB…`, `yandex-verification: 0aad82e3…`, and
+`yandex-verification: 8e9e2f61…` on the mirror). Bing carries no TXT record, so
+it was registered by one of the other routes Bing offers — most likely the
+import from Google Search Console, which needs no record of its own.
+
+**The properties belong to the OpenIPC maintainers.** That is the answer to the
+question this section was opened with: the consoles hold query history that
+#154 needs as a before-and-after when every indexed URL changes, and the
+account that can read it is the maintainers', not a personal one.
+
+If HTML-file verification is ever used instead, commit the file to `public/`.
+It ships in the image and survives a rebuild; `config.assets.compile` is off,
+but `public/` is served as-is.
+
+### The mirrors do not need their own properties
+
+#179 asks for `openipc.ru`, `openipc.kz` and `openipc.eu` to be registered too,
+"because search engines see them as separate sites that duplicate this one".
+They do not. All four mirrors already answer with
+
+    <link rel="canonical" href="https://openipc.org/">
+
+which is the declaration that consolidates them, and the epic's own Phase 7
+plans `X-Robots-Tag: noindex` on every mirror except `openipc.ru` — so
+registering the rest would be instrumenting something the plan intends to make
+invisible. The one case with a reason behind it is `openipc.ru` in Yandex,
+because Yandex is the audience there and the origin may be unreachable from it,
+and that one is already verified.
+
+Baidu Ziyuan needs a Chinese account and is left to whoever has one. Googlebot
+made 6,284 requests to Baiduspider's 36 over 2026-09-19/20, so it is not urgent
+on traffic grounds.
