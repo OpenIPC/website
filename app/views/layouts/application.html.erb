@@ -50,6 +50,22 @@
   <link rel="preload" href="/fonts/ibm-plex-sans-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
   <%= stylesheet_link_tag 'application' %>
   <%= javascript_include_tag 'application', defer: true %>
+  <%# First-party page counting (#181). Same-origin by construction: nginx
+      proxies /api/a/c.js and /api/a/count to GoatCounter on 127.0.0.1:8081,
+      and nothing leaves the host. Kept under /api/ because #142 has the
+      mirrors proxy only /api/, /wall/i/ and /dl/firmware/ to the origin, so
+      this needs no edge change when they become edge nodes in #167.
+
+      /api/a/c.js rather than count.js on purpose: filter lists match the
+      count.js pattern even when it is self-hosted, and a first-party path
+      with no "count", "track" or "analytics" in it is the documented remedy.
+
+      AFTER the bundle, and `defer` like it. Deferred scripts run in document
+      order, so src/analytics.js has set window.goatcounter -- including
+      no_onload -- before this file looks for it. `async` here would be a race
+      this loses silently, by counting the load event once per session instead
+      of once per page. %>
+  <script src="/api/a/c.js" data-goatcounter="/api/a/count" defer></script>
 </head>
 
 <body id="page-top" class="<%= css_debug %>">

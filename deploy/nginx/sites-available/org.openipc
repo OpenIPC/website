@@ -153,6 +153,46 @@ server {
     # long-term (names change when content does). Deliberately outside the
     # site_conc cap: an HTTP/2 page load multiplexes many parallel asset
     # requests, and those must never compete with page renders for slots.
+    # Analytics beacon (#181). GoatCounter runs on the loopback and these are
+    # the only two paths of it the public site exposes.
+    #
+    # Two exact locations, deliberately not `location /api/a/`. GoatCounter is a
+    # whole application behind this port -- dashboard, login, site settings, CSV
+    # export -- and a prefix match would publish all of it under the site's own
+    # name, where it would inherit the site's certificate and look like part of
+    # openipc.org. The dashboard has a vhost of its own for that reason.
+    #
+    # Host is rewritten because GoatCounter picks the site from it, and these
+    # requests arrive as openipc.org, openipc.ru, openipc.kz or openipc.eu.
+    # Without this the four mirrors would each need a site of their own, or
+    # three quarters of the traffic would be dropped as unknown.
+    location = /api/a/c.js {
+        proxy_pass http://127.0.0.1:8081/count.js;
+        proxy_set_header Host analytics.openipc.org;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location = /api/a/count {
+        # A plain GET with a query string: anything that can read the page can
+        # replay it, without running any JavaScript. GoatCounter has a limit of
+        # its own (4/s per address) and this one sits deliberately above it --
+        # see conf.d/openipc-beacon-rate.conf. This keeps a flood off the Go
+        # process; that keeps the numbers honest.
+        limit_req zone=beacon burst=20 nodelay;
+        limit_req_status 429;
+
+        proxy_pass http://127.0.0.1:8081/count;
+        proxy_set_header Host analytics.openipc.org;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Never cached. A cached count is a count that happened once and was
+        # then reported as many, or not reported at all.
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
+    }
+
     location ~ ^/(assets|fonts)/ {
         # Same carve-out as /wall/, and the reason this block was written in
         # the first place: an HTTP/2 page load multiplexes many parallel asset
