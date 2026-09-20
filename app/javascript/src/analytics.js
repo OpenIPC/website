@@ -21,6 +21,39 @@
 // scripts do run in document order -- but it made the guarantee depend on how
 // the bundle is built, and the failure is silent: count.js would count the
 // document load event instead, which Turbo fires once per session.
+// One event. GoatCounter treats an event as a page view whose path is the
+// event name, which is why these names are short and stable: they appear in
+// the dashboard's list beside real paths and are read by the monthly memo.
+export function countEvent(name) {
+  window.goatcounter?.count?.({ path: name, event: true })
+}
+
+// A landing tag, recorded once and then removed from the address.
+//
+// The project posts links to itself -- Telegram pins, the firmware and wiki
+// READMEs, YouTube descriptions, the camera WebUI's link home -- and 39% of
+// human page views arrive with no referrer at all, so those channels are
+// indistinguishable from someone typing the URL. ?ref=<tag> tells them apart.
+//
+// Stripped before the page is counted, not after, and that ordering is the
+// whole point: left in place it would fragment the page report into /?ref=tg-ru,
+// /?ref=readme and /?ref=yt, which is three rows saying what one row plus one
+// event says better. replaceState rather than pushState so Back still leaves
+// the site rather than stepping through a URL the visitor never chose.
+function recordLandingTag() {
+  const url = new URL(window.location.href)
+  const tag = url.searchParams.get('ref')
+  if (!tag) return
+
+  // Bounded and sanitised: this lands in the dashboard as a row name, and it
+  // arrives from whatever anyone chooses to paste.
+  const clean = tag.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24)
+  if (clean) countEvent(`ref:${clean}`)
+
+  url.searchParams.delete('ref')
+  window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+}
+
 export default function initAnalytics() {
   // window.goatcounter is NOT set here. It is set by an inline script in the
   // layout, which runs at parse time and therefore before every deferred
@@ -32,6 +65,9 @@ export default function initAnalytics() {
   // blocked or failed request must not take the rest of the bundle down with
   // it. Analytics failing is not a reason for the page to stop working.
   document.addEventListener('turbo:load', () => {
+    // Before the page count, so the address it reads is already clean.
+    recordLandingTag()
+
     window.goatcounter?.count?.({
       // Explicit rather than left to count.js's default, which reads
       // location.pathname at the moment the script ran -- on a Turbo visit

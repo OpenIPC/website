@@ -11,9 +11,14 @@
   <div class="container text-center">
     <h2 class="mb-4"><%= title %></h2>
     <p class="d-flex flex-wrap gap-2 justify-content-center mb-0">
-      <a href="<%= primary_href %>" class="btn btn-primary btn-lg"><%= primary_label %></a>
+      <%# data-event names the click for the beacon (#183). Optional, because
+          five pages share this band and most of their buttons go somewhere
+          else on this site, where a page view already records the visit. %>
+      <a href="<%= primary_href %>" class="btn btn-primary btn-lg"
+         <%= tag.attributes(data: { event: local_assigns[:primary_event] }) if local_assigns[:primary_event].present? %>><%= primary_label %></a>
       <% if local_assigns[:secondary_label].present? %>
-        <a href="<%= secondary_href %>" class="btn btn-outline-light btn-lg"><%= secondary_label %></a>
+        <a href="<%= secondary_href %>" class="btn btn-outline-light btn-lg"
+           <%= tag.attributes(data: { event: local_assigns[:secondary_event] }) if local_assigns[:secondary_event].present? %>><%= secondary_label %></a>
       <% end %>
     </p>
     <% if local_assigns[:note_html].present? %>

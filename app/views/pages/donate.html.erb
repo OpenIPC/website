@@ -27,7 +27,7 @@
             <div class="card-body">
               <h2 class="h5"><i class="bi bi-credit-card-fill text-primary me-2"></i><%= t('.paywall_title') %></h2>
               <p class="text-body-secondary"><%= t('.paywall_text_html') %></p>
-              <a href="https://paywall.pw/openipc" class="btn btn-primary"><%= t('.paywall_button') %></a>
+              <a href="https://paywall.pw/openipc" class="btn btn-primary" data-event="paywall-checkout"><%= t('.paywall_button') %></a>
             </div>
           </div>
           <p class="text-body-secondary small mb-0"><%= t('.paywall_oc_fallback_html') %></p>
@@ -36,7 +36,7 @@
             <div class="card-body">
               <h2 class="h5"><i class="bi bi-heart-fill text-danger me-2"></i><%= t('.oc_title') %></h2>
               <p class="text-body-secondary"><%= t('.oc_text_html') %></p>
-              <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout" class="btn btn-primary"><%= t('.oc_button') %></a>
+              <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout" class="btn btn-primary" data-event="oc-checkout"><%= t('.oc_button') %></a>
             </div>
           </div>
         <% end %>
