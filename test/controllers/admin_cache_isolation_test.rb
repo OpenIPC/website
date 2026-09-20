@@ -82,4 +82,18 @@ class AdminCacheIsolationTest < ActionDispatch::IntegrationTest
     get '/open-wall'
     assert_nil response.headers['X-Admin-View']
   end
+
+  # The other cache in front of an admin page is the one inside the visitor's
+  # own browser. Turbo keeps a snapshot of every page it leaves and restores it
+  # from memory on Back, without asking the server -- so signing out would stop
+  # taking these pages off the screen, which is exactly what a full load's
+  # `must-revalidate` used to guarantee. Every admin page renders through this
+  # layout, so one tag covers all of them.
+  test 'admin pages are not kept in the browser-side Turbo snapshot cache' do
+    sign_in admins(:one)
+    get admin_socs_path
+
+    assert_response :success
+    assert_select 'head meta[name=?][content=?]', 'turbo-cache-control', 'no-cache'
+  end
 end
