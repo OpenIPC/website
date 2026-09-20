@@ -29,8 +29,14 @@ APPLY=0
 [ "${1:-}" = "--apply" ] && APPLY=1
 SSH=(ssh -p "$PORT" -o BatchMode=yes "$USER@$HOST")
 
-# repo path -> path under /etc/nginx, which is the same path
-files() { (cd "$SRC" && find sites-available conf.d -type f -name '*' | sort); }
+# repo path -> path under /etc/nginx, which is the same path.
+#
+# nginx.conf is listed first and explicitly: it is the only managed file not in
+# a directory, and it is the one whose failure takes every vhost on the host
+# down rather than one site. The install order does not matter -- nothing is
+# reloaded until all of them are in place and `nginx -t` has passed over the
+# whole tree -- but it belongs at the top of the report for the same reason.
+files() { (cd "$SRC" && { echo nginx.conf; find sites-available conf.d -type f; }); }
 
 echo "origin: $USER@$HOST:$PORT"
 echo

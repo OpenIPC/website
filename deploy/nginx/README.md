@@ -4,6 +4,7 @@ This directory **is** what `webber-eu` serves. It mirrors `/etc/nginx/` path
 for path:
 
 ```
+deploy/nginx/nginx.conf                        ->  /etc/nginx/nginx.conf
 deploy/nginx/sites-available/org.openipc       ->  /etc/nginx/sites-available/org.openipc
 deploy/nginx/conf.d/openipc-microcache.conf    ->  /etc/nginx/conf.d/openipc-microcache.conf
 ```
@@ -31,9 +32,30 @@ caching and no admission control at all — three `proxy_cache` zones, the
 rebuild from `deploy/RESTORE.md` would have come back without them and nobody
 would have noticed until the next flood.
 
-Certificates and `/etc/nginx/.htpasswd-dev` are still referenced by path only,
-and `nginx.conf` itself is untouched — the stock Debian file already includes
-both directories.
+Certificates and `/etc/nginx/.htpasswd-dev` are still referenced by path only.
+
+## nginx.conf
+
+Mostly Debian's stock file. What is ours is the rate limiting, and it was not
+version-controlled until 2026-09-20 — so a host rebuilt from this repository
+got every vhost and every cache zone but **none of the global limits**, and
+nothing would have said so.
+
+The part that surprises people is `limit_conn per_subnet 20`. It sits at http
+level, so it **inherits into every location that does not declare a
+`limit_conn` of its own** — on `org.openipc` that is `/wall/`,
+`/assets|fonts/`, `/dl/`, `/images/`, `/protected-files/` and the
+acme-challenge block. A location that declares one replaces it rather than
+adding to it, which is why `site_conc`, `media_conc` and `snapshot_conc` are
+not also subject to it.
+
+It counts **connections, not HTTP/2 streams**. A browser pulling eighteen
+thumbnails over one multiplexed connection counts as one and is never shed by
+it; what it catches is a client opening tens of parallel connections. If you
+find 429s in a location you thought was uncapped, this is why — check whether
+real page loads are actually affected before changing it.
+
+`limit_req_zone per_subnet_rate` is defined and referenced by nothing.
 
 ## What is in conf.d
 
