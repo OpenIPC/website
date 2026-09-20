@@ -80,13 +80,25 @@ document.addEventListener('turbo:load', () => {
           .forEach(el => Carousel.getOrCreateInstance(el))
 })
 
-// ...and stop them again on the way out. A carousel cycles on a setInterval
-// that Bootstrap only clears when the instance is disposed, and Turbo never
-// disposes anything: it swaps the body and leaves the old elements detached
-// with their timers still running. Measured on /snapshots/:id/oneday -- one
-// live interval on the page, still live after navigating home, and one more
-// added by every subsequent visit for the rest of the session.
+// ...and stop them again on the way out. A carousel cycles on a setInterval,
+// and Turbo disposes nothing: it swaps the body and leaves the old elements
+// detached with their timers still running. Measured on /snapshots/:id/oneday
+// -- one live interval on the page, still live after navigating home, and one
+// more added by every subsequent visit for the rest of the session.
+//
+// pause() before dispose(), and the order is the whole point. Carousel's own
+// dispose() drops the swipe helper and hands off to BaseComponent, which
+// removes the instance and its handlers and nulls every property -- it never
+// looks at _interval, so disposing alone leaves the timer running with nothing
+// left that could ever clear it. pause() is what calls _clearInterval();
+// dispose() is what stops mouseleave and the pending `slid` callback from
+// starting a new one, and frees the element so turbo:load builds a fresh
+// instance if the visitor comes back.
 document.addEventListener('turbo:before-cache', () => {
-  document.querySelectorAll('[data-bs-ride="carousel"]')
-          .forEach(el => Carousel.getInstance(el)?.dispose())
+  document.querySelectorAll('[data-bs-ride="carousel"]').forEach(el => {
+    const carousel = Carousel.getInstance(el)
+    if (!carousel) return
+    carousel.pause()
+    carousel.dispose()
+  })
 })
