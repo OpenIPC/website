@@ -10,25 +10,72 @@
 </article>
 
 <script>
-    const t = document.querySelector('#time');
-    const f = document.querySelector('#fps');
-    const times = [];
-    let fps;
+  // Scoped, because Turbo re-executes body scripts on every visit and these
+  // declarations would land in the shared global scope a second time --
+  // "Identifier 't' has already been declared", and nothing below runs.
+  (() => {
+    let frame, ticker;
+
+    function stop() {
+        window.cancelAnimationFrame(frame);
+        clearInterval(ticker);
+    }
 
     /* based on https://blog.bullgare.com/2019/03/simple-way-to-detect-browsers-fps-via-js/ */
-    function refreshLoop() {
-        window.requestAnimationFrame(() => {
-            const now = performance.now();
-            t.textContent = Math.ceil(now);
-            while (times.length > 0 && times[0] <= now - 1000) {
-                times.shift();
-            }
-            times.push(now);
-            fps = times.length;
-            refreshLoop();
-        });
-    }
-    refreshLoop();
+    function start() {
+        const t = document.querySelector('#time');
+        const f = document.querySelector('#fps');
+        if (!t) return;   // turbo:load fires for every page, not just this one
+        const times = [];
+        let fps;
 
-    setInterval(() => {f.textContent = fps;}, 1000)
+        stop();           // never leave two loops animating one element
+        (function refreshLoop() {
+            frame = window.requestAnimationFrame(() => {
+                const now = performance.now();
+                t.textContent = Math.ceil(now);
+                while (times.length > 0 && times[0] <= now - 1000) {
+                    times.shift();
+                }
+                times.push(now);
+                fps = times.length;
+                refreshLoop();
+            });
+        })();
+
+        ticker = setInterval(() => {f.textContent = fps;}, 1000);
+    }
+
+    // Both halves are needed and for opposite reasons. Without the stop, the
+    // loop went on counting frames against a detached <p> for the rest of the
+    // session, because Turbo keeps the document a page was rendered into: 41
+    // callbacks while the page was open, still climbing 1.5 s after leaving
+    // it. Without the start, pressing Back would bring the page back frozen --
+    // a restoration visit re-uses the cached DOM and does not re-run this
+    // script, so nothing would wind the clock again.
+    //
+    // Listeners are replaced rather than added. This script *does* run again
+    // on every forward visit, and a second pair would leave two loops writing
+    // to the same element and only one of them stoppable.
+    const previous = window.__hiResTimer;
+    if (previous) {
+        previous.stop();
+        document.removeEventListener('turbo:load', previous.start);
+        document.removeEventListener('turbo:before-cache', previous.stop);
+    }
+    window.__hiResTimer = { start, stop };
+    document.addEventListener('turbo:load', start);
+    document.addEventListener('turbo:before-cache', stop);
+
+    // Started here as well as from turbo:load, and only once the previous
+    // scope above has been shut down. Directly, because this page needed no
+    // JavaScript but its own until today and should not start depending on
+    // the bundle arriving -- `config.assets.compile = false` means a mistyped
+    // asset reference 404s in production, and the clock would stop with it.
+    // From turbo:load as well, because that is the only one of the two that
+    // fires on a restoration visit. start() opens with stop(), so being
+    // called twice on the first load costs one cancelled frame and nothing
+    // else.
+    start();
+  })();
 </script>

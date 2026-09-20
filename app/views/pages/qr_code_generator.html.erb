@@ -33,18 +33,24 @@
 </article>
 
 <script>
-  document.querySelector('#qrcode_generator').addEventListener('submit', (ev) => {
-    ev.preventDefault();
-    const wlanssid = document.querySelector('#wlanssid').value;
-    const wlanpass = document.querySelector('#wlanpass').value;
-    const data = 'wlanssid=' + wlanssid + "\n" + 'wlanpass=' + wlanpass;
-    QRCode.toDataURL(data, { width: 400, errorCorrectionLevel: 'Q' }).then(url => {
-      document.querySelector('#qr').src = url;
+  // Scoped. Turbo re-executes body scripts on every visit, so anything
+  // declared at the top level here would be re-declared in the shared
+  // global scope and throw on the second visit. Nothing is declared today;
+  // the wrapper is what keeps that true when someone adds a `const`.
+  (() => {
+    document.querySelector('#qrcode_generator').addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const wlanssid = document.querySelector('#wlanssid').value;
+      const wlanpass = document.querySelector('#wlanpass').value;
+      const data = 'wlanssid=' + wlanssid + "\n" + 'wlanpass=' + wlanpass;
+      QRCode.toDataURL(data, { width: 400, errorCorrectionLevel: 'Q' }).then(url => {
+        document.querySelector('#qr').src = url;
+      });
     });
-  });
-  document.querySelector('#qrcode_generator').addEventListener('reset', (ev) => {
-    document.querySelector('#qr').src = "<%= asset_path("qrcode.png") %>";
-  });
+    document.querySelector('#qrcode_generator').addEventListener('reset', (ev) => {
+      document.querySelector('#qr').src = "<%= asset_path("qrcode.png") %>";
+    });
+  })();
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.js"

@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Admin: <%= page_title %></title>
   <%= csrf_meta_tags %>
+  <%# Turbo keeps a snapshot of every page it leaves and restores it, from
+      memory and without asking the server, when you press Back. These pages
+      show an uploader's IP and MAC address, so after signing out the Back
+      button would hand them straight back to whoever has the keyboard --
+      something the old full-page loads could not do, because `must-revalidate`
+      sent the browser to the server and the server sent it to the login form.
+      This opts admin pages out of that cache; they are behind a login and
+      nobody is measuring their navigation speed. %>
+  <meta name="turbo-cache-control" content="no-cache">
   <%= csp_meta_tag %>
   <link rel="icon" type="image/x-icon" href="<%= asset_path "favicon-admin.png" %>">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css"

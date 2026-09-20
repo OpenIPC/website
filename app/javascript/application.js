@@ -1,3 +1,10 @@
+// Turbo Drive: a click on an internal link fetches the new page and swaps the
+// body instead of tearing the document down and building it again. The gems
+// have been in the Gemfile since the app was generated, but nothing ever
+// imported them, so every navigation was a full document load -- which is what
+// "CGI-ish" meant, and it was accurate.
+import '@hotwired/turbo-rails'
+
 // Bootstrap's JS, imported per-component rather than as `import * as bootstrap`.
 // Each of these registers Bootstrap's data API on import, so the markup keeps
 // working with no further wiring.
@@ -14,7 +21,7 @@
 import 'bootstrap/js/dist/collapse'
 import 'bootstrap/js/dist/dropdown'
 import 'bootstrap/js/dist/offcanvas'
-import 'bootstrap/js/dist/carousel'
+import Carousel from 'bootstrap/js/dist/carousel'
 
 import initZoom from './src/zoom'
 import initExternalLinks from './src/external-links'
@@ -23,15 +30,75 @@ import initConfirms from './src/confirms'
 import initHeifViewer from './src/heif-viewer'
 import initCopy from './src/copy'
 
-// DOMContentLoaded, not window.onload, which waits for every image and on the
-// Open Wall meant the page sat unresponsive until the whole gallery had loaded.
-// Assigning window.onload was also a single slot: a second assignment anywhere
-// would have silently replaced all of this.
-document.addEventListener('DOMContentLoaded', () => {
-  initZoom()
+// Forms are left alone, deliberately.
+//
+// Turbo expects a form submission to answer with a redirect, and refuses to do
+// anything with a plain 200 -- it logs "Form responses must redirect to another
+// location" and the page simply does not change. Two surfaces here answer that
+// way: the installation wizard, whose update action renders the instructions
+// directly because it persists nothing, and every Devise form, which re-renders
+// itself with a 200 when a field is wrong.
+//
+// So Drive handles links, which is the whole of the complaint, and forms submit
+// exactly as they did yesterday. Turning this on for a form is then a decision
+// per form rather than a site-wide gamble -- and the wizard is due to become a
+// GET anyway (#156), at which point it is a link and this stops applying to it.
+// `Turbo.config` is the current spelling; `setFormMode` still works in Turbo 8
+// but logs a deprecation warning on every single page load, which drowns the
+// console output anyone debugging this site is trying to read.
+if (window.Turbo.config) {
+  window.Turbo.config.forms.mode = 'off'
+} else {
+  window.Turbo.setFormMode('off')
+}
+
+// Bound once, at import. These delegate from `document`, which Turbo never
+// replaces, so they keep working across navigations -- and binding them again
+// per page would add a second listener each time, firing the copy or the zoom
+// twice, then three times.
+initZoom()
+initCopy()
+initHeifViewer()
+
+// Re-run per page. These walk the DOM and attach to the elements they find, so
+// they have to run again once Turbo has swapped in new ones. turbo:load fires
+// on the first load as well as after every navigation, which is why it replaces
+// DOMContentLoaded rather than joining it: DOMContentLoaded fires only for the
+// document Turbo started with.
+document.addEventListener('turbo:load', () => {
   initExternalLinks()
   initTimestamps()
   initConfirms()
-  initHeifViewer()
-  initCopy()
+
+  // Bootstrap starts `data-bs-ride` carousels from its own `load` listener,
+  // which a Turbo navigation never fires -- so the Open Wall's one-day
+  // slideshow would sit on its first frame for anyone who arrived by clicking
+  // rather than by typing the URL. getOrCreateInstance is idempotent, so this
+  // is safe to run on every navigation and does nothing on the pages without
+  // a carousel.
+  document.querySelectorAll('[data-bs-ride="carousel"]')
+          .forEach(el => Carousel.getOrCreateInstance(el))
+})
+
+// ...and stop them again on the way out. A carousel cycles on a setInterval,
+// and Turbo disposes nothing: it swaps the body and leaves the old elements
+// detached with their timers still running. Measured on /snapshots/:id/oneday
+// -- one live interval on the page, still live after navigating home, and one
+// more added by every subsequent visit for the rest of the session.
+//
+// pause() before dispose(), and the order is the whole point. Carousel's own
+// dispose() drops the swipe helper and hands off to BaseComponent, which
+// removes the instance and its handlers and nulls every property -- it never
+// looks at _interval, so disposing alone leaves the timer running with nothing
+// left that could ever clear it. pause() is what calls _clearInterval();
+// dispose() is what stops mouseleave and the pending `slid` callback from
+// starting a new one, and frees the element so turbo:load builds a fresh
+// instance if the visitor comes back.
+document.addEventListener('turbo:before-cache', () => {
+  document.querySelectorAll('[data-bs-ride="carousel"]').forEach(el => {
+    const carousel = Carousel.getInstance(el)
+    if (!carousel) return
+    carousel.pause()
+    carousel.dispose()
+  })
 })
