@@ -119,6 +119,31 @@ class CacheabilityTest < ActionDispatch::IntegrationTest
                         'this page mints a CSRF token, so its response carries Set-Cookie'
   end
 
+  # The catalogue JSON is the one endpoint here with consumers nobody in this
+  # project controls, so it gets its own policy rather than the hour the
+  # catalogue pages around it take: a reader can wait out a stale page, a
+  # script polling this cannot tell it is stale.
+  test 'the catalogue feed declares its own freshness, not the pages around it' do
+    get '/cameras/socs.json'
+
+    assert_response :success
+    assert_match(/max-age=300\b/, response.headers['Cache-Control'].to_s,
+                 'the feed inherited the catalogue pages\' one-hour lifetime')
+    assert_includes response.headers['Cache-Control'].to_s, 'public'
+  end
+
+  test 'the catalogue feed answers a conditional request without a body' do
+    get '/cameras/socs.json'
+    etag = response.headers['ETag']
+
+    assert etag.present?, 'no ETag, so a poller must re-download an unchanged feed every time'
+
+    get '/cameras/socs.json', headers: { 'If-None-Match' => etag }
+
+    assert_response :not_modified
+    assert_empty response.body
+  end
+
   # The other direction, and the one that breaks a feature rather than a cache
   # if it is wrong: the wizard posts, so it must still get a token.
   test 'the wizard still gets its token' do

@@ -76,6 +76,21 @@ class MicrocacheLanguageTest < ActiveSupport::TestCase
     end
   end
 
+  # A signed-in admin must reach Rails. These pages render uploader details and
+  # moderation controls for an admin and not for anyone else, and the cache
+  # keys on the path alone -- so without this an admin gets whatever anonymous
+  # copy someone else's request put there, with the controls missing, for as
+  # long as the entry lives. Since #155 removed the public session cookie this
+  # bypass costs almost nothing: hardly anyone carries one now.
+  test 'a signed-in admin is never served someone else\'s cached copy' do
+    cached_rails_blocks.each do |block|
+      next if block.match?(LANGUAGE_INDEPENDENT)
+
+      assert_includes block, 'proxy_cache_bypass $cookie__openipc_session',
+                      "#{block[/location[^{]*/].to_s.strip} will hand an admin an anonymous copy"
+    end
+  end
+
   # Rails declares its own freshness since #155, so nginx must not override it.
   test 'no cache overrides the lifetime the application declares' do
     cached_rails_blocks.each do |block|

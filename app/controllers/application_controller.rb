@@ -117,6 +117,12 @@ class ApplicationController < ActionController::Base
     # looks cookieless at this point. csrf_needed? is the same question asked
     # early enough to answer.
     return false if csrf_needed?
+    # An action that declared its own freshness has said something more
+    # specific than this rule can: /cameras/socs.json asks for five minutes
+    # and an ETag, where the catalogue pages around it want an hour. Rails
+    # leaves cache_control empty unless expires_in or fresh_when set it, so
+    # this distinguishes "declared" from "defaulted" without a flag.
+    return false if response.cache_control.present?
 
     !(respond_to?(:devise_controller?, true) && devise_controller?)
   end

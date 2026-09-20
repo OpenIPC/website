@@ -54,7 +54,20 @@ module Cameras
               }
             end
           }
-          render json: @data #.to_json
+          # Public and short, with an ETag, because this is the one endpoint
+          # here with consumers nobody here controls (#155). Five minutes
+          # rather than the hour the catalogue pages around it get: a reader
+          # can wait out a stale page, a script polling this cannot tell it is
+          # stale.
+          #
+          # fresh_when on the payload gives a conditional request something to
+          # match, so a poller that has not missed an edit gets a 304 and no
+          # body -- the catalogue changed four times in a year, so that is
+          # almost every request.
+          expires_in 5.minutes, public: true
+          return if fresh_when(etag: @data, public: true)
+
+          render json: @data
         end
       end
     end

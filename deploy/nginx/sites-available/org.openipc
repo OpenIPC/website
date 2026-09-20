@@ -252,13 +252,28 @@ server {
         proxy_cache_lock_age 30s;
         proxy_cache_lock_timeout 30s;
         proxy_cache_use_stale updating error timeout;
+
+        # Do not serve a cached copy to anyone carrying a session. Since #155
+        # that is a much smaller group than it was -- public pages set no
+        # cookie at all now -- so this costs almost nothing, and what it buys
+        # is that a signed-in admin reaches Rails and sees the uploader
+        # details and moderation controls rather than an anonymous copy
+        # somebody else's request put in the cache.
+        #
+        # #204 added this because session[:locale] could change the render.
+        # That reason went with #155; this one replaces it. Storing is handled
+        # separately: proxy_no_cache below for the admin render, and nothing
+        # in proxy_ignore_headers, so a response that sets a cookie is not
+        # stored either way.
+        proxy_cache_bypass $cookie__openipc_session;
         proxy_hide_header Set-Cookie;
         # Never store a response Rails rendered for a signed-in admin: this page
         # shows the uploader's IP and MAC to admins, and the cache key is the
         # path alone, so a cached copy would go to everyone who asks for it. See
-        # ApplicationController#refuse_shared_caching_for_admins. An admin may
-        # in return be served an anonymous copy already in the cache, for up to
-        # the TTL above; reaching the controls then means waiting it out.
+        # ApplicationController#refuse_shared_caching_for_admins. The admin is
+        # not served an anonymous copy in return either -- proxy_cache_bypass
+        # above sends anyone carrying a session to Rails, which since #155 is
+        # essentially only admins.
         proxy_no_cache $upstream_http_x_admin_view;
         proxy_hide_header X-Admin-View;
 
@@ -332,6 +347,20 @@ server {
         proxy_cache_lock_age 30s;
         proxy_cache_lock_timeout 30s;
         proxy_cache_use_stale updating error timeout;
+
+        # Do not serve a cached copy to anyone carrying a session. Since #155
+        # that is a much smaller group than it was -- public pages set no
+        # cookie at all now -- so this costs almost nothing, and what it buys
+        # is that a signed-in admin reaches Rails and sees the uploader
+        # details and moderation controls rather than an anonymous copy
+        # somebody else's request put in the cache.
+        #
+        # #204 added this because session[:locale] could change the render.
+        # That reason went with #155; this one replaces it. Storing is handled
+        # separately: proxy_no_cache below for the admin render, and nothing
+        # in proxy_ignore_headers, so a response that sets a cookie is not
+        # stored either way.
+        proxy_cache_bypass $cookie__openipc_session;
         proxy_hide_header Set-Cookie;
         # As above: /open-wall/camera/<id> reaches the same template, so an
         # admin's rendering of it must not be stored either.
