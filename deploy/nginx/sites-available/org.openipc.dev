@@ -68,6 +68,18 @@ server {
     location ^~ /wall/ {
         alias /srv/www/shared/dev-wall/;
         add_header Cache-Control "public, max-age=31536000, immutable";
+
+        # Declaring any limit_conn here REPLACES the http-level `limit_conn
+        # per_subnet 20` this would otherwise inherit -- which is per address,
+        # not per subnet, and which concurrent HTTP/2 streams each consume a
+        # slot of. Sixteen thumbnails plus stylesheets, fonts and a favicon put
+        # a cold first visit near that twenty, so the page could shed its own
+        # images. These are sendfile of a small JPEG already in page cache and
+        # never reach Rails, so they have no business competing for slots that
+        # exist to bound concurrent renders. High enough not to bind on any
+        # real page, low enough to stay a bound.
+        limit_conn per_subnet 100;
+        limit_conn_status 429;
     }
 
    location /files/ {

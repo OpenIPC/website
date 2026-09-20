@@ -129,6 +129,14 @@ server {
     # site_conc cap: an HTTP/2 page load multiplexes many parallel asset
     # requests, and those must never compete with page renders for slots.
     location ~ ^/(assets|fonts)/ {
+        # Same carve-out as /wall/, and the reason this block was written in
+        # the first place: an HTTP/2 page load multiplexes many parallel asset
+        # requests, and those must never compete with page renders for slots.
+        # It was taken out of site_conc in September and left inheriting the
+        # http-level cap, which is the half that was missed.
+        limit_conn per_subnet 100;
+        limit_conn_status 429;
+
         proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -212,6 +220,18 @@ server {
     location ^~ /wall/ {
         alias /srv/www/shared/wall/;
         add_header Cache-Control "public, max-age=31536000, immutable";
+
+        # Declaring any limit_conn here REPLACES the http-level `limit_conn
+        # per_subnet 20` this would otherwise inherit -- which is per address,
+        # not per subnet, and which concurrent HTTP/2 streams each consume a
+        # slot of. Sixteen thumbnails plus stylesheets, fonts and a favicon put
+        # a cold first visit near that twenty, so the page could shed its own
+        # images. These are sendfile of a small JPEG already in page cache and
+        # never reach Rails, so they have no business competing for slots that
+        # exist to bound concurrent renders. High enough not to bind on any
+        # real page, low enough to stay a bound.
+        limit_conn per_subnet 100;
+        limit_conn_status 429;
     }
 
     # Open Wall pages and the ActiveStorage image URLs they embed: the paths
