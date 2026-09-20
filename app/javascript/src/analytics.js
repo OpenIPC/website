@@ -45,10 +45,16 @@ function recordLandingTag() {
   const tag = url.searchParams.get('ref')
   if (!tag) return
 
-  // Bounded and sanitised: this lands in the dashboard as a row name, and it
-  // arrives from whatever anyone chooses to paste.
-  const clean = tag.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24)
-  if (clean) countEvent(`ref:${clean}`)
+  // Recorded only if it was already a well-formed tag. Sanitising and then
+  // recording the result would let anyone mint dashboard rows by appending
+  // junk -- ?ref=<script>x</script> came through as ref:scriptxscript, which
+  // is harmless but is still a row nobody asked for, sitting next to the real
+  // channels in the report the monthly memo reads.
+  //
+  // The tags are the project's own (README, "Links the project posts"), so
+  // anything that does not look like one is not one.
+  const clean = tag.toLowerCase()
+  if (/^[a-z0-9-]{1,24}$/.test(clean)) countEvent(`ref:${clean}`)
 
   url.searchParams.delete('ref')
   window.history.replaceState({}, '', url.pathname + url.search + url.hash)
