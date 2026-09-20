@@ -10,7 +10,13 @@ config/production.env
 config/ssl
 
 # Rebuilt inside the image.
-node_modules
+# `**/` matters: Docker matches these against the whole relative path, so a
+# bare `node_modules` excludes the one at the root and nothing else. Nothing
+# has leaked through it -- the two directories that have grown a node_modules
+# so far, tools/ and tools/webui-gallery/, are inside the `tools` exclusion
+# below and never reach the build context at all. This is so that the next one
+# does not have to be somewhere lucky.
+**/node_modules
 app/assets/builds/*
 public/assets
 

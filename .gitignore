@@ -47,7 +47,10 @@
 /app/assets/builds/*
 !/app/assets/builds/.keep
 
-/node_modules
+# Any node_modules, at any depth. Anchored to the root it was not enough:
+# tools/ gets one from the Playwright container that runs tools/turbo-check.mjs,
+# and a `git add -A` swept 448 of those files onto master on 2026-09-20.
+node_modules/
 
 /config/credentials/production.key
 /config/credentials/development.key
@@ -55,8 +58,6 @@
 # Yarn Berry install state (regenerated locally).
 /.yarn/install-state.gz
 
-# tools/webui-gallery installs its own node_modules; the tool is not part of the app build.
-/tools/webui-gallery/node_modules
 
 # Local overrides for the dev compose stack (DEV_UID/DEV_GID); never committed.
 /.env
