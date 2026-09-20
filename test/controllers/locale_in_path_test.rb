@@ -107,4 +107,43 @@ class LocaleInPathTest < ActionDispatch::IntegrationTest
     assert_select 'a[lang=zh][href=?]', '/zh/donate'
     assert_select 'a[lang=en][href=?]', '/donate'
   end
+
+  # The invariant, rather than another individual case.
+  #
+  # Two links have already been found pointing at routes that do not exist in
+  # a prefixed form -- /ru/open-wall in review, and /ru/supported-hardware on
+  # dev, which is the navbar's "Hardware" item and sent Russian and Chinese
+  # visitors to the ENGLISH homepage. Both were invisible because locale_path
+  # will happily prefix a path whether or not anything answers it.
+  #
+  # So: follow every internal link on a localized page and require it to
+  # resolve. A redirect counts as a failure unless it stays in the language --
+  # a navigation click that changes the language is the bug, not the fix.
+  %w[ru zh].each do |locale|
+    test "every internal link on a #{locale} page stays in #{locale}" do
+      get "/#{locale}/donate"
+
+      assert_response :success
+      links = css_select('a[href^="/"]').map { |a| a['href'] }.uniq
+      refute_empty links
+
+      broken = links.filter_map do |href|
+        get href
+        next if response.successful?
+        # A redirect is fine only if it keeps the prefix.
+        next if response.redirect? && URI(response.location).path.start_with?("/#{locale}/")
+
+        "#{href} -> #{response.status} #{response.redirect? ? response.location : ''}"
+      end
+
+      assert_empty broken, <<~MESSAGE.chomp
+        Links on /#{locale}/donate that leave the language:
+
+        #{broken.map { |b| "  #{b}" }.join("\n")}
+
+        locale_path prefixes a path whether or not a route answers it, so an
+        unscoped route becomes a link to the English homepage.
+      MESSAGE
+    end
+  end
 end
