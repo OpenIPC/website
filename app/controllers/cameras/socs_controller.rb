@@ -12,7 +12,7 @@ module Cameras
           # so leaving it unset answered 500 -- and /supported-hardware already
           # treats "no filter" as meaning the featured page.
           if params[:vendor].blank?
-            redirect_to '/supported-hardware/featured'
+            redirect_to locale_path('/supported-hardware/featured')
           else
             # Present but unknown is a bad address, not an empty list.
             @vendor = Vendor.find(params[:vendor])

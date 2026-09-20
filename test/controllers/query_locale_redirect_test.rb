@@ -61,15 +61,33 @@ class QueryLocaleRedirectTest < ActionDispatch::IntegrationTest
     assert_select 'html[lang=?]', 'ru'
   end
 
-  # The pages whose routes are not localized yet -- the per-snapshot views and
-  # the 126-page catalogue, whose helpers take positional arguments that
-  # :locale would swallow. Redirecting them would send a Russian reader to the
-  # English homepage through the catch-all, so they keep the old mechanism.
+  # There is no public page left without a prefixed form. The snapshot views,
+  # the catalogue and finally the secondary Open Wall entry points were the
+  # examples here in turn, and #154 localized all of them; what remains
+  # unscoped is redirects, /sitemap.xml and one image, none of which render a
+  # page in a language.
+  #
+  # The branch has not gone though -- the admin area is deliberately not
+  # localized, and it is what exercises it now.
   test 'a page with no prefixed form is left alone' do
-    get '/snapshots?locale=ru'
+    russian = { 'HTTP_ACCEPT_LANGUAGE' => 'ru' }
+
+    get '/admin/sign_in?locale=ru', headers: russian
 
     assert_response :success
     assert_select 'html[lang=?]', 'ru'
+  end
+
+  # The other half of #154: every one of these used to be the example above.
+  test 'the pages that gained a prefixed form now use it' do
+    { '/snapshots?locale=ru' => '/ru/snapshots',
+      '/supported-hardware/featured?locale=zh' => '/zh/supported-hardware/featured',
+      '/open-wall/2?locale=ru' => '/ru/open-wall/2',
+      '/open-wall/camera/1?locale=zh' => '/zh/open-wall/camera/1' }.each do |from, to|
+      get from
+
+      assert_redirected_to to
+    end
   end
 
   test 'the admin area is not redirected' do
@@ -94,10 +112,10 @@ class QueryLocaleRedirectTest < ActionDispatch::IntegrationTest
   test 'a page with no prefixed form keeps its English parameter' do
     russian = { 'HTTP_ACCEPT_LANGUAGE' => 'ru' }
 
-    get '/snapshots', headers: russian
+    get '/admin/sign_in', headers: russian
     assert_select 'html[lang=?]', 'ru'
 
-    get '/snapshots?locale=en', headers: russian
+    get '/admin/sign_in?locale=en', headers: russian
 
     assert_response :success
     assert_select 'html[lang=?]', 'en'

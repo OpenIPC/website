@@ -75,6 +75,112 @@ class LocaleInPathTest < ActionDispatch::IntegrationTest
     assert_select 'nav a[href=?]', '/ru/supported-hardware'
   end
 
+  # The catalogue and the snapshot pages were the last two route families
+  # without an address of their own, because `scope "(:locale)"` puts :locale
+  # first among the dynamic segments and every helper here takes a vendor, a
+  # SoC or a snapshot positionally. #154 converted those call sites to keyword
+  # form, which is what let these move inside the scope.
+  #
+  # The catalogue is built rather than looked up. The test database is
+  # regenerated from development and carries no vendors or SoCs at all, so a
+  # test naming a real model -- rv1106, say -- fails with RecordNotFound for a
+  # reason that has nothing to do with locales, and one that skips when the
+  # table is empty never runs.
+  MINIMAL_JPEG = "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00\xFF\xD9".b
+
+  def some_soc
+    @some_soc ||= begin
+      vendor = Vendor.find_by(name: 'Locale Test Vendor') ||
+               Vendor.create!(name: 'Locale Test Vendor')
+      Soc.find_by(model: 'LT1000') ||
+        # uboot_filename and linux_filename are what make it `instructable?`,
+        # which is the branch that renders the catalogue link this file
+        # asserts on. Without them the partial raises on nil.
+        Soc.create!(model: 'LT1000', vendor: vendor, family: 'lt', status: 'done',
+                    uboot_filename: 'u-boot-lt1000.bin', linux_filename: 'uImage.lt1000')
+    end
+  end
+
+  def soc_path_for(prefix)
+    "#{prefix}/cameras/vendors/#{some_soc.vendor.to_param}/socs/#{some_soc.to_param}"
+  end
+
+  test 'the catalogue has an address in every language' do
+    { '/supported-hardware/featured' => 'en',
+      '/ru/supported-hardware/featured' => 'ru',
+      '/zh/supported-hardware/featured' => 'zh' }.each do |path, lang|
+      get path
+
+      assert_response :success
+      assert_select 'html[lang=?]', lang
+    end
+  end
+
+  test 'a SoC page has an address in every language' do
+    { '' => 'en', '/ru' => 'ru', '/zh' => 'zh' }.each do |prefix, lang|
+      get soc_path_for(prefix)
+
+      assert_response :success
+      assert_select 'html[lang=?]', lang
+    end
+  end
+
+  # A visitor who reaches the catalogue in Russian must not be handed back to
+  # English by the next click. This is the invariant that caught the navbar
+  # Hardware link dropping people on the English homepage.
+  test 'links inside a prefixed catalogue page keep the prefix' do
+    some_soc
+    get '/ru/supported-hardware/full-list'
+
+    assert_response :success
+    assert_select 'a[href^=?]', '/ru/cameras/vendors/', minimum: 1
+    assert_select 'a[href^="/cameras/vendors/"]', false
+  end
+
+  test 'a snapshot has an address in every language' do
+    snapshot = Snapshot.new(mac_address: '00:11:22:33:44:66', ip_address: '203.0.113.10',
+                            soc: 'gk7205v300', sensor: 'imx307')
+    snapshot.file.attach(io: StringIO.new(MINIMAL_JPEG), filename: 'snapshot.jpg',
+                         content_type: 'image/jpeg')
+    snapshot.save!(validate: false)
+
+    get "/ru/snapshots/#{snapshot.id}"
+
+    assert_response :success
+    assert_select 'html[lang=?]', 'ru'
+  end
+
+  # A redirect that drops the prefix is a language change disguised as a
+  # navigation click. This is the same fault as the navbar Hardware link, which
+  # sent Russian readers to the English homepage, and localizing the catalogue
+  # created three more places it could happen.
+  test 'a redirect inside the catalogue keeps the language' do
+    get '/ru/cameras/socs'
+
+    assert_redirected_to '/ru/supported-hardware/featured'
+  end
+
+  test 'a snapshot that is gone returns to the gallery in the same language' do
+    get '/ru/snapshots/999999999'
+
+    assert_redirected_to '/ru/open-wall'
+  end
+
+  # The catch-all every mistyped and every retired URL lands on. Sending the
+  # reader of /ru/<typo> to the English homepage is the complaint #154 exists
+  # to fix, in its most visible form.
+  test 'a mistyped prefixed URL lands on the homepage in that language' do
+    get '/ru/no-such-page-here'
+
+    assert_redirected_to '/ru'
+  end
+
+  test 'a mistyped English URL still lands on the bare homepage' do
+    get '/no-such-page-here'
+
+    assert_redirected_to '/'
+  end
+
   # /ru/assets/... and /ru/fonts/... are 404s. The first draft of locale_path
   # produced both by rewriting the font preloads in the layout.
   test 'assets and fonts are never prefixed' do

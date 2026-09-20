@@ -149,7 +149,7 @@ server {
     #
     # No URI part on proxy_pass: nginx forbids one in a regex location, and the
     # full original URI is what should reach the app anyway.
-    location ~ ^/cameras/vendors/[^/]+/socs/[^/]+/download_full_image {
+    location ~ ^/(?:(?:ru|zh)/)?cameras/vendors/[^/]+/socs/[^/]+/download_full_image {
         # Same limits as production, sharing the same zones, so that a change
         # to them can be exercised here before it reaches anyone. Dev has no
         # limit_conn of its own and gains none.

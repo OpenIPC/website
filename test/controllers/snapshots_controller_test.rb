@@ -136,7 +136,7 @@ class SnapshotsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :created
-    assert_equal snapshot_path(Snapshot.last), response.headers['Location']
+    assert_equal snapshot_path(id: Snapshot.last), response.headers['Location']
   end
 
   # HEIF is why every variant is rendered to JPEG: the cameras can send it and

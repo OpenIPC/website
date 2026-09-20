@@ -2,7 +2,7 @@
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><%= link_to t('nav.home'), locale_path('/') %></li>
     <li class="breadcrumb-item"><%= link_to t('nav.snapshots'), locale_path('/open-wall') %></li>
-    <li class="breadcrumb-item active" aria-current="page"><%= link_to t('nav.snapshot', number: @snapshot.id), snapshot_path(@snapshot) %></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= link_to t('nav.snapshot', number: @snapshot.id), snapshot_path(id: @snapshot) %></li>
   </ol>
 </nav>
 
@@ -47,14 +47,14 @@
   <% end %>
 
   <p>
-    <%= link_to t('site.snapshot.download'), download_snapshot_path(@snapshot) %><br>
-    <%= link_to t('site.snapshot.link_to_camera'), openwall_camera_path(@snapshot.mac_address_dec) %><br>
-    <%= link_to t('site.snapshot.link_to_last_jpeg'), openwall_camera_path(@snapshot.mac_address_dec, format: :jpg) %>
+    <%= link_to t('site.snapshot.download'), download_snapshot_path(id: @snapshot) %><br>
+    <%= link_to t('site.snapshot.link_to_camera'), openwall_camera_path(id: @snapshot.mac_address_dec) %><br>
+    <%= link_to t('site.snapshot.link_to_last_jpeg'), openwall_camera_path(id: @snapshot.mac_address_dec, format: :jpg) %>
   </p>
 
   <% if @snapshots && @snapshots.any? %>
     <h4><%= t('.last_24h') %></h4>
-    <p><%= link_to t('.show_slideshow'), oneday_snapshot_path(@snapshot), class: "btn btn-primary" %></p>
+    <p><%= link_to t('.show_slideshow'), oneday_snapshot_path(id: @snapshot), class: "btn btn-primary" %></p>
 
     <div class="archive row row-cols-2 row-cols-sm-3 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2">
       <%= render partial: 'icon', collection: @snapshots %>

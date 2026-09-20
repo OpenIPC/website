@@ -150,39 +150,52 @@ Rails.application.routes.draw do
   #
   # This exposes nothing new. `resources :snapshots` has served the same gallery
   # at /snapshots throughout; these are the URLs the site itself uses for it.
-  # The gallery index is localized; the per-snapshot pages are not, yet.
+  # The gallery index and the per-snapshot pages are both localized now.
   #
   # `scope '(:locale)'` puts :locale FIRST among a route's dynamic segments,
   # and Rails fills positional helper arguments in segment order -- so inside
-  # the scope `snapshot_path(@snapshot)` binds the Snapshot to :locale and
-  # raises "missing required keys: [:id]". There are a dozen such call sites
-  # across the snapshot views and the catalogue, and converting them to keyword
-  # form is its own change with its own review. The marketing pages have no
-  # dynamic segments at all, which is why they localize cleanly.
+  # the scope `snapshot_path(@snapshot)` bound the Snapshot to :locale and
+  # raised "missing required keys: [:id]". That is why these two blocks sat
+  # outside it. The 26 call sites are now keyword form, so they do not.
   #
   # /open-wall is the address the navbar, the footer and the sitemap use, so it
   # is the one that has to exist in three languages.
-  get '/open-wall/camera/:id', to: 'snapshots#camera', as: 'openwall_camera'
+  # All three Open Wall entry points, not just the one the navbar uses. The
+  # gallery index was localized first because it is what the navbar, the footer
+  # and the sitemap link to; leaving the other two behind meant a reader who
+  # paged through the wall in Russian, or opened one camera, was back to
+  # depending on the session and the browser header for their language -- which
+  # is the thing #154 exists to end.
   scope '(:locale)', locale: Multilang::IN_PATH do
+    get '/open-wall/camera/:id', to: 'snapshots#camera', as: 'openwall_camera'
     get '/open-wall', to: 'snapshots#index', as: 'open_wall'
-  end
-  get '/open-wall(/:page)', to: 'snapshots#index'
-
-  resources :snapshots do
-    get :camera, on: :collection
-    get :oneday, on: :member
-    get :download, on: :member
+    get '/open-wall(/:page)', to: 'snapshots#index'
   end
 
-  # Not localized, for the positional-argument reason above: every catalogue
-  # helper takes a vendor and a SoC, and :locale would swallow the first of
-  # them. The catalogue is the part of the site with real long-tail search
-  # value, so this is worth doing -- after the call sites are converted.
-  namespace :cameras do
-    resources :socs
-    resources :vendors do
-      resources :socs do
-        get :download_full_image, on: :member
+  scope '(:locale)', locale: Multilang::IN_PATH do
+    resources :snapshots do
+      get :camera, on: :collection
+      get :oneday, on: :member
+      get :download, on: :member
+    end
+  end
+
+  # The catalogue is the part of the site with real long-tail search value, so
+  # it is the part that most wanted a language in its address.
+  #
+  # Every rule protecting these paths lives in an nginx location anchored at
+  # ^/, and a rule simply stops applying to a path its regex does not match.
+  # Localizing this block without the matching (ru|zh)/ prefixes in the vhost
+  # would have put /ru/cameras/.../download_full_image -- about a second of CPU
+  # and 8-32MB of disk per call -- outside the #147 limit_req zones. #205 added
+  # those prefixes first, and a test now fails if the two lists drift apart.
+  scope '(:locale)', locale: Multilang::IN_PATH do
+    namespace :cameras do
+      resources :socs
+      resources :vendors do
+        resources :socs do
+          get :download_full_image, on: :member
+        end
       end
     end
   end

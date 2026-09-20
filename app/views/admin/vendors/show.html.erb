@@ -13,7 +13,7 @@
 
   <nav class="navbar">
     <p>
-      <%= link_to t('nav.view_vendor'), cameras_vendor_path(@vendor), class: "btn btn-success" %>
+      <%= link_to t('nav.view_vendor'), cameras_vendor_path(id: @vendor), class: "btn btn-success" %>
       <%= link_to t('nav.add_vendor'), new_admin_vendor_path, class: "btn btn-primary" %>
     </p>
   </nav>
