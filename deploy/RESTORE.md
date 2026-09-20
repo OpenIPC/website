@@ -156,3 +156,21 @@ The most likely causes, in order:
    unquoted bcrypt digest (`$2b$12$...`) expands as positional parameters and
    the script dies with `$2: unbound variable`.
 3. **Listing the bucket root** instead of a prefix — see the note in step 0.
+
+## Memory sampling
+
+The hourly memory series in `/var/log/openipc-rss.log` is what every memory
+claim about this host rests on -- it is how #148 established that the Rails
+container reaches 0.27 GiB at boot, 1.56 GiB at one hour and 3.19 GiB at five
+days, and how any future allocator or caching change gets judged. A rebuilt
+host that skips this comes back with no series at all, and the gap only becomes
+visible when someone needs the numbers.
+
+    scp -P 35242 -r deploy root@openipc.org:/tmp/openipc-deploy
+    ssh -p 35242 root@openipc.org /tmp/openipc-deploy/install-metrics.sh
+
+Idempotent, and it verifies itself: it runs the sampler the way cron will, with
+an empty environment, and fails if nothing comes out. `deploy/memory-probe.sh`
+is the other half -- it puts a fixed load on a container and reports what that
+did to its memory and its latency, so two images can be compared in minutes
+instead of by deploying one and waiting a day.

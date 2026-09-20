@@ -94,12 +94,58 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y \
       curl \
       libffi8 \
       libheif1 \
+      libjemalloc2 \
       libmariadb3 \
       libvips42 \
       libyaml-0-2 \
       msmtp-mta \
       tzdata \
   && rm -rf /var/lib/apt/lists/*
+
+# Measured on this host before changing anything (#148, hourly series in
+# /var/log/openipc-rss.log): anon memory is 0.27 GiB on a fresh boot, 1.56 GiB
+# an hour later, 2.94 GiB at nine hours and 3.19 GiB at 4.9 days. That shape is
+# not a leak -- nine tenths of the growth happens on the first day and then it
+# asymptotes -- it is glibc handing each of the 32 Puma threads its own arena
+# and never giving the pages back.
+#
+# Asserted at build time, because the failure mode is silent: a missing library
+# makes LD_PRELOAD a no-op, the process keeps running on glibc, and the only
+# symptom is memory drifting back to where it was. Better a red build when a
+# base image moves the library than an image that quietly stops doing the one
+# thing it was changed to do.
+RUN LD_PRELOAD=libjemalloc.so.2 ruby -e \
+      'abort "jemalloc did not preload" unless File.read("/proc/self/maps").include?("jemalloc")'
+
+# After the install, never before it: as an ENV this applies to every later
+# RUN as well, and a preload naming a library that is not there yet makes the
+# loader complain on every command in the build.
+#
+# Bare soname rather than a path -- the library lives under the multiarch
+# directory and the loader finds it by name, so this does not have to know
+# whether the image was built for amd64 or arm64.
+#
+# MALLOC_CONF is not optional and is the whole reason this is safe. Measured in
+# this image, 32 threads churning 5MB strings, RSS after the work and again
+# twenty seconds later:
+#
+#   glibc                          18.7 MB -> 18.5 MB
+#   jemalloc, default config      360   MB -> 345   MB     never returned
+#   jemalloc, the settings below  316   MB -> 21    MB
+#
+# Left at its defaults, jemalloc purges a dirty page only when something else
+# allocates in the same arena, so an idle worker holds everything it ever
+# peaked at. background_thread gives the decay a clock of its own instead.
+# Shipping jemalloc without this would have been a memory regression, not a
+# saving, which is the opposite of what #148 set out to do.
+#
+# MALLOC_ARENA_MAX is deliberately NOT set. It is glibc's, so it is inert
+# whenever the preload works; and on the one workload here that fragments --
+# many small allocations across 32 threads -- capping glibc at two arenas
+# retained 123MB against 72MB for the default. A fallback that is measurably
+# worse than doing nothing is not a fallback.
+ENV LD_PRELOAD=libjemalloc.so.2 \
+    MALLOC_CONF=background_thread:true,dirty_decay_ms:1000,muzzy_decay_ms:1000
 
 WORKDIR /rails
 
