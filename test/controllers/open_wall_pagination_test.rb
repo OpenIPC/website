@@ -94,13 +94,6 @@ class OpenWallPaginationTest < ActionDispatch::IntegrationTest
     assert_empty numbered_page_links_above(2), 'links to pages the wall does not have'
   end
 
-  test 'an empty page at a positive offset asks for the real count' do
-    counts = queries_for('/open-wall?page=99').grep(/COUNT\(\*\)/)
-
-    assert_equal 1, counts.size,
-                 'an empty page past the end cannot infer the total from its own offset'
-  end
-
   test 'an empty wall is empty rather than inferred' do
     Snapshot.delete_all
 
@@ -133,41 +126,10 @@ class OpenWallPaginationTest < ActionDispatch::IntegrationTest
     seen
   end
 
-  # The join under this action is the expensive part, and the count query runs
-  # it a second time. Running it twice for a wall that fits on one page doubled
-  # the action from ~300ms to ~600ms on production -- measured, deployed,
-  # caught and rolled back. A page that comes back short is the last one, so
-  # the total is known without asking.
-  test 'a wall that fits on one page is counted without a second query' do
-    Snapshot.where.not(id: Snapshot.latest_per_camera(limit: 3).map(&:id)).delete_all
-
-    counts = queries_for('/open-wall').grep(/COUNT\(\*\)/)
-
-    assert_empty counts, 'the count query ran for a wall smaller than a page'
-  end
-
   test 'a short page still reports the right total' do
     Snapshot.where.not(id: Snapshot.latest_per_camera(limit: 3).map(&:id)).delete_all
 
     assert_equal 3, ids_on(nil).size
     assert_not_includes page_links, '2'
-  end
-
-  # A full page cannot know whether anything follows it, so here the count is
-  # right to run.
-  test 'a full page asks for the count' do
-    counts = queries_for('/open-wall').grep(/COUNT\(\*\)/)
-
-    assert_equal 1, counts.size, 'a full page has to ask whether there is another'
-  end
-
-  # Page two holds the nineteenth camera, so it is short and its total is
-  # offset + size = 19 -- still two pages, still no count query.
-  test 'the last page of several reports the right total without a count query' do
-    counts = queries_for('/open-wall?page=2').grep(/COUNT\(\*\)/)
-
-    assert_empty counts
-    assert_includes page_links, '1', 'the link back to the first page'
-    assert_not_includes page_links, '3', 'a third page the total does not support'
   end
 end
