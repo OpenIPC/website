@@ -23,6 +23,17 @@ class LocaleVaryTest < ActionDispatch::IntegrationTest
                     'the language of / is chosen from this header, so the header belongs in Vary'
   end
 
+  # The route where the missing declaration actually bit. /open-wall sits
+  # behind a 60-second microcache that keys on the path, so this header is the
+  # only thing that can keep the Russian copy away from an English visitor.
+  test 'the Open Wall declares it too, because that is the cached one' do
+    get '/open-wall', headers: { 'Accept-Language' => 'ru-RU,ru;q=0.9' }
+
+    assert_response :success
+    assert_includes vary_tokens, 'Accept-Language',
+                    'nginx caches this path for everyone; without the header it cannot tell the copies apart'
+  end
+
   test 'a prefixed page does not, because its language is in the address' do
     get '/ru'
 
