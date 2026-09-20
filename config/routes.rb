@@ -1,16 +1,39 @@
 Rails.application.routes.draw do
+  # Ships BEFORE the ?locale= redirects, deliberately (#154, and #142 says so in
+  # as many words): if the sitemap and the redirects land together, a ranking
+  # movement afterwards cannot be attributed to either. This one tells search
+  # engines the three-language structure exists; the redirects come once that
+  # has been crawled.
+  get '/sitemap.xml', to: 'sitemaps#show', defaults: { format: 'xml' }
+
   # Healthcheck for the container runtime and the deploy script. Must stay above
   # the "*unmatched" catch-all below, which redirects instead of 404ing.
   get "/up", to: proc { [200, { "Content-Type" => "text/plain" }, ["ok"]] }
 
-  root 'pages#home'
+  # The locale lives in the path, not in a query parameter or a cookie (#154).
+  #
+  # English stays at `/`: every indexed URL, forum link and wiki link on the
+  # site is English, and moving them would be a cost with no benefit. Russian
+  # and Chinese gain a prefix, so `/ru/donate` and `/zh/get-started` are their
+  # own addresses and a shared cache can finally key on the URL -- which is the
+  # thing the whole epic is waiting for.
+  #
+  # The constraint is what keeps `(:locale)` from swallowing the rest of the
+  # site: without it `/donate` would parse as locale "donate".
+  #
+  # Only pages a visitor reads are in here. The API, the admin area, the
+  # healthcheck, the external redirects and the firmware download are not
+  # translated and gain nothing from a prefix.
+  scope '(:locale)', locale: Multilang::IN_PATH do
+    root 'pages#home'
 
-  get '/get-started', to: 'pages#get_started'
-  get '/low-latency', to: 'pages#low_latency'
-  get '/ecosystem',   to: 'pages#ecosystem'
-  get '/business',    to: 'pages#business'
-  get '/community',   to: 'pages#community'
-  get '/donate',      to: 'pages#donate'
+    get '/get-started', to: 'pages#get_started'
+    get '/low-latency', to: 'pages#low_latency'
+    get '/ecosystem',   to: 'pages#ecosystem'
+    get '/business',    to: 'pages#business'
+    get '/community',   to: 'pages#community'
+    get '/donate',      to: 'pages#donate'
+  end
 
   # The pre-relaunch structure, redirected rather than dropped. These URLs are
   # in search results, in forum posts and in the wiki, and none of that is ours
@@ -40,7 +63,7 @@ Rails.application.routes.draw do
   get '/about', to: redirect(status: 302) { |_params, request|
     request.query_string.present? ? "/community?#{request.query_string}" : '/community'
   }
-  get '/majestic-endpoints', to: 'pages#majestic_endpoints'
+  scope('(:locale)', locale: Multilang::IN_PATH) { get '/majestic-endpoints', to: 'pages#majestic_endpoints' }
 
   get '/coupler',     to: redirect('https://github.com/OpenIPC/coupler/')
   get '/firmware',    to: redirect('https://github.com/OpenIPC/firmware/')
@@ -74,28 +97,34 @@ Rails.application.routes.draw do
   get '/SDK', to: redirect('/supported-hardware')
   get '/sponsor', to: redirect('/donate')
 
-  get '/green_life', to:'pages#green_life'
-  # Not linked from anywhere while there is nothing to sell -- see the footer.
-  # The route and the page stay: the shop is expected back, plausibly through
-  # Open Collective, and deleting them would mean writing it all again.
-  get '/merchandise', to: 'pages#merchandise'
-  get '/our-team', to: 'pages#our_team'
-  get '/stages-of-firmware-development', to: 'pages#stages_of_firmware_development'
-  get '/utilities', to: 'pages#utilities'
-  get '/web-interface', to: 'pages#web_interface'
+  scope '(:locale)', locale: Multilang::IN_PATH do
+    get '/green_life', to:'pages#green_life'
+    # Not linked from anywhere while there is nothing to sell -- see the footer.
+    # The route and the page stay: the shop is expected back, plausibly through
+    # Open Collective, and deleting them would mean writing it all again.
+    get '/merchandise', to: 'pages#merchandise'
+    get '/our-team', to: 'pages#our_team'
+    get '/stages-of-firmware-development', to: 'pages#stages_of_firmware_development'
+    get '/utilities', to: 'pages#utilities'
+    get '/web-interface', to: 'pages#web_interface'
+  end
 
   get '/supported-hardware', to: redirect('/supported-hardware/featured')
-  get '/supported-hardware/featured', to: 'cameras/socs#featured'
-  get '/supported-hardware/full-list', to: 'cameras/socs#full_list'
+  scope '(:locale)', locale: Multilang::IN_PATH do
+    get '/supported-hardware/featured', to: 'cameras/socs#featured'
+    get '/supported-hardware/full-list', to: 'cameras/socs#full_list'
+  end
 
   # /tools/bandwidth-calculator is deliberately absent. It routed to
   # pages#bandwidth_calculator, which has never existed -- no action, no
   # template -- so every request raised AbstractController::ActionNotFound and
   # answered 500 in production. Falling through to the catch-all sends the
   # visitor to the homepage, which is at least a page.
-  get '/tools/firmware-partitions-calculation', to: 'pages#firmware_partitions_calculation'
-  get '/tools/high-resolution-timer', to: 'pages#high_resolution_timer'
-  get '/tools/qr-code-generator', to: 'pages#qr_code_generator'
+  scope '(:locale)', locale: Multilang::IN_PATH do
+    get '/tools/firmware-partitions-calculation', to: 'pages#firmware_partitions_calculation'
+    get '/tools/high-resolution-timer', to: 'pages#high_resolution_timer'
+    get '/tools/qr-code-generator', to: 'pages#qr_code_generator'
+  end
   # /tools/timelaps-interval-calculator is deliberately absent, for the same
   # reason as the bandwidth calculator above: pages#timelaps_interval_calculator
   # has no action and no template under that name, so the route has answered 500
@@ -111,8 +140,23 @@ Rails.application.routes.draw do
   #
   # This exposes nothing new. `resources :snapshots` has served the same gallery
   # at /snapshots throughout; these are the URLs the site itself uses for it.
+  # The gallery index is localized; the per-snapshot pages are not, yet.
+  #
+  # `scope '(:locale)'` puts :locale FIRST among a route's dynamic segments,
+  # and Rails fills positional helper arguments in segment order -- so inside
+  # the scope `snapshot_path(@snapshot)` binds the Snapshot to :locale and
+  # raises "missing required keys: [:id]". There are a dozen such call sites
+  # across the snapshot views and the catalogue, and converting them to keyword
+  # form is its own change with its own review. The marketing pages have no
+  # dynamic segments at all, which is why they localize cleanly.
+  #
+  # /open-wall is the address the navbar, the footer and the sitemap use, so it
+  # is the one that has to exist in three languages.
   get '/open-wall/camera/:id', to: 'snapshots#camera', as: 'openwall_camera'
-  get '/open-wall(/:page)', to: 'snapshots#index', as: 'open_wall'
+  scope '(:locale)', locale: Multilang::IN_PATH do
+    get '/open-wall', to: 'snapshots#index', as: 'open_wall'
+  end
+  get '/open-wall(/:page)', to: 'snapshots#index'
 
   resources :snapshots do
     get :camera, on: :collection
@@ -120,6 +164,10 @@ Rails.application.routes.draw do
     get :download, on: :member
   end
 
+  # Not localized, for the positional-argument reason above: every catalogue
+  # helper takes a vendor and a SoC, and :locale would swallow the first of
+  # them. The catalogue is the part of the site with real long-tail search
+  # value, so this is worth doing -- after the call sites are converted.
   namespace :cameras do
     resources :socs
     resources :vendors do

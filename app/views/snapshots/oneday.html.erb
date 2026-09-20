@@ -1,7 +1,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><%= link_to t('nav.home'), "/" %></li>
-    <li class="breadcrumb-item"><%= link_to t('nav.snapshots'), "/open-wall" %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.home'), locale_path('/') %></li>
+    <li class="breadcrumb-item"><%= link_to t('nav.snapshots'), locale_path('/open-wall') %></li>
     <li class="breadcrumb-item active" aria-current="page"><%= link_to t('nav.snapshot', number: @snapshot.id), snapshot_path(@snapshot) %></li>
   </ol>
 </nav>

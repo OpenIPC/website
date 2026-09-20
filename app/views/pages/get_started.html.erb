@@ -29,7 +29,7 @@
       <div class="col-lg-4">
         <h2 class="h5"><span class="text-data text-primary me-2">2</span><%= t('.step2_title') %></h2>
         <p class="text-body-secondary"><%= t('.step2_text') %></p>
-        <p><a href="/supported-hardware" class="btn btn-primary"><%= t('.cta_find_soc') %></a></p>
+        <p><a href="<%= locale_path('/supported-hardware') %>" class="btn btn-primary"><%= t('.cta_find_soc') %></a></p>
       </div>
       <div class="col-lg-4">
         <h2 class="h5"><span class="text-data text-primary me-2">3</span><%= t('.step3_title') %></h2>
@@ -55,7 +55,7 @@
         <p class="text-body-secondary mb-0"><%= t('.editions_text') %></p>
       </div>
       <div class="col-lg-7">
-        <h2 class="h4 mb-3"><a href="/web-interface" class="text-reset"><%= t('.webui_title') %></a></h2>
+        <h2 class="h4 mb-3"><a href="<%= locale_path('/web-interface') %>" class="text-reset"><%= t('.webui_title') %></a></h2>
         <%# Four of the screenshots from /web-interface, taken through
             WebuiGallery rather than named here. The June draft of this page
             hardcoded webui/preview.jpg and three others; the gallery was
