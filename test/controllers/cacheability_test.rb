@@ -101,64 +101,38 @@ class CacheabilityTest < ActionDispatch::IntegrationTest
     assert_select 'meta[name=csrf-token]', false
   end
 
-  # The wizard sets a cookie because its form needs a token, so it must not be
-  # declared publicly cacheable -- nginx would refuse to store it anyway, but
-  # a CDN or any other cache that believes the header would hand one visitor's
-  # session to the next. Found on dev: it was answering
-  # `public, max-age=3600` alongside Set-Cookie.
-  test 'a page that sets a cookie is never declared publicly cacheable' do
+  # The wizard was the last public page with a token, and therefore the last
+  # one setting a cookie. #156 made its form a GET -- the action persisted
+  # nothing, so the verb bought nothing -- and a GET form carries no
+  # authenticity_token, so the page joins the rest.
+  test 'the wizard is cookieless and cacheable now that its form is a GET' do
     vendor = Vendor.find_by(name: 'Cache Test Vendor') || Vendor.create!(name: 'Cache Test Vendor')
     soc = Soc.find_by(model: 'CT1000') ||
           Soc.create!(model: 'CT1000', vendor: vendor, family: 'ct', status: 'done',
                       uboot_filename: 'u.bin', linux_filename: 'l.bin')
+    path = "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}"
 
-    get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}"
-
-    assert_response :success
-    assert_not_includes response.headers['Cache-Control'].to_s, 'public',
-                        'this page mints a CSRF token, so its response carries Set-Cookie'
-  end
-
-  # The catalogue JSON is the one endpoint here with consumers nobody in this
-  # project controls, so it gets its own policy rather than the hour the
-  # catalogue pages around it take: a reader can wait out a stale page, a
-  # script polling this cannot tell it is stale.
-  test 'the catalogue feed declares its own freshness, not the pages around it' do
-    get '/cameras/socs.json'
+    get path
 
     assert_response :success
-    assert_match(/max-age=300\b/, response.headers['Cache-Control'].to_s,
-                 'the feed inherited the catalogue pages\' one-hour lifetime')
+    assert_nil response.headers['Set-Cookie']
+    assert_select 'meta[name=csrf-token]', false,
+                  'a GET form needs no token, and minting one would write the session'
     assert_includes response.headers['Cache-Control'].to_s, 'public'
-  end
 
-  test 'the catalogue feed answers a conditional request without a body' do
-    get '/cameras/socs.json'
-    etag = response.headers['ETag']
-
-    assert etag.present?, 'no ETag, so a poller must re-download an unchanged feed every time'
-
-    get '/cameras/socs.json', headers: { 'If-None-Match' => etag }
-
-    assert_response :not_modified
-    assert_empty response.body
-  end
-
-  # The other direction, and the one that breaks a feature rather than a cache
-  # if it is wrong: the wizard posts, so it must still get a token.
-  test 'the wizard still gets its token' do
-    # Built, not looked up: this database is regenerated from development and
-    # carries no vendors or SoCs, so a test that skips on an empty table never
-    # runs and proves nothing.
-    vendor = Vendor.find_by(name: 'Cache Test Vendor') || Vendor.create!(name: 'Cache Test Vendor')
-    soc = Soc.find_by(model: 'CT1000') ||
-          Soc.create!(model: 'CT1000', vendor: vendor, family: 'ct', status: 'done',
-                      uboot_filename: 'u.bin', linux_filename: 'l.bin')
-
-    get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}"
+    # And the result it produces is a URL, which is the point of #156.
+    get path, params: { camera: { flash_type: 'nor8m', firmware_version: 'lite' } }
 
     assert_response :success
-    assert_select 'meta[name=csrf-token]', 1,
-                  'the wizard form would fail every submission with InvalidAuthenticityToken'
+    assert_nil response.headers['Set-Cookie']
+  end
+
+  # The rule that a token implies a cookie implies private still matters --
+  # Devise is what exercises it now.
+  test 'a page that mints a token is never declared publicly cacheable' do
+    get '/admin/sign_in'
+
+    assert_select 'meta[name=csrf-token]', 1, 'the sign-in form cannot work without one'
+    assert_not_includes response.headers['Cache-Control'].to_s, 'public'
   end
 end

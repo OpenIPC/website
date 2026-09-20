@@ -206,7 +206,12 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
                camera_mac_address: mac }
     camera[:partition_layout] = partition_layout if partition_layout
 
-    put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}#{"?locale=#{locale}" if locale}",
+      # The prefix, not ?locale=. The wizard result is a GET since #156, so
+      # #203's redirect applies to it like any other page and ?locale=ru now
+      # answers 301 to /ru/... -- correctly, but a test asserting :success
+      # sees only the redirect.
+      prefix = locale ? "/#{locale}" : ''
+      get "#{prefix}/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
         params: { camera: }
     assert_response :success
   end
@@ -459,7 +464,15 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     with_release_index(*every_edition_for(soc)) do
       submit(soc, 'nor64m')
 
-      assert_no_match(/nor64m/, response.body)
+      # The commands, not the whole body. Since #156 the form is a GET, so the
+      # submitted value legitimately appears in the page's own locale-switcher
+      # links -- they carry the query forward so switching language keeps the
+      # configuration. What must never appear is the string reaching a command,
+      # which is what this test was written for and what the comment above
+      # describes. The canonical and the hreflang alternates stay bare, so no
+      # permutation becomes its own indexed URL.
+      assert_no_match(/setnor64m|uknor64m|urnor64m/, response.body)
+      assert_no_match(%r{<code>[^<]*nor64m}, response.body)
       assert_match 'run uknor8m; run urnor8m', response.body
       assert_match '<code>uknor8m</code>, <code>urnor8m</code>, <code>setnor8m</code>', response.body
     end
@@ -872,7 +885,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     soc = instructable_soc('TS3516EVG10')
 
     with_release_index(*every_edition_for(soc)) do
-      put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
           params: { camera: { flash_type: 'nor8m', firmware_version: 'lite',
                               network_interface: 'eth', sd_card_slot: 'nosd',
                               camera_ip_address: '192.168.1.10',
@@ -903,7 +916,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     soc = instructable_soc('TS3516EVG30')
 
     with_release_index(*every_edition_for(soc)) do
-      put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
           params: { camera: { flash_type: 'nor8m', firmware_version: 'lite',
                               network_interface: 'wifi', sd_card_slot: 'sd',
                               camera_ip_address: '192.168.1.10',
@@ -1088,7 +1101,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     soc = instructable_soc('TS3516EVF40')
 
     with_release_index(*every_edition_for(soc)) do
-      put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
           params: { camera: { flash_type: 'nor8m', firmware_version: 'lite',
                               network_interface: 'eth', sd_card_slot: 'nosd',
                               camera_ip_address: '192.168.1.10',
@@ -1105,7 +1118,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
     soc = instructable_soc('TS3516EVF50')
 
     with_release_index(*every_edition_for(soc)) do
-      put "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
           params: { camera: { flash_type: 'nor8m', firmware_version: 'lite',
                               network_interface: 'eth', sd_card_slot: 'nosd',
                               camera_ip_address: '10.0.0.5; setenv bootdelay 0',
