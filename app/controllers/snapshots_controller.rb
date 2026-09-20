@@ -42,7 +42,7 @@ class SnapshotsController < ApplicationController
     @snapshot = Snapshot.new
     @snapshot.ip_address = request.remote_ip
     if @snapshot.update(permitted_params)
-      head :created, location: snapshot_path(@snapshot)
+      head :created, location: snapshot_path(id: @snapshot)
     else
       head :unsupported_media_type, 'X-Error': @snapshot.errors.full_messages.join('. ')
     end

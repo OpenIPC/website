@@ -3,7 +3,7 @@
     <div class="ratio ratio-16x9 bg-light">
       <%= link_to image_tag(snapshot.wall_image(:thumb) || default_image_path, alt: t('.snapshot_alt'),
                             class: "h-100 w-auto position-absolute top-50 start-50 translate-middle"),
-                  snapshot_path(snapshot) %>
+                  snapshot_path(id: snapshot) %>
     </div>
     <div class="card-body small">
       <span class="float-end x-small text-muted" data-timestamp="<%= snapshot.created_at.to_i %>"><%= snapshot.created_at %></span>

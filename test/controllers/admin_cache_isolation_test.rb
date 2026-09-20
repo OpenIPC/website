@@ -36,7 +36,7 @@ class AdminCacheIsolationTest < ActionDispatch::IntegrationTest
   end
 
   test 'an anonymous snapshot page is cacheable and shows no uploader details' do
-    get snapshot_path(@snapshot)
+    get snapshot_path(id: @snapshot)
 
     assert_response :success
     assert_nil response.headers['X-Admin-View'],
@@ -48,7 +48,7 @@ class AdminCacheIsolationTest < ActionDispatch::IntegrationTest
   test "an admin's snapshot page carries the marker that keeps it out of the cache" do
     sign_in admins(:one)
 
-    get snapshot_path(@snapshot)
+    get snapshot_path(id: @snapshot)
 
     assert_response :success
     assert_equal '1', response.headers['X-Admin-View'],
@@ -58,7 +58,7 @@ class AdminCacheIsolationTest < ActionDispatch::IntegrationTest
   test 'the uploader details an admin sees are the ones that must not be cached' do
     sign_in admins(:one)
 
-    get snapshot_path(@snapshot)
+    get snapshot_path(id: @snapshot)
 
     assert_match(/203\.0\.113\.9/, response.body, 'the admin view is expected to show the IP')
     assert_match(/00:11:22:33:44:55/, response.body, 'and the MAC')

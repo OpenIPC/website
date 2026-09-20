@@ -61,15 +61,26 @@ class QueryLocaleRedirectTest < ActionDispatch::IntegrationTest
     assert_select 'html[lang=?]', 'ru'
   end
 
-  # The pages whose routes are not localized yet -- the per-snapshot views and
-  # the 126-page catalogue, whose helpers take positional arguments that
-  # :locale would swallow. Redirecting them would send a Russian reader to the
-  # English homepage through the catch-all, so they keep the old mechanism.
+  # The snapshot views and the catalogue were the examples here until #154
+  # localized them. What is left is the secondary Open Wall entry points --
+  # /open-wall/<page> and /open-wall/camera/<id> -- which have no prefixed
+  # form. Redirecting one of those would send a Russian reader to the English
+  # homepage through the catch-all, so they keep the old mechanism, and this
+  # is the path that proves the branch still exists.
   test 'a page with no prefixed form is left alone' do
-    get '/snapshots?locale=ru'
+    get '/open-wall/2?locale=ru'
 
     assert_response :success
     assert_select 'html[lang=?]', 'ru'
+  end
+
+  # The other half of #154: these two used to be the example above.
+  test 'the pages that gained a prefixed form now use it' do
+    get '/snapshots?locale=ru'
+    assert_redirected_to '/ru/snapshots'
+
+    get '/supported-hardware/featured?locale=zh'
+    assert_redirected_to '/zh/supported-hardware/featured'
   end
 
   test 'the admin area is not redirected' do
@@ -94,10 +105,10 @@ class QueryLocaleRedirectTest < ActionDispatch::IntegrationTest
   test 'a page with no prefixed form keeps its English parameter' do
     russian = { 'HTTP_ACCEPT_LANGUAGE' => 'ru' }
 
-    get '/snapshots', headers: russian
+    get '/open-wall/2', headers: russian
     assert_select 'html[lang=?]', 'ru'
 
-    get '/snapshots?locale=en', headers: russian
+    get '/open-wall/2?locale=en', headers: russian
 
     assert_response :success
     assert_select 'html[lang=?]', 'en'

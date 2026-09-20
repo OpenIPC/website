@@ -2,8 +2,8 @@
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><%= link_to t('nav.home'), locale_path('/') %></li>
     <li class="breadcrumb-item"><%= link_to t('nav.vendors'), cameras_vendors_path %></li>
-    <li class="breadcrumb-item"><%= link_to @vendor.name, cameras_vendor_path(@vendor) %></li>
-    <li class="breadcrumb-item active" aria-current="page"><%= link_to @camera.soc.model, cameras_vendor_soc_path(@vendor, @camera.soc) %></li>
+    <li class="breadcrumb-item"><%= link_to @vendor.name, cameras_vendor_path(id: @vendor) %></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= link_to @camera.soc.model, cameras_vendor_soc_path(vendor_id: @vendor, id: @camera.soc) %></li>
   </ol>
 </nav>
 
@@ -68,7 +68,7 @@
         <div class="col col-lg-4">
           <div class="github">
             <i class="bi bi-github float-start me-2"></i>
-            <h6 class="mb-0"><%= link_to t('firmware.installation.flashing_full.link', name: @camera.firmware_version.to_s.titleize), download_full_image_cameras_vendor_soc_path(@camera.soc.vendor, @camera.soc, fw_release: @camera.firmware_version, flash_size: @camera.flash_size, flash_type: @camera.flash_type_type, layout: @camera.layout_size) %></h6>
+            <h6 class="mb-0"><%= link_to t('firmware.installation.flashing_full.link', name: @camera.firmware_version.to_s.titleize), download_full_image_cameras_vendor_soc_path(vendor_id: @camera.soc.vendor, id: @camera.soc, fw_release: @camera.firmware_version, flash_size: @camera.flash_size, flash_type: @camera.flash_type_type, layout: @camera.layout_size) %></h6>
             <p>for <%= @camera.soc.full_name %> with <%= @camera.flash_size %>MB <%= @camera.flash_type_type.upcase %> flash<%= ", #{@camera.layout_size}MB partitions" unless @camera.nand? || @camera.layout_size == @camera.flash_size %></p>
             <p class="mb-0"><%= t('firmware.installation.flashing_full.info') %></p>
             <% if @camera.nand? %>
