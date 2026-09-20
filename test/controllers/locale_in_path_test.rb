@@ -31,7 +31,7 @@ class LocaleInPathTest < ActionDispatch::IntegrationTest
   # The point of the whole change: two visitors asking for the same URL get the
   # same page, whatever either of them has in a cookie.
   test 'a prefixed path ignores the session' do
-    get '/?locale=zh'
+    get '/zh'
     assert_select 'html[lang=?]', 'zh'
 
     get '/ru/donate'
@@ -45,15 +45,16 @@ class LocaleInPathTest < ActionDispatch::IntegrationTest
     assert_select 'html[lang=?]', 'en' # /ru/ must not make later bare paths Russian
   end
 
-  # Until #155 retires it. Removing this before the prefixed URLs are the ones
-  # being linked would give a ?locale= visitor one page in their language and
-  # then English for the rest of the visit.
-  test 'the old query parameter still works and still sticks' do
+  # ?locale= is retired: it now answers 301 to the prefixed path rather than
+  # rendering in place, and query_locale_redirect_test covers the rules. What
+  # this asserts is that the old links still arrive somewhere correct, which is
+  # the promise made to everyone who has one in a bookmark or a forum post.
+  test 'an old query-parameter link still arrives in the right language' do
     get '/?locale=ru'
-    assert_select 'html[lang=?]', 'ru'
 
-    get '/donate'
-    assert_select 'html[lang=?]', 'ru' # the session still carries it for unprefixed paths
+    assert_response :moved_permanently
+    follow_redirect!
+    assert_select 'html[lang=?]', 'ru'
   end
 
   # The constraint is what stops (:locale) swallowing the site. An unknown

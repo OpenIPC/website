@@ -21,7 +21,11 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
   PAGES.each do |path, key|
     LOCALES.each do |locale|
       test "#{path} renders in #{locale}" do
-        get "#{path}?locale=#{locale}"
+        # The prefixed URL, which is the address these pages now have. ?locale=
+        # still reaches them and answers 301 to exactly this (#154), and
+        # query_locale_redirect_test covers that; what this file is for is that
+        # every page renders in every language, which is unchanged.
+        get locale == :en ? path : "/#{locale}#{path == '/' ? '' : path}"
 
         assert_response :success
         # A key that exists in en but not here would render as this span, and
@@ -137,12 +141,12 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
   test 'Russian integrators appear for ru and for nobody else' do
     marker = PagesHelper::RU_INTEGRATORS.first[:img]
 
-    get '/?locale=ru'
+    get '/ru'
 
     assert_includes response.body, marker.sub('.png', '')
 
     %w[en zh].each do |locale|
-      get "/?locale=#{locale}"
+      get locale == :en ? "/" : "/#{locale}"
 
       assert_not_includes response.body, marker.sub('.png', ''),
                           "RU integrators leaked into #{locale}"
@@ -429,7 +433,7 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
   # want their names on the marketing site.
   test 'the low-latency page cites no private Telegram links and no unpublished meter' do
     %w[en ru zh].each do |locale|
-      get "/low-latency?locale=#{locale}"
+      get locale == 'en' ? '/low-latency' : "/#{locale}/low-latency"
 
       assert_response :success
       assert_not_includes response.body, 't.me/c/', "a private Telegram link leaked into #{locale}"
@@ -437,7 +441,7 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
                       "the latency section is missing in #{locale}"
     end
 
-    get '/low-latency?locale=en'
+    get '/low-latency'
     assert_not_includes response.body, 'latency meter',
                         'the page claims a meter whose design and runs are not published'
   end

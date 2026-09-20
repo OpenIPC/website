@@ -20,11 +20,11 @@ class PageMetadataTest < ActionDispatch::IntegrationTest
   # would render the English one -- fine -- or, without fallbacks, a
   # "translation missing" span, which would be published into search results.
   test 'the description is written in the locale being rendered' do
-    get '/?locale=ru'
+    get '/ru'
 
     ru = css_select('meta[name="description"]').first['content']
 
-    get '/?locale=en'
+    get '/'
 
     en = css_select('meta[name="description"]').first['content']
 
@@ -36,11 +36,14 @@ class PageMetadataTest < ActionDispatch::IntegrationTest
   # query string reached the canonical, each translation would compete with the
   # others for the same content.
   test 'the canonical URL drops the query string' do
-    get '/supported-hardware/featured?locale=ru&page=2'
+    get '/ru/supported-hardware/featured?page=2'
 
     canonical = css_select('link[rel="canonical"]').first['href']
 
-    assert_equal '/supported-hardware/featured', URI.parse(canonical).path
+    # Its own path, since #154: a translated page is its own canonical rather
+    # than pointing at the English one. What this test is about is unchanged --
+    # the query string must not reach it, or ?page=2 would compete with ?page=3.
+    assert_equal '/ru/supported-hardware/featured', URI.parse(canonical).path
     assert_nil URI.parse(canonical).query
   end
 

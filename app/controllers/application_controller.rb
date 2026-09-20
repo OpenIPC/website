@@ -3,6 +3,9 @@
 class ApplicationController < ActionController::Base
   include RubyMineHacks if Rails.env.development?
   include Multilang
+  # After Multilang: the redirect asks whether a prefixed route exists, and
+  # Multilang owns the locale list it asks about (#154).
+  include LocaleRedirect
   include RescueHandler
 
   protect_from_forgery unless: -> { request.format.json? }
