@@ -16,6 +16,7 @@ set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 sampler=/usr/local/sbin/openipc-sample-rss
 cron=/etc/cron.d/openipc-metrics
+probe=/usr/local/sbin/openipc-memory-probe
 
 [ "$(id -u)" -eq 0 ] || { echo "install-metrics.sh: must run as root" >&2; exit 1; }
 
@@ -24,7 +25,14 @@ install -m 0755 -o root -g root "$here/openipc-sample-rss" "$sampler"
 # so silently -- no entry, no error, no samples.
 install -m 0644 -o root -g root "$here/cron.d/openipc-metrics" "$cron"
 
-echo "installed $sampler and $cron"
+# The probe is not a cron job, but it belongs on the host for the same reason
+# the sampler does: a copy left to be scp'd by hand goes stale, and a stale
+# probe reports numbers from a load nobody can reproduce. The first time this
+# was skipped, the host kept running a version that still loaded a redirect for
+# a sixth of every request.
+install -m 0755 -o root -g root "$here/memory-probe.sh" "$probe"
+
+echo "installed $sampler, $cron and $probe"
 
 # Prove it runs as installed rather than assuming it does. A sampler that fails
 # only under cron's environment is the failure this line exists to catch.
