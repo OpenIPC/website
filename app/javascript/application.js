@@ -29,6 +29,7 @@ import initTimestamps from './src/timestamps'
 import initConfirms from './src/confirms'
 import initHeifViewer from './src/heif-viewer'
 import initCopy from './src/copy'
+import initAnalytics from './src/analytics'
 
 // Forms are left alone, deliberately.
 //
@@ -59,6 +60,7 @@ if (window.Turbo.config) {
 initZoom()
 initCopy()
 initHeifViewer()
+initAnalytics()
 
 // Re-run per page. These walk the DOM and attach to the elements they find, so
 // they have to run again once Turbo has swapped in new ones. turbo:load fires

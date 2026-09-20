@@ -116,6 +116,34 @@ zstd -dc "${WORK}/${DB}.sql.zst" | tail -5 | grep -q "Dump completed" \
   || fail "dump has no completion marker — mysqldump was interrupted"
 log "dump verified"
 
+# ----------------------------------------------------------- analytics
+# GoatCounter's SQLite file (#181). Small -- only per-day aggregates reach
+# disk, no raw addresses and no session rows -- but it is the only copy of the
+# site's entire audience history, and unlike MySQL it is not rebuilt from
+# anything if the host is lost.
+#
+# `sqlite3 .backup` rather than cp: the service is running and writing, and a
+# plain copy of a live SQLite file can be a torn one that restores to an error.
+# Absent on a host where analytics was never installed, which is not a failure.
+ANALYTICS_DB=/srv/www/shared/analytics/db.sqlite3
+ANALYTICS_ARCHIVE=analytics.sqlite3.zst
+HAVE_ANALYTICS=0
+
+if [ -f "$ANALYTICS_DB" ]; then
+  if sqlite3 "$ANALYTICS_DB" ".backup '${WORK}/analytics.sqlite3'" 2>/dev/null; then
+    zstd -q -f --rm "${WORK}/analytics.sqlite3" -o "${WORK}/${ANALYTICS_ARCHIVE}" \
+      || fail "compressing the analytics database failed"
+    zstd -t "${WORK}/${ANALYTICS_ARCHIVE}" 2>/dev/null \
+      || fail "analytics database fails its own integrity check"
+    HAVE_ANALYTICS=1
+    log "analytics database captured"
+  else
+    fail "sqlite3 .backup of the analytics database failed"
+  fi
+else
+  log "no analytics database on this host, skipping"
+fi
+
 # ------------------------------------------------------------- secrets
 log "encrypting secrets to ${AGE_RECIPIENT:0:20}..."
 tar -C "$APP_DIR/config" -czf "${WORK}/secrets.tar.gz" master.key production.env
@@ -129,7 +157,9 @@ rm -f "${WORK}/secrets.tar.gz"
 # -------------------------------------------------------------- upload
 put() {
   local prefix=$1
-  for f in "${DB}.sql.zst" secrets.tar.gz.age; do
+  local files=("${DB}.sql.zst" secrets.tar.gz.age)
+  [ "$HAVE_ANALYTICS" = 1 ] && files+=("$ANALYTICS_ARCHIVE")
+  for f in "${files[@]}"; do
     if [ "$DRY_RUN" = 1 ]; then
       log "DRY RUN would upload ${f} -> s3://${S3_BUCKET}/${prefix}/${f}"
     else
