@@ -68,6 +68,118 @@ class MicrocacheLanguageTest < ActiveSupport::TestCase
     end
   end
 
+  # Vary covers headers. It says nothing about the query string, and
+  # ?locale= still selects a language on the routes that have no prefixed
+  # form -- the snapshot routes sit outside `scope "(:locale)"` because
+  # positional route helpers break under it, and the Open Wall mosaic links
+  # to them with exactly that parameter. A cache that drops the query from
+  # its key therefore stores one language under a key that claims none:
+  #
+  #   /snapshots/3589409?locale=ru  Accept-Language: en  ->  lang="ru"  MISS
+  #   /snapshots/3589409            Accept-Language: en  ->  lang="ru"  HIT
+  test 'a key that drops the query still accounts for the locale parameter' do
+    cached_rails_blocks.each do |block|
+      next if block.match?(LANGUAGE_INDEPENDENT)
+
+      location = block[/location[^{]*/].to_s.strip
+      key = block[/proxy_cache_key\s+([^;]+);/, 1].to_s
+
+      next if key.include?('$request_uri') # the whole query is in the key already
+
+      assert_includes key, '$locale_key', <<~MESSAGE.chomp
+        #{location} keys its cache on #{key}, which drops the query string,
+        but ?locale= still changes the language of the page it caches.
+
+        Use $locale_key (conf.d/openipc-microcache.conf), which normalises the
+        parameter to the supported set. Keying on $arg_locale raw would let
+        ?locale=<anything> fragment the cache without bound, which is the
+        flood the $uri key exists to absorb.
+      MESSAGE
+    end
+  end
+
+  test 'the locale key is normalised rather than taken raw' do
+    micro = Rails.root.join('deploy/nginx/conf.d/openipc-microcache.conf').read
+
+    assert_match(/map\s+\$arg_locale\s+\$locale_key\s*\{/, micro,
+                 '$locale_key is used in a cache key and has to be defined')
+    assert_match(/default\s+"";/, micro,
+                 'an unrecognised ?locale= must collapse to one bucket, not create its own')
+  end
+
+  # Every rule these locations carry -- the firmware rate limit, the
+  # microcache, the concurrency caps -- applies only to paths the regex
+  # matches. They are anchored at ^/, so a locale prefix walks past all of
+  # them. #154 localized /open-wall and that alone opened the gap: /open-wall
+  # was microcached and capped, /ru/open-wall was neither. The rest of #154
+  # localizes the catalogue, at which point /ru/cameras/.../download_full_image
+  # would be the same 1s-of-CPU, 8-32MB-of-disk action with no limit_req in
+  # front of it.
+  #
+  # Named by the route family they guard, never by the locales they list. An
+  # earlier version of this test hardcoded `ru|zh` in each pattern, which meant
+  # adding a locale could be made to pass by editing the patterns one at a time
+  # while two guards stayed stale -- the test agreeing with itself rather than
+  # with the vhost.
+  GUARDED_ROUTES = ['cameras/vendors', 'snapshots/', '(open-wall'].freeze
+
+  # The optional locale alternation each guarded location actually carries.
+  def guard_locales
+    GUARDED_ROUTES.to_h do |route|
+      line = VHOST.lines.find { |l| l.include?('location ~ ') && l.include?(route) }
+      [route, line&.[](/\(\?:\(\?:([a-z|]+)\)/, 1)&.split('|')&.sort]
+    end
+  end
+
+  test 'a locale prefix cannot walk past the rate limits and caches' do
+    guard_locales.each do |route, locales|
+      assert_not_nil locales, <<~MESSAGE.chomp
+        The location guarding #{route} carries no optional locale prefix.
+
+        These regexes are anchored at ^/. Without (?:(?:ru|zh)/)? the rule
+        stops applying the moment the route is localized, which for the
+        firmware location means an unlimited image build behind /ru/.
+      MESSAGE
+    end
+  end
+
+  # The nginx lists and the Rails list have no connection, and a disagreement
+  # is silent in the direction that matters: a locale Rails serves but nginx
+  # does not know about is an unguarded path. Checked for every guard, not
+  # whichever one appears first in the file.
+  test 'the prefixes nginx knows match the locales Rails puts in a path' do
+    rails_locales = Multilang::IN_PATH.source.split('|').sort
+
+    guard_locales.each do |route, locales|
+      assert_equal rails_locales, locales, <<~MESSAGE.chomp
+        The location guarding #{route} knows #{locales.inspect} but Rails
+        serves #{rails_locales.inspect} as path prefixes. A locale in the
+        second list and not the first is a path with no rate limit, no cache
+        and no concurrency cap.
+      MESSAGE
+    end
+  end
+
+  # /snapshots/123ru with no parameter and /snapshots/123?locale=ru built the
+  # same key when $locale_key was simply appended, and the first URL resolves:
+  # the location regex is not anchored at the end and MySQL casts "123ru" to
+  # 123. Reproduced on production -- an English render was served for the
+  # Russian page. The bounded field has to be delimited, not concatenated.
+  test 'the locale field in a cache key cannot run into the path' do
+    cached_rails_blocks.each do |block|
+      key = block[/proxy_cache_key\s+([^;]+);/, 1].to_s
+      next unless key.include?('$locale_key')
+
+      assert_match(/\|\$locale_key\|/, key, <<~MESSAGE.chomp)
+        #{block[/location[^{]*/].to_s.strip} builds its key as #{key}.
+
+        $locale_key must be bracketed by delimiters. Appended straight onto
+        the path, /snapshots/123ru and /snapshots/123?locale=ru are the same
+        key, and anyone can seed the Russian entry with an English render.
+      MESSAGE
+    end
+  end
+
   test 'the guard covers the locations that actually render pages' do
     covered = cached_rails_blocks.reject { |b| b.match?(LANGUAGE_INDEPENDENT) }
 
