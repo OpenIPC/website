@@ -10,6 +10,11 @@
 #   scp -P 35242 -r deploy root@openipc.org:/tmp/openipc-deploy
 #   ssh -p 35242 root@openipc.org /tmp/openipc-deploy/install-metrics.sh
 #
+# The audience report needs a country database, which is a separate monthly
+# job rather than part of this:
+#
+#   ssh -p 35242 root@openipc.org openipc-audience-report --refresh-country-db
+#
 # Safe to re-run: it overwrites both files and leaves the log alone.
 set -euo pipefail
 
@@ -17,6 +22,8 @@ here=$(cd "$(dirname "$0")" && pwd)
 sampler=/usr/local/sbin/openipc-sample-rss
 cron=/etc/cron.d/openipc-metrics
 probe=/usr/local/sbin/openipc-memory-probe
+audience=/usr/local/sbin/openipc-audience-report
+reports=/srv/www/shared/reports
 
 [ "$(id -u)" -eq 0 ] || { echo "install-metrics.sh: must run as root" >&2; exit 1; }
 
@@ -31,8 +38,13 @@ install -m 0644 -o root -g root "$here/cron.d/openipc-metrics" "$cron"
 # was skipped, the host kept running a version that still loaded a redirect for
 # a sixth of every request.
 install -m 0755 -o root -g root "$here/memory-probe.sh" "$probe"
+install -m 0755 -o root -g root "$here/audience-report.sh" "$audience"
 
-echo "installed $sampler, $cron and $probe"
+# nginx serves this directory to org.openipc.dev under basic auth; it has to
+# exist before the first report is written or the location 404s all day.
+install -d -m 0755 -o root -g root "$reports"
+
+echo "installed $sampler, $cron, $probe and $audience"
 
 # Prove it runs as installed rather than assuming it does. A sampler that fails
 # only under cron's environment is the failure this line exists to catch.

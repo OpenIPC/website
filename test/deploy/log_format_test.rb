@@ -71,4 +71,43 @@ class LogFormatTest < ActiveSupport::TestCase
                    "#{key} carries a comma-separated value and must be quoted")
     end
   end
+
+  # The report reads this log with a GoAccess format string that has to describe
+  # the same fields in the same order. Nothing connects the two files, and a
+  # mismatch is silent: GoAccess parses zero lines and writes an empty report
+  # every night until somebody opens one.
+  REPORT = Rails.root.join('deploy/audience-report.sh').read.freeze
+
+  def goaccess_format
+    REPORT[/--log-format='([^']*)'/, 1].to_s
+  end
+
+  test 'the report describes the same fields as the log writes' do
+    # GoAccess names what it keeps (%h host, %r request, %s status, %b bytes,
+    # %R referer, %u agent, %T time) and ignores the rest with %^. Reduce both
+    # sides to the literal text between the fields and they must agree.
+    #
+    # The timestamp is collapsed whole: nginx writes it as one $time_local
+    # where GoAccess has to be told its date and time parts separately, so the
+    # two spell the same bracketed field differently on purpose.
+    skeleton = lambda do |fmt|
+      fmt.gsub(/\[[^\]]*\]/, '[~]').gsub(/%\^|%[a-zA-Z]|\$[a-z_]+/, '~').squeeze('~ ')
+    end
+
+    assert_equal skeleton.call(format_string), skeleton.call(goaccess_format),
+                 <<~MESSAGE.chomp
+                   deploy/audience-report.sh no longer describes this log.
+
+                   nginx writes : #{format_string}
+                   goaccess reads: #{goaccess_format}
+
+                   A mismatch is silent -- GoAccess parses nothing and writes an
+                   empty report every night.
+                 MESSAGE
+  end
+
+  test 'the report knows about the accept-language field' do
+    assert_includes goaccess_format, 'al=',
+                    'the field is written; a reader that stops before it parses nothing'
+  end
 end

@@ -2,3 +2,12 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # Hourly memory baseline for the migration epic (#143, feeds #148).
 5 * * * *  root  /usr/local/sbin/openipc-sample-rss >>/var/log/openipc-rss.log 2>&1
+
+# Yesterday's audience, people only, as an HTML page (#180). Runs after
+# logrotate, which fires at 00:00, and before anyone is awake to ask.
+17 3 * * *  root  /usr/local/sbin/openipc-audience-report >>/var/log/openipc-audience.log 2>&1
+
+# The country database the report annotates addresses with. DB-IP publish a new
+# one each month under a predictable name and the old one keeps working, so a
+# failed fetch is not an outage.
+41 4 3 * *  root  /usr/local/sbin/openipc-audience-report --refresh-country-db >>/var/log/openipc-audience.log 2>&1

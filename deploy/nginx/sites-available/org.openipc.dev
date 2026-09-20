@@ -49,6 +49,19 @@ server {
 
    add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
 
+   # Nightly audience reports (#180). Here and never on org.openipc, because
+   # they name the pages people read and the countries they read them from, and
+   # the basic auth above is the only thing standing in front of them. Served
+   # from disk: the report is a self-contained HTML file with no server behind
+   # it, and autoindex is what makes yesterday's reachable without a link.
+   location /_reports/ {
+       alias /srv/www/shared/reports/;
+       autoindex on;
+       autoindex_localtime on;
+       # A report is written once and never changed; the directory listing is.
+       add_header Cache-Control "no-cache" always;
+   }
+
    # Assembled firmware images. Rails decides who may have one and names the
    # file; nginx sends the bytes, so a slow client holds an nginx connection
    # instead of one of Puma's sixteen threads.
