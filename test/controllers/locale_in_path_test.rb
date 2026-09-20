@@ -107,4 +107,51 @@ class LocaleInPathTest < ActionDispatch::IntegrationTest
     assert_select 'a[lang=zh][href=?]', '/zh/donate'
     assert_select 'a[lang=en][href=?]', '/donate'
   end
+
+  # The invariant, rather than another individual case.
+  #
+  # Two links have already been found pointing at routes that do not exist in
+  # a prefixed form -- /ru/open-wall in review, and /ru/supported-hardware on
+  # dev, which is the navbar's "Hardware" item and sent Russian and Chinese
+  # visitors to the ENGLISH homepage. Both were invisible because locale_path
+  # will happily prefix a path whether or not anything answers it.
+  #
+  # So: follow every internal link on a localized page and require it to
+  # resolve. A redirect counts as a failure unless it stays in the language --
+  # a navigation click that changes the language is the bug, not the fix.
+  %w[ru zh].each do |locale|
+    test "every internal link on a #{locale} page stays in #{locale}" do
+      get "/#{locale}/donate"
+
+      assert_response :success
+      # The language switcher deliberately points at the other languages, so it
+      # is the one set of links exempt from this. It is the only place that
+      # carries a lang attribute.
+      links = css_select('a[href^="/"]:not([lang])').map { |a| a['href'] }.uniq
+      refute_empty links
+
+      broken = links.filter_map do |href|
+        path = href.split('?').first
+        # 200 is not enough. A link to the unprefixed /business answers 200 --
+        # in English -- so a page can pass a liveness check while quietly
+        # sending half its readers into another language. 48 such links live
+        # inside the locale YAML, where locale_path cannot see them.
+        next if path.start_with?("/#{locale}/") || path == "/#{locale}"
+        next if path.match?(%r{\A/(assets|fonts|files|dl|wall|images)/}) ||
+                File.extname(path).present?
+
+        get href
+        "#{href} -> #{response.status} #{response.redirect? ? response.location : ''}"
+      end
+
+      assert_empty broken, <<~MESSAGE.chomp
+        Links on /#{locale}/donate that leave the language:
+
+        #{broken.map { |b| "  #{b}" }.join("\n")}
+
+        locale_path prefixes a path whether or not a route answers it, so an
+        unscoped route becomes a link to the English homepage.
+      MESSAGE
+    end
+  end
 end

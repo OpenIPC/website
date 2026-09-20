@@ -109,7 +109,17 @@ Rails.application.routes.draw do
     get '/web-interface', to: 'pages#web_interface'
   end
 
-  get '/supported-hardware', to: redirect('/supported-hardware/featured')
+  # Localized, because the navbar links here from every page. Unscoped, the
+  # "Hardware" item on a Russian page pointed at /ru/supported-hardware, which
+  # was not a route and dropped the visitor on the ENGLISH homepage. A redirect
+  # target has to carry the prefix forward or it is a language change disguised
+  # as a navigation click.
+  scope '(:locale)', locale: Multilang::IN_PATH do
+    get '/supported-hardware', to: redirect { |params, _request|
+      prefix = params[:locale].present? ? "/#{params[:locale]}" : ''
+      "#{prefix}/supported-hardware/featured"
+    }
+  end
   scope '(:locale)', locale: Multilang::IN_PATH do
     get '/supported-hardware/featured', to: 'cameras/socs#featured'
     get '/supported-hardware/full-list', to: 'cameras/socs#full_list'
