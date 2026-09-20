@@ -32,6 +32,43 @@ ok() { printf '\033[32m ok\033[0m %s\n' "$*"; }
 
 compose() { docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"; }
 
+# Every page this deploy serves carries the beacon tag (#181), and nginx
+# proxies /api/a/count to 127.0.0.1:8081. If nothing is listening there the
+# site is fine -- the counter is loaded with optional chaining and a dead
+# upstream cannot break a page -- but it silently stops counting, and the
+# dashboard shows a flat line that looks like an audience rather than an
+# outage.
+#
+# That is exactly the state a rebuilt host is in: the image and the nginx
+# configuration come back, the service does not, because installing it needs
+# credentials and a download and is therefore deploy/install-analytics.sh
+# rather than part of every deploy.
+#
+# So this does not install anything. It starts the unit if it is present and
+# stopped, and says what to run if it is absent. It never fails the deploy:
+# the site works without it, and refusing to ship a working site because its
+# analytics are down would be the wrong trade.
+check_analytics() {
+  if ! systemctl list-unit-files openipc-analytics.service >/dev/null 2>&1 \
+     || ! systemctl cat openipc-analytics >/dev/null 2>&1; then
+    printf '\033[33m==> analytics not installed; pages will carry the beacon and nothing will count it\033[0m\n' >&2
+    printf '    ANALYTICS_EMAIL=... ANALYTICS_PASSWORD=... %s/install-analytics.sh\n' "$(dirname "$SELF")" >&2
+    return 0
+  fi
+
+  if ! systemctl is-active --quiet openipc-analytics; then
+    printf '\033[33m==> analytics service is down, starting it\033[0m\n' >&2
+    systemctl start openipc-analytics || true
+  fi
+
+  if systemctl is-active --quiet openipc-analytics; then
+    ok "analytics is up ($(systemctl show openipc-analytics -p MemoryCurrent --value | awk '{printf "%.0fMB", $1/1048576}'))"
+  else
+    printf '\033[33m==> analytics service will not start; the beacon has no upstream\033[0m\n' >&2
+    printf '    journalctl -u openipc-analytics -n 30\n' >&2
+  fi
+}
+
 # Read a key from deploy/.env, empty if absent.
 env_get() { [ -f "$ENV_FILE" ] && sed -n "s/^$1=//p" "$ENV_FILE" | tail -1 || true; }
 
@@ -160,6 +197,7 @@ do_deploy() {
     fi
     ok "${env_name} is serving ${sha}"
     compose ps "$service"
+    check_analytics
   else
     printf '\033[31m==> health check failed; rolling back\033[0m\n' >&2
     if [ -n "$previous" ]; then

@@ -16,6 +16,13 @@
 # afterwards they live in the SQLite file and the variables are ignored. They
 # are deliberately not in this repository, which is public.
 #
+# Not part of deploy.sh, deliberately: this downloads a binary and needs
+# credentials, and neither belongs in a command that runs on every release.
+# deploy.sh does check that the service is up afterwards and says to run this
+# when it is not -- because a deploy that leaves the beacon tag on every page
+# with nothing listening behind it produces a flat dashboard that reads like an
+# audience rather than an outage.
+#
 # Safe to re-run: it re-verifies the binary, rewrites the unit, and leaves an
 # existing database alone.
 set -euo pipefail
