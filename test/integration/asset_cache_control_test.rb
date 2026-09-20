@@ -66,10 +66,22 @@ class AssetCacheControlTest < ActiveSupport::TestCase
     assert_equal AssetCacheControl::IMMUTABLE, value
   end
 
+  # Positioned against Rack::Sendfile rather than ActionDispatch::Static,
+  # because Static is only in the stack when public_file_server.enabled is
+  # true. It is not during the image build's assets:precompile, where
+  # insert_before ActionDispatch::Static aborts the build outright -- which is
+  # how this was found, in CI rather than here.
   test 'the middleware sits where it can see what Static served' do
     stack = Rails.application.config.middleware.map(&:name)
+
     assert_includes stack, 'AssetCacheControl'
-    assert_operator stack.index('AssetCacheControl'), :<, stack.index('ActionDispatch::Static'),
+    assert_operator stack.index('Rack::Sendfile'), :<, stack.index('AssetCacheControl'),
+                    'Rack::Sendfile is the unconditional anchor this is positioned against'
+
+    static = stack.index('ActionDispatch::Static')
+    return if static.nil? # not enabled in this environment; nothing to order against
+
+    assert_operator stack.index('AssetCacheControl'), :<, static,
                     'outside Static, or it never sees the response Static produced'
   end
 end
