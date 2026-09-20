@@ -47,10 +47,12 @@ class SitemapTest < ActionDispatch::IntegrationTest
   # The one that matters, and the one that was missing.
   #
   # The first version of this listed the 126-page hardware catalogue in three
-  # languages. /ru/cameras/... is not a route -- the catalogue helpers take a
-  # vendor and a SoC positionally and :locale would swallow the first -- so the
-  # sitemap advertised 252 URLs that 302 to the English homepage. Telling a
-  # search engine to crawl a redirect is worse than telling it nothing.
+  # languages before /ru/cameras/... was a route -- the catalogue helpers took
+  # a vendor and a SoC positionally and :locale swallowed the first -- so the
+  # sitemap advertised 252 URLs that 302'd to the English homepage. Telling a
+  # search engine to crawl a redirect is worse than telling it nothing. #154
+  # localized those routes, so the catalogue is listed now, and this is what
+  # keeps it honest.
   test 'every URL it advertises actually renders' do
     locs = response.body.scan(%r{<loc>http://www\.example\.com(/[^<]*)</loc>}).flatten.uniq
     refute_empty locs
@@ -68,5 +70,59 @@ class SitemapTest < ActionDispatch::IntegrationTest
       A search engine told to crawl a redirect is worse off than one told
       nothing. Either localize the route or leave it out of the sitemap.
     MESSAGE
+  end
+end
+
+# The catalogue is the part of the site with real long-tail search value and
+# the reason the sitemap sat half-finished for so long. It is read from the
+# database, and this database carries no vendors or SoCs, so these build one --
+# otherwise every assertion about the catalogue passes over an empty list.
+class SitemapCatalogueTest < ActionDispatch::IntegrationTest
+  setup do
+    vendor = Vendor.find_by(name: 'Sitemap Test Vendor') ||
+             Vendor.create!(name: 'Sitemap Test Vendor')
+    @soc = Soc.find_by(model: 'SM2000') ||
+           Soc.create!(model: 'SM2000', vendor: vendor, family: 'sm', status: 'done',
+                       uboot_filename: 'u-boot-sm2000.bin', linux_filename: 'uImage.sm2000')
+    get '/sitemap.xml'
+  end
+
+  def locs
+    response.body.scan(%r{<loc>http://www\.example\.com(/[^<]*)</loc>}).flatten
+  end
+
+  test 'every SoC is offered in every language' do
+    path = "/cameras/vendors/#{@soc.vendor.to_param}/socs/#{@soc.to_param}"
+
+    assert_includes locs, path
+    assert_includes locs, "/ru#{path}"
+    assert_includes locs, "/zh#{path}"
+  end
+
+  test 'every vendor is offered in every language' do
+    path = "/cameras/vendors/#{@soc.vendor.to_param}"
+
+    assert_includes locs, path
+    assert_includes locs, "/ru#{path}"
+    assert_includes locs, "/zh#{path}"
+  end
+
+  # /cameras/socs without ?vendor= redirects to the featured page, which is
+  # already listed. Offering both tells a crawler to follow a hop to a URL it
+  # already has.
+  test 'it does not offer the redirecting catalogue index' do
+    assert_empty locs.grep(%r{\A(/(ru|zh))?/cameras/socs\z})
+  end
+
+  test 'the catalogue URLs it advertises render' do
+    catalogue = locs.grep(%r{/cameras/vendors/}).uniq
+
+    refute_empty catalogue
+    broken = catalogue.reject do |path|
+      get path
+      response.successful?
+    end
+
+    assert_empty broken, "the sitemap offers catalogue URLs that do not render: #{broken.first(5).inspect}"
   end
 end

@@ -150,6 +150,37 @@ class LocaleInPathTest < ActionDispatch::IntegrationTest
     assert_select 'html[lang=?]', 'ru'
   end
 
+  # A redirect that drops the prefix is a language change disguised as a
+  # navigation click. This is the same fault as the navbar Hardware link, which
+  # sent Russian readers to the English homepage, and localizing the catalogue
+  # created three more places it could happen.
+  test 'a redirect inside the catalogue keeps the language' do
+    get '/ru/cameras/socs'
+
+    assert_redirected_to '/ru/supported-hardware/featured'
+  end
+
+  test 'a snapshot that is gone returns to the gallery in the same language' do
+    get '/ru/snapshots/999999999'
+
+    assert_redirected_to '/ru/open-wall'
+  end
+
+  # The catch-all every mistyped and every retired URL lands on. Sending the
+  # reader of /ru/<typo> to the English homepage is the complaint #154 exists
+  # to fix, in its most visible form.
+  test 'a mistyped prefixed URL lands on the homepage in that language' do
+    get '/ru/no-such-page-here'
+
+    assert_redirected_to '/ru'
+  end
+
+  test 'a mistyped English URL still lands on the bare homepage' do
+    get '/no-such-page-here'
+
+    assert_redirected_to '/'
+  end
+
   # /ru/assets/... and /ru/fonts/... are 404s. The first draft of locale_path
   # produced both by rewriting the font preloads in the layout.
   test 'assets and fonts are never prefixed' do

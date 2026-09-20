@@ -135,13 +135,13 @@ class SnapshotsController < ApplicationController
     mac_address_dec = params[:id].to_i
     mac_address = mac_address_dec.to_s(16).rjust(12, '0').reverse.gsub(/(.{2})(?=.)/, '\\1:').reverse
     @snapshot = Snapshot.where(mac_address: mac_address).order(created_at: :desc).first
-    redirect_to '/open-wall', alert: "No camera with ID #{mac_address_dec} here." if @snapshot.nil?
+    redirect_to locale_path('/open-wall'), alert: "No camera with ID #{mac_address_dec} here." if @snapshot.nil?
   end
 
   def find_snapshot
     @snapshot = Snapshot.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    redirect_to '/open-wall', alert: 'No such a shaphot here.'
+    redirect_to locale_path('/open-wall'), alert: 'No such a shaphot here.'
   end
 
   def permitted_params
