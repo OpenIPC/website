@@ -46,10 +46,6 @@
         ticker = setInterval(() => {f.textContent = fps;}, 1000);
     }
 
-    // Driven entirely by Turbo's events, including the first load -- turbo:load
-    // fires for the document the browser fetched as well as for every visit
-    // after it, which is the whole reason it replaces DOMContentLoaded here.
-    //
     // Both halves are needed and for opposite reasons. Without the stop, the
     // loop went on counting frames against a detached <p> for the rest of the
     // session, because Turbo keeps the document a page was rendered into: 41
@@ -70,5 +66,16 @@
     window.__hiResTimer = { start, stop };
     document.addEventListener('turbo:load', start);
     document.addEventListener('turbo:before-cache', stop);
+
+    // Started here as well as from turbo:load, and only once the previous
+    // scope above has been shut down. Directly, because this page needed no
+    // JavaScript but its own until today and should not start depending on
+    // the bundle arriving -- `config.assets.compile = false` means a mistyped
+    // asset reference 404s in production, and the clock would stop with it.
+    // From turbo:load as well, because that is the only one of the two that
+    // fires on a restoration visit. start() opens with stop(), so being
+    // called twice on the first load costs one cancelled frame and nothing
+    // else.
+    start();
   })();
 </script>
