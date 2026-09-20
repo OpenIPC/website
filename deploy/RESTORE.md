@@ -132,6 +132,19 @@ Only needed on a rebuilt host:
 - `/srv/www/shared/storage` — the blob tree, on the system disk. Blobs are
   **not** in the backup; the Open Wall will simply be empty until cameras
   re-upload, so an empty directory owned by uid 1000 is a complete restore.
+- **analytics**, via `deploy/install-analytics.sh` (#181). It installs
+  GoatCounter, its account and its systemd unit, and creates the site on first
+  run from `ANALYTICS_EMAIL` and `ANALYTICS_PASSWORD`. The SQLite database is
+  restored from `analytics.sqlite3.zst` in the backup instead, and the
+  installer leaves an existing file alone — so restore the database first, then
+  run the installer, or the site row it creates will be the wrong one.
+
+  Two things live outside this repository and a rebuilt host needs both:
+  `analytics.openipc.org` must resolve to the host, and it must be listed in
+  `/etc/dehydrated/domains.txt` beside the other three names or the dashboard
+  vhost will not start — its 443 block names a certificate that would not
+  exist. The counting endpoints do not depend on either: they are two exact
+  locations on the public vhosts and work with no certificate of their own.
 
 ## Expected timings
 
