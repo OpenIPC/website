@@ -12,19 +12,14 @@ class Snapshot < ApplicationRecord
 
   INTERVAL_LIMIT = 15.minutes
 
-  # The newest snapshot from each camera seen in the last 24 hours, newest
-  # first. Lived inline in SnapshotsController#index; the homepage mosaic wants
-  # the same list, and two copies of a correlated subquery is one too many.
+  # The join behind "the newest snapshot from each camera seen in the last 24
+  # hours", with no projection and no order, so that the page query and the
+  # count query below cannot drift apart. They have to agree: a count taken
+  # over different rows than the page paginates to pages that do not exist, or
+  # hides ones that do.
   #
   # The LEFT JOIN ... WHERE s2.id IS NULL is a greatest-n-per-group: a row
   # survives only when no newer row exists for its MAC.
-  #
-  # limit is interpolated after to_i, not bound, because it lands in a LIMIT
-  # clause where a bind parameter is not accepted; to_i is what makes that safe.
-  # The join and its filter, with no projection and no order, so that the page
-  # query and the count query below cannot drift apart. They have to agree:
-  # a count taken over different rows than the page would paginate to pages
-  # that do not exist, or hide ones that do.
   #
   # The tie-break on id matters: two rows for one camera can share a
   # created_at, and comparing timestamps alone then calls both of them the
@@ -37,9 +32,21 @@ class Snapshot < ApplicationRecord
                       ' WHERE s2.id IS NULL' \
                       ' AND s1.created_at > SUBDATE(NOW(), INTERVAL 1 DAY)'
 
+  # Newest first. Lived inline in SnapshotsController#index; the homepage
+  # mosaic wants the same list, and two copies of a correlated subquery is one
+  # too many.
+  #
   # limit and offset are interpolated after to_i, not bound, because they land
   # in a LIMIT clause where a bind parameter is not accepted; to_i is what
   # makes that safe.
+  #
+  # The attachment and its blob are preloaded because every caller renders
+  # tiles and the tile's caption prints `snapshot.file.byte_size` -- an
+  # attachment and a blob apiece otherwise, which was 32 of the 33 queries the
+  # Open Wall made. It survived #146 because that took the IMAGE off
+  # ActiveStorage and left the caption on it. Here rather than in the
+  # controller because find_by_sql returns plain records with no relation to
+  # chain onto, so a caller that forgets is silently back to a query per tile.
   def self.latest_per_camera(limit: nil, offset: nil)
     # MySQL has no OFFSET without a LIMIT, and silently dropping the offset
     # would serve page 1 under every page number -- which is exactly the bug
@@ -49,7 +56,9 @@ class Snapshot < ApplicationRecord
     sql = "SELECT s1.* #{LATEST_PER_CAMERA} ORDER BY created_at DESC, id DESC"
     sql += " LIMIT #{limit.to_i}" if limit
     sql += " OFFSET #{offset.to_i}" if offset
-    find_by_sql(sql)
+    rows = find_by_sql(sql)
+    ActiveRecord::Associations::Preloader.new(records: rows, associations: { file_attachment: :blob }).call
+    rows
   end
 
   # How many cameras the wall has, without building a row object for any of
