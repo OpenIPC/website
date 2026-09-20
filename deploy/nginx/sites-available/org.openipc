@@ -82,6 +82,20 @@ server {
     location ~ ^/cameras/vendors/[^/]+/socs/[^/]+/download_full_image {
         limit_conn site_conc 10;
         limit_conn_status 429;
+
+        # Per address, where site_conc above is keyed on $server_name -- one
+        # global pool of ten that a single client can take all of. See
+        # conf.d/openipc-firmware-rate.conf for where the numbers come from.
+        #
+        # The bursts are what make them safe. Measured on dev with these exact
+        # directives: nine plain requests go through back to back and the tenth
+        # is shed; fifteen range requests in a row are not counted by fw_start
+        # at all; and a client that sets a Range header to get round it gets
+        # thirty-two through before fw_all sheds it. Real traffic's worst
+        # minute in fifteen days was four plain requests, or thirty ranges of
+        # one file.
+        limit_req zone=fw_start burst=8 nodelay;
+        limit_req zone=fw_all burst=30 nodelay;
         proxy_buffer_size 128k;
         proxy_buffers 8 128k;
 
