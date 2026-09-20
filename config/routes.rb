@@ -192,9 +192,14 @@ Rails.application.routes.draw do
   # those prefixes first, and a test now fails if the two lists drift apart.
   scope '(:locale)', locale: Multilang::IN_PATH do
     namespace :cameras do
-      resources :socs
-      resources :vendors do
-        resources :socs do
+      resources :socs, only: %i[index show]
+      resources :vendors, only: %i[index show] do
+        # No :update. The wizard's result is a GET on the SoC's own address
+        # since #156 -- `?camera[...]` renders the instructions, bare renders
+        # the form -- so there is one address per SoC and one way in. The PUT
+        # persisted nothing and only cost the form an authenticity_token, which
+        # was the last thing writing a session on a public page.
+        resources :socs, only: %i[index show] do
           get :download_full_image, on: :member
         end
       end

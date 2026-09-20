@@ -2,18 +2,6 @@
 
 module Cameras
   class SocsController < ApplicationController
-    # The wizard's form is the only public form on the site (#155). Not the
-    # whole controller though -- #featured and #full_list are the catalogue
-    # listings and have no form, and granting them a token was enough to put
-    # Set-Cookie back on the two most-linked hardware pages.
-    #
-    # #156 turns the wizard's PUT into a GET, after which this can go too.
-    FORM_ACTIONS = %w[show update].freeze
-
-    def csrf_needed?
-      FORM_ACTIONS.include?(action_name)
-    end
-
     # include InstallationInstructionConcern
 
     def index
@@ -73,6 +61,29 @@ module Cameras
     end
 
     def show
+      # The wizard's result is a GET now (#156), and it arrives here rather than
+      # at a route of its own so that a SoC has ONE address: bare it is the
+      # form, with camera[...] it is the instructions that form produces.
+      #
+      # That is what makes the result linkable, which is the point. It was a PUT
+      # that persisted nothing -- the action builds a PORO, clamps it and
+      # renders -- so the verb bought nothing and cost three things: the form
+      # had to carry an authenticity_token, which wrote the session and put
+      # Set-Cookie back on the one public page that still had it after #155;
+      # the result could not be shared; and a page whose inputs change four
+      # times a year could not be cached.
+      # is_a?, not present?. This is a public GET now, so the query is whatever
+      # anyone types: ?camera=x makes params[:camera] a String and ?camera[]=x
+      # an Array, and permitted_params calls permit on it -- NoMethodError, and
+      # a 500 on a page anyone can reach with a malformed link.
+      #
+      # An unusable value falls through to the form rather than answering 400.
+      # A wizard link is something people paste into chat and forums, where it
+      # gets truncated and re-wrapped, and the useful response to a mangled one
+      # is the form it was trying to fill in. That is also how the permalink
+      # path already treats a value it cannot use.
+      return update if params[:camera].is_a?(ActionController::Parameters)
+
       @camera = Camera.new(
         camera_ip_address: '192.168.1.10',
         server_ip_address: '192.168.1.254',
