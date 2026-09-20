@@ -48,8 +48,8 @@
 
   <p>
     <%= link_to t('site.snapshot.download'), download_snapshot_path(id: @snapshot) %><br>
-    <%= link_to t('site.snapshot.link_to_camera'), openwall_camera_path(@snapshot.mac_address_dec) %><br>
-    <%= link_to t('site.snapshot.link_to_last_jpeg'), openwall_camera_path(@snapshot.mac_address_dec, format: :jpg) %>
+    <%= link_to t('site.snapshot.link_to_camera'), openwall_camera_path(id: @snapshot.mac_address_dec) %><br>
+    <%= link_to t('site.snapshot.link_to_last_jpeg'), openwall_camera_path(id: @snapshot.mac_address_dec, format: :jpg) %>
   </p>
 
   <% if @snapshots && @snapshots.any? %>

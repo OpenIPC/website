@@ -124,22 +124,38 @@ class MicrocacheLanguageTest < ActiveSupport::TestCase
   GUARDED_ROUTES = ['cameras/vendors', 'snapshots/', '(open-wall'].freeze
 
   # The optional locale alternation each guarded location actually carries.
-  def guard_locales
-    GUARDED_ROUTES.to_h do |route|
-      line = VHOST.lines.find { |l| l.include?('location ~ ') && l.include?(route) }
-      [route, line&.[](/\(\?:\(\?:([a-z|]+)\)/, 1)&.split('|')&.sort]
+  # BOTH vhosts. This file read only the production one until a review pointed
+  # out that org.openipc.dev keeps its own copy of the firmware-download
+  # location -- which still matched /cameras only, so on dev a localized
+  # firmware build had no limit_req in front of it. The environment used to
+  # validate a change being the one without the protection is the worst place
+  # for that gap to sit.
+  VHOSTS = {
+    'org.openipc' => VHOST,
+    'org.openipc.dev' => Rails.root.join('deploy/nginx/sites-available/org.openipc.dev').read
+  }.freeze
+
+  def guard_locales(config)
+    GUARDED_ROUTES.filter_map do |route|
+      line = config.lines.find { |l| l.include?('location ~ ') && l.include?(route) }
+      next if line.nil? # not every location exists in every vhost
+
+      [route, line[/\(\?:\(\?:([a-z|]+)\)/, 1]&.split('|')&.sort]
     end
   end
 
   test 'a locale prefix cannot walk past the rate limits and caches' do
-    guard_locales.each do |route, locales|
-      assert_not_nil locales, <<~MESSAGE.chomp
-        The location guarding #{route} carries no optional locale prefix.
+    VHOSTS.each do |name, config|
+      guard_locales(config).each do |route, locales|
+        assert_not_nil locales, <<~MESSAGE.chomp
+          In #{name}, the location guarding #{route} carries no optional
+          locale prefix.
 
-        These regexes are anchored at ^/. Without (?:(?:ru|zh)/)? the rule
-        stops applying the moment the route is localized, which for the
-        firmware location means an unlimited image build behind /ru/.
-      MESSAGE
+          These regexes are anchored at ^/. Without (?:(?:ru|zh)/)? the rule
+          stops applying the moment the route is localized, which for the
+          firmware location means an unlimited image build behind /ru/.
+        MESSAGE
+      end
     end
   end
 
@@ -150,13 +166,15 @@ class MicrocacheLanguageTest < ActiveSupport::TestCase
   test 'the prefixes nginx knows match the locales Rails puts in a path' do
     rails_locales = Multilang::IN_PATH.source.split('|').sort
 
-    guard_locales.each do |route, locales|
-      assert_equal rails_locales, locales, <<~MESSAGE.chomp
-        The location guarding #{route} knows #{locales.inspect} but Rails
-        serves #{rails_locales.inspect} as path prefixes. A locale in the
-        second list and not the first is a path with no rate limit, no cache
-        and no concurrency cap.
-      MESSAGE
+    VHOSTS.each do |name, config|
+      guard_locales(config).each do |route, locales|
+        assert_equal rails_locales, locales, <<~MESSAGE.chomp
+          In #{name}, the location guarding #{route} knows #{locales.inspect}
+          but Rails serves #{rails_locales.inspect} as path prefixes. A locale
+          in the second list and not the first is a path with no rate limit,
+          no cache and no concurrency cap.
+        MESSAGE
+      end
     end
   end
 
@@ -185,5 +203,16 @@ class MicrocacheLanguageTest < ActiveSupport::TestCase
 
     assert_operator covered.length, :>=, 2,
                     'expected the Open Wall and per-snapshot caches to be found; the vhost was reshaped'
+  end
+
+  # The firmware location is the one that exists in both vhosts, and the one
+  # where being unguarded costs a second of CPU and 8-32MB of disk per call.
+  test 'the firmware limit is guarded in every vhost that has it' do
+    found = VHOSTS.filter_map do |name, config|
+      name if config.include?('download_full_image')
+    end
+
+    assert_equal VHOSTS.keys.sort, found.sort,
+                 'a vhost stopped serving the firmware action, or started and was not guarded'
   end
 end

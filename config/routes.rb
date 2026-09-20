@@ -160,11 +160,17 @@ Rails.application.routes.draw do
   #
   # /open-wall is the address the navbar, the footer and the sitemap use, so it
   # is the one that has to exist in three languages.
-  get '/open-wall/camera/:id', to: 'snapshots#camera', as: 'openwall_camera'
+  # All three Open Wall entry points, not just the one the navbar uses. The
+  # gallery index was localized first because it is what the navbar, the footer
+  # and the sitemap link to; leaving the other two behind meant a reader who
+  # paged through the wall in Russian, or opened one camera, was back to
+  # depending on the session and the browser header for their language -- which
+  # is the thing #154 exists to end.
   scope '(:locale)', locale: Multilang::IN_PATH do
+    get '/open-wall/camera/:id', to: 'snapshots#camera', as: 'openwall_camera'
     get '/open-wall', to: 'snapshots#index', as: 'open_wall'
+    get '/open-wall(/:page)', to: 'snapshots#index'
   end
-  get '/open-wall(/:page)', to: 'snapshots#index'
 
   scope '(:locale)', locale: Multilang::IN_PATH do
     resources :snapshots do

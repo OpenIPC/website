@@ -44,11 +44,24 @@ class SitemapsController < ApplicationController
   # Vendor pages and SoC pages, in the shape the catalogue itself links to.
   # /cameras/socs is deliberately absent: without ?vendor= it redirects to the
   # featured page, which is already listed.
+  #
+  # Built with the route helpers rather than by interpolating slugs into a
+  # string. `urlname` is a free text column an admin can edit, and a value
+  # holding a "/", a "?" or a "#" interpolated raw would split one entry into
+  # extra path segments, a query or a fragment -- advertising URLs the
+  # catalogue routes, which take one segment per identifier, cannot serve. The
+  # helpers escape it, and `locale: nil` keeps these as the English forms that
+  # locale_alternates then derives the other two from.
+  #
+  # A SoC whose vendor row has gone is skipped rather than raised on. The
+  # association is required at the model, so this should not happen -- but the
+  # database has no foreign key to enforce it, and the cost of being wrong is
+  # the entire sitemap answering 500 instead of one chip being absent from it.
   def catalogue_paths
-    socs = Soc.includes(:vendor).order(:id)
+    socs = Soc.includes(:vendor).order(:id).select { |soc| soc.vendor.present? }
 
-    socs.map(&:vendor).uniq.map { |vendor| "/cameras/vendors/#{vendor.to_param}" } +
-      socs.map { |soc| "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}" }
+    socs.map(&:vendor).uniq.map { |vendor| cameras_vendor_path(id: vendor, locale: nil) } +
+      socs.map { |soc| cameras_vendor_soc_path(vendor_id: soc.vendor, id: soc, locale: nil) }
   end
 
   # One URL per locale, each carrying the full alternate set including itself.

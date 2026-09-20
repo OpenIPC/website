@@ -114,6 +114,36 @@ class SitemapCatalogueTest < ActionDispatch::IntegrationTest
     assert_empty locs.grep(%r{\A(/(ru|zh))?/cameras/socs\z})
   end
 
+  # belongs_to :vendor is required at the model, so this should not arise --
+  # but the table has no foreign key to enforce it, and the cost of being
+  # wrong is the whole sitemap answering 500 rather than one chip missing
+  # from it.
+  test 'a chip whose vendor has gone is skipped, not raised on' do
+    vendor = Vendor.create!(name: 'Orphan Probe Vendor')
+    orphan = Soc.create!(model: 'ORPH1', vendor: vendor, family: 'o', status: 'done',
+                         uboot_filename: 'u.bin', linux_filename: 'l.bin')
+    Vendor.where(id: vendor.id).delete_all
+
+    get '/sitemap.xml'
+
+    assert_response :success
+    assert_not_includes response.body, orphan.urlname
+  end
+
+  # urlname is a free text column an admin can edit. Interpolated raw into a
+  # path, a value holding "/" or "?" splits one entry into extra segments or a
+  # query -- advertising URLs the catalogue routes, which take one segment per
+  # identifier, cannot serve. The route helpers escape it.
+  test 'a slug with path characters in it cannot break out of its segment' do
+    vendor = Vendor.create!(name: 'Escape Probe Vendor')
+    vendor.update_column(:urlname, 'escape/probe?x=1')
+
+    get '/sitemap.xml'
+
+    assert_response :success
+    assert_not_includes response.body, '/cameras/vendors/escape/probe?x=1'
+  end
+
   test 'the catalogue URLs it advertises render' do
     catalogue = locs.grep(%r{/cameras/vendors/}).uniq
 

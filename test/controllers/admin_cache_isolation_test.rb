@@ -69,7 +69,7 @@ class AdminCacheIsolationTest < ActionDispatch::IntegrationTest
   test 'the per-camera page carries the marker too' do
     sign_in admins(:one)
 
-    get openwall_camera_path(@snapshot.mac_address_dec)
+    get openwall_camera_path(id: @snapshot.mac_address_dec)
 
     assert_response :success
     assert_equal '1', response.headers['X-Admin-View']
