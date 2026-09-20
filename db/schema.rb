@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_09_19_190000) do
+ActiveRecord::Schema[7.0].define(version: 2026_09_20_060000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -76,6 +76,13 @@ ActiveRecord::Schema[7.0].define(version: 2026_09_19_190000) do
     t.index ["created_at"], name: "index_downloads_on_created_at"
     t.index ["soc_id"], name: "index_downloads_on_soc_id"
     t.index ["soc_model", "created_at"], name: "index_downloads_on_soc_model_and_created_at"
+  end
+
+  create_table "firmware_builds", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
+    t.string "ip_address", limit: 45, null: false
+    t.datetime "created_at", null: false
+    t.index ["created_at"], name: "index_firmware_builds_on_created_at"
+    t.index ["ip_address", "created_at"], name: "index_firmware_builds_on_ip_address_and_created_at"
   end
 
   create_table "sensors", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|

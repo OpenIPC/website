@@ -131,6 +131,14 @@ class Firmware
     nil
   end
 
+  # Whether this image can be sent without assembling it. Asked before
+  # #generate, because assembly is the expensive thing here and it is what
+  # #147's rate limit counts -- nginx cannot see the difference, and a client
+  # that has to wait a minute for a cache hit has been punished for nothing.
+  def cached?
+    usable?
+  end
+
   private
 
   def build_if_needed

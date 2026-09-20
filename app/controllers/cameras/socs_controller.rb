@@ -169,7 +169,21 @@ module Cameras
       # before the wizard could tell the two apart meant.
       fw = Firmware.new(size: flash_size, flash_type: flash_type, release: fw_release, soc: @soc,
                         layout: permitted_params[:layout])
+
+      # Asked before generate, and only when there is nothing to send: a cache
+      # hit costs a file read and must never be refused. The nginx limits in
+      # deploy/nginx/conf.d/openipc-firmware-rate.conf count requests and
+      # cannot tell the two apart -- a 16-32MB image is legitimately fetched as
+      # thirty range requests in a minute -- so the limit that counts builds
+      # has to live here, where the cache miss is known (#147).
+      assembling = !fw.cached?
+      if assembling && FirmwareBuild.over_limit?(request.remote_ip)
+        Rails.logger.warn "firmware build refused for #{request.remote_ip}: over #{FirmwareBuild::LIMIT}/min"
+        return head :too_many_requests, retry_after: FirmwareBuild::WINDOW.to_i
+      end
+
       fw.generate
+      FirmwareBuild.record(request.remote_ip) if assembling
       # Recorded here rather than in Firmware, because a cached image is sent
       # without being rebuilt and it is the sending that is worth counting.
       Download.record(firmware: fw, soc: @soc, bytes: File.size(fw.filepath))
