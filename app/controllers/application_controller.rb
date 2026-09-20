@@ -10,6 +10,26 @@ class ApplicationController < ActionController::Base
 
   protect_from_forgery unless: -> { request.format.json? }
 
+  # Rails writes session[:_csrf_token] the first time a token is asked for, and
+  # `csrf_meta_tags` in the layout asked for one on every page -- so after the
+  # locale write went (#155), this was still putting Set-Cookie on responses
+  # that have no form on them at all, and a response carrying Set-Cookie is one
+  # most caches decline to store.
+  #
+  # The token is emitted where something will actually post: the wizard, which
+  # has the only public form, and the Devise pages, which share this layout
+  # because there is no layouts/devise. Everything else -- the marketing pages,
+  # the catalogue, the Open Wall -- is read-only and needs none.
+  #
+  # Narrow rather than clever on purpose. A page that grows a form and forgets
+  # this fails loudly on the first submission with an InvalidAuthenticityToken,
+  # which is a better failure than a silently uncacheable site.
+  helper_method :csrf_needed?
+
+  def csrf_needed?
+    respond_to?(:devise_controller?, true) && devise_controller?
+  end
+
   add_flash_types :alert, :notice, :danger, :info, :success, :warning
 
   # Tell the cache in front of us that this response was rendered for a
@@ -33,6 +53,71 @@ class ApplicationController < ActionController::Base
   # come with a reminder. `proxy_no_cache` in
   # deploy/nginx/sites-available/org.openipc is the other half.
   after_action :refuse_shared_caching_for_admins
+
+  # Say how long a response is good for (#155). Until now every public page
+  # answered `max-age=0, private, must-revalidate` -- Rails' default for a
+  # response it knows nothing about -- so the only caching on this site was
+  # nginx overriding that with proxy_ignore_headers, which is a cache guessing
+  # rather than being told.
+  #
+  # The numbers come from how often each thing actually changes. The Open Wall
+  # gains a snapshot every few minutes; the catalogue has not changed in eight
+  # months; the marketing pages change when someone edits them. The long
+  # stale-while-revalidate is the part that matters under load: it lets an edge
+  # keep answering from a slightly old copy while it fetches a new one, which
+  # is exactly the behaviour the 2026-08-30 flood needed and did not have.
+  #
+  # Only GET, only 200, and never for an admin -- a signed-in admin sees
+  # uploader IPs and MAC addresses on the same URLs, which is what
+  # X-Admin-View above is for. Anything that sets a flash is skipped too: a
+  # one-shot message must not be stored and handed to the next reader.
+  # Keyed on controller#action, not controller: /open-wall and
+  # /snapshots/<id> are both SnapshotsController and want different answers.
+  # The gallery gains a snapshot every few minutes; an individual snapshot
+  # never changes once uploaded.
+  #
+  # These numbers deliberately match the proxy_cache_valid already in
+  # deploy/nginx/sites-available/org.openipc, because nginx stops overriding
+  # them in this same change: with proxy_ignore_headers gone, whatever Rails
+  # says here IS the cache lifetime. Declaring 60s for a page the vhost had
+  # been holding 300s would have quietly multiplied that flood's cost by five.
+  FRESHNESS = {
+    'snapshots#index' => { max_age: 60, swr: 600 },
+    'snapshots#camera' => { max_age: 60, swr: 600 },
+    'snapshots#show' => { max_age: 300, swr: 3600 },
+    'snapshots#oneday' => { max_age: 300, swr: 3600 },
+    'cameras/socs' => { max_age: 3600, swr: 86_400 },
+    'cameras/vendors' => { max_age: 3600, swr: 86_400 },
+    'sitemaps' => { max_age: 3600, swr: 86_400 }
+  }.freeze
+  DEFAULT_FRESHNESS = { max_age: 300, swr: 3600 }.freeze
+
+  after_action :declare_freshness
+
+  def declare_freshness
+    return unless publicly_cacheable?
+
+    f = freshness
+    response.set_header('Cache-Control',
+                        "public, max-age=#{f[:max_age]}, stale-while-revalidate=#{f[:swr]}")
+  end
+
+  # Only GET, only 200, and never for a signed-in admin -- they see uploader
+  # IPs and MAC addresses on URLs an anonymous visitor also reaches. A response
+  # carrying a flash is skipped too: a one-shot message must not be stored and
+  # handed to the next reader.
+  def publicly_cacheable?
+    return false unless request.get? && response.status == 200
+    return false if admin_signed_in? || flash.any?
+
+    !(respond_to?(:devise_controller?, true) && devise_controller?)
+  end
+
+  def freshness
+    FRESHNESS["#{controller_path}##{action_name}"] ||
+      FRESHNESS[controller_path] ||
+      DEFAULT_FRESHNESS
+  end
 
   def refuse_shared_caching_for_admins
     response.set_header('X-Admin-View', '1') if admin_signed_in?

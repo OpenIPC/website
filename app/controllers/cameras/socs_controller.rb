@@ -2,6 +2,18 @@
 
 module Cameras
   class SocsController < ApplicationController
+    # The wizard's form is the only public form on the site (#155). Not the
+    # whole controller though -- #featured and #full_list are the catalogue
+    # listings and have no form, and granting them a token was enough to put
+    # Set-Cookie back on the two most-linked hardware pages.
+    #
+    # #156 turns the wizard's PUT into a GET, after which this can go too.
+    FORM_ACTIONS = %w[show update].freeze
+
+    def csrf_needed?
+      FORM_ACTIONS.include?(action_name)
+    end
+
     # include InstallationInstructionConcern
 
     def index

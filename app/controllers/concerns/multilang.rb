@@ -141,15 +141,28 @@ module Multilang
     from_path = locale_from_path
     return I18n.with_locale(from_path, &) if from_path
 
-    # No prefix: the behaviour that was here before, unchanged. A first visit
-    # starts from what the browser asks for; later visits keep whatever the
-    # switcher last set; ?locale=xx still overrides and still sticks. #155
-    # removes this half, once the prefixed URLs are the ones being linked.
-    session[:locale] ||= browser_locale
-    session[:locale] = I18n.default_locale unless available?(session[:locale])
-    session[:locale] = params[:locale] if available?(params[:locale])
+    # No prefix: the browser header decides, and nothing is remembered. The
+    # session write that used to live here is gone (#155).
+    #
+    # It was the only cookie state on the public site, and it is why nothing
+    # could be cached: a response carrying Set-Cookie is one most caches
+    # decline to store, and one that varies by a cookie cannot be shared
+    # between visitors at all. #154 removed the reason for it -- a reader who
+    # picks a language now goes to /ru or /zh, and the address carries the
+    # choice from page to page far better than a cookie did, because it
+    # survives being shared, bookmarked and indexed.
+    #
+    # ?locale= is still honoured for the routes that have no prefixed form --
+    # the admin area -- but only for that request. Sticking it in the session
+    # would put the cookie back for every page after it.
+    # The explicit default matters. browser_locale returns nil when the header
+    # names nothing this site serves, and I18n.with_locale(nil) does not set a
+    # locale -- it leaves whatever the thread was last used for, which is the
+    # leak the comment above this method is about.
+    requested = params[:locale] if available?(params[:locale])
+    chosen = requested || browser_locale || I18n.default_locale
 
-    negotiated = I18n.with_locale(session[:locale], &)
+    negotiated = I18n.with_locale(chosen, &)
     vary_by_accept_language
     negotiated
   end

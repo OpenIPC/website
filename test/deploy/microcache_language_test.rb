@@ -47,24 +47,51 @@ class MicrocacheLanguageTest < ActiveSupport::TestCase
     MESSAGE
   end
 
-  test 'a page a session could have changed is never stored for everyone' do
+  # #204 kept session-carrying requests out of these caches by hand, because
+  # session[:locale] could change what was rendered. #155 removed that write,
+  # and with it the reason -- so the guard is now the honest one: nginx is told
+  # nothing to ignore, which means a response that sets a cookie is not stored
+  # at all.
+  #
+  # That is a better guard than the explicit bypass it replaces. The bypass
+  # protected against one known cause; this protects against any future code
+  # that starts writing the session, and it fails in the safe direction -- the
+  # page stops being cached rather than being cached with somebody's cookie in
+  # it.
+  test 'a response that sets a cookie is never stored for everyone' do
     cached_rails_blocks.each do |block|
-      location = block[/location[^{]*/].to_s.strip
       next if block.match?(LANGUAGE_INDEPENDENT)
 
-      assert_includes block, 'proxy_cache_bypass $cookie__openipc_session', <<~MESSAGE.chomp
-        #{location} caches a Rails-rendered page but will still serve a cached
-        copy to a visitor carrying a session.
-      MESSAGE
+      location = block[/location[^{]*/].to_s.strip
+      ignored = block.lines.grep(/proxy_ignore_headers/).join
 
-      assert_match(/proxy_no_cache[^;]*\$cookie__openipc_session/, block, <<~MESSAGE.chomp)
-        #{location} caches a Rails-rendered page but will store the copy it
-        rendered for a visitor carrying a session.
+      assert_not_includes ignored, 'Set-Cookie', <<~MESSAGE.chomp
+        #{location} is told to ignore Set-Cookie, so it will store a response
+        that carries one and hand that visitor's session to everyone else.
 
-        session[:locale] overrides Accept-Language until #155 removes that
-        write, so such a response is that visitor's language, not the one the
-        cache key claims. Storing it hands their language to everyone.
+        Nothing public sets a cookie since #155. If something starts to, the
+        right outcome is that the page stops being cached -- not that the
+        cookie is cached with it.
       MESSAGE
+    end
+  end
+
+  # Rails declares its own freshness since #155, so nginx must not override it.
+  test 'no cache overrides the lifetime the application declares' do
+    cached_rails_blocks.each do |block|
+      next if block.match?(LANGUAGE_INDEPENDENT)
+
+      location = block[/location[^{]*/].to_s.strip
+      ignored = block.lines.grep(/proxy_ignore_headers/).join
+
+      %w[Cache-Control Expires].each do |header|
+        assert_not_includes ignored, header, <<~MESSAGE.chomp
+          #{location} ignores #{header}, so the vhost decides the lifetime and
+          ApplicationController::FRESHNESS is decoration. The two then drift
+          silently, which is how a page the application thinks is good for a
+          minute gets held for five.
+        MESSAGE
+      end
     end
   end
 
