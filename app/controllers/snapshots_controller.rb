@@ -25,7 +25,11 @@ class SnapshotsController < ApplicationController
     # If the wall ever outgrows a page by enough for the row count to matter,
     # the thing to fix first is the join -- it takes ~280ms inside a request
     # for eighteen rows, which is not explained by its EXPLAIN.
-    page = params[:page] || 1
+    # Normalised once, and used for both. Kaminari quietly turns "abc", "0" and
+    # "-3" into page one, so passing the raw parameter through to the title
+    # renders the first page under <title>Open Wall, page abc</title> -- which
+    # is also the og:title a link preview shows.
+    page = [params[:page].to_i, 1].max
     @snapshots = Kaminari.paginate_array(Snapshot.latest_per_camera).page(page).per(PER_PAGE)
     @page_title = "Open Wall, page #{page}"
     render 'snapshots/index'

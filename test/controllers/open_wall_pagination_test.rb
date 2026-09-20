@@ -76,6 +76,19 @@ class OpenWallPaginationTest < ActionDispatch::IntegrationTest
     assert_not_includes page_links, '3', 'a page link to a page with nothing on it'
   end
 
+  # page_title is the <title> and the og:title a link preview shows, so it has
+  # to agree with what actually rendered.
+  test 'the title names the page that rendered, not the one that was asked for' do
+    { nil => 1, '1' => 1, '2' => 2, 'abc' => 1, '0' => 1, '-3' => 1 }.each do |param, expected|
+      get(param ? "/open-wall?page=#{param}" : '/open-wall')
+
+      assert_response :success
+      # The layout appends the site name, so match the part this sets.
+      assert_match(/\AOpen Wall, page #{expected}\b/, css_select('title').first.text,
+                   "page=#{param.inspect} rendered page #{expected}")
+    end
+  end
+
   test 'a page number that is not a number is the first page' do
     first = ids_on(1)
 
