@@ -160,6 +160,7 @@ ru:
     hires_timer: Шустрый таймер
     home: Начало
     low_latency: Низкая задержка
+    low_latency_fpv: FPV и видеолинк
     next: Следующий
     openwall: Стена
     partition_calc: Калькулятор разделов
@@ -173,6 +174,7 @@ ru:
     store: Магазин
     supported_hardware: Оборудование
     team: Команда
+    teleoperation: Телеуправление
     utilities: Утилиты
     vendors: Продавцы
     view_soc: Посмотреть страницу SoC

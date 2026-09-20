@@ -27,7 +27,7 @@ class SitemapsController < ApplicationController
   # time; sitemap_test asserts every URL advertised here actually renders, so
   # a vendor whose page 500s cannot reach a search engine through this file.
   PAGES = %w[
-    / /get-started /low-latency /ecosystem /business /community /donate
+    / /get-started /low-latency /teleoperation /ecosystem /business /community /donate
     /majestic-endpoints /green_life /our-team /stages-of-firmware-development
     /utilities /web-interface /supported-hardware/featured
     /supported-hardware/full-list /tools/firmware-partitions-calculation

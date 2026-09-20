@@ -221,6 +221,7 @@ en:
       latency_path_ground_station: Dedicated ground station
       latency_path_phone: Phone or tablet
       latency_title: How fast, really
+      robotics_cta: Teleoperation for robots
       robotics_text1: The same link carries video for industrial robots, AGVs, inspection rigs, and remote operation — anywhere a closed video system would lock you in or a cloud hop would add seconds.
       robotics_text2: On supported SoCs, frames carry wall-clock timestamps tied to the sensor frame start — millisecond-class synchronization for multi-camera rigs without extra hardware.
       robotics_title: 'Beyond drones: robots and teleoperation'
@@ -270,6 +271,70 @@ en:
       title: Stages of Firmware development
       wip_alt: 'Image: stage WIP'
       wip_info: Work in progress. We learned a lot about the platform hardware and code base, prepared the first public binary build, and are waiting for the first adopters to test it on their boards and provide feedback to help us move forward.
+    teleoperation:
+      bring_latency_text: The same stack FPV pilots fly at full speed, on cameras that cost less than lunch. Open firmware from the sensor to the encoder, tuned for the shortest way out.
+      bring_latency_title: Tens of milliseconds, proven in the air
+      bring_link_text: 'Video down, control up, and no stall in between: no pairing, no retransmit queue. When the air gets noisy you lose a frame, never the robot.'
+      bring_link_title: A link that drops a frame, not the operator
+      bring_stream_text: One encoded stream, two speeds. The recorder keeps every frame while the operator's link carries what it can — no second encoder, no second camera.
+      bring_stream_title: Record everything, send what fits
+      bring_time_text: Each frame is stamped the instant the sensor captures it, before anything else touches it. Every camera on the robot agrees to within a few milliseconds, with no trigger cable, so the dataset lines up.
+      bring_time_title: Time built into every frame
+      brings_intro: Four things, each already running on cameras in the field.
+      brings_title: What OpenIPC brings to the loop
+      cta_note_html: An engineer answers, not a sales script. Camera and link engineering that ships today is on the <a href="/business">business page</a>.
+      cta_primary: Write to business@openipc.org
+      cta_secondary: Ask in the chat
+      cta_text: 'We are taking three design partners: a robot, a bench and an engineer on your side; camera firmware, the link and our time on ours. What comes out is a teleoperation loop measured on your machine — and, if you want it, your first dataset.'
+      cta_title: Bring a robot, whoever made it. We bring the eyes.
+      eyebrow: Whitepaper · Physical AI · Teleoperation data
+      hero_art_alt: An operator in a VR headset mirrored by a humanoid robot working in a flooded industrial plant
+      hero_cta_link: How the video link works
+      hero_cta_pilot: Talk to us about a pilot
+      hero_lede: 'OpenIPC brings the open, ultra-low-latency video stack proven in FPV to human-in-the-loop robotics: a rig that fits any robot from any maker, a link that never stalls, every frame stamped the instant it is captured, every session a dataset.'
+      hero_title: A hundred humanoids are about to learn from people. Give them eyes that keep up.
+      landscape_p1: 'Everyone building a general-purpose robot has picked a way to get training data. Figure bets on human video, Tesla on simulation, 1X and Unitree on human-in-the-loop teleoperation: a person drives the robot, the session is recorded, and a policy is trained on data that is already kinematically correct for that body. Amazon''s research teams take the other road, translating human motion capture into robot motion after the fact.'
+      landscape_p2: Teleoperation is winning because it closes the embodiment gap at the source. Unitree alone has built some 18,000 bipeds, and every one of them is going to be driven.
+      landscape_p3: What is not settled is the rig. Unitree's avatar drives Unitree's robot. The other 43 makers on the list, and every lab with more than one kind of machine, need a teleoperation and data rig that fits any robot and any camera.
+      landscape_p4: 'And it has to answer the one question demo videos never do: what is the glass-to-glass figure, and how was it measured? The operator can only be as good as the delay they feel, and the dataset inherits every hesitation.'
+      landscape_title: The data strategy is settled. The rig is not.
+      loop_intro: 'Teleoperator is the layer we are building on top of the stack: a human-in-the-loop rig for any robot — humanoid, wheeled or flying — piloted from a headset, with every session written as LeRobot datasets the open robotics community already trains on.'
+      loop_return: The policy trained on the dataset drives the robot next. That is the flywheel.
+      loop_title: From the operator's hands to the training set
+      meta_description: 'Open ultra-low-latency video for robot teleoperation: a rig that fits any robot, a link that never stalls, every frame stamped at capture, every session a dataset.'
+      node_dataset_text: Episodes ready to train on
+      node_dataset_title: Dataset
+      node_link_text: Video down, intent up
+      node_link_title: Link
+      node_operator_text: Sees what the robot sees; head, hands or whole body tracked
+      node_operator_title: Operator
+      node_recorder_text: Every frame, every pose, one clock
+      node_recorder_title: Recorder
+      node_robot_text: 'Any maker''s: arms, legs, wheels or rotors'
+      node_robot_title: Robot
+      pilot1_text: OpenIPC firmware on the cameras your robot already carries, and the link between the robot and the operator's station.
+      pilot1_title: Eyes on the robot
+      pilot2_text: 'An operator drives the machine: head and hands from a headset, or the whole body from a motion-capture suit, mapped onto the robot''s own joints, with a failsafe that stops it the moment the link goes quiet.'
+      pilot2_title: Hands on the controls
+      pilot3_text: 'Folding laundry, loading a fridge, tidying a room: every run is recorded on one clock — what the operator saw, what they did, what the robot felt — as LeRobot episodes, ready to train on.'
+      pilot3_title: Sessions into datasets
+      pilot_title: What a pilot looks like
+      pull_quote: Latency is a tax on every episode you record.
+      stat_latency_l: glass-to-glass on the OpenIPC stack, camera to screen
+      stat_latency_n: '~30 ms'
+      stat_market_l: humanoid models from 44 Chinese makers
+      stat_market_n: '100'
+      stat_units_l: units expected to ship in 2026, most of them to labs
+      stat_units_n: '100,000'
+      stats_source_html: 'Market figures: <a href="https://www.linkedin.com/posts/jens-peder-kristensen-0116b2_chinese-humanoid-and-legged-robot-companies-activity-7470567675631435776-UGdv">KeyResearch, September 2026</a>. Latency: figures reported by people flying the stack, on the <a href="/low-latency">low-latency page</a>.'
+      title: Teleoperation
+      why1_text: Firmware and tools for dozens of camera chip families, in the open, with a community that reads the source and fixes what it finds.
+      why1_title: Open since 2019
+      why2_text: FPV pilots fly the stack every day, and RunCam and other vendors ship OpenIPC-based hardware out of the box. The reflexes that fly a drone through a gap are the ones that box a robot in a ring, and the link has already been through the worst radio conditions there are.
+      why2_title: Proven in the air
+      why3_text: No cloud, no subscription, no per-unit tax, and no dependency on whose robot you bought. When a chip goes end-of-life, the firmware outlives it — and so does your robot.
+      why3_title: Not tied to a robot maker
+      why_title: Why OpenIPC
     utilities:
       paragraph1: A collection of useful tools and utilities.
       title: Utilities

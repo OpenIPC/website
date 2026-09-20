@@ -221,6 +221,7 @@ zh:
       latency_path_ground_station: 专用地面站
       latency_path_phone: 手机或平板
       latency_title: 到底有多快
+      robotics_cta: 机器人遥操作
       robotics_text1: 同一条链路也为工业机器人、AGV、巡检设备和远程操作传输视频——凡是封闭视频系统会把你锁死、或者绕行云端会带来数秒延迟的场合，都用得上。
       robotics_text2: 在受支持的 SoC 上，画面帧会携带与传感器曝光起始对齐的挂钟时间戳——无需额外硬件即可实现多摄像机毫秒级同步。
       robotics_title: '不止于无人机：机器人与遥操作'
@@ -270,6 +271,70 @@ zh:
       title: 固件开发阶段
       wip_alt: 图片：阶段 WIP
       wip_info: 工作正在进行中。我们了解了很多关于平台硬件和代码库的知识，准备了第一个公共二进制版本，并等待第一批试用者在他们的硬件上对其进行测试并提供反馈以帮助我们改进。
+    teleoperation:
+      bring_latency_text: 与 FPV 飞手全速飞行所用的是同一套视频栈，跑在一顿午饭价钱的相机上。从传感器到编码器全开源的固件，只为最短的出路而调校。
+      bring_latency_title: 几十毫秒，空中验证
+      bring_link_text: 视频下行，控制上行，中间没有任何卡顿：无需配对，没有重传队列。空中信号嘈杂时，你丢的是一帧，而不是机器人。
+      bring_link_title: 丢一帧，而不是丢操作员
+      bring_stream_text: 一路编码流，两种速率。录制端保留每一帧，操作员的链路则量力传输——不需要第二个编码器，也不需要第二台相机。
+      bring_stream_title: 全部记录，按需传输
+      bring_time_text: 每一帧在传感器采集的瞬间就被打上时间戳，早于任何其他处理。机器人上的所有相机在几毫秒内保持一致，无需触发线，数据集因此严丝合缝。
+      bring_time_title: 每一帧都自带时间
+      brings_intro: 四件事，每一件都已在现场的相机上运行。
+      brings_title: OpenIPC 为这个闭环带来什么
+      cta_note_html: 回复你的是工程师，而不是销售话术。今天即可交付的相机与链路工程服务见<a href="/business">商务页面</a>。
+      cta_primary: 写信至 business@openipc.org
+      cta_secondary: 在群里提问
+      cta_text: 我们招募三家设计合作伙伴：你出机器人、测试台和一名工程师；我们出相机固件、链路和我们的时间。成果是一套在你的机器上实测过的遥操作闭环——如果你愿意，还有你的第一个数据集。
+      cta_title: 带上你的机器人，不管谁造的。眼睛由我们来给。
+      eyebrow: 白皮书 · 具身智能 · 遥操作数据
+      hero_art_alt: 一位戴着 VR 头显的操作员，一台人形机器人在被水淹没的工业厂房中同步复现其动作
+      hero_cta_link: 视频链路是如何工作的
+      hero_cta_pilot: 与我们聊聊试点项目
+      hero_lede: OpenIPC 将 FPV 领域验证过的开放超低延迟视频栈带入人在回路的机器人领域：适配任何厂商任何机器人的方案，永不卡顿的链路，每一帧在采集瞬间打上时间戳，每一次会话都是数据集。
+      hero_title: 一百款人形机器人即将向人类学习。给它们一双跟得上的眼睛。
+      landscape_p1: 每一家做通用机器人的公司都已经选好了获取训练数据的路线。Figure 押注人类视频，Tesla 押注大规模仿真，1X 和 Unitree 押注人在回路的遥操作：由人驾驶机器人，记录整个会话，再用这些对该机体而言运动学上天然正确的数据训练策略。Amazon 的研究团队走另一条路，事后把人体动作捕捉换算成机器人动作。
+      landscape_p2: 遥操作正在胜出，因为它从源头弥合了具身鸿沟。仅 Unitree 一家就已生产约 18,000 台双足机器人，每一台都将被人驾驶。
+      landscape_p3: 尚未定下来的是采集方案。Unitree 的 Avatar 只驾驶 Unitree 的机器人。榜单上其余 43 家厂商，以及每一个拥有不止一种机器的实验室，都需要一套能适配任何机器人、任何相机的遥操作与数据采集方案。
+      landscape_p4: 而且它必须回答演示视频从不回答的那个问题：从镜头到屏幕的延迟是多少，又是如何测量的？操作员的水平上限取决于他感受到的延迟，而数据集会继承他的每一次迟疑。
+      landscape_title: 数据策略已经定了，采集方案还没有。
+      loop_intro: Teleoperator 是我们在这套视频栈之上构建的一层：面向任何机器人——人形、轮式或飞行——的人在回路方案，通过头显驾驶，每一次会话都写成开放机器人社区已在用于训练的 LeRobot 数据集。
+      loop_return: 在数据集上训练出的策略接着驾驶机器人。这就是飞轮。
+      loop_title: 从操作员的双手到训练集
+      meta_description: 面向机器人遥操作的开放超低延迟视频：适配任何机器人的方案、永不卡顿的链路、每一帧在采集瞬间打上时间戳、每一次会话都是数据集。
+      node_dataset_text: 可直接用于训练的片段
+      node_dataset_title: 数据集
+      node_link_text: 视频下行，意图上行
+      node_link_title: 链路
+      node_operator_text: 看到机器人所见；追踪头部、双手或全身
+      node_operator_title: 操作员
+      node_recorder_text: 每一帧、每一个姿态、同一个时钟
+      node_recorder_title: 录制端
+      node_robot_text: 任何厂商：机械臂、双腿、轮子或旋翼
+      node_robot_title: 机器人
+      pilot1_text: 在你的机器人已有的相机上运行 OpenIPC 固件，并搭建机器人与操作员工位之间的链路。
+      pilot1_title: 给机器人装上眼睛
+      pilot2_text: 操作员驾驶机器：头部与双手来自头显，或全身来自动作捕捉服，映射到机器人自身的关节上，并配有链路一静默就立即停机的保护机制。
+      pilot2_title: 双手接管控制
+      pilot3_text: 叠衣服、往冰箱里放东西、收拾房间：每一次运行都按同一个时钟记录——操作员看到了什么、做了什么、机器人感受到了什么——写成可直接训练的 LeRobot 片段。
+      pilot3_title: 会话变成数据集
+      pilot_title: 试点项目是什么样的
+      pull_quote: 延迟是你录下的每一个片段都要缴的税。
+      stat_latency_l: OpenIPC 视频栈从镜头到屏幕的端到端延迟
+      stat_latency_n: '~30 ms'
+      stat_market_l: 款人形机器人，来自 44 家中国厂商
+      stat_market_n: '100'
+      stat_units_l: 台预计于 2026 年出货，大多数流向实验室
+      stat_units_n: '100,000'
+      stats_source_html: 市场数据：<a href="https://www.linkedin.com/posts/jens-peder-kristensen-0116b2_chinese-humanoid-and-legged-robot-companies-activity-7470567675631435776-UGdv">KeyResearch，2026 年 9 月</a>。延迟：由实际使用这套视频栈的飞手报告，见<a href="/low-latency">低延迟页面</a>。
+      title: 遥操作
+      why1_text: 覆盖数十个相机芯片家族的固件与工具，全部开源，社区会阅读源码并修复所发现的问题。
+      why1_title: 2019 年起开源
+      why2_text: FPV 飞手每天都在用这套视频栈飞行，RunCam 等厂商出厂即搭载 OpenIPC 硬件。让无人机穿过缝隙的反应力，正是让机器人在擂台上出拳的反应力，而这条链路早已经历过最恶劣的无线环境。
+      why2_title: 空中验证
+      why3_text: 没有云、没有订阅、不按台收费，也不取决于你买了谁家的机器人。芯片停产后，固件依然存活——你的机器人也是。
+      why3_title: 不绑定任何机器人厂商
+      why_title: 为什么选择 OpenIPC
     utilities:
       paragraph1: 实用工具和实用程序集。
       title: 公用设施

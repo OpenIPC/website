@@ -158,6 +158,7 @@ en:
     hires_timer: High-Resolution Timer
     home: Home
     low_latency: Low Latency
+    low_latency_fpv: FPV & the video link
     next: Next
     openwall: Open Wall
     partition_calc: Firmware Partition Calculator
@@ -171,6 +172,7 @@ en:
     store: Store
     supported_hardware: Supported Hardware
     team: Our Team
+    teleoperation: Teleoperation
     utilities: Utilities
     vendors: Vendors
     view_soc: View SoC page

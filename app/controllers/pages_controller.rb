@@ -86,6 +86,12 @@ class PagesController < ApplicationController
     render 'pages/qr_code_generator'
   end
 
+  def teleoperation
+    @page_title = t('pages.teleoperation.title')
+    @meta_description = t('pages.teleoperation.meta_description')
+    render 'pages/teleoperation'
+  end
+
   def stages_of_firmware_development
     @page_title = t('pages.stages_of_firmware_development.title')
     render 'pages/stages_of_firmware_development'
