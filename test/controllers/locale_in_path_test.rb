@@ -124,15 +124,23 @@ class LocaleInPathTest < ActionDispatch::IntegrationTest
       get "/#{locale}/donate"
 
       assert_response :success
-      links = css_select('a[href^="/"]').map { |a| a['href'] }.uniq
+      # The language switcher deliberately points at the other languages, so it
+      # is the one set of links exempt from this. It is the only place that
+      # carries a lang attribute.
+      links = css_select('a[href^="/"]:not([lang])').map { |a| a['href'] }.uniq
       refute_empty links
 
       broken = links.filter_map do |href|
-        get href
-        next if response.successful?
-        # A redirect is fine only if it keeps the prefix.
-        next if response.redirect? && URI(response.location).path.start_with?("/#{locale}/")
+        path = href.split('?').first
+        # 200 is not enough. A link to the unprefixed /business answers 200 --
+        # in English -- so a page can pass a liveness check while quietly
+        # sending half its readers into another language. 48 such links live
+        # inside the locale YAML, where locale_path cannot see them.
+        next if path.start_with?("/#{locale}/") || path == "/#{locale}"
+        next if path.match?(%r{\A/(assets|fonts|files|dl|wall|images)/}) ||
+                File.extname(path).present?
 
+        get href
         "#{href} -> #{response.status} #{response.redirect? ? response.location : ''}"
       end
 

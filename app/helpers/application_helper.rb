@@ -84,4 +84,29 @@ module ApplicationHelper
   def under_development
     content_tag 'p', 'This part is currently under development. Stay tuned.', class: 'alert alert-warning'
   end
+
+  # Translated copy contains links, and they were all English.
+  #
+  # 48 internal hrefs live inside the locale YAML -- `<a href="/business">` in
+  # the middle of a sentence, in six files. locale_path cannot reach them: they
+  # are not in a template, they are in the string the template renders. So a
+  # Russian visitor reading /ru/donate and clicking a link in the body copy
+  # landed on the English page, silently, and the link crawl in
+  # locale_in_path_test passed it because an English page answers 200.
+  #
+  # Overriding translate rather than adding a t_html helper and changing 34
+  # call sites: one hook, and it covers the ones nobody has written yet. The
+  # regex only runs when there is an href to find and the locale is not the
+  # default, so the ordinary case costs an include? on a short string.
+  def translate(key, **options)
+    result = super
+    return result if I18n.locale.to_s == I18n.default_locale.to_s
+    return result unless result.is_a?(String) && result.include?('href="/')
+
+    localized = result.gsub(%r{href="(/[^"]*)"}) { %(href="#{locale_path(Regexp.last_match(1))}") }
+    # Only the hrefs changed, and locale_path produces a path rather than
+    # markup, so a string that was safe before is still safe.
+    result.html_safe? ? localized.html_safe : localized
+  end
+  alias t translate
 end
