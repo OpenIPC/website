@@ -21,19 +21,41 @@ class Snapshot < ApplicationRecord
   #
   # limit is interpolated after to_i, not bound, because it lands in a LIMIT
   # clause where a bind parameter is not accepted; to_i is what makes that safe.
-  def self.latest_per_camera(limit: nil)
-    # The tie-break on id matters: two rows for one camera can share a
-    # created_at, and comparing timestamps alone then calls both of them the
-    # latest. On the homepage, where the result is cut to five, that spent two
-    # of the five tiles on one camera.
-    sql = 'SELECT s1.* FROM snapshots s1 LEFT JOIN snapshots s2' \
-          ' ON (s1.mac_address = s2.mac_address' \
-          '     AND (s1.created_at < s2.created_at' \
-          '          OR (s1.created_at = s2.created_at AND s1.id < s2.id)))' \
-          ' WHERE s2.id IS NULL AND s1.created_at > SUBDATE(NOW(), INTERVAL 1 DAY)' \
-          ' ORDER BY created_at DESC, id DESC'
+  # The join and its filter, with no projection and no order, so that the page
+  # query and the count query below cannot drift apart. They have to agree:
+  # a count taken over different rows than the page would paginate to pages
+  # that do not exist, or hide ones that do.
+  #
+  # The tie-break on id matters: two rows for one camera can share a
+  # created_at, and comparing timestamps alone then calls both of them the
+  # latest. On the homepage, where the result is cut to five, that spent two
+  # of the five tiles on one camera.
+  LATEST_PER_CAMERA = 'FROM snapshots s1 LEFT JOIN snapshots s2' \
+                      ' ON (s1.mac_address = s2.mac_address' \
+                      '     AND (s1.created_at < s2.created_at' \
+                      '          OR (s1.created_at = s2.created_at AND s1.id < s2.id)))' \
+                      ' WHERE s2.id IS NULL' \
+                      ' AND s1.created_at > SUBDATE(NOW(), INTERVAL 1 DAY)'
+
+  # limit and offset are interpolated after to_i, not bound, because they land
+  # in a LIMIT clause where a bind parameter is not accepted; to_i is what
+  # makes that safe.
+  def self.latest_per_camera(limit: nil, offset: nil)
+    # MySQL has no OFFSET without a LIMIT, and silently dropping the offset
+    # would serve page 1 under every page number -- which is exactly the bug
+    # this method was changed to fix.
+    raise ArgumentError, 'offset needs a limit' if offset && limit.nil?
+
+    sql = "SELECT s1.* #{LATEST_PER_CAMERA} ORDER BY created_at DESC, id DESC"
     sql += " LIMIT #{limit.to_i}" if limit
+    sql += " OFFSET #{offset.to_i}" if offset
     find_by_sql(sql)
+  end
+
+  # How many cameras the wall has, without building a row object for any of
+  # them. The gallery needs this for its page links and nothing else.
+  def self.latest_per_camera_count
+    connection.select_value("SELECT COUNT(*) #{LATEST_PER_CAMERA}").to_i
   end
 
   # Uploads may be HEIF (HEVC/AVC) as well as JPEG. Render every variant as JPEG

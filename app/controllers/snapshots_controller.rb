@@ -5,9 +5,23 @@ class SnapshotsController < ApplicationController
   before_action :find_snapshot, only: [:oneday, :show, :download]
   before_action :find_camera, only: [:camera]
 
+  PER_PAGE = 18
+
   def index
-    page = params[:page] || 1
-    @snapshots = Kaminari.paginate_array(Snapshot.latest_per_camera).page(page).per(18)
+    # One page of rows, not all of them. This used to load the whole 24-hour
+    # greatest-n-per-group -- roughly a thousand ActiveRecord objects -- and
+    # hand it to Kaminari to throw away all but eighteen, on every view of a
+    # page that Rails renders 1,300 times a day behind the microcache (#152).
+    #
+    # paginate_array is still what builds the page links, but it is given the
+    # slice and told where it sits rather than being asked to cut it out: with
+    # total_count, limit and offset supplied it treats the array as the page.
+    page = [params[:page].to_i, 1].max
+    offset = (page - 1) * PER_PAGE
+    @snapshots = Kaminari.paginate_array(
+      Snapshot.latest_per_camera(limit: PER_PAGE, offset: offset),
+      total_count: Snapshot.latest_per_camera_count, limit: PER_PAGE, offset: offset
+    )
     @page_title = "Open Wall, page #{page}"
     render 'snapshots/index'
   end
