@@ -1,0 +1,43 @@
+# GoatCounter, counting openipc.org's visitors (#181).
+#
+# One Go binary and a SQLite file. Bound to the loopback: the only ways in are
+# the two proxied paths on the public vhosts (/api/a/c.js and /api/a/count) and
+# the dashboard vhost, both in deploy/nginx/.
+[Unit]
+Description=GoatCounter analytics for openipc.org
+Documentation=https://github.com/OpenIPC/website/issues/181
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=openipc-analytics
+Group=openipc-analytics
+ExecStart=/usr/local/bin/goatcounter serve \
+  -listen 127.0.0.1:8081 \
+  -tls none \
+  -db 'sqlite+/srv/www/shared/analytics/db.sqlite3' \
+  -automigrate
+Restart=on-failure
+RestartSec=5
+
+# The host has 7.6 GiB and the Rails container alone is over 2 GiB of it, so
+# this is capped rather than trusted. GoatCounter is ~50 MB resident; 256 MB
+# leaves room for a traffic spike and still fails loudly instead of competing
+# with the application for memory.
+MemoryMax=256M
+
+# It needs its database directory and nothing else on this host.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/srv/www/shared/analytics
+
+[Install]
+WantedBy=multi-user.target
