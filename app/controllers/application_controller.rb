@@ -109,6 +109,14 @@ class ApplicationController < ActionController::Base
   def publicly_cacheable?
     return false unless request.get? && response.status == 200
     return false if admin_signed_in? || flash.any?
+    # A page that mints a CSRF token writes the session, so the response will
+    # carry Set-Cookie -- and declaring that publicly cacheable for an hour is
+    # how one visitor's session gets handed to the next by any cache that
+    # believes us. The header cannot be checked directly here: the session
+    # middleware writes it after this after_action has run, so the response
+    # looks cookieless at this point. csrf_needed? is the same question asked
+    # early enough to answer.
+    return false if csrf_needed?
 
     !(respond_to?(:devise_controller?, true) && devise_controller?)
   end

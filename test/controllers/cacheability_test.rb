@@ -101,6 +101,24 @@ class CacheabilityTest < ActionDispatch::IntegrationTest
     assert_select 'meta[name=csrf-token]', false
   end
 
+  # The wizard sets a cookie because its form needs a token, so it must not be
+  # declared publicly cacheable -- nginx would refuse to store it anyway, but
+  # a CDN or any other cache that believes the header would hand one visitor's
+  # session to the next. Found on dev: it was answering
+  # `public, max-age=3600` alongside Set-Cookie.
+  test 'a page that sets a cookie is never declared publicly cacheable' do
+    vendor = Vendor.find_by(name: 'Cache Test Vendor') || Vendor.create!(name: 'Cache Test Vendor')
+    soc = Soc.find_by(model: 'CT1000') ||
+          Soc.create!(model: 'CT1000', vendor: vendor, family: 'ct', status: 'done',
+                      uboot_filename: 'u.bin', linux_filename: 'l.bin')
+
+    get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}"
+
+    assert_response :success
+    assert_not_includes response.headers['Cache-Control'].to_s, 'public',
+                        'this page mints a CSRF token, so its response carries Set-Cookie'
+  end
+
   # The other direction, and the one that breaks a feature rather than a cache
   # if it is wrong: the wizard posts, so it must still get a token.
   test 'the wizard still gets its token' do
