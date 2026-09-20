@@ -87,6 +87,22 @@ class QueryLocaleRedirectTest < ActionDispatch::IntegrationTest
     assert_not_equal 301, response.status
   end
 
+  # English is the bare path, so ?locale=en normally just loses the parameter.
+  # Not on a page with no prefixed form: there the parameter is the only thing
+  # saying English, and dropping it hands the visitor back to the session and
+  # the browser header. A Russian browser asking for English got Russian.
+  test 'a page with no prefixed form keeps its English parameter' do
+    russian = { 'HTTP_ACCEPT_LANGUAGE' => 'ru' }
+
+    get '/snapshots', headers: russian
+    assert_select 'html[lang=?]', 'ru'
+
+    get '/snapshots?locale=en', headers: russian
+
+    assert_response :success
+    assert_select 'html[lang=?]', 'en'
+  end
+
   test 'a locale this site does not serve is ignored' do
     get '/donate?locale=xx'
 
