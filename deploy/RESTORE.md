@@ -174,3 +174,38 @@ an empty environment, and fails if nothing comes out. `deploy/memory-probe.sh`
 is the other half -- it puts a fixed load on a container and reports what that
 did to its memory and its latency, so two images can be compared in minutes
 instead of by deploying one and waiting a day.
+
+## Search console properties
+
+Things that exist only outside this repository, recorded here because nothing
+else records them and a rebuilt host does not bring them back (#179).
+
+Verified by DNS TXT on the Hetzner zone, read on 2026-09-20:
+
+| domain | Google | Yandex | Bing |
+|---|---|---|---|
+| `openipc.org` | `google-site-verification=0IN-3sAB…` | `yandex-verification: 0aad82e3…` | not registered |
+| `openipc.ru` | not registered | `yandex-verification: 8e9e2f61…` | not registered |
+| `openipc.kz` | not registered | not registered | not registered |
+| `openipc.eu` | not registered | not registered | not registered |
+| `openipc.cloud` | not registered | not registered | not registered |
+| `опенипц.рф` | not registered | not registered | not registered |
+
+**Who owns the Google and Yandex properties is not known.** The records are in
+DNS and the consoles hold several weeks of query data behind them, but nobody
+has written down which account can read it. That is the gap worth closing
+first: a property nobody can sign in to is the same as no property when #154
+changes every indexed URL and somebody needs the before-and-after.
+
+The mirrors matter to search engines as separate sites duplicating this one —
+the canonical tag already points them here, but only a console shows whether
+that is being honoured.
+
+If HTML-file verification is ever used instead of DNS, commit the file to
+`public/`. It ships in the image and survives a rebuild; `config.assets.compile`
+is off, but `public/` is served as-is.
+
+Baidu Ziyuan needs a Chinese account and is left to whoever has one.
+Googlebot made 6,284 requests to Baiduspider's 36 over 2026-09-19/20, so this
+is not urgent on traffic grounds.
+
