@@ -58,6 +58,35 @@ server {
 
     client_max_body_size 1m;
 
+    # The account pages -- sign in, password reset, user settings -- get the
+    # narrow column back.
+    #
+    # backend.css ships `.page, .center { max-width: calc((1em*2) + (86mm*4) + 10mm) }`,
+    # which is the dashboard sized to fit four 86mm chart columns and is right
+    # there. It applies to every page though, so the sign-in form sits against
+    # the left edge of a 1370px box with the heading centred above it, which
+    # reads as a broken page rather than a deliberate one. Upstream CSS, not
+    # anything this deployment does.
+    #
+    # Scoped to /user/ so the dashboard keeps the width it needs. Accept-Encoding
+    # is cleared because sub_filter cannot rewrite a gzipped body; that costs a
+    # little bandwidth on the handful of pages a maintainer signs in through.
+    location ^~ /user/ {
+        limit_req zone=dashboard burst=20 nodelay;
+        limit_req_status 429;
+
+        proxy_pass http://127.0.0.1:8081;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Accept-Encoding "";
+
+        sub_filter_types text/html;
+        sub_filter_once on;
+        sub_filter '</head>' '<style>.page,.center{max-width:54rem}</style></head>';
+    }
+
     location / {
         limit_req zone=dashboard burst=20 nodelay;
         limit_req_status 429;
