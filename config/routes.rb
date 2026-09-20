@@ -29,6 +29,7 @@ Rails.application.routes.draw do
 
     get '/get-started', to: 'pages#get_started'
     get '/low-latency', to: 'pages#low_latency'
+    get '/teleoperation', to: 'pages#teleoperation'
     get '/ecosystem',   to: 'pages#ecosystem'
     get '/business',    to: 'pages#business'
     get '/community',   to: 'pages#community'

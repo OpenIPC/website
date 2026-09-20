@@ -2,6 +2,10 @@
   The relaunched navigation: Get Started | Hardware | Low Latency | Ecosystem |
   For Business | Community.
 
+  Low Latency is a dropdown of two: the FPV video link and the teleoperation
+  page. A seventh top-level entry would not fit either, which is the reason
+  for the dropdown rather than a sibling.
+
   expand-xl rather than expand-lg. Six top-level entries plus the language
   switcher do not fit an lg breakpoint without wrapping, and a wrapped navbar
   reads as broken rather than as full.
@@ -21,7 +25,13 @@
       <ul class="navbar-nav align-items-xl-center">
         <%= navbar_link t('nav.get_started'), '/get-started' %>
         <%= navbar_link t('nav.hardware'), '/supported-hardware' %>
-        <%= navbar_link t('nav.low_latency'), '/low-latency' %>
+        <li class="nav-item dropdown">
+          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownLowLatency" role="button"><%= t('nav.low_latency') %></a>
+          <ul aria-labelledby="dropdownLowLatency" class="dropdown-menu dropdown-menu-xl-end">
+            <%= dropdown_link t('nav.low_latency_fpv'), '/low-latency' %>
+            <%= dropdown_link t('nav.teleoperation'), '/teleoperation' %>
+          </ul>
+        </li>
         <li class="nav-item dropdown">
           <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownEcosystem" role="button"><%= t('nav.ecosystem') %></a>
           <ul aria-labelledby="dropdownEcosystem" class="dropdown-menu dropdown-menu-xl-end">

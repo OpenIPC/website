@@ -10,6 +10,7 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     '/' => 'home',
     '/get-started' => 'get_started',
     '/low-latency' => 'low_latency',
+    '/teleoperation' => 'teleoperation',
     '/ecosystem' => 'ecosystem',
     '/business' => 'business',
     '/community' => 'community',
@@ -272,6 +273,31 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
                         'the homepage band is separated from the section above it by a white stripe'
   end
 
+  # Low Latency became a dropdown when the teleoperation page arrived: a
+  # seventh top-level entry does not fit the navbar. Both pages have to stay
+  # reachable from it, in every language, or one of them quietly loses its
+  # only entry in the chrome.
+  test 'the Low Latency menu reaches both of its pages' do
+    %w[en ru zh].each do |locale|
+      prefix = locale == 'en' ? '' : "/#{locale}"
+      get prefix.empty? ? '/' : prefix
+
+      %w[/low-latency /teleoperation].each do |path|
+        assert_not_empty css_select(%(.navbar a.dropdown-item[href="#{prefix}#{path}"])),
+                         "no #{path} entry in the #{locale} menu"
+      end
+      assert_not_empty css_select(%(footer a[href="#{prefix}/teleoperation"])), "no footer entry in #{locale}"
+    end
+  end
+
+  # The teleoperation page ends on a tinted full-bleed section, so its band is
+  # flush like the homepage's rather than spaced like the article pages'.
+  test 'the teleoperation band follows its tinted section without a stripe' do
+    get '/teleoperation'
+
+    assert_not_includes css_select('section.section--ink').last['class'], 'mt-6'
+  end
+
   # Cryptocurrency is off the donation page; Open Collective stays.
   test '/donate offers Open Collective and nothing crypto' do
     get '/donate'
@@ -295,7 +321,7 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     assert_not_empty held
     assert_not_includes PagesHelper::HOME_PARTNER_ROWS.values.flatten, :exhibitions
 
-    %w[/ /business /ecosystem /community /donate /low-latency /get-started].each do |path|
+    %w[/ /business /ecosystem /community /donate /low-latency /teleoperation /get-started].each do |path|
       get path
 
       held.each do |logo|
