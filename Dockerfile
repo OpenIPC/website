@@ -94,12 +94,44 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y \
       curl \
       libffi8 \
       libheif1 \
+      libjemalloc2 \
       libmariadb3 \
       libvips42 \
       libyaml-0-2 \
       msmtp-mta \
       tzdata \
   && rm -rf /var/lib/apt/lists/*
+
+# Measured on this host before changing anything (#148, hourly series in
+# /var/log/openipc-rss.log): anon memory is 0.27 GiB on a fresh boot, 1.56 GiB
+# an hour later, 2.94 GiB at nine hours and 3.19 GiB at 4.9 days. That shape is
+# not a leak -- nine tenths of the growth happens on the first day and then it
+# asymptotes -- it is glibc handing each of the 32 Puma threads its own arena
+# and never giving the pages back.
+#
+# Asserted at build time, because the failure mode is silent: a missing library
+# makes LD_PRELOAD a no-op, the process keeps running on glibc, and the only
+# symptom is memory drifting back to where it was. Better a red build when a
+# base image moves the library than an image that quietly stops doing the one
+# thing it was changed to do.
+RUN LD_PRELOAD=libjemalloc.so.2 ruby -e \
+      'abort "jemalloc did not preload" unless File.read("/proc/self/maps").include?("jemalloc")'
+
+# After the install, never before it: as an ENV this applies to every later
+# RUN as well, and a preload naming a library that is not there yet makes the
+# loader complain on every command in the build.
+#
+# Bare soname rather than a path -- the library lives under the multiarch
+# directory and the loader finds it by name, so this does not have to know
+# whether the image was built for amd64 or arm64.
+#
+# MALLOC_ARENA_MAX is glibc's, and glibc is not the allocator once the preload
+# takes; verified that it stays jemalloc with both set, so this is inert in the
+# normal case. It is the floor under the abnormal one: if a future base image
+# drops libjemalloc2, the process falls back to glibc with two arenas rather
+# than with 8 x nproc.
+ENV LD_PRELOAD=libjemalloc.so.2 \
+    MALLOC_ARENA_MAX=2
 
 WORKDIR /rails
 
