@@ -33,16 +33,24 @@ module WallImage
   # because serving assembled firmware by name would skip the rules that decide
   # who may have it, these images are public by definition.
   #
-  # A method rather than a constant, and per worker under test. The suite runs
+  # A method rather than a constant, and per process under test. The suite runs
   # parallelized across cores, each worker with its own database, so two
   # workers routinely mint the same snapshot id -- and a shared directory then
   # has one test deleting another's files mid-run. public/files has bitten this
   # way before. A constant cannot fix it: it is evaluated when the class loads,
-  # which is before the workers fork and before TEST_ENV_NUMBER is set.
+  # which is before the workers fork.
+  #
+  # Keyed on the pid, because TEST_ENV_NUMBER is not set here. That is a
+  # parallel_tests convention; `parallelize(workers: :number_of_processors)`
+  # gives each worker its own database but does not export it, so every one of
+  # the 32 processes read it as "" and shared one directory. Measured: three
+  # pids, one root between them. The isolation this comment described was not
+  # happening, and the symptom was an occasional ENOENT between an
+  # assert_path_exists and the File.binread on the next line.
   def root
     return Rails.root.join('public', 'wall') unless Rails.env.test?
 
-    Rails.root.join('tmp', "wall-test#{ENV.fetch('TEST_ENV_NUMBER', '')}")
+    Rails.root.join('tmp', "wall-test-#{Process.pid}")
   end
 
   def dir_for(snapshot_id)
