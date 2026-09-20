@@ -1,0 +1,4 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# Hourly memory baseline for the migration epic (#143, feeds #148).
+5 * * * *  root  /usr/local/sbin/openipc-sample-rss >>/var/log/openipc-rss.log 2>&1

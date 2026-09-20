@@ -1,0 +1,33 @@
+#!/bin/bash
+# Hourly memory sample (2026-09-19, issue #143).
+#
+# The migration epic asserts Rails memory falls from ~3.3 GiB to under 2.2 GiB
+# once jemalloc and MALLOC_ARENA_MAX land (#148), and that host MemAvailable
+# rises above 1 GiB. Neither is checkable without a before-series, and RSS
+# growth per week with no restart is currently unquantified -- so sample before
+# changing anything.
+#
+# Record the COMPONENTS, not one blended number. cgroup memory.current counts
+# page cache, so it read 3.70 GiB at the same moment `docker stats` said 3.31
+# GiB; docker subtracts inactive_file to get a working set. Neither is wrong,
+# but comparing one against the other later would invent a 400 MB regression.
+# `anon` is the number #148 is actually about -- heap that grew and was never
+# returned to the OS -- and the rest is derivable from these columns.
+#
+# TSV: iso8601, container, anon, file, current, limit, host_memavail_kb, uptime_s
+set -u
+ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+memavail=$(awk '/^MemAvailable:/{print $2}' /proc/meminfo)
+for c in $(docker ps --format "{{.Names}}" 2>/dev/null); do
+  id=$(docker inspect -f '{{.Id}}' "$c" 2>/dev/null) || continue
+  d=/sys/fs/cgroup/system.slice/docker-$id.scope
+  [ -d "$d" ] || d=/sys/fs/cgroup/docker/$id
+  [ -d "$d" ] || continue
+  anon=$(awk '/^anon /{print $2}' "$d/memory.stat" 2>/dev/null || echo 0)
+  file=$(awk '/^file /{print $2}' "$d/memory.stat" 2>/dev/null || echo 0)
+  cur=$(cat "$d/memory.current" 2>/dev/null || echo 0)
+  lim=$(cat "$d/memory.max" 2>/dev/null || echo max)
+  started=$(docker inspect -f '{{.State.StartedAt}}' "$c" 2>/dev/null)
+  up=$(( $(date -u +%s) - $(date -u -d "$started" +%s 2>/dev/null || echo 0) ))
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$ts" "$c" "$anon" "$file" "$cur" "$lim" "$memavail" "$up"
+done
