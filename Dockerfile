@@ -125,13 +125,27 @@ RUN LD_PRELOAD=libjemalloc.so.2 ruby -e \
 # directory and the loader finds it by name, so this does not have to know
 # whether the image was built for amd64 or arm64.
 #
-# MALLOC_ARENA_MAX is glibc's, and glibc is not the allocator once the preload
-# takes; verified that it stays jemalloc with both set, so this is inert in the
-# normal case. It is the floor under the abnormal one: if a future base image
-# drops libjemalloc2, the process falls back to glibc with two arenas rather
-# than with 8 x nproc.
+# MALLOC_CONF is not optional and is the whole reason this is safe. Measured in
+# this image, 32 threads churning 5MB strings, RSS after the work and again
+# twenty seconds later:
+#
+#   glibc                          18.7 MB -> 18.5 MB
+#   jemalloc, default config      360   MB -> 345   MB     never returned
+#   jemalloc, the settings below  316   MB -> 21    MB
+#
+# Left at its defaults, jemalloc purges a dirty page only when something else
+# allocates in the same arena, so an idle worker holds everything it ever
+# peaked at. background_thread gives the decay a clock of its own instead.
+# Shipping jemalloc without this would have been a memory regression, not a
+# saving, which is the opposite of what #148 set out to do.
+#
+# MALLOC_ARENA_MAX is deliberately NOT set. It is glibc's, so it is inert
+# whenever the preload works; and on the one workload here that fragments --
+# many small allocations across 32 threads -- capping glibc at two arenas
+# retained 123MB against 72MB for the default. A fallback that is measurably
+# worse than doing nothing is not a fallback.
 ENV LD_PRELOAD=libjemalloc.so.2 \
-    MALLOC_ARENA_MAX=2
+    MALLOC_CONF=background_thread:true,dirty_decay_ms:1000,muzzy_decay_ms:1000
 
 WORKDIR /rails
 
