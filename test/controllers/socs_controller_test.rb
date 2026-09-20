@@ -206,12 +206,12 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
                camera_mac_address: mac }
     camera[:partition_layout] = partition_layout if partition_layout
 
-      # The prefix, not ?locale=. The wizard result is a GET since #156, so
-      # #203's redirect applies to it like any other page and ?locale=ru now
-      # answers 301 to /ru/... -- correctly, but a test asserting :success
-      # sees only the redirect.
-      prefix = locale ? "/#{locale}" : ''
-      get "#{prefix}/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
+    # The prefix, not ?locale=. The wizard result is a GET since #156, so
+    # #203's redirect applies to it like any other page and ?locale=ru now
+    # answers 301 to /ru/... -- correctly, but a test asserting :success
+    # sees only the redirect.
+    prefix = locale ? "/#{locale}" : ''
+    get "#{prefix}/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}",
         params: { camera: }
     assert_response :success
   end
@@ -450,6 +450,25 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
       assert_match 'run uknor16m; run urnor16m', response.body
       assert_match '<code>uknor16m</code>, <code>urnor16m</code>, <code>setnor16m</code>', response.body
       assert_no_match(/uknor32m/, response.body)
+    end
+  end
+
+  # The wizard's result is a public GET since #156, so the query string is
+  # whatever anyone types. ?camera=x makes params[:camera] a String and
+  # ?camera[]=x an Array, and permitted_params calls permit on it --
+  # NoMethodError, and a 500 on a page reachable by a malformed link.
+  #
+  # A wizard link is something people paste into chat and forums, where it
+  # gets truncated and re-wrapped, so the useful answer to a mangled one is the
+  # form it was trying to fill in rather than an error.
+  test 'a malformed camera parameter falls back to the form' do
+    soc = instructable_soc('TS3520DV200')
+
+    ['?camera=x', '?camera[]=x', '?camera=1&camera=2'].each do |query|
+      get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}#{query}"
+
+      assert_response :success, "#{query} did not render"
+      assert_select 'form#new_camera', 1, "#{query} did not fall back to the form"
     end
   end
 

@@ -72,7 +72,17 @@ module Cameras
       # Set-Cookie back on the one public page that still had it after #155;
       # the result could not be shared; and a page whose inputs change four
       # times a year could not be cached.
-      return update if params[:camera].present?
+      # is_a?, not present?. This is a public GET now, so the query is whatever
+      # anyone types: ?camera=x makes params[:camera] a String and ?camera[]=x
+      # an Array, and permitted_params calls permit on it -- NoMethodError, and
+      # a 500 on a page anyone can reach with a malformed link.
+      #
+      # An unusable value falls through to the form rather than answering 400.
+      # A wizard link is something people paste into chat and forums, where it
+      # gets truncated and re-wrapped, and the useful response to a mangled one
+      # is the form it was trying to fill in. That is also how the permalink
+      # path already treats a value it cannot use.
+      return update if params[:camera].is_a?(ActionController::Parameters)
 
       @camera = Camera.new(
         camera_ip_address: '192.168.1.10',
