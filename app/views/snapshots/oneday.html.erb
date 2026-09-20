@@ -39,10 +39,16 @@
 </article>
 
 <script>
-  function setSpeed() {
-      const ms = (5 - document.querySelector('#speed').valueAsNumber) * 1000;
-      document.querySelectorAll('.carousel-item').forEach(el => el.dataset["bsInterval"] = ms);
-  }
-  document.querySelector("#speed").addEventListener("input", setSpeed);
-  setSpeed();
+  // Scoped. Turbo re-executes body scripts on every visit, so anything
+  // declared at the top level here would be re-declared in the shared
+  // global scope and throw on the second visit. A function declaration
+  // survives that; a `const` added next to it would not.
+  (() => {
+    function setSpeed() {
+        const ms = (5 - document.querySelector('#speed').valueAsNumber) * 1000;
+        document.querySelectorAll('.carousel-item').forEach(el => el.dataset["bsInterval"] = ms);
+    }
+    document.querySelector("#speed").addEventListener("input", setSpeed);
+    setSpeed();
+  })();
 </script>

@@ -32,6 +32,25 @@ const context = await browser.newContext({
 })
 const page = await context.newPage()
 
+// Instrumentation, installed before anything navigates so it survives every
+// body swap: the document outlives a Turbo visit, and so does anything a page
+// left running in it.
+await page.addInitScript(() => {
+  window.__frames = 0
+  const raf = window.requestAnimationFrame.bind(window)
+  window.requestAnimationFrame = cb => { window.__frames++; return raf(cb) }
+  window.__timers = new Set()
+  const set = window.setInterval.bind(window), clear = window.clearInterval.bind(window)
+  window.setInterval = (...a) => { const id = set(...a); window.__timers.add(id); return id }
+  window.clearInterval = id => { window.__timers.delete(id); return clear(id) }
+})
+
+// The Tools menu is a collapsed dropdown, so a real click cannot reach its
+// links headlessly. A scripted click still bubbles to document, which is where
+// Turbo listens, so the code path under test is the same one.
+const turboClick = sel => page.evaluate(s => document.querySelector(s)?.click(), sel)
+const goHome = async () => { await turboClick('a.navbar-brand'); await page.waitForTimeout(500) }
+
 // Keep these apart. A JavaScript exception means this change is broken; a
 // failed resource means the server did not serve something, which on dev is
 // routine -- its blob store holds 440K against 3,444 snapshot rows, so the
@@ -53,8 +72,10 @@ await page.goto(base + '/', { waitUntil: 'networkidle' })
 check('Turbo is present on the page', await page.evaluate(() => typeof window.Turbo !== 'undefined'))
 check('Turbo Drive is enabled', await page.evaluate(() => window.Turbo?.session?.drive === true))
 check('form mode is off, so forms submit as they always did',
-      await page.evaluate(() => window.Turbo?.session?.formMode === 'off'),
-      await page.evaluate(() => 'formMode=' + window.Turbo?.session?.formMode))
+      await page.evaluate(() =>
+        (window.Turbo?.config?.forms?.mode ?? window.Turbo?.session?.formMode) === 'off'),
+      await page.evaluate(() =>
+        'formMode=' + (window.Turbo?.config?.forms?.mode ?? window.Turbo?.session?.formMode)))
 
 const loadsAfterFirst = documentLoads
 
@@ -97,6 +118,79 @@ check('no duplicate listeners after back/forward',
         document.body.click()
         return window.__hits === 1
       }))
+
+// --- The scripts that live in views, not in application.js ------------------
+//
+// Turbo re-executes the <script> elements in each body it swaps in, but the
+// global lexical scope belongs to the document and survives the swap. A view
+// whose script declares `const x` at the top level therefore throws
+// "Identifier 'x' has already been declared" the *second* time you open it,
+// and the whole block dies with it -- so one visit proves nothing and these
+// checks all go round twice.
+const inlineScriptPages = [
+  '/tools/firmware-partitions-calculation',
+  '/tools/high-resolution-timer',
+  '/tools/qr-code-generator',
+]
+for (const path of inlineScriptPages) {
+  const before = jsErrors.length
+  await goHome()
+  for (const _ of [1, 2]) {
+    await turboClick(`a[href="${path}"]`)
+    await page.waitForURL('**' + path, { timeout: 15000 }).catch(() => {})
+    await page.waitForTimeout(600)
+    await goHome()
+  }
+  check(`${path} survives being opened twice`,
+        jsErrors.length === before, jsErrors.slice(before, before + 1).join(''))
+}
+
+// Reaching a page by link must leave it as usable as typing its URL does.
+// The calculator fills #mtdparts from its own init, so an empty box means the
+// init never ran.
+await turboClick('a[href="/tools/firmware-partitions-calculation"]')
+await page.waitForURL('**/tools/firmware-partitions-calculation', { timeout: 15000 }).catch(() => {})
+await page.waitForTimeout(700)
+check('the partition calculator initialises when reached by a link',
+      await page.evaluate(() => (document.querySelector('#mtdparts')?.textContent || '').trim().length > 0),
+      await page.evaluate(() => JSON.stringify((document.querySelector('#mtdparts')?.textContent || '').trim().slice(0, 40))))
+
+// --- Nothing a page started may outlive it ---------------------------------
+await goHome()
+await turboClick('a[href="/tools/high-resolution-timer"]')
+await page.waitForURL('**/tools/high-resolution-timer', { timeout: 15000 }).catch(() => {})
+await page.waitForTimeout(800)
+check('the frame-rate timer runs while you are on its page',
+      await page.evaluate(() => window.__frames) > 5)
+await goHome()
+const framesOnLeaving = await page.evaluate(() => window.__frames)
+await page.waitForTimeout(1500)
+const framesLater = await page.evaluate(() => window.__frames)
+check('the frame-rate timer stops when you leave it',
+      framesLater - framesOnLeaving < 5,
+      `${framesOnLeaving} -> ${framesLater} frame callbacks across 1.5 s away from the page`)
+
+// The Open Wall slideshow is a Bootstrap carousel, which cycles on an interval
+// that only dispose() clears.
+await page.goto(base + '/open-wall', { waitUntil: 'networkidle' })
+const snapshot = await page.evaluate(() => document.querySelector('a[href^="/snapshots/"]')?.getAttribute('href'))
+if (!snapshot) {
+  check('found a snapshot to open', false, 'no snapshot links on /open-wall')
+} else {
+  await turboClick(`a[href="${snapshot}"]`); await page.waitForTimeout(800)
+  const oneday = await page.evaluate(() => document.querySelector('a[href*="oneday"]')?.getAttribute('href'))
+  if (!oneday) {
+    check('found the one-day slideshow', false, `no oneday link on ${snapshot}`)
+  } else {
+    await turboClick(`a[href="${oneday}"]`); await page.waitForTimeout(1200)
+    const running = await page.evaluate(() => window.__timers.size)
+    check('the slideshow cycles while you are on its page', running > 0, `${running} live interval(s)`)
+    await goHome(); await page.waitForTimeout(800)
+    const leftBehind = await page.evaluate(() => window.__timers.size)
+    check('the slideshow stops when you leave it', leftBehind === 0,
+          `${running} live interval(s) on the page, ${leftBehind} still running after leaving`)
+  }
+}
 
 check('no JavaScript exceptions anywhere in the run', jsErrors.length === 0, jsErrors.slice(0, 3).join(' | '))
 if (resourceErrors.length) {

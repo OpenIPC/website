@@ -10,14 +10,18 @@
 </article>
 
 <script>
+  // Scoped, because Turbo re-executes body scripts on every visit and these
+  // top-level declarations would land in the shared global scope a second
+  // time -- "Identifier 't' has already been declared", and nothing runs.
+  (() => {
     const t = document.querySelector('#time');
     const f = document.querySelector('#fps');
     const times = [];
-    let fps;
+    let fps, frame, ticker;
 
     /* based on https://blog.bullgare.com/2019/03/simple-way-to-detect-browsers-fps-via-js/ */
     function refreshLoop() {
-        window.requestAnimationFrame(() => {
+        frame = window.requestAnimationFrame(() => {
             const now = performance.now();
             t.textContent = Math.ceil(now);
             while (times.length > 0 && times[0] <= now - 1000) {
@@ -30,5 +34,20 @@
     }
     refreshLoop();
 
-    setInterval(() => {f.textContent = fps;}, 1000)
+    ticker = setInterval(() => {f.textContent = fps;}, 1000);
+
+    // Stop on the way out. A full document load used to end this loop by
+    // destroying the document around it; under Turbo the document survives the
+    // navigation and the loop does not notice it has left, so it goes on
+    // animating a detached <p> and counting frames for the rest of the
+    // session. Measured before this listener existed: 41 frame callbacks
+    // while the page was open, still climbing 1.5 s after leaving it.
+    //
+    // `once` matters -- this script runs again on every visit to the page, and
+    // a listener that outlived its own page would stack up one per visit.
+    document.addEventListener('turbo:before-cache', () => {
+        window.cancelAnimationFrame(frame);
+        clearInterval(ticker);
+    }, { once: true });
+  })();
 </script>

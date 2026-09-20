@@ -43,7 +43,14 @@ import initCopy from './src/copy'
 // exactly as they did yesterday. Turning this on for a form is then a decision
 // per form rather than a site-wide gamble -- and the wizard is due to become a
 // GET anyway (#156), at which point it is a link and this stops applying to it.
-window.Turbo.setFormMode('off')
+// `Turbo.config` is the current spelling; `setFormMode` still works in Turbo 8
+// but logs a deprecation warning on every single page load, which drowns the
+// console output anyone debugging this site is trying to read.
+if (window.Turbo.config) {
+  window.Turbo.config.forms.mode = 'off'
+} else {
+  window.Turbo.setFormMode('off')
+}
 
 // Bound once, at import. These delegate from `document`, which Turbo never
 // replaces, so they keep working across navigations -- and binding them again
@@ -71,4 +78,15 @@ document.addEventListener('turbo:load', () => {
   // a carousel.
   document.querySelectorAll('[data-bs-ride="carousel"]')
           .forEach(el => Carousel.getOrCreateInstance(el))
+})
+
+// ...and stop them again on the way out. A carousel cycles on a setInterval
+// that Bootstrap only clears when the instance is disposed, and Turbo never
+// disposes anything: it swaps the body and leaves the old elements detached
+// with their timers still running. Measured on /snapshots/:id/oneday -- one
+// live interval on the page, still live after navigating home, and one more
+// added by every subsequent visit for the rest of the session.
+document.addEventListener('turbo:before-cache', () => {
+  document.querySelectorAll('[data-bs-ride="carousel"]')
+          .forEach(el => Carousel.getInstance(el)?.dispose())
 })
