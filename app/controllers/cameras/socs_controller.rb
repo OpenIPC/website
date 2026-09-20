@@ -2,6 +2,18 @@
 
 module Cameras
   class SocsController < ApplicationController
+    # The wizard's form is the only public form on the site (#155). Not the
+    # whole controller though -- #featured and #full_list are the catalogue
+    # listings and have no form, and granting them a token was enough to put
+    # Set-Cookie back on the two most-linked hardware pages.
+    #
+    # #156 turns the wizard's PUT into a GET, after which this can go too.
+    FORM_ACTIONS = %w[show update].freeze
+
+    def csrf_needed?
+      FORM_ACTIONS.include?(action_name)
+    end
+
     # include InstallationInstructionConcern
 
     def index
@@ -42,7 +54,20 @@ module Cameras
               }
             end
           }
-          render json: @data #.to_json
+          # Public and short, with an ETag, because this is the one endpoint
+          # here with consumers nobody here controls (#155). Five minutes
+          # rather than the hour the catalogue pages around it get: a reader
+          # can wait out a stale page, a script polling this cannot tell it is
+          # stale.
+          #
+          # fresh_when on the payload gives a conditional request something to
+          # match, so a poller that has not missed an edit gets a 304 and no
+          # body -- the catalogue changed four times in a year, so that is
+          # almost every request.
+          expires_in 5.minutes, public: true
+          return if fresh_when(etag: @data, public: true)
+
+          render json: @data
         end
       end
     end

@@ -39,7 +39,7 @@
   <meta property="og:image" content="<%= request.base_url %>/og-default.png">
   <meta name="twitter:card" content="summary_large_image">
 
-  <%= csrf_meta_tags %>
+  <%= csrf_meta_tags if csrf_needed? %>
   <%= csp_meta_tag %>
   <link rel="icon" type="image/x-icon" href="<%= asset_path 'favicon.png' %>">
   <%# The two faces every page renders body text in. Without the hint they are
