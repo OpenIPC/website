@@ -66,6 +66,22 @@ ru:
       money_band_html: Хотите помочь деньгами? <a href="/donate">Поддержите работу</a>.
       title: Сообщество
     donate:
+      # Russia-only, and deliberately absent from pages.en.yml and pages.zh.yml
+      # (#201). Open Collective cannot be paid with a card issued in Russia, so
+      # the Russian section of the old site sent those visitors to PayWall
+      # instead. The August 2026 relaunch dropped the fork and nothing has
+      # mentioned PayWall since -- the site sent 9, 3, 11 and 7 subscribers a
+      # year from 2022 to 2025, and none after the relaunch, because the link
+      # stopped existing.
+      #
+      # "Разовый платёж" is described as paying one month and cancelling
+      # because that is what the service offers: the project page carries three
+      # monthly tiers (100 ₽, $5, €5) and no one-off button. Half of all
+      # PayWall subscriptions have been used exactly that way.
+      paywall_title: PayWall — для карт, выпущенных в России
+      paywall_text_html: Open Collective не принимает карты, выпущенные в России, — PayWall принимает. 100 ₽ в месяц, есть тарифы в долларах и евро. Разовый платёж — это оплата за один месяц и отмена подписки сразу после неё.
+      paywall_button: Поддержать через PayWall
+      paywall_oc_fallback_html: Если у вас карта, выпущенная за пределами России, удобнее будет <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout">Open Collective</a> — там же публичная отчётность.
       business_band_html: Если ваша компания зависит от OpenIPC, самый устойчивый способ поддержать проект — коммерческое сотрудничество. <a href="/business">Что мы предлагаем</a>.
       accounting: Мы стремимся к открытому и прозрачному учету и благодарны за любую поддержку, которую вы можете оказать нашим усилиям по продвижению OpenIPC и нашей миссии по обеспечению устойчивого будущего.
       hero_lede: OpenIPC бесплатен в использовании и дорог в производстве. Пожертвования покупают камеры для новых платформ, оплачивают работу мейнтейнеров и держат свет включённым.

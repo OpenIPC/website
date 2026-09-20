@@ -11,13 +11,35 @@
         <p class="text-body-secondary mb-0"><%= t('.accounting') %></p>
       </div>
       <div class="col-lg-6">
-        <div class="card p-2">
-          <div class="card-body">
-            <h2 class="h5"><i class="bi bi-heart-fill text-danger me-2"></i><%= t('.oc_title') %></h2>
-            <p class="text-body-secondary"><%= t('.oc_text_html') %></p>
-            <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout" class="btn btn-primary"><%= t('.oc_button') %></a>
+        <%# Russian readers get PayWall first (#201). Open Collective cannot be
+            paid with a card issued in Russia, so for that audience the only
+            button on this page was one they could not press -- a relaunch
+            regression rather than a new idea: the old site's Russian section
+            linked to PayWall, and the site sent it 9, 3, 11 and 7 subscribers a
+            year from 2022 to 2025 and none since the link stopped existing.
+
+            Keyed on the locale, not on where the visitor appears to be. The
+            address decides what the page says (#154), which is what lets this
+            page be cached at all, and a Russian speaker abroad still sees Open
+            Collective underneath. %>
+        <% if I18n.locale == :ru %>
+          <div class="card p-2 mb-3">
+            <div class="card-body">
+              <h2 class="h5"><i class="bi bi-credit-card-fill text-primary me-2"></i><%= t('.paywall_title') %></h2>
+              <p class="text-body-secondary"><%= t('.paywall_text_html') %></p>
+              <a href="https://paywall.pw/openipc" class="btn btn-primary"><%= t('.paywall_button') %></a>
+            </div>
           </div>
-        </div>
+          <p class="text-body-secondary small mb-0"><%= t('.paywall_oc_fallback_html') %></p>
+        <% else %>
+          <div class="card p-2">
+            <div class="card-body">
+              <h2 class="h5"><i class="bi bi-heart-fill text-danger me-2"></i><%= t('.oc_title') %></h2>
+              <p class="text-body-secondary"><%= t('.oc_text_html') %></p>
+              <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout" class="btn btn-primary"><%= t('.oc_button') %></a>
+            </div>
+          </div>
+        <% end %>
       </div>
     </div>
 
