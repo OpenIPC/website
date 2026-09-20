@@ -35,14 +35,21 @@ seconds=${4:-300}
 concurrency=${5:-16}
 
 # The site's real shape rather than a single URL: the front page, the gallery
-# pages that dominate request count, a catalogue page that hits MySQL, and the
-# wizard. download_full_image is deliberately absent -- it is rate limited
+# pages that dominate request count, two catalogue pages that hit MySQL, and
+# the wizard. download_full_image is deliberately absent -- it is rate limited
 # (#147) and one build would swamp the signal.
+#
+# Every path here must render. /supported-hardware used to be in this list and
+# is a 301 to /supported-hardware/featured, which is also in it: a sixth of
+# every run was a redirect that exercised no controller, counted as a request,
+# and was then excluded from the latency sample for not being a 200. curl is
+# not given -L on purpose, so a redirect added here would be silent -- the
+# status breakdown in the output is where it would show up.
 paths=(
   /
   /open-wall
   /supported-hardware/featured
-  /supported-hardware
+  /supported-hardware/full-list
   /get-started
   /cameras/vendors/sigmastar/socs/ssc337
 )
@@ -58,10 +65,16 @@ anon_of() {
 tally=$(mktemp)
 trap 'rm -f "$tally" "$tally.ok"' EXIT
 
+# The deadline is checked before every request, not once per cycle. Checked per
+# cycle, a worker that reaches it on the first of six paths still makes the
+# other five, each of which may wait out the 20s timeout -- so a run slows down
+# exactly when the server is struggling, which is when comparability matters
+# most.
 worker() {
-  local deadline=$(( $(date +%s) + seconds ))
+  local deadline=$1
   while [ "$(date +%s)" -lt "$deadline" ]; do
     for p in "${paths[@]}"; do
+      [ "$(date +%s)" -lt "$deadline" ] || break
       curl -s -o /dev/null --max-time 20 \
         -H "Host: $host" -H 'X-Forwarded-Proto: https' \
         -w '%{http_code} %{time_total}\n' "$base$p" >> "$tally" 2>/dev/null \
@@ -77,8 +90,12 @@ printf 'container   %s\nuptime      %s s\nanon before %d KiB (%.2f GiB)\nload   
   "$((before / 1024))" "$(echo "$before" | awk '{print $1/1073741824}')" \
   "$concurrency" "$seconds" "${#paths[@]}"
 
-for _ in $(seq "$concurrency"); do worker & done
+started=$(date +%s)
+deadline=$(( started + seconds ))
+for _ in $(seq "$concurrency"); do worker "$deadline" & done
 wait
+elapsed=$(( $(date +%s) - started ))
+[ "$elapsed" -gt 0 ] || elapsed=1
 
 after=$(anon_of)
 requests=$(wc -l < "$tally")
@@ -93,8 +110,12 @@ awk '$1 == 200 {print $2}' "$tally" | sort -n > "$tally.ok"
 n=$(wc -l < "$tally.ok")
 if [ "$n" -gt 0 ]; then
   p() { awk -v k="$1" 'NR==k {printf "%.1f", $1*1000}' "$tally.ok"; }
-  printf 'throughput  %.1f req/s\nlatency     p50=%s ms  p95=%s ms  p99=%s ms  (n=%d)\n' \
-    "$(echo "$requests $seconds" | awk '{print $1/$2}')" \
+  # Divided by the time that actually elapsed, not the time asked for. An
+  # in-flight request can outlive the deadline by up to its timeout, and a run
+  # that overran by 15% while reporting the requested duration would read as
+  # 15% faster than it was.
+  printf 'throughput  %.1f req/s over %d s (asked for %d)\nlatency     p50=%s ms  p95=%s ms  p99=%s ms  (n=%d)\n' \
+    "$(echo "$requests $elapsed" | awk '{print $1/$2}')" "$elapsed" "$seconds" \
     "$(p $(( (n * 50 + 99) / 100 )))" \
     "$(p $(( (n * 95 + 99) / 100 )))" \
     "$(p $(( (n * 99 + 99) / 100 )))" \
