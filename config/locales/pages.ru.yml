@@ -74,12 +74,21 @@ ru:
       # year from 2022 to 2025, and none after the relaunch, because the link
       # stopped existing.
       #
+      # Roubles only, and three tiers mirroring Open Collective's shape:
+      # 100 / 250 / 500 ₽ with 250 ₽ the default. The fork exists because a
+      # card issued in Russia cannot pay Open Collective, so offering dollars
+      # and euros here would be offering the same problem in a second place.
+      #
       # "Разовый платёж" is described as paying one month and cancelling
-      # because that is what the service offers: the project page carries three
-      # monthly tiers (100 ₽, $5, €5) and no one-off button. Half of all
-      # PayWall subscriptions have been used exactly that way.
+      # because that is what the service offers -- there is no one-off button,
+      # and the project's own figures say half of all PayWall subscriptions
+      # have been used exactly that way.
+      #
+      # THESE AMOUNTS DESCRIBE THE PAYWALL PROJECT PAGE. They must match what
+      # https://paywall.pw/openipc actually offers, and nothing in this
+      # repository can enforce that -- the tiers live in the service, not here.
       paywall_title: PayWall — для карт, выпущенных в России
-      paywall_text_html: Open Collective не принимает карты, выпущенные в России, — PayWall принимает. 100 ₽ в месяц, есть тарифы в долларах и евро. Разовый платёж — это оплата за один месяц и отмена подписки сразу после неё.
+      paywall_text_html: Open Collective не принимает карты, выпущенные в России, — PayWall принимает. 100, 250 или 500 ₽ в месяц, по умолчанию 250 ₽. Разовый платёж — это оплата за один месяц и отмена подписки сразу после неё.
       paywall_button: Поддержать через PayWall
       paywall_oc_fallback_html: Если у вас карта, выпущенная за пределами России, удобнее будет <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout">Open Collective</a> — там же публичная отчётность.
       business_band_html: Если ваша компания зависит от OpenIPC, самый устойчивый способ поддержать проект — коммерческое сотрудничество. <a href="/business">Что мы предлагаем</a>.
