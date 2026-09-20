@@ -84,11 +84,17 @@ ru:
       # and the project's own figures say half of all PayWall subscriptions
       # have been used exactly that way.
       #
+      # The tiers are listed and none is steered towards. PayWall has no
+      # default tier and no per-tier address -- /openipc/R-250 answers 404 and
+      # ?tier=R-250 is ignored -- but that is not why: the amount someone gives
+      # is theirs to choose, and a default or a recommendation is a nudge this
+      # project does not want to make even where the platform would allow it.
+      #
       # THESE AMOUNTS DESCRIBE THE PAYWALL PROJECT PAGE. They must match what
       # https://paywall.pw/openipc actually offers, and nothing in this
       # repository can enforce that -- the tiers live in the service, not here.
       paywall_title: PayWall — для карт, выпущенных в России
-      paywall_text_html: Open Collective не принимает карты, выпущенные в России, — PayWall принимает. 100, 250 или 500 ₽ в месяц, по умолчанию 250 ₽. Разовый платёж — это оплата за один месяц и отмена подписки сразу после неё.
+      paywall_text_html: Open Collective не принимает карты, выпущенные в России, — PayWall принимает. 100, 250 или 500 ₽ в месяц. Разовый платёж — это оплата за один месяц и отмена подписки сразу после неё.
       paywall_button: Поддержать через PayWall
       paywall_oc_fallback_html: Если у вас карта, выпущенная за пределами России, удобнее будет <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout">Open Collective</a> — там же публичная отчётность.
       business_band_html: Если ваша компания зависит от OpenIPC, самый устойчивый способ поддержать проект — коммерческое сотрудничество. <a href="/business">Что мы предлагаем</a>.
