@@ -2,25 +2,29 @@
 
 class SnapshotsController < ApplicationController
   skip_before_action :verify_authenticity_token
-  before_action :find_snapshot, only: [:oneday, :show, :download]
+  before_action :find_snapshot, only: %i[oneday show download]
   before_action :find_camera, only: [:camera]
 
   PER_PAGE = 18
 
   def index
-    # One page of rows, not all of them. This used to load the whole 24-hour
-    # greatest-n-per-group -- roughly a thousand ActiveRecord objects -- and
-    # hand it to Kaminari to throw away all but eighteen, on every view of a
-    # page that Rails renders 1,300 times a day behind the microcache (#152).
+    # One page of rows, not all of them (#152). This used to load the whole
+    # 24-hour greatest-n-per-group and hand it to Kaminari to throw away all
+    # but eighteen.
+    #
+    # Not the thousand rows that issue estimates, though -- the query returns
+    # one row per camera that has uploaded in the last day, and that has been
+    # sixteen. So the LIMIT is inert at today's size and is here for the wall
+    # that outgrows a page, not for the speed.
     #
     # paginate_array is still what builds the page links, but it is given the
     # slice and told where it sits rather than being asked to cut it out: with
     # total_count, limit and offset supplied it treats the array as the page.
     page = [params[:page].to_i, 1].max
     offset = (page - 1) * PER_PAGE
-    rows = with_attachments(Snapshot.latest_per_camera(limit: PER_PAGE, offset: offset))
+    rows = Snapshot.latest_per_camera(limit: PER_PAGE, offset: offset)
     @snapshots = Kaminari.paginate_array(
-      rows, total_count: Snapshot.latest_per_camera_count, limit: PER_PAGE, offset: offset
+      rows, total_count: total_cameras(rows, offset), limit: PER_PAGE, offset: offset
     )
     @page_title = "Open Wall, page #{page}"
     render 'snapshots/index'
@@ -75,17 +79,25 @@ class SnapshotsController < ApplicationController
 
   private
 
-  # The tile prints `snapshot.file.byte_size`, which costs an attachment and a
-  # blob per tile unless they arrive together -- 32 of the 33 queries this
-  # action used to make. They survived #146 because that took the IMAGE off
-  # ActiveStorage, not the caption. find_by_sql returns plain records with
-  # nothing preloaded, so this has to be asked for rather than chained onto a
-  # relation.
-  def with_attachments(snapshots)
-    ActiveRecord::Associations::Preloader.new(
-      records: snapshots, associations: { file_attachment: :blob }
-    ).call
-    snapshots
+  # How many cameras there are in total, which the page links need.
+  #
+  # A page that comes back short and is not empty is the last one -- there is
+  # nothing after it, so the total is where this page started plus what it
+  # holds, and the count query can be skipped. An EMPTY page proves nothing
+  # unless it is the first: ?page=99 on a sixteen-camera wall would otherwise
+  # infer a total of 1,764 and draw links to ninety-eight pages that do not
+  # exist. An empty first page really is an empty wall. That is not a micro-optimisation here: the join
+  # underneath it is the expensive part of this action, and running it a second
+  # time for a wall that fits on one page doubled the action from ~300ms to
+  # ~600ms on production. It was measured, deployed, caught and rolled back
+  # before this guard existed.
+  #
+  # The wall has had sixteen cameras on it, against eighteen to a page, so this
+  # is the ordinary case rather than the edge one.
+  def total_cameras(rows, offset)
+    return offset + rows.size if rows.size < PER_PAGE && (rows.any? || offset.zero?)
+
+    Snapshot.latest_per_camera_count
   end
 
   # A JPEG upload is already a JPEG. Asking ActiveStorage to represent it as
@@ -119,7 +131,7 @@ class SnapshotsController < ApplicationController
 
     if service.respond_to?(:path_for)
       send_file service.path_for(blob.key), disposition: 'attachment',
-                filename: filename, type: blob.content_type
+                                            filename: filename, type: blob.content_type
     else
       send_data blob.download, disposition: 'attachment', filename: filename
     end
