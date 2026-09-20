@@ -68,6 +68,12 @@ translation:
 ## Do not consider these keys missing:
 ignore_missing:
   - i18n.plural.keys
+  # Russia-only by design (#201). Open Collective cannot be paid with a card
+  # issued in Russia, so the Russian donate page offers PayWall and the English
+  # and Chinese ones do not -- these keys render under `if I18n.locale == :ru`
+  # and translating them for locales that never show the block would be dead
+  # copy pretending to be coverage.
+  - pages.donate.paywall_*
 # - 'errors.messages.{accepted,blank,invalid,too_short,too_long}'
 # - '{devise,simple_form}.*'
 
