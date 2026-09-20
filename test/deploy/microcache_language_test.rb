@@ -107,6 +107,46 @@ class MicrocacheLanguageTest < ActiveSupport::TestCase
                  'an unrecognised ?locale= must collapse to one bucket, not create its own')
   end
 
+  # Every rule these locations carry -- the firmware rate limit, the
+  # microcache, the concurrency caps -- applies only to paths the regex
+  # matches. They are anchored at ^/, so a locale prefix walks past all of
+  # them. #154 localized /open-wall and that alone opened the gap: /open-wall
+  # was microcached and capped, /ru/open-wall was neither. The rest of #154
+  # localizes the catalogue, at which point /ru/cameras/.../download_full_image
+  # would be the same 1s-of-CPU, 8-32MB-of-disk action with no limit_req in
+  # front of it.
+  PREFIXABLE = [
+    %r{location ~ \^/\(\?:\(\?:ru\|zh\)/\)\?cameras/vendors},
+    %r{location ~ \^/\(\?:\(\?:ru\|zh\)/\)\?snapshots/},
+    %r{location ~ \^/\(\?:\(\?:ru\|zh\)/\)\?\(open-wall}
+  ].freeze
+
+  test 'a locale prefix cannot walk past the rate limits and caches' do
+    PREFIXABLE.each do |pattern|
+      assert_match pattern, VHOST, <<~MESSAGE.chomp
+        A guarded location lost its optional locale prefix.
+
+        These regexes are anchored at ^/. Without (?:(?:ru|zh)/)? the rule
+        stops applying the moment the route is localized, which for the
+        firmware location means an unlimited image build behind /ru/.
+      MESSAGE
+    end
+  end
+
+  # The nginx list and the Rails list have no connection, and a disagreement
+  # is silent in the direction that matters: a locale Rails serves but nginx
+  # does not know about is an unguarded path.
+  test 'the prefixes nginx knows match the locales Rails puts in a path' do
+    rails_locales = Multilang::IN_PATH.source.split('|').sort
+    nginx_locales = VHOST[/\(\?:\(\?:([a-z|]+)\)/, 1].to_s.split('|').sort
+
+    assert_equal rails_locales, nginx_locales, <<~MESSAGE.chomp
+      nginx guards #{nginx_locales.inspect} but Rails serves #{rails_locales.inspect}
+      as path prefixes. A locale in the second list and not the first is a
+      path with no rate limit, no cache and no concurrency cap.
+    MESSAGE
+  end
+
   test 'the guard covers the locations that actually render pages' do
     covered = cached_rails_blocks.reject { |b| b.match?(LANGUAGE_INDEPENDENT) }
 

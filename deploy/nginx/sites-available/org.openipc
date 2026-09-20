@@ -69,6 +69,17 @@ server {
         return 404;
     }
 
+    # The optional (ru|zh)/ prefix on this and the two cache locations below is
+    # not decoration. These regexes are anchored at ^/ and every rule they carry
+    # -- the firmware rate limit here, the microcache and the concurrency caps
+    # further down -- simply stops applying to a path that does not match. #154
+    # localized /open-wall and that alone already opened the gap: /open-wall was
+    # microcached and capped, /ru/open-wall was neither. Localizing the rest of
+    # the catalogue without this would turn the firmware limit into a formality,
+    # since /ru/cameras/.../download_full_image would be the same expensive
+    # action with no limit_req in front of it. The list must stay in step with
+    # Multilang::IN_PATH; a test asserts it does.
+    #
     # Only the action that produces a firmware image. NOT `location /`:
     # proxy_set_header applies to everything a location serves, and
     # Rack::Sendfile acts on any response whose body responds to to_path --
@@ -79,7 +90,7 @@ server {
     #
     # No URI part on proxy_pass: nginx forbids one in a regex location, and the
     # full original URI is what should reach the app anyway.
-    location ~ ^/cameras/vendors/[^/]+/socs/[^/]+/download_full_image {
+    location ~ ^/(?:(?:ru|zh)/)?cameras/vendors/[^/]+/socs/[^/]+/download_full_image {
         limit_conn site_conc 10;
         limit_conn_status 429;
 
@@ -177,7 +188,7 @@ server {
     # below documents -- for five minutes rather than sixty seconds. Vary is
     # honoured and a session-carrying request stays out of the cache for the
     # same reasons.
-    location ~ ^/snapshots/[0-9]+ {
+    location ~ ^/(?:(?:ru|zh)/)?snapshots/[0-9]+ {
         limit_conn snapshot_conc 10;
         limit_conn_status 429;
         proxy_buffer_size 128k;
@@ -260,7 +271,7 @@ server {
     # visitor's session can never be handed to another from the cache; no
     # form on these pages needs a session. POST /snapshots (camera uploads)
     # matches this location too but proxy_cache only ever caches GET/HEAD.
-    location ~ ^/(open-wall|snapshots|rails/active_storage) {
+    location ~ ^/(?:(?:ru|zh)/)?(open-wall|snapshots|rails/active_storage) {
         limit_conn media_conc 12;
         limit_conn_status 429;
         proxy_buffer_size 128k;
