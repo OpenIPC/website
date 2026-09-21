@@ -159,19 +159,33 @@ class SitemapCatalogueTest < ActionDispatch::IntegrationTest
   # The footer is the site's own statement of which pages matter, and it is on
   # every page. A page reachable from it but absent from the sitemap is one the
   # site links and does not want found, which is never deliberate -- /privacy
-  # was in the footer from the day it shipped (#225) and in the sitemap from
-  # nine commits later. Reading the footer rather than listing paths here means
-  # the next page added to it is covered without anyone remembering to.
+  # was in the footer from the day it shipped (#225) and in the sitemap only
+  # nine commits later.
   #
-  # Prefix match, because the footer's /supported-hardware is a redirect to
-  # /supported-hardware/featured and the sitemap correctly lists the target.
+  # Read from the rendered page rather than from the template source. The first
+  # version of this scanned _footer.html.erb for locale_path('...') with a
+  # regex, which meant a link rewritten to double quotes, to link_to, or built
+  # from a variable would quietly leave the expected set while the surviving
+  # links kept the test green -- a coverage loss that looks exactly like a pass.
+  # What a visitor is served is the thing with the obligation, so that is what
+  # is asked.
   test 'every page the footer links to is advertised' do
-    linked = File.read(Rails.root.join('app/views/layouts/_footer.html.erb'))
-                 .scan(%r{locale_path\('(/[^']*)'}).flatten.uniq
-    refute_empty linked, 'the footer stopped using locale_path; this test now proves nothing'
+    get '/'
 
+    linked = css_select('footer a')
+             .map { |a| a['href'].to_s }
+             .select { |href| href.start_with?('/') }
+             .map { |href| href.split(/[?#]/).first }
+             .uniq
+
+    assert_includes linked, '/privacy', 'the footer stopped linking the privacy page'
+    assert_operator linked.size, :>, 10, 'the footer lost most of its links; this test now proves little'
+
+    get '/sitemap.xml'
     paths = response.body.scan(%r{<loc>http://www\.example\.com(/[^<]*)</loc>}).flatten
 
+    # Prefix match: the footer's /supported-hardware redirects to
+    # /supported-hardware/featured, which the sitemap correctly lists instead.
     missing = linked.reject { |path| paths.any? { |loc| loc == path || loc.start_with?("#{path}/") } }
 
     assert_empty missing, <<~MESSAGE.chomp
@@ -193,8 +207,16 @@ class SitemapCatalogueTest < ActionDispatch::IntegrationTest
   # hand-written action that has to remember, where the 126 catalogue pages
   # share one. Three locales, because a title key is per-locale, so English
   # being right says nothing about the other two.
+  #
+  # "translation missing" is checked separately from emptiness because it is
+  # not empty. A deleted locale key renders
+  # "translation missing: ru.pages.privacy.title", which would satisfy any test
+  # that only asks for non-blank text -- and would then be published as the
+  # <title> and the og:title, which is worse than a bare site name.
+  # page_metadata_test makes the same distinction for the description.
   test 'every page it advertises has a title of its own' do
     untitled = []
+    untranslated = []
     broken = []
 
     SitemapsController::PAGES.each do |path|
@@ -205,11 +227,22 @@ class SitemapCatalogueTest < ActionDispatch::IntegrationTest
         next broken << url unless response.successful?
 
         title = response.body[%r{<title>(.*?)</title>}m, 1].to_s
+        next untranslated << url if title.match?(/translation missing/i)
+
         untitled << url if title.sub(/-\s*OpenIPC\z/, '').strip.empty?
       end
     end
 
     assert_empty broken, "the sitemap offers pages that do not render: #{broken.inspect}"
+
+    assert_empty untranslated, <<~MESSAGE.chomp
+      These pages would publish Rails' placeholder as their title:
+
+        #{untranslated.join("\n        ")}
+
+      The locale is missing the title key. i18n-tasks finds it.
+    MESSAGE
+
     assert_empty untitled, <<~MESSAGE.chomp
       These pages render with no title but "- OpenIPC":
 
