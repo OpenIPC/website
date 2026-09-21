@@ -41,6 +41,38 @@ function cls(p) {
   if (p == "/")                         return "front"
   return "other"
 }
+# The User-Agent, taken by anchoring on the structured tail rather than by
+# field number: it is quoted, contains spaces, and the field before it is the
+# referer, which is quoted too. The one thing that cannot appear inside it is
+# a raw double quote -- nginx writes those as \x22 -- so the quoted run that
+# ends immediately before ` xff="` is the agent and nothing else can be.
+function agent(line) {
+  if (!match(line, /"[^"]*" xff="/)) return ""
+  return substr(line, RSTART + 1, RLENGTH - 8)
+}
+# Who the crawler says it is. Named because the interesting movement is
+# between names: on 2026-09-19 the LLM crawlers together already outran Yandex
+# and Bing, and chatgpt.com had begun appearing as a referrer. Order matters --
+# the generic test at the end must only catch what the named ones missed.
+function crawler(ua) {
+  if (ua ~ /Googlebot/)                          return "Googlebot"
+  if (ua ~ /Google-|GoogleOther|Storebot-Google/) return "Google other"
+  if (ua ~ /bingbot|BingPreview/)                return "bingbot"
+  if (ua ~ /Yandex/)                             return "Yandex"
+  if (ua ~ /Baiduspider/)                        return "Baiduspider"
+  if (ua ~ /DuckDuckBot|DuckAssistBot/)          return "DuckDuckGo"
+  if (ua ~ /Applebot/)                           return "Applebot"
+  if (ua ~ /GPTBot|ChatGPT-User|OAI-SearchBot/)  return "OpenAI"
+  if (ua ~ /ClaudeBot|Claude-User|anthropic/)    return "Anthropic"
+  if (ua ~ /PerplexityBot|Perplexity-User/)      return "Perplexity"
+  if (ua ~ /Bytespider|TikTokSpider/)            return "Bytespider"
+  if (ua ~ /Amazonbot/)                          return "Amazonbot"
+  if (ua ~ /meta-externalagent|facebookexternalhit/) return "Meta"
+  if (ua ~ /Sogou|360Spider|Yisou|Haosou/)       return "CN other"
+  if (ua ~ /[Bb]ot|[Cc]rawl|[Ss]pider|[Ss]lurp|curl\/|[Ww]get\/|python-requests|Go-http-client|libwww|Scrapy|HeadlessChrome|PhantomJS/)
+                                                 return "other, self-declared"
+  return ""
+}
 function qsort(a, lo, hi,   i, j, pv, t) {
   if (lo >= hi) return
   pv = a[int((lo + hi) / 2)]; i = lo; j = hi
@@ -110,6 +142,9 @@ function tail(line,   s, q) {
   if (st == 429) { shed[c]++; tshed++; shedpath[$7]++ }
   if (st ~ /^5/) err5[c]++
 
+  who = crawler(agent($0))
+  if (who != "") { bot[who]++; tbot++ }
+
   if (tail($0)) {
     newfmt++
     if (T_cache ~ /^(HIT|STALE|UPDATING|REVALIDATED)$/) hit[c]++
@@ -155,6 +190,22 @@ END {
       while (j > 0 && shedpath[sp[j]] < shedpath[v]) { sp[j+1] = sp[j]; j-- }
       sp[j+1] = v }
     for (i = 1; i <= k && i <= 8; i++) printf "  %-58.58s %6d\n", sp[i], shedpath[sp[i]]
+  }
+
+  # Crawlers that name themselves, which is the honest half of the bot count:
+  # the residential-proxy fleet on the wall presents a browser string and is
+  # not here. This replaces the hand-written census in
+  # ~/reports/analytics-proposal-data/host-pass1-traffic-referrers.sh, which
+  # was the last thing that script produced that nothing else did (#180).
+  if (tbot > 0) {
+    printf "\nself-declared crawlers: %d requests, %.1f%% of the log\n", tbot, 100*tbot/total
+    k = 0; for (b in bot) bo[++k] = b
+    for (i = 2; i <= k; i++) { v = bo[i]; j = i - 1
+      while (j > 0 && bot[bo[j]] < bot[v]) { bo[j+1] = bo[j]; j-- }
+      bo[j+1] = v }
+    for (i = 1; i <= k; i++) printf "  %-22s %8d\n", bo[i], bot[bo[i]]
+  } else {
+    print "\nself-declared crawlers: none"
   }
 
   if (newfmt == 0) { print "\nno new-format lines yet; cache and timing columns stay empty"; exit }
