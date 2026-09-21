@@ -30,10 +30,12 @@ class OpenWallPaginationTest < ActionDispatch::IntegrationTest
   # `assigns` needs the rails-controller-testing gem, and the page is the thing
   # a visitor actually gets -- if the tiles and the page links disagree, it
   # shows up here and not in an instance variable.
+  # public_id, not the row id: the gallery links a snapshot by the identifier
+  # that cannot be walked, and a \d+ pattern here would match nothing.
   def ids_on(page)
     get(page ? "/open-wall?page=#{page}" : '/open-wall')
     assert_response :success
-    css_select('a[href^="/snapshots/"]').map { |a| a['href'][%r{/snapshots/(\d+)}, 1].to_i }.uniq
+    css_select('a[href^="/snapshots/"]').filter_map { |a| a['href'][%r{/snapshots/([0-9a-f]{20})}, 1] }.uniq
   end
 
   def page_links
@@ -63,7 +65,7 @@ class OpenWallPaginationTest < ActionDispatch::IntegrationTest
 
     assert_equal PER_PAGE + 1, both.size
     assert_equal both.uniq, both
-    assert_equal Snapshot.latest_per_camera.map(&:id).sort, both.sort
+    assert_equal Snapshot.latest_per_camera.map(&:public_id).sort, both.sort
   end
 
   # The count is what draws these. Nineteen cameras at eighteen a page is two,

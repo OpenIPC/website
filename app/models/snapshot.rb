@@ -86,6 +86,28 @@ class Snapshot < ApplicationRecord
   before_destroy :purge_file_now, prepend: true
   before_destroy :purge_wall_images, prepend: true
 
+  # The identifier every public URL for this row uses. Never reassigned: a
+  # snapshot's address must not change under a link somebody already has.
+  #
+  # before_create and not before_validation, which would be the obvious
+  # place. `save(validate: false)` skips before_validation entirely -- the
+  # test suite builds rows that way, and so could anything else -- and a row
+  # that reached the table without one would violate the NOT NULL at best and
+  # be unreachable at worst. There is no validation on the column for the
+  # same reason: it would have to pass before the value exists. The NOT NULL
+  # and the unique index are what enforce it.
+  before_create :assign_public_id
+
+  # What a URL for this row looks like, and therefore what a URL for this row
+  # does NOT look like: a number. The show action answers 410 to the numeric
+  # form rather than resolving it, or the walk would still work.
+  PUBLIC_ID_FORMAT = /\A[0-9a-f]{20}\z/
+
+  # Rails builds every path for a Snapshot from this.
+  def to_param
+    public_id
+  end
+
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }
   validates :mac_address, presence: true, format: MAC_ADDRESS_FORMAT
   validate :blacklisted_mac
@@ -171,7 +193,7 @@ class Snapshot < ApplicationRecord
   # image_tag do what it did before, including the `|| default_image_path`
   # guards the gallery partials use for a snapshot whose file has gone.
   def wall_image(variant)
-    return WallImage.url_for(id, variant) if variants_generated_at?
+    return WallImage.url_for(public_id, variant) if variants_generated_at?
 
     file.variant(variant)
   end
@@ -212,6 +234,19 @@ class Snapshot < ApplicationRecord
     # %x[ffmpeg -pattern_type glob -i "#{in_dir}/*.jpg" -s:v 1280x720 -preset veryslow -c:v libx265 -crf 18 -pix_fmt yuv420p -tag:v hvc1 -y "#{in_dir}/265-tagged-hd.mp4" >&2]
   end
 
+  # Never all digits, which one hex token in ten thousand otherwise is. Both
+  # this app and the nginx vhost tell a retired numeric address from a current
+  # one by whether it is a number, and a token that looked like a row id would
+  # be answered 410 and be unreachable for its whole two days.
+  def self.generate_public_id
+    loop do
+      candidate = SecureRandom.hex(10)
+      next if candidate.match?(/\A[0-9]+\z/)
+
+      return candidate unless exists?(public_id: candidate)
+    end
+  end
+
   private
 
   # The plain-file copies of the variants are ours, not ActiveStorage's, so
@@ -221,7 +256,20 @@ class Snapshot < ApplicationRecord
   # directory, and leaving it behind is how a disk fills with images no row
   # references.
   def purge_wall_images
-    WallImage.purge(id)
+    WallImage.purge(public_id)
+  end
+
+  # Twenty hex characters, eighty bits. The wall holds a few thousand rows at
+  # the two-day retention, so this is not a size chosen against a birthday
+  # bound -- it is chosen so that nothing about one snapshot's address tells
+  # you another one. The exists? check costs an indexed lookup on create and
+  # means a collision is a retry rather than a failed camera upload.
+  #
+  # Hex and not base64: the column collation is utf8mb4_general_ci, which
+  # folds case, so a mixed-case alphabet would let two distinct tokens collide
+  # in the unique index and let a lookup match the wrong row.
+  def assign_public_id
+    self.public_id ||= self.class.generate_public_id
   end
 
   def purge_file_now

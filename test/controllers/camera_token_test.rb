@@ -22,7 +22,7 @@ class CameraTokenTest < ActionDispatch::IntegrationTest
   end
 
   test 'the camera link does not contain the address in any form' do
-    get "/snapshots/#{@snapshot.id}"
+    get "/snapshots/#{@snapshot.public_id}"
 
     assert_response :success
     links = css_select('a[href*="/open-wall/camera/"]').map { |a| a['href'] }

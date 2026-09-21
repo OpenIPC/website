@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_09_21_060000) do
+ActiveRecord::Schema[7.0].define(version: 2026_09_21_070000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -115,6 +115,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_09_21_060000) do
   end
 
   create_table "snapshots", charset: "utf8mb4", collation: "utf8mb4_general_ci", force: :cascade do |t|
+    t.string "public_id", limit: 20, null: false
     t.string "mac_address"
     t.string "ip_address"
     t.string "hostname"
@@ -133,6 +134,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_09_21_060000) do
     t.index ["flash_size"], name: "index_snapshots_on_flash_size"
     t.index ["ip_address"], name: "index_snapshots_on_ip_address"
     t.index ["mac_address"], name: "index_snapshots_on_mac_address"
+    t.index ["public_id"], name: "index_snapshots_on_public_id", unique: true
     t.index ["sensor"], name: "index_snapshots_on_sensor"
     t.index ["soc"], name: "index_snapshots_on_soc"
   end

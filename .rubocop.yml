@@ -11,3 +11,14 @@ Layout/LineLength:
 Metrics/ClassLength:
   Exclude:
     - 'test/**/*'
+
+# A rake namespace is file structure, not a method: the block holds every task
+# in the file, so the cop measures "how many tasks live here" and answers with
+# a number that has nothing to do with whether any of them is too long.
+# lib/tasks/wall.rake crossed it at its third task, and the fix the cop implies
+# -- a file per task, or logic pushed out of sight to keep the block short --
+# is worse than the thing it objects to. Task bodies themselves stay short;
+# the two long ones already delegate to a method above the namespace.
+Metrics/BlockLength:
+  Exclude:
+    - 'lib/tasks/**/*'

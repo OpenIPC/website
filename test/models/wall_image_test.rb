@@ -20,7 +20,7 @@ class WallImageTest < ActiveSupport::TestCase
   end
 
   teardown do
-    WallImage.purge(@snapshot.id)
+    WallImage.purge(@snapshot.public_id)
   end
 
   test 'a snapshot with no generated variants falls back to ActiveStorage' do
@@ -35,14 +35,14 @@ class WallImageTest < ActiveSupport::TestCase
   test 'a snapshot with generated variants links to the plain file' do
     @snapshot.update_column(:variants_generated_at, Time.current)
 
-    assert_equal "/wall/#{@snapshot.id}/thumb.jpg", @snapshot.wall_image(:thumb)
+    assert_equal "/wall/#{@snapshot.public_id}/thumb.jpg", @snapshot.wall_image(:thumb)
   end
 
   test 'every variant the wall renders has a path of its own' do
     @snapshot.update_column(:variants_generated_at, Time.current)
 
     WallImage::VARIANTS.each do |name|
-      assert_equal "/wall/#{@snapshot.id}/#{name}.jpg", @snapshot.wall_image(name)
+      assert_equal "/wall/#{@snapshot.public_id}/#{name}.jpg", @snapshot.wall_image(name)
     end
   end
 
@@ -56,12 +56,12 @@ class WallImageTest < ActiveSupport::TestCase
     source.write(MINIMAL_JPEG)
     source.flush
 
-    WallImage.store(@snapshot.id, :thumb, source.path)
+    WallImage.store(@snapshot.public_id, :thumb, source.path)
 
-    path = WallImage.path_for(@snapshot.id, :thumb)
+    path = WallImage.path_for(@snapshot.public_id, :thumb)
     assert_path_exists path
     assert_equal MINIMAL_JPEG, File.binread(path)
-    assert_equal [path.to_s], Dir.glob(WallImage.dir_for(@snapshot.id).join('*')).sort,
+    assert_equal [path.to_s], Dir.glob(WallImage.dir_for(@snapshot.public_id).join('*')).sort,
                  'a leftover temporary file would be served as garbage or swept as an orphan'
   ensure
     source&.close!
@@ -74,9 +74,9 @@ class WallImageTest < ActiveSupport::TestCase
     source.flush
     File.chmod(0o600, source.path)
 
-    WallImage.store(@snapshot.id, :icon, source.path)
+    WallImage.store(@snapshot.public_id, :icon, source.path)
 
-    mode = File.stat(WallImage.path_for(@snapshot.id, :icon)).mode & 0o777
+    mode = File.stat(WallImage.path_for(@snapshot.public_id, :icon)).mode & 0o777
     assert_equal 0o644, mode, 'nginx runs as another user and would answer 403'
   ensure
     source&.close!
@@ -89,8 +89,8 @@ class WallImageTest < ActiveSupport::TestCase
     source.binmode
     source.write(MINIMAL_JPEG)
     source.flush
-    WallImage.store(@snapshot.id, :thumb, source.path)
-    dir = WallImage.dir_for(@snapshot.id)
+    WallImage.store(@snapshot.public_id, :thumb, source.path)
+    dir = WallImage.dir_for(@snapshot.public_id)
     assert_path_exists dir
 
     @snapshot.destroy
@@ -101,6 +101,6 @@ class WallImageTest < ActiveSupport::TestCase
   end
 
   test 'purging a snapshot that never had wall files is not an error' do
-    assert_nothing_raised { WallImage.purge(@snapshot.id) }
+    assert_nothing_raised { WallImage.purge(@snapshot.public_id) }
   end
 end

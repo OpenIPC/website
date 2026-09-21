@@ -18,8 +18,10 @@ class Admin
 
     private
 
+    # The admin views build their links from to_param like every other view,
+    # so they carry a public_id too.
     def find_snapshot
-      @snapshot = Snapshot.find(params[:id])
+      @snapshot = Snapshot.find_by!(public_id: params[:id])
     end
   end
 end
