@@ -55,6 +55,17 @@ class SchemaDumpTest < ActiveSupport::TestCase
     MESSAGE
   end
 
+  SETTING = 'config.active_record.schema_format = :ruby'
+
+  # Uncommented lines only. The runtime value cannot tell the explicit setting
+  # from Rails' own :ruby default, so this raw-text check is the whole of the
+  # guard -- and a substring search over the file would be satisfied by the
+  # commented-out line, which is the one state it exists to reject. It would
+  # also be satisfied by the paragraph above the setting, which quotes it.
+  def sets_schema_format?(source)
+    source.lines.any? { |line| !line.strip.start_with?('#') && line.include?(SETTING) }
+  end
+
   # A structure.sql switch would be a legitimate decision and is not one to
   # make by accident -- config/application.rb says why it is :ruby, with the
   # round-trip that backs it. This fails if the setting goes away, so the
@@ -62,13 +73,23 @@ class SchemaDumpTest < ActiveSupport::TestCase
   test 'the schema format is a decision, not a default' do
     assert_equal :ruby, Rails.application.config.active_record.schema_format
 
-    assert_includes Rails.root.join('config/application.rb').read,
-                    'config.active_record.schema_format = :ruby',
-                    <<~MESSAGE.chomp
-                      config/application.rb no longer states the schema format. :ruby is also the
-                      Rails default, so leaving it unwritten makes the next person's `structure.sql`
-                      question look unanswered when it has been answered -- see #236.
-                    MESSAGE
+    assert sets_schema_format?(Rails.root.join('config/application.rb').read), <<~MESSAGE.chomp
+      config/application.rb no longer sets the schema format. :ruby is also the
+      Rails default, so leaving it unwritten makes the next person's `structure.sql`
+      question look unanswered when it has been answered -- see #236.
+    MESSAGE
+  end
+
+  # The guard above has exactly one way to fail quietly: commenting the line
+  # out leaves the runtime value at :ruby by default and leaves the text in the
+  # file. Same matcher, so this cannot drift away from what actually runs.
+  test 'a commented-out setting does not count as setting it' do
+    assert_not sets_schema_format?("    # #{SETTING}\n"),
+               'a commented-out assignment satisfies the schema-format guard'
+    assert_not sets_schema_format?("# see also `#{SETTING}` below\n"),
+               'prose quoting the setting satisfies the schema-format guard'
+    assert sets_schema_format?("    #{SETTING}\n"),
+           'the matcher does not recognise the setting when it is actually set'
   end
 
   # A schema dumped at a migration whose file never got committed. The file
