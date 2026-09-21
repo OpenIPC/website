@@ -39,18 +39,36 @@ const listVisible = async () => {
 await p.goto(wizard('sigmastar/socs/ssc338q'), { waitUntil: 'networkidle' })
 check('the first camera of a tab is offered the list', await listVisible())
 
-const asks = await p.locator('[data-whatnext] a[data-event]').evaluateAll(
+// Direct children throughout. The chat item nests the rooms now, so a bare
+// descendant selector counts those too and "three things to do next" reads
+// seven. The chat item itself carries no link of its own -- its lede is plain
+// text above the room list -- which is why the items are counted as `li` and
+// the money ask is looked for among the direct links only.
+const items = await p.locator('[data-whatnext] > li').count()
+check('three things to do next', items === 3, String(items))
+
+const asks = await p.locator('[data-whatnext] > li > a[data-event]').evaluateAll(
   els => els.map(e => e.dataset.event))
-check('three things to do next', asks.length === 3, asks.join(', '))
 check('exactly one ask about money',
       asks.filter(e => /donate|business/.test(e)).length === 1,
       asks.filter(e => /donate|business/.test(e)).join(', '))
 
-// An FPV chip: the ask is commercial and the room is the FPV one.
+// An FPV chip: the ask is commercial and the FPV room leads the list.
 check('an FPV chip is asked about commercial terms, not donations',
       asks.includes('download-step:business:fpv'))
-const chat = await p.locator('[data-whatnext] a[data-event="download-step:chat"]').getAttribute('href')
-check('and pointed at the FPV room', chat === 'https://t.me/+BMyMoolVOpkzNWUy', chat)
+
+const rooms = await p.locator('[data-whatnext] [data-chat] a[data-event]').evaluateAll(
+  els => els.map(e => ({ event: e.dataset.event, href: e.getAttribute('href') })))
+check('every room is offered, not just the one that fits', rooms.length === 3,
+      rooms.map(r => r.event).join(', '))
+check('and the FPV room leads for an FPV chip',
+      rooms[0]?.href === 'https://t.me/+BMyMoolVOpkzNWUy', rooms[0]?.href)
+
+// The rooms are all Telegram, so the page has to say what to do when Telegram
+// is not reachable -- the whole point of the change these checks now cover.
+const wayout = await p.locator(
+  '[data-whatnext] [data-chat-fallback] a[data-event="download-step:chat:issues"]').count()
+check('the way out is named when Telegram will not open', wayout === 1, String(wayout))
 
 // Second camera, same tab. This is the whole reason the file exists.
 await p.goto(wizard('goke/socs/gk7205v300'), { waitUntil: 'networkidle' })
@@ -114,7 +132,7 @@ await fresh.goto(wizard('ingenic/socs/t31l'), { waitUntil: 'networkidle' })
 const freshVisible = await fresh.locator('[data-whatnext]').first().isVisible()
 check('a new tab is offered it again', freshVisible)
 
-const freshAsks = await fresh.locator('[data-whatnext] a[data-event]').evaluateAll(
+const freshAsks = await fresh.locator('[data-whatnext] > li > a[data-event]').evaluateAll(
   els => els.map(e => e.dataset.event))
 check('a consumer chip is asked to donate, not for commercial terms',
       freshAsks.includes('download-step:donate') && !freshAsks.some(e => e.startsWith('download-step:business')),
