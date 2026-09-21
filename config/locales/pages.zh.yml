@@ -403,7 +403,7 @@ zh:
       hero_cta_start: 快速上手
       hero_lede: 面向物理世界之眼的开放固件与工具：IP 摄像机、FPV 无人机，以及正在学习使用它们的机器人。你的硬件听你的，而不是听某个厂商云端的。
       hero_microline: 140+ 个仓库 · 数十个 SoC 系列 · 自 2019 年
-      hero_title: 为能看见的机器打造的开放操作系统。
+      hero_title: 开放操作系统，为会看的机器而生。
       partners_title: 制造商、集成商与研究团队的共同选择
       pillar_firmware_text_html: 面向数十个 SoC 系列的 IP 摄像机开放固件，基于 Buildroot，核心是 <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">Majestic</a> 推流器。
       pillar_firmware_title: 摄像机固件
