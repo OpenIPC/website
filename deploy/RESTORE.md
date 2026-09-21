@@ -226,7 +226,8 @@ Measured on the live host:
 | Backup run (dump → verify → encrypt → upload) | 9 s |
 | Download + restore + scrub into a fresh schema | 8 s |
 | Deploy or roll back a container | 13 s |
-| Install or roll back a static bundle | see below |
+| Install a static bundle (pull, extract, check, flip, verify) | 4 s |
+| Roll back a static bundle already on disk | 1.8 s |
 
 The realistic constraint on a full rebuild is provisioning the host, not the
 data — the data is 6.6 MB.
