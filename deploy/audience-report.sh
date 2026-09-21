@@ -99,6 +99,15 @@ visitors() {
       path = ""
       if (match($2, /[?&]p=[^& ]*/)) path = decode(substr($2, RSTART + 3, RLENGTH - 3))
 
+      # The calendar day of the request. The threshold below is defined per
+      # day, and a log is one day only by convention -- the nightly is handed
+      # a rotated file, but both modes take an arbitrary path and a log that
+      # spans two days would otherwise pool a visitor two shallow days into
+      # one engaged one.
+      stamp = ""
+      if (match($0, /\[[0-9][0-9]\/[A-Za-z][A-Za-z][A-Za-z]\/[0-9][0-9][0-9][0-9]/))
+        stamp = substr($0, RSTART + 1, RLENGTH - 1)
+
       calls++
       seen[visitor] = 1
 
@@ -146,7 +155,9 @@ visitors() {
         else {
           if (!(visitor in elsewhere)) rep[visitor] = $0
           elsewhere[visitor] = 1
-          site_views[visitor]++
+          depth = ++site_views[stamp SUBSEP visitor]
+          if (depth > deepest[visitor] + 0) deepest[visitor] = depth
+          spans[stamp] = 1
         }
         views[path SUBSEP visitor] = 1
         views_by[visitor]++
@@ -179,7 +190,7 @@ visitors() {
             # SUBSET of readers rather than its own classification: every
             # test above has already been applied, so the impossible device
             # and the visitor with no Accept-Language cannot reach it.
-            if (site_views[v] >= engaged_min) {
+            if (deepest[v] + 0 >= engaged_min) {
               engaged++
               engaged_line[v] = rep[v]
             }
@@ -206,6 +217,8 @@ visitors() {
       printf "readers %d\n", readers
       printf "engaged %d\n", engaged
       printf "engaged-min %d\n", engaged_min
+      for (sp in spans) days++
+      printf "days %d\n", days
       # Internal, for the country split below: one log line per engaged
       # VISITOR, which is the address and User-Agent pair counted above and
       # not merely the address. visitor_report never prints these and neither
@@ -228,7 +241,7 @@ visitors() {
 visitor_report() {
   local counts=$1
 
-  local calls total crawler wall_only wall_once readers engaged engaged_min events_only quiet
+  local calls total crawler wall_only wall_once readers engaged engaged_min events_only quiet days
   calls=$(awk '$1 == "calls" { print $2 }' <<< "$counts")
   total=$(awk '$1 == "visitors" { print $2 }' <<< "$counts")
   crawler=$(awk '$1 == "crawler" { print $2 }' <<< "$counts")
@@ -239,13 +252,17 @@ visitor_report() {
   engaged_min=$(awk '$1 == "engaged-min" { print $2 }' <<< "$counts")
   events_only=$(awk '$1 == "events-only" { print $2 }' <<< "$counts")
   quiet=$(awk '$1 == "no-language" { print $2 }' <<< "$counts")
+  days=$(awk '$1 == "days" { print $2 }' <<< "$counts")
 
   printf '  beacon requests     %8d\n' "$calls"
   printf '  ran the JavaScript  %8d visitors\n' "$total"
   printf '    impossible device %8d  macOS at 1366px, the snapshot crawler\n' "$crawler"
   printf '    open wall only    %8d  %d of them one view and gone\n' "$wall_only" "$wall_once"
   printf '    readers           %8d  reached a page outside the wall\n' "$readers"
-  printf '      engaged         %8d  read %d+ pages outside the wall\n' "$engaged" "$engaged_min"
+  printf '      engaged         %8d  read %d+ pages outside the wall, in one day\n' \
+    "$engaged" "$engaged_min"
+  [ "${days:-1}" -le 1 ] ||
+    printf '  NOTE: this log spans %d days. Engagement is counted per day, so the\n           figures above are the busiest day of each visitor, not a total.\n' "$days"
   [ "$quiet" -eq 0 ] ||
     printf '    no Accept-Language%8d  reader-shaped, but no browser omits that header\n' "$quiet"
   [ "$events_only" -eq 0 ] ||
@@ -287,28 +304,49 @@ visitor_report() {
   fi
 }
 
+# Which run came before this date, read from engaged.tsv because that file has
+# a row for EVERY run -- including a day on which nobody was engaged, and
+# including a day on which no country could be resolved. The country history
+# cannot answer it: a zero day leaves no rows there, and asking it would skip
+# back past that day to an older, larger one and report the difference as
+# movement.
+#
+# Prints the previous date, its engaged count and the threshold that produced
+# it, tab separated, or nothing when this is the first run.
+previous_run() {
+  local history=$1 day=$2
+
+  [ -f "$history" ] || return 0
+  # Explicit string comparison: awk treats a field that looks numeric as a
+  # number, and mawk and gawk need not agree on what looks numeric.
+  awk -v d="$day" -F'\t' '
+    /^#/ { next }
+    ($1 "") < (d "") { p_day = $1; p_engaged = $4; p_min = $5 }
+    END { if (p_day != "") printf "%s\t%s\t%s\n", p_day, p_engaged, p_min }
+  ' "$history"
+}
+
+# 20260921 when it came from a log filename, 2026-09-21 when it came from
+# `date`, and the nightly and a hand run of an archived log take different
+# branches. Two formats in one column break the ordering these files depend on.
+iso_day() {
+  if [[ $1 =~ ^[0-9]{8}$ ]]; then printf '%s-%s-%s\n' "${1:0:4}" "${1:4:2}" "${1:6:2}"
+  else printf '%s\n' "$1"
+  fi
+}
+
 # One row a day, so that a month of them can be compared with the month before
 # it -- which is the whole ask of #184 and the reason #180 wrote the method
-# down instead of retyping awk. Three numbers wide on purpose: engaged alone
-# cannot be read without the readers it is a subset of, and neither can be read
-# without the visitor count they are filtered from.
+# down instead of retyping awk. The threshold is stored with the count because
+# it DEFINES the count: ENGAGED_MIN is overridable, and a delta between two
+# different definitions is not a change in the audience.
 #
 # Re-running a day replaces its row rather than appending a second one, so a
 # re-run after a fix does not leave the series with two answers for one date.
-# Dates are ISO, so a lexical sort is chronological.
 record_history() {
-  local counts=$1 outdir=$2 day=$3
+  local counts=$1 outdir=$2 day=$3 prev=$4
   local history="$outdir/engaged.tsv" scratch
-  local total readers engaged
-
-  # `day` arrives as 20260921 when it came from a log's filename and as
-  # 2026-09-21 when it came from `date`, and the nightly and a hand run of an
-  # archived log take different branches. Two formats in one column break the
-  # ordering this file depends on -- '-' sorts before any digit, so every
-  # dashed date would sort ahead of every undashed one regardless of when it
-  # happened. One format, chosen here rather than upstream, because only this
-  # file cares.
-  [[ $day =~ ^[0-9]{8}$ ]] && day="${day:0:4}-${day:4:2}-${day:6:2}"
+  local total readers engaged prev_day prev_engaged prev_min
 
   total=$(awk '$1 == "visitors" { print $2 }' <<< "$counts")
   readers=$(awk '$1 == "readers" { print $2 }' <<< "$counts")
@@ -317,51 +355,36 @@ record_history() {
   # The header is written, not sorted into place. A comment character sorts
   # ahead of a digit by byte, but the default locale collates punctuation as
   # though it were absent and puts the line in the middle of the series.
-  # LC_ALL=C for the same reason: the order of this file is the comparison.
-  mkdir -p "$outdir"
+  # LC_ALL=C on the sort for the same reason: the order of this file is the
+  # comparison.
   scratch=$(mktemp)
   [ -f "$history" ] && awk -v d="$day" -F'\t' '!/^#/ && $1 != d' "$history" > "$scratch"
-  printf '%s\t%s\t%s\t%s\n' "$day" "$total" "$readers" "$engaged" >> "$scratch"
+  printf '%s\t%s\t%s\t%s\t%s\n' "$day" "$total" "$readers" "$engaged" "$ENGAGED_MIN" >> "$scratch"
   {
-    printf '# date\tvisitors\treaders\tengaged (%s+ pages outside the wall) -- beacon\n' "$ENGAGED_MIN"
+    printf '# date\tvisitors\treaders\tengaged\tthreshold'
+    printf ' -- beacon; engaged = threshold+ pages outside the wall in one day\n'
     LC_ALL=C sort "$scratch"
   } > "$history"
   rm -f "$scratch"
 
-  # The previous row is the run before this date, not simply the line above:
-  # a backfill of an older day must compare against what preceded IT, or the
-  # report claims a change that never happened.
-  # Explicit string comparison: awk treats a field that looks numeric as a
-  # number, and mawk and gawk need not agree on what looks numeric.
-  awk -v d="$day" -v engaged="$engaged" -F'\t' '
-    /^#/ { next }
-    ($1 "") < (d "") { prev_day = $1; prev = $4 }
-    END {
-      if (prev_day == "") {
-        printf "  no previous run to compare with; the series starts here\n"
-        exit
-      }
-      # The previous number and the change, not the count for today again:
-      # that is four lines above this one, and a figure printed twice invites
-      # the reader to wonder which of them is the answer.
-      #
-      # No apostrophes in here: this whole program is a single-quoted shell
-      # string, and one in a comment ends it.
-      delta = engaged - prev
-      if (prev > 0) printf "  engaged, previous   %8d  on %s (%+d, %+.0f%%)\n", prev, prev_day, delta, 100 * delta / prev
-      else          printf "  engaged, previous   %8d  on %s (%+d)\n", prev, prev_day, delta
-    }
-  ' "$history"
+  IFS=$'\t' read -r prev_day prev_engaged prev_min <<< "$prev"
+
+  if [ -z "$prev_day" ]; then
+    printf '  no previous run to compare with; the series starts here\n'
+  elif [ "$prev_min" != "$ENGAGED_MIN" ]; then
+    printf '  engaged, previous   %8d  on %s at a threshold of %s, not %s -- not comparable\n' \
+      "$prev_engaged" "$prev_day" "$prev_min" "$ENGAGED_MIN"
+  else
+    awk -v prev="$prev_engaged" -v prev_day="$prev_day" -v engaged="$engaged" '
+      BEGIN {
+        delta = engaged - prev
+        if (prev > 0) printf "  engaged, previous   %8d  on %s (%+d, %+.0f%%)\n", prev, prev_day, delta, 100 * delta / prev
+        else          printf "  engaged, previous   %8d  on %s (%+d)\n", prev, prev_day, delta
+      }'
+  fi
 }
 
 # Where the readers who stayed actually are.
-#
-# GoAccess is the only thing on this host that can read the country database --
-# there is no mmdblookup and no python binding -- so the split is taken from
-# its CSV rather than by looking addresses up directly. In that output the
-# geolocation panel carries a continent per row with its countries as children,
-# so a country is a geolocation row that HAS a parent index; the continent rows
-# have an empty one and would otherwise be counted a second time.
 #
 # The population is the same one the count above reports, and keeping it that
 # way is the whole difficulty. An engaged reader is an address AND a
@@ -374,54 +397,77 @@ record_history() {
 # visitor, its own, and that is all GoAccess ever sees. The country totals then
 # reconcile with the engaged count by construction rather than by argument.
 #
+# GoAccess is also the only thing on this host that can read the country
+# database -- there is no mmdblookup and no python binding -- so the split is
+# taken from its CSV.
+#
 # Those lines never leave $work, which the trap removes. Only counts are
 # printed.
 engaged_countries() {
-  local counts=$1 work=$2 outdir=$3 day=$4
-  local history="$outdir/engaged-countries.tsv" scratch
+  local counts=$1 work=$2 outdir=$3 day=$4 prev=$5
+  local history="$outdir/engaged-countries.tsv" scratch status
+  local prev_day prev_engaged prev_min
 
-  [[ $day =~ ^[0-9]{8}$ ]] && day="${day:0:4}-${day:4:2}-${day:6:2}"
+  IFS=$'\t' read -r prev_day prev_engaged prev_min <<< "$prev"
 
   sed -n 's/^engaged-line //p' <<< "$counts" > "$work/engaged.log"
-  [ -s "$work/engaged.log" ] || return 0
-  [ -r "$db" ] || { echo '  no country database; the engaged split needs one'; return 0; }
+  : > "$work/engaged-by-country"
 
-  goaccess "$work/engaged.log" -o csv \
-    --log-format='%h - %^ [%d:%t %^] "%r" %s %b "%R" "%u" xff="%^" cache=%^ rt=%T urt="%^" al="%^" peer=%^' \
-    --date-format='%d/%b/%Y' --time-format='%H:%M:%S' \
-    --no-progress --geoip-database "$db" 2>/dev/null > "$work/engaged.csv" || true
+  # Three outcomes, and they must not be confused. A day with nobody engaged is
+  # a real result and its rows are rewritten empty, so a re-run cannot leave
+  # yesterday's countries standing. A day whose lookup FAILED is not a result
+  # at all: it says so and leaves the rows alone, because overwriting them with
+  # nothing would record a fact nobody established.
+  if [ -s "$work/engaged.log" ]; then
+    if [ ! -r "$db" ]; then
+      printf '  no country database at %s; the engaged split needs one\n' "$db"
+      return 0
+    fi
 
-  # Three things about this CSV, each of which cost a run to find.
-  #
-  # It is CRLF, so an anchored match needs the carriage return gone first or
-  # nothing at the end of a line is ever found.
-  #
-  # Empty columns are written as bare commas, so a split on the quote-comma
-  # does not separate them. That is what sorts the rows for free: a continent
-  # row is "0",,"geolocation",... and its first two columns arrive welded
-  # together, leaving a percentage in $3, while a country row is
-  # "0","0","geolocation",... and splits cleanly. Testing $3 therefore keeps
-  # the countries and drops the continents, which would otherwise be counted
-  # a second time on top of the countries inside them.
-  #
-  # The same welding puts the tail of a row at ,,,"CN China", so the country
-  # is not $NF either -- it is matched off the end of the line, which is where
-  # it always is. $6 is the visitor count.
-  awk -F'","' '
-    { sub(/\r$/, "") }
-    $3 != "geolocation" { next }
-    match($0, /"[A-Z][A-Z] [^"]*"$/) {
-      printf "%s\t%s\n", $6, substr($0, RSTART + 1, RLENGTH - 2)
-    }
-  ' "$work/engaged.csv" | sort -rn > "$work/engaged-by-country"
+    status=0
+    goaccess "$work/engaged.log" -o csv \
+      --log-format='%h - %^ [%d:%t %^] "%r" %s %b "%R" "%u" xff="%^" cache=%^ rt=%T urt="%^" al="%^" peer=%^' \
+      --date-format='%d/%b/%Y' --time-format='%H:%M:%S' \
+      --no-progress --geoip-database "$db" \
+      > "$work/engaged.csv" 2> "$work/engaged.err" || status=$?
 
-  [ -s "$work/engaged-by-country" ] || return 0
+    if [ "$status" -ne 0 ]; then
+      printf '  WARNING: the country split failed -- goaccess exited %d: %s\n' \
+        "$status" "$(head -1 "$work/engaged.err")"
+      return 0
+    fi
 
-  # A header, rewritten each run so it cannot end up duplicated, saying what
-  # the columns are and what produced them -- this file outlives the report it
-  # was printed beside. It survives the sort because "#" sorts ahead of any
-  # digit, and every reader below skips it.
-  mkdir -p "$outdir"
+    # Three things about this CSV, each of which cost a run to find.
+    #
+    # It is CRLF, so an anchored match needs the carriage return gone first or
+    # nothing at the end of a line is ever found.
+    #
+    # Empty columns are written as bare commas, so a split on the quote-comma
+    # does not separate them. That is what sorts the rows for free: a continent
+    # row is "0",,"geolocation",... and its first two columns arrive welded
+    # together, leaving a percentage in $3, while a country row is
+    # "0","0","geolocation",... and splits cleanly. Testing $3 therefore keeps
+    # the countries and drops the continents, which would otherwise be counted
+    # a second time on top of the countries inside them.
+    #
+    # The same welding puts the tail of a row at ,,,"CN China", so the country
+    # is not $NF either -- it is matched off the end of the line, which is where
+    # it always is. $6 is the visitor count.
+    awk -F'","' '
+      { sub(/\r$/, "") }
+      $3 != "geolocation" { next }
+      match($0, /"[A-Z][A-Z] [^"]*"$/) {
+        printf "%s\t%s\n", $6, substr($0, RSTART + 1, RLENGTH - 2)
+      }
+    ' "$work/engaged.csv" | LC_ALL=C sort -rn > "$work/engaged-by-country"
+
+    if [ ! -s "$work/engaged-by-country" ]; then
+      printf '  WARNING: the country split parsed no rows from %s engaged readers; goaccess output changed?\n' \
+        "$(wc -l < "$work/engaged.log")"
+      return 0
+    fi
+  fi
+
   scratch=$(mktemp)
   [ -f "$history" ] && awk -v d="$day" -F'\t' '!/^#/ && $1 != d' "$history" > "$scratch"
   awk -v d="$day" -F'\t' '{ printf "%s\t%s\t%s\n", d, $2, $1 }' "$work/engaged-by-country" >> "$scratch"
@@ -431,30 +477,29 @@ engaged_countries() {
   } > "$history"
   rm -f "$scratch"
 
-  # The run before this date, the same rule record_history follows, so that
-  # backfilling an older day compares against what preceded IT.
-  awk -v d="$day" -F'\t' '
-    /^#/ { next }
-    ($1 "") < (d "") { if ($1 != last_day) { last_day = $1; delete prev; } prev[$2] = $3 }
-    END { for (c in prev) printf "%s\t%s\t%s\n", "PREV", c, prev[c]; printf "%s\t%s\n", "PREVDAY", last_day }
-  ' "$history" > "$work/engaged-prev"
+  [ -s "$work/engaged-by-country" ] || return 0
 
-  local prev_day
-  prev_day=$(awk -F'\t' '$1 == "PREVDAY" { print $2 }' "$work/engaged-prev")
   # Where these figures come from, printed with them. #184 asks that every
   # number in the memo name its source, and a country column is the one most
   # likely to be quoted away from the report that produced it.
-  if [ -n "$prev_day" ]; then
+  if [ -n "$prev_day" ] && [ "$prev_min" = "$ENGAGED_MIN" ]; then
     printf '  engaged readers by country, against %s  [beacon; %s via goaccess]\n' \
       "$prev_day" "$(basename "$db")"
   else
     printf '  engaged readers by country  [beacon; %s via goaccess]\n' "$(basename "$db")"
   fi
 
-  # A country missing from the previous day had no engaged readers that day,
-  # so absence is zero and every row can carry a change. The whole column is
-  # dropped on the first run instead, where every number would read "+itself".
-  awk -F'\t' -v have_prev="${prev_day:+1}" \
+  # A country missing from the previous day had no engaged readers that day, so
+  # absence is zero and every row can carry a change. The column is dropped on
+  # a first run, where every number would read "+itself", and when the previous
+  # run used a different threshold, where the two are not the same measurement.
+  awk -v d="$prev_day" -F'\t' '/^#/ { next } $1 == d { printf "PREV\t%s\t%s\n", $2, $3 }' \
+    "$history" > "$work/engaged-prev"
+
+  local comparable=
+  [ -n "$prev_day" ] && [ "$prev_min" = "$ENGAGED_MIN" ] && comparable=1
+
+  awk -F'\t' -v have_prev="$comparable" \
       -v total="$(awk -F'\t' '{ s += $1 } END { print s + 0 }' "$work/engaged-by-country")" '
     FILENAME ~ /engaged-prev$/ { if ($1 == "PREV") was[$2] = $3; next }
     shown >= 10 { next }
@@ -466,6 +511,7 @@ engaged_countries() {
     }
   ' "$work/engaged-prev" "$work/engaged-by-country"
 }
+
 
 if [ "${1:-}" = '--visitors' ]; then
   visitor_log=${2:-/var/log/nginx/org.openipc.access.log.1}
@@ -598,5 +644,15 @@ printf '  report              %s\n' "$report"
 # the crawler that runs JavaScript passes the first test and fails the second.
 beacon_counts=$(visitors "$log")
 visitor_report "$beacon_counts"
-record_history "$beacon_counts" "$outdir" "$day"
-engaged_countries "$beacon_counts" "$work" "$outdir" "$day"
+
+# Both histories are read-modify-write against files a hand run or a backfill
+# can touch at the same time as cron, so both updates happen under one lock --
+# and the previous run is read inside it, or the comparison could describe a
+# state that no longer exists by the time the row is written.
+iso=$(iso_day "$day")
+(
+  flock 9
+  previous=$(previous_run "$outdir/engaged.tsv" "$iso")
+  record_history "$beacon_counts" "$outdir" "$iso" "$previous"
+  engaged_countries "$beacon_counts" "$work" "$outdir" "$iso" "$previous"
+) 9> "$outdir/.history.lock"

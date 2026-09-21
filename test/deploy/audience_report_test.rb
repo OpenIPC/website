@@ -383,11 +383,11 @@ class AudienceReportTest < ActiveSupport::TestCase
 
       rows = data_rows(File.join(outdir, 'engaged.tsv'))
 
-      assert_equal [%w[2026-09-20 7 3 0], %w[2026-09-21 7 3 0]], rows, <<~MESSAGE.chomp
-        date, visitors, readers, engaged -- and the date normalised, because
-        `day` is 20260921 from a filename and 2026-09-21 from `date`, and '-'
-        sorts before every digit, so two formats in one column would order the
-        series by which branch produced it.
+      assert_equal [%w[2026-09-20 7 3 0 5], %w[2026-09-21 7 3 0 5]], rows, <<~MESSAGE.chomp
+        date, visitors, readers, engaged, threshold -- the threshold because it
+        DEFINES the count, and the date normalised because `day` is 20260921
+        from a filename and 2026-09-21 from `date`, and two formats in one
+        column would order the series by which branch produced it.
       MESSAGE
     end
   end
@@ -503,6 +503,113 @@ class AudienceReportTest < ActiveSupport::TestCase
       rows = data_rows(File.join(outdir, 'engaged.tsv'))
 
       assert_equal 1, rows.length, 'a re-run after a fix must not leave two answers for one date'
+    end
+  end
+
+  # --- review findings on #249 ---
+
+  # A day on which nobody was engaged is a result, and the country rows for
+  # that date have to become empty. Leaving yesterday's countries standing
+  # would show a population that was not there, and the run after would compare
+  # against them.
+  test 'a day with nobody engaged clears its countries rather than keeping the old ones' do
+    Dir.mktmpdir do |outdir|
+      run_report(FIXTURE, outdir, day: '20260920', min: 2, csv: geo_csv([['CN China', 1]]))
+
+      assert_includes data_rows(File.join(outdir, 'engaged-countries.tsv')),
+                      ['2026-09-20', 'CN China', '1']
+
+      # Nothing reaches five pages in the fixture, so this day is a real zero.
+      run_report(FIXTURE, outdir, day: '20260921', min: 5, csv: geo_csv([['CN China', 1]]))
+      rows = data_rows(File.join(outdir, 'engaged-countries.tsv'))
+
+      assert_empty rows.select { |row| row.first == '2026-09-21' },
+                   'a zero day must record no countries'
+      assert_includes rows, ['2026-09-20', 'CN China', '1'], 'and must not disturb another day'
+    end
+  end
+
+  # The previous run is read from engaged.tsv, which has a row for every run
+  # including zero days. Asking the country file instead would skip a zero day
+  # and compare against an older, larger one.
+  test 'the run before a zero day is the zero day, not the last day with countries' do
+    Dir.mktmpdir do |outdir|
+      run_report(FIXTURE, outdir, day: '20260919', min: 2, csv: geo_csv([['CN China', 5]]))
+      run_report(FIXTURE, outdir, day: '20260920', min: 5, csv: geo_csv([['CN China', 5]]))
+      output = run_report(FIXTURE, outdir, day: '20260921', min: 5, csv: geo_csv([['CN China', 5]]))
+
+      assert_match(/engaged, previous\s+0\s+on 2026-09-20/, output,
+                   'the zero day is a run and is what the next day follows')
+      assert_no_match(/on 2026-09-19/, output)
+    end
+  end
+
+  # ENGAGED_MIN is overridable, and a delta between two different definitions
+  # is not a change in the audience.
+  test 'a threshold change suppresses the comparison instead of inventing a trend' do
+    Dir.mktmpdir do |outdir|
+      run_report(FIXTURE, outdir, day: '20260920', min: 3, csv: geo_csv([['CN China', 1]]))
+      output = run_report(FIXTURE, outdir, day: '20260921', min: 2, csv: geo_csv([['CN China', 1]]))
+
+      assert_match(/at a threshold of 3, not 2 -- not comparable/, output)
+      assert_no_match(/\(\+\d+, \+\d+%\)/, output, 'no percentage across two definitions')
+      assert_match(/engaged readers by country\s+\[/, output,
+                   'the country list still prints, just without deltas')
+    end
+  end
+
+  # A lookup that failed is not a day with no countries. Overwriting the rows
+  # with nothing would record a fact nobody established.
+  test 'a failed country lookup says so and leaves the rows alone' do
+    Dir.mktmpdir do |outdir|
+      run_report(FIXTURE, outdir, day: '20260920', min: 2, csv: geo_csv([['CN China', 1]]))
+
+      # Fails only the CSV call. Failing the HTML report as well would kill
+      # the run under `set -e` before it reached the country split at all.
+      bin = Dir.mktmpdir
+      File.write(File.join(bin, 'goaccess'), <<~SH)
+        #!/bin/sh
+        for arg in "$@"; do
+          if [ "$arg" = csv ]; then
+            echo boom >&2
+            exit 3
+          fi
+        done
+        exit 0
+      SH
+      File.chmod(0o755, File.join(bin, 'goaccess'))
+      named = File.join(Dir.mktmpdir, 'access-20260920.log')
+      FileUtils.cp(FIXTURE, named)
+      db = Tempfile.new(['db', '.mmdb'])
+      db.write('x')
+      db.flush
+
+      out, = Open3.capture2e({ 'PATH' => "#{bin}:#{ENV.fetch('PATH')}", 'ENGAGED_MIN' => '2',
+                               'OPENIPC_GEOIP_DB' => db.path },
+                             'bash', SCRIPT.to_s, named, outdir)
+
+      assert_match(/WARNING: the country split failed -- goaccess exited 3/, out)
+      assert_includes data_rows(File.join(outdir, 'engaged-countries.tsv')),
+                      ['2026-09-20', 'CN China', '1'], 'the rows from the run that worked survive'
+    end
+  end
+
+  # The threshold is per day. A log spanning two days would otherwise pool a
+  # visitor's two shallow days into one engaged one.
+  test 'two shallow days do not add up to one engaged day' do
+    second_day = File.read(FIXTURE).gsub('21/Sep/2026', '22/Sep/2026')
+
+    Tempfile.create(['two-days', '.log']) do |file|
+      file.write(FIXTURE.read + second_day)
+      file.flush
+
+      output = run_visitors(file.path, min: 4)
+
+      assert_equal 0, count_in(output, 'engaged'), <<~MESSAGE.chomp
+        The busiest visitor reads three pages on each of two days. Pooled that
+        is six and clears a threshold of four; per day it is three and does not.
+      MESSAGE
+      assert_match(/NOTE: this log spans 2 days/, output)
     end
   end
 
