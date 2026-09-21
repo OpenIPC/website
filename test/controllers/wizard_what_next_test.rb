@@ -29,10 +29,12 @@ class WizardWhatNextTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  # Direct children only: the chat item now carries a nested list of rooms, and
+  # a bare `li` would count those too. The assertion means what it always did.
   test 'the block offers three things to do next' do
     wizard soc_for(model: 'WNBASE')
 
-    assert_select '.alert-success [data-whatnext] li', 3
+    assert_select '.alert-success [data-whatnext] > li', 3
   end
 
   # The whole point of the placement. An ask above the download is a toll; this
@@ -81,42 +83,104 @@ class WizardWhatNextTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # --- the chat link goes somewhere the visitor can actually reach ---
+  # --- the chat doors: every room is offered, the order is what varies ---
 
-  test 'the chat link follows the locale' do
-    soc = soc_for(model: 'WNCHAT')
+  EN_ROOM = 'https://t.me/+7LL2kc32SOo5YWYy'
+  FPV_ROOM = 'https://t.me/+BMyMoolVOpkzNWUy'
+  RU_ROOM = 'https://t.me/+Sl2GPoR9G2iJAOCr'
 
-    wizard soc
-    assert_select '[data-whatnext] a[data-event="download-step:chat"][href^=?]', 'https://t.me/'
+  def chat_hrefs
+    css_select('[data-whatnext] [data-chat] a').map { |a| a['href'] }
+  end
+
+  # The rule, and the reason it replaced routing on the locale: a language
+  # setting is not a network. `zh` used to be sent to /community instead of a
+  # room, on the belief that the page carried a WeChat contact -- it never did,
+  # so that swapped one unopenable link for a page of four. Ordering on the
+  # locale is honest; removing a door on it is not.
+  test 'every visitor is offered every room' do
+    soc = soc_for(model: 'WNDOORS')
+    seen = {}
+
+    [nil, 'ru', 'zh'].each do |locale|
+      wizard soc, locale: locale
+      seen[locale] = chat_hrefs.sort
+    end
+
+    assert_equal [EN_ROOM, FPV_ROOM, RU_ROOM].sort, seen[nil]
+    assert_equal 1, seen.values.uniq.size,
+                 "a locale is shown a different set of rooms: #{seen.inspect}"
+  end
+
+  # Leads with, still offers, in that order -- the shape donation_path_test.rb
+  # already locks for the PayWall/Open Collective split.
+  test 'the locale decides the order, and only the order' do
+    soc = soc_for(model: 'WNORDER')
 
     wizard soc, locale: 'ru'
-    ru = css_select('[data-whatnext] a[data-event="download-step:chat"]').first['href']
+
+    assert_equal RU_ROOM, chat_hrefs.first, 'the Russian room does not lead for a Russian reader'
+    assert_includes chat_hrefs, EN_ROOM, 'the English room was taken away instead of reordered'
 
     wizard soc
-    en = css_select('[data-whatnext] a[data-event="download-step:chat"]').first['href']
 
-    assert_not_equal en, ru, 'Russian and English visitors are sent to the same room'
+    assert_equal EN_ROOM, chat_hrefs.first
+    assert_includes chat_hrefs, RU_ROOM
   end
 
-  # Telegram is blocked in China, so a Telegram link there is a link that does
-  # not open. /community lists the WeChat contact alongside the rest.
-  test 'Chinese visitors are not sent to Telegram' do
-    wizard soc_for(model: 'WNZH'), locale: 'zh'
+  # The chip is the more specific signal, so it wins the ordering over the
+  # language -- that part of #191 is unchanged.
+  test 'an FPV chip is offered the FPV room first' do
+    soc = soc_for(model: 'WNFPVROOM', segment: 'fpv')
 
-    href = css_select('[data-whatnext] a[data-event="download-step:chat"]').first['href']
+    wizard soc
 
-    assert_not_includes href, 't.me'
-    assert_equal '/zh/community', href
+    assert_equal FPV_ROOM, chat_hrefs.first
+
+    wizard soc, locale: 'ru'
+
+    assert_equal FPV_ROOM, chat_hrefs.first, 'the language overrode the chip'
   end
 
-  # An FPV chip's questions get answered in the FPV room, and the page already
-  # knows which chip it is.
-  test 'an FPV chip points at the FPV room' do
-    wizard soc_for(model: 'WNFPVROOM', segment: 'fpv')
+  # The defect this replaces: the FPV branch ran before the locale check and
+  # ignored it, so an FPV chip handed a Chinese visitor a t.me link -- the one
+  # thing the zh fallback existed to prevent, and untested because the FPV test
+  # ran in the default locale.
+  #
+  # Asserted as "the way out comes first", not "there is no t.me link". Removing
+  # the room because the page is in Chinese is the same mistake pointing the
+  # other way: it strands the Shenzhen FPV builder whose VPN works.
+  test 'a Chinese visitor is never handed Telegram first, FPV chip included' do
+    [[nil, 'WNZHPLAIN'], %w[fpv WNZHFPV]].each do |segment, model|
+      wizard soc_for(model:, segment:), locale: 'zh'
+      body = response.body
 
-    href = css_select('[data-whatnext] a[data-event="download-step:chat"]').first['href']
+      assert_select '[data-whatnext] [data-chat-fallback]', 1
+      assert_operator body.index('data-chat-fallback'), :<, body.index('data-chat='),
+                      "#{model}: the rooms come before the way out for a Chinese reader"
+      assert_includes chat_hrefs, FPV_ROOM, "#{model}: a room was removed rather than reordered"
+    end
+  end
 
-    assert_equal 'https://t.me/+BMyMoolVOpkzNWUy', href
+  # A door nobody can tell apart in the dashboard is a door whose evidence is
+  # not there in four weeks.
+  test 'each room is counted apart' do
+    wizard soc_for(model: 'WNEVENTS')
+
+    events = css_select('[data-chat] a[data-event]').map { |a| a['data-event'] }
+
+    assert_equal %w[download-step:chat:en download-step:chat:fpv download-step:chat:ru], events.sort
+  end
+
+  test 'the way out is named in every locale' do
+    soc = soc_for(model: 'WNWAYOUT')
+
+    [nil, 'ru', 'zh'].each do |locale|
+      wizard soc, locale: locale
+
+      assert_select '[data-chat-fallback] a[data-event=?]', 'download-step:chat:issues', 1
+      assert_no_match(/translation missing/i, response.body)
+    end
   end
 
   test 'every link stays in the visitor language' do

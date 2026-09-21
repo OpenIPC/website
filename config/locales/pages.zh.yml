@@ -58,12 +58,16 @@ zh:
       contribute_title: 参与贡献的方式
       cta_join: 加入主 Telegram 群组
       help1_html: 先查阅<a href="https://github.com/OpenIPC/wiki">维基</a>——安装、FPV 和排障指南都在那里。
-      help2: 搜索聊天记录；大多数新手问题此前都已有人解答。
+      help2: '搜索聊天记录或维基；大多数新手问题此前都已有人解答。'
       help3: 提问时请附上 SoC、传感器、你已经尝试过的做法，以及启动日志（如果有）。问题问得好，答案来得快。
       help_title: 怎样提问才会有人回答
       hero_lede: OpenIPC 由每天都在回答问题的人们公开构建。来打个招呼吧。
       hero_title: 来和我们聊聊。
       money_band_html: 更愿意用资金支持？<a href="/donate">资助这项工作</a>。
+      reach_issues_html: '<a href="https://github.com/OpenIPC/" data-event="reach-issues">问题追踪器</a>——到相关仓库提问。一份好的报告本身就是贡献。'
+      reach_lede: 'Telegram 并非在所有网络下都能打开——在某些国家、某些公司 Wi-Fi、很多酒店网络下都是如此。下面这些方式在任何地方都可用：'
+      reach_title: '如果 Telegram 打不开'
+      reach_wiki_html: '<a href="https://github.com/OpenIPC/wiki" data-event="reach-wiki">维基</a>——安装、FPV 和排障指南。'
       title: 社区
     privacy:
       # Written against the running configuration rather than the plan (#182):

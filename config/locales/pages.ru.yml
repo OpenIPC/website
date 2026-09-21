@@ -58,12 +58,16 @@ ru:
       contribute_title: Как помочь проекту
       cta_join: Вступить в основную группу в Telegram
       help1_html: Сначала загляните в <a href="https://github.com/OpenIPC/wiki">вики</a> — там живут гайды по установке, FPV и решению проблем.
-      help2: Поищите в истории чата — на большинство первых вопросов уже отвечали.
+      help2: 'Поищите в истории чата или в вики — на большинство первых вопросов уже отвечали.'
       help3: В вопросе укажите SoC, сенсор, что уже пробовали и лог загрузки, если есть. Хорошие вопросы получают быстрые ответы.
       help_title: Как получить ответ быстро
       hero_lede: OpenIPC делается открыто людьми, которые отвечают на вопросы каждый день. Заходите.
       hero_title: Поговорите с нами.
       money_band_html: Хотите помочь деньгами? <a href="/donate">Поддержите работу</a>.
+      reach_issues_html: '<a href="https://github.com/OpenIPC/" data-event="reach-issues">Трекер задач</a> — спросите в том репозитории, к которому относится вопрос. Хороший отчёт — это уже вклад.'
+      reach_lede: 'Telegram открывается не из каждой сети — в некоторых странах, в корпоративном Wi-Fi, во многих гостиницах. Эти способы работают откуда угодно:'
+      reach_title: 'Если Telegram не открывается'
+      reach_wiki_html: '<a href="https://github.com/OpenIPC/wiki" data-event="reach-wiki">Вики</a> — гайды по установке, FPV и решению проблем.'
       title: Сообщество
     privacy:
       # Written against the running configuration rather than the plan (#182):

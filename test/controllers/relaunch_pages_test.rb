@@ -255,6 +255,34 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
                  css_select('h3.text-uppercase').map { |h| h.text.strip }
   end
 
+  # Every room on /community is a Telegram room, and Telegram does not open
+  # from every network -- China and Russia are the site's second and fourth
+  # countries by visitor. The wizard used to send Chinese visitors here on the
+  # belief that the page carried a WeChat contact; it never did, so this block
+  # is what makes landing here an answer rather than four more closed doors.
+  test 'the community page names a way in that does not need Telegram' do
+    ['/community', '/ru/community', '/zh/community'].each do |path|
+      get path
+
+      assert_response :success
+      assert_select '#reach', 1, "#{path} does not say what to do when Telegram will not open"
+      assert_select '#reach a[data-event=?]', 'reach-issues', 1, "#{path} does not name the issue tracker"
+      assert_select '#reach a[data-event=?]', 'reach-wiki', 1, "#{path} does not name the wiki"
+      assert_no_match(/translation missing/i, response.body)
+    end
+  end
+
+  # It advertised a contact the project does not have, through a search engine
+  # that is itself blocked where that contact was aimed.
+  test 'no page offers a WeChat contact through a Google search' do
+    ['/', '/community', '/our-team', '/zh/community'].each do |path|
+      get path
+
+      assert_select 'a[href*=?]', 'google.com/search', false,
+                    "#{path} still links a search engine in place of a contact"
+    end
+  end
+
   # The dark band arriving with no gap under an article on white reads as the
   # text falling off a cliff. The homepage is the exception: its band follows a
   # tinted full-bleed section, where the gap is a white stripe between two
