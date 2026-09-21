@@ -20,7 +20,7 @@ class PageCacheTest < ActiveSupport::TestCase
   # -- the port-80 one only redirects to https -- and the first in the file is
   # the wrong one, which is what the earliest version of this helper picked up.
   def catch_all
-    blocks = VHOST.scan(/\n    location \/ \{\n.*?\n    \}\n/m)
+    blocks = VHOST.scan(%r{\n    location / \{\n.*?\n    \}\n}m)
     proxying = blocks.select { |b| b.include?('proxy_pass') }
 
     assert_equal 1, proxying.length,
@@ -43,17 +43,28 @@ class PageCacheTest < ActiveSupport::TestCase
   # does not quietly stop working the day someone reformats the file.
   def server_level_directives
     depth = 0
-    in_location = nil
+    location_depth = nil
 
     VHOST.lines.filter_map do |line|
-      stripped = line.strip
-      opening = stripped.end_with?('{')
-      in_location = depth if opening && stripped.start_with?('location', 'if (')
-      keep = depth == 1 && in_location.nil? && !opening && !stripped.start_with?('#')
-      depth += line.count('{') - line.count('}')
-      in_location = nil if in_location && depth <= in_location
+      keep = depth == 1 && location_depth.nil? && directive?(line)
+      depth, location_depth = advance(line, depth, location_depth)
       keep ? line : nil
     end
+  end
+
+  def directive?(line)
+    stripped = line.strip
+    !stripped.empty? && !stripped.start_with?('#') && !stripped.end_with?('{')
+  end
+
+  def advance(line, depth, location_depth)
+    stripped = line.strip
+    opens_location = stripped.end_with?('{') && stripped.start_with?('location', 'if (')
+    location_depth = depth if location_depth.nil? && opens_location
+
+    depth += line.count('{') - line.count('}')
+    location_depth = nil if location_depth && depth <= location_depth
+    [depth, location_depth]
   end
 
   test 'the page cache exists at all' do
