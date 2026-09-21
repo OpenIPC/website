@@ -11,6 +11,20 @@ class Download < ApplicationRecord
   # Only created, never updated, so there is no updated_at to maintain.
   self.record_timestamps = false
 
+  # What a row means changed on 2026-09-21 (#188).
+  #
+  # Before that date a row was one HTTP request, and a chunked or resumed fetch
+  # wrote several -- so the table counted requests, not downloads, and counted
+  # the large images worst. From that date only the first chunk of a fetch is
+  # recorded, which is the download.
+  #
+  # The 2,558 rows written before it are left exactly as they are. Rewriting
+  # history would make the table agree with itself and disagree with the nginx
+  # log, which is the only independent record of what actually happened. A
+  # chart that crosses this date is comparing two different measurements, and
+  # should say so.
+  COUNTS_ONE_ROW_PER_DOWNLOAD_FROM = Date.new(2026, 9, 21)
+
   # Recording must never cost somebody their download. A full disk, a locked
   # table, a migration not yet run on one container -- none of those are
   # reasons to fail a request that has already produced a valid image, so this
