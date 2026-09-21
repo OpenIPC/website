@@ -87,27 +87,7 @@ class SocAvailabilityTest < ActionDispatch::IntegrationTest
     assert_no_match(/no ready solution yet/i, response.body)
   end
 
-  # --- the SoC page says why, per status ---
-
-  # The one this issue exists for. A reader on a `neq` page was told to wait;
-  # what they could actually do is send a board.
-  { 'neq' => /no board to develop on/i,
-    'hlp' => /need someone to do the work/i,
-    'rnd' => /research stage/i,
-    'wip' => /being worked on/i,
-    'mvp' => /early .* build/i }.each do |status, wording|
-    test "a #{status} page says what is actually in the way" do
-      soc = soc_for(model: "AVS#{status.upcase}", status: status)
-      publish
-
-      get "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}"
-
-      assert_response :success
-      assert_match wording, response.body
-      assert_no_match(/working hard/i, response.body,
-                      "a #{status} page still asks the reader to wait")
-    end
-  end
+  # --- the SoC page says why, per status: see the exhaustive test below ---
 
   test 'a firmware-only page says how to flash it' do
     soc = soc_for(model: 'AVSFW', linux: 'openipc.avsfw-nor-lite.tgz')
@@ -135,7 +115,7 @@ class SocAvailabilityTest < ActionDispatch::IntegrationTest
 
     get "/cameras/vendors/#{@vendor.to_param}"
 
-    badge = css_select(".nav-link.active .badge").first
+    badge = css_select('.nav-link.active .badge').first
 
     assert badge, 'the active vendor tab carries no count'
     assert_equal '2', badge.text.strip, 'the wizard chip and the firmware-only chip are both installable'
@@ -162,6 +142,105 @@ class SocAvailabilityTest < ActionDispatch::IntegrationTest
     get "/cameras/vendors/#{@vendor.to_param}"
 
     assert_select '.alert-warning', 0
+  end
+
+  # --- the bootloader has to be published, not merely named ---
+
+  # HI3536DV100 names u-boot-hi3536dv100-original.bin and upstream does not
+  # publish it. `availability` said :firmware_only and the list row agreed,
+  # while the page offered the wizard form -- which would have gone on to build
+  # an image around a bootloader that does not exist.
+  test 'a named but unpublished bootloader does not reach the wizard form' do
+    soc = soc_for(model: 'AVGHOST', uboot: 'u-boot-avghost-original.bin',
+                  linux: 'openipc.avghost-nor-lite.tgz')
+    publish 'openipc.avghost-nor-lite.tgz'
+
+    assert_equal :firmware_only, soc.availability
+
+    get "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}"
+
+    assert_response :success
+    assert_match(/keeps its own bootloader/i, response.body,
+                 'the page offers the wizard for a bootloader nobody publishes')
+    assert_no_match(/Please enter the camera configuration/i, response.body)
+  end
+
+  # A link we cannot honour is worse than no link: it reads as our download
+  # being broken rather than as the chip being unsupported. MStar MSC313E is
+  # the one live page that reached this branch with a filename set.
+  test 'an unpublished bootloader is not offered as a download either' do
+    soc = soc_for(model: 'AVGLINK', status: 'wip', uboot: 'u-boot-avglink-universal.bin')
+    publish
+
+    get "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}"
+
+    assert_response :success
+    assert_no_match(%r{releases/download/latest/u-boot-avglink-universal\.bin}, response.body,
+                    'the page links a bootloader that 404s on github.com')
+  end
+
+  test 'a published bootloader is still offered' do
+    soc = soc_for(model: 'AVGREAL', status: 'wip', uboot: 'u-boot-avgreal.bin')
+    publish 'u-boot-avgreal.bin'
+
+    get "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}"
+
+    assert_response :success
+    assert_match(%r{releases/download/latest/u-boot-avgreal\.bin}, response.body)
+  end
+
+  # --- every state, for every status ---
+
+  # #189 asks for a test that walks the whole catalogue. The catalogue lives in
+  # MySQL and the test database is loaded from db/schema.rb with no rows in it,
+  # so there is nothing committed to walk -- that arrives with #161. What can be
+  # guarded here is the state space the 126 rows land in: every status crossed
+  # with every availability, which is what decides the wording. The count
+  # against the live index is measured on the host and reported on the PR.
+  WORDING = {
+    wizard: /Please enter the camera configuration/i,
+    firmware_only: /keeps its own bootloader/i,
+    none: {
+      'neq' => /no board to develop on/i,
+      'rnd' => /research stage/i,
+      'hlp' => /need someone to do the work/i,
+      'wip' => /being worked on/i,
+      'mvp' => /early .* build/i,
+      'done' => /no OpenIPC build for/i
+    }
+  }.freeze
+
+  test 'every status in every state renders the wording that state calls for' do
+    rows = Soc::STATUS.keys.map(&:to_s).flat_map do |status|
+      %i[wizard firmware_only none].map do |state|
+        [state, status, soc_for(model: "AVX#{status.upcase}#{state.to_s.upcase.delete('_')}",
+                                status: status,
+                                uboot: state == :wizard ? "u-boot-avx#{status}#{state}.bin" : '',
+                                linux: state == :none ? '' : "openipc.avx#{status}#{state}-nor-lite.tgz")]
+      end
+    end
+
+    publish(*rows.reject { |state, _, _| state == :none }
+                 .flat_map { |state, status, _| assets_for(state, status) })
+
+    rows.each do |state, status, soc|
+      assert_equal state, soc.availability, "#{status}/#{state} classified as #{soc.availability}"
+      assert_equal(state != :none, soc.installable?, "#{status}/#{state} disagrees with installable?")
+
+      get "/cameras/vendors/#{@vendor.to_param}/socs/#{soc.to_param}"
+
+      assert_response :success
+      expected = state == :none ? WORDING[:none].fetch(status) : WORDING[state]
+      assert_match expected, response.body, "a #{status} page in state #{state} says the wrong thing"
+      assert_no_match(/working hard/i, response.body, "a #{status}/#{state} page asks the reader to wait")
+      assert_no_match(/translation missing/i, response.body)
+    end
+  end
+
+  def assets_for(state, status)
+    names = ["openipc.avx#{status}#{state}-nor-lite.tgz"]
+    names << "u-boot-avx#{status}#{state}.bin" if state == :wizard
+    names
   end
 
   # --- three locales ---

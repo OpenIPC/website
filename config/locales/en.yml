@@ -28,7 +28,7 @@ en:
         unavailable_hlp_html: "We have a %{name} board and need someone to do the work. If you write C for embedded Linux, <a href=\"/community\">the chat</a> is where to start."
         unavailable_html: "There is no OpenIPC build for %{name} yet."
         unavailable_mvp_html: "There is an early %{name} build that does not yet do enough to publish. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>."
-        unavailable_neq_html: "We have the vendor SDK for %{name} but no board to develop on, and that is the only thing in the way. If you have one to spare, say so in <a href=\"/community\">the chat</a> — a donated board is how most of the supported list got here."
+        unavailable_neq_html: "We have the vendor SDK for %{name} but no board to develop on, and that is the only thing in the way. If you have one to spare, say so in <a href=\"/community\">the chat</a> — a donated board is how most of the supported list got here. <a href=\"/donate\">A donation</a> buys one just as well. What happens once a board arrives is on the <a href=\"/stages-of-firmware-development\">development stages</a> page."
         unavailable_rnd_html: "Work on %{name} is at the research stage — we are reading the SDK and finding out what is possible. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>."
         unavailable_wip_html: "%{name} is being worked on now. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>."
         bootloader: OpenIPC Bootloader
@@ -40,7 +40,6 @@ en:
         generate_button: Generate Installation Guide
         generate_mac: Or generate a random one.
         no_bootloader_alert: OpenIPC publishes firmware for the %{name}, but not a bootloader for it. Both the guided installation and the ready-made flash image begin by writing an OpenIPC bootloader, so neither can be offered for this SoC. The firmware bundle below is the part that does exist.
-        not_ready_alert_html: The installation instructions for the %{name} SoC are not yet ready. Although we are working hard to release OpenIPC firmware for the %{name}. Please stay tuned.
         notes: Notes
         paragraph1: Please enter the camera configuration in the provided form and press the "Generate Installation Guide" button. On the next page, you will find the binary files and the commands you have to execute for the installation of the OpenIPC firmware on the camera.
         paragraph2: Do not overlook this part. You may think that it is not necessary since you are not going to return to the dark past, but we assure you that the stock firmware will still be needed for restoring missing settings, drivers, and further research.
@@ -61,7 +60,6 @@ en:
         unavailable_rnd: "Not available — in research"
         unavailable_wip: "Not available — in progress"
         generate_guide: Generate an installation guide
-        no_solution_yet: There is no ready solution yet.
       update:
         advanced_instruction_link: Advanced installation instruction for experts
         files_download_alert: If you have any problems accessing downloadable files, please feel free to contact us on our Telegram channel.

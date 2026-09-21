@@ -28,7 +28,7 @@ zh:
         unavailable_hlp_html: "我们有 %{name} 的板子，缺的是动手做的人。如果你写嵌入式 Linux 的 C，请从<a href=\"/zh/community\">聊天室</a>开始。"
         unavailable_html: "%{name} 目前还没有 OpenIPC 构建。"
         unavailable_mvp_html: "%{name} 有一个早期构建，但功能还不足以发布。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
-        unavailable_neq_html: "我们有 %{name} 的厂商 SDK，但没有可供开发的板子——这是唯一的障碍。如果你有多余的，请到<a href=\"/zh/community\">聊天室</a>说一声：现有支持列表大多是这样来的。"
+        unavailable_neq_html: "我们有 %{name} 的厂商 SDK，但没有可供开发的板子——这是唯一的障碍。如果你有多余的，请到<a href=\"/zh/community\">聊天室</a>说一声：现有支持列表大多是这样来的。也可以<a href=\"/zh/donate\">捐助项目</a>，由我们去买板子。板子到手之后会经历什么，见<a href=\"/zh/stages-of-firmware-development\">开发阶段</a>页面。"
         unavailable_rnd_html: "%{name} 的工作还在研究阶段——我们正在读 SDK，弄清能做到什么。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
         unavailable_wip_html: "%{name} 正在开发中。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
         bootloader: OpenIPC 引导程序
@@ -40,7 +40,6 @@ zh:
         generate_button: 生成安装指南
         generate_mac: 或生成一个随机地址。
         no_bootloader_alert: OpenIPC 为 %{name} 提供固件，但没有为它提供引导加载程序。引导式安装和现成的刷机镜像都要先写入 OpenIPC 引导加载程序，因此这两者都无法为该 SoC 提供。下方的固件包是确实存在的部分。
-        not_ready_alert_html: '%{name} SoC 的安装说明尚未准备好。但是我们正在努力发布 %{name} 的 OpenIPC 固件。请继续关注。'
         notes: 备注
         paragraph1: 请在右侧输入摄像机配置，然后点击“生成安装指南”按钮。在下一页中，您将找到二进制文件和在摄像机上安装 OpenIPC 固件时必须执行的命令。
         paragraph2: 请不要忽视这部分。您可能认为没有必要，但我们向您保证，仍然需要原始固件来恢复丢失的设置、驱动程序，并且用来进一步研究。
@@ -61,7 +60,6 @@ zh:
         unavailable_rnd: "不可用——研究中"
         unavailable_wip: "不可用——进行中"
         generate_guide: 生成安装指南
-        no_solution_yet: 目前还没有现成的解决方案。
       update:
         advanced_instruction_link: 为专家提供的高级安装指导
         files_download_alert: 如果你在访问可下载文件时有任何问题，请随时在我们的Telegram频道与我们联系。
