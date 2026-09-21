@@ -194,6 +194,32 @@ class AudienceReportTest < ActiveSupport::TestCase
     end
   end
 
+  # Review finding on #244. A day's log spans both formats when a log-format
+  # change lands, and rows written before al= existed carry no field at all.
+  # Reading those as "this client sent no Accept-Language" takes real readers,
+  # and every page they read, out of the audience -- on exactly the day
+  # someone goes looking. Absent is not empty.
+  test 'a row from before the al field existed is not a silent visitor' do
+    old_format = <<~LINE
+      198.51.100.50 - - [21/Sep/2026:01:08:00 +0000] "POST /api/a/count?p=%2Fecosystem&t=Ecosystem&s=1920&b=0&rnd=iiii1 HTTP/2.0" 200 43 "https://openipc.org/ecosystem" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36" xff="-" cache=- rt=0.002 urt="0.002"
+    LINE
+
+    Tempfile.create(['mixed-format-access', '.log']) do |file|
+      file.write(FIXTURE.read)
+      file.write(old_format)
+      file.flush
+
+      output = run_visitors(file.path)
+
+      assert_equal 4, count_in(output, 'readers'),
+                   'the pre-rollout row was read as a client that omitted the header'
+      assert_nil count_in(output, 'no Accept-Language'),
+                 'nothing here omitted the header, so the line should not appear at all'
+      assert_match(%r{^\s+1\s+/ecosystem$}, output,
+                   'and their page went out of the reader list with them')
+    end
+  end
+
   test 'mawk and gawk agree' do
     skip 'only one awk on this machine' unless File.executable?('/usr/bin/mawk') &&
                                                File.executable?('/usr/bin/gawk')

@@ -70,8 +70,17 @@ visitors() {
 
       width = 0
       if (match($2, /[?&]s=[0-9]+/)) width = substr($2, RSTART + 3, RLENGTH - 3) + 0
-      language = "-"
-      if (match($0, /al="[^"]*"/)) language = substr($0, RSTART + 4, RLENGTH - 5)
+      # Absent is not the same as empty. A log spanning the #143 rollout holds
+      # rows written before al= existed at all, and reading those as "this
+      # client sent no Accept-Language" would take real readers -- and every
+      # page they read -- out of the audience on exactly the day someone looks.
+      # Only a field that is present and empty says anything about the client.
+      language = ""
+      has_language = 0
+      if (match($0, /al="[^"]*"/)) {
+        has_language = 1
+        language = substr($0, RSTART + 4, RLENGTH - 5)
+      }
       path = ""
       if (match($2, /[?&]p=[^& ]*/)) path = decode(substr($2, RSTART + 3, RLENGTH - 3))
 
@@ -90,7 +99,7 @@ visitors() {
       # worked while one fleet dominated both, and once the snapshot crawler
       # left it fired on every run. It now separates reader-shaped visits
       # instead of second-guessing the fingerprint.
-      if (language == "-" || language == "") quiet[visitor] = 1
+      if (has_language && (language == "-" || language == "")) quiet[visitor] = 1
 
       # The gallery and the images in it, in any locale. Kept apart from the
       # rest of the site because the population reading them is not the
