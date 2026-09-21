@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": false,
+    "outDir": "dist/types",
+    "rootDir": "src"
+  },
+  "include": ["src"],
+  // The gallery and the fixtures are development tools; they import each
+  // other and would otherwise pull Storybook data into the published types.
+  "exclude": [
+    "src/**/*.stories.*", "src/**/*.test.*",
+    "src/__fixtures__", "src/__tests__", "src/gallery"
+  ]
+}
