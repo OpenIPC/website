@@ -18,13 +18,16 @@ require 'test_helper'
 class LogReportTest < ActiveSupport::TestCase
   SCRIPT = Rails.root.join('deploy/log-report.sh')
   FIXTURE = Rails.root.join('test/fixtures/files/crawler-access.log')
+  MIXED = Rails.root.join('test/fixtures/files/crawler-access-mixed.log')
+
+  def run_report(log = FIXTURE)
+    out, status = Open3.capture2e('bash', SCRIPT.to_s, log.to_s)
+    assert_predicate status, :success?, "log-report.sh failed:\n#{out}"
+    out
+  end
 
   def report
-    @report ||= begin
-      out, status = Open3.capture2e('bash', SCRIPT.to_s, FIXTURE.to_s)
-      assert_predicate status, :success?, "log-report.sh failed:\n#{out}"
-      out
-    end
+    @report ||= run_report
   end
 
   def census
@@ -60,6 +63,21 @@ class LogReportTest < ActiveSupport::TestCase
   test 'it says what share of the log the named crawlers are' do
     assert_match(/self-declared crawlers: 13 requests, 81\.2% of the log/, report)
     assert_match(/^  Googlebot\s+2$/, census)
+  end
+
+  # Review finding on #230. A day that spans the #143 log-format rollout holds
+  # both formats and this report counts every line of either, so an agent
+  # reader that only understands the new one leaves the older records in the
+  # total while dropping their crawlers -- undercounting the census and the
+  # percentage at once, on exactly the day someone is most likely to look.
+  test 'it reads the agent from both log formats' do
+    output = run_report(MIXED)
+
+    assert_match(/self-declared crawlers: 4 requests, 80\.0% of the log/, output)
+    %w[Googlebot Anthropic Yandex Baiduspider].each do |name|
+      assert_match(/^  #{name}\s+1$/, output,
+                   "#{name} is in the fixture; Yandex and Baidu are the stock-combined half of it")
+    end
   end
 
   # The fleet crawling /snapshots presents a current Chrome on macOS. Nothing

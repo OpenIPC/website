@@ -41,14 +41,24 @@ function cls(p) {
   if (p == "/")                         return "front"
   return "other"
 }
-# The User-Agent, taken by anchoring on the structured tail rather than by
-# field number: it is quoted, contains spaces, and the field before it is the
-# referer, which is quoted too. The one thing that cannot appear inside it is
-# a raw double quote -- nginx writes those as \x22 -- so the quoted run that
-# ends immediately before ` xff="` is the agent and nothing else can be.
+# The User-Agent, taken by anchoring rather than by field number: it is
+# quoted, contains spaces, and the field before it is the referer, which is
+# quoted too. The one thing that cannot appear inside it is a raw double quote
+# -- nginx writes those as \x22 -- so an anchored quoted run is the agent and
+# nothing else can be.
+#
+# Both formats, because a day that spans the #143 rollout contains both and
+# this report counts every line of it. In `openipc` the agent is the quoted
+# run ending immediately before ` xff="`; in stock `combined` it is the last
+# field on the line. The two tests cannot be confused for one another: an
+# openipc line ends in `peer=<address>`, never in a quote.
 function agent(line) {
-  if (!match(line, /"[^"]*" xff="/)) return ""
-  return substr(line, RSTART + 1, RLENGTH - 8)
+  if (match(line, /"[^"]*" xff="/)) return substr(line, RSTART + 1, RLENGTH - 8)
+  if (match(line, /"[^"]*"[ \t\r]*$/)) {
+    sub(/[ \t\r]*$/, "", line)
+    return substr(line, RSTART + 1, length(line) - RSTART - 1)
+  }
+  return ""
 }
 # Who the crawler says it is. Named because the interesting movement is
 # between names: on 2026-09-19 the LLM crawlers together already outran Yandex
