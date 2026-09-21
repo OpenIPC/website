@@ -202,8 +202,14 @@ days, and how any future allocator or caching change gets judged. A rebuilt
 host that skips this comes back with no series at all, and the gap only becomes
 visible when someone needs the numbers.
 
-    scp -P 35242 -r deploy root@openipc.org:/tmp/openipc-deploy
+    rsync -a --delete -e 'ssh -p 35242' deploy/ root@openipc.org:/tmp/openipc-deploy/
     ssh -p 35242 root@openipc.org /tmp/openipc-deploy/install-metrics.sh
+
+rsync rather than `scp -r deploy`, which is only correct the first time: on a
+re-run the destination exists, scp copies the tree inside it, and the installer
+you then run is the stale one left there by the previous restore -- reporting
+success over files it did not copy. The installer prints a checksum of each
+file it installs so that failure is visible.
 
 Idempotent, and it verifies itself: it runs the sampler the way cron will, with
 an empty environment, and fails if nothing comes out. `deploy/memory-probe.sh`

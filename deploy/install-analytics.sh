@@ -5,12 +5,23 @@
 # country, it cannot see the click that turns a reader into a backer, 39% of
 # human page views arrive with no referrer because Telegram and apps send none,
 # and it cannot tell whether 560 addresses on /open-wall were people or a
-# proxy-checker. A JavaScript beacon settles the last one on its own, because
-# the residential-proxy botnet does not execute JavaScript.
+# proxy-checker.
 #
-#   scp -P 35242 -r deploy root@openipc.org:/tmp/openipc-deploy
+# This last one was expected to settle itself, on the reasoning that the
+# residential-proxy botnet would not execute JavaScript. It does. The first
+# day of data was 87% /open-wall and /snapshots, and 5,510 of those visitors
+# announced macOS while reporting a 1,366 px viewport, which no Mac has ever
+# had. So the beacon did answer the question, by contradicting the
+# assumption: what separates the two is the fingerprint, not whether the
+# script ran. deploy/audience-report.sh --visitors does that separation.
+#
+#   rsync -a --delete -e 'ssh -p 35242' deploy/ root@openipc.org:/tmp/openipc-deploy/
 #   ssh -p 35242 root@openipc.org \
 #       ANALYTICS_EMAIL=... ANALYTICS_PASSWORD=... /tmp/openipc-deploy/install-analytics.sh
+#
+# rsync and not `scp -r deploy`: on a re-run the destination already exists,
+# so scp nests the tree as /tmp/openipc-deploy/deploy/ and the script you then
+# run is whatever the last person left there. See install-metrics.sh.
 #
 # The credentials are only read the first time, when the site row is created;
 # afterwards they live in the SQLite file and the variables are ignored. They
