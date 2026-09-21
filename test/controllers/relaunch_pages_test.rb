@@ -540,4 +540,19 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, 'latency meter',
                         'the page claims a meter whose design and runs are not published'
   end
+  # The turnkey page describes a reference board line that ships under a
+  # partner's brand. The partner has not agreed to be named on the marketing
+  # site, and its documentation host reached production once, in all three
+  # languages, before it was rolled back. A translation pass or a later edit
+  # could put it back in one locale without anyone reading the other two.
+  test 'no relaunch page names the host behind the reference boards' do
+    PAGES.each_key do |path|
+      LOCALES.each do |locale|
+        get locale == :en ? path : "/#{locale}#{path == '/' ? '' : path}"
+
+        assert_response :success
+        assert_not_includes response.body, 'skycam.openipc.ru', "the partner's host leaked into #{locale} #{path}"
+      end
+    end
+  end
 end
