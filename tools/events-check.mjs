@@ -76,6 +76,22 @@ check('a junk tag is not recorded at all',
       !counts.some(x => (x.path || '').startsWith('ref:script')),
       counts.slice(-3).map(x => x.path).join(' '))
 
+// Back, after a tagged landing. Stripping ?ref= rewrites the history entry,
+// and rewriting it with an empty state deletes the restorationIdentifier Turbo
+// needs to put the cached body back -- so the address returns and the page does
+// not. Nothing server-side can see that; it is two navigations and a cache.
+await p.goto(`${base}/?ref=tg-ru`, { waitUntil: 'networkidle' })
+await p.evaluate(() => window.Turbo.visit('/donate'))
+await p.waitForTimeout(1200)
+const away = (await p.textContent('h1, .display-3').catch(() => '')) || ''
+await p.goBack()
+await p.waitForTimeout(1500)
+const home = (await p.textContent('h1, .display-3').catch(() => '')) || ''
+
+check('Back after a tagged landing restores the page, not just the address',
+      home.trim() !== away.trim() && !p.url().includes('ref='),
+      `left on "${away.trim().slice(0, 24)}", came back to "${home.trim().slice(0, 24)}"`)
+
 await b.close()
 const failed = results.filter(r => !r).length
 console.log(`\n${results.length - failed}/${results.length} passed`)

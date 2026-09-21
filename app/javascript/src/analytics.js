@@ -57,7 +57,14 @@ function recordLandingTag() {
   if (/^[a-z0-9-]{1,24}$/.test(clean)) countEvent(`ref:${clean}`)
 
   url.searchParams.delete('ref')
-  window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+
+  // history.state, not {}. Turbo keeps a restorationIdentifier in the history
+  // entry and needs it to restore the cached body when someone presses Back;
+  // replacing the entry with an empty object throws it away, and the failure
+  // is horrible to read -- the address goes back and the page does not, so the
+  // visitor is looking at /donate with / in the address bar. Reproduced on dev
+  // before this line was written, and tools/events-check.mjs now walks it.
+  window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
 }
 
 export default function initAnalytics() {
