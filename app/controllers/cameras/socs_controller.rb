@@ -307,13 +307,30 @@ module Cameras
     # bug this replaces made it quietly high. Undercounting a download is
     # indistinguishable from nobody downloading.
     #
+    # A HEAD is not a download. Rails routes it to the same action and the
+    # reader gets no body, so counting it records a download that did not
+    # happen -- eighteen reached this path in the fourteen days of log the host
+    # keeps, against 1,871 GETs. Small, and wrong in the direction that invents
+    # readers.
+    #
+    # A range in a unit the file server does not implement is not a
+    # continuation either. An unrecognised unit is ignored and the whole
+    # representation sent: `Range: kbytes=0-4` comes back 200 with all
+    # 8,388,608 bytes. That is a download, and the first version of this rule
+    # dropped it -- with a test asserting the drop, which is how a bug gets
+    # written down as a rule.
+    #
     # Rows written before 2026-09-21 were not filtered this way. A chart that
     # crosses that date is comparing two different things -- see the note on
     # Download itself.
     def first_chunk?
-      range = request.headers['Range'].to_s.strip
+      return false unless request.get?
 
-      range.empty? || range.match?(/\Abytes\s*=\s*0-/i)
+      range = request.headers['Range'].to_s.strip
+      return true if range.empty?
+      return true unless range.match?(/\Abytes\s*=/i)
+
+      range.match?(/\Abytes\s*=\s*0-/i)
     end
 
     # Read a configuration back out of the query string Camera#permalink writes.

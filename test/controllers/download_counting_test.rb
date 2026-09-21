@@ -89,11 +89,41 @@ class DownloadCountingTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # A unit that merely ends in "bytes" is not the bytes unit, and its range 0-
-  # is not our byte zero.
-  test 'a range in another unit does not count' do
+  # A range in a unit the file server does not implement is ignored and the
+  # whole file is sent -- `Range: kbytes=0-4` comes back 200 with all 8,388,608
+  # bytes. That is a download.
+  #
+  # The first version of this file asserted the opposite, which is how a bug
+  # gets written down as a rule: the reader received the entire image and the
+  # table recorded nothing.
+  ['kbytes=0-4', 'items=0-4', 'bytes-and-more=0-4'].each do |range|
+    test "a range in the unrecognised unit #{range.split('=').first} counts, because the whole file is sent" do
+      assert_difference 'Download.count', 1 do
+        download range: range
+      end
+
+      assert_equal 200, response.status
+      assert_equal 8.megabytes, response.body.bytesize
+    end
+  end
+
+  # A HEAD is a probe. Rails routes it to the same action and the reader gets
+  # no body, so counting it records a download that did not happen. Eighteen
+  # reached this path in fourteen days, against 1,871 GETs.
+  test 'a HEAD probe does not count as a download' do
     assert_no_difference 'Download.count' do
-      download range: 'kbytes=0-4'
+      head "/cameras/vendors/#{@vendor.to_param}/socs/#{@soc.to_param}/download_full_image",
+           params: { flash_size: 8, flash_type: 'nor', fw_release: 'lite' }
+    end
+
+    assert_equal 0, response.body.bytesize
+  end
+
+  test 'a probe followed by the real download counts once' do
+    assert_difference 'Download.count', 1 do
+      head "/cameras/vendors/#{@vendor.to_param}/socs/#{@soc.to_param}/download_full_image",
+           params: { flash_size: 8, flash_type: 'nor', fw_release: 'lite' }
+      download
     end
   end
 
