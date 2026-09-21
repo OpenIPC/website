@@ -218,10 +218,30 @@ Only needed on a rebuilt host:
 
   Two things live outside this repository and a rebuilt host needs both:
   `analytics.openipc.org` must resolve to the host, and it must be listed in
-  `/etc/dehydrated/domains.txt` beside the other three names or the dashboard
+  `/etc/dehydrated/domains.txt` beside the other names or the dashboard
   vhost will not start — its 443 block names a certificate that would not
   exist. The counting endpoints do not depend on either: they are two exact
   locations on the public vhosts and work with no certificate of their own.
+
+### /etc/dehydrated/domains.txt
+
+Not in this repository, and a vhost whose name is missing from it does not
+start. As of 2026-09-21 the list is:
+
+```
+openipc.org
+dev.openipc.org
+wiki.openipc.org
+analytics.openipc.org
+openipc.eu
+```
+
+`openipc.eu` joined it when its dedicated edge node was retired and the name
+was folded onto this host (`sites-available/eu.openipc`). It is the one entry
+that is easy to get wrong in a rebuild, because the name merely redirects and
+looks skippable — but the old edge pinned it to HTTPS with a six-month HSTS
+header, so without the certificate those visitors get a browser warning rather
+than the redirect. `deploy/nginx/README.md` has the rest of it.
 
 ## Expected timings
 
@@ -302,7 +322,9 @@ but `public/` is served as-is.
 
 #179 asks for `openipc.ru`, `openipc.kz` and `openipc.eu` to be registered too,
 "because search engines see them as separate sites that duplicate this one".
-They do not. All four mirrors already answer with
+They do not. `openipc.eu` stopped being one of them on 2026-09-21: it resolves
+to this host and returns `301` to `openipc.org`, which settles the duplicate
+more firmly than any property would. The rest already answer with
 
     <link rel="canonical" href="https://openipc.org/">
 

@@ -114,9 +114,10 @@ server {
     # openipc.org. The dashboard has a vhost of its own for that reason.
     #
     # Host is rewritten because GoatCounter picks the site from it, and these
-    # requests arrive as openipc.org, openipc.ru, openipc.kz or openipc.eu.
-    # Without this the four mirrors would each need a site of their own, or
-    # three quarters of the traffic would be dropped as unknown.
+    # requests arrive as openipc.org, openipc.ru or openipc.kz. Without this
+    # each name would need a site of their own, or most of the traffic would be
+    # dropped as unknown. openipc.eu was a fourth until 2026-09-21, when it
+    # stopped being a mirror and became a 301 -- see sites-available/eu.openipc.
     location = /api/a/c.js {
         proxy_pass http://127.0.0.1:8081/count.js;
         proxy_set_header Host analytics.openipc.org;

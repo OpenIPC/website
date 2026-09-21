@@ -26,7 +26,12 @@ set -euo pipefail
 SELF="$(readlink -f "${BASH_SOURCE[0]}")"
 HERE="$(dirname "$SELF")"
 BASE="${NGINX_IMAGE:-nginx:1.26-alpine}"   # matches webber-eu (nginx/1.26.3)
-FIXTURE=openipc-nginx-check:1
+# The tag is part of the fixture's contents, not decoration: the image is built
+# once and reused for every later run, so a vhost that names a certificate the
+# image does not carry fails `nginx -t` on every machine that already has the
+# old image. Bump this whenever the domain list below changes. :2 added
+# openipc.eu.
+FIXTURE=openipc-nginx-check:2
 
 die() { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 ok() { printf '\033[32m ok\033[0m %s\n' "$*"; }
@@ -41,7 +46,7 @@ if ! docker image inspect "$FIXTURE" >/dev/null 2>&1; then
 FROM ${BASE}
 RUN apk add --no-cache openssl curl \\
  && (adduser -S -D -H www-data || true) \\
- && for d in openipc.org dev.openipc.org wiki.openipc.org analytics.openipc.org openipc.net; do \\
+ && for d in openipc.org dev.openipc.org wiki.openipc.org analytics.openipc.org openipc.net openipc.eu; do \\
       mkdir -p /var/lib/dehydrated/certs/\$d; \\
       openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=\$d" \\
         -keyout /var/lib/dehydrated/certs/\$d/privkey.pem \\
@@ -106,6 +111,10 @@ install -d -m 0755 /srv/www/static/prod/site-test/_smoke
 printf 'SMOKE\n' > /srv/www/static/prod/site-test/_smoke/index.html
 ln -s site-test /srv/www/static/prod/current
 
+# A token where dehydrated puts one, so the openipc.eu probes below can tell
+# "the renewal path is served" from "the redirect ate it".
+printf 'TOKEN-OK\n' > /var/lib/dehydrated/acme-challenges/probe-token
+
 # Redirected explicitly. A daemonised nginx still inherits this exec's stdout
 # and stderr, and `docker exec` does not return until those close -- so
 # without this the setup step hangs rather than finishing.
@@ -159,6 +168,40 @@ expect() {
   fi
 }
 
+# openipc.eu is a 301 to the canonical host and nothing else. Its own function
+# because `expect` resolves openipc.org and reads X-Served-By, and the claim
+# here is the opposite one: that no application is reached at all.
+redirects_to() {
+  host=$1; path=$2; want=$3
+
+  if ! curl -sS -o /dev/null -D /tmp/h -k --max-time 5 \
+       --resolve "$host:443:127.0.0.1" "https://$host$path" >/dev/null 2>&1
+  then
+    printf '  %-32s CURL FAILED\n' "$host$path"
+    fail=1
+    return
+  fi
+
+  code=$(awk 'NR==1{print $2}' /tmp/h)
+  loc=$(grep -i '^location:' /tmp/h | tr -d '\r' | awk '{print $2}' | head -1)
+  [ -z "$loc" ] && loc="-"
+  if grep -qi '^strict-transport-security' /tmp/h; then hsts=hsts; else hsts=no-hsts; fi
+
+  bad=""
+  [ "$code" = 301 ] || bad="$bad code=$code(want 301)"
+  [ "$loc" = "$want" ] || bad="$bad location=$loc(want $want)"
+  # Deliberate, and the vhost says why: the old edge pinned this name to HTTPS
+  # for six months and the pin has to keep being renewed while it lasts.
+  [ "$hsts" = hsts ] || bad="$bad no-hsts(want hsts)"
+
+  if [ -n "$bad" ]; then
+    printf '  %-32s %-5s %-7s %s MISMATCH:%s\n' "$host$path" "$code" "$hsts" "$loc" "$bad"
+    fail=1
+  else
+    printf '  %-32s %-5s %-7s %s\n' "$host$path" "$code" "$hsts" "$loc"
+  fi
+}
+
 printf '  %-32s %-5s %-9s %s\n' PATH CODE SERVED-BY HSTS
 
 # The bundle holds one page, and both spellings of it reach the file: with
@@ -180,6 +223,35 @@ expect /admin                       200 rails  hsts
 # X-Served-By at all -- and must still carry the header the server block sends.
 expect /open-wall                   200 -      hsts
 expect /up                          200 -      hsts
+
+echo "  --- openipc.eu: one 301 to the canonical host, never a page ---"
+redirects_to openipc.eu /                  https://openipc.org/
+redirects_to openipc.eu /ru/donate         https://openipc.org/ru/donate
+redirects_to openipc.eu /supported-hardware/featured \
+                                           https://openipc.org/supported-hardware/featured
+# The query string comes too. $request_uri is the original request line, so
+# this is the one form of the redirect that cannot silently drop a ?locale=.
+redirects_to openipc.eu '/?locale=ru'      'https://openipc.org/?locale=ru'
+
+# Not a page even where openipc.org serves one from the bundle: the seam is
+# below the redirect, and a static file reached under the wrong name would be
+# the duplicate-content case this vhost exists to prevent.
+redirects_to openipc.eu /_smoke/           https://openipc.org/_smoke/
+
+echo "  --- openipc.eu: the redirect must not swallow the renewal path ---"
+# If this ever fails, the certificate stops renewing sixty days later, on a
+# name nobody is watching any more -- and the failure looks like a browser
+# warning, not like a broken config. `^~` on the acme location is what keeps
+# it ahead of `location /`.
+body=$(curl -sS --max-time 5 --resolve openipc.eu:80:127.0.0.1 \
+        http://openipc.eu/.well-known/acme-challenge/probe-token 2>/dev/null || true)
+if [ "$body" = "TOKEN-OK" ]; then
+  printf '  %-32s %s\n' 'http acme-challenge' served
+else
+  printf '  %-32s NOT SERVED (got "%s") -- dehydrated would stop renewing\n' \
+    'http acme-challenge' "$body"
+  fail=1
+fi
 
 echo "  --- the bundle removed entirely, which is a rollback to nothing ---"
 rm -f /srv/www/static/prod/current
