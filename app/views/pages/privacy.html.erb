@@ -1,0 +1,85 @@
+<% content_for :fullwidth, 'yes' %>
+
+<%= render 'shared/page_header', title: t('.hero_title'), lede: t('.hero_lede') %>
+
+<div class="container">
+  <article class="privacy">
+    <div class="row">
+      <div class="col-lg-8">
+
+        <h2 class="h4 mt-5"><%= t('.counting_title') %></h2>
+        <p class="text-body-secondary"><%= t('.counting_lede') %></p>
+
+        <%# Two lists, one shape: what is recorded and what is not. The second
+            is the part people actually want, so it is not a footnote. %>
+        <ul class="list-unstyled mb-4">
+          <% %w[page place device clicks tag].each do |item| %>
+            <li class="d-flex gap-2 mb-2">
+              <i class="bi bi-plus-lg text-success flex-shrink-0 mt-1"></i>
+              <span><%= t(".records_#{item}_html") %></span>
+            </li>
+          <% end %>
+        </ul>
+
+        <ul class="list-unstyled mb-4">
+          <% %w[cookies individuals region].each do |item| %>
+            <li class="d-flex gap-2 mb-2">
+              <i class="bi bi-dash-lg text-danger flex-shrink-0 mt-1"></i>
+              <span><%= t(".never_#{item}_html") %></span>
+            </li>
+          <% end %>
+        </ul>
+
+        <div class="alert alert-light border">
+          <p class="mb-0"><%= t('.sessions_html') %></p>
+        </div>
+
+        <h2 class="h4 mt-5"><%= t('.log_title') %></h2>
+        <p class="text-body-secondary"><%= t('.log_lede') %></p>
+        <p><%= t('.log_text_html') %></p>
+
+        <h2 class="h4 mt-5"><%= t('.wall_title') %></h2>
+        <p class="text-body-secondary"><%= t('.wall_lede') %></p>
+
+        <ul class="list-unstyled mb-4">
+          <li class="d-flex gap-2 mb-2">
+            <i class="bi bi-plus-lg text-success flex-shrink-0 mt-1"></i>
+            <span><%= t('.wall_published_html') %></span>
+          </li>
+          <li class="d-flex gap-2 mb-2">
+            <i class="bi bi-dash-lg text-danger flex-shrink-0 mt-1"></i>
+            <span><%= t('.wall_withheld_html') %></span>
+          </li>
+        </ul>
+
+        <p><%= t('.wall_retention_html') %></p>
+
+        <h2 class="h4 mt-5"><%= t('.retention_title') %></h2>
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th scope="col"><%= t('.retention_what') %></th>
+                <th scope="col"><%= t('.retention_where') %></th>
+                <th scope="col"><%= t('.retention_how_long') %></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% %w[totals session log images details].each do |row| %>
+                <tr>
+                  <td><%= t(".row_#{row}_what") %></td>
+                  <td><%= t(".row_#{row}_where") %></td>
+                  <td class="text-data"><%= t(".row_#{row}_long") %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 class="h4 mt-5"><%= t('.contact_title') %></h2>
+        <p><%= t('.contact_text_html') %></p>
+
+      </div>
+    </div>
+  </article>
+</div>
