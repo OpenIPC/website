@@ -257,6 +257,29 @@ server {
     # honoured and a session-carrying request stays out of the cache for the
     # same reasons.
     #
+    # Monitoring, kept out of the log.
+    #
+    # /up is config/routes.rb:11 -- a rack proc answering "ok", no controller,
+    # no view, no database. The container healthcheck and openipc-deploy poll
+    # it on the loopback and never come through here, so today this location
+    # silences four requests. It exists for what comes next: it is the right
+    # target for the mirrors' monitoring, which currently fetches the full
+    # home page every three seconds, and pointing 27,600 requests a day at
+    # /up would only move the noise from one line of the log to another.
+    #
+    # An exact location, so nothing else can fall into it. access_log off and
+    # nothing more: the endpoint still answers, it just stops being counted
+    # among the requests anybody reads the log to understand.
+    location = /up {
+        access_log off;
+
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
     # The retired numeric form, answered here rather than by Rails. A walk of
     # the id space is the whole reason the ids changed, and every probe it
     # makes is a distinct URL -- so proxying them would mean one render per id
