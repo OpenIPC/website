@@ -15,6 +15,15 @@ server {
         alias   /var/lib/dehydrated/acme-challenges;
         allow all;
     }
+    # The same exception on port 80. A check that asks for http://.../up is
+    # redirected here and logged here, so silencing /up only in the TLS server
+    # leaves the line it was meant to remove -- written by the redirect rather
+    # than by the app, which is harder to notice, not easier.
+    location = /up {
+        access_log off;
+        return 301 https://$host$request_uri;
+    }
+
     location / {
         return 301 https://$host$request_uri;
     }

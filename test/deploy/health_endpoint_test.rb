@@ -33,16 +33,28 @@ class HealthEndpointTest < ActionDispatch::IntegrationTest
                      'the healthcheck gained a locale-prefixed form, which deploy.sh does not use'
   end
 
-  test 'the vhosts keep it out of the access log' do
+  # Both server blocks, not just the TLS one. A check that asks for
+  # http://.../up is answered by the port-80 redirect, which writes to the
+  # same access log -- so silencing /up only where the app is proxied leaves
+  # exactly the line this is meant to remove, written by the redirect instead.
+  test 'the vhosts keep it out of the access log, on both ports' do
     %w[org.openipc org.openipc.dev].each do |vhost|
       conf = Rails.root.join("deploy/nginx/sites-available/#{vhost}").read
-      block = conf[%r{location = /up \{.*?\n    \}}m]
+      blocks = conf.scan(%r{location = /up \{.*?\n    \}}m)
 
-      assert block, "#{vhost} has no exact location for /up, so monitoring lands in the log"
-      assert_match(/access_log off;/, block, <<~MESSAGE.chomp)
-        #{vhost} logs /up. At a three-second monitoring cadence that is 28,800
-        lines a day in the one record of who asks this site for what.
+      assert_equal 2, blocks.length, <<~MESSAGE.chomp
+        #{vhost} has #{blocks.length} exact location(s) for /up and needs two:
+        one in the port-80 server, one in the TLS server. Both write to the
+        same access log, so an exception in only one of them still logs.
       MESSAGE
+
+      blocks.each_with_index do |block, i|
+        assert_match(/access_log off;/, block, <<~MESSAGE.chomp)
+          #{vhost} server block #{i + 1} logs /up. At a three-second monitoring
+          cadence that is 28,800 lines a day in the one record of who asks this
+          site for what.
+        MESSAGE
+      end
     end
   end
 end
