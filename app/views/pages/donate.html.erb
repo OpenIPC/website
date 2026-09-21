@@ -8,7 +8,10 @@
       <div class="col-lg-6">
         <h2 class="h4"><%= t('.where_title') %></h2>
         <p class="text-body-secondary"><%= t('.where_text') %></p>
-        <p class="text-body-secondary mb-0"><%= t('.accounting') %></p>
+        <p class="text-body-secondary"><%= t('.accounting') %></p>
+        <%# The count, on the page whose whole job is this ask (#198). Renders
+            nothing when there is no usable number. %>
+        <%= render 'shared/support_count', class: 'mt-4' %>
       </div>
       <div class="col-lg-6">
         <%# Russian readers get PayWall first (#201). Open Collective cannot be

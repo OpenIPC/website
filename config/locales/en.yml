@@ -255,5 +255,9 @@ en:
       uptime: Uptime
   str:
     language: Language
+  support:
+    count_html: "<strong>%{backers} people</strong> support OpenIPC every month. Help us reach %{goal}."
+    meter_label: "%{backers} of %{goal} monthly backers"
+    monthly_html: "That is %{amount} a month towards cameras, SDK access and the people who do the work."
   title:
     openwall: Open Wall

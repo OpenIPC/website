@@ -17,10 +17,11 @@
 # "installed ..." line while every file it copied is the stale one. That cost
 # a cycle on 2026-09-21, which is why this script now prints a checksum of
 # each file it installs. If a change does not appear to have taken, compare
-# them with the same four files in your checkout, in the same order:
+# them with the same five files in your checkout, in the same order:
 #
 #   sha256sum deploy/openipc-sample-rss deploy/cron.d/openipc-metrics \
-#             deploy/memory-probe.sh deploy/audience-report.sh | cut -c1-16
+#             deploy/memory-probe.sh deploy/audience-report.sh \
+#             deploy/oc-stats.sh | cut -c1-16
 #
 # rsync has to exist at both ends. It is in deploy/RESTORE.md's prerequisites
 # for that reason: a rebuilt Debian host does not always have it.
@@ -38,6 +39,7 @@ sampler=/usr/local/sbin/openipc-sample-rss
 cron=/etc/cron.d/openipc-metrics
 probe=/usr/local/sbin/openipc-memory-probe
 audience=/usr/local/sbin/openipc-audience-report
+ocstats=/usr/local/sbin/openipc-oc-stats
 reports=/srv/www/shared/reports
 
 [ "$(id -u)" -eq 0 ] || { echo "install-metrics.sh: must run as root" >&2; exit 1; }
@@ -64,12 +66,13 @@ install -m 0644 -o root -g root "$here/cron.d/openipc-metrics" "$cron"
 # a sixth of every request.
 install -m 0755 -o root -g root "$here/memory-probe.sh" "$probe"
 install -m 0755 -o root -g root "$here/audience-report.sh" "$audience"
+install -m 0755 -o root -g root "$here/oc-stats.sh" "$ocstats"
 
 # nginx serves this directory to org.openipc.dev under basic auth; it has to
 # exist before the first report is written or the location 404s all day.
 install -d -m 0755 -o root -g root "$reports"
 
-echo "installed $sampler, $cron, $probe and $audience"
+echo "installed $sampler, $cron, $probe, $audience and $ocstats"
 
 # What was actually installed, not what the run meant to install. A copy that
 # landed in the wrong place leaves this script reporting success over stale

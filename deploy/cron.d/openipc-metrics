@@ -11,3 +11,10 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # one each month under a predictable name and the old one keeps working, so a
 # failed fetch is not an outage.
 41 4 3 * *  root  /usr/local/sbin/openipc-audience-report --refresh-country-db >>/var/log/openipc-audience.log 2>&1
+
+# The backer count the donate page prints (#198). Hourly, at :23 so it does not
+# land with the RSS sample at :05. A failed fetch leaves the previous file
+# alone and the page keeps showing the last good number until it goes stale at
+# 48 hours, after which the page renders without one.
+23 * * * *  root  /usr/local/sbin/openipc-oc-stats >>/var/log/openipc-oc-stats.log 2>&1
+

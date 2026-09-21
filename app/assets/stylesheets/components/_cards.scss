@@ -111,3 +111,38 @@
     }
   }
 }
+
+// The backer meter on /donate and wherever else the count appears (#198).
+//
+// A track a lighter step of the accent rather than grey: grey reads as "empty"
+// and the thing being measured is people who already pay. Never a status
+// colour -- green would say the number is healthy and amber would say it is
+// not, and neither is a judgement this site should be making of its backers.
+.support-meter {
+  background: rgba($indigo, .12);
+  border-radius: $border-radius-sm;
+  height: .5rem;
+  overflow: hidden;
+
+  span {
+    background: $indigo;
+    border-radius: inherit;
+    display: block;
+    height: 100%;
+    // Only when the page is not being read by someone who asked for stillness.
+    @media (prefers-reduced-motion: no-preference) {
+      transition: width .4s ease-out;
+    }
+  }
+}
+
+// On the dark CTA band the light indigo track disappears into the ink. The
+// fill keeps its hue -- it is the same measurement -- and the track becomes a
+// step of the band's own surface rather than a different colour.
+[data-bs-theme="dark"] .support-meter {
+  background: rgba(255, 255, 255, .14);
+
+  span {
+    background: tint-color($indigo, 25%);
+  }
+}

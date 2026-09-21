@@ -1,0 +1,27 @@
+<%# How many people pay for OpenIPC every month (#198). Locals: none; reads
+    SupportStats. Renders nothing at all when there is no usable number, which
+    is the whole safety property: a stale or missing file leaves every page
+    that uses this exactly as it was before the count existed.
+
+    Three placements share it -- /donate above the button, the wizard's success
+    block, and the note under the home CTA band -- so the number the site
+    quotes is one number, and changing the sentence changes it everywhere. %>
+<% stats = SupportStats.current %>
+<% if stats %>
+  <div class="support-count <%= local_assigns[:class] %>">
+    <p class="mb-2"><%= t('support.count_html', backers: stats.backers, goal: SupportStats.goal) %></p>
+    <%# A meter, not a progress bar: this measures people against a target
+        somebody chose, and `progress` would announce it to a screen reader as
+        a task completing. The fill is the accent at full strength on a lighter
+        step of the same hue -- never green or amber, which would say "healthy"
+        or "warning" about a number that is neither. %>
+    <div class="support-meter" role="meter" aria-valuenow="<%= stats.backers %>"
+         aria-valuemin="0" aria-valuemax="<%= SupportStats.goal %>"
+         aria-label="<%= t('support.meter_label', backers: stats.backers, goal: SupportStats.goal) %>">
+      <span style="width: <%= stats.progress_percent %>%"></span>
+    </div>
+    <p class="small text-body-secondary mb-0 mt-2">
+      <%= t('support.monthly_html', amount: number_to_currency(stats.monthly_usd, precision: 0)) %>
+    </p>
+  </div>
+<% end %>

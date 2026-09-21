@@ -66,7 +66,10 @@ class InstallDocsTest < ActiveSupport::TestCase
     installed = body.scan(%r{^install -m \S+ -o \S+ -g \S+ "\$here/([^"]+)"}).flatten
     documented = body[/sha256sum (.*?)\| cut/m].to_s
 
-    assert_equal 4, installed.length, 'expected four installed files; the check below assumes them'
+    # Counted rather than hardcoded. The number was 4 and is 5 since #198;
+    # pinning it turns "the installer grew a file" into a failure that reads
+    # like the docs check broke, which is not what this test is about.
+    refute_empty installed, 'install-metrics.sh installs nothing; this test proves nothing'
     missing = installed.reject { |f| documented.include?("deploy/#{f}") }
 
     assert_empty missing, <<~MESSAGE.chomp

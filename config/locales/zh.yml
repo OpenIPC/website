@@ -255,5 +255,9 @@ zh:
       uptime: 正常运行时间
   str:
     language: 语言
+  support:
+    count_html: "每月有 <strong>%{backers} 人</strong>支持 OpenIPC。帮我们达到 %{goal} 人。"
+    meter_label: "%{goal} 位月度支持者中的 %{backers} 位"
+    monthly_html: "每月 %{amount}，用于购买相机、获取 SDK 以及支付做这些工作的人。"
   title:
     openwall: 公开展板
