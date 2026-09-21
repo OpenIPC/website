@@ -401,9 +401,9 @@ en:
       cta_title: Flash your first camera this weekend.
       hero_cta_low_latency: Low-latency video
       hero_cta_start: Get started
-      hero_lede: Open firmware and tools for IP cameras, FPV drones, and the devices in between. Your hardware should answer to you — not to a vendor's cloud.
+      hero_lede: 'Open firmware and tools for the eyes of the physical world: IP cameras, FPV drones, and the robots that are learning to use them. Your hardware answers to you, not to a vendor''s cloud.'
       hero_microline: 140+ repositories · dozens of SoC families · since 2019
-      hero_title: The open platform for embedded video.
+      hero_title: The open operating system for the machines that see.
       partners_title: Trusted by manufacturers, integrators, and research teams
       pillar_firmware_text_html: An open, Buildroot-based OS for IP cameras across dozens of SoC families, with the <a href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">Majestic</a> streamer at its core.
       pillar_firmware_title: Camera firmware
