@@ -230,6 +230,42 @@ class StaticSeamTest < ActiveSupport::TestCase
                     'static.sh accepts an image whose revision is not a commit, which could never be rolled back to'
   end
 
+  # deploy/static/README.md says the extracted directories are the rollback
+  # store and the registry is only the delivery path -- "so it keeps working
+  # whatever GHCR's untagged-version cleanup decides to do". The first version
+  # of do_install pulled before it looked on disk, which made that sentence
+  # false: a rollback during a registry outage, which is exactly when one is
+  # wanted, would have failed with a bundle sitting there intact.
+  #
+  # Proven on dev by running `rollback` with `docker` stubbed out to fail on
+  # any call; this keeps the ordering from drifting back.
+  test 'a bundle already on disk is installed without touching the registry' do
+    body = installer[/^do_install\(\) \{(.*?)^\}/m, 1]
+
+    assert body, 'static.sh has no do_install'
+    on_disk = body.index('intact "$root" "$ref"')
+    pull = body.index('resolve_image')
+
+    assert on_disk, 'do_install never checks whether the bundle is already here'
+    assert pull, 'do_install never resolves a reference'
+    assert on_disk < pull, <<~MESSAGE.chomp
+      do_install reaches for the registry before it looks on disk.
+
+      A rollback goes through this function, and the moment it needs a pull it
+      stops working during exactly the outage that makes someone want it.
+      Ten bundles are kept on disk to make a rollback a symlink flip; check
+      for one before resolving anything.
+    MESSAGE
+  end
+
+  # Pull one reference, address another, and it works only because `docker
+  # create` quietly pulls a second time -- until the SHA tag is gone from the
+  # registry while the branch tag is still there.
+  test 'the resolved image is tagged locally before anything extracts it' do
+    assert_match(/docker tag "\$image" "\$\{REGISTRY_IMAGE\}:\$\{revision\}"/, installer,
+                 'resolve_image pulls a tag and hands extraction a different one')
+  end
+
   # `docker create --rm` sets AutoRemove, which only fires on stop -- and this
   # container is never started, so every failed install would leak one.
   test 'the extraction container is removed however the install ends' do

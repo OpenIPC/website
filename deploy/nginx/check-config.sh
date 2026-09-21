@@ -94,7 +94,8 @@ exec_sh() { docker exec -i "$cid" sh -s; }
   printf '%s\n' "$INSTALL"
   cat <<'SETUP'
 # Two stubs standing in for the Rails containers, so what is measured is the
-# seam and not the application.
+# seam and not the application. Both answer 200 to everything, which is what
+# makes the expected statuses below deterministic.
 cat > /etc/nginx/conf.d/zz-stub-upstream.conf <<'STUB'
 server { listen 127.0.0.1:3000; location / { return 200 "RAILS-PROD\n"; } }
 server { listen 127.0.0.1:3001; location / { return 200 "RAILS-DEV\n"; } }
@@ -112,34 +113,94 @@ nginx >/dev/null 2>&1 </dev/null
 SETUP
 } | exec_sh >/dev/null 2>&1 || die "the vhosts would not start; run without --seam to see nginx -t"
 
+# Only openipc.org is probed. The dev vhost sits behind auth_basic and the
+# fixture has no usable htpasswd, so probing it would measure the password
+# rather than the seam; `deploy/static.sh verify dev` is what checks dev, on
+# the host, against the real one.
+# `rc=0; out=$(...) || rc=$?`, not a bare assignment. Under `set -e` an
+# assignment whose command substitution fails kills the script right there --
+# so the probe would exit non-zero and print not one row of the table it had
+# just produced, which is the least useful way for a check to fail.
+rc=0
 out=$(cat <<'PROBE' | exec_sh 2>&1
-say() {
-  curl -sS -o /tmp/b -D /tmp/h -k --max-time 5 --resolve "$2:443:127.0.0.1" \
-       "https://$2$1" >/dev/null 2>&1 || true
-  printf '  %-32s %-5s %-9s %s\n' "$1" \
-    "$(awk 'NR==1{print $2}' /tmp/h)" \
-    "$(grep -i '^x-served-by:' /tmp/h | tr -d '\r' | awk '{print $2}' | head -1)" \
-    "$(grep -qi 'strict-transport-security' /tmp/h && echo hsts || echo NO-HSTS)"
+fail=0
+
+# expect <path> <status> <served-by, or "-" for none> <hsts|no-hsts>
+#
+# The point of the table is that it is compared, not printed. An earlier
+# version of this script printed exactly these columns and exited 0 whatever
+# they said, which is a check that cannot fail and therefore is not one.
+expect() {
+  path=$1; want_code=$2; want_by=$3; want_hsts=$4
+
+  if ! curl -sS -o /tmp/b -D /tmp/h -k --max-time 5 \
+       --resolve "openipc.org:443:127.0.0.1" "https://openipc.org$path" >/dev/null 2>&1
+  then
+    printf '  %-32s CURL FAILED\n' "$path"
+    fail=1
+    return
+  fi
+
+  code=$(awk 'NR==1{print $2}' /tmp/h)
+  by=$(grep -i '^x-served-by:' /tmp/h | tr -d '\r' | awk '{print $2}' | head -1)
+  [ -z "$by" ] && by="-"
+  if grep -qi '^strict-transport-security' /tmp/h; then hsts=hsts; else hsts=no-hsts; fi
+
+  bad=""
+  [ "$code" = "$want_code" ] || bad="$bad code=$code(want $want_code)"
+  [ "$by" = "$want_by" ] || bad="$bad served-by=$by(want $want_by)"
+  [ "$hsts" = "$want_hsts" ] || bad="$bad $hsts(want $want_hsts)"
+
+  if [ -n "$bad" ]; then
+    printf '  %-32s %-5s %-9s %-7s MISMATCH:%s\n' "$path" "$code" "$by" "$hsts" "$bad"
+    fail=1
+  else
+    printf '  %-32s %-5s %-9s %s\n' "$path" "$code" "$by" "$hsts"
+  fi
 }
 
 printf '  %-32s %-5s %-9s %s\n' PATH CODE SERVED-BY HSTS
-for p in /_smoke/ /_smoke / /donate /ru/donate /supported-hardware/featured \
-         /open-wall /sitemap.xml /robots.txt /admin /up; do
-  say "$p" openipc.org
-done
+
+# The bundle holds one page, and both spellings of it reach the file: with
+# `try_files $uri $uri/index.html`, /_smoke finds _smoke/index.html directly
+# rather than being redirected to /_smoke/.
+expect /_smoke/                     200 static hsts
+expect /_smoke                      200 static hsts
+
+# Everything else is still Rails, which is the whole claim of this change.
+expect /                            200 rails  hsts
+expect /donate                      200 rails  hsts
+expect /ru/donate                   200 rails  hsts
+expect /supported-hardware/featured 200 rails  hsts
+expect /sitemap.xml                 200 rails  hsts
+expect /robots.txt                  200 rails  hsts
+expect /admin                       200 rails  hsts
+
+# Exact and regex locations that never reach the catch-all, so they carry no
+# X-Served-By at all -- and must still carry the header the server block sends.
+expect /open-wall                   200 -      hsts
+expect /up                          200 -      hsts
 
 echo "  --- the bundle removed entirely, which is a rollback to nothing ---"
 rm -f /srv/www/static/prod/current
-say /_smoke/ openipc.org
-say / openipc.org
+expect /_smoke/                     200 rails  hsts
+expect /                            200 rails  hsts
 
 echo "  --- error log: directory index / forbidden ---"
 # -type f, and never a bare glob. /var/log/nginx/access.log in the nginx image
 # is a symlink to /dev/stdout, and grepping that reads the docker stream and
 # never returns.
-find /var/log/nginx -maxdepth 1 -type f -name '*.error.log' -exec \
-  grep -ihE 'directory index|forbidden' {} + 2>/dev/null | head -3 || true
-PROBE
-) || die "the seam probe failed to run"
+forbidden=$(find /var/log/nginx -maxdepth 1 -type f -name '*.error.log' -exec \
+  grep -ihE 'directory index|forbidden' {} + 2>/dev/null | head -3)
+if [ -n "$forbidden" ]; then
+  echo "$forbidden"
+  echo "  a try_files element tested for a directory; see the note in the vhost"
+  fail=1
+fi
 
+exit "$fail"
+PROBE
+) || rc=$?
 printf '%s\n' "$out" | noise
+[ "$rc" -eq 0 ] || die "the seam does not route as it should"
+ok "the seam routes as it should on ${BASE}"

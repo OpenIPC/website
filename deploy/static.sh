@@ -90,9 +90,30 @@ resolve_image() {
     '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image" 2>/dev/null || true)
   [[ "$revision" =~ ^[0-9a-f]{40}$ ]] \
     || die "${image} has no org.opencontainers.image.revision; it could never be rolled back to"
+
+  # Tag what was actually pulled, so extraction addresses an image that is
+  # certainly here. Without this, `openipc-static dev <branch>` pulls the
+  # branch tag and then `docker create` is handed a SHA tag it has never seen;
+  # it works today only because docker create quietly pulls it a second time,
+  # and it stops working the moment the SHA tag is not in the registry while
+  # the branch tag is. deploy.sh resolves floating tags the same way and for
+  # the same reason.
+  docker tag "$image" "${REGISTRY_IMAGE}:${revision}" >/dev/null \
+    || die "cannot tag ${image} as ${revision:0:12} locally"
+
   # stderr: this function's stdout is the revision itself.
   [ "$ref" = "$revision" ] || info "${ref} resolves to ${revision:0:12}" >&2
   printf '%s' "$revision"
+}
+
+# A bundle already on disk and still passing today's rules. This is the check
+# that makes the extracted directories the rollback store rather than the
+# registry -- see deploy/static/README.md.
+intact() {
+  local root=$1 sha=$2 dir
+  dir="${root}/bundle-${sha}"
+  [ -d "$dir" ] || return 1
+  "$CHECK" "${dir}/site" "${dir}/MANIFEST" >/dev/null 2>&1
 }
 
 # A scratch image has no shell, so the only way to read it is to create a
@@ -220,16 +241,28 @@ do_install() {
   read -r vhost root <<<"$(target_for "$env_name")"
   ensure_tree "$root"
 
-  local sha; sha=$(resolve_image "$ref")
-  local dir="bundle-${sha}" target
-  target="$(served_tree "$sha")"
-
-  if [ -d "${root}/${dir}" ] && "$CHECK" "${root}/${dir}/site" "${root}/${dir}/MANIFEST" >/dev/null 2>&1; then
-    info "${sha:0:12} is already installed and intact"
+  # The registry is the delivery path; the disk is the rollback store. A
+  # reference that is already a commit, whose bundle is here and still passes
+  # check-bundle.sh, needs no network at all -- which is the whole point of
+  # keeping ten of them. Rolling back during a GHCR outage, or after the old
+  # image has been cleaned up there, is exactly when a rollback is wanted, and
+  # pulling first would be the one thing guaranteed to fail then.
+  local sha
+  if [[ "$ref" =~ ^[0-9a-f]{40}$ ]] && intact "$root" "$ref"; then
+    sha="$ref"
+    info "${sha:0:12} is on disk and intact; not touching the registry"
   else
-    info "extracting ${sha:0:12}"
-    extract "$sha" "${root}/${dir}"
+    sha=$(resolve_image "$ref")
+    if intact "$root" "$sha"; then
+      info "${sha:0:12} is already installed and intact"
+    else
+      info "extracting ${sha:0:12}"
+      extract "$sha" "${root}/bundle-${sha}"
+    fi
   fi
+
+  local target
+  target="$(served_tree "$sha")"
 
   local previous=""
   [ -L "${root}/current" ] && previous="$(readlink "${root}/current")"
