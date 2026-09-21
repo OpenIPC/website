@@ -31,7 +31,7 @@ zh:
         generate_button: 生成安装指南
         generate_mac: 或生成一个随机地址。
         no_bootloader_alert: OpenIPC 为 %{name} 提供固件，但没有为它提供引导加载程序。引导式安装和现成的刷机镜像都要先写入 OpenIPC 引导加载程序，因此这两者都无法为该 SoC 提供。下方的固件包是确实存在的部分。
-        not_ready_alert_html: '%{name} SoC 的安装说明尚未准备好。但是我们正在努力发布 %{name} 的 OpenIPC 固件。请继续关注并<a href="/donate">支持开源</a>。'
+        not_ready_alert_html: '%{name} SoC 的安装说明尚未准备好。但是我们正在努力发布 %{name} 的 OpenIPC 固件。请继续关注。'
         notes: 备注
         paragraph1: 请在右侧输入摄像机配置，然后点击“生成安装指南”按钮。在下一页中，您将找到二进制文件和在摄像机上安装 OpenIPC 固件时必须执行的命令。
         paragraph2: 请不要忽视这部分。您可能认为没有必要，但我们向您保证，仍然需要原始固件来恢复丢失的设置、驱动程序，并且用来进一步研究。
@@ -113,6 +113,14 @@ zh:
       licence_volume_link: 免费沟通需求
       lock_caveat_html: "<code>sf lock 0</code> 用于清除某些厂商在闪存状态寄存器中设置的块保护，它是 OpenIPC U-Boot 自带的子命令：由上游 U-Boot 编译的原厂引导程序只有 <code>sf protect</code> 而没有 <code>lock</code>，因此只会输出 <code>sf</code> 的用法说明。这并没有改动任何东西，而且大多数芯片本就没有加保护——请照原样继续输入本段其余的命令，刷写会正常完成。如果确实有 <code>sf protect</code>，可以用与下面 <code>sf erase</code> 相同的偏移和长度试一次，但多数芯片会回答不支持。无论哪种情况，失去的都是一道检查：仍处于保护状态的闪存会悄悄丢弃擦除和写入，却依然报告成功——每条命令都显示 OK、摄像机却仍然启动原厂固件，就是这种情况。该引导程序无法解除这道保护：请用外部编程器烧录芯片，或通过您已经连接的串口使用 <a href=\"https://github.com/OpenIPC/defib\">defib</a>，它的写入代理会自行解锁。"
       mac_record_caveat_html: "请把这个地址和备份一起记下来。完整镜像会擦除整片闪存，原厂 MAC 也会随之消失：首次启动时，摄像机会保留它已有的地址，其次查找仍留在闪存中的原厂地址，只有两者都找不到时才会自行生成一个——而整片擦除之后已经无处可找。如果引导程序回答 <code>ethaddr</code> 未定义，该地址就印在摄像机自己的标签上。无论哪种情况，之后都可以在摄像机上用 <code>set_mac aa:bb:cc:dd:ee:ff</code> 把它设置回去。"
+      next_business_link: "商业授权与支持"
+      next_business_text: "——如果这要做成产品。"
+      next_chat_link: "加入聊天"
+      next_chat_text: "——那里有人解答这类硬件的问题。"
+      next_donate_link: "支持这项工作"
+      next_donate_text: "——OpenIPC 免费使用，但做出来并不便宜。"
+      next_wall_link: "把它放上开放墙"
+      next_wall_text: "——在网页界面里改一个设置，相机就会来打招呼。"
       permanent_link: 当前配置的永久链接
       shell_label: "引导程序控制台"
       subtitle: 在带有 %{soc_name} SoC 和 %{flash_type} SPI 闪存芯片的摄像机上

@@ -345,6 +345,30 @@ module InstallationHelper
     end
   end
 
+  # What to do once the camera is up (#191).
+  #
+  # The success block is the closest thing this site has to a thank-you page,
+  # and it ended the visit with nothing to do. It is also the only place in the
+  # wizard where an ask reads as "what next" rather than as a toll: after the
+  # value is delivered, never before the download, and never on a page that
+  # cannot install anything.
+  #
+  # Three plain links, no box inside a box, no modal and no timer. The third
+  # one is the segment's ask and never both -- a visitor is asked to donate or
+  # asked about commercial terms, not handed a menu of ways to pay.
+  #
+  # `data-whatnext` marks the list rather than a class, because the browser
+  # hides it after the first camera of a tab session (see wizard.js) and a
+  # class that means "style me" and "find me" at once is one rename away from
+  # doing neither.
+  def what_next_list(camera)
+    items = [what_next_chat(camera), what_next_wall, what_next_support(camera)]
+
+    tag.ul(class: 'list-unstyled mb-0 mt-3', data: { whatnext: true }) do
+      safe_join(items.map { |item| tag.li(item, class: 'mb-1') })
+    end
+  end
+
   private
 
   # The business line is a question, not an offer: the visitor decides whether
@@ -366,5 +390,53 @@ module InstallationHelper
                            volume_link: t('firmware.installation.licence_volume_link') })
 
     safe_join([t("firmware.installation.licence_ask.#{segment}"), ' ', link, '.'])
+  end
+
+  # The room the visitor would actually be understood in. Locale first, as #191
+  # asks -- and the FPV room for an FPV chip, because that is where those
+  # questions get answered and the page already knows which chip it is.
+  #
+  # Chinese gets /community rather than a Telegram link: Telegram is blocked in
+  # China, and that page lists the WeChat contact alongside the rest. A link
+  # that cannot be opened is worse than one more click.
+  CHAT_ROOMS = { 'en' => 'https://t.me/+7LL2kc32SOo5YWYy',
+                 'ru' => 'https://t.me/+Sl2GPoR9G2iJAOCr',
+                 'fpv' => 'https://t.me/+BMyMoolVOpkzNWUy' }.freeze
+
+  def what_next_chat(camera)
+    href = if camera.soc.segment_name == 'fpv'
+             CHAT_ROOMS['fpv']
+           else
+             CHAT_ROOMS[I18n.locale.to_s] || locale_path('/community')
+           end
+
+    what_next_line('chat', href, 'download-step:chat')
+  end
+
+  # The site's own page, not the wiki. #191 said to link the wiki's Open Wall
+  # section; there is no such page, and /get-started already describes the wall
+  # the same way -- one setting in the web interface.
+  def what_next_wall
+    what_next_line('wall', locale_path('/open-wall'), 'download-step:wall')
+  end
+
+  # Donate or commercial terms, decided by the segment and never both (#190,
+  # #191). A `consumer` doorbell is not a lead, and an integrator flashing a
+  # hundred CCTV cameras is not someone to pass a tip jar.
+  def what_next_support(camera)
+    segment = camera.soc.segment_name
+
+    if %w[fpv cctv].include?(segment)
+      href = "#{locale_path('/business')}?#{{ ref: 'download-step', soc: camera.soc.urlname,
+                                              edition: camera.firmware_version }.to_query}"
+      what_next_line('business', href, "download-step:business:#{segment}")
+    else
+      what_next_line('donate', locale_path('/donate'), 'download-step:donate')
+    end
+  end
+
+  def what_next_line(key, href, event)
+    safe_join([link_to(t("firmware.installation.next_#{key}_link"), href, data: { event: event }),
+               ' ', t("firmware.installation.next_#{key}_text")])
   end
 end
