@@ -1,121 +1,151 @@
-<nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><%= link_to t('nav.home'), locale_path('/') %></li>
-    <li class="breadcrumb-item"><%= link_to t('nav.vendors'), cameras_vendors_path %></li>
-    <li class="breadcrumb-item"><%= link_to @vendor.name, cameras_vendor_path(id: @vendor) %></li>
-    <li class="breadcrumb-item active" aria-current="page"><%= link_to @camera.soc.model, cameras_vendor_soc_path(vendor_id: @vendor, id: @camera.soc) %></li>
-  </ol>
-</nav>
+<% content_for :fullwidth, 'yes' %>
 
-<article class="firmware">
-  <header>
-    <%= link_to image_tag("stage-#{@camera.soc.status}.svg", width: 64), '/stages-of-firmware-development',
-                title: Soc::STATUS[@camera.soc.status.to_sym], class: 'float-end' %>
-    <h2 class="mb-0"><%= t('firmware.installation.title') %> (<%= @camera.firmware_version_name %>)</h2>
-    <p class="lead fw-bold"><%= t('firmware.installation.subtitle',
-                                  soc_name: @camera.soc.full_name, flash_type: @camera.flash_type_name) %></p>
-    <%# Which mtdparts these commands assume. Worth saying out loud: it is a %>
-    <%# separate choice from the chip now, and the erase below spans the chip %>
-    <%# whichever layout goes inside it.                                     %>
-    <% unless @camera.nand? %>
-      <p class="text-muted"><%= t('firmware.installation.layout_note',
-                                  layout: @camera.partition_layout_name) %></p>
-    <% end %>
-  </header>
+<%# Rebuilt out of the site's own kit. It was the last page still wearing the
+    pre-relaunch costume: a bare h2 where every other page has a header band,
+    three saturated full-width alert boxes with headings inside them, a battery
+    icon floated into the corner, and command blocks rendered as light-grey
+    `pre` -- on the one page where the difference between prose and a line you
+    paste into a bootloader matters most.
 
-  <p class="text-end"><%= link_to t('firmware.installation.permanent_link'), @camera.permalink %></p>
-
-  <div class="alert alert-warning"><%= t('.files_download_alert') %></div>
-
-  <div class="alert alert-danger">
-    <h3 class="fw-bold"><%= t('firmware.installation.backup.title') %></h3>
-    <h5 class="mb-4 fw-bold"><%= t('firmware.installation.backup.subtitle') %></h5>
-    <div class="row">
-      <div class="col col-lg-4">
-        <p><%= t('firmware.installation.backup.info') %></p>
-      </div>
-      <div class="col col-lg-8">
-        <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
-          <div class="alert alert-warning">
-            <p class="mb-0"><%= t('.sdcard_required_0') %></p>
-          </div>
-        <% end %>
-        <% if @camera.flash_type.eql?("nand") %>
-          <%= under_development %>
-        <% else %>
-          <%= firmware_backup(@camera) %>
-          <%# Without a MAC the name carries nothing that tells one camera from
-              another, and the second backup of a batch overwrites the first --
-              OpenIPC/firmware#2405, where that cost the reporter every backup
-              but the last. Shown only when the name really is shared: with a
-              MAC in it there is nothing to warn about. %>
-          <% unless @camera.known_mac_address? %>
-            <p class="alert alert-warning"><%= t('firmware.installation.backup.shared_name') %></p>
-          <% end %>
-          <% if @camera.flash_type.eql?("nor32m") %>
-            <p class="alert alert-warning"><%= t('firmware.installation.backup_32') %></p>
-          <% end %>
+    The steps are numbered because this genuinely is a sequence, and the
+    numbering is /get-started's. What stays an alert is what is actually a
+    warning; the rest are sections. %>
+<header class="page-header py-4 py-lg-5">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-3">
+        <li class="breadcrumb-item"><%= link_to t('nav.home'), locale_path('/') %></li>
+        <li class="breadcrumb-item"><%= link_to t('nav.vendors'), cameras_vendors_path %></li>
+        <li class="breadcrumb-item"><%= link_to @vendor.name, cameras_vendor_path(id: @vendor) %></li>
+        <li class="breadcrumb-item active" aria-current="page"><%= link_to @camera.soc.model, cameras_vendor_soc_path(vendor_id: @vendor, id: @camera.soc) %></li>
+      </ol>
+    </nav>
+    <div class="d-flex justify-content-between align-items-start gap-3">
+      <div>
+        <h1 class="mb-0"><%= t('firmware.installation.title') %> (<%= @camera.firmware_version_name %>)</h1>
+        <p class="lead text-body-secondary mt-2 mb-0"><%= t('firmware.installation.subtitle',
+                                      soc_name: @camera.soc.full_name, flash_type: @camera.flash_type_name) %></p>
+        <%# Which mtdparts these commands assume. Worth saying out loud: it is a
+            separate choice from the chip now, and the erase below spans the
+            chip whichever layout goes inside it. %>
+        <% unless @camera.nand? %>
+          <p class="small text-body-secondary mt-2 mb-0"><%= t('firmware.installation.layout_note',
+                                      layout: @camera.partition_layout_name) %></p>
         <% end %>
       </div>
+      <%= link_to image_tag("stage-#{@camera.soc.status}.svg", width: 56, class: 'flex-shrink-0'),
+                  '/stages-of-firmware-development',
+                  title: Soc::STATUS[@camera.soc.status.to_sym] %>
     </div>
-    <p class="mb-0"><%= t('firmware.installation.backup.more_info_html') %></p>
+    <p class="small mb-0 mt-3"><%= link_to t('firmware.installation.permanent_link'), @camera.permalink %></p>
   </div>
+</header>
 
-  <% if @camera.soc.instructable? %>
-    <div class="alert alert-secondary">
-      <h3 class="mb-4 fw-bold"><%= t('firmware.installation.flashing_full.title') %></h3>
-      <div class="row">
-        <div class="col col-lg-4">
-          <div class="github">
-            <i class="bi bi-github float-start me-2"></i>
-            <h6 class="mb-0"><%= link_to t('firmware.installation.flashing_full.link', name: @camera.firmware_version.to_s.titleize), download_full_image_cameras_vendor_soc_path(vendor_id: @camera.soc.vendor, id: @camera.soc, fw_release: @camera.firmware_version, flash_size: @camera.flash_size, flash_type: @camera.flash_type_type, layout: @camera.layout_size) %></h6>
-            <p>for <%= @camera.soc.full_name %> with <%= @camera.flash_size %>MB <%= @camera.flash_type_type.upcase %> flash<%= ", #{@camera.layout_size}MB partitions" unless @camera.nand? || @camera.layout_size == @camera.flash_size %></p>
-            <p class="mb-0"><%= t('firmware.installation.flashing_full.info') %></p>
-            <% if @camera.nand? %>
-              <p class="mb-0 mt-2 small"><%= t('firmware.installation.flashing_full.nand_caveat') %></p>
-            <% end %>
-          </div>
+<div class="container">
+  <article class="firmware">
+
+    <div class="alert alert-warning d-flex gap-3 mt-5">
+      <i class="bi bi-info-circle-fill fs-5"></i>
+      <p class="mb-0"><%= t('.files_download_alert') %></p>
+    </div>
+
+    <%# Step 1. Kept loudest on the page, because this is the step whose
+        omission is unrecoverable -- but as a warning callout beside a normal
+        section, not as a red box swallowing the commands. %>
+    <section class="py-4">
+      <h2 class="h4 mb-1"><span class="text-data text-primary me-2">1</span><%= t('firmware.installation.backup.title') %></h2>
+      <div class="alert alert-danger d-flex gap-3 my-3">
+        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+        <p class="mb-0 fw-semibold"><%= t('firmware.installation.backup.subtitle') %></p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <p class="text-body-secondary"><%= t('firmware.installation.backup.info') %></p>
         </div>
-        <div class="col">
+        <div class="col-lg-8">
           <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
-            <div class="alert alert-warning">
-              <p class="mb-0"><%= t('.sdcard_required_1') %></p>
-            </div>
+            <div class="alert alert-warning"><p class="mb-0"><%= t('.sdcard_required_0') %></p></div>
           <% end %>
-          <%= flashing_everything(@camera) %>
-          <p><%= t('firmware.installation.flashing_full.continue') %></p>
-          <%# A full-image flash leaves the env erased, so everything the
-              bootloader needs is set at this prompt: the MAC address, which is
-              otherwise never set at all on this path, and the layout, where the
-              bootloader does not already default to it. Every one of them
-              defaults mtdparts to the 8MB layout. Asked of the camera rather
-              than of the layout name: SigmaStar and Ingenic have no set* macro
-              to run, and what they are given instead is the setenv that macro
-              would have done. %>
-          <% if @camera.post_flash_commands.any? %>
-            <p><%= t('firmware.installation.flashing_full.continue2') %></p>
-            <% if @camera.mac_address_command? %>
-              <p><%= t('firmware.installation.flashing_full.mac_note_html') %></p>
+          <% if @camera.flash_type.eql?("nand") %>
+            <%= under_development %>
+          <% else %>
+            <%= firmware_backup(@camera) %>
+            <%# Without a MAC the name carries nothing that tells one camera from
+                another, and the second backup of a batch overwrites the first --
+                OpenIPC/firmware#2405, where that cost the reporter every backup
+                but the last. Shown only when the name really is shared: with a
+                MAC in it there is nothing to warn about. %>
+            <% unless @camera.known_mac_address? %>
+              <p class="alert alert-warning"><%= t('firmware.installation.backup.shared_name') %></p>
             <% end %>
-            <% unless @camera.default_bootloader_layout? %>
-              <p><%= t('firmware.installation.flashing_footfs.info') %></p>
+            <% if @camera.flash_type.eql?("nor32m") %>
+              <p class="alert alert-warning"><%= t('firmware.installation.backup_32') %></p>
             <% end %>
-            <%= post_flash_environment(@camera) %>
           <% end %>
         </div>
       </div>
-      <%# Full width under both columns, after everything that gets pasted into
-          a bootloader and never among it (#190). In the left column it sat
-          directly under a long grey paragraph in a 200px measure and read as a
-          fourth paragraph of that blurb rather than as a note of its own. %>
-      <%= download_licence_notice(@camera) %>
-    </div>
-  <% end %>
+      <p class="text-body-secondary mb-0 mt-3"><%= t('firmware.installation.backup.more_info_html') %></p>
+    </section>
 
-  <div class="alert alert-success p-5">
-    <h3><%= t('firmware.installation.success.title', name: @camera.firmware_version_name) %></h3>
-    <p class="mb-0"><%= t('firmware.installation.success.info_html', address: @camera.camera_ip_address) %></p>
-  </div>
+    <% if @camera.soc.instructable? %>
+      <%# Step 2. %>
+      <section class="py-4 border-top">
+        <h2 class="h4 mb-3"><span class="text-data text-primary me-2">2</span><%= t('firmware.installation.flashing_full.title') %></h2>
+        <div class="row g-4">
+          <div class="col-lg-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <h3 class="h6 d-flex align-items-start gap-2 mb-2">
+                  <i class="bi bi-github fs-5 flex-shrink-0"></i>
+                  <%= link_to t('firmware.installation.flashing_full.link', name: @camera.firmware_version.to_s.titleize), download_full_image_cameras_vendor_soc_path(vendor_id: @camera.soc.vendor, id: @camera.soc, fw_release: @camera.firmware_version, flash_size: @camera.flash_size, flash_type: @camera.flash_type_type, layout: @camera.layout_size) %>
+                </h3>
+                <p class="small text-body-secondary">for <%= @camera.soc.full_name %> with <%= @camera.flash_size %>MB <%= @camera.flash_type_type.upcase %> flash<%= ", #{@camera.layout_size}MB partitions" unless @camera.nand? || @camera.layout_size == @camera.flash_size %></p>
+                <p class="small text-body-secondary mb-0"><%= t('firmware.installation.flashing_full.info') %></p>
+                <% if @camera.nand? %>
+                  <p class="small text-body-secondary mb-0 mt-2"><%= t('firmware.installation.flashing_full.nand_caveat') %></p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <% if @camera.sd_card_slot.eql?("sd") && @camera.network_interface.eql?("wifi") %>
+              <div class="alert alert-warning"><p class="mb-0"><%= t('.sdcard_required_1') %></p></div>
+            <% end %>
+            <%= flashing_everything(@camera) %>
+            <p><%= t('firmware.installation.flashing_full.continue') %></p>
+            <%# A full-image flash leaves the env erased, so everything the
+                bootloader needs is set at this prompt: the MAC address, which is
+                otherwise never set at all on this path, and the layout, where the
+                bootloader does not already default to it. Every one of them
+                defaults mtdparts to the 8MB layout. Asked of the camera rather
+                than of the layout name: SigmaStar and Ingenic have no set* macro
+                to run, and what they are given instead is the setenv that macro
+                would have done. %>
+            <% if @camera.post_flash_commands.any? %>
+              <p><%= t('firmware.installation.flashing_full.continue2') %></p>
+              <% if @camera.mac_address_command? %>
+                <p><%= t('firmware.installation.flashing_full.mac_note_html') %></p>
+              <% end %>
+              <% unless @camera.default_bootloader_layout? %>
+                <p><%= t('firmware.installation.flashing_footfs.info') %></p>
+              <% end %>
+              <%= post_flash_environment(@camera) %>
+            <% end %>
+          </div>
+        </div>
+        <%# Full width under both columns, after everything that gets pasted into
+            a bootloader and never among it (#190). %>
+        <%= download_licence_notice(@camera) %>
+      </section>
+    <% end %>
+
+    <div class="alert alert-success d-flex gap-3 my-4">
+      <i class="bi bi-check-circle-fill fs-4"></i>
+      <div>
+        <h2 class="h5 mb-1"><%= t('firmware.installation.success.title', name: @camera.firmware_version_name) %></h2>
+        <p class="mb-0"><%= t('firmware.installation.success.info_html', address: @camera.camera_ip_address) %></p>
+      </div>
+    </div>
 
   <div class="collapsing collapsed" id="collapseExperts">
     <h3><%= t('firmware.installation.flashing.alternative') %></h3>
@@ -203,3 +233,15 @@
 
   <a data-bs-toggle="collapse" href="#collapseExperts" role="button" aria-expanded="false" aria-controls="collapseExperts"><%= t('.advanced_instruction_link') %></a>
 </article>
+</div>
+
+<%# The page used to end on a bare "advanced instruction for experts" link and
+    then the footer. Every other page here closes on a band with the one thing
+    to do next, and for someone who has just been handed bootloader commands
+    that is asking a human -- which is also what /get-started's "Stuck?" does.
+    #191 will make this block a proper what-next; this is the shape it lands in. %>
+<%= render 'shared/cta_band',
+           title: t('firmware.installation.help_title'),
+           primary_label: t('firmware.installation.help_cta'),
+           primary_href: locale_path('/community'),
+           primary_event: 'wizard:help' %>

@@ -37,10 +37,38 @@ module InstallationHelper
   #
   def list_of_commands(text)
     notes = caveats_for(text).map do |key|
-      content_tag('p', t("firmware.installation.#{key}"), class: 'small text-muted')
+      content_tag('p', t("firmware.installation.#{key}"), class: 'small text-body-secondary')
     end
-    block = content_tag 'pre', text.join('<br>').html_safe, class: 'bg-light p-4'
-    notes.empty? ? block : safe_join([block, *notes])
+    notes.empty? ? terminal_block(text) : safe_join([terminal_block(text), *notes])
+  end
+
+  # The site's terminal chrome, deliberately without its copy button.
+  #
+  # shared/_terminal is the component every other page uses for a command, and
+  # these blocks were a bare `pre.bg-light` from before it existed -- light
+  # grey, no frame, indistinguishable from a quotation on the one page where
+  # the difference between prose and a command matters most.
+  #
+  # But the partial ships a copy-to-clipboard button, and here that would be a
+  # trap. Every one of these blocks opens with "Enter commands line by line! Do
+  # not copy and paste multiple lines at once!", and the reason is in
+  # guarded_flash above: a bootloader that does not understand `&&` runs the
+  # whole pasted line as one command, or runs the write without the erase.
+  # Offering one click that puts all of it on the clipboard, on a page where
+  # that bricks a camera, is not a convenience.
+  #
+  # The wrapping is inherited and wanted: .terminal wraps rather than scrolls,
+  # so a long tftpboot line stays readable to its end instead of disappearing
+  # behind a scrollbar most systems do not draw.
+  def terminal_block(text)
+    header = content_tag('div', class: 'terminal-header') do
+      safe_join([
+        content_tag('span', safe_join([tag.span, tag.span, tag.span]), class: 'dots'),
+        content_tag('span', t('firmware.installation.shell_label'), class: 'text-data')
+      ])
+    end
+    body = content_tag('pre', content_tag('code', text.join('<br>').html_safe))
+    content_tag('div', safe_join([header, body]), class: 'terminal my-3')
   end
 
   # The line that raises a question, and the note that answers it. One table
