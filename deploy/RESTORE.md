@@ -153,6 +153,15 @@ Only needed on a rebuilt host:
   admission control the site depends on under load — which is how it can look
   restored and fall over on the next flood. Run `deploy/push-nginx.sh` with no
   argument afterwards; it should report that the origin matches
+- **log rotation**, via `deploy/install-logrotate.sh` (#227). `/privacy` tells
+  visitors the server log is deleted after fourteen days, and until this
+  existed that number was Debian's stock `/etc/logrotate.d/nginx` — so a
+  rebuilt host came back keeping visitor addresses for whatever the
+  distribution shipped that year, and nothing in the repository would have
+  noticed. It also replaces the 2022 `openipc` entry that kept the retired
+  deployment's Rails logs for a year. Run it with the same rsync copy as the
+  metrics installer below; it prints what is over-age before and after, and the
+  next nightly logrotate run removes it.
 - `/run/mysqld` bind-mounted into the containers (the socket, not TCP)
 - `/srv/github-releases` — recreated by `~paul/bin/openipc-backup-releases.rb`
   within the hour; the site degrades gracefully until then
