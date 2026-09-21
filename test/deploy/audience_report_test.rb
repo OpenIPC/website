@@ -44,23 +44,66 @@ class AudienceReportTest < ActiveSupport::TestCase
   # a test host has. Everything this exercises happens after goaccess has run
   # and does not depend on what it produced, so a stub that writes nothing is
   # enough to reach it -- and keeps the test honest about which part is covered.
+  # The stub answers `-o csv` from $ENGAGED_CSV and does nothing otherwise, so
+  # the HTML report costs nothing and the country split gets a CSV the test
+  # controls. What this exercises is the parsing and the bookkeeping around it;
+  # geolocation itself is goaccess's and is not under test here.
+  GOACCESS_STUB = <<~SH
+    #!/bin/sh
+    for arg in "$@"; do
+      if [ "$arg" = csv ]; then
+        [ -n "${ENGAGED_CSV:-}" ] && cat "$ENGAGED_CSV"
+        exit 0
+      fi
+    done
+    exit 0
+  SH
+
   def stub_goaccess(dir)
     stub = File.join(dir, 'goaccess')
-    File.write(stub, "#!/bin/sh\nexit 0\n")
+    File.write(stub, GOACCESS_STUB)
     File.chmod(0o755, stub)
     dir
   end
 
+  # goaccess writes CRLF, and its empty columns are bare commas rather than
+  # empty quoted fields -- which is what welds a continent row's first two
+  # columns together and leaves the country at the end rather than in a field
+  # of its own. Both are reproduced here because both broke the parse.
+  def geo_csv(counts)
+    rows = counts.map.with_index do |(code, visitors), index|
+      %("#{index}","0","geolocation","#{visitors * 3}","10.00%","#{visitors}","10.00%",) +
+        %("1","0.10%","1","1","1",,,"#{code}"\r\n)
+    end
+    continent = %("0",,"geolocation","999","99.00%","999","99.00%",) +
+                %("1","0.10%","1","1","1",,,"AS Asia"\r\n)
+    file = Tempfile.new(['geo', '.csv'])
+    file.write(continent + rows.join)
+    file.flush
+    file
+  end
+
+  # The geoip database is pointed at the CSV itself: the script only checks
+  # that one is readable, and the stub never opens it.
+  def report_env(bin, csv, min)
+    env = { 'PATH' => "#{bin}:#{ENV.fetch('PATH')}" }
+    env['ENGAGED_MIN'] = min.to_s if min
+    return env unless csv
+
+    env['ENGAGED_CSV'] = csv.path
+    env['OPENIPC_GEOIP_DB'] = csv.path
+    env
+  end
+
   # The log is copied under a dated name because the script takes the day from
   # the filename when it can and from `date` when it cannot, and the history
-  # below has to be deterministic.
-  def run_report(log, outdir, day: '20260921')
+  # has to be deterministic.
+  def run_report(log, outdir, day: '20260921', csv: nil, min: nil)
     bin = stub_goaccess(Dir.mktmpdir)
     named = File.join(Dir.mktmpdir, "access-#{day}.log")
     FileUtils.cp(log, named)
 
-    out, status = Open3.capture2e({ 'PATH' => "#{bin}:#{ENV.fetch('PATH')}" },
-                                  'bash', SCRIPT.to_s, named, outdir)
+    out, status = Open3.capture2e(report_env(bin, csv, min), 'bash', SCRIPT.to_s, named, outdir)
     assert_predicate status, :success?, "audience-report failed:\n#{out}"
     out
   ensure
@@ -335,6 +378,59 @@ class AudienceReportTest < ActiveSupport::TestCase
         sorts before every digit, so two formats in one column would order the
         series by which branch produced it.
       MESSAGE
+    end
+  end
+
+  # Where the readers who stayed actually are (#184). The continent row is the
+  # trap: goaccess lists every country under its continent, and counting both
+  # doubles the total and puts "AS Asia" at the top of the list.
+  test 'the country split counts countries and not the continents above them' do
+    csv = geo_csv([['CN China', 9], ['RU Russia', 4], ['US United States', 2]])
+
+    Dir.mktmpdir do |outdir|
+      output = run_report(FIXTURE, outdir, day: '20260921', csv:, min: 3)
+
+      assert_match(/engaged readers by country/, output)
+      assert_match(/9\s+60%\s+CN China/, output, 'nine of fifteen is the share, not of the continent total')
+      assert_match(/4\s+27%\s+RU Russia/, output)
+      assert_no_match(/AS Asia/, output, <<~MESSAGE.chomp)
+        The continent row would be counted on top of the countries inside it.
+        Its first two columns arrive welded together because goaccess writes
+        an empty column as a bare comma, which is what the parse keys on.
+      MESSAGE
+    end
+  end
+
+  test 'the country split is written per day and compared with the run before' do
+    Dir.mktmpdir do |outdir|
+      run_report(FIXTURE, outdir, day: '20260920', min: 3,
+                                  csv: geo_csv([['CN China', 4], ['PL Poland', 3]]))
+      output = run_report(FIXTURE, outdir, day: '20260921', min: 3,
+                                           csv: geo_csv([['CN China', 9], ['RU Russia', 2]]))
+
+      assert_match(/engaged readers by country, against 2026-09-20/, output)
+      assert_match(/9\s+\d+%\s+CN China\s+\(\+5\)/, output, 'four the day before, nine now')
+      assert_match(/2\s+\d+%\s+RU Russia\s+\(\+2\)/, output,
+                   'absent from the previous day is zero that day, not an absent column')
+
+      rows = File.readlines(File.join(outdir, 'engaged-countries.tsv'), chomp: true)
+                 .map { |row| row.split("\t") }
+
+      assert_equal [%w[2026-09-20], %w[2026-09-20], %w[2026-09-21], %w[2026-09-21]],
+                   rows.map { |row| [row.first] }, 'two countries a day, both days kept'
+      assert_includes rows, ['2026-09-21', 'CN China', '9']
+    end
+  end
+
+  # Every number here is a count. An address in this output would make the
+  # nightly the individual record /privacy says the site does not keep.
+  test 'no address reaches the output' do
+    Dir.mktmpdir do |outdir|
+      output = run_report(FIXTURE, outdir, day: '20260921', min: 3,
+                                           csv: geo_csv([['CN China', 1]]))
+
+      assert_no_match(/198\.51\.100\.\d+/, output)
+      assert_no_match(/engaged-address/, output)
     end
   end
 

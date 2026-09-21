@@ -20,7 +20,9 @@
 # deploy/install-metrics.sh and run by cron; see deploy/cron.d/openipc-metrics.
 set -euo pipefail
 
-db=/var/lib/GeoIP/dbip-country-lite.mmdb
+# Overridable so the country split can be exercised without the installed
+# database -- and so a run by hand can point at a copy.
+db=${OPENIPC_GEOIP_DB:-/var/lib/GeoIP/dbip-country-lite.mmdb}
 
 # Page views outside the wall, in one day, before a reader counts as engaged
 # (#184). Five is a judgement, not a discovery: on 2026-09-21 the wall-excluded
@@ -169,7 +171,13 @@ visitors() {
             # SUBSET of readers rather than its own classification: every
             # test above has already been applied, so the impossible device
             # and the visitor with no Accept-Language cannot reach it.
-            if (site_views[v] >= engaged_min) engaged++
+            if (site_views[v] >= engaged_min) {
+              engaged++
+              # The address alone, for the country split. Everything before
+              # the FIRST pipe: the key is address|User-Agent and a User-Agent
+              # may contain a pipe, while an address never can.
+              engaged_at[substr(v, 1, index(v, "|") - 1)] = 1
+            }
           }
         }
         else if (v in wall) { wall_only++; if (views_by[v] == 1) wall_once++ }
@@ -193,6 +201,11 @@ visitors() {
       printf "readers %d\n", readers
       printf "engaged %d\n", engaged
       printf "engaged-min %d\n", engaged_min
+      # Internal, for the country split below. visitor_report never prints
+      # these and neither does anything else: an address in the output would
+      # make this report the individual record the privacy page says the site
+      # does not keep.
+      for (a in engaged_at) printf "engaged-address %s\n", a
       printf "events-only %d\n", events_only
       printf "no-language %d\n", no_language
       for (p in page) printf "page %d %s\n", page[p], p
@@ -327,6 +340,102 @@ record_history() {
   ' "$history"
 }
 
+# Where the readers who stayed actually are.
+#
+# GoAccess is the only thing on this host that can read the country database --
+# there is no mmdblookup and no python binding -- so the split is taken from
+# its CSV rather than by looking addresses up directly. In that output the
+# geolocation panel carries a continent per row with its countries as children,
+# so a country is a geolocation row that HAS a parent index; the continent rows
+# have an empty one and would otherwise be counted a second time.
+#
+# By address, not by visitor: one address carrying two engaged browsers is two
+# engaged readers above and one line here. The difference is small and the
+# alternative is geolocating in this script, which needs a database reader it
+# does not have.
+#
+# Addresses never leave $work, which the trap removes. Only counts are printed.
+engaged_countries() {
+  local counts=$1 log=$2 work=$3 outdir=$4 day=$5
+  local history="$outdir/engaged-countries.tsv" scratch
+
+  [[ $day =~ ^[0-9]{8}$ ]] && day="${day:0:4}-${day:4:2}-${day:6:2}"
+
+  awk '$1 == "engaged-address" { print $2 }' <<< "$counts" | sort -u > "$work/engaged-addresses"
+  [ -s "$work/engaged-addresses" ] || return 0
+  [ -r "$db" ] || { echo '  no country database; the engaged split needs one'; return 0; }
+
+  awk 'NR == FNR { keep[$1]; next } ($1 in keep)' "$work/engaged-addresses" "$log" > "$work/engaged.log"
+
+  goaccess "$work/engaged.log" -o csv \
+    --log-format='%h - %^ [%d:%t %^] "%r" %s %b "%R" "%u" xff="%^" cache=%^ rt=%T urt="%^" al="%^" peer=%^' \
+    --date-format='%d/%b/%Y' --time-format='%H:%M:%S' \
+    --no-progress --geoip-database "$db" 2>/dev/null > "$work/engaged.csv" || true
+
+  # Three things about this CSV, each of which cost a run to find.
+  #
+  # It is CRLF, so an anchored match needs the carriage return gone first or
+  # nothing at the end of a line is ever found.
+  #
+  # Empty columns are written as bare commas, so a split on the quote-comma
+  # does not separate them. That is what sorts the rows for free: a continent
+  # row is "0",,"geolocation",... and its first two columns arrive welded
+  # together, leaving a percentage in $3, while a country row is
+  # "0","0","geolocation",... and splits cleanly. Testing $3 therefore keeps
+  # the countries and drops the continents, which would otherwise be counted
+  # a second time on top of the countries inside them.
+  #
+  # The same welding puts the tail of a row at ,,,"CN China", so the country
+  # is not $NF either -- it is matched off the end of the line, which is where
+  # it always is. $6 is the visitor count.
+  awk -F'","' '
+    { sub(/\r$/, "") }
+    $3 != "geolocation" { next }
+    match($0, /"[A-Z][A-Z] [^"]*"$/) {
+      printf "%s\t%s\n", $6, substr($0, RSTART + 1, RLENGTH - 2)
+    }
+  ' "$work/engaged.csv" | sort -rn > "$work/engaged-by-country"
+
+  [ -s "$work/engaged-by-country" ] || return 0
+
+  mkdir -p "$outdir"
+  scratch=$(mktemp)
+  [ -f "$history" ] && awk -v d="$day" -F'\t' '$1 != d' "$history" > "$scratch"
+  awk -v d="$day" -F'\t' '{ printf "%s\t%s\t%s\n", d, $2, $1 }' "$work/engaged-by-country" >> "$scratch"
+  sort -o "$history" "$scratch"
+  rm -f "$scratch"
+
+  # The run before this date, the same rule record_history follows, so that
+  # backfilling an older day compares against what preceded IT.
+  awk -v d="$day" -F'\t' '
+    ($1 "") < (d "") { if ($1 != last_day) { last_day = $1; delete prev; } prev[$2] = $3 }
+    END { for (c in prev) printf "%s\t%s\t%s\n", "PREV", c, prev[c]; printf "%s\t%s\n", "PREVDAY", last_day }
+  ' "$history" > "$work/engaged-prev"
+
+  local prev_day
+  prev_day=$(awk -F'\t' '$1 == "PREVDAY" { print $2 }' "$work/engaged-prev")
+  if [ -n "$prev_day" ]; then
+    printf '  engaged readers by country, against %s\n' "$prev_day"
+  else
+    printf '  engaged readers by country\n'
+  fi
+
+  # A country missing from the previous day had no engaged readers that day,
+  # so absence is zero and every row can carry a change. The whole column is
+  # dropped on the first run instead, where every number would read "+itself".
+  awk -F'\t' -v have_prev="${prev_day:+1}" \
+      -v total="$(awk -F'\t' '{ s += $1 } END { print s + 0 }' "$work/engaged-by-country")" '
+    FILENAME ~ /engaged-prev$/ { if ($1 == "PREV") was[$2] = $3; next }
+    shown >= 10 { next }
+    {
+      shown++
+      share = total > 0 ? 100 * $1 / total : 0
+      if (have_prev) printf "    %6d  %3.0f%%  %-22s (%+d)\n", $1, share, $2, $1 - ($2 in was ? was[$2] : 0)
+      else           printf "    %6d  %3.0f%%  %s\n", $1, share, $2
+    }
+  ' "$work/engaged-prev" "$work/engaged-by-country"
+}
+
 if [ "${1:-}" = '--visitors' ]; then
   visitor_log=${2:-/var/log/nginx/org.openipc.access.log.1}
   [ -r "$visitor_log" ] || { echo "audience-report: cannot read ${visitor_log}" >&2; exit 1; }
@@ -459,3 +568,4 @@ printf '  report              %s\n' "$report"
 beacon_counts=$(visitors "$log")
 visitor_report "$beacon_counts"
 record_history "$beacon_counts" "$outdir" "$day"
+engaged_countries "$beacon_counts" "$log" "$work" "$outdir" "$day"
