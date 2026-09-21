@@ -11,6 +11,10 @@
           <a href="<%= locale_path('/get-started') %>" class="btn btn-primary btn-lg"><%= t('.hero_cta_start') %></a>
           <a href="<%= locale_path('/low-latency') %>" class="btn btn-outline-light btn-lg"><%= t('.hero_cta_low_latency') %></a>
         </p>
+        <%# The "$" is a shell prompt, not a stray character, and .cursor-blink
+            appends the block cursor that completes it. A native reader of the
+            Chinese copy flagged it as a typo that had slipped into the string --
+            it is in the markup instead, and deliberately in every locale. %>
         <p class="hero-microline cursor-blink mb-0">$ <%= t('.hero_microline') %> </p>
       </div>
       <div class="col-lg-6">

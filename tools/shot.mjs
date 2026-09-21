@@ -30,10 +30,22 @@ if (!targets.length) {
 // 2x: these are read on HiDPI displays, and a 1x capture of 14px body text is
 // the kind of soft that makes a reviewer squint at the design rather than at
 // the change.
+//
+// SHOT_VIEWPORT=375x812 shoots at phone width instead of the 1280x900 default.
+// Most of this site's traffic reads it on a phone, and the things that go wrong
+// there -- a headline that runs to four lines, a call to action pushed under
+// the fold -- are invisible at desktop width. Run the tool twice, once per
+// width, rather than trying to judge one from the other.
+const [vw, vh] = (process.env.SHOT_VIEWPORT || '1280x900').split('x').map(Number)
+if (!vw || !vh) {
+  console.error(`bad SHOT_VIEWPORT ${process.env.SHOT_VIEWPORT}; expected WIDTHxHEIGHT`)
+  process.exit(2)
+}
+
 const b = await chromium.launch()
 const c = await b.newContext({
   httpCredentials: { username: user, password: pass },
-  viewport: { width: 1280, height: 900 },
+  viewport: { width: vw, height: vh },
   deviceScaleFactor: 2
 })
 const p = await c.newPage()
