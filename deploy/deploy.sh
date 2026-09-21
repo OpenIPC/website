@@ -22,6 +22,7 @@ REGISTRY_IMAGE="ghcr.io/openipc/website"
 # through the /usr/local/sbin/openipc-deploy symlink.
 SELF="$(readlink -f "${BASH_SOURCE[0]}")"
 COMPOSE_FILE="$(dirname "$SELF")/docker-compose.yml"
+CHECKOUT_DIR="$(dirname "$SELF")"
 ENV_FILE="$(dirname "$COMPOSE_FILE")/.env"
 STATE_DIR="/srv/www"
 HEALTH_TIMEOUT=90
@@ -31,6 +32,17 @@ info() { printf '\033[36m==>\033[0m %s\n' "$*"; }
 ok() { printf '\033[32m ok\033[0m %s\n' "$*"; }
 
 compose() { docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"; }
+
+# The checkout this script runs out of is what it reads docker-compose.yml and
+# legacy-images from -- it is not a copy of the deploy, it is the deploy
+# (#256). Defined first and then overridden by the real implementations, so an
+# older checkout that does not carry that file still runs: the absence of a
+# warning is the state being fixed, and it must not also be a crash.
+checkout_warn() { :; }
+checkout_report() { printf 'deploy checkout:\n  (deploy/checkout-status.sh is not in this checkout)\n'; }
+# shellcheck source=checkout-status.sh
+[ -r "${CHECKOUT_DIR}/checkout-status.sh" ] && . "${CHECKOUT_DIR}/checkout-status.sh"
+
 
 # Every page this deploy serves carries the beacon tag (#181), and nginx
 # proxies /api/a/count to 127.0.0.1:8081. If nothing is listening there the
@@ -143,6 +155,7 @@ wait_healthy() {
 }
 
 do_deploy() {
+  checkout_warn "$CHECKOUT_DIR"
   local env_name=$1 sha=${2:-latest}
   read -r service port tag_key prev_file blob_root cache_root wall_root <<<"$(target_for "$env_name")"
   local prev_path="${STATE_DIR}/${prev_file}"
@@ -226,7 +239,8 @@ do_rollback() {
 }
 
 do_status() {
-  printf 'configured tags:\n'
+  checkout_report "$CHECKOUT_DIR"
+  printf '\nconfigured tags:\n'
   [ -f "$ENV_FILE" ] && sed 's/^/  /' "$ENV_FILE" || printf '  (no %s yet)\n' "$ENV_FILE"
   printf '\nrollback target (previous release):\n'
   for f in "${STATE_DIR}"/.previous-*; do

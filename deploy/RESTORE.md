@@ -121,6 +121,12 @@ ln -sfn /srv/www/deploy-src/deploy/deploy.sh /usr/local/sbin/openipc-deploy
 ln -sfn /srv/www/deploy-src/deploy/static.sh /usr/local/sbin/openipc-static
 ```
 
+This checkout is not a copy of the deploy, it **is** the deploy: `openipc-deploy`
+reads `docker-compose.yml` and `legacy-images/` from it, and the installers
+below read their payloads from it. Keep it on master —
+`openipc-deploy status` reports how far behind it is, and both commands warn
+before they run (#256).
+
 Put `master.key` and `production.env` in place, write `/srv/www/.env.prod` (see
 `deploy/docker-compose.yml` for the variables), then:
 

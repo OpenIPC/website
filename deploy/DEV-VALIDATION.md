@@ -54,9 +54,21 @@ ssh -p 35242 root@openipc.org "docker pull -q ghcr.io/openipc/website:$(git rev-
 ### 3. Deploy to dev
 
 ```bash
+git -C /srv/www/deploy-src pull --ff-only   # [host] first, every time
 openipc-deploy dev <sha>        # or: openipc-deploy dev my-branch
 openipc-static dev <sha>        # only if the change touches the static bundle
 ```
+
+**The pull is not housekeeping.** `openipc-deploy` reads `docker-compose.yml`
+and `legacy-images/` out of that checkout, the three installers read their
+payloads out of it, and both `/usr/local/sbin` commands are symlinks into it —
+so a stale checkout deploys a stale compose file and a command added to the
+repository does not exist on the host (#256). Both commands now warn when it is
+behind or dirty, and `openipc-deploy status` reports it.
+
+If the pull **refuses**, somebody hand-edited the host to keep production
+working. Land that edit rather than discarding it — and note that the refusal
+is also what keeps the checkout stale, which is what forces the next hand-edit.
 
 Two release trains, deliberately (#157). A change to page content needs only
 the second; a change to Ruby needs only the first.
@@ -344,6 +356,12 @@ is already in the local cache.
 ---
 
 ## Traps that have actually cost time here
+
+**A stale `deploy-src` is invisible and load-bearing.** On 2026-09-21 it was
+32 commits behind and dirty. Nothing said so, and `openipc-deploy` had been
+reading its compose file from it the whole time. The warning added in #256 is
+the only thing that says it now; it cannot fail a deploy, so it is easy to
+scroll past.
 
 **`ln -sfn` is not atomic, and `mv` without `-T` lies.** Relinking `current`
 with `ln -sfn` leaves a window where the path does not exist. Worse, `mv tmp

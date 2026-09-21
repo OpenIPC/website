@@ -30,6 +30,7 @@ REGISTRY_IMAGE="ghcr.io/openipc/website-static"
 # real file.
 SELF="$(readlink -f "${BASH_SOURCE[0]}")"
 CHECK="$(dirname "$SELF")/static/check-bundle.sh"
+CHECKOUT_DIR="$(dirname "$SELF")"
 STATIC_ROOT="/srv/www/static"
 # Bundles are small and the disk is not the constraint. What this number buys
 # is that a rollback never depends on the registry still holding the image --
@@ -49,6 +50,14 @@ cleanup() {
 trap cleanup EXIT
 
 die() { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+
+# The checkout this runs out of is the one openipc-deploy reads its compose
+# file from, and the one this script is a symlink into (#256). Defined first
+# and then overridden, so an older checkout without that file still runs.
+checkout_warn() { :; }
+checkout_report() { printf 'deploy checkout:\n  (deploy/checkout-status.sh is not in this checkout)\n'; }
+# shellcheck source=checkout-status.sh
+[ -r "${CHECKOUT_DIR}/checkout-status.sh" ] && . "${CHECKOUT_DIR}/checkout-status.sh"
 info() { printf '\033[36m==>\033[0m %s\n' "$*"; }
 ok() { printf '\033[32m ok\033[0m %s\n' "$*"; }
 
@@ -237,6 +246,7 @@ bundle_revision() {
 }
 
 do_install() {
+  checkout_warn "$CHECKOUT_DIR"
   local env_name=$1 ref=${2:-latest} vhost root
   read -r vhost root <<<"$(target_for "$env_name")"
   ensure_tree "$root"
@@ -323,6 +333,8 @@ prune() {
 }
 
 do_status() {
+  checkout_report "$CHECKOUT_DIR"
+  printf '\n'
   for env_name in prod dev; do
     local vhost root
     read -r vhost root <<<"$(target_for "$env_name")"
