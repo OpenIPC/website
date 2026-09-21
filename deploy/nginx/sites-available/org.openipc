@@ -319,6 +319,14 @@ server {
     # so that the 410 the app answers to a walk is also shed and cached here
     # rather than reaching Rails once per probe.
     location ~ ^/(?:(?:ru|zh)/)?snapshots/[0-9a-f]+ {
+        # Not for training. See $openipc_gallery_crawler in
+        # conf.d/openipc-crawler-block.conf; robots.txt disallows these paths
+        # for everyone and this is the same rule, answered now rather than
+        # whenever the crawler next reads that file.
+        if ($openipc_gallery_crawler) {
+            return 403;
+        }
+
         limit_conn snapshot_conc 10;
         limit_conn_status 429;
         proxy_buffer_size 128k;
@@ -392,6 +400,14 @@ server {
     # whose job has not run is never linked to this path at all, because the
     # view falls back to ActiveStorage until the column is set.
     location ^~ /wall/ {
+        # Not for training. See $openipc_gallery_crawler in
+        # conf.d/openipc-crawler-block.conf; robots.txt disallows these paths
+        # for everyone and this is the same rule, answered now rather than
+        # whenever the crawler next reads that file.
+        if ($openipc_gallery_crawler) {
+            return 403;
+        }
+
         alias /srv/www/shared/wall/;
         add_header Cache-Control "public, max-age=31536000, immutable";
 
@@ -415,6 +431,14 @@ server {
     # form on these pages needs a session. POST /snapshots (camera uploads)
     # matches this location too but proxy_cache only ever caches GET/HEAD.
     location ~ ^/(?:(?:ru|zh)/)?(open-wall|snapshots|rails/active_storage) {
+        # Not for training. See $openipc_gallery_crawler in
+        # conf.d/openipc-crawler-block.conf; robots.txt disallows these paths
+        # for everyone and this is the same rule, answered now rather than
+        # whenever the crawler next reads that file.
+        if ($openipc_gallery_crawler) {
+            return 403;
+        }
+
         limit_conn media_conc 12;
         limit_conn_status 429;
         proxy_buffer_size 128k;

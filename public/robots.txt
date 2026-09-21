@@ -1,5 +1,27 @@
 # See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
+
+# The Open Wall is the one part of this site that is not ours to give away.
+# It is other people's cameras, published for two days and then deleted, and
+# it has been out of bounds to crawlers since it existed.
+#
+# It has four spellings, and until 2026-09-21 this file knew only one of them.
+# The locale-in-path work put /ru/ and /zh/ in front of every route, and #146
+# moved the images out of ActiveStorage and onto plain files under /wall/;
+# each change quietly opened a second door into an area three lines below
+# were written to close. On 2026-09-21 GPTBot walked in through both: 12,962
+# requests and 1.5 GB in under two hours, none of them to a path named here,
+# 9,436 to the same pages behind /ru/ and /zh/ and 3,481 to /wall/. It was
+# obeying this file to the letter. The letter was wrong.
+#
+# So the rule below is written per area rather than per URL, and anything that
+# adds a prefix to the site's routes has to be checked against it. `*` is a
+# wildcard every major crawler supports; the bare forms are kept because the
+# standard's prefix match is all that older ones implement.
 User-agent: *
 Disallow: /open-wall/
-Disallow: /rails/active_storage/
 Disallow: /snapshots/
+Disallow: /wall/
+Disallow: /rails/active_storage/
+Disallow: /*/open-wall/
+Disallow: /*/snapshots/
+Disallow: /*/rails/active_storage/
