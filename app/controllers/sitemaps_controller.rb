@@ -32,6 +32,7 @@ class SitemapsController < ApplicationController
     /utilities /web-interface /supported-hardware/featured
     /supported-hardware/full-list /tools/firmware-partitions-calculation
     /tools/high-resolution-timer /tools/qr-code-generator /open-wall
+    /privacy
   ].freeze
 
   def show
