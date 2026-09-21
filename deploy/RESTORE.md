@@ -147,10 +147,12 @@ from Rails**. That is the correct degradation and it is why this is not part of
 `openipc-static` creates `/srv/www/static/{prod,dev}` itself, with the modes the
 nginx worker needs to traverse them.
 
-> **`ghcr.io/openipc/website-static` must be a public package.** A newly created
-> GHCR package is private, and the host pulls anonymously. Until it is made
-> public once, by hand, every install fails with an auth error that reads like
-> a missing image.
+> **The host pulls `ghcr.io/openipc/website-static` anonymously**, the same way
+> it pulls the application image. Verified 2026-09-21 from two machines with no
+> GHCR credentials and no `~/.docker/config.json`: the package inherited the
+> repository's public visibility when Actions first published it. If a pull
+> ever fails with `denied`, that inheritance is what to check — the symptom
+> reads like a missing image rather than a permissions problem.
 
 ### 5a. Blob tree ownership
 
