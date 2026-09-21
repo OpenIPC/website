@@ -21,6 +21,49 @@ class Soc < ApplicationRecord
     "done": 'Done and done!'
   }.freeze
 
+  # What kind of product this chip ends up in, which decides what the download
+  # step offers besides the file (#190). `unknown` is the generic case and the
+  # default for a null column, so a chip nobody has classified still gets the
+  # neutral line rather than nothing.
+  SEGMENTS = %w[fpv cctv consumer unknown].freeze
+
+  # FPV is read off OpenIPC/builder, not off the wiki page and not off this
+  # site's release index. The index publishes lite/ultimate/neo only, so
+  # "there is no FPV build" is a fact about our feed rather than about what
+  # OpenIPC builds.
+  #
+  # The builder carries roughly a hundred per-device profiles, each declaring
+  # BR2_OPENIPC_VARIANT, and FPV is three separate variants there rather than
+  # one: `fpv` (17 profiles) integrates wfb-ng, adaptive-link and vtund;
+  # `rubyfpv` (4) ships RubyFPV's own stack in their place and no wfb-ng at
+  # all; `apfpv` (6) is a third. All three carry Majestic, so the licence
+  # sentence holds for every one of them -- which is the only thing this file
+  # needs from the distinction, but getting it backwards in a comment is how a
+  # wrong fact survives into the next decision.
+  #
+  # Ten chips can be built for one of those variants. Those ten are not the
+  # list. gk7205v200, gk7205v210, gk7205v300, hi3516ev200, hi3516ev300 and
+  # hi3536dv100 are overwhelmingly CCTV parts in practice -- gk7205v200 has
+  # two FPV profiles against five others -- so asking their visitors about an
+  # FPV product would be asking the wrong question of most of them. The four
+  # below are FPV in every device profile they have, and ssc338q is the single
+  # most downloaded chip on the site.
+  #
+  # Everything else follows #190: Ingenic parts are consumer, HiSilicon and
+  # Goke are cctv, the rest unknown. Set by migration, editable in the admin.
+  SEGMENT_SEED = {
+    'fpv' => %w[ssc338q ssc30kq ssc377qe ssc378qe]
+  }.freeze
+
+  # Reading, rather than the column, because null means "nobody has said" and
+  # every caller wants the generic copy in that case -- and because a value
+  # typed into the admin that is not one of SEGMENTS must not reach a
+  # translation key and render "translation missing" into the page.
+  def segment_name
+    value = self[:segment].to_s
+    SEGMENTS.include?(value) ? value : 'unknown'
+  end
+
   # Rails hands `find` whatever came out of the URL, and `to_param` returns the
   # slug, so a slug has to resolve first; ids still work, for old links and for
   # the admin forms that pass one.

@@ -245,6 +245,14 @@ en:
       wall_live: 'Live now: cameras running OpenIPC around the world'
       wall_snapshot_alt: 'Image: live snapshot from a community camera'
     low_latency:
+      build_apfpv_name: apfpv
+      build_apfpv_text: Plain WiFi instead of broadcast. The air unit runs an access point and the ground station joins it, so anything with a WiFi adapter can receive the stream.
+      build_fpv_name: fpv
+      build_fpv_text: The OpenIPC link, and what the build guide sets up. wfb-ng broadcasts the video with no pairing and no association, and adaptive-link moves the bitrate as the signal changes.
+      build_rubyfpv_name: rubyfpv
+      build_rubyfpv_text: For a RubyFPV ground station. RubyFPV's own link and telemetry take the place of wfb-ng; the camera side is otherwise the same.
+      builds_lede: Three builds of the air unit, differing in the radio link and nothing else. Which one you want is decided by what is at the other end.
+      builds_title: Pick the build to match your ground station
       business_bridge_html: Building a product on this link? <a href="/business">Talk to us</a> — we do custom development and OEM work.
       credits_text_html: The radio link exists thanks to wfb-ng and devourer, and the ecosystem grows with friends like <a href="https://rubyfpv.com/">RubyFPV</a> and <a href="https://www.youtube.com/@mariofpv">Mario FPV</a>. Open source is a team sport.
       credits_title: Standing on open shoulders

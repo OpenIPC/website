@@ -245,6 +245,14 @@ zh:
       wall_live: '正在直播：世界各地运行 OpenIPC 的摄像机'
       wall_snapshot_alt: '图片：来自社区摄像机的实时快照'
     low_latency:
+      build_apfpv_name: apfpv
+      build_apfpv_text: 用普通 Wi-Fi 取代广播。机载端开启热点，地面站连接它，任何带 Wi-Fi 的设备都能接收画面。
+      build_fpv_name: fpv
+      build_fpv_text: OpenIPC 自己的链路，也是搭建指南所配置的方案。wfb-ng 以广播方式发送视频，无需配对、无需关联，adaptive-link 会随信号变化调整码率。
+      build_rubyfpv_name: rubyfpv
+      build_rubyfpv_text: 面向 RubyFPV 地面站。以 RubyFPV 自带的链路和遥测取代 wfb-ng，机载端其余部分不变。
+      builds_lede: 机载端共有三种固件，差别只在无线链路。选哪一种，取决于地面端用的是什么。
+      builds_title: 按地面站选择固件
       business_bridge_html: 想基于这条链路做产品？<a href="/business">和我们谈谈</a>——我们承接定制开发与 OEM 合作。
       credits_text_html: 这条无线链路得益于 wfb-ng 与 devourer，整个生态也在 <a href="https://rubyfpv.com/">RubyFPV</a>、<a href="https://www.youtube.com/@mariofpv">Mario FPV</a> 等伙伴的参与下不断成长。开源是一项团队运动。
       credits_title: 站在开放的肩膀上

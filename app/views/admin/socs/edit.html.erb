@@ -47,6 +47,7 @@
         <%= f.text_field :linux_filename %>
         <%= f.text_field :load_address %>
         <%= f.select :status, list_of_stages_for_select %>
+        <%= f.select :segment, list_of_segments_for_select %>
       </div>
       <div class="col-lg-6">
         <%= f.text_area :notes, rows: 4 %>

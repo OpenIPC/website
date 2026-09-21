@@ -281,6 +281,14 @@ ru:
       wall_live: 'Прямо сейчас: камеры на OpenIPC по всему миру'
       wall_snapshot_alt: 'Изображение: живой снимок с камеры сообщества'
     low_latency:
+      build_apfpv_name: apfpv
+      build_apfpv_text: Обычный Wi-Fi вместо широковещания. Камера поднимает точку доступа, наземная станция подключается к ней — принять поток может любое устройство с Wi-Fi.
+      build_fpv_name: fpv
+      build_fpv_text: Родной линк OpenIPC, именно его настраивает руководство по сборке. wfb-ng вещает видео без пары и без ассоциации, а adaptive-link меняет битрейт вслед за сигналом.
+      build_rubyfpv_name: rubyfpv
+      build_rubyfpv_text: Для наземной станции RubyFPV. Вместо wfb-ng стоят собственные линк и телеметрия RubyFPV; со стороны камеры всё остальное то же самое.
+      builds_lede: Три сборки для воздушной части. Отличаются радиолинком и больше ничем, а выбор определяется тем, что стоит на земле.
+      builds_title: Выберите сборку под свою наземную станцию
       business_bridge_html: Строите продукт на этом линке? <a href="/business">Напишите нам</a> — мы делаем заказную разработку и OEM.
       credits_text_html: Радиолинк существует благодаря wfb-ng и devourer, а экосистема растёт вместе с друзьями — <a href="https://rubyfpv.com/">RubyFPV</a> и <a href="https://www.youtube.com/@mariofpv">Mario FPV</a>. Open source — командный спорт.
       credits_title: Стоим на открытых плечах

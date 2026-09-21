@@ -31,6 +31,7 @@ import initHeifViewer from './src/heif-viewer'
 import initCopy from './src/copy'
 import initAnalytics from './src/analytics'
 import initEvents from './src/events'
+import initWizard from './src/wizard'
 
 // Forms are left alone, deliberately.
 //
@@ -63,6 +64,7 @@ initCopy()
 initHeifViewer()
 initAnalytics()
 initEvents()
+initWizard()
 
 // Re-run per page. These walk the DOM and attach to the elements they find, so
 // they have to run again once Turbo has swapped in new ones. turbo:load fires

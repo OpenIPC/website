@@ -74,6 +74,9 @@
             <% if @camera.nand? %>
               <p class="mb-0 mt-2 small"><%= t('firmware.installation.flashing_full.nand_caveat') %></p>
             <% end %>
+            <%# Below the link, never above it, and never between the command
+                blocks that get pasted into a bootloader (#190). %>
+            <%= download_licence_notice(@camera) %>
           </div>
         </div>
         <div class="col">

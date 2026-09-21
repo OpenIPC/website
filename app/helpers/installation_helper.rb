@@ -290,4 +290,53 @@ module InstallationHelper
     end
     list_of_commands text
   end
+
+  # What the download step says under the file, besides the file (#190).
+  #
+  # Two sentences at most, muted, below the link and never between the command
+  # blocks people paste into a bootloader. Nothing stands between the visitor
+  # and the download: no interstitial, no gate, no timer.
+  #
+  # The licence sentence is a statement about the image in front of them, so it
+  # is only made where it is true. Every `done` chip's image carries Majestic
+  # -- checked across all 95 assemblable images that map to a defconfig -- and
+  # the twelve that carry none are every one of them wip/neq/rnd/hlp/mvp, with
+  # zero downloads between them in ninety days. `status` is therefore a fact
+  # the site already holds that answers the question exactly, which beats a
+  # second hand-maintained list of chips that would drift the first time
+  # upstream changed a defconfig and nothing here would notice.
+  def download_licence_notice(camera)
+    return unless camera.soc.status.to_s == 'done'
+
+    segment = camera.soc.segment_name
+    lines = [t('firmware.installation.licence_html')]
+    lines << business_ask(camera, segment) unless segment == 'consumer'
+
+    tag.div(class: 'download-licence small text-body-secondary mt-3') do
+      safe_join(lines.map { |line| tag.p(line, class: 'mb-0') })
+    end
+  end
+
+  private
+
+  # The business line is a question, not an offer: the visitor decides whether
+  # it is about them. `?ref=` carries the attribution even when the event does
+  # not -- the beacon is an async request and a same-tab navigation can cancel
+  # it, where the landing page reading `?ref=` cannot be raced.
+  #
+  # The alternative wording ships as a data attribute rather than as a second
+  # rendered variant, and the browser chooses between them from sessionStorage:
+  # after #155 and #156 this page is a cacheable GET, so a server-side variant
+  # keyed on anything about the visitor would make it uncacheable again.
+  def business_ask(camera, segment)
+    query = { ref: 'download-step', soc: camera.soc.urlname,
+              edition: camera.firmware_version }.to_query
+    link = link_to(t('firmware.installation.licence_business_link'),
+                   "#{locale_path('/business')}?#{query}",
+                   data: { event: "download-step:business:#{segment}",
+                           volume_text: t('firmware.installation.licence_volume_ask'),
+                           volume_link: t('firmware.installation.licence_volume_link') })
+
+    safe_join([t("firmware.installation.licence_ask.#{segment}"), ' ', link, '.'])
+  end
 end

@@ -62,4 +62,10 @@ module SelectsHelper
       ["#{key.upcase}: #{value}", key]
     end.freeze
   end
+
+  # Blank is a real choice here, not a missing one: it means nobody has
+  # classified this chip, and Soc#segment_name reads it as `unknown`.
+  def list_of_segments_for_select
+    Soc::SEGMENTS.map { |s| [s.upcase, s] }.freeze
+  end
 end
