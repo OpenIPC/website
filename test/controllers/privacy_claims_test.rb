@@ -84,13 +84,13 @@ class PrivacyClaimsTest < ActiveSupport::TestCase
   # What this file cannot check, said out loud so the gap is visible rather
   # than assumed covered.
   #
-  # The page also promises the server log is deleted after fourteen days. That
-  # number is `rotate 14` in /etc/logrotate.d/nginx on the origin -- Debian's
-  # stock file, not in this repository -- so a rebuilt host takes whatever the
-  # distribution ships and nothing here would notice a change. Bringing that
-  # file in, as #144 did for the nginx configuration, is what would close it.
+  # The log retention used to be listed here and no longer is. #227 brought
+  # /etc/logrotate.d into the repository, so test/deploy/log_retention_test.rb
+  # now ties the fourteen days on the page to the file that delivers them and
+  # fails when either moves. This assertion stays as the narrower one it always
+  # was -- that the page still states a retention at all.
   #
-  # The counter's own settings are the same shape of gap: what it collects
+  # The counter's own settings remain the same shape of gap: what it collects
   # lives in its database, not in this tree.
   test 'the claims that cannot be checked here are still made' do
     LOCALES.each do |locale|

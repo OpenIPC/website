@@ -1,0 +1,40 @@
+# The retired bare-metal deployment's Rails log, under the same promise.
+#
+# /srv/www/org-openipc served openipc.org until the containerization on
+# 2026-08-23, and nothing has written to this directory since 2026-08-24. What
+# is in it is Rails production logs, and Rails writes the client address on
+# every request -- `Started GET "/" for 1.2.3.4`. Measured on 2026-09-21: 152
+# files, 90 MB, dating back to 2022-07-14, with 186,313 address-carrying lines
+# in the largest single file.
+#
+# So the claim in #227 that the nginx access log is "the one place on this host
+# that holds visitor addresses" was wrong by seven times in bytes, and this is
+# the larger half of what the privacy page is promising about. One promise,
+# both directories, the same fourteen days.
+#
+# The host file this replaces asked for `rotate 365` and reloaded apache2
+# afterwards -- a policy from 2022 that nobody has chosen since, and a daemon
+# this host does not run. The `notifempty` it also carried is why the directory
+# is frozen: these files stopped rotating on the day they stopped being
+# written, which is how a directory nobody looks at keeps four years of
+# addresses.
+#
+# `dateext` is kept because the archives already on disk are named that way
+# (production.log-20260331.gz); maxage prunes them under that scheme, which
+# was checked against a copy of the real naming before this was written.
+#
+# Installing this deletes everything in that directory older than fourteen
+# days on the next logrotate run. That is the point of it, and it is why
+# deploy/install-logrotate.sh counts and reports those files rather than
+# quietly removing them.
+/srv/www/org-openipc/log/*.log {
+	daily
+	missingok
+	rotate 14
+	maxage 14
+	dateext
+	compress
+	delaycompress
+	create 0640 root adm
+	sharedscripts
+}

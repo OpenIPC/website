@@ -1,0 +1,48 @@
+# Log rotation for nginx on the OpenIPC origin. Installed by
+# deploy/install-logrotate.sh, replacing Debian's stock file of the same name.
+#
+# /privacy tells visitors the server log is deleted after fourteen days, and
+# the access log is where this host writes their addresses. That promise is
+# this file. test/deploy/log_retention_test.rb fails the build if the number
+# here and the number on the page stop agreeing in any of the three locales,
+# which is the gap #227 exists to close: until now the sentence on the page
+# was backed by a distribution default nobody in this project had chosen.
+#
+# Two departures from the stock file, both needed for "fourteen days" to be
+# true rather than approximately true.
+#
+# `maxage 14`, because `rotate 14` counts rotations, not days. With `daily`
+# those are the same number only while the log is written every day.
+#
+# No `notifempty`, because that is what makes them different. A vhost that
+# stops receiving traffic has an empty current log, so notifempty skips its
+# rotation -- and maxage is "only checked if the logfile is to be rotated"
+# (logrotate(8)), so the frozen set never ages out either. It simply stops
+# where it stopped. On 2026-09-21 this host held 45 nginx log files older than
+# fourteen days, 12.3 MB of them, the oldest 46 days: openipc.net went quiet
+# on 20 August and its fourteen rotated logs, full of visitor addresses, have
+# been sitting there since. Rotating an empty log costs a few bytes a day and
+# is what keeps the clock running.
+#
+# The glob stays a glob. Naming each vhost's logs would put a new vhost
+# outside rotation until somebody remembered this file; the test asserts the
+# safer property instead -- that every access_log and error_log path in
+# deploy/nginx/ falls under this pattern.
+/var/log/nginx/*.log {
+	daily
+	missingok
+	rotate 14
+	maxage 14
+	compress
+	delaycompress
+	create 0640 www-data adm
+	sharedscripts
+	prerotate
+		if [ -d /etc/logrotate.d/httpd-prerotate ]; then \
+			run-parts /etc/logrotate.d/httpd-prerotate; \
+		fi \
+	endscript
+	postrotate
+		invoke-rc.d nginx rotate >/dev/null 2>&1
+	endscript
+}
