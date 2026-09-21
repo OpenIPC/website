@@ -82,10 +82,15 @@ class DownloadLicenceTest < ActionDispatch::IntegrationTest
     assert_select '.download-licence a[data-event]', 0
   end
 
-  # A column an admin types into. A value that is not a segment must not reach
-  # a translation key, or the page publishes "translation missing" as its ask.
+  # The model refuses a segment that is not one (see soc_test), so this is the
+  # row that got in around it: a direct UPDATE, a fixture, or a row written
+  # before the validation existed. It must still not reach a translation key,
+  # or the page publishes "translation missing" as its ask.
   test 'a segment nobody recognises falls back to the neutral question' do
-    wizard soc_for(model: 'PROBEJUNK', segment: 'drone-ish')
+    soc = soc_for(model: 'PROBEJUNK')
+    soc.update_column(:segment, 'drone-ish')
+
+    wizard soc
 
     assert_no_match(/translation missing/i, response.body)
     assert_select '.download-licence a[data-event=?]', 'download-step:business:unknown'

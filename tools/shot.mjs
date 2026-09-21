@@ -40,7 +40,14 @@ const p = await c.newPage()
 
 let failed = 0
 for (const target of targets) {
-  const [out, rest] = target.split('=')
+  // On the FIRST '=' only. Splitting on every one truncated the URL at the
+  // first query parameter, so `name=/wizard?camera[flash_type]=nor16m` opened
+  // the wizard with no parameters at all and photographed its defaults -- the
+  // shots looked right, and were of a different configuration than the one
+  // asked for.
+  const split = target.indexOf('=')
+  const out = target.slice(0, split)
+  const rest = target.slice(split + 1)
   const [path, raw] = rest.split('#')
   const selector = raw && decodeURIComponent(raw)
   const url = `${base}${path}`

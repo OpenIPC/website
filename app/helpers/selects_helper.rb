@@ -65,7 +65,12 @@ module SelectsHelper
 
   # Blank is a real choice here, not a missing one: it means nobody has
   # classified this chip, and Soc#segment_name reads it as `unknown`.
+  # Blank first, and it is a real choice: the column is nullable and null means
+  # nobody has classified this chip. Without it a select bound to a null value
+  # shows FPV selected, and saving an unrelated field on any of the 59
+  # unclassified chips would quietly declare it a drone part -- changing the
+  # business wording and the event name on a page nobody was editing.
   def list_of_segments_for_select
-    Soc::SEGMENTS.map { |s| [s.upcase, s] }.freeze
+    [['(unclassified)', '']] + Soc::SEGMENTS.map { |s| [s.upcase, s] }
   end
 end

@@ -138,6 +138,26 @@ class InstallationHelperTest < ActionView::TestCase
     assert_select_none_of html, 'p'
   end
 
+  # #190's contract is that the command blocks do not change. The chrome around
+  # them did -- the maintainers asked for it, because a bare grey `pre` was
+  # indistinguishable from a quotation on the page where that distinction
+  # matters most -- so this pins the part the contract is actually about: the
+  # text a reader types is exactly the lines given, in order, and the wrapper
+  # adds not one character to it.
+  test 'the chrome adds nothing to the commands themselves' do
+    lines = ['setenv ipaddr 192.168.1.10; setenv serverip 192.168.1.254',
+             'sf probe 0; sf lock 0;',
+             'tftpboot 0x42000000 openipc.bin && sf erase 0x0 0x800000',
+             'reset']
+    html = list_of_commands(lines)
+
+    # Everything inside <pre>, with <br> read back as the line break it renders.
+    body = html[%r{<pre>(.*?)</pre>}m, 1]
+    typed = body.gsub(%r{</?code[^>]*>}, '').split('<br>')
+
+    assert_equal lines, typed
+  end
+
   # The blocks say "enter commands line by line" because a bootloader without
   # `&&` runs a pasted line as one command -- see guarded_flash. A copy-all
   # button would be one click that does exactly what the first line of every

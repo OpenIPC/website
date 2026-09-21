@@ -56,12 +56,35 @@ class Soc < ApplicationRecord
   }.freeze
 
   # Reading, rather than the column, because null means "nobody has said" and
-  # every caller wants the generic copy in that case -- and because a value
-  # typed into the admin that is not one of SEGMENTS must not reach a
-  # translation key and render "translation missing" into the page.
+  # every caller wants the generic copy in that case. The validation below
+  # keeps junk out of the column; this keeps a row that predates it, or one
+  # written around the model, from reaching a translation key and rendering
+  # "translation missing" into the page.
   def segment_name
     value = self[:segment].to_s
     SEGMENTS.include?(value) ? value : 'unknown'
+  end
+
+  # Blank is the honest unclassified state and stays allowed. Anything else has
+  # to be a segment: without this the admin's own form would persist a typo,
+  # and `unknown` would then mean both "nobody has looked at this chip" and
+  # "someone typed cctvv", which are not the same thing and want different
+  # follow-up.
+  validates :segment, inclusion: { in: SEGMENTS }, allow_blank: true
+
+  # The initial classification, callable rather than buried in the migration.
+  #
+  # A migration only ever runs against a database that already has rows. A
+  # schema-loaded setup -- `db:prepare` on a fresh checkout, then `db:seed` --
+  # never executes it, so every seeded chip came out unclassified and a `done`
+  # Goke part got the generic business line instead of the CCTV one. Same code
+  # both paths now; seeds calls it after it writes the catalogue.
+  def self.classify_segments!
+    SEGMENT_SEED.each do |segment, models|
+      where(segment: nil).where('LOWER(model) IN (?)', models).update_all(segment: segment)
+    end
+    where(segment: nil, vendor: Vendor.where(name: 'Ingenic')).update_all(segment: 'consumer')
+    where(segment: nil, vendor: Vendor.where(name: %w[HiSilicon Goke])).update_all(segment: 'cctv')
   end
 
   # Rails hands `find` whatever came out of the URL, and `to_param` returns the

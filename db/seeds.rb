@@ -214,3 +214,10 @@ Sensor.create([
                 { vendor_id: 20, model: 'imx385' },
                 { vendor_id: 22, model: 'GC4653' },
               ])
+
+# Segments are a classification of the rows above rather than a column in them,
+# and this is the same call the migration makes. Without it a schema-loaded
+# setup -- `db:prepare` on a fresh checkout, then `db:seed` -- never runs the
+# migration's backfill, so every chip comes out unclassified and a `done` Goke
+# part gets the generic business line instead of the CCTV one (#190).
+Soc.classify_segments!
