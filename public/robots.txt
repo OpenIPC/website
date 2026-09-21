@@ -25,3 +25,8 @@ Disallow: /rails/active_storage/
 Disallow: /*/open-wall/
 Disallow: /*/snapshots/
 Disallow: /*/rails/active_storage/
+
+# Not a page. /_smoke/ is one file in the static bundle whose only job is to
+# prove that nginx is serving the bundle rather than falling through to Rails
+# (#157). It carries a noindex of its own; this is the belt to that's braces.
+Disallow: /_smoke/

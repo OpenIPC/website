@@ -23,8 +23,9 @@ the team password manager. The server can write backups it cannot read.
 
 **Not backed up, by decision:** the ActiveStorage blob tree (Open Wall snapshots
 purge at 2 days and cameras re-upload continuously), `/srv/github-releases`
-(refreshed hourly from GitHub), and `public/files` (rebuilt on demand by
-`Firmware#generate`).
+(refreshed hourly from GitHub), `public/files` (rebuilt on demand by
+`Firmware#generate`), and `/srv/www/static` (every bundle is reproducible from
+`ghcr.io/openipc/website-static:<sha>`, the same argument as the app image).
 
 ## Restore
 
@@ -108,6 +109,18 @@ mysql -N -e "SELECT COUNT(*) FROM socs;" openipc_production   # expect ~126
 
 ### 5. Bring the app up
 
+`openipc-deploy` and `openipc-static` are symlinks into a checkout that carries
+only `deploy/`. On a rebuilt host neither command exists yet, and nothing else
+in this file says where they come from:
+
+```bash
+git clone --depth 1 --filter=blob:none --sparse \
+  https://github.com/OpenIPC/website.git /srv/www/deploy-src
+git -C /srv/www/deploy-src sparse-checkout set deploy
+ln -sfn /srv/www/deploy-src/deploy/deploy.sh /usr/local/sbin/openipc-deploy
+ln -sfn /srv/www/deploy-src/deploy/static.sh /usr/local/sbin/openipc-static
+```
+
 Put `master.key` and `production.env` in place, write `/srv/www/.env.prod` (see
 `deploy/docker-compose.yml` for the variables), then:
 
@@ -117,6 +130,27 @@ openipc-deploy prod <sha>      # or 'latest'
 
 The image comes from `ghcr.io/openipc/website` and the repo is public, so no
 registry credentials are needed.
+
+### 5b. The static bundle
+
+```bash
+openipc-static prod <sha>      # the same sha
+openipc-static status
+```
+
+nginx serves `/srv/www/static/prod/current` and falls through to Rails for
+anything not in it, so a host with **no bundle at all serves the whole site
+from Rails**. That is the correct degradation and it is why this is not part of
+`openipc-deploy` — but it is also why its absence is silent. The signal is
+`/_smoke/` answering Rails' 404 instead of `X-Served-By: static`.
+
+`openipc-static` creates `/srv/www/static/{prod,dev}` itself, with the modes the
+nginx worker needs to traverse them.
+
+> **`ghcr.io/openipc/website-static` must be a public package.** A newly created
+> GHCR package is private, and the host pulls anonymously. Until it is made
+> public once, by hand, every install fails with an auth error that reads like
+> a missing image.
 
 ### 5a. Blob tree ownership
 
@@ -190,6 +224,7 @@ Measured on the live host:
 | Backup run (dump → verify → encrypt → upload) | 9 s |
 | Download + restore + scrub into a fresh schema | 8 s |
 | Deploy or roll back a container | 13 s |
+| Install or roll back a static bundle | see below |
 
 The realistic constraint on a full rebuild is provisioning the host, not the
 data — the data is 6.6 MB.

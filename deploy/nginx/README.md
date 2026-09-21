@@ -12,6 +12,7 @@ deploy/nginx/conf.d/openipc-microcache.conf    ->  /etc/nginx/conf.d/openipc-mic
 `deploy/push-nginx.sh` compares the two and installs this copy:
 
 ```bash
+deploy/nginx/check-config.sh    # nginx -t in a container, before any of this
 deploy/push-nginx.sh            # diff against the origin, change nothing
 deploy/push-nginx.sh --apply    # install, nginx -t, reload
 ```
@@ -232,3 +233,51 @@ Two things to know before editing it:
   restored at this hostname, visitors who followed one of these will keep going
   to GitHub until they clear their cache. Use `302` instead if a restoration is
   planned.
+
+
+## The static seam
+
+`location /` in `org.openipc` and `org.openipc.dev` no longer proxies. It has a
+document root and a `try_files` that falls through to `@rails` (#157):
+
+```nginx
+location / {
+    root /srv/www/static/prod/current;
+    try_files $uri $uri/index.html @rails;
+}
+```
+
+**A page is extracted when its `index.html` is in the bundle**, and nothing
+else — no edit here per page. `deploy/static/README.md` is the other half.
+
+Two things about it are easy to get wrong, and both are measured rather than
+argued. `deploy/nginx/check-config.sh --seam` re-runs the measurement.
+
+**Never write the element as `$uri/`.** try_files decides file-test versus
+directory-test from the literal at parse time, so only an element ending in a
+slash tests for a directory — and a directory that matches goes to the index
+module, which answers 403 when it holds no `index.html`. With an empty bundle
+the directory that always exists is the bundle root:
+
+| request | `$uri $uri/index.html` | `$uri $uri/` |
+|---|---|---|
+| `/` | rails 200 | **403** |
+| `/ru/` (no index) | rails 200 | **403** |
+
+**The `limit_conn` has to be in `location /`, not in `@rails`.** limit_conn runs
+in the preaccess phase and try_files in precontent, so the configuration that
+counts is the location the request reached first, and the handler returns early
+on every pass after it. With the cap at 1 and four concurrent slow transfers:
+
+| cap declared in | result |
+|---|---|
+| `location /` | 429 429 429 200 — binds |
+| `@rails` | 200 200 200 200 — **never runs** |
+| both | 429 429 429 200 — the `@rails` copy is dead |
+
+The middle row is the dangerous one: `@rails` alone looks right and would
+silently replace `site_conc` with the http-level per-address twenty.
+
+Both locations repeat every `add_header` they inherit — HSTS in production, and
+HSTS plus `X-Robots-Tag` on dev, where dropping the second would make staging
+indexable.

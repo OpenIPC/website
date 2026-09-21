@@ -1,0 +1,63 @@
+# Paths the static bundle must never contain (#157).
+#
+# nginx serves the bundle BEFORE it asks Rails: `try_files $uri $uri/index.html
+# @rails` in the catch-all means a file in the bundle shadows the Rails route
+# at the same address, silently and without a line in the Rails log. That is
+# the failure mode epic #142 names as the most likely way this seam goes wrong.
+#
+# A line ending in "/" is a prefix. A line containing "*" is a glob matched
+# against the whole path. Anything else is an exact path. Blank lines and
+# lines starting with "#" are ignored. Matching is done after stripping a
+# locale prefix, so /ru/snapshots/x is checked as /snapshots/x.
+#
+# This list is not maintained by hand: test/deploy/static_seam_test.rb derives
+# what must be in it from three places that know nothing about each other --
+# the router, everything in public/ (Rails serves all of it), and every nginx
+# location with an alias or a root of its own -- and fails if an entry is
+# missing or if an entry here matches none of them.
+
+# --- the application's own namespaces ---------------------------------------
+/admin
+/admin/
+/api/
+/rails/
+/up
+/sitemap.xml
+
+# --- pages that are not pages -----------------------------------------------
+/binaries
+/telemetry
+/telemetry/
+
+# --- the gallery, which #165 extracts through a JSON API, not through here ---
+/open-wall
+/open-wall/
+/snapshots
+/snapshots/
+
+# --- served from disk by nginx already, from a different tree ----------------
+/assets/
+/fonts/
+/images/
+/wall/
+/dl/
+/files/
+/protected-files/
+/.well-known/
+
+# --- files Rails serves straight out of public/ ------------------------------
+/robots.txt
+/404.html
+/422.html
+/500.html
+/favicon.ico
+/apple-touch-icon.png
+/apple-touch-icon-precomposed.png
+/og-default.png
+
+# --- the expensive leaf ------------------------------------------------------
+# /cameras/ is deliberately NOT reserved: the catalogue is exactly what #162
+# extracts. This one action is, because it costs about a second of CPU and
+# 8-32MB of disk per call and is guarded by two limit_req zones that a file
+# served from the bundle would walk straight past.
+*/download_full_image

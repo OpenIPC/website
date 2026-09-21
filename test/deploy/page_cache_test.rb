@@ -16,15 +16,18 @@ require 'test_helper'
 class PageCacheTest < ActiveSupport::TestCase
   VHOST = Rails.root.join('deploy/nginx/sites-available/org.openipc').read.freeze
 
-  # The proxying catch-all in the TLS vhost. There are two `location /` blocks
-  # -- the port-80 one only redirects to https -- and the first in the file is
-  # the wrong one, which is what the earliest version of this helper picked up.
+  # The block that proxies to Rails. It was `location /` until #157 put the
+  # static-bundle seam there; `location /` now serves files and falls through
+  # to this one, so everything below moved with the proxying and none of it
+  # changed. The scan still selects on proxy_pass rather than trusting the
+  # name, because the point of the helper is to find the block that talks to
+  # Rails whatever it is called next.
   def catch_all
-    blocks = VHOST.scan(%r{\n    location / \{\n.*?\n    \}\n}m)
+    blocks = VHOST.scan(/\n    location @rails \{\n.*?\n    \}\n/m)
     proxying = blocks.select { |b| b.include?('proxy_pass') }
 
     assert_equal 1, proxying.length,
-                 "expected exactly one proxying `location /`, found #{proxying.length} " \
+                 "expected exactly one proxying `location @rails`, found #{proxying.length} " \
                  "among #{blocks.length} blocks"
     proxying.first
   end
@@ -76,9 +79,9 @@ class PageCacheTest < ActiveSupport::TestCase
   # refuses to store one. Every other cached location strips the header
   # instead, because those pages never need a cookie -- but this location
   # serves /admin and Devise, and stripping it there means nobody can sign in.
-  test 'the catch-all does not strip Set-Cookie the way the others do' do
+  test 'the fallback does not strip Set-Cookie the way the others do' do
     assert_not_includes directives, 'proxy_hide_header Set-Cookie', <<~MESSAGE.chomp
-      `location /` hides Set-Cookie. That is correct for the gallery locations,
+      `location @rails` hides Set-Cookie. That is correct for the gallery locations,
       whose pages never set one, and it breaks signing in here: Devise's
       session cookie is set on a response this location serves.
 
@@ -96,7 +99,7 @@ class PageCacheTest < ActiveSupport::TestCase
     offered = directives.lines.grep(/proxy_cache_valid/).map(&:strip)
 
     assert_empty offered, <<~MESSAGE.chomp
-      `location /` sets a lifetime of its own:
+      `location @rails` sets a lifetime of its own:
 
         #{offered.join("\n        ")}
 
@@ -124,7 +127,7 @@ class PageCacheTest < ActiveSupport::TestCase
       it needs to be looked at, not this assertion.
     MESSAGE
     assert_includes directives, server_level.first, <<~MESSAGE.chomp
-      `location /` uses add_header and does not repeat:
+      `location @rails` uses add_header and does not repeat:
 
         #{server_level.first}
 
@@ -147,7 +150,7 @@ class PageCacheTest < ActiveSupport::TestCase
   test 'the key keeps the query string' do
     key = directives[/proxy_cache_key (.*);/, 1]
 
-    assert key, '`location /` caches without a key of its own'
+    assert key, '`location @rails` caches without a key of its own'
     assert_includes key, '$request_uri', <<~MESSAGE.chomp
       The key is `#{key}`, which drops the query string. ?locale= still
       selects a language on routes with no prefixed form, so a key that

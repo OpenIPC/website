@@ -55,7 +55,11 @@ ssh -p 35242 root@openipc.org "docker pull -q ghcr.io/openipc/website:$(git rev-
 
 ```bash
 openipc-deploy dev <sha>        # or: openipc-deploy dev my-branch
+openipc-static dev <sha>        # only if the change touches the static bundle
 ```
+
+Two release trains, deliberately (#157). A change to page content needs only
+the second; a change to Ruby needs only the first.
 
 The script pulls, runs migrations, restarts `web-dev`, waits for `/up`, and
 **automatically reverts** if the container does not become healthy in 90s.
@@ -267,6 +271,42 @@ during the scrub.
 
 ---
 
+## Validating a static bundle
+
+nginx serves a page from the bundle when its `index.html` is there and falls
+through to Rails when it is not, so the only question worth asking is which
+side answered. Every response through the catch-all says so:
+
+```bash
+say() {  # [local]
+  curl -sS -o /dev/null -D - -u "openipc:$PW" "https://dev.openipc.org$1" \
+    | tr -d '\r' | awk 'tolower($1)=="x-served-by:"{print $2}'
+}
+
+say /_smoke/     # static  -- the bundle is alive
+say /            # rails   -- and everything else still is not
+```
+
+Then the half that matters more, because it is the one that is not exercised by
+shipping forward. Install the previous bundle, install this one, and roll back:
+
+```bash
+openipc-static dev <previous-sha>
+openipc-static dev <this-sha>
+curl -s .../\_smoke/ | grep -o '[0-9a-f]\{40\}'   # this sha
+openipc-static rollback dev
+curl -s .../\_smoke/ | grep -o '[0-9a-f]\{40\}'   # the previous one
+```
+
+The smoke page names the commit it was built from precisely so that this reads
+over HTTP rather than as a `readlink` on the host.
+
+`deploy/nginx/check-config.sh --seam` does the same thing locally against a
+throwaway nginx and a stub upstream, which is the cheapest place to find out
+that a vhost change broke the seam.
+
+---
+
 ## Migrations
 
 Rollback restores the **image**, never the schema. Keep migrations additive:
@@ -288,8 +328,15 @@ migration failed.
 ```bash
 openipc-deploy rollback dev      # or: rollback prod
 openipc-deploy status            # tags, rollback target, health
+openipc-static rollback dev      # the bundle, which is a separate thing
+openipc-static status
 docker logs --tail=50 openipc-web-dev
 ```
+
+**`openipc-deploy rollback prod` does not roll back the bundle, and
+`openipc-static rollback prod` does not roll back Rails.** That separation is
+the point of the seam and it is also the way to roll back half a release
+without noticing.
 
 Rollback steps back exactly one release and takes about 13 seconds — the image
 is already in the local cache.
@@ -297,6 +344,21 @@ is already in the local cache.
 ---
 
 ## Traps that have actually cost time here
+
+**`ln -sfn` is not atomic, and `mv` without `-T` lies.** Relinking `current`
+with `ln -sfn` leaves a window where the path does not exist. Worse, `mv tmp
+current` where `current` is a symlink to a directory follows it and moves the
+new link *inside the old release*: `current` still points at the old bundle and
+the command reports success. `deploy/static.sh` uses `mv -Tf` and a test
+asserts it does.
+
+**A directory in the bundle with no `index.html` answers 403, not Rails.**
+try_files skips a directory on the `$uri` element and misses on
+`$uri/index.html`, so it falls through — but write the element as `$uri/` and a
+matching directory goes to the index module instead, which answers "directory
+index is forbidden". With an empty bundle the directory that always exists is
+the bundle root, so that form takes the front page down. `check-bundle.sh`
+refuses such a directory and a test asserts the element is not `$uri/`.
 
 **Verify the instrument before believing a bad reading.** A monitor reported the
 site down mid-upgrade; the site was fine and `curl` on the host was mid-replacement.
