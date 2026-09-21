@@ -43,11 +43,25 @@
       </div>
     </div>
 
-    <div class="alert alert-light border d-flex gap-3">
+    <div class="alert alert-light border d-flex gap-3 mb-0">
       <i class="bi bi-briefcase fs-4"></i>
       <p class="mb-0"><%= t('.business_band_html') %></p>
     </div>
-
-    <p class="text-center text-body-secondary mt-5"><%= t('.thanks') %></p>
   </article>
 </div>
+
+<%# The thanks used to be a centred line floating in whitespace above the
+    footer, which is how every other page on this site does not end. It is the
+    band's note now, and the band carries the same channel the card above
+    offers -- PayWall for Russian readers, Open Collective otherwise -- because
+    a closing band that sends someone to a payment page their card is refused
+    by is worse than no band.
+
+    No amount and no tier here: the channel is the ask, the number is the
+    visitor's. %>
+<%= render 'shared/cta_band',
+           title: t('.hero_title'),
+           primary_label: I18n.locale == :ru ? t('.paywall_button') : t('.oc_button'),
+           primary_href: I18n.locale == :ru ? 'https://paywall.pw/openipc' : 'https://opencollective.com/openipc/contribute/backer-14335/checkout',
+           primary_event: I18n.locale == :ru ? 'paywall-checkout:band' : 'oc-checkout:band',
+           note_html: t('.thanks') %>
