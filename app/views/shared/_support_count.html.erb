@@ -8,6 +8,16 @@
     quotes is one number, and changing the sentence changes it everywhere. %>
 <% stats = SupportStats.current %>
 <% if stats %>
+  <%# A page carrying this number must not be served after the number has gone
+      stale (#198). The view is the only place that knows the partial actually
+      rendered; declare_freshness is an after_action and owns the headers, so
+      it reads this and caps what it would otherwise have declared.
+
+      Through request.env, not an instance variable: a view gets a copy of the
+      controller's ivars, so assigning one here sets it on the view object and
+      the controller never sees it -- which is how the first version of this
+      left the wizard declaring 25 hours for a number good for two. %>
+  <% note_support_count_window stats.freshness_window %>
   <div class="support-count <%= local_assigns[:class] %>">
     <p class="mb-2"><%= t('support.count_html', backers: stats.backers, goal: SupportStats.goal) %></p>
     <%# A meter, not a progress bar: this measures people against a target

@@ -23,6 +23,19 @@ class SupportStats
   # existed, which is the safe direction and the one #198 asks for.
   STALE_AFTER = 48.hours
 
+  # How long a rendered page may still be handed out after it was built.
+  #
+  # The pages carrying this count are publicly cacheable, and the wizard's
+  # policy is the longest on the site: one hour fresh plus a day of
+  # stale-while-revalidate. So a response built a minute before the data went
+  # stale could be served for another twenty-five hours, and the 48-hour rule
+  # would be a rule about rendering rather than about what a reader sees.
+  #
+  # `freshness_window` caps the response instead, so no page outlives the
+  # number printed on it. Taken from the longest FRESHNESS entry rather than
+  # guessed, and asserted against it in the test.
+  MAX_PAGE_LIFETIME = 3600 + 86_400
+
   attr_reader :backers, :monthly_cents, :fetched_at
 
   class << self
@@ -34,6 +47,16 @@ class SupportStats
       @current = nil if @stamp != stamp
       @stamp = stamp
       @current ||= parse(JSON.parse(File.read(path)))
+
+      # Checked again on the way out, not only when the file changed.
+      #
+      # A file whose mtime never moves is exactly what a stopped cron looks
+      # like -- and what a fetch that keeps failing looks like too, since
+      # oc-stats.sh deliberately leaves the previous file alone. Without this,
+      # the first request after a deploy memoises a fresh object and a
+      # long-lived Puma worker keeps handing out that same count days later,
+      # which is the one thing the 48-hour rule exists to prevent.
+      @current if @current&.usable?
     rescue JSON::ParserError, SystemCallError, IOError => e
       # A file being renamed over can vanish between the exist? and the read.
       Rails.logger.warn "support stats: #{path} is unreadable: #{e.class}: #{e.message}"
@@ -53,7 +76,13 @@ class SupportStats
 
     private
 
+    # `null`, `[1,2]` and `42` are all valid JSON and none of them are this
+    # file. Indexing them raises NoMethodError or TypeError, which is not among
+    # the rescues above, so a one-character corruption became a 500 on the
+    # donate page, the home page and the wizard at once.
     def parse(raw)
+      return nil unless raw.is_a?(Hash)
+
       stats = new(backers: raw['backers'], monthly_cents: raw['monthly_cents'],
                   fetched_at: raw['fetched_at'])
       stats.usable? ? stats : nil
@@ -67,7 +96,18 @@ class SupportStats
   def initialize(backers:, monthly_cents:, fetched_at:)
     @backers = backers
     @monthly_cents = monthly_cents
-    @fetched_at = fetched_at.present? ? (Time.zone.parse(fetched_at.to_s) rescue nil) : nil
+    @fetched_at = parse_time(fetched_at)
+  end
+
+  # A timestamp the cron did not write -- a hand-edited file, a shape change
+  # upstream -- is a missing timestamp, not an exception. usable? then refuses
+  # it like any other.
+  def parse_time(value)
+    return nil if value.blank?
+
+    Time.zone.parse(value.to_s)
+  rescue ArgumentError, TypeError
+    nil
   end
 
   # Every way the file can be wrong, in one place. A count of zero is refused
@@ -79,8 +119,12 @@ class SupportStats
       fetched_at.present? && fetched_at > STALE_AFTER.ago
   end
 
+  # Rounded, not floored. The view prints whole dollars, and integer division
+  # turned 199 cents into $1 -- understating what people give, on the page
+  # thanking them for it. Every amount Open Collective reports today is whole
+  # dollars, which is exactly why this would have gone unnoticed.
   def monthly_usd
-    monthly_cents / 100
+    (monthly_cents / 100.0).round
   end
 
   # Capped at the goal so the meter cannot overflow its track. Passing the goal
@@ -91,5 +135,17 @@ class SupportStats
     return 100 if backers >= self.class.goal
 
     ((backers.to_f / self.class.goal) * 100).round
+  end
+
+  # What the page may claim for itself, given how old this number already is.
+  #
+  # nil when the remaining life is long enough that the controller's own policy
+  # cannot outlive the data, which is the ordinary case: the cron runs hourly,
+  # so this is normally 47 hours of headroom against 25 of exposure.
+  def freshness_window
+    remaining = (fetched_at + STALE_AFTER) - Time.current
+    return nil if remaining > MAX_PAGE_LIFETIME
+
+    [remaining.to_i, 0].max
   end
 end
