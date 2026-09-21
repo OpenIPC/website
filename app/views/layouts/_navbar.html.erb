@@ -3,8 +3,9 @@
   For Business | Community.
 
   Low Latency is a dropdown of three: the FPV video link, the teleoperation
-  page and the edge-AI page. A seventh top-level entry would not fit, which
-  is the reason for the dropdown rather than siblings.
+  page and the edge-AI page. For Business is a dropdown of six: the overview
+  and the five services pages. A seventh top-level entry would not fit, which
+  is the reason for the dropdowns rather than siblings.
 
   expand-xl rather than expand-lg. Six top-level entries plus the language
   switcher do not fit an lg breakpoint without wrapping, and a wrapped navbar
@@ -50,7 +51,17 @@
             <%= dropdown_link t('nav.wiki'), 'https://github.com/OpenIPC/wiki' %>
           </ul>
         </li>
-        <%= navbar_link t('nav.business'), '/business' %>
+        <li class="nav-item dropdown">
+          <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownBusiness" role="button"><%= t('nav.business') %></a>
+          <ul aria-labelledby="dropdownBusiness" class="dropdown-menu dropdown-menu-xl-end">
+            <%= dropdown_link t('nav.business_overview'), '/business' %>
+            <%= dropdown_link t('nav.video_encoding'), '/video-encoding' %>
+            <%= dropdown_link t('nav.isp_sensors'), '/isp-sensors' %>
+            <%= dropdown_link t('nav.reverse_engineering'), '/reverse-engineering' %>
+            <%= dropdown_link t('nav.turnkey_hardware'), '/turnkey-hardware' %>
+            <%= dropdown_link t('nav.digital_twins'), '/digital-twins' %>
+          </ul>
+        </li>
         <li class="nav-item dropdown">
           <a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownCommunity" role="button"><%= t('nav.community') %></a>
           <ul aria-labelledby="dropdownCommunity" class="dropdown-menu dropdown-menu-xl-end">

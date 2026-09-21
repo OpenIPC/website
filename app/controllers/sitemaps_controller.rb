@@ -28,6 +28,7 @@ class SitemapsController < ApplicationController
   # a vendor whose page 500s cannot reach a search engine through this file.
   PAGES = %w[
     / /get-started /low-latency /teleoperation /edge-ai /ecosystem /business /community /donate
+    /video-encoding /isp-sensors /reverse-engineering /turnkey-hardware /digital-twins
     /majestic-endpoints /green_life /our-team /stages-of-firmware-development
     /utilities /web-interface /supported-hardware/featured
     /supported-hardware/full-list /tools/firmware-partitions-calculation

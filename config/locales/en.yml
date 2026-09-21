@@ -162,6 +162,12 @@ en:
     adding_vendor: Adding vendor
     admin: Admin
     business: For Business
+    business_overview: 'Overview'
+    video_encoding: 'Video encoding'
+    isp_sensors: 'ISP & sensors'
+    reverse_engineering: 'Reverse engineering'
+    turnkey_hardware: 'Turnkey hardware'
+    digital_twins: 'Digital twins'
     clone_soc: Clone this SoC
     community: Community
     community_chat: Chat & Support

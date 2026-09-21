@@ -19,6 +19,21 @@
       <% end %>
     </div>
 
+    <%# What we do: the seven services pages, laid out like the "why" items
+        below rather than as cards -- seven cards in a three-column grid leave
+        one alone in its row. %>
+    <h2 class="h4 mt-6 mb-4"><%= t('.services_title') %></h2>
+    <div class="row g-4 mb-6">
+      <% %w[video_encoding isp_sensors reverse_engineering turnkey_hardware digital_twins teleoperation edge_ai].each do |key| %>
+        <div class="col-md-6">
+          <h3 class="h6 mb-1">
+            <a href="<%= locale_path('/' + key.tr('_', '-')) %>" class="link-body-emphasis text-decoration-none"><%= t(".service_#{key}_title") %> <i class="bi bi-arrow-right small"></i></a>
+          </h3>
+          <p class="text-body-secondary small mb-0"><%= t(".service_#{key}_text") %></p>
+        </div>
+      <% end %>
+    </div>
+
     <%# Why %>
     <h2 class="h4 mb-4"><%= t('.why_title') %></h2>
     <div class="row g-4 mb-6">
