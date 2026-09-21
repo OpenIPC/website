@@ -90,13 +90,18 @@ ru:
       # is theirs to choose, and a default or a recommendation is a nudge this
       # project does not want to make even where the platform would allow it.
       #
+      # data-event on the fallback link is not decoration (#183). Without it
+      # this click would be counted as ext:opencollective.com while the same
+      # click on the English page is oc-checkout, and the two donation routes
+      # #201 exists to compare would be measured in different units.
+      #
       # THESE AMOUNTS DESCRIBE THE PAYWALL PROJECT PAGE. They must match what
       # https://paywall.pw/openipc actually offers, and nothing in this
       # repository can enforce that -- the tiers live in the service, not here.
       paywall_title: PayWall — для карт, выпущенных в России
       paywall_text_html: Open Collective не принимает карты, выпущенные в России, — PayWall принимает. 100, 250 или 500 ₽ в месяц. Разовый платёж — это оплата за один месяц и отмена подписки сразу после неё.
       paywall_button: Поддержать через PayWall
-      paywall_oc_fallback_html: Если у вас карта, выпущенная за пределами России, удобнее будет <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout">Open Collective</a> — там же публичная отчётность.
+      paywall_oc_fallback_html: Если у вас карта, выпущенная за пределами России, удобнее будет <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout" data-event="oc-checkout">Open Collective</a> — там же публичная отчётность.
       business_band_html: Если ваша компания зависит от OpenIPC, самый устойчивый способ поддержать проект — коммерческое сотрудничество. <a href="/business">Что мы предлагаем</a>.
       accounting: Мы стремимся к открытому и прозрачному учету и благодарны за любую поддержку, которую вы можете оказать нашим усилиям по продвижению OpenIPC и нашей миссии по обеспечению устойчивого будущего.
       hero_lede: OpenIPC бесплатен в использовании и дорог в производстве. Пожертвования покупают камеры для новых платформ, оплачивают работу мейнтейнеров и держат свет включённым.
