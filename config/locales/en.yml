@@ -256,6 +256,8 @@ en:
   str:
     language: Language
   support:
+    count_met_html: "<strong>%{backers} people</strong> support OpenIPC every month. Thank you — that is the goal met."
+    split_html: "%{oc} through Open Collective and %{paywall} through PayWall."
     count_html: "<strong>%{backers} people</strong> support OpenIPC every month. Help us reach %{goal}."
     meter_label: "%{backers} of %{goal} monthly backers"
     monthly_html: "That is %{amount} a month towards cameras, SDK access and the people who do the work."

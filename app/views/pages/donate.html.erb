@@ -31,6 +31,26 @@
             <div class="card-body">
               <h2 class="h5"><i class="bi bi-credit-card-fill text-primary me-2"></i><%= t('.paywall_title') %></h2>
               <p class="text-body-secondary"><%= t('.paywall_text_html') %></p>
+              <%# Monthly and one-off as two options, not one with a footnote
+                  (#201). Half of all PayWall subscriptions in five years were
+                  used as a single charge and then cancelled, so the one-off is
+                  how half these people actually gave -- reading it as a caveat
+                  on the subscription understates a route that already works.
+
+                  Both are the same button because PayWall has no per-tier and
+                  no one-off URL: /openipc/R-100 renders nothing and ?tier= is
+                  ignored, checked again today. The difference is what you do
+                  after paying, so that is what the copy says. %>
+              <ul class="list-unstyled mb-3">
+                <li class="d-flex gap-2 mb-1">
+                  <i class="bi bi-arrow-repeat flex-shrink-0 mt-1 text-body-tertiary"></i>
+                  <span class="text-body-secondary"><%= t('.paywall_monthly_html') %></span>
+                </li>
+                <li class="d-flex gap-2">
+                  <i class="bi bi-1-circle flex-shrink-0 mt-1 text-body-tertiary"></i>
+                  <span class="text-body-secondary"><%= t('.paywall_once_html') %></span>
+                </li>
+              </ul>
               <a href="https://paywall.pw/openipc" class="btn btn-primary" data-event="paywall-checkout"><%= t('.paywall_button') %></a>
             </div>
           </div>

@@ -1,0 +1,22 @@
+{
+  "_comment": [
+    "PayWall's live subscriber count, by hand (#201).",
+    "",
+    "PayWall has no API known to us, so this comes from the maintainers' export",
+    "and is updated by pull request -- which is the same discipline as the goal",
+    "in config/support_goal.yml, and for the same reason: a number the site",
+    "prints about its own supporters should have a diff and a reviewer.",
+    "",
+    "deploy/oc-stats.sh merges it into support-stats.json each hour, so the",
+    "public endpoint carries the total rather than only the Open Collective",
+    "half. `as_of` is checked like any other timestamp: once it is older than",
+    "PAYWALL_STALE_DAYS the PayWall half is dropped and the site shows the Open",
+    "Collective count alone, rather than quietly counting people who may have",
+    "left.",
+    "",
+    "Figures below are from the export quoted in #201. They want refreshing."
+  ],
+  "subscribers": 23,
+  "monthly_rub": 2205,
+  "as_of": "2026-09-01"
+}

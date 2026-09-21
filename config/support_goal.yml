@@ -8,7 +8,20 @@
 # Raise it by pull request when it is met, so the maintainers decide what to
 # ask for next.
 #
-# 50 against 27 today. Monthly backers went 43 -> 38 -> 28 across 2024-2026,
-# so this is a recovery target rather than a new high: it was nearly met in
-# 2024 and the collective lost it to ordinary churn with no acquisition.
-monthly_backers: 50
+# Raised from 50 to 75 when #201 added PayWall to the count.
+#
+# 50 was set against Open Collective alone, which is 27 people. PayWall's 23
+# active subscribers bring the total to exactly 50 -- so on the day the two
+# channels were first counted together the goal was met, by arithmetic rather
+# than by anyone joining. A goal that is met the moment you finish defining it
+# is not a goal, and "help us reach 50" printed beside a 50 is a mistake the
+# reader sees before we do.
+#
+# 75 is a judgement and the maintainers should overrule it if they disagree.
+# The reasoning: 50 is where the two channels stand today, Open Collective was
+# at 43 on its own in 2024, and PayWall has shed 517 subscriptions since 2021
+# while adding 205, 143, 98, 72 and then 6 a year. So the combined figure has
+# been well above 75 in the recent past, and asking for half as many again as
+# today is a recovery target rather than a new high -- which is what a goal on
+# this page has to be to mean anything.
+monthly_backers: 75

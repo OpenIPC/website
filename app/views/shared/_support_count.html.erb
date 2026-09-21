@@ -19,7 +19,12 @@
       left the wizard declaring 25 hours for a number good for two. %>
   <% note_support_count_window stats.freshness_window %>
   <div class="support-count <%= local_assigns[:class] %>">
-    <p class="mb-2"><%= t('support.count_html', backers: stats.backers, goal: SupportStats.goal) %></p>
+    <p class="mb-2">
+      <%# Two sentences, because "help us reach 50" printed beside a 50 is not
+          an ask, it is a mistake the reader notices before we do (#201). %>
+      <%= stats.goal_met? ? t('support.count_met_html', backers: stats.backers)
+                          : t('support.count_html', backers: stats.backers, goal: SupportStats.goal) %>
+    </p>
     <%# A meter, not a progress bar: this measures people against a target
         somebody chose, and `progress` would announce it to a screen reader as
         a task completing. The fill is the accent at full strength on a lighter
@@ -32,6 +37,12 @@
     </div>
     <p class="small text-body-secondary mb-0 mt-2">
       <%= t('support.monthly_html', amount: number_to_currency(stats.monthly_usd, precision: 0)) %>
+      <%# Where the people are, when both channels are counted (#201). Said
+          plainly rather than folded into one figure: a Russian reader seeing
+          only a dollar total would reasonably conclude PayWall is not counted. %>
+      <% if stats.paywall_subscribers %>
+        <%= t('support.split_html', oc: stats.backers_oc, paywall: stats.paywall_subscribers) %>
+      <% end %>
     </p>
   </div>
 <% end %>

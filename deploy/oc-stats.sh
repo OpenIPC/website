@@ -22,6 +22,13 @@ SLUG=${OC_SLUG:-openipc}
 OUT=${OC_STATS_OUT:-/srv/www/shared/support-stats.json}
 TIMEOUT=${OC_TIMEOUT:-20}
 
+# PayWall's half of the count (#201), by hand from the maintainers' export
+# because PayWall has no API known to us. Absent or stale, the file below is
+# ignored and the total is Open Collective alone -- never people who may have
+# left months ago.
+PAYWALL=${PAYWALL_SUPPORT:-/srv/www/shared/paywall-support.json}
+PAYWALL_STALE_DAYS=${PAYWALL_STALE_DAYS:-100}
+
 # Both numbers, from one request, because they disagree and the difference is
 # not an error: `orders.totalCount` counts active monthly orders (27 today) and
 # `activeRecurringContributions.monthlyCount` counts the ones making up the
@@ -73,8 +80,33 @@ out = {
     "monthly_counted": counted,
     "fetched_at": datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat(),
 }
+
+# PayWall, if the hand-maintained file is there and recent enough. Its absence
+# is the ordinary case on a host that has not been given one, and must leave
+# the Open Collective numbers exactly as they were.
+path, max_days = sys.argv[1], int(sys.argv[2])
+try:
+    pw = json.load(open(path))
+    as_of = datetime.date.fromisoformat(pw["as_of"])
+    subs = pw["subscribers"]
+    age = (datetime.date.today() - as_of).days
+    if not isinstance(subs, int) or subs < 0:
+        raise ValueError("subscribers=%r" % (subs,))
+    if age > max_days:
+        print("oc-stats: paywall figures are %d days old, dropping them" % age, file=sys.stderr)
+    else:
+        out["paywall_subscribers"] = subs
+        out["paywall_monthly_rub"] = pw.get("monthly_rub")
+        out["paywall_as_of"] = pw["as_of"]
+        out["backers"] = backers + subs
+        out["backers_oc"] = backers
+except FileNotFoundError:
+    pass
+except (ValueError, KeyError, TypeError, json.JSONDecodeError) as e:
+    print("oc-stats: paywall file unusable (%s), dropping it" % e, file=sys.stderr)
+
 print(json.dumps(out, indent=2))
-' > "$OUT.tmp.$$"
+' "$PAYWALL" "$PAYWALL_STALE_DAYS" > "$OUT.tmp.$$"
 
 chmod 0644 "$OUT.tmp.$$"
 mv -f "$OUT.tmp.$$" "$OUT"

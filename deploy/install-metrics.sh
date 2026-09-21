@@ -21,7 +21,7 @@
 #
 #   sha256sum deploy/openipc-sample-rss deploy/cron.d/openipc-metrics \
 #             deploy/memory-probe.sh deploy/audience-report.sh \
-#             deploy/oc-stats.sh | cut -c1-16
+#             deploy/oc-stats.sh deploy/paywall-support.json | cut -c1-16
 #
 # rsync has to exist at both ends. It is in deploy/RESTORE.md's prerequisites
 # for that reason: a rebuilt Debian host does not always have it.
@@ -40,6 +40,7 @@ cron=/etc/cron.d/openipc-metrics
 probe=/usr/local/sbin/openipc-memory-probe
 audience=/usr/local/sbin/openipc-audience-report
 ocstats=/usr/local/sbin/openipc-oc-stats
+paywall=/srv/www/shared/paywall-support.json
 reports=/srv/www/shared/reports
 
 [ "$(id -u)" -eq 0 ] || { echo "install-metrics.sh: must run as root" >&2; exit 1; }
@@ -68,17 +69,22 @@ install -m 0755 -o root -g root "$here/memory-probe.sh" "$probe"
 install -m 0755 -o root -g root "$here/audience-report.sh" "$audience"
 install -m 0755 -o root -g root "$here/oc-stats.sh" "$ocstats"
 
+# PayWall's half of the backer count (#201). The repository is the source of
+# truth: the figures come from a maintainer export and change by pull request,
+# so installing over the host's copy is the point, not a hazard.
+install -m 0644 -o root -g root "$here/paywall-support.json" "$paywall"
+
 # nginx serves this directory to org.openipc.dev under basic auth; it has to
 # exist before the first report is written or the location 404s all day.
 install -d -m 0755 -o root -g root "$reports"
 
-echo "installed $sampler, $cron, $probe, $audience and $ocstats"
+echo "installed $sampler, $cron, $probe, $audience, $ocstats and $paywall"
 
 # What was actually installed, not what the run meant to install. A copy that
 # landed in the wrong place leaves this script reporting success over stale
 # files, and the only way to see it is to compare these against
 # `sha256sum deploy/*.sh cron.d/openipc-metrics` in the checkout.
-for f in "$sampler" "$cron" "$probe" "$audience" "$ocstats"; do
+for f in "$sampler" "$cron" "$probe" "$audience" "$ocstats" "$paywall"; do
   printf '  %s  %s\n' "$(sha256sum "$f" | cut -c1-16)" "$f"
 done
 

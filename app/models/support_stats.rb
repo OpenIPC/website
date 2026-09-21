@@ -36,7 +36,7 @@ class SupportStats
   # guessed, and asserted against it in the test.
   MAX_PAGE_LIFETIME = 3600 + 86_400
 
-  attr_reader :backers, :monthly_cents, :fetched_at
+  attr_reader :backers, :backers_oc, :paywall_subscribers, :monthly_cents, :fetched_at
 
   class << self
     def current
@@ -84,7 +84,8 @@ class SupportStats
       return nil unless raw.is_a?(Hash)
 
       stats = new(backers: raw['backers'], monthly_cents: raw['monthly_cents'],
-                  fetched_at: raw['fetched_at'])
+                  fetched_at: raw['fetched_at'],
+                  backers_oc: raw['backers_oc'], paywall_subscribers: raw['paywall_subscribers'])
       stats.usable? ? stats : nil
     end
 
@@ -93,8 +94,13 @@ class SupportStats
     end
   end
 
-  def initialize(backers:, monthly_cents:, fetched_at:)
+  def initialize(backers:, monthly_cents:, fetched_at:, backers_oc: nil, paywall_subscribers: nil)
     @backers = backers
+    # Both halves, when the PayWall figures were usable (#201). nil is the
+    # ordinary case on a host without that file, and the total is then Open
+    # Collective alone -- which is what `backers` has always meant.
+    @backers_oc = backers_oc
+    @paywall_subscribers = paywall_subscribers
     @monthly_cents = monthly_cents
     @fetched_at = parse_time(fetched_at)
   end
@@ -125,6 +131,15 @@ class SupportStats
   # dollars, which is exactly why this would have gone unnoticed.
   def monthly_usd
     (monthly_cents / 100.0).round
+  end
+
+  # Whether the ask has been answered. Worth asking rather than assuming it
+  # never happens: adding PayWall's subscribers to Open Collective's (#201)
+  # takes the count from 27 to 50, which is the goal exactly -- so "help us
+  # reach 50" beside a 50 arrived the same day the two channels were counted
+  # together, and the page needs something else to say.
+  def goal_met?
+    backers >= self.class.goal
   end
 
   # Capped at the goal so the meter cannot overflow its track. Passing the goal
