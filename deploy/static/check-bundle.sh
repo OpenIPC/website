@@ -20,8 +20,11 @@ set -euo pipefail
 
 SELF="$(readlink -f "${BASH_SOURCE[0]}")"
 HERE="$(dirname "$SELF")"
-SITE="${1:?usage: check-bundle.sh <served-tree> [manifest]}"
-MANIFEST="${2:-$(dirname "$SITE")/MANIFEST}"
+# Absolute, because rule 8 verifies the manifest from inside the tree and a
+# relative path does not survive the cd. `check-bundle.sh dist/site` is how CI
+# calls it, so this is not a hypothetical.
+SITE="$(readlink -f "${1:?usage: check-bundle.sh <served-tree> [manifest]}")"
+MANIFEST="$(readlink -f "${2:-$(dirname "$SITE")/MANIFEST}")"
 RESERVED="$HERE/reserved-paths"
 
 # Kept in step with Multilang::IN_PATH by test/deploy/static_seam_test.rb. A

@@ -74,6 +74,7 @@ ensure_tree() {
       || die "${d} is mode $(stat -c '%a' "$d") — the nginx worker cannot enter it"
     d="$(dirname "$d")"
   done
+  return 0
 }
 
 # Pull, and refuse an image whose revision cannot be read. Same rule and the
@@ -140,6 +141,13 @@ extract() {
   CLEANUP_STAGING=""
 }
 
+# `current` points at the SERVED TREE, which is one level inside the extracted
+# bundle: an extracted bundle is `bundle-<sha>/{site,MANIFEST,REVISION}` and
+# nginx's root is this symlink, so linking it at `bundle-<sha>` would serve the
+# manifest at /MANIFEST and put every page one directory too deep.
+served_tree() { printf 'bundle-%s/site' "$1"; }
+sha_of() { basename "$(dirname "$1")" | sed 's/^bundle-//'; }
+
 # rename(2), which is atomic. `ln -sfn` is unlink() then symlink(), so there is
 # a window where `current` does not exist; and `mv` WITHOUT -T onto a symlink
 # pointing at a directory follows it and moves the new link INSIDE the old
@@ -148,11 +156,11 @@ extract() {
 # The target is relative, so the rename stays inside one directory and cannot
 # fall back to copy-then-unlink, and the tree survives being moved.
 flip() {
-  local root=$1 dir=$2 tmp
+  local root=$1 target=$2 tmp
   tmp="${root}/.current.$$"
-  ln -sfn "$dir" "$tmp"
+  ln -sfn "$target" "$tmp"
   mv -Tf "$tmp" "${root}/current"
-  [ "$(readlink "${root}/current")" = "$dir" ] \
+  [ "$(readlink "${root}/current")" = "$target" ] \
     || die "the flip did not take: current points at $(readlink "${root}/current")"
 }
 
@@ -203,7 +211,8 @@ do_verify() {
 
 bundle_revision() {
   local cur="$1/current"
-  [ -L "$cur" ] && basename "$(readlink "$cur")" | sed 's/^site-//' | cut -c1-12 || echo "none"
+  [ -L "$cur" ] || { echo none; return; }
+  sha_of "$(readlink "$cur")" | cut -c1-12
 }
 
 do_install() {
@@ -212,7 +221,8 @@ do_install() {
   ensure_tree "$root"
 
   local sha; sha=$(resolve_image "$ref")
-  local dir="site-${sha}"
+  local dir="bundle-${sha}" target
+  target="$(served_tree "$sha")"
 
   if [ -d "${root}/${dir}" ] && "$CHECK" "${root}/${dir}/site" "${root}/${dir}/MANIFEST" >/dev/null 2>&1; then
     info "${sha:0:12} is already installed and intact"
@@ -223,9 +233,9 @@ do_install() {
 
   local previous=""
   [ -L "${root}/current" ] && previous="$(readlink "${root}/current")"
-  [ "$previous" = "$dir" ] && { ok "${env_name} is already on ${sha:0:12}"; return 0; }
+  [ "$previous" = "$target" ] && { ok "${env_name} is already on ${sha:0:12}"; return 0; }
 
-  flip "$root" "$dir"
+  flip "$root" "$target"
 
   if ! do_verify "$env_name"; then
     printf '\033[31m==>\033[0m verification failed; putting %s back\n' "${previous:-nothing}" >&2
@@ -234,8 +244,8 @@ do_install() {
   fi
 
   # Only when it differs, so a rollback is never a no-op that claims success.
-  [ -n "$previous" ] && [ "$previous" != "$dir" ] \
-    && printf '%s\n' "${previous#site-}" > "${root}/.previous"
+  [ -n "$previous" ] && [ "$previous" != "$target" ] \
+    && printf '%s\n' "$(sha_of "$previous")" > "${root}/.previous"
   prune "$root"
   ok "${env_name} serves ${sha:0:12}"
 }
@@ -246,8 +256,8 @@ do_rollback() {
   [ -f "${root}/.previous" ] || die "no previous bundle recorded for ${env_name} — pass a SHA explicitly"
   local previous; previous=$(cat "${root}/.previous")
   local current=""; [ -L "${root}/current" ] && current="$(readlink "${root}/current")"
-  [ "site-${previous}" != "$current" ] || die "${env_name} is already on ${previous:0:12}"
-  info "rolling ${env_name} back from ${current#site-} to ${previous:0:12}"
+  [ "$(served_tree "$previous")" != "$current" ] || die "${env_name} is already on ${previous:0:12}"
+  info "rolling ${env_name} back from $(sha_of "${current:-/x/y}") to ${previous:0:12}"
   do_install "$env_name" "$previous"
 }
 
@@ -257,8 +267,8 @@ do_rollback() {
 # response still holds an open descriptor on the previous release.
 prune() {
   local root=$1 current="" previous="" n=0
-  [ -L "${root}/current" ] && current="$(readlink "${root}/current")"
-  [ -f "${root}/.previous" ] && previous="site-$(cat "${root}/.previous")"
+  [ -L "${root}/current" ] && current="bundle-$(sha_of "$(readlink "${root}/current")")"
+  [ -f "${root}/.previous" ] && previous="bundle-$(cat "${root}/.previous")"
 
   while IFS= read -r dir; do
     local base; base="$(basename "$dir")"
@@ -268,8 +278,15 @@ prune() {
     [ "$n" -le "$KEEP" ] && continue
     [ -n "$(find "$dir" -maxdepth 0 -mmin -10)" ] && continue
     rm -rf "$dir"
-  done < <(find "$root" -maxdepth 1 -type d -name 'site-*' -printf '%T@ %p\n' \
+  done < <(find "$root" -maxdepth 1 -type d -name 'bundle-*' -printf '%T@ %p\n' \
              | sort -rn | cut -d' ' -f2-)
+
+  # A while loop returns the status of the last command in its body, and the
+  # last thing the body does is often a `[ ... ] && continue` that evaluated
+  # false. Under `set -e` a function returning 1 kills its caller -- so an
+  # install whose prune found nothing to delete would abort after a successful
+  # flip, with the bundle serving and the script reporting failure.
+  return 0
 }
 
 do_status() {
@@ -284,10 +301,11 @@ do_status() {
     fi
     printf '  rollback to  %s\n' "$([ -f "${root}/.previous" ] && cat "${root}/.previous" || echo '(none recorded)')"
     printf '  installed    %s bundle(s), %s\n' \
-      "$(find "$root" -maxdepth 1 -type d -name 'site-*' 2>/dev/null | wc -l | tr -d ' ')" \
+      "$(find "$root" -maxdepth 1 -type d -name 'bundle-*' 2>/dev/null | wc -l | tr -d ' ')" \
       "$(du -sh "$root" 2>/dev/null | cut -f1 || echo '-')"
     printf '  /_smoke/     %s\n' "$(probe "$vhost" /_smoke/ || true)"
   done
+  return 0
 }
 
 case "${1:-}" in

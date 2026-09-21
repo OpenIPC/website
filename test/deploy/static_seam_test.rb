@@ -209,6 +209,20 @@ class StaticSeamTest < ActiveSupport::TestCase
                     'the flip links `current` directly, so the path briefly does not exist')
   end
 
+  # An extracted bundle is `bundle-<sha>/{site,MANIFEST,REVISION}` and nginx's
+  # root is the `current` symlink, so linking it one level too high serves the
+  # manifest at /MANIFEST and puts every page one directory too deep. Both ends
+  # have to agree on which directory is the served tree, and they are written
+  # in two different languages in two different files.
+  test 'the directory nginx serves is the one the build produces' do
+    build = Rails.root.join('deploy/static/build.sh').read
+
+    assert_includes build, 'mkdir -p "$OUT/site"',
+                    'build.sh does not put the served tree in site/'
+    assert_match(%r{served_tree\(\) \{ printf 'bundle-%s/site'}, installer,
+                 'static.sh links `current` somewhere other than the built site/ directory')
+  end
+
   # The same rule deploy.sh applies to the application image, at the other end
   # of the same pipe.
   test 'a bundle that could not be rolled back to is refused' do

@@ -108,6 +108,18 @@ class StaticBundleTest < ActiveSupport::TestCase
     end
   end
 
+  # CI calls this as `check-bundle.sh dist/site` from the repository root, and
+  # rule 8 verifies the manifest from inside the tree -- so a relative path that
+  # is not resolved first stops existing the moment it cds. Every test above
+  # passes an absolute tmpdir and none of them would have caught it; CI did.
+  test 'the checks work on a relative path' do
+    with_bundle do |dist|
+      out, status = Open3.capture2e('bash', CHECK.to_s, 'dist/site', chdir: File.dirname(dist))
+
+      assert status.success?, "check-bundle.sh refused a good bundle given a relative path:\n#{out}"
+    end
+  end
+
   # Each of these is a way the bundle does damage rather than nothing, and each
   # is checked by planting it rather than by reading the script.
   {
