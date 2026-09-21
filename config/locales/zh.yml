@@ -76,6 +76,8 @@ zh:
         subtitle: 备份您的原始固件，请不要跳过这个步骤！
         title: 保存原始固件
       backup_32: 请注意！在备份 32M 闪存之前，请确保摄像机至少有 64M 的 RAM。
+      chat_blocked_html: 'Telegram 并非在所有网络下都能打开。如果你的网络打不开，请到<a href="https://github.com/OpenIPC/" data-event="download-step:chat:issues">问题追踪器</a>提问。'
+      chat_lede: '就这块硬件提问：'
       compound_caveat_html: "如果引导程序输出的是命令用法说明而不是执行该行，说明它不支持 <code>&amp;&amp;</code>。该行由三条命令组成——传输、擦除，然后写入——三条都必须输入，每一条都要等前一条报告成功之后再执行，这正是 <code>&amp;&amp;</code> 替你做的检查。切勿省略擦除：向未擦除的闪存写入会存进乱码，却仍然报告成功，而位于 0 偏移处的那段乱码就是引导程序。"
       flashing:
         alternative: 或者，通过其烧录部分 OpenIPC 固件
@@ -115,8 +117,6 @@ zh:
       mac_record_caveat_html: "请把这个地址和备份一起记下来。完整镜像会擦除整片闪存，原厂 MAC 也会随之消失：首次启动时，摄像机会保留它已有的地址，其次查找仍留在闪存中的原厂地址，只有两者都找不到时才会自行生成一个——而整片擦除之后已经无处可找。如果引导程序回答 <code>ethaddr</code> 未定义，该地址就印在摄像机自己的标签上。无论哪种情况，之后都可以在摄像机上用 <code>set_mac aa:bb:cc:dd:ee:ff</code> 把它设置回去。"
       next_business_link: "商业授权与支持"
       next_business_text: "——如果这要做成产品。"
-      next_chat_link: "加入聊天"
-      next_chat_text: "——那里有人解答这类硬件的问题。"
       next_donate_link: "支持这项工作"
       next_donate_text: "——OpenIPC 免费使用，但做出来并不便宜。"
       next_wall_link: "把它放上开放墙"

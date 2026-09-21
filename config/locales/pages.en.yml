@@ -58,12 +58,16 @@ en:
       contribute_title: Ways to contribute
       cta_join: Join the main Telegram group
       help1_html: Check the <a href="https://github.com/OpenIPC/wiki">wiki</a> first — installation, FPV, and troubleshooting guides live there.
-      help2: Search the chat history; most first questions have been answered before.
+      help2: 'Search the chat history or the wiki; most first questions have been answered before.'
       help3: When you ask, include the SoC, the sensor, what you tried, and a boot log if you have one. Good questions get fast answers.
       help_title: Getting help that gets answered
       hero_lede: OpenIPC is built in the open by people who answer questions every day. Come say hi.
       hero_title: Talk to us.
       money_band_html: Prefer to help with money? <a href="/donate">Fund the work</a>.
+      reach_issues_html: '<a href="https://github.com/OpenIPC/" data-event="reach-issues">The issue tracker</a> — ask in the repository your question is about. A good report is a contribution.'
+      reach_lede: 'Telegram does not open from every network — that is true in some countries, on some company Wi-Fi, and on a lot of hotel connections. These work from anywhere:'
+      reach_title: 'If Telegram does not open'
+      reach_wiki_html: '<a href="https://github.com/OpenIPC/wiki" data-event="reach-wiki">The wiki</a> — installation, FPV and troubleshooting guides.'
       title: Community
     privacy:
       # Written against the running configuration rather than the plan (#182):

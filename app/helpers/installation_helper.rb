@@ -392,25 +392,61 @@ module InstallationHelper
     safe_join([t("firmware.installation.licence_ask.#{segment}"), ' ', link, '.'])
   end
 
-  # The room the visitor would actually be understood in. Locale first, as #191
-  # asks -- and the FPV room for an FPV chip, because that is where those
-  # questions get answered and the page already knows which chip it is.
+  # Every visitor is offered every door; the locale and the chip decide the
+  # order, and nothing else.
   #
-  # Chinese gets /community rather than a Telegram link: Telegram is blocked in
-  # China, and that page lists the WeChat contact alongside the rest. A link
-  # that cannot be opened is worse than one more click.
-  CHAT_ROOMS = { 'en' => 'https://t.me/+7LL2kc32SOo5YWYy',
-                 'ru' => 'https://t.me/+Sl2GPoR9G2iJAOCr',
-                 'fpv' => 'https://t.me/+BMyMoolVOpkzNWUy' }.freeze
+  # The rule this replaces routed on the locale: `en` and `ru` got a t.me link,
+  # and `zh` got /community instead, on the stated belief that the page "lists
+  # the WeChat contact alongside the rest". It does not, and the project holds
+  # no WeChat account and plans none, so that redirect swapped one link a
+  # Chinese visitor cannot open for a page of four more. Telegram is now
+  # blocked in Russia too, which put `ru` in the same position.
+  #
+  # Routing on the locale was the deeper mistake, and it is why nothing here
+  # filters. A language setting is not a network: ordering on it is honest,
+  # because it is a hint about what to print first, but removing a door on it
+  # strands the Chinese-reading FPV builder whose VPN works. So the FPV chip
+  # still wins the ordering, and it can no longer suppress the warning.
+  #
+  # Order is least-specific first, so each `move_first` below overrides the one
+  # before it.
+  CHAT_ROOMS = [['en', 'https://t.me/+7LL2kc32SOo5YWYy', 'OpenIPC Users (EN)'],
+                ['fpv', 'https://t.me/+BMyMoolVOpkzNWUy', 'OpenIPC & FPV'],
+                ['ru', 'https://t.me/+Sl2GPoR9G2iJAOCr', 'OpenIPC Users (RU)']].freeze
 
   def what_next_chat(camera)
-    href = if camera.soc.segment_name == 'fpv'
-             CHAT_ROOMS['fpv']
-           else
-             CHAT_ROOMS[I18n.locale.to_s] || locale_path('/community')
-           end
+    doors = tag.ul(safe_join(chat_door_items(camera)),
+                   class: 'list-unstyled ms-3 mb-0 mt-1 small', data: { chat: true })
+    wayout = tag.p(t('firmware.installation.chat_blocked_html'),
+                   class: 'ms-3 mb-0 mt-1 small text-body-secondary', data: { chat_fallback: true })
 
-    what_next_line('chat', href, 'download-step:chat')
+    # Chinese has no room of its own, so the way out is the first useful thing
+    # on the list rather than a footnote under three links in other languages.
+    body = I18n.locale == :zh ? [wayout, doors] : [doors, wayout]
+
+    safe_join([t('firmware.installation.chat_lede'), *body])
+  end
+
+  # One description per room, read from the community page's own copy rather
+  # than duplicated here -- these are the same four sentences, already
+  # translated, and two copies would drift.
+  def chat_door_items(camera)
+    chat_doors(camera).map do |key, url, label|
+      tag.li(safe_join([link_to(label, url, data: { event: "download-step:chat:#{key}" }),
+                        ' — ', t("pages.community.channel_#{key}")]))
+    end
+  end
+
+  def chat_doors(camera)
+    doors = move_first(CHAT_ROOMS, I18n.locale.to_s)
+    doors = move_first(doors, 'fpv') if camera.soc.segment_name == 'fpv'
+    doors
+  end
+
+  # A locale with no room of its own (zh) matches nothing and leaves the order
+  # alone, which is the wanted behaviour rather than a special case.
+  def move_first(doors, key)
+    doors.partition { |door| door.first == key }.flatten(1)
   end
 
   # The site's own page, not the wiki. #191 said to link the wiki's Open Wall

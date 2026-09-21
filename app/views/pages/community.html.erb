@@ -21,9 +21,34 @@
         </div>
       <% end %>
     </div>
-    <div class="alert alert-warning d-flex gap-3 mb-6">
+    <div class="alert alert-warning d-flex gap-3 mb-4">
       <i class="bi bi-robot fs-4"></i>
       <p class="mb-0"><%= t('.bot_warning') %></p>
+    </div>
+
+    <%# Every room above is a Telegram room, and Telegram does not open from
+        every network -- it is blocked in China and in Russia, which between
+        them are the site's second and fourth countries by visitor. The wizard
+        used to route Chinese visitors here on the belief that this page listed
+        a WeChat contact; it never did, and the project holds no WeChat account,
+        so the honest answer is to name the two doors that do work from
+        everywhere rather than to invent a third.
+
+        Said about networks rather than countries on purpose: it is equally
+        true of company Wi-Fi and hotel connections, and the site does not know
+        where anyone is sitting. No VPN or proxy advice here -- promoting
+        circumvention is itself restricted in Russia, and the project has a
+        Russian mirror to protect. %>
+    <div class="alert alert-secondary d-flex gap-3 mb-6" id="reach">
+      <i class="bi bi-life-preserver fs-4"></i>
+      <div>
+        <h3 class="h6"><%= t('.reach_title') %></h3>
+        <p class="small"><%= t('.reach_lede') %></p>
+        <ul class="small mb-0">
+          <li><%= t('.reach_issues_html') %></li>
+          <li><%= t('.reach_wiki_html') %></li>
+        </ul>
+      </div>
     </div>
 
     <%# Help etiquette %>

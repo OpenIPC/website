@@ -76,6 +76,8 @@ en:
         subtitle: Back up your stock firmware, don't skip this part of the installation process!
         title: Save the original firmware
       backup_32: ATTENTION! Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM.
+      chat_blocked_html: 'Telegram does not open from every network. If it does not open from yours, <a href="https://github.com/OpenIPC/" data-event="download-step:chat:issues">ask in the issue tracker</a>.'
+      chat_lede: 'Ask about this hardware:'
       compound_caveat_html: "If your bootloader answers with a usage message instead of running the line, it does not understand <code>&amp;&amp;</code>. The line is three commands — the transfer, the erase, then the write — and all three have to be entered, each one only after the part before it has reported success; that check is what <code>&amp;&amp;</code> does for you. Do not leave the erase out: a write onto flash that was not erased first stores garbage, reports success anyway, and at offset 0 that garbage is the bootloader."
       flashing:
         alternative: Alternatively, flash OpenIPC Firmware by its parts
@@ -115,8 +117,6 @@ en:
       mac_record_caveat_html: "Write this address down with the backup. The full image erases the whole chip and the factory MAC goes with it: on first boot the camera keeps an address it already has, then looks for the factory one still in flash, and mints itself a new one only when it finds neither — and after a whole-chip erase there is nothing left to find. If the bootloader answers that <code>ethaddr</code> is not defined, the address is on the camera's own label. Either way you can give it back afterwards with <code>set_mac aa:bb:cc:dd:ee:ff</code> on the camera."
       next_business_link: "Commercial terms and support"
       next_business_text: "— if this is going into a product."
-      next_chat_link: "Join the chat"
-      next_chat_text: "— the people who answer questions about this hardware."
       next_donate_link: "Support the work"
       next_donate_text: "— OpenIPC is free to use and expensive to make."
       next_wall_link: "Put it on the Open Wall"
