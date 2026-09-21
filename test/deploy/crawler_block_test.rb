@@ -30,8 +30,11 @@ class CrawlerBlockTest < ActiveSupport::TestCase
   def blocks?(agent)
     blocked_patterns.any? do |pattern|
       body = pattern.delete_prefix('"').delete_suffix('"')
-      body.start_with?('~*') ? agent.match?(Regexp.new(body.delete_prefix('~*'), Regexp::IGNORECASE))
-                             : agent.include?(body)
+      if body.start_with?('~*')
+        agent.match?(Regexp.new(body.delete_prefix('~*'), Regexp::IGNORECASE))
+      else
+        agent.include?(body)
+      end
     end
   end
 
