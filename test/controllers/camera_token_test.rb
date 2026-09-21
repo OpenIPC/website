@@ -66,6 +66,32 @@ class CameraTokenTest < ActionDispatch::IntegrationTest
     assert_match(/\A[0-9a-f]{16}\z/, @snapshot.camera_token)
   end
 
+  # MAC_ADDRESS_FORMAT accepts either case and either separator, nothing
+  # normalises on write, and the column's collation folds case but not "-"
+  # against ":". So one camera can land in the table under three spellings,
+  # and hashing the raw string would give it three tokens, two of which
+  # resolve to nothing.
+  test 'one camera is one token however its address was spelled' do
+    %w[AA:BB:CC:DD:EE:FF aa-bb-cc-dd-ee-ff Aa:Bb:Cc:Dd:Ee:Ff].each do |spelling|
+      assert_equal Snapshot.camera_token_for('aa:bb:cc:dd:ee:ff'),
+                   Snapshot.camera_token_for(spelling),
+                   "#{spelling} hashes to a different camera"
+    end
+  end
+
+  test 'a camera that uploaded under two spellings is found by its token' do
+    other = Snapshot.new(mac_address: MAC.downcase.tr(':', '-'), ip_address: '203.0.113.11',
+                         soc: 'x', sensor: 'y')
+    other.file.attach(io: StringIO.new(MINIMAL_JPEG), filename: 's.jpg', content_type: 'image/jpeg')
+    other.save!(validate: false)
+
+    assert_equal @snapshot.camera_token, other.camera_token
+
+    get "/open-wall/camera/#{other.camera_token}"
+
+    assert_response :success
+  end
+
   test 'the same camera keeps the same token' do
     second = Snapshot.new(mac_address: MAC, ip_address: '203.0.113.10', soc: 'x', sensor: 'y')
     second.file.attach(io: StringIO.new(MINIMAL_JPEG), filename: 's.jpg', content_type: 'image/jpeg')
