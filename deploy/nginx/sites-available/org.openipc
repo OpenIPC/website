@@ -236,9 +236,16 @@ server {
     # answers 410 without a proxy_pass, a cache entry or a limit_conn slot.
     #
     # Safe against a real id because Snapshot.generate_public_id refuses an
-    # all-digit token: anything numeric here is a row id and nothing else.
-    # The suffix group covers /oneday, /camera and /download.
-    location ~ ^/(?:(?:ru|zh)/)?snapshots/[0-9]+(?:/|$) {
+    # all-digit token: anything numeric here is a row id and nothing else, and
+    # a token cannot reach the boundary character -- it always has a letter
+    # before it.
+    #
+    # The boundary takes a dot as well as a slash. Without it /snapshots/1.json
+    # falls past this location, matches the hexadecimal one below by its
+    # numeric prefix, and is proxied: Rails answers 410 in the end, but the
+    # probe has already cost a render slot under the concurrency cap, and a
+    # 410 is not in proxy_cache_valid so the next probe costs another.
+    location ~ ^/(?:(?:ru|zh)/)?snapshots/[0-9]+(?:[./]|$) {
         return 410;
     }
 

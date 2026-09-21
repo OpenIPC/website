@@ -104,8 +104,15 @@ class Snapshot < ApplicationRecord
   PUBLIC_ID_FORMAT = /\A[0-9a-f]{20}\z/
 
   # Rails builds every path for a Snapshot from this.
+  #
+  # Falls back to the row id, which is a 410, rather than returning nil, which
+  # is a routing error that takes the whole gallery page down with it. The
+  # column is nullable so that a rollback cannot break camera uploads, which
+  # leaves a narrow window -- deploy.sh keeps the old container serving while
+  # migrations run -- where a row can be inserted without one. Such a row is
+  # one dead tile for up to two days; the alternative is a 500 for everyone.
   def to_param
-    public_id
+    public_id.presence || super
   end
 
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }

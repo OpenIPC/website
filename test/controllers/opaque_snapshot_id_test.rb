@@ -85,6 +85,50 @@ class OpaqueSnapshotIdTest < ActionDispatch::IntegrationTest
     assert_redirected_to '/open-wall'
   end
 
+  # Review finding on #238. The column is nullable so that a rollback cannot
+  # break camera uploads, which leaves a window where a row can be written
+  # without one. Returning nil from to_param is a routing error, and the
+  # gallery builds a link per tile -- so one such row would 500 the whole
+  # wall rather than cost itself.
+  test 'a row that missed the backfill costs itself and not the gallery' do
+    snapshot = upload(mac: '00:11:22:33:44:0f')
+    snapshot.update_columns(public_id: nil)
+
+    assert_equal snapshot.id.to_s, snapshot.reload.to_param
+
+    get '/open-wall'
+
+    assert_response :success, 'one row without a public id took the gallery down'
+  end
+
+  # Review finding on #238. /snapshots/1.json does not end at the digits, so
+  # it fell past the retired-form location and matched the hexadecimal one by
+  # its numeric prefix -- proxied, costing a slot under the concurrency cap,
+  # and not cacheable as a 410.
+  test 'the retired form is shed whatever is appended to it' do
+    vhost = Rails.root.join('deploy/nginx/sites-available/org.openipc').read
+    retired = vhost[%r{location ~ \^/\(\?:\(\?:ru\|zh\)/\)\?snapshots/(\[0-9\]\+\S*) \{}, 1]
+
+    %w[/snapshots/123 /snapshots/123/oneday /snapshots/123.json /ru/snapshots/9].each do |path|
+      assert_match(/#{retired}/, path, "#{path} is not shed as a retired address")
+    end
+
+    assert_no_match(/#{retired}/, '/snapshots/12345abcde12345abcde',
+                    'a real id must not look retired')
+  end
+
+  # The retired location has to come FIRST. nginx takes the first regex
+  # location that matches, so reversing the two would hand every numeric probe
+  # to the proxy instead of shedding it.
+  test 'the retired form is matched before the current one' do
+    vhost = Rails.root.join('deploy/nginx/sites-available/org.openipc').read
+    order = vhost.scan(%r{location ~ \^/\(\?:\(\?:ru\|zh\)/\)\?snapshots/(\S+) \{}).flatten
+
+    assert_operator order.index { |l| l.start_with?('[0-9]+') }, :<,
+                    order.index { |l| l.start_with?('[0-9a-f]+') },
+                    'nginx takes the first match, so the retired form must be tested first'
+  end
+
   # The nginx location carrying the microcache and the concurrency cap was
   # `snapshots/[0-9]+` until the ids changed. Everything it carries applies
   # only to paths it matches, so an id shape it does not match falls through
@@ -92,10 +136,6 @@ class OpaqueSnapshotIdTest < ActionDispatch::IntegrationTest
   # site down three times in September.
   test 'the vhost still recognises a snapshot page when it sees one' do
     vhost = Rails.root.join('deploy/nginx/sites-available/org.openipc').read
-    cached = vhost[%r{location ~ \^/\(\?:\(\?:ru\|zh\)/\)\?snapshots/(\S+) \{}, 1]
-
-    assert_equal '[0-9]+(?:/|$)', cached, 'the first snapshot location should shed the retired form'
-
     all = vhost.scan(%r{location ~ \^/\(\?:\(\?:ru\|zh\)/\)\?snapshots/(\S+) \{}).flatten
 
     assert_includes all, '[0-9a-f]+',
