@@ -37,6 +37,25 @@ class PageCacheTest < ActiveSupport::TestCase
     catch_all.lines.reject { |l| l.strip.start_with?('#') }.join
   end
 
+  # Directives that belong to a `server` block itself, not to any location
+  # inside it -- which is what "inherited" means and what a location's own
+  # add_header replaces. Tracked by brace depth rather than indentation, so it
+  # does not quietly stop working the day someone reformats the file.
+  def server_level_directives
+    depth = 0
+    in_location = nil
+
+    VHOST.lines.filter_map do |line|
+      stripped = line.strip
+      opening = stripped.end_with?('{')
+      in_location = depth if opening && stripped.start_with?('location', 'if (')
+      keep = depth == 1 && in_location.nil? && !opening && !stripped.start_with?('#')
+      depth += line.count('{') - line.count('}')
+      in_location = nil if in_location && depth <= in_location
+      keep ? line : nil
+    end
+  end
+
   test 'the page cache exists at all' do
     assert_includes directives, 'proxy_cache openipc_micro',
                     'the largest class of traffic on the site is uncached again'
@@ -82,9 +101,17 @@ class PageCacheTest < ActiveSupport::TestCase
   # every page on the site -- invisibly, because Rails sends a stronger one of
   # its own and a browser would still be protected.
   test 'adding a cache header does not drop the security header above it' do
-    server_level = VHOST.lines.grep(/add_header Strict-Transport-Security/).map(&:strip).uniq
+    server_level = server_level_directives.grep(/add_header Strict-Transport-Security/)
+                                          .map(&:strip).uniq
 
-    refute_empty server_level, 'the vhost stopped setting HSTS; this test now proves nothing'
+    refute_empty server_level, <<~MESSAGE.chomp
+      No `server` block declares HSTS any more.
+
+      This test used to grep the whole file, which the catch-all's own copy of
+      the directive satisfied -- so removing the inherited one left every
+      other location without HSTS and this test still green. Whatever removed
+      it needs to be looked at, not this assertion.
+    MESSAGE
     assert_includes directives, server_level.first, <<~MESSAGE.chomp
       `location /` uses add_header and does not repeat:
 
