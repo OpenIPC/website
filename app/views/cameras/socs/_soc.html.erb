@@ -7,11 +7,22 @@
     <%= soc.load_address %>
   </dd>
   <dd class="col-2 col-sm-1 col-md-1 stage <%= soc.status %>"><%= image_tag("stage-#{soc.status}.svg") %></dd>
+  <%# What this visitor can do, in words (#189).
+
+      It used to be "Generate guide" or "No solution yet", and that second
+      string covered a chip with published firmware and no bootloader --
+      installable, through the camera's own bootloader -- and a chip nobody has
+      hardware for. The `none` rows name the reason from the status, because
+      "we have the SDK and no board" and "we have the board and need a
+      developer" are different things and one of them a reader can act on. %>
   <dd class="col-10 col-md-5 col-xl-5">
-    <% if soc.instructable? %>
+    <% case soc.availability %>
+    <% when :wizard %>
       <%= link_to t('.generate_guide'), cameras_vendor_soc_path(vendor_id: soc.vendor, id: soc) %>
+    <% when :firmware_only %>
+      <%= link_to t('.firmware_only'), cameras_vendor_soc_path(vendor_id: soc.vendor, id: soc) %>
     <% else %>
-      <%= t('.no_solution_yet') %>
+      <span class="text-body-secondary"><%= t(".unavailable_#{soc.status}", default: t('.unavailable')) %></span>
     <% end %>
   </dd>
 </dl>

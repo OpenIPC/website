@@ -11,6 +11,8 @@ en:
         paragraph2: Please refer to the detailed instructions available on our Wiki at
         subtitle: on an NVR with %{soc_name} SoC and %{flash_type} SPI flash chip
       index:
+        installable_title: "%{count} of %{total} can be installed"
+        nothing_installable_html: "None of the %{total} %{vendor} chips can be installed yet — there is no OpenIPC build for any of them. Each row below says why, and several are waiting on a donated board or a developer rather than on us."
         featured: Recommended
         full_list: Full list
         recommended_alert_html: Please note. Support for different SoCs is at different stages of development. <a href="/supported-hardware/featured">This list</a> shows the most fully supported and, therefore, the most recommended ones.
@@ -22,6 +24,13 @@ en:
         th_status: Build status
         title: Supported Hardware by SoC
       show:
+        stock_bootloader_html: "The camera keeps its own bootloader, so install this by flashing the kernel and root filesystem from it. The <a href=\"https://github.com/OpenIPC/wiki/blob/master/en/installation.md\">installation guide</a> covers that path."
+        unavailable_hlp_html: "We have a %{name} board and need someone to do the work. If you write C for embedded Linux, <a href=\"/community\">the chat</a> is where to start."
+        unavailable_html: "There is no OpenIPC build for %{name} yet."
+        unavailable_mvp_html: "There is an early %{name} build that does not yet do enough to publish. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>."
+        unavailable_neq_html: "We have the vendor SDK for %{name} but no board to develop on, and that is the only thing in the way. If you have one to spare, say so in <a href=\"/community\">the chat</a> — a donated board is how most of the supported list got here."
+        unavailable_rnd_html: "Work on %{name} is at the research stage — we are reading the SDK and finding out what is possible. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>."
+        unavailable_wip_html: "%{name} is being worked on now. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>."
         bootloader: OpenIPC Bootloader
         bundle: OpenIPC Linux (%{name})
         camera_ip_address_title: four 8-bit fields separated by periods
@@ -44,6 +53,13 @@ en:
         paragraph1: The installation of OpenIPC firmware on a SigmaStar module with NAND flash memory requires a specific procedure that is not included in this guide.
         paragraph2: Please refer to the detailed instructions available on our Wiki at
       soc:
+        firmware_only: "Firmware only — flash through the stock bootloader"
+        unavailable: "Not available yet"
+        unavailable_hlp: "Not available — looking for a developer"
+        unavailable_mvp: "Not available — early build"
+        unavailable_neq: "Not available — no board to develop on"
+        unavailable_rnd: "Not available — in research"
+        unavailable_wip: "Not available — in progress"
         generate_guide: Generate an installation guide
         no_solution_yet: There is no ready solution yet.
       update:

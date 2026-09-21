@@ -219,6 +219,41 @@ class Soc < ApplicationRecord
   # coming when it is already published and linked on that same page, and it
   # hides the one thing a visitor could act on, which is that they will need
   # their camera's own bootloader.
+  # What a visitor can actually do with this chip (#189).
+  #
+  # The catalogue lists 126 SoCs and the lists said one of two things: "Generate
+  # guide", or "No solution yet" for everything else. That second string covered
+  # a chip with published firmware and no bootloader -- which is installable,
+  # through the stock bootloader -- and a chip nobody has hardware for, and read
+  # the same either way. Ten of the fourteen vendor tabs contain no installable
+  # chip at all and took 55% of vendor-page views in the 19-20 September sample.
+  # People open these pages and leave with nothing.
+  #
+  #   :wizard         bootloader and firmware published -- the wizard builds an
+  #                   image. 55 chips.
+  #   :firmware_only  firmware but no bootloader -- flash the bundle through the
+  #                   camera's own bootloader; the wizard can never help. 22.
+  #   :none           nothing published. 49, and `status` says why: 25 neq (no
+  #                   equipment), 16 rnd, 6 wip, 2 hlp (looking for help).
+  #
+  # Memoised per instance because the lists ask for every row, and both
+  # predicates read ReleaseIndex -- which is already in memory, but the fetch
+  # and the releases_for scan are not free across 126 rows.
+  #
+  # #161 carries these states into the YAML catalogue and #162 into the
+  # prerendered pages, so this is the one definition all three read.
+  def availability
+    @availability ||= if firmware_published?
+                        bootloader_published? ? :wizard : :firmware_only
+                      else
+                        :none
+                      end
+  end
+
+  def installable?
+    availability != :none
+  end
+
   def bootloader_published?
     return false if uboot_filename.blank?
 
