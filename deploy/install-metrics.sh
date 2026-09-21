@@ -78,7 +78,7 @@ echo "installed $sampler, $cron, $probe, $audience and $ocstats"
 # landed in the wrong place leaves this script reporting success over stale
 # files, and the only way to see it is to compare these against
 # `sha256sum deploy/*.sh cron.d/openipc-metrics` in the checkout.
-for f in "$sampler" "$cron" "$probe" "$audience"; do
+for f in "$sampler" "$cron" "$probe" "$audience" "$ocstats"; do
   printf '  %s  %s\n' "$(sha256sum "$f" | cut -c1-16)" "$f"
 done
 

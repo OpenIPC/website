@@ -99,4 +99,28 @@ class InstallDocsTest < ActiveSupport::TestCase
       install does not always have it.
     MESSAGE
   end
+
+  # The checksums are the only way to tell a stale copy from a fresh one, and
+  # the loop that prints them is a separate list from the one that installs.
+  # Adding a file to the installer and not to the loop leaves it silently
+  # unverifiable -- which is what happened when #198 added oc-stats.sh, and was
+  # only visible because the install run printed four lines for five files.
+  test 'every file install-metrics installs is checksummed afterwards' do
+    body = Rails.root.join('deploy/install-metrics.sh').read
+
+    vars = body.scan(%r{^install -m \S+ -o \S+ -g \S+ "\$here/[^"]+" "\$(\w+)"}).flatten
+    printed = body[/^for f in (.*?); do/m].to_s
+
+    refute_empty vars, 'no install lines found; this test proves nothing'
+    missing = vars.reject { |v| printed.include?("$#{v}") }
+
+    assert_empty missing, <<~MESSAGE.chomp
+      install-metrics.sh installs these and never prints their checksum:
+
+      #{missing.map { |v| "  $#{v}" }.join("\n")}
+
+      A file that is installed but not hashed cannot be told apart from a
+      stale copy of itself, which is the whole reason the loop exists.
+    MESSAGE
+  end
 end
