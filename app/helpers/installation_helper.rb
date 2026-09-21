@@ -312,7 +312,7 @@ module InstallationHelper
     lines = [t('firmware.installation.licence_html')]
     lines << business_ask(camera, segment) unless segment == 'consumer'
 
-    tag.div(class: 'download-licence small text-body-secondary mt-3') do
+    tag.div(class: 'download-licence small text-body-secondary border-top pt-3 mt-2') do
       safe_join(lines.map { |line| tag.p(line, class: 'mb-0') })
     end
   end

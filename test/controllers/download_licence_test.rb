@@ -126,12 +126,14 @@ class DownloadLicenceTest < ActionDispatch::IntegrationTest
   # The rule from #190: nothing stands between the person and the file, and
   # nothing lands between the command blocks they paste into a bootloader.
   #
-  # Asserted structurally rather than by byte offset. The page already carries
-  # <pre> blocks above this section for the backup step, so "the notice comes
-  # before the first <pre> on the page" is a test that fails for a reason that
-  # has nothing to do with the rule -- and the first version of this test did
-  # exactly that.
-  test 'it sits below the download link, with no command block between them' do
+  # Asserted against the rule rather than against one layout. An earlier version
+  # of this test said "no <pre> between the link and the notice", which encoded
+  # the notice living in the download link's own column; moving it full width
+  # under both columns broke the test without breaking the rule. What the rule
+  # actually forbids is the notice appearing *among* the commands, so that is
+  # what is checked: it comes after the last of them, and it is in neither
+  # column.
+  test 'it sits below the download link and after every command block' do
     wizard soc_for(model: 'PROBEPOS', segment: 'fpv')
 
     body = response.body
@@ -141,15 +143,20 @@ class DownloadLicenceTest < ActionDispatch::IntegrationTest
     assert link, 'no download link on the page'
     assert notice, 'no licence notice on the page'
     assert_operator link, :<, notice, 'the notice is above the download link'
-    assert_not_includes body[link...notice], '<pre',
-                        'a command block sits between the download link and the notice'
+
+    # The download step ends where the success block begins; the expert section
+    # below that has command blocks of its own and is not this rule's business.
+    step_end = body.index('alert alert-success')
+    assert_not_includes body[notice...step_end], '<pre',
+                        'a command block of the download step follows the notice'
   end
 
-  # And it stays in the link's own column, not in the one holding the commands.
-  test 'it lives beside the download link, not among the commands' do
+  test 'it is a band under the step, not a note inside either column' do
     wizard soc_for(model: 'PROBECOL', segment: 'fpv')
 
-    assert_select '.github .download-licence', 1
+    assert_select '.download-licence', 1
+    assert_select '.col .download-licence', 0
+    assert_select '.github .download-licence', 0
     assert_select '.download-licence pre', 0
   end
 

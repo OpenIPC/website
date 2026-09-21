@@ -74,9 +74,6 @@
             <% if @camera.nand? %>
               <p class="mb-0 mt-2 small"><%= t('firmware.installation.flashing_full.nand_caveat') %></p>
             <% end %>
-            <%# Below the link, never above it, and never between the command
-                blocks that get pasted into a bootloader (#190). %>
-            <%= download_licence_notice(@camera) %>
           </div>
         </div>
         <div class="col">
@@ -107,6 +104,11 @@
           <% end %>
         </div>
       </div>
+      <%# Full width under both columns, after everything that gets pasted into
+          a bootloader and never among it (#190). In the left column it sat
+          directly under a long grey paragraph in a 200px measure and read as a
+          fourth paragraph of that blurb rather than as a note of its own. %>
+      <%= download_licence_notice(@camera) %>
     </div>
   <% end %>
 
