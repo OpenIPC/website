@@ -72,6 +72,12 @@ zh:
       # actually permits. If any of those change, this copy is wrong and
       # nothing will fail -- which is why the numbers are named here once and
       # the page reads them from here.
+      contact_cta: "写信给 privacy@openipc.org"
+      contact_note_html: "没有账号可以删除，也没有资料可以导出，因为我们根本不建立这些。但如果这里有什么不清楚或看起来不对，我们希望知道。"
+      contact_title: "有任何疑问都可以问我们"
+      never_title: "它从不碰什么"
+      records_title: "计数器记录什么"
+      sessions_title: "唯一听起来像追踪的东西"
       title: "隐私"
       hero_title: "本站记录什么"
       hero_lede: "我们统计 openipc.org，以便判断页面是否发挥了作用。本页说明这具体指什么。它很短——长的隐私声明是没人核对的承诺。"
@@ -113,8 +119,6 @@ zh:
       row_details_what: "Open Wall 摄像机信息"
       row_details_where: "我们的服务器"
       row_details_long: "最多 3 天"
-      contact_title: "向我们询问"
-      contact_text_html: "请写信至 <a href=\"mailto:privacy@openipc.org\">privacy@openipc.org</a>。没有账户可删除，也没有档案可导出，因为我们根本不建立——但如果这里有不清楚或看起来不对的地方，我们更希望听到。"
     donate:
       business_band_html: 如果贵公司依赖 OpenIPC，更可持续的支持方式是建立商业合作关系。<a href="/business">看看我们能提供什么</a>。
       accounting: 我们致力于共建一个开放和透明的数字环境，并由衷地感谢你对我们的努力提供的任何支持，以推动OpenIPC和我们的使命走向一个可持续的未来。

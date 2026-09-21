@@ -72,6 +72,12 @@ en:
       # actually permits. If any of those change, this copy is wrong and
       # nothing will fail -- which is why the numbers are named here once and
       # the page reads them from here.
+      contact_cta: "Write to privacy@openipc.org"
+      contact_note_html: "There is no account to delete and no profile to export, because we do not build one — but if something here is unclear or looks wrong, we would rather hear it."
+      contact_title: "Ask us about any of this"
+      never_title: "What it never touches"
+      records_title: "What the counter records"
+      sessions_title: "The one thing that sounds like tracking"
       title: "Privacy"
       hero_title: "What this site records"
       hero_lede: "We measure openipc.org so we can tell whether its pages do their job. This page says exactly what that means. It is short because a long one is a promise nobody checks."
@@ -113,8 +119,6 @@ en:
       row_details_what: "Open Wall camera details"
       row_details_where: "Our server"
       row_details_long: "up to 3 days"
-      contact_title: "Asking us about it"
-      contact_text_html: "Write to <a href=\"mailto:privacy@openipc.org\">privacy@openipc.org</a>. There is no account to delete and no profile to export, because we do not build one — but if something here is unclear or looks wrong, we would rather hear it."
     donate:
       business_band_html: If your company depends on OpenIPC, the sustainable way to support it is a commercial relationship. <a href="/business">See what we offer</a>.
       accounting: We're committed to open and transparent accounting, and are grateful for any support you can provide to our efforts to advance OpenIPC and our mission toward a sustainable future.
