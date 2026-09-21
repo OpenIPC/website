@@ -235,6 +235,47 @@ Two things to know before editing it:
   planned.
 
 
+## openipc.eu
+
+`eu.openipc` **redirects**; like the wiki vhost it serves and proxies nothing.
+
+Until 2026-09-21 openipc.eu was a machine of its own — `fragola`
+(2.29.12.216) — terminating TLS for the name and reverse-proxying every request
+to `https://openipc.org/`. Its DNS now points at this host, so the edge is out
+of the path and the name is answered here.
+
+It redirects rather than serving because it resolves to the same address as
+`openipc.org` and so buys nothing a second name can buy: not availability, not
+latency, and not reach into a network where the origin is unreachable, because
+what is blocked there is this address. One site under two names is not free —
+`$host` is in the microcache key so every page would be cached twice, Rails'
+host authorization needs a second `APP_HOST` or answers `403`, and every search
+engine and analytics tool gains a property to reconcile. A `301` costs none of
+that and keeps every published openipc.eu link working.
+
+Three things to know before editing it:
+
+- **The certificate is not optional.** The old edge sent
+  `Strict-Transport-Security: max-age=15768000`, so every browser that visited
+  openipc.eu in the six months before the switch forces HTTPS to it and never
+  reaches the port-80 block. Between the DNS change and this vhost those
+  requests hit the default server, were answered with the `openipc.org`
+  certificate and failed on the name. `openipc.eu` must be in
+  `/etc/dehydrated/domains.txt` — the same trap the analytics dashboard has,
+  recorded in `deploy/RESTORE.md`.
+- The `^~ /.well-known/acme-challenge` location in the port-80 block is what
+  renewal goes through, and `check-config.sh --seam` asserts it still answers.
+  The same silent sixty-day failure as the wiki.
+- `301` is cached by browsers more or less permanently. If openipc.eu is ever
+  meant to be a distinct site again, those visitors keep landing on
+  `openipc.org` until they clear their cache; use `302` if that is planned.
+
+`nginx.conf` still trusts `2.29.12.216` in `set_real_ip_from`, because stale
+resolver caches keep sending visitors through the old edge for a while after
+the switch. **That line goes when fragola is switched off** — a trusted address
+that no longer proxies for us is an address whose `X-Forwarded-For` we would
+believe from whoever holds it next.
+
 ## The static seam
 
 `location /` in `org.openipc` and `org.openipc.dev` no longer proxies. It has a

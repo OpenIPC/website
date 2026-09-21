@@ -1,0 +1,105 @@
+
+# openipc.eu -- the name, after the edge node behind it was retired.
+#
+# Until 2026-09-21 this name was a machine of its own: `fragola`
+# (2.29.12.216), which terminated TLS for openipc.eu and reverse-proxied every
+# request to https://openipc.org/. DNS now points openipc.eu at this host, so
+# the proxy hop is gone and what arrives here is a visitor rather than a
+# mirror.
+#
+# THE NAME REDIRECTS; IT DOES NOT SERVE. It resolves to the same address as
+# openipc.org and therefore buys nothing that a second name can buy -- not
+# availability, not latency, and not reach into a network where the origin is
+# unreachable, because the thing blocked there is this address. What is left
+# is one site under two names, and that is not free: $host is in the
+# microcache key, so every page would be cached twice; Rails' host
+# authorization would need a second APP_HOST or answer 403; and every search
+# engine and analytics tool would have a second property to reconcile. A 301
+# costs none of that and keeps every openipc.eu link that was ever published
+# working.
+#
+# A 301 is also a stronger version of what the migration epic's Phase 7
+# planned for this name -- `X-Robots-Tag: noindex` on every mirror but
+# openipc.ru. noindex asks an engine to forget the duplicate; a 301 tells it
+# where the page went and hands the link equity over. They are contradictory,
+# so this vhost sends the redirect and no robots header.
+#
+# SAFE FOR WHAT ACTUALLY GOES THROUGH THIS NAME. A 301 makes most clients
+# re-issue a POST as a GET with no body, so it was worth checking what posts
+# here: across fourteen days of the edge's logs, every POST was either the
+# analytics beacon or WordPress attack noise. No camera has ever uploaded a
+# snapshot through openipc.eu -- the Open Wall API is not reachable by this
+# name in any log we keep -- so nothing that a redirect would mangle is at
+# stake.
+#
+# THE CERTIFICATE IS NOT OPTIONAL, AND ITS ABSENCE IS NOT A SMALL FAULT. The
+# old edge sent `Strict-Transport-Security: max-age=15768000`, so every
+# browser that has visited openipc.eu in the last six months will force HTTPS
+# to it and cannot be rescued by the port 80 block below. Between the DNS
+# change and this vhost, those requests reached this host's default server,
+# were answered with the openipc.org certificate, and died on the name -- a
+# browser warning, not a redirect. `openipc.eu` must therefore be listed in
+# /etc/dehydrated/domains.txt; deploy/RESTORE.md records it, and it is the
+# same trap the analytics dashboard has.
+
+server {
+    listen 80;
+    server_name openipc.eu;
+    #
+    access_log /var/log/nginx/eu.openipc.access.log openipc;
+    error_log /var/log/nginx/eu.openipc.error.log info;
+
+    # Stays ahead of the redirect, and `^~` so it beats it. dehydrated renews
+    # this certificate over HTTP-01 on port 80; a renewal that meets a 301 to
+    # another host fails, and it fails silently, sixty days from now, on a
+    # name nobody is watching any more.
+    location ^~ /.well-known/acme-challenge {
+        proxy_redirect off;
+        default_type "text/plain";
+        alias   /var/lib/dehydrated/acme-challenges;
+        allow all;
+    }
+
+    # Straight to openipc.org, not to https://$host. Sending the visitor to
+    # the TLS version of this name first would cost a second hop to reach the
+    # same place, and only the second hop ends anywhere.
+    location / {
+        return 301 https://openipc.org$request_uri;
+    }
+}
+
+
+server {
+    listen 443 ssl http2;
+    server_name openipc.eu;
+    #
+    # Its own log, deliberately. It is how the drain is watched: while stale
+    # resolver caches still hold the old edge's address some visitors reach
+    # fragola and some reach here, and this file is the half that is landing
+    # in the right place.
+    access_log /var/log/nginx/eu.openipc.access.log openipc;
+    error_log /var/log/nginx/eu.openipc.error.log info;
+    #
+    ssl_certificate /var/lib/dehydrated/certs/openipc.eu/fullchain.pem;
+    ssl_certificate_key /var/lib/dehydrated/certs/openipc.eu/privkey.pem;
+    #
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_dhparam /etc/ssl/certs/dhparam.pem;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_stapling off;
+    ssl_stapling_verify on;
+    ssl_session_tickets off;
+
+    # Kept, not dropped. The old edge pinned this name to HTTPS for six months
+    # in browsers that have already been here, and dropping the header would
+    # not unpin any of them -- it would only stop the pin being renewed for a
+    # name that is still HTTPS-only.
+    add_header Strict-Transport-Security max-age=15768000;
+
+    location / {
+        return 301 https://openipc.org$request_uri;
+    }
+}
