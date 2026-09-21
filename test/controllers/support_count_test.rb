@@ -13,13 +13,18 @@ require 'test_helper'
 # has to end with the page rendering exactly as it did before the count
 # existed -- never a stale number, and never a zero, beside a request for money.
 class SupportCountTest < ActionDispatch::IntegrationTest
-  def with_stats(backers: 27, monthly_cents: 53_500, fetched_at: Time.current, raw: nil, &block)
+  DEFAULT_STATS = { 'backers' => 27, 'monthly_cents' => 53_500, 'monthly_counted' => 24 }.freeze
+
+  # Overrides by key rather than by keyword, so adding a field to the file does
+  # not lengthen this signature every time.
+  def with_stats(raw: nil, fetched_at: Time.current, **overrides, &block)
     Dir.mktmpdir do |dir|
       path = File.join(dir, 'support-stats.json')
-      File.write(path, raw || JSON.generate(
-        'backers' => backers, 'monthly_cents' => monthly_cents,
-        'monthly_counted' => 24, 'fetched_at' => fetched_at&.utc&.iso8601
-      ))
+      body = DEFAULT_STATS
+             .merge('fetched_at' => fetched_at&.utc&.iso8601)
+             .merge(overrides.transform_keys(&:to_s))
+             .compact
+      File.write(path, raw || JSON.generate(body))
       with_path(path, &block)
     end
   end
@@ -257,6 +262,89 @@ class SupportCountTest < ActionDispatch::IntegrationTest
                               network_interface: 'eth', sd_card_slot: 'nosd' } }
 
       assert_equal 3600, response.headers['Cache-Control'][/max-age=(\d+)/, 1].to_i
+    end
+  end
+
+  # --- both channels (#201) ---
+
+  # Open Collective cannot be paid with a card issued in Russia, so PayWall is
+  # not a rounding error on the count -- it is where a whole audience gives.
+  test 'the count is both channels, and says which is which' do
+    with_stats(backers: 50, backers_oc: 27, paywall_subscribers: 23) do
+      get '/donate'
+
+      assert_response :success
+      assert_match(/50 people/, response.body)
+      assert_match(/27 through Open Collective and 23 through PayWall/, response.body)
+    end
+  end
+
+  # The ordinary case on a host with no PayWall export: one number, no split,
+  # and nothing claiming a channel that was not counted.
+  test 'with no PayWall figures it says nothing about PayWall' do
+    with_stats(backers: 27) do
+      get '/donate'
+
+      assert_select '.support-count', 1
+      assert_no_match(/PayWall/i, css_select('.support-count').to_s)
+    end
+  end
+
+  # Adding PayWall took the count from 27 to exactly the goal of 50 on the day
+  # the two were first counted together. "Help us reach 50" beside a 50 is a
+  # mistake the reader sees before we do.
+  test 'a met goal is not still asking to be reached' do
+    with_stats(backers: SupportStats.goal) do
+      get '/donate'
+
+      assert_select '.support-count', 1
+      assert_match(/goal met/i, response.body)
+      assert_no_match(/Help us reach/i, response.body)
+    end
+  end
+
+  test 'an unmet goal still asks' do
+    with_stats(backers: SupportStats.goal - 1) do
+      get '/donate'
+
+      assert_match(/Help us reach/i, response.body)
+      assert_no_match(/goal met/i, response.body)
+    end
+  end
+
+  # The two halves and their sum come from one file, so if they disagree the
+  # file is not what this class thinks it is reading -- someone edited it on
+  # the host, or the writer changed shape. `backers` came from there too, so
+  # the total is suspect as well and the page falls back to printing nothing.
+  test 'halves that do not add up are refused entirely' do
+    with_stats(backers: 50, backers_oc: 27, paywall_subscribers: 9) do
+      get '/donate'
+
+      assert_response :success
+      assert_select '.support-count', 0
+    end
+  end
+
+  test 'halves that add up are accepted' do
+    with_stats(backers: 50, backers_oc: 27, paywall_subscribers: 23) do
+      get '/donate'
+
+      assert_select '.support-count', 1
+    end
+  end
+
+  # In Ruby a bool is not an Integer, unlike Python -- where `isinstance(True,
+  # int)` is true and let JSON `true` through the writer, adding one to the
+  # total and rendering as "true through PayWall". Held here so the writer's
+  # bug cannot arrive through a hand-edited file either.
+  [[true, 27], ['23', 27], [-1, 28], [nil, 50]].each do |value, oc|
+    test "a PayWall half of #{value.inspect} is refused" do
+      with_stats(backers: 50, backers_oc: oc, paywall_subscribers: value) do
+        get '/donate'
+
+        assert_response :success
+        assert_select '.support-count', 0
+      end
     end
   end
 end

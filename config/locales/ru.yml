@@ -258,6 +258,8 @@ ru:
   str:
     language: Язык
   support:
+    count_met_html: "OpenIPC каждый месяц поддерживают <strong>%{backers} человек</strong>. Спасибо — цель достигнута."
+    split_html: "%{oc} через Open Collective и %{paywall} через PayWall."
     count_html: "OpenIPC каждый месяц поддерживают <strong>%{backers} человек</strong>. Помогите нам дойти до %{goal}."
     meter_label: "%{backers} из %{goal} ежемесячных сторонников"
     monthly_html: "Это %{amount} в месяц на камеры, доступ к SDK и людей, которые делают работу."

@@ -157,7 +157,9 @@ ru:
       # https://paywall.pw/openipc actually offers, and nothing in this
       # repository can enforce that -- the tiers live in the service, not here.
       paywall_title: PayWall — для карт, выпущенных в России
-      paywall_text_html: Open Collective не принимает карты, выпущенные в России, — PayWall принимает. 100, 250 или 500 ₽ в месяц. Разовый платёж — это оплата за один месяц и отмена подписки сразу после неё.
+      paywall_text_html: Open Collective не принимает карты, выпущенные в России, — PayWall принимает.
+      paywall_monthly_html: "Ежемесячно — 100, 250 или 500 ₽. Списывается раз в месяц, отменить можно когда угодно."
+      paywall_once_html: "Разово — оплатите один месяц и сразу отмените подписку. Так поступала половина всех, кто поддерживал нас через PayWall."
       paywall_button: Поддержать через PayWall
       paywall_oc_fallback_html: Если у вас карта, выпущенная за пределами России, удобнее будет <a href="https://opencollective.com/openipc/contribute/backer-14335/checkout" data-event="oc-checkout">Open Collective</a> — там же публичная отчётность.
       business_band_html: Если ваша компания зависит от OpenIPC, самый устойчивый способ поддержать проект — коммерческое сотрудничество. <a href="/business">Что мы предлагаем</a>.
