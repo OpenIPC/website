@@ -118,6 +118,36 @@ class PagesController < ApplicationController
     render 'pages/utilities'
   end
 
+  def video_encoding
+    @page_title = t('pages.video_encoding.title')
+    @meta_description = t('pages.video_encoding.meta_description')
+    render 'pages/video_encoding'
+  end
+
+  def isp_sensors
+    @page_title = t('pages.isp_sensors.title')
+    @meta_description = t('pages.isp_sensors.meta_description')
+    render 'pages/isp_sensors'
+  end
+
+  def reverse_engineering
+    @page_title = t('pages.reverse_engineering.title')
+    @meta_description = t('pages.reverse_engineering.meta_description')
+    render 'pages/reverse_engineering'
+  end
+
+  def turnkey_hardware
+    @page_title = t('pages.turnkey_hardware.title')
+    @meta_description = t('pages.turnkey_hardware.meta_description')
+    render 'pages/turnkey_hardware'
+  end
+
+  def digital_twins
+    @page_title = t('pages.digital_twins.title')
+    @meta_description = t('pages.digital_twins.meta_description')
+    render 'pages/digital_twins'
+  end
+
   def web_interface
     @page_title = t('pages.web_interface.title')
     render 'pages/web_interface'

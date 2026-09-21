@@ -1,0 +1,7 @@
+<% content_for :fullwidth, 'yes' %>
+
+<%# Video encoding: one of the five services whitepapers. The whole page is the
+    shared partial; what is specific to it lives in pages.video_encoding.* %>
+<%= render 'pages/service', key: 'video_encoding', icons: ['bi-cash-coin', 'bi-patch-check', 'bi-cpu', 'bi-camera-video'], pills: 6,
+            mail_subject: 'Encoder audit',
+            mail_body: ['Encoder platform and codec', 'Content type and resolution', 'What you want to cut (bitrate, storage, quality target)', 'Where the clips can be picked up'] %>

@@ -162,6 +162,12 @@ zh:
     adding_vendor: 加供应商
     admin: 管理
     business: 面向企业
+    business_overview: '概览'
+    video_encoding: '视频编码'
+    isp_sensors: 'ISP 与传感器'
+    reverse_engineering: '逆向工程'
+    turnkey_hardware: '交钥匙硬件'
+    digital_twins: '数字孪生'
     clone_soc: 克隆此 SoC
     community: 社区
     community_chat: 交流与支持

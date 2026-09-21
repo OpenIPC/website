@@ -164,6 +164,12 @@ ru:
     adding_vendor: Добавление вендора
     admin: Администратор
     business: Для бизнеса
+    business_overview: 'Обзор'
+    video_encoding: 'Видеокодирование'
+    isp_sensors: 'ISP и сенсоры'
+    reverse_engineering: 'Реверс-инжиниринг'
+    turnkey_hardware: 'Железо под ключ'
+    digital_twins: 'Цифровые двойники'
     clone_soc: Клонировать SoC
     community: Сообщество
     community_chat: Чат и поддержка

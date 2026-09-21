@@ -1,0 +1,7 @@
+<% content_for :fullwidth, 'yes' %>
+
+<%# Digital twins: one of the five services whitepapers. The whole page is the
+    shared partial; what is specific to it lives in pages.digital_twins.* %>
+<%= render 'pages/service', key: 'digital_twins', icons: ['bi-hdd-network', 'bi-arrow-repeat', 'bi-broadcast-pin', 'bi-boxes'], pills: 4,
+            mail_subject: 'Twin feasibility',
+            mail_body: ['The system (device, controller, radio, robot)', 'The test you cannot run today', 'What you can share (firmware image, unit, documentation)', 'Where the tests should run (your CI or ours)'] %>

@@ -12,6 +12,11 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     '/low-latency' => 'low_latency',
     '/teleoperation' => 'teleoperation',
     '/edge-ai' => 'edge_ai',
+    '/video-encoding' => 'video_encoding',
+    '/isp-sensors' => 'isp_sensors',
+    '/reverse-engineering' => 'reverse_engineering',
+    '/turnkey-hardware' => 'turnkey_hardware',
+    '/digital-twins' => 'digital_twins',
     '/ecosystem' => 'ecosystem',
     '/business' => 'business',
     '/community' => 'community',
@@ -289,7 +294,8 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
   # tinted full-bleed section, where the gap is a white stripe between two
   # coloured bands.
   test 'the closing band keeps its distance from text on white' do
-    %w[/get-started /low-latency /community /ecosystem /edge-ai].each do |path|
+    %w[/get-started /low-latency /community /ecosystem /edge-ai
+       /video-encoding /isp-sensors /reverse-engineering /turnkey-hardware /digital-twins].each do |path|
       get path
 
       band = css_select('section.section--ink').last
@@ -319,6 +325,36 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
       %w[/teleoperation /edge-ai].each do |path|
         assert_not_empty css_select(%(footer a[href="#{prefix}#{path}"])), "no footer entry for #{path} in #{locale}"
       end
+    end
+  end
+
+  # For Business became a dropdown when the five services pages arrived. The
+  # overview and every service have to stay reachable from it, in every
+  # language, and the five from the footer too.
+  test 'the For Business menu reaches the overview and every service' do
+    %w[en ru zh].each do |locale|
+      prefix = locale == 'en' ? '' : "/#{locale}"
+      get prefix.empty? ? '/' : prefix
+
+      %w[/business /video-encoding /isp-sensors /reverse-engineering /turnkey-hardware /digital-twins].each do |path|
+        assert_not_empty css_select(%(.navbar a.dropdown-item[href="#{prefix}#{path}"])),
+                         "no #{path} entry in the #{locale} menu"
+      end
+      %w[/video-encoding /isp-sensors /reverse-engineering /turnkey-hardware /digital-twins].each do |path|
+        assert_not_empty css_select(%(footer a[href="#{prefix}#{path}"])), "no footer entry for #{path} in #{locale}"
+      end
+    end
+  end
+
+  # The business overview links every service it sells, including the two
+  # that live under Low Latency.
+  test 'the business page links all seven services' do
+    get '/business'
+
+    %w[/video-encoding /isp-sensors /reverse-engineering /turnkey-hardware /digital-twins
+       /teleoperation /edge-ai].each do |path|
+      assert_not_empty css_select(%(a[href="#{path}"])),
+                       "the business page no longer links #{path}"
     end
   end
 
@@ -353,7 +389,8 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     assert_not_empty held
     assert_not_includes PagesHelper::HOME_PARTNER_ROWS.values.flatten, :exhibitions
 
-    %w[/ /business /ecosystem /community /donate /low-latency /teleoperation /edge-ai /get-started].each do |path|
+    %w[/ /business /ecosystem /community /donate /low-latency /teleoperation /edge-ai /get-started
+       /video-encoding /isp-sensors /reverse-engineering /turnkey-hardware /digital-twins].each do |path|
       get path
 
       held.each do |logo|
