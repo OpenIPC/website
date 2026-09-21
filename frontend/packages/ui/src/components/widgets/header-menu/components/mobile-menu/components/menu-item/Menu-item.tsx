@@ -1,7 +1,6 @@
 import type { MenuItem } from '../../../../Header-menu';
 import UIIcons from '../../../../../../../assets/icons/ui';
 import { useState } from 'preact/hooks';
-import {TargetedMouseEvent} from 'preact';
 
 interface MenuItemProps {
   menuItem: MenuItem;
@@ -37,19 +36,18 @@ export default function MenuItem(
     setIsExpanded(!isExpanded);
   }
 
-  const handleMenuItemClick = (e: TargetedMouseEvent<HTMLAnchorElement>) => {
-    if (e) e.preventDefault();
+  // Upstream called preventDefault() here and then only closed the drawer, so
+  // every link in the mobile menu went nowhere. Let the anchor navigate.
+  const handleMenuItemClick = () => {
     if (toggleMenu) toggleMenu();
   }
 
   return (
     <li className="">
       <div
-        className={`
-          flex w-max flex-row items-center gap-x-1 opacity-60 transition-opacity
-          duration-250 ease-in-out
-          hover:opacity-100
-        `}
+        // Not dimmed: white at opacity-60 over --color-brand-blue is 2.95:1,
+        // and these are the site's navigation labels. See the desktop item.
+        className="flex w-max flex-row items-center gap-x-1"
         onClick={toggleSubMenu}
       >
         {

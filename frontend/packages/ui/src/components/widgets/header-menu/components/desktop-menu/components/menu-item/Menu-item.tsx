@@ -18,14 +18,14 @@ export default function MenuItem(
   const { label, type, url, children } = menuItem;
   const { Triangle, TriangleRight } = UIIcons;
 
+  // fancyweb-ng dimmed the labels to opacity-60 at rest and restored them on
+  // hover. White at 60% over --color-brand-blue is #b7bfef, which is 2.95:1
+  // against that ground -- under the 3:1 large-text floor, never mind AA's
+  // 4.5:1. Full white is 5.29:1, so the labels stay readable and the hover
+  // affordance moves to the underline the active item already uses.
   const directionStyle: Record<'line'|'column', string> = {
-    column: `flex flex-row items-center justify-between gap-x-1
-            opacity-60 transition-opacity
-            duration-250 ease-in-out
-            hover:opacity-100 gap`,
-    line: `flex w-max flex-row items-center gap-x-1 opacity-60 transition-opacity
-          duration-250 ease-in-out
-          hover:opacity-100`,
+    column: `flex flex-row items-center justify-between gap-x-1`,
+    line: `flex w-max flex-row items-center gap-x-1`,
   };
 
   const [isSubMenuVisible, setIsSubMenuVisible] = useState(false);
@@ -72,7 +72,11 @@ export default function MenuItem(
             (type === 'link' || type === 'mixed')
               ? <a
                   href={url}
-                  className="w-max cursor-pointer tracking-wide text-white"
+                  className="
+                    w-max cursor-pointer tracking-wide text-white decoration-1
+                    underline-offset-[6px]
+                    hover:underline
+                  "
                   onClick={handleMenuItemClick}
                 >
                   {label}

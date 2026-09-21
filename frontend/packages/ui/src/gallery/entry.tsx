@@ -104,7 +104,7 @@ export const ENTRIES: Entry[] = [
     node: h('div', {}, e('H1', { content: 'Supported hardware' }), e('H2', { content: 'HiSilicon' })) },
 
   // --- page furniture -----------------------------------------------------
-  { group: 'Page furniture', name: 'HeaderMenu', live: true, changed: 'preact-iso dropped — the anchor navigates; the outside-click close no longer looks for #app', note: 'the site navigation, desktop breakpoint',
+  { group: 'Page furniture', name: 'HeaderMenu', live: true, changed: 'the labels were white at opacity-60 over the brand blue, 2.95:1 — under the 3:1 large-text floor; undimmed they are 5.29:1, and hover underlines instead. On mobile every link called preventDefault and only closed the drawer, so none of them navigated. preact-iso dropped: the anchor navigates, and the outside-click close no longer looks for the SPA\'s #app', note: 'the site navigation, desktop breakpoint',
     node: e('HeaderMenu', { menuItems: MENU_ITEMS }) },
   { group: 'Page furniture', name: 'Paragraph', changed: 'the optional icon is typed as a component and guarded',
     node: h('div', { className: 'flex flex-col gap-4' },
