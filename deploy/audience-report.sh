@@ -85,11 +85,11 @@ visitors() {
       # not.
       if ($6 ~ /Macintosh/ && width == 1366) impossible[visitor] = 1
 
-      # Second, independent signal, kept only to watch the first one: every
-      # real browser sends Accept-Language. On 2026-09-21 the two agreed on
-      # 1,710 of 1,745 requests. When they stop agreeing the fingerprint above
-      # has drifted and the split below is wrong -- which is worth being told,
-      # rather than left to look like a change in the audience.
+      # Every real browser sends Accept-Language. This used to be a second
+      # bot signal, cross-checked against the fingerprint above; that only
+      # worked while one fleet dominated both, and once the snapshot crawler
+      # left it fired on every run. It now separates reader-shaped visits
+      # instead of second-guessing the fingerprint.
       if (language == "-" || language == "") quiet[visitor] = 1
 
       # The gallery and the images in it, in any locale. Kept apart from the
@@ -120,14 +120,27 @@ visitors() {
     END {
       for (v in seen) {
         total++
-        if (v in quiet) silent++
         if (v in impossible) { crawlers++; continue }
-        if (v in elsewhere) { readers++; person[v] = 1 }
+        if (v in elsewhere) {
+          # Reader-shaped, but every real browser sends Accept-Language. Its
+          # own line rather than a share of the audience: on 2026-09-21, with
+          # the wall crawler gone, 62 of 154 visitors sent none, all of them
+          # reporting an 800 px viewport and no browser token, all of them
+          # asking for /ru or /zh. Counting those as readers overstates the
+          # audience by a third.
+          #
+          # Named rather than dropped, because a few privacy setups do strip
+          # the header and this is the report where someone can judge that
+          # and add them back. The rule is the one the wall split follows: an
+          # ambiguous population gets a line, never a share of "people".
+          if (v in quiet) no_language++
+          else { readers++; person[v] = 1 }
+        }
         else if (v in wall) { wall_only++; if (views_by[v] == 1) wall_once++ }
         # Events but no page view at all. analytics.js counts every turbo:load,
         # so this is a page beacon that was blocked or lost rather than a way
-        # of browsing; it is kept out of the three counts above rather than
-        # quietly making someone a reader, and printed only when it happens.
+        # of browsing; it is kept out of the counts above rather than quietly
+        # making someone a reader, and printed only when it happens.
         else events_only++
       }
 
@@ -143,7 +156,7 @@ visitors() {
       printf "wall-once %d\n", wall_once
       printf "readers %d\n", readers
       printf "events-only %d\n", events_only
-      printf "no-language %d\n", silent
+      printf "no-language %d\n", no_language
       for (p in page) printf "page %d %s\n", page[p], p
     }
   ' "$1"
@@ -169,16 +182,32 @@ visitor_report() {
   printf '    impossible device %8d  macOS at 1366px, the snapshot crawler\n' "$crawler"
   printf '    open wall only    %8d  %d of them one view and gone\n' "$wall_only" "$wall_once"
   printf '    readers           %8d  reached a page outside the wall\n' "$readers"
+  [ "$quiet" -eq 0 ] ||
+    printf '    no Accept-Language%8d  reader-shaped, but no browser omits that header\n' "$quiet"
   [ "$events_only" -eq 0 ] ||
     printf '    events, no page   %8d  a click counted where the page view did not\n' "$events_only"
 
-  # Both signals or neither. A fifth apart means the crawler has changed its
-  # fingerprint and the line above is now counting some of it as people.
-  local spread=$(( crawler > quiet ? crawler - quiet : quiet - crawler ))
-  local larger=$(( crawler > quiet ? crawler : quiet ))
-  if [ "$larger" -gt 0 ] && [ $(( spread * 5 )) -gt "$larger" ]; then
-    printf '  WARNING: %d visitors sent no Accept-Language but %d look impossible.\n' "$quiet" "$crawler"
-    printf '           These two should agree. The fingerprint in visitors() needs a look.\n'
+  # The fingerprint above names one fleet, and a fingerprint is always one
+  # release behind whoever it describes. This is the check that does not
+  # depend on getting it right: `open wall only` is BY CONSTRUCTION the
+  # visitors the fingerprint did not catch -- the classifier takes the
+  # impossible ones first -- so a crawl it has stopped recognising lands
+  # there whatever it has changed about itself.
+  #
+  # More of them than readers means the gallery is being collected rather
+  # than looked at. On 2026-09-20, before the ids changed, that read 661
+  # against 395 and would have said so; in the ninety minutes after, 8
+  # against 142.
+  #
+  # The previous version cross-checked the fingerprint against
+  # Accept-Language and warned when the two disagreed. That only held while
+  # one fleet dominated both signals: the moment the snapshot crawler left it
+  # fired on every run, which is how a warning becomes a line people skip.
+  if [ "$wall_only" -gt "$readers" ]; then
+    printf '  WARNING: %d visitors touched only the gallery against %d who read the site.\n' \
+      "$wall_only" "$readers"
+    printf '           The wall is being collected, not browsed. If the fingerprint above\n'
+    printf '           is not catching it, that is where to look first.\n'
   fi
 
   if [ "$readers" -gt 0 ]; then

@@ -130,25 +130,67 @@ class AudienceReportTest < ActiveSupport::TestCase
     end
   end
 
-  # Two signals, kept because one of them will rot: the crawler can change its
-  # viewport or its User-Agent, and the first sign would be the audience
-  # appearing to grow. Every real browser sends Accept-Language.
-  test 'it says so when the two bot signals stop agreeing' do
-    quiet = <<~LINE
-      203.0.113.12 - - [21/Sep/2026:01:06:00 +0000] "POST /api/a/count?p=%2Fsnapshots%2F1004&t=Open%20Wall&s=1512&b=0&rnd=gggg1 HTTP/1.1" 200 43 "https://openipc.org/snapshots/1004" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36" xff="-" cache=- rt=0.003 urt="0.002" al="-" peer=203.0.113.12
+  # The fingerprint names one fleet, and a fingerprint is always a release
+  # behind whoever it describes. This is the check that does not depend on
+  # getting it right: `open wall only` is by construction the visitors it did
+  # NOT catch, because the classifier takes the impossible ones first -- so a
+  # crawl that has changed its viewport lands there whatever else it changed.
+  #
+  # An earlier version cross-checked the fingerprint against Accept-Language
+  # and warned when the two disagreed. That held only while one fleet
+  # dominated both signals: the morning the snapshot crawler stopped, it began
+  # firing on every run, which is how a warning turns into a line people skip.
+  test 'it warns when the gallery is collected rather than browsed' do
+    wall = <<~LINE
+      203.0.113.20 - - [21/Sep/2026:01:06:00 +0000] "POST /api/a/count?p=%2Fsnapshots%2F1004&t=Open%20Wall&s=1512&b=0&rnd=gggg1 HTTP/1.1" 200 43 "https://openipc.org/snapshots/1004" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" xff="-" cache=- rt=0.003 urt="0.002" al="en-GB,en;q=0.9" peer=203.0.113.20
     LINE
 
-    Tempfile.create(['drifted-access', '.log']) do |file|
+    Tempfile.create(['collected-access', '.log']) do |file|
       file.write(FIXTURE.read)
-      3.times { |i| file.write(quiet.sub('203.0.113.12', "203.0.113.1#{i + 2}").sub('1004', "100#{i + 4}")) }
+      4.times { |i| file.write(wall.gsub('203.0.113.20', "203.0.113.2#{i}").sub('1004', "10#{i + 10}")) }
       file.flush
 
       output = run_visitors(file.path)
 
       assert_equal 2, count_in(output, 'impossible device'),
-                   'the three added crawlers report a viewport a Mac really has'
-      assert_match(/WARNING: 5 visitors sent no Accept-Language but 2 look impossible/, output)
-      assert_match(/fingerprint in visitors\(\) needs a look/, output)
+                   'still only the fixture pair: the four added report a viewport a real ' \
+                   'machine has, so the fingerprint cannot see them -- which is the point'
+      assert_equal 6, count_in(output, 'open wall only')
+      assert_equal 3, count_in(output, 'readers')
+      assert_match(/WARNING: 6 visitors touched only the gallery against 3 who read the site/, output)
+      assert_match(/collected, not browsed/, output)
+    end
+  end
+
+  test 'the quiet fixture raises no warning' do
+    assert_no_match(/WARNING/, run_visitors,
+                    'two wall visitors against three readers is a gallery being browsed')
+  end
+
+  # Every real browser sends Accept-Language. Counting a visit without one as
+  # a reader overstated the audience by a third on 2026-09-21, once the wall
+  # crawler had gone and what was left on /ru and /zh became visible: 62 of
+  # 154, every one reporting an 800px viewport and no browser token.
+  #
+  # A line of its own rather than a silent drop, because a few privacy setups
+  # do strip the header, and this is the report where someone can judge that
+  # and add them back.
+  test 'a reader-shaped visit with no Accept-Language is not a reader' do
+    quiet = <<~LINE
+      203.0.113.30 - - [21/Sep/2026:01:07:00 +0000] "POST /api/a/count?p=%2Fru&t=OpenIPC&s=800&b=0&rnd=hhhh1 HTTP/2.0" 200 43 "https://openipc.org/ru" "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/151.0.0.0 Mobile Safari/537.36" xff="-" cache=- rt=0.002 urt="0.002" al="-" peer=203.0.113.30
+    LINE
+
+    Tempfile.create(['quiet-access', '.log']) do |file|
+      file.write(FIXTURE.read)
+      file.write(quiet)
+      file.flush
+
+      output = run_visitors(file.path)
+
+      assert_equal 3, count_in(output, 'readers'), 'the quiet visitor was counted as audience'
+      assert_equal 1, count_in(output, 'no Accept-Language')
+      assert_no_match(%r{^\s+\d+\s+/ru$}, output,
+                      'its page must not appear in what readers read either')
     end
   end
 
