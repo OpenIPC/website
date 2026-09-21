@@ -24,6 +24,12 @@ class PagesController < ApplicationController
     render 'pages/ecosystem'
   end
 
+  def edge_ai
+    @page_title = t('pages.edge_ai.title')
+    @meta_description = t('pages.edge_ai.meta_description')
+    render 'pages/edge_ai'
+  end
+
   def firmware_partitions_calculation
     @page_title = t('pages.firmware_partitions_calculation.title')
     render 'pages/firmware_partitions_calculation'

@@ -169,6 +169,62 @@ zh:
       section_tools_title: 专业工具
       stage_legend_html: 每个项目都带有诚实的状态标记——与我们用于固件平台的是同一套说法。<a href="/stages-of-firmware-development">各阶段是怎么划分的</a>。
       title: 生态
+    edge_ai:
+      bring_driver_text: 为 HiSilicon 的视觉引擎和神经引擎从反汇编与内核跟踪中写出的洁净室内核驱动，与原厂驱动逐字节一致——在原厂测试卡死的地方更稳。厂商沉默不是障碍。
+      bring_driver_title: 没有驱动，我们就写一个
+      bring_fit_text: 重塑模型，让整张网络都在加速器上运行而不是一半；再用相机自己的画面重新训练：它的角度、它的图像处理流水线、它的原生尺度。不做这一步就搬到新相机上的模型，会损失十到二十个点的精度。
+      bring_fit_title: 让模型适配芯片和相机
+      bring_map_text: 我们通过在四个 NPU 家族上实际运行模型来绘制它们的能力图，而不是读厂商的 PDF：什么能在加速器上跑，什么会悄悄退回，以及在你花一个冲刺去试错之前该改什么。
+      bring_map_title: 我们知道你的 NPU 跑不了什么
+      bring_proven_text: 视觉引擎在我们自己的 QEMU 里跑 CI，与真实芯片逐像素比对过。每一处改动都在模拟硬件上过夜验证，测试台不再是瓶颈，你的板子也不必放在我们桌上。
+      bring_proven_title: 在碰到开发板之前就已验证
+      brings_intro: 四件事，每一件都在芯片上实测。
+      brings_title: 我们带来什么
+      cta_note_html: 相机固件、传感器调优与定制视频链路见<a href="/business">商务页面</a>。
+      cta_primary: 写信至 business@openipc.org
+      cta_secondary: 在群里提问
+      cta_text: 一封四行的邮件：模型及其格式、目标 SoC 与 SDK 版本、相机画面的链接、你需要的帧率与精度。回复你的是带着方案的工程师，不是销售话术。
+      cta_title: 把模型和 SoC 发来。一周内拿到结论。
+      engagement_title: 合作是怎样进行的
+      eyebrow: 白皮书 · 边缘 AI · 在摄像头芯片上推理
+      hero_art_alt: 夜间停车场，一张神经网络汇聚到两辆车上，车牌被框出
+      hero_cta_how: 合作是怎样进行的
+      hero_cta_send: 把模型和 SoC 发给我们
+      hero_lede: 在摄像头 SoC 的 NPU 与视觉引擎上运行 AI 推理，达到芯片本该有的速度，哪怕没有人给你工具。来自 OpenIPC 背后的团队。
+      hero_title: 你有模型，也有芯片。我们让它们一起跑起来。
+      meta_description: 在摄像头 SoC 的 NPU 与视觉引擎上运行 AI 推理：四个 NPU 家族能跑什么、厂商没有驱动时我们自己写、为芯片与相机量身调校的模型、无需开发板即可在 CI 中验证。
+      platform_arm: 没有 NPU 的 ARM 核
+      platform_hisi: HiSilicon 与 Goke
+      platform_ingenic: Ingenic
+      platform_rk: Rockchip
+      platform_sstar: SigmaStar
+      platforms_text: 这些平台我们都在出货固件，并与大多数摄像头 SoC 厂商签有 NDA——包括那些不在本土市场之外发布的工具链。如果你的芯片不在列表里，尽管问：48 小时内给出能或不能。
+      platforms_title: 平台
+      pull_quote: 墙是工具链，不是你的模型。
+      res_cpu_text: 在完全没有加速器的摄像头上，我们自己的整数推理引擎让一个神经网络分类器在摄像头的单核上快了五倍，结果与参考实现完全一致。只有硬件运动检测看到动静时检测才会唤醒，安静的场景不花一分算力。
+      res_cpu_title: 没有 NPU？照样能跑
+      res_faces_text: 八毫秒内完成检测与识别，全部在加速器上，模型小到可以与视频流水线并存——在标准基准上的精度不输于体积大许多倍的模型。
+      res_faces_title: 人脸
+      res_plates_text: 在摄像头芯片的加速器上以超过每秒八十帧的速度找到并读出车牌，没有为了让模型装下而牺牲任何东西。用相机自己的画面训练，所以它读的正是镜头真正看到的：夜里、停车场、相机悬挂的那个角度。
+      res_plates_title: 车牌
+      results_title: 真实芯片上的结果
+      scar_p1: 摄像头 SoC 的 NPU 不是 GPU。它只支持一小串算子，按它的编译器决定的方式量化，而那个编译器你未必拿得到——有些从不在本土市场之外发布。在集群上训练一夜的模型，遇到的是一颗跑不了它一半的芯片，和一个在第一个陌生层就崩溃的驱动。
+      scar_p2: 数据手册写着 TOPS。它不会写你的模型里哪些部分会悄悄退回到 CPU，也不会写原厂驱动只能交出芯片四分之一的速度。这些答案只能靠在芯片上真正运行模型得到——从第一批带视觉引擎的摄像头 SoC 起我们就在做这件事，最早是在连浮点单元都没有的 ARM 核上。
+      scar_title: 你的模型在这里跑不起来，而且没人会告诉你为什么
+      stat_fps_l: 在摄像头芯片上端到端读取车牌
+      stat_fps_n: 80 fps
+      stat_gap_l: 原厂驱动白白留在桌上的速度，在同一颗芯片上实测
+      stat_gap_n: 4×
+      stat_loss_l: 的模型精度在适配芯片后得以保留
+      stat_loss_n: 100%
+      stats_source: 由我们在 RK3588 和 HiSilicon 芯片上实测，用的是我们调校的模型和我们编写的驱动。
+      step1_text: 固定价格，五个工作日。你提供模型或其架构、SoC 与 SDK 版本、约五十帧真实相机画面，以及你被考核的指标。你得到逐层的可运行判定、适配芯片时精度面临的风险及保住它的办法、对照我们实测基线的预期速度，以及下一步的固定报价。
+      step1_title: 可行性报告
+      step2_text: 模型重塑并用你的画面重新训练，在精简的原生运行时中完全跑在加速器上，在你的板子上实测。验收标准就是报告中约定的数字。
+      step2_title: 移植与调校
+      step3_text: 集成进 OpenIPC 或你的固件；芯片有覆盖的话在 QEMU 下跑 CI；软件栈缺失的地方补驱动——外加一份应对 SDK 版本更迭的长期服务，因为那会把模型锁死在固件版本上。
+      step3_title: 集成与维护
+      title: 边缘 AI
     firmware_partitions_calculation:
       end_address: 结束地址
       flash_size_mb: 闪存大小，MB

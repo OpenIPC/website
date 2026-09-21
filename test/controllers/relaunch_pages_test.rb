@@ -11,6 +11,7 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     '/get-started' => 'get_started',
     '/low-latency' => 'low_latency',
     '/teleoperation' => 'teleoperation',
+    '/edge-ai' => 'edge_ai',
     '/ecosystem' => 'ecosystem',
     '/business' => 'business',
     '/community' => 'community',
@@ -288,7 +289,7 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
   # tinted full-bleed section, where the gap is a white stripe between two
   # coloured bands.
   test 'the closing band keeps its distance from text on white' do
-    %w[/get-started /low-latency /community /ecosystem].each do |path|
+    %w[/get-started /low-latency /community /ecosystem /edge-ai].each do |path|
       get path
 
       band = css_select('section.section--ink').last
@@ -302,20 +303,22 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
                         'the homepage band is separated from the section above it by a white stripe'
   end
 
-  # Low Latency became a dropdown when the teleoperation page arrived: a
-  # seventh top-level entry does not fit the navbar. Both pages have to stay
-  # reachable from it, in every language, or one of them quietly loses its
-  # only entry in the chrome.
-  test 'the Low Latency menu reaches both of its pages' do
+  # Low Latency became a dropdown when the teleoperation page arrived, and the
+  # edge-AI page joined it: a seventh top-level entry does not fit the navbar.
+  # Every page in it has to stay reachable, in every language, or one of them
+  # quietly loses its only entry in the chrome.
+  test 'the Low Latency menu reaches all of its pages' do
     %w[en ru zh].each do |locale|
       prefix = locale == 'en' ? '' : "/#{locale}"
       get prefix.empty? ? '/' : prefix
 
-      %w[/low-latency /teleoperation].each do |path|
+      %w[/low-latency /teleoperation /edge-ai].each do |path|
         assert_not_empty css_select(%(.navbar a.dropdown-item[href="#{prefix}#{path}"])),
                          "no #{path} entry in the #{locale} menu"
       end
-      assert_not_empty css_select(%(footer a[href="#{prefix}/teleoperation"])), "no footer entry in #{locale}"
+      %w[/teleoperation /edge-ai].each do |path|
+        assert_not_empty css_select(%(footer a[href="#{prefix}#{path}"])), "no footer entry for #{path} in #{locale}"
+      end
     end
   end
 
@@ -350,7 +353,7 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     assert_not_empty held
     assert_not_includes PagesHelper::HOME_PARTNER_ROWS.values.flatten, :exhibitions
 
-    %w[/ /business /ecosystem /community /donate /low-latency /teleoperation /get-started].each do |path|
+    %w[/ /business /ecosystem /community /donate /low-latency /teleoperation /edge-ai /get-started].each do |path|
       get path
 
       held.each do |logo|
