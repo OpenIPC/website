@@ -15,22 +15,48 @@
   </header>
 
   <div class="row">
-    <% if @camera.soc.uboot_filename.blank? || @camera.soc.linux_filename.blank? || @camera.soc.load_address.blank? || !@camera.soc.firmware_published? %>
+    <%# Asked of the release index, not of the filename. A SoC can name a
+        bootloader that upstream does not publish -- HI3536DV100 names
+        u-boot-hi3536dv100-original.bin, which is not in the index -- and the
+        blank check let it through to the wizard form. Its `availability` is
+        :firmware_only, so the list row said "firmware only" while the page
+        offered to build an image around a bootloader that does not exist.
+        Strictly narrower than the old test: a blank filename is never
+        published, and when the index cannot be read the predicate answers
+        optimistically, which is what the blank check did. %>
+    <% if !@camera.soc.bootloader_published? || @camera.soc.linux_filename.blank? || @camera.soc.load_address.blank? || !@camera.soc.firmware_published? %>
       <div class="col-md-6 col-xl-7 col-xxl-8 mb-3">
         <div class="alert alert-info">
-          <%# Firmware published but no bootloader is a different thing from not %>
-          <%# being supported yet, and saying "we are working hard to release   %>
-          <%# firmware" beside a link to that very firmware helps nobody.       %>
-          <% if @camera.soc.firmware_published? && !@camera.soc.bootloader_published? %>
-            <p class="mb-0"><%= t('.no_bootloader_alert', name: @camera.soc.full_name) %></p>
+          <%# One message per state, not one for everything (#189).
+
+              This said "the installation instructions are not yet ready,
+              although we are working hard to release OpenIPC firmware" to all
+              of them. For the 25 `neq` chips the truth is that we have the SDK
+              and no board, and for the `hlp` ones that we have the board and
+              need a developer -- and each of those is something a reader could
+              act on, hidden behind copy that asked them to wait.
+
+              Firmware published but no bootloader is a different thing again,
+              and saying "working hard to release firmware" beside a link to
+              that very firmware helps nobody. %>
+          <% if @camera.soc.availability == :firmware_only %>
+            <p><%= t('.no_bootloader_alert', name: @camera.soc.full_name) %></p>
+            <p class="mb-0"><%= t('.stock_bootloader_html') %></p>
           <% else %>
-            <p class="mb-0"><%= t('.not_ready_alert_html', name: @camera.soc.full_name) %></p>
+            <p class="mb-0"><%= t(".unavailable_#{@camera.soc.status}_html",
+                                  name: @camera.soc.full_name,
+                                  default: t('.unavailable_html', name: @camera.soc.full_name)) %></p>
           <% end %>
         </div>
       </div>
 
       <div class="col">
-        <% unless @camera.soc.uboot_filename.blank? %>
+        <%# Same question as the gate, one level down. This offered a
+            "Bootloader" link built from the filename alone, so MStar MSC313E
+            -- the one live page that reached here with a filename set -- sent
+            the reader to a 404 on github.com. A link we cannot honour is worse
+            than no link: it reads as our download being broken. %>
+        <% if @camera.soc.bootloader_published? %>
           <div class="alert alert-info github">
             <i class="bi bi-github float-end"></i>
             <h5 class="mb-1"><%= link_to t('.bootloader'), @camera.soc.bl_url %></h5>

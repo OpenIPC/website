@@ -181,4 +181,19 @@ module PagesHelper
   def partner_logos(*keys)
     partner_groups(*keys).flat_map(&:last)
   end
+
+  # How many chips of each vendor a visitor can actually install (#189).
+  #
+  # One pass over the catalogue, memoised for the request: the tab strip asks
+  # for every vendor and Soc#availability reads the release index, so doing it
+  # per tab would walk the index fourteen times.
+  def installable_counts
+    @installable_counts ||= Soc.all.group_by(&:vendor_id)
+                               .transform_values { |socs| socs.count(&:installable?) }
+                               .tap { |h| h.default = 0 }
+  end
+
+  def vendor_totals
+    @vendor_totals ||= Soc.group(:vendor_id).count.tap { |h| h.default = 0 }
+  end
 end

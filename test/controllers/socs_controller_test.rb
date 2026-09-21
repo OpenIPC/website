@@ -184,8 +184,14 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
   # Both editions on both flash types, so use_published_release! leaves the
   # submitted choice alone and the assertions are about flash type and nothing
   # else.
+  #
+  # The bootloader goes in too, since #189: the show page opens the form only
+  # for a chip whose bootloader the index actually lists, so an index carrying
+  # firmware alone describes a firmware-only chip and the form is correctly not
+  # rendered. Every caller here is testing the form.
   def every_edition_for(soc)
-    %w[nor nand].product(%w[lite ultimate]).map { |flash, release| "openipc.#{soc.board}-#{flash}-#{release}.tgz" }
+    %w[nor nand].product(%w[lite ultimate]).map { |flash, release| "openipc.#{soc.board}-#{flash}-#{release}.tgz" } +
+      [soc.uboot_filename]
   end
 
   def instructable_soc(model)
@@ -1236,7 +1242,7 @@ class SocsControllerTest < ActionDispatch::IntegrationTest
   test 'an 8MB link keeps Ultimate where it is the only edition published' do
     soc = instructable_soc('TS3516EVB00')
 
-    with_release_index("openipc.#{soc.board}-nor-ultimate.tgz") do
+    with_release_index("openipc.#{soc.board}-nor-ultimate.tgz", soc.uboot_filename) do
       get "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}" \
           "#{permalink_for(flash_type: 'nor8m', firmware_version: 'ultimate')}"
 
