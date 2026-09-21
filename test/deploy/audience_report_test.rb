@@ -50,6 +50,7 @@ class AudienceReportTest < ActiveSupport::TestCase
   # geolocation itself is goaccess's and is not under test here.
   GOACCESS_STUB = <<~SH
     #!/bin/sh
+    [ -n "${ENGAGED_INPUT_COPY:-}" ] && [ -f "$1" ] && cp "$1" "$ENGAGED_INPUT_COPY"
     for arg in "$@"; do
       if [ "$arg" = csv ]; then
         [ -n "${ENGAGED_CSV:-}" ] && cat "$ENGAGED_CSV"
@@ -85,9 +86,11 @@ class AudienceReportTest < ActiveSupport::TestCase
 
   # The geoip database is pointed at the CSV itself: the script only checks
   # that one is readable, and the stub never opens it.
-  def report_env(bin, csv, min)
+  def report_env(bin, opts)
+    csv = opts[:csv]
     env = { 'PATH' => "#{bin}:#{ENV.fetch('PATH')}" }
-    env['ENGAGED_MIN'] = min.to_s if min
+    env['ENGAGED_MIN'] = opts[:min].to_s if opts[:min]
+    env['ENGAGED_INPUT_COPY'] = opts[:input_copy] if opts[:input_copy]
     return env unless csv
 
     env['ENGAGED_CSV'] = csv.path
@@ -98,16 +101,24 @@ class AudienceReportTest < ActiveSupport::TestCase
   # The log is copied under a dated name because the script takes the day from
   # the filename when it can and from `date` when it cannot, and the history
   # has to be deterministic.
-  def run_report(log, outdir, day: '20260921', csv: nil, min: nil)
+  def run_report(log, outdir, day: '20260921', **opts)
     bin = stub_goaccess(Dir.mktmpdir)
     named = File.join(Dir.mktmpdir, "access-#{day}.log")
     FileUtils.cp(log, named)
 
-    out, status = Open3.capture2e(report_env(bin, csv, min), 'bash', SCRIPT.to_s, named, outdir)
+    out, status = Open3.capture2e(report_env(bin, opts), 'bash', SCRIPT.to_s, named, outdir)
     assert_predicate status, :success?, "audience-report failed:\n#{out}"
     out
   ensure
     FileUtils.rm_rf(bin) if bin
+  end
+
+  # Both series files open with a comment naming their columns and what
+  # produced them, so that a file read months later is still attributable.
+  def data_rows(path)
+    lines = File.readlines(path, chomp: true)
+    assert_match(/\A# date\t/, lines.first, "#{File.basename(path)} lost its header")
+    lines.drop(1).map { |row| row.split("\t") }
   end
 
   def count_in(output, label)
@@ -370,7 +381,7 @@ class AudienceReportTest < ActiveSupport::TestCase
 
       assert_match(/engaged, previous\s+0\s+on 2026-09-20/, second)
 
-      rows = File.readlines(File.join(outdir, 'engaged.tsv'), chomp: true).map { |row| row.split("\t") }
+      rows = data_rows(File.join(outdir, 'engaged.tsv'))
 
       assert_equal [%w[2026-09-20 7 3 0], %w[2026-09-21 7 3 0]], rows, <<~MESSAGE.chomp
         date, visitors, readers, engaged -- and the date normalised, because
@@ -378,6 +389,58 @@ class AudienceReportTest < ActiveSupport::TestCase
         sorts before every digit, so two formats in one column would order the
         series by which branch produced it.
       MESSAGE
+    end
+  end
+
+  # Review finding on #249, and the reason the country split does not filter
+  # the log by address. An engaged reader is an address AND a User-Agent; the
+  # fixture has one address running an engaged Firefox and a one-page iPhone,
+  # so selecting by address alone hands the geolocator a browser that is not
+  # in the count and the two populations stop reconciling.
+  #
+  # Asserted on what goaccess is given rather than on what it returns: the
+  # stub cannot geolocate, and a stubbed total would prove only that the stub
+  # was believed.
+  test 'only the engaged visitors own lines are geolocated, not everyone at their address' do
+    Dir.mktmpdir do |outdir|
+      given = File.join(outdir, 'given-to-goaccess.log')
+      run_report(FIXTURE, outdir, min: 2, input_copy: given,
+                                  csv: geo_csv([['CN China', 1]]))
+      lines = File.readlines(given)
+
+      assert_equal 1, lines.length, 'one engaged visitor in the fixture at this threshold'
+      assert_match(/^198\.51\.100\.30 /, lines.first)
+      assert_match(/Firefox/, lines.first, <<~MESSAGE.chomp)
+        The iPhone at the same address read one page and is not engaged. Filtering
+        by address would have handed its line over too, and goaccess counts a
+        visitor per User-Agent, so the country total would have exceeded the
+        engaged count it is supposed to break down.
+      MESSAGE
+    end
+  end
+
+  test 'two engaged browsers at one address are both geolocated' do
+    extra = (1..2).map do |n|
+      <<~LINE
+        198.51.100.30 - - [21/Sep/2026:01:1#{n}:00 +0000] "POST /api/a/count?p=%2Fecosystem-#{n}&t=E&s=402&b=0&rnd=kkkk#{n} HTTP/2.0" 200 43 "https://openipc.org/ecosystem-#{n}" "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.7 Mobile/15E148 Safari/604.1" xff="-" cache=- rt=0.002 urt="0.001" al="en-GB,en;q=0.9" peer=198.51.100.30
+      LINE
+    end.join
+
+    Tempfile.create(['two-browsers', '.log']) do |file|
+      file.write(FIXTURE.read + extra)
+      file.flush
+
+      Dir.mktmpdir do |outdir|
+        given = File.join(outdir, 'given-to-goaccess.log')
+        output = run_report(file.path, outdir, min: 2, input_copy: given,
+                                               csv: geo_csv([['CN China', 2]]))
+        lines = File.readlines(given)
+
+        assert_equal 2, count_in(output, 'engaged'), 'the iPhone now reads three pages as well'
+        assert_equal 2, lines.length, 'one line each, so the geolocated population is the counted one'
+        assert_equal(1, lines.count { |line| line.include?('Firefox') })
+        assert_equal(1, lines.count { |line| line.include?('iPhone') })
+      end
     end
   end
 
@@ -413,8 +476,7 @@ class AudienceReportTest < ActiveSupport::TestCase
       assert_match(/2\s+\d+%\s+RU Russia\s+\(\+2\)/, output,
                    'absent from the previous day is zero that day, not an absent column')
 
-      rows = File.readlines(File.join(outdir, 'engaged-countries.tsv'), chomp: true)
-                 .map { |row| row.split("\t") }
+      rows = data_rows(File.join(outdir, 'engaged-countries.tsv'))
 
       assert_equal [%w[2026-09-20], %w[2026-09-20], %w[2026-09-21], %w[2026-09-21]],
                    rows.map { |row| [row.first] }, 'two countries a day, both days kept'
@@ -438,7 +500,7 @@ class AudienceReportTest < ActiveSupport::TestCase
     Dir.mktmpdir do |outdir|
       2.times { run_report(FIXTURE, outdir, day: '20260921') }
 
-      rows = File.readlines(File.join(outdir, 'engaged.tsv'), chomp: true)
+      rows = data_rows(File.join(outdir, 'engaged.tsv'))
 
       assert_equal 1, rows.length, 'a re-run after a fix must not leave two answers for one date'
     end

@@ -139,7 +139,15 @@ visitors() {
         # views because wall-once needs them; this one must not, or a gallery
         # visitor who scrolled five images would read as an engaged reader,
         # which is the population the wall split exists to keep separate.
-        else { elsewhere[visitor] = 1; site_views[visitor]++ }
+        #
+        # One line kept per visitor, the first: it is what the country split
+        # geolocates, and keeping the line belonging to THAT visitor is what
+        # makes the two populations the same. See engaged_countries.
+        else {
+          if (!(visitor in elsewhere)) rep[visitor] = $0
+          elsewhere[visitor] = 1
+          site_views[visitor]++
+        }
         views[path SUBSEP visitor] = 1
         views_by[visitor]++
       }
@@ -173,10 +181,7 @@ visitors() {
             # and the visitor with no Accept-Language cannot reach it.
             if (site_views[v] >= engaged_min) {
               engaged++
-              # The address alone, for the country split. Everything before
-              # the FIRST pipe: the key is address|User-Agent and a User-Agent
-              # may contain a pipe, while an address never can.
-              engaged_at[substr(v, 1, index(v, "|") - 1)] = 1
+              engaged_line[v] = rep[v]
             }
           }
         }
@@ -201,11 +206,12 @@ visitors() {
       printf "readers %d\n", readers
       printf "engaged %d\n", engaged
       printf "engaged-min %d\n", engaged_min
-      # Internal, for the country split below. visitor_report never prints
-      # these and neither does anything else: an address in the output would
-      # make this report the individual record the privacy page says the site
-      # does not keep.
-      for (a in engaged_at) printf "engaged-address %s\n", a
+      # Internal, for the country split below: one log line per engaged
+      # VISITOR, which is the address and User-Agent pair counted above and
+      # not merely the address. visitor_report never prints these and neither
+      # does anything else -- an address in the output would make this report
+      # the individual record the privacy page says the site does not keep.
+      for (v in engaged_line) printf "engaged-line %s\n", engaged_line[v]
       printf "events-only %d\n", events_only
       printf "no-language %d\n", no_language
       for (p in page) printf "page %d %s\n", page[p], p
@@ -308,11 +314,18 @@ record_history() {
   readers=$(awk '$1 == "readers" { print $2 }' <<< "$counts")
   engaged=$(awk '$1 == "engaged" { print $2 }' <<< "$counts")
 
+  # The header is written, not sorted into place. A comment character sorts
+  # ahead of a digit by byte, but the default locale collates punctuation as
+  # though it were absent and puts the line in the middle of the series.
+  # LC_ALL=C for the same reason: the order of this file is the comparison.
   mkdir -p "$outdir"
   scratch=$(mktemp)
-  [ -f "$history" ] && awk -v d="$day" -F'\t' '$1 != d' "$history" > "$scratch"
+  [ -f "$history" ] && awk -v d="$day" -F'\t' '!/^#/ && $1 != d' "$history" > "$scratch"
   printf '%s\t%s\t%s\t%s\n' "$day" "$total" "$readers" "$engaged" >> "$scratch"
-  sort -o "$history" "$scratch"
+  {
+    printf '# date\tvisitors\treaders\tengaged (%s+ pages outside the wall) -- beacon\n' "$ENGAGED_MIN"
+    LC_ALL=C sort "$scratch"
+  } > "$history"
   rm -f "$scratch"
 
   # The previous row is the run before this date, not simply the line above:
@@ -321,6 +334,7 @@ record_history() {
   # Explicit string comparison: awk treats a field that looks numeric as a
   # number, and mawk and gawk need not agree on what looks numeric.
   awk -v d="$day" -v engaged="$engaged" -F'\t' '
+    /^#/ { next }
     ($1 "") < (d "") { prev_day = $1; prev = $4 }
     END {
       if (prev_day == "") {
@@ -349,23 +363,28 @@ record_history() {
 # so a country is a geolocation row that HAS a parent index; the continent rows
 # have an empty one and would otherwise be counted a second time.
 #
-# By address, not by visitor: one address carrying two engaged browsers is two
-# engaged readers above and one line here. The difference is small and the
-# alternative is geolocating in this script, which needs a database reader it
-# does not have.
+# The population is the same one the count above reports, and keeping it that
+# way is the whole difficulty. An engaged reader is an address AND a
+# User-Agent, so filtering the log by the ADDRESSES of engaged readers is a
+# different set: it drags in every other browser at those addresses, and the
+# fixture has exactly that shape -- one address running an engaged Firefox and
+# a one-page iPhone. GoAccess would have counted both.
 #
-# Addresses never leave $work, which the trap removes. Only counts are printed.
+# So nothing is filtered here. visitors() hands over one line per engaged
+# visitor, its own, and that is all GoAccess ever sees. The country totals then
+# reconcile with the engaged count by construction rather than by argument.
+#
+# Those lines never leave $work, which the trap removes. Only counts are
+# printed.
 engaged_countries() {
-  local counts=$1 log=$2 work=$3 outdir=$4 day=$5
+  local counts=$1 work=$2 outdir=$3 day=$4
   local history="$outdir/engaged-countries.tsv" scratch
 
   [[ $day =~ ^[0-9]{8}$ ]] && day="${day:0:4}-${day:4:2}-${day:6:2}"
 
-  awk '$1 == "engaged-address" { print $2 }' <<< "$counts" | sort -u > "$work/engaged-addresses"
-  [ -s "$work/engaged-addresses" ] || return 0
+  sed -n 's/^engaged-line //p' <<< "$counts" > "$work/engaged.log"
+  [ -s "$work/engaged.log" ] || return 0
   [ -r "$db" ] || { echo '  no country database; the engaged split needs one'; return 0; }
-
-  awk 'NR == FNR { keep[$1]; next } ($1 in keep)' "$work/engaged-addresses" "$log" > "$work/engaged.log"
 
   goaccess "$work/engaged.log" -o csv \
     --log-format='%h - %^ [%d:%t %^] "%r" %s %b "%R" "%u" xff="%^" cache=%^ rt=%T urt="%^" al="%^" peer=%^' \
@@ -398,26 +417,38 @@ engaged_countries() {
 
   [ -s "$work/engaged-by-country" ] || return 0
 
+  # A header, rewritten each run so it cannot end up duplicated, saying what
+  # the columns are and what produced them -- this file outlives the report it
+  # was printed beside. It survives the sort because "#" sorts ahead of any
+  # digit, and every reader below skips it.
   mkdir -p "$outdir"
   scratch=$(mktemp)
-  [ -f "$history" ] && awk -v d="$day" -F'\t' '$1 != d' "$history" > "$scratch"
+  [ -f "$history" ] && awk -v d="$day" -F'\t' '!/^#/ && $1 != d' "$history" > "$scratch"
   awk -v d="$day" -F'\t' '{ printf "%s\t%s\t%s\n", d, $2, $1 }' "$work/engaged-by-country" >> "$scratch"
-  sort -o "$history" "$scratch"
+  {
+    printf '# date\tcountry\tengaged readers -- beacon, %s via goaccess\n' "$(basename "$db")"
+    LC_ALL=C sort "$scratch"
+  } > "$history"
   rm -f "$scratch"
 
   # The run before this date, the same rule record_history follows, so that
   # backfilling an older day compares against what preceded IT.
   awk -v d="$day" -F'\t' '
+    /^#/ { next }
     ($1 "") < (d "") { if ($1 != last_day) { last_day = $1; delete prev; } prev[$2] = $3 }
     END { for (c in prev) printf "%s\t%s\t%s\n", "PREV", c, prev[c]; printf "%s\t%s\n", "PREVDAY", last_day }
   ' "$history" > "$work/engaged-prev"
 
   local prev_day
   prev_day=$(awk -F'\t' '$1 == "PREVDAY" { print $2 }' "$work/engaged-prev")
+  # Where these figures come from, printed with them. #184 asks that every
+  # number in the memo name its source, and a country column is the one most
+  # likely to be quoted away from the report that produced it.
   if [ -n "$prev_day" ]; then
-    printf '  engaged readers by country, against %s\n' "$prev_day"
+    printf '  engaged readers by country, against %s  [beacon; %s via goaccess]\n' \
+      "$prev_day" "$(basename "$db")"
   else
-    printf '  engaged readers by country\n'
+    printf '  engaged readers by country  [beacon; %s via goaccess]\n' "$(basename "$db")"
   fi
 
   # A country missing from the previous day had no engaged readers that day,
@@ -568,4 +599,4 @@ printf '  report              %s\n' "$report"
 beacon_counts=$(visitors "$log")
 visitor_report "$beacon_counts"
 record_history "$beacon_counts" "$outdir" "$day"
-engaged_countries "$beacon_counts" "$log" "$work" "$outdir" "$day"
+engaged_countries "$beacon_counts" "$work" "$outdir" "$day"
