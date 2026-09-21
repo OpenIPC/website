@@ -16,8 +16,14 @@
 # there by whoever went last. It fails by succeeding: the run prints its usual
 # "installed ..." line while every file it copied is the stale one. That cost
 # a cycle on 2026-09-21, which is why this script now prints a checksum of
-# each file it installs -- compare it with `sha256sum deploy/*.sh` in your
-# checkout if a change does not appear to have taken.
+# each file it installs. If a change does not appear to have taken, compare
+# them with the same four files in your checkout, in the same order:
+#
+#   sha256sum deploy/openipc-sample-rss deploy/cron.d/openipc-metrics \
+#             deploy/memory-probe.sh deploy/audience-report.sh | cut -c1-16
+#
+# rsync has to exist at both ends. It is in deploy/RESTORE.md's prerequisites
+# for that reason: a rebuilt Debian host does not always have it.
 #
 # The audience report needs a country database, which is a separate monthly
 # job rather than part of this:

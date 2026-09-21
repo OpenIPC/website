@@ -54,4 +54,46 @@ class InstallDocsTest < ActiveSupport::TestCase
       success over stale files, and the checksum is the only way to see it.
     MESSAGE
   end
+
+  # A checksum you cannot compare against anything is decoration. The script
+  # tells the reader which files to hash in their checkout, and the first
+  # version of that line said `deploy/*.sh` -- which misses
+  # `deploy/openipc-sample-rss`, having no extension, and the cron file, which
+  # is a directory down. Two of the four had nothing to compare with.
+  test 'the files install-metrics installs are the files it tells you to hash' do
+    body = Rails.root.join('deploy/install-metrics.sh').read
+
+    installed = body.scan(%r{^install -m \S+ -o \S+ -g \S+ "\$here/([^"]+)"}).flatten
+    documented = body[/sha256sum (.*?)\| cut/m].to_s
+
+    assert_equal 4, installed.length, 'expected four installed files; the check below assumes them'
+    missing = installed.reject { |f| documented.include?("deploy/#{f}") }
+
+    assert_empty missing, <<~MESSAGE.chomp
+      install-metrics.sh installs these and does not tell you how to hash them:
+
+      #{missing.map { |f| "  deploy/#{f}" }.join("\n")}
+
+      The comparison command in the header has to name every file the
+      installer installs, or the checksums it prints cover artifacts the
+      reader has no source-side output for -- which is how the first version
+      of it left two of four unverifiable.
+    MESSAGE
+  end
+
+  # The copy step is the one piece of the restore that runs before anything
+  # else works, and rsync is not on every Debian install. A rebuilt host that
+  # reaches the installers without it fails at the transfer, which is a
+  # confusing place to discover a missing package.
+  test 'RESTORE.md declares the tool its own commands need' do
+    restore = Rails.root.join('deploy/RESTORE.md').read
+    prerequisites = restore[/### \d+\. Host prerequisites.*?(?=\n## )/m].to_s
+
+    assert_includes restore, 'rsync -a --delete', 'this test is about the documented copy command'
+    assert_match(/\brsync\b/, prerequisites, <<~MESSAGE.chomp)
+      RESTORE.md tells a rebuilt host to copy deploy/ with rsync, so rsync
+      belongs in its prerequisites. It is needed at both ends and a Debian
+      install does not always have it.
+    MESSAGE
+  end
 end

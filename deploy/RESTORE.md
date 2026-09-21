@@ -143,7 +143,10 @@ from somewhere.
 
 Only needed on a rebuilt host:
 
-- docker-ce + compose v2, MariaDB, nginx, dehydrated
+- docker-ce + compose v2, MariaDB, nginx, dehydrated, rsync. The last one is
+  small and easy to miss: it is how `deploy/` reaches the host for the two
+  installers below, it is needed at both ends, and a Debian install does not
+  always have it. `apt-get install -y rsync` before either of them.
 - **the nginx configuration**, via `deploy/push-nginx.sh --apply` from a
   checkout. It installs the vhosts and `conf.d/`, tests and reloads. A host
   without it answers on the right ports and has none of the caching or
