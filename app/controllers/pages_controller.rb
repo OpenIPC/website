@@ -81,6 +81,16 @@ class PagesController < ApplicationController
     render 'pages/our_team'
   end
 
+  # /privacy is reached from the footer and, after this, from the sitemap. It
+  # renders without an action -- which is how it shipped in #225 with an empty
+  # <title> and an empty og:title, so a search result or a Telegram preview for
+  # the one page that explains what the site records showed nothing but " -
+  # OpenIPC". The key existed in all three locales the whole time.
+  def privacy
+    @page_title = t('pages.privacy.title')
+    render 'pages/privacy'
+  end
+
   def qr_code_generator
     @page_title = t('pages.qr_code_generator.title')
     render 'pages/qr_code_generator'
