@@ -56,16 +56,57 @@ check('and pointed at the FPV room', chat === 'https://t.me/+BMyMoolVOpkzNWUy', 
 await p.goto(wizard('goke/socs/gk7205v300'), { waitUntil: 'networkidle' })
 check('the second camera of the same tab is not asked again', !(await listVisible()))
 
-// Back. Turbo restores the page from its DOM cache, so whatever state the
-// list was left in comes back with it -- the first fix for the double-run bug
-// marked the element as handled, and that marker was cached too, which made
-// Back show the ask again. There is no marker now; turbo:load fires on a
-// restore like any other navigation and the flag decides.
-await p.goBack({ waitUntil: 'networkidle' })
-check('going back does not repeat the ask', !(await listVisible()))
+// Back, after a Turbo visit, in a tab that has not seen the list yet.
+//
+// Three things all have to be true for this to exercise anything, and the
+// first two versions of this check got them wrong and passed against a build
+// that was broken:
+//
+//   1. A *Turbo* visit, not page.goto(). goto() is a full browser navigation;
+//      Back from one rebuilds the document, so no per-element state survives
+//      and a DOM-cache bug cannot reproduce.
+//   2. A *fresh* context. By this point in the file the session flag is
+//      already set, so the list is hidden before Turbo ever caches it -- and
+//      a hidden list coming back hidden proves nothing.
+//   3. The list *visible* when the snapshot is taken, which is what (2) buys.
+//
+// Then Back restores that cached DOM, and whatever was written onto the list
+// comes back with it. That is how a marker meant to last one page view lasted
+// longer and made the ask reappear.
+const backCtx = await b.newContext({ httpCredentials: { username: user, password: pass } })
+const back = await backCtx.newPage()
+await back.goto(wizard('sigmastar/socs/ssc338q'), { waitUntil: 'networkidle' })
 
-await p.goForward({ waitUntil: 'networkidle' })
-check('and forward does not either', !(await listVisible()))
+const wasVisible = await back.locator('[data-whatnext]').first().isVisible()
+check('the list is visible before the snapshot is taken', wasVisible,
+      wasVisible ? '' : 'nothing below can reproduce a cache bug')
+
+const visited = await back.evaluate(() => {
+  if (!window.Turbo) return false
+  const done = new Promise(r => document.addEventListener('turbo:load', () => r(true), { once: true }))
+  window.Turbo.visit('/open-wall')
+  return Promise.race([done, new Promise(r => setTimeout(() => r(false), 5000))])
+})
+check('the check actually made a Turbo visit', visited,
+      visited ? '' : 'Turbo is not driving; the Back case below proves nothing')
+
+// Waiting on turbo:load, not networkidle. A restoration visit that hits
+// Turbo's cache makes no request at all, so networkidle resolves instantly and
+// samples the DOM mid-restore -- where the element is simply absent. That
+// reads as "not visible" and passes, which is how this check agreed with a
+// build that had the bug.
+await back.evaluate(() => {
+  window.__restored = new Promise(r => document.addEventListener('turbo:load', () => r(), { once: true }))
+})
+await back.goBack()
+await back.evaluate(() => window.__restored).catch(() => {})
+
+const restored = await back.evaluate(() => !!document.querySelector('[data-whatnext]'))
+check('the page actually came back', restored,
+      restored ? '' : 'sampled mid-restore; the assertion below would be meaningless')
+
+const stillAsking = await back.locator('[data-whatnext]').first().isVisible()
+check('going back after a Turbo visit does not repeat the ask', !stillAsking)
 
 // A different tab is a different person as far as this is concerned.
 const fresh = await (await b.newContext({ httpCredentials: { username: user, password: pass } })).newPage()
