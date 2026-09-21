@@ -222,7 +222,7 @@ module Cameras
       FirmwareBuild.record(request.remote_ip) if assembling
       # Recorded here rather than in Firmware, because a cached image is sent
       # without being rebuilt and it is the sending that is worth counting.
-      Download.record(firmware: fw, soc: @soc, bytes: File.size(fw.filepath))
+      Download.record(firmware: fw, soc: @soc, bytes: File.size(fw.filepath)) if first_chunk?
       send_file fw.filepath, filename: fw.filename, disposition: :attachment
     rescue Firmware::PayloadTooLarge => e
       # The combination is real but does not fit -- Ultimate on 8MB flash is
@@ -284,6 +284,37 @@ module Cameras
     end
 
     private
+
+    # One row per download, not one per HTTP request (#188).
+    #
+    # A browser or download manager fetching an 8-32MB image asks for it in
+    # chunks, and each chunk is its own request through send_file's
+    # X-Accel-Redirect -- so the table counted requests. Unevenly, too: the
+    # 16MB ultimate images chunk hardest, so the chips people care most about
+    # were inflated most. Reconciled against the nginx log for 6-20 September
+    # 2026, 1,203 rows stood for 824 completed downloads, and on 10 September
+    # 99 range responses turned 55 real downloads into 155 rows.
+    #
+    # The first chunk is the download. A Range starting at byte 0 counts, and
+    # so does no Range at all; anything else is that same download continuing,
+    # whether it is a chunked fetch or a resumed one. A suffix range
+    # (`bytes=-500`) is not a first chunk either.
+    #
+    # Anchored, so a unit that merely ends in "bytes" does not look like one.
+    # Tolerant of surrounding and internal whitespace, because the cost of
+    # being strict here is the opposite failure and a worse one: a legitimate
+    # first chunk that goes uncounted makes the table quietly low, where the
+    # bug this replaces made it quietly high. Undercounting a download is
+    # indistinguishable from nobody downloading.
+    #
+    # Rows written before 2026-09-21 were not filtered this way. A chart that
+    # crosses that date is comparing two different things -- see the note on
+    # Download itself.
+    def first_chunk?
+      range = request.headers['Range'].to_s.strip
+
+      range.empty? || range.match?(/\Abytes\s*=\s*0-/i)
+    end
 
     # Read a configuration back out of the query string Camera#permalink writes.
     #
