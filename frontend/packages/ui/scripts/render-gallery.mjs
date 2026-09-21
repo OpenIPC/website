@@ -113,6 +113,13 @@ try {
     --flag-line: #4a3c1c;
   }
 
+  /* EVERY selector below is scoped to the chrome's own classes.
+     Tailwind 4 emits the components' utilities inside @layer, and an
+     unlayered rule beats every layered rule whatever its specificity -- so a
+     bare selector like 'a { color: ... }' here silently repainted the
+     .text-white links inside the
+     stages. On the brand-blue nav bar that made three of the five labels the
+     same colour as the bar. Nothing global, ever. */
   body {
     margin: 0;
     background: var(--ground);
@@ -121,8 +128,10 @@ try {
     font-size: 15px;
     line-height: 1.55;
   }
-  a { color: var(--accent); }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .masthead a, .nav a { color: var(--accent); }
+  .masthead :focus-visible, .nav :focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
 
   .masthead { max-width: 78rem; margin: 0 auto; padding: 3rem 1.5rem 0; }
   .masthead h1 {
@@ -181,7 +190,10 @@ try {
      the page around them would show colours the library does not have. */
   .stage { margin-top: .75rem; background: #ffffff; color: #111111;
            border: 1px solid var(--hairline); border-radius: 4px;
-           padding: 1.5rem; overflow-x: auto; }
+           padding: 1.5rem; overflow-x: auto;
+           /* body's 15px/1.55 would otherwise cascade into the components,
+              which are drawn against the 16px root Tailwind assumes. */
+           font-size: 1rem; line-height: 1.5; }
   .stage-brand { background: #4c60d8; }
 
   @media (max-width: 62rem) {
