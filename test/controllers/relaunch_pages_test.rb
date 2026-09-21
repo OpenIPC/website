@@ -351,7 +351,8 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
   test 'the business page links all seven services' do
     get '/business'
 
-    %w[/video-encoding /isp-sensors /reverse-engineering /turnkey-hardware /digital-twins /teleoperation /edge-ai].each do |path|
+    %w[/video-encoding /isp-sensors /reverse-engineering /turnkey-hardware /digital-twins
+       /teleoperation /edge-ai].each do |path|
       assert_not_empty css_select(%(a[href="#{path}"])),
                        "the business page no longer links #{path}"
     end
