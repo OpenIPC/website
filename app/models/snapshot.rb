@@ -104,8 +104,45 @@ class Snapshot < ApplicationRecord
     ProcessImagesJob.perform_later(self)
   end
 
-  def mac_address_dec
-    mac_address.gsub(':', '').to_i(16)
+  # An opaque, stable name for one camera, for use in a URL.
+  #
+  # This replaces mac_address_dec, which was the MAC as a decimal integer and
+  # therefore the MAC: /open-wall/camera/261946086576566 reads back as
+  # ee:3d:13:70:d1:b6, and the first three octets name the manufacturer. The
+  # address was never printed on the page for anyone but a signed-in admin --
+  # the intent to withhold it was already there -- but the link beside it
+  # handed it to everyone, and to anyone crawling the wall.
+  #
+  # HMAC rather than a plain digest, so the token cannot be produced from a
+  # guessed MAC without the server's key; 64 bits is far more than 18 cameras
+  # need and small enough to stay a readable URL.
+  def camera_token
+    OpenSSL::HMAC.hexdigest('SHA256', Rails.application.secret_key_base, mac_address)[0, 16]
+  end
+
+  # The reverse, without storing anything.
+  #
+  # Snapshots are purged after two days (PurgeImagesJob::RETENTION), so this
+  # table holds the cameras that uploaded recently and nothing else -- 18 of
+  # them against 2,611 rows when this was written. Hashing that many MACs to
+  # answer one request is cheaper than the column, the index, the backfill and
+  # the before_save that the alternative needs, and it cannot drift out of step
+  # with the token the views emit, because it is the same method.
+  #
+  # If the wall ever holds cameras in the thousands, this is the place to add
+  # the column.
+  def self.find_by_camera_token(token)
+    return nil if token.blank?
+
+    mac = distinct.pluck(:mac_address).compact.find do |candidate|
+      ActiveSupport::SecurityUtils.secure_compare(
+        OpenSSL::HMAC.hexdigest('SHA256', Rails.application.secret_key_base, candidate)[0, 16],
+        token
+      )
+    end
+    return nil if mac.nil?
+
+    where(mac_address: mac).order(created_at: :desc).first
   end
 
   # Where a page should link for one of this snapshot's images.
