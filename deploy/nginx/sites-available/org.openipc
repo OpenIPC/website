@@ -448,6 +448,61 @@ server {
         proxy_connect_timeout 120;
         proxy_send_timeout 120;
         proxy_read_timeout 180;
+
+        # The pages themselves (#233).
+        #
+        # On 2026-09-20 the front page took 62,588 requests and every one was
+        # cache=- : not one served by nginx, every one a Rails render, for
+        # 1,787 distinct clients. Assets hit 89%, the snapshots and the Open
+        # Wall are cached, and the largest class on the site was the one class
+        # that was not. 25,525 of those arrived from openipc.kz, openipc.ru and
+        # openipc.eu, which proxy without caching -- so caching here is what
+        # stops a mirror visitor costing a render, without touching three
+        # configs this repository does not own.
+        #
+        # Rails has been asking for this for days. Since #155 a GET on / comes
+        # back `public, max-age=300, stale-while-revalidate=3600`, and a
+        # catalogue page `max-age=3600, stale-while-revalidate=86400`, and
+        # nothing was listening.
+        proxy_cache openipc_micro;
+
+        # The whole URI, query included. Only 444 of 63,032 front-page requests
+        # carry one, so there is nothing to gain by dropping it -- and dropping
+        # it is what produced the bug the microcache conf documents at length,
+        # where a key that ignored ?locale= served Russian to English readers.
+        proxy_cache_key $scheme$host$request_uri;
+
+        # No proxy_cache_valid, deliberately. Rails decides what may be cached
+        # and for how long, and it is the only thing that can: it knows about
+        # the flash, the signed-in admin and the CSRF token. A page it declares
+        # `max-age=0, private` -- /admin, anything with a flash, any non-200 --
+        # nginx will not store, and a proxy_cache_valid here would be a second
+        # opinion that silently overrides the first on exactly those pages.
+        #
+        # For the same reason there is no `proxy_hide_header Set-Cookie`, which
+        # every other cached location has. Those serve pages that never need a
+        # cookie; this one serves /admin and Devise, which must be able to set
+        # a session. nginx already refuses to store a response carrying
+        # Set-Cookie, which is the right answer rather than one to suppress.
+        proxy_cache_lock on;
+        proxy_cache_lock_age 30s;
+        proxy_cache_lock_timeout 30s;
+        proxy_cache_use_stale updating error timeout;
+
+        # An admin reaches Rails rather than an anonymous copy, and an admin's
+        # render is never stored for anyone else. Same pair as the locations
+        # above; see ApplicationController#refuse_shared_caching_for_admins.
+        proxy_cache_bypass $cookie__openipc_session;
+        proxy_no_cache $upstream_http_x_admin_view;
+        proxy_hide_header X-Admin-View;
+
+        # `add_header` in a location REPLACES every inherited one, so the
+        # server-level HSTS has to be repeated here or adding X-Cache-Status
+        # would quietly remove it. Rails sends a stronger HSTS of its own on
+        # every page, so the loss would not have shown up in a browser -- which
+        # is exactly why it is worth being explicit about.
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Cache-Status $upstream_cache_status;
     }
 
 }
