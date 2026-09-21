@@ -27,6 +27,24 @@ module Openipc
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
+    # Ruby, deliberately rather than by default (#236).
+    #
+    # The argument for structure.sql is that the Ruby dump cannot describe
+    # everything a database holds; here it demonstrably can. Checked by
+    # round-tripping the development database through db/schema.rb and
+    # comparing `SHOW CREATE TABLE` for every table before and after: 196 lines
+    # of DDL, identical, charset and collation included. Nothing is lost.
+    #
+    # What the Ruby dump buys is the thing #236 is about. A schema diff is the
+    # one review in this repository where somebody is checking which column
+    # moved and what a rollback will not undo -- deploy/DEV-VALIDATION.md and
+    # CLAUDE.md both warn that rollback restores the image and never the schema
+    # -- and structure.sql is markedly worse to read for that.
+    #
+    # Written out because a default is not a decision, and this one should
+    # survive somebody's next look at it.
+    config.active_record.schema_format = :ruby
+
     # Cache-Control for the fingerprinted assets. It has to sit outside
     # ActionDispatch::Static to see what Static served, but it cannot be
     # positioned against Static: Static is only in the stack when
