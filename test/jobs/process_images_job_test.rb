@@ -63,7 +63,7 @@ class ProcessImagesJobTest < ActiveJob::TestCase
     assert_equal WallImage::VARIANTS, @file.requested
     stored_variants = @stored.map { |entry| entry[1] }
     assert_equal WallImage::VARIANTS, stored_variants
-    assert_equal [@snapshot.id], @stored.map(&:first).uniq
+    assert_equal [@snapshot.public_id], @stored.map(&:first).uniq
   end
 
   test 'it marks the snapshot so the views start linking to the files' do
@@ -72,7 +72,7 @@ class ProcessImagesJobTest < ActiveJob::TestCase
     run_job
 
     assert_not_nil @snapshot.reload.variants_generated_at
-    assert_equal "/wall/#{@snapshot.id}/thumb.jpg", @snapshot.wall_image(:thumb)
+    assert_equal "/wall/#{@snapshot.public_id}/thumb.jpg", @snapshot.wall_image(:thumb)
   end
 
   test 'a variant that cannot be written leaves the snapshot unmarked' do
@@ -99,7 +99,7 @@ class ProcessImagesJobTest < ActiveJob::TestCase
       end
     end
 
-    assert_equal [@snapshot.id], purged,
+    assert_equal [@snapshot.public_id], purged,
                  'the job must clean up after a row that vanished under it'
     assert_nil Snapshot.find_by(id: @snapshot.id)
   end

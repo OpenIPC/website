@@ -53,18 +53,21 @@ module WallImage
     Rails.root.join('tmp', "wall-test-#{Process.pid}")
   end
 
-  def dir_for(snapshot_id)
-    root.join(snapshot_id.to_s)
+  # Keyed on the snapshot's public_id, not its row id. The images are the
+  # payload: a page address nobody can guess is worth nothing while
+  # /wall/<n>/fullhd.jpg still counts from one.
+  def dir_for(key)
+    root.join(key.to_s)
   end
 
-  def path_for(snapshot_id, variant)
-    dir_for(snapshot_id).join("#{variant}.jpg")
+  def path_for(key, variant)
+    dir_for(key).join("#{variant}.jpg")
   end
 
   # The URL a page links to. Deliberately not a route: nothing in Rails serves
   # it in production, and naming it here keeps the shape in one place.
-  def url_for(snapshot_id, variant)
-    "/wall/#{snapshot_id}/#{variant}.jpg"
+  def url_for(key, variant)
+    "/wall/#{key}/#{variant}.jpg"
   end
 
   # Write one variant, atomically.
@@ -74,27 +77,27 @@ module WallImage
   # an absent one. The temporary file is in the same directory so the rename
   # cannot cross a filesystem -- the same EXDEV trap that ruled out hardlinks,
   # and the one that once had Firmware#publish serving truncated images.
-  def store(snapshot_id, variant, source_path)
-    write_atomically(snapshot_id, variant) { |tmp| FileUtils.cp(source_path, tmp) }
+  def store(key, variant, source_path)
+    write_atomically(key, variant) { |tmp| FileUtils.cp(source_path, tmp) }
   end
 
   # For a service that cannot say where its bytes are on disk.
-  def store_bytes(snapshot_id, variant, data)
-    write_atomically(snapshot_id, variant) { |tmp| File.binwrite(tmp, data) }
+  def store_bytes(key, variant, data)
+    write_atomically(key, variant) { |tmp| File.binwrite(tmp, data) }
   end
 
-  def write_atomically(snapshot_id, variant)
-    dir = dir_for(snapshot_id)
+  def write_atomically(key, variant)
+    dir = dir_for(key)
     FileUtils.mkdir_p(dir)
     tmp = dir.join(".#{variant}.jpg.#{Process.pid}.#{SecureRandom.hex(4)}")
     yield tmp
     File.chmod(0o644, tmp)
-    File.rename(tmp, path_for(snapshot_id, variant))
+    File.rename(tmp, path_for(key, variant))
   ensure
     FileUtils.rm_f(tmp) if tmp && File.exist?(tmp)
   end
 
-  def purge(snapshot_id)
-    FileUtils.rm_rf(dir_for(snapshot_id))
+  def purge(key)
+    FileUtils.rm_rf(dir_for(key))
   end
 end

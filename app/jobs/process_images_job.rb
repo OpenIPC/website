@@ -40,7 +40,7 @@ class ProcessImagesJob < ApplicationJob
     if Snapshot.exists?(snapshot.id)
       snapshot.update_column(:variants_generated_at, Time.current)
     else
-      WallImage.purge(snapshot.id)
+      WallImage.purge(snapshot.public_id)
     end
   end
 
@@ -54,9 +54,9 @@ class ProcessImagesJob < ApplicationJob
     service = ActiveStorage::Blob.service
 
     if service.respond_to?(:path_for)
-      WallImage.store(snapshot.id, name, service.path_for(blob.key))
+      WallImage.store(snapshot.public_id, name, service.path_for(blob.key))
     else
-      WallImage.store_bytes(snapshot.id, name, blob.download)
+      WallImage.store_bytes(snapshot.public_id, name, blob.download)
     end
   end
 end

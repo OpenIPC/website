@@ -150,8 +150,13 @@ class SnapshotsController < ApplicationController
     redirect_to locale_path('/open-wall'), alert: 'No camera here.'
   end
 
+  # By public_id, never by row id. Snapshot.find is left alone on purpose:
+  # ActiveJob deserializes a GlobalID through it, so teaching it to refuse a
+  # number would break ProcessImagesJob rather than a crawler.
   def find_snapshot
-    @snapshot = Snapshot.find(params[:id])
+    return head :gone if params[:id].to_s.match?(/\A[0-9]+\z/)
+
+    @snapshot = Snapshot.find_by!(public_id: params[:id])
   rescue ActiveRecord::RecordNotFound
     redirect_to locale_path('/open-wall'), alert: 'No such a shaphot here.'
   end

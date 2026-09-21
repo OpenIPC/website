@@ -144,7 +144,7 @@ class LocaleInPathTest < ActionDispatch::IntegrationTest
                          content_type: 'image/jpeg')
     snapshot.save!(validate: false)
 
-    get "/ru/snapshots/#{snapshot.id}"
+    get "/ru/snapshots/#{snapshot.public_id}"
 
     assert_response :success
     assert_select 'html[lang=?]', 'ru'
@@ -161,9 +161,20 @@ class LocaleInPathTest < ActionDispatch::IntegrationTest
   end
 
   test 'a snapshot that is gone returns to the gallery in the same language' do
-    get '/ru/snapshots/999999999'
+    get "/ru/snapshots/#{'0' * 19}a"
 
     assert_redirected_to '/ru/open-wall'
+  end
+
+  # The numeric form is retired, not missing. Redirecting it to the gallery
+  # would tell a walk of the id space that it had merely run past the end,
+  # which is the same answer it got before the ids changed.
+  test 'the old numeric address is gone in every language' do
+    %w[/snapshots/999999999 /ru/snapshots/999999999 /zh/snapshots/1].each do |path|
+      get path
+
+      assert_response :gone, "#{path} still answers a walk"
+    end
   end
 
   # The catch-all every mistyped and every retired URL lands on. Sending the

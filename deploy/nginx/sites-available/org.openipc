@@ -228,7 +228,37 @@ server {
     # below documents -- for five minutes rather than sixty seconds. Vary is
     # honoured and a session-carrying request stays out of the cache for the
     # same reasons.
-    location ~ ^/(?:(?:ru|zh)/)?snapshots/[0-9]+ {
+    #
+    # The retired numeric form, answered here rather than by Rails. A walk of
+    # the id space is the whole reason the ids changed, and every probe it
+    # makes is a distinct URL -- so proxying them would mean one render per id
+    # per cache TTL, which is the cost this change exists to remove. nginx
+    # answers 410 without a proxy_pass, a cache entry or a limit_conn slot.
+    #
+    # Safe against a real id because Snapshot.generate_public_id refuses an
+    # all-digit token: anything numeric here is a row id and nothing else, and
+    # a token cannot reach the boundary character -- it always has a letter
+    # before it.
+    #
+    # The boundary takes a dot as well as a slash. Without it /snapshots/1.json
+    # falls past this location, matches the hexadecimal one below by its
+    # numeric prefix, and is proxied: Rails answers 410 in the end, but the
+    # probe has already cost a render slot under the concurrency cap, and a
+    # 410 is not in proxy_cache_valid so the next probe costs another.
+    location ~ ^/(?:(?:ru|zh)/)?snapshots/[0-9]+(?:[./]|$) {
+        return 410;
+    }
+
+    # The id is twenty hex characters, not digits. It was `[0-9]+` until the
+    # ids stopped being sequential, and that regex is load-bearing twice over:
+    # everything this location carries -- the microcache and the concurrency
+    # cap that ended the 2026-09-03 outage -- applies only to paths it matches.
+    # A snapshot address it does not match falls through to the catch-all,
+    # uncached and uncapped, which is the exact seam that took the site down
+    # three times in September. Kept wide enough to match the numeric form too,
+    # so that the 410 the app answers to a walk is also shed and cached here
+    # rather than reaching Rails once per probe.
+    location ~ ^/(?:(?:ru|zh)/)?snapshots/[0-9a-f]+ {
         limit_conn snapshot_conc 10;
         limit_conn_status 429;
         proxy_buffer_size 128k;
