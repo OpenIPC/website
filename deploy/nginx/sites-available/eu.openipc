@@ -73,10 +73,11 @@ server {
     listen 443 ssl http2;
     server_name openipc.eu;
     #
-    # Its own log, deliberately. It is how the drain is watched: while stale
-    # resolver caches still hold the old edge's address some visitors reach
-    # fragola and some reach here, and this file is the half that is landing
-    # in the right place.
+    # Its own log, deliberately. It is how the drain was watched: while stale
+    # resolver caches still held the old edge's address, some visitors reached
+    # fragola and some reached here, and this file was the half landing in the
+    # right place. fragola's own vhost returns a 301 as well now, so both
+    # halves end up at openipc.org and neither proxies anything.
     access_log /var/log/nginx/eu.openipc.access.log openipc;
     error_log /var/log/nginx/eu.openipc.error.log info;
     #

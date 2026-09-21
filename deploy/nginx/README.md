@@ -270,11 +270,20 @@ Three things to know before editing it:
   meant to be a distinct site again, those visitors keep landing on
   `openipc.org` until they clear their cache; use `302` if that is planned.
 
-`nginx.conf` still trusts `2.29.12.216` in `set_real_ip_from`, because stale
-resolver caches keep sending visitors through the old edge for a while after
-the switch. **That line goes when fragola is switched off** — a trusted address
-that no longer proxies for us is an address whose `X-Forwarded-For` we would
-believe from whoever holds it next.
+`nginx.conf` no longer trusts `2.29.12.216` in `set_real_ip_from`. The order
+mattered and is worth keeping in mind for the next fold: the line came out only
+after fragola stopped proxying, because while it still did, dropping it would
+have collapsed every visitor behind it onto one address and one `limit_conn`
+bucket — the fault #145 was filed to fix. Crawlers cache DNS far past a
+300-second TTL, so that did not happen on its own; fragola's own vhost was
+changed to `301` to `openipc.org` (backup beside it as `eu.openipc.bak.*`),
+which empties the proxy in one hop. Measured over the 150 seconds after: 15
+requests from that address, every one its own collectd monitoring with
+`xff="-"`, not one proxied client.
+
+A trusted address that no longer proxies for us is an address whose
+`X-Forwarded-For` we would believe from whoever holds it next — so the line
+comes out the moment the proxying stops, and never while it continues.
 
 ## The static seam
 
