@@ -14,12 +14,169 @@
 # automated, and `--ignore-crawlers` only knows the ones that say so.
 #
 #   deploy/audience-report.sh [log] [outdir]
+#   deploy/audience-report.sh --visitors [log]   # the visitor count on its own
 #
 # Installed as /usr/local/sbin/openipc-audience-report by
 # deploy/install-metrics.sh and run by cron; see deploy/cron.d/openipc-metrics.
 set -euo pipefail
 
 db=/var/lib/GeoIP/dbip-country-lite.mmdb
+
+# How many visitors, as opposed to how many requests. GoatCounter answers this
+# for pages -- every number it stores is already deduplicated, one visitor per
+# page per eight-hour session -- but it cannot answer it for the site, because
+# the deduplication is per page and a reader of three pages is three rows.
+# Summing its columns is not a visitor count, and its own dashboard totals have
+# the same property.
+#
+# The session it deduplicates on is a hash of address and User-Agent, held in
+# memory for eight hours and never written down, so the figure cannot be
+# recovered from its database afterwards. It can be recomputed here: the beacon
+# request is in this log, and the same pair identifies the same visitor.
+# Counting a day's distinct pairs is slightly looser than GoatCounter -- someone
+# who returns after nine hours is two sessions there and one visitor here.
+#
+#   deploy/audience-report.sh --visitors [log]
+#
+# Printed by the nightly run as well. No goaccess, no country database and no
+# root for this mode, so it can be run against any log by hand.
+visitors() {
+  awk -F'"' '
+    function decode(s,   out, hi, lo) {
+      out = ""
+      while (match(s, /%[0-9A-Fa-f][0-9A-Fa-f]/)) {
+        hi = hex[substr(s, RSTART + 1, 1)]
+        lo = hex[substr(s, RSTART + 2, 1)]
+        out = out substr(s, 1, RSTART - 1) sprintf("%c", hi * 16 + lo)
+        s = substr(s, RSTART + RLENGTH)
+      }
+      return out s
+    }
+
+    BEGIN {
+      for (i = 0; i <= 9; i++) hex[i "" ] = i
+      split("a b c d e f", letters, " ")
+      for (i = 1; i <= 6; i++) { hex[letters[i]] = 9 + i; hex[toupper(letters[i])] = 9 + i }
+    }
+
+    # The beacon, and only the beacon: a client that ran the JavaScript. The
+    # script it runs is /api/a/c.js, which is a static fetch and says nothing
+    # about whether it executed.
+    $2 !~ /\/api\/a\/count/ { next }
+
+    {
+      split($1, addr, " ")
+      visitor = addr[1] "|" $6
+
+      width = 0
+      if (match($2, /[?&]s=[0-9]+/)) width = substr($2, RSTART + 3, RLENGTH - 3) + 0
+      language = "-"
+      if (match($0, /al="[^"]*"/)) language = substr($0, RSTART + 4, RLENGTH - 5)
+      path = ""
+      if (match($2, /[?&]p=[^& ]*/)) path = decode(substr($2, RSTART + 3, RLENGTH - 3))
+
+      calls++
+      seen[visitor] = 1
+
+      # A device that does not exist. The fleet crawling /snapshots since the
+      # beacon went up announces macOS and reports a 1,366 px viewport, and no
+      # Mac has ever had one. This is the test rather than the browser version
+      # it also shares, because the version moves and the contradiction does
+      # not.
+      if ($6 ~ /Macintosh/ && width == 1366) impossible[visitor] = 1
+
+      # Second, independent signal, kept only to watch the first one: every
+      # real browser sends Accept-Language. On 2026-09-21 the two agreed on
+      # 1,710 of 1,745 requests. When they stop agreeing the fingerprint above
+      # has drifted and the split below is wrong -- which is worth being told,
+      # rather than left to look like a change in the audience.
+      if (language == "-" || language == "") quiet[visitor] = 1
+
+      # The gallery and the images in it, in any locale. Kept apart from the
+      # rest of the site because the population reading them is not the
+      # population reading the site: in the first three hours measured, 369 of
+      # the 518 non-crawler visitors touched nothing else, 349 of those viewed
+      # exactly one image and left, and only 103 had asked for the stylesheet.
+      # That is the proxy-checker the beacon was installed to identify, and
+      # folding it into a people count overstates the audience threefold.
+      if (path != "") {
+        if (path ~ /^\/(ru\/|zh\/)?(open-wall|snapshots)(\/|$)/) wall[visitor]++
+        else elsewhere[visitor] = 1
+        views[path SUBSEP visitor] = 1
+      }
+      views_by[visitor]++
+    }
+
+    END {
+      for (v in seen) {
+        total++
+        if (v in quiet) silent++
+        if (v in impossible) { crawlers++; continue }
+        if (v in elsewhere) { readers++; person[v] = 1 }
+        else { wall_only++; if (views_by[v] == 1) wall_once++ }
+      }
+
+      for (k in views) {
+        split(k, part, SUBSEP)
+        if (part[2] in person) page[part[1]]++
+      }
+
+      printf "calls %d\n", calls
+      printf "visitors %d\n", total
+      printf "crawler %d\n", crawlers
+      printf "wall-only %d\n", wall_only
+      printf "wall-once %d\n", wall_once
+      printf "readers %d\n", readers
+      printf "no-language %d\n", silent
+      for (p in page) printf "page %d %s\n", page[p], p
+    }
+  ' "$1"
+}
+
+# The block the nightly prints and `--visitors` prints on its own.
+visitor_report() {
+  local log=$1 counts
+  counts=$(visitors "$log")
+
+  local calls total crawler wall_only wall_once readers quiet
+  calls=$(awk '$1 == "calls" { print $2 }' <<< "$counts")
+  total=$(awk '$1 == "visitors" { print $2 }' <<< "$counts")
+  crawler=$(awk '$1 == "crawler" { print $2 }' <<< "$counts")
+  wall_only=$(awk '$1 == "wall-only" { print $2 }' <<< "$counts")
+  wall_once=$(awk '$1 == "wall-once" { print $2 }' <<< "$counts")
+  readers=$(awk '$1 == "readers" { print $2 }' <<< "$counts")
+  quiet=$(awk '$1 == "no-language" { print $2 }' <<< "$counts")
+
+  printf '  beacon requests     %8d\n' "$calls"
+  printf '  ran the JavaScript  %8d visitors\n' "$total"
+  printf '    impossible device %8d  macOS at 1366px, the snapshot crawler\n' "$crawler"
+  printf '    open wall only    %8d  %d of them one view and gone\n' "$wall_only" "$wall_once"
+  printf '    readers           %8d  reached a page outside the wall\n' "$readers"
+
+  # Both signals or neither. A fifth apart means the crawler has changed its
+  # fingerprint and the line above is now counting some of it as people.
+  local spread=$(( crawler > quiet ? crawler - quiet : quiet - crawler ))
+  local larger=$(( crawler > quiet ? crawler : quiet ))
+  if [ "$larger" -gt 0 ] && [ $(( spread * 5 )) -gt "$larger" ]; then
+    printf '  WARNING: %d visitors sent no Accept-Language but %d look impossible.\n' "$quiet" "$crawler"
+    printf '           These two should agree. The fingerprint in visitors() needs a look.\n'
+  fi
+
+  if [ "$readers" -gt 0 ]; then
+    echo '  pages, counted once per reader'
+    awk '$1 == "page" { print }' <<< "$counts" |
+      sort -k2,2nr -k3,3 | head -10 |
+      awk '{ printf "    %6d  %s\n", $2, $3 }'
+  fi
+}
+
+if [ "${1:-}" = '--visitors' ]; then
+  visitor_log=${2:-/var/log/nginx/org.openipc.access.log.1}
+  [ -r "$visitor_log" ] || { echo "audience-report: cannot read ${visitor_log}" >&2; exit 1; }
+  printf 'audience-report --visitors %s\n' "$visitor_log"
+  visitor_report "$visitor_log"
+  exit 0
+fi
 
 # Monthly, from cron. DB-IP publish a new file each month under a predictable
 # name; the previous one keeps working, so a failed fetch is a stale country
@@ -137,3 +294,9 @@ printf '  fetched stylesheet  %8d addresses\n' "$(wc -l < "$work/fetched-css")"
 printf '  judged people       %8d addresses\n' "$(wc -l < "$work/humans")"
 printf '  their requests      %8d\n' "$(wc -l < "$work/human.log")"
 printf '  report              %s\n' "$report"
+
+# The visitor count, from the beacon rather than from the stylesheet. Two
+# methods that disagree are worth more than one that cannot be checked: the
+# addresses above are judged by what they fetched, these by what they ran, and
+# the crawler that runs JavaScript passes the first test and fails the second.
+visitor_report "$log"
