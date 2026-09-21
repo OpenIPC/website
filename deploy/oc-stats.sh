@@ -90,9 +90,18 @@ try:
     as_of = datetime.date.fromisoformat(pw["as_of"])
     subs = pw["subscribers"]
     age = (datetime.date.today() - as_of).days
-    if not isinstance(subs, int) or subs < 0:
+    # `not isinstance(subs, bool)` is not redundant: in Python a bool IS an int,
+    # so JSON `true` passed the type check, added one to the total, and came
+    # out the other side as "true through PayWall" on the page.
+    if isinstance(subs, bool) or not isinstance(subs, int) or subs < 0:
         raise ValueError("subscribers=%r" % (subs,))
-    if age > max_days:
+    # A future date is not fresh, it is wrong -- and being wrong in the
+    # direction that never expires, since the staleness window would then run
+    # from a day that has not happened. A hand-maintained file is exactly where
+    # 2027 gets typed for 2026.
+    if age < 0:
+        print("oc-stats: paywall as_of %s is in the future, dropping it" % pw["as_of"], file=sys.stderr)
+    elif age > max_days:
         print("oc-stats: paywall figures are %d days old, dropping them" % age, file=sys.stderr)
     else:
         out["paywall_subscribers"] = subs

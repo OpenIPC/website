@@ -122,7 +122,31 @@ class SupportStats
   def usable?
     backers.is_a?(Integer) && backers.positive? &&
       monthly_cents.is_a?(Integer) && monthly_cents >= 0 &&
-      fetched_at.present? && fetched_at > STALE_AFTER.ago
+      fetched_at.present? && fetched_at > STALE_AFTER.ago &&
+      halves_agree?
+  end
+
+  # Defence in depth, and a real invariant rather than a repeated type check.
+  #
+  # oc-stats.sh writes the two halves and their sum, so if they are present and
+  # do not add up, the file is not the file this class thinks it is reading --
+  # someone edited it on the host, or the writer changed shape. Refusing the
+  # whole thing is right there: `backers` came from the same file, so a split
+  # that disagrees with it makes the total suspect too, and the page falls back
+  # to printing nothing.
+  #
+  # Note that `Integer === true` is false in Ruby, unlike Python where a bool
+  # is an int -- which is the bug this same JSON caused in the writer.
+  def halves_agree?
+    halves = [backers_oc, paywall_subscribers]
+    return true if halves.all?(&:nil?)
+    return false unless halves.all? { |h| whole_number?(h) }
+
+    halves.sum == backers
+  end
+
+  def whole_number?(value)
+    value.is_a?(Integer) && !value.negative?
   end
 
   # Rounded, not floored. The view prints whole dollars, and integer division

@@ -311,4 +311,40 @@ class SupportCountTest < ActionDispatch::IntegrationTest
       assert_no_match(/goal met/i, response.body)
     end
   end
+
+  # The two halves and their sum come from one file, so if they disagree the
+  # file is not what this class thinks it is reading -- someone edited it on
+  # the host, or the writer changed shape. `backers` came from there too, so
+  # the total is suspect as well and the page falls back to printing nothing.
+  test 'halves that do not add up are refused entirely' do
+    with_stats(backers: 50, backers_oc: 27, paywall_subscribers: 9) do
+      get '/donate'
+
+      assert_response :success
+      assert_select '.support-count', 0
+    end
+  end
+
+  test 'halves that add up are accepted' do
+    with_stats(backers: 50, backers_oc: 27, paywall_subscribers: 23) do
+      get '/donate'
+
+      assert_select '.support-count', 1
+    end
+  end
+
+  # In Ruby a bool is not an Integer, unlike Python -- where `isinstance(True,
+  # int)` is true and let JSON `true` through the writer, adding one to the
+  # total and rendering as "true through PayWall". Held here so the writer's
+  # bug cannot arrive through a hand-edited file either.
+  [[true, 27], ['23', 27], [-1, 28], [nil, 50]].each do |value, oc|
+    test "a PayWall half of #{value.inspect} is refused" do
+      with_stats(backers: 50, backers_oc: oc, paywall_subscribers: value) do
+        get '/donate'
+
+        assert_response :success
+        assert_select '.support-count', 0
+      end
+    end
+  end
 end
