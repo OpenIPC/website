@@ -548,7 +548,7 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
   test 'no relaunch page names the host behind the reference boards' do
     PAGES.each_key do |path|
       LOCALES.each do |locale|
-        get locale == :en ? path : "/#{locale}#{path == '/' ? '' : path}"
+        get locale == :en ? path : "/#{locale}#{path}".chomp('/')
 
         assert_response :success
         assert_not_includes response.body, 'skycam.openipc.ru', "the partner's host leaked into #{locale} #{path}"
