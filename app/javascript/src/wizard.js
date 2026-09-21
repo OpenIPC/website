@@ -83,17 +83,24 @@ function applyVolumeWording(root) {
 //
 // `hidden` rather than a style, so it stays hidden for a reader who overrides
 // page CSS, and so nothing has to know what display value to put back.
+// Run exactly once per page view, from turbo:load and nowhere else.
+//
+// Twice was the first bug: initWizard() called this eagerly *and* on
+// turbo:load, so the second pass read the flag the first had just written and
+// hid the list on the very page meant to show it -- it was never visible to
+// anyone, with a green suite.
+//
+// Marking the element as handled was the wrong fix for that, and the second
+// bug. Turbo caches the DOM it navigates away from, marker included, so
+// pressing Back restored a list that still said "already decided" and showed
+// the ask again -- which is the thing the once-per-tab rule exists to stop.
+//
+// There is no marker now. turbo:load fires on the first load and on every
+// navigation including a restore from cache, so one call per page view falls
+// out of the event rather than out of bookkeeping that has to be kept honest.
 function applyWhatNext(root) {
   const list = (root || document).querySelector('[data-whatnext]')
   if (!list) return
-
-  // Decided once per list, not once per call. initWizard() runs this on load
-  // and again on turbo:load, and without this guard the second pass read the
-  // flag the first pass had just written and hid the list on the very page
-  // that was supposed to show it -- so it was never visible to anyone. The
-  // browser check caught that; no server-side test could.
-  if (list.dataset.whatnextDone) return
-  list.dataset.whatnextDone = '1'
 
   if (seen()) {
     list.hidden = true
@@ -111,9 +118,6 @@ function applyWhatNext(root) {
 }
 
 export default function initWizard() {
-  applyVolumeWording()
-  applyWhatNext()
-
   // Delegated from `document` and bound once, for the same reason the event
   // counter is: Turbo swaps the body on every navigation but never the
   // document, and re-running a bind is how one click gets counted twice.

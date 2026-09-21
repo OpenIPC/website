@@ -56,6 +56,17 @@ check('and pointed at the FPV room', chat === 'https://t.me/+BMyMoolVOpkzNWUy', 
 await p.goto(wizard('goke/socs/gk7205v300'), { waitUntil: 'networkidle' })
 check('the second camera of the same tab is not asked again', !(await listVisible()))
 
+// Back. Turbo restores the page from its DOM cache, so whatever state the
+// list was left in comes back with it -- the first fix for the double-run bug
+// marked the element as handled, and that marker was cached too, which made
+// Back show the ask again. There is no marker now; turbo:load fires on a
+// restore like any other navigation and the flag decides.
+await p.goBack({ waitUntil: 'networkidle' })
+check('going back does not repeat the ask', !(await listVisible()))
+
+await p.goForward({ waitUntil: 'networkidle' })
+check('and forward does not either', !(await listVisible()))
+
 // A different tab is a different person as far as this is concerned.
 const fresh = await (await b.newContext({ httpCredentials: { username: user, password: pass } })).newPage()
 await fresh.goto(wizard('ingenic/socs/t31l'), { waitUntil: 'networkidle' })
