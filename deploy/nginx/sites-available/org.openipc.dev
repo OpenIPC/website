@@ -80,6 +80,11 @@ server {
        autoindex on;
        autoindex_localtime on;
        # A report is written once and never changed; the directory listing is.
+       # Repeated, not inherited: add_header at location level replaces the
+       # whole set the server block sends, so a location that adds one of its
+       # own drops HSTS from everything it serves unless it says so again.
+       add_header Strict-Transport-Security max-age=15768000;
+       add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
        add_header Cache-Control "no-cache" always;
    }
 
@@ -141,6 +146,8 @@ server {
 
     location ^~ /wall/ {
         alias /srv/www/shared/dev-wall/;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
         add_header Cache-Control "public, max-age=31536000, immutable";
 
         # Declaring any limit_conn here REPLACES the http-level `limit_conn
