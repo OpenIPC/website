@@ -66,7 +66,10 @@ class InstallDocsTest < ActiveSupport::TestCase
     installed = body.scan(%r{^install -m \S+ -o \S+ -g \S+ "\$here/([^"]+)"}).flatten
     documented = body[/sha256sum (.*?)\| cut/m].to_s
 
-    assert_equal 4, installed.length, 'expected four installed files; the check below assumes them'
+    # Counted rather than hardcoded. The number was 4 and is 5 since #198;
+    # pinning it turns "the installer grew a file" into a failure that reads
+    # like the docs check broke, which is not what this test is about.
+    refute_empty installed, 'install-metrics.sh installs nothing; this test proves nothing'
     missing = installed.reject { |f| documented.include?("deploy/#{f}") }
 
     assert_empty missing, <<~MESSAGE.chomp
@@ -94,6 +97,30 @@ class InstallDocsTest < ActiveSupport::TestCase
       RESTORE.md tells a rebuilt host to copy deploy/ with rsync, so rsync
       belongs in its prerequisites. It is needed at both ends and a Debian
       install does not always have it.
+    MESSAGE
+  end
+
+  # The checksums are the only way to tell a stale copy from a fresh one, and
+  # the loop that prints them is a separate list from the one that installs.
+  # Adding a file to the installer and not to the loop leaves it silently
+  # unverifiable -- which is what happened when #198 added oc-stats.sh, and was
+  # only visible because the install run printed four lines for five files.
+  test 'every file install-metrics installs is checksummed afterwards' do
+    body = Rails.root.join('deploy/install-metrics.sh').read
+
+    vars = body.scan(%r{^install -m \S+ -o \S+ -g \S+ "\$here/[^"]+" "\$(\w+)"}).flatten
+    printed = body[/^for f in (.*?); do/m].to_s
+
+    refute_empty vars, 'no install lines found; this test proves nothing'
+    missing = vars.reject { |v| printed.include?("$#{v}") }
+
+    assert_empty missing, <<~MESSAGE.chomp
+      install-metrics.sh installs these and never prints their checksum:
+
+      #{missing.map { |v| "  $#{v}" }.join("\n")}
+
+      A file that is installed but not hashed cannot be told apart from a
+      stale copy of itself, which is the whole reason the loop exists.
     MESSAGE
   end
 end

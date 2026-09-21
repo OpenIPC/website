@@ -1,0 +1,14 @@
+# What the donate page asks people to help reach (#198).
+#
+# A setting, not a computation. "Next round number above the current count"
+# would move the goal every time someone joins, which is the one thing a goal
+# must not do -- a target that recedes as you approach it reads as a trick, and
+# nobody can say they helped reach it.
+#
+# Raise it by pull request when it is met, so the maintainers decide what to
+# ask for next.
+#
+# 50 against 27 today. Monthly backers went 43 -> 38 -> 28 across 2024-2026,
+# so this is a recovery target rather than a new high: it was nearly met in
+# 2024 and the collective lost it to ordinary churn with no acquisition.
+monthly_backers: 50

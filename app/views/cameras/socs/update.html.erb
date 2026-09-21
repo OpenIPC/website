@@ -149,6 +149,9 @@
             because an ask that repeats on every board of a batch stops being
             a suggestion. %>
         <%= what_next_list(@camera) %>
+        <%# The same number the donate page prints (#198), so someone who just
+            got a working camera sees what the ask is actually for. %>
+        <%= render 'shared/support_count', class: 'mt-3' %>
       </div>
     </div>
 

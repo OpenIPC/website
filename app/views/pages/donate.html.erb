@@ -11,6 +11,10 @@
         <p class="text-body-secondary mb-0"><%= t('.accounting') %></p>
       </div>
       <div class="col-lg-6">
+        <%# Above the button, not beside it (#198). The number is the reason to
+            press it, so it reads in the same glance -- in the left column it
+            was a fact about the project rather than an ask. %>
+        <%= render 'shared/support_count', class: 'mb-4' %>
         <%# Russian readers get PayWall first (#201). Open Collective cannot be
             paid with a card issued in Russia, so for that audience the only
             button on this page was one they could not press -- a relaunch

@@ -59,6 +59,9 @@ services:
       # and separate from dev's so a staging experiment cannot poison what
       # production serves.
       - /srv/www/shared/release-cache:/srv/release-cache
+      # The backer count (#198), read-only: the site prints this file and must
+      # never be able to write it. deploy/oc-stats.sh on the host owns it.
+      - /srv/www/shared:/rails/shared:ro
 
   web-dev:
     <<: *common
@@ -84,3 +87,7 @@ services:
       - /srv/www/shared/dev-files:/rails/public/files
       - /srv/www/shared/dl:/rails/public/dl:ro
       - /srv/www/shared/dev-release-cache:/srv/release-cache
+      # Same file as production: the backer count is a fact about the
+      # collective, not about the environment, and dev showing a different
+      # number would make it useless for checking the page before release.
+      - /srv/www/shared:/rails/shared:ro

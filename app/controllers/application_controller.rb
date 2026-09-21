@@ -97,9 +97,37 @@ class ApplicationController < ActionController::Base
   def declare_freshness
     return unless publicly_cacheable?
 
-    f = freshness
+    f = capped_freshness(freshness)
     response.set_header('Cache-Control',
                         "public, max-age=#{f[:max_age]}, stale-while-revalidate=#{f[:swr]}")
+  end
+
+  # A page must not be served after a number printed on it has expired (#198).
+  #
+  # The backer count is good for 48 hours and the catalogue's policy is an hour
+  # fresh plus a day stale, so a response built shortly before the data expired
+  # could be handed out for another twenty-five -- which would make the 48-hour
+  # rule one about rendering rather than about what a reader sees.
+  #
+  # The window is recorded by shared/_support_count while it renders, because
+  # the view is the only place that knows the partial ran at all, and it is nil
+  # in the ordinary case: the cron is hourly, so there are normally 47 hours of
+  # headroom against 25 of exposure and nothing to cap.
+  SUPPORT_WINDOW_KEY = 'openipc.support_count_window'
+
+  # Callable from a view, which is where it is known.
+  def note_support_count_window(seconds)
+    request.env[SUPPORT_WINDOW_KEY] = seconds
+  end
+  helper_method :note_support_count_window
+
+  def capped_freshness(fresh)
+    window = request.env[SUPPORT_WINDOW_KEY]
+    return fresh if window.nil?
+    return { max_age: 0, swr: 0 } if window <= 0
+
+    { max_age: [fresh[:max_age], window].min,
+      swr: [fresh[:swr], window - [fresh[:max_age], window].min].min }
   end
 
   # Only GET, only 200, and never for a signed-in admin -- they see uploader
