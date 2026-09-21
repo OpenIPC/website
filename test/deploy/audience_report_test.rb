@@ -12,16 +12,16 @@ require 'test_helper'
 # from cron against a log nobody reads afterwards. A miscount there is silent
 # and looks like the audience changing.
 #
-# The fixture log is twelve beacon requests and three that are not, composed
+# The fixture log is fourteen beacon requests and three that are not, composed
 # so that every rule in visitors() decides something:
 #
 #   203.0.113.10   crawler, two views      macOS claiming a 1366px viewport
 #   203.0.113.11   crawler, one view       same
-#   198.51.100.20  wall only, one view     /open-wall and gone
+#   198.51.100.20  wall only, one view     /open-wall, then a click to github
 #   198.51.100.21  wall only, two views    /ru/open-wall then an image
 #   198.51.100.30  reader (Firefox)        / twice and /get-started
 #   198.51.100.30  reader (iPhone)         / -- same address, other visitor
-#   198.51.100.40  reader (Chrome)         /open-wall and /low-latency
+#   198.51.100.40  reader (Chrome)         /open-wall, /low-latency, one event
 #
 # and three lines that must not be counted at all: a page view, a stylesheet,
 # and /api/a/c.js, which is the beacon script being fetched rather than run.
@@ -46,10 +46,10 @@ class AudienceReportTest < ActiveSupport::TestCase
   test 'a visitor is an address and a User-Agent, counted once however often it calls' do
     output = run_visitors
 
-    assert_equal 12, count_in(output, 'beacon requests'),
+    assert_equal 14, count_in(output, 'beacon requests'),
                  'the three non-beacon lines, /api/a/c.js among them, are not visits'
     assert_equal 7, count_in(output, 'ran the JavaScript'), <<~MESSAGE.chomp
-      Seven distinct address+User-Agent pairs made those twelve requests.
+      Seven distinct address+User-Agent pairs made those fourteen requests.
 
       This is GoatCounter's own definition of a session, which is why the two
       can be compared. Two things in the fixture break a naive count: one
@@ -89,6 +89,45 @@ class AudienceReportTest < ActiveSupport::TestCase
                  'a reader who also looked at the wall counts on the wall page too')
     assert_no_match(%r{/snapshots/1001}, output,
                     "the crawler's pages are not part of what people read")
+  end
+
+  # Review finding on #228. Clicks that leave the site (#183) go through the
+  # same endpoint, so an event carries a name where a page view carries a path.
+  # Counted as pages they promote a visitor who looked at one image and clicked
+  # a link into a reader, and put the event name among what people read.
+  test 'an event is not a page, and does not turn a wall visitor into a reader' do
+    output = run_visitors
+
+    assert_equal 2, count_in(output, 'open wall only'), <<~MESSAGE.chomp
+      198.51.100.20 viewed /open-wall and clicked through to github. The click
+      is an event -- e=true, and a name rather than a path -- and must leave
+      that visitor where it found them.
+    MESSAGE
+    assert_match(/open wall only\s+2\s+1 of them one view and gone/, output,
+                 'an event is not a page view, so the visitor still viewed exactly one page')
+    assert_no_match(/ext:github\.com/, output, 'an event name is not a page anyone read')
+    assert_no_match(/business-mail/, output, 'nor is one fired by a reader')
+  end
+
+  # Review finding on #228, reproduced at 6,000 paths: `sort | head -10` gives
+  # sort a SIGPIPE once its output passes the 64KB pipe buffer, and pipefail
+  # turns that into exit 141 for the whole nightly. A day of reader paths is
+  # well past 64KB.
+  test 'a long page list does not kill the run' do
+    Tempfile.create(['many-pages-access', '.log']) do |file|
+      6000.times do |n|
+        file.write(<<~LINE)
+          198.51.100.#{(n % 200) + 1} - - [21/Sep/2026:01:00:00 +0000] "POST /api/a/count?p=%2Fpage-#{n}&t=T&s=1920&b=0&rnd=x#{n} HTTP/2.0" 200 43 "https://openipc.org/page-#{n}" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36" xff="-" cache=- rt=0.002 urt="0.002" al="en-US,en;q=0.9" peer=198.51.100.#{(n % 200) + 1}
+        LINE
+      end
+      file.flush
+
+      output = run_visitors(file.path)
+
+      assert_equal 200, count_in(output, 'readers')
+      assert_equal 10, output.scan(%r{^\s+\d+\s+/page-\d+$}).length,
+                   'the ten busiest, and the run still has to succeed'
+    end
   end
 
   # Two signals, kept because one of them will rot: the crawler can change its

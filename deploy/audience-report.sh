@@ -99,12 +99,22 @@ visitors() {
       # exactly one image and left, and only 103 had asked for the stylesheet.
       # That is the proxy-checker the beacon was installed to identify, and
       # folding it into a people count overstates the audience threefold.
-      if (path != "") {
+      #
+      # Only page views decide any of that. #183 sends clicks that leave the
+      # site through the same endpoint, carrying e=true and a name rather than
+      # a path -- ext:github.com, business-mail, tg-join. Counted as pages they
+      # would promote a visitor who looked at one image and clicked a link into
+      # a reader, and put an event name in the list of what people read. Both
+      # tests: e=true is the marker GoatCounter sets, and a page path here is
+      # always window.location.pathname, so it begins with a slash.
+      event = ($2 ~ /[?&]e=true/) || (path != "" && substr(path, 1, 1) != "/")
+
+      if (path != "" && !event) {
         if (path ~ /^\/(ru\/|zh\/)?(open-wall|snapshots)(\/|$)/) wall[visitor]++
         else elsewhere[visitor] = 1
         views[path SUBSEP visitor] = 1
+        views_by[visitor]++
       }
-      views_by[visitor]++
     }
 
     END {
@@ -113,7 +123,12 @@ visitors() {
         if (v in quiet) silent++
         if (v in impossible) { crawlers++; continue }
         if (v in elsewhere) { readers++; person[v] = 1 }
-        else { wall_only++; if (views_by[v] == 1) wall_once++ }
+        else if (v in wall) { wall_only++; if (views_by[v] == 1) wall_once++ }
+        # Events but no page view at all. analytics.js counts every turbo:load,
+        # so this is a page beacon that was blocked or lost rather than a way
+        # of browsing; it is kept out of the three counts above rather than
+        # quietly making someone a reader, and printed only when it happens.
+        else events_only++
       }
 
       for (k in views) {
@@ -127,6 +142,7 @@ visitors() {
       printf "wall-only %d\n", wall_only
       printf "wall-once %d\n", wall_once
       printf "readers %d\n", readers
+      printf "events-only %d\n", events_only
       printf "no-language %d\n", silent
       for (p in page) printf "page %d %s\n", page[p], p
     }
@@ -138,13 +154,14 @@ visitor_report() {
   local log=$1 counts
   counts=$(visitors "$log")
 
-  local calls total crawler wall_only wall_once readers quiet
+  local calls total crawler wall_only wall_once readers events_only quiet
   calls=$(awk '$1 == "calls" { print $2 }' <<< "$counts")
   total=$(awk '$1 == "visitors" { print $2 }' <<< "$counts")
   crawler=$(awk '$1 == "crawler" { print $2 }' <<< "$counts")
   wall_only=$(awk '$1 == "wall-only" { print $2 }' <<< "$counts")
   wall_once=$(awk '$1 == "wall-once" { print $2 }' <<< "$counts")
   readers=$(awk '$1 == "readers" { print $2 }' <<< "$counts")
+  events_only=$(awk '$1 == "events-only" { print $2 }' <<< "$counts")
   quiet=$(awk '$1 == "no-language" { print $2 }' <<< "$counts")
 
   printf '  beacon requests     %8d\n' "$calls"
@@ -152,6 +169,8 @@ visitor_report() {
   printf '    impossible device %8d  macOS at 1366px, the snapshot crawler\n' "$crawler"
   printf '    open wall only    %8d  %d of them one view and gone\n' "$wall_only" "$wall_once"
   printf '    readers           %8d  reached a page outside the wall\n' "$readers"
+  [ "$events_only" -eq 0 ] ||
+    printf '    events, no page   %8d  a click counted where the page view did not\n' "$events_only"
 
   # Both signals or neither. A fifth apart means the crawler has changed its
   # fingerprint and the line above is now counting some of it as people.
@@ -164,9 +183,14 @@ visitor_report() {
 
   if [ "$readers" -gt 0 ]; then
     echo '  pages, counted once per reader'
+    # The ten busiest, taken by awk rather than `head` on purpose: head closes
+    # the pipe as soon as it has them, sort dies of SIGPIPE once its output
+    # passes the 64KB pipe buffer, and `set -o pipefail` turns that into a
+    # failed nightly. A day of reader paths is well past 64KB. Verified: the
+    # head version exits 141 on 6,000 paths.
     awk '$1 == "page" { print }' <<< "$counts" |
-      sort -k2,2nr -k3,3 | head -10 |
-      awk '{ printf "    %6d  %s\n", $2, $3 }'
+      sort -k2,2nr -k3,3 |
+      awk 'NR <= 10 { printf "    %6d  %s\n", $2, $3 }'
   fi
 }
 
