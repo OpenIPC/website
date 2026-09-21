@@ -152,6 +152,36 @@ class CheckoutFreshnessTest < ActiveSupport::TestCase
     end
   end
 
+  # Behind and ahead at once, which is what a host that was hand-fixed and then
+  # left behind looks like. Both facts have to be said: the pull the first
+  # warning suggests will refuse, and the second is the reason why.
+  test 'a diverged checkout is reported in both directions' do
+    Dir.mktmpdir do |tmp|
+      git = ->(*args) { Open3.capture2e('git', '-c', 'user.email=t@t', '-c', 'user.name=t', *args) }
+
+      git.call('init', '-q', '--bare', "#{tmp}/origin.git")
+      git.call('clone', '-q', "#{tmp}/origin.git", "#{tmp}/work")
+      File.write("#{tmp}/work/a", '1')
+      git.call('-C', "#{tmp}/work", 'add', '-A')
+      git.call('-C', "#{tmp}/work", 'commit', '-qm', 'one')
+      git.call('-C', "#{tmp}/work", 'push', '-q', 'origin', 'HEAD:master')
+      git.call('clone', '-q', "#{tmp}/origin.git", "#{tmp}/host")
+
+      File.write("#{tmp}/work/b", '2')
+      git.call('-C', "#{tmp}/work", 'add', '-A')
+      git.call('-C', "#{tmp}/work", 'commit', '-qm', 'master moved on')
+      git.call('-C', "#{tmp}/work", 'push', '-q', 'origin', 'HEAD:master')
+
+      File.write("#{tmp}/host/c", '3')
+      git.call('-C', "#{tmp}/host", 'add', '-A')
+      git.call('-C', "#{tmp}/host", 'commit', '-qm', 'hand-fixed on the host')
+
+      warning = warn_for("#{tmp}/host")
+      assert_match(/1 commit\(s\) behind master/, warning, 'the diverged checkout was not reported as behind')
+      assert_match(/1 commit\(s\) master does not/, warning, 'the diverged checkout was not reported as ahead')
+    end
+  end
+
   # An rsynced copy is not a checkout and has nothing to be stale against.
   # Saying so on every run would train people to ignore the warning.
   test 'it says nothing about a directory that is not a checkout' do
