@@ -22,7 +22,8 @@
 # checkout forces a hand-edit, the hand-edit makes `git pull` refuse, and the
 # refusal is what keeps the checkout stale.
 
-# Fills CHECKOUT_ROOT, CHECKOUT_SHA, CHECKOUT_BEHIND and CHECKOUT_DIRTY. Returns 1, silently,
+# Fills CHECKOUT_ROOT, CHECKOUT_BRANCH, CHECKOUT_SHA, CHECKOUT_BEHIND,
+# CHECKOUT_AHEAD and CHECKOUT_DIRTY. Returns 1, silently,
 # when the directory is not a git checkout at all -- the normal case for a copy
 # rsynced to /tmp to test a branch, where there is nothing to be stale against.
 checkout_state() {
@@ -33,6 +34,7 @@ checkout_state() {
   # the command printed below is the one RESTORE.md and DEV-VALIDATION.md name.
   CHECKOUT_ROOT=$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$dir")
   CHECKOUT_SHA=$(git -C "$dir" rev-parse --short HEAD 2>/dev/null || echo unknown)
+  CHECKOUT_BRANCH=$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)
   # Tracked files only. deploy/.env is untracked, holds PROD_TAG and DEV_TAG,
   # is written by deploy.sh itself and must never be reported as drift.
   CHECKOUT_DIRTY=$(git -C "$dir" status --porcelain 2>/dev/null | grep -v '^??' || true)
@@ -42,8 +44,16 @@ checkout_state() {
   # whole point is that silence has been meaning the wrong thing.
   if timeout 15 git -C "$dir" fetch -q origin master 2>/dev/null; then
     CHECKOUT_BEHIND=$(git -C "$dir" rev-list --count HEAD..FETCH_HEAD 2>/dev/null || echo '?')
+    # Both directions. Counting only what master has and this does not would
+    # call a FEATURE BRANCH current, and pointing this checkout at a branch to
+    # try it on dev is a thing people here actually do -- the runbook says to
+    # repoint it at master after the merge, which is a step somebody has to
+    # remember. A checkout ahead of master is running deploy code that has not
+    # landed, which is the same problem as running code that is out of date.
+    CHECKOUT_AHEAD=$(git -C "$dir" rev-list --count FETCH_HEAD..HEAD 2>/dev/null || echo '?')
   else
     CHECKOUT_BEHIND='?'
+    CHECKOUT_AHEAD='?'
   fi
   return 0
 }
@@ -54,12 +64,21 @@ checkout_warn() {
 
   if [ "$CHECKOUT_BEHIND" = '?' ]; then
     printf '\033[33m==> cannot tell whether %s is current; the fetch failed\033[0m\n' "$dir" >&2
-  elif [ "$CHECKOUT_BEHIND" -gt 0 ]; then
-    printf '\033[33m==> %s is %s commit(s) behind master, at %s\033[0m\n' \
-      "$dir" "$CHECKOUT_BEHIND" "$CHECKOUT_SHA" >&2
-    printf '    This deploy reads docker-compose.yml and legacy-images from there,\n' >&2
-    printf '    and the installers read their payloads from there.\n' >&2
-    printf '    git -C %s pull --ff-only\n' "$CHECKOUT_ROOT" >&2
+  else
+    if [ "$CHECKOUT_BEHIND" -gt 0 ]; then
+      printf '\033[33m==> %s is %s commit(s) behind master, at %s\033[0m\n' \
+        "$dir" "$CHECKOUT_BEHIND" "$CHECKOUT_SHA" >&2
+      printf '    This deploy reads docker-compose.yml and legacy-images from there,\n' >&2
+      printf '    and the installers read their payloads from there.\n' >&2
+      printf '    git -C %s pull --ff-only\n' "$CHECKOUT_ROOT" >&2
+    fi
+    if [ "$CHECKOUT_AHEAD" -gt 0 ]; then
+      printf '\033[33m==> %s carries %s commit(s) master does not, on %s\033[0m\n' \
+        "$dir" "$CHECKOUT_AHEAD" "$CHECKOUT_BRANCH" >&2
+      printf '    This deploy is reading its compose file and its installers from\n' >&2
+      printf '    code that has not landed. If a branch was put here to try it on\n' >&2
+      printf '    dev, it needs repointing at master once it merges.\n' >&2
+    fi
   fi
 
   if [ -n "$CHECKOUT_DIRTY" ]; then
@@ -80,13 +99,19 @@ checkout_report() {
     return 0
   fi
   printf '  path         %s\n' "$CHECKOUT_ROOT"
-  printf '  at           %s\n' "$CHECKOUT_SHA"
-  case "$CHECKOUT_BEHIND" in
-    0)   printf '  vs master    current\n' ;;
-    '?') printf '  vs master    cannot tell; the fetch failed\n' ;;
-    *)   printf '  vs master    %s commit(s) behind — git -C %s pull --ff-only\n' \
-           "$CHECKOUT_BEHIND" "$CHECKOUT_ROOT" ;;
-  esac
+  printf '  at           %s (%s)\n' "$CHECKOUT_SHA" "$CHECKOUT_BRANCH"
+  if [ "$CHECKOUT_BEHIND" = '?' ]; then
+    printf '  vs master    cannot tell; the fetch failed\n'
+  elif [ "$CHECKOUT_BEHIND" -eq 0 ] && [ "$CHECKOUT_AHEAD" -eq 0 ]; then
+    printf '  vs master    current\n'
+  else
+    [ "$CHECKOUT_BEHIND" -gt 0 ] && \
+      printf '  vs master    %s commit(s) behind — git -C %s pull --ff-only\n' \
+        "$CHECKOUT_BEHIND" "$CHECKOUT_ROOT"
+    [ "$CHECKOUT_AHEAD" -gt 0 ] && \
+      printf '  vs master    %s commit(s) master does not have — this is running code that has not landed\n' \
+        "$CHECKOUT_AHEAD"
+  fi
   if [ -n "$CHECKOUT_DIRTY" ]; then
     printf '  modified     %s tracked file(s), which is a change that has not landed:\n' \
       "$(printf '%s\n' "$CHECKOUT_DIRTY" | wc -l | tr -d ' ')"

@@ -119,6 +119,39 @@ class CheckoutFreshnessTest < ActiveSupport::TestCase
     end
   end
 
+  # Counting only what master has and the checkout does not calls a FEATURE
+  # BRANCH current, and putting a branch here to try it on dev is a thing this
+  # project actually does -- the runbook says to repoint at master after the
+  # merge, which is a step somebody has to remember rather than something that
+  # is checked. A checkout ahead of master is running deploy code that has not
+  # landed, which is the same problem as running code that is out of date.
+  test 'a checkout carrying commits master does not have is reported' do
+    Dir.mktmpdir do |tmp|
+      git = ->(*args) { Open3.capture2e('git', '-c', 'user.email=t@t', '-c', 'user.name=t', *args) }
+
+      git.call('init', '-q', '--bare', "#{tmp}/origin.git")
+      git.call('clone', '-q', "#{tmp}/origin.git", "#{tmp}/work")
+      File.write("#{tmp}/work/a", '1')
+      git.call('-C', "#{tmp}/work", 'add', '-A')
+      git.call('-C', "#{tmp}/work", 'commit', '-qm', 'one')
+      git.call('-C', "#{tmp}/work", 'push', '-q', 'origin', 'HEAD:master')
+
+      git.call('clone', '-q', "#{tmp}/origin.git", "#{tmp}/branchy")
+      assert_empty warn_for("#{tmp}/branchy"), 'a current checkout was reported as drifted'
+
+      # A branch put here to try it on dev, exactly as the runbook describes.
+      git.call('-C', "#{tmp}/branchy", 'checkout', '-q', '-b', 'try-something')
+      File.write("#{tmp}/branchy/b", '2')
+      git.call('-C', "#{tmp}/branchy", 'add', '-A')
+      git.call('-C', "#{tmp}/branchy", 'commit', '-qm', 'not landed yet')
+
+      warning = warn_for("#{tmp}/branchy")
+      assert_match(/1 commit\(s\) master does not/, warning,
+                   'a checkout ahead of master was reported as current')
+      assert_match(/try-something/, warning, 'the warning does not name the branch it is on')
+    end
+  end
+
   # An rsynced copy is not a checkout and has nothing to be stale against.
   # Saying so on every run would train people to ignore the warning.
   test 'it says nothing about a directory that is not a checkout' do
