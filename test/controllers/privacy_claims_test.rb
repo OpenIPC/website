@@ -17,11 +17,34 @@ class PrivacyClaimsTest < ActiveSupport::TestCase
     I18n.t("pages.privacy.#{key}", locale: locale)
   end
 
+  # Whole numbers, not substrings. assert_includes("... 12 days ...", "2")
+  # passes, so a page that had drifted to 12 days would have satisfied a check
+  # for 2 -- which is the one thing this file exists to catch.
+  def figures(key, locale)
+    claim(key, locale).scan(/\d+/)
+  end
+
+  # The page states whole days and whole minutes. If a constant stops being
+  # one -- 60.hours, 15.5.minutes -- flooring it would let the old wording
+  # stand while the system does something else, so this fails instead and
+  # makes the copy a decision rather than a rounding.
+  def whole(duration, unit)
+    value = duration.public_send("in_#{unit}")
+    assert_equal value.to_i, value, <<~MESSAGE.chomp
+      #{duration.inspect} is not a whole number of #{unit}, and the privacy
+      page states this figure in #{unit}.
+
+      Either express the constant in whole #{unit} or rewrite the sentence in
+      all three locales -- do not let it round.
+    MESSAGE
+    value.to_i
+  end
+
   test 'the retention the page promises is the retention the job applies' do
-    days = PurgeImagesJob::RETENTION.in_days.to_i
+    days = whole(PurgeImagesJob::RETENTION, :days)
 
     LOCALES.each do |locale|
-      assert_includes claim(:wall_retention_html, locale), days.to_s, <<~MESSAGE.chomp
+      assert_includes figures(:wall_retention_html, locale), days.to_s, <<~MESSAGE.chomp
         The #{locale} privacy page does not say #{days} days, but
         PurgeImagesJob::RETENTION is #{PurgeImagesJob::RETENTION.inspect}.
 
@@ -36,24 +59,24 @@ class PrivacyClaimsTest < ActiveSupport::TestCase
   # and can reach RETENTION + 1 day. The page says so rather than rounding in
   # its own favour, and the table's figure has to move with the constant too.
   test 'the outside figure allows for the sweep being nightly' do
-    latest = PurgeImagesJob::RETENTION.in_days.to_i + 1
+    latest = whole(PurgeImagesJob::RETENTION, :days) + 1
 
     LOCALES.each do |locale|
-      assert_includes claim(:wall_retention_html, locale), latest.to_s,
+      assert_includes figures(:wall_retention_html, locale), latest.to_s,
                       "the #{locale} page does not say #{latest} as the outside case"
 
       %i[row_images_long row_details_long].each do |row|
-        assert_includes claim(row, locale), latest.to_s,
-                        "the #{locale} retention table disagrees with the prose above it"
+        assert_equal [latest.to_s], figures(row, locale),
+                     "the #{locale} retention table disagrees with the prose above it"
       end
     end
   end
 
   test 'the upload interval the page states is the one the model enforces' do
-    minutes = Snapshot::INTERVAL_LIMIT.in_minutes.to_i
+    minutes = whole(Snapshot::INTERVAL_LIMIT, :minutes)
 
     LOCALES.each do |locale|
-      assert_includes claim(:wall_withheld_html, locale), minutes.to_s,
+      assert_includes figures(:wall_withheld_html, locale), minutes.to_s,
                       "the #{locale} page does not say #{minutes} minutes"
     end
   end
@@ -71,7 +94,7 @@ class PrivacyClaimsTest < ActiveSupport::TestCase
   # lives in its database, not in this tree.
   test 'the claims that cannot be checked here are still made' do
     LOCALES.each do |locale|
-      assert_includes claim(:log_text_html, locale), '14',
+      assert_includes figures(:log_text_html, locale), '14',
                       "the #{locale} page no longer states the log retention at all"
     end
   end
