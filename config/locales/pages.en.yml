@@ -65,6 +65,56 @@ en:
       hero_title: Talk to us.
       money_band_html: Prefer to help with money? <a href="/donate">Fund the work</a>.
       title: Community
+    privacy:
+      # Written against the running configuration rather than the plan (#182):
+      # the collect settings on the counter, `rotate 14` in the nginx logrotate
+      # entry, PurgeImagesJob::RETENTION, and the fields snapshots_controller
+      # actually permits. If any of those change, this copy is wrong and
+      # nothing will fail -- which is why the numbers are named here once and
+      # the page reads them from here.
+      title: "Privacy"
+      hero_title: "What this site records"
+      hero_lede: "We measure openipc.org so we can tell whether its pages do their job. This page says exactly what that means. It is short because a long one is a promise nobody checks."
+      counting_title: "Counting visitors"
+      counting_lede: "A counter we run ourselves, on the same server that serves the site. Nothing goes to anyone else."
+      records_page_html: "The page you opened, and the site you came from if your browser sent one."
+      records_place_html: "Your country, and the language your browser asks for."
+      records_device_html: "Your browser and operating system, and the size of your screen."
+      records_clicks_html: "Clicks that leave the site: writing to us, joining the chat, opening a donation page, or following a link elsewhere."
+      records_tag_html: "A tag in the address, such as <code>?ref=tg-ru</code>, when we posted the link ourselves. It is counted once and then removed from the address."
+      never_cookies_html: "No cookie, no local storage, no identifier of any kind. Nothing is kept in your browser."
+      never_individuals_html: "No individual visits. Only daily totals reach the disk, so there is no row anywhere that is you."
+      never_region_html: "No region or city. That needs a finer location database than we keep."
+      sessions_html: "To count one person reading three pages as one visit rather than three, the counter derives a short-lived key from your address and browser. It exists in memory for at most eight hours and is never written down. Your address is not stored by the counter at all."
+      log_title: "The server log"
+      log_lede: "The ordinary record every web server keeps."
+      log_text_html: "Each request is written to a log with the address it came from, the page, and the result. We use it to find faults, to stop abuse, and to size the machine. It is deleted after fourteen days."
+      wall_title: "The Open Wall"
+      wall_lede: "Cameras running OpenIPC can send a picture to the wall. This part is about the camera, not about you."
+      wall_published_html: "<strong>Published:</strong> the picture, and what the camera says about itself — chip, sensor, firmware, streamer, uptime and chip temperature."
+      wall_withheld_html: "<strong>Not published:</strong> the camera's MAC and IP addresses, both visible only to maintainers. The MAC decides two things: one camera may upload every fifteen minutes, and a camera on the block list is refused. Each camera's page is named by a token that cannot be turned back into either address."
+      wall_retention_html: "A nightly sweep removes pictures, and the descriptions that came with them, once they are two days old — so nothing stays beyond three."
+      retention_title: "How long things are kept"
+      retention_what: "What"
+      retention_where: "Where"
+      retention_how_long: "How long"
+      row_totals_what: "Counting totals"
+      row_totals_where: "Our server"
+      row_totals_long: "kept"
+      row_session_what: "The counter's short-lived key"
+      row_session_where: "Memory only"
+      row_session_long: "8 hours"
+      row_log_what: "Server log, with addresses"
+      row_log_where: "Our server"
+      row_log_long: "14 days"
+      row_images_what: "Open Wall pictures"
+      row_images_where: "Our server"
+      row_images_long: "up to 3 days"
+      row_details_what: "Open Wall camera details"
+      row_details_where: "Our server"
+      row_details_long: "up to 3 days"
+      contact_title: "Asking us about it"
+      contact_text_html: "Write to <a href=\"mailto:privacy@openipc.org\">privacy@openipc.org</a>. There is no account to delete and no profile to export, because we do not build one — but if something here is unclear or looks wrong, we would rather hear it."
     donate:
       business_band_html: If your company depends on OpenIPC, the sustainable way to support it is a commercial relationship. <a href="/business">See what we offer</a>.
       accounting: We're committed to open and transparent accounting, and are grateful for any support you can provide to our efforts to advance OpenIPC and our mission toward a sustainable future.

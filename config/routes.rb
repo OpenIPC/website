@@ -34,6 +34,7 @@ Rails.application.routes.draw do
     get '/business',    to: 'pages#business'
     get '/community',   to: 'pages#community'
     get '/donate',      to: 'pages#donate'
+    get '/privacy',     to: 'pages#privacy'
   end
 
   # The pre-relaunch structure, redirected rather than dropped. These URLs are

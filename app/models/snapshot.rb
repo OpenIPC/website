@@ -104,8 +104,58 @@ class Snapshot < ApplicationRecord
     ProcessImagesJob.perform_later(self)
   end
 
-  def mac_address_dec
-    mac_address.gsub(':', '').to_i(16)
+  # An opaque, stable name for one camera, for use in a URL.
+  #
+  # This replaces mac_address_dec, which was the MAC as a decimal integer and
+  # therefore the MAC: /open-wall/camera/261946086576566 reads back as
+  # ee:3d:13:70:d1:b6, and the first three octets name the manufacturer. The
+  # address was never printed on the page for anyone but a signed-in admin --
+  # the intent to withhold it was already there -- but the link beside it
+  # handed it to everyone, and to anyone crawling the wall.
+  #
+  # HMAC rather than a plain digest, so the token cannot be produced from a
+  # guessed MAC without the server's key; 64 bits is far more than 18 cameras
+  # need and small enough to stay a readable URL.
+  def camera_token
+    self.class.camera_token_for(mac_address)
+  end
+
+  # One spelling per camera before hashing. MAC_ADDRESS_FORMAT accepts either
+  # case and either separator, nothing normalises on write, and the column's
+  # collation folds case but not "-" against ":" -- so aa:bb:cc:dd:ee:ff,
+  # AA:BB:CC:DD:EE:FF and aa-bb-cc-dd-ee-ff are one camera that would otherwise
+  # hash to three different tokens, two of which resolve to nothing.
+  def self.canonical_mac(mac)
+    mac.to_s.downcase.delete(':-')
+  end
+
+  def self.camera_token_for(mac)
+    OpenSSL::HMAC.hexdigest('SHA256', Rails.application.secret_key_base, canonical_mac(mac))[0, 16]
+  end
+
+  # The reverse, without storing anything.
+  #
+  # Snapshots are purged after two days (PurgeImagesJob::RETENTION), so this
+  # table holds the cameras that uploaded recently and nothing else -- 18 of
+  # them against 2,611 rows when this was written. Hashing that many MACs to
+  # answer one request is cheaper than the column, the index, the backfill and
+  # the before_save that the alternative needs, and it cannot drift out of step
+  # with the token the views emit, because it is the same method.
+  #
+  # If the wall ever holds cameras in the thousands, this is the place to add
+  # the column.
+  def self.find_by_camera_token(token)
+    return nil if token.blank?
+
+    # Every spelling that matches, not the first: a camera whose uploads landed
+    # as both "aa-bb-..." and "aa:bb:..." is one camera, and asking for only
+    # one of them would hide half its pictures.
+    spellings = distinct.pluck(:mac_address).compact.select do |candidate|
+      ActiveSupport::SecurityUtils.secure_compare(camera_token_for(candidate), token)
+    end
+    return nil if spellings.empty?
+
+    where(mac_address: spellings).order(created_at: :desc).first
   end
 
   # Where a page should link for one of this snapshot's images.

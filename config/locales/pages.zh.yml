@@ -65,6 +65,56 @@ zh:
       hero_title: 来和我们聊聊。
       money_band_html: 更愿意用资金支持？<a href="/donate">资助这项工作</a>。
       title: 社区
+    privacy:
+      # Written against the running configuration rather than the plan (#182):
+      # the collect settings on the counter, `rotate 14` in the nginx logrotate
+      # entry, PurgeImagesJob::RETENTION, and the fields snapshots_controller
+      # actually permits. If any of those change, this copy is wrong and
+      # nothing will fail -- which is why the numbers are named here once and
+      # the page reads them from here.
+      title: "隐私"
+      hero_title: "本站记录什么"
+      hero_lede: "我们统计 openipc.org，以便判断页面是否发挥了作用。本页说明这具体指什么。它很短——长的隐私声明是没人核对的承诺。"
+      counting_title: "访问统计"
+      counting_lede: "统计程序由我们自己运行，就在提供本站的同一台服务器上。不会发送给任何第三方。"
+      records_page_html: "您打开的页面，以及浏览器告知的来源站点。"
+      records_place_html: "您所在的国家，以及浏览器请求的语言。"
+      records_device_html: "浏览器和操作系统，以及屏幕尺寸。"
+      records_clicks_html: "离开本站的点击：写信给我们、加入聊天、打开捐助页面，或访问外部链接。"
+      records_tag_html: "地址中的标记，例如 <code>?ref=tg-ru</code>，当链接是我们自己发布的时候。它只统计一次，随后从地址中移除。"
+      never_cookies_html: "没有 Cookie，没有本地存储，没有任何标识符。您的浏览器里不留下任何东西。"
+      never_individuals_html: "不记录单次访问。只有每日汇总写入磁盘，任何地方都没有一行属于您。"
+      never_region_html: "不记录地区或城市。那需要比我们所保有的更精细的位置数据库。"
+      sessions_html: "为了把一个人读三页算作一次访问而不是三次，统计程序会从您的地址和浏览器推导出一个短暂的键。它只存在于内存中，最多八小时，从不写入磁盘。您的地址统计程序完全不保存。"
+      log_title: "服务器日志"
+      log_lede: "任何网页服务器都会保留的普通记录。"
+      log_text_html: "每个请求都会连同来源地址、页面和结果写入日志。我们用它排查故障、阻止滥用、评估负载。十四天后删除。"
+      wall_title: "Open Wall"
+      wall_lede: "运行 OpenIPC 的摄像机可以向墙上发送图片。这一节讲的是摄像机，不是您。"
+      wall_published_html: "<strong>公开：</strong>图片本身，以及摄像机对自己的描述——芯片、传感器、固件、推流程序、运行时间和芯片温度。"
+      wall_withheld_html: "<strong>不公开：</strong>摄像机的 MAC 与 IP 地址，两者仅维护者可见。MAC 决定两件事：一台摄像机每十五分钟可上传一次，列入封禁名单的摄像机会被拒绝。每台摄像机的页面以一个令牌命名，无法还原为任一地址。"
+      wall_retention_html: "每晚的清理会删除已满两天的图片及随附的描述——因此任何内容都不会超过三天。"
+      retention_title: "各项保留多久"
+      retention_what: "内容"
+      retention_where: "位置"
+      retention_how_long: "保留"
+      row_totals_what: "统计汇总"
+      row_totals_where: "我们的服务器"
+      row_totals_long: "长期"
+      row_session_what: "统计程序的短暂键"
+      row_session_where: "仅内存"
+      row_session_long: "8 小时"
+      row_log_what: "含地址的服务器日志"
+      row_log_where: "我们的服务器"
+      row_log_long: "14 天"
+      row_images_what: "Open Wall 图片"
+      row_images_where: "我们的服务器"
+      row_images_long: "最多 3 天"
+      row_details_what: "Open Wall 摄像机信息"
+      row_details_where: "我们的服务器"
+      row_details_long: "最多 3 天"
+      contact_title: "向我们询问"
+      contact_text_html: "请写信至 <a href=\"mailto:privacy@openipc.org\">privacy@openipc.org</a>。没有账户可删除，也没有档案可导出，因为我们根本不建立——但如果这里有不清楚或看起来不对的地方，我们更希望听到。"
     donate:
       business_band_html: 如果贵公司依赖 OpenIPC，更可持续的支持方式是建立商业合作关系。<a href="/business">看看我们能提供什么</a>。
       accounting: 我们致力于共建一个开放和透明的数字环境，并由衷地感谢你对我们的努力提供的任何支持，以推动OpenIPC和我们的使命走向一个可持续的未来。

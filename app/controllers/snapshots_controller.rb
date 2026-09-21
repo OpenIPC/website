@@ -131,11 +131,23 @@ class SnapshotsController < ApplicationController
                                 created_at: [1.day.ago..Time.now]).order(:created_at)
   end
 
+  # The :id here is a camera token, not a MAC. It used to be the MAC as a
+  # decimal integer, which put every uploading camera's hardware address --
+  # and, in its first three octets, the manufacturer -- into a public URL.
+  # See Snapshot#camera_token.
+  #
+  # The old numeric form is deliberately not accepted any more. Keeping it
+  # would leave the addresses enumerable, which is most of what was wrong with
+  # it, and dropping it costs nothing: the wall keeps two days of images, so a
+  # shared link to one camera has nothing behind it by the time anyone follows
+  # it.
   def find_camera
-    mac_address_dec = params[:id].to_i
-    mac_address = mac_address_dec.to_s(16).rjust(12, '0').reverse.gsub(/(.{2})(?=.)/, '\\1:').reverse
-    @snapshot = Snapshot.where(mac_address: mac_address).order(created_at: :desc).first
-    redirect_to locale_path('/open-wall'), alert: "No camera with ID #{mac_address_dec} here." if @snapshot.nil?
+    @snapshot = Snapshot.find_by_camera_token(params[:id])
+    return if @snapshot
+
+    # No echo of what was asked for: the old message repeated the decoded
+    # address back to whoever probed for it.
+    redirect_to locale_path('/open-wall'), alert: 'No camera here.'
   end
 
   def find_snapshot

@@ -14,7 +14,8 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     '/ecosystem' => 'ecosystem',
     '/business' => 'business',
     '/community' => 'community',
-    '/donate' => 'donate'
+    '/donate' => 'donate',
+    '/privacy' => 'privacy'
   }.freeze
 
   LOCALES = %i[en ru zh].freeze
