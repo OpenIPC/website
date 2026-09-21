@@ -142,18 +142,68 @@ class LogRetentionTest < ActiveSupport::TestCase
 
   # --- the host gets it ---
 
+  INSTALLER = Rails.root.join('deploy/install-logrotate.sh')
+
+  # The script's own commentary explains the traps below, which means it names
+  # `/etc/logrotate.d`, `.bak-` and the rest while doing so. Same rule as for
+  # the policy files: read what runs, not what explains it.
+  def script
+    INSTALLER.read.lines.reject { |line| line.strip.start_with?('#') }.map(&:strip)
+  end
+
   # logrotate 3.22 prints `error: <file>:4 argument expected after maxage
   # count` and exits 0, which was checked on the origin rather than assumed.
   # An installer that tests only the exit status therefore installs a broken
   # policy and prints its success line over it -- and a config file logrotate
   # cannot parse stops every log on the host from rotating, not just these two.
   test 'the installer does not trust logrotate exit status alone' do
-    body = Rails.root.join('deploy/install-logrotate.sh').read
-
-    assert_match(/grep -q '\^error'/, body, <<~MESSAGE.chomp)
+    assert_includes script.join("\n"), "grep -q '^error'", <<~MESSAGE.chomp
       deploy/install-logrotate.sh has to read logrotate's output for error
       lines, not just its exit code: logrotate reports a syntax error on
       stderr and exits 0 anyway.
+    MESSAGE
+  end
+
+  # Validate the staged copy, then install. The other order leaves a policy
+  # logrotate cannot parse sitting under /etc/logrotate.d whenever the rollback
+  # has nothing to restore -- a destination that did not exist before, or an
+  # install that fails on the second file -- and one unreadable file there ends
+  # the whole run, so every log on the host stops rotating and not just these.
+  test 'nothing reaches /etc/logrotate.d before the policy has been parsed' do
+    lines = script
+    validates = lines.index { |l| l.start_with?('out=$(logrotate --debug') }
+    installs = lines.index { |l| l.include?('install -m 0644') && l.include?('"$dest/') }
+
+    assert validates, 'deploy/install-logrotate.sh never runs logrotate over what it is about to install'
+    assert installs, 'deploy/install-logrotate.sh never installs anything into $dest'
+
+    assert validates < installs, <<~MESSAGE.chomp
+      deploy/install-logrotate.sh writes to $dest at line #{installs + 1} and
+      only parses the policy at line #{validates + 1}. A broken file then has to
+      be rolled back, and rollback cannot help a destination that had no
+      previous version -- which is every file on a freshly rebuilt host, the
+      one case RESTORE.md exists for.
+    MESSAGE
+  end
+
+  # logrotate's `include` reads every file in the directory except the taboo
+  # extensions -- .bak, .old, .orig, .dpkg-*, and the rest of a fixed list.
+  # `nginx.bak-20260921T000000Z` is not one of them, because its suffix is the
+  # timestamp, so a backup left beside the policy is read as a second policy
+  # for the same paths. Checked on the origin: logrotate answers
+  # `error: duplicate log entry for ...` and exits 1.
+  test 'backups are not left where logrotate will read them as policy' do
+    target = script.grep(/\Abackups=/).first
+
+    assert target, 'deploy/install-logrotate.sh does not say where it keeps the previous policy'
+
+    path = target.split('=', 2).last
+
+    assert_not_includes path, '/etc/logrotate.d', <<~MESSAGE.chomp
+      deploy/install-logrotate.sh keeps its backups in #{path}. logrotate reads
+      every non-taboo file in its include directory, and a timestamped backup is
+      not taboo -- so the next run finds two policies for the same logs and
+      fails on `duplicate log entry`.
     MESSAGE
   end
 
