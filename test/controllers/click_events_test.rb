@@ -42,6 +42,21 @@ class ClickEventsTest < ActionDispatch::IntegrationTest
                   'the fallback would be counted as a generic outbound click instead'
   end
 
+  # The closing band offers the same channel as the card above it, under its own
+  # name. Same conversion, two placements; sharing one name would merge them and
+  # lose the only question the second placement exists to answer.
+  test 'the donate band is counted apart from the card above it' do
+    get '/donate'
+
+    assert_select 'a[data-event=?]', 'oc-checkout', 1
+    assert_select 'a[data-event=?]', 'oc-checkout:band', 1
+
+    get '/ru/donate'
+
+    assert_select 'a[data-event=?]', 'paywall-checkout', 1
+    assert_select 'a[data-event=?]', 'paywall-checkout:band', 1
+  end
+
   test 'the home band names its Telegram button' do
     get '/'
 

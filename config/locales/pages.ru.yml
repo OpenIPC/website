@@ -72,6 +72,12 @@ ru:
       # actually permits. If any of those change, this copy is wrong and
       # nothing will fail -- which is why the numbers are named here once and
       # the page reads them from here.
+      contact_cta: "Написать на privacy@openipc.org"
+      contact_note_html: "Удалять нечего и выгружать нечего: профиля мы не заводим. Но если что-то здесь непонятно или выглядит неправильно, мы предпочли бы об этом узнать."
+      contact_title: "Спросите нас о чём угодно из этого"
+      never_title: "Чего он не касается"
+      records_title: "Что счётчик записывает"
+      sessions_title: "Единственное, что похоже на слежку"
       title: "Приватность"
       hero_title: "Что этот сайт записывает"
       hero_lede: "Мы измеряем openipc.org, чтобы понимать, работают ли его страницы. Эта страница говорит, что именно это значит. Она короткая: длинная — это обещание, которое никто не проверяет."
@@ -113,8 +119,6 @@ ru:
       row_details_what: "Данные камер Open Wall"
       row_details_where: "Наш сервер"
       row_details_long: "до 3 дней"
-      contact_title: "Спросить нас об этом"
-      contact_text_html: "Пишите на <a href=\"mailto:privacy@openipc.org\">privacy@openipc.org</a>. Удалять нечего и выгружать нечего, потому что профиля мы не заводим, — но если здесь что-то непонятно или выглядит неверно, мы предпочли бы об этом услышать."
     donate:
       # Russia-only, and deliberately absent from pages.en.yml and pages.zh.yml
       # (#201). Open Collective cannot be paid with a card issued in Russia, so
@@ -281,6 +285,14 @@ ru:
       wall_live: 'Прямо сейчас: камеры на OpenIPC по всему миру'
       wall_snapshot_alt: 'Изображение: живой снимок с камеры сообщества'
     low_latency:
+      build_apfpv_name: apfpv
+      build_apfpv_text: Обычный Wi-Fi вместо широковещания. Камера поднимает точку доступа, наземная станция подключается к ней — принять поток может любое устройство с Wi-Fi.
+      build_fpv_name: fpv
+      build_fpv_text: Родной линк OpenIPC, именно его настраивает руководство по сборке. wfb-ng вещает видео без пары и без ассоциации, а adaptive-link меняет битрейт вслед за сигналом.
+      build_rubyfpv_name: rubyfpv
+      build_rubyfpv_text: Для наземной станции RubyFPV. Вместо wfb-ng стоят собственные линк и телеметрия RubyFPV; со стороны камеры всё остальное то же самое.
+      builds_lede: Три сборки для воздушной части. Отличаются радиолинком и больше ничем, а выбор определяется тем, что стоит на земле.
+      builds_title: Выберите сборку под свою наземную станцию
       business_bridge_html: Строите продукт на этом линке? <a href="/business">Напишите нам</a> — мы делаем заказную разработку и OEM.
       credits_text_html: Радиолинк существует благодаря wfb-ng и devourer, а экосистема растёт вместе с друзьями — <a href="https://rubyfpv.com/">RubyFPV</a> и <a href="https://www.youtube.com/@mariofpv">Mario FPV</a>. Open source — командный спорт.
       credits_title: Стоим на открытых плечах

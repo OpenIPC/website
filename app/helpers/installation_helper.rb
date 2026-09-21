@@ -37,10 +37,38 @@ module InstallationHelper
   #
   def list_of_commands(text)
     notes = caveats_for(text).map do |key|
-      content_tag('p', t("firmware.installation.#{key}"), class: 'small text-muted')
+      content_tag('p', t("firmware.installation.#{key}"), class: 'small text-body-secondary')
     end
-    block = content_tag 'pre', text.join('<br>').html_safe, class: 'bg-light p-4'
-    notes.empty? ? block : safe_join([block, *notes])
+    notes.empty? ? terminal_block(text) : safe_join([terminal_block(text), *notes])
+  end
+
+  # The site's terminal chrome, deliberately without its copy button.
+  #
+  # shared/_terminal is the component every other page uses for a command, and
+  # these blocks were a bare `pre.bg-light` from before it existed -- light
+  # grey, no frame, indistinguishable from a quotation on the one page where
+  # the difference between prose and a command matters most.
+  #
+  # But the partial ships a copy-to-clipboard button, and here that would be a
+  # trap. Every one of these blocks opens with "Enter commands line by line! Do
+  # not copy and paste multiple lines at once!", and the reason is in
+  # guarded_flash above: a bootloader that does not understand `&&` runs the
+  # whole pasted line as one command, or runs the write without the erase.
+  # Offering one click that puts all of it on the clipboard, on a page where
+  # that bricks a camera, is not a convenience.
+  #
+  # The wrapping is inherited and wanted: .terminal wraps rather than scrolls,
+  # so a long tftpboot line stays readable to its end instead of disappearing
+  # behind a scrollbar most systems do not draw.
+  def terminal_block(text)
+    header = content_tag('div', class: 'terminal-header') do
+      safe_join([
+        content_tag('span', safe_join([tag.span, tag.span, tag.span]), class: 'dots'),
+        content_tag('span', t('firmware.installation.shell_label'), class: 'text-data')
+      ])
+    end
+    body = content_tag('pre', content_tag('code', text.join('<br>').html_safe))
+    content_tag('div', safe_join([header, body]), class: 'terminal my-3')
   end
 
   # The line that raises a question, and the note that answers it. One table
@@ -289,5 +317,54 @@ module InstallationHelper
                             '0x0', c.flash_size_hex, write_size)
     end
     list_of_commands text
+  end
+
+  # What the download step says under the file, besides the file (#190).
+  #
+  # Two sentences at most, muted, below the link and never between the command
+  # blocks people paste into a bootloader. Nothing stands between the visitor
+  # and the download: no interstitial, no gate, no timer.
+  #
+  # The licence sentence is a statement about the image in front of them, so it
+  # is only made where it is true. Every `done` chip's image carries Majestic
+  # -- checked across all 95 assemblable images that map to a defconfig -- and
+  # the twelve that carry none are every one of them wip/neq/rnd/hlp/mvp, with
+  # zero downloads between them in ninety days. `status` is therefore a fact
+  # the site already holds that answers the question exactly, which beats a
+  # second hand-maintained list of chips that would drift the first time
+  # upstream changed a defconfig and nothing here would notice.
+  def download_licence_notice(camera)
+    return unless camera.soc.status.to_s == 'done'
+
+    segment = camera.soc.segment_name
+    lines = [t('firmware.installation.licence_html')]
+    lines << business_ask(camera, segment) unless segment == 'consumer'
+
+    tag.div(class: 'download-licence small text-body-secondary border-top pt-3 mt-2') do
+      safe_join(lines.map { |line| tag.p(line, class: 'mb-0') })
+    end
+  end
+
+  private
+
+  # The business line is a question, not an offer: the visitor decides whether
+  # it is about them. `?ref=` carries the attribution even when the event does
+  # not -- the beacon is an async request and a same-tab navigation can cancel
+  # it, where the landing page reading `?ref=` cannot be raced.
+  #
+  # The alternative wording ships as a data attribute rather than as a second
+  # rendered variant, and the browser chooses between them from sessionStorage:
+  # after #155 and #156 this page is a cacheable GET, so a server-side variant
+  # keyed on anything about the visitor would make it uncacheable again.
+  def business_ask(camera, segment)
+    query = { ref: 'download-step', soc: camera.soc.urlname,
+              edition: camera.firmware_version }.to_query
+    link = link_to(t('firmware.installation.licence_business_link'),
+                   "#{locale_path('/business')}?#{query}",
+                   data: { event: "download-step:business:#{segment}",
+                           volume_text: t('firmware.installation.licence_volume_ask'),
+                           volume_link: t('firmware.installation.licence_volume_link') })
+
+    safe_join([t("firmware.installation.licence_ask.#{segment}"), ' ', link, '.'])
   end
 end

@@ -52,6 +52,29 @@
       </div>
     </div>
 
+    <%# Which air-unit build (#190).
+
+        The FPV copy above tells the reader to "pick your ground station", and
+        until now the site never said what there was to pick from. There are
+        three builds, they differ in the radio link and in nothing else the
+        reader cares about, and which one someone wants is decided entirely by
+        what is on the bench at the other end. Named here in the order people
+        meet them: the OpenIPC link first, then the two that replace it. %>
+    <div class="row g-4 mb-5" id="builds">
+      <div class="col-12">
+        <h2 class="h4 mb-1"><%= t('.builds_title') %></h2>
+        <p class="text-body-secondary mb-0"><%= t('.builds_lede') %></p>
+      </div>
+      <% %w[fpv rubyfpv apfpv].each do |build| %>
+        <div class="col-lg-4">
+          <div class="h-100 p-3 border rounded-3">
+            <h3 class="h6 text-data mb-2"><%= t(".build_#{build}_name") %></h3>
+            <p class="text-body-secondary small mb-0"><%= t(".build_#{build}_text") %></p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
     <%# How fast, really.
 
         One measure across four receive paths, so the bars are one hue on a

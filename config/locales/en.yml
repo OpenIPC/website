@@ -100,10 +100,21 @@ en:
         info: Download bootloader binary file and save it to the root directory of your TFTP server.
         link: Download OpenIPC U-Boot binary file
         title: Flash OpenIPC U-Boot
+      help_cta: "Ask in the chat"
+      help_title: "Stuck, or something did not match?"
       layout_note: 'Partition layout: %{layout}. The image below covers the whole chip, so flashing it clears the overlay as well.'
+      licence_ask:
+        cctv: Deploying more than a handful?
+        fpv: Building an FPV product on this platform?
+        unknown: Shipping a product?
+      licence_business_link: Commercial terms and support
+      licence_html: 'This image includes Majestic under the <a href="https://github.com/OpenIPC/majestic/blob/master/LICENSE.md">Prosperity Public License</a>: free for personal, hobby and nonprofit use, and free to try commercially for thirty days.'
+      licence_volume_ask: Building images for several boards?
+      licence_volume_link: A scoping call is free
       lock_caveat_html: "<code>sf lock 0</code> clears the block protection some vendors arm in the flash chip's status register, and it is OpenIPC U-Boot's own subcommand: a stock bootloader built from mainline U-Boot has <code>sf protect</code> and no <code>lock</code>, so it answers with the <code>sf</code> usage message instead. Nothing was changed by that, and on most chips nothing is armed — enter the rest of the block exactly as written and it flashes normally. Where <code>sf protect</code> does exist it is worth one try, with the same offset and length as the <code>sf erase</code> below, but most chips answer that it is unsupported. What is lost either way is a check: flash that is still protected discards an erase and a write while reporting success, so a camera that comes back on its stock firmware after every command said OK is what that looks like. That bootloader cannot clear the protection — flash the chip with an external programmer, or with <a href=\"https://github.com/OpenIPC/defib\">defib</a> over the serial console you are already on, whose flash agent unlocks it itself."
       mac_record_caveat_html: "Write this address down with the backup. The full image erases the whole chip and the factory MAC goes with it: on first boot the camera keeps an address it already has, then looks for the factory one still in flash, and mints itself a new one only when it finds neither — and after a whole-chip erase there is nothing left to find. If the bootloader answers that <code>ethaddr</code> is not defined, the address is on the camera's own label. Either way you can give it back afterwards with <code>set_mac aa:bb:cc:dd:ee:ff</code> on the camera."
       permanent_link: Permanent link to this configuration
+      shell_label: "bootloader shell"
       subtitle: on a camera with %{soc_name} SoC and %{flash_type} SPI flash chip
       success:
         info_html: Open camera's web interface on <a href=\"http://%{address}/\">http://%{address}/</a>. A new camera has no password yet and streams nothing until it has one, so it asks you to choose a password before anything else. That password belongs to <b>root</b> and is the one the web interface, ssh, UART and RTSP all use. ONVIF accepts it too, unless your client authenticates with a digest -- those need <b>onvif.password</b> set separately.

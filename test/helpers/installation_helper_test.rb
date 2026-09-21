@@ -43,7 +43,12 @@ class InstallationHelperTest < ActionView::TestCase
   test 'a block that does not chain is left alone' do
     html = list_of_commands(['run setnor8m'])
 
-    assert_equal '<pre class="bg-light p-4">run setnor8m</pre>', html
+    # The command, and nothing appended. Asserted as "no note" rather than as
+    # the whole markup string: these two tests are about which blocks earn a
+    # caveat, and pinning the wrapper made them fail when the block was moved
+    # into the site's terminal chrome, which changed nothing they are about.
+    assert_includes html, 'run setnor8m'
+    assert_select_none_of html, 'p'
   end
 
   test 'the note is html, not escaped markup' do
@@ -129,6 +134,47 @@ class InstallationHelperTest < ActionView::TestCase
   test 'a block that probes the flash without unlocking it is left alone' do
     html = list_of_commands(['sf probe 0; sf read 0x42000000 0x0 0x1000000'])
 
-    assert_equal '<pre class="bg-light p-4">sf probe 0; sf read 0x42000000 0x0 0x1000000</pre>', html
+    assert_includes html, 'sf probe 0; sf read 0x42000000 0x0 0x1000000'
+    assert_select_none_of html, 'p'
+  end
+
+  # #190's contract is that the command blocks do not change. The chrome around
+  # them did -- the maintainers asked for it, because a bare grey `pre` was
+  # indistinguishable from a quotation on the page where that distinction
+  # matters most -- so this pins the part the contract is actually about: the
+  # text a reader types is exactly the lines given, in order, and the wrapper
+  # adds not one character to it.
+  test 'the chrome adds nothing to the commands themselves' do
+    lines = ['setenv ipaddr 192.168.1.10; setenv serverip 192.168.1.254',
+             'sf probe 0; sf lock 0;',
+             'tftpboot 0x42000000 openipc.bin && sf erase 0x0 0x800000',
+             'reset']
+    html = list_of_commands(lines)
+
+    # Everything inside <pre>, with <br> read back as the line break it renders.
+    body = html[%r{<pre>(.*?)</pre>}m, 1]
+    typed = body.gsub(%r{</?code[^>]*>}, '').split('<br>')
+
+    assert_equal lines, typed
+  end
+
+  # The blocks say "enter commands line by line" because a bootloader without
+  # `&&` runs a pasted line as one command -- see guarded_flash. A copy-all
+  # button would be one click that does exactly what the first line of every
+  # block forbids, on the page where that bricks a camera.
+  test 'the command blocks offer no copy-to-clipboard button' do
+    html = list_of_commands(['tftp 0x82000000 f && sf erase 0x0 0x800000'])
+
+    assert_includes html, 'terminal'
+    assert_not_includes html, 'data-copy-target'
+    assert_not_includes html, 'btn-copy'
+  end
+
+  private
+
+  # Minitest has no assert_select for a bare string, and Nokogiri here would be
+  # a dependency for one negative check.
+  def assert_select_none_of(html, tag)
+    assert_no_match(/<#{tag}[ >]/, html, "expected no <#{tag}> in #{html}")
   end
 end

@@ -359,4 +359,45 @@ class SocTest < ActiveSupport::TestCase
       assert_equal 'nor8m', ordinary.default_flash_chip
     end
   end
+
+  # --- segments (#190) ---
+
+  # `unknown` has to keep meaning one thing. Without the validation the admin's
+  # own select would persist a typo, and the column would then say both "nobody
+  # has looked at this chip" and "someone typed cctvv" with the same value --
+  # which want different follow-up.
+  test 'a segment that is not one is refused' do
+    soc = Soc.new(vendor: @vendor, model: 'SEGPROBE', segment: 'drone-ish')
+
+    assert_not soc.valid?
+    assert_includes soc.errors[:segment].join, 'included'
+  end
+
+  test 'blank is allowed, because unclassified is a real state' do
+    Soc::SEGMENTS.each do |segment|
+      assert Soc.new(vendor: @vendor, model: "SEG#{segment}", segment: segment).valid?, segment
+    end
+    assert Soc.new(vendor: @vendor, model: 'SEGNIL', segment: nil).valid?
+  end
+
+  test 'a row written around the model still reads as unknown' do
+    soc = Soc.create!(vendor: @vendor, model: 'SEGRAW')
+    soc.update_column(:segment, 'cctvv')
+
+    assert_equal 'unknown', soc.reload.segment_name
+  end
+
+  # The migration's backfill and db/seeds.rb are the same call, because a
+  # migration only ever runs against a database that already has rows: a
+  # schema-loaded setup would otherwise leave every chip unclassified.
+  test 'classify_segments! is idempotent and leaves a hand-set value alone' do
+    goke = Vendor.create!(name: 'Goke')
+    cctv = Soc.create!(vendor: goke, model: 'GKSEG1')
+    held = Soc.create!(vendor: goke, model: 'GKSEG2', segment: 'fpv')
+
+    2.times { Soc.classify_segments! }
+
+    assert_equal 'cctv', cctv.reload.segment
+    assert_equal 'fpv', held.reload.segment, 'it overwrote a classification someone made'
+  end
 end

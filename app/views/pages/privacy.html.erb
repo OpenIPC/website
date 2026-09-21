@@ -2,84 +2,128 @@
 
 <%= render 'shared/page_header', title: t('.hero_title'), lede: t('.hero_lede') %>
 
-<div class="container">
-  <article class="privacy">
-    <div class="row">
-      <div class="col-lg-8">
+<%# Built out of the same kit as /get-started and /teleoperation: alternating
+    full-bleed bands, multi-column rows, cards, and a closing band. The first
+    version of this page put everything in a single col-lg-8 and left a third
+    of the viewport empty, which read as a document someone had pasted in
+    rather than a page of this site.
 
-        <h2 class="h4 mt-5"><%= t('.counting_title') %></h2>
-        <p class="text-body-secondary"><%= t('.counting_lede') %></p>
+    The structure is the argument. What is recorded and what is not are the
+    same shape, side by side, because the comparison is the whole point -- as
+    a footnote under a list, the second half reads as a caveat instead of the
+    part people came for. %>
+<section class="py-6">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-12">
+        <h2 class="h4 mb-1"><%= t('.counting_title') %></h2>
+        <p class="text-body-secondary mb-0"><%= t('.counting_lede') %></p>
+      </div>
 
-        <%# Two lists, one shape: what is recorded and what is not. The second
-            is the part people actually want, so it is not a footnote. %>
-        <ul class="list-unstyled mb-4">
-          <% %w[page place device clicks tag].each do |item| %>
-            <li class="d-flex gap-2 mb-2">
-              <i class="bi bi-plus-lg text-success flex-shrink-0 mt-1"></i>
-              <span><%= t(".records_#{item}_html") %></span>
-            </li>
-          <% end %>
-        </ul>
-
-        <ul class="list-unstyled mb-4">
-          <% %w[cookies individuals region].each do |item| %>
-            <li class="d-flex gap-2 mb-2">
-              <i class="bi bi-dash-lg text-danger flex-shrink-0 mt-1"></i>
-              <span><%= t(".never_#{item}_html") %></span>
-            </li>
-          <% end %>
-        </ul>
-
-        <div class="alert alert-light border">
-          <p class="mb-0"><%= t('.sessions_html') %></p>
-        </div>
-
-        <h2 class="h4 mt-5"><%= t('.log_title') %></h2>
-        <p class="text-body-secondary"><%= t('.log_lede') %></p>
-        <p><%= t('.log_text_html') %></p>
-
-        <h2 class="h4 mt-5"><%= t('.wall_title') %></h2>
-        <p class="text-body-secondary"><%= t('.wall_lede') %></p>
-
-        <ul class="list-unstyled mb-4">
-          <li class="d-flex gap-2 mb-2">
-            <i class="bi bi-plus-lg text-success flex-shrink-0 mt-1"></i>
-            <span><%= t('.wall_published_html') %></span>
-          </li>
-          <li class="d-flex gap-2 mb-2">
-            <i class="bi bi-dash-lg text-danger flex-shrink-0 mt-1"></i>
-            <span><%= t('.wall_withheld_html') %></span>
-          </li>
-        </ul>
-
-        <p><%= t('.wall_retention_html') %></p>
-
-        <h2 class="h4 mt-5"><%= t('.retention_title') %></h2>
-        <div class="table-responsive">
-          <table class="table align-middle">
-            <thead>
-              <tr>
-                <th scope="col"><%= t('.retention_what') %></th>
-                <th scope="col"><%= t('.retention_where') %></th>
-                <th scope="col"><%= t('.retention_how_long') %></th>
-              </tr>
-            </thead>
-            <tbody>
-              <% %w[totals session log images details].each do |row| %>
-                <tr>
-                  <td><%= t(".row_#{row}_what") %></td>
-                  <td><%= t(".row_#{row}_where") %></td>
-                  <td class="text-data"><%= t(".row_#{row}_long") %></td>
-                </tr>
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h3 class="h6 d-flex align-items-center gap-2 mb-3">
+              <span class="icon-chip icon-chip--sm"><i class="bi bi-check-lg"></i></span>
+              <%= t('.records_title') %>
+            </h3>
+            <ul class="list-unstyled mb-0">
+              <% %w[page place device clicks tag].each do |item| %>
+                <li class="d-flex gap-2 mb-2">
+                  <i class="bi bi-dot flex-shrink-0 text-body-tertiary"></i>
+                  <span class="text-body-secondary"><%= t(".records_#{item}_html") %></span>
+                </li>
               <% end %>
-            </tbody>
-          </table>
+            </ul>
+          </div>
         </div>
+      </div>
 
-        <h2 class="h4 mt-5"><%= t('.contact_title') %></h2>
-        <p><%= t('.contact_text_html') %></p>
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h3 class="h6 d-flex align-items-center gap-2 mb-3">
+              <span class="icon-chip icon-chip--sm icon-chip--muted"><i class="bi bi-slash-lg"></i></span>
+              <%= t('.never_title') %>
+            </h3>
+            <ul class="list-unstyled mb-0">
+              <% %w[cookies individuals region].each do |item| %>
+                <li class="d-flex gap-2 mb-2">
+                  <i class="bi bi-dot flex-shrink-0 text-body-tertiary"></i>
+                  <span class="text-body-secondary"><%= t(".never_#{item}_html") %></span>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
 
+      <%# The one mechanism on the page that sounds like tracking and is not,
+          so it gets the honesty-box treatment /get-started uses rather than a
+          grey rectangle. %>
+      <div class="col-12">
+        <div class="alert alert-light border d-flex gap-3 mb-0">
+          <i class="bi bi-hourglass-split fs-4 text-body-tertiary"></i>
+          <div>
+            <h3 class="h6 mb-1"><%= t('.sessions_title') %></h3>
+            <p class="mb-0 text-body-secondary"><%= t('.sessions_html') %></p>
+          </div>
+        </div>
       </div>
     </div>
-  </article>
-</div>
+  </div>
+</section>
+
+<section class="section--alt py-6">
+  <div class="container">
+    <div class="row g-5">
+      <div class="col-lg-6">
+        <h2 class="h4 mb-1"><%= t('.log_title') %></h2>
+        <p class="text-body-secondary"><%= t('.log_lede') %></p>
+        <p class="mb-0"><%= t('.log_text_html') %></p>
+      </div>
+      <div class="col-lg-6">
+        <h2 class="h4 mb-1"><%= t('.wall_title') %></h2>
+        <p class="text-body-secondary"><%= t('.wall_lede') %></p>
+        <p><%= t('.wall_published_html') %></p>
+        <p><%= t('.wall_withheld_html') %></p>
+        <p class="mb-0"><%= t('.wall_retention_html') %></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%# Everything above, as figures. A borderless table on the page's own ground
+    rather than the bordered default: the row labels are the structure, and
+    grid lines around five rows of two words are noise. %>
+<section class="py-6">
+  <div class="container">
+    <h2 class="h4 mb-3"><%= t('.retention_title') %></h2>
+    <div class="table-responsive">
+      <table class="table table-borderless align-middle mb-0">
+        <thead>
+          <tr class="border-bottom">
+            <th scope="col" class="x-small text-uppercase text-body-secondary fw-semibold"><%= t('.retention_what') %></th>
+            <th scope="col" class="x-small text-uppercase text-body-secondary fw-semibold"><%= t('.retention_where') %></th>
+            <th scope="col" class="x-small text-uppercase text-body-secondary fw-semibold"><%= t('.retention_how_long') %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% %w[totals session log images details].each do |row| %>
+            <tr class="border-bottom">
+              <td><%= t(".row_#{row}_what") %></td>
+              <td class="text-body-secondary"><%= t(".row_#{row}_where") %></td>
+              <td class="text-data text-nowrap"><%= t(".row_#{row}_long") %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<%= render 'shared/cta_band',
+           title: t('.contact_title'),
+           primary_label: t('.contact_cta'),
+           primary_href: 'mailto:privacy@openipc.org',
+           note_html: t('.contact_note_html') %>

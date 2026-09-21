@@ -26,12 +26,16 @@
   z-index: 2;
 }
 
-.pillar-card .icon-chip {
+// Unscoped since /privacy: the chip is a general label mark, not a pillar-card
+// part, and the alternative was a second set of rules that drift apart.
+// .pillar-card still gets it by inheriting the base rule.
+.icon-chip {
   align-items: center;
   background: rgba($indigo, .08);
   border-radius: $border-radius-lg;
   color: $indigo;
   display: inline-flex;
+  flex-shrink: 0;
   font-size: 1.5rem;
   height: 3rem;
   justify-content: center;
@@ -40,6 +44,23 @@
   &.icon-chip--accent {
     background: rgba($accent, .15);
     color: shade-color($accent, 35%);
+  }
+
+  // Beside a heading rather than above a paragraph, so it takes the cap height
+  // of the text it labels instead of standing over it.
+  &.icon-chip--sm {
+    border-radius: $border-radius;
+    font-size: .9rem;
+    height: 1.75rem;
+    width: 1.75rem;
+  }
+
+  // For the half of a pair that is an absence. Indigo on both sides would say
+  // the two lists are the same kind of claim, and red would say the absence is
+  // a fault -- it is the reassuring half.
+  &.icon-chip--muted {
+    background: var(--bs-secondary-bg);
+    color: var(--bs-secondary-color);
   }
 }
 
