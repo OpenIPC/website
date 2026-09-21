@@ -80,6 +80,11 @@ server {
        autoindex on;
        autoindex_localtime on;
        # A report is written once and never changed; the directory listing is.
+       # Repeated, not inherited: add_header at location level replaces the
+       # whole set the server block sends, so a location that adds one of its
+       # own drops HSTS from everything it serves unless it says so again.
+       add_header Strict-Transport-Security max-age=15768000;
+       add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
        add_header Cache-Control "no-cache" always;
    }
 
@@ -141,6 +146,8 @@ server {
 
     location ^~ /wall/ {
         alias /srv/www/shared/dev-wall/;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
         add_header Cache-Control "public, max-age=31536000, immutable";
 
         # Declaring any limit_conn here REPLACES the http-level `limit_conn
@@ -217,11 +224,31 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-   location / {
+    # The seam between a static bundle and Rails (#157), the same shape as
+    # production and against a bundle of its own -- a rollback rehearsal on dev
+    # must not touch what openipc.org serves. See the long note in
+    # sites-available/org.openipc for why the try_files elements are these two
+    # and not `$uri $uri/`.
+    location / {
+        root /srv/www/static/dev/current;
+        try_files $uri $uri/index.html @rails;
+
+        # BOTH inherited headers repeated, not just HSTS. add_header at
+        # location level replaces the server block's entire set, and dropping
+        # X-Robots-Tag would quietly make staging indexable -- the same trap
+        # the production vhost documents for HSTS, with a worse outcome.
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header X-Served-By static always;
+    }
+
+    location @rails {
         proxy_buffer_size 128k;
         proxy_buffers 8 128k;
 
-        proxy_pass http://127.0.0.1:3001/;
+        # No URI part: nginx forbids one inside a named location. See the note
+        # in sites-available/org.openipc -- what reaches the app is unchanged.
+        proxy_pass http://127.0.0.1:3001;
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -231,6 +258,10 @@ server {
         proxy_connect_timeout 120;
         proxy_send_timeout 120;
         proxy_read_timeout 180;
-   }
+
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header X-Served-By rails always;
+    }
 
 }

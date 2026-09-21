@@ -36,6 +36,12 @@ verification techniques, and the traps that have cost time here are in
 - `openipc-deploy dev <sha>` / `openipc-deploy prod <sha>` — deploy
 - `openipc-deploy rollback prod` — back one release, ~13s
 - `openipc-deploy status` — tags, rollback target, health
+- `openipc-static <env> <sha>` / `rollback` / `status` / `verify` — the static
+  bundle, a **separate** release train from the container (#157). nginx's
+  `location /` serves `/srv/www/static/<env>/current` and falls through to
+  `@rails`, so a page is extracted when its `index.html` is in the bundle and
+  rollback is a symlink flip. `deploy/static/README.md`; check a vhost change
+  with `deploy/nginx/check-config.sh --seam` before `push-nginx.sh --apply`.
 - `deploy/RESTORE.md` — rebuilding from the S3 backup
 
 Two things that bite: `config.assets.compile = false`, so any asset reference

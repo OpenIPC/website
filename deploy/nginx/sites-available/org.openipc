@@ -190,6 +190,10 @@ server {
     location = /api/v1/support/stats.json {
         alias /srv/www/shared/support-stats.json;
         default_type application/json;
+        # Repeated, not inherited: add_header at location level replaces the
+        # whole set the server block sends, so a location that adds one of its
+        # own drops HSTS from everything it serves unless it says so again.
+        add_header Strict-Transport-Security max-age=15768000;
         add_header Cache-Control "public, max-age=3600" always;
         add_header Access-Control-Allow-Origin "*" always;
 
@@ -251,6 +255,7 @@ server {
         proxy_cache_lock on;
         proxy_ignore_headers Set-Cookie;
         proxy_hide_header Set-Cookie;
+        add_header Strict-Transport-Security max-age=15768000;
         add_header X-Cache-Status $upstream_cache_status;
     }
 
@@ -375,6 +380,7 @@ server {
         proxy_no_cache $upstream_http_x_admin_view;
         proxy_hide_header X-Admin-View;
 
+        add_header Strict-Transport-Security max-age=15768000;
         add_header X-Cache-Status $upstream_cache_status;
     }
 
@@ -409,6 +415,7 @@ server {
         }
 
         alias /srv/www/shared/wall/;
+        add_header Strict-Transport-Security max-age=15768000;
         add_header Cache-Control "public, max-age=31536000, immutable";
 
         # Declaring any limit_conn here REPLACES the http-level `limit_conn
@@ -481,20 +488,99 @@ server {
         proxy_no_cache $upstream_http_x_admin_view;
         proxy_hide_header X-Admin-View;
 
+        add_header Strict-Transport-Security max-age=15768000;
         add_header X-Cache-Status $upstream_cache_status;
     }
 
+    # The seam between a static bundle and Rails (#157). A page is extracted
+    # when its index.html exists under the root below -- nothing else: no
+    # nginx edit per page, no header, no feature flag. Rollback is deleting
+    # that file, or repointing `current` at the previous bundle.
+    #
+    # The fallback direction is the property worth protecting, and try_files
+    # enforces it rather than convention doing so: every element that misses
+    # continues to the next, and the last element is a named location, so this
+    # block cannot answer 404 or 403 of its own. Only Rails can. A missing
+    # /ru/donate/index.html falls through and Rails renders Russian from the
+    # YAML -- a partial locale build degrades to the working old site, never
+    # to the wrong language.
+    #
+    # NOT `try_files $uri $uri/ @rails`. try_files decides file-test versus
+    # directory-test from the literal element at parse time, so only an element
+    # written with a trailing slash tests for a directory -- and a directory
+    # that matches is handed to the index module, which answers "directory
+    # index of ... is forbidden" when there is no index.html in it. With an
+    # empty bundle the directory that always exists is the bundle root, so that
+    # form answers 403 for the front page. Measured on nginx 1.26.3, empty
+    # bundle:
+    #
+    #            $uri $uri/index.html   $uri $uri/
+    #   /        rails 200              403
+    #   /ru/     rails 200              403
+    #
+    # `index` would be dead configuration here for the same reason -- the index
+    # module can only run once a directory element has matched -- and is
+    # deliberately absent.
+    #
+    # A file cannot Vary. Rails declares `Vary: Accept-Language` on every
+    # unprefixed page and the microcache honours it; a bundle file serves one
+    # language to everyone. That is why #154 had to land first: the bare path
+    # is English by decision now, so a page in the bundle carries its language
+    # in its path. It is also why deploy/static/check-bundle.sh refuses a root
+    # index.html -- what `/` means is #160's decision, not a build product.
     location / {
+        # The cap has to be here and cannot be in @rails, and that is a fact
+        # about phase order rather than a preference. limit_conn runs in the
+        # preaccess phase and try_files in precontent, so the configuration
+        # that counts is whichever location the request landed in FIRST --
+        # this one -- and ngx_http_limit_conn_handler returns early on every
+        # pass after it. Measured on nginx 1.26.3 with the cap set to 1 and
+        # four concurrent slow transfers:
+        #
+        #   cap in `location /`   429 429 429 200   binds
+        #   cap in `@rails`       200 200 200 200   never runs
+        #   cap in both           429 429 429 200   the @rails copy is dead
+        #
+        # The middle row is why this matters: @rails alone looks correct, and
+        # would silently replace the site_conc pool that ended the 2026-09-03
+        # outage with the http-level per-address twenty this location would
+        # otherwise inherit.
+        #
+        # The cost of that ordering, stated so it is owned: a request answered
+        # from the bundle also takes a site_conc slot, because nginx decides
+        # admission before it knows which side will answer. Identical to today
+        # while the bundle holds one page nobody links to. It is the number to
+        # revisit when it holds the marketing set.
         limit_conn site_conc 10;
         limit_conn_status 429;
-        # Increase the size of the main buffer for the response header/start
+
+        root /srv/www/static/prod/current;
+        try_files $uri $uri/index.html @rails;
+
+        # `add_header` in a location REPLACES every inherited one, so the
+        # server-level HSTS has to be repeated here exactly as it is in @rails
+        # below -- otherwise every page the bundle serves loses it.
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By static always;
+    }
+
+    # Everything the bundle does not hold, which today is everything. This is
+    # the block that was `location /` until #157; it is unchanged apart from
+    # the proxy_pass URI part and the X-Served-By witness.
+    location @rails {
+        # No limit_conn here. See `location /` above: it would never execute.
         proxy_buffer_size 128k;
 
         # Increase the number and size of additional buffers for the response body
         # This example allocates 8 buffers, each 128 KB
         proxy_buffers 8 128k;
 
-        proxy_pass http://127.0.0.1:3000/;
+        # No URI part. nginx refuses one inside a named location, and none is
+        # needed: with an empty URI part the request line sent upstream is
+        # $request_uri when the URI is simple, and the same normalised, escaped
+        # path as before when it is not. Rails receives what it received when
+        # this was `location /`.
+        proxy_pass http://127.0.0.1:3000;
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -526,6 +612,11 @@ server {
         # carry one, so there is nothing to gain by dropping it -- and dropping
         # it is what produced the bug the microcache conf documents at length,
         # where a key that ignored ?locale= served Russian to English readers.
+        #
+        # Unchanged by the seam: $request_uri is the original request line and
+        # an internal redirect to a named location does not rewrite it, so the
+        # keys are the strings they were and the entries already on disk stay
+        # warm across the reload.
         proxy_cache_key $scheme$host$request_uri;
 
         # No proxy_cache_valid, deliberately. Rails decides what may be cached
@@ -559,6 +650,7 @@ server {
         # is exactly why it is worth being explicit about.
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Cache-Status $upstream_cache_status;
+        add_header X-Served-By rails always;
     }
 
 }

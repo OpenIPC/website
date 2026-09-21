@@ -149,10 +149,53 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # --- the static bundle (#157) ---------------------------------------
+      # Steps in this job rather than a job of their own. Branch protection on
+      # master requires exactly the contexts `build` and `test`; a third job
+      # would report without gating, and a bundle that could shadow /admin has
+      # to be able to block a merge.
+      - name: Build the static bundle
+        run: deploy/static/build.sh dist
+
+      # build.sh runs this too. Repeated as its own step so a bundle that would
+      # shadow a Rails route fails with its own red line here rather than
+      # inside a build log.
+      - name: Refuse a bundle that would shadow Rails
+        run: deploy/static/check-bundle.sh dist/site
+
+      - name: Derive bundle tags
+        id: static-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-static
+          # The same scheme as the image above: the full SHA is what
+          # openipc-static installs and rolls back by.
+          tags: |
+            type=sha,format=long,prefix=
+            type=ref,event=branch
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Publish the static bundle
+        uses: docker/build-push-action@v6
+        with:
+          # dist, not '.' -- see the comment in deploy/static/Dockerfile.
+          context: dist
+          file: deploy/static/Dockerfile
+          push: true
+          # A plain manifest rather than buildx's default attestation index.
+          # deploy/static.sh reads the revision label with `docker image
+          # inspect`, and one indirection fewer there is worth more than
+          # provenance on what is a tarball of HTML.
+          provenance: false
+          tags: ${{ steps.static-meta.outputs.tags }}
+          labels: ${{ steps.static-meta.outputs.labels }}
+
       - name: Summary
         run: |
           echo "### Image built" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           echo "${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo "Deploy with: \`./deploy.sh prod ${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deploy with: \`openipc-deploy prod ${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Static bundle: \`openipc-static prod ${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
