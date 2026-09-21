@@ -215,8 +215,8 @@ en:
       stat_fps_n: 80 fps
       stat_gap_l: the speed a stock driver leaves on the table, measured on the same chip
       stat_gap_n: 4×
-      stat_loss_l: accuracy given up to make a model fit the chip
-      stat_loss_n: '0'
+      stat_loss_l: of the model's accuracy kept after fitting it to the chip
+      stat_loss_n: 100%
       stats_source: Measured by us on RK3588 and HiSilicon silicon, on models we fitted and drivers we wrote.
       step1_text: Fixed price, five working days. You send the model or its architecture, the SoC and SDK version, about fifty frames from the real camera, and the numbers you are judged on. You get a layer-by-layer verdict on what runs, the accuracy at stake in fitting it to the chip and how to keep it, the speed to expect against our measured baselines, and a fixed quote for the next step.
       step1_title: Feasibility report
