@@ -143,7 +143,10 @@ from somewhere.
 
 Only needed on a rebuilt host:
 
-- docker-ce + compose v2, MariaDB, nginx, dehydrated
+- docker-ce + compose v2, MariaDB, nginx, dehydrated, rsync. The last one is
+  small and easy to miss: it is how `deploy/` reaches the host for the two
+  installers below, it is needed at both ends, and a Debian install does not
+  always have it. `apt-get install -y rsync` before either of them.
 - **the nginx configuration**, via `deploy/push-nginx.sh --apply` from a
   checkout. It installs the vhosts and `conf.d/`, tests and reloads. A host
   without it answers on the right ports and has none of the caching or
@@ -202,8 +205,14 @@ days, and how any future allocator or caching change gets judged. A rebuilt
 host that skips this comes back with no series at all, and the gap only becomes
 visible when someone needs the numbers.
 
-    scp -P 35242 -r deploy root@openipc.org:/tmp/openipc-deploy
+    rsync -a --delete -e 'ssh -p 35242' deploy/ root@openipc.org:/tmp/openipc-deploy/
     ssh -p 35242 root@openipc.org /tmp/openipc-deploy/install-metrics.sh
+
+rsync rather than `scp -r deploy`, which is only correct the first time: on a
+re-run the destination exists, scp copies the tree inside it, and the installer
+you then run is the stale one left there by the previous restore -- reporting
+success over files it did not copy. The installer prints a checksum of each
+file it installs so that failure is visible.
 
 Idempotent, and it verifies itself: it runs the sampler the way cron will, with
 an empty environment, and fails if nothing comes out. `deploy/memory-probe.sh`

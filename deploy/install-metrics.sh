@@ -7,8 +7,23 @@
 # come back without them, and the first sign would be a gap in the series
 # exactly when someone needed it to judge a memory change.
 #
-#   scp -P 35242 -r deploy root@openipc.org:/tmp/openipc-deploy
+#   rsync -a --delete -e 'ssh -p 35242' deploy/ root@openipc.org:/tmp/openipc-deploy/
 #   ssh -p 35242 root@openipc.org /tmp/openipc-deploy/install-metrics.sh
+#
+# rsync and not `scp -r deploy`, which is only correct the first time. On a
+# re-run the destination already exists, so scp copies the tree INSIDE it as
+# /tmp/openipc-deploy/deploy/ and the installer you then run is the one left
+# there by whoever went last. It fails by succeeding: the run prints its usual
+# "installed ..." line while every file it copied is the stale one. That cost
+# a cycle on 2026-09-21, which is why this script now prints a checksum of
+# each file it installs. If a change does not appear to have taken, compare
+# them with the same four files in your checkout, in the same order:
+#
+#   sha256sum deploy/openipc-sample-rss deploy/cron.d/openipc-metrics \
+#             deploy/memory-probe.sh deploy/audience-report.sh | cut -c1-16
+#
+# rsync has to exist at both ends. It is in deploy/RESTORE.md's prerequisites
+# for that reason: a rebuilt Debian host does not always have it.
 #
 # The audience report needs a country database, which is a separate monthly
 # job rather than part of this:
@@ -55,6 +70,14 @@ install -m 0755 -o root -g root "$here/audience-report.sh" "$audience"
 install -d -m 0755 -o root -g root "$reports"
 
 echo "installed $sampler, $cron, $probe and $audience"
+
+# What was actually installed, not what the run meant to install. A copy that
+# landed in the wrong place leaves this script reporting success over stale
+# files, and the only way to see it is to compare these against
+# `sha256sum deploy/*.sh cron.d/openipc-metrics` in the checkout.
+for f in "$sampler" "$cron" "$probe" "$audience"; do
+  printf '  %s  %s\n' "$(sha256sum "$f" | cut -c1-16)" "$f"
+done
 
 # Prove it runs as installed rather than assuming it does. A sampler that fails
 # only under cron's environment is the failure this line exists to catch.
