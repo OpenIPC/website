@@ -22,6 +22,19 @@ set -euo pipefail
 
 db=/var/lib/GeoIP/dbip-country-lite.mmdb
 
+# Page views outside the wall, in one day, before a reader counts as engaged
+# (#184). Five is a judgement, not a discovery: on 2026-09-21 the wall-excluded
+# day split into 290 addresses with one view, 145 with two to four, 57 with
+# five to nine and 64 with ten or more, and the ambiguous band is the middle
+# one. Set it deliberately rather than tuning it to flatter a month, and if it
+# moves, say so in the memo -- a threshold that drifts makes the series it
+# feeds incomparable, which is the thing #180 exists to stop.
+#
+# It is applied PER DAY, never pooled across a period: over a month a crawler
+# fetching one page a day clears five and is counted as a reader, where per day
+# it never does.
+ENGAGED_MIN=${ENGAGED_MIN:-5}
+
 # How many visitors, as opposed to how many requests. GoatCounter answers this
 # for pages -- every number it stores is already deduplicated, one visitor per
 # page per eight-hour session -- but it cannot answer it for the site, because
@@ -41,7 +54,7 @@ db=/var/lib/GeoIP/dbip-country-lite.mmdb
 # Printed by the nightly run as well. No goaccess, no country database and no
 # root for this mode, so it can be run against any log by hand.
 visitors() {
-  awk -F'"' '
+  awk -F'"' -v engaged_min="$ENGAGED_MIN" '
     function decode(s,   out, hi, lo) {
       out = ""
       while (match(s, /%[0-9A-Fa-f][0-9A-Fa-f]/)) {
@@ -120,7 +133,11 @@ visitors() {
 
       if (path != "" && !event) {
         if (path ~ /^\/(ru\/|zh\/)?(open-wall|snapshots)(\/|$)/) wall[visitor]++
-        else elsewhere[visitor] = 1
+        # Depth, counted outside the wall only. views_by below includes wall
+        # views because wall-once needs them; this one must not, or a gallery
+        # visitor who scrolled five images would read as an engaged reader,
+        # which is the population the wall split exists to keep separate.
+        else { elsewhere[visitor] = 1; site_views[visitor]++ }
         views[path SUBSEP visitor] = 1
         views_by[visitor]++
       }
@@ -143,7 +160,17 @@ visitors() {
           # and add them back. The rule is the one the wall split follows: an
           # ambiguous population gets a line, never a share of "people".
           if (v in quiet) no_language++
-          else { readers++; person[v] = 1 }
+          else {
+            readers++; person[v] = 1
+            # A reader who went past the page they landed on. Readers is a
+            # low bar by design -- one page outside the wall -- and a number
+            # that low moves with whatever was linked somewhere yesterday.
+            # This is the one that answers "did anyone stay", and it is a
+            # SUBSET of readers rather than its own classification: every
+            # test above has already been applied, so the impossible device
+            # and the visitor with no Accept-Language cannot reach it.
+            if (site_views[v] >= engaged_min) engaged++
+          }
         }
         else if (v in wall) { wall_only++; if (views_by[v] == 1) wall_once++ }
         # Events but no page view at all. analytics.js counts every turbo:load,
@@ -164,6 +191,8 @@ visitors() {
       printf "wall-only %d\n", wall_only
       printf "wall-once %d\n", wall_once
       printf "readers %d\n", readers
+      printf "engaged %d\n", engaged
+      printf "engaged-min %d\n", engaged_min
       printf "events-only %d\n", events_only
       printf "no-language %d\n", no_language
       for (p in page) printf "page %d %s\n", page[p], p
@@ -172,17 +201,23 @@ visitors() {
 }
 
 # The block the nightly prints and `--visitors` prints on its own.
+#
+# Takes the counts rather than the log, because the nightly needs the same
+# numbers twice -- once here and once for the history below -- and a second
+# pass over a seventy-megabyte log to re-derive them would be a pass nobody
+# reading the output could account for.
 visitor_report() {
-  local log=$1 counts
-  counts=$(visitors "$log")
+  local counts=$1
 
-  local calls total crawler wall_only wall_once readers events_only quiet
+  local calls total crawler wall_only wall_once readers engaged engaged_min events_only quiet
   calls=$(awk '$1 == "calls" { print $2 }' <<< "$counts")
   total=$(awk '$1 == "visitors" { print $2 }' <<< "$counts")
   crawler=$(awk '$1 == "crawler" { print $2 }' <<< "$counts")
   wall_only=$(awk '$1 == "wall-only" { print $2 }' <<< "$counts")
   wall_once=$(awk '$1 == "wall-once" { print $2 }' <<< "$counts")
   readers=$(awk '$1 == "readers" { print $2 }' <<< "$counts")
+  engaged=$(awk '$1 == "engaged" { print $2 }' <<< "$counts")
+  engaged_min=$(awk '$1 == "engaged-min" { print $2 }' <<< "$counts")
   events_only=$(awk '$1 == "events-only" { print $2 }' <<< "$counts")
   quiet=$(awk '$1 == "no-language" { print $2 }' <<< "$counts")
 
@@ -191,6 +226,7 @@ visitor_report() {
   printf '    impossible device %8d  macOS at 1366px, the snapshot crawler\n' "$crawler"
   printf '    open wall only    %8d  %d of them one view and gone\n' "$wall_only" "$wall_once"
   printf '    readers           %8d  reached a page outside the wall\n' "$readers"
+  printf '      engaged         %8d  read %d+ pages outside the wall\n' "$engaged" "$engaged_min"
   [ "$quiet" -eq 0 ] ||
     printf '    no Accept-Language%8d  reader-shaped, but no browser omits that header\n' "$quiet"
   [ "$events_only" -eq 0 ] ||
@@ -232,11 +268,70 @@ visitor_report() {
   fi
 }
 
+# One row a day, so that a month of them can be compared with the month before
+# it -- which is the whole ask of #184 and the reason #180 wrote the method
+# down instead of retyping awk. Three numbers wide on purpose: engaged alone
+# cannot be read without the readers it is a subset of, and neither can be read
+# without the visitor count they are filtered from.
+#
+# Re-running a day replaces its row rather than appending a second one, so a
+# re-run after a fix does not leave the series with two answers for one date.
+# Dates are ISO, so a lexical sort is chronological.
+record_history() {
+  local counts=$1 outdir=$2 day=$3
+  local history="$outdir/engaged.tsv" scratch
+  local total readers engaged
+
+  # `day` arrives as 20260921 when it came from a log's filename and as
+  # 2026-09-21 when it came from `date`, and the nightly and a hand run of an
+  # archived log take different branches. Two formats in one column break the
+  # ordering this file depends on -- '-' sorts before any digit, so every
+  # dashed date would sort ahead of every undashed one regardless of when it
+  # happened. One format, chosen here rather than upstream, because only this
+  # file cares.
+  [[ $day =~ ^[0-9]{8}$ ]] && day="${day:0:4}-${day:4:2}-${day:6:2}"
+
+  total=$(awk '$1 == "visitors" { print $2 }' <<< "$counts")
+  readers=$(awk '$1 == "readers" { print $2 }' <<< "$counts")
+  engaged=$(awk '$1 == "engaged" { print $2 }' <<< "$counts")
+
+  mkdir -p "$outdir"
+  scratch=$(mktemp)
+  [ -f "$history" ] && awk -v d="$day" -F'\t' '$1 != d' "$history" > "$scratch"
+  printf '%s\t%s\t%s\t%s\n' "$day" "$total" "$readers" "$engaged" >> "$scratch"
+  sort -o "$history" "$scratch"
+  rm -f "$scratch"
+
+  # The previous row is the run before this date, not simply the line above:
+  # a backfill of an older day must compare against what preceded IT, or the
+  # report claims a change that never happened.
+  # Explicit string comparison: awk treats a field that looks numeric as a
+  # number, and mawk and gawk need not agree on what looks numeric.
+  awk -v d="$day" -v engaged="$engaged" -F'\t' '
+    ($1 "") < (d "") { prev_day = $1; prev = $4 }
+    END {
+      if (prev_day == "") {
+        printf "  no previous run to compare with; the series starts here\n"
+        exit
+      }
+      # The previous number and the change, not the count for today again:
+      # that is four lines above this one, and a figure printed twice invites
+      # the reader to wonder which of them is the answer.
+      #
+      # No apostrophes in here: this whole program is a single-quoted shell
+      # string, and one in a comment ends it.
+      delta = engaged - prev
+      if (prev > 0) printf "  engaged, previous   %8d  on %s (%+d, %+.0f%%)\n", prev, prev_day, delta, 100 * delta / prev
+      else          printf "  engaged, previous   %8d  on %s (%+d)\n", prev, prev_day, delta
+    }
+  ' "$history"
+}
+
 if [ "${1:-}" = '--visitors' ]; then
   visitor_log=${2:-/var/log/nginx/org.openipc.access.log.1}
   [ -r "$visitor_log" ] || { echo "audience-report: cannot read ${visitor_log}" >&2; exit 1; }
   printf 'audience-report --visitors %s\n' "$visitor_log"
-  visitor_report "$visitor_log"
+  visitor_report "$(visitors "$visitor_log")"
   exit 0
 fi
 
@@ -361,4 +456,6 @@ printf '  report              %s\n' "$report"
 # methods that disagree are worth more than one that cannot be checked: the
 # addresses above are judged by what they fetched, these by what they ran, and
 # the crawler that runs JavaScript passes the first test and fails the second.
-visitor_report "$log"
+beacon_counts=$(visitors "$log")
+visitor_report "$beacon_counts"
+record_history "$beacon_counts" "$outdir" "$day"

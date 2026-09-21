@@ -32,11 +32,39 @@ class AudienceReportTest < ActiveSupport::TestCase
   # Debian's default awk is mawk and this host may have gawk; the program has
   # to give the same answer under both, so the suite runs whichever is `awk`
   # and the mawk case is covered explicitly below where one exists.
-  def run_visitors(log = FIXTURE, awk: nil)
+  def run_visitors(log = FIXTURE, awk: nil, min: nil)
     env = awk ? { 'PATH' => "#{File.dirname(awk)}:#{ENV.fetch('PATH')}" } : {}
+    env['ENGAGED_MIN'] = min.to_s if min
     out, status = Open3.capture2e(env, 'bash', SCRIPT.to_s, '--visitors', log.to_s)
     assert_predicate status, :success?, "audience-report --visitors failed:\n#{out}"
     out
+  end
+
+  # The full report needs goaccess, a country database and root, none of which
+  # a test host has. Everything this exercises happens after goaccess has run
+  # and does not depend on what it produced, so a stub that writes nothing is
+  # enough to reach it -- and keeps the test honest about which part is covered.
+  def stub_goaccess(dir)
+    stub = File.join(dir, 'goaccess')
+    File.write(stub, "#!/bin/sh\nexit 0\n")
+    File.chmod(0o755, stub)
+    dir
+  end
+
+  # The log is copied under a dated name because the script takes the day from
+  # the filename when it can and from `date` when it cannot, and the history
+  # below has to be deterministic.
+  def run_report(log, outdir, day: '20260921')
+    bin = stub_goaccess(Dir.mktmpdir)
+    named = File.join(Dir.mktmpdir, "access-#{day}.log")
+    FileUtils.cp(log, named)
+
+    out, status = Open3.capture2e({ 'PATH' => "#{bin}:#{ENV.fetch('PATH')}" },
+                                  'bash', SCRIPT.to_s, named, outdir)
+    assert_predicate status, :success?, "audience-report failed:\n#{out}"
+    out
+  ensure
+    FileUtils.rm_rf(bin) if bin
   end
 
   def count_in(output, label)
@@ -217,6 +245,106 @@ class AudienceReportTest < ActiveSupport::TestCase
                  'nothing here omitted the header, so the line should not appear at all'
       assert_match(%r{^\s+1\s+/ecosystem$}, output,
                    'and their page went out of the reader list with them')
+    end
+  end
+
+  # Most of this script is awk held in single-quoted shell strings, and an
+  # apostrophe anywhere inside one -- in a comment as readily as in code --
+  # closes the string and hands the rest of the program to bash. It happened
+  # while writing the history block below, on the word "today's". The nightly
+  # runs from cron against a log nobody reads afterwards, so the failure is a
+  # line in a mail nobody opens.
+  test 'the script parses' do
+    out, status = Open3.capture2e('bash', '-n', SCRIPT.to_s)
+
+    assert_predicate status, :success?, "audience-report.sh does not parse:\n#{out}"
+  end
+
+  # --- engaged readers (#184) ---
+  #
+  # `readers` is a deliberately low bar: one page outside the wall. A number
+  # that low moves with whatever got linked somewhere yesterday, which makes it
+  # a poor thing to compare months with. Engaged is the subset that went past
+  # the page they landed on.
+
+  test 'engaged readers are the subset of readers who went deeper' do
+    assert_equal 3, count_in(run_visitors, 'readers')
+
+    assert_equal 0, count_in(run_visitors, 'engaged'), <<~MESSAGE.chomp
+      Nobody in the fixture reads five pages outside the wall: the busiest
+      reader views /, /get-started and / again.
+    MESSAGE
+    assert_equal 1, count_in(run_visitors(min: 3), 'engaged'),
+                 'that same reader has exactly three views outside the wall'
+    assert_equal 0, count_in(run_visitors(min: 4), 'engaged')
+  end
+
+  test 'the threshold it used is printed, so a number cannot outlive its definition' do
+    assert_match(/engaged\s+\d+\s+read 5\+ pages outside the wall/, run_visitors)
+    assert_match(/engaged\s+\d+\s+read 2\+ pages outside the wall/, run_visitors(min: 2))
+  end
+
+  # The wall split exists because the population looking at the gallery is not
+  # the population reading the site. Counting gallery views toward engagement
+  # would walk a scrolling image collector straight back into the audience by
+  # the other door.
+  test 'views of the wall do not make a reader engaged' do
+    gallery = (1..6).map do |n|
+      <<~LINE
+        198.51.100.60 - - [21/Sep/2026:01:09:0#{n} +0000] "POST /api/a/count?p=%2Fsnapshots%2F30#{n}&t=Open%20Wall&s=1920&b=0&rnd=jjjj#{n} HTTP/2.0" 200 43 "https://openipc.org/snapshots/30#{n}" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36" xff="-" cache=- rt=0.002 urt="0.002" al="en-US,en;q=0.9" peer=198.51.100.60
+      LINE
+    end.join
+    one_page = <<~LINE
+      198.51.100.60 - - [21/Sep/2026:01:09:09 +0000] "POST /api/a/count?p=%2Fecosystem&t=Ecosystem&s=1920&b=0&rnd=jjjj9 HTTP/2.0" 200 43 "https://openipc.org/ecosystem" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36" xff="-" cache=- rt=0.002 urt="0.002" al="en-US,en;q=0.9" peer=198.51.100.60
+    LINE
+
+    Tempfile.create(['gallery-access', '.log']) do |file|
+      file.write(FIXTURE.read + gallery + one_page)
+      file.flush
+
+      output = run_visitors(file.path, min: 2)
+
+      assert_equal 4, count_in(output, 'readers'),
+                   'one page outside the wall still makes them a reader'
+      assert_equal 1, count_in(output, 'engaged'), <<~MESSAGE.chomp
+        Six snapshot views and one page is one page of engagement. Only the
+        fixture's three-view reader clears a threshold of two.
+      MESSAGE
+    end
+  end
+
+  # #184 asks for numbers that can be compared with the month before, which
+  # means the run has to leave a trail. Three columns wide because engaged
+  # cannot be read without the readers it is drawn from.
+  test 'the nightly appends one row a day and compares against the run before' do
+    Dir.mktmpdir do |outdir|
+      first = run_report(FIXTURE, outdir, day: '20260920')
+
+      assert_match(/no previous run to compare with/, first,
+                   'there is nothing behind the first row and it should say so')
+
+      second = run_report(FIXTURE, outdir, day: '20260921')
+
+      assert_match(/engaged, previous\s+0\s+on 2026-09-20/, second)
+
+      rows = File.readlines(File.join(outdir, 'engaged.tsv'), chomp: true).map { |row| row.split("\t") }
+
+      assert_equal [%w[2026-09-20 7 3 0], %w[2026-09-21 7 3 0]], rows, <<~MESSAGE.chomp
+        date, visitors, readers, engaged -- and the date normalised, because
+        `day` is 20260921 from a filename and 2026-09-21 from `date`, and '-'
+        sorts before every digit, so two formats in one column would order the
+        series by which branch produced it.
+      MESSAGE
+    end
+  end
+
+  test 'a day run twice replaces its row rather than answering twice' do
+    Dir.mktmpdir do |outdir|
+      2.times { run_report(FIXTURE, outdir, day: '20260921') }
+
+      rows = File.readlines(File.join(outdir, 'engaged.tsv'), chomp: true)
+
+      assert_equal 1, rows.length, 'a re-run after a fix must not leave two answers for one date'
     end
   end
 
