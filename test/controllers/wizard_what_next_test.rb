@@ -62,7 +62,7 @@ class WizardWhatNextTest < ActionDispatch::IntegrationTest
     test "a #{segment} chip is asked for #{event.split(':').last}" do
       wizard soc_for(model: "WN#{segment.upcase}", segment:)
 
-      assert_select "[data-whatnext] a[data-event=?]", event, 1
+      assert_select '[data-whatnext] a[data-event=?]', event, 1
     end
   end
 

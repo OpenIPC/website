@@ -392,7 +392,6 @@ module InstallationHelper
     safe_join([t("firmware.installation.licence_ask.#{segment}"), ' ', link, '.'])
   end
 
-
   # The room the visitor would actually be understood in. Locale first, as #191
   # asks -- and the FPV room for an FPV chip, because that is where those
   # questions get answered and the page already knows which chip it is.

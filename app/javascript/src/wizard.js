@@ -87,6 +87,14 @@ function applyWhatNext(root) {
   const list = (root || document).querySelector('[data-whatnext]')
   if (!list) return
 
+  // Decided once per list, not once per call. initWizard() runs this on load
+  // and again on turbo:load, and without this guard the second pass read the
+  // flag the first pass had just written and hid the list on the very page
+  // that was supposed to show it -- so it was never visible to anyone. The
+  // browser check caught that; no server-side test could.
+  if (list.dataset.whatnextDone) return
+  list.dataset.whatnextDone = '1'
+
   if (seen()) {
     list.hidden = true
     return
