@@ -2,23 +2,54 @@
 /**
  * app/views/pages/firmware_partitions_calculation.html.erb (#160).
  *
- * The calculator itself is @openipc/ui's FirmwarePartitionCalculator, which is
- * what #158 extracted it for: the Rails page was a hand-built form and 140
- * lines of inline arithmetic, and the packaged version is the one with tests
- * -- including the one for the gap a nameless partition used to swallow.
+ * The calculator is @openipc/ui's FirmwarePartitionCalculator, which is what
+ * #158 extracted it for: the Rails page was a hand-built form and 140 lines of
+ * inline arithmetic, and the packaged version is the one with tests --
+ * including the one for the gap a nameless partition used to swallow.
+ *
+ * Its labels come from the same catalogue the Rails page read, so the Russian
+ * and Chinese pages keep the translations they have had since before the
+ * calculator was a component. `%{number}` is handed over untouched: it is
+ * Ruby's interpolation syntax, the widget fills it, and Chinese puts the
+ * number in the middle of the phrase rather than after it.
+ *
+ * `free_space`, `unit_kb` and `unit_bytes` are the new keys. The partition map
+ * is a widget feature the Rails page never had, so nothing had ever needed a
+ * word for it -- and "4096 KB" under "Размер раздела 0, КБ" was the last word
+ * left in the wrong language.
+ *
+ * No PageTitle here: the widget renders the page's h1 from labels.title, and
+ * two headings saying the same thing is what the Rails page would have had if
+ * the calculator had brought its own.
  */
 import Container from '../Container.astro';
-import PageTitle from '../PageTitle.astro';
 import { FirmwarePartitionCalculator } from '@openipc/ui';
 import { useTranslations, type Locale } from '../../lib/i18n';
 
 const { locale } = Astro.props as { locale: Locale };
 const t = useTranslations(locale);
 const k = (s: string) => t(`pages.firmware_partitions_calculation.${s}`);
+
+// "Lite" and "Ultimate" are the firmware editions' names and are not
+// translated anywhere on the site, so they are left to the widget's defaults.
+const labels = {
+  title: k('title'),
+  recalculate: k('recalculate'),
+  mtdName: k('mtd_name'),
+  flashSize: k('flash_size_mb'),
+  initialOffset: k('offset'),
+  partitionName: k('partition_name'),
+  partitionSize: k('partition_size'),
+  startAddress: k('start_address'),
+  hexSize: k('size_hex'),
+  endAddress: k('end_address'),
+  freeSpace: k('free_space'),
+  kb: k('unit_kb'),
+  bytes: k('unit_bytes'),
+};
 ---
 <Container>
   <article>
-    <PageTitle>{k('title')}</PageTitle>
-    <FirmwarePartitionCalculator client:load />
+    <FirmwarePartitionCalculator client:load labels={labels} />
   </article>
 </Container>

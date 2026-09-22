@@ -4,7 +4,9 @@ export type SliceData = {
  color: `partition${0|1|2|3|4|5|6|7}` | 'reserved',
 };
 
-export type PartMapData = { 
+export type PartMapData = {
   slices: SliceData[],
   freeSpace: string,
+  /** Defaults to English, so the map reads correctly with no consumer. */
+  freeSpaceLabel?: string,
 };

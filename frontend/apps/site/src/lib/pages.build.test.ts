@@ -70,8 +70,14 @@ describe('every page is a page', () => {
   test('no page renders a missing interpolation', () => {
     // `%{name}` left in the output means the catalogue asked for a variable
     // the page did not supply. translate() leaves it visible on purpose.
+    //
+    // <astro-island> is excluded, and deliberately: it carries an island's
+    // props as JSON for hydration, and the partition calculator's props are
+    // label TEMPLATES -- `Partition %{number} name` -- which the widget fills
+    // itself, once per row. Finding one there is the design working.
     for (const [locale, path, html] of MARKETING) {
-      expect(html, `${locale}${path} has an unfilled interpolation`).not.toMatch(/%\{\w+\}/);
+      const rendered = html.replace(/<astro-island\b[^>]*>/g, '');
+      expect(rendered, `${locale}${path} has an unfilled interpolation`).not.toMatch(/%\{\w+\}/);
     }
   });
 });

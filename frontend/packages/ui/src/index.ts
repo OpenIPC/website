@@ -64,6 +64,11 @@ export type { SoCListItemProps } from './components/widgets/soc-list-item/soc-li
 export type { CamData, CameraSnapshotProps } from './components/widgets/camera-snapshot';
 export type { OpenWallGalleryProps } from './components/widgets/open-wall-gallery';
 export type { Supporter, SupportersProps } from './components/widgets/supporters';
+// The labels a consumer may override on FirmwarePartitionCalculator. The type
+// only: the English defaults are the widget's own business, and a capitalised
+// value export would read as a component to anyone scanning this file --
+// src/__tests__/public-surface.test.ts asserts that it does not.
+export type { FwCalcLabels } from './components/widgets/firmware-partition-calculator/types';
 export type { MenuItem, MenuItems } from './components/widgets/header-menu/Header-menu';
 
 // --- helpers the widgets are built on --------------------------------------

@@ -1,6 +1,6 @@
 import type { SliceData, PartMapData } from './part-map-types';
 
-export default function PartitionMap({ slices, freeSpace }: PartMapData) {
+export default function PartitionMap({ slices, freeSpace, freeSpaceLabel = 'Free space' }: PartMapData) {
   
   function getStyle(slice: SliceData) {
     const { color } = slice;
@@ -36,7 +36,7 @@ export default function PartitionMap({ slices, freeSpace }: PartMapData) {
       <div className="
         absolute inset-0 flex flex-row items-center justify-center
       ">
-        <span className="text-lg text-dark-grey">Free space: {freeSpace}</span>
+        <span className="text-lg text-dark-grey">{freeSpaceLabel}: {freeSpace}</span>
       </div>
     </div>
   );

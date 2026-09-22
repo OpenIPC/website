@@ -311,6 +311,7 @@
     "firmware_partitions_calculation": {
       "end_address": "结束地址",
       "flash_size_mb": "闪存大小，MB",
+      "free_space": "剩余空间",
       "mtd_name": "MTD 设备名称",
       "offset": "初始偏移量，十进制或十六进制",
       "partition_name": "分区 %{number} 名称",
@@ -318,7 +319,9 @@
       "recalculate": "重新计算",
       "size_hex": "十六进制大小，字节",
       "start_address": "起始地址",
-      "title": "固件分区计算"
+      "title": "固件分区计算",
+      "unit_bytes": "字节",
+      "unit_kb": "KB"
     },
     "get_started": {
       "cta_find_soc": "查找你的 SoC",

@@ -317,6 +317,7 @@
     "firmware_partitions_calculation": {
       "end_address": "Конечный адрес",
       "flash_size_mb": "Размер флешки, МБ",
+      "free_space": "Свободно",
       "mtd_name": "Имя устройства МПД",
       "offset": "Начальное смещение, десятичное или шестнадцатеричное",
       "partition_name": "Имя раздела %{number}",
@@ -324,7 +325,9 @@
       "recalculate": "Пересчитать",
       "size_hex": "Шестнадцатеричный размер, байт",
       "start_address": "Начальный адрес",
-      "title": "Расчет разделов прошивки"
+      "title": "Расчет разделов прошивки",
+      "unit_bytes": "байт",
+      "unit_kb": "КБ"
     },
     "get_started": {
       "cta_find_soc": "Найти свой SoC",

@@ -311,6 +311,7 @@
     "firmware_partitions_calculation": {
       "end_address": "End address",
       "flash_size_mb": "Flash size, MB",
+      "free_space": "Free space",
       "mtd_name": "MTD device name",
       "offset": "Initial offset, dec or hex",
       "partition_name": "Partition %{number} name",
@@ -318,7 +319,9 @@
       "recalculate": "Recalculate",
       "size_hex": "Hex size, bytes",
       "start_address": "Start address",
-      "title": "Firmware Partitions Calculation"
+      "title": "Firmware Partitions Calculation",
+      "unit_bytes": "bytes",
+      "unit_kb": "KB"
     },
     "get_started": {
       "cta_find_soc": "Find your SoC",
