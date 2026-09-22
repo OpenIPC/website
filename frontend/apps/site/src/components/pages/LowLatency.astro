@@ -1,0 +1,137 @@
+---
+/**
+ * app/views/pages/low_latency.html.erb (#160).
+ *
+ * The air-unit builds section (#190) exists because the FPV copy above it
+ * tells the reader to "pick your ground station" and the site never said what
+ * there was to pick from. There are three builds, they differ in the radio
+ * link and in nothing else the reader cares about, and which one someone wants
+ * is decided entirely by what is on the bench at the other end. Named in the
+ * order people meet them: the OpenIPC link first, then the two that replace it.
+ *
+ * The latency chart is one measure across four receive paths, so the bars are
+ * one hue on a shared scale rather than four colours -- the reader is
+ * comparing magnitude, not telling series apart. The track is decoration for
+ * the value beside it and is hidden from screen readers; the unit is carried
+ * per value as well as once under the axis, because a screen reader reaches
+ * the numbers one at a time and would otherwise hear "26 to 67" with nothing
+ * saying what of.
+ */
+import Icon from '../Icon.astro';
+import PageHeader from '../PageHeader.astro';
+import CtaBand from '../CtaBand.astro';
+import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
+import { LATENCY_PATHS, LATENCY_SCALE_MAX, latencyBarStyle } from '../../data/latency';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.low_latency.${s}`);
+
+const CHAIN: [string, string][] = [
+  ['camera-video', 'how_tx'],
+  ['broadcast-pin', 'how_link'],
+  ['display', 'how_rx'],
+];
+
+const GUIDE = 'https://github.com/OpenIPC/wiki/blob/master/en/fpv.md';
+const FPV_CHAT = 'https://t.me/+BMyMoolVOpkzNWUy';
+---
+<PageHeader title={k('hero_title')} lede={k('hero_lede')} />
+
+<div class="mx-auto max-w-[1240px] px-4">
+  <article>
+    <h2 class="mb-6 text-2xl">{k('how_title')}</h2>
+    <div class="mb-4 grid gap-6 text-center md:grid-cols-3">
+      {CHAIN.map(([icon, key]) => (
+        <div class="h-full rounded-lg border border-hairline bg-white p-5">
+          <Icon name={icon} class="mx-auto size-7 text-brand-blue" />
+          <h3 class="mt-3 mb-2 text-base font-semibold">{k(`${key}_title`)}</h3>
+          <p class="mb-0 text-sm text-body-secondary" set:html={k(`${key}_text_html`)} />
+        </div>
+      ))}
+    </div>
+    <p class="mb-12 text-center font-mono text-sm text-body-secondary">TX&nbsp;&rarr;&nbsp;devourer&nbsp;&rarr;&nbsp;RX</p>
+
+    <div class="mb-12 grid gap-10 lg:grid-cols-2" id="fpv">
+      <div>
+        <h2 class="mb-3 text-2xl">{k('fpv_title')}</h2>
+        <p class="mb-4 text-body-secondary">{k('fpv_text')}</p>
+        <p class="flex flex-wrap gap-3">
+          <a class="rounded-md bg-brand-blue px-5 py-2.5 font-medium text-white no-underline hover:bg-btn-blue-hover" href={GUIDE}>{k('cta_guide')}</a>
+          <a class="rounded-md border border-brand-blue px-5 py-2.5 font-medium text-brand-blue no-underline hover:bg-brand-blue hover:text-white" href={FPV_CHAT}>{k('cta_chat')}</a>
+        </p>
+      </div>
+      <div>
+        <h2 class="mb-3 text-2xl">{k('robotics_title')}</h2>
+        <p class="mb-3 text-body-secondary">{k('robotics_text1')}</p>
+        <p class="mb-4 text-body-secondary">{k('robotics_text2')}</p>
+        <p class="mb-4 flex flex-wrap gap-3">
+          <a class="rounded-md border border-brand-blue px-5 py-2.5 font-medium text-brand-blue no-underline hover:bg-brand-blue hover:text-white" href={pathFor(locale, '/teleoperation')}>
+            {k('robotics_cta')}
+          </a>
+        </p>
+        <p class="mb-0" set:html={k('business_bridge_html')} />
+      </div>
+    </div>
+
+    <div class="mb-12" id="builds">
+      <h2 class="mb-1 text-2xl">{k('builds_title')}</h2>
+      <p class="mb-6 text-body-secondary">{k('builds_lede')}</p>
+      <div class="grid gap-6 lg:grid-cols-3">
+        {['fpv', 'rubyfpv', 'apfpv'].map((build) => (
+          <div class="h-full rounded-lg border border-hairline p-5">
+            <h3 class="mb-2 font-mono text-base font-semibold">{k(`build_${build}_name`)}</h3>
+            <p class="mb-0 text-sm text-body-secondary">{k(`build_${build}_text`)}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div class="mb-12 grid items-center gap-10 lg:grid-cols-12">
+      <div class="lg:col-span-5">
+        <h2 class="mb-3 text-2xl">{k('latency_title')}</h2>
+        <p class="mb-4 text-body-secondary">{k('latency_intro')}</p>
+        <p class="mb-0 text-sm text-body-secondary">{k('latency_note')}</p>
+      </div>
+      <div class="lg:col-span-7">
+        <div class="grid grid-cols-[auto_auto_1fr] items-center gap-x-4 gap-y-3">
+          {LATENCY_PATHS.map((path) => (
+            <>
+              <span class="text-sm">{k(`latency_path_${path.key}`)}</span>
+              <span class="font-mono text-sm whitespace-nowrap">
+                {`${path.low}–${path.high}`}<span class="sr-only"> {k('latency_axis_unit')}</span>
+              </span>
+              <span class="relative block h-3 rounded-full bg-surface-alt" aria-hidden="true">
+                <span class="absolute inset-y-0 rounded-full bg-brand-blue" style={latencyBarStyle(path)}></span>
+              </span>
+            </>
+          ))}
+          <span class="col-start-3 flex justify-between text-xs text-body-secondary" aria-hidden="true">
+            <span>0</span><span>{LATENCY_SCALE_MAX / 2}</span><span>{LATENCY_SCALE_MAX}</span>
+          </span>
+          <span class="col-start-3 text-xs text-body-secondary" aria-hidden="true">{k('latency_axis_unit')}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2">
+      <div>
+        <h2 class="mb-2 text-xl">{k('hardware_title')}</h2>
+        <p class="mb-0 text-body-secondary" set:html={k('hardware_text_html')} />
+      </div>
+      <div>
+        <h2 class="mb-2 text-xl">{k('credits_title')}</h2>
+        <p class="mb-0 text-body-secondary" set:html={k('credits_text_html')} />
+      </div>
+    </div>
+  </article>
+</div>
+
+<CtaBand
+  title={k('fpv_title')}
+  primaryLabel={k('cta_guide')}
+  primaryHref={GUIDE}
+  secondaryLabel={k('cta_chat')}
+  secondaryHref={FPV_CHAT}
+  noteHtml={k('business_bridge_html')}
+/>

@@ -1,0 +1,28 @@
+---
+/**
+ * app/views/pages/high_resolution_timer.html.erb (#160).
+ *
+ * The clock and the frame counter are @openipc/ui's HighResTimer. The Rails
+ * page carried its own requestAnimationFrame loop with a stop() guard, because
+ * Turbo re-executes body scripts on every visit and two loops would animate
+ * one element; a component mounted by Astro has no such problem, and the
+ * package's version is the one with tests.
+ */
+import Container from '../Container.astro';
+import PageTitle from '../PageTitle.astro';
+import { HighResTimer } from '@openipc/ui';
+import { useTranslations, type Locale } from '../../lib/i18n';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.high_resolution_timer.${s}`);
+---
+<Container>
+  <article>
+    <PageTitle>{k('title')}</PageTitle>
+    <div class="text-center">
+      <HighResTimer client:load />
+      <p class="mt-6 text-sm text-body-secondary">{k('reload_to_reset')}</p>
+    </div>
+  </article>
+</Container>

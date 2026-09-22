@@ -1,0 +1,123 @@
+---
+/**
+ * app/views/pages/donate.html.erb (#160).
+ *
+ * Russian readers get PayWall first (#201). Open Collective cannot be paid
+ * with a card issued in Russia, so for that audience the only button on this
+ * page was one they could not press -- a relaunch regression rather than a new
+ * idea: the old site's Russian section linked to PayWall, and the site sent it
+ * 9, 3, 11 and 7 subscribers a year from 2022 to 2025 and none since the link
+ * stopped existing.
+ *
+ * Keyed on the locale, not on where the visitor appears to be. The address
+ * decides what the page says (#154), which is what lets this page be cached at
+ * all, and a Russian speaker abroad still sees Open Collective underneath. The
+ * `paywall_*` keys exist only in ru.yml for the same reason, which is why they
+ * are read only inside this branch -- `translate` throws on a key English does
+ * not have, deliberately, and that is the check working rather than failing.
+ *
+ * No amount and no tier anywhere on the page: the channel is the ask, the
+ * number is the visitor's.
+ *
+ * The backer count that sits above the button in Rails is absent here. It is
+ * not baked: SupportStats caps the page's own HTTP freshness so that no page
+ * outlives the number printed on it, and a figure baked into a bundle could
+ * not honour that. shared/_support_count renders nothing when it has no usable
+ * figure and says in its own comment that this leaves the page exactly as it
+ * was before the count existed.
+ */
+import Icon from '../Icon.astro';
+import PageHeader from '../PageHeader.astro';
+import CtaBand from '../CtaBand.astro';
+import { useTranslations, type Locale } from '../../lib/i18n';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.donate.${s}`);
+
+const PAYWALL = 'https://paywall.pw/openipc';
+const OPEN_COLLECTIVE = 'https://opencollective.com/openipc/contribute/backer-14335/checkout';
+const ru = locale === 'ru';
+---
+<PageHeader title={k('hero_title')} lede={k('hero_lede')} />
+
+<div class="mx-auto max-w-[1240px] px-4">
+  <article>
+    <div class="mb-12 grid gap-10 lg:grid-cols-2">
+      <div>
+        <h2 class="mb-3 text-2xl">{k('where_title')}</h2>
+        <p class="mb-4 text-body-secondary">{k('where_text')}</p>
+        <p class="mb-0 text-body-secondary">{k('accounting')}</p>
+      </div>
+
+      <div>
+        {ru ? (
+          <>
+            <div class="mb-4 rounded-lg border border-hairline bg-white p-6">
+              <h2 class="mb-3 flex items-center gap-2 text-xl">
+                <Icon name="credit-card-fill" class="size-5 text-brand-blue" />
+                {k('paywall_title')}
+              </h2>
+              <p class="mb-4 text-body-secondary" set:html={k('paywall_text_html')} />
+              {/*
+                Monthly and one-off as two options, not one with a footnote
+                (#201). Half of all PayWall subscriptions in five years were
+                used as a single charge and then cancelled, so the one-off is
+                how half these people actually gave.
+
+                Both are the same button because PayWall has no per-tier and no
+                one-off URL: /openipc/R-100 renders nothing and ?tier= is
+                ignored. The difference is what you do after paying, so that is
+                what the copy says.
+              */}
+              <ul class="mb-4 list-none space-y-2 p-0">
+                <li class="flex gap-2">
+                  <Icon name="arrow-repeat" class="mt-1 size-4 shrink-0 text-body-secondary" />
+                  <span class="text-body-secondary" set:html={k('paywall_monthly_html')} />
+                </li>
+                <li class="flex gap-2">
+                  <Icon name="1-circle" class="mt-1 size-4 shrink-0 text-body-secondary" />
+                  <span class="text-body-secondary" set:html={k('paywall_once_html')} />
+                </li>
+              </ul>
+              <a class="inline-block rounded-md bg-brand-blue px-5 py-2.5 font-medium text-white no-underline hover:bg-btn-blue-hover" href={PAYWALL} data-event="paywall-checkout">
+                {k('paywall_button')}
+              </a>
+            </div>
+            <p class="mb-0 text-sm text-body-secondary" set:html={k('paywall_oc_fallback_html')} />
+          </>
+        ) : (
+          <div class="rounded-lg border border-hairline bg-white p-6">
+            <h2 class="mb-3 flex items-center gap-2 text-xl">
+              <Icon name="heart-fill" class="size-5 text-red" />
+              {k('oc_title')}
+            </h2>
+            <p class="mb-4 text-body-secondary" set:html={k('oc_text_html')} />
+            <a class="inline-block rounded-md bg-brand-blue px-5 py-2.5 font-medium text-white no-underline hover:bg-btn-blue-hover" href={OPEN_COLLECTIVE} data-event="oc-checkout">
+              {k('oc_button')}
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+
+    <div class="flex gap-4 rounded-lg border border-hairline bg-white p-5">
+      <Icon name="briefcase" class="size-6 shrink-0 text-body-secondary" />
+      <p class="mb-0" set:html={k('business_band_html')} />
+    </div>
+  </article>
+</div>
+
+{/*
+  The band carries the same channel the card above offers -- PayWall for
+  Russian readers, Open Collective otherwise -- because a closing band that
+  sends someone to a payment page their card is refused by is worse than no
+  band at all.
+*/}
+<CtaBand
+  title={k('hero_title')}
+  primaryLabel={ru ? k('paywall_button') : k('oc_button')}
+  primaryHref={ru ? PAYWALL : OPEN_COLLECTIVE}
+  primaryEvent={ru ? 'paywall-checkout:band' : 'oc-checkout:band'}
+  noteHtml={k('thanks')}
+/>

@@ -1,0 +1,113 @@
+---
+/**
+ * app/views/pages/business.html.erb (#160).
+ *
+ * The seven services are laid out like the "why" items rather than as cards:
+ * seven cards in a three-column grid leave one alone in its row.
+ *
+ * The partner wall asks for manufacturers and integrators only. A commercial
+ * reader is asking who ships and who installs, and our code host and our
+ * university teams are not an answer to that.
+ */
+import Icon from '../Icon.astro';
+import PageHeader from '../PageHeader.astro';
+import LogoWall from '../LogoWall.astro';
+import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
+import { partnerGroups } from '../../lib/partners';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.business.${s}`);
+
+const OFFERS: [string, string][] = [
+  ['offer1', 'life-preserver'],
+  ['offer2', 'code-square'],
+  ['offer3', 'box-seam'],
+];
+
+const SERVICES = [
+  'video_encoding', 'isp_sensors', 'reverse_engineering', 'turnkey_hardware',
+  'digital_twins', 'teleoperation', 'edge_ai',
+];
+
+const walls = partnerGroups(locale, 'manufacturers', 'integrators');
+---
+<PageHeader title={k('hero_title')} lede={k('hero_lede')} />
+
+<div class="mx-auto max-w-[1240px] px-4">
+  <article>
+    <div class="mb-12 grid gap-6 md:grid-cols-3">
+      {OFFERS.map(([key, icon]) => (
+        <div class="h-full rounded-lg border border-hairline bg-white p-6">
+          <span class="mb-4 flex size-10 items-center justify-center rounded-md bg-brand-blue/10 text-brand-blue">
+            <Icon name={icon} class="size-5" />
+          </span>
+          <h2 class="mb-2 text-xl">{k(`${key}_title`)}</h2>
+          <p class="mb-0 text-body-secondary">{k(`${key}_text`)}</p>
+        </div>
+      ))}
+    </div>
+
+    <h2 class="mt-12 mb-6 text-2xl">{k('services_title')}</h2>
+    <div class="mb-12 grid gap-6 md:grid-cols-2">
+      {SERVICES.map((key) => (
+        <div>
+          <h3 class="mb-1 text-base font-semibold">
+            <a class="inline-flex items-center gap-1 text-body no-underline hover:underline" href={pathFor(locale, `/${key.replace(/_/g, '-')}`)}>
+              {k(`service_${key}_title`)}
+              <Icon name="arrow-right" class="size-4" />
+            </a>
+          </h3>
+          <p class="mb-0 text-sm text-body-secondary">{k(`service_${key}_text`)}</p>
+        </div>
+      ))}
+    </div>
+
+    <h2 class="mb-6 text-2xl">{k('why_title')}</h2>
+    <div class="mb-12 grid gap-6 md:grid-cols-2">
+      {[1, 2, 3, 4].map((i) => (
+        <div>
+          <h3 class="mb-1 flex items-center gap-2 text-base font-semibold">
+            <Icon name="check-circle" class="size-4 text-green" />
+            {k(`why${i}_title`)}
+          </h3>
+          <p class="mb-0 text-body-secondary">{k(`why${i}_text`)}</p>
+        </div>
+      ))}
+    </div>
+
+    <h2 class="mb-6 text-2xl">{k('partners_title')}</h2>
+    {walls.map(([key, logos]) => <LogoWall logos={logos} title={t(`site.partners.${key}`)} />)}
+
+    <h2 class="mt-12 mb-6 text-2xl">{k('how_title')}</h2>
+    <div class="mb-12 grid gap-6 md:grid-cols-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div>
+          <div class="mb-2 font-mono text-2xl text-brand-blue/40">0{i}</div>
+          <p class="mb-0 text-body-secondary">{k(`how${i}`)}</p>
+        </div>
+      ))}
+    </div>
+
+    <div class="flex gap-4 rounded-lg border border-hairline bg-white p-5">
+      <Icon name="file-earmark-text" class="size-6 shrink-0 text-body-secondary" />
+      <div>
+        <h2 class="mb-1 text-base font-semibold">{k('licensing_title')}</h2>
+        <p class="mb-0 text-sm" set:html={k('licensing_html')} />
+      </div>
+    </div>
+  </article>
+</div>
+
+<section class="mt-section bg-ink py-section text-white">
+  <div class="mx-auto max-w-[1240px] px-4 text-center">
+    <h2 class="mb-3 text-3xl">{k('contact_title')}</h2>
+    <p class="mb-6 text-white/70">{k('contact_text')}</p>
+    <p class="mb-4">
+      <a class="inline-block rounded-md bg-brand-blue px-6 py-3 font-mono text-base font-medium text-white no-underline hover:bg-btn-blue-hover" href="mailto:business@openipc.org" data-event="business-mail">
+        business@openipc.org
+      </a>
+    </p>
+    <p class="mb-0 text-sm text-white/60" set:html={k('contact_alt_html')} />
+  </div>
+</section>

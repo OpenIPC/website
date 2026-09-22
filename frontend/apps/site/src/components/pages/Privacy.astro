@@ -1,0 +1,138 @@
+---
+/**
+ * app/views/pages/privacy.html.erb (#160).
+ *
+ * The structure is the argument. What is recorded and what is not are the same
+ * shape, side by side, because the comparison is the whole point -- as a
+ * footnote under a list, the second half reads as a caveat instead of the part
+ * people came for. An earlier version put everything in one narrow column and
+ * left a third of the viewport empty, which read as a document someone had
+ * pasted in rather than a page of this site.
+ */
+import Icon from '../Icon.astro';
+import PageHeader from '../PageHeader.astro';
+import CtaBand from '../CtaBand.astro';
+import { useTranslations, type Locale } from '../../lib/i18n';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.privacy.${s}`);
+
+const RECORDS = ['page', 'place', 'device', 'clicks', 'tag'];
+const NEVER = ['cookies', 'individuals', 'region'];
+const ROWS = ['totals', 'session', 'log', 'images', 'details'];
+---
+<PageHeader title={k('hero_title')} lede={k('hero_lede')} />
+
+<section class="py-section">
+  <div class="mx-auto max-w-[1240px] px-4">
+    <h2 class="mb-1 text-2xl">{k('counting_title')}</h2>
+    <p class="mb-6 text-body-secondary">{k('counting_lede')}</p>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+      <div class="h-full rounded-lg border border-hairline bg-white p-5">
+        <h3 class="mb-4 flex items-center gap-2 text-base font-semibold">
+          <span class="flex size-7 items-center justify-center rounded-md bg-brand-blue/10 text-brand-blue">
+            <Icon name="check-lg" class="size-4" />
+          </span>
+          {k('records_title')}
+        </h3>
+        <ul class="mb-0 list-none space-y-2 p-0">
+          {RECORDS.map((item) => (
+            <li class="flex gap-2">
+              <span class="mt-2 size-1.5 shrink-0 rounded-full bg-hairline"></span>
+              <span class="text-body-secondary" set:html={k(`records_${item}_html`)} />
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="h-full rounded-lg border border-hairline bg-white p-5">
+        <h3 class="mb-4 flex items-center gap-2 text-base font-semibold">
+          <span class="flex size-7 items-center justify-center rounded-md bg-surface-alt text-body-secondary">
+            <Icon name="slash-lg" class="size-4" />
+          </span>
+          {k('never_title')}
+        </h3>
+        <ul class="mb-0 list-none space-y-2 p-0">
+          {NEVER.map((item) => (
+            <li class="flex gap-2">
+              <span class="mt-2 size-1.5 shrink-0 rounded-full bg-hairline"></span>
+              <span class="text-body-secondary" set:html={k(`never_${item}_html`)} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+
+    {/*
+      The one mechanism on the page that sounds like tracking and is not, so it
+      gets the honesty-box treatment /get-started uses rather than a grey
+      rectangle.
+    */}
+    <div class="mt-6 flex gap-4 rounded-lg border border-hairline bg-white p-5">
+      <Icon name="hourglass-split" class="size-6 shrink-0 text-body-secondary" />
+      <div>
+        <h3 class="mb-1 text-base font-semibold">{k('sessions_title')}</h3>
+        <p class="mb-0 text-body-secondary" set:html={k('sessions_html')} />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bg-surface-alt py-section">
+  <div class="mx-auto max-w-[1240px] px-4">
+    <div class="grid gap-10 lg:grid-cols-2">
+      <div>
+        <h2 class="mb-1 text-2xl">{k('log_title')}</h2>
+        <p class="mb-4 text-body-secondary">{k('log_lede')}</p>
+        <p class="mb-0" set:html={k('log_text_html')} />
+      </div>
+      <div>
+        <h2 class="mb-1 text-2xl">{k('wall_title')}</h2>
+        <p class="mb-4 text-body-secondary">{k('wall_lede')}</p>
+        <p class="mb-3" set:html={k('wall_published_html')} />
+        <p class="mb-3" set:html={k('wall_withheld_html')} />
+        <p class="mb-0" set:html={k('wall_retention_html')} />
+      </div>
+    </div>
+  </div>
+</section>
+
+{/*
+  Everything above, as figures. No grid lines around five rows of two words:
+  the row labels are the structure, and the borders would be noise. It scrolls
+  inside its own container rather than widening the page on a phone.
+*/}
+<section class="py-section">
+  <div class="mx-auto max-w-[1240px] px-4">
+    <h2 class="mb-4 text-2xl">{k('retention_title')}</h2>
+    <div class="overflow-x-auto">
+      <table class="mb-0 w-full text-left">
+        <thead>
+          <tr class="border-b border-hairline">
+            <th scope="col" class="py-2 pr-4 text-xs font-semibold tracking-[.04em] text-body-secondary uppercase">{k('retention_what')}</th>
+            <th scope="col" class="py-2 pr-4 text-xs font-semibold tracking-[.04em] text-body-secondary uppercase">{k('retention_where')}</th>
+            <th scope="col" class="py-2 text-xs font-semibold tracking-[.04em] text-body-secondary uppercase">{k('retention_how_long')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ROWS.map((row) => (
+            <tr class="border-b border-hairline">
+              <td class="py-3 pr-4">{k(`row_${row}_what`)}</td>
+              <td class="py-3 pr-4 text-body-secondary">{k(`row_${row}_where`)}</td>
+              <td class="py-3 font-mono whitespace-nowrap">{k(`row_${row}_long`)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<CtaBand
+  title={k('contact_title')}
+  primaryLabel={k('contact_cta')}
+  primaryHref="mailto:privacy@openipc.org"
+  noteHtml={k('contact_note_html')}
+/>

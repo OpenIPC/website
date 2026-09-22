@@ -1,0 +1,59 @@
+---
+/**
+ * app/views/shared/_terminal.html.erb -- a shell block with a copy button.
+ *
+ * The copy handler is delegated from the document, once per page, so a page
+ * with several blocks ships one listener. With JavaScript off the button is
+ * hidden rather than dead: a control that does nothing when pressed is worse
+ * than one that is not offered.
+ */
+import Icon from './Icon.astro';
+
+interface Props { code: string; title?: string; id: string }
+const { code, title = 'shell', id } = Astro.props;
+---
+<div class="my-4 overflow-hidden rounded-lg border border-hairline">
+  <div class="flex items-center gap-2 border-b border-hairline bg-surface-alt px-3 py-2">
+    <span class="flex gap-1.5">
+      <span class="size-2 rounded-full bg-hairline"></span>
+      <span class="size-2 rounded-full bg-hairline"></span>
+      <span class="size-2 rounded-full bg-hairline"></span>
+    </span>
+    <span class="font-mono text-xs text-body-secondary">{title}</span>
+    <button
+      type="button"
+      class="ml-auto hidden cursor-pointer rounded px-2 py-1 text-body-secondary hover:text-body js-copy"
+      data-copy-target={`#${id}`}
+      title="Copy"
+      aria-label="Copy to clipboard"
+    >
+      <Icon name="clipboard" class="size-4" />
+    </button>
+  </div>
+  <pre class="overflow-x-auto p-4 text-sm"><code id={id} class="font-mono">{code}</code></pre>
+</div>
+
+<script>
+  for (const button of document.querySelectorAll<HTMLButtonElement>('.js-copy')) {
+    button.classList.remove('hidden');
+  }
+
+  document.addEventListener('click', async (event) => {
+    const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>('.js-copy');
+    if (!button) return;
+
+    const target = document.querySelector(button.dataset.copyTarget ?? '');
+    if (!target?.textContent) return;
+
+    try {
+      await navigator.clipboard.writeText(target.textContent);
+      const was = button.getAttribute('aria-label');
+      button.setAttribute('aria-label', 'Copied');
+      setTimeout(() => button.setAttribute('aria-label', was ?? 'Copy to clipboard'), 1500);
+    } catch {
+      // Clipboard access can be refused -- an insecure origin, or a browser
+      // setting. The text is on the page and selectable either way, so there
+      // is nothing to report and nothing to fall back to.
+    }
+  });
+</script>

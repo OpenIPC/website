@@ -1,0 +1,15 @@
+---
+/**
+ * The wrapper the Rails layout gives a page that does not lay out its own
+ * full-bleed sections (#160).
+ *
+ * app/views/layouts/application.html.erb puts every page inside
+ * `<div class="container mb-4">` unless it declares `content_for :fullwidth`.
+ * The pages that do -- the home page, the five services whitepapers -- draw
+ * their own sections edge to edge and must not be boxed; the rest are an
+ * article on white and would run into the viewport without this.
+ */
+---
+<div class="mx-auto max-w-[1240px] px-4 pb-8">
+  <slot />
+</div>

@@ -1,0 +1,76 @@
+---
+/**
+ * app/views/pages/our_team.html.erb (#160).
+ *
+ * Two sections of people, from src/data/team.ts. The Rails view was 493 lines
+ * of repeated cards; the markup is written once here and the list is data, so
+ * adding somebody is one entry rather than eleven lines of HTML to get right.
+ */
+import Container from '../Container.astro';
+import PageTitle from '../PageTitle.astro';
+import { useTranslations, type Locale } from '../../lib/i18n';
+import { TEAM } from '../../data/team';
+
+import github from '../../assets/social/github.svg?raw';
+import opencollective from '../../assets/social/opencollective.svg?raw';
+import telegram from '../../assets/social/telegram.svg?raw';
+import youtube from '../../assets/social/youtube.svg?raw';
+import twitter from '../../assets/social/twitter.svg?raw';
+
+const ICONS: Record<string, string> = { github, opencollective, telegram, youtube, twitter };
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.our_team.${s}`);
+---
+<Container>
+  <article>
+    <PageTitle>{k('title')}</PageTitle>
+    <p class="mb-10 max-w-[70ch]" set:html={k('paragraph1_html')} />
+
+    {TEAM.map((section) => (
+      <section class="mb-10">
+        <h2 class="mb-6 text-2xl">{section.title}</h2>
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+          {section.members.map((member) => (
+            <div class="flex h-full flex-col overflow-hidden rounded-lg border border-hairline bg-white">
+              {/*
+                Sized and lazy: 36 avatars are 36 requests to a third party, and
+                without dimensions each one reflows the grid as it lands.
+              */}
+              <img
+                class="aspect-square w-full bg-surface-alt object-cover"
+                src={member.avatar}
+                alt="Image: avatar"
+                title={member.name}
+                width="200"
+                height="200"
+                loading="lazy"
+                decoding="async"
+                referrerpolicy="no-referrer"
+              />
+              <div class="flex flex-1 flex-col p-4">
+                <h3 class="mb-1 text-base font-semibold">{member.name}</h3>
+                <p class="mb-3 text-sm text-body-secondary">{member.role}</p>
+                <div class="mt-auto flex flex-wrap gap-1">
+                  {member.socials.map((social) => (
+                    <a
+                      class="flex size-7 items-center justify-center rounded text-body-secondary hover:text-body"
+                      href={social.url}
+                      title={social.handle}
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      <span class="sr-only">{`${member.name} on ${social.icon}`}</span>
+                      <Fragment set:html={ICONS[social.icon]} />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    ))}
+  </article>
+</Container>

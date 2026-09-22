@@ -1,0 +1,44 @@
+---
+/**
+ * The full-size viewer for any image carrying data-zoom.
+ *
+ * One dialog per page, opened by delegation, so adding a tile costs nothing.
+ * A native <dialog>: Escape and the backdrop close it without a line of code,
+ * and with JavaScript off the tiles are simply images, which is what they
+ * were before this existed.
+ */
+---
+<dialog
+  id="zoom"
+  class="m-auto max-h-[92vh] max-w-[92vw] rounded-lg border border-hairline bg-white p-0 backdrop:bg-ink/70"
+  aria-label="Image zoom"
+>
+  <form method="dialog" class="flex justify-end border-b border-hairline bg-surface-alt px-3 py-2">
+    <button class="cursor-pointer rounded px-2 text-body-secondary hover:text-body" aria-label="Close">✕</button>
+  </form>
+  <img id="zoom-image" class="block max-h-[80vh] w-auto max-w-full" alt="" />
+</dialog>
+
+<script>
+  const dialog = document.getElementById('zoom') as HTMLDialogElement | null;
+  const image = document.getElementById('zoom-image') as HTMLImageElement | null;
+
+  if (dialog && image) {
+    document.addEventListener('click', (event) => {
+      const target = (event.target as HTMLElement | null)?.closest<HTMLImageElement>('img[data-zoom]');
+      if (!target) return;
+      image.src = target.dataset.zoom ?? '';
+      image.alt = target.alt;
+      dialog.showModal();
+    });
+
+    // Clicking the backdrop -- the dialog element itself, outside its children.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+
+    // Release the 2560px file when the viewer is shut, so a page with twelve
+    // tiles does not end up holding every original a visitor has opened.
+    dialog.addEventListener('close', () => { image.removeAttribute('src'); });
+  }
+</script>

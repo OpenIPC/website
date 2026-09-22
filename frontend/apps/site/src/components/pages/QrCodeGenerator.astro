@@ -1,0 +1,35 @@
+---
+/** app/views/pages/qr_code_generator.html.erb (#160). */
+import Container from '../Container.astro';
+import PageTitle from '../PageTitle.astro';
+import WifiQrCode from '../WifiQrCode.tsx';
+import { useTranslations, type Locale } from '../../lib/i18n';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.qr_code_generator.${s}`);
+---
+<Container>
+  <article>
+    <PageTitle>{k('title')}</PageTitle>
+    <p class="mb-8 max-w-[70ch]" set:html={k('paragraph1_html')} />
+
+    <div class="grid gap-8 xl:grid-cols-3">
+      <div class="xl:col-span-2">
+        <WifiQrCode
+          client:load
+          labels={{
+            ssid: 'SSID',
+            password: k('password'),
+            generate: k('generate_qr_code'),
+            reset: k('reset_form'),
+          }}
+        />
+      </div>
+      <aside class="rounded-lg border border-stages-border bg-stages-bg p-5 text-info-text">
+        <p class="mb-2 text-lg font-semibold">{k('alert_title')}</p>
+        <p class="mb-0">{k('alert_text')}</p>
+      </aside>
+    </div>
+  </article>
+</Container>

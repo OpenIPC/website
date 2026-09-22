@@ -1,0 +1,11 @@
+---
+/** app/views/shared/_page_header.html.erb -- the standard inner-page band. */
+interface Props { title: string; lede?: string }
+const { title, lede } = Astro.props;
+---
+<header class="mb-8 border-b border-hairline bg-surface-alt py-8 lg:py-12">
+  <div class="mx-auto max-w-[1240px] px-4">
+    <h1 class="mb-0 text-4xl font-bold">{title}</h1>
+    {lede && <p class="mt-3 mb-0 max-w-[60ch] text-lg text-body-secondary">{lede}</p>}
+  </div>
+</header>

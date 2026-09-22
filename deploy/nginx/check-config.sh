@@ -125,6 +125,18 @@ install -d -m 0755 /srv/www/static/prod/site-test/ru/_smoke
 printf 'SMOKE RU\n' > /srv/www/static/prod/site-test/ru/_smoke/index.html
 install -d -m 0755 /srv/www/static/prod/site-test/_astro
 printf 'body{}\n' > /srv/www/static/prod/site-test/_astro/app.css
+# A marketing page in both the unprefixed and the prefixed tree (#160), so the
+# expectations below measure what the real bundle now does rather than what it
+# did when it held one diagnostic.
+install -d -m 0755 /srv/www/static/prod/site-test/donate /srv/www/static/prod/site-test/ru/donate
+printf 'DONATE\n' > /srv/www/static/prod/site-test/donate/index.html
+printf 'DONATE RU\n' > /srv/www/static/prod/site-test/ru/donate/index.html
+# A page two directories deep, so /tools/ exists in the bundle and is not a
+# page. It is the third shape with no index.html of its own -- after a locale
+# directory and the asset directory -- and the one a visitor is most likely to
+# type by hand.
+install -d -m 0755 /srv/www/static/prod/site-test/tools/qr-code-generator
+printf 'QR\n' > /srv/www/static/prod/site-test/tools/qr-code-generator/index.html
 ln -s site-test /srv/www/static/prod/current
 
 # A token where dehydrated puts one, so the openipc.eu probes below can tell
@@ -260,6 +272,22 @@ expect /ru                          200 rails  hsts
 expect /_astro/app.css              200 static hsts
 expect /_astro/                     200 rails  hsts
 
+# A marketing page, in both trees (#160). This is the claim the whole change
+# rests on: /donate is answered from disk, and /ru/donate is answered from disk
+# in Russian, with Rails never woken.
+expect /donate/                     200 static hsts
+expect /donate                      200 static hsts
+expect /ru/donate/                  200 static hsts
+expect /ru/donate                   200 static hsts
+
+# And the directory above the three web tools, which is not a page and must
+# not become one. Same rule as ru/ and _astro/: a file test misses a directory,
+# so it falls through and Rails 404s it -- nginx never answers "directory index
+# is forbidden", which is what the wrong try_files element would produce.
+expect /tools/qr-code-generator/    200 static hsts
+expect /tools/                      200 rails  hsts
+expect /tools                       200 rails  hsts
+
 echo "  --- Cache-Control: assets forever, pages never without asking ---"
 # Astro fingerprints everything under /_astro/, so the name changes whenever
 # the bytes do and the old name is never reused.
@@ -268,6 +296,7 @@ expect_cache /_astro/app.css        "public, max-age=31536000, immutable"
 # must always be revalidated.
 expect_cache /_smoke/               "public, max-age=0, must-revalidate"
 expect_cache /ru/_smoke/            "public, max-age=0, must-revalidate"
+expect_cache /donate/               "public, max-age=0, must-revalidate"
 
 # And the half that matters to every page that is NOT in the bundle: the seam
 # block's add_header must not reach a Rails response. add_header applies in
@@ -275,14 +304,11 @@ expect_cache /ru/_smoke/            "public, max-age=0, must-revalidate"
 # @rails -- but the two locations are three lines apart in the vhost, and a
 # bundle policy silently overriding what Rails says about its own pages would
 # be invisible until somebody saw a stale page.
-expect_cache /donate                "max-age=300, public"
-expect_cache /ru/donate             "max-age=300, public"
+expect_cache /supported-hardware    "max-age=300, public"
 expect_cache /                      "max-age=300, public"
 
 # Everything else is still Rails, which is the whole claim of this change.
 expect /                            200 rails  hsts
-expect /donate                      200 rails  hsts
-expect /ru/donate                   200 rails  hsts
 expect /supported-hardware/featured 200 rails  hsts
 expect /sitemap.xml                 200 rails  hsts
 expect /robots.txt                  200 rails  hsts

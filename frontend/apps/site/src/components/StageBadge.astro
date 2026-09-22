@@ -1,0 +1,41 @@
+---
+/**
+ * app/views/shared/_stage_badge.html.erb -- a project's status.
+ *
+ * The label is the abbreviation the firmware repository uses, and the title
+ * attribute carries the explanation from the stages page so the reader does not
+ * have to go and find it.
+ */
+import { useTranslations, type Locale } from '../lib/i18n';
+
+const LABELS: Record<string, string> = {
+  neq: 'NEQ', rnd: 'R&D', hlp: 'HLP', wip: 'WIP', mvp: 'MVP', done: 'DONE',
+};
+
+const TONES: Record<string, string> = {
+  neq: 'border-hairline bg-surface-alt text-body-secondary',
+  rnd: 'border-brand-blue/30 bg-brand-blue/10 text-brand-blue',
+  hlp: 'border-accent/40 bg-accent/20 text-ink',
+  wip: 'border-accent/40 bg-accent/20 text-ink',
+  mvp: 'border-brand-blue/30 bg-brand-blue/10 text-brand-blue',
+  done: 'border-green/30 bg-green/10 text-green',
+};
+
+interface Props { stage: string; locale: Locale }
+const { stage, locale } = Astro.props;
+const t = useTranslations(locale);
+
+// `default: ''` in the Rails helper, then truncated to 120. A stage with no
+// explanation gets a badge and no tooltip rather than a failed build -- this
+// is a label, not page copy.
+let title = '';
+try {
+  title = t(`pages.stages_of_firmware_development.${stage}_info`).replace(/<[^>]*>/g, '').slice(0, 120);
+} catch {
+  title = '';
+}
+---
+<span
+  class:list={['inline-block rounded border px-2 py-0.5 font-mono text-xs', TONES[stage] ?? TONES.neq]}
+  title={title || undefined}
+>{LABELS[stage] ?? stage.toUpperCase()}</span>

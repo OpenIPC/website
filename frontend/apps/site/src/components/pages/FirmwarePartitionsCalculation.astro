@@ -1,0 +1,24 @@
+---
+/**
+ * app/views/pages/firmware_partitions_calculation.html.erb (#160).
+ *
+ * The calculator itself is @openipc/ui's FirmwarePartitionCalculator, which is
+ * what #158 extracted it for: the Rails page was a hand-built form and 140
+ * lines of inline arithmetic, and the packaged version is the one with tests
+ * -- including the one for the gap a nameless partition used to swallow.
+ */
+import Container from '../Container.astro';
+import PageTitle from '../PageTitle.astro';
+import { FirmwarePartitionCalculator } from '@openipc/ui';
+import { useTranslations, type Locale } from '../../lib/i18n';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.firmware_partitions_calculation.${s}`);
+---
+<Container>
+  <article>
+    <PageTitle>{k('title')}</PageTitle>
+    <FirmwarePartitionCalculator client:load />
+  </article>
+</Container>

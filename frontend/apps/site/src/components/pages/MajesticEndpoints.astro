@@ -1,0 +1,40 @@
+---
+/**
+ * app/views/pages/majestic_endpoints.html.erb (#160).
+ *
+ * The endpoint list used to live here in full and fell behind the firmware, so
+ * it lives only in the camera's own WebUI now, where it is built from what is
+ * running. The URL stays because search engines, the wiki and other people's
+ * forum posts still point at it: it says where the list went instead of 404ing.
+ * It is deliberately absent from the navigation and the footer.
+ */
+import Container from '../Container.astro';
+import PageTitle from '../PageTitle.astro';
+import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.majestic_endpoints.${s}`);
+---
+<Container>
+  <article>
+    <PageTitle>{k('title')}</PageTitle>
+    <div class="lg:w-2/3">
+      <p class="mb-4" set:html={k('moved_html')} />
+      <p class="mb-3">{k('why')}</p>
+      <ul class="mb-6 list-disc space-y-1 pl-6">
+        <li>{k('reason_address')}</li>
+        <li>{k('reason_scheme')}</li>
+        <li>{k('reason_auth')}</li>
+      </ul>
+      <p class="flex flex-wrap gap-3">
+        <a class="rounded-md bg-brand-blue px-5 py-2.5 font-medium text-white no-underline hover:bg-btn-blue-hover" href={pathFor(locale, '/web-interface')}>
+          {k('see_webui')}
+        </a>
+        <a class="rounded-md border border-hairline px-5 py-2.5 font-medium text-body no-underline hover:border-body-secondary" href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">
+          {k('see_wiki')}
+        </a>
+      </p>
+    </div>
+  </article>
+</Container>

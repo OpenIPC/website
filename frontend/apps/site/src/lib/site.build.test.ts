@@ -11,6 +11,8 @@
  */
 import { describe, expect, test } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { LOCALES, pathFor } from './i18n';
+import { PAGE_PATHS } from './page-paths';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -29,14 +31,41 @@ function walk(dir: string, acc: string[] = []): string[] {
 }
 
 describe('the three locale trees', () => {
-  test('every locale has the page, at the address #154 settled', () => {
-    expect(walk(dist).filter((f) => f.endsWith('index.html')).sort()).toEqual([
-      '_smoke/index.html',
-      'ru/_smoke/index.html',
-      'ru/index.html',
-      'zh/_smoke/index.html',
-      'zh/index.html',
-    ]);
+  test('the built tree is exactly the registry, in every locale', () => {
+    // Derived from src/lib/pages.ts rather than listed here. A literal list
+    // was right when the bundle held one page; at 25 it becomes a second
+    // registry that has to be edited in step with the first, and the failure
+    // it produces says "these two lists differ" rather than "this page is
+    // missing".
+    const expected = LOCALES.flatMap((locale) =>
+      PAGE_PATHS.map((page) => `${pathFor(locale, page.path).replace(/^\//, '')}/index.html`),
+    );
+
+    // The locale roots, which are not in the registry: `/` stays on Rails, so
+    // there is no entry that would generate them. See ../pages/[locale]/index.astro.
+    expected.push('ru/index.html', 'zh/index.html');
+
+    expect(walk(dist).filter((f) => f.endsWith('index.html')).sort()).toEqual(expected.sort());
+  });
+
+  test('every marketing address config/routes.rb serves is in the bundle', () => {
+    // The list is written out rather than derived, because the point of it is
+    // to disagree with the registry when somebody edits one of them. It is
+    // config/routes.rb's `pages#` block, minus `/` -- which stays on Rails
+    // because it negotiates language -- and minus the redirects and the two
+    // `410 Gone` routes, which are not pages.
+    const ROUTED = [
+      '/business', '/community', '/digital-twins', '/donate', '/ecosystem', '/edge-ai',
+      '/get-started', '/green_life', '/isp-sensors', '/low-latency', '/majestic-endpoints',
+      '/merchandise', '/our-team', '/privacy', '/reverse-engineering',
+      '/stages-of-firmware-development', '/teleoperation', '/tools/firmware-partitions-calculation',
+      '/tools/high-resolution-timer', '/tools/qr-code-generator', '/turnkey-hardware',
+      '/utilities', '/video-encoding', '/web-interface',
+    ];
+
+    const claimed = new Set(PAGE_PATHS.map((page) => page.path));
+    expect(ROUTED.filter((path) => !claimed.has(path))).toEqual([]);
+    expect(ROUTED.length).toBe(24);
   });
 
   test('each page declares its own language', () => {

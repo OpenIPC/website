@@ -1,0 +1,40 @@
+---
+/**
+ * app/views/pages/web_interface.html.erb (#160).
+ *
+ * Shot from a real camera by tools/webui-gallery; run it again when the WebUI
+ * changes shape. The list of screens and the captions come from
+ * config/webui_gallery.yml -- through the JSON export, since this build has no
+ * Ruby -- so the tool and this page cannot disagree about what the gallery
+ * contains.
+ *
+ * The two pages with a live player show a beach rather than the bench of
+ * cables the lab camera actually faces; see the credit under the grid. The
+ * scene is laid over the <video> in the DOM at capture time, the same way the
+ * lab's address and MAC are rewritten out of the text.
+ */
+import Container from '../Container.astro';
+import PageTitle from '../PageTitle.astro';
+import WebuiTile from '../WebuiTile.astro';
+import ZoomDialog from '../ZoomDialog.astro';
+import { useTranslations, type Locale } from '../../lib/i18n';
+import { SCREENS } from '../../lib/webui';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.web_interface.${s}`);
+---
+<Container>
+  <article>
+    <PageTitle>{k('title')}</PageTitle>
+    <p class="mb-6 max-w-[70ch] text-lg text-body-secondary">{k('intro')}</p>
+
+    <div id="screens" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {SCREENS.map((screen) => <WebuiTile screen={screen} />)}
+    </div>
+
+    <p class="mt-6 max-w-[70ch] text-sm text-body-secondary" set:html={k('scene_credit_html')} />
+  </article>
+</Container>
+
+<ZoomDialog />

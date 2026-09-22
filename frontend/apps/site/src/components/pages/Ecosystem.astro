@@ -1,0 +1,104 @@
+---
+/**
+ * app/views/pages/ecosystem.html.erb (#160).
+ *
+ * The project list is data, in the order the Rails view declares it. The
+ * low-latency section is in chain order -- camera, air, ground -- because that
+ * is how the three read together; devourer is DONE rather than R&D, because it
+ * is what PixelPilot receives through on Android today, across five Realtek
+ * hardware backends.
+ */
+import PageHeader from '../PageHeader.astro';
+import ProjectCard from '../ProjectCard.astro';
+import CtaBand from '../CtaBand.astro';
+import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.ecosystem.${s}`);
+
+const gh = 'https://github.com/OpenIPC';
+const p = (name: string, descKey: string, stage: string) => ({
+  name, desc: k(descKey), repo: `${gh}/${name}`, stage,
+});
+
+const SECTIONS = [
+  {
+    title: k('section_core_title'),
+    text: k('section_core_text'),
+    projects: [
+      p('firmware', 'proj_firmware', 'done'),
+      p('majestic', 'proj_majestic', 'done'),
+      p('divinus', 'proj_divinus', 'wip'),
+      p('ipctool', 'proj_ipctool', 'done'),
+      p('coupler', 'proj_coupler', 'done'),
+      p('smolrtsp', 'proj_smolrtsp', 'done'),
+      p('microbe-web', 'proj_microbe', 'done'),
+      p('yaml-cli', 'proj_yamlcli', 'done'),
+      p('burn', 'proj_burn', 'done'),
+    ],
+  },
+  {
+    title: k('section_longevity_title'),
+    text: k('section_longevity_text'),
+    projects: [
+      p('openhisilicon', 'proj_openhisilicon', 'wip'),
+      p('openxiongmai', 'proj_openxiongmai', 'rnd'),
+      p('qemu-hisilicon', 'proj_qemu', 'wip'),
+    ],
+  },
+  {
+    title: k('section_lowlat_title'),
+    textHtml: k('section_lowlat_text_html'),
+    projects: [
+      p('waybeam_venc', 'proj_waybeam', 'done'),
+      p('devourer', 'proj_devourer', 'done'),
+      p('PixelPilot_rk', 'proj_pixelpilot', 'done'),
+      p('aviateur', 'proj_aviateur', 'done'),
+    ],
+  },
+  {
+    title: k('section_tools_title'),
+    text: k('section_tools_text'),
+    projects: [
+      p('onvif-tt', 'proj_onvif_tt', 'done'),
+      p('rnd-player', 'proj_rnd_player', 'done'),
+    ],
+  },
+];
+---
+<PageHeader title={k('hero_title')} lede={k('hero_lede')} />
+
+<div class="mx-auto max-w-[1240px] px-4">
+  <article>
+    <p class="mb-10 text-body-secondary" set:html={k('stage_legend_html')} />
+
+    {SECTIONS.map((section) => (
+      <section class="mb-12">
+        <h2 class="mb-2 text-2xl">{section.title}</h2>
+        {section.textHtml
+          ? <p class="mb-4 max-w-[70ch] text-body-secondary" set:html={section.textHtml} />
+          : <p class="mb-4 max-w-[70ch] text-body-secondary">{section.text}</p>}
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {section.projects.map((project) => (
+            <ProjectCard name={project.name} desc={project.desc} repo={project.repo} stage={project.stage} locale={locale} />
+          ))}
+        </div>
+      </section>
+    ))}
+
+    <section class="mb-8">
+      <h2 class="mb-2 text-2xl">{k('section_community_title')}</h2>
+      <p class="mb-0 max-w-[70ch] text-body-secondary" set:html={k('section_community_text_html')} />
+    </section>
+  </article>
+</div>
+
+<CtaBand
+  title={t('pages.community.contribute_title')}
+  primaryLabel={t('pages.community.title')}
+  primaryHref={pathFor(locale, '/community')}
+  secondaryLabel="GitHub"
+  secondaryHref="https://github.com/OpenIPC"
+  noteHtml={k('contribute_cta_html')}
+/>
