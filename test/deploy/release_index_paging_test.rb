@@ -15,7 +15,10 @@ require 'English'
 # These read it. That is worth doing anyway: the failure was silent, it lasted
 # months, and nothing in the repository would have said a word.
 class ReleaseIndexPagingTest < ActiveSupport::TestCase
-  SCRIPT = Rails.root.join('deploy/publish-release-index.rb').read
+  # .freeze because frozen_string_literal does not cover a String that came
+  # back from IO. A shared constant every test reads is exactly the thing that
+  # should not be mutable.
+  SCRIPT = Rails.root.join('deploy/publish-release-index.rb').read.freeze
 
   test 'the page size is the API maximum' do
     # 100 is as many as GitHub will return at once. Anything smaller is more
