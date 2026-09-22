@@ -33,7 +33,9 @@ describe('the three locale trees', () => {
     expect(walk(dist).filter((f) => f.endsWith('index.html')).sort()).toEqual([
       '_smoke/index.html',
       'ru/_smoke/index.html',
+      'ru/index.html',
       'zh/_smoke/index.html',
+      'zh/index.html',
     ]);
   });
 
@@ -143,17 +145,51 @@ describe('the bundle can be stamped', () => {
     // deploy/static/build.sh seds @@REVISION@@ and @@BUILT@@ across every
     // .html in the tree, and check-bundle.sh refuses a page still holding
     // one. A page that never had them would pass both and name no commit.
-    for (const page of ['_smoke', 'ru/_smoke', 'zh/_smoke']) {
-      expect(read(`${page}/index.html`)).toContain('@@REVISION@@');
+    // Every page, not a list that has to be extended: the tokens are in the
+    // shell now (#160), so a page that lacks them is a page that escaped the
+    // shell, which is the thing worth catching.
+    for (const page of walk(dist).filter((f) => f.endsWith('index.html'))) {
+      expect(read(page), `${page} names no commit`).toContain('@@REVISION@@');
+      expect(read(page), `${page} has no build time`).toContain('@@BUILT@@');
     }
   });
 });
 
 describe('nothing claims a page Rails owns', () => {
   test('the build writes no root index.html', () => {
-    // Extracting the home page is #160's decision, and check-bundle.sh
-    // refuses one. Better to find out here than in a CI step named "refuse a
-    // bundle that would shadow Rails".
+    // #160 settled what `/` means: it stays on Rails, because Rails renders it
+    // per Accept-Language and declares `Vary: Accept-Language`, and a file
+    // serves one language to everyone. check-bundle.sh refuses a root
+    // index.html for the same reason; this catches it a build earlier, where
+    // the failure names the page rather than the bundle.
     expect(walk(dist)).not.toContain('index.html');
+  });
+
+  test('the locale roots ARE extracted, and are the home page', () => {
+    // The other half of that decision, asserted so it cannot be lost to a
+    // later tidy-up: /ru/ and /zh/ carry their language in the path, negotiate
+    // nothing, and are in the bundle.
+    for (const [locale, page] of [['ru', 'ru/index.html'], ['zh', 'zh/index.html']]) {
+      const html = read(page);
+      expect(html).toContain(`lang="${locale}"`);
+      const catalogue = JSON.parse(
+        readFileSync(join(root, 'src', 'i18n', `${locale}.json`), 'utf8'),
+      );
+      expect(html, `${page} is not the home page`).toContain(catalogue.pages.home.hero_title);
+    }
+  });
+
+  test('the shell renders on every page, not just the smoke one', () => {
+    // The navigation and the footer are what a visitor crossing the seam
+    // compares, so they are checked on the pages a visitor actually reads.
+    for (const page of ['ru/index.html', 'zh/index.html']) {
+      const html = read(page);
+      const catalogue = JSON.parse(
+        readFileSync(join(root, 'src', 'i18n', `${page.split('/')[0]}.json`), 'utf8'),
+      );
+      expect(html, `${page} has no navigation`).toContain(catalogue.nav.get_started);
+      expect(html, `${page} has no footer`).toContain(catalogue.footer.column_platform);
+      expect(html, `${page} has no disclaimer`).toContain(catalogue.site.disclaimer);
+    }
   });
 });

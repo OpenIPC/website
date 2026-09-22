@@ -7,3 +7,75 @@
  * tokens.css -- and this is the other half of that bargain. */
 @source "../../../../packages/ui/dist";
 @source "../**/*.{astro,ts,tsx}";
+
+/*
+ * The site's own half of the palette (#160).
+ *
+ * @openipc/ui carries fancyweb-ng's tokens, and its --color-brand-blue is
+ * already #4c60d8 -- the same indigo app/assets/stylesheets/_variables.scss
+ * calls $indigo, which is why the two halves of the site do not clash at the
+ * seam. What the package has no opinion about is the "engineering workbench"
+ * theme the relaunch is drawn in: a light body with dark ink anchor sections
+ * and a warm amber accent. Those live here, named as _variables.scss names
+ * them, so a colour can be traced from one file to the other.
+ *
+ * --color-accent is never text on white: 3.6:1 against #fff is under AA. It
+ * is the live dot, the Labs badge and section highlights, and _variables.scss
+ * says so in the same words.
+ */
+@theme {
+  --color-ink: #0f1422;
+  --color-ink-2: #1a2236;
+  --color-accent: #ffb454;
+  --color-body: #1c2333;
+  --color-body-secondary: #5a6377;
+  --color-surface-alt: #f4f6fa;
+  --color-hairline: #e3e7f0;
+
+  /* Bootstrap's $spacers 6 and 7, which the relaunch added for section
+   * rhythm: py-6 is 4.5rem and py-7 is 6rem. Tailwind's own scale stops at
+   * 96 (24rem) but has no 4.5rem step, and the pages are laid out on it. */
+  --spacing-section: 4.5rem;
+  --spacing-section-lg: 6rem;
+}
+
+@layer base {
+  body {
+    color: var(--color-body);
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+  }
+
+  /* The shell renders text on ink in several places -- the hero, the stats
+   * band, the footer. Anchors inside those blocks take their colour from the
+   * block rather than from a global link rule, because a global one would
+   * have to be beaten by every dark section and the specificity fight is how
+   * the gallery page ended up with unreadable menu labels. */
+  :where(h1, h2, h3, h4) {
+    font-weight: 600;
+    line-height: 1.25;
+  }
+}
+
+/*
+ * The navigation band is ink, not the package's indigo (#160).
+ *
+ * @openipc/ui's Header and HeaderMenu are drawn on --color-brand-blue, which
+ * is fancyweb-ng's. The Rails navbar is $ink, and while the seam is open a
+ * visitor crosses between a static page and a Rails one on every other click
+ * -- a navigation bar that changes colour when they do reads as broken rather
+ * than as progress, which is the whole argument for #160 being one cutover.
+ *
+ * Deliberately unlayered: Tailwind emits the package's `bg-brand-blue` into
+ * @layer utilities, and an unlayered rule beats a layered one whatever the
+ * specificity. That is the same cascade behaviour that made the component
+ * gallery's menu labels unreadable by accident; here it is the mechanism, and
+ * it is scoped to the one element rather than left global.
+ *
+ * The right home for this is a prop on the package's Header. Until #158's
+ * next pass gives it one, the override lives with the site that wants it.
+ */
+.site-header header,
+.site-header nav {
+  background-color: var(--color-ink);
+}

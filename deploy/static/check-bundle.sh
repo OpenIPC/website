@@ -83,11 +83,19 @@ while IFS= read -r -d '' d; do
 done < <(find "$SITE" -type d -print0)
 
 # --- 3. the root has no index.html ------------------------------------------
-# Extracting the home page is #160's decision and it is entangled with a
-# property a file cannot have: Rails renders `/` per Accept-Language and
-# declares `Vary: Accept-Language`, which is why the unprefixed path still
-# negotiates. The day this file exists, every visitor gets one language. Lift
-# this rule in the change that decides what `/` means, not as a build product.
+# #160 decided it: `/` stays on Rails, permanently, and this rule stops being
+# a placeholder and becomes the thing that holds the decision.
+#
+# The reason is a property a file cannot have. Rails renders `/` per
+# Accept-Language and declares `Vary: Accept-Language`, so one URL answers in
+# three languages; the day a root index.html exists, every visitor gets one.
+# nginx can approximate that with a map over the raw header, but only
+# approximate: Multilang#browser_locale does RFC 9110 q-value ranking, honours
+# `q=0` and cuts tags to two letters, and a map would disagree with it on a
+# header like `en;q=0.1,ru;q=0.9` -- on the most-visited page on the site.
+#
+# The locale roots are a different question and are allowed: /ru/ and /zh/
+# carry their language in the path, negotiate nothing, and are in the bundle.
 [ -f "$SITE/index.html" ] && bad "the bundle has a root index.html; see the comment in $(basename "$SELF")"
 
 # --- 4. the smoke page ------------------------------------------------------

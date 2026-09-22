@@ -1,0 +1,27 @@
+---
+/**
+ * One Bootstrap Icon, inlined.
+ *
+ * The Rails pages draw these from the bootstrap-icons webfont. A webfont is
+ * the wrong shape for a prerendered page that uses five glyphs: it is a
+ * render-blocking request for 100 KB to draw a chip and an arrow. The SVGs are
+ * the same MIT set, copied in one at a time as a page needs one, and they
+ * inherit `currentColor` so a section's own colour reaches them.
+ */
+const ICONS = import.meta.glob<string>('../assets/icons/*.svg', { eager: true, query: '?raw', import: 'default' });
+
+interface Props {
+  /** File name under src/assets/icons, without the extension. */
+  name: string;
+  class?: string;
+}
+const { name, class: className = 'size-4' } = Astro.props;
+
+const svg = ICONS[`../assets/icons/${name}.svg`];
+if (!svg) {
+  throw new Error(
+    `No icon "${name}". Copy node_modules/bootstrap-icons/icons/${name}.svg into src/assets/icons/.`,
+  );
+}
+---
+<span class={className} aria-hidden="true" set:html={svg} />

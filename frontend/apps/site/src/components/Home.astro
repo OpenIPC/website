@@ -1,0 +1,211 @@
+---
+/**
+ * The home page (#160).
+ *
+ * app/views/pages/home.html.erb, section for section. Two of its parts read
+ * live state that a prerendered page cannot, and both currently render the
+ * same way the Rails page renders when that state is missing -- which is a
+ * state the Rails page already handles, not a new one:
+ *
+ *   * the wall mosaic shows the Open Wall's "no signal" placeholders, which is
+ *     what home.html.erb itself falls back to when the query returns nothing.
+ *     Filling them in needs a JSON endpoint for the wall, and there is not one
+ *     yet -- `resources :snapshots` serves HTML.
+ *   * the backer count under the closing band renders nothing rather than a
+ *     baked number. SupportStats caps the page's own HTTP freshness precisely
+ *     so no page outlives the count printed on it, and a number baked into a
+ *     bundle could not honour that. shared/_support_count renders nothing when
+ *     it has no usable figure, and says in its own comment that this leaves
+ *     the page exactly as it was before the count existed.
+ *
+ * nginx already serves /api/v1/support/stats.json from a file, CORS-open and
+ * 404-clean, which is the shape a client-side fill wants; doing it means
+ * reimplementing SupportStats#usable? -- the 48-hour staleness rule and the
+ * halves-agree check -- in TypeScript, with the goal from
+ * config/support_goal.yml. That is its own change, not a line here.
+ */
+import Icon from './Icon.astro';
+import LogoWall from './LogoWall.astro';
+import { Image } from 'astro:assets';
+import { pathFor, useTranslations, type Locale } from '../lib/i18n';
+import { partnerRows } from '../lib/partners';
+import { SOC_COUNT, SOC_VENDOR_NAMES } from '../data/catalogue';
+import noSignal from '../assets/no-signal.webp';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+
+const t = useTranslations(locale);
+const p = (path: string) => pathFor(locale, path);
+const rows = partnerRows(locale);
+
+const PILLARS = [
+  { icon: 'cpu', title: 'pillar_firmware_title', text: 'pillar_firmware_text_html', href: '/get-started', accent: false },
+  { icon: 'broadcast', title: 'pillar_low_latency_title', text: 'pillar_low_latency_text', href: '/low-latency', accent: false },
+  { icon: 'wrench-adjustable', title: 'pillar_tools_title', text: 'pillar_tools_text', href: '/ecosystem', accent: false },
+  { icon: 'shield-check', title: 'pillar_longevity_title', text: 'pillar_longevity_text', href: '/ecosystem', accent: true },
+];
+---
+
+{/* ---- Hero: tagline + Open Wall mosaic ---- */}
+<section class="bg-ink py-section text-white lg:py-section-lg">
+  <div class="mx-auto max-w-[1240px] px-4">
+    <div class="grid items-center gap-12 lg:grid-cols-2">
+      <div>
+        <h1 class="mb-4 text-4xl font-bold lg:text-5xl">{t('pages.home.hero_title')}</h1>
+        <p class="mb-6 text-lg text-white/80">{t('pages.home.hero_lede')}</p>
+        <p class="mb-6 flex flex-wrap gap-3">
+          <a class="rounded-md bg-brand-blue px-6 py-3 text-base font-medium text-white no-underline transition-colors hover:bg-btn-blue-hover focus:bg-btn-blue-click" href={p('/get-started')}>
+            {t('pages.home.hero_cta_start')}
+          </a>
+          <a class="rounded-md border border-white/70 px-6 py-3 text-base font-medium text-white no-underline transition-colors hover:border-white hover:bg-white/10" href={p('/low-latency')}>
+            {t('pages.home.hero_cta_low_latency')}
+          </a>
+        </p>
+        {/*
+          The "$" is a shell prompt, not a stray character, and the block cursor
+          after it completes it. A native reader of the Chinese copy flagged it
+          as a typo that had slipped into the string -- it is in the markup
+          instead, and deliberately in every locale.
+        */}
+        <p class="mb-0 font-mono text-sm text-white/60">
+          $ {t('pages.home.hero_microline')} <span class="ml-0.5 inline-block h-4 w-2 translate-y-0.5 bg-accent"></span>
+        </p>
+      </div>
+
+      <div>
+        <div class="grid grid-cols-3 gap-2" data-wall-mosaic>
+          {[0, 1, 2, 3, 4].map(() => (
+            <span class="relative block aspect-video overflow-hidden rounded-md bg-ink-2">
+              <Image src={noSignal} alt={t('snapshots.index.no_signal')} loading="lazy" class="size-full object-cover opacity-50" />
+            </span>
+          ))}
+          <a class="flex aspect-video items-center justify-center rounded-md border border-white/20 bg-ink-2 p-2 text-center text-xs text-white no-underline hover:border-white/50" href={p('/open-wall')}>
+            {t('pages.home.wall_cta')}
+          </a>
+        </div>
+        <p class="mt-4 mb-0 text-sm text-white/60">
+          <span class="mr-2 inline-block size-2 rounded-full bg-accent"></span>
+          <a class="text-white no-underline hover:underline" href={p('/open-wall')}>{t('pages.home.wall_live')}</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{/* ---- Silicon strip ---- */}
+<section class="border-b border-hairline py-6">
+  <div class="mx-auto max-w-[1240px] px-4">
+    <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
+      <span class="tracking-[.08em] text-body-secondary uppercase">{t('pages.home.silicon_title')}:</span>
+      {SOC_VENDOR_NAMES.map((name) => <span class="font-mono tracking-[.08em] uppercase">{name}</span>)}
+    </div>
+  </div>
+</section>
+
+{/* ---- Liberation story ---- */}
+<section class="py-section">
+  <div class="mx-auto max-w-[1240px] px-4">
+    <h2 class="mb-12 text-center text-3xl">{t('pages.home.story_title')}</h2>
+    <div class="grid gap-8 md:grid-cols-3">
+      {[1, 2, 3].map((i) => (
+        <div>
+          <div class="mb-2 font-mono text-2xl text-brand-blue/40">0{i}</div>
+          <h3 class="mb-2 text-xl">{t(`pages.home.story_step${i}_title`)}</h3>
+          <p class="mb-0 text-body-secondary">{t(`pages.home.story_step${i}_text`)}</p>
+        </div>
+      ))}
+    </div>
+    <p class="mt-12 mb-0 text-center">
+      <a class="inline-block rounded-md bg-brand-blue px-6 py-3 font-medium text-white no-underline hover:bg-btn-blue-hover" href={p('/get-started')}>
+        {t('pages.home.story_cta')}
+      </a>
+    </p>
+  </div>
+</section>
+
+{/* ---- Platform pillars ---- */}
+<section class="bg-surface-alt py-section">
+  <div class="mx-auto max-w-[1240px] px-4">
+    <div class="mb-12 text-center">
+      <h2 class="mb-3 text-3xl">{t('pages.home.pillars_title')}</h2>
+      <p class="mx-auto max-w-[60ch] text-body-secondary">{t('pages.home.pillars_lede')}</p>
+    </div>
+    <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      {PILLARS.map((pillar) => (
+        <div class="relative flex flex-col rounded-lg border border-hairline bg-white p-6">
+          <span class:list={[
+            'mb-4 flex size-10 items-center justify-center rounded-md',
+            pillar.accent ? 'bg-accent/20 text-ink' : 'bg-brand-blue/10 text-brand-blue',
+          ]}>
+            <Icon name={pillar.icon} class="size-5" />
+          </span>
+          <h3 class="mb-2 text-xl">{t(`pages.home.${pillar.title}`)}</h3>
+          <p class="mb-4 text-body-secondary" set:html={t(`pages.home.${pillar.text}`)} />
+          <a class="mt-auto text-brand-blue after:absolute after:inset-0" href={p(pillar.href)} aria-label={t(`pages.home.${pillar.title}`)}>
+            <Icon name="arrow-right" class="size-5" />
+          </a>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+{/* ---- Stats band ---- */}
+<section class="bg-ink py-12 text-white">
+  <div class="mx-auto max-w-[1240px] px-4">
+    <div class="grid grid-cols-2 gap-8 text-center lg:grid-cols-4">
+      <div>
+        <div class="font-mono text-4xl font-bold">{SOC_COUNT}</div>
+        <div class="mt-1 text-sm text-white/60">{t('pages.home.stats_socs')}</div>
+      </div>
+      <div>
+        <div class="font-mono text-4xl font-bold">{SOC_VENDOR_NAMES.length}</div>
+        <div class="mt-1 text-sm text-white/60">{t('pages.home.stats_vendors')}</div>
+      </div>
+      <div>
+        <div class="font-mono text-4xl font-bold">140+</div>
+        <div class="mt-1 text-sm text-white/60">{t('pages.home.stats_repos')}</div>
+      </div>
+      <div>
+        <div class="font-mono text-4xl font-bold">2019</div>
+        <div class="mt-1 text-sm text-white/60">{t('pages.home.stats_since')}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{/* ---- Partners ---- */}
+<section class="py-section">
+  <div class="mx-auto max-w-[1240px] px-4">
+    <h2 class="mb-12 text-center text-xl text-body-secondary">{t('pages.home.partners_title')}</h2>
+    {rows.map(([label, logos]) => <LogoWall logos={logos} title={t(`site.partners.${label}`)} />)}
+  </div>
+</section>
+
+{/* ---- For Business teaser ---- */}
+<section class="bg-surface-alt py-section">
+  <div class="mx-auto max-w-[1240px] px-4 text-center">
+    <h2 class="mb-3 text-3xl">{t('pages.home.business_title')}</h2>
+    <p class="mx-auto mb-6 max-w-[60ch] text-body-secondary">{t('pages.home.business_text')}</p>
+    <a class="inline-block rounded-md border border-brand-blue px-6 py-3 font-medium text-brand-blue no-underline hover:bg-brand-blue hover:text-white" href={p('/business')}>
+      {t('pages.home.business_cta')}
+    </a>
+  </div>
+</section>
+
+{/* ---- Closing CTA ---- */}
+<section class="bg-ink py-section text-white">
+  <div class="mx-auto max-w-[1240px] px-4 text-center">
+    <h2 class="mb-6 text-3xl">{t('pages.home.cta_title')}</h2>
+    <p class="mb-0 flex flex-wrap justify-center gap-3">
+      <a class="rounded-md bg-brand-blue px-6 py-3 text-base font-medium text-white no-underline hover:bg-btn-blue-hover" href={p('/get-started')}>
+        {t('pages.home.cta_primary')}
+      </a>
+      <a class="rounded-md border border-white/70 px-6 py-3 text-base font-medium text-white no-underline hover:border-white hover:bg-white/10" href="https://t.me/openipc" data-event="tg-join">
+        {t('pages.home.cta_secondary')}
+      </a>
+    </p>
+    <p class="mx-auto mt-8 mb-0 max-w-[60ch] text-sm text-white/60" set:html={t('pages.home.cta_donate_html')} />
+  </div>
+</section>

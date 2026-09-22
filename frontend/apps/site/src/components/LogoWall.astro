@@ -1,0 +1,38 @@
+---
+/**
+ * A row of partner logos, optionally under a group heading (#160).
+ *
+ * app/views/shared/_logo_wall.html.erb. The images go through Astro's asset
+ * pipeline rather than being copied verbatim: that fingerprints them into
+ * /_astro/, which the vhost serves `immutable` for a year -- the one caching
+ * policy a logo that never changes its bytes actually wants.
+ */
+import { Image } from 'astro:assets';
+import type { Partner } from '../lib/partners';
+
+const LOGOS = import.meta.glob<ImageMetadata>('../assets/partners/*.png', { eager: true, import: 'default' });
+
+interface Props {
+  logos: Partner[];
+  title?: string;
+}
+const { logos, title } = Astro.props;
+
+const resolved = logos.map((logo) => {
+  const src = LOGOS[`../assets/partners/${logo.img}.png`];
+  if (!src) throw new Error(`No partner logo "${logo.img}.png" in src/assets/partners/.`);
+  return { ...logo, src };
+});
+---
+{title && <h3 class="mb-3 text-sm font-semibold tracking-[.04em] text-body-secondary uppercase">{title}</h3>}
+<div class:list={['grid grid-cols-3 gap-3 md:grid-cols-4 lg:grid-cols-6', title && 'mb-12']}>
+  {resolved.map((logo) => (
+    <a
+      class="flex min-h-16 items-center justify-center rounded-md border border-hairline bg-white p-3 grayscale opacity-70 transition hover:opacity-100 hover:grayscale-0 focus:opacity-100 focus:grayscale-0"
+      href={logo.url}
+      title={logo.name}
+    >
+      <Image src={logo.src} alt={`Image: ${logo.name} logo`} loading="lazy" class="max-h-10 w-auto" />
+    </a>
+  ))}
+</div>

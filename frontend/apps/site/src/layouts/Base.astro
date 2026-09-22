@@ -9,6 +9,9 @@
  * every other AND itself, or search engines discard the lot.
  */
 import { LOCALE_NAMES, alternates, pathFor, useTranslations, type Locale } from '../lib/i18n';
+import { menuFor } from '../lib/nav';
+import SiteNav from '../components/SiteNav';
+import SiteFooter from '../components/SiteFooter.astro';
 import '../styles/app.css';
 
 interface Props {
@@ -59,6 +62,17 @@ const metaDescription = description ?? t('site.default_meta_description');
   <link rel="icon" type="image/x-icon" href="/favicon.png" />
 
   <!--
+    The commit this page was built from. deploy/static/build.sh substitutes
+    both tokens across every .html in the tree and check-bundle.sh refuses a
+    page that still holds one, so a page without them names no commit and a
+    page with them unsubstituted never ships. It is in the shell rather than on
+    the smoke page alone (#160) because "which release is this?" is a question
+    asked of whichever page is misbehaving.
+  -->
+  <meta name="build-revision" content="@@REVISION@@" />
+  <meta name="build-time" content="@@BUILT@@" />
+
+  <!--
     First-party page counting (#181). nginx proxies /api/a/c.js and
     /api/a/count to GoatCounter on 127.0.0.1:8081; nothing leaves the host and
     there is no third-party host to allow-list.
@@ -74,19 +88,35 @@ const metaDescription = description ?? t('site.default_meta_description');
   <script is:inline src="/api/a/c.js" data-goatcounter="/api/a/count" defer></script>
 </head>
 
-<body id="page-top" class="bg-white text-black">
-  <a class="sr-only focus:not-sr-only" href="#main">Skip to content</a>
+<body id="page-top" class="bg-white text-body">
+  <a class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded focus:bg-white focus:p-2" href="#main">Skip to content</a>
 
-  <nav aria-label="Language" class="flex flex-row justify-end gap-x-3 p-2 text-sm">
-    {Object.entries(alt).map(([code, p]) => (
-      code === locale
-        ? <span aria-current="true" class="font-bold">{LOCALE_NAMES[code as Locale]}</span>
-        : <a class="text-brand-blue underline" href={p} hreflang={code}>{LOCALE_NAMES[code as Locale]}</a>
-    ))}
+  <!--
+    The language strip sits above the navigation rather than inside it. The
+    Bootstrap navbar puts it in a dropdown at the end of the menu, which needs
+    a popper and a click; three links in a strip need neither, and with the
+    marketing pages prerendered there is nothing to open. It is a <nav> with
+    its own label so a screen reader can skip it, and the current language is
+    a <span> rather than a link to the page you are already on.
+  -->
+  <nav aria-label="Language" class="bg-ink-2 text-xs">
+    <div class="mx-auto flex max-w-[1240px] flex-row justify-end gap-x-4 px-4 py-1.5">
+      {Object.entries(alt).map(([code, p]) => (
+        code === locale
+          ? <span aria-current="true" class="font-semibold text-white">{LOCALE_NAMES[code as Locale]}</span>
+          : <a class="text-white/70 no-underline hover:text-white hover:underline" href={p} hreflang={code}>{LOCALE_NAMES[code as Locale]}</a>
+      ))}
+    </div>
   </nav>
+
+  <div class="site-header">
+    <SiteNav client:load menuItems={menuFor(locale)} />
+  </div>
 
   <main id="main">
     <slot />
   </main>
+
+  <SiteFooter locale={locale} />
 </body>
 </html>
