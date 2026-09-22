@@ -16,7 +16,12 @@
   <form method="dialog" class="flex justify-end border-b border-hairline bg-surface-alt px-3 py-2">
     <button class="cursor-pointer rounded px-2 text-body-secondary hover:text-body" aria-label="Close">✕</button>
   </form>
-  <img id="zoom-image" class="block max-h-[80vh] w-auto max-w-full" alt="" />
+  {/*
+    Hidden until it has something to show. An <img> sitting in the document
+    with no `src` is a broken image as far as anything inspecting the page is
+    concerned -- and on some browsers as far as the reader is concerned too.
+  */}
+  <img id="zoom-image" class="block max-h-[80vh] w-auto max-w-full" alt="" hidden />
 </dialog>
 
 <script>
@@ -29,6 +34,7 @@
       if (!target) return;
       image.src = target.dataset.zoom ?? '';
       image.alt = target.alt;
+      image.hidden = false;
       dialog.showModal();
     });
 
@@ -39,6 +45,9 @@
 
     // Release the 2560px file when the viewer is shut, so a page with twelve
     // tiles does not end up holding every original a visitor has opened.
-    dialog.addEventListener('close', () => { image.removeAttribute('src'); });
+    dialog.addEventListener('close', () => {
+      image.hidden = true;
+      image.removeAttribute('src');
+    });
   }
 </script>

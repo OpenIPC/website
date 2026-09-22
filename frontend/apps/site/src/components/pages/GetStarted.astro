@@ -43,7 +43,16 @@ const IPCTOOL = 'curl -L -o /tmp/ipctool https://github.com/OpenIPC/ipctool/rele
         <h2 class="mb-2 text-xl"><span class="mr-2 font-mono text-brand-blue">1</span>{k('step1_title')}</h2>
         <p class="mb-0 text-body-secondary" set:html={k('step1_text_html')} />
       </div>
-      <div class="lg:order-last lg:col-span-3">
+      {/*
+        min-w-0, or the page scrolls sideways on a phone. A grid item's
+        min-width is `auto`, which means "at least as wide as my content" --
+        and this item's content is a 96-character curl command. The <pre>
+        inside has `overflow-x: auto` and never gets to use it, because the
+        track it sits in has already been widened to fit the line: 815px of
+        page in a 390px viewport, with the whole document scrolling rather
+        than the code block.
+      */}
+      <div class="min-w-0 lg:order-last lg:col-span-3">
         <Terminal id="ipctool-cmd" title="camera shell" code={IPCTOOL} />
       </div>
       <div>
