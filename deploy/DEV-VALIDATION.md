@@ -365,6 +365,25 @@ over HTTP rather than as a `readlink` on the host.
 throwaway nginx and a stub upstream, which is the cheapest place to find out
 that a vhost change broke the seam.
 
+### A bundle of a new shape
+
+`openipc-static` runs `check-bundle.sh` out of the checkout for the
+environment it is installing to (#265), so a change that makes the bundle a
+shape the current rules do not allow is tried on dev like anything else: push
+the branch to `dev`, reset the dev checkout, and the dev site is judged by the
+branch's rules while production stays on master's.
+
+#159 is the case that produced the arrangement. Its bundle is the first with
+locale subdirectories and an `_astro/` asset directory, and master's rule at
+the time — an `index.html` in every directory — refused all three. With one
+shared checkout the only way to try it on dev was to change production's
+rules, which is the wrong trade and is what #265 ended.
+
+What dev's rules cannot tell you is what **production** will say about the
+bundle once the branch lands, and that is the question a promotion turns on.
+Step 3 has the one-liner that asks master's copy of the checker directly; run
+it before promoting, not after.
+
 ---
 
 ## Migrations

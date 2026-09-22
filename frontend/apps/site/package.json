@@ -1,0 +1,29 @@
+{
+  "name": "@openipc/site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check --minimumFailingSeverity error",
+    "test": "astro build && vitest run"
+  },
+  "dependencies": {
+    "@openipc/ui": "*",
+    "preact": "10.27.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/preact": "^4.1.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^5.14.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.0.18"
+  }
+}

@@ -6,15 +6,18 @@
     "node": ">=24.0.0"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
+    "prepare": "npm run build -w @openipc/ui",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present"
   },
   "allowScripts": {
-    "esbuild": true
+    "esbuild": true,
+    "sharp": true
   }
 }

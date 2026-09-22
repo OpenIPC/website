@@ -225,6 +225,31 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    # The bundle's own hashed assets (#159). Astro fingerprints every file it
+    # writes under /_astro/, so the name changes whenever the bytes do and the
+    # old name is never reused -- which is the condition `immutable` asks for.
+    # Without this they inherited no Cache-Control at all.
+    #
+    # ^~ so it wins over the regex locations below, and so these never take a
+    # site_conc slot: an HTTP/2 page load opens several in parallel and they
+    # must not compete with page renders.
+    #
+    # try_files ends at @rails rather than =404, because a rollback can leave
+    # a page referencing an asset the older bundle does not carry, and the
+    # seam's rule is that only Rails answers 404.
+    location ^~ /_astro/ {
+        root /srv/www/static/dev/current;
+        try_files $uri @rails;
+
+        # All three inherited headers repeated: add_header at location level
+        # replaces the server block's entire set, and dropping X-Robots-Tag
+        # would quietly make staging indexable.
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header X-Served-By static always;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+
     # The seam between a static bundle and Rails (#157), the same shape as
     # production and against a bundle of its own -- a rollback rehearsal on dev
     # must not touch what openipc.org serves. See the long note in
@@ -241,6 +266,13 @@ server {
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
         add_header X-Served-By static always;
+
+        # Pages, unlike the hashed assets above, keep their address when their
+        # content changes -- a deploy rewrites /donate/index.html in place. So
+        # they may be cached but never used without asking: max-age=0 with
+        # must-revalidate means a conditional request and, almost always, a
+        # 304 off nginx's Last-Modified.
+        add_header Cache-Control "public, max-age=0, must-revalidate" always;
     }
 
     location @rails {

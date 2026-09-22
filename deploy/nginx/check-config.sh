@@ -102,13 +102,29 @@ exec_sh() { docker exec -i "$cid" sh -s; }
 # seam and not the application. Both answer 200 to everything, which is what
 # makes the expected statuses below deterministic.
 cat > /etc/nginx/conf.d/zz-stub-upstream.conf <<'STUB'
-server { listen 127.0.0.1:3000; location / { return 200 "RAILS-PROD\n"; } }
+server { listen 127.0.0.1:3000; location / {
+  # Rails sends its own Cache-Control on every page (max-age=300 and
+  # friends). The stub sends one too, so the assertion below -- that the
+  # bundle's policy cannot reach a Rails response -- has something to
+  # measure.
+  add_header Cache-Control "max-age=300, public" always;
+  return 200 "RAILS-PROD\n";
+} }
 server { listen 127.0.0.1:3001; location / { return 200 "RAILS-DEV\n"; } }
 STUB
 
 # One page, which is exactly what the real bundle holds today.
 install -d -m 0755 /srv/www/static/prod/site-test/_smoke
 printf 'SMOKE\n' > /srv/www/static/prod/site-test/_smoke/index.html
+# A locale directory holding a page but no index of its own, and an asset
+# directory holding no page at all. Both shapes arrive with #159: Astro writes
+# ru/_smoke/index.html and _astro/*, and neither ru/ nor _astro/ is a page.
+# check-bundle.sh used to refuse them, so what nginx does with them is worth
+# measuring rather than assuming.
+install -d -m 0755 /srv/www/static/prod/site-test/ru/_smoke
+printf 'SMOKE RU\n' > /srv/www/static/prod/site-test/ru/_smoke/index.html
+install -d -m 0755 /srv/www/static/prod/site-test/_astro
+printf 'body{}\n' > /srv/www/static/prod/site-test/_astro/app.css
 ln -s site-test /srv/www/static/prod/current
 
 # A token where dehydrated puts one, so the openipc.eu probes below can tell
@@ -168,6 +184,25 @@ expect() {
   fi
 }
 
+# Cache-Control on what the bundle serves (#159). `expect` above does not look
+# at it, and the two policies are opposites -- assets forever, pages never
+# without asking -- so getting one wrong is silent until somebody sees stale
+# wording after a deploy, or a re-download of four woff2 faces on every visit.
+expect_cache() {
+  path=$1; want=$2
+
+  curl -sS -o /dev/null -D /tmp/hc -k --max-time 5 \
+    --resolve "openipc.org:443:127.0.0.1" "https://openipc.org$path" >/dev/null 2>&1
+
+  got=$(grep -i '^cache-control:' /tmp/hc | tr -d '\r' | cut -d' ' -f2- | head -1)
+  if [ "$got" = "$want" ]; then
+    printf '  %-32s %s\n' "$path" "$got"
+  else
+    printf '  %-32s MISMATCH: %s (want %s)\n' "$path" "${got:-<none>}" "$want"
+    fail=1
+  fi
+}
+
 # openipc.eu is a 301 to the canonical host and nothing else. Its own function
 # because `expect` resolves openipc.org and reads X-Served-By, and the claim
 # here is the opposite one: that no application is reached at all.
@@ -209,6 +244,40 @@ printf '  %-32s %-5s %-9s %s\n' PATH CODE SERVED-BY HSTS
 # rather than being redirected to /_smoke/.
 expect /_smoke/                     200 static hsts
 expect /_smoke                      200 static hsts
+
+# A locale tree: the page is static, and the bare locale directory above it is
+# NOT a 403. `try_files $uri $uri/index.html` writes its first element without
+# a trailing slash, so it is a FILE test -- a directory misses it, misses
+# index.html too, and falls through to Rails. That is what makes it safe for
+# the bundle to contain ru/ before anything owns /ru/, which is #160's call.
+expect /ru/_smoke/                  200 static hsts
+expect /ru/                         200 rails  hsts
+expect /ru                          200 rails  hsts
+
+# The asset directory is the same shape and answers the same way: its files
+# are served, and its bare directory URL -- which nothing links to -- is
+# Rails' 404 rather than nginx's 403.
+expect /_astro/app.css              200 static hsts
+expect /_astro/                     200 rails  hsts
+
+echo "  --- Cache-Control: assets forever, pages never without asking ---"
+# Astro fingerprints everything under /_astro/, so the name changes whenever
+# the bytes do and the old name is never reused.
+expect_cache /_astro/app.css        "public, max-age=31536000, immutable"
+# A page keeps its address when its content changes, so it may be cached and
+# must always be revalidated.
+expect_cache /_smoke/               "public, max-age=0, must-revalidate"
+expect_cache /ru/_smoke/            "public, max-age=0, must-revalidate"
+
+# And the half that matters to every page that is NOT in the bundle: the seam
+# block's add_header must not reach a Rails response. add_header applies in
+# the location that produced the response, and try_files hands these to
+# @rails -- but the two locations are three lines apart in the vhost, and a
+# bundle policy silently overriding what Rails says about its own pages would
+# be invisible until somebody saw a stale page.
+expect_cache /donate                "max-age=300, public"
+expect_cache /ru/donate             "max-age=300, public"
+expect_cache /                      "max-age=300, public"
 
 # Everything else is still Rails, which is the whole claim of this change.
 expect /                            200 rails  hsts

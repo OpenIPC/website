@@ -1,0 +1,92 @@
+---
+/**
+ * The page shell.
+ *
+ * Deliberately the same head as app/views/layouts/application.html.erb, tag
+ * for tag: while the seam is open, some pages are served from here and some
+ * from Rails, and a visitor moving between them must not be able to tell.
+ * The hreflang set is the part that matters most -- every alternate names
+ * every other AND itself, or search engines discard the lot.
+ */
+import { LOCALE_NAMES, alternates, pathFor, useTranslations, type Locale } from '../lib/i18n';
+import '../styles/app.css';
+
+interface Props {
+  locale: Locale;
+  /** The page's own path, without a locale prefix: '/donate', '/'. */
+  path: string;
+  title: string;
+  description?: string;
+  /** Keep the page out of search results. Per page, because the marketing
+   *  set must NOT carry it -- search discovery is most of why #142 exists. */
+  noindex?: boolean;
+}
+
+const { locale, path, title, description, noindex = false } = Astro.props;
+const t = useTranslations(locale);
+
+const site = 'https://openipc.org';
+const alt = alternates(path);
+const here = pathFor(locale, path);
+const metaDescription = description ?? t('site.default_meta_description');
+---
+<!doctype html>
+<html dir="ltr" lang={locale}>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{title}</title>
+
+  <meta name="description" content={metaDescription} />
+  <meta name="theme-color" content="#0f1422" />
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+  <link rel="canonical" href={`${site}${here}`} />
+
+  {Object.entries(alt).map(([code, p]) => (
+    <link rel="alternate" hreflang={code} href={`${site}${p}`} />
+  ))}
+  <link rel="alternate" hreflang="x-default" href={`${site}${alt.en}`} />
+
+  <meta property="og:site_name" content="OpenIPC" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={metaDescription} />
+  <meta property="og:url" content={`${site}${here}`} />
+  <meta property="og:image" content={`${site}/og-default.png`} />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="icon" type="image/x-icon" href="/favicon.png" />
+
+  <!--
+    First-party page counting (#181). nginx proxies /api/a/c.js and
+    /api/a/count to GoatCounter on 127.0.0.1:8081; nothing leaves the host and
+    there is no third-party host to allow-list.
+
+    no_onload is set at parse time rather than inside a bundle, for the same
+    reason the Rails layout sets it here: count.js reading it before it is set
+    would count the document load event, and a visitor who read twenty pages
+    would register one.
+  -->
+  <script is:inline>
+    (() => { window.goatcounter = { no_onload: true, endpoint: '/api/a/count' } })()
+  </script>
+  <script is:inline src="/api/a/c.js" data-goatcounter="/api/a/count" defer></script>
+</head>
+
+<body id="page-top" class="bg-white text-black">
+  <a class="sr-only focus:not-sr-only" href="#main">Skip to content</a>
+
+  <nav aria-label="Language" class="flex flex-row justify-end gap-x-3 p-2 text-sm">
+    {Object.entries(alt).map(([code, p]) => (
+      code === locale
+        ? <span aria-current="true" class="font-bold">{LOCALE_NAMES[code as Locale]}</span>
+        : <a class="text-brand-blue underline" href={p} hreflang={code}>{LOCALE_NAMES[code as Locale]}</a>
+    ))}
+  </nav>
+
+  <main id="main">
+    <slot />
+  </main>
+</body>
+</html>

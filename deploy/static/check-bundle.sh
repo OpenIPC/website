@@ -52,17 +52,34 @@ while IFS= read -r -d '' f; do
   bad "$(realpath --relative-to="$SITE" "$f") is not a regular file"
 done < <(find "$SITE" ! -type f ! -type d ! -type l -print0)
 
-# --- 2. every directory below the root carries an index.html ----------------
-# Not cosmetic. `try_files $uri $uri/index.html @rails` skips a directory on
-# the first element and misses on the second, so such a directory falls through
-# to Rails -- which is correct but means the pages under it are unreachable by
-# their own directory URL. Requiring the index keeps "a directory exists" and
-# "that page is extracted" the same statement.
+# --- 2. no directory in the bundle is empty ---------------------------------
+# This used to demand an index.html in every directory. It cannot: a bundle
+# with more than one page has intermediate directories that are not pages --
+# `ru/` above `ru/donate/index.html`, and the build's own `_astro/` of
+# stylesheets and fonts -- and #159 brought both.
+#
+# The rule was guarding against a 403, and the guard is unnecessary because of
+# how the vhost writes the seam. `try_files $uri $uri/index.html @rails` tests
+# its first element as a FILE, since try_files decides file-test versus
+# directory-test from whether the literal ends in a slash. A directory misses
+# that test, misses index.html too, and falls through to Rails. Measured by
+# deploy/nginx/check-config.sh --seam on nginx 1.26-alpine, which asserts it on
+# every run rather than leaving it to this comment:
+#
+#   /ru/_smoke/      200 static     the page
+#   /ru/             200 rails      the directory above it, not a 403
+#   /_astro/app.css  200 static     an asset
+#   /_astro/         200 rails      its directory, not a 403
+#
+# What is still worth refusing is a directory with nothing under it at all.
+# It serves no file, answers nothing, and can only be the residue of a build
+# that went wrong -- which is the state a manifest of zero files would not
+# otherwise reveal.
 while IFS= read -r -d '' d; do
   rel="$(realpath --relative-to="$SITE" "$d")"
   [ "$rel" = "." ] && continue
-  [ -f "$d/index.html" ] \
-    || bad "/$rel has no index.html; that directory is not a page and should not be in the bundle"
+  [ -n "$(find "$d" -type f -print -quit)" ] \
+    || bad "/$rel is empty; a directory that serves nothing should not be in the bundle"
 done < <(find "$SITE" -type d -print0)
 
 # --- 3. the root has no index.html ------------------------------------------

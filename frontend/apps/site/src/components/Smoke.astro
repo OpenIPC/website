@@ -1,0 +1,66 @@
+---
+/**
+ * The one address that proves the seam is working.
+ *
+ * deploy/static/build.sh refuses a bundle without it, deploy/static.sh asks
+ * for it over HTTP after every install, and it names the commit it was built
+ * from so that a rollback is visible in a browser rather than as a readlink
+ * on the host.
+ *
+ * Kept deliberately small, and noindexed, as the hand-written page it
+ * replaces was. It is a diagnostic on a public host: it should say what it is
+ * and name its build, and nothing about how the site is put together. What is
+ * new is only that there are three of it, because the bundle has three locale
+ * trees now -- and a translated sentence and a rendered component are the
+ * cheapest proof that the catalogue and the component library survived the
+ * build.
+ *
+ * It goes away when #160 puts real pages in the bundle: /donate answering
+ * `X-Served-By: static` proves the same thing and is a page somebody wanted.
+ */
+import Base from '../layouts/Base.astro';
+import { MainButton } from '@openipc/ui';
+import Counter from './Counter.tsx';
+import { LOCALES, useTranslations, pathFor, type Locale } from '../lib/i18n';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+<Base
+  locale={locale}
+  path="/_smoke"
+  title="openipc.org static bundle"
+  description="Proof that the static bundle is being served."
+  noindex
+>
+  <div class="mx-auto flex max-w-xl flex-col gap-5 px-4 py-12">
+    <h1 class="text-2xl font-bold text-brand-blue">Static bundle is live</h1>
+
+    <p class="text-sm">
+      This page is a file on disk, served by nginx without waking Rails. It has no
+      other purpose: it is the one address that proves the seam between the static
+      bundle and the application is working, and it is deliberately the only page in
+      the bundle until the marketing pages move across.
+    </p>
+
+    <dl class="grid grid-cols-[6rem_1fr] gap-x-4 gap-y-1 font-mono text-sm">
+      <dt class="text-dark-grey">locale</dt><dd>{locale}</dd>
+      <dt class="text-dark-grey">built from</dt><dd class="break-all">@@REVISION@@</dd>
+      <dt class="text-dark-grey">built at</dt><dd>@@BUILT@@</dd>
+    </dl>
+
+    <p class="text-sm">{t('site.default_meta_description')}</p>
+
+    <div class="flex flex-row flex-wrap items-center gap-3">
+      <MainButton size="s" caption={t('button.find')} />
+      <Counter client:load />
+    </div>
+
+    <nav class="flex flex-row gap-4 text-sm" aria-label="This page in every language">
+      {LOCALES.map((l) => (
+        <a class="text-brand-blue underline" href={pathFor(l, '/_smoke')}>{pathFor(l, '/_smoke')}</a>
+      ))}
+    </nav>
+  </div>
+</Base>
