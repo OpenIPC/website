@@ -1,0 +1,5 @@
+/* The entry point Storybook and the gallery compile. Consumers import
+ * tokens.css into their own Tailwind build instead -- see tokens.css. */
+@import "tailwindcss";
+@import "./tokens.css";
+@source "../../src/**/*.{ts,tsx}";

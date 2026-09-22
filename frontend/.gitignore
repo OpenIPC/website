@@ -1,0 +1,9 @@
+# The root .gitignore already covers node_modules/ at any depth, and /dist/
+# only at the repository root -- these are the per-package ones.
+dist/
+storybook-static/
+*.tsbuildinfo
+*.tgz
+# The rendered gallery, not src/gallery/ which builds it. Anchored two
+# levels down on purpose: a bare `gallery/` also swallowed the source.
+packages/*/gallery/

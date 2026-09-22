@@ -1,0 +1,90 @@
+/*
+ * The design tokens and typefaces openipc.org is drawn with.
+ *
+ * Import this into your own Tailwind 4 entry point, and point @source at the
+ * package so Tailwind can see the class names the components use:
+ *
+ *     @import "tailwindcss";
+ *     @import "@openipc/ui/tokens.css";
+ *     @source "../node_modules/@openipc/ui/dist";
+ *
+ * The package ships no compiled utility sheet on purpose: the consumer runs
+ * Tailwind anyway, and two stylesheets that both define utilities is how a
+ * design system starts disagreeing with itself.
+ */
+
+@theme {
+  --color-brand-blue: #4c60d8;
+  --color-btn-blue-hover: #3949ab;
+  --color-btn-blue-click: #283593;
+  --color-light-blue: #b7bfef;
+  --color-action-blue: #052c65;
+  --color-text-blue: #0e6efd;
+  --color-input-bg-blue: #bbdff0;
+  --color-dark-grey: #555555;
+  --color-light-grey: #e9ecef;
+  --color-grey: #9e9e9e;
+  --color-grey-bg: #f8f9fa;
+  --color-white: #fff;
+  --color-black: #000;
+  --color-donban-bg: #cfe2ff;
+  --color-opencol-donban-bg-from: #3385ff;
+  --color-opencol-donban-bg-to: #52bcfa;
+  --color-wallet-bg: #f8f9fa;
+  --color-wallet-border: #d2d2d2;
+  --color-crimson: #ff4785;
+  --color-red: #d92839;
+  --color-input-bg-red: #d7939a;
+  --color-input-focus-bg-red: #d27e87;
+  --color-stages-bg: #cff4fc;
+  --color-stages-border: #9eeaf9;
+  --color-info-text: #055160;
+  --color-warning-bg: #f8d7da;
+  --color-warning-border: #f1aeb5;
+  --color-warning-text: #58151c;
+  --color-green: #138350;
+  --color-input-bg-green: #c3dbc9;
+  --color-input-focus-bg-green: #a9e0b8;
+  --color-partition0: #ff6961;
+  --color-partition1: #ffb480;
+  --color-partition2: #f8f38d;
+  --color-partition3: #42d6a4;
+  --color-partition4: #08cad1;
+  --color-partition5: #59adf6;
+  --color-partition6: #9d94ff;
+  --color-partition7: #c780e8;
+}
+
+@layer base {
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../assets/fonts/IBMPlexSans-Regular.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('../assets/fonts/IBMPlexSans-SemiBold.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../assets/fonts/IBMPlexSans-Bold.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: 'Share Tech Mono';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../assets/fonts/share-tech-mono-v15-latin-regular.woff2') format('woff2');
+  }
+}

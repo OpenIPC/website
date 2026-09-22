@@ -106,6 +106,62 @@ jobs:
       - name: Run tests
         run: bin/rails test
 
+      # --- the component library (#158) -----------------------------------
+      # Steps in this job rather than a job of their own, for the same reason
+      # the static bundle's steps live in `build`: branch protection on master
+      # requires exactly the contexts `build` and `test`, so a third job would
+      # report without gating, and a library whose type-check is red has to be
+      # able to block a merge.
+      #
+      # `if: always()` so a red Rails suite does not hide the frontend result,
+      # and the other way round. Either failing fails the job.
+      #
+      # Node 24, not the 20 above: the toolchain the library came with
+      # (vite 8, eslint 10, storybook 10) needs it, and the Rails asset build
+      # must keep matching what the Dockerfile installs.
+      - uses: actions/setup-node@v4
+        if: always()
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install the frontend workspace
+        if: always()
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint @openipc/ui
+        if: always()
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Type-check @openipc/ui
+        if: always()
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Test @openipc/ui
+        if: always()
+        working-directory: frontend
+        run: npm test
+
+      # Never built upstream: fancyweb-ng's vite.config.ts threw
+      # "Unknown config modifiers" for mode='production'. It is a gate here so
+      # it cannot quietly stop building again.
+      - name: Build Storybook
+        if: always()
+        working-directory: frontend/packages/ui
+        run: npm run storybook:build
+
+      # Packs the tarball npm would publish, installs it into an empty project
+      # and renders through it -- the difference between "the bundler is happy"
+      # and "a consumer can use this".
+      - name: Check @openipc/ui is consumable from outside the repo
+        if: always()
+        working-directory: frontend/packages/ui
+        run: sh scripts/verify-consumable.sh
+
   build:
     runs-on: ubuntu-latest
     permissions:
