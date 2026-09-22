@@ -213,10 +213,24 @@ probe() {
 # rather than "is rails" on purpose: /up and the two /api/a/ endpoints are
 # exact locations that never reach the catch-all and carry no header at all.
 #
-# `/` is deliberately absent. It becomes static at #160, and what keeps it
-# Rails today is the root-index rule in check-bundle.sh -- enforced where
-# lifting it is a reviewed decision rather than a build product.
-MUST_NOT_BE_STATIC=(/donate /ru/donate /supported-hardware/featured /open-wall /robots.txt /sitemap.xml /admin)
+# `/` is here now, and permanently. #160 settled it: Rails renders the bare
+# path per Accept-Language and declares `Vary: Accept-Language`, which a file
+# cannot do, so a root index.html would hand every visitor one language.
+# check-bundle.sh refuses one; this is the same rule asserted over HTTP, after
+# an install, against whatever is actually on disk.
+#
+# /donate and /ru/donate used to be here and have moved to the list below:
+# they are marketing pages, and #160 is where they stopped being Rails'.
+MUST_NOT_BE_STATIC=(/ /supported-hardware/featured /open-wall /robots.txt /sitemap.xml /admin)
+
+# And the other direction (#160), which is the half that catches a bundle that
+# built but did not ship what it was for. A tree that loses every page still
+# passes the list above -- so does an empty one -- and the smoke page alone
+# cannot tell "the seam works" from "the seam works and the site is on it".
+#
+# One unprefixed page, the same page in a locale tree, and one two directories
+# deep, because those are the three shapes the seam treats differently.
+MUST_BE_STATIC=(/donate /ru/donate /get-started /tools/qr-code-generator)
 
 do_verify() {
   local env_name=${1:-prod} vhost root served bad=0
@@ -237,8 +251,18 @@ do_verify() {
       bad=1
     fi
   done
+
+  for path in "${MUST_BE_STATIC[@]}"; do
+    served=$(probe "$vhost" "$path")
+    if [ "$served" != "static" ]; then
+      printf '\033[31mfail\033[0m %s answered "%s", expected "static"\n' "$path" "${served:-<no header>}" >&2
+      bad=1
+    fi
+  done
+
   [ "$bad" -eq 0 ] || return 1
   ok "${#MUST_NOT_BE_STATIC[@]} Rails path(s) still reach Rails"
+  ok "${#MUST_BE_STATIC[@]} marketing page(s) answered from the bundle"
 }
 
 bundle_revision() {
