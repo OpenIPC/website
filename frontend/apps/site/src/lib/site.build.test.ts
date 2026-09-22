@@ -162,10 +162,28 @@ describe('the design tokens carried over', () => {
     }
   });
 
-  test('the self-hosted faces are declared and shipped', () => {
-    expect(css()).toContain('@font-face');
-    const fonts = walk(dist).filter((f) => f.endsWith('.woff2'));
-    expect(fonts.length).toBeGreaterThan(0);
+  test('the faces are declared, and borrowed rather than bundled', () => {
+    // The bundle ships no woff2 of its own. app/assets/stylesheets/_fonts.scss
+    // declares the same faces and nginx serves the files out of public/fonts,
+    // which is why /fonts/ is in deploy/static/reserved-paths -- so a second
+    // copy in here would be bytes nothing renders with, on a page whose
+    // neighbour across the seam is already using the first copy.
+    //
+    // It was two copies: @openipc/ui carries three Latin-only faces for
+    // Storybook, the site imported them with the design tokens, and every
+    // visitor downloaded an IBM Plex Sans Regular that nothing rendered in.
+    const sheet = css();
+    expect(sheet).toContain('@font-face');
+    // Unquoted: the minifier drops the quotes the source writes.
+    expect(sheet, 'the faces are not pointing at the shared /fonts/')
+      .toContain('/fonts/ibm-plex-sans-latin-400-normal.woff2');
+    expect(sheet, 'no monospace face, so every font-mono falls back to the OS')
+      .toContain('/fonts/ibm-plex-mono-latin-400-normal.woff2');
+    expect(sheet, 'no Cyrillic face, so Russian falls back to the system stack')
+      .toContain('/fonts/ibm-plex-sans-cyrillic-400-normal.woff2');
+
+    expect(walk(dist).filter((f) => f.endsWith('.woff2')),
+      'the bundle carries its own copy of a face nginx already serves').toEqual([]);
   });
 });
 

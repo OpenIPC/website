@@ -1,0 +1,45 @@
+/*
+ * The typefaces, as files this package carries.
+ *
+ * Separate from tokens.css so a consumer can take the design tokens without
+ * the faces. openipc.org is one: both halves of that site self-host IBM Plex
+ * from /fonts/, subsetted for latin, latin-ext and cyrillic, and importing
+ * these as well meant every visitor downloaded a second, Latin-only copy of
+ * IBM Plex Sans Regular that nothing rendered in.
+ *
+ * Storybook and the gallery import it through index.css, because they have no
+ * /fonts/ to borrow.
+ */
+@layer base {
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../assets/fonts/IBMPlexSans-Regular.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('../assets/fonts/IBMPlexSans-SemiBold.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: 'IBM Plex Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../assets/fonts/IBMPlexSans-Bold.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: 'Share Tech Mono';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../assets/fonts/share-tech-mono-v15-latin-regular.woff2') format('woff2');
+  }
+}

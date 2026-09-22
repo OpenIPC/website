@@ -2,4 +2,5 @@
  * tokens.css into their own Tailwind build instead -- see tokens.css. */
 @import "tailwindcss";
 @import "./tokens.css";
+@import "./fonts.css";
 @source "../../src/**/*.{ts,tsx}";

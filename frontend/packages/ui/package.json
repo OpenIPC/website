@@ -24,7 +24,8 @@
       "import": "./dist/openipc-ui.js"
     },
     "./tokens.css": "./dist/tokens.css",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./fonts.css": "./dist/fonts.css"
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0",
