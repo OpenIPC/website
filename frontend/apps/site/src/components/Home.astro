@@ -49,7 +49,7 @@ const PILLARS = [
 
 {/* ---- Hero: tagline + Open Wall mosaic ---- */}
 <section class="bg-ink py-section text-white lg:py-section-lg">
-  <div class="mx-auto max-w-[1240px] px-4">
+  <div class="site-container">
     <div class="grid items-center gap-12 lg:grid-cols-2">
       <div>
         <h1 class="mb-4 text-4xl font-bold lg:text-5xl">{t('pages.home.hero_title')}</h1>
@@ -93,7 +93,7 @@ const PILLARS = [
 
 {/* ---- Silicon strip ---- */}
 <section class="border-b border-hairline py-6">
-  <div class="mx-auto max-w-[1240px] px-4">
+  <div class="site-container">
     <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
       <span class="tracking-[.08em] text-body-secondary uppercase">{t('pages.home.silicon_title')}:</span>
       {SOC_VENDOR_NAMES.map((name) => <span class="font-mono tracking-[.08em] uppercase">{name}</span>)}
@@ -103,7 +103,7 @@ const PILLARS = [
 
 {/* ---- Liberation story ---- */}
 <section class="py-section">
-  <div class="mx-auto max-w-[1240px] px-4">
+  <div class="site-container">
     <h2 class="mb-12 text-center text-3xl">{t('pages.home.story_title')}</h2>
     <div class="grid gap-8 md:grid-cols-3">
       {[1, 2, 3].map((i) => (
@@ -124,7 +124,7 @@ const PILLARS = [
 
 {/* ---- Platform pillars ---- */}
 <section class="bg-surface-alt py-section">
-  <div class="mx-auto max-w-[1240px] px-4">
+  <div class="site-container">
     <div class="mb-12 text-center">
       <h2 class="mb-3 text-3xl">{t('pages.home.pillars_title')}</h2>
       <p class="mx-auto max-w-[60ch] text-body-secondary">{t('pages.home.pillars_lede')}</p>
@@ -151,7 +151,7 @@ const PILLARS = [
 
 {/* ---- Stats band ---- */}
 <section class="bg-ink py-12 text-white">
-  <div class="mx-auto max-w-[1240px] px-4">
+  <div class="site-container">
     <div class="grid grid-cols-2 gap-8 text-center lg:grid-cols-4">
       <div>
         <div class="font-mono text-4xl font-bold">{SOC_COUNT}</div>
@@ -175,7 +175,7 @@ const PILLARS = [
 
 {/* ---- Partners ---- */}
 <section class="py-section">
-  <div class="mx-auto max-w-[1240px] px-4">
+  <div class="site-container">
     <h2 class="mb-12 text-center text-xl text-body-secondary">{t('pages.home.partners_title')}</h2>
     {rows.map(([label, logos]) => <LogoWall logos={logos} title={t(`site.partners.${label}`)} />)}
   </div>
@@ -183,7 +183,7 @@ const PILLARS = [
 
 {/* ---- For Business teaser ---- */}
 <section class="bg-surface-alt py-section">
-  <div class="mx-auto max-w-[1240px] px-4 text-center">
+  <div class="site-container text-center">
     <h2 class="mb-3 text-3xl">{t('pages.home.business_title')}</h2>
     <p class="mx-auto mb-6 max-w-[60ch] text-body-secondary">{t('pages.home.business_text')}</p>
     <a class="inline-block rounded-md border border-brand-blue px-6 py-3 font-medium text-brand-blue no-underline hover:bg-brand-blue hover:text-white" href={p('/business')}>
@@ -194,7 +194,7 @@ const PILLARS = [
 
 {/* ---- Closing CTA ---- */}
 <section class="bg-ink py-section text-white">
-  <div class="mx-auto max-w-[1240px] px-4 text-center">
+  <div class="site-container text-center">
     <h2 class="mb-6 text-3xl">{t('pages.home.cta_title')}</h2>
     <p class="mb-0 flex flex-wrap justify-center gap-3">
       <a class="rounded-md bg-brand-blue px-6 py-3 text-base font-medium text-white no-underline hover:bg-btn-blue-hover" href={p('/get-started')}>

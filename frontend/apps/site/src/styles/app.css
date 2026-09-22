@@ -64,6 +64,30 @@
 }
 
 /*
+ * Bootstrap's `.container`, to the pixel (#160).
+ *
+ * Every page on the Rails half sits in one, and its width steps at each
+ * breakpoint: 540, 720, 960, 1140, 1320. A single max-width was close enough
+ * to look right on its own and wrong beside the real thing -- at a 1440
+ * viewport the site is 1320px wide and these pages were 1240, so the text
+ * column moved by 40px on either side every time a visitor crossed the seam.
+ *
+ * The padding is Bootstrap's too: --bs-gutter-x is 1.5rem and the container
+ * takes half of it on each side.
+ */
+.site-container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 0.75rem;
+}
+
+@media (min-width: 576px) { .site-container { max-width: 540px; } }
+@media (min-width: 768px) { .site-container { max-width: 720px; } }
+@media (min-width: 992px) { .site-container { max-width: 960px; } }
+@media (min-width: 1200px) { .site-container { max-width: 1140px; } }
+@media (min-width: 1400px) { .site-container { max-width: 1320px; } }
+
+/*
  * The navigation band is ink, not the package's indigo (#160).
  *
  * @openipc/ui's Header and HeaderMenu are drawn on --color-brand-blue, which

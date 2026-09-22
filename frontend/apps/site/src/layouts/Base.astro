@@ -106,7 +106,7 @@ const metaDescription = description ?? t('site.default_meta_description');
   -->
   <div class="site-header">
     <nav aria-label="Language" class="bg-ink-2 text-xs">
-      <div class="mx-auto flex max-w-[1240px] flex-row justify-end gap-x-4 px-4 py-1.5">
+      <div class="site-container flex flex-row justify-end gap-x-4 py-1.5">
         {Object.entries(alt).map(([code, p]) => (
           code === locale
             ? <span aria-current="true" class="font-semibold text-white">{LOCALE_NAMES[code as Locale]}</span>
