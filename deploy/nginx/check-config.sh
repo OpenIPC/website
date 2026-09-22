@@ -102,7 +102,14 @@ exec_sh() { docker exec -i "$cid" sh -s; }
 # seam and not the application. Both answer 200 to everything, which is what
 # makes the expected statuses below deterministic.
 cat > /etc/nginx/conf.d/zz-stub-upstream.conf <<'STUB'
-server { listen 127.0.0.1:3000; location / { return 200 "RAILS-PROD\n"; } }
+server { listen 127.0.0.1:3000; location / {
+  # Rails sends its own Cache-Control on every page (max-age=300 and
+  # friends). The stub sends one too, so the assertion below -- that the
+  # bundle's policy cannot reach a Rails response -- has something to
+  # measure.
+  add_header Cache-Control "max-age=300, public" always;
+  return 200 "RAILS-PROD\n";
+} }
 server { listen 127.0.0.1:3001; location / { return 200 "RAILS-DEV\n"; } }
 STUB
 
@@ -261,6 +268,16 @@ expect_cache /_astro/app.css        "public, max-age=31536000, immutable"
 # must always be revalidated.
 expect_cache /_smoke/               "public, max-age=0, must-revalidate"
 expect_cache /ru/_smoke/            "public, max-age=0, must-revalidate"
+
+# And the half that matters to every page that is NOT in the bundle: the seam
+# block's add_header must not reach a Rails response. add_header applies in
+# the location that produced the response, and try_files hands these to
+# @rails -- but the two locations are three lines apart in the vhost, and a
+# bundle policy silently overriding what Rails says about its own pages would
+# be invisible until somebody saw a stale page.
+expect_cache /donate                "max-age=300, public"
+expect_cache /ru/donate             "max-age=300, public"
+expect_cache /                      "max-age=300, public"
 
 # Everything else is still Rails, which is the whole claim of this change.
 expect /                            200 rails  hsts
