@@ -100,7 +100,7 @@ export const ENTRIES: Entry[] = [
     ) },
   { group: 'Primitives', name: 'Radio',
     node: e('Radio', { name: 'g-radio', captions: ['NOR', 'NAND'], checked: 'NOR', changeHandler: () => {} }) },
-  { group: 'Primitives', name: 'CustomSelect', live: true, changed: 'setter and ref renamed; options keyed by value rather than position',
+  { group: 'Primitives', name: 'CustomSelect', live: true, changed: 'setter and ref renamed; options keyed by value. Both its inputs carried the same name, so a form sent the field twice; neither was ever disabled; the box showed the raw value instead of the option\'s display text; and it opened on click alone with unfocusable options, so a keyboard could not reach it',
     node: e('CustomSelect', {
       state: 'default', value: 'hi_sfc', elemName: 'g-sel', label: 'MTD device name', onChange: () => {},
       options: ['hi_sfc', 'hinand', 'jz_sfc', 'nor-flash'].map(v => ({ value: v, option: v, display: v })),
@@ -133,9 +133,9 @@ export const ENTRIES: Entry[] = [
   { group: 'Page furniture', name: 'Footer', onBrand: true, node: e('Footer') },
 
   // --- hardware catalogue -------------------------------------------------
-  { group: 'Hardware catalogue', name: 'AbcSelector', live: true,
+  { group: 'Hardware catalogue', name: 'AbcSelector', changed: 'the tabs were list items with an onClick: unfocusable, unannounced, unusable without a pointer — which made the catalogue unfilterable from a keyboard. The handler also read the label back out of the DOM instead of being told which tab was clicked', live: true,
     node: e('AbcSelector', { letters: ['A', 'F', 'G', 'H', 'I', 'M', 'N', 'R', 'S', 'T', 'X'], curSelected: 'H', clickHandler: () => {} }) },
-  { group: 'Hardware catalogue', name: 'VendorsList', live: true,
+  { group: 'Hardware catalogue', name: 'VendorsList', changed: 'same as AbcSelector: keyboard-operable tabs, told which vendor they are', live: true,
     node: e('VendorsList', { list: ['Goke', 'HiSilicon', 'Ingenic', 'SigmaStar', 'Xiongmai'], curSelected: 'HiSilicon', clickHandler: () => {} }) },
   { group: 'Hardware catalogue', name: 'FirmwareDevStages', node: e('FirmwareDevStages') },
   { group: 'Hardware catalogue', name: 'SoCList', changed: 'rows keyed by vendor and model', note: 'ten of the 126 fixture rows',
@@ -158,7 +158,7 @@ export const ENTRIES: Entry[] = [
     }) },
 
   // --- people and money ---------------------------------------------------
-  { group: 'People and money', name: 'Team', changed: 'the social icon name was typed as Github | Telegram; widened to the six marks the icon set carries', note: 'six of the thirty-six on openipc.org/our-team',
+  { group: 'People and money', name: 'Team', changed: 'the social icon name was typed as Github | Telegram, widened to the six marks the icon set carries. A member with an empty social list rendered a stray 0, because `socials.length` is a number', note: 'six of the thirty-six on openipc.org/our-team',
     node: e('Team', { members: TEAM_OFFLINE }) },
   { group: 'People and money', name: 'Supporters', changed: 'read its own constants and eight bundled logos; takes them as props, and the package ships no partner artwork', node: e('Supporters', { supporters: SUPPORTERS_OFFLINE }) },
   { group: 'People and money', name: 'DonateBanner',
@@ -178,11 +178,11 @@ export const ENTRIES: Entry[] = [
   // --- tools --------------------------------------------------------------
   { group: 'Tools', name: 'FirmwarePartitionCalculator', live: true, changed: 'lifted out of sites/main/pages/tools/; three click handlers renamed off the use prefix that made eslint read them as hooks', note: '/tools/firmware-partitions-calculation — 238 lines of arithmetic whose output is pasted into a bootloader',
     node: e('FirmwarePartitionCalculator') },
-  { group: 'Tools', name: 'QrCodeWidget', live: true, changed: 'the svg ref was untyped and dereferenced unguarded', note: 'drawn on the client; empty until it runs',
+  { group: 'Tools', name: 'QrCodeWidget', changed: 'encoded in an effect and drew by mutating the SVG through a ref, so a server render emitted an empty square — this one is drawn here, with no JavaScript at all. Text past a QR code\'s capacity threw RangeError out of the effect; it now says so',
     node: h('div', { className: 'max-w-48' }, e('QrCodeWidget', { textToCode: 'https://openipc.org' })) },
   { group: 'Tools', name: 'HighResTimer', live: true, node: e('HighResTimer') },
   { group: 'Tools', name: 'WannabeKey', node: e('WannabeKey') },
-  { group: 'Tools', name: 'ModalImage', live: true,
+  { group: 'Tools', name: 'ModalImage', live: true, changed: 'restored invented body styles rather than the ones it replaced; Escape kept calling whichever close was passed on mount; and two open at once fought over the scroll lock, which is now shared and counted',
     note: 'the lightbox behind the WebUI gallery. It is position: fixed, so the frame below gives it a containing block rather than letting it cover this page',
     node: h('div', {
       className: 'relative h-72 overflow-hidden rounded border border-wallet-border',

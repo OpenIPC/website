@@ -8,9 +8,14 @@ export default function CustomSelect ({state, value, onChange, options, open, si
   const [display, setDisplay] = useState(value);
   const valueInputRef = useRef<HTMLInputElement>(null);
 
+  /** What the closed box shows for a value: the option's `display`, not the
+   *  value itself, which is why 8 was appearing where 'NOR 8' was meant. */
+  const displayFor = (v: string) =>
+    options.find((o) => o.value === v)?.display ?? v;
+
   function handleOptionClick (value: SelectProps['options'][number]['value'], disabled: boolean) {
     if (disabled) return;
-    setDisplay(value);
+    setDisplay(displayFor(value));
     if (isOpen) setIsOpen(false);
     if (valueInputRef.current) {
       valueInputRef.current.value = value;
@@ -40,13 +45,14 @@ export default function CustomSelect ({state, value, onChange, options, open, si
   });
 
   // Mirroring a prop into state, so the box can show a pending choice before
-  // the parent echoes it back through `value`.
+  // the parent echoes it back through `value`. Keyed on the value and the
+  // option list, which is everything displayFor reads.
   useEffect(
     () => {
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- see above
-      setDisplay(value);
+      setDisplay(options.find((o) => o.value === value)?.display ?? value);
     },
-    [value],
+    [value, options],
   );
 
   // Same: `open` is a controlled prop that may also be set from inside.
@@ -78,37 +84,69 @@ export default function CustomSelect ({state, value, onChange, options, open, si
   function getSelectBody () {
     return (
       <div className="relative w-full">
-        <input className="hidden" ref={valueInputRef} onInput={handleInput} name={elemName} value={value} />
+        {/* The field. Only this one is named, so a form submission carries
+            one entry -- both inputs used to share elemName and send two. */}
+        <input
+          type="hidden"
+          ref={valueInputRef}
+          onInput={handleInput}
+          name={elemName}
+          value={value}
+          disabled={state === 'disabled'}
+        />
+        {/* The box. Named after nothing, so it submits nothing, and operable
+            from the keyboard: it used to open on click alone, with the
+            options as unfocusable list items, so there was no way in. */}
         <input
           className={selectStyleFab(state)}
-          {...(state !== 'disabled' && {onClick: () => !isOpen && setIsOpen(true)})}
+          {...(state !== 'disabled' && {
+            onClick: () => !isOpen && setIsOpen(true),
+            onKeyDown: (e: KeyboardEvent) => {
+              if (e.key === 'Escape') { setIsOpen(false); return; }
+              if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                setIsOpen(true);
+              }
+            },
+          })}
           readOnly={true}
+          disabled={state === 'disabled'}
           value={display}
-          name={elemName}
           id={elemName}
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-controls={`${elemName}-options`}
         />
         <div className="absolute inset-y-0 right-2 flex flex-col justify-center" {...(state !== 'disabled' && {onClick: () => !isOpen && setIsOpen(true)})}>
           <ArrowDown />
         </div>
         { isOpen &&
-          <ul className="
+          <ul id={`${elemName}-options`} role="listbox" className="
             absolute z-50 flex w-full cursor-default flex-col gap-y-px
             rounded-sm border border-grey bg-white px-1 py-2 shadow-md
           ">
             {
-              options.map(({value, option, disabled}) => <li
+              options.map(({value: optValue, option, disabled}) => <li
                 className={`
                   min-h-[28px] rounded-sm px-1 py-[2px]
                   ${!disabled && `hover:bg-light-blue`}
                   ${disabled && 'cursor-not-allowed text-grey'}
                 `}
+                role="option"
+                aria-selected={optValue === value}
+                aria-disabled={disabled ?? false}
+                tabIndex={disabled ? -1 : 0}
                 onClick={(e) => {
-                  e.stopPropagation(); handleOptionClick(
-                    value,
-                    disabled ?? false,
-                  );
+                  e.stopPropagation();
+                  handleOptionClick(optValue, disabled ?? false);
                 }}
-                key={value}
+                onKeyDown={(e: KeyboardEvent) => {
+                  if (e.key !== 'Enter' && e.key !== ' ') return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleOptionClick(optValue, disabled ?? false);
+                }}
+                key={optValue}
               >
                 {option}
               </li>)

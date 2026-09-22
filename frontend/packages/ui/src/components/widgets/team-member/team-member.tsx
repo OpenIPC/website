@@ -13,7 +13,7 @@ export default function TeamMember(props: TeamMemberProps) {
       <div className="relative min-h-[160px] p-3">
         <h5 className="pb-2 text-xl font-normal">{name}</h5>
         <p className="text-sm">{bio}</p>
-        {socials && socials.length &&
+        {socials && socials.length > 0 &&
           <ul className="
             absolute -top-3.5 right-2 flex max-w-fit flex-row gap-x-2
           ">

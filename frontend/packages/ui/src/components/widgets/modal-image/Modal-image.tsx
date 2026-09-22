@@ -1,10 +1,27 @@
-import {useEffect} from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import icons from '../../../assets/icons/ui';
+
+/**
+ * The body scroll lock is shared, because the page has one body.
+ *
+ * Each instance used to snapshot and restore document.body.style on its own,
+ * so with two modals open, closing the first restored the page's scrolling
+ * while the second was still up. A depth count means the first one in takes
+ * the snapshot and the last one out puts it back.
+ */
+let lockDepth = 0;
+let lockedStyles: { width: string, paddingRight: string, top: string, position: string } | null = null;
+let lockedScrollY = 0;
 
 export default function ModalImage({
   src, alt, close
 }: { src: string, alt: string, close: () => void }) {
   const { Cross } = icons;
+
+  // Escape used to invoke whichever close was passed on mount, for as long as
+  // the modal lived, because the listener is bound once.
+  const closeRef = useRef(close);
+  useEffect(() => { closeRef.current = close; });
   
   function handleBackdropClick(e: Event) {
     if (
@@ -15,38 +32,47 @@ export default function ModalImage({
   }
 
   function handleEscKeyPress(e: KeyboardEvent) {
-    if (e.code === 'Escape') close();
+    if (e.code === 'Escape') closeRef.current();
   }
 
   // Mount-only: it locks body scroll and binds Escape for the modal's life.
   useEffect(() => {
     document.addEventListener("keyup", handleEscKeyPress);
+
     const { style } = document.body;
-    // Put back exactly what was there. Cleanup used to assign invented values
-    // -- position: static, padding-right: 0 -- which is not a restore: a page
-    // that styled its own body, or a second scroll lock, kept them.
-    const previous = {
-      width: style.width,
-      paddingRight: style.paddingRight,
-      top: style.top,
-      position: style.position,
-    };
-    const scrollY = window.scrollY;
-    const innerWidth = window.innerWidth;
-    const { right: bodyRight } = document.body.getBoundingClientRect();
-    style.width = '100%';
-    style.paddingRight = `${innerWidth - bodyRight}px`;
-    style.top = `-${scrollY}px`;
-    style.position = 'fixed';
+    if (lockDepth === 0) {
+      // Put back exactly what was there. Cleanup used to assign invented
+      // values -- position: static, padding-right: 0 -- which is not a
+      // restore: a page that styled its own body kept them.
+      lockedStyles = {
+        width: style.width,
+        paddingRight: style.paddingRight,
+        top: style.top,
+        position: style.position,
+      };
+      lockedScrollY = window.scrollY;
+      const innerWidth = window.innerWidth;
+      const { right: bodyRight } = document.body.getBoundingClientRect();
+      style.width = '100%';
+      style.paddingRight = `${innerWidth - bodyRight}px`;
+      style.top = `-${lockedScrollY}px`;
+      style.position = 'fixed';
+    }
+    lockDepth++;
+
     return () => {
       document.removeEventListener("keyup", handleEscKeyPress)
-      style.width = previous.width;
-      style.paddingRight = previous.paddingRight;
-      style.position = previous.position;
-      style.top = previous.top;
-      window.scroll(0, scrollY);
+      lockDepth--;
+      if (lockDepth === 0 && lockedStyles) {
+        style.width = lockedStyles.width;
+        style.paddingRight = lockedStyles.paddingRight;
+        style.position = lockedStyles.position;
+        style.top = lockedStyles.top;
+        lockedStyles = null;
+        window.scroll(0, lockedScrollY);
+      }
     }
-    // eslint-disable-next-line @eslint-react/exhaustive-deps -- see above
+     
   }, [])
 
   return (

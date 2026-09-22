@@ -466,23 +466,25 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
   /**
    * The mtdparts line somebody pastes into a bootloader.
    *
-   * Two things this used to get wrong. It dropped the initial offset, so a
-   * layout starting at 0x40000 exported as one starting at zero and would
-   * have been written over the reserved region. And it emitted a partition
-   * whose name was blank as `256k()`, which is not a partition definition.
+   * Every partition carries its own `@<start>`, which mtdparts syntax allows
+   * and which makes the line independent of what precedes it. That matters
+   * because a sized partition with no name cannot be written -- `256k()` is
+   * not a definition -- and it is therefore skipped, leaving a gap. With
+   * offsets implied by position, skipping one shifted every later partition
+   * earlier than the addresses on screen said, and the paste would have
+   * landed in the wrong place. With each start stated, a gap is just a gap.
    *
-   * The offset rides on the first partition as `@<start>`, which is where
-   * mtdparts syntax puts it; the rest follow contiguously and need none.
+   * It also used to drop the initial offset entirely, so a layout starting
+   * at 0x40000 exported as one starting at zero.
    */
   function getPartString(formState: FormSchema) {
     const parts: string[] = [];
     for (let i = 0; i < 8; i++) {
       const size = formState[`part${i}-size` as ElemNames];
       const name = formState[`part${i}-name` as ElemNames].value;
-      if (size.state !== 'valid' || size.value === '' || name === '') continue;
       const start = formState[`part${i}-start` as ElemNames].value;
-      const at = parts.length === 0 && start && parseOffset(start) !== 0 ? `@${start}` : '';
-      parts.push(`${size.value}k${at}(${name})`);
+      if (size.state !== 'valid' || size.value === '' || name === '' || !start) continue;
+      parts.push(`${size.value}k@${start}(${name})`);
     }
     return parts.length === 0
       ? ''

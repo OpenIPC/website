@@ -7,17 +7,30 @@ export default function AbcSelector(props: AbcSelectorProps) {
     return cur === arr.length - 1;
   };
 
-  const handleClick = (e: MouseEvent) => {
-    const letterContainer = e.currentTarget;
-    if (letterContainer instanceof HTMLLIElement) {
-      const letter = letterContainer!.getElementsByTagName('span')[0].innerText;
-      clickHandler(letter);
-    }
-  }
+  /**
+   * Each tab is operable from the keyboard and reports which one is current.
+   *
+   * These were list items with an onClick and nothing else: not focusable,
+   * not announced, and unreachable without a pointer -- which made the whole
+   * hardware catalogue unfilterable for a keyboard user. The handler also
+   * used to read the label back out of the DOM with innerText rather than
+   * being told what was clicked.
+   */
+  const tabProps = (label: string) => ({
+    role: 'tab' as const,
+    tabIndex: 0,
+    'aria-selected': curSelected?.toLowerCase() === label.toLowerCase(),
+    onClick: () => clickHandler(label),
+    onKeyDown: (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      clickHandler(label);
+    },
+  });
 
   return (
     <div className="max-w-full overflow-x-auto">
-      <ul className="
+      <ul role="tablist" aria-label="Filter by first letter" className="
         box-border flex flex-row flex-nowrap overflow-x-auto pb-2 text-sm
         text-text-blue
       ">
@@ -30,7 +43,7 @@ export default function AbcSelector(props: AbcSelectorProps) {
           hover:cursor-pointer hover:border-x-grey hover:border-t-grey
           hover:border-b-white hover:text-btn-blue-hover
           *:hover:border-0
-        `} onClick={handleClick}>
+        `} {...tabProps('Recommended')}>
           <div className="
             absolute right-[-2px] -bottom-px h-[2px] w-[3px] border
             border-transparent border-b-grey
@@ -47,7 +60,7 @@ export default function AbcSelector(props: AbcSelectorProps) {
           hover:cursor-pointer hover:border-x-grey hover:border-t-grey
           hover:border-b-white hover:text-btn-blue-hover
           *:hover:border-0
-        `} onClick={handleClick}>
+        `} {...tabProps('Full list')}>
           <div className="
             absolute right-[-2px] -bottom-px h-[2px] w-[3px] border
             border-transparent border-b-grey
@@ -65,7 +78,7 @@ export default function AbcSelector(props: AbcSelectorProps) {
             hover:cursor-pointer hover:border-x-grey hover:border-t-grey
             hover:border-b-white hover:text-btn-blue-hover
             *:hover:border-0
-          `} onClick={handleClick}>
+          `} {...tabProps(letter)}>
             {!isLastElem(i, letters) && <div className="
               absolute right-[-2px] -bottom-px h-[2px] w-[3px] border
               border-transparent border-b-grey

@@ -36,7 +36,7 @@ function addresses() {
 function mtdparts() {
   return [...document.querySelectorAll('p')]
     .map(p => p.textContent ?? '')
-    .find(t => t.includes('k(')) ?? '';
+    .find(t => /\dk@0x[0-9a-f]+\(/.test(t)) ?? '';
 }
 
 function freeSpace() {
@@ -81,8 +81,16 @@ describe('the Lite preset: 8 MB as 256 + 64 + 2048 + 5120 + 704 KB', () => {
     setMtdDeviceName('hi_sfc');
     click('Recalculate');
 
+    // Every partition states its own start. See getPartString for why: a
+    // partition that cannot be written leaves a gap, and offsets implied by
+    // position would silently close it.
     expect(mtdparts()).toBe(
-      'hi_sfc:256k(boot),64k(env),2048k(kernel),5120k(rootfs),704k(rootfs_data)',
+      'hi_sfc:'
+      + '256k@0x0(boot),'
+      + '64k@0x40000(env),'
+      + '2048k@0x50000(kernel),'
+      + '5120k@0x250000(rootfs),'
+      + '704k@0x750000(rootfs_data)',
     );
   });
 });
@@ -175,6 +183,7 @@ describe('findings from the review of #260', () => {
     // Without the @, pasting this writes the first partition over whatever
     // the reserved region below 0x40000 holds.
     expect(mtdparts()).toContain('256k@0x40000(boot)');
+    expect(mtdparts()).toContain('64k@0x80000(env)');
     expect(addresses()[0]).toBe('0x40000');
   });
 
@@ -219,6 +228,30 @@ describe('findings from the review of #260', () => {
     expect(addresses()).toEqual([]);
   });
 
+  test('a gap left by an unnamed partition does not move the ones after it', async () => {
+    vi.useFakeTimers();
+    try {
+      render(<FirmwarePartitionCalculator />);
+      click('Lite');
+      // Blank the name of the middle partition. Its 2048 KB still occupy the
+      // layout -- the addresses on screen say so -- but it cannot be written
+      // into the line. Skipping it used to pull rootfs back by 2048 KB,
+      // because each partition's offset was implied by the one before it.
+      fireEvent.input(field('part2-name'), { target: { value: '' } });
+      await vi.advanceTimersByTimeAsync(600);
+      setMtdDeviceName('hi_sfc');
+      click('Recalculate');
+
+      expect(mtdparts()).not.toContain('kernel');
+      expect(mtdparts()).toContain('64k@0x40000(env)');
+      // rootfs stays where the address columns put it, gap and all.
+      expect(mtdparts()).toContain('5120k@0x250000(rootfs)');
+      expect(addresses()).toContain('0x250000');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test('a partition with a size but no name is left out of the line', async () => {
     vi.useFakeTimers();
     try {
@@ -229,9 +262,9 @@ describe('findings from the review of #260', () => {
       setMtdDeviceName('hi_sfc');
       click('Recalculate');
 
-      // `704k()` is not a partition definition.
+      // `704k()` is not a partition definition, so it is left out.
       expect(mtdparts()).not.toContain('()');
-      expect(mtdparts()).toContain('5120k(rootfs)');
+      expect(mtdparts()).toContain('5120k@0x250000(rootfs)');
     } finally {
       vi.useRealTimers();
     }
