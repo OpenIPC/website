@@ -17,7 +17,8 @@ the marketing pages into it.
 
 ```bash
 cd frontend
-npm ci
+npm ci        # `prepare` builds @openipc/ui, because apps/site resolves it
+              # through its exports map and needs dist/ to exist
 npm run lint && npm run typecheck && npm run test && npm run build
 npm run storybook -w @openipc/ui        # http://localhost:6006
 npm run dev -w @openipc/site            # http://localhost:4321/_smoke/
