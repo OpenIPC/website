@@ -24,6 +24,24 @@ Rails.application.routes.draw do
   # Only pages a visitor reads are in here. The API, the admin area, the
   # healthcheck, the external redirects and the firmware download are not
   # translated and gain nothing from a prefix.
+  # MARKED FOR DELETION, not before 2026-10-22 (#160).
+  #
+  # Every `pages#` route below except `root` is now served from the static
+  # bundle. They stay because they are the fallback: nginx's try_files walks
+  # past a missing file and ends at @rails, so a bundle that is rolled back,
+  # half-installed or absent means these answer -- which is the property that
+  # makes the cutover reversible by one symlink flip.
+  #
+  # Thirty days is how long that matters. After it, a rollback would be to a
+  # bundle that is itself newer than these views, and keeping two renderings of
+  # the same page is how the two start disagreeing. Delete the actions, the
+  # views, app/helpers/pages_helper.rb's constants and
+  # test/controllers/relaunch_pages_test.rb together; the assertions live on in
+  # frontend/apps/site/src/lib/pages.build.test.ts.
+  #
+  # `root` is NOT in that list. `/` stays on Rails permanently: it renders per
+  # Accept-Language and declares `Vary: Accept-Language`, which a file cannot
+  # do. See the comment on rule 3 in deploy/static/check-bundle.sh.
   scope '(:locale)', locale: Multilang::IN_PATH do
     root 'pages#home'
 
