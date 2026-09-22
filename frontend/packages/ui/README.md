@@ -1,8 +1,8 @@
 # @openipc/ui
 
 The Preact components openipc.org is drawn with: ~30 widgets, nine
-primitives, 45 design tokens, four self-hosted typefaces and a firmware
-partition calculator. Extracted from
+primitives, 43 Storybook stories, 45 design tokens, four self-hosted typefaces
+and a firmware partition calculator. Extracted from
 [`OpenIPC/fancyweb-ng`](https://github.com/OpenIPC/fancyweb-ng) under
 [#158](https://github.com/OpenIPC/website/issues/158) — see
 [`PROVENANCE.md`](PROVENANCE.md) for what came across, what did not, and what

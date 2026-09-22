@@ -13,6 +13,23 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
   );
   const [ partString, setPartString ] = useState<string>('');
 
+  /**
+   * Blank the derived columns. They describe a layout that no longer exists
+   * the moment any size or offset changes, and leaving them on screen next to
+   * edited inputs is how somebody copies an address from the layout before.
+   */
+  function clearComputedColumns(state: FormSchema): FormSchema {
+    let next = { ...state };
+    for (let i = 0; i < 8; i++) {
+      next = { ...next, ...{
+        [`part${i}-start`]: { value: '', state: 'default', error: '' },
+        [`part${i}-size-hex`]: { value: '', state: 'default', error: '' },
+        [`part${i}-end`]: { value: '', state: 'default', error: '' },
+      } };
+    }
+    return next;
+  }
+
   function isValidElemName(name: string): name is ElemNames {
     return Object.keys(formSchema).includes(name);
   }
@@ -23,7 +40,9 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
       if (isValidElemName(name)) {
         setFormElemsState({...formElemsState, [name]: getCurElemState(value, {...formElemsState[name]}, formValidationSchema[name])});
         const curFormElemsState = {...formElemsState, [name]: getCurElemState(value, {...formElemsState[name]}, formValidationSchema[name])};
-        const curFormElemsStateDepCheck = validateDependencies(curFormElemsState);
+        const curFormElemsStateDepCheck = clearComputedColumns(
+          validateDependencies(curFormElemsState),
+        );
         setFormElemsState(curFormElemsStateDepCheck);
         setPartMap(getPartMapSlices(curFormElemsStateDepCheck) as SliceData[]);
         getFreeSpace(curFormElemsStateDepCheck);
@@ -278,7 +297,18 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
     }
 
     const elemNames = Object.keys(formElemsState).filter(elemName => /^part[0-7]-size$/.test(elemName)) as DependancyValidableElemNames[];
-    let tempFormElemsState = { ...formElemsState, ...configs[configName] };
+    const preset = configs[configName];
+    // A preset is a whole layout, not an overlay. Clear every partition first,
+    // or the rows a longer layout left behind stay in the free-space sum and
+    // in the exported line, past the end of the preset's flash.
+    let tempFormElemsState = { ...formElemsState };
+    for (let i = 0; i < elemNames.length; i++) {
+      tempFormElemsState = { ...tempFormElemsState, ...{
+        [`part${i}-name`]: { value: '', state: 'default', error: '' },
+        [`part${i}-size`]: { value: '', state: 'default', error: '' },
+      } };
+    }
+    tempFormElemsState = { ...tempFormElemsState, ...preset };
     for (let i = 0; i < elemNames.length; i++) {
       tempFormElemsState = { ...tempFormElemsState, ...{
           [`part${i}-start`]: {
@@ -313,6 +343,18 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
     applyPredefinedConfig('ultimate');
   }
   
+  /**
+   * The initial-offset field accepts either notation -- isDecOrHexNumber lets
+   * `4096` and `0x1000` both through, and getFreeSpace() reads it with
+   * parseInt's own prefix detection. recalculate() used to force radix 16, so
+   * a decimal 4096 was laid out at 0x4096 and every address after it followed
+   * that wrong start.
+   */
+  const parseOffset = (value: string): number => {
+    const n = /^0[xX]/.test(value) ? Number.parseInt(value, 16) : Number.parseInt(value, 10);
+    return Number.isNaN(n) ? 0 : n;
+  };
+
   const getAddresses = (sizeKb: number, start: number): {start: string, size: string, end: string} => {
     const sizeBytes = kiloBytesToBytes(sizeKb);
     return {
@@ -357,7 +399,7 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
 
     for (let i = 0; i < elemNames.length; i++) {
       if (tempFormElemsState[elemNames[i]].state === 'valid') {
-        const addresses = getAddresses(Number.parseInt(tempFormElemsState[elemNames[i]].value), i > 0 ? Number.parseInt(tempFormElemsState[(`part${i-1}-end`) as unknown as DependancyValidableElemNames].value, 16) + 1 : Number.parseInt(tempFormElemsState['initial-offset'].value, 16));
+        const addresses = getAddresses(Number.parseInt(tempFormElemsState[elemNames[i]].value), i > 0 ? Number.parseInt(tempFormElemsState[(`part${i-1}-end`) as unknown as DependancyValidableElemNames].value, 16) + 1 : parseOffset(tempFormElemsState['initial-offset'].value));
         tempFormElemsState = {
           ...tempFormElemsState, 
           ...{
@@ -421,12 +463,30 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
     setFreeSpace(freeSpace % 1024 === 0 ? `${freeSpace / 1024} KB` : `${Math.floor(freeSpace / 1024)} KB, ${freeSpace % 1024} bytes`);
   }
 
+  /**
+   * The mtdparts line somebody pastes into a bootloader.
+   *
+   * Two things this used to get wrong. It dropped the initial offset, so a
+   * layout starting at 0x40000 exported as one starting at zero and would
+   * have been written over the reserved region. And it emitted a partition
+   * whose name was blank as `256k()`, which is not a partition definition.
+   *
+   * The offset rides on the first partition as `@<start>`, which is where
+   * mtdparts syntax puts it; the rest follow contiguously and need none.
+   */
   function getPartString(formState: FormSchema) {
-    return Object.keys(formState)
-      .filter((key) => /part\d+-size/i.test(key) && formState[key as ElemNames].state === 'valid')
-      .map((size, i) => [formState[`part${i}-name` as ElemNames].value, formState[size as ElemNames].value])
-      .reduce((acc, entry) => acc + `${entry[1]}k(${entry[0]}),`, `${formState['MTD-device-name'].value}:`)
-      .slice(0, -1);
+    const parts: string[] = [];
+    for (let i = 0; i < 8; i++) {
+      const size = formState[`part${i}-size` as ElemNames];
+      const name = formState[`part${i}-name` as ElemNames].value;
+      if (size.state !== 'valid' || size.value === '' || name === '') continue;
+      const start = formState[`part${i}-start` as ElemNames].value;
+      const at = parts.length === 0 && start && parseOffset(start) !== 0 ? `@${start}` : '';
+      parts.push(`${size.value}k${at}(${name})`);
+    }
+    return parts.length === 0
+      ? ''
+      : `${formState['MTD-device-name'].value}:${parts.join(',')}`;
   }
 
   function handleRecalculateBtnClick() {

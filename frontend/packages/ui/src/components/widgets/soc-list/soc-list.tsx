@@ -4,10 +4,16 @@ import SoCListItem from '../soc-list-item/soc-list-item';
 
 type SoCListProps = {
   list: SoCManagedListProps['fullList'],
+  /**
+   * Builds each row's installation link. Without it the rows say what is
+   * supported without linking anywhere, which is the honest default for a
+   * package that does not know the host's routes.
+   */
+  hrefFor?: (soc: SoCManagedListProps['fullList'][number]) => string | undefined,
 }
 
 export default function SoCList(props: SoCListProps) {
-  const { list }= props; 
+  const { list, hrefFor } = props;
 
   return (
     <ul className="flex flex-col gap-y-2 self-stretch">
@@ -49,7 +55,7 @@ export default function SoCList(props: SoCListProps) {
           {SoCItemSpecificConstants.installationCellTitle}
         </p>
       </li>
-      { list.map(item => <SoCListItem key={`${item.vendor} ${item.model}`} {...item} />) }
+      { list.map(item => <SoCListItem key={`${item.vendor} ${item.model}`} {...item} href={hrefFor?.(item)} />) }
     </ul>
   );
 }

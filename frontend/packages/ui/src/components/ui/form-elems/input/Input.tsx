@@ -54,7 +54,7 @@ export default function Input(props: InputProps) {
           ${Icon && getIconPaddings(iconPlace)}
         `} disabled={state === 'disabled'}
           type={type} id={elemName} name={elemName} {...(placeholder && { placeholder })}
-          {...(value && { value })} onInput={onInput} ref={inputRef}
+          {...(value !== undefined && { value })} required={required} onInput={onInput} ref={inputRef}
         />
         {Icon && <div className={getIconStyle(iconPlace)} onClick={handleIconClick} title={iconTooltip}><Icon /></div>}
       </div>

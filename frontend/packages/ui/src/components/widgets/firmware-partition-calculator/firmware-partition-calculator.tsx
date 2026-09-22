@@ -9,7 +9,7 @@ import useCalc from './hooks/useCalc';
 import { FwCalcFormSchema } from './calcFormSchema';
 import { FwCalcFormValidationSchema } from './calcFormValidationSchema';
 import { MTDDevNameOpts, flashSizeOpts } from './constants';
-import { useMemo } from 'preact/hooks';
+import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { debounce } from '../../../utils';
 
 export default function FirmwarePartitionCalculator() {
@@ -24,14 +24,23 @@ export default function FirmwarePartitionCalculator() {
     }
   }
 
-  // Keyed on handleOnChange alone on purpose: handleInputChange is rebuilt
-  // every render, and listing it would hand out a fresh debounce -- and so a
-  // fresh timer -- on every keystroke, which is the opposite of debouncing.
+  // One debounce for the life of the component, calling through a ref to
+  // whatever the current handler is.
+  //
+  // It used to be keyed on handleOnChange, which useCalc rebuilds every
+  // render -- so every render produced a new debounced function with its own
+  // timer, and a new timer cannot clear the previous one's. Nothing was
+  // debounced, and a name edit still in flight would later write its stale
+  // copy of the form back over whatever had been changed since.
+  const latestHandlerRef = useRef(handleInputChange);
+  useEffect(() => {
+    latestHandlerRef.current = handleInputChange;
+  });
+
   const debouncedHandleInputChange = useMemo(() => {
-    const [ fn ] = debounce(handleInputChange, 500);
+    const [ fn ] = debounce((e: Event) => latestHandlerRef.current(e), 500);
     return fn;
-    // eslint-disable-next-line @eslint-react/exhaustive-deps -- see above
-  }, [handleOnChange]);
+  }, []);
 
   return (
     <>

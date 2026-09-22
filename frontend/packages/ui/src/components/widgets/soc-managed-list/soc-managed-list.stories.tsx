@@ -10,5 +10,8 @@ const meta: Meta<typeof SoCManagedList> = {
 export default meta;
 
 export const SoCManagedListStory: StoryObj<typeof SoCManagedList> = {
-  args: { fullList: SOCS },
+  args: {
+    fullList: SOCS,
+    hrefFor: soc => `/supported-hardware/${soc.vendor.toLowerCase()}/${soc.model.toLowerCase()}`,
+  },
 };

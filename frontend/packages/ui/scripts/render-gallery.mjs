@@ -42,6 +42,27 @@ try {
     );
   }
 
+  /**
+   * Components that import an asset get a Vite dev URL like /src/assets/...,
+   * which resolves against a dev server and against nothing at all when the
+   * committed page is opened from a file:// path. TeamMember's card
+   * background is one. Inline every such reference the render produced.
+   */
+  const inlineAssetUrls = async (markup) => {
+    const types = { svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg',
+                    jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' };
+    const refs = [...new Set([...markup.matchAll(/\/src\/assets\/[^"')\s]+/g)].map(m => m[0]))];
+    for (const ref of refs) {
+      const clean = ref.split('?')[0];
+      const ext = clean.split('.').pop().toLowerCase();
+      if (!types[ext]) continue;
+      const bytes = await readFile(join(root, clean.replace(/^\/+/, '')));
+      const uri = `data:${types[ext]};base64,${bytes.toString('base64')}`;
+      markup = markup.replaceAll(ref, uri);
+    }
+    return markup;
+  };
+
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   const item = (x) => `
@@ -72,6 +93,17 @@ try {
     </li>`).join('');
 
   const changedCount = ENTRIES.filter((x) => x.changed).length;
+
+  // Counted, not quoted: the masthead said "135 tests" until it was 171.
+  const countStories = async (dir) => {
+    let n = 0;
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) n += await countStories(join(dir, entry.name));
+      else if (/\.stories\.tsx?$/.test(entry.name)) n++;
+    }
+    return n;
+  };
+  const storyCount = await countStories(join(root, 'src'));
 
   const chrome = `
   /* The chrome is set in the two faces the package itself ships, and takes
@@ -222,14 +254,15 @@ try {
       <span><b>${ENTRIES.length}</b> components</span>
       <span><b>${changedCount}</b> changed on the way out</span>
       <span><b>${ENTRIES.filter((x) => x.live).length}</b> need JavaScript</span>
-      <span><b>44</b> Storybook stories</span>
-      <span><b>135</b> tests, from zero</span>
+      <span><b>${storyCount}</b> Storybook stories</span>
     </p>
   </div>
   <div class="wrap">
     <nav class="nav" aria-label="Components"><ul>${nav}</ul></nav>
     <main>${GROUPS.map(section).join('\n')}</main>
   </div>`;
+
+  const inlined = await inlineAssetUrls(body);
 
   const html = `<!doctype html>
 <html lang="en">
@@ -238,7 +271,7 @@ try {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 ${head}
 </head>
-<body>${body}</body>
+<body>${inlined}</body>
 </html>`;
 
   await mkdir(out, { recursive: true });
@@ -246,7 +279,7 @@ ${head}
 
   // The same page without the document wrapper, for publishing as an Artifact,
   // which supplies its own <head> and <body>.
-  await writeFile(join(out, 'artifact.html'), `${head}\n${body}\n`);
+  await writeFile(join(out, 'artifact.html'), `${head}\n${inlined}\n`);
 
   console.log(`gallery/index.html — ${ENTRIES.length} components, ${(html.length / 1024).toFixed(0)} kB`);
   console.log(`gallery/artifact.html — the same page, without the document wrapper`);

@@ -17,9 +17,16 @@ export default function Select({ elemName, label, state, onInput, options, requi
       <label for={elemName} className="text-sm">{label}{required && <span className="
         pl-1 text-crimson
       ">*</span>}</label>
-      <select className={`
-        ${selectStyleFab(state)}
-      `} onInput={onInput} disabled={state === 'disabled'}>
+      <select
+        id={elemName}
+        name={elemName}
+        required={required}
+        className={`
+          ${selectStyleFab(state)}
+        `}
+        onInput={onInput}
+        disabled={state === 'disabled'}
+      >
         {options.map(({value, disabled}) => <option key={value} value={value} {...(disabled && {disabled: disabled})}>{value}</option>)}
       </select>
       <div>

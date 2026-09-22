@@ -6,7 +6,7 @@
  * expected addresses below are computed by hand from the presets and checked
  * against the component -- not snapshotted out of it.
  */
-import { expect, test, describe } from 'vitest';
+import { expect, test, describe, vi } from 'vitest';
 import { render, fireEvent, screen } from '@testing-library/preact';
 import FirmwarePartitionCalculator from './firmware-partition-calculator';
 
@@ -131,5 +131,109 @@ describe('refusals', () => {
     fireEvent.input(field('initial-offset'), { target: { value: '0x' } });
 
     expect(screen.getAllByText('Invalid hexademical number').length).toBeGreaterThan(0);
+  });
+});
+
+describe('findings from the review of #260', () => {
+  /**
+   * The Lite preset fills its 8 MB exactly, so any initial offset overflows
+   * it and recalculate() correctly refuses. Shrink a partition by the offset
+   * first, which is what a real layout with a reserved head looks like.
+   */
+  function litePlusRoom(freeKb: number) {
+    render(<FirmwarePartitionCalculator />);
+    click('Lite');
+    fireEvent.input(field('part3-size'), { target: { value: String(5120 - freeKb) } });
+  }
+
+  test('a decimal initial offset is decimal, not hex', () => {
+    litePlusRoom(4);                       // 4 KB = 4096 bytes
+    fireEvent.input(field('initial-offset'), { target: { value: '4096' } });
+    setMtdDeviceName('hi_sfc');
+    click('Recalculate');
+
+    // 4096 decimal is 0x1000. Read as hex it would be 0x4096, and every
+    // address after it would inherit that wrong start.
+    expect(addresses()[0]).toBe('0x1000');
+  });
+
+  test('a hex initial offset still works', () => {
+    litePlusRoom(4);
+    fireEvent.input(field('initial-offset'), { target: { value: '0x1000' } });
+    setMtdDeviceName('hi_sfc');
+    click('Recalculate');
+
+    expect(addresses()[0]).toBe('0x1000');
+  });
+
+  test('the exported line carries the offset it starts at', () => {
+    litePlusRoom(256);                     // 256 KB = 0x40000
+    fireEvent.input(field('initial-offset'), { target: { value: '0x40000' } });
+    setMtdDeviceName('hi_sfc');
+    click('Recalculate');
+
+    // Without the @, pasting this writes the first partition over whatever
+    // the reserved region below 0x40000 holds.
+    expect(mtdparts()).toContain('256k@0x40000(boot)');
+    expect(addresses()[0]).toBe('0x40000');
+  });
+
+  test('a partition name cannot contain an mtdparts delimiter', async () => {
+    vi.useFakeTimers();
+    try {
+      render(<FirmwarePartitionCalculator />);
+      click('Lite');
+      // The name fields are debounced by 500ms, so the rejection lands after
+      // the timer -- and Preact re-renders on a microtask after that, which
+      // is why this advances asynchronously.
+      fireEvent.input(field('part0-name'), { target: { value: 'root,fs' } });
+      await vi.advanceTimersByTimeAsync(600);
+
+      expect(field('part0-name').value).toBe('boot');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test('a preset replaces the layout rather than merging into it', () => {
+    render(<FirmwarePartitionCalculator />);
+    // A sixth partition, beyond anything the presets define.
+    fireEvent.input(field('part5-size'), { target: { value: '512' } });
+    click('Lite');
+
+    expect(field('part5-size').value).toBe('');
+    // 8 MB exactly, so the leftover row is not still eating into it.
+    expect(freeSpace()).toBe('Free space: 0 KB');
+  });
+
+  test('editing a size clears the addresses it invalidated', () => {
+    render(<FirmwarePartitionCalculator />);
+    click('Lite');
+    setMtdDeviceName('hi_sfc');
+    click('Recalculate');
+    expect(addresses().length).toBeGreaterThan(0);
+
+    fireEvent.input(field('part2-size'), { target: { value: '1024' } });
+
+    // Every start/end column described the layout before the edit.
+    expect(addresses()).toEqual([]);
+  });
+
+  test('a partition with a size but no name is left out of the line', async () => {
+    vi.useFakeTimers();
+    try {
+      render(<FirmwarePartitionCalculator />);
+      click('Lite');
+      fireEvent.input(field('part4-name'), { target: { value: '' } });
+      await vi.advanceTimersByTimeAsync(600);
+      setMtdDeviceName('hi_sfc');
+      click('Recalculate');
+
+      // `704k()` is not a partition definition.
+      expect(mtdparts()).not.toContain('()');
+      expect(mtdparts()).toContain('5120k(rootfs)');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -2,17 +2,21 @@ import type { SoCItem } from '../soc-managed-list/types';
 
 export type SoCListItemProps = SoCItem & {
   /**
-   * Prefix for the per-SoC installation link, e.g. '/supported-hardware'.
-   * fancyweb-ng read window.location during render instead, which both
-   * breaks server rendering and carries the query string into the href.
+   * Where this SoC's installation page lives. Given by the caller, because
+   * only the caller knows the route: openipc.org addresses SoCs by the
+   * `urlname` slug its models generate, which is not the vendor and model as
+   * displayed. Left out, the cell states support without linking.
+   *
+   * fancyweb-ng read window.location during render and appended the display
+   * values -- unusable in a server render, and a 404 against the real route.
    */
-  hrefBase?: string,
+  href?: string,
 };
 import { SoCItemSpecificConstants, installationAlternatives } from './constants';
 import SoCIcons from '../../../assets/icons/socs-info';
 
 export default function SoCListItem(props: SoCListItemProps) {
-  const { vendor, model, address, stage, firmware, hrefBase = '' } = props;
+  const { vendor, model, address, stage, firmware, href } = props;
   const StageIcon = SoCIcons[stage];
 
   return (
@@ -80,11 +84,11 @@ export default function SoCListItem(props: SoCListItemProps) {
         md:min-w-56 md:shrink-0 md:grow-4 md:basis-0 md:content-center md:p-0
         md:pl-2 md:text-left
       ">
-        {firmware.length > 0 && address !== null && address.length > 0
+        {href && firmware.length > 0 && address !== null && address.length > 0
           ? <a className="
             text-brand-blue
             hover:text-btn-blue-hover
-          " href={`${hrefBase}/${vendor}/${model}`}>{installationAlternatives.yes}</a>
+          " href={href}>{installationAlternatives.yes}</a>
           : installationAlternatives.no
         }
       </p>

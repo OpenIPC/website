@@ -65,10 +65,10 @@ const html = renderToString(h(SoCListItem, {
   address: '0x42000000', stage: 'DONE', bootloader: '',
   firmware: 'openipc.hi3516ev300-nor-lite.tgz', featured: true,
   core: null, ai: null, package: null, encoder: null, memory: null,
-  hrefBase: '/supported-hardware',
+  href: '/supported-hardware/hisilicon/hi3516ev300',
 }));
 if (!html.includes('HiSilicon HI3516EV300')) throw new Error('SoCListItem rendered nothing recognisable');
-if (!html.includes('/supported-hardware/HiSilicon/HI3516EV300')) throw new Error('hrefBase was ignored');
+if (!html.includes('/supported-hardware/hisilicon/hi3516ev300')) throw new Error('the href prop was ignored');
 
 if (!renderToString(h(MainButton, { size: 's', caption: 'Flash', clickHandler() {} })).includes('Flash'))
   throw new Error('MainButton rendered nothing recognisable');

@@ -19,6 +19,21 @@ test('every exported name is defined', () => {
   expect(missing).toEqual([]);
 });
 
+/**
+ * `export * as default from './x'` in a component barrel exports the module
+ * namespace object, not the component. It is defined, it type-checks, and it
+ * throws "Cannot convert object to primitive value" the moment anybody
+ * renders it. icon-button shipped that way, and neither the old surface test
+ * -- which only asked whether the name was defined -- nor the render smoke
+ * -- which skipped anything that was not a function -- said a word.
+ */
+test('every capitalised export is a component, not a namespace object', () => {
+  const notFunctions = Object.entries(ui)
+    .filter(([name, value]) => /^[A-Z]/.test(name) && typeof value !== 'function')
+    .map(([name, value]) => `${name} is ${Object.prototype.toString.call(value)}`);
+  expect(notFunctions).toEqual([]);
+});
+
 test('every widget directory is reachable from the entry point', () => {
   const entry = readFileSync(join(src, 'index.ts'), 'utf8');
   const widgets = readdirSync(join(src, 'components', 'widgets'), { withFileTypes: true })

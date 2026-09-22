@@ -21,20 +21,30 @@ export default function ModalImage({
   // Mount-only: it locks body scroll and binds Escape for the modal's life.
   useEffect(() => {
     document.addEventListener("keyup", handleEscKeyPress);
+    const { style } = document.body;
+    // Put back exactly what was there. Cleanup used to assign invented values
+    // -- position: static, padding-right: 0 -- which is not a restore: a page
+    // that styled its own body, or a second scroll lock, kept them.
+    const previous = {
+      width: style.width,
+      paddingRight: style.paddingRight,
+      top: style.top,
+      position: style.position,
+    };
+    const scrollY = window.scrollY;
     const innerWidth = window.innerWidth;
     const { right: bodyRight } = document.body.getBoundingClientRect();
-    document.body.style.width = '100%';
-    document.body.style.paddingRight = `${innerWidth - bodyRight}px`;
-    document.body.style.top = `-${window.scrollY}px`;
-    document.body.style.position = 'fixed';
+    style.width = '100%';
+    style.paddingRight = `${innerWidth - bodyRight}px`;
+    style.top = `-${scrollY}px`;
+    style.position = 'fixed';
     return () => {
       document.removeEventListener("keyup", handleEscKeyPress)
-      const scrollY = document.body.style.top;
-      document.body.style.width = '';
-      document.body.style.position = 'static';
-      document.body.style.setProperty('padding-right', '0');
-      document.body.style.top = '';
-      window.scroll(0, parseInt(scrollY || '0') * -1);
+      style.width = previous.width;
+      style.paddingRight = previous.paddingRight;
+      style.position = previous.position;
+      style.top = previous.top;
+      window.scroll(0, scrollY);
     }
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- see above
   }, [])

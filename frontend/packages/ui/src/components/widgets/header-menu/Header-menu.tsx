@@ -2,7 +2,7 @@ import { DesktopMenu } from './components';
 import { MobileMenu } from './components';
 import HeaderBurgerButton from '../header-burger-button';
 import UIIcons from '../../../assets/icons/ui';
-import { useState, useRef } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { useMediaQuery } from '../../../utils/hooks/useMediaQuery';
 
 type ItemType = 'link' | 'parent' | 'mixed';
@@ -29,10 +29,14 @@ export default function HeaderMenu({ menuItems }: HeaderMenuProps) {
   const [ isAnimating, setIsAnimating ] = useState(false);
   const [ isBurgBtnOpened, setIsBurgBtnOpened ] = useState(false);
   const navRef = useRef(null);
+  const unmountTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const isMobile = useMediaQuery('(width < 768px)');
+
+  useEffect(() => () => clearTimeout(unmountTimerRef.current), []);
 
   const toggleMenu = () => {
     if (!isOpen) {
+      clearTimeout(unmountTimerRef.current);
       setIsBurgBtnOpened(true);
       setShouldRender(true);
       requestAnimationFrame(() => {
@@ -43,7 +47,10 @@ export default function HeaderMenu({ menuItems }: HeaderMenuProps) {
     } else {
       setIsBurgBtnOpened(false);
       setIsAnimating(false);
-      setTimeout(() => {
+      // Held so that reopening during the 500ms close can cancel it. Without
+      // that, the stale callback fired afterwards and unmounted the drawer
+      // the user had just reopened.
+      unmountTimerRef.current = setTimeout(() => {
         setShouldRender(false);
       }, 500);
     }

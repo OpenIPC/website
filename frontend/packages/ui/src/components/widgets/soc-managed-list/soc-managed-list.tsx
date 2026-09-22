@@ -6,7 +6,7 @@ import {useState} from 'preact/hooks';
 import FirmwareDevStages from '../firmware-dev-stages';
 
 const SoCManagedList = (props: SoCManagedListProps) => {
-  const { fullList } = props;
+  const { fullList, hrefFor } = props;
   const emptyFilter: FilterState = {
     abcSelector: 'Recommended',
     vendorSelector: null,
@@ -21,7 +21,6 @@ const SoCManagedList = (props: SoCManagedListProps) => {
   }
 
   const handleVendorClick = (vendor: string) => {
-    console.log('vendor clicked: ', vendor);
     setFilterState({...filterState, vendorSelector: vendor});
   }
 
@@ -86,7 +85,7 @@ const SoCManagedList = (props: SoCManagedListProps) => {
         md:flex-row
       ">
         <div className="shrink-6 grow-6 basis-[60%]">
-          <SoCList list={getSoCsList(filterState, fullList)} />
+          <SoCList list={getSoCsList(filterState, fullList)} hrefFor={hrefFor} />
         </div>
         <div className="shrink-3 grow-3 basis-[30%]">
           <FirmwareDevStages />

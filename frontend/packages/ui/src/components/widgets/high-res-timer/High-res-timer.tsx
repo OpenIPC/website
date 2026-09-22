@@ -1,34 +1,38 @@
 import MainButton from '../../ui/buttons/main-button/Main-button';
 import icons from '../../../assets/icons/ui';
-import { useState, useEffect } from 'preact/hooks';
+import { useState, useEffect, useRef } from 'preact/hooks';
 import Paragraph from '../paragraph/paragraph';
 
 const { Play, Pause, Refresh } = icons;
-let rafTimerID: number;
-let rafFPSID: number;
-let offset: number;
-let timeStamp: number;
-let counter = 0;
 
 export default function HighResTimer() {
   const [ play, setPlay ] = useState<boolean>(true);
   const [ time, setTime ] = useState(0);
   const [ fps, setFps ] = useState(0);
 
+  // Per instance. These were module-level, so two timers on one page shared
+  // one set: either could cancel the other's animation frames or reset the
+  // other's clock, and pausing one left the other's loop running untracked.
+  const rafTimerRef = useRef<number>(0);
+  const rafFpsRef = useRef<number>(0);
+  const offsetRef = useRef<number>(0);
+  const timeStampRef = useRef<number>(0);
+  const counterRef = useRef<number>(0);
+
   function loop() {
-    rafTimerID = window.requestAnimationFrame(() => {
-      setTime(Math.ceil(performance.now() - offset));
+    rafTimerRef.current = window.requestAnimationFrame(() => {
+      setTime(Math.ceil(performance.now() - offsetRef.current));
       loop();
     });
   }
 
   function fpsLoop() {
-    rafFPSID = window.requestAnimationFrame(() => {
-      counter++;
-      if (performance.now() - timeStamp >= 1000) {
-        setFps(counter);
-        counter = 0;
-        timeStamp = performance.now();
+    rafFpsRef.current = window.requestAnimationFrame(() => {
+      counterRef.current++;
+      if (performance.now() - timeStampRef.current >= 1000) {
+        setFps(counterRef.current);
+        counterRef.current = 0;
+        timeStampRef.current = performance.now();
       }
       fpsLoop();
     });
@@ -37,29 +41,29 @@ export default function HighResTimer() {
   // Starts the two rAF loops once; they re-arm themselves and the cleanup
   // cancels them. Re-running this on every render would start a new pair.
   useEffect(() => {
-    offset = performance.now();
-    timeStamp = performance.now();
+    offsetRef.current = performance.now();
+    timeStampRef.current = performance.now();
     loop();
     fpsLoop();
     return () => {
-      window.cancelAnimationFrame(rafTimerID);
-      window.cancelAnimationFrame(rafFPSID);
+      window.cancelAnimationFrame(rafTimerRef.current);
+      window.cancelAnimationFrame(rafFpsRef.current);
     }
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- see above
   }, []);
 
   function controlBtnClickHandler() {
     if (play) {
-      window.cancelAnimationFrame(rafTimerID);
+      window.cancelAnimationFrame(rafTimerRef.current);
     } else {
-      offset = performance.now() - time;
+      offsetRef.current = performance.now() - time;
       loop();
     }
     setPlay(!play);
   }
 
   function refreshBtnClickHandler() {
-    offset = performance.now();
+    offsetRef.current = performance.now();
     setTime(0);
   }
 

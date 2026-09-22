@@ -14,8 +14,11 @@ export default function CustomSelect ({state, value, onChange, options, open, si
     if (isOpen) setIsOpen(false);
     if (valueInputRef.current) {
       valueInputRef.current.value = value;
-      const onChangeEvt = new Event('input');
-      valueInputRef.current.dispatchEvent(onChangeEvt);
+      // The hidden input listens with onInput, so this has to be an `input`
+      // event. It used to dispatch one at an onChange listener -- which in
+      // Preact is the native `change` event -- so picking an option moved the
+      // box's own display and told the parent nothing.
+      valueInputRef.current.dispatchEvent(new Event('input', { bubbles: true }));
     }
   }
 
@@ -75,7 +78,7 @@ export default function CustomSelect ({state, value, onChange, options, open, si
   function getSelectBody () {
     return (
       <div className="relative w-full">
-        <input className="hidden" ref={valueInputRef} onChange={handleInput} name={elemName} value={value} />
+        <input className="hidden" ref={valueInputRef} onInput={handleInput} name={elemName} value={value} />
         <input
           className={selectStyleFab(state)}
           {...(state !== 'disabled' && {onClick: () => !isOpen && setIsOpen(true)})}

@@ -75,6 +75,13 @@ test('the entry point exports the components this suite thinks it does', () => {
   expect(components.length).toBeGreaterThanOrEqual(30);
 });
 
+test('no capitalised export is skipped for not being a function', () => {
+  // The filter above is how a barrel that exported a namespace object instead
+  // of its component slipped through unrendered.
+  const capitalised = Object.keys(ui).filter(name => /^[A-Z]/.test(name));
+  expect(components.map(([name]) => name).sort()).toEqual(capitalised.sort());
+});
+
 describe.each(components)('%s', (name, Component) => {
   const args = props[name] ?? {};
 

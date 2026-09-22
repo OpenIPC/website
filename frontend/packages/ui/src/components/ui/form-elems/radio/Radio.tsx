@@ -22,10 +22,10 @@ export default function<T extends string[]>({ name, defaultChecked, captions, ch
     ">
       {captions.map((caption) => (
         <li key={caption} className="relative">
-          <input name={name} value={caption} id={caption} checked={caption === checked} type="radio" onChange={handleChange} className="
+          <input name={name} value={caption} id={`${name}-${caption}`} checked={caption === checked} type="radio" onChange={handleChange} className="
             peer absolute opacity-0
           " />
-          <label for={caption} className="
+          <label for={`${name}-${caption}`} className="
             flex min-w-24 cursor-pointer flex-col justify-center rounded-sm
             border-0 text-center transition
             peer-checked:bg-brand-blue peer-checked:text-white

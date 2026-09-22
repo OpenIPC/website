@@ -34,6 +34,14 @@ function monogram(label: string, bg: string, fg = '#ffffff'): string {
 
 const SHADES = ['#4c60d8', '#3949ab', '#052c65', '#138350', '#9e9e9e', '#555555'];
 
+/**
+ * Stands in for the host's routing. openipc.org addresses a SoC by the
+ * `urlname` its model generates; the package takes the finished href rather
+ * than guessing at that, and this is the guess a demo is allowed to make.
+ */
+const demoHref = (soc: { vendor: string, model: string }) =>
+  `/supported-hardware/${soc.vendor.toLowerCase()}/${soc.model.toLowerCase()}`;
+
 const TEAM_OFFLINE = TEAM.map((m, i) => ({
   ...m, imgSrc: monogram(m.name, SHADES[i % SHADES.length]),
 }));
@@ -131,9 +139,9 @@ export const ENTRIES: Entry[] = [
     node: e('VendorsList', { list: ['Goke', 'HiSilicon', 'Ingenic', 'SigmaStar', 'Xiongmai'], curSelected: 'HiSilicon', clickHandler: () => {} }) },
   { group: 'Hardware catalogue', name: 'FirmwareDevStages', node: e('FirmwareDevStages') },
   { group: 'Hardware catalogue', name: 'SoCList', changed: 'rows keyed by vendor and model', note: 'ten of the 126 fixture rows',
-    node: e('SoCList', { list: SOCS.filter(s => s.vendor === 'HiSilicon').slice(0, 10) }) },
-  { group: 'Hardware catalogue', name: 'SoCManagedList', live: true, changed: 'rows keyed by vendor and model; SoCListItem read window.location during render and now takes a hrefBase prop', note: 'the whole catalogue with its A–Z and vendor filters; filtering needs JavaScript, this is its first paint',
-    node: e('SoCManagedList', { fullList: SOCS }) },
+    node: e('SoCList', { list: SOCS.filter(s => s.vendor === 'HiSilicon').slice(0, 10), hrefFor: demoHref }) },
+  { group: 'Hardware catalogue', name: 'SoCManagedList', live: true, changed: 'rows keyed by vendor and model; SoCListItem read window.location during render, and the installation link is now a href the caller supplies — openipc.org addresses SoCs by a urlname slug, which is not the vendor and model as displayed', note: 'the whole catalogue with its A–Z and vendor filters; filtering needs JavaScript, this is its first paint',
+    node: e('SoCManagedList', { fullList: SOCS, hrefFor: demoHref }) },
 
   // --- the wall -----------------------------------------------------------
   { group: 'The Open Wall', name: 'CameraSnapshot', changed: 'was a mock: fixed data, an hls.js stream on localhost:4000, and a loading flag nothing ever set. Now props, and that flag drives the skeleton already written for it',

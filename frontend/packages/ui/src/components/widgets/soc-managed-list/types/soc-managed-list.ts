@@ -16,6 +16,8 @@ export type SoCItem = {
 
 export type SoCManagedListProps = {
   fullList: SoCItem[],
+  /** Forwarded to SoCList; see the note there. */
+  hrefFor?: (soc: SoCItem) => string | undefined,
 }
 
 export type FilterState = {

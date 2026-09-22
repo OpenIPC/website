@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'preact/hooks';
 
 export function useMediaQuery(query: string): boolean {
-  // Server rendering has no matchMedia. Start false and let the effect below
-  // correct it on hydration, rather than throwing during the prerender.
-  const [ matches, setMatches ] = useState<boolean>(() =>
-    typeof window === 'undefined' ? false : window.matchMedia(query).matches
-  );
+  // Always false for the first render, on the server and in the browser
+  // alike, then corrected by the effect below.
+  //
+  // Reading matchMedia in this initialiser looked harmless and was not:
+  // HeaderMenu picks between structurally different desktop and mobile trees
+  // from this value, so on a phone the server emitted the desktop tree and
+  // the very first client render wanted the mobile one. That is a hydration
+  // mismatch, and Preact resolves it by rebuilding the subtree. One frame of
+  // the desktop menu is the better trade, and a caller that cannot accept
+  // even that should branch in CSS rather than here.
+  const [ matches, setMatches ] = useState<boolean>(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(query);
