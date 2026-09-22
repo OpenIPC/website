@@ -5,7 +5,12 @@ import {useEffect, useRef, useState} from 'preact/hooks';
 export default function CustomSelect ({state, value, onChange, options, open, size, elemName, label, description}: SelectProps) {
   const {ArrowDown} = Icons;
   const [isOpen, setIsOpen] = useState(open ?? false);
-  const [display, setDisplay] = useState(value);
+  // Seeded through displayFor, not from the raw value: the effect that
+  // corrects it does not run on the server, so a prerendered page showed 8
+  // where 'NOR 8' was configured.
+  const [display, setDisplay] = useState(
+    () => options.find((o) => o.value === value)?.display ?? value,
+  );
   const valueInputRef = useRef<HTMLInputElement>(null);
 
   /** What the closed box shows for a value: the option's `display`, not the
@@ -14,7 +19,9 @@ export default function CustomSelect ({state, value, onChange, options, open, si
     options.find((o) => o.value === v)?.display ?? v;
 
   function handleOptionClick (value: SelectProps['options'][number]['value'], disabled: boolean) {
-    if (disabled) return;
+    // The control as a whole, not just the option: a select mounted open,
+    // or disabled while open, could still be changed.
+    if (disabled || state === 'disabled') return;
     setDisplay(displayFor(value));
     if (isOpen) setIsOpen(false);
     if (valueInputRef.current) {
@@ -159,7 +166,7 @@ export default function CustomSelect ({state, value, onChange, options, open, si
 
   return (
     <div className="w-full">
-      { label && <label className="text-sm">{label}</label> }
+      { label && <label for={elemName} className="text-sm">{label}</label> }
       { getSelectBody() }
       { description && <div className="text-sm">{description}</div> }
     </div>

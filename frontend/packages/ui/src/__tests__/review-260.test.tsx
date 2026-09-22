@@ -14,7 +14,7 @@ import { MENU_ITEMS } from '../components/widgets/header-menu/constants';
 import {
   Paragraph, IconButton, Radio, Input, Select, CustomSelect, SoCListItem, SoCList,
   QrCodeWidget, HeaderBurgerButton, AbcSelector, VendorsList, TeamMember, ModalImage,
-  MainButton, FirmwarePartitionCalculator,
+  MainButton, FirmwarePartitionCalculator, ToggleButton,
 } from '../index';
 import { SOCS } from '../__fixtures__/socs';
 
@@ -304,5 +304,70 @@ describe('third round of the review', () => {
     // Free space is zero, so nothing in the bar may read as available.
     expect(document.querySelector('span')?.textContent).toBe('Free space: 0 KB');
     expect(document.body.innerHTML).toContain('bg-dark-grey');
+  });
+});
+
+describe('fourth round of the review', () => {
+  test('a CustomSelect shows its display text on the server', () => {
+    // The effect that corrects this does not run in a prerender, so the
+    // static page showed 8 where 'NOR 8' was configured.
+    const html = renderToString(h(CustomSelect, {
+      state: 'default' as const, value: '8', elemName: 'flash', onChange: () => {},
+      options: [{ value: '8', option: 'NOR 8 MB', display: 'NOR 8' }],
+    }));
+    expect(html).toContain('NOR 8');
+  });
+
+  test('a CustomSelect label names the control it labels', () => {
+    const { container } = render(h(CustomSelect, {
+      state: 'default' as const, value: 'a', elemName: 'sel', label: 'Flash size',
+      onChange: () => {}, options: [{ value: 'a', option: 'A', display: 'A' }],
+    }));
+    expect(container.querySelector('label')?.getAttribute('for')).toBe('sel');
+  });
+
+  test('a CustomSelect disabled while open cannot still be changed', () => {
+    let changed = 0;
+    const { container } = render(h(CustomSelect, {
+      state: 'disabled' as const, value: 'a', elemName: 'sel', open: true,
+      onChange: () => { changed++; },
+      options: [
+        { value: 'a', option: 'A', display: 'A' },
+        { value: 'b', option: 'B', display: 'B' },
+      ],
+    }));
+    const option = [...container.querySelectorAll('li')].find(li => li.textContent === 'B');
+    if (option) fireEvent.click(option);
+    expect(changed).toBe(0);
+  });
+
+  test('an icon-only toggle says what it toggles', () => {
+    const { container } = render(h(ToggleButton, {
+      size: 's', label: 'Pause', Icon: () => h('svg', {}), changeHandler: () => {},
+    }));
+    expect(container.querySelector('input')?.getAttribute('aria-label')).toBe('Pause');
+  });
+
+  test('a profile portrait has a text alternative', () => {
+    const { container } = render(h(TeamMember, {
+      name: 'widgetii', bio: 'Majestic Streamer', imgSrc: 'x.png', socials: [],
+    }));
+    expect(container.querySelector('img')?.getAttribute('alt')).toBe('widgetii');
+  });
+
+  test('the partition map of a full chip sums to 100%, not 101%', () => {
+    // 256 + 64 + 2048 + 5120 + 704 KB rounded one at a time came to 101% of
+    // the 8 MB they exactly fill, and the bar clips at overflow-hidden -- so
+    // a layout that fitted perfectly lost the end of its last partition.
+    render(h(FirmwarePartitionCalculator, {}));
+    fireEvent.click(screen.getAllByText('Lite')[0]);
+
+    const widths = [...document.querySelectorAll('[style*="width:"]')]
+      .map(el => /width:\s*([\d.]+)%/.exec(el.getAttribute('style') ?? '')?.[1])
+      .filter(Boolean)
+      .map(Number);
+
+    expect(widths.length).toBe(5);
+    expect(widths.reduce((a, b) => a + b, 0)).toBe(100);
   });
 });

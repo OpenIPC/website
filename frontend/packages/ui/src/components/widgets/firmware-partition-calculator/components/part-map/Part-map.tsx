@@ -31,7 +31,7 @@ export default function PartitionMap({ slices, freeSpace }: PartMapData) {
         // eslint-disable-next-line @eslint-react/no-array-index-key -- a partition map is positional; slices have no identity but their place
       !!slices.length && slices.map((slice, i) => (<div key={i} className={`
         ${getStyle(slice)}
-      `} style={`width:${slice.width}%;`}></div>))
+      `} style={`width:${slice.width}%;min-width:1px;`}></div>))
       }
       <div className="
         absolute inset-0 flex flex-row items-center justify-center

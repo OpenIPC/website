@@ -434,28 +434,45 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
    * anything occupied has to be drawn -- including the initial offset, which
    * getFreeSpace() subtracts but this used to ignore, leaving reserved flash
    * looking like room for another partition.
+   *
+   * Widths come from cumulative boundaries rather than from rounding each
+   * region on its own. Rounded independently, the Lite preset's 256, 64,
+   * 2048, 5120 and 704 KB came to 3 + 1 + 25 + 63 + 9 = 101% of a chip they
+   * exactly fill, and the map clips at overflow-hidden -- so a layout that
+   * fitted perfectly lost the end of its last partition. Rounding the
+   * running total instead makes the parts sum to the whole by construction.
+   *
+   * A region under half a percent therefore rounds to zero width. The map
+   * gives every slice a one-pixel minimum in CSS, which shows it without
+   * putting the arithmetic back out of true.
    */
   function getPartMapSlices(formState: FormSchema): SliceData[] {
     const total = megaBytesToBytes(Number.parseInt(formState['flash-size'].value));
     if (!total) return [];
-    const pct = (bytes: number) => {
-      const p = Math.round(bytes / total * 100);
-      return p === 0 ? 1 : p;
-    };
 
-    const slices: SliceData[] = [];
+    const regions: { bytes: number, color: SliceData['color'] }[] = [];
 
     const offsetState = formState['initial-offset'];
     const offset = offsetState.state === 'valid' ? parseOffset(offsetState.value) : 0;
-    if (offset > 0) slices.push({ width: pct(offset), color: 'reserved' });
+    if (offset > 0) regions.push({ bytes: offset, color: 'reserved' });
 
     for (let i = 0; i < 8; i++) {
       const part = formState[`part${i}-size` as ElemNames];
       if (!part.value || part.state !== 'valid') continue;
-      slices.push({
-        width: pct(kiloBytesToBytes(Number.parseInt(part.value))),
+      regions.push({
+        bytes: kiloBytesToBytes(Number.parseInt(part.value)),
         color: `partition${i}` as SliceData['color'],
       });
+    }
+
+    const slices: SliceData[] = [];
+    let consumed = 0;
+    let drawn = 0;
+    for (const { bytes, color } of regions) {
+      consumed += bytes;
+      const boundary = Math.min(100, Math.round(consumed / total * 100));
+      slices.push({ width: Math.max(0, boundary - drawn), color });
+      drawn = boundary;
     }
 
     return slices;

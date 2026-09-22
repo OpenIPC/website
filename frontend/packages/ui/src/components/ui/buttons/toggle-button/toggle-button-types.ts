@@ -5,6 +5,8 @@ type ToggleButtonProps = {
   checked?: boolean,
   disabled?: boolean,
   Icon?: FunctionComponent,
+  /** Spoken name. An icon-only toggle announces nothing without it. */
+  label?: string,
   changeHandler: (checked: boolean) => void,
 }
 

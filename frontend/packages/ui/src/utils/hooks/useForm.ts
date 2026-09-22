@@ -12,7 +12,9 @@ export default function useForm(formSchema: FormSchema, formValidationSchema: Fo
   }, [formElemsState]);
 
   function handleOnChange(e: Event) {
-    if (e.target instanceof HTMLInputElement) {
+    // Select too. It only accepted HTMLInputElement, so choosing an option
+    // in the package's own <Select> never reached the form state.
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) {
       const { name, value } = e.target;
       let curElem: FormSchema[0] = {  value, state: 'default', error: '' };
       curElem = validateInput({ [name]: curElem }, formValidationSchema);

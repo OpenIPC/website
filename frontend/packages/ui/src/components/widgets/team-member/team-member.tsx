@@ -8,7 +8,7 @@ export default function TeamMember(props: TeamMemberProps) {
   return (
     <li className="w-full list-none rounded-md border border-wallet-border">
       <div className="aspect-square rounded-t-md bg-repeat" style={`background-image: url(${bg})`}>
-        { imgSrc && <img src={imgSrc} className="w-full rounded-t-md"></img> }
+        { imgSrc && <img src={imgSrc} alt={name} className="w-full rounded-t-md"></img> }
       </div>
       <div className="relative min-h-[160px] p-3">
         <h5 className="pb-2 text-xl font-normal">{name}</h5>

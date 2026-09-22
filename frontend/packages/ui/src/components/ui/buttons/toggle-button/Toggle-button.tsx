@@ -1,6 +1,6 @@
 import type ToggleButtonProps from './toggle-button-types';
 
-export default function ToggleButton({ size, checked, disabled, Icon, changeHandler }: ToggleButtonProps) {
+export default function ToggleButton({ size, checked, disabled, Icon, label, changeHandler }: ToggleButtonProps) {
 
   function getSize(size: ToggleButtonProps['size']) {
     const sizes:Record<ToggleButtonProps['size'], string> = {
@@ -27,7 +27,7 @@ export default function ToggleButton({ size, checked, disabled, Icon, changeHand
     <div className="max-w-min rounded-sm">
       <label className={getClass()}>
         {Icon && <Icon />}
-        <input type="checkbox" onChange={handleChange} {...{checked, disabled}} className="
+        <input type="checkbox" aria-label={label} onChange={handleChange} {...{checked, disabled}} className="
           absolute -top-1 size-0
         " />
       </label>

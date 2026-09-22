@@ -61,6 +61,9 @@ export default function HeaderMenu({ menuItems }: HeaderMenuProps) {
     setIsOpen(false);
     setShouldRender(false);
     setIsAnimating(false);
+    // Left set, so returning to a mobile width showed an open burger with no
+    // drawer behind it.
+    setIsBurgBtnOpened(false);
   }
 
   return (
