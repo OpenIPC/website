@@ -143,8 +143,8 @@ export default function MenuItem(
         <div
           className={`
             transition-opacity duration-150
-            group-hover:visible group-hover:opacity-100
             group-focus-within:visible group-focus-within:opacity-100
+            group-hover:visible group-hover:opacity-100
             ${isSubMenuVisible ? 'visible opacity-100' : 'invisible opacity-0'}
           `}
         >
