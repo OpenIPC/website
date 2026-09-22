@@ -15,9 +15,15 @@ whole mechanism — no nginx edit per page, no feature flag, no header. Putting
 `donate/index.html` in the bundle makes `/donate` static; taking it out gives
 it back to Rails.
 
-Today the bundle holds one page, `/_smoke/`, which exists only to prove the
-seam is alive. Everything else on the site is answered by Rails, exactly as it
-was before this existed. #159 and #160 fill it.
+Today the bundle holds one page in three languages -- `/_smoke/`,
+`/ru/_smoke/` and `/zh/_smoke/` -- which exist only to prove the seam is
+alive. Everything else on the site is answered by Rails, exactly as it was
+before this existed. #160 fills it.
+
+Since #159 the bundle is an **Astro build**, in `frontend/apps/site`. It reads
+the marketing catalogue exported from `config/locales/*.yml` and renders
+`@openipc/ui` into the page, so a missing translation or a component that
+cannot render fails the build rather than reaching a visitor.
 
 ## Which side answered
 
@@ -41,6 +47,16 @@ which appears in no Rails log at all.
 deploy/static/build.sh dist        # -> dist/site, dist/MANIFEST, dist/REVISION
 deploy/static/check-bundle.sh dist/site
 ```
+
+`build.sh` runs the Astro build itself, so it needs Node and it installs the
+workspace on first use. Two escape hatches, both for callers that have already
+built: `SKIP_FRONTEND_BUILD=1` reuses `frontend/apps/site/dist`, and
+`STATIC_SITE_DIST=<dir>` collects from somewhere else entirely --
+`test/deploy/static_bundle_test.rb` uses the second so that `bin/rails test`
+never needs Node.
+
+The origin needs none of this. The bundle is built in CI and shipped as an
+image; webber-eu has 157 MiB free and no Node, deliberately.
 
 `build.sh` needs a real commit — `GITHUB_SHA` in CI, `git rev-parse HEAD`
 locally — and refuses anything else, because a bundle whose commit is unknown
@@ -78,7 +94,7 @@ not have. That is what these rules are about.
 |---|---|
 | a path Rails owns (`reserved-paths`) | it would shadow the route silently, with nothing in the Rails log |
 | the same path behind `/ru/` or `/zh/` | `/ru/snapshots/x` reaches the same route as `/snapshots/x` |
-| a directory with no `index.html` | "the directory exists" and "that page is extracted" must stay the same statement |
+| a directory with nothing under it | it serves no file and answers nothing, so it can only be the residue of a build that went wrong |
 | a **root** `index.html` | see below |
 | a symlink | `disable_symlinks` is not set, so `x -> /etc/passwd` would be a public file |
 | a file the nginx worker cannot read | a 403 on a bundle that looks perfectly installed |

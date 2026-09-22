@@ -6,7 +6,8 @@
     "node": ">=24.0.0"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
     "lint": "npm run lint --workspaces --if-present",
@@ -15,6 +16,7 @@
     "build": "npm run build --workspaces --if-present"
   },
   "allowScripts": {
-    "esbuild": true
+    "esbuild": true,
+    "sharp": true
   }
 }

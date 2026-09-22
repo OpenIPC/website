@@ -14,11 +14,14 @@
 # never fetchable at https://openipc.org/MANIFEST and the next sidecar has
 # somewhere to go.
 #
-# Today "collect the sources" is a copy of deploy/static/src/. #159 and #160
-# replace that one step with an Astro build writing into site/. Everything
-# after it -- the revision, the manifest, the checks -- is the part that has to
-# keep working across that change, which is why it lives here rather than in
-# the workflow.
+# "Collect the sources" is the Astro build in frontend/apps/site (#159).
+# Everything after it -- the revision, the manifest, the checks -- is the part
+# that had to keep working across that change, which is why it lives here
+# rather than in the workflow.
+#
+# Node is required. There is none on webber-eu and there is not going to be:
+# the bundle is built in CI and shipped as an image, and this script runs
+# there and on a developer's machine, never on the origin.
 
 set -euo pipefail
 
@@ -44,8 +47,34 @@ rm -rf "$OUT"
 mkdir -p "$OUT/site"
 
 # --- collect the sources ------------------------------------------------
-# One `cp` today. This is the line #159/#160 replace.
-cp -r "$HERE/src/." "$OUT/site/"
+# The Astro build writes the served tree. It needs @openipc/ui built first:
+# the site imports the package's dist, not its source, which is the same thing
+# a consumer outside the repository would do.
+#
+# SKIP_FRONTEND_BUILD is for a caller that has already built -- CI does, in the
+# step above this one, and building twice is a minute of nothing.
+FRONTEND="$(readlink -f "$HERE/../../frontend")"
+
+# STATIC_SITE_DIST points the collection at a tree somebody else produced.
+# test/deploy/static_bundle_test.rb uses it: those tests are about the
+# manifest, the stamping and the refusals, none of which care what the pages
+# say -- and `bin/rails test` should not need Node installed to run.
+SITE_DIST="${STATIC_SITE_DIST:-$FRONTEND/apps/site/dist}"
+
+if [ -z "${SKIP_FRONTEND_BUILD:-}" ] && [ -z "${STATIC_SITE_DIST:-}" ]; then
+  command -v npm >/dev/null \
+    || die "npm is needed to build the site; see the note at the top of this script"
+
+  info 'building the frontend'
+  [ -d "$FRONTEND/node_modules" ] || ( cd "$FRONTEND" && npm ci --no-audit --no-fund )
+  ( cd "$FRONTEND" && npm run build -w @openipc/ui --silent )
+  ( cd "$FRONTEND" && npm run build -w @openipc/site --silent )
+fi
+
+[ -d "$SITE_DIST" ] \
+  || die "$SITE_DIST does not exist; the Astro build produced nothing"
+
+cp -r "$SITE_DIST/." "$OUT/site/"
 
 # --- stamp the build ----------------------------------------------------
 # The smoke page names the commit it came from, which is what makes a rollback

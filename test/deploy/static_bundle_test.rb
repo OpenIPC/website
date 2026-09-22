@@ -20,8 +20,47 @@ class StaticBundleTest < ActiveSupport::TestCase
   RESERVED = STATIC.join('reserved-paths').read.lines
                    .map(&:strip).reject { |l| l.empty? || l.start_with?('#') }.freeze
 
-  def build(dir)
-    out, status = Open3.capture2e('bash', BUILD.to_s, dir)
+  # A stand-in for the Astro build (#159).
+  #
+  # These tests are about build.sh's machinery -- the revision, the manifest,
+  # the refusals -- and none of it cares what the pages say. Building the real
+  # site here would put Node on the critical path of `bin/rails test`, which
+  # is a Ruby suite and should stay one. deploy/static/build.sh is exercised
+  # against the real Astro output in the `build` job, where Node already is.
+  #
+  # The shapes are the ones Astro actually emits: the smoke page in three
+  # locale trees, an asset directory, and the @@TOKEN@@s build.sh substitutes.
+  FIXTURE_REVISION = '0123456789abcdef0123456789abcdef01234567'
+
+  def fixture_site(dir)
+    FileUtils.mkdir_p("#{dir}/_smoke")
+    File.write("#{dir}/_smoke/index.html", <<~HTML)
+      <!doctype html><html lang="en"><body>
+      <p>built from @@REVISION@@ at @@BUILT@@</p>
+      </body></html>
+    HTML
+
+    %w[ru zh].each do |locale|
+      FileUtils.mkdir_p("#{dir}/#{locale}/_smoke")
+      File.write("#{dir}/#{locale}/_smoke/index.html", <<~HTML)
+        <!doctype html><html lang="#{locale}"><body>
+        <p>built from @@REVISION@@ at @@BUILT@@</p>
+        </body></html>
+      HTML
+    end
+
+    FileUtils.mkdir_p("#{dir}/_astro")
+    File.write("#{dir}/_astro/app.css", 'body{}')
+    dir
+  end
+
+  def build(dir, site_dist: nil)
+    # A fixed commit rather than this checkout's. build.sh only insists the
+    # revision is forty hex characters, and asking git for the real one means
+    # the suite needs git installed and a .git it can resolve -- which a git
+    # worktree, whose .git is a file pointing elsewhere, does not always give.
+    env = { 'STATIC_SITE_DIST' => site_dist.to_s, 'GITHUB_SHA' => FIXTURE_REVISION }
+    out, status = Open3.capture2e(env, 'bash', BUILD.to_s, dir)
     [out, status]
   end
 
@@ -29,10 +68,11 @@ class StaticBundleTest < ActiveSupport::TestCase
     Open3.capture2e('bash', CHECK.to_s, site.to_s, *[manifest&.to_s].compact)
   end
 
-  # A bundle with the smoke page in it, as CI would produce.
+  # A bundle shaped like the one CI produces.
   def with_bundle
     Dir.mktmpdir do |tmp|
-      out, status = build(File.join(tmp, 'dist'))
+      site_dist = fixture_site(File.join(tmp, 'site-src'))
+      out, status = build(File.join(tmp, 'dist'), site_dist: site_dist)
       assert status.success?, "build.sh failed:\n#{out}"
       yield File.join(tmp, 'dist')
     end
@@ -112,6 +152,50 @@ class StaticBundleTest < ActiveSupport::TestCase
   # rule 8 verifies the manifest from inside the tree -- so a relative path that
   # is not resolved first stops existing the moment it cds. Every test above
   # passes an absolute tmpdir and none of them would have caught it; CI did.
+  # --- the shapes #159 brought -------------------------------------------
+  #
+  # Rule 2 used to demand an index.html in every directory. A bundle with more
+  # than one page cannot satisfy that: `ru/` sits above `ru/donate/index.html`
+  # and is not itself a page, and the build writes `_astro/` of stylesheets
+  # and fonts. deploy/nginx/check-config.sh --seam measures what nginx does
+  # with both -- they fall through to Rails, not to a 403 -- so what is left
+  # to refuse is a directory serving nothing at all.
+
+  test 'a locale directory above a page is allowed' do
+    with_bundle do |dist|
+      assert File.directory?("#{dist}/site/ru"), 'the fixture should have built a locale tree'
+      assert_not File.exist?("#{dist}/site/ru/index.html"),
+                 'the Russian home page is #160, not this'
+
+      out, status = check("#{dist}/site")
+      assert status.success?, "check-bundle.sh refused a locale directory:\n#{out}"
+    end
+  end
+
+  test 'the asset directory is allowed' do
+    with_bundle do |dist|
+      assert File.directory?("#{dist}/site/_astro")
+      assert_not File.exist?("#{dist}/site/_astro/index.html")
+
+      out, status = check("#{dist}/site")
+      assert status.success?, "check-bundle.sh refused the asset directory:\n#{out}"
+    end
+  end
+
+  test 'every locale tree is stamped, not just the English one' do
+    # build.sh substitutes @@REVISION@@ across every .html in the tree. When
+    # that was one file the distinction did not exist; with three it does, and
+    # a page still holding @@REVISION@@ would be shipped by a check that only
+    # ever looked at _smoke/index.html.
+    with_bundle do |dist|
+      %w[_smoke ru/_smoke zh/_smoke].each do |page|
+        html = File.read("#{dist}/site/#{page}/index.html")
+        assert_match(/[0-9a-f]{40}/, html, "#{page} does not name the commit it was built from")
+        assert_no_match(/@@/, html, "#{page} still has an unsubstituted token")
+      end
+    end
+  end
+
   test 'the checks work on a relative path' do
     with_bundle do |dist|
       out, status = Open3.capture2e('bash', CHECK.to_s, 'dist/site', chdir: File.dirname(dist))
@@ -131,9 +215,8 @@ class StaticBundleTest < ActiveSupport::TestCase
       FileUtils.mkdir_p("#{site}/ru/snapshots")
       File.write("#{site}/ru/snapshots/index.html", 'x')
     },
-    'a directory with no index.html' => lambda { |site|
-      FileUtils.mkdir_p("#{site}/guide/deep")
-      File.write("#{site}/guide/deep/index.html", 'x')
+    'a directory with nothing under it' => lambda { |site|
+      FileUtils.mkdir_p("#{site}/guide/empty")
     },
     'a symlink out of the tree' => ->(site) { File.symlink('/etc/passwd', "#{site}/leak") },
     'a file added after the manifest was written' => ->(site) { File.write("#{site}/stray.html", 'x') }

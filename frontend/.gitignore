@@ -7,3 +7,7 @@ storybook-static/
 # The rendered gallery, not src/gallery/ which builds it. Anchored two
 # levels down on purpose: a bare `gallery/` also swallowed the source.
 packages/*/gallery/
+
+# Astro's generated type cache and its build output. `astro sync` rewrites
+# .astro/ from the config on every build and check.
+.astro/

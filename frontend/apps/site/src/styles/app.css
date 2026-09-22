@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@import "@openipc/ui/tokens.css";
+
+/* Tailwind has to see the class names the package's components use, or the
+ * utilities they are drawn with are never generated and the components render
+ * unstyled. The package ships no compiled sheet on purpose -- see its own
+ * tokens.css -- and this is the other half of that bargain. */
+@source "../../../../packages/ui/dist";
+@source "../**/*.{astro,ts,tsx}";

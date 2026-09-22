@@ -131,17 +131,22 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Lint @openipc/ui
+      # --workspaces, so @openipc/site (#159) is covered by the same three
+      # commands the moment it exists. Its type-check is `astro check`, which
+      # reads the .astro files as well as the .ts, and its tests build the
+      # site first and then assert against the built tree -- three locale
+      # trees, the components rendered into them, the tokens carried over.
+      - name: Lint the frontend
         if: always()
         working-directory: frontend
         run: npm run lint
 
-      - name: Type-check @openipc/ui
+      - name: Type-check the frontend
         if: always()
         working-directory: frontend
         run: npm run typecheck
 
-      - name: Test @openipc/ui
+      - name: Test the frontend
         if: always()
         working-directory: frontend
         run: npm test
@@ -205,11 +210,27 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # --- the static bundle (#157) ---------------------------------------
+      # --- the static bundle (#157, filled by #159) -------------------------
       # Steps in this job rather than a job of their own. Branch protection on
       # master requires exactly the contexts `build` and `test`; a third job
       # would report without gating, and a bundle that could shadow /admin has
       # to be able to block a merge.
+      #
+      # The bundle is the Astro build now, so this job needs Node. The origin
+      # does not and never will: #142 ships a tarball built here, and
+      # webber-eu has 157 MiB free.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install the frontend workspace
+        working-directory: frontend
+        run: npm ci
+
+      # build.sh runs the Astro build itself when node_modules is present, so
+      # this is the same command a developer runs locally.
       - name: Build the static bundle
         run: deploy/static/build.sh dist
 

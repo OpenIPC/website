@@ -109,6 +109,15 @@ STUB
 # One page, which is exactly what the real bundle holds today.
 install -d -m 0755 /srv/www/static/prod/site-test/_smoke
 printf 'SMOKE\n' > /srv/www/static/prod/site-test/_smoke/index.html
+# A locale directory holding a page but no index of its own, and an asset
+# directory holding no page at all. Both shapes arrive with #159: Astro writes
+# ru/_smoke/index.html and _astro/*, and neither ru/ nor _astro/ is a page.
+# check-bundle.sh used to refuse them, so what nginx does with them is worth
+# measuring rather than assuming.
+install -d -m 0755 /srv/www/static/prod/site-test/ru/_smoke
+printf 'SMOKE RU\n' > /srv/www/static/prod/site-test/ru/_smoke/index.html
+install -d -m 0755 /srv/www/static/prod/site-test/_astro
+printf 'body{}\n' > /srv/www/static/prod/site-test/_astro/app.css
 ln -s site-test /srv/www/static/prod/current
 
 # A token where dehydrated puts one, so the openipc.eu probes below can tell
@@ -209,6 +218,21 @@ printf '  %-32s %-5s %-9s %s\n' PATH CODE SERVED-BY HSTS
 # rather than being redirected to /_smoke/.
 expect /_smoke/                     200 static hsts
 expect /_smoke                      200 static hsts
+
+# A locale tree: the page is static, and the bare locale directory above it is
+# NOT a 403. `try_files $uri $uri/index.html` writes its first element without
+# a trailing slash, so it is a FILE test -- a directory misses it, misses
+# index.html too, and falls through to Rails. That is what makes it safe for
+# the bundle to contain ru/ before anything owns /ru/, which is #160's call.
+expect /ru/_smoke/                  200 static hsts
+expect /ru/                         200 rails  hsts
+expect /ru                          200 rails  hsts
+
+# The asset directory is the same shape and answers the same way: its files
+# are served, and its bare directory URL -- which nothing links to -- is
+# Rails' 404 rather than nginx's 403.
+expect /_astro/app.css              200 static hsts
+expect /_astro/                     200 rails  hsts
 
 # Everything else is still Rails, which is the whole claim of this change.
 expect /                            200 rails  hsts

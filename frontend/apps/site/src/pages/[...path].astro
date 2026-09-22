@@ -1,0 +1,36 @@
+---
+/**
+ * The three smoke pages, and only those.
+ *
+ * A dynamic route rather than `src/pages/_smoke/index.astro`, because Astro
+ * ignores anything under src/pages whose name begins with an underscore --
+ * that prefix is its convention for files that are not routes. A rest
+ * parameter has no such rule, so the underscore can come from the value.
+ *
+ * `/_smoke/` is not ours to rename: deploy/static.sh verifies it after every
+ * install, deploy/nginx/check-config.sh asserts nginx serves it from the
+ * bundle and not from Rails, build.sh refuses a bundle without it, and both
+ * DEV-VALIDATION.md and RESTORE.md tell a reader to curl it. The page is the
+ * one thing proving the seam is alive, so the address stays and the routing
+ * bends.
+ *
+ * getStaticPaths names every address this route may claim, so it cannot
+ * swallow anything. When #160 brings the marketing pages they are ordinary
+ * files, and Astro prefers a static route to a dynamic one.
+ */
+import Smoke from '../components/Smoke.astro';
+import { LOCALES, DEFAULT_LOCALE, pathFor, type Locale } from '../lib/i18n';
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({
+    // Leading slash stripped: a rest parameter is the path relative to the
+    // site root.
+    params: { path: pathFor(locale as Locale, '/_smoke').replace(/^\//, '') },
+    props: { locale },
+  }));
+}
+
+const { locale } = Astro.props as { locale: Locale };
+void DEFAULT_LOCALE;
+---
+<Smoke locale={locale} />
