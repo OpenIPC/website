@@ -180,14 +180,34 @@ class WallSupplyLineTest < ActionDispatch::IntegrationTest
     ["/snapshots/#{id}/archive", "/snapshots/#{id}/slideshow"].each do |path|
       get path
       assert_response :success
-      assert_match(/<html/, response.body, "#{path} answered a fragment to a plain GET")
+      plain = response.body
 
       get path, headers: { 'Turbo-Frame' => 'snapshot-archive' }
       assert_response :success
-      assert_match(/<html/, response.body, <<~MESSAGE.chomp)
+      framed = response.body
+
+      # The plain body has to be a real page first. Equality alone would be
+      # satisfied by two identically broken responses, and `assert_match
+      # /<html/` -- what the first version of this test checked -- is satisfied
+      # by the bug itself, because turbo-rails answers from
+      # layouts/turbo_rails/frame, which IS an <html> document with an empty
+      # <head>.
+      %w[stylesheet application og:title canonical].each do |marker|
+        assert_includes plain, marker, "#{path} lost #{marker} on a plain GET"
+      end
+
+      # Then the invariant itself, stated as the invariant rather than as a
+      # sample of it: ONE address, ONE body. Any frame-dependent difference
+      # that happened to keep the markers above would pass a marker check and
+      # still be cached for every client for 300 seconds. Deterministic here
+      # because csrf_needed? is true only for Devise controllers, so nothing
+      # per-request is rendered into these pages.
+      assert_equal plain, framed, <<~MESSAGE.chomp
         #{path} answered a different body to a frame request. The proxy cache
-        key is $scheme$host|$locale_key|$uri, so whichever of the two bodies
-        arrives first is what every other client gets for 300 seconds.
+        key is $scheme$host|$locale_key|$uri and knows nothing about
+        Turbo-Frame, so whichever of the two arrives first is what every other
+        client gets for the next 300 seconds. Sizes: #{plain.bytesize} plain,
+        #{framed.bytesize} framed.
       MESSAGE
     end
   end
