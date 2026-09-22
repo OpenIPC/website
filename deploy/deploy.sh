@@ -23,6 +23,8 @@ REGISTRY_IMAGE="ghcr.io/openipc/website"
 SELF="$(readlink -f "${BASH_SOURCE[0]}")"
 COMPOSE_FILE="$(dirname "$SELF")/docker-compose.yml"
 CHECKOUT_DIR="$(dirname "$SELF")"
+# shellcheck source=deploy/env-checkout.sh
+. "${CHECKOUT_DIR}/env-checkout.sh"
 ENV_FILE="$(dirname "$COMPOSE_FILE")/.env"
 STATE_DIR="/srv/www"
 HEALTH_TIMEOUT=90
@@ -155,7 +157,9 @@ wait_healthy() {
 }
 
 do_deploy() {
-  checkout_warn "$CHECKOUT_DIR"
+  # First, before any work -- checkout_freshness_test.rb asserts that. The
+  # branch comes off $1 rather than env_name below so it can stay first.
+  checkout_warn "$CHECKOUT_DIR" "$(checkout_branch_for "${1:-prod}")"
   local env_name=$1 sha=${2:-latest}
   read -r service port tag_key prev_file blob_root cache_root wall_root <<<"$(target_for "$env_name")"
   local prev_path="${STATE_DIR}/${prev_file}"
@@ -239,7 +243,18 @@ do_rollback() {
 }
 
 do_status() {
-  checkout_report "$CHECKOUT_DIR"
+  # Both checkouts, because two of them is the thing most likely to surprise
+  # somebody: production's rules come from deploy-src on master and dev's from
+  # deploy-src-dev on dev, and a dev checkout left on last week's branch is a
+  # dev site being judged by last week's rules.
+  checkout_report "$DEPLOY_SRC_PROD" master
+  if [ -d "$DEPLOY_SRC_DEV" ]; then
+    printf '\n'
+    checkout_report "$DEPLOY_SRC_DEV" dev
+  else
+    printf '\ndev checkout:\n  %s does not exist; dev runs production'"'"'s copy\n' \
+      "$DEPLOY_SRC_DEV"
+  fi
   printf '\nconfigured tags:\n'
   [ -f "$ENV_FILE" ] && sed 's/^/  /' "$ENV_FILE" || printf '  (no %s yet)\n' "$ENV_FILE"
   printf '\nrollback target (previous release):\n'

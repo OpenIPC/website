@@ -51,15 +51,63 @@ actually pullable before deploying:
 ssh -p 35242 root@openipc.org "docker pull -q ghcr.io/openipc/website:$(git rev-parse HEAD)"
 ```
 
-### 3. Deploy to dev
+### 3. Put the branch on `dev`, then deploy
 
 ```bash
-git -C /srv/www/deploy-src pull --ff-only   # [host] first, every time
+git push -f origin my-branch:dev            # [local] dev is a scratch pointer
+git -C /srv/www/deploy-src-dev fetch origin && \
+  git -C /srv/www/deploy-src-dev reset --hard origin/dev   # [host]
 openipc-deploy dev <sha>        # or: openipc-deploy dev my-branch
 openipc-static dev <sha>        # only if the change touches the static bundle
 ```
 
-**The pull is not housekeeping.** `openipc-deploy` reads `docker-compose.yml`
+**`dev` is a branch, force-pushed to whatever is being tried.** Nothing merges
+through it and it is never a base; `git rev-parse origin/dev` simply answers
+"what is on the dev site", which nothing answered before.
+
+It exists because the two commands read more than their own logic out of the
+checkout they live in — `docker-compose.yml`, the installers' payloads, and
+`deploy/static/check-bundle.sh`, which judges every bundle before it is
+installed. One checkout meant those were **master's** rules for dev as well,
+so a change to any of them could not be tried on dev before it landed — on a
+site whose rule is that nothing lands before it has been tried on dev.
+
+Now `deploy-src` on master serves production and `deploy-src-dev` on dev
+serves dev, and **`openipc-static dev` hands the whole invocation to the dev
+checkout's copy of itself** — so a change to `static.sh` or to
+`check-bundle.sh` is tried on dev like any other change.
+
+`openipc-deploy` deliberately does **not** do this, and the asymmetry is worth
+knowing rather than discovering: the two environments share one docker compose
+project and one `.env` carrying both `PROD_TAG` and `DEV_TAG`, and `deploy.sh`
+derives both paths from the checkout it runs out of. Handing it over would
+have dev writing a different `.env` from production's — a fresh dev checkout
+writing only `DEV_TAG`, so compose rejects the missing `PROD_TAG`. Testing a
+change to `deploy.sh` still means running the dev checkout's copy by hand.
+
+The bundle has no such sharing: separate trees, separate symlinks, separate
+rollback pointers, and the per-environment rules that made any of this
+necessary.
+
+Production is untouched by all of it: it runs master's scripts against
+master's rules, which is what makes a rollback to an old bundle safe.
+`test/deploy/env_checkout_test.rb` asserts that a production command is never
+sent through the dev checkout, that `deploy.sh` hands nothing over, and that
+every command — `rollback dev`, `verify dev`, `dev <sha>` — arrives on the
+other side unchanged. The first version rebuilt the argument list and turned
+`verify dev`, a read-only command, into an install.
+
+To see what production would say about a bundle before shipping it there, run
+master's copy of the checker against it:
+
+```bash
+git show origin/master:deploy/static/check-bundle.sh > /tmp/check.sh
+git show origin/master:deploy/static/reserved-paths  > /tmp/reserved-paths
+deploy/static/build.sh dist
+bash /tmp/check.sh dist/site dist/MANIFEST
+```
+
+**Resetting the dev checkout is not housekeeping.** `openipc-deploy` reads `docker-compose.yml`
 and `legacy-images/` out of that checkout, the three installers read their
 payloads out of it, and both `/usr/local/sbin` commands are symlinks into it —
 so a stale checkout deploys a stale compose file and a command added to the
