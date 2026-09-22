@@ -98,18 +98,23 @@ const metaDescription = description ?? t('site.default_meta_description');
     marketing pages prerendered there is nothing to open. It is a <nav> with
     its own label so a screen reader can skip it, and the current language is
     a <span> rather than a link to the page you are already on.
-  -->
-  <nav aria-label="Language" class="bg-ink-2 text-xs">
-    <div class="mx-auto flex max-w-[1240px] flex-row justify-end gap-x-4 px-4 py-1.5">
-      {Object.entries(alt).map(([code, p]) => (
-        code === locale
-          ? <span aria-current="true" class="font-semibold text-white">{LOCALE_NAMES[code as Locale]}</span>
-          : <a class="text-white/70 no-underline hover:text-white hover:underline" href={p} hreflang={code}>{LOCALE_NAMES[code as Locale]}</a>
-      ))}
-    </div>
-  </nav>
 
+    Both rows are inside the sticky wrapper. The Rails navbar is `sticky-top`
+    and carries its language dropdown with it, so a reader who has scrolled can
+    still switch language; pinning only the menu row would have taken that away
+    on the static half of the site while leaving it on the Rails half.
+  -->
   <div class="site-header">
+    <nav aria-label="Language" class="bg-ink-2 text-xs">
+      <div class="mx-auto flex max-w-[1240px] flex-row justify-end gap-x-4 px-4 py-1.5">
+        {Object.entries(alt).map(([code, p]) => (
+          code === locale
+            ? <span aria-current="true" class="font-semibold text-white">{LOCALE_NAMES[code as Locale]}</span>
+            : <a class="text-white/70 no-underline hover:text-white hover:underline" href={p} hreflang={code}>{LOCALE_NAMES[code as Locale]}</a>
+        ))}
+      </div>
+    </nav>
+
     <SiteNav client:load menuItems={menuFor(locale)} />
   </div>
 

@@ -79,3 +79,25 @@
 .site-header nav {
   background-color: var(--color-ink);
 }
+
+/*
+ * Pinned, because the Rails navbar is (#160).
+ *
+ * app/views/layouts/_navbar.html.erb carries Bootstrap's `sticky-top`, so on
+ * every page the bundle does not serve -- `/`, /supported-hardware, the Open
+ * Wall -- the navigation stays put while the page scrolls. A static page whose
+ * navigation scrolls away is the same "it changes when you click a link"
+ * failure the whole cutover exists to avoid, and it is the kind that only
+ * shows up once somebody scrolls.
+ *
+ * z-index 1020 is Bootstrap's own $zindex-sticky, so the two halves of the
+ * site stack their headers identically. The value matters here: the menu's
+ * dropdowns are absolutely positioned inside this element, and a sticky
+ * ancestor is a stacking context -- without it they would open behind the
+ * page rather than over it.
+ */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+}

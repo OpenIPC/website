@@ -23,6 +23,15 @@ import { RAILS_PATHS, RAILS_PREFIXES } from './rails-paths';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const dist = join(root, 'dist');
 
+function walk(dir: string, acc: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) walk(full, acc);
+    else acc.push(full.slice(dist.length + 1));
+  }
+  return acc;
+}
+
 /** Every built page, as [locale, locale-free path, html]. */
 function builtPages(): [Locale, string, string][] {
   return LOCALES.flatMap((locale) =>
@@ -79,6 +88,42 @@ describe('every page is a page', () => {
       const rendered = html.replace(/<astro-island\b[^>]*>/g, '');
       expect(rendered, `${locale}${path} has an unfilled interpolation`).not.toMatch(/%\{\w+\}/);
     }
+  });
+});
+
+describe('the shell behaves the way the Rails shell does', () => {
+  // The seam's whole premise is that a visitor cannot tell which half of the
+  // site they are on. Two of the ways they could are properties of the built
+  // CSS rather than of any page's markup, so they are checked here.
+  const stylesheet = walk(dist)
+    .filter((f) => f.startsWith('_astro/') && f.endsWith('.css'))
+    .map((f) => readFileSync(join(dist, f), 'utf8'))
+    .join('\n');
+
+  test('the navigation is pinned, as app/views/layouts/_navbar.html.erb is', () => {
+    // Bootstrap's `sticky-top`. Every page the bundle does not serve -- `/`,
+    // /supported-hardware, the Open Wall -- keeps its navigation put while the
+    // page scrolls, and a static page whose navigation scrolls away is the
+    // "it changes when you click a link" failure the cutover exists to avoid.
+    // It is also the kind that only shows up once somebody scrolls, which is
+    // why it is asserted rather than looked at.
+    const rule = stylesheet.match(/\.site-header\{([^}]*)\}/);
+    expect(rule, '.site-header has no rule of its own in the built CSS').toBeTruthy();
+    expect(rule![1]).toContain('position:sticky');
+    expect(rule![1]).toContain('top:0');
+    // Bootstrap's $zindex-sticky, so the two halves stack their headers
+    // identically -- and so the menu's dropdowns, which are positioned inside
+    // a sticky element and therefore inside its stacking context, open over
+    // the page rather than behind it.
+    expect(rule![1]).toContain('z-index:1020');
+  });
+
+  test('the navigation band is ink, not the package\'s indigo', () => {
+    // @openipc/ui draws Header and HeaderMenu on --color-brand-blue. A
+    // navigation bar that changes colour when a visitor crosses the seam reads
+    // as breakage; the override is unlayered on purpose, and an unlayered rule
+    // is exactly the kind a later refactor drops without noticing.
+    expect(stylesheet).toMatch(/\.site-header header,\.site-header nav\{background-color:var\(--color-ink\)\}/);
   });
 });
 
@@ -264,15 +309,6 @@ describe('the pages say what they are for', () => {
     }
   });
 });
-
-function walk(dir: string, acc: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) walk(full, acc);
-    else acc.push(full.slice(dist.length + 1));
-  }
-  return acc;
-}
 
 describe('the bundle holds nothing it should not', () => {
   test('no directory in the tree is empty', () => {
