@@ -85,14 +85,14 @@ export default function ModalImage({
       <div className="mx-auto w-10/12 rounded-lg border bg-white">
         <div className="flex flex-row rounded-t-lg border-b-2 bg-white p-4">
           <p className="w-[calc(100%-24px)] truncate text-lg text-brand-blue">{alt}</p>
-          <div className="
+          <button className="
             size-6
             *:size-6 *:fill-light-blue *:transition-all
             hover:cursor-pointer
             hover:*:fill-brand-blue
-          " onClick={close}>
+          " onClick={close} type="button" aria-label="Close image">
             <Cross />
-          </div>
+          </button>
         </div>
         <div className="p-4">
           <img className="mx-auto" src={src} alt={alt}/>

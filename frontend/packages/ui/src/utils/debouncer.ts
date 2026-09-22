@@ -1,5 +1,7 @@
 type Timeout = {
-  current: NodeJS.Timeout|undefined,
+  // Not NodeJS.Timeout: that name is only in scope with @types/node, and a
+  // browser component library has no business demanding it of a consumer.
+  current: ReturnType<typeof setTimeout> | undefined,
 };
   
 export function debounce<

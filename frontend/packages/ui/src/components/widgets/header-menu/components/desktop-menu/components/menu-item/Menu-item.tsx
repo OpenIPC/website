@@ -81,11 +81,31 @@ export default function MenuItem(
                 >
                   {label}
                 </a>
-              : <span
-                  className="w-max cursor-default tracking-wide text-white"
-                >
-                  {label}
-                </span>
+              : children
+                // A parent entry opens a submenu, so it is a button. It was
+                // a span, and the submenu opened on mouseenter alone, which
+                // left every child link of About and Tools unreachable
+                // without a pointer.
+                ? <button
+                    type="button"
+                    className="w-max cursor-pointer tracking-wide text-white"
+                    aria-expanded={isSubMenuVisible}
+                    aria-haspopup="true"
+                    onClick={() => setIsSubMenuVisible(!isSubMenuVisible)}
+                    onKeyDown={(e: KeyboardEvent) => {
+                      if (e.key === 'Escape') { setIsSubMenuVisible(false); return; }
+                      if (e.key !== 'ArrowDown') return;
+                      e.preventDefault();
+                      setIsSubMenuVisible(true);
+                    }}
+                  >
+                    {label}
+                  </button>
+                : <span
+                    className="w-max cursor-default tracking-wide text-white"
+                  >
+                    {label}
+                  </span>
           }
           {
             active

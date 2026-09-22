@@ -85,6 +85,10 @@ console.log('rendered, typed and styled from a published tarball');
 JS
 node check.mjs
 
+# skipLibCheck: false on purpose. With it on, the published declarations
+# type-checked while referencing nineteen hand-written .d.ts files that the
+# build never emitted -- every one of those imports dangling, and this
+# script saying ok.
 info 'checking the declarations resolve'
 npm install --no-audit --no-fund --silent typescript@6 >/dev/null 2>&1 || \
   npm install --no-audit --no-fund --silent typescript >/dev/null
@@ -99,7 +103,7 @@ export const used = [SoCListItem, soc];
 TS
 cat > tsconfig.json <<'JSON'
 { "compilerOptions": { "module": "ESNext", "moduleResolution": "bundler",
-  "target": "ES2022", "strict": true, "noEmit": true, "skipLibCheck": true,
+  "target": "ES2022", "strict": true, "noEmit": true, "skipLibCheck": false,
   "jsx": "react-jsx", "jsxImportSource": "preact" }, "include": ["types.ts"] }
 JSON
 npx --no-install tsc -p tsconfig.json

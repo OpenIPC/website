@@ -67,11 +67,23 @@ export default function MenuItem(
                 >
                   {label}
                 </a>
-              : <span
-                  className="w-max cursor-default tracking-wide text-white"
-                >
-                  {label}
-                </span>
+              : children
+                // A parent row expands its children, so it is a button. The
+                // row's onClick did the expanding and a span cannot receive
+                // it from a keyboard.
+                ? <button
+                    type="button"
+                    className="w-max cursor-pointer tracking-wide text-white"
+                    aria-expanded={isExpanded}
+                    onClick={toggleSubMenu}
+                  >
+                    {label}
+                  </button>
+                : <span
+                    className="w-max cursor-default tracking-wide text-white"
+                  >
+                    {label}
+                  </span>
           }
           {
             active

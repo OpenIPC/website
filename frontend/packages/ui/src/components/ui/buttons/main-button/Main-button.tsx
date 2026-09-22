@@ -1,6 +1,6 @@
 import type MainButtonProps from './main-button-types';
 
-export default function MainButton({ size, disabled, caption, type, Icon, clickHandler }: MainButtonProps) {
+export default function MainButton({ size, disabled, caption, type, Icon, label, clickHandler }: MainButtonProps) {
   function getSize(size: MainButtonProps['size']) {
     const sizes:Record<MainButtonProps['size'], string> = {
       xs: 'w-16 h-8',
@@ -18,7 +18,14 @@ export default function MainButton({ size, disabled, caption, type, Icon, clickH
   }
 
   return (
-    <button className={getClass()} type={type ?? 'button'} {...{disabled}} onClick={clickHandler}>
+    <button
+      className={getClass()}
+      type={type ?? 'button'}
+      {...{disabled}}
+      // An icon-only button announces nothing without this.
+      aria-label={label ?? (caption ? undefined : 'Button')}
+      onClick={clickHandler}
+    >
       {caption}
       {Icon && <Icon />}
     </button>

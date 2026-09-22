@@ -7,7 +7,7 @@ export default function Input(props: InputProps) {
     elemName, type, label, state,
     onInput, required, value, placeholder,
     Icon, iconClickHandler, iconPlace,
-    iconTooltip, errorText, description
+    iconTooltip, iconLabel, errorText, description
   } = props;
 
   const getUnderInputText = (errorText?: string, description?: string) => {
@@ -56,7 +56,19 @@ export default function Input(props: InputProps) {
           type={type} id={elemName} name={elemName} {...(placeholder && { placeholder })}
           {...(value !== undefined && { value })} required={required} onInput={onInput} ref={inputRef}
         />
-        {Icon && <div className={getIconStyle(iconPlace)} onClick={handleIconClick} title={iconTooltip}><Icon /></div>}
+        {Icon && (iconClickHandler
+          // An actionable icon is a button. It was a div with an onClick, so
+          // the documented random-MAC action could not be reached at all
+          // without a pointer.
+          ? <button
+              type="button"
+              className={getIconStyle(iconPlace)}
+              onClick={handleIconClick}
+              title={iconTooltip}
+              aria-label={iconLabel ?? iconTooltip ?? 'Field action'}
+            ><Icon /></button>
+          : <div className={getIconStyle(iconPlace)} title={iconTooltip}><Icon /></div>
+        )}
       </div>
       <div className="min-h-5 leading-4">
         <span className={`

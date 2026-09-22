@@ -44,7 +44,7 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
           validateDependencies(curFormElemsState),
         );
         setFormElemsState(curFormElemsStateDepCheck);
-        setPartMap(getPartMapSlices(curFormElemsStateDepCheck) as SliceData[]);
+        setPartMap(getPartMapSlices(curFormElemsStateDepCheck));
         getFreeSpace(curFormElemsStateDepCheck);
         setPartString('');
       }
@@ -330,7 +330,7 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
       };
     }
     setFormElemsState(tempFormElemsState);
-    setPartMap(getPartMapSlices(tempFormElemsState) as SliceData[]);
+    setPartMap(getPartMapSlices(tempFormElemsState));
     getFreeSpace(tempFormElemsState);
     setPartString('');
   }
@@ -429,14 +429,34 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
     setPartString(getPartString(tempFormElemsState));
   }
 
-  function getPartMapSlices(formState: FormSchema) {
-    const size = Number.parseInt(formState['flash-size'].value);
-    const slices = Object.entries(formState)
-    .filter(entry => /^part\d-size$/i.test(entry[0]))
-    .reduce((acc: string[] | [] , el): string[] => [...acc, ...(el[1].value && el[1].state === 'valid' ? [el[1].value] : [])], [])
-    .map(slice => Math.round(kiloBytesToBytes(Number.parseInt(slice)) / megaBytesToBytes(size) * 100))
-    .map(slice => slice === 0 ? 1 : slice)
-    .map((slice, i) => ({ width: slice, color: `partition${i}` }));
+  /**
+   * The bar under the form. Its grey remainder is labelled "free space", so
+   * anything occupied has to be drawn -- including the initial offset, which
+   * getFreeSpace() subtracts but this used to ignore, leaving reserved flash
+   * looking like room for another partition.
+   */
+  function getPartMapSlices(formState: FormSchema): SliceData[] {
+    const total = megaBytesToBytes(Number.parseInt(formState['flash-size'].value));
+    if (!total) return [];
+    const pct = (bytes: number) => {
+      const p = Math.round(bytes / total * 100);
+      return p === 0 ? 1 : p;
+    };
+
+    const slices: SliceData[] = [];
+
+    const offsetState = formState['initial-offset'];
+    const offset = offsetState.state === 'valid' ? parseOffset(offsetState.value) : 0;
+    if (offset > 0) slices.push({ width: pct(offset), color: 'reserved' });
+
+    for (let i = 0; i < 8; i++) {
+      const part = formState[`part${i}-size` as ElemNames];
+      if (!part.value || part.state !== 'valid') continue;
+      slices.push({
+        width: pct(kiloBytesToBytes(Number.parseInt(part.value))),
+        color: `partition${i}` as SliceData['color'],
+      });
+    }
 
     return slices;
   }

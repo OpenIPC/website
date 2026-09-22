@@ -13,6 +13,10 @@ export default function PartitionMap({ slices, freeSpace }: PartMapData) {
       'partition5': 'bg-partition5', 
       'partition6': 'bg-partition6',
       'partition7': 'bg-partition7',
+      // Occupied by the initial offset. Not a partition, and not free --
+      // the map used to leave it in the grey remainder, where it reads as
+      // room for another partition.
+      'reserved': 'bg-dark-grey',
     };
 
     return `${bgs[color]}`;

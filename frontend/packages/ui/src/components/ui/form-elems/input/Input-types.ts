@@ -11,6 +11,8 @@ export type InputProps = {
   placeholder?: string,
   Icon?: FunctionComponent,
   iconClickHandler?: (elem: HTMLInputElement, e: Event) => void,
+  /** Spoken name for the icon action, when there is one. */
+  iconLabel?: string,
   iconPlace?: 'left' | 'right',
   iconTooltip?: string,
   errorText?: string,

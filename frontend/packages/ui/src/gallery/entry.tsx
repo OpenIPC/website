@@ -176,7 +176,7 @@ export const ENTRIES: Entry[] = [
     }) },
 
   // --- tools --------------------------------------------------------------
-  { group: 'Tools', name: 'FirmwarePartitionCalculator', live: true, changed: 'lifted out of sites/main/pages/tools/; three click handlers renamed off the use prefix that made eslint read them as hooks', note: '/tools/firmware-partitions-calculation — 238 lines of arithmetic whose output is pasted into a bootloader',
+  { group: 'Tools', name: 'FirmwarePartitionCalculator', live: true, changed: 'lifted out of sites/main/pages/tools/. A decimal initial offset was read as hex, so 4096 laid out at 0x4096; the exported line dropped the offset entirely and would have been pasted over reserved flash; partition names could contain the comma that separates partitions; a preset merged into the previous layout instead of replacing it; the address columns kept describing a layout after it was edited; nothing was actually debounced; and the map drew reserved flash as free space', note: '/tools/firmware-partitions-calculation — 238 lines of arithmetic whose output is pasted into a bootloader',
     node: e('FirmwarePartitionCalculator') },
   { group: 'Tools', name: 'QrCodeWidget', changed: 'encoded in an effect and drew by mutating the SVG through a ref, so a server render emitted an empty square — this one is drawn here, with no JavaScript at all. Text past a QR code\'s capacity threw RangeError out of the effect; it now says so',
     node: h('div', { className: 'max-w-48' }, e('QrCodeWidget', { textToCode: 'https://openipc.org' })) },

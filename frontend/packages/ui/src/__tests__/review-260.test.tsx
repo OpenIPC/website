@@ -3,14 +3,22 @@
  * component itself is tested. Each name is the failure, not the fix.
  */
 import { expect, test, describe } from 'vitest';
-import { render, fireEvent } from '@testing-library/preact';
+import { render, fireEvent, screen } from '@testing-library/preact';
 import { h } from 'preact';
 import { renderToString } from 'preact-render-to-string';
+import { readdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import DesktopMenuItem from '../components/widgets/header-menu/components/desktop-menu/components/menu-item';
+import { MENU_ITEMS } from '../components/widgets/header-menu/constants';
 import {
   Paragraph, IconButton, Radio, Input, Select, CustomSelect, SoCListItem, SoCList,
   QrCodeWidget, HeaderBurgerButton, AbcSelector, VendorsList, TeamMember, ModalImage,
+  MainButton, FirmwarePartitionCalculator,
 } from '../index';
 import { SOCS } from '../__fixtures__/socs';
+
+const src = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 describe('Paragraph does not turn content into a script', () => {
   const linkIn = (content: string) => {
@@ -219,5 +227,82 @@ describe('second round of the review', () => {
     fireEvent.keyUp(document, { code: 'Escape' });
     expect(second).toBe(1);
     expect(first).toBe(0);
+  });
+});
+
+describe('third round of the review', () => {
+  test('the published declarations reference no file the build drops', () => {
+    // Nineteen hand-written .d.ts files were imported by the emitted
+    // declarations and never emitted themselves, so every one of those
+    // imports dangled. They are ordinary .ts now, and
+    // scripts/verify-consumable.sh compiles a consumer with skipLibCheck
+    // off, which is what would have caught it.
+    const p = join(src, 'components');
+    const handWritten: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (e.isDirectory()) walk(join(dir, e.name));
+        else if (e.name.endsWith('.d.ts')) handWritten.push(join(dir, e.name));
+      }
+    };
+    walk(p);
+    walk(join(src, 'utils'));
+    expect(handWritten).toEqual([]);
+  });
+
+  test('a parent menu entry can be opened from the keyboard', () => {
+    const parent = MENU_ITEMS.find(i => i.children?.length)!;
+    const { container } = render(h(DesktopMenuItem, { menuItem: parent, active: false }));
+    const button = container.querySelector('button');
+    expect(button).not.toBeNull();
+    expect(button?.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.click(button as HTMLElement);
+    expect(container.querySelector('button')?.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  test('the modal close control is a labelled button', () => {
+    const { container } = render(h(ModalImage, { src: 'x.webp', alt: 'x', close: () => {} }));
+    const button = [...container.querySelectorAll('button')]
+      .find(b => b.getAttribute('aria-label') === 'Close image');
+    expect(button).toBeDefined();
+    expect(button?.getAttribute('type')).toBe('button');
+  });
+
+  test('an icon-only button says what it is', () => {
+    const { container } = render(h(MainButton, {
+      size: 's', Icon: () => h('svg', {}), label: 'Pause the timer', clickHandler: () => {},
+    }));
+    expect(container.querySelector('button')?.getAttribute('aria-label')).toBe('Pause the timer');
+  });
+
+  test("an Input's icon action is a button when it does something", () => {
+    const withAction = render(h(Input, {
+      elemName: 'mac', type: 'text', label: 'MAC', state: 'default' as const, onInput: () => {},
+      Icon: () => h('svg', {}), iconClickHandler: () => {}, iconLabel: 'Generate a random MAC',
+    }));
+    const button = withAction.container.querySelector('button');
+    expect(button?.getAttribute('aria-label')).toBe('Generate a random MAC');
+
+    // A decorative icon stays a div: there is nothing to activate.
+    const decorative = render(h(Input, {
+      elemName: 'other', type: 'text', label: 'Other', state: 'default' as const,
+      onInput: () => {}, Icon: () => h('svg', {}),
+    }));
+    expect(decorative.container.querySelector('button')).toBeNull();
+  });
+
+  test('reserved flash is drawn on the partition map, not left looking free', () => {
+    render(h(FirmwarePartitionCalculator, {}));
+    const lite = screen.getAllByText('Lite')[0];
+    fireEvent.click(lite);
+    const part3 = document.querySelector('input[name="part3-size"]') as HTMLInputElement;
+    fireEvent.input(part3, { target: { value: '4864' } });     // free 256 KB
+    const offset = document.querySelector('input[name="initial-offset"]') as HTMLInputElement;
+    fireEvent.input(offset, { target: { value: '0x40000' } }); // reserve it
+
+    // Free space is zero, so nothing in the bar may read as available.
+    expect(document.querySelector('span')?.textContent).toBe('Free space: 0 KB');
+    expect(document.body.innerHTML).toContain('bg-dark-grey');
   });
 });
