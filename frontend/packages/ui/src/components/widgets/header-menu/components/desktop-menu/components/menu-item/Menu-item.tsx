@@ -1,7 +1,6 @@
 import type { MenuItem } from '../../../../Header-menu';
 import UIIcons from '../../../../../../../assets/icons/ui';
-import { debounce } from '../../../../../../../utils';
-import { useState, useRef } from 'preact/hooks';
+import { useState, useRef, useEffect } from 'preact/hooks';
 import SubMenu from '../sub-menu';
 import { TargetedMouseEvent } from 'preact';
 
@@ -28,8 +27,41 @@ export default function MenuItem(
     line: `flex w-max flex-row items-center gap-x-1`,
   };
 
+  // Open ONLY as the result of a click or a keypress. Hovering is CSS's job
+  // now -- `group-hover` on the wrapper below -- which is why there is no
+  // timer here any more.
+  //
+  // There was one, and it is what made the menu open and never close. Opening
+  // was debounced on mouseenter and closing was debounced on mouseleave, while
+  // the button's click toggled the same state directly; `debounce` was called
+  // during render, so every render produced a new debounced function with its
+  // own timer and `clearTimeout` cancelled a timer nobody was waiting on.
+  // Click a menu, move the pointer away, and the panel stayed open for good --
+  // and every menu hovered after it left another panel behind.
   const [isSubMenuVisible, setIsSubMenuVisible] = useState(false);
-  const [fn, timeoutObj] = debounce(setIsSubMenuVisible, 350);
+
+  const liRef = useRef<HTMLLIElement>(null);
+
+  // A menu opened by clicking has to close the way every other menu does: by
+  // clicking somewhere else, or with Escape. Bound only while one is open.
+  useEffect(() => {
+    if (!isSubMenuVisible) return undefined;
+
+    const onDocumentClick = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (target && liRef.current && !liRef.current.contains(target)) setIsSubMenuVisible(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsSubMenuVisible(false);
+    };
+
+    document.addEventListener('click', onDocumentClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('click', onDocumentClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isSubMenuVisible]);
 
   // The anchor navigates. fancyweb-ng called preact-iso's route() here and
   // swallowed the click; this package carries no SPA router, and a static site
@@ -39,22 +71,12 @@ export default function MenuItem(
     if (menuItemClickHandler) menuItemClickHandler();
   }
 
-  const handleMouseLeave = () => {
-    if (isSubMenuVisible) {
-      fn(false);
-    } else {
-      clearTimeout(timeoutObj.current)
-      setIsSubMenuVisible(false);
-    }
-  };
-
-  const liRef = useRef<HTMLLIElement>(null);
-
   return (
     <li class="group relative"
       {...(children && {
-        onMouseEnter: () => fn(true),
-        onMouseLeave: handleMouseLeave,
+        // Leaving the item closes a panel that a click opened. Hover opening
+        // and closing is CSS; this is only here so the two cannot disagree.
+        onMouseLeave: () => setIsSubMenuVisible(false),
       })}
       ref={liRef}
     >
@@ -129,11 +151,26 @@ export default function MenuItem(
         is search discovery. Bootstrap's dropdown, which this replaced, renders
         the whole tree and hides it with CSS; so does this now.
 
-        The visibility rules are doubled on purpose. `group-hover` and
-        `group-focus-within` open it with no JavaScript at all, which is what
-        makes the menu work on a page whose island has not hydrated yet or
-        never will; the state class opens it for the click and the keyboard,
-        which is what makes it work on a touch screen, where there is no hover.
+        The visibility rules are doubled on purpose. `group-hover` opens it
+        with no JavaScript at all, which is what makes the menu work on a page
+        whose island has not hydrated yet or never will; the state class opens
+        it for the click and the keyboard, which is what makes it work on a
+        touch screen, where there is no hover.
+
+        There is no focus rule here, and there were two attempts at one.
+        `group-focus-within` is true after a mouse click as well, because
+        clicking the button focuses it, and the rule outranks `invisible` -- so
+        a menu opened by clicking stayed open wherever the pointer went, which
+        is the menu that opened and never closed. Narrowing it to
+        `:has(:focus-visible)` swapped one stuck state for another: pressing
+        Escape is a key, a key makes the focused button focus-visible, and the
+        panel reopened behind the keypress that was meant to dismiss it.
+
+        Keyboard opening is the button's job instead -- ArrowDown opens,
+        Escape closes, aria-expanded says which -- because that is one
+        mechanism with one owner rather than CSS and state racing over the same
+        element. With JavaScript off a keyboard user reaches these pages
+        through the footer, which carries every one of them as plain links.
 
         `invisible` rather than `hidden`: it keeps the subtree in the
         accessibility and find-in-page trees' reach while taking it out of the
@@ -143,7 +180,6 @@ export default function MenuItem(
         <div
           className={`
             transition-opacity duration-150
-            group-focus-within:visible group-focus-within:opacity-100
             group-hover:visible group-hover:opacity-100
             ${isSubMenuVisible ? 'visible opacity-100' : 'invisible opacity-0'}
           `}

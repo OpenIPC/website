@@ -90,13 +90,18 @@ try {
       const page = await browser.newPage();
       const problems = [];
       page.on('pageerror', (e) => problems.push(`pageerror: ${String(e).slice(0, 120)}`));
-      // Addresses the bundle does not own. Served by nginx and Rails in front
-      // of it -- the analytics beacon, the favicon Rails fingerprints -- and
-      // absent from a bare `dist`, so a local run would report a 404 per page
-      // and bury the findings it exists for. Run against dev to exercise them.
+      // Addresses the bundle does not own, and must not: every one of them is
+      // in deploy/static/reserved-paths, served by nginx or Rails in front of
+      // the bundle -- the analytics beacon, the fingerprinted favicon, and the
+      // self-hosted IBM Plex faces both halves of the site share. They are
+      // absent from a bare `dist` by design, so a local run would report a
+      // 404 per page and bury the findings this exists for. Run it against
+      // dev to exercise them.
       const notOurs = (url) => {
         const { pathname } = new URL(url);
-        return pathname.startsWith('/api/') || pathname === '/favicon.png';
+        return pathname.startsWith('/api/')
+          || pathname.startsWith('/fonts/')
+          || pathname === '/favicon.png';
       };
 
       page.on('requestfailed', (r) => {
