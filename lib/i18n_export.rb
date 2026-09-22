@@ -34,6 +34,16 @@ module I18nExport
   # The admin area is not part of the marketing surface.
   EXCLUDED = [%w[pages admin]].freeze
 
+  # Single keys from outside the namespaces above, grafted in by path.
+  #
+  # `snapshots` as a whole stays in Rails with the Open Wall, and #160 does not
+  # move it. But the home page's wall mosaic fills its empty tiles with the Open
+  # Wall's own "no signal" placeholder, and the two halves of the site must say
+  # it in the same words -- a second key would drift the moment either is
+  # retranslated. Grafting the one leaf is cheaper than admitting 27 wizard-
+  # adjacent strings the marketing pages cannot use.
+  INCLUDED = [%w[snapshots index no_signal]].freeze
+
   OUT_DIR = 'frontend/apps/site/src/i18n'
 
   class << self
@@ -50,6 +60,17 @@ module I18nExport
       EXCLUDED.each do |path|
         parent = path[0..-2].inject(picked) { |node, key| node.is_a?(Hash) ? node[key] : nil }
         parent.delete(path.last) if parent.is_a?(Hash)
+      end
+
+      INCLUDED.each do |path|
+        value = path.inject(all) { |node, key| node.is_a?(Hash) ? node[key.to_sym] : nil }
+        # A key that has fallen out of the YAML is not grafted as nil: the
+        # frontend treats a missing English key as a build failure, and a null
+        # would defeat that by looking present.
+        next if value.nil?
+
+        parent = path[0..-2].inject(picked) { |node, key| node[key] ||= {} }
+        parent[path.last] = stringify(value)
       end
 
       deep_sort(picked)

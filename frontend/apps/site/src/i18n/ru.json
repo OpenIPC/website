@@ -857,6 +857,11 @@
       "link_to_camera": "Постоянная ссылка на эту камеру"
     }
   },
+  "snapshots": {
+    "index": {
+      "no_signal": "Нет сигнала"
+    }
+  },
   "str": {
     "language": "Язык"
   },

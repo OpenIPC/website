@@ -851,6 +851,11 @@
       "link_to_camera": "此摄像机的固定链接"
     }
   },
+  "snapshots": {
+    "index": {
+      "no_signal": "没信号"
+    }
+  },
   "str": {
     "language": "语言"
   },

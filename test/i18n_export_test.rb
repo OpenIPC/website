@@ -34,9 +34,42 @@ class I18nExportTest < ActiveSupport::TestCase
     # The wizard, the Open Wall, devise and the validation messages stay in
     # Rails. Shipping them would put strings in the bundle no page can use and
     # would make every unrelated wizard edit dirty the export.
+    #
+    # INCLUDED's namespaces count as allowed, because that list is how a single
+    # leaf is admitted without its whole namespace -- see the test below, which
+    # holds the graft to exactly that leaf.
+    grafted = I18nExport::INCLUDED.map(&:first)
+
     I18n.available_locales.each do |locale|
-      extra = I18nExport.catalogue(locale).keys - I18nExport::NAMESPACES
+      extra = I18nExport.catalogue(locale).keys - I18nExport::NAMESPACES - grafted
       assert_empty extra, "#{locale} exports #{extra.join(', ')}, which is outside the allow-list"
+    end
+  end
+
+  test 'a grafted key brings nothing but itself' do
+    # #160 needed one string out of `snapshots`: the home page's wall mosaic
+    # fills its empty tiles with the Open Wall's own "no signal" placeholder,
+    # and the two halves of the site have to say it in the same words. The risk
+    # the graft carries is that it quietly widens -- the namespace arrives
+    # whole, and 27 wizard-adjacent strings the marketing pages cannot use ship
+    # with it.
+    I18n.available_locales.each do |locale|
+      catalogue = I18nExport.catalogue(locale)
+
+      I18nExport::INCLUDED.each do |path|
+        leaf = path.inject(catalogue) { |node, key| node.is_a?(Hash) ? node[key] : nil }
+        assert_kind_of String, leaf, "#{locale} did not graft #{path.join('.')}"
+        assert_predicate leaf, :present?
+
+        # Nothing beside it: the namespace holds exactly the path that was
+        # asked for, with no siblings at any level.
+        node = catalogue
+        path[0..-2].each do |key|
+          node = node[key]
+          assert_equal 1, node.keys.size,
+                       "#{locale}: #{key} carries #{node.keys.join(', ')}, not just the grafted leaf"
+        end
+      end
     end
   end
 

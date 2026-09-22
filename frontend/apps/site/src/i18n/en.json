@@ -851,6 +851,11 @@
       "link_to_camera": "Permanent link to this camera"
     }
   },
+  "snapshots": {
+    "index": {
+      "no_signal": "No signal"
+    }
+  },
   "str": {
     "language": "Language"
   },
