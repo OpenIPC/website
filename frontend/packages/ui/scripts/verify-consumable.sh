@@ -77,9 +77,16 @@ if (formatUptime(191400) !== '2d 5h') throw new Error('formatUptime is not the o
 if (!isValidMAC('aa:bb:cc:dd:ee:ff')) throw new Error('the validators did not come across');
 
 const require = createRequire(import.meta.url);
+
+// Two stylesheets, and the split is the point: a consumer that self-hosts its
+// own copy of IBM Plex takes the tokens without the faces. openipc.org does.
 const tokens = readFileSync(require.resolve('@openipc/ui/tokens.css'), 'utf8');
 if (!tokens.includes('--color-brand-blue')) throw new Error('tokens.css has no tokens');
-if (!tokens.includes('./fonts/')) throw new Error('tokens.css still points at the source fonts');
+if (tokens.includes('@font-face')) throw new Error('tokens.css carries faces again; they belong in fonts.css');
+
+const fonts = readFileSync(require.resolve('@openipc/ui/fonts.css'), 'utf8');
+if (!fonts.includes('@font-face')) throw new Error('fonts.css declares no faces');
+if (!fonts.includes('./fonts/')) throw new Error('fonts.css still points at the source fonts');
 
 console.log('rendered, typed and styled from a published tarball');
 JS
