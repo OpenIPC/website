@@ -142,10 +142,25 @@ def plain_filename?(name)
     !name.match?(/[[:cntrl:]]/)
 end
 
-# One page of releases, newest first. The rolling `nightly` and `latest` tags
-# sort first and carry the current build; older dated nightlies behind them
-# fill in assets those two happen not to publish.
-RELEASES_PER_PAGE = 30
+# Every release, newest first. The rolling `nightly` and `latest` tags sort
+# first and carry the current build; older dated nightlies behind them fill in
+# assets those two happen not to publish.
+#
+# ALL of them, not just the first page, and that is the point of the paging
+# below. Thirty was enough until it was not: an asset last built months ago
+# drifts past position thirty and drops out of the index, and since the mirror
+# was retired an asset missing from the index is a download the site refuses
+# outright -- while the file is still sitting on GitHub, reachable, the whole
+# time.
+#
+# openipc/firmware had 102 releases on 2026-09-22, so even one request at the
+# API's maximum of 100 no longer covers it. The number only goes up.
+RELEASES_PER_PAGE = 100
+
+# A backstop, not a policy. If the release list ever outgrows this the run
+# still indexes what it fetched, and says so -- rather than quietly indexing a
+# prefix, which is the failure this exists to fix.
+MAX_RELEASE_PAGES = 10
 
 DRY_RUN = ARGV.include?('--dry-run')
 
@@ -216,23 +231,41 @@ end
 # that three attempts cannot overrun the hour between runs.
 API_RETRY_WAITS = [5, 15].freeze
 
-def releases_page
+def releases_page(page)
   attempt = 0
   begin
-    Github.new.repos.releases.list('openipc', 'firmware', per_page: RELEASES_PER_PAGE)
+    Github.new.repos.releases.list('openipc', 'firmware',
+                                   per_page: RELEASES_PER_PAGE, page: page).to_a
   rescue StandardError => e
     wait = API_RETRY_WAITS[attempt]
     raise if wait.nil?
 
     attempt += 1
-    log "  releases list failed (#{e.class}: #{e.message.to_s.lines.first.to_s.strip}), retrying in #{wait}s"
+    log "  releases list page #{page} failed " \
+        "(#{e.class}: #{e.message.to_s.lines.first.to_s.strip}), retrying in #{wait}s"
     sleep wait
     retry
   end
 end
 
+# Pages until one comes back short, which is how the list ends. A full last
+# page costs one extra empty request and is worth it: stopping early is the
+# bug being fixed.
+def all_releases
+  releases = []
+  (1..MAX_RELEASE_PAGES).each do |page|
+    batch = releases_page(page)
+    releases.concat(batch)
+    return releases if batch.size < RELEASES_PER_PAGE
+  end
+
+  log "  release list is still going after #{MAX_RELEASE_PAGES} pages; " \
+      "indexing the newest #{releases.size} -- raise MAX_RELEASE_PAGES"
+  releases
+end
+
 def newest_assets
-  releases = releases_page
+  releases = all_releases
   chosen = {}
   # Names, not counts: an asset published by several releases must be counted
   # once. `chosen` stays exactly the set we intend to mirror, because its keys
