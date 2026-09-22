@@ -29,8 +29,10 @@ REGISTRY_IMAGE="ghcr.io/openipc/website-static"
 # /usr/local/sbin/openipc-static symlink, and check-bundle.sh sits beside the
 # real file.
 SELF="$(readlink -f "${BASH_SOURCE[0]}")"
-CHECK="$(dirname "$SELF")/static/check-bundle.sh"
 CHECKOUT_DIR="$(dirname "$SELF")"
+# shellcheck source=deploy/env-checkout.sh
+. "${CHECKOUT_DIR}/env-checkout.sh"
+CHECK="${CHECKOUT_DIR}/static/check-bundle.sh"
 STATIC_ROOT="/srv/www/static"
 # Bundles are small and the disk is not the constraint. What this number buys
 # is that a rollback never depends on the registry still holding the image --
@@ -246,7 +248,10 @@ bundle_revision() {
 }
 
 do_install() {
-  checkout_warn "$CHECKOUT_DIR"
+  # First, before any work: see the note in checkout-status.sh. The branch is
+  # read straight off $1 rather than from env_name below, so this stays the
+  # first statement -- checkout_freshness_test.rb asserts exactly that.
+  checkout_warn "$CHECKOUT_DIR" "$(checkout_branch_for "${1:-prod}")"
   local env_name=$1 ref=${2:-latest} vhost root
   read -r vhost root <<<"$(target_for "$env_name")"
   ensure_tree "$root"
@@ -333,7 +338,18 @@ prune() {
 }
 
 do_status() {
-  checkout_report "$CHECKOUT_DIR"
+  # Both checkouts, because two of them is the thing most likely to surprise
+  # somebody: production's rules come from deploy-src on master and dev's from
+  # deploy-src-dev on dev, and a dev checkout left on last week's branch is a
+  # dev site being judged by last week's rules.
+  checkout_report "$DEPLOY_SRC_PROD" master
+  if [ -d "$DEPLOY_SRC_DEV" ]; then
+    printf '\n'
+    checkout_report "$DEPLOY_SRC_DEV" dev
+  else
+    printf '\ndev checkout:\n  %s does not exist; dev runs production'"'"'s copy\n' \
+      "$DEPLOY_SRC_DEV"
+  fi
   printf '\n'
   for env_name in prod dev; do
     local vhost root
@@ -352,6 +368,14 @@ do_status() {
   done
   return 0
 }
+
+# dev is served out of the dev checkout, so hand the whole invocation over to
+# its copy of this script -- see deploy/env-checkout.sh. Production is
+# untouched and still runs master's.
+case "${1:-}" in
+  prod|dev)    reexec_in_dev_checkout "$1" "$SELF" "${2:-}" ;;
+  rollback|verify) reexec_in_dev_checkout "${2:-prod}" "$SELF" ;;
+esac
 
 case "${1:-}" in
   prod|dev) do_install "$1" "${2:-}" ;;

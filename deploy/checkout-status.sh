@@ -5,7 +5,10 @@
 # Sourced by deploy.sh and static.sh; not useful on its own.
 #
 # /srv/www/deploy-src is not a copy of how openipc.org is deployed -- it IS
-# what runs. deploy.sh reads docker-compose.yml and legacy-images from beside
+# what runs. There are two of them since #159: deploy-src on master serves
+# production and deploy-src-dev on dev serves dev.openipc.org, so "current"
+# means a different branch depending on which one is asking -- which is the
+# argument below. deploy.sh reads docker-compose.yml and legacy-images from beside
 # itself, the three installers read their payloads from beside themselves, and
 # /usr/local/sbin/openipc-deploy and openipc-static are symlinks into it. A
 # command added to the repository does not exist on the host until somebody
@@ -26,8 +29,11 @@
 # CHECKOUT_AHEAD and CHECKOUT_DIRTY. Returns 1, silently,
 # when the directory is not a git checkout at all -- the normal case for a copy
 # rsynced to /tmp to test a branch, where there is nothing to be stale against.
+# The second argument is the branch this checkout is supposed to track:
+# master for production, dev for dev. Defaulted so an older caller behaves as
+# it always did.
 checkout_state() {
-  local dir=$1
+  local dir=$1 want=${2:-master}
   git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 1
 
   # The repository root, not the deploy/ subdirectory this script sits in, so
@@ -42,7 +48,7 @@ checkout_state() {
   # Bounded: this runs before every deploy and must not be able to hang one.
   # A failed fetch is reported as "cannot tell", never as "current" -- the
   # whole point is that silence has been meaning the wrong thing.
-  if timeout 15 git -C "$dir" fetch -q origin master 2>/dev/null; then
+  if timeout 15 git -C "$dir" fetch -q origin "$want" 2>/dev/null; then
     CHECKOUT_BEHIND=$(git -C "$dir" rev-list --count HEAD..FETCH_HEAD 2>/dev/null || echo '?')
     # Both directions. Counting only what master has and this does not would
     # call a FEATURE BRANCH current, and pointing this checkout at a branch to
@@ -59,22 +65,22 @@ checkout_state() {
 }
 
 checkout_warn() {
-  local dir=$1
-  checkout_state "$dir" || return 0
+  local dir=$1 want=${2:-master}
+  checkout_state "$dir" "$want" || return 0
 
   if [ "$CHECKOUT_BEHIND" = '?' ]; then
     printf '\033[33m==> cannot tell whether %s is current; the fetch failed\033[0m\n' "$dir" >&2
   else
     if [ "$CHECKOUT_BEHIND" -gt 0 ]; then
-      printf '\033[33m==> %s is %s commit(s) behind master, at %s\033[0m\n' \
-        "$dir" "$CHECKOUT_BEHIND" "$CHECKOUT_SHA" >&2
+      printf '\033[33m==> %s is %s commit(s) behind %s, at %s\033[0m\n' \
+        "$dir" "$CHECKOUT_BEHIND" "$want" "$CHECKOUT_SHA" >&2
       printf '    This deploy reads docker-compose.yml and legacy-images from there,\n' >&2
       printf '    and the installers read their payloads from there.\n' >&2
       printf '    git -C %s pull --ff-only\n' "$CHECKOUT_ROOT" >&2
     fi
     if [ "$CHECKOUT_AHEAD" -gt 0 ]; then
-      printf '\033[33m==> %s carries %s commit(s) master does not, on %s\033[0m\n' \
-        "$dir" "$CHECKOUT_AHEAD" "$CHECKOUT_BRANCH" >&2
+      printf '\033[33m==> %s carries %s commit(s) %s does not, on %s\033[0m\n' \
+        "$dir" "$CHECKOUT_AHEAD" "$want" "$CHECKOUT_BRANCH" >&2
       printf '    This deploy is reading its compose file and its installers from\n' >&2
       printf '    code that has not landed. If a branch was put here to try it on\n' >&2
       printf '    dev, it needs repointing at master once it merges.\n' >&2
@@ -92,24 +98,24 @@ checkout_warn() {
 }
 
 checkout_report() {
-  local dir=$1
+  local dir=$1 want=${2:-master}
   printf 'deploy checkout:\n'
-  if ! checkout_state "$dir"; then
+  if ! checkout_state "$dir" "$want"; then
     printf '  %s is not a git checkout — running from a copy\n' "$dir"
     return 0
   fi
   printf '  path         %s\n' "$CHECKOUT_ROOT"
   printf '  at           %s (%s)\n' "$CHECKOUT_SHA" "$CHECKOUT_BRANCH"
   if [ "$CHECKOUT_BEHIND" = '?' ]; then
-    printf '  vs master    cannot tell; the fetch failed\n'
+    printf '  vs %-8s cannot tell; the fetch failed\n' "$want"
   elif [ "$CHECKOUT_BEHIND" -eq 0 ] && [ "$CHECKOUT_AHEAD" -eq 0 ]; then
-    printf '  vs master    current\n'
+    printf '  vs %-8s current\n' "$want"
   else
     [ "$CHECKOUT_BEHIND" -gt 0 ] && \
-      printf '  vs master    %s commit(s) behind — git -C %s pull --ff-only\n' \
+      printf '  vs %-8s %s commit(s) behind — git -C %s pull --ff-only\n' "$want" \
         "$CHECKOUT_BEHIND" "$CHECKOUT_ROOT"
     [ "$CHECKOUT_AHEAD" -gt 0 ] && \
-      printf '  vs master    %s commit(s) master does not have — this is running code that has not landed\n' \
+      printf '  vs %-8s %s commit(s) it does not have — this is running code that has not landed\n' "$want" \
         "$CHECKOUT_AHEAD"
   fi
   if [ -n "$CHECKOUT_DIRTY" ]; then

@@ -51,15 +51,48 @@ actually pullable before deploying:
 ssh -p 35242 root@openipc.org "docker pull -q ghcr.io/openipc/website:$(git rev-parse HEAD)"
 ```
 
-### 3. Deploy to dev
+### 3. Put the branch on `dev`, then deploy
 
 ```bash
-git -C /srv/www/deploy-src pull --ff-only   # [host] first, every time
+git push -f origin my-branch:dev            # [local] dev is a scratch pointer
+git -C /srv/www/deploy-src-dev fetch origin && \
+  git -C /srv/www/deploy-src-dev reset --hard origin/dev   # [host]
 openipc-deploy dev <sha>        # or: openipc-deploy dev my-branch
 openipc-static dev <sha>        # only if the change touches the static bundle
 ```
 
-**The pull is not housekeeping.** `openipc-deploy` reads `docker-compose.yml`
+**`dev` is a branch, force-pushed to whatever is being tried.** Nothing merges
+through it and it is never a base; `git rev-parse origin/dev` simply answers
+"what is on the dev site", which nothing answered before.
+
+It exists because the two commands read more than their own logic out of the
+checkout they live in — `docker-compose.yml`, the installers' payloads, and
+`deploy/static/check-bundle.sh`, which judges every bundle before it is
+installed. One checkout meant those were **master's** rules for dev as well,
+so a change to any of them could not be tried on dev before it landed — on a
+site whose rule is that nothing lands before it has been tried on dev.
+
+Now `deploy-src` on master serves production and `deploy-src-dev` on dev
+serves dev, and `openipc-deploy dev` / `openipc-static dev` hand the whole
+invocation to the dev checkout's copy of themselves — so a change to the
+deploy scripts is tried on dev like any other.
+
+Production is untouched by all of it: it runs master's scripts against
+master's rules, which is what makes a rollback to an old bundle safe.
+`test/deploy/env_checkout_test.rb` asserts that a production command is never
+sent through the dev checkout.
+
+To see what production would say about a bundle before shipping it there, run
+master's copy of the checker against it:
+
+```bash
+git show origin/master:deploy/static/check-bundle.sh > /tmp/check.sh
+git show origin/master:deploy/static/reserved-paths  > /tmp/reserved-paths
+deploy/static/build.sh dist
+bash /tmp/check.sh dist/site dist/MANIFEST
+```
+
+**Resetting the dev checkout is not housekeeping.** `openipc-deploy` reads `docker-compose.yml`
 and `legacy-images/` out of that checkout, the three installers read their
 payloads out of it, and both `/usr/local/sbin` commands are symlinks into it —
 so a stale checkout deploys a stale compose file and a command added to the
