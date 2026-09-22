@@ -71,7 +71,7 @@ initWizard()
 // on the first load as well as after every navigation, which is why it replaces
 // DOMContentLoaded rather than joining it: DOMContentLoaded fires only for the
 // document Turbo started with.
-document.addEventListener('turbo:load', () => {
+function initPage() {
   initExternalLinks()
   initTimestamps()
   initConfirms()
@@ -84,7 +84,19 @@ document.addEventListener('turbo:load', () => {
   // a carousel.
   document.querySelectorAll('[data-bs-ride="carousel"]')
           .forEach(el => Carousel.getOrCreateInstance(el))
-})
+}
+
+document.addEventListener('turbo:load', initPage)
+
+// ...and again for content that arrives after the page did. Since #261 the
+// Open Wall loads two things into lazy turbo-frames -- the rest of a camera's
+// day on /snapshots/:id, and the whole slideshow on /snapshots/:id/oneday --
+// so the elements these walk for are not in the document when turbo:load
+// fires. turbo:frame-load is per frame and fires after its content is in the
+// DOM; without this the archive's timestamps stay as server-rendered UTC and
+// the slideshow never starts, which is the same bug the comment above
+// describes, one layer down.
+document.addEventListener('turbo:frame-load', initPage)
 
 // ...and stop them again on the way out. A carousel cycles on a setInterval,
 // and Turbo disposes nothing: it swaps the body and leaves the old elements

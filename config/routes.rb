@@ -183,7 +183,13 @@ Rails.application.routes.draw do
   scope '(:locale)', locale: Multilang::IN_PATH do
     resources :snapshots do
       get :camera, on: :collection
+      # The rest of a camera's day, on its own address. Both are what the show
+      # page and the slideshow page load into a lazy turbo-frame instead of
+      # writing 96 sibling ids into every render (#261); both stay reachable
+      # without JavaScript, which is why they are routes and not a format.
+      get :archive, on: :member
       get :oneday, on: :member
+      get :slideshow, on: :member
       get :download, on: :member
     end
   end

@@ -1,0 +1,10 @@
+<%# Every frame this camera uploaded in the last day.
+    Reached two ways: the lazy turbo-frame on the snapshot page fetches it for
+    a client that runs JavaScript, and the link under the strip reaches it for
+    one that does not. The frame id has to match the one on the show page or
+    Turbo drops the response on the floor. %>
+<%= turbo_frame_tag 'snapshot-archive' do %>
+  <div class="archive row row-cols-2 row-cols-sm-3 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2">
+    <%= render partial: 'icon', collection: @snapshots %>
+  </div>
+<% end %>
