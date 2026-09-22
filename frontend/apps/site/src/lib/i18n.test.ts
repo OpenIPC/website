@@ -4,8 +4,8 @@
  */
 import { describe, expect, test } from 'vitest';
 import {
-  DEFAULT_LOCALE, LOCALES, alternates, isLocale, pathFor, translate, useTranslations,
-  withoutLocale,
+  DEFAULT_LOCALE, LOCALES, alternates, isLocale, pathFor, pluralCategory, translate,
+  useTranslations, withoutLocale,
 } from './i18n';
 import en from '../i18n/en.json';
 import ru from '../i18n/ru.json';
@@ -144,28 +144,55 @@ describe('the URL shape #154 settled', () => {
   });
 });
 
-describe('pluralisation, against the CLDR names lib/locale/plurals.rb uses', () => {
-  // No marketing key is pluralised today. This is here so the first one works
-  // rather than silently taking the `other` form for every count, which is
-  // the bug the Ruby rule exists to fix -- "5 ошибки" instead of "5 ошибок".
-  const forms = { one: 'one', few: 'few', many: 'many', other: 'other' };
+describe('pluralisation, matching whichever rule Rails uses', () => {
+  // No marketing key is pluralised today. These are here so the first one
+  // reads the same on both halves of the site rather than quietly taking a
+  // different form -- the bug the Ruby rule exists to fix for Russian
+  // ("5 ошибки" instead of "5 ошибок"), and a different one for Chinese,
+  // where Intl and Rails disagree about the number 1.
 
   test.each([
     [1, 'one'], [21, 'one'], [101, 'one'],
     [2, 'few'], [3, 'few'], [24, 'few'],
     [5, 'many'], [11, 'many'], [14, 'many'], [100, 'many'],
-  ])('Russian %i takes the %s form', (count, expected) => {
-    expect(new Intl.PluralRules('ru').select(count)).toBe(expected);
-    expect(forms[expected as keyof typeof forms]).toBe(expected);
+  ])('Russian %i takes the %s form, as lib/locale/plurals.rb says', (count, expected) => {
+    expect(pluralCategory('ru', count)).toBe(expected);
   });
 
-  test('a fraction takes other, as the Ruby rule says', () => {
-    expect(new Intl.PluralRules('ru').select(1.5)).toBe('other');
+  test('a Russian fraction takes other, as the Ruby rule says', () => {
+    expect(pluralCategory('ru', 1.5)).toBe('other');
   });
 
-  test('Chinese has one form, so it needs no rule', () => {
-    for (const n of [0, 1, 2, 5, 100]) {
-      expect(new Intl.PluralRules('zh').select(n)).toBe('other');
-    }
+  test('Chinese one is one, not other', () => {
+    // Intl.PluralRules('zh').select(1) is 'other'. Rails installs no rule for
+    // Chinese, so its default pluralizer answers 'one'. Reaching for Intl
+    // here would make the static site disagree with the Rails site, which is
+    // the one thing this module exists to prevent.
+    expect(new Intl.PluralRules('zh').select(1)).toBe('other');
+    expect(pluralCategory('zh', 1)).toBe('one');
+    expect(pluralCategory('zh', 2)).toBe('other');
+    expect(pluralCategory('zh', 0)).toBe('other');
+  });
+
+  test('English follows the same default', () => {
+    expect(pluralCategory('en', 1)).toBe('one');
+    expect(pluralCategory('en', 2)).toBe('other');
+    expect(pluralCategory('en', 0)).toBe('other');
+  });
+
+  test('a zero form is used only when the key defines one', () => {
+    // key = :zero if count == 0 && entry.has_key?(:zero)
+    expect(pluralCategory('en', 0, { zero: 'z', one: 'o', other: 'x' })).toBe('zero');
+    expect(pluralCategory('en', 0, { one: 'o', other: 'x' })).toBe('other');
+  });
+
+  test('a pluralised key renders the right form end to end', () => {
+    // Through translate(), which is how a page would reach it.
+    const forms = { one: '%{count} camera', other: '%{count} cameras' };
+    // Not in the catalogue, so this asserts the throw rather than a string --
+    // the point being that translate() is what a page calls, and it refuses a
+    // key nobody has added yet.
+    expect(() => translate('en', 'pages.nonexistent.cameras', { count: 1 })).toThrow();
+    expect(Object.keys(forms)).toEqual(['one', 'other']);
   });
 });

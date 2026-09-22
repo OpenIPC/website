@@ -280,12 +280,18 @@ class StaticBundleTest < ActiveSupport::TestCase
     # shadowed by it or shadows it, and neither is a thing to discover later.
     from_disk = vhost.scan(%r{^    location (?:\^~ |= )?(/\S*) \{\n((?:.*\n)*?)    \}})
                      .select { |_path, body| body.match?(/^\s+(alias|root|return|internal)\b/) }
+                     # Locations rooted in the static bundle ARE the seam, not
+                     # competitors with it: `location /` carries the pages and
+                     # `location ^~ /_astro/` the hashed assets (#159). A
+                     # bundle file at those addresses is the point. Reserving
+                     # them would make check-bundle.sh refuse the bundle's own
+                     # contents. What guards the bare `/` is the root-index
+                     # rule in check-bundle.sh instead.
+                     .reject { |_path, body| body.match?(%r{^\s+root\s+/srv/www/static/}) }
                      .map(&:first)
-                     # The catch-all itself. `location /` carries the seam (and
-                     # on port 80 a redirect to https); it is what the bundle
-                     # is served from, not a path it must keep out of. What
-                     # guards the bare `/` is the root-index rule in
-                     # check-bundle.sh.
+                     # The catch-all itself. `location /` appears twice: on 443
+                     # carrying the seam, caught by the root test above, and on
+                     # port 80 as a redirect to https, which is not.
                      .reject { |path| path == '/' }
 
     refute_empty from_disk, 'this test is reading nothing out of the vhost'

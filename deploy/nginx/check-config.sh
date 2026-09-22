@@ -177,6 +177,25 @@ expect() {
   fi
 }
 
+# Cache-Control on what the bundle serves (#159). `expect` above does not look
+# at it, and the two policies are opposites -- assets forever, pages never
+# without asking -- so getting one wrong is silent until somebody sees stale
+# wording after a deploy, or a re-download of four woff2 faces on every visit.
+expect_cache() {
+  path=$1; want=$2
+
+  curl -sS -o /dev/null -D /tmp/hc -k --max-time 5 \
+    --resolve "openipc.org:443:127.0.0.1" "https://openipc.org$path" >/dev/null 2>&1
+
+  got=$(grep -i '^cache-control:' /tmp/hc | tr -d '\r' | cut -d' ' -f2- | head -1)
+  if [ "$got" = "$want" ]; then
+    printf '  %-32s %s\n' "$path" "$got"
+  else
+    printf '  %-32s MISMATCH: %s (want %s)\n' "$path" "${got:-<none>}" "$want"
+    fail=1
+  fi
+}
+
 # openipc.eu is a 301 to the canonical host and nothing else. Its own function
 # because `expect` resolves openipc.org and reads X-Served-By, and the claim
 # here is the opposite one: that no application is reached at all.
@@ -233,6 +252,15 @@ expect /ru                          200 rails  hsts
 # Rails' 404 rather than nginx's 403.
 expect /_astro/app.css              200 static hsts
 expect /_astro/                     200 rails  hsts
+
+echo "  --- Cache-Control: assets forever, pages never without asking ---"
+# Astro fingerprints everything under /_astro/, so the name changes whenever
+# the bytes do and the old name is never reused.
+expect_cache /_astro/app.css        "public, max-age=31536000, immutable"
+# A page keeps its address when its content changes, so it may be cached and
+# must always be revalidated.
+expect_cache /_smoke/               "public, max-age=0, must-revalidate"
+expect_cache /ru/_smoke/            "public, max-age=0, must-revalidate"
 
 # Everything else is still Rails, which is the whole claim of this change.
 expect /                            200 rails  hsts

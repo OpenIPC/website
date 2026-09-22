@@ -64,12 +64,44 @@ function interpolate(text: string, vars: Record<string, unknown>): string {
   );
 }
 
+/**
+ * Locales for which lib/locale/plurals.rb installs a CLDR rule.
+ *
+ * Only these may go through Intl.PluralRules. Everywhere else Rails uses
+ * I18n's default pluralizer, and the two disagree: `Intl.PluralRules('zh')`
+ * answers `other` for 1, while Rails answers `one`. A Chinese key with `one`
+ * and `other` forms would then read differently on the static half of the
+ * site than on the Rails half, which is the one thing this module exists to
+ * prevent.
+ */
+const CLDR_RULE_LOCALES = new Set<Locale>(['ru']);
+
+/**
+ * Which plural form a count selects, by the same rule Rails would apply.
+ *
+ * Exported so it can be tested directly: no marketing key is pluralised yet,
+ * so there is no key to reach this through, and a test that reimplements the
+ * rule to check the rule proves nothing.
+ */
+export function pluralCategory(
+  locale: Locale,
+  count: number,
+  forms: { [key: string]: unknown } = {},
+): string {
+  if (CLDR_RULE_LOCALES.has(locale)) {
+    // `other` is CLDR's form for fractions, and the Ruby rule says the same.
+    return Number.isInteger(count) ? new Intl.PluralRules(locale).select(count) : 'other';
+  }
+
+  // I18n::Backend::Base#pluralization_key, verbatim:
+  //   key = :zero if count == 0 && entry.has_key?(:zero)
+  //   key ||= count == 1 ? :one : :other
+  if (count === 0 && 'zero' in forms) return 'zero';
+  return count === 1 ? 'one' : 'other';
+}
+
 function pluralise(forms: { [key: string]: Node }, count: number, locale: Locale): Node | undefined {
-  // `other` is CLDR's form for fractions, and the Ruby rule says the same.
-  const category = Number.isInteger(count)
-    ? new Intl.PluralRules(locale).select(count)
-    : 'other';
-  return forms[category] ?? forms.other;
+  return forms[pluralCategory(locale, count, forms)] ?? forms.other;
 }
 
 export type TranslateOptions = Record<string, unknown> & { count?: number };

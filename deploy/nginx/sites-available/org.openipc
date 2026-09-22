@@ -545,6 +545,36 @@ server {
     # is English by decision now, so a page in the bundle carries its language
     # in its path. It is also why deploy/static/check-bundle.sh refuses a root
     # index.html -- what `/` means is #160's decision, not a build product.
+    # The bundle's own hashed assets (#159). Astro fingerprints every file it
+    # writes under /_astro/, so the name changes whenever the bytes do and the
+    # old name is never reused -- which is exactly the condition `immutable`
+    # asks for. Without this they inherited no Cache-Control at all and every
+    # visit re-fetched or revalidated the stylesheet, the island and four
+    # woff2 faces.
+    #
+    # ^~ so it wins over the regex locations below it, and so these never take
+    # a site_conc slot: an HTTP/2 page load opens several of them in parallel
+    # and they must not compete with page renders, which is the same reasoning
+    # the /assets|fonts/ block above was written on.
+    #
+    # try_files still ends at @rails rather than =404. A rollback can leave a
+    # page referencing an asset the older bundle does not carry, and the seam's
+    # rule is that only Rails answers 404 -- so that miss shows up in the Rails
+    # log like every other one, instead of vanishing into nginx.
+    location ^~ /_astro/ {
+        limit_conn per_subnet 100;
+        limit_conn_status 429;
+
+        root /srv/www/static/prod/current;
+        try_files $uri @rails;
+
+        # add_header in a location REPLACES every inherited one, so HSTS is
+        # repeated here exactly as it is in the seam below.
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By static always;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+
     location / {
         # The cap has to be here and cannot be in @rails, and that is a fact
         # about phase order rather than a preference. limit_conn runs in the
@@ -579,6 +609,13 @@ server {
         # below -- otherwise every page the bundle serves loses it.
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By static always;
+        # Pages, unlike the assets above, keep their address when their content
+        # changes -- a deploy rewrites /donate/index.html in place. So they may
+        # be cached but never used without asking: max-age=0 with
+        # must-revalidate means a conditional request and, almost always, a
+        # 304 off nginx's Last-Modified. Nothing here should ever serve the
+        # previous release's wording after a rollback.
+        add_header Cache-Control "public, max-age=0, must-revalidate" always;
     }
 
     # Everything the bundle does not hold, which today is everything. This is
