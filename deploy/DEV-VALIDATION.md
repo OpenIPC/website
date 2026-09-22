@@ -365,38 +365,24 @@ over HTTP rather than as a `readlink` on the host.
 throwaway nginx and a stub upstream, which is the cheapest place to find out
 that a vhost change broke the seam.
 
-### A bundle of a new shape cannot be validated on dev first
+### A bundle of a new shape
 
-`openipc-static` runs `check-bundle.sh` **out of the host's checkout**, which
-is master's — deliberately, so that a rollback to a six-month-old bundle is
-judged by today's rules rather than by the rules of the day it was built.
+`openipc-static` runs `check-bundle.sh` out of the checkout for the
+environment it is installing to (#265), so a change that makes the bundle a
+shape the current rules do not allow is tried on dev like anything else: push
+the branch to `dev`, reset the dev checkout, and the dev site is judged by the
+branch's rules while production stays on master's.
 
-The corollary is easy to miss and costs a confusing deploy failure: when a
-change makes the bundle a shape master's rules do not yet allow, **the rule
-change has to reach master before the bundle can be installed anywhere, dev
-included**. #159 hit exactly this. Its bundle is the first with locale
-subdirectories and an `_astro/` asset directory, and master's rule — an
-`index.html` in every directory — refused all three:
+#159 is the case that produced the arrangement. Its bundle is the first with
+locale subdirectories and an `_astro/` asset directory, and master's rule at
+the time — an `index.html` in every directory — refused all three. With one
+shared checkout the only way to try it on dev was to change production's
+rules, which is the wrong trade and is what #265 ended.
 
-```
-refused: /ru has no index.html; that directory is not a page ...
-refused: /zh has no index.html; that directory is not a page ...
-refused: /_astro has no index.html; that directory is not a page ...
-```
-
-There is no way around it that is worth taking. Pointing `/srv/www/deploy-src`
-at the branch would change the rules applied to **production** bundles too, so
-the answer is to land the rule and then deploy.
-
-Check before deploying, rather than finding out on the host:
-
-```bash
-git show origin/master:deploy/static/check-bundle.sh > /tmp/check.sh
-git show origin/master:deploy/static/reserved-paths  > /tmp/reserved-paths
-# check-bundle.sh reads reserved-paths from beside itself
-deploy/static/build.sh dist
-bash /tmp/check.sh dist/site dist/MANIFEST
-```
+What dev's rules cannot tell you is what **production** will say about the
+bundle once the branch lands, and that is the question a promotion turns on.
+Step 3 has the one-liner that asks master's copy of the checker directly; run
+it before promoting, not after.
 
 ---
 
