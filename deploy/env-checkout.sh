@@ -44,13 +44,29 @@ checkout_for() {
 
 # Hand this invocation over to the dev checkout's copy of the same script.
 #
-# Not merely "read dev's payloads": the script ITSELF comes from the branch, so
-# a change to deploy.sh or static.sh can be tried on dev like any other. That
-# was the stated point of keeping these in the repository (#258) and it did not
-# work while one checkout served both.
+# THE STATIC BUNDLE ONLY. deploy.sh is deliberately NOT handed over, and the
+# reason is worth stating because the symmetry is tempting: the two
+# environments share one docker compose project and one .env carrying both
+# PROD_TAG and DEV_TAG, and deploy.sh derives both paths from the checkout it
+# is running out of. Handing it over would have dev writing a different .env
+# from production's -- a fresh dev checkout writing only DEV_TAG, so compose
+# rejects the missing PROD_TAG, and a seeded one leaving production's status
+# reporting a dev tag that moved. The bundle has no such sharing: separate
+# trees, separate symlinks, separate rollback pointers, and the per-environment
+# rules that made this necessary at all.
+#
+# So a change to static.sh or to check-bundle.sh is tried on dev like any other
+# change. A change to deploy.sh is not, and testing one still means running the
+# dev checkout's copy by hand.
 #
 # OPENIPC_DEPLOY_REEXEC stops the handover happening twice. Without it, dev's
 # copy would dispatch straight back into itself.
+# Called as: reexec_in_dev_checkout <env> <self> "$@"
+#
+# Everything after the first two arguments is the ORIGINAL argv and is passed
+# through untouched. Rebuilding it here was a bug with teeth: `rollback dev`
+# and `verify dev` both became `dev`, which is an INSTALL of whatever `latest`
+# resolves to. A read-only verify would have changed the served bundle.
 reexec_in_dev_checkout() {
   local env=$1 self=$2
   shift 2
@@ -65,5 +81,5 @@ reexec_in_dev_checkout() {
   [ "$(readlink -f "$target")" != "$(readlink -f "$self")" ] || return 0
 
   printf '\033[36m==>\033[0m dev: running %s\n' "$target" >&2
-  OPENIPC_DEPLOY_REEXEC=1 exec "$target" "$env" "$@"
+  OPENIPC_DEPLOY_REEXEC=1 exec "$target" "$@"
 }

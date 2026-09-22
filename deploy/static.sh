@@ -373,8 +373,8 @@ do_status() {
 # its copy of this script -- see deploy/env-checkout.sh. Production is
 # untouched and still runs master's.
 case "${1:-}" in
-  prod|dev)    reexec_in_dev_checkout "$1" "$SELF" "${2:-}" ;;
-  rollback|verify) reexec_in_dev_checkout "${2:-prod}" "$SELF" ;;
+  prod|dev)        reexec_in_dev_checkout "$1" "$SELF" "$@" ;;
+  rollback|verify) reexec_in_dev_checkout "${2:-prod}" "$SELF" "$@" ;;
 esac
 
 case "${1:-}" in

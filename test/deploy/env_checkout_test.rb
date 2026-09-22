@@ -44,22 +44,13 @@ class EnvCheckoutTest < ActiveSupport::TestCase
     )
   end
 
-  %w[static.sh deploy.sh].each do |script|
+  %w[static.sh].each do |script|
     test "#{script} hands a dev install to the dev checkout" do
       with_dev_checkout do |dev_src|
         out, = run_script(script, 'dev', 'abc123', dev_src: dev_src)
 
         assert_match(/DEV COPY of #{Regexp.escape(script)} ran with: dev abc123/, out,
                      "#{script} did not hand over to the dev checkout:\n#{out}")
-      end
-    end
-
-    test "#{script} hands a dev rollback to the dev checkout" do
-      with_dev_checkout do |dev_src|
-        out, = run_script(script, 'rollback', 'dev', dev_src: dev_src)
-
-        assert_match(/DEV COPY of #{Regexp.escape(script)} ran with: dev/, out,
-                     "#{script} did not hand over a rollback:\n#{out}")
       end
     end
 
@@ -80,6 +71,42 @@ class EnvCheckoutTest < ActiveSupport::TestCase
 
       assert_no_match(/DEV COPY/, out)
       assert_no_match(/No such file/, out, "#{script} broke without a dev checkout:\n#{out}")
+    end
+  end
+
+  # --- the command must survive the handover -----------------------------
+  #
+  # The first version rebuilt the argument list as "<env>" instead of passing
+  # the original through. `rollback dev` and `verify dev` both arrived as
+  # `dev`, which static.sh reads as an INSTALL of whatever `latest` resolves
+  # to -- so a read-only verify would have changed the served bundle. Every
+  # command gets its own assertion because the failure was silent: the
+  # handover happened, it just handed over something else.
+  {
+    %w[rollback dev] => 'rollback dev',
+    %w[verify dev] => 'verify dev',
+    %w[dev abc123] => 'dev abc123',
+    %w[dev] => 'dev'
+  }.each do |argv, expected|
+    test "static.sh hands `#{argv.join(' ')}` over unchanged" do
+      with_dev_checkout do |dev_src|
+        out, = run_script('static.sh', *argv, dev_src: dev_src)
+
+        assert_match(/DEV COPY of static\.sh ran with: #{Regexp.escape(expected)}$/, out,
+                     "the command was rewritten on the way over:\n#{out}")
+      end
+    end
+  end
+
+  test 'deploy.sh hands nothing over, because the compose model is shared' do
+    # One docker compose project and one .env carrying both PROD_TAG and
+    # DEV_TAG. A handover would have dev writing a different .env from
+    # production's, and compose rejecting the tag that is missing from it.
+    with_dev_checkout do |dev_src|
+      out, = run_script('deploy.sh', 'dev', 'abc123', dev_src: dev_src)
+
+      assert_no_match(/DEV COPY/, out,
+                      "deploy.sh handed over; the two environments share one compose model:\n#{out}")
     end
   end
 

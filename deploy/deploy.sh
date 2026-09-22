@@ -270,13 +270,6 @@ do_status() {
   done
 }
 
-# See the note in deploy/env-checkout.sh: dev is served out of the dev
-# checkout, so its deploys run that checkout's copy of this script.
-case "${1:-}" in
-  prod|dev) reexec_in_dev_checkout "$1" "$SELF" "${2:-}" ;;
-  rollback) reexec_in_dev_checkout "${2:-prod}" "$SELF" ;;
-esac
-
 case "${1:-}" in
   prod|dev)  do_deploy "$1" "${2:-}" ;;
   rollback)  do_rollback "${2:-prod}" ;;

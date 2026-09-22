@@ -76,7 +76,14 @@ checkout_warn() {
         "$dir" "$CHECKOUT_BEHIND" "$want" "$CHECKOUT_SHA" >&2
       printf '    This deploy reads docker-compose.yml and legacy-images from there,\n' >&2
       printf '    and the installers read their payloads from there.\n' >&2
-      printf '    git -C %s pull --ff-only\n' "$CHECKOUT_ROOT" >&2
+      # `dev` is force-pushed, so --ff-only cannot follow it. Advice that does
+      # not work is worse than none: it reads as though the checkout is fine.
+      if [ "$want" = dev ]; then
+        printf '    git -C %s fetch origin dev && git -C %s reset --hard origin/dev\n' \
+          "$CHECKOUT_ROOT" "$CHECKOUT_ROOT" >&2
+      else
+        printf '    git -C %s pull --ff-only\n' "$CHECKOUT_ROOT" >&2
+      fi
     fi
     if [ "$CHECKOUT_AHEAD" -gt 0 ]; then
       printf '\033[33m==> %s carries %s commit(s) %s does not, on %s\033[0m\n' \
@@ -112,8 +119,13 @@ checkout_report() {
     printf '  vs %-8s current\n' "$want"
   else
     [ "$CHECKOUT_BEHIND" -gt 0 ] && \
-      printf '  vs %-8s %s commit(s) behind — git -C %s pull --ff-only\n' "$want" \
-        "$CHECKOUT_BEHIND" "$CHECKOUT_ROOT"
+      if [ "$want" = dev ]; then
+        printf '  vs %-8s %s commit(s) behind — git -C %s reset --hard origin/dev\n' "$want" \
+          "$CHECKOUT_BEHIND" "$CHECKOUT_ROOT"
+      else
+        printf '  vs %-8s %s commit(s) behind — git -C %s pull --ff-only\n' "$want" \
+          "$CHECKOUT_BEHIND" "$CHECKOUT_ROOT"
+      fi
     [ "$CHECKOUT_AHEAD" -gt 0 ] && \
       printf '  vs %-8s %s commit(s) it does not have — this is running code that has not landed\n' "$want" \
         "$CHECKOUT_AHEAD"
