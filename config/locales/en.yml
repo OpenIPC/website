@@ -252,11 +252,13 @@ en:
       stay_tuned: stay tuned
       subtitle: Images from real IP-cameras running on OpenIPC firmware, provided by their owners.
     oneday:
+      show_all_frames: Show every frame from this day
       speed: Speed
     show:
       delete_by_mac: Delete all by MAC
       delete_one: Delete this one
       last_24h: Last 24 hours
+      show_all_frames: Show every frame from this day
       show_slideshow: Watch as slideshow
       snapshot_alt: 'Image: Snapshot'
       temperature: SoC temperature

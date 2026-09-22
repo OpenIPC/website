@@ -11,44 +11,23 @@
     <h2><%= t('title.openwall') %></h2>
   </header>
 
-  <div id="carouselSnapshots" class="carousel slide carousel-fade" data-bs-ride="carousel">
-    <div class="carousel-indicators">
-    <% @snapshots.each_with_index do |_, idx| %>
-      <button type="button" data-bs-target="#carouselSnapshots" data-bs-slide-to="<%= idx %>"
-              <%= raw 'class="active" aria-current="true"' if idx.eql?(0) %>
-              aria-label="Slide <%= idx + 1 %>"></button>
-    <% end %>
+  <%# The slideshow arrives in the frame, not in this page.
+      Bootstrap is what advances a carousel, so without JavaScript all 96
+      slides were one visible frame and 95 behind `display: none` -- nobody
+      who could not run the script was ever served by having them here, and
+      writing them out cost 104 KB carrying 96 full-HD URLs and 96 sibling
+      snapshot addresses to anyone who fetched the page. A client that runs
+      the script asks for them; this page shows the frame it is standing on
+      and a link for one that does not. %>
+  <%# target: '_top' for the same reason as the strip, and here it is worse:
+      a slide's "link to this" would look for an oneday-slideshow frame in the
+      snapshot page, find none, and be refused rather than navigate. %>
+  <%= turbo_frame_tag 'oneday-slideshow', src: slideshow_snapshot_path(id: @snapshot),
+                      loading: 'lazy', target: '_top' do %>
+    <div class="ratio ratio-16x9 bg-light">
+      <%= image_tag(@snapshot.wall_image(:fullhd) || default_image_path, alt: t('snapshots.slide.snapshot_alt'),
+                    class: "d-block h-100 w-auto position-absolute top-50 start-50 translate-middle") %>
     </div>
-    <div class="carousel-inner ratio ratio-16x9 bg-light">
-      <%= render partial: "slide", collection: @snapshots %>
-    </div>
-    <button class="carousel-control-prev" type="button" data-bs-target="#carouselSnapshots" data-bs-slide="prev">
-      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-      <span class="visually-hidden"><%= t('nav.previous') %></span>
-    </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#carouselSnapshots" data-bs-slide="next">
-      <span class="carousel-control-next-icon" aria-hidden="true"></span>
-      <span class="visually-hidden"><%= t('nav.next') %></span>
-    </button>
-  </div>
-
-  <p class="hstack gap-3 my-3">
-    <span class="text-muted"><%= t('nav.pause_transitions') %></span>
-    <span class="ms-auto"><input type="range" id="speed" min="0" max="4.5" step="0.5" value="2" title="<%= t('.speed') %>"></span>
-  </p>
+    <p class="mt-3"><%= link_to t('.show_all_frames'), slideshow_snapshot_path(id: @snapshot) %></p>
+  <% end %>
 </article>
-
-<script>
-  // Scoped. Turbo re-executes body scripts on every visit, so anything
-  // declared at the top level here would be re-declared in the shared
-  // global scope and throw on the second visit. A function declaration
-  // survives that; a `const` added next to it would not.
-  (() => {
-    function setSpeed() {
-        const ms = (5 - document.querySelector('#speed').valueAsNumber) * 1000;
-        document.querySelectorAll('.carousel-item').forEach(el => el.dataset["bsInterval"] = ms);
-    }
-    document.querySelector("#speed").addEventListener("input", setSpeed);
-    setSpeed();
-  })();
-</script>

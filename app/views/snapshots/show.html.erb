@@ -56,8 +56,25 @@
     <h4><%= t('.last_24h') %></h4>
     <p><%= link_to t('.show_slideshow'), oneday_snapshot_path(id: @snapshot), class: "btn btn-primary" %></p>
 
-    <div class="archive row row-cols-2 row-cols-sm-3 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2">
-      <%= render partial: 'icon', collection: @snapshots %>
-    </div>
+    <%# The frame carries the first screenful and, for a client that runs the
+        script, fetches the rest of the day when it scrolls into view. What is
+        NOT here is the point of it: a camera at the 15-minute upload limit has
+        96 frames in a day, and writing all of them into this page handed
+        whoever fetched it 96 more snapshot addresses -- the supply line the
+        Azure scraper re-armed on after the ids became opaque. The link below
+        keeps every frame reachable without JavaScript. %>
+    <%# target: '_top' or every icon in here navigates INTO this frame: Turbo
+        scopes a link to its enclosing frame, the snapshot page it fetches has
+        a frame of the same name, and the click would swap this grid for that
+        page's strip instead of opening the snapshot. %>
+    <%= turbo_frame_tag 'snapshot-archive', src: (@strip_more ? archive_snapshot_path(id: @snapshot) : nil),
+                        loading: 'lazy', target: '_top' do %>
+      <div class="archive row row-cols-2 row-cols-sm-3 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-2">
+        <%= render partial: 'icon', collection: @snapshots %>
+      </div>
+      <% if @strip_more %>
+        <p class="mt-2"><%= link_to t('.show_all_frames'), archive_snapshot_path(id: @snapshot) %></p>
+      <% end %>
+    <% end %>
   <% end %>
 </article>

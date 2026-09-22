@@ -71,10 +71,10 @@ initWizard()
 // on the first load as well as after every navigation, which is why it replaces
 // DOMContentLoaded rather than joining it: DOMContentLoaded fires only for the
 // document Turbo started with.
-document.addEventListener('turbo:load', () => {
-  initExternalLinks()
-  initTimestamps()
-  initConfirms()
+function initPage(root = document) {
+  initExternalLinks(root)
+  initTimestamps(root)
+  initConfirms(root)
 
   // Bootstrap starts `data-bs-ride` carousels from its own `load` listener,
   // which a Turbo navigation never fires -- so the Open Wall's one-day
@@ -82,9 +82,27 @@ document.addEventListener('turbo:load', () => {
   // rather than by typing the URL. getOrCreateInstance is idempotent, so this
   // is safe to run on every navigation and does nothing on the pages without
   // a carousel.
-  document.querySelectorAll('[data-bs-ride="carousel"]')
-          .forEach(el => Carousel.getOrCreateInstance(el))
-})
+  root.querySelectorAll('[data-bs-ride="carousel"]')
+      .forEach(el => Carousel.getOrCreateInstance(el))
+}
+
+document.addEventListener('turbo:load', () => initPage())
+
+// ...and again for content that arrives after the page did. Since #261 the
+// Open Wall loads two things into lazy turbo-frames -- the rest of a camera's
+// day on /snapshots/:id, and the whole slideshow on /snapshots/:id/oneday --
+// so the elements these walk for are not in the document when turbo:load
+// fires. turbo:frame-load is per frame and fires after its content is in the
+// DOM; without this the archive's timestamps stay as server-rendered UTC and
+// the slideshow never starts, which is the same bug the comment above
+// describes, one layer down.
+//
+// Scoped to the frame, NOT the document. initConfirms adds a listener per
+// matching element with nothing to stop it adding a second, and the admin
+// delete buttons on a snapshot page are outside the frame -- a document-wide
+// re-run here would ask an admin "Are you sure?" twice for one click, three
+// times after the next frame, and so on.
+document.addEventListener('turbo:frame-load', (event) => initPage(event.target))
 
 // ...and stop them again on the way out. A carousel cycles on a setInterval,
 // and Turbo disposes nothing: it swaps the body and leaves the old elements

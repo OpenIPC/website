@@ -252,11 +252,13 @@ zh:
       stay_tuned: 敬请关注
       subtitle: 所有图像均由用户上传，请注意保护个人隐私！
     oneday:
+      show_all_frames: 显示当天的全部画面
       speed: 速度
     show:
       delete_by_mac: 通过MAC删除所有
       delete_one: 删除这个
       last_24h: 过去 24 小时
+      show_all_frames: 显示当天的全部画面
       show_slideshow: 观看幻灯片
       snapshot_alt: 图片：快照
       temperature: 芯片温度

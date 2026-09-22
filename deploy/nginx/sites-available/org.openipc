@@ -57,6 +57,13 @@ server {
         return 403;
     }
 
+    # The Open Wall scraper, which declares nothing and rotates its user agent.
+    # Recognised by address instead. See conf.d/openipc-datacentre-block.conf
+    # for the ranges and for the beacon test that says no reader is in them.
+    if ($openipc_datacentre_client) {
+        return 403;
+    }
+
     location /dl/ {
         alias /srv/www/shared/dl/;
         allow all;
@@ -335,6 +342,15 @@ server {
 
         limit_conn snapshot_conc 10;
         limit_conn_status 429;
+
+        # Per address, where limit_conn above is per site. The two answer
+        # different questions: the pool bounds how many renders run at once,
+        # this bounds how fast one client may walk the id space. See
+        # conf.d/openipc-snapshot-rate.conf for where 60r/m and burst 48 come
+        # from -- burst alone clears the busiest real reader ever measured.
+        limit_req zone=snapshot_pages burst=48 nodelay;
+        limit_req_status 429;
+
         proxy_buffer_size 128k;
         proxy_buffers 8 128k;
 
