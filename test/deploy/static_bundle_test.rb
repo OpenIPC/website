@@ -323,6 +323,22 @@ class StaticBundleTest < ActiveSupport::TestCase
     MESSAGE
   end
 
+  test 'the baked support goal is the one config/support_goal.yml sets' do
+    # The donate page and the home band print "help us reach N", and N is a
+    # setting somebody raises by pull request (#198) -- so the prerendered copy
+    # of it cannot drift. The build has no Ruby, which is why there is a copy
+    # at all; this is what makes raising the goal one edit and a red test.
+    ts = Rails.root.join('frontend/apps/site/src/data/support-goal.ts').read
+    baked = ts[/SUPPORT_GOAL\s*=\s*(\d+)/, 1]&.to_i
+
+    assert baked, 'found no SUPPORT_GOAL in support-goal.ts; has its shape changed?'
+    assert_equal SupportStats.goal, baked, <<~MESSAGE.chomp
+      config/support_goal.yml says #{SupportStats.goal} and the static pages say #{baked}.
+
+      Both halves of the site quote this number, and they must quote the same one.
+    MESSAGE
+  end
+
   test 'no address the bundle claims is reserved' do
     # The two lists are written for opposite purposes and must not overlap:
     # reserved-paths is what the bundle must never contain, and page-paths.ts

@@ -19,17 +19,19 @@
  * No amount and no tier anywhere on the page: the channel is the ask, the
  * number is the visitor's.
  *
- * The backer count that sits above the button in Rails is absent here. It is
- * not baked: SupportStats caps the page's own HTTP freshness so that no page
- * outlives the number printed on it, and a figure baked into a bundle could
- * not honour that. shared/_support_count renders nothing when it has no usable
- * figure and says in its own comment that this leaves the page exactly as it
- * was before the count existed.
+ * The backer count sits above the button rather than beside it (#198): the
+ * number is the reason to press it, so it reads in the same glance. It is
+ * fetched on load rather than baked -- SupportStats caps the page's own HTTP
+ * freshness so no page outlives the number printed on it, and a figure baked
+ * into a bundle could not honour that. When it has nothing usable it renders
+ * nothing, which leaves the page exactly as it was before the count existed.
  */
 import Icon from '../Icon.astro';
 import PageHeader from '../PageHeader.astro';
 import CtaBand from '../CtaBand.astro';
+import SupportCount from '../SupportCount.tsx';
 import { useTranslations, type Locale } from '../../lib/i18n';
+import { SUPPORT_GOAL } from '../../data/support-goal';
 
 const { locale } = Astro.props as { locale: Locale };
 const t = useTranslations(locale);
@@ -51,6 +53,19 @@ const ru = locale === 'ru';
       </div>
 
       <div>
+        <SupportCount
+          client:idle
+          goal={SUPPORT_GOAL}
+          class="mb-6"
+          labels={{
+            count: t('support.count_html'),
+            countMet: t('support.count_met_html'),
+            meter: t('support.meter_label'),
+            monthly: t('support.monthly_html'),
+            split: t('support.split_html'),
+          }}
+        />
+
         {ru ? (
           <>
             <div class="mb-4 rounded-lg border border-hairline bg-white p-6">

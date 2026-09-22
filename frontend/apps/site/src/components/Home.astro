@@ -11,12 +11,10 @@
  *     what home.html.erb itself falls back to when the query returns nothing.
  *     Filling them in needs a JSON endpoint for the wall, and there is not one
  *     yet -- `resources :snapshots` serves HTML.
- *   * the backer count under the closing band renders nothing rather than a
- *     baked number. SupportStats caps the page's own HTTP freshness precisely
- *     so no page outlives the count printed on it, and a number baked into a
- *     bundle could not honour that. shared/_support_count renders nothing when
- *     it has no usable figure, and says in its own comment that this leaves
- *     the page exactly as it was before the count existed.
+ *   * the backer count under the closing band is fetched on load, not baked.
+ *     SupportStats caps the page's own HTTP freshness precisely so no page
+ *     outlives the count printed on it, and a number baked into a bundle could
+ *     not honour that.
  *
  * nginx already serves /api/v1/support/stats.json from a file, CORS-open and
  * 404-clean, which is the shape a client-side fill wants; doing it means
@@ -30,6 +28,8 @@ import { Image } from 'astro:assets';
 import { pathFor, useTranslations, type Locale } from '../lib/i18n';
 import { partnerRows } from '../lib/partners';
 import { SOC_COUNT, SOC_VENDOR_NAMES } from '../data/catalogue';
+import SupportCount from './SupportCount.tsx';
+import { SUPPORT_GOAL } from '../data/support-goal';
 import noSignal from '../assets/no-signal.webp';
 
 interface Props { locale: Locale }
@@ -207,5 +207,22 @@ const PILLARS = [
       </a>
     </p>
     <p class="mx-auto mt-8 mb-0 max-w-[60ch] text-sm text-white/60" set:html={t('pages.home.cta_donate_html')} />
+
+    {/*
+      Constrained and centred, because a full-width meter across a 1200px band
+      reads as a loading bar. Below the note, as shared/_cta_band puts it.
+    */}
+    <SupportCount
+      client:idle
+      goal={SUPPORT_GOAL}
+      class="mx-auto mt-6 max-w-[26rem] text-sm text-white/70"
+      labels={{
+        count: t('support.count_html'),
+        countMet: t('support.count_met_html'),
+        meter: t('support.meter_label'),
+        monthly: t('support.monthly_html'),
+        split: t('support.split_html'),
+      }}
+    />
   </div>
 </section>
