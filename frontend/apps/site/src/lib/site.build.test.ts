@@ -43,15 +43,35 @@ describe('the three locale trees', () => {
     expect(read('zh/_smoke/index.html')).toContain('lang="zh"');
   });
 
-  test('each page renders its own translation', () => {
-    // Not merely present in three files: actually different text, which is
-    // what a catalogue that failed to load would not produce.
-    const descriptions = ['_smoke', 'ru/_smoke', 'zh/_smoke'].map((p) => {
-      const html = read(`${p}/index.html`);
-      return /<p class="text-sm">([^<]+)<\/p>/.exec(html)?.[1] ?? '';
-    });
-    expect(descriptions.every((d) => d.length > 0)).toBe(true);
-    expect(new Set(descriptions).size).toBe(3);
+  test('each page renders the string its own catalogue holds', () => {
+    // Against the exported catalogue rather than against "the three differ":
+    // a build that rendered English three times would pass that, and this
+    // says which language each page is actually in.
+    for (const [locale, page] of [['en', '_smoke'], ['ru', 'ru/_smoke'], ['zh', 'zh/_smoke']]) {
+      const catalogue = JSON.parse(
+        readFileSync(join(root, 'src', 'i18n', `${locale}.json`), 'utf8'),
+      );
+      const expected: string = catalogue.site.default_meta_description;
+      expect(expected.length).toBeGreaterThan(0);
+      expect(read(`${page}/index.html`), `${page} is not in ${locale}`).toContain(expected);
+    }
+  });
+
+  test('the smoke page stays out of search results', () => {
+    // The hand-written page it replaced carried this, and the first Astro
+    // version of it did not. It is a diagnostic on a public host.
+    for (const page of ['_smoke', 'ru/_smoke', 'zh/_smoke']) {
+      expect(read(`${page}/index.html`)).toContain('name="robots" content="noindex, nofollow"');
+    }
+  });
+
+  test('it says nothing about how the site is built', () => {
+    // It is reachable without authentication on production. Internal paths,
+    // rake tasks and test filenames do not belong on it.
+    const html = read('_smoke/index.html');
+    for (const leak of ['config/locales', 'bin/rails', '.rb', 'i18n:export']) {
+      expect(html, `the smoke page mentions ${leak}`).not.toContain(leak);
+    }
   });
 
   test('the hreflang set names every locale and itself', () => {

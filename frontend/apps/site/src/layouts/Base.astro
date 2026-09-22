@@ -17,9 +17,12 @@ interface Props {
   path: string;
   title: string;
   description?: string;
+  /** Keep the page out of search results. Per page, because the marketing
+   *  set must NOT carry it -- search discovery is most of why #142 exists. */
+  noindex?: boolean;
 }
 
-const { locale, path, title, description } = Astro.props;
+const { locale, path, title, description, noindex = false } = Astro.props;
 const t = useTranslations(locale);
 
 const site = 'https://openipc.org';
@@ -36,6 +39,7 @@ const metaDescription = description ?? t('site.default_meta_description');
 
   <meta name="description" content={metaDescription} />
   <meta name="theme-color" content="#0f1422" />
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
 
   <link rel="canonical" href={`${site}${here}`} />
 

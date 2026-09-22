@@ -11,9 +11,6 @@ export default function Counter() {
   return (
     <div class="flex flex-row items-center gap-3">
       <MainButton size="s" caption={`Clicked ${clicks}`} clickHandler={() => setClicks(clicks + 1)} />
-      <span class="text-xs text-dark-grey">
-        {clicks === 0 ? 'hydrated when this button responds' : 'island is live'}
-      </span>
     </div>
   );
 }
