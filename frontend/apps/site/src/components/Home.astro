@@ -7,10 +7,9 @@
  * same way the Rails page renders when that state is missing -- which is a
  * state the Rails page already handles, not a new one:
  *
- *   * the wall mosaic shows the Open Wall's "no signal" placeholders, which is
- *     what home.html.erb itself falls back to when the query returns nothing.
- *     Filling them in needs a JSON endpoint for the wall, and there is not one
- *     yet -- `resources :snapshots` serves HTML.
+ *   * the wall mosaic ships the Open Wall's "no signal" placeholders -- what
+ *     home.html.erb itself falls back to when the query returns nothing -- and
+ *     swaps in real cameras from /api/v1/wall/latest on load.
  *   * the backer count under the closing band is fetched on load, not baked.
  *     SupportStats caps the page's own HTTP freshness precisely so no page
  *     outlives the count printed on it, and a number baked into a bundle could
@@ -29,6 +28,7 @@ import { pathFor, useTranslations, type Locale } from '../lib/i18n';
 import { partnerRows } from '../lib/partners';
 import { SOC_COUNT, SOC_VENDOR_NAMES } from '../data/catalogue';
 import SupportCount from './SupportCount.tsx';
+import WallMosaic from './WallMosaic.tsx';
 import { SUPPORT_GOAL } from '../data/support-goal';
 import noSignal from '../assets/no-signal.webp';
 
@@ -74,16 +74,14 @@ const PILLARS = [
       </div>
 
       <div>
-        <div class="grid grid-cols-3 gap-2" data-wall-mosaic>
-          {[0, 1, 2, 3, 4].map(() => (
-            <span class="relative block aspect-video overflow-hidden rounded-md bg-ink-2">
-              <Image src={noSignal} alt={t('snapshots.index.no_signal')} loading="lazy" class="size-full object-cover opacity-50" />
-            </span>
-          ))}
-          <a class="flex aspect-video items-center justify-center rounded-md border border-white/20 bg-ink-2 p-2 text-center text-xs text-white no-underline hover:border-white/50" href={p('/open-wall')}>
-            {t('pages.home.wall_cta')}
-          </a>
-        </div>
+        <WallMosaic
+          client:idle
+          tiles={5}
+          placeholder={noSignal.src}
+          placeholderAlt={t('snapshots.index.no_signal')}
+          cta={t('pages.home.wall_cta')}
+          ctaHref={p('/open-wall')}
+        />
         <p class="mt-4 mb-0 text-sm text-white/60">
           <span class="mr-2 inline-block size-2 rounded-full bg-accent"></span>
           <a class="text-white no-underline hover:underline" href={p('/open-wall')}>{t('pages.home.wall_live')}</a>

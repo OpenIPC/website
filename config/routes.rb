@@ -42,6 +42,18 @@ Rails.application.routes.draw do
   # `root` is NOT in that list. `/` stays on Rails permanently: it renders per
   # Accept-Language and declares `Vary: Accept-Language`, which a file cannot
   # do. See the comment on rule 3 in deploy/static/check-bundle.sh.
+  # The Open Wall's newest tiles, for the prerendered home page (#160). Not
+  # inside the locale scope: it answers data, not copy, and the page it feeds
+  # is the same JSON in all three languages.
+  #
+  # /api/ is reserved against the static bundle and is what the mirrors proxy
+  # to the origin uncached, so this address cannot be shadowed by a file.
+  namespace :api do
+    namespace :v1 do
+      get 'wall/latest', to: 'wall#latest', defaults: { format: :json }
+    end
+  end
+
   scope '(:locale)', locale: Multilang::IN_PATH do
     root 'pages#home'
 
