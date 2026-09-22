@@ -180,15 +180,27 @@ class WallSupplyLineTest < ActionDispatch::IntegrationTest
     ["/snapshots/#{id}/archive", "/snapshots/#{id}/slideshow"].each do |path|
       get path
       assert_response :success
-      assert_match(/<html/, response.body, "#{path} answered a fragment to a plain GET")
+      plain = response.body
 
       get path, headers: { 'Turbo-Frame' => 'snapshot-archive' }
       assert_response :success
-      assert_match(/<html/, response.body, <<~MESSAGE.chomp)
-        #{path} answered a different body to a frame request. The proxy cache
-        key is $scheme$host|$locale_key|$uri, so whichever of the two bodies
-        arrives first is what every other client gets for 300 seconds.
-      MESSAGE
+      framed = response.body
+
+      # NOT `assert_match /<html/`. That is what the first version of this test
+      # asserted and it passed against the bug: turbo-rails answers a frame
+      # request from layouts/turbo_rails/frame, which IS an <html> document --
+      # with an empty <head>. The head is the whole point, so assert the things
+      # a direct visitor cannot do without.
+      %w[stylesheet application og:title canonical].each do |marker|
+        assert_includes plain, marker, "#{path} lost #{marker} on a plain GET"
+        assert_includes framed, marker, <<~MESSAGE.chomp
+          #{path} answered without #{marker} to a frame request, so this URL has
+          two bodies. The proxy cache key is $scheme$host|$locale_key|$uri and
+          knows nothing about Turbo-Frame, so whichever arrives first is what
+          every other client gets for the next 300 seconds -- and the one
+          without a stylesheet is an unstyled orphan.
+        MESSAGE
+      end
     end
   end
 

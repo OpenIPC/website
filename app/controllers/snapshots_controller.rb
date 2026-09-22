@@ -86,18 +86,26 @@ class SnapshotsController < ApplicationController
   # search engines, which are welcome here in a way the scraper is not -- can
   # still reach every frame by following the link the strip carries.
   #
-  # ONE representation, always with the layout. `layout: !turbo_frame_request?`
-  # would give this URL two bodies, and the microcache in front of Rails keys
-  # on $scheme$host|$locale_key|$uri with no Turbo-Frame header in it -- so a
-  # lazy frame fetch would prime the entry with a bare fragment and the next
-  # reader to follow the link printed under the strip would get an unstyled
-  # orphan for the next 300 seconds. Turbo extracts the frame it wants from a
-  # complete document, so the only cost of this is bytes on a request that only
-  # a real reader makes.
+  # ONE representation, and `layout: 'application'` is what makes it one.
+  #
+  # The microcache in front of Rails keys on $scheme$host|$locale_key|$uri with
+  # no Turbo-Frame header in it, so two bodies at one address means a lazy frame
+  # fetch can prime the entry and the next reader to follow the link printed
+  # under the strip gets whatever the crawler-free path happened to render, for
+  # 300 seconds.
+  #
+  # Dropping our own `layout: !turbo_frame_request?` did NOT achieve that, and
+  # measuring on dev is the only reason we know: turbo-rails includes
+  # Turbo::Frames::FrameRequest, which sets `layout -> { "turbo_rails/frame" if
+  # turbo_frame_request? }` on every controller. That layout is <html><head>
+  # <%= yield :head %></head><body>...  -- an EMPTY head. So a frame request
+  # answered 12 KB smaller with no stylesheet, no application.js, no canonical
+  # and no OG tags, and an assertion that the body contains "<html" passed
+  # because the gem's layout has one. Naming the layout overrides the lambda.
   def archive
     @snapshots = daily_snapshots_new_to_old
     @page_title = "Open Wall, image ##{params[:id]}, all frames"
-    render 'snapshots/archive'
+    render 'snapshots/archive', layout: 'application'
   end
 
   def camera
@@ -120,11 +128,13 @@ class SnapshotsController < ApplicationController
     @page_title = 'Open Wall, one day in life...'
   end
 
-  # One representation, with the layout, for the reason spelled out on archive.
+  # One representation, named layout and all, for the reason spelled out on
+  # archive: turbo-rails would otherwise answer a frame request from its own
+  # head-less layout and the microcache cannot tell the two apart.
   def slideshow
     @snapshots = daily_snapshots_old_to_new
     @page_title = 'Open Wall, one day in life...'
-    render 'snapshots/slideshow'
+    render 'snapshots/slideshow', layout: 'application'
   end
 
   private
