@@ -19,7 +19,11 @@
       snapshot addresses to anyone who fetched the page. A client that runs
       the script asks for them; this page shows the frame it is standing on
       and a link for one that does not. %>
-  <%= turbo_frame_tag 'oneday-slideshow', src: slideshow_snapshot_path(id: @snapshot), loading: 'lazy' do %>
+  <%# target: '_top' for the same reason as the strip, and here it is worse:
+      a slide's "link to this" would look for an oneday-slideshow frame in the
+      snapshot page, find none, and be refused rather than navigate. %>
+  <%= turbo_frame_tag 'oneday-slideshow', src: slideshow_snapshot_path(id: @snapshot),
+                      loading: 'lazy', target: '_top' do %>
     <div class="ratio ratio-16x9 bg-light">
       <%= image_tag(@snapshot.wall_image(:fullhd) || default_image_path, alt: t('snapshots.slide.snapshot_alt'),
                     class: "d-block h-100 w-auto position-absolute top-50 start-50 translate-middle") %>

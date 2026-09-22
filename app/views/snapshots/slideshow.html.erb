@@ -2,7 +2,7 @@
     client that runs JavaScript, and served as a page of its own to one that
     follows the link instead. The frame id has to match the one on the oneday
     page or Turbo drops the response. %>
-<%= turbo_frame_tag 'oneday-slideshow' do %>
+<%= turbo_frame_tag 'oneday-slideshow', target: '_top' do %>
   <div id="carouselSnapshots" class="carousel slide carousel-fade" data-bs-ride="carousel">
     <div class="carousel-indicators">
     <% @snapshots.each_with_index do |_, idx| %>

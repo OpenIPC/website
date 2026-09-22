@@ -85,10 +85,19 @@ class SnapshotsController < ApplicationController
   # real page on its own address, so a reader without JavaScript -- and the
   # search engines, which are welcome here in a way the scraper is not -- can
   # still reach every frame by following the link the strip carries.
+  #
+  # ONE representation, always with the layout. `layout: !turbo_frame_request?`
+  # would give this URL two bodies, and the microcache in front of Rails keys
+  # on $scheme$host|$locale_key|$uri with no Turbo-Frame header in it -- so a
+  # lazy frame fetch would prime the entry with a bare fragment and the next
+  # reader to follow the link printed under the strip would get an unstyled
+  # orphan for the next 300 seconds. Turbo extracts the frame it wants from a
+  # complete document, so the only cost of this is bytes on a request that only
+  # a real reader makes.
   def archive
     @snapshots = daily_snapshots_new_to_old
     @page_title = "Open Wall, image ##{params[:id]}, all frames"
-    render 'snapshots/archive', layout: !turbo_frame_request?
+    render 'snapshots/archive'
   end
 
   def camera
@@ -111,10 +120,11 @@ class SnapshotsController < ApplicationController
     @page_title = 'Open Wall, one day in life...'
   end
 
+  # One representation, with the layout, for the reason spelled out on archive.
   def slideshow
     @snapshots = daily_snapshots_old_to_new
     @page_title = 'Open Wall, one day in life...'
-    render 'snapshots/slideshow', layout: !turbo_frame_request?
+    render 'snapshots/slideshow'
   end
 
   private

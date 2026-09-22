@@ -124,6 +124,74 @@ class WallSupplyLineTest < ActionDispatch::IntegrationTest
                     'the breadcrumb and the frame source, and no slide list'
   end
 
+  # The same invariant as the show page, asserted the same way: one fixture
+  # size proves nothing about growth, and /oneday was the heavier of the two
+  # pages before this change -- 130 KB against 95 KB.
+  test 'a bigger day does not make the slideshow page hand out more addresses' do
+    small = upload_day(frames: 20, mac: '00:11:22:33:44:03')
+    get "/snapshots/#{small.first.public_id}/oneday"
+    few = addresses_in(response.body).size
+
+    big = upload_day(frames: 96, mac: '00:11:22:33:44:04')
+    get "/snapshots/#{big.first.public_id}/oneday"
+    many = addresses_in(response.body).size
+
+    assert_equal few, many, <<~MESSAGE.chomp
+      A 96-frame day gave away #{many} addresses on /oneday and a 20-frame day
+      gave away #{few}. The slideshow is where 96 full-HD URLs and 96 sibling
+      ids used to be written out for a client that could not run the carousel.
+    MESSAGE
+    assert_operator many, :<=, 2, 'the breadcrumb and the frame source'
+  end
+
+  # Turbo scopes a link to its enclosing frame. Without target="_top" an icon
+  # in the archive would find a frame of the same name in the snapshot page it
+  # fetched and swap the grid instead of navigating, and a slide's "link to
+  # this" would find no oneday-slideshow frame at all and be refused. Both
+  # ends of each pair carry it, because the attribute has to survive the swap.
+  test 'links inside the frames navigate the page, not the frame' do
+    frames = upload_day(frames: 30)
+    id = frames.first.public_id
+
+    {
+      "/snapshots/#{id}" => 'snapshot-archive',
+      "/snapshots/#{id}/archive" => 'snapshot-archive',
+      "/snapshots/#{id}/oneday" => 'oneday-slideshow',
+      "/snapshots/#{id}/slideshow" => 'oneday-slideshow'
+    }.each do |path, frame|
+      get path
+      tag = response.body[/<turbo-frame[^>]*id="#{frame}"[^>]*>/]
+
+      assert tag, "#{path} has no #{frame} frame"
+      assert_includes tag, 'target="_top"',
+                      "#{path}: a link inside #{frame} would navigate the frame instead of the page"
+    end
+  end
+
+  # The microcache in front of Rails keys on the URI and knows nothing about
+  # the Turbo-Frame header, so one address must have one body. When these
+  # actions dropped the layout for a frame request, a lazy fetch primed the
+  # entry with a bare fragment and the reader who followed the link printed
+  # under the strip got an unstyled orphan for the next 300 seconds.
+  test 'the frame endpoints answer one body, layout and all' do
+    frames = upload_day(frames: 30)
+    id = frames.first.public_id
+
+    ["/snapshots/#{id}/archive", "/snapshots/#{id}/slideshow"].each do |path|
+      get path
+      assert_response :success
+      assert_match(/<html/, response.body, "#{path} answered a fragment to a plain GET")
+
+      get path, headers: { 'Turbo-Frame' => 'snapshot-archive' }
+      assert_response :success
+      assert_match(/<html/, response.body, <<~MESSAGE.chomp)
+        #{path} answered a different body to a frame request. The proxy cache
+        key is $scheme$host|$locale_key|$uri, so whichever of the two bodies
+        arrives first is what every other client gets for 300 seconds.
+      MESSAGE
+    end
+  end
+
   test 'the slideshow itself still shows the whole day' do
     frames = upload_day(frames: 30)
     get "/snapshots/#{frames.first.public_id}/slideshow"
