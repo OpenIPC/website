@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { LOCALES, pathFor, type Locale } from './i18n';
 import { PAGE_PATHS } from './page-paths';
 import { RAILS_PATHS, RAILS_PREFIXES } from './rails-paths';
+import { menuFor, footerFor, type FooterLink } from './nav';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const dist = join(root, 'dist');
@@ -118,12 +119,55 @@ describe('the shell behaves the way the Rails shell does', () => {
     expect(rule![1]).toContain('z-index:1020');
   });
 
+  test('the whole navigation is in the HTML, not built on hover', () => {
+    // @openipc/ui's menu used to render a dropdown's children only while it
+    // was open, so the served page carried 6 of the navigation's 29 addresses
+    // and every page behind a dropdown -- teleoperation, edge AI, the Open
+    // Wall, the services set, all three tools -- was linked from nothing a
+    // crawler could see. On a site that is prerendered FOR search discovery.
+    //
+    // Asserted against src/lib/nav.ts rather than a list written here, so a
+    // menu entry added in one place cannot pass by being forgotten in the
+    // other.
+    function addresses(items: ReturnType<typeof menuFor>): string[] {
+      return items.flatMap((item) => [
+        ...(item.url ? [item.url] : []),
+        ...(item.children ? addresses(item.children) : []),
+      ]);
+    }
+
+    for (const locale of LOCALES) {
+      const wanted = new Set([
+        ...addresses(menuFor(locale)),
+        ...footerFor(locale).flatMap((column) => column.links.map((l: FooterLink) => l.url)),
+      ]);
+
+      for (const [loc, path, html] of PAGES) {
+        if (loc !== locale) continue;
+        const shell = html.split('<main')[0] + html.split('</main>')[1];
+        const hrefs = new Set(attrs(shell, /<a[^>]+href="([^"]+)"/g));
+        const missing = [...wanted].filter((url) => !hrefs.has(url));
+        expect(missing, `${loc}${path} does not link ${missing.join(', ')}`).toEqual([]);
+      }
+    }
+  });
+
+  test('a dropdown is closed at rest', () => {
+    // The other half of rendering it always: present in the markup, and not
+    // painted over the page until somebody asks for it.
+    const rule = stylesheet.match(/\.invisible\{([^}]*)\}/);
+    expect(rule, 'no .invisible rule, so the submenus would sit open').toBeTruthy();
+    expect(rule![1]).toContain('visibility:hidden');
+  });
+
   test('the navigation band is ink, not the package\'s indigo', () => {
-    // @openipc/ui draws Header and HeaderMenu on --color-brand-blue. A
-    // navigation bar that changes colour when a visitor crosses the seam reads
-    // as breakage; the override is unlayered on purpose, and an unlayered rule
-    // is exactly the kind a later refactor drops without noticing.
-    expect(stylesheet).toMatch(/\.site-header header,\.site-header nav\{background-color:var\(--color-ink\)\}/);
+    // @openipc/ui draws Header, HeaderMenu and the dropdown panel on
+    // --color-brand-blue. A navigation bar that changes colour when a visitor
+    // crosses the seam reads as breakage, and so does a panel that hangs off
+    // the bar in a different colour from it. The override is unlayered on
+    // purpose, and an unlayered rule is exactly the kind a later refactor
+    // drops without noticing.
+    expect(stylesheet).toMatch(/\.site-header \.bg-brand-blue\{background-color:var\(--color-ink\)\}/);
   });
 });
 

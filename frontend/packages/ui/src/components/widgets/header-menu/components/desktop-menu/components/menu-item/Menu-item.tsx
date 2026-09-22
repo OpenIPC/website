@@ -51,7 +51,7 @@ export default function MenuItem(
   const liRef = useRef<HTMLLIElement>(null);
 
   return (
-    <li class="relative"
+    <li class="group relative"
       {...(children && {
         onMouseEnter: () => fn(true),
         onMouseLeave: handleMouseLeave,
@@ -117,13 +117,44 @@ export default function MenuItem(
         { children && level === 1 && <Triangle />}
         { children && level === 2 && <TriangleRight />}
       </div>
-      {(children && isSubMenuVisible) && (
+      {/*
+        Always in the DOM, hidden with CSS rather than rendered on demand.
+
+        It used to be `{children && isSubMenuVisible && <SubMenu/>}`, which
+        meant the child links did not exist in the served HTML: openipc.org's
+        navigation has 34 addresses and a prerendered page carried 6 of them.
+        Every page behind a dropdown -- teleoperation, edge AI, the Open Wall,
+        the whole services set, all three tools -- was linked from nothing a
+        crawler could see, on a site whose reason for being prerendered at all
+        is search discovery. Bootstrap's dropdown, which this replaced, renders
+        the whole tree and hides it with CSS; so does this now.
+
+        The visibility rules are doubled on purpose. `group-hover` and
+        `group-focus-within` open it with no JavaScript at all, which is what
+        makes the menu work on a page whose island has not hydrated yet or
+        never will; the state class opens it for the click and the keyboard,
+        which is what makes it work on a touch screen, where there is no hover.
+
+        `invisible` rather than `hidden`: it keeps the subtree in the
+        accessibility and find-in-page trees' reach while taking it out of the
+        pointer's, and it is what allows the fade.
+      */}
+      {children && (
+        <div
+          className={`
+            transition-opacity duration-150
+            group-hover:visible group-hover:opacity-100
+            group-focus-within:visible group-focus-within:opacity-100
+            ${isSubMenuVisible ? 'visible opacity-100' : 'invisible opacity-0'}
+          `}
+        >
           <SubMenu
             level={level+1}
             menuItems={children}
             parent={liRef}
             menuItemClickHandler={handleMenuItemClick}
           />
+        </div>
       )}
     </li>
   );

@@ -70,14 +70,28 @@
  * @layer utilities, and an unlayered rule beats a layered one whatever the
  * specificity. That is the same cascade behaviour that made the component
  * gallery's menu labels unreadable by accident; here it is the mechanism, and
- * it is scoped to the one element rather than left global.
+ * it is scoped to the header rather than left global.
+ *
+ * It matches the utility rather than the elements, because the band is not one
+ * element: Header, HeaderMenu and the dropdown panel each paint their own, and
+ * naming them one at a time left the panel hanging off the bar in a different
+ * colour from it.
  *
  * The right home for this is a prop on the package's Header. Until #158's
  * next pass gives it one, the override lives with the site that wants it.
  */
-.site-header header,
-.site-header nav {
+.site-header .bg-brand-blue {
   background-color: var(--color-ink);
+}
+
+/*
+ * And the dropdown's edge with it. The package outlines the panel in
+ * --color-light-blue, which is a bright line against fancyweb's indigo and a
+ * glowing one against ink. Bootstrap's dropdown, which this replaced, has a
+ * hairline the same colour as the divider inside it.
+ */
+.site-header .border-light-blue {
+  border-color: rgb(255 255 255 / 0.14);
 }
 
 /*
