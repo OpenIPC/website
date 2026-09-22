@@ -186,21 +186,29 @@ class WallSupplyLineTest < ActionDispatch::IntegrationTest
       assert_response :success
       framed = response.body
 
-      # NOT `assert_match /<html/`. That is what the first version of this test
-      # asserted and it passed against the bug: turbo-rails answers a frame
-      # request from layouts/turbo_rails/frame, which IS an <html> document --
-      # with an empty <head>. The head is the whole point, so assert the things
-      # a direct visitor cannot do without.
+      # The plain body has to be a real page first. Equality alone would be
+      # satisfied by two identically broken responses, and `assert_match
+      # /<html/` -- what the first version of this test checked -- is satisfied
+      # by the bug itself, because turbo-rails answers from
+      # layouts/turbo_rails/frame, which IS an <html> document with an empty
+      # <head>.
       %w[stylesheet application og:title canonical].each do |marker|
         assert_includes plain, marker, "#{path} lost #{marker} on a plain GET"
-        assert_includes framed, marker, <<~MESSAGE.chomp
-          #{path} answered without #{marker} to a frame request, so this URL has
-          two bodies. The proxy cache key is $scheme$host|$locale_key|$uri and
-          knows nothing about Turbo-Frame, so whichever arrives first is what
-          every other client gets for the next 300 seconds -- and the one
-          without a stylesheet is an unstyled orphan.
-        MESSAGE
       end
+
+      # Then the invariant itself, stated as the invariant rather than as a
+      # sample of it: ONE address, ONE body. Any frame-dependent difference
+      # that happened to keep the markers above would pass a marker check and
+      # still be cached for every client for 300 seconds. Deterministic here
+      # because csrf_needed? is true only for Devise controllers, so nothing
+      # per-request is rendered into these pages.
+      assert_equal plain, framed, <<~MESSAGE.chomp
+        #{path} answered a different body to a frame request. The proxy cache
+        key is $scheme$host|$locale_key|$uri and knows nothing about
+        Turbo-Frame, so whichever of the two arrives first is what every other
+        client gets for the next 300 seconds. Sizes: #{plain.bytesize} plain,
+        #{framed.bytesize} framed.
+      MESSAGE
     end
   end
 
