@@ -57,14 +57,21 @@ investigation of the host.
 Verify after applying, because a failed upgrade is silent:
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' \
+curl -s -o /dev/null -w '%{http_code}\n' --http1.1 \
   -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
   -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' \
   https://openipc.kz/api/v1/wall/cable
 ```
 
+**`--http1.1` is not optional.** `Connection` and `Upgrade` are illegal headers
+in HTTP/2, and these vhosts offer h2 — so without it curl negotiates h2, drops
+both headers, and the origin answers 404 with `HTTP_UPGRADE:` empty in its log.
+That reads exactly like a broken configuration and is not one. It cost an hour
+on 2026-09-23, on a mirror whose config was already correct.
+
 101 is right; anything else means the upgrade is not being forwarded. Then run
-`tools/canvas-check.mjs https://openipc.kz` and confirm tiles actually paint.
+`tools/canvas-check.mjs https://openipc.kz` and confirm tiles actually paint —
+a handshake proves the socket opens, not that frames arrive.
 
 ## A latent outage found while applying this (2026-09-23)
 
