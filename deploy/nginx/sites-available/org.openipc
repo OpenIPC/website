@@ -322,6 +322,34 @@ server {
         return 410;
     }
 
+    # The three addresses that used to hand over image bytes, answered here
+    # rather than by Rails, for the same reason the numeric form above is.
+    #
+    # `download` returned the ORIGINAL upload -- full resolution, EXIF
+    # unstripped. In the 24 hours to 2026-09-23 it was asked for 18,007 times
+    # and served 5,825 of them: 1,182 MB, covering 2,341 of the 2,820 snapshots
+    # that existed, which is 83% of every frame on the wall. 7,296 of those
+    # requests carried the Azure fleet's user agent, and 14 of the 10,630
+    # requesting addresses had ever executed the page beacon.
+    #
+    # Rails no longer routes any of them, so without this they fall to the
+    # catch-all and cost a 302 through Ruby -- eighteen thousand of those a day
+    # to answer a question whose answer is "no". 410 says gone rather than
+    # moved, which is the honest status and the one a crawler is supposed to
+    # stop retrying. Ahead of the hexadecimal location below, because nginx
+    # takes the first matching regex.
+    location ~ ^/(?:(?:ru|zh)/)?snapshots/[^/]+/download {
+        return 410;
+    }
+
+    location ~ ^/(?:(?:ru|zh)/)?snapshots/camera(?:[./]|$) {
+        return 410;
+    }
+
+    location ~ ^/(?:(?:ru|zh)/)?open-wall/camera/[^/]+\.jpg$ {
+        return 410;
+    }
+
     # The id is twenty hex characters, not digits. It was `[0-9]+` until the
     # ids stopped being sequential, and that regex is load-bearing twice over:
     # everything this location carries -- the microcache and the concurrency
@@ -401,54 +429,80 @@ server {
         add_header X-Cache-Status $upstream_cache_status;
     }
 
-    # The Open Wall's images, as plain files (2026-09, issue #146).
+    # /wall/ is gone, and so is every other address that returned a frame.
     #
-    # These were 293,785 requests on 2026-09-18 -- 62% of everything the site
-    # served, and 18,041 of the day's 21,291 429s -- because ActiveStorage's
-    # redirect mode answers each one with a 302 to a URL signed with a five
-    # minute expiry. Two Rails requests per image, both private, neither
-    # cacheable by anything. Almost none of it is people: 22,504 addresses
-    # presenting a handful of spoofed mobile user agents.
+    # #146 put the Open Wall's four variants here as plain files, and it was
+    # right about what it fixed: ActiveStorage's redirect mode was 293,785
+    # requests on 2026-09-18, 62% of everything served and 18,041 of that day's
+    # 21,291 429s. What it could not fix is that a file nginx hands to anyone
+    # who asks has no session behind it, so there is no way to say "this client
+    # has taken five hundred frames". Four rounds of hardening failed on
+    # exactly that: opaque ids (#235), a JavaScript gate (#261), an address
+    # block (#262), a rate limit. Each made the frames dearer; none made them
+    # absent.
     #
-    # ProcessImagesJob now writes the four variants here as ordinary files, so
-    # nginx answers without waking Ruby. immutable is honest: a snapshot's
-    # image never changes, and the id is in the path.
+    # Frames now leave over a WebSocket, which is a session that can be counted
+    # and refused -- see app/channels/wall_channel.rb. The files moved out of
+    # public/ at the same time, because RAILS_SERVE_STATIC_FILES=1 meant Rails
+    # served this path itself whatever was written here.
     #
-    # No limit_conn. These are sendfile of a small JPEG already in page cache,
-    # which is the whole point -- capping them would only reintroduce the
-    # queueing this removes.
-    # alias and no try_files. Combining the two is a long-standing nginx trap
-    # that resolves the path twice; alias on its own already answers 404 for a
-    # file that is not there, which is the honest answer here -- a snapshot
-    # whose job has not run is never linked to this path at all, because the
-    # view falls back to ActiveStorage until the column is set.
+    # 410, not 404: these addresses existed for a month and are in caches and
+    # crawl frontiers. Answered here so the 13,725 daily requests that will
+    # keep arriving cost nothing.
     location ^~ /wall/ {
-        # Not for training. See $openipc_gallery_crawler in
-        # conf.d/openipc-crawler-block.conf; robots.txt disallows these paths
-        # for everyone and this is the same rule, answered now rather than
-        # whenever the crawler next reads that file.
-        if ($openipc_gallery_crawler) {
-            return 403;
-        }
-
-        alias /srv/www/shared/wall/;
-        add_header Strict-Transport-Security max-age=15768000;
-        add_header Cache-Control "public, max-age=31536000, immutable";
-
-        # Declaring any limit_conn here REPLACES the http-level `limit_conn
-        # per_subnet 20` this would otherwise inherit -- which is per address,
-        # not per subnet, and which concurrent HTTP/2 streams each consume a
-        # slot of. Sixteen thumbnails plus stylesheets, fonts and a favicon put
-        # a cold first visit near that twenty, so the page could shed its own
-        # images. These are sendfile of a small JPEG already in page cache and
-        # never reach Rails, so they have no business competing for slots that
-        # exist to bound concurrent renders. High enough not to bind on any
-        # real page, low enough to stay a bound.
-        limit_conn per_subnet 100;
-        limit_conn_status 429;
+        return 410;
     }
 
-    # Open Wall pages and the ActiveStorage image URLs they embed: the paths
+    # The frame channel. A WebSocket, so everything about this location is
+    # different from the rest of the file.
+    #
+    # Under /api/ deliberately: #142 has the mirrors proxying only /api/,
+    # /wall/i/ and /dl/firmware/ to the origin, and deploy/static/reserved-paths
+    # already reserves the prefix so the static bundle cannot shadow it.
+    #
+    # Its own limit_conn zone, and this is the trap worth naming. site_conc,
+    # snapshot_conc and media_conc are all keyed on $server_name -- ONE global
+    # pool each, sized so the three together sum to Puma's 32 threads. A
+    # long-lived socket holds its slot for the whole connection, so ten readers
+    # on a $server_name-keyed pool would 429 the entire site. Keyed per address
+    # instead, and low: a reader needs one socket, and nothing legitimate needs
+    # four.
+    location ^~ /api/v1/wall/ {
+        limit_conn wall_sockets 4;
+        limit_conn_status 429;
+
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Buffering would hold frames until the buffer filled, which for a
+        # socket means holding them until the connection closed.
+        proxy_buffering off;
+
+        # The default proxy_read_timeout of 180s elsewhere in this file would
+        # drop an idle socket after three minutes -- a reader who leaves the
+        # wall open loses their frames and gets no error. ActionCable pings on
+        # its own; this is the ceiling above that.
+        proxy_read_timeout 1h;
+        proxy_send_timeout 1h;
+
+        # A socket must never enter the microcache. It is not a document and
+        # there is nothing to replay.
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
+
+        add_header Strict-Transport-Security max-age=15768000;
+    }
+
+    # Open Wall pages. The ActiveStorage image URLs these used to embed are
+    # gone -- nothing renders one, and /rails/active_storage/* answers 410 --
+    # but the prefix stays in the regex so an old link still lands somewhere
+    # rate limited rather than in the catch-all.
     # the 2026-08-30 flood hammers. Cached 60s for everyone; these pages are
     # identical for all anonymous visitors. Set-Cookie is stripped so one
     # visitor's session can never be handed to another from the cache; no

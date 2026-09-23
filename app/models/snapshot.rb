@@ -187,58 +187,17 @@ class Snapshot < ApplicationRecord
     where(mac_address: spellings).order(created_at: :desc).first
   end
 
-  # Where a page should link for one of this snapshot's images.
+  # wall_image is gone, and with it the last place this model produced a URL.
   #
-  # Once ProcessImagesJob has written the four variants as plain files, that is
-  # a static path nginx serves without waking Ruby, cacheable forever because a
-  # given snapshot's image never changes. Until then -- a row uploaded seconds
-  # ago, a row predating the backfill, or a job lost to the :async adapter on a
-  # restart -- it is the ActiveStorage variant, which is what the whole site
-  # used before #146 and still works.
-  #
-  # Returning the variant object rather than a URL in the fallback case lets
-  # image_tag do what it did before, including the `|| default_image_path`
-  # guards the gallery partials use for a snapshot whose file has gone.
-  def wall_image(variant)
-    return WallImage.url_for(public_id, variant) if variants_generated_at?
-
-    file.variant(variant)
-  end
-
-  def filename_for_download
-    "openipc-#{firmware}-#{soc}-#{sensor}-#{created_at.to_i}-#{file.filename}"
-  end
+  # It returned "/wall/<public_id>/<variant>.jpg" once ProcessImagesJob had
+  # run, and an ActiveStorage variant object before that -- so every gallery
+  # template emitted a fetchable address for somebody's premises, and the
+  # pre-job fallback emitted an ActiveStorage one even after #146 moved the
+  # files. Frames now travel over WallChannel; a view asks for them with
+  # wall_frame_tag, which writes the id and nothing else.
 
   def image_dimensions
     [file.metadata['width'], file.metadata['height']].join('x')
-  end
-
-  def generate_timelaps
-    in_dir = "/tmp/#{mac_address}"
-    FileUtils.mkdir_p in_dir
-
-    command = []
-    command << 'melt 0.jpg out=5'
-    Snapshot.where(mac_address: mac_address).each_with_index do |s, idx|
-      s.file.open do |f|
-        in_file = "#{idx}.jpg"
-        tgt = File.join(in_dir, in_file)
-        FileUtils.cp f, tgt unless File.exist?(tgt)
-        command << "#{in_file} out=5 -mix 3 -mixer luma"
-      end
-    end
-    command << '-consumer avformat:out.mp4'
-    command << 'width=1920 height=1080 frame_rate_num=30 sample_aspect_num=1 sample_aspect_den=1'
-    command << '-video-track -quiet'
-    command = command.join(' ')
-
-    Dir.chdir in_dir do
-      %x[#{command}]
-    end
-
-    # ffmpeg -framerate 30 -pattern_type glob -i "#{in_dir}/*.jpg" -s:v 1440x1080 -c:v libx264 -crf 17 -pix_fmt yuv420p -y my-timelapse.mp4
-    # %x[ffmpeg -framerate 24 -pattern_type glob -i "#{in_dir}/*.jpg" -s hd1080 -c:v libx264 -crf 18 -preset ultrafast -vf "format=yuv420p" -tag:v hvc1 -y "#{in_dir}/265-tagged-hd.mp4" >&2]
-    # %x[ffmpeg -pattern_type glob -i "#{in_dir}/*.jpg" -s:v 1280x720 -preset veryslow -c:v libx265 -crf 18 -pix_fmt yuv420p -tag:v hvc1 -y "#{in_dir}/265-tagged-hd.mp4" >&2]
   end
 
   # Never all digits, which one hex token in ten thousand otherwise is. Both

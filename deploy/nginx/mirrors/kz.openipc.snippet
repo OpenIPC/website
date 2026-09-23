@@ -1,0 +1,66 @@
+# The Open Wall's frame channel, through the openipc.kz / openipc.cloud mirror.
+#
+# NOT YET APPLIED. 87.199.131.93 serves both names (they answer 200) but did
+# not accept ssh on 35242 or 22 from the build host on 2026-09-23, so this is
+# intended state waiting for someone who can reach it. Until it is applied,
+# readers on those two names get no frames -- the client says so in the page
+# after eight seconds rather than showing a grid of blank squares, but the
+# wall is not working for them.
+#
+# Identical in substance to ru.openipc.snippet; kept as its own file so the
+# gap is impossible to overlook, and so applying it is a copy rather than a
+# judgement about which parts transfer.
+#
+# WHAT GOES WHERE
+#
+# 1. At http level, in /etc/nginx/conf.d/openipc-upgrade.conf:
+#
+#        map $http_upgrade $connection_upgrade {
+#            default upgrade;
+#            ''      close;
+#        }
+#
+# 2. In the server block for each name, BEFORE `location /` so the prefix
+#    match wins: the block below. Check first whether that host already sets
+#    proxy_http_version 1.1 in `location /` -- openipc.ru did -- because a
+#    prefix location inherits nothing from a sibling either way, so everything
+#    needed is repeated here regardless.
+#
+# AFTERWARDS, verify rather than assume. A failed upgrade is silent: nginx
+# forwards the request, the origin answers an ordinary response instead of
+# 101, and nothing in any log distinguishes that from nobody having visited.
+#
+#   curl -s -o /dev/null -w '%{http_code}\n' \
+#     -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
+#     -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' \
+#     https://openipc.kz/api/v1/wall/cable
+#
+# 101 is right. Anything else means the upgrade is not being forwarded. Then
+# open https://openipc.kz/open-wall and confirm the tiles actually paint, or
+# run tools/canvas-check.mjs against that name.
+
+location ^~ /api/v1/wall/ {
+    proxy_pass https://openipc.org;
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade    $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # The origin hosts several sites on one address, so it needs the name in
+    # the TLS handshake.
+    proxy_ssl_server_name         on;
+    proxy_ssl_name                openipc.org;
+    proxy_ssl_verify              on;
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    proxy_ssl_verify_depth        3;
+
+    # A socket is idle most of its life. The default read timeout would close
+    # it mid-session and the reader would lose their frames with no error.
+    proxy_buffering    off;
+    proxy_read_timeout 1h;
+    proxy_send_timeout 1h;
+}

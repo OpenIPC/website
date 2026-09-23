@@ -848,10 +848,7 @@
       "trade": "Manufacturers and integrators"
     },
     "snapshot": {
-      "download": "Download original image",
-      "link_to_camera": "Permanent link to this camera",
-      "link_to_last_jpeg": "Permanent link to the latest snapshot from this camera (JPEG)",
-      "view_heif": "View original HEIF in your browser"
+      "link_to_camera": "Permanent link to this camera"
     }
   },
   "str": {

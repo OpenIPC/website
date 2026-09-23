@@ -170,21 +170,6 @@ class SnapshotsControllerTest < ActionDispatch::IntegrationTest
     assert_equal '198.51.100.7', Snapshot.last.ip_address
   end
 
-  # A HEIF upload downloaded through /camera.jpg is converted to JPEG, so it
-  # must not still claim to be HEIC. The substitution used to match only a
-  # .heif extension, and every HEIF file the cameras send is named .heic.
-  test 'a HEIF snapshot downloaded as JPEG is named as a JPEG' do
-    post_snapshot(mac: '00:11:22:33:45:01',
-                  file: upload(heif_bytes(12.kilobytes), 'image/heic', 'snapshot.heic'))
-    assert_response :created
-    snapshot = Snapshot.last
-
-    name = snapshot.filename_for_download.sub(/hei[cf]$/i, 'jpg')
-
-    assert name.end_with?('.jpg'), "expected a .jpg name, got #{name}"
-    assert_not name.include?('heic'), 'the JPEG bytes were handed over named as HEIC'
-  end
-
   # --- refused uploads ----------------------------------------------------
 
   # 415 with the reason in a header, not a body: `head` sends no body at all,

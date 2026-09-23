@@ -180,9 +180,27 @@ Rails.application.routes.draw do
     get '/open-wall(/:page)', to: 'snapshots#index'
   end
 
+  # No route here returns image bytes, and that is the point.
+  #
+  # Three did until 2026-09-23, and between them they were the largest theft on
+  # the site. `download` handed over the ORIGINAL upload -- full resolution,
+  # EXIF unstripped -- and in the 24 hours to that date it was asked for 18,007
+  # times, served 5,825 times, 1,182 MB, covering 2,341 of the 2,820 snapshots
+  # that existed. 83% of every frame on the wall. 7,296 of those requests
+  # carried the Azure fleet's user agent and 14 of the 10,630 requesting
+  # addresses had ever executed the page beacon. robots.txt disallowed the path
+  # throughout.
+  #
+  # `get :camera, on: :collection` was the quiet one: it made
+  # /snapshots/camera.jpg?id=<token> a SECOND address for the per-camera JPEG,
+  # unlinked and undocumented, so any guard written for the member route missed
+  # it entirely. The member route itself (openwall_camera, below) survives as
+  # an HTML permalink to a camera; what it no longer does is answer .jpg.
+  #
+  # Frames reach a reader over the wall transport, which can count what a
+  # session has taken. A static URL cannot.
   scope '(:locale)', locale: Multilang::IN_PATH do
     resources :snapshots do
-      get :camera, on: :collection
       # The rest of a camera's day, on its own address. Both are what the show
       # page and the slideshow page load into a lazy turbo-frame instead of
       # writing 96 sibling ids into every render (#261); both stay reachable
@@ -190,7 +208,6 @@ Rails.application.routes.draw do
       get :archive, on: :member
       get :oneday, on: :member
       get :slideshow, on: :member
-      get :download, on: :member
     end
   end
 
@@ -245,7 +262,23 @@ Rails.application.routes.draw do
   match "/telemetry(/*any)", to: proc { [410, { "Content-Type" => "text/plain" }, ["Gone\n"]] },
         via: :all, as: :retired_telemetry
 
-  match "*unmatched", to: "application#route_not_found",
-        constraints: lambda { |req| req.path.exclude? 'rails/active_storage' },
-        via: :all
+  # ActiveStorage's public routes, refused.
+  #
+  # This used to be the opposite: a constraint excluding anything containing
+  # 'rails/active_storage' from the catch-all, added in 2022 so those requests
+  # would fall through to the engine instead of being redirected away. That
+  # made /rails/active_storage/representations/redirect/... and
+  # /rails/active_storage/disk/... live public addresses for the ORIGINAL
+  # uploads and every variant -- reachable for as long as the signed id lasts,
+  # which for a blob id is forever.
+  #
+  # Snapshot is the only model on this site with an attachment, and nothing
+  # renders an ActiveStorage URL any more, so the engine's routes serve no
+  # purpose here beyond being a door. 410 rather than 404: they existed, they
+  # are gone, and a crawler holding an old link should stop asking.
+  match "/rails/active_storage/*any",
+        to: proc { [410, { "Content-Type" => "text/plain" }, ["Gone\n"]] },
+        via: :all, as: :retired_active_storage
+
+  match "*unmatched", to: "application#route_not_found", via: :all
 end
