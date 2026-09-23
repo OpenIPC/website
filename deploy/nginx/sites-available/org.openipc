@@ -322,6 +322,34 @@ server {
         return 410;
     }
 
+    # The three addresses that used to hand over image bytes, answered here
+    # rather than by Rails, for the same reason the numeric form above is.
+    #
+    # `download` returned the ORIGINAL upload -- full resolution, EXIF
+    # unstripped. In the 24 hours to 2026-09-23 it was asked for 18,007 times
+    # and served 5,825 of them: 1,182 MB, covering 2,341 of the 2,820 snapshots
+    # that existed, which is 83% of every frame on the wall. 7,296 of those
+    # requests carried the Azure fleet's user agent, and 14 of the 10,630
+    # requesting addresses had ever executed the page beacon.
+    #
+    # Rails no longer routes any of them, so without this they fall to the
+    # catch-all and cost a 302 through Ruby -- eighteen thousand of those a day
+    # to answer a question whose answer is "no". 410 says gone rather than
+    # moved, which is the honest status and the one a crawler is supposed to
+    # stop retrying. Ahead of the hexadecimal location below, because nginx
+    # takes the first matching regex.
+    location ~ ^/(?:(?:ru|zh)/)?snapshots/[^/]+/download {
+        return 410;
+    }
+
+    location ~ ^/(?:(?:ru|zh)/)?snapshots/camera(?:[./]|$) {
+        return 410;
+    }
+
+    location ~ ^/(?:(?:ru|zh)/)?open-wall/camera/[^/]+\.jpg$ {
+        return 410;
+    }
+
     # The id is twenty hex characters, not digits. It was `[0-9]+` until the
     # ids stopped being sequential, and that regex is load-bearing twice over:
     # everything this location carries -- the microcache and the concurrency

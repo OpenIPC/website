@@ -46,10 +46,11 @@
     </div>
   <% end %>
 
+  <%# One link, and it goes to a page rather than to bytes. The two that are
+      gone handed over the original upload and the camera's newest frame as
+      files; between them they were the wall's largest leak. %>
   <p>
-    <%= link_to t('site.snapshot.download'), download_snapshot_path(id: @snapshot) %><br>
-    <%= link_to t('site.snapshot.link_to_camera'), openwall_camera_path(id: @snapshot.camera_token) %><br>
-    <%= link_to t('site.snapshot.link_to_last_jpeg'), openwall_camera_path(id: @snapshot.camera_token, format: :jpg) %>
+    <%= link_to t('site.snapshot.link_to_camera'), openwall_camera_path(id: @snapshot.camera_token) %>
   </p>
 
   <% if @snapshots && @snapshots.any? %>
