@@ -1,0 +1,51 @@
+# The Open Wall's frame channel, through the mirror.
+#
+# Applied by hand on 194.58.109.202 (openipc.ru). See README.md in this
+# directory for why these hosts are not managed by push-nginx.sh.
+#
+# WHAT GOES WHERE
+#
+# 1. At http level -- /etc/nginx/conf.d/openipc-upgrade.conf, which is included
+#    by the stock `include /etc/nginx/conf.d/*.conf;` in nginx.conf:
+#
+#        map $http_upgrade $connection_upgrade {
+#            default upgrade;
+#            ''      close;
+#        }
+#
+# 2. In the openipc.ru server block, BEFORE `location /`, so the prefix match
+#    wins: the block below.
+#
+# The host already sets proxy_http_version 1.1 in `location /` -- which is why
+# only the headers and the timeout are new -- but a prefix location does not
+# inherit anything from a sibling, so every directive it needs is repeated
+# here.
+
+location ^~ /api/v1/wall/ {
+    proxy_pass https://openipc.org;
+
+    # Without these two the handshake degrades silently: nginx forwards the
+    # request, the origin answers a normal 200 or 400 instead of 101, and the
+    # reader sees an empty gallery with nothing in any log to say why.
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade    $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # Same TLS arrangement as `location /`: the origin hosts several sites on
+    # one address, so it needs the name in the handshake.
+    proxy_ssl_server_name         on;
+    proxy_ssl_name                openipc.org;
+    proxy_ssl_verify              on;
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    proxy_ssl_verify_depth        3;
+
+    # A socket is idle most of its life. The default would close it mid-session
+    # and the reader would lose their frames with no error.
+    proxy_buffering    off;
+    proxy_read_timeout 1h;
+    proxy_send_timeout 1h;
+}
