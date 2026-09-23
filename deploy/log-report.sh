@@ -41,6 +41,29 @@ function cls(p) {
   if (p == "/")                         return "front"
   return "other"
 }
+# Did this request hand over actual camera image bytes?
+#
+# Since #267 the Open Wall delivers frames over a WebSocket and no address
+# returns a picture, so this number is an invariant: it should be zero, and a
+# non-zero reading means a door reopened.
+#
+# The shape matters more than it looks, and getting it wrong is not theoretical.
+# `/open-wall/camera/<id>` WITHOUT an extension is the HTML camera page, which
+# is served on purpose and paints its frame onto a canvas; only the `.jpg` twin
+# ever returned bytes. A detector written as a substring match on
+# `open-wall/camera` counts that page as a leak -- which is what an ad-hoc
+# version of this check did on 2026-09-23, twice, both times sending someone off
+# to disprove a frame escape that had not happened. Match the extension, not the
+# route.
+function frame_bytes(p) {
+  sub(/^\/(ru|zh)\//, "/", p)
+  if (p ~ /^\/wall\//)                                          return 1
+  if (p ~ /^\/rails\/active_storage\//)                         return 1
+  if (p ~ /^\/snapshots\/[0-9a-f]+\/download([.?\/]|$)/)        return 1
+  if (p ~ /^\/open-wall\/camera\/[^\/]+\.(jpg|jpeg|png|webp)$/) return 1
+  if (p ~ /^\/snapshots\/camera\.(jpg|jpeg|png|webp)/)          return 1
+  return 0
+}
 # The User-Agent, taken by anchoring rather than by field number: it is
 # quoted, contains spaces, and the field before it is the referer, which is
 # quoted too. The one thing that cannot appear inside it is a raw double quote
@@ -155,6 +178,28 @@ function tail(line,   s, q) {
   who = crawler(agent($0))
   if (who != "") { bot[who]++; tbot++ }
 
+  # Open Wall: the invariant, the refusals that enforce it, and the channel
+  # that replaced the addresses it used to be served from.
+  if (frame_bytes($7)) {
+    fb_req++
+    # Keep when the most recent one was. A log that spans the 2026-09-23
+    # cutover legitimately contains thousands of these and the count alone
+    # cannot say whether they are history or a live regression; the timestamp
+    # can, and it is the first thing worth knowing if a door really has
+    # reopened. The log is chronological, so the last seen is the latest.
+    if (st == 200) { fb_ok++; fb_bytes += by; fb_last = substr($4, 2) }
+    if (st == 410) fb_410++
+  }
+  if ($7 ~ /\/api\/v1\/wall\//) { ch_req++; ch_st[st]++; ch_bytes += by }
+  # No {16,20} here: mawk is the default awk on the hosts this runs on and it
+  # does not implement interval expressions, so the match silently never fires
+  # and the id count reads zero on a log full of ids. Take the hex run and
+  # measure it instead.
+  if (st == 200 && match($7, /\/snapshots\/[0-9a-f]+/)) {
+    wall_id = substr($7, RSTART + 11, RLENGTH - 11)
+    if (length(wall_id) >= 16) wid[wall_id] = 1
+  }
+
   if (tail($0)) {
     newfmt++
     if (T_cache ~ /^(HIT|STALE|UPDATING|REVALIDATED)$/) hit[c]++
@@ -200,6 +245,36 @@ END {
       while (j > 0 && shedpath[sp[j]] < shedpath[v]) { sp[j+1] = sp[j]; j-- }
       sp[j+1] = v }
     for (i = 1; i <= k && i <= 8; i++) printf "  %-58.58s %6d\n", sp[i], shedpath[sp[i]]
+  }
+
+  # The Open Wall, whose whole defence is that no address returns a picture.
+  nwid = 0; for (w in wid) nwid++
+  print "\nOpen Wall"
+  if (fb_ok > 0) {
+    printf "  CAMERA FRAMES SERVED OVER HTTP  %d  (%.1f MiB)\n", fb_ok, fb_bytes/1048576
+    printf "  most recent one                 %s\n", fb_last
+    print  "  ^ this is meant to be zero. Check the time before reacting: a log"
+    print  "    spanning the 2026-09-23 cutover holds that whole morning of them"
+    print  "    legitimately. A recent one is a door #267 closed, reopened."
+  } else {
+    print "  camera frames served over HTTP  0"
+  }
+  printf "  retired image paths refused     %d of %d requests answered 410\n",
+         fb_410 + 0, fb_req + 0
+  # Any 200 carrying an id confirms that camera exists, a page and a download
+  # alike, so this is "exposed" rather than "served as a page". It is the part
+  # the channel does not hide: frames stopped leaving, the identifiers did not.
+  printf "  distinct camera ids exposed     %d\n", nwid
+  if (ch_req > 0) {
+    printf "  frame channel                   %d requests:", ch_req
+    for (sc in ch_st) printf " %s=%d", sc, ch_st[sc]
+    printf "\n  frame channel egress            %.1f MiB\n", ch_bytes/1048576
+    if (ch_st[404] > 0)
+      print "  a 404 here is a proxy forwarding the socket without the Upgrade header"
+    if (ch_st[429] > 0)
+      print "  a 429 here is limit_conn wall_sockets, which counts open tabs, not a rate"
+  } else {
+    print "  frame channel                   no requests"
   }
 
   # Crawlers that name themselves, which is the honest half of the bot count:
