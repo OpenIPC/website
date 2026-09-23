@@ -76,6 +76,26 @@ class WallChannelTest < ActionCable::Channel::TestCase
     assert_equal big, head + masked.byteslice(WallChannel::MASK_BYTES..).to_s
   end
 
+  # The two constants, compared directly.
+  #
+  # The round-trip test above derives its boundary from WallChannel::MASK_BYTES
+  # and therefore checks the server against itself -- so if src/wall.js and the
+  # channel ever disagreed, both tests would pass and every frame would paint
+  # as noise from the boundary onward. The PR that added them claimed they
+  # "hold the two constants together". They did not. This does.
+  test 'the client masks exactly as many bytes as the server' do
+    js = Rails.root.join('app/javascript/src/wall.js').read
+    declared = js[/^const MASK_BYTES = (\d+)/, 1]
+
+    assert declared, 'src/wall.js no longer declares MASK_BYTES; the client cannot unmask'
+    assert_equal WallChannel::MASK_BYTES, declared.to_i, <<~MESSAGE.chomp
+      The client unmasks #{declared} bytes and the server masks
+      #{WallChannel::MASK_BYTES}. Every frame will paint as noise from
+      whichever boundary is lower, and no other test in this file notices,
+      because they all take the server's constant as the truth.
+    MESSAGE
+  end
+
   # And the mask must actually be applied where it claims: the head altered,
   # the tail untouched. Without this, MASK_BYTES = 0 would pass the round trip
   # above while sending every frame in the clear.

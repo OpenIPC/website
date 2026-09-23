@@ -20,6 +20,17 @@ let subscription = null
 let pending = new Map()
 let connected = false
 
+// Bumped whenever the page changes or the socket drops. Chunk timers carry the
+// generation they were scheduled under and stop if it has moved on.
+//
+// Both halves of that are bugs found in review. Without it, a Turbo navigation
+// left the remaining chunks of the page you just LEFT still arriving, spending
+// the connection's hourly budget on frames nobody is looking at; and a
+// reconnect re-requested nothing, because `request` skips an id whose slot is
+// already in `pending` and a dropped socket leaves every unresolved slot
+// sitting there for ever.
+let generation = 0
+
 function canvasesIn(root) {
   return Array.from(root.querySelectorAll('canvas[data-wall-frame]'))
 }
@@ -146,9 +157,11 @@ function request(root) {
 // Sequential rather than all at once, so one page cannot monopolise the socket
 // and a reader sees the top of the page while the bottom is still arriving.
 function sendChunks(variant, ids) {
+  const mine = generation
   let at = 0
   const next = () => {
-    if (at >= ids.length || !subscription) return
+    // Stop if the page moved on or the socket dropped while this was queued.
+    if (at >= ids.length || !subscription || mine !== generation) return
     subscription.perform('request_frames', { variant, ids: ids.slice(at, at + CHUNK) })
     at += CHUNK
     if (at < ids.length) setTimeout(next, 250)
@@ -166,6 +179,7 @@ export default function initWall() {
   // pending map here stops a stale canvas reference being painted into a
   // detached document.
   document.addEventListener('turbo:before-cache', () => {
+    generation++
     pending = new Map()
     canvasesIn(document).forEach((canvas) => delete canvas.dataset.wallPainted)
   })
@@ -179,7 +193,13 @@ function hydrate(root) {
     subscription = consumer.subscriptions.create('WallChannel', {
       received: onFrame,
       connected: () => { connected = true; request(document) },
-      disconnected: () => { connected = false },
+      disconnected: () => {
+        connected = false
+        // Anything still waiting will never arrive on this socket, so drop the
+        // slots: the reconnect's request() has to be able to ask again.
+        generation++
+        pending = new Map()
+      },
     })
 
     // A handshake that never completes produces no event to hang this on --

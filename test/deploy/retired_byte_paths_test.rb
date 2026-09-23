@@ -25,8 +25,15 @@ class RetiredBytePathsTest < ActiveSupport::TestCase
     'the per-camera JPEG' => 'open-wall/camera/[^/]+\.jpg$'
   }.freeze
 
-  def location_at(suffix)
-    VHOST.index("location ~ ^/(?:(?:ru|zh)/)?#{suffix}")
+  def location_at(suffix, vhost = VHOST)
+    vhost.index("location ~ ^/(?:(?:ru|zh)/)?#{suffix}")
+  end
+
+  def refuses?(suffix, vhost)
+    at = location_at(suffix, vhost)
+    return false unless at
+
+    vhost[at..].split("\n    }").first.include?('return 410')
   end
 
   RETIRED.each do |what, suffix|
@@ -65,8 +72,36 @@ class RetiredBytePathsTest < ActiveSupport::TestCase
   # curling both after the deploy, not by reading either file.
   RETIRED.each do |what, suffix|
     test "dev refuses #{what} exactly as production does" do
-      assert DEV_VHOST.index("location ~ ^/(?:(?:ru|zh)/)?#{suffix}"),
-             "org.openipc.dev has no rule for #{what}, so dev and production disagree"
+      # Not merely "a location exists". The first version of this asserted the
+      # prefix was present and nothing else, so dev could have answered 302,
+      # 404 or anything at all and still passed -- which is the same shape of
+      # hole that let dev and production disagree in the first place.
+      assert refuses?(suffix, DEV_VHOST),
+             "org.openipc.dev does not answer 410 for #{what}, so dev and production disagree"
+    end
+  end
+
+  # Ordering matters on dev for the same reason it does on production: the
+  # hexadecimal snapshots location matches /snapshots/<id>/download too.
+  # No skip: a skipped test is one nobody reads the day it starts mattering.
+  # Dev has no hexadecimal snapshots location today -- its snapshot pages go
+  # through `location /` to @rails -- so there is nothing to be shadowed BY,
+  # and that is asserted rather than assumed. Add one and this starts checking
+  # the order, which is when it needs to.
+  test 'dev matches every retired path before its hexadecimal snapshots block' do
+    hex = location_at('snapshots/[0-9a-f]+', DEV_VHOST)
+
+    if hex.nil?
+      assert_nil hex, 'dev has no hexadecimal snapshots location, so nothing can shadow the rules'
+      next
+    end
+
+    RETIRED.each do |what, suffix|
+      at = location_at(suffix, DEV_VHOST)
+
+      assert at, "org.openipc.dev has no rule for #{what}"
+      assert_operator at, :<, hex,
+                      "on dev the rule for #{what} sits below the hexadecimal block and never applies"
     end
   end
 
