@@ -18,7 +18,7 @@ everything except the file below.
 | host | names | ssh |
 |---|---|---|
 | `194.58.109.202` (`natrium.zftlab.org`) | openipc.ru, опенипц.рф | port 35242 |
-| `87.199.131.93` | openipc.kz, openipc.cloud | port 35242 — **did not answer on 2026-09-23**, chase before relying on it |
+| `87.199.131.93` | openipc.kz, openipc.cloud | ssh did not answer on 35242 or 22 from the build host on 2026-09-23 — **the host itself is fine**, both names serve 200 |
 
 They proxy `https://openipc.org/` with `proxy_ssl_server_name on`, appending
 `X-Forwarded-For`; `set_real_ip_from` on the origin turns that back into the
@@ -35,12 +35,36 @@ from the origin's logs.
 
 ## What has to be applied
 
-`ru.openipc.snippet` — the Open Wall's frame channel. Without it the wall shows
-empty canvases behind `openipc.ru`, because nginx's default HTTP/1.0 to the
-upstream cannot carry an `Upgrade`.
+Both snippets add the Open Wall's frame channel. Without one, the wall shows
+empty canvases behind that mirror's names: nginx's default HTTP/1.0 to the
+upstream cannot carry an `Upgrade`, so the handshake quietly becomes an
+ordinary request.
 
-Applied on `194.58.109.202` on 2026-09-23. Re-apply after any nginx upgrade or
-rebuild of that host.
+| file | host | state |
+|---|---|---|
+| `ru.openipc.snippet` | `194.58.109.202` | **applied 2026-09-23**, nginx reloaded |
+| `kz.openipc.snippet` | `87.199.131.93` | **not applied** — ssh did not answer from the build host |
+
+Re-apply after any nginx upgrade or rebuild of either host.
+
+**Until `kz.openipc.snippet` is applied, readers on openipc.kz and
+openipc.cloud get no frames.** The client tells them so after eight seconds
+instead of leaving blank squares, but the wall is not working for them. That
+host is up and serving — this is an ssh reach problem from the build machine,
+not a dead mirror, so it needs somebody who can get to it rather than
+investigation of the host.
+
+Verify after applying, because a failed upgrade is silent:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
+  -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' \
+  https://openipc.kz/api/v1/wall/cable
+```
+
+101 is right; anything else means the upgrade is not being forwarded. Then run
+`tools/canvas-check.mjs https://openipc.kz` and confirm tiles actually paint.
 
 ## A latent outage found while applying this (2026-09-23)
 
