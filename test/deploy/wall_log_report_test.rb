@@ -20,17 +20,46 @@ require 'test_helper'
 class WallLogReportTest < ActiveSupport::TestCase
   SCRIPT = Rails.root.join('deploy/log-report.sh')
   FIXTURE = Rails.root.join('test/fixtures/files/wall-access.log')
+  EARLIER = Rails.root.join('test/fixtures/files/wall-access-earlier.log')
 
-  def report
-    @report ||= begin
-      out, status = Open3.capture2e('bash', SCRIPT.to_s, FIXTURE.to_s)
-      assert_predicate status, :success?, "log-report.sh failed:\n#{out}"
-      out
-    end
+  def run_report(*logs)
+    logs = [FIXTURE] if logs.empty?
+    out, status = Open3.capture2e('bash', SCRIPT.to_s, *logs.map(&:to_s))
+    assert_predicate status, :success?, "log-report.sh failed:\n#{out}"
+    out
   end
 
-  def wall_section
-    report[/^Open Wall$.*?(?=\n\nself-declared|\z)/m].to_s
+  def report
+    @report ||= run_report
+  end
+
+  def wall_section(text = report)
+    text[/^Open Wall$.*?(?=\n\nself-declared|\z)/m].to_s
+  end
+
+  # The whole awk program is one single-quoted shell argument, so a single
+  # apostrophe anywhere inside it -- in prose, in a comment, in "the header's
+  # own example" -- closes the quote and the script dies with a syntax error at
+  # run time. It cost two round-trips in one sitting to learn that twice, and
+  # the symptom is only ever "exit 2", which names neither the character nor
+  # the line. Every other test here would catch it, but none of them would say
+  # what happened.
+  test 'the awk program contains no apostrophe to close its own quoting' do
+    lines = File.readlines(SCRIPT)
+    opens = lines.index { |l| l.start_with?('cat ') }
+    assert opens, 'could not find the line that opens the awk program'
+
+    # Report the line number in the FILE, not an offset into the awk body, so
+    # the message can be acted on without counting.
+    body = lines[(opens + 1)..-2].to_a
+    offenders = body.each_with_index
+                    .select { |line, _| line.include?("'") }
+                    .map { |line, i| "line #{opens + 2 + i}: #{line.strip}" }
+
+    assert_empty offenders,
+                 'An apostrophe inside the single-quoted awk program ends the ' \
+                 'quote. Reword it -- "the usage note at the top", not ' \
+                 '"the header\'s own example".'
   end
 
   test 'it counts the frames that really did leave over HTTP' do
@@ -64,9 +93,20 @@ class WallLogReportTest < ActiveSupport::TestCase
   end
 
   test 'the refusals that enforce the invariant are counted' do
-    # Three 410s in the fixture: a /wall/ frame, a download, and the .jpg twin
-    # of the camera page -- out of five requests to retired image addresses.
-    assert_match(/retired image paths refused\s+3 of 5 requests answered 410/, wall_section)
+    # Four 410s in the fixture: a /wall/ frame, a download, the .jpg twin of
+    # the camera page, and that twin again with a query string -- out of six
+    # requests to retired image addresses.
+    assert_match(/retired image paths refused\s+4 of 6 requests answered 410/, wall_section)
+  end
+
+  test 'a query string does not hide a request for image bytes' do
+    # nginx logs the request target, so `.jpg?v=2` is what lands in the log.
+    # An expression anchored with `$` right after the extension drops it, and
+    # it drops it from the invariant as readily as from the refusal count --
+    # so the one metric meant to notice a reopened door would undercount
+    # exactly the requests an attacker can produce for free.
+    refute_match(/retired image paths refused\s+3 of 5/, wall_section,
+                 'The query-string request fell out of the detector.')
   end
 
   test 'the locale-prefixed .jpg twin still counts as a retired address' do
@@ -92,12 +132,33 @@ class WallLogReportTest < ActiveSupport::TestCase
     assert_match(/counts open tabs/, wall_section)
   end
 
-  test 'it counts the distinct camera ids the site confirmed exist' do
-    # Metadata is the part the channel does not hide. Three distinct ids are
-    # confirmed by a 200 in the fixture: two snapshot pages, one of them behind
-    # a locale prefix, and the original-upload download. A download confirms
-    # the camera exists exactly as a page does, which is why this counts any
-    # 200 carrying an id rather than pages alone.
-    assert_match(/distinct camera ids exposed\s+3\b/, wall_section)
+  test 'it separates cameras from snapshots, which are different identifiers' do
+    # `/snapshots/<20 hex>` is Snapshot::PUBLIC_ID_FORMAT, one per uploaded
+    # frame. `/open-wall/camera/<16 hex>` is Snapshot#camera_token, an HMAC of
+    # the MAC and therefore one per camera, stable across every frame it sends.
+    #
+    # The fixture has three distinct snapshot ids confirmed by a 200 (two pages,
+    # one behind a locale prefix, plus the original-upload download) and two
+    # distinct camera tokens. Reporting three and calling them cameras -- which
+    # this did at first -- overstates how many premises were enumerated and
+    # ignores the camera permalink altogether.
+    assert_match(/distinct cameras exposed\s+2\b/, wall_section)
+    assert_match(/distinct snapshots exposed\s+3\b/, wall_section)
+  end
+
+  test 'the most recent leak is the latest by time, not the last line read' do
+    # The script takes several logs in whatever order the caller names them,
+    # and its own header shows a rotated one being passed. Newest-first is the
+    # dangerous order: a leak happening now would be reported with yesterday's
+    # timestamp, read as pre-cutover history, and dismissed.
+    newest_first = wall_section(run_report(FIXTURE, EARLIER))
+
+    assert_match(%r{most recent one\s+23/Sep/2026:10:16:30}, newest_first)
+    refute_match(%r{most recent one\s+22/Sep/2026}, newest_first,
+                 'The older log won because it was read last.')
+
+    # And the same answer whichever way round they are given.
+    assert_match(%r{most recent one\s+23/Sep/2026:10:16:30},
+                 wall_section(run_report(EARLIER, FIXTURE)))
   end
 end
