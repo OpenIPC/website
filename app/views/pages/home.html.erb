@@ -21,8 +21,7 @@
         <div class="wall-mosaic">
           <% @wall_snapshots.each_with_index do |snapshot, idx| %>
             <a href="<%= snapshot_path(id: snapshot) %>" class="wall-tile">
-              <%= image_tag snapshot.wall_image(:thumb), alt: t('.wall_snapshot_alt'),
-                            loading: (idx.zero? ? 'eager' : 'lazy') %>
+              <%= wall_frame_tag(snapshot, :thumb, alt: t('.wall_snapshot_alt')) %>
               <%# soc and sensor are whatever the camera chose to send: both are
                   nullable, and the upload endpoint permits either to be absent.
                   One such upload used to take the whole homepage down with it. %>

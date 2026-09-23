@@ -187,23 +187,14 @@ class Snapshot < ApplicationRecord
     where(mac_address: spellings).order(created_at: :desc).first
   end
 
-  # Where a page should link for one of this snapshot's images.
+  # wall_image is gone, and with it the last place this model produced a URL.
   #
-  # Once ProcessImagesJob has written the four variants as plain files, that is
-  # a static path nginx serves without waking Ruby, cacheable forever because a
-  # given snapshot's image never changes. Until then -- a row uploaded seconds
-  # ago, a row predating the backfill, or a job lost to the :async adapter on a
-  # restart -- it is the ActiveStorage variant, which is what the whole site
-  # used before #146 and still works.
-  #
-  # Returning the variant object rather than a URL in the fallback case lets
-  # image_tag do what it did before, including the `|| default_image_path`
-  # guards the gallery partials use for a snapshot whose file has gone.
-  def wall_image(variant)
-    return WallImage.url_for(public_id, variant) if variants_generated_at?
-
-    file.variant(variant)
-  end
+  # It returned "/wall/<public_id>/<variant>.jpg" once ProcessImagesJob had
+  # run, and an ActiveStorage variant object before that -- so every gallery
+  # template emitted a fetchable address for somebody's premises, and the
+  # pre-job fallback emitted an ActiveStorage one even after #146 moved the
+  # files. Frames now travel over WallChannel; a view asks for them with
+  # wall_frame_tag, which writes the id and nothing else.
 
   def image_dimensions
     [file.metadata['width'], file.metadata['height']].join('x')

@@ -118,10 +118,20 @@ class GalleryCrawlerBlockTest < ActiveSupport::TestCase
   test 'the gallery map is applied only in the gallery locations' do
     applied = VHOST.scan(/^(\s*)if \(\$openipc_gallery_crawler\)/).flatten
 
-    assert_equal 3, applied.length, <<~MESSAGE.chomp
-      Expected the guard in exactly the three locations that serve gallery
-      content -- the hexadecimal snapshot ids, /wall/, and the
-      open-wall/snapshots/active_storage catch-all. Found #{applied.length}.
+    assert_equal 2, applied.length, <<~MESSAGE.chomp
+      Expected the guard in exactly the two locations that serve gallery
+      content -- the hexadecimal snapshot ids, and the open-wall/snapshots
+      catch-all. Found #{applied.length}.
+
+      It was three until 2026-09-23. /wall/ was the third, and it no longer
+      serves anything: frames moved onto WallChannel and that location answers
+      410. A guard there would be a user-agent test on an address that returns
+      nothing to anybody.
+
+      Note what this means for the AI crawlers the map names. They are refused
+      the gallery PAGES as before, and the frames are now beyond a user-agent
+      question entirely -- there is no address to fetch, so the map never has
+      to be right about them.
     MESSAGE
     assert applied.all? { |indent| indent.length >= 8 }, <<~MESSAGE.chomp
       The guard appears at server level, which refuses these crawlers the

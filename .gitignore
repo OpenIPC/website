@@ -21,6 +21,14 @@
 # Ignore uploaded files in development.
 /storage/*
 !/storage/.keep
+
+# The Open Wall's frames. These moved out of public/ on 2026-09-23 -- Rails
+# serves everything under public/ whatever nginx does, which was the door the
+# transport change exists to close -- and moving them took them out of the
+# /public/wall ignore they used to sit under. They are other people's cameras;
+# they must never reach a commit.
+/wall/*
+!/wall/.keep
 /tmp/storage/*
 !/tmp/storage/
 !/tmp/storage/.keep

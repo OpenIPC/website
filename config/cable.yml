@@ -1,3 +1,13 @@
+# The wall channel answers client requests and never broadcasts, so there is
+# nothing to fan out between Puma workers and no pubsub is needed. `async` is
+# per process, which is exactly right for a request/response channel and
+# avoids standing up Redis for a site whose peak concurrency on this surface
+# is three.
+#
+# The day anything here calls `broadcast_to` -- pushing a frame to open
+# sockets as a camera uploads, which is the obvious next feature -- this MUST
+# become redis, or workers will each serve only the clients they happen to
+# hold. Nothing warns about that; it simply half-works.
 development:
   adapter: async
 
@@ -5,6 +15,4 @@ test:
   adapter: test
 
 production:
-  adapter: redis
-  url: <%= ENV.fetch("REDIS_URL") { "redis://localhost:6379/1" } %>
-  channel_prefix: openipc_production
+  adapter: async

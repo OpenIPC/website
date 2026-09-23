@@ -54,7 +54,10 @@ class NoImageBytesTest < ActionDispatch::IntegrationTest
       ["#{l}/snapshots/#{id}/download", "#{l}/open-wall/camera/#{token}.jpg"]
     end
 
-    localised + ["/snapshots/#{id}/download.jpg", "/snapshots/camera.jpg?id=#{token}"]
+    localised + ["/snapshots/#{id}/download.jpg", "/snapshots/camera.jpg?id=#{token}",
+                 "/wall/#{id}/thumb.jpg", "/wall/#{id}/fullhd.jpg",
+                 "/rails/active_storage/blobs/redirect/#{id}/x.jpg",
+                 "/rails/active_storage/disk/#{id}/x.jpg"]
   end
 
   test 'no retired byte path serves an image' do
@@ -124,13 +127,13 @@ class NoImageBytesTest < ActionDispatch::IntegrationTest
       get path
       next unless response.successful?
 
-      # /rails/active_storage is deliberately NOT in this list yet. It is a
-      # live door -- Snapshot#wall_image falls back to an ActiveStorage variant
-      # URL whenever variants_generated_at? is nil, which is every frame
-      # between upload and ProcessImagesJob -- and closing it is the next step,
-      # with the transport. Adding it here now would be a red test standing in
-      # for work not done. It goes in the moment that step lands.
-      %w[/download camera.jpg].each do |needle|
+      # /rails/active_storage is in this list as of the transport change. It
+      # was the quietest of the doors: Snapshot#wall_image fell back to an
+      # ActiveStorage variant URL whenever variants_generated_at? was nil --
+      # every frame between upload and ProcessImagesJob -- so even after #146
+      # moved the files, freshly uploaded frames were fetchable over HTTP. The
+      # fallback is gone and the engine's routes answer 410.
+      %w[/download camera.jpg /rails/active_storage /wall/].each do |needle|
         assert_not_includes response.body, needle,
                             "#{path} still names #{needle}, which is a door a crawler will walk through"
       end

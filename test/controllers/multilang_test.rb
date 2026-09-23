@@ -189,16 +189,9 @@ class MultilangTest < ActionDispatch::IntegrationTest
     assert_no_match(/translation missing/i, response.body)
   end
 
-  # site.snapshot.view_heif existed only as an inline English default in the
-  # view, so it read as English on a Russian page and i18n-tasks could not see
-  # it was untranslated.
-  test 'the HEIF button is a translation, not an inline English default' do
-    ru = I18n.t('site.snapshot.view_heif', locale: :ru)
-
-    assert_equal 'View original HEIF in your browser', I18n.t('site.snapshot.view_heif', locale: :en)
-    assert_no_match(/translation missing/i, ru)
-    assert_not_equal I18n.t('site.snapshot.view_heif', locale: :en), ru
-  end
+  # The HEIF button's translation test was here. The button is gone: it carried
+  # rails_blob_path(disposition: 'inline'), which put the ORIGINAL upload at a
+  # never-expiring signed id into the markup of every HEIF snapshot page.
 
   # --- Russian counts ---
 

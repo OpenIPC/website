@@ -72,7 +72,7 @@ class ProcessImagesJobTest < ActiveJob::TestCase
     run_job
 
     assert_not_nil @snapshot.reload.variants_generated_at
-    assert_equal "/wall/#{@snapshot.public_id}/thumb.jpg", @snapshot.wall_image(:thumb)
+    assert_includes @stored.map { |entry| entry[1] }, :thumb
   end
 
   test 'a variant that cannot be written leaves the snapshot unmarked' do

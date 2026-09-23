@@ -27,11 +27,11 @@ import initZoom from './src/zoom'
 import initExternalLinks from './src/external-links'
 import initTimestamps from './src/timestamps'
 import initConfirms from './src/confirms'
-import initHeifViewer from './src/heif-viewer'
 import initCopy from './src/copy'
 import initAnalytics from './src/analytics'
 import initEvents from './src/events'
 import initWizard from './src/wizard'
+import initWall from './src/wall'
 
 // Forms are left alone, deliberately.
 //
@@ -61,10 +61,14 @@ if (window.Turbo.config) {
 // twice, then three times.
 initZoom()
 initCopy()
-initHeifViewer()
 initAnalytics()
 initEvents()
 initWizard()
+
+// The Open Wall's frames arrive over the cable and are painted onto canvases;
+// no wall page carries an image URL any more. Bound once at import, like the
+// rest of these -- it listens on document and re-hydrates per navigation.
+initWall()
 
 // Re-run per page. These walk the DOM and attach to the elements they find, so
 // they have to run again once Turbo has swapped in new ones. turbo:load fires

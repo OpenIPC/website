@@ -848,8 +848,7 @@
       "trade": "厂商与集成商"
     },
     "snapshot": {
-      "link_to_camera": "此摄像机的固定链接",
-      "view_heif": "在浏览器中查看 HEIF 原图"
+      "link_to_camera": "此摄像机的固定链接"
     }
   },
   "str": {

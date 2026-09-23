@@ -48,9 +48,19 @@ Rails.application.configure do
   config.active_storage.service = :local
 
   # Mount Action Cable outside main process or domain.
-  # config.action_cable.mount_path = nil
-  # config.action_cable.url = 'wss://example.com/cable'
-  # config.action_cable.allowed_request_origins = [ 'http://example.com', /http:\/\/example.*/ ]
+  # The mirrors serve the site under their own names, so a socket opened from
+  # openipc.ru carries that Origin and ActionCable would refuse it -- silently,
+  # as a failed handshake, for the audience that cannot reach this origin at
+  # all because it is blocked in Russia at provider level. Every name the site
+  # answers to has to be listed here.
+  config.action_cable.allowed_request_origins = [
+    %r{\Ahttps://(www\.)?openipc\.org\z},
+    %r{\Ahttps://(www\.)?openipc\.ru\z},
+    %r{\Ahttps://(www\.)?openipc\.kz\z},
+    %r{\Ahttps://(www\.)?openipc\.cloud\z},
+    %r{\Ahttps://dev\.openipc\.org\z},
+    %r{\Ahttps://xn--e1agocfd3c\.xn--p1ai\z}
+  ]
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
   config.force_ssl = true

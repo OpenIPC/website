@@ -19,6 +19,16 @@ module Openipc
     # changes almost nothing.
     config.load_defaults 8.1
 
+    # The wall channel lives under /api/, not at the default /cable.
+    #
+    # Two reasons, both structural. #142 has the mirrors proxying only /api/,
+    # /wall/i/ and /dl/firmware/ through to the origin, so a path under /api/
+    # needs no edge rule when they become edge nodes in #167. And
+    # deploy/static/reserved-paths already reserves /api/, so the static bundle
+    # can never shadow it -- which is the failure mode #157 names as the most
+    # likely way that seam goes wrong.
+    config.action_cable.mount_path = '/api/v1/wall/cable'
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

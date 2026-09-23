@@ -48,14 +48,18 @@ class OpaqueSnapshotIdTest < ActionDispatch::IntegrationTest
     assert_equal ids.uniq, ids
   end
 
+  # The frames are still keyed on the unguessable id rather than the row id,
+  # which is what this test was written for. What has changed is that the key
+  # names a file on disk the channel reads, not a URL in the markup -- since
+  # 2026-09-23 nothing serves these over HTTP at all.
   test 'the image files are keyed on the same identifier as the page' do
     snapshot = upload
     snapshot.update_columns(variants_generated_at: Time.current)
 
-    url = snapshot.wall_image(:fullhd)
+    path = WallImage.path_for(snapshot.public_id, :fullhd).to_s
 
-    assert_equal "/wall/#{snapshot.public_id}/fullhd.jpg", url
-    assert_no_match(%r{/wall/#{snapshot.id}/}, url,
+    assert_includes path, snapshot.public_id
+    assert_no_match(/\/#{snapshot.id}\//, path,
                     'the pictures are what the crawl was after; a guessable page ' \
                     'address is no use while the images still count from one')
   end

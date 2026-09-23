@@ -4,12 +4,12 @@ require 'test_helper'
 
 # The Open Wall's images as plain files.
 #
-# What this guards is the reason the whole change exists: a page must be able
-# to link to a path nginx can serve without waking Ruby, and must fall back to
-# the ActiveStorage variant whenever those files are not there yet -- a row
-# uploaded seconds ago, a row predating the backfill, or a job lost to the
-# :async adapter on a restart. Getting the fallback wrong is worse than not
-# doing this at all: it shows broken images rather than slow ones.
+# #146 wrote these so a page could link to a path nginx serves without waking
+# Ruby. Since 2026-09-23 nothing links to them at all: the files are what
+# WallChannel reads and transmits, and they live outside public/ so that
+# RAILS_SERVE_STATIC_FILES cannot hand them out behind nginx's back. What is
+# guarded here is the storage contract -- keyed on the unguessable id, written
+# atomically, purged with the row.
 class WallImageTest < ActiveSupport::TestCase
   MINIMAL_JPEG = "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00\xFF\xD9".b
 
@@ -23,27 +23,26 @@ class WallImageTest < ActiveSupport::TestCase
     WallImage.purge(@snapshot.public_id)
   end
 
-  test 'a snapshot with no generated variants falls back to ActiveStorage' do
-    assert_nil @snapshot.variants_generated_at
-
-    image = @snapshot.wall_image(:thumb)
-
-    assert_kind_of ActiveStorage::VariantWithRecord, image,
-                   'until the files exist the page must keep using the variant it always used'
-  end
-
-  test 'a snapshot with generated variants links to the plain file' do
-    @snapshot.update_column(:variants_generated_at, Time.current)
-
-    assert_equal "/wall/#{@snapshot.public_id}/thumb.jpg", @snapshot.wall_image(:thumb)
-  end
-
-  test 'every variant the wall renders has a path of its own' do
-    @snapshot.update_column(:variants_generated_at, Time.current)
-
+  # The ActiveStorage fallback is gone on purpose. It used to return a variant
+  # object whenever the files were not there yet, and image_tag turned that
+  # into a /rails/active_storage/... URL -- so every frame between upload and
+  # ProcessImagesJob was fetchable over HTTP even after #146 moved the files.
+  # A frame that has not been processed now simply does not arrive, and the
+  # canvas stays empty.
+  test 'every variant the wall renders has a path of its own, keyed on the public id' do
     WallImage::VARIANTS.each do |name|
-      assert_equal "/wall/#{@snapshot.public_id}/#{name}.jpg", @snapshot.wall_image(name)
+      path = WallImage.path_for(@snapshot.public_id, name).to_s
+
+      assert path.end_with?("#{@snapshot.public_id}/#{name}.jpg"), path
     end
+  end
+
+  # The files must not be reachable by Rails' own static middleware, which
+  # serves everything under public/ whatever nginx is configured to do.
+  test 'the wall tree is not inside public' do
+    assert_not WallImage.root.to_s.include?('/public'),
+               "wall files under public/ are served by ActionDispatch::Static " \
+               'regardless of nginx, which is the door #146 left open'
   end
 
   # The bytes have to arrive complete or not at all: nginx may be serving this

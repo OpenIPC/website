@@ -28,10 +28,24 @@ module WallImage
 
   module_function
 
-  # Under public/ so that Rails can still serve these if nginx is bypassed --
-  # a backstop, not the intended path. Unlike public/files, which nginx 404s
-  # because serving assembled firmware by name would skip the rules that decide
-  # who may have it, these images are public by definition.
+  # NOT under public/, and that is the point.
+  #
+  # It was, until 2026-09-23, "so that Rails can still serve these if nginx is
+  # bypassed -- a backstop". The backstop was the hole. RAILS_SERVE_STATIC_FILES
+  # is 1 in the container and the tree was bind-mounted to /rails/public/wall,
+  # so ActionDispatch::Static served every frame at /wall/<id>/<variant>.jpg
+  # INDEPENDENTLY of nginx -- meaning deleting the nginx location closed
+  # nothing, and any vhost without that location (eu.openipc, or a direct hit
+  # on :3000) served them anyway.
+  #
+  # Frames now leave this process only over the wall channel, which can count
+  # what a session has taken. A file under public/ cannot be counted, rate
+  # limited, or refused.
+  #
+  # Its own tree rather than a subdirectory of storage/: that path is
+  # ActiveStorage's blob root and is itself a bind mount in production, so
+  # nesting this inside it would be a mount within a mount for two unrelated
+  # things.
   #
   # A method rather than a constant, and per process under test. The suite runs
   # parallelized across cores, each worker with its own database, so two
@@ -48,7 +62,7 @@ module WallImage
   # happening, and the symptom was an occasional ENOENT between an
   # assert_path_exists and the File.binread on the next line.
   def root
-    return Rails.root.join('public', 'wall') unless Rails.env.test?
+    return Rails.root.join('wall') unless Rails.env.test?
 
     Rails.root.join('tmp', "wall-test-#{Process.pid}")
   end
@@ -64,10 +78,12 @@ module WallImage
     dir_for(key).join("#{variant}.jpg")
   end
 
-  # The URL a page links to. Deliberately not a route: nothing in Rails serves
-  # it in production, and naming it here keeps the shape in one place.
-  def url_for(key, variant)
-    "/wall/#{key}/#{variant}.jpg"
+  # The id a page asks the channel for. There is no URL any more: this used to
+  # return "/wall/#{key}/#{variant}.jpg" and that string, emitted into the
+  # markup of every gallery page, was the whole distribution mechanism for
+  # whoever wanted the frames.
+  def frame_ref(key, variant)
+    { id: key.to_s, variant: variant.to_s }
   end
 
   # Write one variant, atomically.

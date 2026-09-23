@@ -262,7 +262,23 @@ Rails.application.routes.draw do
   match "/telemetry(/*any)", to: proc { [410, { "Content-Type" => "text/plain" }, ["Gone\n"]] },
         via: :all, as: :retired_telemetry
 
-  match "*unmatched", to: "application#route_not_found",
-        constraints: lambda { |req| req.path.exclude? 'rails/active_storage' },
-        via: :all
+  # ActiveStorage's public routes, refused.
+  #
+  # This used to be the opposite: a constraint excluding anything containing
+  # 'rails/active_storage' from the catch-all, added in 2022 so those requests
+  # would fall through to the engine instead of being redirected away. That
+  # made /rails/active_storage/representations/redirect/... and
+  # /rails/active_storage/disk/... live public addresses for the ORIGINAL
+  # uploads and every variant -- reachable for as long as the signed id lasts,
+  # which for a blob id is forever.
+  #
+  # Snapshot is the only model on this site with an attachment, and nothing
+  # renders an ActiveStorage URL any more, so the engine's routes serve no
+  # purpose here beyond being a door. 410 rather than 404: they existed, they
+  # are gone, and a crawler holding an old link should stop asking.
+  match "/rails/active_storage/*any",
+        to: proc { [410, { "Content-Type" => "text/plain" }, ["Gone\n"]] },
+        via: :all, as: :retired_active_storage
+
+  match "*unmatched", to: "application#route_not_found", via: :all
 end

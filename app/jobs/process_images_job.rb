@@ -24,10 +24,17 @@ class ProcessImagesJob < ApplicationJob
       store(snapshot, name, variant)
     end
 
-    # Last, and only if every variant landed: the column is what the views read
-    # to decide whether they may link to the plain files, so it must never be
-    # set while one of them is missing. A failure part way through leaves it
-    # null and the page falls back to ActiveStorage, which is where it was.
+    # Last, and only if every variant landed. A failure part way through leaves
+    # the column null, and since 2026-09-23 that means the frame simply does
+    # not arrive: there is no ActiveStorage fallback any more, because the URL
+    # it produced was a public address for the original upload. An unprocessed
+    # frame shows as an empty canvas rather than a broken image.
+    #
+    # The variants are still MADE through ActiveStorage -- it is the tested way
+    # to get JPEG bytes out of a HEIF upload, and libvips is already behind it.
+    # What changed is that /rails/active_storage/* now answers 410, so the
+    # representations exist on disk and are reachable by nobody; the blob
+    # reaper is what clears them.
     #
     # And only if the row is still there. Destruction purges the directory, so
     # a destroy that lands mid-run has this job recreate it behind the purge

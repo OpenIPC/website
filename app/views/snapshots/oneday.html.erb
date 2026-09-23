@@ -7,6 +7,7 @@
 </nav>
 
 <article>
+  <%= wall_noscript %>
   <header>
     <h2><%= t('title.openwall') %></h2>
   </header>
@@ -25,8 +26,8 @@
   <%= turbo_frame_tag 'oneday-slideshow', src: slideshow_snapshot_path(id: @snapshot),
                       loading: 'lazy', target: '_top' do %>
     <div class="ratio ratio-16x9 bg-light">
-      <%= image_tag(@snapshot.wall_image(:fullhd) || default_image_path, alt: t('snapshots.slide.snapshot_alt'),
-                    class: "d-block h-100 w-auto position-absolute top-50 start-50 translate-middle") %>
+      <%= wall_frame_tag(@snapshot, :fullhd, alt: t('snapshots.slide.snapshot_alt'),
+                         css_class: "d-block h-100 w-auto position-absolute top-50 start-50 translate-middle") %>
     </div>
     <p class="mt-3"><%= link_to t('.show_all_frames'), slideshow_snapshot_path(id: @snapshot) %></p>
   <% end %>

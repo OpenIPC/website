@@ -7,23 +7,21 @@
 </nav>
 
 <article>
+  <%= wall_noscript %>
   <header>
     <h2><%= t('title.openwall') %></h2>
   </header>
 
   <div class="ratio ratio-16x9 bg-light mb-4">
-    <%= image_tag @snapshot.wall_image(:fullhd), alt: t('.snapshot_alt'), class: "h-100 w-auto position-absolute top-50 start-50 translate-middle" %>
+    <%= wall_frame_tag(@snapshot, :fullhd, alt: t('.snapshot_alt'), css_class: "h-100 w-auto position-absolute top-50 start-50 translate-middle") %>
   </div>
 
-  <% if @snapshot.file.content_type.to_s.start_with?('image/hei') %>
-    <p data-heif-original="<%= rails_blob_path(@snapshot.file, disposition: 'inline') %>">
-      <button type="button" class="btn btn-sm btn-outline-secondary" data-heif-view>
-        <%= t('site.snapshot.view_heif') %>
-      </button>
-      <span class="small text-muted ms-2" data-heif-status></span>
-      <canvas class="d-none w-100 mt-2" data-heif-canvas></canvas>
-    </p>
-  <% end %>
+  <%# The "view original HEIF" button was here, and what it put into the markup
+      was rails_blob_path(@snapshot.file, disposition: 'inline') -- the
+      ORIGINAL upload, at a signed id that never expires, on every HEIF
+      snapshot page. It is gone with the rest of the byte addresses.
+      ProcessImagesJob already renders HEIF uploads to JPEG variants, so the
+      frame above shows the picture either way. %>
 
   <span class="float-end text-end text-muted">
     <span data-timestamp="<%= @snapshot.created_at.to_i %>"><%= @snapshot.created_at %></span><br>

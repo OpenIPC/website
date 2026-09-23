@@ -239,11 +239,11 @@ zh:
     disclaimer: 本网站包含的信息仅供一般参考之用，访问者不应依赖这些信息。本网站上提供的所有软件和固件均按原样提供，仅供研究使用。对于因使用这些文件或依赖本网站中包含的任何信息而造成的任何损失或损害，OpenIPC 概不负责。
     snapshot:
       link_to_camera: 此摄像机的固定链接
-      view_heif: 在浏览器中查看 HEIF 原图
   snapshots:
     icon:
       snapshot_alt: 图片：快照
     index:
+      needs_javascript: 开放墙需要 JavaScript。摄像头画面通过数据流传输并在页面上绘制，而不是作为文件提供，以防被批量采集。
       intro_html: 这些图片是摄像机自己上传的——没有人去采集。想让你的画面出现在这里？在摄像机的 Web 界面中开启 Open Wall 选项即可。
       no_signal: 没信号
       snapshot_alt: 图片：快照
