@@ -31,7 +31,19 @@
     overflow: hidden;
     position: relative;
 
-    img {
+    // `canvas` as well as `img`, and the canvas is what actually renders now.
+    //
+    // The mosaic broke the day frames moved onto the wall channel: the tiles
+    // became <canvas> elements, this selector still named only `img`, and an
+    // unstyled canvas draws at its own bitmap size. So a 480x270 frame sat at
+    // the top of a tile whose height came from the grid row, leaving a tall
+    // dark box under each picture -- landscape images in portrait tiles.
+    //
+    // object-fit applies to a canvas exactly as it does to an image, both
+    // being replaced elements, so cropping to 16:9 works unchanged. Worth
+    // remembering for any other element-name selector on a wall surface:
+    // swapping the element silently drops every one of them.
+    img, canvas {
       aspect-ratio: 16 / 9;
       display: block;
       height: 100%;
