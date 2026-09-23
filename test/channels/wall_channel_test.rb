@@ -53,16 +53,49 @@ class WallChannelTest < ActionCable::Channel::TestCase
 
   # The mask is obfuscation, not secrecy -- but it has to round-trip, or the
   # canvas paints noise and the failure looks like a decode bug.
-  test 'a frame unmasks back to the bytes on disk' do
+  #
+  # Deliberately on a frame LARGER than MASK_BYTES. The mask covers only the
+  # head, so a test on a 22-byte image never reaches the boundary and would
+  # pass whatever the constant said -- including if the server and
+  # src/wall.js disagreed about it, which is the failure this guards.
+  test 'a frame unmasks back to the bytes on disk, across the mask boundary' do
+    big = MINIMAL_JPEG + SecureRandom.bytes(WallChannel::MASK_BYTES * 2)
+    id = Snapshot.generate_public_id
+    @ids << id
+    WallImage.store_bytes(id, :thumb, big)
+
     subscribe
-    perform :request_frames, 'variant' => 'thumb', 'ids' => [@ids.first]
+    perform :request_frames, 'variant' => 'thumb', 'ids' => [id]
 
     sent = transmissions.last
     masked = Base64.strict_decode64(sent['frame'] || sent[:frame])
     key = 'abcdef0123456789'.each_char.map(&:ord)
-    unmasked = masked.bytes.each_with_index.map { |b, i| b ^ key[i % key.size] }.pack('C*')
+    head = masked.byteslice(0, WallChannel::MASK_BYTES)
+                 .bytes.each_with_index.map { |b, i| b ^ key[i % key.size] }.pack('C*')
 
-    assert_equal MINIMAL_JPEG, unmasked
+    assert_equal big, head + masked.byteslice(WallChannel::MASK_BYTES..).to_s
+  end
+
+  # And the mask must actually be applied where it claims: the head altered,
+  # the tail untouched. Without this, MASK_BYTES = 0 would pass the round trip
+  # above while sending every frame in the clear.
+  test 'the head is masked and the tail is not' do
+    big = MINIMAL_JPEG + SecureRandom.bytes(WallChannel::MASK_BYTES * 2)
+    id = Snapshot.generate_public_id
+    @ids << id
+    WallImage.store_bytes(id, :thumb, big)
+
+    subscribe
+    perform :request_frames, 'variant' => 'thumb', 'ids' => [id]
+
+    masked = Base64.strict_decode64(transmissions.last['frame'] || transmissions.last[:frame])
+
+    assert_not_equal big.byteslice(0, WallChannel::MASK_BYTES),
+                     masked.byteslice(0, WallChannel::MASK_BYTES),
+                     'the head went out unmasked, so the frame is a renderable JPEG on the wire'
+    assert_equal big.byteslice(WallChannel::MASK_BYTES..),
+                 masked.byteslice(WallChannel::MASK_BYTES..),
+                 'the tail was masked, which costs time and buys nothing'
   end
 
   # Spending the budget without generating three thousand files: the counter is

@@ -42,10 +42,20 @@ function showUnavailable(reason) {
 }
 
 // The mask is the server's, and is obfuscation rather than secrecy -- see the
-// comment on WallChannel#transmit_frame. Same key, same operation.
+// comment on WallChannel#transmit_frame.
+//
+// Only the first MASK_BYTES are masked, and this number MUST equal
+// WallChannel::MASK_BYTES. Masking the whole frame cost the server a quarter
+// of a million Ruby iterations per fullhd image; the head is where a JPEG's
+// markers and quantisation tables live, which is all that needs corrupting
+// for the bytes not to be a picture. A channel test asserts the round trip
+// rather than trusting these two constants to stay in step.
+const MASK_BYTES = 4096
+
 function unmask(bytes, key) {
-  const out = new Uint8Array(bytes.length)
-  for (let i = 0; i < bytes.length; i++) out[i] = bytes[i] ^ key[i % key.length]
+  const out = new Uint8Array(bytes)
+  const end = Math.min(MASK_BYTES, bytes.length)
+  for (let i = 0; i < end; i++) out[i] = bytes[i] ^ key[i % key.length]
   return out
 }
 
@@ -95,26 +105,55 @@ function onFrame(data) {
   pending.delete(slot(data.id, data.variant))
 }
 
+// Frames per message.
+//
+// Not the 96 the channel allows, and the difference matters on the one-day
+// slideshow. A camera's day is up to 96 full-HD frames at a median 320 KB --
+// about 27 MB, half again as much base64-encoded -- and asking for all of it
+// in one message meant the page showed nothing much for the first few seconds
+// and took around thirty to fill. Measured on production 2026-09-23: 15
+// painted at 5 s, 61 at 15 s, 83 at 30 s.
+//
+// In chunks, in document order, the slides a reader is about to see arrive
+// first and the rest stream in behind. The total is no faster; what changes is
+// that the carousel -- which advances every three seconds and takes four
+// minutes to cycle -- is never waiting on frames it does not need yet.
+const CHUNK = 8
+
 function request(root) {
   const canvases = canvasesIn(root)
   if (canvases.length === 0) return
 
-  // Group by variant: one message per variant, every id the page needs.
+  // Group by variant, preserving document order: one message per variant per
+  // chunk, and the first chunk is what the reader is looking at.
   const byVariant = new Map()
   canvases.forEach((canvas) => {
     const id = canvas.dataset.wallFrame
     const variant = canvas.dataset.wallVariant || 'thumb'
-    if (!byVariant.has(variant)) byVariant.set(variant, new Set())
-    byVariant.get(variant).add(id)
+    if (!byVariant.has(variant)) byVariant.set(variant, [])
 
     const key = slot(id, variant)
-    if (!pending.has(key)) pending.set(key, [])
+    if (!pending.has(key)) {
+      pending.set(key, [])
+      byVariant.get(variant).push(id)
+    }
     pending.get(key).push(canvas)
   })
 
-  byVariant.forEach((ids, variant) => {
-    subscription.perform('request_frames', { variant, ids: Array.from(ids) })
-  })
+  byVariant.forEach((ids, variant) => sendChunks(variant, ids))
+}
+
+// Sequential rather than all at once, so one page cannot monopolise the socket
+// and a reader sees the top of the page while the bottom is still arriving.
+function sendChunks(variant, ids) {
+  let at = 0
+  const next = () => {
+    if (at >= ids.length || !subscription) return
+    subscription.perform('request_frames', { variant, ids: ids.slice(at, at + CHUNK) })
+    at += CHUNK
+    if (at < ids.length) setTimeout(next, 250)
+  }
+  next()
 }
 
 export default function initWall() {

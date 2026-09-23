@@ -17,6 +17,7 @@ require 'test_helper'
 # watches.
 class RetiredBytePathsTest < ActiveSupport::TestCase
   VHOST = Rails.root.join('deploy/nginx/sites-available/org.openipc').read.freeze
+  DEV_VHOST = Rails.root.join('deploy/nginx/sites-available/org.openipc.dev').read.freeze
 
   RETIRED = {
     'the original upload' => 'snapshots/[^/]+/download',
@@ -53,6 +54,19 @@ class RetiredBytePathsTest < ActiveSupport::TestCase
         addresses too -- so this rule no longer applies to anything. Nothing
         else will fail; the requests simply start being proxied again.
       MESSAGE
+    end
+  end
+
+  # Dev must refuse them the same way, and this is not tidiness.
+  #
+  # Dev answered these 302 through the catch-all while production answered 410,
+  # which makes the environment a worse rehearsal than it looks: a validation
+  # run there would have reported a status production never returns. Found by
+  # curling both after the deploy, not by reading either file.
+  RETIRED.each do |what, suffix|
+    test "dev refuses #{what} exactly as production does" do
+      assert DEV_VHOST.index("location ~ ^/(?:(?:ru|zh)/)?#{suffix}"),
+             "org.openipc.dev has no rule for #{what}, so dev and production disagree"
     end
   end
 

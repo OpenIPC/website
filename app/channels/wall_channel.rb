@@ -50,6 +50,22 @@ class WallChannel < ApplicationCable::Channel
   # can produce.
   MAX_PER_REQUEST = 96
 
+  # How much of a frame the mask covers.
+  #
+  # It used to cover all of it, and the cost was real: the XOR runs byte by
+  # byte in Ruby, so a 250 KB fullhd frame is a quarter of a million
+  # iterations and the 83-frame slideshow was twenty million. Measured on
+  # production, that page took about thirty seconds to fill -- 15 frames
+  # painted at 5 s, 61 at 15 s, 83 at 30 s.
+  #
+  # The head is enough for what the mask is actually for. A JPEG's SOI marker,
+  # APP0 header and quantisation tables live in the first few kilobytes;
+  # corrupt those and the file will not decode, which is the entire goal --
+  # that somebody recording the socket cannot rename the result .jpg. Masking
+  # the pixel data after that adds cost and no property, and calling it
+  # encryption would be wrong at any length.
+  MASK_BYTES = 4_096
+
   VARIANTS = WallImage::VARIANTS.map(&:to_s).freeze
 
   def subscribed
@@ -148,8 +164,6 @@ class WallChannel < ApplicationCable::Channel
   # and `transmit(id: ...)` in Ruby 3 passes keywords instead, which is an
   # ArgumentError at the first frame.
   def transmit_frame(id, variant, bytes)
-    key = mask_key
-    masked = bytes.bytes.each_with_index.map { |b, i| b ^ key[i % key.size] }.pack('C*')
     charge
 
     # The VARIANT travels back with the frame, and must. The client keys its
@@ -159,7 +173,18 @@ class WallChannel < ApplicationCable::Channel
     # alone let whichever response arrived first paint both canvases, so the
     # hero could be drawn from a 240x135 thumbnail.
     transmit({ id: id, variant: variant, connection_id: connection_id,
-               frame: Base64.strict_encode64(masked) })
+               frame: Base64.strict_encode64(mask(bytes)) })
+  end
+
+  # Only the first MASK_BYTES are touched; the rest is copied through. The
+  # client mirrors this exactly, so the two constants have to agree -- a test
+  # asserts the round trip rather than trusting that they do.
+  def mask(bytes)
+    key = mask_key
+    head = bytes.byteslice(0, MASK_BYTES)
+    masked = head.bytes.each_with_index.map { |b, i| b ^ key[i % key.size] }.pack('C*')
+
+    masked + bytes.byteslice(MASK_BYTES..).to_s
   end
 
   def mask_key

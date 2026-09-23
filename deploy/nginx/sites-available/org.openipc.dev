@@ -152,6 +152,22 @@ server {
         return 410;
     }
 
+    # The same three retired byte addresses production refuses. Dev had been
+    # answering these 302 through the catch-all while production answered 410,
+    # which makes dev a worse rehearsal than it looks: the whole point of the
+    # environment is that a difference here is a difference there.
+    location ~ ^/(?:(?:ru|zh)/)?snapshots/[^/]+/download {
+        return 410;
+    }
+
+    location ~ ^/(?:(?:ru|zh)/)?snapshots/camera(?:[./]|$) {
+        return 410;
+    }
+
+    location ~ ^/(?:(?:ru|zh)/)?open-wall/camera/[^/]+\.jpg$ {
+        return 410;
+    }
+
     # The frame channel on dev. Same shape as production -- upgrade headers,
     # buffering off, a long read timeout, its own per-address connection pool
     # -- because a socket that works here and not there, or the reverse, is
