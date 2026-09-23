@@ -465,10 +465,24 @@ server {
     # pool each, sized so the three together sum to Puma's 32 threads. A
     # long-lived socket holds its slot for the whole connection, so ten readers
     # on a $server_name-keyed pool would 429 the entire site. Keyed per address
-    # instead, and low: a reader needs one socket, and nothing legitimate needs
-    # four.
+    # instead.
+    #
+    # The first version of this said "nothing legitimate needs four" and set the
+    # limit there. Production disagreed within two hours: a socket here lives up
+    # to proxy_read_timeout (1h), so a slot is held for as long as a tab is
+    # open, not for as long as a request takes. One reader with four tabs on the
+    # wall consumed the whole pool and then 429'd their own reconnects -- 173
+    # refusals from a single address, steady at three a minute, until a tab
+    # closed. Behind NAT or CGNAT the same arithmetic locks out four separate
+    # people.
+    #
+    # This pool is NOT what stops bulk collection; WallChannel's per-address
+    # frame budget is, and that budget is keyed on the address too, so opening
+    # more sockets buys a harvester no extra frames. All this limit has to do is
+    # bound nginx's own connection slots (a proxied socket costs two), so it can
+    # be generous.
     location ^~ /api/v1/wall/ {
-        limit_conn wall_sockets 4;
+        limit_conn wall_sockets 16;
         limit_conn_status 429;
 
         proxy_pass http://127.0.0.1:3000;

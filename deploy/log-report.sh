@@ -41,6 +41,55 @@ function cls(p) {
   if (p == "/")                         return "front"
   return "other"
 }
+# Did this request hand over actual camera image bytes?
+#
+# Since #267 the Open Wall delivers frames over a WebSocket and no address
+# returns a picture, so this number is an invariant: it should be zero, and a
+# non-zero reading means a door reopened.
+#
+# The shape matters more than it looks, and getting it wrong is not theoretical.
+# `/open-wall/camera/<id>` WITHOUT an extension is the HTML camera page, which
+# is served on purpose and paints its frame onto a canvas; only the `.jpg` twin
+# ever returned bytes. A detector written as a substring match on
+# `open-wall/camera` counts that page as a leak -- which is what an ad-hoc
+# version of this check did on 2026-09-23, twice, both times sending someone off
+# to disprove a frame escape that had not happened. Match the extension, not the
+# route.
+#
+# Takes the path with the query string already stripped, because nginx logs the
+# request TARGET: `/open-wall/camera/<token>.jpg?v=2` is one request for one
+# frame, and an expression anchored with `$` after the extension silently drops
+# it from both the invariant and the refusal count -- undercounting exactly the
+# metric that is supposed to notice a reopened door.
+function frame_bytes(p) {
+  sub(/^\/(ru|zh)\//, "/", p)
+  if (p ~ /^\/wall\//)                                          return 1
+  if (p ~ /^\/rails\/active_storage\//)                         return 1
+  if (p ~ /^\/snapshots\/[0-9a-f]+\/download([.\/]|$)/)         return 1
+  if (p ~ /^\/open-wall\/camera\/[^\/]+\.(jpg|jpeg|png|webp)$/) return 1
+  if (p ~ /^\/snapshots\/camera\.(jpg|jpeg|png|webp)/)          return 1
+  return 0
+}
+# An access-log timestamp as a sortable number, 23/Sep/2026:10:17:11 becoming
+# 20260923101711.
+#
+# Needed because this script takes several logs in whatever order the caller
+# names them, and the usage note at the top passes a rotated one. Treating
+# "last line read" as "latest" is therefore wrong whenever the files arrive
+# newest-first -- and the way it is wrong is the dangerous direction: a leak
+# happening now gets reported with a timestamp from yesterday, which reads as
+# pre-cutover history and gets dismissed.
+#
+# Built by hand rather than with mktime() because mawk, the default awk on
+# these hosts, has no time functions at all -- the same reason the id match
+# below cannot use an interval expression.
+function stamp_key(ts,   d, mo) {
+  split(ts, d, /[\/:]/)
+  mo = index("JanFebMarAprMayJunJulAugSepOctNovDec", d[2])
+  if (mo == 0) return 0
+  mo = int((mo + 2) / 3)
+  return (d[3] * 10000 + mo * 100 + d[1]) * 1000000 + (d[4] * 10000 + d[5] * 100 + d[6])
+}
 # The User-Agent, taken by anchoring rather than by field number: it is
 # quoted, contains spaces, and the field before it is the referer, which is
 # quoted too. The one thing that cannot appear inside it is a raw double quote
@@ -155,6 +204,51 @@ function tail(line,   s, q) {
   who = crawler(agent($0))
   if (who != "") { bot[who]++; tbot++ }
 
+  # Open Wall: the invariant, the refusals that enforce it, and the channel
+  # that replaced the addresses it used to be served from.
+  #
+  # nginx logs the request target, so everything below works on the path with
+  # the query string cut off. A `?` is not part of any route here, and leaving
+  # it on makes every test that anchors its end quietly stop matching.
+  reqpath = $7
+  sub(/\?.*$/, "", reqpath)
+
+  if (frame_bytes(reqpath)) {
+    fb_req++
+    # Keep when the most recent one was, by comparing timestamps rather than
+    # trusting arrival order -- see stamp_key above for why last-read is not
+    # latest.
+    if (st == 200) {
+      fb_ok++; fb_bytes += by
+      fb_k = stamp_key(substr($4, 2))
+      if (fb_k >= fb_last_k) { fb_last_k = fb_k; fb_last = substr($4, 2) }
+    }
+    if (st == 410) fb_410++
+  }
+  if (reqpath ~ /\/api\/v1\/wall\//) { ch_req++; ch_st[st]++; ch_bytes += by }
+
+  # Two different identifiers live in these URLs and conflating them mislabels
+  # the figure that matters most here.
+  #
+  # `/snapshots/<20 hex>` is Snapshot::PUBLIC_ID_FORMAT -- one per uploaded
+  # FRAME. `/open-wall/camera/<16 hex>` is Snapshot#camera_token, an HMAC of
+  # the MAC, so it is one per CAMERA and stable across every frame that camera
+  # ever sends. Counting the first and calling the result cameras overstates
+  # how many premises were enumerated, by roughly the number of frames each
+  # camera sent that day, and misses the camera permalink entirely.
+  #
+  # Lengths are tested rather than matched with {20}: mawk is the default awk
+  # on these hosts and does not implement interval expressions, so an earlier
+  # {16,20} matched nothing at all and reported zero ids on a log full of them.
+  if (st == 200 && match(reqpath, /\/snapshots\/[0-9a-f]+/)) {
+    wall_id = substr(reqpath, RSTART + 11, RLENGTH - 11)
+    if (length(wall_id) == 20) sid[wall_id] = 1
+  }
+  if (st == 200 && match(reqpath, /\/open-wall\/camera\/[0-9a-f]+/)) {
+    wall_id = substr(reqpath, RSTART + 18, RLENGTH - 18)
+    if (length(wall_id) == 16) cid[wall_id] = 1
+  }
+
   if (tail($0)) {
     newfmt++
     if (T_cache ~ /^(HIT|STALE|UPDATING|REVALIDATED)$/) hit[c]++
@@ -200,6 +294,41 @@ END {
       while (j > 0 && shedpath[sp[j]] < shedpath[v]) { sp[j+1] = sp[j]; j-- }
       sp[j+1] = v }
     for (i = 1; i <= k && i <= 8; i++) printf "  %-58.58s %6d\n", sp[i], shedpath[sp[i]]
+  }
+
+  # The Open Wall, whose whole defence is that no address returns a picture.
+  nsid = 0; for (w in sid) nsid++
+  ncid = 0; for (w in cid) ncid++
+  print "\nOpen Wall"
+  if (fb_ok > 0) {
+    printf "  CAMERA FRAMES SERVED OVER HTTP  %d  (%.1f MiB)\n", fb_ok, fb_bytes/1048576
+    printf "  most recent one                 %s\n", fb_last
+    print  "  ^ this is meant to be zero. Check the time before reacting: a log"
+    print  "    spanning the 2026-09-23 cutover holds that whole morning of them"
+    print  "    legitimately. A recent one is a door #267 closed, reopened."
+  } else {
+    print "  camera frames served over HTTP  0"
+  }
+  printf "  retired image paths refused     %d of %d requests answered 410\n",
+         fb_410 + 0, fb_req + 0
+  # The part the channel does not hide: frames stopped leaving, the identifiers
+  # did not. Any 200 carrying one confirms it exists, a page and a download
+  # alike, which is why this is "exposed" rather than "served as a page".
+  #
+  # Cameras is the number that means something about people: one token is one
+  # premises, however many frames it sent. Snapshots is the crawl volume.
+  printf "  distinct cameras exposed        %d\n", ncid
+  printf "  distinct snapshots exposed      %d\n", nsid
+  if (ch_req > 0) {
+    printf "  frame channel                   %d requests:", ch_req
+    for (sc in ch_st) printf " %s=%d", sc, ch_st[sc]
+    printf "\n  frame channel egress            %.1f MiB\n", ch_bytes/1048576
+    if (ch_st[404] > 0)
+      print "  a 404 here is a proxy forwarding the socket without the Upgrade header"
+    if (ch_st[429] > 0)
+      print "  a 429 here is limit_conn wall_sockets, which counts open tabs, not a rate"
+  } else {
+    print "  frame channel                   no requests"
   }
 
   # Crawlers that name themselves, which is the honest half of the bot count:
