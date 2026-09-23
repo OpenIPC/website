@@ -18,6 +18,11 @@
         <p class="hero-microline cursor-blink mb-0">$ <%= t('.hero_microline') %> </p>
       </div>
       <div class="col-lg-6">
+        <%# The homepage is a wall surface, so it owes the same explanation the
+            gallery gives: without JavaScript these tiles are empty, and a
+            visitor should be told that rather than left to conclude the
+            cameras are down. %>
+        <%= wall_noscript %>
         <div class="wall-mosaic">
           <% @wall_snapshots.each_with_index do |snapshot, idx| %>
             <a href="<%= snapshot_path(id: snapshot) %>" class="wall-tile">

@@ -38,6 +38,21 @@ module WallHelper
   # distinct ids harvested went UP, 2,255 to 3,188. So there is no fallback
   # now, on purpose, and the page says why rather than looking broken.
   def wall_noscript
-    tag.noscript(t('snapshots.index.needs_javascript'), class: 'alert alert-info')
+    safe_join([tag.noscript(t('snapshots.index.needs_javascript'), class: 'alert alert-info'),
+               wall_status_slot])
+  end
+
+  # Where src/wall.js says why there are no pictures.
+  #
+  # Empty and hidden until something goes wrong. Two things can: the channel
+  # refuses a client that has taken its hourly budget, and -- the case this was
+  # really added for -- the socket never opens at all, which is what a reader
+  # behind a mirror whose nginx does not forward the Upgrade experiences.
+  # openipc.kz and openipc.cloud are in that state today. Without this they
+  # would see a grid of blank squares indistinguishable from an empty wall.
+  def wall_status_slot
+    status = { wall_status: t('snapshots.index.frames_unavailable') }
+
+    tag.p('', class: 'alert alert-warning', hidden: true, data: status)
   end
 end

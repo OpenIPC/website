@@ -244,6 +244,7 @@ zh:
       snapshot_alt: 图片：快照
     index:
       needs_javascript: 开放墙需要 JavaScript。摄像头画面通过数据流传输并在页面上绘制，而不是作为文件提供，以防被批量采集。
+      frames_unavailable: 本页的摄像头画面无法加载。画面通过数据流传输而非以文件形式提供，而该数据流未能到达您的浏览器。
       intro_html: 这些图片是摄像机自己上传的——没有人去采集。想让你的画面出现在这里？在摄像机的 Web 界面中开启 Open Wall 选项即可。
       no_signal: 没信号
       snapshot_alt: 图片：快照

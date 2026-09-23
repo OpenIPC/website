@@ -67,10 +67,17 @@ log "purging snapshots past retention (image ${IMAGE_TAG:0:12})"
 # fail on the name collision and cost a night's purge. Under the flock nothing
 # legitimate holds this name, so clear it first.
 docker rm -f openipc-purge-snapshots >/dev/null 2>&1 || true
+# The wall mount is not optional here, and its absence was invisible.
+# Snapshot#purge_wall_images removes a row's frame directory as the row is
+# destroyed -- the comment further down calls that "the path that actually
+# keeps this clean" -- but with no wall tree mounted it was deleting inside the
+# container's own filesystem and throwing the result away with the container.
+# Every destroyed snapshot left its four variants on the host.
 timeout 600 docker run --rm --name openipc-purge-snapshots \
   --env-file /srv/www/.env.prod \
   -v /run/mysqld:/run/mysqld \
   -v "$BLOB_ROOT":/rails/storage \
+  -v "$WALL_ROOT":/rails/wall \
   "ghcr.io/openipc/website:${IMAGE_TAG}" \
   bundle exec rails runner 'puts "purged #{PurgeImagesJob.new.perform} snapshots"' \
   || log "WARNING: purge job errored or timed out, continuing"
@@ -129,7 +136,11 @@ log "sweeping orphan wall directories"
 docker run --rm \
   --env-file /srv/www/.env.prod \
   -v /run/mysqld:/run/mysqld \
-  -v "$WALL_ROOT":/rails/public/wall \
+  # /rails/wall, not /rails/public/wall: the tree moved out of public/ on
+  # 2026-09-23 because RAILS_SERVE_STATIC_FILES served anything under there
+  # whatever nginx said. Mounted at the old path this sweep found an empty
+  # directory and reported success.
+  -v "$WALL_ROOT":/rails/wall \
   "ghcr.io/openipc/website:${IMAGE_TAG}" \
   bundle exec rails wall:prune 2>&1 | tail -3 \
   || log "WARNING: wall prune errored, continuing"

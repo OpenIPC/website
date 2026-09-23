@@ -11,33 +11,39 @@
 # the frames more EXPENSIVE to take. None of them made the frames ABSENT, and a
 # distributed adversary simply paid.
 #
-# What a static file cannot do, and this can, is COUNT. There is no session
-# behind a GET for a file, so there was no way to say "this client has taken
-# five hundred frames" -- and that sentence is the entire difference. A reader
-# looking at a wall of twenty cameras asks for about twenty frames. The
-# harvester took roughly 2,800 distinct ones a day. Three orders of magnitude,
-# and until now nothing was in a position to notice.
+# WHAT ACTUALLY STOPS THE HARVEST is that there is no longer an address to
+# fetch. A crawler that collects URLs -- which is all of them, including every
+# AI crawler measured here -- gets nothing, permanently, without an arms race.
 #
-# WHAT THIS IS NOT. It is not a security control and the mask below is not
-# encryption. Anything drawn on a screen can be photographed, and a headless
-# browser pointed at this site specifically could read the canvas back. The
-# claim is narrower and worth more: every crawler and bot that collects URLs --
-# which is all of them, including every AI crawler measured here -- gets
-# nothing, permanently, without an arms race, because there is no URL.
+# WHAT THE BUDGET BELOW IS AND IS NOT. It is not what stops a distributed
+# harvester; the per-address rate limit of #262 taught that lesson, since a
+# fleet spread over seven hundred addresses sits under any per-address
+# threshold by construction. What it does is stop ONE client taking everything
+# in a sitting, and -- through the log line in `unsubscribed` -- make bulk
+# collection visible, which a static file never could. Those are worth having.
+# Overstating them is not.
+#
+# NOT A SECURITY CONTROL, and the mask is not encryption. Anything drawn on a
+# screen can be photographed, and a headless browser pointed at this site
+# specifically could read the canvas back.
 class WallChannel < ApplicationCable::Channel
-  # Distinct frames one connection may have before it is refused.
+  # Frames one ADDRESS may take per hour.
   #
-  # Sized from measurement, not taste. The gallery renders 18 tiles
-  # (SnapshotsController::PER_PAGE), a snapshot page 13 (hero + STRIP_EAGER),
-  # and the archive view of a camera at the 15-minute upload interval is 96.
-  # So a reader who opens the wall, a camera, and that camera's whole day is
-  # around 130. Beyond that nobody is reading; they are collecting.
+  # Per address and time-boxed, not per connection and permanent. The first
+  # version was the latter and was wrong twice over: a reader browsing several
+  # camera-days in one visit exhausted it and silently stopped seeing pictures
+  # -- the one failure this work must not cause -- while a harvester simply
+  # reconnected for a fresh allowance, which nginx's per-address `limit_conn`
+  # does not prevent because it bounds simultaneous sockets, not sequential
+  # ones.
   #
-  # Deliberately generous. The cost of being slightly too high is that a
-  # harvester gets a few more frames per connection than it needs; the cost of
-  # being too low is a reader hitting a wall mid-page, which is the failure
-  # this whole line of work must not cause.
-  FRAME_BUDGET = 150
+  # Sized well clear of any reader. A thorough visit -- the gallery (18), a
+  # camera page (13), its whole archive (96) and the slideshow (96) -- is about
+  # 223 frames. Carrier-grade NAT pools many readers behind one address and
+  # this site has a large audience behind exactly that, so the ceiling sits an
+  # order of magnitude above a single visit rather than tuned close to it.
+  FRAME_BUDGET = 3_000
+  BUDGET_WINDOW = 1.hour
 
   # Frames per single request. A page asks for everything it needs at once, and
   # nothing legitimate needs more in one message than the longest day a camera
@@ -54,6 +60,9 @@ class WallChannel < ApplicationCable::Channel
   def unsubscribed
     return if @served.blank?
 
+    # The visible half of the mechanism. A reader is tens of frames; a
+    # collector is hundreds, and says so here whether or not it ever reaches
+    # the ceiling.
     logger.info("wall: connection served #{@served.size} distinct frames")
   end
 
@@ -75,43 +84,82 @@ class WallChannel < ApplicationCable::Channel
   def deliver(id, variant)
     return if over_budget?
 
-    path = WallImage.path_for(id, variant)
-    # A frame whose file is missing is not an error worth telling a client
-    # about in detail -- it is a purged snapshot, or an id that never existed,
+    bytes = read_frame(id, variant)
+    # A frame with no file is a purged snapshot or an id that never existed,
     # and those look identical from here on purpose.
-    return unless File.exist?(path)
+    return if bytes.nil?
 
     @served << id
-    transmit_frame(id, File.binread(path))
+    transmit_frame(id, variant, bytes)
+  end
+
+  # File.exist? followed by File.binread is a race: PurgeImagesJob destroys
+  # snapshots on a nightly cron and Snapshot#purge_wall_images removes the
+  # whole directory, so a frame can vanish between the two calls and take the
+  # channel action down with an ENOENT. Ask for the bytes and accept that they
+  # may not be there.
+  def read_frame(id, variant)
+    File.binread(WallImage.path_for(id, variant))
+  rescue Errno::ENOENT, Errno::EACCES
+    nil
   end
 
   def over_budget?
-    return false if @served.size < FRAME_BUDGET
+    return false if spent < FRAME_BUDGET
 
     unless @refused
       @refused = true
-      logger.warn("wall: connection refused at #{@served.size} distinct frames")
+      logger.warn("wall: #{client_key} refused at #{spent} frames in the hour")
       transmit({ error: 'frame budget reached' })
     end
     true
   end
 
-  # Braces are load-bearing: ActionCable's transmit takes a positional hash,
-  # and `transmit(id: ...)` in Ruby 3 passes keywords instead, which is an
-  # ArgumentError at the first frame.
-  #
+  def spent
+    Rails.cache.read(budget_key).to_i
+  end
+
+  def charge
+    Rails.cache.increment(budget_key, 1, expires_in: BUDGET_WINDOW) ||
+      Rails.cache.write(budget_key, 1, expires_in: BUDGET_WINDOW)
+  end
+
+  # Bucketed by window so the count ages out wholesale rather than needing a
+  # sliding structure. Keyed on the reader's address: set_real_ip_from in
+  # nginx.conf has already turned a mirror's forwarded address back into the
+  # reader before this sees it.
+  def budget_key
+    @budget_key ||= "wall:frames:#{client_key}:#{Time.now.to_i / BUDGET_WINDOW}"
+  end
+
+  # Supplied by the connection rather than read from the request here:
+  # ActionCable::Connection::Base#request is private, so reaching for it from a
+  # channel raises on every message. See the note in application_cable.
+  def client_key
+    client_ip.presence || 'unknown'
+  end
+
   # The mask is obfuscation and nothing more. It costs a scraper a look at this
   # file; it costs a reader nothing. Its only real job is to stop the frames
   # being recoverable by pointing a recorder at the socket and renaming the
   # result .jpg. Do not describe it as encryption anywhere.
-  def transmit_frame(id, bytes)
+  #
+  # Braces are load-bearing on transmit: ActionCable's takes a positional hash,
+  # and `transmit(id: ...)` in Ruby 3 passes keywords instead, which is an
+  # ArgumentError at the first frame.
+  def transmit_frame(id, variant, bytes)
     key = mask_key
     masked = bytes.bytes.each_with_index.map { |b, i| b ^ key[i % key.size] }.pack('C*')
+    charge
 
-    # connection_id travels with the frame because it IS the mask key, and a
-    # key sent once on subscribe would be lost the moment Turbo swapped the
-    # page and the client re-requested. Sixteen characters per frame.
-    transmit({ id: id, connection_id: connection_id, frame: Base64.strict_encode64(masked) })
+    # The VARIANT travels back with the frame, and must. The client keys its
+    # waiting canvases on id and variant together, because one snapshot appears
+    # on a page twice at different sizes -- the fullhd hero and the first icon2
+    # tile of its own archive strip are the same id. Answering with the id
+    # alone let whichever response arrived first paint both canvases, so the
+    # hero could be drawn from a 240x135 thumbnail.
+    transmit({ id: id, variant: variant, connection_id: connection_id,
+               frame: Base64.strict_encode64(masked) })
   end
 
   def mask_key

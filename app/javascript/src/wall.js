@@ -13,14 +13,32 @@
 import { createConsumer } from '@rails/actioncable'
 
 // One consumer for the document. Turbo swaps the body, not the socket, so
-// re-subscribing per navigation would open a connection per page view and the
-// budget on the server counts per connection.
+// re-subscribing per navigation would open a connection per page view for no
+// gain.
 let consumer = null
 let subscription = null
 let pending = new Map()
+let connected = false
 
 function canvasesIn(root) {
   return Array.from(root.querySelectorAll('canvas[data-wall-frame]'))
+}
+
+// Say what is wrong, in the page, rather than leaving a grid of blank squares.
+//
+// Two ways to get here and the second is why this exists. The channel can
+// refuse -- a frame budget reached -- and a socket can simply never open,
+// which is what happens to a reader behind a mirror whose nginx does not
+// forward the Upgrade. openipc.kz and openipc.cloud are in exactly that state
+// today, and a blank gallery there would be indistinguishable from an empty
+// one. A visitor is owed the difference.
+function showUnavailable(reason) {
+  const holder = document.querySelector('[data-wall-status]')
+  if (!holder || holder.dataset.wallShown) return
+
+  holder.dataset.wallShown = '1'
+  holder.hidden = false
+  holder.textContent = holder.dataset.wallStatus.replace('%{reason}', reason || '')
 }
 
 // The mask is the server's, and is obfuscation rather than secrecy -- see the
@@ -56,19 +74,25 @@ async function paint(canvas, bytes) {
   bitmap.close?.()
 }
 
+// id alone is not a key. One snapshot appears on a page at two sizes -- the
+// fullhd hero and the first icon2 tile of its own archive strip are the same
+// id -- so keying on it let whichever reply arrived first paint both canvases,
+// drawing the hero from a 240x135 thumbnail.
+const slot = (id, variant) => `${id}|${variant}`
+
 function onFrame(data) {
   if (data.error) {
-    console.warn('wall:', data.error)
+    showUnavailable(data.error)
     return
   }
 
-  const canvases = pending.get(data.id)
+  const canvases = pending.get(slot(data.id, data.variant))
   if (!canvases) return
 
   const raw = Uint8Array.from(atob(data.frame), (c) => c.charCodeAt(0))
   const bytes = unmask(raw, keyFor(data.connection_id))
   canvases.forEach((canvas) => paint(canvas, bytes))
-  pending.delete(data.id)
+  pending.delete(slot(data.id, data.variant))
 }
 
 function request(root) {
@@ -83,8 +107,9 @@ function request(root) {
     if (!byVariant.has(variant)) byVariant.set(variant, new Set())
     byVariant.get(variant).add(id)
 
-    if (!pending.has(id)) pending.set(id, [])
-    pending.get(id).push(canvas)
+    const key = slot(id, variant)
+    if (!pending.has(key)) pending.set(key, [])
+    pending.get(key).push(canvas)
   })
 
   byVariant.forEach((ids, variant) => {
@@ -114,8 +139,13 @@ function hydrate(root) {
     consumer = createConsumer('/api/v1/wall/cable')
     subscription = consumer.subscriptions.create('WallChannel', {
       received: onFrame,
-      connected: () => request(document),
+      connected: () => { connected = true; request(document) },
+      disconnected: () => { connected = false },
     })
+
+    // A handshake that never completes produces no event to hang this on --
+    // it just stays silent -- so the only way to notice is to look.
+    setTimeout(() => { if (!connected) showUnavailable('') }, 8000)
     return
   }
 

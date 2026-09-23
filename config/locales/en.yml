@@ -244,6 +244,7 @@ en:
       snapshot_alt: 'Image: Snapshot'
     index:
       needs_javascript: The Open Wall needs JavaScript. Camera frames are streamed to this page and drawn, not served as files, so that they cannot be collected in bulk.
+      frames_unavailable: Camera frames could not be loaded on this page. They are streamed rather than served as files, and that stream did not reach your browser.
       intro_html: Cameras send these themselves — nobody goes out and collects them. Want yours here? Turn on the Open Wall option in your camera's web interface.
       no_signal: No signal
       snapshot_alt: 'Image: Snapshot'
