@@ -136,6 +136,12 @@ module InstallationHelper
   # somebody wrote it down. It costs one command to write it down here, beside
   # the backup it belongs with. OpenIPC/firmware#2405.
   def firmware_backup(c)
+    list_of_commands(firmware_backup_lines(c))
+  end
+
+  # The lines themselves, so #163's export can carry them: one producer
+  # for the page and for the data the static wizard will render from.
+  def firmware_backup_lines(c)
     text = []
     text << do_not_copy_paste
     text << 'printenv ethaddr'
@@ -167,10 +173,16 @@ module InstallationHelper
       text << '# (the third argument is what makes tftp upload rather than download)'
       text << "tftp #{c.soc.load_address} #{c.backup_filename} #{c.flash_size_hex}"
     end
-    list_of_commands text
+    text
   end
 
   def flashing_everything(c)
+    list_of_commands(flashing_everything_lines(c))
+  end
+
+  # The lines themselves, so #163's export can carry them: one producer
+  # for the page and for the data the static wizard will render from.
+  def flashing_everything_lines(c)
     fw_filename = Firmware.filename_for(soc_model: c.soc.model_downcase, flash_type: c.flash_type_type,
                                         release: c.firmware_version, size: c.flash_size,
                                         layout: c.layout_size)
@@ -203,10 +215,16 @@ module InstallationHelper
                             '0x0', c.flash_size_hex, write_size)
     end
     text << 'reset'
-    list_of_commands text
+    text
   end
 
   def flashing_uboot(c)
+    list_of_commands(flashing_uboot_lines(c))
+  end
+
+  # The lines themselves, so #163's export can carry them: one producer
+  # for the page and for the data the static wizard will render from.
+  def flashing_uboot_lines(c)
     write_size = write_size_for(c, '0x50000')
     text = []
     text << do_not_copy_paste
@@ -226,7 +244,7 @@ module InstallationHelper
                             '0x0', '0x50000', write_size)
     end
     text << 'reset'
-    list_of_commands text
+    text
   end
 
   # The suffix comes off the camera rather than being passed in beside it: the
@@ -234,6 +252,12 @@ module InstallationHelper
   # Ingenic that is `uknor`/`urnor` with nothing after it whatever layout is
   # being installed.
   def flashing_linux(c)
+    list_of_commands(flashing_linux_lines(c))
+  end
+
+  # The lines themselves, so #163's export can carry them: one producer
+  # for the page and for the data the static wizard will render from.
+  def flashing_linux_lines(c)
     c2 = c.bootloader_macro_suffix
     text = []
     text << do_not_copy_paste
@@ -263,7 +287,7 @@ module InstallationHelper
     # `nand erase 0xD50000 0x-550000`.
     text << "sf erase #{c.overlay_offset} #{c.overlay_max_size}" unless c.flash_type.eql?('nand')
     text << 'reset'
-    list_of_commands text
+    text
   end
 
   # The bootloader variables the instructions above actually named, for the hint
@@ -283,10 +307,16 @@ module InstallationHelper
   # not -- see Camera#layout_commands. Nothing at all when the layout is already
   # the bootloader's default, which is why every caller checks first.
   def preparing_environment(camera)
+    list_of_commands(preparing_environment_lines(camera))
+  end
+
+  # The lines themselves, so #163's export can carry them: one producer
+  # for the page and for the data the static wizard will render from.
+  def preparing_environment_lines(camera)
     text = []
     text << do_not_copy_paste
     text.concat(camera.layout_commands)
-    list_of_commands text
+    text
   end
 
   # The full-image path's own environment step. Kept apart from
@@ -294,13 +324,25 @@ module InstallationHelper
   # has already run `setenv ethaddr`, and U-Boot refuses a second one on a
   # variable that is now set.
   def post_flash_environment(camera)
+    list_of_commands(post_flash_environment_lines(camera))
+  end
+
+  # The lines themselves, so #163's export can carry them: one producer
+  # for the page and for the data the static wizard will render from.
+  def post_flash_environment_lines(camera)
     text = []
     text << do_not_copy_paste
     text.concat(camera.post_flash_commands)
-    list_of_commands text
+    text
   end
 
   def restore_from_backup(c)
+    list_of_commands(restore_from_backup_lines(c))
+  end
+
+  # The lines themselves, so #163's export can carry them: one producer
+  # for the page and for the data the static wizard will render from.
+  def restore_from_backup_lines(c)
     write_size = write_size_for(c, c.flash_size_hex)
     text = []
     text << do_not_copy_paste
@@ -316,7 +358,7 @@ module InstallationHelper
       text << guarded_flash(c, "tftpboot #{c.soc.load_address} #{c.backup_filename}",
                             '0x0', c.flash_size_hex, write_size)
     end
-    list_of_commands text
+    text
   end
 
   # What the download step says under the file, besides the file (#190).

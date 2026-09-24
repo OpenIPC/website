@@ -123,3 +123,17 @@ namespace :catalogue do
     puts "wrote #{Vendor.count} file(s) to data/catalogue"
   end
 end
+
+# The wizard's own export (#163). Separate namespace: it enumerates ~40
+# combinations per SoC and renders each one's command lines, so it costs
+# considerably more than baking the catalogue and is not something to run on
+# every build by accident.
+namespace :wizard do
+  desc "Export every combination's command blocks, one file per SoC"
+  task export: :environment do
+    require 'wizard_export'
+    written = WizardExport.write_all
+    total = written.sum { |(_, count)| count }
+    puts "wrote #{written.size} file(s), #{total} combination(s) to #{WizardExport::OUT_DIR}"
+  end
+end
