@@ -115,7 +115,7 @@ const alt = alternates(path);
         <a class="site-nav-link site-caret" href="#" role="button" aria-expanded="false" aria-haspopup="true" aria-label="Language selection">
           <span class="inline-block size-4 align-[-.15rem]" set:html={translate} />
         </a>
-        <ul class="site-dropdown site-dropdown-end">
+        <ul class="site-dropdown site-dropdown-end site-dropdown-lang">
           {Object.entries(alt).map(([code, target]) => (
             <li>
               <a

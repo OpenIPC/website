@@ -314,6 +314,28 @@ h1, h2, h3, h4, h5, h6 {
   color: #fff;
 }
 
+/*
+ * The language list is `<ul class="navbar-nav text-uppercase">` on the origin,
+ * and its entries are plain links inside `li.dropdown-item` rather than
+ * `.dropdown-item` anchors. So they are uppercase, they take the dark theme's
+ * link colour rather than the panel's text colour, and the current language is
+ * `fw-bold` -- 700, not the 600 the other menus use.
+ */
+.site-nav .site-dropdown-lang .site-dropdown-item {
+  color: #94a0e8;
+  text-transform: uppercase;
+}
+
+.site-nav .site-dropdown-lang .site-dropdown-item:hover,
+.site-nav .site-dropdown-lang .site-dropdown-item:focus-visible {
+  color: #94a0e8;
+}
+
+.site-nav .site-dropdown-lang .site-dropdown-item[aria-current="true"] {
+  font-weight: 700;
+  color: #94a0e8;
+}
+
 .site-nav .site-dropdown-header {
   margin: 0;
   padding: 0.5rem 1rem;
