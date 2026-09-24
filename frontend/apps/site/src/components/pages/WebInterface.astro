@@ -27,13 +27,13 @@ const k = (s: string) => t(`pages.web_interface.${s}`);
 <Container>
   <article>
     <PageTitle>{k('title')}</PageTitle>
-    <p class="mb-6 max-w-[70ch] text-lg text-body-secondary">{k('intro')}</p>
+    <p class="mb-6 text-xl font-light lg:w-2/3">{k('intro')}</p>
 
     <div id="screens" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {SCREENS.map((screen) => <WebuiTile screen={screen} />)}
     </div>
 
-    <p class="mt-6 max-w-[70ch] text-sm text-body-secondary" set:html={k('scene_credit_html')} />
+    <p class="mt-4 text-sm text-body-secondary lg:w-2/3" set:html={k('scene_credit_html')} />
   </article>
 </Container>
 
