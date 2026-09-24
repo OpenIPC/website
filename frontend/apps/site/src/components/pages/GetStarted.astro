@@ -40,7 +40,7 @@ const IPCTOOL = 'curl -L -o /tmp/ipctool https://github.com/OpenIPC/ipctool/rele
   <article>
     <div class="mb-12 grid gap-6 lg:grid-cols-3">
       <div>
-        <h2 class="mb-2 text-xl leading-6 font-semibold"><span class="mr-2 font-mono text-brand-blue">1</span>{k('step1_title')}</h2>
+        <h2 class="mb-2 text-xl leading-6 font-semibold"><span class="mr-2 text-brand-blue">1</span>{k('step1_title')}</h2>
         <p class="mb-4 text-body-secondary" set:html={k('step1_text_html')} />
       </div>
       {/*
@@ -56,7 +56,7 @@ const IPCTOOL = 'curl -L -o /tmp/ipctool https://github.com/OpenIPC/ipctool/rele
         <Terminal id="ipctool-cmd" title="camera shell" code={IPCTOOL} />
       </div>
       <div>
-        <h2 class="mb-2 text-xl leading-6 font-semibold"><span class="mr-2 font-mono text-brand-blue">2</span>{k('step2_title')}</h2>
+        <h2 class="mb-2 text-xl leading-6 font-semibold"><span class="mr-2 text-brand-blue">2</span>{k('step2_title')}</h2>
         <p class="mb-4 text-body-secondary">{k('step2_text')}</p>
         <p class="mb-4">
           <a class="site-btn site-btn-primary" href={pathFor(locale, '/supported-hardware')}>
@@ -65,7 +65,7 @@ const IPCTOOL = 'curl -L -o /tmp/ipctool https://github.com/OpenIPC/ipctool/rele
         </p>
       </div>
       <div>
-        <h2 class="mb-2 text-xl leading-6 font-semibold"><span class="mr-2 font-mono text-brand-blue">3</span>{k('step3_title')}</h2>
+        <h2 class="mb-2 text-xl leading-6 font-semibold"><span class="mr-2 text-brand-blue">3</span>{k('step3_title')}</h2>
         <p class="mb-4 text-body-secondary">{k('step3_text')}</p>
       </div>
     </div>

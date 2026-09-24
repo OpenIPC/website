@@ -62,7 +62,7 @@ const MAIL = 'mailto:business@openipc.org?subject=NPU%20feasibility%3A%20%5BSoC%
     <div class="grid gap-6 text-center md:grid-cols-3 lg:text-left">
       {['fps', 'loss', 'gap'].map((key) => (
         <div>
-          <span class="block font-mono text-3xl font-bold text-brand-blue">{k(`stat_${key}_n`)}</span>
+          <span class="block text-[2.25rem] leading-[1.1] font-semibold tracking-[-.01em] text-body">{k(`stat_${key}_n`)}</span>
           <span class="block text-sm text-body-secondary">{k(`stat_${key}_l`)}</span>
         </div>
       ))}

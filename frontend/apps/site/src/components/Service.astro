@@ -54,7 +54,7 @@ const mailto = `mailto:business@openipc.org?subject=${encodeURIComponent(mailSub
     <div class="grid gap-6 text-center md:grid-cols-3 lg:text-left">
       {[1, 2, 3].map((i) => (
         <div>
-          <span class="block font-mono text-3xl font-bold text-brand-blue">{tk(`stat${i}_n`)}</span>
+          <span class="block text-[2.25rem] leading-[1.1] font-semibold tracking-[-.01em] text-body">{tk(`stat${i}_n`)}</span>
           <span class="block text-sm text-body-secondary">{tk(`stat${i}_l`)}</span>
         </div>
       ))}

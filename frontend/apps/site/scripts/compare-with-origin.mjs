@@ -77,18 +77,24 @@ const TYPES = {
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, 'http://local');
 
-  // The fonts are Rails', through the seam. Fetch them from the origin rather
-  // than 404 and render the page in a fallback face.
-  if (url.pathname.startsWith('/fonts/')) {
-    const upstream = await fetch(origin + url.pathname);
-    response.writeHead(upstream.status, { 'content-type': 'font/woff2' });
-    response.end(Buffer.from(await upstream.arrayBuffer()));
-    return;
-  }
-
   let file = join(dist, normalize(url.pathname));
   if (!extname(file)) file = join(file, 'index.html');
-  if (!existsSync(file)) { response.writeHead(404).end(); return; }
+
+  // Anything the bundle does not carry comes from the origin -- which is the
+  // seam itself: nginx answers from the bundle when the file is there and
+  // falls through to Rails when it is not. The fonts live in Rails' public/
+  // and the backer count is an endpoint, so a dist-only server rendered this
+  // page in a fallback face with the count missing, and reported a page 218px
+  // shorter than the origin's for reasons that were the harness, not the page.
+  if (!existsSync(file)) {
+    const upstream = await fetch(origin + url.pathname + url.search);
+    const body = Buffer.from(await upstream.arrayBuffer());
+    response.writeHead(upstream.status, {
+      'content-type': upstream.headers.get('content-type') ?? 'application/octet-stream',
+    });
+    response.end(body);
+    return;
+  }
   response.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
   response.end(await readFile(file));
 });
