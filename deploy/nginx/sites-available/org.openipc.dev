@@ -142,6 +142,43 @@ server {
         error_page 404 = @no_support_stats;
     }
 
+    # The wizard's command blocks, one file per SoC (#164).
+    #
+    # The installation page is prerendered and its commands are not: what a
+    # bootloader is told to do depends on what upstream has published, which a
+    # publisher refreshes hourly, and a page built on Tuesday must not tell
+    # Friday's visitor to flash a tarball that now exists in a different
+    # edition. So the page fetches the SoC it is for.
+    #
+    # A regex location rather than a prefix, and the capture is a slug: the
+    # name that arrives here becomes a filename, and Vendor/Soc validate the
+    # same shape before one is ever written (#275). Anything else does not
+    # match this location at all and falls through to the catch-all.
+    #
+    # Its own directory, not production's. The export is written by running the
+    # container, so dev writes what dev's code renders -- and dev is where a
+    # change to that shape is tried. Sharing one directory would have a dev
+    # deploy quietly rewrite what production's pages read, which is the one
+    # thing this environment exists to make impossible.
+    location ~ ^/api/v1/wizard/(?<soc_slug>[a-z0-9][a-z0-9._-]*)\.json$ {
+        alias /srv/www/shared/wizard-dev/$soc_slug.json;
+        default_type application/json;
+        # Repeated, not inherited, for the reason given above the backer count.
+        add_header Strict-Transport-Security max-age=15768000;
+        # An hour, matching the publisher. A file up to an hour old is the
+        # honest resolution of the thing being described.
+        add_header Cache-Control "public, max-age=3600" always;
+
+        # A SoC with nothing published has no file, and the page says so
+        # itself rather than showing commands that name tarballs nobody built.
+        error_page 404 = @no_wizard_export;
+    }
+
+    location @no_wizard_export {
+        default_type application/json;
+        return 404 '{"error":"not available"}';
+    }
+
     location @no_support_stats {
         return 404 '{"error":"not available"}';
     }

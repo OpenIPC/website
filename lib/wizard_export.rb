@@ -45,16 +45,69 @@ module WizardExport
     preparing_environment post_flash_environment restore_from_backup
   ].freeze
 
-  OUT_DIR = 'frontend/apps/site/src/data/wizard'
+  # Where the export is written. Not into the bundle: it is a function of the
+  # release index, which a publisher refreshes on the host, and the bundle is
+  # built in CI where that file does not exist. So the pages fetch it, as they
+  # fetch the backer count and the availability states, and nginx serves it
+  # from the same shared directory.
+  OUT_DIR = ENV.fetch('WIZARD_EXPORT_DIR', '/srv/www/shared/wizard')
 
   class << self
     # One SoC, every combination its menu can offer.
+    #
+    # The command blocks are pooled rather than repeated. Ninety combinations
+    # produce 630 blocks and 82 distinct ones: the network interface changes
+    # two lines of one block and nothing in the other six, and the SD slot
+    # rather less. Written out in full the file was 400 KB, which is a lot to
+    # hand a browser to render one page of it; pooled it is a fraction of that
+    # and exactly the same data -- a combination names the block it uses and
+    # the pool holds each distinct one once.
     def document(soc)
+      @pool = {}
+      @pool_ids = {}
+      @variant_pool = {}
+      @variant_ids = {}
+
+      combinations = combinations(soc)
+
       {
         'soc' => soc.urlname,
         'model' => soc.model,
         'vendor' => soc.vendor.urlname,
         'load_address' => soc.load_address,
+        # The board a firmware is built for, which is not always the model:
+        # Ingenic ships one build per family. The bundle filenames the page
+        # links to are built from it.
+        'board' => soc.board,
+        # What the SoC page decides between before it shows a form at all --
+        # whether upstream publishes a bootloader and firmware for this chip.
+        # Read from the release index, so it is a runtime answer like the
+        # editions above and cannot be baked into the page.
+        'instructable' => soc.instructable?,
+        'availability' => soc.availability.to_s,
+        'bootloader_published' => soc.bootloader_published?,
+        'uboot_filename' => soc.uboot_filename,
+        'linux_filename' => soc.linux_filename,
+        # What is inside the bundle. Named on the page for a SoC OpenIPC
+        # publishes no bootloader for, where the reader writes these two files
+        # themselves rather than running a macro that knows where they go.
+        'kernel_file' => soc.kernel_file,
+        'rootfs_file' => soc.rootfs_file,
+        'bl_url' => soc.bl_url,
+        # One entry per bundle upstream actually publishes, for the links the
+        # page offers when it cannot offer instructions. Built here rather
+        # than from a filename template for the reason the view says: a link
+        # this site cannot honour reads as our download being broken.
+        'published' => soc.published_availability.flat_map do |flash_type, releases|
+          releases.map do |release|
+            {
+              'flash_type' => flash_type,
+              'release' => release,
+              'url' => soc.fw_url(release, flash_type),
+              'filename' => soc.linux_filename_for(release, flash_type),
+            }
+          end
+        end,
         # Step 4: the patterns the form validates with, exported once so the
         # static form cannot grow a third copy.
         #
@@ -70,24 +123,78 @@ module WizardExport
           'ip' => view.ipaddr_pattern,
         },
         'editions' => Soc::FLASH_TYPES.to_h { |type| [type, soc.available_releases(type)] },
-        'combinations' => combinations(soc),
+        # What the edition menu lists before the page narrows it -- the union
+        # across flash types, because the flash type is chosen in the same form
+        # without a round trip. And where the form opens: a SoC upstream builds
+        # only a NAND image for has its NOR sizes disabled, so nor8m would be a
+        # choice that cannot be chosen.
+        'offerable' => soc.offerable_releases,
+        'default_flash_chip' => soc.default_flash_chip,
+        # Which flash types get a page of their own rather than commands, by
+        # the same rule `update` applies. Said here rather than left to the
+        # renderer to rediscover, because rediscovering it is how the two
+        # halves come to disagree about a camera somebody is about to flash.
+        'special_pages' => Camera::FLASH_CHIP.filter_map do |flash_type|
+          page = special_page(soc, flash_type)
+          [flash_type, page] if page
+        end.to_h,
+        # Each distinct block once, named by the order it was first seen.
+        'blocks' => @pool,
+        'mac_variants' => @variant_pool,
+        'combinations' => combinations,
       }
+    end
+
+    # The id this content already has, or the next one.
+    def pool(store, ids, value)
+      key = value.to_json
+      ids[key] ||= begin
+        id = ids.size.to_s
+        store[id] = value
+        id
+      end
     end
 
     def json(soc)
       "#{JSON.pretty_generate(document(soc))}\n"
     end
 
-    def path(soc, root: Rails.root)
-      File.join(root, OUT_DIR, "#{soc.urlname}.json")
+    def path(soc, dir: OUT_DIR)
+      File.join(dir, "#{soc.urlname}.json")
     end
 
-    def write_all(root: Rails.root)
-      FileUtils.mkdir_p(File.join(root, OUT_DIR))
-      Soc.includes(:vendor).find_each.map do |soc|
-        File.write(path(soc, root: root), json(soc))
-        [soc.urlname, document(soc)['combinations'].size]
+    # Compact, because this one is fetched rather than read: pretty-printing it
+    # adds a third for nobody's benefit, and gzip takes the compact form to
+    # about 3 KB.
+    def write_all(dir: OUT_DIR)
+      FileUtils.mkdir_p(dir)
+
+      # One file at a time, in place, rather than a whole directory staged and
+      # switched. A run that dies half way therefore leaves half the files on
+      # the new set and half on the old, and that is the right trade rather
+      # than an oversight: a page fetches one SoC's file and never combines
+      # two, so a file this run did not reach is a file an hour older -- which
+      # is what every file here is allowed to be. What no reader ever sees is
+      # half a file; each is written beside its name and renamed over it.
+      written = Soc.includes(:vendor).find_each.map do |soc|
+        document = document(soc)
+        # Written and renamed, so a reader never sees half a file -- the same
+        # arrangement oc-stats.sh uses for the backer count.
+        temporary = "#{path(soc, dir: dir)}.tmp"
+        File.write(temporary, "#{JSON.generate(document)}\n")
+        FileUtils.chmod(0o644, temporary)
+        FileUtils.mv(temporary, path(soc, dir: dir))
+        [soc.urlname, document['combinations'].size]
       end
+
+      # A SoC removed from the catalogue leaves a file that would go on being
+      # served, describing a chip the site no longer lists.
+      names = written.map { |(urlname, _)| "#{urlname}.json" }
+      Dir[File.join(dir, '*.json')].each do |file|
+        File.delete(file) unless names.include?(File.basename(file))
+      end
+
+      written
     end
 
     # Every combination the menu can reach for this SoC.
@@ -129,17 +236,35 @@ module WizardExport
       layout == 'nor8m' || flash_type.in?(%w[nor16m nor32m])
     end
 
+    # Which editions this flash type can be asked for.
+    #
+    # The published ones where upstream publishes any: `use_published_release!`
+    # moves anything else onto the first of them, so no other edition can reach
+    # a rendered page.
+    #
+    # Where it publishes none, that method returns early and the asked edition
+    # is what gets rendered -- with `nothing_published` over it -- so every
+    # edition the menu lists is reachable and each one needs a page here. This
+    # is the tail a hand-edited query string reaches, and covering it is what
+    # lets the static wizard answer from the export alone instead of guessing
+    # when it finds nothing.
     def editions_for(soc, flash_type, layout)
       published = soc.available_releases(flash_type.start_with?('nor') ? 'nor' : 'nand')
-      return published if published.empty?
+      # Where this family publishes nothing, every edition this site knows is
+      # reachable, and the union with the other family's covers a name upstream
+      # has that this site does not. Narrowing it to `offerable_releases` was
+      # wrong in both directions and showed on dev: SSC333DE publishes nothing
+      # at all, so the list was the one-element fallback, and asking for
+      # Ultimate found no page where Rails renders a full one.
+      offered = published.presence || (Camera::FW_VERSION + soc.offerable_releases).uniq
 
       # The Ultimate-on-8MB rule, from narrow_to_what_the_menu_offers: dropped
       # only when there is a Lite to fall back to, because naming a tarball
       # upstream never built is worse than the size warning.
       if layout == 'nor8m' && published.include?('lite')
-        published - ['ultimate']
+        offered - ['ultimate']
       else
-        published
+        offered
       end
     end
 
@@ -181,6 +306,16 @@ module WizardExport
         'sd_card_slot' => sd,
         'flash_size' => camera.flash_size,
         'layout_size' => camera.layout_size,
+        # What the result page shows around the commands: which steps it has,
+        # which bundle it links to, and which bootloader variables the hint at
+        # the bottom names. Facts rather than markup -- the page is rendered at
+        # the other end, in the visitor's language.
+        'flash_family' => camera.flash_type_type,
+        'firmware_url' => view.firmware_url(camera),
+        'firmware_filename' => view.firmware_filename(camera),
+        'default_bootloader_layout' => camera.default_bootloader_layout?,
+        'layout_commands' => camera.layout_commands.any?,
+        'bootloader_variables' => camera.bootloader_variables,
         'blocks' => blocks_for(camera),
         'mac_variant' => mac_variant_for(soc, flash_type: flash_type, layout: layout,
                                               edition: edition, interface: interface, sd: sd),
@@ -205,7 +340,7 @@ module WizardExport
                  .map { |line| line.gsub(SAMPLE_MAC, ETHADDR) }
                  .map { |line| line.gsub(SAMPLE_MAC.delete(':'), ETHADDR_PLAIN) }
         ours = lines_of(without, block)
-        differences[block] = theirs unless theirs == ours
+        differences[block] = pool(@variant_pool, @variant_ids, theirs) unless theirs == ours
       end
     end
 
@@ -238,11 +373,11 @@ module WizardExport
         notes = view.caveats_for(lines)
         plain = lines.reject { |line| line.start_with?('<') }
 
-        [block, {
+        [block, pool(@pool, @pool_ids, {
           'lines' => plain,
           'notes' => notes,
           'no_paste' => lines.size != plain.size,
-        }]
+        })]
       end
     end
 

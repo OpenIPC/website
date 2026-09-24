@@ -5,6 +5,9 @@
  *     --shots <dir>    write a.png (origin) and b.png (bundle), full page
  *     --probe <file>   run a function exported by <file> on both, print both
  *     --origin <url>   default https://openipc.org
+ *     --against <url>  drive this host as side B instead of serving <dist>,
+ *                      which is how a deployed dev is held to production.
+ *                      DEV_PW supplies basic auth when it is dev.openipc.org.
  *
  * The bundle has one hard requirement: a visitor cannot tell which half of the
  * site they are on. Reading the DOM does not establish that -- both pages are
@@ -65,6 +68,9 @@ if (!dist || !path) {
 const width = Number(widthArg ?? 1440);
 const origin = option('origin', 'https://openipc.org');
 const shots = option('shots');
+// When given, side B is a host that is already serving rather than a tree to
+// serve: the same walk, against what a visitor would actually get.
+const against = option('against');
 const probeFile = option('probe');
 const probe = probeFile ? await readFile(probeFile, 'utf8') : null;
 
@@ -100,13 +106,16 @@ const server = createServer(async (request, response) => {
 });
 
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const local = `http://127.0.0.1:${server.address().port}`;
+const local = against ?? `http://127.0.0.1:${server.address().port}`;
 
 const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
 
 try {
   for (const [host, name, label] of [[origin, 'a', 'origin'], [local, 'b', 'bundle']]) {
     const page = await browser.newPage();
+    if (host.includes('dev.') && process.env.DEV_PW) {
+      await page.authenticate({ username: 'openipc', password: process.env.DEV_PW });
+    }
 
     const cdp = await page.createCDPSession();
     await cdp.send('Emulation.setEmulatedMedia', {

@@ -25,16 +25,22 @@ export const RAILS_PATHS: string[] = [
 ];
 
 /**
- * The wizard, one address per SoC (#162).
+ * The firmware download, one address per SoC (#164).
  *
- * The catalogue pages are in the bundle and every row of them links to
- * `/cameras/vendors/<vendor>/socs/<soc>`, which is Rails' until #163 -- 126
- * addresses that are real routes and are not files here. Listed as a shape
- * rather than as 126 strings: the Rails half of the check resolves it against
- * the router, and a shape that stopped matching would fail there.
+ * The wizard itself used to be here: 126 addresses the catalogue linked to and
+ * Rails owned. It is in the bundle now, and what is left under that tree is
+ * the one action that never leaves Rails -- it costs about a second of CPU and
+ * 8-32MB of disk per call and is guarded by two limit_req zones a file served
+ * from the bundle would walk straight past.
+ *
+ * Listed as a shape rather than as 126 strings: the Rails half of the check
+ * resolves it against the router, and a shape that stopped matching would fail
+ * there. The wizard emits this link from the browser rather than into the
+ * HTML, so `pages.build.test.ts` does not meet it -- which is why the Rails
+ * half is the half that matters for this one.
  */
 export const RAILS_PATTERNS: RegExp[] = [
-  /^\/cameras\/vendors\/[a-z0-9_-]+\/socs\/[a-z0-9_.-]+$/,
+  /^\/cameras\/vendors\/[a-z0-9_-]+\/socs\/[a-z0-9_.-]+\/download_full_image$/,
 ];
 
 /** Trees served from disk, matched as prefixes. */

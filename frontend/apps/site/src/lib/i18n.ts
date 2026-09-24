@@ -34,7 +34,7 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   zh: '中文',
 };
 
-type Node = string | string[] | { [key: string]: Node };
+export type Node = string | string[] | { [key: string]: Node };
 
 const CATALOGUES: Record<Locale, Node> = {
   en: en as Node,
@@ -124,11 +124,29 @@ export type TranslateOptions = Record<string, unknown> & {
  * "[object Object]" into a page is worse than failing the build.
  */
 export function translate(locale: Locale, key: string, options: TranslateOptions = {}): string {
-  let found = lookup(CATALOGUES[locale], key);
+  return translateIn(CATALOGUES, locale, key, options);
+}
+
+/**
+ * The same lookup against a dictionary that is not the marketing catalogue.
+ *
+ * The installation wizard has one of its own (#164): it is an island, so its
+ * copy has to reach the browser as data rather than being resolved into the
+ * HTML at build time, and it ships as a module the island imports rather than
+ * as 14 KB of props on each of 378 pages. Every rule above is the same rule
+ * there, so this is the same function with the dictionary passed in.
+ */
+export function translateIn(
+  catalogues: Record<Locale, Node>,
+  locale: Locale,
+  key: string,
+  options: TranslateOptions = {},
+): string {
+  let found = lookup(catalogues[locale], key);
   let usedFallback = false;
 
   if (found === undefined && locale !== DEFAULT_LOCALE) {
-    found = lookup(CATALOGUES[DEFAULT_LOCALE], key);
+    found = lookup(catalogues[DEFAULT_LOCALE], key);
     usedFallback = found !== undefined;
   }
 

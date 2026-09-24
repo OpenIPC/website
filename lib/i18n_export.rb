@@ -46,12 +46,53 @@ module I18nExport
     %w[snapshots index no_signal],
 
     # The hardware catalogue's own strings (#162). `cameras` as a whole is not
-    # a namespace here: most of it belongs to the wizard, which stays in Rails
-    # until #163, and admitting the lot would put 27 strings the catalogue
-    # pages cannot use in front of every translator. These two subtrees are the
-    # table and the row.
+    # a namespace here: most of it belongs to the wizard, which ships as its
+    # own dictionary below, and admitting the lot would put 27 strings the
+    # catalogue pages cannot use in front of every translator. These two
+    # subtrees are the table and the row.
     %w[cameras socs index],
     %w[cameras socs soc],
+
+    # The wizard page's <title>, which the layout renders at build time from
+    # lib/page-paths.ts. The rest of that subtree is the wizard's own and
+    # arrives with WIZARD instead.
+    %w[cameras socs show title],
+  ].freeze
+
+  # The installation wizard's strings, exported separately (#164).
+  #
+  # The wizard is an island: what it renders depends on a query string and on a
+  # release index fetched at runtime, so its copy cannot be resolved into the
+  # HTML at build time the way every other page's is. It has to reach the
+  # browser as data.
+  #
+  # Which is why it is not simply added to the list above. These seven subtrees
+  # are 14 KB, and props are serialised into the page that carries the island:
+  # passed that way they would add 14 KB to each of 378 prerendered wizard
+  # pages -- 5 MB of identical JSON -- where a module the island imports is one
+  # chunk, fetched once and cached for the whole catalogue.
+  #
+  # `nav` and `pages.community` arrive by the leaf. The island renders the
+  # breadcrumb, and the "ask about this hardware" list reads the community
+  # page's own description of each room rather than keeping a second copy.
+  WIZARD = [
+    %w[cameras socs show],
+    %w[cameras socs update],
+    %w[cameras socs warnings],
+    %w[cameras socs sigmastar_nand_is_weird],
+    %w[cameras socs hi3536dv100_is_weird],
+    %w[firmware],
+    %w[flash_chip],
+    %w[flash_layout],
+    %w[activemodel attributes camera],
+    # bootstrap_form reads the help line under a field from here, and the two
+    # menus that have one are the wizard's.
+    %w[activerecord help camera],
+    %w[nav home],
+    %w[nav vendors],
+    %w[pages community channel_en],
+    %w[pages community channel_fpv],
+    %w[pages community channel_ru],
   ].freeze
 
   OUT_DIR = 'frontend/apps/site/src/i18n'
@@ -72,7 +113,22 @@ module I18nExport
         parent.delete(path.last) if parent.is_a?(Hash)
       end
 
-      INCLUDED.each do |path|
+      graft(picked, all, INCLUDED)
+
+      deep_sort(picked)
+    end
+
+    # The wizard's own dictionary -- WIZARD's subtrees and nothing else.
+    def wizard_catalogue(locale)
+      I18n.backend.send(:init_translations) unless I18n.backend.initialized?
+      all = I18n.backend.send(:translations)[locale.to_sym] || {}
+
+      deep_sort(graft({}, all, WIZARD))
+    end
+
+    # Copy the named subtrees out of the backend's view and into `picked`.
+    def graft(picked, all, paths)
+      paths.each do |path|
         value = path.inject(all) { |node, key| node.is_a?(Hash) ? node[key.to_sym] : nil }
         # A key that has fallen out of the YAML is not grafted as nil: the
         # frontend treats a missing English key as a build failure, and a null
@@ -83,7 +139,7 @@ module I18nExport
         parent[path.last] = stringify(value)
       end
 
-      deep_sort(picked)
+      picked
     end
 
     # Sorted and newline-terminated, so the file is a function of the YAML
@@ -92,17 +148,28 @@ module I18nExport
       "#{JSON.pretty_generate(catalogue(locale))}\n"
     end
 
+    def wizard_json_for(locale)
+      "#{JSON.pretty_generate(wizard_catalogue(locale))}\n"
+    end
+
     def path_for(locale, root: Rails.root)
       File.join(root, OUT_DIR, "#{locale}.json")
+    end
+
+    def wizard_path_for(locale, root: Rails.root)
+      File.join(root, OUT_DIR, "wizard.#{locale}.json")
     end
 
     def write_all(root: Rails.root)
       FileUtils.mkdir_p(File.join(root, OUT_DIR))
 
-      I18n.available_locales.map do |locale|
-        path = path_for(locale, root: root)
-        File.write(path, json_for(locale))
-        [path, count_leaves(catalogue(locale))]
+      I18n.available_locales.flat_map do |locale|
+        [[path_for(locale, root: root), json_for(locale), catalogue(locale)],
+         [wizard_path_for(locale, root: root), wizard_json_for(locale), wizard_catalogue(locale)]]
+          .map do |path, json, tree|
+            File.write(path, json)
+            [path, count_leaves(tree)]
+          end
       end
     end
 

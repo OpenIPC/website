@@ -29,6 +29,11 @@ const WALK = [
   '/open-wall', '/get-started', '/supported-hardware/featured',
   '/cameras/vendors/goke/socs/gk7205v300', '/donate', '/open-wall',
   '/cameras/vendors/sigmastar', '/', '/community',
+  // Straight into the wizard from a Rails page and straight back out again
+  // (#164). It is the deepest page the bundle claims and the newest crossing,
+  // and the walk above only ever reached it from another bundle page.
+  '/open-wall', '/cameras/vendors/goke/socs/gk7205v200', '/open-wall',
+  '/', '/cameras/vendors/hisilicon/socs/hi3516ev300', '/',
 ];
 
 const NAV_HEIGHT = 60.4;

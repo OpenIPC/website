@@ -18,6 +18,9 @@
         "th_status": "构建状态",
         "title": "SoC 支持的硬件"
       },
+      "show": {
+        "title": "安装指南"
+      },
       "soc": {
         "firmware_only": "仅有固件——通过原厂引导程序刷入",
         "generate_guide": "生成安装指南",

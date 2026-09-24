@@ -227,8 +227,7 @@ probe() {
 # lists it needs no database. What is left here is the wizard behind it --
 # /cameras/vendors/<v>/socs/<s> -- which is still Rails until #163, and the
 # download it ends at, which must never be a file in a bundle.
-MUST_NOT_BE_STATIC=(/ /open-wall /robots.txt /sitemap.xml /admin
-                    /cameras/vendors/sigmastar/socs/ssc338q)
+MUST_NOT_BE_STATIC=(/ /open-wall /robots.txt /sitemap.xml /admin)
 
 # And the other direction (#160), which is the half that catches a bundle that
 # built but did not ship what it was for. A tree that loses every page still
@@ -241,9 +240,19 @@ MUST_NOT_BE_STATIC=(/ /open-wall /robots.txt /sitemap.xml /admin
 # The three hardware views are here from #162: the recommended list, the full
 # list and one vendor tab. They are the pages a visitor lands on from search
 # and the ones a half-shipped bundle would silently hand back to Rails.
+#
+# Two wizard pages join them from #164, one of them in a locale tree. The SoC
+# page used to be on the list above -- it was the deepest page Rails still
+# owned -- and moving it here rather than deleting the line is the whole of
+# what that issue does, from the seam's point of view. The download under it
+# stays Rails' and is held there by `*/download_full_image` in
+# deploy/static/reserved-paths, which is a check on the bundle rather than a
+# probe: fetching it to find out would build an image.
 MUST_BE_STATIC=(/donate /ru/donate /get-started /tools/qr-code-generator
                 /supported-hardware/featured /supported-hardware/full-list
-                /cameras/vendors/sigmastar)
+                /cameras/vendors/sigmastar
+                /cameras/vendors/sigmastar/socs/ssc338q
+                /ru/cameras/vendors/hisilicon/socs/hi3516ev300)
 
 do_verify() {
   local env_name=${1:-prod} vhost root served bad=0

@@ -1,0 +1,198 @@
+{
+  "activemodel": {
+    "attributes": {
+      "camera": {
+        "camera_ip_address": "摄像机IP地址",
+        "camera_mac_address": "摄像机MAC地址",
+        "firmware_version": "固件版本",
+        "flash_type": "闪存芯片类型和容量大小",
+        "network_interface": "网络接口",
+        "partition_layout": "分区布局",
+        "sd_card_slot": "SD卡槽",
+        "server_ip_address": "TFTP服务器IP地址",
+        "soc_id": "芯片型号"
+      }
+    }
+  },
+  "activerecord": {
+    "help": {
+      "camera": {
+        "flash_type": "如果不确定，请选择 NOR 8M。",
+        "partition_layout": "默认与芯片容量一致。在更大的芯片上使用 8MB 分区布局会把余下的空间留给 overlay，但只能容纳 Lite 版本。"
+      }
+    }
+  },
+  "cameras": {
+    "socs": {
+      "hi3536dv100_is_weird": {
+        "paragraph1": "在 HiSilicon NVR 上安装 OpenIPC 固件需要特定的过程，本指南中未包含该过程。",
+        "paragraph2": "请参阅我们的 Wiki 上提供的详细说明：",
+        "subtitle": "在具有 %{soc_name} SoC 和 %{flash_type} SPI 闪存芯片的 NVR 上"
+      },
+      "show": {
+        "bootloader": "OpenIPC 引导程序",
+        "bundle": "OpenIPC Linux (%{name})",
+        "camera_ip_address_title": "由小数点分隔的四个数字",
+        "camera_mac_address_help": "可选。留空即可 — 摄像机会在首次启动时为自己分配一个固定的唯一地址。只有在想保留摄像机原有地址（即标签上那个）时才需要填写。",
+        "camera_mac_address_title": "六个 8 位十六进制字段，用冒号或横线分隔",
+        "export_unreachable": "无法加载这颗芯片的安装命令，因此本页暂时无法显示它们。这是本站的问题，与您的摄像机无关——硬件没有任何故障。",
+        "export_unreachable_link": "重试",
+        "for": "对于 %{name}",
+        "generate_button": "生成安装指南",
+        "generate_mac": "或生成一个随机地址。",
+        "mac_already_set": "MAC 地址栏已有内容。请先清空该栏再试。",
+        "no_bootloader_alert": "OpenIPC 为 %{name} 提供固件，但没有为它提供引导加载程序。引导式安装和现成的刷机镜像都要先写入 OpenIPC 引导加载程序，因此这两者都无法为该 SoC 提供。下方的固件包是确实存在的部分。",
+        "notes": "备注",
+        "paragraph1": "请在右侧输入摄像机配置，然后点击“生成安装指南”按钮。在下一页中，您将找到二进制文件和在摄像机上安装 OpenIPC 固件时必须执行的命令。",
+        "paragraph2": "请不要忽视这部分。您可能认为没有必要，但我们向您保证，仍然需要原始固件来恢复丢失的设置、驱动程序，并且用来进一步研究。",
+        "server_ip_address_title": "由小数点分隔的四个数字",
+        "stock_bootloader_html": "相机保留原厂引导程序，因此从它刷入内核和根文件系统即可。<a href=\"https://github.com/OpenIPC/wiki/blob/master/en/installation.md\">安装指南</a>介绍了这条路径。",
+        "subtitle": "下载",
+        "title": "安装指南",
+        "title2": "保存您的原始固件！",
+        "toolchain": "OpenIPC 工具链",
+        "unavailable_hlp_html": "我们有 %{name} 的板子，缺的是动手做的人。如果你写嵌入式 Linux 的 C，请从<a href=\"/zh/community\">聊天室</a>开始。",
+        "unavailable_html": "%{name} 目前还没有 OpenIPC 构建。",
+        "unavailable_mvp_html": "%{name} 有一个早期构建，但功能还不足以发布。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。",
+        "unavailable_neq_html": "我们有 %{name} 的厂商 SDK，但没有可供开发的板子——这是唯一的障碍。如果你有多余的，请到<a href=\"/zh/community\">聊天室</a>说一声：现有支持列表大多是这样来的。也可以<a href=\"/zh/donate\">捐助项目</a>，由我们去买板子。板子到手之后会经历什么，见<a href=\"/zh/stages-of-firmware-development\">开发阶段</a>页面。",
+        "unavailable_rnd_html": "%{name} 的工作还在研究阶段——我们正在读 SDK，弄清能做到什么。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。",
+        "unavailable_wip_html": "%{name} 正在开发中。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
+      },
+      "sigmastar_nand_is_weird": {
+        "paragraph1": "在具有 NAND 闪存的 SigmaStar 模块上安装 OpenIPC 固件需要特定的过程，本指南中未包含该过程。",
+        "paragraph2": "请参阅我们的 Wiki 上提供的详细说明："
+      },
+      "update": {
+        "advanced_instruction_link": "为专家提供的高级安装指导",
+        "files_download_alert": "如果你在访问可下载文件时有任何问题，请随时在我们的Telegram频道与我们联系。",
+        "sdcard_required_0": "您将需要一张 SD 卡来执行此步骤。 SD 卡的现有内容将被破坏。",
+        "sdcard_required_1": "您将需要一张 SD 卡来执行此步骤。将SD卡格式化为FAT32，并将下载的文件复制到卡的根目录下。",
+        "sdcard_required_2": "您将需要一张 SD 卡来执行此步骤。将SD卡格式化为FAT32，并将下载的文件复制到卡的根目录下。",
+        "sdcard_required_3": "您将需要一张 SD 卡来执行此步骤。将 SD 卡格式化为 FAT32，并将下载的捆绑包中的文件提取到卡上的根目录。"
+      },
+      "warnings": {
+        "edition_not_published": "OpenIPC 未为该 SoC 在 %{flash} 闪存上发布 %{edition} 版本。现显示 %{shown}。",
+        "eight_meg_chip": "8MB 闪存只能刷写 Lite 或 FPV 版本！",
+        "eight_meg_layout": "8MB 分区布局只给根文件系统留了 5MB，只有 Lite 和 FPV 版本放得下。请选择 16MB 布局，以便在该芯片上安装 Ultimate。",
+        "layout_changed": "16MB 分区布局需要 16MB 芯片——仅它的根文件系统就结束于 0xD50000。现显示 %{size}MB 布局。",
+        "no_lite_chip": "Ultimate 版本放不进 8MB 闪存芯片，而 OpenIPC 未为该 SoC 在 NOR 上发布 Lite 版本。这些说明无法在 8MB 闪存上做出一台能用的摄像机——该 SoC 需要更大的芯片。",
+        "no_lite_layout": "Ultimate 版本放不进 8MB 分区布局，而 OpenIPC 未为该 SoC 在 NOR 上发布 Lite 版本。请选择 16MB 布局，该芯片的容量是够的。",
+        "nothing_published": "OpenIPC 未为该 SoC 发布 %{flash} 固件。这些说明无法做出一台能用的摄像机——它们所指名的文件从未被构建过。"
+      }
+    }
+  },
+  "firmware": {
+    "info_html": "如果您想详细了解 %{commands} 命令的作用，请在引导加载程序控制台中执行<code>printenv</code> 。",
+    "installation": {
+      "attention": "注意！",
+      "backup": {
+        "info": "OpenIPC U-Boot 会覆盖原始的加密分区，因此无法恢复为出厂固件，除非您拥有此特定摄像机的完整闪存备份！要创建完整的固件备份，请启动 TFTP 服务器并在引导加载程序 shell 中执行这些命令。",
+        "more_info_html": "有关详细信息，请参阅项目 wiki 中的<a href=\"https://github.com/OpenIPC/wiki/blob/master/en/installation.md\">安装说明</a>。",
+        "shared_name": "上面的文件名对本型号、同种闪存的每台摄像机都是一样的，因此备份第二台时会覆盖第一台的备份——而这个文件是回到原厂固件的唯一途径。请给每台摄像机的备份取一个自己的名字，恢复时也使用同一个名字。或者在上面填写 MAC 地址：填写之后它会成为文件名的一部分。",
+        "subtitle": "备份您的原始固件，请不要跳过这个步骤！",
+        "title": "保存原始固件"
+      },
+      "backup_32": "请注意！在备份 32M 闪存之前，请确保摄像机至少有 64M 的 RAM。",
+      "chat_blocked_html": "Telegram 并非在所有网络下都能打开。如果你的网络打不开，请到<a href=\"https://github.com/OpenIPC/\" data-event=\"download-step:chat:issues\">问题追踪器</a>提问。",
+      "chat_lede": "就这块硬件提问：",
+      "compound_caveat_html": "如果引导程序输出的是命令用法说明而不是执行该行，说明它不支持 <code>&amp;&amp;</code>。该行由三条命令组成——传输、擦除，然后写入——三条都必须输入，每一条都要等前一条报告成功之后再执行，这正是 <code>&amp;&amp;</code> 替你做的检查。切勿省略擦除：向未擦除的闪存写入会存进乱码，却仍然报告成功，而位于 0 偏移处的那段乱码就是引导程序。",
+      "do_not_paste": "# 请逐行输入命令！不要一次复制粘贴多行！",
+      "flashing": {
+        "alternative": "或者，通过其烧录部分 OpenIPC 固件"
+      },
+      "flashing_footfs": {
+        "continue": "摄像机将自动重启并应用更改。 注意准备中断并进入引导程序的命令行。",
+        "info": "在引导加载程序的命令行中，根据您的闪存大小和类型重新映射 ROM 分区。",
+        "title": "为 OpenIPC Linux 准备摄像机"
+      },
+      "flashing_footfs2": {
+        "info": "下载固件包并将其解压缩到 TFTP 服务器的根目录中。",
+        "link": "下载 OpenIPC 固件 (%{name}) 包",
+        "title": "烧录 OpenIPC Linux 内核和根文件系统"
+      },
+      "flashing_full": {
+        "continue": "摄像机将自动重启并使用全新的引导加载程序启动。",
+        "continue2": "注意准备中断并进入引导程序的命令行。",
+        "info": "完整的固件由引导加载程序、内核和根文件系统组成，也适用于使用编程器烧写闪存芯片。 请注意，完整固件不包含预设环境，因此 IP 地址等设置需要你自行添加。MAC 地址不在此列 — 摄像机会在首次启动时为自己分配一个固定的唯一地址并保留它。",
+        "link": "下载 OpenIPC 固件 (%{name})",
+        "mac_note_html": "完整镜像不包含环境变量，因此你在上面填写的地址正是用在这里。只有在想保留摄像机原有地址（即标签上那个）时才需要它。如果留空，摄像机会在首次启动时为自己选择一个固定的唯一地址并保留它，这里无需设置，之后也不会再向你索要。如果引导程序回答 <code>Can't overwrite \"ethaddr\"</code>，说明地址已经设置，这里无需再做任何事。",
+        "nand_caveat": "在 NAND 上，该镜像只包含引导程序、内核和 UBI 根文件系统，并非整片闪存，也不适合用编程器烧录——它不含 OOB/ECC 字节，也没有出厂坏块标记。请从 U-Boot 写入，或使用下面的分区命令。",
+        "title": "烧录完整的 OpenIPC 固件"
+      },
+      "flashing_uboot": {
+        "continue": "摄像机将引导到新烧写的引导加载程序中。 注意准备中断并进入引导程序的命令行。",
+        "info": "下载引导加载程序二进制文件并将其保存到 TFTP 服务器的根目录。",
+        "link": "下载 OpenIPC U-Boot 二进制文件",
+        "title": "烧录 OpenIPC U-Boot"
+      },
+      "help_cta": "到聊天室提问",
+      "help_title": "卡住了，或者对不上？",
+      "layout_note": "分区布局：%{layout}。下面的镜像覆盖整片闪存，因此刷写时也会清除 overlay 分区。",
+      "licence_ask": {
+        "cctv": "需要部署多台设备？",
+        "fpv": "正在用这个平台做 FPV 产品？",
+        "unknown": "准备做成产品？"
+      },
+      "licence_business_link": "商业授权与支持",
+      "licence_html": "本固件包含 Majestic，采用 <a href=\"https://github.com/OpenIPC/majestic/blob/master/LICENSE.md\">Prosperity Public License</a>：个人、业余和非营利用途免费，商业用途可免费试用三十天。",
+      "licence_volume_ask": "需要为多块板子构建固件？",
+      "licence_volume_link": "免费沟通需求",
+      "lock_caveat_html": "<code>sf lock 0</code> 用于清除某些厂商在闪存状态寄存器中设置的块保护，它是 OpenIPC U-Boot 自带的子命令：由上游 U-Boot 编译的原厂引导程序只有 <code>sf protect</code> 而没有 <code>lock</code>，因此只会输出 <code>sf</code> 的用法说明。这并没有改动任何东西，而且大多数芯片本就没有加保护——请照原样继续输入本段其余的命令，刷写会正常完成。如果确实有 <code>sf protect</code>，可以用与下面 <code>sf erase</code> 相同的偏移和长度试一次，但多数芯片会回答不支持。无论哪种情况，失去的都是一道检查：仍处于保护状态的闪存会悄悄丢弃擦除和写入，却依然报告成功——每条命令都显示 OK、摄像机却仍然启动原厂固件，就是这种情况。该引导程序无法解除这道保护：请用外部编程器烧录芯片，或通过您已经连接的串口使用 <a href=\"https://github.com/OpenIPC/defib\">defib</a>，它的写入代理会自行解锁。",
+      "mac_record_caveat_html": "请把这个地址和备份一起记下来。完整镜像会擦除整片闪存，原厂 MAC 也会随之消失：首次启动时，摄像机会保留它已有的地址，其次查找仍留在闪存中的原厂地址，只有两者都找不到时才会自行生成一个——而整片擦除之后已经无处可找。如果引导程序回答 <code>ethaddr</code> 未定义，该地址就印在摄像机自己的标签上。无论哪种情况，之后都可以在摄像机上用 <code>set_mac aa:bb:cc:dd:ee:ff</code> 把它设置回去。",
+      "mac_record_stock_caveat_html": "请把这个地址和备份一起记下来。出厂 MAC 保存在闪存里，任何擦除芯片的操作都会把它一起抹掉：首次启动时摄像机会保留自己已有的地址，然后到闪存里找出厂地址，两者都找不到时才会自己生成一个新的。如果引导程序提示 <code>ethaddr</code> 未定义，地址就印在摄像机的标签上。无论哪种情况，之后都可以在摄像机上用 <code>set_mac aa:bb:cc:dd:ee:ff</code> 把它设回去。",
+      "next_business_link": "商业授权与支持",
+      "next_business_text": "——如果这要做成产品。",
+      "next_donate_link": "支持这项工作",
+      "next_donate_text": "——OpenIPC 免费使用，但做出来并不便宜。",
+      "next_wall_link": "把它放上开放墙",
+      "next_wall_text": "——在网页界面里改一个设置，相机就会来打招呼。",
+      "permanent_link": "当前配置的永久链接",
+      "shell_label": "引导程序控制台",
+      "stock_backup_info": "您即将覆盖摄像机出厂时自带的固件，没有备份就回不去了。请启动 TFTP 服务器，并在摄像机的引导程序命令行中执行下面这些命令——它们只用到板子上现有引导程序本来就有的功能。",
+      "stock_bundle_info_html": "把它解压到 TFTP 服务器的根目录。里面是 <code>%{kernel}</code>（内核）和 <code>%{rootfs}</code>（根文件系统）。",
+      "stock_bundle_title": "下载固件包",
+      "stock_info_html": "本站无法给出这两条命令。内核与根文件系统写到哪里，取决于您摄像机引导程序编译时使用的分区布局，而同一颗芯片的不同摄像机也可能不同——OpenIPC 自己的偏移量是随 OpenIPC 引导程序一起提供的，而这颗 SoC 没有。请用 <code>printenv bootargs</code> 和 <code>printenv mtdparts</code> 查看您的分区布局，然后按<a href=\"https://github.com/OpenIPC/wiki/blob/master/en/installation.md\">安装指南</a>写入这两个文件。如果指南没有涵盖您的摄像机，请<a href=\"/community\">到聊天群里询问</a>——这一步大家都是互相帮忙完成的。",
+      "stock_lede": "OpenIPC 为这颗 SoC 提供固件，但没有提供引导程序，因此向导式安装和现成的整片镜像都不在这里提供——它们都要先写入 OpenIPC 引导程序。您可以做的是用摄像机自带的引导程序来安装这份固件，而它的第一步在每台摄像机上都是一样的。",
+      "stock_title": "用摄像机自带的引导程序写入这两个文件",
+      "subtitle": "在带有 %{soc_name} SoC 和 %{flash_type} SPI 闪存芯片的摄像机上",
+      "success": {
+        "info_html": "在 <a href=\\\"http://%{address}/\\\">http://%{address}/</a> 打开摄像机的 Web 界面。新摄像机尚未设置密码，在设置密码之前不会推送任何视频流，因此它会首先要求您设置一个密码。该密码属于 <b>root</b> 用户，Web 界面、ssh、UART 和 RTSP 都使用它。ONVIF 也接受该密码，但使用摘要认证的客户端除外，它们需要单独设置 <b>onvif.password</b>。",
+        "title": "恭喜！此时，您已经安装了 OpenIPC 固件 (%{name})。"
+      },
+      "title": "刷写 OpenIPC 固件"
+    },
+    "restore": {
+      "info": "如果您需要恢复原始固件，请使用您使用上述命令创建的备份文件。将备份文件放入 TFTP 服务器的根目录，并在引导加载程序 shell 中执行这些命令。",
+      "title": "恢复摄像机原始固件"
+    },
+    "version": {
+      "lite": "Lite",
+      "nand": "Nand",
+      "neo": "Neo",
+      "ultimate": "Ultimate",
+      "venc": "VENC"
+    }
+  },
+  "flash_chip": {
+    "nand": "NAND",
+    "nor16m": "NOR 16M",
+    "nor32m": "NOR 32M",
+    "nor8m": "NOR 8M"
+  },
+  "flash_layout": {
+    "nand": "UBI 分区布局",
+    "nor16m": "16MB（rootfs 10MB）",
+    "nor8m": "8MB（rootfs 5MB）"
+  },
+  "nav": {
+    "home": "主页",
+    "vendors": "供应商"
+  },
+  "pages": {
+    "community": {
+      "channel_en": "OpenIPC 国际群组。",
+      "channel_fpv": "关于基于 OpenIPC 的 FPV 与视频链路的一切。",
+      "channel_ru": "OpenIPC 俄语群组。"
+    }
+  }
+}

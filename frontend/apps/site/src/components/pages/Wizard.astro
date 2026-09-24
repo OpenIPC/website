@@ -1,0 +1,98 @@
+---
+/**
+ * One SoC's installation wizard (#164).
+ *
+ * The page is prerendered per SoC and per locale, and everything on it is the
+ * island's: which of Rails' two templates a visitor sees depends on the query
+ * string, and which menus the form offers depends on what upstream has
+ * published -- a release index a cron refreshes hourly, which a page built in
+ * CI cannot know. So this file resolves what the catalogue knows, hands it
+ * over, and renders nothing itself.
+ *
+ * What the commands say is never decided here or in the island: they are
+ * rendered by Rails and fetched as data (#163).
+ */
+import Wizard from '../wizard/Wizard.tsx';
+import { pathFor, type Locale } from '../../lib/i18n';
+import { VENDORS, fullName, socPath, vendorPath, type Soc, type Vendor } from '../../lib/hardware';
+import { useTranslations } from '../../lib/i18n';
+import { SUPPORT_GOAL } from '../../data/support-goal';
+
+const STAGE_ICONS = import.meta.glob<ImageMetadata>(
+  '../../../../../../app/assets/images/stage-*.svg',
+  { eager: true, import: 'default' },
+);
+const WARNING = await import('../../../../../../app/assets/images/icons/pose/warning_front.png');
+
+/** `Soc::STATUS`, which is the stage link's title attribute and is English on both halves. */
+const STATUS: Record<string, string> = {
+  neq: 'No equipment on hands',
+  rnd: 'Research and development',
+  hlp: 'Looking for help',
+  wip: 'Work in progress',
+  mvp: 'Minimum viable product',
+  done: 'Done and done!',
+};
+
+/** `Soc::SEGMENTS`. Anything else is `unknown`, as `segment_name` has it. */
+const SEGMENTS = ['fpv', 'cctv', 'consumer', 'unknown'];
+
+interface Props { locale: Locale; vendor: string; soc: string }
+const { locale, vendor: vendorSlug, soc: socSlug } = Astro.props;
+
+const vendor: Vendor | undefined = VENDORS.find((v) => v.urlname === vendorSlug);
+if (!vendor) throw new Error(`No vendor "${vendorSlug}" in the catalogue.`);
+const soc: Soc | undefined = vendor.socs.find((s) => s.urlname === socSlug);
+if (!soc) throw new Error(`No SoC "${socSlug}" under ${vendorSlug}.`);
+
+const t = useTranslations(locale);
+const p = (path: string) => pathFor(locale, path);
+
+const stage = STAGE_ICONS[`../../../../../../app/assets/images/stage-${soc.status}.svg`];
+if (!stage) throw new Error(`No stage-${soc.status}.svg in app/assets/images.`);
+
+const here = p(socPath(vendor, soc));
+---
+
+{/*
+  The whole page is the island, header and breadcrumb included, because the
+  form and the instructions are two different pages at one address and only the
+  query string says which. It is server-rendered here in the state a visitor
+  arriving without one sees, so the page a crawler reads and the page that
+  arrives with JavaScript off are both the form.
+*/}
+<Wizard
+  client:load
+  locale={locale}
+  source={`/api/v1/wizard/${soc.urlname}.json`}
+  here={here}
+  warningSrc={WARNING.default.src}
+  supportGoal={SUPPORT_GOAL}
+  supportLabels={{
+    count: t('support.count_html'),
+    countMet: t('support.count_met_html'),
+    meter: t('support.meter_label'),
+    monthly: t('support.monthly_html'),
+    split: t('support.split_html'),
+  }}
+  links={{
+    business: p('/business'),
+    donate: p('/donate'),
+    wall: p('/open-wall'),
+    community: p('/community'),
+  }}
+  facts={{
+    fullName: fullName(vendor, soc),
+    model: soc.model,
+    status: soc.status,
+    statusTitle: STATUS[soc.status] ?? soc.status,
+    stageSrc: stage.src,
+    segment: SEGMENTS.includes(soc.segment ?? '') ? soc.segment! : 'unknown',
+    vendorName: vendor.name,
+    vendorHref: p(vendorPath(vendor)),
+    socHref: here,
+    vendorsHref: p('/supported-hardware/featured'),
+    homeHref: p('/'),
+    stagesHref: p('/stages-of-firmware-development'),
+  }}
+/>

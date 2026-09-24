@@ -24,19 +24,44 @@ class WizardExportTest < ActiveSupport::TestCase
     @document ||= WizardExport.document(@soc)
   end
 
+  # A combination names its blocks and the document holds each distinct one
+  # once (#164): ninety combinations share eighty-two blocks, and written out
+  # in full the file was 400 KB.
+  def block_of(entry, name)
+    document['blocks'].fetch(entry['blocks'].fetch(name))
+  end
+
+  def blocks_of(entry)
+    entry['blocks'].transform_values { |id| document['blocks'].fetch(id) }
+  end
+
   test 'it enumerates combinations and describes each one fully' do
     combinations = document['combinations']
 
     assert_operator combinations.size, :>, 20, 'the menu offers more than this'
     combinations.each do |entry|
-      assert_equal %w[blocks edition flash_size flash_type layout_size mac_variant
-                      network_interface partition_layout sd_card_slot warnings].sort,
+      assert_equal %w[blocks bootloader_variables default_bootloader_layout edition
+                      firmware_filename firmware_url flash_family flash_size flash_type
+                      layout_commands layout_size mac_variant network_interface
+                      partition_layout sd_card_slot warnings].sort,
                    entry.keys.sort
       assert_includes Camera::FLASH_CHIP, entry['flash_type']
       assert_includes Camera::NET_IFACE, entry['network_interface']
       assert_includes Camera::SD_CARD, entry['sd_card_slot']
       assert_equal WizardExport::BLOCKS.sort, entry['blocks'].keys.sort
+      entry['blocks'].each_value { |id| assert document['blocks'].key?(id), "no block #{id}" }
     end
+  end
+
+  test 'the pool holds each distinct block once and nothing unreferenced' do
+    used = document['combinations'].flat_map { |entry| entry['blocks'].values }.uniq
+    assert_equal used.sort, document['blocks'].keys.sort, 'the pool and the references disagree'
+
+    contents = document['blocks'].values.map(&:to_json)
+    assert_equal contents.uniq.size, contents.size, 'the pool holds the same block twice'
+
+    variants = document['combinations'].flat_map { |e| (e['mac_variant'] || {}).values }.uniq
+    assert_equal variants.sort, document['mac_variants'].keys.sort
   end
 
   test 'a block is lines, notes and a paste warning -- and no markup' do
@@ -44,7 +69,7 @@ class WizardExportTest < ActiveSupport::TestCase
     # do-not-paste warning is the one line on this page that must be rendered
     # in the reader's own language.
     document['combinations'].each do |entry|
-      entry['blocks'].each do |name, block|
+      blocks_of(entry).each do |name, block|
         assert_equal %w[lines no_paste notes].sort, block.keys.sort, name
 
         block['lines'].each do |line|
@@ -62,7 +87,8 @@ class WizardExportTest < ActiveSupport::TestCase
     # They appear only inside setenv and in the backup filename, so they can be
     # holes -- and if one ever stops being a hole, an address from whoever ran
     # the export ships to every visitor.
-    all = document['combinations'].flat_map { |e| e['blocks'].values.flat_map { |b| b['lines'] } }
+    all = document['blocks'].values.flat_map { |b| b['lines'] } +
+          document['mac_variants'].values.flatten
     joined = all.join("\n")
 
     assert_includes joined, WizardExport::IPADDR
@@ -90,7 +116,7 @@ class WizardExportTest < ActiveSupport::TestCase
     WizardExport::BLOCKS.each do |block|
       wanted = view.public_send("#{block}_lines", camera).map(&:to_s).reject { |l| l.start_with?('<') }
 
-      assert_equal wanted, entry['blocks'][block]['lines'], block
+      assert_equal wanted, block_of(entry, block)['lines'], block
     end
   end
 
@@ -166,17 +192,64 @@ class WizardExportTest < ActiveSupport::TestCase
     on_bigger.each { |e| assert_includes e['warnings'], 'no_lite_layout' }
   end
 
-  test 'a NAND-only part says nothing is published for NOR' do
+  test 'a NAND-only part still carries its NOR pages, saying nothing is published' do
     soc = @soc
     soc.define_singleton_method(:available_releases) { |type| type == 'nand' ? ['ultimate'] : [] }
 
     document = WizardExport.document(soc)
     nor = document['combinations'].select { |e| e['flash_type'].start_with?('nor') }
 
-    # Nothing published means no edition to enumerate, so the combination is
-    # not offered at all -- which is the menu's behaviour too.
-    assert_empty nor, 'NOR combinations were enumerated for a part with no NOR build'
+    # The menu will not offer these -- the chip is disabled in it -- but a
+    # hand-edited query string reaches them and `update` renders the full page
+    # with `nothing_published` over it. Enumerating them is what lets the
+    # static wizard answer from the export alone instead of guessing when it
+    # finds nothing; leaving them out was how it came to render an empty page.
+    assert_not_empty nor, 'a NOR page a query string can reach was not enumerated'
+    nor.each { |e| assert_includes e['warnings'], 'nothing_published' }
     assert_not_empty document['combinations'].select { |e| e['flash_type'] == 'nand' }
+  end
+
+  test 'a part that publishes nothing anywhere still has a page for every edition' do
+    soc = @soc
+    soc.define_singleton_method(:available_releases) { |_type| [] }
+    soc.define_singleton_method(:offerable_releases) { [] }
+
+    document = WizardExport.document(soc)
+    editions = document['combinations'].map { |e| e['edition'] }.uniq.sort
+
+    # `use_published_release!` returns early when there is nothing to move to,
+    # so whatever a query string asks for is what gets rendered -- with
+    # `nothing_published` over it. Narrowing this list to what the SoC offers
+    # was the bug dev caught: SSC333DE publishes nothing, the list came out as
+    # the one-element fallback, and asking for Ultimate found no page at all
+    # where Rails renders a full one.
+    assert_equal Camera::FW_VERSION.sort, editions
+    document['combinations'].each { |e| assert_includes e['warnings'], 'nothing_published' }
+  end
+
+  test 'the page facts the result page renders from are all there' do
+    # Which steps this combination has, which bundle it links to and which
+    # bootloader variables the hint at the foot names. Facts rather than
+    # markup: the static wizard renders them in the visitor's language, and
+    # anything it had to work out for itself is a chance for the two halves to
+    # disagree about a camera somebody is about to flash.
+    entry = document['combinations'].find { |e| e['flash_type'] == 'nor16m' && e['partition_layout'] == 'nor16m' }
+
+    assert_equal 'nor', entry['flash_family']
+    assert_equal 16, entry['layout_size']
+    assert_equal false, entry['default_bootloader_layout'], '16MB is not the bootloader default'
+    assert_equal true, entry['layout_commands']
+    assert_equal %w[uknor16m urnor16m setnor16m], entry['bootloader_variables']
+    assert_match %r{^https://github.com/OpenIPC/firmware/releases/download/latest/},
+                 entry['firmware_url']
+    assert_equal File.basename(entry['firmware_url']), entry['firmware_filename']
+  end
+
+  test 'the document says what the SoC page decides between before it shows a form' do
+    %w[instructable availability bootloader_published uboot_filename linux_filename
+       bl_url published board special_pages].each do |key|
+      assert document.key?(key), "the export does not carry #{key}"
+    end
   end
 
   test 'the MAC changes the shape of the output, and the export carries both' do
@@ -189,7 +262,7 @@ class WizardExportTest < ActiveSupport::TestCase
     assert_not_empty variant, 'no combination changes when a MAC is given'
     assert_includes variant.keys, 'post_flash_environment'
 
-    joined = variant.values.flatten.join("\n")
+    joined = variant.values.map { |id| document['mac_variants'].fetch(id) }.flatten.join("\n")
     assert_includes joined, WizardExport::ETHADDR
     assert_includes joined, WizardExport::ETHADDR_PLAIN,
                     'the filename form of the MAC needs its own hole'

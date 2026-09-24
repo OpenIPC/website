@@ -86,8 +86,12 @@ module InstallationHelper
     CAVEATS.select { |trigger, _| lines.any? { |line| line.include?(trigger) } }.values
   end
 
+  # The one line of every command block that is not a command, and the one a
+  # reader most needs to understand -- guarded_flash's whole reason. It was
+  # English for everyone until #164 needed it on the static wizard too, which
+  # is where the key came from.
   def do_not_copy_paste
-    content_tag 'span', '# Enter commands line by line! Do not copy and paste multiple lines at once!', class: 'text-danger'
+    content_tag 'span', t('firmware.installation.do_not_paste'), class: 'text-danger'
   end
 
   # `sf probe` has to run before any erase, and `sf lock 0` clears the status

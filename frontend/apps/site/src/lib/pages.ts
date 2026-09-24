@@ -13,6 +13,7 @@
  * than a sentence.
  */
 import Hardware from '../components/pages/Hardware.astro';
+import Wizard from '../components/pages/Wizard.astro';
 import Service from '../components/Service.astro';
 import Smoke from '../components/Smoke.astro';
 import Business from '../components/pages/Business.astro';
@@ -77,6 +78,12 @@ const COMPONENTS: Record<string, Renderer> = {
     `/cameras/vendors/${vendor.urlname}`,
     { component: Hardware, props: { view: 'vendor', vendor: vendor.urlname } },
   ])),
+
+  // The wizard, one page per SoC (#164).
+  ...Object.fromEntries(VENDORS.flatMap((vendor) => vendor.socs.map((soc) => [
+    `/cameras/vendors/${vendor.urlname}/socs/${soc.urlname}`,
+    { component: Wizard, props: { vendor: vendor.urlname, soc: soc.urlname } },
+  ]))),
 
   '/business': { component: Business },
   '/community': { component: Community },
