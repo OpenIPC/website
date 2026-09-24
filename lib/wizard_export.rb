@@ -88,6 +88,11 @@ module WizardExport
         'bootloader_published' => soc.bootloader_published?,
         'uboot_filename' => soc.uboot_filename,
         'linux_filename' => soc.linux_filename,
+        # What is inside the bundle. Named on the page for a SoC OpenIPC
+        # publishes no bootloader for, where the reader writes these two files
+        # themselves rather than running a macro that knows where they go.
+        'kernel_file' => soc.kernel_file,
+        'rootfs_file' => soc.rootfs_file,
         'bl_url' => soc.bl_url,
         # One entry per bundle upstream actually publishes, for the links the
         # page offers when it cannot offer instructions. Built here rather

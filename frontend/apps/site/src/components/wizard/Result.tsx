@@ -12,7 +12,7 @@ import type { ComponentChildren } from 'preact';
 import type { Block, Combination, WizardDocument } from '../../lib/wizard-export';
 import { fillHoles, type WizardSettings } from '../../lib/wizard-input';
 import { toPermalink } from '../../lib/wizard-input';
-import { flashArguments, type FlashMessage } from '../../lib/wizard-result';
+import { flashArguments, stockBootloaderOnly, type FlashMessage } from '../../lib/wizard-result';
 import SupportCount from '../SupportCount.tsx';
 import Icon from './Icon.tsx';
 import Terminal from './Terminal.tsx';
@@ -64,9 +64,24 @@ function Html({ as: Tag = 'p', class: className, html }:
   return <Tag class={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
+/**
+ * The notes a block has earned, with the one that assumes a full image
+ * swapped where there is no full image to write.
+ *
+ * `mac_record_caveat_html` opens "the full image erases the whole chip", which
+ * is the right reason on the guided path and a false one where the reader is
+ * writing two files from their own bootloader. The advice -- write the address
+ * down -- is the same either way.
+ */
+function noteFor(name: string, stockOnly: boolean): string {
+  if (!stockOnly || name !== 'mac_record_caveat_html') return name;
+  return 'mac_record_stock_caveat_html';
+}
+
 /** One command block: the terminal, and the notes the lines in it have earned. */
-function Commands({ t, doc, combination, settings, name }:
-{ t: Translate; doc: WizardDocument; combination: Combination; settings: WizardSettings; name: string }) {
+function Commands({ t, doc, combination, settings, name, stockOnly = false }:
+{ t: Translate; doc: WizardDocument; combination: Combination; settings: WizardSettings;
+  name: string; stockOnly?: boolean }) {
   const id = combination.blocks?.[name];
   if (id === undefined) return null;
   const block: Block | undefined = doc.blocks[id];
@@ -90,7 +105,7 @@ function Commands({ t, doc, combination, settings, name }:
         <Html
           key={note}
           class="text-[.875em] text-body-secondary"
-          html={t(`firmware.installation.${note}`)}
+          html={t(`firmware.installation.${noteFor(note, stockOnly)}`)}
         />
       ))}
     </>
@@ -107,6 +122,22 @@ export default function Result({
 
   const edition = versionName(t, settings.firmwareVersion);
   const nand = settings.flashType === 'nand';
+
+  /*
+   * No OpenIPC bootloader for this chip, so most of this page does not apply.
+   *
+   * What survives is what a stock bootloader can do: the backup, which is
+   * `sf probe`, `sf read` and `tftpput`, and the restore that undoes it. What
+   * goes is everything that assumes OpenIPC's own bootloader -- the U-Boot
+   * step, whose command comes out with a hole where the filename would be,
+   * and the by-parts step, which is `run uknor8m; run urnor8m`, macros a stock
+   * bootloader answers with `## Error: "uknor8m" not defined`.
+   *
+   * The congratulation goes too. These steps do not install anything; saying
+   * they did would be the page's own copy contradicting what the reader just
+   * ran.
+   */
+  const stockOnly = stockBootloaderOnly(doc);
   const sdcardRequired = settings.sdCardSlot === 'sd' && settings.networkInterface === 'wifi';
 
   // `post_flash_commands.any?`: the MAC line when there is one to set, plus
@@ -145,7 +176,12 @@ export default function Result({
                 is a separate choice from the chip now, and the erase below
                 spans the chip whichever layout goes inside it.
               */}
-              {!nand && (
+              {/*
+                Left off where there is no OpenIPC bootloader: the layout it
+                names is that bootloader's mtdparts, and the image it says
+                covers the whole chip is one this page cannot assemble.
+              */}
+              {!nand && !stockOnly && (
                 <p class="mt-2 mb-0 text-[.875em] text-body-secondary">
                   {install('layout_note', {
                     layout: t(`flash_layout.${settings.partitionLayout}`),
@@ -191,7 +227,15 @@ export default function Result({
             </div>
             <div class="site-row site-row-g4">
               <div class="site-col-lg-4">
-                <p class="text-body-secondary">{install('backup.info')}</p>
+                {/*
+                  Why the backup matters is the same; what is about to
+                  overwrite the camera is not. `backup.info` names OpenIPC's
+                  U-Boot and the crypto partition it takes with it, and neither
+                  is in this reader's path.
+                */}
+                <p class="text-body-secondary">
+                  {install(stockOnly ? 'stock_backup_info' : 'backup.info')}
+                </p>
               </div>
               <div class="site-col-lg-8">
                 {sdcardRequired && (
@@ -201,7 +245,10 @@ export default function Result({
                   ? <p class="site-alert site-alert-warning">This part is currently under development. Stay tuned.</p>
                   : (
                     <>
-                      <Commands t={t} doc={doc} combination={combination} settings={settings} name="firmware_backup" />
+                      <Commands
+                        t={t} doc={doc} combination={combination} settings={settings}
+                        name="firmware_backup" stockOnly={stockOnly}
+                      />
                       {/*
                         Without a MAC the name carries nothing that tells one
                         camera from another, and the second backup of a batch
@@ -289,6 +336,13 @@ export default function Result({
             </section>
           )}
 
+          {stockOnly && (
+            <StockBootloader
+              t={t} doc={doc} facts={facts} settings={settings} combination={combination}
+            />
+          )}
+
+          {!stockOnly && (
           <div class="site-alert site-alert-success my-6 flex gap-4">
             <Icon name="check-circle-fill" size="fs4" />
             <div>
@@ -301,33 +355,41 @@ export default function Result({
               <SupportCount goal={supportGoal} labels={supportLabels} class="mt-4" />
             </div>
           </div>
+          )}
 
           {/*
             The by-parts path, and the link that opens it -- in that order,
             because that is the order the page has: the block sits collapsed
             above its own link, with the printenv hint between them.
+
+            Every part of it is OpenIPC's bootloader's, so a chip without one
+            gets the restore on its own instead; see StockBootloader.
           */}
-          <Collapse id="collapseExperts" open={expertsOpen}>
-            <Experts
-              t={t} doc={doc} combination={combination} settings={settings} facts={facts}
-              sdcardRequired={sdcardRequired} edition={edition}
-            />
-          </Collapse>
+          {!stockOnly && (
+            <>
+              <Collapse id="collapseExperts" open={expertsOpen}>
+                <Experts
+                  t={t} doc={doc} combination={combination} settings={settings} facts={facts}
+                  sdcardRequired={sdcardRequired} edition={edition}
+                />
+              </Collapse>
 
-          <Html
-            html={t('firmware.info_html', {
-              commands: (combination.bootloader_variables ?? [])
-                .map((name) => `<code>${name}</code>`).join(', '),
-            })}
-          />
+              <Html
+                html={t('firmware.info_html', {
+                  commands: (combination.bootloader_variables ?? [])
+                    .map((name) => `<code>${name}</code>`).join(', '),
+                })}
+              />
 
-          <a
-            href="#collapseExperts"
-            role="button"
-            aria-expanded={expertsOpen ? 'true' : 'false'}
-            aria-controls="collapseExperts"
-            onClick={(event) => { event.preventDefault(); setExpertsOpen(!expertsOpen); }}
-          >{update('advanced_instruction_link')}</a>
+              <a
+                href="#collapseExperts"
+                role="button"
+                aria-expanded={expertsOpen ? 'true' : 'false'}
+                aria-controls="collapseExperts"
+                onClick={(event) => { event.preventDefault(); setExpertsOpen(!expertsOpen); }}
+              >{update('advanced_instruction_link')}</a>
+            </>
+          )}
         </article>
       </div>
 
@@ -578,6 +640,102 @@ function Experts({ t, doc, combination, settings, facts, sdcardRequired, edition
             </div>
           </div>
         </div>
+      )}
+    </>
+  );
+}
+
+/**
+ * What is left of the installation when there is no OpenIPC bootloader (#164).
+ *
+ * The bundle, what is inside it, and the one thing this site will not do:
+ * compose the two commands that write the kernel and the root filesystem.
+ * Their offsets are a property of the bootloader on the board rather than of
+ * the chip -- OpenIPC's own arrive with OpenIPC's bootloader, which this SoC
+ * does not have -- and a wrong offset at the start of flash is the bootloader.
+ * `guarded_flash` carries the report of a camera lost that way.
+ *
+ * So the page says that, names the two files, and points at the wiki and the
+ * chat, which is where a layout gets worked out with somebody who has the
+ * board. The restore block above it is real and stays: it is the backup's
+ * counterpart and needs no macro.
+ */
+function StockBootloader({ t, doc, facts, settings, combination }: {
+  t: Translate; doc: WizardDocument; facts: SocFacts; settings: WizardSettings;
+  combination: Combination;
+}) {
+  const install = (key: string, options?: Record<string, unknown>) =>
+    t(`firmware.installation.${key}`, options);
+  const bundle = doc.published.find((one) => one.release === settings.firmwareVersion)
+    ?? doc.published[0];
+
+  return (
+    <>
+      <section class="border-t border-hairline py-6">
+        <h2 class="site-h4 mb-4">
+          <span class="me-2 text-brand-blue">2</span>{install('stock_bundle_title')}
+        </h2>
+        <div class="site-row site-row-g4">
+          <div class="site-col-lg-4">
+            {bundle && (
+              <div class="site-card h-full">
+                <div class="site-card-body">
+                  <h3 class="site-h6 mb-2 flex items-start gap-2">
+                    <Icon name="github" size="githubFs5" />
+                    <a href={bundle.url} title={bundle.filename}>
+                      {t('cameras.socs.show.bundle', {
+                        name: `${versionName(t, bundle.release)} ${bundle.flash_type.toUpperCase()}`,
+                      })}
+                    </a>
+                  </h3>
+                  <p class="mb-0 text-[.875em] text-body-secondary">
+                    {t('cameras.socs.show.for', { name: facts.fullName })}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+          <div class="site-col-lg-8">
+            <Html
+              html={install('stock_bundle_info_html', {
+                kernel: doc.kernel_file, rootfs: doc.rootfs_file,
+              })}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="border-t border-hairline py-6">
+        <h2 class="site-h4 mb-4">
+          <span class="me-2 text-brand-blue">3</span>{install('stock_title')}
+        </h2>
+        <div class="site-alert site-alert-warning">
+          <Html class="mb-0" html={install('stock_info_html')} />
+        </div>
+      </section>
+
+      {/*
+        The backup's counterpart, and the reason step 1 is worth the trouble.
+        It writes the whole chip back from the file, needs no macro, and is
+        the way out of a write that went somewhere it should not have.
+      */}
+      {settings.flashType !== 'nand' && (
+        <section class="border-t border-hairline py-6">
+          <h2 class="site-h4 mb-4">
+            <span class="me-2 text-brand-blue">4</span>{t('firmware.restore.title')}
+          </h2>
+          <div class="site-row site-row-g4">
+            <div class="site-col-lg-4">
+              <p class="text-body-secondary">{t('firmware.restore.info')}</p>
+            </div>
+            <div class="site-col-lg-8">
+              <Commands
+                t={t} doc={doc} combination={combination} settings={settings}
+                name="restore_from_backup"
+              />
+            </div>
+          </div>
+        </section>
       )}
     </>
   );

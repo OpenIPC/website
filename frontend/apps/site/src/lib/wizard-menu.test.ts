@@ -3,6 +3,7 @@ import {
   allowedEditions, allowedLayouts, generateMac, narrow, naturalLayout, openOn,
   useAnOfferedFlashType, type Availability,
 } from './wizard-menu';
+import { stockBootloaderOnly } from './wizard-result';
 
 // What a typical SoC has published, and two that are not typical.
 const BOTH: Availability = { nor: ['lite', 'ultimate'], nand: ['ultimate'] };
@@ -143,5 +144,37 @@ describe('the generated MAC', () => {
     for (const value of [0, 0.5, 0.999999]) {
       expect(generateMac(() => value)).toMatch(/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/);
     }
+  });
+});
+
+describe('installing from the bootloader the camera already has', () => {
+  // Twenty-two SoCs have OpenIPC firmware and no OpenIPC U-Boot. What the page
+  // can still give them is the backup -- `sf probe`, `sf read`, `tftpput`, the
+  // same on any bootloader -- and what it must not give them is the U-Boot step
+  // or `run uknor8m`, which a stock bootloader answers with "not defined".
+  const soc = (over: Partial<Parameters<typeof stockBootloaderOnly>[0]> = {}) => ({
+    bootloader_published: false,
+    availability: 'firmware_only',
+    load_address: '0xA1000000',
+    ...over,
+  });
+
+  test('firmware, no bootloader, and an address to transfer to', () => {
+    expect(stockBootloaderOnly(soc())).toBe(true);
+  });
+
+  test('no load address recorded leaves the page exactly as it was', () => {
+    // The five. Their commands would come out as `sf read  0x0 0x800000`, with
+    // a hole where the address belongs, so the page says nothing rather than
+    // printing that.
+    expect(stockBootloaderOnly(soc({ load_address: '' }))).toBe(false);
+  });
+
+  test('a SoC with a bootloader takes the guided path', () => {
+    expect(stockBootloaderOnly(soc({ bootloader_published: true, availability: 'wizard' }))).toBe(false);
+  });
+
+  test('a SoC with nothing published has nothing to install', () => {
+    expect(stockBootloaderOnly(soc({ availability: 'none' }))).toBe(false);
   });
 });

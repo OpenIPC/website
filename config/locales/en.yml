@@ -93,6 +93,13 @@ en:
   firmware:
     info_html: If you want to learn more about what the %{commands} commands do, run <code>printenv</code> in the bootloader console.
     installation:
+      mac_record_stock_caveat_html: "Write this address down with the backup. The factory MAC lives in flash, so anything that erases the chip takes it with it: on first boot the camera keeps an address it already has, then looks for the factory one still in flash, and mints itself a new one only when it finds neither. If the bootloader answers that <code>ethaddr</code> is not defined, the address is on the camera's own label. Either way you can give it back afterwards with <code>set_mac aa:bb:cc:dd:ee:ff</code> on the camera."
+      stock_backup_info: "You are about to write over the firmware the camera shipped with, and without a copy of it there is no way back. Start a TFTP server and run these commands in your camera’s bootloader shell — they use nothing the bootloader already on the board does not have."
+      stock_bundle_info_html: "Unpack it into the root directory of your TFTP server. Inside are <code>%{kernel}</code>, the kernel, and <code>%{rootfs}</code>, the root filesystem."
+      stock_bundle_title: "Download the firmware bundle"
+      stock_info_html: "This site cannot print these two commands. Where the kernel and the root filesystem go depends on the partition layout your camera's bootloader was built with, and that differs between cameras carrying the same chip — OpenIPC's own offsets arrive with OpenIPC's bootloader, which this SoC does not have. Read your layout with <code>printenv bootargs</code> and <code>printenv mtdparts</code>, then the <a href=\"https://github.com/OpenIPC/wiki/blob/master/en/installation.md\">installation guide</a> walks through writing the two files. If it does not cover your camera, <a href=\"/community\">ask in the chat</a> — this is the step people help each other with."
+      stock_lede: "OpenIPC publishes firmware for this SoC but not a bootloader for it, so the guided installation and the ready-made flash image — both of which begin by writing an OpenIPC bootloader — are not offered here. What you can do is install this firmware from the bootloader your camera already has, and the first step of that is the same on every camera."
+      stock_title: "Write them from the bootloader your camera has"
       do_not_paste: "# Enter commands line by line! Do not copy and paste multiple lines at once!"
       attention: Attention!
       backup:

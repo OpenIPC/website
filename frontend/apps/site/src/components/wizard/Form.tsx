@@ -10,6 +10,7 @@
 import type { WizardDocument } from '../../lib/wizard-export';
 import type { WizardSettings } from '../../lib/wizard-input';
 import { FLASH_CHIPS, PARTITION_LAYOUTS, type Narrowed } from '../../lib/wizard-menu';
+import { stockBootloaderOnly } from '../../lib/wizard-result';
 import Icon from './Icon.tsx';
 
 export interface SocFacts {
@@ -75,6 +76,10 @@ export default function Form({
     || (doc.bootloader_published && doc.linux_filename !== ''
       && doc.load_address !== '' && doc.availability !== 'none');
 
+  // Firmware but no bootloader, and a load address to work with. See
+  // `stockBootloaderOnly` for what that state is and which five it leaves out.
+  const stockOnly = doc !== null && stockBootloaderOnly(doc);
+
   return (
     // `<main><div class="container mb-4">`, which is what the layout wraps a
     // page in unless it asks for the full width. The result page does ask, and
@@ -91,18 +96,28 @@ export default function Form({
         </header>
 
         <div class="site-row">
-          {usable
+          {usable || stockOnly
             ? (
               <>
                 <div class="site-col-md-6 site-col-xl-5 site-col-xxl-4 mb-4">
-                  <div class="site-alert site-alert-info">
-                    <h3>{show('title')}</h3>
-                    <p class="mb-0">{show('paragraph1')}</p>
-                  </div>
-                  <div class="site-alert site-alert-danger">
-                    <h3>{show('title2')}</h3>
-                    <p class="mb-0">{show('paragraph2')}</p>
-                  </div>
+                  {stockOnly
+                    ? (
+                      <div class="site-alert site-alert-info">
+                        <p class="mb-0">{t('firmware.installation.stock_lede')}</p>
+                      </div>
+                    )
+                    : (
+                      <>
+                        <div class="site-alert site-alert-info">
+                          <h3>{show('title')}</h3>
+                          <p class="mb-0">{show('paragraph1')}</p>
+                        </div>
+                        <div class="site-alert site-alert-danger">
+                          <h3>{show('title2')}</h3>
+                          <p class="mb-0">{show('paragraph2')}</p>
+                        </div>
+                      </>
+                    )}
                 </div>
 
                 <div class="site-col-md-6 site-col-xl-7 site-col-xxl-8 mb-4">
@@ -221,8 +236,16 @@ export default function Form({
                           </small>
                         </div>
 
-                        {/* Hidden for NAND, which has one layout and nothing to choose. */}
-                        <div id="partition-layout-field" hidden={narrowed?.layoutFieldHidden}>
+                        {/*
+                          Hidden for NAND, which has one layout and nothing to
+                          choose -- and for a SoC with no OpenIPC bootloader,
+                          where the layout is that bootloader's and the reader
+                          is using their own.
+                        */}
+                        <div
+                          id="partition-layout-field"
+                          hidden={stockOnly || narrowed?.layoutFieldHidden}
+                        >
                           <div class="mb-4">
                             <label class="site-form-label" for="camera_partition_layout">
                               {t('activemodel.attributes.camera.partition_layout')}
@@ -249,7 +272,11 @@ export default function Form({
                           </div>
                         </div>
 
-                        <div class="mb-4">
+                        {/*
+                          One bundle and no edition to weigh up, when there is
+                          no image for this page to assemble.
+                        */}
+                        <div class="mb-4" hidden={stockOnly && (doc?.published.length ?? 0) < 2}>
                           <label class="site-form-label" for="camera_firmware_version">
                             {t('activemodel.attributes.camera.firmware_version')}
                           </label>

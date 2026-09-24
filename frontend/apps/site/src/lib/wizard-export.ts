@@ -59,6 +59,9 @@ export interface WizardDocument {
   bootloader_published: boolean;
   uboot_filename: string;
   linux_filename: string;
+  /** What is inside the bundle: the kernel and the root filesystem. */
+  kernel_file: string;
+  rootfs_file: string;
   bl_url: string;
   published: PublishedBundle[];
   patterns: Patterns;

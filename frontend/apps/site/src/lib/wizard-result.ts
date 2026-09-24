@@ -47,6 +47,29 @@ export interface SocRules {
   specialPages: Record<string, string | undefined>;
 }
 
+/**
+ * Whether this SoC is installed from the bootloader the camera already has.
+ *
+ * Twenty-two SoCs have OpenIPC firmware and no OpenIPC U-Boot. Neither the
+ * guided installation nor the ready-made image can be offered for them -- both
+ * begin by writing one -- and the page used to say so and stop, which left a
+ * reader with a supported camera no step at all, not even the backup whose
+ * omission cannot be undone.
+ *
+ * That backup is the same on any bootloader: `sf probe`, `sf read`, `tftpput`.
+ * It needs the address the bootloader transfers to, and five of the twenty-two
+ * have none recorded -- their commands would come out with a hole where the
+ * address belongs -- so those keep the page they have until somebody fills it
+ * in.
+ */
+export function stockBootloaderOnly(doc: {
+  bootloader_published: boolean; availability: string; load_address: string;
+}): boolean {
+  return !doc.bootloader_published
+    && doc.availability === 'firmware_only'
+    && doc.load_address !== '';
+}
+
 /** `Camera#flash_type_type`. */
 export function flashFamily(chip: string): 'nor' | 'nand' {
   return chip === 'nand' ? 'nand' : 'nor';
