@@ -134,8 +134,10 @@ try {
     const height = await page.evaluate(() => document.documentElement.scrollHeight);
     console.log(`=== ${label.padEnd(6)} ${host}${path}  ${width}x${height}`);
 
-    if (shots) await page.screenshot({ path: `${shots}/${name}.png`, fullPage: true });
+    // The probe runs first so it can set the page up for the picture -- open a
+    // menu, expand a panel -- rather than only reporting on it.
     if (probe) console.log(await page.evaluate(eval(`(${probe})`)));
+    if (shots) await page.screenshot({ path: `${shots}/${name}.png`, fullPage: true });
 
     await page.close();
   }

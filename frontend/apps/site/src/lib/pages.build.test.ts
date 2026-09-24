@@ -124,7 +124,7 @@ describe('the shell behaves the way the Rails shell does', () => {
     expect(stylesheet).toContain('z-index:1020');
   });
 
-  test('the navigation collapses below a laptop', () => {
+  test('the navigation collapses at the same width the origin does', () => {
     // navbar-expand-lg. Without it the brand and seven menu items cannot fit a
     // phone and the whole document scrolls sideways -- 625px of page in a
     // 390px viewport, on every page of the bundle. It is invisible at desktop
@@ -138,8 +138,52 @@ describe('the shell behaves the way the Rails shell does', () => {
     const collapsed = stylesheet.match(/\.site-nav-collapse\{([^}]*)\}/);
     expect(collapsed, 'no .site-nav-collapse rule, so the menu never collapses').toBeTruthy();
     expect(collapsed![1]).toContain('display:none');
-    // And comes back at Bootstrap's lg breakpoint.
-    expect(stylesheet).toMatch(/@media\s*\(min-width:992px\)/);
+
+    // navbar-expand-XL, not lg. Between 992 and 1200 -- which is most laptops
+    // -- the origin shows a hamburger, and a full row there is a state the
+    // page it replaces never has.
+    //
+    // Everything the stylesheet says at that breakpoint, gathered first: the
+    // minifier splits and reorders media blocks, and rewrites the longhand
+    // `inset-inline-start/end` into `inset-inline`, so matching the source
+    // text of a rule does not survive a build.
+    const atXl = [...stylesheet.matchAll(/@media\s*\(min-width:1200px\)\{((?:[^{}]|\{[^{}]*\})*)\}/g)]
+      .map((m) => m[1])
+      .join('\n');
+
+    expect(atXl, 'the menu does not come back at Bootstrap\'s xl breakpoint (1200px)')
+      .toContain('.site-nav-toggler{display:none}');
+
+    // And the panels hang from the right edge of their control there
+    // (dropdown-menu-xl-end), which is what keeps the last one on the page.
+    expect(atXl, 'the dropdown panels are not end-aligned at xl')
+      .toMatch(/\.site-nav \.site-dropdown\{[^}]*inset-inline:auto 0/);
+  });
+
+  test('the dropdowns answer the keyboard the way Bootstrap\'s do', () => {
+    // The click-only version left a keyboard reader with a menu that opened
+    // and then dropped them back on the page: no arrow keys into it, and
+    // Escape closing the panel without putting focus back on the control that
+    // opened it. Asserted against the shipped script because there is no DOM
+    // here to press a key against -- scripts/compare-with-origin.mjs drives
+    // the real thing against the origin.
+    // The bar's script is inlined into every page rather than bundled, so the
+    // page is where to look for it -- and every page has to have it, not just
+    // the one that was checked.
+    for (const [loc, path, html] of PAGES) {
+      expect(html, `${loc}${path}: nothing handles ArrowDown in the navigation`).toContain('ArrowDown');
+      expect(html, `${loc}${path}: nothing handles ArrowUp in the navigation`).toContain('ArrowUp');
+      expect(html, `${loc}${path}: nothing handles Escape in the navigation`).toContain('Escape');
+      // focus() on the control after Escape, and on an item when it opens.
+      expect(html, `${loc}${path}: the menu never moves focus`).toMatch(/\.focus\(\)/);
+    }
+
+    // And focus is visible when it lands: $focus-ring-color is rgba($indigo,
+    // .3) in a .25rem ring, which `.nav-link:focus-visible` draws on the
+    // origin. Tailwind's preflight leaves the browser default instead, and the
+    // browser default on an ink bar is a black outline nobody can see.
+    expect(stylesheet, 'the navigation has no focus ring of its own')
+      .toMatch(/\.site-nav \.site-nav-link:focus-visible\{[^}]*#4c60d84d|\.site-nav \.site-nav-link:focus-visible\{[^}]*76 96 216/);
   });
 
   test('the whole navigation is in the HTML, not built on hover', () => {

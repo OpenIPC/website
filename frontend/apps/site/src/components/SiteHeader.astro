@@ -47,8 +47,14 @@ const alt = alternates(path);
 
     {/*
       The toggler, and the block it opens. Bootstrap's own markup: a button
-      that is gone from 992px up, and a container that is a block on a phone
-      and the row itself on a desktop.
+      that is gone from 1200px up, and a container that is a block below that
+      and the row itself above it.
+
+      `navbar-expand-xl`, as _navbar.html.erb says and for the reason it gives:
+      six top-level entries and the language control do not fit an lg breakpoint
+      without wrapping, and a wrapped navbar reads as broken rather than as
+      full. Collapsing at 992 put this bar in a state the origin never has --
+      the full row at 1100px -- which is the width a laptop actually uses.
     */}
     <button
       type="button"
@@ -63,7 +69,7 @@ const alt = alternates(path);
     </button>
 
     <div class="site-nav-collapse" id="site-menu">
-    <ul class="flex list-none flex-col gap-0 p-0 lg:flex-row lg:items-center">
+    <ul class="flex list-none flex-col gap-0 p-0 xl:flex-row xl:items-center">
       {items.filter((item) => item.id !== 'github').map((item) => (
         <li class="site-nav-item relative">
           {item.type === 'link' ? (
@@ -95,7 +101,7 @@ const alt = alternates(path);
       <li class="site-nav-item">
         <a class="site-nav-link" href="https://github.com/OpenIPC" title="OpenIPC on GitHub">
           <span class="inline-block size-5 align-[-.25rem]" set:html={github} />
-          <span class="sr-only">GitHub</span>
+          <span class="ms-2 xl:sr-only">GitHub</span>
         </a>
       </li>
 
@@ -149,8 +155,41 @@ const alt = alternates(path);
   }
 
   document.addEventListener('click', () => closeAll());
+
+  function itemsOf(toggle: HTMLButtonElement): HTMLAnchorElement[] {
+    const panel = toggle.nextElementSibling;
+    return panel ? [...panel.querySelectorAll<HTMLAnchorElement>('a')] : [];
+  }
+
+  for (const toggle of toggles) {
+    toggle.addEventListener('keydown', (event) => {
+      const items = itemsOf(toggle);
+      if (items.length === 0) return;
+      const wasOpen = toggle.getAttribute('aria-expanded') === 'true';
+      const here = items.indexOf(document.activeElement as HTMLAnchorElement);
+
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (!wasOpen) {
+          closeAll(toggle);
+          toggle.setAttribute('aria-expanded', 'true');
+          (event.key === 'ArrowDown' ? items[0] : items[items.length - 1]).focus();
+          return;
+        }
+        const step = event.key === 'ArrowDown' ? 1 : -1;
+        const next = (here + step + items.length) % items.length;
+        items[next].focus();
+      }
+    });
+  }
+
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') closeAll();
+    if (event.key !== 'Escape') return;
+    // Focus goes back to the button that opened the panel, or it lands on the
+    // page behind a menu the reader has just dismissed.
+    const owner = toggles.find((t) => t.getAttribute('aria-expanded') === 'true');
+    closeAll();
+    owner?.focus();
   });
 
   // The toggler, below 992px. `data-open` rather than a class, so the CSS that

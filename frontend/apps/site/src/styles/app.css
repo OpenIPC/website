@@ -185,8 +185,8 @@ h1, h2, h3, h4, h5, h6 {
  */
 
 /*
- * `navbar-expand-lg`. Below 992px the bar is a brand and a toggler and the
- * menu is a block underneath them; from 992px the toggler goes and the menu
+ * `navbar-expand-xl`. Below 1200px the bar is a brand and a toggler and the
+ * menu is a block underneath them; from 1200px the toggler goes and the menu
  * is the row.
  *
  * Not decoration: without it the seven menu items and the brand cannot fit a
@@ -216,37 +216,6 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1;
 }
 
-@media (min-width: 992px) {
-  .site-nav-toggler {
-    display: none;
-  }
-
-  .site-nav-collapse {
-    display: flex;
-    flex-basis: auto;
-    width: auto;
-    margin-inline-start: auto;
-  }
-}
-
-/*
- * Collapsed, a dropdown is part of the flow rather than a panel floating over
- * the page -- .navbar .dropdown-menu is `position: static` below the expand
- * breakpoint, and a panel absolutely positioned inside a full-width block
- * would otherwise hang off the side of a phone.
- */
-@media (max-width: 991.98px) {
-  .site-nav .site-dropdown {
-    position: static;
-    padding-inline-start: 1rem;
-    background: none;
-    border: 0;
-  }
-
-  .site-nav .site-dropdown-item {
-    white-space: normal;
-  }
-}
 .site-nav .site-nav-link {
   display: block;
   padding: 0.5rem;
@@ -262,6 +231,18 @@ h1, h2, h3, h4, h5, h6 {
 .site-nav .site-nav-link:hover,
 .site-nav .site-nav-link:focus-visible {
   color: #fff;
+}
+
+/*
+ * `.nav-link:focus-visible`, which is $focus-ring-color -- rgba($indigo, .3)
+ * -- in a .25rem ring with the browser's own outline turned off. Without it a
+ * keyboard reader opening this menu got Chrome's default outline on the origin
+ * and nothing that looked like this site; with it, the control that owns the
+ * open panel is marked the way the rest of the site marks focus.
+ */
+.site-nav .site-nav-link:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgb(76 96 216 / 0.3);
 }
 
 /* Bootstrap's caret: a .3em triangle with .255em of space before it. */
@@ -332,6 +313,49 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0.5rem 0;
   border: 0;
   border-top: 1px solid rgb(255 255 255 / 0.14);
+}
+
+@media (min-width: 1200px) {
+  .site-nav-toggler {
+    display: none;
+  }
+
+  .site-nav-collapse {
+    display: flex;
+    flex-basis: auto;
+    width: auto;
+    margin-inline-start: auto;
+  }
+
+  /*
+   * `dropdown-menu-xl-end`: every panel in this bar hangs from the right edge
+   * of the control that opens it, which is what keeps the last one on the
+   * page. Left-aligned is the Bootstrap default and is what this had, so each
+   * panel sat one control to the right of where the origin puts it.
+   */
+  .site-nav .site-dropdown {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+  }
+}
+
+/*
+ * Collapsed, a dropdown is part of the flow rather than a panel floating over
+ * the page -- .navbar .dropdown-menu is `position: static` below the expand
+ * breakpoint, and a panel absolutely positioned inside a full-width block
+ * would otherwise hang off the side of a phone.
+ */
+@media (max-width: 1199.98px) {
+  .site-nav .site-dropdown {
+    position: static;
+    padding-inline-start: 1rem;
+    background: none;
+    border: 0;
+  }
+
+  .site-nav .site-dropdown-item {
+    white-space: normal;
+  }
 }
 
 /*
@@ -530,6 +554,25 @@ h1, h2, h3, h4, h5, h6 {
     color 0.15s ease-in-out,
     background-color 0.15s ease-in-out,
     border-color 0.15s ease-in-out;
+}
+
+/* $btn-focus-width, and the per-variant ring Bootstrap mixes from the
+ * button's own colour. */
+.site-btn:focus-visible {
+  outline: 0;
+}
+
+.site-btn-primary:focus-visible {
+  box-shadow: 0 0 0 0.25rem rgb(103 120 222 / 0.49);
+}
+
+.site-btn-outline-primary:focus-visible {
+  box-shadow: 0 0 0 0.25rem rgb(76 96 216 / 0.5);
+}
+
+.site-btn-outline-light:focus-visible,
+.site-btn-outline-secondary:focus-visible {
+  box-shadow: 0 0 0 0.25rem rgb(248 249 250 / 0.5);
 }
 
 .site-btn-lg {
