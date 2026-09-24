@@ -134,6 +134,22 @@ describe('the shell behaves the way the Rails shell does', () => {
     expect(stylesheet).toContain('z-index:1020');
   });
 
+  test('every page tells Turbo it is not part of the Rails application', () => {
+    // The Rails half ships Turbo Drive, which intercepts a link into this
+    // bundle, swaps the body and merges the heads -- leaving Bootstrap and
+    // Tailwind loaded together. Measured on dev: the bar went from 60.4px to
+    // 74.6 crossing one way, and coming back left Tailwind's preflight on the
+    // Rails page, where `img { height: auto }` made the logo 64px instead of
+    // 32. One click and the site was broken until a reload.
+    //
+    // A page that loses this meta rejoins that application silently, so it is
+    // asserted on every page rather than on the layout.
+    for (const [loc, path, html] of PAGES) {
+      expect(html, `${loc}${path} does not opt out of Turbo`)
+        .toMatch(/<meta name="turbo-visit-control" content="reload"/);
+    }
+  });
+
   test('the navigation collapses at the same width the origin does', () => {
     // navbar-expand-lg. Without it the brand and seven menu items cannot fit a
     // phone and the whole document scrolls sideways -- 625px of page in a

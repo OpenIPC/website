@@ -39,6 +39,26 @@ const metaDescription = description ?? t('site.default_meta_description');
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>{title}</title>
 
+  {/*
+    These pages are not part of Rails' Turbo application, and Turbo has to be
+    told so.
+
+    The Rails half ships Turbo Drive. It intercepts a link into this bundle,
+    fetches the page, swaps the body and MERGES the heads -- so Bootstrap stays
+    loaded and Tailwind's stylesheet is added next to it. Measured on dev
+    before this was here: clicking from /open-wall to /get-started gave the bar
+    74.6px instead of 60.4, and clicking back left Tailwind's preflight applied
+    to the Rails page, where `img { height: auto }` made the logo 64px and the
+    navigation bar 90. A visitor who crossed the seam once had a broken site
+    until they reloaded.
+
+    `turbo-visit-control: reload` is Turbo's own way to say "do a full
+    navigation to me". It belongs here rather than on the Rails links: this is
+    the half that is not the application, and a rule stated once on every page
+    of it cannot be forgotten on a link somebody adds later.
+  */}
+  <meta name="turbo-visit-control" content="reload" />
+
   <meta name="description" content={metaDescription} />
   <meta name="theme-color" content="#0f1422" />
   {noindex && <meta name="robots" content="noindex, nofollow" />}
