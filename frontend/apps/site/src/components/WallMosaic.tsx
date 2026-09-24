@@ -1,20 +1,22 @@
-import { useEffect, useState } from 'preact/hooks';
 
 /**
- * The home page's Open Wall mosaic, filled in on load (#160).
+ * The home page's Open Wall mosaic (#160).
  *
- * The Rails page read `Snapshot.latest_per_camera(limit: 5)` on every request.
- * A prerendered page cannot, so it ships the "no signal" placeholders the
- * Rails template itself falls back to when the query returns nothing, and
- * swaps in real cameras once /api/v1/wall/latest answers.
+ * Placeholders, and for now only placeholders -- which is what home.html.erb
+ * itself falls back to when its query returns nothing, so the page is the one
+ * the Rails page renders in that state rather than a new one.
  *
- * Placeholders first and always: the tiles are in the prerendered HTML, so the
- * page is complete before any JavaScript runs and the grid never reflows from
- * nothing. A visitor with JavaScript off, or a wall with no uploads in the
- * last day, sees exactly what the Rails page shows them.
+ * It briefly fetched /api/v1/wall/latest, an endpoint this branch added. #267
+ * then landed on master and took the other direction: Open Wall frames are
+ * delivered over a channel to a client that rendered the page, and no address
+ * returns a camera image at all -- WallImage, Snapshot#wall_image and nginx's
+ * /wall/ location are gone. An endpoint handing out image URLs would put back
+ * exactly what that change removed, so it went with the rebase.
+ *
+ * Filling these tiles on a prerendered page now means obtaining a WallGrant
+ * without Rails having rendered the page, which is a question for whoever
+ * takes #165 rather than something to improvise here.
  */
-interface Tile { href: string; src: string; caption: string }
-
 export default function WallMosaic({ tiles, placeholder, placeholderAlt, cta, ctaHref }: {
   /** How many tiles the mosaic holds. */
   tiles: number;
@@ -24,44 +26,9 @@ export default function WallMosaic({ tiles, placeholder, placeholderAlt, cta, ct
   cta: string;
   ctaHref: string;
 }) {
-  const [cameras, setCameras] = useState<Tile[]>([]);
-
-  useEffect(() => {
-    let live = true;
-    fetch('/api/v1/wall/latest', { headers: { accept: 'application/json' } })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => {
-        if (!live || !data || !Array.isArray(data.snapshots)) return;
-        setCameras(data.snapshots
-          .filter((t: Tile) => t && typeof t.href === 'string' && typeof t.src === 'string')
-          .slice(0, tiles));
-      })
-      // The page is correct without them, so there is nothing to report.
-      .catch(() => {});
-    return () => { live = false; };
-  }, [tiles]);
-
-  const blanks = Math.max(0, tiles - cameras.length);
-
   return (
     <div class="grid grid-cols-3 gap-2">
-      {cameras.map((camera, i) => (
-        <a key={camera.href} class="relative block aspect-video overflow-hidden rounded-md bg-ink-2" href={camera.href}>
-          <img
-            class="size-full object-cover"
-            src={camera.src}
-            alt={placeholderAlt}
-            loading={i === 0 ? 'eager' : 'lazy'}
-          />
-          {camera.caption && (
-            <span class="absolute right-0 bottom-0 left-0 bg-ink/70 px-1 py-0.5 text-center font-mono text-[10px] text-white">
-              {camera.caption}
-            </span>
-          )}
-        </a>
-      ))}
-
-      {Array.from({ length: blanks }, (_, i) => (
+      {Array.from({ length: tiles }, (_, i) => (
         <span key={`blank-${i}`} class="relative block aspect-video overflow-hidden rounded-md bg-ink-2">
           <img class="size-full object-cover opacity-50" src={placeholder} alt={placeholderAlt} loading="lazy" />
         </span>

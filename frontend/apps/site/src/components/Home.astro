@@ -7,9 +7,10 @@
  * same way the Rails page renders when that state is missing -- which is a
  * state the Rails page already handles, not a new one:
  *
- *   * the wall mosaic ships the Open Wall's "no signal" placeholders -- what
- *     home.html.erb itself falls back to when the query returns nothing -- and
- *     swaps in real cameras from /api/v1/wall/latest on load.
+ *   * the wall mosaic ships the Open Wall's "no signal" placeholders, which is
+ *     what home.html.erb itself falls back to when its query returns nothing.
+ *     Filling them needs a WallGrant, and #267 made that something only a
+ *     client that rendered the page in Rails can obtain -- see WallMosaic.
  *   * the backer count under the closing band is fetched on load, not baked.
  *     SupportStats caps the page's own HTTP freshness precisely so no page
  *     outlives the count printed on it, and a number baked into a bundle could
@@ -74,8 +75,12 @@ const PILLARS = [
       </div>
 
       <div>
+        {/*
+          No client directive: with the fetch gone this renders the same markup
+          every time, so hydrating it would ship an island to re-draw what the
+          server already drew.
+        */}
         <WallMosaic
-          client:idle
           tiles={5}
           placeholder={noSignal.src}
           placeholderAlt={t('snapshots.index.no_signal')}
