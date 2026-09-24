@@ -162,6 +162,11 @@ try {
         }
 
         for (const a of document.querySelectorAll('a')) {
+          // A dropdown control is an anchor with `href="#"` and role=button --
+          // Bootstrap's own markup, and what the navigation bar reproduces. It
+          // is a control, not a link that forgot where it was going.
+          if (a.getAttribute('role') === 'button' && a.hasAttribute('aria-expanded')) continue;
+
           const href = a.getAttribute('href');
           if (!href || href.trim() === '' || href === '#') {
             out.push(`link with no destination: ${(a.textContent || '').trim().slice(0, 40)}`);

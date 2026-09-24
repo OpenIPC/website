@@ -76,7 +76,7 @@ const alt = alternates(path);
             <a class="site-nav-link" href={item.url}>{item.label}</a>
           ) : (
             <>
-              <button type="button" class="site-nav-link site-caret" aria-expanded="false" aria-haspopup="true">{item.label}</button>
+              <a class="site-nav-link site-caret" href="#" role="button" aria-expanded="false" aria-haspopup="true">{item.label}</a>
               <ul class="site-dropdown">
                 {item.children?.map((child) => (
                   child.type === 'parent' ? (
@@ -112,9 +112,9 @@ const alt = alternates(path);
         against the origin.
       */}
       <li class="site-nav-item relative">
-        <button type="button" class="site-nav-link site-caret" aria-expanded="false" aria-haspopup="true" aria-label="Language selection">
+        <a class="site-nav-link site-caret" href="#" role="button" aria-expanded="false" aria-haspopup="true" aria-label="Language selection">
           <span class="inline-block size-4 align-[-.15rem]" set:html={translate} />
-        </button>
+        </a>
         <ul class="site-dropdown site-dropdown-end">
           {Object.entries(alt).map(([code, target]) => (
             <li>
@@ -136,7 +136,12 @@ const alt = alternates(path);
 <script>
   // Bootstrap's dropdown, in the twelve lines this needs: one open at a time,
   // click to toggle, click away or Escape to close.
-  const toggles = [...document.querySelectorAll<HTMLButtonElement>('.site-nav .site-caret')];
+  // An anchor with role="button", which is the control _navbar.html.erb uses.
+  // Not cosmetic: Bootstrap focuses the control when the panel opens, and a
+  // browser draws its focus ring for an activated link where it withholds one
+  // from a button clicked with a mouse. With a <button> here the origin
+  // outlined the open control and this bar did not.
+  const toggles = [...document.querySelectorAll<HTMLAnchorElement>('.site-nav .site-caret')];
 
   function closeAll(except?: Element) {
     for (const t of toggles) {
@@ -147,16 +152,18 @@ const alt = alternates(path);
 
   for (const toggle of toggles) {
     toggle.addEventListener('click', (event) => {
+      event.preventDefault();
       event.stopPropagation();
       const open = toggle.getAttribute('aria-expanded') === 'true';
       closeAll(toggle);
       toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+      toggle.focus();
     });
   }
 
   document.addEventListener('click', () => closeAll());
 
-  function itemsOf(toggle: HTMLButtonElement): HTMLAnchorElement[] {
+  function itemsOf(toggle: HTMLAnchorElement): HTMLAnchorElement[] {
     const panel = toggle.nextElementSibling;
     return panel ? [...panel.querySelectorAll<HTMLAnchorElement>('a')] : [];
   }
