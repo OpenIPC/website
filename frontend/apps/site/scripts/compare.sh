@@ -22,6 +22,10 @@ cd "$(dirname "$0")/../../../.."
 
 PAGE=${1:?usage: compare.sh <path> [width]}
 WIDTH=${2:-1440}
+# AGAINST=https://dev.openipc.org drives a deployed host as side B instead of
+# the tree built here, which is how a deploy is held to production. Set DEV_PW
+# with it; dev is behind basic auth.
+AGAINST=${AGAINST:-}
 ORIGIN=${ORIGIN:-https://openipc.org}
 DB=${OPENIPC_DATABASE_HOST:-astro-test-db}
 NET=${DOCKER_NETWORK:-astro-test-net}
@@ -30,6 +34,8 @@ RAILS_IMAGE=${RAILS_IMAGE:-openipc-website:r81}
 run() { docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp "$@"; }
 
 mkdir -p tmp/shots
+
+[ -n "$AGAINST" ] && SKIP_BUILD=1
 
 if [ -z "$SKIP_BUILD" ]; then
   run -v "$PWD":/w -w /w/frontend/apps/site node:24-bookworm-slim \
@@ -40,12 +46,13 @@ if [ -z "$SKIP_BUILD" ]; then
       bin/rails wizard:export 2>&1 | grep -E 'wrote|Error' || true
 fi
 
-run -e PUPPETEER_CACHE_DIR=/home/pptruser/.cache/puppeteer -v "$PWD":/w \
+run -e PUPPETEER_CACHE_DIR=/home/pptruser/.cache/puppeteer -e "DEV_PW=${DEV_PW:-}" -v "$PWD":/w \
   ghcr.io/puppeteer/puppeteer:latest bash -c \
   "mkdir -p /tmp/s && ln -s /home/pptruser/node_modules /tmp/s/ && \
    cp /w/frontend/apps/site/scripts/compare-with-origin.mjs /tmp/s/ && cd /tmp/s && \
    node compare-with-origin.mjs /w/frontend/apps/site/dist '$PAGE' $WIDTH \
-     --origin '$ORIGIN' --shots /w/tmp/shots ${PROBE:+--probe /w/$PROBE}" 2>&1 | grep -v '^docker:'
+     --origin '$ORIGIN' --shots /w/tmp/shots ${AGAINST:+--against '$AGAINST'} \
+     ${PROBE:+--probe /w/$PROBE}" 2>&1 | grep -v '^docker:'
 
 run -v "$PWD":/w -w /w python:3.12-slim bash -c \
   'pip install -q pillow && python frontend/apps/site/scripts/diff-png.py tmp/shots/a.png tmp/shots/b.png' \

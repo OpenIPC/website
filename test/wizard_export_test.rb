@@ -209,6 +209,24 @@ class WizardExportTest < ActiveSupport::TestCase
     assert_not_empty document['combinations'].select { |e| e['flash_type'] == 'nand' }
   end
 
+  test 'a part that publishes nothing anywhere still has a page for every edition' do
+    soc = @soc
+    soc.define_singleton_method(:available_releases) { |_type| [] }
+    soc.define_singleton_method(:offerable_releases) { [] }
+
+    document = WizardExport.document(soc)
+    editions = document['combinations'].map { |e| e['edition'] }.uniq.sort
+
+    # `use_published_release!` returns early when there is nothing to move to,
+    # so whatever a query string asks for is what gets rendered -- with
+    # `nothing_published` over it. Narrowing this list to what the SoC offers
+    # was the bug dev caught: SSC333DE publishes nothing, the list came out as
+    # the one-element fallback, and asking for Ultimate found no page at all
+    # where Rails renders a full one.
+    assert_equal Camera::FW_VERSION.sort, editions
+    document['combinations'].each { |e| assert_includes e['warnings'], 'nothing_published' }
+  end
+
   test 'the page facts the result page renders from are all there' do
     # Which steps this combination has, which bundle it links to and which
     # bootloader variables the hint at the foot names. Facts rather than

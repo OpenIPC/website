@@ -238,7 +238,13 @@ module WizardExport
     # when it finds nothing.
     def editions_for(soc, flash_type, layout)
       published = soc.available_releases(flash_type.start_with?('nor') ? 'nor' : 'nand')
-      offered = published.presence || soc.offerable_releases.presence || [Camera::FW_VERSION.first]
+      # Where this family publishes nothing, every edition this site knows is
+      # reachable, and the union with the other family's covers a name upstream
+      # has that this site does not. Narrowing it to `offerable_releases` was
+      # wrong in both directions and showed on dev: SSC333DE publishes nothing
+      # at all, so the list was the one-element fallback, and asking for
+      # Ultimate found no page where Rails renders a full one.
+      offered = published.presence || (Camera::FW_VERSION + soc.offerable_releases).uniq
 
       # The Ultimate-on-8MB rule, from narrow_to_what_the_menu_offers: dropped
       # only when there is a Lite to fall back to, because naming a tarball
