@@ -28,10 +28,10 @@ const k = (s: string) => t(`pages.majestic_endpoints.${s}`);
         <li>{k('reason_auth')}</li>
       </ul>
       <p class="flex flex-wrap gap-3">
-        <a class="rounded-md bg-brand-blue px-5 py-2.5 font-medium text-white no-underline hover:bg-btn-blue-hover" href={pathFor(locale, '/web-interface')}>
+        <a class="site-btn site-btn-primary" href={pathFor(locale, '/web-interface')}>
           {k('see_webui')}
         </a>
-        <a class="rounded-md border border-hairline px-5 py-2.5 font-medium text-body no-underline hover:border-body-secondary" href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">
+        <a class="site-btn site-btn-outline-secondary" href="https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md">
           {k('see_wiki')}
         </a>
       </p>

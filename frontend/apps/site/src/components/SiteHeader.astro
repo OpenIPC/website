@@ -1,0 +1,168 @@
+---
+/**
+ * app/views/layouts/_navbar.html.erb, to the pixel (#160).
+ *
+ * Not @openipc/ui's HeaderMenu. That component is fancyweb-ng's navigation and
+ * it cannot express this one: the brand is 116x32 at x=72, the links are
+ * 16px/25.6 with 8px of padding, the language control is a 16px globe at
+ * x=1320 and the bar is exactly 60px tall. Measured off the origin rather than
+ * guessed, because "indistinguishable from the Rails page" is the one thing
+ * #160 has to deliver and the header is on every page of it.
+ *
+ * The package still draws the pages -- the partition calculator, the timer,
+ * the QR code -- which is what #158 extracted it for.
+ *
+ * Bootstrap's own numbers, for anyone checking this against the origin:
+ *   .navbar            padding .5rem 0, background $ink, 60px tall here
+ *   .navbar-brand      padding .3rem 0, font-size 1.25rem
+ *   .nav-link          padding .5rem, colour rgba(255,255,255,.78)
+ *   .dropdown-toggle   a .3em caret with .255em of spacing before it
+ *   .dropdown-menu     $ink-2, .5rem radius, .5rem 0 padding
+ *
+ * The dropdowns open on click, as Bootstrap's do -- not on hover. The whole
+ * tree is in the markup and hidden with CSS, so every address is crawlable and
+ * reachable without JavaScript, which is the property #160 needs and the thing
+ * the package's menu did not do.
+ */
+import { LOCALE_NAMES, alternates, pathFor, useTranslations, type Locale } from '../lib/i18n';
+import { menuFor } from '../lib/nav';
+import logo from '../assets/openipc-logo-white.svg';
+import translate from '../assets/icons/translate.svg?raw';
+import github from '../assets/icons/github.svg?raw';
+
+interface Props { locale: Locale; path: string }
+const { locale, path } = Astro.props;
+
+const t = useTranslations(locale);
+void t;
+const items = menuFor(locale);
+const alt = alternates(path);
+---
+
+<nav class="site-nav sticky top-0 z-[1020] border-b border-white/[.08] bg-ink py-2" aria-label="Main">
+  <div class="site-container flex flex-wrap items-center">
+    <a class="site-brand py-[.3rem] text-xl leading-8 text-white no-underline" href={pathFor(locale, '/')}>
+      <img class="inline align-middle" src={logo.src} alt="Image: OpenIPC logo" height="32" width="116" />
+    </a>
+
+    {/*
+      The toggler, and the block it opens. Bootstrap's own markup: a button
+      that is gone from 992px up, and a container that is a block on a phone
+      and the row itself on a desktop.
+    */}
+    <button
+      type="button"
+      class="site-nav-toggler"
+      aria-expanded="false"
+      aria-controls="site-menu"
+      aria-label="Menu"
+    >
+      <svg width="24" height="24" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+        <path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h22M4 15h22M4 23h22" />
+      </svg>
+    </button>
+
+    <div class="site-nav-collapse" id="site-menu">
+    <ul class="flex list-none flex-col gap-0 p-0 lg:flex-row lg:items-center">
+      {items.filter((item) => item.id !== 'github').map((item) => (
+        <li class="site-nav-item relative">
+          {item.type === 'link' ? (
+            <a class="site-nav-link" href={item.url}>{item.label}</a>
+          ) : (
+            <>
+              <button type="button" class="site-nav-link site-caret" aria-expanded="false" aria-haspopup="true">{item.label}</button>
+              <ul class="site-dropdown">
+                {item.children?.map((child) => (
+                  child.type === 'parent' ? (
+                    <>
+                      <li><hr class="site-divider" /></li>
+                      <li class="site-dropdown-header">{child.label}</li>
+                      {child.children?.map((leaf) => (
+                        <li><a class="site-dropdown-item" href={leaf.url}>{leaf.label}</a></li>
+                      ))}
+                      <li><hr class="site-divider" /></li>
+                    </>
+                  ) : (
+                    <li><a class="site-dropdown-item" href={child.url}>{child.label}</a></li>
+                  )
+                ))}
+              </ul>
+            </>
+          )}
+        </li>
+      ))}
+
+      <li class="site-nav-item">
+        <a class="site-nav-link" href="https://github.com/OpenIPC" title="OpenIPC on GitHub">
+          <span class="inline-block size-5 align-[-.25rem]" set:html={github} />
+          <span class="sr-only">GitHub</span>
+        </a>
+      </li>
+
+      {/*
+        The language control, where the Rails navbar puts it: a globe at the
+        end of the bar rather than a strip above it. The strip cost 18px of
+        height on every page, which pushed the whole document down by that much
+        against the origin.
+      */}
+      <li class="site-nav-item relative">
+        <button type="button" class="site-nav-link site-caret" aria-expanded="false" aria-haspopup="true" aria-label="Language selection">
+          <span class="inline-block size-4 align-[-.15rem]" set:html={translate} />
+        </button>
+        <ul class="site-dropdown site-dropdown-end">
+          {Object.entries(alt).map(([code, target]) => (
+            <li>
+              <a
+                class="site-dropdown-item"
+                href={target}
+                hreflang={code}
+                aria-current={code === locale ? 'true' : undefined}
+              >{LOCALE_NAMES[code as Locale]}</a>
+            </li>
+          ))}
+        </ul>
+      </li>
+    </ul>
+    </div>
+  </div>
+</nav>
+
+<script>
+  // Bootstrap's dropdown, in the twelve lines this needs: one open at a time,
+  // click to toggle, click away or Escape to close.
+  const toggles = [...document.querySelectorAll<HTMLButtonElement>('.site-nav .site-caret')];
+
+  function closeAll(except?: Element) {
+    for (const t of toggles) {
+      if (t === except) continue;
+      t.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  for (const toggle of toggles) {
+    toggle.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const open = toggle.getAttribute('aria-expanded') === 'true';
+      closeAll(toggle);
+      toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+    });
+  }
+
+  document.addEventListener('click', () => closeAll());
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeAll();
+  });
+
+  // The toggler, below 992px. `data-open` rather than a class, so the CSS that
+  // shows the block and the CSS that hides it live next to each other.
+  const toggler = document.querySelector<HTMLButtonElement>('.site-nav-toggler');
+  const collapse = document.getElementById('site-menu');
+
+  toggler?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const open = collapse?.hasAttribute('data-open');
+    if (open) collapse?.removeAttribute('data-open');
+    else collapse?.setAttribute('data-open', '');
+    toggler.setAttribute('aria-expanded', open ? 'false' : 'true');
+  });
+</script>

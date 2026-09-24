@@ -3,9 +3,15 @@
 interface Props { title: string; lede?: string }
 const { title, lede } = Astro.props;
 ---
-<header class="mb-8 border-b border-hairline bg-surface-alt py-8 lg:py-12">
+{/*
+  The origin's `.page-header`, measured: 48px of padding, 24px of margin under
+  it, $body-tertiary-bg behind it. The h1 is 36px/43.2 at weight 600 and the
+  lede 20px/32 at weight 300 -- Bootstrap's `.lead`, which is lighter than body
+  text rather than merely larger.
+*/}
+<header class="mb-6 border-b border-hairline bg-surface-alt py-12">
   <div class="site-container">
-    <h1 class="mb-0 text-4xl font-bold">{title}</h1>
-    {lede && <p class="mt-3 mb-0 max-w-[60ch] text-lg text-body-secondary">{lede}</p>}
+    <h1 class="mb-0 text-4xl leading-[1.2] font-semibold">{title}</h1>
+    {lede && <p class="mt-2 mb-0 max-w-[60ch] text-xl leading-[1.6] font-light text-body-secondary">{lede}</p>}
   </div>
 </header>

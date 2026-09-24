@@ -41,7 +41,7 @@ const PARTNER_MAIL = 'mailto:business@openipc.org?subject=Teleoperation%20design
 ---
 
 {/* ---- Cover: the thesis, and the operator mirrored by the robot ---- */}
-<section class="bg-ink py-section text-white lg:py-section-lg">
+<section class="bg-ink py-section text-white/85 lg:py-section-lg">
   <div class="site-container">
     <div class="grid items-center gap-10 lg:grid-cols-2">
       <div>
@@ -49,10 +49,10 @@ const PARTNER_MAIL = 'mailto:business@openipc.org?subject=Teleoperation%20design
         <h1 class="mb-3 text-4xl font-bold lg:text-5xl">{k('hero_title')}</h1>
         <p class="mb-6 text-lg text-white/80">{k('hero_lede')}</p>
         <p class="mb-0 flex flex-wrap gap-3">
-          <a class="rounded-md bg-brand-blue px-6 py-3 text-base font-medium text-white no-underline hover:bg-btn-blue-hover" href={PILOT_MAIL}>
+          <a class="site-btn site-btn-lg site-btn-primary" href={PILOT_MAIL}>
             {k('hero_cta_pilot')}
           </a>
-          <a class="rounded-md border border-white/70 px-6 py-3 text-base font-medium text-white no-underline hover:border-white hover:bg-white/10" href={pathFor(locale, '/low-latency')}>
+          <a class="site-btn site-btn-lg site-btn-outline-light" href={pathFor(locale, '/low-latency')}>
             {k('hero_cta_link')}
           </a>
         </p>
@@ -172,15 +172,15 @@ const PARTNER_MAIL = 'mailto:business@openipc.org?subject=Teleoperation%20design
 </section>
 
 {/* ---- The ask. No top gap: the band follows a tinted full-bleed section. ---- */}
-<section class="bg-ink py-section text-white">
+<section class="bg-ink py-section text-white/85">
   <div class="site-container text-center">
-    <h2 class="mb-4 text-3xl">{k('cta_title')}</h2>
+    <h2 class="mb-4 text-h2">{k('cta_title')}</h2>
     <p class="mx-auto mb-6 max-w-[62ch] text-white/70">{k('cta_text')}</p>
     <p class="mb-0 flex flex-wrap justify-center gap-3">
-      <a class="rounded-md bg-brand-blue px-6 py-3 text-base font-medium text-white no-underline hover:bg-btn-blue-hover" href={PARTNER_MAIL}>
+      <a class="site-btn site-btn-lg site-btn-primary" href={PARTNER_MAIL}>
         {k('cta_primary')}
       </a>
-      <a class="rounded-md border border-white/70 px-6 py-3 text-base font-medium text-white no-underline hover:border-white hover:bg-white/10" href="https://t.me/openipc">
+      <a class="site-btn site-btn-lg site-btn-outline-light" href="https://t.me/openipc">
         {k('cta_secondary')}
       </a>
     </p>

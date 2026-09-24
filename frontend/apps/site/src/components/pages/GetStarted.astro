@@ -38,10 +38,10 @@ const IPCTOOL = 'curl -L -o /tmp/ipctool https://github.com/OpenIPC/ipctool/rele
 
 <div class="site-container">
   <article>
-    <div class="mb-10 grid gap-6 lg:grid-cols-3">
+    <div class="mb-12 grid gap-6 lg:grid-cols-3">
       <div>
-        <h2 class="mb-2 text-xl"><span class="mr-2 font-mono text-brand-blue">1</span>{k('step1_title')}</h2>
-        <p class="mb-0 text-body-secondary" set:html={k('step1_text_html')} />
+        <h2 class="mb-2 text-xl leading-6 font-semibold"><span class="mr-2 font-mono text-brand-blue">1</span>{k('step1_title')}</h2>
+        <p class="mb-4 text-body-secondary" set:html={k('step1_text_html')} />
       </div>
       {/*
         min-w-0, or the page scrolls sideways on a phone. A grid item's
@@ -56,30 +56,30 @@ const IPCTOOL = 'curl -L -o /tmp/ipctool https://github.com/OpenIPC/ipctool/rele
         <Terminal id="ipctool-cmd" title="camera shell" code={IPCTOOL} />
       </div>
       <div>
-        <h2 class="mb-2 text-xl"><span class="mr-2 font-mono text-brand-blue">2</span>{k('step2_title')}</h2>
+        <h2 class="mb-2 text-xl leading-6 font-semibold"><span class="mr-2 font-mono text-brand-blue">2</span>{k('step2_title')}</h2>
         <p class="mb-4 text-body-secondary">{k('step2_text')}</p>
-        <p class="mb-0">
-          <a class="inline-block rounded-md bg-brand-blue px-5 py-2.5 font-medium text-white no-underline hover:bg-btn-blue-hover" href={pathFor(locale, '/supported-hardware')}>
+        <p class="mb-4">
+          <a class="site-btn site-btn-primary" href={pathFor(locale, '/supported-hardware')}>
             {k('cta_find_soc')}
           </a>
         </p>
       </div>
       <div>
-        <h2 class="mb-2 text-xl"><span class="mr-2 font-mono text-brand-blue">3</span>{k('step3_title')}</h2>
-        <p class="mb-0 text-body-secondary">{k('step3_text')}</p>
+        <h2 class="mb-2 text-xl leading-6 font-semibold"><span class="mr-2 font-mono text-brand-blue">3</span>{k('step3_title')}</h2>
+        <p class="mb-4 text-body-secondary">{k('step3_text')}</p>
       </div>
     </div>
 
     {/* Honesty box. */}
-    <div class="mb-10 flex gap-4 rounded-lg border border-accent/40 bg-accent/10 p-5">
-      <Icon name="exclamation-triangle-fill" class="size-6 shrink-0 text-ink" />
+    <div class="mb-12 flex gap-4 rounded-lg border border-[#f8dfc0] bg-[#faecd8] p-4 text-[#5d4018]">
+      <Icon name="exclamation-triangle-fill" class="size-6 shrink-0" />
       <div>
         <h2 class="mb-1 text-base font-semibold">{k('warning_title')}</h2>
         <p class="mb-0" set:html={k('warning_text_html')} />
       </div>
     </div>
 
-    <div class="mb-10 grid items-start gap-10 lg:grid-cols-12">
+    <div class="mb-12 grid items-start gap-12 lg:grid-cols-12">
       <div class="lg:col-span-5">
         <h2 class="mb-3 text-2xl">{k('what_title')}</h2>
         <p class="mb-6 text-body-secondary">{k('what_text')}</p>
@@ -88,7 +88,7 @@ const IPCTOOL = 'curl -L -o /tmp/ipctool https://github.com/OpenIPC/ipctool/rele
       </div>
       <div class="lg:col-span-7">
         <h2 class="mb-4 text-2xl">
-          <a class="text-body no-underline hover:underline" href={pathFor(locale, '/web-interface')}>{k('webui_title')}</a>
+          <a class="text-body" href={pathFor(locale, '/web-interface')}>{k('webui_title')}</a>
         </h2>
         <div class="grid grid-cols-2 gap-4">
           {SCREENS.slice(0, 4).map((screen) => <WebuiTile screen={screen} frame />)}

@@ -95,7 +95,7 @@ const ru = locale === 'ru';
                   <span class="text-body-secondary" set:html={k('paywall_once_html')} />
                 </li>
               </ul>
-              <a class="inline-block rounded-md bg-brand-blue px-5 py-2.5 font-medium text-white no-underline hover:bg-btn-blue-hover" href={PAYWALL} data-event="paywall-checkout">
+              <a class="site-btn site-btn-primary" href={PAYWALL} data-event="paywall-checkout">
                 {k('paywall_button')}
               </a>
             </div>
@@ -108,7 +108,7 @@ const ru = locale === 'ru';
               {k('oc_title')}
             </h2>
             <p class="mb-4 text-body-secondary" set:html={k('oc_text_html')} />
-            <a class="inline-block rounded-md bg-brand-blue px-5 py-2.5 font-medium text-white no-underline hover:bg-btn-blue-hover" href={OPEN_COLLECTIVE} data-event="oc-checkout">
+            <a class="site-btn site-btn-primary" href={OPEN_COLLECTIVE} data-event="oc-checkout">
               {k('oc_button')}
             </a>
           </div>

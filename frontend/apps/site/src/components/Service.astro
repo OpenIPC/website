@@ -30,17 +30,17 @@ const mailto = `mailto:business@openipc.org?subject=${encodeURIComponent(mailSub
 ---
 
 {/* ---- Cover ---- */}
-<section class="bg-ink py-section text-white lg:py-section-lg">
+<section class="bg-ink py-section text-white/85 lg:py-section-lg">
   <div class="site-container">
     <div class="lg:w-3/4">
       <p class="mb-3 text-sm tracking-[.08em] text-accent uppercase">{tk('eyebrow')}</p>
       <h1 class="mb-3 text-4xl font-bold lg:text-5xl">{tk('hero_title')}</h1>
       <p class="mb-6 max-w-[62ch] text-lg text-white/80">{tk('hero_lede')}</p>
       <p class="mb-0 flex flex-wrap gap-3">
-        <a class="rounded-md bg-brand-blue px-6 py-3 text-base font-medium text-white no-underline hover:bg-btn-blue-hover" href={mailto}>
+        <a class="site-btn site-btn-lg site-btn-primary" href={mailto}>
           {tk('hero_cta_send')}
         </a>
-        <a class="rounded-md border border-white/70 px-6 py-3 text-base font-medium text-white no-underline hover:border-white hover:bg-white/10" href="#engagement">
+        <a class="site-btn site-btn-lg site-btn-outline-light" href="#engagement">
           {tk('hero_cta_how')}
         </a>
       </p>
@@ -139,15 +139,15 @@ const mailto = `mailto:business@openipc.org?subject=${encodeURIComponent(mailSub
 </section>
 
 {/* ---- The ask. The band follows an article on white, so it keeps its gap. ---- */}
-<section class="mt-section bg-ink py-section text-white">
+<section class="mt-section bg-ink py-section text-white/85">
   <div class="site-container text-center">
-    <h2 class="mb-4 text-3xl">{tk('cta_title')}</h2>
+    <h2 class="mb-4 text-h2">{tk('cta_title')}</h2>
     <p class="mx-auto mb-6 max-w-[62ch] text-white/70">{tk('cta_text')}</p>
     <p class="mb-0 flex flex-wrap justify-center gap-3">
-      <a class="rounded-md bg-brand-blue px-6 py-3 text-base font-medium text-white no-underline hover:bg-btn-blue-hover" href={mailto}>
+      <a class="site-btn site-btn-lg site-btn-primary" href={mailto}>
         {tk('cta_primary')}
       </a>
-      <a class="rounded-md border border-white/70 px-6 py-3 text-base font-medium text-white no-underline hover:border-white hover:bg-white/10" href="https://t.me/openipc">
+      <a class="site-btn site-btn-lg site-btn-outline-light" href="https://t.me/openipc">
         {tk('cta_secondary')}
       </a>
     </p>

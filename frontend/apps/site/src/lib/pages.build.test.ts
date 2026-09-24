@@ -108,15 +108,38 @@ describe('the shell behaves the way the Rails shell does', () => {
     // "it changes when you click a link" failure the cutover exists to avoid.
     // It is also the kind that only shows up once somebody scrolls, which is
     // why it is asserted rather than looked at.
-    const rule = stylesheet.match(/\.site-header\{([^}]*)\}/);
-    expect(rule, '.site-header has no rule of its own in the built CSS').toBeTruthy();
-    expect(rule![1]).toContain('position:sticky');
-    expect(rule![1]).toContain('top:0');
-    // Bootstrap's $zindex-sticky, so the two halves stack their headers
-    // identically -- and so the menu's dropdowns, which are positioned inside
-    // a sticky element and therefore inside its stacking context, open over
-    // the page rather than behind it.
-    expect(rule![1]).toContain('z-index:1020');
+    for (const [loc, path, html] of PAGES) {
+      const nav = html.match(/<nav class="([^"]*site-nav[^"]*)"/);
+      expect(nav, `${loc}${path} renders no site navigation`).toBeTruthy();
+      expect(nav![1], `${loc}${path}'s navigation is not pinned`).toContain('sticky');
+      expect(nav![1]).toContain('top-0');
+      // Bootstrap's $zindex-sticky, so the two halves stack their headers
+      // identically -- and so the bar's dropdowns, which are positioned inside
+      // a sticky element and therefore inside its stacking context, open over
+      // the page rather than behind it.
+      expect(nav![1]).toContain('z-[1020]');
+    }
+
+    expect(stylesheet, 'nothing in the CSS makes `sticky` stick').toContain('position:sticky');
+    expect(stylesheet).toContain('z-index:1020');
+  });
+
+  test('the navigation collapses below a laptop', () => {
+    // navbar-expand-lg. Without it the brand and seven menu items cannot fit a
+    // phone and the whole document scrolls sideways -- 625px of page in a
+    // 390px viewport, on every page of the bundle. It is invisible at desktop
+    // width, which is where a page is usually looked at, so it is asserted.
+    for (const [loc, path, html] of PAGES) {
+      expect(html, `${loc}${path} has no menu button`).toContain('site-nav-toggler');
+      expect(html, `${loc}${path}'s button controls nothing`).toContain('aria-controls="site-menu"');
+      expect(html, `${loc}${path} has no collapsible menu`).toContain('id="site-menu"');
+    }
+
+    const collapsed = stylesheet.match(/\.site-nav-collapse\{([^}]*)\}/);
+    expect(collapsed, 'no .site-nav-collapse rule, so the menu never collapses').toBeTruthy();
+    expect(collapsed![1]).toContain('display:none');
+    // And comes back at Bootstrap's lg breakpoint.
+    expect(stylesheet).toMatch(/@media\s*\(min-width:992px\)/);
   });
 
   test('the whole navigation is in the HTML, not built on hover', () => {
@@ -164,10 +187,17 @@ describe('the shell behaves the way the Rails shell does', () => {
     // @openipc/ui draws Header, HeaderMenu and the dropdown panel on
     // --color-brand-blue. A navigation bar that changes colour when a visitor
     // crosses the seam reads as breakage, and so does a panel that hangs off
-    // the bar in a different colour from it. The override is unlayered on
-    // purpose, and an unlayered rule is exactly the kind a later refactor
-    // drops without noticing.
-    expect(stylesheet).toMatch(/\.site-header \.bg-brand-blue\{background-color:var\(--color-ink\)\}/);
+    // the bar in a different colour from it. SiteHeader.astro draws the bar
+    // itself, on $ink, and the dropdown panel on $ink-2 -- the two colours
+    // _navbar.scss uses -- so this asserts the bar's own class and the value
+    // behind it rather than an override of somebody else's rule.
+    for (const [loc, path, html] of PAGES) {
+      const nav = html.match(/<nav class="([^"]*site-nav[^"]*)"/);
+      expect(nav![1], `${loc}${path}'s navigation is not on ink`).toContain('bg-ink');
+    }
+
+    expect(stylesheet).toMatch(/\.bg-ink\{background-color:var\(--color-ink\)\}/);
+    expect(stylesheet).toMatch(/--color-ink:\s*#0f1422/);
   });
 });
 
@@ -279,7 +309,10 @@ describe('the pages say what they are for', () => {
     // The selector is the card's own link, not every GitHub URL on the page:
     // the prose links the wiki too, and that is not a project.
     for (const locale of LOCALES) {
-      const html = readFileSync(join(dist, pathFor(locale, '/ecosystem'), 'index.html'), 'utf8');
+      const page = readFileSync(join(dist, pathFor(locale, '/ecosystem'), 'index.html'), 'utf8');
+      // Inside <main> only: the navigation bar's GitHub link has the same
+      // shape as a card's and is not a project.
+      const html = page.split('<main')[1]?.split('</main>')[0] ?? '';
       const repos = attrs(html, /href="(https:\/\/github\.com\/[^"]*)"[^>]*>\s*<span[^>]*>\s*<svg/g);
       expect(repos.length, `${locale} /ecosystem renders no project links`).toBeGreaterThan(15);
       for (const repo of repos) {

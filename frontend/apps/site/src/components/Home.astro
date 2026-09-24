@@ -24,7 +24,6 @@
  */
 import Icon from './Icon.astro';
 import LogoWall from './LogoWall.astro';
-import { Image } from 'astro:assets';
 import { pathFor, useTranslations, type Locale } from '../lib/i18n';
 import { partnerRows } from '../lib/partners';
 import { SOC_COUNT, SOC_VENDOR_NAMES } from '../data/catalogue';
@@ -49,17 +48,17 @@ const PILLARS = [
 ---
 
 {/* ---- Hero: tagline + Open Wall mosaic ---- */}
-<section class="bg-ink py-section text-white lg:py-section-lg">
+<section class="bg-ink py-section text-white/85 lg:py-section-lg">
   <div class="site-container">
     <div class="grid items-center gap-12 lg:grid-cols-2">
       <div>
         <h1 class="mb-4 text-4xl font-bold lg:text-5xl">{t('pages.home.hero_title')}</h1>
         <p class="mb-6 text-lg text-white/80">{t('pages.home.hero_lede')}</p>
         <p class="mb-6 flex flex-wrap gap-3">
-          <a class="rounded-md bg-brand-blue px-6 py-3 text-base font-medium text-white no-underline transition-colors hover:bg-btn-blue-hover focus:bg-btn-blue-click" href={p('/get-started')}>
+          <a class="site-btn site-btn-lg site-btn-primary" href={p('/get-started')}>
             {t('pages.home.hero_cta_start')}
           </a>
-          <a class="rounded-md border border-white/70 px-6 py-3 text-base font-medium text-white no-underline transition-colors hover:border-white hover:bg-white/10" href={p('/low-latency')}>
+          <a class="site-btn site-btn-lg site-btn-outline-light" href={p('/low-latency')}>
             {t('pages.home.hero_cta_low_latency')}
           </a>
         </p>
@@ -109,7 +108,7 @@ const PILLARS = [
 {/* ---- Liberation story ---- */}
 <section class="py-section">
   <div class="site-container">
-    <h2 class="mb-12 text-center text-3xl">{t('pages.home.story_title')}</h2>
+    <h2 class="mb-12 text-center text-h2">{t('pages.home.story_title')}</h2>
     <div class="grid gap-8 md:grid-cols-3">
       {[1, 2, 3].map((i) => (
         <div>
@@ -120,7 +119,7 @@ const PILLARS = [
       ))}
     </div>
     <p class="mt-12 mb-0 text-center">
-      <a class="inline-block rounded-md bg-brand-blue px-6 py-3 font-medium text-white no-underline hover:bg-btn-blue-hover" href={p('/get-started')}>
+      <a class="site-btn site-btn-lg site-btn-primary" href={p('/get-started')}>
         {t('pages.home.story_cta')}
       </a>
     </p>
@@ -131,7 +130,7 @@ const PILLARS = [
 <section class="bg-surface-alt py-section">
   <div class="site-container">
     <div class="mb-12 text-center">
-      <h2 class="mb-3 text-3xl">{t('pages.home.pillars_title')}</h2>
+      <h2 class="mb-3 text-h2">{t('pages.home.pillars_title')}</h2>
       <p class="mx-auto max-w-[60ch] text-body-secondary">{t('pages.home.pillars_lede')}</p>
     </div>
     <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -155,7 +154,7 @@ const PILLARS = [
 </section>
 
 {/* ---- Stats band ---- */}
-<section class="bg-ink py-12 text-white">
+<section class="bg-ink py-12 text-white/85">
   <div class="site-container">
     <div class="grid grid-cols-2 gap-8 text-center lg:grid-cols-4">
       <div>
@@ -189,23 +188,23 @@ const PILLARS = [
 {/* ---- For Business teaser ---- */}
 <section class="bg-surface-alt py-section">
   <div class="site-container text-center">
-    <h2 class="mb-3 text-3xl">{t('pages.home.business_title')}</h2>
+    <h2 class="mb-3 text-h2">{t('pages.home.business_title')}</h2>
     <p class="mx-auto mb-6 max-w-[60ch] text-body-secondary">{t('pages.home.business_text')}</p>
-    <a class="inline-block rounded-md border border-brand-blue px-6 py-3 font-medium text-brand-blue no-underline hover:bg-brand-blue hover:text-white" href={p('/business')}>
+    <a class="site-btn site-btn-lg site-btn-outline-primary" href={p('/business')}>
       {t('pages.home.business_cta')}
     </a>
   </div>
 </section>
 
 {/* ---- Closing CTA ---- */}
-<section class="bg-ink py-section text-white">
+<section class="bg-ink py-section text-white/85">
   <div class="site-container text-center">
-    <h2 class="mb-6 text-3xl">{t('pages.home.cta_title')}</h2>
+    <h2 class="mb-6 text-h2">{t('pages.home.cta_title')}</h2>
     <p class="mb-0 flex flex-wrap justify-center gap-3">
-      <a class="rounded-md bg-brand-blue px-6 py-3 text-base font-medium text-white no-underline hover:bg-btn-blue-hover" href={p('/get-started')}>
+      <a class="site-btn site-btn-lg site-btn-primary" href={p('/get-started')}>
         {t('pages.home.cta_primary')}
       </a>
-      <a class="rounded-md border border-white/70 px-6 py-3 text-base font-medium text-white no-underline hover:border-white hover:bg-white/10" href="https://t.me/openipc" data-event="tg-join">
+      <a class="site-btn site-btn-lg site-btn-outline-light" href="https://t.me/openipc" data-event="tg-join">
         {t('pages.home.cta_secondary')}
       </a>
     </p>

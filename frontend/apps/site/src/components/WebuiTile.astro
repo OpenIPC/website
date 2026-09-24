@@ -6,6 +6,17 @@
  * native <dialog>: it needs no library, it is dismissible with Escape by the
  * browser itself, and the eleven lines of script that open it live in
  * ZoomDialog.astro, once per page rather than once per tile.
+ *
+ * The frame bar follows _browser-frame.scss's own numbers -- .45rem/.75rem of
+ * padding, a .3rem gap, .55rem dots -- rather than Tailwind's nearest steps,
+ * which made it 33px tall against the origin's 24.
+ *
+ * The caption sits in a .55rem box because that stylesheet's `span` rule
+ * catches every span in the bar, the title included, and the text overflows
+ * it. That is a defect in the origin -- the caption is meant to read as a
+ * label, not as a fourth dot with words spilling out of it -- reproduced here
+ * because this page has to be indistinguishable from the one it replaces.
+ * Worth fixing in both places, in a change someone can look at.
  */
 import { Image } from 'astro:assets';
 import type { Screen } from '../lib/webui';
@@ -15,11 +26,11 @@ const { screen, frame = false } = Astro.props;
 ---
 <figure class:list={['mb-0', frame && 'overflow-hidden rounded-lg border border-hairline']}>
   {frame && (
-    <div class="flex items-center gap-1.5 border-b border-hairline bg-surface-alt px-3 py-2">
-      <span class="size-2 rounded-full bg-hairline"></span>
-      <span class="size-2 rounded-full bg-hairline"></span>
-      <span class="size-2 rounded-full bg-hairline"></span>
-      <span class="ml-2 font-mono text-xs text-body-secondary">{screen.caption}</span>
+    <div class="flex items-center gap-[.3rem] border-b border-hairline bg-surface-alt px-[.75rem] py-[.45rem]">
+      <span class="size-[.55rem] rounded-full bg-hairline"></span>
+      <span class="size-[.55rem] rounded-full bg-hairline"></span>
+      <span class="size-[.55rem] rounded-full bg-hairline"></span>
+      <span class="ms-2 size-[.55rem] rounded-full bg-hairline font-mono text-[.7rem] text-body-secondary">{screen.caption}</span>
     </div>
   )}
   <Image

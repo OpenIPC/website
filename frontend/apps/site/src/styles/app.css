@@ -32,6 +32,9 @@
   --color-surface-alt: #f4f6fa;
   --color-hairline: #e3e7f0;
 
+  /* $link-hover-color: shift-color($indigo, 20%). */
+  --color-link-hover: #3d4dad;
+
   /* _variables.scss's $font-family-sans-serif and $font-family-monospace.
    * Tailwind's own --font-mono has no IBM Plex Mono in it, which is how every
    * monospace element on the site came to render in the OS default. */
@@ -43,6 +46,38 @@
    * 96 (24rem) but has no 4.5rem step, and the pages are laid out on it. */
   --spacing-section: 4.5rem;
   --spacing-section-lg: 6rem;
+
+  /* _variables.scss's $border-radius ladder. Tailwind's `rounded-lg` is .5rem
+   * and Bootstrap's is .625rem, so every card, terminal and large button on
+   * the site had a slightly tighter corner than the page it replaces. `md`
+   * and `sm` already agree; these two did not. */
+  --radius-lg: 0.625rem;
+  --radius-xl: 1rem;
+
+  /* _variables.scss's heading scale. Tailwind's ladder has no 1.75rem step,
+   * so a bare <h2> written as `text-3xl` is 30px where the Rails page renders
+   * 28 -- two pixels of font on every section title of every page. */
+  --text-h1: 2.25rem;
+  --text-h2: 1.75rem;
+  --text-h3: 1.375rem;
+
+  /* $line-height-base, for body text at every size.
+   *
+   * Bootstrap has one body line-height and applies it whatever the font size;
+   * Tailwind pairs each size with its own -- `text-sm` is 14px in a 20px box
+   * where the Rails page gives it 22.4. Two pixels per line, on every list,
+   * caption and paragraph that carries a size utility, and it is why the
+   * footer ran 25px shorter than the page it replaces. Headings are exempt:
+   * the unlayered rule below gives them 1.2, as $headings-line-height does. */
+  --text-xs--line-height: 1.6;
+  --text-sm--line-height: 1.6;
+  --text-base--line-height: 1.6;
+  --text-lg--line-height: 1.6;
+  --text-xl--line-height: 1.6;
+
+  /* .x-small, the disclaimer's size. */
+  --text-xxs: 0.8125rem;
+  --text-xxs--line-height: 1.6;
 }
 
 @layer base {
@@ -57,10 +92,53 @@
    * block rather than from a global link rule, because a global one would
    * have to be beaten by every dark section and the specificity fight is how
    * the gallery page ended up with unreadable menu labels. */
-  :where(h1, h2, h3, h4) {
-    font-weight: 600;
-    line-height: 1.25;
+  /*
+   * $link-color and $link-decoration.
+   *
+   * Tailwind's preflight makes an anchor inherit its colour and drop its
+   * underline, so a link inside a paragraph rendered as plain text: on
+   * /get-started the word "ipctool" -- which is where a reader goes to get the
+   * tool the page tells them to run -- was indistinguishable from the prose
+   * around it. In a layer, so `no-underline` and a colour utility still win,
+   * which is what the navbar, the footer and the buttons rely on.
+   */
+  a {
+    color: var(--color-brand-blue);
+    text-decoration: underline;
   }
+
+  a:hover {
+    color: var(--color-link-hover);
+  }
+
+  /* $headings-font-weight and the same scale, for a heading with no size
+   * utility on it. */
+  /* Element selectors, not `:where()`: preflight resets these same elements
+   * with `a { color: inherit }` and `h1 { font-size: inherit }`, and a
+   * zero-specificity rule in the same layer loses to it. */
+  h1, h2, h3, h4, h5, h6 { font-weight: 600; }
+
+  h1 { font-size: var(--text-h1); }
+  h2 { font-size: var(--text-h2); }
+  h3 { font-size: var(--text-h3); }
+  h4 { font-size: 1.5rem; }
+  h5 { font-size: 1.25rem; }
+  h6 { font-size: 1rem; }
+}
+
+/*
+ * Bootstrap's $headings-line-height, and deliberately outside every layer.
+ *
+ * Tailwind's `text-2xl` sets a line-height as well as a font-size -- 24px text
+ * in a 32px box -- so a heading styled with it came out 3-4px taller than the
+ * Rails page's, on every heading of every page, which is most of the 40px this
+ * page was running long. A rule in `@layer base` cannot fix that: utilities
+ * beat base whatever their specificity. Unlayered, it beats them, which is the
+ * point and also the catch -- a heading that genuinely wants a different
+ * leading needs `leading-[...]` with `!`, as `leading-[1.2]!`.
+ */
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.2;
 }
 
 /*
@@ -88,62 +166,158 @@
 @media (min-width: 1400px) { .site-container { max-width: 1320px; } }
 
 /*
- * The navigation band is ink, not the package's indigo (#160).
- *
- * @openipc/ui's Header and HeaderMenu are drawn on --color-brand-blue, which
- * is fancyweb-ng's. The Rails navbar is $ink, and while the seam is open a
- * visitor crosses between a static page and a Rails one on every other click
- * -- a navigation bar that changes colour when they do reads as broken rather
- * than as progress, which is the whole argument for #160 being one cutover.
- *
- * Deliberately unlayered: Tailwind emits the package's `bg-brand-blue` into
- * @layer utilities, and an unlayered rule beats a layered one whatever the
- * specificity. That is the same cascade behaviour that made the component
- * gallery's menu labels unreadable by accident; here it is the mechanism, and
- * it is scoped to the header rather than left global.
- *
- * It matches the utility rather than the elements, because the band is not one
- * element: Header, HeaderMenu and the dropdown panel each paint their own, and
- * naming them one at a time left the panel hanging off the bar in a different
- * colour from it.
- *
- * The right home for this is a prop on the package's Header. Until #158's
- * next pass gives it one, the override lives with the site that wants it.
+ * The navigation bar, at app/views/layouts/_navbar.html.erb's measurements
+ * (#160). Every number here was read off the origin; see SiteHeader.astro.
  */
-.site-header .bg-brand-blue {
-  background-color: var(--color-ink);
+
+/*
+ * `navbar-expand-lg`. Below 992px the bar is a brand and a toggler and the
+ * menu is a block underneath them; from 992px the toggler goes and the menu
+ * is the row.
+ *
+ * Not decoration: without it the seven menu items and the brand cannot fit a
+ * phone, and every page in the bundle laid out 625px of content in a 390px
+ * viewport -- the whole document scrolling sideways, on every page, which the
+ * sweep caught and a desktop screenshot never would.
+ */
+.site-nav-collapse {
+  display: none;
+  flex-basis: 100%;
+  width: 100%;
+}
+
+.site-nav-collapse[data-open] {
+  display: block;
+}
+
+/* Bootstrap's .navbar-toggler. */
+.site-nav-toggler {
+  margin-inline-start: auto;
+  padding: 0.25rem 0.75rem;
+  color: rgb(255 255 255 / 0.55);
+  background: none;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+@media (min-width: 992px) {
+  .site-nav-toggler {
+    display: none;
+  }
+
+  .site-nav-collapse {
+    display: flex;
+    flex-basis: auto;
+    width: auto;
+    margin-inline-start: auto;
+  }
 }
 
 /*
- * And the dropdown's edge with it. The package outlines the panel in
- * --color-light-blue, which is a bright line against fancyweb's indigo and a
- * glowing one against ink. Bootstrap's dropdown, which this replaced, has a
- * hairline the same colour as the divider inside it.
+ * Collapsed, a dropdown is part of the flow rather than a panel floating over
+ * the page -- .navbar .dropdown-menu is `position: static` below the expand
+ * breakpoint, and a panel absolutely positioned inside a full-width block
+ * would otherwise hang off the side of a phone.
  */
-.site-header .border-light-blue {
-  border-color: rgb(255 255 255 / 0.14);
+@media (max-width: 991.98px) {
+  .site-nav .site-dropdown {
+    position: static;
+    padding-inline-start: 1rem;
+    background: none;
+    border: 0;
+  }
+
+  .site-nav .site-dropdown-item {
+    white-space: normal;
+  }
+}
+.site-nav .site-nav-link {
+  display: block;
+  padding: 0.5rem;
+  color: rgb(255 255 255 / 0.78);
+  font-size: 1rem;
+  line-height: 1.6;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
 }
 
-/*
- * Pinned, because the Rails navbar is (#160).
- *
- * app/views/layouts/_navbar.html.erb carries Bootstrap's `sticky-top`, so on
- * every page the bundle does not serve -- `/`, /supported-hardware, the Open
- * Wall -- the navigation stays put while the page scrolls. A static page whose
- * navigation scrolls away is the same "it changes when you click a link"
- * failure the whole cutover exists to avoid, and it is the kind that only
- * shows up once somebody scrolls.
- *
- * z-index 1020 is Bootstrap's own $zindex-sticky, so the two halves of the
- * site stack their headers identically. The value matters here: the menu's
- * dropdowns are absolutely positioned inside this element, and a sticky
- * ancestor is a stacking context -- without it they would open behind the
- * page rather than over it.
- */
-.site-header {
-  position: sticky;
-  top: 0;
-  z-index: 1020;
+.site-nav .site-nav-link:hover,
+.site-nav .site-nav-link:focus-visible {
+  color: #fff;
+}
+
+/* Bootstrap's caret: a .3em triangle with .255em of space before it. */
+.site-nav .site-caret::after {
+  content: "";
+  display: inline-block;
+  margin-inline-start: 0.255em;
+  vertical-align: 0.255em;
+  border-top: 0.3em solid;
+  border-right: 0.3em solid transparent;
+  border-bottom: 0;
+  border-left: 0.3em solid transparent;
+}
+
+.site-nav .site-dropdown {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 100%;
+  z-index: 1000;
+  display: none;
+  min-width: 10rem;
+  margin: 0;
+  padding: 0.5rem 0;
+  list-style: none;
+  background-color: var(--color-ink-2);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 0.375rem;
+}
+
+.site-nav .site-dropdown-end {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+
+.site-nav [aria-expanded="true"] + .site-dropdown {
+  display: block;
+}
+
+.site-nav .site-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.25rem 1rem;
+  color: rgb(255 255 255 / 0.78);
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.site-nav .site-dropdown-item:hover,
+.site-nav .site-dropdown-item:focus-visible {
+  color: #fff;
+  background-color: rgb(255 255 255 / 0.08);
+}
+
+.site-nav .site-dropdown-item[aria-current="true"] {
+  font-weight: 600;
+  color: #fff;
+}
+
+.site-nav .site-dropdown-header {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: rgb(255 255 255 / 0.55);
+}
+
+.site-nav .site-divider {
+  margin: 0.5rem 0;
+  border: 0;
+  border-top: 1px solid rgb(255 255 255 / 0.14);
 }
 
 /*
@@ -312,4 +486,94 @@
   font-weight: 600;
   src: url('/fonts/ibm-plex-mono-cyrillic-600-normal.woff2') format('woff2');
   unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+/*
+ * Bootstrap's .btn, .btn-lg and .btn-sm, to the pixel (#160).
+ *
+ * A button assembled out of utilities came out the wrong size on every page:
+ * `px-5 py-2.5 font-medium` is 45.6px tall against the origin's 43.6, and the
+ * band's large button was 48 against 58 because Bootstrap's .btn-lg raises the
+ * font size to 1.25rem and the utility version did not. Three numbers -- the
+ * padding, the font size and the 1px transparent border -- decide the height,
+ * and they are worth stating once rather than re-deriving per call site.
+ *
+ * $btn-padding-y/.x and $btn-font-weight come from the Rails
+ * _variables.scss; the rest is Bootstrap's own default.
+ */
+.site-btn {
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.6;
+  padding: 0.5rem 1.125rem;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    color 0.15s ease-in-out,
+    background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
+}
+
+.site-btn-lg {
+  border-radius: 0.625rem;
+  font-size: 1.25rem;
+  padding: 0.75rem 1.5rem;
+}
+
+.site-btn-sm {
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.site-btn-primary {
+  background-color: var(--color-brand-blue);
+  border-color: var(--color-brand-blue);
+  color: #fff;
+}
+
+.site-btn-primary:hover,
+.site-btn-primary:focus-visible {
+  background-color: var(--color-btn-blue-hover);
+  border-color: var(--color-btn-blue-hover);
+  color: #fff;
+}
+
+/* .btn-outline-light: the band's second button, which inverts on hover. */
+.site-btn-outline-light {
+  border-color: #f8f9fa;
+  color: #f8f9fa;
+}
+
+.site-btn-outline-light:hover,
+.site-btn-outline-light:focus-visible {
+  background-color: #f8f9fa;
+  border-color: #f8f9fa;
+  color: #000;
+}
+
+/* .btn-outline-primary and the hairline outline, same geometry. */
+.site-btn-outline-primary {
+  border-color: var(--color-brand-blue);
+  color: var(--color-brand-blue);
+}
+
+.site-btn-outline-primary:hover,
+.site-btn-outline-primary:focus-visible {
+  background-color: var(--color-brand-blue);
+  color: #fff;
+}
+
+.site-btn-outline-secondary {
+  border-color: var(--color-hairline);
+  color: var(--color-body);
+}
+
+.site-btn-outline-secondary:hover,
+.site-btn-outline-secondary:focus-visible {
+  border-color: var(--color-body-secondary);
 }

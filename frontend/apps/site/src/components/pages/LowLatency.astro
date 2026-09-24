@@ -57,8 +57,8 @@ const FPV_CHAT = 'https://t.me/+BMyMoolVOpkzNWUy';
         <h2 class="mb-3 text-2xl">{k('fpv_title')}</h2>
         <p class="mb-4 text-body-secondary">{k('fpv_text')}</p>
         <p class="flex flex-wrap gap-3">
-          <a class="rounded-md bg-brand-blue px-5 py-2.5 font-medium text-white no-underline hover:bg-btn-blue-hover" href={GUIDE}>{k('cta_guide')}</a>
-          <a class="rounded-md border border-brand-blue px-5 py-2.5 font-medium text-brand-blue no-underline hover:bg-brand-blue hover:text-white" href={FPV_CHAT}>{k('cta_chat')}</a>
+          <a class="site-btn site-btn-primary" href={GUIDE}>{k('cta_guide')}</a>
+          <a class="site-btn site-btn-outline-primary" href={FPV_CHAT}>{k('cta_chat')}</a>
         </p>
       </div>
       <div>
@@ -66,7 +66,7 @@ const FPV_CHAT = 'https://t.me/+BMyMoolVOpkzNWUy';
         <p class="mb-3 text-body-secondary">{k('robotics_text1')}</p>
         <p class="mb-4 text-body-secondary">{k('robotics_text2')}</p>
         <p class="mb-4 flex flex-wrap gap-3">
-          <a class="rounded-md border border-brand-blue px-5 py-2.5 font-medium text-brand-blue no-underline hover:bg-brand-blue hover:text-white" href={pathFor(locale, '/teleoperation')}>
+          <a class="site-btn site-btn-outline-primary" href={pathFor(locale, '/teleoperation')}>
             {k('robotics_cta')}
           </a>
         </p>
