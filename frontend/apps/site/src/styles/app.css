@@ -257,6 +257,15 @@ h1, h2, h3, h4, h5, h6 {
   border-left: 0.3em solid transparent;
 }
 
+/*
+ * The panel is Bootstrap's dark dropdown, not $ink-2.
+ *
+ * The bar carries `data-bs-theme="dark"` on the origin, so the panel takes the
+ * dark theme's own palette -- #212529 behind #dee2e6 text -- rather than the
+ * site's ink. Painting it $ink-2 (#1a2236) made it a navy panel hanging off a
+ * navy bar where the origin's is a neutral dark grey, which is visible the
+ * moment the two are opened next to each other.
+ */
 .site-nav .site-dropdown {
   position: absolute;
   inset-inline-start: 0;
@@ -267,9 +276,11 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0;
   padding: 0.5rem 0;
   list-style: none;
-  background-color: var(--color-ink-2);
-  border: 1px solid rgb(255 255 255 / 0.14);
+  background-color: #212529;
+  border: 1px solid rgb(255 255 255 / 0.15);
   border-radius: 0.375rem;
+  /* $dropdown-spacer: the panel hangs .125rem clear of the control. */
+  margin-top: 0.125rem;
 }
 
 .site-nav .site-dropdown-end {
@@ -285,7 +296,7 @@ h1, h2, h3, h4, h5, h6 {
   display: block;
   width: 100%;
   padding: 0.25rem 1rem;
-  color: rgb(255 255 255 / 0.78);
+  color: #dee2e6;
   font-size: 1rem;
   line-height: 1.6;
   white-space: nowrap;
@@ -294,8 +305,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .site-nav .site-dropdown-item:hover,
 .site-nav .site-dropdown-item:focus-visible {
-  color: #fff;
-  background-color: rgb(255 255 255 / 0.08);
+  color: #dee2e6;
+  background-color: #2b3035;
 }
 
 .site-nav .site-dropdown-item[aria-current="true"] {
@@ -304,15 +315,16 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .site-nav .site-dropdown-header {
+  margin: 0;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  color: rgb(255 255 255 / 0.55);
+  color: #6c757d;
 }
 
 .site-nav .site-divider {
   margin: 0.5rem 0;
   border: 0;
-  border-top: 1px solid rgb(255 255 255 / 0.14);
+  border-top: 1px solid rgb(255 255 255 / 0.15);
 }
 
 @media (min-width: 1200px) {

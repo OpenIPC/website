@@ -82,7 +82,7 @@ const alt = alternates(path);
                   child.type === 'parent' ? (
                     <>
                       <li><hr class="site-divider" /></li>
-                      <li class="site-dropdown-header">{child.label}</li>
+                      <li><h6 class="site-dropdown-header">{child.label}</h6></li>
                       {child.children?.map((leaf) => (
                         <li><a class="site-dropdown-item" href={leaf.url}>{leaf.label}</a></li>
                       ))}
