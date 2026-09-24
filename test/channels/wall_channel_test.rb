@@ -44,8 +44,22 @@ class WallChannelTest < ActionCable::Channel::TestCase
     transmissions.filter_map { |t| t['frame'] || t[:frame] }
   end
 
+  ADDRESS = '203.0.113.50'
+
+  def grant_for(ids, variants: WallChannel::VARIANTS)
+    WallGrant.issue(pairs: ids.product(Array(variants)).map { |i, v| WallGrant.pair(i, v) })
+  end
+
+  # Every test below subscribes through a grant, because a subscription without
+  # one is refused outright and would make the whole file fail for one reason.
+  # The grant names the frames the test wrote, which is what a page render
+  # would have produced.
+  def subscribe_granted(ids: @ids, **options)
+    subscribe(grant: grant_for(ids, **options))
+  end
+
   test 'a subscriber gets the frames it asks for' do
-    subscribe
+    subscribe_granted
     perform :request_frames, 'variant' => 'thumb', 'ids' => @ids
 
     assert_equal @ids.size, frames_from(transmissions).size
@@ -64,7 +78,7 @@ class WallChannelTest < ActionCable::Channel::TestCase
     @ids << id
     WallImage.store_bytes(id, :thumb, big)
 
-    subscribe
+    subscribe_granted
     perform :request_frames, 'variant' => 'thumb', 'ids' => [id]
 
     sent = transmissions.last
@@ -105,7 +119,7 @@ class WallChannelTest < ActionCable::Channel::TestCase
     @ids << id
     WallImage.store_bytes(id, :thumb, big)
 
-    subscribe
+    subscribe_granted
     perform :request_frames, 'variant' => 'thumb', 'ids' => [id]
 
     masked = Base64.strict_decode64(transmissions.last['frame'] || transmissions.last[:frame])
@@ -127,7 +141,7 @@ class WallChannelTest < ActionCable::Channel::TestCase
 
   test 'an address is refused once it has taken its hourly budget' do
     spend(WallChannel::FRAME_BUDGET)
-    subscribe
+    subscribe_granted
     perform :request_frames, 'variant' => 'thumb', 'ids' => @ids
 
     assert_empty frames_from(transmissions)
@@ -141,13 +155,13 @@ class WallChannelTest < ActionCable::Channel::TestCase
   test 'a new connection does not reset the budget' do
     spend(WallChannel::FRAME_BUDGET)
 
-    subscribe
+    subscribe_granted
     perform :request_frames, 'variant' => 'thumb', 'ids' => @ids
     assert_empty frames_from(transmissions)
 
     # A fresh connection, a fresh connection_id, the same address.
     stub_connection connection_id: 'fedcba9876543210', client_ip: '203.0.113.50'
-    subscribe
+    subscribe_granted
     perform :request_frames, 'variant' => 'thumb', 'ids' => @ids
 
     assert_empty frames_from(transmissions),
@@ -169,7 +183,7 @@ class WallChannelTest < ActionCable::Channel::TestCase
   end
 
   test 'an unknown variant is refused rather than guessed at' do
-    subscribe
+    subscribe_granted
     perform :request_frames, 'variant' => '../../etc/passwd', 'ids' => @ids
 
     assert_empty frames_from(transmissions)
@@ -179,7 +193,7 @@ class WallChannelTest < ActionCable::Channel::TestCase
   # The ids come from the page and are therefore untrusted. Anything that is
   # not a public_id must never reach the filesystem.
   test 'an id that is not a public id never reaches the disk' do
-    subscribe
+    subscribe_granted
     perform :request_frames, 'variant' => 'thumb',
                              'ids' => ['../../../etc/passwd', 'nope', "#{@ids.first}/.."]
 
@@ -187,7 +201,7 @@ class WallChannelTest < ActionCable::Channel::TestCase
   end
 
   test 'a request larger than a camera day is refused whole' do
-    subscribe
+    subscribe_granted
     perform :request_frames, 'variant' => 'thumb',
                              'ids' => Array.new(WallChannel::MAX_PER_REQUEST + 1) { Snapshot.generate_public_id }
 
@@ -206,8 +220,12 @@ class WallChannelTest < ActionCable::Channel::TestCase
   # missing file and a file that disappears mid-read are one code path, and one
   # test covers both.
   test 'a frame with no file on disk is simply absent' do
-    subscribe
-    perform :request_frames, 'variant' => 'thumb', 'ids' => [Snapshot.generate_public_id]
+    missing = Snapshot.generate_public_id
+    # Granted on purpose. Without that the id is filtered by the grant before
+    # it ever reaches read_frame, and this test would pass while proving
+    # nothing about the ENOENT rescue it exists for.
+    subscribe_granted(ids: [missing])
+    perform :request_frames, 'variant' => 'thumb', 'ids' => [missing]
 
     assert_empty frames_from(transmissions)
   end
@@ -219,7 +237,7 @@ class WallChannelTest < ActionCable::Channel::TestCase
   # hero could be drawn from a 240x135 thumbnail.
   test 'a frame says which variant it is' do
     WallImage.store_bytes(@ids.first, :fullhd, MINIMAL_JPEG)
-    subscribe
+    subscribe_granted
 
     perform :request_frames, 'variant' => 'fullhd', 'ids' => [@ids.first]
     perform :request_frames, 'variant' => 'thumb', 'ids' => [@ids.first]

@@ -70,7 +70,28 @@ class WallChannel < ApplicationCable::Channel
 
   def subscribed
     @served = Set.new
+    # Start holding nothing, so every path that is not an accepted grant ends
+    # in frames being refused. An uninitialised set that meant "unrestricted"
+    # would fail open, which on this channel means handing a stranger the wall.
+    revoke
+    return reject_without_grant unless accept_grant(params[:grant])
+
     stream_from "wall:#{connection_id}"
+  end
+
+  # A later page on the same socket.
+  #
+  # Turbo Drive swaps the body and keeps the connection, so a reader who moves
+  # from the gallery to a camera page needs the new page's grant to reach the
+  # channel without tearing the socket down. `reject` is a subscription-time
+  # verb and would raise here, so a bad grant mid-session drops the client back
+  # to holding none: the socket stays open, and nothing more is served on it.
+  def use_grant(data)
+    return if accept_grant(data['grant'])
+
+    revoke
+    logger.warn("wall_grant_refused #{client_key} sent an invalid grant mid-session")
+    transmit({ error: 'no grant' })
   end
 
   def unsubscribed
@@ -92,10 +113,82 @@ class WallChannel < ApplicationCable::Channel
     ids = Array(data['ids']).map(&:to_s).grep(Snapshot::PUBLIC_ID_FORMAT).uniq
     return reject_request('too many frames in one request') if ids.size > MAX_PER_REQUEST
 
+    # The intersection is the whole mechanism, and it is over PAIRS rather than
+    # over ids and variants separately. A client may only ever receive a frame
+    # at a size some page actually drew it at: checking the two independently
+    # let the fullhd permission from a snapshot page's hero be spent on the
+    # icon2 ids of its archive strip, which returns a full-resolution view of a
+    # camera the reader had only been shown as a thumbnail.
+    ids.select! { |id| granted?(id, variant) }
+
     ids.each { |id| deliver(id, variant) }
   end
 
   private
+
+  # Frames a single socket may hold permission for at once.
+  #
+  # Grants accumulate rather than replace, and that is a deliberate reversal of
+  # the first draft. Replacing looks tidier and breaks readers: a page sends
+  # its frames in chunks 250 ms apart, and the lazy archive turbo-frame lands
+  # in the middle of that with a grant of its own -- so the outer page's
+  # remaining chunks would be refused and a reader would watch half a gallery
+  # fail to paint. That is the one failure this work must not cause.
+  #
+  # Accumulating costs little. Retention was never the defence: a harvester
+  # that wanted a wider set would open a second socket, which is free. The
+  # defence is that a grant only ever names frames a page actually rendered,
+  # and that holds however many grants are stacked. The cap is here so a very
+  # long session cannot grow without bound, not as a security boundary.
+  GRANT_RETENTION = 1_024
+
+  # Accepts a grant, adding what it allows to what this socket already holds.
+  def accept_grant(token)
+    if grants_disabled?
+      @unrestricted = true
+      return true
+    end
+
+    granted = WallGrant.verify(token)
+    return false if granted.nil?
+
+    @granted = Set.new if @granted.size >= GRANT_RETENTION
+    @granted.merge(granted)
+    true
+  end
+
+  def revoke
+    @unrestricted = false
+    @granted = Set.new
+  end
+
+  def granted?(id, variant)
+    @unrestricted || @granted.include?(WallGrant.pair(id, variant))
+  end
+
+  # The escape hatch, and the reason it exists.
+  #
+  # If a grant is ever wrong the wall goes blank for everyone, which this
+  # file's own header calls the one failure this work must not cause. Flipping
+  # an environment variable on the host restores frames in the time it takes to
+  # restart a container, without a rollback and without a deploy. It is a
+  # switch for an emergency, not a configuration: when it is on, anybody may
+  # take frames again.
+  def grants_disabled?
+    ENV['WALL_GRANTS_DISABLED'] == '1'
+  end
+
+  def reject_without_grant
+    # Logged at warn and counted, because this is now the number that says
+    # whether the harvest has stopped: before this change 94% of the clients
+    # on the channel had never loaded a page.
+    # `wall_grant_refused` is a marker, not prose: deploy/log-report.sh counts
+    # it to produce the bare-socket figure, which is the number this whole
+    # change is judged on. Do not reword it without changing the report.
+    logger.warn("wall_grant_refused #{client_key} subscribed without a valid grant")
+    transmit({ error: 'no grant' })
+    reject
+  end
 
   def deliver(id, variant)
     return if over_budget?

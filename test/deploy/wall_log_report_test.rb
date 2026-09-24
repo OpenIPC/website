@@ -49,9 +49,16 @@ class WallLogReportTest < ActiveSupport::TestCase
     opens = lines.index { |l| l.start_with?('cat ') }
     assert opens, 'could not find the line that opens the awk program'
 
+    # Ends at the line that closes the quote, NOT at the end of the file. The
+    # first version assumed the awk program was the last thing in the script;
+    # when a plain shell section was appended after it, every apostrophe in
+    # that perfectly legal shell was reported as a quoting bug.
+    offset = lines[(opens + 1)..].index { |l| l.rstrip == "'" }
+    assert offset, 'could not find the line that closes the awk program'
+
     # Report the line number in the FILE, not an offset into the awk body, so
     # the message can be acted on without counting.
-    body = lines[(opens + 1)..-2].to_a
+    body = lines[(opens + 1), offset].to_a
     offenders = body.each_with_index
                     .select { |line, _| line.include?("'") }
                     .map { |line, i| "line #{opens + 2 + i}: #{line.strip}" }
