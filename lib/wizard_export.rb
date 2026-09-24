@@ -169,6 +169,13 @@ module WizardExport
     def write_all(dir: OUT_DIR)
       FileUtils.mkdir_p(dir)
 
+      # One file at a time, in place, rather than a whole directory staged and
+      # switched. A run that dies half way therefore leaves half the files on
+      # the new set and half on the old, and that is the right trade rather
+      # than an oversight: a page fetches one SoC's file and never combines
+      # two, so a file this run did not reach is a file an hour older -- which
+      # is what every file here is allowed to be. What no reader ever sees is
+      # half a file; each is written beside its name and renamed over it.
       written = Soc.includes(:vendor).find_each.map do |soc|
         document = document(soc)
         # Written and renamed, so a reader never sees half a file -- the same

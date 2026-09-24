@@ -12,7 +12,9 @@ import type { ComponentChildren } from 'preact';
 import type { Block, Combination, WizardDocument } from '../../lib/wizard-export';
 import { fillHoles, type WizardSettings } from '../../lib/wizard-input';
 import { toPermalink } from '../../lib/wizard-input';
-import { flashArguments, stockBootloaderOnly, type FlashMessage } from '../../lib/wizard-result';
+import {
+  flashArguments, flashFamily, stockBootloaderOnly, type FlashMessage,
+} from '../../lib/wizard-result';
 import SupportCount from '../SupportCount.tsx';
 import Icon from './Icon.tsx';
 import Terminal from './Terminal.tsx';
@@ -666,8 +668,18 @@ function StockBootloader({ t, doc, facts, settings, combination }: {
 }) {
   const install = (key: string, options?: Record<string, unknown>) =>
     t(`firmware.installation.${key}`, options);
-  const bundle = doc.published.find((one) => one.release === settings.firmwareVersion)
-    ?? doc.published[0];
+  /*
+   * The bundle for this edition AND this chip.
+   *
+   * Matching on the edition alone was wrong: ten SoCs publish `ultimate` for
+   * both NOR and NAND, so the first entry could hand a NAND visitor the NOR
+   * filename and the NOR URL. None of them is bootloader-less today, which is
+   * the only reason it was not already visible -- found by review on #276.
+   */
+  const family = flashFamily(settings.flashType);
+  const bundle = doc.published.find(
+    (one) => one.release === settings.firmwareVersion && one.flash_type === family,
+  ) ?? doc.published.find((one) => one.flash_type === family);
 
   return (
     <>

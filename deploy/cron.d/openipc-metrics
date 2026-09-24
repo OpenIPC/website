@@ -19,7 +19,24 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 23 * * * *  root  /usr/local/sbin/openipc-oc-stats >>/var/log/openipc-oc-stats.log 2>&1
 
 # The wizard's command blocks, one file per SoC (#164). Hourly, at :41, after
-# the release index it reads and clear of the backer count at :23. A failed run
-# leaves the previous files alone: the page keeps showing the last good set,
-# which is what the index said an hour ago rather than nothing at all.
+# the release index it reads and clear of the backer count at :23.
+#
+# A failed run leaves the files that were already written on the new set and
+# the rest on the old one. That is a mixture and it is deliberately not worth
+# a snapshot directory: a page fetches one SoC's file and never combines two,
+# so an untouched file is a file an hour older -- which is what every file here
+# is allowed to be anyway. What a failed run never leaves is a half-written
+# file; each one is written beside its name and renamed over it.
 41 * * * *  root  /usr/local/sbin/openipc-wizard-export >>/var/log/openipc-wizard.log 2>&1
+
+# And dev's own, from dev's own container into the directory the dev vhost
+# serves (#164). Five minutes earlier, so the two runs do not sit on the
+# release index at the same moment.
+#
+# Without this line dev only ever had an export because somebody ran the
+# exporter by hand: the wrapper defaults to production's container and
+# production's directory, so every scheduled run wrote production's copy and
+# dev's went stale the moment the release index moved -- and a fresh dev host
+# had none at all, which the wizard pages show as "the commands could not be
+# loaded". Found by review on #276.
+36 * * * *  root  WIZARD_EXPORT_CONTAINER=openipc-web-dev WIZARD_EXPORT_DIR=/srv/www/shared/wizard-dev /usr/local/sbin/openipc-wizard-export >>/var/log/openipc-wizard-dev.log 2>&1

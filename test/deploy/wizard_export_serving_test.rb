@@ -68,6 +68,24 @@ class WizardExportServingTest < ActiveSupport::TestCase
 
     assert_path_exists runner
     assert_match(/openipc-wizard-export/, cron, 'nothing refreshes the export')
+
+    # Both environments, on their own schedules. The wrapper defaults to
+    # production's container and production's directory, so a single entry
+    # refreshed production and left dev on whatever somebody last ran by hand
+    # -- and a fresh dev host with no export at all shows "the commands could
+    # not be loaded" on every wizard page. Found by review on #276.
+    dev = cron.lines.find { |line| line.include?('openipc-web-dev') }
+    assert dev, 'nothing refreshes the export dev serves'
+    assert_includes dev, 'WIZARD_EXPORT_DIR=/srv/www/shared/wizard-dev',
+                    "dev's scheduled export does not write where the dev vhost reads"
+    assert_match(%r{>>/var/log/openipc-wizard-dev\.log}, dev,
+                 "dev's export shares production's log, so a failure in one reads as the other")
+
+    prod = cron.lines.find { |line| line.include?('openipc-wizard-export') && !line.include?('-dev') }
+    assert prod, 'nothing refreshes the export production serves'
+    assert_not_includes prod, 'WIZARD_EXPORT_CONTAINER',
+                        "production's export should take the wrapper's defaults"
+
     assert_match(%r{install .*wizard-export\.sh}, installer, 'the runner is never installed')
     assert_match(%r{install -d .*\$wizarddir}, installer, 'nothing creates the directory nginx reads')
     assert_match(%r{install -d .*\$wizarddevdir}, installer, "nothing creates dev's own directory")

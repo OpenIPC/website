@@ -3,7 +3,7 @@ import {
   allowedEditions, allowedLayouts, generateMac, narrow, naturalLayout, openOn,
   useAnOfferedFlashType, type Availability,
 } from './wizard-menu';
-import { stockBootloaderOnly } from './wizard-result';
+import { flashFamily, stockBootloaderOnly } from './wizard-result';
 
 // What a typical SoC has published, and two that are not typical.
 const BOTH: Availability = { nor: ['lite', 'ultimate'], nand: ['ultimate'] };
@@ -176,5 +176,34 @@ describe('installing from the bootloader the camera already has', () => {
 
   test('a SoC with nothing published has nothing to install', () => {
     expect(stockBootloaderOnly(soc({ availability: 'none' }))).toBe(false);
+  });
+});
+
+describe('which published bundle a page links to', () => {
+  // Ten SoCs publish `ultimate` for both NOR and NAND. Matching on the edition
+  // alone handed whichever came first, so a NAND visitor could be given the NOR
+  // filename and URL -- found by review on #276. None of the ten is
+  // bootloader-less today, which is the only reason it was not yet visible.
+  const published = [
+    { flash_type: 'nor', release: 'ultimate', url: 'nor-ultimate', filename: 'nor-ultimate.tgz' },
+    { flash_type: 'nand', release: 'ultimate', url: 'nand-ultimate', filename: 'nand-ultimate.tgz' },
+    { flash_type: 'nor', release: 'lite', url: 'nor-lite', filename: 'nor-lite.tgz' },
+  ];
+  const pick = (chip: string, release: string) => {
+    const family = flashFamily(chip);
+    return (published.find((one) => one.release === release && one.flash_type === family)
+      ?? published.find((one) => one.flash_type === family))?.url;
+  };
+
+  test('the chip decides as much as the edition does', () => {
+    expect(pick('nor16m', 'ultimate')).toBe('nor-ultimate');
+    expect(pick('nand', 'ultimate')).toBe('nand-ultimate');
+  });
+
+  test('an edition that family does not publish falls back inside the family', () => {
+    // Never across it: a NAND camera handed a NOR tarball is a download that
+    // cannot work, and the filename is what the reader types into tftp.
+    expect(pick('nand', 'lite')).toBe('nand-ultimate');
+    expect(pick('nor8m', 'lite')).toBe('nor-lite');
   });
 });
