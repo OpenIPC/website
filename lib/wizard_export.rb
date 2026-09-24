@@ -75,6 +75,34 @@ module WizardExport
         'model' => soc.model,
         'vendor' => soc.vendor.urlname,
         'load_address' => soc.load_address,
+        # The board a firmware is built for, which is not always the model:
+        # Ingenic ships one build per family. The bundle filenames the page
+        # links to are built from it.
+        'board' => soc.board,
+        # What the SoC page decides between before it shows a form at all --
+        # whether upstream publishes a bootloader and firmware for this chip.
+        # Read from the release index, so it is a runtime answer like the
+        # editions above and cannot be baked into the page.
+        'instructable' => soc.instructable?,
+        'availability' => soc.availability.to_s,
+        'bootloader_published' => soc.bootloader_published?,
+        'uboot_filename' => soc.uboot_filename,
+        'linux_filename' => soc.linux_filename,
+        'bl_url' => soc.bl_url,
+        # One entry per bundle upstream actually publishes, for the links the
+        # page offers when it cannot offer instructions. Built here rather
+        # than from a filename template for the reason the view says: a link
+        # this site cannot honour reads as our download being broken.
+        'published' => soc.published_availability.flat_map do |flash_type, releases|
+          releases.map do |release|
+            {
+              'flash_type' => flash_type,
+              'release' => release,
+              'url' => soc.fw_url(release, flash_type),
+              'filename' => soc.linux_filename_for(release, flash_type),
+            }
+          end
+        end,
         # Step 4: the patterns the form validates with, exported once so the
         # static form cannot grow a third copy.
         #
@@ -97,6 +125,14 @@ module WizardExport
         # choice that cannot be chosen.
         'offerable' => soc.offerable_releases,
         'default_flash_chip' => soc.default_flash_chip,
+        # Which flash types get a page of their own rather than commands, by
+        # the same rule `update` applies. Said here rather than left to the
+        # renderer to rediscover, because rediscovering it is how the two
+        # halves come to disagree about a camera somebody is about to flash.
+        'special_pages' => Camera::FLASH_CHIP.filter_map do |flash_type|
+          page = special_page(soc, flash_type)
+          [flash_type, page] if page
+        end.to_h,
         # Each distinct block once, named by the order it was first seen.
         'blocks' => @pool,
         'mac_variants' => @variant_pool,
@@ -188,17 +224,29 @@ module WizardExport
       layout == 'nor8m' || flash_type.in?(%w[nor16m nor32m])
     end
 
+    # Which editions this flash type can be asked for.
+    #
+    # The published ones where upstream publishes any: `use_published_release!`
+    # moves anything else onto the first of them, so no other edition can reach
+    # a rendered page.
+    #
+    # Where it publishes none, that method returns early and the asked edition
+    # is what gets rendered -- with `nothing_published` over it -- so every
+    # edition the menu lists is reachable and each one needs a page here. This
+    # is the tail a hand-edited query string reaches, and covering it is what
+    # lets the static wizard answer from the export alone instead of guessing
+    # when it finds nothing.
     def editions_for(soc, flash_type, layout)
       published = soc.available_releases(flash_type.start_with?('nor') ? 'nor' : 'nand')
-      return published if published.empty?
+      offered = published.presence || soc.offerable_releases.presence || [Camera::FW_VERSION.first]
 
       # The Ultimate-on-8MB rule, from narrow_to_what_the_menu_offers: dropped
       # only when there is a Lite to fall back to, because naming a tarball
       # upstream never built is worse than the size warning.
       if layout == 'nor8m' && published.include?('lite')
-        published - ['ultimate']
+        offered - ['ultimate']
       else
-        published
+        offered
       end
     end
 
@@ -240,6 +288,16 @@ module WizardExport
         'sd_card_slot' => sd,
         'flash_size' => camera.flash_size,
         'layout_size' => camera.layout_size,
+        # What the result page shows around the commands: which steps it has,
+        # which bundle it links to, and which bootloader variables the hint at
+        # the bottom names. Facts rather than markup -- the page is rendered at
+        # the other end, in the visitor's language.
+        'flash_family' => camera.flash_type_type,
+        'firmware_url' => view.firmware_url(camera),
+        'firmware_filename' => view.firmware_filename(camera),
+        'default_bootloader_layout' => camera.default_bootloader_layout?,
+        'layout_commands' => camera.layout_commands.any?,
+        'bootloader_variables' => camera.bootloader_variables,
         'blocks' => blocks_for(camera),
         'mac_variant' => mac_variant_for(soc, flash_type: flash_type, layout: layout,
                                               edition: edition, interface: interface, sd: sd),

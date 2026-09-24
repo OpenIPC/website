@@ -35,10 +35,12 @@ function fill(template: string, vars: Record<string, string | number>): string {
   );
 }
 
-export default function SupportCount({ goal, labels, class: className = '' }: {
+export default function SupportCount({ goal, labels, class: className = '', onInk = false }: {
   goal: number;
   labels: Labels;
   class?: string;
+  /** `[data-bs-theme=dark]`: the meter on one of the site's ink bands. */
+  onInk?: boolean;
 }) {
   const [stats, setStats] = useState<SupportStats | null>(null);
 
@@ -77,19 +79,26 @@ export default function SupportCount({ goal, labels, class: className = '' }: {
       {/*
         A meter, not a progress bar: this measures people against a target
         somebody chose, and `progress` would announce it to a screen reader as
-        a task completing. The fill is the accent on a lighter step of the same
-        hue -- never green or amber, which would say "healthy" or "warning"
-        about a number that is neither.
+        a task completing.
+
+        The colours are _support.scss's, measured rather than chosen: the track
+        is the brand blue at 12% and the fill is the brand blue itself, with a
+        lighter fill and a white track on ink. The fill was the amber accent
+        here, which says "warning" about a number that is neither -- and did
+        not match the same meter on the Rails half of the site.
       */}
       <div
-        class="h-2 w-full overflow-hidden rounded-full bg-brand-blue/15"
+        class={`h-2 w-full overflow-hidden rounded ${onInk ? 'bg-white/14' : 'bg-brand-blue/12'}`}
         role="meter"
         aria-valuenow={meterValue}
         aria-valuemin={0}
         aria-valuemax={goal}
         aria-label={fill(labels.meter, { backers: stats.backers, goal })}
       >
-        <span class="block h-full rounded-full bg-accent" style={`width: ${percent}%`} />
+        <span
+          class={`block h-full rounded-[inherit] ${onInk ? 'bg-[#7988e2]' : 'bg-brand-blue'}`}
+          style={`width: ${percent}%`}
+        />
       </div>
 
       <p class="mt-2 mb-0 text-sm text-body-secondary">

@@ -18,6 +18,9 @@
         "th_status": "Build status",
         "title": "Supported Hardware by SoC"
       },
+      "show": {
+        "title": "Installation Guide"
+      },
       "soc": {
         "firmware_only": "Firmware only — flash through the stock bootloader",
         "generate_guide": "Generate an installation guide",

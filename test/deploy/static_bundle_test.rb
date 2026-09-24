@@ -323,12 +323,11 @@ class StaticBundleTest < ActiveSupport::TestCase
     MESSAGE
   end
 
-  test 'the wizard the catalogue links to is a route Rails still has' do
-    # rails-paths.ts carries a pattern as well as a list (#162): every row of
-    # the catalogue links one address per SoC --
-    # /cameras/vendors/<vendor>/socs/<soc> -- which is Rails' until #163. A
-    # list of 126 strings would be a second copy of the catalogue, so the
-    # frontend matches a shape and this asserts the shape is real.
+  test 'the download the wizard links to is a route Rails still has' do
+    # rails-paths.ts carries a pattern as well as a list: one address per SoC
+    # that the bundle links to and Rails owns. Until #164 that was the wizard
+    # itself; now the wizard is a page here and what is left under that tree is
+    # the firmware download, which never leaves Rails.
     #
     # Not by re-running the TypeScript regex in Ruby: a regex parsed out of one
     # language and executed in another tests the parser. What matters here is
@@ -336,15 +335,15 @@ class StaticBundleTest < ActiveSupport::TestCase
     # quietly dropped the pattern that lets them through.
     ts = Rails.root.join('frontend/apps/site/src/lib/rails-paths.ts').read
 
-    assert_match(/RAILS_PATTERNS/, ts, 'rails-paths.ts no longer carries the wizard pattern')
-    assert_match(%r{cameras\\?/vendors}, ts, "the pattern no longer names the wizard's tree")
+    assert_match(/RAILS_PATTERNS/, ts, 'rails-paths.ts no longer carries the download pattern')
+    assert_match(/download_full_image/, ts, 'the pattern no longer names the download')
 
     # Asked of the router itself: `routed_paths` holds the static addresses,
     # and this one carries two parameters.
     helper = Rails.application.routes.url_helpers
-    assert_equal '/cameras/vendors/probe/socs/ps1000',
-                 helper.cameras_vendor_soc_path(vendor_id: 'probe', id: 'ps1000'),
-                 'the catalogue links at an address config/routes.rb does not route'
+    assert_equal '/cameras/vendors/probe/socs/ps1000/download_full_image',
+                 helper.download_full_image_cameras_vendor_soc_path(vendor_id: 'probe', id: 'ps1000'),
+                 'the wizard links a download at an address config/routes.rb does not route'
   end
 
   test 'the baked support goal is the one config/support_goal.yml sets' do

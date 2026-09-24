@@ -40,8 +40,10 @@ class WizardExportTest < ActiveSupport::TestCase
 
     assert_operator combinations.size, :>, 20, 'the menu offers more than this'
     combinations.each do |entry|
-      assert_equal %w[blocks edition flash_size flash_type layout_size mac_variant
-                      network_interface partition_layout sd_card_slot warnings].sort,
+      assert_equal %w[blocks bootloader_variables default_bootloader_layout edition
+                      firmware_filename firmware_url flash_family flash_size flash_type
+                      layout_commands layout_size mac_variant network_interface
+                      partition_layout sd_card_slot warnings].sort,
                    entry.keys.sort
       assert_includes Camera::FLASH_CHIP, entry['flash_type']
       assert_includes Camera::NET_IFACE, entry['network_interface']
@@ -190,17 +192,46 @@ class WizardExportTest < ActiveSupport::TestCase
     on_bigger.each { |e| assert_includes e['warnings'], 'no_lite_layout' }
   end
 
-  test 'a NAND-only part says nothing is published for NOR' do
+  test 'a NAND-only part still carries its NOR pages, saying nothing is published' do
     soc = @soc
     soc.define_singleton_method(:available_releases) { |type| type == 'nand' ? ['ultimate'] : [] }
 
     document = WizardExport.document(soc)
     nor = document['combinations'].select { |e| e['flash_type'].start_with?('nor') }
 
-    # Nothing published means no edition to enumerate, so the combination is
-    # not offered at all -- which is the menu's behaviour too.
-    assert_empty nor, 'NOR combinations were enumerated for a part with no NOR build'
+    # The menu will not offer these -- the chip is disabled in it -- but a
+    # hand-edited query string reaches them and `update` renders the full page
+    # with `nothing_published` over it. Enumerating them is what lets the
+    # static wizard answer from the export alone instead of guessing when it
+    # finds nothing; leaving them out was how it came to render an empty page.
+    assert_not_empty nor, 'a NOR page a query string can reach was not enumerated'
+    nor.each { |e| assert_includes e['warnings'], 'nothing_published' }
     assert_not_empty document['combinations'].select { |e| e['flash_type'] == 'nand' }
+  end
+
+  test 'the page facts the result page renders from are all there' do
+    # Which steps this combination has, which bundle it links to and which
+    # bootloader variables the hint at the foot names. Facts rather than
+    # markup: the static wizard renders them in the visitor's language, and
+    # anything it had to work out for itself is a chance for the two halves to
+    # disagree about a camera somebody is about to flash.
+    entry = document['combinations'].find { |e| e['flash_type'] == 'nor16m' && e['partition_layout'] == 'nor16m' }
+
+    assert_equal 'nor', entry['flash_family']
+    assert_equal 16, entry['layout_size']
+    assert_equal false, entry['default_bootloader_layout'], '16MB is not the bootloader default'
+    assert_equal true, entry['layout_commands']
+    assert_equal %w[uknor16m urnor16m setnor16m], entry['bootloader_variables']
+    assert_match %r{^https://github.com/OpenIPC/firmware/releases/download/latest/},
+                 entry['firmware_url']
+    assert_equal File.basename(entry['firmware_url']), entry['firmware_filename']
+  end
+
+  test 'the document says what the SoC page decides between before it shows a form' do
+    %w[instructable availability bootloader_published uboot_filename linux_filename
+       bl_url published board special_pages].each do |key|
+      assert document.key?(key), "the export does not carry #{key}"
+    end
   end
 
   test 'the MAC changes the shape of the output, and the export carries both' do

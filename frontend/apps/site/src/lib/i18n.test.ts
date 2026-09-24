@@ -28,13 +28,17 @@ describe('the catalogue', () => {
         expect(keys).not.toContain(forbidden);
       }
 
-      // `cameras` is admitted two subtrees at a time, not whole (#162): the
-      // catalogue's table and row are here and the wizard's 27 strings are
-      // not, because the wizard is still Rails until #163 and a translator
-      // should not be shown strings no page in this bundle can use.
+      // `cameras` is admitted a subtree at a time, not whole (#162): the
+      // catalogue's table and row are here and the wizard's are not. The
+      // wizard has its own dictionary since #164 -- it is an island, so its
+      // copy has to reach the browser as data rather than be resolved into
+      // the HTML -- and the one leaf of it here is the page <title>, which
+      // the layout does resolve at build time.
       const cameras = (cat as unknown as Record<string, Record<string, unknown>>).cameras;
       expect(Object.keys(cameras)).toEqual(['socs']);
-      expect(Object.keys(cameras.socs as Record<string, unknown>).sort()).toEqual(['index', 'soc']);
+      const socs = cameras.socs as Record<string, unknown>;
+      expect(Object.keys(socs).sort()).toEqual(['index', 'show', 'soc']);
+      expect(socs.show).toEqual({ title: expect.any(String) });
       const pages = (cat as unknown as Record<string, Record<string, unknown>>).pages;
       expect(Object.keys(pages)).not.toContain('admin');
 

@@ -37,6 +37,13 @@ function hardwarePaths(): PagePath[] {
       path: `/cameras/vendors/${vendor.urlname}`,
       titleKey: 'cameras.socs.index.title',
     })),
+
+    // One wizard per SoC (#164). 126 of them, and the address is the one
+    // Rails has: a link anyone has shared still opens the page it opened.
+    ...VENDORS.flatMap((vendor) => vendor.socs.map((soc) => ({
+      path: `/cameras/vendors/${vendor.urlname}/socs/${soc.urlname}`,
+      titleKey: 'cameras.socs.show.title',
+    }))),
   ];
 }
 

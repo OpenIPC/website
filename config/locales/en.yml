@@ -24,6 +24,9 @@ en:
         th_status: Build status
         title: Supported Hardware by SoC
       show:
+        export_unreachable: "The installation commands for this camera could not be loaded, so this page cannot show them right now. It is this site's fault, not your camera's — nothing has gone wrong with the hardware."
+        export_unreachable_link: "Try again"
+        mac_already_set: "There's a value in MAC address field. Please empty the field and try again."
         stock_bootloader_html: "The camera keeps its own bootloader, so install this by flashing the kernel and root filesystem from it. The <a href=\"https://github.com/OpenIPC/wiki/blob/master/en/installation.md\">installation guide</a> covers that path."
         unavailable_hlp_html: "We have a %{name} board and need someone to do the work. If you write C for embedded Linux, <a href=\"/community\">the chat</a> is where to start."
         unavailable_html: "There is no OpenIPC build for %{name} yet."
@@ -90,6 +93,7 @@ en:
   firmware:
     info_html: If you want to learn more about what the %{commands} commands do, run <code>printenv</code> in the bootloader console.
     installation:
+      do_not_paste: "# Enter commands line by line! Do not copy and paste multiple lines at once!"
       attention: Attention!
       backup:
         info: OpenIPC U-Boot overwrites the original crypto partition making it impossible to revert to the factory firmware unless you have a full flash backup for this particular camera! To create a full firmware backup start a TFTP server and run these commands in bootloader shell.

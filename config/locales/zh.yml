@@ -24,6 +24,9 @@ zh:
         th_status: 构建状态
         title: SoC 支持的硬件
       show:
+        export_unreachable: "无法加载这颗芯片的安装命令，因此本页暂时无法显示它们。这是本站的问题，与您的摄像机无关——硬件没有任何故障。"
+        export_unreachable_link: "重试"
+        mac_already_set: "MAC 地址栏已有内容。请先清空该栏再试。"
         stock_bootloader_html: "相机保留原厂引导程序，因此从它刷入内核和根文件系统即可。<a href=\"https://github.com/OpenIPC/wiki/blob/master/en/installation.md\">安装指南</a>介绍了这条路径。"
         unavailable_hlp_html: "我们有 %{name} 的板子，缺的是动手做的人。如果你写嵌入式 Linux 的 C，请从<a href=\"/zh/community\">聊天室</a>开始。"
         unavailable_html: "%{name} 目前还没有 OpenIPC 构建。"
@@ -90,6 +93,7 @@ zh:
   firmware:
     info_html: 如果您想详细了解 %{commands} 命令的作用，请在引导加载程序控制台中执行<code>printenv</code> 。
     installation:
+      do_not_paste: "# 请逐行输入命令！不要一次复制粘贴多行！"
       attention: 注意！
       backup:
         info: OpenIPC U-Boot 会覆盖原始的加密分区，因此无法恢复为出厂固件，除非您拥有此特定摄像机的完整闪存备份！要创建完整的固件备份，请启动 TFTP 服务器并在引导加载程序 shell 中执行这些命令。

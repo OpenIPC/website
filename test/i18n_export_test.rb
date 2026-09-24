@@ -11,10 +11,11 @@ require Rails.root.join('lib/i18n_export')
 # thing and frontend/apps/site/src/i18n/*.json says another.
 class I18nExportTest < ActiveSupport::TestCase
   test 'the exported catalogue is what the locale files say today' do
-    stale = I18n.available_locales.reject do |locale|
-      path = I18nExport.path_for(locale)
-      File.exist?(path) && File.read(path) == I18nExport.json_for(locale)
-    end
+    stale = I18n.available_locales.flat_map do |locale|
+      [[I18nExport.path_for(locale), I18nExport.json_for(locale)],
+       [I18nExport.wizard_path_for(locale), I18nExport.wizard_json_for(locale)]]
+    end.reject { |path, json| File.exist?(path) && File.read(path) == json }
+      .map { |path, _| File.basename(path) }
 
     assert_empty stale,
                  "#{stale.join(', ')} out of date. config/locales/*.yml changed without the " \
@@ -27,6 +28,61 @@ class I18nExportTest < ActiveSupport::TestCase
 
     I18n.available_locales.each do |locale|
       assert_path_exists I18nExport.path_for(locale)
+      assert_path_exists I18nExport.wizard_path_for(locale)
+    end
+  end
+
+  test 'the wizard dictionary carries the wizard and nothing else' do
+    # The island imports this file, so every string in it is downloaded by
+    # anyone who opens a SoC page. It is held to exactly WIZARD's subtrees for
+    # the same reason the catalogue is held to its allow-list: a namespace that
+    # arrives whole puts strings nobody renders in front of every translator,
+    # and here it also puts them on the wire.
+    I18n.available_locales.each do |locale|
+      catalogue = I18nExport.wizard_catalogue(locale)
+
+      I18nExport::WIZARD.each do |path|
+        node = path.inject(catalogue) { |parent, key| parent.is_a?(Hash) ? parent[key] : nil }
+
+        assert_not_nil node, "#{locale} did not export #{path.join('.')}"
+      end
+
+      walk = lambda do |node, prefix|
+        return unless node.is_a?(Hash)
+        return if I18nExport::WIZARD.any? { |path| path.size <= prefix.size && path == prefix[0, path.size] }
+
+        node.each_key do |key|
+          here = prefix + [key]
+          assert I18nExport::WIZARD.any? { |path| path[0, here.size] == here },
+                 "#{locale}: wizard.json carries #{here.join('.')} and nothing asked for it"
+          walk.call(node[key], here)
+        end
+      end
+      walk.call(catalogue, [])
+    end
+  end
+
+  test 'the two dictionaries overlap only where both halves render the string' do
+    # Both files come out of config/locales in one pass, so a string in both
+    # cannot disagree with itself. What an overlap costs is bytes, and these
+    # six are the ones worth their weight: the layout resolves the page title
+    # at build time while the island renders the rest of that subtree at
+    # runtime, the island draws the breadcrumb every other page draws from
+    # `nav`, and the "ask about this hardware" list reads the community page's
+    # own description of each room rather than keeping a second wording.
+    #
+    # The assertion is the list, so widening it is a decision somebody makes
+    # rather than something that happens.
+    expected = %w[
+      cameras.socs.show.title
+      nav.home nav.vendors
+      pages.community.channel_en pages.community.channel_fpv pages.community.channel_ru
+    ].sort
+
+    I18n.available_locales.each do |locale|
+      both = flatten(I18nExport.catalogue(locale)).keys & flatten(I18nExport.wizard_catalogue(locale)).keys
+
+      assert_equal expected, both.sort, "#{locale} exports #{both.join(', ')} in both files"
     end
   end
 
@@ -101,9 +157,10 @@ class I18nExportTest < ActiveSupport::TestCase
     # backend stores every key as a symbol. Neither survives JSON, and a
     # silent nil in a catalogue is a blank page rather than an error.
     I18n.available_locales.each do |locale|
-      round_tripped = JSON.parse(I18nExport.json_for(locale))
-      assert_equal I18nExport.catalogue(locale), round_tripped,
+      assert_equal I18nExport.catalogue(locale), JSON.parse(I18nExport.json_for(locale)),
                    "#{locale} does not survive a JSON round trip"
+      assert_equal I18nExport.wizard_catalogue(locale), JSON.parse(I18nExport.wizard_json_for(locale)),
+                   "#{locale}'s wizard dictionary does not survive a JSON round trip"
     end
   end
 
@@ -111,7 +168,7 @@ class I18nExportTest < ActiveSupport::TestCase
     # English is the fallback, so a key missing there is missing everywhere.
     # The frontend's t() throws on it at build time; this says so earlier, and
     # in the language of the locale files.
-    en = flatten(I18nExport.catalogue(:en))
+    en = flatten(I18nExport.catalogue(:en)).merge(flatten(I18nExport.wizard_catalogue(:en)))
     blank = en.select { |_, v| v.nil? || (v.respond_to?(:empty?) && v.empty?) }
 
     assert_empty blank.keys, "empty English strings: #{blank.keys.take(5).join(', ')}"

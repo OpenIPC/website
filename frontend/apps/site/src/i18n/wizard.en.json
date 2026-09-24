@@ -1,0 +1,191 @@
+{
+  "activemodel": {
+    "attributes": {
+      "camera": {
+        "camera_ip_address": "Camera IP address",
+        "camera_mac_address": "Camera MAC address",
+        "firmware_version": "Firmware version",
+        "flash_type": "Type and size of flash memory chip",
+        "network_interface": "Network interface",
+        "partition_layout": "Partition layout",
+        "sd_card_slot": "SD card slot",
+        "server_ip_address": "TFTP server IP address",
+        "soc_id": "System-on-Chip"
+      }
+    }
+  },
+  "activerecord": {
+    "help": {
+      "camera": {
+        "flash_type": "If not sure, select NOR 8M.",
+        "partition_layout": "Follows the chip unless you change it. The 8MB layout on a larger chip leaves the rest of the flash to the overlay, but only fits the Lite edition."
+      }
+    }
+  },
+  "cameras": {
+    "socs": {
+      "hi3536dv100_is_weird": {
+        "paragraph1": "The installation of OpenIPC firmware on a HiSilicon NVR requires a specific procedure that is not included in this guide.",
+        "paragraph2": "Please refer to the detailed instructions available on our Wiki at",
+        "subtitle": "on an NVR with %{soc_name} SoC and %{flash_type} SPI flash chip"
+      },
+      "show": {
+        "bootloader": "OpenIPC Bootloader",
+        "bundle": "OpenIPC Linux (%{name})",
+        "camera_ip_address_title": "four 8-bit fields separated by periods",
+        "camera_mac_address_help": "Optional. Leave it empty and the camera gives itself a stable unique address on first boot. Fill it in only to keep an address the camera already has — the one on its label.",
+        "camera_mac_address_title": "six 8-bit hex fields separated by columns or dashes",
+        "export_unreachable": "The installation commands for this camera could not be loaded, so this page cannot show them right now. It is this site's fault, not your camera's — nothing has gone wrong with the hardware.",
+        "export_unreachable_link": "Try again",
+        "for": "for %{name}",
+        "generate_button": "Generate Installation Guide",
+        "generate_mac": "Or generate a random one.",
+        "mac_already_set": "There's a value in MAC address field. Please empty the field and try again.",
+        "no_bootloader_alert": "OpenIPC publishes firmware for the %{name}, but not a bootloader for it. Both the guided installation and the ready-made flash image begin by writing an OpenIPC bootloader, so neither can be offered for this SoC. The firmware bundle below is the part that does exist.",
+        "notes": "Notes",
+        "paragraph1": "Please enter the camera configuration in the provided form and press the \"Generate Installation Guide\" button. On the next page, you will find the binary files and the commands you have to execute for the installation of the OpenIPC firmware on the camera.",
+        "paragraph2": "Do not overlook this part. You may think that it is not necessary since you are not going to return to the dark past, but we assure you that the stock firmware will still be needed for restoring missing settings, drivers, and further research.",
+        "server_ip_address_title": "four 8-bit fields separated by periods",
+        "stock_bootloader_html": "The camera keeps its own bootloader, so install this by flashing the kernel and root filesystem from it. The <a href=\"https://github.com/OpenIPC/wiki/blob/master/en/installation.md\">installation guide</a> covers that path.",
+        "subtitle": "Downloads",
+        "title": "Installation Guide",
+        "title2": "Save your stock firmware!",
+        "toolchain": "OpenIPC Toolchain",
+        "unavailable_hlp_html": "We have a %{name} board and need someone to do the work. If you write C for embedded Linux, <a href=\"/community\">the chat</a> is where to start.",
+        "unavailable_html": "There is no OpenIPC build for %{name} yet.",
+        "unavailable_mvp_html": "There is an early %{name} build that does not yet do enough to publish. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>.",
+        "unavailable_neq_html": "We have the vendor SDK for %{name} but no board to develop on, and that is the only thing in the way. If you have one to spare, say so in <a href=\"/community\">the chat</a> — a donated board is how most of the supported list got here. <a href=\"/donate\">A donation</a> buys one just as well. What happens once a board arrives is on the <a href=\"/stages-of-firmware-development\">development stages</a> page.",
+        "unavailable_rnd_html": "Work on %{name} is at the research stage — we are reading the SDK and finding out what is possible. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>.",
+        "unavailable_wip_html": "%{name} is being worked on now. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>."
+      },
+      "sigmastar_nand_is_weird": {
+        "paragraph1": "The installation of OpenIPC firmware on a SigmaStar module with NAND flash memory requires a specific procedure that is not included in this guide.",
+        "paragraph2": "Please refer to the detailed instructions available on our Wiki at"
+      },
+      "update": {
+        "advanced_instruction_link": "Advanced installation instruction for experts",
+        "files_download_alert": "If you have any problems accessing downloadable files, please feel free to contact us on our Telegram channel.",
+        "sdcard_required_0": "You will need an SD card to perform this step. Existing content of the SD card will be destroyed.",
+        "sdcard_required_1": "You will need an SD card to perform this step. Format the SD card to FAT32 and copy the downloaded file to the root directory on the card.",
+        "sdcard_required_2": "You will need an SD card to perform this step. Format the SD card to FAT32 and copy the downloaded file to the root directory on the card.",
+        "sdcard_required_3": "You will need an SD card to perform this step. Format the SD card to FAT32 and extract files from the downloaded bundle to the root directory on the card."
+      },
+      "warnings": {
+        "edition_not_published": "OpenIPC does not publish a %{edition} build for this SoC on %{flash} flash. Showing %{shown} instead.",
+        "eight_meg_chip": "8MB Flash ROM can only be flashed with Lite or FPV edition!",
+        "eight_meg_layout": "The 8MB partition layout leaves 5MB for the rootfs, which only the Lite and FPV editions fit. Choose the 16MB layout to install Ultimate on this chip.",
+        "layout_changed": "The 16MB partition layout needs a 16MB chip -- its rootfs alone ends at 0xD50000. Showing the %{size}MB layout instead.",
+        "no_lite_chip": "The Ultimate edition does not fit an 8MB flash chip, and OpenIPC publishes no Lite build for this SoC on NOR. These instructions cannot produce a working camera on 8MB flash -- this SoC needs a larger chip.",
+        "no_lite_layout": "The Ultimate edition does not fit the 8MB partition layout, and OpenIPC publishes no Lite build for this SoC on NOR. Choose the 16MB layout, which this chip is big enough for.",
+        "nothing_published": "OpenIPC publishes no %{flash} firmware for this SoC. These instructions cannot produce a working camera -- the files they name have never been built."
+      }
+    }
+  },
+  "firmware": {
+    "info_html": "If you want to learn more about what the %{commands} commands do, run <code>printenv</code> in the bootloader console.",
+    "installation": {
+      "attention": "Attention!",
+      "backup": {
+        "info": "OpenIPC U-Boot overwrites the original crypto partition making it impossible to revert to the factory firmware unless you have a full flash backup for this particular camera! To create a full firmware backup start a TFTP server and run these commands in bootloader shell.",
+        "more_info_html": "Please refer to <a href=\"https://github.com/OpenIPC/wiki/blob/master/en/installation.md\">Installation instructions</a> in the project's wiki for more information.",
+        "shared_name": "The name above is the same for every camera of this model and chip, so backing up a second one writes over the first — and this file is the only way back to a camera's stock firmware. Give each camera's backup a name of its own, and use that same name when restoring it. Or fill in the MAC address above: when the form has one, it becomes part of the name.",
+        "subtitle": "Back up your stock firmware, don't skip this part of the installation process!",
+        "title": "Save the original firmware"
+      },
+      "backup_32": "ATTENTION! Before backing up 32M flash ROM, make sure that the camera has at least 64M of RAM.",
+      "chat_blocked_html": "Telegram does not open from every network. If it does not open from yours, <a href=\"https://github.com/OpenIPC/\" data-event=\"download-step:chat:issues\">ask in the issue tracker</a>.",
+      "chat_lede": "Ask about this hardware:",
+      "compound_caveat_html": "If your bootloader answers with a usage message instead of running the line, it does not understand <code>&amp;&amp;</code>. The line is three commands — the transfer, the erase, then the write — and all three have to be entered, each one only after the part before it has reported success; that check is what <code>&amp;&amp;</code> does for you. Do not leave the erase out: a write onto flash that was not erased first stores garbage, reports success anyway, and at offset 0 that garbage is the bootloader.",
+      "do_not_paste": "# Enter commands line by line! Do not copy and paste multiple lines at once!",
+      "flashing": {
+        "alternative": "Alternatively, flash OpenIPC Firmware by its parts"
+      },
+      "flashing_footfs": {
+        "continue": "The camera will automatically restart to apply changes. Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.",
+        "info": "When in the bootloader shell, remap ROM partitioning according to your flash size and type.",
+        "title": "Prepare the camera for OpenIPC Linux"
+      },
+      "flashing_footfs2": {
+        "info": "Download firmware bundle and unpack it into the root directory of your TFTP server.",
+        "link": "Download OpenIPC Firmware (%{name}) bundle",
+        "title": "Flash OpenIPC Linux kernel and root filesystem"
+      },
+      "flashing_full": {
+        "continue": "The camera will automatically restart.",
+        "continue2": "Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.",
+        "info": "The full firmware image consists of bootloader, kernel and root filesystem, and is also suitable for flashing memory chip using a programmer. Please note, the full image does not contain pre-set environment, so the IP addresses and other settings are yours to add. The MAC address is not one of them — the camera assigns itself a stable unique address on first boot and keeps it.",
+        "link": "Download OpenIPC Firmware (%{name}) image",
+        "mac_note_html": "The full image carries no environment, so this is where the address you entered above goes. You only need it to keep an address the camera already has — the one on its own label. Left empty, the camera picks a stable unique address for itself on first boot and keeps it, so there is nothing to set here and nothing will ask you for one later. If the bootloader answers <code>Can't overwrite \"ethaddr\"</code>, an address is already set and there is nothing to do here.",
+        "nand_caveat": "On NAND the image covers the bootloader, kernel and UBI root filesystem only, not the whole chip, and it is not suitable for a programmer -- it carries no OOB/ECC bytes and no factory bad-block markers. Write it from U-Boot, or use the per-partition commands below.",
+        "title": "Flash full OpenIPC Firmware image"
+      },
+      "flashing_uboot": {
+        "continue": "The camera will boot into the newly flashed bootloader. Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.",
+        "info": "Download bootloader binary file and save it to the root directory of your TFTP server.",
+        "link": "Download OpenIPC U-Boot binary file",
+        "title": "Flash OpenIPC U-Boot"
+      },
+      "help_cta": "Ask in the chat",
+      "help_title": "Stuck, or something did not match?",
+      "layout_note": "Partition layout: %{layout}. The image below covers the whole chip, so flashing it clears the overlay as well.",
+      "licence_ask": {
+        "cctv": "Deploying more than a handful?",
+        "fpv": "Building an FPV product on this platform?",
+        "unknown": "Shipping a product?"
+      },
+      "licence_business_link": "Commercial terms and support",
+      "licence_html": "This image includes Majestic under the <a href=\"https://github.com/OpenIPC/majestic/blob/master/LICENSE.md\">Prosperity Public License</a>: free for personal, hobby and nonprofit use, and free to try commercially for thirty days.",
+      "licence_volume_ask": "Building images for several boards?",
+      "licence_volume_link": "A scoping call is free",
+      "lock_caveat_html": "<code>sf lock 0</code> clears the block protection some vendors arm in the flash chip's status register, and it is OpenIPC U-Boot's own subcommand: a stock bootloader built from mainline U-Boot has <code>sf protect</code> and no <code>lock</code>, so it answers with the <code>sf</code> usage message instead. Nothing was changed by that, and on most chips nothing is armed — enter the rest of the block exactly as written and it flashes normally. Where <code>sf protect</code> does exist it is worth one try, with the same offset and length as the <code>sf erase</code> below, but most chips answer that it is unsupported. What is lost either way is a check: flash that is still protected discards an erase and a write while reporting success, so a camera that comes back on its stock firmware after every command said OK is what that looks like. That bootloader cannot clear the protection — flash the chip with an external programmer, or with <a href=\"https://github.com/OpenIPC/defib\">defib</a> over the serial console you are already on, whose flash agent unlocks it itself.",
+      "mac_record_caveat_html": "Write this address down with the backup. The full image erases the whole chip and the factory MAC goes with it: on first boot the camera keeps an address it already has, then looks for the factory one still in flash, and mints itself a new one only when it finds neither — and after a whole-chip erase there is nothing left to find. If the bootloader answers that <code>ethaddr</code> is not defined, the address is on the camera's own label. Either way you can give it back afterwards with <code>set_mac aa:bb:cc:dd:ee:ff</code> on the camera.",
+      "next_business_link": "Commercial terms and support",
+      "next_business_text": "— if this is going into a product.",
+      "next_donate_link": "Support the work",
+      "next_donate_text": "— OpenIPC is free to use and expensive to make.",
+      "next_wall_link": "Put it on the Open Wall",
+      "next_wall_text": "— one setting in the web interface, and your camera says hello.",
+      "permanent_link": "Permanent link to this configuration",
+      "shell_label": "bootloader shell",
+      "subtitle": "on a camera with %{soc_name} SoC and %{flash_type} SPI flash chip",
+      "success": {
+        "info_html": "Open camera's web interface on <a href=\\\"http://%{address}/\\\">http://%{address}/</a>. A new camera has no password yet and streams nothing until it has one, so it asks you to choose a password before anything else. That password belongs to <b>root</b> and is the one the web interface, ssh, UART and RTSP all use. ONVIF accepts it too, unless your client authenticates with a digest -- those need <b>onvif.password</b> set separately.",
+        "title": "Congratulations! At this moment, you have OpenIPC Firmware (%{name}) installed."
+      },
+      "title": "Flashing OpenIPC Firmware"
+    },
+    "restore": {
+      "info": "If you need to restore the original firmware, use the backup file you have created using the commands above. Place the backup file into the root directory of your TFTP server and run these commands in bootloader shell.",
+      "title": "Restore camera stock firmware"
+    },
+    "version": {
+      "lite": "Lite",
+      "nand": "NAND",
+      "neo": "Neo",
+      "ultimate": "Ultimate",
+      "venc": "VENC"
+    }
+  },
+  "flash_chip": {
+    "nand": "NAND",
+    "nor16m": "NOR 16M",
+    "nor32m": "NOR 32M",
+    "nor8m": "NOR 8M"
+  },
+  "flash_layout": {
+    "nand": "UBI layout",
+    "nor16m": "16MB (10MB rootfs)",
+    "nor8m": "8MB (5MB rootfs)"
+  },
+  "nav": {
+    "home": "Home",
+    "vendors": "Vendors"
+  },
+  "pages": {
+    "community": {
+      "channel_en": "The international OpenIPC group.",
+      "channel_fpv": "Everything about OpenIPC-based FPV and video links.",
+      "channel_ru": "The Russian-speaking OpenIPC group."
+    }
+  }
+}
