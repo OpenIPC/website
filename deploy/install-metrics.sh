@@ -17,11 +17,12 @@
 # "installed ..." line while every file it copied is the stale one. That cost
 # a cycle on 2026-09-21, which is why this script now prints a checksum of
 # each file it installs. If a change does not appear to have taken, compare
-# them with the same five files in your checkout, in the same order:
+# them with the same files in your checkout, in the same order:
 #
 #   sha256sum deploy/openipc-sample-rss deploy/cron.d/openipc-metrics \
 #             deploy/memory-probe.sh deploy/audience-report.sh \
-#             deploy/oc-stats.sh deploy/paywall-support.json | cut -c1-16
+#             deploy/oc-stats.sh deploy/wizard-export.sh \
+#             deploy/paywall-support.json | cut -c1-16
 #
 # rsync has to exist at both ends. It is in deploy/RESTORE.md's prerequisites
 # for that reason: a rebuilt Debian host does not always have it.
@@ -40,6 +41,8 @@ cron=/etc/cron.d/openipc-metrics
 probe=/usr/local/sbin/openipc-memory-probe
 audience=/usr/local/sbin/openipc-audience-report
 ocstats=/usr/local/sbin/openipc-oc-stats
+wizard=/usr/local/sbin/openipc-wizard-export
+wizarddir=/srv/www/shared/wizard
 paywall=/srv/www/shared/paywall-support.json
 reports=/srv/www/shared/reports
 
@@ -68,6 +71,12 @@ install -m 0644 -o root -g root "$here/cron.d/openipc-metrics" "$cron"
 install -m 0755 -o root -g root "$here/memory-probe.sh" "$probe"
 install -m 0755 -o root -g root "$here/audience-report.sh" "$audience"
 install -m 0755 -o root -g root "$here/oc-stats.sh" "$ocstats"
+install -m 0755 -o root -g root "$here/wizard-export.sh" "$wizard"
+
+# The directory nginx serves the wizard's command blocks from (#164). Made
+# here rather than by the job, so a first run after a rebuild writes into a
+# directory with the right owner instead of one root has just created.
+install -d -m 0755 -o root -g root "$wizarddir"
 
 # PayWall's half of the backer count (#201). The repository is the source of
 # truth: the figures come from a maintainer export and change by pull request,
@@ -84,7 +93,7 @@ echo "installed $sampler, $cron, $probe, $audience, $ocstats and $paywall"
 # landed in the wrong place leaves this script reporting success over stale
 # files, and the only way to see it is to compare these against
 # `sha256sum deploy/*.sh cron.d/openipc-metrics` in the checkout.
-for f in "$sampler" "$cron" "$probe" "$audience" "$ocstats" "$paywall"; do
+for f in "$sampler" "$cron" "$probe" "$audience" "$ocstats" "$wizard" "$paywall"; do
   printf '  %s  %s\n' "$(sha256sum "$f" | cut -c1-16)" "$f"
 done
 

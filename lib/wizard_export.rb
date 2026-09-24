@@ -45,7 +45,12 @@ module WizardExport
     preparing_environment post_flash_environment restore_from_backup
   ].freeze
 
-  OUT_DIR = 'frontend/apps/site/src/data/wizard'
+  # Where the export is written. Not into the bundle: it is a function of the
+  # release index, which a publisher refreshes on the host, and the bundle is
+  # built in CI where that file does not exist. So the pages fetch it, as they
+  # fetch the backer count and the availability states, and nginx serves it
+  # from the same shared directory.
+  OUT_DIR = ENV.fetch('WIZARD_EXPORT_DIR', '/srv/www/shared/wizard')
 
   class << self
     # One SoC, every combination its menu can offer.
@@ -106,16 +111,35 @@ module WizardExport
       "#{JSON.pretty_generate(document(soc))}\n"
     end
 
-    def path(soc, root: Rails.root)
-      File.join(root, OUT_DIR, "#{soc.urlname}.json")
+    def path(soc, dir: OUT_DIR)
+      File.join(dir, "#{soc.urlname}.json")
     end
 
-    def write_all(root: Rails.root)
-      FileUtils.mkdir_p(File.join(root, OUT_DIR))
-      Soc.includes(:vendor).find_each.map do |soc|
-        File.write(path(soc, root: root), json(soc))
-        [soc.urlname, document(soc)['combinations'].size]
+    # Compact, because this one is fetched rather than read: pretty-printing it
+    # adds a third for nobody's benefit, and gzip takes the compact form to
+    # about 3 KB.
+    def write_all(dir: OUT_DIR)
+      FileUtils.mkdir_p(dir)
+
+      written = Soc.includes(:vendor).find_each.map do |soc|
+        document = document(soc)
+        # Written and renamed, so a reader never sees half a file -- the same
+        # arrangement oc-stats.sh uses for the backer count.
+        temporary = "#{path(soc, dir: dir)}.tmp"
+        File.write(temporary, "#{JSON.generate(document)}\n")
+        FileUtils.chmod(0o644, temporary)
+        FileUtils.mv(temporary, path(soc, dir: dir))
+        [soc.urlname, document['combinations'].size]
       end
+
+      # A SoC removed from the catalogue leaves a file that would go on being
+      # served, describing a chip the site no longer lists.
+      names = written.map { |(urlname, _)| "#{urlname}.json" }
+      Dir[File.join(dir, '*.json')].each do |file|
+        File.delete(file) unless names.include?(File.basename(file))
+      end
+
+      written
     end
 
     # Every combination the menu can reach for this SoC.
