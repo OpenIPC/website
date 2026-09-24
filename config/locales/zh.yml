@@ -60,6 +60,14 @@ zh:
         unavailable_rnd: "不可用——研究中"
         unavailable_wip: "不可用——进行中"
         generate_guide: 生成安装指南
+      warnings:
+        edition_not_published: OpenIPC 未为该 SoC 在 %{flash} 闪存上发布 %{edition} 版本。现显示 %{shown}。
+        eight_meg_chip: 8MB 闪存只能刷写 Lite 或 FPV 版本！
+        eight_meg_layout: 8MB 分区布局只给根文件系统留了 5MB，只有 Lite 和 FPV 版本放得下。请选择 16MB 布局，以便在该芯片上安装 Ultimate。
+        layout_changed: 16MB 分区布局需要 16MB 芯片——仅它的根文件系统就结束于 0xD50000。现显示 %{size}MB 布局。
+        no_lite_chip: Ultimate 版本放不进 8MB 闪存芯片，而 OpenIPC 未为该 SoC 在 NOR 上发布 Lite 版本。这些说明无法在 8MB 闪存上做出一台能用的摄像机——该 SoC 需要更大的芯片。
+        no_lite_layout: Ultimate 版本放不进 8MB 分区布局，而 OpenIPC 未为该 SoC 在 NOR 上发布 Lite 版本。请选择 16MB 布局，该芯片的容量是够的。
+        nothing_published: OpenIPC 未为该 SoC 发布 %{flash} 固件。这些说明无法做出一台能用的摄像机——它们所指名的文件从未被构建过。
       update:
         advanced_instruction_link: 为专家提供的高级安装指导
         files_download_alert: 如果你在访问可下载文件时有任何问题，请随时在我们的Telegram频道与我们联系。
