@@ -57,6 +57,11 @@ export default function SupportCount({ goal, labels, class: className = '' }: {
   if (!stats) return null;
 
   const percent = progressPercent(stats, goal);
+  // Capped, as the bar is. progressPercent deliberately allows a count past the
+  // goal -- passing it is a good problem -- but a meter whose value exceeds its
+  // maximum is announced as out of range while the bar beside it shows a
+  // sensible 100%.
+  const meterValue = Math.min(stats.backers, goal);
   const sentence = goalMet(stats, goal)
     ? fill(labels.countMet, { backers: stats.backers })
     : fill(labels.count, { backers: stats.backers, goal });
@@ -79,7 +84,7 @@ export default function SupportCount({ goal, labels, class: className = '' }: {
       <div
         class="h-2 w-full overflow-hidden rounded-full bg-brand-blue/15"
         role="meter"
-        aria-valuenow={stats.backers}
+        aria-valuenow={meterValue}
         aria-valuemin={0}
         aria-valuemax={goal}
         aria-label={fill(labels.meter, { backers: stats.backers, goal })}

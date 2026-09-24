@@ -168,25 +168,38 @@ const alt = alternates(path);
     return panel ? [...panel.querySelectorAll<HTMLAnchorElement>('a')] : [];
   }
 
+  // On the menu item rather than on the control: the panel's links take focus
+  // as soon as it opens, and a listener bound to the control alone stops
+  // hearing the arrow keys at that point -- so the reader could open a menu and
+  // then not move through it.
   for (const toggle of toggles) {
-    toggle.addEventListener('keydown', (event) => {
+    const item = toggle.closest('.site-nav-item');
+    if (!item) continue;
+
+    item.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+
       const items = itemsOf(toggle);
       if (items.length === 0) return;
-      const wasOpen = toggle.getAttribute('aria-expanded') === 'true';
-      const here = items.indexOf(document.activeElement as HTMLAnchorElement);
 
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault();
-        if (!wasOpen) {
-          closeAll(toggle);
-          toggle.setAttribute('aria-expanded', 'true');
-          (event.key === 'ArrowDown' ? items[0] : items[items.length - 1]).focus();
-          return;
-        }
-        const step = event.key === 'ArrowDown' ? 1 : -1;
-        const next = (here + step + items.length) % items.length;
-        items[next].focus();
+      event.preventDefault();
+      const open = toggle.getAttribute('aria-expanded') === 'true';
+
+      if (!open) {
+        closeAll(toggle);
+        toggle.setAttribute('aria-expanded', 'true');
+        (event.key === 'ArrowDown' ? items[0] : items[items.length - 1]).focus();
+        return;
       }
+
+      const here = items.indexOf(document.activeElement as HTMLAnchorElement);
+      const step = event.key === 'ArrowDown' ? 1 : -1;
+      // From the control itself, the first press goes to the first item rather
+      // than wrapping to the last.
+      const next = here === -1
+        ? (event.key === 'ArrowDown' ? 0 : items.length - 1)
+        : (here + step + items.length) % items.length;
+      items[next].focus();
     });
   }
 

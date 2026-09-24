@@ -132,6 +132,21 @@ export function translate(locale: Locale, key: string, options: TranslateOptions
     usedFallback = found !== undefined;
   }
 
+  if (typeof found === 'string' && locale !== DEFAULT_LOCALE && found.includes('href="/')) {
+    // Translated copy contains links, and they were all English.
+    //
+    // 48 internal hrefs live inside the locale files -- `<a href="/business">`
+    // in the middle of a sentence -- and `pathFor` cannot reach them: they are
+    // not in a component, they are in the string the component renders. A
+    // Russian reader clicking one landed on the English page, silently.
+    //
+    // app/helpers/application_helper.rb overrides Rails' `translate` for
+    // exactly this, and this is the same hook in the same place: one rule
+    // rather than a call site per string, so the ones nobody has written yet
+    // are covered too.
+    found = found.replace(/href="(\/[^"]*)"/g, (_match, path: string) => `href="${pathFor(locale, path)}"`);
+  }
+
   if (found === undefined && typeof options.fallback === 'string') {
     return options.fallback;
   }

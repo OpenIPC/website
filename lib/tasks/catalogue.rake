@@ -109,7 +109,24 @@ namespace :catalogue do
   desc 'Rewrite data/catalogue from the database'
   task export: :environment do
     FileUtils.mkdir_p(catalogue_dir)
+
+    # A vendor that has been removed or renamed leaves its file behind, and
+    # CatalogueExport globs every file it finds -- so the next bake would put
+    # the departed vendor back on the pages. Written first so a failure part
+    # way through leaves the tree short rather than stale.
+    wanted = Vendor.pluck(:urlname).map { |urlname| "#{urlname}.yml" }
+    Dir[catalogue_dir.join('*.yml')].each do |file|
+      next if wanted.include?(File.basename(file))
+
+      puts "removing #{File.basename(file)}: no such vendor"
+      File.delete(file)
+    end
+
     Vendor.order(:name).find_each do |vendor|
+      unless vendor.urlname.match?(Vendor::URLNAME_FORMAT)
+        abort "refusing to write #{vendor.urlname.inspect}: not a safe slug"
+      end
+
       document = vendor_document(vendor)
       File.open(catalogue_dir.join("#{vendor.urlname}.yml"), 'w') do |file|
         file.puts "# #{vendor.name} — #{document['socs'].size} SoC(s)."

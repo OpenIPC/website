@@ -14,7 +14,14 @@ import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { debounce } from '../../../utils';
 
 /** The eight rows, and the colour each one is outlined in. */
+// Indices for the form state, which is keyed `part0-name` and always has
+// been. The LABELS are 1-8: the Rails page this replaces numbers its eight
+// rows from one, and a calculator that renames every partition is not the same
+// page. See ROW_LABEL below.
 const PARTITIONS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+
+/** What the reader is shown, against the index the state is keyed by. */
+const rowLabel = (index: number) => index + 1;
 
 /** Ruby's `%{name}`, which is the syntax the catalogue strings are written in. */
 function fill(template: string, vars: Record<string, string | number>): string {
@@ -109,7 +116,7 @@ export default function FirmwarePartitionCalculator({ labels }: FirmwarePartitio
             <div className="md:w-[20%]">
               <Input
                 elemName={`part${n}-name`}
-                label={fill(t.partitionName, { number: n })}
+                label={fill(t.partitionName, { number: rowLabel(n) })}
                 borderWidth='4px'
                 borderColor={`partition${n}`}
                 value={formElemsState[`part${n}-name`].value}
@@ -120,7 +127,7 @@ export default function FirmwarePartitionCalculator({ labels }: FirmwarePartitio
             <div className="md:w-[20%]">
               <Input
                 elemName={`part${n}-size`}
-                label={fill(t.partitionSize, { number: n })}
+                label={fill(t.partitionSize, { number: rowLabel(n) })}
                 borderWidth='1px'
                 borderColor='default'
                 value={formElemsState[`part${n}-size`].value}

@@ -6,8 +6,17 @@ class Soc < ApplicationRecord
   belongs_to :vendor
 
   before_validation :generate_urlname
+  # A urlname is an address and a filename (#162, #161): it is the path segment
+  # under /cameras/vendors/, the name of a prerendered directory, and the name
+  # of a file under data/catalogue. `generate_urlname` only downcases and
+  # replaces spaces, so a name with a slash or a dot in it -- which an
+  # administrator can enter -- produced a slug that walks out of every one of
+  # those. Refused here, where all three read it, rather than sanitised at each.
+  URLNAME_FORMAT = /\A[a-z0-9][a-z0-9._-]*\z/
+
   validates :model, presence: true, uniqueness: { scope: :vendor_id }
-  validates :urlname, presence: true, uniqueness: true
+  validates :urlname, presence: true, uniqueness: true,
+                      format: { with: URLNAME_FORMAT, message: 'is not a safe slug' }
 
   RELEASES_ROOT = '/srv/github-releases'
   GH_DL_ROOT = 'https://github.com/OpenIPC/firmware/releases/download/latest/%s'

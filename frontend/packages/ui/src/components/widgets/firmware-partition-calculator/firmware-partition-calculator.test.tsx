@@ -277,8 +277,12 @@ describe('the labels are the consumer\'s, not the widget\'s (#160)', () => {
 
     expect(screen.getByText('Firmware Partition Calculator')).toBeTruthy();
     expect(screen.getByText('MTD device name')).toBeTruthy();
-    expect(screen.getByText('Partition 0 name')).toBeTruthy();
-    expect(screen.getByText('Partition 7 size, KB')).toBeTruthy();
+    // Numbered from one, as app/views/pages/firmware_partitions_calculation
+    // .html.erb numbers its eight rows -- the state behind them is still keyed
+    // from zero, and a reader should not be able to tell.
+    expect(screen.getByText('Partition 1 name')).toBeTruthy();
+    expect(screen.getByText('Partition 8 size, KB')).toBeTruthy();
+    expect(screen.queryByText('Partition 0 name')).toBeNull();
     expect(freeSpace()).toContain('Free space');
   });
 
@@ -301,8 +305,8 @@ describe('the labels are the consumer\'s, not the widget\'s (#160)', () => {
 
     expect(screen.getByText('Расчет разделов прошивки')).toBeTruthy();
     expect(screen.getByText('Имя устройства МПД')).toBeTruthy();
-    expect(screen.getByText('Имя раздела 0')).toBeTruthy();
-    expect(screen.getByText('Имя раздела 7')).toBeTruthy();
+    expect(screen.getByText('Имя раздела 1')).toBeTruthy();
+    expect(screen.getByText('Имя раздела 8')).toBeTruthy();
     expect(screen.getByText('Размер раздела 3, КБ')).toBeTruthy();
     expect(screen.getAllByText('Начальный адрес').length).toBe(8);
     expect(freeSpace()).toContain('Свободно');

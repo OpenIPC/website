@@ -6,8 +6,17 @@ class Vendor < ApplicationRecord
 
   before_validation :generate_urlname
 
+  # A urlname is an address and a filename (#162, #161): it is the path segment
+  # under /cameras/vendors/, the name of a prerendered directory, and the name
+  # of a file under data/catalogue. `generate_urlname` only downcases and
+  # replaces spaces, so a name with a slash or a dot in it -- which an
+  # administrator can enter -- produced a slug that walks out of every one of
+  # those. Refused here, where all three read it, rather than sanitised at each.
+  URLNAME_FORMAT = /\A[a-z0-9][a-z0-9._-]*\z/
+
   validates :name, presence: true, uniqueness: true
-  validates :urlname, presence: true, uniqueness: true
+  validates :urlname, presence: true, uniqueness: true,
+                      format: { with: URLNAME_FORMAT, message: 'is not a safe slug' }
 
   # distinct is load-bearing, not tidiness: the join produces one row per SoC,
   # so without it the scope yields HiSilicon twenty-three times and the
