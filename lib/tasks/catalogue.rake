@@ -99,6 +99,36 @@ namespace :catalogue do
     end
   end
 
+  desc 'Load data/catalogue into this database'
+  task seed: :environment do
+    require 'catalogue_export'
+    # The files are the reviewed copy of the catalogue, so they are also how a
+    # database gets one: a fresh checkout, a CI job that needs rows, or a local
+    # run of `wizard:verify`, which needs every SoC and cannot have the
+    # production database.
+    require 'yaml'
+
+    vendors = 0
+    socs = 0
+    Dir[catalogue_dir.join('*.yml')].sort.each do |file|
+      data = YAML.safe_load_file(file)
+
+      vendor = Vendor.find_or_initialize_by(urlname: data['urlname'])
+      vendor.assign_attributes(data.slice('name', 'full_name', 'website_url', 'notes'))
+      vendor.save!
+      vendors += 1
+
+      data['socs'].each do |attributes|
+        soc = Soc.find_or_initialize_by(urlname: attributes['urlname'])
+        soc.assign_attributes(attributes.merge('vendor' => vendor))
+        soc.save!
+        socs += 1
+      end
+    end
+
+    puts "seeded #{vendors} vendor(s) and #{socs} SoC(s) from #{CatalogueExport::DIR}"
+  end
+
   desc 'Bake data/catalogue into the JSON the frontend build reads'
   task bake: :environment do
     require 'catalogue_export'
@@ -138,19 +168,5 @@ namespace :catalogue do
       end
     end
     puts "wrote #{Vendor.count} file(s) to data/catalogue"
-  end
-end
-
-# The wizard's own export (#163). Separate namespace: it enumerates ~40
-# combinations per SoC and renders each one's command lines, so it costs
-# considerably more than baking the catalogue and is not something to run on
-# every build by accident.
-namespace :wizard do
-  desc "Export every combination's command blocks, one file per SoC"
-  task export: :environment do
-    require 'wizard_export'
-    written = WizardExport.write_all
-    total = written.sum { |(_, count)| count }
-    puts "wrote #{written.size} file(s), #{total} combination(s) to #{WizardExport::OUT_DIR}"
   end
 end

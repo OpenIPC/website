@@ -24,6 +24,17 @@ class WizardExportTest < ActiveSupport::TestCase
     @document ||= WizardExport.document(@soc)
   end
 
+  # A combination names its blocks and the document holds each distinct one
+  # once (#164): ninety combinations share eighty-two blocks, and written out
+  # in full the file was 400 KB.
+  def block_of(entry, name)
+    document['blocks'].fetch(entry['blocks'].fetch(name))
+  end
+
+  def blocks_of(entry)
+    entry['blocks'].transform_values { |id| document['blocks'].fetch(id) }
+  end
+
   test 'it enumerates combinations and describes each one fully' do
     combinations = document['combinations']
 
@@ -36,7 +47,19 @@ class WizardExportTest < ActiveSupport::TestCase
       assert_includes Camera::NET_IFACE, entry['network_interface']
       assert_includes Camera::SD_CARD, entry['sd_card_slot']
       assert_equal WizardExport::BLOCKS.sort, entry['blocks'].keys.sort
+      entry['blocks'].each_value { |id| assert document['blocks'].key?(id), "no block #{id}" }
     end
+  end
+
+  test 'the pool holds each distinct block once and nothing unreferenced' do
+    used = document['combinations'].flat_map { |entry| entry['blocks'].values }.uniq
+    assert_equal used.sort, document['blocks'].keys.sort, 'the pool and the references disagree'
+
+    contents = document['blocks'].values.map(&:to_json)
+    assert_equal contents.uniq.size, contents.size, 'the pool holds the same block twice'
+
+    variants = document['combinations'].flat_map { |e| (e['mac_variant'] || {}).values }.uniq
+    assert_equal variants.sort, document['mac_variants'].keys.sort
   end
 
   test 'a block is lines, notes and a paste warning -- and no markup' do
@@ -44,7 +67,7 @@ class WizardExportTest < ActiveSupport::TestCase
     # do-not-paste warning is the one line on this page that must be rendered
     # in the reader's own language.
     document['combinations'].each do |entry|
-      entry['blocks'].each do |name, block|
+      blocks_of(entry).each do |name, block|
         assert_equal %w[lines no_paste notes].sort, block.keys.sort, name
 
         block['lines'].each do |line|
@@ -62,7 +85,8 @@ class WizardExportTest < ActiveSupport::TestCase
     # They appear only inside setenv and in the backup filename, so they can be
     # holes -- and if one ever stops being a hole, an address from whoever ran
     # the export ships to every visitor.
-    all = document['combinations'].flat_map { |e| e['blocks'].values.flat_map { |b| b['lines'] } }
+    all = document['blocks'].values.flat_map { |b| b['lines'] } +
+          document['mac_variants'].values.flatten
     joined = all.join("\n")
 
     assert_includes joined, WizardExport::IPADDR
@@ -90,7 +114,7 @@ class WizardExportTest < ActiveSupport::TestCase
     WizardExport::BLOCKS.each do |block|
       wanted = view.public_send("#{block}_lines", camera).map(&:to_s).reject { |l| l.start_with?('<') }
 
-      assert_equal wanted, entry['blocks'][block]['lines'], block
+      assert_equal wanted, block_of(entry, block)['lines'], block
     end
   end
 
@@ -189,7 +213,7 @@ class WizardExportTest < ActiveSupport::TestCase
     assert_not_empty variant, 'no combination changes when a MAC is given'
     assert_includes variant.keys, 'post_flash_environment'
 
-    joined = variant.values.flatten.join("\n")
+    joined = variant.values.map { |id| document['mac_variants'].fetch(id) }.flatten.join("\n")
     assert_includes joined, WizardExport::ETHADDR
     assert_includes joined, WizardExport::ETHADDR_PLAIN,
                     'the filename form of the MAC needs its own hole'

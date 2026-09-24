@@ -49,7 +49,22 @@ module WizardExport
 
   class << self
     # One SoC, every combination its menu can offer.
+    #
+    # The command blocks are pooled rather than repeated. Ninety combinations
+    # produce 630 blocks and 82 distinct ones: the network interface changes
+    # two lines of one block and nothing in the other six, and the SD slot
+    # rather less. Written out in full the file was 400 KB, which is a lot to
+    # hand a browser to render one page of it; pooled it is a fraction of that
+    # and exactly the same data -- a combination names the block it uses and
+    # the pool holds each distinct one once.
     def document(soc)
+      @pool = {}
+      @pool_ids = {}
+      @variant_pool = {}
+      @variant_ids = {}
+
+      combinations = combinations(soc)
+
       {
         'soc' => soc.urlname,
         'model' => soc.model,
@@ -70,8 +85,21 @@ module WizardExport
           'ip' => view.ipaddr_pattern,
         },
         'editions' => Soc::FLASH_TYPES.to_h { |type| [type, soc.available_releases(type)] },
-        'combinations' => combinations(soc),
+        # Each distinct block once, named by the order it was first seen.
+        'blocks' => @pool,
+        'mac_variants' => @variant_pool,
+        'combinations' => combinations,
       }
+    end
+
+    # The id this content already has, or the next one.
+    def pool(store, ids, value)
+      key = value.to_json
+      ids[key] ||= begin
+        id = ids.size.to_s
+        store[id] = value
+        id
+      end
     end
 
     def json(soc)
@@ -205,7 +233,7 @@ module WizardExport
                  .map { |line| line.gsub(SAMPLE_MAC, ETHADDR) }
                  .map { |line| line.gsub(SAMPLE_MAC.delete(':'), ETHADDR_PLAIN) }
         ours = lines_of(without, block)
-        differences[block] = theirs unless theirs == ours
+        differences[block] = pool(@variant_pool, @variant_ids, theirs) unless theirs == ours
       end
     end
 
@@ -238,11 +266,11 @@ module WizardExport
         notes = view.caveats_for(lines)
         plain = lines.reject { |line| line.start_with?('<') }
 
-        [block, {
+        [block, pool(@pool, @pool_ids, {
           'lines' => plain,
           'notes' => notes,
           'no_paste' => lines.size != plain.size,
-        }]
+        })]
       end
     end
 
