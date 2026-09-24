@@ -37,12 +37,36 @@ class WallChannel < ApplicationCable::Channel
   # does not prevent because it bounds simultaneous sockets, not sequential
   # ones.
   #
-  # Sized well clear of any reader. A thorough visit -- the gallery (18), a
-  # camera page (13), its whole archive (96) and the slideshow (96) -- is about
-  # 223 frames. Carrier-grade NAT pools many readers behind one address and
-  # this site has a large audience behind exactly that, so the ceiling sits an
-  # order of magnitude above a single visit rather than tuned close to it.
-  FRAME_BUDGET = 3_000
+  # Sized against BOTH the reader and the corpus, which the first version was
+  # not.
+  #
+  # That version reasoned only from a reader: a thorough visit -- the gallery
+  # (18), a camera page (13), its whole archive (96) and the slideshow (96) --
+  # is about 223 frames, so it put the ceiling an order of magnitude above at
+  # 3,000 and called that safe. It never asked how large the thing being
+  # protected is. The wall holds about 2,767 frames across 20 cameras, so the
+  # budget was LARGER THAN THE ENTIRE WALL: one address, fetching pages for
+  # grants, could take every frame that exists inside an hour and never come
+  # near the limit.
+  #
+  # 1,000 is a compromise and worth naming as one rather than presenting as a
+  # calculation. It keeps the four-fold margin over a thorough visit that the
+  # carrier-NAT case needs -- several readers do share one address here, and a
+  # reader who stops seeing pictures is the failure this work must not cause --
+  # while cutting a single address from "the entire wall in an hour" to about a
+  # third of it, so a full sweep costs three hours instead of one.
+  #
+  # Tighter was tried and put back. At 500 the margin over a thorough visit
+  # falls to roughly two, and three people behind one carrier-grade address
+  # browsing properly in the same hour would start being refused. With a corpus
+  # this small -- 2,767 frames against a 223-frame visit -- there is no
+  # per-address number that both guards the wall and is safe for a shared
+  # address, and pretending otherwise would be the same error as the 3,000.
+  #
+  # Which is the honest summary of this constant: it bounds what ONE address
+  # can take and nothing more. It is not what stops a distributed fleet, it
+  # never was, and the page grant is what does that now.
+  FRAME_BUDGET = 1_000
   BUDGET_WINDOW = 1.hour
 
   # Frames per single request. A page asks for everything it needs at once, and
