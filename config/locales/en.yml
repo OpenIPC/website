@@ -60,6 +60,14 @@ en:
         unavailable_rnd: "Not available — in research"
         unavailable_wip: "Not available — in progress"
         generate_guide: Generate an installation guide
+      warnings:
+        edition_not_published: OpenIPC does not publish a %{edition} build for this SoC on %{flash} flash. Showing %{shown} instead.
+        eight_meg_chip: 8MB Flash ROM can only be flashed with Lite or FPV edition!
+        eight_meg_layout: The 8MB partition layout leaves 5MB for the rootfs, which only the Lite and FPV editions fit. Choose the 16MB layout to install Ultimate on this chip.
+        layout_changed: The 16MB partition layout needs a 16MB chip -- its rootfs alone ends at 0xD50000. Showing the %{size}MB layout instead.
+        no_lite_chip: The Ultimate edition does not fit an 8MB flash chip, and OpenIPC publishes no Lite build for this SoC on NOR. These instructions cannot produce a working camera on 8MB flash -- this SoC needs a larger chip.
+        no_lite_layout: The Ultimate edition does not fit the 8MB partition layout, and OpenIPC publishes no Lite build for this SoC on NOR. Choose the 16MB layout, which this chip is big enough for.
+        nothing_published: OpenIPC publishes no %{flash} firmware for this SoC. These instructions cannot produce a working camera -- the files they name have never been built.
       update:
         advanced_instruction_link: Advanced installation instruction for experts
         files_download_alert: If you have any problems accessing downloadable files, please feel free to contact us on our Telegram channel.

@@ -1,0 +1,83 @@
+---
+/**
+ * The four-column footer (#160).
+ *
+ * app/views/layouts/_footer.html.erb rendered in Tailwind, column for column,
+ * link for link. It is not @openipc/ui's Footer: that one is fancyweb-ng's
+ * single copyright line with four social icons, and the relaunch replaced it
+ * with this. When the seam closes the package's Footer becomes dead weight,
+ * but removing it is #158's business and not this change's.
+ *
+ * The icons are inlined rather than fetched. Each is under 2 KB, they are the
+ * same six SVGs app/assets/images carries, and every one of them already draws
+ * with `fill="currentColor"` -- so the dark footer colours them by inheritance
+ * instead of with the `filter: invert(1)` the Bootstrap footer needs.
+ */
+import { footerFor, SOCIAL_LINKS } from '../lib/nav';
+import { useTranslations, type Locale } from '../lib/i18n';
+
+import github from '../assets/social/github.svg?raw';
+import opencollective from '../assets/social/opencollective.svg?raw';
+import telegram from '../assets/social/telegram.svg?raw';
+import youtube from '../assets/social/youtube.svg?raw';
+import twitter from '../assets/social/twitter.svg?raw';
+import instagram from '../assets/social/instagram.svg?raw';
+
+const ICONS: Record<string, string> = {
+  github, opencollective, telegram, youtube, twitter, instagram,
+};
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+
+const t = useTranslations(locale);
+const columns = footerFor(locale);
+const year = new Date().getFullYear();
+---
+
+<footer class="bg-ink pt-section pb-6 text-sm text-white/[.78]">
+  <div class="site-container">
+    <div class="mb-12 grid grid-cols-2 gap-6 lg:grid-cols-4">
+      {columns.map((column) => (
+        <div>
+          <h2 class="mb-2 text-sm font-semibold tracking-[.04em] text-white uppercase">
+            {column.title}
+          </h2>
+          <ul class="m-0 list-none p-0">
+            {column.links.map((l) => (
+              <li class="mb-1.5">
+                <a class="text-white/[.78] no-underline hover:text-white hover:underline focus:text-white focus:underline" href={l.url}>
+                  {l.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+          {column.id === 'community' && (
+            <ul class="mt-4 flex list-none flex-wrap gap-1 p-0">
+              {SOCIAL_LINKS.map((s) => (
+                <li>
+                  <a
+                    class="flex size-8 items-center justify-center rounded text-white/75 transition-opacity hover:text-white focus:text-white"
+                    href={s.url}
+                    title={s.title}
+                  >
+                    <span class="sr-only">{s.title}</span>
+                    <Fragment set:html={ICONS[s.icon]} />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+    </div>
+
+    <div class="border-t border-white/10 pt-6 text-white/55">
+      <p class="mb-1">
+        Copyright 2019-{year} <a class="text-white/[.78] no-underline hover:text-white hover:underline" href="https://openipc.org/">OpenIPC</a>. {t('footer.license_note')}
+        <span>{t('footer.tagline')}</span>
+      </p>
+      <p class="mb-0 text-xxs">{t('site.disclaimer')}</p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,164 @@
+---
+/**
+ * app/views/pages/edge_ai.html.erb (#160).
+ *
+ * Close in shape to the five services whitepapers but not the same partial:
+ * this page has its own hero art, its stats are keyed by name rather than
+ * numbered, and its platform pills and results are named lists. Forcing it
+ * through Service.astro would mean five conditionals in a component that is
+ * readable because it has none.
+ *
+ * The mailto subject and body are English on every locale, deliberately: they
+ * are what let the business mailbox count and triage these without analytics.
+ */
+import { Image } from 'astro:assets';
+import Icon from '../Icon.astro';
+import { useTranslations, type Locale } from '../../lib/i18n';
+import hero from '../../assets/pages/edge-ai-hero.webp';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.edge_ai.${s}`);
+
+const BRINGS: [string, string][] = [
+  ['map', 'diagram-3'],
+  ['driver', 'cpu'],
+  ['fit', 'bullseye'],
+  ['proven', 'check2-circle'],
+];
+
+const MAIL = 'mailto:business@openipc.org?subject=NPU%20feasibility%3A%20%5BSoC%5D%20%2F%20%5Bmodel%5D'
+  + '&body=Model%20(format)%3A%20%0ATarget%20SoC%20and%20SDK%20version%3A%20%0A'
+  + 'Frames%20from%20the%20camera%20(link)%3A%20%0ATarget%20fps%20and%20accuracy%20metric%3A%20%0A';
+---
+
+{/* ---- Cover: the thesis, and the network converging on the car park ---- */}
+<section class="bg-ink py-section text-white/85 lg:py-section-lg">
+  <div class="site-container">
+    <div class="grid items-center gap-12 lg:grid-cols-2">
+      <div>
+        <p class="mb-3 text-sm tracking-[.08em] text-accent uppercase">{k('eyebrow')}</p>
+        <h1 class="mb-3 text-4xl font-bold lg:text-5xl">{k('hero_title')}</h1>
+        <p class="mb-6 text-lg text-white/80">{k('hero_lede')}</p>
+        <p class="mb-0 flex flex-wrap gap-3">
+          <a class="site-btn site-btn-lg site-btn-primary" href={MAIL}>
+            {k('hero_cta_send')}
+          </a>
+          <a class="site-btn site-btn-lg site-btn-outline-light" href="#engagement">
+            {k('hero_cta_how')}
+          </a>
+        </p>
+      </div>
+      <div>
+        <Image src={hero} alt={k('hero_art_alt')} widths={[600, 1199]} sizes="(min-width: 1024px) 50vw, 100vw" class="h-auto w-full" />
+      </div>
+    </div>
+  </div>
+</section>
+
+{/* ---- Three figures ---- */}
+<section class="border-b border-hairline py-6">
+  <div class="site-container">
+    <div class="grid gap-6 text-center md:grid-cols-3 lg:text-left">
+      {['fps', 'loss', 'gap'].map((key) => (
+        <div>
+          <span class="block text-[2.25rem] leading-[1.1] font-semibold tracking-[-.01em] text-body">{k(`stat_${key}_n`)}</span>
+          <span class="block text-sm text-body-secondary">{k(`stat_${key}_l`)}</span>
+        </div>
+      ))}
+    </div>
+    <p class="mt-4 mb-0 text-center text-sm text-body-secondary lg:text-left">{k('stats_source')}</p>
+  </div>
+</section>
+
+{/* ---- The reader's scar ---- */}
+<section class="py-section">
+  <div class="site-container">
+    <h2 class="mb-6 text-2xl">{k('scar_title')}</h2>
+    <div class="grid gap-12 lg:grid-cols-2">
+      <p class="mb-0">{k('scar_p1')}</p>
+      <p class="mb-0">{k('scar_p2')}</p>
+    </div>
+    <blockquote class="mt-12 mb-0 border-l-4 border-accent pl-6 text-xl text-body-secondary italic">
+      <p class="mb-0">{k('pull_quote')}</p>
+    </blockquote>
+  </div>
+</section>
+
+{/* ---- Four things we bring ---- */}
+<section class="bg-surface-alt py-section">
+  <div class="site-container">
+    <h2 class="mb-2 text-2xl">{k('brings_title')}</h2>
+    <p class="mb-6 max-w-[70ch] text-body-secondary">{k('brings_intro')}</p>
+    <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      {BRINGS.map(([key, icon]) => (
+        <div class="flex h-full flex-col rounded-lg border border-hairline bg-white p-5">
+          <Icon name={icon} class="size-7 text-brand-blue" />
+          <h3 class="mt-3 mb-2 text-base font-semibold">{k(`bring_${key}_title`)}</h3>
+          <p class="mb-0 text-sm text-body-secondary">{k(`bring_${key}_text`)}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+{/* ---- Results ---- */}
+<section class="py-section">
+  <div class="site-container">
+    <h2 class="mb-6 text-2xl">{k('results_title')}</h2>
+    <div class="grid gap-12 lg:grid-cols-3">
+      {['plates', 'faces', 'cpu'].map((key) => (
+        <div>
+          <h3 class="mb-2 text-xl">{k(`res_${key}_title`)}</h3>
+          <p class="mb-0 text-body-secondary">{k(`res_${key}_text`)}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+{/* ---- The platforms ---- */}
+<section class="bg-surface-alt py-section">
+  <div class="site-container">
+    <h2 class="mb-4 text-2xl">{k('platforms_title')}</h2>
+    <p class="mb-4 flex flex-wrap gap-2">
+      {['hisi', 'sstar', 'rk', 'ingenic', 'arm'].map((key) => (
+        <span class="rounded-full border border-hairline bg-white px-3 py-1 font-mono text-sm">{k(`platform_${key}`)}</span>
+      ))}
+    </p>
+    <p class="mb-0 max-w-[70ch] text-body-secondary">{k('platforms_text')}</p>
+  </div>
+</section>
+
+{/* ---- The engagement ---- */}
+<section class="py-section" id="engagement">
+  <div class="site-container">
+    <h2 class="mb-6 text-2xl">{k('engagement_title')}</h2>
+    <div class="grid gap-6 md:grid-cols-3">
+      {[1, 2, 3].map((i) => (
+        <div>
+          <div class="mb-2 font-mono text-2xl text-brand-blue/40">0{i}</div>
+          <h3 class="mb-2 text-base font-semibold">{k(`step${i}_title`)}</h3>
+          <p class="mb-0 text-body-secondary">{k(`step${i}_text`)}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+{/* ---- The ask. The band follows an article on white, so it keeps its gap. ---- */}
+<section class="mt-section bg-ink py-section text-white/85">
+  <div class="site-container text-center">
+    <h2 class="mb-4 text-h2">{k('cta_title')}</h2>
+    <p class="mx-auto mb-6 max-w-[62ch] text-white/70">{k('cta_text')}</p>
+    <p class="mb-0 flex flex-wrap justify-center gap-3">
+      <a class="site-btn site-btn-lg site-btn-primary" href={MAIL}>
+        {k('cta_primary')}
+      </a>
+      <a class="site-btn site-btn-lg site-btn-outline-light" href="https://t.me/openipc">
+        {k('cta_secondary')}
+      </a>
+    </p>
+    <p class="mx-auto mt-6 mb-0 max-w-[62ch] text-sm text-white/60" set:html={k('cta_note_html')} />
+  </div>
+</section>

@@ -270,3 +270,68 @@ describe('findings from the review of #260', () => {
     }
   });
 });
+
+describe('the labels are the consumer\'s, not the widget\'s (#160)', () => {
+  test('with none given, it reads as it always has', () => {
+    render(<FirmwarePartitionCalculator />);
+
+    expect(screen.getByText('Firmware Partition Calculator')).toBeTruthy();
+    expect(screen.getByText('MTD device name')).toBeTruthy();
+    // Numbered from one, as app/views/pages/firmware_partitions_calculation
+    // .html.erb numbers its eight rows -- the state behind them is still keyed
+    // from zero, and a reader should not be able to tell.
+    expect(screen.getByText('Partition 1 name')).toBeTruthy();
+    expect(screen.getByText('Partition 8 size, KB')).toBeTruthy();
+    expect(screen.queryByText('Partition 0 name')).toBeNull();
+    expect(freeSpace()).toContain('Free space');
+  });
+
+  test('a locale replaces every word, numbers interpolated as Ruby writes them', () => {
+    // The strings are config/locales/pages.ru.yml's, verbatim. `%{number}` is
+    // the catalogue's own syntax and the widget fills it, so the consumer
+    // hands the string over untouched rather than reformatting it first.
+    render(
+      <FirmwarePartitionCalculator
+        labels={{
+          title: 'Расчет разделов прошивки',
+          mtdName: 'Имя устройства МПД',
+          partitionName: 'Имя раздела %{number}',
+          partitionSize: 'Размер раздела %{number}, КБ',
+          startAddress: 'Начальный адрес',
+          freeSpace: 'Свободно',
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Расчет разделов прошивки')).toBeTruthy();
+    expect(screen.getByText('Имя устройства МПД')).toBeTruthy();
+    expect(screen.getByText('Имя раздела 1')).toBeTruthy();
+    expect(screen.getByText('Имя раздела 8')).toBeTruthy();
+    expect(screen.getByText('Размер раздела 3, КБ')).toBeTruthy();
+    expect(screen.getAllByText('Начальный адрес').length).toBe(8);
+    expect(freeSpace()).toContain('Свободно');
+
+    // Partial on purpose: what a consumer has no translation for stays
+    // English rather than becoming a hole.
+    expect(screen.getByText('Flash size, MB')).toBeTruthy();
+    expect(screen.getAllByText('End address').length).toBe(8);
+  });
+
+  test('the free-space units follow the labels', () => {
+    // "4096 KB" under "Размер раздела 0, КБ" was the last word in the wrong
+    // language, and it is formatted inside useCalc rather than in the markup.
+    render(<FirmwarePartitionCalculator labels={{ freeSpace: 'Свободно', kb: 'КБ', bytes: 'байт' }} />);
+    click('Lite');
+
+    expect(freeSpace()).toBe('Свободно: 0 КБ');
+  });
+
+  test('a label with no %{number} is left exactly as it was given', () => {
+    // Chinese puts the number in the middle; a language that does not want it
+    // at all must not have one appended.
+    render(<FirmwarePartitionCalculator labels={{ partitionName: '分区 %{number} 名称', hexSize: '大小' }} />);
+
+    expect(screen.getByText('分区 5 名称')).toBeTruthy();
+    expect(screen.getAllByText('大小').length).toBe(8);
+  });
+});

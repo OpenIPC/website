@@ -1,0 +1,14 @@
+---
+/**
+ * The heading a content page opens with.
+ *
+ * `<h2>` in the Rails views, not `<h1>` -- the layout carries no page-level
+ * h1, so these pages have had an h2 as their first heading throughout. Kept
+ * rather than corrected: changing every marketing page's heading level in the
+ * same change that moves them is two changes wearing one commit, and the one
+ * that alters what a screen reader announces deserves its own.
+ */
+---
+<header>
+  <h2 class="mt-4 mb-6 text-h2"><slot /></h2>
+</header>

@@ -1,0 +1,156 @@
+---
+/**
+ * One services whitepaper (#160).
+ *
+ * app/views/pages/_service.html.erb. Five pages are nothing but this partial
+ * with a different i18n block -- video encoding, ISP & sensors, reverse
+ * engineering, turnkey hardware, digital twins -- so it is one component and
+ * five registry entries rather than five near-identical files.
+ *
+ * The mailto is built the same way the partial builds it, and for the same
+ * reason: the subject line is what lets the business mailbox count and triage
+ * enquiries without analytics, and the body is a checklist in English on every
+ * locale because it is read by the people who answer it.
+ */
+import Icon from './Icon.astro';
+import { useTranslations, type Locale } from '../lib/i18n';
+import type { ServiceSpec } from '../lib/pages';
+
+interface Props extends ServiceSpec { locale: Locale }
+const { locale, key, icons, pills, mailSubject, mailBody } = Astro.props;
+
+const t = useTranslations(locale);
+const tk = (k: string) => t(`pages.${key}.${k}`);
+
+// encodeURIComponent, then the literal "%3A%20" the partial appends -- a colon
+// and a space, pre-encoded, so each line of the body reads "Thing: " and the
+// reply is typed after it.
+const mailto = `mailto:business@openipc.org?subject=${encodeURIComponent(mailSubject)}`
+  + `&body=${mailBody.map((line) => `${encodeURIComponent(line)}%3A%20`).join('%0A')}`;
+---
+
+{/* ---- Cover ---- */}
+<section class="bg-ink py-section text-white/85 lg:py-section-lg">
+  <div class="site-container">
+    <div class="lg:w-3/4">
+      <p class="mb-3 text-sm tracking-[.08em] text-accent uppercase">{tk('eyebrow')}</p>
+      <h1 class="mb-3 text-4xl font-bold lg:text-5xl">{tk('hero_title')}</h1>
+      <p class="mb-6 max-w-[62ch] text-lg text-white/80">{tk('hero_lede')}</p>
+      <p class="mb-0 flex flex-wrap gap-3">
+        <a class="site-btn site-btn-lg site-btn-primary" href={mailto}>
+          {tk('hero_cta_send')}
+        </a>
+        <a class="site-btn site-btn-lg site-btn-outline-light" href="#engagement">
+          {tk('hero_cta_how')}
+        </a>
+      </p>
+    </div>
+  </div>
+</section>
+
+{/* ---- Three figures ---- */}
+<section class="border-b border-hairline py-6">
+  <div class="site-container">
+    <div class="grid gap-6 text-center md:grid-cols-3 lg:text-left">
+      {[1, 2, 3].map((i) => (
+        <div>
+          <span class="block text-[2.25rem] leading-[1.1] font-semibold tracking-[-.01em] text-body">{tk(`stat${i}_n`)}</span>
+          <span class="block text-sm text-body-secondary">{tk(`stat${i}_l`)}</span>
+        </div>
+      ))}
+    </div>
+    <p class="mt-4 mb-0 text-center text-sm text-body-secondary lg:text-left">{tk('stats_source')}</p>
+  </div>
+</section>
+
+{/* ---- The reader's problem ---- */}
+<section class="py-section">
+  <div class="site-container">
+    <h2 class="mb-6 text-2xl">{tk('scar_title')}</h2>
+    <div class="grid gap-12 lg:grid-cols-2">
+      <p class="mb-0">{tk('scar_p1')}</p>
+      <p class="mb-0">{tk('scar_p2')}</p>
+    </div>
+    <blockquote class="mt-12 mb-0 border-l-4 border-accent pl-6 text-xl text-body-secondary italic">
+      <p class="mb-0">{tk('pull_quote')}</p>
+    </blockquote>
+  </div>
+</section>
+
+{/* ---- Four things we bring ---- */}
+<section class="bg-surface-alt py-section">
+  <div class="site-container">
+    <h2 class="mb-2 text-2xl">{tk('brings_title')}</h2>
+    <p class="mb-6 max-w-[70ch] text-body-secondary">{tk('brings_intro')}</p>
+    <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      {icons.map((icon, i) => (
+        <div class="flex h-full flex-col rounded-lg border border-hairline bg-white p-5">
+          <Icon name={icon} class="size-7 text-brand-blue" />
+          <h3 class="mt-3 mb-2 text-base font-semibold">{tk(`bring${i + 1}_title`)}</h3>
+          <p class="mb-0 text-sm text-body-secondary">{tk(`bring${i + 1}_text`)}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+{/* ---- Results ---- */}
+<section class="py-section">
+  <div class="site-container">
+    <h2 class="mb-6 text-2xl">{tk('results_title')}</h2>
+    <div class="grid gap-12 lg:grid-cols-3">
+      {[1, 2, 3].map((i) => (
+        <div>
+          <h3 class="mb-2 text-xl">{tk(`res${i}_title`)}</h3>
+          <p class="mb-0 text-body-secondary">{tk(`res${i}_text`)}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+{/* ---- Platforms / scope ---- */}
+<section class="bg-surface-alt py-section">
+  <div class="site-container">
+    <h2 class="mb-4 text-2xl">{tk('platforms_title')}</h2>
+    <p class="mb-4 flex flex-wrap gap-2">
+      {Array.from({ length: pills }, (_, i) => (
+        <span class="rounded-full border border-hairline bg-white px-3 py-1 font-mono text-sm">{tk(`pill${i + 1}`)}</span>
+      ))}
+    </p>
+    <p class="mb-0 max-w-[70ch] text-body-secondary">{tk('platforms_text')}</p>
+  </div>
+</section>
+
+{/* ---- The engagement ---- */}
+<section class="py-section" id="engagement">
+  <div class="site-container">
+    <h2 class="mb-6 text-2xl">{tk('engagement_title')}</h2>
+    <div class="grid gap-6 md:grid-cols-3">
+      {[1, 2, 3].map((i) => (
+        <div>
+          <div class="mb-2 font-mono text-2xl text-brand-blue/40">0{i}</div>
+          <h3 class="mb-2 text-base font-semibold">{tk(`step${i}_title`)}</h3>
+          <p class="mb-0 text-body-secondary">{tk(`step${i}_text`)}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+{/* ---- The ask. The band follows an article on white, so it keeps its gap. ---- */}
+<section class="mt-section bg-ink py-section text-white/85">
+  <div class="site-container text-center">
+    <h2 class="mb-4 text-h2">{tk('cta_title')}</h2>
+    <p class="mx-auto mb-6 max-w-[62ch] text-white/70">{tk('cta_text')}</p>
+    <p class="mb-0 flex flex-wrap justify-center gap-3">
+      <a class="site-btn site-btn-lg site-btn-primary" href={mailto}>
+        {tk('cta_primary')}
+      </a>
+      <a class="site-btn site-btn-lg site-btn-outline-light" href="https://t.me/openipc">
+        {tk('cta_secondary')}
+      </a>
+    </p>
+    <p class="mx-auto mt-6 mb-0 max-w-[62ch] text-sm text-white/60" set:html={tk('cta_note_html')} />
+  </div>
+</section>

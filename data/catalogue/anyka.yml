@@ -1,0 +1,81 @@
+# Anyka — 5 SoC(s).
+#
+# Exported from the catalogue table (#161). This file is the source of
+# truth for the hardware pages: edit it in a pull request, not in the
+# admin, and the prerendered pages follow on the next build.
+name: Anyka
+urlname: anyka
+full_name: null
+website_url: null
+notes: null
+socs:
+- family: AK3918EV300
+  model: AK3916EV300
+  version: ''
+  status: neq
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.ak3916ev300-nor-lite.tgz
+  notes: ''
+  urlname: ak3916ev300
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ak3916ev300_images.yml/badge.svg
+  featured: false
+  segment: null
+- family: null
+  model: AK3916EV301
+  version: ''
+  status: rnd
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.ak3918ev200-nor-lite.tgz
+  notes: ''
+  urlname: ak3916ev301
+  build_status_url: https://img.shields.io/static/v1?label=AK3916Ev301&message=%20&logo=github
+  featured: false
+  segment: null
+- family: AK3918EV200
+  model: AK3918EV200
+  version: ''
+  status: hlp
+  load_address: '0x81808000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: ''
+  notes: ''
+  urlname: ak3918ev200
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ak3918ev200_images.yml/badge.svg
+  featured: false
+  segment: null
+- family: AK3918EV300
+  model: AK3918EV300
+  version: ''
+  status: neq
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.ak3918ev300-nor-lite.tgz
+  notes: ''
+  urlname: ak3918ev300
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ak3918ev300_images.yml/badge.svg
+  featured: false
+  segment: null
+- family: null
+  model: AK3918EV330
+  version: ''
+  status: rnd
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: ''
+  notes: ''
+  urlname: ak3918ev330
+  build_status_url: https://img.shields.io/static/v1?label=AK3918EV330&message=%20&logo=github
+  featured: false
+  segment: null

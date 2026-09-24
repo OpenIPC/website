@@ -2,6 +2,34 @@
   "button": {
     "find": "寻找"
   },
+  "cameras": {
+    "socs": {
+      "index": {
+        "featured": "推荐的",
+        "full_list": "所有列表",
+        "installable_title": "%{total} 款中有 %{count} 款可以安装",
+        "nothing_installable_html": "%{vendor} 的 %{total} 款芯片目前都无法安装——它们都还没有 OpenIPC 构建。下面每一行都写明了原因，其中不少是在等一块板子或一位开发者，而不是等我们。",
+        "recommended_alert_html": "请注意。对不同 SoC 的支持处于不同的开发阶段。<a href=\"/supported-hardware/featured\">此列表</a>显示了最受支持的，因此也是最推荐的。",
+        "stages_of_development": "固件开发阶段说明",
+        "th_baseaddr": "加载地址",
+        "th_docs": "文档",
+        "th_soc_model": "芯片型号",
+        "th_stage": "阶段",
+        "th_status": "构建状态",
+        "title": "SoC 支持的硬件"
+      },
+      "soc": {
+        "firmware_only": "仅有固件——通过原厂引导程序刷入",
+        "generate_guide": "生成安装指南",
+        "unavailable": "暂不可用",
+        "unavailable_hlp": "不可用——正在寻找开发者",
+        "unavailable_mvp": "不可用——早期版本",
+        "unavailable_neq": "不可用——没有可供开发的板子",
+        "unavailable_rnd": "不可用——研究中",
+        "unavailable_wip": "不可用——进行中"
+      }
+    }
+  },
   "footer": {
     "column_community": "社区",
     "column_ecosystem": "生态",
@@ -311,6 +339,7 @@
     "firmware_partitions_calculation": {
       "end_address": "结束地址",
       "flash_size_mb": "闪存大小，MB",
+      "free_space": "剩余空间",
       "mtd_name": "MTD 设备名称",
       "offset": "初始偏移量，十进制或十六进制",
       "partition_name": "分区 %{number} 名称",
@@ -318,7 +347,9 @@
       "recalculate": "重新计算",
       "size_hex": "十六进制大小，字节",
       "start_address": "起始地址",
-      "title": "固件分区计算"
+      "title": "固件分区计算",
+      "unit_bytes": "字节",
+      "unit_kb": "KB"
     },
     "get_started": {
       "cta_find_soc": "查找你的 SoC",
@@ -849,6 +880,11 @@
     },
     "snapshot": {
       "link_to_camera": "此摄像机的固定链接"
+    }
+  },
+  "snapshots": {
+    "index": {
+      "no_signal": "没信号"
     }
   },
   "str": {

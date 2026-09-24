@@ -1,0 +1,120 @@
+---
+/**
+ * app/views/pages/community.html.erb (#160).
+ *
+ * Two notes carried across from the Rails view because they are the reason the
+ * page reads the way it does:
+ *
+ * Every room here is a Telegram room, and Telegram does not open from every
+ * network -- it is blocked in China and in Russia, which between them are the
+ * site's second and fourth countries by visitor. The "if you cannot reach us"
+ * block names the two doors that do work from everywhere. It says networks
+ * rather than countries on purpose: it is equally true of company Wi-Fi and
+ * hotel connections, and the site does not know where anyone is sitting. There
+ * is no VPN or proxy advice, because promoting circumvention is itself
+ * restricted in Russia and the project has a Russian mirror to protect.
+ *
+ * The wizard used to route Chinese visitors here believing the page listed a
+ * WeChat contact. It never did, and the project holds no WeChat account.
+ */
+import Icon from '../Icon.astro';
+import PageHeader from '../PageHeader.astro';
+import CtaBand from '../CtaBand.astro';
+import { useTranslations, type Locale } from '../../lib/i18n';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.community.${s}`);
+
+const CHANNELS: [string, string, string][] = [
+  ['OpenIPC Users (EN)', 'https://t.me/+7LL2kc32SOo5YWYy', 'channel_en'],
+  ['OpenIPC & FPV', 'https://t.me/+BMyMoolVOpkzNWUy', 'channel_fpv'],
+  ['OpenIPC Users (RU)', 'https://t.me/+Sl2GPoR9G2iJAOCr', 'channel_ru'],
+  ['OpenIPC Firmware', 'https://t.me/s/openipc_dev', 'channel_dev'],
+];
+
+const CONTRIBUTIONS: [string, string][] = [
+  ['contrib1', 'bug'],
+  ['contrib2', 'git'],
+  ['contrib3', 'cpu'],
+  ['contrib4', 'translate'],
+  ['contrib5', 'box2-heart'],
+  ['contrib6', 'megaphone'],
+];
+
+// `t(".#{key}_text", default: '').presence || t(".#{key}_text_html")` in the
+// Rails view: some of these entries carry a link and some do not, and the
+// catalogue records which by the key it defines. Reproduced rather than
+// normalised, so the two halves of the site render the same six paragraphs.
+function contributionText(key: string): string {
+  try {
+    return k(`${key}_text`);
+  } catch {
+    return k(`${key}_text_html`);
+  }
+}
+---
+<PageHeader title={k('hero_title')} lede={k('hero_lede')} />
+
+<div class="site-container">
+  <article>
+    <h2 class="mb-6 text-2xl">{k('channels_title')}</h2>
+    <div class="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {CHANNELS.map(([name, url, descKey]) => (
+        <div class="h-full rounded-lg border border-hairline bg-white p-4">
+          <h3 class="mb-2 flex items-center gap-2 text-base font-semibold">
+            <Icon name="telegram" class="size-4 text-brand-blue" />
+            <a class="text-body" href={url} data-event="tg-join">{name}</a>
+          </h3>
+          <p class="mb-0 text-sm text-body-secondary">{k(descKey)}</p>
+        </div>
+      ))}
+    </div>
+
+    <div class="mb-6 flex gap-4 rounded-lg border border-accent/40 bg-accent/10 p-4">
+      <Icon name="robot" class="size-6 shrink-0 text-ink" />
+      <p class="mb-0">{k('bot_warning')}</p>
+    </div>
+
+    <div class="mb-18 flex gap-4 rounded-lg border border-hairline bg-surface-alt p-4" id="reach">
+      <Icon name="life-preserver" class="size-6 shrink-0 text-body-secondary" />
+      <div>
+        <h3 class="mb-2 text-base font-semibold">{k('reach_title')}</h3>
+        <p class="mb-2 text-sm">{k('reach_lede')}</p>
+        <ul class="mb-0 list-disc pl-8 text-sm">
+          <li set:html={k('reach_issues_html')} />
+          <li set:html={k('reach_wiki_html')} />
+        </ul>
+      </div>
+    </div>
+
+    <h2 class="mb-4 text-2xl">{k('help_title')}</h2>
+    <ul class="mb-18 list-disc pl-8 text-body-secondary">
+      <li set:html={k('help1_html')} />
+      <li>{k('help2')}</li>
+      <li>{k('help3')}</li>
+    </ul>
+
+    <h2 class="mb-6 text-2xl">{k('contribute_title')}</h2>
+    <div class="mb-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      {CONTRIBUTIONS.map(([key, icon]) => (
+        <div>
+          <h3 class="mb-2 flex items-center gap-2 text-base font-semibold">
+            <Icon name={icon} class="size-4 text-brand-blue" />
+            {k(`${key}_title`)}
+          </h3>
+          <p class="mb-0 text-sm text-body-secondary" set:html={contributionText(key)} />
+        </div>
+      ))}
+    </div>
+
+    <p class="text-body-secondary" set:html={k('money_band_html')} />
+  </article>
+</div>
+
+<CtaBand
+  title={k('hero_title')}
+  primaryLabel={k('cta_join')}
+  primaryHref="https://t.me/+7LL2kc32SOo5YWYy"
+  noteHtml={k('money_band_html')}
+/>

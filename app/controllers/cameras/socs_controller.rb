@@ -173,9 +173,10 @@ module Cameras
       else
         # Everything above this point can be set from the query string.
         if (asked = @camera.use_published_release!)
-          flash.now[:warning] =
-            "OpenIPC does not publish a #{asked.to_s.capitalize} build for this SoC on " \
-            "#{@camera.flash_type_type.upcase} flash. Showing #{@camera.firmware_version_name} instead."
+          flash.now[:warning] = warning(:edition_not_published,
+                                        edition: asked.to_s.capitalize,
+                                        flash: @camera.flash_type_type.upcase,
+                                        shown: @camera.firmware_version_name)
         end
 
         warn_if_nothing_published
@@ -501,15 +502,9 @@ module Cameras
     # too -- it is the branch for a SoC published as Ultimate and nothing else,
     # hi3516cv6xx and hi3519dv500, where there is no Lite to fall back to.
     def no_lite_for_eight_meg_alert
-      unless @camera.flash_type.eql?('nor8m')
-        return 'The Ultimate edition does not fit the 8MB partition layout, and OpenIPC publishes ' \
-               'no Lite build for this SoC on NOR. Choose the 16MB layout, which this chip is big ' \
-               'enough for.'
-      end
+      return warning(:no_lite_layout) unless @camera.flash_type.eql?('nor8m')
 
-      'The Ultimate edition does not fit an 8MB flash chip, and OpenIPC publishes no Lite build ' \
-        'for this SoC on NOR. These instructions cannot produce a working camera on 8MB flash -- ' \
-        'this SoC needs a larger chip.'
+      warning(:no_lite_chip)
     end
 
     # The chip when the chip is what limits them, and the layout when it is the
@@ -517,10 +512,9 @@ module Cameras
     # part around it is 8MB or 32MB, and on the larger ones there is something
     # the reader can actually do about it.
     def eight_meg_warning
-      return '8MB Flash ROM can only be flashed with Lite or FPV edition!' if @camera.flash_type.eql?('nor8m')
+      return warning(:eight_meg_chip) if @camera.flash_type.eql?('nor8m')
 
-      'The 8MB partition layout leaves 5MB for the rootfs, which only the Lite and FPV editions ' \
-        'fit. Choose the 16MB layout to install Ultimate on this chip.'
+      warning(:eight_meg_layout)
     end
 
     # Nothing published for the chip that was chosen, at any edition.
@@ -549,17 +543,24 @@ module Cameras
       return if @camera.nand? || !asked.in?(Camera::PARTITION_LAYOUT)
       return if asked.eql?(@camera.partition_layout)
 
-      flash.now[:warning] =
-        'The 16MB partition layout needs a 16MB chip -- its rootfs alone ends at 0xD50000. ' \
-        "Showing the #{@camera.layout_size}MB layout instead."
+      flash.now[:warning] = warning(:layout_changed, size: @camera.layout_size)
     end
 
     def warn_if_nothing_published
       return if @camera.soc.available_releases(@camera.flash_type_type).any?
 
-      flash.now[:alert] =
-        "OpenIPC publishes no #{@camera.flash_type_type.upcase} firmware for this SoC. These " \
-        'instructions cannot produce a working camera -- the files they name have never been built.'
+      flash.now[:alert] = warning(:nothing_published, flash: @camera.flash_type_type.upcase)
+    end
+
+    # The wizard's safety messages, in the visitor's language (#163).
+    #
+    # These were English sentences built in Ruby, so a Russian reader was told
+    # in English that the instructions in front of them could not produce a
+    # working camera. They are keys now, which is also what #163's export
+    # carries -- a key and its arguments travel; a rendered sentence in one
+    # language does not.
+    def warning(key, **arguments)
+      t("cameras.socs.warnings.#{key}", **arguments)
     end
 
     def permitted_params

@@ -1,0 +1,41 @@
+---
+/**
+ * app/views/pages/merchandise.html.erb (#160).
+ *
+ * One product. The card was pasted three times in an earlier version -- same
+ * image, same keys, same link -- so the page advertised a single T-shirt as
+ * though it were a catalogue. A test holds it to one.
+ */
+import { Image } from 'astro:assets';
+import Container from '../Container.astro';
+import PageTitle from '../PageTitle.astro';
+import { useTranslations, type Locale } from '../../lib/i18n';
+import shirt from '../../assets/pages/OpenIPC-t-shirt-flo-blue.webp';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.merchandise.${s}`);
+---
+<Container>
+  <article>
+    <PageTitle>{k('title')}</PageTitle>
+    <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div class="overflow-hidden rounded-lg border border-hairline">
+        <Image
+          src={shirt}
+          alt="Image: Model in an OpenIPC T-Shirt"
+          title="OpenIPC Official T-shirt in Florida Blue and White"
+          class="h-auto w-full"
+          loading="lazy"
+        />
+        <div class="p-5">
+          <h2 class="mb-2 text-xl">{k('shirt_1.title')}</h2>
+          <p class="mb-3 text-body-secondary">{k('shirt_1.description')}</p>
+          <a class="text-brand-blue" href="https://weededwords.com/product/openipc-t-shirt/">
+            {k('order_from_weededwords')}
+          </a>
+        </div>
+      </div>
+    </div>
+  </article>
+</Container>

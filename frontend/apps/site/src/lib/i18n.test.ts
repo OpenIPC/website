@@ -24,11 +24,28 @@ describe('the catalogue', () => {
     // change on both sides rather than a surprise.
     for (const cat of [en, ru, zh]) {
       const keys = Object.keys(cat);
-      for (const forbidden of ['cameras', 'firmware', 'snapshots', 'devise', 'activerecord']) {
+      for (const forbidden of ['firmware', 'devise', 'activerecord']) {
         expect(keys).not.toContain(forbidden);
       }
+
+      // `cameras` is admitted two subtrees at a time, not whole (#162): the
+      // catalogue's table and row are here and the wizard's 27 strings are
+      // not, because the wizard is still Rails until #163 and a translator
+      // should not be shown strings no page in this bundle can use.
+      const cameras = (cat as unknown as Record<string, Record<string, unknown>>).cameras;
+      expect(Object.keys(cameras)).toEqual(['socs']);
+      expect(Object.keys(cameras.socs as Record<string, unknown>).sort()).toEqual(['index', 'soc']);
       const pages = (cat as unknown as Record<string, Record<string, unknown>>).pages;
       expect(Object.keys(pages)).not.toContain('admin');
+
+      // `snapshots` is the Open Wall's, and the Open Wall stays in Rails. One
+      // leaf of it is grafted in by I18nExport::INCLUDED: the home page's wall
+      // mosaic fills its empty tiles with the Open Wall's own "no signal"
+      // placeholder, and the two halves of the site have to say it in the same
+      // words (#160). Asserted as "that leaf and nothing else", so widening it
+      // to the namespace is a deliberate change here too.
+      const snapshots = (cat as unknown as Record<string, unknown>).snapshots;
+      expect(snapshots).toEqual({ index: { no_signal: expect.any(String) } });
     }
   });
 });

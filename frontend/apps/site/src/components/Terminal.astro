@@ -1,0 +1,68 @@
+---
+/**
+ * app/views/shared/_terminal.html.erb -- a shell block with a copy button.
+ *
+ * Ink, as app/assets/stylesheets/components/_terminal.scss has it: the block
+ * is $ink with #e7ebf5 text and an $ink-2 header, because it is meant to read
+ * as a terminal. It was white-on-light, which is the one element on
+ * /get-started a reader compares against the shell they are pasting into.
+ *
+ * `dir="ltr"` for the same reason the stylesheet sets it: a shell command
+ * stays left-to-right even in a right-to-left locale.
+ *
+ * The copy handler is delegated from the document, once per page, so a page
+ * with several blocks ships one listener. With JavaScript off the button is
+ * hidden rather than dead: a control that does nothing when pressed is worse
+ * than one that is not offered.
+ */
+import Icon from './Icon.astro';
+
+interface Props { code: string; title?: string; id: string }
+const { code, title = 'shell', id } = Astro.props;
+---
+<div class="my-4 overflow-hidden rounded-lg bg-ink font-mono text-left text-[#e7ebf5]" dir="ltr">
+  <div class="flex items-center gap-2 bg-ink-2 px-3 py-2 text-xs text-white/55">
+    <span class="inline-flex gap-[.3rem]">
+      <span class="size-[.55rem] rounded-full bg-white/25"></span>
+      <span class="size-[.55rem] rounded-full bg-white/25"></span>
+      <span class="size-[.55rem] rounded-full bg-white/25"></span>
+    </span>
+    <span>{title}</span>
+    <button
+      type="button"
+      class="site-btn site-btn-sm js-copy ms-auto text-white/55 hover:text-white"
+      hidden
+      data-copy-target={`#${id}`}
+      title="Copy"
+      aria-label="Copy to clipboard"
+    >
+      <Icon name="clipboard" class="size-4 [&>svg]:inline [&>svg]:align-middle" />
+    </button>
+  </div>
+  <pre class="m-0 overflow-x-auto px-4 py-[14px] text-sm leading-[1.6]"><code id={id}>{code}</code></pre>
+</div>
+
+<script>
+  for (const button of document.querySelectorAll<HTMLButtonElement>('.js-copy')) {
+    button.removeAttribute('hidden');
+  }
+
+  document.addEventListener('click', async (event) => {
+    const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>('.js-copy');
+    if (!button) return;
+
+    const target = document.querySelector(button.dataset.copyTarget ?? '');
+    if (!target?.textContent) return;
+
+    try {
+      await navigator.clipboard.writeText(target.textContent);
+      const was = button.getAttribute('aria-label');
+      button.setAttribute('aria-label', 'Copied');
+      setTimeout(() => button.setAttribute('aria-label', was ?? 'Copy to clipboard'), 1500);
+    } catch {
+      // Clipboard access can be refused -- an insecure origin, or a browser
+      // setting. The text is on the page and selectable either way, so there
+      // is nothing to report and nothing to fall back to.
+    }
+  });
+</script>

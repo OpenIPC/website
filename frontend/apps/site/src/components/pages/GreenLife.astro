@@ -1,0 +1,28 @@
+---
+/** app/views/pages/green_life.html.erb (#160). */
+import { Image } from 'astro:assets';
+import Container from '../Container.astro';
+import PageTitle from '../PageTitle.astro';
+import { useTranslations, type Locale } from '../../lib/i18n';
+import cams from '../../assets/pages/green_life_cams.webp';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.green_life.${s}`);
+---
+<Container>
+  <article>
+    <PageTitle>{k('title')}</PageTitle>
+    <div class="grid gap-6 lg:grid-cols-2">
+      <div class="space-y-4">
+        <p>{k('paragraph1')}</p>
+        <p>{k('paragraph2')}</p>
+        <p>{k('paragraph3')}</p>
+        <p>{k('paragraph4')}</p>
+      </div>
+      <div>
+        <Image src={cams} alt="Image: Green Life Cameras" class="h-auto w-full rounded-lg" loading="lazy" />
+      </div>
+    </div>
+  </article>
+</Container>

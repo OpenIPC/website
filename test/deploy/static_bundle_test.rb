@@ -231,6 +231,154 @@ class StaticBundleTest < ActiveSupport::TestCase
     end
   end
 
+  # Every fixed address the router knows, redirects included.
+  #
+  # `(/:locale)` is the optional prefix #154 put on every public route, and it
+  # is exactly the part the bundle expresses as a directory rather than a
+  # parameter -- /ru/donate is a file. Stripped before comparing, or every
+  # marketing route would look like a dynamic one and match nothing.
+  def routed_paths
+    @routed_paths ||= Rails.application.routes.routes.filter_map do |route|
+      path = route.path.spec.to_s.delete_suffix('(.:format)')
+      # Two spellings, because the root is declared inside the scope rather
+      # than under it: `get '/donate'` becomes "(/:locale)/donate" and `root`
+      # becomes "/(:locale)". Both mean the same optional prefix.
+      path = path.sub(%r{\A\(/:locale\)}, '').sub(%r{\A/\(:locale\)}, '')
+      next if path.include?(':') || path.include?('*')
+
+      path.empty? ? '/' : path
+    end.to_set.freeze
+  end
+
+  # --- what the bundle claims, against what Rails routes (#160) --------------
+  #
+  # frontend/apps/site/src/lib/page-paths.ts is the list of addresses the
+  # bundle serves. It is TypeScript, so nothing in Ruby validates it, and it is
+  # the one file in the repository that can silently shadow a Rails route: the
+  # seam serves a file before it asks Rails, without a line in the log.
+  #
+  # Read as text rather than executed. A Node process inside `bin/rails test`
+  # would put the frontend toolchain on the critical path of a Ruby suite, and
+  # the list is a literal array of string fields -- if it ever stops being one,
+  # this stops finding paths and the count assertion below fails loudly rather
+  # than passing vacuously.
+  PAGE_PATHS_TS = Rails.root.join('frontend/apps/site/src/lib/page-paths.ts')
+
+  def bundle_paths
+    @bundle_paths ||= PAGE_PATHS_TS.read.scan(/^\s*\{ path: '([^']+)'/).flatten.freeze
+  end
+
+  test 'the bundle claims a plausible number of addresses' do
+    # Guards the scan above: a refactor that changes the file's shape must not
+    # quietly turn every assertion below into a test of the empty set.
+    assert_operator bundle_paths.size, :>=, 20,
+                    "only found #{bundle_paths.size} paths in #{PAGE_PATHS_TS.basename}; has its shape changed?"
+  end
+
+  test 'every address the bundle claims is a real Rails route' do
+    known = routed_paths
+
+    # /_smoke is the diagnostic. It is the one address in the bundle with no
+    # Rails route behind it, deliberately: nothing should answer it but the
+    # bundle, and that is what proves the seam is alive.
+    unrouted = bundle_paths.reject { |path| path == '/_smoke' || known.include?(path) }
+
+    assert_empty unrouted, <<~MESSAGE.chomp
+      These addresses are in the static bundle but config/routes.rb has no
+      route for them:
+
+        #{unrouted.join("\n        ")}
+
+      Either the path is a typo -- in which case the bundle serves a page at an
+      address nothing links to -- or the Rails route was deleted before the
+      bundle stopped claiming it, which leaves no fallback when the bundle is
+      rolled back.
+    MESSAGE
+  end
+
+  test 'every Rails address the bundle links to is a real route' do
+    # The other half of the link check in
+    # frontend/apps/site/src/lib/pages.build.test.ts. That one asserts every
+    # internal href in the built tree is either a bundle page or one of these;
+    # this one asserts these exist. A link to a path the router does not know
+    # falls through the catch-all to a 302 home, which looks like a working
+    # link right up until somebody clicks it.
+    ts = Rails.root.join('frontend/apps/site/src/lib/rails-paths.ts').read
+    listed = ts[/RAILS_PATHS[^=]*=\s*\[(.*?)\]/m, 1].to_s.scan(/'([^']+)'/).flatten
+
+    assert_operator listed.size, :>=, 3, 'found no paths in rails-paths.ts; has its shape changed?'
+
+    # Matched against the route table rather than through recognize_path.
+    # `match "*unmatched"` matches everything, so recognize_path never raises
+    # and answers application#route_not_found for a path that does not exist --
+    # and it does the same for a route defined with `redirect`, which
+    # /supported-hardware is. A redirect is a fine destination; the catch-all
+    # is not, and only the table tells them apart.
+    unrouted = listed.reject { |path| routed_paths.include?(path) }
+
+    assert_empty unrouted, <<~MESSAGE.chomp
+      The static pages link these, and config/routes.rb does not route them:
+
+        #{unrouted.join("\n        ")}
+    MESSAGE
+  end
+
+  test 'the wizard the catalogue links to is a route Rails still has' do
+    # rails-paths.ts carries a pattern as well as a list (#162): every row of
+    # the catalogue links one address per SoC --
+    # /cameras/vendors/<vendor>/socs/<soc> -- which is Rails' until #163. A
+    # list of 126 strings would be a second copy of the catalogue, so the
+    # frontend matches a shape and this asserts the shape is real.
+    #
+    # Not by re-running the TypeScript regex in Ruby: a regex parsed out of one
+    # language and executed in another tests the parser. What matters here is
+    # that the address those links have exists, and that the frontend has not
+    # quietly dropped the pattern that lets them through.
+    ts = Rails.root.join('frontend/apps/site/src/lib/rails-paths.ts').read
+
+    assert_match(/RAILS_PATTERNS/, ts, 'rails-paths.ts no longer carries the wizard pattern')
+    assert_match(%r{cameras\\?/vendors}, ts, "the pattern no longer names the wizard's tree")
+
+    # Asked of the router itself: `routed_paths` holds the static addresses,
+    # and this one carries two parameters.
+    helper = Rails.application.routes.url_helpers
+    assert_equal '/cameras/vendors/probe/socs/ps1000',
+                 helper.cameras_vendor_soc_path(vendor_id: 'probe', id: 'ps1000'),
+                 'the catalogue links at an address config/routes.rb does not route'
+  end
+
+  test 'the baked support goal is the one config/support_goal.yml sets' do
+    # The donate page and the home band print "help us reach N", and N is a
+    # setting somebody raises by pull request (#198) -- so the prerendered copy
+    # of it cannot drift. The build has no Ruby, which is why there is a copy
+    # at all; this is what makes raising the goal one edit and a red test.
+    ts = Rails.root.join('frontend/apps/site/src/data/support-goal.ts').read
+    baked = ts[/SUPPORT_GOAL\s*=\s*(\d+)/, 1]&.to_i
+
+    assert baked, 'found no SUPPORT_GOAL in support-goal.ts; has its shape changed?'
+    assert_equal SupportStats.goal, baked, <<~MESSAGE.chomp
+      config/support_goal.yml says #{SupportStats.goal} and the static pages say #{baked}.
+
+      Both halves of the site quote this number, and they must quote the same one.
+    MESSAGE
+  end
+
+  test 'no address the bundle claims is reserved' do
+    # The two lists are written for opposite purposes and must not overlap:
+    # reserved-paths is what the bundle must never contain, and page-paths.ts
+    # is what it does contain. check-bundle.sh refuses the overlap at install
+    # time; this says so at the point somebody adds the second entry.
+    collisions = bundle_paths.select { |path| reserved?(path) }
+
+    assert_empty collisions, <<~MESSAGE.chomp
+      These addresses are both claimed by the bundle and reserved against it:
+
+        #{collisions.join("\n        ")}
+
+      deploy/static/check-bundle.sh would refuse the bundle at install time.
+    MESSAGE
+  end
+
   # Three sources that know nothing about each other. A list maintained by hand
   # is a list that rots -- which is exactly the shape of the bug #254 had just
   # fixed in robots.txt, where the rule named one of four spellings.

@@ -293,7 +293,7 @@ describe('third round of the review', () => {
   });
 
   test('reserved flash is drawn on the partition map, not left looking free', () => {
-    render(h(FirmwarePartitionCalculator, {}));
+    render(h(FirmwarePartitionCalculator, null));
     const lite = screen.getAllByText('Lite')[0];
     fireEvent.click(lite);
     const part3 = document.querySelector('input[name="part3-size"]') as HTMLInputElement;
@@ -359,7 +359,7 @@ describe('fourth round of the review', () => {
     // 256 + 64 + 2048 + 5120 + 704 KB rounded one at a time came to 101% of
     // the 8 MB they exactly fill, and the bar clips at overflow-hidden -- so
     // a layout that fitted perfectly lost the end of its last partition.
-    render(h(FirmwarePartitionCalculator, {}));
+    render(h(FirmwarePartitionCalculator, null));
     fireEvent.click(screen.getAllByText('Lite')[0]);
 
     const widths = [...document.querySelectorAll('[style*="width:"]')]

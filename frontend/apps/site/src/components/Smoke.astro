@@ -17,8 +17,11 @@
  *
  * It goes away when #160 puts real pages in the bundle: /donate answering
  * `X-Served-By: static` proves the same thing and is a page somebody wanted.
+ *
+ * The shell is the route's business, not this file's: every page in
+ * src/lib/pages.ts renders its content and the route wraps it in Base, so the
+ * title, the noindex and the hreflang set are declared in one place.
  */
-import Base from '../layouts/Base.astro';
 import { MainButton } from '@openipc/ui';
 import Counter from './Counter.tsx';
 import { LOCALES, useTranslations, pathFor, type Locale } from '../lib/i18n';
@@ -27,14 +30,7 @@ interface Props { locale: Locale }
 const { locale } = Astro.props;
 const t = useTranslations(locale);
 ---
-<Base
-  locale={locale}
-  path="/_smoke"
-  title="openipc.org static bundle"
-  description="Proof that the static bundle is being served."
-  noindex
->
-  <div class="mx-auto flex max-w-xl flex-col gap-5 px-4 py-12">
+<div class="mx-auto flex max-w-xl flex-col gap-5 px-4 py-12">
     <h1 class="text-2xl font-bold text-brand-blue">Static bundle is live</h1>
 
     <p class="text-sm">
@@ -62,5 +58,4 @@ const t = useTranslations(locale);
         <a class="text-brand-blue underline" href={pathFor(l, '/_smoke')}>{pathFor(l, '/_smoke')}</a>
       ))}
     </nav>
-  </div>
-</Base>
+</div>

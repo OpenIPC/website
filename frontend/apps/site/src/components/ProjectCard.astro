@@ -1,0 +1,22 @@
+---
+/** app/views/shared/_project_card.html.erb -- one ecosystem or Labs project. */
+import StageBadge from './StageBadge.astro';
+import Icon from './Icon.astro';
+import type { Locale } from '../lib/i18n';
+
+interface Props { name: string; desc: string; repo?: string; stage?: string; locale: Locale }
+const { name, desc, repo, stage, locale } = Astro.props;
+---
+<div class="flex h-full flex-col rounded-lg border border-hairline bg-white p-4">
+  <div class="mb-2 flex items-start justify-between gap-2">
+    <h4 class="mb-0 text-base font-semibold">{name}</h4>
+    {stage && <StageBadge stage={stage} locale={locale} />}
+  </div>
+  <p class="mb-2 text-sm text-body-secondary">{desc}</p>
+  {repo && (
+    <a class="mt-auto inline-flex items-center gap-1 text-sm text-brand-blue no-underline" href={repo}>
+      <Icon name="github" class="size-4" />
+      {repo.replace('https://github.com/', '')}
+    </a>
+  )}
+</div>

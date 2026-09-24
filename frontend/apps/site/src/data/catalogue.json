@@ -1,0 +1,1376 @@
+{
+  "vendors": [
+    {
+      "name": "Allwinner",
+      "urlname": "allwinner",
+      "full_name": "Allwinner Technology",
+      "website_url": "https://www.allwinnertech.com/",
+      "socs": [
+        {
+          "model": "V831",
+          "family": "V83X",
+          "version": null,
+          "urlname": "v831",
+          "status": "rnd",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        }
+      ]
+    },
+    {
+      "name": "Ambarella",
+      "urlname": "ambarella",
+      "full_name": null,
+      "website_url": null,
+      "socs": [
+        {
+          "model": "S2L",
+          "family": "S2L",
+          "version": "",
+          "urlname": "s2l",
+          "status": "rnd",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "S3L",
+          "family": "S3L",
+          "version": "",
+          "urlname": "s3l",
+          "status": "wip",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        }
+      ]
+    },
+    {
+      "name": "Anyka",
+      "urlname": "anyka",
+      "full_name": null,
+      "website_url": null,
+      "socs": [
+        {
+          "model": "AK3916EV300",
+          "family": "AK3918EV300",
+          "version": "",
+          "urlname": "ak3916ev300",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "AK3916EV301",
+          "family": null,
+          "version": "",
+          "urlname": "ak3916ev301",
+          "status": "rnd",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "AK3918EV200",
+          "family": "AK3918EV200",
+          "version": "",
+          "urlname": "ak3918ev200",
+          "status": "hlp",
+          "load_address": "0x81808000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "AK3918EV300",
+          "family": "AK3918EV300",
+          "version": "",
+          "urlname": "ak3918ev300",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "AK3918EV330",
+          "family": null,
+          "version": "",
+          "urlname": "ak3918ev330",
+          "status": "rnd",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        }
+      ]
+    },
+    {
+      "name": "Fullhan",
+      "urlname": "fullhan",
+      "full_name": null,
+      "website_url": null,
+      "socs": [
+        {
+          "model": "FH8626V100",
+          "family": null,
+          "version": "",
+          "urlname": "fh8626v100",
+          "status": "rnd",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "FH8632V100",
+          "family": null,
+          "version": "",
+          "urlname": "fh8632v100",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "FH8652V100",
+          "family": null,
+          "version": "",
+          "urlname": "fh8652v100",
+          "status": "hlp",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "FH8833V100",
+          "family": "FH8833V100",
+          "version": "",
+          "urlname": "fh8833v100",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "FH8852V100",
+          "family": "FH8852V100",
+          "version": "",
+          "urlname": "fh8852v100",
+          "status": "wip",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "FH8852V200",
+          "family": "FH8852V200",
+          "version": "",
+          "urlname": "fh8852v200",
+          "status": "wip",
+          "load_address": "0xA1000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "FH8852V210",
+          "family": "FH8852V200",
+          "version": "",
+          "urlname": "fh8852v210",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "FH8856V100",
+          "family": "FH8852V100",
+          "version": "",
+          "urlname": "fh8856v100",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "FH8856V200",
+          "family": "FH8852V200",
+          "version": "",
+          "urlname": "fh8856v200",
+          "status": "wip",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "FH8856V210",
+          "family": "FH8852V200",
+          "version": "",
+          "urlname": "fh8856v210",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "FH8858V200",
+          "family": "FH8852V200",
+          "version": "",
+          "urlname": "fh8858v200",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "FH8858V210",
+          "family": "FH8852V200",
+          "version": "",
+          "urlname": "fh8858v210",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        }
+      ]
+    },
+    {
+      "name": "Goke",
+      "urlname": "goke",
+      "full_name": null,
+      "website_url": null,
+      "socs": [
+        {
+          "model": "GK7102",
+          "family": "GK710X",
+          "version": null,
+          "urlname": "gk7102",
+          "status": "hlp",
+          "load_address": "0xC1000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7102C",
+          "family": "GK710X",
+          "version": null,
+          "urlname": "gk7102c",
+          "status": "hlp",
+          "load_address": "0xC1000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7102CA",
+          "family": "GK710X",
+          "version": null,
+          "urlname": "gk7102ca",
+          "status": "hlp",
+          "load_address": "0xC1000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7102CT",
+          "family": "GK710X",
+          "version": null,
+          "urlname": "gk7102ct",
+          "status": "neq",
+          "load_address": "0xC1000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7102CW",
+          "family": "GK710X",
+          "version": null,
+          "urlname": "gk7102cw",
+          "status": "neq",
+          "load_address": "0xC1000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7102S",
+          "family": "GK710X",
+          "version": "",
+          "urlname": "gk7102s",
+          "status": "hlp",
+          "load_address": "0xC1000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7201V200",
+          "family": "GK7201V200",
+          "version": null,
+          "urlname": "gk7201v200",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7201V300",
+          "family": "GK7201V200",
+          "version": null,
+          "urlname": "gk7201v300",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7202V300",
+          "family": "GK7205V200",
+          "version": "",
+          "urlname": "gk7202v300",
+          "status": "done",
+          "load_address": "0x42000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7205V200",
+          "family": "GK7205V200",
+          "version": "",
+          "urlname": "gk7205v200",
+          "status": "done",
+          "load_address": "0x42000000",
+          "featured": true,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7205V210",
+          "family": "GK7205V200",
+          "version": "",
+          "urlname": "gk7205v210",
+          "status": "done",
+          "load_address": "0x42000000",
+          "featured": true,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7205V300",
+          "family": "GK7205V200",
+          "version": "",
+          "urlname": "gk7205v300",
+          "status": "done",
+          "load_address": "0x42000000",
+          "featured": true,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7605V100",
+          "family": "GK7205V200",
+          "version": "",
+          "urlname": "gk7605v100",
+          "status": "done",
+          "load_address": "0x42000000",
+          "featured": true,
+          "segment": "cctv"
+        }
+      ]
+    },
+    {
+      "name": "GrainMedia",
+      "urlname": "grainmedia",
+      "full_name": null,
+      "website_url": null,
+      "socs": [
+        {
+          "model": "GM8135",
+          "family": "GM8136",
+          "version": "",
+          "urlname": "gm8135",
+          "status": "neq",
+          "load_address": "0x2000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "GM8136",
+          "family": "GM8136",
+          "version": "",
+          "urlname": "gm8136",
+          "status": "mvp",
+          "load_address": "0x2000000",
+          "featured": false,
+          "segment": null
+        }
+      ]
+    },
+    {
+      "name": "HiSilicon",
+      "urlname": "hisilicon",
+      "full_name": null,
+      "website_url": null,
+      "socs": [
+        {
+          "model": "HI3516AV100",
+          "family": "HI3516AV100",
+          "version": "",
+          "urlname": "hi3516av100",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516AV200",
+          "family": "HI3519V101",
+          "version": "",
+          "urlname": "hi3516av200",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516AV300",
+          "family": "HI3516CV500",
+          "version": "",
+          "urlname": "hi3516av300",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516CV100",
+          "family": "HI3516CV100",
+          "version": "",
+          "urlname": "hi3516cv100",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516CV200",
+          "family": "HI3516CV200",
+          "version": "",
+          "urlname": "hi3516cv200",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516CV300",
+          "family": "HI3516CV300",
+          "version": "",
+          "urlname": "hi3516cv300",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516CV500",
+          "family": "HI3516CV500",
+          "version": "",
+          "urlname": "hi3516cv500",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516DV100",
+          "family": "HI3516AV100",
+          "version": "",
+          "urlname": "hi3516dv100",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516DV200",
+          "family": "HI3516EV200",
+          "version": "",
+          "urlname": "hi3516dv200",
+          "status": "done",
+          "load_address": "0x42000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516DV300",
+          "family": "HI3516CV500",
+          "version": "",
+          "urlname": "hi3516dv300",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516EV100",
+          "family": "HI3516CV300",
+          "version": "",
+          "urlname": "hi3516ev100",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516EV200",
+          "family": "HI3516EV200",
+          "version": "",
+          "urlname": "hi3516ev200",
+          "status": "done",
+          "load_address": "0x42000000",
+          "featured": true,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516EV300",
+          "family": "HI3516EV200",
+          "version": "",
+          "urlname": "hi3516ev300",
+          "status": "done",
+          "load_address": "0x42000000",
+          "featured": true,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3518CV100",
+          "family": "HI3516CV100",
+          "version": "",
+          "urlname": "hi3518cv100",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3518EV100",
+          "family": "HI3516CV100",
+          "version": "",
+          "urlname": "hi3518ev100",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3518EV200",
+          "family": "HI3516CV200",
+          "version": "",
+          "urlname": "hi3518ev200",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3518EV201",
+          "family": "HI3516CV200",
+          "version": "",
+          "urlname": "hi3518ev201",
+          "status": "wip",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3518EV300",
+          "family": "HI3516EV200",
+          "version": "",
+          "urlname": "hi3518ev300",
+          "status": "done",
+          "load_address": "0x42000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3519V101",
+          "family": "HI3519V101",
+          "version": "",
+          "urlname": "hi3519v101",
+          "status": "done",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3520DV100",
+          "family": "",
+          "version": "",
+          "urlname": "hi3520dv100",
+          "status": "wip",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3520DV200",
+          "family": "",
+          "version": "",
+          "urlname": "hi3520dv200",
+          "status": "wip",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3536CV100",
+          "family": "HI3536CV100",
+          "version": "",
+          "urlname": "hi3536cv100",
+          "status": "rnd",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3536DV100",
+          "family": "HI3536DV100",
+          "version": "",
+          "urlname": "hi3536dv100",
+          "status": "mvp",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        }
+      ]
+    },
+    {
+      "name": "Ingenic",
+      "urlname": "ingenic",
+      "full_name": null,
+      "website_url": null,
+      "socs": [
+        {
+          "model": "T10",
+          "family": "T21",
+          "version": "",
+          "urlname": "t10",
+          "status": "done",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T20",
+          "family": "T21",
+          "version": "",
+          "urlname": "t20",
+          "status": "done",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T21",
+          "family": "T21",
+          "version": "",
+          "urlname": "t21",
+          "status": "done",
+          "load_address": "0x80600000",
+          "featured": true,
+          "segment": "consumer"
+        },
+        {
+          "model": "T23N",
+          "family": "T23",
+          "version": null,
+          "urlname": "t23n",
+          "status": "done",
+          "load_address": "0x80600000",
+          "featured": true,
+          "segment": "consumer"
+        },
+        {
+          "model": "T30L",
+          "family": "T30",
+          "version": null,
+          "urlname": "t30l",
+          "status": "mvp",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T31A",
+          "family": "T31",
+          "version": null,
+          "urlname": "t31a",
+          "status": "mvp",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T31AL",
+          "family": "T31",
+          "version": "",
+          "urlname": "t31al",
+          "status": "done",
+          "load_address": "0x80600000",
+          "featured": true,
+          "segment": "consumer"
+        },
+        {
+          "model": "T31L",
+          "family": "T31",
+          "version": null,
+          "urlname": "t31l",
+          "status": "done",
+          "load_address": "0x80600000",
+          "featured": true,
+          "segment": "consumer"
+        },
+        {
+          "model": "T31LC",
+          "family": "T31",
+          "version": null,
+          "urlname": "t31lc",
+          "status": "mvp",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T31N",
+          "family": "T31",
+          "version": null,
+          "urlname": "t31n",
+          "status": "done",
+          "load_address": "0x80600000",
+          "featured": true,
+          "segment": "consumer"
+        },
+        {
+          "model": "T31X",
+          "family": "T31",
+          "version": null,
+          "urlname": "t31x",
+          "status": "done",
+          "load_address": "0x80600000",
+          "featured": true,
+          "segment": "consumer"
+        },
+        {
+          "model": "T31ZL",
+          "family": "T31",
+          "version": null,
+          "urlname": "t31zl",
+          "status": "done",
+          "load_address": "0x80600000",
+          "featured": true,
+          "segment": "consumer"
+        },
+        {
+          "model": "T31ZX",
+          "family": "T31",
+          "version": null,
+          "urlname": "t31zx",
+          "status": "done",
+          "load_address": "0x80600000",
+          "featured": true,
+          "segment": "consumer"
+        },
+        {
+          "model": "T40A",
+          "family": "T40",
+          "version": null,
+          "urlname": "t40a",
+          "status": "mvp",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T40N",
+          "family": "T40",
+          "version": null,
+          "urlname": "t40n",
+          "status": "done",
+          "load_address": "0x80600000",
+          "featured": true,
+          "segment": "consumer"
+        },
+        {
+          "model": "T40NN",
+          "family": "T40",
+          "version": null,
+          "urlname": "t40nn",
+          "status": "rnd",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T40XP",
+          "family": "T40",
+          "version": null,
+          "urlname": "t40xp",
+          "status": "done",
+          "load_address": "0x80600000",
+          "featured": true,
+          "segment": "consumer"
+        },
+        {
+          "model": "T41A",
+          "family": "T41",
+          "version": null,
+          "urlname": "t41a",
+          "status": "rnd",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T41L",
+          "family": "T41",
+          "version": null,
+          "urlname": "t41l",
+          "status": "rnd",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T41LC",
+          "family": "T41",
+          "version": null,
+          "urlname": "t41lc",
+          "status": "rnd",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T41LQ",
+          "family": "T41",
+          "version": null,
+          "urlname": "t41lq",
+          "status": "rnd",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T41N",
+          "family": "T41",
+          "version": null,
+          "urlname": "t41n",
+          "status": "rnd",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T41NQ",
+          "family": "T41",
+          "version": null,
+          "urlname": "t41nq",
+          "status": "rnd",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T41XQ",
+          "family": "T41",
+          "version": null,
+          "urlname": "t41xq",
+          "status": "rnd",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T41ZL",
+          "family": "T41",
+          "version": null,
+          "urlname": "t41zl",
+          "status": "rnd",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T41ZN",
+          "family": "T41",
+          "version": null,
+          "urlname": "t41zn",
+          "status": "rnd",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        },
+        {
+          "model": "T41ZX",
+          "family": "T41",
+          "version": null,
+          "urlname": "t41zx",
+          "status": "rnd",
+          "load_address": "0x80600000",
+          "featured": false,
+          "segment": "consumer"
+        }
+      ]
+    },
+    {
+      "name": "MStar",
+      "urlname": "mstar",
+      "full_name": null,
+      "website_url": null,
+      "socs": [
+        {
+          "model": "MSC313E",
+          "family": "INFINITY3",
+          "version": "",
+          "urlname": "msc313e",
+          "status": "wip",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "MSC316DC",
+          "family": "INFINITY3",
+          "version": "",
+          "urlname": "msc316dc",
+          "status": "wip",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "MSC316DM",
+          "family": "INFINITY3",
+          "version": "",
+          "urlname": "msc316dm",
+          "status": "wip",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        }
+      ]
+    },
+    {
+      "name": "Novatek",
+      "urlname": "novatek",
+      "full_name": null,
+      "website_url": null,
+      "socs": [
+        {
+          "model": "NT98562",
+          "family": "NT9856X",
+          "version": "",
+          "urlname": "nt98562",
+          "status": "wip",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "NT98566",
+          "family": "NT9856X",
+          "version": "",
+          "urlname": "nt98566",
+          "status": "wip",
+          "load_address": "0x03100000",
+          "featured": false,
+          "segment": null
+        }
+      ]
+    },
+    {
+      "name": "Rockchip",
+      "urlname": "rockchip",
+      "full_name": null,
+      "website_url": "http://www.rock-chips.com/",
+      "socs": [
+        {
+          "model": "RV1109",
+          "family": "RV11XX",
+          "version": null,
+          "urlname": "rv1109",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "RV1126",
+          "family": "RV11XX",
+          "version": null,
+          "urlname": "rv1126",
+          "status": "rnd",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        }
+      ]
+    },
+    {
+      "name": "SigmaStar",
+      "urlname": "sigmastar",
+      "full_name": null,
+      "website_url": null,
+      "socs": [
+        {
+          "model": "SSC30KD",
+          "family": "INFINITY6E",
+          "version": null,
+          "urlname": "ssc30kd",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": null
+        },
+        {
+          "model": "SSC30KQ",
+          "family": "INFINITY6E",
+          "version": null,
+          "urlname": "ssc30kq",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": "fpv"
+        },
+        {
+          "model": "SSC323",
+          "family": "INFINITY6",
+          "version": null,
+          "urlname": "ssc323",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC325",
+          "family": "INFINITY6",
+          "version": "",
+          "urlname": "ssc325",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC325D",
+          "family": "INFINITY6",
+          "version": null,
+          "urlname": "ssc325d",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC326D",
+          "family": "INFINITY5",
+          "version": null,
+          "urlname": "ssc326d",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC327",
+          "family": "INFINITY6",
+          "version": null,
+          "urlname": "ssc327",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC327D",
+          "family": "INFINITY6",
+          "version": null,
+          "urlname": "ssc327d",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC327DE",
+          "family": "INFINITY6",
+          "version": null,
+          "urlname": "ssc327de",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC327Q",
+          "family": "INFINITY6",
+          "version": null,
+          "urlname": "ssc327q",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC328Q",
+          "family": "INFINITY5",
+          "version": null,
+          "urlname": "ssc328q",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC329Q",
+          "family": "INFINITY5",
+          "version": null,
+          "urlname": "ssc329q",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC333",
+          "family": "INFINITY6B0",
+          "version": null,
+          "urlname": "ssc333",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": null
+        },
+        {
+          "model": "SSC333DE",
+          "family": "INFINITY6B0",
+          "version": null,
+          "urlname": "ssc333de",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC335",
+          "family": "INFINITY6B0",
+          "version": "",
+          "urlname": "ssc335",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": null
+        },
+        {
+          "model": "SSC335DE",
+          "family": "INFINITY6B0",
+          "version": "",
+          "urlname": "ssc335de",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": null
+        },
+        {
+          "model": "SSC336D",
+          "family": "INFINITY6E",
+          "version": null,
+          "urlname": "ssc336d",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC336Q",
+          "family": "INFINITY6E",
+          "version": null,
+          "urlname": "ssc336q",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC337",
+          "family": "INFINITY6B0",
+          "version": "",
+          "urlname": "ssc337",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": null
+        },
+        {
+          "model": "SSC337DE",
+          "family": "INFINITY6B0",
+          "version": "",
+          "urlname": "ssc337de",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": null
+        },
+        {
+          "model": "SSC338D",
+          "family": "INFINITY6E",
+          "version": null,
+          "urlname": "ssc338d",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC338G",
+          "family": "INFINITY6E",
+          "version": null,
+          "urlname": "ssc338g",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC338Q",
+          "family": "INFINITY6E",
+          "version": null,
+          "urlname": "ssc338q",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": "fpv"
+        },
+        {
+          "model": "SSC339G",
+          "family": "INFINITY6E",
+          "version": null,
+          "urlname": "ssc339g",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC377",
+          "family": "INFINITY6C",
+          "version": null,
+          "urlname": "ssc377",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": null
+        },
+        {
+          "model": "SSC377D",
+          "family": "INFINITY6C",
+          "version": null,
+          "urlname": "ssc377d",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": null
+        },
+        {
+          "model": "SSC377DE",
+          "family": "INFINITY6C",
+          "version": null,
+          "urlname": "ssc377de",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": null
+        },
+        {
+          "model": "SSC377QE",
+          "family": "INFINITY6C",
+          "version": null,
+          "urlname": "ssc377qe",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": "fpv"
+        },
+        {
+          "model": "SSC378DE",
+          "family": "INFINITY6C",
+          "version": null,
+          "urlname": "ssc378de",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": null
+        },
+        {
+          "model": "SSC378QE",
+          "family": "INFINITY6C",
+          "version": null,
+          "urlname": "ssc378qe",
+          "status": "done",
+          "load_address": "0x21000000",
+          "featured": true,
+          "segment": "fpv"
+        }
+      ]
+    },
+    {
+      "name": "TI",
+      "urlname": "ti",
+      "full_name": "Texas Instrument",
+      "website_url": "https://www.ti.com/",
+      "socs": [
+        {
+          "model": "DM365",
+          "family": "",
+          "version": null,
+          "urlname": "dm365",
+          "status": "rnd",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        }
+      ]
+    },
+    {
+      "name": "Xiongmai",
+      "urlname": "xiongmai",
+      "full_name": null,
+      "website_url": null,
+      "socs": [
+        {
+          "model": "XM510",
+          "family": "XM510",
+          "version": "",
+          "urlname": "xm510",
+          "status": "mvp",
+          "load_address": "0x80007FC0",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "XM530",
+          "family": "XM530",
+          "version": "",
+          "urlname": "xm530",
+          "status": "mvp",
+          "load_address": "0x81000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "XM550",
+          "family": "XM550",
+          "version": "",
+          "urlname": "xm550",
+          "status": "mvp",
+          "load_address": "0x81000000",
+          "featured": false,
+          "segment": null
+        }
+      ]
+    }
+  ]
+}

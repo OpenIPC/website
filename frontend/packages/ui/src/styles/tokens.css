@@ -55,36 +55,13 @@
   --color-partition7: #c780e8;
 }
 
-@layer base {
-  @font-face {
-    font-family: 'IBM Plex Sans';
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url('../assets/fonts/IBMPlexSans-Regular.woff2') format('woff2');
-  }
-
-  @font-face {
-    font-family: 'IBM Plex Sans';
-    font-style: normal;
-    font-weight: 500;
-    font-display: swap;
-    src: url('../assets/fonts/IBMPlexSans-SemiBold.woff2') format('woff2');
-  }
-
-  @font-face {
-    font-family: 'IBM Plex Sans';
-    font-style: normal;
-    font-weight: 700;
-    font-display: swap;
-    src: url('../assets/fonts/IBMPlexSans-Bold.woff2') format('woff2');
-  }
-
-  @font-face {
-    font-family: 'Share Tech Mono';
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url('../assets/fonts/share-tech-mono-v15-latin-regular.woff2') format('woff2');
-  }
-}
+/*
+ * The typefaces live in fonts.css, which this deliberately does not import.
+ *
+ *     @import "@openipc/ui/tokens.css";   -- the design tokens
+ *     @import "@openipc/ui/fonts.css";    -- and the faces, if you need them
+ *
+ * A consumer that already self-hosts IBM Plex -- as openipc.org does, from
+ * /fonts/, subsetted and with a Mono face this package does not carry --
+ * takes the first and declares its own.
+ */

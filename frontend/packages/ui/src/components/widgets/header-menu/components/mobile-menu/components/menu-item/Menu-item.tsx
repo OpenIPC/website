@@ -44,11 +44,21 @@ export default function MenuItem(
 
   return (
     <li className="">
+      {/*
+        No onClick here. It used to carry one, and so does the button inside
+        it, so a tap on a parent ran toggleSubMenu twice -- the button's
+        handler, then the same handler again as the event bubbled -- which
+        opened the group and closed it in the same gesture. On a phone that
+        made every group a dead end: /donate, /our-team, the five services
+        pages and the three tools were unreachable from the menu.
+
+        The button now holds the label and the triangle, so the whole row is
+        one control with one handler.
+      */}
       <div
         // Not dimmed: white at opacity-60 over --color-brand-blue is 2.95:1,
         // and these are the site's navigation labels. See the desktop item.
         className="flex w-max flex-row items-center gap-x-1"
-        onClick={toggleSubMenu}
       >
         {
           level > 0
@@ -73,11 +83,15 @@ export default function MenuItem(
                 // it from a keyboard.
                 ? <button
                     type="button"
-                    className="w-max cursor-pointer tracking-wide text-white"
+                    className="
+                      flex w-max cursor-pointer flex-row items-center gap-x-1
+                      tracking-wide text-white
+                    "
                     aria-expanded={isExpanded}
                     onClick={toggleSubMenu}
                   >
                     {label}
+                    <Triangle />
                   </button>
                 : <span
                     className="w-max cursor-default tracking-wide text-white"
@@ -92,15 +106,31 @@ export default function MenuItem(
               </span>
           }
         </div>
-        { children && <Triangle />}
+
       </div>
+      {/*
+        Rendered whenever the row has children, not only while it is open, for
+        the same reason the desktop submenu is: the links have to be in the
+        page rather than summoned by a gesture.
+
+        max-h-240 (60rem) rather than max-h-40. The old cap was 10rem, which fits
+        about five rows -- and Ecosystem carries six plus a nested group, so
+        the bottom of the longest menu was clipped by the animation that was
+        supposed to reveal it. The number only has to be larger than any group
+        can be; the transition still reads as a slide.
+
+        `invisible` as well as `max-h-0`, because overflow-hidden clips a thing
+        without taking it out of the tab order: a closed group would otherwise
+        be nine stops on the way past it for anyone using a keyboard, each of
+        them landing on something they cannot see.
+      */}
       {
-        children && shouldRender
+        children
         && <div className={`
           overflow-hidden transition-all duration-300 ease-linear
-          ${isAnimating
-            ? 'max-h-40'
-            : 'max-h-0'
+          ${isAnimating && shouldRender
+            ? 'visible max-h-240'
+            : 'invisible max-h-0'
           }
         `}>
           <ul> {

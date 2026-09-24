@@ -4,12 +4,32 @@ import type { SliceData } from '../components/part-map/part-map-types';
 import { liteConfig, ultimateConfig } from '../constants';
 import { kiloBytesToBytes, megaBytesToBytes } from '../../../../utils/converters';
 
-export default function useCalc(formSchema: FormSchema, formValidationSchema: FormValidationSchema) {
+/**
+ * The two units the free-space readout spells out (#160).
+ *
+ * Defaulted rather than required, so every existing caller and every test
+ * keeps the English it was written against. The calculator's own labels are a
+ * prop now, and "4096 KB" sitting under "Размер раздела 0, КБ" was the one
+ * word left in the wrong language.
+ */
+export interface CalcUnits {
+  kb: string;
+  bytes: string;
+}
+
+const DEFAULT_UNITS: CalcUnits = { kb: 'KB', bytes: 'bytes' };
+
+export default function useCalc(
+  formSchema: FormSchema,
+  formValidationSchema: FormValidationSchema,
+  units: Partial<CalcUnits> = {},
+) {
+  const { kb, bytes } = { ...DEFAULT_UNITS, ...units };
 
   const [ formElemsState, setFormElemsState ] = useState(formSchema); 
   const [ partMap, setPartMap ] = useState<SliceData[]>([]);
   const [ freeSpace, setFreeSpace ] = useState(
-    () => `${megaBytesToBytes(Number.parseInt(formSchema['flash-size'].value)) / 1024} KB`,
+    () => `${megaBytesToBytes(Number.parseInt(formSchema['flash-size'].value)) / 1024} ${kb}`,
   );
   const [ partString, setPartString ] = useState<string>('');
 
@@ -485,7 +505,7 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
     if (formState['initial-offset'].state === 'valid') {
       freeSpace = flashSize - Number.parseInt(formState['initial-offset'].value);
     } else {
-      setFreeSpace(freeSpace % 1024 === 0 ? `${freeSpace / 1024} KB` : `${Math.floor(freeSpace / 1024)} KB, ${freeSpace % 1024} bytes`);
+      setFreeSpace(freeSpace % 1024 === 0 ? `${freeSpace / 1024} ${kb}` : `${Math.floor(freeSpace / 1024)} ${kb}, ${freeSpace % 1024} ${bytes}`);
       return;
     }
     for (const field of countableFields) {
@@ -493,11 +513,11 @@ export default function useCalc(formSchema: FormSchema, formValidationSchema: Fo
       if (state === 'valid') {
         freeSpace = freeSpace - kiloBytesToBytes(Number.parseInt(value));
       } else {
-        setFreeSpace(freeSpace % 1024 === 0 ? `${freeSpace / 1024} KB` : `${Math.floor(freeSpace / 1024)} KB, ${freeSpace % 1024} bytes`);
+        setFreeSpace(freeSpace % 1024 === 0 ? `${freeSpace / 1024} ${kb}` : `${Math.floor(freeSpace / 1024)} ${kb}, ${freeSpace % 1024} ${bytes}`);
         break;
       }
     }
-    setFreeSpace(freeSpace % 1024 === 0 ? `${freeSpace / 1024} KB` : `${Math.floor(freeSpace / 1024)} KB, ${freeSpace % 1024} bytes`);
+    setFreeSpace(freeSpace % 1024 === 0 ? `${freeSpace / 1024} ${kb}` : `${Math.floor(freeSpace / 1024)} ${kb}, ${freeSpace % 1024} ${bytes}`);
   }
 
   /**

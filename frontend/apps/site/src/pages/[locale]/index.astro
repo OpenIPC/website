@@ -1,0 +1,30 @@
+---
+/**
+ * The home page in every language that carries a path prefix (#160).
+ *
+ * English is absent on purpose: it is served at the bare `/` by ../index.astro,
+ * which is #154's scheme -- /donate stays /donate forever and no indexed URL
+ * moves.
+ */
+import Base from '../../layouts/Base.astro';
+import Home from '../../components/Home.astro';
+import { LOCALES, DEFAULT_LOCALE, useTranslations, type Locale } from '../../lib/i18n';
+
+export function getStaticPaths() {
+  return LOCALES.filter((l) => l !== DEFAULT_LOCALE).map((locale) => ({
+    params: { locale },
+    props: { locale },
+  }));
+}
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+---
+<Base
+  locale={locale}
+  path="/"
+  title={`${t('pages.home.title')} - OpenIPC`}
+  description={t('site.default_meta_description')}
+>
+  <Home locale={locale} />
+</Base>

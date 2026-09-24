@@ -1,0 +1,60 @@
+---
+/**
+ * app/views/pages/stages_of_firmware_development.html.erb (#160).
+ *
+ * Six stages down the left, the explanation of why they exist on the right.
+ * The abbreviations are not translated -- they are what the firmware
+ * repository's own labels say, and a reader matching this page against a
+ * repository needs the same six letters.
+ */
+import { Image } from 'astro:assets';
+import Container from '../Container.astro';
+import PageTitle from '../PageTitle.astro';
+import { useTranslations, type Locale } from '../../lib/i18n';
+
+import neq from '../../assets/pages/stage-neq.svg';
+import rnd from '../../assets/pages/stage-rnd.svg';
+import hlp from '../../assets/pages/stage-hlp.svg';
+import wip from '../../assets/pages/stage-wip.svg';
+import mvp from '../../assets/pages/stage-mvp.svg';
+import done from '../../assets/pages/stage-done.svg';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.stages_of_firmware_development.${s}`);
+
+const STAGES = [
+  { key: 'neq', label: 'NEQ', img: neq, html: true },
+  { key: 'rnd', label: 'R&D', img: rnd, html: false },
+  { key: 'hlp', label: 'HLP', img: hlp, html: false },
+  { key: 'wip', label: 'WIP', img: wip, html: false },
+  { key: 'mvp', label: 'MVP', img: mvp, html: false },
+  { key: 'done', label: 'DONE', img: done, html: false },
+];
+---
+<Container>
+  <article>
+    <PageTitle>{k('title')}</PageTitle>
+    <div class="grid gap-12 lg:grid-cols-3">
+      <div class="space-y-4 lg:col-span-2">
+        {STAGES.map((stage) => (
+          <div class="grid grid-cols-1 items-center gap-4 md:grid-cols-4">
+            <Image src={stage.img} alt={k(`${stage.key}_alt`)} class="h-auto w-24 md:w-full md:max-w-32" loading="lazy" />
+            <p class="mb-0 md:col-span-3">
+              <b>{stage.label}</b><br />
+              {stage.html
+                ? <Fragment set:html={k(`${stage.key}_info_html`)} />
+                : k(`${stage.key}_info`)}
+            </p>
+          </div>
+        ))}
+      </div>
+      <div>
+        <h3 class="mb-3 text-xl">{k('subtitle')}</h3>
+        <p class="mb-3 text-body-secondary">{k('paragraph1')}</p>
+        <p class="mb-3 text-body-secondary">{k('paragraph2')}</p>
+        <p class="mb-0 text-body-secondary">{k('paragraph3')}</p>
+      </div>
+    </div>
+  </article>
+</Container>

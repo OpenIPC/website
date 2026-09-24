@@ -2,6 +2,34 @@
   "button": {
     "find": "Find"
   },
+  "cameras": {
+    "socs": {
+      "index": {
+        "featured": "Recommended",
+        "full_list": "Full list",
+        "installable_title": "%{count} of %{total} can be installed",
+        "nothing_installable_html": "None of the %{total} %{vendor} chips can be installed yet — there is no OpenIPC build for any of them. Each row below says why, and several are waiting on a donated board or a developer rather than on us.",
+        "recommended_alert_html": "Please note. Support for different SoCs is at different stages of development. <a href=\"/supported-hardware/featured\">This list</a> shows the most fully supported and, therefore, the most recommended ones.",
+        "stages_of_development": "Stages of firmware development explained",
+        "th_baseaddr": "Load address",
+        "th_docs": "Installation",
+        "th_soc_model": "SoC Model",
+        "th_stage": "Stage",
+        "th_status": "Build status",
+        "title": "Supported Hardware by SoC"
+      },
+      "soc": {
+        "firmware_only": "Firmware only — flash through the stock bootloader",
+        "generate_guide": "Generate an installation guide",
+        "unavailable": "Not available yet",
+        "unavailable_hlp": "Not available — looking for a developer",
+        "unavailable_mvp": "Not available — early build",
+        "unavailable_neq": "Not available — no board to develop on",
+        "unavailable_rnd": "Not available — in research",
+        "unavailable_wip": "Not available — in progress"
+      }
+    }
+  },
   "footer": {
     "column_community": "Community",
     "column_ecosystem": "Ecosystem",
@@ -311,6 +339,7 @@
     "firmware_partitions_calculation": {
       "end_address": "End address",
       "flash_size_mb": "Flash size, MB",
+      "free_space": "Free space",
       "mtd_name": "MTD device name",
       "offset": "Initial offset, dec or hex",
       "partition_name": "Partition %{number} name",
@@ -318,7 +347,9 @@
       "recalculate": "Recalculate",
       "size_hex": "Hex size, bytes",
       "start_address": "Start address",
-      "title": "Firmware Partitions Calculation"
+      "title": "Firmware Partitions Calculation",
+      "unit_bytes": "bytes",
+      "unit_kb": "KB"
     },
     "get_started": {
       "cta_find_soc": "Find your SoC",
@@ -849,6 +880,11 @@
     },
     "snapshot": {
       "link_to_camera": "Permanent link to this camera"
+    }
+  },
+  "snapshots": {
+    "index": {
+      "no_signal": "No signal"
     }
   },
   "str": {

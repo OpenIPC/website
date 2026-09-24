@@ -1,0 +1,39 @@
+# Ambarella — 2 SoC(s).
+#
+# Exported from the catalogue table (#161). This file is the source of
+# truth for the hardware pages: edit it in a pull request, not in the
+# admin, and the prerendered pages follow on the next build.
+name: Ambarella
+urlname: ambarella
+full_name: null
+website_url: null
+notes: null
+socs:
+- family: S2L
+  model: S2L
+  version: ''
+  status: rnd
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: ''
+  notes: ''
+  urlname: s2l
+  build_status_url: https://img.shields.io/static/v1?label=AmbaS2L&message=%20&logo=github
+  featured: false
+  segment: null
+- family: S3L
+  model: S3L
+  version: ''
+  status: wip
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.ambarella-s3l-nor-lite.tgz
+  notes: ''
+  urlname: s3l
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ambarella-s3l_images.yml/badge.svg
+  featured: false
+  segment: null

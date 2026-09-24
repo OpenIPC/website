@@ -1,36 +1,61 @@
 ---
 /**
- * The three smoke pages, and only those.
+ * Every page the bundle serves, in every language (#160).
  *
- * A dynamic route rather than `src/pages/_smoke/index.astro`, because Astro
+ * One rest-parameter route over src/lib/pages.ts rather than a file per page
+ * per locale. getStaticPaths names every address it may claim, so it cannot
+ * swallow anything Rails still owns: a page is in the bundle because it is in
+ * that array, and for no other reason.
+ *
+ * A rest parameter is also the only form that can route `/_smoke/`. Astro
  * ignores anything under src/pages whose name begins with an underscore --
- * that prefix is its convention for files that are not routes. A rest
- * parameter has no such rule, so the underscore can come from the value.
+ * that prefix is its convention for files that are not routes -- and `/_smoke`
+ * is not ours to rename: deploy/static.sh verifies it after every install,
+ * check-config.sh asserts nginx serves it from the bundle, build.sh refuses a
+ * bundle without it, and two runbooks tell a reader to curl it.
  *
- * `/_smoke/` is not ours to rename: deploy/static.sh verifies it after every
- * install, deploy/nginx/check-config.sh asserts nginx serves it from the
- * bundle and not from Rails, build.sh refuses a bundle without it, and both
- * DEV-VALIDATION.md and RESTORE.md tell a reader to curl it. The page is the
- * one thing proving the seam is alive, so the address stays and the routing
- * bends.
- *
- * getStaticPaths names every address this route may claim, so it cannot
- * swallow anything. When #160 brings the marketing pages they are ordinary
- * files, and Astro prefers a static route to a dynamic one.
+ * `/` is absent, deliberately and permanently. Rails renders it per
+ * Accept-Language and declares `Vary: Accept-Language`; a file serves one
+ * language to everyone. The locale roots `/ru/` and `/zh/` are in the bundle
+ * -- they carry their language in the path and negotiate nothing -- and live
+ * in ./[locale]/index.astro because a rest parameter cannot match an empty
+ * path.
  */
-import Smoke from '../components/Smoke.astro';
-import { LOCALES, DEFAULT_LOCALE, pathFor, type Locale } from '../lib/i18n';
+import Base from '../layouts/Base.astro';
+import { LOCALES, pathFor, useTranslations, type Locale } from '../lib/i18n';
+import { pagesWithComponents, type PageSpec } from '../lib/pages';
 
 export function getStaticPaths() {
-  return LOCALES.map((locale) => ({
-    // Leading slash stripped: a rest parameter is the path relative to the
-    // site root.
-    params: { path: pathFor(locale as Locale, '/_smoke').replace(/^\//, '') },
-    props: { locale },
-  }));
+  const pages = pagesWithComponents();
+
+  return LOCALES.flatMap((locale) =>
+    pages.map((page) => ({
+      // Leading slash stripped: a rest parameter is the path relative to the
+      // site root.
+      params: { path: pathFor(locale as Locale, page.path).replace(/^\//, '') },
+      props: { locale, page },
+    })),
+  );
 }
 
-const { locale } = Astro.props as { locale: Locale };
-void DEFAULT_LOCALE;
+const { locale, page } = Astro.props as { locale: Locale; page: PageSpec };
+const t = useTranslations(locale);
+
+// "<page> - OpenIPC", which is PagesHelper#page_title. The smoke page is the
+// exception and names itself, because it is not a marketing page and its
+// title is what a deploy looks for in a browser tab.
+const title = page.noindex
+  ? 'openipc.org static bundle'
+  : `${t(page.titleKey)} - OpenIPC`;
+
+const Content = page.component;
 ---
-<Smoke locale={locale} />
+<Base
+  locale={locale}
+  path={page.path}
+  title={title}
+  description={page.descriptionKey ? t(page.descriptionKey) : undefined}
+  noindex={page.noindex}
+>
+  <Content locale={locale} {...page.props} />
+</Base>

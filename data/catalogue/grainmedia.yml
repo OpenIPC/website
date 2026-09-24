@@ -1,0 +1,39 @@
+# GrainMedia — 2 SoC(s).
+#
+# Exported from the catalogue table (#161). This file is the source of
+# truth for the hardware pages: edit it in a pull request, not in the
+# admin, and the prerendered pages follow on the next build.
+name: GrainMedia
+urlname: grainmedia
+full_name: null
+website_url: null
+notes: null
+socs:
+- family: GM8136
+  model: GM8135
+  version: ''
+  status: neq
+  load_address: '0x2000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: ''
+  notes: ''
+  urlname: gm8135
+  build_status_url: https://img.shields.io/static/v1?label=GM8135&message=%20&logo=github
+  featured: false
+  segment: null
+- family: GM8136
+  model: GM8136
+  version: ''
+  status: mvp
+  load_address: '0x2000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.gm8136-nor-lite.tgz
+  notes: ''
+  urlname: gm8136
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/gm8136_images.yml/badge.svg
+  featured: false
+  segment: null

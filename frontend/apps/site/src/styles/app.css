@@ -7,3 +7,789 @@
  * tokens.css -- and this is the other half of that bargain. */
 @source "../../../../packages/ui/dist";
 @source "../**/*.{astro,ts,tsx}";
+
+/*
+ * The site's own half of the palette (#160).
+ *
+ * @openipc/ui carries fancyweb-ng's tokens, and its --color-brand-blue is
+ * already #4c60d8 -- the same indigo app/assets/stylesheets/_variables.scss
+ * calls $indigo, which is why the two halves of the site do not clash at the
+ * seam. What the package has no opinion about is the "engineering workbench"
+ * theme the relaunch is drawn in: a light body with dark ink anchor sections
+ * and a warm amber accent. Those live here, named as _variables.scss names
+ * them, so a colour can be traced from one file to the other.
+ *
+ * --color-accent is never text on white: 3.6:1 against #fff is under AA. It
+ * is the live dot, the Labs badge and section highlights, and _variables.scss
+ * says so in the same words.
+ */
+@theme {
+  --color-ink: #0f1422;
+  --color-ink-2: #1a2236;
+  --color-accent: #ffb454;
+  --color-body: #1c2333;
+  --color-body-secondary: #5a6377;
+  --color-surface-alt: #f4f6fa;
+  --color-hairline: #e3e7f0;
+
+  /* $link-hover-color: shift-color($indigo, 20%). */
+  --color-link-hover: #3d4dad;
+
+  /* _variables.scss's $font-family-sans-serif and $font-family-monospace.
+   * Tailwind's own --font-mono has no IBM Plex Mono in it, which is how every
+   * monospace element on the site came to render in the OS default. */
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Bootstrap's $spacers 6 and 7, which the relaunch added for section
+   * rhythm: py-6 is 4.5rem and py-7 is 6rem. Tailwind's own scale stops at
+   * 96 (24rem) but has no 4.5rem step, and the pages are laid out on it. */
+  --spacing-section: 4.5rem;
+  --spacing-section-lg: 6rem;
+
+  /* _variables.scss's $border-radius ladder. Tailwind's `rounded-lg` is .5rem
+   * and Bootstrap's is .625rem, so every card, terminal and large button on
+   * the site had a slightly tighter corner than the page it replaces. `md`
+   * and `sm` already agree; these two did not. */
+  --radius-lg: 0.625rem;
+  --radius-xl: 1rem;
+
+  /* _variables.scss's heading scale. Tailwind's ladder has no 1.75rem step,
+   * so a bare <h2> written as `text-3xl` is 30px where the Rails page renders
+   * 28 -- two pixels of font on every section title of every page. */
+  --text-h1: 2.25rem;
+  --text-h2: 1.75rem;
+  --text-h3: 1.375rem;
+
+  /* $line-height-base, for body text at every size.
+   *
+   * Bootstrap has one body line-height and applies it whatever the font size;
+   * Tailwind pairs each size with its own -- `text-sm` is 14px in a 20px box
+   * where the Rails page gives it 22.4. Two pixels per line, on every list,
+   * caption and paragraph that carries a size utility, and it is why the
+   * footer ran 25px shorter than the page it replaces. Headings are exempt:
+   * the unlayered rule below gives them 1.2, as $headings-line-height does. */
+  --text-xs--line-height: 1.6;
+  --text-sm--line-height: 1.6;
+  --text-base--line-height: 1.6;
+  --text-lg--line-height: 1.6;
+  --text-xl--line-height: 1.6;
+
+  /* .x-small, the disclaimer's size. */
+  --text-xxs: 0.8125rem;
+  --text-xxs--line-height: 1.6;
+
+  /*
+   * Bootstrap's breakpoints, because the layouts being reproduced are written
+   * against them. Tailwind's `2xl` is 1536px and Bootstrap's `xxl` is 1400, so
+   * at a 1440px window /our-team's team grid was five columns wide where the
+   * origin's is six -- 728px taller, and the single largest difference on any
+   * page in the bundle. `lg` differs too, 1024 against 992, which is the
+   * breakpoint the navigation collapses at.
+   */
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-2xl: 1400px;
+}
+
+@layer base {
+  body {
+    color: var(--color-body);
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+  }
+
+  /* The shell renders text on ink in several places -- the hero, the stats
+   * band, the footer. Anchors inside those blocks take their colour from the
+   * block rather than from a global link rule, because a global one would
+   * have to be beaten by every dark section and the specificity fight is how
+   * the gallery page ended up with unreadable menu labels. */
+  /*
+   * $link-color and $link-decoration.
+   *
+   * Tailwind's preflight makes an anchor inherit its colour and drop its
+   * underline, so a link inside a paragraph rendered as plain text: on
+   * /get-started the word "ipctool" -- which is where a reader goes to get the
+   * tool the page tells them to run -- was indistinguishable from the prose
+   * around it. In a layer, so `no-underline` and a colour utility still win,
+   * which is what the navbar, the footer and the buttons rely on.
+   */
+  a {
+    color: var(--color-brand-blue);
+    text-decoration: underline;
+  }
+
+  a:hover {
+    color: var(--color-link-hover);
+  }
+
+  /* $headings-font-weight and the same scale, for a heading with no size
+   * utility on it. */
+  /* Element selectors, not `:where()`: preflight resets these same elements
+   * with `a { color: inherit }` and `h1 { font-size: inherit }`, and a
+   * zero-specificity rule in the same layer loses to it. */
+  h1, h2, h3, h4, h5, h6 { font-weight: 600; }
+
+  h1 { font-size: var(--text-h1); }
+  h2 { font-size: var(--text-h2); }
+  h3 { font-size: var(--text-h3); }
+  h4 { font-size: 1.5rem; }
+  h5 { font-size: 1.25rem; }
+  h6 { font-size: 1rem; }
+}
+
+/*
+ * Bootstrap's $headings-line-height, and deliberately outside every layer.
+ *
+ * Tailwind's `text-2xl` sets a line-height as well as a font-size -- 24px text
+ * in a 32px box -- so a heading styled with it came out 3-4px taller than the
+ * Rails page's, on every heading of every page, which is most of the 40px this
+ * page was running long. A rule in `@layer base` cannot fix that: utilities
+ * beat base whatever their specificity. Unlayered, it beats them, which is the
+ * point and also the catch -- a heading that genuinely wants a different
+ * leading needs `leading-[...]` with `!`, as `leading-[1.2]!`.
+ */
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.2;
+}
+
+/*
+ * Bootstrap's `.container`, to the pixel (#160).
+ *
+ * Every page on the Rails half sits in one, and its width steps at each
+ * breakpoint: 540, 720, 960, 1140, 1320. A single max-width was close enough
+ * to look right on its own and wrong beside the real thing -- at a 1440
+ * viewport the site is 1320px wide and these pages were 1240, so the text
+ * column moved by 40px on either side every time a visitor crossed the seam.
+ *
+ * The padding is Bootstrap's too: --bs-gutter-x is 1.5rem and the container
+ * takes half of it on each side.
+ */
+.site-container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 0.75rem;
+}
+
+@media (min-width: 576px) { .site-container { max-width: 540px; } }
+@media (min-width: 768px) { .site-container { max-width: 720px; } }
+@media (min-width: 992px) { .site-container { max-width: 960px; } }
+@media (min-width: 1200px) { .site-container { max-width: 1140px; } }
+@media (min-width: 1400px) { .site-container { max-width: 1320px; } }
+
+/*
+ * The navigation bar, at app/views/layouts/_navbar.html.erb's measurements
+ * (#160). Every number here was read off the origin; see SiteHeader.astro.
+ */
+
+/*
+ * `navbar-expand-xl`. Below 1200px the bar is a brand and a toggler and the
+ * menu is a block underneath them; from 1200px the toggler goes and the menu
+ * is the row.
+ *
+ * Not decoration: without it the seven menu items and the brand cannot fit a
+ * phone, and every page in the bundle laid out 625px of content in a 390px
+ * viewport -- the whole document scrolling sideways, on every page, which the
+ * sweep caught and a desktop screenshot never would.
+ */
+.site-nav-collapse {
+  display: none;
+  flex-basis: 100%;
+  width: 100%;
+}
+
+.site-nav-collapse[data-open] {
+  display: block;
+}
+
+/* Bootstrap's .navbar-toggler. */
+.site-nav-toggler {
+  margin-inline-start: auto;
+  padding: 0.25rem 0.75rem;
+  color: rgb(255 255 255 / 0.55);
+  background: none;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.site-nav .site-nav-link {
+  display: block;
+  padding: 0.5rem;
+  color: rgb(255 255 255 / 0.78);
+  font-size: 1rem;
+  line-height: 1.6;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.site-nav .site-nav-link:hover,
+.site-nav .site-nav-link:focus-visible {
+  color: #fff;
+}
+
+/*
+ * `.nav-link:focus-visible`, which is $focus-ring-color -- rgba($indigo, .3)
+ * -- in a .25rem ring with the browser's own outline turned off. Without it a
+ * keyboard reader opening this menu got Chrome's default outline on the origin
+ * and nothing that looked like this site; with it, the control that owns the
+ * open panel is marked the way the rest of the site marks focus.
+ */
+.site-nav .site-nav-link:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgb(76 96 216 / 0.3);
+}
+
+/* Bootstrap's caret: a .3em triangle with .255em of space before it. */
+.site-nav .site-caret::after {
+  content: "";
+  display: inline-block;
+  margin-inline-start: 0.255em;
+  vertical-align: 0.255em;
+  border-top: 0.3em solid;
+  border-right: 0.3em solid transparent;
+  border-bottom: 0;
+  border-left: 0.3em solid transparent;
+}
+
+/*
+ * The panel is Bootstrap's dark dropdown, not $ink-2.
+ *
+ * The bar carries `data-bs-theme="dark"` on the origin, so the panel takes the
+ * dark theme's own palette -- #212529 behind #dee2e6 text -- rather than the
+ * site's ink. Painting it $ink-2 (#1a2236) made it a navy panel hanging off a
+ * navy bar where the origin's is a neutral dark grey, which is visible the
+ * moment the two are opened next to each other.
+ */
+.site-nav .site-dropdown {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 100%;
+  z-index: 1000;
+  display: none;
+  min-width: 10rem;
+  margin: 0;
+  padding: 0.5rem 0;
+  list-style: none;
+  background-color: #212529;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 0.375rem;
+  /* $dropdown-spacer: the panel hangs .125rem clear of the control. */
+  margin-top: 0.125rem;
+}
+
+.site-nav .site-dropdown-end {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+
+.site-nav [aria-expanded="true"] + .site-dropdown {
+  display: block;
+}
+
+.site-nav .site-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.25rem 1rem;
+  color: #dee2e6;
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.site-nav .site-dropdown-item:hover,
+.site-nav .site-dropdown-item:focus-visible {
+  color: #dee2e6;
+  background-color: #2b3035;
+}
+
+.site-nav .site-dropdown-item[aria-current="true"] {
+  font-weight: 600;
+  color: #fff;
+}
+
+/*
+ * The language list is `<ul class="navbar-nav text-uppercase">` on the origin,
+ * and its entries are plain links inside `li.dropdown-item` rather than
+ * `.dropdown-item` anchors. So they are uppercase, they take the dark theme's
+ * link colour rather than the panel's text colour, and the current language is
+ * `fw-bold` -- 700, not the 600 the other menus use.
+ */
+.site-nav .site-dropdown-lang .site-dropdown-item {
+  color: #94a0e8;
+  text-transform: uppercase;
+}
+
+.site-nav .site-dropdown-lang .site-dropdown-item:hover,
+.site-nav .site-dropdown-lang .site-dropdown-item:focus-visible {
+  color: #94a0e8;
+}
+
+.site-nav .site-dropdown-lang .site-dropdown-item[aria-current="true"] {
+  font-weight: 700;
+  color: #94a0e8;
+}
+
+.site-nav .site-dropdown-header {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.site-nav .site-divider {
+  margin: 0.5rem 0;
+  border: 0;
+  border-top: 1px solid rgb(255 255 255 / 0.15);
+}
+
+@media (min-width: 1200px) {
+  .site-nav-toggler {
+    display: none;
+  }
+
+  .site-nav-collapse {
+    display: flex;
+    flex-basis: auto;
+    width: auto;
+    margin-inline-start: auto;
+  }
+
+  /*
+   * `dropdown-menu-xl-end`: every panel in this bar hangs from the right edge
+   * of the control that opens it, which is what keeps the last one on the
+   * page. Left-aligned is the Bootstrap default and is what this had, so each
+   * panel sat one control to the right of where the origin puts it.
+   */
+  .site-nav .site-dropdown {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+  }
+}
+
+/*
+ * Collapsed, a dropdown is part of the flow rather than a panel floating over
+ * the page -- `.navbar .dropdown-menu` is `position: static` below the expand
+ * breakpoint, and a panel absolutely positioned inside a full-width block
+ * would otherwise hang off the side of a phone.
+ *
+ * `position: static` and nothing else, which is all Bootstrap changes. This
+ * also stripped the panel's background and border and indented it by a rem,
+ * so where the origin shows the sub-items on their own dark block inset in
+ * the menu, this showed them loose on the bar, shifted right.
+ */
+@media (max-width: 1199.98px) {
+  .site-nav .site-dropdown {
+    position: static;
+  }
+}
+
+/*
+ * The same typefaces the Rails half of the site uses, from the same files
+ * (#160).
+ *
+ * app/assets/stylesheets/_fonts.scss declares these and nginx serves them out
+ * of public/fonts, which is why /fonts/ is in deploy/static/reserved-paths.
+ * Pointing at those files rather than shipping a second copy inside the bundle
+ * means one set of bytes, one cache entry, and a page that cannot render in a
+ * different face from the page a visitor clicked it from.
+ *
+ * @openipc/ui ships three Latin-only faces of its own for Storybook and the
+ * gallery, which is why this was not obvious: English looked right. Russian
+ * had no Cyrillic face at all and fell back to the system stack, and nothing
+ * had a monospace face -- every `font-mono` on the site, which is the terminal
+ * block, the step numbers, the silicon strip, the latency figures and the
+ * stats band, was rendering in Menlo or Courier against production's IBM Plex
+ * Mono.
+ *
+ * Subsets, as _fonts.scss has them: latin covers English, latin-ext the
+ * accented names in the partner wall, cyrillic the Russian copy. Chinese falls
+ * back to the system stack -- IBM Plex has no CJK glyphs and the families that
+ * do are megabytes.
+ */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/fonts/ibm-plex-sans-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('/fonts/ibm-plex-sans-latin-500-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('/fonts/ibm-plex-sans-latin-600-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('/fonts/ibm-plex-sans-latin-700-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('/fonts/ibm-plex-mono-latin-600-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/fonts/ibm-plex-sans-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('/fonts/ibm-plex-sans-latin-ext-500-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('/fonts/ibm-plex-sans-latin-ext-600-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('/fonts/ibm-plex-sans-latin-ext-700-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/fonts/ibm-plex-mono-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('/fonts/ibm-plex-mono-latin-ext-600-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/fonts/ibm-plex-sans-cyrillic-400-normal.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('/fonts/ibm-plex-sans-cyrillic-500-normal.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('/fonts/ibm-plex-sans-cyrillic-600-normal.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('/fonts/ibm-plex-sans-cyrillic-700-normal.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/fonts/ibm-plex-mono-cyrillic-400-normal.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('/fonts/ibm-plex-mono-cyrillic-600-normal.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+/*
+ * Bootstrap's .btn, .btn-lg and .btn-sm, to the pixel (#160).
+ *
+ * A button assembled out of utilities came out the wrong size on every page:
+ * `px-5 py-2.5 font-medium` is 45.6px tall against the origin's 43.6, and the
+ * band's large button was 48 against 58 because Bootstrap's .btn-lg raises the
+ * font size to 1.25rem and the utility version did not. Three numbers -- the
+ * padding, the font size and the 1px transparent border -- decide the height,
+ * and they are worth stating once rather than re-deriving per call site.
+ *
+ * $btn-padding-y/.x and $btn-font-weight come from the Rails
+ * _variables.scss; the rest is Bootstrap's own default.
+ */
+.site-btn {
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.6;
+  padding: 0.5rem 1.125rem;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    color 0.15s ease-in-out,
+    background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
+}
+
+/* $btn-focus-width, and the per-variant ring Bootstrap mixes from the
+ * button's own colour. */
+.site-btn:focus-visible {
+  outline: 0;
+}
+
+.site-btn-primary:focus-visible {
+  box-shadow: 0 0 0 0.25rem rgb(103 120 222 / 0.49);
+}
+
+.site-btn-outline-primary:focus-visible {
+  box-shadow: 0 0 0 0.25rem rgb(76 96 216 / 0.5);
+}
+
+.site-btn-outline-light:focus-visible,
+.site-btn-outline-secondary:focus-visible {
+  box-shadow: 0 0 0 0.25rem rgb(248 249 250 / 0.5);
+}
+
+.site-btn-lg {
+  border-radius: 0.625rem;
+  font-size: 1.25rem;
+  padding: 0.75rem 1.5rem;
+}
+
+.site-btn-sm {
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.site-btn-primary {
+  background-color: var(--color-brand-blue);
+  border-color: var(--color-brand-blue);
+  color: #fff;
+}
+
+.site-btn-primary:hover,
+.site-btn-primary:focus-visible {
+  background-color: var(--color-btn-blue-hover);
+  border-color: var(--color-btn-blue-hover);
+  color: #fff;
+}
+
+/* .btn-outline-light: the band's second button, which inverts on hover. */
+.site-btn-outline-light {
+  border-color: #f8f9fa;
+  color: #f8f9fa;
+}
+
+.site-btn-outline-light:hover,
+.site-btn-outline-light:focus-visible {
+  background-color: #f8f9fa;
+  border-color: #f8f9fa;
+  color: #000;
+}
+
+/* .btn-outline-primary and the hairline outline, same geometry. */
+.site-btn-outline-primary {
+  border-color: var(--color-brand-blue);
+  color: var(--color-brand-blue);
+}
+
+.site-btn-outline-primary:hover,
+.site-btn-outline-primary:focus-visible {
+  background-color: var(--color-brand-blue);
+  color: #fff;
+}
+
+.site-btn-outline-secondary {
+  border-color: var(--color-hairline);
+  color: var(--color-body);
+}
+
+.site-btn-outline-secondary:hover,
+.site-btn-outline-secondary:focus-visible {
+  border-color: var(--color-body-secondary);
+}
+
+/*
+ * The hardware catalogue's Bootstrap parts (#162): the tab strip, the count
+ * badge and the two alerts. Every number measured off
+ * openipc.org/supported-hardware/featured rather than derived from Tailwind's
+ * scale, for the reason the rest of this file exists.
+ */
+.site-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.site-tab {
+  display: block;
+  /* --bs-nav-link-padding-x is .3rem on this page, not Bootstrap's 1rem. */
+  padding: 0.5rem 0.3rem;
+  border: 1px solid transparent;
+  border-top-left-radius: 0.375rem;
+  border-top-right-radius: 0.375rem;
+  color: var(--color-brand-blue);
+  line-height: 1.6;
+  text-decoration: none;
+  margin-bottom: -1px;
+}
+
+.site-tab:hover {
+  border-color: #e9ecef #e9ecef var(--color-hairline);
+  color: var(--color-link-hover);
+}
+
+/* `.nav-link.text-muted` on the last tab. A utility cannot say it: this rule
+ * is unlayered and would beat it. */
+.site-tab-muted {
+  color: var(--color-body-secondary);
+}
+
+.site-tab[aria-current='page'] {
+  color: #000;
+  background-color: #fff;
+  border-color: var(--color-hairline) var(--color-hairline) #fff;
+}
+
+/* .badge.rounded-pill: .75em of the tab's 14px, in a pill. */
+.site-badge {
+  display: inline-block;
+  padding: 0.35em 0.65em;
+  font-size: 0.75em;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 50rem;
+  background-color: #6c757d;
+}
+
+.site-badge-primary {
+  background-color: var(--color-brand-blue);
+}
+
+/* .alert-info and .alert-warning, from the dark-on-tint pairs Bootstrap
+ * computes for this theme. */
+.site-alert {
+  padding: 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+}
+
+.site-alert-info {
+  color: #193953;
+  background-color: #d8e8f6;
+  border-color: #b2d2ec;
+}
+
+.site-alert-warning {
+  color: #5d4018;
+  background-color: #faecd8;
+  border-color: #f8dfc0;
+}
+
+/*
+ * The table is a <dl> grid, as the origin's is: a definition list reads as a
+ * list of chips to a screen reader, where a <table> would announce four
+ * columns of layout.
+ */
+.socs dl {
+  display: flex;
+  flex-wrap: wrap;
+  /* `dl.row`: the negative gutter Bootstrap's row carries, which is what makes
+   * the first column's text line up with the heading above it rather than
+   * 12px inside it. */
+  margin: 0 -0.75rem 1rem;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.socs dd {
+  /* Bootstrap's reboot puts .5rem under a dd and the rows are built from it:
+   * without it every row is 8px shorter, which over 126 of them is a page a
+   * quarter shorter than the one it replaces. */
+  margin: 0 0 0.5rem;
+  padding: 0 0.75rem;
+}
+
+.socs .stage {
+  text-align: center;
+}
+
+.socs .stage img {
+  height: 1.25rem;
+  display: inline-block;
+}
+
+/* The anchor beside a model name, which appears on hover as the origin's does. */
+.socs .anchor {
+  display: none;
+}
+
+.socs dd:hover .anchor {
+  display: inline;
+}

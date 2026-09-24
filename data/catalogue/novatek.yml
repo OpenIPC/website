@@ -1,0 +1,39 @@
+# Novatek — 2 SoC(s).
+#
+# Exported from the catalogue table (#161). This file is the source of
+# truth for the hardware pages: edit it in a pull request, not in the
+# admin, and the prerendered pages follow on the next build.
+name: Novatek
+urlname: novatek
+full_name: null
+website_url: null
+notes: null
+socs:
+- family: NT9856X
+  model: NT98562
+  version: ''
+  status: wip
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.nt98562-nor-lite.tgz
+  notes: ''
+  urlname: nt98562
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/nt98562_images.yml/badge.svg
+  featured: false
+  segment: null
+- family: NT9856X
+  model: NT98566
+  version: ''
+  status: wip
+  load_address: '0x03100000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.nt98566-nor-lite.tgz
+  notes: ''
+  urlname: nt98566
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/nt98566_images.yml/badge.svg
+  featured: false
+  segment: null

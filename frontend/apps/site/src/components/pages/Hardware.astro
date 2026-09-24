@@ -1,0 +1,259 @@
+---
+/**
+ * The SoC catalogue: recommended, one vendor, or the full list (#162).
+ *
+ * app/views/cameras/socs/index.html.erb, which renders all three from the same
+ * template and differs only in which rows it is given. The data is
+ * ../../lib/hardware.ts -- data/catalogue/*.yml, baked -- so this page needs no
+ * database, which is what lets it leave Rails.
+ *
+ * One column is not in the catalogue and cannot be. `Soc#availability` asks
+ * what upstream has published, which a cron learns hourly, so a page built on
+ * Tuesday would tell Friday's visitor that a chip has no firmware when it got
+ * some on Wednesday. The page states what was true when it was built and
+ * corrects itself on load from /api/v1/hardware/availability.json. The baked
+ * value is what a crawler and a reader without JavaScript see, which is why it
+ * is baked at all rather than left blank.
+ *
+ * The wizard behind "Generate an installation guide" is still Rails (#163), so
+ * those links leave the bundle and fall through the seam.
+ */
+import { allRows, featuredRows, vendorRows, vendorBySlug, fullName, socPath, vendorPath, VENDORS, type Row, type Vendor } from '../../lib/hardware';
+import availability from '../../data/availability.json';
+import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
+import { Image } from 'astro:assets';
+import StageList from '../StageList.astro';
+
+const STAGE_ICONS = import.meta.glob<ImageMetadata>(
+  '../../../../../../app/assets/images/stage-*.svg',
+  { eager: true, import: 'default' },
+);
+const stageIcon = (status: string) => {
+  const found = STAGE_ICONS[`../../../../../../app/assets/images/stage-${status}.svg`];
+  if (!found) throw new Error(`No stage-${status}.svg in app/assets/images.`);
+  return found;
+};
+
+interface Props {
+  locale: Locale;
+  /** Which of the three the page is: the tab strip marks it current. */
+  view: 'featured' | 'full-list' | 'vendor';
+  /** For a vendor page, its urlname. */
+  vendor?: string;
+}
+const { locale, view, vendor: vendorSlug } = Astro.props;
+
+const t = useTranslations(locale);
+const k = (key: string) => t(`cameras.socs.index.${key}`);
+const rowKey = (key: string) => t(`cameras.socs.soc.${key}`);
+
+/**
+ * Why a chip cannot be installed, in words. The row says it from the status
+ * because "we have the SDK and no board" and "we have the board and need a
+ * developer" are different things and one of them a reader can act on; a
+ * status with no sentence of its own falls back to the general one, which is
+ * what the Rails partial's `default:` does.
+ */
+const unavailableFor = (status: string) =>
+  t(`cameras.socs.soc.unavailable_${status}`, { fallback: rowKey('unavailable') });
+
+const states = availability.socs as Record<string, string>;
+const stateOf = (urlname: string) => states[urlname] ?? 'none';
+const installable = (v: Vendor) => v.socs.filter((s) => stateOf(s.urlname) !== 'none').length;
+
+const rows: Row[] =
+  view === 'featured' ? featuredRows() : view === 'vendor' ? vendorRows(vendorSlug!) : allRows();
+
+const vendor = view === 'vendor' ? vendorBySlug(vendorSlug!) : null;
+
+/**
+ * The heading over the list. `Cameras::SocsController` sets it as an English
+ * string rather than a translation -- all three locales show these words --
+ * and this is a move, not an edit.
+ */
+const listTitle =
+  view === 'featured' ? 'List of recommended SoCs'
+    : view === 'vendor' ? `List of ${vendor!.name} SoCs`
+      : 'SoC: full list';
+
+const p = (path: string) => pathFor(locale, path);
+---
+
+<div class="site-container mt-4 mb-6">
+<article class="hardware">
+  <header>
+    <h2 class="mb-6">{k('title')}</h2>
+  </header>
+
+  <ul class="site-tabs">
+    <li>
+      <a
+        class="site-tab font-bold"
+        href={p('/supported-hardware/featured')}
+        aria-current={view === 'featured' ? 'page' : undefined}
+      >{k('featured')}</a>
+    </li>
+    {VENDORS.map((v) => (
+      <li>
+        <a
+          class="site-tab"
+          href={p(vendorPath(v))}
+          aria-current={view === 'vendor' && v.urlname === vendorSlug ? 'page' : undefined}
+        >
+          {v.name}
+          <span
+            class:list={['site-badge', installable(v) > 0 && 'site-badge-primary']}
+            data-vendor={v.urlname}
+            data-total={v.socs.length}
+            title={k('installable_title').replace('%{count}', String(installable(v))).replace('%{total}', String(v.socs.length))}
+          >{installable(v)}</span>
+        </a>
+      </li>
+    ))}
+    <li>
+      <a
+        class="site-tab site-tab-muted"
+        href={p('/supported-hardware/full-list')}
+        aria-current={view === 'full-list' ? 'page' : undefined}
+      >{k('full_list')}</a>
+    </li>
+  </ul>
+
+  <h3 class="mb-2">{listTitle}</h3>
+
+  {vendor && installable(vendor) === 0 && (
+    <div class="site-alert site-alert-warning flex gap-4" data-empty-vendor={vendor.urlname}>
+      <span class="size-5 shrink-0 text-xl leading-[1.6]">&#9432;</span>
+      <p
+        class="mb-0"
+        set:html={k('nothing_installable_html')
+          .replace('%{vendor}', vendor.name)
+          .replace('%{total}', String(vendor.socs.length))}
+      />
+    </div>
+  )}
+
+  <div class="site-alert site-alert-info">
+    <p class="mb-0" set:html={k('recommended_alert_html')} />
+  </div>
+
+  <div class="-mx-3 flex flex-wrap">
+    <div class="w-full px-3 xl:w-7/12">
+      <div class="socs">
+        <dl class="mb-4 border-b border-hairline text-sm font-bold">
+          <dd class="w-8/12 sm:w-7/12 md:w-4/12">{k('th_soc_model')}</dd>
+          <dd class="w-4/12 md:w-2/12">{k('th_baseaddr')}</dd>
+          <dd class="stage w-2/12 sm:w-1/12 md:w-1/12">{k('th_stage')}</dd>
+          <dd class="w-10/12 md:w-5/12">{k('th_docs')}</dd>
+        </dl>
+
+        {rows.map(({ vendor: v, soc }) => (
+          <dl id={soc.urlname}>
+            <dd class="w-8/12 sm:w-7/12 md:w-4/12">
+              {fullName(v, soc)}
+              <a class="anchor" href={`${p('/supported-hardware')}#${soc.urlname}`}>#</a>
+            </dd>
+            <dd class="w-4/12 md:w-2/12">{soc.load_address}</dd>
+            <dd class={`stage w-2/12 sm:w-1/12 md:w-1/12 ${soc.status}`}>
+              <Image src={stageIcon(soc.status)} alt={soc.status.toUpperCase()} width={34} height={20} />
+            </dd>
+            <dd
+              class="w-10/12 md:w-5/12"
+              data-soc={soc.urlname}
+              data-vendor-slug={v.urlname}
+              data-href={p(socPath(v, soc))}
+              data-unavailable={unavailableFor(soc.status)}
+            >
+              {stateOf(soc.urlname) === 'wizard' ? (
+                <a href={p(socPath(v, soc))}>{rowKey('generate_guide')}</a>
+              ) : stateOf(soc.urlname) === 'firmware_only' ? (
+                <a href={p(socPath(v, soc))}>{rowKey('firmware_only')}</a>
+              ) : (
+                <span class="text-body-secondary">{unavailableFor(soc.status)}</span>
+              )}
+            </dd>
+          </dl>
+        ))}
+      </div>
+    </div>
+
+    <div class="w-full px-3 lg:w-5/12">
+      <StageList locale={locale} />
+    </div>
+  </div>
+</article>
+</div>
+
+{/*
+  What the build could not know. The words for each state are already on the
+  page in this locale, so the script moves cells between them rather than
+  fetching sentences.
+*/}
+<script
+  is:inline
+  define:vars={{
+    words: {
+      wizard: t('cameras.socs.soc.generate_guide'),
+      firmware_only: t('cameras.socs.soc.firmware_only'),
+      installable_title: t('cameras.socs.index.installable_title'),
+    },
+    // Which SoCs belong to which vendor. The badges count every chip a vendor
+    // has, and this page shows thirty of a hundred and twenty-six -- counting
+    // the rows on screen gave Goke 4 where the origin says 12. About 2 KB, and
+    // the alternative is a second endpoint that knows the catalogue.
+    catalogue: Object.fromEntries(VENDORS.map((v) => [v.urlname, v.socs.map((s) => s.urlname)])),
+  }}
+>
+  (async () => {
+    let live;
+    try {
+      const response = await fetch('/api/v1/hardware/availability.json', {
+        headers: { accept: 'application/json' },
+      });
+      if (!response.ok) return;
+      live = await response.json();
+    } catch {
+      // Offline, or the origin is down. The page keeps what it was built with,
+      // which is the last state anybody knew to be true.
+      return;
+    }
+    if (!live || typeof live.socs !== 'object') return;
+
+    for (const cell of document.querySelectorAll('[data-soc]')) {
+      const state = live.socs[cell.dataset.soc] || 'none';
+
+      const shown = cell.firstElementChild;
+      const shownState = shown && shown.tagName === 'A' ? shown.dataset.state : 'none';
+      if (shownState === state) continue;
+
+      cell.textContent = '';
+      if (state === 'none') {
+        const span = document.createElement('span');
+        span.className = 'text-body-secondary';
+        span.textContent = cell.dataset.unavailable;
+        cell.append(span);
+      } else {
+        const anchor = document.createElement('a');
+        anchor.href = cell.dataset.href;
+        anchor.textContent = words[state];
+        anchor.dataset.state = state;
+        cell.append(anchor);
+      }
+    }
+
+    // The tab badges count the same answer -- over the whole catalogue, not
+    // over the rows this page happens to show.
+    for (const badge of document.querySelectorAll('[data-vendor]')) {
+      const socs = catalogue[badge.dataset.vendor];
+      if (!socs) continue;
+
+      const count = socs.filter((urlname) => (live.socs[urlname] || 'none') !== 'none').length;
+
+      badge.textContent = String(count);
+      badge.classList.toggle('site-badge-primary', count > 0);
+      badge.title = words.installable_title
+        .replace('%{count}', String(count))
+        .replace('%{total}', badge.dataset.total);
+    }
+  })();
+</script>

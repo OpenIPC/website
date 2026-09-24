@@ -9,14 +9,43 @@ import useCalc from './hooks/useCalc';
 import { FwCalcFormSchema } from './calcFormSchema';
 import { FwCalcFormValidationSchema } from './calcFormValidationSchema';
 import { MTDDevNameOpts, flashSizeOpts } from './constants';
+import { DEFAULT_FW_CALC_LABELS, type FwCalcLabels } from './types';
 import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { debounce } from '../../../utils';
 
-export default function FirmwarePartitionCalculator() {
+/** The eight rows, and the colour each one is outlined in. */
+// Indices for the form state, which is keyed `part0-name` and always has
+// been. The LABELS are 1-8: the Rails page this replaces numbers its eight
+// rows from one, and a calculator that renames every partition is not the same
+// page. See ROW_LABEL below.
+const PARTITIONS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+
+/** What the reader is shown, against the index the state is keyed by. */
+const rowLabel = (index: number) => index + 1;
+
+/** Ruby's `%{name}`, which is the syntax the catalogue strings are written in. */
+function fill(template: string, vars: Record<string, string | number>): string {
+  return template.replace(/%\{(\w+)\}/g, (whole, name: string) =>
+    name in vars ? String(vars[name]) : whole,
+  );
+}
+
+interface FirmwarePartitionCalculatorProps {
+  /**
+   * What the calculator calls things. Partial, so a consumer overrides the
+   * words it has a translation for and keeps English for the rest -- which is
+   * what an incomplete catalogue should look like, rather than a hole.
+   */
+  labels?: Partial<FwCalcLabels>;
+}
+
+export default function FirmwarePartitionCalculator({ labels }: FirmwarePartitionCalculatorProps) {
+  const t: FwCalcLabels = { ...DEFAULT_FW_CALC_LABELS, ...labels };
+
   const {
     handleOnChange, handleRecalculateBtnClick, formElemsState,
     applyLiteConfig, applyUltimateConfig, partMap, freeSpace, partString
-  } = useCalc(FwCalcFormSchema, FwCalcFormValidationSchema);
+  } = useCalc(FwCalcFormSchema, FwCalcFormValidationSchema, { kb: t.kb, bytes: t.bytes });
 
   function handleInputChange(e: Event) {
     if (e.target instanceof HTMLInputElement) {
@@ -45,13 +74,13 @@ export default function FirmwarePartitionCalculator() {
   return (
     <>
       <div className="py-4">
-        <H1 content="Firmware Partition Calculator" />
+        <H1 content={t.title} />
       </div>
       <div className="mb-6 flex flex-row gap-x-1">
-        <MainButton size='s' caption="Lite" clickHandler={applyLiteConfig} />
-        <MainButton size='s' caption="Ultimate" clickHandler={applyUltimateConfig} />
+        <MainButton size='s' caption={t.lite} clickHandler={applyLiteConfig} />
+        <MainButton size='s' caption={t.ultimate} clickHandler={applyUltimateConfig} />
         <div className="ml-auto">
-          <MainButton size='s' caption="Recalculate" clickHandler={handleRecalculateBtnClick} />
+          <MainButton size='s' caption={t.recalculate} clickHandler={handleRecalculateBtnClick} />
         </div>
       </div>
       <div className="flex flex-col gap-y-2">
@@ -61,7 +90,7 @@ export default function FirmwarePartitionCalculator() {
         ">
           <div className="md:w-[calc(20%-6px)]">
             <Select
-              label='MTD device name'
+              label={t.mtdName}
               elemName='MTD-device-name'
               options={MTDDevNameOpts}
               required={true}
@@ -73,175 +102,54 @@ export default function FirmwarePartitionCalculator() {
             />
           </div>
           <div className="md:w-[calc(20%-6px)]">
-            <Select label='Flash size, MB' elemName='flash-size' options={flashSizeOpts} required={true} onChange={handleOnChange} value={formElemsState['flash-size'].value} state={formElemsState['flash-size'].state} errorText={formElemsState['flash-size'].error} />
+            <Select label={t.flashSize} elemName='flash-size' options={flashSizeOpts} required={true} onChange={handleOnChange} value={formElemsState['flash-size'].value} state={formElemsState['flash-size'].state} errorText={formElemsState['flash-size'].error} />
           </div>
           <div className="md:w-[calc(20%-6px)]">
-            <Input elemName='initial-offset' label='Initial offset, dec or hex, bytes' onInput={handleOnChange} borderWidth='1px' borderColor='default' value={formElemsState['initial-offset'].value} state={formElemsState['initial-offset'].state} errorText={formElemsState['initial-offset'].error} dir="rtl" />
+            <Input elemName='initial-offset' label={t.initialOffset} onInput={handleOnChange} borderWidth='1px' borderColor='default' value={formElemsState['initial-offset'].value} state={formElemsState['initial-offset'].state} errorText={formElemsState['initial-offset'].error} dir="rtl" />
           </div>
         </div>
-        <div className="
-          mt-4 flex flex-col gap-y-2
-          md:mt-0 md:flex-row md:items-center md:gap-x-2
-        ">
-          <div className="md:w-[20%]">
-            <Input elemName='part0-name' label='Partition 0 name' borderWidth='4px' borderColor='partition0' value={formElemsState['part0-name'].value} state={formElemsState['part0-name'].state} onInput={debouncedHandleInputChange} />
+        {PARTITIONS.map((n) => (
+          <div key={n} className="
+            mt-4 flex flex-col gap-y-2
+            md:mt-0 md:flex-row md:items-center md:gap-x-2
+          ">
+            <div className="md:w-[20%]">
+              <Input
+                elemName={`part${n}-name`}
+                label={fill(t.partitionName, { number: rowLabel(n) })}
+                borderWidth='4px'
+                borderColor={`partition${n}`}
+                value={formElemsState[`part${n}-name`].value}
+                state={formElemsState[`part${n}-name`].state}
+                onInput={debouncedHandleInputChange}
+              />
+            </div>
+            <div className="md:w-[20%]">
+              <Input
+                elemName={`part${n}-size`}
+                label={fill(t.partitionSize, { number: rowLabel(n) })}
+                borderWidth='1px'
+                borderColor='default'
+                value={formElemsState[`part${n}-size`].value}
+                onInput={handleInputChange}
+                state={formElemsState[`part${n}-size`].state}
+                errorText={formElemsState[`part${n}-size`].error}
+              />
+            </div>
+            <div className="md:w-[20%]">
+              <Output label={t.startAddress} data={formElemsState[`part${n}-start`].value} />
+            </div>
+            <div className="md:w-[20%]">
+              <Output label={t.hexSize} data={formElemsState[`part${n}-size-hex`].value} />
+            </div>
+            <div className="md:w-[20%]">
+              <Output label={t.endAddress} data={formElemsState[`part${n}-end`].value} />
+            </div>
           </div>
-          <div className="md:w-[20%]">
-            <Input elemName='part0-size' label='Partition 0 size, KB' borderWidth='1px' borderColor='default' value={formElemsState['part0-size'].value} onInput={handleInputChange} state={formElemsState['part0-size'].state} errorText={formElemsState['part0-size'].error} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Start address" data={formElemsState['part0-start'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Hex size, bytes" data={formElemsState['part0-size-hex'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="End address"  data={formElemsState['part0-end'].value} />
-          </div>
-        </div>
-        <div className="
-          mt-4 flex flex-col gap-y-2
-          md:mt-0 md:flex-row md:items-center md:gap-x-2
-        ">
-          <div className="md:w-[20%]">
-            <Input elemName='part1-name' label='Partition 1 name' borderWidth='4px' borderColor='partition1' value={formElemsState['part1-name'].value} state={formElemsState['part1-name'].state} onInput={debouncedHandleInputChange} />
-          </div>
-          <div className="md:w-[20%]">
-            <Input elemName='part1-size' label='Partition 1 size, KB' borderWidth='1px' borderColor='default' value={formElemsState['part1-size'].value} onInput={handleInputChange} state={formElemsState['part1-size'].state} errorText={formElemsState['part1-size'].error} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Start address" data={formElemsState['part1-start'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Hex size, bytes" data={formElemsState['part1-size-hex'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="End address" data={formElemsState['part1-end'].value} />
-          </div>
-        </div>
-        <div className="
-          mt-4 flex flex-col gap-y-2
-          md:mt-0 md:flex-row md:items-center md:gap-x-2
-        ">
-          <div className="md:w-[20%]">
-            <Input elemName='part2-name' label='Partition 2 name' borderWidth='4px' borderColor='partition2' value={formElemsState['part2-name'].value} state={formElemsState['part2-name'].state} onInput={debouncedHandleInputChange} />
-          </div>
-          <div className="md:w-[20%]">
-            <Input elemName='part2-size' label='Partition 2 size, KB' borderWidth='1px' borderColor='default' value={formElemsState['part2-size'].value} onInput={handleInputChange} state={formElemsState['part2-size'].state} errorText={formElemsState['part2-size'].error} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Start address" data={formElemsState['part2-start'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Hex size, bytes" data={formElemsState['part2-size-hex'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="End address" data={formElemsState['part2-end'].value} />
-          </div>
-        </div>
-        <div className="
-          mt-4 flex flex-col gap-y-2
-          md:mt-0 md:flex-row md:items-center md:gap-x-2
-        ">
-          <div className="md:w-[20%]">
-            <Input elemName='part3-name' label='Partition 3 name' borderWidth='4px' borderColor='partition3' value={formElemsState['part3-name'].value} state={formElemsState['part3-name'].state} onInput={debouncedHandleInputChange} />
-          </div>
-          <div className="md:w-[20%]">
-            <Input elemName='part3-size' label='Partition 3 size, KB' borderWidth='1px' borderColor='default' value={formElemsState['part3-size'].value} onInput={handleInputChange} state={formElemsState['part3-size'].state} errorText={formElemsState['part3-size'].error} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Start address" data={formElemsState['part3-start'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Hex size, bytes" data={formElemsState['part3-size-hex'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="End address" data={formElemsState['part3-end'].value} />
-          </div>
-        </div>
-        <div className="
-          mt-4 flex flex-col gap-y-2
-          md:mt-0 md:flex-row md:items-center md:gap-x-2
-        ">
-          <div className="md:w-[20%]">
-            <Input elemName='part4-name' label='Partition 4 name' borderWidth='4px' borderColor='partition4' value={formElemsState['part4-name'].value} state={formElemsState['part4-name'].state} onInput={debouncedHandleInputChange} />
-          </div>
-          <div className="md:w-[20%]">
-            <Input elemName='part4-size' label='Partition 4 size, KB' borderWidth='1px' borderColor='default' value={formElemsState['part4-size'].value} onInput={handleInputChange} state={formElemsState['part4-size'].state} errorText={formElemsState['part4-size'].error} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Start address" data={formElemsState['part4-start'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Hex size, bytes" data={formElemsState['part4-size-hex'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="End address" data={formElemsState['part4-end'].value} />
-          </div>
-        </div>
-        <div className="
-          mt-4 flex flex-col gap-y-2
-          md:mt-0 md:flex-row md:items-center md:gap-x-2
-        ">
-          <div className="md:w-[20%]">
-            <Input elemName='part5-name' label='Partition 5 name' borderWidth='4px' borderColor='partition5' value={formElemsState['part5-name'].value} state={formElemsState['part5-name'].state} onInput={debouncedHandleInputChange} />
-          </div>
-          <div className="md:w-[20%]">
-            <Input elemName='part5-size' label='Partition 5 size, KB' borderWidth='1px' borderColor='default' value={formElemsState['part5-size'].value} onInput={handleInputChange} state={formElemsState['part5-size'].state} errorText={formElemsState['part5-size'].error} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Start address" data={formElemsState['part5-start'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Hex size, bytes" data={formElemsState['part5-size-hex'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="End address" data={formElemsState['part5-end'].value} />
-          </div>
-        </div>
-        <div className="
-          mt-4 flex flex-col gap-y-2
-          md:mt-0 md:flex-row md:items-center md:gap-x-2
-        ">
-          <div className="md:w-[20%]">
-            <Input elemName='part6-name' label='Partition 6 name' borderWidth='4px' borderColor='partition6' value={formElemsState['part6-name'].value} state={formElemsState['part6-name'].state} onInput={debouncedHandleInputChange} />
-          </div>
-          <div className="md:w-[20%]">
-            <Input elemName='part6-size' label='Partition 6 size, KB' borderWidth='1px' borderColor='default' value={formElemsState['part6-size'].value} onInput={handleInputChange} state={formElemsState['part6-size'].state} errorText={formElemsState['part6-size'].error} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Start address" data={formElemsState['part6-start'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Hex size, bytes" data={formElemsState['part6-size-hex'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="End address" data={formElemsState['part6-end'].value} />
-          </div>
-        </div>
-        <div className="
-          mt-4 flex flex-col gap-y-2
-          md:mt-0 md:flex-row md:items-center md:gap-x-2
-        ">
-          <div className="md:w-[20%]">
-            <Input elemName='part7-name' label='Partition 7 name' borderWidth='4px' borderColor='partition7' value={formElemsState['part7-name'].value} state={formElemsState['part7-name'].state} onInput={debouncedHandleInputChange} />
-          </div>
-          <div className="md:w-[20%]">
-            <Input elemName='part7-size' label='Partition 7 size, KB' borderWidth='1px' borderColor='default' value={formElemsState['part7-size'].value} onInput={handleInputChange} state={formElemsState['part7-size'].state} errorText={formElemsState['part7-size'].error} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Start address" data={formElemsState['part7-start'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="Hex size, bytes" data={formElemsState['part7-size-hex'].value} />
-          </div>
-          <div className="md:w-[20%]">
-            <Output label="End address" data={formElemsState['part7-end'].value} />
-          </div>
-        </div>
+        ))}
       </div>
       <div className="py-4">
-        <PartitionMap slices={partMap} freeSpace={freeSpace} />
+        <PartitionMap slices={partMap} freeSpace={freeSpace} freeSpaceLabel={t.freeSpace} />
       </div>
       <div>
         <PartitionString partStrData={partString} />

@@ -1,0 +1,66 @@
+---
+/**
+ * The six firmware stages, beside the catalogue (#162).
+ *
+ * app/views/cameras/socs/_stages.html.erb. The icons are globbed out of
+ * app/assets/images rather than copied here, the same arrangement
+ * ../lib/webui.ts uses and for the same reason: one copy of each file in the
+ * repository is the only state in which the Rails page and this one cannot
+ * disagree about what a stage looks like while both exist.
+ */
+import { Image } from 'astro:assets';
+import { pathFor, useTranslations, type Locale } from '../lib/i18n';
+import { STATUSES } from '../lib/hardware';
+
+const ICONS = import.meta.glob<ImageMetadata>(
+  '../../../../../app/assets/images/stage-*.svg',
+  { eager: true, import: 'default' },
+);
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const s = (key: string) => t(`pages.stages_of_firmware_development.${key}`);
+
+/**
+ * `neq` is the only stage whose sentence carries markup, and the ERB names
+ * `neq_info_html` against five plain `_info` keys. Asking for the _html form
+ * with a fallback keeps that asymmetry in one place instead of a conditional
+ * in the loop.
+ */
+const info = (status: string) => {
+  const html = t(`pages.stages_of_firmware_development.${status}_info_html`, { fallback: '' });
+  return html || t(`pages.stages_of_firmware_development.${status}_info`);
+};
+
+const LABELS: Record<string, string> = {
+  neq: 'NEQ', rnd: 'R&D', hlp: 'HLP', wip: 'WIP', mvp: 'MVP', done: 'DONE',
+};
+
+function icon(status: string): ImageMetadata {
+  const found = ICONS[`../../../../../app/assets/images/stage-${status}.svg`];
+  if (!found) throw new Error(`No stage-${status}.svg in app/assets/images.`);
+  return found;
+}
+---
+
+<div class="site-alert site-alert-info text-sm">
+  <h4 class="mb-2">{t('pages.stages_of_firmware_development.title')}</h4>
+  <dl class="mb-0">
+    {STATUSES.map((status) => (
+      <>
+        <dt class="mt-2 first:mt-0">
+          <Image class="me-2 inline size-8 align-[-.5rem]" src={icon(status)} alt={s(`${status}_alt`)} width={32} height={32} />
+          {LABELS[status]}
+        </dt>
+        <dd class="mb-0 ms-0" set:html={info(status)} />
+      </>
+    ))}
+  </dl>
+</div>
+
+<p class="mt-4">
+  <a href={pathFor(locale, '/stages-of-firmware-development')}>
+    {t('cameras.socs.index.stages_of_development')}
+  </a>
+</p>

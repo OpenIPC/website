@@ -1,0 +1,62 @@
+[
+  {
+    "slug": "dashboard",
+    "caption": "Dashboard",
+    "alt": "Dashboard page of the OpenIPC web interface"
+  },
+  {
+    "slug": "live",
+    "caption": "Live",
+    "alt": "Live page of the OpenIPC web interface"
+  },
+  {
+    "slug": "camera-settings",
+    "caption": "Camera - Settings",
+    "alt": "Camera - Settings page of the OpenIPC web interface"
+  },
+  {
+    "slug": "stream-urls",
+    "caption": "Camera - Stream URLs",
+    "alt": "Camera - Stream URLs page of the OpenIPC web interface"
+  },
+  {
+    "slug": "config-file",
+    "caption": "Camera - Config file",
+    "alt": "Camera - Config file page of the OpenIPC web interface"
+  },
+  {
+    "slug": "logs",
+    "caption": "System - Logs",
+    "alt": "System - Logs page of the OpenIPC web interface"
+  },
+  {
+    "slug": "network",
+    "caption": "System - Network",
+    "alt": "System - Network page of the OpenIPC web interface"
+  },
+  {
+    "slug": "time",
+    "caption": "System - Time",
+    "alt": "System - Time page of the OpenIPC web interface"
+  },
+  {
+    "slug": "firmware-update",
+    "caption": "System - Update",
+    "alt": "System - Update page of the OpenIPC web interface"
+  },
+  {
+    "slug": "console",
+    "caption": "System - Console",
+    "alt": "System - Console page of the OpenIPC web interface"
+  },
+  {
+    "slug": "file-manager",
+    "caption": "System - File Manager",
+    "alt": "System - File Manager page of the OpenIPC web interface"
+  },
+  {
+    "slug": "telegram",
+    "caption": "Services - Telegram",
+    "alt": "Services - Telegram page of the OpenIPC web interface"
+  }
+]

@@ -1,0 +1,230 @@
+---
+/**
+ * The home page (#160).
+ *
+ * app/views/pages/home.html.erb, section for section. Two of its parts read
+ * live state that a prerendered page cannot, and both currently render the
+ * same way the Rails page renders when that state is missing -- which is a
+ * state the Rails page already handles, not a new one:
+ *
+ *   * the wall mosaic ships the Open Wall's "no signal" placeholders, which is
+ *     what home.html.erb itself falls back to when its query returns nothing.
+ *     Filling them needs a WallGrant, and #267 made that something only a
+ *     client that rendered the page in Rails can obtain -- see WallMosaic.
+ *   * the backer count under the closing band is fetched on load, not baked.
+ *     SupportStats caps the page's own HTTP freshness precisely so no page
+ *     outlives the count printed on it, and a number baked into a bundle could
+ *     not honour that.
+ *
+ * nginx already serves /api/v1/support/stats.json from a file, CORS-open and
+ * 404-clean, which is the shape a client-side fill wants; doing it means
+ * reimplementing SupportStats#usable? -- the 48-hour staleness rule and the
+ * halves-agree check -- in TypeScript, with the goal from
+ * config/support_goal.yml. That is its own change, not a line here.
+ */
+import Icon from './Icon.astro';
+import LogoWall from './LogoWall.astro';
+import { pathFor, useTranslations, type Locale } from '../lib/i18n';
+import { partnerRows } from '../lib/partners';
+import { SOC_COUNT, SOC_VENDOR_NAMES } from '../data/catalogue';
+import SupportCount from './SupportCount.tsx';
+import WallMosaic from './WallMosaic.tsx';
+import { SUPPORT_GOAL } from '../data/support-goal';
+import noSignal from '../assets/no-signal.webp';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+
+const t = useTranslations(locale);
+const p = (path: string) => pathFor(locale, path);
+const rows = partnerRows(locale);
+
+const PILLARS = [
+  { icon: 'cpu', title: 'pillar_firmware_title', text: 'pillar_firmware_text_html', href: '/get-started', accent: false },
+  { icon: 'broadcast', title: 'pillar_low_latency_title', text: 'pillar_low_latency_text', href: '/low-latency', accent: false },
+  { icon: 'wrench-adjustable', title: 'pillar_tools_title', text: 'pillar_tools_text', href: '/ecosystem', accent: false },
+  { icon: 'shield-check', title: 'pillar_longevity_title', text: 'pillar_longevity_text', href: '/ecosystem', accent: true },
+];
+---
+
+{/* ---- Hero: tagline + Open Wall mosaic ---- */}
+<section class="bg-ink py-section text-white/85 lg:py-section-lg">
+  <div class="site-container">
+    <div class="grid items-center gap-12 lg:grid-cols-2">
+      <div>
+        <h1 class="mb-4 text-4xl font-bold lg:text-5xl">{t('pages.home.hero_title')}</h1>
+        <p class="mb-6 text-lg text-white/80">{t('pages.home.hero_lede')}</p>
+        <p class="mb-6 flex flex-wrap gap-3">
+          <a class="site-btn site-btn-lg site-btn-primary" href={p('/get-started')}>
+            {t('pages.home.hero_cta_start')}
+          </a>
+          <a class="site-btn site-btn-lg site-btn-outline-light" href={p('/low-latency')}>
+            {t('pages.home.hero_cta_low_latency')}
+          </a>
+        </p>
+        {/*
+          The "$" is a shell prompt, not a stray character, and the block cursor
+          after it completes it. A native reader of the Chinese copy flagged it
+          as a typo that had slipped into the string -- it is in the markup
+          instead, and deliberately in every locale.
+        */}
+        <p class="mb-0 font-mono text-sm text-white/60">
+          $ {t('pages.home.hero_microline')} <span class="ml-0.5 inline-block h-4 w-2 translate-y-0.5 bg-accent"></span>
+        </p>
+      </div>
+
+      <div>
+        {/*
+          No client directive: with the fetch gone this renders the same markup
+          every time, so hydrating it would ship an island to re-draw what the
+          server already drew.
+        */}
+        <WallMosaic
+          tiles={5}
+          placeholder={noSignal.src}
+          placeholderAlt={t('snapshots.index.no_signal')}
+          cta={t('pages.home.wall_cta')}
+          ctaHref={p('/open-wall')}
+        />
+        <p class="mt-4 mb-0 text-sm text-white/60">
+          <span class="mr-2 inline-block size-2 rounded-full bg-accent"></span>
+          <a class="text-white no-underline hover:underline" href={p('/open-wall')}>{t('pages.home.wall_live')}</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{/* ---- Silicon strip ---- */}
+<section class="border-b border-hairline py-6">
+  <div class="site-container">
+    <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
+      <span class="tracking-[.08em] text-body-secondary uppercase">{t('pages.home.silicon_title')}:</span>
+      {SOC_VENDOR_NAMES.map((name) => <span class="font-mono tracking-[.08em] uppercase">{name}</span>)}
+    </div>
+  </div>
+</section>
+
+{/* ---- Liberation story ---- */}
+<section class="py-section">
+  <div class="site-container">
+    <h2 class="mb-12 text-center text-h2">{t('pages.home.story_title')}</h2>
+    <div class="grid gap-6 md:grid-cols-3">
+      {[1, 2, 3].map((i) => (
+        <div>
+          <div class="mb-2 font-mono text-2xl text-brand-blue/40">0{i}</div>
+          <h3 class="mb-2 text-xl">{t(`pages.home.story_step${i}_title`)}</h3>
+          <p class="mb-0 text-body-secondary">{t(`pages.home.story_step${i}_text`)}</p>
+        </div>
+      ))}
+    </div>
+    <p class="mt-12 mb-0 text-center">
+      <a class="site-btn site-btn-lg site-btn-primary" href={p('/get-started')}>
+        {t('pages.home.story_cta')}
+      </a>
+    </p>
+  </div>
+</section>
+
+{/* ---- Platform pillars ---- */}
+<section class="bg-surface-alt py-section">
+  <div class="site-container">
+    <div class="mb-12 text-center">
+      <h2 class="mb-3 text-h2">{t('pages.home.pillars_title')}</h2>
+      <p class="mx-auto max-w-[60ch] text-body-secondary">{t('pages.home.pillars_lede')}</p>
+    </div>
+    <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      {PILLARS.map((pillar) => (
+        <div class="relative flex flex-col rounded-lg border border-hairline bg-white p-6">
+          <span class:list={[
+            'mb-4 flex size-10 items-center justify-center rounded-md',
+            pillar.accent ? 'bg-accent/20 text-ink' : 'bg-brand-blue/10 text-brand-blue',
+          ]}>
+            <Icon name={pillar.icon} class="size-5" />
+          </span>
+          <h3 class="mb-2 text-xl">{t(`pages.home.${pillar.title}`)}</h3>
+          <p class="mb-4 text-body-secondary" set:html={t(`pages.home.${pillar.text}`)} />
+          <a class="mt-auto text-brand-blue after:absolute after:inset-0" href={p(pillar.href)} aria-label={t(`pages.home.${pillar.title}`)}>
+            <Icon name="arrow-right" class="size-5" />
+          </a>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+{/* ---- Stats band ---- */}
+<section class="bg-ink py-12 text-white/85">
+  <div class="site-container">
+    <div class="grid grid-cols-2 gap-6 text-center lg:grid-cols-4">
+      <div>
+        <div class="font-mono text-4xl font-bold">{SOC_COUNT}</div>
+        <div class="mt-1 text-sm text-white/60">{t('pages.home.stats_socs')}</div>
+      </div>
+      <div>
+        <div class="font-mono text-4xl font-bold">{SOC_VENDOR_NAMES.length}</div>
+        <div class="mt-1 text-sm text-white/60">{t('pages.home.stats_vendors')}</div>
+      </div>
+      <div>
+        <div class="font-mono text-4xl font-bold">140+</div>
+        <div class="mt-1 text-sm text-white/60">{t('pages.home.stats_repos')}</div>
+      </div>
+      <div>
+        <div class="font-mono text-4xl font-bold">2019</div>
+        <div class="mt-1 text-sm text-white/60">{t('pages.home.stats_since')}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{/* ---- Partners ---- */}
+<section class="py-section">
+  <div class="site-container">
+    <h2 class="mb-12 text-center text-xl text-body-secondary">{t('pages.home.partners_title')}</h2>
+    {rows.map(([label, logos]) => <LogoWall logos={logos} title={t(`site.partners.${label}`)} />)}
+  </div>
+</section>
+
+{/* ---- For Business teaser ---- */}
+<section class="bg-surface-alt py-section">
+  <div class="site-container text-center">
+    <h2 class="mb-3 text-h2">{t('pages.home.business_title')}</h2>
+    <p class="mx-auto mb-6 max-w-[60ch] text-body-secondary">{t('pages.home.business_text')}</p>
+    <a class="site-btn site-btn-lg site-btn-outline-primary" href={p('/business')}>
+      {t('pages.home.business_cta')}
+    </a>
+  </div>
+</section>
+
+{/* ---- Closing CTA ---- */}
+<section class="bg-ink py-section text-white/85">
+  <div class="site-container text-center">
+    <h2 class="mb-6 text-h2">{t('pages.home.cta_title')}</h2>
+    <p class="mb-0 flex flex-wrap justify-center gap-3">
+      <a class="site-btn site-btn-lg site-btn-primary" href={p('/get-started')}>
+        {t('pages.home.cta_primary')}
+      </a>
+      <a class="site-btn site-btn-lg site-btn-outline-light" href="https://t.me/openipc" data-event="tg-join">
+        {t('pages.home.cta_secondary')}
+      </a>
+    </p>
+    <p class="mx-auto mt-6 mb-0 max-w-[60ch] text-sm text-white/60" set:html={t('pages.home.cta_donate_html')} />
+
+    {/*
+      Constrained and centred, because a full-width meter across a 1200px band
+      reads as a loading bar. Below the note, as shared/_cta_band puts it.
+    */}
+    <SupportCount
+      client:idle
+      goal={SUPPORT_GOAL}
+      class="mx-auto mt-6 max-w-[26rem] text-sm text-white/70"
+      labels={{
+        count: t('support.count_html'),
+        countMet: t('support.count_met_html'),
+        meter: t('support.meter_label'),
+        monthly: t('support.monthly_html'),
+        split: t('support.split_html'),
+      }}
+    />
+  </div>
+</section>

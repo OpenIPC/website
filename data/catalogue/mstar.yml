@@ -1,0 +1,53 @@
+# MStar — 3 SoC(s).
+#
+# Exported from the catalogue table (#161). This file is the source of
+# truth for the hardware pages: edit it in a pull request, not in the
+# admin, and the prerendered pages follow on the next build.
+name: MStar
+urlname: mstar
+full_name: null
+website_url: null
+notes: null
+socs:
+- family: INFINITY3
+  model: MSC313E
+  version: ''
+  status: wip
+  load_address: '0x21000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: u-boot-msc313e-universal.bin
+  linux_filename: openipc.msc313e-nor-lite.tgz
+  notes: ''
+  urlname: msc313e
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/msc313e_images.yml/badge.svg
+  featured: false
+  segment: null
+- family: INFINITY3
+  model: MSC316DC
+  version: ''
+  status: wip
+  load_address: '0x21000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.msc316dc-nor-lite.tgz
+  notes: ''
+  urlname: msc316dc
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/msc316dc_images.yml/badge.svg
+  featured: false
+  segment: null
+- family: INFINITY3
+  model: MSC316DM
+  version: ''
+  status: wip
+  load_address: '0x21000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.msc316dm-nor-lite.tgz
+  notes: ''
+  urlname: msc316dm
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/msc316dm_images.yml/badge.svg
+  featured: false
+  segment: null

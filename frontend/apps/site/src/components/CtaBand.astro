@@ -1,0 +1,50 @@
+---
+/**
+ * app/views/shared/_cta_band.html.erb -- the dark call-to-action band.
+ *
+ * Most pages end with an article on white, where the band arriving with no gap
+ * reads as the text falling off a cliff, so there is one by default. `flush`
+ * removes it for the page that puts the band directly under a full-bleed
+ * section, where the gap would be a stripe of white between two coloured bands.
+ *
+ * `event` names the click for the beacon (#183). Optional, because most of
+ * these buttons go somewhere else on this site, where a page view already
+ * records the visit.
+ */
+interface Props {
+  title: string;
+  primaryLabel: string;
+  primaryHref: string;
+  primaryEvent?: string;
+  secondaryLabel?: string;
+  secondaryHref?: string;
+  secondaryEvent?: string;
+  noteHtml?: string;
+  flush?: boolean;
+}
+const {
+  title, primaryLabel, primaryHref, primaryEvent,
+  secondaryLabel, secondaryHref, secondaryEvent, noteHtml, flush = false,
+} = Astro.props;
+---
+<section class:list={['bg-ink py-section text-white/85', !flush && 'mt-section']}>
+  <div class="site-container text-center">
+    <h2 class="mb-6 text-h2">{title}</h2>
+    <p class="mb-0 flex flex-wrap justify-center gap-3">
+      <a
+        class="site-btn site-btn-lg site-btn-primary"
+        href={primaryHref}
+        data-event={primaryEvent}
+      >{primaryLabel}</a>
+      {secondaryLabel && (
+        <a
+          class="site-btn site-btn-lg site-btn-outline-light"
+          href={secondaryHref}
+          data-event={secondaryEvent}
+        >{secondaryLabel}</a>
+      )}
+    </p>
+    {noteHtml && <p class="mx-auto mt-6 mb-0 max-w-[60ch] text-sm text-white/60" set:html={noteHtml} />}
+    <slot />
+  </div>
+</section>
