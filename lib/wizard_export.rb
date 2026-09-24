@@ -27,10 +27,16 @@ require 'json'
 module WizardExport
   IPADDR = '{{ipaddr}}'
   SERVERIP = '{{serverip}}'
-  # The MAC is normalised to lowercase without separators inside a filename and
-  # printed with colons inside `setenv ethaddr`, so it gets two holes rather
-  # than one.
+  # The MAC appears in two forms and they are not interchangeable: with colons
+  # inside `setenv ethaddr`, and stripped inside the backup filename. One hole
+  # for both would have a renderer writing `backup-...-aa:bb:cc:dd:ee:ff.bin`,
+  # which is a different file from the one the page told them to make.
   ETHADDR = '{{ethaddr}}'
+  ETHADDR_PLAIN = '{{ethaddr_plain}}'
+
+  # A well-formed address, used only to find out which lines change when one is
+  # given; it is substituted back out before anything is written.
+  SAMPLE_MAC = 'aa:bb:cc:dd:ee:ff'
 
   # The blocks that carry commands. Each is a helper that returns lines; the
   # page wraps them in terminal chrome and the static wizard will do the same.
@@ -176,14 +182,41 @@ module WizardExport
         'flash_size' => camera.flash_size,
         'layout_size' => camera.layout_size,
         'blocks' => blocks_for(camera),
+        'mac_variant' => mac_variant_for(soc, flash_type: flash_type, layout: layout,
+                                              edition: edition, interface: interface, sd: sd),
         'warnings' => warnings_for(soc, flash_type: flash_type, layout: layout, edition: edition),
       }
     end
 
-    def camera_for(soc, flash_type:, layout:, edition:, interface:, sd:)
+    # What changes when the visitor gives a MAC address.
+    #
+    # Only the blocks that differ, so the file does not carry two copies of
+    # everything: a camera with an address gets `setenv ethaddr` in its
+    # environment and the address in its backup filename, and every other line
+    # is identical.
+    def mac_variant_for(soc, flash_type:, layout:, edition:, interface:, sd:)
+      with_mac = camera_for(soc, flash_type: flash_type, layout: layout, edition: edition,
+                                 interface: interface, sd: sd, mac: SAMPLE_MAC)
+      without = camera_for(soc, flash_type: flash_type, layout: layout, edition: edition,
+                                interface: interface, sd: sd)
+
+      BLOCKS.each_with_object({}) do |block, differences|
+        theirs = lines_of(with_mac, block)
+                 .map { |line| line.gsub(SAMPLE_MAC, ETHADDR) }
+                 .map { |line| line.gsub(SAMPLE_MAC.delete(':'), ETHADDR_PLAIN) }
+        ours = lines_of(without, block)
+        differences[block] = theirs unless theirs == ours
+      end
+    end
+
+    def lines_of(camera, block)
+      view.public_send("#{block}_lines", camera).map(&:to_s).reject { |line| line.start_with?('<') }
+    end
+
+    def camera_for(soc, flash_type:, layout:, edition:, interface:, sd:, mac: ETHADDR)
       camera = Camera.new(
         camera_ip_address: IPADDR, server_ip_address: SERVERIP,
-        camera_mac_address: ETHADDR, flash_type: flash_type,
+        camera_mac_address: mac, flash_type: flash_type,
         firmware_version: edition, network_interface: interface, sd_card_slot: sd
       )
       camera.partition_layout = layout if layout

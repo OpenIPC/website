@@ -29,8 +29,8 @@ class WizardExportTest < ActiveSupport::TestCase
 
     assert_operator combinations.size, :>, 20, 'the menu offers more than this'
     combinations.each do |entry|
-      assert_equal %w[blocks edition flash_size flash_type layout_size network_interface
-                      partition_layout sd_card_slot warnings].sort,
+      assert_equal %w[blocks edition flash_size flash_type layout_size mac_variant
+                      network_interface partition_layout sd_card_slot warnings].sort,
                    entry.keys.sort
       assert_includes Camera::FLASH_CHIP, entry['flash_type']
       assert_includes Camera::NET_IFACE, entry['network_interface']
@@ -177,6 +177,24 @@ class WizardExportTest < ActiveSupport::TestCase
     # not offered at all -- which is the menu's behaviour too.
     assert_empty nor, 'NOR combinations were enumerated for a part with no NOR build'
     assert_not_empty document['combinations'].select { |e| e['flash_type'] == 'nand' }
+  end
+
+  test 'the MAC changes the shape of the output, and the export carries both' do
+    # Giving an address is not a value substitution: Camera#known_mac_address?
+    # decides whether `setenv ethaddr` is issued at all and whether the address
+    # joins the backup filename, so the two cameras produce different lines.
+    entry = document['combinations'].first
+    variant = entry['mac_variant']
+
+    assert_not_empty variant, 'no combination changes when a MAC is given'
+    assert_includes variant.keys, 'post_flash_environment'
+
+    joined = variant.values.flatten.join("\n")
+    assert_includes joined, WizardExport::ETHADDR
+    assert_includes joined, WizardExport::ETHADDR_PLAIN,
+                    'the filename form of the MAC needs its own hole'
+    assert_no_match(/aa:bb:cc:dd:ee:ff/, joined, 'the sample address reached the export')
+    assert_no_match(/aabbccddeeff/, joined, 'the sample address reached the export')
   end
 
   test 'it carries the editions upstream publishes, per flash type' do
