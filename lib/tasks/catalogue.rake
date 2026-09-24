@@ -1,0 +1,113 @@
+# frozen_string_literal: true
+
+# The catalogue lives in data/catalogue/*.yml (#161) and the hardware pages are
+# built from it (#162). While the socs and vendors tables are still here, the
+# two can drift -- somebody edits a SoC in the admin and the pages keep
+# rendering last month's, with nothing to say so.
+#
+# There is no test for that: the test database carries fixtures, not the
+# catalogue, so a comparison there would be against an empty database. This is
+# the comparison, to be run where the real rows are.
+#
+#   bin/rails catalogue:diff     what the database has that the files do not
+#   bin/rails catalogue:export   rewrite the files from the database
+#
+# catalogue_bake.rake's `catalogue:check` does the same job for the two figures
+# the home page bakes, and says in its own comment that #161 ends the need for
+# it. It does: once the pages read these files, the figures are a function of
+# the tree the build already reads.
+namespace :catalogue do
+  CATALOGUE_COLUMNS = -> { Soc.column_names - %w[id vendor_id created_at updated_at] }
+  CATALOGUE_DIR = -> { Rails.root.join('data/catalogue') }
+
+  def vendor_document(vendor)
+    {
+      'name' => vendor.name, 'urlname' => vendor.urlname,
+      'full_name' => vendor.full_name, 'website_url' => vendor.website_url,
+      'notes' => vendor.notes,
+      'socs' => vendor.socs.order(:model).map do |soc|
+        CATALOGUE_COLUMNS.call.to_h { |column| [column, soc.public_send(column)] }
+      end,
+    }
+  end
+
+  desc 'Report where data/catalogue and the database disagree'
+  task diff: :environment do
+    differences = 0
+
+    Vendor.order(:urlname).find_each do |vendor|
+      file = CATALOGUE_DIR.call.join("#{vendor.urlname}.yml")
+      unless File.exist?(file)
+        puts "missing file: #{vendor.urlname}.yml (#{vendor.socs.count} SoCs)"
+        differences += 1
+        next
+      end
+
+      on_disk = YAML.safe_load_file(file)
+      wanted = vendor_document(vendor)
+      next if on_disk == wanted
+
+      (wanted.keys - ['socs']).each do |key|
+        next if on_disk[key] == wanted[key]
+
+        puts "#{vendor.urlname}: #{key}: file #{on_disk[key].inspect} / db #{wanted[key].inspect}"
+        differences += 1
+      end
+
+      by_model = on_disk['socs'].index_by { |soc| soc['model'] }
+      wanted['socs'].each do |soc|
+        found = by_model.delete(soc['model'])
+        if found.nil?
+          puts "#{vendor.urlname}: #{soc['model']} is in the database and not in the file"
+          differences += 1
+          next
+        end
+
+        soc.each do |column, value|
+          next if found[column] == value
+
+          puts "#{vendor.urlname}: #{soc['model']}.#{column}: " \
+               "file #{found[column].inspect} / db #{value.inspect}"
+          differences += 1
+        end
+      end
+
+      by_model.each_key do |model|
+        puts "#{vendor.urlname}: #{model} is in the file and not in the database"
+        differences += 1
+      end
+    end
+
+    Dir[CATALOGUE_DIR.call.join('*.yml')].each do |file|
+      urlname = YAML.safe_load_file(file)['urlname']
+      next if Vendor.exists?(urlname: urlname)
+
+      puts "#{urlname} is in the files and not in the database"
+      differences += 1
+    end
+
+    if differences.zero?
+      puts 'data/catalogue matches the database'
+    else
+      puts "#{differences} difference(s)"
+      exit 1
+    end
+  end
+
+  desc 'Rewrite data/catalogue from the database'
+  task export: :environment do
+    FileUtils.mkdir_p(CATALOGUE_DIR.call)
+    Vendor.order(:name).find_each do |vendor|
+      document = vendor_document(vendor)
+      File.open(CATALOGUE_DIR.call.join("#{vendor.urlname}.yml"), 'w') do |file|
+        file.puts "# #{vendor.name} — #{document['socs'].size} SoC(s)."
+        file.puts '#'
+        file.puts '# Exported from the catalogue table (#161). This file is the source of'
+        file.puts '# truth for the hardware pages: edit it in a pull request, not in the'
+        file.puts '# admin, and the prerendered pages follow on the next build.'
+        file.write(document.to_yaml.delete_prefix("---\n"))
+      end
+    end
+    puts "wrote #{Vendor.count} file(s) to data/catalogue"
+  end
+end

@@ -1,0 +1,25 @@
+# TI — 1 SoC(s).
+#
+# Exported from the catalogue table (#161). This file is the source of
+# truth for the hardware pages: edit it in a pull request, not in the
+# admin, and the prerendered pages follow on the next build.
+name: TI
+urlname: ti
+full_name: Texas Instrument
+website_url: https://www.ti.com/
+notes: null
+socs:
+- family: ''
+  model: DM365
+  version: null
+  status: rnd
+  load_address: ''
+  sdk: null
+  kernel: null
+  uboot_filename: ''
+  linux_filename: ''
+  notes: ''
+  urlname: dm365
+  build_status_url: ''
+  featured: false
+  segment: null

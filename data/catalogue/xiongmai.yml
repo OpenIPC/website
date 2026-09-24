@@ -1,0 +1,53 @@
+# Xiongmai — 3 SoC(s).
+#
+# Exported from the catalogue table (#161). This file is the source of
+# truth for the hardware pages: edit it in a pull request, not in the
+# admin, and the prerendered pages follow on the next build.
+name: Xiongmai
+urlname: xiongmai
+full_name: null
+website_url: null
+notes: null
+socs:
+- family: XM510
+  model: XM510
+  version: ''
+  status: mvp
+  load_address: '0x80007FC0'
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.xm510-nor-lite.tgz
+  notes: ''
+  urlname: xm510
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/xm510_images.yml/badge.svg
+  featured: false
+  segment: null
+- family: XM530
+  model: XM530
+  version: ''
+  status: mvp
+  load_address: '0x81000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.xm530-nor-lite.tgz
+  notes: ''
+  urlname: xm530
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/xm530_images.yml/badge.svg
+  featured: false
+  segment: null
+- family: XM550
+  model: XM550
+  version: ''
+  status: mvp
+  load_address: '0x81000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.xm550-nor-lite.tgz
+  notes: ''
+  urlname: xm550
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/xm550_images.yml/badge.svg
+  featured: false
+  segment: null
