@@ -26,11 +26,11 @@ const k = (s: string) => t(`pages.our_team.${s}`);
 <Container>
   <article>
     <PageTitle>{k('title')}</PageTitle>
-    <p class="mb-10 max-w-[70ch]" set:html={k('paragraph1_html')} />
+    <p class="mb-10" set:html={k('paragraph1_html')} />
 
     {TEAM.map((section) => (
       <section class="mb-10">
-        <h2 class="mb-6 text-2xl">{section.title}</h2>
+        <h2 class="mb-6">{section.title}</h2>
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
           {section.members.map((member) => (
             <div class="flex h-full flex-col overflow-hidden rounded-lg border border-hairline bg-white">

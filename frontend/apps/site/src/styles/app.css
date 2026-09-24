@@ -78,6 +78,20 @@
   /* .x-small, the disclaimer's size. */
   --text-xxs: 0.8125rem;
   --text-xxs--line-height: 1.6;
+
+  /*
+   * Bootstrap's breakpoints, because the layouts being reproduced are written
+   * against them. Tailwind's `2xl` is 1536px and Bootstrap's `xxl` is 1400, so
+   * at a 1440px window /our-team's team grid was five columns wide where the
+   * origin's is six -- 728px taller, and the single largest difference on any
+   * page in the bundle. `lg` differs too, 1024 against 992, which is the
+   * breakpoint the navigation collapses at.
+   */
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-2xl: 1400px;
 }
 
 @layer base {
