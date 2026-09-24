@@ -24,9 +24,17 @@ describe('the catalogue', () => {
     // change on both sides rather than a surprise.
     for (const cat of [en, ru, zh]) {
       const keys = Object.keys(cat);
-      for (const forbidden of ['cameras', 'firmware', 'devise', 'activerecord']) {
+      for (const forbidden of ['firmware', 'devise', 'activerecord']) {
         expect(keys).not.toContain(forbidden);
       }
+
+      // `cameras` is admitted two subtrees at a time, not whole (#162): the
+      // catalogue's table and row are here and the wizard's 27 strings are
+      // not, because the wizard is still Rails until #163 and a translator
+      // should not be shown strings no page in this bundle can use.
+      const cameras = (cat as unknown as Record<string, Record<string, unknown>>).cameras;
+      expect(Object.keys(cameras)).toEqual(['socs']);
+      expect(Object.keys(cameras.socs as Record<string, unknown>).sort()).toEqual(['index', 'soc']);
       const pages = (cat as unknown as Record<string, Record<string, unknown>>).pages;
       expect(Object.keys(pages)).not.toContain('admin');
 

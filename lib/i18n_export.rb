@@ -42,7 +42,17 @@ module I18nExport
   # it in the same words -- a second key would drift the moment either is
   # retranslated. Grafting the one leaf is cheaper than admitting 27 wizard-
   # adjacent strings the marketing pages cannot use.
-  INCLUDED = [%w[snapshots index no_signal]].freeze
+  INCLUDED = [
+    %w[snapshots index no_signal],
+
+    # The hardware catalogue's own strings (#162). `cameras` as a whole is not
+    # a namespace here: most of it belongs to the wizard, which stays in Rails
+    # until #163, and admitting the lot would put 27 strings the catalogue
+    # pages cannot use in front of every translator. These two subtrees are the
+    # table and the row.
+    %w[cameras socs index],
+    %w[cameras socs soc],
+  ].freeze
 
   OUT_DIR = 'frontend/apps/site/src/i18n'
 

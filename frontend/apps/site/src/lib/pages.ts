@@ -12,6 +12,7 @@
  * the first as a route that renders `undefined`, which is a stack trace rather
  * than a sentence.
  */
+import Hardware from '../components/pages/Hardware.astro';
 import Service from '../components/Service.astro';
 import Smoke from '../components/Smoke.astro';
 import Business from '../components/pages/Business.astro';
@@ -33,6 +34,7 @@ import StagesOfFirmwareDevelopment from '../components/pages/StagesOfFirmwareDev
 import Teleoperation from '../components/pages/Teleoperation.astro';
 import Utilities from '../components/pages/Utilities.astro';
 import WebInterface from '../components/pages/WebInterface.astro';
+import { VENDORS } from './hardware';
 import { PAGE_PATHS, type PagePath } from './page-paths';
 
 /** One services whitepaper's arguments. See ../components/Service.astro. */
@@ -67,6 +69,14 @@ function service(spec: ServiceSpec): Renderer {
 
 const COMPONENTS: Record<string, Renderer> = {
   '/_smoke': { component: Smoke },
+
+  // The catalogue: one component, three views, sixteen addresses (#162).
+  '/supported-hardware/featured': { component: Hardware, props: { view: 'featured' } },
+  '/supported-hardware/full-list': { component: Hardware, props: { view: 'full-list' } },
+  ...Object.fromEntries(VENDORS.map((vendor) => [
+    `/cameras/vendors/${vendor.urlname}`,
+    { component: Hardware, props: { view: 'vendor', vendor: vendor.urlname } },
+  ])),
 
   '/business': { component: Business },
   '/community': { component: Community },

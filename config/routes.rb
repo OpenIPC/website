@@ -146,10 +146,34 @@ Rails.application.routes.draw do
       "#{prefix}/supported-hardware/featured"
     }
   end
+  # MARKED FOR DELETION, not before 2026-10-24 (#162).
+  #
+  # The catalogue lists are served from the static bundle now. They stay for
+  # thirty days for the same reason the marketing pages did: try_files walks
+  # past a missing file and ends at @rails, so a bundle that is rolled back or
+  # half-installed still answers these addresses, and the cutover stays
+  # reversible by a symlink flip.
+  #
+  # What goes with them when they go: Cameras::SocsController#featured and
+  # #full_list, app/views/cameras/socs/index.html.erb, _soc.html.erb,
+  # _stages.html.erb and PagesHelper's installable_counts/vendor_totals. Not
+  # #show and not #index -- the wizard is #163's to move, and the vendor tabs
+  # in the bundle link to it.
   scope '(:locale)', locale: Multilang::IN_PATH do
     get '/supported-hardware/featured', to: 'cameras/socs#featured'
     get '/supported-hardware/full-list', to: 'cameras/socs#full_list'
   end
+
+  # What the prerendered hardware pages cannot know (#162).
+  #
+  # Availability is a question about what upstream has published, answered from
+  # a release index a cron refreshes hourly -- so it is the one column of those
+  # pages that would go stale between builds. Locale-free by design: these are
+  # states, and the page already has the words for them.
+  #
+  # Outside the locale scope, like the rest of /api/.
+  get '/api/v1/hardware/availability.json',
+      to: 'api/v1/hardware#availability', defaults: { format: :json }
 
   # /tools/bandwidth-calculator is deliberately absent. It routed to
   # pages#bandwidth_calculator, which has never existed -- no action, no
@@ -238,6 +262,10 @@ Rails.application.routes.draw do
   # would have put /ru/cameras/.../download_full_image -- about a second of CPU
   # and 8-32MB of disk per call -- outside the #147 limit_req zones. #205 added
   # those prefixes first, and a test now fails if the two lists drift apart.
+  # `cameras/vendors#show` is MARKED FOR DELETION, not before 2026-10-24
+  # (#162): the vendor tabs are in the bundle now, and this stays thirty days
+  # as the fallback behind try_files. The rest of this block is the wizard and
+  # the download, which are #163's and never leave Rails respectively.
   scope '(:locale)', locale: Multilang::IN_PATH do
     namespace :cameras do
       resources :socs, only: %i[index show]

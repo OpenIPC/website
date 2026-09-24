@@ -24,6 +24,19 @@ export const RAILS_PATHS: string[] = [
   '/supported-hardware',
 ];
 
+/**
+ * The wizard, one address per SoC (#162).
+ *
+ * The catalogue pages are in the bundle and every row of them links to
+ * `/cameras/vendors/<vendor>/socs/<soc>`, which is Rails' until #163 -- 126
+ * addresses that are real routes and are not files here. Listed as a shape
+ * rather than as 126 strings: the Rails half of the check resolves it against
+ * the router, and a shape that stopped matching would fail there.
+ */
+export const RAILS_PATTERNS: RegExp[] = [
+  /^\/cameras\/vendors\/[a-z0-9_-]+\/socs\/[a-z0-9_.-]+$/,
+];
+
 /** Trees served from disk, matched as prefixes. */
 export const RAILS_PREFIXES: string[] = [
   '/dl/',

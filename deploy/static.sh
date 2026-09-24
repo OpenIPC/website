@@ -221,7 +221,14 @@ probe() {
 #
 # /donate and /ru/donate used to be here and have moved to the list below:
 # they are marketing pages, and #160 is where they stopped being Rails'.
-MUST_NOT_BE_STATIC=(/ /supported-hardware/featured /open-wall /robots.txt /sitemap.xml /admin)
+#
+# /supported-hardware/featured has made the same move in #162, and for the same
+# reason: the catalogue is data now (data/catalogue/*.yml), so the page that
+# lists it needs no database. What is left here is the wizard behind it --
+# /cameras/vendors/<v>/socs/<s> -- which is still Rails until #163, and the
+# download it ends at, which must never be a file in a bundle.
+MUST_NOT_BE_STATIC=(/ /open-wall /robots.txt /sitemap.xml /admin
+                    /cameras/vendors/sigmastar/socs/ssc338q)
 
 # And the other direction (#160), which is the half that catches a bundle that
 # built but did not ship what it was for. A tree that loses every page still
@@ -230,7 +237,13 @@ MUST_NOT_BE_STATIC=(/ /supported-hardware/featured /open-wall /robots.txt /sitem
 #
 # One unprefixed page, the same page in a locale tree, and one two directories
 # deep, because those are the three shapes the seam treats differently.
-MUST_BE_STATIC=(/donate /ru/donate /get-started /tools/qr-code-generator)
+#
+# The three hardware views are here from #162: the recommended list, the full
+# list and one vendor tab. They are the pages a visitor lands on from search
+# and the ones a half-shipped bundle would silently hand back to Rails.
+MUST_BE_STATIC=(/donate /ru/donate /get-started /tools/qr-code-generator
+                /supported-hardware/featured /supported-hardware/full-list
+                /cameras/vendors/sigmastar)
 
 do_verify() {
   local env_name=${1:-prod} vhost root served bad=0

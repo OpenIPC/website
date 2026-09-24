@@ -94,6 +94,13 @@ namespace :catalogue do
     end
   end
 
+  desc 'Bake data/catalogue into the JSON the frontend build reads'
+  task bake: :environment do
+    require 'catalogue_export'
+    CatalogueExport.write
+    puts "wrote #{CatalogueExport::OUT}"
+  end
+
   desc 'Rewrite data/catalogue from the database'
   task export: :environment do
     FileUtils.mkdir_p(CATALOGUE_DIR.call)

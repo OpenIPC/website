@@ -323,6 +323,30 @@ class StaticBundleTest < ActiveSupport::TestCase
     MESSAGE
   end
 
+  test 'the wizard the catalogue links to is a route Rails still has' do
+    # rails-paths.ts carries a pattern as well as a list (#162): every row of
+    # the catalogue links one address per SoC --
+    # /cameras/vendors/<vendor>/socs/<soc> -- which is Rails' until #163. A
+    # list of 126 strings would be a second copy of the catalogue, so the
+    # frontend matches a shape and this asserts the shape is real.
+    #
+    # Not by re-running the TypeScript regex in Ruby: a regex parsed out of one
+    # language and executed in another tests the parser. What matters here is
+    # that the address those links have exists, and that the frontend has not
+    # quietly dropped the pattern that lets them through.
+    ts = Rails.root.join('frontend/apps/site/src/lib/rails-paths.ts').read
+
+    assert_match(/RAILS_PATTERNS/, ts, 'rails-paths.ts no longer carries the wizard pattern')
+    assert_match(%r{cameras\\?/vendors}, ts, "the pattern no longer names the wizard's tree")
+
+    # Asked of the router itself: `routed_paths` holds the static addresses,
+    # and this one carries two parameters.
+    helper = Rails.application.routes.url_helpers
+    assert_equal '/cameras/vendors/probe/socs/ps1000',
+                 helper.cameras_vendor_soc_path(vendor_id: 'probe', id: 'ps1000'),
+                 'the catalogue links at an address config/routes.rb does not route'
+  end
+
   test 'the baked support goal is the one config/support_goal.yml sets' do
     # The donate page and the home band print "help us reach N", and N is a
     # setting somebody raises by pull request (#198) -- so the prerendered copy

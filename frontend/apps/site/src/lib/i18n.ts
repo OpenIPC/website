@@ -104,7 +104,19 @@ function pluralise(forms: { [key: string]: Node }, count: number, locale: Locale
   return forms[pluralCategory(locale, count, forms)] ?? forms.other;
 }
 
-export type TranslateOptions = Record<string, unknown> & { count?: number };
+export type TranslateOptions = Record<string, unknown> & {
+  count?: number;
+  /**
+   * What to return when the key is in neither locale, instead of throwing.
+   * Rails' `t(..., default:)`, which the pages being ported use where a key is
+   * optional by design -- `unavailable_<status>` exists for the statuses that
+   * have a reason worth naming and deliberately not for the others.
+   *
+   * Named `fallback` rather than `default` so it cannot collide with an
+   * interpolation variable of that name.
+   */
+  fallback?: string;
+};
 
 /**
  * Look up `key` in `locale`, falling back to English, throwing if neither has
@@ -118,6 +130,10 @@ export function translate(locale: Locale, key: string, options: TranslateOptions
   if (found === undefined && locale !== DEFAULT_LOCALE) {
     found = lookup(CATALOGUES[DEFAULT_LOCALE], key);
     usedFallback = found !== undefined;
+  }
+
+  if (found === undefined && typeof options.fallback === 'string') {
+    return options.fallback;
   }
 
   if (found === undefined) {

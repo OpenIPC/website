@@ -666,3 +666,130 @@ h1, h2, h3, h4, h5, h6 {
 .site-btn-outline-secondary:focus-visible {
   border-color: var(--color-body-secondary);
 }
+
+/*
+ * The hardware catalogue's Bootstrap parts (#162): the tab strip, the count
+ * badge and the two alerts. Every number measured off
+ * openipc.org/supported-hardware/featured rather than derived from Tailwind's
+ * scale, for the reason the rest of this file exists.
+ */
+.site-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.site-tab {
+  display: block;
+  /* --bs-nav-link-padding-x is .3rem on this page, not Bootstrap's 1rem. */
+  padding: 0.5rem 0.3rem;
+  border: 1px solid transparent;
+  border-top-left-radius: 0.375rem;
+  border-top-right-radius: 0.375rem;
+  color: var(--color-brand-blue);
+  line-height: 1.6;
+  text-decoration: none;
+  margin-bottom: -1px;
+}
+
+.site-tab:hover {
+  border-color: #e9ecef #e9ecef var(--color-hairline);
+  color: var(--color-link-hover);
+}
+
+/* `.nav-link.text-muted` on the last tab. A utility cannot say it: this rule
+ * is unlayered and would beat it. */
+.site-tab-muted {
+  color: var(--color-body-secondary);
+}
+
+.site-tab[aria-current='page'] {
+  color: #000;
+  background-color: #fff;
+  border-color: var(--color-hairline) var(--color-hairline) #fff;
+}
+
+/* .badge.rounded-pill: .75em of the tab's 14px, in a pill. */
+.site-badge {
+  display: inline-block;
+  padding: 0.35em 0.65em;
+  font-size: 0.75em;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 50rem;
+  background-color: #6c757d;
+}
+
+.site-badge-primary {
+  background-color: var(--color-brand-blue);
+}
+
+/* .alert-info and .alert-warning, from the dark-on-tint pairs Bootstrap
+ * computes for this theme. */
+.site-alert {
+  padding: 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+}
+
+.site-alert-info {
+  color: #193953;
+  background-color: #d8e8f6;
+  border-color: #b2d2ec;
+}
+
+.site-alert-warning {
+  color: #5d4018;
+  background-color: #faecd8;
+  border-color: #f8dfc0;
+}
+
+/*
+ * The table is a <dl> grid, as the origin's is: a definition list reads as a
+ * list of chips to a screen reader, where a <table> would announce four
+ * columns of layout.
+ */
+.socs dl {
+  display: flex;
+  flex-wrap: wrap;
+  /* `dl.row`: the negative gutter Bootstrap's row carries, which is what makes
+   * the first column's text line up with the heading above it rather than
+   * 12px inside it. */
+  margin: 0 -0.75rem 1rem;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.socs dd {
+  /* Bootstrap's reboot puts .5rem under a dd and the rows are built from it:
+   * without it every row is 8px shorter, which over 126 of them is a page a
+   * quarter shorter than the one it replaces. */
+  margin: 0 0 0.5rem;
+  padding: 0 0.75rem;
+}
+
+.socs .stage {
+  text-align: center;
+}
+
+.socs .stage img {
+  height: 1.25rem;
+  display: inline-block;
+}
+
+/* The anchor beside a model name, which appears on hover as the origin's does. */
+.socs .anchor {
+  display: none;
+}
+
+.socs dd:hover .anchor {
+  display: inline;
+}

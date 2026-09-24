@@ -22,6 +22,24 @@
  *   * the ~33 redirects, the two `410 Gone` routes and the catch-all, which
  *     are cheap, tested, and reached by falling through the seam.
  */
+import { VENDORS } from './hardware';
+/**
+ * The catalogue's own addresses (#162), derived from the same data the pages
+ * render: recommended, one tab per vendor, and the full list. Written out here
+ * rather than by hand so a vendor added to data/catalogue cannot be a page
+ * nobody routed to.
+ */
+function hardwarePaths(): PagePath[] {
+  return [
+    { path: '/supported-hardware/featured', titleKey: 'cameras.socs.index.title' },
+    { path: '/supported-hardware/full-list', titleKey: 'cameras.socs.index.title' },
+    ...VENDORS.map((vendor) => ({
+      path: `/cameras/vendors/${vendor.urlname}`,
+      titleKey: 'cameras.socs.index.title',
+    })),
+  ];
+}
+
 export interface PagePath {
   /** Locale-free address, leading slash, no trailing slash. */
   path: string;
@@ -34,6 +52,8 @@ export interface PagePath {
 }
 
 export const PAGE_PATHS: PagePath[] = [
+  ...hardwarePaths(),
+
   // The diagnostic. Not a marketing page and never indexed, but it is an
   // address the bundle claims and it belongs in the same list as the rest --
   // deploy/static.sh, check-bundle.sh and check-config.sh all assert on it.

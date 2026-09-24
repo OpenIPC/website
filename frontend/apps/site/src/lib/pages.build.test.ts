@@ -13,12 +13,13 @@
  * `npm test` builds before running, so this always reads the current output.
  */
 import { describe, expect, test } from 'vitest';
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LOCALES, pathFor, type Locale } from './i18n';
 import { PAGE_PATHS } from './page-paths';
-import { RAILS_PATHS, RAILS_PREFIXES } from './rails-paths';
+import { VENDORS } from './hardware';
+import { RAILS_PATHS, RAILS_PATTERNS, RAILS_PREFIXES } from './rails-paths';
 import { menuFor, footerFor, type FooterLink } from './nav';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -78,6 +79,9 @@ describe('every page is a page', () => {
   });
 
   test('no page renders a missing interpolation', () => {
+    // A <script> may carry one on purpose: the catalogue's refresh script is
+    // given `installable_title` as a template and fills it per vendor once it
+    // knows the live counts (#162). Body text may not.
     // `%{name}` left in the output means the catalogue asked for a variable
     // the page did not supply. translate() leaves it visible on purpose.
     //
@@ -85,8 +89,14 @@ describe('every page is a page', () => {
     // props as JSON for hydration, and the partition calculator's props are
     // label TEMPLATES -- `Partition %{number} name` -- which the widget fills
     // itself, once per row. Finding one there is the design working.
+    //
+    // A <script> is excluded for the same reason: the catalogue's refresh
+    // script is handed `installable_title` as a template and fills it per
+    // vendor once it knows the live counts (#162).
     for (const [locale, path, html] of MARKETING) {
-      const rendered = html.replace(/<astro-island\b[^>]*>/g, '');
+      const rendered = html
+        .replace(/<astro-island\b[^>]*>/g, '')
+        .replace(/<script[\s\S]*?<\/script>/g, '');
       expect(rendered, `${locale}${path} has an unfilled interpolation`).not.toMatch(/%\{\w+\}/);
     }
   });
@@ -245,6 +255,56 @@ describe('the shell behaves the way the Rails shell does', () => {
   });
 });
 
+describe('the hardware catalogue is the catalogue (#162)', () => {
+  const featured = readFileSync(join(dist, 'supported-hardware/featured/index.html'), 'utf8');
+  const fullList = readFileSync(join(dist, 'supported-hardware/full-list/index.html'), 'utf8');
+
+  test('the full list holds every SoC in data/catalogue', () => {
+    // The page is built from the YAML rather than a database, so the failure
+    // this catches is a bake that dropped a vendor: the page still renders,
+    // and the chips are simply not on it.
+    for (const vendor of VENDORS) {
+      for (const soc of vendor.socs) {
+        expect(fullList, `${vendor.name} ${soc.model} is missing from the full list`)
+          .toContain(`id="${soc.urlname}"`);
+      }
+    }
+  });
+
+  test('the recommended list holds the featured SoCs and no others', () => {
+    const wanted = VENDORS.flatMap((v) => v.socs.filter((s) => s.featured).map((s) => s.urlname));
+    const shown = [...featured.matchAll(/<dl id="([^"]+)"/g)].map((m) => m[1]);
+
+    expect(shown.sort()).toEqual(wanted.sort());
+    expect(shown.length).toBeGreaterThan(20);
+  });
+
+  test('every vendor has a tab and a page behind it', () => {
+    for (const vendor of VENDORS) {
+      expect(featured, `no tab for ${vendor.name}`).toContain(`/cameras/vendors/${vendor.urlname}"`);
+      expect(existsSync(join(dist, 'cameras/vendors', vendor.urlname, 'index.html')),
+        `no page for ${vendor.name}`).toBe(true);
+    }
+  });
+
+  test('the availability column can be corrected after the build', () => {
+    // The one column the bundle cannot know: a page built on Tuesday would
+    // tell Friday's visitor a chip has no firmware when it got some on
+    // Wednesday. It is baked so a crawler sees it and refreshed so a reader
+    // does not read a stale one.
+    expect(featured).toContain('/api/v1/hardware/availability.json');
+    expect(featured).toMatch(/data-soc="/);
+    expect(featured).toMatch(/data-unavailable="/);
+  });
+
+  test('the wizard is still linked, because it is still Rails', () => {
+    // #163 moves it. Until then these links leave the bundle and fall through
+    // the seam, and a link that stopped pointing at it would strand the one
+    // action the page exists for.
+    expect(featured).toMatch(/href="\/cameras\/vendors\/[a-z0-9-]+\/socs\/[a-z0-9-]+"/);
+  });
+});
+
 describe('internal links resolve', () => {
   const claimed = new Set(
     LOCALES.flatMap((locale) => PAGE_PATHS.map((page) => pathFor(locale, page.path))),
@@ -259,6 +319,7 @@ describe('internal links resolve', () => {
     // A Rails address, with or without the locale prefix the page gave it.
     const bare = path.replace(new RegExp(`^/(${LOCALES.join('|')})(?=/|$)`), '') || '/';
     if (RAILS_PATHS.includes(bare)) return true;
+    if (RAILS_PATTERNS.some((pattern) => pattern.test(bare))) return true;
     return RAILS_PREFIXES.some((prefix) => bare.startsWith(prefix));
   }
 
