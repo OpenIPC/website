@@ -109,7 +109,7 @@ const PILLARS = [
 <section class="py-section">
   <div class="site-container">
     <h2 class="mb-12 text-center text-h2">{t('pages.home.story_title')}</h2>
-    <div class="grid gap-8 md:grid-cols-3">
+    <div class="grid gap-6 md:grid-cols-3">
       {[1, 2, 3].map((i) => (
         <div>
           <div class="mb-2 font-mono text-2xl text-brand-blue/40">0{i}</div>
@@ -156,7 +156,7 @@ const PILLARS = [
 {/* ---- Stats band ---- */}
 <section class="bg-ink py-12 text-white/85">
   <div class="site-container">
-    <div class="grid grid-cols-2 gap-8 text-center lg:grid-cols-4">
+    <div class="grid grid-cols-2 gap-6 text-center lg:grid-cols-4">
       <div>
         <div class="font-mono text-4xl font-bold">{SOC_COUNT}</div>
         <div class="mt-1 text-sm text-white/60">{t('pages.home.stats_socs')}</div>
@@ -208,7 +208,7 @@ const PILLARS = [
         {t('pages.home.cta_secondary')}
       </a>
     </p>
-    <p class="mx-auto mt-8 mb-0 max-w-[60ch] text-sm text-white/60" set:html={t('pages.home.cta_donate_html')} />
+    <p class="mx-auto mt-6 mb-0 max-w-[60ch] text-sm text-white/60" set:html={t('pages.home.cta_donate_html')} />
 
     {/*
       Constrained and centred, because a full-width meter across a 1200px band

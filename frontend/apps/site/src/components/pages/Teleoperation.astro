@@ -43,7 +43,7 @@ const PARTNER_MAIL = 'mailto:business@openipc.org?subject=Teleoperation%20design
 {/* ---- Cover: the thesis, and the operator mirrored by the robot ---- */}
 <section class="bg-ink py-section text-white/85 lg:py-section-lg">
   <div class="site-container">
-    <div class="grid items-center gap-10 lg:grid-cols-2">
+    <div class="grid items-center gap-12 lg:grid-cols-2">
       <div>
         <p class="mb-3 text-sm tracking-[.08em] text-accent uppercase">{k('eyebrow')}</p>
         <h1 class="mb-3 text-4xl font-bold lg:text-5xl">{k('hero_title')}</h1>
@@ -65,7 +65,7 @@ const PARTNER_MAIL = 'mailto:business@openipc.org?subject=Teleoperation%20design
 </section>
 
 {/* ---- Three figures, each with its source under it ---- */}
-<section class="border-b border-hairline py-8">
+<section class="border-b border-hairline py-6">
   <div class="site-container">
     <div class="grid gap-6 text-center md:grid-cols-3 lg:text-left">
       {['market', 'units', 'latency'].map((key) => (
@@ -83,7 +83,7 @@ const PARTNER_MAIL = 'mailto:business@openipc.org?subject=Teleoperation%20design
 <section class="py-section">
   <div class="site-container">
     <h2 class="mb-6 text-2xl">{k('landscape_title')}</h2>
-    <div class="grid gap-10 lg:grid-cols-2">
+    <div class="grid gap-12 lg:grid-cols-2">
       <div>
         <p class="mb-4">{k('landscape_p1')}</p>
         <p class="mb-0">{k('landscape_p2')}</p>
@@ -184,6 +184,6 @@ const PARTNER_MAIL = 'mailto:business@openipc.org?subject=Teleoperation%20design
         {k('cta_secondary')}
       </a>
     </p>
-    <p class="mx-auto mt-8 mb-0 max-w-[62ch] text-sm text-white/60" set:html={k('cta_note_html')} />
+    <p class="mx-auto mt-6 mb-0 max-w-[62ch] text-sm text-white/60" set:html={k('cta_note_html')} />
   </div>
 </section>

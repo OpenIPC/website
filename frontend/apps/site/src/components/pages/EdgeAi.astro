@@ -35,7 +35,7 @@ const MAIL = 'mailto:business@openipc.org?subject=NPU%20feasibility%3A%20%5BSoC%
 {/* ---- Cover: the thesis, and the network converging on the car park ---- */}
 <section class="bg-ink py-section text-white/85 lg:py-section-lg">
   <div class="site-container">
-    <div class="grid items-center gap-10 lg:grid-cols-2">
+    <div class="grid items-center gap-12 lg:grid-cols-2">
       <div>
         <p class="mb-3 text-sm tracking-[.08em] text-accent uppercase">{k('eyebrow')}</p>
         <h1 class="mb-3 text-4xl font-bold lg:text-5xl">{k('hero_title')}</h1>
@@ -57,7 +57,7 @@ const MAIL = 'mailto:business@openipc.org?subject=NPU%20feasibility%3A%20%5BSoC%
 </section>
 
 {/* ---- Three figures ---- */}
-<section class="border-b border-hairline py-8">
+<section class="border-b border-hairline py-6">
   <div class="site-container">
     <div class="grid gap-6 text-center md:grid-cols-3 lg:text-left">
       {['fps', 'loss', 'gap'].map((key) => (
@@ -75,7 +75,7 @@ const MAIL = 'mailto:business@openipc.org?subject=NPU%20feasibility%3A%20%5BSoC%
 <section class="py-section">
   <div class="site-container">
     <h2 class="mb-6 text-2xl">{k('scar_title')}</h2>
-    <div class="grid gap-10 lg:grid-cols-2">
+    <div class="grid gap-12 lg:grid-cols-2">
       <p class="mb-0">{k('scar_p1')}</p>
       <p class="mb-0">{k('scar_p2')}</p>
     </div>
@@ -106,7 +106,7 @@ const MAIL = 'mailto:business@openipc.org?subject=NPU%20feasibility%3A%20%5BSoC%
 <section class="py-section">
   <div class="site-container">
     <h2 class="mb-6 text-2xl">{k('results_title')}</h2>
-    <div class="grid gap-10 lg:grid-cols-3">
+    <div class="grid gap-12 lg:grid-cols-3">
       {['plates', 'faces', 'cpu'].map((key) => (
         <div>
           <h3 class="mb-2 text-xl">{k(`res_${key}_title`)}</h3>
@@ -134,7 +134,7 @@ const MAIL = 'mailto:business@openipc.org?subject=NPU%20feasibility%3A%20%5BSoC%
 <section class="py-section" id="engagement">
   <div class="site-container">
     <h2 class="mb-6 text-2xl">{k('engagement_title')}</h2>
-    <div class="grid gap-8 md:grid-cols-3">
+    <div class="grid gap-6 md:grid-cols-3">
       {[1, 2, 3].map((i) => (
         <div>
           <div class="mb-2 font-mono text-2xl text-brand-blue/40">0{i}</div>
@@ -159,6 +159,6 @@ const MAIL = 'mailto:business@openipc.org?subject=NPU%20feasibility%3A%20%5BSoC%
         {k('cta_secondary')}
       </a>
     </p>
-    <p class="mx-auto mt-8 mb-0 max-w-[62ch] text-sm text-white/60" set:html={k('cta_note_html')} />
+    <p class="mx-auto mt-6 mb-0 max-w-[62ch] text-sm text-white/60" set:html={k('cta_note_html')} />
   </div>
 </section>

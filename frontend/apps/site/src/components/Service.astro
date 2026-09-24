@@ -49,7 +49,7 @@ const mailto = `mailto:business@openipc.org?subject=${encodeURIComponent(mailSub
 </section>
 
 {/* ---- Three figures ---- */}
-<section class="border-b border-hairline py-8">
+<section class="border-b border-hairline py-6">
   <div class="site-container">
     <div class="grid gap-6 text-center md:grid-cols-3 lg:text-left">
       {[1, 2, 3].map((i) => (
@@ -67,7 +67,7 @@ const mailto = `mailto:business@openipc.org?subject=${encodeURIComponent(mailSub
 <section class="py-section">
   <div class="site-container">
     <h2 class="mb-6 text-2xl">{tk('scar_title')}</h2>
-    <div class="grid gap-10 lg:grid-cols-2">
+    <div class="grid gap-12 lg:grid-cols-2">
       <p class="mb-0">{tk('scar_p1')}</p>
       <p class="mb-0">{tk('scar_p2')}</p>
     </div>
@@ -98,7 +98,7 @@ const mailto = `mailto:business@openipc.org?subject=${encodeURIComponent(mailSub
 <section class="py-section">
   <div class="site-container">
     <h2 class="mb-6 text-2xl">{tk('results_title')}</h2>
-    <div class="grid gap-10 lg:grid-cols-3">
+    <div class="grid gap-12 lg:grid-cols-3">
       {[1, 2, 3].map((i) => (
         <div>
           <h3 class="mb-2 text-xl">{tk(`res${i}_title`)}</h3>
@@ -126,7 +126,7 @@ const mailto = `mailto:business@openipc.org?subject=${encodeURIComponent(mailSub
 <section class="py-section" id="engagement">
   <div class="site-container">
     <h2 class="mb-6 text-2xl">{tk('engagement_title')}</h2>
-    <div class="grid gap-8 md:grid-cols-3">
+    <div class="grid gap-6 md:grid-cols-3">
       {[1, 2, 3].map((i) => (
         <div>
           <div class="mb-2 font-mono text-2xl text-brand-blue/40">0{i}</div>
@@ -151,6 +151,6 @@ const mailto = `mailto:business@openipc.org?subject=${encodeURIComponent(mailSub
         {tk('cta_secondary')}
       </a>
     </p>
-    <p class="mx-auto mt-8 mb-0 max-w-[62ch] text-sm text-white/60" set:html={tk('cta_note_html')} />
+    <p class="mx-auto mt-6 mb-0 max-w-[62ch] text-sm text-white/60" set:html={tk('cta_note_html')} />
   </div>
 </section>
