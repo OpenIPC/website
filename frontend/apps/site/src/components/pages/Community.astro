@@ -59,29 +59,29 @@ function contributionText(key: string): string {
 <div class="site-container">
   <article>
     <h2 class="mb-6 text-2xl">{k('channels_title')}</h2>
-    <div class="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {CHANNELS.map(([name, url, descKey]) => (
-        <div class="h-full rounded-lg border border-hairline bg-white p-5">
+        <div class="h-full rounded-lg border border-hairline bg-white p-4">
           <h3 class="mb-2 flex items-center gap-2 text-base font-semibold">
             <Icon name="telegram" class="size-4 text-brand-blue" />
-            <a class="text-body no-underline hover:underline" href={url} data-event="tg-join">{name}</a>
+            <a class="text-body" href={url} data-event="tg-join">{name}</a>
           </h3>
           <p class="mb-0 text-sm text-body-secondary">{k(descKey)}</p>
         </div>
       ))}
     </div>
 
-    <div class="mb-8 flex gap-4 rounded-lg border border-accent/40 bg-accent/10 p-5">
+    <div class="mb-6 flex gap-4 rounded-lg border border-accent/40 bg-accent/10 p-4">
       <Icon name="robot" class="size-6 shrink-0 text-ink" />
       <p class="mb-0">{k('bot_warning')}</p>
     </div>
 
-    <div class="mb-12 flex gap-4 rounded-lg border border-hairline bg-surface-alt p-5" id="reach">
+    <div class="mb-18 flex gap-4 rounded-lg border border-hairline bg-surface-alt p-4" id="reach">
       <Icon name="life-preserver" class="size-6 shrink-0 text-body-secondary" />
       <div>
         <h3 class="mb-2 text-base font-semibold">{k('reach_title')}</h3>
         <p class="mb-2 text-sm">{k('reach_lede')}</p>
-        <ul class="mb-0 list-disc space-y-1 pl-5 text-sm">
+        <ul class="mb-0 list-disc pl-8 text-sm">
           <li set:html={k('reach_issues_html')} />
           <li set:html={k('reach_wiki_html')} />
         </ul>
@@ -89,14 +89,14 @@ function contributionText(key: string): string {
     </div>
 
     <h2 class="mb-4 text-2xl">{k('help_title')}</h2>
-    <ul class="mb-12 list-disc space-y-1 pl-6 text-body-secondary">
+    <ul class="mb-18 list-disc pl-8 text-body-secondary">
       <li set:html={k('help1_html')} />
       <li>{k('help2')}</li>
       <li>{k('help3')}</li>
     </ul>
 
     <h2 class="mb-6 text-2xl">{k('contribute_title')}</h2>
-    <div class="mb-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+    <div class="mb-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
       {CONTRIBUTIONS.map(([key, icon]) => (
         <div>
           <h3 class="mb-2 flex items-center gap-2 text-base font-semibold">
