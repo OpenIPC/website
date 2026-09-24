@@ -173,7 +173,7 @@ const alt = alternates(path);
   // hearing the arrow keys at that point -- so the reader could open a menu and
   // then not move through it.
   for (const toggle of toggles) {
-    const item = toggle.closest('.site-nav-item');
+    const item = toggle.closest<HTMLElement>('.site-nav-item');
     if (!item) continue;
 
     item.addEventListener('keydown', (event) => {
