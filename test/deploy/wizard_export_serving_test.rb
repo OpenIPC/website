@@ -71,6 +71,14 @@ class WizardExportServingTest < ActiveSupport::TestCase
     assert_match(%r{install .*wizard-export\.sh}, installer, 'the runner is never installed')
     assert_match(%r{install -d .*\$wizarddir}, installer, 'nothing creates the directory nginx reads')
     assert_match(%r{install -d .*\$wizarddevdir}, installer, "nothing creates dev's own directory")
+
+    # Owned by the application, which is what writes it. Created root-owned, it
+    # was a directory the job could open and not write into.
+    assert_match(/^appuid=1000$/, installer, 'the installer does not name the uid the image runs as')
+    %w[wizarddir wizarddevdir].each do |name|
+      assert_match(/install -d -m 0755 -o "\$appuid" -g "\$appuid" "\$#{name}"/, installer,
+                   "$#{name} is not created owned by the application")
+    end
   end
 
   test 'the job writes where nginx reads' do

@@ -44,6 +44,8 @@ ocstats=/usr/local/sbin/openipc-oc-stats
 wizard=/usr/local/sbin/openipc-wizard-export
 wizarddir=/srv/www/shared/wizard
 wizarddevdir=/srv/www/shared/wizard-dev
+# The uid the image runs as, and the owner every writable mount already has.
+appuid=1000
 paywall=/srv/www/shared/paywall-support.json
 reports=/srv/www/shared/reports
 
@@ -77,12 +79,20 @@ install -m 0755 -o root -g root "$here/wizard-export.sh" "$wizard"
 # The directory nginx serves the wizard's command blocks from (#164). Made
 # here rather than by the job, so a first run after a rebuild writes into a
 # directory with the right owner instead of one root has just created.
-install -d -m 0755 -o root -g root "$wizarddir"
+#
+# Owned by the application, not by root, because the application is what
+# writes it: the export is Rails' own rendering, produced inside the container
+# by an hourly job, and the image runs as uid 1000. Every other writable mount
+# in docker-compose.yml -- storage, files, the wall, the release cache -- is
+# uid 1000 on this host for the same reason. Created 0755 root:root, it was a
+# directory the job could open and not write into, and the first run answered
+# `Permission denied @ rb_sysopen` on the first SoC.
+install -d -m 0755 -o "$appuid" -g "$appuid" "$wizarddir"
 # And dev's, which the dev vhost serves instead. Written by running the dev
 # container rather than by the cron above: dev is where a change to the shape
 # of this file is tried, and sharing one directory would have a dev deploy
 # rewrite what production's pages read.
-install -d -m 0755 -o root -g root "$wizarddevdir"
+install -d -m 0755 -o "$appuid" -g "$appuid" "$wizarddevdir"
 
 # PayWall's half of the backer count (#201). The repository is the source of
 # truth: the figures come from a maintainer export and change by pull request,
