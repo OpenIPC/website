@@ -90,6 +90,13 @@ module WizardExport
           'ip' => view.ipaddr_pattern,
         },
         'editions' => Soc::FLASH_TYPES.to_h { |type| [type, soc.available_releases(type)] },
+        # What the edition menu lists before the page narrows it -- the union
+        # across flash types, because the flash type is chosen in the same form
+        # without a round trip. And where the form opens: a SoC upstream builds
+        # only a NAND image for has its NOR sizes disabled, so nor8m would be a
+        # choice that cannot be chosen.
+        'offerable' => soc.offerable_releases,
+        'default_flash_chip' => soc.default_flash_chip,
         # Each distinct block once, named by the order it was first seen.
         'blocks' => @pool,
         'mac_variants' => @variant_pool,
