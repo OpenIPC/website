@@ -11,9 +11,16 @@
 //
 // So this wraps WebSocket before the page's own script runs and records both
 // sides: every id the client requested, every frame that came back, and any
-// error the channel sent. `onPageNotAsked` and `askedNotGot` separate "the
-// client never asked" from "the server never answered", which is the fork that
-// matters and the one that took two wrong guesses to reach by other means.
+// error the channel sent. `onPageNotAsked` and `askedNotAnswered` separate
+// "the client never asked" from "the server never answered", which is the fork
+// that matters and the one that took two wrong guesses to reach by other
+// means.
+//
+// Read `verdict` before either list. A refusal from the channel names no
+// frame, so an id refused for budget or for a missing grant is absent from the
+// returned set in exactly the same way as one still in flight -- the bare
+// difference cannot tell those apart, and it is the difference between "we are
+// dropping frames" and "it had not finished".
 //
 // It answered exactly that on 2026-09-24: a slideshow reporting 71 of 79 had
 // asked for all 79 and received 71 with no error, which ruled out the grant
@@ -65,15 +72,37 @@ const r = await page.evaluate(() => {
   const keys = canvases.map((c) => `${c.dataset.wallFrame}:${c.dataset.wallVariant}`)
   const asked = [...window.__wall.asked]
   const got = [...window.__wall.got]
+  const missing = asked.filter((k) => !got.includes(k))
+  const errors = window.__wall.errors
+
+  // "Asked and not got" does NOT mean the server stayed silent.
+  //
+  // The channel answers a refusal with an error message that names no frame,
+  // so an id refused for budget, for an invalid grant, for an unknown variant
+  // or for an oversized request is absent from `got` in exactly the same way
+  // as one still in flight. Reporting the bare difference sends whoever is
+  // reading this down the silence branch when the server did in fact reply --
+  // and telling those two apart is the only reason this tool exists.
+  const verdict = missing.length === 0
+    ? 'every id asked for came back'
+    : errors.length > 0
+      ? `the channel REFUSED this connection (${errors.join('; ')}) -- ` +
+        'the missing ids were answered, not ignored; treat the error as the cause'
+      : 'no error was sent, so the missing ids were either still in flight ' +
+        'when this stopped watching, or silently filtered -- a grant that does ' +
+        'not name them, or a file that could not be read. Re-run with a longer ' +
+        'TRACE_WAIT_MS before concluding anything else.'
+
   return {
     canvases: canvases.length,
     distinctKeys: new Set(keys).size,
     messages: window.__wall.messages,
     asked: asked.length,
     got: got.length,
-    askedNotGot: asked.filter((k) => !got.includes(k)).slice(0, 10),
+    verdict,
+    errors: errors.slice(0, 5),
+    askedNotAnswered: missing.slice(0, 10),
     onPageNotAsked: [...new Set(keys)].filter((k) => !asked.includes(k)).slice(0, 10),
-    errors: window.__wall.errors.slice(0, 5),
     grants: document.querySelectorAll('[data-wall-grant]').length,
   }
 })

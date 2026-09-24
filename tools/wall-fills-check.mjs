@@ -90,18 +90,39 @@ for (const path of PAGES) {
   // cost a round of digging through server logs to disprove. So: keep waiting
   // while the number is still climbing, give up only when it has genuinely
   // stalled, and cap the whole thing so a broken page cannot hang a run.
+  // The TOTAL moves too, and forgetting that would let this pass a wall it
+  // never checked. A lazy turbo-frame arrives after the page does: the snapshot
+  // page starts with its strip and gains an archive, the one-day page starts
+  // with one canvas and gains seventy-nine slides. Exiting the moment
+  // `painted === total` would therefore declare victory over whichever handful
+  // was present at the first sample, and never look at the frames the lazy
+  // frame brought -- passing on exactly the surface most likely to be broken,
+  // since those frames depend on a grant emitted inside the frame.
+  //
+  // So completion needs both halves: everything painted, AND the canvas count
+  // holding still long enough that a pending frame would have landed.
   const STALL_MS = 30_000
+  const SETTLED_MS = 5_000
   const CAP_MS = 300_000
   const started = Date.now()
-  let seen = await countPainted()
-  let lastChange = Date.now()
-  let last = seen.painted
 
-  while (seen.total > 0 && seen.painted < seen.total &&
-         Date.now() - lastChange < STALL_MS && Date.now() - started < CAP_MS) {
+  let seen = await countPainted()
+  let lastPainted = seen.painted
+  let lastTotal = seen.total
+  let lastChange = Date.now()
+
+  const done = () => seen.total > 0 &&
+                     seen.painted === seen.total &&
+                     Date.now() - lastChange >= SETTLED_MS
+
+  while (!done() && Date.now() - lastChange < STALL_MS && Date.now() - started < CAP_MS) {
     await page.waitForTimeout(500)
     seen = await countPainted()
-    if (seen.painted !== last) { last = seen.painted; lastChange = Date.now() }
+    if (seen.painted !== lastPainted || seen.total !== lastTotal) {
+      lastPainted = seen.painted
+      lastTotal = seen.total
+      lastChange = Date.now()
+    }
   }
 
   if (seen.total === 0) {
