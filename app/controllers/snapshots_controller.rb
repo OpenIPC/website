@@ -164,6 +164,17 @@ class SnapshotsController < ApplicationController
                    created_at: [1.day.ago..Time.now]).order(created_at: :desc)
   end
 
+  # The slideshow shows the whole day, deliberately, and truncating it was
+  # considered and rejected on 2026-09-24.
+  #
+  # One fetch of this frame authorises every slide at fullhd -- measured on
+  # production, 79 frames and 57 MB, the largest single handover on the site.
+  # Capping it looks like an obvious way to shrink that prize. It is not, once
+  # WallChannel::FRAME_BUDGET is the binding constraint: an address limited to
+  # N frames an hour takes N whether it collects them 79 at a time or 24, and
+  # only needs more page fetches, which cost a harvester nothing. The trade was
+  # a guaranteed feature -- wall_supply_line_test pins the whole day -- for a
+  # factor no attacker would feel.
   def daily_snapshots_old_to_new
     Snapshot.where(mac_address: @snapshot.mac_address,
                    created_at: [1.day.ago..Time.now]).order(:created_at)

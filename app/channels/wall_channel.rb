@@ -37,12 +37,36 @@ class WallChannel < ApplicationCable::Channel
   # does not prevent because it bounds simultaneous sockets, not sequential
   # ones.
   #
-  # Sized well clear of any reader. A thorough visit -- the gallery (18), a
-  # camera page (13), its whole archive (96) and the slideshow (96) -- is about
-  # 223 frames. Carrier-grade NAT pools many readers behind one address and
-  # this site has a large audience behind exactly that, so the ceiling sits an
-  # order of magnitude above a single visit rather than tuned close to it.
-  FRAME_BUDGET = 3_000
+  # Sized against BOTH the reader and the corpus, which the first version was
+  # not.
+  #
+  # That version reasoned only from a reader: a thorough visit -- the gallery
+  # (18), a camera page (13), its whole archive (96) and the slideshow (96) --
+  # is about 223 frames, so it put the ceiling an order of magnitude above at
+  # 3,000 and called that safe. It never asked how large the thing being
+  # protected is. The wall holds about 2,767 frames across 20 cameras, so the
+  # budget was LARGER THAN THE ENTIRE WALL: one address, fetching pages for
+  # grants, could take every frame that exists inside an hour and never come
+  # near the limit.
+  #
+  # 1,000 is a compromise and worth naming as one rather than presenting as a
+  # calculation. It keeps the four-fold margin over a thorough visit that the
+  # carrier-NAT case needs -- several readers do share one address here, and a
+  # reader who stops seeing pictures is the failure this work must not cause --
+  # while cutting a single address from "the entire wall in an hour" to about a
+  # third of it, so a full sweep costs three hours instead of one.
+  #
+  # Tighter was tried and put back. At 500 the margin over a thorough visit
+  # falls to roughly two, and three people behind one carrier-grade address
+  # browsing properly in the same hour would start being refused. With a corpus
+  # this small -- 2,767 frames against a 223-frame visit -- there is no
+  # per-address number that both guards the wall and is safe for a shared
+  # address, and pretending otherwise would be the same error as the 3,000.
+  #
+  # Which is the honest summary of this constant: it bounds what ONE address
+  # can take and nothing more. It is not what stops a distributed fleet, it
+  # never was, and the page grant is what does that now.
+  FRAME_BUDGET = 1_000
   BUDGET_WINDOW = 1.hour
 
   # Frames per single request. A page asks for everything it needs at once, and
@@ -190,13 +214,32 @@ class WallChannel < ApplicationCable::Channel
     reject
   end
 
+  # Take the budget FIRST, then decide.
+  #
+  # This used to read the counter, and charge later inside transmit_frame. Two
+  # operations, and nothing between them: several sockets on one address could
+  # each read a figure under the ceiling and then all deliver. nginx allows
+  # sixteen concurrent sockets per address and a request may name ninety-six
+  # frames, so the overshoot was not theoretical -- an address could take well
+  # over the limit by opening connections in parallel, which is precisely what
+  # a harvester does and exactly the hole a tightened ceiling is supposed to
+  # close.
+  #
+  # `Rails.cache.increment` is atomic, so reserving before reading collapses
+  # admission and charging into one operation. A reservation that turns out to
+  # be unspendable -- the frame was purged between the grant and the read -- is
+  # given back, because a reader must not be charged for a picture they never
+  # received.
   def deliver(id, variant)
-    return if over_budget?
+    return unless reserve
 
     bytes = read_frame(id, variant)
     # A frame with no file is a purged snapshot or an id that never existed,
     # and those look identical from here on purpose.
-    return if bytes.nil?
+    if bytes.nil?
+      refund
+      return
+    end
 
     @served << id
     transmit_frame(id, variant, bytes)
@@ -213,32 +256,81 @@ class WallChannel < ApplicationCable::Channel
     nil
   end
 
-  def over_budget?
-    return false if spent < FRAME_BUDGET
+  # Claim one frame's worth of budget, or refuse.
+  def reserve
+    taken = charge
+    return true if taken <= FRAME_BUDGET
+
+    # Hand back the unit this call just took, so a client sitting against the
+    # ceiling cannot inflate the counter for everyone else behind the same
+    # carrier-grade address simply by continuing to ask.
+    refund
 
     unless @refused
       @refused = true
-      logger.warn("wall: #{client_key} refused at #{spent} frames in the hour")
+      logger.warn("wall: #{client_key} refused at #{FRAME_BUDGET} frames in the hour")
       transmit({ error: 'frame budget reached' })
     end
-    true
+    false
   end
 
+  # What this address has spent across the window, not just the current bucket.
+  #
+  # The counter lives in fixed clock-hour buckets, which is cheap and ages out
+  # wholesale -- but taken alone it is not an hourly limit at all: an address
+  # that spends its whole allowance at 10:59 gets a fresh one at 11:00, so the
+  # real worst case was twice the stated figure across two minutes. The PR that
+  # tightened this constant claimed an hourly bound it did not have.
+  #
+  # The previous bucket is therefore counted too, weighted by how much of it
+  # still falls inside the trailing hour: at 11:15 the 10:00 bucket is 75%
+  # relevant. This is the standard sliding-window approximation and it costs one
+  # extra cache read. It is an approximation -- a burst concentrated at the very
+  # start of the previous bucket is over-counted -- and that error is in the
+  # direction of refusing slightly early rather than serving twice over, which
+  # is the right way round for a ceiling.
   def spent
-    Rails.cache.read(budget_key).to_i
+    current = Rails.cache.read(budget_key).to_i
+    previous = Rails.cache.read(previous_budget_key).to_i
+    current + (previous * (1.0 - window_elapsed)).round
   end
 
+  # How far through the current bucket we are, 0.0 to 1.0.
+  def window_elapsed
+    (Time.now.to_i % BUDGET_WINDOW.to_i) / BUDGET_WINDOW.to_f
+  end
+
+  def refund
+    Rails.cache.decrement(budget_key, 1)
+  end
+
+  # Returns what this address has now spent across the window, including the
+  # unit just taken. The increment is atomic; the carried-over part of the
+  # previous bucket is added afterwards because it never changes under us.
   def charge
-    Rails.cache.increment(budget_key, 1, expires_in: BUDGET_WINDOW) ||
-      Rails.cache.write(budget_key, 1, expires_in: BUDGET_WINDOW)
+    taken = Rails.cache.increment(budget_key, 1, expires_in: BUDGET_WINDOW)
+    taken ||= (Rails.cache.write(budget_key, 1, expires_in: BUDGET_WINDOW) && 1)
+
+    previous = Rails.cache.read(previous_budget_key).to_i
+    taken + (previous * (1.0 - window_elapsed)).round
   end
 
   # Bucketed by window so the count ages out wholesale rather than needing a
   # sliding structure. Keyed on the reader's address: set_real_ip_from in
   # nginx.conf has already turned a mirror's forwarded address back into the
   # reader before this sees it.
+  # Not memoised: a long-lived socket outlives its bucket, and a cached key
+  # would keep charging an hour that has ended.
   def budget_key
-    @budget_key ||= "wall:frames:#{client_key}:#{Time.now.to_i / BUDGET_WINDOW}"
+    "wall:frames:#{client_key}:#{bucket}"
+  end
+
+  def previous_budget_key
+    "wall:frames:#{client_key}:#{bucket - 1}"
+  end
+
+  def bucket
+    Time.now.to_i / BUDGET_WINDOW.to_i
   end
 
   # Supplied by the connection rather than read from the request here:
@@ -257,8 +349,6 @@ class WallChannel < ApplicationCable::Channel
   # and `transmit(id: ...)` in Ruby 3 passes keywords instead, which is an
   # ArgumentError at the first frame.
   def transmit_frame(id, variant, bytes)
-    charge
-
     # The VARIANT travels back with the frame, and must. The client keys its
     # waiting canvases on id and variant together, because one snapshot appears
     # on a page twice at different sizes -- the fullhd hero and the first icon2
