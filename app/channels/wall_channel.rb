@@ -90,7 +90,7 @@ class WallChannel < ApplicationCable::Channel
     return if accept_grant(data['grant'])
 
     revoke
-    logger.warn("wall: #{client_key} sent an invalid grant mid-session")
+    logger.warn("wall_grant_refused #{client_key} sent an invalid grant mid-session")
     transmit({ error: 'no grant' })
   end
 
@@ -110,15 +110,16 @@ class WallChannel < ApplicationCable::Channel
     variant = data['variant'].to_s
     return reject_request('unknown variant') unless VARIANTS.include?(variant)
 
-    return reject_request('variant not granted') unless granted_variant?(variant)
-
     ids = Array(data['ids']).map(&:to_s).grep(Snapshot::PUBLIC_ID_FORMAT).uniq
     return reject_request('too many frames in one request') if ids.size > MAX_PER_REQUEST
 
-    # The intersection is the whole mechanism. A client may only ever receive
-    # frames some page already showed it, so it cannot walk ids it was not
-    # given -- which is what the budget could never prevent, only meter.
-    ids.select! { |id| granted_id?(id) }
+    # The intersection is the whole mechanism, and it is over PAIRS rather than
+    # over ids and variants separately. A client may only ever receive a frame
+    # at a size some page actually drew it at: checking the two independently
+    # let the fullhd permission from a snapshot page's hero be spent on the
+    # icon2 ids of its archive strip, which returns a full-resolution view of a
+    # camera the reader had only been shown as a thumbnail.
+    ids.select! { |id| granted?(id, variant) }
 
     ids.each { |id| deliver(id, variant) }
   end
@@ -151,24 +152,18 @@ class WallChannel < ApplicationCable::Channel
     granted = WallGrant.verify(token)
     return false if granted.nil?
 
-    @granted_ids = Set.new if @granted_ids.size >= GRANT_RETENTION
-    @granted_ids.merge(granted[:ids])
-    @granted_variants.merge(granted[:variants])
+    @granted = Set.new if @granted.size >= GRANT_RETENTION
+    @granted.merge(granted)
     true
   end
 
   def revoke
     @unrestricted = false
-    @granted_ids = Set.new
-    @granted_variants = Set.new
+    @granted = Set.new
   end
 
-  def granted_id?(id)
-    @unrestricted || @granted_ids.include?(id)
-  end
-
-  def granted_variant?(variant)
-    @unrestricted || @granted_variants.include?(variant)
+  def granted?(id, variant)
+    @unrestricted || @granted.include?(WallGrant.pair(id, variant))
   end
 
   # The escape hatch, and the reason it exists.
@@ -187,7 +182,10 @@ class WallChannel < ApplicationCable::Channel
     # Logged at warn and counted, because this is now the number that says
     # whether the harvest has stopped: before this change 94% of the clients
     # on the channel had never loaded a page.
-    logger.warn("wall: #{client_key} subscribed without a valid grant")
+    # `wall_grant_refused` is a marker, not prose: deploy/log-report.sh counts
+    # it to produce the bare-socket figure, which is the number this whole
+    # change is judged on. Do not reword it without changing the report.
+    logger.warn("wall_grant_refused #{client_key} subscribed without a valid grant")
     transmit({ error: 'no grant' })
     reject
   end

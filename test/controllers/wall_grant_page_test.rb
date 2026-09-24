@@ -41,18 +41,27 @@ class WallGrantPageTest < ActionDispatch::IntegrationTest
     response.body[/data-wall-grant="([^"]+)"/, 1]
   end
 
+  # Every id/variant pair the page actually drew, read back out of the markup
+  # rather than assumed, so this cannot drift from what the helper emits.
+  def rendered_pairs
+    response.body
+            .scan(/data-wall-frame="([0-9a-f]+)"\s+data-wall-variant="([a-z0-9]+)"/)
+            .map { |id, variant| WallGrant.pair(id, variant) }
+            .uniq
+  end
+
   def assert_grant_covers_page(where)
-    ids = rendered_ids
-    assert_not_empty ids, "#{where} drew no frames, so this test is not checking anything"
+    pairs = rendered_pairs
+    assert_not_empty pairs, "#{where} drew no frames, so this test is not checking anything"
 
     token = grant_on_page
-    assert token, "#{where} drew #{ids.size} frames and issued no grant. " \
+    assert token, "#{where} drew #{pairs.size} frames and issued no grant. " \
                   'The channel will refuse every one of them and the page will paint nothing.'
 
     granted = WallGrant.verify(CGI.unescapeHTML(token))
     assert granted, "#{where} issued a grant that does not verify"
 
-    missing = ids - granted[:ids].to_a
+    missing = pairs - granted.to_a
     assert_empty missing,
                  "#{where} drew #{missing.size} frames its own grant does not cover: " \
                  "#{missing.first(3).join(', ')}"
@@ -103,6 +112,25 @@ class WallGrantPageTest < ActionDispatch::IntegrationTest
     assert_includes frame, 'data-wall-grant',
                     'The grant is outside the turbo-frame, so Turbo will throw it away ' \
                     'and the slideshow will paint nothing when loaded lazily.'
+  end
+
+  # Qodo caught this: the collector was left populated after a turbo-frame
+  # emitted its grant, so the layout's call after `yield` emitted a second one
+  # covering the same frames. Two grants in one document means the client picks
+  # by document order, which is not a decision anybody made.
+  test 'a lazy frame response carries exactly one grant' do
+    get archive_snapshot_path(id: @snapshot.public_id)
+    assert_response :success
+
+    assert_equal 1, response.body.scan(/data-wall-grant=/).size,
+                 'the archive emitted more than one grant'
+  end
+
+  test 'the slideshow response carries exactly one grant' do
+    get slideshow_snapshot_path(id: @snapshot.public_id)
+    assert_response :success
+
+    assert_equal 1, response.body.scan(/data-wall-grant=/).size
   end
 
   # A grant is a standing permission to read somebody's camera, so it must not

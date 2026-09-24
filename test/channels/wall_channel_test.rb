@@ -47,7 +47,7 @@ class WallChannelTest < ActionCable::Channel::TestCase
   ADDRESS = '203.0.113.50'
 
   def grant_for(ids, variants: WallChannel::VARIANTS)
-    WallGrant.issue(ids: ids, variants: variants)
+    WallGrant.issue(pairs: ids.product(Array(variants)).map { |i, v| WallGrant.pair(i, v) })
   end
 
   # Every test below subscribes through a grant, because a subscription without

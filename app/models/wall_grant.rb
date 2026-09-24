@@ -46,6 +46,21 @@ class WallGrant
   # reason: the longest day a camera can produce.
   MAX_IDS = 256
 
+  # Frames are granted as id:variant PAIRS, never as an id set and a variant
+  # set checked separately.
+  #
+  # The first version kept them apart and it opened a hole worth naming,
+  # because it is not obvious from either half. A snapshot page renders its
+  # hero at `fullhd` and its archive tiles at `icon2`. With separate sets the
+  # grant said "these ids" and "these variants", so a client could pair the
+  # fullhd permission from the hero with any archive tile's id and pull a
+  # full-resolution frame of a camera it had only ever been shown at
+  # 240x135 -- a representation that page never rendered. Accumulating grants
+  # across a session widened it further.
+  #
+  # Pairing is the whole fix: a grant now names exactly what was drawn.
+  SEPARATOR = ':'
+
   # Renders inside one bucket produce a byte-identical grant, and that is a
   # requirement rather than an optimisation.
   #
@@ -65,15 +80,19 @@ class WallGrant
   CACHE_WINDOW = 300
 
   class << self
-    def issue(ids:, variants:)
-      ids = Array(ids).uniq.sort.first(MAX_IDS)
-      return nil if ids.empty?
+    def pair(id, variant)
+      "#{id}#{SEPARATOR}#{variant}"
+    end
 
-      verifier.generate({ 'i' => ids, 'v' => Array(variants).uniq.sort },
+    def issue(pairs:)
+      pairs = Array(pairs).uniq.sort.first(MAX_IDS)
+      return nil if pairs.empty?
+
+      verifier.generate({ 'p' => pairs },
                         expires_at: Time.zone.at(bucket_start + TTL.to_i))
     end
 
-    # Returns the granted sets, or nil for anything we did not issue or issued
+    # Returns the granted pairs, or nil for anything we did not issue or issued
     # too long ago.
     #
     # The expiry rides inside the signed payload, so a grant cannot be extended
@@ -82,7 +101,7 @@ class WallGrant
       payload = verifier.verified(token.to_s)
       return nil unless payload.is_a?(Hash)
 
-      { ids: Array(payload['i']).to_set, variants: Array(payload['v']).to_set }
+      Array(payload['p']).to_set
     end
 
     private

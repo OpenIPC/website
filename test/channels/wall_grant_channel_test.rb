@@ -46,7 +46,7 @@ class WallGrantChannelTest < ActionCable::Channel::TestCase
   end
 
   def grant_for(ids, variants: %w[thumb])
-    WallGrant.issue(ids: ids, variants: variants)
+    WallGrant.issue(pairs: ids.product(Array(variants)).map { |i, v| WallGrant.pair(i, v) })
   end
 
   test 'a socket that never rendered a page is refused' do
@@ -137,6 +137,32 @@ class WallGrantChannelTest < ActionCable::Channel::TestCase
     assert_empty frames_from(transmissions)
   ensure
     WallImage.purge(@shown.first)
+  end
+
+  # The cross-product hole, which is why a grant names PAIRS and not an id set
+  # beside a variant set.
+  #
+  # A snapshot page renders its hero at fullhd and its archive tiles at icon2.
+  # Checked separately, those two facts combine: the fullhd permission earned
+  # by the hero could be spent on any tile's id, returning a full-resolution
+  # view of a camera the reader had only ever been shown at 240x135. Nothing
+  # about either half looks wrong on its own, which is what makes it worth a
+  # test of its own.
+  test 'a variant granted for one frame cannot be spent on another' do
+    hero, tile = @shown
+    WallImage.store_bytes(tile, :fullhd, MINIMAL_JPEG)
+
+    subscribe(grant: WallGrant.issue(pairs: [WallGrant.pair(hero, 'fullhd'),
+                                             WallGrant.pair(tile, 'thumb')]))
+    perform :request_frames, 'variant' => 'fullhd', 'ids' => [tile]
+
+    assert_empty frames_from(transmissions), <<~MESSAGE.chomp
+      A frame was served at a size its page never drew it at. The grant held
+      fullhd for the hero and thumb for the tile; pairing them separately lets
+      a reader promote any thumbnail to full resolution.
+    MESSAGE
+  ensure
+    WallImage.purge(tile) if tile
   end
 
   # Turbo Drive keeps one socket across navigations, so a second page has to be

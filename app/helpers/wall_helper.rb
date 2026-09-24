@@ -28,8 +28,7 @@ module WallHelper
     # rather than recomputed in the controller so that a surface cannot be
     # added later that draws frames without authorising them -- there are seven
     # of them and they do not share an action.
-    wall_granted_ids << snapshot.public_id
-    wall_granted_variants << variant.to_s
+    wall_granted_pairs << WallGrant.pair(snapshot.public_id, variant)
 
     tag.canvas('',
                width: width, height: height, class: css_class, role: 'img',
@@ -56,21 +55,22 @@ module WallHelper
   # the body, where a meta does not belong, and because every other wall hook
   # in this codebase is already data-wall-*.
   def wall_grant_tag
-    return if wall_granted_ids.empty?
+    return if wall_granted_pairs.empty?
 
-    grant = WallGrant.issue(ids: wall_granted_ids.to_a,
-                            variants: wall_granted_variants.to_a)
+    grant = WallGrant.issue(pairs: wall_granted_pairs.to_a)
+
+    # Emptied on the way out, so the layout's unconditional call after `yield`
+    # adds nothing on a page whose frames were already authorised from inside a
+    # turbo-frame. Without this the archive and the slideshow carry two grant
+    # elements, and whichever the client reads first is a coin toss.
+    @wall_granted_pairs = Set.new
     return if grant.blank?
 
     tag.div('', hidden: true, data: { wall_grant: grant })
   end
 
-  def wall_granted_ids
-    @wall_granted_ids ||= Set.new
-  end
-
-  def wall_granted_variants
-    @wall_granted_variants ||= Set.new
+  def wall_granted_pairs
+    @wall_granted_pairs ||= Set.new
   end
 
   # Said once per wall page, in place of the image fallback that used to be

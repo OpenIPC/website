@@ -356,3 +356,39 @@ END {
   }
 }
 '
+
+# The bare-socket count, which is the number the page-grant work is judged on.
+#
+# It cannot come from the access log. nginx sees a WebSocket upgrade succeed --
+# 101, one line, job done -- and everything that decides whether the client may
+# actually have frames happens afterwards, inside the application, over a
+# connection nginx has stopped narrating. A socket opened by something that
+# never rendered a page looks exactly like any reader in the file above.
+#
+# So this reads the container log instead, and says so rather than quietly
+# reporting a smaller window: docker keeps what it keeps, which is rarely the
+# same span as the access log passed to this script.
+WALL_CONTAINER="${WALL_CONTAINER:-openipc-web-prod}"
+WALL_SINCE="${WALL_SINCE:-24h}"
+
+echo
+echo "Open Wall: sockets refused for want of a grant"
+if ! command -v docker >/dev/null 2>&1; then
+  echo "  unavailable here -- needs docker and the application log, not the access log"
+elif ! docker inspect "$WALL_CONTAINER" >/dev/null 2>&1; then
+  echo "  unavailable -- no container named $WALL_CONTAINER (set WALL_CONTAINER)"
+else
+  refused=$(docker logs --since "$WALL_SINCE" "$WALL_CONTAINER" 2>&1 | grep -c wall_grant_refused)
+  served=$(docker logs --since "$WALL_SINCE" "$WALL_CONTAINER" 2>&1 \
+           | grep -c "wall: connection served")
+  printf "  refused          %s\n" "$refused"
+  printf "  served frames    %s\n" "$served"
+  printf "  window           last %s of %s, NOT the span of the access log above\n" \
+         "$WALL_SINCE" "$WALL_CONTAINER"
+  if [ "$refused" -gt 0 ] && [ "$served" -gt 0 ]; then
+    printf "  refused share    %s%%\n" \
+      $(( 100 * refused / (refused + served) ))
+  fi
+  echo "  a refusal is a client that opened the socket without rendering a page."
+  echo "  Before #272 those clients were 94% of everything on this channel."
+fi

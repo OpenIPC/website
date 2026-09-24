@@ -161,7 +161,10 @@ function sendChunks(variant, ids) {
   let at = 0
   const next = () => {
     // Stop if the page moved on or the socket dropped while this was queued.
-    if (at >= ids.length || !subscription || mine !== generation) return
+    // `connected` matters as much as `subscription`: perform() on a socket
+    // that is not up yet is silently discarded, and these ids would be marked
+    // pending and never asked for again.
+    if (at >= ids.length || !subscription || !connected || mine !== generation) return
     subscription.perform('request_frames', { variant, ids: ids.slice(at, at + CHUNK) })
     at += CHUNK
     if (at < ids.length) setTimeout(next, 250)
@@ -203,6 +206,69 @@ function grantFor(root) {
   return held ? held.dataset.wallGrant : null
 }
 
+// Grants seen since this socket was opened, and the roots still owed frames.
+//
+// Both exist because hydration and connection are not ordered. A lazy
+// turbo-frame can arrive while the very first handshake is still in flight, and
+// anything sent then is dropped -- but `request` would already have marked its
+// canvases pending, so the `connected` callback would skip them and the frame
+// would never paint at all.
+let heldGrants = new Set()
+let waitingRoots = []
+
+// Hand the channel every grant this socket has been given.
+//
+// Replayed in full on each connect rather than sent once, because a reconnect
+// re-subscribes with the identifier the subscription was CREATED with -- the
+// first page's grant, which by then may name a page the reader has long left,
+// or have expired. The server clears its permissions on every `subscribed`, so
+// without this replay a reader who navigates and then loses the socket comes
+// back to a wall that refuses everything on the page in front of them.
+function replayGrants() {
+  heldGrants.forEach((grant) => subscription.perform('use_grant', { grant }))
+}
+
+function flushWaiting() {
+  const roots = waitingRoots
+  waitingRoots = []
+  roots.forEach((root) => {
+    // A root removed from the document while we were connecting has nothing
+    // left to paint.
+    if (root === document || root.isConnected) request(root)
+  })
+}
+
+function openSubscription(grant) {
+  subscription = consumer.subscriptions.create({ channel: 'WallChannel', grant }, {
+    received: onFrame,
+    connected: () => {
+      connected = true
+      replayGrants()
+      request(document)
+      flushWaiting()
+    },
+    rejected: () => {
+      // The identifier's grant was refused, which after a reconnect means it
+      // has simply expired. The document holds a fresher one; use it once
+      // rather than looping, and say so if that fails too.
+      connected = false
+      const current = grantFor(document)
+      if (current && current !== grant) {
+        openSubscription(current)
+      } else {
+        showUnavailable('')
+      }
+    },
+    disconnected: () => {
+      connected = false
+      // Anything still waiting will never arrive on this socket, so drop the
+      // slots: the reconnect's request() has to be able to ask again.
+      generation++
+      pending = new Map()
+    },
+  })
+}
+
 function hydrate(root) {
   if (canvasesIn(root).length === 0) return
 
@@ -213,20 +279,11 @@ function hydrate(root) {
     showUnavailable('')
     return
   }
+  heldGrants.add(grant)
 
   if (!consumer) {
     consumer = createConsumer('/api/v1/wall/cable')
-    subscription = consumer.subscriptions.create({ channel: 'WallChannel', grant }, {
-      received: onFrame,
-      connected: () => { connected = true; request(document) },
-      disconnected: () => {
-        connected = false
-        // Anything still waiting will never arrive on this socket, so drop the
-        // slots: the reconnect's request() has to be able to ask again.
-        generation++
-        pending = new Map()
-      },
-    })
+    openSubscription(grant)
 
     // A handshake that never completes produces no event to hang this on --
     // it just stays silent -- so the only way to notice is to look.
@@ -234,10 +291,17 @@ function hydrate(root) {
     return
   }
 
+  // Nothing may be sent before the transport is ready: `perform` on a
+  // connecting subscription is discarded, and asking anyway would burn these
+  // canvases' one chance at being requested.
+  if (!connected) {
+    waitingRoots.push(root)
+    return
+  }
+
   // The socket outlives the page. Turbo Drive keeps one consumer across
   // navigations on purpose, so the channel is still holding the PREVIOUS
   // page's permission and would refuse everything this one is asking for.
-  // Hand over the new grant before asking.
   subscription.perform('use_grant', { grant })
   request(root)
 }
