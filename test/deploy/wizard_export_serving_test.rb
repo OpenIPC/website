@@ -80,4 +80,28 @@ class WizardExportServingTest < ActiveSupport::TestCase
     assert_match(/WIZARD_EXPORT_DIR:-#{Regexp.escape(served)}/, runner,
                  'the job and nginx disagree about where the files live')
   end
+
+  test 'each container can write its own export and cannot see the other' do
+    # The application's view of /srv/www/shared is read-only, deliberately, so
+    # the one directory under it that it does write is mounted on its own. The
+    # first version of the job passed the HOST path into the container, where
+    # nothing is mounted at it: `mkdir_p` then failed at /srv, naming a
+    # directory that had nothing to do with the export.
+    compose = Rails.root.join('deploy/docker-compose.yml').read
+    runner = Rails.root.join('deploy/wizard-export.sh').read
+
+    inside = runner[%r{^INSIDE=(\S+)}, 1]
+    assert inside, 'the job does not say where the directory is inside the container'
+    assert_match(/WIZARD_EXPORT_DIR=\$INSIDE/, runner, 'the job passes the host path into the container')
+
+    %w[/srv/www/shared/wizard /srv/www/shared/wizard-dev].each do |host_path|
+      assert_includes compose, "- #{host_path}:#{inside}",
+                      "#{host_path} is not mounted where the job writes"
+    end
+
+    # And read-only where it must stay so: the backer count is printed by the
+    # site and owned by a job on the host.
+    assert_match(%r{- /srv/www/shared:/rails/shared:ro}, compose,
+                 'the shared directory is no longer read-only to the application')
+  end
 end

@@ -64,6 +64,13 @@ services:
       # The backer count (#198), read-only: the site prints this file and must
       # never be able to write it. deploy/oc-stats.sh on the host owns it.
       - /srv/www/shared:/rails/shared:ro
+      # Where `bin/rails wizard:export` writes (#164). The mount above is
+      # read-only and deliberately so, and this is the one directory under it
+      # the application does write -- from an hourly job rather than from a
+      # request, which is why it is a separate line rather than a hole in that
+      # rule. The path inside is the same in both environments and the host
+      # path is not, so nothing in the container can reach the other's.
+      - /srv/www/shared/wizard:/rails/wizard-export
 
   web-dev:
     <<: *common
@@ -93,3 +100,6 @@ services:
       # collective, not about the environment, and dev showing a different
       # number would make it useless for checking the page before release.
       - /srv/www/shared:/rails/shared:ro
+      # Not the same file: the wizard's export is what dev's own code renders,
+      # and dev is where a change to its shape is tried.
+      - /srv/www/shared/wizard-dev:/rails/wizard-export
