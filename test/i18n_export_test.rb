@@ -46,29 +46,46 @@ class I18nExportTest < ActiveSupport::TestCase
     end
   end
 
-  test 'a grafted key brings nothing but itself' do
+  test 'a graft brings nothing but itself' do
     # #160 needed one string out of `snapshots`: the home page's wall mosaic
     # fills its empty tiles with the Open Wall's own "no signal" placeholder,
-    # and the two halves of the site have to say it in the same words. The risk
-    # the graft carries is that it quietly widens -- the namespace arrives
-    # whole, and 27 wizard-adjacent strings the marketing pages cannot use ship
-    # with it.
+    # and the two halves of the site have to say it in the same words. #162
+    # needed two subtrees out of `cameras`: the catalogue's table and row, but
+    # not the wizard's 27 strings, which no page in the bundle can use.
+    #
+    # The risk a graft carries is that it quietly widens -- the namespace
+    # arrives whole, and strings nobody renders go in front of translators. So
+    # this asserts the shape rather than the depth: every key the graft brings,
+    # at every level, is on a path that was asked for.
     I18n.available_locales.each do |locale|
       catalogue = I18nExport.catalogue(locale)
 
       I18nExport::INCLUDED.each do |path|
-        leaf = path.inject(catalogue) { |node, key| node.is_a?(Hash) ? node[key] : nil }
-        assert_kind_of String, leaf, "#{locale} did not graft #{path.join('.')}"
-        assert_predicate leaf, :present?
+        node = path.inject(catalogue) { |parent, key| parent.is_a?(Hash) ? parent[key] : nil }
 
-        # Nothing beside it: the namespace holds exactly the path that was
-        # asked for, with no siblings at any level.
-        node = catalogue
-        path[0..-2].each do |key|
-          node = node[key]
-          assert_equal 1, node.keys.size,
-                       "#{locale}: #{key} carries #{node.keys.join(', ')}, not just the grafted leaf"
+        assert_not_nil node, "#{locale} did not graft #{path.join('.')}"
+        assert node.is_a?(String) ? node.present? : node.any?,
+               "#{locale} grafted #{path.join('.')} empty"
+      end
+
+      # Walk each grafted namespace and refuse a key no INCLUDED path names.
+      I18nExport::INCLUDED.map(&:first).uniq.each do |root|
+        next unless catalogue.key?(root)
+
+        wanted = I18nExport::INCLUDED.select { |path| path.first == root }
+        walk = lambda do |node, prefix|
+          return unless node.is_a?(Hash)
+          # At or past the end of a grafted path, everything below belongs.
+          return if wanted.any? { |path| path.size <= prefix.size && path == prefix[0, path.size] }
+
+          node.each_key do |key|
+            here = prefix + [key]
+            assert wanted.any? { |path| path[0, here.size] == here },
+                   "#{locale}: #{here.join('.')} came with the graft and nothing asked for it"
+            walk.call(node[key], here)
+          end
         end
+        walk.call(catalogue[root], [root])
       end
     end
   end

@@ -17,8 +17,13 @@
 # it. It does: once the pages read these files, the figures are a function of
 # the tree the build already reads.
 namespace :catalogue do
-  CATALOGUE_COLUMNS = -> { Soc.column_names - %w[id vendor_id created_at updated_at] }
-  CATALOGUE_DIR = -> { Rails.root.join('data/catalogue') }
+  def catalogue_columns
+    Soc.column_names - %w[id vendor_id created_at updated_at]
+  end
+
+  def catalogue_dir
+    Rails.root.join('data/catalogue')
+  end
 
   def vendor_document(vendor)
     {
@@ -26,7 +31,7 @@ namespace :catalogue do
       'full_name' => vendor.full_name, 'website_url' => vendor.website_url,
       'notes' => vendor.notes,
       'socs' => vendor.socs.order(:model).map do |soc|
-        CATALOGUE_COLUMNS.call.to_h { |column| [column, soc.public_send(column)] }
+        catalogue_columns.to_h { |column| [column, soc.public_send(column)] }
       end,
     }
   end
@@ -36,7 +41,7 @@ namespace :catalogue do
     differences = 0
 
     Vendor.order(:urlname).find_each do |vendor|
-      file = CATALOGUE_DIR.call.join("#{vendor.urlname}.yml")
+      file = catalogue_dir.join("#{vendor.urlname}.yml")
       unless File.exist?(file)
         puts "missing file: #{vendor.urlname}.yml (#{vendor.socs.count} SoCs)"
         differences += 1
@@ -78,7 +83,7 @@ namespace :catalogue do
       end
     end
 
-    Dir[CATALOGUE_DIR.call.join('*.yml')].each do |file|
+    Dir[catalogue_dir.join('*.yml')].each do |file|
       urlname = YAML.safe_load_file(file)['urlname']
       next if Vendor.exists?(urlname: urlname)
 
@@ -103,10 +108,10 @@ namespace :catalogue do
 
   desc 'Rewrite data/catalogue from the database'
   task export: :environment do
-    FileUtils.mkdir_p(CATALOGUE_DIR.call)
+    FileUtils.mkdir_p(catalogue_dir)
     Vendor.order(:name).find_each do |vendor|
       document = vendor_document(vendor)
-      File.open(CATALOGUE_DIR.call.join("#{vendor.urlname}.yml"), 'w') do |file|
+      File.open(catalogue_dir.join("#{vendor.urlname}.yml"), 'w') do |file|
         file.puts "# #{vendor.name} — #{document['socs'].size} SoC(s)."
         file.puts '#'
         file.puts '# Exported from the catalogue table (#161). This file is the source of'
