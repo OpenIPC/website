@@ -35,15 +35,30 @@ const context = await browser.newContext(
 )
 const page = await context.newPage()
 
-async function yieldOf(path) {
-  await page.goto(`${base}${path}`, { waitUntil: 'networkidle' })
+// Read the page as a bot does: fetch the HTML, do not run it.
+//
+// Rendering the page was wrong twice over. The site's own JavaScript hydrates,
+// opens a cable subscription and pulls every frame on the page BEFORE this
+// script opens its socket -- so each measurement charged the address budget
+// twice, and once that budget is a thousand rather than three thousand a few
+// runs would exhaust it and understate every later yield. It also is not what
+// a harvester does: it never renders anything, it parses markup.
+async function pageFacts(path) {
+  const res = await page.request.get(`${base}${path}`)
+  const html = await res.text()
 
-  const held = await page.evaluate(() => {
-    const el = document.querySelector('[data-wall-grant]')
-    const frames = Array.from(document.querySelectorAll('canvas[data-wall-frame]'))
-      .map((c) => ({ id: c.dataset.wallFrame, variant: c.dataset.wallVariant || 'thumb' }))
-    return { grant: el ? el.dataset.wallGrant : null, frames }
-  })
+  const grant = (html.match(/data-wall-grant="([^"]+)"/) || [])[1] || null
+  const frames = [...html.matchAll(/data-wall-frame="([0-9a-f]+)"\s+data-wall-variant="([a-z0-9]+)"/g)]
+    .map((m) => ({ id: m[1], variant: m[2] }))
+
+  return {
+    grant: grant ? grant.replace(/&amp;/g, '&').replace(/&quot;/g, '"') : null,
+    frames,
+  }
+}
+
+async function yieldOf(path) {
+  const held = await pageFacts(path)
 
   if (!held.grant) return { path, drawn: held.frames.length, took: 0, bytes: 0, note: 'no grant on this page' }
 
@@ -90,8 +105,12 @@ async function yieldOf(path) {
   return { path, drawn: held.frames.length, took: got.took, bytes: got.bytes }
 }
 
-await page.goto(`${base}/open-wall`, { waitUntil: 'networkidle' })
-const first = await page.$eval('[data-wall-frame]', (el) => el.dataset.wallFrame).catch(() => null)
+// A blank same-origin document, so the sockets below are legal but the site's
+// own client never runs and never spends the budget this is trying to measure.
+await page.goto(`${base}/robots.txt`, { waitUntil: 'domcontentloaded' })
+
+const firstFacts = await pageFacts('/open-wall')
+const first = firstFacts.frames.length ? firstFacts.frames[0].id : null
 
 const targets = ['/open-wall']
 if (first) targets.push(`/snapshots/${first}`, `/snapshots/${first}/oneday`)
