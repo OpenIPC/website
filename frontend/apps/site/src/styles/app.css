@@ -375,20 +375,18 @@ h1, h2, h3, h4, h5, h6 {
 
 /*
  * Collapsed, a dropdown is part of the flow rather than a panel floating over
- * the page -- .navbar .dropdown-menu is `position: static` below the expand
+ * the page -- `.navbar .dropdown-menu` is `position: static` below the expand
  * breakpoint, and a panel absolutely positioned inside a full-width block
  * would otherwise hang off the side of a phone.
+ *
+ * `position: static` and nothing else, which is all Bootstrap changes. This
+ * also stripped the panel's background and border and indented it by a rem,
+ * so where the origin shows the sub-items on their own dark block inset in
+ * the menu, this showed them loose on the bar, shifted right.
  */
 @media (max-width: 1199.98px) {
   .site-nav .site-dropdown {
     position: static;
-    padding-inline-start: 1rem;
-    background: none;
-    border: 0;
-  }
-
-  .site-nav .site-dropdown-item {
-    white-space: normal;
   }
 }
 
