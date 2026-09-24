@@ -43,6 +43,7 @@ audience=/usr/local/sbin/openipc-audience-report
 ocstats=/usr/local/sbin/openipc-oc-stats
 wizard=/usr/local/sbin/openipc-wizard-export
 wizarddir=/srv/www/shared/wizard
+wizarddevdir=/srv/www/shared/wizard-dev
 paywall=/srv/www/shared/paywall-support.json
 reports=/srv/www/shared/reports
 
@@ -77,6 +78,11 @@ install -m 0755 -o root -g root "$here/wizard-export.sh" "$wizard"
 # here rather than by the job, so a first run after a rebuild writes into a
 # directory with the right owner instead of one root has just created.
 install -d -m 0755 -o root -g root "$wizarddir"
+# And dev's, which the dev vhost serves instead. Written by running the dev
+# container rather than by the cron above: dev is where a change to the shape
+# of this file is tried, and sharing one directory would have a dev deploy
+# rewrite what production's pages read.
+install -d -m 0755 -o root -g root "$wizarddevdir"
 
 # PayWall's half of the backer count (#201). The repository is the source of
 # truth: the figures come from a maintainer export and change by pull request,

@@ -16,12 +16,19 @@ class WizardExportServingTest < ActiveSupport::TestCase
     Rails.root.join('deploy/nginx/sites-available', name).read
   end
 
-  test 'both vhosts serve the export, and from the directory the job writes' do
-    VHOSTS.each do |name|
+  test 'both vhosts serve the export, each from its own directory' do
+    # Not one directory between them. The file is written by running the
+    # container, so dev writes what dev's code renders -- and dev is where a
+    # change to that shape is tried. Sharing would have a dev deploy quietly
+    # rewrite what production's pages read, which is the one thing that
+    # environment exists to make impossible.
+    { 'org.openipc' => '/srv/www/shared/wizard',
+      'org.openipc.dev' => '/srv/www/shared/wizard-dev' }.each do |name, directory|
       config = vhost(name)
 
       assert_match %r{location ~ \^/api/v1/wizard/}, config, "#{name} does not serve the export"
-      assert_match %r{alias /srv/www/shared/wizard/}, config, "#{name} serves it from elsewhere"
+      assert_match %r{alias #{Regexp.escape(directory)}/}, config,
+                   "#{name} serves the export from somewhere other than #{directory}"
     end
   end
 
@@ -63,6 +70,7 @@ class WizardExportServingTest < ActiveSupport::TestCase
     assert_match(/openipc-wizard-export/, cron, 'nothing refreshes the export')
     assert_match(%r{install .*wizard-export\.sh}, installer, 'the runner is never installed')
     assert_match(%r{install -d .*\$wizarddir}, installer, 'nothing creates the directory nginx reads')
+    assert_match(%r{install -d .*\$wizarddevdir}, installer, "nothing creates dev's own directory")
   end
 
   test 'the job writes where nginx reads' do
