@@ -59,23 +59,49 @@ if (first) {
 for (const path of PAGES) {
   await page.goto(`${base}${path}`, { waitUntil: 'networkidle' })
 
-  // Settle: poll until the painted count has stopped moving for a good while.
+  // Wait for the count the page itself declares, not for stillness.
   //
-  // STABLE has to be generous. A page requests in chunks 250 ms apart and a
-  // production fullhd frame is a couple of hundred kilobytes, so the count
-  // pauses repeatedly on its way up. At three rounds this reported 71 of 79
-  // against production while the same code painted 79 of 79 against dev, whose
-  // seeded frames are a couple of kilobytes and arrive instantly -- a
-  // measurement artefact that reads exactly like frames being refused.
-  const STABLE = 12 // × 500 ms = six seconds of no movement
-  let last = -1
-  let stable = 0
-  let seen = { total: 0, painted: 0 }
-  for (let i = 0; i < 180 && stable < STABLE; i++) {
+  // Settling on "the number stopped moving" was wrong twice over. A page asks
+  // in chunks 250 ms apart and a production fullhd frame is a couple of
+  // hundred kilobytes, so the count pauses repeatedly on the way up: at three
+  // quiet rounds this reported 71 of 79 against production while the same code
+  // painted 79 of 79 against dev, whose seeded frames are two kilobytes and
+  // arrive instantly. Widening the window to six seconds only moved the
+  // threshold -- production reported 71 again on a slower run, and the server
+  // log confirmed the cause was this checker giving up and closing the page
+  // while the last chunk was still queued. The measurement was killing the
+  // thing it measured.
+  //
+  // The page knows how many canvases it has, so wait for that number and stop
+  // early when it arrives. Only a genuine shortfall now takes the full
+  // deadline.
+  // Wait while PROGRESS is being made, not for a fixed period and not for
+  // stillness. Both of those were tried against production and both lied.
+  //
+  // Stillness is too eager: a page asks in chunks 250 ms apart, so the count
+  // pauses on the way up, and at six quiet seconds this reported 71 of 79 --
+  // indistinguishable from frames being refused. A flat deadline is arbitrary:
+  // at ninety seconds it reported 71 of 79 again, on a camera whose frames are
+  // 700 KB each, because the full set is about 75 MB down one socket. The same
+  // check said 79 of 79 on a camera with smaller frames, so the tool's verdict
+  // depended on which camera it happened to pick.
+  //
+  // Both times the conclusion "frames are being refused" was wrong, and each
+  // cost a round of digging through server logs to disprove. So: keep waiting
+  // while the number is still climbing, give up only when it has genuinely
+  // stalled, and cap the whole thing so a broken page cannot hang a run.
+  const STALL_MS = 30_000
+  const CAP_MS = 300_000
+  const started = Date.now()
+  let seen = await countPainted()
+  let lastChange = Date.now()
+  let last = seen.painted
+
+  while (seen.total > 0 && seen.painted < seen.total &&
+         Date.now() - lastChange < STALL_MS && Date.now() - started < CAP_MS) {
     await page.waitForTimeout(500)
     seen = await countPainted()
-    if (seen.painted === last) stable++
-    else { stable = 0; last = seen.painted }
+    if (seen.painted !== last) { last = seen.painted; lastChange = Date.now() }
   }
 
   if (seen.total === 0) {
