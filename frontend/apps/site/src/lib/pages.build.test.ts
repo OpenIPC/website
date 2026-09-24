@@ -297,6 +297,24 @@ describe('the hardware catalogue is the catalogue (#162)', () => {
     expect(featured).toMatch(/data-unavailable="/);
   });
 
+  test('a tab badge counts the vendor, not the rows on screen', () => {
+    // The recommended list shows 30 of 126 SoCs, and the badges count what a
+    // vendor has rather than what this page shows. Counting the rows gave Goke
+    // 4 where the origin says 12 -- found by driving the deployed page, not by
+    // reading the markup, because the refresh only runs in a browser.
+    expect(featured, 'the page does not carry the vendor-to-SoC mapping the count needs')
+      .toContain('catalogue');
+
+    for (const vendor of VENDORS) {
+      const badge = featured.match(
+        new RegExp(`data-vendor="${vendor.urlname}"[^>]*data-total="(\\d+)"`),
+      );
+      expect(badge, `no badge for ${vendor.name}`).toBeTruthy();
+      expect(Number(badge![1]), `${vendor.name}'s badge counts the wrong total`)
+        .toBe(vendor.socs.length);
+    }
+  });
+
   test('the wizard is still linked, because it is still Rails', () => {
     // #163 moves it. Until then these links leave the bundle and fall through
     // the seam, and a link that stopped pointing at it would strand the one

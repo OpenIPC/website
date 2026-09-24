@@ -197,6 +197,11 @@ const p = (path: string) => pathFor(locale, path);
       firmware_only: t('cameras.socs.soc.firmware_only'),
       installable_title: t('cameras.socs.index.installable_title'),
     },
+    // Which SoCs belong to which vendor. The badges count every chip a vendor
+    // has, and this page shows thirty of a hundred and twenty-six -- counting
+    // the rows on screen gave Goke 4 where the origin says 12. About 2 KB, and
+    // the alternative is a second endpoint that knows the catalogue.
+    catalogue: Object.fromEntries(VENDORS.map((v) => [v.urlname, v.socs.map((s) => s.urlname)])),
   }}
 >
   (async () => {
@@ -214,12 +219,8 @@ const p = (path: string) => pathFor(locale, path);
     }
     if (!live || typeof live.socs !== 'object') return;
 
-    const installable = {};
-
     for (const cell of document.querySelectorAll('[data-soc]')) {
       const state = live.socs[cell.dataset.soc] || 'none';
-      const vendor = cell.dataset.vendorSlug;
-      installable[vendor] = (installable[vendor] || 0) + (state === 'none' ? 0 : 1);
 
       const shown = cell.firstElementChild;
       const shownState = shown && shown.tagName === 'A' ? shown.dataset.state : 'none';
@@ -240,11 +241,13 @@ const p = (path: string) => pathFor(locale, path);
       }
     }
 
-    // The tab badges count the same thing, so they are recounted from the same
-    // answer rather than fetched again.
+    // The tab badges count the same answer -- over the whole catalogue, not
+    // over the rows this page happens to show.
     for (const badge of document.querySelectorAll('[data-vendor]')) {
-      const count = installable[badge.dataset.vendor];
-      if (count === undefined) continue;
+      const socs = catalogue[badge.dataset.vendor];
+      if (!socs) continue;
+
+      const count = socs.filter((urlname) => (live.socs[urlname] || 'none') !== 'none').length;
 
       badge.textContent = String(count);
       badge.classList.toggle('site-badge-primary', count > 0);
