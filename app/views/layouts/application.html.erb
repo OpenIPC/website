@@ -106,5 +106,9 @@
 </main>
 
 <%= render 'layouts/footer' %>
+<%# Authorises the frames this page drew. Must come after yield -- the ids are
+    not known until the body has rendered -- and emits nothing on a page that
+    drew none, which is most of the site. %>
+<%= wall_grant_tag %>
 </body>
 </html>

@@ -185,12 +185,38 @@ export default function initWall() {
   })
 }
 
+// The permission covering the frames in `root`, written out after them by the
+// server.
+//
+// Looked up inside `root` first and only then in the document, because the two
+// lazy turbo-frames carry their own: when the archive or the slideshow is what
+// arrived, the grant that names its 96 frames is inside the frame, while the
+// document still holds the one from the page the reader was already on.
+// Document order would find the stale one.
+//
+// Read fresh every time rather than cached. Turbo replaces the body on every
+// navigation, so the element holding this is a different one on each page.
+function grantFor(root) {
+  const scope = root && root.querySelector ? root : document
+  const held = scope.querySelector('[data-wall-grant]') ||
+               document.querySelector('[data-wall-grant]')
+  return held ? held.dataset.wallGrant : null
+}
+
 function hydrate(root) {
   if (canvasesIn(root).length === 0) return
 
+  const grant = grantFor(root)
+  // A wall page with no grant cannot be served, and saying so beats a grid of
+  // blank squares that looks like an empty wall.
+  if (!grant) {
+    showUnavailable('')
+    return
+  }
+
   if (!consumer) {
     consumer = createConsumer('/api/v1/wall/cable')
-    subscription = consumer.subscriptions.create('WallChannel', {
+    subscription = consumer.subscriptions.create({ channel: 'WallChannel', grant }, {
       received: onFrame,
       connected: () => { connected = true; request(document) },
       disconnected: () => {
@@ -208,5 +234,10 @@ function hydrate(root) {
     return
   }
 
+  // The socket outlives the page. Turbo Drive keeps one consumer across
+  // navigations on purpose, so the channel is still holding the PREVIOUS
+  // page's permission and would refuse everything this one is asking for.
+  // Hand over the new grant before asking.
+  subscription.perform('use_grant', { grant })
   request(root)
 }

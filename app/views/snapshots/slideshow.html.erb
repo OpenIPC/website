@@ -47,4 +47,9 @@
       setSpeed();
     })();
   </script>
+
+  <%# Inside the frame, and after the slides it authorises. Turbo keeps only
+      this element from the response, so a grant emitted by the layout would
+      be discarded and none of the 96 slides would be served. %>
+  <%= wall_grant_tag %>
 <% end %>
