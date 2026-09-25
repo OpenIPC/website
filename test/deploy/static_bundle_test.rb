@@ -278,10 +278,13 @@ class StaticBundleTest < ActiveSupport::TestCase
   test 'every address the bundle claims is a real Rails route' do
     known = routed_paths
 
-    # /_smoke is the diagnostic. It is the one address in the bundle with no
-    # Rails route behind it, deliberately: nothing should answer it but the
-    # bundle, and that is what proves the seam is alive.
-    unrouted = bundle_paths.reject { |path| path == '/_smoke' || known.include?(path) }
+    # The two underscore addresses have no Rails route behind them, and both
+    # deliberately. /_smoke is the diagnostic: nothing should answer it but the
+    # bundle, and that is what proves the seam is alive. /_shell/wall is a file
+    # rather than a page -- nginx serves it FOR other addresses (#165), and
+    # those addresses are Rails routes with the fallback this rule is about.
+    # Nobody navigates to either, so neither needs a route of its own.
+    unrouted = bundle_paths.reject { |path| path.start_with?('/_') || known.include?(path) }
 
     assert_empty unrouted, <<~MESSAGE.chomp
       These addresses are in the static bundle but config/routes.rb has no

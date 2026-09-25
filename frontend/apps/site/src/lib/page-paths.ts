@@ -56,6 +56,8 @@ export interface PagePath {
   descriptionKey?: string;
   /** Keep it out of search results. The smoke page only. */
   noindex?: boolean;
+  /** Served at addresses it cannot know, so it claims none. See Base.astro. */
+  addressless?: boolean;
 }
 
 export const PAGE_PATHS: PagePath[] = [
@@ -65,6 +67,25 @@ export const PAGE_PATHS: PagePath[] = [
   // address the bundle claims and it belongs in the same list as the rest --
   // deploy/static.sh, check-bundle.sh and check-config.sh all assert on it.
   { path: '/_smoke', titleKey: 'site.default_meta_description', noindex: true },
+
+  // The Open Wall's shell (#165). One file per locale, and nginx serves it for
+  // every wall address -- the gallery, a page of it, a camera permalink, a
+  // snapshot, its archive and its slideshow. It is here under a name of its
+  // own because the addresses it answers are Rails' and carry ids that change
+  // by the hour: `/snapshots/<id>` cannot be a file, and a bundle that claimed
+  // `/snapshots` would shadow the route cameras POST to.
+  //
+  // noindex, and that is about the addresses it is served AT rather than about
+  // this one. A snapshot lives two days; indexing 3,210 pages that die within
+  // 48 hours is crawl budget spent on nothing, which #165 asks to stop. The
+  // gallery is a different matter -- it is in the navbar and the footer and
+  // should be found -- so it is a page of its own below, rendering the same
+  // island at an address that carries a canonical and no robots directive.
+  { path: '/_shell/wall', titleKey: 'title.openwall', noindex: true, addressless: true },
+
+  // The gallery. A real address rather than a shell, because it is the one
+  // wall page worth indexing and a page needs a canonical of its own to be.
+  { path: '/open-wall', titleKey: 'title.openwall' },
 
   { path: '/business', titleKey: 'pages.business.title' },
   { path: '/community', titleKey: 'pages.community.title' },

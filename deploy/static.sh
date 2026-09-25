@@ -227,7 +227,11 @@ probe() {
 # lists it needs no database. What is left here is the wizard behind it --
 # /cameras/vendors/<v>/socs/<s> -- which is still Rails until #163, and the
 # download it ends at, which must never be a file in a bundle.
-MUST_NOT_BE_STATIC=(/ /open-wall /robots.txt /sitemap.xml /admin)
+#
+# /open-wall left in #165 and is asserted in the other direction below. What
+# stays is `/`, which is rendered per Accept-Language and cannot be a file,
+# and the three that are not pages at all.
+MUST_NOT_BE_STATIC=(/ /robots.txt /sitemap.xml /admin)
 
 # And the other direction (#160), which is the half that catches a bundle that
 # built but did not ship what it was for. A tree that loses every page still
@@ -248,11 +252,21 @@ MUST_NOT_BE_STATIC=(/ /open-wall /robots.txt /sitemap.xml /admin)
 # stays Rails' and is held there by `*/download_full_image` in
 # deploy/static/reserved-paths, which is a check on the bundle rather than a
 # probe: fetching it to find out would build an image.
+#
+# The Open Wall joins them in #165, and it is the one entry here that is not a
+# page in the bundle: `/open-wall` is, but the two below it are a SHELL served
+# for an address that has no file of its own. They are here because that is the
+# half of the seam #165 adds and the half a rolled-back bundle takes away --
+# and because a shell that fails to install is invisible otherwise: the wall
+# keeps working, out of Rails, which is exactly the state this issue exists to
+# leave behind.
 MUST_BE_STATIC=(/donate /ru/donate /get-started /tools/qr-code-generator
                 /supported-hardware/featured /supported-hardware/full-list
                 /cameras/vendors/sigmastar
                 /cameras/vendors/sigmastar/socs/ssc338q
-                /ru/cameras/vendors/hisilicon/socs/hi3516ev300)
+                /ru/cameras/vendors/hisilicon/socs/hi3516ev300
+                /open-wall /open-wall/2
+                /snapshots/0123456789abcdef0123)
 
 do_verify() {
   local env_name=${1:-prod} vhost root served bad=0

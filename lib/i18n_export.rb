@@ -95,6 +95,33 @@ module I18nExport
     %w[pages community channel_ru],
   ].freeze
 
+  # The Open Wall's strings, exported the same way and for the same reason
+  # (#165).
+  #
+  # Every wall address -- the gallery, a snapshot, its archive, its slideshow
+  # -- is one shell file per locale with an island on it, because what they
+  # render depends on an id in the path and on data fetched when the page
+  # opens. None of that copy can be resolved into HTML at build time, so it
+  # reaches the browser as this dictionary: one chunk for all of them rather
+  # than props serialised into every page.
+  #
+  # `nav` and `title.openwall` arrive by the leaf, as the wizard's do: the
+  # island renders the breadcrumb and the heading, and a second copy of either
+  # would drift the moment one was retranslated.
+  WALL = [
+    %w[snapshots],
+    %w[title openwall],
+    %w[site snapshot],
+    %w[nav home],
+    %w[nav snapshots],
+    %w[nav snapshot]
+  ].freeze
+
+  # The island dictionaries, by the name their file carries. Both are grafted
+  # subtrees rather than whole namespaces, and both exist because an island
+  # cannot have its copy resolved at build time.
+  ISLANDS = { 'wizard' => WIZARD, 'wall' => WALL }.freeze
+
   OUT_DIR = 'frontend/apps/site/src/i18n'
 
   class << self
@@ -118,12 +145,16 @@ module I18nExport
       deep_sort(picked)
     end
 
-    # The wizard's own dictionary -- WIZARD's subtrees and nothing else.
-    def wizard_catalogue(locale)
+    # An island's own dictionary -- that island's subtrees and nothing else.
+    def island_catalogue(name, locale)
       I18n.backend.send(:init_translations) unless I18n.backend.initialized?
       all = I18n.backend.send(:translations)[locale.to_sym] || {}
 
-      deep_sort(graft({}, all, WIZARD))
+      deep_sort(graft({}, all, ISLANDS.fetch(name)))
+    end
+
+    def wizard_catalogue(locale)
+      island_catalogue('wizard', locale)
     end
 
     # Copy the named subtrees out of the backend's view and into `picked`.
@@ -148,28 +179,44 @@ module I18nExport
       "#{JSON.pretty_generate(catalogue(locale))}\n"
     end
 
+    def island_json_for(name, locale)
+      "#{JSON.pretty_generate(island_catalogue(name, locale))}\n"
+    end
+
     def wizard_json_for(locale)
-      "#{JSON.pretty_generate(wizard_catalogue(locale))}\n"
+      island_json_for('wizard', locale)
     end
 
     def path_for(locale, root: Rails.root)
       File.join(root, OUT_DIR, "#{locale}.json")
     end
 
+    # Every file one locale produces: the marketing catalogue, and one
+    # dictionary per island.
+    def files_for(locale, root)
+      [[path_for(locale, root: root), json_for(locale), catalogue(locale)]] +
+        ISLANDS.keys.map do |name|
+          [island_path_for(name, locale, root: root), island_json_for(name, locale),
+           island_catalogue(name, locale)]
+        end
+    end
+
+    def island_path_for(name, locale, root: Rails.root)
+      File.join(root, OUT_DIR, "#{name}.#{locale}.json")
+    end
+
     def wizard_path_for(locale, root: Rails.root)
-      File.join(root, OUT_DIR, "wizard.#{locale}.json")
+      island_path_for('wizard', locale, root: root)
     end
 
     def write_all(root: Rails.root)
       FileUtils.mkdir_p(File.join(root, OUT_DIR))
 
       I18n.available_locales.flat_map do |locale|
-        [[path_for(locale, root: root), json_for(locale), catalogue(locale)],
-         [wizard_path_for(locale, root: root), wizard_json_for(locale), wizard_catalogue(locale)]]
-          .map do |path, json, tree|
-            File.write(path, json)
-            [path, count_leaves(tree)]
-          end
+        files_for(locale, root).map do |path, json, tree|
+          File.write(path, json)
+          [path, count_leaves(tree)]
+        end
       end
     end
 

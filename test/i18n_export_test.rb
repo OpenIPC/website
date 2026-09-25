@@ -11,9 +11,12 @@ require Rails.root.join('lib/i18n_export')
 # thing and frontend/apps/site/src/i18n/*.json says another.
 class I18nExportTest < ActiveSupport::TestCase
   test 'the exported catalogue is what the locale files say today' do
+    # Every file the exporter writes, asked for the way it writes them. Named
+    # one by one this missed the wall's dictionaries entirely the day they were
+    # added (#282): the exporter wrote three more files and the test went on
+    # checking the same two.
     stale = I18n.available_locales.flat_map do |locale|
-      [[I18nExport.path_for(locale), I18nExport.json_for(locale)],
-       [I18nExport.wizard_path_for(locale), I18nExport.wizard_json_for(locale)]]
+      I18nExport.files_for(locale, Rails.root).map { |path, json, _tree| [path, json] }
     end.reject { |path, json| File.exist?(path) && File.read(path) == json }
       .map { |path, _| File.basename(path) }
 
@@ -27,8 +30,16 @@ class I18nExportTest < ActiveSupport::TestCase
                  'a locale was added; the frontend build needs to know about it'
 
     I18n.available_locales.each do |locale|
-      assert_path_exists I18nExport.path_for(locale)
-      assert_path_exists I18nExport.wizard_path_for(locale)
+      I18nExport.files_for(locale, Rails.root).each { |path, _json, _tree| assert_path_exists path }
+    end
+
+    # And every island the exporter knows has a dictionary in every locale: a
+    # new one added to ISLANDS without an export is a missing import at build
+    # time, which is a stack trace rather than a sentence.
+    I18nExport::ISLANDS.each_key do |name|
+      I18n.available_locales.each do |locale|
+        assert_path_exists I18nExport.island_path_for(name, locale)
+      end
     end
   end
 

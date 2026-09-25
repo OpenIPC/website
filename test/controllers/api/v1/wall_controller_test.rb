@@ -260,6 +260,27 @@ class Api::V1::WallControllerTest < ActionDispatch::IntegrationTest
     WallGrant.verify(body['grant']).each { |pair| assert pair.end_with?('fullhd') }
   end
 
+  test 'a camera token answers with that camera\'s newest frame' do
+    frames = camera_day(3)
+
+    get "/api/v1/wall/camera/#{frames.last.camera_token}.json"
+
+    assert_response :success
+    body = response.parsed_body
+
+    assert_equal frames.last.public_id, body['snapshot']['id'],
+                 'the token resolves to the camera\'s newest frame, as the page does'
+    assert_equal 3, body['strip'].size
+    refute_includes response.body, frames.last.mac_address,
+                    'the MAC is the join key and must never leave the server'
+  end
+
+  test 'a camera nobody has is missing rather than redirected' do
+    get "/api/v1/wall/camera/#{'0' * 16}.json"
+
+    assert_response :not_found
+  end
+
   test 'a numeric id is gone and an unknown one is missing' do
     # The same answers SnapshotsController gives, so moving the page does not
     # change what a stale link does.

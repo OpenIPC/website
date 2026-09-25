@@ -221,6 +221,68 @@ server {
     # answering these 302 through the catch-all while production answered 410,
     # which makes dev a worse rehearsal than it looks: the whole point of the
     # environment is that a difference here is a difference there.
+    # --- The Open Wall is files now (#165) ---------------------------------
+    #
+    # Five addresses, one shell per locale. `/open-wall` is a page of its own
+    # in the bundle; every other wall address -- a page of the gallery, a
+    # camera permalink, a snapshot, its archive, its slideshow -- carries an id
+    # that changes by the hour and cannot be a file, so nginx serves them all
+    # from `_shell/wall/index.html` and the island reads the address to learn
+    # what it is. `$wall_shell` is the per-locale path; see
+    # conf.d/openipc-wall-shell.conf.
+    #
+    # Ahead of the Rails wall locations below and stricter than any of them: an
+    # id that is not twenty hex characters, a numeric one, and anything ending
+    # .jpg all fall past these to the answers they already had.
+    #
+    # Both patterns are QUOTED. `{20}` is a repetition count to a regex and the
+    # start of a block to nginx's parser, which truncates the pattern at the
+    # brace and fails with "missing closing parenthesis" pointing at a regex
+    # that plainly has one.
+    #
+    # `try_files ... @rails` is what makes a rollback safe. Roll the bundle
+    # back and the file is gone, the request falls through, and Rails renders
+    # the page it has always rendered. The production vhost carries the
+    # concurrency and rate caps on these locations; this one does not, because
+    # dev is behind basic auth and is not the host anything floods.
+    location ~ "^/(?:(?:ru|zh)/)?open-wall/?$" {
+        root /srv/www/static/dev/current;
+        try_files $wall_gallery_read @rails;
+
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header X-Served-By static always;
+        add_header Cache-Control "public, max-age=0, must-revalidate" always;
+    }
+
+    location ~ "^/(?:(?:ru|zh)/)?open-wall/(?:[0-9]+|camera/[0-9a-f]{16})$" {
+        root /srv/www/static/dev/current;
+        try_files $wall_shell_read @rails;
+
+        # All of them repeated: add_header at location level replaces the
+        # whole inherited set, and dropping the robots line here is how
+        # staging becomes indexable.
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header X-Served-By static always;
+        # A shell is one file serving many addresses, and it changes on every
+        # deploy. Revalidate rather than cache: a conditional request and a 304
+        # off nginx's Last-Modified, which is what the bundle's pages do.
+        add_header Cache-Control "public, max-age=0, must-revalidate" always;
+    }
+
+    location ~ "^/(?:(?:ru|zh)/)?snapshots/[0-9a-f]{20}(?:/(?:archive|oneday|slideshow))?$" {
+        root /srv/www/static/dev/current;
+        try_files $wall_shell_read @rails;
+
+        add_header Strict-Transport-Security max-age=15768000;
+        # Staging's own, which already says more than #165 asks for on these
+        # addresses.
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header X-Served-By static always;
+        add_header Cache-Control "public, max-age=0, must-revalidate" always;
+    }
+
     location ~ ^/(?:(?:ru|zh)/)?snapshots/[^/]+/download {
         return 410;
     }

@@ -109,6 +109,21 @@ module Api
                             strip_more: rows.size > STRIP_EAGER })
       end
 
+      # /open-wall/camera/<token>, as data: the same body as a snapshot, found
+      # by the camera's token rather than by one frame's id.
+      #
+      # The token is what a reader may see; the MAC is what the rows are keyed
+      # on and never leaves the server. A camera with nothing in the last day
+      # is 404 rather than an empty page, which is what the Rails action's
+      # redirect amounts to for a client that wanted data.
+      def camera
+        subject = Snapshot.find_by_camera_token(params[:id])
+        return head :not_found unless subject
+
+        params[:id] = subject.public_id
+        snapshot
+      end
+
       # /snapshots/<id>/archive, as data: every frame of the day as an icon,
       # newest first. Granted at icon2 and nothing larger, which is what the
       # archive page grants -- the day at full resolution is the slideshow's

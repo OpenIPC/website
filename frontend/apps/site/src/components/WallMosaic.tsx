@@ -74,7 +74,7 @@ export default function WallMosaic({
 
   useEffect(() => {
     let live = true;
-    let stop: (() => void) | undefined;
+    let frames: { stop(): void } | undefined;
     let deadline: ReturnType<typeof setTimeout> | undefined;
 
     (async () => {
@@ -99,11 +99,10 @@ export default function WallMosaic({
       // them in the map.
       queueMicrotask(() => {
         if (!live) return;
-        stop = requestFramesOrFallBack({
+        frames = requestFramesOrFallBack({
           grant: loaded.grant!,
-          variant: loaded.variant,
-          ids: loaded.tiles.map((tile) => tile.id),
-          onFrame: async (id, bytes) => {
+          requests: [{ variant: loaded.variant, ids: loaded.tiles.map((tile) => tile.id) }],
+          onFrame: async (id, _variant, bytes) => {
             // Recorded only once the bitmap is actually on the canvas, so a
             // frame that will not decode counts as unanswered rather than as
             // drawn.
@@ -123,7 +122,7 @@ export default function WallMosaic({
       });
     })();
 
-    return () => { live = false; clearTimeout(deadline); stop?.(); };
+    return () => { live = false; clearTimeout(deadline); frames?.stop(); };
   }, [tiles]);
 
   // Never more than the page has room for: the count is the server's, but the

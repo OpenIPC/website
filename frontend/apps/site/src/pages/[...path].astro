@@ -44,7 +44,12 @@ const t = useTranslations(locale);
 // "<page> - OpenIPC", which is PagesHelper#page_title. The smoke page is the
 // exception and names itself, because it is not a marketing page and its
 // title is what a deploy looks for in a browser tab.
-const title = page.noindex
+// The smoke page names itself, because it is not a page anyone reads and its
+// title is what a deploy looks for in a browser tab. Everything else is titled
+// for the site, `noindex` or not: the wall's shell is noindex because of the
+// addresses it is served at, and a reader who lands on one still deserves a
+// tab that says what they are looking at.
+const title = page.path === '/_smoke'
   ? 'openipc.org static bundle'
   : `${t(page.titleKey)} - OpenIPC`;
 
@@ -56,6 +61,7 @@ const Content = page.component;
   title={title}
   description={page.descriptionKey ? t(page.descriptionKey) : undefined}
   noindex={page.noindex}
+  addressless={page.addressless}
 >
   <Content locale={locale} {...page.props} />
 </Base>

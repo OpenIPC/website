@@ -198,6 +198,8 @@ Rails.application.routes.draw do
       to: 'api/v1/wall#archive', defaults: { format: :json }, constraints: { id: wall_id }
   get '/api/v1/wall/snapshot/:id/slideshow.json',
       to: 'api/v1/wall#slideshow', defaults: { format: :json }, constraints: { id: wall_id }
+  get '/api/v1/wall/camera/:id.json',
+      to: 'api/v1/wall#camera', defaults: { format: :json }, constraints: { id: /[0-9a-f]{16}/ }
 
   # /tools/bandwidth-calculator is deliberately absent. It routed to
   # pages#bandwidth_calculator, which has never existed -- no action, no

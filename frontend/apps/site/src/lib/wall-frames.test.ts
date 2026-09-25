@@ -15,7 +15,7 @@
 import { readFile } from 'node:fs/promises';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  CABLE_URL, FALLBACK_AFTER, ORIGIN, fallbackCableUrl, requestFramesOrFallBack,
+  CABLE_URL, FALLBACK_AFTER, MAX_PER_REQUEST, ORIGIN, fallbackCableUrl, requestFramesOrFallBack,
 } from './wall-frames';
 
 interface FakeSubscription {
@@ -65,8 +65,7 @@ vi.mock('@rails/actioncable', () => ({
 
 const options = {
   grant: 'a-grant',
-  variant: 'thumb',
-  ids: ['aaa', 'bbb'],
+  requests: [{ variant: 'thumb', ids: ['aaa', 'bbb'] }],
   onFrame: () => {},
   onUnavailable: () => {},
 };
@@ -145,19 +144,80 @@ describe('requestFramesOrFallBack', () => {
   });
 
   it('tears down whichever attempt is live', () => {
-    const stop = requestFramesOrFallBack(options, 'openipc.kz');
+    const frames = requestFramesOrFallBack(options, 'openipc.kz');
     vi.advanceTimersByTime(FALLBACK_AFTER);
-    stop();
+    frames.stop();
 
     expect(consumers[1].subscription!.unsubscribed).toBe(true);
     expect(consumers[1].disconnected).toBe(true);
   });
 
   it('does not reopen after it has been torn down', () => {
-    const stop = requestFramesOrFallBack(options, 'openipc.kz');
-    stop();
+    const frames = requestFramesOrFallBack(options, 'openipc.kz');
+    frames.stop();
     vi.advanceTimersByTime(FALLBACK_AFTER * 4);
 
     expect(consumers).toHaveLength(1);
+  });
+});
+
+describe('a request larger than the channel accepts', () => {
+  it('is split rather than refused', () => {
+    // WallChannel refuses a request naming more than MAX_PER_REQUEST ids --
+    // the whole request, not the excess -- and a camera at the upload limit
+    // has ninety-six frames in a day, so an archive is routinely over it.
+    const ids = Array.from({ length: MAX_PER_REQUEST + 7 }, (_, i) => `id${i}`);
+    requestFramesOrFallBack({ ...options, requests: [{ variant: 'icon2', ids }] }, 'openipc.org');
+    consumers[0].handlers!.connected();
+
+    const performed = consumers[0].subscription!.performed;
+    expect(performed).toHaveLength(2);
+    expect((performed[0][1] as { ids: string[] }).ids).toHaveLength(MAX_PER_REQUEST);
+    expect((performed[1][1] as { ids: string[] }).ids).toHaveLength(7);
+    // Every id, once, in order: a slideshow plays in time order and a chunk
+    // boundary must not reshuffle it.
+    expect(performed.flatMap((call) => (call[1] as { ids: string[] }).ids)).toEqual(ids);
+  });
+
+  it('sends nothing for a variant with no ids', () => {
+    requestFramesOrFallBack({ ...options, requests: [{ variant: 'icon2', ids: [] }] }, 'openipc.org');
+    consumers[0].handlers!.connected();
+
+    expect(consumers[0].subscription!.performed).toHaveLength(0);
+  });
+});
+
+describe('asking for more after the page has opened', () => {
+  it('sends it at once when the socket is already up', () => {
+    const frames = requestFramesOrFallBack(options, 'openipc.org');
+    consumers[0].handlers!.connected();
+    frames.ask({ variant: 'thumb', ids: ['ccc'] });
+
+    expect(consumers[0].subscription!.performed.at(-1)).toEqual(
+      ['request_frames', { variant: 'thumb', ids: ['ccc'] }],
+    );
+  });
+
+  it('holds it until the socket comes up', () => {
+    const frames = requestFramesOrFallBack(options, 'openipc.org');
+    frames.ask({ variant: 'thumb', ids: ['ccc'] });
+
+    expect(consumers[0].subscription!.performed).toHaveLength(0);
+    consumers[0].handlers!.connected();
+    expect(consumers[0].subscription!.performed).toHaveLength(2);
+  });
+
+  it('asks the fallback socket for everything the first one was asked', () => {
+    // A reader scrolls while the mirror's socket is failing. The frames they
+    // scrolled to have to arrive on the second socket, not be forgotten.
+    const frames = requestFramesOrFallBack(options, 'openipc.kz');
+    frames.ask({ variant: 'thumb', ids: ['ccc'] });
+    vi.advanceTimersByTime(FALLBACK_AFTER);
+    consumers[1].handlers!.connected();
+
+    expect(consumers[1].subscription!.performed).toEqual([
+      ['request_frames', { variant: 'thumb', ids: ['aaa', 'bbb'] }],
+      ['request_frames', { variant: 'thumb', ids: ['ccc'] }],
+    ]);
   });
 });

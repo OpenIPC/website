@@ -22,9 +22,18 @@ interface Props {
   /** Keep the page out of search results. Per page, because the marketing
    *  set must NOT carry it -- search discovery is most of why #142 exists. */
   noindex?: boolean;
+  /**
+   * This file is served at addresses it cannot know, so it claims none.
+   *
+   * True for the Open Wall's shell alone (#165): nginx serves that one file at
+   * every `/snapshots/<id>`, its archive and its slideshow, and a canonical,
+   * an hreflang set or an og:url derived from where it was BUILT would name
+   * `/_shell/wall` on every one of them.
+   */
+  addressless?: boolean;
 }
 
-const { locale, path, title, description, noindex = false } = Astro.props;
+const { locale, path, title, description, noindex = false, addressless = false } = Astro.props;
 const t = useTranslations(locale);
 
 const site = 'https://openipc.org';
@@ -63,18 +72,30 @@ const metaDescription = description ?? t('site.default_meta_description');
   <meta name="theme-color" content="#0f1422" />
   {noindex && <meta name="robots" content="noindex, nofollow" />}
 
-  <link rel="canonical" href={`${site}${here}`} />
-
-  {Object.entries(alt).map(([code, p]) => (
-    <link rel="alternate" hreflang={code} href={`${site}${p}`} />
-  ))}
-  <link rel="alternate" hreflang="x-default" href={`${site}${alt.en}`} />
+  {/*
+    A page knows its own address and says so -- except the wall's shell, which
+    does not have one. nginx serves that file at every `/snapshots/<id>`, so a
+    canonical derived from where it was BUILT would tell a reader's browser,
+    and anything reading og:url, that the snapshot they are looking at lives at
+    /_shell/wall. Better to claim nothing than to claim the wrong thing: the
+    shell is noindex, and the addresses it is served at are what a share or a
+    crawl should carry.
+  */}
+  {!addressless && (
+    <>
+      <link rel="canonical" href={`${site}${here}`} />
+      {Object.entries(alt).map(([code, p]) => (
+        <link rel="alternate" hreflang={code} href={`${site}${p}`} />
+      ))}
+      <link rel="alternate" hreflang="x-default" href={`${site}${alt.en}`} />
+    </>
+  )}
 
   <meta property="og:site_name" content="OpenIPC" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={metaDescription} />
-  <meta property="og:url" content={`${site}${here}`} />
+  {!addressless && <meta property="og:url" content={`${site}${here}`} />}
   <meta property="og:image" content={`${site}/og-default.png`} />
   <meta name="twitter:card" content="summary_large_image" />
 
