@@ -17,12 +17,14 @@
  *
  * Placeholders are the resting state and the failure state alike, which is
  * what home.html.erb does when its own query returns nothing: five "no signal"
- * tiles and the call to action. A reader whose socket never opens -- behind a
- * proxy that does not forward the Upgrade -- sees that rather than five blanks.
+ * tiles and the call to action. A reader whose socket never opens sees that
+ * rather than five blanks -- but a reader behind a mirror that does not
+ * forward the `Upgrade` should not be one of them, so the socket is retried
+ * against the origin before the tiles give up. `requestFramesOrFallBack`.
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  FRAME_DEADLINE, MOSAIC_URL, captionFor, requestFrames, type Mosaic, type MosaicTile,
+  FRAME_DEADLINE, MOSAIC_URL, captionFor, requestFramesOrFallBack, type Mosaic, type MosaicTile,
 } from '../lib/wall-frames';
 
 /** `WallHelper::FRAME_SIZES['thumb']`, so the page does not reflow when frames land. */
@@ -97,7 +99,7 @@ export default function WallMosaic({
       // them in the map.
       queueMicrotask(() => {
         if (!live) return;
-        stop = requestFrames({
+        stop = requestFramesOrFallBack({
           grant: loaded.grant!,
           variant: loaded.variant,
           ids: loaded.tiles.map((tile) => tile.id),
@@ -154,6 +156,12 @@ export default function WallMosaic({
               loading="lazy"
             />
           )}
+          {/*
+            `data-wall-frame` is how every wall check in tools/ finds a tile --
+            canvas-check, wall-fills-check, bare-socket-check, the request
+            trace. The Rails page carries it and this one has to as well, or a
+            migrated page silently drops out of checks that still pass.
+          */}
           <canvas
             ref={(el) => register(canvases.current, tile.id, el)}
             width={THUMB.width}
@@ -161,6 +169,8 @@ export default function WallMosaic({
             class="relative block aspect-video size-full object-cover"
             role="img"
             aria-label={frameAlt}
+            data-wall-frame={tile.id}
+            data-wall-variant={mosaic?.variant}
           />
           <Caption tile={tile} />
         </a>

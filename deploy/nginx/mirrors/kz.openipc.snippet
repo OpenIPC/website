@@ -1,11 +1,17 @@
 # The Open Wall's frame channel, through the openipc.kz / openipc.cloud mirror.
 #
-# NOT YET APPLIED. 87.199.131.93 serves both names (they answer 200) but did
-# not accept ssh on 35242 or 22 from the build host on 2026-09-23, so this is
-# intended state waiting for someone who can reach it. Until it is applied,
-# readers on those two names get no frames -- the client says so in the page
-# after eight seconds rather than showing a grid of blank squares, but the
-# wall is not working for them.
+# NOT YET APPLIED. 87.199.131.93 serves both names and its sshd answers on
+# 35242 from the origin host, but no key this project holds is accepted
+# (checked 2026-09-25) -- so this is intended state waiting on the same grant
+# flyrouter gave for the other two mirrors in OpenIPC/website#145, not on
+# anything about the host.
+#
+# Readers on those two names are no longer blocked on it: the prerendered
+# pages try their own host first and open a socket straight at the origin when
+# that one does not come up, which the origin admits because
+# allowed_request_origins names both. Applying this is still worth doing --
+# it keeps a mirror's readers on their mirror and saves them the wait -- but
+# the wall is not broken there while it waits.
 #
 # Identical in substance to ru.openipc.snippet; kept as its own file so the
 # gap is impossible to overlook, and so applying it is a copy rather than a
@@ -37,13 +43,21 @@
 # negative cost an hour on 2026-09-23.
 #
 #   curl -s -o /dev/null -w '%{http_code}\n' --http1.1 \
+#     -H 'Origin: https://openipc.kz' \
 #     -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
 #     -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' \
 #     https://openipc.kz/api/v1/wall/cable
 #
+# THE ORIGIN HEADER IS AS LOAD-BEARING AS --http1.1. ActionCable checks it
+# against allowed_request_origins and answers a bare 404 both to a name that is
+# not listed and to a request carrying no origin at all -- so without it this
+# command reports 404 against every host on earth, this one included.
+#
 # 101 is right. Anything else means the upgrade is not being forwarded. Then
-# open https://openipc.kz/open-wall and confirm the tiles actually paint, or
-# run tools/canvas-check.mjs against that name.
+# confirm the tiles paint, which the handshake does not prove:
+# tools/mirror-check.mjs openipc.kz reads the pixels back and names the socket
+# they arrived on, so a wall filled by the fallback is not mistaken for one
+# this file fixed.
 
 location ^~ /api/v1/wall/ {
     proxy_pass https://openipc.org;
