@@ -50,14 +50,15 @@
 /.well-known/
 
 # --- files Rails serves straight out of public/ ------------------------------
-/robots.txt
+#
+# What is left of them. robots.txt, the icons and og-default.png were here
+# until #165 and are the bundle's now: they are files, the bundle is where this
+# site keeps its files, and Rails was serving them only because nobody had
+# moved them. The error pages stay -- Rails renders them when Rails is what
+# failed, and a bundle cannot answer for that.
 /404.html
 /422.html
 /500.html
-/favicon.ico
-/apple-touch-icon.png
-/apple-touch-icon-precomposed.png
-/og-default.png
 
 # --- the expensive leaf ------------------------------------------------------
 # /cameras/ is deliberately NOT reserved: the catalogue is exactly what #162
