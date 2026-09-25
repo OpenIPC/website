@@ -101,9 +101,8 @@ export default function WallMosaic({
         if (!live) return;
         stop = requestFramesOrFallBack({
           grant: loaded.grant!,
-          variant: loaded.variant,
-          ids: loaded.tiles.map((tile) => tile.id),
-          onFrame: async (id, bytes) => {
+          requests: [{ variant: loaded.variant, ids: loaded.tiles.map((tile) => tile.id) }],
+          onFrame: async (id, _variant, bytes) => {
             // Recorded only once the bitmap is actually on the canvas, so a
             // frame that will not decode counts as unanswered rather than as
             // drawn.

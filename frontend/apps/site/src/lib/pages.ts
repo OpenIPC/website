@@ -16,6 +16,7 @@ import Hardware from '../components/pages/Hardware.astro';
 import Wizard from '../components/pages/Wizard.astro';
 import Service from '../components/Service.astro';
 import Smoke from '../components/Smoke.astro';
+import Wall from '../components/pages/Wall.astro';
 import Business from '../components/pages/Business.astro';
 import Community from '../components/pages/Community.astro';
 import Donate from '../components/pages/Donate.astro';
@@ -70,6 +71,8 @@ function service(spec: ServiceSpec): Renderer {
 
 const COMPONENTS: Record<string, Renderer> = {
   '/_smoke': { component: Smoke },
+  '/_shell/wall': { component: Wall },
+  '/open-wall': { component: Wall },
 
   // The catalogue: one component, three views, sixteen addresses (#162).
   '/supported-hardware/featured': { component: Hardware, props: { view: 'featured' } },

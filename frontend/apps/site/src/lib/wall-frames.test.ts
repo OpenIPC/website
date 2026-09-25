@@ -65,8 +65,7 @@ vi.mock('@rails/actioncable', () => ({
 
 const options = {
   grant: 'a-grant',
-  variant: 'thumb',
-  ids: ['aaa', 'bbb'],
+  requests: [{ variant: 'thumb', ids: ['aaa', 'bbb'] }],
   onFrame: () => {},
   onUnavailable: () => {},
 };

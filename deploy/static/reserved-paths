@@ -30,8 +30,12 @@
 /telemetry/
 
 # --- the gallery, which #165 extracts through a JSON API, not through here ---
-/open-wall
-/open-wall/
+# /open-wall and /open-wall/ were here until #165 extracted the gallery.
+# /snapshots stays: cameras POST to it, and nginx's static handler answers
+# POST too -- a file at that address would swallow every upload. The
+# per-snapshot pages are served from the bundle's shell by a location of
+# their own rather than by a file at their address, so the prefix below
+# and the seam's catch-all both stay out of their way.
 /snapshots
 /snapshots/
 

@@ -1,0 +1,23 @@
+---
+/**
+ * The shell every Open Wall address is served from (#165).
+ *
+ * One file per locale, and nginx maps `/open-wall`, `/open-wall/<n>`,
+ * `/open-wall/camera/<token>`, `/snapshots/<id>` and that snapshot's archive
+ * and slideshow onto it. The addresses are Rails' own and have not changed --
+ * a link anyone has shared still opens the page it opened.
+ *
+ * Nothing is rendered here. The page cannot know which of those addresses it
+ * is on until the browser tells it, and a server-rendered header over an empty
+ * body would flash the wrong breadcrumb. What this file does is hand the
+ * island the two things the bundle knows and the API does not: the language,
+ * and the "no signal" card from Astro's asset pipeline.
+ */
+import Wall from '../wall/Wall.tsx';
+import noSignal from '../../assets/no-signal.webp';
+import type { Locale } from '../../lib/i18n';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+---
+<Wall client:load locale={locale} placeholder={noSignal.src} />

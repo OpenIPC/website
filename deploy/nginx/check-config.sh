@@ -123,6 +123,15 @@ printf 'SMOKE\n' > /srv/www/static/prod/site-test/_smoke/index.html
 # measuring rather than assuming.
 install -d -m 0755 /srv/www/static/prod/site-test/ru/_smoke
 printf 'SMOKE RU\n' > /srv/www/static/prod/site-test/ru/_smoke/index.html
+
+# The Open Wall (#165): a page at /open-wall, and one shell per locale that
+# every other wall address is served from.
+for loc in "" ru zh; do
+  install -d -m 0755 "/srv/www/static/prod/site-test/${loc:+$loc/}_shell/wall"
+  printf 'WALL SHELL %s\n' "${loc:-en}" > "/srv/www/static/prod/site-test/${loc:+$loc/}_shell/wall/index.html"
+  install -d -m 0755 "/srv/www/static/prod/site-test/${loc:+$loc/}open-wall"
+  printf 'GALLERY %s\n' "${loc:-en}" > "/srv/www/static/prod/site-test/${loc:+$loc/}open-wall/index.html"
+done
 install -d -m 0755 /srv/www/static/prod/site-test/_astro
 printf 'body{}\n' > /srv/www/static/prod/site-test/_astro/app.css
 # A marketing page in both the unprefixed and the prefixed tree (#160), so the
@@ -215,6 +224,26 @@ expect_cache() {
   fi
 }
 
+# A POST that must reach the application rather than a file. `expect` asks with
+# GET, and the hazard here is the opposite one: nginx serves a static file for
+# any method, so a bundle that claimed an upload address would answer the
+# camera 200 and never tell anyone.
+posts_to_rails() {
+  path=$1
+
+  curl -sS -o /dev/null -D /tmp/hp -k --max-time 5 -X POST \
+    --resolve "openipc.org:443:127.0.0.1" "https://openipc.org$path" >/dev/null 2>&1
+
+  by=$(grep -i '^x-served-by:' /tmp/hp | tr -d '\r' | awk '{print $2}' | head -1)
+  code=$(awk 'NR==1{print $2}' /tmp/hp)
+  if [ "${by:-rails}" = rails ]; then
+    printf '  %-32s %-5s %s (POST)\n' "$path" "$code" "${by:-rails}"
+  else
+    printf '  %-32s %-5s %s MISMATCH: a file answered a camera upload\n' "$path" "$code" "$by"
+    fail=1
+  fi
+}
+
 # openipc.eu is a 301 to the canonical host and nothing else. Its own function
 # because `expect` resolves openipc.org and reads X-Served-By, and the claim
 # here is the opposite one: that no application is reached at all.
@@ -288,6 +317,41 @@ expect /tools/qr-code-generator/    200 static hsts
 expect /tools/                      200 rails  hsts
 expect /tools                       200 rails  hsts
 
+echo "  --- the Open Wall: a page, four shells, and the upload path untouched ---"
+# The gallery is a page in the bundle. Everything else under it carries an id
+# that changes by the hour and is served from the shell -- one file, many
+# addresses, the island reads which.
+SNAP=0123456789abcdef0123
+CAM=0123456789abcdef
+expect /open-wall                   200 static hsts
+expect /open-wall/2                 200 static hsts
+expect "/open-wall/camera/$CAM"     200 static hsts
+expect "/snapshots/$SNAP"           200 static hsts
+expect "/snapshots/$SNAP/archive"   200 static hsts
+expect "/snapshots/$SNAP/oneday"    200 static hsts
+expect "/snapshots/$SNAP/slideshow" 200 static hsts
+expect "/ru/snapshots/$SNAP"        200 static hsts
+expect "/zh/open-wall/3"            200 static hsts
+
+# And what must NOT reach the shell. A numeric id is a row id and answers 410
+# without waking anything; an id of the wrong shape, and the .jpg spelling that
+# used to hand over bytes, fall past these locations to the answers they had.
+# The 410s carry no HSTS, and that is the vhost as it stands rather than a
+# claim about what it should be: `add_header` at server level is not `always`,
+# so a bare `return 410` sends none. Recorded here so a change to either is
+# visible rather than silent.
+expect /snapshots/12345             410 -      no-hsts
+# An id of the wrong shape reaches Rails through the wall's own location, which
+# does not label what served it -- so `-` here means "not the bundle", which is
+# the whole claim.
+expect "/snapshots/${SNAP}xx"       200 -      hsts
+expect "/open-wall/camera/$CAM.jpg" 410 -      no-hsts
+
+# The one that matters most: cameras POST here, and nginx's static handler
+# answers POST too. A file at this address would swallow every upload on the
+# site, which is why /snapshots stays in deploy/static/reserved-paths.
+posts_to_rails /snapshots
+
 echo "  --- Cache-Control: assets forever, pages never without asking ---"
 # Astro fingerprints everything under /_astro/, so the name changes whenever
 # the bytes do and the old name is never reused.
@@ -316,7 +380,8 @@ expect /admin                       200 rails  hsts
 
 # Exact and regex locations that never reach the catch-all, so they carry no
 # X-Served-By at all -- and must still carry the header the server block sends.
-expect /open-wall                   200 -      hsts
+# /open-wall is the bundle's since #165 and is asserted with the rest of the
+# wall above; what is checked here is that the seam still answers it at all.
 expect /up                          200 -      hsts
 
 echo "  --- openipc.eu: one 301 to the canonical host, never a page ---"

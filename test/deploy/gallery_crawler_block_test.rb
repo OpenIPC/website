@@ -118,10 +118,16 @@ class GalleryCrawlerBlockTest < ActiveSupport::TestCase
   test 'the gallery map is applied only in the gallery locations' do
     applied = VHOST.scan(/^(\s*)if \(\$openipc_gallery_crawler\)/).flatten
 
-    assert_equal 2, applied.length, <<~MESSAGE.chomp
-      Expected the guard in exactly the two locations that serve gallery
-      content -- the hexadecimal snapshot ids, and the open-wall/snapshots
-      catch-all. Found #{applied.length}.
+    assert_equal 5, applied.length, <<~MESSAGE.chomp
+      Expected the guard in exactly the five locations that serve gallery
+      content. Found #{applied.length}.
+
+      Two of them are Rails': the hexadecimal snapshot ids, and the
+      open-wall/snapshots catch-all. Three are the bundle's, added by #165 --
+      the gallery page, the gallery's numbered and camera addresses, and the
+      per-snapshot pages. The same content is served from a file now, and
+      robots.txt disallows those addresses for everyone: a crawler refused a
+      Rails render of a page must not be handed the same page from disk.
 
       It was three until 2026-09-23. /wall/ was the third, and it no longer
       serves anything: frames moved onto WallChannel and that location answers

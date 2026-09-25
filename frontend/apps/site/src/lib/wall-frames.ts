@@ -123,11 +123,21 @@ interface Frame {
  * that and there cannot be; the caller waits instead. Same for a socket that
  * never opens, which produces no event either.
  */
-export function requestFrames({ grant, variant, ids, onFrame, onUnavailable, onOpen, url = CABLE_URL }: {
-  grant: string;
+export interface FrameRequest {
   variant: string;
   ids: string[];
-  onFrame: (id: string, bytes: Uint8Array) => void;
+}
+
+export function requestFrames({ grant, requests, onFrame, onUnavailable, onOpen, url = CABLE_URL }: {
+  grant: string;
+  /**
+   * One entry per variant. A snapshot page asks for two -- its own frame at
+   * `fullhd` and its strip at `icon2` -- and the channel takes one variant per
+   * `request_frames`, so two performs on one subscription is what that is.
+   * Grants accumulate on the channel side, which is what makes this safe.
+   */
+  requests: FrameRequest[];
+  onFrame: (id: string, variant: string, bytes: Uint8Array) => void;
   onUnavailable: () => void;
   /** The subscription is confirmed, so the socket is up. */
   onOpen?: () => void;
@@ -140,13 +150,15 @@ export function requestFrames({ grant, variant, ids, onFrame, onUnavailable, onO
     {
       received: (data: Frame) => {
         if (data.error) { onUnavailable(); return; }
-        if (!data.id || !data.frame || data.variant !== variant) return;
+        if (!data.id || !data.frame || !data.variant) return;
 
-        onFrame(data.id, unmask(decode(data.frame), keyFor(data.connection_id ?? '')));
+        onFrame(data.id, data.variant, unmask(decode(data.frame), keyFor(data.connection_id ?? '')));
       },
       connected: () => {
         onOpen?.();
-        subscription.perform('request_frames', { variant, ids });
+        requests.forEach(({ variant, ids }) => {
+          if (ids.length > 0) subscription.perform('request_frames', { variant, ids });
+        });
       },
       rejected: onUnavailable,
     },

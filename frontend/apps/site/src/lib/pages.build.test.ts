@@ -71,10 +71,14 @@ describe('every page is a page', () => {
     }
   });
 
-  test('only the smoke page is kept out of search results', () => {
+  test('only the pages that are not pages are kept out of search results', () => {
+    // Two of them, and both start with an underscore: the smoke diagnostic,
+    // and the Open Wall's shell, which is served at every `/snapshots/<id>`
+    // address and must not have 3,210 pages that die within 48 hours indexed
+    // behind it (#165). The gallery itself is a page and is indexed.
     for (const [locale, path, html] of PAGES) {
       const noindexed = html.includes('name="robots"');
-      expect(noindexed, `${locale}${path}`).toBe(path === '/_smoke');
+      expect(noindexed, `${locale}${path}`).toBe(path.startsWith('/_'));
     }
   });
 

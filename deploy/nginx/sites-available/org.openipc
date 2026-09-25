@@ -349,6 +349,93 @@ server {
     # numeric prefix, and is proxied: Rails answers 410 in the end, but the
     # probe has already cost a render slot under the concurrency cap, and a
     # 410 is not in proxy_cache_valid so the next probe costs another.
+    # --- The Open Wall is files now (#165) ---------------------------------
+    #
+    # Five addresses, one shell per locale. `/open-wall` is a page of its own
+    # in the bundle; every other wall address -- a page of the gallery, a
+    # camera permalink, a snapshot, its archive, its slideshow -- carries an id
+    # that changes by the hour and cannot be a file, so nginx serves them all
+    # from `_shell/wall/index.html` and the island reads the address to learn
+    # what it is. `$wall_shell` is the per-locale path; see
+    # conf.d/openipc-wall-shell.conf.
+    #
+    # Ahead of the Rails wall locations below and stricter than any of them: an
+    # id that is not twenty hex characters, a numeric one, and anything ending
+    # .jpg all fall past these to the answers they already had.
+    #
+    # Both patterns are QUOTED. `{20}` is a repetition count to a regex and the
+    # start of a block to nginx's parser, which truncates the pattern at the
+    # brace and fails with "missing closing parenthesis" pointing at a regex
+    # that plainly has one.
+    #
+    # `try_files ... @rails` is what makes a rollback safe. Roll the bundle
+    # back and the file is gone, the request falls through, and Rails renders
+    # the page it has always rendered -- which is why the caps below are here
+    # rather than only in the Rails locations: on that day these addresses are
+    # Rails' again and the September floods are what the caps are for.
+    location ~ "^/(?:(?:ru|zh)/)?open-wall/?$" {
+        if ($openipc_gallery_crawler) {
+            return 403;
+        }
+
+        limit_conn media_conc 12;
+        limit_conn_status 429;
+        limit_req zone=snapshot_pages burst=48 nodelay;
+        limit_req_status 429;
+
+        root /srv/www/static/prod/current;
+        try_files $wall_gallery @rails;
+
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By static always;
+        add_header Cache-Control "public, max-age=0, must-revalidate" always;
+    }
+
+    location ~ "^/(?:(?:ru|zh)/)?open-wall/(?:[0-9]+|camera/[0-9a-f]{16})$" {
+        if ($openipc_gallery_crawler) {
+            return 403;
+        }
+
+        limit_conn media_conc 12;
+        limit_conn_status 429;
+        limit_req zone=snapshot_pages burst=48 nodelay;
+        limit_req_status 429;
+
+        root /srv/www/static/prod/current;
+        try_files $wall_shell @rails;
+
+        # add_header at location level replaces the whole inherited set.
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By static always;
+        # A shell is one file serving many addresses, and it changes on every
+        # deploy. Revalidate rather than cache: a conditional request and a 304
+        # off nginx's Last-Modified, which is what the bundle's pages do.
+        add_header Cache-Control "public, max-age=0, must-revalidate" always;
+    }
+
+    location ~ "^/(?:(?:ru|zh)/)?snapshots/[0-9a-f]{20}(?:/(?:archive|oneday|slideshow))?$" {
+        if ($openipc_gallery_crawler) {
+            return 403;
+        }
+
+        limit_conn media_conc 12;
+        limit_conn_status 429;
+        limit_req zone=snapshot_pages burst=48 nodelay;
+        limit_req_status 429;
+
+        root /srv/www/static/prod/current;
+        try_files $wall_shell @rails;
+
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By static always;
+        add_header Cache-Control "public, max-age=0, must-revalidate" always;
+        # Asked for by #165 and true of the content rather than of the file: a
+        # snapshot lives two days, and 3,210 pages that die within 48 hours are
+        # crawl budget spent on nothing. The gallery above carries no such
+        # header and stays indexable.
+        add_header X-Robots-Tag noindex always;
+    }
+
     location ~ ^/(?:(?:ru|zh)/)?snapshots/[0-9]+(?:[./]|$) {
         return 410;
     }

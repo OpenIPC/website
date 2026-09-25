@@ -1,0 +1,57 @@
+{
+  "nav": {
+    "home": "Home",
+    "snapshot": "Snapshot #%{number}",
+    "snapshots": "Latest Snapshots"
+  },
+  "site": {
+    "snapshot": {
+      "link_to_camera": "Permanent link to this camera"
+    }
+  },
+  "snapshots": {
+    "icon": {
+      "snapshot_alt": "Image: Snapshot"
+    },
+    "index": {
+      "frames_unavailable": "Camera frames could not be loaded on this page. They are streamed rather than served as files, and that stream did not reach your browser.",
+      "intro_html": "Cameras send these themselves — nobody goes out and collects them. Want yours here? Turn on the Open Wall option in your camera's web interface.",
+      "needs_javascript": "The Open Wall needs JavaScript. Camera frames are streamed to this page and drawn, not served as files, so that they cannot be collected in bulk.",
+      "no_signal": "No signal",
+      "snapshot_alt": "Image: Snapshot",
+      "stay_tuned": "stay tuned",
+      "subtitle": "Images from real IP-cameras running on OpenIPC firmware, provided by their owners."
+    },
+    "oneday": {
+      "show_all_frames": "Show every frame from this day",
+      "speed": "Speed"
+    },
+    "show": {
+      "delete_by_mac": "Delete all by MAC",
+      "delete_one": "Delete this one",
+      "last_24h": "Last 24 hours",
+      "show_all_frames": "Show every frame from this day",
+      "show_slideshow": "Watch as slideshow",
+      "snapshot_alt": "Image: Snapshot",
+      "temperature": "SoC temperature",
+      "uptime": "Uptime"
+    },
+    "slide": {
+      "bytes": "bytes",
+      "dimensions": "Dimensions",
+      "link_to_this": "Link to this snapshot",
+      "size": "Size",
+      "snapshot_alt": "Image: Snapshot",
+      "temperature": "SoC temperature",
+      "uptime": "Uptime"
+    },
+    "snapshot": {
+      "snapshot_alt": "Image: Snapshot",
+      "temperature": "SoC temperature",
+      "uptime": "Uptime"
+    }
+  },
+  "title": {
+    "openwall": "Open Wall"
+  }
+}
