@@ -357,8 +357,17 @@ expect "/open-wall/camera/$CAM.jpg" 410 -      no-hsts
 
 # The gallery's older address is retired for readers -- one canonical address
 # rather than two that answer alike.
-redirects_to openipc.org /snapshots     https://openipc.org/open-wall
-redirects_to openipc.org /ru/snapshots  https://openipc.org/ru/open-wall
+redirects_to openipc.org /snapshots      https://openipc.org/open-wall
+redirects_to openipc.org /ru/snapshots   https://openipc.org/ru/open-wall
+# With a trailing slash, which is the same address and was the same page.
+redirects_to openipc.org /snapshots/     https://openipc.org/open-wall
+redirects_to openipc.org /zh/snapshots/  https://openipc.org/zh/open-wall
+# `?locale=` names the language when the path does not, and it is the older
+# contract: Rails answered /snapshots?locale=ru with the Russian page. The
+# query travels with the reader either way -- a campaign's utm parameters are
+# theirs, not the address's.
+redirects_to openipc.org "/snapshots?locale=ru" "https://openipc.org/ru/open-wall?locale=ru"
+redirects_to openipc.org "/snapshots?utm_source=telegram" "https://openipc.org/open-wall?utm_source=telegram"
 
 # And the one that matters most: cameras POST to that same address, and nginx's
 # static handler answers POST too. A file there would swallow every upload on
