@@ -59,5 +59,19 @@ class WallDataLocationTest < ActiveSupport::TestCase
       assert_match(/proxy_cache_key .*\$uri;/, data)
       assert_match(/proxy_cache_valid 200 60s;/, data)
     end
+
+    test "the #{env} gallery alias keeps the upload pool" do
+      # An exact location shadows the broader gallery proxy for this address,
+      # and the POST that falls past the redirect is a camera uploading a
+      # frame. The pools are sized against Puma's threads collectively, so a
+      # location that drops one lets a burst of uploads oversubscribe Rails --
+      # found by review on #286.
+      alias_block = Rails.root.join(path).read[/location ~ "\^\/\(\?:\(\?:ru\|zh\)\/\)\?snapshots\/\?\$" \{.*?\n    \}/m]
+
+      assert alias_block, 'the gallery alias has no location of its own'
+      assert_match(/limit_conn media_conc/, alias_block,
+                   'the upload that falls past the redirect reaches Rails uncapped')
+      assert_match(/limit_conn_status 429;/, alias_block)
+    end
   end
 end

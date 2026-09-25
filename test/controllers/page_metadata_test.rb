@@ -58,8 +58,12 @@ class PageMetadataTest < ActionDispatch::IntegrationTest
     assert_equal '/og-default.png', URI.parse(src).path
   end
 
-  test 'the og:image exists in public' do
-    assert_path_exists Rails.public_path.join('og-default.png')
+  # In the bundle since #165, not in Rails' public/. Rails still NAMES it -- the
+  # pages it renders carry the same og:image -- and nginx serves it from the
+  # bundle, so the file has to exist somewhere and the page has to point at the
+  # place it is.
+  test 'the og:image exists where the bundle keeps it' do
+    assert_path_exists Rails.root.join('frontend/apps/site/public/og-default.png')
   end
 
   # The preloaded faces have to be the ones the stylesheet asks for; a typo here

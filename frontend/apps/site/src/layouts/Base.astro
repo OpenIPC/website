@@ -99,7 +99,17 @@ const metaDescription = description ?? t('site.default_meta_description');
   <meta property="og:image" content={`${site}/og-default.png`} />
   <meta name="twitter:card" content="summary_large_image" />
 
-  <link rel="icon" type="image/x-icon" href="/favicon.png" />
+  {/*
+    The icons, which live in the bundle's own public/ since #165 and were a
+    404 before it. This markup was copied from the Rails layout, where the href
+    is `asset_path 'favicon.png'` -- a digested asset. Written out literally it
+    named a file that existed nowhere, so every page in the bundle asked for
+    /favicon.png, fell through to Rails, and was answered 302 to the home page:
+    1,027 times a day, and no icon on any migrated page.
+  */}
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="alternate icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
   <!--
     The commit this page was built from. deploy/static/build.sh substitutes

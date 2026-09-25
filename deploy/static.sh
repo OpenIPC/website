@@ -233,7 +233,7 @@ probe() {
 # was here because it answered three languages at one URL; the choice is the
 # browser's now, made by a script in the page itself. What is left are the
 # three addresses that are not pages at all.
-MUST_NOT_BE_STATIC=(/robots.txt /sitemap.xml /admin)
+MUST_NOT_BE_STATIC=(/sitemap.xml /admin)
 
 # And the other direction (#160), which is the half that catches a bundle that
 # built but did not ship what it was for. A tree that loses every page still
@@ -262,7 +262,7 @@ MUST_NOT_BE_STATIC=(/robots.txt /sitemap.xml /admin)
 # and because a shell that fails to install is invisible otherwise: the wall
 # keeps working, out of Rails, which is exactly the state this issue exists to
 # leave behind.
-MUST_BE_STATIC=(/ /donate /ru/donate /get-started /tools/qr-code-generator
+MUST_BE_STATIC=(/ /robots.txt /favicon.png /donate /ru/donate /get-started /tools/qr-code-generator
                 /supported-hardware/featured /supported-hardware/full-list
                 /cameras/vendors/sigmastar
                 /cameras/vendors/sigmastar/socs/ssc338q

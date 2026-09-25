@@ -18,7 +18,10 @@ require 'test_helper'
 # So the assertions below are written as the URLs that were actually fetched,
 # not as the patterns that ought to cover them.
 class GalleryCrawlerBlockTest < ActiveSupport::TestCase
-  ROBOTS = Rails.root.join('public/robots.txt').read.freeze
+  # In the bundle since #165, not in Rails' public/. It is a file, the bundle is
+  # where this site keeps its files, and Rails was serving it only because
+  # nobody had moved it.
+  ROBOTS = Rails.root.join('frontend/apps/site/public/robots.txt').read.freeze
   CONF = Rails.root.join('deploy/nginx/conf.d/openipc-crawler-block.conf').read.freeze
   VHOST = Rails.root.join('deploy/nginx/sites-available/org.openipc').read.freeze
 

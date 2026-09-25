@@ -128,6 +128,12 @@ printf 'SMOKE RU\n' > /srv/www/static/prod/site-test/ru/_smoke/index.html
 # every other wall address is served from.
 printf 'HOME navigator.languages\n' > /srv/www/static/prod/site-test/index.html
 
+# The files Rails used to serve out of public/ (#165). They are the bundle's
+# now: it is where this site keeps its files.
+printf 'User-agent: *\n' > /srv/www/static/prod/site-test/robots.txt
+printf 'PNG\n' > /srv/www/static/prod/site-test/favicon.png
+printf 'ICO\n' > /srv/www/static/prod/site-test/favicon.ico
+
 for loc in "" ru zh; do
   install -d -m 0755 "/srv/www/static/prod/site-test/${loc:+$loc/}_shell/wall"
   printf 'WALL SHELL %s\n' "${loc:-en}" > "/srv/www/static/prod/site-test/${loc:+$loc/}_shell/wall/index.html"
@@ -349,9 +355,25 @@ expect /snapshots/12345             410 -      no-hsts
 expect "/snapshots/${SNAP}xx"       200 -      hsts
 expect "/open-wall/camera/$CAM.jpg" 410 -      no-hsts
 
-# The one that matters most: cameras POST here, and nginx's static handler
-# answers POST too. A file at this address would swallow every upload on the
-# site, which is why /snapshots stays in deploy/static/reserved-paths.
+# The gallery's older address is retired for readers -- one canonical address
+# rather than two that answer alike.
+redirects_to openipc.org /snapshots      https://openipc.org/open-wall
+redirects_to openipc.org /ru/snapshots   https://openipc.org/ru/open-wall
+# With a trailing slash, which is the same address and was the same page.
+redirects_to openipc.org /snapshots/     https://openipc.org/open-wall
+redirects_to openipc.org /zh/snapshots/  https://openipc.org/zh/open-wall
+# `?locale=` names the language when the path does not, and it is the older
+# contract: Rails answered /snapshots?locale=ru with the Russian page. The
+# query travels with the reader either way -- a campaign's utm parameters are
+# theirs, not the address's.
+redirects_to openipc.org "/snapshots?locale=ru" "https://openipc.org/ru/open-wall?locale=ru"
+redirects_to openipc.org "/snapshots?utm_source=telegram" "https://openipc.org/open-wall?utm_source=telegram"
+
+# And the one that matters most: cameras POST to that same address, and nginx's
+# static handler answers POST too. A file there would swallow every upload on
+# the site, and the redirect above would send the camera to a page -- firmware
+# in the field follows a 301 as readily as a browser. /snapshots stays in
+# deploy/static/reserved-paths and the redirect is for reads only.
 posts_to_rails /snapshots
 # And the wall's own addresses, where a file exists and would otherwise be
 # served to any method at all.
@@ -387,8 +409,14 @@ expect_cache /                      "public, max-age=0, must-revalidate"
 expect /                            200 static hsts
 expect /supported-hardware/featured 200 rails  hsts
 expect /sitemap.xml                 200 rails  hsts
-expect /robots.txt                  200 rails  hsts
 expect /admin                       200 rails  hsts
+
+# The files, which left public/ in #165. /favicon.png is the one that was
+# never anywhere: the bundle's pages linked it, nothing served it, and every
+# page's icon request fell through to a Rails 302.
+expect /robots.txt                  200 static hsts
+expect /favicon.png                 200 static hsts
+expect /favicon.ico                 200 static hsts
 
 # Exact and regex locations that never reach the catch-all, so they carry no
 # X-Served-By at all -- and must still carry the header the server block sends.
