@@ -247,7 +247,7 @@ server {
     # dev is behind basic auth and is not the host anything floods.
     location ~ "^/(?:(?:ru|zh)/)?open-wall/?$" {
         root /srv/www/static/dev/current;
-        try_files $wall_gallery @rails;
+        try_files $wall_gallery_read @rails;
 
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
@@ -257,7 +257,7 @@ server {
 
     location ~ "^/(?:(?:ru|zh)/)?open-wall/(?:[0-9]+|camera/[0-9a-f]{16})$" {
         root /srv/www/static/dev/current;
-        try_files $wall_shell @rails;
+        try_files $wall_shell_read @rails;
 
         # All of them repeated: add_header at location level replaces the
         # whole inherited set, and dropping the robots line here is how
@@ -273,7 +273,7 @@ server {
 
     location ~ "^/(?:(?:ru|zh)/)?snapshots/[0-9a-f]{20}(?:/(?:archive|oneday|slideshow))?$" {
         root /srv/www/static/dev/current;
-        try_files $wall_shell @rails;
+        try_files $wall_shell_read @rails;
 
         add_header Strict-Transport-Security max-age=15768000;
         # Staging's own, which already says more than #165 asks for on these

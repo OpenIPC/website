@@ -56,6 +56,19 @@ export const ORIGIN = 'https://openipc.org';
 export const FALLBACK_AFTER = 2500;
 
 /**
+ * `WallChannel::MAX_PER_REQUEST`, and asking for more is not a truncation --
+ * the channel REFUSES the whole request.
+ *
+ * A camera at the upload limit has ninety-six frames in a day and the
+ * validation lets a few more through, so an archive or a slideshow of a busy
+ * camera is routinely over the line. Sent as one request it returned nothing
+ * at all: every frame refused, the page blank, and no error a reader could
+ * read. Found by review on #282; `wall_channel_test` asserts the number
+ * against the Ruby rather than trusting this comment.
+ */
+export const MAX_PER_REQUEST = 96;
+
+/**
  * How long a tile waits before it says it has nothing.
  *
  * There is no event for a frame that is never sent, so this is the only way to
@@ -128,6 +141,22 @@ export interface FrameRequest {
   ids: string[];
 }
 
+export interface FrameStream {
+  /** Close the socket. */
+  stop(): void;
+  /**
+   * Ask for more, now or when the socket comes up.
+   *
+   * A wall page asks for a frame when its canvas nears the viewport, not when
+   * the page opens: eighteen tiles, of which a reader sees six, would spend
+   * three times the per-address frame budget on pictures nobody scrolled to.
+   * Everything asked for is remembered, because the fallback in
+   * `requestFramesOrFallBack` opens a second socket and has to ask it for the
+   * same frames.
+   */
+  ask(request: FrameRequest): void;
+}
+
 export function requestFrames({ grant, requests, onFrame, onUnavailable, onOpen, url = CABLE_URL }: {
   grant: string;
   /**
@@ -142,8 +171,17 @@ export function requestFrames({ grant, requests, onFrame, onUnavailable, onOpen,
   /** The subscription is confirmed, so the socket is up. */
   onOpen?: () => void;
   url?: string;
-}): () => void {
+}): FrameStream {
   const consumer = createConsumer(url);
+  let open = false;
+
+  const send = ({ variant, ids }: FrameRequest) => {
+    // In order, and in chunks the channel will accept. Over MAX_PER_REQUEST it
+    // refuses the whole request, not the excess.
+    for (let at = 0; at < ids.length; at += MAX_PER_REQUEST) {
+      subscription.perform('request_frames', { variant, ids: ids.slice(at, at + MAX_PER_REQUEST) });
+    }
+  };
 
   const subscription = consumer.subscriptions.create(
     { channel: 'WallChannel', grant },
@@ -155,18 +193,29 @@ export function requestFrames({ grant, requests, onFrame, onUnavailable, onOpen,
         onFrame(data.id, data.variant, unmask(decode(data.frame), keyFor(data.connection_id ?? '')));
       },
       connected: () => {
+        open = true;
         onOpen?.();
-        requests.forEach(({ variant, ids }) => {
-          if (ids.length > 0) subscription.perform('request_frames', { variant, ids });
-        });
+        // Everything asked for so far, including whatever was asked while the
+        // socket was still opening. Grants accumulate on the channel's side,
+        // so several requests on one subscription are the arrangement rather
+        // than a workaround.
+        requests.filter(({ ids }) => ids.length > 0).forEach(send);
       },
       rejected: onUnavailable,
     },
   );
 
-  return () => {
-    subscription.unsubscribe();
-    consumer.disconnect();
+  return {
+    stop: () => {
+      subscription.unsubscribe();
+      consumer.disconnect();
+    },
+    ask: (request) => {
+      if (request.ids.length === 0) return;
+
+      requests.push(request);
+      if (open) send(request);
+    },
   };
 }
 
@@ -211,19 +260,28 @@ export function fallbackCableUrl(host: string): string | null {
 export function requestFramesOrFallBack(
   options: Parameters<typeof requestFrames>[0],
   host: string = typeof location === 'undefined' ? '' : location.host,
-): () => void {
+): FrameStream {
   let opened = false;
-  let stop = requestFrames({ ...options, onOpen: () => { opened = true; options.onOpen?.(); } });
+  // Shared with whichever socket is live: the second one has to ask for
+  // everything the first was asked for, including frames a reader scrolled to
+  // while the first was failing.
+  const requests = [...options.requests];
+  let stream = requestFrames({
+    ...options, requests, onOpen: () => { opened = true; options.onOpen?.(); },
+  });
 
   const fallback = fallbackCableUrl(host);
-  if (fallback === null) return () => stop();
+  if (fallback === null) return stream;
 
   const retry = setTimeout(() => {
     if (opened) return;
 
-    stop();
-    stop = requestFrames({ ...options, url: fallback });
+    stream.stop();
+    stream = requestFrames({ ...options, requests, url: fallback });
   }, FALLBACK_AFTER);
 
-  return () => { clearTimeout(retry); stop(); };
+  return {
+    stop: () => { clearTimeout(retry); stream.stop(); },
+    ask: (request) => stream.ask(request),
+  };
 }

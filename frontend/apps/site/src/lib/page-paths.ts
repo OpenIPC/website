@@ -56,6 +56,8 @@ export interface PagePath {
   descriptionKey?: string;
   /** Keep it out of search results. The smoke page only. */
   noindex?: boolean;
+  /** Served at addresses it cannot know, so it claims none. See Base.astro. */
+  addressless?: boolean;
 }
 
 export const PAGE_PATHS: PagePath[] = [
@@ -79,7 +81,7 @@ export const PAGE_PATHS: PagePath[] = [
   // gallery is a different matter -- it is in the navbar and the footer and
   // should be found -- so it is a page of its own below, rendering the same
   // island at an address that carries a canonical and no robots directive.
-  { path: '/_shell/wall', titleKey: 'title.openwall', noindex: true },
+  { path: '/_shell/wall', titleKey: 'title.openwall', noindex: true, addressless: true },
 
   // The gallery. A real address rather than a shell, because it is the one
   // wall page worth indexing and a page needs a canonical of its own to be.

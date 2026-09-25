@@ -351,6 +351,10 @@ expect "/open-wall/camera/$CAM.jpg" 410 -      no-hsts
 # answers POST too. A file at this address would swallow every upload on the
 # site, which is why /snapshots stays in deploy/static/reserved-paths.
 posts_to_rails /snapshots
+# And the wall's own addresses, where a file exists and would otherwise be
+# served to any method at all.
+posts_to_rails /open-wall
+posts_to_rails "/snapshots/$SNAP"
 
 echo "  --- Cache-Control: assets forever, pages never without asking ---"
 # Astro fingerprints everything under /_astro/, so the name changes whenever

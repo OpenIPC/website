@@ -18,7 +18,7 @@
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  FRAME_DEADLINE, requestFramesOrFallBack, type FrameRequest,
+  FRAME_DEADLINE, requestFramesOrFallBack, type FrameRequest, type FrameStream,
 } from '../../lib/wall-frames';
 import { dataUrl, localised, wallAddress, type WallView } from '../../lib/wall-route';
 import { useWallTranslations } from '../../lib/wall-i18n';
@@ -70,9 +70,57 @@ export default function Wall({ locale, placeholder }: Props) {
   const [painted, setPainted] = useState<ReadonlySet<string>>(new Set());
   const [resolved, setResolved] = useState(false);
   const canvases = useRef(new Map<string, HTMLCanvasElement>());
+  const stream = useRef<FrameStream | null>(null);
+  const asked = useRef(new Set<string>());
+  const watcher = useRef<IntersectionObserver | null>(null);
+
+  /**
+   * A frame is asked for when its canvas nears the viewport, not when the page
+   * opens.
+   *
+   * A gallery page is eighteen tiles and a reader sees six; an archive is a
+   * day of them. Asking for all of it up front spends the channel's
+   * per-address frame budget on pictures nobody scrolled to -- which is what
+   * `app/javascript/src/wall.js` has always avoided, and what this port did
+   * not until review on #282.
+   *
+   * `rootMargin` is a screenful: the frame should be there by the time the
+   * tile is, not start arriving then.
+   */
+  const watch = (el: HTMLCanvasElement) => {
+    if (typeof IntersectionObserver === 'undefined') return;
+
+    watcher.current ??= new IntersectionObserver((entries) => {
+      const wanted = new Map<string, string[]>();
+
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+
+        const key = (entry.target as HTMLCanvasElement).dataset.wallKey ?? '';
+        if (key === '' || asked.current.has(key)) continue;
+
+        asked.current.add(key);
+        watcher.current?.unobserve(entry.target);
+        const [id, variant] = key.split(':');
+        wanted.set(variant, [...(wanted.get(variant) ?? []), id]);
+      }
+
+      // One request per variant per batch rather than one per tile: a screenful
+      // of a gallery is a dozen canvases arriving in the same callback.
+      for (const [variant, ids] of wanted) stream.current?.ask({ variant, ids });
+    }, { rootMargin: '100% 0px' });
+
+    watcher.current.observe(el);
+  };
 
   const register = (key: string, el: HTMLCanvasElement | null) => {
-    if (el) canvases.current.set(key, el); else canvases.current.delete(key);
+    if (el) {
+      canvases.current.set(key, el);
+      el.dataset.wallKey = key;
+      watch(el);
+    } else {
+      canvases.current.delete(key);
+    }
   };
 
   useEffect(() => {
@@ -81,7 +129,7 @@ export default function Wall({ locale, placeholder }: Props) {
     if (!here.route) { setFailed(true); return undefined; }
 
     let live = true;
-    let stop: (() => void) | undefined;
+    let stop: FrameStream | undefined;
     let deadline: ReturnType<typeof setTimeout> | undefined;
 
     (async () => {
@@ -104,7 +152,7 @@ export default function Wall({ locale, placeholder }: Props) {
         if (!live) return;
         stop = requestFramesOrFallBack({
           grant: payload.grant!,
-          requests: framesWanted(payload),
+          requests: framesWanted(here.route!, payload),
           onFrame: async (id, variant, bytes) => {
             const key = `${id}:${variant}`;
             if (await paint(canvases.current.get(key), bytes) && live) {
@@ -113,11 +161,17 @@ export default function Wall({ locale, placeholder }: Props) {
           },
           onUnavailable: () => { if (live) setResolved(true); },
         });
+        stream.current = stop;
         deadline = setTimeout(() => { if (live) setResolved(true); }, FRAME_DEADLINE);
       });
     })();
 
-    return () => { live = false; clearTimeout(deadline); stop?.(); };
+    return () => {
+      live = false;
+      clearTimeout(deadline);
+      stop?.stop();
+      watcher.current?.disconnect();
+    };
   }, []);
 
   if (!address) return <div class="min-h-[50vh]" />;
@@ -156,19 +210,20 @@ export default function Wall({ locale, placeholder }: Props) {
   );
 }
 
-/** What each view asks the channel for, and at which size. */
-function framesWanted(data: Payload): FrameRequest[] {
-  if (data.tiles) return [{ variant: data.variant, ids: data.tiles.map((c) => c.id) }];
-  if (data.frames) return [{ variant: data.variant, ids: data.frames.map((f) => f.id) }];
-  if (!data.snapshot) return [];
+/**
+ * What a view asks for before anybody scrolls, which is almost nothing.
+ *
+ * Every canvas asks for itself as it nears the viewport -- see `watch` above --
+ * so a gallery, a strip and an archive start empty and fill in. The slideshow
+ * cannot: its slides are all in the page and all but one is `hidden`, and a
+ * hidden element never intersects anything, so it would sit on one frame for
+ * ever. It asks for the day up front, which is what the page it replaces
+ * grants anyway.
+ */
+function framesWanted(route: WallView, data: Payload): FrameRequest[] {
+  if (route.view !== 'oneday') return [];
 
-  // Two variants on one subscription: the frame being read at full resolution,
-  // and its camera's strip as icons. The channel takes one variant per
-  // request and its grants accumulate, which is what makes that safe.
-  return [
-    { variant: data.variant, ids: [data.snapshot.id] },
-    { variant: data.strip_variant ?? 'icon2', ids: (data.strip ?? []).map((i) => i.id) },
-  ];
+  return [{ variant: data.variant, ids: (data.frames ?? []).map((f) => f.id) }];
 }
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;

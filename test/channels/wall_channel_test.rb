@@ -246,4 +246,15 @@ class WallChannelTest < ActionCable::Channel::TestCase
 
     assert_equal %w[fullhd thumb], variants
   end
+
+  # The client has to know this number, because going over it is not a
+  # truncation -- the whole request is refused and the page shows nothing.
+  test 'the browser splits its requests at the same number this refuses at' do
+    ts = Rails.root.join('frontend/apps/site/src/lib/wall-frames.ts').read
+    declared = ts[/MAX_PER_REQUEST = (\d+)/, 1]
+
+    assert_equal WallChannel::MAX_PER_REQUEST.to_s, declared,
+                 'wall-frames.ts chunks its requests at a different size from the one the ' \
+                 'channel accepts; a camera with a full day of frames would get none of them'
+  end
 end

@@ -384,7 +384,7 @@ server {
         limit_req_status 429;
 
         root /srv/www/static/prod/current;
-        try_files $wall_gallery @rails;
+        try_files $wall_gallery_read @rails;
 
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By static always;
@@ -402,7 +402,7 @@ server {
         limit_req_status 429;
 
         root /srv/www/static/prod/current;
-        try_files $wall_shell @rails;
+        try_files $wall_shell_read @rails;
 
         # add_header at location level replaces the whole inherited set.
         add_header Strict-Transport-Security max-age=15768000;
@@ -424,7 +424,7 @@ server {
         limit_req_status 429;
 
         root /srv/www/static/prod/current;
-        try_files $wall_shell @rails;
+        try_files $wall_shell_read @rails;
 
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By static always;

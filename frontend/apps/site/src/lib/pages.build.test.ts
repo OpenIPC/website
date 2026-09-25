@@ -62,9 +62,27 @@ describe('every page is a page', () => {
     }
   });
 
-  test('each declares its own language and its own canonical', () => {
+  test('each declares its own language, and its own canonical if it has one', () => {
     for (const [locale, path, html] of PAGES) {
       expect(html, `${locale}${path}`).toContain(`lang="${locale}"`);
+
+      // The Open Wall's shell is the one page with no address of its own: one
+      // file answers every `/snapshots/<id>`, so a canonical taken from where
+      // it was built would tell every snapshot page that it lives at
+      // /_shell/wall (#165). It claims none, and this checks that it claims
+      // none -- a wrong canonical is worse than no canonical, and both are
+      // invisible without a test.
+      const spec = PAGE_PATHS.find((page) => page.path === path);
+      if (spec?.addressless) {
+        expect(html, `${locale}${path}`).not.toContain('rel="canonical"');
+        // `rel="alternate"`, not `hreflang=`: the language switcher in the
+        // header carries hreflang on its own links, which is correct and is
+        // about the link rather than about the page.
+        expect(html, `${locale}${path}`).not.toContain('rel="alternate"');
+        expect(html, `${locale}${path}`).not.toContain('og:url');
+        continue;
+      }
+
       expect(html, `${locale}${path}`).toContain(
         `<link rel="canonical" href="https://openipc.org${pathFor(locale, path)}"`,
       );

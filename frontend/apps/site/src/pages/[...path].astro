@@ -61,6 +61,7 @@ const Content = page.component;
   title={title}
   description={page.descriptionKey ? t(page.descriptionKey) : undefined}
   noindex={page.noindex}
+  addressless={page.addressless}
 >
   <Content locale={locale} {...page.props} />
 </Base>
