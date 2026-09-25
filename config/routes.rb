@@ -125,10 +125,6 @@ Rails.application.routes.draw do
 
   scope '(:locale)', locale: Multilang::IN_PATH do
     get '/green_life', to:'pages#green_life'
-    # Not linked from anywhere while there is nothing to sell -- see the footer.
-    # The route and the page stay: the shop is expected back, plausibly through
-    # Open Collective, and deleting them would mean writing it all again.
-    get '/merchandise', to: 'pages#merchandise'
     get '/our-team', to: 'pages#our_team'
     get '/stages-of-firmware-development', to: 'pages#stages_of_firmware_development'
     get '/utilities', to: 'pages#utilities'
@@ -319,20 +315,27 @@ Rails.application.routes.draw do
     get "/admin/sign_out", to: "devise/sessions#destroy"
   end
 
-  # Retired 2026-08. Falling through to the catch-all below would answer
-  # 302-then-200 at the homepage, which for a page whose remaining traffic is
-  # entirely scripted is a lie -- the fortnight before it went, 25 of its 26
-  # fetches carried a curl or Wget agent. 410 tells them to stop asking.
-  match "/binaries", to: proc { [410, { "Content-Type" => "text/plain" }, ["Gone\n"]] },
-        via: :all, as: :retired_binaries
+  # The four addresses below are retired rather than merely unrouted: each
+  # existed, each is gone, and the catch-all would answer them 302-then-200 at
+  # the homepage, which tells a crawler the page moved there. One endpoint,
+  # written once, so a fifth retirement is one line.
+  gone = proc { [410, { 'Content-Type' => 'text/plain' }, ["Gone\n"]] }
 
-  # Same treatment, same reason. /telemetry was a shortcut to
-  # github.com/OpenIPC/telemetry, which does not exist and by all appearances
-  # never has, so it had been bouncing visitors to GitHub's own 404. Deleting
-  # the route is worse rather than better: the catch-all answers unknown paths
-  # with a 302 to the homepage, which tells a crawler the page moved there.
-  match "/telemetry(/*any)", to: proc { [410, { "Content-Type" => "text/plain" }, ["Gone\n"]] },
-        via: :all, as: :retired_telemetry
+  # Retired 2026-08. Its remaining traffic was entirely scripted -- the
+  # fortnight before it went, 25 of its 26 fetches carried a curl or Wget
+  # agent -- so 410 tells them to stop asking.
+  match '/binaries', to: gone, via: :all, as: :retired_binaries
+
+  # A shortcut to github.com/OpenIPC/telemetry, which does not exist and by all
+  # appearances never has, so it had been bouncing visitors to GitHub's own 404.
+  match '/telemetry(/*any)', to: gone, via: :all, as: :retired_telemetry
+
+  # Retired 2026-09. It advertised one T-shirt through a third party, was
+  # linked from nothing -- not the navbar, not the footer -- and drew about one
+  # request a day. The route and the page were kept for a while on the theory
+  # that the shop would come back; it is not coming back, so they went with it.
+  match '(/:locale)/merchandise', to: gone, via: :all, as: :retired_merchandise,
+        constraints: { locale: Multilang::IN_PATH }
 
   # ActiveStorage's public routes, refused.
   #
@@ -348,9 +351,7 @@ Rails.application.routes.draw do
   # renders an ActiveStorage URL any more, so the engine's routes serve no
   # purpose here beyond being a door. 410 rather than 404: they existed, they
   # are gone, and a crawler holding an old link should stop asking.
-  match "/rails/active_storage/*any",
-        to: proc { [410, { "Content-Type" => "text/plain" }, ["Gone\n"]] },
-        via: :all, as: :retired_active_storage
+  match '/rails/active_storage/*any', to: gone, via: :all, as: :retired_active_storage
 
   match "*unmatched", to: "application#route_not_found", via: :all
 end

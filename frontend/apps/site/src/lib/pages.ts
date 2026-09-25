@@ -28,7 +28,6 @@ import GreenLife from '../components/pages/GreenLife.astro';
 import HighResolutionTimer from '../components/pages/HighResolutionTimer.astro';
 import LowLatency from '../components/pages/LowLatency.astro';
 import MajesticEndpoints from '../components/pages/MajesticEndpoints.astro';
-import Merchandise from '../components/pages/Merchandise.astro';
 import OurTeam from '../components/pages/OurTeam.astro';
 import Privacy from '../components/pages/Privacy.astro';
 import QrCodeGenerator from '../components/pages/QrCodeGenerator.astro';
@@ -97,7 +96,6 @@ const COMPONENTS: Record<string, Renderer> = {
   '/green_life': { component: GreenLife },
   '/low-latency': { component: LowLatency },
   '/majestic-endpoints': { component: MajesticEndpoints },
-  '/merchandise': { component: Merchandise },
   '/our-team': { component: OurTeam },
   '/privacy': { component: Privacy },
   '/stages-of-firmware-development': { component: StagesOfFirmwareDevelopment },

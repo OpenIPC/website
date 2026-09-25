@@ -484,12 +484,6 @@ en:
       see_wiki: 'Majestic in the wiki'
       title: 'Majestic Endpoints'
       why: 'It is generated there from the firmware that is actually running, which a page on this site cannot be:'
-    merchandise:
-      order_from_weededwords: Order from WeededWords.com
-      shirt_1:
-        description: High quality Gildan Hammer™ 6 oz. crew neck classic fit T-shirt in Flo Blue. 100% combed ring spun cotton, pre-shrunk, with logo in white heat-transfer vinyl.
-        title: OpenIPC T-Shirt
-      title: Merchandise
     our_team:
       contributors_link: List of all GitHub contributors
       paragraph1_html: 'OpenIPC is a community-driven open source project, and many people contribute to its codebase. Kudos to them! There is also a core team of skilled developers who work hard to expand the list of <a href="/supported-hardware">supported hardware platforms</a>, extend the functionality and stability of the firmware, review submitted code, and coordinate community efforts. Get to know the team and their areas of expertise:'

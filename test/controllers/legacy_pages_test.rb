@@ -13,7 +13,6 @@ class LegacyPagesTest < ActionDispatch::IntegrationTest
   # wrong render rather than merely on a non-200.
   PAGES = {
     '/green_life' => 'green_life',
-    '/merchandise' => 'merchandise',
     '/our-team' => 'our_team',
     '/stages-of-firmware-development' => 'stages_of_firmware_development',
     '/utilities' => 'utilities',
@@ -54,14 +53,6 @@ class LegacyPagesTest < ActionDispatch::IntegrationTest
       assert_not_empty css_select('nav.navbar a.navbar-brand'), "#{path} has no navbar"
       assert_not_empty css_select('footer.site-footer'), "#{path} has no footer"
     end
-  end
-
-  # The page advertised a single T-shirt three times: the same image, the same
-  # .shirt_1 keys and the same link, pasted into three cards.
-  test 'merchandise lists each product once' do
-    get '/merchandise'
-
-    assert_equal 1, response.body.scan('weededwords.com').size
   end
 
   # The wall says what it is. It is linked from the navigation and the footer
