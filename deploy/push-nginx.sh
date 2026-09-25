@@ -107,6 +107,10 @@ restore() {
     for a in \$(find /etc/nginx -name '*.absent.$STAMP'); do
       rm -f \"\${a%.absent.$STAMP}\" \"\$a\"
     done
+    # ...and the symlink to a vhost that has just been removed with it. nginx
+    # globs sites-enabled and refuses to load a link to nothing, so a restore
+    # that leaves one has turned a bad configuration into an unloadable host.
+    find /etc/nginx/sites-enabled -xtype l -delete
     rm -rf '$STAGE'
   " || echo "restore itself failed -- inspect /etc/nginx by hand" >&2
   "${SSH[@]}" 'nginx -t' >&2 || true

@@ -1,0 +1,65 @@
+# openipc.kz -- the Kazakh mirror of openipc.org.
+#
+# 17,350 requests a day when this host took the name over. See
+# deploy/nginx/mirrors/README.md for what a mirror is and why these files are
+# in the repository.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name openipc.kz;
+
+    access_log /var/log/nginx/kz.openipc.access.log;
+    error_log  /var/log/nginx/kz.openipc.error.log;
+
+    # dehydrated renews over HTTP-01 from here, the same arrangement the
+    # origin and natrium use. The first certificate could not come this way --
+    # the name still pointed at the old host when it was issued -- so it was
+    # bootstrapped over DNS-01; see install-tls.sh.
+    location ^~ /.well-known/acme-challenge {
+        proxy_redirect off;
+        default_type "text/plain";
+        alias /var/lib/dehydrated/acme-challenges;
+        allow all;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    # `http2 on;` is nginx 1.25.1 and later; this host runs 1.24 from Ubuntu
+    # 24.04, where the flag belongs on the listen directive. Newer nginx still
+    # accepts this form, with a deprecation warning.
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name openipc.kz;
+
+    access_log /var/log/nginx/kz.openipc.access.log;
+    error_log  /var/log/nginx/kz.openipc.error.log;
+
+    ssl_certificate     /var/lib/dehydrated/certs/openipc.kz/fullchain.pem;
+    ssl_certificate_key /var/lib/dehydrated/certs/openipc.kz/privkey.pem;
+    include snippets/openipc-tls.conf;
+
+    # `always`, so it is on the redirect below and on an error page too.
+    add_header Strict-Transport-Security "max-age=15768000" always;
+
+    # Cameras POST snapshots through the mirrors, so the limit has to be the
+    # origin's: sites-available/org.openipc sets none, which is nginx's default
+    # of 1m. Stated rather than inherited, because a default that changes under
+    # us would reject pictures here with a 413 the camera cannot report, and
+    # the origin would never see the request.
+    client_max_body_size 1m;
+
+    # The root goes to the Russian pages, which is what this name did before
+    # the move and is why it is here rather than in the shared snippet:
+    # openipc.cloud does not do it. 302 and not 301 -- it is an experiment,
+    # and a permanent redirect would sit in every browser's cache for good.
+    location = / {
+        return 302 https://openipc.kz/ru$is_args$args;
+    }
+
+    include snippets/openipc-mirror.conf;
+}

@@ -8,6 +8,10 @@
 //   # what it does with a bundle built here, served under that same name
 //   ... node mirror-check.mjs openipc.kz --dist /w/dist
 //
+//   # and what a host that DNS does not point at yet does under that name,
+//   # which is how a mirror is validated before its A record is moved
+//   ... node mirror-check.mjs openipc.kz --at 194.238.42.216 --insecure
+//
 // WHY A SIMULATED MIRROR. openipc.ru, openipc.kz and openipc.cloud are other
 // people's hosts; this project has a shell on one of the three. The fault they
 // produce is not exotic -- nginx proxies to the origin over HTTP/1.0 unless
@@ -45,6 +49,13 @@ if (!host || host.startsWith('--')) {
 }
 
 const dist = opt('dist', null)
+// The address to send this name to instead of whatever DNS says -- a host
+// being prepared to take the name over. The page is then served by that host
+// under its real name, so its own vhost, its own certificate and its own proxy
+// are what answer, which is the only way to test a mirror before the switch
+// rather than after.
+const at = opt('at', null)
+const insecure = args.includes('--insecure')
 const shot = opt('shot', null)
 const path = opt('path', '/ru')
 const origin = opt('origin', 'https://openipc.org')
@@ -110,13 +121,18 @@ if (dist) {
   console.log(`serving ${dist} as https://${host} (upgrades refused, /api/ proxied to ${origin})`)
 }
 
+const resolve = dist ? `127.0.0.1:${port}` : at
 const browser = await chromium.launch({
-  args: dist ? [`--host-resolver-rules=MAP ${host} 127.0.0.1:${port}`] : [],
+  args: resolve ? [`--host-resolver-rules=MAP ${host} ${resolve}`] : [],
 })
 const ctx = await browser.newContext({
   viewport: { width: 1280, height: 1000 },
   deviceScaleFactor: 2,
-  ignoreHTTPSErrors: Boolean(dist),
+  // A locally served bundle is always on a self-signed certificate. A real
+  // host under test is not, unless it is still on a placeholder -- and once it
+  // has its own certificate this flag comes off, because whether the
+  // certificate is right is part of what is being checked.
+  ignoreHTTPSErrors: Boolean(dist) || insecure,
 })
 const page = await ctx.newPage()
 
@@ -157,7 +173,7 @@ while (Date.now() < deadline && drawn < canvases) {
   await page.waitForTimeout(500)
 }
 
-console.log(`\n${host}${path}`)
+console.log(`\n${host}${path}${at ? ` (resolved to ${at})` : ''}`)
 note(canvases > 0, `${canvases} camera tiles on the page`)
 note(drawn > 0, `${drawn} of ${canvases} frames painted`)
 for (const s of sockets) {

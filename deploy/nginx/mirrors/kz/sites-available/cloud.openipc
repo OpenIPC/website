@@ -1,0 +1,58 @@
+# openipc.cloud -- a mirror of openipc.org, on the same host as openipc.kz.
+#
+# Identical to kz.openipc except that its root is not redirected: this name
+# serves the site in whichever language the reader's browser asks for, the way
+# openipc.org itself does. That difference is the only reason these are two
+# files; everything that has to match is in snippets/openipc-mirror.conf.
+#
+# The name moved here from the openipc.eu edge node (2.29.12.216) when that
+# was retired in #259.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name openipc.cloud;
+
+    access_log /var/log/nginx/cloud.openipc.access.log;
+    error_log  /var/log/nginx/cloud.openipc.error.log;
+
+    # dehydrated renews over HTTP-01 from here, the same arrangement the
+    # origin and natrium use.
+    location ^~ /.well-known/acme-challenge {
+        proxy_redirect off;
+        default_type "text/plain";
+        alias /var/lib/dehydrated/acme-challenges;
+        allow all;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    # `http2 on;` is nginx 1.25.1 and later; this host runs 1.24 from Ubuntu
+    # 24.04, where the flag belongs on the listen directive. Newer nginx still
+    # accepts this form, with a deprecation warning.
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name openipc.cloud;
+
+    access_log /var/log/nginx/cloud.openipc.access.log;
+    error_log  /var/log/nginx/cloud.openipc.error.log;
+
+    ssl_certificate     /var/lib/dehydrated/certs/openipc.cloud/fullchain.pem;
+    ssl_certificate_key /var/lib/dehydrated/certs/openipc.cloud/privkey.pem;
+    include snippets/openipc-tls.conf;
+
+    add_header Strict-Transport-Security "max-age=15768000" always;
+
+    # Cameras POST snapshots through the mirrors, so the limit has to be the
+    # origin's: sites-available/org.openipc sets none, which is nginx's default
+    # of 1m. Stated rather than inherited, because a default that changes under
+    # us would reject pictures here with a 413 the camera cannot report, and
+    # the origin would never see the request.
+    client_max_body_size 1m;
+
+    include snippets/openipc-mirror.conf;
+}
