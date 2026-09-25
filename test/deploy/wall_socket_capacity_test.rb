@@ -5,7 +5,7 @@ require 'test_helper'
 # The wall socket pool has to fit a reader with several tabs open.
 #
 # `limit_conn` counts a connection for its whole life, and a connection in
-# `location ^~ /api/v1/wall/` lives up to `proxy_read_timeout`, which is an
+# `location ^~ /api/v1/wall/cable` lives up to `proxy_read_timeout`, which is an
 # hour. So a slot is held for as long as a tab is open -- not for as long as a
 # request takes, which is the intuition the rest of this vhost is written
 # against.
