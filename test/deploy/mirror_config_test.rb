@@ -65,9 +65,12 @@ class MirrorConfigTest < ActiveSupport::TestCase
 
   test 'the mirror carries the WebSocket upgrade' do
     proxy = MIRROR.join('snippets/openipc-mirror.conf').read
-    upgrade = proxy[%r{location \^~ /api/v1/wall/ \{.*?\n\}}m]
+    upgrade = proxy[%r{location \^~ /api/v1/wall/cable \{.*?\n\}}m]
 
     assert upgrade, 'the wall channel has no location of its own'
+    refute_match(%r{location \^~ /api/v1/wall/ \{}, proxy,
+                 'a location covering the whole wall would put the JSON addresses behind ' \
+                 'the socket\'s settings -- no buffering, an hour of timeout, no cache')
     assert_match(/proxy_http_version\s+1\.1;/, upgrade,
                  'HTTP/1.0 cannot carry an Upgrade and nginx uses it by default')
     assert_match(/proxy_set_header Upgrade\s+\$http_upgrade;/, upgrade)
@@ -81,7 +84,7 @@ class MirrorConfigTest < ActiveSupport::TestCase
   # the default read timeout is 60 seconds.
   test 'the mirror does not time the socket out' do
     proxy = MIRROR.join('snippets/openipc-mirror.conf').read
-    upgrade = proxy[%r{location \^~ /api/v1/wall/ \{.*?\n\}}m]
+    upgrade = proxy[%r{location \^~ /api/v1/wall/cable \{.*?\n\}}m]
 
     assert_match(/proxy_read_timeout\s+1h;/, upgrade)
     assert_match(/proxy_buffering\s+off;/, upgrade)
