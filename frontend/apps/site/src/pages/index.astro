@@ -1,0 +1,70 @@
+---
+/**
+ * The home page, in English, at the bare `/` (#165).
+ *
+ * This was the last address Rails rendered for a reader, and the last one that
+ * decided its language from the browser rather than from the path. Every other
+ * page moved to `/`, `/ru/`, `/zh/` in #154; this one could not, because a
+ * file is one language and `/` was answering three.
+ *
+ * So the decision moves into the browser, which is the one place that already
+ * knows the answer: `navigator.languages` is the visitor's list in preference
+ * order, ranked by the browser itself. No q-values to parse and no header to
+ * approximate -- the thing a `map` in nginx could only guess at is handed over
+ * resolved.
+ *
+ * English is what the file says, so a reader who wants English, a reader whose
+ * language we do not publish, and every crawler -- 93% of the requests to this
+ * address send no Accept-Language at all -- are served without a redirect.
+ */
+import Base from '../layouts/Base.astro';
+import Home from '../components/Home.astro';
+import { DEFAULT_LOCALE, useTranslations } from '../lib/i18n';
+
+const t = useTranslations(DEFAULT_LOCALE);
+---
+<Base
+  locale={DEFAULT_LOCALE}
+  path="/"
+  title={`${t('pages.home.title')} - OpenIPC`}
+  description={t('site.default_meta_description')}
+>
+  {/*
+    Inline and first, so it runs while the parser is still here rather than
+    after a screenful of English has been painted.
+
+    `is:inline` on purpose: a bundled module is deferred, and deferred means a
+    Russian reader sees the English page before it goes away. This is small
+    enough to read in one sitting, and its behaviour is pinned by
+    src/lib/home-redirect.test.ts, which runs THIS source rather than a copy.
+  */}
+  <script is:inline>
+    (function () {
+      var here = new URL(window.location.href);
+      var asked = here.searchParams.get('locale');
+      var langs = asked ? [asked] : (navigator.languages || [navigator.language || '']);
+      var to = '';
+
+      for (var i = 0; i < langs.length; i += 1) {
+        var tag = String(langs[i] || '').slice(0, 2).toLowerCase();
+        // English first means English: a reader who lists en above ru has
+        // asked for this page.
+        if (tag === 'en') break;
+        if (tag === 'ru' || tag === 'zh') { to = '/' + tag; break; }
+      }
+
+      // Somebody who arrived from this site chose to be here -- the language
+      // picker's English entry is a link to `/` -- and bouncing them back to
+      // the language they just left is the one thing this must never do.
+      if (!asked && document.referrer && document.referrer.indexOf(here.origin) === 0) to = '';
+      if (!to) return;
+
+      // `?locale=` is consumed; everything else a campaign put on the URL
+      // travels with the reader.
+      here.searchParams.delete('locale');
+      window.location.replace(to + here.search + here.hash);
+    }());
+  </script>
+
+  <Home locale={DEFAULT_LOCALE} />
+</Base>

@@ -126,6 +126,8 @@ printf 'SMOKE RU\n' > /srv/www/static/prod/site-test/ru/_smoke/index.html
 
 # The Open Wall (#165): a page at /open-wall, and one shell per locale that
 # every other wall address is served from.
+printf 'HOME navigator.languages\n' > /srv/www/static/prod/site-test/index.html
+
 for loc in "" ru zh; do
   install -d -m 0755 "/srv/www/static/prod/site-test/${loc:+$loc/}_shell/wall"
   printf 'WALL SHELL %s\n' "${loc:-en}" > "/srv/www/static/prod/site-test/${loc:+$loc/}_shell/wall/index.html"
@@ -373,10 +375,16 @@ expect_cache /donate/               "public, max-age=0, must-revalidate"
 # bundle policy silently overriding what Rails says about its own pages would
 # be invisible until somebody saw a stale page.
 expect_cache /supported-hardware    "max-age=300, public"
-expect_cache /                      "max-age=300, public"
+# The home page keeps its address when its content changes, like every other
+# page in the bundle, so it may be cached and must always be revalidated. It
+# carried Rails' `max-age=300` until #165.
+expect_cache /                      "public, max-age=0, must-revalidate"
 
 # Everything else is still Rails, which is the whole claim of this change.
-expect /                            200 rails  hsts
+# The home page is the bundle's since #165 -- the last address Rails rendered
+# for a reader. The language it serves is decided in the browser by a script in
+# the page, not here and not by Rails.
+expect /                            200 static hsts
 expect /supported-hardware/featured 200 rails  hsts
 expect /sitemap.xml                 200 rails  hsts
 expect /robots.txt                  200 rails  hsts
@@ -420,6 +428,8 @@ fi
 echo "  --- the bundle removed entirely, which is a rollback to nothing ---"
 rm -f /srv/www/static/prod/current
 expect /_smoke/                     200 rails  hsts
+# Including the home page: the bundle is where it lives now, and Rails is what
+# answers when the bundle is not there.
 expect /                            200 rails  hsts
 
 echo "  --- error log: directory index / forbidden ---"

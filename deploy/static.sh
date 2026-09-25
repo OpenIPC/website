@@ -228,10 +228,12 @@ probe() {
 # /cameras/vendors/<v>/socs/<s> -- which is still Rails until #163, and the
 # download it ends at, which must never be a file in a bundle.
 #
-# /open-wall left in #165 and is asserted in the other direction below. What
-# stays is `/`, which is rendered per Accept-Language and cannot be a file,
-# and the three that are not pages at all.
-MUST_NOT_BE_STATIC=(/ /robots.txt /sitemap.xml /admin)
+# /open-wall left in #165 and is asserted in the other direction below, and so
+# did `/` -- the home page was the last thing Rails rendered for a reader. It
+# was here because it answered three languages at one URL; the choice is the
+# browser's now, made by a script in the page itself. What is left are the
+# three addresses that are not pages at all.
+MUST_NOT_BE_STATIC=(/robots.txt /sitemap.xml /admin)
 
 # And the other direction (#160), which is the half that catches a bundle that
 # built but did not ship what it was for. A tree that loses every page still
@@ -260,7 +262,7 @@ MUST_NOT_BE_STATIC=(/ /robots.txt /sitemap.xml /admin)
 # and because a shell that fails to install is invisible otherwise: the wall
 # keeps working, out of Rails, which is exactly the state this issue exists to
 # leave behind.
-MUST_BE_STATIC=(/donate /ru/donate /get-started /tools/qr-code-generator
+MUST_BE_STATIC=(/ /donate /ru/donate /get-started /tools/qr-code-generator
                 /supported-hardware/featured /supported-hardware/full-list
                 /cameras/vendors/sigmastar
                 /cameras/vendors/sigmastar/socs/ssc338q

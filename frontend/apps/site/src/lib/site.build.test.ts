@@ -41,9 +41,10 @@ describe('the three locale trees', () => {
       PAGE_PATHS.map((page) => `${pathFor(locale, page.path).replace(/^\//, '')}/index.html`),
     );
 
-    // The locale roots, which are not in the registry: `/` stays on Rails, so
-    // there is no entry that would generate them. See ../pages/[locale]/index.astro.
-    expected.push('ru/index.html', 'zh/index.html');
+    // The home page, in all three languages, which is not in the registry:
+    // `/` cannot be written as a rest-parameter route, so it has file routes
+    // of its own -- ../pages/index.astro and ../pages/[locale]/index.astro.
+    expected.push('index.html', 'ru/index.html', 'zh/index.html');
 
     expect(walk(dist).filter((f) => f.endsWith('index.html')).sort()).toEqual(expected.sort());
   });
@@ -203,19 +204,26 @@ describe('the bundle can be stamped', () => {
 });
 
 describe('nothing claims a page Rails owns', () => {
-  test('the build writes no root index.html', () => {
-    // #160 settled what `/` means: it stays on Rails, because Rails renders it
-    // per Accept-Language and declares `Vary: Accept-Language`, and a file
-    // serves one language to everyone. check-bundle.sh refuses a root
-    // index.html for the same reason; this catches it a build earlier, where
-    // the failure names the page rather than the bundle.
-    expect(walk(dist)).not.toContain('index.html');
+  test('the root index.html carries the language decision', () => {
+    // #160 left `/` on Rails because Rails renders it per Accept-Language and
+    // a file serves one language to everyone. #165 moved the decision into the
+    // browser instead: the file is English and a script in it sends a reader
+    // whose browser prefers Russian or Chinese onward before the page paints.
+    //
+    // So the root page is allowed, and what has to be true is that it carries
+    // that script -- a home page shipped without it serves English to
+    // everybody, and nothing else would notice. check-bundle.sh refuses it at
+    // install time; this catches it a build earlier, where the failure names
+    // the page rather than the bundle.
+    expect(walk(dist)).toContain('index.html');
+    expect(read('index.html'), 'the home page does not decide its language')
+      .toContain('navigator.languages');
+    expect(read('index.html')).toContain('lang="en"');
   });
 
-  test('the locale roots ARE extracted, and are the home page', () => {
-    // The other half of that decision, asserted so it cannot be lost to a
-    // later tidy-up: /ru/ and /zh/ carry their language in the path, negotiate
-    // nothing, and are in the bundle.
+  test('the locale roots are extracted too, and are the home page', () => {
+    // /ru/ and /zh/ carry their language in the path and negotiate nothing --
+    // which is where the script above sends the readers who want them.
     for (const [locale, page] of [['ru', 'ru/index.html'], ['zh', 'zh/index.html']]) {
       const html = read(page);
       expect(html).toContain(`lang="${locale}"`);

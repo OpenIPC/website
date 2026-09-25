@@ -105,16 +105,31 @@ derives what must be in it from the router, from everything in `public/`, and
 from every nginx location with an `alias` or a `root` of its own, and fails if
 an entry is missing — or if an entry matches nothing any more.
 
-### Why the home page is refused
+### The home page, and how it stopped being refused
 
-Rails renders `/` according to `Accept-Language` and declares
-`Vary: Accept-Language`; the microcache honours it. A file cannot vary. The day
-`index.html` enters this bundle, every visitor to the bare path gets one
-language, whatever their browser asked for — and `try_files` never sees the
-query string either, so the `?locale=ru` redirect stops happening too.
+This rule used to refuse a root `index.html`, and the reasoning was right:
+Rails rendered `/` according to `Accept-Language` and declared
+`Vary: Accept-Language`, and a file cannot vary. The day one entered the
+bundle, every visitor to the bare path would get one language whatever their
+browser asked for — and `try_files` never sees the query string either, so the
+`?locale=ru` redirect would stop happening.
 
-Neither is a reason not to extract the home page. Both are reasons it is a
-decision rather than a build product, and #160 is where it gets made.
+**#165 resolved it by moving the decision rather than approximating it.** The
+browser already knows the answer: `navigator.languages` is the visitor's list
+in preference order, ranked by the browser itself, with no q-values left to
+parse. So the file says English and a script in it sends a reader whose browser
+prefers Russian or Chinese to `/ru` or `/zh` before the page paints. `?locale=`
+is read by the same script, and a reader who arrived from this site — the
+language picker's English entry is a link to `/` — is never moved.
+
+What the numbers said before the change: of 22,015 requests to `/` in a day,
+93% carried no `Accept-Language` at all and were being served English anyway,
+4% asked for English, and 493 asked for Russian or Chinese. Those 493 are the
+ones the script is for.
+
+The rule that replaced it checks the other direction: a root `index.html` must
+CARRY that script. A bundle that ships the home page without it serves English
+to everybody, and nothing else would notice.
 
 ## Retention
 
