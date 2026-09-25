@@ -257,6 +257,12 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
+        # The wall's own per-address budget, shared with the gallery pages: this
+        # is one fetch per home-page view and the two are the same reader. The
+        # cache absorbs the rest, except for a request carrying a session
+        # cookie -- which anybody can send, and which bypasses it.
+        limit_req zone=snapshot_pages burst=8 nodelay;
+
         proxy_cache openipc_micro;
         # $locale_key even though this body carries no language: the ids, the
         # grant and the SoC names read the same in every one. The rule it obeys
@@ -275,6 +281,10 @@ server {
         # Repeated, not inherited, for the reason given above the backer count.
         add_header Strict-Transport-Security max-age=15768000;
         add_header Cache-Control "public, max-age=60" always;
+        # Readable from a mirror, as the backer count is. Declared here as well
+        # as in the controller because add_header at location level replaces
+        # the whole set, and a cached response is replayed by nginx.
+        add_header Access-Control-Allow-Origin "*" always;
     }
 
 

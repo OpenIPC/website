@@ -59,9 +59,7 @@ export default function WallMosaic({
     (async () => {
       let loaded: Mosaic;
       try {
-        const response = await fetch(`${MOSAIC_URL}?limit=${tiles}`, {
-          headers: { accept: 'application/json' },
-        });
+        const response = await fetch(MOSAIC_URL, { headers: { accept: 'application/json' } });
         if (!response.ok) throw new Error(String(response.status));
         loaded = (await response.json()) as Mosaic;
       } catch {
@@ -83,8 +81,9 @@ export default function WallMosaic({
           variant: loaded.variant,
           ids: loaded.tiles.map((tile) => tile.id),
           onFrame: (id, bytes) => paint(canvases.current.get(id), bytes),
-          // A tile that never arrives keeps the placeholder underneath it,
-          // which is the same thing an empty wall looks like.
+          // Nothing to do: every tile is already showing its placeholder, and
+          // an unpainted canvas is transparent, so a refusal leaves the page
+          // exactly as the Rails page renders when its own query is empty.
           onUnavailable: () => {},
         });
       });
@@ -93,7 +92,9 @@ export default function WallMosaic({
     return () => { live = false; stop?.(); };
   }, [tiles]);
 
-  const shown = mosaic?.tiles ?? [];
+  // Never more than the page has room for: the count is the server's, but the
+  // layout is this page's and a mosaic of nine would break the hero's grid.
+  const shown = (mosaic?.tiles ?? []).slice(0, tiles);
   const blanks = Math.max(0, tiles - shown.length);
 
   return (
@@ -104,11 +105,28 @@ export default function WallMosaic({
           class="relative block overflow-hidden rounded-[.375rem] bg-ink-2 no-underline"
           href={`${snapshotBase}/${tile.id}`}
         >
+          {/*
+            The placeholder stays underneath, and the canvas is transparent
+            until a frame is drawn on it.
+
+            So a tile whose frame never arrives keeps its "no signal" rather
+            than going empty -- and that is the ordinary case on a mirror,
+            whose nginx does not forward the Upgrade, as well as what a
+            refused subscription or a frame that will not decode looks like. A
+            grid of blank squares is indistinguishable from a wall with no
+            cameras on it, and a visitor is owed the difference.
+          */}
+          <img
+            class="absolute inset-0 block size-full object-cover opacity-50"
+            src={placeholder}
+            alt={placeholderAlt}
+            loading="lazy"
+          />
           <canvas
             ref={(el) => register(canvases.current, tile.id, el)}
             width={THUMB.width}
             height={THUMB.height}
-            class="block aspect-video size-full object-cover"
+            class="relative block aspect-video size-full object-cover"
             role="img"
             aria-label={frameAlt}
           />

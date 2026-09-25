@@ -27,9 +27,15 @@ module Api
       # flash have nothing to do with it.
       skip_forgery_protection
 
-      # More than any surface draws at this size. The wall's own grid is
-      # eighteen; the home mosaic is five.
-      MAX_TILES = 24
+      # The mosaic is five tiles, and the number is the server's.
+      #
+      # It was `?limit=`, and that was a bug: both vhosts cache this on $uri,
+      # which drops the query, so whichever count filled the cache first was
+      # the one every home page got for the next minute -- and the grant with
+      # it. A parameter that changes the body has to be in the cache key or not
+      # exist, and this one has no caller that needs it. Found by review on
+      # #277; if #165 wants another count it can add one with the key to match.
+      TILES = 5
 
       # The one variant this address may authorise. A grant names id:variant
       # PAIRS for the reason WallGrant spells out -- separate id and variant
@@ -38,7 +44,7 @@ module Api
       VARIANT = 'thumb'
 
       def mosaic
-        tiles = Snapshot.latest_per_camera(limit: tile_count)
+        tiles = Snapshot.latest_per_camera(limit: TILES)
         grant = WallGrant.issue(pairs: tiles.map { |s| WallGrant.pair(s.public_id, VARIANT) })
 
         # A minute, and nothing in the body that changes between renders.
@@ -49,6 +55,13 @@ module Api
         # here for no reader's benefit -- Cache-Control already says how fresh
         # this is.
         expires_in 60.seconds, public: true
+
+        # Readable from a mirror. openipc.kz and openipc.cloud serve this
+        # bundle from their own hosts, and a versioned public API that only
+        # the canonical origin's own pages may read is one the mirrors cannot
+        # use -- the same reason the backer count is CORS-open. There is
+        # nothing here that is not already in /open-wall's HTML.
+        response.set_header('Access-Control-Allow-Origin', '*')
 
         render json: { variant: VARIANT, grant: grant, tiles: tiles.map { |s| tile(s) } }
       end
@@ -62,9 +75,6 @@ module Api
         { id: snapshot.public_id, soc: snapshot.soc.presence, sensor: snapshot.sensor.presence }
       end
 
-      def tile_count
-        params[:limit].to_i.clamp(1, MAX_TILES)
-      end
     end
   end
 end

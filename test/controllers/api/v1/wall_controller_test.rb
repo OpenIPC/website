@@ -23,7 +23,7 @@ class Api::V1::WallControllerTest < ActionDispatch::IntegrationTest
   end
 
   test 'it answers with tiles and a grant that names them' do
-    get '/api/v1/wall/mosaic.json', params: { limit: 5 }
+    get '/api/v1/wall/mosaic.json'
 
     assert_response :success
     body = response.parsed_body
@@ -61,18 +61,30 @@ class Api::V1::WallControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test 'the number of tiles is bounded whatever is asked for' do
-    get '/api/v1/wall/mosaic.json', params: { limit: 10_000 }
+  test 'the number of tiles is the server\'s, and no query changes it' do
+    # It was `?limit=`, and both vhosts cache this on $uri, which drops the
+    # query -- so whichever count filled the cache first was the one every home
+    # page got for the next minute, and the grant with it. A parameter that
+    # changes the body has to be in the cache key or not exist.
+    get '/api/v1/wall/mosaic.json', params: { limit: 24 }
+    many = response.parsed_body
 
-    assert_response :success
-    assert_operator response.parsed_body['tiles'].size, :<=, Api::V1::WallController::MAX_TILES
+    get '/api/v1/wall/mosaic.json', params: { limit: 1 }
+    few = response.parsed_body
+
+    # Three cameras exist, so three come back however many are asked for.
+    assert_operator many['tiles'].size, :<=, Api::V1::WallController::TILES
+    assert_equal many, few, 'the query string changes a response cached without it'
   end
 
-  test 'a limit that is not a number is one tile, not none and not all of them' do
-    get '/api/v1/wall/mosaic.json', params: { limit: 'all' }
+  test 'it is readable from a mirror' do
+    # openipc.kz and openipc.cloud serve this bundle from their own hosts. A
+    # versioned public API only the canonical origin may read is one they
+    # cannot use, and there is nothing here that is not already in
+    # /open-wall's HTML.
+    get '/api/v1/wall/mosaic.json'
 
-    assert_response :success
-    assert_equal 1, response.parsed_body['tiles'].size
+    assert_equal '*', response.headers['Access-Control-Allow-Origin']
   end
 
   test 'no cameras is an empty mosaic and no grant, not an error' do
