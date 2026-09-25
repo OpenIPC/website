@@ -355,9 +355,16 @@ expect /snapshots/12345             410 -      no-hsts
 expect "/snapshots/${SNAP}xx"       200 -      hsts
 expect "/open-wall/camera/$CAM.jpg" 410 -      no-hsts
 
-# The one that matters most: cameras POST here, and nginx's static handler
-# answers POST too. A file at this address would swallow every upload on the
-# site, which is why /snapshots stays in deploy/static/reserved-paths.
+# The gallery's older address is retired for readers -- one canonical address
+# rather than two that answer alike.
+redirects_to openipc.org /snapshots     https://openipc.org/open-wall
+redirects_to openipc.org /ru/snapshots  https://openipc.org/ru/open-wall
+
+# And the one that matters most: cameras POST to that same address, and nginx's
+# static handler answers POST too. A file there would swallow every upload on
+# the site, and the redirect above would send the camera to a page -- firmware
+# in the field follows a 301 as readily as a browser. /snapshots stays in
+# deploy/static/reserved-paths and the redirect is for reads only.
 posts_to_rails /snapshots
 # And the wall's own addresses, where a file exists and would otherwise be
 # served to any method at all.

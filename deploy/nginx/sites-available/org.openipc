@@ -349,6 +349,27 @@ server {
     # numeric prefix, and is proxied: Rails answers 410 in the end, but the
     # probe has already cost a render slot under the concurrency cap, and a
     # 410 is not in proxy_cache_valid so the next probe costs another.
+    # The gallery's older address, retired for readers (#165). See
+    # conf.d/openipc-wall-shell.conf for the two maps, and for why only a read
+    # is redirected: POST here is a camera uploading a frame.
+    location ~ "^/(?:(?:ru|zh)/)?snapshots$" {
+        if ($snapshots_alias_read) {
+            return 301 $snapshots_alias_read;
+        }
+
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # The upload limit, which is the origin's and is what a camera POSTs
+        # against.
+        client_max_body_size 1m;
+
+        add_header Strict-Transport-Security max-age=15768000;
+    }
+
     # --- The Open Wall is files now (#165) ---------------------------------
     #
     # Five addresses, one shell per locale. `/open-wall` is a page of its own

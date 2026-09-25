@@ -221,6 +221,27 @@ server {
     # answering these 302 through the catch-all while production answered 410,
     # which makes dev a worse rehearsal than it looks: the whole point of the
     # environment is that a difference here is a difference there.
+    # The gallery's older address, retired for readers (#165). See
+    # conf.d/openipc-wall-shell.conf for the two maps, and for why only a read
+    # is redirected: POST here is a camera uploading a frame.
+    location ~ "^/(?:(?:ru|zh)/)?snapshots$" {
+        if ($snapshots_alias_read) {
+            return 301 $snapshots_alias_read;
+        }
+
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # The upload limit, which is the origin's and is what a camera POSTs
+        # against.
+        client_max_body_size 1m;
+
+        add_header Strict-Transport-Security max-age=15768000;
+    }
+
     # --- The Open Wall is files now (#165) ---------------------------------
     #
     # Five addresses, one shell per locale. `/open-wall` is a page of its own
