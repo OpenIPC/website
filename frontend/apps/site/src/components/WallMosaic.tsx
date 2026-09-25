@@ -50,6 +50,17 @@ export default function WallMosaic({
   tiles, placeholder, placeholderAlt, cta, ctaHref, snapshotBase, frameAlt,
 }: Props) {
   const [mosaic, setMosaic] = useState<Mosaic | null>(null);
+  /*
+   * Whether we know there is nothing to show.
+   *
+   * "No signal" is a test card, and a test card is an answer -- it says this
+   * camera is not sending. It must never be the first thing a visitor sees,
+   * because at that moment it is not true yet: the frames are on their way.
+   * So the tile rests dark, the way the Rails page's does, and the card
+   * appears only once something has actually failed: the request, the
+   * subscription, or the eight seconds the socket had to open.
+   */
+  const [failed, setFailed] = useState(false);
   const canvases = useRef(new Map<string, HTMLCanvasElement>());
 
   useEffect(() => {
@@ -65,10 +76,12 @@ export default function WallMosaic({
       } catch {
         // The page is correct without cameras on it -- it is the state the
         // Rails page falls back to -- so there is nothing to report and
-        // nothing to retry.
+        // nothing to retry. The tiles say so.
+        if (live) setFailed(true);
         return;
       }
-      if (!live || !loaded.grant || loaded.tiles.length === 0) return;
+      if (!live) return;
+      if (!loaded.grant || loaded.tiles.length === 0) { setFailed(true); return; }
 
       setMosaic(loaded);
 
@@ -81,10 +94,11 @@ export default function WallMosaic({
           variant: loaded.variant,
           ids: loaded.tiles.map((tile) => tile.id),
           onFrame: (id, bytes) => paint(canvases.current.get(id), bytes),
-          // Nothing to do: every tile is already showing its placeholder, and
-          // an unpainted canvas is transparent, so a refusal leaves the page
-          // exactly as the Rails page renders when its own query is empty.
-          onUnavailable: () => {},
+          // Now it is true, and now the card earns its place: the channel
+          // refused, or the socket never opened -- which is what happens
+          // behind a proxy that does not forward the Upgrade, and is why a
+          // blank grid would be indistinguishable from a wall with no cameras.
+          onUnavailable: () => { if (live) setFailed(true); },
         });
       });
     })();
@@ -95,6 +109,9 @@ export default function WallMosaic({
   // Never more than the page has room for: the count is the server's, but the
   // layout is this page's and a mosaic of nine would break the hero's grid.
   const shown = (mosaic?.tiles ?? []).slice(0, tiles);
+  // Tiles with no camera behind them. Before the answer arrives they are
+  // empty; once it has, they are genuinely "no signal" -- there is no camera
+  // to show, which is what home.html.erb pads its own mosaic with.
   const blanks = Math.max(0, tiles - shown.length);
 
   return (
@@ -106,22 +123,19 @@ export default function WallMosaic({
           href={`${snapshotBase}/${tile.id}`}
         >
           {/*
-            The placeholder stays underneath, and the canvas is transparent
-            until a frame is drawn on it.
-
-            So a tile whose frame never arrives keeps its "no signal" rather
-            than going empty -- and that is the ordinary case on a mirror,
-            whose nginx does not forward the Upgrade, as well as what a
-            refused subscription or a frame that will not decode looks like. A
-            grid of blank squares is indistinguishable from a wall with no
-            cameras on it, and a visitor is owed the difference.
+            Underneath the canvas, which is transparent until a frame is drawn
+            on it -- but only once we know the frame is not coming. Until then
+            the tile is the same dark rectangle the Rails page shows while its
+            own canvases fill in.
           */}
-          <img
-            class="absolute inset-0 block size-full object-cover opacity-50"
-            src={placeholder}
-            alt={placeholderAlt}
-            loading="lazy"
-          />
+          {failed && (
+            <img
+              class="absolute inset-0 block size-full object-cover opacity-50"
+              src={placeholder}
+              alt={placeholderAlt}
+              loading="lazy"
+            />
+          )}
           <canvas
             ref={(el) => register(canvases.current, tile.id, el)}
             width={THUMB.width}
@@ -135,13 +149,15 @@ export default function WallMosaic({
       ))}
 
       {Array.from({ length: blanks }, (_, i) => (
-        <span key={`blank-${i}`} class="relative block overflow-hidden rounded-[.375rem] bg-ink-2">
-          <img
-            class="block aspect-video size-full object-cover opacity-50"
-            src={placeholder}
-            alt={placeholderAlt}
-            loading="lazy"
-          />
+        <span key={`blank-${i}`} class="relative block aspect-video overflow-hidden rounded-[.375rem] bg-ink-2">
+          {(mosaic !== null || failed) && (
+            <img
+              class="block aspect-video size-full object-cover opacity-50"
+              src={placeholder}
+              alt={placeholderAlt}
+              loading="lazy"
+            />
+          )}
         </span>
       ))}
 
