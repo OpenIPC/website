@@ -175,6 +175,12 @@ Rails.application.routes.draw do
   get '/api/v1/hardware/availability.json',
       to: 'api/v1/hardware#availability', defaults: { format: :json }
 
+  # The home page mosaic's tiles and its grant, for the prerendered home pages
+  # (#165). Outside the locale scope like the rest of /api/: these are ids and
+  # a signed permission, not sentences.
+  get '/api/v1/wall/mosaic.json',
+      to: 'api/v1/wall#mosaic', defaults: { format: :json }
+
   # /tools/bandwidth-calculator is deliberately absent. It routed to
   # pages#bandwidth_calculator, which has never existed -- no action, no
   # template -- so every request raised AbstractController::ActionNotFound and

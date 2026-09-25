@@ -91,6 +91,25 @@ class MicrocacheLanguageTest < ActiveSupport::TestCase
     end
   end
 
+  # The other half of the same rule: a location must not add a header the
+  # application already sends, or the response carries two of them and the
+  # vhost is quietly deciding something Rails decided.
+  test 'no cached location repeats a header Rails already sets' do
+    cached_rails_blocks.each do |block|
+      next if block.match?(LANGUAGE_INDEPENDENT)
+
+      location = block[/location[^{]*/].to_s.strip
+      %w[Cache-Control Access-Control-Allow-Origin].each do |header|
+        assert_not_includes block, "add_header #{header}", <<~MESSAGE.chomp
+          #{location} adds #{header}, which its upstream already sends. nginx
+          passes an upstream header through and replays it from the cache, so
+          this sends it twice -- and for Cache-Control that is the vhost
+          overriding a lifetime ApplicationController::FRESHNESS set.
+        MESSAGE
+      end
+    end
+  end
+
   # Rails declares its own freshness since #155, so nginx must not override it.
   test 'no cache overrides the lifetime the application declares' do
     cached_rails_blocks.each do |block|

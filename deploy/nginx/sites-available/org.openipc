@@ -483,6 +483,62 @@ server {
     location ^~ /wall/ {
         return 410;
     }
+    # The home page mosaic's tiles and the permission to ask for them (#165).
+    #
+    # The prerendered home pages -- /ru and /zh -- are files, so nothing renders
+    # them a WallGrant the way WallHelper renders one into `/`. They showed five
+    # "no signal" tiles while the same page in the same language showed live
+    # cameras at `/`, and the only way to reach the broken one was to click your
+    # own language.
+    #
+    # An exact location, ahead of the `^~ /api/v1/wall/` prefix below, because
+    # that prefix is the socket's: it forbids caching, which is right for a
+    # connection and wrong for this. Exact beats prefix in nginx whatever the
+    # order, but the two are written next to each other so the difference is
+    # visible.
+    #
+    # Microcached for a minute on the same key the pages use. One body serves
+    # every reader, which is what WallGrant's cache-window bucketing exists for:
+    # the same ids in the same five minutes sign to the same bytes, so a cached
+    # response carries a grant that is still valid when it is served.
+    location = /api/v1/wall/mosaic.json {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # The wall's own per-address budget, shared with the gallery pages: this
+        # is one fetch per home-page view and the two are the same reader. The
+        # cache absorbs the rest, except for a request carrying a session
+        # cookie -- which anybody can send, and which bypasses it.
+        limit_req zone=snapshot_pages burst=8 nodelay;
+
+        proxy_cache openipc_micro;
+        # $locale_key even though this body carries no language: the ids, the
+        # grant and the SoC names read the same in every one. The rule it obeys
+        # is the one that exists because ignoring Vary served the Russian Open
+        # Wall to English visitors for a minute at a time, and three entries
+        # holding identical bytes is a cheaper thing to keep than an exemption
+        # somebody has to re-derive.
+        proxy_cache_key $scheme$host|$locale_key|$uri;
+        proxy_cache_valid 200 60s;
+        proxy_cache_lock on;
+        # An admin reaches Rails, as everywhere else that is cached. Nothing on
+        # this response differs for one today; the bypass costs almost nothing
+        # since #155 and is what stops that being a decision made per location.
+        proxy_cache_bypass $cookie__openipc_session;
+
+        # HSTS is repeated because add_header at location level replaces the
+        # whole inherited set. Cache-Control and Access-Control-Allow-Origin
+        # are NOT repeated: they come from Rails, pass through this proxy, and
+        # are replayed from the cache with the rest of the response. Adding
+        # them here too sent each one twice, and the second of them is the
+        # drift ApplicationController::FRESHNESS exists to prevent -- nginx
+        # deciding a lifetime the application already declared.
+        add_header Strict-Transport-Security max-age=15768000;
+    }
+
 
     # The frame channel. A WebSocket, so everything about this location is
     # different from the rest of the file.
