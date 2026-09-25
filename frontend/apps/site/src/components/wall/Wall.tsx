@@ -211,14 +211,16 @@ function Gallery({ data, t, p, register, placeholder, painted, resolved }: {
 
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {tiles.map((tile) => (
-          <a key={tile.id} href={p(`/snapshots/${tile.id}`)}
-             class="block overflow-hidden rounded-lg border border-hairline no-underline">
-            <div class="aspect-video bg-ink-2">
+          /* The link is on the picture and not on the card. Wrapping the body
+             in it made every line of the caption the colour of a link, which
+             is not what the page it replaces does. */
+          <div key={tile.id} class="overflow-hidden rounded-lg border border-hairline">
+            <a href={p(`/snapshots/${tile.id}`)} class="block aspect-video bg-ink-2">
               <Frame id={tile.id} variant={data.variant} alt={t('snapshots.snapshot.snapshot_alt')}
-                     class="size-full object-cover" register={register} />
-            </div>
+                     class="size-full object-contain" register={register} />
+            </a>
             <CardBody card={tile} t={t} />
-          </a>
+          </div>
         ))}
 
         {Array.from({ length: blanks }, (_, i) => (
@@ -325,7 +327,7 @@ function Icons({ frames, variant, t, p, register }: {
         <a key={frame.id} href={p(`/snapshots/${frame.id}`)}
            class="relative block overflow-hidden rounded bg-ink-2 no-underline">
           <Frame id={frame.id} variant={variant} alt={t('snapshots.icon.snapshot_alt')}
-                 class="block aspect-video size-full object-cover" register={register} />
+                 class="block aspect-video size-full object-contain" register={register} />
           <span class="absolute inset-x-0 bottom-0 bg-ink/70 px-1 text-center text-[.7rem] text-white">
             <At at={frame.at} />
           </span>
