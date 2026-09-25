@@ -115,5 +115,22 @@ else
   "${SSH[@]}" "sudo /usr/bin/dehydrated --cron" 2>&1 | sed 's/^/  /'
 fi
 
+# What is SERVED, not what is on disk. Those are different questions and only
+# one of them is the reader's: a certificate can be written, and nginx can be
+# holding the placeholder it started with, and every file on the host will look
+# right. Asked over the wire, with SNI, on the host itself -- the names need
+# not point here yet for this to work.
 echo
-"${SSH[@]}" "for d in openipc.kz openipc.cloud; do printf '  %-16s ' \"\$d\"; sudo openssl x509 -noout -subject -dates -in /var/lib/dehydrated/certs/\$d/fullchain.pem 2>/dev/null | tr '\n' ' ' || echo 'no certificate'; echo; done"
+served=0
+for d in openipc.kz openipc.cloud; do
+  printf '  %-16s ' "$d"
+  line="$("${SSH[@]}" "echo | openssl s_client -servername $d -connect 127.0.0.1:443 2>/dev/null \
+            | openssl x509 -noout -issuer -subject -enddate 2>/dev/null | tr '\n' ' '")"
+  echo "${line:-nothing served}"
+  case "$line" in
+    *"O = Let's Encrypt"*"CN = $d"*) ;;
+    *) echo "  ^ not a Let's Encrypt certificate for $d -- the host is still serving something else" >&2
+       served=1 ;;
+  esac
+done
+exit $served

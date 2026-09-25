@@ -34,6 +34,18 @@ class MirrorConfigTest < ActiveSupport::TestCase
     assert_includes TRUSTED, '194.58.109.202', 'openipc.ru, опенипц.рф'
   end
 
+  # Trust is not a certificate of good character, it is permission to declare
+  # who the client is. A host that has stopped proxying for us has no business
+  # holding it -- whoever holds that address next would inherit the ability to
+  # put any address in a log line and in any limit_conn bucket.
+  test 'the origin does not trust a mirror it no longer has' do
+    refute_includes TRUSTED, '87.199.131.93',
+                    'that host served openipc.kz and openipc.cloud until 2026-09-25 and serves ' \
+                    'nothing for us now'
+    refute_includes TRUSTED, '2.29.12.216',
+                    'the openipc.eu edge, retired in #259'
+  end
+
   test 'forwarded addresses are read, and read recursively' do
     assert_match(/^\s*real_ip_header\s+X-Forwarded-For;/, ORIGIN)
     # The mirrors proxy to each other, so the last entry is often another
@@ -53,7 +65,7 @@ class MirrorConfigTest < ActiveSupport::TestCase
 
   test 'the mirror carries the WebSocket upgrade' do
     proxy = MIRROR.join('snippets/openipc-mirror.conf').read
-    upgrade = proxy[/location \^~ \/api\/v1\/wall\/ \{.*?\n\}/m]
+    upgrade = proxy[%r{location \^~ /api/v1/wall/ \{.*?\n\}}m]
 
     assert upgrade, 'the wall channel has no location of its own'
     assert_match(/proxy_http_version\s+1\.1;/, upgrade,
@@ -69,7 +81,7 @@ class MirrorConfigTest < ActiveSupport::TestCase
   # the default read timeout is 60 seconds.
   test 'the mirror does not time the socket out' do
     proxy = MIRROR.join('snippets/openipc-mirror.conf').read
-    upgrade = proxy[/location \^~ \/api\/v1\/wall\/ \{.*?\n\}/m]
+    upgrade = proxy[%r{location \^~ /api/v1/wall/ \{.*?\n\}}m]
 
     assert_match(/proxy_read_timeout\s+1h;/, upgrade)
     assert_match(/proxy_buffering\s+off;/, upgrade)
@@ -86,7 +98,7 @@ class MirrorConfigTest < ActiveSupport::TestCase
       config = MIRROR.join("sites-available/#{vhost}").read
 
       assert_match(%r{return 301 https://\$host\$request_uri;}, config)
-      assert_match(/include snippets\/openipc-mirror\.conf;/, config,
+      assert_match(%r{include snippets/openipc-mirror\.conf;}, config,
                    'the proxy itself is shared, so the two names cannot drift apart')
     end
   end

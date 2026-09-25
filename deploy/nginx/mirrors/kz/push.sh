@@ -51,6 +51,21 @@ for f in $(files); do
   fi
 done
 
+# A file that matches is not a vhost that is serving. nginx reads
+# sites-enabled, so a link that is missing, stale, or replaced by a copy leaves
+# the host serving something else entirely while every file above compares
+# equal -- and this script would have reported "matches" and changed nothing.
+# The link is what makes a file take effect, so the link is checked.
+for f in $(cd "$SRC" && ls sites-available); do
+  # `test -L` first: readlink -f on a path that is not there answers with the
+  # path, which would print "-> itself" for a link that does not exist.
+  target="$("${SSH[@]}" "test -L '/etc/nginx/sites-enabled/$f' && readlink -f '/etc/nginx/sites-enabled/$f'" 2>/dev/null || true)"
+  if [ "$target" != "/etc/nginx/sites-available/$f" ]; then
+    echo "  NOT ENABLED: sites-available/$f   (sites-enabled/$f -> ${target:-nothing})"
+    drift=1
+  fi
+done
+
 if [ "$drift" -eq 0 ]; then
   echo
   echo "host matches the repository."
@@ -63,7 +78,10 @@ if [ "$APPLY" -eq 0 ]; then
   exit 1
 fi
 
-STAMP="$(date -u +%Y%m%d-%H%M%S)"
+# Seconds are not unique enough to stake a rollback on: two runs started in the
+# same second would share a staging directory and a backup suffix, and either
+# could then restore or delete the other's files.
+STAMP="$(date -u +%Y%m%d-%H%M%S)-$$-$RANDOM"
 STAGE="/tmp/openipc-nginx-$STAMP"
 echo
 echo "installing, backups tagged $STAMP"

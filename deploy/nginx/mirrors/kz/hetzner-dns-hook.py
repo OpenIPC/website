@@ -134,7 +134,14 @@ def clean_challenge(domain, _token_filename, value):
 
 
 def deploy_cert(*_args):
-    subprocess.run(['nginx', '-s', 'reload'], check=False)
+    # Loudly. A certificate on disk that nginx has not picked up is the worst
+    # of the three states -- issuance reports success, the files are right, and
+    # the host goes on serving whatever it had, which during a move is the
+    # self-signed placeholder. Anything but a clean reload has to fail the run.
+    reload = subprocess.run(['nginx', '-s', 'reload'], capture_output=True, text=True)
+    if reload.returncode != 0:
+        raise SystemExit(f'nginx did not reload after the certificate was written: '
+                         f'{reload.stderr.strip() or reload.stdout.strip()}')
 
 
 HOOKS = {
