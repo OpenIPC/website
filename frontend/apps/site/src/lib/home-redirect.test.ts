@@ -59,6 +59,16 @@ describe("the home page's language decision", () => {
     expect(visit({ href: 'https://openipc.org/?locale=en', languages: ['ru'] })).toBeNull();
   });
 
+  it('ignores a ?locale= this site cannot serve', () => {
+    // Rails fell back to the browser for a locale it does not publish, and so
+    // does this. `?locale=de` is not a choice we can honour...
+    expect(visit({ href: 'https://openipc.org/?locale=de', languages: ['ru'] })).toBe('/ru');
+    // ...and `?locale=russian` is not a language tag at all. Truncating to two
+    // characters first would have read it as Russian.
+    expect(visit({ href: 'https://openipc.org/?locale=russian', languages: ['en'] })).toBeNull();
+    expect(visit({ href: 'https://openipc.org/?locale=zhuang', languages: ['en'] })).toBeNull();
+  });
+
   it('never bounces a reader who came from this site', () => {
     // The language picker's English entry is a link to `/`. Sending a Russian
     // browser straight back to /ru would make that entry impossible to use --
@@ -70,6 +80,10 @@ describe("the home page's language decision", () => {
     })).toBe('/zh');
     // Arriving from anywhere else is not a choice about language.
     expect(visit({ languages: ['ru'], referrer: 'https://news.ycombinator.com/' })).toBe('/ru');
+    // And "same origin" is an origin, not a prefix: this hostname starts with
+    // ours as a string and is somebody else's site.
+    expect(visit({ languages: ['ru'], referrer: 'https://openipc.org.evil.example/' })).toBe('/ru');
+    expect(visit({ languages: ['ru'], referrer: 'not a url' })).toBe('/ru');
   });
 
   it('carries the rest of the address with the reader', () => {

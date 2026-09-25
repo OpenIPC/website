@@ -41,8 +41,16 @@ const t = useTranslations(DEFAULT_LOCALE);
   <script is:inline>
     (function () {
       var here = new URL(window.location.href);
-      var asked = here.searchParams.get('locale');
-      var langs = asked ? [asked] : (navigator.languages || [navigator.language || '']);
+      var served = ['en', 'ru', 'zh'];
+
+      // `?locale=` is a choice only when it names a language this site
+      // publishes. `?locale=de` is one we cannot honour and `?locale=russian`
+      // is not a language tag at all -- both fall back to the browser, which
+      // is what Rails did with an unavailable locale. Truncating first would
+      // have read the second as Russian.
+      var asked = String(here.searchParams.get('locale') || '').toLowerCase();
+      var chosen = served.indexOf(asked) !== -1;
+      var langs = chosen ? [asked] : (navigator.languages || [navigator.language || '']);
       var to = '';
 
       for (var i = 0; i < langs.length; i += 1) {
@@ -56,7 +64,15 @@ const t = useTranslations(DEFAULT_LOCALE);
       // Somebody who arrived from this site chose to be here -- the language
       // picker's English entry is a link to `/` -- and bouncing them back to
       // the language they just left is the one thing this must never do.
-      if (!asked && document.referrer && document.referrer.indexOf(here.origin) === 0) to = '';
+      //
+      // By origin, not by prefix: `https://openipc.org.evil.example/` starts
+      // with this origin as a string, and a link from there would otherwise
+      // pin a Russian reader to the English page.
+      if (!chosen && document.referrer) {
+        try {
+          if (new URL(document.referrer).origin === here.origin) to = '';
+        } catch (e) { /* a referrer that is not a URL is not this site */ }
+      }
       if (!to) return;
 
       // `?locale=` is consumed; everything else a campaign put on the URL
