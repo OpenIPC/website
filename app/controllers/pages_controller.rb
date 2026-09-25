@@ -77,11 +77,6 @@ class PagesController < ApplicationController
     render 'pages/majestic_endpoints'
   end
 
-  def merchandise
-    @page_title = "OpenIPC Merchandise"
-    render 'pages/merchandise'
-  end
-
   def our_team
     @page_title = t('pages.our_team.title')
     render 'pages/our_team'

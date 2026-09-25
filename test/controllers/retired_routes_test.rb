@@ -21,6 +21,17 @@ class RetiredRoutesTest < ActionDispatch::IntegrationTest
     assert_response :gone
   end
 
+  # /merchandise advertised one T-shirt through a third party, was linked from
+  # nothing, and drew about one request a day. The catch-all would answer it
+  # 302-then-200 at the homepage, which tells a crawler the page moved there;
+  # it did not move, it went.
+  test 'the retired merchandise page says it is gone, in every locale it had' do
+    ['/merchandise', '/ru/merchandise', '/zh/merchandise'].each do |path|
+      get path
+      assert_response :gone, "#{path} should be 410"
+    end
+  end
+
   test 'other unknown paths still redirect as they did before' do
     get '/no-such-page-at-all'
     assert_redirected_to '/'

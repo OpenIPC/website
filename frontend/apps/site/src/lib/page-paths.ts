@@ -98,7 +98,6 @@ export const PAGE_PATHS: PagePath[] = [
   { path: '/isp-sensors', titleKey: 'pages.isp_sensors.title' },
   { path: '/low-latency', titleKey: 'pages.low_latency.title' },
   { path: '/majestic-endpoints', titleKey: 'pages.majestic_endpoints.title' },
-  { path: '/merchandise', titleKey: 'pages.merchandise.title' },
   { path: '/our-team', titleKey: 'pages.our_team.title' },
   { path: '/privacy', titleKey: 'pages.privacy.title' },
   { path: '/reverse-engineering', titleKey: 'pages.reverse_engineering.title' },

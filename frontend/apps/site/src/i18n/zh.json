@@ -537,14 +537,6 @@
       "title": "Majestic Endpoints",
       "why": "该页面由实际运行的固件生成，这是本站的静态页面无法做到的："
     },
-    "merchandise": {
-      "order_from_weededwords": "从 WeededWords.com 订购",
-      "shirt_1": {
-        "description": "高品质 Gildan Hammer™ 6 盎司。 Flo 蓝色圆领经典版型 T 恤。 100% 精梳环锭纺棉，预缩，带有白色热转印乙烯基徽标。",
-        "title": "OpenIPC T 恤"
-      },
-      "title": "商品"
-    },
     "our_team": {
       "contributors_link": "所有 GitHub 贡献者列表",
       "paragraph1_html": "OpenIPC 是一个社区驱动的开源项目，许多人为其代码库做出贡献。赞美他们！还有一个由熟练的开发人员组成的核心团队，他们努力扩展<a href=\"/supported-hardware\">支持的硬件平台</a>列表、扩展固件的功能和稳定性、审查提交的代码并协调社区工作。了解团队及其专业领域：",

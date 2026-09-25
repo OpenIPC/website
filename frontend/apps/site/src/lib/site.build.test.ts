@@ -54,11 +54,11 @@ describe('the three locale trees', () => {
     // to disagree with the registry when somebody edits one of them. It is
     // config/routes.rb's `pages#` block, minus `/` -- which stays on Rails
     // because it negotiates language -- and minus the redirects and the two
-    // `410 Gone` routes, which are not pages.
+    // `410 Gone` routes, which are not pages (/merchandise became one in #290).
     const ROUTED = [
       '/business', '/community', '/digital-twins', '/donate', '/ecosystem', '/edge-ai',
       '/get-started', '/green_life', '/isp-sensors', '/low-latency', '/majestic-endpoints',
-      '/merchandise', '/our-team', '/privacy', '/reverse-engineering',
+      '/our-team', '/privacy', '/reverse-engineering',
       '/stages-of-firmware-development', '/teleoperation', '/tools/firmware-partitions-calculation',
       '/tools/high-resolution-timer', '/tools/qr-code-generator', '/turnkey-hardware',
       '/utilities', '/video-encoding', '/web-interface',
@@ -66,7 +66,7 @@ describe('the three locale trees', () => {
 
     const claimed = new Set(PAGE_PATHS.map((page) => page.path));
     expect(ROUTED.filter((path) => !claimed.has(path))).toEqual([]);
-    expect(ROUTED.length).toBe(24);
+    expect(ROUTED.length).toBe(23);
   });
 
   test('each page declares its own language', () => {
