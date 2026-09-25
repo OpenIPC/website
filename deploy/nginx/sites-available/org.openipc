@@ -349,6 +349,25 @@ server {
     # numeric prefix, and is proxied: Rails answers 410 in the end, but the
     # probe has already cost a render slot under the concurrency cap, and a
     # 410 is not in proxy_cache_valid so the next probe costs another.
+    # The home page, which is a file now (#165).
+    #
+    # An exact location because the catch-all cannot reach it: `try_files $uri
+    # $uri/index.html` builds `//index.html` when the URI is `/`, and that is
+    # not the file. Naming it directly is clearer than teaching the catch-all a
+    # special case, and it keeps the one address Rails rendered longest visible
+    # in this file.
+    #
+    # `@rails` is still behind it: roll the bundle back and Rails renders the
+    # home page per Accept-Language exactly as it did.
+    location = / {
+        root /srv/www/static/prod/current;
+        try_files /index.html @rails;
+
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By static always;
+        add_header Cache-Control "public, max-age=0, must-revalidate" always;
+    }
+
     # --- The Open Wall is files now (#165) ---------------------------------
     #
     # Five addresses, one shell per locale. `/open-wall` is a page of its own
