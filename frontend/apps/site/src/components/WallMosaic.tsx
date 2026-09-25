@@ -22,7 +22,7 @@
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  MOSAIC_URL, captionFor, requestFrames, type Mosaic, type MosaicTile,
+  FRAME_DEADLINE, MOSAIC_URL, captionFor, requestFrames, type Mosaic, type MosaicTile,
 } from '../lib/wall-frames';
 
 /** `WallHelper::FRAME_SIZES['thumb']`, so the page does not reflow when frames land. */
@@ -51,21 +51,29 @@ export default function WallMosaic({
 }: Props) {
   const [mosaic, setMosaic] = useState<Mosaic | null>(null);
   /*
-   * Whether we know there is nothing to show.
+   * Which tiles have a picture on them, and whether the waiting is over.
    *
    * "No signal" is a test card, and a test card is an answer -- it says this
    * camera is not sending. It must never be the first thing a visitor sees,
    * because at that moment it is not true yet: the frames are on their way.
-   * So the tile rests dark, the way the Rails page's does, and the card
-   * appears only once something has actually failed: the request, the
-   * subscription, or the eight seconds the socket had to open.
+   * So a tile rests dark, the way the Rails page's does, and turns into the
+   * card only when the answer has come in and this tile is not in it.
+   *
+   * Per tile, not per subscription. A frame that has been purged is delivered
+   * as silence -- `WallChannel#deliver` returns without transmitting, because
+   * a purged snapshot and an id that never existed must look identical -- and
+   * a JPEG that will not decode is the same from here. Either leaves one tile
+   * unanswered while the other four paint, and a single flag would have left
+   * that one dark for ever.
    */
-  const [failed, setFailed] = useState(false);
+  const [painted, setPainted] = useState<ReadonlySet<string>>(new Set());
+  const [resolved, setResolved] = useState(false);
   const canvases = useRef(new Map<string, HTMLCanvasElement>());
 
   useEffect(() => {
     let live = true;
     let stop: (() => void) | undefined;
+    let deadline: ReturnType<typeof setTimeout> | undefined;
 
     (async () => {
       let loaded: Mosaic;
@@ -77,11 +85,11 @@ export default function WallMosaic({
         // The page is correct without cameras on it -- it is the state the
         // Rails page falls back to -- so there is nothing to report and
         // nothing to retry. The tiles say so.
-        if (live) setFailed(true);
+        if (live) setResolved(true);
         return;
       }
       if (!live) return;
-      if (!loaded.grant || loaded.tiles.length === 0) { setFailed(true); return; }
+      if (!loaded.grant || loaded.tiles.length === 0) { setResolved(true); return; }
 
       setMosaic(loaded);
 
@@ -93,17 +101,27 @@ export default function WallMosaic({
           grant: loaded.grant!,
           variant: loaded.variant,
           ids: loaded.tiles.map((tile) => tile.id),
-          onFrame: (id, bytes) => paint(canvases.current.get(id), bytes),
-          // Now it is true, and now the card earns its place: the channel
-          // refused, or the socket never opened -- which is what happens
-          // behind a proxy that does not forward the Upgrade, and is why a
-          // blank grid would be indistinguishable from a wall with no cameras.
-          onUnavailable: () => { if (live) setFailed(true); },
+          onFrame: async (id, bytes) => {
+            // Recorded only once the bitmap is actually on the canvas, so a
+            // frame that will not decode counts as unanswered rather than as
+            // drawn.
+            if (await paint(canvases.current.get(id), bytes) && live) {
+              setPainted((seen) => new Set(seen).add(id));
+            }
+          },
+          // The channel refused, or said no. Everything still dark is dark for
+          // good, so stop waiting.
+          onUnavailable: () => { if (live) setResolved(true); },
         });
+
+        // And the silent cases: a socket that never opens, and a frame that is
+        // never sent. Neither produces an event, so the only way to tell them
+        // from "still coming" is to stop expecting.
+        deadline = setTimeout(() => { if (live) setResolved(true); }, FRAME_DEADLINE);
       });
     })();
 
-    return () => { live = false; stop?.(); };
+    return () => { live = false; clearTimeout(deadline); stop?.(); };
   }, [tiles]);
 
   // Never more than the page has room for: the count is the server's, but the
@@ -128,7 +146,7 @@ export default function WallMosaic({
             the tile is the same dark rectangle the Rails page shows while its
             own canvases fill in.
           */}
-          {failed && (
+          {resolved && !painted.has(tile.id) && (
             <img
               class="absolute inset-0 block size-full object-cover opacity-50"
               src={placeholder}
@@ -150,7 +168,7 @@ export default function WallMosaic({
 
       {Array.from({ length: blanks }, (_, i) => (
         <span key={`blank-${i}`} class="relative block aspect-video overflow-hidden rounded-[.375rem] bg-ink-2">
-          {(mosaic !== null || failed) && (
+          {(mosaic !== null || resolved) && (
             <img
               class="block aspect-video size-full object-cover opacity-50"
               src={placeholder}
@@ -201,18 +219,19 @@ function register(map: Map<string, HTMLCanvasElement>, id: string, el: HTMLCanva
  * background, and carrying its aria-label. Better than a broken-image glyph,
  * and it is what a purged snapshot looks like.
  */
-async function paint(canvas: HTMLCanvasElement | undefined, bytes: Uint8Array) {
-  if (!canvas) return;
+async function paint(canvas: HTMLCanvasElement | undefined, bytes: Uint8Array): Promise<boolean> {
+  if (!canvas) return false;
 
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(new Blob([bytes as BlobPart], { type: 'image/jpeg' }));
   } catch {
-    return;
+    return false;
   }
 
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
   canvas.getContext('2d')?.drawImage(bitmap, 0, 0);
   bitmap.close?.();
+  return true;
 }
