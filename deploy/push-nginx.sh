@@ -67,6 +67,19 @@ for f in $("${SSH[@]}" "ls /etc/nginx/conf.d/*.conf 2>/dev/null | xargs -n1 base
   [ -f "$SRC/conf.d/$f" ] || { echo "  UNMANAGED on origin: conf.d/$f"; drift=1; }
 done
 
+# The same for the links themselves: nginx reads sites-enabled, so a vhost
+# whose file matches but whose link is missing or points elsewhere is not
+# serving, and comparing only file contents reports that host as matching.
+for f in $(cd "$SRC" && ls sites-available); do
+  # `test -L` first: readlink -f on a path that is not there answers with the
+  # path, which would print "-> itself" for a link that does not exist.
+  target="$("${SSH[@]}" "test -L '/etc/nginx/sites-enabled/$f' && readlink -f '/etc/nginx/sites-enabled/$f'" 2>/dev/null || true)"
+  if [ "$target" != "/etc/nginx/sites-available/$f" ]; then
+    echo "  NOT ENABLED: sites-available/$f   (sites-enabled/$f -> ${target:-nothing})"
+    drift=1
+  fi
+done
+
 if [ "$drift" -eq 0 ]; then
   echo
   echo "origin matches the repository."
@@ -79,7 +92,9 @@ if [ "$APPLY" -eq 0 ]; then
   exit 1
 fi
 
-STAMP="$(date -u +%Y%m%d-%H%M%S)"
+# Unique per run, not per second: two runs in the same second would share a
+# staging directory and a backup suffix, and either could restore the other's.
+STAMP="$(date -u +%Y%m%d-%H%M%S)-$$-$RANDOM"
 STAGE="/tmp/openipc-nginx-$STAMP"
 echo
 echo "installing, backups tagged $STAMP"
@@ -107,6 +122,10 @@ restore() {
     for a in \$(find /etc/nginx -name '*.absent.$STAMP'); do
       rm -f \"\${a%.absent.$STAMP}\" \"\$a\"
     done
+    # ...and the symlink to a vhost that has just been removed with it. nginx
+    # globs sites-enabled and refuses to load a link to nothing, so a restore
+    # that leaves one has turned a bad configuration into an unloadable host.
+    find /etc/nginx/sites-enabled -xtype l -delete
     rm -rf '$STAGE'
   " || echo "restore itself failed -- inspect /etc/nginx by hand" >&2
   "${SSH[@]}" 'nginx -t' >&2 || true

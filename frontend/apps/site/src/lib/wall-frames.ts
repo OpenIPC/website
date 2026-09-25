@@ -32,10 +32,10 @@ export const CABLE_URL = '/api/v1/wall/cable';
  * this one address, and a socket is the one thing an ordinary reverse proxy
  * does not forward by accident: nginx speaks HTTP/1.0 upstream unless told
  * otherwise, and HTTP/1.0 cannot carry an `Upgrade`, so the handshake quietly
- * becomes an ordinary request and the origin answers 404. That is the state
- * openipc.kz and openipc.cloud are in -- `deploy/nginx/mirrors/README.md` has
- * the vhost fix, which needs a shell on a host this project does not have one
- * on.
+ * becomes an ordinary request and the origin answers 404. Every mirror's vhost
+ * now says otherwise -- `deploy/nginx/mirrors/README.md` -- but two of them
+ * spent days in that state because the host belonged to somebody else, and a
+ * mirror is by definition a machine this page cannot check.
  *
  * So the page does not depend on that fix landing. `allowed_request_origins`
  * in config/environments/production.rb already names every mirror, which is
