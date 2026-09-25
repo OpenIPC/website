@@ -159,7 +159,26 @@ while (Date.now() < deadline && drawn < canvases) {
 
 console.log(`\n${host}${path}`)
 note(canvases > 0, `${canvases} camera tiles on the page`)
-note(drawn > 0, `${drawn} of ${canvases} frames painted`)
+// Every tile, not one of them. A mosaic where four cameras are dark and one
+// paints is a broken wall, and a check that passes on it certifies a mirror
+// nobody can use. A frame that was purged between the mosaic and the socket
+// fails here too, on purpose: this cannot tell that from a mirror dropping
+// frames, and the difference is worth a look either way.
+note(drawn === canvases, `${drawn} of ${canvases} frames painted`)
+
+// And over this host's own socket. Since #165 a page whose host will not carry
+// a socket opens one at the origin instead, so a mirror with no upgrade at all
+// now paints a full wall -- which is right for the reader and wrong for this
+// command, whose whole job is to say whether the mirror carries frames. Not
+// asserted for --dist, where the local server refuses upgrades deliberately
+// and the fallback is the thing under test.
+if (!dist) {
+  const own = sockets.filter((s) => {
+    try { return new URL(s.url).host === host && s.frames > 0 } catch { return false }
+  })
+  note(own.length > 0, `frames arrived over ${host}'s own socket`)
+}
+
 for (const s of sockets) {
   console.log(`      socket ${s.url} — ${s.frames} messages${s.error ? `, ${s.error}` : ''}`)
 }
