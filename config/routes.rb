@@ -181,6 +181,24 @@ Rails.application.routes.draw do
   get '/api/v1/wall/mosaic.json',
       to: 'api/v1/wall#mosaic', defaults: { format: :json }
 
+  # The wall's own pages, as data (#165). One address per page rather than one
+  # address with parameters, because both vhosts cache on $uri: a query string
+  # that changes the body -- and the grant with it -- would be served to
+  # whoever asked next for anything else at the same path.
+  #
+  # `:id` is constrained to the public-id shape so that the literal `.json`
+  # cannot be swallowed as a format, and so that a numeric id reaches the
+  # action to be answered 410 rather than being routed away as a mismatch.
+  wall_id = /[0-9a-f]{20}|[0-9]+/
+  get '/api/v1/wall/page/:page.json',
+      to: 'api/v1/wall#page', defaults: { format: :json }, constraints: { page: /\d+/ }
+  get '/api/v1/wall/snapshot/:id.json',
+      to: 'api/v1/wall#snapshot', defaults: { format: :json }, constraints: { id: wall_id }
+  get '/api/v1/wall/snapshot/:id/archive.json',
+      to: 'api/v1/wall#archive', defaults: { format: :json }, constraints: { id: wall_id }
+  get '/api/v1/wall/snapshot/:id/slideshow.json',
+      to: 'api/v1/wall#slideshow', defaults: { format: :json }, constraints: { id: wall_id }
+
   # /tools/bandwidth-calculator is deliberately absent. It routed to
   # pages#bandwidth_calculator, which has never existed -- no action, no
   # template -- so every request raised AbstractController::ActionNotFound and

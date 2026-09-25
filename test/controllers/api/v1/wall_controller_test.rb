@@ -125,4 +125,163 @@ class Api::V1::WallControllerTest < ActionDispatch::IntegrationTest
 
     assert_no_match(%r{/wall/|\.jpe?g|\.webp|rails/active_storage}, response.body)
   end
+
+  # --- the wall's own pages, as data (#165) ----------------------------------
+  #
+  # These replace Rails-rendered pages, so the test that matters most is not
+  # what they return but what they authorise: each one must grant exactly what
+  # the page at the same address grants today, no more. A harvester's economics
+  # must not improve because a page moved into the bundle.
+
+  # One camera with a day of frames, for the strip, the archive and the
+  # slideshow. Times are set explicitly because ordering is the thing under
+  # test and three rows saved in the same second have none.
+  def camera_day(count, mac: '00:11:22:33:44:FF')
+    Array.new(count) do |i|
+      snapshot = Snapshot.new(mac_address: mac, ip_address: '203.0.113.9',
+                              soc: 'hi3516ev300', sensor: 'imx335', firmware: 'lite',
+                              streamer: 'majestic', uptime: '3 days', caption: 'a yard')
+      snapshot.file.attach(io: StringIO.new(MINIMAL_JPEG), filename: 'snapshot.jpg',
+                           content_type: 'image/jpeg')
+      snapshot.save!(validate: false)
+      snapshot.update_column(:created_at, (count - i).minutes.ago)
+      snapshot.reload
+    end
+  end
+
+  test 'the page endpoint answers the wall a page at a time' do
+    get '/api/v1/wall/page/1.json'
+
+    assert_response :success
+    body = response.parsed_body
+
+    assert_equal 1, body['page']
+    assert_equal 3, body['tiles'].size
+    assert_operator body['tiles'].size, :<=, Api::V1::WallController::PER_PAGE
+    assert_equal body['tiles'].map { |t| WallGrant.pair(t['id'], 'thumb') }.sort,
+                 WallGrant.verify(body['grant']).sort
+  end
+
+  test 'a page past the end is empty rather than wrong' do
+    get '/api/v1/wall/page/99.json'
+
+    assert_response :success
+    assert_empty response.parsed_body['tiles']
+  end
+
+  test 'a wall card carries what the card prints' do
+    get '/api/v1/wall/page/1.json'
+
+    response.parsed_body['tiles'].each do |tile|
+      assert_equal %w[at bytes dimensions firmware id sensor soc soc_temperature streamer uptime].sort,
+                   tile.keys.sort
+    end
+  end
+
+  test 'the page size is the wall\'s, not this controller\'s' do
+    # The page moves into the bundle; the number of cards on it does not
+    # change, and neither does the number of ids one fetch is worth.
+    assert_equal SnapshotsController::PER_PAGE, Api::V1::WallController::PER_PAGE
+    assert_equal SnapshotsController::STRIP_EAGER, Api::V1::WallController::STRIP_EAGER
+  end
+
+  test 'the snapshot endpoint grants the frame at fullhd and its strip at icon2' do
+    frames = camera_day(4)
+    subject = frames.last
+
+    get "/api/v1/wall/snapshot/#{subject.public_id}.json"
+
+    assert_response :success
+    body = response.parsed_body
+
+    assert_equal subject.public_id, body['snapshot']['id']
+    assert_equal 4, body['strip'].size
+    refute body['strip_more'], 'four frames is under the eager limit'
+
+    granted = WallGrant.verify(body['grant'])
+    assert_includes granted, WallGrant.pair(subject.public_id, 'fullhd')
+    body['strip'].each { |icon| assert_includes granted, WallGrant.pair(icon['id'], 'icon2') }
+    assert_equal 1, granted.count { |pair| pair.end_with?('fullhd') },
+                 'only the frame being shown may be granted at full resolution'
+  end
+
+  test 'the strip stops at the eager limit and says there is more' do
+    # The supply line #235 closed: a page that names every frame of the day
+    # hands a harvester a fresh batch of addresses for free.
+    frames = camera_day(Api::V1::WallController::STRIP_EAGER + 3)
+
+    get "/api/v1/wall/snapshot/#{frames.last.public_id}.json"
+
+    body = response.parsed_body
+    assert_equal Api::V1::WallController::STRIP_EAGER, body['strip'].size
+    assert body['strip_more']
+    assert_equal Api::V1::WallController::STRIP_EAGER + 1, WallGrant.verify(body['grant']).size
+  end
+
+  test 'a strip icon carries an address and a time, and no hardware' do
+    frames = camera_day(3)
+
+    get "/api/v1/wall/snapshot/#{frames.last.public_id}.json"
+
+    response.parsed_body['strip'].each do |icon|
+      assert_equal %w[at id].sort, icon.keys.sort,
+                   'a day of frames repeating one camera\'s hardware is a description of it'
+    end
+  end
+
+  test 'the archive is the whole day at icon2 and nothing larger' do
+    frames = camera_day(5)
+
+    get "/api/v1/wall/snapshot/#{frames.last.public_id}/archive.json"
+
+    assert_response :success
+    body = response.parsed_body
+
+    assert_equal 'icon2', body['variant']
+    assert_equal 5, body['frames'].size
+    times = body['frames'].map { |f| f['at'] }
+    assert_equal times.sort.reverse, times, 'the archive is newest first, as the page is'
+    WallGrant.verify(body['grant']).each { |pair| assert pair.end_with?('icon2') }
+  end
+
+  test 'the slideshow is the whole day at fullhd, oldest first' do
+    # Truncating this was considered and rejected on 2026-09-24: FRAME_BUDGET
+    # is the binding constraint, so a cap costs a feature and buys nothing.
+    frames = camera_day(5)
+
+    get "/api/v1/wall/snapshot/#{frames.last.public_id}/slideshow.json"
+
+    assert_response :success
+    body = response.parsed_body
+
+    assert_equal 'fullhd', body['variant']
+    times = body['frames'].map { |f| f['at'] }
+    assert_equal times.sort, times
+    WallGrant.verify(body['grant']).each { |pair| assert pair.end_with?('fullhd') }
+  end
+
+  test 'a numeric id is gone and an unknown one is missing' do
+    # The same answers SnapshotsController gives, so moving the page does not
+    # change what a stale link does.
+    get '/api/v1/wall/snapshot/12345.json'
+    assert_response :gone
+
+    get "/api/v1/wall/snapshot/#{'a' * 20}.json"
+    assert_response :not_found
+  end
+
+  test 'every wall address is cacheable and readable from a mirror' do
+    frames = camera_day(2)
+    id = frames.last.public_id
+
+    ['/api/v1/wall/page/1.json', "/api/v1/wall/snapshot/#{id}.json",
+     "/api/v1/wall/snapshot/#{id}/archive.json", "/api/v1/wall/snapshot/#{id}/slideshow.json"].each do |path|
+      get path
+
+      assert_response :success, path
+      assert_includes response.headers['Cache-Control'], 'max-age=60', path
+      assert_equal '*', response.headers['Access-Control-Allow-Origin'], path
+      assert_no_match(%r{/wall/|\.jpe?g|\.webp|rails/active_storage}, response.body, path)
+    end
+  end
 end
