@@ -24,6 +24,16 @@ import { createConsumer } from '@rails/actioncable';
 const MASK_BYTES = 4096;
 
 export const CABLE_URL = '/api/v1/wall/cable';
+
+/**
+ * How long a tile waits before it says it has nothing.
+ *
+ * There is no event for a frame that is never sent, so this is the only way to
+ * tell "still coming" from "not coming". Long enough that a slow connection
+ * is not called a failure: the whole mosaic paints in a quarter of a second on
+ * a good one.
+ */
+export const FRAME_DEADLINE = 8000;
 export const MOSAIC_URL = '/api/v1/wall/mosaic.json';
 
 export interface MosaicTile {
@@ -73,10 +83,15 @@ interface Frame {
 /**
  * Ask the channel for these ids and hand each decoded frame to `onFrame`.
  *
- * Returns a teardown. `onUnavailable` is called when the socket refuses, when
- * it never opens -- which is what happens behind a proxy that does not forward
- * the Upgrade, and is why the wall pages carry a visible notice rather than a
- * grid of blanks -- or when the channel says no.
+ * Returns a teardown. `onUnavailable` is for the failures the channel reports:
+ * a refused subscription and an error message.
+ *
+ * It is deliberately NOT how a missing frame is noticed. `WallChannel#deliver`
+ * returns in silence when a frame has no file -- a purged snapshot and an id
+ * that never existed look identical from there, on purpose -- so an id can
+ * simply never be answered while every other one is. There is no event for
+ * that and there cannot be; the caller waits instead. Same for a socket that
+ * never opens, which produces no event either.
  */
 export function requestFrames({ grant, variant, ids, onFrame, onUnavailable }: {
   grant: string;
@@ -86,7 +101,6 @@ export function requestFrames({ grant, variant, ids, onFrame, onUnavailable }: {
   onUnavailable: () => void;
 }): () => void {
   const consumer = createConsumer(CABLE_URL);
-  let settled = false;
 
   const subscription = consumer.subscriptions.create(
     { channel: 'WallChannel', grant },
@@ -95,7 +109,6 @@ export function requestFrames({ grant, variant, ids, onFrame, onUnavailable }: {
         if (data.error) { onUnavailable(); return; }
         if (!data.id || !data.frame || data.variant !== variant) return;
 
-        settled = true;
         onFrame(data.id, unmask(decode(data.frame), keyFor(data.connection_id ?? '')));
       },
       connected: () => subscription.perform('request_frames', { variant, ids }),
@@ -103,12 +116,7 @@ export function requestFrames({ grant, variant, ids, onFrame, onUnavailable }: {
     },
   );
 
-  // A handshake that never completes produces no event to hang this on -- it
-  // just stays silent -- so the only way to notice is to look.
-  const timer = setTimeout(() => { if (!settled) onUnavailable(); }, 8000);
-
   return () => {
-    clearTimeout(timer);
     subscription.unsubscribe();
     consumer.disconnect();
   };
