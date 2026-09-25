@@ -107,6 +107,18 @@ class WizardExportServingTest < ActiveSupport::TestCase
                  'the job and nginx disagree about where the files live')
   end
 
+  test "the dev vhost proxies to the dev container, never to production's" do
+    # Every proxy_pass in org.openipc.dev goes to :3001. One copied from the
+    # production vhost went to :3000, and production's Rails answered 403 to a
+    # request carrying `Host: dev.openipc.org` -- so the endpoint looked broken
+    # rather than looking like it was talking to the wrong application.
+    dev = Rails.root.join('deploy/nginx/sites-available/org.openipc.dev').read
+    wrong = dev.lines.grep(%r{proxy_pass\s+http://127\.0\.0\.1:3000})
+
+    assert_empty wrong.map(&:strip),
+                 'the dev vhost proxies to the production container on :3000'
+  end
+
   test 'each container can write its own export and cannot see the other' do
     # The application's view of /srv/www/shared is read-only, deliberately, so
     # the one directory under it that it does write is mounted on its own. The

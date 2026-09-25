@@ -97,18 +97,18 @@ export default function WallMosaic({
   const blanks = Math.max(0, tiles - shown.length);
 
   return (
-    <div class="grid grid-cols-3 gap-2">
+    <div class="grid grid-cols-3 gap-[8px]">
       {shown.map((tile) => (
         <a
           key={tile.id}
-          class="relative block aspect-video overflow-hidden rounded-md bg-ink-2 no-underline"
+          class="relative block overflow-hidden rounded-[.375rem] bg-ink-2 no-underline"
           href={`${snapshotBase}/${tile.id}`}
         >
           <canvas
             ref={(el) => register(canvases.current, tile.id, el)}
             width={THUMB.width}
             height={THUMB.height}
-            class="size-full object-cover"
+            class="block aspect-video size-full object-cover"
             role="img"
             aria-label={frameAlt}
           />
@@ -117,13 +117,21 @@ export default function WallMosaic({
       ))}
 
       {Array.from({ length: blanks }, (_, i) => (
-        <span key={`blank-${i}`} class="relative block aspect-video overflow-hidden rounded-md bg-ink-2">
-          <img class="size-full object-cover opacity-50" src={placeholder} alt={placeholderAlt} loading="lazy" />
+        <span key={`blank-${i}`} class="relative block overflow-hidden rounded-[.375rem] bg-ink-2">
+          <img
+            class="block aspect-video size-full object-cover opacity-50"
+            src={placeholder}
+            alt={placeholderAlt}
+            loading="lazy"
+          />
         </span>
       ))}
 
+      {/* `.wall-tile--cta`: dashed, aspect-ratio of its own, and the only tile
+          that holds text rather than a picture. */}
       <a
-        class="flex aspect-video items-center justify-center rounded-md border border-white/20 bg-ink-2 p-2 text-center text-xs text-white no-underline hover:border-white/50"
+        class="flex aspect-video items-center justify-center rounded-[.375rem] border border-dashed
+               border-white/30 bg-ink-2 p-2 text-center text-[.8125rem] text-white/70 no-underline"
         href={ctaHref}
       >
         {cta}
@@ -137,8 +145,14 @@ function Caption({ tile }: { tile: MosaicTile }) {
   const caption = captionFor(tile);
   if (caption === '') return null;
 
+  /* `.wall-caption`: a gradient rather than a bar, so the picture is not cut
+     off by a band, and the SoC name is what it fades behind. */
   return (
-    <span class="absolute inset-x-0 bottom-0 bg-ink/70 px-1.5 py-0.5 font-mono text-[10px] text-white/80">
+    <span
+      class="absolute inset-x-0 bottom-0 overflow-hidden text-ellipsis whitespace-nowrap
+             bg-gradient-to-b from-transparent to-ink/85 px-2 pt-4 pb-1 font-mono
+             text-[.65rem] text-white/85"
+    >
       {caption}
     </span>
   );
