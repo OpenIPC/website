@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@openipc/ui": "*",
+    "@rails/actioncable": "^8.0.200",
     "preact": "10.27.2"
   },
   "devDependencies": {

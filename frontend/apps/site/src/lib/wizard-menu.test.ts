@@ -4,6 +4,7 @@ import {
   useAnOfferedFlashType, type Availability,
 } from './wizard-menu';
 import { flashFamily, stockBootloaderOnly } from './wizard-result';
+import { captionFor, keyFor, unmask } from './wall-frames';
 
 // What a typical SoC has published, and two that are not typical.
 const BOTH: Availability = { nor: ['lite', 'ultimate'], nand: ['ultimate'] };
@@ -205,5 +206,30 @@ describe('which published bundle a page links to', () => {
     // cannot work, and the filename is what the reader types into tftp.
     expect(pick('nand', 'lite')).toBe('nand-ultimate');
     expect(pick('nor8m', 'lite')).toBe('nor-lite');
+  });
+});
+
+describe('the frames a prerendered mosaic paints', () => {
+  // The mask is the server's and is obfuscation rather than secrecy -- see
+  // WallChannel#transmit_frame. Only the head is touched, because that is
+  // where a JPEG's markers and quantisation tables live, and masking a whole
+  // full-HD frame cost the server a quarter of a million iterations.
+  test('unmasking is the masking, applied again', () => {
+    const key = keyFor('conn-1234');
+    const original = Uint8Array.from({ length: 5000 }, (_, i) => i % 256);
+    const masked = unmask(original, key);
+
+    expect(Array.from(unmask(masked, key))).toEqual(Array.from(original));
+    // Past the head the bytes are carried through untouched.
+    expect(masked[4096]).toBe(original[4096]);
+    expect(masked[0]).not.toBe(original[0]);
+  });
+
+  test('a caption is the SoC and the sensor, upper case, and nothing when neither came', () => {
+    // Both are nullable: the upload endpoint permits either to be absent, and
+    // one such upload used to take the whole home page down with it.
+    expect(captionFor({ id: 'a', soc: 'gk7205v300', sensor: 'imx307' })).toBe('GK7205V300 · IMX307');
+    expect(captionFor({ id: 'a', soc: 'gk7205v300', sensor: null })).toBe('GK7205V300');
+    expect(captionFor({ id: 'a', soc: null, sensor: '  ' })).toBe('');
   });
 });

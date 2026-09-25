@@ -337,6 +337,7 @@ class StaticBundleTest < ActiveSupport::TestCase
 
     assert_match(/RAILS_PATTERNS/, ts, 'rails-paths.ts no longer carries the download pattern')
     assert_match(/download_full_image/, ts, 'the pattern no longer names the download')
+    assert_match(%r{\^\\/snapshots}, ts, 'the pattern no longer names a snapshot')
 
     # Asked of the router itself: `routed_paths` holds the static addresses,
     # and this one carries two parameters.
@@ -344,6 +345,11 @@ class StaticBundleTest < ActiveSupport::TestCase
     assert_equal '/cameras/vendors/probe/socs/ps1000/download_full_image',
                  helper.download_full_image_cameras_vendor_soc_path(vendor_id: 'probe', id: 'ps1000'),
                  'the wizard links a download at an address config/routes.rb does not route'
+
+    # The home page's mosaic links each tile to its snapshot (#165), also at
+    # runtime rather than into the HTML.
+    assert_equal '/snapshots/abc123', helper.snapshot_path(id: 'abc123'),
+                 'the mosaic links a snapshot at an address config/routes.rb does not route'
   end
 
   test 'the baked support goal is the one config/support_goal.yml sets' do

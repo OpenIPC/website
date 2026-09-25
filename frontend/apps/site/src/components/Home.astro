@@ -3,24 +3,17 @@
  * The home page (#160).
  *
  * app/views/pages/home.html.erb, section for section. Two of its parts read
- * live state that a prerendered page cannot, and both currently render the
- * same way the Rails page renders when that state is missing -- which is a
- * state the Rails page already handles, not a new one:
+ * live state that cannot be known when this page is built, and both ask an
+ * address for it on load rather than being baked:
  *
- *   * the wall mosaic ships the Open Wall's "no signal" placeholders, which is
- *     what home.html.erb itself falls back to when its query returns nothing.
- *     Filling them needs a WallGrant, and #267 made that something only a
- *     client that rendered the page in Rails can obtain -- see WallMosaic.
- *   * the backer count under the closing band is fetched on load, not baked.
- *     SupportStats caps the page's own HTTP freshness precisely so no page
- *     outlives the count printed on it, and a number baked into a bundle could
- *     not honour that.
- *
- * nginx already serves /api/v1/support/stats.json from a file, CORS-open and
- * 404-clean, which is the shape a client-side fill wants; doing it means
- * reimplementing SupportStats#usable? -- the 48-hour staleness rule and the
- * halves-agree check -- in TypeScript, with the goal from
- * config/support_goal.yml. That is its own change, not a line here.
+ *   * the wall mosaic, from /api/v1/wall/mosaic.json -- the ids, the captions
+ *     and a WallGrant. The frames themselves still arrive over WallChannel and
+ *     are painted onto a canvas; no address returns an image. It renders the
+ *     "no signal" placeholders first, which is what home.html.erb falls back to
+ *     when its own query comes back empty, and paints over them (#165).
+ *   * the backer count under the closing band. SupportStats caps the page's own
+ *     HTTP freshness precisely so no page outlives the count printed on it, and
+ *     a number baked into a bundle could not honour that.
  */
 import Icon from './Icon.astro';
 import LogoWall from './LogoWall.astro';
@@ -75,16 +68,20 @@ const PILLARS = [
 
       <div>
         {/*
-          No client directive: with the fetch gone this renders the same markup
-          every time, so hydrating it would ship an island to re-draw what the
-          server already drew.
+          An island, because the cameras on it are the one thing on this page
+          that cannot be known when it is built. It renders the placeholders
+          first -- which is the state home.html.erb falls back to when its own
+          query returns nothing -- and paints frames over them when they land.
         */}
         <WallMosaic
+          client:load
           tiles={5}
           placeholder={noSignal.src}
           placeholderAlt={t('snapshots.index.no_signal')}
           cta={t('pages.home.wall_cta')}
           ctaHref={p('/open-wall')}
+          snapshotBase={p('/snapshots')}
+          frameAlt={t('pages.home.wall_snapshot_alt')}
         />
         <p class="mt-4 mb-0 text-sm text-white/60">
           <span class="mr-2 inline-block size-2 rounded-full bg-accent"></span>

@@ -41,6 +41,10 @@ export const RAILS_PATHS: string[] = [
  */
 export const RAILS_PATTERNS: RegExp[] = [
   /^\/cameras\/vendors\/[a-z0-9_-]+\/socs\/[a-z0-9_.-]+\/download_full_image$/,
+  // One snapshot, linked from the home page's mosaic (#165). The tiles are
+  // filled at runtime, so these hrefs are never in the built HTML and the
+  // frontend half of the check does not meet them -- the Rails half does.
+  /^\/snapshots\/[a-z0-9]+$/,
 ];
 
 /** Trees served from disk, matched as prefixes. */
