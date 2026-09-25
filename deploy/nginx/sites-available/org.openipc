@@ -529,13 +529,14 @@ server {
         # since #155 and is what stops that being a decision made per location.
         proxy_cache_bypass $cookie__openipc_session;
 
-        # Repeated, not inherited, for the reason given above the backer count.
+        # HSTS is repeated because add_header at location level replaces the
+        # whole inherited set. Cache-Control and Access-Control-Allow-Origin
+        # are NOT repeated: they come from Rails, pass through this proxy, and
+        # are replayed from the cache with the rest of the response. Adding
+        # them here too sent each one twice, and the second of them is the
+        # drift ApplicationController::FRESHNESS exists to prevent -- nginx
+        # deciding a lifetime the application already declared.
         add_header Strict-Transport-Security max-age=15768000;
-        add_header Cache-Control "public, max-age=60" always;
-        # Readable from a mirror, as the backer count is. Declared here as well
-        # as in the controller because add_header at location level replaces
-        # the whole set, and a cached response is replayed by nginx.
-        add_header Access-Control-Allow-Origin "*" always;
     }
 
 
