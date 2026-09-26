@@ -7,7 +7,7 @@ import (
 )
 
 // ContentType decides what an upload is, the way the Rails endpoint decided:
-// Marcel's rules, as recorded in test/conformance/fixtures/content_types.json
+// Marcel's rules, as recorded in service/conformance/testdata/content_types.json
 // and replayed against this code by sniff_test.go and the conformance suite.
 //
 // Three outcomes, in order:
