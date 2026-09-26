@@ -2,6 +2,8 @@ package builds
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -136,8 +138,14 @@ func (h *History) ImportUBoot(ctx context.Context, repo string) error {
 		}
 		sha, ok := strings.CutPrefix(a.Digest, "sha256:")
 		if !ok || !sha256Shape.MatchString(sha) {
-			h.Log.Warn("history: u-boot asset without a digest", "name", a.Name)
-			continue
+			// Uploaded before GitHub recorded digests. A u-boot binary is a
+			// few hundred kilobytes: hash it here rather than lose it.
+			sum, size, err := h.hash(ctx, a.DownloadURL)
+			if err != nil {
+				h.Log.Warn("history: u-boot asset not hashed", "name", a.Name, "err", err)
+				continue
+			}
+			sha, a.Size = sum, size
 		}
 		p.Assets = append(p.Assets, Asset{Name: a.Name, Size: a.Size, SHA256: sha})
 	}
@@ -188,6 +196,8 @@ func (h *History) payload(ctx context.Context, source string, r ghRelease, kconf
 			sha, ok := strings.CutPrefix(a.Digest, "sha256:")
 			if ok && sha256Shape.MatchString(sha) && assetShape.MatchString(a.Name) {
 				p.Assets = append(p.Assets, Asset{Name: a.Name, Size: a.Size, SHA256: sha})
+			} else {
+				h.Log.Warn("history: tarball without a digest, not offered", "tag", r.TagName, "name", a.Name)
 			}
 		case strings.HasPrefix(a.Name, "sizes.") && strings.HasSuffix(a.Name, ".json"):
 			add(strings.TrimSuffix(strings.TrimPrefix(a.Name, "sizes."), ".json"), "sizes", a)
@@ -244,6 +254,28 @@ func (h *History) payload(ctx context.Context, source string, r ghRelease, kconf
 		return nil, ferr
 	}
 	return p, nil
+}
+
+func (h *History) hash(ctx context.Context, u string) (string, int64, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
+	if err != nil {
+		return "", 0, err
+	}
+	req.Header.Set("User-Agent", "openipc.org builds history import")
+	resp, err := h.HTTP.Do(req)
+	if err != nil {
+		return "", 0, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return "", 0, fmt.Errorf("%s: %s", u, resp.Status)
+	}
+	sum := sha256.New()
+	n, err := io.Copy(sum, io.LimitReader(resp.Body, 64<<20))
+	if err != nil {
+		return "", 0, err
+	}
+	return hex.EncodeToString(sum.Sum(nil)), n, nil
 }
 
 func (h *History) releases(ctx context.Context, repo string) ([]ghRelease, error) {
