@@ -69,7 +69,7 @@ func TestDatacentreBlock(t *testing.T) {
 	t.Run("the rate limit is on the snapshot pages and keyed on the reader", func(t *testing.T) {
 		mustMatch(t, `limit_req_zone\s+\$binary_remote_addr`, rate,
 			"keyed on the mirror instead would pool every visitor behind openipc.ru onto one key")
-		gallery := blockRe(v, regexp.MustCompile(`location ~ \^/\(\?:\(\?:ru\|zh\)/\)\?snapshots/\[0-9a-f\]`))
+		gallery := blockRe(v, regexp.MustCompile(`location ~ "?\^/\(\?:\(\?:ru\|zh\)/\)\?snapshots/\[0-9a-f\]`))
 		mustContain(t, gallery, "limit_req zone=snapshot_pages", "the snapshot pages are not rate-limited")
 	})
 }
@@ -264,59 +264,10 @@ func TestWizardExportServing(t *testing.T) {
 	})
 }
 
-// The pages themselves are cached by nginx (#233). What makes the catch-all
-// different from every other cached location: it serves whatever the
-// application still answers that nothing else claims, so the guards that are
-// right for a gallery page are wrong here.
-func TestPageCache(t *testing.T) {
-	v := vhost(t, "org.openipc")
-	catchAll := func(t *testing.T) string {
-		var proxying []string
-		for _, b := range regexp.MustCompile(`(?s)\n    location @rails \{\n.*?\n    \}\n`).FindAllString(v, -1) {
-			if strings.Contains(b, "proxy_pass") {
-				proxying = append(proxying, b)
-			}
-		}
-		if len(proxying) != 1 {
-			t.Fatalf("expected exactly one proxying `location @rails`, found %d", len(proxying))
-		}
-		return directives(proxying[0])
-	}
-	t.Run("the page cache exists at all", func(t *testing.T) {
-		mustContain(t, catchAll(t), "proxy_cache openipc_micro", "the largest class of traffic on the site is uncached again")
-	})
-	t.Run("the fallback does not strip Set-Cookie the way the others do", func(t *testing.T) {
-		mustNotContain(t, catchAll(t), "proxy_hide_header Set-Cookie",
-			"`location @rails` hides Set-Cookie: nothing should set a cookie at all (#288), and hiding the header turns the first sign of one into silence")
-	})
-	t.Run("nginx does not offer its own opinion on how long a page lives", func(t *testing.T) {
-		if strings.Contains(catchAll(t), "proxy_cache_valid") {
-			t.Error("`location @rails` sets a lifetime of its own; proxy_cache_valid applies to responses that say nothing, which here are the ones that must not be stored")
-		}
-	})
-	t.Run("adding a cache header does not drop the security header above it", func(t *testing.T) {
-		var server []string
-		depth, locDepth := 0, -1
-		for _, l := range strings.SplitAfter(v, "\n") {
-			s := strings.TrimSpace(l)
-			if depth == 1 && locDepth < 0 && s != "" && !strings.HasPrefix(s, "#") && !strings.HasSuffix(s, "{") &&
-				strings.Contains(s, "add_header Strict-Transport-Security") {
-				server = append(server, s)
-			}
-			if locDepth < 0 && strings.HasSuffix(s, "{") && (strings.HasPrefix(s, "location") || strings.HasPrefix(s, "if (")) {
-				locDepth = depth
-			}
-			depth += strings.Count(l, "{") - strings.Count(l, "}")
-			if locDepth >= 0 && depth <= locDepth {
-				locDepth = -1
-			}
-		}
-		if len(server) == 0 {
-			t.Fatal("No `server` block declares HSTS any more")
-		}
-		mustContain(t, catchAll(t), server[0], "`location @rails` uses add_header and does not repeat the vhost's HSTS")
-	})
-	// Both rules existed for the admin alone (#288).
+// Both rules existed for the admin alone (#288), and the page cache that
+// needed them went with Rails (#304): nothing behind the catch-all renders a
+// page any more, so there is nothing there to cache.
+func TestNoAdminRules(t *testing.T) {
 	t.Run("no location keeps a rule for the admin that is gone", func(t *testing.T) {
 		for _, name := range vhosts {
 			live := directives(vhost(t, name))
@@ -325,12 +276,13 @@ func TestPageCache(t *testing.T) {
 			}
 		}
 	})
-	t.Run("the key keeps the query string", func(t *testing.T) {
-		key := find(catchAll(t), regexp.MustCompile(`proxy_cache_key (.*);`), 1)
-		if key == "" {
-			t.Fatal("`location @rails` caches without a key of its own")
+	t.Run("nothing proxies to the Rails ports", func(t *testing.T) {
+		for _, name := range vhosts {
+			live := directives(vhost(t, name))
+			for _, port := range []string{"127.0.0.1:3000", "127.0.0.1:3001"} {
+				mustNotContain(t, live, "proxy_pass http://"+port, name+" still proxies to "+port+", where Rails was")
+			}
 		}
-		mustContain(t, key, "$request_uri", "the key drops the query string, and ?locale= still selects a language")
 	})
 }
 
@@ -350,7 +302,7 @@ func TestMicrocacheLanguage(t *testing.T) {
 		cuts = append(cuts, len(v))
 		for i := 0; i+1 < len(cuts); i++ {
 			b := v[cuts[i]:cuts[i+1]]
-			if strings.Contains(b, "proxy_cache openipc_micro") && strings.Contains(b, "proxy_pass http://127.0.0.1:3000") {
+			if strings.Contains(b, "proxy_cache openipc_micro") && strings.Contains(b, "proxy_pass http://") {
 				out = append(out, b)
 			}
 		}
@@ -479,8 +431,8 @@ func TestMicrocacheLanguage(t *testing.T) {
 				n++
 			}
 		}
-		if n < 2 {
-			t.Errorf("expected the Open Wall and per-snapshot caches to be found; found %d", n)
+		if n < 1 {
+			t.Errorf("expected the wall JSON cache to be found; found %d", n)
 		}
 	})
 	t.Run("the firmware limit is guarded in every vhost that has it", func(t *testing.T) {

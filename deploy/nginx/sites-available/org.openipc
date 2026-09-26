@@ -29,7 +29,6 @@ server {
     }
 }
 
-
 server {
     listen 443 ssl http2;
     server_name openipc.org;
@@ -282,29 +281,20 @@ server {
         proxy_cache_bypass 1;
     }
 
-    location ~ ^/(assets|fonts)/ {
-        # Same carve-out as /wall/, and the reason this block was written in
-        # the first place: an HTTP/2 page load multiplexes many parallel asset
-        # requests, and those must never compete with page renders for slots.
-        # It was taken out of site_conc in September and left inheriting the
-        # http-level cap, which is the half that was missed.
-        limit_conn per_subnet 100;
-        limit_conn_status 429;
-
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_cache openipc_micro;
-        proxy_cache_key $scheme$host$uri;
-        proxy_cache_valid 200 7d;
-        proxy_cache_lock on;
-        proxy_ignore_headers Set-Cookie;
-        proxy_hide_header Set-Cookie;
+    # The web fonts are the bundle's (#304): Rails' public/fonts served them
+    # until Rails went, and the static pages' stylesheet asks for them here.
+    # Named by face and weight, never rewritten, so a year of cache is safe.
+    location ^~ /fonts/ {
+        root /srv/www/static/prod/current;
+        try_files $uri =404;
         add_header Strict-Transport-Security max-age=15768000;
-        add_header X-Cache-Status $upstream_cache_status;
+        add_header X-Served-By static always;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+
+    # Rails' asset pipeline, gone with Rails (#304).
+    location ^~ /assets/ {
+        return 410 "Gone\n";
     }
 
     # Per-snapshot pages (/snapshots/<id>, /oneday, /camera, /download): the
@@ -335,7 +325,7 @@ server {
     location = /up {
         access_log off;
 
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3002;  # the Go web process (#304)
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -383,15 +373,6 @@ server {
             return 503;
         }
 
-        # Shadowing (#294): every upload is mirrored to the shadow Go process,
-        # which decides it into its own database; the mirror location answers
-        # itself with 204 whenever the route is not `shadow`. The primary's
-        # decisions are logged by request id for deploy/shadow-report.sh.
-        mirror /_openipc_shadow_upload;
-        mirror_request_body on;
-        access_log /var/log/nginx/org.openipc.access.log openipc;
-        access_log /var/log/nginx/openipc-upload-decisions.log openipc_upload_decision if=$openipc_shadow_prod_upload;
-
         proxy_pass http://$openipc_up_prod_upload;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -405,21 +386,6 @@ server {
 
         add_header X-Served-By $openipc_by_prod_upload always;
         add_header Strict-Transport-Security max-age=15768000;
-    }
-
-    location = /_openipc_shadow_upload {
-        internal;
-        if ($openipc_shadow_prod_upload = "") {
-            return 204;
-        }
-        proxy_pass http://127.0.0.1:3004$request_uri;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Request-Id $request_id;
-        proxy_connect_timeout 2s;
-        proxy_read_timeout 15s;
     }
 
     # --- The Open Wall is files now (#165) ---------------------------------
@@ -441,7 +407,7 @@ server {
     # brace and fails with "missing closing parenthesis" pointing at a regex
     # that plainly has one.
     #
-    # `try_files ... @rails` is what makes a rollback safe. Roll the bundle
+    # `try_files ... @fallback` is what makes a rollback safe. Roll the bundle
     # back and the file is gone, the request falls through, and Rails renders
     # the page it has always rendered -- which is why the caps below are here
     # rather than only in the Rails locations: on that day these addresses are
@@ -457,7 +423,7 @@ server {
         limit_req_status 429;
 
         root /srv/www/static/prod/current;
-        try_files $wall_gallery_read @rails;
+        try_files $wall_gallery_read @fallback;
 
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By static always;
@@ -475,7 +441,7 @@ server {
         limit_req_status 429;
 
         root /srv/www/static/prod/current;
-        try_files $wall_shell_read @rails;
+        try_files $wall_shell_read @fallback;
 
         # add_header at location level replaces the whole inherited set.
         add_header Strict-Transport-Security max-age=15768000;
@@ -497,7 +463,7 @@ server {
         limit_req_status 429;
 
         root /srv/www/static/prod/current;
-        try_files $wall_shell_read @rails;
+        try_files $wall_shell_read @fallback;
 
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By static always;
@@ -551,57 +517,12 @@ server {
     # so that the 410 the app answers to a walk is also shed and cached here
     # rather than reaching Rails once per probe.
     location ~ ^/(?:(?:ru|zh)/)?snapshots/[0-9a-f]+ {
-        # Not for training. See $openipc_gallery_crawler in
-        # conf.d/openipc-crawler-block.conf; robots.txt disallows these paths
-        # for everyone and this is the same rule, answered now rather than
-        # whenever the crawler next reads that file.
         if ($openipc_gallery_crawler) {
             return 403;
         }
-
-        limit_conn snapshot_conc 10;
-        limit_conn_status 429;
-
-        # Per address, where limit_conn above is per site. The two answer
-        # different questions: the pool bounds how many renders run at once,
-        # this bounds how fast one client may walk the id space. See
-        # conf.d/openipc-snapshot-rate.conf for where 60r/m and burst 48 come
-        # from -- burst alone clears the busiest real reader ever measured.
-        limit_req zone=snapshot_pages burst=48 nodelay;
-        limit_req_status 429;
-
-        proxy_buffer_size 128k;
-        proxy_buffers 8 128k;
-
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_connect_timeout 120;
-        proxy_send_timeout 120;
-        proxy_read_timeout 180;
-
-        proxy_cache openipc_micro;
-        proxy_cache_key $scheme$host|$locale_key|$uri;
-        proxy_cache_valid 200 301 302 300s;
-        proxy_cache_valid 404 120s;
-        proxy_cache_lock on;
-        proxy_cache_lock_age 30s;
-        proxy_cache_lock_timeout 30s;
-        proxy_cache_use_stale updating error timeout;
-
-        # No session bypass and no admin rule (#288). Nothing on openipc.org
-        # sets a cookie any more: the locale left the session in #155 and the
-        # admin -- the only sign-in there was -- went in #288, and with it the
-        # only render that differed by who asked. Set-Cookie is still hidden,
-        # and nothing in proxy_ignore_headers, so a response that ever sets
-        # one again is not stored either way.
-        proxy_hide_header Set-Cookie;
-
-        add_header Strict-Transport-Security max-age=15768000;
-        add_header X-Cache-Status $upstream_cache_status;
+        # A hexadecimal address the wall shell above did not claim -- the
+        # wrong length, a suffix. Rails answered it 404 and is gone (#304).
+        return 404 "Not Found\n";
     }
 
     # /wall/ is gone, and so is every other address that returned a frame.
@@ -707,7 +628,6 @@ server {
         add_header Strict-Transport-Security max-age=15768000;
     }
 
-
     # The frame channel. A WebSocket, so everything about this location is
     # different from the rest of the file.
     #
@@ -782,47 +702,17 @@ server {
     # form on these pages needs a session. POST /snapshots (camera uploads)
     # matches this location too but proxy_cache only ever caches GET/HEAD.
     location ~ ^/(?:(?:ru|zh)/)?(open-wall|snapshots|rails/active_storage) {
-        # Not for training. See $openipc_gallery_crawler in
-        # conf.d/openipc-crawler-block.conf; robots.txt disallows these paths
-        # for everyone and this is the same rule, answered now rather than
-        # whenever the crawler next reads that file.
         if ($openipc_gallery_crawler) {
             return 403;
         }
 
         limit_conn media_conc 12;
         limit_conn_status 429;
-        proxy_buffer_size 128k;
-        proxy_buffers 8 128k;
 
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_connect_timeout 120;
-        proxy_send_timeout 120;
-        proxy_read_timeout 180;
-
-        proxy_cache openipc_micro;
-        proxy_cache_key $scheme$host$request_uri;
-        proxy_cache_valid 200 301 302 60s;
-        proxy_cache_lock on;
-        proxy_cache_lock_age 30s;
-        proxy_cache_lock_timeout 30s;
-        proxy_cache_use_stale updating error timeout;
-
-        # No session bypass and no admin rule (#288). Nothing on openipc.org
-        # sets a cookie any more: the locale left the session in #155 and the
-        # admin -- the only sign-in there was -- went in #288, and with it the
-        # only render that differed by who asked. Set-Cookie is still hidden,
-        # and nothing in proxy_ignore_headers, so a response that ever sets
-        # one again is not stored either way.
-        proxy_hide_header Set-Cookie;
-
-        add_header Strict-Transport-Security max-age=15768000;
-        add_header X-Cache-Status $upstream_cache_status;
+        # What the shells above did not claim goes where every other miss goes
+        # (#304): the route map answers it -- the retired ActiveStorage paths
+        # 410, the gallery's old address a redirect -- or it is a 404.
+        try_files /.no-such-file @fallback;
     }
 
     # The seam between a static bundle and Rails (#157). A page is extracted
@@ -838,7 +728,7 @@ server {
     # YAML -- a partial locale build degrades to the working old site, never
     # to the wrong language.
     #
-    # NOT `try_files $uri $uri/ @rails`. try_files decides file-test versus
+    # NOT `try_files $uri $uri/ @fallback`. try_files decides file-test versus
     # directory-test from the literal element at parse time, so only an element
     # written with a trailing slash tests for a directory -- and a directory
     # that matches is handed to the index module, which answers "directory
@@ -873,7 +763,7 @@ server {
     # and they must not compete with page renders, which is the same reasoning
     # the /assets|fonts/ block above was written on.
     #
-    # try_files still ends at @rails rather than =404. A rollback can leave a
+    # try_files still ends at @fallback rather than =404. A rollback can leave a
     # page referencing an asset the older bundle does not carry, and the seam's
     # rule is that only Rails answers 404 -- so that miss shows up in the Rails
     # log like every other one, instead of vanishing into nginx.
@@ -882,7 +772,7 @@ server {
         limit_conn_status 429;
 
         root /srv/www/static/prod/current;
-        try_files $uri @rails;
+        try_files $uri @fallback;
 
         # add_header in a location REPLACES every inherited one, so HSTS is
         # repeated here exactly as it is in the seam below.
@@ -892,7 +782,7 @@ server {
     }
 
     location / {
-        # The cap has to be here and cannot be in @rails, and that is a fact
+        # The cap has to be here and cannot be in @fallback, and that is a fact
         # about phase order rather than a preference. limit_conn runs in the
         # preaccess phase and try_files in precontent, so the configuration
         # that counts is whichever location the request landed in FIRST --
@@ -901,10 +791,10 @@ server {
         # four concurrent slow transfers:
         #
         #   cap in `location /`   429 429 429 200   binds
-        #   cap in `@rails`       200 200 200 200   never runs
-        #   cap in both           429 429 429 200   the @rails copy is dead
+        #   cap in `@fallback`       200 200 200 200   never runs
+        #   cap in both           429 429 429 200   the @fallback copy is dead
         #
-        # The middle row is why this matters: @rails alone looks correct, and
+        # The middle row is why this matters: @fallback alone looks correct, and
         # would silently replace the site_conc pool that ended the 2026-09-03
         # outage with the http-level per-address twenty this location would
         # otherwise inherit.
@@ -918,10 +808,10 @@ server {
         limit_conn_status 429;
 
         root /srv/www/static/prod/current;
-        try_files $uri $uri/index.html @rails;
+        try_files $uri $uri/index.html @fallback;
 
         # `add_header` in a location REPLACES every inherited one, so the
-        # server-level HSTS has to be repeated here exactly as it is in @rails
+        # server-level HSTS has to be repeated here exactly as it is in @fallback
         # below -- otherwise every page the bundle serves loses it.
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By static always;
@@ -937,101 +827,23 @@ server {
     # Everything the bundle does not hold, which today is everything. This is
     # the block that was `location /` until #157; it is unchanged apart from
     # the proxy_pass URI part and the X-Served-By witness.
-    location @rails {
-        # What Rails' router answered without rendering anything (#302) --
-        # the redirects, the retired addresses and the catch-all -- answered
-        # here instead, from maps generated out of config/routes.rb
-        # (conf.d/openipc-redirects.conf). Only after try_files, so a file in
-        # the bundle still wins, exactly as it did over the router; and only
-        # what no route renders, so every page Rails still serves still reaches
-        # it. `return` is the one thing `if` is safe for. One line each: the
-        # deploy tests read this block as ending at the first bare `}`.
+    location @fallback {
+        # Everything the bundle does not hold (#304). Rails used to be here; it
+        # is gone, and what its router answered is answered from
+        # conf.d/openipc-redirects.conf -- the redirects, the retired addresses
+        # and the catch-all -- and anything else is a page the bundle should
+        # have held, which is a 404. `return` is the one thing `if` is safe
+        # for. One line each: the deploy tests read this block as ending at
+        # the first bare `}`.
         if ($openipc_route_action = 410)      { return 410 "Gone\n"; }
         if ($openipc_route_action = 301)      { return 301 $openipc_route_target; }
         if ($openipc_route_action = 302)      { return 302 $openipc_route_target; }
         if ($openipc_route_action = catchall) { return 302 $openipc_route_target; }
         default_type text/plain;
+        return 404 "Not Found\n";
 
-        # No limit_conn here. See `location /` above: it would never execute.
-        proxy_buffer_size 128k;
-
-        # Increase the number and size of additional buffers for the response body
-        # This example allocates 8 buffers, each 128 KB
-        proxy_buffers 8 128k;
-
-        # No URI part. nginx refuses one inside a named location, and none is
-        # needed: with an empty URI part the request line sent upstream is
-        # $request_uri when the URI is simple, and the same normalised, escaped
-        # path as before when it is not. Rails receives what it received when
-        # this was `location /`.
-        proxy_pass http://127.0.0.1:3000;
-
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_connect_timeout 120;
-        proxy_send_timeout 120;
-        proxy_read_timeout 180;
-
-        # The pages themselves (#233).
-        #
-        # On 2026-09-20 the front page took 62,588 requests and every one was
-        # cache=- : not one served by nginx, every one a Rails render, for
-        # 1,787 distinct clients. Assets hit 89%, the snapshots and the Open
-        # Wall are cached, and the largest class on the site was the one class
-        # that was not. 25,525 of those arrived from openipc.kz, openipc.ru and
-        # openipc.eu, which proxy without caching -- so caching here is what
-        # stops a mirror visitor costing a render, without touching three
-        # configs this repository does not own.
-        #
-        # Rails has been asking for this for days. Since #155 a GET on / comes
-        # back `public, max-age=300, stale-while-revalidate=3600`, and a
-        # catalogue page `max-age=3600, stale-while-revalidate=86400`, and
-        # nothing was listening.
-        proxy_cache openipc_micro;
-
-        # The whole URI, query included. Only 444 of 63,032 front-page requests
-        # carry one, so there is nothing to gain by dropping it -- and dropping
-        # it is what produced the bug the microcache conf documents at length,
-        # where a key that ignored ?locale= served Russian to English readers.
-        #
-        # Unchanged by the seam: $request_uri is the original request line and
-        # an internal redirect to a named location does not rewrite it, so the
-        # keys are the strings they were and the entries already on disk stay
-        # warm across the reload.
-        proxy_cache_key $scheme$host$request_uri;
-
-        # No proxy_cache_valid, deliberately. Rails decides what may be cached
-        # and for how long, and it is the only thing that can: it knows about
-        # the flash. A page it declares `max-age=0, private` -- anything with a
-        # flash, any non-200 -- nginx will not store, and a proxy_cache_valid
-        # here would be a second opinion that silently overrides the first on
-        # exactly those pages.
-        #
-        # There is no `proxy_hide_header Set-Cookie` here either, unlike every
-        # other cached location. Nothing on the site sets a cookie since the
-        # admin went (#288), so one arriving is a regression to see, not to
-        # hide; nginx already refuses to store a response carrying Set-Cookie.
-        proxy_cache_lock on;
-        proxy_cache_lock_age 30s;
-        proxy_cache_lock_timeout 30s;
-        proxy_cache_use_stale updating error timeout;
-
-        # No session bypass and no admin rule: nothing sets a cookie and no
-        # render differs by who asked, since the admin went (#288).
-
-        # `add_header` in a location REPLACES every inherited one, so the
-        # server-level HSTS has to be repeated here or adding X-Cache-Status
-        # would quietly remove it. Rails sends a stronger HSTS of its own on
-        # every page, so the loss would not have shown up in a browser -- which
-        # is exactly why it is worth being explicit about.
         add_header Strict-Transport-Security max-age=15768000;
-        add_header X-Cache-Status $upstream_cache_status;
         add_header X-Served-By $openipc_route_by always;
-        # Only on what nginx answered itself: Rails sent no-cache on its
-        # redirects and 410s. Empty -- so absent -- when Rails answers.
         add_header Cache-Control $openipc_route_cache always;
     }
 

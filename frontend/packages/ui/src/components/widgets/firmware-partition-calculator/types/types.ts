@@ -17,7 +17,7 @@ export type SelectOption = {
  * Strings rather than functions, and `%{number}` rather than a template
  * literal, for two reasons. An Astro island receives its props as JSON, so a
  * function cannot cross that boundary at all. And `%{number}` is Ruby's
- * interpolation syntax, which is what config/locales already writes -- so the
+ * interpolation syntax, which is what data/locales already writes -- so the
  * consumer hands over the catalogue string untouched instead of reformatting
  * it into something else's syntax first.
  */

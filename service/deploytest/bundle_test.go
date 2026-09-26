@@ -64,7 +64,7 @@ func isFile(p string) bool { st, err := os.Stat(p); return err == nil && st.Mode
 // The bundle nginx serves in front of the application (#157).
 //
 // The seam cannot fail closed -- try_files walks past every miss and ends at
-// @rails. What a bundle CAN do is take over an address that is not its to
+// @fallback. What a bundle CAN do is take over an address that is not its to
 // take, silently and with nothing in any log. That is what
 // deploy/static/check-bundle.sh is for, and what most of this file is about.
 func TestStaticBundle(t *testing.T) {
@@ -182,7 +182,7 @@ func TestStaticBundle(t *testing.T) {
 		what  string
 		plant func(t *testing.T, site string)
 	}{
-		{"a path Rails owns", func(t *testing.T, site string) {
+		{"a reserved path", func(t *testing.T, site string) {
 			os.MkdirAll(filepath.Join(site, "admin"), 0o755)
 			writeFile(t, filepath.Join(site, "admin/index.html"), "x")
 		}},
@@ -231,11 +231,9 @@ func TestStaticBundle(t *testing.T) {
 	railsTS := read(t, "frontend/apps/site/src/lib/rails-paths.ts")
 	// The other half of the link check in pages.build.test.ts, which asserts
 	// every internal href in the built tree is a bundle page or one of these;
-	// this asserts these are answered. Rails' route table answered that; now it
-	// is a Go route, an nginx location, a bundle page, or -- only while
-	// config/routes.rb exists -- a route there. Once Rails is gone, each has to
-	// be one of the first three.
-	t.Run("every Rails address the bundle links to is a real route", func(t *testing.T) {
+	// this asserts these are answered: by a Go route, an nginx location, the
+	// route map, or a bundle page.
+	t.Run("every non-bundle address the bundle links to is a real route", func(t *testing.T) {
 		var listed []string
 		for _, m := range regexp.MustCompile(`'([^']+)'`).FindAllStringSubmatch(find(railsTS, regexp.MustCompile(`(?s)RAILS_PATHS[^=]*=\s*\[(.*?)\]`), 1), -1) {
 			listed = append(listed, m[1])
@@ -265,7 +263,7 @@ func TestStaticBundle(t *testing.T) {
 	})
 	// N is a setting somebody raises by pull request (#198), so the
 	// prerendered copy of it cannot drift.
-	t.Run("the baked support goal is the one config/support_goal.yml sets", func(t *testing.T) {
+	t.Run("the baked support goal is the one data/support_goal.yml sets", func(t *testing.T) {
 		baked, err := strconv.Atoi(find(read(t, "frontend/apps/site/src/data/support-goal.ts"), regexp.MustCompile(`SUPPORT_GOAL\s*=\s*(\d+)`), 1))
 		if err != nil {
 			t.Fatal("found no SUPPORT_GOAL in support-goal.ts; has its shape changed?")
@@ -273,11 +271,11 @@ func TestStaticBundle(t *testing.T) {
 		var goal struct {
 			MonthlyBackers int `yaml:"monthly_backers"`
 		}
-		if err := yaml.Unmarshal([]byte(read(t, "config/support_goal.yml")), &goal); err != nil || goal.MonthlyBackers == 0 {
-			t.Fatalf("config/support_goal.yml has no monthly_backers: %v", err)
+		if err := yaml.Unmarshal([]byte(read(t, "data/support_goal.yml")), &goal); err != nil || goal.MonthlyBackers == 0 {
+			t.Fatalf("data/support_goal.yml has no monthly_backers: %v", err)
 		}
 		if goal.MonthlyBackers != baked {
-			t.Errorf("config/support_goal.yml says %d and the static pages say %d. Both halves of the site quote this number.", goal.MonthlyBackers, baked)
+			t.Errorf("data/support_goal.yml says %d and the static pages say %d. Both halves of the site quote this number.", goal.MonthlyBackers, baked)
 		}
 	})
 	// reserved-paths is what the bundle must never contain, and page-paths.ts
@@ -290,28 +288,10 @@ func TestStaticBundle(t *testing.T) {
 			}
 		}
 	})
-	t.Run("everything Rails serves out of public/ is reserved", func(t *testing.T) {
-		entries, err := os.ReadDir(path("public"))
-		if os.IsNotExist(err) {
-			return // nothing served from public/, nothing to shadow
-		}
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, e := range entries {
-			p := "/" + e.Name()
-			if e.IsDir() {
-				p += "/x"
-			}
-			if !reserved(t, p, false) {
-				t.Errorf("/%s exists in public/ and is not in deploy/static/reserved-paths", e.Name())
-			}
-		}
-	})
 	// A location that aliases a directory, returns a status, or is internal is
 	// answered by nginx itself, so a bundle file at that address is either
 	// shadowed by it or shadows it.
-	t.Run("every path nginx answers without Rails is reserved", func(t *testing.T) {
+	t.Run("every path nginx answers itself is reserved", func(t *testing.T) {
 		var fromDisk []string
 		for _, m := range regexp.MustCompile(`(?m)^    location (?:\^~ |= )?(/\S*) \{\n((?:.*\n)*?)    \}`).FindAllStringSubmatch(vhost(t, "org.openipc"), -1) {
 			p, body := m[1], m[2]
@@ -355,17 +335,12 @@ func TestStaticBundle(t *testing.T) {
 		}
 	})
 	// An entry that matches nothing any more is folklore, and folklore is how a
-	// list stops being read. Known is the Go routes, public/, every nginx
-	// location, and config/routes.rb for as long as it exists.
+	// list stops being read. Known is the Go routes, every nginx location and
+	// the route map.
 	t.Run("no reserved entry has stopped meaning anything", func(t *testing.T) {
 		var known []string
 		for _, r := range goRoutes(t) {
 			known = append(known, r.Path, sample(r.Path))
-		}
-		if entries, err := os.ReadDir(path("public")); err == nil {
-			for _, e := range entries {
-				known = append(known, "/"+e.Name())
-			}
 		}
 		sites, _ := filepath.Glob(path("deploy/nginx/sites-available/*"))
 		for _, s := range sites {
@@ -375,12 +350,12 @@ func TestStaticBundle(t *testing.T) {
 				}
 			}
 		}
-		if exists("config/routes.rb") {
-			known = append(known, lines(read(t, "config/routes.rb"))...)
-		}
 		for _, rule := range reservedRules(t) {
 			needle := strings.TrimSuffix(strings.TrimPrefix(rule, "*"), "/")
 			if needle == "" || slices.ContainsFunc(known, func(k string) bool { return strings.Contains(k, needle) }) {
+				continue
+			}
+			if !strings.Contains(rule, "*") && (routeMapAnswers(t, rule) || routeMapAnswers(t, rule+"x")) {
 				continue
 			}
 			// Rails' table held `/assets` as a mount; nginx spells it inside a
@@ -395,7 +370,7 @@ func TestStaticBundle(t *testing.T) {
 					continue
 				}
 			}
-			t.Errorf("%s in deploy/static/reserved-paths matches no route, no file in public/ and no nginx location", rule)
+			t.Errorf("%s in deploy/static/reserved-paths matches no Go route, no route-map entry and no nginx location", rule)
 		}
 	})
 	// The scripts are the whole mechanism and nothing else executes them here.
@@ -473,16 +448,37 @@ func answered(t testing.TB, p string, bundlePaths []string) bool {
 	if slices.Contains(bundlePaths, p) || slices.ContainsFunc(goRoutes(t), func(r route) bool { return routeMatches(r.Path, p) }) {
 		return true
 	}
-	if nginxAnswers(t, p) {
+	// The home page is a file route of its own (src/pages/index.astro), not
+	// an entry in page-paths.ts.
+	if p == "/" {
 		return true
 	}
-	if exists("config/routes.rb") {
-		rb := read(t, "config/routes.rb")
-		if p == "/" {
-			return regexp.MustCompile(`(?m)^\s*root\b`).MatchString(rb)
+	return nginxAnswers(t, p) || routeMapAnswers(t, p)
+}
+
+// routeMapAnswers says whether conf.d/openipc-redirects.conf -- what Rails'
+// router answered, kept as an nginx map since #304 -- claims p with anything
+// but its default. A claimed address is redirected, retired with a 410, or is
+// a page the bundle holds.
+func routeMapAnswers(t testing.TB, p string) bool {
+	conf := read(t, "deploy/nginx/conf.d/openipc-redirects.conf")
+	body := find(conf, regexp.MustCompile(`(?s)map "\$request_method \$uri" \$openipc_route_action \{(.*?)\n\}`), 1)
+	if body == "" {
+		t.Fatal("openipc-redirects.conf has no $openipc_route_action map")
+	}
+	entry := regexp.MustCompile(`^\s*"~([^"]+)"\s+"[^"]*";`)
+	for _, l := range lines(body) {
+		m := entry.FindStringSubmatch(l)
+		if m == nil {
+			continue
 		}
-		return strings.Contains(rb, "'"+p+"'") || strings.Contains(rb, `"`+p+`"`) ||
-			strings.Contains(rb, "'"+strings.TrimPrefix(p, "/")+"'")
+		re, err := regexp.Compile(strings.ReplaceAll(m[1], `\\`, `\`))
+		if err != nil {
+			t.Fatalf("openipc-redirects.conf: %s does not compile: %v", m[1], err)
+		}
+		if re.MatchString("GET " + p) {
+			return true
+		}
 	}
 	return false
 }

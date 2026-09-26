@@ -7,7 +7,7 @@
  * wall page -- rather than as props serialised into each shell.
  *
  * `npm run export` (scripts/export-data.mjs) writes the three files below out
- * of config/locales, and export-data.test.ts fails when they drift from it.
+ * of data/locales, and export-data.test.ts fails when they drift from it.
  */
 import { DEFAULT_LOCALE, translateIn, type Locale, type Node, type TranslateOptions } from './i18n';
 import en from '../i18n/wall.en.json';

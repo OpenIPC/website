@@ -1,7 +1,7 @@
 /**
  * The WebUI screenshots, and where their files are (#160).
  *
- * The manifest is exported from config/webui_gallery.yml -- the same file
+ * The manifest is exported from data/webui_gallery.yml -- the same file
  * tools/webui-gallery reads to know which pages of a camera to photograph, so
  * the page and the photographs cannot describe different sets of screens.
  *
@@ -38,7 +38,7 @@ function file(name: string): ImageMetadata {
   const found = FILES[key];
   if (!found) {
     throw new Error(
-      `No WebUI screenshot ${name}. config/webui_gallery.yml names it; `
+      `No WebUI screenshot ${name}. data/webui_gallery.yml names it; `
       + 'run tools/webui-gallery/run.sh, or remove the entry.',
     );
   }

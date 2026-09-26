@@ -14,7 +14,7 @@ tools/webui-gallery/run.sh --camera 192.168.1.10
 ```
 
 It asks for the password, photographs every page named in
-`config/webui_gallery.yml`, removes anything that identifies the camera, lays a
+`data/webui_gallery.yml`, removes anything that identifies the camera, lays a
 scene over the live player, converts each capture to the two sizes the page
 ships, and installs them into `app/assets/images/webui/`. Then commit the result
 and open a pull request like any other change.
@@ -36,7 +36,7 @@ full of dark chrome.
 
 ## Changing which pages appear
 
-`config/webui_gallery.yml` is the gallery. Add an entry and the page shows it,
+`data/webui_gallery.yml` is the gallery. Add an entry and the page shows it,
 the tool photographs it, and the test suite starts requiring both its files. The
 same file is read by `app/models/webui_gallery.rb`, so the list and the pictures
 cannot drift apart.

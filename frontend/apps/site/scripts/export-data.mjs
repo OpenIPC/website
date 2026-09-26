@@ -8,11 +8,11 @@
  *
  * Three exports, each the byte-for-byte replacement of a Rails task:
  *
- *   i18n       config/locales/*.yml  -> src/i18n/{en,ru,zh}.json and the
+ *   i18n       data/locales/*.yml  -> src/i18n/{en,ru,zh}.json and the
  *              wizard.* and wall.* island catalogues   (was `bin/rails i18n:export`)
  *   catalogue  data/catalogue/*.yml  -> src/data/catalogue.json
  *                                                       (was `bin/rails catalogue:bake`)
- *   webui      config/webui_gallery.yml -> src/data/webui-gallery.json
+ *   webui      data/webui_gallery.yml -> src/data/webui-gallery.json
  *                                                       (was `bin/rails webui_gallery:export`)
  *
  * The output format is Ruby's JSON.pretty_generate, reproduced here rather
@@ -71,7 +71,7 @@ const yamlFile = (path) => parse(readFileSync(path, 'utf8'));
 // --- i18n --------------------------------------------------------------------
 //
 // lib/i18n_export.rb, which read Rails' merged I18n backend. That backend is
-// config/locales merged over the gems' own locale files, and exactly one gem
+// data/locales merged over the gems' own locale files, and exactly one gem
 // key lands inside an exported namespace: ActiveSupport's `support.array`
 // (words_connector and friends), in English. It is carried in
 // scripts/rails-locale-defaults.en.yml so the export needs no gem.
@@ -120,7 +120,7 @@ function deepMerge(into, from) {
   return into;
 }
 
-/** I18n's translations for one locale: defaults, then config/locales in load order. */
+/** I18n's translations for one locale: defaults, then data/locales in load order. */
 export function translations(locale, root = REPO) {
   const merged = {};
   const defaults = join(SITE, 'scripts', `rails-locale-defaults.${locale}.yml`);
@@ -129,7 +129,7 @@ export function translations(locale, root = REPO) {
   } catch (e) {
     if (e.code !== 'ENOENT') throw e;
   }
-  const dir = join(root, 'config', 'locales');
+  const dir = join(root, 'data', 'locales');
   for (const file of readdirSync(dir).filter((f) => f.endsWith('.yml')).sort(byteOrder)) {
     deepMerge(merged, yamlFile(join(dir, file))?.[locale] ?? {});
   }
@@ -203,7 +203,7 @@ export function catalogue(root = REPO) {
 // lib/webui_gallery_export.rb over app/models/webui_gallery.rb.
 
 export function webuiGallery(root = REPO) {
-  return yamlFile(join(root, 'config', 'webui_gallery.yml')).screens.map((s) =>
+  return yamlFile(join(root, 'data', 'webui_gallery.yml')).screens.map((s) =>
     entries([
       ['slug', s.slug],
       ['caption', s.caption],

@@ -1,18 +1,19 @@
 # Paths the static bundle must never contain (#157).
 #
-# nginx serves the bundle BEFORE it asks Rails: `try_files $uri $uri/index.html
-# @rails` in the catch-all means a file in the bundle shadows the Rails route
-# at the same address, silently and without a line in the Rails log. That is
-# the failure mode epic #142 names as the most likely way this seam goes wrong.
+# nginx serves the bundle BEFORE anything else: `try_files $uri $uri/index.html
+# @fallback` in the catch-all means a file in the bundle shadows the route map
+# or the Go service at the same address, silently and without a line in any
+# log. That is the failure mode epic #142 names as the most likely way this
+# seam goes wrong.
 #
 # A line ending in "/" is a prefix. A line containing "*" is a glob matched
 # against the whole path. Anything else is an exact path. Blank lines and
 # lines starting with "#" are ignored. Matching is done after stripping a
 # locale prefix, so /ru/snapshots/x is checked as /snapshots/x.
 #
-# This list is not maintained by hand: test/deploy/static_seam_test.rb derives
-# what must be in it from three places that know nothing about each other --
-# the router, everything in public/ (Rails serves all of it), and every nginx
+# This list is not maintained by hand: service/deploytest derives what must be
+# in it from places that know nothing about each other -- the Go routes, the
+# route map in deploy/nginx/conf.d/openipc-redirects.conf, and every nginx
 # location with an alias or a root of its own -- and fails if an entry is
 # missing or if an entry here matches none of them.
 
@@ -20,7 +21,7 @@
 /admin
 /admin/
 /api/
-/rails/
+/rails/active_storage/
 /up
 
 # --- pages that are not pages -----------------------------------------------
@@ -47,22 +48,8 @@
 /files/
 /protected-files/
 /.well-known/
-# The Go firmware process's image cache (#299), internal like /protected-files/,
-# and the internal location nginx mirrors camera uploads through while they
-# are shadowed (#294).
+# The Go firmware process's image cache (#299), internal like /protected-files/.
 /firmware-cache/
-/_openipc_shadow_upload
-
-# --- files Rails serves straight out of public/ ------------------------------
-#
-# What is left of them. robots.txt, the icons and og-default.png were here
-# until #165 and are the bundle's now: they are files, the bundle is where this
-# site keeps its files, and Rails was serving them only because nobody had
-# moved them. The error pages stay -- Rails renders them when Rails is what
-# failed, and a bundle cannot answer for that.
-/404.html
-/422.html
-/500.html
 
 # --- the expensive leaf ------------------------------------------------------
 # /cameras/ is deliberately NOT reserved: the catalogue is exactly what #162

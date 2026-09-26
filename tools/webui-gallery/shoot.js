@@ -1,4 +1,4 @@
-// Photographs the pages listed in config/webui_gallery.yml from a running
+// Photographs the pages listed in data/webui_gallery.yml from a running
 // camera. Driven by run.sh; see README.md for what to pass and why.
 const fs = require('fs');
 const path = require('path');
@@ -164,7 +164,7 @@ async function unlisted(page, listed) {
 
   if (extra.length) {
     console.log(`\nnot in the manifest, offered by this camera: ${extra.join(', ')}`);
-    console.log('add any worth showing to config/webui_gallery.yml and run again.');
+    console.log('add any worth showing to data/webui_gallery.yml and run again.');
   }
   if (failed) {
     // Loudly, and before anything is installed: a gallery missing a tile is

@@ -1,5 +1,0 @@
-66.249.66.1 - - [20/Sep/2026:01:00:00 +0000] "GET / HTTP/1.1" 200 26382 "-" "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" xff="-" cache=HIT rt=0.010 urt="-" al="-" peer=66.249.66.1
-160.79.104.7 - - [20/Sep/2026:01:00:07 +0000] "GET /supported-hardware/featured HTTP/1.1" 200 42111 "-" "Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)" xff="-" cache=MISS rt=0.220 urt="0.219" al="-" peer=160.79.104.7
-95.108.213.5 - - [19/Sep/2026:23:59:58 +0000] "GET /ru HTTP/1.1" 200 26001 "-" "Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)"
-180.76.15.6 - - [19/Sep/2026:23:59:59 +0000] "GET /zh HTTP/1.1" 200 25880 "-" "Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)"
-198.51.100.14 - - [19/Sep/2026:23:59:59 +0000] "GET / HTTP/2.0" 200 26382 "https://www.google.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36"

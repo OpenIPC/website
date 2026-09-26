@@ -89,7 +89,7 @@ export function monthlyUsd(stats: SupportStats): number {
 /**
  * Capped at the goal so the meter cannot overflow its track. Passing the goal
  * is a good problem and shows as a full bar until someone raises it in
- * config/support_goal.yml -- which is a pull request, deliberately, so the
+ * data/support_goal.yml -- which is a pull request, deliberately, so the
  * number does not move on its own.
  */
 export function progressPercent(stats: SupportStats, goal: number): number {

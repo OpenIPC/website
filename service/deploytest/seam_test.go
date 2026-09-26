@@ -1,14 +1,11 @@
 package deploytest
 
 import (
-	"os"
 	"regexp"
 	"slices"
 	"strings"
 	"testing"
 )
-
-var upstreams = map[string]string{"org.openipc": "http://127.0.0.1:3000", "org.openipc.dev": "http://127.0.0.1:3001"}
 
 // seamBlock is the body of the one `<header> { ... }` block containing
 // `containing`, comments stripped. There are two `location /` blocks in each
@@ -34,13 +31,13 @@ func seamBlock(t testing.TB, name, header, containing string) string {
 func seam(t testing.TB, name string) string { return seamBlock(t, name, "location /", "try_files") }
 
 func fallback(t testing.TB, name string) string {
-	return seamBlock(t, name, "location @rails", "proxy_pass")
+	return seamBlock(t, name, "location @fallback", "return 404")
 }
 
 // The seam between the static bundle and the application (#157).
 //
 // nginx's catch-all serves a file from the bundle when one is there and falls
-// through to a named `@rails` location when it is not, so "extracted" and "has
+// through to a named `@fallback` location when it is not, so "extracted" and "has
 // an index.html in the bundle" are the same statement. That is a lot of
 // behaviour resting on four directives, and three of the ways to get it wrong
 // are silent. What these hold is measured, not reasoned: the numbers quoted in
@@ -49,7 +46,7 @@ func fallback(t testing.TB, name string) string {
 func TestStaticSeam(t *testing.T) {
 	tryFiles := regexp.MustCompile(`try_files (.*);`)
 
-	t.Run("the catch-all tries the bundle and then falls through to Rails", func(t *testing.T) {
+	t.Run("the catch-all tries the bundle and then falls through to the route map", func(t *testing.T) {
 		for _, name := range vhosts {
 			d := seam(t, name)
 			mustContain(t, d, "root /srv/www/static/", name+": `location /` has no document root, so try_files resolves against nothing")
@@ -58,9 +55,9 @@ func TestStaticSeam(t *testing.T) {
 				t.Fatalf("%s: `location /` does not try the bundle at all", name)
 			}
 			f := strings.Fields(tf)
-			if last := f[len(f)-1]; last != "@rails" {
-				t.Errorf("%s: try_files ends in `%s`, not `@rails`. Anything but a named location here means nginx "+
-					"answers instead of the application -- a 404 or a 403 where there is a working page.", name, last)
+			if last := f[len(f)-1]; last != "@fallback" {
+				t.Errorf("%s: try_files ends in `%s`, not `@fallback`. Anything but the named location here skips "+
+					"the route map -- a 404 where there used to be a redirect.", name, last)
 			}
 		}
 	})
@@ -76,29 +73,27 @@ func TestStaticSeam(t *testing.T) {
 			}
 		}
 	})
-	t.Run("the fallback proxies to the application", func(t *testing.T) {
-		for name, up := range upstreams {
-			mustContain(t, fallback(t, name), "proxy_pass "+up+";", name+": @rails does not proxy to "+up)
-		}
-	})
-	// nginx refuses `proxy_pass` with a URI part inside a named location.
-	t.Run("the fallback proxy_pass carries no URI part", func(t *testing.T) {
+	// Rails is gone (#304). What its router answered is the route map in
+	// conf.d/openipc-redirects.conf, and the fallback answers it itself:
+	// nothing behind the catch-all is proxied any more.
+	t.Run("the fallback answers from the route map and proxies nothing", func(t *testing.T) {
 		for _, name := range vhosts {
-			pass := find(fallback(t, name), regexp.MustCompile(`proxy_pass (\S+);`), 1)
-			if strings.HasSuffix(pass, "/") {
-				t.Errorf("%s: @rails proxies to `%s`, which has a URI part; nginx -t fails and the reload does not happen", name, pass)
+			d := fallback(t, name)
+			for _, action := range []string{"410", "301", "302", "catchall"} {
+				mustContain(t, d, "$openipc_route_action = "+action, name+": @fallback does not answer the route map's `"+action+"`")
 			}
+			mustNotContain(t, d, "proxy_pass", name+": @fallback proxies somewhere; there is no application behind it")
 		}
 	})
 	// limit_conn runs in preaccess and try_files in precontent, so the
 	// configuration that counts is the location the request landed in first.
 	// With the cap at 1 and four concurrent slow transfers on 1.26.3: in
-	// `location /`, 429 429 429 200; in `@rails`, 200 200 200 200.
+	// `location /`, 429 429 429 200; in the named location, 200 200 200 200.
 	t.Run("admission control sits where the phase engine can see it", func(t *testing.T) {
 		mustContain(t, seam(t, "org.openipc"), "limit_conn site_conc",
 			"`location /` declares no limit_conn, so the inherited per-address cap is the only one that runs and the site_conc pool that ended the 2026-09-03 outage is silently replaced")
 		mustNotContain(t, fallback(t, "org.openipc"), "limit_conn",
-			"@rails declares a limit_conn. It cannot run: the request has already passed preaccess in `location /`.")
+			"@fallback declares a limit_conn. It cannot run: the request has already passed preaccess in `location /`.")
 	})
 	// add_header at location level REPLACES every inherited one.
 	t.Run("the new locations repeat every header they would otherwise drop", func(t *testing.T) {
@@ -106,7 +101,7 @@ func TestStaticSeam(t *testing.T) {
 			"org.openipc":     {"add_header Strict-Transport-Security"},
 			"org.openipc.dev": {"add_header Strict-Transport-Security", "add_header X-Robots-Tag"},
 		} {
-			for header, d := range map[string]string{"location /": seam(t, name), "location @rails": fallback(t, name)} {
+			for header, d := range map[string]string{"location /": seam(t, name), "location @fallback": fallback(t, name)} {
 				for _, directive := range required {
 					mustContain(t, d, directive, name+": `"+header+"` uses add_header and does not repeat `"+directive+"`")
 				}
@@ -118,10 +113,9 @@ func TestStaticSeam(t *testing.T) {
 	t.Run("each side of the seam says which one it is", func(t *testing.T) {
 		for _, name := range vhosts {
 			mustContain(t, seam(t, name), "add_header X-Served-By static always", name+": a page served from the bundle does not say so")
-			// Since #302 the fallback answers the router's redirects and 410s
-			// itself, so the witness is a variable: `rails` for what reaches the
-			// application, `nginx` for what the generated map answered.
-			mustContain(t, fallback(t, name), "add_header X-Served-By $openipc_route_by always", name+": a page rendered by the application does not say so")
+			// The fallback answers the route map's redirects and 410s itself, so
+			// the witness is a variable the map sets.
+			mustContain(t, fallback(t, name), "add_header X-Served-By $openipc_route_by always", name+": an answer from the route map does not say so")
 		}
 	})
 
@@ -176,8 +170,7 @@ func TestStaticSeam(t *testing.T) {
 	})
 	// Every path the installer asserts must still reach the application has to
 	// be a real address. A typo here is a check that passes because nothing
-	// answers it. Rails' router answered that; now a Go route does, or a file
-	// served straight out of public/.
+	// answers it: a Go route has to.
 	t.Run("the paths the installer guards are real addresses", func(t *testing.T) {
 		paths := strings.Fields(find(installer, regexp.MustCompile(`(?s)MUST_NOT_BE_STATIC=\((.*?)\)`), 1))
 		if len(paths) == 0 {
@@ -185,11 +178,8 @@ func TestStaticSeam(t *testing.T) {
 		}
 		routes := goRoutes(t)
 		for _, p := range paths {
-			if st, err := os.Stat(path("public/" + strings.TrimPrefix(p, "/"))); err == nil && !st.IsDir() {
-				continue
-			}
 			if !slices.ContainsFunc(routes, func(r route) bool { return routeMatches(r.Path, p) }) {
-				t.Errorf("static.sh guards %s, which is neither a Go route nor a file in public/ -- it would pass whatever the bundle did", p)
+				t.Errorf("static.sh guards %s, which is not a Go route -- it would pass whatever the bundle did", p)
 			}
 		}
 	})

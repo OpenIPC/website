@@ -1,4 +1,4 @@
-// The filenames config/webui_gallery.yml implies, one per line.
+// The filenames data/webui_gallery.yml implies, one per line.
 //
 // run.sh deletes anything in the images directory that this does not list, and
 // it used to work that list out with grep -- a second, worse YAML parser living

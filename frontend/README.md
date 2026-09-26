@@ -26,12 +26,12 @@ npm run dev -w @openipc/site            # http://localhost:4321/_smoke/
 
 ## Translations
 
-`config/locales/*.yml` is the source of truth and stays that way. The Astro
+`data/locales/*.yml` is the source of truth and stays that way. The Astro
 build reads a JSON export of the marketing namespaces, committed under
 `apps/site/src/i18n/`, so that no page render parses YAML.
 
 ```bash
-npm run export -w @openipc/site   # after changing config/locales, data/catalogue or config/webui_gallery.yml
+npm run export -w @openipc/site   # after changing data/locales, data/catalogue or data/webui_gallery.yml
 ```
 
 `scripts/export-data.mjs` writes the translations, `src/data/catalogue.json`

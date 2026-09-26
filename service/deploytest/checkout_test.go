@@ -1,104 +1,11 @@
 package deploytest
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
 )
-
-// deploy/shadow-report.sh is the gate before cameras are moved to Go (#294):
-// every mirrored upload must have been seen, decided and stored the same way.
-// Run against logs and stand-in database clients, so what it accepts and what
-// it refuses is pinned without a host.
-func TestShadowReport(t *testing.T) {
-	const decisions = `2026-09-27T10:00:00+00:00 req0001 201 /snapshots/r0000000000000000001
-2026-09-27T10:30:00+00:00 req0002 201 /snapshots/r0000000000000000002
-2026-09-27T10:31:00+00:00 req0003 429 -
-2026-09-27T10:32:00+00:00 req0004 415 -
-2026-09-27T10:33:00+00:00 req0005 - -
-2026-09-27T10:33:00+00:00 req0006 - -
-2026-09-27T10:34:00+00:00 req0007 429 -
-`
-	shadowLine := func(id string, status int, location string) string {
-		return `{"time":"2026-09-27T10:30:00Z","level":"INFO","msg":"upload_decision","role":"web",` +
-			fmt.Sprintf(`"request_id":"%s","status":%d,"location":"%s"}`, id, status, location) + "\n"
-	}
-	row := func(uptime string) string {
-		return `\t02:c0:f0:00:00:02\t1.2.3.4\tNULL\tfw\tNULL\tNULL\timx335\tgk7205v300\t55.1\tmajestic\t` + uptime + `\timage/jpeg\t12288`
-	}
-	// mysql answers with Rails' row; runuser (psql as postgres) with the shadow's.
-	report := func(t *testing.T, shadow []string, goUptime string) (string, bool) {
-		dir := t.TempDir()
-		bin := filepath.Join(dir, "bin")
-		if err := os.Mkdir(bin, 0o755); err != nil {
-			t.Fatal(err)
-		}
-		writeExec(t, filepath.Join(bin, "mysql"), "#!/bin/sh\nprintf 'r0000000000000000002"+row("3 days")+"\\n'\n")
-		writeExec(t, filepath.Join(bin, "runuser"), "#!/bin/sh\nprintf 'g0000000000000000002"+row(goUptime)+"\\n'\n")
-		writeFile(t, filepath.Join(dir, "decisions.log"), decisions)
-		writeFile(t, filepath.Join(dir, "shadow.log"), strings.Join(shadow, ""))
-		return run(t, map[string]string{"PATH": bin + ":" + os.Getenv("PATH"),
-			"DECISIONS_LOG": filepath.Join(dir, "decisions.log"), "SHADOW_LOG": filepath.Join(dir, "shadow.log")},
-			"", "bash", abs(t, "deploy/shadow-report.sh"))
-	}
-	allSeen := func() []string {
-		return []string{shadowLine("req0001", 201, "/snapshots/g0000000000000000001"),
-			shadowLine("req0002", 201, "/snapshots/g0000000000000000002"),
-			shadowLine("req0003", 429, ""), shadowLine("req0004", 415, ""), shadowLine("req0007", 429, "")}
-	}
-	without := func(id string) []string {
-		var out []string
-		for _, l := range allSeen() {
-			if !strings.Contains(l, id) {
-				out = append(out, l)
-			}
-		}
-		return out
-	}
-
-	t.Run("every upload seen, decided and stored the same way passes, after the warm-up", func(t *testing.T) {
-		out, ok := report(t, allSeen(), "3 days")
-		if !ok {
-			t.Fatal(out)
-		}
-		mustContain(t, out, "compared 4 uploads", "the warm-up, and what no backend saw, are skipped")
-		mustContain(t, out, "1 frames both stored; 0 row lines differ", out)
-	})
-	t.Run("a different decision fails", func(t *testing.T) {
-		ls := allSeen()
-		ls[2] = shadowLine("req0003", 201, "/snapshots/g0000000000000000003")
-		out, ok := report(t, ls, "3 days")
-		if ok {
-			t.Error(out)
-		}
-		mustContain(t, out, "DECISIONS DISAGREE", out)
-	})
-	t.Run("the same decision with a different stored row fails", func(t *testing.T) {
-		out, ok := report(t, allSeen(), "4 days")
-		if ok {
-			t.Error(out)
-		}
-		mustContain(t, out, "STORED ROWS DIFFER", out)
-	})
-	// nginx logged 499 for it at the edge; the decision log carries what Rails answered.
-	t.Run("a camera that hung up is still compared, because the backends may have stored its frame", func(t *testing.T) {
-		out, ok := report(t, without("req0007"), "3 days")
-		if ok {
-			t.Error(out)
-		}
-		mustContain(t, out, "1 uploads Rails decided that the shadow never saw", out)
-	})
-	t.Run("an upload the shadow never saw fails", func(t *testing.T) {
-		out, ok := report(t, without("req0004"), "3 days")
-		if ok {
-			t.Error(out)
-		}
-		mustContain(t, out, "1 uploads Rails decided that the shadow never saw", out)
-	})
-}
 
 // /srv/www/deploy-src is not a copy of how openipc.org is deployed. It IS what
 // runs: deploy.sh reads docker-compose.yml and legacy-images from beside

@@ -68,7 +68,7 @@ server {
     location = /up {
         access_log off;
 
-        proxy_pass http://127.0.0.1:3001;
+        proxy_pass http://127.0.0.1:3012;  # the Go web process (#304)
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -281,14 +281,14 @@ server {
     # brace and fails with "missing closing parenthesis" pointing at a regex
     # that plainly has one.
     #
-    # `try_files ... @rails` is what makes a rollback safe. Roll the bundle
+    # `try_files ... @fallback` is what makes a rollback safe. Roll the bundle
     # back and the file is gone, the request falls through, and Rails renders
     # the page it has always rendered. The production vhost carries the
     # concurrency and rate caps on these locations; this one does not, because
     # dev is behind basic auth and is not the host anything floods.
     location ~ "^/(?:(?:ru|zh)/)?open-wall/?$" {
         root /srv/www/static/dev/current;
-        try_files $wall_gallery_read @rails;
+        try_files $wall_gallery_read @fallback;
 
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
@@ -298,7 +298,7 @@ server {
 
     location ~ "^/(?:(?:ru|zh)/)?open-wall/(?:[0-9]+|camera/[0-9a-f]{16})$" {
         root /srv/www/static/dev/current;
-        try_files $wall_shell_read @rails;
+        try_files $wall_shell_read @fallback;
 
         # All of them repeated: add_header at location level replaces the
         # whole inherited set, and dropping the robots line here is how
@@ -314,7 +314,7 @@ server {
 
     location ~ "^/(?:(?:ru|zh)/)?snapshots/[0-9a-f]{20}(?:/(?:archive|oneday|slideshow))?$" {
         root /srv/www/static/dev/current;
-        try_files $wall_shell_read @rails;
+        try_files $wall_shell_read @fallback;
 
         add_header Strict-Transport-Security max-age=15768000;
         # Staging's own, which already says more than #165 asks for on these
@@ -531,15 +531,21 @@ server {
     # cold visit -- so dev was shedding its own images and rendering with gaps.
     # Production carves the same prefix out for the same reason; dev had been
     # left behind.
-    location ~ ^/(assets|fonts)/ {
-        limit_conn per_subnet 100;
-        limit_conn_status 429;
+    # The web fonts are the bundle's (#304): Rails' public/fonts served them
+    # until Rails went, and the static pages' stylesheet asks for them here.
+    # Named by face and weight, never rewritten, so a year of cache is safe.
+    location ^~ /fonts/ {
+        root /srv/www/static/dev/current;
+        try_files $uri =404;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header X-Served-By static always;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
 
-        proxy_pass http://127.0.0.1:3001;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+    # Rails' asset pipeline, gone with Rails (#304).
+    location ^~ /assets/ {
+        return 410 "Gone\n";
     }
 
     # The bundle's own hashed assets (#159). Astro fingerprints every file it
@@ -551,12 +557,12 @@ server {
     # site_conc slot: an HTTP/2 page load opens several in parallel and they
     # must not compete with page renders.
     #
-    # try_files ends at @rails rather than =404, because a rollback can leave
+    # try_files ends at @fallback rather than =404, because a rollback can leave
     # a page referencing an asset the older bundle does not carry, and the
     # seam's rule is that only Rails answers 404.
     location ^~ /_astro/ {
         root /srv/www/static/dev/current;
-        try_files $uri @rails;
+        try_files $uri @fallback;
 
         # All three inherited headers repeated: add_header at location level
         # replaces the server block's entire set, and dropping X-Robots-Tag
@@ -574,7 +580,7 @@ server {
     # and not `$uri $uri/`.
     location / {
         root /srv/www/static/dev/current;
-        try_files $uri $uri/index.html @rails;
+        try_files $uri $uri/index.html @fallback;
 
         # BOTH inherited headers repeated, not just HSTS. add_header at
         # location level replaces the server block's entire set, and dropping
@@ -592,42 +598,24 @@ server {
         add_header Cache-Control "public, max-age=0, must-revalidate" always;
     }
 
-    location @rails {
-        # What Rails' router answered without rendering anything (#302) --
-        # the redirects, the retired addresses and the catch-all -- answered
-        # here instead, from maps generated out of config/routes.rb
-        # (conf.d/openipc-redirects.conf). Only after try_files, so a file in
-        # the bundle still wins, exactly as it did over the router; and only
-        # what no route renders, so every page Rails still serves still reaches
-        # it. `return` is the one thing `if` is safe for. One line each: the
-        # deploy tests read this block as ending at the first bare `}`.
+    location @fallback {
+        # Everything the bundle does not hold (#304). Rails used to be here; it
+        # is gone, and what its router answered is answered from
+        # conf.d/openipc-redirects.conf -- the redirects, the retired addresses
+        # and the catch-all -- and anything else is a page the bundle should
+        # have held, which is a 404. `return` is the one thing `if` is safe
+        # for. One line each: the deploy tests read this block as ending at
+        # the first bare `}`.
         if ($openipc_route_action = 410)      { return 410 "Gone\n"; }
         if ($openipc_route_action = 301)      { return 301 $openipc_route_target; }
         if ($openipc_route_action = 302)      { return 302 $openipc_route_target; }
         if ($openipc_route_action = catchall) { return 302 $openipc_route_target; }
         default_type text/plain;
-
-        proxy_buffer_size 128k;
-        proxy_buffers 8 128k;
-
-        # No URI part: nginx forbids one inside a named location. See the note
-        # in sites-available/org.openipc -- what reaches the app is unchanged.
-        proxy_pass http://127.0.0.1:3001;
-
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_connect_timeout 120;
-        proxy_send_timeout 120;
-        proxy_read_timeout 180;
+        return 404 "Not Found\n";
 
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
         add_header X-Served-By $openipc_route_by always;
-        # Only on what nginx answered itself: Rails sent no-cache on its
-        # redirects and 410s. Empty -- so absent -- when Rails answers.
         add_header Cache-Control $openipc_route_cache always;
     }
 

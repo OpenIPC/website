@@ -104,15 +104,6 @@ exec_sh() { docker exec -i "$cid" sh -s; }
 # seam and not the application. Both answer 200 to everything, which is what
 # makes the expected statuses below deterministic.
 cat > /etc/nginx/conf.d/zz-stub-upstream.conf <<'STUB'
-server { listen 127.0.0.1:3000; location / {
-  # Rails sends its own Cache-Control on every page (max-age=300 and
-  # friends). The stub sends one too, so the assertion below -- that the
-  # bundle's policy cannot reach a Rails response -- has something to
-  # measure.
-  add_header Cache-Control "max-age=300, public" always;
-  return 200 "RAILS-PROD\n";
-} }
-server { listen 127.0.0.1:3001; location / { return 200 "RAILS-DEV\n"; } }
 server { listen 127.0.0.1:3002; location / { return 200 "GO-WEB-PROD\n"; } }
 server { listen 127.0.0.1:3003;
   location = /api/v1/hardware/availability.json { return 200 "GO-AVAILABILITY\n"; }
@@ -120,7 +111,6 @@ server { listen 127.0.0.1:3003;
   add_header X-Accel-Redirect /firmware-cache/image.bin;
   return 200 "";
 } }
-server { listen 127.0.0.1:3004; access_log /tmp/shadow.log; location / { return 201 "GO-SHADOW\n"; } }
 server { listen 127.0.0.1:3012; location / { return 200 "GO-WEB-DEV\n"; } }
 server { listen 127.0.0.1:3013; location / { return 200 "GO-FIRMWARE-DEV\n"; } }
 STUB
@@ -147,6 +137,8 @@ printf 'HOME navigator.languages\n' > /srv/www/static/prod/site-test/index.html
 printf 'User-agent: *\n' > /srv/www/static/prod/site-test/robots.txt
 printf '<urlset/>\n' > /srv/www/static/prod/site-test/sitemap.xml
 printf 'PNG\n' > /srv/www/static/prod/site-test/favicon.png
+install -d -m 0755 /srv/www/static/prod/site-test/fonts
+printf 'WOFF2\n' > /srv/www/static/prod/site-test/fonts/ibm-plex-sans-latin-400-normal.woff2
 printf 'ICO\n' > /srv/www/static/prod/site-test/favicon.ico
 
 for loc in "" ru zh; do
@@ -253,7 +245,7 @@ expect_cache() {
 # GET, and the hazard here is the opposite one: nginx serves a static file for
 # any method, so a bundle that claimed an upload address would answer the
 # camera 200 and never tell anyone.
-posts_to_rails() {
+posts_to_application() {
   path=$1
 
   curl -sS -o /dev/null -D /tmp/hp -k --max-time 5 -X POST \
@@ -261,8 +253,8 @@ posts_to_rails() {
 
   by=$(grep -i '^x-served-by:' /tmp/hp | tr -d '\r' | awk '{print $2}' | head -1)
   code=$(awk 'NR==1{print $2}' /tmp/hp)
-  if [ "${by:-rails}" = rails ] || [ "$by" = nginx ] || [ "$by" = go ]; then
-    printf '  %-32s %-5s %s (POST)\n' "$path" "$code" "${by:-rails}"
+  if [ "$by" = nginx ] || [ "$by" = go ] || [ -z "$by" ]; then
+    printf '  %-32s %-5s %s (POST)\n' "$path" "$code" "${by:--}"
   else
     printf '  %-32s %-5s %s MISMATCH: a file answered a camera upload\n' "$path" "$code" "$by"
     fail=1
@@ -314,11 +306,13 @@ expect /_smoke                      200 static hsts
 # A locale tree: the page is static, and the bare locale directory above it is
 # NOT a 403. `try_files $uri $uri/index.html` writes its first element without
 # a trailing slash, so it is a FILE test -- a directory misses it, misses
-# index.html too, and falls through to Rails. That is what makes it safe for
+# index.html too, and falls through to the fallback, which answers the home
+# page's route as a page the bundle should have held: a 404 in this fixture,
+# whose bundle has no ru/index.html. That is what makes it safe for
 # the bundle to contain ru/ before anything owns /ru/, which is #160's call.
 expect /ru/_smoke/                  200 static hsts
-expect /ru/                         200 rails  hsts
-expect /ru                          200 rails  hsts
+expect /ru/                         404 nginx  no-hsts
+expect /ru                          404 nginx  no-hsts
 
 # The asset directory is the same shape and answers the same way: its files
 # are served, and its bare directory URL -- which nothing links to -- is
@@ -366,10 +360,10 @@ expect "/zh/open-wall/3"            200 static hsts
 # so a bare `return 410` sends none. Recorded here so a change to either is
 # visible rather than silent.
 expect /snapshots/12345             410 -      no-hsts
-# An id of the wrong shape reaches Rails through the wall's own location, which
+# An id of the wrong shape is a 404 from the wall's own location (#304), which
 # does not label what served it -- so `-` here means "not the bundle", which is
 # the whole claim.
-expect "/snapshots/${SNAP}xx"       200 -      hsts
+expect "/snapshots/${SNAP}xx"       404 -      no-hsts
 expect "/open-wall/camera/$CAM.jpg" 410 -      no-hsts
 
 # The gallery's older address is retired for readers -- one canonical address
@@ -391,11 +385,11 @@ redirects_to openipc.org "/snapshots?utm_source=telegram" "https://openipc.org/o
 # the site, and the redirect above would send the camera to a page -- firmware
 # in the field follows a 301 as readily as a browser. /snapshots stays in
 # deploy/static/reserved-paths and the redirect is for reads only.
-posts_to_rails /snapshots
+posts_to_application /snapshots
 # And the wall's own addresses, where a file exists and would otherwise be
 # served to any method at all.
-posts_to_rails /open-wall
-posts_to_rails "/snapshots/$SNAP"
+posts_to_application /open-wall
+posts_to_application "/snapshots/$SNAP"
 
 echo "  --- Cache-Control: assets forever, pages never without asking ---"
 # Astro fingerprints everything under /_astro/, so the name changes whenever
@@ -407,29 +401,29 @@ expect_cache /_smoke/               "public, max-age=0, must-revalidate"
 expect_cache /ru/_smoke/            "public, max-age=0, must-revalidate"
 expect_cache /donate/               "public, max-age=0, must-revalidate"
 
-# And the half that matters to every page that is NOT in the bundle: the seam
-# block's add_header must not reach a Rails response. add_header applies in
-# the location that produced the response, and try_files hands these to
-# @rails -- but the two locations are three lines apart in the vhost, and a
-# bundle policy silently overriding what Rails says about its own pages would
-# be invisible until somebody saw a stale page.
-expect_cache /supported-hardware/featured "max-age=300, public"
+# And the half that matters to every address NOT in the bundle: the seam
+# block's add_header must not reach the fallback's answers. add_header applies
+# in the location that produced the response, and try_files hands these to
+# @fallback, three lines apart in the vhost.
+expect_cache /no-such-page-at-all   "no-cache"
+# The web fonts are the bundle's (#304), named by face, cached for a year.
+expect /fonts/ibm-plex-sans-latin-400-normal.woff2 200 static hsts
+expect_cache /fonts/ibm-plex-sans-latin-400-normal.woff2 "public, max-age=31536000, immutable"
+expect /assets/application.css      410 -      no-hsts
 # The home page keeps its address when its content changes, like every other
 # page in the bundle, so it may be cached and must always be revalidated. It
 # carried Rails' `max-age=300` until #165.
 expect_cache /                      "public, max-age=0, must-revalidate"
 
-# Everything else is still Rails, which is the whole claim of this change.
-# The home page is the bundle's since #165 -- the last address Rails rendered
-# for a reader. The language it serves is decided in the browser by a script in
-# the page, not here and not by Rails.
+# The home page is the bundle's since #165. The language it serves is decided
+# in the browser by a script in the page.
 expect /                            200 static hsts
-expect /supported-hardware/featured 200 rails  hsts
+# A page this fixture's bundle does not hold is nginx's 404 (#304): there is
+# no application behind the seam any more.
+expect /supported-hardware/featured 404 nginx  no-hsts
 expect /sitemap.xml                 200 static hsts
-# The availability feed rather than /admin, which answers 410 since #288. The
-# stub says 200 to everything, so what this checks is that the seam hands the
-# address to Rails -- a live one says that more honestly than a retired one.
-expect /api/v1/hardware/availability.json 200 rails hsts
+# The availability feed is the Go firmware process's (#298).
+expect /api/v1/hardware/availability.json 200 go hsts
 
 # The files, which left public/ in #165. /favicon.png is the one that was
 # never anywhere: the bundle's pages linked it, nothing served it, and every
@@ -473,9 +467,8 @@ else
   fail=1
 fi
 
-echo "  --- what Rails' router answered without rendering, answered by nginx (#302) ---"
-# method path code location served-by. The stub Rails answers 200 to anything,
-# so a 200 from `rails` here is a route that still reaches the application.
+echo "  --- what Rails' router answered, answered by nginx (#302, #304) ---"
+# method path code location served-by.
 answered() {
   method=$1; path=$2; want_code=$3; want_loc=$4; want_by=$5
   curl -sS -o /tmp/ab -D /tmp/ah -k --max-time 5 -X "$method" \
@@ -513,17 +506,25 @@ answered GET  /admin/snapshots          410 -                                ngi
 answered GET  /no-such-page-at-all      302 "$O/"                            nginx
 answered GET  /ru/no-such-page          302 "$O/ru"                          nginx
 answered POST /home                     302 "$O/"                            nginx
-answered GET  /supported-hardware/featured 200 -                             rails
-answered GET  /privacy                  200 -                                rails
-answered GET  /ru/privacy               200 -                                rails
+answered GET  /supported-hardware/featured 404 -                             nginx
+answered GET  /privacy                  404 -                                nginx
+answered GET  /ru/privacy               404 -                                nginx
 answered GET  /sitemap.xml              200 -                                static
-answered GET  /cameras/vendors/hisilicon/socs/hi3516ev300 200 -              rails
-answered GET  /500.html                 200 -                                rails
+answered GET  /cameras/vendors/hisilicon/socs/hi3516ev300 404 -              nginx
+answered GET  /500.html                 404 -                                nginx
+# The two pages Rails still rendered when it was deleted (#304): the vendor
+# index is the full list, and a SoC's page lives under its vendor.
+answered GET  /cameras/vendors          301 "$O/supported-hardware/full-list" nginx
+answered GET  /zh/cameras/vendors       301 "$O/zh/supported-hardware/full-list" nginx
+answered GET  /cameras/socs/hi3516ev300 301 "$O/cameras/vendors/hisilicon/socs/hi3516ev300" nginx
+answered GET  /ru/cameras/socs/ssc338q  301 "$O/ru/cameras/vendors/sigmastar/socs/ssc338q" nginx
+answered GET  /cameras/socs             302 "$O/supported-hardware/featured" nginx
+answered GET  /cameras/vendors/hisilicon/socs 302 "$O/supported-hardware/featured" nginx
 answered GET  /donate                   200 -                                static
 answered GET  /images/logo_openipc.png  200 -                                -
 answered GET  /binaries                 410 -                                nginx
 grep -qx 'Gone' /tmp/ab || { echo "  a 410 does not say Gone"; fail=1; }
-echo "  --- the three surfaces moving off Rails, as openipc-route flips them (#287) ---"
+echo "  --- the application surfaces, all the Go service's (#287, #304) ---"
 FW=/cameras/vendors/hisilicon/socs/hi3516ev300/download_full_image
 posts() {
   path=$1; want_code=$2; want_by=$3
@@ -539,64 +540,31 @@ posts() {
   fi
 }
 route() { NGINX_RELOAD="nginx -s reload" ROUTE_LOG=/dev/null sh /route.sh "$@" --force >/dev/null && sleep 1; }
-posts /snapshots                    200 rails
-expect /api/v1/wall/mosaic.json     200 rails  hsts
-expect $FW                          200 rails  hsts
-route prod upload go
-route prod wall go
-route prod firmware go
-route prod availability go
-expect /api/v1/hardware/availability.json 200 go hsts
-grep -q GO-AVAILABILITY /tmp/b || { echo "  the availability feed did not reach the Go firmware process"; fail=1; }
 posts /snapshots                    200 go
 posts /ru/snapshots                 200 go
 grep -q GO-WEB-PROD /tmp/pb || { echo "  the upload did not reach the Go web process"; fail=1; }
-# page/2, not the mosaic fetched above: the microcache holds that one for 60s,
-# which is what a flip looks like in production too -- the last Rails body of
-# an address is served for up to a minute, its grant still valid.
 expect /api/v1/wall/page/2.json     200 go     hsts
 grep -q GO-WEB-PROD /tmp/b || { echo "  the wall JSON did not reach the Go web process"; fail=1; }
-# The socket is its own surface (#297): the wall's JSON moving does not move it.
-expect /api/v1/wall/cable           200 rails  hsts
-route prod cable go
 expect /api/v1/wall/cable           200 go     hsts
 grep -q GO-WEB-PROD /tmp/b || { echo "  the socket did not reach the Go web process"; fail=1; }
-route prod cable rails
-expect /api/v1/wall/cable           200 rails  hsts
+expect /api/v1/hardware/availability.json 200 go hsts
+grep -q GO-AVAILABILITY /tmp/b || { echo "  the availability feed did not reach the Go firmware process"; fail=1; }
 expect $FW                          200 go     hsts
 grep -q IMAGE /tmp/b || { echo "  the firmware X-Accel-Redirect did not reach /firmware-cache/"; fail=1; }
 redirects_to openipc.org /snapshots https://openipc.org/open-wall
-posts_to_rails /open-wall
+# The one state left: a frozen upload is told 503 and retries on its next
+# cron, and unfreezing puts it back.
 route prod upload freeze
 posts /snapshots                    503 nginx
-rm -f /tmp/shadow.log /var/log/nginx/openipc-upload-decisions.log
-posts /snapshots                    503 nginx
-[ -s /tmp/shadow.log ] && { echo "  a frozen upload was mirrored"; fail=1; }
-route prod upload shadow
-posts /ru/snapshots                 200 rails
-sleep 1
-grep -q 'POST /ru/snapshots' /tmp/shadow.log 2>/dev/null \
-  || { echo "  shadowing did not mirror the upload to :3004"; fail=1; }
-grep -qE ' [0-9a-f]{32} 200 ' /var/log/nginx/openipc-upload-decisions.log 2>/dev/null \
-  || { echo "  shadowing did not log the primary's decision"; fail=1; }
-route prod upload rails
-: > /tmp/shadow.log
-posts /snapshots                    200 rails
-sleep 1
-[ -s /tmp/shadow.log ] && { echo "  an upload was mirrored with shadowing off"; fail=1; }
-route prod wall rails
-route prod firmware rails
-route prod availability rails
-expect /api/v1/hardware/availability.json 200 rails hsts
-posts /snapshots                    200 rails
-expect /api/v1/wall/mosaic.json     200 rails  hsts
+route prod upload go
+posts /snapshots                    200 go
 echo "  --- the bundle removed entirely, which is a rollback to nothing ---"
 rm -f /srv/www/static/prod/current
-expect /donate                      200 rails  hsts
+# Nothing stands behind the bundle any more (#304): its pages are 404s and
+# everything else is still answered by the route map.
+expect /donate                      404 nginx  no-hsts
 expect /_smoke/                     302 nginx  hsts
-# Including the home page: the bundle is where it lives now, and Rails is what
-# answers when the bundle is not there.
-expect /                            200 rails  hsts
+expect /                            404 nginx  no-hsts
 
 echo "  --- error log: directory index / forbidden ---"
 # -type f, and never a bare glob. /var/log/nginx/access.log in the nginx image

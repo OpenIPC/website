@@ -3,7 +3,7 @@ import ru from '../i18n/ru.json';
 import zh from '../i18n/zh.json';
 
 /**
- * Translation lookup against the catalogue exported from config/locales.
+ * Translation lookup against the catalogue exported from data/locales.
  *
  * The three rules it exists to reproduce, all of them Rails' own:
  *
@@ -172,7 +172,7 @@ export function translateIn(
   if (found === undefined) {
     throw new Error(
       `Missing translation "${key}" for ${locale}, and none in ${DEFAULT_LOCALE} to fall back to. ` +
-      'Add it to config/locales and run `npm run export -w @openipc/site`.',
+      'Add it to data/locales and run `npm run export -w @openipc/site`.',
     );
   }
 
