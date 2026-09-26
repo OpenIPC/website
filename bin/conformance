@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# Run the black-box conformance suite (#291) against a server of its own.
+#
+#   bin/conformance                  boot this tree in production mode, run the suite
+#   bin/conformance --mutations      the check on the check: break Rails six ways,
+#                                    and require the suite to fail every time
+#
+# To point the suite at something already running -- dev, production, or the Go
+# service on the loopback -- skip this script and set the variables yourself:
+#
+#   CONFORMANCE_BASE_URL=https://openipc.org bin/rails test test/conformance
+#
+# Production mode, not test: the test environment turns forgery protection off,
+# so a suite run against it could not notice the upload losing its CSRF
+# exemption, which is one of the six mutations. And production mode is what the
+# cameras talk to.
+#
+# The server gets a database of its own (CONFORMANCE_DB, created and dropped
+# here), so the rows the suite writes and deletes never touch development's.
+# Needs MySQL reachable the way config/database.yml reaches it; inside
+# `docker compose run web` that is already true.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+PORT=${CONFORMANCE_PORT:-3100}
+DB=${CONFORMANCE_DB:-openipc_conformance}
+HOST=${OPENIPC_DATABASE_HOST:-127.0.0.1}
+DBPORT=${OPENIPC_DATABASE_PORT:-3306}
+ROOT_URL=${CONFORMANCE_ROOT_DATABASE_URL:-mysql2://root:root@${HOST}:${DBPORT}}
+export CONFORMANCE_DATABASE_URL="${ROOT_URL}/${DB}"
+
+# What the server under test is told. A blacklisted MAC and a whitelisted
+# address the suite knows about, so both refusals can be reached from outside.
+export CONFORMANCE_BLACKLISTED_MAC=${CONFORMANCE_BLACKLISTED_MAC:-02:c0:ff:ee:00:01}
+export CONFORMANCE_WHITELISTED_IP=${CONFORMANCE_WHITELISTED_IP:-198.51.100.77}
+
+server_env=(
+  RAILS_ENV=production
+  SECRET_KEY_BASE_DUMMY=1
+  DATABASE_URL="$CONFORMANCE_DATABASE_URL"
+  RAILS_LOG_TO_STDOUT=0
+  SNAPSHOT_MAC_BLACKLIST="$CONFORMANCE_BLACKLISTED_MAC"
+  SNAPSHOT_IP_WHITELIST="$CONFORMANCE_WHITELISTED_IP"
+)
+
+log() { printf '\033[1m%s\033[0m\n' "$*" >&2; }
+
+# The catalogue as well, while it is still a table: the availability feed and
+# the sitemap are about it, and an empty one passes their tests vacuously.
+# #289 makes it a file, and the seed task goes with the table.
+prepare_database() {
+  env "${server_env[@]}" DISABLE_DATABASE_ENVIRONMENT_CHECK=1 \
+    bin/rails db:drop db:create db:schema:load >/dev/null
+  if [ -f lib/tasks/catalogue.rake ] && grep -q 'task seed:' lib/tasks/catalogue.rake; then
+    env "${server_env[@]}" bin/rails catalogue:seed >/dev/null
+  fi
+}
+
+SERVER_PID=
+start_server() {
+  rm -f tmp/pids/conformance.pid
+  env "${server_env[@]}" bin/rails server -p "$PORT" -b 127.0.0.1 \
+    -P tmp/pids/conformance.pid >log/conformance-server.log 2>&1 &
+  SERVER_PID=$!
+  for _ in $(seq 1 120); do
+    if curl -fsS -o /dev/null "http://127.0.0.1:${PORT}/up" 2>/dev/null; then return 0; fi
+    kill -0 "$SERVER_PID" 2>/dev/null || { tail -30 log/conformance-server.log >&2; return 1; }
+    sleep 0.5
+  done
+  log "server did not answer /up"; tail -30 log/conformance-server.log >&2; return 1
+}
+
+stop_server() {
+  [ -n "$SERVER_PID" ] || return 0
+  kill "$SERVER_PID" 2>/dev/null || true
+  wait "$SERVER_PID" 2>/dev/null || true
+  SERVER_PID=
+}
+trap stop_server EXIT
+
+run_suite() {
+  CONFORMANCE_BASE_URL="http://127.0.0.1:${PORT}" CONFORMANCE_HOST=openipc.org \
+    bin/rails test test/conformance "$@"
+}
+
+if [ "${1:-}" != "--mutations" ]; then
+  prepare_database
+  start_server
+  run_suite "$@"
+  exit $?
+fi
+
+# --- the check on the check ------------------------------------------------
+#
+# A conformance suite is worthless until it has been shown to fail. Each entry
+# is a name, then one or more file|from|to edits; every one of them is a
+# plausible thing for a port to get wrong, and the suite has to go red for
+# each. Applied to the working tree and reverted with git, so run this on a
+# clean tree.
+#
+# The last one is not the issue's "remove the CSRF skip" on its own, because
+# that alone changes nothing a client can see: ApplicationController's
+# protect_from_forgery takes Rails' default strategy, :null_session, which
+# blanks the session of a request without a token and lets it through. The
+# upload reads no session, so the mutant is equivalent and no black-box suite
+# could kill it. What would brick the fleet is a refusal, so that is what is
+# mutated: the exemption dropped AND the strategy made :exception.
+MUTATIONS=(
+  "hysteresis 2 minutes -> 0|app/models/snapshot.rb|INTERVAL_LIMIT.ago + 2.minutes|INTERVAL_LIMIT.ago + 0.minutes"
+  "X-Error dropped|app/controllers/snapshots_controller.rb|head :unsupported_media_type, 'X-Error': @snapshot.errors.full_messages.join('. ')|head :unsupported_media_type"
+  "Retry-After constant 900|app/controllers/snapshots_controller.rb|retry_after: Snapshot::INTERVAL_LIMIT - offset|retry_after: 900"
+  "403 -> 422|app/controllers/snapshots_controller.rb|head :forbidden|head :unprocessable_entity"
+  "Location absolute|app/controllers/snapshots_controller.rb|location: snapshot_path(id: @snapshot)|location: snapshot_url(id: @snapshot)"
+  "CSRF enforced on the upload|app/controllers/snapshots_controller.rb|skip_before_action :verify_authenticity_token|# no CSRF exemption|app/controllers/application_controller.rb|protect_from_forgery unless:|protect_from_forgery with: :exception, unless:"
+)
+
+git diff --quiet -- app || { log "app/ has uncommitted changes; refusing to mutate it"; exit 2; }
+
+survived=0
+for mutation in "${MUTATIONS[@]}"; do
+  IFS='|' read -r -a parts <<<"$mutation"
+  name=${parts[0]}
+  files=()
+  for ((i = 1; i < ${#parts[@]}; i += 3)); do
+    file=${parts[i]} from=${parts[i + 1]} to=${parts[i + 2]}
+    grep -qF -- "$from" "$file" || { log "mutation '$name': '$from' is not in $file"; git checkout -- app; exit 2; }
+    FROM="$from" TO="$to" ruby -i -pe 'sub(ENV["FROM"]) { ENV["TO"] }' "$file"
+    files+=("$file")
+  done
+
+  log "mutation: $name"
+  prepare_database
+  if ! start_server; then
+    log "  server did not start -- a mutation that breaks boot proves nothing about the suite"
+    survived=$((survived + 1))
+  elif run_suite >"log/conformance-mutation.log" 2>&1; then
+    log "  SURVIVED -- the suite passed against a broken server"
+    survived=$((survived + 1))
+  else
+    log "  killed -- $(grep -E '^[0-9]+ runs' log/conformance-mutation.log)"
+  fi
+  stop_server
+  git checkout -- "${files[@]}"
+done
+
+[ "$survived" -eq 0 ] && log "all ${#MUTATIONS[@]} mutations killed" && exit 0
+log "$survived mutation(s) survived"; exit 1

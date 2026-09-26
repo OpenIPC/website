@@ -115,6 +115,27 @@ class Snapshot < ApplicationRecord
     public_id.presence || super
   end
 
+  # The two lists, from the environment when it names them and from the
+  # credentials otherwise (#291). Comma-separated; set but empty means an empty
+  # list, which is how a test server says "nothing here" without a master key.
+  #
+  # The environment is there so the refusals can be tested from outside. The
+  # conformance suite drives a running server over HTTP, where stubbing the
+  # credentials is not an option, and without this 403-on-blacklist and the
+  # whitelist's exemption were reachable only in-process -- so a port of this
+  # endpoint could drop either and nothing black-box would notice.
+  def self.blacklisted_macs
+    listed('SNAPSHOT_MAC_BLACKLIST') || Rails.application.credentials.dig(:mac, :blacklisted) || []
+  end
+
+  def self.whitelisted_ips
+    listed('SNAPSHOT_IP_WHITELIST') || Rails.application.credentials.dig(:ip, :whitelisted) || []
+  end
+
+  def self.listed(name)
+    ENV.key?(name) ? ENV[name].split(',').map(&:strip).reject(&:empty?) : nil
+  end
+
   validates :file, presence: true, blob: { content_type: :image, size_range: (10.kilobytes)..(5.megabytes) }
   validates :mac_address, presence: true, format: MAC_ADDRESS_FORMAT
   validate :blacklisted_mac
@@ -266,13 +287,13 @@ class Snapshot < ApplicationRecord
   # having nothing to blacklist. Production has the key, so this never showed
   # there; it made the API impossible to exercise anywhere else.
   def blacklisted_mac
-    return unless mac_address.in?(Rails.application.credentials.dig(:mac, :blacklisted) || [])
+    return unless mac_address.in?(self.class.blacklisted_macs)
     errors.add :base, 'This IP address is blacklisted.'
     raise BlacklistedMac
   end
 
   def time_interval
-    return if ip_address.in?(Rails.application.credentials.dig(:ip, :whitelisted) || [])
+    return if ip_address.in?(self.class.whitelisted_ips)
 
     s = Snapshot.select(:created_at).where(mac_address: mac_address).order(:created_at).last
     if s && s.created_at > INTERVAL_LIMIT.ago + 2.minutes # hysteresis

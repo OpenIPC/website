@@ -106,6 +106,19 @@ jobs:
       - name: Run tests
         run: bin/rails test
 
+      # The black-box conformance suite (#291), against this checkout booted in
+      # production mode -- the mode the cameras talk to, and the one where
+      # forgery protection is on. The suite drives it over HTTP and reads its
+      # database, and nothing is loaded in-process.
+      - name: Conformance suite
+        run: bin/conformance
+
+      # The check on the check: six ways a port could break the upload, each
+      # applied to the tree in turn. Every one must turn the suite red, or it
+      # does not cover what it claims to.
+      - name: Conformance suite fails against a broken server
+        run: bin/conformance --mutations
+
       # --- the component library (#158) -----------------------------------
       # Steps in this job rather than a job of their own, for the same reason
       # the static bundle's steps live in `build`: branch protection on master
