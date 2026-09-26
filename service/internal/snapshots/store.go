@@ -75,9 +75,9 @@ type Store struct {
 	TokenKey string // secret_key_base
 }
 
-// CameraToken is Snapshot.camera_token_for: HMAC-SHA256 over the canonical MAC
-// with the raw secret_key_base, first sixteen hex characters. Kept identical
-// so that links to a camera made while Rails served the wall still resolve.
+// CameraToken is HMAC-SHA256 over the canonical MAC with CAMERA_TOKEN_KEY,
+// first sixteen hex characters. The key and the formula are unchanged since
+// the first camera links were shared, so those links still resolve.
 func (st *Store) CameraToken(mac string) string {
 	m := hmac.New(sha256.New, []byte(st.TokenKey))
 	m.Write([]byte(MACKey(mac)))

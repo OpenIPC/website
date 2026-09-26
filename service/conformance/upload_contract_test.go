@@ -68,8 +68,8 @@ func TestAMalformedMACGivesOneSentence(t *testing.T) {
 
 // --- the size rule, at its four edges ---------------------------------------
 //
-// 10 KB and 5 MB inclusive. "File File size" is what the Rails validator gem
-// said, doubled word and all; a server that tidies it changes the header.
+// 10 KB and 5 MB inclusive. "File File size" is the contract's sentence,
+// doubled word and all; a server that tidies it changes the header.
 
 func TestOneByteUnderTheFloorIsRefusedTheFloorItselfIsNot(t *testing.T) {
 	s := start(t, "upload")

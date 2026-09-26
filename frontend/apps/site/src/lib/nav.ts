@@ -1,14 +1,14 @@
 /**
  * The site's navigation, as data (#160).
  *
- * app/views/layouts/_navbar.html.erb and _footer.html.erb are the source this
+ * The site's navbar and footer are the source this
  * reproduces, entry for entry, because while the seam is open a visitor can
- * cross between a static page and a Rails one and must not see the navigation
+ * cross between pages and must not see the navigation
  * change shape. When one of those files changes, this changes with it --
  * src/lib/nav.test.ts pins the set of addresses so the two cannot drift
  * quietly.
  *
- * Two things the Rails navbar does that are worth keeping in mind here:
+ * Two things the original navbar does that are worth keeping in mind here:
  *
  *   * /majestic-endpoints is deliberately absent. 3f0753c took it out of the
  *     menu when the page stopped being a list to browse; the URL stays for the
@@ -177,7 +177,7 @@ export function footerFor(locale: Locale): FooterColumn[] {
 /**
  * The social row under the community column.
  *
- * Six, not @openipc/ui's four: the Rails footer carries Telegram and Instagram
+ * Six, not @openipc/ui's four: the footer carries Telegram and Instagram
  * as well, and Telegram is where the project actually answers questions.
  */
 export const SOCIAL_LINKS: { title: string; url: string; icon: string }[] = [

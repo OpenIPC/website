@@ -2,7 +2,7 @@
  * One camera frame: a canvas, and nothing that is an address (#165).
  *
  * `data-wall-frame` is how every wall check in tools/ finds a tile, and the
- * Rails pages have always carried it. The canvas is sized to the variant so
+ * wall's pages have always carried it. The canvas is sized to the variant so
  * the page does not reflow when the bytes land, and it stays blank rather
  * than showing a broken-image glyph when they do not -- which is what a purged
  * snapshot looks like from here.

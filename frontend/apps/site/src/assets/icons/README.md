@@ -3,7 +3,7 @@
 Bootstrap Icons, MIT, copied one at a time from `node_modules/bootstrap-icons`
 as a page needs one.
 
-Copied rather than fetched: the Rails pages draw these from the bootstrap-icons
+Copied rather than fetched: the original pages drew these from the bootstrap-icons
 webfont, which is a render-blocking request for about 100 KB to draw a chip and
 an arrow. A prerendered page that uses thirty glyphs should carry thirty SVGs,
 inlined, and every one of these draws with `fill="currentColor"` so a section's

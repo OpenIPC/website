@@ -8,10 +8,10 @@
 // loses the in-memory channel and nothing else: Recover re-enqueues every row
 // still marked pending.
 //
-// The pipeline reproduces Rails' ActiveStorage variants byte for byte (same
-// libvips, same operations), which was proven against the Rails image before
-// Rails went (#295, #304): `vips thumbnail` with --size down, ImageProcessing's
-// default sharpen mask through `vips conv`, then jpegsave with Q and strip.
+// The pipeline: `vips thumbnail` with --size down, a sharpen mask through
+// `vips conv`, then jpegsave with Q and strip. The output is pinned byte for
+// byte on the service image's libvips (#295), so a libvips upgrade is a
+// change to what the wall looks like.
 package variants
 
 import (
@@ -48,7 +48,7 @@ var All = []Variant{
 // width height scale offset, then rows.
 const sharpenMask = "3 3 24 0\n-1 -1 -1\n-1 32 -1\n-1 -1 -1\n"
 
-// Wall is the tree Rails' cable reads frames from.
+// Wall is the tree the frame socket reads frames from.
 type Wall struct{ Root string }
 
 func (w Wall) Dir(id string) string            { return filepath.Join(w.Root, id) }

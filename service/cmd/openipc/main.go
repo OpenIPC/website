@@ -145,7 +145,7 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/explorer/{source}/builds/{build}/platforms/{platform}"},
 	{"web", "GET", "/api/v1/explorer/{source}/platforms/{platform}/trends"},
 	{"web", "GET", "/api/v1/explorer/{source}/platforms/{platform}/kconfig"},
-	{"web", "GET", "/api/v1/wall/cable"},
+	{"web", "GET", "/api/v1/wall/socket"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 }
@@ -309,7 +309,7 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 	granter := &wall.Granter{Key: cfg.WallGrantKey}
 	api := &wall.API{Store: store, Granter: granter, Log: log}
 	api.Routes(mux)
-	mux.Handle("GET /api/v1/wall/cable", &wallsocket.Server{WallRoot: cfg.WallRoot, Grants: granter, Log: log,
+	mux.Handle("GET /api/v1/wall/socket", &wallsocket.Server{WallRoot: cfg.WallRoot, Grants: granter, Log: log,
 		GrantsDisabled: cfg.GrantsDisabled, Budget: &wallsocket.Budget{Limit: 1000}})
 
 	// The address this process believes a request came from, for the

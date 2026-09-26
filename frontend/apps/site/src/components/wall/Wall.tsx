@@ -1,5 +1,5 @@
 /**
- * The Open Wall, off Rails (#165).
+ * The Open Wall (#165).
  *
  * One island for five addresses -- the gallery, a page of it, a camera
  * permalink, a snapshot, its archive and its slideshow -- because nginx serves
@@ -12,8 +12,8 @@
  * address it is on, and a server-rendered header over an empty body would flash
  * the wrong thing.
  *
- * No address returns a camera image (#267). Frames arrive over WallChannel,
- * masked, inside the channel's per-address budget, and are painted onto the
+ * No address returns a camera image (#267). Frames arrive over the wall
+ * socket, masked, inside its per-address budget, and are painted onto the
  * canvases below.
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
@@ -255,7 +255,7 @@ function Gallery({ data, t, p, register, placeholder, painted, resolved }: {
   register: (key: string, el: HTMLCanvasElement | null) => void;
 }) {
   const tiles = data.tiles ?? [];
-  // The Rails page pads to nine with "no signal" cards, which is what an empty
+  // The original page padded to nine with "no signal" cards, which is what an empty
   // wall looks like there too.
   const blanks = Math.max(0, 9 - tiles.length);
 
@@ -395,7 +395,7 @@ function Icons({ frames, variant, t, p, register }: {
 /**
  * The carousel, advanced by this component rather than by Bootstrap.
  *
- * The Rails page wrote every slide into the HTML and let Bootstrap show one;
+ * The original page wrote every slide into the HTML and let Bootstrap show one;
  * without JavaScript that was one visible frame and ninety-five behind
  * `display: none`. Here the whole day is granted and one slide is drawn at a
  * time, which is the same picture for a reader and a great deal less markup.
@@ -448,7 +448,7 @@ function Slideshow({ data, t, p, register }: {
 /**
  * A time the reader's own browser formats.
  *
- * Rails printed the server's UTC and left `application.js` to localise it from
+ * The original page printed the server's UTC and left `application.js` to localise it from
  * `data-timestamp`. Here the epoch second arrives as data and the browser
  * formats it directly, which is the same answer without the second pass.
  */

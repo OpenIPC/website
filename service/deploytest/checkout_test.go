@@ -17,7 +17,7 @@ import (
 // it can only ever warn.
 func TestCheckoutFreshness(t *testing.T) {
 	const helper = "deploy/checkout-status.sh"
-	// fnBody is Ruby's text[/^name\(\) \{(.*?)^\}/m, 1].
+	// fnBody is the body of the shell function `name() { ... }`.
 	fnBody := func(text, name string) string {
 		return find(text, regexp.MustCompile(`(?ms)^`+name+`\(\) \{(.*?)^\}`), 1)
 	}

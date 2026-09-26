@@ -11,26 +11,26 @@ import {
  * leaves the page as it was before the count existed. That is the safety
  * property, not a fallback: a stale or absent number must never become a claim.
  *
- * Three placements share it in Rails -- the donate page above the button, the
+ * Three placements share it -- the donate page above the button, the
  * wizard's success block, and the note under the home CTA band -- so the
  * number the site quotes is one number and changing the sentence changes it
- * everywhere. Two of those are static pages now; the wizard is still Rails.
+ * everywhere.
  */
 interface Labels {
-  /** `%{backers}` and `%{goal}`. */
+  /** `{backers}` and `{goal}`. */
   count: string;
-  /** `%{backers}`, for when the goal is already met. */
+  /** `{backers}`, for when the goal is already met. */
   countMet: string;
-  /** `%{backers}` and `%{goal}`. */
+  /** `{backers}` and `{goal}`. */
   meter: string;
-  /** `%{amount}`. */
+  /** `{amount}`. */
   monthly: string;
-  /** `%{oc}` and `%{paywall}`. */
+  /** `{oc}` and `{paywall}`. */
   split: string;
 }
 
 function fill(template: string, vars: Record<string, string | number>): string {
-  return template.replace(/%\{(\w+)\}/g, (whole, name: string) =>
+  return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
     name in vars ? String(vars[name]) : whole,
   );
 }
@@ -85,7 +85,7 @@ export default function SupportCount({ goal, labels, class: className = '', onIn
         is the brand blue at 12% and the fill is the brand blue itself, with a
         lighter fill and a white track on ink. The fill was the amber accent
         here, which says "warning" about a number that is neither -- and did
-        not match the same meter on the Rails half of the site.
+        not match the same meter elsewhere on the site.
       */}
       <div
         class={`h-2 w-full overflow-hidden rounded ${onInk ? 'bg-white/14' : 'bg-brand-blue/12'}`}

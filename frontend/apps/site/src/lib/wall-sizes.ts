@@ -1,10 +1,9 @@
 /**
- * `WallHelper::FRAME_SIZES`, so a canvas is the shape of the frame it will
+ * The wall variants' pixel sizes, so a canvas is the shape of the frame it will
  * hold and the page does not reflow when the bytes arrive (#165).
  *
  * One copy here, because four views draw frames and a second would drift the
- * day a variant is resized. `test/helpers/wall_helper_test.rb` asserts this
- * file against the Ruby rather than trusting the comment.
+ * day a variant is resized. service/internal/variants holds the other copy.
  */
 export const FRAME_SIZES = {
   icon: { width: 90, height: 60 },

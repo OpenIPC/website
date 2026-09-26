@@ -4,8 +4,8 @@
  *   DEV_PW=... node scripts/drive.mjs https://dev.openipc.org/path probe.mjs
  *
  * `compare-with-origin.mjs` holds two pages next to each other and cannot do
- * this: a probe that presses a button on the Rails half navigates, and the
- * execution context it was running in is gone. What an island does after a
+ * this: a probe that presses a button that navigates loses the execution
+ * context it was running in. What an island does after a
  * click is exactly what a screenshot of either page cannot show, and the one
  * bug this bundle shipped twice was invisible to every check that loaded a
  * page and looked at it.
@@ -53,7 +53,7 @@ await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
 try {
   console.log(await page.evaluate(eval(`(${probe})`)));
 } catch (error) {
-  // A probe that presses submit on the Rails half navigates, and the context
+  // A probe that presses a submit that navigates loses the context
   // it was running in goes with the old document. That is an answer rather
   // than a failure -- it is the difference being measured -- so say what the
   // browser ended up on instead of a stack trace.

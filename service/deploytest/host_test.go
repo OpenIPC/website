@@ -31,7 +31,7 @@ func TestMirrorConfig(t *testing.T) {
 	for _, m := range regexp.MustCompile(`(?m)^\s*set_real_ip_from\s+(\S+?);`).FindAllStringSubmatch(origin, -1) {
 		trusted = append(trusted, m[1])
 	}
-	upgrade := find(proxy, regexp.MustCompile(`(?s)(location \^~ /api/v1/wall/cable \{.*?\n\})`), 1)
+	upgrade := find(proxy, regexp.MustCompile(`(?s)(location \^~ /api/v1/wall/socket \{.*?\n\})`), 1)
 
 	t.Run("the origin trusts the host that serves openipc.kz and openipc.cloud", func(t *testing.T) {
 		if !slices.Contains(trusted, "194.238.42.216") {
@@ -249,12 +249,6 @@ func TestLogRetention(t *testing.T) {
 				t.Errorf("deploy/logrotate.d/nginx keeps the server log for %d days, and the %s privacy page does not "+
 					"say %d. They have to be the same number.\n\n  %s", days, locale, days, c)
 			}
-		}
-	})
-	// One promise covers every directory on this host that holds addresses.
-	t.Run("both directories that hold visitor addresses keep them for the same time", func(t *testing.T) {
-		if a, b := retention(t, "nginx"), retention(t, "openipc"); a != b {
-			t.Errorf("the nginx logs are kept %d days and /srv/www/org-openipc/log %d; /privacy makes one promise", a, b)
 		}
 	})
 	// maxage is what makes `rotate` a duration, and it is only checked when a

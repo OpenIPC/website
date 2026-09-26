@@ -1,8 +1,8 @@
 /**
- * The built sitemap is the one Rails served (#303), and everything it lists
+ * The built sitemap is the one production served before #303, and everything it lists
  * is a page in the bundle.
  *
- * sitemap.golden.xml is production's /sitemap.xml as Rails answered it on
+ * sitemap.golden.xml is production's /sitemap.xml as it was answered on
  * 2026-09-26, before it moved here. A catalogue change will rightly change the
  * build, and the golden with it -- regenerate it from the build then, and let
  * the diff be read in the pull request.
@@ -17,7 +17,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const dist = join(here, '..', '..', 'dist');
 
 describe('sitemap.xml', () => {
-  test('is byte-identical to what Rails served', () => {
+  test('is byte-identical to what production served', () => {
     expect(sitemapXml()).toBe(readFileSync(join(here, 'sitemap.golden.xml'), 'utf8'));
   });
 

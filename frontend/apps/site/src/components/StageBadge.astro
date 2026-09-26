@@ -1,6 +1,6 @@
 ---
 /**
- * app/views/shared/_stage_badge.html.erb -- a project's status.
+ * A project's status.
  *
  * The label is the abbreviation the firmware repository uses, and the title
  * attribute carries the explanation from the stages page so the reader does not
@@ -25,7 +25,7 @@ interface Props { stage: string; locale: Locale }
 const { stage, locale } = Astro.props;
 const t = useTranslations(locale);
 
-// `default: ''` in the Rails helper, then truncated to 120. A stage with no
+// An empty default, then truncated to 120. A stage with no
 // explanation gets a badge and no tooltip rather than a failed build -- this
 // is a label, not page copy.
 let title = '';

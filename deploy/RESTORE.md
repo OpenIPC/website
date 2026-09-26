@@ -1,7 +1,7 @@
 # Restoring openipc.org
 
-Rehearsed 2026-08-23 against the Rails stack, and rewritten for the Go service
-and PostgreSQL when Rails was removed (#304).
+Rehearsed 2026-08-23, and rewritten for the Go service and PostgreSQL in
+#304.
 
 The nightly `refresh-dev.sh` exercises steps 2 and 4 of this procedure against
 a live S3 object every morning at 03:00 UTC, restoring into `openipc_dev`, so a
@@ -18,16 +18,17 @@ daily/YYYY-MM-DD/secrets.tar.gz.age                 ~500 B
 daily/YYYY-MM-DD/analytics.sqlite3.zst              GoatCounter
 weekly/YYYY-Www/...                                                               kept 60 days
 monthly/YYYY-MM/...                                                               kept 400 days
-final/...                                           MySQL's last dump, taken when Rails was removed (#304)
+monthly/2026-09/mysql-final-before-304.sql.zst      the retired MySQL database's last dump (#304)
 ```
 
-Before #304 each night also carried `openipc_production.sql.zst`, the MySQL
-dump Rails read. Nothing restores it any more; it is kept for the record.
+Before #304 each night also carried `openipc_production.sql.zst`, a MySQL
+dump. Nothing restores it any more; the last one is kept for the record.
 
 `secrets.tar.gz.age` holds the Go service's settings, `.env.go-prod` and
 `.env.go-dev`: the database passwords and the two keys that keep shared camera
-links and frame grants valid. Backups written before #304 also hold Rails'
-`master.key` and `production.env`, which nothing needs now. It is encrypted to
+links and frame grants valid. Backups written before #304 also hold the
+retired application's `master.key` and `production.env`, which nothing needs
+now. It is encrypted to
 an age recipient whose **private key is not on the server** — it lives only in
 the team password manager. The server can write backups it cannot read.
 
@@ -279,8 +280,8 @@ Measured on the live host:
 | Install a static bundle (pull, extract, check, flip, verify) | 4 s |
 | Roll back a static bundle already on disk | 1.8 s |
 
-The first three rows were measured against the Rails stack; the PostgreSQL
-database is smaller than the MySQL one was. The realistic constraint on a full
+The first three rows were measured before #304; the PostgreSQL database is
+smaller than the MySQL one was. The realistic constraint on a full
 rebuild is provisioning the host, not the data.
 
 ## If a restore fails
@@ -297,9 +298,9 @@ The most likely causes, in order:
 ## Memory sampling
 
 The hourly memory series in `/var/log/openipc-rss.log` is what every memory
-claim about this host rests on -- it is how #148 established that the Rails
-container reached 0.27 GiB at boot, 1.56 GiB at one hour and 3.19 GiB at five
-days, and it is the before-and-after for #304 removing it. A rebuilt
+claim about this host rests on -- it is how #148 measured a container
+reaching 0.27 GiB at boot, 1.56 GiB at one hour and 3.19 GiB at five days, and
+it is the before-and-after for #304. A rebuilt
 host that skips this comes back with no series at all, and the gap only becomes
 visible when someone needs the numbers.
 

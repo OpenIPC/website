@@ -147,8 +147,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # The service's image (#287). Rails' image, website:<sha>, is not built
-      # any more (#304); openipc-deploy pulls website-go:<sha>.
+      # The service's image (#287); openipc-deploy pulls website-go:<sha>.
       - name: Derive Go image tags
         id: go-meta
         uses: docker/metadata-action@v5

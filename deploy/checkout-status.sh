@@ -18,7 +18,7 @@
 # working release because a documentation file moved would be the wrong trade.
 # Auto-pulling would be worse: a local modification here is a hand-edit
 # somebody made to keep production working -- on 2026-09-21 it was #239's
-# /rails/shared mount, without which the donate page loses its backer count --
+# shared-directory mount, without which the donate page lost its backer count --
 # and discarding that silently is how the fix disappears.
 #
 # Note the loop that makes this worth a check rather than a habit: a stale

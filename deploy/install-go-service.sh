@@ -21,9 +21,9 @@
 #     WALL_GRANT_KEY       signs the wall's frame grants, 64 bytes of hex
 #     CAMERA_TOKEN_KEY     keys the per-camera share links
 #     SNAPSHOT_MAC_BLACKLIST / SNAPSHOT_IP_WHITELIST   comma-separated, may be empty
-#   A key already in the file is kept -- the production keys were carried over
-#   from Rails at the cutover, so shared camera links made then still resolve,
-#   and the secrets archive in the nightly backup restores them onto a rebuilt
+#   A key already in the file is kept -- CAMERA_TOKEN_KEY is what every shared
+#   camera link was made with, so those links still resolve -- and the secrets
+#   archive in the nightly backup restores them onto a rebuilt
 #   host. A missing key is generated, which on a host rebuilt WITHOUT that
 #   archive means old camera links stop resolving and nothing else.
 #

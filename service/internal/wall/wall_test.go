@@ -2,6 +2,7 @@ package wall_test
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"io"
@@ -28,7 +29,7 @@ type golden struct {
 
 func loadGolden(t *testing.T) (golden, []byte) {
 	var g golden
-	raw, err := os.ReadFile("testdata/rails_grant.json")
+	raw, err := os.ReadFile("testdata/grant.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,13 +38,13 @@ func loadGolden(t *testing.T) (golden, []byte) {
 	return g, key
 }
 
-// Rails' frame socket verifies every grant this service mints, so the bytes
-// must be Rails' bytes. The golden was minted by Rails itself.
-func TestGrantIsByteIdenticalToRails(t *testing.T) {
+// The token format is pinned by a vector computed outside Go, so a change to
+// the encoding cannot pass by changing the test's expectations with it.
+func TestGrantMatchesTheReferenceVector(t *testing.T) {
 	g, key := loadGolden(t)
 	gr := &wall.Granter{Key: key}
 	if got := gr.Sign(g.Pairs, time.Unix(g.ExpiresAt, 0)); got != g.Token {
-		t.Fatalf("signed\n  %s\nRails minted\n  %s", got, g.Token)
+		t.Fatalf("signed\n  %s\nwant\n  %s", got, g.Token)
 	}
 }
 
@@ -71,16 +72,32 @@ func TestIssueBucketsTheExpiry(t *testing.T) {
 	}
 }
 
-func TestRailsGrantsVerifyAndForgeriesDoNot(t *testing.T) {
+func TestGrantsVerifyAndForgeriesDoNot(t *testing.T) {
 	g, key := loadGolden(t)
 	before := &wall.Granter{Key: key, Now: func() time.Time { return time.Unix(g.ExpiresAt-1, 0) }}
 	if p := before.Verify(g.Token); !reflect.DeepEqual(p, g.Pairs) {
-		t.Fatalf("Rails' grant did not verify: %v", p)
+		t.Fatalf("the reference grant did not verify: %v", p)
 	}
 	flipped := []byte(g.Token)
 	flipped[10] ^= 1
 	if before.Verify(string(flipped)) != nil {
 		t.Error("a bit-flipped grant verified")
+	}
+	// Widening a grant means re-encoding its claims, which the MAC then no
+	// longer covers.
+	data, sig, _ := strings.Cut(g.Token, ".")
+	claims, _ := base64.RawURLEncoding.DecodeString(data)
+	widened := base64.RawURLEncoding.EncodeToString([]byte(strings.ReplaceAll(string(claims), ":thumb", ":fullhd")))
+	if widened == data {
+		t.Fatal("the reference grant names no thumb pair to widen")
+	}
+	if before.Verify(widened+"."+sig) != nil {
+		t.Error("a grant with rewritten claims verified")
+	}
+	for _, broken := range []string{"", ".", data, data + ".", "." + sig, data + ".!!" + sig} {
+		if before.Verify(broken) != nil {
+			t.Errorf("malformed grant %q verified", broken)
+		}
 	}
 	after := &wall.Granter{Key: key, Now: func() time.Time { return time.Unix(g.ExpiresAt, 0) }}
 	if after.Verify(g.Token) != nil {
@@ -160,7 +177,7 @@ func TestWallAddresses(t *testing.T) {
 	}
 	seed(t, store, "AA-BB-CC-00-00-02", 60, nil) // no soc: null, not an empty string
 
-	// mosaic: the Rails key order, byte for byte.
+	// mosaic: the key order the pages read, byte for byte.
 	rec := get(t, mux, "/api/v1/wall/mosaic.json")
 	body := rec.Body.String()
 	if rec.Code != 200 || !strings.HasPrefix(body, `{"variant":"thumb","grant":"`) ||
@@ -179,7 +196,7 @@ func TestWallAddresses(t *testing.T) {
 		t.Error("two renders in one grant window differ")
 	}
 
-	// page: the card, in Rails' key order.
+	// page: the card, in its fixed key order.
 	page := get(t, mux, "/api/v1/wall/page/1.json").Body.String()
 	wantCard := `{"id":"` + ids[0] + `","soc":"gk7205v300","sensor":"imx335","firmware":"2.6.09.15-lite",` +
 		`"streamer":"majestic","uptime":"8 days","soc_temperature":"55.73","dimensions":"2592x1520","bytes":534513,"at":`

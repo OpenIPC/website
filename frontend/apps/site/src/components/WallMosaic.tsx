@@ -1,22 +1,13 @@
 /**
  * The home page's Open Wall mosaic, with live cameras on it (#165).
  *
- * `/` is rendered by Rails and draws this out of WallHelper: a canvas per
- * camera and a signed WallGrant naming the pairs it drew. `/ru` and `/zh` are
- * prerendered, so nothing rendered them a grant, and they showed five "no
- * signal" tiles while the same page in the same language showed live cameras
- * at `/` -- reachable only by clicking your own language, which is what made
- * it look like a translation fault.
- *
- * The fix is not to put the page back in Rails. It is the shape every other
- * island here already has: the page is a file and asks an address for what it
- * cannot know at build time. `/api/v1/wall/mosaic.json` hands over the ids,
- * the captions and the grant; the frames still arrive over WallChannel,
- * masked, inside the channel's per-address budget, and no address returns an
- * image.
+ * The page is a file, so it asks an address for what it cannot know at build
+ * time: `/api/v1/wall/mosaic.json` hands over the ids, the captions and the
+ * grant; the frames arrive over the wall's socket, masked, inside its
+ * per-address budget, and no address returns an image.
  *
  * Placeholders are the resting state and the failure state alike, which is
- * what home.html.erb does when its own query returns nothing: five "no signal"
+ * what the home page has always shown when there is nothing: five "no signal"
  * tiles and the call to action. A reader whose socket never opens sees that
  * rather than five blanks -- but a reader behind a mirror that does not
  * forward the `Upgrade` should not be one of them, so the socket is retried
@@ -27,7 +18,7 @@ import {
   FRAME_DEADLINE, MOSAIC_URL, captionFor, requestFramesOrFallBack, type Mosaic, type MosaicTile,
 } from '../lib/wall-frames';
 
-/** `WallHelper::FRAME_SIZES['thumb']`, so the page does not reflow when frames land. */
+/** The thumb variant's size, so the page does not reflow when frames land. */
 const THUMB = { width: 480, height: 360 };
 
 interface Props {
@@ -58,11 +49,11 @@ export default function WallMosaic({
    * "No signal" is a test card, and a test card is an answer -- it says this
    * camera is not sending. It must never be the first thing a visitor sees,
    * because at that moment it is not true yet: the frames are on their way.
-   * So a tile rests dark, the way the Rails page's does, and turns into the
+   * So a tile rests dark and turns into the
    * card only when the answer has come in and this tile is not in it.
    *
    * Per tile, not per subscription. A frame that has been purged is delivered
-   * as silence -- `WallChannel#deliver` returns without transmitting, because
+   * as silence -- the socket returns without transmitting, because
    * a purged snapshot and an id that never existed must look identical -- and
    * a JPEG that will not decode is the same from here. Either leaves one tile
    * unanswered while the other four paint, and a single flag would have left
@@ -84,8 +75,7 @@ export default function WallMosaic({
         if (!response.ok) throw new Error(String(response.status));
         loaded = (await response.json()) as Mosaic;
       } catch {
-        // The page is correct without cameras on it -- it is the state the
-        // Rails page falls back to -- so there is nothing to report and
+        // The page is correct without cameras on it, so there is nothing to report and
         // nothing to retry. The tiles say so.
         if (live) setResolved(true);
         return;
@@ -130,7 +120,7 @@ export default function WallMosaic({
   const shown = (mosaic?.tiles ?? []).slice(0, tiles);
   // Tiles with no camera behind them. Before the answer arrives they are
   // empty; once it has, they are genuinely "no signal" -- there is no camera
-  // to show, which is what home.html.erb pads its own mosaic with.
+  // to show.
   const blanks = Math.max(0, tiles - shown.length);
 
   return (
@@ -144,8 +134,7 @@ export default function WallMosaic({
           {/*
             Underneath the canvas, which is transparent until a frame is drawn
             on it -- but only once we know the frame is not coming. Until then
-            the tile is the same dark rectangle the Rails page shows while its
-            own canvases fill in.
+            the tile is a dark rectangle while the canvases fill in.
           */}
           {resolved && !painted.has(tile.id) && (
             <img
@@ -158,8 +147,8 @@ export default function WallMosaic({
           {/*
             `data-wall-frame` is how every wall check in tools/ finds a tile --
             canvas-check, wall-fills-check, bare-socket-check, the request
-            trace. The Rails page carries it and this one has to as well, or a
-            migrated page silently drops out of checks that still pass.
+            trace. A page without it silently drops out of checks that still
+            pass.
           */}
           <canvas
             ref={(el) => register(canvases.current, tile.id, el)}

@@ -4,7 +4,7 @@
  * The <Supporters> widget takes logo URLs as props precisely so that the
  * package ships no partner artwork: on openipc.org those files live in
  * app/assets/images/partners/ and the list itself is PARTNER_GROUPS in
- * app/helpers/pages_helper.rb, which #160 turns into a data file. These four
+ * the site's partner list, which #160 turned into a data file. These four
  * point at the projects' own public marks so the story has something to draw.
  */
 import type { Supporter } from '../components/widgets/supporters';

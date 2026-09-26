@@ -2,14 +2,14 @@
 /**
  * The home page (#160).
  *
- * app/views/pages/home.html.erb, section for section. Two of its parts read
+ * The home page, section for section. Two of its parts read
  * live state that cannot be known when this page is built, and both ask an
  * address for it on load rather than being baked:
  *
  *   * the wall mosaic, from /api/v1/wall/mosaic.json -- the ids, the captions
- *     and a WallGrant. The frames themselves still arrive over WallChannel and
+ *     and a grant. The frames themselves arrive over the wall socket and
  *     are painted onto a canvas; no address returns an image. It renders the
- *     "no signal" placeholders first, which is what home.html.erb falls back to
+ *     "no signal" placeholders first, which is what the home page falls back to
  *     when its own query comes back empty, and paints over them (#165).
  *   * the backer count under the closing band. SupportStats caps the page's own
  *     HTTP freshness precisely so no page outlives the count printed on it, and
@@ -70,7 +70,7 @@ const PILLARS = [
         {/*
           An island, because the cameras on it are the one thing on this page
           that cannot be known when it is built. It renders the placeholders
-          first -- which is the state home.html.erb falls back to when its own
+          first -- which is the state the page falls back to when its own
           query returns nothing -- and paints frames over them when they land.
         */}
         <WallMosaic

@@ -135,9 +135,8 @@ func TestRetiredBytePaths(t *testing.T) {
 			}
 		}
 	})
-	// Rails asserted its own route table had no byte-serving snapshots action.
-	// The Go service is what answers the wall now: none of its routes may
-	// answer these addresses either.
+	// The Go service answers the wall: none of its routes may answer these
+	// addresses.
 	t.Run("no route maps to a snapshots action that serves bytes", func(t *testing.T) {
 		for _, rt := range goRoutes(t) {
 			for _, p := range []string{"/snapshots/0123456789abcdef0123/download", "/snapshots/camera.jpg",
@@ -146,20 +145,6 @@ func TestRetiredBytePaths(t *testing.T) {
 					t.Errorf("the Go route %s %s answers %s, an address that used to hand over image bytes", rt.Method, rt.Path, p)
 				}
 			}
-		}
-	})
-}
-
-// The controller is Rails'; while it exists it must not define them either,
-// since a route is one line away from coming back.
-func TestRetiredBytePathsController(t *testing.T) {
-	t.Run("the controller defines no byte-serving action", func(t *testing.T) {
-		if !exists("app/controllers/snapshots_controller.rb") {
-			return // Rails is gone, and with it the place the actions lived
-		}
-		src := read(t, "app/controllers/snapshots_controller.rb")
-		for _, d := range []string{"def download", "def send_blob", "def send_camera_jpeg"} {
-			mustNotContain(t, src, d, "SnapshotsController still defines "+d)
 		}
 	})
 }
@@ -205,7 +190,7 @@ func TestWizardAndBuildsServing(t *testing.T) {
 }
 
 // Both rules existed for the admin alone (#288), and the page cache that
-// needed them went with Rails (#304): nothing behind the catch-all renders a
+// needed them went with #304: nothing behind the catch-all renders a
 // page any more, so there is nothing there to cache.
 func TestNoAdminRules(t *testing.T) {
 	t.Run("no location keeps a rule for the admin that is gone", func(t *testing.T) {
@@ -216,11 +201,11 @@ func TestNoAdminRules(t *testing.T) {
 			}
 		}
 	})
-	t.Run("nothing proxies to the Rails ports", func(t *testing.T) {
+	t.Run("nothing proxies to the retired application ports", func(t *testing.T) {
 		for _, name := range vhosts {
 			live := directives(vhost(t, name))
 			for _, port := range []string{"127.0.0.1:3000", "127.0.0.1:3001"} {
-				mustNotContain(t, live, "proxy_pass http://"+port, name+" still proxies to "+port+", where Rails was")
+				mustNotContain(t, live, "proxy_pass http://"+port, name+" still proxies to "+port+", where nothing listens")
 			}
 		}
 	})
@@ -231,9 +216,9 @@ func TestNoAdminRules(t *testing.T) {
 // English visitor was served the Russian Open Wall. These keep languages apart.
 func TestMicrocacheLanguage(t *testing.T) {
 	v := vhost(t, "org.openipc")
-	// Ruby split before each `location ` or `# ` at four spaces with a
-	// lookahead; RE2 has none, so the cut points are found and sliced.
-	cachedRailsBlocks := func() []string {
+	// Split before each `location ` or `# ` at four spaces; RE2 has no
+	// lookahead, so the cut points are found and sliced.
+	cachedBlocks := func() []string {
 		var out []string
 		cuts := []int{0}
 		for _, m := range regexp.MustCompile(`(?m)^    (?:location |# )`).FindAllStringIndex(v, -1) {
@@ -255,12 +240,12 @@ func TestMicrocacheLanguage(t *testing.T) {
 	t.Run("no cache is told to disregard what the response varies by", func(t *testing.T) {
 		for _, l := range lines(v) {
 			if strings.Contains(l, "proxy_ignore_headers") && strings.Contains(l, "Vary") {
-				t.Errorf("%s -- Rails declares `Vary: Accept-Language`; ignoring it served the Russian Open Wall to English visitors", strings.TrimSpace(l))
+				t.Errorf("%s -- ignoring Vary once served the Russian Open Wall to English visitors", strings.TrimSpace(l))
 			}
 		}
 	})
 	t.Run("a response that sets a cookie is never stored for everyone", func(t *testing.T) {
-		for _, b := range cachedRailsBlocks() {
+		for _, b := range cachedBlocks() {
 			if independent.MatchString(b) {
 				continue
 			}
@@ -271,12 +256,12 @@ func TestMicrocacheLanguage(t *testing.T) {
 			}
 		}
 	})
-	t.Run("no cached location repeats a header Rails already sets", func(t *testing.T) {
+	t.Run("no cached location repeats a header its upstream already sets", func(t *testing.T) {
 		// Since #302 the fallback answers the router's redirects itself, and the
 		// Cache-Control nginx adds there is $openipc_route_cache -- empty
-		// whenever Rails answers, so it never doubles the application's own.
+		// whenever the service answers, so it never doubles the service's own.
 		routeCache := regexp.MustCompile(`(?m)^\s*add_header Cache-Control \$openipc_route_cache always;\n`)
-		for _, b := range cachedRailsBlocks() {
+		for _, b := range cachedBlocks() {
 			if independent.MatchString(b) {
 				continue
 			}
@@ -287,7 +272,7 @@ func TestMicrocacheLanguage(t *testing.T) {
 		}
 	})
 	t.Run("no cache overrides the lifetime the application declares", func(t *testing.T) {
-		for _, b := range cachedRailsBlocks() {
+		for _, b := range cachedBlocks() {
 			if independent.MatchString(b) {
 				continue
 			}
@@ -299,7 +284,7 @@ func TestMicrocacheLanguage(t *testing.T) {
 		}
 	})
 	t.Run("a key that drops the query still accounts for the locale parameter", func(t *testing.T) {
-		for _, b := range cachedRailsBlocks() {
+		for _, b := range cachedBlocks() {
 			if independent.MatchString(b) {
 				continue
 			}
@@ -346,7 +331,7 @@ func TestMicrocacheLanguage(t *testing.T) {
 	})
 	// The nginx lists and the application's list have no connection, and a
 	// disagreement is silent in the direction that matters.
-	t.Run("the prefixes nginx knows match the locales Rails puts in a path", func(t *testing.T) {
+	t.Run("the prefixes nginx knows match the locales the site puts in a path", func(t *testing.T) {
 		want := inPathLocales()
 		for _, n := range vhosts {
 			for r, ls := range guardLocales(vhost(t, n)) {
@@ -357,7 +342,7 @@ func TestMicrocacheLanguage(t *testing.T) {
 		}
 	})
 	t.Run("the locale field in a cache key cannot run into the path", func(t *testing.T) {
-		for _, b := range cachedRailsBlocks() {
+		for _, b := range cachedBlocks() {
 			key := find(b, regexp.MustCompile(`proxy_cache_key\s+([^;]+);`), 1)
 			if strings.Contains(key, "$locale_key") {
 				mustContain(t, key, "|$locale_key|", name(b)+" builds its key as "+key+"; $locale_key must be bracketed by delimiters")
@@ -366,7 +351,7 @@ func TestMicrocacheLanguage(t *testing.T) {
 	})
 	t.Run("the guard covers the locations that actually render pages", func(t *testing.T) {
 		n := 0
-		for _, b := range cachedRailsBlocks() {
+		for _, b := range cachedBlocks() {
 			if !independent.MatchString(b) {
 				n++
 			}

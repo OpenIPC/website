@@ -150,7 +150,7 @@ func TestCrawlerBlock(t *testing.T) {
 // as the URLs that were actually fetched, not as the patterns that ought to
 // cover them.
 func TestGalleryCrawlerBlock(t *testing.T) {
-	// In the bundle since #165, not in Rails' public/.
+	// In the bundle since #165.
 	robots := read(t, "frontend/apps/site/public/robots.txt")
 	vhostText := vhost(t, "org.openipc")
 
@@ -239,7 +239,7 @@ func TestGalleryCrawlerBlock(t *testing.T) {
 		applied := regexp.MustCompile(`(?m)^(\s*)if \(\$openipc_gallery_crawler\)`).FindAllStringSubmatch(vhostText, -1)
 		if len(applied) != 5 {
 			t.Errorf("Expected the guard in exactly the five locations that serve gallery content "+
-				"(two Rails', three the bundle's since #165). Found %d.", len(applied))
+				"(two broad ones, three the bundle's since #165). Found %d.", len(applied))
 		}
 		for _, a := range applied {
 			if len(a[1]) < 8 {

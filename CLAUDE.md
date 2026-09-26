@@ -8,8 +8,7 @@ The OpenIPC project website, openipc.org: the marketing pages, the catalogue of
 supported camera SoCs with per-SoC installation instructions, on-demand firmware
 image assembly, and the "Open Wall" gallery that cameras upload screenshots to.
 
-It is three parts, and none of them is Rails — Rails, MySQL and the Ruby
-toolchain were removed in #304 (epic #287):
+It is three parts (epic #287, #304):
 
 - **The static bundle** — every page. An Astro build in `frontend/apps/site`,
   using the Preact component library `frontend/packages/ui`. nginx serves it
@@ -21,12 +20,12 @@ toolchain were removed in #304 (epic #287):
 - **nginx** — `deploy/nginx/`, which mirrors `/etc/nginx/` path for path. What
   the bundle does not hold falls through to `@fallback`, which answers the route
   map in `deploy/nginx/conf.d/openipc-redirects.conf` (redirects, 410s for
-  retired addresses, a 302 home for anything unclaimed) and otherwise 404s. That
-  map was generated from Rails' routes in #302 and is maintained by hand now.
+  retired addresses, a 302 home for anything unclaimed) and otherwise serves the
+  bundle's 404 page. That map is maintained by hand.
 
 ## Commands
 
-No Go or Ruby on the host; Node 24 for the frontend.
+No Go on the host; Node 24 for the frontend.
 
 - `service/run.sh build` / `service/run.sh test` — build `service/bin/openipc`,
   or `go vet` + `go test` against a throwaway `postgres:17` container, all inside
@@ -77,7 +76,7 @@ verification techniques, and the traps that have cost time here are in
   `index.html` is in the bundle; rollback is a symlink flip. Since #304 the
   bundle is the whole site, so an install verifies itself over HTTP and flips
   back on failure. `deploy/static/README.md`.
-- `openipc-route <env> <upload|wall|firmware|availability|cable> <go|freeze>` —
+- `openipc-route <env> <upload|wall|firmware|availability|socket> <go|freeze>` —
   `freeze` answers camera uploads 503 (upload only) while a restore or
   migration must not race one; `go` puts them back.
 - `deploy/push-nginx.sh` (dry run) / `--apply` — install `deploy/nginx/` on the
@@ -103,7 +102,7 @@ restores the image but never the schema, so keep migrations additive.
   minutes of hysteresis (429 with `Retry-After`). `internal/variants` makes the
   four wall sizes with `vips`.
 - `internal/wall`, `internal/wallsocket` — the wall's JSON and the frame socket
-  (ActionCable's wire protocol, so the page client is unchanged), with signed
+  (a small JSON protocol at `/api/v1/wall/socket`), with signed
   grants keyed by `WALL_GRANT_KEY`.
 - `internal/firmware`, `internal/downloads` — full flash images built lazily
   from the release tarballs under `/srv/github-releases`, shared by concurrent
@@ -122,7 +121,7 @@ restores the image but never the schema, so keep migrations additive.
 
 - `frontend/apps/site` — Astro, three locale trees (`/`, `/ru/`, `/zh/`). The
   home page picks the reader's language in the browser. Pages are registered in
-  `src/lib/pages.ts`; `src/lib/rails-paths.ts` lists the non-bundle addresses
+  `src/lib/pages.ts`; `src/lib/origin-paths.ts` lists the non-bundle addresses
   pages may link to, and the tests hold both sides of every internal link.
 - Translations are `data/locales/*.yml`; the site reads the committed JSON
   export under `src/i18n/`. A key missing in `ru` or `zh` falls back to English;

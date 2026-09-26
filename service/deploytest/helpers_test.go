@@ -1,10 +1,8 @@
 // Package deploytest holds the tests for what surrounds the service: the nginx
 // configuration, the deploy and report scripts, the static-bundle seam and the
-// host installers. They were Ruby tests under test/deploy/ while Rails was the
-// application; they read files and run scripts, not Rails, so they move here to
-// outlive it (#304). Every test keeps the name and the reasoning it had; where
-// one asked Rails a question, it now asks whatever answers that question
-// without Rails -- service/routes.json, the vhosts, the static bundle's source.
+// host installers. They read files and run scripts; where a test needs to know
+// what answers an address, it asks service/routes.json, the vhosts, the route
+// map and the static bundle's source.
 //
 // Paths are relative to the repository root, two directories up. service/run.sh
 // mounts the whole repository, so they resolve inside the Go container too.
@@ -54,7 +52,7 @@ func directives(text string) string {
 
 func lines(text string) []string { return strings.Split(strings.TrimSuffix(text, "\n"), "\n") }
 
-// find returns submatch n of re in s, or "" (Ruby's s[re, n]).
+// find returns submatch n of re in s, or "".
 func find(s string, re *regexp.Regexp, n int) string {
 	m := re.FindStringSubmatch(s)
 	if m == nil || n >= len(m) {
@@ -143,8 +141,8 @@ func locations(text string) []location {
 	return out
 }
 
-// block is Ruby's text[/<opening>.*?\n    \}/m]: from the first occurrence of
-// opening to the next closing brace at four spaces; "" when absent.
+// block is from the first occurrence of opening to the next closing brace at
+// four spaces; "" when absent.
 func block(text, opening string) string {
 	i := strings.Index(text, opening)
 	if i < 0 {
@@ -201,9 +199,8 @@ func reservedRules(t testing.TB) []string {
 
 // reserved is check-bundle.sh's matching -- prefix, glob, or exact, after a
 // locale prefix is stripped. crossSlash picks the glob semantics: false is
-// File.fnmatch with FNM_PATHNAME (`*` stops at a slash), which is how the
-// Ruby suite read the list; true is the shell `case` the checker actually
-// uses, where `*` crosses slashes.
+// path-name globbing (`*` stops at a slash); true is the shell `case` the
+// checker actually uses, where `*` crosses slashes.
 func reserved(t testing.TB, p string, crossSlash bool) bool {
 	for _, rule := range reservedRules(t) {
 		for _, q := range []string{p, stripLocale(p)} {

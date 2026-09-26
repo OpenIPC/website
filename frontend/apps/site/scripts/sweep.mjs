@@ -91,7 +91,7 @@ try {
       const problems = [];
       page.on('pageerror', (e) => problems.push(`pageerror: ${String(e).slice(0, 120)}`));
       // Addresses the bundle does not own, and must not: every one of them is
-      // in deploy/static/reserved-paths, served by nginx or Rails in front of
+      // in deploy/static/reserved-paths, served by nginx or the service in front of
       // the bundle -- the analytics beacon, the fingerprinted favicon, and the
       // self-hosted IBM Plex faces both halves of the site share. They are
       // absent from a bare `dist` by design, so a local run would report a

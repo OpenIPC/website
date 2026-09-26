@@ -133,7 +133,7 @@ func TestLogFormat(t *testing.T) {
 	})
 }
 
-// squeeze is Ruby's String#squeeze(set): runs of the same character from set
+// squeeze collapses runs of the same character from set
 // collapse to one.
 func squeeze(s, set string) string {
 	var b strings.Builder
@@ -177,4 +177,3 @@ func TestMemoryProbe(t *testing.T) {
 			"an in-flight request can outlive the deadline; dividing by the requested duration would report a run that overran as faster than it was")
 	})
 }
-

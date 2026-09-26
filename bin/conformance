@@ -15,9 +15,8 @@
 # To point the suite at something already running -- dev or production --
 # use service/conformance/run.sh <base-url>.
 #
-# Rails' suite and its mutations went with Rails (#304); the upload contract
-# they pinned is what this one pins, and the mutations below are the same six
-# mistakes, made in the Go handler.
+# The mutations below are six mistakes a port of the upload could make, made
+# in the Go handler.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -51,9 +50,8 @@ fi
 # each. Applied to the working tree and reverted with git, so run this on a
 # clean tree.
 #
-# Rails' sixth mutation was the upload losing its CSRF exemption. Go has no
-# forgery protection to lose, so the sixth here is the other exemption the
-# fleet depends on: the whitelisted address that is never rate limited.
+# The sixth is the exemption the fleet depends on: the whitelisted address
+# that is never rate limited.
 UPLOAD=service/internal/snapshots/upload.go
 MUTATIONS=(
   "hysteresis 2 minutes -> 0|$UPLOAD|HysteresisSeconds = 120|HysteresisSeconds = 0"

@@ -160,7 +160,7 @@ echo "  enabled $(cd "$SRC" && ls sites-available | wc -l) vhosts"
 
 # The route state (conf.d/openipc-routes.conf includes it) is the host's, not
 # the repository's: openipc-route writes it and this never overwrites it. It
-# only creates what is missing, all on Rails, so a fresh host passes nginx -t.
+# only creates what is missing, all on go, so a fresh host passes nginx -t.
 "${SSH[@]}" "ROUTES_DIR=/etc/nginx/openipc-routes sh -s init" < "$(dirname "$0")/route.sh" | sed 's/^/  /'
 "${SSH[@]}" "sh -s status" < "$(dirname "$0")/route.sh" | sed 's/^/  routes /' || true
 

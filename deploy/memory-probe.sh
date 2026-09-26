@@ -2,9 +2,8 @@
 # Put a fixed, repeatable load on a container and report what it did to that
 # container's memory and to its latency.
 #
-# Every memory number in this epic before #148 was a single `docker stats`
-# reading taken at an unknown point in a worker's life, which cannot tell
-# "Rails needs 1.6GB" from "this worker has been up for six days". The hourly
+# A single `docker stats` reading taken at an unknown point in a process's
+# life cannot tell "this needs 1.6GB" from "this has been up for six days". The hourly
 # series in /var/log/openipc-rss.log fixed that for production. This is the
 # other half: a way to compare two IMAGES under the same load in minutes,
 # rather than deploying one and waiting a day to find out.
@@ -14,10 +13,9 @@
 #
 #   deploy/memory-probe.sh openipc-go-web-dev dev.openipc.org http://127.0.0.1:3012 300 16
 #
-# The Host header is an argument because the first run of this script, against
-# Rails, sent 73,638 requests its host check refused in microseconds and
-# reported a small, meaningless delta. Hence the status breakdown below: a run
-# that measured nothing has to look like one.
+# The Host header is an argument because a run whose requests are all refused
+# in microseconds reports a small, meaningless delta. Hence the status
+# breakdown below: a run that measured nothing has to look like one.
 #
 # Latency is reported alongside the memory because an allocator or caching
 # change that saves a gigabyte and costs 20ms a request is not a win, and the

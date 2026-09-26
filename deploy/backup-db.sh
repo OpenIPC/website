@@ -17,7 +17,8 @@
 #      continuously), /srv/github-releases (refreshed hourly from GitHub) and
 #      the firmware cache (rebuilt on demand).
 #
-# MySQL went with Rails (#304). Its last dump is final/ in the same bucket.
+# The MySQL database is retired (#304). Its last dump is
+# monthly/2026-09/mysql-final-before-304.sql.zst in the same bucket.
 #
 # Retention is S3's job, via lifecycle rules on the daily/, weekly/ and
 # monthly/ prefixes. This script therefore never deletes anything, and the IAM

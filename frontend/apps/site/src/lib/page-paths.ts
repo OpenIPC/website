@@ -7,7 +7,7 @@
  * run has no Astro plugin -- importing a `.astro` file here would break every
  * consumer that only wanted to know what URLs exist.
  *
- * `path` is the address without a locale prefix, exactly as config/routes.rb
+ * `path` is the address without a locale prefix, exactly as the site has always
  * writes it -- including `/green_life`, which is the one marketing URL with an
  * underscore in it. It is not a typo and renaming it would break every inbound
  * link.
@@ -17,7 +17,7 @@
  *   * `/`, `/ru/` and `/zh/`, which are the home page and have file routes of
  *     their own -- ../pages/index.astro and ../pages/[locale]/index.astro --
  *     because a rest parameter cannot match an empty path. `/` was the last
- *     address Rails rendered for a reader; it left in #165, when the language
+ *     address the server rendered for a reader; it left in #165, when the language
  *     choice moved into the browser.
  *   * the ~33 redirects, the two `410 Gone` routes and the catch-all, which
  *     are cheap, tested, and reached by falling through the seam.
@@ -39,7 +39,7 @@ function hardwarePaths(): PagePath[] {
     })),
 
     // One wizard per SoC (#164). 126 of them, and the address is the one
-    // Rails has: a link anyone has shared still opens the page it opened.
+    // it always had: a link anyone has shared still opens the page it opened.
     ...VENDORS.flatMap((vendor) => vendor.socs.map((soc) => ({
       path: `/cameras/vendors/${vendor.urlname}/socs/${soc.urlname}`,
       titleKey: 'cameras.socs.show.title',
@@ -71,7 +71,7 @@ export const PAGE_PATHS: PagePath[] = [
   // The Open Wall's shell (#165). One file per locale, and nginx serves it for
   // every wall address -- the gallery, a page of it, a camera permalink, a
   // snapshot, its archive and its slideshow. It is here under a name of its
-  // own because the addresses it answers are Rails' and carry ids that change
+  // own because the addresses it answers carry ids that change
   // by the hour: `/snapshots/<id>` cannot be a file, and a bundle that claimed
   // `/snapshots` would shadow the route cameras POST to.
   //
@@ -111,7 +111,7 @@ export const PAGE_PATHS: PagePath[] = [
   // The three web tools. Their addresses carry a directory that is not a page:
   // `/tools/` itself has no index.html and must not get one. check-bundle.sh
   // allows a directory that is not empty, and nginx's try_files misses it and
-  // falls through to Rails, which 404s it exactly as it does today.
+  // falls through to @fallback, which answers it with the 404 page.
   { path: '/tools/firmware-partitions-calculation', titleKey: 'pages.firmware_partitions_calculation.title' },
   { path: '/tools/high-resolution-timer', titleKey: 'pages.high_resolution_timer.title' },
   { path: '/tools/qr-code-generator', titleKey: 'pages.qr_code_generator.title' },

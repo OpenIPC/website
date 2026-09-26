@@ -1,7 +1,7 @@
 /**
- * app/views/cameras/socs/update.html.erb -- the installation instructions.
+ * The installation instructions.
  *
- * Every command on this page is rendered by Rails and arrives as data (#163).
+ * Every command on this page is rendered by the Go service and arrives as data (#163).
  * What is here is the page around them: which steps exist for this
  * combination, which bundle it links to, and the order a reader meets them in.
  * No offset, no partition size and no erase length is computed in this file,
@@ -419,7 +419,7 @@ function titleize(value: string): string {
 /**
  * `display_flashes`, above everything, which is where the layout puts them.
  *
- * `alert` is Rails' red key and `warning` its amber one; the classes are
+ * `alert` is the red key and `warning` the amber one; the classes are
  * FLASH_CLASSES', not the key names.
  */
 function Flashes({ t, flashes }: { t: Translate; flashes: FlashMessage[] }) {

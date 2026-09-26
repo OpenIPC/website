@@ -16,8 +16,7 @@ import (
 	"time"
 )
 
-// Trusted proxies are the ones Rails trusted by default: loopback and the
-// private ranges. nginx reaches the containers through the Docker bridge, so
+// Trusted proxies are loopback and the private ranges. nginx reaches the containers through the Docker bridge, so
 // what the process sees as RemoteAddr is a 172.x gateway, and the visitor is in
 // X-Forwarded-For. A camera on the public internet cannot choose its address
 // here, because nginx appends the real one.
@@ -44,7 +43,7 @@ func isTrusted(ip net.IP) bool {
 	return false
 }
 
-// ClientIP is Rails' request.remote_ip for the cases that occur here: walk the
+// ClientIP is the client's address for the cases that occur here: walk the
 // X-Forwarded-For chain from the right, dropping trusted proxies, and take the
 // first address that is not one. If every hop is trusted, the leftmost is the
 // client. A request that did not come through a trusted proxy is its own
@@ -83,7 +82,7 @@ func ClientIP(r *http.Request) string {
 	return host
 }
 
-// Secure sets the headers Rails sent on every response. nginx adds HSTS
+// Secure sets the headers every response carries. nginx adds HSTS
 // itself, so it is not repeated here.
 func Secure(h http.Header) {
 	h.Set("X-Frame-Options", "SAMEORIGIN")
@@ -163,7 +162,7 @@ func Log(log *slog.Logger, next http.Handler) http.Handler {
 	})
 }
 
-// WriteJSON sends a body with Rails' conditional-GET behaviour: a weak ETag
+// WriteJSON sends a body with conditional-GET behaviour: a weak ETag
 // over the bytes, and 304 when the client already has them.
 func WriteJSON(w http.ResponseWriter, r *http.Request, body []byte) {
 	sum := md5.Sum(body)
@@ -181,7 +180,7 @@ func WriteJSON(w http.ResponseWriter, r *http.Request, body []byte) {
 	}
 }
 
-// Empty is Rails' `head`: a status, no body.
+// Empty is a status and no body.
 func Empty(w http.ResponseWriter, status int) {
 	w.Header().Set("Content-Length", "0")
 	w.WriteHeader(status)

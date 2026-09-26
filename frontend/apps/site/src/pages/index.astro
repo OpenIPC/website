@@ -2,7 +2,7 @@
 /**
  * The home page, in English, at the bare `/` (#165).
  *
- * This was the last address Rails rendered for a reader, and the last one that
+ * This was the last address the server rendered for a reader, and the last one that
  * decided its language from the browser rather than from the path. Every other
  * page moved to `/`, `/ru/`, `/zh/` in #154; this one could not, because a
  * file is one language and `/` was answering three.
@@ -46,7 +46,7 @@ const t = useTranslations(DEFAULT_LOCALE);
       // `?locale=` is a choice only when it names a language this site
       // publishes. `?locale=de` is one we cannot honour and `?locale=russian`
       // is not a language tag at all -- both fall back to the browser, which
-      // is what Rails did with an unavailable locale. Truncating first would
+      // is what the site always did with an unavailable locale. Truncating first would
       // have read the second as Russian.
       var asked = String(here.searchParams.get('locale') || '').toLowerCase();
       var chosen = served.indexOf(asked) !== -1;

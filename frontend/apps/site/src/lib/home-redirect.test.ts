@@ -1,7 +1,7 @@
 /**
  * The home page's language decision, run as the page ships it (#165).
  *
- * `/` was the last address Rails rendered and the last one that chose a
+ * `/` was the last address the server rendered and the last one that chose a
  * language from `Accept-Language`. A file cannot do that, so the choice moved
  * into the browser -- and the script that makes it is inline in
  * src/pages/index.astro, because a bundled module is deferred and deferred
@@ -60,7 +60,7 @@ describe("the home page's language decision", () => {
   });
 
   it('ignores a ?locale= this site cannot serve', () => {
-    // Rails fell back to the browser for a locale it does not publish, and so
+    // A locale the site does not publish falls back to the browser, and so
     // does this. `?locale=de` is not a choice we can honour...
     expect(visit({ href: 'https://openipc.org/?locale=de', languages: ['ru'] })).toBe('/ru');
     // ...and `?locale=russian` is not a language tag at all. Truncating to two

@@ -1,23 +1,22 @@
 # service/ — the Go service behind openipc.org
 
-Epic #287 replaced the Rails application with this: one binary, `openipc`, and
-PostgreSQL. Rails is gone (#304). Every page is a file in the static bundle
+One binary, `openipc`, and PostgreSQL (epic #287). Every page is a file in the static bundle
 (`frontend/`); what is not a page is answered either by nginx itself, from the
 route map in `deploy/nginx/conf.d/openipc-redirects.conf`, or by one of the two
 roles below.
 
 | role | port (prod / dev) | answers |
 |---|---|---|
-| `web` | 3002 / 3012 | `POST /snapshots` (the cameras' frozen contract), the wall's variants, `/api/v1/wall/*` JSON, the frame socket `/api/v1/wall/cable`, `/up` |
+| `web` | 3002 / 3012 | `POST /snapshots` (the cameras' frozen contract), the wall's variants, `/api/v1/wall/*` JSON, the frame socket `/api/v1/wall/socket`, `/up` |
 | `firmware` | 3003 / 3013 | `…/download_full_image`: full flash images, built on demand, and the download stats; `/api/v1/hardware/availability.json` |
 
 `openipc routes --json` prints exactly what each role serves, and the deploy
 tests read it.
 
-The frame socket (`/api/v1/wall/cable`, #297) speaks ActionCable's wire
-protocol, so the pages' client (`@rails/actioncable` in
-`frontend/apps/site/src/lib/wall-frames.ts`) is unchanged. It verifies grants
-with the same key the wall JSON signs them with.
+The frame socket (`/api/v1/wall/socket`, #297) speaks a small JSON protocol,
+documented at the top of `internal/wallsocket/socket.go`; the pages' client is
+`frontend/apps/site/src/lib/wall-frames.ts`. It verifies grants with the same
+key the wall JSON signs them with.
 
 ## Subcommands
 
@@ -55,18 +54,16 @@ their own on the `openipc-go-test-pg` container, and `run.sh` starts it.
 
 ## What proves what
 
-The goldens below were written by the Rails implementation before it was
-deleted, and are now fixed: nothing regenerates them.
+The goldens below are fixed: nothing regenerates them.
 
 - **The upload contract** is what cameras in the field depend on. It is pinned by
   `service/conformance`, and `bin/conformance --mutations` shows the suite fails
-  when the contract is broken. The corpora Rails wrote (`content_types.json`,
+  when the contract is broken. The recorded corpora (`content_types.json`,
   `mac_addresses.json`) are replayed by `internal/snapshots` on every `go test`.
-- **Variants** were compared byte for byte against Rails' on the same originals
-  before the cutover. The runtime image uses Debian bookworm's libvips 8.14, the
-  same one the Rails image had, so a libvips upgrade is a change to what the wall
+- **Variants** are pinned byte for byte on the runtime image's libvips
+  (Debian bookworm, 8.14), so a libvips upgrade is a change to what the wall
   looks like.
-- **Grants**: `internal/wall/testdata/rails_grant.json` was minted by Rails, and
+- **Grants**: `internal/wall/testdata/grant.json` was computed outside Go, and
   `Granter.Sign` must reproduce it byte for byte.
 - **Firmware images**: `internal/firmware/testdata/manifests.json` holds full
   images that the Ruby implementation assembled from synthetic assets: every
@@ -77,7 +74,7 @@ deleted, and are now fixed: nothing regenerates them.
   recorded on 2026-09-26 and what the Ruby job wrote from them. The Go job must
   write the same bytes.
 
-## Design, where it departs from Rails
+## Design
 
 - **Greenfield data.** Nothing was imported from MySQL. The wall refills from live
   cameras within fifteen minutes and keeps two days. Download stats count from the
@@ -107,4 +104,4 @@ deleted, and are now fixed: nothing regenerates them.
 - The nightly `openipc-purge-snapshots` runs `openipc purge` and `openipc probe`
   in the running containers.
 
-`deploy/GO-CUTOVER.md` is the record of how the surfaces moved off Rails.
+`deploy/GO-CUTOVER.md` is the record of how the surfaces moved to this service.

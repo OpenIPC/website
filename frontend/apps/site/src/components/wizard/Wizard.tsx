@@ -1,10 +1,10 @@
 /**
  * The installation wizard, in the browser (#164).
  *
- * One address per SoC, as Rails has it since #156: bare it is the form, with
+ * One address per SoC, as it has been since #156: bare it is the form, with
  * `camera[...]` it is the instructions that form produces. The page is
  * prerendered in the first of those states and switches to the second without
- * a round trip, so the address a visitor can share is the address Rails
+ * a round trip, so the address a visitor can share is the address the reference
  * answers to, character for character.
  *
  * What this file does NOT do is compute anything about flash. Every command
@@ -212,7 +212,7 @@ export default function Wizard({
         setSettings((current) => ({ ...current, cameraMacAddress: generateMac() }));
       }}
       onSubmit={() => {
-        // pushState rather than a navigation: the address is the one Rails
+        // pushState rather than a navigation: the address is the one the reference
         // answers to either way, and the page it would fetch is the one
         // already open.
         window.history.pushState({}, '', here + toFormQuery(settings));

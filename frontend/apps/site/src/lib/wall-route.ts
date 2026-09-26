@@ -8,7 +8,7 @@
  * pure function with its own tests rather than something the island does
  * inline.
  *
- * The addresses are Rails' own, unchanged. A link anyone has shared still
+ * The addresses are unchanged. A link anyone has shared still
  * opens the page it opened, and a crawler that has one indexed still reaches
  * it; only the thing that answers has changed.
  */

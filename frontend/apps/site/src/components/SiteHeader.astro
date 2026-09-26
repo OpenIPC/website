@@ -1,12 +1,12 @@
 ---
 /**
- * app/views/layouts/_navbar.html.erb, to the pixel (#160).
+ * The site's navbar, to the pixel (#160).
  *
  * Not @openipc/ui's HeaderMenu. That component is fancyweb-ng's navigation and
  * it cannot express this one: the brand is 116x32 at x=72, the links are
  * 16px/25.6 with 8px of padding, the language control is a 16px globe at
  * x=1320 and the bar is exactly 60px tall. Measured off the origin rather than
- * guessed, because "indistinguishable from the Rails page" is the one thing
+ * guessed, because "indistinguishable from the page it replaced" is the one thing
  * #160 has to deliver and the header is on every page of it.
  *
  * The package still draws the pages -- the partition calculator, the timer,
@@ -50,7 +50,7 @@ const alt = alternates(path);
       that is gone from 1200px up, and a container that is a block below that
       and the row itself above it.
 
-      `navbar-expand-xl`, as _navbar.html.erb says and for the reason it gives:
+      `navbar-expand-xl`, as the original navbar had it and for its reason:
       six top-level entries and the language control do not fit an lg breakpoint
       without wrapping, and a wrapped navbar reads as broken rather than as
       full. Collapsing at 992 put this bar in a state the origin never has --
@@ -106,7 +106,7 @@ const alt = alternates(path);
       </li>
 
       {/*
-        The language control, where the Rails navbar puts it: a globe at the
+        The language control, where the original navbar put it: a globe at the
         end of the bar rather than a strip above it. The strip cost 18px of
         height on every page, which pushed the whole document down by that much
         against the origin.
@@ -136,7 +136,7 @@ const alt = alternates(path);
 <script>
   // Bootstrap's dropdown, in the twelve lines this needs: one open at a time,
   // click to toggle, click away or Escape to close.
-  // An anchor with role="button", which is the control _navbar.html.erb uses.
+  // An anchor with role="button", which is the control the original navbar used.
   // Not cosmetic: Bootstrap focuses the control when the panel opens, and a
   // browser draws its focus ring for an activated link where it withholds one
   // from a button clicked with a mouse. With a <button> here the origin

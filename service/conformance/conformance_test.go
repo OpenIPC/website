@@ -1,6 +1,5 @@
 // Package conformance is the black-box suite for the surface openipc.org's
-// application answers (#291), ported from test/conformance/*.rb so that it
-// keeps guarding production once Ruby is gone (#304).
+// application answers (#291).
 //
 // Everything here talks to a base URL and nothing talks to the service
 // in-process, so the same suite runs against the Go service on the loopback,

@@ -4,17 +4,17 @@ import preact from '@astrojs/preact';
 import tailwindcss from '@tailwindcss/vite';
 
 /**
- * The static half of openipc.org (#159).
+ * Every page of openipc.org (#159).
  *
  * The locale lives in the path, English at the root, exactly as #154 settled
- * it for Rails: `/donate`, `/ru/donate`, `/zh/donate`. Reproducing that here
+ * it: `/donate`, `/ru/donate`, `/zh/donate`. Reproducing that here
  * rather than inventing a scheme is the whole point -- every indexed URL,
  * forum link and wiki link is English at the root, and the hreflang set in
  * the layout names the three as translations of each other.
  *
  * `prefixDefaultLocale: false` is what keeps English unprefixed.
  * `redirectToDefaultLocale: false` keeps Astro from planting a redirect at
- * `/` that would shadow the Rails home page while the seam is still open.
+ * `/`, which is a page of its own.
  */
 export default defineConfig({
   site: 'https://openipc.org',
@@ -25,11 +25,11 @@ export default defineConfig({
   trailingSlash: 'ignore',
   build: {
     // A directory with an index.html per page, because that is the shape
-    // `try_files $uri $uri/index.html @rails` serves and the shape
+    // `try_files $uri $uri/index.html @fallback` serves and the shape
     // deploy/static/check-bundle.sh insists on.
     format: 'directory',
     // No hashed-asset directory at the root of the served tree: the bundle
-    // shares its namespace with Rails, and `_astro` is out of the way of
+    // shares its namespace with the service, and `_astro` is out of the way of
     // anything in deploy/static/reserved-paths.
     assets: '_astro',
   },

@@ -1,7 +1,7 @@
 /**
  * The rules that decide whether the site may print a number about people.
  *
- * These are app/models/support_stats.rb's, reimplemented for the browser, and
+ * These are the backer count's rules, as the browser applies them, and
  * they are the safety property rather than a nicety: the count sits next to a
  * request for money, so every one of these cases has to end with the page
  * rendering as it did before the count existed.
@@ -53,7 +53,7 @@ describe('what it refuses', () => {
   test('a count that is not a whole number', () => {
     expect(parseStats(fresh({ backers: 50.5 }), NOW)).toBeNull();
     expect(parseStats(fresh({ backers: '50' }), NOW)).toBeNull();
-    // Integer === true is false in Ruby, unlike Python, and this is the bug
+    // `true` is not a count, whatever a loosely typed source says, and this is the bug
     // that JSON caused in the writer.
     expect(parseStats(fresh({ backers: true }), NOW)).toBeNull();
   });

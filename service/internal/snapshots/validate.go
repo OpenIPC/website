@@ -12,14 +12,13 @@ const (
 	MaxBytes = 5 * 1024 * 1024
 )
 
-// macFormat is MAC_ADDRESS_FORMAT from the Rails app. Go's $ without (?m) is
-// end of text, like Ruby's \z, so a trailing newline is refused here too.
+// macFormat is the MAC address shape the cameras' contract accepts. Go's $
+// without (?m) is end of text, so a trailing newline is refused too.
 var macFormat = regexp.MustCompile(`^([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}$`)
 
-// The attribute name is translated and nothing else is: Rails had no
-// translations for the error sentences, so under /ru a camera is told
-// "MAC-адрес is invalid", in raw UTF-8, in an HTTP header. That is frozen
-// (upload_contract_test.rb pins it), because cameras cannot be updated.
+// The attribute name is translated and nothing else is: under /ru a camera is
+// told "MAC-адрес is invalid", in raw UTF-8, in an HTTP header. That is
+// frozen (service/conformance pins it), because cameras cannot be updated.
 var macAttribute = map[string]string{
 	"en": "MAC address",
 	"ru": "MAC-адрес",
@@ -37,9 +36,8 @@ type Upload struct {
 	Attributes map[string]*string // caption, firmware, ...
 }
 
-// Errors are the X-Error sentences, in the order Rails declared its
-// validations: the file (presence, then size, then type), then the MAC
-// (presence, then format).
+// Errors are the X-Error sentences, in the contract's order: the file
+// (presence, then size, then type), then the MAC (presence, then format).
 func Errors(u *Upload, locale string) []string {
 	var errs []string
 	if !u.HasFile {
@@ -72,7 +70,7 @@ func Errors(u *Upload, locale string) []string {
 	return errs
 }
 
-// blank is Ruby's String#blank?: empty or whitespace only.
+// blank is empty or whitespace only.
 func blank(s string) bool {
 	return strings.IndexFunc(s, func(r rune) bool { return !unicode.IsSpace(r) }) < 0
 }

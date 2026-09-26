@@ -17,9 +17,8 @@ import (
 
 // OrphanAge is how old a wall directory must be, with no row naming it,
 // before it is removed. Longer than retention on purpose: the directory is
-// written before its row is inserted, and during the move off Rails the same
-// tree holds Rails' images, whose rows are in MySQL where this cannot see
-// them. Anything younger than retention is somebody's live frame.
+// written before its row is inserted. Anything younger than retention is
+// somebody's live frame.
 const OrphanAge = 50 * time.Hour
 
 type Snapshots struct {

@@ -15,7 +15,7 @@ import { debounce } from '../../../utils';
 
 /** The eight rows, and the colour each one is outlined in. */
 // Indices for the form state, which is keyed `part0-name` and always has
-// been. The LABELS are 1-8: the Rails page this replaces numbers its eight
+// been. The LABELS are 1-8: the page this replaced numbered its eight
 // rows from one, and a calculator that renames every partition is not the same
 // page. See ROW_LABEL below.
 const PARTITIONS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
@@ -23,9 +23,9 @@ const PARTITIONS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 /** What the reader is shown, against the index the state is keyed by. */
 const rowLabel = (index: number) => index + 1;
 
-/** Ruby's `%{name}`, which is the syntax the catalogue strings are written in. */
+/** `{name}`, which is the placeholder syntax the catalogue strings are written in. */
 function fill(template: string, vars: Record<string, string | number>): string {
-  return template.replace(/%\{(\w+)\}/g, (whole, name: string) =>
+  return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
     name in vars ? String(vars[name]) : whole,
   );
 }
