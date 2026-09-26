@@ -39,4 +39,4 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # dev's went stale the moment the release index moved -- and a fresh dev host
 # had none at all, which the wizard pages show as "the commands could not be
 # loaded". Found by review on #276.
-36 * * * *  root  WIZARD_EXPORT_CONTAINER=openipc-web-dev WIZARD_EXPORT_DIR=/srv/www/shared/wizard-dev /usr/local/sbin/openipc-wizard-export >>/var/log/openipc-wizard-dev.log 2>&1
+36 * * * *  root  WIZARD_EXPORT_CONTAINER=openipc-go-firmware-dev WIZARD_EXPORT_DIR=/srv/www/shared/wizard-dev /usr/local/sbin/openipc-wizard-export >>/var/log/openipc-wizard-dev.log 2>&1

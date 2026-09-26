@@ -20,6 +20,7 @@ type SoC struct {
 	Status        string  `yaml:"status"`
 	UBootFilename string  `yaml:"uboot_filename"`
 	LinuxFilename string  `yaml:"linux_filename"`
+	LoadAddress   string  `yaml:"load_address"`
 	Vendor        *Vendor `yaml:"-"`
 }
 

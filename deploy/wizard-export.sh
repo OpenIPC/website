@@ -9,28 +9,26 @@
 #
 # Each file is written and renamed, so a page never fetches half of one, and a
 # SoC that leaves the catalogue takes its file with it.
+#
+# Since #300 the export is the Go service's (`openipc wizard-export`), run in
+# the environment's firmware container, which already has the catalogue and the
+# release index. It is held byte-identical to the Rails export it replaced by
+# service/internal/wizard/testdata/digests.json.
 set -euo pipefail
 
-CONTAINER=${WIZARD_EXPORT_CONTAINER:-openipc-web-prod}
+CONTAINER=${WIZARD_EXPORT_CONTAINER:-openipc-go-firmware-prod}
 OUT=${WIZARD_EXPORT_DIR:-/srv/www/shared/wizard}
 
 # Where that directory is mounted inside the container. The same path in both
 # environments, because which host directory is behind it is the compose
 # file's business and not this script's -- dev's container sees wizard-dev
 # here and production's sees wizard, and neither can reach the other.
-INSIDE=/rails/wizard-export
+INSIDE=/srv/wizard
 
 mkdir -p "$OUT"
 
-# Inside the container, because the export is Rails' own rendering -- that is
-# the whole point of it. The directory is a bind mount, so what it writes is
-# what nginx serves.
-#
 # The path passed in is the container's, not the host's. Passing the host path
-# was the first version and it could not work: the application's only view of
-# /srv/www/shared is read-only, and `mkdir_p` on a path that is not mounted
-# fails at /srv rather than at the leaf, so the error named a directory that
-# had nothing to do with it.
-docker exec \
-  -e "WIZARD_EXPORT_DIR=$INSIDE" \
-  "$CONTAINER" bin/rails wizard:export
+# was the first version of this job and it could not work: nothing is mounted
+# at it inside the container, so the write failed at /srv, naming a directory
+# that had nothing to do with the export.
+docker exec "$CONTAINER" openipc wizard-export --out "$INSIDE"
