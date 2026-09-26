@@ -84,7 +84,7 @@ ignore_unused:
   - button.find
   # Kept as the fixture for the four-form Russian plural rule
   # (test/controllers/multilang_test.rb). Its Rails caller was the admin.
-  - errors.messages.not_saved
+  - errors.messages.not_saved*
 # - 'simple_form.{yes,no}'
 # - 'simple_form.{placeholders,hints,labels}.*'
 # - 'simple_form.{error_notification,required}.:'
