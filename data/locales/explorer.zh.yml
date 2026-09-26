@@ -128,7 +128,7 @@ zh:
     status_kept: 保留
     selectors: '{count} 个选择者'
     footer_source: '基于 OpenIPC 的 CI 每次构建时发送到 openipc.org 的大小报告生成。'
-    help_title: 固件浏览器 — 帮助
+    help_title: 固件构成 — 帮助
     help:
       what:
         title: 这是什么

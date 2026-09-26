@@ -128,7 +128,7 @@ ru:
     status_kept: останется
     selectors: 'включают: {count}'
     footer_source: 'Построено по отчётам о размерах, которые CI OpenIPC присылает на openipc.org один раз на каждую сборку.'
-    help_title: Обозреватель прошивок — справка
+    help_title: Состав прошивки — справка
     help:
       what:
         title: Что это

@@ -53,7 +53,7 @@
     "ecosystem": "生态",
     "ecosystem_overview": "项目总览",
     "edge_ai": "边缘 AI",
-    "firmware_explorer": "固件浏览器",
+    "firmware_explorer": "固件构成",
     "get_started": "快速上手",
     "green_life": "绿色生活",
     "hardware": "硬件",
@@ -330,7 +330,7 @@
     },
     "firmware_explorer": {
       "lede": "每个 OpenIPC 构建包含什么：闪存空间如何分配、哪些软件包和内核模块占用了它、90 个夜间构建中的变化，以及哪些内容可以去掉。",
-      "title": "固件浏览器"
+      "title": "固件构成"
     },
     "firmware_partitions_calculation": {
       "end_address": "结束地址",

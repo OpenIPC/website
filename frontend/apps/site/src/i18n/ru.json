@@ -53,7 +53,7 @@
     "ecosystem": "Экосистема",
     "ecosystem_overview": "Обзор проектов",
     "edge_ai": "Edge AI",
-    "firmware_explorer": "Обозреватель прошивок",
+    "firmware_explorer": "Состав прошивки",
     "get_started": "Начало работы",
     "green_life": "Зеленая жизнь",
     "hardware": "Железо",
@@ -336,7 +336,7 @@
     },
     "firmware_explorer": {
       "lede": "Из чего состоит каждая сборка OpenIPC: как распределена флеш-память, какие пакеты и модули ядра её занимают, как это менялось за 90 ночных сборок и от чего можно отказаться.",
-      "title": "Обозреватель прошивок"
+      "title": "Состав прошивки"
     },
     "firmware_partitions_calculation": {
       "end_address": "Конечный адрес",

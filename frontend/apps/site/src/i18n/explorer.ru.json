@@ -79,7 +79,7 @@
     },
     "help_close": "Закрыть справку",
     "help_open": "Справка",
-    "help_title": "Обозреватель прошивок — справка",
+    "help_title": "Состав прошивки — справка",
     "kernel_version": "ядро {version}",
     "kind_label": "Тип",
     "kind_module": "модуль",

@@ -191,7 +191,7 @@ ru:
   nav:
     business: Для бизнеса
     business_overview: 'Обзор'
-    firmware_explorer: Обозреватель прошивок
+    firmware_explorer: Состав прошивки
     video_encoding: 'Видеокодирование'
     isp_sensors: 'ISP и сенсоры'
     reverse_engineering: 'Реверс-инжиниринг'

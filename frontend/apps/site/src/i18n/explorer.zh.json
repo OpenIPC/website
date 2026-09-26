@@ -79,7 +79,7 @@
     },
     "help_close": "关闭帮助",
     "help_open": "帮助",
-    "help_title": "固件浏览器 — 帮助",
+    "help_title": "固件构成 — 帮助",
     "kernel_version": "内核 {version}",
     "kind_label": "类型",
     "kind_module": "模块",
