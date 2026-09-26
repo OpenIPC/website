@@ -6,7 +6,7 @@
 #   openipc-route init                       create missing state files, all Rails
 #
 #   env      prod | dev
-#   surface  upload | wall | firmware
+#   surface  upload | wall | firmware | availability
 #   state    rails | go                      (any surface)
 #            freeze                          (upload: cameras get 503 and retry)
 #            shadow                          (prod upload: Rails answers, Go decides a mirror)
@@ -29,7 +29,7 @@ set -eu
 ROUTES_DIR=${ROUTES_DIR:-/etc/nginx/openipc-routes}
 RELOAD=${NGINX_RELOAD:-systemctl reload nginx}
 LOG=${ROUTE_LOG:-/var/log/openipc-route.log}
-SURFACES="upload wall firmware"
+SURFACES="upload wall firmware availability"
 
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
@@ -74,15 +74,15 @@ status() {
 
 go_port() { # env surface
   case "$1:$2" in
-    prod:firmware) echo 3003 ;; prod:*) echo 3002 ;;
-    dev:firmware) echo 3013 ;; dev:*) echo 3012 ;;
+    prod:firmware|prod:availability) echo 3003 ;; prod:*) echo 3002 ;;
+    dev:firmware|dev:availability) echo 3013 ;; dev:*) echo 3012 ;;
   esac
 }
 
 flip() {
   env_name=$1 surface=$2 state=$3 force=${4:-}
   case "$env_name" in prod|dev) ;; *) die "unknown environment '$env_name'" ;; esac
-  case " $SURFACES " in *" $surface "*) ;; *) die "unknown surface '$surface' (upload, wall, firmware)" ;; esac
+  case " $SURFACES " in *" $surface "*) ;; *) die "unknown surface '$surface' ($SURFACES)" ;; esac
   case "$state" in
     rails|go) ;;
     freeze) [ "$surface" = upload ] || die "only the upload can be frozen" ;;

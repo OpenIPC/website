@@ -233,9 +233,11 @@ probe() {
 # was here because it answered three languages at one URL; the choice is the
 # browser's now, made by a script in the page itself. What is left are two
 # addresses that are not pages at all. /admin was the second until it was
-# deleted (#288); the availability feed replaced it because it reaches Rails
-# through the same try_files seam, where a bundle file would shadow it.
-MUST_NOT_BE_STATIC=(/sitemap.xml /api/v1/hardware/availability.json)
+# deleted (#288); the availability feed replaced it because it reaches an
+# application through the same try_files seam, where a bundle file would shadow
+# it. /sitemap.xml was the other until #303 built it into the bundle; it is
+# asserted in the other direction below.
+MUST_NOT_BE_STATIC=(/api/v1/hardware/availability.json)
 
 # And the other direction (#160), which is the half that catches a bundle that
 # built but did not ship what it was for. A tree that loses every page still
@@ -270,7 +272,8 @@ MUST_BE_STATIC=(/ /robots.txt /favicon.png /donate /ru/donate /get-started /tool
                 /cameras/vendors/sigmastar/socs/ssc338q
                 /ru/cameras/vendors/hisilicon/socs/hi3516ev300
                 /open-wall /open-wall/2
-                /snapshots/0123456789abcdef0123)
+                /snapshots/0123456789abcdef0123
+                /sitemap.xml)
 
 do_verify() {
   local env_name=${1:-prod} vhost root served bad=0
@@ -301,7 +304,7 @@ do_verify() {
   done
 
   [ "$bad" -eq 0 ] || return 1
-  ok "${#MUST_NOT_BE_STATIC[@]} Rails path(s) still reach Rails"
+  ok "${#MUST_NOT_BE_STATIC[@]} application path(s) still reach an application"
   ok "${#MUST_BE_STATIC[@]} marketing page(s) answered from the bundle"
 }
 

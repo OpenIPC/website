@@ -6,11 +6,12 @@
 #
 #   bin/rails runner service/testdata/gen/firmware_golden.rb
 #
-# Two files, both committed under service/internal/firmware/testdata/:
+# Three files, all committed under service/internal/firmware/testdata/:
 #
 #   boards.json     every catalogue SoC: its board, its bootloader asset, and
 #                   the tarball names it would ask for -- against a snapshot of
 #                   the production release index (release-index.json)
+#   availability.json  the availability feed's socs map, against that index
 #   manifests.json  full images, assembled by Firmware#generate from synthetic
 #                   release assets, for every vendor's flash-layout table on
 #                   every flash type, chip size and partition layout: the image
@@ -60,6 +61,9 @@ prod_index = Dir.mktmpdir
 File.write(File.join(prod_index, '.index.json'), JSON.generate(INDEX))
 ENV['RELEASE_INDEX_ROOT'] = prod_index
 ReleaseIndex.reset!
+
+# /api/v1/hardware/availability.json's socs map (#298), against the same index.
+availability = Soc.all.sort_by(&:urlname).to_h { |soc| [soc.urlname, soc.availability.to_s] }
 
 boards = Soc.all.map do |soc|
   {
@@ -146,6 +150,7 @@ manifests = Dir.mktmpdir do |dir|
   representatives.flat_map { |soc| cases_for(soc) }.map { |args| manifest(*args) }
 end
 
+File.write(OUT.join('availability.json'), JSON.generate(availability))
 File.write(OUT.join('boards.json'), "#{JSON.pretty_generate(boards)}\n")
 File.write(OUT.join('manifests.json'), "#{JSON.pretty_generate(manifests)}\n")
 puts "#{boards.size} boards, #{manifests.size} manifests (#{manifests.count { |m| m[:error] }} refusals)"

@@ -114,7 +114,9 @@ server { listen 127.0.0.1:3000; location / {
 } }
 server { listen 127.0.0.1:3001; location / { return 200 "RAILS-DEV\n"; } }
 server { listen 127.0.0.1:3002; location / { return 200 "GO-WEB-PROD\n"; } }
-server { listen 127.0.0.1:3003; location / {
+server { listen 127.0.0.1:3003;
+  location = /api/v1/hardware/availability.json { return 200 "GO-AVAILABILITY\n"; }
+  location / {
   add_header X-Accel-Redirect /firmware-cache/image.bin;
   return 200 "";
 } }
@@ -143,6 +145,7 @@ printf 'HOME navigator.languages\n' > /srv/www/static/prod/site-test/index.html
 # The files Rails used to serve out of public/ (#165). They are the bundle's
 # now: it is where this site keeps its files.
 printf 'User-agent: *\n' > /srv/www/static/prod/site-test/robots.txt
+printf '<urlset/>\n' > /srv/www/static/prod/site-test/sitemap.xml
 printf 'PNG\n' > /srv/www/static/prod/site-test/favicon.png
 printf 'ICO\n' > /srv/www/static/prod/site-test/favicon.ico
 
@@ -420,7 +423,7 @@ expect_cache /                      "public, max-age=0, must-revalidate"
 # the page, not here and not by Rails.
 expect /                            200 static hsts
 expect /supported-hardware/featured 200 rails  hsts
-expect /sitemap.xml                 200 rails  hsts
+expect /sitemap.xml                 200 static hsts
 # The availability feed rather than /admin, which answers 410 since #288. The
 # stub says 200 to everything, so what this checks is that the seam hands the
 # address to Rails -- a live one says that more honestly than a retired one.
@@ -490,6 +493,9 @@ expect $FW                          200 rails  hsts
 route prod upload go
 route prod wall go
 route prod firmware go
+route prod availability go
+expect /api/v1/hardware/availability.json 200 go hsts
+grep -q GO-AVAILABILITY /tmp/b || { echo "  the availability feed did not reach the Go firmware process"; fail=1; }
 posts /snapshots                    200 go
 posts /ru/snapshots                 200 go
 grep -q GO-WEB-PROD /tmp/pb || { echo "  the upload did not reach the Go web process"; fail=1; }
@@ -522,6 +528,8 @@ sleep 1
 [ -s /tmp/shadow.log ] && { echo "  an upload was mirrored with shadowing off"; fail=1; }
 route prod wall rails
 route prod firmware rails
+route prod availability rails
+expect /api/v1/hardware/availability.json 200 rails hsts
 posts /snapshots                    200 rails
 expect /api/v1/wall/mosaic.json     200 rails  hsts
 echo "  --- the bundle removed entirely, which is a rollback to nothing ---"

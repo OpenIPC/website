@@ -132,6 +132,7 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/wall/snapshot/{file}"},
 	{"web", "GET", "/api/v1/wall/snapshot/{id}/{file}"},
 	{"web", "GET", "/api/v1/wall/camera/{file}"},
+	{"firmware", "GET", "/api/v1/hardware/availability.json"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 }
@@ -330,10 +331,11 @@ func firmwareRole(ctx context.Context, cfg *config.Config, log *slog.Logger, poo
 		AccelPrefix: cfg.FirmwareAccelPrefix, Log: log,
 	})
 	for _, r := range routes {
-		if r.Role == "firmware" {
+		if r.Role == "firmware" && strings.HasSuffix(r.Path, "/download_full_image") {
 			mux.Handle(r.Method+" "+r.Path, h)
 		}
 	}
+	mux.Handle("GET /api/v1/hardware/availability.json", &firmware.AvailabilityHandler{Catalogue: cat, Index: index})
 
 	// When upstream publishes, the old version goes: every ten minutes, evict
 	// whatever the index no longer describes (images once nginx has had the

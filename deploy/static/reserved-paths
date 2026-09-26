@@ -22,7 +22,6 @@
 /api/
 /rails/
 /up
-/sitemap.xml
 
 # --- pages that are not pages -----------------------------------------------
 /binaries
