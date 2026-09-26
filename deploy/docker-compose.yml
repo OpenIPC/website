@@ -176,6 +176,9 @@ services:
       - /srv/github-releases:/srv/github-releases:ro
       - /srv/www/shared/firmware:/srv/firmware
       - /srv/www/shared/go-release-cache:/srv/release-cache
+      # Where `openipc wizard-export` writes (#300), run here hourly by
+      # deploy/wizard-export.sh. nginx serves it as /api/v1/wizard/<soc>.json.
+      - /srv/www/shared/wizard:/srv/wizard
 
   go-shadow-prod:
     <<: *go-common
@@ -231,3 +234,5 @@ services:
       - /srv/github-releases:/srv/github-releases:ro
       - /srv/www/shared/dev-firmware:/srv/firmware
       - /srv/www/shared/dev-go-release-cache:/srv/release-cache
+      # Dev's own export: what dev's code renders, where the dev vhost reads it.
+      - /srv/www/shared/wizard-dev:/srv/wizard

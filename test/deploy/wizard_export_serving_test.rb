@@ -74,7 +74,7 @@ class WizardExportServingTest < ActiveSupport::TestCase
     # refreshed production and left dev on whatever somebody last ran by hand
     # -- and a fresh dev host with no export at all shows "the commands could
     # not be loaded" on every wizard page. Found by review on #276.
-    dev = cron.lines.find { |line| line.include?('openipc-web-dev') }
+    dev = cron.lines.find { |line| line.include?('openipc-go-firmware-dev') }
     assert dev, 'nothing refreshes the export dev serves'
     assert_includes dev, 'WIZARD_EXPORT_DIR=/srv/www/shared/wizard-dev',
                     "dev's scheduled export does not write where the dev vhost reads"
@@ -130,7 +130,7 @@ class WizardExportServingTest < ActiveSupport::TestCase
 
     inside = runner[%r{^INSIDE=(\S+)}, 1]
     assert inside, 'the job does not say where the directory is inside the container'
-    assert_match(/WIZARD_EXPORT_DIR=\$INSIDE/, runner, 'the job passes the host path into the container')
+    assert_match(/--out "\$INSIDE"/, runner, 'the job passes the host path into the container')
 
     %w[/srv/www/shared/wizard /srv/www/shared/wizard-dev].each do |host_path|
       assert_includes compose, "- #{host_path}:#{inside}",
