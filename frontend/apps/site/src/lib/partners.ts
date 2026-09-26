@@ -1,8 +1,7 @@
 /**
  * The partner wall, as data (#160).
  *
- * app/helpers/pages_helper.rb held these as Ruby constants; the pages that
- * render them are leaving Rails, so the lists come with them. The grouping,
+ * The partner lists the pages render. The grouping,
  * the order, the commented-out entries and the territory rule are all carried
  * across unchanged -- this is a move, not an edit, and src/lib/partners.test.ts
  * pins the counts so a later edit is a deliberate one.
@@ -26,7 +25,7 @@ export type PartnerGroupKey =
   | 'global' | 'manufacturers' | 'integrators' | 'fpv' | 'education' | 'exhibitions' | 'research';
 
 /**
- * Entries commented out here are commented out on the Rails wall too, with the
+ * Entries commented out here were commented out on the original wall too, with the
  * same URLs, so nothing appears or disappears silently. Uncommenting a line is
  * how one comes back.
  *
@@ -43,7 +42,7 @@ export const PARTNER_GROUPS: Record<PartnerGroupKey, Partner[]> = {
   manufacturers: [
     { name: 'RunCam', url: 'https://runcam.com/', img: 'runcam_mini' },
     { name: 'CCDCAM', url: 'https://ccdcam.com/', img: 'ccdcam_mini' },
-    // Commented out on the Rails wall, so commented out here:
+    // Commented out on the original wall, so commented out here:
     // { name: 'EMAX', url: 'https://emaxmodel.com/', img: 'emax_mini' },
   ],
   // Builds systems on it for other people. RU_INTEGRATORS is appended to this
@@ -105,7 +104,7 @@ export const RU_INTEGRATORS: Partner[] = [
       + '?swoof=1&product_brands=openipc&really_curr_tax=189-product_cat',
     img: 'alarmsystem_mini',
   },
-  // Commented out on the Rails wall, so commented out here:
+  // Commented out on the original wall, so commented out here:
   // { name: 'MegaCam', url: 'https://megacam.kz/', img: 'megacam_mini' },
   // { name: 'Dozor', url: 'https://dozor-smart.ru/', img: 'dozor_mini' },
   // { name: 'Flagman', url: 'https://flagman.org/', img: 'flagman_mini' },

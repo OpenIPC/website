@@ -22,6 +22,7 @@ import Community from '../components/pages/Community.astro';
 import Donate from '../components/pages/Donate.astro';
 import EdgeAi from '../components/pages/EdgeAi.astro';
 import Ecosystem from '../components/pages/Ecosystem.astro';
+import FirmwareExplorer from '../components/pages/FirmwareExplorer.astro';
 import FirmwarePartitionsCalculation from '../components/pages/FirmwarePartitionsCalculation.astro';
 import GetStarted from '../components/pages/GetStarted.astro';
 import GreenLife from '../components/pages/GreenLife.astro';
@@ -92,6 +93,7 @@ const COMPONENTS: Record<string, Renderer> = {
   '/donate': { component: Donate },
   '/ecosystem': { component: Ecosystem },
   '/edge-ai': { component: EdgeAi },
+  '/firmware-explorer': { component: FirmwareExplorer },
   '/get-started': { component: GetStarted },
   '/green_life': { component: GreenLife },
   '/low-latency': { component: LowLatency },

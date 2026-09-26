@@ -14,12 +14,11 @@ export type SelectOption = {
  * these, and they had been translating them since before the calculator was a
  * component.
  *
- * Strings rather than functions, and `%{number}` rather than a template
+ * Strings rather than functions, and `{number}` rather than a template
  * literal, for two reasons. An Astro island receives its props as JSON, so a
- * function cannot cross that boundary at all. And `%{number}` is Ruby's
- * interpolation syntax, which is what data/locales already writes -- so the
- * consumer hands over the catalogue string untouched instead of reformatting
- * it into something else's syntax first.
+ * function cannot cross that boundary at all. And `{number}` is the
+ * placeholder syntax data/locales writes -- so the consumer hands over the
+ * catalogue string untouched instead of reformatting it first.
  */
 export interface FwCalcLabels {
   title: string;
@@ -29,9 +28,9 @@ export interface FwCalcLabels {
   mtdName: string;
   flashSize: string;
   initialOffset: string;
-  /** Carries `%{number}`. */
+  /** Carries `{number}`. */
   partitionName: string;
-  /** Carries `%{number}`. */
+  /** Carries `{number}`. */
   partitionSize: string;
   startAddress: string;
   hexSize: string;
@@ -48,7 +47,7 @@ export interface FwCalcLabels {
  * widget always rendered. Storybook and the gallery pass no labels at all.
  *
  * "Lite" and "Ultimate" are the firmware editions' names and are not
- * translated anywhere on the site, including in the Rails views this replaced.
+ * translated anywhere on the site, including in the views this replaced.
  */
 export const DEFAULT_FW_CALC_LABELS: FwCalcLabels = {
   title: 'Firmware Partition Calculator',
@@ -58,8 +57,8 @@ export const DEFAULT_FW_CALC_LABELS: FwCalcLabels = {
   mtdName: 'MTD device name',
   flashSize: 'Flash size, MB',
   initialOffset: 'Initial offset, dec or hex, bytes',
-  partitionName: 'Partition %{number} name',
-  partitionSize: 'Partition %{number} size, KB',
+  partitionName: 'Partition {number} name',
+  partitionSize: 'Partition {number} size, KB',
   startAddress: 'Start address',
   hexSize: 'Hex size, bytes',
   endAddress: 'End address',

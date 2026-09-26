@@ -1,11 +1,9 @@
 #!/bin/bash
 # Hourly memory sample (2026-09-19, issue #143).
 #
-# The migration epic asserts Rails memory falls from ~3.3 GiB to under 2.2 GiB
-# once jemalloc and MALLOC_ARENA_MAX land (#148), and that host MemAvailable
-# rises above 1 GiB. Neither is checkable without a before-series, and RSS
-# growth per week with no restart is currently unquantified -- so sample before
-# changing anything.
+# A memory claim about a container needs a series, not a reading: RSS growth
+# per week with no restart is only visible hour by hour, and a change to what
+# runs has to be compared with what ran before it.
 #
 # Record the COMPONENTS, not one blended number. cgroup memory.current counts
 # page cache, so it read 3.70 GiB at the same moment `docker stats` said 3.31

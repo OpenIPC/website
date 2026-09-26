@@ -40,7 +40,7 @@
 /snapshots/
 
 # --- served from disk by nginx already, from a different tree ----------------
-# /assets/ was Rails' asset pipeline and answers 410 now. /fonts/ was here
+# /assets/ was the old asset pipeline's and answers 410 now. /fonts/ was here
 # until #304 moved the faces into the bundle, which serves them itself.
 /assets/
 /images/

@@ -1,5 +1,5 @@
 /**
- * The settling, held to Rails' own answers (#164).
+ * The settling, held to the reference's own answers (#164).
  *
  * `update` is the action that decides which commands a visitor is shown: it
  * moves a 16MB layout off an 8MB chip, an unpublished edition onto a published
@@ -7,11 +7,11 @@
  * static wizard has to reach the same answer -- a disagreement here is the two
  * halves of the site describing different installs of the same camera.
  *
- * The fixture is not written by hand. `bin/rails wizard:settled` makes a real
- * request per case and reads the settled configuration back out of the
- * permanent link the page prints -- which is `Camera#permalink` -- along with
- * the flash messages as rendered. So this compares against Rails' output, not
- * against a second statement of the rule.
+ * The fixture is not written by hand. It was recorded from the reference
+ * implementation, one real request per case, reading the settled
+ * configuration back out of the permanent link the page printed, along with
+ * the messages as rendered. So this compares against the reference's output,
+ * not against a second statement of the rule.
  */
 import { describe, expect, test } from 'vitest';
 import fixture from './wizard-settled.fixture.json';
@@ -70,7 +70,7 @@ describe('what the wizard settles on', () => {
             text: wizardTranslate('en', `cameras.socs.warnings.${message.key}`,
               flashArguments(message, versionName)),
           }));
-          // Rails' flash keys are `warning` and `alert`; the classes the layout
+          // The severity keys are `warning` and `alert`; the classes the layout
           // draws them with are `warning` and `danger`.
           expect(sentences.map((s) => ({
             level: s.level === 'alert' ? 'danger' : 'warning',

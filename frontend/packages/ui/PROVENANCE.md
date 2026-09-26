@@ -31,10 +31,10 @@ with the rest of the SPA.
 | `sites/camera` | a header-and-footer stub still titled "Vite + Preact + TS" |
 | the `/open-wall` page | an hls.js grid of twelve identical tiles pointed at `http://localhost:4000/index.m3u8`. Not the Open Wall |
 | `hls.js` | with that page gone, nothing needed it. `<CameraSnapshot>` takes a `media` slot for anyone who does |
-| the 35 partner logos | openipc.org owns those: `app/assets/images/partners/`, listed by `PARTNER_GROUPS` in `app/helpers/pages_helper.rb`. `<Supporters>` takes URLs |
-| the 12 WebUI screenshots | `tools/webui-gallery/run.sh` photographs a real camera into `app/assets/images/webui/`. A second copy is the drift that tool exists to prevent |
+| the 35 partner logos | openipc.org owns those: `frontend/apps/site/src/assets/partners/`, listed in `src/lib/partners.ts`. `<Supporters>` takes URLs |
+| the 12 WebUI screenshots | `tools/webui-gallery/run.sh` photographs a real camera into `frontend/apps/site/src/assets/webui/`. A second copy is the drift that tool exists to prevent |
 | 2,016 lines of SoC constants | the catalogue of record is the `socs` table, and #161 moves it to YAML. `src/__fixtures__/socs.ts` keeps the 126 rows as tuples, for stories |
-| the 23-member team roster | openipc.org lists 36 people in `app/views/pages/our_team.html.erb`. Six of them are a story fixture; a library holding a second roster is a second roster to go stale |
+| the 23-member team roster | openipc.org lists 36 people on its `/our-team` page. Six of them are a story fixture; a library holding a second roster is a second roster to go stale |
 
 ## What was broken on arrival
 

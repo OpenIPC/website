@@ -1,38 +1,29 @@
-// Package wallsocket is the Open Wall's frame channel (#297): the only way a
-// camera frame leaves the site, speaking ActionCable's wire protocol so that
-// the pages' client (@rails/actioncable, frontend/apps/site/src/lib/
-// wall-frames.ts) does not change.
+// Package wallsocket is the Open Wall's frame socket (#297): the only way a
+// camera frame leaves the site. The page's client is
+// frontend/apps/site/src/lib/wall-frames.ts.
 //
-// Why the client does not change: the static bundle ships on its own release
-// train, and the mirrors that proxy it (openipc.ru, .kz, .cloud) had to have
-// their vhosts fixed by hand to forward the Upgrade. A new protocol would make
-// the bundle and this service a pair that must land together, and would
-// re-break machines this project cannot test.
+// One socket carries one reader's frames. The protocol is JSON text messages:
 //
-// The protocol, as ActionCable 8.1 speaks it:
+//	server -> {"type":"hello","connection_id":"<16 hex>"}      once, on open
+//	server -> {"type":"ping"}                                   every PingEvery
+//	client -> {"type":"grant","grant":"<token>"}                any number of times
+//	client -> {"type":"request","variant":"thumb","ids":[...]}
+//	server -> {"type":"frame","id":..,"variant":..,"frame":"<base64>"}
+//	server -> {"type":"error","error":"no grant" | "unknown variant" | ...}
 //
-//	server -> {"type":"welcome"}                              once, on open
-//	server -> {"type":"ping","message":<unix seconds>}        every 3 s
-//	client -> {"command":"subscribe","identifier":"<json>"}
-//	server -> {"identifier":"<json>","type":"confirm_subscription"} | "reject_subscription"
-//	client -> {"command":"message","identifier":"<json>","data":"<json with action>"}
-//	server -> {"identifier":"<json>","message":{...}}
-//	client -> {"command":"unsubscribe","identifier":"<json>"}
-//
-// The identifier is a JSON string holding JSON, and it is echoed back exactly
-// as it arrived: the client routes a message by comparing that string.
-//
-// What WallChannel did, and this does the same way:
-//   - A subscription needs a WallGrant; without one it is told {error:"no
-//     grant"}, logged as wall_grant_refused, and rejected.
-//   - Frames are asked for in id:variant pairs the grants name. Grants
-//     accumulate, reset past GRANT_RETENTION pairs.
-//   - A request over MaxPerRequest ids is refused whole.
-//   - Each frame is the file's bytes with the first MaskBytes XORed against
-//     the connection id's characters -- obfuscation, not encryption -- sent
-//     base64 in {id, variant, connection_id, frame}.
-//   - `wall: connection served N distinct frames` on unsubscribe, which
+// The rules:
+//   - Frames are asked for in id:variant pairs that grants name. Grants
+//     accumulate, and reset past GrantRetention pairs, because a page asks for
+//     its frames in chunks and a lazy frame can land between them with a grant
+//     of its own.
+//   - A grant that does not verify revokes everything the socket held; the
+//     socket stays open. It is logged as wall_grant_refused, a marker
 //     deploy/log-report.sh counts.
+//   - A request over MaxPerRequest ids is refused whole.
+//   - Each frame is the file's bytes with the first MaskBytes XORed against the
+//     connection id's characters -- obfuscation, not encryption -- base64.
+//   - `wall: connection served N distinct frames` when the socket closes,
+//     which deploy/log-report.sh counts.
 package wallsocket
 
 import (
@@ -50,6 +41,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sync"
 	"time"
 
@@ -58,27 +50,25 @@ import (
 	"github.com/OpenIPC/website/service/internal/httpx"
 )
 
-// The channel's numbers, WallChannel's constants.
+// The socket's numbers. MaskBytes must equal the client's MASK_BYTES; the
+// frontend's test pins the round trip.
 const (
 	MaskBytes      = 4096
 	MaxPerRequest  = 96
 	GrantRetention = 1024
-	PingEvery      = 3 * time.Second
+	PingEvery      = 15 * time.Second
 )
 
 // Variants a frame may be asked for at.
 var Variants = []string{"icon", "icon2", "thumb", "fullhd"}
 
-// publicID is Snapshot::PUBLIC_ID_FORMAT.
+// publicID is the shape of a snapshot's public id.
 var publicID = regexp.MustCompile(`^[0-9a-f]{20}$`)
 
-// Protocols the client offers; the first is the one this speaks.
-var protocols = []string{"actioncable-v1-json", "actioncable-unsupported"}
-
-// AllowedOrigins is config.action_cable.allowed_request_origins: every name
-// the site answers to, mirrors included, because a page served by a mirror
-// opens its socket with that mirror's Origin -- and the page falls back to
-// opening it straight to the origin when the mirror will not carry it.
+// AllowedOrigins is every name the site answers to, mirrors included, because
+// a page served by a mirror opens its socket with that mirror's Origin -- and
+// the page falls back to opening it straight to the origin when the mirror
+// will not carry it.
 var AllowedOrigins = []*regexp.Regexp{
 	regexp.MustCompile(`^https://(www\.)?openipc\.org$`),
 	regexp.MustCompile(`^https://(www\.)?openipc\.ru$`),
@@ -93,7 +83,7 @@ type Verifier interface {
 	Verify(token string) []string
 }
 
-// Server answers /api/v1/wall/cable.
+// Server answers /api/v1/wall/socket.
 type Server struct {
 	WallRoot string
 	Grants   Verifier
@@ -106,8 +96,8 @@ type Server struct {
 	PingEvery      time.Duration
 }
 
-// originAllowed is ActionCable's allow_request_origin?: the page's own host,
-// or a listed name. No Origin at all is refused.
+// originAllowed admits the page's own host or a listed name. No Origin at all
+// is refused.
 func (s *Server) originAllowed(r *http.Request) bool {
 	origin := r.Header.Get("Origin")
 	if origin == "" {
@@ -134,13 +124,13 @@ func (s *Server) originAllowed(r *http.Request) bool {
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ip := httpx.ClientIP(r)
-	// What ActionCable answers a request it will not upgrade: not a socket,
-	// or an origin it does not know.
+	// Not a socket, or an origin this site does not answer to: a plain 404,
+	// which is what a scanner walking the address learns.
 	if !isUpgrade(r) || !s.originAllowed(r) {
 		if !isUpgrade(r) {
-			s.Log.Warn("wall cable: not a WebSocket request", "ip", ip)
+			s.Log.Warn("wall socket: not a WebSocket request", "ip", ip)
 		} else {
-			s.Log.Warn("wall cable: request origin not allowed", "origin", r.Header.Get("Origin"), "ip", ip)
+			s.Log.Warn("wall socket: request origin not allowed", "origin", r.Header.Get("Origin"), "ip", ip)
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusNotFound)
@@ -154,16 +144,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_ = rc.SetReadDeadline(time.Time{})
 	_ = rc.SetWriteDeadline(time.Time{})
 	ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		Subprotocols:       protocols,
-		InsecureSkipVerify: true, // the origin was checked above, ActionCable's way
+		InsecureSkipVerify: true, // the origin was checked above, against the list
 		CompressionMode:    websocket.CompressionDisabled,
 	})
 	if err != nil {
-		s.Log.Warn("wall cable: handshake failed", "err", err, "ip", ip)
+		s.Log.Warn("wall socket: handshake failed", "err", err, "ip", ip)
 		return
 	}
 	ws.SetReadLimit(64 << 10)
-	c := &conn{server: s, ws: ws, id: newConnectionID(), ip: ip, subs: map[string]*subscription{}}
+	c := &conn{server: s, ws: ws, id: newConnectionID(), ip: ip, served: map[string]bool{}}
+	c.revoke()
 	c.run(r.Context())
 }
 
@@ -182,9 +172,8 @@ func headerHas(values []string, token string) bool {
 	return false
 }
 
-// newConnectionID is SecureRandom.hex(8): sixteen lowercase hex characters.
-// The client's keyFor() takes the key from these characters' codes, so any
-// other alphabet or length decodes every frame to garbage.
+// newConnectionID is sixteen lowercase hex characters. The client's keyFor()
+// takes the mask key from these characters' codes.
 func newConnectionID() string {
 	var b [8]byte
 	if _, err := rand.Read(b[:]); err != nil {
@@ -200,34 +189,30 @@ type conn struct {
 	ip     string
 
 	writeMu sync.Mutex
-	subs    map[string]*subscription // read loop only
-	refused bool                     // the budget has been logged for this connection
-}
 
-type subscription struct {
-	identifier   string
+	// Read loop only.
 	served       map[string]bool
 	granted      map[string]bool
 	unrestricted bool
+	refused      bool // the budget has been logged for this connection
 }
 
 func (c *conn) run(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	defer func() {
-		for id := range c.subs {
-			c.unsubscribe(id)
+		if len(c.served) > 0 {
+			c.server.Log.Info(fmt.Sprintf("wall: connection served %d distinct frames", len(c.served)),
+				"ip", c.ip, "connection_id", c.id)
 		}
 		c.ws.CloseNow()
 	}()
 
-	if c.ws.Subprotocol() != protocols[0] {
-		// The client stops on anything else; say why once and go.
-		c.send(ctx, map[string]any{"type": "disconnect", "reason": "invalid_request", "reconnect": false})
+	if err := c.send(ctx, map[string]any{"type": "hello", "connection_id": c.id}); err != nil {
 		return
 	}
-	if err := c.send(ctx, map[string]any{"type": "welcome"}); err != nil {
-		return
+	if c.server.GrantsDisabled {
+		c.unrestricted = true
 	}
 
 	every := c.server.PingEvery
@@ -241,8 +226,8 @@ func (c *conn) run(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 				return
-			case now := <-t.C:
-				if err := c.send(ctx, map[string]any{"type": "ping", "message": now.Unix()}); err != nil {
+			case <-t.C:
+				if err := c.send(ctx, map[string]any{"type": "ping"}); err != nil {
 					cancel()
 					return
 				}
@@ -255,172 +240,107 @@ func (c *conn) run(ctx context.Context) {
 		if err != nil {
 			return
 		}
-		c.command(ctx, raw)
+		c.message(ctx, raw)
 	}
 }
 
-type command struct {
-	Command    string `json:"command"`
-	Identifier string `json:"identifier"`
-	Data       string `json:"data"`
+type message struct {
+	Type    string   `json:"type"`
+	Grant   string   `json:"grant"`
+	Variant string   `json:"variant"`
+	IDs     []string `json:"ids"`
 }
 
-func (c *conn) command(ctx context.Context, raw []byte) {
-	var cmd command
-	if err := json.Unmarshal(raw, &cmd); err != nil {
-		c.server.Log.Error("wall cable: unreadable command", "err", err)
+func (c *conn) message(ctx context.Context, raw []byte) {
+	var m message
+	if err := json.Unmarshal(raw, &m); err != nil {
+		c.server.Log.Warn("wall socket: unreadable message", "err", err, "ip", c.ip)
+		c.sendError(ctx, "unreadable message")
 		return
 	}
-	switch cmd.Command {
-	case "subscribe":
-		c.subscribe(ctx, cmd.Identifier)
-	case "unsubscribe":
-		c.unsubscribe(cmd.Identifier)
-	case "message":
-		sub := c.subs[cmd.Identifier]
-		if sub == nil {
-			c.server.Log.Error("wall cable: unable to find subscription", "identifier", cmd.Identifier)
-			return
-		}
-		var data map[string]any
-		if err := json.Unmarshal([]byte(cmd.Data), &data); err != nil {
-			c.server.Log.Error("wall cable: unreadable message data", "err", err)
-			return
-		}
-		switch action, _ := data["action"].(string); action {
-		case "request_frames":
-			c.requestFrames(ctx, sub, data)
-		case "use_grant":
-			c.useGrant(ctx, sub, data)
-		default:
-			c.server.Log.Error("wall cable: unable to process action", "action", action)
-		}
+	switch m.Type {
+	case "grant":
+		c.useGrant(ctx, m.Grant)
+	case "request":
+		c.requestFrames(ctx, m.Variant, m.IDs)
 	default:
-		c.server.Log.Error("wall cable: unrecognized command", "command", cmd.Command)
+		c.server.Log.Warn("wall socket: unknown message type", "type", m.Type, "ip", c.ip)
+		c.sendError(ctx, "unknown message type")
 	}
 }
 
-func (c *conn) subscribe(ctx context.Context, identifier string) {
-	var params map[string]any
-	if err := json.Unmarshal([]byte(identifier), &params); err != nil {
-		c.server.Log.Error("wall cable: unreadable identifier", "err", err)
-		return
-	}
-	if _, dup := c.subs[identifier]; dup {
-		return
-	}
-	if params["channel"] != "WallChannel" {
-		c.server.Log.Error("wall cable: subscription class not found", "channel", params["channel"])
-		return
-	}
-	sub := &subscription{identifier: identifier, served: map[string]bool{}}
-	sub.revoke()
-	c.subs[identifier] = sub
-	grant, _ := params["grant"].(string)
-	if !c.accept(sub, grant) {
-		// wall_grant_refused is a marker, not prose: deploy/log-report.sh
-		// counts it for the bare-socket figure.
-		c.server.Log.Warn(fmt.Sprintf("wall_grant_refused %s subscribed without a valid grant", c.ip))
-		c.transmit(ctx, sub, map[string]any{"error": "no grant"})
-		c.unsubscribe(identifier)
-		c.send(ctx, map[string]any{"identifier": identifier, "type": "reject_subscription"})
-		return
-	}
-	c.send(ctx, map[string]any{"identifier": identifier, "type": "confirm_subscription"})
+func (c *conn) revoke() {
+	c.unrestricted = c.server.GrantsDisabled
+	c.granted = map[string]bool{}
 }
 
-func (c *conn) unsubscribe(identifier string) {
-	sub := c.subs[identifier]
-	if sub == nil {
-		return
-	}
-	delete(c.subs, identifier)
-	if len(sub.served) > 0 {
-		c.server.Log.Info(fmt.Sprintf("wall: connection served %d distinct frames", len(sub.served)),
-			"ip", c.ip, "connection_id", c.id)
-	}
-}
-
-func (s *subscription) revoke() {
-	s.unrestricted = false
-	s.granted = map[string]bool{}
-}
-
-// accept adds what a grant allows to what the subscription already holds.
-// Grants accumulate: a page sends its frames in chunks and a lazy frame can
-// land between them with a grant of its own; replacing would refuse the rest.
-func (c *conn) accept(sub *subscription, token string) bool {
+// useGrant adds what a grant allows to what the socket already holds. A grant
+// that does not verify drops the socket to holding nothing; it stays open.
+func (c *conn) useGrant(ctx context.Context, token string) {
 	if c.server.GrantsDisabled {
-		sub.unrestricted = true
-		return true
+		return
 	}
 	pairs := c.server.Grants.Verify(token)
 	if pairs == nil {
-		return false
-	}
-	if len(sub.granted) >= GrantRetention {
-		sub.granted = map[string]bool{}
-	}
-	for _, p := range pairs {
-		sub.granted[p] = true
-	}
-	return true
-}
-
-// useGrant is a later page on the same socket. A bad grant mid-session drops
-// the subscription to holding nothing, and the socket stays open.
-func (c *conn) useGrant(ctx context.Context, sub *subscription, data map[string]any) {
-	grant, _ := data["grant"].(string)
-	if c.accept(sub, grant) {
+		c.revoke()
+		// wall_grant_refused is a marker, not prose: deploy/log-report.sh
+		// counts it for the bare-socket figure.
+		c.server.Log.Warn(fmt.Sprintf("wall_grant_refused %s sent an invalid grant", c.ip))
+		c.sendError(ctx, "no grant")
 		return
 	}
-	sub.revoke()
-	c.server.Log.Warn(fmt.Sprintf("wall_grant_refused %s sent an invalid grant mid-session", c.ip))
-	c.transmit(ctx, sub, map[string]any{"error": "no grant"})
+	if len(c.granted) >= GrantRetention {
+		c.granted = map[string]bool{}
+	}
+	for _, p := range pairs {
+		c.granted[p] = true
+	}
 }
 
-func (c *conn) requestFrames(ctx context.Context, sub *subscription, data map[string]any) {
-	variant := toString(data["variant"])
-	if !contains(Variants, variant) {
-		c.refuseRequest(ctx, sub, "unknown variant")
+func (c *conn) requestFrames(ctx context.Context, variant string, requested []string) {
+	if !slices.Contains(Variants, variant) {
+		c.refuseRequest(ctx, "unknown variant")
+		return
+	}
+	if !c.unrestricted && len(c.granted) == 0 {
+		c.server.Log.Warn(fmt.Sprintf("wall_grant_refused %s asked for frames without a grant", c.ip))
+		c.sendError(ctx, "no grant")
 		return
 	}
 	var ids []string
 	seen := map[string]bool{}
-	for _, v := range toArray(data["ids"]) {
-		id := toString(v)
+	for _, id := range requested {
 		if publicID.MatchString(id) && !seen[id] {
 			seen[id] = true
 			ids = append(ids, id)
 		}
 	}
 	if len(ids) > MaxPerRequest {
-		c.refuseRequest(ctx, sub, "too many frames in one request")
+		c.refuseRequest(ctx, "too many frames in one request")
 		return
 	}
 	for _, id := range ids {
 		// Over PAIRS, not ids and variants separately: a thumbnail permission
 		// must not buy the same id at full resolution.
-		if sub.unrestricted || sub.granted[id+":"+variant] {
-			c.deliver(ctx, sub, id, variant)
+		if c.unrestricted || c.granted[id+":"+variant] {
+			c.deliver(ctx, id, variant)
 		}
 	}
 }
 
-func (c *conn) refuseRequest(ctx context.Context, sub *subscription, reason string) {
+func (c *conn) refuseRequest(ctx context.Context, reason string) {
 	c.server.Log.Warn("wall: refused request -- " + reason)
-	c.transmit(ctx, sub, map[string]any{"error": reason})
+	c.sendError(ctx, reason)
 }
 
 // deliver charges the budget first, then reads, and gives the charge back if
 // there turned out to be nothing to send (a purged snapshot and an id that
 // never existed look identical from here, on purpose).
-func (c *conn) deliver(ctx context.Context, sub *subscription, id, variant string) {
+func (c *conn) deliver(ctx context.Context, id, variant string) {
 	if b := c.server.Budget; b != nil {
 		if over, spent := b.Charge(c.ip, time.Now()); over && !c.refused {
-			// Observe-only (#297): the Rails number was per Puma worker and
-			// reset on every deploy, so enforcing it in one process would be
-			// a tightening nobody has measured. Log what would be refused.
+			// Observe-only (#297): nothing measured says where an enforced
+			// limit should sit, so this logs what it would refuse.
 			c.refused = true
 			c.server.Log.Warn(fmt.Sprintf("wall: %s would be refused at %d frames in the hour (observe-only, spent %d)",
 				c.ip, b.Limit, spent))
@@ -434,23 +354,22 @@ func (c *conn) deliver(ctx context.Context, sub *subscription, id, variant strin
 		return
 	}
 	defer f.Close()
-	if err := c.transmitFrame(ctx, sub, id, variant, f); err != nil {
+	if err := c.transmitFrame(ctx, id, variant, f); err != nil {
 		// Not delivered, so not spent: the observe-only log would otherwise
 		// count every frame a reader hung up on.
 		if b := c.server.Budget; b != nil {
 			b.Refund(c.ip, time.Now())
 		}
-		c.server.Log.Warn("wall cable: frame not sent", "err", err, "public_id", id)
+		c.server.Log.Warn("wall socket: frame not sent", "err", err, "public_id", id)
 		return
 	}
-	sub.served[id] = true
+	c.served[id] = true
 }
 
-// transmitFrame streams {"identifier":..,"message":{"id","variant",
-// "connection_id","frame"}} without holding the file: the head is read and
-// masked, and the rest is copied through a base64 encoder straight into the
-// WebSocket message.
-func (c *conn) transmitFrame(ctx context.Context, sub *subscription, id, variant string, f *os.File) error {
+// transmitFrame streams {"type":"frame","id","variant","frame"} without
+// holding the file: the head is read and masked, and the rest is copied
+// through a base64 encoder straight into the WebSocket message.
+func (c *conn) transmitFrame(ctx context.Context, id, variant string, f *os.File) error {
 	head := make([]byte, MaskBytes)
 	n, err := io.ReadFull(f, head)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
@@ -468,8 +387,7 @@ func (c *conn) transmitFrame(ctx context.Context, sub *subscription, id, variant
 	if err != nil {
 		return err
 	}
-	prefix := fmt.Sprintf(`{"identifier":%s,"message":{"id":%s,"variant":%s,"connection_id":%s,"frame":"`,
-		jsonString(sub.identifier), jsonString(id), jsonString(variant), jsonString(c.id))
+	prefix := fmt.Sprintf(`{"type":"frame","id":%s,"variant":%s,"frame":"`, jsonString(id), jsonString(variant))
 	if _, err := io.WriteString(w, prefix); err != nil {
 		w.Close()
 		return err
@@ -487,16 +405,15 @@ func (c *conn) transmitFrame(ctx context.Context, sub *subscription, id, variant
 		w.Close()
 		return err
 	}
-	if _, err := io.WriteString(w, `"}}`); err != nil {
+	if _, err := io.WriteString(w, `"}`); err != nil {
 		w.Close()
 		return err
 	}
 	return w.Close()
 }
 
-// transmit is Channel#transmit: {"identifier": ..., "message": data}.
-func (c *conn) transmit(ctx context.Context, sub *subscription, data any) error {
-	return c.send(ctx, map[string]any{"identifier": sub.identifier, "message": data})
+func (c *conn) sendError(ctx context.Context, reason string) {
+	_ = c.send(ctx, map[string]any{"type": "error", "error": reason})
 }
 
 func (c *conn) send(ctx context.Context, v any) error {
@@ -514,43 +431,4 @@ func (c *conn) send(ctx context.Context, v any) error {
 func jsonString(s string) string {
 	raw, _ := json.Marshal(s)
 	return string(raw)
-}
-
-// toString is Ruby's #to_s for what JSON can carry.
-func toString(v any) string {
-	switch t := v.(type) {
-	case nil:
-		return ""
-	case string:
-		return t
-	case float64:
-		if t == float64(int64(t)) {
-			return fmt.Sprintf("%d", int64(t))
-		}
-		return fmt.Sprint(t)
-	default:
-		return fmt.Sprint(t)
-	}
-}
-
-// toArray is Kernel#Array: nil is empty, a list is itself, anything else is
-// a list of one.
-func toArray(v any) []any {
-	switch t := v.(type) {
-	case nil:
-		return nil
-	case []any:
-		return t
-	default:
-		return []any{t}
-	}
-}
-
-func contains(list []string, s string) bool {
-	for _, v := range list {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }

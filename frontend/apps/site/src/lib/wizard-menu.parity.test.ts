@@ -7,24 +7,22 @@ import { openOn, type Availability } from './wizard-menu';
 /**
  * The port, against the script it was ported from.
  *
- * Rails' app/views/cameras/socs/show.html.erb carried 166 lines of vanilla
- * JavaScript that narrow the wizard's menus, and wizard-menu.ts is a
- * translation of it. Rails is gone (#304); the script is frozen, as it was,
- * in wizard-menu.rails-script.fixture.html. A translation is a second copy, and the way a second copy
- * stays honest is by being compared with the first -- not by being read
- * carefully once.
+ * The wizard's menus were once narrowed by 166 lines of vanilla JavaScript in
+ * the page, and wizard-menu.ts is a translation of it. That script is frozen,
+ * as it was, in wizard-menu.reference-script.fixture.html. A translation is a
+ * second copy, and the way a second copy stays honest is by being compared
+ * with the first -- not by being read carefully once.
  *
- * So this extracts that script from the ERB and runs it against a DOM small
- * enough to fit here: three selects, a wrapper and a link. The script's last
- * three lines settle the menus, so after it runs the stubs hold what the Rails
- * page would show, and that is compared with what `openOn` answers.
- *
+ * So this runs the reference script against a DOM small enough to fit here:
+ * three selects, a wrapper and a link. The script's last three lines settle
+ * the menus, so after it runs the stubs hold what the reference would show,
+ * and that is compared with what `openOn` answers.
  */
-const VIEW = join(dirname(fileURLToPath(import.meta.url)), 'wizard-menu.rails-script.fixture.html');
+const VIEW = join(dirname(fileURLToPath(import.meta.url)), 'wizard-menu.reference-script.fixture.html');
 
 function scriptFromView(): string {
-  const erb = readFileSync(VIEW, 'utf8');
-  const script = erb.match(/<script>([\s\S]*?)<\/script>/);
+  const html = readFileSync(VIEW, 'utf8');
+  const script = html.match(/<script>([\s\S]*?)<\/script>/);
   if (!script) throw new Error('no <script> in the frozen wizard script');
   return script[1];
 }
@@ -77,7 +75,7 @@ function fakeDocument(chip: string, layout: string, edition: string, availabilit
   };
 }
 
-function railsSettles(chip: string, layout: string, edition: string, availability: Availability,
+function referenceSettles(chip: string, layout: string, edition: string, availability: Availability,
                       offerable: string[]) {
   const dom = fakeDocument(chip, layout, edition, availability, offerable);
   // eslint-disable-next-line no-new-func -- the point is to run the real script
@@ -101,7 +99,7 @@ const CASES: { name: string; availability: Availability; offerable: string[] }[]
   { name: 'neo as well', availability: { nor: ['lite', 'ultimate', 'neo'], nand: [] }, offerable: ['lite', 'ultimate', 'neo'] },
 ];
 
-describe('the port settles where the Rails script settles', () => {
+describe('the port settles where the reference script settles', () => {
   for (const { name, availability, offerable } of CASES) {
     test(`${name}: every starting point a link can ask for`, () => {
       const starts: [string, string, string][] = [];
@@ -114,7 +112,7 @@ describe('the port settles where the Rails script settles', () => {
       }
 
       for (const [chip, layout, edition] of starts) {
-        const theirs = railsSettles(chip, layout, edition, availability, offerable);
+        const theirs = referenceSettles(chip, layout, edition, availability, offerable);
         const ours = openOn({ chip, layout: layout === '' ? undefined : layout, edition },
           availability, offerable);
         const where = `${name} ${chip}/${layout || '-'}/${edition || '-'}`;

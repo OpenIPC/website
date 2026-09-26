@@ -7,8 +7,8 @@
       "index": {
         "featured": "推荐的",
         "full_list": "所有列表",
-        "installable_title": "%{total} 款中有 %{count} 款可以安装",
-        "nothing_installable_html": "%{vendor} 的 %{total} 款芯片目前都无法安装——它们都还没有 OpenIPC 构建。下面每一行都写明了原因，其中不少是在等一块板子或一位开发者，而不是等我们。",
+        "installable_title": "{total} 款中有 {count} 款可以安装",
+        "nothing_installable_html": "{vendor} 的 {total} 款芯片目前都无法安装——它们都还没有 OpenIPC 构建。下面每一行都写明了原因，其中不少是在等一块板子或一位开发者，而不是等我们。",
         "recommended_alert_html": "请注意。对不同 SoC 的支持处于不同的开发阶段。<a href=\"/supported-hardware/featured\">此列表</a>显示了最受支持的，因此也是最推荐的。",
         "stages_of_development": "固件开发阶段说明",
         "th_baseaddr": "加载地址",
@@ -70,7 +70,7 @@
     "privacy": "隐私",
     "qr_code_generator": "二维码生成器",
     "reverse_engineering": "逆向工程",
-    "snapshot": "快照 #%{number}",
+    "snapshot": "快照 #{number}",
     "snapshots": "最新快照",
     "stages": "开发阶段",
     "supported_hardware": "支持的硬件",
@@ -333,8 +333,8 @@
       "free_space": "剩余空间",
       "mtd_name": "MTD 设备名称",
       "offset": "初始偏移量，十进制或十六进制",
-      "partition_name": "分区 %{number} 名称",
-      "partition_size": "分区 %{number} 大小，KB",
+      "partition_name": "分区 {number} 名称",
+      "partition_size": "分区 {number} 大小，KB",
       "recalculate": "重新计算",
       "size_hex": "十六进制大小，字节",
       "start_address": "起始地址",
@@ -874,11 +874,11 @@
     "language": "语言"
   },
   "support": {
-    "count_html": "每月有 <strong>%{backers} 人</strong>支持 OpenIPC。帮我们达到 %{goal} 人。",
-    "count_met_html": "每月有 <strong>%{backers} 人</strong>支持 OpenIPC。谢谢——目标已达成。",
-    "meter_label": "%{goal} 位月度支持者中的 %{backers} 位",
-    "monthly_html": "每月 %{amount}，用于购买相机、获取 SDK 以及支付做这些工作的人。",
-    "split_html": "其中 %{oc} 位通过 Open Collective，%{paywall} 位通过 PayWall。"
+    "count_html": "每月有 <strong>{backers} 人</strong>支持 OpenIPC。帮我们达到 {goal} 人。",
+    "count_met_html": "每月有 <strong>{backers} 人</strong>支持 OpenIPC。谢谢——目标已达成。",
+    "meter_label": "{goal} 位月度支持者中的 {backers} 位",
+    "monthly_html": "每月 {amount}，用于购买相机、获取 SDK 以及支付做这些工作的人。",
+    "split_html": "其中 {oc} 位通过 Open Collective，{paywall} 位通过 PayWall。"
   },
   "title": {
     "openwall": "公开展板"

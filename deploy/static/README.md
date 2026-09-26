@@ -11,10 +11,9 @@ location / {
 ```
 
 `@fallback` answers the route map in `deploy/nginx/conf.d/openipc-redirects.conf`
-— what Rails' router used to answer: the redirects, the retired addresses'
-410s, and a 302 home for anything the map does not claim — and otherwise 404s.
-Nothing behind it is an application: since #304 there is no Rails to fall
-through to. The Go service answers only the addresses nginx routes to it by
+— the redirects, the retired addresses' 410s, and a 302 home for anything the
+map does not claim — and otherwise serves the bundle's 404 page. Nothing
+behind it is an application. The Go service answers only the addresses nginx routes to it by
 their own locations (the camera upload, the wall's JSON and socket, the
 firmware download, the availability feed).
 
@@ -112,7 +111,7 @@ an entry is missing — or if an entry matches nothing any more.
 ### The home page, and how it stopped being refused
 
 This rule used to refuse a root `index.html`, and the reasoning was right:
-Rails rendered `/` according to `Accept-Language` and declared
+`/` answered according to `Accept-Language` with
 `Vary: Accept-Language`, and a file cannot vary. The day one entered the
 bundle, every visitor to the bare path would get one language whatever their
 browser asked for — and `try_files` never sees the query string either, so the

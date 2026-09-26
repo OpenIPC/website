@@ -2,12 +2,11 @@
 /**
  * The page nginx answers with when nothing claims an address (#304).
  *
- * Rails rendered public/404.html for a SoC slug that is not in the catalogue
- * and for the few addresses its router matched with nothing behind them. Rails
- * is gone; the vhost's @fallback answers the route map's redirects and 410s
- * itself, and everything else it cannot place gets this file, with a 404
- * status, through `error_page 404 /404.html`. Most unknown addresses never get
- * here -- the route map sends them home, as Rails' catch-all did.
+ * The vhost's @fallback answers the route map's redirects and 410s itself, and
+ * everything else it cannot place -- a SoC slug that is not in the catalogue,
+ * an address the map claims with nothing behind it -- gets this file, with a
+ * 404 status, through `error_page 404 /404.html`. Most unknown addresses never
+ * get here: the route map's catch-all sends them home.
  *
  * One file for every address and every language, so it claims no address and
  * stays out of search results.

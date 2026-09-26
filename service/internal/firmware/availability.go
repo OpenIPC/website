@@ -16,11 +16,11 @@ import (
 // full image can be assembled; `firmware_only` when it publishes firmware but
 // no bootloader; `none` otherwise. It is the one column of the prerendered
 // hardware pages that would go stale between builds, so it is answered live
-// from the release index the mirror refreshes hourly.
+// from the firmware index, which moves when a build is pushed.
 func Availability(soc *catalogue.SoC, idx *Index) string {
 	if idx == nil {
-		// No index at all: the Rails rule -- a SoC naming a firmware file is
-		// assumed published, and a bootloader is assumed to exist.
+		// No index at all: a SoC naming a firmware file is assumed
+		// published, and a bootloader is assumed to exist.
 		if soc.LinuxFilename != "" {
 			return "wizard"
 		}
@@ -48,12 +48,12 @@ func AvailabilityMap(cat *catalogue.Catalogue, idx *Index) map[string]string {
 	return out
 }
 
-// AvailabilityHandler answers /api/v1/hardware/availability.json with the
-// bytes Rails' Api::V1::HardwareController did: socs in slug order, and when
-// the answer was made, because the page decides whether to trust it.
+// AvailabilityHandler answers /api/v1/hardware/availability.json: socs in slug
+// order, and when the answer was made, because the page decides whether to
+// trust it.
 type AvailabilityHandler struct {
 	Catalogue *catalogue.Catalogue
-	Index     *IndexFile
+	Index     Source
 	Now       func() time.Time
 }
 

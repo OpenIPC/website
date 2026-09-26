@@ -3,13 +3,9 @@
 // lines a visitor pastes into a bootloader. The static wizard pages fetch one
 // file per SoC from /api/v1/wizard/<soc>.json.
 //
-// This is a port of lib/wizard_export.rb, app/models/camera.rb and
-// app/helpers/installation_helper.rb, held byte-identical to what the Ruby
-// wrote: testdata/digests.json carries the SHA-256 of every file the Ruby
-// export produced against a snapshot of the release index, and the test
-// rebuilds all of them. The comments on the Ruby side explain the rules --
-// the guarded flash line, the overlay erase, the fixed-mtdparts vendors -- and
-// the golden is what proves they came across; nothing here re-derives them.
+// The rules -- the guarded flash line, the overlay erase, the fixed-mtdparts
+// vendors -- are pinned by testdata/documents.json, every SoC's document for
+// the fixture catalogue and index; the page is served live by Handler.
 package wizard
 
 import (
@@ -282,7 +278,7 @@ func (c *camera) rootfsOffset() string {
 
 func (c *camera) overlayOffset() string { return hexUpper(c.nor().overlayOffset) }
 
-// overlayMaxSize is lower-case, as the Ruby computed it.
+// overlayMaxSize is lower-case: the bootloader commands have always shown it so.
 func (c *camera) overlayMaxSize() string {
 	size, _ := strconv.ParseInt(strings.TrimPrefix(c.flashSizeHex(), "0x"), 16, 64)
 	size -= c.nor().overlayOffset

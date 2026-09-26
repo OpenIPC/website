@@ -1,5 +1,5 @@
 /**
- * Hold a built page next to the Rails page it replaces (#160).
+ * Hold a built page next to the page production serves at the same address (#160).
  *
  *   node scripts/compare-with-origin.mjs <dist> <path> [width] [options]
  *     --shots <dir>    write a.png (origin) and b.png (bundle), full page
@@ -19,7 +19,7 @@
  * wrong answer first:
  *
  *   * serves /fonts/ from the origin. The bundle carries no font files --
- *     nginx falls through to Rails for them -- so a dist-only server renders
+ *     nginx serves them from a location of its own -- so a dist-only server renders
  *     in a fallback face and every width it reports is wrong. The lede
  *     measured 763px against the origin's 720 for exactly this reason.
  *   * neutralises `position: sticky`. A full-page screenshot smears a sticky
@@ -86,11 +86,9 @@ const server = createServer(async (request, response) => {
   let file = join(dist, normalize(url.pathname));
   if (!extname(file)) file = join(file, 'index.html');
 
-  // Anything the bundle does not carry comes from the origin -- which is the
-  // seam itself: nginx answers from the bundle when the file is there and
-  // falls through to Rails when it is not. The fonts live in Rails' public/
-  // and the backer count is an endpoint, so a dist-only server rendered this
-  // page in a fallback face with the count missing, and reported a page 218px
+  // Anything the built tree does not carry comes from the origin, as nginx
+  // would answer it there: the backer count is an endpoint, so a dist-only
+  // server rendered this page with the count missing, and reported a page
   // shorter than the origin's for reasons that were the harness, not the page.
   if (!existsSync(file)) {
     const upstream = await fetch(origin + url.pathname + url.search);

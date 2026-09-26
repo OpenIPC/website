@@ -380,6 +380,27 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/stages-of-firmware-development"/>
   </url>
   <url>
+    <loc>https://openipc.org/firmware-explorer</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/firmware-explorer"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/firmware-explorer"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/firmware-explorer"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/firmware-explorer"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/firmware-explorer</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/firmware-explorer"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/firmware-explorer"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/firmware-explorer"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/firmware-explorer"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/firmware-explorer</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/firmware-explorer"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/firmware-explorer"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/firmware-explorer"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/firmware-explorer"/>
+  </url>
+  <url>
     <loc>https://openipc.org/utilities</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/utilities"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/utilities"/>

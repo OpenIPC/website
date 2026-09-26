@@ -50,9 +50,39 @@
     "path": "/api/v1/hardware/availability.json"
   },
   {
+    "role": "firmware",
+    "method": "GET",
+    "path": "/api/v1/wizard/{file}"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/builds"
+  },
+  {
     "role": "web",
     "method": "GET",
-    "path": "/api/v1/wall/cable"
+    "path": "/api/v1/explorer/{source}/builds"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/explorer/{source}/builds/{build}/platforms/{platform}"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/explorer/{source}/platforms/{platform}/trends"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/explorer/{source}/platforms/{platform}/kconfig"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/wall/socket"
   },
   {
     "role": "firmware",

@@ -1,7 +1,7 @@
 {
   "nav": {
     "home": "Home",
-    "snapshot": "Snapshot #%{number}",
+    "snapshot": "Snapshot #{number}",
     "snapshots": "Latest Snapshots"
   },
   "site": {

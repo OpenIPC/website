@@ -13,7 +13,7 @@
 //
 // Since #272 it is no longer sufficient. The channel now refuses any frame the
 // page did not authorise, so a grant that covers less than the page drew --
-// a surface that forgets to emit one, a cap like WallGrant::MAX_IDS quietly
+// a surface that forgets to emit one, a cap on a grant's pairs quietly
 // truncating a long page -- produces a wall that paints SOME frames and stops.
 // Every automated check would stay green and a reader would see holes.
 //

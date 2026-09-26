@@ -24,7 +24,7 @@ import (
 // all.
 type Handler struct {
 	Catalogue   *catalogue.Catalogue
-	Index       *IndexFile
+	Index       Source
 	Images      *Images
 	Limiter     *Limiter
 	Downloads   *downloads.Store
@@ -82,7 +82,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_, err := h.Images.Build(r.Context(), in)
 		h.Images.Release(in)
 		if err != nil {
-			h.buildFailed(w, r, soc, err)
+			h.buildFailed(w, r, soc, spec, idx, err)
 			return
 		}
 	}
@@ -111,15 +111,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) buildFailed(w http.ResponseWriter, r *http.Request, soc *catalogue.SoC, err error) {
+func (h *Handler) buildFailed(w http.ResponseWriter, r *http.Request, soc *catalogue.SoC, spec Spec, idx *Index, err error) {
 	var tooLarge ErrTooLarge
 	var missing ErrMissingMember
 	var unavailable ErrUnavailable
 	switch {
 	case errors.As(err, &tooLarge):
 		h.Log.Warn("firmware: does not fit", "soc", soc.URLName, "err", err)
-		h.page(w, r, http.StatusUnprocessableEntity,
-			"This edition is too large for that flash size. Try the Lite edition, or a larger flash.", soc)
+		h.page(w, r, http.StatusUnprocessableEntity, tooLargeMessage(spec, idx), soc)
 	case errors.As(err, &missing):
 		h.Log.Warn("firmware: member missing", "soc", soc.URLName, "err", err)
 		h.page(w, r, http.StatusNotFound, "This firmware does not exist.", soc)
@@ -181,9 +180,9 @@ var errorPage = template.Must(template.New("error").Parse(`<!DOCTYPE html>
 </html>
 `))
 
-// page is the error answer. Rails redirected back with a flash message,
-// which set a cookie and which the static wizard page could not display; this
-// says it on its own page, with the status that is true.
+// page is the error answer: said on its own page, with the status that is
+// true, and without a cookie -- the static wizard page links here and could
+// not show a message carried any other way.
 func (h *Handler) page(w http.ResponseWriter, r *http.Request, status int, message string, soc *catalogue.SoC) {
 	back := "/supported-hardware"
 	name := ""
@@ -212,3 +211,13 @@ func statSize(path string) (int64, error) {
 }
 
 func pathBase(path string) string { return filepath.Base(path) }
+
+// tooLargeMessage names the flash the build is made for when its build said so
+// (#285): "try the Lite edition" is no help to somebody already on Lite.
+func tooLargeMessage(spec Spec, idx *Index) string {
+	if f, ok := idx.Fit(Board(spec.SoC, idx), spec.Release); ok && f.FlashMB > spec.SizeMB {
+		return fmt.Sprintf("This firmware is built for %d MB flash and does not fit %d MB. "+
+			"Choose a %d MB chip on the installation page.", f.FlashMB, spec.SizeMB, f.FlashMB)
+	}
+	return "This edition is too large for that flash size. Try the Lite edition, or a larger flash."
+}

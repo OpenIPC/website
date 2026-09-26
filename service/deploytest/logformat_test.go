@@ -1,7 +1,6 @@
 package deploytest
 
 import (
-	"os/exec"
 	"regexp"
 	"strings"
 	"testing"
@@ -134,7 +133,7 @@ func TestLogFormat(t *testing.T) {
 	})
 }
 
-// squeeze is Ruby's String#squeeze(set): runs of the same character from set
+// squeeze collapses runs of the same character from set
 // collapse to one.
 func squeeze(s, set string) string {
 	var b strings.Builder
@@ -176,48 +175,5 @@ func TestMemoryProbe(t *testing.T) {
 		mustMatch(t, `elapsed=\$\(\( \$\(date \+%s\) - started \)\)`, probe, "elapsed is not measured")
 		mustMatch(t, `echo "\$requests \$elapsed"`, probe,
 			"an in-flight request can outlive the deadline; dividing by the requested duration would report a run that overran as faster than it was")
-	})
-}
-
-// deploy/publish-release-index.rb asked GitHub for one page of releases and
-// indexed whatever came back: seventy-two of 102 releases were invisible, and
-// an asset missing from the index is a download the site refuses outright.
-// The script talks to the network and writes to /srv, so it is not run here.
-// These read it. (It is Ruby itself; whoever ports it inherits these.)
-func TestReleaseIndexPaging(t *testing.T) {
-	const rel = "deploy/publish-release-index.rb"
-	if !exists(rel) {
-		t.Skip(rel + " is gone; service/internal/upstream holds its replacement to the same rules")
-	}
-	script := read(t, rel)
-	t.Run("the page size is the API maximum", func(t *testing.T) {
-		mustMatch(t, `(?m)^RELEASES_PER_PAGE = 100$`, script, "100 is as many as GitHub will return at once")
-	})
-	t.Run("it asks for more than one page", func(t *testing.T) {
-		mustMatch(t, `def all_releases`, script, "nothing pages through the release list")
-		mustMatch(t, `releases_page\(page\)`, script, "the fetch does not take a page number")
-		mustMatch(t, `page: page`, script, "the page number never reaches the API call")
-	})
-	// A page shorter than the page size is the end of the list.
-	t.Run("it stops on a short page, not on a fixed count", func(t *testing.T) {
-		mustMatch(t, `return releases if batch\.size < RELEASES_PER_PAGE`, script, "it stops on a count")
-	})
-	t.Run("the backstop says so rather than truncating quietly", func(t *testing.T) {
-		mustMatch(t, `MAX_RELEASE_PAGES`, script, "no page cap")
-		mustMatch(t, `release list is still going after`, script,
-			"hitting the page cap must be logged; indexing a prefix in silence is the bug this change exists to fix")
-	})
-	t.Run("the caller takes every release, not one page", func(t *testing.T) {
-		mustMatch(t, `releases = all_releases`, script, "the caller does not page")
-		mustNotMatch(t, `(?m)releases = releases_page$`, script, "the caller takes one page")
-	})
-	// These tests are textual, so a change that satisfies every regex and
-	// breaks the file would pass them all.
-	t.Run("the script still parses", func(t *testing.T) {
-		if _, err := exec.LookPath("ruby"); err != nil {
-			t.Skip("ruby is not on PATH in this environment")
-		}
-		out, _ := run(t, nil, "", "ruby", "-c", abs(t, rel))
-		mustContain(t, out, "Syntax OK", out)
 	})
 }

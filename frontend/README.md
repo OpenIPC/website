@@ -33,12 +33,11 @@ npm run export -w @openipc/site   # after changing data/locales, data/catalogue 
 ```
 
 `scripts/export-data.mjs` writes the translations, `src/data/catalogue.json`
-and `src/data/webui-gallery.json`, byte for byte what the Rails tasks it
-replaced wrote (#304). `src/lib/export-data.test.ts` fails, and
+and `src/data/webui-gallery.json` (#304). `src/lib/export-data.test.ts` fails, and
 `deploy/static/build.sh` refuses to build, if a committed file disagrees with
 its source, so a forgotten export is a red test rather than a page serving last
 week's wording. A key missing in
-`ru` or `zh` falls back to English, as Rails' `config.i18n.fallbacks` did; a
-key missing in English throws, which fails the build.
+`ru` or `zh` falls back to English; a key missing in English throws, which
+fails the build. Placeholders are written `{name}`.
 
 Node 24 (`.nvmrc`).

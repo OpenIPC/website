@@ -2,9 +2,9 @@
  * Storybook fixture. NOT the roster.
  *
  * Six of the thirty-six people openipc.org/our-team lists today, copied from
- * app/views/pages/our_team.html.erb -- which is the roster of record until
- * #160 turns that template into a data file. The package carries a handful
- * rather than all of them on purpose: a component library holding a second
+ * the roster of record, frontend/apps/site/src/data/team.ts. The package
+ * carries a handful rather than all of them on purpose: a component library
+ * holding a second
  * copy of the team is a second copy to go stale.
  */
 import type { TeamProps } from '../components/widgets/team/team-types';

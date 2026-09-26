@@ -1,0 +1,526 @@
+{
+  "schema": 1,
+  "board": "gk7205v200",
+  "variant": "lite",
+  "br_ver": "2024.02.10",
+  "symbol_prefix": "BR2_PACKAGE_",
+  "symbol_count": 47,
+  "skipped_no_node": 0,
+  "symbols": {
+    "BR2_PACKAGE_BUSYBOX": {
+      "package": "busybox",
+      "type": "bool",
+      "prompt": "BusyBox",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [
+        "BR2_INIT_BUSYBOX"
+      ],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_UBOOT_TOOLS": {
+      "package": "uboot-tools",
+      "type": "bool",
+      "prompt": "u-boot tools",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_UBOOT_TOOLS_FWPRINTENV": {
+      "package": "uboot-tools",
+      "type": "bool",
+      "prompt": "fw_printenv",
+      "depends_on": [
+        "BR2_PACKAGE_UBOOT_TOOLS"
+      ],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_PACKAGE_UBOOT_TOOLS"
+    },
+    "BR2_PACKAGE_HASERL": {
+      "package": "haserl",
+      "type": "bool",
+      "prompt": "haserl",
+      "depends_on": [
+        "BR2_USE_MMU"
+      ],
+      "selects": [],
+      "selected_by": [
+        "BR2_PACKAGE_MAJESTIC_WEBUI"
+      ],
+      "direct_dep_expr": "BR2_USE_MMU"
+    },
+    "BR2_PACKAGE_ZLIB": {
+      "package": "zlib",
+      "type": "bool",
+      "prompt": "zlib support",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [
+        "BR2_PACKAGE_DROPBEAR_OPENIPC"
+      ],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_LIBZLIB": {
+      "package": "zlib",
+      "type": "bool",
+      "prompt": "zlib",
+      "depends_on": [],
+      "selects": [
+        "BR2_PACKAGE_HAS_ZLIB"
+      ],
+      "selected_by": [],
+      "direct_dep_expr": "<choice>"
+    },
+    "BR2_PACKAGE_LIBYAML": {
+      "package": "libyaml",
+      "type": "bool",
+      "prompt": "libyaml",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [
+        "BR2_PACKAGE_YAML_CLI"
+      ],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_LIBNL": {
+      "package": "libnl",
+      "type": "bool",
+      "prompt": "libnl",
+      "depends_on": [
+        "BR2_TOOLCHAIN_HAS_THREADS"
+      ],
+      "selects": [],
+      "selected_by": [
+        "BR2_PACKAGE_WPA_SUPPLICANT_NL80211"
+      ],
+      "direct_dep_expr": "BR2_TOOLCHAIN_HAS_THREADS"
+    },
+    "BR2_PACKAGE_WIREGUARD_LINUX_COMPAT": {
+      "package": "wireguard-linux-compat",
+      "type": "bool",
+      "prompt": "wireguard linux-compat",
+      "depends_on": [
+        "BR2_LINUX_KERNEL",
+        "BR2_TOOLCHAIN_HEADERS_AT_LEAST_3_10",
+        "BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_6"
+      ],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_LINUX_KERNEL && BR2_TOOLCHAIN_HEADERS_AT_LEAST_3_10 && !BR2_TOOLCHAIN_HEADERS_AT_LEAST_5_6"
+    },
+    "BR2_PACKAGE_WIREGUARD_TOOLS": {
+      "package": "wireguard-tools",
+      "type": "bool",
+      "prompt": "wireguard tools",
+      "depends_on": [
+        "BR2_TOOLCHAIN_HEADERS_AT_LEAST_3_10"
+      ],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_TOOLCHAIN_HEADERS_AT_LEAST_3_10"
+    },
+    "BR2_PACKAGE_WIRELESS_TOOLS": {
+      "package": "wireless_tools",
+      "type": "bool",
+      "prompt": "wireless tools",
+      "depends_on": [],
+      "selects": [
+        "BR2_PACKAGE_WIRELESS_TOOLS_IWCONFIG"
+      ],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_WIRELESS_TOOLS_IWCONFIG": {
+      "package": "wireless_tools",
+      "type": "bool",
+      "prompt": "Install tools",
+      "depends_on": [
+        "BR2_PACKAGE_WIRELESS_TOOLS"
+      ],
+      "selects": [],
+      "selected_by": [
+        "BR2_PACKAGE_WIRELESS_TOOLS"
+      ],
+      "direct_dep_expr": "BR2_PACKAGE_WIRELESS_TOOLS"
+    },
+    "BR2_PACKAGE_WPA_SUPPLICANT": {
+      "package": "wpa_supplicant",
+      "type": "bool",
+      "prompt": "wpa_supplicant",
+      "depends_on": [
+        "BR2_USE_MMU"
+      ],
+      "selects": [
+        "BR2_PACKAGE_LIBOPENSSL_ENABLE_DES",
+        "BR2_PACKAGE_LIBOPENSSL_ENABLE_MD4"
+      ],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_USE_MMU"
+    },
+    "BR2_PACKAGE_WPA_SUPPLICANT_NL80211": {
+      "package": "wpa_supplicant",
+      "type": "bool",
+      "prompt": "Enable nl80211 support",
+      "depends_on": [
+        "BR2_PACKAGE_WPA_SUPPLICANT",
+        "BR2_TOOLCHAIN_HAS_THREADS"
+      ],
+      "selects": [
+        "BR2_PACKAGE_LIBNL"
+      ],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_TOOLCHAIN_HAS_THREADS && BR2_PACKAGE_WPA_SUPPLICANT"
+    },
+    "BR2_PACKAGE_WPA_SUPPLICANT_WEXT": {
+      "package": "wpa_supplicant",
+      "type": "bool",
+      "prompt": "Enable wext (deprecated)",
+      "depends_on": [
+        "BR2_PACKAGE_WPA_SUPPLICANT"
+      ],
+      "selects": [],
+      "selected_by": [
+        "BR2_PACKAGE_LINUX_FIRMWARE_OPENIPC_MEDIATEK_MT7601U"
+      ],
+      "direct_dep_expr": "BR2_PACKAGE_WPA_SUPPLICANT"
+    },
+    "BR2_PACKAGE_WPA_SUPPLICANT_CLI": {
+      "package": "wpa_supplicant",
+      "type": "bool",
+      "prompt": "Install wpa_cli binary",
+      "depends_on": [
+        "BR2_PACKAGE_WPA_SUPPLICANT"
+      ],
+      "selects": [
+        "BR2_PACKAGE_WPA_SUPPLICANT_CTRL_IFACE"
+      ],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_PACKAGE_WPA_SUPPLICANT"
+    },
+    "BR2_PACKAGE_WPA_SUPPLICANT_PASSPHRASE": {
+      "package": "wpa_supplicant",
+      "type": "bool",
+      "prompt": "Install wpa_passphrase binary",
+      "depends_on": [
+        "BR2_PACKAGE_WPA_SUPPLICANT"
+      ],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_PACKAGE_WPA_SUPPLICANT"
+    },
+    "BR2_PACKAGE_WPA_SUPPLICANT_CTRL_IFACE": {
+      "package": "wpa_supplicant",
+      "type": "bool",
+      "prompt": "Enable the Unix-socket control interface",
+      "depends_on": [
+        "BR2_PACKAGE_WPA_SUPPLICANT"
+      ],
+      "selects": [],
+      "selected_by": [
+        "BR2_PACKAGE_WPA_SUPPLICANT_CLI"
+      ],
+      "direct_dep_expr": "BR2_PACKAGE_WPA_SUPPLICANT"
+    },
+    "BR2_PACKAGE_URANDOM_SCRIPTS": {
+      "package": "urandom-scripts",
+      "type": "bool",
+      "prompt": "urandom-initscripts",
+      "depends_on": [
+        "BR2_PACKAGE_BUSYBOX",
+        "BR2_PACKAGE_SYSTEMD"
+      ],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_PACKAGE_BUSYBOX && !BR2_PACKAGE_SYSTEMD"
+    },
+    "BR2_PACKAGE_HOST_DTC": {
+      "package": "dtc",
+      "type": "bool",
+      "prompt": "host dtc",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [
+        "BR2_PACKAGE_HOST_UBOOT_TOOLS_FIT_SUPPORT"
+      ],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_HOST_KMOD": {
+      "package": "kmod",
+      "type": "bool",
+      "prompt": "host kmod",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [
+        "BR2_LINUX_KERNEL"
+      ],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_HOST_UBOOT_TOOLS": {
+      "package": "uboot-tools",
+      "type": "bool",
+      "prompt": "host u-boot tools",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [
+        "BR2_LINUX_KERNEL_UIMAGE"
+      ],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_HOST_UBOOT_TOOLS_FIT_SUPPORT": {
+      "package": "uboot-tools",
+      "type": "bool",
+      "prompt": "Flattened Image Tree (FIT) support",
+      "depends_on": [
+        "BR2_PACKAGE_HOST_UBOOT_TOOLS"
+      ],
+      "selects": [
+        "BR2_PACKAGE_HOST_DTC"
+      ],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_PACKAGE_HOST_UBOOT_TOOLS"
+    },
+    "BR2_PACKAGE_DROPBEAR_OPENIPC": {
+      "package": "dropbear-openipc",
+      "type": "bool",
+      "prompt": "dropbear-openipc",
+      "depends_on": [],
+      "selects": [
+        "BR2_PACKAGE_LIBTOMCRYPT",
+        "BR2_PACKAGE_ZLIB"
+      ],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_DROPBEAR_OPENIPC_CLIENT": {
+      "package": "dropbear-openipc",
+      "type": "bool",
+      "prompt": "client programs",
+      "depends_on": [
+        "BR2_PACKAGE_DROPBEAR_OPENIPC"
+      ],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_PACKAGE_DROPBEAR_OPENIPC"
+    },
+    "BR2_PACKAGE_DROPBEAR_OPENIPC_SMALL": {
+      "package": "dropbear-openipc",
+      "type": "bool",
+      "prompt": "optimize for size",
+      "depends_on": [
+        "BR2_PACKAGE_DROPBEAR_OPENIPC"
+      ],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_PACKAGE_DROPBEAR_OPENIPC"
+    },
+    "BR2_PACKAGE_GOKE_OSDRV_GK7205V200": {
+      "package": "goke-osdrv-gk7205v200",
+      "type": "bool",
+      "prompt": "goke-osdrv-gk7205v200",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_HISILICON_OPENSDK": {
+      "package": "hisilicon-opensdk",
+      "type": "bool",
+      "prompt": "hisilicon-opensdk",
+      "depends_on": [
+        "BR2_LINUX_KERNEL"
+      ],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_LINUX_KERNEL"
+    },
+    "BR2_PACKAGE_IPCTOOL": {
+      "package": "ipctool",
+      "type": "bool",
+      "prompt": "ipctool",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_LIBCURL_OPENIPC": {
+      "package": "libcurl-openipc",
+      "type": "bool",
+      "prompt": "libcurl-openipc",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_LIBCURL_OPENIPC_CURL": {
+      "package": "libcurl-openipc",
+      "type": "bool",
+      "prompt": "curl binary",
+      "depends_on": [
+        "BR2_PACKAGE_LIBCURL_OPENIPC"
+      ],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_PACKAGE_LIBCURL_OPENIPC"
+    },
+    "BR2_PACKAGE_LIBCURL_OPENIPC_MBEDTLS": {
+      "package": "libcurl-openipc",
+      "type": "bool",
+      "prompt": "mbed TLS",
+      "depends_on": [
+        "BR2_PACKAGE_MBEDTLS_OPENIPC"
+      ],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_PACKAGE_MBEDTLS_OPENIPC && <choice>"
+    },
+    "BR2_PACKAGE_LIBEVENT_OPENIPC": {
+      "package": "libevent-openipc",
+      "type": "bool",
+      "prompt": "libevent-openipc",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_LIBOGG_OPENIPC": {
+      "package": "libogg-openipc",
+      "type": "bool",
+      "prompt": "libogg-openipc",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_LINUX_FIRMWARE_OPENIPC": {
+      "package": "linux-firmware-openipc",
+      "type": "bool",
+      "prompt": "linux-firmware-openipc",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_LINUX_FIRMWARE_OPENIPC_MEDIATEK_MT7601U": {
+      "package": "linux-firmware-openipc",
+      "type": "bool",
+      "prompt": "MediaTek MT7601U",
+      "depends_on": [
+        "BR2_PACKAGE_LINUX_FIRMWARE_OPENIPC"
+      ],
+      "selects": [
+        "BR2_PACKAGE_WPA_SUPPLICANT_WEXT"
+      ],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_PACKAGE_LINUX_FIRMWARE_OPENIPC"
+    },
+    "BR2_PACKAGE_LINUX_PATCHER": {
+      "package": "linux-patcher",
+      "type": "bool",
+      "prompt": "linux patcher",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_MAJESTIC_FONTS": {
+      "package": "majestic-fonts",
+      "type": "bool",
+      "prompt": "majestic-fonts",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_MAJESTIC_WEBUI": {
+      "package": "majestic-webui",
+      "type": "bool",
+      "prompt": "majestic-webui",
+      "depends_on": [],
+      "selects": [
+        "BR2_PACKAGE_HASERL"
+      ],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_MAJESTIC": {
+      "package": "majestic",
+      "type": "bool",
+      "prompt": "Majestic streamer",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_MBEDTLS_OPENIPC": {
+      "package": "mbedtls-openipc",
+      "type": "bool",
+      "prompt": "mbedtls-openipc",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_MOTORS": {
+      "package": "motors",
+      "type": "bool",
+      "prompt": "motors",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_OPENIPC_FAILSAFE": {
+      "package": "openipc-failsafe",
+      "type": "bool",
+      "prompt": "OpenIPC failsafe rescue + crash capture",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_OPUS_OPENIPC": {
+      "package": "opus-openipc",
+      "type": "bool",
+      "prompt": "opus-openipc",
+      "depends_on": [],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    },
+    "BR2_PACKAGE_OPUS_OPENIPC_FIXED_POINT": {
+      "package": "opus-openipc",
+      "type": "bool",
+      "prompt": "use fixed-point",
+      "depends_on": [
+        "BR2_PACKAGE_OPUS_OPENIPC"
+      ],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_PACKAGE_OPUS_OPENIPC"
+    },
+    "BR2_PACKAGE_VTUND_OPENIPC": {
+      "package": "vtund-openipc",
+      "type": "bool",
+      "prompt": "vtund-openipc",
+      "depends_on": [
+        "BR2_USE_MMU"
+      ],
+      "selects": [],
+      "selected_by": [],
+      "direct_dep_expr": "BR2_USE_MMU"
+    },
+    "BR2_PACKAGE_YAML_CLI": {
+      "package": "yaml-cli",
+      "type": "bool",
+      "prompt": "yaml-cli",
+      "depends_on": [],
+      "selects": [
+        "BR2_PACKAGE_LIBYAML"
+      ],
+      "selected_by": [],
+      "direct_dep_expr": "y"
+    }
+  }
+}

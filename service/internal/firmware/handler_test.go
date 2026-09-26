@@ -68,21 +68,15 @@ func TestDownloadAddress(t *testing.T) {
 		{"uImage." + board, synthetic("k", 500_000)}, {"rootfs.squashfs." + board, synthetic("r", 900_000)}}))
 	put("openipc."+board+"-nor-ultimate.tgz", tgz(t, [][2]any{
 		{"uImage." + board, synthetic("k", 500_000)}, {"rootfs.squashfs." + board, synthetic("R", 5_300_000)}}))
-	indexJSON := `{"generated_at":"2026-09-26T00:00:00Z","aliases":{},"assets":{`
-	first := true
+	var list []Asset
 	for name, a := range assets {
-		if !first {
-			indexJSON += ","
-		}
-		first = false
-		indexJSON += `"` + name + `":{"size":` + itoa(a.Size) + `,"digest":"` + a.Digest + `","release":"latest"}`
+		a.Name, a.Release = name, "latest"
+		list = append(list, a)
 	}
-	indexJSON += `}}`
-	indexPath := filepath.Join(dir, "index.json")
-	os.WriteFile(indexPath, []byte(indexJSON), 0o644)
+	index := NewIndex("test", list, nil, nil)
 
 	h := &Handler{
-		Catalogue: cat, Index: &IndexFile{Path: indexPath},
+		Catalogue: cat, Index: Fixed{Index: index},
 		Images:      &Images{Root: filepath.Join(dir, "img"), Releases: releases},
 		Limiter:     &Limiter{Limit: 6, Window: 60e9},
 		Downloads:   &downloads.Store{DB: pool},
@@ -211,3 +205,19 @@ func TestDownloadAddress(t *testing.T) {
 }
 
 func itoa(n int64) string { return strconv.FormatInt(n, 10) }
+
+// #285: a 16 MB Lite build asked for as 8 MB is told what it needs, not to
+// "try the Lite edition" it is already on.
+func TestTooLargeNamesTheFlashTheBuildNeeds(t *testing.T) {
+	cat := loadCatalogue(t)
+	soc := cat.SoC("hi3516cv500")
+	idx := NewIndex("test", nil, nil, map[string]Fit{"hi3516cv500-lite": {FlashMB: 16, KernelKB: 1943, RootfsKB: 7864}})
+	spec := Spec{SoC: soc, FlashType: "nor", Release: "lite", SizeMB: 8, LayoutMB: 8}
+	if got := tooLargeMessage(spec, idx); !strings.Contains(got, "built for 16 MB") || !strings.Contains(got, "does not fit 8 MB") {
+		t.Errorf("message %q does not name the 16 MB the build needs", got)
+	}
+	unknown := NewIndex("test", nil, nil, nil)
+	if got := tooLargeMessage(spec, unknown); !strings.Contains(got, "too large") {
+		t.Errorf("without a report the message is %q", got)
+	}
+}

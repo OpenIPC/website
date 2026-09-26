@@ -89,10 +89,10 @@ Shared definitions the vhosts reference. nginx includes `conf.d/` before
 |---|---|
 | `openipc-logformat.conf` | the `openipc` log format: combined plus cache status, request and upstream time, and the forwarded address |
 | `openipc-microcache.conf` | the `openipc_micro` cache zone |
-| `openipc-snapshot-conc.conf` | the `snapshot_conc`, `site_conc` and `media_conc` connection pools, sized together to what was Puma's capacity |
+| `openipc-snapshot-conc.conf` | the `snapshot_conc`, `site_conc` and `media_conc` connection pools, 32 upstream connections between them |
 | `openipc-crawler-block.conf` | the `$openipc_blocked_crawler` map |
 | `openipc-routes.conf` | which Go process answers each surface, from the state files `openipc-route` writes under `/etc/nginx/openipc-routes/` |
-| `openipc-redirects.conf` | the route map `@fallback` answers: what Rails' router answered — redirects, 410s for retired addresses, a 302 home for anything unclaimed. Generated from `config/routes.rb` in #302 and maintained by hand since #304 |
+| `openipc-redirects.conf` | the route map `@fallback` answers — redirects, 410s for retired addresses, a 302 home for anything unclaimed. Maintained by hand (#302, #304) |
 
 ## The firmware download path
 
@@ -104,25 +104,15 @@ location /firmware-cache/  { internal; alias /srv/www/shared/firmware/; }
 `/firmware-cache/` is `internal`, so it is reachable only through an
 `X-Accel-Redirect` header, which the Go firmware role sends for a cached image.
 A slow client then holds an nginx connection rather than one of the service's.
-`/files/` answering 404 is kept from the Rails days, when `public/files` held
-every assembled image and would otherwise have been fetchable by name.
+`/files/` answering 404 keeps the retired listing of assembled images from
+coming back by accident.
 
-## X-Accel-Redirect, and the outage that shaped it (Rails, historical)
+## After a change to anything that rewrites responses
 
-Rails handed downloads to nginx through `Rack::Sendfile`, and the headers that
-arranged it had to be **scoped to the download action**. They were first put in
-`location /`, which took the CSS and images down on both sites on 2026-08-24:
-`Rack::Sendfile` acts on any response whose body responds to `to_path`, which
-with `RAILS_SERVE_STATIC_FILES=1` was every file under `public/assets`, and
-when no `X-Accel-Mapping` prefix matched it returned the path unchanged rather
-than nil. A stylesheet came back as `X-Accel-Redirect: /rails/public/assets/…css`,
-fell through to the catch-all and answered 302 to the homepage; every page
-rendered as unstyled text while answering 200.
-
-The lesson outlives Rails: **after a change to anything that rewrites
-responses, fetch a stylesheet, not just a page.** The pages answered 200
-throughout the outage; only their assets did not. Today the check is the
-`/_astro/…` URLs the homepage references.
+**Fetch a stylesheet, not just a page.** On 2026-08-24 X-Accel headers set
+too broadly answered every stylesheet with a redirect nginx had no location
+for; the pages answered 200 throughout, and only their assets did not. The
+check today is the `/_astro/…` URLs the homepage references.
 
 ## Host directories these serve from
 
@@ -260,9 +250,9 @@ location / {
 **A page exists when its `index.html` is in the bundle**, and nothing else —
 no edit here per page. `deploy/static/README.md` is the other half.
 
-`@fallback` proxies nothing. Since Rails went (#304) it answers the route map
+`@fallback` proxies nothing (#304). It answers the route map
 in `conf.d/openipc-redirects.conf` — 410, 301, 302, or the catch-all 302 home —
-and otherwise returns 404. Each answer carries `X-Served-By` from
+and otherwise serves the bundle's 404 page with a 404 status. Each answer carries `X-Served-By` from
 `$openipc_route_by` and `Cache-Control` from `$openipc_route_cache`.
 
 Two things about it are easy to get wrong, and both are measured rather than
@@ -290,7 +280,6 @@ on every pass after it. With the cap at 1 and four concurrent slow transfers:
 | the named location | 200 200 200 200 — **never runs** |
 | both | 429 429 429 200 — the named location's copy is dead |
 
-(Measured when the named location was `@rails`; the phases have not changed.)
 The middle row is the dangerous one: a cap in the named location alone looks
 right and would
 silently replace `site_conc` with the http-level per-address twenty.

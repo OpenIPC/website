@@ -23,7 +23,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/catalogue"
 )
 
-// synthetic is firmware_golden.rb's generator: SHA-256 in counter mode.
+// synthetic is the reference images' generator: SHA-256 in counter mode.
 func synthetic(seed string, size int) []byte {
 	var out []byte
 	for i := uint64(0); len(out) < size; i++ {
@@ -69,15 +69,15 @@ func readJSON(t testing.TB, path string, v any) {
 	}
 }
 
-// Every SoC in the catalogue asks for the same assets the Rails
-// implementation asked for, against the same release index.
-func TestBoardsMatchRails(t *testing.T) {
+// Every SoC in the catalogue asks for the assets the reference says it does,
+// against the fixture index.
+func TestBoardsMatchReference(t *testing.T) {
 	cat := loadCatalogue(t)
 	raw, err := os.ReadFile("testdata/release-index.json")
 	if err != nil {
 		t.Fatal(err)
 	}
-	idx, err := parseIndex(raw)
+	idx, err := ParseIndex(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,15 +97,15 @@ func TestBoardsMatchRails(t *testing.T) {
 			continue
 		}
 		if got := Board(soc, idx); got != w.Board {
-			t.Errorf("%s: board %q, Rails said %q", w.URLName, got, w.Board)
+			t.Errorf("%s: board %q, the reference says %q", w.URLName, got, w.Board)
 		}
 		if soc.UBootFilename != w.UBoot {
-			t.Errorf("%s: bootloader %q, Rails said %q", w.URLName, soc.UBootFilename, w.UBoot)
+			t.Errorf("%s: bootloader %q, the reference says %q", w.URLName, soc.UBootFilename, w.UBoot)
 		}
 		for flash, name := range map[string]string{"nor": w.NorLite, "nand": w.NandLite} {
 			s := Spec{SoC: soc, FlashType: flash, Release: "lite"}
 			if got := s.LinuxAsset(idx); got != name {
-				t.Errorf("%s %s: tarball %q, Rails said %q", w.URLName, flash, got, name)
+				t.Errorf("%s %s: tarball %q, the reference says %q", w.URLName, flash, got, name)
 			}
 		}
 	}
@@ -129,7 +129,7 @@ type manifest struct {
 // cache and returns the index describing them.
 func fixture(t testing.TB, cat *catalogue.Catalogue, releasesRoot string, ms []manifest) *Index {
 	raw, _ := os.ReadFile("testdata/release-index.json")
-	prod, _ := parseIndex(raw)
+	prod, _ := ParseIndex(raw)
 	idx := &Index{assets: map[string]Asset{}, aliases: prod.aliases, builds: map[[2]string][]string{}}
 	add := func(name string, data []byte) {
 		sum := sha256.Sum256(data)
@@ -168,8 +168,8 @@ func fixture(t testing.TB, cat *catalogue.Catalogue, releasesRoot string, ms []m
 
 // The complete proof over the layouts: for every vendor's partition table,
 // every flash type, chip size and layout, the Go builder produces the image
-// the Rails one produced, byte for byte -- and refuses what Rails refused.
-func TestImagesMatchRails(t *testing.T) {
+// the reference image, byte for byte -- and refuses what the reference refused.
+func TestImagesMatchReference(t *testing.T) {
 	cat := loadCatalogue(t)
 	var ms []manifest
 	readJSON(t, "testdata/manifests.json", &ms)
@@ -192,7 +192,7 @@ func TestImagesMatchRails(t *testing.T) {
 			if m.Error == "too_large" {
 				var tl ErrTooLarge
 				if !errors.As(err, &tl) {
-					t.Fatalf("Rails refused this as too large; Go said %v", err)
+					t.Fatalf("the reference refused this as too large; Go said %v", err)
 				}
 				return
 			}
@@ -200,11 +200,11 @@ func TestImagesMatchRails(t *testing.T) {
 				t.Fatal(err)
 			}
 			if spec.Filename() != m.Filename {
-				t.Errorf("filename %q, Rails %q", spec.Filename(), m.Filename)
+				t.Errorf("filename %q, reference %q", spec.Filename(), m.Filename)
 			}
 			data, _ := os.ReadFile(path)
 			if int64(len(data)) != m.Bytes {
-				t.Fatalf("%d bytes, Rails %d", len(data), m.Bytes)
+				t.Fatalf("%d bytes, reference %d", len(data), m.Bytes)
 			}
 			for part, off := range m.Offsets {
 				seed := map[string]string{"u-boot": "uboot:", "kernel": "kernel:", "rootfs": "rootfs:"}[part]
@@ -213,12 +213,12 @@ func TestImagesMatchRails(t *testing.T) {
 				}
 				board := Board(spec.SoC, idx)
 				if got := bytes.Index(data, synthetic(seed+board, 64)); int64(got) != off {
-					t.Errorf("%s at 0x%x, Rails put it at 0x%x", part, got, off)
+					t.Errorf("%s at 0x%x, the reference put it at 0x%x", part, got, off)
 				}
 			}
 			sum := sha256.Sum256(data)
 			if hex.EncodeToString(sum[:]) != m.SHA256 {
-				t.Errorf("image differs from Rails' (sha256 %x)", sum)
+				t.Errorf("image differs from the reference (sha256 %x)", sum)
 			}
 		})
 	}

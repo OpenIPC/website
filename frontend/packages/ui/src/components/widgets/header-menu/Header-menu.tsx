@@ -24,7 +24,7 @@ interface HeaderMenuProps {
    *
    * 1200 -- Bootstrap's `xl` -- because that is where the navbar this replaced
    * collapses, and its reason is written down in
-   * app/views/layouts/_navbar.html.erb: six top-level entries plus the
+   * the site's navbar: six top-level entries plus the
    * language switcher do not fit an `lg` breakpoint without wrapping, and a
    * wrapped navbar reads as broken rather than as full.
    *

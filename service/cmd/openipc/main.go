@@ -1,14 +1,12 @@
-// Command openipc is the service that is replacing the Rails application
-// behind openipc.org (#287). One binary, several subcommands:
+// Command openipc is the service behind openipc.org's dynamic addresses. One
+// binary, several subcommands:
 //
-//	openipc serve --role web       uploads, variants, the wall JSON   (:3002)
-//	openipc serve --role firmware  full-image assembly and its stats  (:3003)
+//	openipc serve --role web       uploads, variants, the wall, build pushes  (:3002)
+//	openipc serve --role firmware  full images, their stats, the wizard, availability  (:3003)
 //	openipc migrate                bring PostgreSQL to this binary's schema
-//	openipc purge [--snapshots] [--firmware]   nightly retention
+//	openipc purge [--snapshots] [--firmware] [--builds]   nightly retention
 //	openipc probe                  nightly health numbers, non-zero on trouble
-//	openipc wizard-export          the installation wizard's data, one file per SoC
-//	openipc publish-release-index  hourly: what upstream publishes, into .index.json
-//	openipc mirror-repos           hourly: local clones of the OpenIPC repositories
+//	openipc builds import-history  once: the builds GitHub still holds, into PostgreSQL
 //	openipc routes --json          what this binary answers, for the nginx seam test
 //
 // Configuration is the environment; see internal/config.
@@ -31,6 +29,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/OpenIPC/website/service/internal/builds"
 	"github.com/OpenIPC/website/service/internal/catalogue"
 	"github.com/OpenIPC/website/service/internal/config"
 	"github.com/OpenIPC/website/service/internal/db"
@@ -42,6 +41,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/variants"
 	"github.com/OpenIPC/website/service/internal/wall"
 	"github.com/OpenIPC/website/service/internal/wallsocket"
+	"github.com/OpenIPC/website/service/internal/wizard"
 )
 
 // version is stamped at build time (-ldflags "-X main.version=<sha>").
@@ -69,12 +69,8 @@ func main() {
 		err = runPurge(ctx, cfg, log, args)
 	case "probe":
 		err = probe(ctx, cfg)
-	case "wizard-export":
-		err = wizardExport(cfg, log, args)
-	case "publish-release-index":
-		err = publishReleaseIndex(ctx, args)
-	case "mirror-repos":
-		err = mirrorRepos(ctx, args)
+	case "builds":
+		err = buildsCommand(ctx, cfg, log, args)
 	case "routes":
 		err = printRoutes()
 	case "version":
@@ -88,7 +84,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] | probe | wizard-export [--out DIR] [--index PATH] | publish-release-index [--dry-run] [--mirror] [--retire-mirror] | mirror-repos | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | routes --json | version")
 	os.Exit(2)
 }
 
@@ -143,7 +139,13 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/wall/snapshot/{id}/{file}"},
 	{"web", "GET", "/api/v1/wall/camera/{file}"},
 	{"firmware", "GET", "/api/v1/hardware/availability.json"},
-	{"web", "GET", "/api/v1/wall/cable"},
+	{"firmware", "GET", "/api/v1/wizard/{file}"},
+	{"web", "POST", "/api/v1/builds"},
+	{"web", "GET", "/api/v1/explorer/{source}/builds"},
+	{"web", "GET", "/api/v1/explorer/{source}/builds/{build}/platforms/{platform}"},
+	{"web", "GET", "/api/v1/explorer/{source}/platforms/{platform}/trends"},
+	{"web", "GET", "/api/v1/explorer/{source}/platforms/{platform}/kconfig"},
+	{"web", "GET", "/api/v1/wall/socket"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 }
@@ -294,16 +296,47 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		Store: store, Wall: wallFS, Enqueue: proc.Enqueue,
 		Blacklist: cfg.MACBlacklist, Whitelist: cfg.IPWhitelist, Log: log, Shadow: cfg.Shadow,
 	})
+	granter := &wall.Granter{Key: cfg.WallGrantKey}
+	// Every handler the web role has, keyed as the routes table names it. The
+	// table decides what is served: a route with no handler, or a handler
+	// the table does not list, stops the process from starting.
+	handlers := map[string]http.Handler{
+		// The one place builds enter: CI pushes each build once (builds/PUSH.md).
+		"POST /api/v1/builds": &builds.Handler{
+			Verifier: &builds.LazyVerifier{Issuer: builds.GitHubIssuer}, DB: pool, Log: log},
+		"GET /api/v1/wall/socket": &wallsocket.Server{WallRoot: cfg.WallRoot, Grants: granter, Log: log,
+			GrantsDisabled: cfg.GrantsDisabled, Budget: &wallsocket.Budget{Limit: 1000}},
+	}
 	for _, r := range routes {
-		if r.Role == "web" && r.Method == "POST" {
-			mux.Handle(r.Method+" "+r.Path, upload)
+		if r.Role == "web" && r.Method == "POST" && strings.Contains(r.Path, "/snapshots") {
+			handlers[r.Method+" "+r.Path] = upload
 		}
 	}
-	granter := &wall.Granter{Key: cfg.WallGrantKey}
-	api := &wall.API{Store: store, Granter: granter, Log: log}
-	api.Routes(mux)
-	mux.Handle("GET /api/v1/wall/cable", &wallsocket.Server{WallRoot: cfg.WallRoot, Grants: granter, Log: log,
-		GrantsDisabled: cfg.GrantsDisabled, Budget: &wallsocket.Budget{Limit: 1000}})
+	for k, h := range (&builds.Explorer{DB: pool, Log: log}).Handlers() {
+		handlers[k] = h
+	}
+	for k, h := range (&wall.API{Store: store, Granter: granter, Log: log}).Handlers() {
+		handlers[k] = h
+	}
+	for _, r := range routes {
+		if r.Role != "web" {
+			continue
+		}
+		k := r.Method + " " + r.Path
+		h, ok := handlers[k]
+		if !ok {
+			cancel()
+			lock.Release()
+			return nil, fmt.Errorf("web route %s has no handler", k)
+		}
+		mux.Handle(k, h)
+		delete(handlers, k)
+	}
+	for k := range handlers {
+		cancel()
+		lock.Release()
+		return nil, fmt.Errorf("web handler %s is not in the routes table", k)
+	}
 
 	// The address this process believes a request came from, for the
 	// remote_ip canary. Answered only to a peer on a trusted network, which is
@@ -335,9 +368,24 @@ func firmwareRole(ctx context.Context, cfg *config.Config, log *slog.Logger, poo
 			return nil, err
 		}
 	}
-	index := &firmware.IndexFile{Path: cfg.ReleaseIndexPath}
 	releases := &firmware.Releases{Root: cfg.ReleaseCacheRoot, Base: cfg.DownloadBase, HTTP: firmware.NewHTTPClient()}
 	images := &firmware.Images{Root: cfg.FirmwareCacheRoot, Releases: releases, MaxBytes: cfg.FirmwareCacheMax, Log: log}
+	// The index is the builds tables, reloaded when a build is stored
+	// (LISTEN builds). When it moves, the old version goes: images once nginx
+	// has had the grace to finish with them, tarballs once no build is
+	// reading them. The nightly purge catches anything still in its grace.
+	index := &builds.Source{Pool: pool, Log: log, Changed: func(idx *firmware.Index) {
+		n, freed := images.Keep(idx)
+		var m int
+		var freedTar int64
+		if !images.Busy() {
+			m, freedTar, _ = releases.Keep(idx)
+		}
+		if n+m > 0 {
+			log.Info("firmware: evicted superseded versions", "images", n, "tarballs", m,
+				"freed_mb", (freed+freedTar)>>20)
+		}
+	}}
 	h := prefixed(&firmware.Handler{
 		Catalogue: cat, Index: index, Images: images,
 		Limiter:     &firmware.Limiter{Limit: cfg.BuildsPerMinute, Window: time.Minute},
@@ -356,44 +404,15 @@ func firmwareRole(ctx context.Context, cfg *config.Config, log *slog.Logger, poo
 			mux.Handle(r.Method+" "+r.Path, h)
 		case r.Path == "/api/v1/hardware/availability.json":
 			mux.Handle(r.Method+" "+r.Path, availability)
+		case r.Path == "/api/v1/wizard/{file}":
+			mux.Handle(r.Method+" "+r.Path, &wizard.Handler{Catalogue: cat, Index: index, Log: log})
 		default:
 			return nil, fmt.Errorf("firmware route %s %s has no handler", r.Method, r.Path)
 		}
 	}
 
-	// When upstream publishes, the old version goes: every ten minutes, evict
-	// whatever the index no longer describes (images once nginx has had the
-	// grace to finish with them, tarballs once no build is reading them).
 	bg, cancel := context.WithCancel(context.WithoutCancel(ctx))
-	go func() {
-		var seen *firmware.Index
-		t := time.NewTicker(10 * time.Minute)
-		defer t.Stop()
-		for {
-			if idx, err := index.Current(); err == nil {
-				n, freed := images.Keep(idx)
-				var m int
-				var freedTar int64
-				if !images.Busy() {
-					m, freedTar, _ = releases.Keep(idx)
-				}
-				if n+m > 0 {
-					log.Info("firmware: evicted superseded versions", "images", n, "tarballs", m,
-						"freed_mb", (freed+freedTar)>>20)
-				}
-				if idx != seen && idx.Stale(time.Now()) {
-					log.Warn("firmware: release index is stale; is the publisher still running?",
-						"generated_at", idx.GeneratedAt)
-				}
-				seen = idx
-			}
-			select {
-			case <-bg.Done():
-				return
-			case <-t.C:
-			}
-		}
-	}()
+	go index.Run(bg)
 	return cancel, nil
 }
 
@@ -401,13 +420,30 @@ func runPurge(ctx context.Context, cfg *config.Config, log *slog.Logger, args []
 	fs := flag.NewFlagSet("purge", flag.ExitOnError)
 	doSnapshots := fs.Bool("snapshots", false, "retire snapshots past two days, with their images")
 	doFirmware := fs.Bool("firmware", false, "evict firmware images and tarballs the index no longer describes")
+	doBuilds := fs.Bool("builds", false, "keep the newest 90 builds per source, as upstream's release cleanup does")
 	_ = fs.Parse(args)
-	if !*doSnapshots && !*doFirmware {
-		*doSnapshots, *doFirmware = true, true
+	if !*doSnapshots && !*doFirmware && !*doBuilds {
+		*doSnapshots, *doFirmware, *doBuilds = true, true, true
+	}
+	if *doBuilds {
+		pool, err := open(ctx, cfg)
+		if err != nil {
+			return err
+		}
+		n, err := builds.Trim(ctx, pool, 90)
+		pool.Close()
+		if err != nil {
+			return err
+		}
+		log.Info("purge: builds", "removed", n)
 	}
 	if *doFirmware {
-		index := &firmware.IndexFile{Path: cfg.ReleaseIndexPath}
-		idx, err := index.Current()
+		pool, err := open(ctx, cfg)
+		if err != nil {
+			return err
+		}
+		idx, err := builds.LoadIndex(ctx, pool)
+		pool.Close()
 		if err != nil {
 			return err
 		}

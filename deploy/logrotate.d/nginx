@@ -3,7 +3,7 @@
 #
 # /privacy tells visitors the server log is deleted after fourteen days, and
 # the access log is where this host writes their addresses. That promise is
-# this file. test/deploy/log_retention_test.rb fails the build if the number
+# this file. service/deploytest fails the build if the number
 # here and the number on the page stop agreeing in any of the three locales,
 # which is the gap #227 exists to close: until now the sentence on the page
 # was backed by a distribution default nobody in this project had chosen.

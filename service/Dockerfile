@@ -4,8 +4,7 @@
 # `build` job, tagged with the commit it was built from.
 #
 # The runtime is Debian bookworm with libvips 8.14 from Debian, the same
-# libvips the Rails image carried: the wall's variants were proven
-# byte-identical to Rails' on it before Rails went (#295, #304), and a libvips
+# libvips the wall's variants were first proven byte-identical on (#295), and a libvips
 # upgrade is a change to what the wall looks like. libheif decodes the cameras
 # that send HEIF. The binary itself is static (CGO_ENABLED=0) and shells out
 # to `vips`.

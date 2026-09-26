@@ -3,22 +3,20 @@ package firmware
 import (
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 )
 
-// The feed's socs map is Rails' for the whole catalogue, byte for byte,
-// against the same release index (testdata/availability.json, written by
-// firmware_golden.rb from Soc#availability).
-func TestAvailabilityMatchesRails(t *testing.T) {
+// The feed's socs map for the whole catalogue, byte for byte, against the
+// fixture index (testdata/availability.json, the reference answer).
+func TestAvailabilityMatchesReference(t *testing.T) {
 	cat := loadCatalogue(t)
 	raw, err := os.ReadFile("testdata/release-index.json")
 	if err != nil {
 		t.Fatal(err)
 	}
-	idx, err := parseIndex(raw)
+	idx, err := ParseIndex(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,15 +28,17 @@ func TestAvailabilityMatchesRails(t *testing.T) {
 	got := string(availabilityJSON(AvailabilityMap(cat, idx), at))
 	want := `{"generated_at":"2026-09-26T10:32:05Z","socs":` + strings.TrimSpace(string(golden)) + `}`
 	if got != want {
-		t.Fatalf("availability differs from Rails':\n got %.300s\nwant %.300s", got, want)
+		t.Fatalf("availability differs from the reference:\n got %.300s\nwant %.300s", got, want)
 	}
 }
 
 func TestAvailabilityAddress(t *testing.T) {
-	dir := t.TempDir()
 	raw, _ := os.ReadFile("testdata/release-index.json")
-	os.WriteFile(filepath.Join(dir, ".index.json"), raw, 0o644)
-	h := &AvailabilityHandler{Catalogue: loadCatalogue(t), Index: &IndexFile{Path: filepath.Join(dir, ".index.json")},
+	idx, err := ParseIndex(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := &AvailabilityHandler{Catalogue: loadCatalogue(t), Index: Fixed{Index: idx},
 		Now: func() time.Time { return time.Unix(1790000000, 0) }}
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest("GET", "/api/v1/hardware/availability.json", nil))

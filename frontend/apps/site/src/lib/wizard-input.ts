@@ -3,7 +3,7 @@
  *
  * This is the one piece of the wizard that is deliberately duplicated rather
  * than exported, and it is worth saying why. Everything else the installation
- * page shows is rendered by Rails and carried across as data -- no flash
+ * page shows is rendered by the Go service and carried across as data -- no flash
  * geometry is re-derived here. But three values are holes in that data, and
  * something has to decide what may go into them.
  *
@@ -14,10 +14,10 @@
  *     1.2.3.4; sf erase 0x0 0x1000000
  *
  * renders `setenv serverip 1.2.3.4; sf erase 0x0 0x1000000`, in a block headed
- * "enter these one line at a time". Found by review on #138, on the Rails side,
+ * "enter these one line at a time". Found by review on #138,
  * where `well_formed` has guarded it since.
  *
- * Three rules, all of them the Rails ones:
+ * Three rules, all of them the reference's:
  *
  *   * the patterns come from the export -- `patterns.ip` and `patterns.mac` --
  *     never a copy retyped here, so the two halves cannot drift;
@@ -37,7 +37,7 @@ export interface Patterns {
   mac: string;
 }
 
-/** app/controllers/cameras/socs_controller.rb's `well_formed`. */
+/** The reference's `well_formed`. */
 export function wellFormed(value: unknown, pattern: string, fallback = ''): string {
   const text = value == null ? '' : String(value);
   // Anchored, because an HTML `pattern` is implicitly anchored and a RegExp is
@@ -67,7 +67,7 @@ function stripAnchors(pattern: string): string {
 /**
  * The wizard's settings, named as the form names them.
  *
- * `partitionLayout` is optional in the same sense Rails' is: absent means the
+ * `partitionLayout` is optional in the same sense the reference's was: absent means the
  * chip's own, which the export has already resolved.
  */
 export interface WizardSettings {

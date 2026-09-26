@@ -9,8 +9,7 @@ The OpenIPC project's website, [openipc.org](https://openipc.org).
 | `data/` | the hardware catalogue, the translations and the WebUI gallery manifest, which both of the above read |
 | `deploy/` | nginx, the deploy and backup scripts, and how to run them: start with `deploy/DEV-VALIDATION.md` |
 
-Rails was removed in #304; `deploy/GO-CUTOVER.md` records how the site moved
-off it.
+`deploy/GO-CUTOVER.md` records how the site reached this shape (#287, #304).
 
 ## Links the project posts
 

@@ -3,8 +3,6 @@ package wizard
 import (
 	"bytes"
 	"fmt"
-	"os"
-	"path/filepath"
 	"slices"
 	"sort"
 	"strconv"
@@ -21,8 +19,8 @@ const (
 	ethaddr      = "{{ethaddr}}"
 	ethaddrPlain = "{{ethaddr_plain}}"
 	sampleMAC    = "aa:bb:cc:dd:ee:ff"
-	ghDownload   = "https://github.com/OpenIPC/firmware/releases/download/latest/"
-	// The form's validation patterns, exported once (ApplicationHelper).
+	ghDownload   = "https://github.com/OpenIPC/firmware/releases/download/"
+	// The form's validation patterns.
 	macPattern = `^([a-fA-F\d]{2}[:\-]){5}[a-fA-F\d]{2}$`
 	ipPattern  = `^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$`
 )
@@ -43,7 +41,7 @@ type exporter struct {
 	varIDs   map[string]string
 }
 
-// Document is the JSON one SoC's page fetches, exactly as the Ruby wrote it.
+// Document is the JSON one SoC's page fetches.
 func Document(soc *catalogue.SoC, idx *firmware.Index) []byte {
 	e := &exporter{soc: soc, idx: idx, board: firmware.Board(soc, idx),
 		poolIDs: map[string]string{}, varIDs: map[string]string{}}
@@ -62,13 +60,13 @@ func Document(soc *catalogue.SoC, idx *firmware.Index) []byte {
 	d.set("linux_filename", soc.LinuxFilename)
 	d.set("kernel_file", "uImage."+e.board)
 	d.set("rootfs_file", "rootfs.squashfs."+e.board)
-	d.set("bl_url", ghDownload+soc.UBootFilename)
+	d.set("bl_url", e.url(soc.UBootFilename))
 	published := []any{}
 	for _, ft := range flashTypes {
 		for _, rel := range e.releases(ft) {
 			name := e.linuxFilename(rel, ft)
 			published = append(published, obj{{"flash_type", ft}, {"release", rel},
-				{"url", ghDownload + name}, {"filename", name}})
+				{"url", e.url(name)}, {"filename", name}})
 		}
 	}
 	d.set("published", published)
@@ -77,9 +75,21 @@ func Document(soc *catalogue.SoC, idx *firmware.Index) []byte {
 	d.set("offerable", e.offerable())
 	defaultChip := "nand"
 	if len(e.releases("nor")) > 0 {
-		defaultChip = "nor8m"
+		defaultChip = "nor16m"
+		for _, rel := range e.releases("nor") {
+			if e.fitsEight(rel) {
+				defaultChip = "nor8m"
+				break
+			}
+		}
 	}
 	d.set("default_flash_chip", defaultChip)
+	// The smallest NOR chip anything published fits, when that is more than
+	// 8 MB (#285): the page says so rather than offering a layout that cannot
+	// hold the build.
+	if need := e.needsFlashMB(); need > 8 {
+		d.set("needs_flash_mb", need)
+	}
 	var special obj
 	for _, ft := range flashChip {
 		if page := e.specialPage(ft); page != "" {
@@ -159,6 +169,50 @@ func (e *exporter) offerable() []string {
 	return all
 }
 
+// url is where an asset downloads from: the immutable release that published
+// it, or `latest` for a name the index does not hold (the page says it is not
+// published in that case anyway).
+func (e *exporter) url(name string) string {
+	if a, ok := e.idx.Asset(name); ok && a.Release != "" {
+		return ghDownload + a.Release + "/" + name
+	}
+	return ghDownload + "latest/" + name
+}
+
+// Eight-megabyte NOR gives the kernel 2048 KiB and the rootfs 5120 KiB.
+const (
+	eightKernelKB = 2048
+	eightRootfsKB = 5120
+)
+
+// fitsEight says whether an edition's build fits an 8 MB NOR chip. A size
+// report that says it does not is decisive (#285). No report is not evidence
+// of either: legacy tarballs such as hi3518ev201's never had one and are 8 MB
+// builds, and SoCs with nothing published show the full menu with a warning.
+// For those the offer stands as it always did, and the image builder still
+// refuses an image that does not fit, naming the flash it needs.
+func (e *exporter) fitsEight(edition string) bool {
+	f, ok := e.idx.Fit(e.board, edition)
+	if !ok {
+		return true
+	}
+	return f.FlashMB <= 8 && f.KernelKB <= eightKernelKB && f.RootfsKB <= eightRootfsKB
+}
+
+func (e *exporter) needsFlashMB() int {
+	need := 0
+	for _, rel := range e.releases("nor") {
+		f, ok := e.idx.Fit(e.board, rel)
+		if !ok || e.fitsEight(rel) {
+			return 0
+		}
+		if need == 0 || f.FlashMB < need {
+			need = f.FlashMB
+		}
+	}
+	return need
+}
+
 func (e *exporter) linuxFilename(release, ft string) string {
 	return fmt.Sprintf("openipc.%s-%s-%s.tgz", e.board, ft, release)
 }
@@ -224,6 +278,18 @@ func (e *exporter) editionsFor(ft string, layout *string) []string {
 			}
 		}
 	}
+	eight := ft == "nor8m" || (layout != nil && *layout == "nor8m")
+	if eight {
+		// An edition whose build does not fit eight megabytes is not offered
+		// on an 8 MB chip or in the 8 MB layout (#285).
+		var fit []string
+		for _, r := range offered {
+			if e.fitsEight(r) {
+				fit = append(fit, r)
+			}
+		}
+		offered = fit
+	}
 	if layout != nil && *layout == "nor8m" && slices.Contains(published, "lite") {
 		var out []string
 		for _, r := range offered {
@@ -287,7 +353,7 @@ func (e *exporter) entry(ft string, layout *string, edition, iface, sd string) o
 	o.set("flash_size", c.flashSize())
 	o.set("layout_size", c.layoutSize())
 	o.set("flash_family", c.flashTypeType())
-	o.set("firmware_url", ghDownload+c.firmwareFilename())
+	o.set("firmware_url", e.url(c.firmwareFilename()))
 	o.set("firmware_filename", c.firmwareFilename())
 	o.set("default_bootloader_layout", c.defaultBootloaderLayout())
 	o.set("layout_commands", len(c.layoutCommands()) > 0)
@@ -370,46 +436,4 @@ func (e *exporter) warnings(ft string, layout *string, edition string) []string 
 		}
 	}
 	return keys
-}
-
-// WriteAll writes every SoC's file into dir, each beside its name and renamed
-// over it, and removes files for SoCs the catalogue no longer lists. It
-// returns how many files and combinations were written.
-func WriteAll(cat *catalogue.Catalogue, idx *firmware.Index, dir string) (files, combos int, err error) {
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return 0, 0, err
-	}
-	names := map[string]bool{}
-	for _, soc := range cat.All() {
-		body := Document(soc, idx)
-		name := soc.URLName + ".json"
-		path := filepath.Join(dir, name)
-		tmp := path + ".tmp"
-		if err := os.WriteFile(tmp, body, 0o644); err != nil {
-			return files, combos, err
-		}
-		if err := os.Chmod(tmp, 0o644); err != nil {
-			return files, combos, err
-		}
-		if err := os.Rename(tmp, path); err != nil {
-			return files, combos, err
-		}
-		names[name] = true
-		files++
-		combos += bytes.Count(body, []byte(`"sd_card_slot"`))
-	}
-	// A file left behind is a retired SoC nginx keeps serving, so failing to
-	// remove one fails the export.
-	existing, err := filepath.Glob(filepath.Join(dir, "*.json"))
-	if err != nil {
-		return files, combos, err
-	}
-	for _, f := range existing {
-		if !names[filepath.Base(f)] {
-			if err := os.Remove(f); err != nil && !os.IsNotExist(err) {
-				return files, combos, fmt.Errorf("removing the retired %s: %w", filepath.Base(f), err)
-			}
-		}
-	}
-	return files, combos, nil
 }

@@ -390,8 +390,8 @@ ru:
       free_space: Свободно
       mtd_name: Имя устройства МПД
       offset: Начальное смещение, десятичное или шестнадцатеричное
-      partition_name: Имя раздела %{number}
-      partition_size: Размер раздела %{number}, КБ
+      partition_name: Имя раздела {number}
+      partition_size: Размер раздела {number}, КБ
       recalculate: Пересчитать
       size_hex: Шестнадцатеричный размер, байт
       start_address: Начальный адрес

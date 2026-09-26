@@ -73,12 +73,12 @@ export function vendorBySlug(urlname: string): Vendor {
   return vendor;
 }
 
-/** The address of a vendor's tab, which is a Rails route until #163. */
+/** The address of a vendor's tab. */
 export function vendorPath(vendor: Vendor): string {
   return `/cameras/vendors/${vendor.urlname}`;
 }
 
-/** The address of one SoC's wizard, which stays on Rails until #163/#164. */
+/** The address of one SoC's wizard. */
 export function socPath(vendor: Vendor, soc: Soc): string {
   return `/cameras/vendors/${vendor.urlname}/socs/${soc.urlname}`;
 }

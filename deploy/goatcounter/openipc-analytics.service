@@ -21,8 +21,8 @@ ExecStart=/usr/local/bin/goatcounter serve \
 Restart=on-failure
 RestartSec=5
 
-# The host has 7.6 GiB and the Rails container alone is over 2 GiB of it, so
-# this is capped rather than trusted. GoatCounter is ~50 MB resident; 256 MB
+# The host has 7.6 GiB shared with the site, so this is capped rather than
+# trusted. GoatCounter is ~50 MB resident; 256 MB
 # leaves room for a traffic spike and still fails loudly instead of competing
 # with the application for memory.
 MemoryMax=256M

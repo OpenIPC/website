@@ -67,7 +67,7 @@ cannot tell "nobody opened a socket" from "every socket failed".
 A client-side safety net sits behind both: a prerendered page whose own host
 will not carry a socket opens one straight at the origin instead
 (`requestFramesOrFallBack` in `frontend/apps/site/src/lib/wall-frames.ts`,
-admitted by `allowed_request_origins` in `config/environments/production.rb`).
+admitted by `AllowedOrigins` in `service/internal/wallsocket/socket.go`).
 That is a net and not the arrangement. A mirror's readers belong on their
 mirror — the fallback only helps someone who can reach openipc.org, and behind
 the Russian block nobody can, which is why the first attempt is always the
@@ -80,7 +80,7 @@ curl -s -o /dev/null -w '%{http_code}\n' --http1.1 \
   -H 'Origin: https://openipc.kz' \
   -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
   -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' \
-  https://openipc.kz/api/v1/wall/cable
+  https://openipc.kz/api/v1/wall/socket
 ```
 
 **Neither `--http1.1` nor `Origin` is optional**, and each one missing produces
@@ -91,11 +91,11 @@ offer h2 — so without `--http1.1` curl negotiates h2, drops both headers, and
 the origin answers 404 with `HTTP_UPGRADE:` empty in its log. That cost an hour
 on 2026-09-23, on a mirror whose config was already correct.
 
-`Origin` became load-bearing the day after, when the mosaic work set
-`allowed_request_origins` so the mirrors' names would be admitted (they are
-cross-origin now that a page can open a socket straight at the origin).
-ActionCable refuses a handshake whose origin is not on that list and refuses
-one carrying no origin at all, both with a bare 404 — so the command as it
+`Origin` is load-bearing: the socket admits only the names in
+`service/internal/wallsocket.AllowedOrigins` (the mirrors are listed, because
+a page can open a socket straight at the origin, which is cross-origin). It
+refuses a handshake whose origin is not on that list and one carrying no
+origin at all, both with a bare 404 — so the command as it
 stood answered 404 against **every** host, including openipc.org itself. Give
 it the name you are testing.
 

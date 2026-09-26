@@ -6,17 +6,15 @@ import (
 	"time"
 )
 
-// Budget counts frames per address per hour the way WallChannel did, so the
-// numbers stay comparable: fixed clock-hour buckets, with the previous bucket
-// counted in proportion to how much of it still lies inside the trailing hour
-// (the standard sliding-window approximation, which over-counts a burst at
-// the very start of the previous bucket -- the safe direction for a ceiling).
-// Reserve first, then decide, then refund a frame that was never sent.
+// Budget counts frames per address per hour: fixed clock-hour buckets, with
+// the previous bucket counted in proportion to how much of it still lies
+// inside the trailing hour (the standard sliding-window approximation, which
+// over-counts a burst at the very start of the previous bucket -- the safe
+// direction for a ceiling). Reserve first, then decide, then refund a frame
+// that was never sent.
 //
-// In Rails this lived in each Puma worker's FileStore and reset on every
-// deploy, so the real ceiling was workers x Limit. One Go process makes Limit
-// true for the first time, which is a tightening; until the per-address
-// distribution has been measured, Charge only reports what would be refused.
+// Until the per-address distribution has been measured, Charge only reports
+// what would be refused; nothing is enforced.
 type Budget struct {
 	Limit  int
 	Window time.Duration

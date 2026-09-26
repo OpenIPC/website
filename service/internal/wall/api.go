@@ -13,8 +13,8 @@ import (
 	"github.com/OpenIPC/website/service/internal/snapshots"
 )
 
-// The wall's numbers. Each address authorises exactly what the Rails page at
-// the same address authorised: the same count, the same variants.
+// The wall's numbers. Each address authorises exactly what its page draws:
+// this many tiles, at these variants, and no more.
 const (
 	MosaicTiles = 5
 	PerPage     = 18
@@ -45,13 +45,24 @@ type API struct {
 
 // Routes registers the five addresses on mux. The path segment carries the
 // extension (Go's patterns match whole segments), so each handler checks and
-// strips it; anything that does not fit answers 404 as Rails' router did.
+// strips it; anything that does not fit answers 404.
+// Handlers is every address the wall's JSON answers, keyed "METHOD pattern"
+// as the service's routes table names them.
+func (a *API) Handlers() map[string]http.HandlerFunc {
+	return map[string]http.HandlerFunc{
+		"GET /api/v1/wall/mosaic.json":          a.mosaic,
+		"GET /api/v1/wall/page/{page}":          a.page,
+		"GET /api/v1/wall/snapshot/{file}":      a.snapshot,
+		"GET /api/v1/wall/snapshot/{id}/{file}": a.snapshotDay,
+		"GET /api/v1/wall/camera/{file}":        a.camera,
+	}
+}
+
+// Routes registers Handlers on mux, for tests.
 func (a *API) Routes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/v1/wall/mosaic.json", a.mosaic)
-	mux.HandleFunc("GET /api/v1/wall/page/{page}", a.page)
-	mux.HandleFunc("GET /api/v1/wall/snapshot/{file}", a.snapshot)
-	mux.HandleFunc("GET /api/v1/wall/snapshot/{id}/{file}", a.snapshotDay)
-	mux.HandleFunc("GET /api/v1/wall/camera/{file}", a.camera)
+	for k, h := range a.Handlers() {
+		mux.HandleFunc(k, h)
+	}
 }
 
 func jsonStem(file string) (string, bool) {
@@ -86,7 +97,7 @@ type detail struct {
 	Camera  string  `json:"camera"`
 }
 
-// MarshalJSON keeps detail's keys in Rails' order: the card's, then caption
+// MarshalJSON keeps detail's keys in a fixed order: the card's, then caption
 // and camera. Embedding alone would do that too; this makes it explicit.
 func (d detail) MarshalJSON() ([]byte, error) {
 	c, err := json.Marshal(d.card)
@@ -144,7 +155,7 @@ func pairs(rows []*snapshots.Snapshot, variant string) []string {
 	return out
 }
 
-// render is Rails' render_wall: a minute of public freshness, readable from a
+// render answers with a minute of public freshness, readable from a
 // mirror, and a body that is byte-stable within a grant bucket.
 func (a *API) render(w http.ResponseWriter, r *http.Request, body any) {
 	var buf bytes.Buffer
@@ -160,7 +171,7 @@ func (a *API) render(w http.ResponseWriter, r *http.Request, body any) {
 	httpx.WriteJSON(w, r, bytes.TrimSuffix(buf.Bytes(), []byte("\n")))
 }
 
-// status is Rails' `head`: no body, and no-cache so nothing stores a miss.
+// status answers a bare status: no body, and no-cache so nothing stores a miss.
 func status(w http.ResponseWriter, code int) {
 	h := w.Header()
 	h.Set("Content-Type", "application/json")

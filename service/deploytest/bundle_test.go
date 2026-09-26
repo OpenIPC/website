@@ -228,18 +228,18 @@ func TestStaticBundle(t *testing.T) {
 		}
 	})
 
-	railsTS := read(t, "frontend/apps/site/src/lib/rails-paths.ts")
+	originTS := read(t, "frontend/apps/site/src/lib/origin-paths.ts")
 	// The other half of the link check in pages.build.test.ts, which asserts
 	// every internal href in the built tree is a bundle page or one of these;
 	// this asserts these are answered: by a Go route, an nginx location, the
 	// route map, or a bundle page.
 	t.Run("every non-bundle address the bundle links to is a real route", func(t *testing.T) {
 		var listed []string
-		for _, m := range regexp.MustCompile(`'([^']+)'`).FindAllStringSubmatch(find(railsTS, regexp.MustCompile(`(?s)RAILS_PATHS[^=]*=\s*\[(.*?)\]`), 1), -1) {
+		for _, m := range regexp.MustCompile(`'([^']+)'`).FindAllStringSubmatch(find(originTS, regexp.MustCompile(`(?s)ORIGIN_PATHS[^=]*=\s*\[(.*?)\]`), 1), -1) {
 			listed = append(listed, m[1])
 		}
 		if len(listed) < 3 {
-			t.Fatal("found no paths in rails-paths.ts; has its shape changed?")
+			t.Fatal("found no paths in origin-paths.ts; has its shape changed?")
 		}
 		for _, p := range listed {
 			if !answered(t, p, bundlePaths) {
@@ -249,10 +249,10 @@ func TestStaticBundle(t *testing.T) {
 	})
 	// What is left under the wizard's tree is the firmware download, which the
 	// Go firmware role answers now; the mosaic links each tile to its snapshot.
-	t.Run("the download the wizard links to is a route Rails still has", func(t *testing.T) {
-		mustContain(t, railsTS, "RAILS_PATTERNS", "rails-paths.ts no longer carries the download pattern")
-		mustContain(t, railsTS, "download_full_image", "the pattern no longer names the download")
-		mustContain(t, railsTS, `^\/snapshots`, "the pattern no longer names a snapshot")
+	t.Run("the download the wizard links to is a Go route", func(t *testing.T) {
+		mustContain(t, originTS, "ORIGIN_PATTERNS", "origin-paths.ts no longer carries the download pattern")
+		mustContain(t, originTS, "download_full_image", "the pattern no longer names the download")
+		mustContain(t, originTS, `^\/snapshots`, "the pattern no longer names a snapshot")
 		const download = "/cameras/vendors/probe/socs/ps1000/download_full_image"
 		if !slices.ContainsFunc(goRoutes(t), func(r route) bool { return routeMatches(r.Path, download) }) {
 			t.Error("the wizard links a download at an address service/routes.json does not route")
@@ -318,7 +318,7 @@ func TestStaticBundle(t *testing.T) {
 			}
 		}
 	})
-	// The Go service answers what it took from Rails (#287). Every address in
+	// The Go service answers its own addresses (#287). Every address in
 	// service/routes.json must be one a bundle file cannot shadow -- read both
 	// the narrow way and the way check-bundle.sh's shell `case` enforces it,
 	// where `*` crosses slashes.
@@ -358,9 +358,8 @@ func TestStaticBundle(t *testing.T) {
 			if !strings.Contains(rule, "*") && (routeMapAnswers(t, rule) || routeMapAnswers(t, rule+"x")) {
 				continue
 			}
-			// Rails' table held `/assets` as a mount; nginx spells it inside a
-			// regex, `^/(assets|fonts)/`, which no substring finds. Asked of
-			// the location itself instead.
+			// nginx may spell an address inside a regex, which no substring
+			// finds. Asked of the location itself instead.
 			if !strings.Contains(rule, "*") {
 				probe := rule
 				if strings.HasSuffix(rule, "/") {
@@ -443,7 +442,7 @@ func mapValue(n *yaml.Node, key string) *yaml.Node {
 
 // answered says whether something other than the catch-all answers p: a Go
 // route, a bundle page, an nginx location of its own (the catch-all
-// `location /` excluded), or -- while Rails exists -- config/routes.rb.
+// `location /` excluded), or the route map.
 func answered(t testing.TB, p string, bundlePaths []string) bool {
 	if slices.Contains(bundlePaths, p) || slices.ContainsFunc(goRoutes(t), func(r route) bool { return routeMatches(r.Path, p) }) {
 		return true
@@ -456,8 +455,8 @@ func answered(t testing.TB, p string, bundlePaths []string) bool {
 	return nginxAnswers(t, p) || routeMapAnswers(t, p)
 }
 
-// routeMapAnswers says whether conf.d/openipc-redirects.conf -- what Rails'
-// router answered, kept as an nginx map since #304 -- claims p with anything
+// routeMapAnswers says whether conf.d/openipc-redirects.conf -- the route
+// table nginx answers from -- claims p with anything
 // but its default. A claimed address is redirected, retired with a 410, or is
 // a page the bundle holds.
 func routeMapAnswers(t testing.TB, p string) bool {

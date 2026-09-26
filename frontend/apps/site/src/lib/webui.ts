@@ -6,8 +6,7 @@
  * the page and the photographs cannot describe different sets of screens.
  *
  * The images live in src/assets/webui, where tools/webui-gallery installs
- * them. They were globbed out of Rails' app/assets/images until Rails went
- * (#304), so that there was one copy of each while two pages showed them.
+ * them (#304).
  *
  * Two files per screen. The tile is the 1200px copy the page loads; the zoom
  * swaps in the 2560px original, which is what stops the zoom being an upscale

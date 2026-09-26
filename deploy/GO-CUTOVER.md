@@ -14,7 +14,7 @@ openipc-route prod upload freeze   # cameras get 503 and retry on their next cro
 openipc-route prod upload go       # refused unless the Go web process answers /up
 ```
 
-The surfaces are `upload`, `wall`, `firmware`, `availability` and `cable`, and
+The surfaces are `upload`, `wall`, `firmware`, `availability` and `socket`, and
 the states are `go` and `freeze`; only the upload can be frozen. Freeze it for
 the minute a restore or a migration must not race a camera's write. A flip
 rewrites `/etc/nginx/openipc-routes/<env>.conf`, runs `nginx -t` and reloads,
@@ -32,7 +32,7 @@ restart.
 | `upload` | `POST /snapshots` from cameras | cameras in the field, which cannot be updated |
 | `wall` | `/api/v1/wall/*.json` | every Open Wall page and the home mosaic |
 | `firmware` | `…/download_full_image` | anyone flashing a camera |
-| `cable` | the frame socket (#297) | every Open Wall reader |
+| `socket` | the frame socket (#297, `/api/v1/wall/socket`) | every Open Wall reader |
 | `availability` | `/api/v1/hardware/availability.json` (#298) | the catalogue pages |
 
 Before any flip: the same SHA validated on dev with every dev surface on `go`,

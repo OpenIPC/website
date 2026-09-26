@@ -54,7 +54,7 @@ response=$(curl -fsS --max-time "$TIMEOUT" "$API" \
   exit 1
 }
 
-# Parsed and checked here rather than in Rails. A file that reaches the site is
+# Parsed and checked here, not in the pages. A file that reaches the site is
 # a file the site will print, so everything that can be wrong about it is wrong
 # before it is written: no numbers, a zero count, a shape that changed upstream.
 printf '%s' "$response" | python3 -c '

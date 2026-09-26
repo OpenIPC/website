@@ -5,10 +5,10 @@
  * #161 the catalogue is a committed file and every address it advertises is
  * already a file in this bundle, so it is built here, from the same
  * catalogue.json the pages are. The bytes are what SitemapsController and
- * sitemaps/show.xml.erb produced on openipc.org -- sitemap.build.test.ts holds
- * the build to a copy of production's answer taken before Rails stopped serving it.
+ * the old server-rendered sitemap produced on openipc.org -- sitemap.build.test.ts holds
+ * the build to a copy of production's answer taken before the bundle served it.
  *
- * The host is the canonical one. Rails wrote whatever host asked, so dev and
+ * The host is the canonical one. The old sitemap wrote whatever host asked, so dev and
  * the mirrors advertised themselves; a built file says openipc.org, which is
  * the address search engines should index anyway.
  */
@@ -21,7 +21,7 @@ export const SITE = 'https://openipc.org';
 export const SITEMAP_PAGES = [
   '/', '/get-started', '/low-latency', '/teleoperation', '/edge-ai', '/ecosystem', '/business', '/community',
   '/donate', '/video-encoding', '/isp-sensors', '/reverse-engineering', '/turnkey-hardware', '/digital-twins',
-  '/majestic-endpoints', '/green_life', '/our-team', '/stages-of-firmware-development',
+  '/majestic-endpoints', '/green_life', '/our-team', '/stages-of-firmware-development', '/firmware-explorer',
   '/utilities', '/web-interface', '/supported-hardware/featured',
   '/supported-hardware/full-list', '/tools/firmware-partitions-calculation',
   '/tools/high-resolution-timer', '/tools/qr-code-generator', '/open-wall',

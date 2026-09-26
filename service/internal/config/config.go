@@ -20,9 +20,9 @@ type Config struct {
 	LogLevel    string
 
 	// Web role.
-	WallRoot       string   // where wall/<public_id>/<variant>.jpg live; Rails' cable reads the same tree
-	WallGrantKey   []byte   // Rails' key_generator.generate_key("wall_grant"), 64 bytes
-	CameraTokenKey string   // Rails' secret_key_base, raw: camera tokens are HMAC-SHA256 over it
+	WallRoot       string   // where wall/<public_id>/<variant>.jpg live; the frame socket reads the same tree
+	WallGrantKey   []byte   // WALL_GRANT_KEY, hex: signs the wall's frame grants
+	CameraTokenKey string   // CAMERA_TOKEN_KEY, raw: camera tokens are HMAC-SHA256 over it
 	MACBlacklist   []string // SNAPSHOT_MAC_BLACKLIST
 	IPWhitelist    []string // SNAPSHOT_IP_WHITELIST
 	VariantWorkers int
@@ -34,7 +34,6 @@ type Config struct {
 
 	// Firmware role.
 	CatalogueDir        string
-	ReleaseIndexPath    string
 	ReleaseCacheRoot    string // tarballs, keyed by digest
 	FirmwareCacheRoot   string // assembled images
 	FirmwareAccelPrefix string // the nginx internal location that aliases FirmwareCacheRoot
@@ -60,7 +59,6 @@ func Load() (*Config, error) {
 		GrantsDisabled:      os.Getenv("WALL_GRANTS_DISABLED") == "1",
 		SnapshotMaxAge:      48 * time.Hour,
 		CatalogueDir:        str("CATALOGUE_DIR", "/app/catalogue"),
-		ReleaseIndexPath:    str("RELEASE_INDEX", "/srv/github-releases/.index.json"),
 		ReleaseCacheRoot:    str("RELEASE_CACHE_ROOT", "/srv/release-cache"),
 		FirmwareCacheRoot:   str("FIRMWARE_CACHE_ROOT", "/srv/firmware"),
 		FirmwareAccelPrefix: str("FIRMWARE_ACCEL_PREFIX", "/firmware-cache/"),
@@ -87,7 +85,7 @@ func (c *Config) RequireDatabase() error {
 }
 
 // RequireWeb is what `serve --role web` cannot start without. A missing grant
-// key would mint grants Rails' cable refuses -- a blank wall with no error
+// key would mint grants the frame socket refuses -- a blank wall with no error
 // anywhere -- so it is a startup failure, not a default.
 func (c *Config) RequireWeb() error {
 	if err := c.RequireDatabase(); err != nil {

@@ -15,9 +15,9 @@ import (
 // Interval rules. A camera may send one frame per fifteen minutes, with two
 // minutes of hysteresis because a quarter-hour cron drifts: the gate opens at
 // 780 seconds. Retry-After is fifteen minutes less the elapsed time and does
-// NOT subtract the hysteresis, so it over-reports by 120 s. That is the Rails
-// behaviour, pinned by the conformance suite as a defect, and cameras in the
-// field may read it; changing it is a separate, deliberate decision.
+// NOT subtract the hysteresis, so it over-reports by 120 s. That is the
+// contract cameras in the field were built against, pinned by the conformance
+// suite as a defect; changing it is a separate, deliberate decision.
 const (
 	IntervalSeconds   = 900
 	HysteresisSeconds = 120
@@ -35,7 +35,7 @@ type Wall interface {
 
 // Upload handles POST /snapshots, /ru/snapshots and /zh/snapshots -- the one
 // request on the site whose clients cannot be updated. Everything it answers
-// is frozen: see test/conformance/upload_contract_test.rb.
+// is frozen: see service/conformance/upload_contract_test.go.
 type UploadHandler struct {
 	Store     *Store
 	Wall      Wall
@@ -81,8 +81,8 @@ func (h *UploadHandler) serve(w http.ResponseWriter, r *http.Request, locale str
 		httpx.Empty(w, http.StatusForbidden)
 		return http.StatusForbidden
 	}
-	// So is the interval, and it wins over a file error too: Rails raised it
-	// from inside validation, after collecting the rest. With nothing else
+	// So is the interval, and it wins over a file error too, after the rest
+	// have been collected. With nothing else
 	// wrong, the check is made again under the camera's lock as the row is
 	// inserted (Store.InsertIfDue), so two frames at once cannot both pass.
 	exempt := contains(h.Whitelist, u.RemoteIP)
@@ -116,7 +116,7 @@ func (h *UploadHandler) serve(w http.ResponseWriter, r *http.Request, locale str
 	h.Enqueue(id)
 
 	// A path, never a URL, and never a row id. The locale prefix follows the
-	// language the request was answered in, as Rails' snapshot_path did.
+	// language the request was answered in.
 	location := "/snapshots/" + id
 	if locale != "en" {
 		location = "/" + locale + location
@@ -161,7 +161,7 @@ func (h *UploadHandler) create(r *http.Request, u *Upload, mac string, minElapse
 }
 
 // read takes the multipart form a camera sends (curl -F), or an urlencoded
-// one. Body fields win over the query string, as they did in Rails' params.
+// one. Body fields win over the query string.
 // The body is already capped at 1 MB by nginx; the cap here is for a request
 // that reaches the process some other way.
 func read(r *http.Request) (*Upload, error) {

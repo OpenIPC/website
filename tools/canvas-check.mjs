@@ -11,8 +11,8 @@
 // Playwright refuses a version that does not match the image's browsers.
 //
 // WHY THIS EXISTS. Since 2026-09-23 no address on this site returns image
-// bytes; frames arrive over WallChannel and are painted. Both halves of that
-// need checking and neither is visible to the Ruby suite: the suite can assert
+// bytes; frames arrive over the wall socket and are painted. Both halves of that
+// need checking and neither is visible to the Go tests: they can assert
 // the markup carries no image URL, but only a browser can say whether a frame
 // arrived and was drawn. A silent failure here looks like an empty gallery,
 // which is also what an empty database looks like -- so the check reads

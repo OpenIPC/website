@@ -97,7 +97,7 @@ func TestHealthEndpointStaysOutOfTheLog(t *testing.T) {
 }
 
 // The wall's JSON addresses must not inherit the socket's nginx block. The
-// split is by prefix length: `/api/v1/wall/cable` is longer than
+// split is by prefix length: `/api/v1/wall/socket` is longer than
 // `/api/v1/wall/`, and nginx takes the longest matching prefix whatever the
 // order in the file. The failure is silent -- everything still works, it just
 // works without the controls.
@@ -107,12 +107,12 @@ func TestWallDataLocation(t *testing.T) {
 		name := envs[env]
 		t.Run("the "+env+" socket block covers the socket and nothing else", func(t *testing.T) {
 			v := vhost(t, name)
-			cable := block(v, "    location ^~ /api/v1/wall/cable {")
-			if cable == "" {
+			socket := block(v, "    location ^~ /api/v1/wall/socket {")
+			if socket == "" {
 				t.Fatal("the frame channel has no location of its own")
 			}
-			mustContain(t, cable, "proxy_no_cache 1;", "a socket has nothing to replay")
-			mustMatch(t, `proxy_buffering\s+off;`, cable, "the socket is buffered")
+			mustContain(t, socket, "proxy_no_cache 1;", "a socket has nothing to replay")
+			mustMatch(t, `proxy_buffering\s+off;`, socket, "the socket is buffered")
 			wall := block(v, "    location ^~ /api/v1/wall/ {")
 			mustNotMatch(t, `proxy_read_timeout\s+1h;`, wall,
 				"the wall-wide location carries the socket settings, so every JSON "+
@@ -171,19 +171,13 @@ func TestWallSocketCapacity(t *testing.T) {
 			}
 		})
 	}
-	// And the reason a generous pool is safe has to keep being true. Rails'
-	// WallChannel keyed its budget on client_ip; the Go socket keys Budget on
-	// the address it charges.
+	// And the reason a generous pool is safe has to keep being true: the
+	// socket charges its budget to the client's address.
 	t.Run("the frame budget is keyed per address, not per connection", func(t *testing.T) {
 		src := read(t, "service/internal/wallsocket/budget.go")
 		mustMatch(t, `func \(b \*Budget\) Charge\(ip string`, src,
 			"the frame budget is no longer charged against the client address. If it became per-connection, "+
 				"opening more sockets would multiply what a harvester can take, and the socket pool would be load-bearing after all")
-		if exists("app/channels/wall_channel.rb") {
-			ch := read(t, "app/channels/wall_channel.rb")
-			mustContain(t, ch, "FRAME_BUDGET", "WallChannel has no frame budget")
-			mustContain(t, ch, "client_ip", "WallChannel no longer charges its budget against the client address")
-		}
 	})
 }
 
@@ -194,21 +188,9 @@ func TestWallSocketCapacity(t *testing.T) {
 // Deleting a name would take the wall down on one mirror and break nothing
 // else -- a silent 404 on a handshake.
 //
-// It was six expressions in Rails' production.rb; the socket is Go's now
-// (service/internal/wallsocket.AllowedOrigins). Rails' list is also checked
-// for as long as the file exists, because the cable can still be routed to it.
+// The list is service/internal/wallsocket.AllowedOrigins.
 func TestWallMirrorOrigins(t *testing.T) {
 	lists := map[string][]*regexp.Regexp{"the Go socket": wallsocket.AllowedOrigins}
-	if exists("config/environments/production.rb") {
-		prod := read(t, "config/environments/production.rb")
-		body := find(prod, regexp.MustCompile(`(?s)allowed_request_origins\s*=\s*\[(.*?)\]`), 1)
-		var rails []*regexp.Regexp
-		for _, m := range regexp.MustCompile(`(?s)%r\{(.*?)\}`).FindAllStringSubmatch(body, -1) {
-			src := strings.ReplaceAll(strings.ReplaceAll(m[1], `\A`, `^`), `\z`, `$`)
-			rails = append(rails, regexp.MustCompile(src))
-		}
-		lists["Rails"] = rails
-	}
 	mirrors := []string{
 		"https://openipc.org", "https://www.openipc.org", "https://dev.openipc.org",
 		"https://openipc.ru", "https://www.openipc.ru",

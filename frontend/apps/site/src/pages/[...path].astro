@@ -4,7 +4,7 @@
  *
  * One rest-parameter route over src/lib/pages.ts rather than a file per page
  * per locale. getStaticPaths names every address it may claim, so it cannot
- * swallow anything Rails still owns: a page is in the bundle because it is in
+ * swallow any address it does not own: a page is in the bundle because it is in
  * that array, and for no other reason.
  *
  * A rest parameter is also the only form that can route `/_smoke/`. Astro
@@ -14,7 +14,7 @@
  * check-config.sh asserts nginx serves it from the bundle, build.sh refuses a
  * bundle without it, and two runbooks tell a reader to curl it.
  *
- * `/` is absent, deliberately and permanently. Rails renders it per
+ * `/` is absent, deliberately and permanently. It used to be rendered per
  * Accept-Language and declares `Vary: Accept-Language`; a file serves one
  * language to everyone. The locale roots `/ru/` and `/zh/` are in the bundle
  * -- they carry their language in the path and negotiate nothing -- and live

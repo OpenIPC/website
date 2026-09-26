@@ -346,14 +346,17 @@ en:
       step3_text: Into OpenIPC or your firmware, CI under QEMU where the chip is covered, driver work where the stack is missing — and a retainer for the SDK churn that locks models to firmware versions.
       step3_title: Integrate and keep
       title: Edge AI
+    firmware_explorer:
+      lede: 'What goes into every OpenIPC build: where the flash goes, which packages and kernel modules take it, how that changed over 90 nightlies, and what you could leave out.'
+      title: Firmware explorer
     firmware_partitions_calculation:
       end_address: End address
       flash_size_mb: Flash size, MB
       free_space: Free space
       mtd_name: MTD device name
       offset: Initial offset, dec or hex
-      partition_name: Partition %{number} name
-      partition_size: Partition %{number} size, KB
+      partition_name: Partition {number} name
+      partition_size: Partition {number} size, KB
       recalculate: Recalculate
       size_hex: Hex size, bytes
       start_address: Start address

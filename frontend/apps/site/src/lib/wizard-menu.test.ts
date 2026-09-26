@@ -211,7 +211,7 @@ describe('which published bundle a page links to', () => {
 
 describe('the frames a prerendered mosaic paints', () => {
   // The mask is the server's and is obfuscation rather than secrecy -- see
-  // WallChannel#transmit_frame. Only the head is touched, because that is
+  // service/internal/wallsocket. Only the head is touched, because that is
   // where a JPEG's markers and quantisation tables live, and masking a whole
   // full-HD frame cost the server a quarter of a million iterations.
   test('unmasking is the masking, applied again', () => {

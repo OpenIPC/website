@@ -1,6 +1,5 @@
 /**
- * What `test/controllers/relaunch_pages_test.rb` asserts, against the built
- * tree instead of against a Rails response (#160).
+ * What every page must be, asserted against the built tree (#160).
  *
  * The epic calls for a Playwright run here. These pages are prerendered HTML,
  * so a browser adds nothing to any of the assertions below -- they are all
@@ -19,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { LOCALES, pathFor, type Locale } from './i18n';
 import { PAGE_PATHS } from './page-paths';
 import { VENDORS } from './hardware';
-import { RAILS_PATHS, RAILS_PATTERNS, RAILS_PREFIXES } from './rails-paths';
+import { ORIGIN_PATHS, ORIGIN_PATTERNS, ORIGIN_PREFIXES } from './origin-paths';
 import { menuFor, footerFor, type FooterLink } from './nav';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -104,12 +103,12 @@ describe('every page is a page', () => {
     // A <script> may carry one on purpose: the catalogue's refresh script is
     // given `installable_title` as a template and fills it per vendor once it
     // knows the live counts (#162). Body text may not.
-    // `%{name}` left in the output means the catalogue asked for a variable
+    // `{name}` left in the output means the catalogue asked for a variable
     // the page did not supply. translate() leaves it visible on purpose.
     //
     // <astro-island> is excluded, and deliberately: it carries an island's
     // props as JSON for hydration, and the partition calculator's props are
-    // label TEMPLATES -- `Partition %{number} name` -- which the widget fills
+    // label TEMPLATES -- `Partition {number} name` -- which the widget fills
     // itself, once per row. Finding one there is the design working.
     //
     // A <script> is excluded for the same reason: the catalogue's refresh
@@ -119,12 +118,12 @@ describe('every page is a page', () => {
       const rendered = html
         .replace(/<astro-island\b[^>]*>/g, '')
         .replace(/<script[\s\S]*?<\/script>/g, '');
-      expect(rendered, `${locale}${path} has an unfilled interpolation`).not.toMatch(/%\{\w+\}/);
+      expect(rendered, `${locale}${path} has an unfilled interpolation`).not.toMatch(/\{\w+\}/);
     }
   });
 });
 
-describe('the shell behaves the way the Rails shell does', () => {
+describe('the shell behaves the way the site\'s shell always has', () => {
   // The seam's whole premise is that a visitor cannot tell which half of the
   // site they are on. Two of the ways they could are properties of the built
   // CSS rather than of any page's markup, so they are checked here.
@@ -133,7 +132,7 @@ describe('the shell behaves the way the Rails shell does', () => {
     .map((f) => readFileSync(join(dist, f), 'utf8'))
     .join('\n');
 
-  test('the navigation is pinned, as app/views/layouts/_navbar.html.erb is', () => {
+  test('the navigation is pinned', () => {
     // Bootstrap's `sticky-top`. Every page the bundle does not serve -- `/`,
     // /supported-hardware, the Open Wall -- keeps its navigation put while the
     // page scrolls, and a static page whose navigation scrolls away is the
@@ -154,22 +153,6 @@ describe('the shell behaves the way the Rails shell does', () => {
 
     expect(stylesheet, 'nothing in the CSS makes `sticky` stick').toContain('position:sticky');
     expect(stylesheet).toContain('z-index:1020');
-  });
-
-  test('every page tells Turbo it is not part of the Rails application', () => {
-    // The Rails half ships Turbo Drive, which intercepts a link into this
-    // bundle, swaps the body and merges the heads -- leaving Bootstrap and
-    // Tailwind loaded together. Measured on dev: the bar went from 60.4px to
-    // 74.6 crossing one way, and coming back left Tailwind's preflight on the
-    // Rails page, where `img { height: auto }` made the logo 64px instead of
-    // 32. One click and the site was broken until a reload.
-    //
-    // A page that loses this meta rejoins that application silently, so it is
-    // asserted on every page rather than on the layout.
-    for (const [loc, path, html] of PAGES) {
-      expect(html, `${loc}${path} does not opt out of Turbo`)
-        .toMatch(/<meta name="turbo-visit-control" content="reload"/);
-    }
   });
 
   test('the navigation collapses at the same width the origin does', () => {
@@ -353,7 +336,7 @@ describe('the hardware catalogue is the catalogue (#162)', () => {
     }
   });
 
-  test('the wizard is still linked, because it is still Rails', () => {
+  test('the wizard is still linked', () => {
     // #163 moves it. Until then these links leave the bundle and fall through
     // the seam, and a link that stopped pointing at it would strand the one
     // action the page exists for.
@@ -372,14 +355,14 @@ describe('internal links resolve', () => {
     const path = href.split(/[?#]/)[0].replace(/\/$/, '') || '/';
     if (claimed.has(path)) return true;
 
-    // A Rails address, with or without the locale prefix the page gave it.
+    // An address the origin answers, with or without the locale prefix the page gave it.
     const bare = path.replace(new RegExp(`^/(${LOCALES.join('|')})(?=/|$)`), '') || '/';
-    if (RAILS_PATHS.includes(bare)) return true;
-    if (RAILS_PATTERNS.some((pattern) => pattern.test(bare))) return true;
-    return RAILS_PREFIXES.some((prefix) => bare.startsWith(prefix));
+    if (ORIGIN_PATHS.includes(bare)) return true;
+    if (ORIGIN_PATTERNS.some((pattern) => pattern.test(bare))) return true;
+    return ORIGIN_PREFIXES.some((prefix) => bare.startsWith(prefix));
   }
 
-  test('every internal href is a page in the bundle or an address Rails owns', () => {
+  test('every internal href is a page in the bundle or an address the origin answers', () => {
     const broken: string[] = [];
 
     for (const [locale, path, html] of PAGES) {
@@ -388,7 +371,7 @@ describe('internal links resolve', () => {
       }
     }
 
-    expect(broken, 'these links reach nothing; Rails would 302 them to the home page').toEqual([]);
+    expect(broken, 'these links reach nothing; the route map would 302 them to the home page').toEqual([]);
   });
 
   test('the home page links every place it is supposed to send people', () => {
@@ -424,7 +407,7 @@ describe('the pages say what they are for', () => {
     // The partner wall is the reason this exists: a logo named in the data and
     // missing from disk is a broken tile on the page a commercial reader is
     // most likely to be looking at. Remote avatars are skipped -- /our-team
-    // loads GitHub's, as the Rails page does.
+    // loads GitHub's.
     const missing: string[] = [];
 
     for (const [locale, path, html] of PAGES) {
@@ -557,5 +540,18 @@ describe('the bundle holds nothing it should not', () => {
     for (const dir of seen) if (dir !== '.') dirs.push(dir);
 
     expect(dirs.length).toBeGreaterThan(0);
+  });
+});
+
+describe('the WebUI gallery credits its scene', () => {
+  // tools/webui-gallery/scene/CREDIT.md: the beach in two screenshots is a
+  // user's camera, published with permission and credited on the page. A scene
+  // swap that forgets the credit fails here, in every language.
+  test('every locale names the camera owner and links the permission', () => {
+    for (const [locale, path, html] of PAGES) {
+      if (path !== '/web-interface') continue;
+      expect(html, `${locale}${path} lost the scene credit`).toContain('https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706');
+      expect(html, `${locale}${path} lost the scene credit`).toContain('@usa-');
+    }
   });
 });

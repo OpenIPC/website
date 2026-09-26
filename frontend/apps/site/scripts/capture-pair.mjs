@@ -3,8 +3,8 @@
  *
  *   node scripts/capture-pair.mjs <out-dir> <path> <width> <a-url> <b-url>
  *
- * Written for #160's one hard requirement: a page served from the static
- * bundle has to be indistinguishable from the Rails page it replaces. Reading
+ * Written for #160's one hard requirement: a page has to be
+ * indistinguishable from the one it replaces, on another host. Reading
  * the DOM cannot tell you that -- both pages are valid, neither scrolls,
  * nothing 404s, and they still do not look alike. Only the pixels can.
  *

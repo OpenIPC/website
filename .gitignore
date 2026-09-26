@@ -14,9 +14,9 @@ node_modules/
 /wall/*
 !/wall/.keep
 
-# What the Rails tree left behind on developer machines (#304): its uploads,
-# its keys and its logs. The tree is gone; these keep a stale copy out of a
-# commit.
+# What the retired application tree left behind on developer machines
+# (#304): its uploads, its keys and its logs. These keep a stale copy out of
+# a commit.
 /storage/
 /log/
 /tmp/

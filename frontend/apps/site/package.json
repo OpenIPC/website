@@ -17,13 +17,14 @@
   },
   "dependencies": {
     "@openipc/ui": "*",
-    "@rails/actioncable": "^8.0.200",
+    "d3-hierarchy": "^3.1.2",
     "preact": "10.27.2"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
     "@astrojs/preact": "^4.1.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/d3-hierarchy": "^3.1.7",
     "astro": "^5.14.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",

@@ -67,7 +67,7 @@ rm -f /etc/nginx/conf.d/default.conf
 cp /repo/conf.d/*.conf /etc/nginx/conf.d/
 cp /repo/sites-available/* /etc/nginx/sites-available/
 for f in /etc/nginx/sites-available/*; do ln -sf "$f" /etc/nginx/sites-enabled/; done
-# The route state openipc-route owns on the host (deploy/route.sh): all Rails.
+# The route state openipc-route owns on the host (deploy/route.sh): all go.
 ROUTES_DIR=/etc/nginx/openipc-routes sh /route.sh init >/dev/null
 '
 
@@ -100,13 +100,14 @@ exec_sh() { docker exec -i "$cid" sh -s; }
 {
   printf '%s\n' "$INSTALL"
   cat <<'SETUP'
-# Two stubs standing in for the Rails containers, so what is measured is the
+# Stubs standing in for the Go containers, so what is measured is the
 # seam and not the application. Both answer 200 to everything, which is what
 # makes the expected statuses below deterministic.
 cat > /etc/nginx/conf.d/zz-stub-upstream.conf <<'STUB'
 server { listen 127.0.0.1:3002; location / { return 200 "GO-WEB-PROD\n"; } }
 server { listen 127.0.0.1:3003;
   location = /api/v1/hardware/availability.json { return 200 "GO-AVAILABILITY\n"; }
+  location ^~ /api/v1/wizard/ { return 200 "GO-WIZARD\n"; }
   location / {
   add_header X-Accel-Redirect /firmware-cache/image.bin;
   return 200 "";
@@ -134,8 +135,7 @@ printf 'HOME navigator.languages\n' > /srv/www/static/prod/site-test/index.html
 # The bundle's error page (#304): what every 404 behind the seam shows.
 printf 'NOT FOUND PAGE\n' > /srv/www/static/prod/site-test/404.html
 
-# The files Rails used to serve out of public/ (#165). They are the bundle's
-# now: it is where this site keeps its files.
+# The bundle's plain files (#165): it is where this site keeps its files.
 printf 'User-agent: *\n' > /srv/www/static/prod/site-test/robots.txt
 printf '<urlset/>\n' > /srv/www/static/prod/site-test/sitemap.xml
 printf 'PNG\n' > /srv/www/static/prod/site-test/favicon.png
@@ -317,14 +317,14 @@ expect /ru/                         404 static hsts
 expect /ru                          404 static hsts
 
 # The asset directory is the same shape and answers the same way: its files
-# are served, and its bare directory URL -- which nothing links to -- is
-# Rails' 404 rather than nginx's 403.
+# are served, and its bare directory URL -- which nothing links to -- falls
+# through to @fallback rather than being nginx's 403.
 expect /_astro/app.css              200 static hsts
 expect /_astro/                     302 nginx  hsts
 
 # A marketing page, in both trees (#160). This is the claim the whole change
 # rests on: /donate is answered from disk, and /ru/donate is answered from disk
-# in Russian, with Rails never woken.
+# in Russian.
 expect /donate/                     200 static hsts
 expect /donate                      200 static hsts
 expect /ru/donate/                  200 static hsts
@@ -332,7 +332,7 @@ expect /ru/donate                   200 static hsts
 
 # And the directory above the three web tools, which is not a page and must
 # not become one. Same rule as ru/ and _astro/: a file test misses a directory,
-# so it falls through and Rails 404s it -- nginx never answers "directory index
+# so it falls through to @fallback -- nginx never answers "directory index
 # is forbidden", which is what the wrong try_files element would produce.
 expect /tools/qr-code-generator/    200 static hsts
 expect /tools/                      302 nginx  hsts
@@ -375,7 +375,7 @@ redirects_to openipc.org /ru/snapshots   https://openipc.org/ru/open-wall
 redirects_to openipc.org /snapshots/     https://openipc.org/open-wall
 redirects_to openipc.org /zh/snapshots/  https://openipc.org/zh/open-wall
 # `?locale=` names the language when the path does not, and it is the older
-# contract: Rails answered /snapshots?locale=ru with the Russian page. The
+# contract: /snapshots?locale=ru has always meant the Russian page. The
 # query travels with the reader either way -- a campaign's utm parameters are
 # theirs, not the address's.
 redirects_to openipc.org "/snapshots?locale=ru" "https://openipc.org/ru/open-wall?locale=ru"
@@ -412,8 +412,7 @@ expect /fonts/ibm-plex-sans-latin-400-normal.woff2 200 static hsts
 expect_cache /fonts/ibm-plex-sans-latin-400-normal.woff2 "public, max-age=31536000, immutable"
 expect /assets/application.css      410 -      no-hsts
 # The home page keeps its address when its content changes, like every other
-# page in the bundle, so it may be cached and must always be revalidated. It
-# carried Rails' `max-age=300` until #165.
+# page in the bundle, so it may be cached and must always be revalidated.
 expect_cache /                      "public, max-age=0, must-revalidate"
 
 # The home page is the bundle's since #165. The language it serves is decided
@@ -430,7 +429,7 @@ expect /api/v1/hardware/availability.json 200 go hsts
 
 # The files, which left public/ in #165. /favicon.png is the one that was
 # never anywhere: the bundle's pages linked it, nothing served it, and every
-# page's icon request fell through to a Rails 302.
+# page's icon request fell through to the catch-all's 302.
 expect /robots.txt                  200 static hsts
 expect /favicon.png                 200 static hsts
 expect /favicon.ico                 200 static hsts
@@ -470,7 +469,7 @@ else
   fail=1
 fi
 
-echo "  --- what Rails' router answered, answered by nginx (#302, #304) ---"
+echo "  --- the route map, answered by nginx (#302, #304) ---"
 # method path code location served-by.
 answered() {
   method=$1; path=$2; want_code=$3; want_loc=$4; want_by=$5
@@ -515,8 +514,8 @@ answered GET  /ru/privacy               404 -                                sta
 answered GET  /sitemap.xml              200 -                                static
 answered GET  /cameras/vendors/hisilicon/socs/hi3516ev300 404 -              static
 answered GET  /500.html                 404 -                                static
-# The two pages Rails still rendered when it was deleted (#304): the vendor
-# index is the full list, and a SoC's page lives under its vendor.
+# Two retired page addresses (#304): the vendor index is the full list, and
+# a SoC's page lives under its vendor.
 answered GET  /cameras/vendors          301 "$O/supported-hardware/full-list" nginx
 answered GET  /zh/cameras/vendors       301 "$O/zh/supported-hardware/full-list" nginx
 answered GET  /cameras/socs/hi3516ev300 301 "$O/cameras/vendors/hisilicon/socs/hi3516ev300" nginx
@@ -548,13 +547,19 @@ posts /ru/snapshots                 200 go
 grep -q GO-WEB-PROD /tmp/pb || { echo "  the upload did not reach the Go web process"; fail=1; }
 expect /api/v1/wall/page/2.json     200 go     hsts
 grep -q GO-WEB-PROD /tmp/b || { echo "  the wall JSON did not reach the Go web process"; fail=1; }
-expect /api/v1/wall/cable           200 go     hsts
+expect /api/v1/wall/socket          200 go     hsts
 grep -q GO-WEB-PROD /tmp/b || { echo "  the socket did not reach the Go web process"; fail=1; }
 expect /api/v1/hardware/availability.json 200 go hsts
 grep -q GO-AVAILABILITY /tmp/b || { echo "  the availability feed did not reach the Go firmware process"; fail=1; }
-# With a trailing slash, as Rails' router answered it: the same feed.
+# With a trailing slash: the same feed.
 expect /api/v1/hardware/availability.json/ 200 go hsts
 grep -q GO-AVAILABILITY /tmp/b || { echo "  the trailing-slash feed did not reach the Go firmware process"; fail=1; }
+# The wizard is the firmware role's, built from the pushed builds (#285).
+expect /api/v1/wizard/hi3516ev300.json 200 go    hsts
+grep -q GO-WIZARD /tmp/b || { echo "  the wizard did not reach the Go firmware process"; fail=1; }
+# CI pushes each build to the web role, once (builds/PUSH.md).
+posts /api/v1/builds                200 go
+grep -q GO-WEB-PROD /tmp/pb || { echo "  the build push did not reach the Go web process"; fail=1; }
 expect $FW                          200 go     hsts
 grep -q IMAGE /tmp/b || { echo "  the firmware X-Accel-Redirect did not reach /firmware-cache/"; fail=1; }
 redirects_to openipc.org /snapshots https://openipc.org/open-wall
