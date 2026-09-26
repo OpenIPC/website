@@ -1,0 +1,111 @@
+{
+  "boards": {
+    "also_marked": "also marked {aliases}",
+    "ask": "Have this board?",
+    "board_count": {
+      "one": "{count} board",
+      "other": "{count} boards"
+    },
+    "clear": "Clear filters",
+    "cov_boot_log": "Boot log",
+    "cov_flash_dump": "Flash dump",
+    "cov_photos": "Photos",
+    "cov_pinout": "Pinout",
+    "cov_uboot_env": "U-Boot console",
+    "empty": "No board matches these filters. Clear one to widen the list.",
+    "error": "The board catalogue could not be loaded ({error}). Reload the page to try again.",
+    "family": "{family} family",
+    "filter_any": "all",
+    "filter_maker": "Maker",
+    "filter_missing": "Missing",
+    "filter_sensor": "Sensor",
+    "filter_soc": "SoC",
+    "flash": "Flash",
+    "hits_boards": {
+      "one": "in {count} board",
+      "other": "in {count} boards"
+    },
+    "hits_lines": {
+      "one": "{count} matching line",
+      "other": "{count} matching lines"
+    },
+    "hits_none": "No line matches “{q}” here.",
+    "hits_none_boot_log": "No boot logs have been contributed yet.",
+    "hits_scope": "searching: {scope}",
+    "hits_truncated": "Only the first matches are shown. Make the search more specific to see the rest.",
+    "issue_body": "Board: {board} ({id})\n\nWhat I can add (photos, UART pinout, flash dump, U-Boot console, boot log):\n\n",
+    "issue_title": "Board {board}: adding evidence",
+    "kind_boot_log": "Boot log",
+    "kind_document": "Document",
+    "kind_flash_dump": "Flash dump",
+    "kind_note": "Note",
+    "kind_uboot_env": "U-Boot console",
+    "known_credit_html": "Boards from the <a href=\"https://github.com/OpenHisiIpCam\">OpenHisiIpCam</a> catalogue (2018), republished with its author's permission.",
+    "known_link": "See them in the board catalogue →",
+    "known_title": "Known boards with {soc}",
+    "line": "line {n}",
+    "lines": {
+      "one": "{count} line",
+      "other": "{count} lines"
+    },
+    "loading": "Loading the boards…",
+    "missing_any": "anything",
+    "missing_boot_log": "no boot log",
+    "missing_flash_dump": "no flash dump",
+    "missing_pinout": "no pinout",
+    "missing_uboot_env": "no U-Boot console",
+    "no_photos": "No photos yet",
+    "photo_alt": "{what} of {board}",
+    "query_short": "Type at least three characters to search.",
+    "scope_all": "All",
+    "scope_boot_log": "Boot logs",
+    "scope_label": "Search in",
+    "scope_note": "Notes",
+    "scope_uboot_env": "U-Boot console",
+    "search_error": "The search could not run ({error}).",
+    "search_label": "Search board evidence",
+    "search_placeholder": "Search U-Boot consoles and notes: mtdparts, 0x82000000, xm25qh64a…",
+    "searching": "Searching…",
+    "send_boot_log": "Send us the boot log",
+    "send_flash_dump": "Send us the flash dump",
+    "send_photos": "Send us its photos",
+    "send_pinout": "Send us the pinout",
+    "send_uboot_env": "Send us the U-Boot console",
+    "sensor": "Sensor",
+    "soc_install": "Install OpenIPC on {soc}",
+    "soc_not_catalogued": "Not in the OpenIPC catalogue",
+    "stats_boards": {
+      "one": "board",
+      "other": "boards"
+    },
+    "stats_dumps": {
+      "one": "factory flash dump",
+      "other": "factory flash dumps"
+    },
+    "stats_makers": {
+      "one": "known maker",
+      "other": "known makers"
+    },
+    "stats_need_pinout": {
+      "one": "still needs a pinout",
+      "other": "still need a pinout"
+    },
+    "stats_pinouts": {
+      "one": "with UART pinout",
+      "other": "with UART pinout"
+    },
+    "tag_photo_back": "back",
+    "tag_photo_front": "front",
+    "tag_photo_other": "photo",
+    "tag_pinout": "pinout",
+    "text_error": "This file could not be loaded ({error}).",
+    "text_loading": "Loading…",
+    "unidentified": "Unidentified board",
+    "units": {
+      "one": "{count} unit on record",
+      "other": "{count} units on record"
+    },
+    "unknown": "unknown",
+    "unknown_maker": "Unidentified maker"
+  }
+}

@@ -17,11 +17,12 @@
  *
  * "Generate an installation guide" links to each SoC's wizard page (#164).
  */
-import { allRows, featuredRows, vendorRows, vendorBySlug, fullName, socPath, vendorPath, VENDORS, type Row, type Vendor } from '../../lib/hardware';
+import { allRows, featuredRows, vendorRows, vendorBySlug, fullName, socPath, VENDORS, type Row, type Vendor } from '../../lib/hardware';
 import availability from '../../data/availability.json';
 import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
 import { Image } from 'astro:assets';
 import StageList from '../StageList.astro';
+import HardwareTabs from '../HardwareTabs.astro';
 
 const STAGE_ICONS = import.meta.glob<ImageMetadata>(
   '../../assets/stages/stage-*.svg',
@@ -84,39 +85,7 @@ const p = (path: string) => pathFor(locale, path);
     <h2 class="mb-6">{k('title')}</h2>
   </header>
 
-  <ul class="site-tabs">
-    <li>
-      <a
-        class="site-tab font-bold"
-        href={p('/supported-hardware/featured')}
-        aria-current={view === 'featured' ? 'page' : undefined}
-      >{k('featured')}</a>
-    </li>
-    {VENDORS.map((v) => (
-      <li>
-        <a
-          class="site-tab"
-          href={p(vendorPath(v))}
-          aria-current={view === 'vendor' && v.urlname === vendorSlug ? 'page' : undefined}
-        >
-          {v.name}
-          <span
-            class:list={['site-badge', installable(v) > 0 && 'site-badge-primary']}
-            data-vendor={v.urlname}
-            data-total={v.socs.length}
-            title={k('installable_title').replace('{count}', String(installable(v))).replace('{total}', String(v.socs.length))}
-          >{installable(v)}</span>
-        </a>
-      </li>
-    ))}
-    <li>
-      <a
-        class="site-tab site-tab-muted"
-        href={p('/supported-hardware/full-list')}
-        aria-current={view === 'full-list' ? 'page' : undefined}
-      >{k('full_list')}</a>
-    </li>
-  </ul>
+  <HardwareTabs locale={locale} view={view} vendor={vendorSlug} />
 
   <h3 class="mb-2">{listTitle}</h3>
 

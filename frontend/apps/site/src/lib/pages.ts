@@ -17,6 +17,7 @@ import Wizard from '../components/pages/Wizard.astro';
 import Service from '../components/Service.astro';
 import Smoke from '../components/Smoke.astro';
 import Wall from '../components/pages/Wall.astro';
+import Boards from '../components/pages/Boards.astro';
 import Business from '../components/pages/Business.astro';
 import Community from '../components/pages/Community.astro';
 import Donate from '../components/pages/Donate.astro';
@@ -87,6 +88,9 @@ const COMPONENTS: Record<string, Renderer> = {
     `/cameras/vendors/${vendor.urlname}/socs/${soc.urlname}`,
     { component: Wizard, props: { vendor: vendor.urlname, soc: soc.urlname } },
   ]))),
+
+  // The board catalogue, beside the SoC catalogue it links into.
+  '/cameras/boards': { component: Boards },
 
   '/business': { component: Business },
   '/community': { component: Community },

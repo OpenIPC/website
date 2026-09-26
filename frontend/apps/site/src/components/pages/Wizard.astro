@@ -13,6 +13,8 @@
  * rendered by the Go service and fetched as data (#163).
  */
 import Wizard from '../wizard/Wizard.tsx';
+import KnownBoards from '../boards/KnownBoards.tsx';
+import ZoomDialog from '../ZoomDialog.astro';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { VENDORS, fullName, socPath, vendorPath, type Soc, type Vendor } from '../../lib/hardware';
 import { useTranslations } from '../../lib/i18n';
@@ -96,3 +98,11 @@ const here = p(socPath(vendor, soc));
     stagesHref: p('/stages-of-firmware-development'),
   }}
 />
+
+{/*
+  The boards on record with this SoC (/cameras/boards), after the wizard. It
+  renders nothing until it has boards to show, and nothing at all when there
+  are none or the catalogue cannot be fetched, so the wizard never waits on it.
+*/}
+<KnownBoards client:idle locale={locale} soc={soc.urlname} model={soc.model} catalogueHref={p('/cameras/boards')} />
+<ZoomDialog />

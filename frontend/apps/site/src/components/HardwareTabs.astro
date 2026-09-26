@@ -1,0 +1,100 @@
+---
+/**
+ * The tab strip over the hardware pages: recommended, one tab per vendor, the
+ * full list, and the board catalogue.
+ *
+ * The vendor badges count the SoCs with firmware as of the build, and are
+ * corrected on load from /api/v1/hardware/availability.json: by
+ * ./pages/Hardware.astro on the catalogue pages, which corrects its rows from
+ * the same answer, and by the script below on the board catalogue.
+ */
+import availability from '../data/availability.json';
+import { VENDORS, vendorPath, type Vendor } from '../lib/hardware';
+import { pathFor, useTranslations, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  /** Which tab is current. */
+  view: 'featured' | 'full-list' | 'vendor' | 'boards';
+  /** For a vendor page, its urlname. */
+  vendor?: string;
+}
+const { locale, view, vendor: vendorSlug } = Astro.props;
+
+const t = useTranslations(locale);
+const k = (key: string) => t(`cameras.socs.index.${key}`);
+const p = (path: string) => pathFor(locale, path);
+
+const states = availability.socs as Record<string, string>;
+const installable = (v: Vendor) => v.socs.filter((s) => (states[s.urlname] ?? 'none') !== 'none').length;
+---
+<ul class="site-tabs">
+  <li>
+    <a
+      class="site-tab font-bold"
+      href={p('/supported-hardware/featured')}
+      aria-current={view === 'featured' ? 'page' : undefined}
+    >{k('featured')}</a>
+  </li>
+  {VENDORS.map((v) => (
+    <li>
+      <a
+        class="site-tab"
+        href={p(vendorPath(v))}
+        aria-current={view === 'vendor' && v.urlname === vendorSlug ? 'page' : undefined}
+      >
+        {v.name}
+        <span
+          class:list={['site-badge', installable(v) > 0 && 'site-badge-primary']}
+          data-vendor={v.urlname}
+          data-total={v.socs.length}
+          title={k('installable_title').replace('{count}', String(installable(v))).replace('{total}', String(v.socs.length))}
+        >{installable(v)}</span>
+      </a>
+    </li>
+  ))}
+  <li>
+    <a
+      class="site-tab site-tab-muted"
+      href={p('/supported-hardware/full-list')}
+      aria-current={view === 'full-list' ? 'page' : undefined}
+    >{k('full_list')}</a>
+  </li>
+  <li>
+    <a
+      class="site-tab site-tab-muted"
+      href={p('/cameras/boards')}
+      aria-current={view === 'boards' ? 'page' : undefined}
+    >{k('boards')}</a>
+  </li>
+</ul>
+
+{view === 'boards' && (
+  <script
+    is:inline
+    define:vars={{
+      installableTitle: k('installable_title'),
+      catalogue: Object.fromEntries(VENDORS.map((v) => [v.urlname, v.socs.map((s) => s.urlname)])),
+    }}
+  >
+    (async () => {
+      let live;
+      try {
+        const response = await fetch('/api/v1/hardware/availability.json', { headers: { accept: 'application/json' } });
+        if (!response.ok) return;
+        live = await response.json();
+      } catch {
+        return; // the build's numbers stay, the last ones anybody knew
+      }
+      if (!live || typeof live.socs !== 'object') return;
+      for (const badge of document.querySelectorAll('[data-vendor]')) {
+        const socs = catalogue[badge.dataset.vendor];
+        if (!socs) continue;
+        const count = socs.filter((urlname) => (live.socs[urlname] || 'none') !== 'none').length;
+        badge.textContent = String(count);
+        badge.classList.toggle('site-badge-primary', count > 0);
+        badge.title = installableTitle.replace('{count}', String(count)).replace('{total}', badge.dataset.total);
+      }
+    })();
+  </script>
+)}

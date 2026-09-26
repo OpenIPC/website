@@ -17,9 +17,10 @@ const site = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 describe('generated data', () => {
   const files = generated();
 
-  test('covers the catalogue, the gallery and all twelve translation files', () => {
+  test('covers the catalogue, the gallery and all fifteen translation files', () => {
     expect(files.map(([rel]) => rel).sort()).toEqual([
       'src/data/catalogue.json', 'src/data/webui-gallery.json',
+      'src/i18n/boards.en.json', 'src/i18n/boards.ru.json', 'src/i18n/boards.zh.json',
       'src/i18n/en.json',
       'src/i18n/explorer.en.json', 'src/i18n/explorer.ru.json', 'src/i18n/explorer.zh.json',
       'src/i18n/ru.json',

@@ -5,6 +5,7 @@
   "cameras": {
     "socs": {
       "index": {
+        "boards": "Boards",
         "featured": "Recommended",
         "full_list": "Full list",
         "installable_title": "{count} of {total} can be installed",
@@ -44,6 +45,7 @@
   },
   "go": "Go",
   "nav": {
+    "boards": "Camera boards",
     "business": "For Business",
     "business_overview": "Overview",
     "community": "Community",
@@ -87,6 +89,12 @@
   "pages": {
     "bandwidth_calculator": {
       "title": "Bandwidth calculator"
+    },
+    "boards": {
+      "credit_html": "The first 25 boards come from the hardware catalogue of the <a href=\"https://github.com/OpenHisiIpCam\">OpenHisiIpCam</a> project (2018), republished with its author's permission.",
+      "heading": "Your board is probably here",
+      "lede": "Camera boards found in real cameras, with photos of both sides, UART pinouts, factory flash dumps and the U-Boot console of each. Match the PCB in your hand, then install OpenIPC on its SoC.",
+      "title": "Camera boards"
     },
     "business": {
       "contact_alt_html": "Prefer chat? Message us on <a href=\"https://t.me/openipc\">Telegram</a>.",

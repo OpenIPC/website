@@ -45,4 +45,7 @@ export const ORIGIN_PATTERNS: RegExp[] = [
 export const ORIGIN_PREFIXES: string[] = [
   '/dl/',
   '/wall/',
+  // Board photos, dumps and console captures (/cameras/boards), which nginx
+  // serves from disk. The island links them at runtime.
+  '/board-files/',
 ];

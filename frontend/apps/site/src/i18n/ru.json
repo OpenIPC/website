@@ -5,6 +5,7 @@
   "cameras": {
     "socs": {
       "index": {
+        "boards": "Платы",
         "featured": "Рекомендуемые",
         "full_list": "Все",
         "installable_title": "Можно установить на {count} из {total}",
@@ -44,6 +45,7 @@
   },
   "go": "Go",
   "nav": {
+    "boards": "Платы камер",
     "business": "Для бизнеса",
     "business_overview": "Обзор",
     "community": "Сообщество",
@@ -87,6 +89,12 @@
   "pages": {
     "bandwidth_calculator": {
       "title": "Калькулятор пропускной способности"
+    },
+    "boards": {
+      "credit_html": "Первые 25 плат взяты из каталога оборудования проекта <a href=\"https://github.com/OpenHisiIpCam\">OpenHisiIpCam</a> (2018) и опубликованы с разрешения его автора.",
+      "heading": "Ваша плата, скорее всего, уже здесь",
+      "lede": "Платы из настоящих камер: фотографии обеих сторон, распиновка UART, заводские дампы флеш-памяти и консоль U-Boot. Найдите плату, которая у вас в руках, и установите OpenIPC на её SoC.",
+      "title": "Платы камер"
     },
     "business": {
       "contact_alt_html": "Удобнее в мессенджере? Напишите в <a href=\"https://t.me/openipc\">Telegram</a>.",
