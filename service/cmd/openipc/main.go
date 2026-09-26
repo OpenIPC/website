@@ -322,7 +322,7 @@ func firmwareRole(ctx context.Context, cfg *config.Config, log *slog.Logger, poo
 	}
 	index := &firmware.IndexFile{Path: cfg.ReleaseIndexPath}
 	releases := &firmware.Releases{Root: cfg.ReleaseCacheRoot, Base: cfg.DownloadBase, HTTP: firmware.NewHTTPClient()}
-	images := &firmware.Images{Root: cfg.FirmwareCacheRoot, Releases: releases, MaxBytes: cfg.FirmwareCacheMax}
+	images := &firmware.Images{Root: cfg.FirmwareCacheRoot, Releases: releases, MaxBytes: cfg.FirmwareCacheMax, Log: log}
 	h := prefixed(&firmware.Handler{
 		Catalogue: cat, Index: index, Images: images,
 		Limiter:     &firmware.Limiter{Limit: cfg.BuildsPerMinute, Window: time.Minute},

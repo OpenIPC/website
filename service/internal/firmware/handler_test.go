@@ -11,7 +11,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/OpenIPC/website/service/internal/db/dbtest"
 	"github.com/OpenIPC/website/service/internal/downloads"
@@ -136,6 +138,52 @@ func TestDownloadAddress(t *testing.T) {
 	rec = fetch("/ru/cameras/vendors/hisilicon/socs/hi3516ev300/download_full_image?flash_type=nor&flash_size=16&fw_release=lite&layout=8", nil)
 	if rec.Code != 200 || !strings.Contains(rec.Header().Get("Content-Disposition"), "openipc-hi3516ev300-nor-lite-16mb-parts8m.bin") {
 		t.Errorf("/ru 16MB/8MB layout: %d %q", rec.Code, rec.Header().Get("Content-Disposition"))
+	}
+
+	// Eight connections at once for an image nobody has built yet -- a download
+	// manager -- are one build, not eight against a limit of six.
+	multi := "/cameras/vendors/hisilicon/socs/hi3516ev300/download_full_image?flash_type=nor&flash_size=32&fw_release=lite"
+	codes := make(chan int, 8)
+	var wg sync.WaitGroup
+	for range 8 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			codes <- fetch(multi, map[string]string{"Range": "bytes=4194304-"}).Code
+		}()
+	}
+	wg.Wait()
+	close(codes)
+	for c := range codes {
+		if c != 200 {
+			t.Errorf("a concurrent request for one build was answered %d", c)
+		}
+	}
+
+	// And a build refused by the limit cannot be had by asking twice at once.
+	tight := &Handler{Catalogue: h.Catalogue, Index: h.Index, Images: h.Images,
+		Limiter: &Limiter{Limit: 1, Window: 60e9}, Downloads: h.Downloads, AccelPrefix: h.AccelPrefix, Log: h.Log}
+	tight.Limiter.Allow("127.0.0.1", time.Now()) // this address has used its one build
+	over := "/cameras/vendors/hisilicon/socs/hi3516ev300/download_full_image?flash_type=nor&flash_size=16&fw_release=lite&layout=16"
+	refused := make(chan int, 4)
+	for range 4 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			r := httptest.NewRequest("GET", over, nil)
+			r.RemoteAddr = "127.0.0.1:1"
+			r.SetPathValue("soc", "hi3516ev300")
+			rec := httptest.NewRecorder()
+			tight.ServeHTTP(rec, r)
+			refused <- rec.Code
+		}()
+	}
+	wg.Wait()
+	close(refused)
+	for c := range refused {
+		if c != 429 {
+			t.Errorf("a request over the limit was answered %d, want 429", c)
+		}
 	}
 
 	// Failures are pages that say what happened, with the status that is true.

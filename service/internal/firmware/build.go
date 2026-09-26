@@ -12,10 +12,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/sync/singleflight"
@@ -105,8 +107,33 @@ type Images struct {
 	Root     string
 	Releases *Releases
 	MaxBytes int64
+	Log      *slog.Logger
 
-	flight singleflight.Group
+	flight   singleflight.Group
+	building sync.Map // image name -> chan struct{}, closed when its one build is over
+}
+
+// Claim marks this image as being built. The caller who gets it is the build
+// as far as the per-address limit is concerned, and must Release it. Everyone
+// else gets a channel that closes when that build is over, then looks again:
+// the image is either there, or (the build was refused or failed) theirs to
+// claim. So a download manager opening eight connections to an image nobody
+// has asked for yet is one build, not eight, and a refused build cannot be
+// slipped past the limit by asking for it twice at once.
+func (im *Images) Claim(in Inputs) (bool, <-chan struct{}) {
+	mine := make(chan struct{})
+	held, taken := im.building.LoadOrStore(filepath.Base(im.Path(in)), mine)
+	if taken {
+		return false, held.(chan struct{})
+	}
+	return true, mine
+}
+
+// Release ends a claim and wakes whoever was waiting on it.
+func (im *Images) Release(in Inputs) {
+	if held, ok := im.building.LoadAndDelete(filepath.Base(im.Path(in))); ok {
+		close(held.(chan struct{}))
+	}
 }
 
 // Path is where the image for these inputs lives.
@@ -136,10 +163,12 @@ func (im *Images) Build(ctx context.Context, in Inputs) (string, error) {
 	if im.Cached(in) {
 		return path, nil
 	}
-	_, err, _ := im.flight.Do(filepath.Base(path), func() (any, error) {
+	name := filepath.Base(path)
+	_, err, _ := im.flight.Do(name, func() (any, error) {
 		if im.Cached(in) {
 			return nil, nil
 		}
+		start := time.Now()
 		bctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 4*time.Minute)
 		defer cancel()
 		ubootPath, err := im.Releases.Get(bctx, in.UBoot)
@@ -158,6 +187,10 @@ func (im *Images) Build(ctx context.Context, in Inputs) (string, error) {
 		}
 		im.dropOtherVersions(in)
 		im.enforceCap()
+		if im.Log != nil {
+			im.Log.Info("firmware: built", "file", in.Spec.Filename(), "key", in.Key(),
+				"ms", time.Since(start).Milliseconds())
+		}
 		return nil, nil
 	})
 	if err != nil {

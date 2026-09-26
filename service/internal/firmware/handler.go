@@ -62,19 +62,29 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ip := httpx.ClientIP(r)
-	if !h.Images.Cached(in) {
+	for !h.Images.Cached(in) {
+		mine, done := h.Images.Claim(in)
+		if !mine {
+			select {
+			case <-done:
+				continue // built, refused or failed: look again
+			case <-r.Context().Done():
+				return
+			}
+		}
 		if !h.Limiter.Allow(ip, time.Now()) {
+			h.Images.Release(in)
 			h.Log.Warn("firmware: build refused", "ip", ip, "limit", h.Limiter.Limit)
 			w.Header().Set("Retry-After", strconv.Itoa(int(h.Limiter.Window.Seconds())))
 			httpx.Empty(w, http.StatusTooManyRequests)
 			return
 		}
-		start := time.Now()
-		if _, err := h.Images.Build(r.Context(), in); err != nil {
+		_, err := h.Images.Build(r.Context(), in)
+		h.Images.Release(in)
+		if err != nil {
 			h.buildFailed(w, r, soc, err)
 			return
 		}
-		h.Log.Info("firmware: built", "file", spec.Filename(), "key", in.Key(), "ms", time.Since(start).Milliseconds())
 	}
 
 	path := h.Images.Path(in)

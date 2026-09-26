@@ -116,6 +116,11 @@ flip() {
     die "nginx -t failed; left $env_name $surface on ${before:-rails}"
   fi
   $RELOAD
+  # A reload returns once nginx has been signalled, not once the new workers
+  # are answering: a request sent in that instant is still routed the old way
+  # (seen on dev, a download labelled `go` a moment after the flip to `rails`).
+  # Wait out the handover before saying the flip is in force.
+  sleep "${ROUTE_SETTLE:-1}"
   rm -f "$file.prev"
   msg="$env_name $surface: ${before:-rails} -> $state"
   echo "$msg"
