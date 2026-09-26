@@ -1,7 +1,7 @@
 {
   "nav": {
     "home": "主页",
-    "snapshot": "快照 #%{number}",
+    "snapshot": "快照 #{number}",
     "snapshots": "最新快照"
   },
   "site": {

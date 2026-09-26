@@ -7,8 +7,8 @@
       "index": {
         "featured": "Рекомендуемые",
         "full_list": "Все",
-        "installable_title": "Можно установить на %{count} из %{total}",
-        "nothing_installable_html": "Ни на один из %{total} чипов %{vendor} установить пока нельзя — сборок OpenIPC для них нет. В каждой строке ниже указана причина, и во многих случаях дело за платой или разработчиком, а не за нами.",
+        "installable_title": "Можно установить на {count} из {total}",
+        "nothing_installable_html": "Ни на один из {total} чипов {vendor} установить пока нельзя — сборок OpenIPC для них нет. В каждой строке ниже указана причина, и во многих случаях дело за платой или разработчиком, а не за нами.",
         "recommended_alert_html": "Поддержка разных SoC находится на разных стадиях разработки. <a href=\"/supported-hardware/featured\">Здесь</a> перечислены наиболее поддерживаемые и, следовательно, рекомендуемые процессоры.",
         "stages_of_development": "Объяснение этапов разработки прошивки",
         "th_baseaddr": "Базовый адрес",
@@ -70,7 +70,7 @@
     "privacy": "Приватность",
     "qr_code_generator": "Генератор QR-кода",
     "reverse_engineering": "Реверс-инжиниринг",
-    "snapshot": "Снимок № %{number}",
+    "snapshot": "Снимок № {number}",
     "snapshots": "Последние снимки",
     "stages": "Стадии разработки",
     "supported_hardware": "Оборудование",
@@ -339,8 +339,8 @@
       "free_space": "Свободно",
       "mtd_name": "Имя устройства МПД",
       "offset": "Начальное смещение, десятичное или шестнадцатеричное",
-      "partition_name": "Имя раздела %{number}",
-      "partition_size": "Размер раздела %{number}, КБ",
+      "partition_name": "Имя раздела {number}",
+      "partition_size": "Размер раздела {number}, КБ",
       "recalculate": "Пересчитать",
       "size_hex": "Шестнадцатеричный размер, байт",
       "start_address": "Начальный адрес",
@@ -880,11 +880,11 @@
     "language": "Язык"
   },
   "support": {
-    "count_html": "OpenIPC каждый месяц поддерживают <strong>%{backers} человек</strong>. Помогите нам дойти до %{goal}.",
-    "count_met_html": "OpenIPC каждый месяц поддерживают <strong>%{backers} человек</strong>. Спасибо — цель достигнута.",
-    "meter_label": "%{backers} из %{goal} ежемесячных сторонников",
-    "monthly_html": "Это %{amount} в месяц на камеры, доступ к SDK и людей, которые делают работу.",
-    "split_html": "%{oc} через Open Collective и %{paywall} через PayWall."
+    "count_html": "OpenIPC каждый месяц поддерживают <strong>{backers} человек</strong>. Помогите нам дойти до {goal}.",
+    "count_met_html": "OpenIPC каждый месяц поддерживают <strong>{backers} человек</strong>. Спасибо — цель достигнута.",
+    "meter_label": "{backers} из {goal} ежемесячных сторонников",
+    "monthly_html": "Это {amount} в месяц на камеры, доступ к SDK и людей, которые делают работу.",
+    "split_html": "{oc} через Open Collective и {paywall} через PayWall."
   },
   "title": {
     "openwall": "Стена"

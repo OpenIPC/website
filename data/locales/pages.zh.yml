@@ -352,8 +352,8 @@ zh:
       free_space: 剩余空间
       mtd_name: MTD 设备名称
       offset: 初始偏移量，十进制或十六进制
-      partition_name: 分区 %{number} 名称
-      partition_size: 分区 %{number} 大小，KB
+      partition_name: 分区 {number} 名称
+      partition_size: 分区 {number} 大小，KB
       recalculate: 重新计算
       size_hex: 十六进制大小，字节
       start_address: 起始地址

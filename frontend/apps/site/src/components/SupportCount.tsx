@@ -17,20 +17,20 @@ import {
  * everywhere. Two of those are static pages now; the wizard is still Rails.
  */
 interface Labels {
-  /** `%{backers}` and `%{goal}`. */
+  /** `{backers}` and `{goal}`. */
   count: string;
-  /** `%{backers}`, for when the goal is already met. */
+  /** `{backers}`, for when the goal is already met. */
   countMet: string;
-  /** `%{backers}` and `%{goal}`. */
+  /** `{backers}` and `{goal}`. */
   meter: string;
-  /** `%{amount}`. */
+  /** `{amount}`. */
   monthly: string;
-  /** `%{oc}` and `%{paywall}`. */
+  /** `{oc}` and `{paywall}`. */
   split: string;
 }
 
 function fill(template: string, vars: Record<string, string | number>): string {
-  return template.replace(/%\{(\w+)\}/g, (whole, name: string) =>
+  return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
     name in vars ? String(vars[name]) : whole,
   );
 }

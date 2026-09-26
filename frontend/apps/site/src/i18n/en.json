@@ -7,8 +7,8 @@
       "index": {
         "featured": "Recommended",
         "full_list": "Full list",
-        "installable_title": "%{count} of %{total} can be installed",
-        "nothing_installable_html": "None of the %{total} %{vendor} chips can be installed yet — there is no OpenIPC build for any of them. Each row below says why, and several are waiting on a donated board or a developer rather than on us.",
+        "installable_title": "{count} of {total} can be installed",
+        "nothing_installable_html": "None of the {total} {vendor} chips can be installed yet — there is no OpenIPC build for any of them. Each row below says why, and several are waiting on a donated board or a developer rather than on us.",
         "recommended_alert_html": "Please note. Support for different SoCs is at different stages of development. <a href=\"/supported-hardware/featured\">This list</a> shows the most fully supported and, therefore, the most recommended ones.",
         "stages_of_development": "Stages of firmware development explained",
         "th_baseaddr": "Load address",
@@ -70,7 +70,7 @@
     "privacy": "Privacy",
     "qr_code_generator": "QR Code Generator",
     "reverse_engineering": "Reverse engineering",
-    "snapshot": "Snapshot #%{number}",
+    "snapshot": "Snapshot #{number}",
     "snapshots": "Latest Snapshots",
     "stages": "Development stages",
     "supported_hardware": "Supported Hardware",
@@ -333,8 +333,8 @@
       "free_space": "Free space",
       "mtd_name": "MTD device name",
       "offset": "Initial offset, dec or hex",
-      "partition_name": "Partition %{number} name",
-      "partition_size": "Partition %{number} size, KB",
+      "partition_name": "Partition {number} name",
+      "partition_size": "Partition {number} size, KB",
       "recalculate": "Recalculate",
       "size_hex": "Hex size, bytes",
       "start_address": "Start address",
@@ -874,16 +874,11 @@
     "language": "Language"
   },
   "support": {
-    "array": {
-      "last_word_connector": ", and ",
-      "two_words_connector": " and ",
-      "words_connector": ", "
-    },
-    "count_html": "<strong>%{backers} people</strong> support OpenIPC every month. Help us reach %{goal}.",
-    "count_met_html": "<strong>%{backers} people</strong> support OpenIPC every month. Thank you — that is the goal met.",
-    "meter_label": "%{backers} of %{goal} monthly backers",
-    "monthly_html": "That is %{amount} a month towards cameras, SDK access and the people who do the work.",
-    "split_html": "%{oc} through Open Collective and %{paywall} through PayWall."
+    "count_html": "<strong>{backers} people</strong> support OpenIPC every month. Help us reach {goal}.",
+    "count_met_html": "<strong>{backers} people</strong> support OpenIPC every month. Thank you — that is the goal met.",
+    "meter_label": "{backers} of {goal} monthly backers",
+    "monthly_html": "That is {amount} a month towards cameras, SDK access and the people who do the work.",
+    "split_html": "{oc} through Open Collective and {paywall} through PayWall."
   },
   "title": {
     "openwall": "Open Wall"

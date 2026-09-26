@@ -104,12 +104,12 @@ describe('every page is a page', () => {
     // A <script> may carry one on purpose: the catalogue's refresh script is
     // given `installable_title` as a template and fills it per vendor once it
     // knows the live counts (#162). Body text may not.
-    // `%{name}` left in the output means the catalogue asked for a variable
+    // `{name}` left in the output means the catalogue asked for a variable
     // the page did not supply. translate() leaves it visible on purpose.
     //
     // <astro-island> is excluded, and deliberately: it carries an island's
     // props as JSON for hydration, and the partition calculator's props are
-    // label TEMPLATES -- `Partition %{number} name` -- which the widget fills
+    // label TEMPLATES -- `Partition {number} name` -- which the widget fills
     // itself, once per row. Finding one there is the design working.
     //
     // A <script> is excluded for the same reason: the catalogue's refresh
@@ -119,7 +119,7 @@ describe('every page is a page', () => {
       const rendered = html
         .replace(/<astro-island\b[^>]*>/g, '')
         .replace(/<script[\s\S]*?<\/script>/g, '');
-      expect(rendered, `${locale}${path} has an unfilled interpolation`).not.toMatch(/%\{\w+\}/);
+      expect(rendered, `${locale}${path} has an unfilled interpolation`).not.toMatch(/\{\w+\}/);
     }
   });
 });

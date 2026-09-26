@@ -352,8 +352,8 @@ en:
       free_space: Free space
       mtd_name: MTD device name
       offset: Initial offset, dec or hex
-      partition_name: Partition %{number} name
-      partition_size: Partition %{number} size, KB
+      partition_name: Partition {number} name
+      partition_size: Partition {number} size, KB
       recalculate: Recalculate
       size_hex: Hex size, bytes
       start_address: Start address

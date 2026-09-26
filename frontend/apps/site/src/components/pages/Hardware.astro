@@ -105,7 +105,7 @@ const p = (path: string) => pathFor(locale, path);
             class:list={['site-badge', installable(v) > 0 && 'site-badge-primary']}
             data-vendor={v.urlname}
             data-total={v.socs.length}
-            title={k('installable_title').replace('%{count}', String(installable(v))).replace('%{total}', String(v.socs.length))}
+            title={k('installable_title').replace('{count}', String(installable(v))).replace('{total}', String(v.socs.length))}
           >{installable(v)}</span>
         </a>
       </li>
@@ -127,8 +127,8 @@ const p = (path: string) => pathFor(locale, path);
       <p
         class="mb-0"
         set:html={k('nothing_installable_html')
-          .replace('%{vendor}', vendor.name)
-          .replace('%{total}', String(vendor.socs.length))}
+          .replace('{vendor}', vendor.name)
+          .replace('{total}', String(vendor.socs.length))}
       />
     </div>
   )}
@@ -252,8 +252,8 @@ const p = (path: string) => pathFor(locale, path);
       badge.textContent = String(count);
       badge.classList.toggle('site-badge-primary', count > 0);
       badge.title = words.installable_title
-        .replace('%{count}', String(count))
-        .replace('%{total}', badge.dataset.total);
+        .replace('{count}', String(count))
+        .replace('{total}', badge.dataset.total);
     }
   })();
 </script>

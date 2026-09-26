@@ -5,20 +5,18 @@ import zh from '../i18n/zh.json';
 /**
  * Translation lookup against the catalogue exported from data/locales.
  *
- * The three rules it exists to reproduce, all of them Rails' own:
+ * The three rules it exists for:
  *
- *   1. `config.i18n.fallbacks = true` -- a key missing in ru or zh renders
- *      the English string, never a "translation missing" span. Two thirds of
- *      the site is a translation, and a half-finished one should read as
- *      English rather than as breakage.
+ *   1. A key missing in ru or zh renders the English string, never a
+ *      "translation missing" span. Two thirds of the site is a translation,
+ *      and a half-finished one should read as English rather than as
+ *      breakage.
  *   2. A key missing in English is a mistake, not a fallback. It throws. The
  *      site is prerendered, so that fails the build, which is what #159 means
  *      by "a deliberate missing key fails CI".
- *   3. `%{interpolation}` is Ruby's syntax and the catalogue is full of it.
+ *   3. `{name}` in a string is replaced with the option of that name.
  *
- * Pluralisation goes through Intl.PluralRules, which returns CLDR category
- * names -- one/few/many/other -- and lib/locale/plurals.rb keys the Russian
- * rule on exactly those, so the same YAML serves both halves of the site. No
+ * Pluralisation keys forms by CLDR category -- one/few/many/other. No
  * marketing key is pluralised today; this is here so the first one works.
  */
 
@@ -56,28 +54,25 @@ function lookup(catalogue: Node, key: string): Node | undefined {
 }
 
 function interpolate(text: string, vars: Record<string, unknown>): string {
-  // Ruby's %{name}. Left alone when nothing is supplied for it, rather than
-  // rendered as the empty string: a page showing "%{count}" is a visible bug
+  // {name}. Left alone when nothing is supplied for it, rather than
+  // rendered as the empty string: a page showing "{count}" is a visible bug
   // report, and a page showing nothing hides one.
-  return text.replace(/%\{(\w+)\}/g, (whole, name: string) =>
+  return text.replace(/\{(\w+)\}/g, (whole, name: string) =>
     name in vars ? String(vars[name]) : whole,
   );
 }
 
 /**
- * Locales for which lib/locale/plurals.rb installs a CLDR rule.
+ * Locales whose forms follow CLDR's plural rule.
  *
- * Only these may go through Intl.PluralRules. Everywhere else Rails uses
- * I18n's default pluralizer, and the two disagree: `Intl.PluralRules('zh')`
- * answers `other` for 1, while Rails answers `one`. A Chinese key with `one`
- * and `other` forms would then read differently on the static half of the
- * site than on the Rails half, which is the one thing this module exists to
- * prevent.
+ * Only these go through Intl.PluralRules. Everywhere else a count of one takes
+ * `one` and anything else `other`: `Intl.PluralRules('zh')` answers `other` for
+ * 1, which would leave a Chinese key's `one` form unused.
  */
 const CLDR_RULE_LOCALES = new Set<Locale>(['ru']);
 
 /**
- * Which plural form a count selects, by the same rule Rails would apply.
+ * Which plural form a count selects.
  *
  * Exported so it can be tested directly: no marketing key is pluralised yet,
  * so there is no key to reach this through, and a test that reimplements the
@@ -89,13 +84,11 @@ export function pluralCategory(
   forms: { [key: string]: unknown } = {},
 ): string {
   if (CLDR_RULE_LOCALES.has(locale)) {
-    // `other` is CLDR's form for fractions, and the Ruby rule says the same.
+    // `other` is CLDR's form for fractions.
     return Number.isInteger(count) ? new Intl.PluralRules(locale).select(count) : 'other';
   }
 
-  // I18n::Backend::Base#pluralization_key, verbatim:
-  //   key = :zero if count == 0 && entry.has_key?(:zero)
-  //   key ||= count == 1 ? :one : :other
+  // A `zero` form is used for 0 only when the key defines one.
   if (count === 0 && 'zero' in forms) return 'zero';
   return count === 1 ? 'one' : 'other';
 }
@@ -107,9 +100,8 @@ function pluralise(forms: { [key: string]: Node }, count: number, locale: Locale
 export type TranslateOptions = Record<string, unknown> & {
   count?: number;
   /**
-   * What to return when the key is in neither locale, instead of throwing.
-   * Rails' `t(..., default:)`, which the pages being ported use where a key is
-   * optional by design -- `unavailable_<status>` exists for the statuses that
+   * What to return when the key is in neither locale, instead of throwing,
+   * for a key that is optional by design -- `unavailable_<status>` exists for the statuses that
    * have a reason worth naming and deliberately not for the others.
    *
    * Named `fallback` rather than `default` so it cannot collide with an
@@ -158,10 +150,8 @@ export function translateIn(
     // not in a component, they are in the string the component renders. A
     // Russian reader clicking one landed on the English page, silently.
     //
-    // app/helpers/application_helper.rb overrides Rails' `translate` for
-    // exactly this, and this is the same hook in the same place: one rule
-    // rather than a call site per string, so the ones nobody has written yet
-    // are covered too.
+    // One rule here rather than a call site per string, so the ones nobody
+    // has written yet are covered too.
     found = found.replace(/href="(\/[^"]*)"/g, (_match, path: string) => `href="${pathFor(locale, path)}"`);
   }
 

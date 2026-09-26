@@ -23,9 +23,9 @@ const PARTITIONS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 /** What the reader is shown, against the index the state is keyed by. */
 const rowLabel = (index: number) => index + 1;
 
-/** Ruby's `%{name}`, which is the syntax the catalogue strings are written in. */
+/** `{name}`, which is the placeholder syntax the catalogue strings are written in. */
 function fill(template: string, vars: Record<string, string | number>): string {
-  return template.replace(/%\{(\w+)\}/g, (whole, name: string) =>
+  return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
     name in vars ? String(vars[name]) : whole,
   );
 }

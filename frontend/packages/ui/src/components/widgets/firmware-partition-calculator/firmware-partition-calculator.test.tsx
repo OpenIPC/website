@@ -286,8 +286,8 @@ describe('the labels are the consumer\'s, not the widget\'s (#160)', () => {
     expect(freeSpace()).toContain('Free space');
   });
 
-  test('a locale replaces every word, numbers interpolated as Ruby writes them', () => {
-    // The strings are config/locales/pages.ru.yml's, verbatim. `%{number}` is
+  test('a locale replaces every word, numbers interpolated into the placeholder', () => {
+    // The strings are data/locales/pages.ru.yml's, verbatim. `{number}` is
     // the catalogue's own syntax and the widget fills it, so the consumer
     // hands the string over untouched rather than reformatting it first.
     render(
@@ -295,8 +295,8 @@ describe('the labels are the consumer\'s, not the widget\'s (#160)', () => {
         labels={{
           title: 'Расчет разделов прошивки',
           mtdName: 'Имя устройства МПД',
-          partitionName: 'Имя раздела %{number}',
-          partitionSize: 'Размер раздела %{number}, КБ',
+          partitionName: 'Имя раздела {number}',
+          partitionSize: 'Размер раздела {number}, КБ',
           startAddress: 'Начальный адрес',
           freeSpace: 'Свободно',
         }}
@@ -326,10 +326,10 @@ describe('the labels are the consumer\'s, not the widget\'s (#160)', () => {
     expect(freeSpace()).toBe('Свободно: 0 КБ');
   });
 
-  test('a label with no %{number} is left exactly as it was given', () => {
+  test('a label with no {number} is left exactly as it was given', () => {
     // Chinese puts the number in the middle; a language that does not want it
     // at all must not have one appended.
-    render(<FirmwarePartitionCalculator labels={{ partitionName: '分区 %{number} 名称', hexSize: '大小' }} />);
+    render(<FirmwarePartitionCalculator labels={{ partitionName: '分区 {number} 名称', hexSize: '大小' }} />);
 
     expect(screen.getByText('分区 5 名称')).toBeTruthy();
     expect(screen.getAllByText('大小').length).toBe(8);
