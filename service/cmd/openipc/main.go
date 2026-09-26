@@ -7,6 +7,8 @@
 //	openipc purge [--snapshots] [--firmware]   nightly retention
 //	openipc probe                  nightly health numbers, non-zero on trouble
 //	openipc wizard-export          the installation wizard's data, one file per SoC
+//	openipc publish-release-index  hourly: what upstream publishes, into .index.json
+//	openipc mirror-repos           hourly: local clones of the OpenIPC repositories
 //	openipc routes --json          what this binary answers, for the nginx seam test
 //
 // Configuration is the environment; see internal/config.
@@ -69,6 +71,10 @@ func main() {
 		err = probe(ctx, cfg)
 	case "wizard-export":
 		err = wizardExport(cfg, log, args)
+	case "publish-release-index":
+		err = publishReleaseIndex(ctx, args)
+	case "mirror-repos":
+		err = mirrorRepos(ctx, args)
 	case "routes":
 		err = printRoutes()
 	case "version":
@@ -82,7 +88,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] | probe | wizard-export [--out DIR] [--index PATH] | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] | probe | wizard-export [--out DIR] [--index PATH] | publish-release-index [--dry-run] [--mirror] [--retire-mirror] | mirror-repos | routes --json | version")
 	os.Exit(2)
 }
 

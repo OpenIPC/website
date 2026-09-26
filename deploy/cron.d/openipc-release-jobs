@@ -1,0 +1,9 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# The two hourly jobs against GitHub (#304), moved here from paul's crontab
+# when they became Go subcommands: paul is not in the docker group, root is.
+# The containers still run as uid 1000 (paul), who owns both directories.
+# Same minutes and the same log as before, so nothing downstream moves: the
+# wizard export at :36/:41 still reads an index written at :05.
+0 * * * *  root  /usr/local/sbin/openipc-mirror-repos >>/var/log/openipc-paul-cron.log 2>&1
+5 * * * *  root  /usr/local/sbin/openipc-publish-release-index >>/var/log/openipc-paul-cron.log 2>&1

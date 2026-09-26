@@ -1,0 +1,20 @@
+2026-09-26T11:08:14Z  601 assets published, 205 of them consumed here
+2026-09-26T11:08:14Z    skipping 204 kconfig-* (nothing here reads them)
+2026-09-26T11:08:14Z    skipping 102 sizes.* (nothing here reads them)
+2026-09-26T11:08:14Z    skipping 56 openipc-* (nothing here reads them)
+2026-09-26T11:08:14Z    skipping 34 toolchain.* (nothing here reads them)
+2026-09-26T11:08:14Z  114 of 180 rolling-tag asset(s) pinned to a dated release
+2026-09-26T11:08:14Z    no immutable copy of boot-hi3516cv608-nor.bin
+2026-09-26T11:08:14Z    no immutable copy of boot-hi3516cv610-00g-nor.bin
+2026-09-26T11:08:14Z    no immutable copy of boot-hi3516cv610-00s-nor.bin
+2026-09-26T11:08:14Z    no immutable copy of boot-hi3516cv610-10b-nor.bin
+2026-09-26T11:08:14Z    no immutable copy of boot-hi3516cv610-20g-nor.bin
+2026-09-26T11:08:14Z    no immutable copy of boot-hi3516cv610-20s-nor.bin
+2026-09-26T11:08:14Z    no immutable copy of boot-hi3519dv500-dmeb-nor.bin
+2026-09-26T11:08:14Z    no immutable copy of boot-hi3519dv500-dmebpro-nor.bin
+2026-09-26T11:08:14Z    no immutable copy of openipc.hi3518ev201-nor-lite.tgz
+2026-09-26T11:08:14Z    no immutable copy of u-boot-gk7202v300-universal.bin
+2026-09-26T11:08:14Z    and 56 more
+2026-09-26T11:08:14Z  aliases: 5 from the upstream manifest
+2026-09-26T11:08:14Z  wrote .index.json (205 assets, 5 aliases)
+2026-09-26T11:08:14Z  done

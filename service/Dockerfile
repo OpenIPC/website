@@ -20,7 +20,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${REVISION}
 
 FROM debian:bookworm-slim
 RUN apt-get update -qq \
- && apt-get install -y --no-install-recommends ca-certificates curl libvips-tools libheif1 \
+ && apt-get install -y --no-install-recommends ca-certificates curl git libvips-tools libheif1 \
  && rm -rf /var/lib/apt/lists/* \
  && groupadd --gid 1000 openipc \
  && useradd --uid 1000 --gid 1000 --no-create-home --shell /usr/sbin/nologin openipc
