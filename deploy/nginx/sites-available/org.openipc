@@ -241,10 +241,11 @@ server {
     # factory flash dumps, U-Boot console captures, board manuals. Written
     # once by `openipc boards import-openhisiipcam` and never rewritten, so a
     # month of cache is safe. The gallery asks for dozens of thumbnails at
-    # once, so this carves itself out of the http-level `per_subnet 20` the way
-    # /_astro/ does. Consoles and notes are text; a dump is a download.
+    # once, so it has a zone of its own (conf.d/openipc-boards-rate.conf):
+    # counted in per_subnet, the thumbnails crowded out the page's own fonts.
+    # Consoles and notes are text; a dump is a download.
     location ^~ /board-files/ {
-        limit_conn per_subnet 100;
+        limit_conn board_files 100;
         limit_conn_status 429;
         alias /srv/www/shared/boards/;
         types {

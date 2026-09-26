@@ -24,16 +24,20 @@ func TestBoardCatalogueServing(t *testing.T) {
 		mustContain(t, search, "limit_req zone=boards_search", name+": the board search has no rate limit")
 		files := blockRe(c, regexp.MustCompile(`location \^~ /board-files/ \{`))
 		mustContain(t, files, "alias "+e.dir+"/;", name+": the board files come from another environment's directory")
-		// A gallery asks for dozens of thumbnails at once; the http-level
-		// per_subnet 20 would shed some of them.
-		mustContain(t, files, "limit_conn per_subnet 100;", name+": the board files inherit the 20-stream cap")
+		// A gallery asks for dozens of thumbnails at once. In a zone of their
+		// own: counted in per_subnet they crowded out the page's fonts (a 429
+		// on dev), and inheriting its 20 would shed thumbnails.
+		mustContain(t, files, "limit_conn board_files 100;", name+": the board files do not have their own concurrency zone")
+		mustNotContain(t, files, "per_subnet", name+": the board files count against the zone every other request needs")
 		mustContain(t, files, "Strict-Transport-Security", name+": add_header in /board-files/ drops the inherited HSTS")
 		mustContain(t, files, "text/plain uboot", name+": a U-Boot console would download instead of opening")
 		// A missing file's 404 must not be kept for a month by a browser or a
 		// mirror: add_header without `always` leaves error answers alone.
 		mustContain(t, files, `add_header Cache-Control "public, max-age=2592000";`, name+": the month of cache is not on successful answers only")
 	}
-	mustContain(t, read(t, "deploy/nginx/conf.d/openipc-boards-rate.conf"), "zone=boards_search", "the boards_search zone is not declared")
+	rate := read(t, "deploy/nginx/conf.d/openipc-boards-rate.conf")
+	mustContain(t, rate, "zone=boards_search", "the boards_search zone is not declared")
+	mustContain(t, rate, "zone=board_files", "the board_files zone is not declared")
 
 	compose := read(t, "deploy/docker-compose.yml")
 	for _, m := range []string{"- /srv/www/shared/boards:/srv/boards", "- /srv/www/shared/dev-boards:/srv/boards"} {
