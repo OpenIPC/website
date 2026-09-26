@@ -213,6 +213,55 @@ server {
         add_header X-Served-By go always;
     }
 
+    # The board catalogue (/cameras/boards, firmware#659): the tree of makers,
+    # models, units and files, and the search over their U-Boot consoles and
+    # notes, read by the web role from PostgreSQL. Revalidated by ETag, which
+    # moves only when a board is added.
+    location = /api/v1/boards {
+        proxy_pass http://127.0.0.1:3002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Request-Id $request_id;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+    }
+
+    location = /api/v1/boards/search {
+        limit_req zone=boards_search burst=20 nodelay;
+        limit_req_status 429;
+        proxy_pass http://127.0.0.1:3002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Request-Id $request_id;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+    }
+
+    # The catalogue's files: photos and their thumbnails, UART pinouts,
+    # factory flash dumps, U-Boot console captures, board manuals. Written
+    # once by `openipc boards import-openhisiipcam` and never rewritten, so a
+    # month of cache is safe. The gallery asks for dozens of thumbnails at
+    # once, so this carves itself out of the http-level `per_subnet 20` the way
+    # /_astro/ does. Consoles and notes are text; a dump is a download.
+    location ^~ /board-files/ {
+        limit_conn per_subnet 100;
+        limit_conn_status 429;
+        alias /srv/www/shared/boards/;
+        types {
+            image/jpeg jpg jpeg;
+            image/png png;
+            application/pdf pdf;
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document docx;
+            text/plain uboot txt log;
+            application/octet-stream bin;
+        }
+        charset utf-8;
+        charset_types text/plain;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Content-Type-Options nosniff always;
+        add_header Cache-Control "public, max-age=2592000" always;
+    }
+
     # Where OpenIPC's CI pushes each build, once (service/internal/builds/
     # PUSH.md). The web role verifies the GitHub Actions OIDC token itself; a
     # firmware build is about 1 MB gzipped, the limit is the service's 64 MB.

@@ -50,6 +50,8 @@
 /.well-known/
 # The Go firmware process's image cache (#299), internal: reached only through the X-Accel-Redirect the firmware role sends.
 /firmware-cache/
+# The board catalogue's files (firmware#659), written by the web role's import.
+/board-files/
 
 # --- the expensive leaf ------------------------------------------------------
 # /cameras/ is deliberately NOT reserved: the catalogue is exactly what #162

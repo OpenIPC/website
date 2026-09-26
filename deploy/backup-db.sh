@@ -13,6 +13,9 @@
 #      Wall's snapshot rows and the download stats), GoatCounter's SQLite
 #      file, and the secrets that exist nowhere else -- /srv/www/.env.go-prod
 #      and .env.go-dev, encrypted.
+#      The board catalogue's files (/srv/www/shared/boards) go up too, but
+#      only when they change, under boards/ rather than daily/: the archive
+#      they came from may not outlive us, and the rows name them.
 # Out: the wall's images (snapshots purge at 2 days and cameras re-upload
 #      continuously), /srv/github-releases (refreshed hourly from GitHub) and
 #      the firmware cache (rebuilt on demand).
@@ -187,5 +190,42 @@ if [ "$DRY_RUN" = 0 ]; then
 fi
 
 echo "$SIZE" > "$LAST_SIZE_FILE"
+
+# ------------------------------------------------------------- boards
+# The board catalogue's files (firmware#659): photos, pinouts, factory flash
+# dumps, console captures -- about 160 MB, written once by `openipc boards
+# import-openhisiipcam` and added to rarely. Their rows are in the dump above;
+# the files are not rebuilt from anything once the archive they came from is
+# gone, so they are kept, but a nightly copy of bytes that never change would
+# be 160 MB a night for nothing. Uploaded when the set of files changes, under
+# boards/ -- outside the daily/weekly/monthly lifecycle, so nothing expires it.
+BOARDS_ROOT=/srv/www/shared/boards
+BOARDS_MARK=/srv/www/.last-boards-backup
+if [ -d "$BOARDS_ROOT" ]; then
+  # Files are never rewritten in place, so names and sizes identify the set.
+  BOARDS_ID=$(cd "$BOARDS_ROOT" && find . -path './.import-*' -prune -o -type f -printf '%P %s\n' \
+    | LC_ALL=C sort | sha256sum | cut -c1-16)
+  if [ "$(cat "$BOARDS_MARK" 2>/dev/null || true)" = "$BOARDS_ID" ]; then
+    log "board files unchanged (${BOARDS_ID}), not uploaded"
+  else
+    BOARDS_TAR="boards-${STAMP}-${BOARDS_ID}.tar"
+    tar -C "$BOARDS_ROOT" --exclude='./.import-*' -cf "${WORK}/${BOARDS_TAR}" . \
+      || fail "archiving the board files failed"
+    BOARDS_SIZE=$(stat -c %s "${WORK}/${BOARDS_TAR}")
+    if [ "$DRY_RUN" = 1 ]; then
+      log "DRY RUN would upload ${BOARDS_TAR} (${BOARDS_SIZE} bytes) -> s3://${S3_BUCKET}/boards/"
+    else
+      "${AWS[@]}" s3 cp --only-show-errors "${WORK}/${BOARDS_TAR}" "s3://${S3_BUCKET}/boards/${BOARDS_TAR}" \
+        || fail "upload of the board files failed"
+      REMOTE=$("${AWS[@]}" s3api head-object --bucket "$S3_BUCKET" --key "boards/${BOARDS_TAR}" \
+        --query ContentLength --output text 2>/dev/null) || fail "the board files are not readable back"
+      [ "$REMOTE" = "$BOARDS_SIZE" ] || fail "board files size mismatch: local ${BOARDS_SIZE}, remote ${REMOTE}"
+      echo "$BOARDS_ID" > "$BOARDS_MARK"
+      log "uploaded boards/${BOARDS_TAR}, ${BOARDS_SIZE} bytes"
+    fi
+  fi
+else
+  log "no board files on this host, skipping"
+fi
 
 log "backup complete"

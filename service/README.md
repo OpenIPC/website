@@ -27,6 +27,7 @@ key the wall JSON signs them with.
 | `purge [--snapshots] [--firmware]` | snapshots past two days with their images, orphan wall directories, and firmware of any release but the current one |
 | `probe` | the numbers only a probe sees: all-digit `public_id`s, HEIF uploads, a stuck variant queue |
 | `builds import-history [--keep 90] [--kconfig-all] [--skip-builder]` | once per environment: the builds GitHub still holds, into PostgreSQL |
+| `boards import-openhisiipcam [--from <dir>]` | once per environment: the OpenHisiIpCam board archive (firmware#659, pinned commit) into the board catalogue, its files under `BOARDS_ROOT`; a second run adds nothing. Run it in the web container, which mounts that directory |
 | `routes --json` | the routes table |
 | `version` | the commit the binary was built from |
 

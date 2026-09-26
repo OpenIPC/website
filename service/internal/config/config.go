@@ -31,6 +31,7 @@ type Config struct {
 	Shadow         bool // a mirror of production traffic: log decisions, write only its own store
 	GrantsDisabled bool // WALL_GRANTS_DISABLED=1: the frame socket serves without grants (the emergency switch)
 	SnapshotMaxAge time.Duration
+	BoardsRoot     string // the board catalogue's files, served by nginx at /board-files/
 
 	// Firmware role.
 	CatalogueDir        string
@@ -58,6 +59,7 @@ func Load() (*Config, error) {
 		Shadow:              os.Getenv("SHADOW") == "1",
 		GrantsDisabled:      os.Getenv("WALL_GRANTS_DISABLED") == "1",
 		SnapshotMaxAge:      48 * time.Hour,
+		BoardsRoot:          str("BOARDS_ROOT", "/srv/boards"),
 		CatalogueDir:        str("CATALOGUE_DIR", "/app/catalogue"),
 		ReleaseCacheRoot:    str("RELEASE_CACHE_ROOT", "/srv/release-cache"),
 		FirmwareCacheRoot:   str("FIRMWARE_CACHE_ROOT", "/srv/firmware"),

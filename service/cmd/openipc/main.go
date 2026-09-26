@@ -7,6 +7,7 @@
 //	openipc purge [--snapshots] [--firmware] [--builds]   nightly retention
 //	openipc probe                  nightly health numbers, non-zero on trouble
 //	openipc builds import-history  once: the builds GitHub still holds, into PostgreSQL
+//	openipc boards import-openhisiipcam  once: the OpenHisiIpCam board archive, into the board catalogue
 //	openipc routes --json          what this binary answers, for the nginx seam test
 //
 // Configuration is the environment; see internal/config.
@@ -29,6 +30,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/OpenIPC/website/service/internal/boards"
 	"github.com/OpenIPC/website/service/internal/builds"
 	"github.com/OpenIPC/website/service/internal/catalogue"
 	"github.com/OpenIPC/website/service/internal/config"
@@ -71,6 +73,8 @@ func main() {
 		err = probe(ctx, cfg)
 	case "builds":
 		err = buildsCommand(ctx, cfg, log, args)
+	case "boards":
+		err = boardsCommand(ctx, cfg, log, args)
 	case "routes":
 		err = printRoutes()
 	case "version":
@@ -84,7 +88,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | routes --json | version")
 	os.Exit(2)
 }
 
@@ -146,6 +150,8 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/explorer/{source}/platforms/{platform}/trends"},
 	{"web", "GET", "/api/v1/explorer/{source}/platforms/{platform}/kconfig"},
 	{"web", "GET", "/api/v1/wall/socket"},
+	{"web", "GET", "/api/v1/boards"},
+	{"web", "GET", "/api/v1/boards/search"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 }
@@ -316,6 +322,9 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		handlers[k] = h
 	}
 	for k, h := range (&wall.API{Store: store, Granter: granter, Log: log}).Handlers() {
+		handlers[k] = h
+	}
+	for k, h := range (&boards.API{DB: pool, Log: log}).Handlers() {
 		handlers[k] = h
 	}
 	for _, r := range routes {
