@@ -7,11 +7,12 @@ import { describe, expect, test } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LOCALES, pathFor } from '../i18n';
+import { LOCALES, useTranslations, pathFor } from '../i18n';
 import { menuFor, footerFor } from '../nav';
 import { sitemapXml } from '../sitemap';
 
-const dist = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'dist');
+const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const dist = join(root, 'dist');
 const page = (locale: (typeof LOCALES)[number]) =>
   readFileSync(join(dist, pathFor(locale, '/firmware-explorer'), 'index.html'), 'utf8');
 
@@ -21,7 +22,16 @@ describe('/firmware-explorer', () => {
       const html = page(locale);
       expect(html, locale).toContain('<astro-island');
       expect(html, locale).toMatch(/component-url="[^"]*Explorer[^"]*"/);
-      expect(html, locale).toContain('Firmware explorer');
+      // In the page's own language: the title and the island's catalogue.
+      const t = useTranslations(locale);
+      expect(html, locale).toContain(t('pages.firmware_explorer.title'));
+      if (locale !== 'en') {
+        expect(t('pages.firmware_explorer.title'), `${locale} has no title of its own`).not.toBe('Firmware explorer');
+        const own = JSON.parse(readFileSync(join(root, 'src', 'i18n', `explorer.${locale}.json`), 'utf8'));
+        const en = JSON.parse(readFileSync(join(root, 'src', 'i18n', 'explorer.en.json'), 'utf8'));
+        expect(own.explorer.source_label, `${locale} explorer strings fall back to English`).not.toBe(en.explorer.source_label);
+        expect(Object.keys(own.explorer).sort(), `${locale} explorer keys differ from English`).toEqual(Object.keys(en.explorer).sort());
+      }
       expect(html, `${locale} is indexable`).not.toContain('noindex');
     }
   });

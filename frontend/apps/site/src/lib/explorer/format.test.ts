@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   fmtBytes,
   fmtBytesOrNull,
+  fmtKiB,
+  fmtNum,
+  fmtPct,
   fmtPerWeek,
   fmtSignedBytes,
+  setFormatLocale,
 } from "./format";
 
 describe("fmtBytes", () => {
@@ -73,5 +77,23 @@ describe("fmtPerWeek", () => {
 
   it("0 → 0 B/wk", () => {
     expect(fmtPerWeek(0)).toBe("0 B/wk");
+  });
+});
+
+describe("page language", () => {
+  it("formats numbers and units in Russian and Chinese", () => {
+    try {
+      setFormatLocale("ru");
+      expect(fmtKiB(1943).replace(/\s/g, " ")).toBe("1 943 КиБ");
+      expect(fmtBytes(2_000_000).replace(/\s/g, " ")).toBe("1,91 МБ");
+      expect(fmtBytesOrNull(null)).toBe("н/д");
+      expect(fmtPct(83.52).replace(/\s/g, " ")).toBe("83,5 %");
+      expect(fmtPct(34.4, 0).replace(/\s/g, " ")).toBe("34 %");
+      setFormatLocale("zh");
+      expect(fmtNum(7864)).toBe("7,864");
+      expect(fmtPerWeek(1_024)).toBe("+7.0 KB/周");
+    } finally {
+      setFormatLocale("en");
+    }
   });
 });

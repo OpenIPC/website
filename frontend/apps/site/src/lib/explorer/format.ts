@@ -9,26 +9,58 @@
 // audit during that PR proved the pattern was regression-prone — exporting
 // one canonical pair removes the next-time hazard.
 
+// The page's language decides separators and unit names: 1,943 KiB in
+// English, 1 943 КиБ in Russian. The island sets it once, before rendering.
+const UNITS = {
+  en: { B: 'B', KB: 'KB', MB: 'MB', KiB: 'KiB', wk: '/wk', na: 'n/a' },
+  ru: { B: 'Б', KB: 'КБ', MB: 'МБ', KiB: 'КиБ', wk: '/нед', na: 'н/д' },
+  zh: { B: 'B', KB: 'KB', MB: 'MB', KiB: 'KiB', wk: '/周', na: '无' },
+} as const;
+type FormatLocale = keyof typeof UNITS;
+let locale: FormatLocale = 'en';
+
+export function setFormatLocale(l: string): void {
+  locale = (l in UNITS ? l : 'en') as FormatLocale;
+}
+
+const unit = (u: keyof (typeof UNITS)['en']) => UNITS[locale][u];
+
+/** A number in the page's language, with a fixed number of decimals. */
+export function fmtNum(n: number, decimals = 0): string {
+  return n.toLocaleString(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+/** Kibibytes, as the size reports count them: "1,943 KiB". */
+export function fmtKiB(n: number): string {
+  return `${fmtNum(n)} ${unit('KiB')}`;
+}
+
+export function kibUnit(): string {
+  return unit('KiB');
+}
+
 export function fmtBytes(b: number): string {
-  if (b >= 1024 * 1024) return (b / 1024 / 1024).toFixed(2) + " MB";
-  if (b >= 1024) return (b / 1024).toFixed(1) + " KB";
-  return Math.round(b) + " B";
+  if (b >= 1024 * 1024) return `${fmtNum(b / 1024 / 1024, 2)} ${unit('MB')}`;
+  if (b >= 1024) return `${fmtNum(b / 1024, 1)} ${unit('KB')}`;
+  return `${fmtNum(Math.round(b))} ${unit('B')}`;
 }
 
 export function fmtBytesOrNull(b: number | null): string {
-  if (b === null) return "n/a";
+  if (b === null) return unit('na');
   return fmtBytes(b);
 }
 
 export function fmtSignedBytes(b: number): string {
   const sign = b < 0 ? "−" : b > 0 ? "+" : "";
-  const abs = Math.abs(b);
-  if (abs >= 1024 * 1024) return sign + (abs / 1024 / 1024).toFixed(2) + " MB";
-  if (abs >= 1024) return sign + (abs / 1024).toFixed(1) + " KB";
-  return sign + Math.round(abs) + " B";
+  return sign + fmtBytes(Math.abs(b));
 }
 
 /** TrendsView leaderboard convention: "+24.0 KB/wk". */
 export function fmtPerWeek(perDayBytes: number): string {
-  return fmtSignedBytes(perDayBytes * 7) + "/wk";
+  return fmtSignedBytes(perDayBytes * 7) + unit('wk');
+}
+
+/** A share in percent (one decimal unless told otherwise), as the page's language writes it (83,5 %). */
+export function fmtPct(n: number, decimals = 1): string {
+  return (n / 100).toLocaleString(locale, { style: 'percent', minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
