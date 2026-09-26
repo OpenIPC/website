@@ -1,0 +1,10 @@
+{
+  "_comment": "A grant computed outside Go (Python: json.dumps(separators=(',',':')), base64url without padding, HMAC-SHA256), so the format is pinned by a second implementation rather than by the code under test.",
+  "key_hex": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+  "pairs": [
+    "0123456789abcdef0123:thumb",
+    "fedcba9876543210fedc:icon2"
+  ],
+  "expires_at": 1790000700,
+  "token": "eyJwIjpbIjAxMjM0NTY3ODlhYmNkZWYwMTIzOnRodW1iIiwiZmVkY2JhOTg3NjU0MzIxMGZlZGM6aWNvbjIiXSwiZXhwIjoxNzkwMDAwNzAwfQ.fNzyZ2nUiXiUFv97k0Hulb5uT5BDSr3KBfrjrCZka-M"
+}

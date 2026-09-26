@@ -4,52 +4,53 @@ package wall
 
 import (
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"sort"
 	"strings"
 	"time"
 )
 
-// Grant rules, WallGrant's constants.
+// Grant rules.
 const (
 	GrantTTL         = 10 * time.Minute
 	GrantMaxPairs    = 256
 	GrantCacheWindow = 300 // seconds
 )
 
-// Pair is WallGrant.pair: "<public_id>:<variant>". A grant names pairs, not an
-// id set and a variant set, so a thumbnail permission cannot be paired with a
+// Pair is "<public_id>:<variant>". A grant names pairs, not an id set and a
+// variant set, so a thumbnail permission cannot be paired with a
 // full-resolution request for the same id.
 func Pair(id, variant string) string { return id + ":" + variant }
 
-// Granter signs grants in the format Rails' frame socket verifies -- an
-// ActiveSupport::MessageVerifier token from Rails 8.1 defaults:
+// Granter signs and verifies grants:
 //
-//	strict_base64(`{"_rails":{"data":{"p":[...]},"exp":"<iso8601 ms Z>"}}`) + "--" + hex(HMAC-SHA1)
+//	base64url(`{"p":[...],"exp":<unix seconds>}`) + "." + base64url(HMAC-SHA256)
 //
-// keyed by Rails' key_generator.generate_key("wall_grant"). The key is handed
-// over as WALL_GRANT_KEY rather than derived here from secret_key_base, so
-// nothing in this service depends on Rails' key derivation settings; the
-// format is pinned by golden vectors minted by Rails (testdata/rails_grant.json).
+// keyed by WALL_GRANT_KEY. The web role mints them in the wall's JSON and the
+// frame socket verifies them; the page only carries them.
 type Granter struct {
 	Key []byte
 	Now func() time.Time
 }
 
-type envelope struct {
-	Rails struct {
-		Data struct {
-			P []string `json:"p"`
-		} `json:"data"`
-		Exp string `json:"exp"`
-	} `json:"_rails"`
+type claims struct {
+	P   []string `json:"p"`
+	Exp int64    `json:"exp"`
 }
 
-// Issue returns nil for no pairs (the JSON says "grant":null, as Rails did).
+var b64 = base64.RawURLEncoding
+
+func (g *Granter) now() time.Time {
+	if g.Now != nil {
+		return g.Now()
+	}
+	return time.Now()
+}
+
+// Issue returns nil for no pairs (the JSON says "grant":null).
 //
 // The expiry is bucketed to the five-minute cache window, so the same pairs in
 // the same window sign to the same bytes: nginx microcaches these responses,
@@ -70,55 +71,42 @@ func (g *Granter) Issue(pairs []string) *string {
 	if len(list) > GrantMaxPairs {
 		list = list[:GrantMaxPairs]
 	}
-	now := time.Now
-	if g.Now != nil {
-		now = g.Now
-	}
-	bucket := now().Unix() / GrantCacheWindow * GrantCacheWindow
+	bucket := g.now().Unix() / GrantCacheWindow * GrantCacheWindow
 	token := g.Sign(list, time.Unix(bucket, 0).Add(GrantTTL))
 	return &token
 }
 
-// Sign is the MessageVerifier token for exactly these pairs and this expiry.
+// Sign is the token for exactly these pairs and this expiry.
 func (g *Granter) Sign(pairs []string, expires time.Time) string {
-	var e envelope
-	e.Rails.Data.P = pairs
-	e.Rails.Exp = expires.UTC().Format("2006-01-02T15:04:05.000Z")
-	raw, _ := json.Marshal(e)
-	data := base64.StdEncoding.EncodeToString(raw)
-	return data + "--" + g.digest(data)
+	raw, _ := json.Marshal(claims{P: pairs, Exp: expires.Unix()})
+	data := b64.EncodeToString(raw)
+	return data + "." + b64.EncodeToString(g.mac(data))
 }
 
-func (g *Granter) digest(data string) string {
-	m := hmac.New(sha1.New, g.Key)
+func (g *Granter) mac(data string) []byte {
+	m := hmac.New(sha256.New, g.Key)
 	m.Write([]byte(data))
-	return hex.EncodeToString(m.Sum(nil))
+	return m.Sum(nil)
 }
 
 // Verify returns the granted pairs, or nil for a token this key did not sign
-// or that has expired. The service does not need it to serve -- Rails' cable
-// verifies -- but it is what proves continuity in both directions, and #297
-// will need it.
+// or that has expired.
 func (g *Granter) Verify(token string) []string {
-	data, digest, ok := strings.Cut(token, "--")
-	if !ok || subtle.ConstantTimeCompare([]byte(g.digest(data)), []byte(digest)) != 1 {
+	data, sig, ok := strings.Cut(token, ".")
+	if !ok {
 		return nil
 	}
-	raw, err := base64.StdEncoding.DecodeString(data)
+	got, err := b64.DecodeString(sig)
+	if err != nil || subtle.ConstantTimeCompare(g.mac(data), got) != 1 {
+		return nil
+	}
+	raw, err := b64.DecodeString(data)
 	if err != nil {
 		return nil
 	}
-	var e envelope
-	if json.Unmarshal(raw, &e) != nil {
+	var c claims
+	if json.Unmarshal(raw, &c) != nil || !g.now().Before(time.Unix(c.Exp, 0)) {
 		return nil
 	}
-	exp, err := time.Parse(time.RFC3339Nano, e.Rails.Exp)
-	now := time.Now
-	if g.Now != nil {
-		now = g.Now
-	}
-	if err != nil || !now().Before(exp) {
-		return nil
-	}
-	return e.Rails.Data.P
+	return c.P
 }

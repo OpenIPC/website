@@ -6,15 +6,14 @@
 #   openipc-route init                       create or complete the state files
 #
 #   env      prod | dev
-#   surface  upload | wall | firmware | availability | cable
+#   surface  upload | wall | firmware | availability | socket
 #   state    go       the Go service answers (the only application there is)
 #            freeze   upload only: cameras get 503 and retry on their next cron
 #
-# Until #304 each surface could be `rails` or `go`, and a flip between them was
-# the unit of change for moving the site off Rails. Rails is gone, so what is
-# left is freezing the camera upload for the minute a restore or a migration
-# must not race one, and putting it back. conf.d/openipc-routes.conf routes any
-# value but `freeze` to Go, so a state file written before #304 is harmless.
+# What a flip is for: freezing the camera upload for the minute a restore or a
+# migration must not race one, and putting it back. conf.d/openipc-routes.conf
+# routes any value but `freeze` to the Go service, so a state file holding a
+# value this script no longer writes is harmless.
 #
 # A state file lives under /etc/nginx/openipc-routes/ and push-nginx.sh never
 # overwrites it.
@@ -26,7 +25,7 @@ set -eu
 ROUTES_DIR=${ROUTES_DIR:-/etc/nginx/openipc-routes}
 RELOAD=${NGINX_RELOAD:-systemctl reload nginx}
 LOG=${ROUTE_LOG:-/var/log/openipc-route.log}
-SURFACES="upload wall firmware availability cable"
+SURFACES="upload wall firmware availability socket"
 
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
@@ -59,7 +58,7 @@ init() {
       echo "created $ROUTES_DIR/$e.conf (all surfaces on go)"
       continue
     fi
-    # A surface added since the file was written (cable, #297) must be defined
+    # A surface added since the file was written (socket, for one) must be defined
     # before the repository's maps name it, or nginx -t fails. Add it on
     # go and leave every surface already in force exactly as it is.
     missing=""
@@ -83,7 +82,7 @@ status() {
 
 go_port() { # env surface
   case "$1:$2" in
-    prod:firmware|prod:availability) echo 3003 ;; prod:*) echo 3002 ;; # web: upload, wall, cable
+    prod:firmware|prod:availability) echo 3003 ;; prod:*) echo 3002 ;; # web: upload, wall, socket
     dev:firmware|dev:availability) echo 3013 ;; dev:*) echo 3012 ;;
   esac
 }
@@ -95,7 +94,6 @@ flip() {
   case "$state" in
     go) ;;
     freeze) [ "$surface" = upload ] || die "only the upload can be frozen" ;;
-    rails|shadow) die "Rails is gone (#304); '$state' is not a state any more" ;;
     *) die "unknown state '$state' (go, freeze)" ;;
   esac
   if [ "$state" = go ] && [ "$force" != --force ]; then

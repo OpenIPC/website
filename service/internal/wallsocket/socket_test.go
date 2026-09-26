@@ -74,6 +74,7 @@ type client struct {
 	ws  *websocket.Conn
 	in  chan []byte
 	raw bool // deliver pings too
+	cid string
 }
 
 func (c *client) pump() {
@@ -87,24 +88,26 @@ func (c *client) pump() {
 	}
 }
 
+// dial opens a socket and reads the hello, which carries the mask key.
 func (r *rig) dial(t *testing.T, origin string) *client {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	ws, resp, err := websocket.Dial(ctx, strings.Replace(r.srv.URL, "http", "ws", 1)+"/cable", &websocket.DialOptions{
-		Subprotocols: []string{"actioncable-v1-json", "actioncable-unsupported"},
-		HTTPHeader:   http.Header{"Origin": {origin}},
+	ws, _, err := websocket.Dial(ctx, strings.Replace(r.srv.URL, "http", "ws", 1)+"/socket", &websocket.DialOptions{
+		HTTPHeader: http.Header{"Origin": {origin}},
 	})
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
-	if ws.Subprotocol() != "actioncable-v1-json" {
-		t.Fatalf("subprotocol %q: the client stops on anything else", ws.Subprotocol())
-	}
-	_ = resp
 	ws.SetReadLimit(4 << 20)
 	t.Cleanup(func() { ws.CloseNow() })
 	c := &client{t: t, ws: ws, in: make(chan []byte, 64)}
 	go c.pump()
+	hello := c.must(time.Second)
+	cid, _ := hello["connection_id"].(string)
+	if hello["type"] != "hello" || len(cid) != 16 || strings.Trim(cid, "0123456789abcdef") != "" {
+		t.Fatalf("first message %v, want a hello with sixteen lowercase hex characters", hello)
+	}
+	c.cid = cid
 	return c
 }
 
@@ -146,69 +149,47 @@ func (c *client) send(v any) {
 	}
 }
 
-func (c *client) perform(identifier string, data map[string]any) {
-	raw, _ := json.Marshal(data)
-	c.send(map[string]string{"command": "message", "identifier": identifier, "data": string(raw)})
+func (c *client) grant(token string) { c.send(map[string]string{"type": "grant", "grant": token}) }
+
+func (c *client) request(variant string, ids ...any) {
+	c.send(map[string]any{"type": "request", "variant": variant, "ids": ids})
 }
 
-// identifier is built the way @rails/actioncable builds it: JSON.stringify of
-// the params, a JSON string inside the message.
-func identifier(grant *string) string {
-	if grant == nil {
-		return `{"channel":"WallChannel"}`
+func (r *rig) grant(pairs ...string) string { return *r.granter.Issue(pairs) }
+
+func (c *client) unmask(m map[string]any) (string, string, []byte) {
+	if m["type"] != "frame" {
+		c.t.Fatalf("got %v, want a frame", m)
 	}
-	raw, _ := json.Marshal(map[string]string{"channel": "WallChannel", "grant": *grant})
-	return string(raw)
-}
-
-func (r *rig) grant(pairs ...string) *string {
-	return r.granter.Issue(pairs)
-}
-
-func unmask(t *testing.T, m map[string]any) (string, string, []byte) {
-	msg := m["message"].(map[string]any)
-	cid := msg["connection_id"].(string)
-	if len(cid) != 16 || strings.Trim(cid, "0123456789abcdef") != "" {
-		t.Fatalf("connection_id %q is not sixteen lowercase hex characters", cid)
-	}
-	b, err := base64.StdEncoding.DecodeString(msg["frame"].(string))
+	b, err := base64.StdEncoding.DecodeString(m["frame"].(string))
 	if err != nil {
-		t.Fatal(err)
+		c.t.Fatal(err)
 	}
 	// wall-frames.ts: unmask the first 4096 bytes with keyFor(connection_id).
 	for i := 0; i < len(b) && i < wallsocket.MaskBytes; i++ {
-		b[i] ^= cid[i%len(cid)]
+		b[i] ^= c.cid[i%len(c.cid)]
 	}
-	return msg["id"].(string), msg["variant"].(string), b
+	return m["id"].(string), m["variant"].(string), b
+}
+
+func errorOf(m map[string]any) string {
+	if m["type"] != "error" {
+		return ""
+	}
+	s, _ := m["error"].(string)
+	return s
 }
 
 func TestProtocolEndToEnd(t *testing.T) {
 	r := newRig(t, false)
 	c := r.dial(t, "https://openipc.org")
-
-	if m := c.must(time.Second); m["type"] != "welcome" {
-		t.Fatalf("first message %v, want welcome", m)
-	}
-	// Spacing and key order the server did not choose: the identifier must
-	// come back as these exact bytes.
-	g := r.grant(big+":thumb", small+":thumb", big+":fullhd")
-	id := `{ "grant":` + mustJSON(*g) + `, "channel":"WallChannel" }`
-	c.send(map[string]string{"command": "subscribe", "identifier": id})
-	m := c.must(time.Second)
-	if m["type"] != "confirm_subscription" || m["identifier"] != id {
-		t.Fatalf("got %v, want confirm_subscription echoing %q", m, id)
-	}
+	c.grant(r.grant(big+":thumb", small+":thumb", big+":fullhd"))
 
 	// Granted, not granted at that size, and not a public id at all.
-	c.perform(id, map[string]any{"action": "request_frames", "variant": "thumb",
-		"ids": []any{big, small, big, "12345", "../etc/passwd"}})
+	c.request("thumb", big, small, big, "12345", "../etc/passwd")
 	got := map[string][]byte{}
 	for range 2 {
-		m := c.must(2 * time.Second)
-		if m["identifier"] != id {
-			t.Fatalf("frame under identifier %v", m["identifier"])
-		}
-		fid, variant, b := unmask(t, m)
+		fid, variant, b := c.unmask(c.must(2 * time.Second))
 		got[fid+"/"+variant] = b
 	}
 	for _, k := range []string{big + "/thumb", small + "/thumb"} {
@@ -217,13 +198,13 @@ func TestProtocolEndToEnd(t *testing.T) {
 		}
 	}
 	// icon2 was never granted for this id: nothing comes.
-	c.perform(id, map[string]any{"action": "request_frames", "variant": "icon2", "ids": []any{big}})
+	c.request("icon2", big)
 	if m, ok := c.next(300 * time.Millisecond); ok {
 		t.Errorf("an ungranted pair was answered: %v", m)
 	}
 	// A pair that is granted, at the other size.
-	c.perform(id, map[string]any{"action": "request_frames", "variant": "fullhd", "ids": []any{big}})
-	if _, v, b := unmask(t, c.must(2*time.Second)); v != "fullhd" || !bytes.Equal(b, r.files[big+"/fullhd"]) {
+	c.request("fullhd", big)
+	if _, v, b := c.unmask(c.must(2 * time.Second)); v != "fullhd" || !bytes.Equal(b, r.files[big+"/fullhd"]) {
 		t.Error("fullhd frame wrong")
 	}
 
@@ -232,28 +213,37 @@ func TestProtocolEndToEnd(t *testing.T) {
 	for i := range 97 {
 		many = append(many, fmt.Sprintf("%019xf", i)) // 97 distinct public ids
 	}
-	c.perform(id, map[string]any{"action": "request_frames", "variant": "thumb", "ids": many})
-	if m := c.must(time.Second); m["message"].(map[string]any)["error"] != "too many frames in one request" {
-		t.Errorf("97 ids: %v", m)
+	c.request("thumb", many...)
+	if e := errorOf(c.must(time.Second)); e != "too many frames in one request" {
+		t.Errorf("97 ids: %q", e)
 	}
-	c.perform(id, map[string]any{"action": "request_frames", "variant": "huge", "ids": []any{big}})
-	if m := c.must(time.Second); m["message"].(map[string]any)["error"] != "unknown variant" {
-		t.Errorf("unknown variant: %v", m)
+	c.request("huge", big)
+	if e := errorOf(c.must(time.Second)); e != "unknown variant" {
+		t.Errorf("unknown variant: %q", e)
+	}
+	// Ids of the wrong JSON type are an unreadable message, not coerced.
+	c.send(map[string]any{"type": "request", "variant": "thumb", "ids": 12345})
+	if e := errorOf(c.must(time.Second)); e != "unreadable message" {
+		t.Errorf("ids as a number: %q", e)
+	}
+	c.send(map[string]any{"type": "subscribe"})
+	if e := errorOf(c.must(time.Second)); e != "unknown message type" {
+		t.Errorf("unknown type: %q", e)
 	}
 
-	// A new page's grant accumulates; a bad one leaves nothing, but stays open.
-	c.perform(id, map[string]any{"action": "use_grant", "grant": *r.grant(big + ":icon2")})
-	c.perform(id, map[string]any{"action": "request_frames", "variant": "icon2", "ids": []any{big}})
-	if _, v, _ := unmask(t, c.must(2*time.Second)); v != "icon2" {
-		t.Error("use_grant did not add icon2")
+	// A later grant accumulates; a bad one leaves nothing, but stays open.
+	c.grant(r.grant(big + ":icon2"))
+	c.request("icon2", big)
+	if _, v, _ := c.unmask(c.must(2 * time.Second)); v != "icon2" {
+		t.Error("the second grant did not add icon2")
 	}
-	c.perform(id, map[string]any{"action": "use_grant", "grant": "forged--0000"})
-	if m := c.must(time.Second); m["message"].(map[string]any)["error"] != "no grant" {
-		t.Errorf("bad use_grant: %v", m)
+	c.grant("forged.0000")
+	if e := errorOf(c.must(time.Second)); e != "no grant" {
+		t.Errorf("bad grant: %q", e)
 	}
-	c.perform(id, map[string]any{"action": "request_frames", "variant": "thumb", "ids": []any{big}})
-	if m, ok := c.next(300 * time.Millisecond); ok {
-		t.Errorf("frames after a refused grant: %v", m)
+	c.request("thumb", big)
+	if e := errorOf(c.must(time.Second)); e != "no grant" {
+		t.Errorf("frames after a refused grant: %q", e)
 	}
 	// Pings keep coming: the socket is open.
 	c.raw = true
@@ -262,52 +252,41 @@ func TestProtocolEndToEnd(t *testing.T) {
 	}
 	c.raw = false
 
-	c.send(map[string]string{"command": "unsubscribe", "identifier": id})
+	c.ws.Close(websocket.StatusNormalClosure, "")
 	waitFor(t, func() bool { return strings.Contains(r.logs.String(), "wall: connection served 2 distinct frames") })
 }
 
 func TestNoGrantIsRefusedAndLogged(t *testing.T) {
 	r := newRig(t, false)
 	c := r.dial(t, "https://openipc.ru")
-	c.must(time.Second) // welcome
-	id := identifier(nil)
-	c.send(map[string]string{"command": "subscribe", "identifier": id})
-	if m := c.must(time.Second); m["message"].(map[string]any)["error"] != "no grant" || m["identifier"] != id {
-		t.Fatalf("got %v, want the error first", m)
-	}
-	if m := c.must(time.Second); m["type"] != "reject_subscription" || m["identifier"] != id {
-		t.Fatalf("got %v, want reject_subscription", m)
+	c.request("thumb", big)
+	if e := errorOf(c.must(time.Second)); e != "no grant" {
+		t.Fatalf("got %q, want no grant", e)
 	}
 	if !strings.Contains(r.logs.String(), "wall_grant_refused") {
 		t.Error("no wall_grant_refused marker for deploy/log-report.sh")
 	}
-	// A rejected subscription answers nothing.
-	c.perform(id, map[string]any{"action": "request_frames", "variant": "thumb", "ids": []any{big}})
-	if m, ok := c.next(300 * time.Millisecond); ok {
-		t.Errorf("a rejected subscription was answered: %v", m)
+	c.grant("")
+	if e := errorOf(c.must(time.Second)); e != "no grant" {
+		t.Fatalf("an empty grant: %q", e)
 	}
 }
 
 func TestGrantsDisabledServesWithoutAGrant(t *testing.T) {
 	r := newRig(t, true)
 	c := r.dial(t, "https://openipc.org")
-	c.must(time.Second)
-	id := identifier(nil)
-	c.send(map[string]string{"command": "subscribe", "identifier": id})
-	if m := c.must(time.Second); m["type"] != "confirm_subscription" {
-		t.Fatalf("got %v", m)
-	}
-	c.perform(id, map[string]any{"action": "request_frames", "variant": "thumb", "ids": []any{small}})
-	if _, _, b := unmask(t, c.must(time.Second)); !bytes.Equal(b, r.files[small+"/thumb"]) {
+	c.request("thumb", small)
+	if _, _, b := c.unmask(c.must(time.Second)); !bytes.Equal(b, r.files[small+"/thumb"]) {
 		t.Error("wrong frame")
 	}
 }
 
-// ActionCable answers a handshake it will not take with a 404, not a 403.
+// A handshake the socket will not take is a 404, as for any address that
+// does not exist.
 func TestOriginsAndPlainRequests(t *testing.T) {
 	r := newRig(t, false)
 	for _, origin := range []string{"https://evil.example", "http://openipc.org", ""} {
-		req, _ := http.NewRequest("GET", r.srv.URL+"/cable", nil)
+		req, _ := http.NewRequest("GET", r.srv.URL+"/socket", nil)
 		req.Header.Set("Connection", "Upgrade")
 		req.Header.Set("Upgrade", "websocket")
 		req.Header.Set("Sec-WebSocket-Version", "13")
@@ -325,7 +304,7 @@ func TestOriginsAndPlainRequests(t *testing.T) {
 			t.Errorf("origin %q: %d %q", origin, resp.StatusCode, body)
 		}
 	}
-	resp, _ := http.Get(r.srv.URL + "/cable")
+	resp, _ := http.Get(r.srv.URL + "/socket")
 	if resp.StatusCode != 404 {
 		t.Errorf("a plain GET: %d", resp.StatusCode)
 	}
@@ -356,8 +335,6 @@ func TestBudgetIsObservedNotEnforced(t *testing.T) {
 		t.Error("another address charged")
 	}
 }
-
-func mustJSON(s string) string { raw, _ := json.Marshal(s); return string(raw) }
 
 func waitFor(t *testing.T, ok func() bool) {
 	deadline := time.Now().Add(2 * time.Second)

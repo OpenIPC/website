@@ -52,7 +52,7 @@
   {
     "role": "web",
     "method": "GET",
-    "path": "/api/v1/wall/cable"
+    "path": "/api/v1/wall/socket"
   },
   {
     "role": "firmware",

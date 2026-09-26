@@ -21,7 +21,7 @@
 # inherit anything from a sibling, so every directive it needs is repeated
 # here.
 
-location ^~ /api/v1/wall/cable {
+location ^~ /api/v1/wall/socket {
     proxy_pass https://openipc.org;
 
     # Without these two the handshake degrades silently: nginx forwards the

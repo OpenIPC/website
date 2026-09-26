@@ -31,7 +31,7 @@ func TestMirrorConfig(t *testing.T) {
 	for _, m := range regexp.MustCompile(`(?m)^\s*set_real_ip_from\s+(\S+?);`).FindAllStringSubmatch(origin, -1) {
 		trusted = append(trusted, m[1])
 	}
-	upgrade := find(proxy, regexp.MustCompile(`(?s)(location \^~ /api/v1/wall/cable \{.*?\n\})`), 1)
+	upgrade := find(proxy, regexp.MustCompile(`(?s)(location \^~ /api/v1/wall/socket \{.*?\n\})`), 1)
 
 	t.Run("the origin trusts the host that serves openipc.kz and openipc.cloud", func(t *testing.T) {
 		if !slices.Contains(trusted, "194.238.42.216") {

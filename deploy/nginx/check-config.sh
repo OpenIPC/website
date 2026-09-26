@@ -548,7 +548,7 @@ posts /ru/snapshots                 200 go
 grep -q GO-WEB-PROD /tmp/pb || { echo "  the upload did not reach the Go web process"; fail=1; }
 expect /api/v1/wall/page/2.json     200 go     hsts
 grep -q GO-WEB-PROD /tmp/b || { echo "  the wall JSON did not reach the Go web process"; fail=1; }
-expect /api/v1/wall/cable           200 go     hsts
+expect /api/v1/wall/socket          200 go     hsts
 grep -q GO-WEB-PROD /tmp/b || { echo "  the socket did not reach the Go web process"; fail=1; }
 expect /api/v1/hardware/availability.json 200 go hsts
 grep -q GO-AVAILABILITY /tmp/b || { echo "  the availability feed did not reach the Go firmware process"; fail=1; }

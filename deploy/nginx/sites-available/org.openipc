@@ -585,7 +585,7 @@ server {
 
     location ^~ /api/v1/wall/ {
         # Rails or the Go web process (#296); see conf.d/openipc-routes.conf.
-        # The socket below has its own location and stays on Rails.
+        # The socket below has its own location.
         proxy_pass http://$openipc_up_prod_wall;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -650,14 +650,14 @@ server {
     # more sockets buys a harvester no extra frames. All this limit has to do is
     # bound nginx's own connection slots (a proxied socket costs two), so it can
     # be generous.
-    location ^~ /api/v1/wall/cable {
+    location ^~ /api/v1/wall/socket {
         limit_conn wall_sockets 16;
         limit_conn_status 429;
 
-        # Rails' ActionCable or the Go web process (#297), whichever
-        # conf.d/openipc-routes.conf says. Established sockets stay where they
+        # The Go web process's frame socket (#297), routed by
+        # conf.d/openipc-routes.conf. Established sockets stay where they
         # are on a flip: a reload does not close them.
-        proxy_pass http://$openipc_up_prod_cable;
+        proxy_pass http://$openipc_up_prod_socket;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
@@ -672,7 +672,7 @@ server {
 
         # The default proxy_read_timeout of 180s elsewhere in this file would
         # drop an idle socket after three minutes -- a reader who leaves the
-        # wall open loses their frames and gets no error. ActionCable pings on
+        # wall open loses their frames and gets no error. The socket pings on
         # its own; this is the ceiling above that.
         proxy_read_timeout 1h;
         proxy_send_timeout 1h;
@@ -682,7 +682,7 @@ server {
         proxy_no_cache 1;
         proxy_cache_bypass 1;
 
-        add_header X-Served-By $openipc_by_prod_cable always;
+        add_header X-Served-By $openipc_by_prod_socket always;
         add_header Strict-Transport-Security max-age=15768000;
     }
 
