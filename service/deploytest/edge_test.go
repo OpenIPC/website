@@ -242,10 +242,10 @@ func TestWizardExportServing(t *testing.T) {
 	})
 	// One copied from the production vhost went to :3000, and production's
 	// Rails answered 403 to a request carrying `Host: dev.openipc.org`.
-	t.Run("the dev vhost proxies to the dev container, never to production's", func(t *testing.T) {
+	t.Run("the dev vhost proxies to the dev containers, never to production's", func(t *testing.T) {
 		for _, l := range lines(vhost(t, "org.openipc.dev")) {
-			if regexp.MustCompile(`proxy_pass\s+http://127\.0\.0\.1:3000`).MatchString(l) {
-				t.Errorf("the dev vhost proxies to the production container on :3000: %s", strings.TrimSpace(l))
+			if regexp.MustCompile(`proxy_pass\s+http://127\.0\.0\.1:300[23]\b`).MatchString(l) {
+				t.Errorf("the dev vhost proxies to a production container: %s", strings.TrimSpace(l))
 			}
 		}
 	})
@@ -260,7 +260,9 @@ func TestWizardExportServing(t *testing.T) {
 		for _, host := range []string{"/srv/www/shared/wizard", "/srv/www/shared/wizard-dev"} {
 			mustContain(t, compose, "- "+host+":"+inside, host+" is not mounted where the job writes")
 		}
-		mustContain(t, compose, "- /srv/www/shared:/rails/shared:ro", "the shared directory is no longer read-only to the application")
+		// The rest of /srv/www/shared is the host's: the backer count, the
+		// legacy images. No container gets the whole tree.
+		mustNotMatch(t, `(?m)^\s*- /srv/www/shared:`, compose, "a container mounts all of /srv/www/shared")
 	})
 }
 

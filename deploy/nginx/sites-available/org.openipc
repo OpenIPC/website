@@ -125,19 +125,15 @@ server {
         proxy_buffer_size 128k;
         proxy_buffers 8 128k;
 
-        # Rails or the Go firmware process, whichever conf.d/openipc-routes.conf
-        # says (#299). Both answer with an X-Accel-Redirect: Rails into
-        # /protected-files/, Go into /firmware-cache/. Go ignores the two
-        # Rack::Sendfile headers below.
+        # The Go firmware process (#299), or 503 while the surface is frozen
+        # (conf.d/openipc-routes.conf). It answers with an X-Accel-Redirect
+        # into /firmware-cache/.
         proxy_pass http://$openipc_up_prod_firmware;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Request-Id $request_id;
-
-        proxy_set_header X-Sendfile-Type X-Accel-Redirect;
-        proxy_set_header X-Accel-Mapping /rails/public/files/=/protected-files/;
 
         proxy_connect_timeout 120;
         proxy_send_timeout 120;
@@ -147,12 +143,6 @@ server {
         add_header Strict-Transport-Security max-age=15768000;
     }
 
-    location /protected-files/ {
-        internal;
-        alias /srv/www/shared/files/;
-        add_header X-Served-By rails always;
-        add_header Strict-Transport-Security max-age=15768000;
-    }
 
     # The Go firmware process's image cache (#299): one version of each image,
     # built on first request. Reachable only through its X-Accel-Redirect.
@@ -522,7 +512,8 @@ server {
         }
         # A hexadecimal address the wall shell above did not claim -- the
         # wrong length, a suffix. Rails answered it 404 and is gone (#304).
-        return 404 "Not Found\n";
+        error_page 404 /404.html;
+        return 404;
     }
 
     # /wall/ is gone, and so is every other address that returned a frame.
@@ -812,8 +803,9 @@ server {
 
         # `add_header` in a location REPLACES every inherited one, so the
         # server-level HSTS has to be repeated here exactly as it is in @fallback
-        # below -- otherwise every page the bundle serves loses it.
-        add_header Strict-Transport-Security max-age=15768000;
+        # below -- otherwise every page the bundle serves loses it. `always`,
+        # because the bundle's 404 page is served from here with its 404.
+        add_header Strict-Transport-Security max-age=15768000 always;
         add_header X-Served-By static always;
         # Pages, unlike the assets above, keep their address when their content
         # changes -- a deploy rewrites /donate/index.html in place. So they may
@@ -824,9 +816,6 @@ server {
         add_header Cache-Control "public, max-age=0, must-revalidate" always;
     }
 
-    # Everything the bundle does not hold, which today is everything. This is
-    # the block that was `location /` until #157; it is unchanged apart from
-    # the proxy_pass URI part and the X-Served-By witness.
     location @fallback {
         # Everything the bundle does not hold (#304). Rails used to be here; it
         # is gone, and what its router answered is answered from
@@ -835,12 +824,19 @@ server {
         # have held, which is a 404. `return` is the one thing `if` is safe
         # for. One line each: the deploy tests read this block as ending at
         # the first bare `}`.
+        # The error page itself, missing from the bundle: a bare 404 rather
+        # than the route map's catch-all redirect home.
+        if ($uri = /404.html)                 { return 404; }
         if ($openipc_route_action = 410)      { return 410 "Gone\n"; }
         if ($openipc_route_action = 301)      { return 301 $openipc_route_target; }
         if ($openipc_route_action = 302)      { return 302 $openipc_route_target; }
         if ($openipc_route_action = catchall) { return 302 $openipc_route_target; }
-        default_type text/plain;
-        return 404 "Not Found\n";
+        # The bundle's own 404 page (src/pages/404.astro), with the 404
+        # status, through `location /`. If the bundle has none, the line at
+        # the top of this block answers, and nginx does not recurse into
+        # error_page a second time.
+        error_page 404 /404.html;
+        return 404;
 
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By $openipc_route_by always;

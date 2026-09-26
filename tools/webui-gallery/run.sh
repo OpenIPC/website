@@ -11,7 +11,7 @@ work="$repo/tmp/webui-gallery"
 out="$work/out"
 image=openipc-webui-gallery
 manifest=data/webui_gallery.yml
-images=app/assets/images/webui
+images=frontend/apps/site/src/assets/webui
 
 camera=""; user=root; password=""; scene="$here/scene/beach-usa.jpg"
 only=""; maps=(); install=yes; keep=no

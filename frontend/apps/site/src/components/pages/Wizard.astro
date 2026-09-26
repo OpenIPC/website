@@ -19,10 +19,10 @@ import { useTranslations } from '../../lib/i18n';
 import { SUPPORT_GOAL } from '../../data/support-goal';
 
 const STAGE_ICONS = import.meta.glob<ImageMetadata>(
-  '../../../../../../app/assets/images/stage-*.svg',
+  '../../assets/stages/stage-*.svg',
   { eager: true, import: 'default' },
 );
-const WARNING = await import('../../../../../../app/assets/images/icons/pose/warning_front.png');
+const WARNING = await import('../../assets/icons/pose/warning_front.png');
 
 /** `Soc::STATUS`, which is the stage link's title attribute and is English on both halves. */
 const STATUS: Record<string, string> = {
@@ -48,8 +48,8 @@ if (!soc) throw new Error(`No SoC "${socSlug}" under ${vendorSlug}.`);
 const t = useTranslations(locale);
 const p = (path: string) => pathFor(locale, path);
 
-const stage = STAGE_ICONS[`../../../../../../app/assets/images/stage-${soc.status}.svg`];
-if (!stage) throw new Error(`No stage-${soc.status}.svg in app/assets/images.`);
+const stage = STAGE_ICONS[`../../assets/stages/stage-${soc.status}.svg`];
+if (!stage) throw new Error(`No stage-${soc.status}.svg in src/assets/stages.`);
 
 const here = p(socPath(vendor, soc));
 ---

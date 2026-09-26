@@ -131,6 +131,8 @@ printf 'SMOKE RU\n' > /srv/www/static/prod/site-test/ru/_smoke/index.html
 # The Open Wall (#165): a page at /open-wall, and one shell per locale that
 # every other wall address is served from.
 printf 'HOME navigator.languages\n' > /srv/www/static/prod/site-test/index.html
+# The bundle's error page (#304): what every 404 behind the seam shows.
+printf 'NOT FOUND PAGE\n' > /srv/www/static/prod/site-test/404.html
 
 # The files Rails used to serve out of public/ (#165). They are the bundle's
 # now: it is where this site keeps its files.
@@ -307,12 +309,12 @@ expect /_smoke                      200 static hsts
 # NOT a 403. `try_files $uri $uri/index.html` writes its first element without
 # a trailing slash, so it is a FILE test -- a directory misses it, misses
 # index.html too, and falls through to the fallback, which answers the home
-# page's route as a page the bundle should have held: a 404 in this fixture,
-# whose bundle has no ru/index.html. That is what makes it safe for
+# page's route as a page the bundle should have held: the bundle's 404 page in
+# this fixture, whose bundle has no ru/index.html. That is what makes it safe for
 # the bundle to contain ru/ before anything owns /ru/, which is #160's call.
 expect /ru/_smoke/                  200 static hsts
-expect /ru/                         404 nginx  no-hsts
-expect /ru                          404 nginx  no-hsts
+expect /ru/                         404 static hsts
+expect /ru                          404 static hsts
 
 # The asset directory is the same shape and answers the same way: its files
 # are served, and its bare directory URL -- which nothing links to -- is
@@ -360,10 +362,9 @@ expect "/zh/open-wall/3"            200 static hsts
 # so a bare `return 410` sends none. Recorded here so a change to either is
 # visible rather than silent.
 expect /snapshots/12345             410 -      no-hsts
-# An id of the wrong shape is a 404 from the wall's own location (#304), which
-# does not label what served it -- so `-` here means "not the bundle", which is
-# the whole claim.
-expect "/snapshots/${SNAP}xx"       404 -      no-hsts
+# An id of the wrong shape is a 404 from the wall's own location (#304), shown
+# as the bundle's 404 page -- never the wall's shell, which is the claim.
+expect "/snapshots/${SNAP}xx"       404 static hsts
 expect "/open-wall/camera/$CAM.jpg" 410 -      no-hsts
 
 # The gallery's older address is retired for readers -- one canonical address
@@ -418,9 +419,11 @@ expect_cache /                      "public, max-age=0, must-revalidate"
 # The home page is the bundle's since #165. The language it serves is decided
 # in the browser by a script in the page.
 expect /                            200 static hsts
-# A page this fixture's bundle does not hold is nginx's 404 (#304): there is
-# no application behind the seam any more.
-expect /supported-hardware/featured 404 nginx  no-hsts
+# A page this fixture's bundle does not hold is the bundle's 404 page (#304):
+# there is no application behind the seam any more.
+expect /supported-hardware/featured 404 static hsts
+grep -q 'NOT FOUND PAGE' /tmp/b \
+  || { printf '  %-32s MISMATCH: the body is not the bundle'"'"'s 404 page\n' /supported-hardware/featured; fail=1; }
 expect /sitemap.xml                 200 static hsts
 # The availability feed is the Go firmware process's (#298).
 expect /api/v1/hardware/availability.json 200 go hsts
@@ -506,12 +509,12 @@ answered GET  /admin/snapshots          410 -                                ngi
 answered GET  /no-such-page-at-all      302 "$O/"                            nginx
 answered GET  /ru/no-such-page          302 "$O/ru"                          nginx
 answered POST /home                     302 "$O/"                            nginx
-answered GET  /supported-hardware/featured 404 -                             nginx
-answered GET  /privacy                  404 -                                nginx
-answered GET  /ru/privacy               404 -                                nginx
+answered GET  /supported-hardware/featured 404 -                             static
+answered GET  /privacy                  404 -                                static
+answered GET  /ru/privacy               404 -                                static
 answered GET  /sitemap.xml              200 -                                static
-answered GET  /cameras/vendors/hisilicon/socs/hi3516ev300 404 -              nginx
-answered GET  /500.html                 404 -                                nginx
+answered GET  /cameras/vendors/hisilicon/socs/hi3516ev300 404 -              static
+answered GET  /500.html                 404 -                                static
 # The two pages Rails still rendered when it was deleted (#304): the vendor
 # index is the full list, and a SoC's page lives under its vendor.
 answered GET  /cameras/vendors          301 "$O/supported-hardware/full-list" nginx

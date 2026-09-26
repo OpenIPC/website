@@ -1,27 +1,28 @@
 # The static bundle
 
-nginx serves openipc.org from two places. A request is answered from this
-bundle when the matching file exists in it, and by Rails when it does not:
+The bundle is every page on openipc.org. nginx answers a request from it when
+the matching file exists, and from `@fallback` when it does not:
 
 ```nginx
 location / {
     root /srv/www/static/prod/current;
-    try_files $uri $uri/index.html @rails;
+    try_files $uri $uri/index.html @fallback;
 }
 ```
 
-**A page is extracted when its `index.html` is in the bundle.** That is the
-whole mechanism — no nginx edit per page, no feature flag, no header. Putting
-`donate/index.html` in the bundle makes `/donate` static; taking it out gives
-it back to Rails.
+`@fallback` answers the route map in `deploy/nginx/conf.d/openipc-redirects.conf`
+— what Rails' router used to answer: the redirects, the retired addresses'
+410s, and a 302 home for anything the map does not claim — and otherwise 404s.
+Nothing behind it is an application: since #304 there is no Rails to fall
+through to. The Go service answers only the addresses nginx routes to it by
+their own locations (the camera upload, the wall's JSON and socket, the
+firmware download, the availability feed).
 
-Today the bundle holds one page in three languages -- `/_smoke/`,
-`/ru/_smoke/` and `/zh/_smoke/` -- which exist only to prove the seam is
-alive. Everything else on the site is answered by Rails, exactly as it was
-before this existed. #160 fills it.
+**A page exists when its `index.html` is in the bundle.** No nginx edit per
+page, no feature flag, no header.
 
-Since #159 the bundle is an **Astro build**, in `frontend/apps/site`. It reads
-the marketing catalogue exported from `config/locales/*.yml` and renders
+The bundle is an **Astro build**, in `frontend/apps/site`. It reads the
+catalogue and the translations exported from `data/` and renders
 `@openipc/ui` into the page, so a missing translation or a component that
 cannot render fails the build rather than reaching a visitor.
 
@@ -30,16 +31,15 @@ cannot render fails the build rather than reaching a visitor.
 Every response through the catch-all says so:
 
 ```
-$ curl -sI https://openipc.org/_smoke/ | grep -i x-served-by
+$ curl -sI https://openipc.org/donate | grep -i x-served-by
 x-served-by: static
 
-$ curl -sI https://openipc.org/donate | grep -i x-served-by
-x-served-by: rails
+$ curl -sI https://openipc.org/hardware | grep -i x-served-by
+x-served-by: nginx
 ```
 
-That header is the instrument for the failure this seam makes possible: a
-stale file in the bundle shadowing a Rails page that has since been fixed,
-which appears in no Rails log at all.
+`static` is a file from the bundle; anything else is `@fallback`, which sets
+the header from the route map.
 
 ## Building one
 
@@ -52,8 +52,7 @@ deploy/static/check-bundle.sh dist/site
 workspace on first use. Two escape hatches, both for callers that have already
 built: `SKIP_FRONTEND_BUILD=1` reuses `frontend/apps/site/dist`, and
 `STATIC_SITE_DIST=<dir>` collects from somewhere else entirely --
-`test/deploy/static_bundle_test.rb` uses the second so that `bin/rails test`
-never needs Node.
+`service/deploytest` uses the second so that `go test` never needs Node.
 
 The origin needs none of this. The bundle is built in CI and shipped as an
 image; webber-eu has 157 MiB free and no Node, deliberately.
@@ -80,19 +79,24 @@ openipc-static verify prod     # ask nginx which side answers
 
 Independent of `openipc-deploy` on purpose, and that is also the footgun:
 **`openipc-deploy rollback prod` does not roll back the bundle, and
-`openipc-static rollback prod` does not roll back Rails.**
+`openipc-static rollback prod` does not roll back the service.**
+
+Because the bundle is the whole site, an install is checked before the flip
+(`check-bundle.sh` and the manifest) and verified over HTTP after it; if the
+verification fails, `openipc-static` flips back to the previous bundle on its
+own and reports the environment unchanged.
 
 ## What `check-bundle.sh` refuses, and why each one matters
 
-The seam cannot fail closed. `try_files` continues past every miss — a missing
-file, a directory, even a permissions error — and ends at `@rails`, so a bundle
-that is merely absent or wrong means Rails answers, which is where everything
-is answered today. What a bundle *can* do is take something over that it should
-not have. That is what these rules are about.
+`try_files` continues past every miss — a missing file, a directory, even a
+permissions error — and ends at `@fallback`. What a bundle can do besides
+missing a page is take over an address that is not its own: a file at the
+camera upload's address or the firmware download's would answer instead of the
+service, silently. That is what these rules are about.
 
 | refused | because |
 |---|---|
-| a path Rails owns (`reserved-paths`) | it would shadow the route silently, with nothing in the Rails log |
+| a reserved path (`reserved-paths`) | it would shadow the service or an nginx location silently, with nothing in any log |
 | the same path behind `/ru/` or `/zh/` | `/ru/snapshots/x` reaches the same route as `/snapshots/x` |
 | a directory with nothing under it | it serves no file and answers nothing, so it can only be the residue of a build that went wrong |
 | a **root** `index.html` | see below |
@@ -100,9 +104,9 @@ not have. That is what these rules are about.
 | a file the nginx worker cannot read | a 403 on a bundle that looks perfectly installed |
 | a manifest that does not match the tree | the host checks it again before flipping, so it has to mean something |
 
-`reserved-paths` is not maintained by hand. `test/deploy/static_seam_test.rb`
-derives what must be in it from the router, from everything in `public/`, and
-from every nginx location with an `alias` or a `root` of its own, and fails if
+`reserved-paths` is not maintained by hand. `service/deploytest` derives what
+must be in it from the Go service's routes, from the route map, and from every
+nginx location with an `alias`, a `root` or a `return` of its own, and fails if
 an entry is missing — or if an entry matches nothing any more.
 
 ### The home page, and how it stopped being refused

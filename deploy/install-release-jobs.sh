@@ -11,17 +11,17 @@
 #
 #   1. Proves the image can do the job: a dry run of publish-release-index
 #      against the real directory and GitHub, which writes nothing.
-#   2. Repoints /usr/local/sbin/openipc-publish-release-index and
-#      openipc-mirror-repos from the .rb files to deploy/release-jobs.sh.
+#   2. Points /usr/local/sbin/openipc-publish-release-index and
+#      openipc-mirror-repos at deploy/release-jobs.sh (they were the Ruby
+#      scripts until #304).
 #   3. Installs deploy/cron.d/openipc-release-jobs (root's, same minutes, same
 #      log) and only then removes the two lines from paul's crontab -- in that
 #      order, so the worst a failure between them leaves is one hour where both
 #      fire, which the shared lock turns into one run and one "skipping".
 #
-# Nothing it does needs the Ruby, and it deletes none: the .rb files stay in
-# the checkout until the Rails deletion takes them. To go back, point the two
-# links at the .rb files, remove the cron file and restore paul's two lines
-# (the old crontab is kept at /var/backups/paul.crontab.<date>).
+# The Ruby went with Rails (#304), so there is no going back to it; a broken
+# job is fixed forward in the Go image. paul's old crontab is kept at
+# /var/backups/paul.crontab.<date> as a record.
 set -euo pipefail
 
 SELF="$(readlink -f "${BASH_SOURCE[0]}")"

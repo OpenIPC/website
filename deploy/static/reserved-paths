@@ -46,9 +46,8 @@
 /wall/
 /dl/
 /files/
-/protected-files/
 /.well-known/
-# The Go firmware process's image cache (#299), internal like /protected-files/.
+# The Go firmware process's image cache (#299), internal: reached only through the X-Accel-Redirect the firmware role sends.
 /firmware-cache/
 
 # --- the expensive leaf ------------------------------------------------------

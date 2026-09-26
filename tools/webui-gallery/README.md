@@ -16,7 +16,7 @@ tools/webui-gallery/run.sh --camera 192.168.1.10
 It asks for the password, photographs every page named in
 `data/webui_gallery.yml`, removes anything that identifies the camera, lays a
 scene over the live player, converts each capture to the two sizes the page
-ships, and installs them into `app/assets/images/webui/`. Then commit the result
+ships, and installs them into `frontend/apps/site/src/assets/webui/`. Then commit the result
 and open a pull request like any other change.
 
 Requirements: Docker, and network access to the camera. Everything else —
@@ -52,7 +52,7 @@ fault of the camera's software — the log viewer filling with warnings from
 something misconfigured on that particular device, say. Keep the previous one:
 
 ```bash
-git checkout master -- app/assets/images/webui/logs.webp app/assets/images/webui/logs-thumb.webp
+git checkout master -- frontend/apps/site/src/assets/webui/logs.webp frontend/apps/site/src/assets/webui/logs-thumb.webp
 ```
 
 Nothing depends on the gallery being one moment in time. Say so in the commit

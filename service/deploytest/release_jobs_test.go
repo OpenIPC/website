@@ -4,7 +4,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 )
@@ -18,17 +17,15 @@ func TestReleaseJobs(t *testing.T) {
 	installer := read(t, "deploy/install-release-jobs.sh")
 	cmd := read(t, "service/cmd/openipc/upstream.go")
 
-	// The Go and the Ruby take the same lock file, so a Ruby run still in
-	// flight while the jobs are swapped makes the Go one skip, not overlap.
+	// The Go and the Ruby took the same lock file, so a Ruby run still in
+	// flight while the jobs were swapped made the Go one skip, not overlap.
+	// The Ruby is gone (#304); these are the paths it named, and anything
+	// else that takes the lock by hand takes these.
 	t.Run("each job takes the lock its Ruby took", func(t *testing.T) {
-		for rb, flag := range map[string]string{
-			"deploy/publish-release-index.rb": "publish-release-index",
-			"deploy/mirror-repos.rb":          "mirror-repos",
+		for lock, flag := range map[string]string{
+			"/run/lock/openipc-mirror-releases.lock": "publish-release-index",
+			"/run/lock/openipc-mirror-repos.lock":    "mirror-repos",
 		} {
-			lock := find(read(t, rb), regexp.MustCompile(`(?m)^LOCK = '([^']+)'`), 1)
-			if lock == "" {
-				t.Fatalf("%s names no LOCK", rb)
-			}
 			mustContain(t, cmd, `"`+lock+`"`, flag+" does not default to "+lock)
 		}
 		mustContain(t, wrapper, "-v /run/lock:/run/lock", "the lock has to be the host's file, not one inside the container")

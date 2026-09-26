@@ -1,35 +1,42 @@
 # Restoring openipc.org
 
-Rehearsed 2026-08-23. Every step below was actually run, not merely written down.
+Rehearsed 2026-08-23 against the Rails stack, and rewritten for the Go service
+and PostgreSQL when Rails was removed (#304).
 
-The nightly `refresh-dev.sh` exercises steps 2–4 of this procedure against a
-live S3 object every morning at 03:00 UTC, so a broken backup surfaces the next
-day rather than on the day you need it.
+The nightly `refresh-dev.sh` exercises steps 2 and 4 of this procedure against
+a live S3 object every morning at 03:00 UTC, restoring into `openipc_dev`, so a
+broken backup surfaces the next day rather than on the day you need it.
 
 ## What exists to restore from
 
-`s3://openipc-org-backup/` (eu-north-1), written nightly at 02:00 UTC:
+`s3://openipc-org-backup/` (eu-north-1), written nightly at 02:00 UTC by
+`deploy/backup-db.sh`:
 
 ```
-daily/YYYY-MM-DD/openipc_production.sql.zst   ~6.6 MB   kept 14 days
-daily/YYYY-MM-DD/postgres-openipc_production.dump   the Go service's PostgreSQL (#293)
-daily/YYYY-MM-DD/secrets.tar.gz.age           ~500 B
-weekly/YYYY-Www/...                                     kept 60 days
-monthly/YYYY-MM/...                                     kept 400 days
+daily/YYYY-MM-DD/postgres-openipc_production.dump   the Go service's PostgreSQL   kept 14 days
+daily/YYYY-MM-DD/secrets.tar.gz.age                 ~500 B
+daily/YYYY-MM-DD/analytics.sqlite3.zst              GoatCounter
+weekly/YYYY-Www/...                                                               kept 60 days
+monthly/YYYY-MM/...                                                               kept 400 days
+final/...                                           MySQL's last dump, taken when Rails was removed (#304)
 ```
 
-`secrets.tar.gz.age` holds `master.key` and `production.env`, and the Go
-service's settings (`.env.go-prod`, `.env.go-dev`, `.env.go-shadow`). It is encrypted to
+Before #304 each night also carried `openipc_production.sql.zst`, the MySQL
+dump Rails read. Nothing restores it any more; it is kept for the record.
+
+`secrets.tar.gz.age` holds the Go service's settings, `.env.go-prod` and
+`.env.go-dev`: the database passwords and the two keys that keep shared camera
+links and frame grants valid. Backups written before #304 also hold Rails'
+`master.key` and `production.env`, which nothing needs now. It is encrypted to
 an age recipient whose **private key is not on the server** — it lives only in
 the team password manager. The server can write backups it cannot read.
 
-**Not backed up, by decision:** the ActiveStorage blob tree and the wall
-images (Open Wall snapshots purge at 2 days and cameras re-upload continuously),
-the Go service's firmware cache (`/srv/www/shared/firmware`, one version of
-each image, rebuilt on the next request), `/srv/github-releases`
-(refreshed hourly from GitHub), `public/files` (rebuilt on demand by
-`Firmware#generate`), and `/srv/www/static` (every bundle is reproducible from
-`ghcr.io/openipc/website-static:<sha>`, the same argument as the app image).
+**Not backed up, by decision:** the wall images (snapshots purge at 2 days and
+cameras re-upload continuously), the firmware cache (`/srv/www/shared/firmware`,
+one version of each image, rebuilt on the next request), `/srv/github-releases`
+(refreshed hourly from GitHub), and `/srv/www/static` (every bundle is
+reproducible from `ghcr.io/openipc/website-static:<sha>`, the same argument as
+the service image).
 
 ## Restore
 
@@ -51,36 +58,37 @@ export AWS_ACCESS_KEY_ID=...
 export AWS_SECRET_ACCESS_KEY=...
 
 aws s3 ls s3://openipc-org-backup/daily/
-aws s3 ls s3://openipc-org-backup/daily/2026-08-23/
+aws s3 ls s3://openipc-org-backup/daily/2026-09-27/
 ```
 
 ### 2. Download
 
 ```bash
-D=2026-08-23
-aws s3 cp s3://openipc-org-backup/daily/$D/openipc_production.sql.zst .
+D=2026-09-27
+aws s3 cp s3://openipc-org-backup/daily/$D/postgres-openipc_production.dump .
 aws s3 cp s3://openipc-org-backup/daily/$D/secrets.tar.gz.age .
-aws s3 cp s3://openipc-org-backup/daily/$D/analytics.sqlite3.zst .   # absent before 2026-09-20
-aws s3 cp s3://openipc-org-backup/daily/$D/postgres-openipc_production.dump .   # absent before the Go service
-zstd -t openipc_production.sql.zst        # integrity, before trusting it
-zstd -t analytics.sqlite3.zst
-pg_restore --list postgres-openipc_production.dump | grep -E 'TABLE DATA public (snapshots|downloads) '
+aws s3 cp s3://openipc-org-backup/daily/$D/analytics.sqlite3.zst .
+zstd -t analytics.sqlite3.zst             # integrity, before trusting it
+pg_restore --list postgres-openipc_production.dump \
+  | grep -E 'TABLE DATA public (snapshots|downloads|service_migrations) '
 ```
 
 `pg_restore --list` reads the archive's table of contents and fails on a
-truncated one; both tables must be listed. (`pg_restore` comes with the
-PostgreSQL client, which step 4b installs; run the check then if this host
-has none yet.)
+truncated one; all three tables must be listed. (`pg_restore` comes with the
+PostgreSQL client, which step 4 installs; run the check then if this host has
+none yet.)
 
 ### 3. Recover the secrets
 
 ```bash
 age -d -i /path/to/openipc-backup-age.key -o secrets.tar.gz secrets.tar.gz.age
-tar -xzf secrets.tar.gz                   # -> master.key, production.env
+tar -xzf secrets.tar.gz                   # -> .env.go-prod, .env.go-dev
+install -m 0600 .env.go-prod .env.go-dev /srv/www/
 ```
 
-Without `master.key`, `credentials.yml.enc` is undecryptable and the app will
-not boot (`config.require_master_key = true`). This step is not optional.
+Without them the service still comes up — the installer generates what is
+missing — but with new keys: every camera link shared before the restore stops
+resolving.
 
 ### 3b. Restore the analytics database
 
@@ -94,8 +102,9 @@ chown openipc-analytics:openipc-analytics /srv/www/shared/analytics/db.sqlite3
 an empty database when it finds no file there, and it leaves an existing one
 alone — so running it first gives a host that works, collects from that moment,
 and has quietly lost every visitor figure the project ever had. Nothing rebuilds
-this from anywhere else: MySQL is dumped nightly and the blob tree refills
-itself from cameras, but the audience history exists only in this archive.
+this from anywhere else: the service's database is dumped nightly and the wall
+refills itself from cameras, but the audience history exists only in this
+archive.
 
 The account it belongs to does not exist yet on a rebuilt host either; the
 `install -d` above fails until `install-analytics.sh` has created it, so the
@@ -104,26 +113,12 @@ archive, otherwise create the user first (`useradd --system
 --no-create-home --shell /usr/sbin/nologin openipc-analytics`), restore, then
 run the installer.
 
-### 4. Load the database
+### 4. The database
 
-```bash
-mysql -e "CREATE DATABASE openipc_production
-          CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-          CREATE USER IF NOT EXISTS 'openipc'@'localhost'
-            IDENTIFIED BY '<from production.env>';
-          GRANT ALL ON openipc_production.* TO 'openipc'@'localhost';"
-
-zstd -dc openipc_production.sql.zst | mysql openipc_production
-
-mysql -N -e "SELECT COUNT(*) FROM schema_migrations;" openipc_production   # expect > 10
-```
-
-### 4b. The Go service's PostgreSQL (#293)
-
-`deploy/install-go-service.sh` installs PostgreSQL 17, creates the three
-databases and their roles, and writes `/srv/www/.env.go-*`. On a rebuilt host
-put the `.env.go-*` files from the secrets archive in place **first** (mode
-0600) so the roles get the passwords the files already carry, then:
+`deploy/install-go-service.sh` installs PostgreSQL 17, creates the two
+databases and their roles, and writes `/srv/www/.env.go-prod` and
+`.env.go-dev`. With the files from step 3 already in place, the roles get the
+passwords the files carry and the keys in them are kept:
 
 ```bash
 /srv/www/deploy-src/deploy/install-go-service.sh
@@ -135,11 +130,15 @@ runuser -u postgres -- psql -tAc "SELECT count(*) FROM downloads" openipc_produc
 
 The snapshots in it name images under `/srv/www/shared/wall`, which is not
 backed up: the wall repopulates within one upload cycle, and rows whose images
-are gone are retired by the nightly purge. `openipc-deploy` runs the Go
+are gone are retired by the nightly purge. `openipc-deploy` runs the
 migrations before it starts the containers, so a dump from an older schema is
 brought forward on the first deploy.
 
-### 5. Bring the app up
+To keep cameras from writing into the database while it is being replaced on a
+live host, freeze the upload first and unfreeze it afterwards:
+`openipc-route prod upload freeze` … `openipc-route prod upload go`.
+
+### 5. Bring the service up
 
 `openipc-deploy` and `openipc-static` are symlinks into a checkout that carries
 only `deploy/`. On a rebuilt host neither command exists yet, and nothing else
@@ -159,15 +158,26 @@ below read their payloads from it. Keep it on master —
 `openipc-deploy status` reports how far behind it is, and both commands warn
 before they run (#256).
 
-Put `master.key` and `production.env` in place, write `/srv/www/.env.prod` (see
-`deploy/docker-compose.yml` for the variables), then:
+Step 4 has written the service's settings, so:
 
 ```bash
 openipc-deploy prod <sha>      # or 'latest'
+openipc-deploy dev <sha>
 ```
 
-The image comes from `ghcr.io/openipc/website` and the repo is public, so no
-registry credentials are needed.
+The image comes from `ghcr.io/openipc/website-go` and the repo is public, so no
+registry credentials are needed. `deploy.sh` creates the directories the
+containers write to (`/srv/www/shared/wall`, `firmware`, `go-release-cache` and
+their dev counterparts) owned by uid 1000, and refuses to deploy if one exists
+with another owner: Docker creates a missing bind-mount source root-owned, and
+the container would then fail every write while reporting healthy.
+
+Then the two hourly GitHub jobs, which need an image on `GO_PROD_TAG`:
+
+```bash
+/srv/www/deploy-src/deploy/install-release-jobs.sh
+/usr/local/sbin/openipc-publish-release-index >>/var/log/openipc-paul-cron.log 2>&1   # the index now, not at :05
+```
 
 ### 5b. The static bundle
 
@@ -176,48 +186,28 @@ openipc-static prod <sha>      # the same sha
 openipc-static status
 ```
 
-nginx serves `/srv/www/static/prod/current` and falls through to Rails for
-anything not in it, so a host with **no bundle at all serves the whole site
-from Rails**. That is the correct degradation and it is why this is not part of
-`openipc-deploy` — but it is also why its absence is silent. The signal is
-`/_smoke/` answering Rails' 404 instead of `X-Served-By: static`.
+**The bundle is the site.** nginx serves `/srv/www/static/prod/current`, and
+what is not in it falls through to `@fallback`, which answers the route map's
+redirects and 410s and otherwise 404s. A host with no bundle has no pages at
+all — it is not a degraded state, it is an outage, and this step is not
+optional. The signal is `/_smoke/` answering `X-Served-By: static`.
 
 `openipc-static` creates `/srv/www/static/{prod,dev}` itself, with the modes the
 nginx worker needs to traverse them.
 
 > **The host pulls `ghcr.io/openipc/website-static` anonymously**, the same way
-> it pulls the application image. Verified 2026-09-21 from two machines with no
+> it pulls the service image. Verified 2026-09-21 from two machines with no
 > GHCR credentials and no `~/.docker/config.json`: the package inherited the
 > repository's public visibility when Actions first published it. If a pull
 > ever fails with `denied`, that inheritance is what to check — the symptom
 > reads like a missing image rather than a permissions problem.
 
-### 5a. Blob tree ownership
-
-The containers run as **uid 1000**. If `storage/` was ever written by a
-root-running process (the pre-2026-08-23 bare-metal service did exactly this),
-the blobs will be `root:root` and the container can read them but not create or
-unlink — new uploads and `ActiveStorage::PurgeJob` both fail with `EACCES`:
-
-```bash
-install -d -o 1000 -g 1000 -m 0755 /srv/www/shared/storage
-chown -R 1000:1000 /srv/www/shared/storage
-```
-
-Do this **before** cutting traffic over, not after. On ~94k blobs the recursive
-chown takes several minutes.
-
-`deploy.sh` and `purge-snapshots.sh` both run the `install -d` line themselves
-and refuse to continue if the directory is owned by anyone else, so a rebuilt
-host cannot quietly end up with a root-owned blob tree that Docker created on
-first mount. The recursive chown is still yours to run if you restore blobs
-from somewhere.
-
 ### 6. Host prerequisites
 
 Only needed on a rebuilt host:
 
-- docker-ce + compose v2, MariaDB, nginx, dehydrated, rsync. The last one is
+- docker-ce + compose v2, nginx, dehydrated, rsync (PostgreSQL comes from
+  `install-go-service.sh`, step 4). The last one is
   small and easy to miss: it is how `deploy/` reaches the host for the two
   installers below, it is needed at both ends, and a Debian install does not
   always have it. `apt-get install -y rsync` before either of them.
@@ -233,15 +223,17 @@ Only needed on a rebuilt host:
   rebuilt host came back keeping visitor addresses for whatever the
   distribution shipped that year, and nothing in the repository would have
   noticed. It also replaces the 2022 `openipc` entry that kept the retired
-  deployment's Rails logs for a year. Run it with the same rsync copy as the
+  deployment's logs for a year. Run it with the same rsync copy as the
   metrics installer below; it prints what is over-age before and after, and the
   next nightly logrotate run removes it.
-- `/run/mysqld` bind-mounted into the containers (the socket, not TCP)
-- `/srv/github-releases` — recreated by `~paul/bin/openipc-backup-releases.rb`
-  within the hour; the site degrades gracefully until then
-- `/srv/www/shared/storage` — the blob tree, on the system disk. Blobs are
-  **not** in the backup; the Open Wall will simply be empty until cameras
-  re-upload, so an empty directory owned by uid 1000 is a complete restore.
+- `/var/run/postgresql` bind-mounted into the containers (the socket, not TCP;
+  `docker-compose.yml` does this)
+- `/srv/github-releases` — recreated by `openipc-publish-release-index` (step 5)
+  within the hour; firmware downloads refuse what the index does not list until
+  then, and every page still works
+- `/srv/www/shared/wall` — the wall's images. **Not** in the backup; the Open
+  Wall is empty until cameras re-upload, so an empty directory owned by uid
+  1000 is a complete restore.
 - **analytics**, via `deploy/install-analytics.sh` (#181). It installs
   GoatCounter, its account and its systemd unit, and creates the site on first
   run from `ANALYTICS_EMAIL` and `ANALYTICS_PASSWORD`. The SQLite database is
@@ -287,8 +279,9 @@ Measured on the live host:
 | Install a static bundle (pull, extract, check, flip, verify) | 4 s |
 | Roll back a static bundle already on disk | 1.8 s |
 
-The realistic constraint on a full rebuild is provisioning the host, not the
-data — the data is 6.6 MB.
+The first three rows were measured against the Rails stack; the PostgreSQL
+database is smaller than the MySQL one was. The realistic constraint on a full
+rebuild is provisioning the host, not the data.
 
 ## If a restore fails
 
@@ -305,8 +298,8 @@ The most likely causes, in order:
 
 The hourly memory series in `/var/log/openipc-rss.log` is what every memory
 claim about this host rests on -- it is how #148 established that the Rails
-container reaches 0.27 GiB at boot, 1.56 GiB at one hour and 3.19 GiB at five
-days, and how any future allocator or caching change gets judged. A rebuilt
+container reached 0.27 GiB at boot, 1.56 GiB at one hour and 3.19 GiB at five
+days, and it is the before-and-after for #304 removing it. A rebuilt
 host that skips this comes back with no series at all, and the gap only becomes
 visible when someone needs the numbers.
 
@@ -321,9 +314,9 @@ file it installs so that failure is visible.
 
 Idempotent, and it verifies itself: it runs the sampler the way cron will, with
 an empty environment, and fails if nothing comes out. `deploy/memory-probe.sh`
-is the other half -- it puts a fixed load on a container and reports what that
-did to its memory and its latency, so two images can be compared in minutes
-instead of by deploying one and waiting a day.
+is the other half -- it puts a fixed load on the Go web container (the wall's
+JSON and `/up`) and reports what that did to its memory and its latency, so two
+images can be compared in minutes instead of by deploying one and waiting a day.
 
 ## Search console properties
 
@@ -346,9 +339,9 @@ question this section was opened with: the consoles hold query history that
 #154 needs as a before-and-after when every indexed URL changes, and the
 account that can read it is the maintainers', not a personal one.
 
-If HTML-file verification is ever used instead, commit the file to `public/`.
-It ships in the image and survives a rebuild; `config.assets.compile` is off,
-but `public/` is served as-is.
+If HTML-file verification is ever used instead, commit the file to
+`frontend/apps/site/public/`. It ships in the static bundle and survives a
+rebuild.
 
 ### The mirrors do not need their own properties
 
