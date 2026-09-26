@@ -199,7 +199,8 @@ server {
         charset_types text/plain;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Content-Type-Options nosniff always;
-        add_header Cache-Control "public, max-age=2592000" always;
+        # Not `always`: a 404 cached for a month would outlive the file's arrival.
+        add_header Cache-Control "public, max-age=2592000";
         add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 

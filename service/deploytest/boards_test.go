@@ -29,6 +29,9 @@ func TestBoardCatalogueServing(t *testing.T) {
 		mustContain(t, files, "limit_conn per_subnet 100;", name+": the board files inherit the 20-stream cap")
 		mustContain(t, files, "Strict-Transport-Security", name+": add_header in /board-files/ drops the inherited HSTS")
 		mustContain(t, files, "text/plain uboot", name+": a U-Boot console would download instead of opening")
+		// A missing file's 404 must not be kept for a month by a browser or a
+		// mirror: add_header without `always` leaves error answers alone.
+		mustContain(t, files, `add_header Cache-Control "public, max-age=2592000";`, name+": the month of cache is not on successful answers only")
 	}
 	mustContain(t, read(t, "deploy/nginx/conf.d/openipc-boards-rate.conf"), "zone=boards_search", "the boards_search zone is not declared")
 
