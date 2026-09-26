@@ -62,6 +62,26 @@
   {
     "role": "web",
     "method": "GET",
+    "path": "/api/v1/explorer/{source}/builds"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/explorer/{source}/builds/{build}/platforms/{platform}"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/explorer/{source}/platforms/{platform}/trends"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/explorer/{source}/platforms/{platform}/kconfig"
+  },
+  {
+    "role": "web",
+    "method": "GET",
     "path": "/api/v1/wall/cable"
   },
   {

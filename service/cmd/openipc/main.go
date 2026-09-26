@@ -141,6 +141,10 @@ var routes = []Route{
 	{"firmware", "GET", "/api/v1/hardware/availability.json"},
 	{"firmware", "GET", "/api/v1/wizard/{file}"},
 	{"web", "POST", "/api/v1/builds"},
+	{"web", "GET", "/api/v1/explorer/{source}/builds"},
+	{"web", "GET", "/api/v1/explorer/{source}/builds/{build}/platforms/{platform}"},
+	{"web", "GET", "/api/v1/explorer/{source}/platforms/{platform}/trends"},
+	{"web", "GET", "/api/v1/explorer/{source}/platforms/{platform}/kconfig"},
 	{"web", "GET", "/api/v1/wall/cable"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
@@ -300,6 +304,8 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 	// The one place builds enter: CI pushes each build once (builds/PUSH.md).
 	mux.Handle("POST /api/v1/builds", &builds.Handler{
 		Verifier: &builds.LazyVerifier{Issuer: builds.GitHubIssuer}, DB: pool, Log: log})
+	// The firmware explorer reads the same tables.
+	(&builds.Explorer{DB: pool, Log: log}).Routes(mux)
 	granter := &wall.Granter{Key: cfg.WallGrantKey}
 	api := &wall.API{Store: store, Granter: granter, Log: log}
 	api.Routes(mux)

@@ -379,3 +379,97 @@ func TestHandler(t *testing.T) {
 		t.Errorf("pushed_by %q", by)
 	}
 }
+
+// What the explorer reads back is what the CI measured: the size report,
+// reassembled from rows, equals the document that was pushed.
+func TestExplorerRoundTrip(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	p := push(t, "nightly-20260925-230295e", time.Date(2026, 9, 25, 17, 48, 37, 0, time.UTC), "gk7205v200", "hi3516cv500")
+	if _, err := Save(ctx, pool, p, "test"); err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	(&Explorer{DB: pool, Log: slog.New(slog.DiscardHandler)}).Routes(mux)
+	get := func(path string) (int, map[string]any, string) {
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		var v map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &v)
+		return rec.Code, v, rec.Header().Get("ETag")
+	}
+
+	code, list, etag := get("/api/v1/explorer/firmware/builds")
+	if code != 200 || len(list["builds"].([]any)) != 1 || etag == "" {
+		t.Fatalf("builds: %d %v", code, list)
+	}
+	if kc := list["kconfig_available_for"].([]any); len(kc) != 1 || kc[0] != "gk7205v200-lite" {
+		t.Errorf("kconfig_available_for %v", kc)
+	}
+
+	code, got, _ := get("/api/v1/explorer/firmware/builds/nightly-20260925-230295e/platforms/gk7205v200-lite")
+	if code != 200 {
+		t.Fatalf("report: %d", code)
+	}
+	var want map[string]any
+	raw, _ := os.ReadFile("testdata/sizes.gk7205v200-lite.json")
+	json.Unmarshal(raw, &want)
+	for _, k := range []string{"board", "variant", "flash_mb", "kernel_version", "headroom"} {
+		if a, b := jsonOf(got[k]), jsonOf(want[k]); a != b {
+			t.Errorf("%s: %s, pushed %s", k, a, b)
+		}
+	}
+	if len(got["packages"].([]any)) != len(want["packages"].([]any)) {
+		t.Errorf("%d packages, pushed %d", len(got["packages"].([]any)), len(want["packages"].([]any)))
+	}
+	sumOf := func(doc map[string]any, key string) float64 {
+		var s float64
+		for _, p := range doc["packages"].([]any) {
+			s += p.(map[string]any)[key].(float64)
+		}
+		return s
+	}
+	if sumOf(got, "uncompressed_bytes") != sumOf(want, "uncompressed_bytes") {
+		t.Error("package bytes differ from what was pushed")
+	}
+	lc, wlc := got["linux_components"].(map[string]any), want["linux_components"].(map[string]any)
+	for _, k := range []string{"modules", "built_in", "autoload_list"} {
+		if len(lc[k].([]any)) != len(wlc[k].([]any)) {
+			t.Errorf("%s: %d, pushed %d", k, len(lc[k].([]any)), len(wlc[k].([]any)))
+		}
+	}
+	if len(got["removed_by_finalize"].([]any)) != len(want["removed_by_finalize"].([]any)) {
+		t.Error("removed_by_finalize differs from what was pushed")
+	}
+
+	code, tr, _ := get("/api/v1/explorer/firmware/platforms/gk7205v200-lite/trends")
+	if code != 200 || len(tr["headroom_rootfs"].([]any)) != 1 || len(tr["packages"].(map[string]any)) != 35 {
+		t.Errorf("trends: %d %v", code, tr["headroom_rootfs"])
+	}
+	code, kc, _ := get("/api/v1/explorer/firmware/platforms/gk7205v200-lite/kconfig")
+	if code != 200 || kc["graph"].(map[string]any)["symbol_count"] != float64(47) || len(kc["help"].(map[string]any)["help"].(map[string]any)) == 0 {
+		t.Errorf("kconfig: %d", code)
+	}
+	for _, path := range []string{
+		"/api/v1/explorer/wiki/builds",
+		"/api/v1/explorer/firmware/builds/nightly-19990101-0000000/platforms/gk7205v200-lite",
+		"/api/v1/explorer/firmware/platforms/no-such-lite/trends",
+		"/api/v1/explorer/firmware/platforms/hi3516cv500-lite/kconfig",
+	} {
+		if code, _, _ := get(path); code != 404 {
+			t.Errorf("%s: %d, want 404", path, code)
+		}
+	}
+	rec := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/api/v1/explorer/firmware/builds", nil)
+	r.Header.Set("If-None-Match", etag)
+	mux.ServeHTTP(rec, r)
+	if rec.Code != http.StatusNotModified {
+		t.Errorf("a matching ETag got %d", rec.Code)
+	}
+}
+
+func jsonOf(v any) string {
+	b, _ := json.Marshal(v)
+	return string(b)
+}
