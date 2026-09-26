@@ -122,21 +122,32 @@ env_put() {
   fi
 }
 
+# The password a DATABASE_URL carries: postgres://role:PASSWORD@/db?host=...
+url_password() { sed -n 's|^postgres://[^:]*:\([^@]*\)@.*|\1|p' <<<"$1"; }
+
 create_databases() {
   for e in "${ENVIRONMENTS[@]}"; do
     read -r name db role _ <<<"$e"
     local file; file=$(env_file "$name")
     local url; url=$(env_value "$file" DATABASE_URL)
-    if [ -z "$url" ]; then
-      local pw; pw=$(openssl rand -hex 24)
-      if psql_admin -c "SELECT 1 FROM pg_roles WHERE rolname = '${role}'" | grep -q 1; then
-        psql_admin -c "ALTER ROLE ${role} WITH LOGIN PASSWORD '${pw}'"
-      else
-        psql_admin -c "CREATE ROLE ${role} WITH LOGIN PASSWORD '${pw}'"
-      fi
+    # The role must exist with the password the settings carry, whether those
+    # settings were just generated or restored from the secrets archive onto a
+    # fresh host (RESTORE.md 4b) -- a URL with no role behind it cannot own a
+    # database, let alone log in.
+    local pw
+    if [ -n "$url" ]; then
+      pw=$(url_password "$url")
+      [[ "$pw" =~ ^[0-9a-f]{48}$ ]] || die "${file}: DATABASE_URL does not carry a password this installer wrote"
+    else
+      pw=$(openssl rand -hex 24)
       url="postgres://${role}:${pw}@/${db}?host=/var/run/postgresql"
-      env_put "$file" DATABASE_URL "$url"
     fi
+    if psql_admin -c "SELECT 1 FROM pg_roles WHERE rolname = '${role}'" | grep -q 1; then
+      psql_admin -c "ALTER ROLE ${role} WITH LOGIN PASSWORD '${pw}'"
+    else
+      psql_admin -c "CREATE ROLE ${role} WITH LOGIN PASSWORD '${pw}'"
+    fi
+    env_put "$file" DATABASE_URL "$url"
     if ! psql_admin -c "SELECT 1 FROM pg_database WHERE datname = '${db}'" | grep -q 1; then
       runuser -u postgres -- createdb -O "$role" "$db"
     fi

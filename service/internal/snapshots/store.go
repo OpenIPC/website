@@ -121,11 +121,51 @@ type NewRow struct {
 	ByteSize    int64
 }
 
-// Insert writes a row and returns its public id, generating another on the
-// one-in-2^80 collision rather than failing a camera's upload.
-func (st *Store) Insert(ctx context.Context, row NewRow) error {
+// ErrTooSoon is the interval refusing a frame; Elapsed is the seconds since
+// the camera's last one, by the database's clock.
+type ErrTooSoon struct{ Elapsed float64 }
+
+func (e ErrTooSoon) Error() string {
+	return fmt.Sprintf("too soon: %.0f s since the last frame", e.Elapsed)
+}
+
+// InsertIfDue is the interval check and the insert as one step. Two uploads
+// from one camera arriving together would otherwise both read the same last
+// frame, both pass, and both be stored: the check and the write happen under
+// a transaction-scoped advisory lock on the camera's key, so the second waits
+// for the first and then sees it. minElapsed <= 0 skips the check (a
+// whitelisted address).
+func (st *Store) InsertIfDue(ctx context.Context, row NewRow, minElapsed float64) error {
+	return pgx.BeginFunc(ctx, st.DB, func(tx pgx.Tx) error {
+		key := MACKey(row.MAC)
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('snapshot:' || $1, 0))`, key); err != nil {
+			return err
+		}
+		if minElapsed > 0 {
+			var elapsed float64
+			err := tx.QueryRow(ctx, `SELECT extract(epoch FROM now() - created_at)::float8
+				FROM snapshots WHERE mac_key = $1 ORDER BY created_at DESC, id DESC LIMIT 1`, key).Scan(&elapsed)
+			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				return err
+			}
+			if err == nil && elapsed < minElapsed {
+				return ErrTooSoon{Elapsed: elapsed}
+			}
+		}
+		return insert(ctx, tx, st, row)
+	})
+}
+
+type execer interface {
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+}
+
+// Insert writes a row with no interval check.
+func (st *Store) Insert(ctx context.Context, row NewRow) error { return insert(ctx, st.DB, st, row) }
+
+func insert(ctx context.Context, db execer, st *Store, row NewRow) error {
 	a := row.Attributes
-	_, err := st.DB.Exec(ctx, `INSERT INTO snapshots
+	_, err := db.Exec(ctx, `INSERT INTO snapshots
 		(public_id, mac_address, camera_token, ip_address, caption, firmware, flash_size, hostname,
 		 sensor, soc, soc_temperature, streamer, uptime, content_type, byte_size)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
@@ -198,6 +238,25 @@ func (st *Store) DayOf(ctx context.Context, subject *Snapshot, limit int) ([]*Sn
 func (st *Store) Pending(ctx context.Context) ([]string, error) {
 	rows, err := st.DB.Query(ctx, `SELECT public_id FROM snapshots
 		WHERE variants_generated_at IS NULL ORDER BY id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
+// Generated is every frame whose variants are done: the sweep removes any
+// original still beside them (a crash between marking and unlinking).
+func (st *Store) Generated(ctx context.Context) ([]string, error) {
+	rows, err := st.DB.Query(ctx, `SELECT public_id FROM snapshots WHERE variants_generated_at IS NOT NULL`)
 	if err != nil {
 		return nil, err
 	}

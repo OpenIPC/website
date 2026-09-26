@@ -320,23 +320,38 @@ func TestOneVersionPerFirmware(t *testing.T) {
 		}
 		return p
 	}
+	age := func() { // as if nginx had last opened everything an hour ago
+		files, _ := filepath.Glob(filepath.Join(dir, "img", "*"))
+		old := time.Now().Add(-time.Hour)
+		for _, f := range files {
+			os.Chtimes(f, old, old)
+		}
+	}
 	v1 := build(version(1))
 	idx2 := version(2)
 	v2 := build(idx2)
 	if v1 == v2 {
 		t.Fatal("a new upstream version produced the same cache name")
 	}
-	if _, err := os.Stat(v1); !errors.Is(err, os.ErrNotExist) {
-		t.Error("building version 2 left version 1's image on disk")
+	// Version 1 was handed to nginx a moment ago, so it outlives the build of
+	// version 2 by the grace -- deleting it now could 404 a download already
+	// answered.
+	if _, err := os.Stat(v1); err != nil {
+		t.Error("version 1 was deleted while a download of it could still be in flight")
 	}
+	age()
 	images.Keep(idx2)
 	releases.Keep(idx2)
 	bins, _ := filepath.Glob(filepath.Join(dir, "img", "*.bin"))
 	blobs, _ := filepath.Glob(filepath.Join(dir, "rel", "blobs", "*"))
 	if len(bins) != 1 || len(blobs) != 2 {
-		t.Errorf("after purge: %d images (want 1), %d tarballs (want 2: the current bootloader and linux)", len(bins), len(blobs))
+		t.Errorf("after the grace: %d images (want 1), %d tarballs (want 2: the current bootloader and linux)", len(bins), len(blobs))
+	}
+	if _, err := os.Stat(v2); err != nil {
+		t.Error("the current version was evicted")
 	}
 	// And an index that no longer offers it at all empties the cache.
+	age()
 	images.Keep(&Index{assets: map[string]Asset{}})
 	bins, _ = filepath.Glob(filepath.Join(dir, "img", "*"))
 	if len(bins) != 0 {

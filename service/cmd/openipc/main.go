@@ -335,26 +335,31 @@ func firmwareRole(ctx context.Context, cfg *config.Config, log *slog.Logger, poo
 		}
 	}
 
-	// When upstream publishes, the old version goes: check the index every
-	// ten minutes and evict whatever it no longer describes.
+	// When upstream publishes, the old version goes: every ten minutes, evict
+	// whatever the index no longer describes (images once nginx has had the
+	// grace to finish with them, tarballs once no build is reading them).
 	bg, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	go func() {
 		var seen *firmware.Index
 		t := time.NewTicker(10 * time.Minute)
 		defer t.Stop()
 		for {
-			if idx, err := index.Current(); err == nil && idx != seen {
-				seen = idx
+			if idx, err := index.Current(); err == nil {
 				n, freed := images.Keep(idx)
-				m, freedTar, _ := releases.Keep(idx)
+				var m int
+				var freedTar int64
+				if !images.Busy() {
+					m, freedTar, _ = releases.Keep(idx)
+				}
 				if n+m > 0 {
 					log.Info("firmware: evicted superseded versions", "images", n, "tarballs", m,
 						"freed_mb", (freed+freedTar)>>20)
 				}
-				if idx.Stale(time.Now()) {
+				if idx != seen && idx.Stale(time.Now()) {
 					log.Warn("firmware: release index is stale; is the publisher still running?",
 						"generated_at", idx.GeneratedAt)
 				}
+				seen = idx
 			}
 			select {
 			case <-bg.Done():

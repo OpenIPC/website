@@ -58,7 +58,7 @@ func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	status := h.serve(w, r, locale)
 	if h.Shadow {
 		h.Log.Info("upload_decision", "request_id", r.Header.Get("X-Request-Id"), "status", status,
-			"mac", r.FormValue("mac_address"))
+			"location", w.Header().Get("Location"))
 	}
 }
 
@@ -82,18 +82,17 @@ func (h *UploadHandler) serve(w http.ResponseWriter, r *http.Request, locale str
 		return http.StatusForbidden
 	}
 	// So is the interval, and it wins over a file error too: Rails raised it
-	// from inside validation, after collecting the rest.
-	if u.MAC != nil && !contains(h.Whitelist, u.RemoteIP) {
+	// from inside validation, after collecting the rest. With nothing else
+	// wrong, the check is made again under the camera's lock as the row is
+	// inserted (Store.InsertIfDue), so two frames at once cannot both pass.
+	exempt := contains(h.Whitelist, u.RemoteIP)
+	if u.MAC != nil && !exempt && len(errs) > 0 {
 		elapsed, found, err := h.Store.SecondsSinceLast(r.Context(), mac)
 		if err != nil {
-			h.Log.Error("upload: interval lookup failed", "err", err)
-			httpx.Empty(w, http.StatusInternalServerError)
-			return http.StatusInternalServerError
+			return h.fail(w, "interval lookup failed", err)
 		}
 		if found && elapsed < IntervalSeconds-HysteresisSeconds {
-			w.Header().Set("Retry-After", strconv.Itoa(IntervalSeconds-int(elapsed)))
-			httpx.Empty(w, http.StatusTooManyRequests)
-			return http.StatusTooManyRequests
+			return tooSoon(w, elapsed)
 		}
 	}
 	if len(errs) > 0 {
@@ -102,11 +101,17 @@ func (h *UploadHandler) serve(w http.ResponseWriter, r *http.Request, locale str
 		return http.StatusUnsupportedMediaType
 	}
 
-	id, err := h.create(r, u, mac)
+	minElapsed := float64(IntervalSeconds - HysteresisSeconds)
+	if exempt {
+		minElapsed = 0
+	}
+	id, err := h.create(r, u, mac, minElapsed)
+	var soon ErrTooSoon
+	if errors.As(err, &soon) {
+		return tooSoon(w, soon.Elapsed)
+	}
 	if err != nil {
-		h.Log.Error("upload: not stored", "err", err)
-		httpx.Empty(w, http.StatusInternalServerError)
-		return http.StatusInternalServerError
+		return h.fail(w, "not stored", err)
 	}
 	h.Enqueue(id)
 
@@ -121,17 +126,30 @@ func (h *UploadHandler) serve(w http.ResponseWriter, r *http.Request, locale str
 	return http.StatusCreated
 }
 
-func (h *UploadHandler) create(r *http.Request, u *Upload, mac string) (string, error) {
+// tooSoon is the 429: fifteen minutes less the elapsed time, whole seconds.
+func tooSoon(w http.ResponseWriter, elapsed float64) int {
+	w.Header().Set("Retry-After", strconv.Itoa(IntervalSeconds-int(elapsed)))
+	httpx.Empty(w, http.StatusTooManyRequests)
+	return http.StatusTooManyRequests
+}
+
+func (h *UploadHandler) fail(w http.ResponseWriter, what string, err error) int {
+	h.Log.Error("upload: "+what, "err", err)
+	httpx.Empty(w, http.StatusInternalServerError)
+	return http.StatusInternalServerError
+}
+
+func (h *UploadHandler) create(r *http.Request, u *Upload, mac string, minElapsed float64) (string, error) {
 	contentType := ContentType(u.File, u.Declared, u.Filename)
 	for attempt := 0; ; attempt++ {
 		id := NewPublicID()
 		if err := h.Wall.WriteOriginal(id, u.File); err != nil {
 			return "", err
 		}
-		err := h.Store.Insert(r.Context(), NewRow{
+		err := h.Store.InsertIfDue(r.Context(), NewRow{
 			PublicID: id, MAC: mac, IP: u.RemoteIP, Attributes: u.Attributes,
 			ContentType: contentType, ByteSize: int64(len(u.File)),
-		})
+		}, minElapsed)
 		if err == nil {
 			return id, nil
 		}

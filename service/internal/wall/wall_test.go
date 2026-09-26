@@ -249,6 +249,13 @@ func TestWallAddresses(t *testing.T) {
 			t.Errorf("%s: %d, want %d", path, rec.Code, code)
 		}
 	}
+	// Page numbers at and beyond the top of an int are not a panic.
+	for _, page := range []string{"9223372036854775807", "9223372036854775808", "1024819115206086200"} {
+		rec := get(t, mux, "/api/v1/wall/page/"+page+".json")
+		if rec.Code != 200 && rec.Code != 404 {
+			t.Errorf("page %s: %d", page, rec.Code)
+		}
+	}
 	// A page past the end is empty, not an error.
 	if p := get(t, mux, "/api/v1/wall/page/9.json").Body.String(); !strings.Contains(p, `"tiles":[],"grant":null`) {
 		t.Errorf("page 9: %s", p)

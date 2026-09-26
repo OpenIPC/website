@@ -43,13 +43,18 @@ Rails keeps answering. nginx mirrors every upload to the shadow process, which
 decides it into `openipc_shadow`. After a day:
 
 ```sh
-openipc-shadow-report          # must end "0 disagree"
+openipc-shadow-report          # must exit 0: "every upload seen, decided and stored the same way"
 ```
 
-The first 20 minutes are skipped by default: the shadow database starts
-empty, so for one interval it accepts frames that Rails throttles. Any
-disagreement after that is a bug, and the upload stays on Rails until it is
-understood. When done: `openipc-route prod upload rails`, then stop and remove
+It requires, for every upload in the window, that the shadow saw it, decided
+it the same way (201, 403, 415 or 429), and, where both stored the frame,
+stored the same row: every field the camera sent, its address, and the file's
+type and size, read back from MariaDB and from `openipc_shadow`. The first 20
+minutes are skipped by default: the shadow database starts empty, so for one
+interval it accepts frames that Rails throttles. Any failure after that is a
+bug, and the upload stays on Rails until it is understood.
+
+When done: `openipc-route prod upload rails`, then stop and remove
 `go-shadow-prod`.
 
 ## 2. The wall (#293, #295, #296, #301): about two minutes

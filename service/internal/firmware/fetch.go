@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"golang.org/x/sync/singleflight"
@@ -47,7 +48,7 @@ type Releases struct {
 // generous overall deadline for 16 MB tarballs, and no redirect off GitHub.
 func NewHTTPClient() *http.Client {
 	return &http.Client{
-		Timeout: 3 * time.Minute,
+		Timeout: BuildDeadline,
 		Transport: &http.Transport{
 			Proxy:                 http.ProxyFromEnvironment,
 			TLSHandshakeTimeout:   5 * time.Second,
@@ -81,7 +82,7 @@ func (r *Releases) Get(ctx context.Context, a Asset) (string, error) {
 		if usable(path, a) {
 			return nil, nil
 		}
-		fctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Minute)
+		fctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), BuildDeadline)
 		defer cancel()
 		return nil, r.fetch(fctx, a, path)
 	})
@@ -146,7 +147,9 @@ func (r *Releases) fetch(ctx context.Context, a Asset, dest string) error {
 	return os.Rename(tmp, dest)
 }
 
-// Keep deletes every fetched asset the current index no longer names.
+// Keep deletes every fetched asset the current index no longer names. Call it
+// only while no build is running (Images.Busy): a build may still be reading
+// the version the index has just moved past.
 func (r *Releases) Keep(idx *Index) (removed int, freed int64, err error) {
 	keep := map[string]bool{}
 	for _, a := range idx.Assets() {
@@ -169,7 +172,7 @@ func (r *Releases) Keep(idx *Index) (removed int, freed int64, err error) {
 			continue
 		}
 		// A download in flight is only a temp file; leave young ones alone.
-		if len(e.Name()) > 4 && e.Name()[:5] == ".tmp-" && time.Since(info.ModTime()) < time.Hour {
+		if strings.HasPrefix(e.Name(), ".tmp-") && time.Since(info.ModTime()) < time.Hour {
 			continue
 		}
 		if os.Remove(filepath.Join(dir, e.Name())) == nil {

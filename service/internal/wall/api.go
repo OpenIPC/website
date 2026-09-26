@@ -197,7 +197,11 @@ func (a *API) page(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	number, _ := strconv.Atoi(stem)
+	number, err := strconv.Atoi(stem)
+	if err != nil {
+		http.NotFound(w, r) // more digits than an int holds: no such page
+		return
+	}
 	if number < 1 {
 		number = 1
 	}
@@ -206,8 +210,11 @@ func (a *API) page(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, err)
 		return
 	}
+	// Compared before multiplying, so a page number near the top of an int
+	// cannot overflow into a negative slice bound.
 	var rows []*snapshots.Snapshot
-	if from := (number - 1) * PerPage; from < len(all) {
+	if number-1 < (len(all)+PerPage-1)/PerPage {
+		from := (number - 1) * PerPage
 		rows = all[from:min(from+PerPage, len(all))]
 	}
 	pages := max((len(all)+PerPage-1)/PerPage, 1)

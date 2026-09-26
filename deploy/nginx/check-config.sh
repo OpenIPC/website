@@ -513,7 +513,7 @@ posts /ru/snapshots                 200 rails
 sleep 1
 grep -q 'POST /ru/snapshots' /tmp/shadow.log 2>/dev/null \
   || { echo "  shadowing did not mirror the upload to :3004"; fail=1; }
-grep -qE ' [0-9a-f]{32} 200$' /var/log/nginx/openipc-upload-decisions.log 2>/dev/null \
+grep -qE ' [0-9a-f]{32} 200 ' /var/log/nginx/openipc-upload-decisions.log 2>/dev/null \
   || { echo "  shadowing did not log the primary's decision"; fail=1; }
 route prod upload rails
 : > /tmp/shadow.log

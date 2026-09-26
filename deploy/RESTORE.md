@@ -61,9 +61,16 @@ D=2026-08-23
 aws s3 cp s3://openipc-org-backup/daily/$D/openipc_production.sql.zst .
 aws s3 cp s3://openipc-org-backup/daily/$D/secrets.tar.gz.age .
 aws s3 cp s3://openipc-org-backup/daily/$D/analytics.sqlite3.zst .   # absent before 2026-09-20
+aws s3 cp s3://openipc-org-backup/daily/$D/postgres-openipc_production.dump .   # absent before the Go service
 zstd -t openipc_production.sql.zst        # integrity, before trusting it
 zstd -t analytics.sqlite3.zst
+pg_restore --list postgres-openipc_production.dump | grep -E 'TABLE DATA public (snapshots|downloads) '
 ```
+
+`pg_restore --list` reads the archive's table of contents and fails on a
+truncated one; both tables must be listed. (`pg_restore` comes with the
+PostgreSQL client, which step 4b installs; run the check then if this host
+has none yet.)
 
 ### 3. Recover the secrets
 
@@ -120,6 +127,7 @@ put the `.env.go-*` files from the secrets archive in place **first** (mode
 
 ```bash
 /srv/www/deploy-src/deploy/install-go-service.sh
+pg_restore --list postgres-openipc_production.dump >/dev/null   # readable, before anything is dropped
 runuser -u postgres -- pg_restore --clean --if-exists --no-owner \
   --role=openipc_prod -d openipc_production postgres-openipc_production.dump
 runuser -u postgres -- psql -tAc "SELECT count(*) FROM downloads" openipc_production

@@ -48,6 +48,27 @@ type Inputs struct {
 	Rootfs string
 }
 
+// RetireGrace is how long a superseded image survives after it was last
+// handed to nginx. The handler names a file in X-Accel-Redirect and nginx
+// opens it a moment later; deleting in between is a 404 for a visitor whose
+// download had already been answered. Retired files go on the next sweep
+// after the grace, so "one version per firmware" holds within minutes.
+const RetireGrace = 10 * time.Minute
+
+func recentlyServed(info os.FileInfo) bool { return time.Since(atime(info)) < RetireGrace }
+
+// Busy says whether any build is running; the tarball sweep waits for none.
+func (im *Images) Busy() bool {
+	busy := false
+	im.building.Range(func(_, _ any) bool { busy = true; return false })
+	return busy
+}
+
+// BuildDeadline bounds a cold build, fetches included, below nginx's
+// proxy_read_timeout of 180 s on the download location: a build that could
+// outlive it would finish for nobody, the visitor having been sent a 504.
+const BuildDeadline = 150 * time.Second
+
 // layoutVersion changes whenever the way an image is assembled changes, so
 // that every cached image made the old way stops matching and is rebuilt.
 const layoutVersion = "1"
@@ -169,7 +190,7 @@ func (im *Images) Build(ctx context.Context, in Inputs) (string, error) {
 			return nil, nil
 		}
 		start := time.Now()
-		bctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 4*time.Minute)
+		bctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), BuildDeadline)
 		defer cancel()
 		ubootPath, err := im.Releases.Get(bctx, in.UBoot)
 		if err != nil {
@@ -378,6 +399,9 @@ func (im *Images) dropOtherVersions(in Inputs) {
 		n := e.Name()
 		if n != keep && strings.HasPrefix(n, prefix) && strings.HasSuffix(n, ".bin") &&
 			len(n) == len(prefix)+16+len(".bin") {
+			if info, err := e.Info(); err != nil || recentlyServed(info) {
+				continue // retired on a later sweep, once nginx is done with it
+			}
 			_ = os.Remove(filepath.Join(im.Root, n))
 			_ = os.Remove(inputsFile(filepath.Join(im.Root, n)))
 		}
@@ -413,6 +437,9 @@ func (im *Images) enforceCap() {
 	for _, f := range files {
 		if total <= im.MaxBytes {
 			return
+		}
+		if time.Since(f.used) < RetireGrace {
+			continue
 		}
 		if os.Remove(f.path) == nil {
 			_ = os.Remove(inputsFile(f.path))
@@ -466,6 +493,9 @@ func (im *Images) Keep(idx *Index) (removed int, freed int64) {
 				continue // judged with its image
 			}
 		case strings.HasSuffix(n, ".bin"):
+			if recentlyServed(info) {
+				continue
+			}
 			var r recordedInputs
 			raw, rerr := os.ReadFile(inputsFile(path))
 			if rerr == nil && json.Unmarshal(raw, &r) == nil && current(r.UBoot) && current(r.Linux) {

@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -96,6 +97,7 @@ type rig struct {
 	pool    *pgxpool.Pool
 	store   *snapshots.Store
 	handler http.Handler
+	mu      sync.Mutex
 	queued  []string
 }
 
@@ -105,7 +107,7 @@ func newRig(t *testing.T) *rig {
 	mux := http.NewServeMux()
 	h := &snapshots.UploadHandler{
 		Store: r.store, Wall: variants.Wall{Root: t.TempDir()},
-		Enqueue:   func(id string) { r.queued = append(r.queued, id) },
+		Enqueue:   func(id string) { r.mu.Lock(); r.queued = append(r.queued, id); r.mu.Unlock() },
 		Blacklist: []string{"02:c0:ff:ee:00:01"}, Whitelist: []string{"198.51.100.77"},
 		Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
@@ -268,6 +270,38 @@ func TestInterval(t *testing.T) {
 	if rec := r.upload(t, "/snapshots", "02:c0:f0:40:00:01", jpeg(12_288),
 		map[string]string{"X-Forwarded-For": "198.51.100.200"}); rec.Code != 429 {
 		t.Errorf("not whitelisted: %d", rec.Code)
+	}
+}
+
+// Frames sent together by one camera are judged one after the other: the
+// first is stored, the rest are told to wait. Otherwise every one of them
+// reads the same last frame, passes, and is stored.
+func TestConcurrentFramesFromOneCamera(t *testing.T) {
+	r := newRig(t)
+	codes := make(chan int, 8)
+	var wg sync.WaitGroup
+	for i := range 8 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			mac := "02:c0:f0:50:00:01"
+			if i%2 == 1 {
+				mac = "02-C0-F0-50-00-01" // the same camera, spelt the other way
+			}
+			codes <- r.upload(t, "/snapshots", mac, jpeg(12_288), nil).Code
+		}()
+	}
+	wg.Wait()
+	close(codes)
+	count := map[int]int{}
+	for c := range codes {
+		count[c]++
+	}
+	if count[201] != 1 || count[429] != 7 {
+		t.Errorf("eight frames at once from one camera: %v, want one 201 and seven 429", count)
+	}
+	if n := r.count(t, "02:c0:f0:50:00:01"); n != 1 {
+		t.Errorf("%d rows stored", n)
 	}
 }
 

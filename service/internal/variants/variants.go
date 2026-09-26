@@ -101,6 +101,7 @@ type Store interface {
 	Exists(ctx context.Context, publicID string) (bool, error)
 	MarkGenerated(ctx context.Context, publicID string, width, height int) (bool, error)
 	Pending(ctx context.Context) ([]string, error)
+	Generated(ctx context.Context) ([]string, error)
 }
 
 // Processor is the pool.
@@ -172,8 +173,10 @@ func (p *Processor) Enqueue(id string) {
 	}
 }
 
-// Recover re-enqueues every pending row whose original is still on disk. Run
-// at boot, and by the periodic sweep.
+// Recover re-enqueues every pending row whose original is still on disk, and
+// removes the original of every row that is done but still has one -- the
+// process stopped, or the unlink failed, between marking the row and removing
+// the file. Run at boot, and by the periodic sweep.
 func (p *Processor) Recover(ctx context.Context) (int, error) {
 	ids, err := p.Store.Pending(ctx)
 	if err != nil {
@@ -186,7 +189,22 @@ func (p *Processor) Recover(ctx context.Context) (int, error) {
 			n++
 		}
 	}
+	done, err := p.Store.Generated(ctx)
+	if err != nil {
+		return n, err
+	}
+	for _, id := range done {
+		if p.Wall.HasOriginal(id) {
+			p.removeOriginal(id)
+		}
+	}
 	return n, nil
+}
+
+func (p *Processor) removeOriginal(id string) {
+	if err := os.Remove(p.Wall.Original(id)); err != nil && !os.IsNotExist(err) {
+		p.Log.Warn("variants: original not removed; the sweep will retry", "public_id", id, "err", err)
+	}
 }
 
 func (p *Processor) process(ctx context.Context, id string) {
@@ -215,7 +233,7 @@ func (p *Processor) process(ctx context.Context, id string) {
 		_ = p.Wall.Purge(id)
 		return
 	}
-	_ = os.Remove(p.Wall.Original(id))
+	p.removeOriginal(id)
 	p.Log.Info("variants: generated", "public_id", id, "ms", time.Since(start).Milliseconds())
 }
 
