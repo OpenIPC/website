@@ -16,6 +16,9 @@ class ShadowReportTest < ActiveSupport::TestCase
     2026-09-27T10:30:00+00:00 req0002 201 /snapshots/r0000000000000000002
     2026-09-27T10:31:00+00:00 req0003 429 -
     2026-09-27T10:32:00+00:00 req0004 415 -
+    2026-09-27T10:33:00+00:00 req0005 - -
+    2026-09-27T10:33:00+00:00 req0006 - -
+    2026-09-27T10:34:00+00:00 req0007 429 -
   LOG
 
   def shadow_line(id, status, location)
@@ -48,14 +51,14 @@ class ShadowReportTest < ActiveSupport::TestCase
   def all_seen
     [shadow_line('req0001', 201, '/snapshots/g0000000000000000001'),
      shadow_line('req0002', 201, '/snapshots/g0000000000000000002'),
-     shadow_line('req0003', 429, ''), shadow_line('req0004', 415, '')]
+     shadow_line('req0003', 429, ''), shadow_line('req0004', 415, ''), shadow_line('req0007', 429, '')]
   end
 
   test 'every upload seen, decided and stored the same way passes, after the warm-up' do
     out, ok = report(all_seen)
 
     assert ok, out
-    assert_match(/compared 3 uploads/, out, 'the first twenty minutes are the warm-up')
+    assert_match(/compared 4 uploads/, out, 'the warm-up, and what no backend saw, are skipped')
     assert_match(/1 frames both stored; 0 row lines differ/, out)
   end
 
@@ -73,6 +76,14 @@ class ShadowReportTest < ActiveSupport::TestCase
 
     refute ok, out
     assert_match(/STORED ROWS DIFFER/, out)
+  end
+
+  # nginx logged 499 for it at the edge; the decision log carries what Rails answered.
+  test 'a camera that hung up is still compared, because the backends may have stored its frame' do
+    out, ok = report(all_seen.reject { |l| l.include?('req0007') })
+
+    refute ok, out
+    assert_match(/1 uploads Rails decided that the shadow never saw/, out)
   end
 
   test 'an upload the shadow never saw fails' do

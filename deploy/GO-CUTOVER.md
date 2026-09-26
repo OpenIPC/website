@@ -33,9 +33,10 @@ The wall's microcache keeps serving the last Rails body of an address for up to
 ## 1. Shadow the upload (#294): about a day
 
 ```sh
-docker compose --env-file /srv/www/deploy-src/deploy/.env \
-  -f /srv/www/deploy-src/deploy/docker-compose.yml --profile shadow up -d go-shadow-prod
-docker exec openipc-go-shadow-prod openipc migrate
+C="docker compose --env-file /srv/www/deploy-src/deploy/.env \
+  -f /srv/www/deploy-src/deploy/docker-compose.yml --profile shadow"
+$C run --rm --no-deps -T go-shadow-prod migrate   # first: serve refuses an unmigrated database
+$C up -d --no-deps --wait --wait-timeout 60 go-shadow-prod   # healthy before anything routes to it
 openipc-route prod upload shadow
 ```
 

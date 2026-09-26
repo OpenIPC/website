@@ -40,8 +40,14 @@ SINCE=""
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
-# nginx: "<iso time> <request id> <status> <location or ->"
-awk '{print $2, $3, ($4 == "" ? "-" : $4), $1}' "$LOG" | sort > "$work/primary"
+# nginx: "<iso time> <request id> <Rails' status> <location or ->". The status
+# is Rails' own answer ($upstream_status), so a camera that hung up after both
+# backends stored its frame is still compared. It is "-" when nginx answered
+# itself and no backend saw the request -- 408 (the body never finished
+# arriving; a few slow uplinks do this every cron, some 300 a day) and 413
+# (over the 1 MB limit) -- and those are not mirrored, so they are left out.
+awk '$3 != "-" {print $2, $3, ($4 == "" ? "-" : $4), $1}' "$LOG" \
+  | sort > "$work/primary"
 # the shadow: JSON lines with msg=upload_decision (SHADOW_LOG names a file
 # instead, for a test)
 { if [ -n "${SHADOW_LOG:-}" ]; then cat "$SHADOW_LOG"; else docker logs "$CONTAINER" 2>&1; fi; } \
