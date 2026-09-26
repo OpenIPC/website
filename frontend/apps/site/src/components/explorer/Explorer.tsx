@@ -6,6 +6,7 @@
  * per build. Everything shareable is in the query string -- source, build,
  * plat, compare, tab, help -- so a link opens the same view.
  */
+import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Build, IndexFile, Sizes, Source } from '../../lib/explorer/types';
 import { fetchIndex, fetchSizes, NotFound } from '../../lib/explorer/api';
@@ -39,10 +40,14 @@ export default function Explorer({ locale }: { locale: Locale }) {
   const [sizes, setSizes] = useState<Load<Sizes>>({ state: 'loading' });
 
   useEffect(() => {
+    // `live` drops the answer to a question the reader has since changed:
+    // switch source twice quickly and the slower response must not win.
+    let live = true;
     setIndex({ state: 'loading' });
     fetchIndex(source)
-      .then((v) => setIndex({ state: 'ok', value: v }))
-      .catch((e: Error) => setIndex({ state: 'error', error: e.message }));
+      .then((v) => live && setIndex({ state: 'ok', value: v }))
+      .catch((e: Error) => live && setIndex({ state: 'error', error: e.message }));
+    return () => { live = false; };
   }, [source]);
 
   // Builds that reported sizes; the rest have nothing to show.
@@ -65,9 +70,11 @@ export default function Explorer({ locale }: { locale: Locale }) {
   useEffect(() => {
     setSizes({ state: 'loading' });
     if (!build || !platform || !build.platforms.includes(platform)) return;
+    let live = true;
     fetchSizes(source, build.id, platform)
-      .then((v) => setSizes({ state: 'ok', value: v }))
-      .catch((e: Error) => setSizes(e instanceof NotFound ? { state: 'missing' } : { state: 'error', error: e.message }));
+      .then((v) => live && setSizes({ state: 'ok', value: v }))
+      .catch((e: Error) => live && setSizes(e instanceof NotFound ? { state: 'missing' } : { state: 'error', error: e.message }));
+    return () => { live = false; };
   }, [source, build?.id, platform]);
 
   useEffect(() => {
@@ -184,7 +191,7 @@ export default function Explorer({ locale }: { locale: Locale }) {
   );
 }
 
-function Notice({ tone = 'info', children }: { tone?: 'info' | 'error'; children: preact.ComponentChildren }) {
+function Notice({ tone = 'info', children }: { tone?: 'info' | 'error'; children: ComponentChildren }) {
   return (
     <p class={`my-0 border-l-[3px] px-3 py-2 ${tone === 'error' ? 'border-red bg-[#fbe4e6]' : 'border-brand-blue bg-surface-alt'}`}>{children}</p>
   );

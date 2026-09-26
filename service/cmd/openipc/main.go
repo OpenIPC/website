@@ -296,21 +296,47 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		Store: store, Wall: wallFS, Enqueue: proc.Enqueue,
 		Blacklist: cfg.MACBlacklist, Whitelist: cfg.IPWhitelist, Log: log, Shadow: cfg.Shadow,
 	})
+	granter := &wall.Granter{Key: cfg.WallGrantKey}
+	// Every handler the web role has, keyed as the routes table names it. The
+	// table decides what is served: a route with no handler, or a handler
+	// the table does not list, stops the process from starting.
+	handlers := map[string]http.Handler{
+		// The one place builds enter: CI pushes each build once (builds/PUSH.md).
+		"POST /api/v1/builds": &builds.Handler{
+			Verifier: &builds.LazyVerifier{Issuer: builds.GitHubIssuer}, DB: pool, Log: log},
+		"GET /api/v1/wall/socket": &wallsocket.Server{WallRoot: cfg.WallRoot, Grants: granter, Log: log,
+			GrantsDisabled: cfg.GrantsDisabled, Budget: &wallsocket.Budget{Limit: 1000}},
+	}
 	for _, r := range routes {
 		if r.Role == "web" && r.Method == "POST" && strings.Contains(r.Path, "/snapshots") {
-			mux.Handle(r.Method+" "+r.Path, upload)
+			handlers[r.Method+" "+r.Path] = upload
 		}
 	}
-	// The one place builds enter: CI pushes each build once (builds/PUSH.md).
-	mux.Handle("POST /api/v1/builds", &builds.Handler{
-		Verifier: &builds.LazyVerifier{Issuer: builds.GitHubIssuer}, DB: pool, Log: log})
-	// The firmware explorer reads the same tables.
-	(&builds.Explorer{DB: pool, Log: log}).Routes(mux)
-	granter := &wall.Granter{Key: cfg.WallGrantKey}
-	api := &wall.API{Store: store, Granter: granter, Log: log}
-	api.Routes(mux)
-	mux.Handle("GET /api/v1/wall/socket", &wallsocket.Server{WallRoot: cfg.WallRoot, Grants: granter, Log: log,
-		GrantsDisabled: cfg.GrantsDisabled, Budget: &wallsocket.Budget{Limit: 1000}})
+	for k, h := range (&builds.Explorer{DB: pool, Log: log}).Handlers() {
+		handlers[k] = h
+	}
+	for k, h := range (&wall.API{Store: store, Granter: granter, Log: log}).Handlers() {
+		handlers[k] = h
+	}
+	for _, r := range routes {
+		if r.Role != "web" {
+			continue
+		}
+		k := r.Method + " " + r.Path
+		h, ok := handlers[k]
+		if !ok {
+			cancel()
+			lock.Release()
+			return nil, fmt.Errorf("web route %s has no handler", k)
+		}
+		mux.Handle(k, h)
+		delete(handlers, k)
+	}
+	for k := range handlers {
+		cancel()
+		lock.Release()
+		return nil, fmt.Errorf("web handler %s is not in the routes table", k)
+	}
 
 	// The address this process believes a request came from, for the
 	// remote_ip canary. Answered only to a peer on a trusted network, which is

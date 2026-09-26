@@ -83,6 +83,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	counts, err := Save(r.Context(), h.DB, p, claims.PushedBy())
+	var other ErrOtherSource
+	if errors.As(err, &other) {
+		h.refuse(w, http.StatusConflict, err.Error(), nil)
+		return
+	}
 	if err != nil {
 		h.Log.Error("builds: not stored", "build", p.Build.ID, "by", claims.PushedBy(), "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "the build could not be stored; retry"})

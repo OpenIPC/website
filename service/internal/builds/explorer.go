@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -27,12 +28,22 @@ type Explorer struct {
 	Log *slog.Logger
 }
 
-// Routes registers the four addresses on mux.
+// Handlers is the four addresses, keyed "METHOD pattern" as the service's
+// routes table names them.
+func (e *Explorer) Handlers() map[string]http.HandlerFunc {
+	return map[string]http.HandlerFunc{
+		"GET /api/v1/explorer/{source}/builds":                              e.builds,
+		"GET /api/v1/explorer/{source}/builds/{build}/platforms/{platform}": e.report,
+		"GET /api/v1/explorer/{source}/platforms/{platform}/trends":         e.trends,
+		"GET /api/v1/explorer/{source}/platforms/{platform}/kconfig":        e.kconfig,
+	}
+}
+
+// Routes registers Handlers on mux, for tests.
 func (e *Explorer) Routes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/v1/explorer/{source}/builds", e.builds)
-	mux.HandleFunc("GET /api/v1/explorer/{source}/builds/{build}/platforms/{platform}", e.report)
-	mux.HandleFunc("GET /api/v1/explorer/{source}/platforms/{platform}/trends", e.trends)
-	mux.HandleFunc("GET /api/v1/explorer/{source}/platforms/{platform}/kconfig", e.kconfig)
+	for k, h := range e.Handlers() {
+		mux.HandleFunc(k, h)
+	}
 }
 
 var errNotFound = errors.New("not found")
@@ -42,13 +53,22 @@ func source(r *http.Request) (string, bool) {
 	return s, s == "firmware" || s == "builder"
 }
 
-// serve answers with a document that changes only when a build is stored: the
-// ETag is the newest build of the source plus the address, so a revisit costs
-// a 304 until the next nightly.
+// serve answers with a document that changes only when the source's builds
+// change: the ETag is the source's revision -- how many builds it holds and
+// when the latest was stored, so a new push, a re-push of the same id and a
+// retention trim each move it -- plus the address. A revisit costs a 304 until
+// then. Without a revision there is no 304.
 func (e *Explorer) serve(w http.ResponseWriter, r *http.Request, src string, load func(ctx context.Context) (any, error)) {
-	var newest string
-	_ = e.DB.QueryRow(r.Context(), `SELECT coalesce(max(id), '') FROM builds WHERE source = $1`, src).Scan(&newest)
-	sum := sha256.Sum256([]byte(newest + "|" + r.URL.Path))
+	var n int64
+	var last time.Time
+	if err := e.DB.QueryRow(r.Context(),
+		`SELECT count(*), coalesce(max(ingested_at), 'epoch') FROM builds WHERE source = $1`, src).Scan(&n, &last); err != nil {
+		e.Log.Error("explorer: no revision", "err", err)
+		w.Header().Set("Cache-Control", "no-store")
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})
+		return
+	}
+	sum := sha256.Sum256([]byte(fmt.Sprintf("%d|%d|%s", n, last.UnixNano(), r.URL.Path)))
 	etag := `"` + hex.EncodeToString(sum[:12]) + `"`
 	h := w.Header()
 	h.Set("Cache-Control", "public, max-age=300")
@@ -133,10 +153,10 @@ func (e *Explorer) report(w http.ResponseWriter, r *http.Request) {
 // loadReport reassembles size_report.py's document from rows.
 func loadReport(ctx context.Context, db *pgxpool.Pool, src, build, plat string) (map[string]any, error) {
 	var (
-		id                                                      int64
-		board, variant, kver, kpath, comp                       *string
-		flash, kused, kcap, rused, rcap                         *int
-		kuimage, kvmlinux, runcomp, rcomp                       *int64
+		id                                int64
+		board, variant, kver, kpath, comp *string
+		flash, kused, kcap, rused, rcap   *int
+		kuimage, kvmlinux, runcomp, rcomp *int64
 	)
 	err := db.QueryRow(ctx, `
 		SELECT p.id, p.board, p.variant, p.flash_mb, p.kernel_version, p.kernel_image_path,

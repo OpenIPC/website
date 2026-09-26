@@ -1239,5 +1239,517 @@
       "updated_at": "2026-07-24T19:11:33Z",
       "release": "latest"
     }
+  },
+  "fits": {
+    "fh8852v100-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1710,
+      "rootfs_kb": 3844
+    },
+    "fh8852v200-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1440,
+      "rootfs_kb": 4664
+    },
+    "gk7102-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1382,
+      "rootfs_kb": 3960
+    },
+    "gk7102s-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1372,
+      "rootfs_kb": 3960
+    },
+    "gk7201v200-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1836,
+      "rootfs_kb": 4948
+    },
+    "gk7202v300-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1856,
+      "rootfs_kb": 5088
+    },
+    "gk7202v300-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1856,
+      "rootfs_kb": 7076
+    },
+    "gk7205v200-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1877,
+      "rootfs_kb": 5116
+    },
+    "gk7205v200-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1877,
+      "rootfs_kb": 6684
+    },
+    "gk7205v210-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1816,
+      "rootfs_kb": 5104
+    },
+    "gk7205v300-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1886,
+      "rootfs_kb": 5116
+    },
+    "gk7205v300-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1886,
+      "rootfs_kb": 6684
+    },
+    "gk7205v500-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1897,
+      "rootfs_kb": 4416
+    },
+    "gk7205v500-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1897,
+      "rootfs_kb": 6980
+    },
+    "gk7205v510-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1897,
+      "rootfs_kb": 4416
+    },
+    "gk7605v100-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1856,
+      "rootfs_kb": 5112
+    },
+    "gm8135-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1263,
+      "rootfs_kb": 5084
+    },
+    "gm8136-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1263,
+      "rootfs_kb": 5084
+    },
+    "hi3516av100-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1832,
+      "rootfs_kb": 4640
+    },
+    "hi3516av100-neo": {
+      "flash_mb": 16,
+      "kernel_kb": 1771,
+      "rootfs_kb": 4784
+    },
+    "hi3516av100-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1832,
+      "rootfs_kb": 6120
+    },
+    "hi3516av200-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1877,
+      "rootfs_kb": 4996
+    },
+    "hi3516av200-neo": {
+      "flash_mb": 16,
+      "kernel_kb": 1815,
+      "rootfs_kb": 6320
+    },
+    "hi3516av200-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1877,
+      "rootfs_kb": 6480
+    },
+    "hi3516av300-lite": {
+      "flash_mb": 16,
+      "kernel_kb": 1933,
+      "rootfs_kb": 7864
+    },
+    "hi3516av300-neo": {
+      "flash_mb": 16,
+      "kernel_kb": 1923,
+      "rootfs_kb": 6832
+    },
+    "hi3516cv100-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1820,
+      "rootfs_kb": 5048
+    },
+    "hi3516cv100-neo": {
+      "flash_mb": 8,
+      "kernel_kb": 1743,
+      "rootfs_kb": 4352
+    },
+    "hi3516cv200-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1657,
+      "rootfs_kb": 5064
+    },
+    "hi3516cv200-neo": {
+      "flash_mb": 8,
+      "kernel_kb": 1744,
+      "rootfs_kb": 4652
+    },
+    "hi3516cv300-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1659,
+      "rootfs_kb": 5068
+    },
+    "hi3516cv300-neo": {
+      "flash_mb": 8,
+      "kernel_kb": 1757,
+      "rootfs_kb": 4540
+    },
+    "hi3516cv300-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1659,
+      "rootfs_kb": 6760
+    },
+    "hi3516cv500-lite": {
+      "flash_mb": 16,
+      "kernel_kb": 1943,
+      "rootfs_kb": 7864
+    },
+    "hi3516cv6xx-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 0,
+      "rootfs_kb": 5120
+    },
+    "hi3516cv6xx-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 0,
+      "rootfs_kb": 7124
+    },
+    "hi3516dv100-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1816,
+      "rootfs_kb": 5020
+    },
+    "hi3516dv100-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1816,
+      "rootfs_kb": 6144
+    },
+    "hi3516dv200-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1769,
+      "rootfs_kb": 4828
+    },
+    "hi3516dv300-lite": {
+      "flash_mb": 16,
+      "kernel_kb": 1931,
+      "rootfs_kb": 7864
+    },
+    "hi3516ev100-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1576,
+      "rootfs_kb": 5020
+    },
+    "hi3516ev200-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1782,
+      "rootfs_kb": 5100
+    },
+    "hi3516ev200-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1782,
+      "rootfs_kb": 7128
+    },
+    "hi3516ev300-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 2006,
+      "rootfs_kb": 5108
+    },
+    "hi3516ev300-neo": {
+      "flash_mb": 8,
+      "kernel_kb": 1919,
+      "rootfs_kb": 5116
+    },
+    "hi3516ev300-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 2006,
+      "rootfs_kb": 8132
+    },
+    "hi3518cv100-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1820,
+      "rootfs_kb": 5048
+    },
+    "hi3518ev100-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1820,
+      "rootfs_kb": 4936
+    },
+    "hi3518ev200-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1796,
+      "rootfs_kb": 4868
+    },
+    "hi3518ev200-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1796,
+      "rootfs_kb": 6800
+    },
+    "hi3518ev300-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1874,
+      "rootfs_kb": 5112
+    },
+    "hi3518ev300-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1874,
+      "rootfs_kb": 7644
+    },
+    "hi3519dv500-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 0,
+      "rootfs_kb": 8824
+    },
+    "hi3519v101-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1810,
+      "rootfs_kb": 4960
+    },
+    "hi3520dv200-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1739,
+      "rootfs_kb": 3520
+    },
+    "hi3536cv100-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1671,
+      "rootfs_kb": 2808
+    },
+    "hi3536dv100-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1709,
+      "rootfs_kb": 3908
+    },
+    "nt98562-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1905,
+      "rootfs_kb": 4928
+    },
+    "nt98566-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1905,
+      "rootfs_kb": 4928
+    },
+    "rv1103-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 2720,
+      "rootfs_kb": 5624
+    },
+    "rv1106-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 2720,
+      "rootfs_kb": 5624
+    },
+    "rv1109-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 3298,
+      "rootfs_kb": 0
+    },
+    "rv1126-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 3294,
+      "rootfs_kb": 0
+    },
+    "ssc30kd-lite": {
+      "flash_mb": 16,
+      "kernel_kb": 2025,
+      "rootfs_kb": 6076
+    },
+    "ssc30kd-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 2024,
+      "rootfs_kb": 7472
+    },
+    "ssc30kq-lite": {
+      "flash_mb": 16,
+      "kernel_kb": 2025,
+      "rootfs_kb": 6076
+    },
+    "ssc30kq-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 2025,
+      "rootfs_kb": 7472
+    },
+    "ssc325-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1932,
+      "rootfs_kb": 4400
+    },
+    "ssc325de-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1931,
+      "rootfs_kb": 4816
+    },
+    "ssc333-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1957,
+      "rootfs_kb": 5020
+    },
+    "ssc333-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1957,
+      "rootfs_kb": 6156
+    },
+    "ssc335-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1957,
+      "rootfs_kb": 5020
+    },
+    "ssc335-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1957,
+      "rootfs_kb": 6156
+    },
+    "ssc335de-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1957,
+      "rootfs_kb": 5020
+    },
+    "ssc335de-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1957,
+      "rootfs_kb": 5832
+    },
+    "ssc337-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1957,
+      "rootfs_kb": 5020
+    },
+    "ssc337-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1957,
+      "rootfs_kb": 5832
+    },
+    "ssc337de-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1956,
+      "rootfs_kb": 5020
+    },
+    "ssc337de-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1957,
+      "rootfs_kb": 6248
+    },
+    "ssc338q-lite": {
+      "flash_mb": 16,
+      "kernel_kb": 2025,
+      "rootfs_kb": 6076
+    },
+    "ssc338q-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 2025,
+      "rootfs_kb": 8048
+    },
+    "ssc377-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1991,
+      "rootfs_kb": 5068
+    },
+    "ssc377d-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1991,
+      "rootfs_kb": 5068
+    },
+    "ssc377de-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1991,
+      "rootfs_kb": 5068
+    },
+    "ssc377qe-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1992,
+      "rootfs_kb": 5068
+    },
+    "ssc378de-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1992,
+      "rootfs_kb": 5068
+    },
+    "ssc378qe-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1991,
+      "rootfs_kb": 5068
+    },
+    "t10-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1543,
+      "rootfs_kb": 4740
+    },
+    "t20-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1545,
+      "rootfs_kb": 4344
+    },
+    "t20-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1545,
+      "rootfs_kb": 6568
+    },
+    "t21-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1505,
+      "rootfs_kb": 4340
+    },
+    "t21-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1505,
+      "rootfs_kb": 5076
+    },
+    "t23-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1501,
+      "rootfs_kb": 4648
+    },
+    "t30-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1504,
+      "rootfs_kb": 4996
+    },
+    "t31-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1787,
+      "rootfs_kb": 5012
+    },
+    "t31-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1786,
+      "rootfs_kb": 6992
+    },
+    "t40-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1855,
+      "rootfs_kb": 4732
+    },
+    "t40-ultimate": {
+      "flash_mb": 16,
+      "kernel_kb": 1854,
+      "rootfs_kb": 5800
+    },
+    "v851s-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1997,
+      "rootfs_kb": 4868
+    },
+    "xm510-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1292,
+      "rootfs_kb": 2956
+    },
+    "xm530-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1171,
+      "rootfs_kb": 3912
+    },
+    "xm550-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1171,
+      "rootfs_kb": 3704
+    }
   }
 }

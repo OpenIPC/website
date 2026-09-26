@@ -46,7 +46,7 @@ func push(t testing.TB, id string, builtAt time.Time, boards ...string) *Payload
 	t.Helper()
 	p := &Payload{
 		Schema: 1, Source: "firmware",
-		Build: Build{ID: id, Release: id, SHA: strings.Repeat("a", 40), BuiltAt: builtAt, PublishedAt: builtAt.Add(time.Hour)},
+		Build:   Build{ID: id, Release: id, SHA: strings.Repeat("a", 40), BuiltAt: builtAt, PublishedAt: builtAt.Add(time.Hour)},
 		Aliases: map[string]string{"gk7205v210": "gk7205v200", "xm550": "xm530"},
 	}
 	for _, b := range boards {
@@ -94,11 +94,11 @@ func TestValidate(t *testing.T) {
 
 func TestParseAssetName(t *testing.T) {
 	for name, want := range map[string][3]string{
-		"openipc.gk7205v200-nor-lite.tgz":      {"gk7205v200", "nor", "lite"},
-		"openipc.ssc338q-nand-ultimate.tgz":    {"ssc338q", "nand", "ultimate"},
-		"openipc.rv1106-emmc-lite.tgz":         {"rv1106", "emmc", "lite"},
-		"openipc.t31-sd-neo.tgz":               {"t31", "sd", "neo"},
-		"openipc.hi3516cv6xx.v2-nor-lite.tgz":  {"hi3516cv6xx.v2", "nor", "lite"},
+		"openipc.gk7205v200-nor-lite.tgz":     {"gk7205v200", "nor", "lite"},
+		"openipc.ssc338q-nand-ultimate.tgz":   {"ssc338q", "nand", "ultimate"},
+		"openipc.rv1106-emmc-lite.tgz":        {"rv1106", "emmc", "lite"},
+		"openipc.t31-sd-neo.tgz":              {"t31", "sd", "neo"},
+		"openipc.hi3516cv6xx.v2-nor-lite.tgz": {"hi3516cv6xx.v2", "nor", "lite"},
 	} {
 		b, s, e, ok := ParseAssetName(name)
 		if !ok || [3]string{b, s, e} != want {
@@ -238,7 +238,7 @@ func (s *signer) token(t *testing.T, edit func(std *jwt.Claims, c map[string]any
 	c := map[string]any{
 		"repository": "OpenIPC/firmware", "repository_owner_id": OpenIPCOwnerID,
 		"job_workflow_ref": "OpenIPC/firmware/.github/workflows/build.yml@refs/heads/master",
-		"ref": "refs/heads/master", "event_name": "workflow_dispatch", "run_id": "42", "run_attempt": "1",
+		"ref":              "refs/heads/master", "event_name": "workflow_dispatch", "run_id": "42", "run_attempt": "1",
 	}
 	if edit != nil {
 		edit(&std, c)
@@ -280,8 +280,8 @@ func TestVerifier(t *testing.T) {
 		}
 	}
 	for name, edit := range map[string]func(*jwt.Claims, map[string]any){
-		"another owner":   func(_ *jwt.Claims, c map[string]any) { c["repository_owner_id"] = "1" },
-		"a pull request":  func(_ *jwt.Claims, c map[string]any) { c["event_name"] = "pull_request" },
+		"another owner":       func(_ *jwt.Claims, c map[string]any) { c["repository_owner_id"] = "1" },
+		"a pull request":      func(_ *jwt.Claims, c map[string]any) { c["event_name"] = "pull_request" },
 		"pull_request_target": func(_ *jwt.Claims, c map[string]any) { c["event_name"] = "pull_request_target" },
 	} {
 		_, err := v.Verify(ctx, s.token(t, edit))
@@ -472,4 +472,64 @@ func TestExplorerRoundTrip(t *testing.T) {
 func jsonOf(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)
+}
+
+// One source's CI must not replace another's build by naming its id.
+func TestOtherSourceCannotReplace(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	fw := push(t, "nightly-20260925-230295e", time.Now(), "gk7205v200")
+	if _, err := Save(ctx, pool, fw, "firmware"); err != nil {
+		t.Fatal(err)
+	}
+	bl := push(t, "nightly-20260925-230295e", time.Now(), "gk7205v200")
+	bl.Source = "builder"
+	_, err := Save(ctx, pool, bl, "builder")
+	var other ErrOtherSource
+	if !errors.As(err, &other) || other.Source != "firmware" {
+		t.Fatalf("builder replaced firmware's build: %v", err)
+	}
+	var n int
+	pool.QueryRow(ctx, `SELECT count(*) FROM build_assets WHERE build_id = 'nightly-20260925-230295e'`).Scan(&n)
+	if n != 1 {
+		t.Errorf("firmware's build lost its assets (%d)", n)
+	}
+}
+
+// The explorer's validator moves on a re-push of the same id and on a trim,
+// not only when a newer id arrives.
+func TestExplorerETagFollowsEveryChange(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	mux := http.NewServeMux()
+	(&Explorer{DB: pool, Log: slog.New(slog.DiscardHandler)}).Routes(mux)
+	etag := func() string {
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest("GET", "/api/v1/explorer/firmware/builds", nil))
+		return rec.Header().Get("ETag")
+	}
+	d := time.Date(2026, 9, 25, 17, 0, 0, 0, time.UTC)
+	Save(ctx, pool, push(t, "nightly-20260924-a74b007", d.Add(-24*time.Hour), "gk7205v200"), "t")
+	Save(ctx, pool, push(t, "nightly-20260925-230295e", d, "gk7205v200"), "t")
+	first := etag()
+	time.Sleep(10 * time.Millisecond)
+	Save(ctx, pool, push(t, "nightly-20260925-230295e", d, "gk7205v200", "hi3516cv500"), "re-push")
+	second := etag()
+	if second == first {
+		t.Error("a re-push of the same id kept the ETag")
+	}
+	Trim(ctx, pool, 1)
+	if etag() == second {
+		t.Error("a retention trim kept the ETag")
+	}
+}
+
+// Eviction follows the bytes: a re-pushed build with the same id and the
+// same number of files is a different index when a digest moved.
+func TestFingerprintFollowsDigests(t *testing.T) {
+	a := firmware.NewIndex("b", []firmware.Asset{{Name: "x.tgz", Size: 1, Digest: "sha256:" + sum, Release: "b"}}, nil, nil)
+	b := firmware.NewIndex("b", []firmware.Asset{{Name: "x.tgz", Size: 1, Digest: "sha256:" + strings.Repeat("0", 64), Release: "b"}}, nil, nil)
+	if a.Fingerprint() == b.Fingerprint() {
+		t.Error("a changed digest left the fingerprint alone")
+	}
 }

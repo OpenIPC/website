@@ -124,7 +124,7 @@ func (s *Source) reload(ctx context.Context, why string) {
 		s.Log.Warn("builds: index not loaded", "why", why, "err", err)
 		return
 	}
-	changed := s.current == nil || s.current.Build != idx.Build || len(s.current.Assets()) != len(idx.Assets())
+	changed := s.current == nil || s.current.Fingerprint() != idx.Fingerprint()
 	s.current, s.err = idx, nil
 	s.mu.Unlock()
 	s.Log.Info("builds: index loaded", "why", why, "build", idx.Build, "assets", len(idx.Assets()))

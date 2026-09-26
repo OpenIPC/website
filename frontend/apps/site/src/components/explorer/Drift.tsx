@@ -28,7 +28,11 @@ export default function Drift({ source, builds, base, baseBuild, compareBuild, p
     setOther(null);
     setError(null);
     if (!compareBuild) return;
-    fetchSizes(source, compareBuild, platform).then(setOther).catch((e: Error) => setError(e.message));
+    let live = true;
+    fetchSizes(source, compareBuild, platform)
+      .then((v) => live && setOther(v))
+      .catch((e: Error) => live && setError(e.message));
+    return () => { live = false; };
   }, [source, compareBuild, platform]);
 
   const rows = useMemo(() => (other ? diffSizes(other, base) : []), [other, base]);

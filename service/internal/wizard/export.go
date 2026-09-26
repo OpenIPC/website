@@ -185,8 +185,12 @@ const (
 	eightRootfsKB = 5120
 )
 
-// fitsEight says whether an edition's build fits an 8 MB NOR chip. A build
-// that reported nothing is assumed to, as every build did before the reports.
+// fitsEight says whether an edition's build fits an 8 MB NOR chip. A size
+// report that says it does not is decisive (#285). No report is not evidence
+// of either: legacy tarballs such as hi3518ev201's never had one and are 8 MB
+// builds, and SoCs with nothing published show the full menu with a warning.
+// For those the offer stands as it always did, and the image builder still
+// refuses an image that does not fit, naming the flash it needs.
 func (e *exporter) fitsEight(edition string) bool {
 	f, ok := e.idx.Fit(e.board, edition)
 	if !ok {

@@ -26,13 +26,16 @@ export default function WhatIf({ source, platform, sizes, t }: { source: Source;
     setError(null);
     setMissing(false);
     setWanted(new Set());
+    let live = true;
     fetchKconfig(source, platform)
       .then((doc) => {
+        if (!live) return;
         // The API's graph names no board; the fragment and the request do.
         setGraph({ ...doc.graph, board: sizes.board, variant: sizes.variant });
         setHelp(doc.help);
       })
-      .catch((e: Error) => (e instanceof NotFound ? setMissing(true) : setError(e.message)));
+      .catch((e: Error) => live && (e instanceof NotFound ? setMissing(true) : setError(e.message)));
+    return () => { live = false; };
   }, [source, platform, sizes.board, sizes.variant]);
 
   const closure = useMemo(() => (graph ? closeDisable(graph, wanted) : null), [graph, wanted]);

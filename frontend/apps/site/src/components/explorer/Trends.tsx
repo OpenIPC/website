@@ -30,9 +30,11 @@ export default function Trends({ source, platform, t }: { source: Source; platfo
     setTrends(null);
     setError(null);
     setMissing(false);
+    let live = true;
     fetchTrends(source, platform)
-      .then(setTrends)
-      .catch((e: Error) => (e instanceof NotFound ? setMissing(true) : setError(e.message)));
+      .then((v) => live && setTrends(v))
+      .catch((e: Error) => live && (e instanceof NotFound ? setMissing(true) : setError(e.message)));
+    return () => { live = false; };
   }, [source, platform]);
 
   const series = trends ? (kind === 'packages' ? trends.packages : trends.modules) : {};

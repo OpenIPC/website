@@ -10,6 +10,8 @@
 package firmware
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -67,6 +69,8 @@ type Index struct {
 	aliases map[string]string
 	fits    map[string]Fit
 	builds  map[[2]string][]string
+
+	fingerprint string
 }
 
 // NewIndex builds an Index from rows.
@@ -89,8 +93,24 @@ func NewIndex(build string, assets []Asset, aliases map[string]string, fits map[
 	for k := range idx.builds {
 		slices.Sort(idx.builds[k])
 	}
+	names := make([]string, 0, len(idx.assets))
+	for n := range idx.assets {
+		names = append(names, n)
+	}
+	slices.Sort(names)
+	h := sha256.New()
+	for _, n := range names {
+		a := idx.assets[n]
+		fmt.Fprintf(h, "%s\x00%d\x00%s\x00%s\n", n, a.Size, a.Digest, a.Release)
+	}
+	idx.fingerprint = hex.EncodeToString(h.Sum(nil))
 	return idx
 }
+
+// Fingerprint changes whenever any asset's bytes or release change: a
+// re-pushed build with the same id and the same number of files is still a
+// different index when a digest moved.
+func (i *Index) Fingerprint() string { return i.fingerprint }
 
 // Asset looks one up by name.
 func (i *Index) Asset(name string) (Asset, bool) {

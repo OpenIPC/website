@@ -26,6 +26,13 @@ func Save(ctx context.Context, pool *pgxpool.Pool, p *Payload, pushedBy string) 
 	var c Counts
 	err := pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 		b := p.Build
+		// A re-push replaces the build -- but only its own source's: one
+		// repository's CI must never delete another's build by naming its id.
+		var existing string
+		qerr := tx.QueryRow(ctx, `SELECT source::text FROM builds WHERE id = $1 FOR UPDATE`, b.ID).Scan(&existing)
+		if qerr == nil && existing != p.Source {
+			return ErrOtherSource{ID: b.ID, Source: existing}
+		}
 		if _, err := tx.Exec(ctx, `DELETE FROM builds WHERE id = $1`, b.ID); err != nil {
 			return err
 		}
@@ -222,6 +229,13 @@ func (r *childRows) copy(ctx context.Context, tx pgx.Tx) error {
 		}
 	}
 	return nil
+}
+
+// ErrOtherSource is a push naming a build id another source already holds.
+type ErrOtherSource struct{ ID, Source string }
+
+func (e ErrOtherSource) Error() string {
+	return fmt.Sprintf("build %s belongs to %s; a push cannot replace another source's build", e.ID, e.Source)
 }
 
 // Trim keeps the newest n builds of each source, as upstream's release cleanup
