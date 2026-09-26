@@ -39,6 +39,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/snapshots"
 	"github.com/OpenIPC/website/service/internal/variants"
 	"github.com/OpenIPC/website/service/internal/wall"
+	"github.com/OpenIPC/website/service/internal/wallsocket"
 )
 
 // version is stamped at build time (-ldflags "-X main.version=<sha>").
@@ -136,6 +137,7 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/wall/snapshot/{id}/{file}"},
 	{"web", "GET", "/api/v1/wall/camera/{file}"},
 	{"firmware", "GET", "/api/v1/hardware/availability.json"},
+	{"web", "GET", "/api/v1/wall/cable"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 }
@@ -291,8 +293,11 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 			mux.Handle(r.Method+" "+r.Path, upload)
 		}
 	}
-	api := &wall.API{Store: store, Granter: &wall.Granter{Key: cfg.WallGrantKey}, Log: log}
+	granter := &wall.Granter{Key: cfg.WallGrantKey}
+	api := &wall.API{Store: store, Granter: granter, Log: log}
 	api.Routes(mux)
+	mux.Handle("GET /api/v1/wall/cable", &wallsocket.Server{WallRoot: cfg.WallRoot, Grants: granter, Log: log,
+		GrantsDisabled: cfg.GrantsDisabled, Budget: &wallsocket.Budget{Limit: 1000}})
 
 	// The address this process believes a request came from, for the
 	// remote_ip canary. Answered only to a peer on a trusted network, which is

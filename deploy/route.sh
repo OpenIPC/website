@@ -6,7 +6,7 @@
 #   openipc-route init                       create missing state files, all Rails
 #
 #   env      prod | dev
-#   surface  upload | wall | firmware | availability
+#   surface  upload | wall | firmware | availability | cable
 #   state    rails | go                      (any surface)
 #            freeze                          (upload: cameras get 503 and retry)
 #            shadow                          (prod upload: Rails answers, Go decides a mirror)
@@ -29,7 +29,7 @@ set -eu
 ROUTES_DIR=${ROUTES_DIR:-/etc/nginx/openipc-routes}
 RELOAD=${NGINX_RELOAD:-systemctl reload nginx}
 LOG=${ROUTE_LOG:-/var/log/openipc-route.log}
-SURFACES="upload wall firmware availability"
+SURFACES="upload wall firmware availability cable"
 
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
@@ -60,6 +60,18 @@ init() {
       # shellcheck disable=SC2046
       render "$e" $(current_pairs "$e") > "$ROUTES_DIR/$e.conf"
       echo "created $ROUTES_DIR/$e.conf (all surfaces on rails)"
+      continue
+    fi
+    # A surface added since the file was written (cable, #297) must be defined
+    # before the repository's maps name it, or nginx -t fails. Add it on
+    # Rails and leave every surface already in force exactly as it is.
+    missing=""
+    for s in $SURFACES; do [ -n "$(state_of "$e" "$s")" ] || missing="$missing $s"; done
+    if [ -n "$missing" ]; then
+      # shellcheck disable=SC2046
+      render "$e" $(current_pairs "$e") > "$ROUTES_DIR/$e.conf.new.$$"
+      mv -f "$ROUTES_DIR/$e.conf.new.$$" "$ROUTES_DIR/$e.conf"
+      echo "added$missing to $ROUTES_DIR/$e.conf, on rails"
     fi
   done
 }
@@ -74,7 +86,7 @@ status() {
 
 go_port() { # env surface
   case "$1:$2" in
-    prod:firmware|prod:availability) echo 3003 ;; prod:*) echo 3002 ;;
+    prod:firmware|prod:availability) echo 3003 ;; prod:*) echo 3002 ;; # web: upload, wall, cable
     dev:firmware|dev:availability) echo 3013 ;; dev:*) echo 3012 ;;
   esac
 }

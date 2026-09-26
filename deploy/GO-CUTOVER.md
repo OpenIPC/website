@@ -105,9 +105,23 @@ rm -rf /srv/www/shared/files/* /srv/www/shared/release-cache/*
 **Rollback:** `openipc-route prod firmware rails`. Rails rebuilds on demand.
 Stats recorded by Go stay in PostgreSQL.
 
+## 4. The frame socket (#297): no freeze needed
+
+```sh
+openipc-route prod cable go
+```
+
+A reload does not close established sockets, so readers already on the wall
+stay on Rails until they leave the page; new sockets go to Go. Both accept the
+same grants. Check: `node tools/mirror-check.mjs openipc.org` and
+`tools/canvas-check.mjs` paint every canvas, and
+`deploy/log-report.sh` shows `wall_grant_refused` not rising.
+
+**Rollback:** `openipc-route prod cable rails`. Readers on a Go socket keep it
+until they leave the page; new sockets go to Rails.
+
 ## What is not moved here
 
-- `/api/v1/wall/cable`, the frame socket (#297), stays on Rails and verifies Go's grants.
 - The wizard export (#300), availability (#298), redirects and sitemap (#302, #303).
 - MySQL's `snapshots` and `downloads` stay as Rails left them. They are dropped
   with Rails (#304), not before, so a rollback always has something to read.
