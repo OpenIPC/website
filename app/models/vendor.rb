@@ -2,7 +2,6 @@
 
 class Vendor < ApplicationRecord
   has_many :socs
-  has_many :sensors
 
   before_validation :generate_urlname
 
