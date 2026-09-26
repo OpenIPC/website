@@ -160,5 +160,6 @@ restores the image but never the schema, so keep migrations additive.
 - **External runtime dependencies that won't exist in a fresh checkout**: pushed
   builds in PostgreSQL (`openipc builds import-history` seeds an empty
   database) and libvips (variants; in the service image, and installed in CI).
-- Rails, Ruby and MySQL are gone; `service/deploytest` fails if they are
-  mentioned again. History is in `deploy/GO-CUTOVER.md`.
+- The retired stack and its mechanisms stay retired: `service/deploytest`
+  (`noruby_test.go`) fails if they are mentioned again. History is in
+  `deploy/GO-CUTOVER.md`.
