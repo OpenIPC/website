@@ -189,6 +189,7 @@ zh:
   nav:
     business: 面向企业
     business_overview: '概览'
+    firmware_explorer: 固件浏览器
     video_encoding: '视频编码'
     isp_sensors: 'ISP 与传感器'
     reverse_engineering: '逆向工程'
