@@ -73,7 +73,7 @@ func TestStaticSeam(t *testing.T) {
 			}
 		}
 	})
-	// Rails is gone (#304). What its router answered is the route map in
+	// What answers an address the bundle does not hold is the route map in
 	// conf.d/openipc-redirects.conf, and the fallback answers it itself:
 	// nothing behind the catch-all is proxied any more.
 	t.Run("the fallback answers from the route map and proxies nothing", func(t *testing.T) {

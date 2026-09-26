@@ -19,12 +19,17 @@
 # Safe to re-run, and safe to fail: the policy is validated as a staged copy
 # before anything under /etc/logrotate.d is touched, so a file logrotate cannot
 # parse never reaches the host at all. What a parse failure there would cost is
-# not these two logs -- logrotate abandons the file it cannot read and reports
+# not this log -- logrotate abandons the file it cannot read and reports
 # a failure for the whole run, so a bad file here is how every log on the host
 # quietly stops rotating.
 set -euo pipefail
 
-FILES=(nginx openipc)
+FILES=(nginx)
+# Policies this repository used to install, for logs that no longer exist:
+# `openipc` rotated the bare-metal checkout's log directory, which went with
+# the checkout (#304). Moved out of $dest when found, so logrotate stops
+# reading a policy for a directory nobody writes.
+RETIRED=(openipc)
 
 here=$(cd "$(dirname "$0")" && pwd)
 src="$here/logrotate.d"
@@ -64,7 +69,6 @@ overdue() {
 
 echo 'before:'
 overdue /var/log/nginx
-overdue /srv/www/org-openipc/log
 echo
 
 # --- validate first, install second ---
@@ -144,6 +148,13 @@ for f in "${FILES[@]}"; do
     exit 1
   fi
   i=$((i + 1))
+done
+
+for f in "${RETIRED[@]}"; do
+  if [ -f "$dest/$f" ]; then
+    mv "$dest/$f" "$backups/$f.retired.$stamp"
+    echo "  retired $dest/$f (kept as $backups/$f.retired.$stamp)"
+  fi
 done
 
 echo "installed ${FILES[*]/#/$dest/}"

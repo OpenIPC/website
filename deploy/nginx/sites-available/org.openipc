@@ -68,18 +68,9 @@ server {
         allow all;
     }
 
-    # Assembled firmware images. Rails decides who may have one and names the
-    # file; nginx sends the bytes, so a slow client holds an nginx connection
-    # instead of one of Puma's sixteen threads.
-    #
-    # `internal` means this is reachable only through X-Accel-Redirect, never by
-    # asking for it. The browsable listing that used to be at /files/ goes with
-    # it: images are reached through the download action, which is what applies
-    # the flash-size and edition rules.
-    # Nothing serves /files/ any more. Without this the request falls through to
-    # the app, which serves public/ itself (RAILS_SERVE_STATIC_FILES=1), so every
-    # image would still be fetchable by name -- straight through a Puma thread,
-    # which is the cost handing them to nginx above exists to avoid.
+    # The browsable listing of assembled images that used to be at /files/ is
+    # gone: images are reached through the download action, which applies the
+    # flash-size and edition rules, and leave through /firmware-cache/ below.
     location /files/ {
         return 404;
     }
@@ -93,18 +84,10 @@ server {
     # the catalogue without this would turn the firmware limit into a formality,
     # since /ru/cameras/.../download_full_image would be the same expensive
     # action with no limit_req in front of it. The list must stay in step with
-    # Multilang::IN_PATH; a test asserts it does.
-    #
-    # Only the action that produces a firmware image. NOT `location /`:
-    # proxy_set_header applies to everything a location serves, and
-    # Rack::Sendfile acts on any response whose body responds to to_path --
-    # which with RAILS_SERVE_STATIC_FILES=1 is every file under public/assets.
-    # Setting these globally answered every stylesheet with an X-Accel-Redirect
-    # to a path nginx has no location for, and took both sites down to unstyled
-    # text on 2026-08-24.
+    # the locales the site serves under a path prefix; a test asserts it does.
     #
     # No URI part on proxy_pass: nginx forbids one in a regex location, and the
-    # full original URI is what should reach the app anyway.
+    # full original URI is what should reach the service anyway.
     location ~ ^/(?:(?:ru|zh)/)?cameras/vendors/[^/]+/socs/[^/]+/download_full_image {
         limit_conn site_conc 10;
         limit_conn_status 429;
@@ -155,18 +138,14 @@ server {
 
     # Badges and logos from 2022-2023, embedded on pages this project does not
     # control. Nothing on this site references them. logo_openipc.png among them
-    # was a Rails redirect to a fingerprinted asset until #302; it is the file
-    # itself now, because the asset pipeline goes with Rails (#304). Kept in the repository
+    # used to be a redirect to a fingerprinted asset; it is the file itself now,
+    # so the address keeps answering with the image. Kept in the repository
     # under deploy/legacy-images and installed here by deploy.sh, because this
     # directory is host-only and in no backup.
     location /images/ {
         alias /srv/www/shared/images/;
     }
 
-    # Fingerprinted static assets and fonts, served by Rails but cached here
-    # long-term (names change when content does). Deliberately outside the
-    # site_conc cap: an HTTP/2 page load multiplexes many parallel asset
-    # requests, and those must never compete with page renders for slots.
     # Analytics beacon (#181). GoatCounter runs on the loopback and these are
     # the only two paths of it the public site exposes.
     #
@@ -184,7 +163,7 @@ server {
     # The backer count the donate page prints (#198).
     #
     # A static file written hourly by openipc-oc-stats, served straight off
-    # disk: Rails never sees the request, so the mirrors can cache it and an
+    # disk: no application sees the request, so the mirrors can cache it and an
     # Open Collective outage cannot reach either. An exact location, ahead of
     # everything else under /api/, for the same reason the two beacon paths are
     # exact -- a prefix here would decide the shape of a namespace this file
@@ -192,7 +171,7 @@ server {
     #
     # An hour, matching the cron. A number that is up to an hour old is the
     # honest resolution of the thing being measured; the page refuses it
-    # entirely past 48 hours, which is Rails' job, not nginx's.
+    # entirely past 48 hours, which is the page's job, not nginx's.
     location = /api/v1/support/stats.json {
         alias /srv/www/shared/support-stats.json;
         default_type application/json;
@@ -271,8 +250,8 @@ server {
         proxy_cache_bypass 1;
     }
 
-    # The web fonts are the bundle's (#304): Rails' public/fonts served them
-    # until Rails went, and the static pages' stylesheet asks for them here.
+    # The web fonts are the bundle's (#304), and the pages' stylesheet asks
+    # for them here.
     # Named by face and weight, never rewritten, so a year of cache is safe.
     location ^~ /fonts/ {
         root /srv/www/static/prod/current;
@@ -282,32 +261,17 @@ server {
         add_header Cache-Control "public, max-age=31536000, immutable" always;
     }
 
-    # Rails' asset pipeline, gone with Rails (#304).
+    # The old asset pipeline's address, retired (#304).
     location ^~ /assets/ {
         return 410 "Gone\n";
     }
 
-    # Per-snapshot pages (/snapshots/<id>, /oneday, /camera, /download): the
-    # 2026-09-03 flood iterates ids with a rotating locale param, so keying
-    # the cache on the full request URI never hits. Key on the path alone --
-    # one cached copy per id, whichever locale rendered first; during a flood
-    # that trade is free. Held 5 minutes, and 404s are cached too so probing
-    # dead ids costs Rails one render per id per 2 minutes, not one per hit.
-    # A snapshot page carries the translated navbar, footer and copy like any
-    # other unprefixed path, so it has the same hazard the Open Wall location
-    # below documents -- for five minutes rather than sixty seconds. Vary is
-    # honoured and a session-carrying request stays out of the cache for the
-    # same reasons.
-    #
     # Monitoring, kept out of the log.
     #
-    # /up is config/routes.rb:11 -- a rack proc answering "ok", no controller,
-    # no view, no database. The container healthcheck and openipc-deploy poll
-    # it on the loopback and never come through here, so today this location
-    # silences four requests. It exists for what comes next: it is the right
-    # target for the mirrors' monitoring, which currently fetches the full
-    # home page every three seconds, and pointing 27,600 requests a day at
-    # /up would only move the noise from one line of the log to another.
+    # /up is the Go web process's health check. The container healthcheck and
+    # openipc-deploy poll it on the loopback and never come through here; this
+    # location is the right target for the mirrors' monitoring, which would
+    # otherwise fetch the full home page every three seconds.
     #
     # An exact location, so nothing else can fall into it. access_log off and
     # nothing more: the endpoint still answers, it just stops being counted
@@ -322,31 +286,13 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # The retired numeric form, answered here rather than by Rails. A walk of
-    # the id space is the whole reason the ids changed, and every probe it
-    # makes is a distinct URL -- so proxying them would mean one render per id
-    # per cache TTL, which is the cost this change exists to remove. nginx
-    # answers 410 without a proxy_pass, a cache entry or a limit_conn slot.
-    #
-    # Safe against a real id because Snapshot.generate_public_id refuses an
-    # all-digit token: anything numeric here is a row id and nothing else, and
-    # a token cannot reach the boundary character -- it always has a letter
-    # before it.
-    #
-    # The boundary takes a dot as well as a slash. Without it /snapshots/1.json
-    # falls past this location, matches the hexadecimal one below by its
-    # numeric prefix, and is proxied: Rails answers 410 in the end, but the
-    # probe has already cost a render slot under the concurrency cap, and a
-    # 410 is not in proxy_cache_valid so the next probe costs another.
     # The gallery's older address, retired for readers (#165). See
     # conf.d/openipc-wall-shell.conf for the two maps, and for why only a read
     # is redirected: POST here is a camera uploading a frame.
     location ~ "^/(?:(?:ru|zh)/)?snapshots/?$" {
         # The concurrency pool the gallery location below applies, which this
         # one shadows for this address. Without it a burst of uploads -- the
-        # POSTs that fall past the redirect -- reaches Rails uncapped, and the
-        # pools are sized against Puma's threads collectively rather than one
-        # by one.
+        # POSTs that fall past the redirect -- reaches the service uncapped.
         limit_conn media_conc 12;
         limit_conn_status 429;
 
@@ -388,20 +334,17 @@ server {
     # what it is. `$wall_shell` is the per-locale path; see
     # conf.d/openipc-wall-shell.conf.
     #
-    # Ahead of the Rails wall locations below and stricter than any of them: an
-    # id that is not twenty hex characters, a numeric one, and anything ending
-    # .jpg all fall past these to the answers they already had.
+    # Ahead of the other wall locations below and stricter than any of them:
+    # an id that is not twenty hex characters, a numeric one, and anything
+    # ending .jpg all fall past these to the answers below.
     #
     # Both patterns are QUOTED. `{20}` is a repetition count to a regex and the
     # start of a block to nginx's parser, which truncates the pattern at the
     # brace and fails with "missing closing parenthesis" pointing at a regex
     # that plainly has one.
     #
-    # `try_files ... @fallback` is what makes a rollback safe. Roll the bundle
-    # back and the file is gone, the request falls through, and Rails renders
-    # the page it has always rendered -- which is why the caps below are here
-    # rather than only in the Rails locations: on that day these addresses are
-    # Rails' again and the September floods are what the caps are for.
+    # The caps are here because these are the addresses the September floods
+    # walked, whatever answers them.
     location ~ "^/(?:(?:ru|zh)/)?open-wall/?$" {
         if ($openipc_gallery_crawler) {
             return 403;
@@ -465,12 +408,18 @@ server {
         add_header X-Robots-Tag noindex always;
     }
 
+    # The retired numeric form. A walk of the id space is the whole reason the
+    # ids changed, and every probe it makes is a distinct URL, so nginx answers
+    # 410 without a proxy_pass, a cache entry or a limit_conn slot. Safe against
+    # a real id because a public id is never all digits. The boundary takes a
+    # dot as well as a slash, so /snapshots/1.json is caught here too rather
+    # than by the hexadecimal location below.
     location ~ ^/(?:(?:ru|zh)/)?snapshots/[0-9]+(?:[./]|$) {
         return 410;
     }
 
-    # The three addresses that used to hand over image bytes, answered here
-    # rather than by Rails, for the same reason the numeric form above is.
+    # The three addresses that used to hand over image bytes, and the retired
+    # numeric form above: answered here with 410 and nothing else.
     #
     # `download` returned the ORIGINAL upload -- full resolution, EXIF
     # unstripped. In the 24 hours to 2026-09-23 it was asked for 18,007 times
@@ -479,11 +428,10 @@ server {
     # requests carried the Azure fleet's user agent, and 14 of the 10,630
     # requesting addresses had ever executed the page beacon.
     #
-    # Rails no longer routes any of them, so without this they fall to the
-    # catch-all and cost a 302 through Ruby -- eighteen thousand of those a day
-    # to answer a question whose answer is "no". 410 says gone rather than
-    # moved, which is the honest status and the one a crawler is supposed to
-    # stop retrying. Ahead of the hexadecimal location below, because nginx
+    # Without this they would fall to the route map's catch-all and cost a 302
+    # -- eighteen thousand of those a day to answer a question whose answer is
+    # "no". 410 says gone rather than moved, which is the honest status and the
+    # one a crawler is supposed to stop retrying. Ahead of the hexadecimal location below, because nginx
     # takes the first matching regex.
     location ~ ^/(?:(?:ru|zh)/)?snapshots/[^/]+/download {
         return 410;
@@ -503,15 +451,13 @@ server {
     # cap that ended the 2026-09-03 outage -- applies only to paths it matches.
     # A snapshot address it does not match falls through to the catch-all,
     # uncached and uncapped, which is the exact seam that took the site down
-    # three times in September. Kept wide enough to match the numeric form too,
-    # so that the 410 the app answers to a walk is also shed and cached here
-    # rather than reaching Rails once per probe.
+    # three times in September.
     location ~ ^/(?:(?:ru|zh)/)?snapshots/[0-9a-f]+ {
         if ($openipc_gallery_crawler) {
             return 403;
         }
         # A hexadecimal address the wall shell above did not claim -- the
-        # wrong length, a suffix. Rails answered it 404 and is gone (#304).
+        # wrong length, a suffix -- is a 404.
         error_page 404 /404.html;
         return 404;
     }
@@ -529,9 +475,7 @@ server {
     # absent.
     #
     # Frames now leave over a WebSocket, which is a session that can be counted
-    # and refused -- see app/channels/wall_channel.rb. The files moved out of
-    # public/ at the same time, because RAILS_SERVE_STATIC_FILES=1 meant Rails
-    # served this path itself whatever was written here.
+    # and refused -- see service/internal/wallsocket.
     #
     # 410, not 404: these addresses existed for a month and are in caches and
     # crawl frontiers. Answered here so the 13,725 daily requests that will
@@ -542,19 +486,16 @@ server {
     # The wall as data: the home page's mosaic, and the four addresses the
     # gallery's own pages are moving onto (#165).
     #
-    # The prerendered home pages -- /ru and /zh -- are files, so nothing renders
-    # them a WallGrant the way WallHelper renders one into `/`. They showed five
-    # "no signal" tiles while the same page in the same language showed live
-    # cameras at `/`, and the only way to reach the broken one was to click your
-    # own language.
+    # The pages are files, so a page cannot carry a grant of its own; it asks
+    # these addresses for its frames and the grant that covers them.
     #
     # This location is every wall address EXCEPT the socket, which has its own
     # longer prefix below and wins on length whatever the order here. The split
     # is the whole point: the socket's block forbids caching and sets an hour's
     # timeout, which is right for a connection and wrong for a document, and
     # #165's four JSON addresses would otherwise have inherited it -- reaching
-    # Rails on every request and minting a grant each time, outside the rate
-    # limit every wall page has. Found by review on #281.
+    # the service on every request and minting a grant each time, outside the
+    # rate limit every wall page has. Found by review on #281.
     #
     # burst 48 and not the 8 this carried when it was the mosaic alone: these
     # addresses ARE the gallery pages now, one fetch per page view, and 48 is
@@ -563,14 +504,13 @@ server {
     # pages they replace serve today.
     #
     # Microcached for a minute on the same key the pages use. One body serves
-    # every reader, which is what WallGrant's cache-window bucketing exists for:
+    # every reader, which is what the grant's cache-window bucketing exists for:
     # the same ids in the same five minutes sign to the same bytes, so a cached
     # response carries a grant that is still valid when it is served.
-    # The availability feed (#298): Rails or the Go firmware process, which owns
-    # the release index it is computed from. Exact, so nothing else falls in;
-    # microcached for the minute the application's own headers allow.
-    # Rails' router took a trailing slash too, and so does this: the Go route is
-    # the canonical path alone, so the URI is rewritten to it before proxying.
+    # The availability feed (#298): the Go firmware process, which owns the
+    # release data it is computed from. A trailing slash is accepted too: the Go
+    # route is the canonical path alone, so the URI is rewritten to it before
+    # proxying.
     location ~ ^/api/v1/hardware/availability\.json/*$ {
         rewrite ^ /api/v1/hardware/availability.json break;
         proxy_pass http://$openipc_up_prod_availability;
@@ -584,8 +524,8 @@ server {
     }
 
     location ^~ /api/v1/wall/ {
-        # Rails or the Go web process (#296); see conf.d/openipc-routes.conf.
-        # The socket below has its own location.
+        # The Go web process (#296); see conf.d/openipc-routes.conf. The socket
+        # below has its own location.
         proxy_pass http://$openipc_up_prod_wall;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -613,11 +553,10 @@ server {
 
         # HSTS is repeated because add_header at location level replaces the
         # whole inherited set. Cache-Control and Access-Control-Allow-Origin
-        # are NOT repeated: they come from Rails, pass through this proxy, and
-        # are replayed from the cache with the rest of the response. Adding
-        # them here too sent each one twice, and the second of them is the
-        # drift ApplicationController::FRESHNESS exists to prevent -- nginx
-        # deciding a lifetime the application already declared.
+        # are NOT repeated: they come from the service, pass through this proxy,
+        # and are replayed from the cache with the rest of the response. Adding
+        # them here too sent each one twice, and the second of them would be
+        # nginx deciding a lifetime the service already declared.
         add_header X-Served-By $openipc_by_prod_wall always;
         add_header Strict-Transport-Security max-age=15768000;
     }
@@ -631,7 +570,7 @@ server {
     #
     # Its own limit_conn zone, and this is the trap worth naming. site_conc,
     # snapshot_conc and media_conc are all keyed on $server_name -- ONE global
-    # pool each, sized so the three together sum to Puma's 32 threads. A
+    # pool each. A
     # long-lived socket holds its slot for the whole connection, so ten readers
     # on a $server_name-keyed pool would 429 the entire site. Keyed per address
     # instead.
@@ -686,15 +625,9 @@ server {
         add_header Strict-Transport-Security max-age=15768000;
     }
 
-    # Open Wall pages. The ActiveStorage image URLs these used to embed are
-    # gone -- nothing renders one, and /rails/active_storage/* answers 410 --
-    # but the prefix stays in the regex so an old link still lands somewhere
-    # rate limited rather than in the catch-all.
-    # the 2026-08-30 flood hammers. Cached 60s for everyone; these pages are
-    # identical for all anonymous visitors. Set-Cookie is stripped so one
-    # visitor's session can never be handed to another from the cache; no
-    # form on these pages needs a session. POST /snapshots (camera uploads)
-    # matches this location too but proxy_cache only ever caches GET/HEAD.
+    # Every other wall address. The retired image URLs under
+    # /rails/active_storage/ stay in the regex so an old link still lands
+    # somewhere rate limited, where the route map answers it 410.
     location ~ ^/(?:(?:ru|zh)/)?(open-wall|snapshots|rails/active_storage) {
         if ($openipc_gallery_crawler) {
             return 403;
@@ -709,18 +642,14 @@ server {
         try_files /.no-such-file @fallback;
     }
 
-    # The seam between a static bundle and Rails (#157). A page is extracted
-    # when its index.html exists under the root below -- nothing else: no
-    # nginx edit per page, no header, no feature flag. Rollback is deleting
-    # that file, or repointing `current` at the previous bundle.
+    # The seam between the static bundle and everything else (#157). A page
+    # exists when its index.html exists under the root below -- nothing else:
+    # no nginx edit per page, no header, no feature flag. Rollback is
+    # repointing `current` at the previous bundle.
     #
-    # The fallback direction is the property worth protecting, and try_files
-    # enforces it rather than convention doing so: every element that misses
-    # continues to the next, and the last element is a named location, so this
-    # block cannot answer 404 or 403 of its own. Only Rails can. A missing
-    # /ru/donate/index.html falls through and Rails renders Russian from the
-    # YAML -- a partial locale build degrades to the working old site, never
-    # to the wrong language.
+    # try_files continues past every miss and ends at a named location, so this
+    # block cannot answer 404 or 403 of its own: @fallback answers the route
+    # map, and anything the route map does not claim is the bundle's 404 page.
     #
     # NOT `try_files $uri $uri/ @fallback`. try_files decides file-test versus
     # directory-test from the literal element at parse time, so only an element
@@ -732,19 +661,15 @@ server {
     # bundle:
     #
     #            $uri $uri/index.html   $uri $uri/
-    #   /        rails 200              403
-    #   /ru/     rails 200              403
+    #   /        fallback               403
+    #   /ru/     fallback               403
     #
     # `index` would be dead configuration here for the same reason -- the index
     # module can only run once a directory element has matched -- and is
     # deliberately absent.
     #
-    # A file cannot Vary. Rails declares `Vary: Accept-Language` on every
-    # unprefixed page and the microcache honours it; a bundle file serves one
-    # language to everyone. That is why #154 had to land first: the bare path
-    # is English by decision now, so a page in the bundle carries its language
-    # in its path. It is also why deploy/static/check-bundle.sh refuses a root
-    # index.html -- what `/` means is #160's decision, not a build product.
+    # A file cannot Vary, so a page in the bundle carries its language in its
+    # path (#154), and the bare `/` decides in the browser (#165).
     # The bundle's own hashed assets (#159). Astro fingerprints every file it
     # writes under /_astro/, so the name changes whenever the bytes do and the
     # old name is never reused -- which is exactly the condition `immutable`
@@ -757,10 +682,8 @@ server {
     # and they must not compete with page renders, which is the same reasoning
     # the /assets|fonts/ block above was written on.
     #
-    # try_files still ends at @fallback rather than =404. A rollback can leave a
-    # page referencing an asset the older bundle does not carry, and the seam's
-    # rule is that only Rails answers 404 -- so that miss shows up in the Rails
-    # log like every other one, instead of vanishing into nginx.
+    # try_files ends at @fallback rather than =404, so a miss is answered the
+    # way every other miss is.
     location ^~ /_astro/ {
         limit_conn per_subnet 100;
         limit_conn_status 429;
@@ -820,8 +743,7 @@ server {
     }
 
     location @fallback {
-        # Everything the bundle does not hold (#304). Rails used to be here; it
-        # is gone, and what its router answered is answered from
+        # Everything the bundle does not hold (#304) is answered from
         # conf.d/openipc-redirects.conf -- the redirects, the retired addresses
         # and the catch-all -- and anything else is a page the bundle should
         # have held, which is a 404. `return` is the one thing `if` is safe

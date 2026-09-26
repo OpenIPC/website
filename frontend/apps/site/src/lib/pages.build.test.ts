@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { LOCALES, pathFor, type Locale } from './i18n';
 import { PAGE_PATHS } from './page-paths';
 import { VENDORS } from './hardware';
-import { RAILS_PATHS, RAILS_PATTERNS, RAILS_PREFIXES } from './rails-paths';
+import { ORIGIN_PATHS, ORIGIN_PATTERNS, ORIGIN_PREFIXES } from './origin-paths';
 import { menuFor, footerFor, type FooterLink } from './nav';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -372,14 +372,14 @@ describe('internal links resolve', () => {
     const path = href.split(/[?#]/)[0].replace(/\/$/, '') || '/';
     if (claimed.has(path)) return true;
 
-    // A Rails address, with or without the locale prefix the page gave it.
+    // An address the origin answers, with or without the locale prefix the page gave it.
     const bare = path.replace(new RegExp(`^/(${LOCALES.join('|')})(?=/|$)`), '') || '/';
-    if (RAILS_PATHS.includes(bare)) return true;
-    if (RAILS_PATTERNS.some((pattern) => pattern.test(bare))) return true;
-    return RAILS_PREFIXES.some((prefix) => bare.startsWith(prefix));
+    if (ORIGIN_PATHS.includes(bare)) return true;
+    if (ORIGIN_PATTERNS.some((pattern) => pattern.test(bare))) return true;
+    return ORIGIN_PREFIXES.some((prefix) => bare.startsWith(prefix));
   }
 
-  test('every internal href is a page in the bundle or an address Rails owns', () => {
+  test('every internal href is a page in the bundle or an address the origin answers', () => {
     const broken: string[] = [];
 
     for (const [locale, path, html] of PAGES) {

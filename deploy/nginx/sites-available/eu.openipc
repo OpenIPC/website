@@ -12,8 +12,7 @@
 # availability, not latency, and not reach into a network where the origin is
 # unreachable, because the thing blocked there is this address. What is left
 # is one site under two names, and that is not free: $host is in the
-# microcache key, so every page would be cached twice; Rails' host
-# authorization would need a second APP_HOST or answer 403; and every search
+# microcache key, so every page would be cached twice; and every search
 # engine and analytics tool would have a second property to reconcile. A 301
 # costs none of that and keeps every openipc.eu link that was ever published
 # working.

@@ -251,12 +251,6 @@ func TestLogRetention(t *testing.T) {
 			}
 		}
 	})
-	// One promise covers every directory on this host that holds addresses.
-	t.Run("both directories that hold visitor addresses keep them for the same time", func(t *testing.T) {
-		if a, b := retention(t, "nginx"), retention(t, "openipc"); a != b {
-			t.Errorf("the nginx logs are kept %d days and /srv/www/org-openipc/log %d; /privacy makes one promise", a, b)
-		}
-	})
 	// maxage is what makes `rotate` a duration, and it is only checked when a
 	// log is rotated -- so notifempty, which skips that, also skips the ageing.
 	t.Run("a log that stops being written still ages out", func(t *testing.T) {
