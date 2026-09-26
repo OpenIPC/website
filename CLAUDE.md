@@ -15,7 +15,7 @@ The OpenIPC project website — a Rails 7.0 app (Ruby 3.1.2, MySQL) that serves 
   root `Dockerfile` is the unrelated production build. Use this when the host Ruby does not
   match `.ruby-version` — which is most hosts. Note `bundle exec rubocop`, not bare `rubocop`.
 - `bin/rails test` — run tests (Minitest, parallelized across cores, fixtures auto-loaded). The MySQL `test` DB is regenerated from `development`.
-- `bin/rails test test/models/admin_test.rb` — single file; append `:LINE` to run one test.
+- `bin/rails test test/models/snapshot_test.rb` — single file; append `:LINE` to run one test.
 - `bin/rails test:system` — Capybara + selenium system tests.
 - `rubocop` — lint (config in `.rubocop.yml`: `rubocop-performance`, line length 120). Baseline on master is 742 offences over 111 files; judge a change by whether it adds any to the files it touches, not by the total.
 - `i18n-tasks missing` / `i18n-tasks unused` — audit translations (config in `config/i18n-tasks.yml`); `easy_translate` provides machine translation via `GOOGLE_TRANSLATE_API_KEY`/`DEEPL_TRANSLATE_API_KEY`.
@@ -63,16 +63,15 @@ image but never the schema, so keep migrations additive.
 - `PagesController` — static, i18n marketing/tool pages. `root` is `pages#introduction`. Most actions just set `@page_title` and render. `config/routes.rb` also contains many redirects to `github.com/openipc/*` repos, including the wiki at `github.com/OpenIPC/wiki` — the old `wiki.openipc.org` host is retired and no route should point at it.
 - `Cameras::SocsController` / `Cameras::VendorsController` — the supported-hardware browser (`/supported-hardware/...`, HTML + JSON), the per-SoC installation wizard (`show`/`update` build a `Camera` and render instruction partials), and firmware image download. Note special-case rendering for SigmaStar NAND and HI3536DV100, and the 8MB-flash forces `lite` edition.
 - `SnapshotsController` — public Open Wall API + gallery. **CSRF is skipped** (`verify_authenticity_token`) because cameras POST directly. `create` enqueues `PurgeImagesJob` (deletes snapshots >2 days old) and processes images async via `ProcessImagesJob`. `index` uses a raw correlated SQL query to get the latest snapshot per MAC in the last 24h.
-- `Admin::*` — Devise-authenticated CRUD (Socs, Vendors, Snapshots) + dashboard. All inherit `AdminController`, which is just `before_action :authenticate_admin!`. Auth model is `Admin` (Devise); there is no public user model.
+- There is no admin and no sign-in (#288). `/admin` answers 410; nothing on the site sets a cookie, and `test/controllers/cacheability_test.rb` holds that.
 
 ### Cross-cutting concerns (`app/controllers/concerns/`)
 - `Multilang` — locale handling for ~10 languages. Browser-locale detection, the dropdown `locale_switcher` HTML, and `default_url_options`. **`set_locale` exists but its `before_action` is commented out** — locale currently comes from the `?locale=` param / session, not an automatic before_action.
 - `RescueHandler` — production-only `rescue_from StandardError` ladder mapping common exceptions to redirects or static `public/{404,500}.html`, and emailing unexpected errors. Disabled in dev/test so errors surface normally.
-- `RubyMineHacks` — IDE type-hint shim, included only in development.
 
 ### Conventions & gotchas
 - Global constants `MAC_ADDRESS_FORMAT` and `IP_ADDRESS_FORMAT` live in `config/initializers/000_settings.rb` (the `000_` prefix forces it to load first, before models reference them).
 - Secrets come from Rails encrypted credentials (`config/credentials.yml.enc`), e.g. `Rails.application.credentials.mac.blacklisted` and `.ip.whitelisted`. You need `RAILS_MASTER_KEY` to edit/decrypt.
-- i18n locale files are split by namespace: top-level `config/locales/<locale>.yml` plus `pages.<locale>.yml`, `activerecord.<locale>.yml`, `activemodel.<locale>.yml`, `devise.<locale>.yml`. `i18n-tasks` write-rules (in its config) route new keys to the right file.
+- i18n locale files are split by namespace: top-level `config/locales/<locale>.yml` plus `pages.<locale>.yml`, `activerecord.<locale>.yml`, `activemodel.<locale>.yml`. `i18n-tasks` write-rules (in its config) route new keys to the right file.
 - Front end is Hotwire (Turbo + Stimulus) + Bootstrap 5, bundled with esbuild/sass (no importmap for app JS despite `bin/importmap` existing). `app/javascript/application.js` holds the (non-Stimulus) page glue.
 - **External runtime dependencies that won't exist in a fresh checkout**: the `/srv/github-releases` firmware tarball directory and libvips (image variants). Firmware assembly can't run without the first, and snapshot variants without the second.

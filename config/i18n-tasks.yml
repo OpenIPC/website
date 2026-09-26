@@ -13,11 +13,8 @@ data:
   # Locale files to write new keys to, based on a list of key pattern => file rules. Matched from top to bottom:
   # `i18n-tasks normalize -p` will force move the keys according to these rules
   write:
-    - ["{activerecord, activemodel, admin, devise, form, pages}.*", 'config/locales/\1.%{locale}.yml']
+    - ["{activerecord, activemodel, form, pages}.*", 'config/locales/\1.%{locale}.yml']
     - config/locales/%{locale}.yml
-
-  external:
-    - devise/config/locales/%{locale}.yml
 
   router: conservative_router
 
@@ -75,12 +72,19 @@ ignore_missing:
   # copy pretending to be coverage.
   - pages.donate.paywall_*
 # - 'errors.messages.{accepted,blank,invalid,too_short,too_long}'
-# - '{devise,simple_form}.*'
+# - '{simple_form}.*'
 
 ## Consider these keys used:
 ignore_unused:
   - 'activerecord.{attributes,models}.*'
-  - '{devise,formtastic,kaminari,will_paginate}.*'
+  - '{formtastic,kaminari,will_paginate}.*'
+  # Rendered by the static site (frontend/apps/site/src/components/Smoke.astro)
+  # through the exported dictionary, not by a Rails view. Its Rails caller was
+  # the admin (#288).
+  - button.find
+  # Kept as the fixture for the four-form Russian plural rule
+  # (test/controllers/multilang_test.rb). Its Rails caller was the admin.
+  - errors.messages.not_saved
 # - 'simple_form.{yes,no}'
 # - 'simple_form.{placeholders,hints,labels}.*'
 # - 'simple_form.{error_notification,required}.:'

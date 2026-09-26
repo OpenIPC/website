@@ -213,7 +213,7 @@ jobs:
       # --- the static bundle (#157, filled by #159) -------------------------
       # Steps in this job rather than a job of their own. Branch protection on
       # master requires exactly the contexts `build` and `test`; a third job
-      # would report without gating, and a bundle that could shadow /admin has
+      # would report without gating, and a bundle that could shadow a Rails route has
       # to be able to block a merge.
       #
       # The bundle is the Astro build now, so this job needs Node. The origin

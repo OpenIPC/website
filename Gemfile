@@ -124,10 +124,6 @@ end
 gem 'activestorage-validator', '~> 0.2.2'
 gem 'bootstrap_form', '~> 5.4'
 gem 'bootstrap5-kaminari-views', '~> 0.0.1'
-# 4.9.4, not 4.8: earlier Devise reads Rails.application.secrets, which Rails 7.1
-# deprecates and 7.2 removes. Nothing in this app calls it -- the warning comes
-# from inside the gem.
-gem 'devise', '~> 4.9.4'
 gem 'kaminari', '~> 1.2'
 gem 'sassc-rails'
 # libvips comes from the OS package (libvips42 + libheif1), not from a gem.

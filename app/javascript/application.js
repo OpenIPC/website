@@ -26,7 +26,6 @@ import Carousel from 'bootstrap/js/dist/carousel'
 import initZoom from './src/zoom'
 import initExternalLinks from './src/external-links'
 import initTimestamps from './src/timestamps'
-import initConfirms from './src/confirms'
 import initCopy from './src/copy'
 import initAnalytics from './src/analytics'
 import initEvents from './src/events'
@@ -37,10 +36,9 @@ import initWall from './src/wall'
 //
 // Turbo expects a form submission to answer with a redirect, and refuses to do
 // anything with a plain 200 -- it logs "Form responses must redirect to another
-// location" and the page simply does not change. Two surfaces here answer that
-// way: the installation wizard, whose update action renders the instructions
-// directly because it persists nothing, and every Devise form, which re-renders
-// itself with a 200 when a field is wrong.
+// location" and the page simply does not change. The installation wizard
+// answered that way, because its update action rendered the instructions
+// directly and persisted nothing, and so did the admin's sign-in forms (#288).
 //
 // So Drive handles links, which is the whole of the complaint, and forms submit
 // exactly as they did yesterday. Turning this on for a form is then a decision
@@ -78,7 +76,6 @@ initWall()
 function initPage(root = document) {
   initExternalLinks(root)
   initTimestamps(root)
-  initConfirms(root)
 
   // Bootstrap starts `data-bs-ride` carousels from its own `load` listener,
   // which a Turbo navigation never fires -- so the Open Wall's one-day
@@ -101,11 +98,8 @@ document.addEventListener('turbo:load', () => initPage())
 // the slideshow never starts, which is the same bug the comment above
 // describes, one layer down.
 //
-// Scoped to the frame, NOT the document. initConfirms adds a listener per
-// matching element with nothing to stop it adding a second, and the admin
-// delete buttons on a snapshot page are outside the frame -- a document-wide
-// re-run here would ask an admin "Are you sure?" twice for one click, three
-// times after the next frame, and so on.
+// Scoped to the frame, NOT the document: whatever initPage binds, it should
+// bind once per element, and the rest of the page was bound at turbo:load.
 document.addEventListener('turbo:frame-load', (event) => initPage(event.target))
 
 // ...and stop them again on the way out. A carousel cycles on a setInterval,

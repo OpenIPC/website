@@ -34,8 +34,8 @@ class SitemapTest < ActionDispatch::IntegrationTest
     assert_includes entry, 'href="http://www.example.com/ru/donate"'
   end
 
-  # The routes also contain the admin area, the API, thirty-odd redirects and
-  # two 410s. A sitemap that offers any of those is worse than none.
+  # The routes also contain the API, thirty-odd redirects and a handful of
+  # 410s, the retired admin among them. A sitemap that offers any of those is worse than none.
   test 'it offers nothing that is not a public page' do
     locs = response.body.scan(%r{<loc>([^<]+)</loc>}).flatten
 

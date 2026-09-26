@@ -14,7 +14,7 @@
 # Every rule here is a way the seam can do damage rather than nothing. The seam
 # itself cannot fail closed: try_files continues past every miss and ends at
 # @rails, so a bundle that is merely wrong is invisible. A bundle that shadows
-# /admin, or that carries a directory with no index.html, is not.
+# /sitemap.xml, or that carries a directory with no index.html, is not.
 
 set -euo pipefail
 

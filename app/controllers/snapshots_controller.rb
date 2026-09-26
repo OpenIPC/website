@@ -194,9 +194,10 @@ class SnapshotsController < ApplicationController
     @snapshot = Snapshot.find_by_camera_token(params[:id])
     return if @snapshot
 
-    # No echo of what was asked for: the old message repeated the decoded
-    # address back to whoever probed for it.
-    redirect_to locale_path('/open-wall'), alert: 'No camera here.'
+    # No message: the wall is a static page and cannot show one, and a flash
+    # wrote the session cookie (#288). Its first wording also repeated the
+    # decoded address back to whoever probed for it.
+    redirect_to locale_path('/open-wall')
   end
 
   # By public_id, never by row id. Snapshot.find is left alone on purpose:
@@ -207,7 +208,7 @@ class SnapshotsController < ApplicationController
 
     @snapshot = Snapshot.find_by!(public_id: params[:id])
   rescue ActiveRecord::RecordNotFound
-    redirect_to locale_path('/open-wall'), alert: 'No such a shaphot here.'
+    redirect_to locale_path('/open-wall')
   end
 
   def permitted_params

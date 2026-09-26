@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class ApplicationController < ActionController::Base
-  include RubyMineHacks if Rails.env.development?
   include Multilang
   # After Multilang: the redirect asks whether a prefixed route exists, and
   # Multilang owns the locale list it asks about (#154).
@@ -10,49 +9,7 @@ class ApplicationController < ActionController::Base
 
   protect_from_forgery unless: -> { request.format.json? }
 
-  # Rails writes session[:_csrf_token] the first time a token is asked for, and
-  # `csrf_meta_tags` in the layout asked for one on every page -- so after the
-  # locale write went (#155), this was still putting Set-Cookie on responses
-  # that have no form on them at all, and a response carrying Set-Cookie is one
-  # most caches decline to store.
-  #
-  # The token is emitted where something will actually post: the wizard, which
-  # has the only public form, and the Devise pages, which share this layout
-  # because there is no layouts/devise. Everything else -- the marketing pages,
-  # the catalogue, the Open Wall -- is read-only and needs none.
-  #
-  # Narrow rather than clever on purpose. A page that grows a form and forgets
-  # this fails loudly on the first submission with an InvalidAuthenticityToken,
-  # which is a better failure than a silently uncacheable site.
-  helper_method :csrf_needed?
-
-  def csrf_needed?
-    respond_to?(:devise_controller?, true) && devise_controller?
-  end
-
   add_flash_types :alert, :notice, :danger, :info, :success, :warning
-
-  # Tell the cache in front of us that this response was rendered for a
-  # signed-in admin and must not be stored.
-  #
-  # nginx cannot work this out for itself. Devise keeps the admin identity
-  # inside the same encrypted `_openipc_session` cookie that every visitor
-  # gets, so no variable available to it distinguishes an admin's request from
-  # anyone else's -- and refusing to cache every response carrying a session
-  # cookie would mean refusing to cache anything at all, which is what the
-  # microcache exists to avoid.
-  #
-  # Without this, `snapshots/show` -- which renders the uploading camera's IP
-  # and MAC address for admins, and is cached for 300s on the path alone --
-  # stores whatever an admin was shown and serves it to the public until the
-  # entry expires. The same template is reached at /open-wall/camera/<id>,
-  # cached for 60s, so both paths need it.
-  #
-  # It is set for every action rather than that one view, because the rule is
-  # about admin-conditional content in general and the next such block will not
-  # come with a reminder. `proxy_no_cache` in
-  # deploy/nginx/sites-available/org.openipc is the other half.
-  after_action :refuse_shared_caching_for_admins
 
   # Say how long a response is good for (#155). Until now every public page
   # answered `max-age=0, private, must-revalidate` -- Rails' default for a
@@ -67,9 +24,7 @@ class ApplicationController < ActionController::Base
   # keep answering from a slightly old copy while it fetches a new one, which
   # is exactly the behaviour the 2026-08-30 flood needed and did not have.
   #
-  # Only GET, only 200, and never for an admin -- a signed-in admin sees
-  # uploader IPs and MAC addresses on the same URLs, which is what
-  # X-Admin-View above is for. Anything that sets a flash is skipped too: a
+  # Only GET and only 200. Anything that sets a flash is skipped too: a
   # one-shot message must not be stored and handed to the next reader.
   # Keyed on controller#action, not controller: /open-wall and
   # /snapshots/<id> are both SnapshotsController and want different answers.
@@ -130,39 +85,29 @@ class ApplicationController < ActionController::Base
       swr: [fresh[:swr], window - [fresh[:max_age], window].min].min }
   end
 
-  # Only GET, only 200, and never for a signed-in admin -- they see uploader
-  # IPs and MAC addresses on URLs an anonymous visitor also reaches. A response
-  # carrying a flash is skipped too: a one-shot message must not be stored and
-  # handed to the next reader.
+  # Only GET, only 200, and nothing carrying a flash: a one-shot message must
+  # not be stored and handed to the next reader.
+  #
+  # There used to be two more exclusions -- a signed-in admin, who saw uploader
+  # IPs and MAC addresses on public URLs, and any page that minted a CSRF token
+  # and so wrote the session. Both went with the admin (#288): no page left
+  # has a form that posts, and nobody signs in.
   def publicly_cacheable?
     return false unless request.get? && response.status == 200
-    return false if admin_signed_in? || flash.any?
-    # A page that mints a CSRF token writes the session, so the response will
-    # carry Set-Cookie -- and declaring that publicly cacheable for an hour is
-    # how one visitor's session gets handed to the next by any cache that
-    # believes us. The header cannot be checked directly here: the session
-    # middleware writes it after this after_action has run, so the response
-    # looks cookieless at this point. csrf_needed? is the same question asked
-    # early enough to answer.
-    return false if csrf_needed?
+    return false if flash.any?
+
     # An action that declared its own freshness has said something more
     # specific than this rule can: /cameras/socs.json asks for five minutes
     # and an ETag, where the catalogue pages around it want an hour. Rails
     # leaves cache_control empty unless expires_in or fresh_when set it, so
     # this distinguishes "declared" from "defaulted" without a flag.
-    return false if response.cache_control.present?
-
-    !(respond_to?(:devise_controller?, true) && devise_controller?)
+    response.cache_control.blank?
   end
 
   def freshness
     FRESHNESS["#{controller_path}##{action_name}"] ||
       FRESHNESS[controller_path] ||
       DEFAULT_FRESHNESS
-  end
-
-  def refuse_shared_caching_for_admins
-    response.set_header('X-Admin-View', '1') if admin_signed_in?
   end
 
   # This used to append every unmatched URL, and the referer that produced it,

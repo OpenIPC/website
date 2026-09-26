@@ -78,8 +78,6 @@ ru:
         sdcard_required_1: Для выполнения этого шага вам понадобится SD-карта. Отформатируйте SD-карту в FAT32 и скопируйте загруженный файл в корневой каталог карты.
         sdcard_required_2: Для выполнения этого шага вам понадобится SD-карта. Отформатируйте SD-карту в FAT32 и скопируйте загруженный файл в корневой каталог карты.
         sdcard_required_3: Для выполнения этого шага вам понадобится SD-карта. Отформатируйте SD-карту в FAT32 и извлеките файлы из загруженного пакета в корневой каталог карты.
-  error:
-    please_fix: Пожалуйста, исправьте ошибки ниже.
   errors:
     messages:
       already_confirmed: был уже подтвержден, попробуйте войти
@@ -191,11 +189,6 @@ ru:
     license_note: Ядро под MIT; отдельные компоненты лицензируются иначе.
     tagline: Без бэкдоров. Без подписок. Без ерунды.
   nav:
-    add_soc: Добавьте еще одну SoC
-    add_vendor: Добавить вендора
-    adding_soc: Добавление SoC
-    adding_vendor: Добавление вендора
-    admin: Администратор
     business: Для бизнеса
     business_overview: 'Обзор'
     video_encoding: 'Видеокодирование'
@@ -203,15 +196,12 @@ ru:
     reverse_engineering: 'Реверс-инжиниринг'
     turnkey_hardware: 'Железо под ключ'
     digital_twins: 'Цифровые двойники'
-    clone_soc: Клонировать SoC
     community: Сообщество
     community_chat: Чат и поддержка
-    dashboard: Приборная панель
     donate: Поддержать
     ecosystem: Экосистема
     ecosystem_overview: Обзор проектов
     edge_ai: Edge AI
-    editing: Редактирование
     get_started: Начало работы
     green_life: Зеленая жизнь
     privacy: Приватность
@@ -229,7 +219,6 @@ ru:
     qr_code_generator: Генератор QR-кода
     snapshot: Снимок № %{number}
     snapshots: Последние снимки
-    socs: SoC
     stages: Стадии разработки
     store: Магазин
     supported_hardware: Оборудование
@@ -237,8 +226,6 @@ ru:
     teleoperation: Телеуправление
     utilities: Утилиты
     vendors: Продавцы
-    view_soc: Посмотреть страницу SoC
-    view_vendor: Просмотр вендора
     webui: Веб интерфейс
     wiki: Wiki
   net_iface:
@@ -275,8 +262,6 @@ ru:
       show_all_frames: Показать все кадры за сутки
       speed: Скорость
     show:
-      delete_by_mac: Удалить все по MAC
-      delete_one: Удалить этот
       last_24h: Последние 24 часа
       show_all_frames: Показать все кадры за сутки
       show_slideshow: Смотреть как слайд-шоу

@@ -27,8 +27,6 @@
       "speed": "Speed"
     },
     "show": {
-      "delete_by_mac": "Delete all by MAC",
-      "delete_one": "Delete this one",
       "last_24h": "Last 24 hours",
       "show_all_frames": "Show every frame from this day",
       "show_slideshow": "Watch as slideshow",

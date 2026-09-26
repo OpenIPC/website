@@ -304,18 +304,7 @@ Rails.application.routes.draw do
     end
   end
 
-  devise_for :admin
-  namespace :admin do
-    resources :snapshots
-    resources :socs
-    resources :vendors
-  end
-  as :admin do
-    get "/admin", to: "admin/dashboard#show", as: "admin_root"
-    get "/admin/sign_out", to: "devise/sessions#destroy"
-  end
-
-  # The four addresses below are retired rather than merely unrouted: each
+  # The addresses below are retired rather than merely unrouted: each
   # existed, each is gone, and the catch-all would answer them 302-then-200 at
   # the homepage, which tells a crawler the page moved there. One endpoint,
   # written once, so a fifth retirement is one line.
@@ -336,6 +325,11 @@ Rails.application.routes.draw do
   # that the shop would come back; it is not coming back, so they went with it.
   match '(/:locale)/merchandise', to: gone, via: :all, as: :retired_merchandise,
         constraints: { locale: Multilang::IN_PATH }
+
+  # Retired 2026-09 (#288). Six accounts and about seventy requests a day, and
+  # once the catalogue became a file there was nothing left in it to edit.
+  # Moderating the Open Wall is an operator's command now, not a web page.
+  match '/admin(/*any)', to: gone, via: :all, as: :retired_admin
 
   # ActiveStorage's public routes, refused.
   #

@@ -21,8 +21,11 @@ module RescueHandler
     when ActiveRecord::RecordNotFound, ActionView::MissingTemplate,
          ActionController::UnknownFormat
       render file: Rails.public_path.join('404.html'), layout: false, status: :not_found
+    # Nothing on the site posts a form any more (#288), so this is a foreign
+    # POST rather than an expired session. It used to redirect with a flash
+    # telling the visitor to sign in again, which wrote the session cookie.
     when ActionController::InvalidAuthenticityToken
-      redirect_to root_path, alert: 'Session expired. Please sign in..'
+      redirect_to root_path
     else
       raise exception unless Rails.env.production?
 

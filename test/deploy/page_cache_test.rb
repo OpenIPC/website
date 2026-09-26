@@ -10,9 +10,9 @@ require 'test_helper'
 # site was the only large one that was not.
 #
 # What makes the catch-all different from every other cached location, and what
-# these hold: it is the one that also serves /admin and Devise. The guards that
-# are right for a gallery page are wrong here, and the ways to get it wrong are
-# all one plausible line.
+# these hold: it serves whatever Rails still answers that nothing else claims,
+# so the guards that are right for a gallery page are wrong here, and the ways
+# to get it wrong are all one plausible line.
 class PageCacheTest < ActiveSupport::TestCase
   VHOST = Rails.root.join('deploy/nginx/sites-available/org.openipc').read.freeze
 
@@ -77,22 +77,22 @@ class PageCacheTest < ActiveSupport::TestCase
 
   # A response carrying Set-Cookie must not be stored, and nginx already
   # refuses to store one. Every other cached location strips the header
-  # instead, because those pages never need a cookie -- but this location
-  # serves /admin and Devise, and stripping it there means nobody can sign in.
+  # instead. Here it stays visible: nothing on the site sets a cookie since the
+  # admin went (#288), so one appearing is a regression to be seen in a
+  # browser, and hiding it would only keep serving whatever set it.
   test 'the fallback does not strip Set-Cookie the way the others do' do
     assert_not_includes directives, 'proxy_hide_header Set-Cookie', <<~MESSAGE.chomp
       `location @rails` hides Set-Cookie. That is correct for the gallery locations,
-      whose pages never set one, and it breaks signing in here: Devise's
-      session cookie is set on a response this location serves.
+      and wrong for the catch-all: nothing should be setting a cookie at all
+      (#288), and hiding the header turns the first sign of one into silence.
 
       Not storing such a response is what is wanted, and nginx does that by
-      itself. Hiding the header instead throws away the cookie and keeps
-      serving the page.
+      itself.
     MESSAGE
   end
 
-  # Rails is the only thing that knows about the flash, the signed-in admin and
-  # the CSRF token, so it is the only thing that can decide what may be cached.
+  # Rails is the only thing that knows about the flash, so it is the only thing
+  # that can decide what may be cached.
   # A proxy_cache_valid here is a second opinion that overrides the first on
   # exactly the pages where the first one matters.
   test 'nginx does not offer its own opinion on how long a page lives' do
@@ -103,7 +103,7 @@ class PageCacheTest < ActiveSupport::TestCase
 
         #{offered.join("\n        ")}
 
-      This location serves /admin, Devise and every page carrying a flash.
+      This location serves every page carrying a flash.
       ApplicationController declares those `max-age=0, private` and nginx
       honours it; proxy_cache_valid applies to responses that say nothing,
       which here are the ones that must not be stored.
@@ -137,9 +137,23 @@ class PageCacheTest < ActiveSupport::TestCase
     MESSAGE
   end
 
-  test 'an admin still reaches Rails, and is never stored for anyone else' do
-    assert_includes directives, 'proxy_cache_bypass $cookie__openipc_session'
-    assert_includes directives, 'proxy_no_cache $upstream_http_x_admin_view'
+  # Both rules existed for the admin alone (#288). The bypass sent anyone with
+  # a session cookie past the cache, so a signed-in admin saw the moderation
+  # controls rather than an anonymous copy; the no_cache kept an admin's render
+  # -- which printed the uploader's IP and MAC -- out of a cache keyed on the
+  # path alone. With no admin, nothing sets a cookie and no render differs by
+  # who asked, so either rule coming back is a rule for a problem that does not
+  # exist, and the bypass would hand any client a free cache-skip by sending
+  # a cookie.
+  test 'no location keeps a rule for the admin that is gone' do
+    %w[org.openipc org.openipc.dev].each do |name|
+      vhost = Rails.root.join('deploy/nginx/sites-available', name).read
+      live = vhost.lines.reject { |line| line.lstrip.start_with?('#') }.join
+
+      %w[$cookie__openipc_session $upstream_http_x_admin_view X-Admin-View].each do |rule|
+        assert_not_includes live, rule, "#{name} still refers to #{rule}, which only the admin needed"
+      end
+    end
   end
 
   # Vary covers headers, not the query string. The front page renders per

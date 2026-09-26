@@ -12,8 +12,6 @@ require 'test_helper'
 # #154 made the address carry the language. This file is what stops the cookie
 # coming back.
 class CacheabilityTest < ActionDispatch::IntegrationTest
-  include Devise::Test::IntegrationHelpers
-
   # Forgery protection is off in the test environment, which makes
   # csrf_meta_tags render nothing -- so every assertion here about cookies and
   # tokens passed whether or not the layout emitted one. Found by reverting
@@ -71,22 +69,49 @@ class CacheabilityTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # The half that must NOT change. An admin sees uploader IP and MAC addresses
-  # on URLs an anonymous visitor also reaches.
-  test 'the admin area is never publicly cacheable' do
-    get '/admin/sign_in'
+  # Not just the public pages: nothing the origin answers sets a cookie (#288).
+  # The admin's session was the last cookie the site wrote, and with it gone
+  # the vhost no longer bypasses its cache for anyone carrying one -- so a
+  # cookie reappearing anywhere would be both a privacy regression and a page
+  # nginx quietly stops caching. The list covers the ways a response gets
+  # written: a page, a redirect that used to carry a flash, a 404, a 410, the
+  # catch-all, JSON, and the one POST the public makes.
+  ANSWERS = ['/', '/sitemap.xml', '/cameras/socs.json', '/up',
+             '/snapshots/ffffffffffffffffffff', '/open-wall/camera/0123456789abcdef',
+             '/admin', '/admin/sign_in', '/merchandise', '/no-such-page-anywhere'].freeze
 
-    assert_not_includes response.headers['Cache-Control'].to_s, 'public',
-                        'the sign-in page is declared publicly cacheable'
+  test 'nothing the origin answers sets a cookie' do
+    offenders = ANSWERS.filter_map do |path|
+      get path
+      cookie_set_by("GET #{path}")
+    end
+    post '/snapshots', params: {}
+    offenders << cookie_set_by('POST /snapshots')
+    offenders.compact!
+
+    assert_empty offenders, <<~MESSAGE.chomp
+      These responses set a cookie, and since #288 nothing on the site should:
+
+      #{offenders.map { |o| "  #{o}" }.join("\n")}
+
+      The usual causes are a flash on a redirect (`redirect_to ..., alert:`),
+      a session[] assignment, or csrf_meta_tags on a page.
+    MESSAGE
   end
 
-  test 'a signed-in admin gets no public freshness and is marked uncacheable' do
-    sign_in admins(:one)
-    get '/open-wall'
+  def cookie_set_by(request)
+    cookie = response.headers['Set-Cookie']
+    "#{request} (#{response.status}) -> #{cookie}" if cookie
+  end
 
-    assert_equal '1', response.headers['X-Admin-View'],
-                 'nginx has no other way to know this response was rendered for an admin'
-    assert_not_includes response.headers['Cache-Control'].to_s, 'public'
+  test 'the admin is gone, not merely unlinked' do
+    get '/admin'
+    assert_response :gone
+    get '/admin/sign_in'
+    assert_response :gone
+
+    assert_not Gem.loaded_specs.key?('devise'), 'Devise is loaded again'
+    assert_not ActiveRecord::Base.connection.table_exists?(:admins), 'the admins table is back'
   end
 
   # The wizard is the one public page with a form, so it is the one that still
@@ -154,14 +179,5 @@ class CacheabilityTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_nil response.headers['Set-Cookie']
-  end
-
-  # The rule that a token implies a cookie implies private still matters --
-  # Devise is what exercises it now.
-  test 'a page that mints a token is never declared publicly cacheable' do
-    get '/admin/sign_in'
-
-    assert_select 'meta[name=csrf-token]', 1, 'the sign-in form cannot work without one'
-    assert_not_includes response.headers['Cache-Control'].to_s, 'public'
   end
 end

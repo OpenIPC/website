@@ -378,10 +378,6 @@ server {
         proxy_cache_key $scheme$host|$locale_key|$uri;
         proxy_cache_valid 200 60s;
         proxy_cache_lock on;
-        # An admin reaches Rails, as everywhere else that is cached. Nothing on
-        # this response differs for one today; the bypass costs almost nothing
-        # since #155 and is what stops that being a decision made per location.
-        proxy_cache_bypass $cookie__openipc_session;
 
         # HSTS is repeated because add_header at location level replaces the
         # whole inherited set. Cache-Control and Access-Control-Allow-Origin

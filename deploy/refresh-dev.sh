@@ -81,23 +81,18 @@ ROWS=$(mysql -N -e "SELECT COUNT(*) FROM socs;" "$DST_DB")
 log "restored: ${ROWS} socs"
 
 # ------------------------------------------------------------- scrub
-# Dev is reachable by anyone with the basic-auth password, and its admin
-# accounts must not be production ones. Snapshot MAC and IP addresses identify
-# real cameras and real people's networks, so they go too.
+# Dev is reachable by anyone with the basic-auth password. Snapshot MAC and IP
+# addresses identify real cameras and real people's networks, so they go.
 #
-# DEV_ADMIN_DIGEST is a bcrypt digest of the shared dev password. Generate it
-# with:  docker run --rm ghcr.io/openipc/website:latest \
-#          bundle exec ruby -e 'require "bcrypt"; puts BCrypt::Password.create("PASSWORD")'
-: "${DEV_ADMIN_DIGEST:?DEV_ADMIN_DIGEST not set — refusing to leave production password digests in dev}"
+# The admins table is dropped outright rather than scrubbed. The admin is gone
+# (#288) and nothing reads the table, but a backup taken before production ran
+# that migration still carries it -- email addresses and password digests --
+# and dev has no reason to hold either. IF EXISTS because a later backup will
+# not have it at all.
 
 log "scrubbing"
 mysql "$DST_DB" <<SQL || fail "scrub failed"
-UPDATE admins
-   SET email = CONCAT('admin', id, '@dev.invalid'),
-       encrypted_password = '${DEV_ADMIN_DIGEST}',
-       reset_password_token = NULL,
-       current_sign_in_ip = NULL,
-       last_sign_in_ip = NULL;
+DROP TABLE IF EXISTS admins;
 
 UPDATE snapshots
    SET mac_address = LOWER(CONCAT('02:00:', LPAD(HEX((id >> 24) & 255), 2, '0'), ':',
@@ -108,12 +103,13 @@ UPDATE snapshots
 SQL
 
 # Fail loudly rather than quietly leaving real data exposed.
-LEAK=$(mysql -N -e "SELECT COUNT(*) FROM admins WHERE email NOT LIKE '%@dev.invalid';" "$DST_DB")
-[ "$LEAK" = 0 ] || fail "${LEAK} admin rows still carry production emails"
+LEAK=$(mysql -N -e "SELECT COUNT(*) FROM information_schema.tables
+                    WHERE table_schema = '${DST_DB}' AND table_name = 'admins';")
+[ "$LEAK" = 0 ] || fail "the admins table survived the scrub"
 LEAK=$(mysql -N -e "SELECT COUNT(*) FROM snapshots WHERE ip_address <> '198.51.100.1';" "$DST_DB")
 [ "$LEAK" = 0 ] || fail "${LEAK} snapshot rows still carry production IPs"
 
-log "scrub verified: $(mysql -N -e 'SELECT COUNT(*) FROM admins;' "$DST_DB") admins, \
+log "scrub verified: no admins table, \
 $(mysql -N -e 'SELECT COUNT(*) FROM snapshots;' "$DST_DB") snapshots"
 
 # ------------------------------------------------------------- restart

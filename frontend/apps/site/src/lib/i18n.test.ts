@@ -24,7 +24,7 @@ describe('the catalogue', () => {
     // change on both sides rather than a surprise.
     for (const cat of [en, ru, zh]) {
       const keys = Object.keys(cat);
-      for (const forbidden of ['firmware', 'devise', 'activerecord']) {
+      for (const forbidden of ['firmware', 'activerecord']) {
         expect(keys).not.toContain(forbidden);
       }
 
@@ -39,8 +39,6 @@ describe('the catalogue', () => {
       const socs = cameras.socs as Record<string, unknown>;
       expect(Object.keys(socs).sort()).toEqual(['index', 'show', 'soc']);
       expect(socs.show).toEqual({ title: expect.any(String) });
-      const pages = (cat as unknown as Record<string, Record<string, unknown>>).pages;
-      expect(Object.keys(pages)).not.toContain('admin');
 
       // `snapshots` is the Open Wall's, and the Open Wall stays in Rails. One
       // leaf of it is grafted in by I18nExport::INCLUDED: the home page's wall
