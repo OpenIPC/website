@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Source } from '../../lib/explorer/types';
 import { fetchTrends, NotFound } from '../../lib/explorer/api';
 import { projectOverflow, sortedByDate, topGrowers, type HeadroomPoint, type SeriesPoint, type TrendsFile } from '../../lib/explorer/timeseries';
-import { fmtBytes, fmtPerWeek, fmtSignedBytes } from '../../lib/explorer/format';
+import { fmtBytes, fmtKiB, fmtNum, fmtPerWeek, fmtSignedBytes } from '../../lib/explorer/format';
 import type { ExplorerT } from '../../lib/explorer-i18n';
 import { NUM, TABLE, TD, TH, TableBox } from './Tables';
 
@@ -171,20 +171,20 @@ function HeadroomChart({ title, points, windowDays, t }: { title: string; points
         )}
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} class="block h-auto w-full" role="img"
-        aria-label={`${title}: ${last.used_kb} / ${last.cap_kb} KiB`}>
+        aria-label={`${title}: ${fmtNum(last.used_kb)} / ${fmtKiB(last.cap_kb)}`}>
         {ticks.map((v) => (
           <g key={v}>
             <line x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="#e3e7f0" />
-            <text x={pad.l - 8} y={y(v) + 4} text-anchor="end" class="fill-[#8a93a3] font-mono text-[12px]">{v.toLocaleString('en')}</text>
+            <text x={pad.l - 8} y={y(v) + 4} text-anchor="end" class="fill-[#8a93a3] font-mono text-[12px]">{fmtNum(v)}</text>
           </g>
         ))}
         <line x1={pad.l} x2={W - pad.r} y1={y(cap)} y2={y(cap)} stroke="#d92839" stroke-dasharray="4 4" />
-        <text x={W - pad.r} y={y(cap) - 6} text-anchor="end" class="fill-red font-mono text-[12px]">{t('chart_cap', { kb: cap.toLocaleString('en') })}</text>
+        <text x={W - pad.r} y={y(cap) - 6} text-anchor="end" class="fill-red font-mono text-[12px]">{t('chart_cap', { kb: fmtNum(cap) })}</text>
         <path d={`${path} L${x(last.built_at)} ${H - pad.b} L${x(visible[0].built_at)} ${H - pad.b}Z`} fill="#4c60d8" fill-opacity="0.12" />
         <path d={path} fill="none" stroke="#4c60d8" stroke-width="2" />
         {visible.map((p) => (
           <circle key={p.build_id} cx={x(p.built_at)} cy={y(p.used_kb)} r={p === last ? 4 : 0} fill="#4c60d8">
-            <title>{p.build_id} · {p.used_kb.toLocaleString('en')} / {p.cap_kb.toLocaleString('en')} KiB</title>
+            <title>{p.build_id} · {fmtNum(p.used_kb)} / {fmtKiB(p.cap_kb)}</title>
           </circle>
         ))}
         <text x={pad.l} y={H - 8} class="fill-[#8a93a3] font-mono text-[12px]">{day(visible[0].built_at)}</text>

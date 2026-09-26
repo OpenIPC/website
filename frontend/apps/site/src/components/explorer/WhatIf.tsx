@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { KconfigGraph, KconfigHelp, Sizes, Source } from '../../lib/explorer/types';
 import { fetchKconfig, NotFound } from '../../lib/explorer/api';
 import { buildRequest, closeDisable, defconfigFragment } from '../../lib/explorer/kconfig';
-import { fmtBytes } from '../../lib/explorer/format';
+import { fmtBytes, fmtKiB } from '../../lib/explorer/format';
 import type { ExplorerT } from '../../lib/explorer-i18n';
 import { NUM, TABLE, TD, TH, TableBox } from './Tables';
 
@@ -85,7 +85,7 @@ export default function WhatIf({ source, platform, sizes, t }: { source: Source;
         <Kpi label={t('whatif_disabled')} value={String(closure.disabled.size)} />
         <Kpi label={t('whatif_blocked')} value={String(closure.blocked.size)} />
         <Kpi label={t('whatif_savings')} value={fmtBytes(saved)} />
-        <Kpi label={t('whatif_headroom')} value={`≈ ${newHeadroom.toLocaleString('en')} KiB`} tone={newHeadroom > 0 ? 'text-green' : 'text-red'} />
+        <Kpi label={t('whatif_headroom')} value={`≈ ${fmtKiB(newHeadroom)}`} tone={newHeadroom > 0 ? 'text-green' : 'text-red'} />
         <div class="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-4">
           <button type="button" class="site-btn site-btn-primary" disabled={none} onClick={copyFragment}>
             {copy === 'done' ? t('whatif_copied') : t('whatif_copy')}

@@ -7,7 +7,7 @@ import type { ComponentChildren } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
 import type { SizesModule, SizesPackage, SizesRemoved } from '../../lib/explorer/types';
 import { categorise, CATEGORY_COLOUR } from '../../lib/explorer/categorise';
-import { fmtBytes, fmtBytesOrNull } from '../../lib/explorer/format';
+import { fmtBytes, fmtBytesOrNull, fmtNum } from '../../lib/explorer/format';
 import type { ExplorerT } from '../../lib/explorer-i18n';
 
 export const TABLE = 'w-full border-collapse text-sm';
@@ -98,7 +98,7 @@ export function PackageTable({ packages, t }: { packages: SizesPackage[]; t: Exp
                     </td>
                     <td class={`${TD} ${NUM}`}>{fmtBytes(p.uncompressed_bytes)}</td>
                     <td class={`${TD} ${NUM}`}>{fmtBytesOrNull(p.compressed_bytes_approx)}</td>
-                    <td class={`${TD} ${NUM}`}>{(p.file_count ?? 0).toLocaleString('en')}</td>
+                    <td class={`${TD} ${NUM}`}>{fmtNum(p.file_count ?? 0)}</td>
                     <td class={`${TD} whitespace-nowrap`}>
                       <span class="inline-block h-1.5 rounded bg-brand-blue align-middle opacity-75" style={{ width: `${Math.max(1, share * 2.4)}px` }} />{' '}
                       <span class="font-mono text-xs text-body-secondary tabular-nums">{share.toFixed(1)}%</span>
@@ -125,14 +125,14 @@ export function PackageTable({ packages, t }: { packages: SizesPackage[]; t: Exp
 function TopFiles({ pkg, t }: { pkg: SizesPackage; t: ExplorerT }) {
   const files = pkg.top_files ?? [];
   const total = pkg.file_count ?? files.length;
-  if (files.length === 0) return <p class="m-0 text-body-secondary">{t('no_top_files', { total: total.toLocaleString('en') })}</p>;
+  if (files.length === 0) return <p class="m-0 text-body-secondary">{t('no_top_files', { total: fmtNum(total) })}</p>;
   const shown = files.reduce((s, f) => s + f.bytes, 0);
   const rest = Math.max(0, total - files.length);
   return (
     <div>
       <p class="mt-0 mb-2 text-body-secondary">
-        {t('top_files', { shown: files.length, total: total.toLocaleString('en') })}
-        {rest > 0 ? t('top_files_rest', { rest: rest.toLocaleString('en'), bytes: fmtBytes(Math.max(0, pkg.uncompressed_bytes - shown)) }) : ''}.
+        {t('top_files', { shown: files.length, total: fmtNum(total) })}
+        {rest > 0 ? t('top_files_rest', { rest: fmtNum(rest), bytes: fmtBytes(Math.max(0, pkg.uncompressed_bytes - shown)) }) : ''}.
       </p>
       <ul class="m-0 grid list-none gap-1 p-0">
         {files.map((f) => (

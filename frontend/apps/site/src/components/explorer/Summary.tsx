@@ -4,7 +4,7 @@
  */
 import type { Sizes } from '../../lib/explorer/types';
 import { flashSegments, headroomState, hexOffset, needsMoreThanEight, type HeadroomState, type SegmentKind } from '../../lib/explorer/summary';
-import { fmtBytes } from '../../lib/explorer/format';
+import { fmtBytes, fmtKiB, fmtNum } from '../../lib/explorer/format';
 import type { ExplorerT } from '../../lib/explorer-i18n';
 
 const SEGMENT_CLASS: Record<SegmentKind, string> = {
@@ -30,7 +30,7 @@ const STATE_BAR: Record<HeadroomState, string> = {
   unknown: 'bg-hairline',
 };
 
-const kib = (n: number) => n.toLocaleString('en');
+const kib = (n: number) => fmtNum(n);
 
 export default function Summary({ sizes, t }: { sizes: Sizes; t: ExplorerT }) {
   const segs = flashSegments(sizes);
@@ -50,13 +50,13 @@ export default function Summary({ sizes, t }: { sizes: Sizes; t: ExplorerT }) {
         {segs && (
           <>
             <div class="flex h-[46px] overflow-hidden rounded-md border border-hairline" role="img"
-              aria-label={segs.map((s) => `${t(`segment_${s.kind}`)} ${kib(s.sizeKb)} KiB`).join(', ')}>
+              aria-label={segs.map((s) => `${t(`segment_${s.kind}`)} ${fmtKiB(s.sizeKb)}`).join(', ')}>
               {segs.map((s) => (
                 <div
                   key={s.kind}
                   class={`relative flex items-center justify-center overflow-hidden whitespace-nowrap text-xs ${SEGMENT_CLASS[s.kind]}`}
                   style={{ flexBasis: `${(s.sizeKb / total) * 100}%` }}
-                  title={`${t(`legend_${s.kind}`)}: ${kib(s.sizeKb)} KiB${s.usedKb != null ? `, ${kib(s.usedKb)} KiB used` : ''}`}
+                  title={`${t(`legend_${s.kind}`)}: ${fmtKiB(s.sizeKb)}${s.usedKb != null ? `, ${t('segment_used', { kb: fmtKiB(s.usedKb) })}` : ''}`}
                 >
                   {s.usedKb != null && (
                     <i class="absolute inset-y-0 left-0 bg-black/20" style={{ width: `${Math.min(s.usedKb / s.sizeKb, 1) * 100}%` }} />
@@ -115,7 +115,7 @@ function Meter({ title, used, cap, t }: { title: string; used: number | null; ca
       {used != null && cap ? (
         <>
           <div class="mt-1 flex flex-wrap justify-between gap-2.5 font-mono text-sm text-body-secondary tabular-nums">
-            <span>{kib(used)} / {kib(cap)} KiB</span>
+            <span>{kib(used)} / {fmtKiB(cap)}</span>
             <span>{((used / cap) * 100).toFixed(1)}%</span>
           </div>
           <div class="mt-2.5 h-2 overflow-hidden rounded bg-surface-alt">

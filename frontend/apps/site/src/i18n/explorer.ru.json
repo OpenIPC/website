@@ -117,6 +117,7 @@
     "segment_kernel": "Ядро",
     "segment_overlay": "Оверлей",
     "segment_rootfs": "Корневая ФС",
+    "segment_used": "занято {kb}",
     "selectors": "включают: {count}",
     "source_builder": "Builder",
     "source_firmware": "Firmware",

@@ -28,6 +28,7 @@ en:
     legend_rootfs: Root filesystem
     legend_overlay: Overlay — your settings
     legend_used: Darker = used
+    segment_used: 'used {kb}'
     fact_installed: Installed
     fact_compressed: Compressed
     fact_counts: '{packages} packages · {modules} modules'

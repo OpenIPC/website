@@ -117,6 +117,7 @@
     "segment_kernel": "内核",
     "segment_overlay": "覆盖层",
     "segment_rootfs": "根文件系统",
+    "segment_used": "已用 {kb}",
     "selectors": "{count} 个选择者",
     "source_builder": "Builder",
     "source_firmware": "Firmware",

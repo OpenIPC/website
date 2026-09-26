@@ -28,6 +28,7 @@ ru:
     legend_rootfs: Корневая файловая система
     legend_overlay: Оверлей — ваши настройки
     legend_used: Темнее — занято
+    segment_used: 'занято {kb}'
     fact_installed: Установлено
     fact_compressed: В сжатом виде
     fact_counts: 'пакетов: {packages} · модулей: {modules}'

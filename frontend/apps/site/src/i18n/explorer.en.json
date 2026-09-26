@@ -117,6 +117,7 @@
     "segment_kernel": "Kernel",
     "segment_overlay": "Overlay",
     "segment_rootfs": "Root filesystem",
+    "segment_used": "used {kb}",
     "selectors": "{count} selector(s)",
     "source_builder": "Builder",
     "source_firmware": "Firmware",

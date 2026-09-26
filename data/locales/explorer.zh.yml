@@ -28,6 +28,7 @@ zh:
     legend_rootfs: 根文件系统
     legend_overlay: 覆盖层 — 您的设置
     legend_used: 深色 = 已用
+    segment_used: '已用 {kb}'
     fact_installed: 安装大小
     fact_compressed: 压缩后
     fact_counts: '{packages} 个软件包 · {modules} 个模块'

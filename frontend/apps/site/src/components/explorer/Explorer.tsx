@@ -6,6 +6,7 @@
  * per build. Everything shareable is in the query string -- source, build,
  * plat, compare, tab, help -- so a link opens the same view.
  */
+import { setFormatLocale } from '../../lib/explorer/format';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Build, IndexFile, Sizes, Source } from '../../lib/explorer/types';
@@ -28,6 +29,8 @@ const SELECT = 'max-w-full rounded-md border border-hairline bg-white px-2.5 py-
 const LABEL = 'text-xs font-semibold tracking-wide text-[#8a93a3] uppercase';
 
 export default function Explorer({ locale }: { locale: Locale }) {
+  // Numbers and units in the page's language (1 943 КиБ, not 1,943 KiB).
+  setFormatLocale(locale);
   const t = useExplorerTranslations(locale);
   const initial = useMemo(() => readQueryString(typeof window === 'undefined' ? '' : window.location.search), []);
   const [source, setSource] = useState<Source>(initial.source);
