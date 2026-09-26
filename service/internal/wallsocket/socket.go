@@ -435,6 +435,11 @@ func (c *conn) deliver(ctx context.Context, sub *subscription, id, variant strin
 	}
 	defer f.Close()
 	if err := c.transmitFrame(ctx, sub, id, variant, f); err != nil {
+		// Not delivered, so not spent: the observe-only log would otherwise
+		// count every frame a reader hung up on.
+		if b := c.server.Budget; b != nil {
+			b.Refund(c.ip, time.Now())
+		}
 		c.server.Log.Warn("wall cable: frame not sent", "err", err, "public_id", id)
 		return
 	}

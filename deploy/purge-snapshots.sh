@@ -46,6 +46,9 @@ for env_name in prod dev; do
   if running "openipc-go-firmware-${env_name}"; then
     docker exec "openipc-go-firmware-${env_name}" openipc purge --firmware 2>&1 | tail -3 \
       || { log "WARNING: the firmware purge (${env_name}) failed"; status=1; }
+  else
+    log "openipc-go-firmware-${env_name} is not running; its firmware cache was not purged"
+    [ "$env_name" = prod ] && status=1
   fi
 done
 

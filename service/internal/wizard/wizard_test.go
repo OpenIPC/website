@@ -112,3 +112,18 @@ func TestWriteAllRemovesStaleFiles(t *testing.T) {
 		t.Errorf("temporary files left behind: %v", tmp)
 	}
 }
+
+// A retired SoC's file that cannot be removed is still served by nginx, so the
+// export must not report success over it.
+func TestWriteAllFailsWhenAStaleFileStays(t *testing.T) {
+	cat, idx := inputs(t)
+	dir := t.TempDir()
+	// A non-empty directory with a .json name: os.Remove refuses it.
+	stuck := filepath.Join(dir, "retired-soc.json")
+	if err := os.MkdirAll(filepath.Join(stuck, "inside"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := WriteAll(cat, idx, dir); err == nil {
+		t.Error("the export reported success with a retired SoC's file still in place")
+	}
+}

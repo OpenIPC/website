@@ -344,12 +344,22 @@ func firmwareRole(ctx context.Context, cfg *config.Config, log *slog.Logger, poo
 		Downloads:   &downloads.Store{DB: pool},
 		AccelPrefix: cfg.FirmwareAccelPrefix, Log: log,
 	})
+	// Every firmware route from the one table, so `openipc routes --json` and
+	// what this mux serves cannot describe different sets.
+	availability := &firmware.AvailabilityHandler{Catalogue: cat, Index: index}
 	for _, r := range routes {
-		if r.Role == "firmware" && strings.HasSuffix(r.Path, "/download_full_image") {
+		if r.Role != "firmware" {
+			continue
+		}
+		switch {
+		case strings.HasSuffix(r.Path, "/download_full_image"):
 			mux.Handle(r.Method+" "+r.Path, h)
+		case r.Path == "/api/v1/hardware/availability.json":
+			mux.Handle(r.Method+" "+r.Path, availability)
+		default:
+			return nil, fmt.Errorf("firmware route %s %s has no handler", r.Method, r.Path)
 		}
 	}
-	mux.Handle("GET /api/v1/hardware/availability.json", &firmware.AvailabilityHandler{Catalogue: cat, Index: index})
 
 	// When upstream publishes, the old version goes: every ten minutes, evict
 	// whatever the index no longer describes (images once nginx has had the

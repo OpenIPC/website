@@ -398,10 +398,17 @@ func WriteAll(cat *catalogue.Catalogue, idx *firmware.Index, dir string) (files,
 		files++
 		combos += bytes.Count(body, []byte(`"sd_card_slot"`))
 	}
-	existing, _ := filepath.Glob(filepath.Join(dir, "*.json"))
+	// A file left behind is a retired SoC nginx keeps serving, so failing to
+	// remove one fails the export.
+	existing, err := filepath.Glob(filepath.Join(dir, "*.json"))
+	if err != nil {
+		return files, combos, err
+	}
 	for _, f := range existing {
 		if !names[filepath.Base(f)] {
-			_ = os.Remove(f)
+			if err := os.Remove(f); err != nil && !os.IsNotExist(err) {
+				return files, combos, fmt.Errorf("removing the retired %s: %w", filepath.Base(f), err)
+			}
 		}
 	}
 	return files, combos, nil

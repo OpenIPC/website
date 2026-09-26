@@ -365,7 +365,10 @@ server {
     # The availability feed (#298): Rails or the Go firmware process, which owns
     # the release index it is computed from. Exact, so nothing else falls in;
     # microcached for the minute the application's own headers allow.
-    location = /api/v1/hardware/availability.json {
+    # Rails' router took a trailing slash too, and so does this: the Go route is
+    # the canonical path alone, so the URI is rewritten to it before proxying.
+    location ~ ^/api/v1/hardware/availability\.json/*$ {
+        rewrite ^ /api/v1/hardware/availability.json break;
         proxy_pass http://$openipc_up_dev_availability;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

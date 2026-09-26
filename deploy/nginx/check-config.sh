@@ -552,6 +552,9 @@ expect /api/v1/wall/cable           200 go     hsts
 grep -q GO-WEB-PROD /tmp/b || { echo "  the socket did not reach the Go web process"; fail=1; }
 expect /api/v1/hardware/availability.json 200 go hsts
 grep -q GO-AVAILABILITY /tmp/b || { echo "  the availability feed did not reach the Go firmware process"; fail=1; }
+# With a trailing slash, as Rails' router answered it: the same feed.
+expect /api/v1/hardware/availability.json/ 200 go hsts
+grep -q GO-AVAILABILITY /tmp/b || { echo "  the trailing-slash feed did not reach the Go firmware process"; fail=1; }
 expect $FW                          200 go     hsts
 grep -q IMAGE /tmp/b || { echo "  the firmware X-Accel-Redirect did not reach /firmware-cache/"; fail=1; }
 redirects_to openipc.org /snapshots https://openipc.org/open-wall
