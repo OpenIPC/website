@@ -7,7 +7,7 @@ import type { ComponentChildren } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
 import type { SizesModule, SizesPackage, SizesRemoved } from '../../lib/explorer/types';
 import { categorise, CATEGORY_COLOUR } from '../../lib/explorer/categorise';
-import { fmtBytes, fmtBytesOrNull, fmtNum } from '../../lib/explorer/format';
+import { fmtBytes, fmtBytesOrNull, fmtNum, fmtPct } from '../../lib/explorer/format';
 import type { ExplorerT } from '../../lib/explorer-i18n';
 
 export const TABLE = 'w-full border-collapse text-sm';
@@ -101,7 +101,7 @@ export function PackageTable({ packages, t }: { packages: SizesPackage[]; t: Exp
                     <td class={`${TD} ${NUM}`}>{fmtNum(p.file_count ?? 0)}</td>
                     <td class={`${TD} whitespace-nowrap`}>
                       <span class="inline-block h-1.5 rounded bg-brand-blue align-middle opacity-75" style={{ width: `${Math.max(1, share * 2.4)}px` }} />{' '}
-                      <span class="font-mono text-xs text-body-secondary tabular-nums">{share.toFixed(1)}%</span>
+                      <span class="font-mono text-xs text-body-secondary tabular-nums">{fmtPct(share)}</span>
                     </td>
                   </tr>
                   {isOpen && (

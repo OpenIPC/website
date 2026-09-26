@@ -4,7 +4,7 @@
  */
 import type { Sizes } from '../../lib/explorer/types';
 import { flashSegments, headroomState, hexOffset, needsMoreThanEight, type HeadroomState, type SegmentKind } from '../../lib/explorer/summary';
-import { fmtBytes, fmtKiB, fmtNum } from '../../lib/explorer/format';
+import { fmtBytes, fmtKiB, fmtNum, fmtPct } from '../../lib/explorer/format';
 import type { ExplorerT } from '../../lib/explorer-i18n';
 
 const SEGMENT_CLASS: Record<SegmentKind, string> = {
@@ -116,7 +116,7 @@ function Meter({ title, used, cap, t }: { title: string; used: number | null; ca
         <>
           <div class="mt-1 flex flex-wrap justify-between gap-2.5 font-mono text-sm text-body-secondary tabular-nums">
             <span>{kib(used)} / {fmtKiB(cap)}</span>
-            <span>{((used / cap) * 100).toFixed(1)}%</span>
+            <span>{fmtPct((used / cap) * 100)}</span>
           </div>
           <div class="mt-2.5 h-2 overflow-hidden rounded bg-surface-alt">
             <i class={`block h-full ${STATE_BAR[state]}`} style={{ width: `${Math.min(used / cap, 1) * 100}%` }} />

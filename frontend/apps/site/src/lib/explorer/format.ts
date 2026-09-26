@@ -59,3 +59,8 @@ export function fmtSignedBytes(b: number): string {
 export function fmtPerWeek(perDayBytes: number): string {
   return fmtSignedBytes(perDayBytes * 7) + unit('wk');
 }
+
+/** A share in percent, one decimal, as the page's language writes it (83,5 %). */
+export function fmtPct(n: number): string {
+  return (n / 100).toLocaleString(locale, { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}

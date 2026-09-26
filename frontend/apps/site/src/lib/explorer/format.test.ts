@@ -4,6 +4,7 @@ import {
   fmtBytesOrNull,
   fmtKiB,
   fmtNum,
+  fmtPct,
   fmtPerWeek,
   fmtSignedBytes,
   setFormatLocale,
@@ -86,6 +87,7 @@ describe("page language", () => {
       expect(fmtKiB(1943).replace(/\s/g, " ")).toBe("1 943 КиБ");
       expect(fmtBytes(2_000_000).replace(/\s/g, " ")).toBe("1,91 МБ");
       expect(fmtBytesOrNull(null)).toBe("н/д");
+      expect(fmtPct(83.52).replace(/\s/g, " ")).toBe("83,5 %");
       setFormatLocale("zh");
       expect(fmtNum(7864)).toBe("7,864");
       expect(fmtPerWeek(1_024)).toBe("+7.0 KB/周");
