@@ -498,7 +498,13 @@ grep -q GO-WEB-PROD /tmp/pb || { echo "  the upload did not reach the Go web pro
 # an address is served for up to a minute, its grant still valid.
 expect /api/v1/wall/page/2.json     200 go     hsts
 grep -q GO-WEB-PROD /tmp/b || { echo "  the wall JSON did not reach the Go web process"; fail=1; }
-expect /api/v1/wall/cable           200 -      hsts
+# The socket is its own surface (#297): the wall's JSON moving does not move it.
+expect /api/v1/wall/cable           200 rails  hsts
+route prod cable go
+expect /api/v1/wall/cable           200 go     hsts
+grep -q GO-WEB-PROD /tmp/b || { echo "  the socket did not reach the Go web process"; fail=1; }
+route prod cable rails
+expect /api/v1/wall/cable           200 rails  hsts
 expect $FW                          200 go     hsts
 grep -q IMAGE /tmp/b || { echo "  the firmware X-Accel-Redirect did not reach /firmware-cache/"; fail=1; }
 redirects_to openipc.org /snapshots https://openipc.org/open-wall

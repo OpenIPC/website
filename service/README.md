@@ -7,11 +7,16 @@ moving it back, takes about a second.
 
 | role | port (prod / dev) | answers |
 |---|---|---|
-| `web` | 3002 / 3012 | `POST /snapshots` (the cameras' frozen contract), the wall's variants, `/api/v1/wall/*.json` |
+| `web` | 3002 / 3012 | `POST /snapshots` (the cameras' frozen contract), the wall's variants, `/api/v1/wall/*.json`, the frame socket `/api/v1/wall/cable` |
 | `firmware` | 3003 / 3013 | `…/download_full_image`: full flash images, built on demand, and the download stats |
 
-The frame socket (`/api/v1/wall/cable`) stays on Rails for now (#297). It
-verifies the grants this service mints, because both use the key Rails derives.
+The frame socket (`/api/v1/wall/cable`, #297) speaks ActionCable's wire
+protocol, so the pages' client (`@rails/actioncable` in
+`frontend/apps/site/src/lib/wall-frames.ts`) is unchanged. It verifies grants
+with the same key the wall JSON signs them with, and Rails' channel accepts
+them too, so the socket and the JSON can move independently. Its per-address
+frame budget runs observe-only: it logs what Rails' ceiling would refuse, and
+refuses nothing until that has been measured.
 
 ## Build and test — no Go on the host
 

@@ -3,6 +3,7 @@ module github.com/OpenIPC/website/service
 go 1.27.1
 
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/jackc/pgx/v5 v5.11.0
 	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/sync v0.23.0

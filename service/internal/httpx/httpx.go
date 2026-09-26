@@ -4,6 +4,7 @@
 package httpx
 
 import (
+	"bufio"
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
@@ -115,6 +116,22 @@ func (r *recorder) WriteHeader(code int) {
 		r.status = code
 	}
 	r.ResponseWriter.WriteHeader(code)
+}
+
+// Unwrap lets http.ResponseController reach the connection underneath.
+func (r *recorder) Unwrap() http.ResponseWriter { return r.ResponseWriter }
+
+// Hijack hands the connection to a WebSocket; the request is logged with the
+// 101 the handshake wrote.
+func (r *recorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := r.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("the response writer cannot be hijacked")
+	}
+	if r.status == 0 {
+		r.status = http.StatusSwitchingProtocols
+	}
+	return h.Hijack()
 }
 
 func (r *recorder) Write(b []byte) (int, error) {

@@ -411,7 +411,10 @@ server {
         limit_conn wall_sockets 16;
         limit_conn_status 429;
 
-        proxy_pass http://127.0.0.1:3001;
+        # Rails' ActionCable or the Go web process (#297), whichever
+        # conf.d/openipc-routes.conf says. Established sockets stay where they
+        # are on a flip: a reload does not close them.
+        proxy_pass http://$openipc_up_dev_cable;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
@@ -427,6 +430,7 @@ server {
         proxy_no_cache 1;
         proxy_cache_bypass 1;
 
+        add_header X-Served-By $openipc_by_dev_cable always;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }

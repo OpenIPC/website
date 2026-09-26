@@ -29,6 +29,7 @@ type Config struct {
 	VipsBin        string
 	VipsHeaderBin  string
 	Shadow         bool // a mirror of production traffic: log decisions, write only its own store
+	GrantsDisabled bool // WALL_GRANTS_DISABLED=1: the frame socket serves without grants (the emergency switch)
 	SnapshotMaxAge time.Duration
 
 	// Firmware role.
@@ -56,6 +57,7 @@ func Load() (*Config, error) {
 		VipsBin:             str("VIPS_BIN", "vips"),
 		VipsHeaderBin:       str("VIPSHEADER_BIN", "vipsheader"),
 		Shadow:              os.Getenv("SHADOW") == "1",
+		GrantsDisabled:      os.Getenv("WALL_GRANTS_DISABLED") == "1",
 		SnapshotMaxAge:      48 * time.Hour,
 		CatalogueDir:        str("CATALOGUE_DIR", "/app/catalogue"),
 		ReleaseIndexPath:    str("RELEASE_INDEX", "/srv/github-releases/.index.json"),

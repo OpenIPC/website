@@ -368,19 +368,31 @@ END {
 # So this reads the container log instead, and says so rather than quietly
 # reporting a smaller window: docker keeps what it keeps, which is rarely the
 # same span as the access log passed to this script.
-WALL_CONTAINER="${WALL_CONTAINER:-openipc-web-prod}"
+# Both processes that can serve the socket (#297): Rails' and the Go web
+# role's, which log the same two markers. Whichever openipc-route points at is
+# the one with lines in it; across a flip, both are.
+WALL_CONTAINER="${WALL_CONTAINER:-openipc-web-prod openipc-go-web-prod}"
 WALL_SINCE="${WALL_SINCE:-24h}"
+
+wall_logs() {
+  for c in $WALL_CONTAINER; do
+    docker inspect "$c" >/dev/null 2>&1 && docker logs --since "$WALL_SINCE" "$c" 2>&1
+  done
+  return 0
+}
+
+wall_present=0
+for c in $WALL_CONTAINER; do docker inspect "$c" >/dev/null 2>&1 && wall_present=1; done
 
 echo
 echo "Open Wall: sockets refused for want of a grant"
 if ! command -v docker >/dev/null 2>&1; then
   echo "  unavailable here -- needs docker and the application log, not the access log"
-elif ! docker inspect "$WALL_CONTAINER" >/dev/null 2>&1; then
+elif [ "$wall_present" -eq 0 ]; then
   echo "  unavailable -- no container named $WALL_CONTAINER (set WALL_CONTAINER)"
 else
-  refused=$(docker logs --since "$WALL_SINCE" "$WALL_CONTAINER" 2>&1 | grep -c wall_grant_refused)
-  served=$(docker logs --since "$WALL_SINCE" "$WALL_CONTAINER" 2>&1 \
-           | grep -c "wall: connection served")
+  refused=$(wall_logs | grep -c wall_grant_refused)
+  served=$(wall_logs | grep -c "wall: connection served")
   printf "  refused          %s\n" "$refused"
   printf "  served frames    %s\n" "$served"
   printf "  window           last %s of %s, NOT the span of the access log above\n" \

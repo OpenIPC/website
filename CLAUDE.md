@@ -44,7 +44,7 @@ verification techniques, and the traps that have cost time here are in
   rollback is a symlink flip. `deploy/static/README.md`; check a vhost change
   with `deploy/nginx/check-config.sh --seam` before `push-nginx.sh --apply`.
 - `deploy/RESTORE.md` — rebuilding from the S3 backup
-- `openipc-route <env> <upload|wall|firmware> <rails|go|freeze|shadow>` — which
+- `openipc-route <env> <upload|wall|firmware|cable> <rails|go|freeze|shadow>` — which
   process answers each surface that is moving off Rails; a flip and its
   rollback are one reload. `deploy/GO-CUTOVER.md` is the procedure.
 
