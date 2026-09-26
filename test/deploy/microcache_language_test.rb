@@ -84,6 +84,11 @@ class MicrocacheLanguageTest < ActiveSupport::TestCase
       next if block.match?(LANGUAGE_INDEPENDENT)
 
       location = block[/location[^{]*/].to_s.strip
+      # One exception, by value rather than by name: in `location @rails` the
+      # Cache-Control nginx adds is $openipc_route_cache, which is empty -- so
+      # no header at all -- whenever Rails answers, and set only on the
+      # redirects and 410s nginx answers itself (#302).
+      block = block.gsub(/^\s*add_header Cache-Control \$openipc_route_cache always;\n/, '')
       %w[Cache-Control Access-Control-Allow-Origin].each do |header|
         assert_not_includes block, "add_header #{header}", <<~MESSAGE.chomp
           #{location} adds #{header}, which its upstream already sends. nginx

@@ -164,20 +164,10 @@ server {
         add_header Strict-Transport-Security max-age=15768000;
     }
 
-    # config/routes.rb redirects this one to the CDN, and the /images/ alias
-    # below would otherwise swallow it: the file is not in that directory, so
-    # nginx answered 404 where the app meant to redirect. An exact-match
-    # location outranks a prefix one, so this reaches the app.
-    location = /images/logo_openipc.png {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # Four badges and logos from 2022-2023, embedded on pages this project does
-    # not control. Nothing on this site references them. Kept in the repository
+    # Badges and logos from 2022-2023, embedded on pages this project does not
+    # control. Nothing on this site references them. logo_openipc.png among them
+    # was a Rails redirect to a fingerprinted asset until #302; it is the file
+    # itself now, because the asset pipeline goes with Rails (#304). Kept in the repository
     # under deploy/legacy-images and installed here by deploy.sh, because this
     # directory is host-only and in no backup.
     location /images/ {
@@ -948,6 +938,20 @@ server {
     # the block that was `location /` until #157; it is unchanged apart from
     # the proxy_pass URI part and the X-Served-By witness.
     location @rails {
+        # What Rails' router answered without rendering anything (#302) --
+        # the redirects, the retired addresses and the catch-all -- answered
+        # here instead, from maps generated out of config/routes.rb
+        # (conf.d/openipc-redirects.conf). Only after try_files, so a file in
+        # the bundle still wins, exactly as it did over the router; and only
+        # what no route renders, so every page Rails still serves still reaches
+        # it. `return` is the one thing `if` is safe for. One line each: the
+        # deploy tests read this block as ending at the first bare `}`.
+        if ($openipc_route_action = 410)      { return 410 "Gone\n"; }
+        if ($openipc_route_action = 301)      { return 301 $openipc_route_target; }
+        if ($openipc_route_action = 302)      { return 302 $openipc_route_target; }
+        if ($openipc_route_action = catchall) { return 302 $openipc_route_target; }
+        default_type text/plain;
+
         # No limit_conn here. See `location /` above: it would never execute.
         proxy_buffer_size 128k;
 
@@ -1025,7 +1029,10 @@ server {
         # is exactly why it is worth being explicit about.
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Cache-Status $upstream_cache_status;
-        add_header X-Served-By rails always;
+        add_header X-Served-By $openipc_route_by always;
+        # Only on what nginx answered itself: Rails sent no-cache on its
+        # redirects and 410s. Empty -- so absent -- when Rails answers.
+        add_header Cache-Control $openipc_route_cache always;
     }
 
 }

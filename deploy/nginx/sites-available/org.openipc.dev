@@ -497,7 +497,16 @@ server {
         add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
-    location /protected-files/ {
+     # Badges and logos embedded on pages this project does not control, as
+    # production serves them (deploy/legacy-images). logo_openipc.png among them
+    # was a Rails redirect to a fingerprinted asset until #302.
+    location /images/ {
+        alias /srv/www/shared/images/;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+    }
+
+   location /protected-files/ {
         internal;
         alias /srv/www/shared/dev-files/;
         add_header X-Served-By rails always;
@@ -584,6 +593,20 @@ server {
     }
 
     location @rails {
+        # What Rails' router answered without rendering anything (#302) --
+        # the redirects, the retired addresses and the catch-all -- answered
+        # here instead, from maps generated out of config/routes.rb
+        # (conf.d/openipc-redirects.conf). Only after try_files, so a file in
+        # the bundle still wins, exactly as it did over the router; and only
+        # what no route renders, so every page Rails still serves still reaches
+        # it. `return` is the one thing `if` is safe for. One line each: the
+        # deploy tests read this block as ending at the first bare `}`.
+        if ($openipc_route_action = 410)      { return 410 "Gone\n"; }
+        if ($openipc_route_action = 301)      { return 301 $openipc_route_target; }
+        if ($openipc_route_action = 302)      { return 302 $openipc_route_target; }
+        if ($openipc_route_action = catchall) { return 302 $openipc_route_target; }
+        default_type text/plain;
+
         proxy_buffer_size 128k;
         proxy_buffers 8 128k;
 
@@ -602,7 +625,10 @@ server {
 
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
-        add_header X-Served-By rails always;
+        add_header X-Served-By $openipc_route_by always;
+        # Only on what nginx answered itself: Rails sent no-cache on its
+        # redirects and 410s. Empty -- so absent -- when Rails answers.
+        add_header Cache-Control $openipc_route_cache always;
     }
 
 }
