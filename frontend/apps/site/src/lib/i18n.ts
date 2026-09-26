@@ -172,7 +172,7 @@ export function translateIn(
   if (found === undefined) {
     throw new Error(
       `Missing translation "${key}" for ${locale}, and none in ${DEFAULT_LOCALE} to fall back to. ` +
-      'Add it to config/locales and run `bin/rails i18n:export`.',
+      'Add it to config/locales and run `npm run export -w @openipc/site`.',
     );
   }
 

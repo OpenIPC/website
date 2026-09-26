@@ -28,15 +28,18 @@ npm run dev -w @openipc/site            # http://localhost:4321/_smoke/
 
 `config/locales/*.yml` is the source of truth and stays that way. The Astro
 build reads a JSON export of the marketing namespaces, committed under
-`apps/site/src/i18n/`, because the job that builds the bundle has Node and no
-Ruby.
+`apps/site/src/i18n/`, so that no page render parses YAML.
 
 ```bash
-bin/rails i18n:export        # after changing config/locales/*.yml
+npm run export -w @openipc/site   # after changing config/locales, data/catalogue or config/webui_gallery.yml
 ```
 
-`test/i18n_export_test.rb` fails if the two disagree, so a forgotten export is
-a red test rather than a page serving last week's wording. A key missing in
+`scripts/export-data.mjs` writes the translations, `src/data/catalogue.json`
+and `src/data/webui-gallery.json`, byte for byte what the Rails tasks it
+replaced (#304) wrote. `src/lib/export-data.test.ts` fails, and
+`deploy/static/build.sh` refuses to build, if a committed file disagrees with
+its source, so a forgotten export is a red test rather than a page serving last
+week's wording. A key missing in
 `ru` or `zh` falls back to English exactly as `config.i18n.fallbacks` does; a
 key missing in English throws, which fails the build.
 

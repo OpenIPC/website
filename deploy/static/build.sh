@@ -67,6 +67,12 @@ if [ -z "${SKIP_FRONTEND_BUILD:-}" ] && [ -z "${STATIC_SITE_DIST:-}" ]; then
 
   info 'building the frontend'
   [ -d "$FRONTEND/node_modules" ] || ( cd "$FRONTEND" && npm ci --no-audit --no-fund )
+  # The translations, the catalogue and the WebUI gallery reach the pages as
+  # committed JSON generated from YAML (#304: scripts/export-data.mjs, which
+  # replaced three Rails tasks). A source edited without regenerating would
+  # build a site that disagrees with its own sources, so refuse it here.
+  ( cd "$FRONTEND" && npm run export:check -w @openipc/site --silent ) \
+    || die "generated data is stale: npm run export -w @openipc/site, and commit the result"
   ( cd "$FRONTEND" && npm run build -w @openipc/ui --silent )
   ( cd "$FRONTEND" && npm run build -w @openipc/site --silent )
 fi
