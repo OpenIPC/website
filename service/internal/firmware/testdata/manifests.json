@@ -1,0 +1,612 @@
+[
+  {
+    "urlname": "gk7202v300",
+    "vendor": "Goke",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 8,
+    "layout": null,
+    "filename": "openipc-gk7202v300-nor-lite-8mb.bin",
+    "bytes": 8388608,
+    "sha256": "3e7e0d925104202a947039d87eeccfe6810fe611746f61f06f4624cc660f32d1",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "gk7202v300",
+    "vendor": "Goke",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 16,
+    "layout": null,
+    "filename": "openipc-gk7202v300-nor-lite-16mb.bin",
+    "bytes": 16777216,
+    "sha256": "51f296efb19e67de22c195f662c53fe1fb4accd3d983c778b7d2cacd752e3fe5",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 3473408
+    }
+  },
+  {
+    "urlname": "gk7202v300",
+    "vendor": "Goke",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 16,
+    "layout": 8,
+    "filename": "openipc-gk7202v300-nor-lite-16mb-parts8m.bin",
+    "bytes": 16777216,
+    "sha256": "dd426cf1539acf5f41df50b96390b0c63c41e07f38c26179acd822fdba35f5da",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "gk7202v300",
+    "vendor": "Goke",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 32,
+    "layout": null,
+    "filename": "openipc-gk7202v300-nor-lite-32mb.bin",
+    "bytes": 33554432,
+    "sha256": "516df4f6eec701b227ddacaf01083f600452ca13fc0fa35bb72e0d7f4ba37a14",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 3473408
+    }
+  },
+  {
+    "urlname": "gk7202v300",
+    "vendor": "Goke",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 32,
+    "layout": 8,
+    "filename": "openipc-gk7202v300-nor-lite-32mb-parts8m.bin",
+    "bytes": 33554432,
+    "sha256": "a58789c45200e32a201c4800894b1e6bcc35338558fe3e2db0fee8fb0b71c977",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "gk7202v300",
+    "vendor": "Goke",
+    "flash_type": "nand",
+    "release": "lite",
+    "size": null,
+    "layout": null,
+    "filename": "openipc-gk7202v300-nand-lite.bin",
+    "bytes": 7194624,
+    "sha256": "bde2516085374dd4ba4d32cb72820527302f9cfd30ce608b525530dfd72ff589",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 1048576,
+      "rootfs": 4194304
+    }
+  },
+  {
+    "urlname": "gk7202v300",
+    "vendor": "Goke",
+    "flash_type": "nor",
+    "release": "big",
+    "size": 8,
+    "layout": null,
+    "error": "too_large",
+    "message": "rootfs is 5300000 bytes at 0x250000, which runs 57120 bytes past the rootfs partition (0x750000) of openipc-gk7202v300-nor-big-8mb.bin"
+  },
+  {
+    "urlname": "gk7202v300",
+    "vendor": "Goke",
+    "flash_type": "nor",
+    "release": "big",
+    "size": 16,
+    "layout": null,
+    "filename": "openipc-gk7202v300-nor-big-16mb.bin",
+    "bytes": 16777216,
+    "sha256": "ab0dac120750153884c22709b6b6102c499622cfcd25d4ba026d526ca99537fe",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 3473408
+    }
+  },
+  {
+    "urlname": "hi3516av100",
+    "vendor": "HiSilicon",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 8,
+    "layout": null,
+    "filename": "openipc-hi3516av100-nor-lite-8mb.bin",
+    "bytes": 8388608,
+    "sha256": "e90b41e4a06d325064bb90925c2a3277aeba29e1bd0ed878c2d8a472f25767ae",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "hi3516av100",
+    "vendor": "HiSilicon",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 16,
+    "layout": null,
+    "filename": "openipc-hi3516av100-nor-lite-16mb.bin",
+    "bytes": 16777216,
+    "sha256": "7555aaafcedac3945006f42b7a71df4240a435ffc1e0804b1b18686e6c55c789",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 3473408
+    }
+  },
+  {
+    "urlname": "hi3516av100",
+    "vendor": "HiSilicon",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 16,
+    "layout": 8,
+    "filename": "openipc-hi3516av100-nor-lite-16mb-parts8m.bin",
+    "bytes": 16777216,
+    "sha256": "99f6d9c0d0f3193881b62ff1a533751fca092c941396449a7b1e4c139e100541",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "hi3516av100",
+    "vendor": "HiSilicon",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 32,
+    "layout": null,
+    "filename": "openipc-hi3516av100-nor-lite-32mb.bin",
+    "bytes": 33554432,
+    "sha256": "108a5cde28aaa947e0c2c61b486cf73d751c19d456ad7ed9d8178823ef12ba86",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 3473408
+    }
+  },
+  {
+    "urlname": "hi3516av100",
+    "vendor": "HiSilicon",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 32,
+    "layout": 8,
+    "filename": "openipc-hi3516av100-nor-lite-32mb-parts8m.bin",
+    "bytes": 33554432,
+    "sha256": "aeed2b76ca150025d8d4673fcc9660ae6c4677b656752afd71bc9492078d9e74",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "hi3516av100",
+    "vendor": "HiSilicon",
+    "flash_type": "nand",
+    "release": "lite",
+    "size": null,
+    "layout": null,
+    "filename": "openipc-hi3516av100-nand-lite.bin",
+    "bytes": 7194624,
+    "sha256": "625175516786173b5d68fa1df2bd1138362f0c5015a4918254f4a116b2c4f8ab",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 1048576,
+      "rootfs": 4194304
+    }
+  },
+  {
+    "urlname": "hi3516av100",
+    "vendor": "HiSilicon",
+    "flash_type": "nor",
+    "release": "big",
+    "size": 8,
+    "layout": null,
+    "error": "too_large",
+    "message": "rootfs is 5300000 bytes at 0x250000, which runs 57120 bytes past the rootfs partition (0x750000) of openipc-hi3516av100-nor-big-8mb.bin"
+  },
+  {
+    "urlname": "hi3516av100",
+    "vendor": "HiSilicon",
+    "flash_type": "nor",
+    "release": "big",
+    "size": 16,
+    "layout": null,
+    "filename": "openipc-hi3516av100-nor-big-16mb.bin",
+    "bytes": 16777216,
+    "sha256": "d645d9ca7203a0c902f5a988bdbdb9dba736910a5c0924113f78b53980c55449",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 3473408
+    }
+  },
+  {
+    "urlname": "t10",
+    "vendor": "Ingenic",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 8,
+    "layout": null,
+    "filename": "openipc-t10-nor-lite-8mb.bin",
+    "bytes": 8388608,
+    "sha256": "e52a9ffe62b2702d03631147f92523b7ac62bebe9da2b1a03a66a1f3f8b2f289",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "t10",
+    "vendor": "Ingenic",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 16,
+    "layout": null,
+    "filename": "openipc-t10-nor-lite-16mb.bin",
+    "bytes": 16777216,
+    "sha256": "dc4f61847f490d5aaea5b4c9a67de43487b0d79ee19e8b196684d573c9a1e211",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "t10",
+    "vendor": "Ingenic",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 16,
+    "layout": 8,
+    "filename": "openipc-t10-nor-lite-16mb-parts8m.bin",
+    "bytes": 16777216,
+    "sha256": "dc4f61847f490d5aaea5b4c9a67de43487b0d79ee19e8b196684d573c9a1e211",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "t10",
+    "vendor": "Ingenic",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 32,
+    "layout": null,
+    "filename": "openipc-t10-nor-lite-32mb.bin",
+    "bytes": 33554432,
+    "sha256": "89462fa23719bb8627bbb3ba997bd1ff57e8b34936c7586ef8a500c9ea5b815b",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "t10",
+    "vendor": "Ingenic",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 32,
+    "layout": 8,
+    "filename": "openipc-t10-nor-lite-32mb-parts8m.bin",
+    "bytes": 33554432,
+    "sha256": "89462fa23719bb8627bbb3ba997bd1ff57e8b34936c7586ef8a500c9ea5b815b",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "t10",
+    "vendor": "Ingenic",
+    "flash_type": "nand",
+    "release": "lite",
+    "size": null,
+    "layout": null,
+    "filename": "openipc-t10-nand-lite.bin",
+    "bytes": 7194624,
+    "sha256": "4f6395fec9ddb60e8a0b4bb805a581fe912fdf986975a14364084565140196f8",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 1048576,
+      "rootfs": 4194304
+    }
+  },
+  {
+    "urlname": "t10",
+    "vendor": "Ingenic",
+    "flash_type": "nor",
+    "release": "big",
+    "size": 8,
+    "layout": null,
+    "error": "too_large",
+    "message": "rootfs is 5300000 bytes at 0x250000, which runs 57120 bytes past the rootfs partition (0x750000) of openipc-t10-nor-big-8mb.bin"
+  },
+  {
+    "urlname": "t10",
+    "vendor": "Ingenic",
+    "flash_type": "nor",
+    "release": "big",
+    "size": 16,
+    "layout": null,
+    "filename": "openipc-t10-nor-big-16mb.bin",
+    "bytes": 16777216,
+    "sha256": "075e4fbb22f27697ffdc75e8dcbe8142ce03822c674921664b57d0a07871b1a7",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "msc313e",
+    "vendor": "MStar",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 8,
+    "layout": null,
+    "filename": "openipc-msc313e-nor-lite-8mb.bin",
+    "bytes": 8388608,
+    "sha256": "93d344b8ee95257a8633017cb7a68f673100935b1cf11f68320bc669201757e6",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "msc313e",
+    "vendor": "MStar",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 16,
+    "layout": null,
+    "filename": "openipc-msc313e-nor-lite-16mb.bin",
+    "bytes": 16777216,
+    "sha256": "cad7f42080a8a52f60cbf0905ccc5e005d72d57779511ab67eca3306c86a5b20",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 3473408
+    }
+  },
+  {
+    "urlname": "msc313e",
+    "vendor": "MStar",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 16,
+    "layout": 8,
+    "filename": "openipc-msc313e-nor-lite-16mb-parts8m.bin",
+    "bytes": 16777216,
+    "sha256": "d9336b5029b08240f907b73c6483cc2e13dbefed0740f2158c78a5ce17435f74",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "msc313e",
+    "vendor": "MStar",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 32,
+    "layout": null,
+    "filename": "openipc-msc313e-nor-lite-32mb.bin",
+    "bytes": 33554432,
+    "sha256": "aafb24c1522e25b7cdff426b71b0622c1f4abd7f3bd5adab84d4c16673f37259",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 3473408
+    }
+  },
+  {
+    "urlname": "msc313e",
+    "vendor": "MStar",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 32,
+    "layout": 8,
+    "filename": "openipc-msc313e-nor-lite-32mb-parts8m.bin",
+    "bytes": 33554432,
+    "sha256": "41da50c2394bb5b7ba030b1632bdf8b2a83b74ffcb74d6dd5419262fe03bb343",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "msc313e",
+    "vendor": "MStar",
+    "flash_type": "nand",
+    "release": "lite",
+    "size": null,
+    "layout": null,
+    "filename": "openipc-msc313e-nand-lite.bin",
+    "bytes": 7194624,
+    "sha256": "caa1e9220b1e0909318da2a1ce3ec07c5e5e0bfc68e58fa2fe8aca288c9a00b7",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 1048576,
+      "rootfs": 4194304
+    }
+  },
+  {
+    "urlname": "msc313e",
+    "vendor": "MStar",
+    "flash_type": "nor",
+    "release": "big",
+    "size": 8,
+    "layout": null,
+    "error": "too_large",
+    "message": "rootfs is 5300000 bytes at 0x250000, which runs 57120 bytes past the rootfs partition (0x750000) of openipc-msc313e-nor-big-8mb.bin"
+  },
+  {
+    "urlname": "msc313e",
+    "vendor": "MStar",
+    "flash_type": "nor",
+    "release": "big",
+    "size": 16,
+    "layout": null,
+    "filename": "openipc-msc313e-nor-big-16mb.bin",
+    "bytes": 16777216,
+    "sha256": "ffa21e7f70ad24794408d5ae10258abd022982eab08d05182b21dcbadec96c26",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 3473408
+    }
+  },
+  {
+    "urlname": "ssc30kd",
+    "vendor": "SigmaStar",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 8,
+    "layout": null,
+    "filename": "openipc-ssc30kd-nor-lite-8mb.bin",
+    "bytes": 8388608,
+    "sha256": "d23e2eb8c6f576f432ec43b2be2b47d46813139af7e96499c058f03a8532807e",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "ssc30kd",
+    "vendor": "SigmaStar",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 16,
+    "layout": null,
+    "filename": "openipc-ssc30kd-nor-lite-16mb.bin",
+    "bytes": 16777216,
+    "sha256": "3c288e6e8f04ae9f0b7c62860b8c3d6e4c19b3e2f46d72df529b10239a2f4afc",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "ssc30kd",
+    "vendor": "SigmaStar",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 16,
+    "layout": 8,
+    "filename": "openipc-ssc30kd-nor-lite-16mb-parts8m.bin",
+    "bytes": 16777216,
+    "sha256": "3c288e6e8f04ae9f0b7c62860b8c3d6e4c19b3e2f46d72df529b10239a2f4afc",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "ssc30kd",
+    "vendor": "SigmaStar",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 32,
+    "layout": null,
+    "filename": "openipc-ssc30kd-nor-lite-32mb.bin",
+    "bytes": 33554432,
+    "sha256": "c1e62ebf81b328ea6bd73d2de391e9e339e8366dc504f44d5962d00877a005c7",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "ssc30kd",
+    "vendor": "SigmaStar",
+    "flash_type": "nor",
+    "release": "lite",
+    "size": 32,
+    "layout": 8,
+    "filename": "openipc-ssc30kd-nor-lite-32mb-parts8m.bin",
+    "bytes": 33554432,
+    "sha256": "c1e62ebf81b328ea6bd73d2de391e9e339e8366dc504f44d5962d00877a005c7",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  },
+  {
+    "urlname": "ssc30kd",
+    "vendor": "SigmaStar",
+    "flash_type": "nand",
+    "release": "lite",
+    "size": null,
+    "layout": null,
+    "filename": "openipc-ssc30kd-nand-lite.bin",
+    "bytes": 7194624,
+    "sha256": "1537a8a397f396be11cea70b9a1971360afb0f9cf06def13bf0358291190e7ac",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 1048576,
+      "rootfs": 4194304
+    }
+  },
+  {
+    "urlname": "ssc30kd",
+    "vendor": "SigmaStar",
+    "flash_type": "nor",
+    "release": "big",
+    "size": 8,
+    "layout": null,
+    "error": "too_large",
+    "message": "rootfs is 5300000 bytes at 0x250000, which runs 57120 bytes past the rootfs partition (0x750000) of openipc-ssc30kd-nor-big-8mb.bin"
+  },
+  {
+    "urlname": "ssc30kd",
+    "vendor": "SigmaStar",
+    "flash_type": "nor",
+    "release": "big",
+    "size": 16,
+    "layout": null,
+    "filename": "openipc-ssc30kd-nor-big-16mb.bin",
+    "bytes": 16777216,
+    "sha256": "777dea88ca9babea57f5116bd40c6440fa7ca34c280afb155ecfc15e6dcdf58f",
+    "offsets": {
+      "u-boot": 0,
+      "kernel": 327680,
+      "rootfs": 2424832
+    }
+  }
+]

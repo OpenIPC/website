@@ -463,6 +463,36 @@ class StaticBundleTest < ActiveSupport::TestCase
 
   # The other direction: an entry that matches nothing any more is folklore,
   # and folklore is how a list stops being read.
+  # The Go service answers what it took from Rails (#287), and the router above
+  # knows nothing about it. service/routes.json is its own list, kept current
+  # by a Go test; every address in it must be one a bundle file cannot shadow.
+  test 'every address the Go service answers is reserved' do
+    routes = JSON.parse(Rails.root.join('service/routes.json').read)
+    samples = { '{locale}/' => '', '{$}' => '', '{page}' => '2.json', '{file}' => '0123456789abcdef0123.json',
+                '{id}' => '0123456789abcdef0123', '{vendor}' => 'hisilicon', '{soc}' => 'hi3516ev300' }
+
+    refute_empty routes, 'service/routes.json lists nothing'
+    unreserved = routes.filter_map do |route|
+      path = samples.reduce(route['path']) { |p, (from, to)| p.gsub(from, to) }
+      "#{route['method']} #{route['path']}" unless reserved?(path) || reserved_as_the_checker_reads_it?(path)
+    end
+
+    assert_empty unreserved, <<~MESSAGE.chomp
+      The Go service answers these and they are not in deploy/static/reserved-paths:
+
+        #{unreserved.join("\n        ")}
+    MESSAGE
+  end
+
+  # check-bundle.sh, which is what refuses a bundle, matches a glob with a
+  # shell `case`, where `*` crosses slashes: `*/download_full_image` reserves the
+  # action under every vendor and SoC. reserved? above passes FNM_PATHNAME and
+  # reads the same rule more narrowly; this reads it the way it is enforced.
+  def reserved_as_the_checker_reads_it?(path)
+    stripped = path.sub(%r{\A/(#{Multilang::IN_PATH.source})(/|\z)}, '/')
+    RESERVED.any? { |rule| rule.include?('*') && [path, stripped].any? { |p| File.fnmatch(rule, p) } }
+  end
+
   test 'no reserved entry has stopped meaning anything' do
     known = Rails.application.routes.routes.map { |r| r.path.spec.to_s } +
             Rails.root.join('public').children.map { |c| "/#{c.basename}" } +

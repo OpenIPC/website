@@ -35,6 +35,16 @@ jobs:
         options: >-
           --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval=10s --health-timeout=5s --health-retries=10
+      # The Go service's database (#292): its unit tests and the conformance
+      # suite's Go target each make a database of their own on it.
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s --health-timeout=5s --health-retries=10
 
     env:
       RAILS_ENV: test
@@ -118,6 +128,28 @@ jobs:
       # does not cover what it claims to.
       - name: Conformance suite fails against a broken server
         run: bin/conformance --mutations
+
+      # --- the Go service (#287) ---------------------------------------------
+      # Steps in this job, not a job of their own: branch protection requires
+      # exactly `build` and `test`, and a third job would report without gating.
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.1'
+          cache-dependency-path: service/go.sum
+
+      - name: Go vet and tests
+        working-directory: service
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=disable
+        run: |
+          go vet ./...
+          go test -count=1 ./...
+
+      - name: The conformance suite against the Go service
+        run: |
+          (cd service && CGO_ENABLED=0 go build -trimpath -o bin/openipc ./cmd/openipc)
+          CONFORMANCE_PG_URL='postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=disable' \
+            bin/conformance --target go
 
       # --- the component library (#158) -----------------------------------
       # Steps in this job rather than a job of their own, for the same reason
@@ -222,6 +254,32 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # The Go service's image, from the same commit, so one SHA names both
+      # halves of a release: openipc-deploy pulls website:<sha> and
+      # website-go:<sha> together.
+      - name: Derive Go image tags
+        id: go-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-go
+          tags: |
+            type=sha,format=long,prefix=
+            type=ref,event=branch
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push the Go service
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: service/Dockerfile
+          push: true
+          build-args: REVISION=${{ github.sha }}
+          tags: ${{ steps.go-meta.outputs.tags }}
+          labels: ${{ steps.go-meta.outputs.labels }}
+          cache-from: type=gha,scope=go
+          cache-to: type=gha,mode=max,scope=go
 
       # --- the static bundle (#157, filled by #159) -------------------------
       # Steps in this job rather than a job of their own. Branch protection on

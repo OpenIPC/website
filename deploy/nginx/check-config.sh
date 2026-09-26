@@ -67,9 +67,11 @@ rm -f /etc/nginx/conf.d/default.conf
 cp /repo/conf.d/*.conf /etc/nginx/conf.d/
 cp /repo/sites-available/* /etc/nginx/sites-available/
 for f in /etc/nginx/sites-available/*; do ln -sf "$f" /etc/nginx/sites-enabled/; done
+# The route state openipc-route owns on the host (deploy/route.sh): all Rails.
+ROUTES_DIR=/etc/nginx/openipc-routes sh /route.sh init >/dev/null
 '
 
-run() { docker run --rm -i -v "${HERE}:/repo:ro" "$FIXTURE" sh -s; }
+run() { docker run --rm -i -v "${HERE}:/repo:ro" -v "${HERE}/../route.sh:/route.sh:ro" "$FIXTURE" sh -s; }
 
 # `listen ... http2` is deprecated on 1.26 and warns once per vhost; that is
 # pre-existing and not what this is looking for.
@@ -89,7 +91,7 @@ fi
 # attached `docker run` whose container holds a long-lived process never
 # returns once its output is being captured -- the run hangs instead of
 # failing, which is the worst way for a check to behave.
-cid=$(docker run -d --rm -v "${HERE}:/repo:ro" --entrypoint sleep "$FIXTURE" 600) \
+cid=$(docker run -d --rm -v "${HERE}:/repo:ro" -v "${HERE}/../route.sh:/route.sh:ro" --entrypoint sleep "$FIXTURE" 600) \
   || die "cannot start the fixture container"
 trap 'docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
 
@@ -111,7 +113,17 @@ server { listen 127.0.0.1:3000; location / {
   return 200 "RAILS-PROD\n";
 } }
 server { listen 127.0.0.1:3001; location / { return 200 "RAILS-DEV\n"; } }
+server { listen 127.0.0.1:3002; location / { return 200 "GO-WEB-PROD\n"; } }
+server { listen 127.0.0.1:3003; location / {
+  add_header X-Accel-Redirect /firmware-cache/image.bin;
+  return 200 "";
+} }
+server { listen 127.0.0.1:3004; access_log /tmp/shadow.log; location / { return 201 "GO-SHADOW\n"; } }
+server { listen 127.0.0.1:3012; location / { return 200 "GO-WEB-DEV\n"; } }
+server { listen 127.0.0.1:3013; location / { return 200 "GO-FIRMWARE-DEV\n"; } }
 STUB
+install -d -m 0755 /srv/www/shared/firmware
+printf 'IMAGE\n' > /srv/www/shared/firmware/image.bin
 
 # One page, which is exactly what the real bundle holds today.
 install -d -m 0755 /srv/www/static/prod/site-test/_smoke
@@ -456,6 +468,62 @@ else
   fail=1
 fi
 
+echo "  --- the three surfaces moving off Rails, as openipc-route flips them (#287) ---"
+FW=/cameras/vendors/hisilicon/socs/hi3516ev300/download_full_image
+posts() {
+  path=$1; want_code=$2; want_by=$3
+  curl -sS -o /tmp/pb -D /tmp/hp -k --max-time 5 -X POST -F mac_address=x \
+    --resolve "openipc.org:443:127.0.0.1" "https://openipc.org$path" >/dev/null 2>&1
+  by=$(grep -i '^x-served-by:' /tmp/hp | tr -d '\r' | awk '{print $2}' | head -1)
+  code=$(awk 'NR==1{print $2}' /tmp/hp)
+  if [ "$code" = "$want_code" ] && [ "${by:--}" = "$want_by" ]; then
+    printf '  %-32s %-5s %s (POST)\n' "$path" "$code" "${by:--}"
+  else
+    printf '  %-32s %-5s %s (POST) MISMATCH: want %s %s\n' "$path" "$code" "${by:--}" "$want_code" "$want_by"
+    fail=1
+  fi
+}
+route() { NGINX_RELOAD="nginx -s reload" ROUTE_LOG=/dev/null sh /route.sh "$@" --force >/dev/null && sleep 1; }
+posts /snapshots                    200 rails
+expect /api/v1/wall/mosaic.json     200 rails  hsts
+expect $FW                          200 rails  hsts
+route prod upload go
+route prod wall go
+route prod firmware go
+posts /snapshots                    200 go
+posts /ru/snapshots                 200 go
+grep -q GO-WEB-PROD /tmp/pb || { echo "  the upload did not reach the Go web process"; fail=1; }
+# page/2, not the mosaic fetched above: the microcache holds that one for 60s,
+# which is what a flip looks like in production too -- the last Rails body of
+# an address is served for up to a minute, its grant still valid.
+expect /api/v1/wall/page/2.json     200 go     hsts
+grep -q GO-WEB-PROD /tmp/b || { echo "  the wall JSON did not reach the Go web process"; fail=1; }
+expect /api/v1/wall/cable           200 -      hsts
+expect $FW                          200 go     hsts
+grep -q IMAGE /tmp/b || { echo "  the firmware X-Accel-Redirect did not reach /firmware-cache/"; fail=1; }
+redirects_to openipc.org /snapshots https://openipc.org/open-wall
+posts_to_rails /open-wall
+route prod upload freeze
+posts /snapshots                    503 nginx
+rm -f /tmp/shadow.log /var/log/nginx/openipc-upload-decisions.log
+posts /snapshots                    503 nginx
+[ -s /tmp/shadow.log ] && { echo "  a frozen upload was mirrored"; fail=1; }
+route prod upload shadow
+posts /ru/snapshots                 200 rails
+sleep 1
+grep -q 'POST /ru/snapshots' /tmp/shadow.log 2>/dev/null \
+  || { echo "  shadowing did not mirror the upload to :3004"; fail=1; }
+grep -qE ' [0-9a-f]{32} 200 ' /var/log/nginx/openipc-upload-decisions.log 2>/dev/null \
+  || { echo "  shadowing did not log the primary's decision"; fail=1; }
+route prod upload rails
+: > /tmp/shadow.log
+posts /snapshots                    200 rails
+sleep 1
+[ -s /tmp/shadow.log ] && { echo "  an upload was mirrored with shadowing off"; fail=1; }
+route prod wall rails
+route prod firmware rails
+posts /snapshots                    200 rails
+expect /api/v1/wall/mosaic.json     200 rails  hsts
 echo "  --- the bundle removed entirely, which is a rollback to nothing ---"
 rm -f /srv/www/static/prod/current
 expect /_smoke/                     200 rails  hsts

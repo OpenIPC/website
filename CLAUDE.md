@@ -20,6 +20,7 @@ The OpenIPC project website — a Rails 7.0 app (Ruby 3.1.2, MySQL) that serves 
 - `rubocop` — lint (config in `.rubocop.yml`: `rubocop-performance`, line length 120). Baseline on master is 742 offences over 111 files; judge a change by whether it adds any to the files it touches, not by the total.
 - `i18n-tasks missing` / `i18n-tasks unused` — audit translations (config in `config/i18n-tasks.yml`); `easy_translate` provides machine translation via `GOOGLE_TRANSLATE_API_KEY`/`DEEPL_TRANSLATE_API_KEY`.
 - `tools/webui-gallery/run.sh --camera <host>` — rebuild the WebUI screenshots on `/web-interface` from a real camera. Needs Docker and network access to the camera; everything else is in the image it builds. Run it when the WebUI changes shape (every few months). It redacts the camera's identity, substitutes a scene over the live player, refuses to open the CGIs that reset or reboot on render, and fails the run rather than installing if anything identifying survives. `tools/webui-gallery/README.md` has the traps.
+- `service/run.sh build|test` — the Go service (#287), built and tested inside `golang:1.27.1`; no Go on the host. `bin/conformance --target go` runs the black-box suite against it. See `service/README.md`.
 - Asset bundling (normally run by `bin/dev`): `yarn build` (JS → `app/assets/builds/`), `yarn build:css` (sass + autoprefixer). `app/assets/builds/` is gitignored — rebuild after JS/SCSS changes.
 
 ## Deploying
@@ -43,12 +44,23 @@ verification techniques, and the traps that have cost time here are in
   rollback is a symlink flip. `deploy/static/README.md`; check a vhost change
   with `deploy/nginx/check-config.sh --seam` before `push-nginx.sh --apply`.
 - `deploy/RESTORE.md` — rebuilding from the S3 backup
+- `openipc-route <env> <upload|wall|firmware> <rails|go|freeze|shadow>` — which
+  process answers each surface that is moving off Rails; a flip and its
+  rollback are one reload. `deploy/GO-CUTOVER.md` is the procedure.
 
 Two things that bite: `config.assets.compile = false`, so any asset reference
 not going through the pipeline 404s in production; and rollback restores the
 image but never the schema, so keep migrations additive.
 
 ## Architecture
+
+### Rails is frozen; new work goes into service/
+
+Epic #287 replaces Rails with one Go binary (`service/`, roles `web` and
+`firmware`) and PostgreSQL. **Do not change `app/` or `config/`**: a surface
+moves by being built in Go, proven against Rails (the conformance suite, golden
+files, byte comparisons), and routed with `openipc-route`. The Go service is
+greenfield — its PostgreSQL started empty; nothing is imported from MySQL.
 
 ### Domain model
 - **The hardware catalogue is `data/catalogue/*.yml` and nothing else** (#289). `Catalogue` loads it once per process and validates every record on load; `Vendor` and `Soc` are ActiveModel objects, not tables. `Soc` carries the firmware metadata: `family`, `model`, `status`, `featured`, `uboot_filename`, `linux_filename`, etc. Change the catalogue by editing the YAML in a pull request, then `bin/rails catalogue:bake` for the static site's JSON.

@@ -12,6 +12,8 @@ require_relative 'conformance_helper'
 # answers relative or absolute depending on who built the redirect, and a
 # browser treats the two the same.
 class ReadSurfaceConformanceTest < Conformance::Case
+  surface :read
+
   PERMANENT = {
     '/home' => '/', '/introduction' => '/', '/aaa' => '/', '/fpv' => '/low-latency',
     '/our-projects' => '/ecosystem', '/our-software' => '/ecosystem', '/our-channels' => '/community',

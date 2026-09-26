@@ -383,6 +383,34 @@ it before promoting, not after.
 
 ---
 
+## The Go service (#287)
+
+`openipc-deploy dev <sha>` deploys `openipc-go-web-dev` (:3012) and
+`openipc-go-firmware-dev` (:3013) from the same SHA, before Rails. Nothing
+reaches them until a dev surface is flipped:
+
+```bash
+openipc-route dev upload go      # and wall, firmware; `rails` puts each back
+openipc-route status
+```
+
+Validate with the dev surfaces on `go`, as a visitor would use them:
+
+- **Upload** a real frame from the host, then watch its variants appear:
+  `curl -F mac_address=02:00:00:00:00:01 -F file=@frame.jpg -H 'X-Forwarded-Proto: https' http://127.0.0.1:3012/snapshots`
+  answers 201 with a `Location`. Within a second `/srv/www/shared/dev-wall/<id>/`
+  holds `icon`, `icon2`, `thumb` and `fullhd`.
+- **Click through the dev wall** (`/open-wall`, a snapshot, its archive and
+  slideshow), and run `tools/mirror-check.mjs` against dev. The frames arrive
+  over Rails' socket with grants Go minted, so a painted canvas proves both halves.
+- **Download** a full image from a dev wizard page twice at once, and see one
+  `firmware: built` line in `docker logs openipc-go-firmware-dev`, not two.
+- **Rollback**: `openipc-route dev wall rails`, and time it.
+
+The dev PostgreSQL database is restored from production's nightly archive at
+03:00 and scrubbed, the same as MariaDB. Frames uploaded to dev are gone the
+next morning.
+
 ## Migrations
 
 Rollback restores the **image**, never the schema. Keep migrations additive:

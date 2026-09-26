@@ -31,6 +31,9 @@ db/*.sqlite3
 # Not needed to run.
 test
 tools
+# The Go service's build output and goldens; its image is service/Dockerfile.
+service/bin
+service/**/testdata
 .rubocop.yml
 README.md
 LICENSE

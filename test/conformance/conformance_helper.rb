@@ -5,6 +5,7 @@ require 'active_support/test_case'
 require 'active_support/core_ext/object/blank'
 require 'json'
 require 'net/http'
+require 'open3'
 require 'openssl'
 require 'securerandom'
 require 'socket'
@@ -28,6 +29,14 @@ require 'uri'
 #   CONFORMANCE_BLACKLISTED_MAC / CONFORMANCE_WHITELISTED_IP
 #                              what the server was told (SNAPSHOT_MAC_BLACKLIST,
 #                              SNAPSHOT_IP_WHITELIST); those tests skip without
+#   CONFORMANCE_SURFACES       which surfaces the server answers, comma-separated
+#                              (upload, wall, read). Unset means all of them,
+#                              which is Rails; the Go service answers upload and
+#                              wall, so bin/conformance --target go names those.
+#
+# The database URL's scheme picks the adapter: mysql2:// for Rails' MariaDB,
+# postgres:// for the Go service's PostgreSQL (#293). Both keep the snapshots
+# table's column names, which is why the SQL layer transfers at all.
 #
 # bin/conformance boots a server with all of these set and runs the suite.
 #
@@ -64,6 +73,13 @@ module Conformance
 
     def database?
       ENV['CONFORMANCE_DATABASE_URL'].to_s.strip != ''
+    end
+
+    # A test class that exercises one surface runs only when the server under
+    # test answers it.
+    def surface?(name)
+      list = ENV['CONFORMANCE_SURFACES'].to_s.split(',').map(&:strip).reject(&:empty?)
+      list.empty? || list.include?(name.to_s)
     end
 
     def fixture(name)
@@ -130,32 +146,77 @@ module Conformance
   end
 
   # The server's database, for what an HTTP answer cannot show.
-  class Database
-    def initialize(url = ENV.fetch('CONFORMANCE_DATABASE_URL'))
-      require 'mysql2'
-      uri = URI(url)
-      @client = Mysql2::Client.new(host: uri.host, port: uri.port || 3306, username: uri.user,
-                                   password: uri.password, database: uri.path.delete_prefix('/'))
+  module Database
+    def self.new(url = ENV.fetch('CONFORMANCE_DATABASE_URL'))
+      url.start_with?('postgres') ? Postgres.new(url) : MySQL.new(url)
     end
 
-    def snapshots_from(mac)
-      @client.query("SELECT COUNT(*) AS n FROM snapshots WHERE mac_address = '#{@client.escape(mac)}'")
-             .first['n']
+    class MySQL
+      def initialize(url)
+        require 'mysql2'
+        uri = URI(url)
+        @client = Mysql2::Client.new(host: uri.host, port: uri.port || 3306, username: uri.user,
+                                     password: uri.password, database: uri.path.delete_prefix('/'))
+      end
+
+      def snapshots_from(mac)
+        @client.query("SELECT COUNT(*) AS n FROM snapshots WHERE mac_address = '#{@client.escape(mac)}'")
+               .first['n']
+      end
+
+      # The camera's last frame, `seconds` ago by the database's clock -- the
+      # clock the server compares against, which the test machine's may not be.
+      def seed_frame(mac, seconds_ago)
+        @client.query(<<~SQL)
+          INSERT INTO snapshots (mac_address, ip_address, created_at, updated_at)
+          VALUES ('#{@client.escape(mac)}', '192.0.2.1',
+                  UTC_TIMESTAMP(6) - INTERVAL #{Integer(seconds_ago)} SECOND,
+                  UTC_TIMESTAMP(6) - INTERVAL #{Integer(seconds_ago)} SECOND)
+        SQL
+      end
+
+      def delete_from(mac)
+        @client.query("DELETE FROM snapshots WHERE mac_address = '#{@client.escape(mac)}'")
+      end
     end
 
-    # The camera's last frame, `seconds` ago by the database's clock -- the
-    # clock the server compares against, which the test machine's may not be.
-    def seed_frame(mac, seconds_ago)
-      @client.query(<<~SQL)
-        INSERT INTO snapshots (mac_address, ip_address, created_at, updated_at)
-        VALUES ('#{@client.escape(mac)}', '192.0.2.1',
-                UTC_TIMESTAMP(6) - INTERVAL #{Integer(seconds_ago)} SECOND,
-                UTC_TIMESTAMP(6) - INTERVAL #{Integer(seconds_ago)} SECOND)
-      SQL
-    end
+    # Through the psql client rather than a gem, so the Gemfile does not change
+    # for a test helper. The seeded row carries the columns the Go schema
+    # requires and Rails' does not: a public id, a camera token, a size.
+    class Postgres
+      def initialize(url)
+        @url = url
+      end
 
-    def delete_from(mac)
-      @client.query("DELETE FROM snapshots WHERE mac_address = '#{@client.escape(mac)}'")
+      def snapshots_from(mac)
+        Integer(query("SELECT count(*) FROM snapshots WHERE mac_address = #{quote(mac)}"))
+      end
+
+      def seed_frame(mac, seconds_ago)
+        id = "#{SecureRandom.hex(9)}#{%w[a b c d e f].sample}0"
+        query(<<~SQL)
+          INSERT INTO snapshots (public_id, mac_address, camera_token, ip_address, content_type, byte_size, created_at)
+          VALUES ('#{id}', #{quote(mac)}, 'seed', '192.0.2.1', 'image/jpeg', 1,
+                  now() - make_interval(secs => #{Integer(seconds_ago)}))
+        SQL
+      end
+
+      def delete_from(mac)
+        query("DELETE FROM snapshots WHERE mac_address = #{quote(mac)}")
+      end
+
+      private
+
+      def quote(value)
+        "'#{value.to_s.gsub("'", "''")}'"
+      end
+
+      def query(sql)
+        out, status = Open3.capture2e('psql', @url, '-X', '-q', '-t', '-A', '-v', 'ON_ERROR_STOP=1', '-c', sql)
+        raise "psql failed: #{out}" unless status.success?
+
+        out.strip
+      end
     end
   end
 
@@ -163,7 +224,13 @@ module Conformance
     # Nothing to run without a server, and a run of the whole suite has none.
     # Defining no tests keeps that run's skip count meaning something.
     def self.runnable_methods
-      Conformance.enabled? ? super : []
+      Conformance.enabled? && Conformance.surface?(surface) ? super : []
+    end
+
+    # The surface a test class exercises; see Conformance.surface?.
+    def self.surface(name = nil)
+      @surface = name if name
+      @surface || (superclass.respond_to?(:surface) ? superclass.surface : :upload)
     end
 
     # The server's rows are not in a transaction this process can roll back.

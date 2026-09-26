@@ -25,6 +25,23 @@ x-common: &common
     start_period: 40s
     retries: 3
 
+# The Go containers' shared settings. Small and bounded: the whole of what
+# they do is a few thousand requests a day.
+x-go-common: &go-common
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+  mem_limit: 384m
+
+x-go-health: &go-health
+  interval: 30s
+  timeout: 5s
+  start_period: 10s
+  retries: 3
+
 services:
   web-prod:
     <<: *common
@@ -103,3 +120,114 @@ services:
       # Not the same file: the wizard's export is what dev's own code renders,
       # and dev is where a change to its shape is tried.
       - /srv/www/shared/wizard-dev:/rails/wizard-export
+
+  # --- The Go service (#287) -------------------------------------------------
+  #
+  # One image, ghcr.io/openipc/website-go, built from the same commit as the
+  # Rails one; two roles per environment. Nothing reaches them until
+  # `openipc-route` flips a surface (conf.d/openipc-routes.conf).
+  #
+  #   web       :3002 prod / :3012 dev   uploads, variants, the wall JSON
+  #   firmware  :3003 prod / :3013 dev   full images, one version each, and their stats
+  #   shadow    :3004                    production's uploads, mirrored, decided into
+  #                                      their own database while #294 is compared
+  #
+  # Their settings are /srv/www/.env.go-<env>, written by
+  # deploy/install-go-service.sh -- never .env.prod, whose DATABASE_URL and
+  # snapshot lists Rails would read too. PostgreSQL is reached over its
+  # bind-mounted socket, as MariaDB is.
+  #
+  # GO_PROD_TAG / GO_DEV_TAG are separate from the Rails tags because a
+  # release older than the Go service has no Go image: rolling Rails back to
+  # one must leave the Go containers where they are, not fail to start them.
+
+  go-web-prod:
+    <<: *go-common
+    container_name: openipc-go-web-prod
+    image: ghcr.io/openipc/website-go:${GO_PROD_TAG:-none}
+    command: ["serve", "--role", "web"]
+    env_file:
+      - path: /srv/www/.env.go-prod
+        format: raw
+    ports:
+      - "127.0.0.1:3002:3002"
+    healthcheck:
+      <<: *go-health
+      test: ["CMD", "curl", "-fsS", "http://localhost:3002/up"]
+    volumes:
+      - /var/run/postgresql:/var/run/postgresql
+      - /srv/www/shared/wall:/srv/wall
+
+  go-firmware-prod:
+    <<: *go-common
+    container_name: openipc-go-firmware-prod
+    image: ghcr.io/openipc/website-go:${GO_PROD_TAG:-none}
+    command: ["serve", "--role", "firmware"]
+    env_file:
+      - path: /srv/www/.env.go-prod
+        format: raw
+    ports:
+      - "127.0.0.1:3003:3003"
+    healthcheck:
+      <<: *go-health
+      test: ["CMD", "curl", "-fsS", "http://localhost:3003/up"]
+    volumes:
+      - /var/run/postgresql:/var/run/postgresql
+      - /srv/github-releases:/srv/github-releases:ro
+      - /srv/www/shared/firmware:/srv/firmware
+      - /srv/www/shared/go-release-cache:/srv/release-cache
+
+  go-shadow-prod:
+    <<: *go-common
+    container_name: openipc-go-shadow-prod
+    image: ghcr.io/openipc/website-go:${GO_PROD_TAG:-none}
+    command: ["serve", "--role", "web"]
+    # Started only for a shadow run: `docker compose --profile shadow up -d go-shadow-prod`.
+    profiles: ["shadow"]
+    env_file:
+      - path: /srv/www/.env.go-shadow
+        format: raw
+    ports:
+      - "127.0.0.1:3004:3002"
+    healthcheck:
+      <<: *go-health
+      test: ["CMD", "curl", "-fsS", "http://localhost:3002/up"]
+    volumes:
+      - /var/run/postgresql:/var/run/postgresql
+      - /srv/www/shared/shadow-wall:/srv/wall
+
+  go-web-dev:
+    <<: *go-common
+    container_name: openipc-go-web-dev
+    image: ghcr.io/openipc/website-go:${GO_DEV_TAG:-none}
+    command: ["serve", "--role", "web"]
+    env_file:
+      - path: /srv/www/.env.go-dev
+        format: raw
+    ports:
+      - "127.0.0.1:3012:3002"
+    healthcheck:
+      <<: *go-health
+      test: ["CMD", "curl", "-fsS", "http://localhost:3002/up"]
+    volumes:
+      - /var/run/postgresql:/var/run/postgresql
+      - /srv/www/shared/dev-wall:/srv/wall
+
+  go-firmware-dev:
+    <<: *go-common
+    container_name: openipc-go-firmware-dev
+    image: ghcr.io/openipc/website-go:${GO_DEV_TAG:-none}
+    command: ["serve", "--role", "firmware"]
+    env_file:
+      - path: /srv/www/.env.go-dev
+        format: raw
+    ports:
+      - "127.0.0.1:3013:3003"
+    healthcheck:
+      <<: *go-health
+      test: ["CMD", "curl", "-fsS", "http://localhost:3003/up"]
+    volumes:
+      - /var/run/postgresql:/var/run/postgresql
+      - /srv/github-releases:/srv/github-releases:ro
+      - /srv/www/shared/dev-firmware:/srv/firmware
+      - /srv/www/shared/dev-go-release-cache:/srv/release-cache

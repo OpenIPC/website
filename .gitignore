@@ -70,3 +70,6 @@ node_modules/
 # Local overrides for the dev compose stack (DEV_UID/DEV_GID); never committed.
 /.env
 /dist/
+
+# The Go service binary, built by service/run.sh.
+/service/bin/
