@@ -99,6 +99,20 @@ LEAK=$(runuser -u postgres -- psql -tAc "SELECT count(*) FROM snapshots WHERE ip
 log "restored and scrubbed: $(runuser -u postgres -- psql -tAc 'SELECT count(*) FROM snapshots' "$DST_DB") snapshots, \
 $(runuser -u postgres -- psql -tAc 'SELECT count(*) FROM downloads' "$DST_DB") downloads"
 
+# ---------------------------------------------------------------- wall
+# The restored rows name production's frames, and a row without its images is
+# a tile the socket has nothing to paint -- which is what dev showed after
+# every refresh until this. Hard links, not copies: the two trees are on one
+# filesystem, so this costs no disk, and dev's purge unlinking its own names
+# never touches production's.
+PROD_WALL=/srv/www/shared/wall
+DEV_WALL=/srv/www/shared/dev-wall
+[ "$(stat -c %d "$PROD_WALL")" = "$(stat -c %d "$DEV_WALL")" ] \
+  || fail "${PROD_WALL} and ${DEV_WALL} are on different filesystems; hard links would be copies"
+find "$DEV_WALL" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+cp -al "$PROD_WALL/." "$DEV_WALL/" || fail "could not link production's frames into ${DEV_WALL}"
+log "wall linked: $(find "$DEV_WALL" -mindepth 1 -maxdepth 1 -type d | wc -l) snapshot directories"
+
 # ------------------------------------------------------------- restart
 # They hold connections (and the web role's single-process lock) that the drop
 # just severed. Wait for them to answer again rather than exiting the moment

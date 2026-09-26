@@ -152,3 +152,17 @@ func TestCheckoutFreshness(t *testing.T) {
 		}
 	})
 }
+
+// A dev refresh restores production's wall rows; without production's frames
+// beside them every tile is a row with nothing to paint. The frames are
+// hard-linked in -- no disk, and dev's purge cannot reach production's files.
+func TestDevRefreshLinksTheWall(t *testing.T) {
+	s := directives(read(t, "deploy/refresh-dev.sh"))
+	mustContain(t, s, `cp -al "$PROD_WALL/." "$DEV_WALL/"`, "the refresh does not bring production's frames to dev")
+	mustContain(t, s, `stat -c %d "$PROD_WALL"`, "the refresh does not check the trees share a filesystem, so a copy could fill the disk")
+	restore := strings.Index(s, "pg_restore --no-owner")
+	link := strings.Index(s, "cp -al")
+	if restore < 0 || link < restore {
+		t.Error("the frames are linked before the rows that name them are restored")
+	}
+}
