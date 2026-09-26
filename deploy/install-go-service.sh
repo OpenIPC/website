@@ -154,12 +154,17 @@ derive_keys() {
     fi
     # One runner, four marked lines: production logs to stdout, so anything
     # unmarked is Rails talking and is ignored. Nothing reaches the terminal.
+    # The lists come from Snapshot where it has the readers (#291) and from the
+    # credentials it reads otherwise, so an image older than those works too.
     local out
     out=$(docker exec "$container" bundle exec rails runner '
       puts "OPENIPC-KEY grant #{Rails.application.key_generator.generate_key("wall_grant").unpack1("H*")}"
       puts "OPENIPC-KEY skb #{Rails.application.secret_key_base}"
-      puts "OPENIPC-KEY black #{Array(Snapshot.blacklisted_macs).join(",")}"
-      puts "OPENIPC-KEY white #{Array(Snapshot.whitelisted_ips).join(",")}"' 2>/dev/null) \
+      creds = Rails.application.credentials
+      black = Snapshot.respond_to?(:blacklisted_macs) ? Snapshot.blacklisted_macs : creds.dig(:mac, :blacklisted)
+      white = Snapshot.respond_to?(:whitelisted_ips) ? Snapshot.whitelisted_ips : creds.dig(:ip, :whitelisted)
+      puts "OPENIPC-KEY black #{Array(black).join(",")}"
+      puts "OPENIPC-KEY white #{Array(white).join(",")}"' 2>/dev/null) \
       || die "could not read the keys out of ${container}"
     local grant skb black white
     grant=$(sed -n 's/^OPENIPC-KEY grant //p' <<<"$out")
