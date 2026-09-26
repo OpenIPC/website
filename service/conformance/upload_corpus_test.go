@@ -7,14 +7,14 @@ import (
 	"testing"
 )
 
-// Rails' verdicts, replayed (#291).
+// The recorded verdicts, replayed (#291).
 //
-// testdata/content_types.json and testdata/mac_addresses.json were written by
-// Rails (`bin/rails conformance:fixtures`): for each input, what the model
-// said. These send each input over HTTP and require the same answer. Nothing
-// here restates the rules, because the rules were not ours -- which bytes are
-// an image was Marcel's table, and the MAC pattern is a regex a port will want
-// to tidy.
+// testdata/content_types.json and testdata/mac_addresses.json were recorded
+// from the service cameras were built against: for each input, the verdict.
+// These send each input over HTTP and require the same answer. Nothing here
+// restates the rules: which bytes are an image, and which MAC spellings pass,
+// are what the recording says, and a server that tidies either breaks a
+// camera somewhere.
 //
 // Nothing is stored: every file verdict is read from a refusal, sent with a
 // MAC the server refuses, and every MAC verdict from an upload with no file.
@@ -24,10 +24,10 @@ func mismatchReport(mismatches []string, total int) string {
 	if len(mismatches) > 20 {
 		mismatches = mismatches[:20]
 	}
-	return fmt.Sprintf("%d of %d disagree with Rails:\n  %s", n, total, strings.Join(mismatches, "\n  "))
+	return fmt.Sprintf("%d of %d disagree with the recording:\n  %s", n, total, strings.Join(mismatches, "\n  "))
 }
 
-func TestEveryFileIsJudgedTheWayRailsJudgesIt(t *testing.T) {
+func TestEveryFileIsJudgedAsRecorded(t *testing.T) {
 	s := start(t, "upload")
 	var corpus struct {
 		Size     int               `json:"size"`
@@ -63,7 +63,7 @@ func TestEveryFileIsJudgedTheWayRailsJudgesIt(t *testing.T) {
 	}
 }
 
-func TestEveryMACSpellingIsJudgedTheWayRailsJudgesIt(t *testing.T) {
+func TestEveryMACSpellingIsJudgedAsRecorded(t *testing.T) {
 	s := start(t, "upload")
 	var corpus struct {
 		Cases []struct {

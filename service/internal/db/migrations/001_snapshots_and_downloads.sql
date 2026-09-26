@@ -1,6 +1,6 @@
--- The two tables openipc.org keeps, designed fresh (#293). Nothing here is
--- imported from the Rails MySQL database: the wall refills from live cameras
--- within one upload cycle, and download stats count from the day Go serves them.
+-- The two tables openipc.org keeps, designed fresh (#293). Nothing here was
+-- imported: the wall refills from live cameras within one upload cycle, and
+-- download stats count from the first day this served them.
 
 CREATE TABLE snapshots (
     id                    bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -34,7 +34,7 @@ CREATE TABLE snapshots (
     streamer              text,
     uptime                text,
 
-    -- What the upload was, which ActiveStorage used to keep in three tables.
+    -- What the upload was.
     content_type          text   NOT NULL,
     byte_size             bigint NOT NULL,
     width                 integer,

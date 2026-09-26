@@ -34,10 +34,10 @@ func pad(prefix []byte, size int) []byte {
 	return out
 }
 
-// Rails' verdict on every (bytes, declared type, filename) in the corpus Rails
-// wrote, replayed against this code. The conformance suite does the same over
+// The recorded verdict on every (bytes, declared type, filename) in the
+// corpus, replayed against this code. The conformance suite does the same over
 // HTTP; this is the fast version that runs on every `go test`.
-func TestEveryFileIsJudgedAsRailsJudgedIt(t *testing.T) {
+func TestEveryFileIsJudgedAsRecorded(t *testing.T) {
 	var corpus struct {
 		Size     int               `json:"size"`
 		ProbeMAC string            `json:"probe_mac"`
@@ -65,12 +65,12 @@ func TestEveryFileIsJudgedAsRailsJudgedIt(t *testing.T) {
 			Filename: c.Filename, Declared: declared}
 		want := strings.Join(append(append([]string{}, c.FileErrors...), corpus.MACError...), ". ")
 		if got := strings.Join(snapshots.Errors(u, "en"), ". "); got != want {
-			t.Errorf("%s as %q named %s: %q, Rails said %q", c.Prefix, declared, c.Filename, got, want)
+			t.Errorf("%s as %q named %s: %q, recorded %q", c.Prefix, declared, c.Filename, got, want)
 		}
 	}
 }
 
-func TestEveryMACIsJudgedAsRailsJudgedIt(t *testing.T) {
+func TestEveryMACIsJudgedAsRecorded(t *testing.T) {
 	var corpus struct {
 		Cases []struct {
 			MAC       string   `json:"mac"`
@@ -86,7 +86,7 @@ func TestEveryMACIsJudgedAsRailsJudgedIt(t *testing.T) {
 		mac := c.MAC
 		want := strings.Join(append([]string{"File can't be blank"}, c.MACErrors...), ". ")
 		if got := strings.Join(snapshots.Errors(&snapshots.Upload{MAC: &mac}, "en"), ". "); got != want {
-			t.Errorf("%q: %q, Rails said %q", c.MAC, got, want)
+			t.Errorf("%q: %q, recorded %q", c.MAC, got, want)
 		}
 	}
 }
@@ -256,8 +256,7 @@ func TestInterval(t *testing.T) {
 	if rec := r.upload(t, "/snapshots", "02:c0:f0:30:00:02", jpeg(12_288), nil); rec.Code != 201 {
 		t.Errorf("another camera got %d", rec.Code)
 	}
-	// The interval wins over a file error, as Rails raised it from inside
-	// validation.
+	// The interval wins over a file error.
 	if rec := r.upload(t, "/snapshots", "02:c0:f0:30:00:01", nil, nil); rec.Code != 429 {
 		t.Errorf("throttled with no file: %d", rec.Code)
 	}
@@ -334,8 +333,8 @@ func TestLatestPerCamera(t *testing.T) {
 	}
 
 	// Production's shape: two days of retention, twenty cameras, one frame each
-	// per quarter hour -- 3,840 rows. Rails measured its self-join at ~280 ms
-	// inside a request. Whatever plan PostgreSQL picks for this (a sequential
+	// per quarter hour -- 3,840 rows. The old self-join took ~280 ms inside a
+	// request. Whatever plan PostgreSQL picks for this (a sequential
 	// scan and a sort is right when half the table is inside the day), it must
 	// be fast; and a camera's day must be an index range scan.
 	_, err = r.pool.Exec(ctx, `INSERT INTO snapshots (public_id, mac_address, camera_token, content_type, byte_size, created_at)

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Build and test the Go service inside the official Go image. No Go toolchain
-# on the host, deliberately -- the same way this repository runs every Ruby and
-# Node command in a container.
+# on the host, deliberately -- the same way this repository runs every Node
+# command in a container.
 #
 #   service/run.sh build          -> service/bin/openipc
 #   service/run.sh test [pkgs]    go vet + go test, against a throwaway PostgreSQL

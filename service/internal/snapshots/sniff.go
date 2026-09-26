@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-// ContentType decides what an upload is, the way the Rails endpoint decided:
-// Marcel's rules, as recorded in service/conformance/testdata/content_types.json
-// and replayed against this code by sniff_test.go and the conformance suite.
+// ContentType decides what an upload is, by the rules recorded in
+// service/conformance/testdata/content_types.json and replayed against this
+// code by the snapshots tests and the conformance suite.
 //
 // Three outcomes, in order:
 //   - the bytes are recognised: that type, whatever the client declared;
@@ -17,10 +17,10 @@ import (
 //   - neither: the filename's extension decides, and without one the upload is
 //     application/octet-stream -- not an image, and refused.
 //
-// "Recognised" is Marcel's magic table as far as it matters here. Notably BMP's
-// two-byte "BM" is too weak for it and falls through to the declared type, and
-// an ISO box with the heix brand is recognised as something that is not an
-// image. Both are pinned by the corpus; neither is a judgement of ours.
+// "Recognised" is the magic table below. Notably BMP's two-byte "BM" is too
+// weak for it and falls through to the declared type, and an ISO box with the
+// heix brand is recognised as something that is not an image. Both are pinned
+// by the corpus the cameras' contract was recorded from.
 func ContentType(head []byte, declared, filename string) string {
 	if t := magic(head); t != "" {
 		return t
@@ -35,7 +35,7 @@ func ContentType(head []byte, declared, filename string) string {
 	return "application/octet-stream"
 }
 
-// IsImage is ActiveStorage::Blob#image?.
+// IsImage is whether a content type is any image type.
 func IsImage(contentType string) bool {
 	return strings.HasPrefix(contentType, "image")
 }

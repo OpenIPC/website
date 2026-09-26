@@ -36,8 +36,8 @@ type Catalogue struct {
 	bySlug  map[string]*SoC
 }
 
-// Load reads every vendor file in dir. A duplicate SoC slug is an error, as it
-// is in the Rails loader: the slug is the address.
+// Load reads every vendor file in dir. A duplicate SoC slug is an error: the
+// slug is the address.
 var slugShape = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]*$`)
 
 func Load(dir string) (*Catalogue, error) {
