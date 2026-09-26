@@ -36,7 +36,7 @@ The wall's microcache keeps serving the last Rails body of an address for up to
 C="docker compose --env-file /srv/www/deploy-src/deploy/.env \
   -f /srv/www/deploy-src/deploy/docker-compose.yml --profile shadow"
 $C run --rm --no-deps -T go-shadow-prod migrate   # first: serve refuses an unmigrated database
-$C up -d --no-deps go-shadow-prod
+$C up -d --no-deps --wait --wait-timeout 60 go-shadow-prod   # healthy before anything routes to it
 openipc-route prod upload shadow
 ```
 
