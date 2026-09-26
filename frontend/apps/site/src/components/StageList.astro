@@ -2,18 +2,15 @@
 /**
  * The six firmware stages, beside the catalogue (#162).
  *
- * app/views/cameras/socs/_stages.html.erb. The icons are globbed out of
- * app/assets/images rather than copied here, the same arrangement
- * ../lib/webui.ts uses and for the same reason: one copy of each file in the
- * repository is the only state in which the Rails page and this one cannot
- * disagree about what a stage looks like while both exist.
+ * What app/views/cameras/socs/_stages.html.erb rendered. The icons are in
+ * src/assets/stages since Rails went (#304).
  */
 import { Image } from 'astro:assets';
 import { pathFor, useTranslations, type Locale } from '../lib/i18n';
 import { STATUSES } from '../lib/hardware';
 
 const ICONS = import.meta.glob<ImageMetadata>(
-  '../../../../../app/assets/images/stage-*.svg',
+  '../assets/stages/stage-*.svg',
   { eager: true, import: 'default' },
 );
 
@@ -38,8 +35,8 @@ const LABELS: Record<string, string> = {
 };
 
 function icon(status: string): ImageMetadata {
-  const found = ICONS[`../../../../../app/assets/images/stage-${status}.svg`];
-  if (!found) throw new Error(`No stage-${status}.svg in app/assets/images.`);
+  const found = ICONS[`../assets/stages/stage-${status}.svg`];
+  if (!found) throw new Error(`No stage-${status}.svg in src/assets/stages.`);
   return found;
 }
 ---

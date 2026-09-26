@@ -7,9 +7,10 @@ import { openOn, type Availability } from './wizard-menu';
 /**
  * The port, against the script it was ported from.
  *
- * ../../../../../app/views/cameras/socs/show.html.erb carries 166 lines of
- * vanilla JavaScript that narrow the wizard's menus, and wizard-menu.ts is a
- * translation of it. A translation is a second copy, and the way a second copy
+ * Rails' app/views/cameras/socs/show.html.erb carried 166 lines of vanilla
+ * JavaScript that narrow the wizard's menus, and wizard-menu.ts is a
+ * translation of it. Rails is gone (#304); the script is frozen, as it was,
+ * in wizard-menu.rails-script.fixture.html. A translation is a second copy, and the way a second copy
  * stays honest is by being compared with the first -- not by being read
  * carefully once.
  *
@@ -18,16 +19,13 @@ import { openOn, type Availability } from './wizard-menu';
  * three lines settle the menus, so after it runs the stubs hold what the Rails
  * page would show, and that is compared with what `openOn` answers.
  *
- * It reads the view rather than a copy of it, so a change on the Rails side
- * fails here rather than drifting.
  */
-const VIEW = join(dirname(fileURLToPath(import.meta.url)),
-  '../../../../../app/views/cameras/socs/show.html.erb');
+const VIEW = join(dirname(fileURLToPath(import.meta.url)), 'wizard-menu.rails-script.fixture.html');
 
 function scriptFromView(): string {
   const erb = readFileSync(VIEW, 'utf8');
   const script = erb.match(/<script>([\s\S]*?)<\/script>/);
-  if (!script) throw new Error('no <script> in show.html.erb; has the wizard changed shape?');
+  if (!script) throw new Error('no <script> in the frozen wizard script');
   return script[1];
 }
 

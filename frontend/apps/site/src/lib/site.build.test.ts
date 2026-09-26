@@ -10,7 +10,7 @@
  * The `test` script builds first, so this always reads the current output.
  */
 import { describe, expect, test } from 'vitest';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { LOCALES, pathFor } from './i18n';
 import { PAGE_PATHS } from './page-paths';
 import { join, dirname } from 'node:path';
@@ -101,7 +101,7 @@ describe('the three locale trees', () => {
     // It is reachable without authentication on production. Internal paths,
     // rake tasks and test filenames do not belong on it.
     const html = read('_smoke/index.html');
-    for (const leak of ['config/locales', 'bin/rails', '.rb', 'i18n:export']) {
+    for (const leak of ['data/locales', 'bin/rails', '.rb', 'i18n:export']) {
       expect(html, `the smoke page mentions ${leak}`).not.toContain(leak);
     }
   });
@@ -163,12 +163,10 @@ describe('the design tokens carried over', () => {
     }
   });
 
-  test('the faces are declared, and borrowed rather than bundled', () => {
-    // The bundle ships no woff2 of its own. app/assets/stylesheets/_fonts.scss
-    // declares the same faces and nginx serves the files out of public/fonts,
-    // which is why /fonts/ is in deploy/static/reserved-paths -- so a second
-    // copy in here would be bytes nothing renders with, on a page whose
-    // neighbour across the seam is already using the first copy.
+  test('the faces are declared, and the bundle carries the files', () => {
+    // The files used to be Rails' public/fonts, borrowed across the seam
+    // (nginx proxied /fonts/ to Rails). Rails is gone (#304), so the bundle
+    // ships them in public/fonts/ and serves them itself, at the same address.
     //
     // It was two copies: @openipc/ui carries three Latin-only faces for
     // Storybook, the site imported them with the design tokens, and every
@@ -182,9 +180,14 @@ describe('the design tokens carried over', () => {
       .toContain('/fonts/ibm-plex-mono-latin-400-normal.woff2');
     expect(sheet, 'no Cyrillic face, so Russian falls back to the system stack')
       .toContain('/fonts/ibm-plex-sans-cyrillic-400-normal.woff2');
+    for (const face of sheet.match(/\/fonts\/[a-z0-9-]+\.woff2/g) ?? []) {
+      expect(existsSync(join(dist, face)), `${face} is declared but not in the bundle`).toBe(true);
+    }
 
-    expect(walk(dist).filter((f) => f.endsWith('.woff2')),
-      'the bundle carries its own copy of a face nginx already serves').toEqual([]);
+    // Only under /fonts/, where the stylesheet asks for them: a second copy
+    // elsewhere would be bytes nothing renders with.
+    expect(walk(dist).filter((f) => f.endsWith('.woff2') && !f.startsWith('fonts/') && !f.startsWith('_astro/')),
+      'a face outside /fonts/').toEqual([]);
   });
 });
 

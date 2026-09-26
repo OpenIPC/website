@@ -71,7 +71,7 @@ declares one *replaces* it rather than adding to it — which is how
 sixteen thumbnails; with stylesheets, fonts and a favicon, a cold first visit
 comes close enough to twenty that the page could shed its own images. Static
 files served by `sendfile` have no business competing for slots that exist to
-bound how many expensive renders Rails is asked for at once.
+bound how many expensive requests the application is asked for at once.
 
 If you find 429s in a location you thought was uncapped, this is why. Check
 whether real page loads are actually affected before changing anything — and
@@ -89,90 +89,51 @@ Shared definitions the vhosts reference. nginx includes `conf.d/` before
 |---|---|
 | `openipc-logformat.conf` | the `openipc` log format: combined plus cache status, request and upstream time, and the forwarded address |
 | `openipc-microcache.conf` | the `openipc_micro` cache zone |
-| `openipc-snapshot-conc.conf` | the `snapshot_conc`, `site_conc` and `media_conc` connection pools, sized together to Puma's capacity |
+| `openipc-snapshot-conc.conf` | the `snapshot_conc`, `site_conc` and `media_conc` connection pools, sized together to what was Puma's capacity |
 | `openipc-crawler-block.conf` | the `$openipc_blocked_crawler` map |
+| `openipc-routes.conf` | which Go process answers each surface, from the state files `openipc-route` writes under `/etc/nginx/openipc-routes/` |
+| `openipc-redirects.conf` | the route map `@fallback` answers: what Rails' router answered — redirects, 410s for retired addresses, a 302 home for anything unclaimed. Generated from `config/routes.rb` in #302 and maintained by hand since #304 |
 
 ## The firmware download path
 
 ```nginx
 location /files/           { return 404; }
-location /protected-files/ { internal; alias /srv/www/shared/files/; }
+location /firmware-cache/  { internal; alias /srv/www/shared/firmware/; }
 ```
 
-`/protected-files/` is `internal`, so it is reachable only through an
-`X-Accel-Redirect` header. Rails sends one, through `Rack::Sendfile`, for the
-firmware download action and nothing else — the two `proxy_set_header` lines
-that arrange it are scoped to that location, for the reason in the next
-section.
+`/firmware-cache/` is `internal`, so it is reachable only through an
+`X-Accel-Redirect` header, which the Go firmware role sends for a cached image.
+A slow client then holds an nginx connection rather than one of the service's.
+`/files/` answering 404 is kept from the Rails days, when `public/files` held
+every assembled image and would otherwise have been fetchable by name.
 
-`location /files/ { return 404; }` is doing real work and should not be tidied
-away. Without it the request falls through to `location /`, reaches Rails, and
-Rails serves the file itself: `RAILS_SERVE_STATIC_FILES=1`, and `public/files`
-is inside `public/`. Every assembled image would be fetchable by name.
+## X-Accel-Redirect, and the outage that shaped it (Rails, historical)
 
-## X-Accel-Redirect, and the outage that shaped it
+Rails handed downloads to nginx through `Rack::Sendfile`, and the headers that
+arranged it had to be **scoped to the download action**. They were first put in
+`location /`, which took the CSS and images down on both sites on 2026-08-24:
+`Rack::Sendfile` acts on any response whose body responds to `to_path`, which
+with `RAILS_SERVE_STATIC_FILES=1` was every file under `public/assets`, and
+when no `X-Accel-Mapping` prefix matched it returned the path unchanged rather
+than nil. A stylesheet came back as `X-Accel-Redirect: /rails/public/assets/…css`,
+fell through to the catch-all and answered 302 to the homepage; every page
+rendered as unstyled text while answering 200.
 
-Handing the download to nginx keeps a slow client on an nginx connection
-instead of one of Puma's sixteen threads. The headers that arrange it are
-**scoped to the download action**, and that scoping is the whole point:
-
-```nginx
-location ~ ^/cameras/vendors/[^/]+/socs/[^/]+/download_full_image {
-    proxy_pass http://127.0.0.1:3000;          # no URI part: nginx forbids
-    ...                                        # one in a regex location
-    proxy_set_header X-Sendfile-Type X-Accel-Redirect;
-    proxy_set_header X-Accel-Mapping /rails/public/files/=/protected-files/;
-}
-```
-
-They were first put in `location /`, which took the CSS and images down on
-both sites on 2026-08-24. `proxy_set_header` applies to everything a location
-serves, and `Rack::Sendfile` acts on **any** response whose body responds to
-`to_path` — which, with `RAILS_SERVE_STATIC_FILES=1`, is every file under
-`public/assets`.
-
-The trap is what happens when the mapping does not match. Reading
-`rack-2.2.8/lib/rack/sendfile.rb`, `map_accel_path` looks like it returns nil
-and leaves the response alone. It does that only when the header is *absent*.
-When the header is present and no prefix matches, the loop falls off the end
-and it returns **the path unchanged**:
-
-```ruby
-elsif mapping = env['HTTP_X_ACCEL_MAPPING']
-  mapping.split(',').map(&:strip).each do |m|
-    internal, external = m.split('=', 2).map(&:strip)
-    new_path = path.sub(/^#{internal}/i, external)
-    return new_path unless path == new_path
-  end
-  path                                    # <- not nil
-end
-```
-
-A stylesheet therefore came back as `X-Accel-Redirect: /rails/public/assets/…css`,
-nginx redirected internally to a URI with no matching location, that fell to
-`location /`, went back to Rails, hit the catch-all and answered 302 to the
-homepage. Every page rendered as unstyled text.
-
-Assets cannot be given a mapping of their own: they live inside the container
-image and the host has no copy to serve. Scoping the headers is the only fix.
-
-**If you change any of this, fetch a stylesheet, not just a page.** The pages
-answered 200 throughout the outage; only their assets did not. The check that
-matters is every `/assets/…` URL the homepage references.
-
-To revert in a hurry: delete the two `proxy_set_header X-…` lines and reload.
-Downloads fall back to being streamed by Puma, which is where they were before.
+The lesson outlives Rails: **after a change to anything that rewrites
+responses, fetch a stylesheet, not just a page.** The pages answered 200
+throughout the outage; only their assets did not. Today the check is the
+`/_astro/…` URLs the homepage references.
 
 ## Host directories these serve from
 
 All of them are under `/srv/www/shared`, which is what the containers mount and
-what the backup and restore procedure knows about:
+what the restore procedure knows about:
 
 | location | host directory |
 |---|---|
 | `/dl/` | `/srv/www/shared/dl` |
 | `/images/` | `/srv/www/shared/images` |
-| `/protected-files/` | `/srv/www/shared/files` (prod), `dev-files` (dev) |
+| `/firmware-cache/` | `/srv/www/shared/firmware` (prod), `dev-firmware` (dev) |
 
 None of them reaches through `/srv/www/org-openipc`, the checkout that stopped
 serving traffic when the app moved into a container. Two did until 2026-08-24:
@@ -248,8 +209,7 @@ It redirects rather than serving because it resolves to the same address as
 `openipc.org` and so buys nothing a second name can buy: not availability, not
 latency, and not reach into a network where the origin is unreachable, because
 what is blocked there is this address. One site under two names is not free —
-`$host` is in the microcache key so every page would be cached twice, Rails'
-host authorization needs a second `APP_HOST` or answers `403`, and every search
+every cache keyed on `$host` would hold everything twice, and every search
 engine and analytics tool gains a property to reconcile. A `301` costs none of
 that and keeps every published openipc.eu link working.
 
@@ -287,18 +247,23 @@ comes out the moment the proxying stops, and never while it continues.
 
 ## The static seam
 
-`location /` in `org.openipc` and `org.openipc.dev` no longer proxies. It has a
-document root and a `try_files` that falls through to `@rails` (#157):
+`location /` in `org.openipc` and `org.openipc.dev` does not proxy. It has a
+document root and a `try_files` that falls through to `@fallback` (#157, #304):
 
 ```nginx
 location / {
     root /srv/www/static/prod/current;
-    try_files $uri $uri/index.html @rails;
+    try_files $uri $uri/index.html @fallback;
 }
 ```
 
-**A page is extracted when its `index.html` is in the bundle**, and nothing
-else — no edit here per page. `deploy/static/README.md` is the other half.
+**A page exists when its `index.html` is in the bundle**, and nothing else —
+no edit here per page. `deploy/static/README.md` is the other half.
+
+`@fallback` proxies nothing. Since Rails went (#304) it answers the route map
+in `conf.d/openipc-redirects.conf` — 410, 301, 302, or the catch-all 302 home —
+and otherwise returns 404. Each answer carries `X-Served-By` from
+`$openipc_route_by` and `Cache-Control` from `$openipc_route_cache`.
 
 Two things about it are easy to get wrong, and both are measured rather than
 argued. `deploy/nginx/check-config.sh --seam` re-runs the measurement.
@@ -311,10 +276,10 @@ the directory that always exists is the bundle root:
 
 | request | `$uri $uri/index.html` | `$uri $uri/` |
 |---|---|---|
-| `/` | rails 200 | **403** |
-| `/ru/` (no index) | rails 200 | **403** |
+| `/` | falls through | **403** |
+| `/ru/` (no index) | falls through | **403** |
 
-**The `limit_conn` has to be in `location /`, not in `@rails`.** limit_conn runs
+**The `limit_conn` has to be in `location /`, not in `@fallback`.** limit_conn runs
 in the preaccess phase and try_files in precontent, so the configuration that
 counts is the location the request reached first, and the handler returns early
 on every pass after it. With the cap at 1 and four concurrent slow transfers:
@@ -322,10 +287,12 @@ on every pass after it. With the cap at 1 and four concurrent slow transfers:
 | cap declared in | result |
 |---|---|
 | `location /` | 429 429 429 200 — binds |
-| `@rails` | 200 200 200 200 — **never runs** |
-| both | 429 429 429 200 — the `@rails` copy is dead |
+| the named location | 200 200 200 200 — **never runs** |
+| both | 429 429 429 200 — the named location's copy is dead |
 
-The middle row is the dangerous one: `@rails` alone looks right and would
+(Measured when the named location was `@rails`; the phases have not changed.)
+The middle row is the dangerous one: a cap in the named location alone looks
+right and would
 silently replace `site_conc` with the http-level per-address twenty.
 
 Both locations repeat every `add_header` they inherit — HSTS in production, and

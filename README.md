@@ -1,5 +1,16 @@
 # website
-New website of the OpenIPC project
+
+The OpenIPC project's website, [openipc.org](https://openipc.org).
+
+| | |
+|---|---|
+| `frontend/` | every page: an Astro site (`apps/site`) and its Preact component library (`packages/ui`) |
+| `service/` | the Go service and PostgreSQL behind the camera uploads, the Open Wall and the firmware downloads |
+| `data/` | the hardware catalogue, the translations and the WebUI gallery manifest, which both of the above read |
+| `deploy/` | nginx, the deploy and backup scripts, and how to run them: start with `deploy/DEV-VALIDATION.md` |
+
+Rails was removed in #304; `deploy/GO-CUTOVER.md` records how the site moved
+off it.
 
 ## Links the project posts
 

@@ -1,0 +1,13 @@
+# The one key the static site's English catalogue took from a gem rather than
+# from data/locales: ActiveSupport 8.1's `support.array`
+# (activesupport/lib/active_support/locale/en.yml), which Rails merged under the
+# app's translations and `bin/rails i18n:export` therefore exported.
+# scripts/export-data.mjs merges this first, as Rails' I18n load path did, so
+# the export stays byte-identical without the gem (#304). data/locales can
+# still override it, as it always could.
+en:
+  support:
+    array:
+      words_connector: ", "
+      two_words_connector: " and "
+      last_word_connector: ", and "

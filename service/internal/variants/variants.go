@@ -8,10 +8,10 @@
 // loses the in-memory channel and nothing else: Recover re-enqueues every row
 // still marked pending.
 //
-// The pipeline is byte-identical to Rails' ActiveStorage variants (same
-// libvips, same operations): `vips thumbnail` with --size down, ImageProcessing's
+// The pipeline reproduces Rails' ActiveStorage variants byte for byte (same
+// libvips, same operations), which was proven against the Rails image before
+// Rails went (#295, #304): `vips thumbnail` with --size down, ImageProcessing's
 // default sharpen mask through `vips conv`, then jpegsave with Q and strip.
-// tools/variants-compare.sh proves it against the Rails image.
 package variants
 
 import (

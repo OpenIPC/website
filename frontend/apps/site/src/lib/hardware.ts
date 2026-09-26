@@ -3,9 +3,8 @@
  *
  * The data is data/catalogue/*.yml in the repository root -- one file per
  * vendor, reviewed in a pull request -- baked into ../data/catalogue.json by
- * `bin/rails catalogue:bake`, because this build cannot read YAML without
- * another dependency and must not read a database: it runs in CI, where there
- * is none.
+ * `npm run export` (scripts/export-data.mjs), so that pages import JSON rather
+ * than parse YAML, and export-data.test.ts fails when the two drift.
  *
  * What is NOT here is availability -- whether a visitor can generate an
  * installation guide, download firmware only, or neither. That is a question

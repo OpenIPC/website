@@ -1,7 +1,0 @@
-<% content_for :fullwidth, 'yes' %>
-
-<%# ISP & sensors: one of the five services whitepapers. The whole page is the
-    shared partial; what is specific to it lives in pages.isp_sensors.* %>
-<%= render 'pages/service', key: 'isp_sensors', icons: ['bi-speedometer2', 'bi-aspect-ratio', 'bi-sliders', 'bi-layers'], pills: 5,
-            mail_subject: 'Pipeline assessment',
-            mail_body: ['Sensor and SoC', 'Mode or picture you need (fps, wide dynamic range, window, latency)', 'What you have today (driver, firmware, sample unit)', 'Volume and timeline'] %>

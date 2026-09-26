@@ -11,6 +11,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "typecheck": "astro check --minimumFailingSeverity error",
+    "export": "node scripts/export-data.mjs",
+    "export:check": "node scripts/export-data.mjs --check",
     "test": "astro build && vitest run"
   },
   "dependencies": {
@@ -25,6 +27,7 @@
     "astro": "^5.14.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "yaml": "^2.9.1"
   }
 }

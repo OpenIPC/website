@@ -6,6 +6,9 @@
 //	openipc migrate                bring PostgreSQL to this binary's schema
 //	openipc purge [--snapshots] [--firmware]   nightly retention
 //	openipc probe                  nightly health numbers, non-zero on trouble
+//	openipc wizard-export          the installation wizard's data, one file per SoC
+//	openipc publish-release-index  hourly: what upstream publishes, into .index.json
+//	openipc mirror-repos           hourly: local clones of the OpenIPC repositories
 //	openipc routes --json          what this binary answers, for the nginx seam test
 //
 // Configuration is the environment; see internal/config.
@@ -38,6 +41,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/snapshots"
 	"github.com/OpenIPC/website/service/internal/variants"
 	"github.com/OpenIPC/website/service/internal/wall"
+	"github.com/OpenIPC/website/service/internal/wallsocket"
 )
 
 // version is stamped at build time (-ldflags "-X main.version=<sha>").
@@ -65,6 +69,12 @@ func main() {
 		err = runPurge(ctx, cfg, log, args)
 	case "probe":
 		err = probe(ctx, cfg)
+	case "wizard-export":
+		err = wizardExport(cfg, log, args)
+	case "publish-release-index":
+		err = publishReleaseIndex(ctx, args)
+	case "mirror-repos":
+		err = mirrorRepos(ctx, args)
 	case "routes":
 		err = printRoutes()
 	case "version":
@@ -78,7 +88,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] | probe | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] | probe | wizard-export [--out DIR] [--index PATH] | publish-release-index [--dry-run] [--mirror] [--retire-mirror] | mirror-repos | routes --json | version")
 	os.Exit(2)
 }
 
@@ -132,6 +142,8 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/wall/snapshot/{file}"},
 	{"web", "GET", "/api/v1/wall/snapshot/{id}/{file}"},
 	{"web", "GET", "/api/v1/wall/camera/{file}"},
+	{"firmware", "GET", "/api/v1/hardware/availability.json"},
+	{"web", "GET", "/api/v1/wall/cable"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 }
@@ -287,8 +299,11 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 			mux.Handle(r.Method+" "+r.Path, upload)
 		}
 	}
-	api := &wall.API{Store: store, Granter: &wall.Granter{Key: cfg.WallGrantKey}, Log: log}
+	granter := &wall.Granter{Key: cfg.WallGrantKey}
+	api := &wall.API{Store: store, Granter: granter, Log: log}
 	api.Routes(mux)
+	mux.Handle("GET /api/v1/wall/cable", &wallsocket.Server{WallRoot: cfg.WallRoot, Grants: granter, Log: log,
+		GrantsDisabled: cfg.GrantsDisabled, Budget: &wallsocket.Budget{Limit: 1000}})
 
 	// The address this process believes a request came from, for the
 	// remote_ip canary. Answered only to a peer on a trusted network, which is
@@ -329,9 +344,20 @@ func firmwareRole(ctx context.Context, cfg *config.Config, log *slog.Logger, poo
 		Downloads:   &downloads.Store{DB: pool},
 		AccelPrefix: cfg.FirmwareAccelPrefix, Log: log,
 	})
+	// Every firmware route from the one table, so `openipc routes --json` and
+	// what this mux serves cannot describe different sets.
+	availability := &firmware.AvailabilityHandler{Catalogue: cat, Index: index}
 	for _, r := range routes {
-		if r.Role == "firmware" {
+		if r.Role != "firmware" {
+			continue
+		}
+		switch {
+		case strings.HasSuffix(r.Path, "/download_full_image"):
 			mux.Handle(r.Method+" "+r.Path, h)
+		case r.Path == "/api/v1/hardware/availability.json":
+			mux.Handle(r.Method+" "+r.Path, availability)
+		default:
+			return nil, fmt.Errorf("firmware route %s %s has no handler", r.Method, r.Path)
 		}
 	}
 

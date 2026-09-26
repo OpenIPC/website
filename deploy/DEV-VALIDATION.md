@@ -48,7 +48,7 @@ Do not poll in a tight loop. Wait ~3 minutes, then check. Confirm the image is
 actually pullable before deploying:
 
 ```bash
-ssh -p 35242 root@openipc.org "docker pull -q ghcr.io/openipc/website:$(git rev-parse HEAD)"
+ssh -p 35242 root@openipc.org "docker pull -q ghcr.io/openipc/website-go:$(git rev-parse HEAD)"
 ```
 
 ### 3. Put the branch on `dev`, then deploy
@@ -79,11 +79,12 @@ checkout's copy of itself** — so a change to `static.sh` or to
 
 `openipc-deploy` deliberately does **not** do this, and the asymmetry is worth
 knowing rather than discovering: the two environments share one docker compose
-project and one `.env` carrying both `PROD_TAG` and `DEV_TAG`, and `deploy.sh`
-derives both paths from the checkout it runs out of. Handing it over would
-have dev writing a different `.env` from production's — a fresh dev checkout
-writing only `DEV_TAG`, so compose rejects the missing `PROD_TAG`. Testing a
-change to `deploy.sh` still means running the dev checkout's copy by hand.
+project and one `.env` carrying both `GO_PROD_TAG` and `GO_DEV_TAG`, and
+`deploy.sh` derives both paths from the checkout it runs out of. Handing it
+over would have dev writing a different `.env` from production's. Testing a
+change to `deploy.sh` or `docker-compose.yml` still means running the dev
+checkout's copy by hand — after copying `deploy-src/deploy/.env` beside it, or
+it starts from no tags at all.
 
 The bundle has no such sharing: separate trees, separate symlinks, separate
 rollback pointers, and the per-environment rules that made any of this
@@ -91,7 +92,7 @@ necessary.
 
 Production is untouched by all of it: it runs master's scripts against
 master's rules, which is what makes a rollback to an old bundle safe.
-`test/deploy/env_checkout_test.rb` asserts that a production command is never
+`service/deploytest/envcheckout_test.go` asserts that a production command is never
 sent through the dev checkout, that `deploy.sh` hands nothing over, and that
 every command — `rollback dev`, `verify dev`, `dev <sha>` — arrives on the
 other side unchanged. The first version rebuilt the argument list and turned
@@ -119,10 +120,12 @@ working. Land that edit rather than discarding it — and note that the refusal
 is also what keeps the checkout stale, which is what forces the next hand-edit.
 
 Two release trains, deliberately (#157). A change to page content needs only
-the second; a change to Ruby needs only the first.
+`openipc-static`; a change to the Go service needs only `openipc-deploy`.
 
-The script pulls, runs migrations, restarts `web-dev`, waits for `/up`, and
-**automatically reverts** if the container does not become healthy in 90s.
+`openipc-deploy` pulls `ghcr.io/openipc/website-go:<sha>`, runs
+`openipc migrate`, restarts `go-web-dev` and `go-firmware-dev`, waits for both
+to answer `/up`, and **automatically reverts** to the previous tag if either
+does not become healthy in 90s.
 
 Floating tags (`latest`, a branch name) are resolved to the immutable commit SHA
 before being recorded, so the rollback target always names a specific build.
@@ -145,34 +148,13 @@ someone merged meanwhile.
 
 ## How to validate
 
-### Fetch every asset, do not read the HTML
+### Click through, and fetch every asset
 
 Page byte-size is not a signal. When the partner logos broke, the before and
 after pages were *identical in length* — only the URL inside `src` changed. The
-check that works is requesting each asset and asserting 200:
-
-> **`force_ssl` is on.** Anything you request straight from the container on
-> `127.0.0.1:3001` **must** carry `-H "X-Forwarded-Proto: https"`, or Rails
-> answers `301` to every request — the page *and* every asset. Going through
-> nginx on `https://dev.openipc.org` is fine; nginx sets the header for you.
-
-**[host]** — preferred, because it needs no credentials at all:
-
-```bash
-set -uo pipefail
-H=(-H "Host: dev.openipc.org" -H "X-Forwarded-Proto: https")
-curl -fsS "${H[@]}" http://127.0.0.1:3001/ -o /tmp/p.html \
-  || { echo "FAIL: page fetch failed"; exit 1; }
-mapfile -t A < <(grep -oE '/assets/[^"]+' /tmp/p.html | sort -u)
-(( ${#A[@]} )) || { echo "FAIL: no assets on page — wrong URL, or the page errored"; exit 1; }
-bad=0
-for a in "${A[@]}"; do
-  c=$(curl -s "${H[@]}" -o /dev/null -w '%{http_code}' "http://127.0.0.1:3001$a")
-  [ "$c" = 200 ] || { echo "  $c $a"; bad=$((bad+1)); }
-done
-echo "checked ${#A[@]} assets, ${bad} not 200"
-(( bad == 0 )) || exit 1
-```
+check that works is requesting each asset and asserting 200, and navigating the
+site as a visitor does, several clicks in a row: a fault caused by the state
+the previous page left behind is invisible to pages fetched one at a time.
 
 **[local]** — through nginx. Basic auth goes in a `-K` config file, never on the
 command line where `ps` and shell history can see it:
@@ -185,7 +167,7 @@ printf 'user = "openipc:%s"\n' "$PW" > /tmp/devrc
 trap 'rm -f /tmp/devrc' EXIT
 curl -fsS -K /tmp/devrc https://dev.openipc.org/ -o /tmp/p.html \
   || { echo "FAIL: page fetch failed"; exit 1; }
-mapfile -t A < <(grep -oE '/assets/[^"]+' /tmp/p.html | sort -u)
+mapfile -t A < <(grep -oE '/(_astro|fonts)/[^"]+' /tmp/p.html | sort -u)
 (( ${#A[@]} )) || { echo "FAIL: no assets on page"; exit 1; }
 bad=0
 for a in "${A[@]}"; do
@@ -196,112 +178,50 @@ echo "checked ${#A[@]} assets, ${bad} not 200"
 (( bad == 0 )) || exit 1
 ```
 
-> Both snippets fail loudly on an empty asset list. An earlier version ended in
+> The snippet fails loudly on an empty asset list. An earlier version ended in
 > `| grep -v '^200' || echo "all assets 200"`, which printed success when the
 > page fetch 401'd and produced no assets to check at all — a false pass in the
 > document whose entire purpose is preventing them.
 
-`config.assets.compile = false` in production, so anything not resolved through
-the asset pipeline 404s (or 500s, if it went through `image_tag`). Grep for
-these before deploying:
+The browser checks in `tools/` (`canvas-check.mjs`, `mirror-check.mjs`,
+`wall-fills-check.mjs` and the rest) drive a real browser through the pages and
+are the way to prove the Open Wall paints.
+
+### Run the black-box suite against dev
 
 ```bash
-grep -rnE '["'"'"']/assets/' app/views app/helpers app/assets/stylesheets
-grep -rnE '(image_tag|asset_path)\(?\s*["'"'"'][^"'"'"']*#\{' app/views app/helpers
+service/conformance/run.sh https://dev.openipc.org     # [local]
 ```
 
-### Render helpers and views directly
-
-Faster and more precise than clicking through the UI, and it works for output
-that is only reachable after a form submission:
-
-```bash
-ssh -p 35242 root@openipc.org 'docker exec openipc-web-dev bundle exec rails runner "
-  h = ApplicationController.helpers
-  soc = Soc.find_by(urlname: \"hi3518ev200\")
-  c = Camera.new(soc_id: soc.id, soc: soc, flash_type: \"nor16m\", firmware_version: \"lite\",
-                 network_interface: \"eth\", sd_card_slot: \"nosd\",
-                 camera_mac_address: \"00:11:22:33:44:55\")
-  c.backup_filename = \"backup-#{soc.model.downcase}-nor16m.bin\"
-  puts h.flashing_everything(c).to_s.gsub(\"<br>\", \"\n\").gsub(/<[^>]+>/, \"\")
-"'
-```
-
-To diff old against new, run the same script against both image tags with
-`docker run --rm --env-file /srv/www/.env.prod` and compare. That is how the
-flashing-instruction fix was verified.
-
-**`bin/rails test` does not work in a deployed container.** `.dockerignore`
-excludes `test/`, so the production image does not ship it:
-
-```
-$ docker exec openipc-web-dev sh -lc 'ls test/'
-ls: cannot access 'test/': No such file or directory
-```
-
-Run the suite locally instead. Against a deployed container, pipe an assertion
-script to `rails runner -`, which reads from stdin:
-
-```bash
-cat <<'RUBY' | ssh -p 35242 root@openipc.org 'docker exec -i openipc-web-dev bundle exec rails runner -'
-soc = Soc.find_by(urlname: "hi3518ev200")
-out = ApplicationController.helpers.flashing_everything(
-  Camera.new(soc_id: soc.id, soc: soc, flash_type: "nor16m", firmware_version: "lite",
-             network_interface: "eth", sd_card_slot: "nosd",
-             camera_mac_address: "00:11:22:33:44:55")).to_s
-abort "FAIL: erase not guarded" unless out.include?("&&")
-puts "OK"
-RUBY
-```
-
-That exercises the real deployed code against the real dev database and the real
-tarballs in `/srv/github-releases`, which a local unit test cannot.
+Without `CONFORMANCE_DATABASE_URL` it stores nothing and checks only what a
+client can see. The full suite, including the upload, runs in CI against a
+scratch database (`bin/conformance`).
 
 ### Read the container log
 
-`RescueHandler` catches exceptions and renders `500.html`, so a broken page can
-look merely empty. It logs every exception:
-
 ```bash
-ssh -p 35242 root@openipc.org 'docker logs --since 10m openipc-web-dev 2>&1 | grep rescue_ladder'
+ssh -p 35242 root@openipc.org 'docker logs --since 10m openipc-go-web-dev 2>&1 | grep -i error'
+ssh -p 35242 root@openipc.org 'docker logs --since 10m openipc-go-firmware-dev 2>&1 | grep -i error'
 ```
 
-Zero hits is the expected result. Anything there is a real failure regardless of
-what the page looked like.
+The service logs JSON (`log/slog`). Zero error lines is the expected result.
 
 ### Compare against production when behaviour should not change
 
-Three things legitimately differ every request and must be normalised first.
-There are **two** distinct CSRF values per page — the `csrf-token` meta tag and
-the `authenticity_token` hidden field `form_for` emits — plus the asset digest.
-Normalising only the meta tag leaves every page containing a form reporting as
-different, which includes the SoC page, the single most useful one to compare.
+Pages are files, so compare them as files: the same bundle SHA on both
+environments serves the same bytes, apart from the dev-only headers. For the
+service, compare what a client sees — status, headers, and the JSON shape:
 
 ```bash
-ssh -p 35242 root@openipc.org '
-norm() {
-  sed -E "s/name=\"csrf-token\" content=\"[^\"]*\"/CSRF/g;
-          s/name=\"authenticity_token\" value=\"[^\"]*\"/TOKEN/g;
-          s/-[0-9a-f]{64}\./-DIGEST./g" "$1"
-}
-H=(-H "X-Forwarded-Proto: https")
-for p in / /supported-hardware/featured \
-         /cameras/vendors/hisilicon/socs/hi3518ev200; do
-  a=$(curl -s "${H[@]}" -H "Host: openipc.org"     -o /tmp/a -w "%{http_code}" "http://127.0.0.1:3000$p")
-  b=$(curl -s "${H[@]}" -H "Host: dev.openipc.org" -o /tmp/b -w "%{http_code}" "http://127.0.0.1:3001$p")
-  if [ "$a" != 200 ] || [ "$b" != 200 ]; then r="NOT-200"
-  elif diff -q <(norm /tmp/a) <(norm /tmp/b) >/dev/null; then r=same
-  else r=DIFFERS; fi
-  echo "$p prod=$a dev=$b $r"
-done'
+for p in /api/v1/wall/mosaic.json /api/v1/wall/page/1.json /hardware; do   # [local]
+  a=$(curl -s -o /dev/null -w '%{http_code}' "https://openipc.org$p")
+  b=$(curl -s -K /tmp/devrc -o /dev/null -w '%{http_code}' "https://dev.openipc.org$p")
+  echo "$p prod=$a dev=$b"
+done
 ```
 
-> The status check is not decoration. Without it two identical error pages —
-> two `301`s with empty bodies, or two `500.html` — compare byte-identical and
-> get reported as `same`.
-
-A remaining `DIFFERS` is a real difference. Inspect it with
-`diff <(norm /tmp/a) <(norm /tmp/b) | head`.
+A status check matters more than a body diff here: two identical error pages
+compare byte-identical and would otherwise be reported as the same.
 
 ---
 
@@ -311,14 +231,16 @@ A remaining `DIFFERS` is a real difference. Inspect it with
 |---|---|
 | URL | `https://dev.openipc.org` — HTTP basic auth, user `openipc` |
 | Password | `/srv/www/.dev-basic-auth-password` on the host |
-| Port | `127.0.0.1:3001` (`openipc-web-dev`) |
-| Database | `openipc_dev` — **separate** from production |
-| Blobs | `/srv/www/shared/dev-storage` — separate tree |
-| Env | `/srv/www/.env.dev` |
+| Ports | `127.0.0.1:3012` (`openipc-go-web-dev`), `127.0.0.1:3013` (`openipc-go-firmware-dev`) |
+| Database | PostgreSQL `openipc_dev` — **separate** from production |
+| Wall images | `/srv/www/shared/dev-wall` — separate tree |
+| Firmware cache | `/srv/www/shared/dev-firmware` |
+| Env | `/srv/www/.env.go-dev` |
+| Pages | `/srv/www/static/dev/current` — its own bundle |
 
 **The dev database is destroyed and rebuilt every night at 03:00 UTC** from the
-previous night's S3 backup, with snapshot MAC/IP addresses scrubbed and any
-leftover `admins` table dropped. Any data you create on dev is temporary by design. To refresh on
+previous night's S3 backup, with snapshot MAC and IP addresses scrubbed. Any
+data you create on dev is temporary by design. To refresh on
 demand:
 
 ```bash
@@ -331,8 +253,8 @@ openipc-refresh-dev --local    # straight from production (bootstrap only)
 ## Validating a static bundle
 
 nginx serves a page from the bundle when its `index.html` is there and falls
-through to Rails when it is not, so the only question worth asking is which
-side answered. Every response through the catch-all says so:
+through to `@fallback` — the route map, then 404 — when it is not, so the first
+question is which side answered. Every response through the catch-all says so:
 
 ```bash
 say() {  # [local]
@@ -341,7 +263,7 @@ say() {  # [local]
 }
 
 say /_smoke/     # static  -- the bundle is alive
-say /            # rails   -- and everything else still is not
+say /hardware    # nginx   -- the route map answered (a 301)
 ```
 
 Then the half that matters more, because it is the one that is not exercised by
@@ -359,7 +281,7 @@ The smoke page names the commit it was built from precisely so that this reads
 over HTTP rather than as a `readlink` on the host.
 
 `deploy/nginx/check-config.sh --seam` does the same thing locally against a
-throwaway nginx and a stub upstream, which is the cheapest place to find out
+throwaway nginx and stub upstreams, which is the cheapest place to find out
 that a vhost change broke the seam.
 
 ### A bundle of a new shape
@@ -383,33 +305,21 @@ it before promoting, not after.
 
 ---
 
-## The Go service (#287)
+## The Go service
 
-`openipc-deploy dev <sha>` deploys `openipc-go-web-dev` (:3012) and
-`openipc-go-firmware-dev` (:3013) from the same SHA, before Rails. Nothing
-reaches them until a dev surface is flipped:
-
-```bash
-openipc-route dev upload go      # and wall, firmware; `rails` puts each back
-openipc-route status
-```
-
-Validate with the dev surfaces on `go`, as a visitor would use them:
+Every routed surface on dev is on `go` (`openipc-route status`); the only other
+state is `freeze`, for the upload alone. Validate as a visitor would use it:
 
 - **Upload** a real frame from the host, then watch its variants appear:
-  `curl -F mac_address=02:00:00:00:00:01 -F file=@frame.jpg -H 'X-Forwarded-Proto: https' http://127.0.0.1:3012/snapshots`
+  `curl -F mac_address=02:00:00:00:00:01 -F file=@frame.jpg http://127.0.0.1:3012/snapshots`
   answers 201 with a `Location`. Within a second `/srv/www/shared/dev-wall/<id>/`
   holds `icon`, `icon2`, `thumb` and `fullhd`.
 - **Click through the dev wall** (`/open-wall`, a snapshot, its archive and
-  slideshow), and run `tools/mirror-check.mjs` against dev. The frames arrive
-  over Rails' socket with grants Go minted, so a painted canvas proves both halves.
+  slideshow), and run `tools/canvas-check.mjs` and `tools/mirror-check.mjs`
+  against dev. The frames arrive over the socket with the grants the wall JSON
+  minted, so a painted canvas proves both halves.
 - **Download** a full image from a dev wizard page twice at once, and see one
   `firmware: built` line in `docker logs openipc-go-firmware-dev`, not two.
-- **Rollback**: `openipc-route dev wall rails`, and time it.
-
-The dev PostgreSQL database is restored from production's nightly archive at
-03:00 and scrubbed, the same as MariaDB. Frames uploaded to dev are gone the
-next morning.
 
 ## Migrations
 
@@ -418,8 +328,8 @@ never drop or rename a column in the same release that ships code depending on
 it, or a rollback meets a schema it cannot read. Do the destructive half in a
 later release, once the previous image is retired.
 
-`openipc-deploy` runs `db:migrate` before starting the new container. A failing
-migration aborts the deploy and leaves the running container untouched.
+`openipc-deploy` runs `openipc migrate` before starting the new containers. A
+failing migration aborts the deploy and leaves the running containers untouched.
 
 Because dev is rebuilt nightly from a production dump, a migration applied only
 to dev **disappears at 03:00**. That is expected; it is not evidence the
@@ -434,11 +344,11 @@ openipc-deploy rollback dev      # or: rollback prod
 openipc-deploy status            # tags, rollback target, health
 openipc-static rollback dev      # the bundle, which is a separate thing
 openipc-static status
-docker logs --tail=50 openipc-web-dev
+docker logs --tail=50 openipc-go-web-dev
 ```
 
 **`openipc-deploy rollback prod` does not roll back the bundle, and
-`openipc-static rollback prod` does not roll back Rails.** That separation is
+`openipc-static rollback prod` does not roll back the service.** That separation is
 the point of the seam and it is also the way to roll back half a release
 without noticing.
 
@@ -462,7 +372,7 @@ new link *inside the old release*: `current` still points at the old bundle and
 the command reports success. `deploy/static.sh` uses `mv -Tf` and a test
 asserts it does.
 
-**A directory in the bundle with no `index.html` answers 403, not Rails.**
+**A directory in the bundle with no `index.html` can answer 403.**
 try_files skips a directory on the `$uri` element and misses on
 `$uri/index.html`, so it falls through — but write the element as `$uri/` and a
 matching directory goes to the index module instead, which answers "directory
@@ -477,7 +387,7 @@ reported a finished job as running. Check a host's availability from a machine
 that is not the host.
 
 **`docker compose` interpolates `$` inside `env_file`.** The database password
-contains one and arrived truncated, 24 characters to 15. The compose file uses
+contained one and arrived truncated, 24 characters to 15. The compose file uses
 `format: raw` to disable this. Do not "simplify" it back to the short form.
 
 **Files sourced by bash need single-quoted values.** `/srv/www/.env.backup`
@@ -489,6 +399,6 @@ failure email used `sendmail -t` with the recipient as an argument and no `To:`
 header, so every alert was silently discarded. Test failure paths, not just
 success paths.
 
-**Do not add per-request email.** `ERROR_MAIL` is unset deliberately. Crawlers
-hit this site continuously, so one email per exception becomes dozens per minute
-during any transient fault. Exceptions go to the log.
+**Do not add per-request email.** Crawlers hit this site continuously, so one
+email per error becomes dozens per minute during any transient fault. Errors go
+to the log.

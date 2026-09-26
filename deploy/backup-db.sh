@@ -9,12 +9,15 @@
 #
 # What is backed up, and what deliberately is not
 # -----------------------------------------------
-# In:  the whole openipc_production schema (~85 MB raw, ~10 MB compressed) and
-#      the two secrets that exist nowhere else -- config/master.key and
-#      config/production.env.
-# Out: the ActiveStorage blob tree (Open Wall snapshots purge at 2 days and
-#      cameras re-upload continuously), /srv/github-releases (refreshed hourly
-#      from GitHub) and public/files (rebuilt on demand by Firmware#generate).
+# In:  the Go service's PostgreSQL database openipc_production (the Open
+#      Wall's snapshot rows and the download stats), GoatCounter's SQLite
+#      file, and the secrets that exist nowhere else -- /srv/www/.env.go-prod
+#      and .env.go-dev, encrypted.
+# Out: the wall's images (snapshots purge at 2 days and cameras re-upload
+#      continuously), /srv/github-releases (refreshed hourly from GitHub) and
+#      the firmware cache (rebuilt on demand).
+#
+# MySQL went with Rails (#304). Its last dump is final/ in the same bucket.
 #
 # Retention is S3's job, via lifecycle rules on the daily/, weekly/ and
 # monthly/ prefixes. This script therefore never deletes anything, and the IAM
@@ -38,8 +41,8 @@
 set -euo pipefail
 
 CONFIG=/srv/www/.env.backup
-APP_DIR=/srv/www/org-openipc
 DB=openipc_production
+ARCHIVE=postgres-${DB}.dump
 WORK=$(mktemp -d /tmp/openipc-backup.XXXXXX)
 DRY_RUN=0
 [ "${1:-}" = "--dry-run" ] && DRY_RUN=1
@@ -84,65 +87,35 @@ DOW=$(date -u +%u)     # 7 = Sunday
 DOM=$(date -u +%d)
 
 # ---------------------------------------------------------------- dump
+# Custom format, so a restore can pick tables; checked by reading its own table
+# of contents back, which fails on a truncated archive.
 log "dumping ${DB}"
-mysqldump --single-transaction --quick --routines --triggers \
-          --default-character-set=utf8mb4 "$DB" \
-  | zstd -9 -q -o "${WORK}/${DB}.sql.zst" \
-  || fail "mysqldump failed"
+runuser -u postgres -- pg_dump --format=custom --compress=9 "$DB" > "${WORK}/${ARCHIVE}" \
+  || fail "pg_dump of ${DB} failed"
+pg_restore --list "${WORK}/${ARCHIVE}" > "${WORK}/pg.toc" 2>/dev/null \
+  || fail "the dump cannot be read back"
+for t in snapshots downloads service_migrations; do
+  grep -q "TABLE DATA public ${t} " "${WORK}/pg.toc" || fail "the dump has no ${t} data"
+done
+SIZE=$(stat -c %s "${WORK}/${ARCHIVE}")
 
-SIZE=$(stat -c %s "${WORK}/${DB}.sql.zst")
-
-# Sanity floor. This was 100000 when the database still carried ~93,000 orphaned
-# ActiveStorage rows and dumps were ~6.6 MB; after the orphan reap a healthy dump
-# is around 135 KB, which left almost no margin. Compare against the previous
-# successful dump instead of a fixed number: a sudden collapse in size is the
-# signal worth catching, and an absolute floor cannot track a shrinking schema.
+# Sanity floor against the previous successful dump rather than a fixed
+# number: a sudden collapse in size is the signal worth catching. The download
+# ledger only grows, and the wall is two days of rows, so halving overnight
+# means something deleted a lot.
 LAST_SIZE_FILE=/srv/www/.last-backup-size
-[ "$SIZE" -gt 20000 ] || fail "dump is only ${SIZE} bytes — refusing to upload a truncated backup"
-
 if [ -r "$LAST_SIZE_FILE" ]; then
   LAST=$(cat "$LAST_SIZE_FILE")
-  # Halving between nightly runs means something deleted a lot; stop and ask.
   if [ -z "${FORCE_SHRINK:-}" ] && [ "$LAST" -gt 0 ] && [ "$((SIZE * 2))" -lt "$LAST" ]; then
     fail "dump shrank from ${LAST} to ${SIZE} bytes (more than half) — refusing to overwrite good backups until this is explained; re-run with FORCE_SHRINK=1 if intended"
   fi
 fi
-log "dump ok, ${SIZE} bytes compressed"
-
-# Verify the dump is readable before trusting it. zstd -t catches truncation
-# and corruption; a backup that has never been decompressed is a guess.
-zstd -t "${WORK}/${DB}.sql.zst" 2>/dev/null || fail "dump fails its own integrity check"
-zstd -dc "${WORK}/${DB}.sql.zst" | tail -5 | grep -q "Dump completed" \
-  || fail "dump has no completion marker — mysqldump was interrupted"
-log "dump verified"
-
-# The Go service's PostgreSQL (#293): the Open Wall's snapshots and the download
-# stats. Custom format, so a restore can pick tables; checked by reading its own
-# table of contents back, which fails on a truncated archive. There is no
-# shrink guard here as there is for MySQL above: this database is two days of
-# camera frames plus a ledger that only grows, and it starts empty.
-PG_DB=openipc_production
-PG_ARCHIVE=postgres-${PG_DB}.dump
-HAVE_PG=0
-if command -v pg_dump >/dev/null 2>&1 \
-   && runuser -u postgres -- psql -tAc "SELECT 1 FROM pg_database WHERE datname = '${PG_DB}'" 2>/dev/null | grep -q 1; then
-  runuser -u postgres -- pg_dump --format=custom --compress=9 "$PG_DB" > "${WORK}/${PG_ARCHIVE}" \
-    || fail "pg_dump of ${PG_DB} failed"
-  pg_restore --list "${WORK}/${PG_ARCHIVE}" > "${WORK}/pg.toc" 2>/dev/null \
-    || fail "the PostgreSQL dump cannot be read back"
-  for t in snapshots downloads; do
-    grep -q "TABLE DATA public ${t} " "${WORK}/pg.toc" || fail "the PostgreSQL dump has no ${t} data"
-  done
-  HAVE_PG=1
-  log "PostgreSQL ${PG_DB} dumped, $(stat -c %s "${WORK}/${PG_ARCHIVE}") bytes"
-else
-  log "no PostgreSQL ${PG_DB} on this host, skipping"
-fi
+log "dump ok and readable, ${SIZE} bytes"
 
 # ----------------------------------------------------------- analytics
 # GoatCounter's SQLite file (#181). Small -- only per-day aggregates reach
 # disk, no raw addresses and no session rows -- but it is the only copy of the
-# site's entire audience history, and unlike MySQL it is not rebuilt from
+# site's entire audience history, and it is not rebuilt from
 # anything if the host is lost.
 #
 # `sqlite3 .backup` rather than cp: the service is running and writing, and a
@@ -169,12 +142,11 @@ fi
 
 # ------------------------------------------------------------- secrets
 log "encrypting secrets to ${AGE_RECIPIENT:0:20}..."
-tar -C "$APP_DIR/config" -cf "${WORK}/secrets.tar" master.key production.env
-# The Go service's settings: its database passwords, and the keys it was given
-# out of Rails (re-derivable from master.key, but a restore should not have to).
-for f in /srv/www/.env.go-prod /srv/www/.env.go-dev /srv/www/.env.go-shadow; do
-  if [ -f "$f" ]; then tar -C /srv/www -rf "${WORK}/secrets.tar" "$(basename "$f")"; fi
-done
+# The Go service's settings: its database passwords and the two keys that keep
+# shared camera links and frame grants valid. Nothing else can recreate them.
+[ -f /srv/www/.env.go-prod ] || fail "no /srv/www/.env.go-prod to back up"
+tar -C /srv/www -cf "${WORK}/secrets.tar" .env.go-prod
+[ -f /srv/www/.env.go-dev ] && tar -C /srv/www -rf "${WORK}/secrets.tar" .env.go-dev
 gzip -9 "${WORK}/secrets.tar"
 age -r "$AGE_RECIPIENT" -o "${WORK}/secrets.tar.gz.age" "${WORK}/secrets.tar.gz" \
   || fail "age encryption failed"
@@ -186,9 +158,8 @@ rm -f "${WORK}/secrets.tar.gz"
 # -------------------------------------------------------------- upload
 put() {
   local prefix=$1
-  local files=("${DB}.sql.zst" secrets.tar.gz.age)
+  local files=("$ARCHIVE" secrets.tar.gz.age)
   [ "$HAVE_ANALYTICS" = 1 ] && files+=("$ANALYTICS_ARCHIVE")
-  [ "$HAVE_PG" = 1 ] && files+=("$PG_ARCHIVE")
   for f in "${files[@]}"; do
     if [ "$DRY_RUN" = 1 ]; then
       log "DRY RUN would upload ${f} -> s3://${S3_BUCKET}/${prefix}/${f}"
@@ -208,7 +179,7 @@ put "daily/${STAMP}"
 # that cp exited 0.
 if [ "$DRY_RUN" = 0 ]; then
   REMOTE=$("${AWS[@]}" s3api head-object \
-    --bucket "$S3_BUCKET" --key "daily/${STAMP}/${DB}.sql.zst" \
+    --bucket "$S3_BUCKET" --key "daily/${STAMP}/${ARCHIVE}" \
     --query ContentLength --output text 2>/dev/null) || fail "uploaded object is not readable back"
   [ "$REMOTE" = "$SIZE" ] || fail "size mismatch: local ${SIZE}, remote ${REMOTE}"
   log "verified remote object: ${REMOTE} bytes"

@@ -26,7 +26,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/variants"
 )
 
-const fixtures = "../../../test/conformance/fixtures/"
+const fixtures = "../../conformance/testdata/"
 
 func pad(prefix []byte, size int) []byte {
 	out := make([]byte, size)

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -20,6 +21,7 @@ type SoC struct {
 	Status        string  `yaml:"status"`
 	UBootFilename string  `yaml:"uboot_filename"`
 	LinuxFilename string  `yaml:"linux_filename"`
+	LoadAddress   string  `yaml:"load_address"`
 	Vendor        *Vendor `yaml:"-"`
 }
 
@@ -36,6 +38,8 @@ type Catalogue struct {
 
 // Load reads every vendor file in dir. A duplicate SoC slug is an error, as it
 // is in the Rails loader: the slug is the address.
+var slugShape = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]*$`)
+
 func Load(dir string) (*Catalogue, error) {
 	files, err := filepath.Glob(filepath.Join(dir, "*.yml"))
 	if err != nil {
@@ -59,6 +63,11 @@ func Load(dir string) (*Catalogue, error) {
 			s.Vendor = v
 			if s.URLName == "" {
 				return nil, fmt.Errorf("%s: a SoC without a urlname", filepath.Base(file))
+			}
+			// The slug is an address, a file name (the wizard export) and an
+			// nginx capture; this is the shape all three accept.
+			if !slugShape.MatchString(s.URLName) {
+				return nil, fmt.Errorf("%s: SoC urlname %q is not [a-z0-9][a-z0-9._-]*", filepath.Base(file), s.URLName)
 			}
 			if _, dup := c.bySlug[s.URLName]; dup {
 				return nil, fmt.Errorf("%s: SoC %q appears twice", filepath.Base(file), s.URLName)

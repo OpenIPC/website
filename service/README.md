@@ -1,46 +1,81 @@
 # service/ — the Go service behind openipc.org
 
-Epic #287 replaces the Rails application with this: one binary, `openipc`, and
-PostgreSQL. It takes over from Rails one surface at a time. nginx decides which
-process answers each surface (`openipc-route`, below), so moving a surface, and
-moving it back, takes about a second.
+Epic #287 replaced the Rails application with this: one binary, `openipc`, and
+PostgreSQL. Rails is gone (#304). Every page is a file in the static bundle
+(`frontend/`); what is not a page is answered either by nginx itself, from the
+route map in `deploy/nginx/conf.d/openipc-redirects.conf`, or by one of the two
+roles below.
 
 | role | port (prod / dev) | answers |
 |---|---|---|
-| `web` | 3002 / 3012 | `POST /snapshots` (the cameras' frozen contract), the wall's variants, `/api/v1/wall/*.json` |
-| `firmware` | 3003 / 3013 | `…/download_full_image`: full flash images, built on demand, and the download stats |
+| `web` | 3002 / 3012 | `POST /snapshots` (the cameras' frozen contract), the wall's variants, `/api/v1/wall/*` JSON, the frame socket `/api/v1/wall/cable`, `/up` |
+| `firmware` | 3003 / 3013 | `…/download_full_image`: full flash images, built on demand, and the download stats; `/api/v1/hardware/availability.json` |
 
-The frame socket (`/api/v1/wall/cable`) stays on Rails for now (#297). It
-verifies the grants this service mints, because both use the key Rails derives.
+`openipc routes --json` prints exactly what each role serves, and the deploy
+tests read it.
+
+The frame socket (`/api/v1/wall/cable`, #297) speaks ActionCable's wire
+protocol, so the pages' client (`@rails/actioncable` in
+`frontend/apps/site/src/lib/wall-frames.ts`) is unchanged. It verifies grants
+with the same key the wall JSON signs them with.
+
+## Subcommands
+
+| command | what it does |
+|---|---|
+| `serve --role web\|firmware` | the two HTTP processes above |
+| `migrate` | applies the embedded SQL migrations, under an advisory lock |
+| `purge [--snapshots] [--firmware]` | snapshots past two days with their images, orphan wall directories, and firmware of any release but the current one |
+| `probe` | the numbers only a probe sees: all-digit `public_id`s, HEIF uploads, a stuck variant queue |
+| `wizard-export [--out DIR] [--index PATH]` | the wizard's per-SoC JSON (#300), run hourly by `deploy/wizard-export.sh` |
+| `publish-release-index [--dry-run] [--mirror] [--retire-mirror]` | `/srv/github-releases/.index.json` from GitHub's releases, hourly at :05 |
+| `mirror-repos` | the GitHub repository mirror, hourly at :00 |
+| `routes --json` | the routes table |
+| `version` | the commit the binary was built from |
+
+The two GitHub jobs replaced `deploy/publish-release-index.rb` and
+`deploy/mirror-repos.rb` (#304). They run from root's
+`deploy/cron.d/openipc-release-jobs` through `deploy/release-jobs.sh`, which
+starts the image on `GO_PROD_TAG` as uid 1000; `deploy/install-release-jobs.sh`
+installs both.
 
 ## Build and test — no Go on the host
 
 ```sh
 service/run.sh build            # service/bin/openipc
 service/run.sh test             # go vet + go test, against a throwaway postgres:17 container
-bin/conformance --target go     # the black-box suite (test/conformance) against the binary
+bin/conformance                 # build, then the black-box suite (service/conformance) against the binary
+bin/conformance --mutations     # break the upload six ways; the suite must fail every time
+service/conformance/run.sh https://openipc.org   # the suite against a running server, read-only without a DB URL
 ```
 
 Everything runs inside `golang:1.27.1`. The tests that need a database create
 their own on the `openipc-go-test-pg` container, and `run.sh` starts it.
+`service/deploytest` holds the tests for `deploy/` and the nginx configuration.
 
 ## What proves what
 
+The goldens below were written by the Rails implementation before it was
+deleted, and are now fixed: nothing regenerates them.
+
 - **The upload contract** is what cameras in the field depend on. It is pinned by
-  `test/conformance`, which passes against Rails and against this service. The
-  corpora Rails wrote (`content_types.json`, `mac_addresses.json`) are also
-  replayed by `internal/snapshots` on every `go test`.
-- **Variants**: `tools/variants-compare.sh <originals> <rails image> <go image>`
-  compares every variant byte for byte. The runtime image uses Debian bookworm's
-  libvips 8.14, the same one the Rails image has.
+  `service/conformance`, and `bin/conformance --mutations` shows the suite fails
+  when the contract is broken. The corpora Rails wrote (`content_types.json`,
+  `mac_addresses.json`) are replayed by `internal/snapshots` on every `go test`.
+- **Variants** were compared byte for byte against Rails' on the same originals
+  before the cutover. The runtime image uses Debian bookworm's libvips 8.14, the
+  same one the Rails image had, so a libvips upgrade is a change to what the wall
+  looks like.
 - **Grants**: `internal/wall/testdata/rails_grant.json` was minted by Rails, and
   `Granter.Sign` must reproduce it byte for byte.
 - **Firmware images**: `internal/firmware/testdata/manifests.json` holds full
   images that the Ruby implementation assembled from synthetic assets: every
   vendor's partition table, every flash type, size and layout. The Go builder
   must produce the same SHA-256. `boards.json` holds the release asset every
-  catalogue SoC asks for. Both are written by
-  `bin/rails runner service/testdata/gen/firmware_golden.rb`.
+  catalogue SoC asks for.
+- **The release index**: `internal/upstream/testdata` holds GitHub's answers
+  recorded on 2026-09-26 and what the Ruby job wrote from them. The Go job must
+  write the same bytes.
 
 ## Design, where it departs from Rails
 
@@ -61,18 +96,15 @@ their own on the `openipc-go-test-pg` container, and `run.sh` starts it.
 
 ## Operating it
 
-- `deploy/install-go-service.sh`: PostgreSQL, the three databases, and
-  `/srv/www/.env.go-*` (keys read out of the running Rails containers).
-- `openipc-deploy prod|dev <sha>`: runs the Go migrations, starts both roles,
-  health-gates them, and only then deploys Rails. A commit older than this
-  service leaves the Go containers where they are.
-- `openipc-route <env> <upload|wall|firmware> <rails|go|freeze|shadow>`: which
-  process answers.
-- `openipc-shadow-report`: whether Rails and the shadow process decided
-  mirrored uploads the same way.
+- `deploy/install-go-service.sh`: PostgreSQL, the two databases, and
+  `/srv/www/.env.go-prod` / `.env.go-dev`. Keys already in those files are kept;
+  missing ones are generated.
+- `openipc-deploy prod|dev <sha>`: pulls `website-go:<sha>`, runs the
+  migrations, starts both roles and health-gates them, rolling back to the
+  previous tag if either does not answer `/up`.
+- `openipc-route <env> <surface> <go|freeze>`: `freeze` answers camera uploads
+  503 while a restore or migration must not race one; `go` puts them back.
 - The nightly `openipc-purge-snapshots` runs `openipc purge` and `openipc probe`
-  in the running containers. It follows the route, so Rails' `wall:prune` never
-  runs once the upload is Go's.
+  in the running containers.
 
-`deploy/GO-CUTOVER.md` is the procedure for moving the surfaces, with what each
-rollback costs.
+`deploy/GO-CUTOVER.md` is the record of how the surfaces moved off Rails.

@@ -8,8 +8,8 @@
  * pages -- rather than as props, which are serialised into every page that
  * carries the island and would put the same 14 KB into 378 of them.
  *
- * `bin/rails i18n:export` writes the three files below out of config/locales,
- * and test/i18n_export_test.rb fails when they drift from it.
+ * `npm run export` (scripts/export-data.mjs) writes the three files below out
+ * of data/locales, and export-data.test.ts fails when they drift from it.
  */
 import { DEFAULT_LOCALE, translateIn, type Locale, type Node, type TranslateOptions } from './i18n';
 import en from '../i18n/wizard.en.json';

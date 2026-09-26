@@ -1,149 +1,45 @@
 #!/usr/bin/env bash
-# Run the black-box conformance suite (#291) against a server of its own.
+# Run the black-box conformance suite (#291) against the Go service.
 #
-#   bin/conformance                  boot this tree in production mode, run the suite
-#   bin/conformance --mutations      the check on the check: break Rails six ways,
-#                                    and require the suite to fail every time
-#   bin/conformance --target go      the same suite against the Go service (#292):
-#                                    service/bin/openipc (or $OPENIPC_BIN) on a
-#                                    scratch PostgreSQL database, the surfaces it
-#                                    answers (upload, wall) and nothing else
+#   bin/conformance                  build service/bin/openipc, boot it on a scratch
+#                                    PostgreSQL database, run service/conformance
+#   bin/conformance --mutations      the check on the check: break the upload six
+#                                    ways, and require the suite to fail every time
 #
-# To point the suite at something already running -- dev, production, or the Go
-# service on the loopback -- skip this script and set the variables yourself:
+# The suite boots the binary itself: a scratch database on the PostgreSQL named
+# by CONFORMANCE_PG_URL (an admin URL), its own wall root, throwaway keys.
+# With Go on the PATH (CI) it runs directly; without it, in the Go image
+# through service/run.sh and service/conformance/run.sh, which bring their own
+# PostgreSQL.
 #
-#   CONFORMANCE_BASE_URL=https://openipc.org bin/rails test test/conformance
+# To point the suite at something already running -- dev or production --
+# use service/conformance/run.sh <base-url>.
 #
-# Production mode, not test: the test environment turns forgery protection off,
-# so a suite run against it could not notice the upload losing its CSRF
-# exemption, which is one of the six mutations. And production mode is what the
-# cameras talk to.
-#
-# The server gets a database of its own (CONFORMANCE_DB, created and dropped
-# here), so the rows the suite writes and deletes never touch development's.
-# Needs MySQL reachable the way config/database.yml reaches it; inside
-# `docker compose run web` that is already true.
+# Rails' suite and its mutations went with Rails (#304); the upload contract
+# they pinned is what this one pins, and the mutations below are the same six
+# mistakes, made in the Go handler.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PORT=${CONFORMANCE_PORT:-3100}
-DB=${CONFORMANCE_DB:-openipc_conformance}
-HOST=${OPENIPC_DATABASE_HOST:-127.0.0.1}
-DBPORT=${OPENIPC_DATABASE_PORT:-3306}
-ROOT_URL=${CONFORMANCE_ROOT_DATABASE_URL:-mysql2://root:root@${HOST}:${DBPORT}}
-export CONFORMANCE_DATABASE_URL="${ROOT_URL}/${DB}"
-
-# What the server under test is told. A blacklisted MAC and a whitelisted
-# address the suite knows about, so both refusals can be reached from outside.
-export CONFORMANCE_BLACKLISTED_MAC=${CONFORMANCE_BLACKLISTED_MAC:-02:c0:ff:ee:00:01}
-export CONFORMANCE_WHITELISTED_IP=${CONFORMANCE_WHITELISTED_IP:-198.51.100.77}
-
-server_env=(
-  RAILS_ENV=production
-  SECRET_KEY_BASE_DUMMY=1
-  DATABASE_URL="$CONFORMANCE_DATABASE_URL"
-  RAILS_LOG_TO_STDOUT=0
-  SNAPSHOT_MAC_BLACKLIST="$CONFORMANCE_BLACKLISTED_MAC"
-  SNAPSHOT_IP_WHITELIST="$CONFORMANCE_WHITELISTED_IP"
-)
+[ "${1:-}" = "--target" ] && shift 2   # accepted for old invocations; Go is the only target
 
 log() { printf '\033[1m%s\033[0m\n' "$*" >&2; }
 
-# The catalogue as well, while it is still a table: the availability feed and
-# the sitemap are about it, and an empty one passes their tests vacuously.
-# #289 makes it a file, and the seed task goes with the table.
-prepare_database() {
-  env "${server_env[@]}" DISABLE_DATABASE_ENVIRONMENT_CHECK=1 \
-    bin/rails db:drop db:create db:schema:load >/dev/null
-  if [ -f lib/tasks/catalogue.rake ] && grep -q 'task seed:' lib/tasks/catalogue.rake; then
-    env "${server_env[@]}" bin/rails catalogue:seed >/dev/null
-  fi
-}
-
-SERVER_PID=
-start_server() {
-  rm -f tmp/pids/conformance.pid
-  env "${server_env[@]}" bin/rails server -p "$PORT" -b 127.0.0.1 \
-    -P tmp/pids/conformance.pid >log/conformance-server.log 2>&1 &
-  SERVER_PID=$!
-  for _ in $(seq 1 120); do
-    if curl -fsS -o /dev/null "http://127.0.0.1:${PORT}/up" 2>/dev/null; then return 0; fi
-    kill -0 "$SERVER_PID" 2>/dev/null || { tail -30 log/conformance-server.log >&2; return 1; }
-    sleep 0.5
-  done
-  log "server did not answer /up"; tail -30 log/conformance-server.log >&2; return 1
-}
-
-stop_server() {
-  [ -n "$SERVER_PID" ] || return 0
-  kill "$SERVER_PID" 2>/dev/null || true
-  wait "$SERVER_PID" 2>/dev/null || true
-  SERVER_PID=
-}
-
-# The files the current mutation has changed. Restored on ANY exit, not only
-# at the end of its turn: set -e stops the script at the first failing
-# command -- a database that is not there, say -- and without this the
-# checkout would be left carrying a broken upload.
-MUTATED=()
-restore_mutated() {
-  [ "${#MUTATED[@]}" -gt 0 ] || return 0
-  git checkout -- "${MUTATED[@]}"
-  MUTATED=()
-}
-
-cleanup() {
-  stop_server
-  restore_mutated
-}
-trap cleanup EXIT
-
-run_suite() {
-  CONFORMANCE_BASE_URL="http://127.0.0.1:${PORT}" CONFORMANCE_HOST=openipc.org \
-    bin/rails test test/conformance "$@"
-}
-
-# --- the Go service --------------------------------------------------------
-#
-# Its own database on the PostgreSQL named by CONFORMANCE_PG_URL (the server's
-# admin URL, without a database), created and dropped here; its own wall root;
-# and throwaway keys, because nothing here verifies a grant against Rails -- the
-# Go tests do that against golden vectors Rails minted.
-if [ "${1:-}" = "--target" ]; then
-  [ "${2:-}" = go ] || { log "--target takes 'go'"; exit 2; }
-  shift 2
-  BIN=${OPENIPC_BIN:-service/bin/openipc}
-  [ -x "$BIN" ] || { log "no Go binary at $BIN (service/run.sh build)"; exit 2; }
-  PG_ADMIN=${CONFORMANCE_PG_URL:-postgres://postgres:postgres@127.0.0.1:5432/postgres}
-  PG_DB=${CONFORMANCE_PG_DB:-openipc_conformance}
-  PG_URL="${PG_ADMIN%/*}/${PG_DB}"
-  case "$PG_ADMIN" in *\?*) PG_URL="${PG_ADMIN%%\?*}"; PG_URL="${PG_URL%/*}/${PG_DB}?${PG_ADMIN#*\?}" ;; esac
-  psql "$PG_ADMIN" -Xqc "DROP DATABASE IF EXISTS ${PG_DB} WITH (FORCE)" -c "CREATE DATABASE ${PG_DB}" >/dev/null
-  WALL=$(mktemp -d)
-  go_env=(
-    DATABASE_URL="$PG_URL" WALL_ROOT="$WALL"
-    WALL_GRANT_KEY="$(openssl rand -hex 64)" CAMERA_TOKEN_KEY=conformance
-    SNAPSHOT_MAC_BLACKLIST="$CONFORMANCE_BLACKLISTED_MAC"
-    SNAPSHOT_IP_WHITELIST="$CONFORMANCE_WHITELISTED_IP"
-    LOG_LEVEL=warn
-  )
-  env "${go_env[@]}" "$BIN" migrate >/dev/null
-  env "${go_env[@]}" "$BIN" serve --role web --listen "127.0.0.1:${PORT}" >log/conformance-go.log 2>&1 &
-  SERVER_PID=$!
-  trap 'stop_server; rm -rf "$WALL"; psql "$PG_ADMIN" -Xqc "DROP DATABASE IF EXISTS ${PG_DB} WITH (FORCE)" >/dev/null 2>&1 || true' EXIT
-  for _ in $(seq 1 60); do
-    curl -fsS -o /dev/null "http://127.0.0.1:${PORT}/up" 2>/dev/null && break
-    kill -0 "$SERVER_PID" 2>/dev/null || { tail -30 log/conformance-go.log >&2; exit 1; }
-    sleep 0.25
-  done
-  CONFORMANCE_DATABASE_URL="$PG_URL" CONFORMANCE_SURFACES=upload,wall run_suite "$@"
-  exit $?
+if command -v go >/dev/null 2>&1; then
+  build() { (cd service && CGO_ENABLED=0 go build -trimpath -o bin/openipc ./cmd/openipc); }
+  suite() {
+    (cd service && CONFORMANCE_BOOT_BIN="$PWD/bin/openipc" \
+      CONFORMANCE_PG_URL="${CONFORMANCE_PG_URL:-postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=disable}" \
+      go test -count=1 "$@" ./conformance/)
+  }
+else
+  build() { service/run.sh build >/dev/null; }
+  suite() { GO_TEST_FLAGS="$*" service/conformance/run.sh; }
 fi
 
 if [ "${1:-}" != "--mutations" ]; then
-  prepare_database
-  start_server
-  run_suite "$@"
+  build
+  suite "${@:--v}"
   exit $?
 fi
 
@@ -155,24 +51,32 @@ fi
 # each. Applied to the working tree and reverted with git, so run this on a
 # clean tree.
 #
-# The last one is not the issue's "remove the CSRF skip" on its own, because
-# that alone changes nothing a client can see: ApplicationController's
-# protect_from_forgery takes Rails' default strategy, :null_session, which
-# blanks the session of a request without a token and lets it through. The
-# upload reads no session, so the mutant is equivalent and no black-box suite
-# could kill it. What would brick the fleet is a refusal, so that is what is
-# mutated: the exemption dropped AND the strategy made :exception.
+# Rails' sixth mutation was the upload losing its CSRF exemption. Go has no
+# forgery protection to lose, so the sixth here is the other exemption the
+# fleet depends on: the whitelisted address that is never rate limited.
+UPLOAD=service/internal/snapshots/upload.go
 MUTATIONS=(
-  "hysteresis 2 minutes -> 0|app/models/snapshot.rb|INTERVAL_LIMIT.ago + 2.minutes|INTERVAL_LIMIT.ago + 0.minutes"
-  "X-Error dropped|app/controllers/snapshots_controller.rb|head :unsupported_media_type, 'X-Error': @snapshot.errors.full_messages.join('. ')|head :unsupported_media_type"
-  "Retry-After constant 900|app/controllers/snapshots_controller.rb|retry_after: Snapshot::INTERVAL_LIMIT - offset|retry_after: 900"
-  "403 -> 422|app/controllers/snapshots_controller.rb|head :forbidden|head :unprocessable_entity"
-  "Location absolute|app/controllers/snapshots_controller.rb|location: snapshot_path(id: @snapshot)|location: snapshot_url(id: @snapshot)"
-  "CSRF enforced on the upload|app/controllers/snapshots_controller.rb|skip_before_action :verify_authenticity_token|# no CSRF exemption|app/controllers/application_controller.rb|protect_from_forgery unless:|protect_from_forgery with: :exception, unless:"
+  "hysteresis 2 minutes -> 0|$UPLOAD|HysteresisSeconds = 120|HysteresisSeconds = 0"
+  "X-Error dropped|$UPLOAD|w.Header().Set(\"X-Error\", strings.Join(errs, \". \"))|_ = strings.Join(errs, \". \")"
+  "Retry-After constant 900|$UPLOAD|strconv.Itoa(IntervalSeconds-int(elapsed))|strconv.Itoa(IntervalSeconds+0*int(elapsed))"
+  "403 -> 422|$UPLOAD|httpx.Empty(w, http.StatusForbidden)|httpx.Empty(w, http.StatusUnprocessableEntity)"
+  "Location absolute|$UPLOAD|location := \"/snapshots/\" + id|location := \"https://openipc.org/snapshots/\" + id"
+  "whitelist exemption dropped|$UPLOAD|exempt := contains(h.Whitelist, u.RemoteIP)|exempt := false && contains(h.Whitelist, u.RemoteIP)"
 )
 
-git diff --quiet -- app || { log "app/ has uncommitted changes; refusing to mutate it"; exit 2; }
+MUTATED=()
+restore_mutated() {
+  [ "${#MUTATED[@]}" -gt 0 ] || return 0
+  git checkout -- "${MUTATED[@]}"
+  MUTATED=()
+}
+# Restored on ANY exit: without this, a failure mid-run leaves the checkout
+# carrying a broken upload.
+trap 'restore_mutated; build >/dev/null 2>&1 || true' EXIT
 
+git diff --quiet -- service/internal || { log "service/internal has uncommitted changes; refusing to mutate it"; exit 2; }
+
+mkdir -p service/bin
 survived=0
 for mutation in "${MUTATIONS[@]}"; do
   IFS='|' read -r -a parts <<<"$mutation"
@@ -181,21 +85,19 @@ for mutation in "${MUTATIONS[@]}"; do
     file=${parts[i]} from=${parts[i + 1]} to=${parts[i + 2]}
     grep -qF -- "$from" "$file" || { log "mutation '$name': '$from' is not in $file"; exit 2; }
     MUTATED+=("$file")
-    FROM="$from" TO="$to" ruby -i -pe 'sub(ENV["FROM"]) { ENV["TO"] }' "$file"
+    FROM="$from" TO="$to" perl -0pi -e 's/\Q$ENV{FROM}\E/$ENV{TO}/' "$file"
   done
 
   log "mutation: $name"
-  prepare_database
-  if ! start_server; then
-    log "  server did not start -- a mutation that breaks boot proves nothing about the suite"
+  if ! build >service/bin/conformance-mutation.log 2>&1; then
+    log "  did not build -- a mutation that breaks the build proves nothing about the suite"
     survived=$((survived + 1))
-  elif run_suite >"log/conformance-mutation.log" 2>&1; then
+  elif suite >>service/bin/conformance-mutation.log 2>&1; then
     log "  SURVIVED -- the suite passed against a broken server"
     survived=$((survived + 1))
   else
-    log "  killed -- $(grep -E '^[0-9]+ runs' log/conformance-mutation.log)"
+    log "  killed -- $(grep -cE '^\s*--- FAIL' service/bin/conformance-mutation.log) failing test(s)"
   fi
-  stop_server
   restore_mutated
 done
 

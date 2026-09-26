@@ -4,86 +4,148 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-The OpenIPC project website — a Rails 7.0 app (Ruby 3.1.2, MySQL) that serves the marketing/docs pages, a browsable catalog of supported camera SoCs with per-SoC firmware installation instructions, on-the-fly firmware image assembly, and the "Open Wall" gallery where cameras upload screenshots via an API.
+The OpenIPC project website, openipc.org: the marketing pages, the catalogue of
+supported camera SoCs with per-SoC installation instructions, on-demand firmware
+image assembly, and the "Open Wall" gallery that cameras upload screenshots to.
+
+It is three parts, and none of them is Rails — Rails, MySQL and the Ruby
+toolchain were removed in #304 (epic #287):
+
+- **The static bundle** — every page. An Astro build in `frontend/apps/site`,
+  using the Preact component library `frontend/packages/ui`. nginx serves it
+  from `/srv/www/static/<env>/current`.
+- **The Go service** — `service/`, one binary (`openipc`) and PostgreSQL, in two
+  roles: `web` (camera uploads, the wall's variants, JSON and frame socket) and
+  `firmware` (full flash images, download stats, the availability feed).
+  `service/README.md` is the reference.
+- **nginx** — `deploy/nginx/`, which mirrors `/etc/nginx/` path for path. What
+  the bundle does not hold falls through to `@fallback`, which answers the route
+  map in `deploy/nginx/conf.d/openipc-redirects.conf` (redirects, 410s for
+  retired addresses, a 302 home for anything unclaimed) and otherwise 404s. That
+  map was generated from Rails' routes in #302 and is maintained by hand now.
 
 ## Commands
 
-- `bin/dev` — start the full dev stack via foreman (`Procfile.dev`): Rails server on **port 3010** (not 3000), `yarn build --watch` (esbuild JS), and `yarn watch:css` (sass→postcss). Use this, not `bin/rails server` alone, or assets won't rebuild.
-- `bin/setup` — idempotent dev bootstrap (`bundle`, `db:prepare`, clear logs/tmp, restart).
-- `docker compose run --rm web <cmd>` — run anything against Ruby 3.1.7 + MariaDB without
-  installing either. `compose.yaml` + `docker/Dockerfile.dev` are the dev/test stack; the
-  root `Dockerfile` is the unrelated production build. Use this when the host Ruby does not
-  match `.ruby-version` — which is most hosts. Note `bundle exec rubocop`, not bare `rubocop`.
-- `bin/rails test` — run tests (Minitest, parallelized across cores, fixtures auto-loaded). The MySQL `test` DB is regenerated from `development`.
-- `bin/rails test test/models/snapshot_test.rb` — single file; append `:LINE` to run one test.
-- `bin/rails test:system` — Capybara + selenium system tests.
-- `rubocop` — lint (config in `.rubocop.yml`: `rubocop-performance`, line length 120). Baseline on master is 742 offences over 111 files; judge a change by whether it adds any to the files it touches, not by the total.
-- `i18n-tasks missing` / `i18n-tasks unused` — audit translations (config in `config/i18n-tasks.yml`); `easy_translate` provides machine translation via `GOOGLE_TRANSLATE_API_KEY`/`DEEPL_TRANSLATE_API_KEY`.
-- `tools/webui-gallery/run.sh --camera <host>` — rebuild the WebUI screenshots on `/web-interface` from a real camera. Needs Docker and network access to the camera; everything else is in the image it builds. Run it when the WebUI changes shape (every few months). It redacts the camera's identity, substitutes a scene over the live player, refuses to open the CGIs that reset or reboot on render, and fails the run rather than installing if anything identifying survives. `tools/webui-gallery/README.md` has the traps.
-- `service/run.sh build|test` — the Go service (#287), built and tested inside `golang:1.27.1`; no Go on the host. `bin/conformance --target go` runs the black-box suite against it. See `service/README.md`.
-- Asset bundling (normally run by `bin/dev`): `yarn build` (JS → `app/assets/builds/`), `yarn build:css` (sass + autoprefixer). `app/assets/builds/` is gitignored — rebuild after JS/SCSS changes.
+No Go or Ruby on the host; Node 24 for the frontend.
+
+- `service/run.sh build` / `service/run.sh test` — build `service/bin/openipc`,
+  or `go vet` + `go test` against a throwaway `postgres:17` container, all inside
+  `golang:1.27.1`. `service/deploytest` is the test suite for `deploy/` and the
+  nginx configuration.
+- `bin/conformance` — the black-box suite (`service/conformance`) against the
+  binary on a scratch database. `bin/conformance --mutations` breaks the upload
+  six ways and requires the suite to fail each time.
+  `service/conformance/run.sh <base-url>` points it at a running site.
+- In `frontend/`: `npm ci`, then `npm run lint`, `npm run typecheck`,
+  `npm test`, `npm run build`; `npm run dev -w @openipc/site` for a local server.
+- `npm run export -w @openipc/site` (in `frontend/`) — regenerate the committed
+  JSON the site reads from `data/`: translations from `data/locales/*.yml`, the
+  catalogue from `data/catalogue/*.yml`, the WebUI gallery from
+  `data/webui_gallery.yml`. A stale export fails `npm test` and
+  `deploy/static/build.sh`.
+- `deploy/static/build.sh dist` then `deploy/static/check-bundle.sh dist/site` —
+  build and check the static bundle as CI does.
+- `deploy/nginx/check-config.sh` (`--seam` for the static seam and the route
+  map) — `nginx -t` and behaviour checks in a throwaway container, before any
+  vhost change reaches the host.
+- `tools/webui-gallery/run.sh --camera <host>` — rebuild the WebUI screenshots on
+  `/web-interface` from a real camera. Needs Docker and network access to the
+  camera; everything else is in the image it builds. Run it when the WebUI
+  changes shape (every few months). It redacts the camera's identity,
+  substitutes a scene over the live player, refuses to open the CGIs that reset
+  or reboot on render, and fails the run rather than installing if anything
+  identifying survives. `tools/webui-gallery/README.md` has the traps.
 
 ## Deploying
 
-The app runs as a container behind the host's nginx; the checkout in
-`/srv/www/org-openipc` is no longer what serves traffic. Actions builds every
-branch to `ghcr.io/openipc/website:<sha>`, and `openipc-deploy` on the host
-installs a tag.
+Actions (`.github/workflows/build.yml`) builds every branch: the service image
+`ghcr.io/openipc/website-go:<sha>` and the bundle
+`ghcr.io/openipc/website-static:<sha>`. The required checks are `build` and
+`test`. Nothing deploys itself.
 
 **Validate on dev.openipc.org before production — always.** The procedure, the
 verification techniques, and the traps that have cost time here are in
 `deploy/DEV-VALIDATION.md`. Read it before your first deploy.
 
-- `openipc-deploy dev <sha>` / `openipc-deploy prod <sha>` — deploy
+- `openipc-deploy dev <sha>` / `openipc-deploy prod <sha>` — pull the service
+  image, run `openipc migrate`, start both roles, health-gate them; reverts to
+  the previous tag if either fails `/up`
 - `openipc-deploy rollback prod` — back one release, ~13s
-- `openipc-deploy status` — tags, rollback target, health
+- `openipc-deploy status` — checkouts, tags, rollback target, health
 - `openipc-static <env> <sha>` / `rollback` / `status` / `verify` — the static
-  bundle, a **separate** release train from the container (#157). nginx's
-  `location /` serves `/srv/www/static/<env>/current` and falls through to
-  `@rails`, so a page is extracted when its `index.html` is in the bundle and
-  rollback is a symlink flip. `deploy/static/README.md`; check a vhost change
-  with `deploy/nginx/check-config.sh --seam` before `push-nginx.sh --apply`.
-- `deploy/RESTORE.md` — rebuilding from the S3 backup
-- `openipc-route <env> <upload|wall|firmware> <rails|go|freeze|shadow>` — which
-  process answers each surface that is moving off Rails; a flip and its
-  rollback are one reload. `deploy/GO-CUTOVER.md` is the procedure.
+  bundle, a **separate** release train (#157). A page exists when its
+  `index.html` is in the bundle; rollback is a symlink flip. Since #304 the
+  bundle is the whole site, so an install verifies itself over HTTP and flips
+  back on failure. `deploy/static/README.md`.
+- `openipc-route <env> <upload|wall|firmware|availability|cable> <go|freeze>` —
+  `freeze` answers camera uploads 503 (upload only) while a restore or
+  migration must not race one; `go` puts them back.
+- `deploy/push-nginx.sh` (dry run) / `--apply` — install `deploy/nginx/` on the
+  host.
+- `deploy/RESTORE.md` — rebuilding from the S3 backup (PostgreSQL archive,
+  encrypted `.env.go-*`, analytics).
 
-Two things that bite: `config.assets.compile = false`, so any asset reference
-not going through the pipeline 404s in production; and rollback restores the
-image but never the schema, so keep migrations additive.
+The host runs these out of checkouts: `/srv/www/deploy-src` on master for
+production, `/srv/www/deploy-src-dev` on the `dev` branch for dev. Rollback
+restores the image but never the schema, so keep migrations additive.
 
 ## Architecture
 
-### Rails is frozen; new work goes into service/
+### The Go service (`service/`)
 
-Epic #287 replaces Rails with one Go binary (`service/`, roles `web` and
-`firmware`) and PostgreSQL. **Do not change `app/` or `config/`**: a surface
-moves by being built in Go, proven against Rails (the conformance suite, golden
-files, byte comparisons), and routed with `openipc-route`. The Go service is
-greenfield — its PostgreSQL started empty; nothing is imported from MySQL.
+- `cmd/openipc` — subcommands `serve --role web|firmware`, `migrate`, `purge`,
+  `probe`, `wizard-export`, `publish-release-index`, `mirror-repos`,
+  `routes --json`. The routes table in `main.go` is the single list both muxes
+  are built from.
+- `internal/snapshots` — `POST /snapshots`, the cameras' frozen contract: MAC
+  and IP validation, the blacklist and whitelist from `SNAPSHOT_MAC_BLACKLIST` /
+  `SNAPSHOT_IP_WHITELIST`, and a **15-minute per-camera interval** with two
+  minutes of hysteresis (429 with `Retry-After`). `internal/variants` makes the
+  four wall sizes with `vips`.
+- `internal/wall`, `internal/wallsocket` — the wall's JSON and the frame socket
+  (ActionCable's wire protocol, so the page client is unchanged), with signed
+  grants keyed by `WALL_GRANT_KEY`.
+- `internal/firmware`, `internal/downloads` — full flash images built lazily
+  from the release tarballs under `/srv/github-releases`, shared by concurrent
+  requests, cached in `/srv/www/shared/firmware` holding one version per image,
+  served by `X-Accel-Redirect`; one `downloads` row per counted download, never
+  purged.
+- `internal/catalogue` — **the hardware catalogue is `data/catalogue/*.yml` and
+  nothing else** (#289). The service reads it at start; the site reads its
+  export. Change it by editing the YAML in a pull request, then run the export.
+- `internal/purge` — nightly (`deploy/purge-snapshots.sh`): snapshots past two
+  days with their images, orphan wall directories, superseded firmware.
+- PostgreSQL is greenfield: nothing was imported from MySQL. Migrations are
+  embedded SQL under `internal/db/migrations`.
 
-### Domain model
-- **The hardware catalogue is `data/catalogue/*.yml` and nothing else** (#289). `Catalogue` loads it once per process and validates every record on load; `Vendor` and `Soc` are ActiveModel objects, not tables. `Soc` carries the firmware metadata: `family`, `model`, `status`, `featured`, `uboot_filename`, `linux_filename`, etc. Change the catalogue by editing the YAML in a pull request, then `bin/rails catalogue:bake` for the static site's JSON.
-- `Soc.find` and `Vendor.find` take a `urlname` slug (never an id) and raise `ActiveRecord::RecordNotFound`, which `RescueHandler` turns into a 404; `to_param` returns the slug. Anything `Soc` derives from the release index is memoised against the index object, because the records outlive requests. Tests start from an empty catalogue and build chips with `Soc.create!`/`Vendor.create!`, which exist only in `test/support/catalogue_test_support.rb`.
-- `Camera` (`app/models/camera.rb`) is **not** an ActiveRecord model — it's an `ActiveModel` PORO representing a user's camera configuration (flash type, firmware edition, network, IP/MAC). It holds all the flash-geometry logic (partition offsets/sizes in hex, `lite` vs `ultimate` editions) used to render installation instructions.
-- `Firmware` (`app/models/firmware.rb`) is also a plain PORO. `#generate` assembles a complete flash `.bin` by writing uboot + kernel + squashfs rootfs at computed offsets, reading parts from tarballs under `Soc::RELEASES_ROOT` (`/srv/github-releases`) and caching the result in `public/files/`. Driven by `Cameras::SocsController#download_full_image`.
-- `Download` is an ActiveRecord model recording one row per firmware image sent (soc, model, flash type, edition, size, bytes). Written from `Cameras::SocsController#download_full_image` via `Download.record`, which logs and returns nil rather than failing a request that has already produced a valid image. Retired after two years by `deploy/purge-snapshots.sh`.
-- `Snapshot` is an ActiveRecord model with an ActiveStorage attached `file` (variants: icon/icon2/thumb/fullhd via libvips). It powers the Open Wall. Validations enforce MAC/IP format, a credentials-driven MAC blacklist, and a **15-minute per-MAC rate limit** (`INTERVAL_LIMIT`); the latter two raise `Snapshot::BlacklistedMac` / `Snapshot::TooSoon` which the controller maps to HTTP 403/429.
+### The site (`frontend/`)
 
-### Controller areas
-- The `/web-interface` gallery is built from `config/webui_gallery.yml` through `WebuiGallery`, and `tools/webui-gallery` photographs a camera from the same manifest, so the page and the pictures cannot drift apart.
-- `PagesController` — static, i18n marketing/tool pages. `root` is `pages#introduction`. Most actions just set `@page_title` and render. `config/routes.rb` also contains many redirects to `github.com/openipc/*` repos, including the wiki at `github.com/OpenIPC/wiki` — the old `wiki.openipc.org` host is retired and no route should point at it.
-- `Cameras::SocsController` / `Cameras::VendorsController` — the supported-hardware browser (`/supported-hardware/...`, HTML + JSON), the per-SoC installation wizard (`show`/`update` build a `Camera` and render instruction partials), and firmware image download. Note special-case rendering for SigmaStar NAND and HI3536DV100, and the 8MB-flash forces `lite` edition.
-- `SnapshotsController` — public Open Wall API + gallery. **CSRF is skipped** (`verify_authenticity_token`) because cameras POST directly. `create` enqueues `PurgeImagesJob` (deletes snapshots >2 days old) and processes images async via `ProcessImagesJob`. `index` uses a raw correlated SQL query to get the latest snapshot per MAC in the last 24h.
-- There is no admin and no sign-in (#288). `/admin` answers 410; nothing on the site sets a cookie, and `test/controllers/cacheability_test.rb` holds that.
-
-### Cross-cutting concerns (`app/controllers/concerns/`)
-- `Multilang` — locale handling for ~10 languages. Browser-locale detection, the dropdown `locale_switcher` HTML, and `default_url_options`. **`set_locale` exists but its `before_action` is commented out** — locale currently comes from the `?locale=` param / session, not an automatic before_action.
-- `RescueHandler` — production-only `rescue_from StandardError` ladder mapping common exceptions to redirects or static `public/{404,500}.html`, and emailing unexpected errors. Disabled in dev/test so errors surface normally.
+- `frontend/apps/site` — Astro, three locale trees (`/`, `/ru/`, `/zh/`). The
+  home page picks the reader's language in the browser. Pages are registered in
+  `src/lib/pages.ts`; `src/lib/rails-paths.ts` lists the non-bundle addresses
+  pages may link to, and the tests hold both sides of every internal link.
+- Translations are `data/locales/*.yml`; the site reads the committed JSON
+  export under `src/i18n/`. A key missing in `ru` or `zh` falls back to English;
+  missing in English fails the build.
+- The WebUI gallery on `/web-interface` is built from `data/webui_gallery.yml`,
+  and `tools/webui-gallery` photographs a camera from the same manifest, so the
+  page and the pictures cannot drift apart. Screenshots live in
+  `frontend/apps/site/src/assets/webui`.
 
 ### Conventions & gotchas
-- Global constants `MAC_ADDRESS_FORMAT` and `IP_ADDRESS_FORMAT` live in `config/initializers/000_settings.rb` (the `000_` prefix forces it to load first, before models reference them).
-- Secrets come from Rails encrypted credentials (`config/credentials.yml.enc`), e.g. `Rails.application.credentials.mac.blacklisted` and `.ip.whitelisted`. You need `RAILS_MASTER_KEY` to edit/decrypt.
-- i18n locale files are split by namespace: top-level `config/locales/<locale>.yml` plus `pages.<locale>.yml`, `activerecord.<locale>.yml`, `activemodel.<locale>.yml`. `i18n-tasks` write-rules (in its config) route new keys to the right file.
-- Front end is Hotwire (Turbo + Stimulus) + Bootstrap 5, bundled with esbuild/sass (no importmap for app JS despite `bin/importmap` existing). `app/javascript/application.js` holds the (non-Stimulus) page glue.
-- **External runtime dependencies that won't exist in a fresh checkout**: the `/srv/github-releases` firmware tarball directory and libvips (image variants). Firmware assembly can't run without the first, and snapshot variants without the second.
+
+- There is no admin and no sign-in (#288). `/admin` answers 410; nothing on the
+  site sets a cookie.
+- `deploy/static/reserved-paths` lists the addresses a bundle file must never
+  shadow (the upload, the firmware download, the service's APIs, nginx's own
+  locations); `service/deploytest` derives what must be in it and fails when an
+  entry is missing or means nothing.
+- Links to `wiki.openipc.org` are wrong: the wiki is `github.com/OpenIPC/wiki`,
+  and the route map redirects there.
+- Service settings are `/srv/www/.env.go-prod` and `.env.go-dev` on the host,
+  written by `deploy/install-go-service.sh` and backed up encrypted. Compose
+  reads them with `format: raw`, because a `$` in a password is otherwise
+  interpolated away.
+- **External runtime dependencies that won't exist in a fresh checkout**: the
+  `/srv/github-releases` tarball directory (firmware assembly) and libvips
+  (variants; in the service image, and installed in CI).

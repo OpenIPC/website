@@ -1,42 +1,11 @@
-.git
-.github
-.gitignore
-.gitattributes
+# The only image built from the repository root is the Go service's
+# (service/Dockerfile). It needs service/ and the catalogue, and nothing else:
+# an allowlist, so a new top-level directory cannot quietly grow the build
+# context or carry something private into it.
+*
+!service
+!data/catalogue
 
-# Secrets never belong in the image -- they arrive as env at runtime.
-config/master.key
-config/credentials/*.key
-config/production.env
-config/ssl
-
-# Rebuilt inside the image.
-# `**/` matters: Docker matches these against the whole relative path, so a
-# bare `node_modules` excludes the one at the root and nothing else. Nothing
-# has leaked through it -- the two directories that have grown a node_modules
-# so far, tools/ and tools/webui-gallery/, are inside the `tools` exclusion
-# below and never reach the build context at all. This is so that the next one
-# does not have to be somewhere lucky.
-**/node_modules
-app/assets/builds/*
-public/assets
-
-# Host state, bind-mounted at runtime.
-log/*
-tmp/*
-storage
-public/files
-public/dl
-db/*.sqlite3
-
-# Not needed to run.
-test
-tools
-# The Go service's build output and goldens; its image is service/Dockerfile.
+# The Go service's build output and goldens.
 service/bin
 service/**/testdata
-.rubocop.yml
-README.md
-LICENSE
-CLAUDE.md
-Procfile.dev
-.foreman

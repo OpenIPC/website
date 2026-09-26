@@ -2,34 +2,30 @@
 #
 # Prepare the host for the Go service (#292): PostgreSQL, the service's
 # settings, its directories, and the `openipc-route` command. Idempotent: run
-# it again and it changes only what is missing. It starts nothing that serves
-# traffic -- `openipc-deploy` brings the containers up, and nginx routes nothing
-# to them until `openipc-route` says so.
+# it again and it changes only what is missing. It starts nothing --
+# `openipc-deploy` brings the containers up.
 #
 #   deploy/install-go-service.sh            everything below
-#   deploy/install-go-service.sh --keys     only re-derive the Rails keys into the env files
 #
 # What it does:
 #
-#   PostgreSQL 17 from Debian, sized for a host that also runs MariaDB, nginx,
-#   two Rails containers and GoatCounter in 7.6 GB: 64 MB of shared buffers,
-#   thirty connections, and no TCP listener at all. The containers reach it the
-#   way they reach MariaDB, over the bind-mounted Unix socket.
+#   PostgreSQL 17 from Debian, sized for a shared 7.6 GB host: 64 MB of shared
+#   buffers, thirty connections, and no TCP listener at all. The containers
+#   reach it over the bind-mounted Unix socket.
 #
-#   Three databases, each with its own role and password: openipc_production,
-#   openipc_dev, and openipc_shadow (production's uploads, mirrored while #294
-#   is compared against Rails).
+#   Two databases, each with its own role and password: openipc_production and
+#   openipc_dev.
 #
-#   /srv/www/.env.go-prod, .env.go-dev and .env.go-shadow, mode 0600:
+#   /srv/www/.env.go-prod and .env.go-dev, mode 0600:
 #     DATABASE_URL         this environment's database, over the socket
-#     WALL_GRANT_KEY       Rails' key_generator.generate_key("wall_grant"), hex
-#     CAMERA_TOKEN_KEY     Rails' secret_key_base
-#     SNAPSHOT_MAC_BLACKLIST / SNAPSHOT_IP_WHITELIST   Rails' credentials lists
-#   The keys are read out of the RUNNING Rails container for that environment,
-#   so the grants Go mints are the ones Rails' frame socket accepts, and the
-#   camera links Rails handed out keep resolving. They are separate files from
-#   .env.prod on purpose: Rails reads DATABASE_URL and the two list variables
-#   too, and would pick these up.
+#     WALL_GRANT_KEY       signs the wall's frame grants, 64 bytes of hex
+#     CAMERA_TOKEN_KEY     keys the per-camera share links
+#     SNAPSHOT_MAC_BLACKLIST / SNAPSHOT_IP_WHITELIST   comma-separated, may be empty
+#   A key already in the file is kept -- the production keys were carried over
+#   from Rails at the cutover, so shared camera links made then still resolve,
+#   and the secrets archive in the nightly backup restores them onto a rebuilt
+#   host. A missing key is generated, which on a host rebuilt WITHOUT that
+#   archive means old camera links stop resolving and nothing else.
 #
 # Run it on the host as root, out of the deploy checkout:
 #   /srv/www/deploy-src/deploy/install-go-service.sh
@@ -48,11 +44,10 @@ die() { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 
 [ "$(id -u)" = 0 ] || die "run as root"
 
-# env  database  role  rails-container
+# env  database  role
 ENVIRONMENTS=(
-  "prod   openipc_production openipc_prod   openipc-web-prod"
-  "dev    openipc_dev        openipc_dev    openipc-web-dev"
-  "shadow openipc_shadow     openipc_shadow openipc-web-prod"
+  "prod   openipc_production openipc_prod"
+  "dev    openipc_dev        openipc_dev"
 )
 
 install_postgres() {
@@ -81,7 +76,7 @@ CONF
   [ "$(cat "$conf")" = "$before" ] || changed=1
   # The containers run as uid 1000, which is not the role's name, so peer
   # authentication cannot work for them: password over the socket, for exactly
-  # these three database/role pairs, ahead of Debian's defaults.
+  # these database/role pairs, ahead of Debian's defaults.
   local hba="${PG_CONF_DIR}/pg_hba.conf"
   if ! grep -q '^# openipc.org (#292)' "$hba"; then
     local tmp
@@ -89,7 +84,7 @@ CONF
     {
       echo '# openipc.org (#292): the Go service, over the socket, by password.'
       for e in "${ENVIRONMENTS[@]}"; do
-        read -r _ db role _ <<<"$e"
+        read -r _ db role <<<"$e"
         printf 'local   %-20s %-16s scram-sha-256\n' "$db" "$role"
       done
       echo
@@ -135,7 +130,7 @@ url_password() { sed -n 's|^postgres://[^:]*:\([^@]*\)@.*|\1|p' <<<"$1"; }
 
 create_databases() {
   for e in "${ENVIRONMENTS[@]}"; do
-    read -r name db role _ <<<"$e"
+    read -r name db role <<<"$e"
     local file; file=$(env_file "$name")
     local url; url=$(env_value "$file" DATABASE_URL)
     # The role must exist with the password the settings carry, whether those
@@ -163,46 +158,26 @@ create_databases() {
   done
 }
 
-derive_keys() {
+ensure_keys() {
   for e in "${ENVIRONMENTS[@]}"; do
-    read -r name _ _ container <<<"$e"
+    read -r name _ _ <<<"$e"
     local file; file=$(env_file "$name")
-    if ! docker ps --format '{{.Names}}' | grep -qx "$container"; then
-      printf '\033[33m==> %s is not running; %s keeps whatever keys it had\033[0m\n' "$container" "$file" >&2
-      continue
-    fi
-    # One runner, four marked lines: production logs to stdout, so anything
-    # unmarked is Rails talking and is ignored. Nothing reaches the terminal.
-    # The lists come from Snapshot where it has the readers (#291) and from the
-    # credentials it reads otherwise, so an image older than those works too.
-    local out
-    out=$(docker exec "$container" bundle exec rails runner '
-      puts "OPENIPC-KEY grant #{Rails.application.key_generator.generate_key("wall_grant").unpack1("H*")}"
-      puts "OPENIPC-KEY skb #{Rails.application.secret_key_base}"
-      creds = Rails.application.credentials
-      black = Snapshot.respond_to?(:blacklisted_macs) ? Snapshot.blacklisted_macs : creds.dig(:mac, :blacklisted)
-      white = Snapshot.respond_to?(:whitelisted_ips) ? Snapshot.whitelisted_ips : creds.dig(:ip, :whitelisted)
-      puts "OPENIPC-KEY black #{Array(black).join(",")}"
-      puts "OPENIPC-KEY white #{Array(white).join(",")}"' 2>/dev/null) \
-      || die "could not read the keys out of ${container}"
-    local grant skb black white
-    grant=$(sed -n 's/^OPENIPC-KEY grant //p' <<<"$out")
-    skb=$(sed -n 's/^OPENIPC-KEY skb //p' <<<"$out")
-    black=$(sed -n 's/^OPENIPC-KEY black //p' <<<"$out")
-    white=$(sed -n 's/^OPENIPC-KEY white //p' <<<"$out")
-    [[ "$grant" =~ ^[0-9a-f]{128}$ ]] || die "${container} gave a wall_grant key that is not 64 bytes of hex"
-    [ -n "$skb" ] || die "${container} has no secret_key_base"
-    env_put "$file" WALL_GRANT_KEY "$grant"
-    env_put "$file" CAMERA_TOKEN_KEY "$skb"
-    env_put "$file" SNAPSHOT_MAC_BLACKLIST "$black"
-    env_put "$file" SNAPSHOT_IP_WHITELIST "$white"
-    ok "keys for ${name} from ${container}"
+    local k
+    for k in WALL_GRANT_KEY CAMERA_TOKEN_KEY; do
+      if [ -z "$(env_value "$file" "$k")" ]; then
+        env_put "$file" "$k" "$(openssl rand -hex 64)"
+        printf '\033[33m==> %s: generated a new %s\033[0m\n' "$file" "$k" >&2
+      fi
+    done
+    for k in SNAPSHOT_MAC_BLACKLIST SNAPSHOT_IP_WHITELIST; do
+      grep -q "^${k}=" "$file" || env_put "$file" "$k" ""
+    done
+    ok "keys for ${name} in ${file}"
   done
-  env_put "$(env_file shadow)" SHADOW 1
 }
 
 make_directories() {
-  for d in firmware dev-firmware go-release-cache dev-go-release-cache shadow-wall wall dev-wall; do
+  for d in firmware dev-firmware go-release-cache dev-go-release-cache wall dev-wall; do
     install -d -o 1000 -g 1000 -m 0755 "${SHARED}/${d}"
   done
   ok "directories under ${SHARED}"
@@ -210,20 +185,19 @@ make_directories() {
 
 install_commands() {
   ln -sfn "${HERE}/route.sh" /usr/local/sbin/openipc-route
-  ln -sfn "${HERE}/shadow-report.sh" /usr/local/sbin/openipc-shadow-report
+  rm -f /usr/local/sbin/openipc-shadow-report
   ROUTES_DIR=/etc/nginx/openipc-routes sh "${HERE}/route.sh" init
   ok "openipc-route: $(openipc-route status | tr '\n' ' ')"
 }
 
 case "${1:-}" in
-  --keys) derive_keys ;;
   '')
     install_postgres
     create_databases
-    derive_keys
+    ensure_keys
     make_directories
     install_commands
     ok "ready: openipc-deploy brings the Go containers up; openipc-route decides what reaches them"
     ;;
-  *) sed -n '3,12p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '3,9p' "$SELF" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

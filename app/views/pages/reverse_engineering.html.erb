@@ -1,7 +1,0 @@
-<% content_for :fullwidth, 'yes' %>
-
-<%# Reverse engineering: one of the five services whitepapers. The whole page is the
-    shared partial; what is specific to it lives in pages.reverse_engineering.* %>
-<%= render 'pages/service', key: 'reverse_engineering', icons: ['bi-file-earmark-binary', 'bi-shield-check', 'bi-diagram-3', 'bi-lightning-charge'], pills: 5,
-            mail_subject: 'Target assessment',
-            mail_body: ['What the target is (blob, firmware, device, model)', 'What you need from it', 'What you can share (image, unit, container, sources)', 'Deadline or dependency'] %>

@@ -148,3 +148,6 @@ func (i *Index) Stale(now time.Time) bool {
 	t, err := time.Parse(time.RFC3339, i.GeneratedAt)
 	return err == nil && now.Sub(t) > 6*time.Hour
 }
+
+// ParseIndex reads an .index.json document, for callers holding the bytes.
+func ParseIndex(raw []byte) (*Index, error) { return parseIndex(raw) }

@@ -47,6 +47,16 @@
   {
     "role": "firmware",
     "method": "GET",
+    "path": "/api/v1/hardware/availability.json"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/wall/cable"
+  },
+  {
+    "role": "firmware",
+    "method": "GET",
     "path": "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"
   },
   {

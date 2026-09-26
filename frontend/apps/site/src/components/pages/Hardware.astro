@@ -25,12 +25,12 @@ import { Image } from 'astro:assets';
 import StageList from '../StageList.astro';
 
 const STAGE_ICONS = import.meta.glob<ImageMetadata>(
-  '../../../../../../app/assets/images/stage-*.svg',
+  '../../assets/stages/stage-*.svg',
   { eager: true, import: 'default' },
 );
 const stageIcon = (status: string) => {
-  const found = STAGE_ICONS[`../../../../../../app/assets/images/stage-${status}.svg`];
-  if (!found) throw new Error(`No stage-${status}.svg in app/assets/images.`);
+  const found = STAGE_ICONS[`../../assets/stages/stage-${status}.svg`];
+  if (!found) throw new Error(`No stage-${status}.svg in src/assets/stages.`);
   return found;
 };
 
