@@ -220,7 +220,6 @@ ru:
     snapshot: Снимок № %{number}
     snapshots: Последние снимки
     stages: Стадии разработки
-    store: Магазин
     supported_hardware: Оборудование
     team: Команда
     teleoperation: Телеуправление
