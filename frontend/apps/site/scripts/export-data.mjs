@@ -9,7 +9,7 @@
  * Three exports:
  *
  *   i18n       data/locales/*.yml     -> src/i18n/{en,ru,zh}.json and the
- *                                         wizard.* and wall.* island catalogues
+ *                                         wizard.*, wall.* and explorer.* island catalogues
  *   catalogue  data/catalogue/*.yml   -> src/data/catalogue.json
  *   webui      data/webui_gallery.yml -> src/data/webui-gallery.json
  *
@@ -80,7 +80,10 @@ const WALL = [
   ['nav', 'snapshot'],
 ];
 export const LOCALES = ['en', 'ru', 'zh'];
-const ISLANDS = { wizard: WIZARD, wall: WALL };
+const EXPLORER = [
+  ['explorer'],
+];
+const ISLANDS = { wizard: WIZARD, wall: WALL, explorer: EXPLORER };
 
 function deepMerge(into, from) {
   for (const [k, v] of Object.entries(from)) {

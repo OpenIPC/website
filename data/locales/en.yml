@@ -189,6 +189,7 @@ en:
   nav:
     business: For Business
     business_overview: 'Overview'
+    firmware_explorer: Firmware explorer
     video_encoding: 'Video encoding'
     isp_sensors: 'ISP & sensors'
     reverse_engineering: 'Reverse engineering'

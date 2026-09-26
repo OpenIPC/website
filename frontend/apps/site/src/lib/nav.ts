@@ -57,6 +57,7 @@ export function menuFor(locale: Locale): MenuItems {
         link('open-wall', 'nav.openwall', '/open-wall'),
         link('web-interface', 'nav.webui', '/web-interface'),
         link('stages', 'nav.stages', '/stages-of-firmware-development'),
+        link('firmware-explorer', 'nav.firmware_explorer', '/firmware-explorer'),
         {
           id: 'web-tools',
           label: t('nav.header_web_tools'),
@@ -135,6 +136,7 @@ export function footerFor(locale: Locale): FooterColumn[] {
         link('footer.firmware_source', 'https://github.com/OpenIPC/firmware'),
         link('nav.webui', '/web-interface'),
         link('nav.stages', '/stages-of-firmware-development'),
+        link('nav.firmware_explorer', '/firmware-explorer'),
       ],
     },
     {

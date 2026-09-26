@@ -1,0 +1,19 @@
+---
+/**
+ * The firmware explorer: what every OpenIPC build puts on the chip, read from
+ * the size reports and Kconfig graphs the CI pushes to openipc.org once per
+ * build. The page is a header and one island; the island reads the site's own
+ * API, so there is nothing about the builds to prerender.
+ */
+import PageHeader from '../PageHeader.astro';
+import Explorer from '../explorer/Explorer.tsx';
+import { useTranslations, type Locale } from '../../lib/i18n';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+<PageHeader title={t('pages.firmware_explorer.title')} lede={t('pages.firmware_explorer.lede')} />
+<div class="-mt-6">
+  <Explorer client:load locale={locale} />
+</div>
