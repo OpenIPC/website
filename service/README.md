@@ -26,17 +26,15 @@ key the wall JSON signs them with.
 | `migrate` | applies the embedded SQL migrations, under an advisory lock |
 | `purge [--snapshots] [--firmware]` | snapshots past two days with their images, orphan wall directories, and firmware of any release but the current one |
 | `probe` | the numbers only a probe sees: all-digit `public_id`s, HEIF uploads, a stuck variant queue |
-| `wizard-export [--out DIR] [--index PATH]` | the wizard's per-SoC JSON (#300), run hourly by `deploy/wizard-export.sh` |
-| `publish-release-index [--dry-run] [--mirror] [--retire-mirror]` | `/srv/github-releases/.index.json` from GitHub's releases, hourly at :05 |
-| `mirror-repos` | the GitHub repository mirror, hourly at :00 |
+| `builds import-history [--keep 90] [--kconfig-all] [--skip-builder]` | once per environment: the builds GitHub still holds, into PostgreSQL |
 | `routes --json` | the routes table |
 | `version` | the commit the binary was built from |
 
-The two GitHub jobs replaced `deploy/publish-release-index.rb` and
-`deploy/mirror-repos.rb` (#304). They run from root's
-`deploy/cron.d/openipc-release-jobs` through `deploy/release-jobs.sh`, which
-starts the image on `GO_PROD_TAG` as uid 1000; `deploy/install-release-jobs.sh`
-installs both.
+Nothing here polls GitHub. OpenIPC's CI pushes each build once, to
+`POST /api/v1/builds`, over a GitHub Actions OIDC token
+(`internal/builds/PUSH.md`); the firmware role reloads its index when the
+stored build is announced (`LISTEN builds`), and the wizard and the explorer
+read the same tables.
 
 ## Build and test — no Go on the host
 
@@ -66,13 +64,15 @@ The goldens below are fixed: nothing regenerates them.
 - **Grants**: `internal/wall/testdata/grant.json` was computed outside Go, and
   `Granter.Sign` must reproduce it byte for byte.
 - **Firmware images**: `internal/firmware/testdata/manifests.json` holds full
-  images that the Ruby implementation assembled from synthetic assets: every
+  reference images assembled from synthetic assets: every
   vendor's partition table, every flash type, size and layout. The Go builder
   must produce the same SHA-256. `boards.json` holds the release asset every
   catalogue SoC asks for.
-- **The release index**: `internal/upstream/testdata` holds GitHub's answers
-  recorded on 2026-09-26 and what the Ruby job wrote from them. The Go job must
-  write the same bytes.
+- **Wizard documents**: `internal/wizard/testdata/documents.json` pins every
+  SoC's document for the fixture catalogue and index.
+- **Builds**: `internal/builds/testdata` holds real size reports and kconfig
+  documents from the 2026-09-25 nightly; a push of them must read back through
+  the explorer API unchanged.
 
 ## Design
 

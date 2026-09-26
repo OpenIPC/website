@@ -7,10 +7,9 @@ import (
 	"testing"
 )
 
-// service/routes.json is what the Rails-side seam test reads to know which
-// addresses the Go service answers (test/deploy/static_bundle_test.rb). It is
-// committed rather than generated in CI so that the Ruby suite needs no Go
-// toolchain; this is what keeps it true.
+// service/routes.json is what the deploy tests read to know which addresses
+// the Go service answers (service/deploytest). It is committed rather than
+// generated, so reading it needs no build; this is what keeps it true.
 func TestRoutesFileIsCurrent(t *testing.T) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)

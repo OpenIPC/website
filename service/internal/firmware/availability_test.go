@@ -8,10 +8,9 @@ import (
 	"time"
 )
 
-// The feed's socs map is Rails' for the whole catalogue, byte for byte,
-// against the same release index (testdata/availability.json, written by
-// firmware_golden.rb from Soc#availability).
-func TestAvailabilityMatchesRails(t *testing.T) {
+// The feed's socs map for the whole catalogue, byte for byte, against the
+// fixture index (testdata/availability.json, the reference answer).
+func TestAvailabilityMatchesReference(t *testing.T) {
 	cat := loadCatalogue(t)
 	raw, err := os.ReadFile("testdata/release-index.json")
 	if err != nil {
@@ -29,7 +28,7 @@ func TestAvailabilityMatchesRails(t *testing.T) {
 	got := string(availabilityJSON(AvailabilityMap(cat, idx), at))
 	want := `{"generated_at":"2026-09-26T10:32:05Z","socs":` + strings.TrimSpace(string(golden)) + `}`
 	if got != want {
-		t.Fatalf("availability differs from Rails':\n got %.300s\nwant %.300s", got, want)
+		t.Fatalf("availability differs from the reference:\n got %.300s\nwant %.300s", got, want)
 	}
 }
 

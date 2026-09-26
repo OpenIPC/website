@@ -542,3 +542,16 @@ describe('the bundle holds nothing it should not', () => {
     expect(dirs.length).toBeGreaterThan(0);
   });
 });
+
+describe('the WebUI gallery credits its scene', () => {
+  // tools/webui-gallery/scene/CREDIT.md: the beach in two screenshots is a
+  // user's camera, published with permission and credited on the page. A scene
+  // swap that forgets the credit fails here, in every language.
+  test('every locale names the camera owner and links the permission', () => {
+    for (const [locale, path, html] of PAGES) {
+      if (path !== '/web-interface') continue;
+      expect(html, `${locale}${path} lost the scene credit`).toContain('https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706');
+      expect(html, `${locale}${path} lost the scene credit`).toContain('@usa-');
+    }
+  });
+});

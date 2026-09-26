@@ -180,9 +180,9 @@ var errorPage = template.Must(template.New("error").Parse(`<!DOCTYPE html>
 </html>
 `))
 
-// page is the error answer. Rails redirected back with a flash message,
-// which set a cookie and which the static wizard page could not display; this
-// says it on its own page, with the status that is true.
+// page is the error answer: said on its own page, with the status that is
+// true, and without a cookie -- the static wizard page links here and could
+// not show a message carried any other way.
 func (h *Handler) page(w http.ResponseWriter, r *http.Request, status int, message string, soc *catalogue.SoC) {
 	back := "/supported-hardware"
 	name := ""

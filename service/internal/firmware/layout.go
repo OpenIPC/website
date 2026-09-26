@@ -14,8 +14,8 @@ import (
 // a 16 MB chip may be asked for the 8 MB one. These offsets are what the
 // installation page tells people to type into a bootloader; the image and the
 // page must agree or a camera is bricked. The manifest golden
-// (testdata/manifests.json, generated from the Rails implementation) is what
-// proves this table was carried across.
+// (testdata/manifests.json, the reference images) is what proves this table
+// is right.
 type norLayout struct {
 	KernelOffset, RootfsOffset, OverlayOffset int64
 }
@@ -113,8 +113,8 @@ func (s Spec) nor() norLayout {
 	return table[NaturalLayout(s.LayoutMB)]
 }
 
-// Filename is what the visitor's browser saves. Unchanged from the Rails
-// names, because people keep these files and compare them: the layout suffix
+// Filename is what the visitor's browser saves. Unchanged for years, because
+// people keep these files and compare them: the layout suffix
 // appears only when the layout is not the chip's own.
 func (s Spec) Filename() string {
 	model := s.SoC.ModelDowncase()

@@ -22,7 +22,7 @@ Two things have to move with the file:
    permission here as above.
 2. **The credit on the page**, which names @usa- by hand:
    `pages.web_interface.scene_credit_html` in `data/locales/pages.*.yml`, in
-   all ten locales. `test/controllers/web_interface_test.rb` asserts the credit
+   all ten locales. the site's build tests assert the credit
    and its link are present, so a swap that forgets this fails the suite --
    but the test cannot tell whether the name is the *right* one.
 

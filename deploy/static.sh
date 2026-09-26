@@ -290,7 +290,7 @@ bundle_revision() {
 do_install() {
   # First, before any work: see the note in checkout-status.sh. The branch is
   # read straight off $1 rather than from env_name below, so this stays the
-  # first statement -- checkout_freshness_test.rb asserts exactly that.
+  # first statement -- service/deploytest/checkout_test.go asserts exactly that.
   checkout_warn "$CHECKOUT_DIR" "$(checkout_branch_for "${1:-prod}")"
   local env_name=$1 ref=${2:-latest} vhost root
   read -r vhost root <<<"$(target_for "$env_name")"

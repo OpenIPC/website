@@ -38,8 +38,8 @@ full of dark chrome.
 
 `data/webui_gallery.yml` is the gallery. Add an entry and the page shows it,
 the tool photographs it, and the test suite starts requiring both its files. The
-same file is read by `app/models/webui_gallery.rb`, so the list and the pictures
-cannot drift apart.
+same file is exported for the site (`npm run export -w @openipc/site`), so the
+list and the pictures cannot drift apart.
 
 After a run the tool prints any page the camera offers that the manifest does
 not mention. That list is the answer to "what did the redesign add?".

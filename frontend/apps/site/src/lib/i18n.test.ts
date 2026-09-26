@@ -152,7 +152,7 @@ describe('the URL shape #154 settled', () => {
     expect(withoutLocale('/donate')).toBe('/donate');
     expect(withoutLocale('/ru')).toBe('/');
     // Not a locale prefix, just a page that starts with those letters.
-    expect(withoutLocale('/ruby')).toBe('/ruby');
+    expect(withoutLocale('/rubric')).toBe('/rubric');
   });
 
   test('isLocale rejects anything else', () => {

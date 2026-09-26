@@ -93,9 +93,15 @@ restores the image but never the schema, so keep migrations additive.
 ### The Go service (`service/`)
 
 - `cmd/openipc` — subcommands `serve --role web|firmware`, `migrate`, `purge`,
-  `probe`, `wizard-export`, `publish-release-index`, `mirror-repos`,
-  `routes --json`. The routes table in `main.go` is the single list both muxes
-  are built from.
+  `probe`, `builds import-history` (once per environment), `routes --json`. The
+  routes table in `main.go` is the single list both muxes are built from.
+- `internal/builds` — **what OpenIPC's CI builds, pushed once per build** to
+  `POST /api/v1/builds` over a GitHub Actions OIDC token (the contract is
+  `internal/builds/PUSH.md`; no shared secret). Stored as relational rows
+  (migration 002) and announced with `NOTIFY builds`. Nothing polls GitHub and
+  no metadata is read from release assets: when openipc.org needs to know
+  something new about builds, the answer is to push it from the producing CI.
+  The same tables feed the firmware explorer's API (`/api/v1/explorer/...`).
 - `internal/snapshots` — `POST /snapshots`, the cameras' frozen contract: MAC
   and IP validation, the blacklist and whitelist from `SNAPSHOT_MAC_BLACKLIST` /
   `SNAPSHOT_IP_WHITELIST`, and a **15-minute per-camera interval** with two
@@ -105,15 +111,21 @@ restores the image but never the schema, so keep migrations additive.
   (a small JSON protocol at `/api/v1/wall/socket`), with signed
   grants keyed by `WALL_GRANT_KEY`.
 - `internal/firmware`, `internal/downloads` — full flash images built lazily
-  from the release tarballs under `/srv/github-releases`, shared by concurrent
+  from the pushed builds' release tarballs (fetched from their dated release,
+  kept in a release cache), shared by concurrent
   requests, cached in `/srv/www/shared/firmware` holding one version per image,
   served by `X-Accel-Redirect`; one `downloads` row per counted download, never
-  purged.
+  purged. The index is the builds tables (newest retained build per asset),
+  reloaded on `LISTEN builds`.
+- `internal/wizard` — the installation wizard's per-SoC JSON, served live by
+  the firmware role at `/api/v1/wizard/{soc}.json`. An 8 MB chip or layout is
+  offered only where the build's size report says it fits (#285).
 - `internal/catalogue` — **the hardware catalogue is `data/catalogue/*.yml` and
   nothing else** (#289). The service reads it at start; the site reads its
   export. Change it by editing the YAML in a pull request, then run the export.
 - `internal/purge` — nightly (`deploy/purge-snapshots.sh`): snapshots past two
-  days with their images, orphan wall directories, superseded firmware.
+  days with their images, orphan wall directories, superseded firmware, and
+  builds beyond the newest 90 per source.
 - PostgreSQL is greenfield: nothing was imported from MySQL. Migrations are
   embedded SQL under `internal/db/migrations`.
 
@@ -145,6 +157,8 @@ restores the image but never the schema, so keep migrations additive.
   written by `deploy/install-go-service.sh` and backed up encrypted. Compose
   reads them with `format: raw`, because a `$` in a password is otherwise
   interpolated away.
-- **External runtime dependencies that won't exist in a fresh checkout**: the
-  `/srv/github-releases` tarball directory (firmware assembly) and libvips
-  (variants; in the service image, and installed in CI).
+- **External runtime dependencies that won't exist in a fresh checkout**: pushed
+  builds in PostgreSQL (`openipc builds import-history` seeds an empty
+  database) and libvips (variants; in the service image, and installed in CI).
+- Rails, Ruby and MySQL are gone; `service/deploytest` fails if they are
+  mentioned again. History is in `deploy/GO-CUTOVER.md`.

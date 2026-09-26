@@ -19,8 +19,8 @@ import (
 // The documents, pinned. testdata/documents.json holds each SoC's sha256 for
 // the fixture catalogue and index; regenerate it with UPDATE_GOLDEN=1 after a
 // deliberate change, and say in the commit what changed and why. When the
-// Rails export was retired, all 126 documents were checked to decode equal to
-// its output, the release tag in download links aside.
+// previous exporter was retired, all 126 documents were checked to decode equal
+// to its output, the release tag in download links aside.
 type golden struct {
 	Combinations int               `json:"combinations"`
 	Files        map[string]string `json:"files"`
