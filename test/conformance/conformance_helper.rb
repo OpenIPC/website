@@ -83,7 +83,7 @@ module Conformance
     end
 
     def fixture(name)
-      JSON.parse(File.read(File.join(__dir__, 'fixtures', "#{name}.json")))
+      JSON.parse(File.read(File.join(__dir__, '..', '..', 'service', 'conformance', 'testdata', "#{name}.json")))
     end
   end
 

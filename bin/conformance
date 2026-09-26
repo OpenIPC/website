@@ -4,10 +4,9 @@
 #   bin/conformance                  boot this tree in production mode, run the suite
 #   bin/conformance --mutations      the check on the check: break Rails six ways,
 #                                    and require the suite to fail every time
-#   bin/conformance --target go      the same suite against the Go service (#292):
-#                                    service/bin/openipc (or $OPENIPC_BIN) on a
-#                                    scratch PostgreSQL database, the surfaces it
-#                                    answers (upload, wall) and nothing else
+#   bin/conformance --target go      the Go port of the suite (service/conformance)
+#                                    against service/bin/openipc (or $OPENIPC_BIN)
+#                                    on a scratch PostgreSQL database
 #
 # To point the suite at something already running -- dev, production, or the Go
 # service on the loopback -- skip this script and set the variables yourself:
@@ -105,39 +104,21 @@ run_suite() {
 
 # --- the Go service --------------------------------------------------------
 #
-# Its own database on the PostgreSQL named by CONFORMANCE_PG_URL (the server's
-# admin URL, without a database), created and dropped here; its own wall root;
-# and throwaway keys, because nothing here verifies a grant against Rails -- the
-# Go tests do that against golden vectors Rails minted.
+# The suite in Go (service/conformance, #304), which boots the binary itself:
+# a scratch database on the PostgreSQL named by CONFORMANCE_PG_URL (an admin
+# URL), its own wall root, throwaway keys, and the surfaces the Go web role
+# answers. Needs Go on the PATH (CI has it); on a workstation use
+# service/conformance/run.sh, which runs the same thing in the Go image.
 if [ "${1:-}" = "--target" ]; then
   [ "${2:-}" = go ] || { log "--target takes 'go'"; exit 2; }
   shift 2
-  BIN=${OPENIPC_BIN:-service/bin/openipc}
+  BIN=${OPENIPC_BIN:-$PWD/service/bin/openipc}
   [ -x "$BIN" ] || { log "no Go binary at $BIN (service/run.sh build)"; exit 2; }
-  PG_ADMIN=${CONFORMANCE_PG_URL:-postgres://postgres:postgres@127.0.0.1:5432/postgres}
-  PG_DB=${CONFORMANCE_PG_DB:-openipc_conformance}
-  PG_URL="${PG_ADMIN%/*}/${PG_DB}"
-  case "$PG_ADMIN" in *\?*) PG_URL="${PG_ADMIN%%\?*}"; PG_URL="${PG_URL%/*}/${PG_DB}?${PG_ADMIN#*\?}" ;; esac
-  psql "$PG_ADMIN" -Xqc "DROP DATABASE IF EXISTS ${PG_DB} WITH (FORCE)" -c "CREATE DATABASE ${PG_DB}" >/dev/null
-  WALL=$(mktemp -d)
-  go_env=(
-    DATABASE_URL="$PG_URL" WALL_ROOT="$WALL"
-    WALL_GRANT_KEY="$(openssl rand -hex 64)" CAMERA_TOKEN_KEY=conformance
-    SNAPSHOT_MAC_BLACKLIST="$CONFORMANCE_BLACKLISTED_MAC"
-    SNAPSHOT_IP_WHITELIST="$CONFORMANCE_WHITELISTED_IP"
-    LOG_LEVEL=warn
-  )
-  env "${go_env[@]}" "$BIN" migrate >/dev/null
-  env "${go_env[@]}" "$BIN" serve --role web --listen "127.0.0.1:${PORT}" >log/conformance-go.log 2>&1 &
-  SERVER_PID=$!
-  trap 'stop_server; rm -rf "$WALL"; psql "$PG_ADMIN" -Xqc "DROP DATABASE IF EXISTS ${PG_DB} WITH (FORCE)" >/dev/null 2>&1 || true' EXIT
-  for _ in $(seq 1 60); do
-    curl -fsS -o /dev/null "http://127.0.0.1:${PORT}/up" 2>/dev/null && break
-    kill -0 "$SERVER_PID" 2>/dev/null || { tail -30 log/conformance-go.log >&2; exit 1; }
-    sleep 0.25
-  done
-  CONFORMANCE_DATABASE_URL="$PG_URL" CONFORMANCE_SURFACES=upload,wall run_suite "$@"
-  exit $?
+  trap - EXIT
+  cd service
+  CONFORMANCE_BOOT_BIN="$BIN" \
+    CONFORMANCE_PG_URL="${CONFORMANCE_PG_URL:-postgres://postgres:postgres@127.0.0.1:5432/postgres}" \
+    exec go test -count=1 "${@:--v}" ./conformance/
 fi
 
 if [ "${1:-}" != "--mutations" ]; then

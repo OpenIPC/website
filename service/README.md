@@ -21,6 +21,8 @@ refuses nothing until that has been measured.
 ## Build and test — no Go on the host
 
 ```sh
+service/conformance/run.sh      # the black-box suite (service/conformance) against service/bin/openipc
+service/conformance/run.sh https://openipc.org   # ...or against any running server, read-only without a DB URL
 service/run.sh build            # service/bin/openipc
 service/run.sh test             # go vet + go test, against a throwaway postgres:17 container
 bin/conformance --target go     # the black-box suite (test/conformance) against the binary

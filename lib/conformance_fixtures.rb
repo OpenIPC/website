@@ -17,7 +17,7 @@ require 'json'
 # `bin/rails conformance:fixtures`; test/conformance_fixtures_test.rb fails
 # while the committed files disagree with what Rails says today.
 module ConformanceFixtures
-  DIR = 'test/conformance/fixtures'
+  DIR = 'service/conformance/testdata'
 
   # First bytes of a file, by what they claim to be. Each is padded to 12 KB so
   # the size rule is not also being tested.
