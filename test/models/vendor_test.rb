@@ -13,8 +13,9 @@ class VendorTest < ActiveSupport::TestCase
     assert_equal @vendor, Vendor.find('test-vendor')
   end
 
-  test 'still finds by id' do
-    assert_equal @vendor, Vendor.find(@vendor.id)
+  # Ids were a database's, and the catalogue has none (#289).
+  test 'a numeric id is not an address' do
+    assert_raises(ActiveRecord::RecordNotFound) { Vendor.find('1') }
   end
 
   test 'raises RecordNotFound for a slug that does not exist' do

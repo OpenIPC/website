@@ -38,7 +38,7 @@ namespace :wizard do
     differences = 0
     skipped = 0
 
-    Soc.includes(:vendor).find_each do |soc|
+    Soc.all.each do |soc|
       document = WizardExport.document(soc)
 
       document['combinations'].each do |entry|

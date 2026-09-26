@@ -8,14 +8,19 @@
 # rollback leaves the column behind and nothing reads it -- Soc#segment_name
 # treats a null as `unknown`, which is the generic copy.
 #
-# The classification itself lives on the model, because a migration only ever
-# runs against a database that already has rows: a schema-loaded setup never
-# executes this one, and db/seeds.rb has to be able to make the same call.
+# The classification is written out here rather than called on the model. It
+# used to be Soc.classify_segments!, and Soc is not a table any more (#289) --
+# data/catalogue/*.yml carries each chip's segment -- so a migration that
+# named the model would stop running on any database still behind this one.
 class AddSegmentToSocs < ActiveRecord::Migration[8.1]
   def up
     add_column :socs, :segment, :string
-    Soc.reset_column_information
-    Soc.classify_segments!
+    execute("UPDATE socs SET segment = 'fpv' WHERE segment IS NULL " \
+            "AND LOWER(model) IN ('ssc338q', 'ssc30kq', 'ssc377qe', 'ssc378qe')")
+    execute("UPDATE socs SET segment = 'consumer' WHERE segment IS NULL " \
+            "AND vendor_id IN (SELECT id FROM vendors WHERE name = 'Ingenic')")
+    execute("UPDATE socs SET segment = 'cctv' WHERE segment IS NULL " \
+            "AND vendor_id IN (SELECT id FROM vendors WHERE name IN ('HiSilicon', 'Goke'))")
   end
 
   def down

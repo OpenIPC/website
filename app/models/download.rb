@@ -3,10 +3,10 @@
 # A firmware image that was sent. See issue #83: nothing recorded this before,
 # and nginx keeps fourteen days, so there has never been a figure for a month.
 class Download < ApplicationRecord
-  # Optional, and no foreign key behind it: a SoC that is deleted should not
-  # take the record of what people downloaded with it. soc_model keeps the row
-  # readable once the id means nothing.
-  belongs_to :soc, optional: true
+  # soc_model names the chip. soc_id is left in the table and no longer
+  # written: it was a row id in `socs`, which is not a table any more (#289),
+  # and the ids it holds already meant nothing without that table. It goes
+  # with the move to PostgreSQL (#293).
 
   # Only created, never updated, so there is no updated_at to maintain.
   self.record_timestamps = false
@@ -30,14 +30,13 @@ class Download < ApplicationRecord
   # reasons to fail a request that has already produced a valid image, so this
   # logs and carries on.
   def self.record(firmware:, soc:, bytes: nil)
-    create!(soc: soc, soc_model: soc.model_downcase, flash_type: firmware.flash_type,
+    create!(soc_model: soc.model_downcase, flash_type: firmware.flash_type,
             release: firmware.release, flash_size: firmware.flash_size,
             bytes: bytes, created_at: Time.current)
   rescue StandardError => e
     # Loud, because a rescue this broad will otherwise hide a plain bug: this
-    # returned nil for every call during development until the missing
-    # belongs_to above was found, and the only sign was a nil where a row
-    # should have been.
+    # once returned nil for every call during development because of a missing
+    # association, and the only sign was a nil where a row should have been.
     Rails.logger.error "download not recorded for #{soc.model_downcase}: #{e.class}: #{e.message}"
     nil
   end

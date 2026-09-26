@@ -82,13 +82,13 @@ class DownloadLicenceTest < ActionDispatch::IntegrationTest
     assert_select '.download-licence a[data-event]', 0
   end
 
-  # The model refuses a segment that is not one (see soc_test), so this is the
-  # row that got in around it: a direct UPDATE, a fixture, or a row written
-  # before the validation existed. It must still not reach a translation key,
-  # or the page publishes "translation missing" as its ask.
+  # The catalogue refuses a segment that is not one (see catalogue_test), so
+  # this is a value that got in around it -- assigned after loading, which
+  # nothing validates. It must still not reach a translation key, or the page
+  # publishes "translation missing" as its ask.
   test 'a segment nobody recognises falls back to the neutral question' do
     soc = soc_for(model: 'PROBEJUNK')
-    soc.update_column(:segment, 'drone-ish')
+    soc.segment = 'drone-ish'
 
     wizard soc
 
@@ -110,7 +110,7 @@ class DownloadLicenceTest < ActionDispatch::IntegrationTest
   test 'the business link carries its own attribution' do
     wizard soc_for(model: 'PROBEREF', segment: 'fpv')
 
-    soc = Soc.find_by!(model: 'PROBEREF')
+    soc = Soc.find('proberef')
     href = css_select('.download-licence a[data-event]').first['href']
     query = Rack::Utils.parse_query(URI.parse(href).query)
 

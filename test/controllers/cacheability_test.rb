@@ -160,9 +160,8 @@ class CacheabilityTest < ActionDispatch::IntegrationTest
   # nothing, so the verb bought nothing -- and a GET form carries no
   # authenticity_token, so the page joins the rest.
   test 'the wizard is cookieless and cacheable now that its form is a GET' do
-    vendor = Vendor.find_by(name: 'Cache Test Vendor') || Vendor.create!(name: 'Cache Test Vendor')
-    soc = Soc.find_by(model: 'CT1000') ||
-          Soc.create!(model: 'CT1000', vendor: vendor, family: 'ct', status: 'done',
+    vendor = Vendor.create!(name: 'Cache Test Vendor')
+    soc = Soc.create!(model: 'CT1000', vendor: vendor, family: 'ct', status: 'done',
                       uboot_filename: 'u.bin', linux_filename: 'l.bin')
     path = "/cameras/vendors/#{soc.vendor.to_param}/socs/#{soc.to_param}"
 

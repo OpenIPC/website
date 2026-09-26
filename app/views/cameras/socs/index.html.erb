@@ -11,13 +11,13 @@
         Fullhan's twelve chips include none they can install. Ten of the
         fourteen vendors are in that position and they took 55% of vendor-page
         views in the 19-20 September sample (#189). %>
-    <% Vendor.order(:name).each do |v| %>
+    <% Vendor.all.each do |v| %>
       <li class="nav-item">
         <%= link_to cameras_vendor_path(id: v), class: "nav-link#{" active" if @vendor.eql?(v)}" do %>
           <%= v.name %>
-          <span class="badge rounded-pill <%= installable_counts[v.id].positive? ? 'text-bg-primary' : 'text-bg-secondary' %>"
-                title="<%= t('.installable_title', count: installable_counts[v.id], total: vendor_totals[v.id]) %>">
-            <%= installable_counts[v.id] %>
+          <span class="badge rounded-pill <%= installable_counts[v].positive? ? 'text-bg-primary' : 'text-bg-secondary' %>"
+                title="<%= t('.installable_title', count: installable_counts[v], total: vendor_totals[v]) %>">
+            <%= installable_counts[v] %>
           </span>
         <% end %>
       </li>
@@ -32,11 +32,11 @@
   <%# Said once, at the top, before the list (#189). A vendor tab with nothing
       installable stays -- search traffic lands on these -- but it should say so
       rather than let the reader work it out one row at a time. %>
-  <% if @vendor && installable_counts[@vendor.id].zero? %>
+  <% if @vendor && installable_counts[@vendor].zero? %>
     <div class="alert alert-warning d-flex gap-3">
       <i class="bi bi-info-circle-fill fs-5"></i>
       <p class="mb-0"><%= t('.nothing_installable_html', vendor: @vendor.name,
-                            total: vendor_totals[@vendor.id]) %></p>
+                            total: vendor_totals[@vendor]) %></p>
     </div>
   <% end %>
 

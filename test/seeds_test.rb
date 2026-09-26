@@ -4,18 +4,15 @@ require 'test_helper'
 
 # db/seeds.rb has to run to the end (#290). It called `Sensor.delete_all` for a
 # table that never had a model, so `db:seed` stopped with a NameError halfway
-# through and nothing after that line -- the segment classification among it --
-# ever ran on a fresh checkout. Loaded inside the test's transaction, so the
-# fixtures come back afterwards.
+# through on a fresh checkout. There is nothing left to seed since the
+# catalogue became a file (#289), and what is left must still load.
 class SeedsTest < ActiveSupport::TestCase
   test 'db/seeds.rb runs to the end' do
-    load Rails.root.join('db/seeds.rb').to_s
-
-    assert Soc.where.not(segment: nil).exists?, 'the seed stopped before classifying anything'
+    assert_nothing_raised { load Rails.root.join('db/seeds.rb').to_s }
   end
 
-  test 'nothing declares an association to the dropped sensors table' do
-    assert_nil Vendor.reflect_on_association(:sensors)
+  test 'nothing refers to the dropped sensors table' do
+    assert_not Vendor.method_defined?(:sensors)
     assert_not ActiveRecord::Base.connection.table_exists?(:sensors)
   end
 end

@@ -188,12 +188,11 @@ module PagesHelper
   # for every vendor and Soc#availability reads the release index, so doing it
   # per tab would walk the index fourteen times.
   def installable_counts
-    @installable_counts ||= Soc.all.group_by(&:vendor_id)
-                               .transform_values { |socs| socs.count(&:installable?) }
-                               .tap { |h| h.default = 0 }
+    @installable_counts ||= Vendor.all.to_h { |vendor| [vendor, vendor.socs.count(&:installable?)] }
+                                  .tap { |h| h.default = 0 }
   end
 
   def vendor_totals
-    @vendor_totals ||= Soc.group(:vendor_id).count.tap { |h| h.default = 0 }
+    @vendor_totals ||= Vendor.all.to_h { |vendor| [vendor, vendor.socs.size] }.tap { |h| h.default = 0 }
   end
 end

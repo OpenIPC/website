@@ -109,7 +109,7 @@ namespace :wizard do
     session = ActionDispatch::Integration::Session.new(Rails.application)
 
     socs = SETTLED_SOCS.filter_map do |urlname|
-      soc = Soc.find_by_urlname(urlname)
+      soc = Soc.find_by_param(urlname)
       next unless soc
 
       [urlname, {

@@ -81,23 +81,20 @@ class LocaleInPathTest < ActionDispatch::IntegrationTest
   # SoC or a snapshot positionally. #154 converted those call sites to keyword
   # form, which is what let these move inside the scope.
   #
-  # The catalogue is built rather than looked up. The test database is
-  # regenerated from development and carries no vendors or SoCs at all, so a
-  # test naming a real model -- rv1106, say -- fails with RecordNotFound for a
-  # reason that has nothing to do with locales, and one that skips when the
-  # table is empty never runs.
+  # The catalogue is built rather than looked up. Each test starts from an
+  # empty one (test/support/catalogue_test_support.rb), so a test naming a real
+  # model -- rv1106, say -- would fail with RecordNotFound for a reason that
+  # has nothing to do with locales.
   MINIMAL_JPEG = "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00\xFF\xD9".b
 
   def some_soc
     @some_soc ||= begin
-      vendor = Vendor.find_by(name: 'Locale Test Vendor') ||
-               Vendor.create!(name: 'Locale Test Vendor')
-      Soc.find_by(model: 'LT1000') ||
-        # uboot_filename and linux_filename are what make it `instructable?`,
-        # which is the branch that renders the catalogue link this file
-        # asserts on. Without them the partial raises on nil.
-        Soc.create!(model: 'LT1000', vendor: vendor, family: 'lt', status: 'done',
-                    uboot_filename: 'u-boot-lt1000.bin', linux_filename: 'uImage.lt1000')
+      vendor = Vendor.create!(name: 'Locale Test Vendor')
+      # uboot_filename and linux_filename are what make it `instructable?`,
+      # which is the branch that renders the catalogue link this file
+      # asserts on. Without them the partial raises on nil.
+      Soc.create!(model: 'LT1000', vendor: vendor, family: 'lt', status: 'done',
+                  uboot_filename: 'u-boot-lt1000.bin', linux_filename: 'uImage.lt1000')
     end
   end
 
