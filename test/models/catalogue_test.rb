@@ -93,6 +93,24 @@ class CatalogueTest < ActiveSupport::TestCase
     end
   end
 
+  test 'two vendors with one name do not load' do
+    error = assert_raises(Catalogue::Invalid) do
+      load_documents({ 'name' => 'Acme', 'urlname' => 'acme', 'socs' => [] },
+                     { 'name' => 'Acme', 'urlname' => 'acme-2', 'socs' => [] })
+    end
+    assert_match(/v1\.yml: two vendors are named Acme/, error.message)
+  end
+
+  # Malformed rather than invalid: each of these used to escape as a
+  # NoMethodError that said nothing about which file it came from.
+  test 'a file of the wrong shape does not load, and names itself' do
+    [nil, 'just a string', %w[a list], { 'name' => 'Acme', 'socs' => nil },
+     { 'name' => 'Acme', 'socs' => 'X1' }, { 'name' => 'Acme', 'socs' => ['X1'] }].each do |data|
+      error = assert_raises(Catalogue::Invalid, data.inspect) { load_documents(data) }
+      assert_match(/\Av0\.yml: /, error.message, data.inspect)
+    end
+  end
+
   test 'a segment that is not one does not load' do
     error = assert_raises(Catalogue::Invalid) do
       load_documents('name' => 'Acme', 'socs' => [chip('X1', segment: 'cctvv')])

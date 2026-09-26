@@ -63,6 +63,9 @@ class Catalogue
   def add_vendor(vendor)
     check!(vendor, 'vendor')
     raise Invalid, "two vendors are called #{vendor.urlname}" if vendor(vendor.urlname)
+    # The name is what the home page's vendor strip and the tabs print, so two
+    # files under different slugs with one name would show it twice.
+    raise Invalid, "two vendors are named #{vendor.name}" if vendors.any? { |other| other.name == vendor.name }
 
     @vendors << vendor
     vendor
@@ -79,12 +82,25 @@ class Catalogue
 
   private
 
+  # Shape first: a file whose top level is not a mapping, whose `socs` is null
+  # or a scalar, or whose entries are not mappings would otherwise fail on a
+  # method call inside, and boot would stop without naming the file.
   def add_document(file, data)
+    raise Invalid, 'is not a mapping' unless data.is_a?(Hash)
+
     socs = data.fetch('socs', [])
+    raise Invalid, '`socs` is not a list' unless socs.is_a?(Array)
+
     vendor = add_vendor(Vendor.new(data.slice(*Vendor::ATTRIBUTES)))
-    socs.each { |attributes| add_soc(Soc.new(attributes.slice(*Soc::ATTRIBUTES).merge('vendor' => vendor))) }
-  rescue Invalid, KeyError => e
+    socs.each_with_index { |attributes, i| add_soc(soc_from(attributes, vendor, i)) }
+  rescue Invalid => e
     raise Invalid, "#{File.basename(file)}: #{e.message}"
+  end
+
+  def soc_from(attributes, vendor, index)
+    raise Invalid, "SoC ##{index + 1} is not a mapping" unless attributes.is_a?(Hash)
+
+    Soc.new(attributes.slice(*Soc::ATTRIBUTES).merge('vendor' => vendor))
   end
 
   def listed?(soc)

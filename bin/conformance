@@ -76,7 +76,23 @@ stop_server() {
   wait "$SERVER_PID" 2>/dev/null || true
   SERVER_PID=
 }
-trap stop_server EXIT
+
+# The files the current mutation has changed. Restored on ANY exit, not only
+# at the end of its turn: set -e stops the script at the first failing
+# command -- a database that is not there, say -- and without this the
+# checkout would be left carrying a broken upload.
+MUTATED=()
+restore_mutated() {
+  [ "${#MUTATED[@]}" -gt 0 ] || return 0
+  git checkout -- "${MUTATED[@]}"
+  MUTATED=()
+}
+
+cleanup() {
+  stop_server
+  restore_mutated
+}
+trap cleanup EXIT
 
 run_suite() {
   CONFORMANCE_BASE_URL="http://127.0.0.1:${PORT}" CONFORMANCE_HOST=openipc.org \
@@ -120,12 +136,11 @@ survived=0
 for mutation in "${MUTATIONS[@]}"; do
   IFS='|' read -r -a parts <<<"$mutation"
   name=${parts[0]}
-  files=()
   for ((i = 1; i < ${#parts[@]}; i += 3)); do
     file=${parts[i]} from=${parts[i + 1]} to=${parts[i + 2]}
-    grep -qF -- "$from" "$file" || { log "mutation '$name': '$from' is not in $file"; git checkout -- app; exit 2; }
+    grep -qF -- "$from" "$file" || { log "mutation '$name': '$from' is not in $file"; exit 2; }
+    MUTATED+=("$file")
     FROM="$from" TO="$to" ruby -i -pe 'sub(ENV["FROM"]) { ENV["TO"] }' "$file"
-    files+=("$file")
   done
 
   log "mutation: $name"
@@ -140,7 +155,7 @@ for mutation in "${MUTATIONS[@]}"; do
     log "  killed -- $(grep -E '^[0-9]+ runs' log/conformance-mutation.log)"
   fi
   stop_server
-  git checkout -- "${files[@]}"
+  restore_mutated
 done
 
 [ "$survived" -eq 0 ] && log "all ${#MUTATIONS[@]} mutations killed" && exit 0
