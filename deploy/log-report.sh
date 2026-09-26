@@ -368,10 +368,8 @@ END {
 # So this reads the container log instead, and says so rather than quietly
 # reporting a smaller window: docker keeps what it keeps, which is rarely the
 # same span as the access log passed to this script.
-# Both processes that can serve the socket (#297): Rails' and the Go web
-# role's, which log the same two markers. Whichever openipc-route points at is
-# the one with lines in it; across a flip, both are.
-WALL_CONTAINER="${WALL_CONTAINER:-openipc-web-prod openipc-go-web-prod}"
+# The process that serves the socket (#297): the Go web role.
+WALL_CONTAINER="${WALL_CONTAINER:-openipc-go-web-prod}"
 WALL_SINCE="${WALL_SINCE:-24h}"
 
 wall_logs() {

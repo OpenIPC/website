@@ -12,13 +12,12 @@
 # Runs on the host, against the container's own port, so nginx's rate limits
 # and the network are not part of what is being measured.
 #
-#   deploy/memory-probe.sh openipc-web-dev dev.openipc.org http://127.0.0.1:3001 300 16
+#   deploy/memory-probe.sh openipc-go-web-dev dev.openipc.org http://127.0.0.1:3012 300 16
 #
-# The Host header is not optional and is an argument for that reason. Rails
-# checks config.hosts before it does anything else, so a request without one is
-# refused in microseconds with an empty body -- the first run of this script
-# sent 73,638 of those and reported a small, meaningless delta. Hence the
-# status breakdown below: a run that measured nothing has to look like one.
+# The Host header is an argument because the first run of this script, against
+# Rails, sent 73,638 requests its host check refused in microseconds and
+# reported a small, meaningless delta. Hence the status breakdown below: a run
+# that measured nothing has to look like one.
 #
 # Latency is reported alongside the memory because an allocator or caching
 # change that saves a gigabyte and costs 20ms a request is not a win, and the
@@ -34,24 +33,20 @@ base=${3:?base url}
 seconds=${4:-300}
 concurrency=${5:-16}
 
-# The site's real shape rather than a single URL: the front page, the gallery
-# pages that dominate request count, two catalogue pages that hit MySQL, and
-# the wizard. download_full_image is deliberately absent -- it is rate limited
-# (#147) and one build would swamp the signal.
+# What the Go web role actually serves under load (#304): the wall's JSON,
+# which every visitor to the gallery and the home page's mosaic fetches, and
+# /up. Pages are the static bundle's and never reach a container; the
+# firmware role is deliberately absent -- it is rate limited and one build
+# would swamp the signal.
 #
-# Every path here must render. /supported-hardware used to be in this list and
-# is a 301 to /supported-hardware/featured, which is also in it: a sixth of
-# every run was a redirect that exercised no controller, counted as a request,
-# and was then excluded from the latency sample for not being a 200. curl is
-# not given -L on purpose, so a redirect added here would be silent -- the
-# status breakdown in the output is where it would show up.
+# Every path here must answer 200. curl is not given -L on purpose, so a
+# redirect added here would be silent -- the status breakdown in the output is
+# where it would show up.
 paths=(
-  /
-  /open-wall
-  /supported-hardware/featured
-  /supported-hardware/full-list
-  /get-started
-  /cameras/vendors/sigmastar/socs/ssc337
+  /api/v1/wall/mosaic.json
+  /api/v1/wall/page/1.json
+  /api/v1/wall/page/2.json
+  /up
 )
 
 anon_of() {

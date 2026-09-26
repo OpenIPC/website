@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Install or roll back the static bundle openipc.org serves in front of Rails.
+# Install or roll back the static bundle openipc.org serves: every page.
 #
 #   ./static.sh prod <sha>      install that bundle and point production at it
 #   ./static.sh dev <sha>       same, against dev.openipc.org
@@ -9,18 +9,19 @@
 #   ./static.sh verify [env]    ask nginx which side of the seam answers
 #
 # Separate from openipc-deploy on purpose. nginx serves a page from the bundle
-# when its index.html exists there and falls through to Rails otherwise, so the
-# two move independently: a page-content release needs no Rails image, and a
-# Rails rollback -- which is bounded by the schema it can read -- must not drag
-# the frontend back with it.
+# when its index.html exists there and falls through to @fallback otherwise --
+# the route map's redirects and 410s, then a 404 -- so the two move
+# independently: a page-content release needs no service image, and a service
+# rollback -- which is bounded by the schema it can read -- must not drag the
+# frontend back with it.
 #
 # The corollary is the footgun: `openipc-deploy rollback prod` does NOT roll
-# back the bundle, and this script does not roll back Rails.
+# back the bundle, and this script does not roll back the service.
 #
-# Nothing here can take the site down by being wrong. try_files continues past
-# every miss and ends at @rails, so a bundle that is absent, empty, unreadable
-# or pointed at a path that does not exist means every address is answered by
-# Rails -- which is where they are all answered today.
+# Since Rails went (#304) the bundle IS the site: an absent or empty bundle is
+# a site with no pages. That is why the install checks the bundle before the
+# flip, verifies over HTTP after it, and flips back on its own when the
+# verification fails.
 
 set -euo pipefail
 
@@ -210,14 +211,9 @@ probe() {
 }
 
 # Paths that must NOT be answered from the bundle. Asserted as "not static"
-# rather than "is rails" on purpose: /up and the two /api/a/ endpoints are
-# exact locations that never reach the catch-all and carry no header at all.
-#
-# `/` is here now, and permanently. #160 settled it: Rails renders the bare
-# path per Accept-Language and declares `Vary: Accept-Language`, which a file
-# cannot do, so a root index.html would hand every visitor one language.
-# check-bundle.sh refuses one; this is the same rule asserted over HTTP, after
-# an install, against whatever is actually on disk.
+# rather than "is the service" on purpose: /up and the two /api/a/ endpoints
+# are exact locations that never reach the catch-all and carry no header at
+# all.
 #
 # /donate and /ru/donate used to be here and have moved to the list below:
 # they are marketing pages, and #160 is where they stopped being Rails'.
@@ -425,7 +421,7 @@ do_status() {
     if [ -L "${root}/current" ]; then
       printf '  serving      %s\n' "$(readlink "${root}/current")"
     else
-      printf '  serving      (no bundle — every address is answered by Rails)\n'
+      printf '  serving      (no bundle — the site has no pages)\n'
     fi
     printf '  rollback to  %s\n' "$([ -f "${root}/.previous" ] && cat "${root}/.previous" || echo '(none recorded)')"
     printf '  installed    %s bundle(s), %s\n' \

@@ -13,7 +13,7 @@
 #
 # Every rule here is a way the seam can do damage rather than nothing. The seam
 # itself cannot fail closed: try_files continues past every miss and ends at
-# @rails, so a bundle that is merely wrong is invisible. A bundle that shadows
+# @fallback, so a bundle that is merely wrong is invisible. A bundle that shadows
 # the camera upload, or that carries a directory with no index.html, is not.
 
 set -euo pipefail
@@ -27,9 +27,9 @@ SITE="$(readlink -f "${1:?usage: check-bundle.sh <served-tree> [manifest]}")"
 MANIFEST="$(readlink -f "${2:-$(dirname "$SITE")/MANIFEST}")"
 RESERVED="$HERE/reserved-paths"
 
-# Kept in step with Multilang::IN_PATH by test/deploy/static_seam_test.rb. A
+# Kept in step with the service's locale list by service/deploytest. A
 # locale prefix is stripped before a path is matched against the reserved list,
-# because /ru/snapshots/x reaches the same Rails route as /snapshots/x and
+# because /ru/snapshots/x reaches the same route as /snapshots/x and
 # would shadow it just as completely.
 LOCALES='ru|zh'
 
@@ -59,17 +59,17 @@ done < <(find "$SITE" ! -type f ! -type d ! -type l -print0)
 # stylesheets and fonts -- and #159 brought both.
 #
 # The rule was guarding against a 403, and the guard is unnecessary because of
-# how the vhost writes the seam. `try_files $uri $uri/index.html @rails` tests
+# how the vhost writes the seam. `try_files $uri $uri/index.html @fallback` tests
 # its first element as a FILE, since try_files decides file-test versus
 # directory-test from whether the literal ends in a slash. A directory misses
-# that test, misses index.html too, and falls through to Rails. Measured by
+# that test, misses index.html too, and falls through to @fallback. Measured by
 # deploy/nginx/check-config.sh --seam on nginx 1.26-alpine, which asserts it on
 # every run rather than leaving it to this comment:
 #
 #   /ru/_smoke/      200 static     the page
-#   /ru/             200 rails      the directory above it, not a 403
+#   /ru/             not static     the directory above it, not a 403
 #   /_astro/app.css  200 static     an asset
-#   /_astro/         200 rails      its directory, not a 403
+#   /_astro/         not static     its directory, not a 403
 #
 # What is still worth refusing is a directory with nothing under it at all.
 # It serves no file, answers nothing, and can only be the residue of a build
@@ -119,7 +119,7 @@ else
   bad "_smoke/index.html is missing; nothing would prove the seam is alive"
 fi
 
-# --- 5. nothing shadows a path Rails owns -----------------------------------
+# --- 5. nothing shadows a reserved path ---------------------------------------
 while IFS= read -r -d '' f; do
   rel="/$(realpath --relative-to="$SITE" "$f")"
   # A directory page is reached at its directory URL, so check that too.
@@ -139,9 +139,9 @@ while IFS= read -r -d '' f; do
       # vendor and SoC -- which is what SC2254 is about.
       # shellcheck disable=SC2254
       case "$rule" in
-        */)   case "$p/" in "$rule"*) bad "$rel shadows the Rails-owned prefix $rule" ;; esac ;;
-        *\**) case "$p" in $rule) bad "$rel shadows the Rails-owned path $rule" ;; esac ;;
-        *)    [ "$p" = "$rule" ] && bad "$rel shadows the Rails-owned path $rule" ;;
+        */)   case "$p/" in "$rule"*) bad "$rel shadows the reserved prefix $rule" ;; esac ;;
+        *\**) case "$p" in $rule) bad "$rel shadows the reserved path $rule" ;; esac ;;
+        *)    [ "$p" = "$rule" ] && bad "$rel shadows the reserved path $rule" ;;
       esac
     done
   done < "$RESERVED"

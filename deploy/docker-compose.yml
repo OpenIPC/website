@@ -1,29 +1,9 @@
 # openipc.org — production and dev/staging containers.
 #
-# nginx and MariaDB stay on the host. These containers publish only on
-# loopback; nginx terminates TLS and proxies to them, exactly as it did to the
-# bare-metal Puma.
+# nginx and PostgreSQL stay on the host. These containers publish only on
+# loopback; nginx terminates TLS and proxies to them.
 #
 # Tags come from deploy/.env (written by deploy.sh), never edited by hand.
-
-x-common: &common
-  restart: unless-stopped
-  # Reach MariaDB over the bind-mounted Unix socket rather than TCP, so the
-  # database gains no new network exposure.
-  volumes: &common-volumes
-    - /run/mysqld:/run/mysqld
-    - /srv/github-releases:/srv/github-releases:ro
-  logging:
-    driver: json-file
-    options:
-      max-size: "20m"
-      max-file: "5"
-  healthcheck:
-    test: ["CMD", "curl", "-fsS", "http://localhost:3000/up"]
-    interval: 30s
-    timeout: 5s
-    start_period: 40s
-    retries: 3
 
 # The Go containers' shared settings. Small and bounded: the whole of what
 # they do is a few thousand requests a day.
@@ -43,103 +23,17 @@ x-go-health: &go-health
   retries: 3
 
 services:
-  web-prod:
-    <<: *common
-    container_name: openipc-web-prod
-    image: ghcr.io/openipc/website:${PROD_TAG:?PROD_TAG must be set}
-    # format: raw disables Compose's ${...} interpolation of the env file.
-    # Without it Compose expands the $ in the database password and the
-    # container receives a truncated value (24 chars became 15).
-    env_file:
-      - path: /srv/www/.env.prod
-        format: raw
-    environment:
-      # Where assets fetched on demand are kept.
-      RELEASE_CACHE_ROOT: /srv/release-cache
-      # Cut over: assets are fetched on demand and kept. Restoring
-      # `RELEASE_MIRROR_ROOT: /srv/github-releases` here puts the hourly mirror
-      # back in front, which is the way back -- a compose change and a restart,
-      # no new image.
-    ports:
-      - "127.0.0.1:3000:3000"
-    volumes:
-      - /run/mysqld:/run/mysqld
-      - /srv/github-releases:/srv/github-releases:ro
-      - /srv/www/shared/storage:/rails/storage
-      # The Open Wall's variants as plain files (#146). NOT under public/
-      # since 2026-09-23: RAILS_SERVE_STATIC_FILES=1 means anything under
-      # there is served by Rails whatever nginx does, so the "backstop" that
-      # mount used to provide was an open door no nginx change could close.
-      # Frames leave over the wall channel now.
-      - /srv/www/shared/wall:/rails/wall
-      - /srv/www/shared/files:/rails/public/files
-      - /srv/www/shared/dl:/rails/public/dl:ro
-      # Release assets fetched on demand. Writable, unlike the mirror above,
-      # and separate from dev's so a staging experiment cannot poison what
-      # production serves.
-      - /srv/www/shared/release-cache:/srv/release-cache
-      # The backer count (#198), read-only: the site prints this file and must
-      # never be able to write it. deploy/oc-stats.sh on the host owns it.
-      - /srv/www/shared:/rails/shared:ro
-      # Where `bin/rails wizard:export` writes (#164). The mount above is
-      # read-only and deliberately so, and this is the one directory under it
-      # the application does write -- from an hourly job rather than from a
-      # request, which is why it is a separate line rather than a hole in that
-      # rule. The path inside is the same in both environments and the host
-      # path is not, so nothing in the container can reach the other's.
-      - /srv/www/shared/wizard:/rails/wizard-export
-
-  web-dev:
-    <<: *common
-    container_name: openipc-web-dev
-    image: ghcr.io/openipc/website:${DEV_TAG:?DEV_TAG must be set}
-    env_file:
-      - path: /srv/www/.env.dev
-        format: raw
-    environment:
-      # Where assets fetched on demand are kept.
-      RELEASE_CACHE_ROOT: /srv/release-cache
-      # Cut over: dev fetches on demand. Production still has the line above
-      # while this is watched; putting it back here is the way back.
-    ports:
-      - "127.0.0.1:3001:3000"
-    volumes:
-      - /run/mysqld:/run/mysqld
-      - /srv/github-releases:/srv/github-releases:ro
-      # Dev gets its own blob tree so a dev purge can never touch production
-      # snapshots, and its own firmware cache so a bad build is isolated.
-      - /srv/www/shared/dev-storage:/rails/storage
-      - /srv/www/shared/dev-wall:/rails/wall
-      - /srv/www/shared/dev-files:/rails/public/files
-      - /srv/www/shared/dl:/rails/public/dl:ro
-      - /srv/www/shared/dev-release-cache:/srv/release-cache
-      # Same file as production: the backer count is a fact about the
-      # collective, not about the environment, and dev showing a different
-      # number would make it useless for checking the page before release.
-      - /srv/www/shared:/rails/shared:ro
-      # Not the same file: the wizard's export is what dev's own code renders,
-      # and dev is where a change to its shape is tried.
-      - /srv/www/shared/wizard-dev:/rails/wizard-export
-
-  # --- The Go service (#287) -------------------------------------------------
+  # One image, ghcr.io/openipc/website-go (#287, #304); two roles per
+  # environment.
   #
-  # One image, ghcr.io/openipc/website-go, built from the same commit as the
-  # Rails one; two roles per environment. Nothing reaches them until
-  # `openipc-route` flips a surface (conf.d/openipc-routes.conf).
-  #
-  #   web       :3002 prod / :3012 dev   uploads, variants, the wall JSON
-  #   firmware  :3003 prod / :3013 dev   full images, one version each, and their stats
-  #   shadow    :3004                    production's uploads, mirrored, decided into
-  #                                      their own database while #294 is compared
+  #   web       :3002 prod / :3012 dev   uploads, variants, the wall JSON and
+  #                                      socket, /up
+  #   firmware  :3003 prod / :3013 dev   full images, one version each, their
+  #                                      stats, and the catalogue's availability
   #
   # Their settings are /srv/www/.env.go-<env>, written by
-  # deploy/install-go-service.sh -- never .env.prod, whose DATABASE_URL and
-  # snapshot lists Rails would read too. PostgreSQL is reached over its
-  # bind-mounted socket, as MariaDB is.
-  #
-  # GO_PROD_TAG / GO_DEV_TAG are separate from the Rails tags because a
-  # release older than the Go service has no Go image: rolling Rails back to
-  # one must leave the Go containers where they are, not fail to start them.
+  # deploy/install-go-service.sh. PostgreSQL is reached over its bind-mounted
+  # socket.
 
   go-web-prod:
     <<: *go-common
@@ -179,25 +73,6 @@ services:
       # Where `openipc wizard-export` writes (#300), run here hourly by
       # deploy/wizard-export.sh. nginx serves it as /api/v1/wizard/<soc>.json.
       - /srv/www/shared/wizard:/srv/wizard
-
-  go-shadow-prod:
-    <<: *go-common
-    container_name: openipc-go-shadow-prod
-    image: ghcr.io/openipc/website-go:${GO_PROD_TAG:-none}
-    command: ["serve", "--role", "web"]
-    # Started only for a shadow run: `docker compose --profile shadow up -d go-shadow-prod`.
-    profiles: ["shadow"]
-    env_file:
-      - path: /srv/www/.env.go-shadow
-        format: raw
-    ports:
-      - "127.0.0.1:3004:3002"
-    healthcheck:
-      <<: *go-health
-      test: ["CMD", "curl", "-fsS", "http://localhost:3002/up"]
-    volumes:
-      - /var/run/postgresql:/var/run/postgresql
-      - /srv/www/shared/shadow-wall:/srv/wall
 
   go-web-dev:
     <<: *go-common
