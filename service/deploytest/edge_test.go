@@ -380,10 +380,15 @@ func TestMicrocacheLanguage(t *testing.T) {
 		}
 	})
 	t.Run("no cached location repeats a header Rails already sets", func(t *testing.T) {
+		// Since #302 the fallback answers the router's redirects itself, and the
+		// Cache-Control nginx adds there is $openipc_route_cache -- empty
+		// whenever Rails answers, so it never doubles the application's own.
+		routeCache := regexp.MustCompile(`(?m)^\s*add_header Cache-Control \$openipc_route_cache always;\n`)
 		for _, b := range cachedRailsBlocks() {
 			if independent.MatchString(b) {
 				continue
 			}
+			b = routeCache.ReplaceAllString(b, "")
 			for _, h := range []string{"Cache-Control", "Access-Control-Allow-Origin"} {
 				mustNotContain(t, b, "add_header "+h, name(b)+" adds "+h+", which its upstream already sends")
 			}

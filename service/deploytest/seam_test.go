@@ -118,7 +118,10 @@ func TestStaticSeam(t *testing.T) {
 	t.Run("each side of the seam says which one it is", func(t *testing.T) {
 		for _, name := range vhosts {
 			mustContain(t, seam(t, name), "add_header X-Served-By static always", name+": a page served from the bundle does not say so")
-			mustContain(t, fallback(t, name), "add_header X-Served-By rails always", name+": a page rendered by the application does not say so")
+			// Since #302 the fallback answers the router's redirects and 410s
+			// itself, so the witness is a variable: `rails` for what reaches the
+			// application, `nginx` for what the generated map answered.
+			mustContain(t, fallback(t, name), "add_header X-Served-By $openipc_route_by always", name+": a page rendered by the application does not say so")
 		}
 	})
 
