@@ -56,9 +56,9 @@ mkdir -p "$OUT/site"
 FRONTEND="$(readlink -f "$HERE/../../frontend")"
 
 # STATIC_SITE_DIST points the collection at a tree somebody else produced.
-# test/deploy/static_bundle_test.rb uses it: those tests are about the
-# manifest, the stamping and the refusals, none of which care what the pages
-# say -- and `bin/rails test` should not need Node installed to run.
+# service/deploytest uses it: those tests are about the manifest, the stamping
+# and the refusals, none of which care what the pages say -- and the Go tests
+# should not need Node installed to run.
 SITE_DIST="${STATIC_SITE_DIST:-$FRONTEND/apps/site/dist}"
 
 if [ -z "${SKIP_FRONTEND_BUILD:-}" ] && [ -z "${STATIC_SITE_DIST:-}" ]; then
@@ -68,8 +68,8 @@ if [ -z "${SKIP_FRONTEND_BUILD:-}" ] && [ -z "${STATIC_SITE_DIST:-}" ]; then
   info 'building the frontend'
   [ -d "$FRONTEND/node_modules" ] || ( cd "$FRONTEND" && npm ci --no-audit --no-fund )
   # The translations, the catalogue and the WebUI gallery reach the pages as
-  # committed JSON generated from YAML (#304: scripts/export-data.mjs, which
-  # replaced three Rails tasks). A source edited without regenerating would
+  # committed JSON generated from YAML (scripts/export-data.mjs). A source
+  # edited without regenerating would
   # build a site that disagrees with its own sources, so refuse it here.
   ( cd "$FRONTEND" && npm run export:check -w @openipc/site --silent ) \
     || die "generated data is stale: npm run export -w @openipc/site, and commit the result"

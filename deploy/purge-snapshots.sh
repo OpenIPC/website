@@ -19,10 +19,9 @@
 # Download stats are never retired: they are the record of what the site
 # served, a few megabytes over years.
 #
-# Rails' steps -- PurgeImagesJob, storage:reap, the ActiveStorage shard sweep,
-# wall:prune and the two-year download window -- went with Rails (#304).
-# wall:prune in particular must never come back: it deletes every wall
-# directory with no MySQL row, which is every image Go writes.
+# Nothing else runs here (#304). In particular nothing may delete wall
+# directories by any rule but `openipc purge`'s: the tree is written before
+# its rows, and a sweep keyed on another database would erase live frames.
 
 set -euo pipefail
 

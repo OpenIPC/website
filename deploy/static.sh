@@ -18,7 +18,7 @@
 # The corollary is the footgun: `openipc-deploy rollback prod` does NOT roll
 # back the bundle, and this script does not roll back the service.
 #
-# Since Rails went (#304) the bundle IS the site: an absent or empty bundle is
+# The bundle IS the site (#304): an absent or empty bundle is
 # a site with no pages. That is why the install checks the bundle before the
 # flip, verifies over HTTP after it, and flips back on its own when the
 # verification fails.
@@ -73,7 +73,7 @@ target_for() {
 }
 
 # The nginx worker has to traverse every directory on the way to the bundle and
-# read every file in it. When it cannot, the request falls through to Rails and
+# read every file in it. When it cannot, the request falls through to @fallback and
 # a CRIT line goes into the error log once per request -- the site works, the
 # bundle silently never serves, and the symptom looks like a bad build. Refuse
 # that state here rather than ship it.
@@ -215,24 +215,9 @@ probe() {
 # are exact locations that never reach the catch-all and carry no header at
 # all.
 #
-# /donate and /ru/donate used to be here and have moved to the list below:
-# they are marketing pages, and #160 is where they stopped being Rails'.
-#
-# /supported-hardware/featured has made the same move in #162, and for the same
-# reason: the catalogue is data now (data/catalogue/*.yml), so the page that
-# lists it needs no database. What is left here is the wizard behind it --
-# /cameras/vendors/<v>/socs/<s> -- which is still Rails until #163, and the
-# download it ends at, which must never be a file in a bundle.
-#
-# /open-wall left in #165 and is asserted in the other direction below, and so
-# did `/` -- the home page was the last thing Rails rendered for a reader. It
-# was here because it answered three languages at one URL; the choice is the
-# browser's now, made by a script in the page itself. What is left are two
-# addresses that are not pages at all. /admin was the second until it was
-# deleted (#288); the availability feed replaced it because it reaches an
-# application through the same try_files seam, where a bundle file would shadow
-# it. /sitemap.xml was the other until #303 built it into the bundle; it is
-# asserted in the other direction below.
+# What is left is an address that is not a page at all: the availability
+# feed, which reaches the Go service, and which a bundle file at the same
+# address would shadow.
 MUST_NOT_BE_STATIC=(/api/v1/hardware/availability.json)
 
 # And the other direction (#160), which is the half that catches a bundle that
@@ -243,25 +228,17 @@ MUST_NOT_BE_STATIC=(/api/v1/hardware/availability.json)
 # One unprefixed page, the same page in a locale tree, and one two directories
 # deep, because those are the three shapes the seam treats differently.
 #
-# The three hardware views are here from #162: the recommended list, the full
-# list and one vendor tab. They are the pages a visitor lands on from search
-# and the ones a half-shipped bundle would silently hand back to Rails.
+# The three hardware views (#162): the recommended list, the full list and
+# one vendor tab -- the pages a visitor lands on from search. Two wizard pages
+# (#164), one of them in a locale tree; the download under them is the Go
+# firmware role's and is held there by `*/download_full_image` in
+# deploy/static/reserved-paths, a check on the bundle rather than a probe,
+# because fetching it to find out would build an image.
 #
-# Two wizard pages join them from #164, one of them in a locale tree. The SoC
-# page used to be on the list above -- it was the deepest page Rails still
-# owned -- and moving it here rather than deleting the line is the whole of
-# what that issue does, from the seam's point of view. The download under it
-# stays Rails' and is held there by `*/download_full_image` in
-# deploy/static/reserved-paths, which is a check on the bundle rather than a
-# probe: fetching it to find out would build an image.
-#
-# The Open Wall joins them in #165, and it is the one entry here that is not a
-# page in the bundle: `/open-wall` is, but the two below it are a SHELL served
-# for an address that has no file of its own. They are here because that is the
-# half of the seam #165 adds and the half a rolled-back bundle takes away --
-# and because a shell that fails to install is invisible otherwise: the wall
-# keeps working, out of Rails, which is exactly the state this issue exists to
-# leave behind.
+# The Open Wall (#165) is the one entry here that is not a page in the bundle:
+# `/open-wall` is, but the two below it are a SHELL served for an address that
+# has no file of its own, and a shell that fails to install is invisible
+# otherwise.
 MUST_BE_STATIC=(/ /robots.txt /favicon.png /donate /ru/donate /get-started /tools/qr-code-generator
                 /supported-hardware/featured /supported-hardware/full-list
                 /cameras/vendors/sigmastar

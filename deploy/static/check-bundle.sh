@@ -86,11 +86,11 @@ done < <(find "$SITE" -type d -print0)
 # This rule used to refuse one. The reasoning was sound and the conclusion was
 # wrong, and it is worth keeping both.
 #
-# Rails rendered `/` per Accept-Language and declared `Vary: Accept-Language`,
-# so one URL answered in three languages, and a file answers in one. nginx
-# could only approximate the ranking -- Multilang#browser_locale does RFC 9110
-# q-values, honours `q=0` and cuts tags to two letters -- so the rule held `/`
-# on Rails and #160 was named as the place the decision would be made.
+# `/` once answered per Accept-Language with `Vary: Accept-Language`, so one
+# URL answered in three languages, and a file answers in one. nginx could only
+# approximate the ranking (RFC 9110 q-values, `q=0`, tags cut to two letters),
+# so the rule held `/` back and #160 was named as the place the decision would
+# be made.
 #
 # #165 made it, and not with a map. The choice moved into the browser, which
 # is the one party that already knows the answer: `navigator.languages` is the

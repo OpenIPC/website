@@ -15,7 +15,7 @@
 #   docker build -f deploy/static/Dockerfile dist
 #
 # A root context would send the whole repository for one COPY, and would leave
-# the bundle at the mercy of a .dockerignore written for the Rails image -- a
+# the bundle at the mercy of a .dockerignore written for another image -- a
 # line excluding dist/ there would publish an empty bundle and nothing would
 # say so.
 FROM scratch
