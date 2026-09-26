@@ -16,6 +16,8 @@ class ShadowReportTest < ActiveSupport::TestCase
     2026-09-27T10:30:00+00:00 req0002 201 /snapshots/r0000000000000000002
     2026-09-27T10:31:00+00:00 req0003 429 -
     2026-09-27T10:32:00+00:00 req0004 415 -
+    2026-09-27T10:33:00+00:00 req0005 408 -
+    2026-09-27T10:33:00+00:00 req0006 413 -
   LOG
 
   def shadow_line(id, status, location)
@@ -55,7 +57,7 @@ class ShadowReportTest < ActiveSupport::TestCase
     out, ok = report(all_seen)
 
     assert ok, out
-    assert_match(/compared 3 uploads/, out, 'the first twenty minutes are the warm-up')
+    assert_match(/compared 3 uploads/, out, 'the warm-up is skipped, and so is what nginx answered itself')
     assert_match(/1 frames both stored; 0 row lines differ/, out)
   end
 
