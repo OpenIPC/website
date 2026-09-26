@@ -173,9 +173,15 @@ class StaticSeamTest < ActiveSupport::TestCase
     VHOSTS.each_key do |name|
       assert_includes seam(name), 'add_header X-Served-By static always',
                       "#{name}: a page served from the bundle does not say so"
-      assert_includes fallback(name), 'add_header X-Served-By rails always',
+      # Since #302 the fallback answers the router's redirects and 410s
+      # itself, so the witness is a variable: `rails` for what reaches the
+      # application, `nginx` for what the generated map answered.
+      assert_includes fallback(name), 'add_header X-Served-By $openipc_route_by always',
                       "#{name}: a page rendered by Rails does not say so"
     end
+    routes = Rails.root.join('deploy/nginx/conf.d/openipc-redirects.conf').read
+    assert_match(/map \$openipc_route_action \$openipc_route_by \{\s*rails\s+rails;\s*default\s+nginx;/, routes,
+                 'what reaches Rails must still say rails')
   end
 
   # A rollback rehearsal on dev must not be able to change what openipc.org

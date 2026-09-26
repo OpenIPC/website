@@ -171,6 +171,8 @@ ln -s site-test /srv/www/static/prod/current
 # A token where dehydrated puts one, so the openipc.eu probes below can tell
 # "the renewal path is served" from "the redirect ate it".
 printf 'TOKEN-OK\n' > /var/lib/dehydrated/acme-challenges/probe-token
+install -d -m 0755 /srv/www/shared/images
+printf 'PNG\n' > /srv/www/shared/images/logo_openipc.png
 
 # Redirected explicitly. A daemonised nginx still inherits this exec's stdout
 # and stderr, and `docker exec` does not return until those close -- so
@@ -256,7 +258,7 @@ posts_to_rails() {
 
   by=$(grep -i '^x-served-by:' /tmp/hp | tr -d '\r' | awk '{print $2}' | head -1)
   code=$(awk 'NR==1{print $2}' /tmp/hp)
-  if [ "${by:-rails}" = rails ]; then
+  if [ "${by:-rails}" = rails ] || [ "$by" = nginx ] || [ "$by" = go ]; then
     printf '  %-32s %-5s %s (POST)\n' "$path" "$code" "${by:-rails}"
   else
     printf '  %-32s %-5s %s MISMATCH: a file answered a camera upload\n' "$path" "$code" "$by"
@@ -319,7 +321,7 @@ expect /ru                          200 rails  hsts
 # are served, and its bare directory URL -- which nothing links to -- is
 # Rails' 404 rather than nginx's 403.
 expect /_astro/app.css              200 static hsts
-expect /_astro/                     200 rails  hsts
+expect /_astro/                     302 nginx  hsts
 
 # A marketing page, in both trees (#160). This is the claim the whole change
 # rests on: /donate is answered from disk, and /ru/donate is answered from disk
@@ -334,8 +336,8 @@ expect /ru/donate                   200 static hsts
 # so it falls through and Rails 404s it -- nginx never answers "directory index
 # is forbidden", which is what the wrong try_files element would produce.
 expect /tools/qr-code-generator/    200 static hsts
-expect /tools/                      200 rails  hsts
-expect /tools                       200 rails  hsts
+expect /tools/                      302 nginx  hsts
+expect /tools                       302 nginx  hsts
 
 echo "  --- the Open Wall: a page, four shells, and the upload path untouched ---"
 # The gallery is a page in the bundle. Everything else under it carries an id
@@ -408,7 +410,7 @@ expect_cache /donate/               "public, max-age=0, must-revalidate"
 # @rails -- but the two locations are three lines apart in the vhost, and a
 # bundle policy silently overriding what Rails says about its own pages would
 # be invisible until somebody saw a stale page.
-expect_cache /supported-hardware    "max-age=300, public"
+expect_cache /supported-hardware/featured "max-age=300, public"
 # The home page keeps its address when its content changes, like every other
 # page in the bundle, so it may be cached and must always be revalidated. It
 # carried Rails' `max-age=300` until #165.
@@ -468,6 +470,56 @@ else
   fail=1
 fi
 
+echo "  --- what Rails' router answered without rendering, answered by nginx (#302) ---"
+# method path code location served-by. The stub Rails answers 200 to anything,
+# so a 200 from `rails` here is a route that still reaches the application.
+answered() {
+  method=$1; path=$2; want_code=$3; want_loc=$4; want_by=$5
+  curl -sS -o /tmp/ab -D /tmp/ah -k --max-time 5 -X "$method" \
+    --resolve "openipc.org:443:127.0.0.1" "https://openipc.org$path" >/dev/null 2>&1
+  code=$(awk 'NR==1{print $2}' /tmp/ah)
+  loc=$(grep -i '^location:' /tmp/ah | tr -d '\r' | awk '{print $2}' | head -1)
+  by=$(grep -i '^x-served-by:' /tmp/ah | tr -d '\r' | awk '{print $2}' | head -1)
+  bad=""
+  [ "$code" = "$want_code" ] || bad="$bad code=$code(want $want_code)"
+  [ "${loc:--}" = "$want_loc" ] || bad="$bad location=${loc:--}(want $want_loc)"
+  [ "${by:--}" = "$want_by" ] || bad="$bad served-by=${by:--}(want $want_by)"
+  if [ -n "$bad" ]; then
+    printf '  %-6s %-40s MISMATCH:%s\n' "$method" "$path" "$bad"
+    fail=1
+  else
+    printf '  %-6s %-40s %s %s %s\n' "$method" "$path" "$code" "${loc:--}" "${by:--}"
+  fi
+}
+O=https://openipc.org
+answered GET  /home                     301 "$O/"                            nginx
+answered GET  "/home?locale=ru"         301 "$O/?locale=ru"                  nginx
+answered GET  "/fpv?utm_source=x"       301 "$O/low-latency?utm_source=x"    nginx
+answered GET  /about                    302 "$O/community"                   nginx
+answered GET  "/about?locale=zh"        302 "$O/community?locale=zh"         nginx
+answered GET  "/hardware?x=1"           301 "$O/supported-hardware/featured" nginx
+answered GET  /supported-hardware       301 "$O/supported-hardware/featured" nginx
+answered GET  /ru/supported-hardware    301 "$O/ru/supported-hardware/featured" nginx
+answered GET  /coupler                  301 https://github.com/OpenIPC/coupler/ nginx
+answered GET  /wiki/some/deep/path      301 https://github.com/OpenIPC/wiki  nginx
+answered GET  /binaries                 410 -                                nginx
+answered POST /binaries.json            410 -                                nginx
+answered GET  /telemetry/anything       410 -                                nginx
+answered GET  /zh/merchandise           410 -                                nginx
+answered GET  /admin/snapshots          410 -                                nginx
+answered GET  /no-such-page-at-all      302 "$O/"                            nginx
+answered GET  /ru/no-such-page          302 "$O/ru"                          nginx
+answered POST /home                     302 "$O/"                            nginx
+answered GET  /supported-hardware/featured 200 -                             rails
+answered GET  /privacy                  200 -                                rails
+answered GET  /ru/privacy               200 -                                rails
+answered GET  /sitemap.xml              200 -                                rails
+answered GET  /cameras/vendors/hisilicon/socs/hi3516ev300 200 -              rails
+answered GET  /500.html                 200 -                                rails
+answered GET  /donate                   200 -                                static
+answered GET  /images/logo_openipc.png  200 -                                -
+answered GET  /binaries                 410 -                                nginx
+grep -qx 'Gone' /tmp/ab || { echo "  a 410 does not say Gone"; fail=1; }
 echo "  --- the three surfaces moving off Rails, as openipc-route flips them (#287) ---"
 FW=/cameras/vendors/hisilicon/socs/hi3516ev300/download_full_image
 posts() {
@@ -526,7 +578,8 @@ posts /snapshots                    200 rails
 expect /api/v1/wall/mosaic.json     200 rails  hsts
 echo "  --- the bundle removed entirely, which is a rollback to nothing ---"
 rm -f /srv/www/static/prod/current
-expect /_smoke/                     200 rails  hsts
+expect /donate                      200 rails  hsts
+expect /_smoke/                     302 nginx  hsts
 # Including the home page: the bundle is where it lives now, and Rails is what
 # answers when the bundle is not there.
 expect /                            200 rails  hsts
