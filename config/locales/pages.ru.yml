@@ -1,9 +1,6 @@
 ---
 ru:
   pages:
-    admin:
-      dashboard:
-        title: Панель администратора
     bandwidth_calculator:
       title: Калькулятор пропускной способности
     business:

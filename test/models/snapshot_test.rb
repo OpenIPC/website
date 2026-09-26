@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'test_helper'
+require 'minitest/mock'
 
 class SnapshotTest < ActiveSupport::TestCase
   # ProcessImagesJob was enqueued from after_create, which runs inside the
@@ -29,5 +30,27 @@ class SnapshotTest < ActiveSupport::TestCase
 
     assert_empty in_transaction,
                  'after_create runs before the commit, so the job can outrun the row it references'
+  end
+
+  # The lists come from the environment when it names them (#291), so a server
+  # under the conformance suite can be told a MAC to refuse and an address to
+  # exempt without a master key. Set-but-empty is an empty list, not a
+  # fall-through to the credentials.
+  test 'the blacklist and whitelist can come from the environment' do
+    ENV['SNAPSHOT_MAC_BLACKLIST'] = ' 02:c0:ff:ee:00:01 ,aa:bb:cc:dd:ee:ff,'
+    ENV['SNAPSHOT_IP_WHITELIST'] = ''
+
+    assert_equal %w[02:c0:ff:ee:00:01 aa:bb:cc:dd:ee:ff], Snapshot.blacklisted_macs
+    assert_equal [], Snapshot.whitelisted_ips
+  ensure
+    ENV.delete('SNAPSHOT_MAC_BLACKLIST')
+    ENV.delete('SNAPSHOT_IP_WHITELIST')
+  end
+
+  test 'without the environment the credentials still decide' do
+    Rails.application.credentials.stub(:dig, ->(*keys) { keys == %i[mac blacklisted] ? ['de:ad:be:ef:00:01'] : nil }) do
+      assert_equal ['de:ad:be:ef:00:01'], Snapshot.blacklisted_macs
+      assert_equal [], Snapshot.whitelisted_ips
+    end
   end
 end

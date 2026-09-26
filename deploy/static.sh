@@ -231,9 +231,11 @@ probe() {
 # /open-wall left in #165 and is asserted in the other direction below, and so
 # did `/` -- the home page was the last thing Rails rendered for a reader. It
 # was here because it answered three languages at one URL; the choice is the
-# browser's now, made by a script in the page itself. What is left are the
-# three addresses that are not pages at all.
-MUST_NOT_BE_STATIC=(/sitemap.xml /admin)
+# browser's now, made by a script in the page itself. What is left are two
+# addresses that are not pages at all. /admin was the second until it was
+# deleted (#288); the availability feed replaced it because it reaches Rails
+# through the same try_files seam, where a bundle file would shadow it.
+MUST_NOT_BE_STATIC=(/sitemap.xml /api/v1/hardware/availability.json)
 
 # And the other direction (#160), which is the half that catches a bundle that
 # built but did not ship what it was for. A tree that loses every page still

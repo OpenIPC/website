@@ -62,10 +62,10 @@ class ReleaseAssetWiringTest < ActiveSupport::TestCase
                     openipc.ts3516ev300-nand-ultimate.tgz], asked
   end
 
-  # --- names an admin could put in the database ---
+  # --- names a catalogue file could carry ---
 
   test 'a name that climbs out of the mirror root is refused' do
-    # uboot_filename is an admin-editable column, and Firmware#assemble reads
+    # uboot_filename comes from a catalogue file, and Firmware#assemble reads
     # whatever this returns as the bootloader before download_full_image sends
     # the assembled image. Without this, that is host file disclosure.
     ENV['RELEASE_MIRROR_ROOT'] = @mirror

@@ -486,8 +486,8 @@ end
 #
 # It is also the allowlist. A name that is not in here is one upstream is not
 # publishing, so the app refuses it before it can reach a path or a URL --
-# which matters because those names come from a database column an admin can
-# edit.
+# which matters because those names come from data/catalogue, which anyone can
+# propose a change to.
 #
 # The download URL is deliberately absent. The reader builds it from a constant
 # base, the release tag and the asset name, all three of which are checked

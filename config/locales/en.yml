@@ -78,8 +78,6 @@ en:
         sdcard_required_1: You will need an SD card to perform this step. Format the SD card to FAT32 and copy the downloaded file to the root directory on the card.
         sdcard_required_2: You will need an SD card to perform this step. Format the SD card to FAT32 and copy the downloaded file to the root directory on the card.
         sdcard_required_3: You will need an SD card to perform this step. Format the SD card to FAT32 and extract files from the downloaded bundle to the root directory on the card.
-  error:
-    please_fix: Please fix the errors below.
   errors:
     messages:
       already_confirmed: was already confirmed, please try signing in
@@ -189,11 +187,6 @@ en:
     license_note: MIT core; some components are licensed separately.
     tagline: No backdoors. No subscriptions. No nonsense.
   nav:
-    add_soc: Add another SoC
-    add_vendor: Add vendor
-    adding_soc: Addin a SoC
-    adding_vendor: Adding vendor
-    admin: Admin
     business: For Business
     business_overview: 'Overview'
     video_encoding: 'Video encoding'
@@ -201,15 +194,12 @@ en:
     reverse_engineering: 'Reverse engineering'
     turnkey_hardware: 'Turnkey hardware'
     digital_twins: 'Digital twins'
-    clone_soc: Clone this SoC
     community: Community
     community_chat: Chat & Support
-    dashboard: Dashboard
     donate: Donate
     ecosystem: Ecosystem
     ecosystem_overview: Project Overview
     edge_ai: Edge AI
-    editing: Editing
     get_started: Get Started
     green_life: Green Life
     privacy: Privacy
@@ -227,7 +217,6 @@ en:
     qr_code_generator: QR Code Generator
     snapshot: 'Snapshot #%{number}'
     snapshots: Latest Snapshots
-    socs: SoCs
     stages: Development stages
     store: Store
     supported_hardware: Supported Hardware
@@ -235,8 +224,6 @@ en:
     teleoperation: Teleoperation
     utilities: Utilities
     vendors: Vendors
-    view_soc: View SoC page
-    view_vendor: View vendor
     webui: Web Interface
     wiki: Our Wiki
   net_iface:
@@ -273,8 +260,6 @@ en:
       show_all_frames: Show every frame from this day
       speed: Speed
     show:
-      delete_by_mac: Delete all by MAC
-      delete_one: Delete this one
       last_24h: Last 24 hours
       show_all_frames: Show every frame from this day
       show_slideshow: Watch as slideshow

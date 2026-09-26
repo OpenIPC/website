@@ -152,8 +152,8 @@ module Multilang
     # choice from page to page far better than a cookie did, because it
     # survives being shared, bookmarked and indexed.
     #
-    # ?locale= is still honoured for the routes that have no prefixed form --
-    # the admin area -- but only for that request. Sticking it in the session
+    # ?locale= is still honoured for a route that has no prefixed form, but
+    # only for that request. Sticking it in the session
     # would put the cookie back for every page after it.
     # The explicit default matters. browser_locale returns nil when the header
     # names nothing this site serves, and I18n.with_locale(nil) does not set a

@@ -21,7 +21,7 @@ module Api
         body = response.parsed_body
 
         assert_equal Soc.count, body['socs'].size
-        assert_equal Soc.order(:urlname).pluck(:urlname).sort, body['socs'].keys.sort
+        assert_equal Soc.all.map(&:urlname).sort, body['socs'].keys.sort
 
         body['socs'].each_value do |state|
           assert_includes %w[wizard firmware_only none], state

@@ -36,14 +36,6 @@
 
   <p><%= @snapshot.caption %></p>
 
-  <% if admin_signed_in? %>
-    <div class="hstack alert alert-warning">
-      <p class="mb-0">IP: <%= @snapshot.ip_address %>, MAC: <%= @snapshot.mac_address %>.</p>
-      <span class="ms-auto"><%= button_to t('.delete_one'), admin_snapshot_path(@snapshot), method: "delete", class: 'btn btn-danger' %></span>
-      <span class="ms-2"><%= button_to t('.delete_by_mac'), admin_snapshot_path(@snapshot, scope: :mac), method: "delete", class: 'btn btn-danger' %></span>
-    </div>
-  <% end %>
-
   <%# One link, and it goes to a page rather than to bytes. The two that are
       gone handed over the original upload and the camera's newest frame as
       files; between them they were the wall's largest leak. %>

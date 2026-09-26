@@ -22,17 +22,14 @@ module I18nExport
   # An allow-list rather than the whole catalogue: `cameras`, `firmware`,
   # `flash_chip`, `flash_layout`, `net_iface`, `out`, `sd_card` and
   # `snapshots` belong to the installation wizard and the Open Wall, which
-  # stay in Rails; `devise`, `activerecord` and `activemodel` are forms and
-  # validations no static page renders. Exporting them would ship strings the
+  # stay in Rails; `activerecord` and `activemodel` are forms and validations
+  # no static page renders. Exporting them would ship strings the
   # frontend cannot use, and would make every unrelated wizard edit dirty this
   # file.
   #
   # When #160 finds a page reaching for something outside this list, the list
   # grows on purpose, in a commit that says which page needed it.
   NAMESPACES = %w[button footer go nav site str support title pages].freeze
-
-  # The admin area is not part of the marketing surface.
-  EXCLUDED = [%w[pages admin]].freeze
 
   # Single keys from outside the namespaces above, grafted in by path.
   #
@@ -134,11 +131,6 @@ module I18nExport
       # Stringify first: the backend's hashes are frozen, so pruning has to
       # happen on the copy rather than on what every Rails view reads.
       picked = stringify(all.slice(*NAMESPACES.map(&:to_sym)))
-
-      EXCLUDED.each do |path|
-        parent = path[0..-2].inject(picked) { |node, key| node.is_a?(Hash) ? node[key] : nil }
-        parent.delete(path.last) if parent.is_a?(Hash)
-      end
 
       graft(picked, all, INCLUDED)
 

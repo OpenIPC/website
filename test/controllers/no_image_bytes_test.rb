@@ -150,10 +150,10 @@ class NoImageBytesTest < ActionDispatch::IntegrationTest
     specs.select { |spec| walkable?(spec) }.map { |spec| concrete(spec) }.uniq
   end
 
-  # Skippable: the admin area (authenticated), the ActiveStorage engine (its own
-  # step), globs, and anything needing a segment we cannot fill.
+  # Skippable: the ActiveStorage engine (its own step), globs, and anything
+  # needing a segment we cannot fill.
   def walkable?(spec)
-    return false if spec.start_with?('/admin', '/rails') || spec.include?('*')
+    return false if spec.start_with?('/rails') || spec.include?('*')
 
     spec.scan(/:(\w+)/).flatten.all? { |seg| %w[id locale].include?(seg) }
   end

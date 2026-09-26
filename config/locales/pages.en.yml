@@ -1,9 +1,6 @@
 ---
 en:
   pages:
-    admin:
-      dashboard:
-        title: Admin Dashboard
     bandwidth_calculator:
       title: Bandwidth calculator
     business:

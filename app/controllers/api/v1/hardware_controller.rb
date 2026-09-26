@@ -24,7 +24,7 @@ module Api
       skip_forgery_protection
 
       def availability
-        socs = Soc.includes(:vendor).order(:urlname)
+        socs = Soc.all.sort_by(&:urlname)
 
         render json: {
           generated_at: Time.current.iso8601,

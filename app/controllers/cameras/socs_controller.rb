@@ -16,17 +16,17 @@ module Cameras
           else
             # Present but unknown is a bad address, not an empty list.
             @vendor = Vendor.find(params[:vendor])
-            @socs = @vendor.socs.order(:model)
+            @socs = @vendor.socs.sort_by(&:model)
             @page_title = "List of #{@vendor.name} SoCs"
             render 'cameras/socs/index'
           end
         }
         format.json do
           @data = {
-            vendors: Vendor.order(:name).map do |v|
+            vendors: Vendor.all.map do |v|
               {
                 name: v.name,
-                socs: v.socs.order(:model).map do |s|
+                socs: v.socs.sort_by(&:model).map do |s|
                   {
                     family: s.family,
                     model: s.model,
@@ -273,13 +273,13 @@ module Cameras
     end
 
     def featured
-      @socs = Soc.left_joins(:vendor).where(featured: true).order(:name, :model)
+      @socs = Soc.featured
       @page_title = 'List of recommended SoCs'
       render 'cameras/socs/index'
     end
 
     def full_list
-      @socs = Soc.left_joins(:vendor).order(:name, :model)
+      @socs = Soc.all
       @page_title = 'SoC: full list'
       render 'cameras/socs/index'
     end

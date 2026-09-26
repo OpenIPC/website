@@ -450,8 +450,9 @@ class RelaunchPagesTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  # The strip says "runs on silicon by". The vendors table also holds sensor
-  # makers, and listing those claims silicon we do not run on.
+  # The strip says "runs on silicon by". A vendor with no chip in the catalogue
+  # -- the sensor makers once shared the table -- claims silicon we do not run
+  # on.
   test 'the silicon strip lists chip vendors, not sensor makers' do
     chipmaker = Vendor.create!(name: 'Teststar Semiconductor')
     # Two SoCs, because the scope joins them: one row per SoC unless it says

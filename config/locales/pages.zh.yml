@@ -1,9 +1,6 @@
 ---
 zh:
   pages:
-    admin:
-      dashboard:
-        title: 管理仪表板
     bandwidth_calculator:
       title: 带宽计算器
     business:

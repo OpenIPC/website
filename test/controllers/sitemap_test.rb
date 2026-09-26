@@ -34,8 +34,8 @@ class SitemapTest < ActionDispatch::IntegrationTest
     assert_includes entry, 'href="http://www.example.com/ru/donate"'
   end
 
-  # The routes also contain the admin area, the API, thirty-odd redirects and
-  # two 410s. A sitemap that offers any of those is worse than none.
+  # The routes also contain the API, thirty-odd redirects and a handful of
+  # 410s, the retired admin among them. A sitemap that offers any of those is worse than none.
   test 'it offers nothing that is not a public page' do
     locs = response.body.scan(%r{<loc>([^<]+)</loc>}).flatten
 
@@ -74,15 +74,13 @@ class SitemapTest < ActionDispatch::IntegrationTest
 end
 
 # The catalogue is the part of the site with real long-tail search value and
-# the reason the sitemap sat half-finished for so long. It is read from the
-# database, and this database carries no vendors or SoCs, so these build one --
-# otherwise every assertion about the catalogue passes over an empty list.
+# the reason the sitemap sat half-finished for so long. Each test starts from
+# an empty catalogue, so these build one -- otherwise every assertion about the
+# catalogue passes over an empty list.
 class SitemapCatalogueTest < ActionDispatch::IntegrationTest
   setup do
-    vendor = Vendor.find_by(name: 'Sitemap Test Vendor') ||
-             Vendor.create!(name: 'Sitemap Test Vendor')
-    @soc = Soc.find_by(model: 'SM2000') ||
-           Soc.create!(model: 'SM2000', vendor: vendor, family: 'sm', status: 'done',
+    vendor = Vendor.create!(name: 'Sitemap Test Vendor')
+    @soc = Soc.create!(model: 'SM2000', vendor: vendor, family: 'sm', status: 'done',
                        uboot_filename: 'u-boot-sm2000.bin', linux_filename: 'uImage.sm2000')
     get '/sitemap.xml'
   end
@@ -114,29 +112,15 @@ class SitemapCatalogueTest < ActionDispatch::IntegrationTest
     assert_empty locs.grep(%r{\A(/(ru|zh))?/cameras/socs\z})
   end
 
-  # belongs_to :vendor is required at the model, so this should not arise --
-  # but the table has no foreign key to enforce it, and the cost of being
-  # wrong is the whole sitemap answering 500 rather than one chip missing
-  # from it.
-  test 'a chip whose vendor has gone is skipped, not raised on' do
-    vendor = Vendor.create!(name: 'Orphan Probe Vendor')
-    orphan = Soc.create!(model: 'ORPH1', vendor: vendor, family: 'o', status: 'done',
-                         uboot_filename: 'u.bin', linux_filename: 'l.bin')
-    Vendor.where(id: vendor.id).delete_all
-
-    get '/sitemap.xml'
-
-    assert_response :success
-    assert_not_includes response.body, orphan.urlname
-  end
-
-  # urlname is a free text column an admin can edit. Interpolated raw into a
-  # path, a value holding "/" or "?" splits one entry into extra segments or a
-  # query -- advertising URLs the catalogue routes, which take one segment per
-  # identifier, cannot serve. The route helpers escape it.
+  # The catalogue refuses a slug like this on load, so this is one assigned
+  # around that check. Interpolated raw into a path, a value holding "/" or
+  # "?" splits one entry into extra segments or a query -- advertising URLs the
+  # catalogue routes, which take one segment per identifier, cannot serve. The
+  # route helpers escape it.
   test 'a slug with path characters in it cannot break out of its segment' do
     vendor = Vendor.create!(name: 'Escape Probe Vendor')
-    vendor.update_column(:urlname, 'escape/probe?x=1')
+    Soc.create!(model: 'ESC1', vendor: vendor, family: 'e', status: 'done')
+    vendor.urlname = 'escape/probe?x=1'
 
     get '/sitemap.xml'
 

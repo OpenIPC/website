@@ -2,21 +2,51 @@
 
 require 'rubygems/package'
 
-class Soc < ApplicationRecord
-  belongs_to :vendor
+# A system-on-chip, as its vendor's file in data/catalogue describes it (#289).
+# Not a table any more: see Catalogue.
+class Soc
+  include ActiveModel::Model
+  include ActiveModel::Attributes
 
-  before_validation :generate_urlname
+  ATTRIBUTES = %w[family model version status load_address sdk kernel uboot_filename
+                  linux_filename notes urlname build_status_url featured segment].freeze
+
+  attribute :family, :string
+  attribute :model, :string
+  attribute :version, :string
+  attribute :status, :string
+  attribute :load_address, :string
+  attribute :sdk, :string
+  attribute :kernel, :string
+  attribute :uboot_filename, :string, default: ''
+  attribute :linux_filename, :string, default: ''
+  attribute :notes, :string
+  attribute :urlname, :string
+  attribute :build_status_url, :string
+  attribute :featured, :boolean, default: false
+  attribute :segment, :string
+
+  attr_accessor :vendor
+
   # A urlname is an address and a filename (#162, #161): it is the path segment
   # under /cameras/vendors/, the name of a prerendered directory, and the name
-  # of a file under data/catalogue. `generate_urlname` only downcases and
-  # replaces spaces, so a name with a slash or a dot in it -- which an
-  # administrator can enter -- produced a slug that walks out of every one of
-  # those. Refused here, where all three read it, rather than sanitised at each.
+  # of a file the wizard export writes. Derived from the model when a file does
+  # not give one, which only downcases and replaces spaces -- so a model with a
+  # slash or a dot in it produced a slug that walks out of every one of those.
+  # Refused here, where all three read it, rather than sanitised at each.
   URLNAME_FORMAT = /\A[a-z0-9][a-z0-9._-]*\z/
 
-  validates :model, presence: true, uniqueness: { scope: :vendor_id }
-  validates :urlname, presence: true, uniqueness: true,
-                      format: { with: URLNAME_FORMAT, message: 'is not a safe slug' }
+  validates :vendor, presence: true
+  validates :model, presence: true
+  validates :urlname, presence: true, format: { with: URLNAME_FORMAT, message: 'is not a safe slug' }
+
+  def initialize(attributes = {})
+    super
+    self.urlname = model.to_s.downcase.gsub(' ', '-') if urlname.blank?
+    # A file that says `uboot_filename: null` means the same as leaving it out.
+    self.uboot_filename ||= ''
+    self.linux_filename ||= ''
+  end
 
   RELEASES_ROOT = '/srv/github-releases'
   GH_DL_ROOT = 'https://github.com/OpenIPC/firmware/releases/download/latest/%s'
@@ -36,69 +66,37 @@ class Soc < ApplicationRecord
   # neutral line rather than nothing.
   SEGMENTS = %w[fpv cctv consumer unknown].freeze
 
-  # FPV is read off OpenIPC/builder, not off the wiki page and not off this
-  # site's release index. The index publishes lite/ultimate/neo only, so
-  # "there is no FPV build" is a fact about our feed rather than about what
-  # OpenIPC builds.
-  #
-  # The builder carries roughly a hundred per-device profiles, each declaring
-  # BR2_OPENIPC_VARIANT, and FPV is three separate variants there rather than
-  # one: `fpv` (17 profiles) integrates wfb-ng, adaptive-link and vtund;
-  # `rubyfpv` (4) ships RubyFPV's own stack in their place and no wfb-ng at
-  # all; `apfpv` (6) is a third. All three carry Majestic, so the licence
-  # sentence holds for every one of them -- which is the only thing this file
-  # needs from the distinction, but getting it backwards in a comment is how a
-  # wrong fact survives into the next decision.
-  #
-  # Ten chips can be built for one of those variants. Those ten are not the
-  # list. gk7205v200, gk7205v210, gk7205v300, hi3516ev200, hi3516ev300 and
-  # hi3536dv100 are overwhelmingly CCTV parts in practice -- gk7205v200 has
-  # two FPV profiles against five others -- so asking their visitors about an
-  # FPV product would be asking the wrong question of most of them. The four
-  # below are FPV in every device profile they have, and ssc338q is the single
-  # most downloaded chip on the site.
-  #
-  # Everything else follows #190: Ingenic parts are consumer, HiSilicon and
-  # Goke are cctv, the rest unknown. Set by migration, editable in the admin.
-  SEGMENT_SEED = {
-    'fpv' => %w[ssc338q ssc30kq ssc377qe ssc378qe]
-  }.freeze
-
-  # Reading, rather than the column, because null means "nobody has said" and
-  # every caller wants the generic copy in that case. The validation below
-  # keeps junk out of the column; this keeps a row that predates it, or one
-  # written around the model, from reaching a translation key and rendering
-  # "translation missing" into the page.
+  # Reading, rather than the attribute, because null means "nobody has said"
+  # and every caller wants the generic copy in that case. The validation below
+  # keeps junk out of the catalogue; this keeps anything that reaches the model
+  # some other way from reaching a translation key and rendering "translation
+  # missing" into the page.
   def segment_name
-    value = self[:segment].to_s
+    value = segment.to_s
     SEGMENTS.include?(value) ? value : 'unknown'
   end
 
   # Blank is the honest unclassified state and stays allowed. Anything else has
-  # to be a segment: without this the admin's own form would persist a typo,
-  # and `unknown` would then mean both "nobody has looked at this chip" and
+  # to be a segment: without this a typo in a catalogue file would load, and
+  # `unknown` would then mean both "nobody has looked at this chip" and
   # "someone typed cctvv", which are not the same thing and want different
   # follow-up.
   validates :segment, inclusion: { in: SEGMENTS }, allow_blank: true
 
-  # The initial classification, callable rather than buried in the migration.
-  #
-  # A migration only ever runs against a database that already has rows. A
-  # schema-loaded setup -- `db:prepare` on a fresh checkout, then `db:seed` --
-  # never executes it, so every seeded chip came out unclassified and a `done`
-  # Goke part got the generic business line instead of the CCTV one. Same code
-  # both paths now; seeds calls it after it writes the catalogue.
-  def self.classify_segments!
-    SEGMENT_SEED.each do |segment, models|
-      where(segment: nil).where('LOWER(model) IN (?)', models).update_all(segment: segment)
-    end
-    where(segment: nil, vendor: Vendor.where(name: 'Ingenic')).update_all(segment: 'consumer')
-    where(segment: nil, vendor: Vendor.where(name: %w[HiSilicon Goke])).update_all(segment: 'cctv')
+  def self.all
+    Catalogue.current.socs
+  end
+
+  def self.count
+    Catalogue.current.vendors.sum { |vendor| vendor.socs.size }
+  end
+
+  def self.featured
+    all.select(&:featured)
   end
 
   # Rails hands `find` whatever came out of the URL, and `to_param` returns the
-  # slug, so a slug has to resolve first; ids still work, for old links and for
-  # the admin forms that pass one.
+  # slug.
   #
   # This raises rather than returning nil, because that is what every caller
   # already assumes: `#{model}.find(params[:id])` followed by a method call on
@@ -106,10 +104,12 @@ class Soc < ApplicationRecord
   # nil deep inside the request -- /cameras/vendors/ingenic/socs/t31 answered
   # 500 where t31x answered with firmware, because there is no SoC called
   # plain "t31". RescueHandler already turns RecordNotFound into a 404 page.
+  #
+  # Numeric ids no longer resolve: they were a database's, and the catalogue
+  # has none.
   def self.find(id)
     find_by_param(id) ||
-      raise(ActiveRecord::RecordNotFound,
-            "Couldn't find #{name} with urlname or id #{id.inspect}")
+      raise(ActiveRecord::RecordNotFound, "Couldn't find #{name} with urlname #{id.inspect}")
   end
 
   # The nil-returning half, for callers where the identifier is an optional
@@ -117,7 +117,7 @@ class Soc < ApplicationRecord
   def self.find_by_param(id)
     return nil if id.blank?
 
-    find_by(urlname: id) || find_by(id: id)
+    Catalogue.current.soc(id)
   end
 
   def model_downcase
@@ -245,18 +245,22 @@ class Soc < ApplicationRecord
   #   :none           nothing published. 49, and `status` says why: 25 neq (no
   #                   equipment), 16 rnd, 6 wip, 2 hlp (looking for help).
   #
-  # Memoised per instance because the lists ask for every row, and both
-  # predicates read ReleaseIndex -- which is already in memory, but the fetch
-  # and the releases_for scan are not free across 126 rows.
+  # Memoised because the lists ask for every row, and both predicates read
+  # ReleaseIndex -- which is already in memory, but the fetch and the
+  # releases_for scan are not free across 126 rows. Against the index, not the
+  # instance: a catalogue record lives as long as the process, and the index is
+  # refreshed hourly.
   #
   # #161 carries these states into the YAML catalogue and #162 into the
   # prerendered pages, so this is the one definition all three read.
   def availability
-    @availability ||= if firmware_published?
-                        bootloader_published? ? :wizard : :firmware_only
-                      else
-                        :none
-                      end
+    from_index(:availability) do
+      if firmware_published?
+        bootloader_published? ? :wizard : :firmware_only
+      else
+        :none
+      end
+    end
   end
 
   def installable?
@@ -285,7 +289,7 @@ class Soc < ApplicationRecord
   end
 
   def kernel_file
-    @kernel_file ||= "uImage.#{board}"
+    "uImage.#{board}"
   end
 
   # The board a firmware is built for, which is not always the SoC model.
@@ -306,7 +310,7 @@ class Soc < ApplicationRecord
   FAMILY_BUILDS = %w[t31 t40 t30 t23].freeze
 
   def board
-    @board ||= canonical_board(linux_filename.to_s[BOARD_FROM_FILENAME, 1] || family_board)
+    from_index(:board) { canonical_board(linux_filename.to_s[BOARD_FROM_FILENAME, 1] || family_board) }
   end
 
   # What linux_filename names is the chip this SoC is; what upstream builds may
@@ -331,9 +335,8 @@ class Soc < ApplicationRecord
   end
 
   # Reached when linux_filename is blank or still in the pre-2023
-  # openipc.<soc>-br.tgz scheme, which is what db/seeds.rb carries for all 48
-  # of its entries. Production rows are all on the current scheme, but a fresh
-  # install has no modern name to read, so dropping this rule would have T31X
+  # openipc.<soc>-br.tgz scheme. The catalogue is on the current scheme
+  # throughout, but dropping this rule would have T31X with an old-style name
   # ask for a t31x build that upstream has never published.
   def family_board
     FAMILY_BUILDS.find { |family| model_downcase.start_with?(family) } || model_downcase
@@ -354,11 +357,11 @@ class Soc < ApplicationRecord
   end
 
   def rootfs_file
-    @rootfs_file ||= "rootfs.squashfs.#{board}"
+    "rootfs.squashfs.#{board}"
   end
 
   def uboot_file
-    @uboot_file ||= release_asset(uboot_filename)
+    release_asset(uboot_filename)
   end
 
   # Where an upstream asset can be read from.
@@ -384,8 +387,8 @@ class Soc < ApplicationRecord
     ReleaseCache.path(name)
   end
 
-  # uboot_filename and linux_filename are columns an admin edits, and both end
-  # up here. The cache branch refuses a name that is not in the release index,
+  # uboot_filename and linux_filename come from a catalogue file anyone can
+  # propose a change to, and both end up here. The cache branch refuses a name that is not in the release index,
   # but the mirror branch has no index to consult, so it needs its own answer:
   # without one, uboot_filename of "../../../etc/passwd" resolves outside the
   # mirror root, Firmware#assemble reads it as the bootloader, and
@@ -426,9 +429,30 @@ class Soc < ApplicationRecord
     @full_firmware_path ||= "/tmp/openipc.#{model_downcase}.8mb.bin"
   end
 
-  private
+  # A value read off the release index, remembered for as long as that index
+  # is the current one. The catalogue's records outlive any one request -- they
+  # are loaded once per process -- so memoising on the instance, as these did
+  # when every request loaded its own rows, would answer from the index that
+  # was current at boot. ReleaseIndex.current hands back the same object until
+  # the file changes, so identity is the test. No index is a state too: nil.
+  def from_index(key)
+    index = begin
+      ReleaseIndex.current
+    rescue ReleaseIndex::Missing
+      nil
+    end
+    @from_index = [index, {}] unless @from_index && @from_index.first.equal?(index)
+    memo = @from_index.last
+    memo.key?(key) ? memo[key] : (memo[key] = yield)
+  end
+  private :from_index
 
-  def generate_urlname
-    self.urlname = model.downcase.gsub(' ', '-')
+  def ==(other)
+    other.is_a?(Soc) && other.urlname == urlname
+  end
+  alias eql? ==
+
+  def hash
+    urlname.hash
   end
 end

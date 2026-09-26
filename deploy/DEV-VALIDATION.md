@@ -317,17 +317,14 @@ A remaining `DIFFERS` is a real difference. Inspect it with
 | Env | `/srv/www/.env.dev` |
 
 **The dev database is destroyed and rebuilt every night at 03:00 UTC** from the
-previous night's S3 backup, with admin credentials and snapshot MAC/IP addresses
-scrubbed. Any data you create on dev is temporary by design. To refresh on
+previous night's S3 backup, with snapshot MAC/IP addresses scrubbed and any
+leftover `admins` table dropped. Any data you create on dev is temporary by design. To refresh on
 demand:
 
 ```bash
 openipc-refresh-dev            # from last night's S3 object
 openipc-refresh-dev --local    # straight from production (bootstrap only)
 ```
-
-Dev admin logins are **not** production credentials — the digests are replaced
-during the scrub.
 
 ---
 

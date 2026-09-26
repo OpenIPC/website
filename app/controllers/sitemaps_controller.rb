@@ -7,8 +7,8 @@
 # told the site had no sitemap and then handed a page. Two thirds of the
 # content is Russian and Chinese and none of it was discoverable.
 #
-# Generated rather than committed because the SoC catalogue is 126 rows in a
-# database and a static file would be wrong the day a vendor is added.
+# Generated rather than committed so that it follows data/catalogue: a static
+# file would be wrong the day a vendor is added.
 class SitemapsController < ApplicationController
   # The pages a visitor can reach and a search engine should index. Deliberately
   # a list rather than a walk over Rails.application.routes: the routes include
@@ -48,19 +48,19 @@ class SitemapsController < ApplicationController
   # featured page, which is already listed.
   #
   # Built with the route helpers rather than by interpolating slugs into a
-  # string. `urlname` is a free text column an admin can edit, and a value
+  # string. `urlname` comes from a catalogue file anyone can propose a change
+  # to, and a value
   # holding a "/", a "?" or a "#" interpolated raw would split one entry into
   # extra path segments, a query or a fragment -- advertising URLs the
   # catalogue routes, which take one segment per identifier, cannot serve. The
   # helpers escape it, and `locale: nil` keeps these as the English forms that
   # locale_alternates then derives the other two from.
   #
-  # A SoC whose vendor row has gone is skipped rather than raised on. The
-  # association is required at the model, so this should not happen -- but the
-  # database has no foreign key to enforce it, and the cost of being wrong is
-  # the entire sitemap answering 500 instead of one chip being absent from it.
+  # In catalogue order -- by vendor, then model. It was database id order
+  # until the catalogue stopped being a table (#289); a sitemap's order means
+  # nothing to a crawler.
   def catalogue_paths
-    socs = Soc.includes(:vendor).order(:id).select { |soc| soc.vendor.present? }
+    socs = Soc.all
 
     socs.map(&:vendor).uniq.map { |vendor| cameras_vendor_path(id: vendor, locale: nil) } +
       socs.map { |soc| cameras_vendor_soc_path(vendor_id: soc.vendor, id: soc, locale: nil) }

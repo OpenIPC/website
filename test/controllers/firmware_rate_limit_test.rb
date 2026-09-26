@@ -94,7 +94,7 @@ class FirmwareRateLimitTest < ActionDispatch::IntegrationTest
   # Both assets resolve and are written to disk, so Firmware#build_if_needed
   # gets as far as asking whether the cached image is fresher than they are.
   def publish_the_release_assets
-    @soc.update!(uboot_filename: 'u-boot-ts3516ev300-universal.bin')
+    @soc.uboot_filename = 'u-boot-ts3516ev300-universal.bin'
     stub_the_release_index
     @soc.uboot_file
     @soc.linux_file('lite', 'nor')

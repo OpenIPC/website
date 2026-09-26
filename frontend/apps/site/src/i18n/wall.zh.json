@@ -27,8 +27,6 @@
       "speed": "速度"
     },
     "show": {
-      "delete_by_mac": "通过MAC删除所有",
-      "delete_one": "删除这个",
       "last_24h": "过去 24 小时",
       "show_all_frames": "显示当天的全部画面",
       "show_slideshow": "观看幻灯片",

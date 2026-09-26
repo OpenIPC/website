@@ -98,7 +98,7 @@ class I18nExportTest < ActiveSupport::TestCase
   end
 
   test 'the export carries only what the frontend is allowed to read' do
-    # The wizard, the Open Wall, devise and the validation messages stay in
+    # The wizard, the Open Wall and the validation messages stay in
     # Rails. Shipping them would put strings in the bundle no page can use and
     # would make every unrelated wizard edit dirty the export.
     #
@@ -154,12 +154,6 @@ class I18nExportTest < ActiveSupport::TestCase
         end
         walk.call(catalogue[root], [root])
       end
-    end
-  end
-
-  test 'the admin area is not in the marketing catalogue' do
-    I18n.available_locales.each do |locale|
-      assert_not_includes I18nExport.catalogue(locale).fetch('pages', {}).keys, 'admin'
     end
   end
 

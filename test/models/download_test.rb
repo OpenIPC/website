@@ -19,7 +19,7 @@ class DownloadTest < ActiveSupport::TestCase
     assert_equal 'lite', d.release
     assert_equal 16, d.flash_size
     assert_equal 16.megabytes, d.bytes
-    assert_equal @soc.id, d.soc_id
+    assert_nil d.soc_id, 'soc_id was a row id in a table that is gone'
     assert_not_nil d.created_at
   end
 
@@ -35,15 +35,6 @@ class DownloadTest < ActiveSupport::TestCase
     Download.stub(:create!, ->(*) { raise ActiveRecord::StatementInvalid, 'table is gone' }) do
       assert_nothing_raised { assert_nil Download.record(firmware: @fw, soc: @soc) }
     end
-  end
-
-  test 'the row outlives the SoC it names' do
-    d = Download.record(firmware: @fw, soc: @soc)
-    @soc.destroy
-    d.reload
-
-    assert_equal 'ts3516ev300', d.soc_model, 'the model must stay readable'
-    assert_nil Download.find(d.id).soc
   end
 
   test 'it groups by what a report would ask' do

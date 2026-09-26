@@ -16,8 +16,9 @@ class SocTest < ActiveSupport::TestCase
     assert_equal @soc, Soc.find('ts3516ev300')
   end
 
-  test 'still finds by id, for old links and the admin forms' do
-    assert_equal @soc, Soc.find(@soc.id)
+  # Ids were a database's, and the catalogue has none (#289).
+  test 'a numeric id is not an address' do
+    assert_raises(ActiveRecord::RecordNotFound) { Soc.find('1') }
   end
 
   test 'raises RecordNotFound for a slug that does not exist' do
@@ -362,8 +363,8 @@ class SocTest < ActiveSupport::TestCase
 
   # --- segments (#190) ---
 
-  # `unknown` has to keep meaning one thing. Without the validation the admin's
-  # own select would persist a typo, and the column would then say both "nobody
+  # `unknown` has to keep meaning one thing. Without the validation a typo in a
+  # catalogue file would load, and the field would then say both "nobody
   # has looked at this chip" and "someone typed cctvv" with the same value --
   # which want different follow-up.
   test 'a segment that is not one is refused' do
@@ -380,24 +381,10 @@ class SocTest < ActiveSupport::TestCase
     assert Soc.new(vendor: @vendor, model: 'SEGNIL', segment: nil).valid?
   end
 
-  test 'a row written around the model still reads as unknown' do
+  test 'a value assigned around the validation still reads as unknown' do
     soc = Soc.create!(vendor: @vendor, model: 'SEGRAW')
-    soc.update_column(:segment, 'cctvv')
+    soc.segment = 'cctvv'
 
-    assert_equal 'unknown', soc.reload.segment_name
-  end
-
-  # The migration's backfill and db/seeds.rb are the same call, because a
-  # migration only ever runs against a database that already has rows: a
-  # schema-loaded setup would otherwise leave every chip unclassified.
-  test 'classify_segments! is idempotent and leaves a hand-set value alone' do
-    goke = Vendor.create!(name: 'Goke')
-    cctv = Soc.create!(vendor: goke, model: 'GKSEG1')
-    held = Soc.create!(vendor: goke, model: 'GKSEG2', segment: 'fpv')
-
-    2.times { Soc.classify_segments! }
-
-    assert_equal 'cctv', cctv.reload.segment
-    assert_equal 'fpv', held.reload.segment, 'it overwrote a classification someone made'
+    assert_equal 'unknown', soc.segment_name
   end
 end

@@ -200,7 +200,7 @@ class WallSupplyLineTest < ActionDispatch::IntegrationTest
       # sample of it: ONE address, ONE body. Any frame-dependent difference
       # that happened to keep the markers above would pass a marker check and
       # still be cached for every client for 300 seconds. Deterministic here
-      # because csrf_needed? is true only for Devise controllers, so nothing
+      # because no page renders a CSRF token since the admin went, so nothing
       # per-request is rendered into these pages.
       assert_equal plain, framed, <<~MESSAGE.chomp
         #{path} answered a different body to a frame request. The proxy cache

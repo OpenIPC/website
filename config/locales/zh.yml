@@ -78,8 +78,6 @@ zh:
         sdcard_required_1: 您将需要一张 SD 卡来执行此步骤。将SD卡格式化为FAT32，并将下载的文件复制到卡的根目录下。
         sdcard_required_2: 您将需要一张 SD 卡来执行此步骤。将SD卡格式化为FAT32，并将下载的文件复制到卡的根目录下。
         sdcard_required_3: 您将需要一张 SD 卡来执行此步骤。将 SD 卡格式化为 FAT32，并将下载的捆绑包中的文件提取到卡上的根目录。
-  error:
-    please_fix: 请修正以下的错误。
   errors:
     messages:
       already_confirmed: 已确认，请尝试登录
@@ -189,11 +187,6 @@ zh:
     license_note: 核心采用 MIT 许可；部分组件另行授权。
     tagline: 没有后门。没有订阅。不折腾。
   nav:
-    add_soc: 添加另一个 SoC
-    add_vendor: 添加供应商
-    adding_soc: 添加 SoC
-    adding_vendor: 加供应商
-    admin: 管理
     business: 面向企业
     business_overview: '概览'
     video_encoding: '视频编码'
@@ -201,15 +194,12 @@ zh:
     reverse_engineering: '逆向工程'
     turnkey_hardware: '交钥匙硬件'
     digital_twins: '数字孪生'
-    clone_soc: 克隆此 SoC
     community: 社区
     community_chat: 交流与支持
-    dashboard: 仪表板
     donate: 捐赠
     ecosystem: 生态
     ecosystem_overview: 项目总览
     edge_ai: 边缘 AI
-    editing: 编辑
     get_started: 快速上手
     green_life: 绿色生活
     privacy: 隐私
@@ -227,7 +217,6 @@ zh:
     qr_code_generator: 二维码生成器
     snapshot: '快照 #%{number}'
     snapshots: 最新快照
-    socs: SoC
     stages: 开发阶段
     store: 店铺
     supported_hardware: 支持的硬件
@@ -235,8 +224,6 @@ zh:
     teleoperation: 遥操作
     utilities: 公用设施
     vendors: 供应商
-    view_soc: 查看 SoC 页面
-    view_vendor: 查看供应商
     webui: 页面展示
     wiki: 我们的维基
   net_iface:
@@ -273,8 +260,6 @@ zh:
       show_all_frames: 显示当天的全部画面
       speed: 速度
     show:
-      delete_by_mac: 通过MAC删除所有
-      delete_one: 删除这个
       last_24h: 过去 24 小时
       show_all_frames: 显示当天的全部画面
       show_slideshow: 观看幻灯片

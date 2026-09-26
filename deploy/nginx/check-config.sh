@@ -409,7 +409,10 @@ expect_cache /                      "public, max-age=0, must-revalidate"
 expect /                            200 static hsts
 expect /supported-hardware/featured 200 rails  hsts
 expect /sitemap.xml                 200 rails  hsts
-expect /admin                       200 rails  hsts
+# The availability feed rather than /admin, which answers 410 since #288. The
+# stub says 200 to everything, so what this checks is that the seam hands the
+# address to Rails -- a live one says that more honestly than a retired one.
+expect /api/v1/hardware/availability.json 200 rails hsts
 
 # The files, which left public/ in #165. /favicon.png is the one that was
 # never anywhere: the bundle's pages linked it, nothing served it, and every

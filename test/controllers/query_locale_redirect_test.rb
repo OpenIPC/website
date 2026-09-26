@@ -67,15 +67,13 @@ class QueryLocaleRedirectTest < ActionDispatch::IntegrationTest
   # unscoped is redirects, /sitemap.xml and one image, none of which render a
   # page in a language.
   #
-  # The branch has not gone though -- the admin area is deliberately not
-  # localized, and it is what exercises it now.
-  test 'a page with no prefixed form is left alone' do
-    russian = { 'HTTP_ACCEPT_LANGUAGE' => 'ru' }
-
-    get '/admin/sign_in?locale=ru', headers: russian
+  # The branch has not gone though. The admin area exercised it until it was
+  # deleted (#288); /sitemap.xml has no prefixed form either, and a 301 from it
+  # to /ru/sitemap.xml would land a crawler on the catch-all.
+  test 'an address with no prefixed form is left alone' do
+    get '/sitemap.xml?locale=ru'
 
     assert_response :success
-    assert_select 'html[lang=?]', 'ru'
   end
 
   # The other half of #154: every one of these used to be the example above.
@@ -88,12 +86,6 @@ class QueryLocaleRedirectTest < ActionDispatch::IntegrationTest
 
       assert_redirected_to to
     end
-  end
-
-  test 'the admin area is not redirected' do
-    get '/admin/sign_in?locale=ru'
-
-    assert_response :success
   end
 
   # The one request on this site that can never be touched: firmware in the
@@ -109,16 +101,10 @@ class QueryLocaleRedirectTest < ActionDispatch::IntegrationTest
   # Not on a page with no prefixed form: there the parameter is the only thing
   # saying English, and dropping it hands the visitor back to the session and
   # the browser header. A Russian browser asking for English got Russian.
-  test 'a page with no prefixed form keeps its English parameter' do
-    russian = { 'HTTP_ACCEPT_LANGUAGE' => 'ru' }
-
-    get '/admin/sign_in', headers: russian
-    assert_select 'html[lang=?]', 'ru'
-
-    get '/admin/sign_in?locale=en', headers: russian
+  test 'an address with no prefixed form keeps its English parameter' do
+    get '/sitemap.xml?locale=en', headers: { 'HTTP_ACCEPT_LANGUAGE' => 'ru' }
 
     assert_response :success
-    assert_select 'html[lang=?]', 'en'
   end
 
   test 'a locale this site does not serve is ignored' do

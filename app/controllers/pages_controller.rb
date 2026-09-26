@@ -61,9 +61,7 @@ class PagesController < ApplicationController
     @meta_description = t('site.default_meta_description')
     @wall_snapshots = Snapshot.latest_per_camera(limit: 5)
     @soc_count = Soc.count
-    # soc_vendors, not every Vendor: the table also holds sensor makers, and
-    # counting them as silicon we run on overstates the list.
-    @vendor_names = Vendor.soc_vendors.order(:name).pluck(:name)
+    @vendor_names = Vendor.soc_vendors.map(&:name)
     render 'pages/home'
   end
 

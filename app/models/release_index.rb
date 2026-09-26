@@ -12,7 +12,8 @@ require 'json'
 # cannot fail that way.
 #
 # It is also the allowlist. Asset names arrive from the uboot_filename and
-# linux_filename columns, which an admin can edit, and end up in a path and a
+# linux_filename fields of data/catalogue, which anyone can propose a change to,
+# and end up in a path and a
 # URL; a name upstream is not publishing is refused here before it becomes
 # either.
 class ReleaseIndex
