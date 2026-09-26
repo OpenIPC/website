@@ -58,6 +58,21 @@ describe('/cameras/boards', () => {
     expect(read('ru/supported-hardware/full-list')).toMatch(/href="\/ru\/cameras\/boards"/);
   });
 
+  test('leaves out the vendors with nothing installable, and only there', () => {
+    // The badges say how many SoCs have firmware; a zero is a tab that is
+    // only space on this page. Hidden rather than absent, so the correction
+    // on load can bring it back.
+    const tabOf = (html: string, vendor: string) =>
+      html.match(new RegExp(`<li[^>]*>\\s*<a[^>]*href="/cameras/vendors/${vendor}"`))?.[0] ?? '';
+    const boards = page('en');
+    const zero = [...boards.matchAll(/data-vendor="([^"]+)"[^>]*>0</g)].map((m) => m[1]);
+    expect(zero.length, 'the build knows some vendors with nothing installable').toBeGreaterThan(0);
+    for (const v of zero) expect(tabOf(boards, v), v).toMatch(/<li[^>]*hidden/);
+    expect(tabOf(boards, 'hisilicon')).not.toMatch(/hidden/);
+    const featured = read('supported-hardware/featured');
+    for (const v of zero) expect(tabOf(featured, v), `${v} on the hardware pages`).not.toMatch(/hidden/);
+  });
+
   test('is in the menu, the footer and the sitemap', () => {
     const urls = (items: ReturnType<typeof menuFor>): string[] =>
       items.flatMap((i) => ('url' in i && i.url ? [i.url] : []).concat('children' in i && i.children ? urls(i.children) : []));
