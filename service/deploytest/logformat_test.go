@@ -187,7 +187,7 @@ func TestMemoryProbe(t *testing.T) {
 func TestReleaseIndexPaging(t *testing.T) {
 	const rel = "deploy/publish-release-index.rb"
 	if !exists(rel) {
-		t.Skip(rel + " is gone; its replacement needs these assertions")
+		t.Skip(rel + " is gone; service/internal/upstream holds its replacement to the same rules")
 	}
 	script := read(t, rel)
 	t.Run("the page size is the API maximum", func(t *testing.T) {
