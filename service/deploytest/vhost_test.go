@@ -47,7 +47,9 @@ func TestInheritedHeaders(t *testing.T) {
 					continue
 				}
 				for _, h := range inherited {
-					if !strings.Contains(l.Body, h) {
+					// The same header with `always` is the same header, sent on
+					// error responses too.
+					if !strings.Contains(l.Body, h) && !strings.Contains(l.Body, strings.TrimSuffix(h, ";")+" always;") {
 						dropping = append(dropping, "  "+l.Header+"\n    missing: "+h)
 					}
 				}

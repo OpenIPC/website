@@ -420,8 +420,7 @@ h1, h2, h3, h4, h5, h6 {
 /*
  * The typefaces the Rails site used, from the same files (#160). They are the
  * bundle's own since Rails went (#304): public/fonts/, served at /fonts/ with a
- * year's immutable cache, which is why /fonts/ is in
- * deploy/static/reserved-paths -- nginx answers it from a location of its own.
+ * year's immutable cache by a location of their own in the vhost.
  *
  * @openipc/ui ships three Latin-only faces of its own for Storybook and the
  * gallery, which is why this was not obvious: English looked right. Russian
