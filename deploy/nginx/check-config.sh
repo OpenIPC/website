@@ -516,7 +516,7 @@ answered POST /home                     302 "$O/"                            ngi
 answered GET  /supported-hardware/featured 200 -                             rails
 answered GET  /privacy                  200 -                                rails
 answered GET  /ru/privacy               200 -                                rails
-answered GET  /sitemap.xml              200 -                                rails
+answered GET  /sitemap.xml              200 -                                static
 answered GET  /cameras/vendors/hisilicon/socs/hi3516ev300 200 -              rails
 answered GET  /500.html                 200 -                                rails
 answered GET  /donate                   200 -                                static
