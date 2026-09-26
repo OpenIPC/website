@@ -61,7 +61,11 @@ install_postgres() {
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "postgresql-${PG_VERSION}" >/dev/null
   fi
   install -d -m 0755 "${PG_CONF_DIR}/conf.d"
-  cat > "${PG_CONF_DIR}/conf.d/openipc.conf" <<'CONF'
+  # Restarted only when something here changed: once the Go service is live, a
+  # needless restart on a re-run is a brief outage of every surface on Go.
+  local changed=0 conf="${PG_CONF_DIR}/conf.d/openipc.conf"
+  local before; before=$(cat "$conf" 2>/dev/null || true)
+  cat > "$conf" <<'CONF'
 # openipc.org (#292). Written by deploy/install-go-service.sh.
 #
 # A few thousand rows on a shared 7.6 GB host: small on purpose.
@@ -74,6 +78,7 @@ maintenance_work_mem = 32MB
 password_encryption = scram-sha-256
 log_min_duration_statement = 250ms
 CONF
+  [ "$(cat "$conf")" = "$before" ] || changed=1
   # The containers run as uid 1000, which is not the role's name, so peer
   # authentication cannot work for them: password over the socket, for exactly
   # these three database/role pairs, ahead of Debian's defaults.
@@ -92,9 +97,12 @@ CONF
     } > "$tmp"
     install -o postgres -g postgres -m 0640 "$tmp" "$hba"
     rm -f "$tmp"
+    changed=1
   fi
   systemctl enable --quiet "postgresql@${PG_VERSION}-main" 2>/dev/null || systemctl enable --quiet postgresql
-  systemctl restart postgresql
+  if [ "$changed" = 1 ] || ! runuser -u postgres -- pg_isready -q; then
+    systemctl restart postgresql
+  fi
   local i=0
   until runuser -u postgres -- pg_isready -q; do
     i=$((i + 1)); [ $i -gt 30 ] && die "PostgreSQL did not start"; sleep 1
