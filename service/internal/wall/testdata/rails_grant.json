@@ -1,0 +1,7 @@
+{
+  "note": "Minted by Rails 8.1 (Rails.application.message_verifier(:wall_grant)) on 2026-09-26. key is key_generator.generate_key('wall_grant') for a throwaway secret_key_base.",
+  "key_hex": "8a54852db77e7136600df06b623bc5e5eb9f5fd57b1b9fb556309ff1d1682479dfdbfb319d3af6afa09d1dff5302f7944815d91c11ead78d4f5d435d96b21a5c",
+  "pairs": ["0123456789abcdef0123:thumb", "aaaaaaaaaaaaaaaaaaaa:icon2"],
+  "expires_at": 1790000000,
+  "token": "eyJfcmFpbHMiOnsiZGF0YSI6eyJwIjpbIjAxMjM0NTY3ODlhYmNkZWYwMTIzOnRodW1iIiwiYWFhYWFhYWFhYWFhYWFhYWFhYWE6aWNvbjIiXX0sImV4cCI6IjIwMjYtMDktMjFUMTQ6MTM6MjAuMDAwWiJ9fQ==--8b3566ead17982d5029d96631860b2cc32e2159d"
+}

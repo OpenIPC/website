@@ -18,6 +18,7 @@
 set -euo pipefail
 
 REGISTRY_IMAGE="ghcr.io/openipc/website"
+GO_IMAGE="ghcr.io/openipc/website-go"
 # readlink -f, not dirname $BASH_SOURCE: this script is normally invoked
 # through the /usr/local/sbin/openipc-deploy symlink.
 SELF="$(readlink -f "${BASH_SOURCE[0]}")"
@@ -113,6 +114,81 @@ target_for() {
 # Same reasoning as the blob root, and the same failure if it is skipped: a
 # missing bind-mount source is created root-owned by Docker, and the container
 # then fails every write with EACCES while still reporting healthy.
+go_target_for() {
+  case "$1" in
+    prod) echo "go-web-prod go-firmware-prod 3002 3003 GO_PROD_TAG /srv/www/shared/firmware /srv/www/shared/go-release-cache" ;;
+    dev)  echo "go-web-dev  go-firmware-dev  3012 3013 GO_DEV_TAG  /srv/www/shared/dev-firmware /srv/www/shared/dev-go-release-cache" ;;
+  esac
+}
+
+warn() { printf '\033[33m==>\033[0m %s\n' "$*" >&2; }
+
+# The Go service (#287), deployed from the same commit as Rails and ahead of
+# it: its migrations run first, both roles must answer /up, and only then is
+# Rails touched. A failure here stops the whole deploy with Go put back where
+# it was, so a half-deployed release never serves.
+#
+# Two cases deploy nothing and say so rather than fail: a commit older than the
+# Go service has no Go image (this is what a rollback past it looks like -- the
+# Go containers stay on what they were running), and a host that has not run
+# deploy/install-go-service.sh has no settings for it.
+deploy_go() {
+  local env_name=$1 sha=$2
+  local web fw web_port fw_port tag_key fw_cache rel_cache
+  read -r web fw web_port fw_port tag_key fw_cache rel_cache <<<"$(go_target_for "$env_name")"
+  local settings="/srv/www/.env.go-${env_name}"
+
+  if [ ! -f "$settings" ]; then
+    warn "no ${settings}: the Go service is not set up on this host (deploy/install-go-service.sh); skipping it"
+    return 0
+  fi
+  if ! docker pull "${GO_IMAGE}:${sha}" >/dev/null 2>&1; then
+    warn "no ${GO_IMAGE}:${sha:0:12} -- a commit older than the Go service; its containers stay on $(env_get "$tag_key" | cut -c1-12)"
+    return 0
+  fi
+
+  ensure_uid_1000_root "$fw_cache"
+  ensure_uid_1000_root "$rel_cache"
+
+  local previous
+  previous=$(env_get "$tag_key")
+  env_set "$tag_key" "$sha"
+
+  info "Go: migrating ${env_name}'s PostgreSQL"
+  if ! compose run --rm --no-deps -T "$web" migrate; then
+    [ -n "$previous" ] && env_set "$tag_key" "$previous"
+    die "Go migration failed; Go left on ${previous:-nothing}, Rails untouched"
+  fi
+  if shadow_running "$env_name"; then
+    compose --profile shadow run --rm --no-deps -T go-shadow-prod migrate \
+      || warn "the shadow database did not migrate; the shadow keeps its old image"
+  fi
+
+  info "Go: starting ${web} and ${fw}"
+  compose up -d --no-deps "$web" "$fw"
+  if wait_healthy "$web_port" && wait_healthy "$fw_port"; then
+    ok "Go ${env_name} is serving ${sha:0:12} on :${web_port} and :${fw_port}"
+    if shadow_running "$env_name"; then
+      compose --profile shadow up -d --no-deps go-shadow-prod && ok "shadow restarted on ${sha:0:12}"
+    fi
+    return 0
+  fi
+
+  printf '\033[31m==> Go health check failed; rolling Go back\033[0m\n' >&2
+  compose logs --tail=30 "$web" "$fw" >&2 || true
+  if [ -n "$previous" ]; then
+    env_set "$tag_key" "$previous"
+    compose up -d --no-deps "$web" "$fw"
+  else
+    compose stop "$web" "$fw" >/dev/null 2>&1 || true
+  fi
+  die "Go did not become healthy; Rails untouched"
+}
+
+shadow_running() {
+  [ "$1" = prod ] && docker ps --format '{{.Names}}' | grep -qx openipc-go-shadow-prod
+}
+
 ensure_uid_1000_root() {
   local root=$1
   install -d -o 1000 -g 1000 -m 0755 "$root" \
@@ -197,6 +273,8 @@ do_deploy() {
     sha=$resolved
   fi
 
+  deploy_go "$env_name" "$sha"
+
   env_set "$tag_key" "$sha"
 
   info "running migrations"
@@ -264,7 +342,7 @@ do_status() {
   printf '\ncontainers:\n'
   compose ps 2>/dev/null | sed 's/^/  /'
   printf '\nhealth:\n'
-  for p in 3000 3001; do
+  for p in 3000 3001 3002 3003 3012 3013; do
     printf '  :%s ' "$p"
     curl -fsS --max-time 3 "http://127.0.0.1:${p}/up" >/dev/null 2>&1 && echo "ok" || echo "DOWN"
   done

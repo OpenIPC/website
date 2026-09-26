@@ -1,0 +1,57 @@
+[
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/snapshots"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/snapshots/{$}"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/{locale}/snapshots"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/{locale}/snapshots/{$}"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/wall/mosaic.json"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/wall/page/{page}"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/wall/snapshot/{file}"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/wall/snapshot/{id}/{file}"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/wall/camera/{file}"
+  },
+  {
+    "role": "firmware",
+    "method": "GET",
+    "path": "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"
+  },
+  {
+    "role": "firmware",
+    "method": "GET",
+    "path": "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"
+  }
+]

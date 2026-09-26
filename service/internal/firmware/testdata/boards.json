@@ -1,0 +1,1136 @@
+[
+  {
+    "urlname": "v831",
+    "vendor": "Allwinner",
+    "model": "V831",
+    "board": "v831",
+    "uboot": "",
+    "nor_lite": "openipc.v831-nor-lite.tgz",
+    "nand_lite": "openipc.v831-nand-lite.tgz"
+  },
+  {
+    "urlname": "s2l",
+    "vendor": "Ambarella",
+    "model": "S2L",
+    "board": "s2l",
+    "uboot": "",
+    "nor_lite": "openipc.s2l-nor-lite.tgz",
+    "nand_lite": "openipc.s2l-nand-lite.tgz"
+  },
+  {
+    "urlname": "s3l",
+    "vendor": "Ambarella",
+    "model": "S3L",
+    "board": "ambarella-s3l",
+    "uboot": "",
+    "nor_lite": "openipc.ambarella-s3l-nor-lite.tgz",
+    "nand_lite": "openipc.ambarella-s3l-nand-lite.tgz"
+  },
+  {
+    "urlname": "ak3916ev300",
+    "vendor": "Anyka",
+    "model": "AK3916EV300",
+    "board": "ak3916ev300",
+    "uboot": "",
+    "nor_lite": "openipc.ak3916ev300-nor-lite.tgz",
+    "nand_lite": "openipc.ak3916ev300-nand-lite.tgz"
+  },
+  {
+    "urlname": "ak3916ev301",
+    "vendor": "Anyka",
+    "model": "AK3916EV301",
+    "board": "ak3918ev200",
+    "uboot": "",
+    "nor_lite": "openipc.ak3918ev200-nor-lite.tgz",
+    "nand_lite": "openipc.ak3918ev200-nand-lite.tgz"
+  },
+  {
+    "urlname": "ak3918ev200",
+    "vendor": "Anyka",
+    "model": "AK3918EV200",
+    "board": "ak3918ev200",
+    "uboot": "",
+    "nor_lite": "openipc.ak3918ev200-nor-lite.tgz",
+    "nand_lite": "openipc.ak3918ev200-nand-lite.tgz"
+  },
+  {
+    "urlname": "ak3918ev300",
+    "vendor": "Anyka",
+    "model": "AK3918EV300",
+    "board": "ak3918ev300",
+    "uboot": "",
+    "nor_lite": "openipc.ak3918ev300-nor-lite.tgz",
+    "nand_lite": "openipc.ak3918ev300-nand-lite.tgz"
+  },
+  {
+    "urlname": "ak3918ev330",
+    "vendor": "Anyka",
+    "model": "AK3918EV330",
+    "board": "ak3918ev330",
+    "uboot": "",
+    "nor_lite": "openipc.ak3918ev330-nor-lite.tgz",
+    "nand_lite": "openipc.ak3918ev330-nand-lite.tgz"
+  },
+  {
+    "urlname": "fh8626v100",
+    "vendor": "Fullhan",
+    "model": "FH8626V100",
+    "board": "fh8626v100",
+    "uboot": "",
+    "nor_lite": "openipc.fh8626v100-nor-lite.tgz",
+    "nand_lite": "openipc.fh8626v100-nand-lite.tgz"
+  },
+  {
+    "urlname": "fh8632v100",
+    "vendor": "Fullhan",
+    "model": "FH8632V100",
+    "board": "fh8632v100",
+    "uboot": "",
+    "nor_lite": "openipc.fh8632v100-nor-lite.tgz",
+    "nand_lite": "openipc.fh8632v100-nand-lite.tgz"
+  },
+  {
+    "urlname": "fh8652v100",
+    "vendor": "Fullhan",
+    "model": "FH8652V100",
+    "board": "fh8652v100",
+    "uboot": "",
+    "nor_lite": "openipc.fh8652v100-nor-lite.tgz",
+    "nand_lite": "openipc.fh8652v100-nand-lite.tgz"
+  },
+  {
+    "urlname": "fh8833v100",
+    "vendor": "Fullhan",
+    "model": "FH8833V100",
+    "board": "fh8833v100",
+    "uboot": "",
+    "nor_lite": "openipc.fh8833v100-nor-lite.tgz",
+    "nand_lite": "openipc.fh8833v100-nand-lite.tgz"
+  },
+  {
+    "urlname": "fh8852v100",
+    "vendor": "Fullhan",
+    "model": "FH8852V100",
+    "board": "fh8852v100",
+    "uboot": "",
+    "nor_lite": "openipc.fh8852v100-nor-lite.tgz",
+    "nand_lite": "openipc.fh8852v100-nand-lite.tgz"
+  },
+  {
+    "urlname": "fh8852v200",
+    "vendor": "Fullhan",
+    "model": "FH8852V200",
+    "board": "fh8852v200",
+    "uboot": "",
+    "nor_lite": "openipc.fh8852v200-nor-lite.tgz",
+    "nand_lite": "openipc.fh8852v200-nand-lite.tgz"
+  },
+  {
+    "urlname": "fh8852v210",
+    "vendor": "Fullhan",
+    "model": "FH8852V210",
+    "board": "fh8852v210",
+    "uboot": "",
+    "nor_lite": "openipc.fh8852v210-nor-lite.tgz",
+    "nand_lite": "openipc.fh8852v210-nand-lite.tgz"
+  },
+  {
+    "urlname": "fh8856v100",
+    "vendor": "Fullhan",
+    "model": "FH8856V100",
+    "board": "fh8856v100",
+    "uboot": "",
+    "nor_lite": "openipc.fh8856v100-nor-lite.tgz",
+    "nand_lite": "openipc.fh8856v100-nand-lite.tgz"
+  },
+  {
+    "urlname": "fh8856v200",
+    "vendor": "Fullhan",
+    "model": "FH8856V200",
+    "board": "fh8856v200",
+    "uboot": "",
+    "nor_lite": "openipc.fh8856v200-nor-lite.tgz",
+    "nand_lite": "openipc.fh8856v200-nand-lite.tgz"
+  },
+  {
+    "urlname": "fh8856v210",
+    "vendor": "Fullhan",
+    "model": "FH8856V210",
+    "board": "fh8856v210",
+    "uboot": "",
+    "nor_lite": "openipc.fh8856v210-nor-lite.tgz",
+    "nand_lite": "openipc.fh8856v210-nand-lite.tgz"
+  },
+  {
+    "urlname": "fh8858v200",
+    "vendor": "Fullhan",
+    "model": "FH8858V200",
+    "board": "fh8858v200",
+    "uboot": "",
+    "nor_lite": "openipc.fh8858v200-nor-lite.tgz",
+    "nand_lite": "openipc.fh8858v200-nand-lite.tgz"
+  },
+  {
+    "urlname": "fh8858v210",
+    "vendor": "Fullhan",
+    "model": "FH8858V210",
+    "board": "fh8858v210",
+    "uboot": "",
+    "nor_lite": "openipc.fh8858v210-nor-lite.tgz",
+    "nand_lite": "openipc.fh8858v210-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7102",
+    "vendor": "Goke",
+    "model": "GK7102",
+    "board": "gk7102",
+    "uboot": "",
+    "nor_lite": "openipc.gk7102-nor-lite.tgz",
+    "nand_lite": "openipc.gk7102-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7102c",
+    "vendor": "Goke",
+    "model": "GK7102C",
+    "board": "gk7102",
+    "uboot": "",
+    "nor_lite": "openipc.gk7102-nor-lite.tgz",
+    "nand_lite": "openipc.gk7102-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7102ca",
+    "vendor": "Goke",
+    "model": "GK7102CA",
+    "board": "gk7102",
+    "uboot": "",
+    "nor_lite": "openipc.gk7102-nor-lite.tgz",
+    "nand_lite": "openipc.gk7102-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7102ct",
+    "vendor": "Goke",
+    "model": "GK7102CT",
+    "board": "gk7102",
+    "uboot": "",
+    "nor_lite": "openipc.gk7102-nor-lite.tgz",
+    "nand_lite": "openipc.gk7102-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7102cw",
+    "vendor": "Goke",
+    "model": "GK7102CW",
+    "board": "gk7102",
+    "uboot": "",
+    "nor_lite": "openipc.gk7102-nor-lite.tgz",
+    "nand_lite": "openipc.gk7102-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7102s",
+    "vendor": "Goke",
+    "model": "GK7102S",
+    "board": "gk7102s",
+    "uboot": "",
+    "nor_lite": "openipc.gk7102s-nor-lite.tgz",
+    "nand_lite": "openipc.gk7102s-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7201v200",
+    "vendor": "Goke",
+    "model": "GK7201V200",
+    "board": "gk7201v200",
+    "uboot": "",
+    "nor_lite": "openipc.gk7201v200-nor-lite.tgz",
+    "nand_lite": "openipc.gk7201v200-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7201v300",
+    "vendor": "Goke",
+    "model": "GK7201V300",
+    "board": "gk7201v300",
+    "uboot": "",
+    "nor_lite": "openipc.gk7201v300-nor-lite.tgz",
+    "nand_lite": "openipc.gk7201v300-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7202v300",
+    "vendor": "Goke",
+    "model": "GK7202V300",
+    "board": "gk7202v300",
+    "uboot": "u-boot-gk7202v300-universal.bin",
+    "nor_lite": "openipc.gk7202v300-nor-lite.tgz",
+    "nand_lite": "openipc.gk7202v300-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7205v200",
+    "vendor": "Goke",
+    "model": "GK7205V200",
+    "board": "gk7205v200",
+    "uboot": "u-boot-gk7205v200-universal.bin",
+    "nor_lite": "openipc.gk7205v200-nor-lite.tgz",
+    "nand_lite": "openipc.gk7205v200-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7205v210",
+    "vendor": "Goke",
+    "model": "GK7205V210",
+    "board": "gk7205v200",
+    "uboot": "u-boot-gk7205v200-universal.bin",
+    "nor_lite": "openipc.gk7205v200-nor-lite.tgz",
+    "nand_lite": "openipc.gk7205v200-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7205v300",
+    "vendor": "Goke",
+    "model": "GK7205V300",
+    "board": "gk7205v300",
+    "uboot": "u-boot-gk7205v300-universal.bin",
+    "nor_lite": "openipc.gk7205v300-nor-lite.tgz",
+    "nand_lite": "openipc.gk7205v300-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7605v100",
+    "vendor": "Goke",
+    "model": "GK7605V100",
+    "board": "gk7605v100",
+    "uboot": "u-boot-gk7605v100-universal.bin",
+    "nor_lite": "openipc.gk7605v100-nor-lite.tgz",
+    "nand_lite": "openipc.gk7605v100-nand-lite.tgz"
+  },
+  {
+    "urlname": "gm8135",
+    "vendor": "GrainMedia",
+    "model": "GM8135",
+    "board": "gm8135",
+    "uboot": "",
+    "nor_lite": "openipc.gm8135-nor-lite.tgz",
+    "nand_lite": "openipc.gm8135-nand-lite.tgz"
+  },
+  {
+    "urlname": "gm8136",
+    "vendor": "GrainMedia",
+    "model": "GM8136",
+    "board": "gm8136",
+    "uboot": "",
+    "nor_lite": "openipc.gm8136-nor-lite.tgz",
+    "nand_lite": "openipc.gm8136-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516av100",
+    "vendor": "HiSilicon",
+    "model": "HI3516AV100",
+    "board": "hi3516av100",
+    "uboot": "u-boot-hi3516av100-universal.bin",
+    "nor_lite": "openipc.hi3516av100-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516av100-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516av200",
+    "vendor": "HiSilicon",
+    "model": "HI3516AV200",
+    "board": "hi3516av200",
+    "uboot": "u-boot-hi3516av200-universal.bin",
+    "nor_lite": "openipc.hi3516av200-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516av200-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516av300",
+    "vendor": "HiSilicon",
+    "model": "HI3516AV300",
+    "board": "hi3516av300",
+    "uboot": "u-boot-hi3516av300-universal.bin",
+    "nor_lite": "openipc.hi3516av300-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516av300-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516cv100",
+    "vendor": "HiSilicon",
+    "model": "HI3516CV100",
+    "board": "hi3516cv100",
+    "uboot": "u-boot-hi3516cv100-universal.bin",
+    "nor_lite": "openipc.hi3516cv100-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516cv100-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516cv200",
+    "vendor": "HiSilicon",
+    "model": "HI3516CV200",
+    "board": "hi3516cv200",
+    "uboot": "u-boot-hi3516cv200-universal.bin",
+    "nor_lite": "openipc.hi3516cv200-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516cv200-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516cv300",
+    "vendor": "HiSilicon",
+    "model": "HI3516CV300",
+    "board": "hi3516cv300",
+    "uboot": "u-boot-hi3516cv300-universal.bin",
+    "nor_lite": "openipc.hi3516cv300-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516cv300-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516cv500",
+    "vendor": "HiSilicon",
+    "model": "HI3516CV500",
+    "board": "hi3516cv500",
+    "uboot": "u-boot-hi3516cv500-universal.bin",
+    "nor_lite": "openipc.hi3516cv500-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516cv500-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516dv100",
+    "vendor": "HiSilicon",
+    "model": "HI3516DV100",
+    "board": "hi3516dv100",
+    "uboot": "u-boot-hi3516dv100-universal.bin",
+    "nor_lite": "openipc.hi3516dv100-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516dv100-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516dv200",
+    "vendor": "HiSilicon",
+    "model": "HI3516DV200",
+    "board": "hi3516dv200",
+    "uboot": "u-boot-hi3516dv200-universal.bin",
+    "nor_lite": "openipc.hi3516dv200-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516dv200-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516dv300",
+    "vendor": "HiSilicon",
+    "model": "HI3516DV300",
+    "board": "hi3516dv300",
+    "uboot": "u-boot-hi3516dv300-universal.bin",
+    "nor_lite": "openipc.hi3516dv300-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516dv300-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516ev100",
+    "vendor": "HiSilicon",
+    "model": "HI3516EV100",
+    "board": "hi3516ev100",
+    "uboot": "u-boot-hi3516ev100-universal.bin",
+    "nor_lite": "openipc.hi3516ev100-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516ev100-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516ev200",
+    "vendor": "HiSilicon",
+    "model": "HI3516EV200",
+    "board": "hi3516ev200",
+    "uboot": "u-boot-hi3516ev200-universal.bin",
+    "nor_lite": "openipc.hi3516ev200-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516ev200-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516ev300",
+    "vendor": "HiSilicon",
+    "model": "HI3516EV300",
+    "board": "hi3516ev300",
+    "uboot": "u-boot-hi3516ev300-universal.bin",
+    "nor_lite": "openipc.hi3516ev300-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516ev300-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3518cv100",
+    "vendor": "HiSilicon",
+    "model": "HI3518CV100",
+    "board": "hi3518cv100",
+    "uboot": "u-boot-hi3518cv100-universal.bin",
+    "nor_lite": "openipc.hi3518cv100-nor-lite.tgz",
+    "nand_lite": "openipc.hi3518cv100-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3518ev100",
+    "vendor": "HiSilicon",
+    "model": "HI3518EV100",
+    "board": "hi3518ev100",
+    "uboot": "u-boot-hi3518ev100-universal.bin",
+    "nor_lite": "openipc.hi3518ev100-nor-lite.tgz",
+    "nand_lite": "openipc.hi3518ev100-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3518ev200",
+    "vendor": "HiSilicon",
+    "model": "HI3518EV200",
+    "board": "hi3518ev200",
+    "uboot": "u-boot-hi3518ev200-universal.bin",
+    "nor_lite": "openipc.hi3518ev200-nor-lite.tgz",
+    "nand_lite": "openipc.hi3518ev200-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3518ev201",
+    "vendor": "HiSilicon",
+    "model": "HI3518EV201",
+    "board": "hi3518ev201",
+    "uboot": "",
+    "nor_lite": "openipc.hi3518ev201-nor-lite.tgz",
+    "nand_lite": "openipc.hi3518ev201-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3518ev300",
+    "vendor": "HiSilicon",
+    "model": "HI3518EV300",
+    "board": "hi3518ev300",
+    "uboot": "u-boot-hi3518ev300-universal.bin",
+    "nor_lite": "openipc.hi3518ev300-nor-lite.tgz",
+    "nand_lite": "openipc.hi3518ev300-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3519v101",
+    "vendor": "HiSilicon",
+    "model": "HI3519V101",
+    "board": "hi3519v101",
+    "uboot": "u-boot-hi3519v101-universal.bin",
+    "nor_lite": "openipc.hi3519v101-nor-lite.tgz",
+    "nand_lite": "openipc.hi3519v101-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3520dv100",
+    "vendor": "HiSilicon",
+    "model": "HI3520DV100",
+    "board": "hi3520dv100",
+    "uboot": "",
+    "nor_lite": "openipc.hi3520dv100-nor-lite.tgz",
+    "nand_lite": "openipc.hi3520dv100-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3520dv200",
+    "vendor": "HiSilicon",
+    "model": "HI3520DV200",
+    "board": "hi3520dv200",
+    "uboot": "",
+    "nor_lite": "openipc.hi3520dv200-nor-lite.tgz",
+    "nand_lite": "openipc.hi3520dv200-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3536cv100",
+    "vendor": "HiSilicon",
+    "model": "HI3536CV100",
+    "board": "hi3536cv100",
+    "uboot": "",
+    "nor_lite": "openipc.hi3536cv100-nor-lite.tgz",
+    "nand_lite": "openipc.hi3536cv100-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3536dv100",
+    "vendor": "HiSilicon",
+    "model": "HI3536DV100",
+    "board": "hi3536dv100",
+    "uboot": "u-boot-hi3536dv100-original.bin",
+    "nor_lite": "openipc.hi3536dv100-nor-lite.tgz",
+    "nand_lite": "openipc.hi3536dv100-nand-lite.tgz"
+  },
+  {
+    "urlname": "t10",
+    "vendor": "Ingenic",
+    "model": "T10",
+    "board": "t10",
+    "uboot": "u-boot-t10-nor.bin",
+    "nor_lite": "openipc.t10-nor-lite.tgz",
+    "nand_lite": "openipc.t10-nand-lite.tgz"
+  },
+  {
+    "urlname": "t20",
+    "vendor": "Ingenic",
+    "model": "T20",
+    "board": "t20",
+    "uboot": "u-boot-t20-nor.bin",
+    "nor_lite": "openipc.t20-nor-lite.tgz",
+    "nand_lite": "openipc.t20-nand-lite.tgz"
+  },
+  {
+    "urlname": "t21",
+    "vendor": "Ingenic",
+    "model": "T21",
+    "board": "t21",
+    "uboot": "u-boot-t21n-nor.bin",
+    "nor_lite": "openipc.t21-nor-lite.tgz",
+    "nand_lite": "openipc.t21-nand-lite.tgz"
+  },
+  {
+    "urlname": "t23n",
+    "vendor": "Ingenic",
+    "model": "T23N",
+    "board": "t23",
+    "uboot": "u-boot-t23n-nor.bin",
+    "nor_lite": "openipc.t23-nor-lite.tgz",
+    "nand_lite": "openipc.t23-nand-lite.tgz"
+  },
+  {
+    "urlname": "t30l",
+    "vendor": "Ingenic",
+    "model": "T30L",
+    "board": "t30",
+    "uboot": "u-boot-t30l-nor.bin",
+    "nor_lite": "openipc.t30-nor-lite.tgz",
+    "nand_lite": "openipc.t30-nand-lite.tgz"
+  },
+  {
+    "urlname": "t31a",
+    "vendor": "Ingenic",
+    "model": "T31A",
+    "board": "t31",
+    "uboot": "u-boot-t31a-nor.bin",
+    "nor_lite": "openipc.t31-nor-lite.tgz",
+    "nand_lite": "openipc.t31-nand-lite.tgz"
+  },
+  {
+    "urlname": "t31al",
+    "vendor": "Ingenic",
+    "model": "T31AL",
+    "board": "t31",
+    "uboot": "u-boot-t31al-nor.bin",
+    "nor_lite": "openipc.t31-nor-lite.tgz",
+    "nand_lite": "openipc.t31-nand-lite.tgz"
+  },
+  {
+    "urlname": "t31l",
+    "vendor": "Ingenic",
+    "model": "T31L",
+    "board": "t31",
+    "uboot": "u-boot-t31l-nor.bin",
+    "nor_lite": "openipc.t31-nor-lite.tgz",
+    "nand_lite": "openipc.t31-nand-lite.tgz"
+  },
+  {
+    "urlname": "t31lc",
+    "vendor": "Ingenic",
+    "model": "T31LC",
+    "board": "t31",
+    "uboot": "u-boot-t31lc-nor.bin",
+    "nor_lite": "openipc.t31-nor-lite.tgz",
+    "nand_lite": "openipc.t31-nand-lite.tgz"
+  },
+  {
+    "urlname": "t31n",
+    "vendor": "Ingenic",
+    "model": "T31N",
+    "board": "t31",
+    "uboot": "u-boot-t31n-nor.bin",
+    "nor_lite": "openipc.t31-nor-lite.tgz",
+    "nand_lite": "openipc.t31-nand-lite.tgz"
+  },
+  {
+    "urlname": "t31x",
+    "vendor": "Ingenic",
+    "model": "T31X",
+    "board": "t31",
+    "uboot": "u-boot-t31x-nor.bin",
+    "nor_lite": "openipc.t31-nor-lite.tgz",
+    "nand_lite": "openipc.t31-nand-lite.tgz"
+  },
+  {
+    "urlname": "t31zl",
+    "vendor": "Ingenic",
+    "model": "T31ZL",
+    "board": "t31",
+    "uboot": "u-boot-t31l-nor.bin",
+    "nor_lite": "openipc.t31-nor-lite.tgz",
+    "nand_lite": "openipc.t31-nand-lite.tgz"
+  },
+  {
+    "urlname": "t31zx",
+    "vendor": "Ingenic",
+    "model": "T31ZX",
+    "board": "t31",
+    "uboot": "u-boot-t31x-nor.bin",
+    "nor_lite": "openipc.t31-nor-lite.tgz",
+    "nand_lite": "openipc.t31-nand-lite.tgz"
+  },
+  {
+    "urlname": "t40a",
+    "vendor": "Ingenic",
+    "model": "T40A",
+    "board": "t40",
+    "uboot": "u-boot-t40a-universal.bin",
+    "nor_lite": "openipc.t40-nor-lite.tgz",
+    "nand_lite": "openipc.t40-nand-lite.tgz"
+  },
+  {
+    "urlname": "t40n",
+    "vendor": "Ingenic",
+    "model": "T40N",
+    "board": "t40",
+    "uboot": "u-boot-t40n-universal.bin",
+    "nor_lite": "openipc.t40-nor-lite.tgz",
+    "nand_lite": "openipc.t40-nand-lite.tgz"
+  },
+  {
+    "urlname": "t40nn",
+    "vendor": "Ingenic",
+    "model": "T40NN",
+    "board": "t40",
+    "uboot": "u-boot-t40n-universal.bin",
+    "nor_lite": "openipc.t40-nor-lite.tgz",
+    "nand_lite": "openipc.t40-nand-lite.tgz"
+  },
+  {
+    "urlname": "t40xp",
+    "vendor": "Ingenic",
+    "model": "T40XP",
+    "board": "t40",
+    "uboot": "u-boot-t40xp-universal.bin",
+    "nor_lite": "openipc.t40-nor-lite.tgz",
+    "nand_lite": "openipc.t40-nand-lite.tgz"
+  },
+  {
+    "urlname": "t41a",
+    "vendor": "Ingenic",
+    "model": "T41A",
+    "board": "t41a",
+    "uboot": "",
+    "nor_lite": "openipc.t41a-nor-lite.tgz",
+    "nand_lite": "openipc.t41a-nand-lite.tgz"
+  },
+  {
+    "urlname": "t41l",
+    "vendor": "Ingenic",
+    "model": "T41L",
+    "board": "t41l",
+    "uboot": "",
+    "nor_lite": "openipc.t41l-nor-lite.tgz",
+    "nand_lite": "openipc.t41l-nand-lite.tgz"
+  },
+  {
+    "urlname": "t41lc",
+    "vendor": "Ingenic",
+    "model": "T41LC",
+    "board": "t41lc",
+    "uboot": "",
+    "nor_lite": "openipc.t41lc-nor-lite.tgz",
+    "nand_lite": "openipc.t41lc-nand-lite.tgz"
+  },
+  {
+    "urlname": "t41lq",
+    "vendor": "Ingenic",
+    "model": "T41LQ",
+    "board": "t41lq",
+    "uboot": "",
+    "nor_lite": "openipc.t41lq-nor-lite.tgz",
+    "nand_lite": "openipc.t41lq-nand-lite.tgz"
+  },
+  {
+    "urlname": "t41n",
+    "vendor": "Ingenic",
+    "model": "T41N",
+    "board": "t41n",
+    "uboot": "",
+    "nor_lite": "openipc.t41n-nor-lite.tgz",
+    "nand_lite": "openipc.t41n-nand-lite.tgz"
+  },
+  {
+    "urlname": "t41nq",
+    "vendor": "Ingenic",
+    "model": "T41NQ",
+    "board": "t41nq",
+    "uboot": "",
+    "nor_lite": "openipc.t41nq-nor-lite.tgz",
+    "nand_lite": "openipc.t41nq-nand-lite.tgz"
+  },
+  {
+    "urlname": "t41xq",
+    "vendor": "Ingenic",
+    "model": "T41XQ",
+    "board": "t41xq",
+    "uboot": "",
+    "nor_lite": "openipc.t41xq-nor-lite.tgz",
+    "nand_lite": "openipc.t41xq-nand-lite.tgz"
+  },
+  {
+    "urlname": "t41zl",
+    "vendor": "Ingenic",
+    "model": "T41ZL",
+    "board": "t41zl",
+    "uboot": "",
+    "nor_lite": "openipc.t41zl-nor-lite.tgz",
+    "nand_lite": "openipc.t41zl-nand-lite.tgz"
+  },
+  {
+    "urlname": "t41zn",
+    "vendor": "Ingenic",
+    "model": "T41ZN",
+    "board": "t41zn",
+    "uboot": "",
+    "nor_lite": "openipc.t41zn-nor-lite.tgz",
+    "nand_lite": "openipc.t41zn-nand-lite.tgz"
+  },
+  {
+    "urlname": "t41zx",
+    "vendor": "Ingenic",
+    "model": "T41ZX",
+    "board": "t41zx",
+    "uboot": "",
+    "nor_lite": "openipc.t41zx-nor-lite.tgz",
+    "nand_lite": "openipc.t41zx-nand-lite.tgz"
+  },
+  {
+    "urlname": "msc313e",
+    "vendor": "MStar",
+    "model": "MSC313E",
+    "board": "msc313e",
+    "uboot": "u-boot-msc313e-universal.bin",
+    "nor_lite": "openipc.msc313e-nor-lite.tgz",
+    "nand_lite": "openipc.msc313e-nand-lite.tgz"
+  },
+  {
+    "urlname": "msc316dc",
+    "vendor": "MStar",
+    "model": "MSC316DC",
+    "board": "msc316dc",
+    "uboot": "",
+    "nor_lite": "openipc.msc316dc-nor-lite.tgz",
+    "nand_lite": "openipc.msc316dc-nand-lite.tgz"
+  },
+  {
+    "urlname": "msc316dm",
+    "vendor": "MStar",
+    "model": "MSC316DM",
+    "board": "msc316dm",
+    "uboot": "",
+    "nor_lite": "openipc.msc316dm-nor-lite.tgz",
+    "nand_lite": "openipc.msc316dm-nand-lite.tgz"
+  },
+  {
+    "urlname": "nt98562",
+    "vendor": "Novatek",
+    "model": "NT98562",
+    "board": "nt98562",
+    "uboot": "",
+    "nor_lite": "openipc.nt98562-nor-lite.tgz",
+    "nand_lite": "openipc.nt98562-nand-lite.tgz"
+  },
+  {
+    "urlname": "nt98566",
+    "vendor": "Novatek",
+    "model": "NT98566",
+    "board": "nt98566",
+    "uboot": "",
+    "nor_lite": "openipc.nt98566-nor-lite.tgz",
+    "nand_lite": "openipc.nt98566-nand-lite.tgz"
+  },
+  {
+    "urlname": "rv1109",
+    "vendor": "Rockchip",
+    "model": "RV1109",
+    "board": "rv1109",
+    "uboot": "",
+    "nor_lite": "openipc.rv1109-nor-lite.tgz",
+    "nand_lite": "openipc.rv1109-nand-lite.tgz"
+  },
+  {
+    "urlname": "rv1126",
+    "vendor": "Rockchip",
+    "model": "RV1126",
+    "board": "rv1126",
+    "uboot": "",
+    "nor_lite": "openipc.rv1126-nor-lite.tgz",
+    "nand_lite": "openipc.rv1126-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc30kd",
+    "vendor": "SigmaStar",
+    "model": "SSC30KD",
+    "board": "ssc30kd",
+    "uboot": "u-boot-ssc30kd-nor.bin",
+    "nor_lite": "openipc.ssc30kd-nor-lite.tgz",
+    "nand_lite": "openipc.ssc30kd-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc30kq",
+    "vendor": "SigmaStar",
+    "model": "SSC30KQ",
+    "board": "ssc30kq",
+    "uboot": "u-boot-ssc30kq-nor.bin",
+    "nor_lite": "openipc.ssc30kq-nor-lite.tgz",
+    "nand_lite": "openipc.ssc30kq-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc323",
+    "vendor": "SigmaStar",
+    "model": "SSC323",
+    "board": "ssc323",
+    "uboot": "",
+    "nor_lite": "openipc.ssc323-nor-lite.tgz",
+    "nand_lite": "openipc.ssc323-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc325",
+    "vendor": "SigmaStar",
+    "model": "SSC325",
+    "board": "ssc325",
+    "uboot": "u-boot-ssc325-nor.bin",
+    "nor_lite": "openipc.ssc325-nor-lite.tgz",
+    "nand_lite": "openipc.ssc325-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc325d",
+    "vendor": "SigmaStar",
+    "model": "SSC325D",
+    "board": "ssc325d",
+    "uboot": "",
+    "nor_lite": "openipc.ssc325d-nor-lite.tgz",
+    "nand_lite": "openipc.ssc325d-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc326d",
+    "vendor": "SigmaStar",
+    "model": "SSC326D",
+    "board": "ssc326d",
+    "uboot": "",
+    "nor_lite": "openipc.ssc326d-nor-lite.tgz",
+    "nand_lite": "openipc.ssc326d-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc327",
+    "vendor": "SigmaStar",
+    "model": "SSC327",
+    "board": "ssc327",
+    "uboot": "",
+    "nor_lite": "openipc.ssc327-nor-lite.tgz",
+    "nand_lite": "openipc.ssc327-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc327d",
+    "vendor": "SigmaStar",
+    "model": "SSC327D",
+    "board": "ssc327d",
+    "uboot": "",
+    "nor_lite": "openipc.ssc327d-nor-lite.tgz",
+    "nand_lite": "openipc.ssc327d-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc327de",
+    "vendor": "SigmaStar",
+    "model": "SSC327DE",
+    "board": "ssc327de",
+    "uboot": "",
+    "nor_lite": "openipc.ssc327de-nor-lite.tgz",
+    "nand_lite": "openipc.ssc327de-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc327q",
+    "vendor": "SigmaStar",
+    "model": "SSC327Q",
+    "board": "ssc327q",
+    "uboot": "",
+    "nor_lite": "openipc.ssc327q-nor-lite.tgz",
+    "nand_lite": "openipc.ssc327q-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc328q",
+    "vendor": "SigmaStar",
+    "model": "SSC328Q",
+    "board": "ssc328q",
+    "uboot": "",
+    "nor_lite": "openipc.ssc328q-nor-lite.tgz",
+    "nand_lite": "openipc.ssc328q-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc329q",
+    "vendor": "SigmaStar",
+    "model": "SSC329Q",
+    "board": "ssc329q",
+    "uboot": "",
+    "nor_lite": "openipc.ssc329q-nor-lite.tgz",
+    "nand_lite": "openipc.ssc329q-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc333",
+    "vendor": "SigmaStar",
+    "model": "SSC333",
+    "board": "ssc333",
+    "uboot": "u-boot-ssc333-nor.bin",
+    "nor_lite": "openipc.ssc333-nor-lite.tgz",
+    "nand_lite": "openipc.ssc333-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc333de",
+    "vendor": "SigmaStar",
+    "model": "SSC333DE",
+    "board": "ssc333de",
+    "uboot": "",
+    "nor_lite": "openipc.ssc333de-nor-lite.tgz",
+    "nand_lite": "openipc.ssc333de-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc335",
+    "vendor": "SigmaStar",
+    "model": "SSC335",
+    "board": "ssc335",
+    "uboot": "u-boot-ssc335-nor.bin",
+    "nor_lite": "openipc.ssc335-nor-lite.tgz",
+    "nand_lite": "openipc.ssc335-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc335de",
+    "vendor": "SigmaStar",
+    "model": "SSC335DE",
+    "board": "ssc335de",
+    "uboot": "u-boot-ssc335de-nor.bin",
+    "nor_lite": "openipc.ssc335de-nor-lite.tgz",
+    "nand_lite": "openipc.ssc335de-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc336d",
+    "vendor": "SigmaStar",
+    "model": "SSC336D",
+    "board": "ssc336d",
+    "uboot": "",
+    "nor_lite": "openipc.ssc336d-nor-lite.tgz",
+    "nand_lite": "openipc.ssc336d-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc336q",
+    "vendor": "SigmaStar",
+    "model": "SSC336Q",
+    "board": "ssc336q",
+    "uboot": "",
+    "nor_lite": "openipc.ssc336q-nor-lite.tgz",
+    "nand_lite": "openipc.ssc336q-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc337",
+    "vendor": "SigmaStar",
+    "model": "SSC337",
+    "board": "ssc337",
+    "uboot": "u-boot-ssc337-nor.bin",
+    "nor_lite": "openipc.ssc337-nor-lite.tgz",
+    "nand_lite": "openipc.ssc337-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc337de",
+    "vendor": "SigmaStar",
+    "model": "SSC337DE",
+    "board": "ssc337de",
+    "uboot": "u-boot-ssc337de-nor.bin",
+    "nor_lite": "openipc.ssc337de-nor-lite.tgz",
+    "nand_lite": "openipc.ssc337de-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc338d",
+    "vendor": "SigmaStar",
+    "model": "SSC338D",
+    "board": "ssc338d",
+    "uboot": "",
+    "nor_lite": "openipc.ssc338d-nor-lite.tgz",
+    "nand_lite": "openipc.ssc338d-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc338g",
+    "vendor": "SigmaStar",
+    "model": "SSC338G",
+    "board": "ssc338g",
+    "uboot": "",
+    "nor_lite": "openipc.ssc338g-nor-lite.tgz",
+    "nand_lite": "openipc.ssc338g-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc338q",
+    "vendor": "SigmaStar",
+    "model": "SSC338Q",
+    "board": "ssc338q",
+    "uboot": "u-boot-ssc338q-nor.bin",
+    "nor_lite": "openipc.ssc338q-nor-lite.tgz",
+    "nand_lite": "openipc.ssc338q-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc339g",
+    "vendor": "SigmaStar",
+    "model": "SSC339G",
+    "board": "ssc339g",
+    "uboot": "",
+    "nor_lite": "openipc.ssc339g-nor-lite.tgz",
+    "nand_lite": "openipc.ssc339g-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc377",
+    "vendor": "SigmaStar",
+    "model": "SSC377",
+    "board": "ssc377",
+    "uboot": "u-boot-ssc377-nor.bin",
+    "nor_lite": "openipc.ssc377-nor-lite.tgz",
+    "nand_lite": "openipc.ssc377-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc377d",
+    "vendor": "SigmaStar",
+    "model": "SSC377D",
+    "board": "ssc377d",
+    "uboot": "u-boot-ssc377d-nor.bin",
+    "nor_lite": "openipc.ssc377d-nor-lite.tgz",
+    "nand_lite": "openipc.ssc377d-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc377de",
+    "vendor": "SigmaStar",
+    "model": "SSC377DE",
+    "board": "ssc377de",
+    "uboot": "u-boot-ssc377de-nor.bin",
+    "nor_lite": "openipc.ssc377de-nor-lite.tgz",
+    "nand_lite": "openipc.ssc377de-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc377qe",
+    "vendor": "SigmaStar",
+    "model": "SSC377QE",
+    "board": "ssc377qe",
+    "uboot": "u-boot-ssc377qe-nor.bin",
+    "nor_lite": "openipc.ssc377qe-nor-lite.tgz",
+    "nand_lite": "openipc.ssc377qe-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc378de",
+    "vendor": "SigmaStar",
+    "model": "SSC378DE",
+    "board": "ssc378de",
+    "uboot": "u-boot-ssc378de-nor.bin",
+    "nor_lite": "openipc.ssc378de-nor-lite.tgz",
+    "nand_lite": "openipc.ssc378de-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc378qe",
+    "vendor": "SigmaStar",
+    "model": "SSC378QE",
+    "board": "ssc378qe",
+    "uboot": "u-boot-ssc378qe-nor.bin",
+    "nor_lite": "openipc.ssc378qe-nor-lite.tgz",
+    "nand_lite": "openipc.ssc378qe-nand-lite.tgz"
+  },
+  {
+    "urlname": "dm365",
+    "vendor": "TI",
+    "model": "DM365",
+    "board": "dm365",
+    "uboot": "",
+    "nor_lite": "openipc.dm365-nor-lite.tgz",
+    "nand_lite": "openipc.dm365-nand-lite.tgz"
+  },
+  {
+    "urlname": "xm510",
+    "vendor": "Xiongmai",
+    "model": "XM510",
+    "board": "xm510",
+    "uboot": "",
+    "nor_lite": "openipc.xm510-nor-lite.tgz",
+    "nand_lite": "openipc.xm510-nand-lite.tgz"
+  },
+  {
+    "urlname": "xm530",
+    "vendor": "Xiongmai",
+    "model": "XM530",
+    "board": "xm530",
+    "uboot": "",
+    "nor_lite": "openipc.xm530-nor-lite.tgz",
+    "nand_lite": "openipc.xm530-nand-lite.tgz"
+  },
+  {
+    "urlname": "xm550",
+    "vendor": "Xiongmai",
+    "model": "XM550",
+    "board": "xm530",
+    "uboot": "",
+    "nor_lite": "openipc.xm530-nor-lite.tgz",
+    "nand_lite": "openipc.xm530-nand-lite.tgz"
+  }
+]

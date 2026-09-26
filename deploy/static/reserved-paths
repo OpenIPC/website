@@ -48,6 +48,11 @@
 /files/
 /protected-files/
 /.well-known/
+# The Go firmware process's image cache (#299), internal like /protected-files/,
+# and the internal location nginx mirrors camera uploads through while they
+# are shadowed (#294).
+/firmware-cache/
+/_openipc_shadow_upload
 
 # --- files Rails serves straight out of public/ ------------------------------
 #

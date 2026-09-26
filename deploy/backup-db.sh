@@ -116,6 +116,29 @@ zstd -dc "${WORK}/${DB}.sql.zst" | tail -5 | grep -q "Dump completed" \
   || fail "dump has no completion marker — mysqldump was interrupted"
 log "dump verified"
 
+# The Go service's PostgreSQL (#293): the Open Wall's snapshots and the download
+# stats. Custom format, so a restore can pick tables; checked by reading its own
+# table of contents back, which fails on a truncated archive. There is no
+# shrink guard here as there is for MySQL above: this database is two days of
+# camera frames plus a ledger that only grows, and it starts empty.
+PG_DB=openipc_production
+PG_ARCHIVE=postgres-${PG_DB}.dump
+HAVE_PG=0
+if command -v pg_dump >/dev/null 2>&1 \
+   && runuser -u postgres -- psql -tAc "SELECT 1 FROM pg_database WHERE datname = '${PG_DB}'" 2>/dev/null | grep -q 1; then
+  runuser -u postgres -- pg_dump --format=custom --compress=9 "$PG_DB" > "${WORK}/${PG_ARCHIVE}" \
+    || fail "pg_dump of ${PG_DB} failed"
+  pg_restore --list "${WORK}/${PG_ARCHIVE}" > "${WORK}/pg.toc" 2>/dev/null \
+    || fail "the PostgreSQL dump cannot be read back"
+  for t in snapshots downloads; do
+    grep -q "TABLE DATA public ${t} " "${WORK}/pg.toc" || fail "the PostgreSQL dump has no ${t} data"
+  done
+  HAVE_PG=1
+  log "PostgreSQL ${PG_DB} dumped, $(stat -c %s "${WORK}/${PG_ARCHIVE}") bytes"
+else
+  log "no PostgreSQL ${PG_DB} on this host, skipping"
+fi
+
 # ----------------------------------------------------------- analytics
 # GoatCounter's SQLite file (#181). Small -- only per-day aggregates reach
 # disk, no raw addresses and no session rows -- but it is the only copy of the
@@ -146,7 +169,13 @@ fi
 
 # ------------------------------------------------------------- secrets
 log "encrypting secrets to ${AGE_RECIPIENT:0:20}..."
-tar -C "$APP_DIR/config" -czf "${WORK}/secrets.tar.gz" master.key production.env
+tar -C "$APP_DIR/config" -cf "${WORK}/secrets.tar" master.key production.env
+# The Go service's settings: its database passwords, and the keys it was given
+# out of Rails (re-derivable from master.key, but a restore should not have to).
+for f in /srv/www/.env.go-prod /srv/www/.env.go-dev /srv/www/.env.go-shadow; do
+  if [ -f "$f" ]; then tar -C /srv/www -rf "${WORK}/secrets.tar" "$(basename "$f")"; fi
+done
+gzip -9 "${WORK}/secrets.tar"
 age -r "$AGE_RECIPIENT" -o "${WORK}/secrets.tar.gz.age" "${WORK}/secrets.tar.gz" \
   || fail "age encryption failed"
 rm -f "${WORK}/secrets.tar.gz"
@@ -159,6 +188,7 @@ put() {
   local prefix=$1
   local files=("${DB}.sql.zst" secrets.tar.gz.age)
   [ "$HAVE_ANALYTICS" = 1 ] && files+=("$ANALYTICS_ARCHIVE")
+  [ "$HAVE_PG" = 1 ] && files+=("$PG_ARCHIVE")
   for f in "${files[@]}"; do
     if [ "$DRY_RUN" = 1 ]; then
       log "DRY RUN would upload ${f} -> s3://${S3_BUCKET}/${prefix}/${f}"

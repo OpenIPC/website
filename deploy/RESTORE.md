@@ -12,17 +12,21 @@ day rather than on the day you need it.
 
 ```
 daily/YYYY-MM-DD/openipc_production.sql.zst   ~6.6 MB   kept 14 days
+daily/YYYY-MM-DD/postgres-openipc_production.dump   the Go service's PostgreSQL (#293)
 daily/YYYY-MM-DD/secrets.tar.gz.age           ~500 B
 weekly/YYYY-Www/...                                     kept 60 days
 monthly/YYYY-MM/...                                     kept 400 days
 ```
 
-`secrets.tar.gz.age` holds `master.key` and `production.env`. It is encrypted to
+`secrets.tar.gz.age` holds `master.key` and `production.env`, and the Go
+service's settings (`.env.go-prod`, `.env.go-dev`, `.env.go-shadow`). It is encrypted to
 an age recipient whose **private key is not on the server** — it lives only in
 the team password manager. The server can write backups it cannot read.
 
-**Not backed up, by decision:** the ActiveStorage blob tree (Open Wall snapshots
-purge at 2 days and cameras re-upload continuously), `/srv/github-releases`
+**Not backed up, by decision:** the ActiveStorage blob tree and the wall
+images (Open Wall snapshots purge at 2 days and cameras re-upload continuously),
+the Go service's firmware cache (`/srv/www/shared/firmware`, one version of
+each image, rebuilt on the next request), `/srv/github-releases`
 (refreshed hourly from GitHub), `public/files` (rebuilt on demand by
 `Firmware#generate`), and `/srv/www/static` (every bundle is reproducible from
 `ghcr.io/openipc/website-static:<sha>`, the same argument as the app image).
@@ -104,8 +108,28 @@ mysql -e "CREATE DATABASE openipc_production
 
 zstd -dc openipc_production.sql.zst | mysql openipc_production
 
-mysql -N -e "SELECT COUNT(*) FROM socs;" openipc_production   # expect ~126
+mysql -N -e "SELECT COUNT(*) FROM schema_migrations;" openipc_production   # expect > 10
 ```
+
+### 4b. The Go service's PostgreSQL (#293)
+
+`deploy/install-go-service.sh` installs PostgreSQL 17, creates the three
+databases and their roles, and writes `/srv/www/.env.go-*`. On a rebuilt host
+put the `.env.go-*` files from the secrets archive in place **first** (mode
+0600) so the roles get the passwords the files already carry, then:
+
+```bash
+/srv/www/deploy-src/deploy/install-go-service.sh
+runuser -u postgres -- pg_restore --clean --if-exists --no-owner \
+  --role=openipc_prod -d openipc_production postgres-openipc_production.dump
+runuser -u postgres -- psql -tAc "SELECT count(*) FROM downloads" openipc_production
+```
+
+The snapshots in it name images under `/srv/www/shared/wall`, which is not
+backed up: the wall repopulates within one upload cycle, and rows whose images
+are gone are retired by the nightly purge. `openipc-deploy` runs the Go
+migrations before it starts the containers, so a dump from an older schema is
+brought forward on the first deploy.
 
 ### 5. Bring the app up
 
