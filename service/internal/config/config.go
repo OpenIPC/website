@@ -34,7 +34,6 @@ type Config struct {
 
 	// Firmware role.
 	CatalogueDir        string
-	ReleaseIndexPath    string
 	ReleaseCacheRoot    string // tarballs, keyed by digest
 	FirmwareCacheRoot   string // assembled images
 	FirmwareAccelPrefix string // the nginx internal location that aliases FirmwareCacheRoot
@@ -60,7 +59,6 @@ func Load() (*Config, error) {
 		GrantsDisabled:      os.Getenv("WALL_GRANTS_DISABLED") == "1",
 		SnapshotMaxAge:      48 * time.Hour,
 		CatalogueDir:        str("CATALOGUE_DIR", "/app/catalogue"),
-		ReleaseIndexPath:    str("RELEASE_INDEX", "/srv/github-releases/.index.json"),
 		ReleaseCacheRoot:    str("RELEASE_CACHE_ROOT", "/srv/release-cache"),
 		FirmwareCacheRoot:   str("FIRMWARE_CACHE_ROOT", "/srv/firmware"),
 		FirmwareAccelPrefix: str("FIRMWARE_ACCEL_PREFIX", "/firmware-cache/"),

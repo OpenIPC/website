@@ -53,7 +53,7 @@ func AvailabilityMap(cat *catalogue.Catalogue, idx *Index) map[string]string {
 // the answer was made, because the page decides whether to trust it.
 type AvailabilityHandler struct {
 	Catalogue *catalogue.Catalogue
-	Index     *IndexFile
+	Index     Source
 	Now       func() time.Time
 }
 

@@ -12,24 +12,20 @@ package firmware
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"regexp"
+	"slices"
 	"strings"
-	"sync"
-	"time"
 )
 
-// Asset is one row of the release index the mirror publishes hourly.
+// Asset is one file a build published, as the build pushed it.
 type Asset struct {
-	Name      string
-	Size      int64  `json:"size"`
-	Digest    string `json:"digest"`
-	UpdatedAt string `json:"updated_at"`
-	Release   string `json:"release"`
+	Name    string
+	Size    int64  `json:"size"`
+	Digest  string `json:"digest"` // "sha256:<hex>"
+	Release string `json:"release"`
 }
 
-// SHA256 is the digest without its "sha256:" prefix, or "" when the index
-// did not give one.
+// SHA256 is the digest without its "sha256:" prefix, or "" when there is none.
 func (a Asset) SHA256() string {
 	if d, ok := strings.CutPrefix(a.Digest, "sha256:"); ok && sha256Hex.MatchString(d) {
 		return d
@@ -48,38 +44,52 @@ func (a Asset) Key() string {
 var (
 	sha256Hex  = regexp.MustCompile(`^[0-9a-f]{64}$`)
 	unsafeName = regexp.MustCompile(`[^A-Za-z0-9._-]`)
-	// openipc.<board>-<nor|nand>-<release>.tgz
-	assetName = regexp.MustCompile(`^openipc\.(.+)-(nor|nand)-([a-z0-9]+)\.tgz$`)
+	// openipc.<board>-<storage>-<edition>.tgz
+	assetName = regexp.MustCompile(`^openipc\.(.+)-(nor|nand|emmc|sd)-([a-z0-9]+)\.tgz$`)
 )
 
-// Index is one reading of .index.json.
-type Index struct {
-	GeneratedAt string
-	assets      map[string]Asset
-	aliases     map[string]string
-	builds      map[[2]string][]string
+// Fit is what a platform's build needs from the flash: the flash size it is
+// built for, and how much of the kernel and rootfs partitions it uses.
+type Fit struct {
+	FlashMB  int
+	KernelKB int
+	RootfsKB int
 }
 
-func parseIndex(raw []byte) (*Index, error) {
-	var doc struct {
-		GeneratedAt string            `json:"generated_at"`
-		Assets      map[string]Asset  `json:"assets"`
-		Aliases     map[string]string `json:"aliases"`
-	}
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		return nil, err
-	}
-	idx := &Index{GeneratedAt: doc.GeneratedAt, assets: map[string]Asset{}, aliases: doc.Aliases,
+// Index is what the site can hand out right now: for each asset name, the
+// newest retained build that published it -- a board that failed tonight
+// keeps yesterday's tarball, as the rolling releases do -- with the aliases of
+// the newest firmware build and each platform's flash fit.
+type Index struct {
+	// Build is the newest firmware build, the one the index is "as of".
+	Build   string
+	assets  map[string]Asset
+	aliases map[string]string
+	fits    map[string]Fit
+	builds  map[[2]string][]string
+}
+
+// NewIndex builds an Index from rows.
+func NewIndex(build string, assets []Asset, aliases map[string]string, fits map[string]Fit) *Index {
+	idx := &Index{Build: build, assets: map[string]Asset{}, aliases: aliases, fits: fits,
 		builds: map[[2]string][]string{}}
-	for name, a := range doc.Assets {
-		a.Name = name
-		idx.assets[name] = a
-		if m := assetName.FindStringSubmatch(name); m != nil {
+	if idx.aliases == nil {
+		idx.aliases = map[string]string{}
+	}
+	if idx.fits == nil {
+		idx.fits = map[string]Fit{}
+	}
+	for _, a := range assets {
+		idx.assets[a.Name] = a
+		if m := assetName.FindStringSubmatch(a.Name); m != nil {
 			k := [2]string{m[1], m[2]}
 			idx.builds[k] = append(idx.builds[k], m[3])
 		}
 	}
-	return idx, nil
+	for k := range idx.builds {
+		slices.Sort(idx.builds[k])
+	}
+	return idx
 }
 
 // Asset looks one up by name.
@@ -91,7 +101,7 @@ func (i *Index) Asset(name string) (Asset, bool) {
 // Assets is every row, for the purge: what is current is what is kept.
 func (i *Index) Assets() map[string]Asset { return i.assets }
 
-// CanonicalBoard follows the index's aliases (gk7205v210 builds as gk7205v200).
+// CanonicalBoard follows the aliases (gk7205v210 builds as gk7205v200).
 func (i *Index) CanonicalBoard(board string) string {
 	if a, ok := i.aliases[board]; ok && a != "" {
 		return a
@@ -99,55 +109,61 @@ func (i *Index) CanonicalBoard(board string) string {
 	return board
 }
 
-// Releases is what upstream publishes for a board and flash type.
-func (i *Index) Releases(board, flashType string) []string {
-	return i.builds[[2]string{board, flashType}]
+// Releases is the editions upstream publishes for a board and storage type.
+func (i *Index) Releases(board, storage string) []string {
+	return i.builds[[2]string{board, storage}]
 }
 
-// IndexFile re-reads the index when the file changes, and hands back the same
-// *Index otherwise, so anything keyed on it stays valid until upstream moves.
-type IndexFile struct {
-	Path string
-
-	mu      sync.Mutex
-	current *Index
-	stamp   [2]int64
+// Fit is the flash fit of a board's edition, when its build reported one.
+func (i *Index) Fit(board, edition string) (Fit, bool) {
+	f, ok := i.fits[board+"-"+edition]
+	return f, ok && f.FlashMB > 0
 }
 
-// ErrNoIndex means the mirror has not published an index this process can read.
+// Source hands out the current Index.
+type Source interface {
+	Current() (*Index, error)
+}
+
+// ErrNoIndex means no build has been stored yet.
 type ErrNoIndex struct{ Err error }
 
-func (e ErrNoIndex) Error() string { return "no release index: " + e.Err.Error() }
+func (e ErrNoIndex) Error() string { return "no firmware index: " + e.Err.Error() }
 
-func (f *IndexFile) Current() (*Index, error) {
-	st, err := os.Stat(f.Path)
-	if err != nil {
-		return nil, ErrNoIndex{err}
+// Fixed is a Source that never changes, for tests and one-off commands.
+type Fixed struct{ Index *Index }
+
+func (f Fixed) Current() (*Index, error) {
+	if f.Index == nil {
+		return nil, ErrNoIndex{fmt.Errorf("empty")}
 	}
-	stamp := [2]int64{st.ModTime().UnixNano(), st.Size()}
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	if f.current != nil && stamp == f.stamp {
-		return f.current, nil
-	}
-	raw, err := os.ReadFile(f.Path)
-	if err != nil {
-		return nil, ErrNoIndex{err}
-	}
-	idx, err := parseIndex(raw)
-	if err != nil {
-		return nil, ErrNoIndex{fmt.Errorf("%s: %w", f.Path, err)}
-	}
-	f.current, f.stamp = idx, stamp
-	return idx, nil
+	return f.Index, nil
 }
 
-// Stale says whether the publisher looks stopped: an index older than six
-// hours is served, but worth a warning.
-func (i *Index) Stale(now time.Time) bool {
-	t, err := time.Parse(time.RFC3339, i.GeneratedAt)
-	return err == nil && now.Sub(t) > 6*time.Hour
+// ParseIndex reads a JSON snapshot of an index -- {"assets":{name:{size,
+// digest,release}},"aliases":{...},"fits":{...}} -- as the tests' fixtures are.
+func ParseIndex(raw []byte) (*Index, error) {
+	var doc struct {
+		Build   string            `json:"build"`
+		Assets  map[string]Asset  `json:"assets"`
+		Aliases map[string]string `json:"aliases"`
+		Fits    map[string]struct {
+			FlashMB  int `json:"flash_mb"`
+			KernelKB int `json:"kernel_kb"`
+			RootfsKB int `json:"rootfs_kb"`
+		} `json:"fits"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return nil, err
+	}
+	assets := make([]Asset, 0, len(doc.Assets))
+	for name, a := range doc.Assets {
+		a.Name = name
+		assets = append(assets, a)
+	}
+	fits := map[string]Fit{}
+	for k, f := range doc.Fits {
+		fits[k] = Fit{FlashMB: f.FlashMB, KernelKB: f.KernelKB, RootfsKB: f.RootfsKB}
+	}
+	return NewIndex(doc.Build, assets, doc.Aliases, fits), nil
 }
-
-// ParseIndex reads an .index.json document, for callers holding the bytes.
-func ParseIndex(raw []byte) (*Index, error) { return parseIndex(raw) }

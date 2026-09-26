@@ -1,0 +1,1523 @@
+{
+  "schema": 1,
+  "board": "gk7205v200",
+  "variant": "lite",
+  "flash_mb": 8,
+  "kernel_version": "4.9.37",
+  "rootfs": {
+    "uncompressed_bytes": 13683673,
+    "compressed_bytes": 5238784,
+    "compression": "xz",
+    "compression_ratio": 0.38284925399781183
+  },
+  "kernel": {
+    "image_path": "uImage.gk7205v200",
+    "uimage_bytes": 1921334,
+    "vmlinux_bytes": 7417212
+  },
+  "headroom": {
+    "kernel": {
+      "used_kb": 1877,
+      "cap_kb": 2048,
+      "headroom_kb": 171
+    },
+    "rootfs": {
+      "used_kb": 5116,
+      "cap_kb": 5120,
+      "headroom_kb": 4
+    }
+  },
+  "packages": [
+    {
+      "name": "hisilicon-opensdk",
+      "uncompressed_bytes": 3592372,
+      "compressed_bytes_approx": 1375336,
+      "file_count": 61,
+      "top_files": [
+        {
+          "path": "/lib/modules/4.9.37/goke/gk7205v200_vi.ko",
+          "bytes": 334288
+        },
+        {
+          "path": "/lib/modules/4.9.37/goke/gk7205v200_vpss.ko",
+          "bytes": 284764
+        },
+        {
+          "path": "/lib/modules/4.9.37/goke/gk7205v200_venc.ko",
+          "bytes": 180092
+        },
+        {
+          "path": "/lib/modules/4.9.37/extra/open_isp.ko",
+          "bytes": 172552
+        },
+        {
+          "path": "/usr/lib/sensors/libsns_imx307.so",
+          "bytes": 156488
+        }
+      ]
+    },
+    {
+      "name": "goke-osdrv-gk7205v200",
+      "uncompressed_bytes": 2316358,
+      "compressed_bytes_approx": 886815,
+      "file_count": 66,
+      "top_files": [
+        {
+          "path": "/usr/lib/libgk_isp.so",
+          "bytes": 455080
+        },
+        {
+          "path": "/usr/lib/libgk_api.so",
+          "bytes": 309104
+        },
+        {
+          "path": "/usr/lib/libgk_ae.so",
+          "bytes": 210404
+        },
+        {
+          "path": "/etc/sensors/iq/imx335.ini",
+          "bytes": 148834
+        },
+        {
+          "path": "/etc/sensors/iq/sc2232.ini",
+          "bytes": 143193
+        }
+      ]
+    },
+    {
+      "name": "majestic",
+      "uncompressed_bytes": 1379260,
+      "compressed_bytes_approx": 528048,
+      "file_count": 3,
+      "top_files": [
+        {
+          "path": "/usr/bin/majestic",
+          "bytes": 1375652
+        },
+        {
+          "path": "/etc/majestic.yaml",
+          "bytes": 2697
+        },
+        {
+          "path": "/etc/init.d/S95majestic",
+          "bytes": 911
+        }
+      ]
+    },
+    {
+      "name": "majestic-webui",
+      "uncompressed_bytes": 1234130,
+      "compressed_bytes_approx": 472485,
+      "file_count": 185,
+      "top_files": [
+        {
+          "path": "/var/www/a/mj-settings.js",
+          "bytes": 161064
+        },
+        {
+          "path": "/var/www/a/bootstrap.override.css",
+          "bytes": 109275
+        },
+        {
+          "path": "/var/www/a/bootstrap.min.css",
+          "bytes": 61749
+        },
+        {
+          "path": "/var/www/a/recordings.js",
+          "bytes": 41571
+        },
+        {
+          "path": "/var/www/setup.html",
+          "bytes": 33463
+        }
+      ]
+    },
+    {
+      "name": "linux",
+      "uncompressed_bytes": 731996,
+      "compressed_bytes_approx": 280244,
+      "file_count": 13,
+      "top_files": [
+        {
+          "path": "/lib/modules/4.9.37/kernel/net/mac80211/mac80211.ko",
+          "bytes": 390900
+        },
+        {
+          "path": "/lib/modules/4.9.37/kernel/drivers/usb/serial/option.ko",
+          "bytes": 139132
+        },
+        {
+          "path": "/lib/modules/4.9.37/kernel/drivers/net/wireless/mediatek/mt7601u/mt7601u.ko",
+          "bytes": 60464
+        },
+        {
+          "path": "/lib/modules/4.9.37/kernel/drivers/usb/serial/usbserial.ko",
+          "bytes": 32504
+        },
+        {
+          "path": "/lib/modules/4.9.37/kernel/drivers/net/usb/usbnet.ko",
+          "bytes": 29428
+        }
+      ]
+    },
+    {
+      "name": "toolchain-external-custom",
+      "uncompressed_bytes": 623005,
+      "compressed_bytes_approx": 238516,
+      "file_count": 5,
+      "top_files": [
+        {
+          "path": "/lib/libc.so",
+          "bytes": 501464
+        },
+        {
+          "path": "/lib/libgcc_s.so.1",
+          "bytes": 108004
+        },
+        {
+          "path": "/lib/libatomic.so.1.2.0",
+          "bytes": 13512
+        },
+        {
+          "path": "/lib/libatomic.so.1",
+          "bytes": 18
+        },
+        {
+          "path": "/lib/ld-musl-arm.so.1",
+          "bytes": 7
+        }
+      ]
+    },
+    {
+      "name": "busybox",
+      "uncompressed_bytes": 565319,
+      "compressed_bytes_approx": 216431,
+      "file_count": 233,
+      "top_files": [
+        {
+          "path": "/bin/busybox",
+          "bytes": 555664
+        },
+        {
+          "path": "/usr/share/udhcpc/default.script",
+          "bytes": 2210
+        },
+        {
+          "path": "/etc/init.d/S02sysctl",
+          "bytes": 1357
+        },
+        {
+          "path": "/etc/inittab",
+          "bytes": 1136
+        },
+        {
+          "path": "/etc/init.d/S01syslogd",
+          "bytes": 1091
+        }
+      ]
+    },
+    {
+      "name": "wpa_supplicant",
+      "uncompressed_bytes": 553366,
+      "compressed_bytes_approx": 211855,
+      "file_count": 4,
+      "top_files": [
+        {
+          "path": "/usr/sbin/wpa_supplicant",
+          "bytes": 455248
+        },
+        {
+          "path": "/usr/sbin/wpa_cli",
+          "bytes": 67864
+        },
+        {
+          "path": "/usr/sbin/wpa_passphrase",
+          "bytes": 30176
+        },
+        {
+          "path": "/etc/wpa_supplicant.conf",
+          "bytes": 78
+        }
+      ]
+    },
+    {
+      "name": "mbedtls-openipc",
+      "uncompressed_bytes": 515050,
+      "compressed_bytes_approx": 197186,
+      "file_count": 9,
+      "top_files": [
+        {
+          "path": "/usr/lib/libmbedcrypto.so.2.25.0",
+          "bytes": 269456
+        },
+        {
+          "path": "/usr/lib/libmbedtls.so.2.25.0",
+          "bytes": 141376
+        },
+        {
+          "path": "/usr/lib/libmbedx509.so.2.25.0",
+          "bytes": 104104
+        },
+        {
+          "path": "/usr/lib/libmbedcrypto.so.6",
+          "bytes": 23
+        },
+        {
+          "path": "/usr/lib/libmbedx509.so.1",
+          "bytes": 21
+        }
+      ]
+    },
+    {
+      "name": "wireguard-linux-compat",
+      "uncompressed_bytes": 312447,
+      "compressed_bytes_approx": 119620,
+      "file_count": 11,
+      "top_files": [
+        {
+          "path": "/lib/modules/4.9.37/extra/wireguard.ko",
+          "bytes": 124860
+        },
+        {
+          "path": "/lib/modules/4.9.37/modules.alias",
+          "bytes": 72015
+        },
+        {
+          "path": "/lib/modules/4.9.37/modules.alias.bin",
+          "bytes": 61939
+        },
+        {
+          "path": "/lib/modules/4.9.37/modules.symbols.bin",
+          "bytes": 21459
+        },
+        {
+          "path": "/lib/modules/4.9.37/modules.symbols",
+          "bytes": 18219
+        }
+      ]
+    },
+    {
+      "name": "_overlay_or_post_build",
+      "uncompressed_bytes": 306748,
+      "compressed_bytes_approx": 117438,
+      "file_count": 74,
+      "top_files": [
+        {
+          "path": "/etc/ssl/certs/ca-certificates.crt",
+          "bytes": 200313
+        },
+        {
+          "path": "/usr/sbin/sysupgrade",
+          "bytes": 33706
+        },
+        {
+          "path": "/usr/share/openipc/eula/eula.ru.txt",
+          "bytes": 13400
+        },
+        {
+          "path": "/usr/share/openipc/eula/eula.en.txt",
+          "bytes": 6366
+        },
+        {
+          "path": "/usr/sbin/extutils",
+          "bytes": 5738
+        }
+      ]
+    },
+    {
+      "name": "libcurl-openipc",
+      "uncompressed_bytes": 291656,
+      "compressed_bytes_approx": 111660,
+      "file_count": 4,
+      "top_files": [
+        {
+          "path": "/usr/lib/libcurl.so.4.7.0",
+          "bytes": 191452
+        },
+        {
+          "path": "/usr/bin/curl",
+          "bytes": 100172
+        },
+        {
+          "path": "/usr/lib/libcurl.so.4",
+          "bytes": 16
+        },
+        {
+          "path": "/usr/lib/libcurl.so",
+          "bytes": 16
+        }
+      ]
+    },
+    {
+      "name": "libevent-openipc",
+      "uncompressed_bytes": 236928,
+      "compressed_bytes_approx": 90707,
+      "file_count": 16,
+      "top_files": [
+        {
+          "path": "/usr/lib/libevent_core-2.2.so.1.0.1",
+          "bytes": 116984
+        },
+        {
+          "path": "/usr/lib/libevent_extra-2.2.so.1.0.1",
+          "bytes": 84124
+        },
+        {
+          "path": "/usr/lib/libevent_mbedtls-2.2.so.1.0.1",
+          "bytes": 17884
+        },
+        {
+          "path": "/usr/lib/libevent_pthreads-2.2.so.1.0.1",
+          "bytes": 17616
+        },
+        {
+          "path": "/usr/lib/libevent_pthreads.so",
+          "bytes": 30
+        }
+      ]
+    },
+    {
+      "name": "opus-openipc",
+      "uncompressed_bytes": 210644,
+      "compressed_bytes_approx": 80644,
+      "file_count": 3,
+      "top_files": [
+        {
+          "path": "/usr/lib/libopus.so.0.8.0",
+          "bytes": 210612
+        },
+        {
+          "path": "/usr/lib/libopus.so.0",
+          "bytes": 16
+        },
+        {
+          "path": "/usr/lib/libopus.so",
+          "bytes": 16
+        }
+      ]
+    },
+    {
+      "name": "dropbear-openipc",
+      "uncompressed_bytes": 171482,
+      "compressed_bytes_approx": 65651,
+      "file_count": 7,
+      "top_files": [
+        {
+          "path": "/usr/sbin/dropbear",
+          "bytes": 170796
+        },
+        {
+          "path": "/etc/init.d/S50dropbear",
+          "bytes": 606
+        },
+        {
+          "path": "/usr/bin/ssh",
+          "bytes": 16
+        },
+        {
+          "path": "/usr/bin/scp",
+          "bytes": 16
+        },
+        {
+          "path": "/usr/bin/dropbearkey",
+          "bytes": 16
+        }
+      ]
+    },
+    {
+      "name": "libnl",
+      "uncompressed_bytes": 98638,
+      "compressed_bytes_approx": 37763,
+      "file_count": 6,
+      "top_files": [
+        {
+          "path": "/usr/lib/libnl-3.so.200.26.0",
+          "bytes": 84196
+        },
+        {
+          "path": "/usr/lib/libnl-genl-3.so.200.26.0",
+          "bytes": 14356
+        },
+        {
+          "path": "/usr/lib/libnl-genl-3.so.200",
+          "bytes": 24
+        },
+        {
+          "path": "/usr/lib/libnl-genl-3.so",
+          "bytes": 24
+        },
+        {
+          "path": "/usr/lib/libnl-3.so.200",
+          "bytes": 19
+        }
+      ]
+    },
+    {
+      "name": "libyaml",
+      "uncompressed_bytes": 66856,
+      "compressed_bytes_approx": 25595,
+      "file_count": 3,
+      "top_files": [
+        {
+          "path": "/usr/lib/libyaml-0.so.2.0.9",
+          "bytes": 66820
+        },
+        {
+          "path": "/usr/lib/libyaml.so",
+          "bytes": 18
+        },
+        {
+          "path": "/usr/lib/libyaml-0.so.2",
+          "bytes": 18
+        }
+      ]
+    },
+    {
+      "name": "wireless_tools",
+      "uncompressed_bytes": 58940,
+      "compressed_bytes_approx": 22565,
+      "file_count": 5,
+      "top_files": [
+        {
+          "path": "/sbin/iwconfig",
+          "bytes": 58908
+        },
+        {
+          "path": "/sbin/iwspy",
+          "bytes": 8
+        },
+        {
+          "path": "/sbin/iwpriv",
+          "bytes": 8
+        },
+        {
+          "path": "/sbin/iwlist",
+          "bytes": 8
+        },
+        {
+          "path": "/sbin/iwgetid",
+          "bytes": 8
+        }
+      ]
+    },
+    {
+      "name": "libzlib",
+      "uncompressed_bytes": 54778,
+      "compressed_bytes_approx": 20971,
+      "file_count": 3,
+      "top_files": [
+        {
+          "path": "/usr/lib/libz.so.1.3.1",
+          "bytes": 54752
+        },
+        {
+          "path": "/usr/lib/libz.so.1",
+          "bytes": 13
+        },
+        {
+          "path": "/usr/lib/libz.so",
+          "bytes": 13
+        }
+      ]
+    },
+    {
+      "name": "linux-firmware-openipc",
+      "uncompressed_bytes": 46654,
+      "compressed_bytes_approx": 17861,
+      "file_count": 3,
+      "top_files": [
+        {
+          "path": "/lib/firmware/mediatek/mt7601u.bin",
+          "bytes": 45412
+        },
+        {
+          "path": "/etc/mediatek/RT2870STA.dat",
+          "bytes": 1222
+        },
+        {
+          "path": "/lib/firmware/mt7601u.bin",
+          "bytes": 20
+        }
+      ]
+    },
+    {
+      "name": "json-c",
+      "uncompressed_bytes": 42664,
+      "compressed_bytes_approx": 16333,
+      "file_count": 3,
+      "top_files": [
+        {
+          "path": "/usr/lib/libjson-c.so.5.3.0",
+          "bytes": 42632
+        },
+        {
+          "path": "/usr/lib/libjson-c.so.5",
+          "bytes": 18
+        },
+        {
+          "path": "/usr/lib/libjson-c.so",
+          "bytes": 14
+        }
+      ]
+    },
+    {
+      "name": "vtund-openipc",
+      "uncompressed_bytes": 42621,
+      "compressed_bytes_approx": 16317,
+      "file_count": 4,
+      "top_files": [
+        {
+          "path": "/usr/sbin/vtund",
+          "bytes": 39388
+        },
+        {
+          "path": "/usr/sbin/tunnel",
+          "bytes": 2578
+        },
+        {
+          "path": "/usr/sbin/tapip",
+          "bytes": 475
+        },
+        {
+          "path": "/etc/init.d/S98vtun",
+          "bytes": 180
+        }
+      ]
+    },
+    {
+      "name": "wireguard-tools",
+      "uncompressed_bytes": 39496,
+      "compressed_bytes_approx": 15121,
+      "file_count": 1,
+      "top_files": [
+        {
+          "path": "/usr/bin/wg",
+          "bytes": 39496
+        }
+      ]
+    },
+    {
+      "name": "motors",
+      "uncompressed_bytes": 34752,
+      "compressed_bytes_approx": 13304,
+      "file_count": 5,
+      "top_files": [
+        {
+          "path": "/usr/bin/xm-uart",
+          "bytes": 9440
+        },
+        {
+          "path": "/usr/bin/ingenic-motor",
+          "bytes": 9404
+        },
+        {
+          "path": "/usr/bin/i2c-motor",
+          "bytes": 5312
+        },
+        {
+          "path": "/usr/bin/xm-kmotor",
+          "bytes": 5300
+        },
+        {
+          "path": "/usr/bin/camhi-motor",
+          "bytes": 5296
+        }
+      ]
+    },
+    {
+      "name": "majestic-fonts",
+      "uncompressed_bytes": 33492,
+      "compressed_bytes_approx": 12822,
+      "file_count": 1,
+      "top_files": [
+        {
+          "path": "/usr/share/fonts/truetype/UbuntuMono-Regular.ttf",
+          "bytes": 33492
+        }
+      ]
+    },
+    {
+      "name": "uboot-tools",
+      "uncompressed_bytes": 26355,
+      "compressed_bytes_approx": 10089,
+      "file_count": 2,
+      "top_files": [
+        {
+          "path": "/usr/sbin/fw_printenv",
+          "bytes": 26344
+        },
+        {
+          "path": "/usr/sbin/fw_setenv",
+          "bytes": 11
+        }
+      ]
+    },
+    {
+      "name": "ipctool",
+      "uncompressed_bytes": 22036,
+      "compressed_bytes_approx": 8436,
+      "file_count": 1,
+      "top_files": [
+        {
+          "path": "/usr/bin/ipcinfo",
+          "bytes": 22036
+        }
+      ]
+    },
+    {
+      "name": "libogg-openipc",
+      "uncompressed_bytes": 21758,
+      "compressed_bytes_approx": 8330,
+      "file_count": 3,
+      "top_files": [
+        {
+          "path": "/usr/lib/libogg.so.0.8.5",
+          "bytes": 21728
+        },
+        {
+          "path": "/usr/lib/libogg.so.0",
+          "bytes": 15
+        },
+        {
+          "path": "/usr/lib/libogg.so",
+          "bytes": 15
+        }
+      ]
+    },
+    {
+      "name": "skeleton-init-common",
+      "uncompressed_bytes": 18321,
+      "compressed_bytes_approx": 7014,
+      "file_count": 15,
+      "top_files": [
+        {
+          "path": "/etc/services",
+          "bytes": 10873
+        },
+        {
+          "path": "/etc/protocols",
+          "bytes": 2744
+        },
+        {
+          "path": "/etc/profile",
+          "bytes": 2406
+        },
+        {
+          "path": "/THIS_IS_NOT_YOUR_ROOT_FILESYSTEM",
+          "bytes": 1336
+        },
+        {
+          "path": "/etc/passwd",
+          "bytes": 356
+        }
+      ]
+    },
+    {
+      "name": "haserl",
+      "uncompressed_bytes": 18156,
+      "compressed_bytes_approx": 6951,
+      "file_count": 1,
+      "top_files": [
+        {
+          "path": "/usr/bin/haserl",
+          "bytes": 18156
+        }
+      ]
+    },
+    {
+      "name": "yaml-cli",
+      "uncompressed_bytes": 13596,
+      "compressed_bytes_approx": 5205,
+      "file_count": 1,
+      "top_files": [
+        {
+          "path": "/usr/bin/yaml-cli",
+          "bytes": 13596
+        }
+      ]
+    },
+    {
+      "name": "openipc-failsafe",
+      "uncompressed_bytes": 2718,
+      "compressed_bytes_approx": 1040,
+      "file_count": 4,
+      "top_files": [
+        {
+          "path": "/etc/init.d/S98crashlog",
+          "bytes": 930
+        },
+        {
+          "path": "/usr/sbin/failsafe-rescue",
+          "bytes": 835
+        },
+        {
+          "path": "/etc/init.d/S99bootok",
+          "bytes": 726
+        },
+        {
+          "path": "/usr/sbin/bootcount-clear",
+          "bytes": 227
+        }
+      ]
+    },
+    {
+      "name": "initscripts",
+      "uncompressed_bytes": 491,
+      "compressed_bytes_approx": 187,
+      "file_count": 2,
+      "top_files": [
+        {
+          "path": "/etc/init.d/rcS",
+          "bytes": 367
+        },
+        {
+          "path": "/etc/init.d/rcK",
+          "bytes": 124
+        }
+      ]
+    },
+    {
+      "name": "skeleton-init-sysv",
+      "uncompressed_bytes": 344,
+      "compressed_bytes_approx": 131,
+      "file_count": 2,
+      "top_files": [
+        {
+          "path": "/etc/fstab",
+          "bytes": 334
+        },
+        {
+          "path": "/dev/log",
+          "bytes": 10
+        }
+      ]
+    },
+    {
+      "name": "urandom-scripts",
+      "uncompressed_bytes": 246,
+      "compressed_bytes_approx": 94,
+      "file_count": 1,
+      "top_files": [
+        {
+          "path": "/etc/init.d/S01seedrng",
+          "bytes": 246
+        }
+      ]
+    }
+  ],
+  "linux_components": {
+    "kernel_image": {
+      "image_path": "uImage.gk7205v200",
+      "uimage_bytes": 1921334,
+      "vmlinux_bytes": 7417212
+    },
+    "modules": [
+      {
+        "name": "open_cipher",
+        "path": "/lib/modules/4.9.37/extra/open_cipher.ko",
+        "bytes": 96188,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "open_hwrng",
+        "path": "/lib/modules/4.9.37/extra/open_hwrng.ko",
+        "bytes": 3468,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "open_isp",
+        "path": "/lib/modules/4.9.37/extra/open_isp.ko",
+        "bytes": 172552,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "open_mipi_rx",
+        "path": "/lib/modules/4.9.37/extra/open_mipi_rx.ko",
+        "bytes": 43076,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "open_openipc_frame_ts",
+        "path": "/lib/modules/4.9.37/extra/open_openipc_frame_ts.ko",
+        "bytes": 12188,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "open_osal",
+        "path": "/lib/modules/4.9.37/extra/open_osal.ko",
+        "bytes": 104512,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "open_piris",
+        "path": "/lib/modules/4.9.37/extra/open_piris.ko",
+        "bytes": 8440,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "open_pwm",
+        "path": "/lib/modules/4.9.37/extra/open_pwm.ko",
+        "bytes": 4472,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "open_sensor_i2c",
+        "path": "/lib/modules/4.9.37/extra/open_sensor_i2c.ko",
+        "bytes": 3796,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "open_sensor_spi",
+        "path": "/lib/modules/4.9.37/extra/open_sensor_spi.ko",
+        "bytes": 6592,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "open_sys_config",
+        "path": "/lib/modules/4.9.37/extra/open_sys_config.ko",
+        "bytes": 16672,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "open_wdt",
+        "path": "/lib/modules/4.9.37/extra/open_wdt.ko",
+        "bytes": 10548,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "wireguard",
+        "path": "/lib/modules/4.9.37/extra/wireguard.ko",
+        "bytes": 124860,
+        "package": "wireguard-linux-compat",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_acodec",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_acodec.ko",
+        "bytes": 14436,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_adec",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_adec.ko",
+        "bytes": 8868,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_aenc",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_aenc.ko",
+        "bytes": 21812,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_ai",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_ai.ko",
+        "bytes": 74628,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_aio",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_aio.ko",
+        "bytes": 24216,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_ao",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_ao.ko",
+        "bytes": 49692,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_base",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_base.ko",
+        "bytes": 43908,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_chnl",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_chnl.ko",
+        "bytes": 29672,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_h264e",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_h264e.ko",
+        "bytes": 118464,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_h265e",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_h265e.ko",
+        "bytes": 149040,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_ive",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_ive.ko",
+        "bytes": 101428,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_jpege",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_jpege.ko",
+        "bytes": 46196,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_rc",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_rc.ko",
+        "bytes": 106200,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_rgn",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_rgn.ko",
+        "bytes": 74592,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_sys",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_sys.ko",
+        "bytes": 122984,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_vedu",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_vedu.ko",
+        "bytes": 30288,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_venc",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_venc.ko",
+        "bytes": 180092,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_vgs",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_vgs.ko",
+        "bytes": 116792,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_vi",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_vi.ko",
+        "bytes": 334288,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "gk7205v200_vpss",
+        "path": "/lib/modules/4.9.37/goke/gk7205v200_vpss.ko",
+        "bytes": 284764,
+        "package": "hisilicon-opensdk",
+        "autoloaded": false
+      },
+      {
+        "name": "mii",
+        "path": "/lib/modules/4.9.37/kernel/drivers/net/mii.ko",
+        "bytes": 5888,
+        "package": "linux",
+        "autoloaded": false
+      },
+      {
+        "name": "tun",
+        "path": "/lib/modules/4.9.37/kernel/drivers/net/tun.ko",
+        "bytes": 27260,
+        "package": "linux",
+        "autoloaded": false
+      },
+      {
+        "name": "cdc_ether",
+        "path": "/lib/modules/4.9.37/kernel/drivers/net/usb/cdc_ether.ko",
+        "bytes": 11796,
+        "package": "linux",
+        "autoloaded": false
+      },
+      {
+        "name": "rndis_host",
+        "path": "/lib/modules/4.9.37/kernel/drivers/net/usb/rndis_host.ko",
+        "bytes": 10016,
+        "package": "linux",
+        "autoloaded": false
+      },
+      {
+        "name": "usbnet",
+        "path": "/lib/modules/4.9.37/kernel/drivers/net/usb/usbnet.ko",
+        "bytes": 29428,
+        "package": "linux",
+        "autoloaded": false
+      },
+      {
+        "name": "mt7601u",
+        "path": "/lib/modules/4.9.37/kernel/drivers/net/wireless/mediatek/mt7601u/mt7601u.ko",
+        "bytes": 60464,
+        "package": "linux",
+        "autoloaded": false
+      },
+      {
+        "name": "option",
+        "path": "/lib/modules/4.9.37/kernel/drivers/usb/serial/option.ko",
+        "bytes": 139132,
+        "package": "linux",
+        "autoloaded": false
+      },
+      {
+        "name": "usb-serial-simple",
+        "path": "/lib/modules/4.9.37/kernel/drivers/usb/serial/usb-serial-simple.ko",
+        "bytes": 9208,
+        "package": "linux",
+        "autoloaded": false
+      },
+      {
+        "name": "usb_wwan",
+        "path": "/lib/modules/4.9.37/kernel/drivers/usb/serial/usb_wwan.ko",
+        "bytes": 10512,
+        "package": "linux",
+        "autoloaded": false
+      },
+      {
+        "name": "usbserial",
+        "path": "/lib/modules/4.9.37/kernel/drivers/usb/serial/usbserial.ko",
+        "bytes": 32504,
+        "package": "linux",
+        "autoloaded": false
+      },
+      {
+        "name": "mac80211",
+        "path": "/lib/modules/4.9.37/kernel/net/mac80211/mac80211.ko",
+        "bytes": 390900,
+        "package": "linux",
+        "autoloaded": false
+      }
+    ],
+    "built_in": [
+      "aead",
+      "aes_generic",
+      "af_packet",
+      "akcipher",
+      "amba-pl011",
+      "arc4",
+      "binfmt_script",
+      "bitrev",
+      "brd",
+      "bridge",
+      "ccm",
+      "cfg80211",
+      "chipreg",
+      "clk-gk7205v200",
+      "cmdlinepart",
+      "crc-ccitt",
+      "crc-itu-t",
+      "crc-t10dif",
+      "crc16",
+      "crc32",
+      "crc32_generic",
+      "crc32c_generic",
+      "crct10dif_common",
+      "crct10dif_generic",
+      "crypto",
+      "crypto_algapi",
+      "crypto_blkcipher",
+      "crypto_hash",
+      "crypto_null",
+      "crypto_wq",
+      "cryptomgr",
+      "ctr",
+      "deadline-iosched",
+      "deflate",
+      "drbg",
+      "dwc3",
+      "dwc3-goke",
+      "dwc3-of-simple",
+      "echainiv",
+      "exportfs",
+      "fat",
+      "femac",
+      "firmware_class",
+      "fixed_phy",
+      "fou",
+      "fou6",
+      "gcm",
+      "gf128mul",
+      "ghash-generic",
+      "gluebi",
+      "goke-sfc",
+      "goke_fmc",
+      "grace",
+      "hmac",
+      "i2c-core",
+      "i2c-dev",
+      "i2c-goke",
+      "i2c-mux",
+      "inet6_hashtables",
+      "inet_diag",
+      "ip6_udp_tunnel",
+      "ip_tables",
+      "ip_tunnel",
+      "iptable_filter",
+      "ipv6",
+      "jffs2",
+      "jitterentropy_rng",
+      "kpp",
+      "libcrc32c",
+      "libphy",
+      "llc",
+      "lockd",
+      "loop",
+      "lz4_decompress",
+      "lzo",
+      "lzo_compress",
+      "lzo_decompress",
+      "md5",
+      "mdio-goke-femac",
+      "mfd-core",
+      "mmc_block",
+      "mmc_core",
+      "mtd",
+      "mtd_blkdevs",
+      "mtdblock",
+      "nand",
+      "nand_ecc",
+      "nand_ids",
+      "nfs",
+      "nfs_acl",
+      "nfsv3",
+      "nls_ascii",
+      "nls_base",
+      "nls_cp437",
+      "nls_iso8859-1",
+      "nls_utf8",
+      "of_mdio",
+      "ofpart",
+      "overlay",
+      "p8022",
+      "phy-goke-usbp2",
+      "phy_fix",
+      "pinctrl-single",
+      "psnap",
+      "pstore",
+      "pwrseq_emmc",
+      "pwrseq_simple",
+      "ramoops",
+      "reed_solomon",
+      "regmap-i2c",
+      "regmap-mmio",
+      "regmap-spi",
+      "rng",
+      "rtc-goke",
+      "sdhci",
+      "sdhci-pltfm",
+      "sdhci-proc",
+      "seqiv",
+      "serial_core",
+      "sha1_generic",
+      "sha256_generic",
+      "spi-nor",
+      "spi-pl022",
+      "squashfs",
+      "stp",
+      "sunrpc",
+      "tcp_cubic",
+      "tcp_diag",
+      "ubi",
+      "ubifs",
+      "udc-core",
+      "udp_tunnel",
+      "unix",
+      "usb-common",
+      "usbcore",
+      "util",
+      "vfat",
+      "x_tables",
+      "xhci-hcd",
+      "xhci-plat-hcd",
+      "xt_tcpudp",
+      "xz_dec",
+      "yaffs",
+      "zlib_deflate",
+      "zlib_inflate"
+    ],
+    "autoload_list": [
+      "exfat",
+      "vfat"
+    ]
+  },
+  "removed_by_finalize": [
+    {
+      "path": "/usr/lib/libstdc++.so.6.0.32",
+      "package": "toolchain-external-custom",
+      "source_bytes": 2214096
+    },
+    {
+      "path": "/usr/lib/libnl-route-3.so.200.26.0",
+      "package": "libnl",
+      "source_bytes": 494472
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_vi.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 333940
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_vpss.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 284404
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_venc.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 179688
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_h265e.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 148664
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_sys.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 122616
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_h264e.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 118084
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_vgs.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 116420
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_rc.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 105852
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_ive.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 101060
+    },
+    {
+      "path": "/usr/lib/libnl-nf-3.so.200.26.0",
+      "package": "libnl",
+      "source_bytes": 100140
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_ai.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 74228
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_rgn.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 74224
+    },
+    {
+      "path": "/usr/lib/libnl-xfrm-3.so.200.26.0",
+      "package": "libnl",
+      "source_bytes": 70908
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_ao.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 49312
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_jpege.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 45804
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_base.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 43504
+    },
+    {
+      "path": "/usr/lib/libnl-idiag-3.so.200.26.0",
+      "package": "libnl",
+      "source_bytes": 36504
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_ive_neo.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 31644
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_vedu.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 29900
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_chnl.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 29268
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_aio.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 23848
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_aenc.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 21420
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_acodec.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 14040
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_adec.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 8496
+    },
+    {
+      "path": "/lib/modules/4.9.37/extra/open_adc.ko",
+      "package": "hisilicon-opensdk",
+      "source_bytes": 6304
+    },
+    {
+      "path": "/usr/lib/libstdc++.so.6.0.32-gdb.py",
+      "package": "toolchain-external-custom",
+      "source_bytes": 2594
+    },
+    {
+      "path": "/etc/libnl/pktloc",
+      "package": "libnl",
+      "source_bytes": 1532
+    },
+    {
+      "path": "/etc/libnl/classid",
+      "package": "libnl",
+      "source_bytes": 1130
+    },
+    {
+      "path": "/usr/lib/libnl-route-3.so.200",
+      "package": "libnl",
+      "source_bytes": 25
+    },
+    {
+      "path": "/usr/lib/libnl-route-3.so",
+      "package": "libnl",
+      "source_bytes": 25
+    },
+    {
+      "path": "/usr/lib/libnl-idiag-3.so.200",
+      "package": "libnl",
+      "source_bytes": 25
+    },
+    {
+      "path": "/usr/lib/libnl-idiag-3.so",
+      "package": "libnl",
+      "source_bytes": 25
+    },
+    {
+      "path": "/usr/lib/libnl-xfrm-3.so.200",
+      "package": "libnl",
+      "source_bytes": 24
+    },
+    {
+      "path": "/usr/lib/libnl-xfrm-3.so",
+      "package": "libnl",
+      "source_bytes": 24
+    },
+    {
+      "path": "/usr/lib/libnl-nf-3.so.200",
+      "package": "libnl",
+      "source_bytes": 22
+    },
+    {
+      "path": "/usr/lib/libnl-nf-3.so",
+      "package": "libnl",
+      "source_bytes": 22
+    },
+    {
+      "path": "/usr/lib/libstdc++.so.6",
+      "package": "toolchain-external-custom",
+      "source_bytes": 19
+    },
+    {
+      "path": "/var/lock",
+      "package": "skeleton-init-sysv",
+      "source_bytes": 11
+    },
+    {
+      "path": "/var/lib/misc",
+      "package": "skeleton-init-sysv",
+      "source_bytes": 9
+    },
+    {
+      "path": "/var/cache",
+      "package": "skeleton-init-sysv",
+      "source_bytes": 6
+    },
+    {
+      "path": "/var/log",
+      "package": "skeleton-init-sysv",
+      "source_bytes": 6
+    },
+    {
+      "path": "/var/run",
+      "package": "skeleton-init-sysv",
+      "source_bytes": 6
+    },
+    {
+      "path": "/var/spool",
+      "package": "skeleton-init-sysv",
+      "source_bytes": 6
+    },
+    {
+      "path": "/var/tmp",
+      "package": "skeleton-init-sysv",
+      "source_bytes": 6
+    },
+    {
+      "path": "/lib32",
+      "package": "skeleton-init-common",
+      "source_bytes": 3
+    },
+    {
+      "path": "/usr/lib32",
+      "package": "skeleton-init-common",
+      "source_bytes": 3
+    },
+    {
+      "path": "/etc/dropbear",
+      "package": "dropbear-openipc",
+      "source_bytes": 0
+    }
+  ]
+}

@@ -107,6 +107,7 @@ cat > /etc/nginx/conf.d/zz-stub-upstream.conf <<'STUB'
 server { listen 127.0.0.1:3002; location / { return 200 "GO-WEB-PROD\n"; } }
 server { listen 127.0.0.1:3003;
   location = /api/v1/hardware/availability.json { return 200 "GO-AVAILABILITY\n"; }
+  location ^~ /api/v1/wizard/ { return 200 "GO-WIZARD\n"; }
   location / {
   add_header X-Accel-Redirect /firmware-cache/image.bin;
   return 200 "";
@@ -555,6 +556,12 @@ grep -q GO-AVAILABILITY /tmp/b || { echo "  the availability feed did not reach 
 # With a trailing slash, as Rails' router answered it: the same feed.
 expect /api/v1/hardware/availability.json/ 200 go hsts
 grep -q GO-AVAILABILITY /tmp/b || { echo "  the trailing-slash feed did not reach the Go firmware process"; fail=1; }
+# The wizard is the firmware role's, built from the pushed builds (#285).
+expect /api/v1/wizard/hi3516ev300.json 200 go    hsts
+grep -q GO-WIZARD /tmp/b || { echo "  the wizard did not reach the Go firmware process"; fail=1; }
+# CI pushes each build to the web role, once (builds/PUSH.md).
+posts /api/v1/builds                200 go
+grep -q GO-WEB-PROD /tmp/pb || { echo "  the build push did not reach the Go web process"; fail=1; }
 expect $FW                          200 go     hsts
 grep -q IMAGE /tmp/b || { echo "  the firmware X-Accel-Redirect did not reach /firmware-cache/"; fail=1; }
 redirects_to openipc.org /snapshots https://openipc.org/open-wall

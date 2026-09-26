@@ -77,7 +77,7 @@ func TestBoardsMatchRails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	idx, err := parseIndex(raw)
+	idx, err := ParseIndex(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ type manifest struct {
 // cache and returns the index describing them.
 func fixture(t testing.TB, cat *catalogue.Catalogue, releasesRoot string, ms []manifest) *Index {
 	raw, _ := os.ReadFile("testdata/release-index.json")
-	prod, _ := parseIndex(raw)
+	prod, _ := ParseIndex(raw)
 	idx := &Index{assets: map[string]Asset{}, aliases: prod.aliases, builds: map[[2]string][]string{}}
 	add := func(name string, data []byte) {
 		sum := sha256.Sum256(data)
