@@ -1,5 +1,5 @@
 /**
- * app/views/cameras/socs/show.html.erb -- the wizard's form, and what stands
+ * The wizard's form, and what stands
  * in its place for a chip nothing has been published for.
  *
  * Which of the two a visitor sees is a question about the release index, not
@@ -207,7 +207,7 @@ export default function Form({
                             aria-required rather than `required`: the field is
                             mandatory and the asterisk is a CSS ::after a screen
                             reader does not read, but a `required` select makes
-                            Rails prepend a blank option -- a chip of "", which
+                            the reference prepend a blank option -- a chip of "", which
                             decides which layouts and editions are offered and
                             whose output is pasted into a bootloader.
                           */}

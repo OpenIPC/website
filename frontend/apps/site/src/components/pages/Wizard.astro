@@ -3,14 +3,14 @@
  * One SoC's installation wizard (#164).
  *
  * The page is prerendered per SoC and per locale, and everything on it is the
- * island's: which of Rails' two templates a visitor sees depends on the query
+ * island's: which of the two views a visitor sees depends on the query
  * string, and which menus the form offers depends on what upstream has
  * published -- a release index a cron refreshes hourly, which a page built in
  * CI cannot know. So this file resolves what the catalogue knows, hands it
  * over, and renders nothing itself.
  *
  * What the commands say is never decided here or in the island: they are
- * rendered by Rails and fetched as data (#163).
+ * rendered by the Go service and fetched as data (#163).
  */
 import Wizard from '../wizard/Wizard.tsx';
 import { pathFor, type Locale } from '../../lib/i18n';

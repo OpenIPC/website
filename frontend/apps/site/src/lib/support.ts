@@ -1,7 +1,7 @@
 /**
  * How many people pay for OpenIPC every month, read in the browser (#160).
  *
- * app/models/support_stats.rb does this in Rails, from a file an hourly cron
+ * The backer count's rules, applied in the browser to a file an hourly cron
  * writes. A prerendered page cannot: the count would be baked into a bundle
  * that may sit behind a cache for far longer than the number is good for, and
  * SupportStats exists precisely to stop a page outliving the figure printed on

@@ -2,10 +2,10 @@
 /**
  * The SoC catalogue: recommended, one vendor, or the full list (#162).
  *
- * app/views/cameras/socs/index.html.erb, which renders all three from the same
+ * The three hardware views, rendered from the same
  * template and differs only in which rows it is given. The data is
  * ../../lib/hardware.ts -- data/catalogue/*.yml, baked -- so this page needs no
- * database, which is what lets it leave Rails.
+ * database.
  *
  * One column is not in the catalogue and cannot be. `Soc#availability` asks
  * what upstream has published, which a cron learns hourly, so a page built on
@@ -15,8 +15,7 @@
  * value is what a crawler and a reader without JavaScript see, which is why it
  * is baked at all rather than left blank.
  *
- * The wizard behind "Generate an installation guide" is still Rails (#163), so
- * those links leave the bundle and fall through the seam.
+ * "Generate an installation guide" links to each SoC's wizard page (#164).
  */
 import { allRows, featuredRows, vendorRows, vendorBySlug, fullName, socPath, vendorPath, VENDORS, type Row, type Vendor } from '../../lib/hardware';
 import availability from '../../data/availability.json';
@@ -52,7 +51,7 @@ const rowKey = (key: string) => t(`cameras.socs.soc.${key}`);
  * because "we have the SDK and no board" and "we have the board and need a
  * developer" are different things and one of them a reader can act on; a
  * status with no sentence of its own falls back to the general one, which is
- * what the Rails partial's `default:` does.
+ * what the original partial's `default:` did.
  */
 const unavailableFor = (status: string) =>
   t(`cameras.socs.soc.unavailable_${status}`, { fallback: rowKey('unavailable') });

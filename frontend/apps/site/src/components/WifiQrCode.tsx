@@ -8,7 +8,7 @@ import { Input, MainButton, QrCodeWidget } from '@openipc/ui';
  * so the encoded text is that exact shape and not a `WIFI:` URI -- which is
  * what a phone would expect and what this camera would not understand.
  *
- * The Rails page pulled qrcode@1.5.1 from jsdelivr on every visit. @openipc/ui
+ * The original page pulled qrcode@1.5.1 from jsdelivr on every visit. @openipc/ui
  * encodes it in the page instead: one fewer third party on a page whose
  * neighbour is /privacy, and a code that still renders with JavaScript off
  * once something has been typed -- which, on a form, is never, so the initial

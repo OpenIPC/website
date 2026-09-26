@@ -1,6 +1,5 @@
 /**
- * What `test/controllers/relaunch_pages_test.rb` asserts, against the built
- * tree instead of against a Rails response (#160).
+ * What every page must be, asserted against the built tree (#160).
  *
  * The epic calls for a Playwright run here. These pages are prerendered HTML,
  * so a browser adds nothing to any of the assertions below -- they are all
@@ -124,7 +123,7 @@ describe('every page is a page', () => {
   });
 });
 
-describe('the shell behaves the way the Rails shell does', () => {
+describe('the shell behaves the way the site\'s shell always has', () => {
   // The seam's whole premise is that a visitor cannot tell which half of the
   // site they are on. Two of the ways they could are properties of the built
   // CSS rather than of any page's markup, so they are checked here.
@@ -133,7 +132,7 @@ describe('the shell behaves the way the Rails shell does', () => {
     .map((f) => readFileSync(join(dist, f), 'utf8'))
     .join('\n');
 
-  test('the navigation is pinned, as app/views/layouts/_navbar.html.erb is', () => {
+  test('the navigation is pinned', () => {
     // Bootstrap's `sticky-top`. Every page the bundle does not serve -- `/`,
     // /supported-hardware, the Open Wall -- keeps its navigation put while the
     // page scrolls, and a static page whose navigation scrolls away is the
@@ -154,22 +153,6 @@ describe('the shell behaves the way the Rails shell does', () => {
 
     expect(stylesheet, 'nothing in the CSS makes `sticky` stick').toContain('position:sticky');
     expect(stylesheet).toContain('z-index:1020');
-  });
-
-  test('every page tells Turbo it is not part of the Rails application', () => {
-    // The Rails half ships Turbo Drive, which intercepts a link into this
-    // bundle, swaps the body and merges the heads -- leaving Bootstrap and
-    // Tailwind loaded together. Measured on dev: the bar went from 60.4px to
-    // 74.6 crossing one way, and coming back left Tailwind's preflight on the
-    // Rails page, where `img { height: auto }` made the logo 64px instead of
-    // 32. One click and the site was broken until a reload.
-    //
-    // A page that loses this meta rejoins that application silently, so it is
-    // asserted on every page rather than on the layout.
-    for (const [loc, path, html] of PAGES) {
-      expect(html, `${loc}${path} does not opt out of Turbo`)
-        .toMatch(/<meta name="turbo-visit-control" content="reload"/);
-    }
   });
 
   test('the navigation collapses at the same width the origin does', () => {
@@ -353,7 +336,7 @@ describe('the hardware catalogue is the catalogue (#162)', () => {
     }
   });
 
-  test('the wizard is still linked, because it is still Rails', () => {
+  test('the wizard is still linked', () => {
     // #163 moves it. Until then these links leave the bundle and fall through
     // the seam, and a link that stopped pointing at it would strand the one
     // action the page exists for.
@@ -388,7 +371,7 @@ describe('internal links resolve', () => {
       }
     }
 
-    expect(broken, 'these links reach nothing; Rails would 302 them to the home page').toEqual([]);
+    expect(broken, 'these links reach nothing; the route map would 302 them to the home page').toEqual([]);
   });
 
   test('the home page links every place it is supposed to send people', () => {
@@ -424,7 +407,7 @@ describe('the pages say what they are for', () => {
     // The partner wall is the reason this exists: a logo named in the data and
     // missing from disk is a broken tile on the page a commercial reader is
     // most likely to be looking at. Remote avatars are skipped -- /our-team
-    // loads GitHub's, as the Rails page does.
+    // loads GitHub's.
     const missing: string[] = [];
 
     for (const [locale, path, html] of PAGES) {

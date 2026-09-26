@@ -1,9 +1,10 @@
 /**
  * Which options the wizard's menus offer, for one SoC (#164).
  *
- * A port of the script in app/views/cameras/socs/show.html.erb, rule for rule.
+ * The wizard's menu narrowing, rule for rule as the reference script has it
+ * (wizard-menu.reference-script.fixture.html).
  * None of it is flash geometry -- where a partition starts and how big it is
- * stays in Rails and arrives as rendered commands -- but which chips, layouts
+ * is rendered by the Go service and arrives as data -- but which chips, layouts
  * and editions a visitor may pick is menu behaviour, and menu behaviour has to
  * run in the browser.
  *

@@ -3,7 +3,7 @@
  *
  * Icon.astro does the same thing for prerendered pages and cannot be used
  * here: it is an Astro component, and this page's chrome is decided in the
- * browser. Same MIT set, same four glyphs the Rails page draws from the
+ * browser. Same MIT set, same four glyphs the original page drew from the
  * webfont, imported by name so the bundle carries only these.
  *
  * The width and height attributes come off, because the glyph they replace is

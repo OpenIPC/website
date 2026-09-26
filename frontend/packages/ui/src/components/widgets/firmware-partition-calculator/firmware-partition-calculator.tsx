@@ -15,7 +15,7 @@ import { debounce } from '../../../utils';
 
 /** The eight rows, and the colour each one is outlined in. */
 // Indices for the form state, which is keyed `part0-name` and always has
-// been. The LABELS are 1-8: the Rails page this replaces numbers its eight
+// been. The LABELS are 1-8: the page this replaced numbered its eight
 // rows from one, and a calculator that renames every partition is not the same
 // page. See ROW_LABEL below.
 const PARTITIONS = [0, 1, 2, 3, 4, 5, 6, 7] as const;

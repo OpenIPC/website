@@ -81,7 +81,7 @@ export interface WizardDocument {
  * in the form, so a submission carries neither and `update` ends up with nil
  * for both -- which `Camera` reads exactly as the eth, no-SD case everywhere
  * it looks. The blank is kept in the settings so the permanent link matches
- * Rails' character for character, and turned into a page here.
+ * character for character, and turned into a page here.
  */
 export function combinationFor(
   document: WizardDocument,

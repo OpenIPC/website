@@ -1,8 +1,8 @@
 ---
 /**
- * app/views/pages/community.html.erb (#160).
+ * The community page (#160).
  *
- * Two notes carried across from the Rails view because they are the reason the
+ * Two notes carried across from the original view because they are the reason the
  * page reads the way it does:
  *
  * Every room here is a Telegram room, and Telegram does not open from every
@@ -43,7 +43,7 @@ const CONTRIBUTIONS: [string, string][] = [
 ];
 
 // `t(".#{key}_text", default: '').presence || t(".#{key}_text_html")` in the
-// Rails view: some of these entries carry a link and some do not, and the
+// original view: some of these entries carry a link and some do not, and the
 // catalogue records which by the key it defines. Reproduced rather than
 // normalised, so the two halves of the site render the same six paragraphs.
 function contributionText(key: string): string {

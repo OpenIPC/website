@@ -1,7 +1,7 @@
 /**
  * The people on /our-team, as data (#160).
  *
- * app/views/pages/our_team.html.erb held 36 cards of hand-written HTML, each
+ * The team page once held 36 cards of hand-written HTML, each
  * repeating the same markup around a name, an avatar, a role and a handful of
  * links. Extracted mechanically from that file rather than retyped -- 36 cards
  * and 75 links is exactly the volume at which a transcription error goes
@@ -9,7 +9,7 @@
  * and the same 75 links.
  *
  * The avatars are GitHub's, loaded from avatars.githubusercontent.com, as they
- * are on the Rails page. That is a third-party request from the visitor's
+ * were on the original page. That is a third-party request from the visitor's
  * browser and it is worth knowing about; it is not a change this page makes,
  * and baking them into the bundle would mean 36 faces going stale whenever
  * somebody changes their picture.

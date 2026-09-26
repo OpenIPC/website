@@ -47,7 +47,7 @@ export interface FwCalcLabels {
  * widget always rendered. Storybook and the gallery pass no labels at all.
  *
  * "Lite" and "Ultimate" are the firmware editions' names and are not
- * translated anywhere on the site, including in the Rails views this replaced.
+ * translated anywhere on the site, including in the views this replaced.
  */
 export const DEFAULT_FW_CALC_LABELS: FwCalcLabels = {
   title: 'Firmware Partition Calculator',

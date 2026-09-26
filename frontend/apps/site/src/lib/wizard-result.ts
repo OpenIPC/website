@@ -3,7 +3,7 @@
  *
  * The form can send a combination the page will not show as asked: a 16MB
  * layout on an 8MB chip, an edition upstream does not publish, Ultimate on a
- * 5120KB rootfs partition. Rails moves each of those onto something it can
+ * 5120KB rootfs partition. The reference moves each of those onto something it can
  * render and says so in a flash message, and the order it does it in is load
  * bearing -- the size rule reads the edition that `use_published_release!`
  * settled on, not the one that was asked for, and reading it first is a bug
@@ -14,7 +14,7 @@
  * export's answer and is not recomputed here.
  *
  * `frontend/apps/site/src/lib/wizard-result.parity.test.ts` holds it to what
- * Rails renders, combination by combination, from a fixture Rails writes.
+ * the reference renders, combination by combination, from a recorded fixture.
  */
 import {
   DEFAULTS, normalisedMac, wellFormed, type Patterns, type WizardSettings,
@@ -23,7 +23,7 @@ import { FLASH_CHIPS, PARTITION_LAYOUTS, type Availability } from './wizard-menu
 
 /** One flash message, as a key and its arguments rather than a sentence. */
 export interface FlashMessage {
-  /** Rails' flash key. `alert` is the red one, `warning` the amber. */
+  /** The message's severity. `alert` is the red one, `warning` the amber. */
   level: 'warning' | 'alert';
   /** Under `cameras.socs.warnings`. */
   key: string;
@@ -120,7 +120,7 @@ export function fromForm(query: URLSearchParams, patterns: Patterns): WizardSett
     // over the constructor's `eth` and `nosd`. `Camera` treats that exactly as
     // eth and nosd everywhere it looks; see `combinationFor`, which is where
     // the blank is turned back into a page. Defaulting here instead would make
-    // every permanent link this page prints differ from the one Rails prints.
+    // every permanent link this page prints differ from the one the reference printed.
     networkInterface: field('network_interface') ?? '',
     sdCardSlot: field('sd_card_slot') ?? '',
   };
@@ -149,7 +149,7 @@ export function toFormQuery(settings: WizardSettings): string {
  * `shown` translated.
  *
  * `settle` carries the raw names, because it has no translator and must stay
- * testable against the fixture Rails writes; this is where they become what
+ * testable against the recorded fixture; this is where they become what
  * `cameras.socs.warnings.edition_not_published` expects.
  */
 export function flashArguments(
@@ -174,7 +174,7 @@ export function flashArguments(
  */
 export function settle(asked: WizardSettings, rules: SocRules): Settled {
   const flashes: FlashMessage[] = [];
-  // Rails' flash is a hash: a second message under the same key replaces the
+  // The messages are keyed by severity: a second message under the same key replaces the
   // first, and the render order is the order each KEY was first set.
   const raise = (level: FlashMessage['level'], key: string, args: FlashMessage['args'] = {}) => {
     const existing = flashes.findIndex((message) => message.level === level);
@@ -224,7 +224,7 @@ export function settle(asked: WizardSettings, rules: SocRules): Settled {
   if (published.length > 0 && !published.includes(settings.firmwareVersion)) {
     const wanted = settings.firmwareVersion;
     settings.firmwareVersion = published[0];
-    // Raw edition names, not sentences: Rails passes `asked.capitalize` and
+    // Raw edition names, not sentences: the reference passed `asked.capitalize` and
     // `firmware_version_name`, and both of those are the renderer's job here --
     // this module has no translator and must not grow one, or it stops being
     // testable against the fixture.

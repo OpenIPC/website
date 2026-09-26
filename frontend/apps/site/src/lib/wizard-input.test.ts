@@ -6,7 +6,7 @@ import {
 import fixture from './wizard-input.fixture.json';
 
 // The patterns as the export carries them, which are the ones
-// app/helpers/application_helper.rb gives the form.
+// the reference gave the form.
 const PATTERNS: Patterns = {
   ip: '^((\\d{1,2}|1\\d\\d|2[0-4]\\d|25[0-5])\\.){3}(\\d{1,2}|1\\d\\d|2[0-4]\\d|25[0-5])$',
   mac: '^([a-fA-F\\d]{2}[:\\-]){5}[a-fA-F\\d]{2}$',
@@ -18,7 +18,7 @@ describe('what may go into a command a human will paste', () => {
   });
 
   test('anything else falls back rather than being refused', () => {
-    // Rails' semantics exactly: the page still renders, with the default.
+    // The reference's semantics exactly: the page still renders, with the default.
     for (const bad of ['', '256.1.1.1', '1.2.3', 'not-an-ip', '192.168.1.10 ']) {
       expect(wellFormed(bad, PATTERNS.ip, '192.168.1.10')).toBe('192.168.1.10');
     }
@@ -135,19 +135,19 @@ describe('the holes the export leaves', () => {
 });
 
 
-describe('the port answers what Rails answers', () => {
-  // The fixture is written by `bin/rails wizard:fixture`: Rails' own answers
+describe('the port answers what the reference answers', () => {
+  // The fixture was recorded from the reference implementation: its own answers
   // for the ordinary inputs, the malformed ones and the hostile ones. A
   // duplicate is a thing that drifts, and this is what stops it drifting
   // quietly -- if the validation changes on either side, these fail.
   const patterns = fixture.patterns as Patterns;
 
-  test('the patterns are the ones Rails gives the form', () => {
+  test('the patterns are the ones the reference gives the form', () => {
     expect(patterns.ip).toBe(PATTERNS.ip);
     expect(patterns.mac).toBe(PATTERNS.mac);
   });
 
-  test('every address Rails keeps or replaces, the port keeps or replaces the same way', () => {
+  test('every address the reference keeps or replaces, the port keeps or replaces the same way', () => {
     for (const [input, wanted] of Object.entries(fixture.ip)) {
       expect(wellFormed(input, patterns.ip, '192.168.1.10'), `ip ${JSON.stringify(input)}`)
         .toBe(wanted);
@@ -163,7 +163,7 @@ describe('the port answers what Rails answers', () => {
   test('the one place the two differ on purpose, written down', () => {
     // IP_ADDRESS_FORMAT is Resolv's and accepts IPv6; the form's `pattern`,
     // which is what the export carries and what this port uses, is IPv4 only.
-    // So a hand-made query string with an IPv6 address is accepted by Rails and
+    // So a hand-made query string with an IPv6 address is accepted by the reference and
     // falls back to the default here. The wizard has never offered IPv6 -- the
     // form refuses it too -- and the stricter side is the one composing a
     // command, which is the right way round. Asserted so it stays deliberate.

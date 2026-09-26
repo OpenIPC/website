@@ -277,8 +277,8 @@ describe('the labels are the consumer\'s, not the widget\'s (#160)', () => {
 
     expect(screen.getByText('Firmware Partition Calculator')).toBeTruthy();
     expect(screen.getByText('MTD device name')).toBeTruthy();
-    // Numbered from one, as app/views/pages/firmware_partitions_calculation
-    // .html.erb numbers its eight rows -- the state behind them is still keyed
+    // Numbered from one, as the page this replaced numbered its eight rows --
+    // the state behind them is still keyed
     // from zero, and a reader should not be able to tell.
     expect(screen.getByText('Partition 1 name')).toBeTruthy();
     expect(screen.getByText('Partition 8 size, KB')).toBeTruthy();

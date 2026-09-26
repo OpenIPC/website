@@ -49,12 +49,12 @@ describe('the three locale trees', () => {
     expect(walk(dist).filter((f) => f.endsWith('index.html')).sort()).toEqual(expected.sort());
   });
 
-  test('every marketing address config/routes.rb serves is in the bundle', () => {
+  test('every marketing address the site serves is in the bundle', () => {
     // The list is written out rather than derived, because the point of it is
     // to disagree with the registry when somebody edits one of them. It is
-    // config/routes.rb's `pages#` block, minus `/` -- which stays on Rails
-    // because it negotiates language -- and minus the redirects and the two
-    // `410 Gone` routes, which are not pages (/merchandise became one in #290).
+    // the site's marketing pages, minus `/` -- which has file routes of its
+    // own -- and minus the redirects and the retired addresses, which are not
+    // pages (/merchandise became one in #290).
     const ROUTED = [
       '/business', '/community', '/digital-twins', '/donate', '/ecosystem', '/edge-ai',
       '/get-started', '/green_life', '/isp-sensors', '/low-latency', '/majestic-endpoints',
@@ -99,9 +99,9 @@ describe('the three locale trees', () => {
 
   test('it says nothing about how the site is built', () => {
     // It is reachable without authentication on production. Internal paths,
-    // rake tasks and test filenames do not belong on it.
+    // build tasks and test filenames do not belong on it.
     const html = read('_smoke/index.html');
-    for (const leak of ['data/locales', 'bin/rails', '.rb', 'i18n:export']) {
+    for (const leak of ['data/locales', 'export-data', 'service/', '.test.ts']) {
       expect(html, `the smoke page mentions ${leak}`).not.toContain(leak);
     }
   });
@@ -164,9 +164,8 @@ describe('the design tokens carried over', () => {
   });
 
   test('the faces are declared, and the bundle carries the files', () => {
-    // The files used to be Rails' public/fonts, borrowed across the seam
-    // (nginx proxied /fonts/ to Rails). Rails is gone (#304), so the bundle
-    // ships them in public/fonts/ and serves them itself, at the same address.
+    // The bundle ships the faces in public/fonts/ and serves them itself, at
+    // /fonts/ (#304).
     //
     // It was two copies: @openipc/ui carries three Latin-only faces for
     // Storybook, the site imported them with the design tokens, and every
@@ -206,10 +205,10 @@ describe('the bundle can be stamped', () => {
   });
 });
 
-describe('nothing claims a page Rails owns', () => {
+describe('the home page', () => {
   test('the root index.html carries the language decision', () => {
-    // #160 left `/` on Rails because Rails renders it per Accept-Language and
-    // a file serves one language to everyone. #165 moved the decision into the
+    // `/` once answered per Accept-Language, and a file serves one language
+    // to everyone. #165 moved the decision into the
     // browser instead: the file is English and a script in it sends a reader
     // whose browser prefers Russian or Chinese onward before the page paints.
     //

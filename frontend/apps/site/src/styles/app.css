@@ -55,7 +55,7 @@
   --radius-xl: 1rem;
 
   /* _variables.scss's heading scale. Tailwind's ladder has no 1.75rem step,
-   * so a bare <h2> written as `text-3xl` is 30px where the Rails page renders
+   * so a bare <h2> written as `text-3xl` is 30px where the original page renders
    * 28 -- two pixels of font on every section title of every page. */
   --text-h1: 2.25rem;
   --text-h2: 1.75rem;
@@ -65,7 +65,7 @@
    *
    * Bootstrap has one body line-height and applies it whatever the font size;
    * Tailwind pairs each size with its own -- `text-sm` is 14px in a 20px box
-   * where the Rails page gives it 22.4. Two pixels per line, on every list,
+   * where the original page gives it 22.4. Two pixels per line, on every list,
    * caption and paragraph that carries a size utility, and it is why the
    * footer ran 25px shorter than the page it replaces. Headings are exempt:
    * the unlayered rule below gives them 1.2, as $headings-line-height does. */
@@ -172,7 +172,7 @@
  *
  * Tailwind's `text-2xl` sets a line-height as well as a font-size -- 24px text
  * in a 32px box -- so a heading styled with it came out 3-4px taller than the
- * Rails page's, on every heading of every page, which is most of the 40px this
+ * original page's, on every heading of every page, which is most of the 40px this
  * page was running long. A rule in `@layer base` cannot fix that: utilities
  * beat base whatever their specificity. Unlayered, it beats them, which is the
  * point and also the catch -- a heading that genuinely wants a different
@@ -185,7 +185,7 @@ h1, h2, h3, h4, h5, h6 {
 /*
  * Bootstrap's `.container`, to the pixel (#160).
  *
- * Every page on the Rails half sits in one, and its width steps at each
+ * Every original page sits in one, and its width steps at each
  * breakpoint: 540, 720, 960, 1140, 1320. A single max-width was close enough
  * to look right on its own and wrong beside the real thing -- at a 1440
  * viewport the site is 1320px wide and these pages were 1240, so the text
@@ -207,7 +207,7 @@ h1, h2, h3, h4, h5, h6 {
 @media (min-width: 1400px) { .site-container { max-width: 1320px; } }
 
 /*
- * The navigation bar, at app/views/layouts/_navbar.html.erb's measurements
+ * The navigation bar, at the original navbar's measurements
  * (#160). Every number here was read off the origin; see SiteHeader.astro.
  */
 
@@ -418,9 +418,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /*
- * The typefaces the Rails site used, from the same files (#160). They are the
- * bundle's own since Rails went (#304): public/fonts/, served at /fonts/ with a
- * year's immutable cache by a location of their own in the vhost.
+ * The site's typefaces (#160), the bundle's own (#304): public/fonts/, served
+ * at /fonts/ with a year's immutable cache by a location of their own in the
+ * vhost.
  *
  * @openipc/ui ships three Latin-only faces of its own for Storybook and the
  * gallery, which is why this was not obvious: English looked right. Russian
@@ -590,7 +590,7 @@ h1, h2, h3, h4, h5, h6 {
  * padding, the font size and the 1px transparent border -- decide the height,
  * and they are worth stating once rather than re-deriving per call site.
  *
- * $btn-padding-y/.x and $btn-font-weight come from the Rails
+ * $btn-padding-y/.x and $btn-font-weight come from the original
  * _variables.scss; the rest is Bootstrap's own default.
  */
 .site-btn {
@@ -835,7 +835,7 @@ h1, h2, h3, h4, h5, h6 {
    * release index fetched when it opens, so it cannot be drawn with utilities
    * resolved at build time the way the rest of the bundle is. The Bootstrap
    * components it stands on are reproduced here instead, and every number below
-   * was read off the compiled stylesheet the Rails page serves rather than
+   * was read off the compiled stylesheet the original page served rather than
    * guessed -- which is the lesson of every previous page in this bundle.
    * ------------------------------------------------------------------------ */
 
@@ -954,7 +954,7 @@ h1, h2, h3, h4, h5, h6 {
   /*
    * The remaining `.alert-*` pairs, from the same computed tokens the two above
    * came from: --bs-<colour>-text-emphasis, -bg-subtle and -border-subtle, as
-   * the Rails stylesheet resolves them for this theme.
+   * the original stylesheet resolved them for this theme.
    */
   .site-alert-danger {
     color: #561c18;
@@ -1061,7 +1061,7 @@ h1, h2, h3, h4, h5, h6 {
    * Everywhere else in the bundle a `.row` is rewritten as flex utilities,
    * because the markup is written once at build time and can be written in
    * Tailwind's terms. The wizard's is not: it is rendered by an island from the
-   * same ERB structure the Rails page has, at four breakpoints, and translating
+   * same structure the original page had, at four breakpoints, and translating
    * `col col-lg-4` by hand -- equal-width below 992px, a third above it -- is
    * exactly the by-eye translation that cost this bundle its first three
    * reviews. These are the rules themselves, with this theme's 1.5rem gutter.
