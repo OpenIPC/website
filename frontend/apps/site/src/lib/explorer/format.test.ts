@@ -88,6 +88,7 @@ describe("page language", () => {
       expect(fmtBytes(2_000_000).replace(/\s/g, " ")).toBe("1,91 МБ");
       expect(fmtBytesOrNull(null)).toBe("н/д");
       expect(fmtPct(83.52).replace(/\s/g, " ")).toBe("83,5 %");
+      expect(fmtPct(34.4, 0).replace(/\s/g, " ")).toBe("34 %");
       setFormatLocale("zh");
       expect(fmtNum(7864)).toBe("7,864");
       expect(fmtPerWeek(1_024)).toBe("+7.0 KB/周");

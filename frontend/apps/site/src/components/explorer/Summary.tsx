@@ -82,7 +82,7 @@ export default function Summary({ sizes, t }: { sizes: Sizes; t: ExplorerT }) {
           {sizes.rootfs.compressed_bytes != null && (
             <span>
               {t('fact_compressed')} <b class="font-medium text-body">{fmtBytes(sizes.rootfs.compressed_bytes)}</b>
-              {sizes.rootfs.compression ? ` (${sizes.rootfs.compression}${sizes.rootfs.compression_ratio ? `, ${Math.round(sizes.rootfs.compression_ratio * 100)}%` : ''})` : ''}
+              {sizes.rootfs.compression ? ` (${sizes.rootfs.compression}${sizes.rootfs.compression_ratio ? `, ${fmtPct(sizes.rootfs.compression_ratio * 100, 0)}` : ''})` : ''}
             </span>
           )}
           <span>{t('fact_counts', { packages: sizes.packages.length, modules: sizes.linux_components.modules.length })}</span>
