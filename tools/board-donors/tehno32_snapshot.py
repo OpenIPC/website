@@ -144,6 +144,29 @@ def pages(pdf, work):
     return out
 
 
+def trimmed(png, work):
+    """The page cropped to what is printed on it, with a small margin: an A4
+    page with a short pin table at the top is mostly white, and white is all
+    a thumbnail of it would show. The running header and footer (the
+    company's letterhead) are cropped too when they are all that is left
+    between them and the edge."""
+    from PIL import Image, ImageChops
+    out = os.path.join(work, "trim", os.path.basename(png))
+    if not os.path.exists(out):
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        with Image.open(png) as im:
+            rgb = im.convert("RGB")
+            ink = ImageChops.difference(rgb, Image.new("RGB", rgb.size, "white")).convert("L").point(lambda v: 255 if v > 24 else 0)
+            box = ink.getbbox()
+            if box:
+                m = 12
+                box = (max(box[0] - m, 0), max(box[1] - m, 0), min(box[2] + m, rgb.width), min(box[3] + m, rgb.height))
+                rgb = rgb.crop(box)
+            rgb.save(out + ".tmp.png", "PNG", optimize=True)
+        os.replace(out + ".tmp.png", out)
+    return out
+
+
 def main():
     cap, work, out = sys.argv[1:4]
     os.makedirs(work, exist_ok=True)
@@ -219,7 +242,7 @@ def main():
         d, got = interface_pages(ds)
         fl = []
         for i, png in enumerate(got, 1):
-            name, path = files.add(png, f"{code}-pinout-{i}.png", used)
+            name, path = files.add(trimmed(png, work), f"{code}-pinout-{i}.png", used)
             fl.append({"kind": "pinout", "name": name, "path": path})
         return fl
 
