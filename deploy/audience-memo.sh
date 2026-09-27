@@ -64,13 +64,23 @@ trap 'rm -rf "$work"' EXIT
 # The month before this one, for the deltas the series exists to make possible.
 prev_month=$(date -u -d "$month-01 -1 day" +%Y-%m 2>/dev/null || echo "")
 
+# The month's raw log lines, once, for every raw-log section (the awk pass and
+# the bot report both read this). The origin deletes access logs after 14 days
+# (the /privacy promise, enforced by service/deploytest), so on a run for a
+# closed month this holds only the tail of the month -- the coverage window is
+# reported and the raw-log sections are framed as shares and per-day rates,
+# which stay comparable month to month regardless of how many days survived.
+mon_abbr=$(date -u -d "$month-01" +%b 2>/dev/null || date -u -j -f %Y-%m-%d "$month-01" +%b 2>/dev/null || echo "")
+year=${month%%-*}
+zcat -f "${logs[@]}" 2>/dev/null | grep -aF "/$mon_abbr/$year:" > "$work/month.log" || true
+
 # --- one awk pass over the month's logs -------------------------------------
 #
 # Emits KEY VALUE lines the shell below reads back. Field split on the double
 # quote, so $1 carries the address and timestamp, $2 the request, $4 the
 # referer and $6 the user agent -- the same shape deploy/audience-report.sh and
 # deploy/log-report.sh read.
-zcat -f "${logs[@]}" 2>/dev/null | awk -F'"' -v month="$month" '
+awk -F'"' -v month="$month" '
   function urldecode(s) { gsub(/%2[Ff]/, "/", s); gsub(/%3[Aa]/, ":", s); return s }
   BEGIN {
     split("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec", mn, " ")
@@ -83,6 +93,11 @@ zcat -f "${logs[@]}" 2>/dev/null | awk -F'"' -v month="$month" '
     ym = substr(stamp, 8, 4) "-" num[substr(stamp, 4, 3)]
     if (ym != month) next
     day = substr(stamp, 8, 4) "-" num[substr(stamp, 4, 3)] "-" substr(stamp, 1, 2)
+    # Coverage of the month actually present in the logs. The origin deletes
+    # access logs after 14 days (the /privacy promise), so a month run on the
+    # 1st sees only the tail of the month for everything read from the raw log.
+    if (cmin == "" || day < cmin) cmin = day
+    if (day > cmax) cmax = day
 
     req = $2
     split($3, st, " "); code = st[1]                     # " STATUS BYTES " -> split on " " strips the leading space, so status is st[1]
@@ -92,9 +107,9 @@ zcat -f "${logs[@]}" 2>/dev/null | awk -F'"' -v month="$month" '
     # path. soc is the segment after /socs/; the edition is fw_release=.
     if (code == "200" && path ~ /\/socs\/[^\/]+\/download_full_image/) {
       soc = path; sub(/.*\/socs\//, "", soc); sub(/\/download_full_image.*/, "", soc)
-      rel = ""
-      if (match(path, /[?&]fw_release=[^&]*/)) rel = substr(path, RSTART + 12, RLENGTH - 12)
-      fw[soc]++; if (rel != "") fwrel[soc SUBSEP rel]++
+      rel = "none"
+      if (match(path, /[?&]fw_release=[^&]*/)) { rel = substr(path, RSTART + 12, RLENGTH - 12); if (rel == "") rel = "none" }
+      fw[soc]++; fwrel[soc SUBSEP rel]++   # every download, so the FPV edition can override the SoC segment
       fwtotal++
       next
     }
@@ -110,6 +125,7 @@ zcat -f "${logs[@]}" 2>/dev/null | awk -F'"' -v month="$month" '
       # #183 events: the name is p= (not a path) or is flagged e=true.
       name = p
       if (name ~ /^ref:/)          reftag[substr(name, 5)]++
+      else if (name ~ /^ext:/)     exthost[substr(name, 5)]++
       else if (name == "business-mail") ev_businessmail++
       else if (name == "oc-checkout")   ev_occheckout++
       else if (name == "tg-join")       ev_tgjoin++
@@ -120,11 +136,22 @@ zcat -f "${logs[@]}" 2>/dev/null | awk -F'"' -v month="$month" '
 
     pv++; days[day] = 1
 
-    # Locale from the path prefix.
+    # Site locale the visitor read, from the path prefix. This is page views,
+    # not deduplicated people, and is the locale the SITE served -- distinct
+    # from the browser language below.
     loc = "en"
     if (p ~ /^\/ru(\/|$)/) loc = "ru"
     else if (p ~ /^\/zh(\/|$)/) loc = "zh"
     locale[loc]++
+
+    # Browser language, from the Accept-Language header (al=), primary subtag
+    # only. Also page views, not people. Absent or "-" is unknown.
+    lang = "unknown"
+    if (match($0, /al="[^"]*"/)) {
+      al = substr($0, RSTART + 4, RLENGTH - 5)
+      if (al != "" && al != "-") { lang = al; sub(/[,;].*/, "", lang); sub(/-.*/, "", lang); if (lang == "") lang = "unknown" }
+    }
+    brlang[lang]++
 
     # Section, after stripping the optional locale prefix.
     q = p; sub(/^\/(ru|zh)(\/|$)/, "/", q)
@@ -141,8 +168,10 @@ zcat -f "${logs[@]}" 2>/dev/null | awk -F'"' -v month="$month" '
     if (q ~ /^\/business(\/|$)/) pv_business++
     if (q ~ /^\/donate(\/|$)/)   pv_donate++
 
-    # External referrer hosts (the beacon POST carries the page as referer;
-    # count only hosts that are not us).
+    # Referer hosts seen on beacon requests. On this site the beacon POST
+    # carries the current page as its referer, so non-openipc hosts here are
+    # mostly our own mirrors, not marketing referrers -- labelled as such in
+    # the memo. True outbound attribution is the ext: events above.
     ref = $4
     if (ref != "" && ref != "-") {
       host = ref; sub(/^[a-z]+:\/\//, "", host); sub(/\/.*/, "", host); sub(/:.*/, "", host)
@@ -153,25 +182,34 @@ zcat -f "${logs[@]}" 2>/dev/null | awk -F'"' -v month="$month" '
     nd = 0; for (d in days) nd++
     print "PV", pv + 0
     print "DAYS", nd
+    print "COVER_MIN", cmin
+    print "COVER_MAX", cmax
     print "PV_BUSINESS", pv_business + 0
     print "PV_DONATE", pv_donate + 0
     print "EV_BUSINESSMAIL", ev_businessmail + 0
     print "EV_OCCHECKOUT", ev_occheckout + 0
     print "EV_TGJOIN", ev_tgjoin + 0
     print "FWTOTAL", fwtotal + 0
-    for (k in locale) print "LOCALE", k, locale[k]
-    for (k in sec)    print "SEC", k, sec[k]
-    for (k in reftag) print "REF", reftag[k], k
+    for (k in locale)  print "LOCALE", k, locale[k]
+    for (k in brlang)  print "LANG", brlang[k], k
+    for (k in sec)     print "SEC", k, sec[k]
+    for (k in reftag)  print "REF", reftag[k], k
+    for (k in exthost) print "EXT", exthost[k], k
     for (k in refhost) print "REFHOST", refhost[k], k
-    for (k in fw)     print "FW", fw[k], k
-    for (k in fwrel)  { split(k, a, SUBSEP); print "FWREL", fwrel[k], a[1], a[2] }
+    for (k in fw)      print "FW", fw[k], k
+    for (k in fwrel)   { split(k, a, SUBSEP); print "FWREL", fwrel[k], a[1], a[2] }
   }
-' > "$work/agg" || true
+' "$work/month.log" > "$work/agg" || true
 
 val() { awk -v k="$1" '$1 == k { print $2; exit }' "$work/agg"; }
 
 pv=$(val PV); pv=${pv:-0}
 ndays=$(val DAYS); ndays=${ndays:-0}
+cover_min=$(val COVER_MIN); cover_max=$(val COVER_MAX)
+cover_note=""
+if [ -n "$cover_min" ] && [ "$cover_min" != "$month-01" ]; then
+  cover_note="**Raw-log coverage: $cover_min to $cover_max only.** Earlier days of $month are past the origin's 14-day log retention (the /privacy promise), so the beacon, section, funnel, firmware, attribution and bot figures below are for that window. They are given as shares and per-day rates, which stay month-to-month comparable; absolute monthly totals for these are not. The engaged-reader and country figures are unaffected — they come from the daily series, which persists aggregates, not logs."
+fi
 
 # --- engaged spine, from the daily series -----------------------------------
 engaged_tsv="$REPORTS_DIR/engaged.tsv"
@@ -212,8 +250,10 @@ sg_top=$(awk -F'\t' '$2 != "TOTAL" { n++; if (n <= 5 && ($2 ~ /Singapore/ || $2 
 
 # --- bots and 429s ----------------------------------------------------------
 bot_line=""
-if [ -n "$LOG_REPORT" ] && [ -x "$LOG_REPORT" ]; then
-  "$LOG_REPORT" "${logs[@]}" > "$work/logreport" 2>/dev/null || true
+if [ -n "$LOG_REPORT" ] && [ -x "$LOG_REPORT" ] && [ -s "$work/month.log" ]; then
+  # The month's lines only, so the bot share is for the month and not the
+  # retained cross-month window.
+  "$LOG_REPORT" "$work/month.log" > "$work/logreport" 2>/dev/null || true
   shed=$(grep -oE '[0-9.]+% shed as 429' "$work/logreport" | head -1 || true)
   crawl=$(grep -oE 'self-declared crawlers: [0-9,]+ requests, [0-9.]+% of the log' "$work/logreport" | head -1 || true)
   [ -n "$shed" ] && bot_line="${bot_line}${shed}. "
@@ -231,10 +271,17 @@ elif command -v curl >/dev/null && command -v python3 >/dev/null; then
   # shape oc-monthly.py expects. The public API needs no token.
   : > "$work/oc-nodes.ndjson"; offset=0; ok=1
   while :; do
-    q=$(printf 'query($slug:String!,$limit:Int!,$offset:Int!){account(slug:$slug){received:transactions(type:CREDIT,kind:CONTRIBUTION,limit:$limit,offset:$offset){totalCount nodes{createdAt amount{valueInCents} fromAccount{name type} order{frequency description tier{name}}}}}}')
+    q=$(printf 'query($slug:String!,$limit:Int!,$offset:Int!){account(slug:$slug){received:transactions(type:CREDIT,kind:CONTRIBUTION,limit:$limit,offset:$offset){totalCount nodes{createdAt amount{valueInCents} fromAccount{slug id name type} order{frequency description tier{name}}}}}}')
     body=$(python3 -c 'import json,sys; print(json.dumps({"query":sys.argv[1],"variables":{"slug":sys.argv[2],"limit":1000,"offset":int(sys.argv[3])}}))' "$q" "$OC_SLUG" "$offset")
     resp=$(curl -fsS --max-time 30 "$OC_API" -H 'Content-Type: application/json' -d "$body" 2>/dev/null) || { ok=0; break; }
-    n=$(printf '%s' "$resp" | python3 -c 'import json,sys; d=json.load(sys.stdin); ns=(((d.get("data") or {}).get("account") or {}).get("received") or {}).get("nodes") or []; sys.stdout.write("\n".join(json.dumps(x) for x in ns)); print("" if not ns else "", file=sys.stderr); sys.exit(0 if ns is not None else 1)' 2>/dev/null) || { ok=0; break; }
+    # A GraphQL error is not an empty page: aborting keeps a failed fetch from
+    # being reported as "no receipts this month".
+    n=$(printf '%s' "$resp" | python3 -c 'import json,sys
+d=json.load(sys.stdin)
+if d.get("errors"): sys.exit("oc fetch errors: %r" % d["errors"])
+ns=(((d.get("data") or {}).get("account") or {}).get("received") or {}).get("nodes")
+if ns is None: sys.exit("oc fetch: no received.nodes in response")
+sys.stdout.write("\n".join(json.dumps(x) for x in ns))' 2>/dev/null) || { ok=0; break; }
     [ -z "$n" ] && break
     printf '%s\n' "$n" >> "$work/oc-nodes.ndjson"
     cnt=$(printf '%s\n' "$n" | grep -c . || true)
@@ -243,6 +290,27 @@ elif command -v curl >/dev/null && command -v python3 >/dev/null; then
   done
   if [ "$ok" = 1 ] && [ -s "$work/oc-nodes.ndjson" ]; then
     python3 -c 'import json,sys; nodes=[json.loads(l) for l in open(sys.argv[1]) if l.strip()]; json.dump({"data":{"account":{"received":{"nodes":nodes}}}}, open(sys.argv[2],"w"))' "$work/oc-nodes.ndjson" "$oc_ledger" && have_oc=1
+  fi
+fi
+# Spent, beside received (#184): fetch the month's total spent so the scheduled
+# run carries it too, not only when OC_SPENT_CENTS is set by hand. Skipped when
+# a fixture ledger is supplied (tests pass OC_SPENT_CENTS explicitly).
+if [ "$have_oc" = 1 ] && [ -z "${OC_SPENT_CENTS:-}" ] && [ -z "${OC_LEDGER_JSON:-}" ] \
+   && command -v curl >/dev/null && command -v python3 >/dev/null; then
+  from="$month-01T00:00:00Z"
+  to=$(date -u -d "$month-01 +1 month" "+%Y-%m-01T00:00:00Z" 2>/dev/null || echo "")
+  if [ -n "$to" ]; then
+    sq='query($slug:String!,$from:DateTime!,$to:DateTime!){account(slug:$slug){stats{totalAmountSpent(dateFrom:$from,dateTo:$to,net:true){valueInCents}}}}'
+    sbody=$(python3 -c 'import json,sys;print(json.dumps({"query":sys.argv[1],"variables":{"slug":sys.argv[2],"from":sys.argv[3],"to":sys.argv[4]}}))' "$sq" "$OC_SLUG" "$from" "$to")
+    sresp=$(curl -fsS --max-time 30 "$OC_API" -H 'Content-Type: application/json' -d "$sbody" 2>/dev/null || true)
+    OC_SPENT_CENTS=$(printf '%s' "$sresp" | python3 -c '
+import json,sys
+try:
+    d = json.load(sys.stdin)
+    v = ((((d.get("data") or {}).get("account") or {}).get("stats") or {}).get("totalAmountSpent") or {}).get("valueInCents")
+    print(abs(v) if isinstance(v, int) else "")
+except Exception:
+    print("")' 2>/dev/null || echo "")
   fi
 fi
 if [ "$have_oc" = 1 ] && command -v python3 >/dev/null && [ -f "$OC_MONTHLY_PY" ]; then
@@ -275,6 +343,9 @@ mkdir -p "$(dirname "$OUT")"
   echo "generated and name their source; the two commentary paragraphs are written by a"
   echo "person before this is sent._"
   echo
+  echo "**Owner:** _[assign in the first memo — who reads this each month and answers its questions]_"
+  echo
+  [ -n "$cover_note" ] && { echo "$cover_note"; echo; }
   echo "> _[commentary — what changed this month and why it matters: fill in before sending]_"
   echo
 
@@ -290,11 +361,21 @@ mkdir -p "$(dirname "$OUT")"
   else
     echo "- No engaged-reader rows for $month in engaged.tsv. _[the daily series did not cover this month]_"
   fi
-  printf -- "- Beacon page views this month: **%d** over %d day(s) (source: nginx /api/a/count).\n" "$pv" "$ndays"
-  echo "- Locale split (by path prefix):"
-  awk '$1 == "LOCALE" { print $2, $3 }' "$work/agg" | sort | while read -r l n; do
-    printf -- "  - %s: %s\n" "$l" "$n"
+  if [ "$ndays" -gt 0 ]; then
+    printf -- "- Beacon page views: **%d** over %d day(s) covered = **%d/day** (source: nginx /api/a/count).\n" \
+      "$pv" "$ndays" "$(( pv / ndays ))"
+  else
+    printf -- "- Beacon page views: **%d** (source: nginx /api/a/count).\n" "$pv"
+  fi
+  echo "- Page views by site locale (URL path — the language the site served, not deduplicated people):"
+  awk -v tot="$pv" '$1 == "LOCALE" { printf "%d\t%s\n", $3, $2 }' "$work/agg" | sort -rn | while IFS=$'\t' read -r n l; do
+    if [ "$pv" -gt 0 ]; then printf -- "  - %s: %d (%.0f%%)\n" "$l" "$n" "$(awk -v a="$n" -v b="$pv" 'BEGIN{printf "%.0f",100*a/b}')"; fi
   done
+  echo "- Page views by browser language (Accept-Language primary subtag — the reader's own language):"
+  awk -v tot="$pv" '$1 == "LANG" { printf "%d\t%s\n", $2, $3 }' "$work/agg" | sort -rn | head -8 | while IFS=$'\t' read -r n l; do
+    if [ "$pv" -gt 0 ]; then printf -- "  - %s: %d (%.0f%%)\n" "$l" "$n" "$(awk -v a="$n" -v b="$pv" 'BEGIN{printf "%.0f",100*a/b}')"; fi
+  done
+  echo "- _People per day are the engaged/reader means above and the country split below (deduplicated, bot-filtered via audience-report.sh). A per-language people cut would need that engaged pipeline extended and is not attempted from raw page views, which are bot-inflated._"
   echo
 
   echo "## Country composition (engaged readers)"
@@ -343,16 +424,17 @@ mkdir -p "$(dirname "$OUT")"
       printf -- "| %s | %d |\n" "$f" "$n"
     done
     echo
-    echo "FPV vs CCTV (SoC market segment from the catalogue; FPV editions fpv/rubyfpv/apfpv also counted as FPV):"
+    echo "FPV vs CCTV — a download counts as FPV if its firmware edition is fpv/rubyfpv/apfpv, otherwise by the SoC's market segment from the catalogue:"
     echo
-    awk '$1 == "FW" { print $3, $2 }' "$work/agg" | while read -r soc n; do
-      seg=$(awk -F'\t' -v s="$soc" '$1 == s { print $4 }' "$FIRMWARE_SEGMENTS")
-      case "$seg" in fpv) k=FPV;; cctv) k=CCTV;; consumer) k=consumer;; *) k=unclassified;; esac
+    awk '$1 == "FWREL" { print $3, $4, $2 }' "$work/agg" | while read -r soc rel n; do
+      case "$rel" in
+        fpv|rubyfpv|apfpv) k=FPV ;;
+        *)
+          seg=$(awk -F'\t' -v s="$soc" '$1 == s { print $4 }' "$FIRMWARE_SEGMENTS")
+          case "$seg" in fpv) k=FPV ;; cctv) k=CCTV ;; consumer) k=consumer ;; *) k=unclassified ;; esac ;;
+      esac
       printf "%s\t%s\n" "$k" "$n"
     done | awk -F'\t' '{ c[$1] += $2 } END { for (k in c) printf "- %s: %d\n", k, c[k] }' | sort
-    # FPV editions counted regardless of SoC segment.
-    fpv_ed=$(awk '$1 == "FWREL" && ($4 == "fpv" || $4 == "rubyfpv" || $4 == "apfpv") { s += $2 } END { print s+0 }' "$work/agg")
-    [ "${fpv_ed:-0}" -gt 0 ] && printf -- "- (of which FPV firmware editions by fw_release: %d)\n" "$fpv_ed"
   else
     echo "- No completed firmware downloads recorded for $month, or the segment table is missing."
   fi
@@ -360,22 +442,29 @@ mkdir -p "$(dirname "$OUT")"
 
   echo "## Attribution"
   echo
-  echo "\`ref:\` tags (beacon events):"
+  echo "\`ref:\` tags (beacon events — what the project posted, made attributable):"
   if awk '$1 == "REF"' "$work/agg" | grep -q .; then
-    awk '$1 == "REF" { printf "- %s: %s\n", $3, $2 }' "$work/agg" | sort -t: -k2 -rn 2>/dev/null || awk '$1 == "REF" { printf -- "- %s: %s\n", $3, $2 }' "$work/agg"
+    awk '$1 == "REF" { printf "%d\t%s\n", $2, $3 }' "$work/agg" | sort -rn | while IFS=$'\t' read -r n tag; do printf -- "- %s: %d\n" "$tag" "$n"; done
   else
     echo "- none recorded."
   fi
   echo
-  echo "Top external referrer hosts (beacon):"
+  echo "Outbound link clicks by destination host (\`ext:\` events — the real external attribution):"
+  if awk '$1 == "EXT"' "$work/agg" | grep -q .; then
+    awk '$1 == "EXT" { printf "%d\t%s\n", $2, $3 }' "$work/agg" | sort -rn | head -8 | while IFS=$'\t' read -r n h; do printf -- "- %s: %d\n" "$h" "$n"; done
+  else
+    echo "- none recorded."
+  fi
+  echo
+  echo "Referer hosts on beacon requests (mostly our own mirrors, not marketing referrers):"
   if awk '$1 == "REFHOST"' "$work/agg" | grep -q .; then
-    awk '$1 == "REFHOST" { print $2, $3 }' "$work/agg" | sort -rn | head -8 | while read -r n h; do printf -- "- %s: %s\n" "$h" "$n"; done
+    awk '$1 == "REFHOST" { printf "%d\t%s\n", $2, $3 }' "$work/agg" | sort -rn | head -8 | while IFS=$'\t' read -r n h; do printf -- "- %s: %d\n" "$h" "$n"; done
   else
     echo "- none recorded."
   fi
   echo
-  echo "GitHub traffic referrers:"
-  if [ -n "$gh_block" ]; then printf '%b' "$gh_block"; else echo "  _[gh not available or skipped]_"; fi
+  echo "GitHub traffic referrers (GitHub only exposes a trailing 14-day window, so this is a point-in-time snapshot, not the full month):"
+  if [ -n "$gh_block" ]; then printf '%b' "$gh_block"; else echo "  _[gh/token not available on the host that runs this — pull from a machine with repo access, or install gh here]_"; fi
   echo
   echo "Search-console / Bing / Yandex top 20 queries:"
   echo "> _[MANUAL: paste the top queries from Search Console, Bing and Yandex Webmaster;"
@@ -405,16 +494,25 @@ mkdir -p "$(dirname "$OUT")"
   echo "Carried every month; the decision on each is written on #184 at the review date"
   echo "(end of the first full quarter after #181 and #183 are live)."
   echo
-  echo "| # | hypothesis | metric this month | decision rule |"
-  echo "|---|---|---|---|"
-  echo "| H1 | Money pages are not found, not refused | business+donate clicks per 100 downloads | keep at >=1 business click / 100 downloads and >=1 form submission a week |"
-  echo "| H2 | A form beats a mailto | \`lead\`/\`business-mail\` submissions this month | keep at >=4 qualified leads a month |"
-  echo "| H3 | FPV is the paying hobby | FPV share of business clicks vs its download share | invest at >=2x its download share |"
-  echo "| H4 | The Chinese channel has no door | zh share of people; zh→/business contact rate | build out at >=15% of people |"
-  echo "| H5 | Tag what the project posts | share of no-referrer traffic now attributed via ref: | judged one month after tags go live: >=50% attributed |"
+  echo "| # | hypothesis | instrument | metric this month | decision rule | guardrail |"
+  echo "|---|---|---|---|---|---|"
+  echo "| H1 | Money pages are not found, not refused | #190/#191/#189, events #183 | business & donate clicks per 100 downloads, by segment; donate-page reach | keep and extend to the hardware list at >=1 business click / 100 downloads and >=1 form submission a week; if < 0.2 / 100 after 5,000 downloads the offer, not discoverability, is the problem | downloads per SoC-page visitor must not fall > 5% |"
+  echo "| H2 | A form beats a mailto | #186, \`lead\` event, ref=download-step | submissions/month; share with company and volume; baseline = business@ mails over the prior three months | keep at >=4 qualified leads/month; 0-1 in a quarter with > 100 business views/month means the page reaches the wrong people — next move is positioning (#116), not the form | none |"
+  echo "| H3 | FPV is the paying hobby | #193 offer, segment from #190, honest downloads from #188 | FPV share of business clicks and leads vs its ~14% download share; paid support engagements | invest at >=2x its download share (> 28%) or >=3 paid engagements; drop below its share | downloads per /low-latency and per FPV SoC-page visitor must not fall > 5% |"
+  echo "| H4 | The Chinese channel has no door | #194 door, language share from #181, indexable zh pages from #154/#179 | zh share of people; zh visitors reaching /business and clicking a contact, vs the en rate | build out at >=15% of people and en-rate contact clicks, two indexed months after #154; deprioritise for a year under 5% | none |"
+  echo "| H5 | Tag what the project posts | #183 \`?ref=\` and ref: events | share of previously no-referrer traffic now attributed; backers and leads per 1,000 visits per channel | judged one month after tags go live: >=50% attributed, else the finding is about deployment, not channels; the best channel per 1,000 visits gets the next promotional effort | none |"
+  echo
+  echo "_Open Collective corrections (2026-09-20): H1's OC metric is the individuals' Backer and one-time receipts only (the \"pure donations, individual monthly\" line above), never the total; H3's paid-support signal is the Technical support tier line._"
   echo
   echo "> _[commentary — the monetization read for the quarter: fill in before sending]_"
 } > "$work/memo.md"
 
 install -m 0644 "$work/memo.md" "$OUT"
 echo "audience-memo: wrote $OUT ($(wc -l < "$OUT") lines)"
+# The memo runs on the origin (that is where the logs and the daily series
+# are), so its output lands here. #184 asks for it under the maintainer's
+# ~/reports/; print the one command that fetches it, so nobody has to go
+# looking. A host-side rsync cannot reach the maintainer's machine.
+case "$OUT" in
+  /srv/www/*) echo "  retrieve it:  scp -P 35242 root@openipc.org:$OUT ~/reports/" ;;
+esac

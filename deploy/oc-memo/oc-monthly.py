@@ -67,7 +67,10 @@ def main():
             return "pure donations (individual monthly)"
         if a <= 100:
             return "pure donations (one-time <= $100)"
-        return "large one-time, unlabelled (>= $150)"
+        # The rule above is <= $100, so this bucket is everything over $100 --
+        # label it for exactly that, not ">= $150", which left $100.01-$149.99
+        # under a threshold they do not meet.
+        return "one-time > $100 (unlabelled)"
 
     CATS = [
         "pure donations (individual monthly)",
@@ -75,8 +78,15 @@ def main():
         "paid service (Technical support tier)",
         "organisation retainers (monthly)",
         "hardware (labelled)",
-        "large one-time, unlabelled (>= $150)",
+        "one-time > $100 (unlabelled)",
     ]
+
+    # Group backers by a stable identity, not the display name: names are not
+    # unique (two "Alex"es would merge) and can change. Prefer slug, then id,
+    # then fall back to the name only when neither is present.
+    def ident(t):
+        a = t.get("fromAccount") or {}
+        return a.get("slug") or a.get("id") or a.get("name", "?")
 
     this = [t for t in nodes if ym(t) == month]
     received = sum(amt(t) for t in this)
@@ -104,18 +114,28 @@ def main():
            if freq(t) == "MONTHLY" and ptype(t) != "ORGANIZATION"]
     by = collections.defaultdict(list)
     for t in mon:
-        by[(t.get("fromAccount") or {}).get("name", "?")].append(t)
+        by[ident(t)].append(t)
     first = {n: min(ym(x) for x in l) for n, l in by.items()}
     last = {n: max(ym(x) for x in l) for n, l in by.items()}
     active = [n for n in by if any(ym(x) == month for x in by[n])]
     new = [n for n in active if first[n] == month]
-    stopped = [n for n in by if last[n] == month and month not in
-               (ym(x) for x in by[n] if ym(x) > month)]
-    # "stopped this month" = last-ever payment fell in this month. Only
-    # meaningful once the month is closed and a following month exists in the
-    # data; flagged so an open month is not read as churn.
+
+    # "stopped this month" = a backer's last-ever payment fell in this month.
+    # That is only observable once the data extends PAST the month: on a run
+    # for the month that just closed, the current month's transactions are
+    # present, so a backer with no payment after the target month has genuinely
+    # lapsed. If the target month is the latest month in the ledger (an open
+    # month), stoppage cannot be known yet and is reported as such rather than
+    # counting every still-active backer as churned.
+    max_ym = max((ym(t) for t in nodes if ym(t)), default="")
+    if max_ym > month:
+        stopped = len([n for n in by if last[n] == month])
+        stopped_str = "stopped %d" % stopped
+    else:
+        stopped_str = "stopped n/a (month still open — no later data to confirm churn)"
+
     print("Individual monthly backers (Open Collective): "
-          "**active %d, new %d, stopped %d**." % (len(active), len(new), len(stopped)))
+          "**active %d, new %d, %s**." % (len(active), len(new), stopped_str))
     print("_New is the metric to watch: acquisition, not churn, is what the "
           "site can influence (proposal, 2026-09-20)._")
 

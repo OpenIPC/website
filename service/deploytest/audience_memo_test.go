@@ -37,10 +37,11 @@ func memoLog(t testing.TB) string {
 	b.WriteString(line("16/Oct/2026:12:00:00", "p=%2Fdonate&t=x&s=1920&b=0&rnd=d", "200", "https://openipc.org/donate"))
 	b.WriteString(line("17/Oct/2026:09:00:00", "p=%2Fzh%2Flow-latency&t=x&s=1280&b=0&rnd=f", "200", "https://www.google.com/"))
 	b.WriteString(line("17/Oct/2026:09:06:00", "p=%2Fcameras%2Fvendors%2Fsigmastar%2Fsocs%2Fssc338q&t=x&s=1280&b=0&rnd=h", "200", "https://t.me/openipc"))
-	// Events: business-mail, oc-checkout, ref:tg (colon percent-encoded).
+	// Events: business-mail, oc-checkout, ref:tg and ext:github.com (colon %3A-encoded).
 	b.WriteString(line("16/Oct/2026:11:01:00", "p=business-mail&e=true&t=x&s=1920&b=0&rnd=c", "200", "https://openipc.org/business"))
 	b.WriteString(line("16/Oct/2026:12:01:00", "p=oc-checkout&e=true&t=x&s=1920&b=0&rnd=e", "200", "https://openipc.org/donate"))
 	b.WriteString(line("17/Oct/2026:09:05:00", "p=ref%3Atg&e=true&t=x&s=1280&b=0&rnd=g", "200", "https://openipc.org/"))
+	b.WriteString(line("17/Oct/2026:09:07:00", "p=ext%3Agithub.com&e=true&t=x&s=1280&b=0&rnd=x1", "200", "https://openipc.org/ecosystem"))
 	// A completed firmware download (status 200), SigmaStar SSC338Q, FPV edition.
 	b.WriteString(fmt.Sprintf(`198.51.100.4 - - [17/Oct/2026:09:10:00 +0000] "GET /cameras/vendors/sigmastar/socs/ssc338q/download_full_image?flash_type=nor&flash_size=16&fw_release=fpv&layout=nor16m HTTP/2.0" 200 8300000 "-" %s xff="-" cache=- rt=0.5 urt="0.4" al="-" peer=198.51.100.4`+"\n", ua))
 	// A page view in the PREVIOUS month, which must not be counted in October.
@@ -66,7 +67,11 @@ const octoberCountries = "2026-10-15\tCN China\t7\n2026-10-15\tRU Russia\t3\n202
 const octoberLedger = `{"data":{"account":{"received":{"nodes":[` +
 	`{"createdAt":"2026-10-05T00:00:00Z","amount":{"valueInCents":1000},"fromAccount":{"name":"Alice","type":"INDIVIDUAL"},"order":{"frequency":"MONTHLY","description":"","tier":{"name":"Backer"}}},` +
 	`{"createdAt":"2026-10-06T00:00:00Z","amount":{"valueInCents":50000},"fromAccount":{"name":"AcmeCorp","type":"ORGANIZATION"},"order":{"frequency":"ONETIME","description":"Technical support","tier":{"name":"Technical support"}}},` +
-	`{"createdAt":"2026-09-05T00:00:00Z","amount":{"valueInCents":1000},"fromAccount":{"name":"Alice","type":"INDIVIDUAL"},"order":{"frequency":"MONTHLY","description":"","tier":{"name":"Backer"}}}` +
+	`{"createdAt":"2026-09-05T00:00:00Z","amount":{"valueInCents":1000},"fromAccount":{"name":"Alice","type":"INDIVIDUAL"},"order":{"frequency":"MONTHLY","description":"","tier":{"name":"Backer"}}},` +
+	// A payment in the month AFTER the target, so the ledger extends past October
+	// and "stopped" is computable: Alice's last payment is October, so she counts
+	// as stopped; Bob (November only) is not active in October.
+	`{"createdAt":"2026-11-05T00:00:00Z","amount":{"valueInCents":1000},"fromAccount":{"name":"Bob","type":"INDIVIDUAL"},"order":{"frequency":"MONTHLY","description":"","tier":{"name":"Backer"}}}` +
 	`]}}}}`
 
 // runMemo runs the generator for the fixture month and returns the memo text.
@@ -105,8 +110,17 @@ func TestAudienceMemo(t *testing.T) {
 	})
 	t.Run("only the target month is counted", func(t *testing.T) {
 		// Five page views in October; the September line is excluded.
-		mustContain(t, memo, "Beacon page views this month: **5**",
+		mustContain(t, memo, "Beacon page views: **5**",
 			"the previous month's page view leaked into the count, or a page view was lost")
+	})
+	t.Run("page views are split by site locale and by browser language", func(t *testing.T) {
+		mustContain(t, memo, "Page views by site locale", "the URL-locale split is present and labelled as page views")
+		mustContain(t, memo, "Page views by browser language", "browser language (Accept-Language) is measured, not only URL locale")
+		mustMatch(t, `(?m)^  - en:`, memo, "the fixture's readers send en Accept-Language")
+	})
+	t.Run("outbound ext: clicks are attributed by host", func(t *testing.T) {
+		mustContain(t, memo, "Outbound link clicks by destination host", "ext: events are surfaced as external attribution")
+		mustMatch(t, `(?m)^- github.com:`, memo, "the ext:github.com click is attributed, not dropped into other")
 	})
 	t.Run("the engaged spine is aggregated from the daily series, with the previous month", func(t *testing.T) {
 		mustContain(t, memo, "Engaged readers/day (>=5 pageviews outside the wall): **11**",
@@ -168,6 +182,30 @@ func TestAudienceMemoSingaporeGuard(t *testing.T) {
 	memo := runMemo(t, "", sgCountries)
 	mustContain(t, memo, "WITHHELD", "Singapore in the top five must withhold the country block")
 	mustNotMatch(t, `SG Singapore \| 40 \|`, memo, "the withheld block must not print the harvester ranking")
+}
+
+// #14: a one-time receipt over $100 must not be filed under a label that
+// claims ">= $150". The rule is "> $100"; the label must say so, and $100
+// exactly stays in the <= $100 bucket.
+func TestOCMonthlyCategoryBoundary(t *testing.T) {
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skip("python3 not available")
+	}
+	node := func(cents int) string {
+		return `{"createdAt":"2026-10-10T00:00:00Z","amount":{"valueInCents":` + fmt.Sprint(cents) +
+			`},"fromAccount":{"name":"X","type":"INDIVIDUAL"},"order":{"frequency":"ONETIME","description":"","tier":{"name":"no tier"}}}`
+	}
+	ledger := `{"data":{"account":{"received":{"nodes":[` +
+		node(10000) + "," + node(10001) + "," + node(14999) + "," + node(15000) + `]}}}}`
+	lp := writeFile(t, filepath.Join(t.TempDir(), "oc.json"), ledger)
+	out, ok := run(t, nil, "", "bash", "-c", "python3 "+abs(t, "deploy/oc-memo/oc-monthly.py")+" 2026-10 < "+lp)
+	if !ok {
+		t.Fatalf("oc-monthly.py failed:\n%s", out)
+	}
+	mustContain(t, out, "one-time > $100 (unlabelled)", "$100.01-$149.99 and $150 belong to a > $100 bucket")
+	mustContain(t, out, "pure donations (one-time <= $100)", "$100 exactly stays in the <= $100 bucket")
+	mustNotContain(t, out, ">= $150", "the misleading >= $150 label must be gone")
+	mustNotContain(t, out, ">= 150", "no >= 150 threshold claim anywhere")
 }
 
 // firmware-segments.tsv is generated from the catalogue and installed onto the
