@@ -152,6 +152,7 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/wall/socket"},
 	{"web", "GET", "/api/v1/boards"},
 	{"web", "GET", "/api/v1/boards/search"},
+	{"web", "GET", "/api/v1/boards/models/{id}"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 }

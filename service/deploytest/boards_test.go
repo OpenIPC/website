@@ -19,6 +19,13 @@ func TestBoardCatalogueServing(t *testing.T) {
 		c := vhost(t, name)
 		tree := blockRe(c, regexp.MustCompile(`location = /api/v1/boards \{`))
 		mustContain(t, tree, "proxy_pass http://127.0.0.1:"+e.port+";", name+": the board tree does not reach its web role")
+		for _, re := range []string{`location = /api/v1/boards \{`, `location \^~ /api/v1/boards/models/ \{`, `location = /api/v1/boards/search \{`} {
+			b := blockRe(c, regexp.MustCompile(re))
+			mustContain(t, b, "proxy_pass http://127.0.0.1:"+e.port+";", name+": "+re+" does not reach its web role")
+			// megabytes of JSON; nginx compresses only text/html by default
+			mustContain(t, b, "gzip_types application/json;", name+": "+re+" is sent uncompressed")
+			mustContain(t, b, "gzip_proxied any;", name+": "+re+" is proxied and so never compressed")
+		}
 		search := blockRe(c, regexp.MustCompile(`location = /api/v1/boards/search \{`))
 		mustContain(t, search, "proxy_pass http://127.0.0.1:"+e.port+";", name+": the board search does not reach its web role")
 		mustContain(t, search, "limit_req zone=boards_search", name+": the board search has no rate limit")

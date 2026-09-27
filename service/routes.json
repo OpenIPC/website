@@ -95,6 +95,11 @@
     "path": "/api/v1/boards/search"
   },
   {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/boards/models/{id}"
+  },
+  {
     "role": "firmware",
     "method": "GET",
     "path": "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"

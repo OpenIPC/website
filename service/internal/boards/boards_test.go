@@ -106,7 +106,7 @@ func TestTheTreeIsWholeWhileAnImportRuns(t *testing.T) {
 			running = false
 		default:
 		}
-		if _, err := Tree(context.Background(), pool, "en"); err != nil {
+		if _, err := Tree(context.Background(), pool, "en", ""); err != nil {
 			t.Fatalf("a tree read during the import: %v", err)
 		}
 	}

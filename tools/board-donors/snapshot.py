@@ -72,18 +72,44 @@ def safe(name):
     return name[:120] or "file"
 
 
+IMAGE_EXT = (".jpg", ".jpeg", ".png", ".gif")
+
+
+def web_image(src, converted):
+    """A picture the site and the importer can both read: vendors serve BMPs
+    under .png names (NBD8032H4-UL). Anything that is not JPEG, PNG or GIF is
+    converted to PNG once, into <converted>/, and that copy is published."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return src
+    with Image.open(src) as im:
+        if im.format in ("JPEG", "PNG", "GIF"):
+            return src
+        os.makedirs(converted, exist_ok=True)
+        out = os.path.join(converted, os.path.basename(src) + ".png")
+        if not os.path.exists(out):
+            im.convert("RGB").save(out, "PNG", optimize=True)
+        return out
+
+
 class Files:
-    def __init__(self, cap):
-        self.cap, self.out = cap, {}
+    def __init__(self, cap, converted=None):
+        self.cap, self.out, self.converted = cap, {}, converted
 
     def add(self, entry_file, name, used):
         base, ext = os.path.splitext(safe(name))
+        src = os.path.join(self.cap, entry_file)
+        if ext.lower() in IMAGE_EXT and self.converted:
+            src = web_image(src, self.converted)
+            if src.endswith(".png") and ext.lower() != ".png":
+                ext = ".png"
         n, i = base + ext, 2
         while n in used:
             n, i = f"{base}-{i}{ext}", i + 1
         used.add(n)
         path = "files/" + os.path.basename(entry_file) + ext.lower()
-        self.out[path] = os.path.join(self.cap, entry_file)
+        self.out[path] = src
         return n, path
 
 
@@ -198,7 +224,7 @@ def main():
     dic = load_dictionary(sys.argv[6] if len(sys.argv) > 6 else None)
     recs = json.load(open(rec_path))["records"]
     builds, index = xmupdates(xmu)
-    files = Files(cap)
+    files = Files(cap, converted=os.path.join(os.path.dirname(os.path.abspath(out)), "converted"))
     if source == "cctvsp":
         models = [cctvsp_model(r, files, builds, index) for r in recs]
     else:

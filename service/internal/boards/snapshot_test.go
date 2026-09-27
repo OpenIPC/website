@@ -148,7 +148,7 @@ func TestNoTwoModelsShareACodeAndReimportsAddNothing(t *testing.T) {
 		t.Errorf("%d codes name more than one model", n)
 	}
 	// And the API draws each model once.
-	tree, err := Tree(context.Background(), pool, "en")
+	tree, err := Tree(context.Background(), pool, "en", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,26 +183,19 @@ func TestNormCodeIsTheMigrationsNormalisation(t *testing.T) {
 	}
 }
 
-func TestTheTreeSpeaksTheReadersLanguageAndFallsBackToEnglish(t *testing.T) {
+func TestTheDetailSpeaksTheReadersLanguageAndFallsBackToEnglish(t *testing.T) {
 	pool, _, _ := withDonors(t)
 	pick := func(locale, source string) *aboutJSON {
-		tree, err := Tree(context.Background(), pool, locale)
+		d, err := ModelDetail(context.Background(), pool, "xiongmai-ivg-85hf20pya-s", locale)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, m := range tree["manufacturers"].([]*makerJSON) {
-			for _, mo := range m.Models {
-				if mo.ID != "xiongmai-ivg-85hf20pya-s" {
-					continue
-				}
-				if len(mo.Tags) != 1 || mo.Tags[0] != "discontinued" || len(mo.Links) != 2 {
-					t.Errorf("tags %v, %d links", mo.Tags, len(mo.Links))
-				}
-				for _, a := range mo.About {
-					if a.Source == source {
-						return a
-					}
-				}
+		if tags := d["tags"].([]string); len(tags) != 1 || tags[0] != "discontinued" || len(d["links"].([]linkJSON)) != 2 {
+			t.Errorf("tags %v, %d links", tags, len(d["links"].([]linkJSON)))
+		}
+		for _, a := range d["about"].([]*aboutJSON) {
+			if a.Source == source {
+				return a
 			}
 		}
 		t.Fatalf("no %s text for the model in %s", source, locale)
@@ -220,10 +213,60 @@ func TestTheTreeSpeaksTheReadersLanguageAndFallsBackToEnglish(t *testing.T) {
 	if a := pick("en", "cctvsp"); len(a.Specs) != 1 || a.Specs[0] != [2]string{"Sensor", "IMX291"} {
 		t.Errorf("en specs: %v", a.Specs)
 	}
+	if _, err := ModelDetail(context.Background(), pool, "no-such-board", "en"); err == nil {
+		t.Error("an unknown board has a detail")
+	}
 }
 
-// A source that says outright that several codes are one board (not a
-// vendor's family row: tools/board-donors never sends those as aliases).
+func TestACardCarriesOneNameAndOneLeadNotEverySourcesText(t *testing.T) {
+	pool, _, _ := withDonors(t)
+	tree, err := Tree(context.Background(), pool, "ru", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var found *modelJSON
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			if len(mo.About) != 0 || len(mo.Links) != 0 {
+				t.Fatalf("%s: the tree carries every source's text", mo.ID)
+			}
+			if mo.ID == "xiongmai-ivg-85hf20pya-s" {
+				found = mo
+			}
+		}
+	}
+	if found == nil || found.Summary == nil {
+		t.Fatal("no summary")
+	}
+	// the maker's name for the board, the shop's words for what it is
+	if *found.Summary.Name != "Starlight module" || *found.Summary.Lead != "По-русски." {
+		t.Errorf("summary %q / %q", *found.Summary.Name, *found.Summary.Lead)
+	}
+	if len(found.Sources) != 2 {
+		t.Errorf("sources %v", found.Sources)
+	}
+}
+
+func TestASoCPageAsksOnlyForItsBoards(t *testing.T) {
+	pool, _, _ := withDonors(t)
+	tree, err := Tree(context.Background(), pool, "en", "hi3516cv300")
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			n++
+			if mo.SoC == nil || *mo.SoC != "hi3516cv300" {
+				t.Errorf("%s on the hi3516cv300 page", mo.ID)
+			}
+		}
+	}
+	if n == 0 {
+		t.Error("no boards for hi3516cv300")
+	}
+}
+
 func TestCodesASourceDeclaresOneBoardAreOneModelOtherListingsJoin(t *testing.T) {
 	pool, root := imported(t)
 	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
