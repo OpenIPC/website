@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
 import type { BoardFile, BoardsFile, Hit, Model } from './types';
 import {
   lineLabel,
-  cardFiles, cardPhotos, codeIndex, entries, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
+  cardFiles, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, paragraphs, sensorKey, sensorOptions, slug,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
@@ -140,6 +140,33 @@ describe('finding a board by what it is called', () => {
     expect(ids('hi3516cv100')).toEqual(['old']);
     expect(ids('SONY IMX222')).toEqual(['old']);
     expect(ids('imx222')).toEqual(['old']);
+  });
+});
+
+describe('XM device IDs', () => {
+  const fw = { key: 'k', version: 'v', build: 'b', url: 'u', sha256: null, size: null, published_at: null };
+  test('a query is a device ID when it reads like one off a camera', () => {
+    expect(deviceIdOf(' 000559a7 ')).toBe('000559A7');
+    expect(deviceIdOf('000929ZR')).toBe('000929ZR');
+    expect(deviceIdOf('c2106510')).toBe('C2106510');
+    expect(deviceIdOf('0003068b')).toBe('0003068B');
+    expect(deviceIdOf('IPG-50H2')).toBeNull();
+    expect(deviceIdOf('mtdparts')).toBeNull();
+    expect(deviceIdOf('0x820000')).toBeNull();
+    expect(deviceIdOf('000559A7.1')).toBeNull();
+  });
+
+  test('a board is OpenIPC-ready by the device IDs coupler has an image for', () => {
+    expect(couplerDevices({ devices: [{ id: '000559A7', stock: [], coupler: fw }, { id: '00002520', stock: [fw], coupler: null }] })).toEqual(['000559A7']);
+    expect(couplerDevices({})).toEqual([]);
+  });
+
+  test('searching a device ID finds the boards that run it', () => {
+    const list = entries({ ...FILE, manufacturers: [{ id: 'xiongmai', name: 'Xiongmai', aliases: [], website: null, models: [
+      model('ivg', { model: 'IVG-85HF20PYA-S', devices: [{ id: '000559A7', stock: [], coupler: fw }] }),
+      model('other', { model: 'IPG-50H20PLS-S', devices: [{ id: '00002520', stock: [], coupler: null }] }),
+    ] }] });
+    expect(matchBoards(list, '000559a7').map((m) => m.id)).toEqual(['ivg']);
   });
 });
 

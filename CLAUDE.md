@@ -128,6 +128,15 @@ restores the image but never the schema, so keep migrations additive.
   evidence, scoped by kind). Seeded once per environment by
   `openipc boards import-openhisiipcam`; the dumps are published byte-identical
   (lab hardware, nothing redacted).
+- `internal/vendorfw` — firmware for Xiongmai devices keyed by the XM device
+  ID (the 8-character firmware number a camera reports): every stock build
+  OpenIPC/xmupdates mirrors, and OpenIPC/coupler's stock-to-OpenIPC images.
+  **Pushed** by those projects' CI to `POST /api/v1/vendor-firmware` over the
+  builds' OIDC check (`internal/vendorfw/PUSH.md`), each push replacing its
+  source's list; `openipc vendor-firmware import-history` seeds an
+  environment once. Boards link to device IDs through `board_device_ids`
+  (tehno32's firmware pages, cctvsp) or a firmware named after the board; a
+  board with a coupler image is OpenIPC-ready, derived on read, never stored.
 - `internal/catalogue` — **the hardware catalogue is `data/catalogue/*.yml` and
   nothing else** (#289). The service reads it at start; the site reads its
   export. Change it by editing the YAML in a pull request, then run the export.

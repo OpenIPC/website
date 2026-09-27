@@ -13,11 +13,12 @@
  */
 import type { ComponentChildren } from 'preact';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { BoardsFile, Hit, SearchResult, Source } from '../../lib/boards/types';
-import { fetchBoards, searchBoards } from '../../lib/boards/api';
+import type { BoardsFile, DeviceAnswer, Hit, SearchResult, Source } from '../../lib/boards/types';
+import { fetchBoards, fetchDevice, searchBoards } from '../../lib/boards/api';
+import Firmware from './Firmware';
 import { EMPTY, MISSING, SCOPES, readQueryString, writeQueryString, type BoardsState, type Scope } from '../../lib/boards/url';
 import {
-  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, entries, filterBoards, filterHits, heading, matchBoards, flashOf, has, highlight, layout, lead,
+  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, deviceIdOf, entries, filterBoards, filterHits, heading, matchBoards, flashOf, has, highlight, layout, lead,
   lineLabel, lineOptions, sensorOptions, socName, socOptions, stats, subtitle, type Entry, type Group, type Heading,
 } from '../../lib/boards/model';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
@@ -46,6 +47,7 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
   const [open, setOpen] = useState<string | null>(initial.model);
   const [data, setData] = useState<Load<BoardsFile>>({ state: 'loading' });
   const [found, setFound] = useState<Load<SearchResult> | null>(null);
+  const [device, setDevice] = useState<Load<DeviceAnswer> | null>(null);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const set = (patch: Partial<BoardsState>) => setView((v) => ({ ...v, ...patch }));
 
@@ -121,6 +123,17 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
   const searching = q.length >= MIN_QUERY;
   // The server filters by catalogue SoC only; the rest is done on its answer.
   const matched = useMemo(() => (searching ? matchBoards(kept, q) : []), [kept, q, searching]);
+  // A device ID typed off a camera: what it can be flashed with, board or not.
+  const deviceId = deviceIdOf(q);
+  useEffect(() => {
+    if (!deviceId) { setDevice(null); return; }
+    let live = true;
+    setDevice({ state: 'loading' });
+    fetchDevice(deviceId)
+      .then((v) => live && setDevice({ state: 'ok', value: v }))
+      .catch((e: Error) => live && setDevice({ state: 'error', error: e.message }));
+    return () => { live = false; };
+  }, [deviceId]);
   const serverSoc = view.soc && all.some((m) => m.soc === view.soc) ? view.soc : null;
 
   useEffect(() => {
@@ -216,6 +229,15 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
         )}
         {data.state === 'ok' && (searching
           ? <>
+            {device?.state === 'ok' && (device.value.device.stock.length > 0 || device.value.device.coupler || device.value.boards.length > 0) && (
+              <div class="mt-5 grid gap-2">
+                <Firmware device={device.value.device} heading={t('fw_your_device', { id: device.value.device.id })}
+                  note={device.value.device.coupler ? undefined : t('fw_no_coupler')} locale={locale} t={t} />
+                <p class="m-0 text-sm text-body-secondary">
+                  {device.value.boards.length > 0 ? t('fw_boards', { count: device.value.boards.length }) : t('fw_no_boards')}
+                </p>
+              </div>
+            )}
             {matched.length > 0 && (
               <section class="mt-5" aria-labelledby="boards-matched">
                 <h2 id="boards-matched" class="m-0 text-sm font-normal text-body-secondary">{t('matched_boards', { count: matched.length, q })}</h2>

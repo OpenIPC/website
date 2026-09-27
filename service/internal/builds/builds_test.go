@@ -310,6 +310,29 @@ func TestVerifier(t *testing.T) {
 		}
 	}
 
+	// Each source on its own branch: xmupdates and coupler publish from main,
+	// firmware only from master.
+	for _, tc := range []struct {
+		repo, ref, source string
+		ok                bool
+	}{
+		{"OpenIPC/xmupdates", "OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/main", "xmupdates", true},
+		{"OpenIPC/xmupdates", "OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/master", "xmupdates", false},
+		{"OpenIPC/coupler", "OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main", "coupler", true},
+		{"OpenIPC/coupler", "OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main", "xmupdates", false},
+		{"OpenIPC/firmware", "OpenIPC/firmware/.github/workflows/build.yml@refs/heads/main", "firmware", false},
+	} {
+		c, err := v.Verify(ctx, s.token(t, func(_ *jwt.Claims, m map[string]any) {
+			m["repository"], m["job_workflow_ref"] = tc.repo, tc.ref
+		}))
+		if err != nil {
+			t.Fatalf("%s: %v", tc.ref, err)
+		}
+		if got := c.Allows(tc.source) == nil; got != tc.ok {
+			t.Errorf("%s pushing %s: allowed %v, want %v", tc.ref, tc.source, got, tc.ok)
+		}
+	}
+
 	other := newSigner(t)
 	if _, err := v.Verify(ctx, other.token(t, nil)); err == nil {
 		t.Error("a token signed by another key was accepted")

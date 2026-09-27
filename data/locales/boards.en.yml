@@ -158,6 +158,35 @@ en:
     features: Features
     specs: Specifications
     links: Links
+    ready_because_label: "Supported by OpenIPC:"
+    ready_because: "a transition image exists for device {ids}"
+    fw_title: Firmware
+    fw_device: "Device ID {id}"
+    fw_device_hint: "the 4th field of the System version: V5.00.R02.{id}.10010…"
+    fw_your_device: "Your device {id}"
+    fw_none: "Nothing is archived for this device ID yet: no stock build and no OpenIPC transition image. OpenIPC can still be installed over UART from the SoC's page."
+    fw_coupler: Switch to OpenIPC
+    fw_built: "built {date}"
+    fw_archived: "archived {date}"
+    fw_download: Download
+    fw_caution_flash: "Flash it through the camera's own update function: its web interface, or"
+    fw_caution_before: "Before you do:"
+    fw_caution_stock: "update to the latest stock firmware first (below);"
+    fw_caution_rollback: "there is no way back to stock without UART and TFTP recovery"
+    fw_recovery: recovery guide
+    fw_caution_firstboot_before: "after the first boot run"
+    fw_caution_firstboot_after: ", and set the sensor if there is no picture."
+    fw_stock: Stay on stock, updated
+    fw_stock_one: "The vendor's firmware for this device, current."
+    fw_stock_several: "The vendor published this firmware more than once. If a build misbehaves, an earlier one is here to go back to."
+    fw_latest: Latest
+    fw_earlier: Earlier
+    fw_stock_source: "Xiongmai firmware, mirrored by OpenIPC/xmupdates."
+    fw_no_coupler: "no OpenIPC transition image for this device yet"
+    fw_boards:
+      one: "{count} catalogue board runs this device ID:"
+      other: "{count} catalogue boards run this device ID:"
+    fw_no_boards: "No catalogue board is known to run this device ID yet."
     link_stock_firmware: Stock firmware
     link_successor: Replaced by
     link_predecessor: Replaces

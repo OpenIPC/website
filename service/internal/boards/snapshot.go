@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/OpenIPC/website/service/internal/vendorfw"
 	"io"
 	"io/fs"
 	"os"
@@ -25,6 +26,9 @@ import (
 // manifest.json and the files it names, tarred. The tar's sha256 is pinned
 // in Snapshots, so what reaches the catalogue is exactly what was reviewed.
 //
+// errSkip leaves a link-only entry out: the board it names is not in the catalogue.
+var errSkip = errors.New("names no catalogue board")
+
 // Snapshots are kept in the backup bucket under boards-donors/<source>/;
 // the capture they were made from sits beside them.
 var Snapshots = map[string]string{
@@ -70,6 +74,19 @@ type SnapModel struct {
 	// ListedYear is the year the maker's own catalogue first showed the
 	// board, where the source dates it; 0 when it does not.
 	ListedYear int `json:"listed_year,omitempty"`
+	// DeviceIDs are the XM device IDs the source says the board runs, each
+	// with the page that says so.
+	DeviceIDs []SnapDevice `json:"device_ids,omitempty"`
+	// LinkOnly adds what the entry carries to a board the catalogue has, and
+	// never creates one: a source that names a board only in passing (a
+	// firmware page's "download firmware for IPG-50H20PLS-S") is evidence
+	// about it, not a listing of it.
+	LinkOnly bool `json:"link_only,omitempty"`
+}
+
+type SnapDevice struct {
+	ID       string `json:"id"`
+	Evidence string `json:"evidence"`
 }
 
 type SnapLink struct {
@@ -406,6 +423,9 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 				id = found
 			}
 		}
+		if id == "" && m.LinkOnly {
+			return errSkip
+		}
 		if id == "" {
 			isNew = true
 			id = slug(m.Maker + "-" + m.Code)
@@ -442,7 +462,7 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 			}
 		}
 		// This source's say about the model replaces what it said last time.
-		for _, t := range []string{"board_model_texts", "board_model_specs", "board_model_tags", "board_links"} {
+		for _, t := range []string{"board_model_texts", "board_model_specs", "board_model_tags", "board_links", "board_device_ids"} {
 			if _, err := tx.Exec(ctx, `DELETE FROM `+t+` WHERE model_id = $1 AND source = $2`, id, src); err != nil {
 				return err
 			}
@@ -471,6 +491,16 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 				}
 			}
 		}
+		for _, d := range m.DeviceIDs {
+			dev := vendorfw.DeviceID(d.ID)
+			if dev == "" {
+				return fmt.Errorf("device id %q is not an 8-character XM device ID", d.ID)
+			}
+			if _, err := tx.Exec(ctx, `INSERT INTO board_device_ids (model_id, device_id, source, evidence) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+				id, dev, src, null(d.Evidence)); err != nil {
+				return err
+			}
+		}
 		for _, tag := range m.Tags {
 			if _, err := tx.Exec(ctx, `INSERT INTO board_model_tags (model_id, source, tag) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`, id, src, tag); err != nil {
 				return err
@@ -484,6 +514,10 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 		}
 		return nil
 	})
+	if errors.Is(err, errSkip) {
+		im.Log.Info("boards: link-only entry names no catalogue board, skipped", "source", src, "code", m.Code)
+		return "", false, nil
+	}
 	if err == nil && have {
 		// The snapshot is the source's say about its unit: a corrected
 		// sensor replaces the old one, with or without files to refresh.

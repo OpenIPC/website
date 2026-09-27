@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/OpenIPC/website/service/internal/vendorfw"
 	"log/slog"
 	"net/http"
 	"regexp"
@@ -97,6 +98,9 @@ type modelJSON struct {
 	// Aliases are the other codes the sources print for this board, so a
 	// search by any of them finds its card.
 	Aliases []string `json:"aliases"`
+	// Devices are the XM device IDs the board runs, with the stock update and
+	// the coupler image each can be flashed with.
+	Devices []*vendorfw.Device `json:"devices"`
 	// ListedYear is the year the maker's catalogue first showed the board,
 	// where a source dates it.
 	ListedYear *int `json:"listed_year"`
@@ -348,6 +352,9 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 	if err := about(ctx, tx, byModel, locale); err != nil {
 		return nil, err
 	}
+	if err := devices(ctx, tx, byModel); err != nil {
+		return nil, err
+	}
 	for _, m := range byModel {
 		summarise(m)
 		m.About, m.Links = nil, nil
@@ -545,10 +552,14 @@ func ModelDetail(ctx context.Context, db *pgxpool.Pool, id, locale string) (map[
 		Scan(&m.Model, &m.SoC, &m.SoCLabel, &m.Category); err != nil {
 		return nil, err
 	}
-	if err := about(ctx, tx, map[string]*modelJSON{id: m}, locale); err != nil {
+	one := map[string]*modelJSON{id: m}
+	if err := about(ctx, tx, one, locale); err != nil {
 		return nil, err
 	}
-	return map[string]any{"schema": 1, "locale": locale, "id": id, "model": m.Model, "about": m.About, "links": m.Links, "tags": m.Tags}, nil
+	if err := devices(ctx, tx, one); err != nil {
+		return nil, err
+	}
+	return map[string]any{"schema": 1, "locale": locale, "id": id, "model": m.Model, "about": m.About, "links": m.Links, "tags": m.Tags, "devices": m.Devices}, nil
 }
 
 type hitJSON struct {
@@ -677,7 +688,8 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 		       (SELECT coalesce(string_agg(id || ':' || ref, ',' ORDER BY id), '') FROM board_sources) || '|' ||
 		       (SELECT count(*) FROM board_model_texts) || '|' || (SELECT count(*) FROM board_model_specs) || '|' ||
 		       (SELECT count(*) FROM board_model_tags) || '|' || (SELECT count(*) FROM board_links) || '|' ||
-		       (SELECT coalesce(md5(string_agg(id || ':' || listed_year, ',' ORDER BY id)), '') FROM board_models WHERE listed_year IS NOT NULL)`).Scan(&units, &files, &last, &about); err != nil {
+		       (SELECT coalesce(md5(string_agg(id || ':' || listed_year, ',' ORDER BY id)), '') FROM board_models WHERE listed_year IS NOT NULL) || '|' ||
+		       (SELECT count(*) || ':' || coalesce(max(pushed_at)::text, '') FROM vendor_firmware) || '|' || (SELECT count(*) FROM board_device_ids)`).Scan(&units, &files, &last, &about); err != nil {
 		a.Log.Error("boards: no revision", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})
 		return

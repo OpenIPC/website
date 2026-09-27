@@ -12,8 +12,9 @@ import { Fragment } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { BoardLink, LinkKind, ModelDetail, Source } from '../../lib/boards/types';
 import { fetchModel } from '../../lib/boards/api';
+import Firmware from './Firmware';
 import {
-  HEADING_CLASS, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, subtitle, unitFiles, unitPhotos,
+  HEADING_CLASS, couplerDevices, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, subtitle, unitFiles, unitPhotos,
   type CodeIndex, type Entry, type Heading,
 } from '../../lib/boards/model';
 import type { BoardsT } from '../../lib/boards-i18n';
@@ -84,6 +85,8 @@ export default function BoardPanel({ id, entry, loaded, locale, t, sources, inde
     ? <a key={i} href={href(p.id)} onClick={follow(p.id)}>{p.text}</a>
     : p.text));
   const missing = entry ? firstMissing(entry) : null;
+  const devices = entry?.devices ?? (detail.state === 'ok' ? detail.value.devices ?? [] : []);
+  const ready = couplerDevices({ devices });
   const notFound = detail.state === 'error' && detail.error === 'HTTP 404';
 
   return (
@@ -99,6 +102,11 @@ export default function BoardPanel({ id, entry, loaded, locale, t, sources, inde
           </div>
           {name && <p class="m-0 text-sm text-body-secondary">{name}</p>}
           {entry && <Tags tags={entry.tags} line={entry.category} t={t} />}
+          {ready.length > 0 && (
+            <p class="m-0 text-[13px] text-body-secondary">
+              <b class="text-[#146c3c]">{t('ready_because_label')}</b> {t('ready_because', { ids: ready.join(', ') })}
+            </p>
+          )}
         </div>
         <button type="button" aria-label={t('close')} onClick={() => dialog.current?.close()}
           class="shrink-0 cursor-pointer rounded px-2 text-xl leading-none text-body-secondary hover:text-body">✕</button>
@@ -149,6 +157,15 @@ export default function BoardPanel({ id, entry, loaded, locale, t, sources, inde
             </div>
           </section>
         ))}
+
+        {devices.length > 0 && (
+          <section aria-labelledby="board-panel-firmware" class="grid gap-3">
+            <h3 id="board-panel-firmware" class={`${HEADING} mb-0`}>{t('fw_title')}</h3>
+            {devices.map((d) => (
+              <Firmware key={d.id} device={d} heading={t('fw_device', { id: d.id })} note={t('fw_device_hint', { id: d.id })} locale={locale} t={t} />
+            ))}
+          </section>
+        )}
 
         {detail.state === 'ok' && detail.value.links.length > 0 && (
           <section aria-labelledby="board-panel-links">

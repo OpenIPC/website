@@ -7,6 +7,7 @@
 //	openipc purge [--snapshots] [--firmware] [--builds]   nightly retention
 //	openipc probe                  nightly health numbers, non-zero on trouble
 //	openipc builds import-history  once: the builds GitHub still holds, into PostgreSQL
+//	openipc vendor-firmware import-history  once: xmupdates and coupler as published so far
 //	openipc boards import-openhisiipcam  once: the OpenHisiIpCam board archive, into the board catalogue
 //	openipc routes --json          what this binary answers, for the nginx seam test
 //
@@ -41,6 +42,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/purge"
 	"github.com/OpenIPC/website/service/internal/snapshots"
 	"github.com/OpenIPC/website/service/internal/variants"
+	"github.com/OpenIPC/website/service/internal/vendorfw"
 	"github.com/OpenIPC/website/service/internal/wall"
 	"github.com/OpenIPC/website/service/internal/wallsocket"
 	"github.com/OpenIPC/website/service/internal/wizard"
@@ -73,6 +75,8 @@ func main() {
 		err = probe(ctx, cfg)
 	case "builds":
 		err = buildsCommand(ctx, cfg, log, args)
+	case "vendor-firmware":
+		err = vendorFirmwareCommand(ctx, cfg, log, args)
 	case "boards":
 		err = boardsCommand(ctx, cfg, log, args)
 	case "routes":
@@ -88,7 +92,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | boards import-snapshot | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | boards import-snapshot | vendor-firmware import-history | routes --json | version")
 	os.Exit(2)
 }
 
@@ -153,6 +157,8 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/boards"},
 	{"web", "GET", "/api/v1/boards/search"},
 	{"web", "GET", "/api/v1/boards/models/{id}"},
+	{"web", "POST", "/api/v1/vendor-firmware"},
+	{"web", "GET", "/api/v1/vendor-firmware/{deviceId}"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 }
@@ -311,6 +317,10 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		// The one place builds enter: CI pushes each build once (builds/PUSH.md).
 		"POST /api/v1/builds": &builds.Handler{
 			Verifier: &builds.LazyVerifier{Issuer: builds.GitHubIssuer}, DB: pool, Log: log},
+		// Stock updates (xmupdates) and stock-to-OpenIPC images (coupler),
+		// pushed by those projects' CI (vendorfw/PUSH.md).
+		"POST /api/v1/vendor-firmware": &vendorfw.Handler{
+			Verifier: &builds.LazyVerifier{Issuer: builds.GitHubIssuer}, DB: pool, Log: log},
 		"GET /api/v1/wall/socket": &wallsocket.Server{WallRoot: cfg.WallRoot, Grants: granter, Log: log,
 			GrantsDisabled: cfg.GrantsDisabled, Budget: &wallsocket.Budget{Limit: 1000}},
 	}
@@ -326,6 +336,9 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		handlers[k] = h
 	}
 	for k, h := range (&boards.API{DB: pool, Log: log}).Handlers() {
+		handlers[k] = h
+	}
+	for k, h := range (&vendorfw.API{DB: pool, Log: log}).Handlers() {
 		handlers[k] = h
 	}
 	for _, r := range routes {

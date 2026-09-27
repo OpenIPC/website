@@ -2,7 +2,8 @@
 the boards they describe.
 
   docker run --rm -v ~/reports/boards-catalogue/donors:/w -v $PWD/tools/board-donors:/t \\
-    board-render:1 python3 /t/tehno32_snapshot.py /w/raw/tehno32 /w/tehno32-work /w/snapshots/tehno32-snapshot.tar
+    board-render:1 python3 /t/tehno32_snapshot.py /w/raw/tehno32 /w/tehno32-work /w/snapshots/tehno32-snapshot.tar \\
+    /w/raw/tehno32-firmware
 
 Runs in board-render:1 (tools/board-donors/render): LibreOffice turns .doc
 and .docx into PDF, poppler renders pages.
@@ -28,6 +29,7 @@ files naming neither a module nor a PCB.
 """
 
 import hashlib
+import html
 import io
 import json
 import os
@@ -168,8 +170,37 @@ def trimmed(png, work):
     return out
 
 
+def firmware_devices(fw_cap):
+    """{module code: {device ID: page URL}} from the captured firmware pages."""
+    pages = json.load(open(os.path.join(fw_cap, "firmware.json")))
+    log = {}
+    for line in open(os.path.join(fw_cap, "log.jsonl")):
+        e = json.loads(line)
+        if e.get("status") == 200 and e.get("file"):
+            log[e["url"]] = e
+    out = {}
+    for url in sorted(pages):
+        e = log.get(url)
+        if not e:
+            continue
+        page = open(os.path.join(fw_cap, e["file"]), encoding="utf-8", errors="replace").read()
+        m = re.search(r"<main.*?</main>", page, re.S)
+        body = re.sub(r"<(script|style).*?</\1>", "", m.group(0) if m else page, flags=re.S)
+        text = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", body)))
+        num = re.search(r"Номер прошивки\s+([0-9A-Za-z]{8})\b", text)
+        at = text.find("Скачать прошивку для")
+        if not num or at < 0:
+            continue
+        dev = num.group(1).upper()
+        for code in set(MODULE.findall(text[at:].upper())):
+            code = re.sub(r"-V\d+$", "", code)
+            out.setdefault(code, {}).setdefault(dev, url)
+    return out
+
+
 def main():
     cap, work, out = sys.argv[1:4]
+    fw_cap = sys.argv[4] if len(sys.argv) > 4 else None
     os.makedirs(work, exist_ok=True)
     index = json.load(open(os.path.join(cap, "index.json")))
     by_url = {}
@@ -278,11 +309,29 @@ def main():
                        "texts": {}, "original": [], "specs": {}, "tags": [], "links": links,
                        "files": own + doc_files(code, p["docs"], used)})
 
+    # Device IDs from the firmware pages (tehno32.py --firmware-pages): each
+    # names a firmware number -- the XM device ID -- and, after "Скачать
+    # прошивку для", the boards it is for. Every module code there is
+    # evidence; a board with a card here gets the ID on it, any other is
+    # linked only if the catalogue already has it (link_only).
+    if fw_cap:
+        cards = {m["code"]: m for m in models}
+        for code, devs in firmware_devices(fw_cap).items():
+            ids = [{"id": d, "evidence": url} for d, url in sorted(devs.items())]
+            if code in cards:
+                cards[code].setdefault("device_ids", []).extend(ids)
+            else:
+                m = {"maker": "xiongmai", "code": code, "category": CATEGORY.get(re.match(r"[A-Z]+", code).group(0)),
+                     "texts": {}, "original": [], "specs": {}, "tags": [], "links": [], "files": [],
+                     "device_ids": ids, "link_only": True}
+                models.append(m)
+                cards[code] = m
+
     # A PCB lists a module only if the module links back, and every card has
     # a product line: a broken snapshot is refused here, not published.
     cards = {m["code"]: m for m in models}
     for m in models:
-        if not m["category"]:
+        if not m["category"] and not m.get("link_only"):
             sys.exit(f"{m['code']}: no product line")
         for l in m["links"]:
             if l["kind"] == "on_pcb" and not any(k["kind"] == "pcb" and k["code"] == m["code"] for k in cards[l["code"]]["links"]):
