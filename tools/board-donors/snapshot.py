@@ -9,6 +9,10 @@ OpenIPC/xmupdates has archived the build, read from that repository's
 origin/main so no one's working tree is touched.
 
 Prints the tar's sha256: that is what boards.Snapshots pins.
+
+Needs Pillow (python3-pil): it converts BMPs to PNG and tells a Xiongmai
+picture's ZH copy from a different picture. It is imported at the top so a
+build without it fails at once, not halfway through a snapshot.
 """
 
 import hashlib
@@ -19,6 +23,8 @@ import re
 import subprocess
 import sys
 import tarfile
+
+from PIL import Image
 
 SOURCES = {
     "cctvsp": {"id": "cctvsp", "name": "cctvsp.ru", "url": "https://www.cctvsp.ru/cctv/ip-moduli",
@@ -79,10 +85,6 @@ def web_image(src, converted):
     """A picture the site and the importer can both read: vendors serve BMPs
     under .png names (NBD8032H4-UL). Anything that is not JPEG, PNG or GIF is
     converted to PNG once, into <converted>/, and that copy is published."""
-    try:
-        from PIL import Image
-    except ImportError:
-        return src
     with Image.open(src) as im:
         if im.format in ("JPEG", "PNG", "GIF"):
             return src
@@ -164,7 +166,6 @@ def dhash(path, n=16):
     """A 256-bit difference hash: the same picture re-saved, re-cropped or
     relabelled in another language lands within ~75 bits; different
     pictures of one board land beyond ~90."""
-    from PIL import Image
     im = Image.open(path).convert("L").resize((n + 1, n), Image.LANCZOS)
     px, bits = im.tobytes(), 0
     for y in range(n):
