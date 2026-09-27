@@ -24,7 +24,7 @@ SOURCES = {
     "cctvsp": {"id": "cctvsp", "name": "cctvsp.ru", "url": "https://www.cctvsp.ru/cctv/ip-moduli",
                "note": "Module descriptions, photos, pinouts and manufacturer documents from cctvsp.ru's OpenIPC and archive sections, contributed by the shop (2026)."},
     "xiongmai": {"id": "xiongmai", "name": "Xiongmai", "url": "https://www.xiongmaitech.com/en/index.php/product",
-                 "note": "Xiongmai's own product catalogue, archived in 2026 as the company closed its IP camera business."},
+                 "note": "Xiongmai's own product catalogue, archived in 2026 because the company site is not available anymore."},
 }
 
 
@@ -94,7 +94,14 @@ def cctvsp_model(r, files, builds, index):
     names = {"ru": r["title"]["ru"],
              "en": f"IP camera module {code}" + (f" ({parts})" if parts else "") if r["code"] else "WiFi and SD expansion board (RTL8188)",
              "zh": f"IP摄像机模组 {code}" + (f"（{parts}）" if parts else "") if r["code"] else "WiFi与SD扩展板（RTL8188）"}
-    texts = {l: {"name": names[l], "description": "\n\n".join(r["description"][l])} for l in ("ru", "en", "zh")}
+    # The shop puts its notes ("discontinued long ago; the replacement is
+    # ...") first; the board's own description reads first here, the notes
+    # after it. Paragraphs are aligned across languages, so one order serves all.
+    notes = set(r.get("note_paragraphs", []))
+    n = len(r["description"]["ru"])
+    main = [i for i in range(n) if i not in notes]
+    order = main[:1] + sorted(notes) + main[1:]
+    texts = {l: {"name": names[l], "description": "\n\n".join(r["description"][l][i] for i in order)} for l in ("ru", "en", "zh")}
     links = [{"kind": "source_page", "label": "cctvsp.ru", "url": r["source_url"]}]
     for rel in r["relations"]:
         links.append({"kind": rel["kind"], "label": rel["code"], "code": rel["code"]})

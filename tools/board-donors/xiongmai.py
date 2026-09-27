@@ -1,4 +1,4 @@
-"""Capture Xiongmai's product catalogue (xiongmaitech.com) before it goes dark.
+"""Capture Xiongmai's product catalogue (xiongmaitech.com) while it can still be read.
 
   python xiongmai.py <capture-dir> [--max-id 800]
 

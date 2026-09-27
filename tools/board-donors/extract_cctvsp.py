@@ -53,8 +53,15 @@ def extract(cap, mod):
     code_m = CODE.search(title)
     parts = PARTS.search(title)
     desc_html = pane(page, "item-desc")
-    paragraphs = [clean(p) for p in re.findall(r"<p[^>]*>(.*?)</p>", desc_html, re.S)]
-    paragraphs = [p for p in paragraphs if p]
+    paragraphs, note_paragraphs = [], []
+    for attrs, body in re.findall(r"<p([^>]*)>(.*?)</p>", desc_html, re.S):
+        text = clean(body)
+        if not text:
+            continue
+        # The shop's asides: an alert box, or a paragraph that says it is a note.
+        if "alert" in attrs or re.match(r"(Примечание|Внимание|Важно)\s*:", text):
+            note_paragraphs.append(len(paragraphs))
+        paragraphs.append(text)
     relations = []
     for p in re.findall(r"<p[^>]*>(.*?)</p>", desc_html, re.S):
         for href, label in re.findall(r'<a[^>]+href="(/cctv/[^"]+)"[^>]*>(.*?)</a>', p, re.S):
@@ -114,6 +121,7 @@ def extract(cap, mod):
         "category": "ip_module" if code_m else "accessory",
         "tags": tags,
         "description": {"ru": paragraphs},
+        "note_paragraphs": note_paragraphs,
         "specs": {"ru": specs},
         "relations": relations,
         "photos": photos,
