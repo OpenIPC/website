@@ -97,18 +97,26 @@ const metaDescription = description ?? t('site.default_meta_description');
   <meta name="build-revision" content="@@REVISION@@" />
   <meta name="build-time" content="@@BUILT@@" />
 
-  <!--
+  {/*
     First-party page counting (#181). nginx proxies /api/a/c.js and
     /api/a/count to GoatCounter on 127.0.0.1:8081; nothing leaves the host and
     there is no third-party host to allow-list.
 
-    no_onload is set at parse time rather than inside a bundle, for the same
-    reason: count.js reading it before it is set
-    would count the document load event, and a visitor who read twenty pages
-    would register one.
-  -->
+    count.js counts once on load, and this is a plain multi-page site: every
+    navigation is a full document load, so that on-load count is exactly one hit
+    per page a visitor reads -- the twenty pages of a session are twenty loads
+    and twenty counts. The previous stack ran a client-side router that swapped
+    pages without a load event, so it suppressed the on-load count and re-counted
+    on each swap; there is no such router here, so the built-in counter is left
+    enabled and the settings below carry only the endpoint. If Astro's
+    ClientRouter is ever adopted, restore a manual goatcounter.count() on
+    astro:page-load, or client-side navigations go uncounted again.
+
+    This is a JSX comment, not an HTML one, so it is stripped from the page
+    rather than shipped to every reader.
+  */}
   <script is:inline>
-    (() => { window.goatcounter = { no_onload: true, endpoint: '/api/a/count' } })()
+    (() => { window.goatcounter = { endpoint: '/api/a/count' } })()
   </script>
   <script is:inline src="/api/a/c.js" data-goatcounter="/api/a/count" defer></script>
 </head>

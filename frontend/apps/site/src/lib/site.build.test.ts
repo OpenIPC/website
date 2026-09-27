@@ -250,3 +250,23 @@ describe('the home page', () => {
     }
   });
 });
+
+describe('the analytics beacon', () => {
+  // GoatCounter's count.js (#181), served same-origin under /api/a/. It counts
+  // once on load, and every page is a full load here, so the on-load count is
+  // exactly one hit per page read. The previous stack set no_onload:true and
+  // counted on its client-side router's page-swap event instead; carried
+  // unchanged into this bundle, which has no such router, it silenced the
+  // beacon entirely -- c.js loaded and nothing was ever counted. So the
+  // property under test is that no_onload is NOT set.
+  for (const page of ['index.html', 'zh/index.html']) {
+    test(`${page} carries the beacon and lets it count on load`, () => {
+      const html = read(page);
+      expect(html, `${page} does not load the beacon`).toContain('src="/api/a/c.js"');
+      expect(html, `${page} does not point the beacon at the endpoint`)
+        .toContain('data-goatcounter="/api/a/count"');
+      expect(html, `${page} sets no_onload, so the beacon loads but never counts`)
+        .not.toContain('no_onload');
+    });
+  }
+});

@@ -27,8 +27,10 @@ import (
 //	198.51.100.30  reader (iPhone)         / -- same address, other visitor
 //	198.51.100.40  reader (Chrome)         /open-wall, /low-latency, one event
 //
-// and three lines that must not be counted at all: a page view, a stylesheet,
-// and /api/a/c.js, which is the beacon script being fetched rather than run.
+// and three lines that must not be counted as visits: a page view, a stylesheet
+// (the static bundle's /_astro/*.css, the signal the full report's people
+// filter keys on), and /api/a/c.js, the beacon script being fetched rather
+// than run.
 const beaconFixture = "service/deploytest/testdata/beacon-access.log"
 
 // goaccessStub answers `-o csv` from $ENGAGED_CSV and does nothing otherwise,
@@ -271,6 +273,17 @@ func TestAudienceReport(t *testing.T) {
 		if out, ok := run(t, nil, "", "bash", "-n", abs(t, "deploy/audience-report.sh")); !ok {
 			t.Errorf("audience-report.sh does not parse:\n%s", out)
 		}
+	})
+	// The full report's second, independent people count is the addresses that
+	// fetched a page stylesheet -- the signal the beacon cannot give, and the one
+	// that broke silently at the #304 cutover when the served path changed from
+	// the retired /assets/application-*.css to the bundle's /_astro/*.css. The
+	// fixture's reader fetches the current path, and must still be judged a
+	// person; nothing else exercised this grep before.
+	t.Run("the stylesheet filter finds the reader at the current asset path", func(t *testing.T) {
+		out := runReport(t, fixture, t.TempDir(), reportOpts{})
+		wantCount(t, out, "fetched stylesheet", 1, "198.51.100.30 fetched /_astro/*.css; a crawler reading HTML does not")
+		wantCount(t, out, "judged people", 1, "that same address read pages and is no robot, so it is a person")
 	})
 
 	// --- engaged readers (#184) ---

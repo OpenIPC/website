@@ -570,7 +570,11 @@ trap 'rm -rf "$work"' EXIT
 # 1. Addresses that fetched the stylesheet. A browser rendering a page asks for
 #    it; a crawler reading HTML does not. This is the strongest single signal
 #    available from the origin, and on its own it is not enough -- hence 2.
-awk '$7 ~ /\/assets\/application-.*\.css/ { print $1 }' "$log" | sort -u > "$work/fetched-css"
+#    The static bundle (#304) serves its stylesheet under /_astro/<name>.<hash>.css;
+#    the retired /assets/application-<hash>.css path is kept in the union so a log
+#    that spans the cutover, or an archived one replayed by hand, still resolves
+#    its readers.
+awk '$7 ~ /\/(_astro\/.*|assets\/application-.*)\.css/ { print $1 }' "$log" | sort -u > "$work/fetched-css"
 
 # 2. Take the ones that also behaved like a reader. An address is dropped if it
 #    announces itself as a robot, is one of the mirrors, or asked for more pages
