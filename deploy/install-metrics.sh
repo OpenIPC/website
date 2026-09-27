@@ -21,7 +21,8 @@
 #
 #   sha256sum deploy/openipc-sample-rss deploy/cron.d/openipc-metrics \
 #             deploy/memory-probe.sh deploy/audience-report.sh \
-#             deploy/oc-stats.sh \
+#             deploy/oc-stats.sh deploy/audience-memo.sh deploy/log-report.sh \
+#             deploy/oc-memo/oc-monthly.py deploy/firmware-segments.tsv \
 #             deploy/paywall-support.json | cut -c1-16
 #
 # rsync has to exist at both ends. It is in deploy/RESTORE.md's prerequisites
@@ -41,6 +42,12 @@ cron=/etc/cron.d/openipc-metrics
 probe=/usr/local/sbin/openipc-memory-probe
 audience=/usr/local/sbin/openipc-audience-report
 ocstats=/usr/local/sbin/openipc-oc-stats
+# The monthly memo (#184) and the diagnostic it reads bot/429 share from, which
+# until now was only ever streamed over ssh and so absent from a rebuilt host.
+memo=/usr/local/sbin/openipc-audience-memo
+logreport=/usr/local/sbin/openipc-log-report
+memolib=/usr/local/lib/openipc-memo
+fwseg=/srv/www/shared/firmware-segments.tsv
 # The uid the image runs as, and the owner every writable mount already has.
 appuid=1000
 paywall=/srv/www/shared/paywall-support.json
@@ -71,6 +78,16 @@ install -m 0644 -o root -g root "$here/cron.d/openipc-metrics" "$cron"
 install -m 0755 -o root -g root "$here/memory-probe.sh" "$probe"
 install -m 0755 -o root -g root "$here/audience-report.sh" "$audience"
 install -m 0755 -o root -g root "$here/oc-stats.sh" "$ocstats"
+install -m 0755 -o root -g root "$here/audience-memo.sh" "$memo"
+install -m 0755 -o root -g root "$here/log-report.sh" "$logreport"
+
+# The memo's Open Collective helper, and the SoC->family/segment table it maps
+# firmware downloads through. The table is generated from the catalogue and
+# kept in the repository (service/deploytest fails a stale one), so installing
+# it is a plain copy -- no jq or catalogue on the host at install time.
+install -d -m 0755 -o root -g root "$memolib"
+install -m 0755 -o root -g root "$here/oc-memo/oc-monthly.py" "$memolib/oc-monthly.py"
+install -m 0644 -o root -g root "$here/firmware-segments.tsv" "$fwseg"
 
 # PayWall's half of the backer count (#201). The repository is the source of
 # truth: the figures come from a maintainer export and change by pull request,
@@ -81,13 +98,13 @@ install -m 0644 -o root -g root "$here/paywall-support.json" "$paywall"
 # exist before the first report is written or the location 404s all day.
 install -d -m 0755 -o root -g root "$reports"
 
-echo "installed $sampler, $cron, $probe, $audience, $ocstats and $paywall"
+echo "installed $sampler, $cron, $probe, $audience, $ocstats, $memo, $logreport, $memolib/oc-monthly.py, $fwseg and $paywall"
 
 # What was actually installed, not what the run meant to install. A copy that
 # landed in the wrong place leaves this script reporting success over stale
 # files, and the only way to see it is to compare these against
 # `sha256sum deploy/*.sh cron.d/openipc-metrics` in the checkout.
-for f in "$sampler" "$cron" "$probe" "$audience" "$ocstats" "$paywall"; do
+for f in "$sampler" "$cron" "$probe" "$audience" "$ocstats" "$memo" "$logreport" "$memolib/oc-monthly.py" "$fwseg" "$paywall"; do
   printf '  %s  %s\n' "$(sha256sum "$f" | cut -c1-16)" "$f"
 done
 
