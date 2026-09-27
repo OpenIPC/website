@@ -104,18 +104,30 @@ var aliasesYAML []byte
 type Alias struct {
 	Maker string `yaml:"maker"`
 	Code  string `yaml:"code"`
-	Is    string `yaml:"is"`
+	// Is merges: the code is that board.
+	Is string `yaml:"is"`
+	// Related links: a different board of the same family, both ways.
+	Related string `yaml:"related"`
 }
 
-func decisions(extra []Alias) (map[[2]string]string, error) {
+func reviewed(extra []Alias) ([]Alias, error) {
 	var list []Alias
 	if err := yaml.Unmarshal(aliasesYAML, &list); err != nil {
 		return nil, fmt.Errorf("aliases.yml: %w", err)
 	}
-	list = append(list, extra...)
+	return append(list, extra...), nil
+}
+
+func decisions(extra []Alias) (map[[2]string]string, error) {
+	list, err := reviewed(extra)
+	if err != nil {
+		return nil, err
+	}
 	out := map[[2]string]string{}
 	for _, a := range list {
-		out[[2]string{a.Maker, NormCode(a.Code)}] = NormCode(a.Is)
+		if a.Is != "" {
+			out[[2]string{a.Maker, NormCode(a.Code)}] = NormCode(a.Is)
+		}
 	}
 	return out, nil
 }
@@ -240,7 +252,54 @@ func (im *Importer) FromSnapshot(ctx context.Context, fsys fs.FS) (int, error) {
 			}
 		}
 	}
-	return created, nil
+	return created, im.relate(ctx, src, dec)
+}
+
+// relate adds the reviewed "same family" links, both ways, for every pair
+// whose two boards the catalogue has. They are this import's source's say,
+// at fixed positions past any the source brings, so a re-import rewrites
+// rather than repeats them.
+func (im *Importer) relate(ctx context.Context, src string, dec map[[2]string]string) error {
+	list, err := reviewed(im.ExtraAliases)
+	if err != nil {
+		return err
+	}
+	linked := map[[2]string]bool{}
+	for i, a := range list {
+		if a.Related == "" {
+			continue
+		}
+		x, err := im.resolve(ctx, im.Pool, a.Maker, a.Code, dec)
+		if err != nil {
+			return err
+		}
+		y, err := im.resolve(ctx, im.Pool, a.Maker, a.Related, dec)
+		if err != nil {
+			return err
+		}
+		if x == "" || y == "" || x == y || linked[[2]string{x, y}] {
+			continue
+		}
+		// the same pair written twice, or both ways, links once
+		linked[[2]string{x, y}], linked[[2]string{y, x}] = true, true
+		for _, l := range [][3]string{{x, y, a.Related}, {y, x, a.Code}} {
+			if _, err := im.Pool.Exec(ctx, `
+				INSERT INTO board_links (model_id, source, position, kind, label, target_model_id)
+				VALUES ($1, $2, $3, 'related', $4, $5)
+				ON CONFLICT (model_id, source, position) DO UPDATE SET label = EXCLUDED.label, target_model_id = EXCLUDED.target_model_id`,
+				l[0], src, 10000+2*i+boolInt(l[0] == y), l[2], l[1]); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func boolInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 type querier interface {

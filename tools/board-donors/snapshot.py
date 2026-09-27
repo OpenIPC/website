@@ -186,12 +186,7 @@ def xiongmai_model(r, files, builds, index, dic=None):
         if d["publish"] and d.get("file"):
             name, path = files.add(d["file"], os.path.basename(d["url"]), used)
             fl.append({"kind": "document", "name": name, "path": path})
-    code = r["code"]
-    if r.get("code_from_title"):
-        # No model row: the page names the board only in words. A stable code
-        # from the vendor's page id keeps it one model across imports.
-        first = r["pages"][0]
-        code = f"XM-{first['lang'].upper()}-{first['id']}"
+    code = r["code"]  # XM-<LANG>-<page id> when the page has no model row
     category = (r.get("category") or "").replace("&AHD;", "&AHD") or None
     return {"maker": "xiongmai", "code": code, "category": category, "soc_label": r.get("soc_label"),
             "sensor": r.get("sensor"), "tags": r["tags"], "texts": texts, "original": original,

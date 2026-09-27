@@ -258,3 +258,24 @@ func TestCodesAlreadyOnTwoModelsAreRefusedNotMerged(t *testing.T) {
 		t.Errorf("err = %v", err)
 	}
 }
+
+func TestAReviewedFamilyLinksBothBoardsWithoutMergingThem(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported,
+		ExtraAliases: []Alias{{Maker: "xiongmai", Code: "53H20-S", Related: "IPG-53H20PL-S"}}}
+	ctx := context.Background()
+	snap := donor(t, "xiongmai", model("xiongmai", "IPG-53H20PL-S", nil))
+	for range 2 { // and a re-import does not repeat the links
+		if _, err := im.FromSnapshot(ctx, snap); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_links WHERE kind = 'related' AND
+		((model_id = 'xiongmai-53h20-s' AND target_model_id = 'xiongmai-ipg-53h20pl-s') OR
+		 (model_id = 'xiongmai-ipg-53h20pl-s' AND target_model_id = 'xiongmai-53h20-s'))`); n != 2 {
+		t.Errorf("%d family links, want one each way", n)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE id IN ('xiongmai-53h20-s', 'xiongmai-ipg-53h20pl-s')`); n != 2 {
+		t.Errorf("%d models: related boards stay two", n)
+	}
+}

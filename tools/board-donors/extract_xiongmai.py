@@ -64,8 +64,9 @@ def codes_of(specs, title):
     same board with another sensor or lens. The first is the model's code,
     the rest its aliases."""
     for label, value in specs[:3]:
-        l = label.strip().lower().rstrip(":：")
-        if l in MODEL_LABELS or l.startswith("model"):
+        # "型 号", "规格指标" and "Specifications" all label the model row.
+        l = re.sub(r"[\s\u3000:：]+", "", label).lower()
+        if l in MODEL_LABELS or l.startswith(("model", "型号", "规格指", "specification", "产品型号")):
             codes = [c.strip() for c in re.split(r"\s*/\s*|\s*[,，、]\s*", value) if c.strip()]
             codes = [c for c in codes if CODE_SHAPE.match(c)]
             if codes:
@@ -114,6 +115,13 @@ def photos(cap, page, media):
     return [m for m in media if any(m["url"].endswith(o) for o in own)]
 
 
+# Decisions from the deduplication review, 2026-09-27: these Chinese pages
+# without a model code are the English page with the same id (the titles say
+# the same thing), and a page titled 测试 ("test") is not a product.
+ZH_PAGE_IS_EN_PAGE = {25: 25, 26: 26, 46: 46, 48: 48}
+NOT_PRODUCTS = {"测试"}
+
+
 def main():
     out, caps = sys.argv[1], sys.argv[2:]
     trees = []
@@ -130,6 +138,15 @@ def main():
             tabs = {k: load(cap, v.get("file")) for k, v in p["tabs"].items()}
             specs = spec_rows(tabs.get("jscs", ""))
             codes, from_title = codes_of(specs, p["title"])
+            if p["title"].strip() in NOT_PRODUCTS:
+                continue
+            if from_title and lang == "zh" and p["id"] in ZH_PAGE_IS_EN_PAGE:
+                codes, from_title = [f"XM-EN-{ZH_PAGE_IS_EN_PAGE[p['id']]}"], True
+            elif from_title:
+                # No model row: the page is its own board, keyed by the vendor's
+                # page id. Two pages with the same title are not assumed to be
+                # one board; the review lists them for a person to decide.
+                codes = [f"XM-{lang.upper()}-{p['id']}"]
             pages.append({"cap": cap, "lang": lang, "names": names, "p": p, "page": page, "tabs": tabs,
                           "specs": specs, "codes": codes, "from_title": from_title})
     # A model row naming several codes is a product family, not one board:

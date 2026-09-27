@@ -60,7 +60,7 @@ def main():
     for path in sys.argv[2:]:
         d = json.load(open(path))
         for r in d["records"]:
-            if not r.get("code") or r.get("code_from_title"):
+            if not r.get("code"):
                 continue
             group = r["code"]
             # A vendor page naming several codes says they are one board:
@@ -128,6 +128,14 @@ def main():
         print(f"{i}. {l}")
     if not cross:
         print("None.")
+    nocode = [r for path in sys.argv[2:] for r in json.load(open(path))["records"] if r.get("code_from_title")]
+    if nocode:
+        print("\n## Pages with no model code: each is its own board unless you pair them\n")
+        by_title = defaultdict(list)
+        for r in nocode:
+            by_title[(r.get("category"), next(iter(r["title"].values())))].append(r["code"])
+        for (cat, title), codes in sorted(by_title.items(), key=lambda x: (str(x[0][0]), x[0][1])):
+            print(f"- {cat}: \"{title}\" -> " + ", ".join(codes))
     print("\n## Variants within one source: kept as separate models unless you say otherwise\n")
     print("Suffixes such as -S/-A/-SL/-AF or PY/PYA are different modules the source sells separately.\n")
     for l in within:

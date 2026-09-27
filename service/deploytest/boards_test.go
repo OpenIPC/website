@@ -53,6 +53,10 @@ func TestBoardCatalogueServing(t *testing.T) {
 	mustContain(t, backup, "BOARDS_ROOT=/srv/www/shared/boards", "the backup leaves out the board files, which nothing can rebuild")
 	// A file corrected in place keeps its length; only its contents say it changed.
 	mustContain(t, backup, "xargs -0r sha256sum", "the backup decides the board files changed by names and sizes alone")
+	// Streamed to S3: staged in ${WORK} on the host's small /tmp tmpfs, the
+	// 160 MB archive can fill it and fail the whole run.
+	mustContain(t, backup, `boards_tar | "${AWS[@]}" s3 cp`, "the board files are staged on disk before the upload")
+	mustNotContain(t, backup, `-cf "${WORK}/${BOARDS_TAR}"`, "the board files are staged in ${WORK}")
 	if !strings.Contains(read(t, "deploy/RESTORE.md"), "Restore the board catalogue's files") {
 		t.Error("RESTORE.md does not say how to bring the board files back")
 	}
