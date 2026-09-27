@@ -51,7 +51,8 @@ PCB = re.compile(r"(?<![A-Z0-9])((?:BLK\d|XM\d{3})[0-9A-Z]*(?:[-_][0-9A-Z]+)+?)(
 NOT_BOARDS = re.compile(r"^(ADVR|AHC|JF-|SD-)", re.I)
 CATEGORY = {"IPG": "IP Camera Module", "IPM": "IP Camera Module", "XPG": "IP Camera Module", "XIG": "IP Camera Module",
             "IVG": "Intelligent analysis module", "NBD": "NVR Board", "AHB": "DVR Board", "AHG": "AHD Camera Module",
-            "XAG": "AHD Camera Module", "HTG": "XVI&AHD Hybrid Camera Module", "LPG": "Battery Camera Module"}
+            "XAG": "AHD Camera Module", "HTG": "XVI&AHD Hybrid Camera Module", "LPG": "Battery Camera Module",
+            "MVB": "DVR Board", "THB": "DVR Board", "JZC": "AF module"}
 PCB_LINE = "PCB"
 MAX_PAGES = 6
 
@@ -251,7 +252,11 @@ def main():
         ds = mods[code]
         used = set()
         prefix = re.match(r"[A-Z]+", code).group(0)
-        links = [{"kind": "pcb", "label": p, "code": p} for p in dict.fromkeys(p for d in ds for p in d["pcbs"])]
+        # Every PCB any document names beside this module, the documents filed
+        # under another module included: the PCB card lists this module, so
+        # the module links back.
+        links = [{"kind": "pcb", "label": p, "code": p} for p in dict.fromkeys(
+            p for d in docs if code in d["modules"] for p in d["pcbs"])]
         sections = sorted({d["section"] for d in ds})
         links += [{"kind": "source_page", "label": f"tehno32.ru ({s.upper()})",
                    "url": f"https://tehno32.ru/doc/product_xm/{s}_doc"} for s in sections]
@@ -267,10 +272,21 @@ def main():
                 own = pinouts(code, mods.get(m, []), used)
                 if own:
                     break
-        links = [{"kind": "on_pcb", "label": m, "code": m} for m in p["modules"]]
+        # Only modules with a card here: each of them links back (above).
+        links = [{"kind": "on_pcb", "label": m, "code": m} for m in p["modules"] if m in mods]
         models.append({"maker": "xiongmai", "code": code, "category": PCB_LINE,
                        "texts": {}, "original": [], "specs": {}, "tags": [], "links": links,
                        "files": own + doc_files(code, p["docs"], used)})
+
+    # A PCB lists a module only if the module links back, and every card has
+    # a product line: a broken snapshot is refused here, not published.
+    cards = {m["code"]: m for m in models}
+    for m in models:
+        if not m["category"]:
+            sys.exit(f"{m['code']}: no product line")
+        for l in m["links"]:
+            if l["kind"] == "on_pcb" and not any(k["kind"] == "pcb" and k["code"] == m["code"] for k in cards[l["code"]]["links"]):
+                sys.exit(f"{m['code']} lists {l['code']}, which does not link back")
 
     manifest = {"source": dict(SOURCE), "models": models}
     raw = json.dumps(manifest, ensure_ascii=False, indent=1, sort_keys=True).encode()
@@ -287,7 +303,11 @@ def main():
                 put(path, f.read())
     with open(os.path.join(work, "skipped.json"), "w") as f:
         json.dump(skipped, f, ensure_ascii=False, indent=1, sort_keys=True)
-    sha = hashlib.sha256(open(out, "rb").read()).hexdigest()
+    h = hashlib.sha256()
+    with open(out, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    sha = h.hexdigest()
     n_pin = sum(1 for m in models for f in m["files"] if f["kind"] == "pinout")
     print(f"tehno32: {len(mods)} modules, {len(pcbs)} PCBs, {len(docs)} documents published, "
           f"{len(skipped)} left out, {n_pin} pinout pages, {len(files.out)} files; sha256 {sha}", file=sys.stderr)

@@ -130,6 +130,7 @@
     },
     "soc_install": "Install OpenIPC on {soc}",
     "soc_not_catalogued": "Not in the OpenIPC catalogue",
+    "source_note_tehno32": "Xiongmai's board documentation (interface descriptions with connector drawings and pinouts, parameter sheets and board outlines) from the archive kept by tehno32.ru (2026).",
     "sources_label": "Where the boards come from",
     "specs": "Specifications",
     "stats_boards": {
