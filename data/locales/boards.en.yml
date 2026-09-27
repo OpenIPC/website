@@ -138,6 +138,7 @@ en:
       xvi-ahd-dvr-board: "XVI/AHD DVR boards"
       dual-lens-camera-module: "Dual-lens camera modules"
       accessory: "Accessories"
+      pcb: "PCBs"
     show_all:
       one: 'Show all {count} board'
       other: 'Show all {count} boards'
@@ -162,7 +163,10 @@ en:
     link_predecessor: Replaces
     link_related: Same family
     link_vendor_page: Vendor page (archived)
+    source_note_tehno32: "Xiongmai's board documentation (interface descriptions with connector drawings and pinouts, parameter sheets and board outlines) from the archive kept by tehno32.ru (2026)."
     link_source_page: Source page
+    link_pcb: PCB
+    link_on_pcb: Modules on this PCB
     new_tab: opens in a new tab
     files_title: Photos and files
     from_source: 'From {source}'

@@ -25,7 +25,7 @@ type Load = { state: 'loading' } | { state: 'ok'; value: ModelDetail } | { state
 const ISSUE = 'https://github.com/OpenIPC/website/issues/new';
 const HEADING = 'mb-2 text-base font-semibold';
 /** The order the links are listed in: what to download, where the board went, where it came from. */
-const LINK_ORDER: LinkKind[] = ['stock_firmware', 'successor', 'predecessor', 'related', 'vendor_page', 'source_page'];
+const LINK_ORDER: LinkKind[] = ['stock_firmware', 'pcb', 'on_pcb', 'successor', 'predecessor', 'related', 'vendor_page', 'source_page'];
 const EXTERNAL: LinkKind[] = ['vendor_page', 'source_page'];
 
 export default function BoardPanel({ id, entry, loaded, locale, t, sources, index, socs, names, href, onOpen, onClose }: {
