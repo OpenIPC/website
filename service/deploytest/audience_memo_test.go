@@ -1,0 +1,213 @@
+package deploytest
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"sort"
+	"strings"
+	"testing"
+)
+
+// deploy/audience-memo.sh assembles the monthly memo (#184) from one awk pass
+// over the month's logs, the engaged-reader series audience-report.sh writes,
+// and the Open Collective helper. Nothing else on the host will notice if a
+// month boundary, a section rule or the Singapore validation guard breaks --
+// the memo just goes out wrong once a month -- so it is pinned here.
+//
+// The fixture is one closed month (2026-10) of beacon page views, #183 events,
+// and one completed firmware download, plus a line in the previous month that
+// must be excluded, and daily series rows for both months.
+
+const memoMonth = "2026-10"
+
+func memoLog(t testing.TB) string {
+	t.Helper()
+	ua := `"Mozilla/5.0 (X11; Linux x86_64; rv:156.0) Gecko/20100101 Firefox/156.0"`
+	line := func(day, reqQuery, code, referer string) string {
+		return fmt.Sprintf(`203.0.113.9 - - [%s +0000] "POST /api/a/count?%s HTTP/2.0" %s 43 %q %s xff="-" cache=- rt=0.002 urt="-" al="en-US" peer=203.0.113.9`+"\n",
+			day, reqQuery, code, referer, ua)
+	}
+	var b strings.Builder
+	// Page views: get-started, business, donate, zh/low-latency, a hardware SoC page.
+	b.WriteString(line("15/Oct/2026:10:00:00", "p=%2Fget-started&t=x&s=1920&b=0&rnd=a", "200", "https://openipc.org/get-started"))
+	b.WriteString(line("16/Oct/2026:11:00:00", "p=%2Fbusiness&t=x&s=1920&b=0&rnd=b", "200", "https://openipc.org/business"))
+	b.WriteString(line("16/Oct/2026:12:00:00", "p=%2Fdonate&t=x&s=1920&b=0&rnd=d", "200", "https://openipc.org/donate"))
+	b.WriteString(line("17/Oct/2026:09:00:00", "p=%2Fzh%2Flow-latency&t=x&s=1280&b=0&rnd=f", "200", "https://www.google.com/"))
+	b.WriteString(line("17/Oct/2026:09:06:00", "p=%2Fcameras%2Fvendors%2Fsigmastar%2Fsocs%2Fssc338q&t=x&s=1280&b=0&rnd=h", "200", "https://t.me/openipc"))
+	// Events: business-mail, oc-checkout, ref:tg (colon percent-encoded).
+	b.WriteString(line("16/Oct/2026:11:01:00", "p=business-mail&e=true&t=x&s=1920&b=0&rnd=c", "200", "https://openipc.org/business"))
+	b.WriteString(line("16/Oct/2026:12:01:00", "p=oc-checkout&e=true&t=x&s=1920&b=0&rnd=e", "200", "https://openipc.org/donate"))
+	b.WriteString(line("17/Oct/2026:09:05:00", "p=ref%3Atg&e=true&t=x&s=1280&b=0&rnd=g", "200", "https://openipc.org/"))
+	// A completed firmware download (status 200), SigmaStar SSC338Q, FPV edition.
+	b.WriteString(fmt.Sprintf(`198.51.100.4 - - [17/Oct/2026:09:10:00 +0000] "GET /cameras/vendors/sigmastar/socs/ssc338q/download_full_image?flash_type=nor&flash_size=16&fw_release=fpv&layout=nor16m HTTP/2.0" 200 8300000 "-" %s xff="-" cache=- rt=0.5 urt="0.4" al="-" peer=198.51.100.4`+"\n", ua))
+	// A page view in the PREVIOUS month, which must not be counted in October.
+	b.WriteString(line("20/Sep/2026:09:10:00", "p=%2Fget-started&t=x&s=1920&b=0&rnd=z", "200", "https://openipc.org/get-started"))
+	return writeFile(t, filepath.Join(t.TempDir(), "access.log"), b.String())
+}
+
+func memoReports(t testing.TB, countries string) string {
+	t.Helper()
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "engaged.tsv"),
+		"# date\tvisitors\treaders\tengaged\tthreshold\n"+
+			"2026-09-30\t100\t40\t8\t5\n"+
+			"2026-10-15\t120\t60\t12\t5\n"+
+			"2026-10-16\t130\t50\t10\t5\n")
+	writeFile(t, filepath.Join(dir, "engaged-countries.tsv"),
+		"# date\tcountry\tengaged\n"+countries)
+	return dir
+}
+
+const octoberCountries = "2026-10-15\tCN China\t7\n2026-10-15\tRU Russia\t3\n2026-10-16\tUS United States\t5\n"
+
+const octoberLedger = `{"data":{"account":{"received":{"nodes":[` +
+	`{"createdAt":"2026-10-05T00:00:00Z","amount":{"valueInCents":1000},"fromAccount":{"name":"Alice","type":"INDIVIDUAL"},"order":{"frequency":"MONTHLY","description":"","tier":{"name":"Backer"}}},` +
+	`{"createdAt":"2026-10-06T00:00:00Z","amount":{"valueInCents":50000},"fromAccount":{"name":"AcmeCorp","type":"ORGANIZATION"},"order":{"frequency":"ONETIME","description":"Technical support","tier":{"name":"Technical support"}}},` +
+	`{"createdAt":"2026-09-05T00:00:00Z","amount":{"valueInCents":1000},"fromAccount":{"name":"Alice","type":"INDIVIDUAL"},"order":{"frequency":"MONTHLY","description":"","tier":{"name":"Backer"}}}` +
+	`]}}}}`
+
+// runMemo runs the generator for the fixture month and returns the memo text.
+func runMemo(t testing.TB, reportsDir, countries string) string {
+	t.Helper()
+	log := memoLog(t)
+	if reportsDir == "" {
+		reportsDir = memoReports(t, countries)
+	}
+	ledger := writeFile(t, filepath.Join(t.TempDir(), "oc.json"), octoberLedger)
+	out := filepath.Join(t.TempDir(), "memo.md")
+	env := map[string]string{
+		"REPORTS_DIR":        reportsDir,
+		"AUDIENCE_MEMO_LOGS": log,
+		"FIRMWARE_SEGMENTS":  abs(t, "deploy/firmware-segments.tsv"),
+		"OC_LEDGER_JSON":     ledger,
+		"OC_SPENT_CENTS":     "12345",
+		"OC_MONTHLY_PY":      abs(t, "deploy/oc-memo/oc-monthly.py"),
+		"LOG_REPORT":         "",
+		"MEMO_SKIP_GH":       "1",
+		"OUT":                out,
+	}
+	if o, ok := run(t, env, "", "bash", abs(t, "deploy/audience-memo.sh"), memoMonth); !ok {
+		t.Fatalf("audience-memo.sh failed:\n%s", o)
+	}
+	return readAbs(t, out)
+}
+
+func TestAudienceMemo(t *testing.T) {
+	memo := runMemo(t, "", octoberCountries)
+
+	t.Run("the script parses", func(t *testing.T) {
+		if out, ok := run(t, nil, "", "bash", "-n", abs(t, "deploy/audience-memo.sh")); !ok {
+			t.Errorf("audience-memo.sh does not parse:\n%s", out)
+		}
+	})
+	t.Run("only the target month is counted", func(t *testing.T) {
+		// Five page views in October; the September line is excluded.
+		mustContain(t, memo, "Beacon page views this month: **5**",
+			"the previous month's page view leaked into the count, or a page view was lost")
+	})
+	t.Run("the engaged spine is aggregated from the daily series, with the previous month", func(t *testing.T) {
+		mustContain(t, memo, "Engaged readers/day (>=5 pageviews outside the wall): **11**",
+			"(12+10)/2 = 11 engaged readers a day")
+		mustContain(t, memo, "Previous month: 8", "the September row is the comparison")
+		mustContain(t, memo, "Readers/day (>=1 page outside the wall): **55**", "(60+50)/2")
+	})
+	t.Run("sections are classified locale-tolerantly", func(t *testing.T) {
+		mustMatch(t, `business\+donate \| 2 \| 40%`, memo, "/business and /donate are one section")
+		mustMatch(t, `low-latency \| 1 \| 20%`, memo, "/zh/low-latency counts under low-latency despite the locale prefix")
+		mustMatch(t, `hardware\+wizard \| 1 \| 20%`, memo, "a /cameras SoC page is hardware+wizard")
+	})
+	t.Run("funnels count events against page views", func(t *testing.T) {
+		mustContain(t, memo, "business-mail` clicks: **1 → 1**", "one /business view, one business-mail click")
+		mustContain(t, memo, "oc-checkout` clicks: **1 → 1**", "one /donate view, one oc-checkout click")
+	})
+	t.Run("firmware is tabulated by family and FPV/CCTV from the download path", func(t *testing.T) {
+		mustMatch(t, `INFINITY6E \| 1`, memo, "SSC338Q is INFINITY6E")
+		mustContain(t, memo, "FPV: 1", "SSC338Q is an FPV SoC and the edition is fpv")
+	})
+	t.Run("ref tags survive percent-encoding of the colon", func(t *testing.T) {
+		mustMatch(t, `(?m)^- tg: 1$`, memo, "ref%3Atg must decode to the tg tag, not fall through to other")
+	})
+	t.Run("the country block prints shares when Singapore is absent", func(t *testing.T) {
+		mustMatch(t, `CN China \| 7 \| 47%`, memo, "China's share of the engaged cut")
+		mustNotContain(t, memo, "WITHHELD", "no harvester country is present, so the block is not withheld")
+	})
+	t.Run("the manual sources and commentary are labelled placeholders", func(t *testing.T) {
+		mustContain(t, memo, "MANUAL: paste the top queries", "search-console queries are a fill-in")
+		mustContain(t, memo, "MANUAL: from the maintainers' monthly PayWall export", "PayWall is a fill-in")
+		mustContain(t, memo, "[commentary", "the two commentary paragraphs are placeholders")
+	})
+	t.Run("the hypothesis register is carried", func(t *testing.T) {
+		mustContain(t, memo, "| H1 |", "the register's five rows travel with every memo")
+		mustContain(t, memo, "| H5 |", "")
+	})
+
+	// Open Collective needs python3; the memo degrades to a placeholder without
+	// it, so assert the numbers only where python3 exists (it does in CI).
+	t.Run("open collective is split by tier and payer with cohorts", func(t *testing.T) {
+		if _, err := exec.LookPath("python3"); err != nil {
+			t.Skip("python3 not available; the memo falls back to a placeholder")
+		}
+		mustContain(t, memo, "| **received, total** | 510 |", "10 individual monthly + 500 tech support")
+		mustContain(t, memo, "paid service (Technical support tier) | 500", "the org's payment is paid service, not a donation")
+		mustContain(t, memo, "| **spent, total** | 123 |", "spent is printed beside received")
+		mustContain(t, memo, "active 1, new 0, stopped 1",
+			"Alice is active but first paid in September, so she is not new this month")
+		mustNotContain(t, memo, "Alice", "no backer name reaches the memo")
+	})
+}
+
+// The Singapore validation rule (#184): SG is the Open Wall harvester and must
+// not appear in the engaged top countries. If it does, the wall exclusion in
+// audience-report.sh has broken and the country block is withheld rather than
+// published wrong.
+func TestAudienceMemoSingaporeGuard(t *testing.T) {
+	sgCountries := "2026-10-15\tSG Singapore\t40\n2026-10-15\tCN China\t7\n2026-10-16\tUS United States\t5\n"
+	memo := runMemo(t, "", sgCountries)
+	mustContain(t, memo, "WITHHELD", "Singapore in the top five must withhold the country block")
+	mustNotMatch(t, `SG Singapore \| 40 \|`, memo, "the withheld block must not print the harvester ranking")
+}
+
+// firmware-segments.tsv is generated from the catalogue and installed onto the
+// host, where there is no catalogue to regenerate it from. A stale copy would
+// silently misclassify a new SoC's downloads, so it is kept in step here.
+func TestFirmwareSegmentsCurrent(t *testing.T) {
+	var cat struct {
+		Vendors []struct {
+			URLName string `json:"urlname"`
+			SoCs    []struct {
+				URLName string `json:"urlname"`
+				Family  string `json:"family"`
+				Segment string `json:"segment"`
+			} `json:"socs"`
+		} `json:"vendors"`
+	}
+	raw, err := os.ReadFile(path("frontend/apps/site/src/data/catalogue.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &cat); err != nil {
+		t.Fatal(err)
+	}
+	var want []string
+	for _, v := range cat.Vendors {
+		for _, s := range v.SoCs {
+			want = append(want, strings.Join([]string{s.URLName, v.URLName, s.Family, s.Segment}, "\t"))
+		}
+	}
+	sort.Strings(want)
+
+	var got []string
+	for _, l := range lines(read(t, "deploy/firmware-segments.tsv")) {
+		if l == "" || strings.HasPrefix(l, "#") {
+			continue
+		}
+		got = append(got, l)
+	}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Errorf("deploy/firmware-segments.tsv is stale: %d rows, catalogue has %d.\n"+
+			"Regenerate it with the jq line in the file's header.", len(got), len(want))
+	}
+}

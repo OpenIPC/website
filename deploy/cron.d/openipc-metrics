@@ -17,3 +17,10 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # alone and the page keeps showing the last good number until it goes stale at
 # 48 hours, after which the page renders without one.
 23 * * * *  root  /usr/local/sbin/openipc-oc-stats >>/var/log/openipc-oc-stats.log 2>&1
+
+# The monthly audience memo (#184): the fixed set of numbers for the month that
+# just closed, so month three compares with month one. On the 1st at 05:30 --
+# after the nightly report at 03:17 has written the last day's row, and well
+# after logrotate. The memo lands in the reports directory; a person fills in
+# the two commentary paragraphs and the manual sources, then sends it.
+30 5 1 * *  root  /usr/local/sbin/openipc-audience-memo >>/var/log/openipc-audience-memo.log 2>&1

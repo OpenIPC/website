@@ -1,0 +1,131 @@
+# soc	vendor	family	segment -- firmware download classification for the monthly memo (#184).
+# Generated from data/catalogue/*.yml via the committed export frontend/apps/site/src/data/catalogue.json.
+# Regenerate: jq -r '.vendors[] as $v | $v.socs[] | [.urlname,$v.urlname,(.family//""),(.segment//"")] | @tsv' \
+#   frontend/apps/site/src/data/catalogue.json | LC_ALL=C sort > deploy/firmware-segments.tsv
+# service/deploytest keeps this in step with the catalogue; a stale file fails the suite.
+ak3916ev300	anyka	AK3918EV300	
+ak3916ev301	anyka		
+ak3918ev200	anyka	AK3918EV200	
+ak3918ev300	anyka	AK3918EV300	
+ak3918ev330	anyka		
+dm365	ti		
+fh8626v100	fullhan		
+fh8632v100	fullhan		
+fh8652v100	fullhan		
+fh8833v100	fullhan	FH8833V100	
+fh8852v100	fullhan	FH8852V100	
+fh8852v200	fullhan	FH8852V200	
+fh8852v210	fullhan	FH8852V200	
+fh8856v100	fullhan	FH8852V100	
+fh8856v200	fullhan	FH8852V200	
+fh8856v210	fullhan	FH8852V200	
+fh8858v200	fullhan	FH8852V200	
+fh8858v210	fullhan	FH8852V200	
+gk7102	goke	GK710X	cctv
+gk7102c	goke	GK710X	cctv
+gk7102ca	goke	GK710X	cctv
+gk7102ct	goke	GK710X	cctv
+gk7102cw	goke	GK710X	cctv
+gk7102s	goke	GK710X	cctv
+gk7201v200	goke	GK7201V200	cctv
+gk7201v300	goke	GK7201V200	cctv
+gk7202v300	goke	GK7205V200	cctv
+gk7205v200	goke	GK7205V200	cctv
+gk7205v210	goke	GK7205V200	cctv
+gk7205v300	goke	GK7205V200	cctv
+gk7605v100	goke	GK7205V200	cctv
+gm8135	grainmedia	GM8136	
+gm8136	grainmedia	GM8136	
+hi3516av100	hisilicon	HI3516AV100	cctv
+hi3516av200	hisilicon	HI3519V101	cctv
+hi3516av300	hisilicon	HI3516CV500	cctv
+hi3516cv100	hisilicon	HI3516CV100	cctv
+hi3516cv200	hisilicon	HI3516CV200	cctv
+hi3516cv300	hisilicon	HI3516CV300	cctv
+hi3516cv500	hisilicon	HI3516CV500	cctv
+hi3516dv100	hisilicon	HI3516AV100	cctv
+hi3516dv200	hisilicon	HI3516EV200	cctv
+hi3516dv300	hisilicon	HI3516CV500	cctv
+hi3516ev100	hisilicon	HI3516CV300	cctv
+hi3516ev200	hisilicon	HI3516EV200	cctv
+hi3516ev300	hisilicon	HI3516EV200	cctv
+hi3518cv100	hisilicon	HI3516CV100	cctv
+hi3518ev100	hisilicon	HI3516CV100	cctv
+hi3518ev200	hisilicon	HI3516CV200	cctv
+hi3518ev201	hisilicon	HI3516CV200	cctv
+hi3518ev300	hisilicon	HI3516EV200	cctv
+hi3519v101	hisilicon	HI3519V101	cctv
+hi3520dv100	hisilicon		cctv
+hi3520dv200	hisilicon		cctv
+hi3536cv100	hisilicon	HI3536CV100	cctv
+hi3536dv100	hisilicon	HI3536DV100	cctv
+msc313e	mstar	INFINITY3	
+msc316dc	mstar	INFINITY3	
+msc316dm	mstar	INFINITY3	
+nt98562	novatek	NT9856X	
+nt98566	novatek	NT9856X	
+rv1109	rockchip	RV11XX	
+rv1126	rockchip	RV11XX	
+s2l	ambarella	S2L	
+s3l	ambarella	S3L	
+ssc30kd	sigmastar	INFINITY6E	
+ssc30kq	sigmastar	INFINITY6E	fpv
+ssc323	sigmastar	INFINITY6	
+ssc325	sigmastar	INFINITY6	
+ssc325d	sigmastar	INFINITY6	
+ssc326d	sigmastar	INFINITY5	
+ssc327	sigmastar	INFINITY6	
+ssc327d	sigmastar	INFINITY6	
+ssc327de	sigmastar	INFINITY6	
+ssc327q	sigmastar	INFINITY6	
+ssc328q	sigmastar	INFINITY5	
+ssc329q	sigmastar	INFINITY5	
+ssc333	sigmastar	INFINITY6B0	
+ssc333de	sigmastar	INFINITY6B0	
+ssc335	sigmastar	INFINITY6B0	
+ssc335de	sigmastar	INFINITY6B0	
+ssc336d	sigmastar	INFINITY6E	
+ssc336q	sigmastar	INFINITY6E	
+ssc337	sigmastar	INFINITY6B0	
+ssc337de	sigmastar	INFINITY6B0	
+ssc338d	sigmastar	INFINITY6E	
+ssc338g	sigmastar	INFINITY6E	
+ssc338q	sigmastar	INFINITY6E	fpv
+ssc339g	sigmastar	INFINITY6E	
+ssc377	sigmastar	INFINITY6C	
+ssc377d	sigmastar	INFINITY6C	
+ssc377de	sigmastar	INFINITY6C	
+ssc377qe	sigmastar	INFINITY6C	fpv
+ssc378de	sigmastar	INFINITY6C	
+ssc378qe	sigmastar	INFINITY6C	fpv
+t10	ingenic	T21	consumer
+t20	ingenic	T21	consumer
+t21	ingenic	T21	consumer
+t23n	ingenic	T23	consumer
+t30l	ingenic	T30	consumer
+t31a	ingenic	T31	consumer
+t31al	ingenic	T31	consumer
+t31l	ingenic	T31	consumer
+t31lc	ingenic	T31	consumer
+t31n	ingenic	T31	consumer
+t31x	ingenic	T31	consumer
+t31zl	ingenic	T31	consumer
+t31zx	ingenic	T31	consumer
+t40a	ingenic	T40	consumer
+t40n	ingenic	T40	consumer
+t40nn	ingenic	T40	consumer
+t40xp	ingenic	T40	consumer
+t41a	ingenic	T41	consumer
+t41l	ingenic	T41	consumer
+t41lc	ingenic	T41	consumer
+t41lq	ingenic	T41	consumer
+t41n	ingenic	T41	consumer
+t41nq	ingenic	T41	consumer
+t41xq	ingenic	T41	consumer
+t41zl	ingenic	T41	consumer
+t41zn	ingenic	T41	consumer
+t41zx	ingenic	T41	consumer
+v831	allwinner	V83X	
+xm510	xiongmai	XM510	
+xm530	xiongmai	XM530	
+xm550	xiongmai	XM550	
