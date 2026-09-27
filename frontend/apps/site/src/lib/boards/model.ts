@@ -167,9 +167,37 @@ export function sensorOptions(all: Entry[]): Option[] {
 }
 
 /** The name under a card's model code; left out when it only repeats the code. */
+/**
+ * Codes the importer made up for a vendor page that prints no model number
+ * ("XM-EN-243", "XM-ZH-476"). They identify the board here but are printed on
+ * nothing, so a visitor is shown the product's name instead.
+ */
+const MADE_UP = /^XM-(?:EN|ZH)-\d+$/i;
+
+export function printedCode(code: string | null | undefined): string | null {
+  return code && !MADE_UP.test(code) ? code : null;
+}
+
+/** What a board is headed by: its printed code, else its product name. */
+export interface Heading { text: string | null; kind: 'code' | 'name' | 'none' }
+
+export function heading(m: Pick<Model, 'model' | 'summary'>): Heading {
+  const code = printedCode(m.model);
+  if (code) return { text: code, kind: 'code' };
+  const name = m.summary?.name?.trim();
+  return name ? { text: name, kind: 'name' } : { text: null, kind: 'none' };
+}
+
+/** The class a heading's text takes: codes in mono, a name as plain text, nothing greyed. */
+export const HEADING_CLASS: Record<Heading['kind'], string> = {
+  code: 'font-mono font-semibold break-all',
+  name: 'font-semibold',
+  none: 'font-medium text-body-secondary',
+};
+
 export function subtitle(m: Model): string | null {
   const name = m.summary?.name?.trim();
-  if (!name) return null;
+  if (!name || heading(m).kind === 'name') return null;
   return m.model && normaliseCode(name) === normaliseCode(m.model) ? null : name;
 }
 
@@ -190,15 +218,47 @@ export const SPLIT_OVER = 40;
 export interface Group { key: string; label: string | null; entries: Entry[] }
 export interface Section { maker: Manufacturer; count: number; groups: Group[] }
 
-export function layout(makers: Manufacturer[], kept: Entry[], splitOver = SPLIT_OVER): Section[] {
+/**
+ * Newest boards first, so a newcomer meets current hardware before 2014's.
+ * A board is dated by its maker's catalogue where a source says when it
+ * appeared; an undated one takes the median year of the dated boards on its
+ * SoC (across `dated`, the whole catalogue by default), and one with neither
+ * goes last. Ties keep code order, numbers read as numbers.
+ */
+export function newestFirst<T extends Model>(list: T[], dated: Model[] = list): T[] {
+  // The SoC's median comes from every dated board given, not only the ones
+  // being ordered: a maker's section or a filtered view would otherwise
+  // date its undated boards by a fraction of the evidence.
+  const bySoc = new Map<string, number[]>();
+  for (const m of dated) {
+    const key = socKey(m);
+    if (!m.listed_year || !key) continue;
+    const years = bySoc.get(key);
+    if (years) years.push(m.listed_year); else bySoc.set(key, [m.listed_year]);
+  }
+  const median = (ys: number[]) => [...ys].sort((a, b) => a - b)[Math.floor((ys.length - 1) / 2)];
+  const yearOf = (m: T): number => {
+    if (m.listed_year) return m.listed_year;
+    const key = socKey(m);
+    const ys = key ? bySoc.get(key) : undefined;
+    return ys ? median(ys) : 0;
+  };
+  const years = new Map(list.map((m) => [m.id, yearOf(m)]));
+  return [...list].sort((a, b) => (years.get(b.id) ?? 0) - (years.get(a.id) ?? 0)
+    || (a.model ?? '\uffff').localeCompare(b.model ?? '\uffff', undefined, { numeric: true }));
+}
+
+/** `dated` is what an undated board's SoC year is taken from: the whole catalogue, not only `kept`. */
+export function layout(makers: Manufacturer[], kept: Entry[], splitOver = SPLIT_OVER, dated: Model[] = kept): Section[] {
   const byMaker = new Map<string, Entry[]>();
   for (const m of kept) {
     const list = byMaker.get(m.maker.id);
     if (list) list.push(m); else byMaker.set(m.maker.id, [m]);
   }
   return makers.flatMap((maker): Section[] => {
-    const mine = byMaker.get(maker.id);
-    if (!mine) return [];
+    const found = byMaker.get(maker.id);
+    if (!found) return [];
+    const mine = newestFirst(found, dated);
     const lines = new Map<string | null, Entry[]>();
     for (const m of mine) {
       const list = lines.get(m.category);

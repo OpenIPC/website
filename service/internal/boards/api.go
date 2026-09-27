@@ -97,6 +97,9 @@ type modelJSON struct {
 	// Aliases are the other codes the sources print for this board, so a
 	// search by any of them finds its card.
 	Aliases []string `json:"aliases"`
+	// ListedYear is the year the maker's catalogue first showed the board,
+	// where a source dates it.
+	ListedYear *int `json:"listed_year"`
 	// Summary is what a card shows: one name and the lead of one
 	// description. The tree carries it; the full say of every source, its
 	// specifications and links are /api/v1/boards/models/{id}.
@@ -247,7 +250,7 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 
 	byModel := map[string]*modelJSON{}
 	rows, err = tx.Query(ctx, `
-		SELECT m.id, m.manufacturer_id, m.model, m.soc, m.soc_label, m.family, m.notes, m.category,
+		SELECT m.id, m.manufacturer_id, m.model, m.soc, m.soc_label, m.family, m.notes, m.category, m.listed_year::int,
 		       ARRAY(SELECT DISTINCT a.code_as_printed FROM board_model_aliases a
 		             WHERE a.model_id = m.id AND upper(a.code_as_printed) <> upper(coalesce(m.model, ''))
 		             ORDER BY a.code_as_printed),
@@ -262,7 +265,7 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 		m := &modelJSON{Units: []*unitJSON{}}
 		var maker string
 		c := &m.Coverage
-		if err := rows.Scan(&m.ID, &maker, &m.Model, &m.SoC, &m.SoCLabel, &m.Family, &m.Notes, &m.Category, &m.Aliases,
+		if err := rows.Scan(&m.ID, &maker, &m.Model, &m.SoC, &m.SoCLabel, &m.Family, &m.Notes, &m.Category, &m.ListedYear, &m.Aliases,
 			&c.Units, &c.Photos, &c.Pinouts, &c.FlashDumps, &c.UBootEnvs, &c.BootLogs, &c.Documents); err != nil {
 			rows.Close()
 			return nil, err
@@ -673,7 +676,8 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 		       (SELECT coalesce(max(ingested_at), 'epoch') FROM board_units),
 		       (SELECT coalesce(string_agg(id || ':' || ref, ',' ORDER BY id), '') FROM board_sources) || '|' ||
 		       (SELECT count(*) FROM board_model_texts) || '|' || (SELECT count(*) FROM board_model_specs) || '|' ||
-		       (SELECT count(*) FROM board_model_tags) || '|' || (SELECT count(*) FROM board_links)`).Scan(&units, &files, &last, &about); err != nil {
+		       (SELECT count(*) FROM board_model_tags) || '|' || (SELECT count(*) FROM board_links) || '|' ||
+		       (SELECT coalesce(md5(string_agg(id || ':' || listed_year, ',' ORDER BY id)), '') FROM board_models WHERE listed_year IS NOT NULL)`).Scan(&units, &files, &last, &about); err != nil {
 		a.Log.Error("boards: no revision", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})
 		return

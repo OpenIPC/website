@@ -10,7 +10,7 @@
 import { Fragment } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { fetchBoards } from '../../lib/boards/api';
-import { entries, frontPhoto, has, subtitle, type Entry } from '../../lib/boards/model';
+import { HEADING_CLASS, entries, frontPhoto, has, heading, newestFirst, subtitle, type Entry } from '../../lib/boards/model';
 import type { Source } from '../../lib/boards/types';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import type { Locale } from '../../lib/i18n';
@@ -31,7 +31,7 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
       .then((file) => {
         if (!live) return;
         // The server answers for this SoC; the check keeps a server that ignored ?soc= from filling the page.
-        const mine = entries(file).filter((m) => m.soc === soc);
+        const mine = newestFirst(entries(file).filter((m) => m.soc === soc));
         const used = new Set(mine.flatMap((m) => m.sources));
         setBoards(mine);
         setSources(file.sources.filter((s) => used.has(s.id)));
@@ -52,7 +52,8 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
       </header>
       <ul class="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3.5 p-0">
         {boards.map((m) => {
-          const title = m.model ?? t('unidentified');
+          const head = heading(m);
+          const title = head.text ?? t('unidentified');
           const name = subtitle(m);
           const photo = frontPhoto(m);
           const sensors = [...new Set(m.units.map((u) => u.sensor).filter(Boolean))].join('; ') || t('unknown');
@@ -64,7 +65,7 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
                   ? <img src={photo.thumb_url} alt="" loading="lazy" decoding="async" class="block h-full min-h-[96px] w-[110px] bg-surface-alt object-cover" />
                   : <span class="bg-surface-alt" />}
                 <span class="grid min-w-0 content-start gap-1 px-3 py-2.5 text-[13px]">
-                  <b class={m.model ? 'font-mono text-sm font-semibold break-all' : 'text-sm font-medium text-body-secondary'}>{title}</b>
+                  <b class={`text-sm ${HEADING_CLASS[head.kind]}`}>{title}</b>
                   {name && <span class="leading-snug">{name}</span>}
                   <span class="text-body-secondary">{makerName(m.maker.id, m.maker.name, t)} · {sensors}</span>
                   <span class="flex flex-wrap gap-1.5">

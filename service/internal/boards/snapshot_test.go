@@ -397,3 +397,71 @@ func TestANewerSnapshotReplacesAUnitsChangedFiles(t *testing.T) {
 		t.Errorf("%d files after an unchanged re-import", n)
 	}
 }
+
+func TestTheEarliestListedYearAnySourceGivesIsKept(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	year := func() *int {
+		var y *int
+		if err := pool.QueryRow(ctx, `SELECT listed_year FROM board_models WHERE id = 'xiongmai-ivg-g5s'`).Scan(&y); err != nil {
+			t.Fatal(err)
+		}
+		return y
+	}
+	// cctvsp does not date its modules: the board starts undated.
+	if _, err := im.FromSnapshot(ctx, donor(t, "cctvsp", model("xiongmai", "IVG-G5S", nil))); err != nil {
+		t.Fatal(err)
+	}
+	if y := year(); y != nil {
+		t.Fatalf("undated board has year %d", *y)
+	}
+	for _, y := range []int{2022, 2021, 2023} {
+		if _, err := im.FromSnapshot(ctx, donor(t, "xiongmai", model("xiongmai", "IVG-G5S", map[string]any{"listed_year": y}))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if y := year(); y == nil || *y != 2021 {
+		t.Fatalf("year %v, want the earliest given, 2021", y)
+	}
+	tree, err := Tree(ctx, pool, "en", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			if mo.ID == "xiongmai-ivg-g5s" && (mo.ListedYear == nil || *mo.ListedYear != 2021) {
+				t.Errorf("tree listed_year %v", mo.ListedYear)
+			}
+		}
+	}
+}
+
+func TestAReimportCorrectsTheUnitsSensor(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	for _, sensor := range []string{"SC5239S低照度CMOS传感器", "SC5239S"} {
+		if _, err := im.FromSnapshot(ctx, donor(t, "xiongmai", model("xiongmai", "IVG-G5A", map[string]any{"sensor": sensor}))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_units WHERE model_id = 'xiongmai-ivg-g5a' AND sensor = 'SC5239S'`); n != 1 {
+		t.Errorf("%d units with the corrected sensor", n)
+	}
+}
+
+func TestAFilelessReimportStillCorrectsTheSensor(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "xiongmai", model("xiongmai", "IVG-G5A", map[string]any{"sensor": "SC5239S低照度CMOS传感器"}))); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := im.FromSnapshot(ctx, donor(t, "xiongmai", model("xiongmai", "IVG-G5A", map[string]any{"sensor": "SC5239S", "files": []any{}}))); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_units WHERE model_id = 'xiongmai-ivg-g5a' AND sensor = 'SC5239S'`); n != 1 {
+		t.Errorf("%d units with the corrected sensor", n)
+	}
+}
