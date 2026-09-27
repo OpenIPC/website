@@ -200,6 +200,14 @@ def one_language(images):
 UPLOAD_YEAR = re.compile(r"/upload/(?:at/image/)?(20\d\d)")
 
 
+def sensor_name(s):
+    """The sensor as a chip: a few ZH pages run on into a description
+    ("SC5239S低照度CMOS传感器", low-light CMOS sensor), which is not a name."""
+    if not s:
+        return s
+    return re.sub(r"[\u4e00-\u9fff].*$", "", s).strip() or None
+
+
 def listed_year(r):
     """The year the product first appeared in Xiongmai's catalogue: its
     earliest picture upload, in either language. None when nothing is dated."""
@@ -268,7 +276,7 @@ def xiongmai_model(r, files, builds, index, dic=None):
     code = r["code"]  # XM-<LANG>-<page id> when the page has no model row
     category = (r.get("category") or "").replace("&AHD;", "&AHD") or None
     out = {"maker": "xiongmai", "code": code, "category": category, "soc_label": r.get("soc_label"),
-           "sensor": r.get("sensor"), "tags": r["tags"], "texts": texts, "original": original,
+           "sensor": sensor_name(r.get("sensor")), "tags": r["tags"], "texts": texts, "original": original,
            "translated_from": src, "specs": specs, "links": links, "files": fl}
     year = listed_year(r)
     if year:
