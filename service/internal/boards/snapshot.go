@@ -41,8 +41,11 @@ type Snapshot struct {
 }
 
 type SnapModel struct {
-	Maker    string `json:"maker"`
-	Code     string `json:"code"`
+	Maker string `json:"maker"`
+	Code  string `json:"code"`
+	// Aliases are the other codes the source gives the same board: one
+	// vendor page often covers a board in several sensor or lens variants.
+	Aliases  []string `json:"aliases"`
 	Category string `json:"category"`
 	SoCLabel string `json:"soc_label"`
 	Sensor   string `json:"sensor"`
@@ -297,10 +300,23 @@ func (im *Importer) saveModel(ctx context.Context, fsys fs.FS, src string, posit
 			maker.ID, maker.Name, nonNil(maker.Aliases), maker.Position); err != nil {
 			return err
 		}
-		var err error
-		id, err = im.resolve(ctx, tx, m.Maker, m.Code, dec)
-		if err != nil {
-			return err
+		// Every code the source gives the board must name one model, or none
+		// yet; two different models means a person has to decide.
+		codes := append([]string{m.Code}, m.Aliases...)
+		for _, c := range codes {
+			if !codeShape.MatchString(NormCode(c)) {
+				return fmt.Errorf("alias %q does not normalise to a code", c)
+			}
+			found, err := im.resolve(ctx, tx, m.Maker, c, dec)
+			if err != nil {
+				return err
+			}
+			if found != "" && id != "" && found != id {
+				return fmt.Errorf("its codes name two models already, %s and %s: decide in aliases.yml", id, found)
+			}
+			if found != "" {
+				id = found
+			}
 		}
 		if id == "" {
 			isNew = true
@@ -323,16 +339,18 @@ func (im *Importer) saveModel(ctx context.Context, fsys fs.FS, src string, posit
 			WHERE id = $1`, id, null(m.Category), null(im.socFor(m.SoCLabel)), null(m.SoCLabel)); err != nil {
 			return err
 		}
-		var owner string
-		if err := tx.QueryRow(ctx, `
-			INSERT INTO board_model_aliases (maker_id, code_norm, model_id, source, code_as_printed)
-			VALUES ($1, $2, $3, $4, $5)
-			ON CONFLICT (maker_id, code_norm) DO UPDATE SET maker_id = EXCLUDED.maker_id
-			RETURNING model_id`, maker.ID, norm, id, src, m.Code).Scan(&owner); err != nil {
-			return err
-		}
-		if owner != id {
-			return fmt.Errorf("code %s already belongs to %s", norm, owner)
+		for _, c := range codes {
+			var owner string
+			if err := tx.QueryRow(ctx, `
+				INSERT INTO board_model_aliases (maker_id, code_norm, model_id, source, code_as_printed)
+				VALUES ($1, $2, $3, $4, $5)
+				ON CONFLICT (maker_id, code_norm) DO UPDATE SET maker_id = EXCLUDED.maker_id
+				RETURNING model_id`, maker.ID, NormCode(c), id, src, c).Scan(&owner); err != nil {
+				return err
+			}
+			if owner != id {
+				return fmt.Errorf("code %s already belongs to %s", NormCode(c), owner)
+			}
 		}
 		// This source's say about the model replaces what it said last time.
 		for _, t := range []string{"board_model_texts", "board_model_specs", "board_model_tags", "board_links"} {
@@ -380,7 +398,13 @@ func (im *Importer) saveModel(ctx context.Context, fsys fs.FS, src string, posit
 	if err != nil || have || len(m.Files) == 0 {
 		return id, isNew, err
 	}
-	unit = &Unit{ID: slug(id + "-" + src + "-u1"), Sensor: m.Sensor, SourceRef: unitRef, Position: 1000 + position,
+	// One unit per listing: two of a shop's modules can be one board, so the
+	// unit is named by the code the listing printed, not by the model.
+	uid := slug(id + "-" + src)
+	if NormCode(m.Code) != NormCode(unitModelCode(id)) {
+		uid = slug(id + "-" + src + "-" + m.Code)
+	}
+	unit = &Unit{ID: uid, Sensor: m.Sensor, SourceRef: unitRef, Position: 1000 + position,
 		Source: src, ContributedBy: src}
 	for _, f := range m.Files {
 		unit.Files = append(unit.Files, File{Kind: f.Kind, Name: f.Name, Source: f.Path})
@@ -399,4 +423,14 @@ func makersByID() map[string]Manufacturer {
 		out[m.ID] = m
 	}
 	return out
+}
+
+// unitModelCode is the code part of a model id made by saveModel
+// ("xiongmai-ipg-50hv20pes-s" -> "ipg-50hv20pes-s"); a unit whose listing
+// printed that code needs no second copy of it in its id.
+func unitModelCode(modelID string) string {
+	if i := strings.Index(modelID, "-"); i >= 0 {
+		return modelID[i+1:]
+	}
+	return modelID
 }

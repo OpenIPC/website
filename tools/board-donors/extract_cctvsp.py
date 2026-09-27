@@ -71,8 +71,19 @@ def extract(cap, mod):
         r'<td class="element-label">(.*?)</td>\s*<td>(.*?)</td>', pane(page, "item-prop"), re.S)]
     specs = [(re.sub(r"\s+", " ", a), b) for a, b in specs if a]
     pinout_urls = {l["url"] for l in mod["links"] if "распайка" in l["label"].lower()}
-    photos = [{"url": i["url"], "file": i["file"], "sha256": i["sha256"],
-               "role": "pinout" if i["url"] in pinout_urls else "photo"} for i in mod["images"] if i["status"] == 200]
+    photos, seen = [], {}
+    for i in mod["images"]:
+        if i["status"] != 200:
+            continue
+        role = "pinout" if i["url"] in pinout_urls else "photo"
+        # The pinout is linked relatively as well as shown in the gallery:
+        # one file, and a pinout if either place says so.
+        if i["sha256"] in seen:
+            if role == "pinout":
+                seen[i["sha256"]]["role"] = "pinout"
+            continue
+        seen[i["sha256"]] = {"url": i["url"], "file": i["file"], "sha256": i["sha256"], "role": role}
+        photos.append(seen[i["sha256"]])
     docs, builds = [], []
     for s in mod["support"]:
         role = support_role(s["label"])

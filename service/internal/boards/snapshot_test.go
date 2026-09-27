@@ -221,3 +221,38 @@ func TestTheTreeSpeaksTheReadersLanguageAndFallsBackToEnglish(t *testing.T) {
 		t.Errorf("en specs: %v", a.Specs)
 	}
 }
+
+func TestAVendorPageNamingSeveralCodesIsOneModelTheShopsListingsJoin(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	// Xiongmai first: one page, one board in three variants.
+	xm := donor(t, "xiongmai", model("xiongmai", "IPG-50HV20PES-S", map[string]any{"aliases": []string{"IPG-50HV20PET-S", "IPG-50HV20PET-A"}}))
+	if n, err := im.FromSnapshot(ctx, xm); err != nil || n != 1 {
+		t.Fatalf("xiongmai: %d, %v", n, err)
+	}
+	// The shop sells two of the variants as two modules: both are that board.
+	shop := donor(t, "cctvsp", model("xiongmai", "IPG-50HV20PES-S", nil), model("xiongmai", "ipg-50hv20pet-s", nil))
+	if n, err := im.FromSnapshot(ctx, shop); err != nil || n != 0 {
+		t.Fatalf("cctvsp: created %d (%v), want 0", n, err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE model ILIKE 'IPG-50HV20%'`); n != 1 {
+		t.Errorf("%d models for one board", n)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_model_aliases WHERE model_id = 'xiongmai-ipg-50hv20pes-s'`); n != 3 {
+		t.Errorf("%d aliases, want the three codes", n)
+	}
+}
+
+func TestCodesAlreadyOnTwoModelsAreRefusedNotMerged(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "cctvsp", model("xiongmai", "IPG-50HV20PES-S", nil), model("xiongmai", "IPG-50HV20PET-S", nil))); err != nil {
+		t.Fatal(err)
+	}
+	_, err := im.FromSnapshot(ctx, donor(t, "xiongmai", model("xiongmai", "IPG-50HV20PES-S", map[string]any{"aliases": []string{"IPG-50HV20PET-S"}})))
+	if err == nil || !strings.Contains(err.Error(), "name two models") {
+		t.Errorf("err = %v", err)
+	}
+}

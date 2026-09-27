@@ -135,10 +135,11 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--max-id", type=int, default=800)
     ap.add_argument("--delay", type=float, default=1.0)
+    ap.add_argument("--trees", default="en,zh", help="which trees, e.g. zh to run one tree in its own capture")
     a = ap.parse_args()
     cap = Capture(a.out, insecure_hosts=["xiongmaitech.com"], delay=a.delay)
     manifest = {"site": HOST, "trees": {}}
-    for lang in TREES:
+    for lang in [t for t in a.trees.split(",") if t in TREES]:
         listed, names = listings(cap, lang)
         say(f"{lang}: {len(listed)} products in the listings")
         products, last = [], 0

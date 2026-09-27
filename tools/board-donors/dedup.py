@@ -60,8 +60,14 @@ def main():
     for path in sys.argv[2:]:
         d = json.load(open(path))
         for r in d["records"]:
-            if r.get("code"):
-                items.append({"source": r["source"], "maker": r.get("maker"), "code": r["code"],
+            if not r.get("code") or r.get("code_from_title"):
+                continue
+            group = r["code"]
+            # A vendor page naming several codes says they are one board:
+            # each code is an item of the same group, merged by the source's
+            # own word rather than by a guess.
+            for c in [r["code"]] + r.get("aliases", []):
+                items.append({"source": r["source"], "maker": r.get("maker"), "code": c, "group": group,
                               "soc_label": r.get("soc_label"), "sensor": r.get("sensor"),
                               "title": next(iter(r.get("title", {}).values()), r["code"]),
                               "id": r.get("source_url")})
@@ -69,6 +75,10 @@ def main():
     for it in items:
         by_code[(it["maker"], norm(it["code"]))].append(it)
     exact = {k: v for k, v in by_code.items() if len({i["source"] for i in v}) > 1 or len(v) > 1}
+    groups = defaultdict(set)
+    for it in items:
+        if it.get("group") and norm(it["group"]) != norm(it["code"]):
+            groups[(it["maker"], norm(it["group"]))].add(norm(it["code"]))
     print("# Board catalogue: deduplication review\n")
     print(f"{len(items)} coded items from {len({i['source'] for i in items})} sources; "
           f"{len(by_code)} distinct (maker, code).\n")
@@ -77,6 +87,12 @@ def main():
         print("None.\n")
     for (maker, code), v in sorted(exact.items(), key=lambda kv: (kv[0][0] or "", kv[0][1] or "")):
         print(f"- **{maker} {code}**: " + "; ".join(f"{i['source']} `{i['code']}` ({i['soc_label']} + {i['sensor']})" for i in v))
+    print("\n## One vendor page, several codes: one model, merged by the source's own word\n")
+    for (maker, g), codes in sorted(groups.items()):
+        others = {c for c in codes if len({i["source"] for i in by_code[(maker, c)]}) > 1 or any(i["source"] != "xiongmai" for i in by_code[(maker, c)])}
+        mark = " (also listed separately elsewhere: " + ", ".join(sorted(others)) + ")" if others else ""
+        print(f"- {maker} {g} = " + " = ".join(sorted(codes)) + mark)
+    in_group = {(m, c) for (m, g), cs in groups.items() for c in cs} | {(m, g) for (m, g) in groups}
     keys = list(by_code)
     seen, n = set(), 0
     cross, within = [], []
@@ -84,6 +100,10 @@ def main():
         for b in keys[i + 1:]:
             if a[0] != b[0] or not a[0]:
                 continue
+            ga = next((i.get("group") for i in by_code[a] if i.get("group")), None)
+            gb = next((i.get("group") for i in by_code[b] if i.get("group")), None)
+            if ga and ga == gb:
+                continue  # the vendor already said
             A, B = by_code[a][0], by_code[b][0]
             ca, cb = core(a[1]), core(b[1])
             if len(ca) < 4 or len(cb) < 4:

@@ -1,7 +1,10 @@
 """Turn a Xiongmai capture into records: one per model code, with the English
 and Chinese pages of the same product merged.
 
-  python extract_xiongmai.py <capture-dir> <records.json>
+  python extract_xiongmai.py <records.json> <capture-dir>...
+
+Several capture directories may be given: each tree can be captured on its
+own (xiongmai.py --trees zh), and their manifests are read together.
 
 The EN and ZH trees number their products independently (EN 319 is a zoom
 module, ZH 319 an NVR board), so the two are joined by the model code in the
@@ -51,16 +54,37 @@ def features(page):
     return [x for x in items if x]
 
 
-MODEL_LABELS = ("model", "型号", "产品型号", "机芯型号")
+MODEL_LABELS = ("model", "型号", "产品型号", "机芯型号", "specifications", "specification", "规格", "产品规格")
+CODE_SHAPE = re.compile(r"^[A-Z0-9][A-Z0-9-]{3,}$", re.I)
 
 
-def code_of(specs, title):
-    for label, value in specs:
-        if label.strip().lower().rstrip(":：") in MODEL_LABELS or label.strip().lower().startswith("model"):
-            v = value.split(" / ")[0].strip()
-            if v:
-                return v, False
-    return title, True
+def codes_of(specs, title):
+    """Every code the specification's model row names: one product page often
+    covers several (IPG-50HV20PES-S / IPG-50HV20PET-S / IPG-50HV20PET-A), the
+    same board with another sensor or lens. The first is the model's code,
+    the rest its aliases."""
+    for label, value in specs[:3]:
+        l = label.strip().lower().rstrip(":：")
+        if l in MODEL_LABELS or l.startswith("model"):
+            codes = [c.strip() for c in re.split(r"\s*/\s*|\s*[,，、]\s*", value) if c.strip()]
+            codes = [c for c in codes if CODE_SHAPE.match(c)]
+            if codes:
+                return codes, False
+    return [title], True
+
+
+CATEGORY_WORDS = [  # a title says what line a product is, when no listing does any more
+    (r"NVR", "NVR Board"), (r"DVR|XVR|HVR", "DVR Board"), (r"Hybrid|AHD/TVI", "XVI&AHD Hybrid Camera Module"),
+    (r"AHD", "AHD Camera Module"), (r"Zoom|Auto-?focus|AF ", "AF module"), (r"WiFi|WIFI|Wireless", "WiFi Kit"),
+    (r"Battery|Doorbell", "Battery Camera Module"), (r"Panoram|Fisheye|VR", "Panoramic VR"),
+    (r"IP|Network|IPC", "IP Camera Module")]
+
+
+def category_from_title(title):
+    for pat, cat in CATEGORY_WORDS:
+        if re.search(pat, title or "", re.I):
+            return cat
+    return None
 
 
 def photos(cap, page, media):
@@ -72,22 +96,31 @@ def photos(cap, page, media):
 
 
 def main():
-    cap, out = sys.argv[1], sys.argv[2]
-    with open(os.path.join(cap, "manifest.json")) as f:
-        man = json.load(f)
+    out, caps = sys.argv[1], sys.argv[2:]
+    trees = []
+    for cap in caps:
+        with open(os.path.join(cap, "manifest.json")) as f:
+            for lang, tree in json.load(f)["trees"].items():
+                trees.append((cap, lang, tree))
+    site = "https://www.xiongmaitech.com"
     by_code = defaultdict(lambda: {"source": "xiongmai", "maker": "xiongmai", "title": {}, "features": {},
                                    "specs": {}, "photos": [], "interface": [], "downloads": [], "firmware": [],
                                    "lines": set(), "pages": [], "code_from_title": False})
-    for lang, tree in man["trees"].items():
+    for cap, lang, tree in trees:
         names = tree.get("list_names", {})
         for p in tree["products"]:
             page = load(cap, p["page"])
             tabs = {k: load(cap, v.get("file")) for k, v in p["tabs"].items()}
             specs = spec_rows(tabs.get("jscs", ""))
-            code, from_title = code_of(specs, p["title"])
+            codes, from_title = codes_of(specs, p["title"])
+            code = codes[0]
             key = re.sub(r"[\s_/.]+", "-", code.strip().upper())
             r = by_code[key]
             r["code"] = r.get("code") or code
+            r.setdefault("aliases", [])
+            for c in codes[1:]:
+                if c not in r["aliases"] and c != r["code"]:
+                    r["aliases"].append(c)
             r["code_from_title"] = r["code_from_title"] or from_title
             r["title"][lang] = p["title"]
             r["features"][lang] = features(tabs.get("cpgs", ""))
@@ -119,10 +152,12 @@ def main():
         stop = any(re.search(r"stop production|停产", f"{x['line']} {x['sub']}", re.I) for x in r["lines"])
         r["tags"] = ["discontinued"] if stop else []
         en_lines = [x["line"] for x in r["lines"] if x["lang"] == "en"]
-        r["category"] = en_lines[0] if en_lines else (r["lines"][0]["line"] if r["lines"] else None)
+        r["category"] = en_lines[0] if en_lines else (r["lines"][0]["line"] if r["lines"] else
+                        category_from_title(r["title"].get("en") or r["title"].get("zh")))
+        r["listed"] = bool(r["lines"])
         recs.append(r)
     with open(out, "w") as f:
-        json.dump({"source": "xiongmai", "site": man["site"], "records": recs}, f, ensure_ascii=False, indent=1)
+        json.dump({"source": "xiongmai", "site": site, "records": recs}, f, ensure_ascii=False, indent=1)
     both = sum(1 for r in recs if len(r["title"]) == 2)
     print(f"{len(recs)} models ({both} with both EN and ZH pages, "
           f"{sum(1 for r in recs if r['code_from_title'])} without a model row); "
