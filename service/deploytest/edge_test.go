@@ -47,9 +47,19 @@ func TestDatacentreBlock(t *testing.T) {
 		}
 	})
 	t.Run("the block is applied, and at server level rather than on the gallery", func(t *testing.T) {
-		mustMatch(t, `if \(\$openipc_datacentre_client\) \{\s*return 403;`, v, "the datacentre block is not applied")
+		mustMatch(t, `if \(\$openipc_datacentre_refused\) \{\s*return 403;`, v, "the datacentre block is not applied")
 		gallery := blockRe(v, regexp.MustCompile(`location ~ \^/\(\?:\(\?:ru\|zh\)/\)\?snapshots`))
 		mustNotContain(t, gallery, "openipc_datacentre_client", "the same fleet probes /.git/config, so this is not a gallery rule")
+	})
+	// GitHub's runners are Azure, so an Azure range also catches the report job
+	// that pushes every build; nightly-20260927-60d4cbe was refused from
+	// 68.220.61.2. The push authenticates by OIDC token, not by address.
+	t.Run("CI's build push is let through the block", func(t *testing.T) {
+		mustMatch(t, `map "\$openipc_datacentre_client:\$uri" \$openipc_datacentre_refused \{`, conf,
+			"the refusal is not derived from the address and the path")
+		mustMatch(t, `"1:/api/v1/builds"\s+0;`, conf, "a runner in a blocked range cannot push its build")
+		mustMatch(t, `~\^1:\s+1;`, conf, "the rest of a blocked range is no longer refused")
+		mustContain(t, v, "location = /api/v1/builds", "the exemption names an address the vhost does not serve")
 	})
 	// nginx fails to start on a mismatch, which is a bad way to find out.
 	t.Run("the snapshot rate zone is declared and used under one name", func(t *testing.T) {

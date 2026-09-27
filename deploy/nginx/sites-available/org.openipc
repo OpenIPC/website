@@ -58,8 +58,9 @@ server {
 
     # The Open Wall scraper, which declares nothing and rotates its user agent.
     # Recognised by address instead. See conf.d/openipc-datacentre-block.conf
-    # for the ranges and for the beacon test that says no reader is in them.
-    if ($openipc_datacentre_client) {
+    # for the ranges, for the beacon test that says no reader is in them, and
+    # for why CI's build push is let through.
+    if ($openipc_datacentre_refused) {
         return 403;
     }
 
