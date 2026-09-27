@@ -160,6 +160,40 @@ def load_dictionary(path):
     return json.load(open(path))
 
 
+def dhash(path, n=16):
+    """A 256-bit difference hash: the same picture re-saved, re-cropped or
+    relabelled in another language lands within ~75 bits; different
+    pictures of one board land beyond ~90."""
+    from PIL import Image
+    im = Image.open(path).convert("L").resize((n + 1, n), Image.LANCZOS)
+    px, bits = im.tobytes(), 0
+    for y in range(n):
+        for x in range(n):
+            bits = bits << 1 | (px[y * (n + 1) + x] > px[y * (n + 1) + x + 1])
+    return bits
+
+
+def one_language(images):
+    """Xiongmai's EN and ZH pages show the same pictures uploaded twice,
+    under /en/upload and /upload, with the labels translated: different
+    bytes, one picture. Where the EN page has pictures of a kind, the ZH
+    page's are its translation; a ZH picture stays only when the ZH page has
+    more than the EN page and it looks like none of the English ones."""
+    images = [p for p in images if p.get("file")]
+    en = [p for p in images if "/en/" in p["url"]]
+    zh = [p for p in images if "/en/" not in p["url"]]
+    if not en or len(zh) <= len(en):
+        return en or zh
+    seen = [dhash(p["file"]) for p in en]
+    extra = []
+    for p in zh:
+        h = dhash(p["file"])
+        if min(bin(h ^ e).count("1") for e in seen) > 90:
+            extra.append(p)
+            seen.append(h)
+    return en + extra
+
+
 def xiongmai_model(r, files, builds, index, dic=None):
     dic = dic or {}
 
@@ -206,11 +240,11 @@ def xiongmai_model(r, files, builds, index, dic=None):
     used, fl = set(), []
     # A picture the capture could not fetch has no file; it is left out,
     # not allowed to stop the snapshot.
-    photos = [p for p in r["photos"] if p.get("file")]
+    photos = one_language(r["photos"])
     for i, p in enumerate(photos, 1):
         name, path = files.add(p["file"], f"photo-{i}{os.path.splitext(p['url'])[1] or '.png'}", used)
         fl.append({"kind": "photo_front" if i == 1 else "photo_other", "name": name, "path": path})
-    for i, p in enumerate([p for p in r["interface"] if p.get("file")], 1):
+    for i, p in enumerate(one_language(r["interface"]), 1):
         name, path = files.add(p["file"], f"interface-{i}{os.path.splitext(p['url'])[1] or '.png'}", used)
         fl.append({"kind": "pinout", "name": name, "path": path})
     for d in r["downloads"]:

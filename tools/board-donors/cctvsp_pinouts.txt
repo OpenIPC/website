@@ -1,0 +1,127 @@
+# cctvsp.ru gallery images that are pinouts: the photo with the connectors'
+# pins labelled. cctvsp's markup gives every gallery image the module's title,
+# so this was decided by looking at each of the 210 images (2026-09-27); only
+# the "Распайка" link says so on the page, and it names 7 of them.
+# One image path per line, as under https://www.cctvsp.ru/.
+# IPG-50H10PE-S
+images/cctv/module/hi3518e-ov9712/2.jpg
+images/cctv/module/hi3518e-ov9712/4.jpg
+# IPG-50H10PE-SL
+images/cctv/module/hi3518e-h22/2.jpg
+# IPG-50H10PL-AE
+images/cctv/module/hi3518c-ov9712-IPG-50H10PL-AE/4.jpg
+# IPG-50H10PL-S
+images/cctv/module/hi3518c-ov9712-IPG-50H10PL-S/2.jpg
+# IPG-50H20PLS-S
+images/cctv/module/hi3516c-sc2035/2.jpg
+images/cctv/module/hi3516c-sc2035/x3.jpg
+# IPG-50HV20PES-S
+images/cctv/module/hi3518ev200-sc2135/2.jpg
+# IPG-50HV20PET-S
+images/cctv/module/hi3518ev200-f22/1.jpg
+images/cctv/module/hi3518ev200-f22/2.jpg
+# IPG-50HV20PSB-S
+images/cctv/module/hi3518ev200-sc2235/3.jpg
+# IPG-50X10PT-S
+images/cctv/module/xm510-h62/2.jpg
+# IPG-53H13AF
+images/cctv/module/hi3518c-ar0130-af-IPG-53H13AF/2.jpg
+# IPG-53H13PE-S
+images/cctv/module/hi3518e-ar0130/4.jpg
+# IPG-53H20PL-A
+images/cctv/module/hi3516c-imx322_IPG-53H20PL-A_/3.jpg
+# IPG-53H20PL-S
+images/cctv/module/hi3516c-imx322/3.jpg
+images/cctv/module/hi3516c-imx322/4.jpg
+# IPG-53H20PY-S
+images/cctv/module/hi3516cv200-imx323/2.jpg
+# IPG-53X13PA-S
+images/cctv/module/xm510-ar0130/2.jpg
+# IPG-53X13PT-S
+images/cctv/module/xm510-h65/2.jpg
+# IPG-54H13PE-S
+images/cctv/module/hi3518e-imx225/2.jpg
+images/cctv/module/hi3518e-imx225/4.jpg
+# IPG-54H20PL-S
+images/cctv/module/hi3516c-imx291/2.jpg
+# IPG-80H20PS-S
+images/cctv/module/hi3516cv300-sc2235-s38/2.jpg
+# IPG-80H20PT-S
+images/cctv/module/hi3516cv300-f22/2.jpg
+# IPG-80HE20AF
+images/cctv/module/hi3516ev100-sc2235-af/5.jpg
+# IPG-80HE20PS-A
+images/cctv/module/hi3516ev100-sc2235-s38-ae/2.jpg
+# IPG-80HE20PS-S
+images/cctv/module/hi3516ev100-sc2235-s38/2.jpg
+images/cctv/module/hi3516ev100-sc2235-s38/4.jpg
+# IPG-80HE20PS-SL
+images/cctv/module/hi3516ev100-sc2235-32x32/2.jpg
+# IPG-80HV20PSA-S
+images/cctv/module/hi3518ev200-sc2045/3.jpg
+images/cctv/module/hi3518ev200-sc2045/4.jpg
+# IPG-83H20PY-S
+# IPG-83H40PL-B
+images/cctv/module/hi3516d-ov4689/3.jpg
+images/cctv/module/hi3516d-ov4689/5.jpg
+# IPG-83H50P-B
+images/cctv/module/hi3516a-imx178-IPG-83H50P-B/2.jpg
+images/cctv/module/hi3516a-imx178-IPG-83H50P-B/4.jpg
+# IPG-83HE20PY-S
+images/cctv/module/hi3516ev100-imx323-s38/2.jpg
+# IPG-85HE20PY-AF
+# IPG-85HE20PY-S
+images/cctv/module/hi3516ev100-imx307-s38/2.jpg
+# IPG-85HE20PYA-S
+images/cctv/module/hi3516ev100-imx307-s38-IPG-85HE20PYA-S/2.jpg
+# IPG-H100T-S-E36
+images/cctv/module/hi3518ev200-h42/ircut-lens/3.jpg
+# IPG-H200NS-S-E36
+images/cctv/module/hi3518ev200-f02/ircut-lens/4.jpg
+# IPG-HP201A-S-F36
+images/cctv/module/hi3516d-ar0237/2.jpg
+# IPG-HP201NY-A
+images/cctv/module/hi3516ev100-imx323-ae/3.jpg
+# IPG-HP500NR-AE
+images/cctv/module/hi3516d-ps5510/4.jpg
+# IPG-HP500NS-A
+images/cctv/module/hi3516d-sc5239/4.jpg
+# IVG-80X20PS-S
+images/cctv/module/xm530-sc2235p-80X20PS-S/2.jpg
+# IVG-80X40PS-S
+images/cctv/module/xm530-sc4238-80X40PS-S/2.jpg
+# IVG-83X50PS-S
+images/cctv/module/xm550-sc335E-IVG-83X50PS-S/2.jpg
+# IVG-85H20PYA-S
+images/cctv/module/hi3516cv300-imx307-IVG-85H20PYA-S/2.jpg
+# IVG-85HF20PY-S
+images/cctv/module/hi3516ev200-imx307-IVG-85HF20PY-S/2.jpg
+# IVG-85HF20PYA-S
+images/cctv/module/hi3516ev200-imx307-IVG-85HF20PYA-S/2.jpg
+# IVG-85HF30PS-S
+images/cctv/module/hi3516ev200-sc4239-IVG-85HF30PS-S/2.jpg
+# IVG-85HF30PS-ST
+images/cctv/module/hi3516ev200-sc4339-IVG-85HF30PS-ST/2.jpg
+# IVG-85HG50PYA-S
+images/cctv/module/hi3516ev300-imx335-IVG-85HG50PYA-S/2.jpg
+# IVG-85X20PS-S
+images/cctv/module/xm530-sc307E-IVG-85X20PS-S/2.jpg
+# IVG-85X20PYA-S
+images/cctv/module/xm530-imx307-85X20PYA-S/2.jpg
+# IVG-85X30PSA-ST
+images/cctv/module/xm530-sc3235-85X30PS-ST/2.jpg
+# IVG-85X50PYA-S
+images/cctv/module/xm550-imx335-IVG-85X50PYA-S/2.jpg
+# IVG-G2S
+images/cctv/module/gk7205-imx307-IVG-G2S/2.jpg
+# IVG-G5S
+images/cctv/module/gk7205v300-imx335-IVG-G5S/2.jpg
+# IVG-HP200S-AE
+images/cctv/module/hi3516cv300-sc2235/3.jpg
+# IVG-HP201Y-AE
+images/cctv/module/hi3516cv300-imx323/3.jpg
+# IVG-HP203Y-AE
+images/cctv/module/hi3516cv300-imx291/3.jpg
+# WIFI-SD
+images/cctv/module/wifi-rtl8188/1.jpg
+images/cctv/module/wifi-rtl8188/2.jpg

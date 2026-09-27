@@ -26,8 +26,8 @@ en:
     stats_need_pinout:
       one: still needs a pinout
       other: still need a pinout
-    search_label: Search board evidence
-    search_placeholder: 'Search U-Boot consoles and notes: mtdparts, 0x82000000, xm25qh64a…'
+    search_label: Search boards and their evidence
+    search_placeholder: 'Model, name, U-Boot console or notes: JZC-N81820S, mtdparts, xm25qh64a…'
     scope_label: Search in
     scope_uboot_env: U-Boot console
     scope_boot_log: Boot logs
@@ -97,6 +97,9 @@ en:
     hits_lines:
       one: '{count} matching line'
       other: '{count} matching lines'
+    matched_boards:
+      one: '{count} board matches “{q}” by model or name'
+      other: '{count} boards match “{q}” by model or name'
     hits_boards:
       one: 'in {count} board'
       other: 'in {count} boards'

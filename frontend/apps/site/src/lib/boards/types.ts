@@ -68,6 +68,8 @@ export interface Model {
   category: string | null;
   /** "openipc-ready", "discontinued". */
   tags: string[];
+  /** The other codes sources print for this board. */
+  aliases?: string[];
   summary: Summary | null;
   /** Source ids, which `BoardsFile.sources` names. */
   sources: string[];

@@ -26,3 +26,4 @@ node_modules/
 
 # Local environment overrides; never committed.
 /.env
+__pycache__/
