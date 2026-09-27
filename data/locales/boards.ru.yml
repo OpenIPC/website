@@ -132,6 +132,7 @@ ru:
     source_note_openhisiipcam: 'Каталог оборудования проекта OpenHisiIpCam (2018), опубликован с разрешения его автора.'
     source_note_xiongmai: 'Собственный каталог продукции Xiongmai, сохранённый в 2026 году, потому что сайт компании больше недоступен.'
     source_note_cctvsp: 'Описания модулей, фотографии, распиновки и документы производителя из разделов OpenIPC и архива магазина cctvsp.ru, предоставлены магазином (2026).'
+    source_note_tehno32: 'Документация Xiongmai на платы — описания интерфейсов с чертежами разъёмов и распиновками, листы параметров и контуры плат — из архива tehno32.ru (2026).'
     filter_line: Линейка
     filter_source: Источник
     filter_ready: Только готовые к OpenIPC
@@ -161,6 +162,7 @@ ru:
       xvi-ahd-dvr-board: "Платы DVR XVI/AHD"
       dual-lens-camera-module: "Двухобъективные модули камер"
       accessory: "Аксессуары"
+      pcb: "Печатные платы (PCB)"
     show_all:
       one: 'Показать все {count} плату'
       few: 'Показать все {count} платы'
@@ -188,6 +190,8 @@ ru:
     link_related: То же семейство
     link_vendor_page: Страница производителя (архив)
     link_source_page: Страница источника
+    link_pcb: Плата (PCB)
+    link_on_pcb: Модули на этой плате
     new_tab: откроется в новой вкладке
     files_title: Фото и файлы
     from_source: 'Источник: {source}'

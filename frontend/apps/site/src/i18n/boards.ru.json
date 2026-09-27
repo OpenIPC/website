@@ -68,6 +68,8 @@
       "one": "{count} строка",
       "other": "{count} строки"
     },
+    "link_on_pcb": "Модули на этой плате",
+    "link_pcb": "Плата (PCB)",
     "link_predecessor": "Заменяет",
     "link_related": "То же семейство",
     "link_source_page": "Страница источника",
@@ -113,6 +115,7 @@
       "ip-camera-module": "IP-модули камер",
       "nvr-board": "Платы NVR",
       "panoramic-vr": "Панорамные и VR-модули",
+      "pcb": "Печатные платы (PCB)",
       "wifi-kit": "Комплекты Wi-Fi",
       "xvi-ahd-dvr-board": "Платы DVR XVI/AHD",
       "xvi-ahd-hybrid-camera-module": "Гибридные модули камер XVI/AHD"
@@ -143,6 +146,7 @@
     "soc_not_catalogued": "Этого SoC нет в каталоге OpenIPC",
     "source_note_cctvsp": "Описания модулей, фотографии, распиновки и документы производителя из разделов OpenIPC и архива магазина cctvsp.ru, предоставлены магазином (2026).",
     "source_note_openhisiipcam": "Каталог оборудования проекта OpenHisiIpCam (2018), опубликован с разрешения его автора.",
+    "source_note_tehno32": "Документация Xiongmai на платы — описания интерфейсов с чертежами разъёмов и распиновками, листы параметров и контуры плат — из архива tehno32.ru (2026).",
     "source_note_xiongmai": "Собственный каталог продукции Xiongmai, сохранённый в 2026 году, потому что сайт компании больше недоступен.",
     "sources_label": "Откуда эти платы",
     "specs": "Характеристики",

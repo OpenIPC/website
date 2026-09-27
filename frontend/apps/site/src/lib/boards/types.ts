@@ -117,7 +117,7 @@ export interface About {
   specs: [label: string, value: string][];
 }
 
-export type LinkKind = 'stock_firmware' | 'source_page' | 'vendor_page' | 'successor' | 'predecessor' | 'related';
+export type LinkKind = 'stock_firmware' | 'source_page' | 'vendor_page' | 'successor' | 'predecessor' | 'related' | 'pcb' | 'on_pcb';
 
 export interface BoardLink {
   source: string;

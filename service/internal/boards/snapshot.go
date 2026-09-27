@@ -32,6 +32,9 @@ var Snapshots = map[string]string{
 	"cctvsp": "1a8c5b9e28d9e696f5539f06388bf7e4ceb3711ed118a8f3928188d9bf6a766f",
 	// boards-donors/xiongmai/snapshot-dd6963582f41.tar: 684 models from the EN and ZH trees, each picture once, dated; ZH-only pages translated.
 	"xiongmai": "dd6963582f41e1db50fc7151348d22ae5429a0f30957a79737e3740e9040ba2b",
+	// boards-donors/tehno32/snapshot-94862b6d4b4a.tar: Xiongmai's board documents from
+	// tehno32.ru's archive, on 542 modules and 71 PCBs, with 651 pinout pages.
+	"tehno32": "94862b6d4b4a21a83cb7798e69a7e3e0d316459c5d50fef06588613f9e9984df",
 }
 
 type Snapshot struct {

@@ -114,6 +114,7 @@ zh:
     source_note_openhisiipcam: 'OpenHisiIpCam 项目（2018 年）的硬件目录，经作者许可重新发布。'
     source_note_xiongmai: '雄迈自己的产品目录，因公司网站已无法访问，于 2026 年归档。'
     source_note_cctvsp: '来自 cctvsp.ru 商店 OpenIPC 和归档栏目的模组介绍、照片、引脚图和厂商文档，由该商店提供（2026 年）。'
+    source_note_tehno32: '雄迈的主板文档——带接口图和引脚定义的接口说明、参数表和板框图——来自 tehno32.ru 的归档（2026 年）。'
     filter_line: 产品线
     filter_source: 来源
     filter_ready: 仅显示支持 OpenIPC 的
@@ -141,6 +142,7 @@ zh:
       xvi-ahd-dvr-board: "XVI/AHD DVR 主板"
       dual-lens-camera-module: "双目摄像机模组"
       accessory: "配件"
+      pcb: "PCB 板"
     show_all:
       one: '显示全部 {count} 块'
       other: '显示全部 {count} 块'
@@ -166,6 +168,8 @@ zh:
     link_related: 同系列
     link_vendor_page: 厂商页面（归档）
     link_source_page: 来源页面
+    link_pcb: PCB 板
+    link_on_pcb: 此 PCB 上的模组
     new_tab: 在新标签页中打开
     files_title: 照片与文件
     from_source: '来源：{source}'

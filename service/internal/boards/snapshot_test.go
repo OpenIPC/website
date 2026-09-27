@@ -465,3 +465,23 @@ func TestAFilelessReimportStillCorrectsTheSensor(t *testing.T) {
 		t.Errorf("%d units with the corrected sensor", n)
 	}
 }
+
+func TestAPCBAndItsModulesLinkBothWays(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	snap := donor(t, "tehno32",
+		model("xiongmai", "IVG-80X20PS-S", map[string]any{"links": []map[string]string{{"kind": "pcb", "label": "BLK530WX1-0235P-38X38-S", "code": "BLK530WX1-0235P-38X38-S"}}}),
+		model("xiongmai", "BLK530WX1-0235P-38X38-S", map[string]any{"category": "PCB", "links": []map[string]string{{"kind": "on_pcb", "label": "IVG-80X20PS-S", "code": "IVG-80X20PS-S"}}}))
+	if _, err := im.FromSnapshot(ctx, snap); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_links WHERE
+		(model_id = 'xiongmai-ivg-80x20ps-s' AND kind = 'pcb' AND target_model_id = 'xiongmai-blk530wx1-0235p-38x38-s') OR
+		(model_id = 'xiongmai-blk530wx1-0235p-38x38-s' AND kind = 'on_pcb' AND target_model_id = 'xiongmai-ivg-80x20ps-s')`); n != 2 {
+		t.Errorf("%d of the two PCB links resolved", n)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_units WHERE source = 'tehno32'`); n != 2 {
+		t.Errorf("%d tehno32 units", n)
+	}
+}

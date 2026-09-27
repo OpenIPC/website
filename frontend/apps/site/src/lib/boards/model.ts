@@ -148,7 +148,7 @@ export function socOptions(all: Entry[], names: Record<string, string>): Option[
 export const KNOWN_LINES = new Set([
   'ip-camera-module', 'dvr-board', 'nvr-board', 'consumer-module', 'ahd-camera-module', 'xvi-ahd-hybrid-camera-module',
   'af-module', 'panoramic-vr', 'wifi-kit', 'h-265-xvi-dvr-board', 'intelligent-analysis-module',
-  'battery-camera-module', 'xvi-ahd-dvr-board', 'dual-lens-camera-module', 'accessory',
+  'battery-camera-module', 'xvi-ahd-dvr-board', 'dual-lens-camera-module', 'accessory', 'pcb',
 ]);
 
 /** A product line in the reader's language, or as the source names it. */

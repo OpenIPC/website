@@ -60,6 +60,8 @@
       "one": "{count} line",
       "other": "{count} lines"
     },
+    "link_on_pcb": "Modules on this PCB",
+    "link_pcb": "PCB",
     "link_predecessor": "Replaces",
     "link_related": "Same family",
     "link_source_page": "Source page",
@@ -101,6 +103,7 @@
       "ip-camera-module": "IP camera modules",
       "nvr-board": "NVR boards",
       "panoramic-vr": "Panoramic and VR modules",
+      "pcb": "PCBs",
       "wifi-kit": "Wi-Fi kits",
       "xvi-ahd-dvr-board": "XVI/AHD DVR boards",
       "xvi-ahd-hybrid-camera-module": "XVI/AHD hybrid camera modules"

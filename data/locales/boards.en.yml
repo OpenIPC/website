@@ -138,6 +138,7 @@ en:
       xvi-ahd-dvr-board: "XVI/AHD DVR boards"
       dual-lens-camera-module: "Dual-lens camera modules"
       accessory: "Accessories"
+      pcb: "PCBs"
     show_all:
       one: 'Show all {count} board'
       other: 'Show all {count} boards'
@@ -163,6 +164,8 @@ en:
     link_related: Same family
     link_vendor_page: Vendor page (archived)
     link_source_page: Source page
+    link_pcb: PCB
+    link_on_pcb: Modules on this PCB
     new_tab: opens in a new tab
     files_title: Photos and files
     from_source: 'From {source}'
