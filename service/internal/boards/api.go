@@ -677,7 +677,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 		       (SELECT coalesce(string_agg(id || ':' || ref, ',' ORDER BY id), '') FROM board_sources) || '|' ||
 		       (SELECT count(*) FROM board_model_texts) || '|' || (SELECT count(*) FROM board_model_specs) || '|' ||
 		       (SELECT count(*) FROM board_model_tags) || '|' || (SELECT count(*) FROM board_links) || '|' ||
-		       (SELECT coalesce(sum(listed_year), 0) FROM board_models)`).Scan(&units, &files, &last, &about); err != nil {
+		       (SELECT coalesce(md5(string_agg(id || ':' || listed_year, ',' ORDER BY id)), '') FROM board_models WHERE listed_year IS NOT NULL)`).Scan(&units, &files, &last, &about); err != nil {
 		a.Log.Error("boards: no revision", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})
 		return

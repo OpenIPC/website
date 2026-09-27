@@ -222,12 +222,15 @@ export interface Section { maker: Manufacturer; count: number; groups: Group[] }
  * Newest boards first, so a newcomer meets current hardware before 2014's.
  * A board is dated by its maker's catalogue where a source says when it
  * appeared; an undated one takes the median year of the dated boards on its
- * SoC, and one with neither goes last. Ties keep code order, numbers read as
- * numbers.
+ * SoC (across `dated`, the whole catalogue by default), and one with neither
+ * goes last. Ties keep code order, numbers read as numbers.
  */
-export function newestFirst<T extends Model>(list: T[]): T[] {
+export function newestFirst<T extends Model>(list: T[], dated: Model[] = list): T[] {
+  // The SoC's median comes from every dated board given, not only the ones
+  // being ordered: a maker's section or a filtered view would otherwise
+  // date its undated boards by a fraction of the evidence.
   const bySoc = new Map<string, number[]>();
-  for (const m of list) {
+  for (const m of dated) {
     const key = socKey(m);
     if (!m.listed_year || !key) continue;
     const years = bySoc.get(key);
@@ -245,7 +248,8 @@ export function newestFirst<T extends Model>(list: T[]): T[] {
     || (a.model ?? '\uffff').localeCompare(b.model ?? '\uffff', undefined, { numeric: true }));
 }
 
-export function layout(makers: Manufacturer[], kept: Entry[], splitOver = SPLIT_OVER): Section[] {
+/** `dated` is what an undated board's SoC year is taken from: the whole catalogue, not only `kept`. */
+export function layout(makers: Manufacturer[], kept: Entry[], splitOver = SPLIT_OVER, dated: Model[] = kept): Section[] {
   const byMaker = new Map<string, Entry[]>();
   for (const m of kept) {
     const list = byMaker.get(m.maker.id);
@@ -254,7 +258,7 @@ export function layout(makers: Manufacturer[], kept: Entry[], splitOver = SPLIT_
   return makers.flatMap((maker): Section[] => {
     const found = byMaker.get(maker.id);
     if (!found) return [];
-    const mine = newestFirst(found);
+    const mine = newestFirst(found, dated);
     const lines = new Map<string | null, Entry[]>();
     for (const m of mine) {
       const list = lines.get(m.category);

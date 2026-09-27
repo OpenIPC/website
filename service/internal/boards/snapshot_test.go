@@ -450,3 +450,18 @@ func TestAReimportCorrectsTheUnitsSensor(t *testing.T) {
 		t.Errorf("%d units with the corrected sensor", n)
 	}
 }
+
+func TestAFilelessReimportStillCorrectsTheSensor(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "xiongmai", model("xiongmai", "IVG-G5A", map[string]any{"sensor": "SC5239S低照度CMOS传感器"}))); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := im.FromSnapshot(ctx, donor(t, "xiongmai", model("xiongmai", "IVG-G5A", map[string]any{"sensor": "SC5239S", "files": []any{}}))); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_units WHERE model_id = 'xiongmai-ivg-g5a' AND sensor = 'SC5239S'`); n != 1 {
+		t.Errorf("%d units with the corrected sensor", n)
+	}
+}

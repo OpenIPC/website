@@ -13,12 +13,12 @@
  */
 import type { ComponentChildren } from 'preact';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { BoardsFile, SearchResult, Source } from '../../lib/boards/types';
+import type { BoardsFile, Hit, SearchResult, Source } from '../../lib/boards/types';
 import { fetchBoards, searchBoards } from '../../lib/boards/api';
 import { EMPTY, MISSING, SCOPES, readQueryString, writeQueryString, type BoardsState, type Scope } from '../../lib/boards/url';
 import {
-  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, entries, filterBoards, filterHits, heading, matchBoards, printedCode, flashOf, has, highlight, layout, lead,
-  lineLabel, lineOptions, sensorOptions, socName, socOptions, stats, subtitle, type Entry, type Group,
+  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, entries, filterBoards, filterHits, heading, matchBoards, flashOf, has, highlight, layout, lead,
+  lineLabel, lineOptions, sensorOptions, socName, socOptions, stats, subtitle, type Entry, type Group, type Heading,
 } from '../../lib/boards/model';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import type { Locale } from '../../lib/i18n';
@@ -116,7 +116,7 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
   const names = useMemo(() => Object.fromEntries(Object.entries(socs).map(([k, v]) => [k, v.model])), [socs]);
   const kept = useMemo(() => filterBoards(all, view),
     [all, view.maker, view.soc, view.sensor, view.missing, view.line, view.source, view.ready]);
-  const sections = useMemo(() => (data.state === 'ok' ? layout(data.value.manufacturers, kept) : []), [data, kept]);
+  const sections = useMemo(() => (data.state === 'ok' ? layout(data.value.manufacturers, kept, undefined, all) : []), [data, kept, all]);
   const q = view.q.trim();
   const searching = q.length >= MIN_QUERY;
   // The server filters by catalogue SoC only; the rest is done on its answer.
@@ -355,6 +355,8 @@ function Card({ m, level, socs, names, sources, t, href, onOpen }: CardProps & {
   );
 }
 
+const HIT_CLASS: Record<Heading['kind'], string> = { code: 'font-mono font-bold', name: 'font-semibold', none: 'font-medium' };
+
 function Hits({ found, kept, q, scope, none, t, names, href, onOpen }: {
   found: Load<SearchResult> | null; kept: Entry[]; q: string; scope: Scope; none: boolean; t: BoardsT; names: Record<string, string>;
   href: (model: string | null) => string; onOpen: (id: string) => void;
@@ -364,6 +366,12 @@ function Hits({ found, kept, q, scope, none, t, names, href, onOpen }: {
     return <div class="site-alert site-alert-warning mt-8" role="alert"><p class="mb-0">{t('search_error', { error: found.error })}</p></div>;
   }
   const hits = filterHits(found.value.hits, kept);
+  const byId = new Map(kept.map((m) => [m.id, m]));
+  // A hit is headed as its card is: the printed code, else the product name.
+  const headOf = (h: Hit): Heading => {
+    const m = byId.get(h.model_id);
+    return m ? heading(m) : heading({ model: h.model, summary: null });
+  };
   const boards = new Set(hits.map((h) => h.unit_id)).size;
   return (
     <div class="mt-5 grid gap-2.5">
@@ -377,9 +385,9 @@ function Hits({ found, kept, q, scope, none, t, names, href, onOpen }: {
         <div key={`${h.url}:${h.line}`} class="grid gap-1.5 rounded-lg border border-hairline bg-white px-3.5 py-3">
           <header class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 text-sm">
             <span class="font-mono text-[11px] font-medium tracking-wide text-body-secondary uppercase">{t(`kind_${h.kind}`)}</span>
-            <a href={href(h.model_id)} class={printedCode(h.model) ? 'font-mono font-bold' : 'font-medium'}
+            <a href={href(h.model_id)} class={HIT_CLASS[headOf(h).kind]}
               onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; e.preventDefault(); onOpen(h.model_id); }}>
-              {printedCode(h.model) ?? t('unidentified')}
+              {headOf(h).text ?? t('unidentified')}
             </a>
             <span class="text-body-secondary">
               {makerName(h.manufacturer_id, h.manufacturer_name, t)} · {h.soc ? socName(h.soc, names) : h.family ? t('family', { family: socName(h.family, names) }) : ''} · <a href={h.url} class="text-inherit">{t('line', { n: h.line })}</a>

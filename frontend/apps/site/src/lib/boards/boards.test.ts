@@ -186,6 +186,13 @@ describe('newest boards first', () => {
     ])).toEqual(['new-b', 'new-c', 'undated-new', 'new-a', 'old', 'undated-old', 'nosoc']);
   });
 
+  test("an undated board's SoC year comes from the whole catalogue, not the slice being ordered", () => {
+    const dated = [model('other-maker', { soc: 'gk7205v300', listed_year: 2022 })];
+    const slice = [model('old', { soc: 'hi3518ev100', listed_year: 2016 }), model('undated', { soc: 'gk7205v300' })];
+    expect(ids(slice)).toEqual(['old', 'undated']);
+    expect(newestFirst(slice, [...slice, ...dated]).map((m) => m.id)).toEqual(['undated', 'old']);
+  });
+
   test('the layout lists each group newest first', () => {
     const file: BoardsFile = { ...FILE, manufacturers: [{ id: 'x', name: 'X', aliases: [], website: null, models: [
       model('a', { listed_year: 2015 }), model('b', { listed_year: 2023 }),

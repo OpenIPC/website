@@ -269,6 +269,37 @@ func TestTheTreeGoesFromMakerToFileAndRevisitsCostA304(t *testing.T) {
 	}
 }
 
+// A corrected year changes the revision even when the years' total does not,
+// or a browser keeps the old order on a 304.
+func TestAYearCorrectionChangesTheETag(t *testing.T) {
+	pool, _ := imported(t)
+	s := serve(t, pool)
+	ctx := context.Background()
+	etag := func() string {
+		resp, err := http.Get(s.URL + "/api/v1/boards")
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.Header.Get("ETag")
+	}
+	var a, b string
+	if err := pool.QueryRow(ctx, `SELECT min(id), max(id) FROM board_models`).Scan(&a, &b); err != nil {
+		t.Fatal(err)
+	}
+	set := func(ya, yb int) {
+		if _, err := pool.Exec(ctx, `UPDATE board_models SET listed_year = CASE id WHEN $1 THEN $3::smallint ELSE $4::smallint END WHERE id IN ($1, $2)`, a, b, ya, yb); err != nil {
+			t.Fatal(err)
+		}
+	}
+	set(2010, 2020)
+	before := etag()
+	set(2011, 2019)
+	if after := etag(); after == before {
+		t.Errorf("ETag %s unchanged after the years moved", after)
+	}
+}
+
 type searchAnswer struct {
 	Hits []struct {
 		Kind, Text string

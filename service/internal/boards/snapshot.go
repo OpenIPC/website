@@ -481,6 +481,11 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 		}
 		return nil
 	})
+	if err == nil && have {
+		// The snapshot is the source's say about its unit: a corrected
+		// sensor replaces the old one, with or without files to refresh.
+		_, err = tx.Exec(ctx, `UPDATE board_units SET sensor = $2 WHERE source_ref = $1 AND sensor IS DISTINCT FROM $2`, unitRef, null(m.Sensor))
+	}
 	if err != nil || len(m.Files) == 0 {
 		return id, isNew, err
 	}
@@ -512,11 +517,6 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 func (im *Importer) refreshUnit(ctx context.Context, tx pgx.Tx, fsys fs.FS, unitRef string, m SnapModel) error {
 	var unitID, modelID string
 	if err := tx.QueryRow(ctx, `SELECT id, model_id FROM board_units WHERE source_ref = $1`, unitRef).Scan(&unitID, &modelID); err != nil {
-		return err
-	}
-	// The snapshot is the source's say about its unit: a corrected sensor
-	// replaces the old one, as its files do.
-	if _, err := tx.Exec(ctx, `UPDATE board_units SET sensor = $2 WHERE id = $1 AND sensor IS DISTINCT FROM $2`, unitID, null(m.Sensor)); err != nil {
 		return err
 	}
 	want := map[string]string{}

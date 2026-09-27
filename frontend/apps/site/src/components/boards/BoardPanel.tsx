@@ -62,7 +62,15 @@ export default function BoardPanel({ id, entry, loaded, locale, t, sources, inde
     return () => { live = false; };
   }, [id, locale]);
 
-  const head: Heading = entry ? heading(entry) : heading({ model: detail.state === 'ok' ? detail.value.model : null, summary: null });
+  // A deep link can open before (or without) the tree: the detail's own
+  // names head the board then.
+  const detailName = detail.state === 'ok' ? detail.value.about.find((a) => a.name)?.name ?? null : null;
+  const head: Heading = entry
+    ? heading(entry)
+    : heading({
+      model: detail.state === 'ok' ? detail.value.model : null,
+      summary: detailName ? { name: detailName, lead: null, locale, translated_from: null } : null,
+    });
   const title = head.text ?? (loaded ? t('unidentified') : '');
   const self = { id, model: printedCode(entry?.model ?? (detail.state === 'ok' ? detail.value.model : null)) };
   const name = entry ? subtitle(entry) : null;
