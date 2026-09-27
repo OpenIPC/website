@@ -50,6 +50,16 @@ MODULE = re.compile(r"(?<![A-Z0-9])((?:" + LINES + r")-?[A-Z0-9]*[0-9][A-Z0-9]*(
 # A silkscreen starts BLK<digits> or XM<3 digits>, runs over - and _ separated
 # parts, and stops at its revision (-V1_01) or at the next module code.
 PCB = re.compile(r"(?<![A-Z0-9])((?:BLK\d|XM\d{3})[0-9A-Z]*(?:[-_][0-9A-Z]+)+?)(?=[-_]V\d|_(?:" + LINES + r")-|_?$)")
+# The shop's upload mangled Chinese words and labels into the names, and a
+# module code can run straight into them: NBD8016S-ULAzhCGeDJe(R)ldNo0,
+# AHB8004T-GLzhCGeDJiIgzhC, LPG-ES3-Interface_Description. Cut at the first.
+GARBLE = re.compile(r"(ZHCGEDJ|ZHYOU|JIEKOU|PJEU|LDNO|-?INTERFACE|DESCRIPTION|ENGLISH|ENGILSH|ZZHC).*$")
+
+
+def clean(code):
+    return GARBLE.sub("", code.upper()).rstrip("-")
+
+
 NOT_BOARDS = re.compile(r"^(ADVR|AHC|JF-|SD-)", re.I)
 CATEGORY = {"IPG": "IP Camera Module", "IPM": "IP Camera Module", "XPG": "IP Camera Module", "XIG": "IP Camera Module",
             "IVG": "Intelligent analysis module", "NBD": "NVR Board", "AHB": "DVR Board", "AHG": "AHD Camera Module",
@@ -85,7 +95,7 @@ def parse(name):
     rest = PCB.sub("_", s)
     mods = []
     for m in MODULE.findall(rest):
-        m = re.sub(r"-V\d+$", "", m)
+        m = re.sub(r"-V\d+$", "", clean(m))
         if m not in mods:
             mods.append(m)
     return kind, lang, mods, pcbs
@@ -193,7 +203,7 @@ def firmware_devices(fw_cap):
             continue
         dev = num.group(1).upper()
         for code in set(MODULE.findall(text[at:].upper())):
-            code = re.sub(r"-V\d+$", "", code)
+            code = re.sub(r"-V\d+$", "", clean(code))
             out.setdefault(code, {}).setdefault(dev, url)
     return out
 
@@ -331,6 +341,8 @@ def main():
     # a product line: a broken snapshot is refused here, not published.
     cards = {m["code"]: m for m in models}
     for m in models:
+        if GARBLE.search(m["code"]):
+            sys.exit(f"{m['code']}: a mangled file-name word left in the code")
         if not m["category"] and not m.get("link_only"):
             sys.exit(f"{m['code']}: no product line")
         for l in m["links"]:

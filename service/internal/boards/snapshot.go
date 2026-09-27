@@ -36,10 +36,10 @@ var Snapshots = map[string]string{
 	"cctvsp": "70c2bc568d61318ac1435adc2fb5b2ed70a66f2300ff5744504f3ed8295eedad",
 	// boards-donors/xiongmai/snapshot-dd6963582f41.tar: 684 models from the EN and ZH trees, each picture once, dated; ZH-only pages translated.
 	"xiongmai": "dd6963582f41e1db50fc7151348d22ae5429a0f30957a79737e3740e9040ba2b",
-	// boards-donors/tehno32/snapshot-6c660e151083.tar: Xiongmai's board documents from
-	// tehno32.ru's archive, on 542 modules and 71 PCBs, with 651 pinout pages,
+	// boards-donors/tehno32/snapshot-f7137bd8a94d.tar: Xiongmai's board documents from
+	// tehno32.ru's archive, on 541 modules and 71 PCBs, with 650 pinout pages,
 	// and the device IDs its firmware pages name.
-	"tehno32": "6c660e15108396d5cc216b9fa5190e315b84087f964351b791b6224c44402e63",
+	"tehno32": "f7137bd8a94dc3f7776f868e67cf5fa063dbbb4ce7d638ca00cbc382ec15a651",
 }
 
 type Snapshot struct {
