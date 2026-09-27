@@ -1,0 +1,8 @@
+# Decisions from the deduplication review (tools/board-donors/dedup.py):
+# a code one source prints is the model another source already has. Each
+# entry is made by a person, once; the importer applies it on every import.
+#
+# - maker: xiongmai
+#   code: IPG-53H20PL-S      # as the donor prints it
+#   is: 53H20-S              # a code the catalogue already has
+[]

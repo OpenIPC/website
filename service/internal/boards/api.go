@@ -89,8 +89,34 @@ type modelJSON struct {
 	SoCLabel *string      `json:"soc_label"`
 	Family   *string      `json:"family"`
 	Notes    *string      `json:"notes"`
+	Category *string      `json:"category"`
+	Tags     []string     `json:"tags"`
+	// About is what each source says about the model, in the reader's
+	// language when there is a text in it.
+	About    []*aboutJSON `json:"about"`
+	Links    []linkJSON   `json:"links"`
 	Coverage coverageJSON `json:"coverage"`
 	Units    []*unitJSON  `json:"units"`
+}
+
+type aboutJSON struct {
+	Source string `json:"source"`
+	// Locale is the language the texts below are in: the one asked for, else
+	// English, else the source's own.
+	Locale         string      `json:"locale"`
+	TranslatedFrom *string     `json:"translated_from"`
+	Name           *string     `json:"name"`
+	Description    *string     `json:"description"`
+	Features       *string     `json:"features"`
+	Specs          [][2]string `json:"specs"`
+}
+
+type linkJSON struct {
+	Source string  `json:"source"`
+	Kind   string  `json:"kind"`
+	Label  string  `json:"label"`
+	URL    *string `json:"url"`
+	Target *string `json:"target"`
 }
 
 type makerJSON struct {
@@ -105,14 +131,18 @@ type sourceJSON struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 	URL  string `json:"url"`
+	Note string `json:"note"`
 	Ref  string `json:"ref"`
 }
+
+// Locales the catalogue has texts in; a request for another reads English.
+var Locales = []string{"en", "ru", "zh"}
 
 // Tree is the document GET /api/v1/boards answers. Its four queries read one
 // snapshot: an import commits a unit at a time while the service runs, and a
 // model committed between two of them would otherwise arrive without its
 // maker.
-func Tree(ctx context.Context, db *pgxpool.Pool) (map[string]any, error) {
+func Tree(ctx context.Context, db *pgxpool.Pool, locale string) (map[string]any, error) {
 	tx, err := db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return nil, err
@@ -140,7 +170,7 @@ func Tree(ctx context.Context, db *pgxpool.Pool) (map[string]any, error) {
 
 	byModel := map[string]*modelJSON{}
 	rows, err = tx.Query(ctx, `
-		SELECT m.id, m.manufacturer_id, m.model, m.soc, m.soc_label, m.family, m.notes,
+		SELECT m.id, m.manufacturer_id, m.model, m.soc, m.soc_label, m.family, m.notes, m.category,
 		       c.units, c.photos, c.pinouts, c.flash_dumps, c.uboot_envs, c.boot_logs, c.documents
 		FROM board_models m JOIN board_model_coverage c ON c.model_id = m.id
 		ORDER BY m.position, m.id`)
@@ -151,7 +181,7 @@ func Tree(ctx context.Context, db *pgxpool.Pool) (map[string]any, error) {
 		m := &modelJSON{Units: []*unitJSON{}}
 		var maker string
 		c := &m.Coverage
-		if err := rows.Scan(&m.ID, &maker, &m.Model, &m.SoC, &m.SoCLabel, &m.Family, &m.Notes,
+		if err := rows.Scan(&m.ID, &maker, &m.Model, &m.SoC, &m.SoCLabel, &m.Family, &m.Notes, &m.Category,
 			&c.Units, &c.Photos, &c.Pinouts, &c.FlashDumps, &c.UBootEnvs, &c.BootLogs, &c.Documents); err != nil {
 			rows.Close()
 			return nil, err
@@ -227,6 +257,27 @@ func Tree(ctx context.Context, db *pgxpool.Pool) (map[string]any, error) {
 		return nil, err
 	}
 
+	if err := about(ctx, tx, byModel, locale); err != nil {
+		return nil, err
+	}
+	sources := []sourceJSON{}
+	rows, err = tx.Query(ctx, `SELECT id, name, url, note, ref FROM board_sources ORDER BY position, id`)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var s sourceJSON
+		if err := rows.Scan(&s.ID, &s.Name, &s.URL, &s.Note, &s.Ref); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		sources = append(sources, s)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	kept := []*makerJSON{}
 	for _, m := range makers {
 		if len(m.Models) > 0 {
@@ -235,11 +286,154 @@ func Tree(ctx context.Context, db *pgxpool.Pool) (map[string]any, error) {
 	}
 	return map[string]any{
 		"schema":        1,
+		"locale":        locale,
 		"files_prefix":  FilesPrefix,
 		"manufacturers": kept,
-		"sources": []sourceJSON{{ID: "openhisiipcam", Name: "OpenHisiIpCam",
-			URL: OpenHisiIpCamURL, Ref: OpenHisiIpCamRef}},
+		"sources":       sources,
 	}, nil
+}
+
+// about fills each model's tags, links and per-source texts and specs, from
+// the same snapshot as the rest of the tree.
+func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale string) error {
+	for _, m := range byModel {
+		m.Tags, m.About, m.Links = []string{}, []*aboutJSON{}, []linkJSON{}
+	}
+	rows, err := tx.Query(ctx, `SELECT model_id, array_agg(DISTINCT tag ORDER BY tag) FROM board_model_tags GROUP BY model_id`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var id string
+		var tags []string
+		if err := rows.Scan(&id, &tags); err != nil {
+			rows.Close()
+			return err
+		}
+		if m := byModel[id]; m != nil {
+			m.Tags = tags
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	// Which locale each (model, source) is shown in: the reader's, else
+	// English, else whatever the source has.
+	type key struct{ model, source string }
+	rank := func(l string) int {
+		switch l {
+		case locale:
+			return 0
+		case "en":
+			return 1
+		}
+		return 2
+	}
+	chosen := map[key]string{}
+	rows, err = tx.Query(ctx, `
+		SELECT model_id, source, locale FROM board_model_texts
+		UNION SELECT model_id, source, locale FROM board_model_specs`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var k key
+		var l string
+		if err := rows.Scan(&k.model, &k.source, &l); err != nil {
+			rows.Close()
+			return err
+		}
+		if c, ok := chosen[k]; !ok || rank(l) < rank(c) || (rank(l) == rank(c) && l < c) {
+			chosen[k] = l
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	abouts := map[key]*aboutJSON{}
+	get := func(k key) *aboutJSON {
+		a := abouts[k]
+		if a == nil {
+			a = &aboutJSON{Source: k.source, Locale: chosen[k], Specs: [][2]string{}}
+			abouts[k] = a
+			if m := byModel[k.model]; m != nil {
+				m.About = append(m.About, a)
+			}
+		}
+		return a
+	}
+	rows, err = tx.Query(ctx, `SELECT model_id, source, locale, field, text, translated_from FROM board_model_texts ORDER BY model_id, source`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var k key
+		var l, field, text string
+		var from *string
+		if err := rows.Scan(&k.model, &k.source, &l, &field, &text, &from); err != nil {
+			rows.Close()
+			return err
+		}
+		if chosen[k] != l {
+			continue
+		}
+		a := get(k)
+		if from != nil {
+			a.TranslatedFrom = from
+		}
+		switch field {
+		case "name":
+			a.Name = &text
+		case "description":
+			a.Description = &text
+		case "features":
+			a.Features = &text
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	rows, err = tx.Query(ctx, `SELECT model_id, source, locale, label, value FROM board_model_specs ORDER BY model_id, source, position`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var k key
+		var l, label, value string
+		if err := rows.Scan(&k.model, &k.source, &l, &label, &value); err != nil {
+			rows.Close()
+			return err
+		}
+		if chosen[k] == l {
+			a := get(k)
+			a.Specs = append(a.Specs, [2]string{label, value})
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	rows, err = tx.Query(ctx, `SELECT model_id, source, kind, label, url, target_model_id FROM board_links ORDER BY model_id, source, position`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var id string
+		var l linkJSON
+		if err := rows.Scan(&id, &l.Source, &l.Kind, &l.Label, &l.URL, &l.Target); err != nil {
+			rows.Close()
+			return err
+		}
+		if m := byModel[id]; m != nil {
+			m.Links = append(m.Links, l)
+		}
+	}
+	rows.Close()
+	return rows.Err()
 }
 
 type hitJSON struct {
@@ -297,8 +491,12 @@ func Search(ctx context.Context, db *pgxpool.Pool, q string, kinds []string, soc
 }
 
 func (a *API) tree(w http.ResponseWriter, r *http.Request) {
+	locale := r.URL.Query().Get("locale")
+	if !contains(Locales, locale) {
+		locale = "en"
+	}
 	a.serve(w, r, 300, func(ctx context.Context) (any, int, error) {
-		t, err := Tree(ctx, a.DB)
+		t, err := Tree(ctx, a.DB, locale)
 		return t, http.StatusOK, err
 	})
 }
@@ -335,14 +533,20 @@ func (a *API) search(w http.ResponseWriter, r *http.Request) {
 func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load func(context.Context) (any, int, error)) {
 	var units, files int64
 	var last time.Time
+	var about string
+	// A donor's re-import replaces its texts without adding a unit, so the
+	// revision also carries each source's pinned ref and what it says.
 	if err := a.DB.QueryRow(r.Context(), `
 		SELECT (SELECT count(*) FROM board_units), (SELECT count(*) FROM board_artifacts),
-		       (SELECT coalesce(max(ingested_at), 'epoch') FROM board_units)`).Scan(&units, &files, &last); err != nil {
+		       (SELECT coalesce(max(ingested_at), 'epoch') FROM board_units),
+		       (SELECT coalesce(string_agg(id || ':' || ref, ',' ORDER BY id), '') FROM board_sources) || '|' ||
+		       (SELECT count(*) FROM board_model_texts) || '|' || (SELECT count(*) FROM board_model_specs) || '|' ||
+		       (SELECT count(*) FROM board_model_tags) || '|' || (SELECT count(*) FROM board_links)`).Scan(&units, &files, &last, &about); err != nil {
 		a.Log.Error("boards: no revision", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})
 		return
 	}
-	sum := sha256.Sum256([]byte(fmt.Sprintf("%d|%d|%d|%s", units, files, last.UnixNano(), r.URL.RequestURI())))
+	sum := sha256.Sum256([]byte(fmt.Sprintf("%d|%d|%d|%s|%s", units, files, last.UnixNano(), about, r.URL.RequestURI())))
 	etag := `"` + hex.EncodeToString(sum[:12]) + `"`
 	if r.Header.Get("If-None-Match") == etag {
 		w.Header().Set("ETag", etag)

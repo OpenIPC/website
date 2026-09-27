@@ -88,7 +88,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | boards import-snapshot | routes --json | version")
 	os.Exit(2)
 }
 

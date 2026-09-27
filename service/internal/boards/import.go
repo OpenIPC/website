@@ -35,6 +35,8 @@ type Importer struct {
 	// local server.
 	TarballURL string
 	Resolve    func(label string) string
+	// ExtraAliases add to the reviewed decisions in aliases.yml; for tests.
+	ExtraAliases []Alias
 }
 
 // TarballURL is where GitHub serves the pinned archive.
@@ -224,15 +226,25 @@ func (im *Importer) save(ctx context.Context, u *Unit, arts []artifact) (bool, e
 			m.ID, mk.ID, null(m.Model), null(m.SoC), null(m.SoCLabel), null(m.Family), m.Position); err != nil {
 			return err
 		}
+		if m.Model != "" {
+			// Every coded model answers to its code (migration 004).
+			if _, err := tx.Exec(ctx, `
+				INSERT INTO board_model_aliases (maker_id, code_norm, model_id, source, code_as_printed)
+				VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
+				mk.ID, NormCode(m.Model), m.ID, orElse(u.Source, "openhisiipcam"), m.Model); err != nil {
+				return err
+			}
+		}
 		var flash *int
 		if u.FlashSizeMB > 0 {
 			flash = &u.FlashSizeMB
 		}
 		tag, err := tx.Exec(ctx, `
 			INSERT INTO board_units (id, model_id, sensor, flash_chip, flash_size_mb, source, source_ref, contributed_by, position)
-			VALUES ($1, $2, $3, $4, $5, 'openhisiipcam', $6, 'OpenHisiIpCam', $7)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 			ON CONFLICT DO NOTHING`,
-			u.ID, m.ID, null(u.Sensor), null(u.FlashChip), flash, u.SourceRef, u.Position)
+			u.ID, m.ID, null(u.Sensor), null(u.FlashChip), flash, orElse(u.Source, "openhisiipcam"), u.SourceRef,
+			orElse(u.ContributedBy, "OpenHisiIpCam"), u.Position)
 		if err != nil {
 			return err
 		}
