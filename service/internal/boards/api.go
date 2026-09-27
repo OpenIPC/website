@@ -12,6 +12,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -107,11 +108,19 @@ type sourceJSON struct {
 	Ref  string `json:"ref"`
 }
 
-// Tree is the document GET /api/v1/boards answers.
+// Tree is the document GET /api/v1/boards answers. Its four queries read one
+// snapshot: an import commits a unit at a time while the service runs, and a
+// model committed between two of them would otherwise arrive without its
+// maker.
 func Tree(ctx context.Context, db *pgxpool.Pool) (map[string]any, error) {
+	tx, err := db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
 	makers := []*makerJSON{}
 	byMaker := map[string]*makerJSON{}
-	rows, err := db.Query(ctx, `SELECT id, name, aliases, website FROM board_manufacturers ORDER BY position, name`)
+	rows, err := tx.Query(ctx, `SELECT id, name, aliases, website FROM board_manufacturers ORDER BY position, name`)
 	if err != nil {
 		return nil, err
 	}
@@ -125,9 +134,12 @@ func Tree(ctx context.Context, db *pgxpool.Pool) (map[string]any, error) {
 		byMaker[m.ID] = m
 	}
 	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	byModel := map[string]*modelJSON{}
-	rows, err = db.Query(ctx, `
+	rows, err = tx.Query(ctx, `
 		SELECT m.id, m.manufacturer_id, m.model, m.soc, m.soc_label, m.family, m.notes,
 		       c.units, c.photos, c.pinouts, c.flash_dumps, c.uboot_envs, c.boot_logs, c.documents
 		FROM board_models m JOIN board_model_coverage c ON c.model_id = m.id
@@ -144,13 +156,21 @@ func Tree(ctx context.Context, db *pgxpool.Pool) (map[string]any, error) {
 			rows.Close()
 			return nil, err
 		}
-		byMaker[maker].Models = append(byMaker[maker].Models, m)
+		parent := byMaker[maker]
+		if parent == nil {
+			rows.Close()
+			return nil, fmt.Errorf("model %s: no manufacturer %s", m.ID, maker)
+		}
+		parent.Models = append(parent.Models, m)
 		byModel[m.ID] = m
 	}
 	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	byUnit := map[string]*unitJSON{}
-	rows, err = db.Query(ctx, `
+	rows, err = tx.Query(ctx, `
 		SELECT id, model_id, sensor, flash_chip, flash_size_mb, source::text, source_ref, contributed_by, notes
 		FROM board_units ORDER BY position, id`)
 	if err != nil {
@@ -163,12 +183,20 @@ func Tree(ctx context.Context, db *pgxpool.Pool) (map[string]any, error) {
 			rows.Close()
 			return nil, err
 		}
-		byModel[model].Units = append(byModel[model].Units, u)
+		parent := byModel[model]
+		if parent == nil {
+			rows.Close()
+			return nil, fmt.Errorf("unit %s: no model %s", u.ID, model)
+		}
+		parent.Units = append(parent.Units, u)
 		byUnit[u.ID] = u
 	}
 	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-	rows, err = db.Query(ctx, `
+	rows, err = tx.Query(ctx, `
 		SELECT unit_id, kind::text, name, path, coalesce(thumb_path, ''), mime, bytes, sha256,
 		       coalesce(width, 0), coalesce(height, 0),
 		       coalesce(array_length(regexp_split_to_array(rtrim(content, E'\n'), E'\n'), 1), 0)
@@ -187,7 +215,12 @@ func Tree(ctx context.Context, db *pgxpool.Pool) (map[string]any, error) {
 		if thumb != "" {
 			f.ThumbURL = FilesPrefix + thumb
 		}
-		byUnit[unit].Files = append(byUnit[unit].Files, f)
+		parent := byUnit[unit]
+		if parent == nil {
+			rows.Close()
+			return nil, fmt.Errorf("file %s: no unit %s", p, unit)
+		}
+		parent.Files = append(parent.Files, f)
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {

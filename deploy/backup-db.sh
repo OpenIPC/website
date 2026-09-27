@@ -202,9 +202,11 @@ echo "$SIZE" > "$LAST_SIZE_FILE"
 BOARDS_ROOT=/srv/www/shared/boards
 BOARDS_MARK=/srv/www/.last-boards-backup
 if [ -d "$BOARDS_ROOT" ]; then
-  # Files are never rewritten in place, so names and sizes identify the set.
-  BOARDS_ID=$(cd "$BOARDS_ROOT" && find . -path './.import-*' -prune -o -type f -printf '%P %s\n' \
-    | LC_ALL=C sort | sha256sum | cut -c1-16)
+  # The set is identified by every file's contents, not by names and sizes: a
+  # dump corrected in place keeps its length. About 160 MB to hash, a second
+  # or two a night.
+  BOARDS_ID=$(cd "$BOARDS_ROOT" && find . -path './.import-*' -prune -o -type f -print0 \
+    | LC_ALL=C sort -z | xargs -0r sha256sum | sha256sum | cut -c1-16)
   if [ "$(cat "$BOARDS_MARK" 2>/dev/null || true)" = "$BOARDS_ID" ]; then
     log "board files unchanged (${BOARDS_ID}), not uploaded"
   else

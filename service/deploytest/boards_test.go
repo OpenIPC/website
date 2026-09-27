@@ -51,6 +51,8 @@ func TestBoardCatalogueServing(t *testing.T) {
 	mustContain(t, read(t, "deploy/install-go-service.sh"), "wall dev-wall boards dev-boards", "the installer does not create the boards directories")
 	backup := read(t, "deploy/backup-db.sh")
 	mustContain(t, backup, "BOARDS_ROOT=/srv/www/shared/boards", "the backup leaves out the board files, which nothing can rebuild")
+	// A file corrected in place keeps its length; only its contents say it changed.
+	mustContain(t, backup, "xargs -0r sha256sum", "the backup decides the board files changed by names and sizes alone")
 	if !strings.Contains(read(t, "deploy/RESTORE.md"), "Restore the board catalogue's files") {
 		t.Error("RESTORE.md does not say how to bring the board files back")
 	}

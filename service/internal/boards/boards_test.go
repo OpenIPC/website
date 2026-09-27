@@ -17,7 +17,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -52,6 +54,61 @@ func TestASecondImportAddsNothing(t *testing.T) {
 	_ = pool.QueryRow(context.Background(), `SELECT (SELECT count(*) FROM board_units), (SELECT count(*) FROM board_artifacts)`).Scan(&units, &files)
 	if units != 6 || files != 13 {
 		t.Errorf("%d units, %d files", units, files)
+	}
+}
+
+func TestTwoImportsAtOnceStoreEachUnitOnce(t *testing.T) {
+	pool := dbtest.New(t)
+	root := t.TempDir()
+	var added [2]int
+	var errs [2]error
+	var wg sync.WaitGroup
+	for i := range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+			added[i], errs[i] = im.FromFS(context.Background(), archive())
+		}()
+	}
+	wg.Wait()
+	if errs[0] != nil || errs[1] != nil {
+		t.Fatalf("errors: %v, %v", errs[0], errs[1])
+	}
+	if added[0]+added[1] != 6 {
+		t.Errorf("added %d and %d, want 6 between them", added[0], added[1])
+	}
+	var units int
+	_ = pool.QueryRow(context.Background(), `SELECT count(*) FROM board_units`).Scan(&units)
+	if units != 6 {
+		t.Errorf("%d units", units)
+	}
+}
+
+func TestTheTreeIsWholeWhileAnImportRuns(t *testing.T) {
+	pool := dbtest.New(t)
+	done := make(chan error, 1)
+	go func() {
+		im := &Importer{Pool: pool, Log: quiet(), Root: t.TempDir(), Resolve: supported}
+		_, err := im.FromFS(context.Background(), archive())
+		done <- err
+	}()
+	deadline := time.Now().Add(30 * time.Second)
+	for running := true; running; {
+		if time.Now().After(deadline) {
+			t.Fatal("the import did not finish while the tree was being read")
+		}
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Fatal(err)
+			}
+			running = false
+		default:
+		}
+		if _, err := Tree(context.Background(), pool); err != nil {
+			t.Fatalf("a tree read during the import: %v", err)
+		}
 	}
 }
 

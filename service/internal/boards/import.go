@@ -145,8 +145,12 @@ func (im *Importer) FromFS(ctx context.Context, fsys fs.FS) (int, error) {
 		if err != nil {
 			return added, fmt.Errorf("%s: %w", u.SourceRef, err)
 		}
-		if err := im.save(ctx, u, arts); err != nil {
+		saved, err := im.save(ctx, u, arts)
+		if err != nil {
 			return added, fmt.Errorf("%s: %w", u.SourceRef, err)
+		}
+		if !saved {
+			continue // another import stored it first
 		}
 		added++
 		im.Log.Info("boards: unit imported", "unit", u.ID, "files", len(arts))
@@ -202,8 +206,12 @@ func (im *Importer) files(fsys fs.FS, u *Unit) ([]artifact, error) {
 	return out, nil
 }
 
-func (im *Importer) save(ctx context.Context, u *Unit, arts []artifact) error {
-	return pgx.BeginFunc(ctx, im.Pool, func(tx pgx.Tx) error {
+// save stores one unit and its files in one transaction, and reports false
+// when the unit was already there: the check before it is only a shortcut,
+// and two imports running at once decide here, on source_ref.
+func (im *Importer) save(ctx context.Context, u *Unit, arts []artifact) (bool, error) {
+	saved := false
+	err := pgx.BeginFunc(ctx, im.Pool, func(tx pgx.Tx) error {
 		m, mk := u.Model, u.Model.Manufacturer
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO board_manufacturers (id, name, aliases, position) VALUES ($1, $2, $3, $4)
@@ -220,12 +228,27 @@ func (im *Importer) save(ctx context.Context, u *Unit, arts []artifact) error {
 		if u.FlashSizeMB > 0 {
 			flash = &u.FlashSizeMB
 		}
-		if _, err := tx.Exec(ctx, `
+		tag, err := tx.Exec(ctx, `
 			INSERT INTO board_units (id, model_id, sensor, flash_chip, flash_size_mb, source, source_ref, contributed_by, position)
-			VALUES ($1, $2, $3, $4, $5, 'openhisiipcam', $6, 'OpenHisiIpCam', $7)`,
-			u.ID, m.ID, null(u.Sensor), null(u.FlashChip), flash, u.SourceRef, u.Position); err != nil {
+			VALUES ($1, $2, $3, $4, $5, 'openhisiipcam', $6, 'OpenHisiIpCam', $7)
+			ON CONFLICT DO NOTHING`,
+			u.ID, m.ID, null(u.Sensor), null(u.FlashChip), flash, u.SourceRef, u.Position)
+		if err != nil {
 			return err
 		}
+		if tag.RowsAffected() == 0 {
+			// Two imports racing can collide on the id before the source_ref:
+			// either way the unit is there, unless the id belongs to another.
+			var same bool
+			if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM board_units WHERE source_ref = $1)`, u.SourceRef).Scan(&same); err != nil {
+				return err
+			}
+			if !same {
+				return fmt.Errorf("unit id %s is already taken by another source", u.ID)
+			}
+			return nil
+		}
+		saved = true
 		for i, a := range arts {
 			var id int64
 			if err := tx.QueryRow(ctx, `
@@ -245,6 +268,7 @@ func (im *Importer) save(ctx context.Context, u *Unit, arts []artifact) error {
 		}
 		return nil
 	})
+	return saved, err
 }
 
 func mimeOf(name string) string {
