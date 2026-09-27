@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
 import type { BoardFile, BoardsFile, Hit, Model } from './types';
 import {
   lineLabel,
-  cardFiles, cardPhotos, codeIndex, entries, filterBoards, filterHits, matchBoards, newestFirst, firstMissing, flashOf, formatBytes, frontPhoto,
+  cardFiles, cardPhotos, codeIndex, entries, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, paragraphs, sensorKey, sensorOptions, slug,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
@@ -143,6 +143,27 @@ describe('finding a board by what it is called', () => {
   });
 });
 
+describe('what a board is headed by', () => {
+  const summary = (name: string) => ({ name, lead: null, locale: 'en', translated_from: null });
+
+  test('its printed code; a code made up for a page without one is not shown', () => {
+    expect(printedCode('IPG-50H20PLS-S')).toBe('IPG-50H20PLS-S');
+    expect(printedCode('XM-EN-243')).toBeNull();
+    expect(printedCode('XM-ZH-476')).toBeNull();
+    expect(printedCode(null)).toBeNull();
+  });
+
+  test('a board without a printed code is headed by its name, which is then not repeated below', () => {
+    const named = model('xm', { model: 'XM-EN-243', summary: summary('4ch 1080P POE Extension NVR Board') });
+    expect(heading(named)).toEqual({ text: '4ch 1080P POE Extension NVR Board', kind: 'name' });
+    expect(subtitle(named)).toBeNull();
+    const coded = model('ipg', { model: 'IPG-50H20PLS-S', summary: summary('2MP IP camera module') });
+    expect(heading(coded)).toEqual({ text: 'IPG-50H20PLS-S', kind: 'code' });
+    expect(subtitle(coded)).toBe('2MP IP camera module');
+    expect(heading(model('none', { model: null }))).toEqual({ text: null, kind: 'none' });
+  });
+});
+
 describe('newest boards first', () => {
   const ids = (list: Model[]) => newestFirst(list).map((m) => m.id);
 
@@ -257,7 +278,8 @@ describe('a card', () => {
     expect(s(sum('  '))).toBeNull();
     expect(s(sum('2.0M CMOS IP Camera Module'))).toBe('2.0M CMOS IP Camera Module');
     expect(s(sum('ipg 50h20pls s'))).toBeNull();
-    expect(s(sum('Anything'), null)).toBe('Anything');
+    // With no code the name is the heading itself, not repeated below it.
+    expect(s(sum('Anything'), null)).toBeNull();
     expect(lead(model('x', { summary: sum('n', ' Module for a camera. ') }))).toBe('Module for a camera.');
     expect(lead(model('x', { summary: sum('n', '') }))).toBeNull();
     expect(lead(model('x'))).toBeNull();

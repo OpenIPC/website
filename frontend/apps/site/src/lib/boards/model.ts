@@ -167,9 +167,37 @@ export function sensorOptions(all: Entry[]): Option[] {
 }
 
 /** The name under a card's model code; left out when it only repeats the code. */
+/**
+ * Codes the importer made up for a vendor page that prints no model number
+ * ("XM-EN-243", "XM-ZH-476"). They identify the board here but are printed on
+ * nothing, so a visitor is shown the product's name instead.
+ */
+const MADE_UP = /^XM-(?:EN|ZH)-\d+$/i;
+
+export function printedCode(code: string | null | undefined): string | null {
+  return code && !MADE_UP.test(code) ? code : null;
+}
+
+/** What a board is headed by: its printed code, else its product name. */
+export interface Heading { text: string | null; kind: 'code' | 'name' | 'none' }
+
+export function heading(m: Pick<Model, 'model' | 'summary'>): Heading {
+  const code = printedCode(m.model);
+  if (code) return { text: code, kind: 'code' };
+  const name = m.summary?.name?.trim();
+  return name ? { text: name, kind: 'name' } : { text: null, kind: 'none' };
+}
+
+/** The class a heading's text takes: codes in mono, a name as plain text, nothing greyed. */
+export const HEADING_CLASS: Record<Heading['kind'], string> = {
+  code: 'font-mono font-semibold break-all',
+  name: 'font-semibold',
+  none: 'font-medium text-body-secondary',
+};
+
 export function subtitle(m: Model): string | null {
   const name = m.summary?.name?.trim();
-  if (!name) return null;
+  if (!name || heading(m).kind === 'name') return null;
   return m.model && normaliseCode(name) === normaliseCode(m.model) ? null : name;
 }
 

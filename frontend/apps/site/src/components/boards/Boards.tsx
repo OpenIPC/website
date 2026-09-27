@@ -17,7 +17,7 @@ import type { BoardsFile, SearchResult, Source } from '../../lib/boards/types';
 import { fetchBoards, searchBoards } from '../../lib/boards/api';
 import { EMPTY, MISSING, SCOPES, readQueryString, writeQueryString, type BoardsState, type Scope } from '../../lib/boards/url';
 import {
-  COVERAGE, cardPhotos, codeIndex, entries, filterBoards, filterHits, matchBoards, flashOf, has, highlight, layout, lead,
+  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, entries, filterBoards, filterHits, heading, matchBoards, printedCode, flashOf, has, highlight, layout, lead,
   lineLabel, lineOptions, sensorOptions, socName, socOptions, stats, subtitle, type Entry, type Group,
 } from '../../lib/boards/model';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
@@ -304,7 +304,8 @@ function GroupView({ group, split, all, onAll, card }: {
 }
 
 function Card({ m, level, socs, names, sources, t, href, onOpen }: CardProps & { m: Entry; level: 3 | 4 }) {
-  const title = m.model ?? t('unidentified');
+  const head = heading(m);
+  const title = head.text ?? t('unidentified');
   const name = subtitle(m);
   const text = lead(m);
   const photos = cardPhotos(m);
@@ -327,7 +328,7 @@ function Card({ m, level, socs, names, sources, t, href, onOpen }: CardProps & {
       <div class="grid flex-1 content-start gap-2.5 px-4 pt-3.5 pb-4">
         <div class="flex items-start justify-between gap-2.5">
           <div class="min-w-0">
-            <Title class={`mb-0 text-[1.05rem] leading-snug ${m.model ? 'font-mono font-semibold break-all' : 'font-medium text-body-secondary'}`}>{title}</Title>
+            <Title class={`mb-0 text-[1.05rem] leading-snug ${HEADING_CLASS[head.kind]}`}>{title}</Title>
             {name && <p class="m-0 mt-0.5 text-[13px] leading-snug text-body-secondary">{name}</p>}
           </div>
           <SocChip m={m} socs={socs} names={names} t={t} />
@@ -376,9 +377,9 @@ function Hits({ found, kept, q, scope, none, t, names, href, onOpen }: {
         <div key={`${h.url}:${h.line}`} class="grid gap-1.5 rounded-lg border border-hairline bg-white px-3.5 py-3">
           <header class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 text-sm">
             <span class="font-mono text-[11px] font-medium tracking-wide text-body-secondary uppercase">{t(`kind_${h.kind}`)}</span>
-            <a href={href(h.model_id)} class={h.model ? 'font-mono font-bold' : 'font-medium'}
+            <a href={href(h.model_id)} class={printedCode(h.model) ? 'font-mono font-bold' : 'font-medium'}
               onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; e.preventDefault(); onOpen(h.model_id); }}>
-              {h.model ?? t('unidentified')}
+              {printedCode(h.model) ?? t('unidentified')}
             </a>
             <span class="text-body-secondary">
               {makerName(h.manufacturer_id, h.manufacturer_name, t)} · {h.soc ? socName(h.soc, names) : h.family ? t('family', { family: socName(h.family, names) }) : ''} · <a href={h.url} class="text-inherit">{t('line', { n: h.line })}</a>

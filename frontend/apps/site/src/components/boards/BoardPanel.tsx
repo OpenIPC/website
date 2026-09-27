@@ -13,7 +13,8 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { BoardLink, LinkKind, ModelDetail, Source } from '../../lib/boards/types';
 import { fetchModel } from '../../lib/boards/api';
 import {
-  firstMissing, formatBytes, linkCodes, lines, paragraphs, subtitle, unitFiles, unitPhotos, type CodeIndex, type Entry,
+  HEADING_CLASS, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, subtitle, unitFiles, unitPhotos,
+  type CodeIndex, type Entry, type Heading,
 } from '../../lib/boards/model';
 import type { BoardsT } from '../../lib/boards-i18n';
 import type { Locale } from '../../lib/i18n';
@@ -61,8 +62,9 @@ export default function BoardPanel({ id, entry, loaded, locale, t, sources, inde
     return () => { live = false; };
   }, [id, locale]);
 
-  const title = entry?.model ?? (detail.state === 'ok' ? detail.value.model : null) ?? (loaded ? t('unidentified') : '');
-  const self = { id, model: entry?.model ?? (detail.state === 'ok' ? detail.value.model : null) };
+  const head: Heading = entry ? heading(entry) : heading({ model: detail.state === 'ok' ? detail.value.model : null, summary: null });
+  const title = head.text ?? (loaded ? t('unidentified') : '');
+  const self = { id, model: printedCode(entry?.model ?? (detail.state === 'ok' ? detail.value.model : null)) };
   const name = entry ? subtitle(entry) : null;
   const sourceName = (s: string) => sources.get(s)?.name ?? s;
   const follow = (target: string) => (e: MouseEvent) => {
@@ -84,7 +86,7 @@ export default function BoardPanel({ id, entry, loaded, locale, t, sources, inde
       <header class="sticky top-0 z-[1] flex items-start justify-between gap-3 border-b border-hairline bg-white px-4 py-3 sm:px-5">
         <div class="grid min-w-0 gap-1.5">
           <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h2 id="board-panel-title" class={`mb-0 text-h3 font-semibold ${self.model ? 'font-mono break-all' : 'text-body-secondary'}`}>{title}</h2>
+            <h2 id="board-panel-title" class={`mb-0 text-h3 ${HEADING_CLASS[head.kind]}`}>{title}</h2>
             {entry && <SocChip m={entry} socs={socs} names={names} t={t} />}
           </div>
           {name && <p class="m-0 text-sm text-body-secondary">{name}</p>}
