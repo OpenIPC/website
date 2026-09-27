@@ -109,6 +109,7 @@ describe('finding a board by what it is called', () => {
       model('zoom', { model: 'JZC-N81820S', aliases: ['JZC-N81820'], summary: summary('Starlight 2.0M 18X AF module'), category: 'AF Module' }),
       model('ipg', { model: 'IPG-50H20PLS-S', summary: summary('2MP IP camera module'), soc_label: 'Hi3516CV300' }),
       model('near', { model: 'IPG-50H20PL-S', summary: summary('2MP IP camera module') }),
+      model('old', { model: '53H20-S', soc: 'hi3516cv100', soc_label: 'hi3516c' }, 'SONY IMX222'),
     ] }],
   });
   const ids = (q: string) => matchBoards(list, q).map((m) => m.id);
@@ -133,6 +134,12 @@ describe('finding a board by what it is called', () => {
   test('by SoC and nothing for a word no board carries', () => {
     expect(ids('hi3516cv300')).toEqual(['ipg']);
     expect(ids('mtdparts')).toEqual([]);
+  });
+
+  test('by the catalogue SoC a source label resolved to, and by the sensor as the card shows it', () => {
+    expect(ids('hi3516cv100')).toEqual(['old']);
+    expect(ids('SONY IMX222')).toEqual(['old']);
+    expect(ids('imx222')).toEqual(['old']);
   });
 });
 

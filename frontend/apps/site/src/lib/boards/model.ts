@@ -98,7 +98,8 @@ export function matchBoards(all: Entry[], q: string): Entry[] {
   const found: { m: Entry; rank: number }[] = [];
   for (const m of all) {
     const codes = [m.model, ...(m.aliases ?? [])].filter((c): c is string => !!c);
-    const fields = [...codes, m.summary?.name, m.summary?.lead, m.soc_label, m.category, m.family, ...sensorsOf(m)]
+    const fields = [...codes, m.summary?.name, m.summary?.lead, m.soc, m.soc_label, m.category, m.family,
+      ...m.units.map((u) => u.sensor), ...sensorsOf(m)]
       .filter((f): f is string => !!f);
     const low = fields.map((f) => f.toLowerCase());
     const flat = fields.map(squeeze);
