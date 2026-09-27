@@ -99,7 +99,9 @@ class Files:
 
     def add(self, entry_file, name, used):
         base, ext = os.path.splitext(safe(name))
-        src = os.path.join(self.cap, entry_file)
+        # Extractors that read several captures name files by their own
+        # directory already; only a bare files/<sha> is the capture's.
+        src = entry_file if os.path.isabs(entry_file) or os.path.exists(entry_file) else os.path.join(self.cap, entry_file)
         if ext.lower() in IMAGE_EXT and self.converted:
             src = web_image(src, self.converted)
             if src.endswith(".png") and ext.lower() != ".png":
@@ -134,12 +136,12 @@ def cctvsp_model(r, files, builds, index):
     for b in r["firmware_builds"]:
         links.append({"kind": "stock_firmware", "label": b, "url": firmware_url(b, builds, index)})
     used, fl = set(), []
-    for i, p in enumerate(r["photos"], 1):
+    for i, p in enumerate([p for p in r["photos"] if p.get("file")], 1):
         ext = os.path.splitext(p["url"])[1] or ".jpg"
         name, path = files.add(p["file"], ("pinout" if p["role"] == "pinout" else "photo") + f"-{i}{ext}", used)
         fl.append({"kind": "pinout" if p["role"] == "pinout" else "photo_other", "name": name, "path": path})
     for d in r["docs"]:
-        if not d["publish"]:
+        if not d["publish"] or not d.get("file"):
             continue
         ext = ".pdf" if "pdf" in (d["type"] or "") else (".zip" if "zip" in (d["type"] or "") else ".bin")
         name, path = files.add(d["file"], ("firmware" if d["role"] == "firmware" else f"{code}-manual") + ext, used)
@@ -202,10 +204,13 @@ def xiongmai_model(r, files, builds, index, dic=None):
         if re.match(r"^[0-9A-F]{8}", fw.strip()):
             links.append({"kind": "stock_firmware", "label": fw, "url": firmware_url(fw, builds, index)})
     used, fl = set(), []
-    for i, p in enumerate(r["photos"], 1):
+    # A picture the capture could not fetch has no file; it is left out,
+    # not allowed to stop the snapshot.
+    photos = [p for p in r["photos"] if p.get("file")]
+    for i, p in enumerate(photos, 1):
         name, path = files.add(p["file"], f"photo-{i}{os.path.splitext(p['url'])[1] or '.png'}", used)
         fl.append({"kind": "photo_front" if i == 1 else "photo_other", "name": name, "path": path})
-    for i, p in enumerate(r["interface"], 1):
+    for i, p in enumerate([p for p in r["interface"] if p.get("file")], 1):
         name, path = files.add(p["file"], f"interface-{i}{os.path.splitext(p['url'])[1] or '.png'}", used)
         fl.append({"kind": "pinout", "name": name, "path": path})
     for d in r["downloads"]:

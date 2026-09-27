@@ -379,10 +379,14 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 // about fills each model's tags, links and per-source texts and specs, from
 // the same snapshot as the rest of the tree.
 func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale string) error {
-	for _, m := range byModel {
+	ids := make([]string, 0, len(byModel))
+	for id, m := range byModel {
 		m.Tags, m.About, m.Links = []string{}, []*aboutJSON{}, []linkJSON{}
+		ids = append(ids, id)
 	}
-	rows, err := tx.Query(ctx, `SELECT model_id, array_agg(DISTINCT tag ORDER BY tag) FROM board_model_tags GROUP BY model_id`)
+	// Only the rows of the models asked for: one board's detail or one SoC's
+	// cards must not read every text and specification in the catalogue.
+	rows, err := tx.Query(ctx, `SELECT model_id, array_agg(DISTINCT tag ORDER BY tag) FROM board_model_tags WHERE model_id = ANY($1) GROUP BY model_id`, ids)
 	if err != nil {
 		return err
 	}
@@ -416,8 +420,8 @@ func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale
 	}
 	chosen := map[key]string{}
 	rows, err = tx.Query(ctx, `
-		SELECT model_id, source, locale FROM board_model_texts
-		UNION SELECT model_id, source, locale FROM board_model_specs`)
+		SELECT model_id, source, locale FROM board_model_texts WHERE model_id = ANY($1)
+		UNION SELECT model_id, source, locale FROM board_model_specs WHERE model_id = ANY($1)`, ids)
 	if err != nil {
 		return err
 	}
@@ -448,7 +452,7 @@ func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale
 		}
 		return a
 	}
-	rows, err = tx.Query(ctx, `SELECT model_id, source, locale, field, text, translated_from FROM board_model_texts ORDER BY model_id, source`)
+	rows, err = tx.Query(ctx, `SELECT model_id, source, locale, field, text, translated_from FROM board_model_texts WHERE model_id = ANY($1) ORDER BY model_id, source`, ids)
 	if err != nil {
 		return err
 	}
@@ -480,7 +484,7 @@ func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale
 	if err := rows.Err(); err != nil {
 		return err
 	}
-	rows, err = tx.Query(ctx, `SELECT model_id, source, locale, label, value FROM board_model_specs ORDER BY model_id, source, position`)
+	rows, err = tx.Query(ctx, `SELECT model_id, source, locale, label, value FROM board_model_specs WHERE model_id = ANY($1) ORDER BY model_id, source, position`, ids)
 	if err != nil {
 		return err
 	}
@@ -500,7 +504,7 @@ func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale
 	if err := rows.Err(); err != nil {
 		return err
 	}
-	rows, err = tx.Query(ctx, `SELECT model_id, source, kind, label, url, target_model_id FROM board_links ORDER BY model_id, source, position`)
+	rows, err = tx.Query(ctx, `SELECT model_id, source, kind, label, url, target_model_id FROM board_links WHERE model_id = ANY($1) ORDER BY model_id, source, position`, ids)
 	if err != nil {
 		return err
 	}

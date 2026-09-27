@@ -3,6 +3,8 @@ package boards
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -320,5 +322,61 @@ func TestAReviewedFamilyLinksBothBoardsWithoutMergingThem(t *testing.T) {
 	}
 	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE id IN ('xiongmai-53h20-s', 'xiongmai-ipg-53h20pl-s')`); n != 2 {
 		t.Errorf("%d models: related boards stay two", n)
+	}
+}
+
+func TestAFailedSnapshotPublishesNothing(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	before := count(t, pool, `SELECT count(*) FROM board_models`)
+	// the second model's code normalises to nothing: the import must fail,
+	// and the first model must not be left behind
+	_, err := im.FromSnapshot(context.Background(), donor(t, "cctvsp",
+		model("xiongmai", "IPG-TEST-OK", nil), model("xiongmai", "!!!", nil)))
+	if err == nil {
+		t.Fatal("an invalid snapshot imported")
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_models`); n != before {
+		t.Errorf("%d models after a failed import, %d before", n, before)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_sources WHERE id = 'cctvsp'`); n != 0 {
+		t.Error("the failed snapshot's source was recorded")
+	}
+}
+
+func TestANewerSnapshotReplacesAUnitsChangedFiles(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "cctvsp", model("xiongmai", "IPG-TEST-1", nil))); err != nil {
+		t.Fatal(err)
+	}
+	unit := "xiongmai-ipg-test-1-cctvsp"
+	var oldSum string
+	_ = pool.QueryRow(ctx, `SELECT sha256 FROM board_artifacts WHERE unit_id = $1 AND name = 'front.jpg'`, unit).Scan(&oldSum)
+	// the same listing, a new photo, and the manual gone
+	next := donor(t, "cctvsp", model("xiongmai", "IPG-TEST-1", map[string]any{"files": []map[string]string{
+		{"kind": "photo_other", "name": "front.jpg", "path": "files/b.jpg"}}}))
+	next["files/b.jpg"] = &fstest.MapFile{Data: jpg(300, 200)}
+	if _, err := im.FromSnapshot(ctx, next); err != nil {
+		t.Fatal(err)
+	}
+	var newSum string
+	_ = pool.QueryRow(ctx, `SELECT sha256 FROM board_artifacts WHERE unit_id = $1 AND name = 'front.jpg'`, unit).Scan(&newSum)
+	if newSum == "" || newSum == oldSum {
+		t.Errorf("the photo was not replaced: %s -> %s", oldSum, newSum)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_artifacts WHERE unit_id = $1`, unit); n != 1 {
+		t.Errorf("%d files on the unit, want the one the snapshot names", n)
+	}
+	if _, err := os.Stat(filepath.Join(root, unit, "manual.pdf")); !os.IsNotExist(err) {
+		t.Errorf("the dropped manual is still on disk: %v", err)
+	}
+	// and an unchanged snapshot touches nothing
+	if _, err := im.FromSnapshot(ctx, next); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_artifacts WHERE unit_id = $1`, unit); n != 1 {
+		t.Errorf("%d files after an unchanged re-import", n)
 	}
 }

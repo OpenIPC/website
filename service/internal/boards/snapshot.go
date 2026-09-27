@@ -222,49 +222,67 @@ func (im *Importer) FromSnapshot(ctx context.Context, fsys fs.FS) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	if _, err := im.Pool.Exec(ctx, `
-		INSERT INTO board_sources (id, name, url, note, ref, position)
-		VALUES ($1, $2, $3, $4, $5, (SELECT coalesce(max(position), 0) + 1 FROM board_sources))
-		ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, url = EXCLUDED.url, note = EXCLUDED.note, ref = EXCLUDED.ref`,
-		src, s.Source.Name, s.Source.URL, s.Source.Note, s.Source.Ref); err != nil {
+	// One transaction: a snapshot is published whole or not at all. A model
+	// that conflicts halfway leaves nothing of the earlier ones behind (each
+	// unit's files are written to disk first, and a rerun overwrites them).
+	created := 0
+	err = pgx.BeginFunc(ctx, im.Pool, func(tx pgx.Tx) error {
+		created = 0
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO board_sources (id, name, url, note, ref, position)
+			VALUES ($1, $2, $3, $4, $5, (SELECT coalesce(max(position), 0) + 1 FROM board_sources))
+			ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, url = EXCLUDED.url, note = EXCLUDED.note, ref = EXCLUDED.ref`,
+			src, s.Source.Name, s.Source.URL, s.Source.Note, s.Source.Ref); err != nil {
+			return err
+		}
+		ids := map[int]string{}
+		for i, m := range s.Models {
+			id, isNew, err := im.saveModel(ctx, tx, fsys, src, i, m, dec)
+			if err != nil {
+				return fmt.Errorf("%s %s: %w", m.Maker, m.Code, err)
+			}
+			ids[i] = id
+			if isNew {
+				created++
+			}
+		}
+		// Links to other models resolve once every model of the snapshot exists.
+		for i, m := range s.Models {
+			for pos, l := range m.Links {
+				if l.Code == "" {
+					continue
+				}
+				target, err := im.resolve(ctx, tx, m.Maker, l.Code, dec)
+				if err != nil {
+					return err
+				}
+				if target == "" {
+					continue
+				}
+				if _, err := tx.Exec(ctx, `UPDATE board_links SET target_model_id = $1 WHERE model_id = $2 AND source = $3 AND position = $4`,
+					target, ids[i], src, pos); err != nil {
+					return err
+				}
+			}
+		}
+		return im.relate(ctx, tx, src, dec)
+	})
+	if err != nil {
+		im.stale = nil
 		return 0, err
 	}
-	created := 0
-	ids := map[int]string{}
-	for i, m := range s.Models {
-		id, isNew, err := im.saveModel(ctx, fsys, src, i, m, dec)
-		if err != nil {
-			return created, fmt.Errorf("%s %s: %w", m.Maker, m.Code, err)
-		}
-		ids[i] = id
-		if isNew {
-			created++
-		}
+	for _, p := range im.stale {
+		_ = os.Remove(filepath.Join(im.Root, filepath.FromSlash(p)))
 	}
-	// Links to other models resolve once every model of the snapshot exists.
-	for i, m := range s.Models {
-		for pos, l := range m.Links {
-			if l.Code == "" {
-				continue
-			}
-			target, err := im.resolve(ctx, im.Pool, m.Maker, l.Code, dec)
-			if err != nil || target == "" {
-				continue
-			}
-			if _, err := im.Pool.Exec(ctx, `UPDATE board_links SET target_model_id = $1 WHERE model_id = $2 AND source = $3 AND position = $4`,
-				target, ids[i], src, pos); err != nil {
-				return created, err
-			}
-		}
-	}
-	return created, im.relate(ctx, src, dec)
+	im.stale = nil
+	return created, nil
 }
 
 // relate adds the reviewed "same family" links, both ways, for every pair
 // whose two boards the catalogue has. They are this import's source's say,
 // at fixed positions past any the source brings, so a re-import rewrites
 // rather than repeats them.
-func (im *Importer) relate(ctx context.Context, src string, dec map[[2]string]string) error {
+func (im *Importer) relate(ctx context.Context, tx pgx.Tx, src string, dec map[[2]string]string) error {
 	list, err := reviewed(im.ExtraAliases)
 	if err != nil {
 		return err
@@ -274,11 +292,11 @@ func (im *Importer) relate(ctx context.Context, src string, dec map[[2]string]st
 		if a.Related == "" {
 			continue
 		}
-		x, err := im.resolve(ctx, im.Pool, a.Maker, a.Code, dec)
+		x, err := im.resolve(ctx, tx, a.Maker, a.Code, dec)
 		if err != nil {
 			return err
 		}
-		y, err := im.resolve(ctx, im.Pool, a.Maker, a.Related, dec)
+		y, err := im.resolve(ctx, tx, a.Maker, a.Related, dec)
 		if err != nil {
 			return err
 		}
@@ -288,7 +306,7 @@ func (im *Importer) relate(ctx context.Context, src string, dec map[[2]string]st
 		// the same pair written twice, or both ways, links once
 		linked[[2]string{x, y}], linked[[2]string{y, x}] = true, true
 		for _, l := range [][3]string{{x, y, a.Related}, {y, x, a.Code}} {
-			if _, err := im.Pool.Exec(ctx, `
+			if _, err := tx.Exec(ctx, `
 				INSERT INTO board_links (model_id, source, position, kind, label, target_model_id)
 				VALUES ($1, $2, $3, 'related', $4, $5)
 				ON CONFLICT (model_id, source, position) DO UPDATE SET label = EXCLUDED.label, target_model_id = EXCLUDED.target_model_id`,
@@ -337,7 +355,7 @@ func (im *Importer) socFor(label string) string {
 	return im.Resolve(l)
 }
 
-func (im *Importer) saveModel(ctx context.Context, fsys fs.FS, src string, position int, m SnapModel, dec map[[2]string]string) (string, bool, error) {
+func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src string, position int, m SnapModel, dec map[[2]string]string) (string, bool, error) {
 	norm := NormCode(m.Code)
 	if !codeShape.MatchString(norm) {
 		return "", false, fmt.Errorf("code %q does not normalise to a code", m.Code)
@@ -356,10 +374,10 @@ func (im *Importer) saveModel(ctx context.Context, fsys fs.FS, src string, posit
 	// a unit whose rows do not commit leaves files the next run overwrites.
 	unitRef := src + ":" + norm
 	var have bool
-	if err := im.Pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM board_units WHERE source_ref = $1)`, unitRef).Scan(&have); err != nil {
+	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM board_units WHERE source_ref = $1)`, unitRef).Scan(&have); err != nil {
 		return "", false, err
 	}
-	err := pgx.BeginFunc(ctx, im.Pool, func(tx pgx.Tx) error {
+	err := pgx.BeginFunc(ctx, tx, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `INSERT INTO board_manufacturers (id, name, aliases, position) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING`,
 			maker.ID, maker.Name, nonNil(maker.Aliases), maker.Position); err != nil {
 			return err
@@ -459,8 +477,11 @@ func (im *Importer) saveModel(ctx context.Context, fsys fs.FS, src string, posit
 		}
 		return nil
 	})
-	if err != nil || have || len(m.Files) == 0 {
+	if err != nil || len(m.Files) == 0 {
 		return id, isNew, err
+	}
+	if have {
+		return id, isNew, im.refreshUnit(ctx, tx, fsys, unitRef, m)
 	}
 	// One unit per listing: two of a shop's modules can be one board, so the
 	// unit is named by the code the listing printed, not by the model.
@@ -477,8 +498,88 @@ func (im *Importer) saveModel(ctx context.Context, fsys fs.FS, src string, posit
 	if arts, err = im.files(fsys, unit); err != nil {
 		return id, isNew, err
 	}
-	_, err = im.save(ctx, unit, arts)
+	_, err = im.saveIn(ctx, tx, unit, arts)
 	return id, isNew, err
+}
+
+// refreshUnit brings a unit a source already gave in line with a newer
+// snapshot: when its files (by name and content) differ, they are replaced.
+// Files no longer named are removed from disk after the snapshot commits.
+func (im *Importer) refreshUnit(ctx context.Context, tx pgx.Tx, fsys fs.FS, unitRef string, m SnapModel) error {
+	var unitID, modelID string
+	if err := tx.QueryRow(ctx, `SELECT id, model_id FROM board_units WHERE source_ref = $1`, unitRef).Scan(&unitID, &modelID); err != nil {
+		return err
+	}
+	want := map[string]string{}
+	for _, f := range m.Files {
+		b, err := fs.ReadFile(fsys, f.Path)
+		if err != nil {
+			return err
+		}
+		sum := sha256.Sum256(b)
+		want[f.Name] = hex.EncodeToString(sum[:])
+	}
+	have := map[string]string{}
+	old := []string{}
+	rows, err := tx.Query(ctx, `SELECT name, sha256, path, coalesce(thumb_path, '') FROM board_artifacts WHERE unit_id = $1`, unitID)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var name, sum, path, thumb string
+		if err := rows.Scan(&name, &sum, &path, &thumb); err != nil {
+			rows.Close()
+			return err
+		}
+		have[name] = sum
+		old = append(old, path)
+		if thumb != "" {
+			old = append(old, thumb)
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if sameFiles(want, have) {
+		return nil
+	}
+	unit := &Unit{ID: unitID, Model: &Model{ID: modelID}}
+	for _, f := range m.Files {
+		unit.Files = append(unit.Files, File{Kind: f.Kind, Name: f.Name, Source: f.Path})
+	}
+	arts, err := im.files(fsys, unit)
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM board_artifacts WHERE unit_id = $1`, unitID); err != nil {
+		return err
+	}
+	if err := insertArtifacts(ctx, tx, unitID, arts); err != nil {
+		return err
+	}
+	kept := map[string]bool{}
+	for _, a := range arts {
+		kept[a.Path], kept[a.Thumb] = true, true
+	}
+	for _, p := range old {
+		if !kept[p] {
+			im.stale = append(im.stale, p)
+		}
+	}
+	return nil
+}
+
+func sameFiles(a, b map[string]string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		if b[k] != v {
+			return false
+		}
+	}
+	return true
 }
 
 func makersByID() map[string]Manufacturer {

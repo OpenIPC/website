@@ -201,7 +201,7 @@ def main():
             tabs, page = pg["tabs"], pg["page"]
             # Files are named by capture directory as well: each tree may have
             # been captured on its own.
-            media = [{**m, "file": os.path.join(pg["cap"], m["file"]) if m.get("file") else None} for m in p["media"]]
+            media = [{**m, "file": os.path.join(os.path.abspath(pg["cap"]), m["file"]) if m.get("file") else None} for m in p["media"]]
             iface = set(re.findall(r'upload/[^"\'\s]+\.(?:png|jpe?g|gif)', tabs.get("dhxh", ""), re.I))
             if not family or not r["photos"]:
                 for m in photos(pg["cap"], page, media):

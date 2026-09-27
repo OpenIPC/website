@@ -37,6 +37,9 @@ type Importer struct {
 	Resolve    func(label string) string
 	// ExtraAliases add to the reviewed decisions in aliases.yml; for tests.
 	ExtraAliases []Alias
+	// stale are files a snapshot's refreshed units no longer name, removed
+	// once the snapshot has committed.
+	stale []string
 }
 
 // TarballURL is where GitHub serves the pinned archive.
@@ -212,8 +215,18 @@ func (im *Importer) files(fsys fs.FS, u *Unit) ([]artifact, error) {
 // when the unit was already there: the check before it is only a shortcut,
 // and two imports running at once decide here, on source_ref.
 func (im *Importer) save(ctx context.Context, u *Unit, arts []artifact) (bool, error) {
+	return im.saveIn(ctx, im.Pool, u, arts)
+}
+
+// beginner is a pool, or a transaction whose Begin is a savepoint: a donor
+// snapshot saves its units inside its own transaction.
+type beginner interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+}
+
+func (im *Importer) saveIn(ctx context.Context, db beginner, u *Unit, arts []artifact) (bool, error) {
 	saved := false
-	err := pgx.BeginFunc(ctx, im.Pool, func(tx pgx.Tx) error {
+	err := pgx.BeginFunc(ctx, db, func(tx pgx.Tx) error {
 		m, mk := u.Model, u.Model.Manufacturer
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO board_manufacturers (id, name, aliases, position) VALUES ($1, $2, $3, $4)
@@ -261,26 +274,32 @@ func (im *Importer) save(ctx context.Context, u *Unit, arts []artifact) (bool, e
 			return nil
 		}
 		saved = true
-		for i, a := range arts {
-			var id int64
-			if err := tx.QueryRow(ctx, `
-				INSERT INTO board_artifacts (unit_id, kind, name, path, thumb_path, mime, bytes, sha256, width, height, content, position)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
-				u.ID, a.Kind, a.Name, a.Path, null(a.Thumb), a.Mime, a.Bytes, a.SHA256,
-				nullInt(a.Width), nullInt(a.Height), a.Content, i).Scan(&id); err != nil {
-				return err
-			}
-			if a.Kind == "uboot_env" && a.Content != nil {
-				for k, v := range UBootVars(*a.Content) {
-					if _, err := tx.Exec(ctx, `INSERT INTO board_uboot_vars (artifact_id, key, value) VALUES ($1, $2, $3)`, id, k, v); err != nil {
-						return err
-					}
+		return insertArtifacts(ctx, tx, u.ID, arts)
+	})
+	return saved, err
+}
+
+// insertArtifacts stores a unit's files, in order, with each U-Boot
+// console's printenv as rows.
+func insertArtifacts(ctx context.Context, tx pgx.Tx, unit string, arts []artifact) error {
+	for i, a := range arts {
+		var id int64
+		if err := tx.QueryRow(ctx, `
+			INSERT INTO board_artifacts (unit_id, kind, name, path, thumb_path, mime, bytes, sha256, width, height, content, position)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
+			unit, a.Kind, a.Name, a.Path, null(a.Thumb), a.Mime, a.Bytes, a.SHA256,
+			nullInt(a.Width), nullInt(a.Height), a.Content, i).Scan(&id); err != nil {
+			return err
+		}
+		if a.Kind == "uboot_env" && a.Content != nil {
+			for k, v := range UBootVars(*a.Content) {
+				if _, err := tx.Exec(ctx, `INSERT INTO board_uboot_vars (artifact_id, key, value) VALUES ($1, $2, $3)`, id, k, v); err != nil {
+					return err
 				}
 			}
 		}
-		return nil
-	})
-	return saved, err
+	}
+	return nil
 }
 
 func mimeOf(name string) string {
