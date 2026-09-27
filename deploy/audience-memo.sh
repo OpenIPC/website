@@ -114,6 +114,24 @@ awk -F'"' -v month="$month" '
       next
     }
 
+    # The wall/snapshot harvest. A large automated fleet fetches the snapshot
+    # HTML page with spoofed browser user agents, so it never appears in the
+    # self-declared-crawler line and never runs the beacon. Since the frames
+    # moved to the WebSocket transport the page is a content-free shell, so the
+    # harvest gets nothing -- but it is worth watching, and a drop is the signal
+    # they have noticed. Tracked here as requests, distinct source addresses,
+    # one-request addresses (the residential-proxy signature), opaque-page 200s
+    # and retired-numeric 410s.
+    if (path ~ /^\/(ru\/|zh\/)?snapshots\//) {
+      split($1, ipf, " "); ip = ipf[1]
+      snap++
+      if (!(ip in snapip)) { snapip[ip] = 0; snapips++ }
+      snapip[ip]++
+      if (path ~ /snapshots\/[0-9a-f]{20}/ && code == "200") snap_shell200++
+      else if (path ~ /snapshots\/[0-9]+/ && code == "410") snap_num410++
+      next
+    }
+
     # Beacon only from here.
     if (req !~ /\/api\/a\/count/) next
 
@@ -189,6 +207,12 @@ awk -F'"' -v month="$month" '
     print "EV_BUSINESSMAIL", ev_businessmail + 0
     print "EV_OCCHECKOUT", ev_occheckout + 0
     print "EV_TGJOIN", ev_tgjoin + 0
+    print "SNAP", snap + 0
+    print "SNAP_IPS", snapips + 0
+    print "SNAP_SHELL200", snap_shell200 + 0
+    print "SNAP_NUM410", snap_num410 + 0
+    snapone = 0; for (k in snapip) if (snapip[k] == 1) snapone++
+    print "SNAP_ONEREQ", snapone + 0
     print "FWTOTAL", fwtotal + 0
     for (k in locale)  print "LOCALE", k, locale[k]
     for (k in brlang)  print "LANG", brlang[k], k
@@ -475,6 +499,23 @@ mkdir -p "$(dirname "$OUT")"
   echo
   if [ -n "$bot_line" ]; then echo "- $bot_line"; else echo "- _[openipc-log-report not available on this host — run deploy/log-report.sh over the month's logs]_"; fi
   echo "_These are here so the rest can be believed: about nine requests in ten to this site are automated._"
+  echo
+  # The wall/snapshot harvest, which the crawler line above cannot see because
+  # it spoofs browser user agents. Since the frames moved to the WebSocket
+  # transport the snapshot page is a content-free shell, so this fleet harvests
+  # nothing -- watch it anyway; a fall is the sign they have noticed. Reported
+  # as a per-day rate because it is steady and the raw-log coverage is partial.
+  snap=$(val SNAP); snap=${snap:-0}
+  echo "Wall/snapshot harvest (automated, spoofed browser UAs — not in the crawler line above):"
+  if [ "$snap" -gt 0 ] && [ "$ndays" -gt 0 ]; then
+    printf -- "- **%d/day** requests to /snapshots/ (%d over %d day(s) covered), from %d distinct addresses, %d of them at a single request (the residential-proxy signature).\n" \
+      "$(( snap / ndays ))" "$snap" "$ndays" "$(val SNAP_IPS)" "$(val SNAP_ONEREQ)"
+    printf -- "- Of these: %d opaque-page 200s (content-free shells since the WebSocket migration) and %d retired-numeric 410s.\n" \
+      "$(val SNAP_SHELL200)" "$(val SNAP_NUM410)"
+    echo "- _The frames themselves are served only over the grant-gated WebSocket (/api/v1/wall/socket), which this fleet does not use. A sustained drop here is the signal they have noticed the page went empty._"
+  else
+    echo "- none recorded in the covered window."
+  fi
   echo
 
   echo "## Open Collective (received split by tier and payer; never a single \"donations\" figure)"
