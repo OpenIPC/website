@@ -50,7 +50,7 @@ export default function Firmware({ device, heading, note, locale, t }: {
           </div>
           <div class="rounded-md bg-[#fff5e6] px-3 py-2 text-[13px] text-[#8a5200]">
             {t('fw_caution_flash')} <a href={PYTHON_DVR} class="text-inherit underline">python-dvr</a>. {t('fw_caution_before')}
-            <ul class="mt-1 mb-0 pl-5">
+            <ul class="mt-1 mb-0 list-disc pl-5">
               {stock.length > 0 && <li>{t('fw_caution_stock')}</li>}
               <li>{t('fw_caution_rollback')} (<a href={RECOVERY} class="text-inherit underline">{t('fw_recovery')}</a>);</li>
               <li>{t('fw_caution_firstboot_before')} <code class="font-mono">firstboot</code>{t('fw_caution_firstboot_after')}</li>
