@@ -67,9 +67,11 @@ def extract(cap, mod):
         for href, label in re.findall(r'<a[^>]+href="(/cctv/[^"]+)"[^>]*>(.*?)</a>', p, re.S):
             code = CODE.search(clean(label))
             txt = clean(p).lower()
+            # "пришёл на смену X": X came before; "рекомендуемая замена - X",
+            # "новый модуль называется X": X comes after.
             if "на смену" in txt:
                 kind = "predecessor"
-            elif "новый модуль" in txt or "называется" in txt or "заменён" in txt:
+            elif re.search(r"замен|новый модуль|называется", txt):
                 kind = "successor"
             else:
                 kind = "related"

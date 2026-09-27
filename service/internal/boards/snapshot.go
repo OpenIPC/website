@@ -27,7 +27,12 @@ import (
 //
 // Snapshots are kept in the backup bucket under boards-donors/<source>/;
 // the capture they were made from sits beside them.
-var Snapshots = map[string]string{}
+var Snapshots = map[string]string{
+	// boards-donors/cctvsp/snapshot-68ecbe963f49.tar: 57 modules, translated from Russian.
+	"cctvsp": "68ecbe963f49422b3f9dc7eb9ff38c55366cda8f5574147ca949d40d9be8bea4",
+	// boards-donors/xiongmai/snapshot-04229496ef35.tar: 684 models from the EN and ZH trees.
+	"xiongmai": "04229496ef35881d406096eeac9d104635d7492e532db9f68f043cd54b1c7799",
+}
 
 type Snapshot struct {
 	Source struct {

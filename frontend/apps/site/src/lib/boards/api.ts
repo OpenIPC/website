@@ -1,10 +1,10 @@
 /**
  * The board catalogue's data, from the site's own API (/api/v1/boards...),
- * which the Go web role answers. Same origin; the catalogue is fetched once
+ * which the Go web role answers. Same origin; each address is fetched once
  * per page and shared by every island on it, and a failed fetch is forgotten
  * so a retry asks again.
  */
-import type { BoardsFile, SearchResult } from './types';
+import type { BoardsFile, ModelDetail, SearchResult } from './types';
 import type { Scope } from './url';
 
 async function json<T>(url: string, signal?: AbortSignal): Promise<T> {
@@ -13,14 +13,28 @@ async function json<T>(url: string, signal?: AbortSignal): Promise<T> {
   return (await r.json()) as T;
 }
 
-let catalogue: Promise<BoardsFile> | null = null;
+const cache = new Map<string, Promise<unknown>>();
 
-export function fetchBoards(): Promise<BoardsFile> {
-  if (!catalogue) {
-    catalogue = json<BoardsFile>('/api/v1/boards');
-    catalogue.catch(() => { catalogue = null; });
+function once<T>(url: string): Promise<T> {
+  let p = cache.get(url) as Promise<T> | undefined;
+  if (!p) {
+    p = json<T>(url);
+    p.catch(() => cache.delete(url));
+    cache.set(url, p);
   }
-  return catalogue;
+  return p;
+}
+
+/** The catalogue in `locale`, or only the boards on one catalogued SoC. */
+export function fetchBoards(locale: string, soc?: string): Promise<BoardsFile> {
+  const p = new URLSearchParams({ locale });
+  if (soc) p.set('soc', soc);
+  return once<BoardsFile>(`/api/v1/boards?${p.toString()}`);
+}
+
+/** Everything each source says about one board. */
+export function fetchModel(id: string, locale: string): Promise<ModelDetail> {
+  return once<ModelDetail>(`/api/v1/boards/models/${encodeURIComponent(id)}?${new URLSearchParams({ locale }).toString()}`);
 }
 
 /** The search runs on the server, over the text evidence only. */

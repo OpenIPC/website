@@ -74,11 +74,19 @@ def codes_of(specs, title):
     return [title], True
 
 
-CATEGORY_WORDS = [  # a title says what line a product is, when no listing does any more
-    (r"NVR", "NVR Board"), (r"DVR|XVR|HVR", "DVR Board"), (r"Hybrid|AHD/TVI", "XVI&AHD Hybrid Camera Module"),
-    (r"AHD", "AHD Camera Module"), (r"Zoom|Auto-?focus|AF ", "AF module"), (r"WiFi|WIFI|Wireless", "WiFi Kit"),
-    (r"Battery|Doorbell", "Battery Camera Module"), (r"Panoram|Fisheye|VR", "Panoramic VR"),
-    (r"IP|Network|IPC", "IP Camera Module")]
+CATEGORY_WORDS = [  # a title says what line a product is, when no English listing does
+    (r"NVR|网络硬盘录像机|网络高清NVR", "NVR Board"),
+    (r"DVR|XVR|HVR|同轴高清主板|硬盘录像机主板", "DVR Board"),
+    (r"Hybrid|AHD/TVI|混合", "XVI&AHD Hybrid Camera Module"),
+    (r"Zoom|Auto-?focus|Autofocal|AF |变焦|对焦", "AF module"),
+    (r"AHD|同轴高清模组|同轴高清", "AHD Camera Module"),
+    (r"Battery|Doorbell|电池|门铃", "Battery Camera Module"),
+    (r"Panoram|Fisheye|VR|全景|鱼眼", "Panoramic VR"),
+    (r"4G|消费类|Robot|机器人", "consumer module"),
+    (r"WiFi Kit|WIFI Kit|无线套装", "WiFi Kit"),
+    (r"Intelligent|Face|License plate|智能分析|人脸|车牌", "Intelligent analysis module"),
+    (r"Dual-?lens|双目|双镜头", "Dual-lens Camera Module"),
+    (r"IP|Network|IPC|网络摄像机|网络高清摄像机|摄像机模组|模组", "IP Camera Module")]
 
 
 def category_from_title(title):
@@ -223,9 +231,13 @@ def main():
         r["lines"] = [{"lang": l, "line": a, "sub": b} for l, a, b in lines]
         stop = any(re.search(r"stop production|停产", f"{x['line']} {x['sub']}", re.I) for x in r["lines"])
         r["tags"] = ["discontinued"] if stop else []
-        en_lines = [x["line"] for x in r["lines"] if x["lang"] == "en"]
-        r["category"] = en_lines[0] if en_lines else (r["lines"][0]["line"] if r["lines"] else
-                        category_from_title(r["title"].get("en") or r["title"].get("zh")))
+        # The English listing names the line; a Chinese listing's name or a
+        # listing id never does (they reached the site as "4", "223",
+        # "智能分析模组"). Otherwise the title says what the product is.
+        en_lines = [x["line"].replace("&AHD;", "&AHD") for x in r["lines"]
+                    if x["lang"] == "en" and not x["line"].isdigit()]
+        r["category"] = en_lines[0] if en_lines else (
+            category_from_title(r["title"].get("en")) or category_from_title(r["title"].get("zh")))
         r["listed"] = bool(r["lines"])
         recs.append(r)
     with open(out, "w") as f:

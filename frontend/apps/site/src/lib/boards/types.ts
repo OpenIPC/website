@@ -1,11 +1,14 @@
 /**
- * The board catalogue as the Go service answers it: GET /api/v1/boards and
- * GET /api/v1/boards/search (service/internal/boards/api.go).
+ * The board catalogue as the Go service answers it: GET /api/v1/boards,
+ * GET /api/v1/boards/models/{id} and GET /api/v1/boards/search
+ * (service/internal/boards/api.go).
  */
 
 export type FileKind =
   | 'photo_front' | 'photo_back' | 'photo_other' | 'pinout'
-  | 'flash_dump' | 'uboot_env' | 'boot_log' | 'document' | 'note';
+  | 'flash_dump' | 'uboot_env' | 'boot_log' | 'document' | 'note'
+  /** A seller-hosted stock firmware file. */
+  | 'firmware';
 
 export interface BoardFile {
   kind: FileKind;
@@ -42,6 +45,16 @@ export interface Coverage {
   documents: number;
 }
 
+/** What a card says about a board, in the page's language when a source has it. */
+export interface Summary {
+  name: string | null;
+  lead: string | null;
+  /** The language served. */
+  locale: string;
+  /** The language the source wrote it in, when this is a translation. */
+  translated_from: string | null;
+}
+
 export interface Model {
   id: string;
   model: string | null;
@@ -51,6 +64,13 @@ export interface Model {
   soc_label: string | null;
   family: string | null;
   notes: string | null;
+  /** The product line, as the source files it ("NVR Board"). */
+  category: string | null;
+  /** "openipc-ready", "discontinued". */
+  tags: string[];
+  summary: Summary | null;
+  /** Source ids, which `BoardsFile.sources` names. */
+  sources: string[];
   coverage: Coverage;
   units: Unit[];
 }
@@ -67,14 +87,51 @@ export interface Source {
   id: string;
   name: string;
   url: string;
+  note: string;
   ref: string;
 }
 
 export interface BoardsFile {
   schema: number;
+  locale: string;
   files_prefix: string;
   sources: Source[];
   manufacturers: Manufacturer[];
+}
+
+/** One source's say about a board: GET /api/v1/boards/models/{id}. */
+export interface About {
+  source: string;
+  /** The language actually served. */
+  locale: string;
+  translated_from: string | null;
+  name: string | null;
+  /** Paragraphs separated by blank lines. */
+  description: string | null;
+  /** One feature per line. */
+  features: string | null;
+  specs: [label: string, value: string][];
+}
+
+export type LinkKind = 'stock_firmware' | 'source_page' | 'vendor_page' | 'successor' | 'predecessor' | 'related';
+
+export interface BoardLink {
+  source: string;
+  kind: LinkKind;
+  label: string;
+  url: string | null;
+  /** A model id in the catalogue. */
+  target: string | null;
+}
+
+export interface ModelDetail {
+  schema: number;
+  locale: string;
+  id: string;
+  model: string | null;
+  tags: string[];
+  about: About[];
+  links: BoardLink[];
 }
 
 export type TextKind = 'uboot_env' | 'boot_log' | 'note';
