@@ -34,7 +34,7 @@ func TestBoardCatalogueServing(t *testing.T) {
 		// A gallery asks for dozens of thumbnails at once. In a zone of their
 		// own: counted in per_subnet they crowded out the page's fonts (a 429
 		// on dev), and inheriting its 20 would shed thumbnails.
-		mustContain(t, files, "limit_conn board_files 100;", name+": the board files do not have their own concurrency zone")
+		mustContain(t, files, "limit_conn board_files 400;", name+": the board files do not have their own concurrency zone, or it is too small for a product line's thumbnails")
 		mustNotContain(t, files, "per_subnet", name+": the board files count against the zone every other request needs")
 		mustContain(t, files, "Strict-Transport-Security", name+": add_header in /board-files/ drops the inherited HSTS")
 		mustContain(t, files, "text/plain uboot", name+": a U-Boot console would download instead of opening")

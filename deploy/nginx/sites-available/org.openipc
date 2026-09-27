@@ -270,9 +270,11 @@ server {
     # month of cache is safe. The gallery asks for dozens of thumbnails at
     # once, so it has a zone of its own (conf.d/openipc-boards-rate.conf):
     # counted in per_subnet, the thumbnails crowded out the page's own fonts.
+    # 400, not 100: with the donors a product line's "Show all" asks for
+    # several hundred thumbnails at once over HTTP/2 (429s found on dev).
     # Consoles and notes are text; a dump is a download.
     location ^~ /board-files/ {
-        limit_conn board_files 100;
+        limit_conn board_files 400;
         limit_conn_status 429;
         alias /srv/www/shared/boards/;
         types {
