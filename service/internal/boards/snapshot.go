@@ -30,8 +30,8 @@ import (
 var Snapshots = map[string]string{
 	// boards-donors/cctvsp/snapshot-1a8c5b9e28d9.tar: 57 modules, translated from Russian; pinouts reviewed by eye.
 	"cctvsp": "1a8c5b9e28d9e696f5539f06388bf7e4ceb3711ed118a8f3928188d9bf6a766f",
-	// boards-donors/xiongmai/snapshot-bf30809cb019.tar: 684 models from the EN and ZH trees, each picture once, dated.
-	"xiongmai": "bf30809cb019dc80a00ea89988c93691c98f757bff876a4f53f36cbc9288395c",
+	// boards-donors/xiongmai/snapshot-54da7eb404dc.tar: 684 models from the EN and ZH trees, each picture once, dated; ZH-only pages translated.
+	"xiongmai": "54da7eb404dc4b529533939ef2a19fc36da0de341228efd2dec09b73a325e9e5",
 }
 
 type Snapshot struct {
