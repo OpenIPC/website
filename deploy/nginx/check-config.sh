@@ -171,6 +171,11 @@ printf 'TOKEN-OK\n' > /var/lib/dehydrated/acme-challenges/probe-token
 install -d -m 0755 /srv/www/shared/images
 printf 'PNG\n' > /srv/www/shared/images/logo_openipc.png
 
+# A second loopback address stands in for a datacentre client, so the block
+# and CI's way through it are measured rather than read off the map.
+sed -i 's|^geo \$openipc_datacentre_client {|&\n    127.0.0.2/32 1;|' \
+  /etc/nginx/conf.d/openipc-datacentre-block.conf
+
 # Redirected explicitly. A daemonised nginx still inherits this exec's stdout
 # and stderr, and `docker exec` does not return until those close -- so
 # without this the setup step hangs rather than finishing.
@@ -560,6 +565,22 @@ grep -q GO-WIZARD /tmp/b || { echo "  the wizard did not reach the Go firmware p
 # CI pushes each build to the web role, once (builds/PUSH.md).
 posts /api/v1/builds                200 go
 grep -q GO-WEB-PROD /tmp/pb || { echo "  the build push did not reach the Go web process"; fail=1; }
+# From a blocked range: refused everywhere, except the push GitHub's runners
+# make from Azure (conf.d/openipc-datacentre-block.conf).
+from_dc() {
+  curl -sS -o /dev/null -w '%{http_code}' -k --max-time 5 --interface 127.0.0.2 \
+    --resolve "openipc.org:443:127.0.0.1" "$@" 2>/dev/null
+}
+for probe in "403 GET /" "403 GET /.git/config" "403 POST /snapshots" "200 POST /api/v1/builds"; do
+  set -- $probe
+  got=$(from_dc -X "$2" "https://openipc.org$3")
+  if [ "$got" = "$1" ]; then
+    printf '  %-32s %-5s (%s from a datacentre)\n' "$3" "$got" "$2"
+  else
+    printf '  %-32s %-5s (%s from a datacentre) MISMATCH: want %s\n' "$3" "$got" "$2" "$1"
+    fail=1
+  fi
+done
 expect $FW                          200 go     hsts
 grep -q IMAGE /tmp/b || { echo "  the firmware X-Accel-Redirect did not reach /firmware-cache/"; fail=1; }
 redirects_to openipc.org /snapshots https://openipc.org/open-wall
