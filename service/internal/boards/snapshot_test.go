@@ -436,3 +436,17 @@ func TestTheEarliestListedYearAnySourceGivesIsKept(t *testing.T) {
 		}
 	}
 }
+
+func TestAReimportCorrectsTheUnitsSensor(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	for _, sensor := range []string{"SC5239S低照度CMOS传感器", "SC5239S"} {
+		if _, err := im.FromSnapshot(ctx, donor(t, "xiongmai", model("xiongmai", "IVG-G5A", map[string]any{"sensor": sensor}))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_units WHERE model_id = 'xiongmai-ivg-g5a' AND sensor = 'SC5239S'`); n != 1 {
+		t.Errorf("%d units with the corrected sensor", n)
+	}
+}

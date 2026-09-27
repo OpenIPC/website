@@ -514,6 +514,11 @@ func (im *Importer) refreshUnit(ctx context.Context, tx pgx.Tx, fsys fs.FS, unit
 	if err := tx.QueryRow(ctx, `SELECT id, model_id FROM board_units WHERE source_ref = $1`, unitRef).Scan(&unitID, &modelID); err != nil {
 		return err
 	}
+	// The snapshot is the source's say about its unit: a corrected sensor
+	// replaces the old one, as its files do.
+	if _, err := tx.Exec(ctx, `UPDATE board_units SET sensor = $2 WHERE id = $1 AND sensor IS DISTINCT FROM $2`, unitID, null(m.Sensor)); err != nil {
+		return err
+	}
 	want := map[string]string{}
 	for _, f := range m.Files {
 		b, err := fs.ReadFile(fsys, f.Path)
