@@ -1,6 +1,6 @@
 """Build a donor snapshot for `openipc boards import-snapshot`.
 
-  python snapshot.py <source> <records.json> <capture-dir> <xmupdates-dir> <out.tar>
+  python snapshot.py <source> <records.json> <capture-dir> <xmupdates-dir> <out.tar> [<dictionary.json>]
 
 The tar holds manifest.json (the service's Snapshot shape) and the files it
 names under files/. Only what may be published goes in: chip vendors'
@@ -123,16 +123,51 @@ def cctvsp_model(r, files, builds, index):
             "translated_from": "ru", "specs": r["specs"], "links": links, "files": fl}
 
 
-def xiongmai_model(r, files, builds, index):
-    texts = {}
-    for l in ("en", "zh", "ru"):
+def load_dictionary(path):
+    """The translated strings: source text -> {"ru": ..., "zh": ...} (or
+    {"en", "ru"} for a string the vendor wrote in Chinese). Built from
+    translate/xm-strings.json and the batch outputs."""
+    if not path or not os.path.exists(path):
+        return {}
+    return json.load(open(path))
+
+
+def xiongmai_model(r, files, builds, index, dic=None):
+    dic = dic or {}
+
+    def tr(text, lang):
+        t = (dic.get(text.strip()) or {}).get(lang)
+        return t if t else None
+
+    texts, original = {}, []
+    for lang in ("en", "zh"):
         t = {}
-        if r["title"].get(l):
-            t["name"] = r["title"][l]
-        if r["features"].get(l):
-            t["features"] = "\n".join(r["features"][l])
+        if r["title"].get(lang):
+            t["name"] = r["title"][lang]
+        if r["features"].get(lang):
+            t["features"] = "\n".join(r["features"][lang])
         if t:
-            texts[l] = t
+            texts[lang] = t
+            original.append(lang)
+    specs = {l: v for l, v in r["specs"].items() if v}
+    # Translations fill every language the vendor did not write in: Russian
+    # always, Chinese where Xiongmai has no Chinese page for the board.
+    src = "en" if "en" in texts else "zh"
+    for lang in ("ru", "zh", "en"):
+        if lang in texts:
+            continue
+        name = tr(r["title"][src], lang) if r["title"].get(src) else None
+        feats = [tr(f, lang) for f in r["features"].get(src, [])]
+        t = {}
+        if name:
+            t["name"] = name
+        if feats and all(feats):
+            t["features"] = "\n".join(feats)
+        if t:
+            texts[lang] = t
+        rows = r["specs"].get(src) or []
+        if rows and lang not in specs:
+            specs[lang] = [[tr(a, lang) or a, tr(b, lang) or b] for a, b in rows]
     links = [{"kind": "vendor_page", "label": f"xiongmaitech.com ({p['lang']})", "url": p["url"]} for p in r["pages"]]
     for f in r.get("family", []):
         links.append({"kind": "related", "label": f, "code": f})
@@ -151,25 +186,28 @@ def xiongmai_model(r, files, builds, index):
         if d["publish"] and d.get("file"):
             name, path = files.add(d["file"], os.path.basename(d["url"]), used)
             fl.append({"kind": "document", "name": name, "path": path})
-    original = [l for l in ("en", "zh") if r["title"].get(l)]
     code = r["code"]
     if r.get("code_from_title"):
         # No model row: the page names the board only in words. A stable code
         # from the vendor's page id keeps it one model across imports.
         first = r["pages"][0]
         code = f"XM-{first['lang'].upper()}-{first['id']}"
-    return {"maker": "xiongmai", "code": code, "category": r.get("category"), "soc_label": r.get("soc_label"),
+    category = (r.get("category") or "").replace("&AHD;", "&AHD") or None
+    return {"maker": "xiongmai", "code": code, "category": category, "soc_label": r.get("soc_label"),
             "sensor": r.get("sensor"), "tags": r["tags"], "texts": texts, "original": original,
-            "translated_from": r.get("translated_from", "en"), "specs": r["specs"], "links": links, "files": fl}
+            "translated_from": src, "specs": specs, "links": links, "files": fl}
 
 
 def main():
     source, rec_path, cap, xmu, out = sys.argv[1:6]
+    dic = load_dictionary(sys.argv[6] if len(sys.argv) > 6 else None)
     recs = json.load(open(rec_path))["records"]
     builds, index = xmupdates(xmu)
     files = Files(cap)
-    make = cctvsp_model if source == "cctvsp" else xiongmai_model
-    models = [make(r, files, builds, index) for r in recs]
+    if source == "cctvsp":
+        models = [cctvsp_model(r, files, builds, index) for r in recs]
+    else:
+        models = [xiongmai_model(r, files, builds, index, dic) for r in recs]
     manifest = {"source": {**SOURCES[source]}, "models": models}
     raw = json.dumps(manifest, ensure_ascii=False, indent=1, sort_keys=True).encode()
     manifest["source"]["ref"] = "sha256:" + hashlib.sha256(raw).hexdigest()[:16]
