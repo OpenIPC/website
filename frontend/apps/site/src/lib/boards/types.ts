@@ -70,6 +70,8 @@ export interface Model {
   tags: string[];
   /** The other codes sources print for this board. */
   aliases?: string[];
+  /** The year the maker's own catalogue first showed the board, where a source dates it. */
+  listed_year?: number | null;
   summary: Summary | null;
   /** Source ids, which `BoardsFile.sources` names. */
   sources: string[];

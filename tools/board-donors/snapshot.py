@@ -195,6 +195,19 @@ def one_language(images):
     return en + extra
 
 
+# xiongmaitech.com files a product's pictures by upload date:
+# /upload/2016/09/18/..., /upload/at/image/20170814/...
+UPLOAD_YEAR = re.compile(r"/upload/(?:at/image/)?(20\d\d)")
+
+
+def listed_year(r):
+    """The year the product first appeared in Xiongmai's catalogue: its
+    earliest picture upload, in either language. None when nothing is dated."""
+    years = [int(m.group(1)) for k in ("photos", "interface") for p in r.get(k, [])
+             for m in [UPLOAD_YEAR.search(p["url"])] if m]
+    return min(years) if years else None
+
+
 def xiongmai_model(r, files, builds, index, dic=None):
     dic = dic or {}
 
@@ -254,9 +267,13 @@ def xiongmai_model(r, files, builds, index, dic=None):
             fl.append({"kind": "document", "name": name, "path": path})
     code = r["code"]  # XM-<LANG>-<page id> when the page has no model row
     category = (r.get("category") or "").replace("&AHD;", "&AHD") or None
-    return {"maker": "xiongmai", "code": code, "category": category, "soc_label": r.get("soc_label"),
-            "sensor": r.get("sensor"), "tags": r["tags"], "texts": texts, "original": original,
-            "translated_from": src, "specs": specs, "links": links, "files": fl}
+    out = {"maker": "xiongmai", "code": code, "category": category, "soc_label": r.get("soc_label"),
+           "sensor": r.get("sensor"), "tags": r["tags"], "texts": texts, "original": original,
+           "translated_from": src, "specs": specs, "links": links, "files": fl}
+    year = listed_year(r)
+    if year:
+        out["listed_year"] = year
+    return out
 
 
 def main():

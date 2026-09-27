@@ -10,7 +10,7 @@
 import { Fragment } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { fetchBoards } from '../../lib/boards/api';
-import { entries, frontPhoto, has, subtitle, type Entry } from '../../lib/boards/model';
+import { entries, frontPhoto, has, newestFirst, subtitle, type Entry } from '../../lib/boards/model';
 import type { Source } from '../../lib/boards/types';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import type { Locale } from '../../lib/i18n';
@@ -31,7 +31,7 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
       .then((file) => {
         if (!live) return;
         // The server answers for this SoC; the check keeps a server that ignored ?soc= from filling the page.
-        const mine = entries(file).filter((m) => m.soc === soc);
+        const mine = newestFirst(entries(file).filter((m) => m.soc === soc));
         const used = new Set(mine.flatMap((m) => m.sources));
         setBoards(mine);
         setSources(file.sources.filter((s) => used.has(s.id)));

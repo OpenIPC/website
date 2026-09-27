@@ -190,6 +190,33 @@ export const SPLIT_OVER = 40;
 export interface Group { key: string; label: string | null; entries: Entry[] }
 export interface Section { maker: Manufacturer; count: number; groups: Group[] }
 
+/**
+ * Newest boards first, so a newcomer meets current hardware before 2014's.
+ * A board is dated by its maker's catalogue where a source says when it
+ * appeared; an undated one takes the median year of the dated boards on its
+ * SoC, and one with neither goes last. Ties keep code order, numbers read as
+ * numbers.
+ */
+export function newestFirst<T extends Model>(list: T[]): T[] {
+  const bySoc = new Map<string, number[]>();
+  for (const m of list) {
+    const key = socKey(m);
+    if (!m.listed_year || !key) continue;
+    const years = bySoc.get(key);
+    if (years) years.push(m.listed_year); else bySoc.set(key, [m.listed_year]);
+  }
+  const median = (ys: number[]) => [...ys].sort((a, b) => a - b)[Math.floor((ys.length - 1) / 2)];
+  const yearOf = (m: T): number => {
+    if (m.listed_year) return m.listed_year;
+    const key = socKey(m);
+    const ys = key ? bySoc.get(key) : undefined;
+    return ys ? median(ys) : 0;
+  };
+  const years = new Map(list.map((m) => [m.id, yearOf(m)]));
+  return [...list].sort((a, b) => (years.get(b.id) ?? 0) - (years.get(a.id) ?? 0)
+    || (a.model ?? '\uffff').localeCompare(b.model ?? '\uffff', undefined, { numeric: true }));
+}
+
 export function layout(makers: Manufacturer[], kept: Entry[], splitOver = SPLIT_OVER): Section[] {
   const byMaker = new Map<string, Entry[]>();
   for (const m of kept) {
@@ -197,8 +224,9 @@ export function layout(makers: Manufacturer[], kept: Entry[], splitOver = SPLIT_
     if (list) list.push(m); else byMaker.set(m.maker.id, [m]);
   }
   return makers.flatMap((maker): Section[] => {
-    const mine = byMaker.get(maker.id);
-    if (!mine) return [];
+    const found = byMaker.get(maker.id);
+    if (!found) return [];
+    const mine = newestFirst(found);
     const lines = new Map<string | null, Entry[]>();
     for (const m of mine) {
       const list = lines.get(m.category);

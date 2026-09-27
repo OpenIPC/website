@@ -397,3 +397,42 @@ func TestANewerSnapshotReplacesAUnitsChangedFiles(t *testing.T) {
 		t.Errorf("%d files after an unchanged re-import", n)
 	}
 }
+
+func TestTheEarliestListedYearAnySourceGivesIsKept(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	year := func() *int {
+		var y *int
+		if err := pool.QueryRow(ctx, `SELECT listed_year FROM board_models WHERE id = 'xiongmai-ivg-g5s'`).Scan(&y); err != nil {
+			t.Fatal(err)
+		}
+		return y
+	}
+	// cctvsp does not date its modules: the board starts undated.
+	if _, err := im.FromSnapshot(ctx, donor(t, "cctvsp", model("xiongmai", "IVG-G5S", nil))); err != nil {
+		t.Fatal(err)
+	}
+	if y := year(); y != nil {
+		t.Fatalf("undated board has year %d", *y)
+	}
+	for _, y := range []int{2022, 2021, 2023} {
+		if _, err := im.FromSnapshot(ctx, donor(t, "xiongmai", model("xiongmai", "IVG-G5S", map[string]any{"listed_year": y}))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if y := year(); y == nil || *y != 2021 {
+		t.Fatalf("year %v, want the earliest given, 2021", y)
+	}
+	tree, err := Tree(ctx, pool, "en", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			if mo.ID == "xiongmai-ivg-g5s" && (mo.ListedYear == nil || *mo.ListedYear != 2021) {
+				t.Errorf("tree listed_year %v", mo.ListedYear)
+			}
+		}
+	}
+}

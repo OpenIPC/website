@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
 import type { BoardFile, BoardsFile, Hit, Model } from './types';
 import {
   lineLabel,
-  cardFiles, cardPhotos, codeIndex, entries, filterBoards, filterHits, matchBoards, firstMissing, flashOf, formatBytes, frontPhoto,
+  cardFiles, cardPhotos, codeIndex, entries, filterBoards, filterHits, matchBoards, newestFirst, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, paragraphs, sensorKey, sensorOptions, slug,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
@@ -140,6 +140,36 @@ describe('finding a board by what it is called', () => {
     expect(ids('hi3516cv100')).toEqual(['old']);
     expect(ids('SONY IMX222')).toEqual(['old']);
     expect(ids('imx222')).toEqual(['old']);
+  });
+});
+
+describe('newest boards first', () => {
+  const ids = (list: Model[]) => newestFirst(list).map((m) => m.id);
+
+  test('by the year the maker listed them, then by code with numbers read as numbers', () => {
+    expect(ids([
+      model('ipg-9', { listed_year: 2016 }), model('ipg-10', { listed_year: 2016 }),
+      model('ivg-g5s', { listed_year: 2021 }), model('ahb', { listed_year: 2015 }),
+    ])).toEqual(['ivg-g5s', 'ipg-9', 'ipg-10', 'ahb']);
+  });
+
+  test('an undated board takes the median year of the dated boards on its SoC; one with neither goes last', () => {
+    expect(ids([
+      model('nosoc'),
+      model('old', { soc: 'hi3518ev100', listed_year: 2015 }),
+      model('undated-old', { soc: 'hi3518ev100' }),
+      model('new-a', { soc: 'gk7205v200', listed_year: 2020 }),
+      model('new-b', { soc: 'gk7205v200', listed_year: 2022 }),
+      model('new-c', { soc: 'gk7205v200', listed_year: 2021 }),
+      model('undated-new', { soc: null, soc_label: 'GK7205V200' }),
+    ])).toEqual(['new-b', 'new-c', 'undated-new', 'new-a', 'old', 'undated-old', 'nosoc']);
+  });
+
+  test('the layout lists each group newest first', () => {
+    const file: BoardsFile = { ...FILE, manufacturers: [{ id: 'x', name: 'X', aliases: [], website: null, models: [
+      model('a', { listed_year: 2015 }), model('b', { listed_year: 2023 }),
+    ] }] };
+    expect(layout(file.manufacturers, entries(file))[0].groups[0].entries.map((m) => m.id)).toEqual(['b', 'a']);
   });
 });
 

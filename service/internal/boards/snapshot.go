@@ -30,8 +30,8 @@ import (
 var Snapshots = map[string]string{
 	// boards-donors/cctvsp/snapshot-1a8c5b9e28d9.tar: 57 modules, translated from Russian; pinouts reviewed by eye.
 	"cctvsp": "1a8c5b9e28d9e696f5539f06388bf7e4ceb3711ed118a8f3928188d9bf6a766f",
-	// boards-donors/xiongmai/snapshot-f57d850923ed.tar: 684 models from the EN and ZH trees, each picture once.
-	"xiongmai": "f57d850923ed7d5515c4219393ba93bdfd8c40e4edc70c81cc93c5a7a5b69dae",
+	// boards-donors/xiongmai/snapshot-bf30809cb019.tar: 684 models from the EN and ZH trees, each picture once, dated.
+	"xiongmai": "bf30809cb019dc80a00ea89988c93691c98f757bff876a4f53f36cbc9288395c",
 }
 
 type Snapshot struct {
@@ -64,6 +64,9 @@ type SnapModel struct {
 	Links          []SnapLink             `json:"links"`
 	Files          []SnapFile             `json:"files"`
 	Tags           []string               `json:"tags"`
+	// ListedYear is the year the maker's own catalogue first showed the
+	// board, where the source dates it; 0 when it does not.
+	ListedYear int `json:"listed_year,omitempty"`
 }
 
 type SnapLink struct {
@@ -411,14 +414,15 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 				id = slug(m.Maker + "-" + m.Code + "-" + src)
 			}
 			if _, err := tx.Exec(ctx, `
-				INSERT INTO board_models (id, manufacturer_id, model, soc, soc_label, category, position)
-				VALUES ($1, $2, $3, $4, $5, $6, 1000 + $7)`,
-				id, maker.ID, m.Code, null(im.socFor(m.SoCLabel)), null(m.SoCLabel), null(m.Category), position); err != nil {
+				INSERT INTO board_models (id, manufacturer_id, model, soc, soc_label, category, listed_year, position)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, 1000 + $8)`,
+				id, maker.ID, m.Code, null(im.socFor(m.SoCLabel)), null(m.SoCLabel), null(m.Category), nullInt(m.ListedYear), position); err != nil {
 				return err
 			}
 		} else if _, err := tx.Exec(ctx, `
-			UPDATE board_models SET category = coalesce(category, $2), soc = coalesce(soc, $3), soc_label = coalesce(soc_label, $4)
-			WHERE id = $1`, id, null(m.Category), null(im.socFor(m.SoCLabel)), null(m.SoCLabel)); err != nil {
+			UPDATE board_models SET category = coalesce(category, $2), soc = coalesce(soc, $3), soc_label = coalesce(soc_label, $4),
+			       listed_year = least(listed_year, $5)
+			WHERE id = $1`, id, null(m.Category), null(im.socFor(m.SoCLabel)), null(m.SoCLabel), nullInt(m.ListedYear)); err != nil {
 			return err
 		}
 		for _, c := range codes {
