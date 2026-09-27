@@ -58,19 +58,20 @@ describe('/cameras/boards', () => {
     expect(read('ru/supported-hardware/full-list')).toMatch(/href="\/ru\/cameras\/boards"/);
   });
 
-  test('leaves out the vendors with nothing installable, and only there', () => {
-    // The badges say how many SoCs have firmware; a zero is a tab that is
-    // only space on this page. Hidden rather than absent, so the correction
-    // on load can bring it back.
+  test('the strip leaves out vendors with nothing installable, except the page you are on', () => {
+    // A zero is a tab that is only space. Hidden rather than absent, so the
+    // correction on load can bring it back.
     const tabOf = (html: string, vendor: string) =>
       html.match(new RegExp(`<li[^>]*>\\s*<a[^>]*href="/cameras/vendors/${vendor}"`))?.[0] ?? '';
-    const boards = page('en');
-    const zero = [...boards.matchAll(/data-vendor="([^"]+)"[^>]*>0</g)].map((m) => m[1]);
+    const zero = [...page('en').matchAll(/data-vendor="([^"]+)"[^>]*>0</g)].map((m) => m[1]);
     expect(zero.length, 'the build knows some vendors with nothing installable').toBeGreaterThan(0);
-    for (const v of zero) expect(tabOf(boards, v), v).toMatch(/<li[^>]*hidden/);
-    expect(tabOf(boards, 'hisilicon')).not.toMatch(/hidden/);
-    const featured = read('supported-hardware/featured');
-    for (const v of zero) expect(tabOf(featured, v), `${v} on the hardware pages`).not.toMatch(/hidden/);
+    for (const html of [page('en'), read('supported-hardware/featured'), read('supported-hardware/full-list'), read('cameras/vendors/hisilicon')]) {
+      for (const v of zero) expect(tabOf(html, v), v).toMatch(/<li[^>]*hidden/);
+      expect(tabOf(html, 'hisilicon')).not.toMatch(/hidden/);
+    }
+    const own = read(`cameras/vendors/${zero[0]}`);
+    expect(tabOf(own, zero[0]), `${zero[0]}'s own page`).not.toMatch(/hidden/);
+    expect(own).toMatch(new RegExp(`href="/cameras/vendors/${zero[0]}"[^>]*aria-current="page"`));
   });
 
   test('is in the menu, the footer and the sitemap', () => {

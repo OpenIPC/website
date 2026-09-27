@@ -219,6 +219,10 @@ const p = (path: string) => pathFor(locale, path);
 
       badge.textContent = String(count);
       badge.classList.toggle('site-badge-primary', count > 0);
+      // A vendor with nothing installable has no tab (../HardwareTabs.astro),
+      // except the one this page is about.
+      const tab = badge.closest('li');
+      if (tab && !tab.querySelector('[aria-current]')) tab.hidden = count === 0;
       badge.title = words.installable_title
         .replace('{count}', String(count))
         .replace('{total}', badge.dataset.total);

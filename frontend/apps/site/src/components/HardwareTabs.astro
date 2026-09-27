@@ -8,10 +8,11 @@
  * ./pages/Hardware.astro on the catalogue pages, which corrects its rows from
  * the same answer, and by the script below on the board catalogue.
  *
- * On the board catalogue a vendor with nothing installable has no tab: there
- * the strip is a way out to the hardware pages, and a row of zeros is only
- * space. The tab is still in the page, hidden, so the correction on load can
- * bring it back when the live count says so.
+ * A vendor with nothing installable has no tab: a row of zeros is only space,
+ * and Full list still names every vendor. The one exception is the vendor
+ * page you are on, whose tab stays as the current one. The hidden tabs are
+ * still in the page so the correction on load can bring one back when its
+ * live count rises; both correcting scripts toggle them.
  */
 import availability from '../data/availability.json';
 import { VENDORS, vendorPath, type Vendor } from '../lib/hardware';
@@ -42,7 +43,7 @@ const installable = (v: Vendor) => v.socs.filter((s) => (states[s.urlname] ?? 'n
     >{k('featured')}</a>
   </li>
   {VENDORS.map((v) => (
-    <li hidden={view === 'boards' && installable(v) === 0}>
+    <li hidden={installable(v) === 0 && !(view === 'vendor' && v.urlname === vendorSlug)}>
       <a
         class="site-tab"
         href={p(vendorPath(v))}
@@ -99,7 +100,7 @@ const installable = (v: Vendor) => v.socs.filter((s) => (states[s.urlname] ?? 'n
         badge.textContent = String(count);
         badge.classList.toggle('site-badge-primary', count > 0);
         const tab = badge.closest('li');
-        if (tab) tab.hidden = count === 0;
+        if (tab && !tab.querySelector('[aria-current]')) tab.hidden = count === 0;
         badge.title = installableTitle.replace('{count}', String(count)).replace('{total}', badge.dataset.total);
       }
     })();
