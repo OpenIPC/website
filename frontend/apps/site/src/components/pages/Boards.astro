@@ -1,7 +1,8 @@
 ---
 /**
- * The board catalogue: camera boards found in real cameras, with their photos,
- * UART pinouts, flash dumps and console captures.
+ * The board catalogue: camera and recorder boards with their photos, pinouts,
+ * specifications, flash dumps and console captures, from every source that
+ * describes them. The island credits the sources, as the API names them.
  *
  * The page is the hardware tab strip, a heading and one island; the island
  * reads /api/v1/boards, which the Go web role answers from what was imported
@@ -27,8 +28,7 @@ const socs = Object.fromEntries(VENDORS.flatMap((vendor) => vendor.socs.map((soc
 <div class="site-container mt-4">
   <HardwareTabs locale={locale} view="boards" />
   <h1 class="mt-7 mb-0 text-h1 font-semibold text-balance">{t('pages.boards.heading')}</h1>
-  <p class="mt-2.5 mb-1.5 max-w-[65ch] text-lg">{t('pages.boards.lede')}</p>
-  <p class="mb-0 text-[13px] text-body-secondary" set:html={t('pages.boards.credit_html')} />
+  <p class="mt-2.5 mb-0 max-w-[65ch] text-lg">{t('pages.boards.lede')}</p>
 </div>
 <Boards client:load locale={locale} socs={socs} />
 <ZoomDialog />

@@ -46,6 +46,9 @@ type Unit struct {
 	SourceRef   string
 	Position    int
 	Files       []File
+	// Source and ContributedBy default to the OpenHisiIpCam archive.
+	Source        string
+	ContributedBy string
 }
 
 type File struct {

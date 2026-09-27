@@ -3,8 +3,7 @@ en:
     boards:
       title: Camera boards
       heading: Your board is probably here
-      lede: 'Camera boards found in real cameras, with photos of both sides, UART pinouts, factory flash dumps and the U-Boot console of each. Match the PCB in your hand, then install OpenIPC on its SoC.'
-      credit_html: 'The first 25 boards come from the hardware catalogue of the <a href="https://github.com/OpenHisiIpCam">OpenHisiIpCam</a> project (2018), republished with its author''s permission.'
+      lede: 'Camera and recorder boards with photos, UART pinouts, specifications and, where we have them, factory flash dumps and U-Boot consoles. Match the PCB in your hand, then install OpenIPC on its SoC.'
   nav:
     boards: Camera boards
   cameras:
@@ -108,4 +107,60 @@ en:
     line: 'line {n}'
     known_title: 'Known boards with {soc}'
     known_link: See them in the board catalogue →
-    known_credit_html: 'Boards from the <a href="https://github.com/OpenHisiIpCam">OpenHisiIpCam</a> catalogue (2018), republished with its author''s permission.'
+    sources_label: Where the boards come from
+    filter_line: Product line
+    filter_source: Source
+    filter_ready: OpenIPC-ready only
+    tag_ready: OpenIPC-ready
+    tag_discontinued: Discontinued
+    matching:
+      one: '{count} board matches'
+      other: '{count} boards match'
+    group_other: Other boards
+    # Product lines, by their slug (lib/boards/model.ts slug()); a line not
+    # listed here is shown as the source names it.
+    product_line:
+      ip-camera-module: "IP camera modules"
+      dvr-board: "DVR boards"
+      nvr-board: "NVR boards"
+      consumer-module: "Consumer modules (4G, Wi-Fi)"
+      ahd-camera-module: "AHD camera modules"
+      xvi-ahd-hybrid-camera-module: "XVI/AHD hybrid camera modules"
+      af-module: "Zoom and autofocus modules"
+      panoramic-vr: "Panoramic and VR modules"
+      wifi-kit: "Wi-Fi kits"
+      h-265-xvi-dvr-board: "H.265 XVI DVR boards"
+      intelligent-analysis-module: "Intelligent analysis modules"
+      battery-camera-module: "Battery camera modules"
+      xvi-ahd-dvr-board: "XVI/AHD DVR boards"
+      dual-lens-camera-module: "Dual-lens camera modules"
+      accessory: "Accessories"
+    show_all:
+      one: 'Show all {count} board'
+      other: 'Show all {count} boards'
+    details: Details
+    details_of: 'Details of {board}'
+    cov_document: Docs
+    kind_firmware: Stock firmware
+    close: Close
+    panel_loading: Loading what the sources say…
+    panel_error: 'The details could not be loaded ({error}).'
+    panel_missing: This board is not in the catalogue.
+    original: Original
+    translated_from_ru: Translated from Russian
+    translated_from_en: Translated from English
+    translated_from_zh: Translated from Chinese
+    translated_from_other: Translated
+    features: Features
+    specs: Specifications
+    links: Links
+    link_stock_firmware: Stock firmware
+    link_successor: Replaced by
+    link_predecessor: Replaces
+    link_related: Same family
+    link_vendor_page: Vendor page (archived)
+    link_source_page: Source page
+    new_tab: opens in a new tab
+    files_title: Photos and files
+    from_source: 'From {source}'
+    known_sources: 'Sources: '

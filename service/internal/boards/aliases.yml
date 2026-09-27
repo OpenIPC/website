@@ -1,0 +1,72 @@
+# Decisions from the deduplication review (tools/board-donors/dedup.py).
+# Each entry was made by a person, once; the importer applies it on every import.
+#
+#   is:       the code one source prints IS the board another has (merge)
+#   related:  a different board of the same family (link both ways, no merge)
+#
+# 2026-09-27: every cross-source candidate is a separate SKU, linked as
+# related; OpenHisiIpCam's 53h20-s is related to, not the same as, the
+# IPG-53H20PL family.
+- maker: xiongmai
+  code: 53H20-S
+  related: IPG-53H20AF
+- maker: xiongmai
+  code: 53H20-S
+  related: IPG-53H20PL-AE
+- maker: xiongmai
+  code: 53H20-S
+  related: IPG-53H20PL-B
+- maker: xiongmai
+  code: 53H20-S
+  related: IPG-53H20PL-P
+- maker: xiongmai
+  code: 53H20-S
+  related: IPG-53H20PL-S
+- maker: xiongmai
+  code: 53H20-S
+  related: IPG-53H20PL-A
+- maker: xiongmai
+  code: AHG-53X13PT-M
+  related: IPG-53X13PT-S
+- maker: xiongmai
+  code: IPG-50H10PL-A
+  related: IPG-50H10PL-AE
+- maker: xiongmai
+  code: IPG-50H10PL-B
+  related: IPG-50H10PL-AE
+- maker: xiongmai
+  code: IPG-50H10PL-P
+  related: IPG-50H10PL-AE
+- maker: xiongmai
+  code: IPG-50H10PL-R
+  related: IPG-50H10PL-AE
+- maker: xiongmai
+  code: IPG-53H20PL-AE
+  related: IPG-53H20PL-A
+- maker: xiongmai
+  code: IPG-53H20PL-B
+  related: IPG-53H20PL-A
+- maker: xiongmai
+  code: IPG-53H20PL-P
+  related: IPG-53H20PL-A
+- maker: xiongmai
+  code: IPG-53X13PT-WF-4F
+  related: IPG-53X13PT-S
+- maker: xiongmai
+  code: IPG-53X13PT-WFA1
+  related: IPG-53X13PT-S
+- maker: xiongmai
+  code: IPG-83H20PY-AFT-2812
+  related: IPG-83H20PY-S
+- maker: xiongmai
+  code: IPG-85HE20PY-A
+  related: IPG-85HE20PY-AF
+- maker: xiongmai
+  code: IPG-HP500NR-S
+  related: IPG-HP500NR-AE
+- maker: xiongmai
+  code: IVG-HP500NR-AE
+  related: IPG-HP500NR-AE
+- maker: xiongmai
+  code: IVG-HP500NR-SY
+  related: IPG-HP500NR-AE

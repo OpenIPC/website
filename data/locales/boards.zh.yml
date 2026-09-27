@@ -3,8 +3,7 @@ zh:
     boards:
       title: 摄像头主板
       heading: 你的主板很可能就在这里
-      lede: '来自真实摄像头的主板：正反两面的照片、UART 引脚图、出厂闪存转储和 U-Boot 控制台输出。先找到与你手中 PCB 相同的主板，再在它的 SoC 上安装 OpenIPC。'
-      credit_html: '最早的 25 块主板来自 <a href="https://github.com/OpenHisiIpCam">OpenHisiIpCam</a> 项目（2018 年）的硬件目录，经作者许可重新发布。'
+      lede: '摄像机和录像机主板：照片、UART 引脚图、规格参数，以及（如有）出厂闪存转储和 U-Boot 控制台输出。先找到与你手中 PCB 相同的主板，再在它的 SoC 上安装 OpenIPC。'
   nav:
     boards: 摄像头主板
   cameras:
@@ -108,4 +107,63 @@ zh:
     line: '第 {n} 行'
     known_title: '使用 {soc} 的已知主板'
     known_link: 在主板目录中查看 →
-    known_credit_html: '主板来自 <a href="https://github.com/OpenHisiIpCam">OpenHisiIpCam</a> 目录（2018 年），经作者许可重新发布。'
+    sources_label: 主板资料来源
+    source_note_openhisiipcam: 'OpenHisiIpCam 项目（2018 年）的硬件目录，经作者许可重新发布。'
+    source_note_xiongmai: '雄迈自己的产品目录，因公司网站已无法访问，于 2026 年归档。'
+    source_note_cctvsp: '来自 cctvsp.ru 商店 OpenIPC 和归档栏目的模组介绍、照片、引脚图和厂商文档，由该商店提供（2026 年）。'
+    filter_line: 产品线
+    filter_source: 来源
+    filter_ready: 仅显示支持 OpenIPC 的
+    tag_ready: 支持 OpenIPC
+    tag_discontinued: 已停产
+    matching:
+      one: '{count} 块主板符合条件'
+      other: '{count} 块主板符合条件'
+    group_other: 其他主板
+    # Product lines, by their slug (lib/boards/model.ts slug()); a line not
+    # listed here is shown as the source names it.
+    product_line:
+      ip-camera-module: "网络摄像机模组"
+      dvr-board: "DVR 主板"
+      nvr-board: "NVR 主板"
+      consumer-module: "消费类模组（4G、WiFi）"
+      ahd-camera-module: "AHD 摄像机模组"
+      xvi-ahd-hybrid-camera-module: "XVI/AHD 混合摄像机模组"
+      af-module: "变焦与自动对焦模组"
+      panoramic-vr: "全景与 VR 模组"
+      wifi-kit: "WiFi 套装"
+      h-265-xvi-dvr-board: "H.265 XVI DVR 主板"
+      intelligent-analysis-module: "智能分析模组"
+      battery-camera-module: "电池类摄像机模组"
+      xvi-ahd-dvr-board: "XVI/AHD DVR 主板"
+      dual-lens-camera-module: "双目摄像机模组"
+      accessory: "配件"
+    show_all:
+      one: '显示全部 {count} 块'
+      other: '显示全部 {count} 块'
+    details: 详情
+    details_of: '{board} 的详情'
+    cov_document: 文档
+    kind_firmware: 原厂固件
+    close: 关闭
+    panel_loading: 正在加载各来源的资料…
+    panel_error: '无法加载详情（{error}）。'
+    panel_missing: 目录中没有这块主板。
+    original: 原文
+    translated_from_ru: 译自俄语
+    translated_from_en: 译自英语
+    translated_from_zh: 译自中文
+    translated_from_other: 译文
+    features: 特点
+    specs: 规格
+    links: 链接
+    link_stock_firmware: 原厂固件
+    link_successor: 后继型号
+    link_predecessor: 取代型号
+    link_related: 同系列
+    link_vendor_page: 厂商页面（归档）
+    link_source_page: 来源页面
+    new_tab: 在新标签页中打开
+    files_title: 照片与文件
+    from_source: '来源：{source}'
+    known_sources: '来源：'

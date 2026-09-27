@@ -19,6 +19,13 @@ func TestBoardCatalogueServing(t *testing.T) {
 		c := vhost(t, name)
 		tree := blockRe(c, regexp.MustCompile(`location = /api/v1/boards \{`))
 		mustContain(t, tree, "proxy_pass http://127.0.0.1:"+e.port+";", name+": the board tree does not reach its web role")
+		for _, re := range []string{`location = /api/v1/boards \{`, `location \^~ /api/v1/boards/models/ \{`, `location = /api/v1/boards/search \{`} {
+			b := blockRe(c, regexp.MustCompile(re))
+			mustContain(t, b, "proxy_pass http://127.0.0.1:"+e.port+";", name+": "+re+" does not reach its web role")
+			// megabytes of JSON; nginx compresses only text/html by default
+			mustContain(t, b, "gzip_types application/json;", name+": "+re+" is sent uncompressed")
+			mustContain(t, b, "gzip_proxied any;", name+": "+re+" is proxied and so never compressed")
+		}
 		search := blockRe(c, regexp.MustCompile(`location = /api/v1/boards/search \{`))
 		mustContain(t, search, "proxy_pass http://127.0.0.1:"+e.port+";", name+": the board search does not reach its web role")
 		mustContain(t, search, "limit_req zone=boards_search", name+": the board search has no rate limit")
@@ -27,7 +34,7 @@ func TestBoardCatalogueServing(t *testing.T) {
 		// A gallery asks for dozens of thumbnails at once. In a zone of their
 		// own: counted in per_subnet they crowded out the page's fonts (a 429
 		// on dev), and inheriting its 20 would shed thumbnails.
-		mustContain(t, files, "limit_conn board_files 100;", name+": the board files do not have their own concurrency zone")
+		mustContain(t, files, "limit_conn board_files 400;", name+": the board files do not have their own concurrency zone, or it is too small for a product line's thumbnails")
 		mustNotContain(t, files, "per_subnet", name+": the board files count against the zone every other request needs")
 		mustContain(t, files, "Strict-Transport-Security", name+": add_header in /board-files/ drops the inherited HSTS")
 		mustContain(t, files, "text/plain uboot", name+": a U-Boot console would download instead of opening")
@@ -53,6 +60,10 @@ func TestBoardCatalogueServing(t *testing.T) {
 	mustContain(t, backup, "BOARDS_ROOT=/srv/www/shared/boards", "the backup leaves out the board files, which nothing can rebuild")
 	// A file corrected in place keeps its length; only its contents say it changed.
 	mustContain(t, backup, "xargs -0r sha256sum", "the backup decides the board files changed by names and sizes alone")
+	// Streamed to S3: staged in ${WORK} on the host's small /tmp tmpfs, the
+	// 160 MB archive can fill it and fail the whole run.
+	mustContain(t, backup, `boards_tar | "${AWS[@]}" s3 cp`, "the board files are staged on disk before the upload")
+	mustNotContain(t, backup, `-cf "${WORK}/${BOARDS_TAR}"`, "the board files are staged in ${WORK}")
 	if !strings.Contains(read(t, "deploy/RESTORE.md"), "Restore the board catalogue's files") {
 		t.Error("RESTORE.md does not say how to bring the board files back")
 	}

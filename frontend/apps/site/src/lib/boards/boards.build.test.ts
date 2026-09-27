@@ -24,7 +24,8 @@ describe('/cameras/boards', () => {
       expect(html, locale).toContain('<astro-island');
       expect(html, locale).toMatch(/component-url="[^"]*Boards[^"]*"/);
       expect(html, locale).toContain(translate(locale, 'pages.boards.heading'));
-      expect(html, locale).toContain('https://github.com/OpenHisiIpCam');
+      // The sources are credited by the island, from the API's own list; the lede says what is here.
+      expect(html, locale).toContain(translate(locale, 'pages.boards.lede'));
       expect(html, `${locale} is indexable`).not.toContain('noindex');
       expect(html, `${locale} has the zoom viewer`).toContain('id="zoom"');
     }

@@ -88,7 +88,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | boards import-snapshot | routes --json | version")
 	os.Exit(2)
 }
 
@@ -152,6 +152,7 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/wall/socket"},
 	{"web", "GET", "/api/v1/boards"},
 	{"web", "GET", "/api/v1/boards/search"},
+	{"web", "GET", "/api/v1/boards/models/{id}"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 }

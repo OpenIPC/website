@@ -205,19 +205,21 @@ if [ -d "$BOARDS_ROOT" ]; then
   # The set is identified by every file's contents, not by names and sizes: a
   # dump corrected in place keeps its length. About 160 MB to hash, a second
   # or two a night.
-  BOARDS_ID=$(cd "$BOARDS_ROOT" && find . -path './.import-*' -prune -o -type f -print0 \
+  BOARDS_ID=$(cd "$BOARDS_ROOT" && find . \( -path './.import-*' -o -path './.incoming-*' \) -prune -o -type f -print0 \
     | LC_ALL=C sort -z | xargs -0r sha256sum | sha256sum | cut -c1-16)
   if [ "$(cat "$BOARDS_MARK" 2>/dev/null || true)" = "$BOARDS_ID" ]; then
     log "board files unchanged (${BOARDS_ID}), not uploaded"
   else
     BOARDS_TAR="boards-${STAMP}-${BOARDS_ID}.tar"
-    tar -C "$BOARDS_ROOT" --exclude='./.import-*' -cf "${WORK}/${BOARDS_TAR}" . \
-      || fail "archiving the board files failed"
-    BOARDS_SIZE=$(stat -c %s "${WORK}/${BOARDS_TAR}")
+    # Streamed, never staged: the archive is 160 MB and more, and ${WORK} is
+    # on /tmp, which on this host is a tmpfs with a few hundred MB free. The
+    # size comes from a second pass over the same files, for the read-back.
+    boards_tar() { tar -C "$BOARDS_ROOT" --exclude='./.import-*' --exclude='./.incoming-*' -cf - .; }
+    BOARDS_SIZE=$(boards_tar | wc -c) || fail "reading the board files failed"
     if [ "$DRY_RUN" = 1 ]; then
       log "DRY RUN would upload ${BOARDS_TAR} (${BOARDS_SIZE} bytes) -> s3://${S3_BUCKET}/boards/"
     else
-      "${AWS[@]}" s3 cp --only-show-errors "${WORK}/${BOARDS_TAR}" "s3://${S3_BUCKET}/boards/${BOARDS_TAR}" \
+      boards_tar | "${AWS[@]}" s3 cp --only-show-errors --expected-size "$BOARDS_SIZE" - "s3://${S3_BUCKET}/boards/${BOARDS_TAR}" \
         || fail "upload of the board files failed"
       REMOTE=$("${AWS[@]}" s3api head-object --bucket "$S3_BUCKET" --key "boards/${BOARDS_TAR}" \
         --query ContentLength --output text 2>/dev/null) || fail "the board files are not readable back"

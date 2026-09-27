@@ -1,18 +1,20 @@
 /**
  * "Known boards with <SoC>", under the installation wizard on each SoC page.
  *
- * It reads the same /api/v1/boards the catalogue page does and shows the
- * boards built on this chip. A SoC with no boards on record, a catalogue that
- * cannot be fetched, or a page still loading all render nothing: the wizard
- * is what the visitor came for, and this section must never make that page
- * look broken.
+ * It reads /api/v1/boards?soc=<urlname>, the boards built on this chip, in the
+ * page's language. Each card opens that board's details in the catalogue. A
+ * SoC with no boards on record, a catalogue that cannot be fetched, or a page
+ * still loading all render nothing: the wizard is what the visitor came for,
+ * and this section must never make that page look broken.
  */
+import { Fragment } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { fetchBoards } from '../../lib/boards/api';
-import { entries, frontPhoto, has, type Entry } from '../../lib/boards/model';
+import { entries, frontPhoto, has, subtitle, type Entry } from '../../lib/boards/model';
+import type { Source } from '../../lib/boards/types';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import type { Locale } from '../../lib/i18n';
-import { Chip, Thumb } from './parts';
+import { Chip, makerName } from './parts';
 
 const SHOWN = ['pinout', 'flash_dump', 'uboot_env'] as const;
 
@@ -21,14 +23,22 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
 }) {
   const t = useBoardsTranslations(locale);
   const [boards, setBoards] = useState<Entry[]>([]);
+  const [sources, setSources] = useState<Source[]>([]);
 
   useEffect(() => {
     let live = true;
-    fetchBoards()
-      .then((file) => live && setBoards(entries(file).filter((m) => m.soc === soc)))
+    fetchBoards(locale, soc)
+      .then((file) => {
+        if (!live) return;
+        // The server answers for this SoC; the check keeps a server that ignored ?soc= from filling the page.
+        const mine = entries(file).filter((m) => m.soc === soc);
+        const used = new Set(mine.flatMap((m) => m.sources));
+        setBoards(mine);
+        setSources(file.sources.filter((s) => used.has(s.id)));
+      })
       .catch(() => { /* Nothing to add to the page; the wizard stands alone. */ });
     return () => { live = false; };
-  }, [soc]);
+  }, [soc, locale]);
 
   if (boards.length === 0) return null;
 
@@ -40,29 +50,43 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
         </h2>
         <a href={`${catalogueHref}?soc=${encodeURIComponent(soc)}`}>{t('known_link')}</a>
       </header>
-      <div class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3.5">
+      <ul class="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3.5 p-0">
         {boards.map((m) => {
           const title = m.model ?? t('unidentified');
+          const name = subtitle(m);
           const photo = frontPhoto(m);
           const sensors = [...new Set(m.units.map((u) => u.sensor).filter(Boolean))].join('; ') || t('unknown');
-          const maker = m.maker.id === 'unknown' ? t('unknown_maker') : m.maker.name;
           return (
-            <div key={m.id} class="grid grid-cols-[110px_1fr] overflow-hidden rounded-lg border border-hairline bg-white">
-              {photo
-                ? <Thumb file={photo} class="h-full min-h-[96px] w-[110px]" alt={t('photo_alt', { what: t(`tag_${photo.kind}`), board: title })} />
-                : <span class="bg-surface-alt" />}
-              <div class="grid min-w-0 content-start gap-1 px-3 py-2.5 text-[13px]">
-                <b class={m.model ? 'font-mono text-sm font-semibold break-all' : 'text-sm font-medium text-body-secondary'}>{title}</b>
-                <span class="text-body-secondary">{maker} · {sensors}</span>
-                <div class="flex flex-wrap gap-1.5">
-                  {SHOWN.map((k) => <Chip key={k} ok={has(m, k)}>{t(`cov_${k}`)}</Chip>)}
-                </div>
-              </div>
-            </div>
+            <li key={m.id}>
+              <a href={`${catalogueHref}?model=${encodeURIComponent(m.id)}`} aria-label={t('details_of', { board: title })}
+                class="grid h-full grid-cols-[110px_1fr] overflow-hidden rounded-lg border border-hairline bg-white text-body no-underline transition-colors hover:border-brand-blue">
+                {photo
+                  ? <img src={photo.thumb_url} alt="" loading="lazy" decoding="async" class="block h-full min-h-[96px] w-[110px] bg-surface-alt object-cover" />
+                  : <span class="bg-surface-alt" />}
+                <span class="grid min-w-0 content-start gap-1 px-3 py-2.5 text-[13px]">
+                  <b class={m.model ? 'font-mono text-sm font-semibold break-all' : 'text-sm font-medium text-body-secondary'}>{title}</b>
+                  {name && <span class="leading-snug">{name}</span>}
+                  <span class="text-body-secondary">{makerName(m.maker.id, m.maker.name, t)} · {sensors}</span>
+                  <span class="flex flex-wrap gap-1.5">
+                    {SHOWN.map((k) => <Chip key={k} ok={has(m, k)}>{t(`cov_${k}`)}</Chip>)}
+                  </span>
+                </span>
+              </a>
+            </li>
           );
         })}
-      </div>
-      <p class="m-0 text-[13px] text-body-secondary" dangerouslySetInnerHTML={{ __html: t('known_credit_html') }} />
+      </ul>
+      {sources.length > 0 && (
+        <p class="m-0 text-[13px] text-body-secondary">
+          {t('known_sources')}
+          {sources.map((s, i) => (
+            <Fragment key={s.id}>
+              {i > 0 && ', '}
+              <a href={s.url} target="_blank" rel="noopener">{s.name}</a>
+            </Fragment>
+          ))}.
+        </p>
+      )}
     </section>
   );
 }

@@ -91,9 +91,8 @@
       "title": "Bandwidth calculator"
     },
     "boards": {
-      "credit_html": "The first 25 boards come from the hardware catalogue of the <a href=\"https://github.com/OpenHisiIpCam\">OpenHisiIpCam</a> project (2018), republished with its author's permission.",
       "heading": "Your board is probably here",
-      "lede": "Camera boards found in real cameras, with photos of both sides, UART pinouts, factory flash dumps and the U-Boot console of each. Match the PCB in your hand, then install OpenIPC on its SoC.",
+      "lede": "Camera and recorder boards with photos, UART pinouts, specifications and, where we have them, factory flash dumps and U-Boot consoles. Match the PCB in your hand, then install OpenIPC on its SoC.",
       "title": "Camera boards"
     },
     "business": {

@@ -3,8 +3,7 @@ ru:
     boards:
       title: Платы камер
       heading: Ваша плата, скорее всего, уже здесь
-      lede: 'Платы из настоящих камер: фотографии обеих сторон, распиновка UART, заводские дампы флеш-памяти и консоль U-Boot. Найдите плату, которая у вас в руках, и установите OpenIPC на её SoC.'
-      credit_html: 'Первые 25 плат взяты из каталога оборудования проекта <a href="https://github.com/OpenHisiIpCam">OpenHisiIpCam</a> (2018) и опубликованы с разрешения его автора.'
+      lede: 'Платы камер и регистраторов: фотографии, распиновка UART, характеристики, а где они есть — заводские дампы флеш-памяти и консоль U-Boot. Найдите плату, которая у вас в руках, и установите OpenIPC на её SoC.'
   nav:
     boards: Платы камер
   cameras:
@@ -124,4 +123,67 @@ ru:
     line: 'строка {n}'
     known_title: 'Известные платы на {soc}'
     known_link: Смотреть в каталоге плат →
-    known_credit_html: 'Платы из каталога <a href="https://github.com/OpenHisiIpCam">OpenHisiIpCam</a> (2018), опубликованы с разрешения его автора.'
+    sources_label: Откуда эти платы
+    source_note_openhisiipcam: 'Каталог оборудования проекта OpenHisiIpCam (2018), опубликован с разрешения его автора.'
+    source_note_xiongmai: 'Собственный каталог продукции Xiongmai, сохранённый в 2026 году, потому что сайт компании больше недоступен.'
+    source_note_cctvsp: 'Описания модулей, фотографии, распиновки и документы производителя из разделов OpenIPC и архива магазина cctvsp.ru, предоставлены магазином (2026).'
+    filter_line: Линейка
+    filter_source: Источник
+    filter_ready: Только готовые к OpenIPC
+    tag_ready: Готов к OpenIPC
+    tag_discontinued: Снят с производства
+    matching:
+      one: 'Подходит {count} плата'
+      few: 'Подходят {count} платы'
+      many: 'Подходят {count} плат'
+      other: 'Подходят {count} платы'
+    group_other: Прочие платы
+    # Product lines, by their slug (lib/boards/model.ts slug()); a line not
+    # listed here is shown as the source names it.
+    product_line:
+      ip-camera-module: "IP-модули камер"
+      dvr-board: "Платы DVR"
+      nvr-board: "Платы NVR"
+      consumer-module: "Бытовые модули (4G, Wi-Fi)"
+      ahd-camera-module: "Модули камер AHD"
+      xvi-ahd-hybrid-camera-module: "Гибридные модули камер XVI/AHD"
+      af-module: "Модули с зумом и автофокусом"
+      panoramic-vr: "Панорамные и VR-модули"
+      wifi-kit: "Комплекты Wi-Fi"
+      h-265-xvi-dvr-board: "Платы DVR H.265 XVI"
+      intelligent-analysis-module: "Модули интеллектуальной аналитики"
+      battery-camera-module: "Модули камер с батарейным питанием"
+      xvi-ahd-dvr-board: "Платы DVR XVI/AHD"
+      dual-lens-camera-module: "Двухобъективные модули камер"
+      accessory: "Аксессуары"
+    show_all:
+      one: 'Показать все {count} плату'
+      few: 'Показать все {count} платы'
+      many: 'Показать все {count} плат'
+      other: 'Показать все {count} платы'
+    details: Подробнее
+    details_of: 'Подробности: {board}'
+    cov_document: Документы
+    kind_firmware: Заводская прошивка
+    close: Закрыть
+    panel_loading: Загружаем, что пишут источники…
+    panel_error: 'Не удалось загрузить подробности ({error}).'
+    panel_missing: Такой платы нет в каталоге.
+    original: Оригинал
+    translated_from_ru: Перевод с русского
+    translated_from_en: Перевод с английского
+    translated_from_zh: Перевод с китайского
+    translated_from_other: Перевод
+    features: Особенности
+    specs: Характеристики
+    links: Ссылки
+    link_stock_firmware: Заводская прошивка
+    link_successor: Заменён на
+    link_predecessor: Заменяет
+    link_related: То же семейство
+    link_vendor_page: Страница производителя (архив)
+    link_source_page: Страница источника
+    new_tab: откроется в новой вкладке
+    files_title: Фото и файлы
+    from_source: 'Источник: {source}'
+    known_sources: 'Источники: '

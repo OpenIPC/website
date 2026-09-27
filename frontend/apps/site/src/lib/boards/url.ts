@@ -1,7 +1,7 @@
 /**
- * Everything a shared link to /cameras/boards carries: the search, its scope
- * and the four filters. Defaults are left out, so the bare address is the
- * whole catalogue.
+ * Everything a shared link to /cameras/boards carries: the search, its scope,
+ * the filters and the board whose details are open. Defaults are left out,
+ * so the bare address is the whole catalogue.
  */
 
 export const SCOPES = ['uboot_env', 'boot_log', 'note', 'all'] as const;
@@ -17,9 +17,20 @@ export type BoardsState = {
   soc: string | null;
   sensor: string | null;
   missing: Missing | null;
+  /** The product line: the source's category, as written. */
+  line: string | null;
+  /** A source id. */
+  source: string | null;
+  /** Only boards tagged openipc-ready. */
+  ready: boolean;
+  /** The board whose details panel is open. */
+  model: string | null;
 };
 
-export const EMPTY: BoardsState = { q: '', scope: 'uboot_env', maker: null, soc: null, sensor: null, missing: null };
+export const EMPTY: BoardsState = {
+  q: '', scope: 'uboot_env', maker: null, soc: null, sensor: null, missing: null,
+  line: null, source: null, ready: false, model: null,
+};
 
 const oneOf = <T extends string>(list: readonly T[], v: string | null): T | null =>
   v !== null && (list as readonly string[]).includes(v) ? (v as T) : null;
@@ -33,6 +44,10 @@ export function readQueryString(search: string): BoardsState {
     soc: p.get('soc')?.toLowerCase() || null,
     sensor: p.get('sensor')?.toUpperCase() || null,
     missing: oneOf(MISSING, p.get('missing')),
+    line: p.get('line') || null,
+    source: p.get('source') || null,
+    ready: p.get('ready') === '1',
+    model: p.get('model') || null,
   };
 }
 
@@ -44,6 +59,10 @@ export function writeQueryString(s: BoardsState): string {
   if (s.soc) p.set('soc', s.soc);
   if (s.sensor) p.set('sensor', s.sensor);
   if (s.missing) p.set('missing', s.missing);
+  if (s.line) p.set('line', s.line);
+  if (s.source) p.set('source', s.source);
+  if (s.ready) p.set('ready', '1');
+  if (s.model) p.set('model', s.model);
   const out = p.toString();
   return out ? `?${out}` : '';
 }
