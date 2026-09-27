@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
 import type { BoardFile, BoardsFile, Hit, Model } from './types';
 import {
   lineLabel,
-  cardFiles, cardPhotos, codeIndex, entries, filterBoards, filterHits, firstMissing, flashOf, formatBytes, frontPhoto,
+  cardFiles, cardPhotos, codeIndex, entries, filterBoards, filterHits, matchBoards, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, paragraphs, sensorKey, sensorOptions, slug,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
@@ -98,6 +98,48 @@ describe('filters', () => {
     const hit = (model_id: string) => ({ model_id } as Hit);
     const kept = filterBoards(ALL, { ...EMPTY, maker: 'xiongmai' });
     expect(filterHits([hit('a'), hit('c'), hit('b')], kept).map((h) => h.model_id)).toEqual(['a', 'b']);
+  });
+});
+
+describe('finding a board by what it is called', () => {
+  const summary = (name: string) => ({ name, lead: null, locale: 'en', translated_from: null });
+  const list = entries({
+    ...FILE,
+    manufacturers: [{ id: 'xiongmai', name: 'Xiongmai', aliases: [], website: null, models: [
+      model('zoom', { model: 'JZC-N81820S', aliases: ['JZC-N81820'], summary: summary('Starlight 2.0M 18X AF module'), category: 'AF Module' }),
+      model('ipg', { model: 'IPG-50H20PLS-S', summary: summary('2MP IP camera module'), soc_label: 'Hi3516CV300' }),
+      model('near', { model: 'IPG-50H20PL-S', summary: summary('2MP IP camera module') }),
+      model('old', { model: '53H20-S', soc: 'hi3516cv100', soc_label: 'hi3516c' }, 'SONY IMX222'),
+    ] }],
+  });
+  const ids = (q: string) => matchBoards(list, q).map((m) => m.id);
+
+  test('by code, with or without separators, in any case', () => {
+    expect(ids('JZC-N81820S')).toEqual(['zoom']);
+    expect(ids('jzc n81820s')).toEqual(['zoom']);
+    expect(ids('N81820')).toEqual(['zoom']);
+  });
+
+  test('by product name, words in any order', () => {
+    expect(ids('Starlight 2.0M 18X')).toEqual(['zoom']);
+    expect(ids('18x starlight')).toEqual(['zoom']);
+  });
+
+  test('an exact code comes before the codes that contain it', () => {
+    expect(ids('IPG-50H20PL-S')).toEqual(['near', 'ipg']);
+    expect(ids('IPG-50H20PL')).toEqual(['ipg', 'near']);
+    expect(ids('2MP')).toEqual(['ipg', 'near']);
+  });
+
+  test('by SoC and nothing for a word no board carries', () => {
+    expect(ids('hi3516cv300')).toEqual(['ipg']);
+    expect(ids('mtdparts')).toEqual([]);
+  });
+
+  test('by the catalogue SoC a source label resolved to, and by the sensor as the card shows it', () => {
+    expect(ids('hi3516cv100')).toEqual(['old']);
+    expect(ids('SONY IMX222')).toEqual(['old']);
+    expect(ids('imx222')).toEqual(['old']);
   });
 });
 

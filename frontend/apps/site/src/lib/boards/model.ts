@@ -83,6 +83,34 @@ export function filterBoards(all: Entry[], s: Filters): Entry[] {
     && (!s.ready || m.tags.includes(READY)));
 }
 
+/** A code with its separators squeezed out: "n81820" is in "JZC-N81820S". */
+const squeeze = (s: string): string => s.toLowerCase().replace(/[-_ /.()（）]/g, '');
+
+/**
+ * The boards whose code, other codes, name, lead, SoC, product line or
+ * sensor carry every word of the query -- what a visitor typing a model code
+ * or a product name means. Exact codes first, then codes that contain it.
+ */
+export function matchBoards(all: Entry[], q: string): Entry[] {
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+  const whole = squeeze(q);
+  const found: { m: Entry; rank: number }[] = [];
+  for (const m of all) {
+    const codes = [m.model, ...(m.aliases ?? [])].filter((c): c is string => !!c);
+    const fields = [...codes, m.summary?.name, m.summary?.lead, m.soc, m.soc_label, m.category, m.family,
+      ...m.units.map((u) => u.sensor), ...sensorsOf(m)]
+      .filter((f): f is string => !!f);
+    const low = fields.map((f) => f.toLowerCase());
+    const flat = fields.map(squeeze);
+    const hit = (w: string) => low.some((f) => f.includes(w)) || (squeeze(w) !== '' && flat.some((f) => f.includes(squeeze(w))));
+    if (!words.every(hit)) continue;
+    const rank = codes.some((c) => squeeze(c) === whole) ? 0 : codes.some((c) => squeeze(c).includes(whole)) ? 1 : 2;
+    found.push({ m, rank });
+  }
+  return found.sort((a, b) => a.rank - b.rank).map((f) => f.m);
+}
+
 /** Search hits on the boards the filters leave. The server knows only `soc`. */
 export function filterHits(hits: Hit[], kept: Entry[]): Hit[] {
   const ids = new Set(kept.map((m) => m.id));

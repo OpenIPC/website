@@ -28,10 +28,10 @@ import (
 // Snapshots are kept in the backup bucket under boards-donors/<source>/;
 // the capture they were made from sits beside them.
 var Snapshots = map[string]string{
-	// boards-donors/cctvsp/snapshot-68ecbe963f49.tar: 57 modules, translated from Russian.
-	"cctvsp": "68ecbe963f49422b3f9dc7eb9ff38c55366cda8f5574147ca949d40d9be8bea4",
-	// boards-donors/xiongmai/snapshot-04229496ef35.tar: 684 models from the EN and ZH trees.
-	"xiongmai": "04229496ef35881d406096eeac9d104635d7492e532db9f68f043cd54b1c7799",
+	// boards-donors/cctvsp/snapshot-1a8c5b9e28d9.tar: 57 modules, translated from Russian; pinouts reviewed by eye.
+	"cctvsp": "1a8c5b9e28d9e696f5539f06388bf7e4ceb3711ed118a8f3928188d9bf6a766f",
+	// boards-donors/xiongmai/snapshot-f57d850923ed.tar: 684 models from the EN and ZH trees, each picture once.
+	"xiongmai": "f57d850923ed7d5515c4219393ba93bdfd8c40e4edc70c81cc93c5a7a5b69dae",
 }
 
 type Snapshot struct {
@@ -51,19 +51,19 @@ type SnapModel struct {
 	// Aliases are the other codes the source gives the same board: one
 	// vendor page often covers a board in several sensor or lens variants.
 	Aliases  []string `json:"aliases"`
-	Category string `json:"category"`
-	SoCLabel string `json:"soc_label"`
-	Sensor   string `json:"sensor"`
+	Category string   `json:"category"`
+	SoCLabel string   `json:"soc_label"`
+	Sensor   string   `json:"sensor"`
 	// Texts is locale -> field (name, description, features) -> text.
 	Texts map[string]map[string]string `json:"texts"`
 	// Original lists the locales that are the source's own words; the rest
 	// were translated from TranslatedFrom.
-	Original       []string              `json:"original"`
-	TranslatedFrom string                `json:"translated_from"`
+	Original       []string               `json:"original"`
+	TranslatedFrom string                 `json:"translated_from"`
 	Specs          map[string][][2]string `json:"specs"`
-	Links          []SnapLink            `json:"links"`
-	Files          []SnapFile            `json:"files"`
-	Tags           []string              `json:"tags"`
+	Links          []SnapLink             `json:"links"`
+	Files          []SnapFile             `json:"files"`
+	Tags           []string               `json:"tags"`
 }
 
 type SnapLink struct {

@@ -17,7 +17,7 @@ import type { BoardsFile, SearchResult, Source } from '../../lib/boards/types';
 import { fetchBoards, searchBoards } from '../../lib/boards/api';
 import { EMPTY, MISSING, SCOPES, readQueryString, writeQueryString, type BoardsState, type Scope } from '../../lib/boards/url';
 import {
-  COVERAGE, cardPhotos, codeIndex, entries, filterBoards, filterHits, flashOf, has, highlight, layout, lead,
+  COVERAGE, cardPhotos, codeIndex, entries, filterBoards, filterHits, matchBoards, flashOf, has, highlight, layout, lead,
   lineLabel, lineOptions, sensorOptions, socName, socOptions, stats, subtitle, type Entry, type Group,
 } from '../../lib/boards/model';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
@@ -120,6 +120,7 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
   const q = view.q.trim();
   const searching = q.length >= MIN_QUERY;
   // The server filters by catalogue SoC only; the rest is done on its answer.
+  const matched = useMemo(() => (searching ? matchBoards(kept, q) : []), [kept, q, searching]);
   const serverSoc = view.soc && all.some((m) => m.soc === view.soc) ? view.soc : null;
 
   useEffect(() => {
@@ -214,8 +215,17 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
           <div class="site-alert site-alert-warning mt-8" role="alert"><p class="mb-0">{t('error', { error: data.error })}</p></div>
         )}
         {data.state === 'ok' && (searching
-          ? <Hits found={found} kept={kept} q={q} scope={view.scope} none={s.boards > 0 && all.every((m) => !has(m, 'boot_log'))}
+          ? <>
+            {matched.length > 0 && (
+              <section class="mt-5" aria-labelledby="boards-matched">
+                <h2 id="boards-matched" class="m-0 text-sm font-normal text-body-secondary">{t('matched_boards', { count: matched.length, q })}</h2>
+                <GroupView group={{ key: 'matched', label: null, entries: matched }} split={false} all={expanded.has('matched')}
+                  onAll={() => setExpanded((x) => new Set(x).add('matched'))} card={card} />
+              </section>
+            )}
+            <Hits found={found} kept={kept} q={q} scope={view.scope} none={s.boards > 0 && all.every((m) => !has(m, 'boot_log'))}
             t={t} names={names} href={href} onOpen={openModel} />
+          </>
           : <>
             {q.length > 0 && <p class="mt-6 mb-0 text-sm text-body-secondary">{t('query_short')}</p>}
             {filtered && kept.length > 0 && <p class="mt-5 mb-0 text-sm text-body-secondary">{t('matching', { count: kept.length })}</p>}

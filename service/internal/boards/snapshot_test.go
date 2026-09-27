@@ -289,6 +289,23 @@ func TestCodesASourceDeclaresOneBoardAreOneModelOtherListingsJoin(t *testing.T) 
 	if n := count(t, pool, `SELECT count(*) FROM board_model_aliases WHERE model_id = 'xiongmai-ipg-50hv20pes-s'`); n != 3 {
 		t.Errorf("%d aliases, want the three codes", n)
 	}
+	// The tree carries the other codes, so the gallery's search finds the
+	// card by any of them; the model's own code is not repeated.
+	tree, err := Tree(context.Background(), pool, "en", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			if mo.ID == "xiongmai-ipg-50hv20pes-s" {
+				if got := strings.Join(mo.Aliases, ","); got != "IPG-50HV20PET-A,IPG-50HV20PET-S" {
+					t.Errorf("aliases %q", got)
+				}
+			} else if mo.Aliases == nil {
+				t.Errorf("%s: aliases null, want []", mo.ID)
+			}
+		}
+	}
 }
 
 func TestCodesAlreadyOnTwoModelsAreRefusedNotMerged(t *testing.T) {

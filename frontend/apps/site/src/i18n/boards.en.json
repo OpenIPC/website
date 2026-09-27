@@ -68,6 +68,10 @@
     "link_vendor_page": "Vendor page (archived)",
     "links": "Links",
     "loading": "Loading the boards…",
+    "matched_boards": {
+      "one": "{count} board matches “{q}” by model or name",
+      "other": "{count} boards match “{q}” by model or name"
+    },
     "matching": {
       "one": "{count} board matches",
       "other": "{count} boards match"
@@ -108,8 +112,8 @@
     "scope_note": "Notes",
     "scope_uboot_env": "U-Boot console",
     "search_error": "The search could not run ({error}).",
-    "search_label": "Search board evidence",
-    "search_placeholder": "Search U-Boot consoles and notes: mtdparts, 0x82000000, xm25qh64a…",
+    "search_label": "Search boards and their evidence",
+    "search_placeholder": "Model, name, U-Boot console or notes: JZC-N81820S, mtdparts, xm25qh64a…",
     "searching": "Searching…",
     "send_boot_log": "Send us the boot log",
     "send_flash_dump": "Send us the flash dump",

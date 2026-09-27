@@ -68,6 +68,10 @@
     "link_vendor_page": "厂商页面（归档）",
     "links": "链接",
     "loading": "正在加载主板…",
+    "matched_boards": {
+      "one": "型号或名称与“{q}”匹配的主板：{count} 块",
+      "other": "型号或名称与“{q}”匹配的主板：{count} 块"
+    },
     "matching": {
       "one": "{count} 块主板符合条件",
       "other": "{count} 块主板符合条件"
@@ -108,8 +112,8 @@
     "scope_note": "备注",
     "scope_uboot_env": "U-Boot 控制台",
     "search_error": "搜索失败（{error}）。",
-    "search_label": "搜索主板资料",
-    "search_placeholder": "搜索 U-Boot 控制台和备注：mtdparts、0x82000000、xm25qh64a…",
+    "search_label": "搜索主板及其资料",
+    "search_placeholder": "型号、名称、U-Boot 控制台或备注：JZC-N81820S、mtdparts、xm25qh64a…",
     "searching": "正在搜索…",
     "send_boot_log": "把启动日志发给我们",
     "send_flash_dump": "把闪存转储发给我们",

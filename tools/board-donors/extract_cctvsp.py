@@ -19,6 +19,11 @@ CODE = re.compile(r"\b((?:IPG|IVG|AHG|IPC)-[A-Z0-9]+(?:-[A-Z0-9]+)*)\b", re.I)
 PARTS = re.compile(r"\(([^()+]+)\+([^()]+)\)")
 BUILD = re.compile(r"\(([0-9A-F]{8}(?:\.\d+)?\s[^)]*)\)")
 
+# The gallery's pinouts, reviewed by eye: the page marks only the one behind
+# its "Распайка" link, and gives every other image the module's title.
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cctvsp_pinouts.txt")) as f:
+    REVIEWED_PINOUTS = {"https://www.cctvsp.ru/" + l.strip() for l in f if l.strip() and not l.startswith("#")}
+
 
 def load(cap, rel):
     if not rel:
@@ -79,7 +84,7 @@ def extract(cap, mod):
     specs = [(clean(a), clean(b)) for a, b in re.findall(
         r'<td class="element-label">(.*?)</td>\s*<td>(.*?)</td>', pane(page, "item-prop"), re.S)]
     specs = [(re.sub(r"\s+", " ", a), b) for a, b in specs if a]
-    pinout_urls = {l["url"] for l in mod["links"] if "распайка" in l["label"].lower()}
+    pinout_urls = {l["url"] for l in mod["links"] if "распайка" in l["label"].lower()} | REVIEWED_PINOUTS
     photos, seen = [], {}
     for i in mod["images"]:
         if i["status"] != 200:

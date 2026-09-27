@@ -26,8 +26,8 @@ zh:
     stats_need_pinout:
       one: 块仍缺引脚图
       other: 块仍缺引脚图
-    search_label: 搜索主板资料
-    search_placeholder: '搜索 U-Boot 控制台和备注：mtdparts、0x82000000、xm25qh64a…'
+    search_label: 搜索主板及其资料
+    search_placeholder: '型号、名称、U-Boot 控制台或备注：JZC-N81820S、mtdparts、xm25qh64a…'
     scope_label: 搜索范围
     scope_uboot_env: U-Boot 控制台
     scope_boot_log: 启动日志
@@ -97,6 +97,9 @@ zh:
     hits_lines:
       one: '{count} 行匹配'
       other: '{count} 行匹配'
+    matched_boards:
+      one: '型号或名称与“{q}”匹配的主板：{count} 块'
+      other: '型号或名称与“{q}”匹配的主板：{count} 块'
     hits_boards:
       one: '来自 {count} 块主板'
       other: '来自 {count} 块主板'

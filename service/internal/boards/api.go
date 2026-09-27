@@ -5,9 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
-	"errors"
 	"net/http"
 	"regexp"
 	"strings"
@@ -86,14 +86,17 @@ type coverageJSON struct {
 }
 
 type modelJSON struct {
-	ID       string       `json:"id"`
-	Model    *string      `json:"model"`
-	SoC      *string      `json:"soc"`
-	SoCLabel *string      `json:"soc_label"`
-	Family   *string      `json:"family"`
-	Notes    *string      `json:"notes"`
-	Category *string      `json:"category"`
-	Tags     []string     `json:"tags"`
+	ID       string   `json:"id"`
+	Model    *string  `json:"model"`
+	SoC      *string  `json:"soc"`
+	SoCLabel *string  `json:"soc_label"`
+	Family   *string  `json:"family"`
+	Notes    *string  `json:"notes"`
+	Category *string  `json:"category"`
+	Tags     []string `json:"tags"`
+	// Aliases are the other codes the sources print for this board, so a
+	// search by any of them finds its card.
+	Aliases []string `json:"aliases"`
 	// Summary is what a card shows: one name and the lead of one
 	// description. The tree carries it; the full say of every source, its
 	// specifications and links are /api/v1/boards/models/{id}.
@@ -245,6 +248,9 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 	byModel := map[string]*modelJSON{}
 	rows, err = tx.Query(ctx, `
 		SELECT m.id, m.manufacturer_id, m.model, m.soc, m.soc_label, m.family, m.notes, m.category,
+		       ARRAY(SELECT DISTINCT a.code_as_printed FROM board_model_aliases a
+		             WHERE a.model_id = m.id AND upper(a.code_as_printed) <> upper(coalesce(m.model, ''))
+		             ORDER BY a.code_as_printed),
 		       c.units, c.photos, c.pinouts, c.flash_dumps, c.uboot_envs, c.boot_logs, c.documents
 		FROM board_models m JOIN board_model_coverage c ON c.model_id = m.id
 		WHERE $1 = '' OR m.soc = $1
@@ -256,7 +262,7 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 		m := &modelJSON{Units: []*unitJSON{}}
 		var maker string
 		c := &m.Coverage
-		if err := rows.Scan(&m.ID, &maker, &m.Model, &m.SoC, &m.SoCLabel, &m.Family, &m.Notes, &m.Category,
+		if err := rows.Scan(&m.ID, &maker, &m.Model, &m.SoC, &m.SoCLabel, &m.Family, &m.Notes, &m.Category, &m.Aliases,
 			&c.Units, &c.Photos, &c.Pinouts, &c.FlashDumps, &c.UBootEnvs, &c.BootLogs, &c.Documents); err != nil {
 			rows.Close()
 			return nil, err
