@@ -1,0 +1,127 @@
+ru:
+  pages:
+    boards:
+      title: Платы камер
+      heading: Ваша плата, скорее всего, уже здесь
+      lede: 'Платы из настоящих камер: фотографии обеих сторон, распиновка UART, заводские дампы флеш-памяти и консоль U-Boot. Найдите плату, которая у вас в руках, и установите OpenIPC на её SoC.'
+      credit_html: 'Первые 25 плат взяты из каталога оборудования проекта <a href="https://github.com/OpenHisiIpCam">OpenHisiIpCam</a> (2018) и опубликованы с разрешения его автора.'
+  nav:
+    boards: Платы камер
+  cameras:
+    socs:
+      index:
+        boards: Платы
+  boards:
+    stats_boards:
+      one: плата
+      few: платы
+      many: плат
+      other: платы
+    stats_makers:
+      one: известный производитель
+      few: известных производителя
+      many: известных производителей
+      other: известного производителя
+    stats_pinouts:
+      one: с распиновкой UART
+      other: с распиновкой UART
+    stats_dumps:
+      one: заводской дамп флеш-памяти
+      few: заводских дампа флеш-памяти
+      many: заводских дампов флеш-памяти
+      other: заводского дампа флеш-памяти
+    stats_need_pinout:
+      one: ещё ждёт распиновку
+      other: ещё ждут распиновку
+    search_label: Поиск по материалам плат
+    search_placeholder: 'Поиск по консолям U-Boot и заметкам: mtdparts, 0x82000000, xm25qh64a…'
+    scope_label: Где искать
+    scope_uboot_env: Консоль U-Boot
+    scope_boot_log: Логи загрузки
+    scope_note: Заметки
+    scope_all: Везде
+    filter_maker: Производитель
+    filter_soc: SoC
+    filter_sensor: Сенсор
+    filter_missing: Не хватает
+    filter_any: все
+    missing_any: всё есть
+    missing_pinout: нет распиновки
+    missing_flash_dump: нет дампа флеш-памяти
+    missing_uboot_env: нет консоли U-Boot
+    missing_boot_log: нет лога загрузки
+    clear: Сбросить фильтры
+    loading: Загружаем платы…
+    error: 'Не удалось загрузить каталог плат ({error}). Обновите страницу, чтобы попробовать ещё раз.'
+    empty: Ни одна плата не подходит под эти фильтры. Уберите какой-нибудь из них.
+    unknown_maker: Производитель неизвестен
+    also_marked: 'также маркируется {aliases}'
+    board_count:
+      one: '{count} плата'
+      few: '{count} платы'
+      many: '{count} плат'
+      other: '{count} платы'
+    unidentified: Неопознанная плата
+    soc_install: 'Установить OpenIPC на {soc}'
+    soc_not_catalogued: Этого SoC нет в каталоге OpenIPC
+    family: 'семейство {family}'
+    sensor: Сенсор
+    flash: Флеш
+    unknown: неизвестно
+    tag_photo_front: лицо
+    tag_photo_back: оборот
+    tag_photo_other: фото
+    tag_pinout: распиновка
+    photo_alt: '{what}: {board}'
+    no_photos: Фотографий пока нет
+    cov_photos: Фото
+    cov_pinout: Распиновка
+    cov_flash_dump: Дамп флеш
+    cov_uboot_env: Консоль U-Boot
+    cov_boot_log: Лог загрузки
+    kind_flash_dump: Дамп флеш
+    kind_uboot_env: Консоль U-Boot
+    kind_boot_log: Лог загрузки
+    kind_note: Заметка
+    kind_document: Документ
+    lines:
+      one: '{count} строка'
+      few: '{count} строки'
+      many: '{count} строк'
+      other: '{count} строки'
+    text_loading: Загружаем…
+    text_error: 'Не удалось загрузить файл ({error}).'
+    units:
+      one: '{count} экземпляр в каталоге'
+      few: '{count} экземпляра в каталоге'
+      many: '{count} экземпляров в каталоге'
+      other: '{count} экземпляра в каталоге'
+    ask: Есть такая плата?
+    send_photos: Пришлите нам её фотографии
+    send_pinout: Пришлите нам распиновку
+    send_flash_dump: Пришлите нам дамп флеш-памяти
+    send_uboot_env: Пришлите нам консоль U-Boot
+    send_boot_log: Пришлите нам лог загрузки
+    issue_title: 'Плата {board}: новые материалы'
+    issue_body: "Плата: {board} ({id})\n\nЧто я могу добавить (фото, распиновка UART, дамп флеш-памяти, консоль U-Boot, лог загрузки):\n\n"
+    query_short: Для поиска введите хотя бы три символа.
+    searching: Ищем…
+    search_error: 'Поиск не удался ({error}).'
+    hits_lines:
+      one: '{count} совпадающая строка'
+      few: '{count} совпадающие строки'
+      many: '{count} совпадающих строк'
+      other: '{count} совпадающей строки'
+    hits_boards:
+      one: 'на {count} плате'
+      few: 'на {count} платах'
+      many: 'на {count} платах'
+      other: 'на {count} платы'
+    hits_scope: 'где искали: {scope}'
+    hits_truncated: 'Показаны только первые совпадения. Уточните запрос, чтобы увидеть остальные.'
+    hits_none: 'Здесь нет строк с «{q}».'
+    hits_none_boot_log: Логов загрузки пока никто не прислал.
+    line: 'строка {n}'
+    known_title: 'Известные платы на {soc}'
+    known_link: Смотреть в каталоге плат →
+    known_credit_html: 'Платы из каталога <a href="https://github.com/OpenHisiIpCam">OpenHisiIpCam</a> (2018), опубликованы с разрешения его автора.'

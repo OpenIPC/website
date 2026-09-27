@@ -23,7 +23,7 @@ export const SITEMAP_PAGES = [
   '/donate', '/video-encoding', '/isp-sensors', '/reverse-engineering', '/turnkey-hardware', '/digital-twins',
   '/majestic-endpoints', '/green_life', '/our-team', '/stages-of-firmware-development', '/firmware-explorer',
   '/utilities', '/web-interface', '/supported-hardware/featured',
-  '/supported-hardware/full-list', '/tools/firmware-partitions-calculation',
+  '/supported-hardware/full-list', '/cameras/boards', '/tools/firmware-partitions-calculation',
   '/tools/high-resolution-timer', '/tools/qr-code-generator', '/open-wall',
   '/privacy',
 ];

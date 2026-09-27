@@ -1,0 +1,111 @@
+en:
+  pages:
+    boards:
+      title: Camera boards
+      heading: Your board is probably here
+      lede: 'Camera boards found in real cameras, with photos of both sides, UART pinouts, factory flash dumps and the U-Boot console of each. Match the PCB in your hand, then install OpenIPC on its SoC.'
+      credit_html: 'The first 25 boards come from the hardware catalogue of the <a href="https://github.com/OpenHisiIpCam">OpenHisiIpCam</a> project (2018), republished with its author''s permission.'
+  nav:
+    boards: Camera boards
+  cameras:
+    socs:
+      index:
+        boards: Boards
+  boards:
+    stats_boards:
+      one: board
+      other: boards
+    stats_makers:
+      one: known maker
+      other: known makers
+    stats_pinouts:
+      one: with UART pinout
+      other: with UART pinout
+    stats_dumps:
+      one: factory flash dump
+      other: factory flash dumps
+    stats_need_pinout:
+      one: still needs a pinout
+      other: still need a pinout
+    search_label: Search board evidence
+    search_placeholder: 'Search U-Boot consoles and notes: mtdparts, 0x82000000, xm25qh64a…'
+    scope_label: Search in
+    scope_uboot_env: U-Boot console
+    scope_boot_log: Boot logs
+    scope_note: Notes
+    scope_all: All
+    filter_maker: Maker
+    filter_soc: SoC
+    filter_sensor: Sensor
+    filter_missing: Missing
+    filter_any: all
+    missing_any: anything
+    missing_pinout: no pinout
+    missing_flash_dump: no flash dump
+    missing_uboot_env: no U-Boot console
+    missing_boot_log: no boot log
+    clear: Clear filters
+    loading: Loading the boards…
+    error: 'The board catalogue could not be loaded ({error}). Reload the page to try again.'
+    empty: No board matches these filters. Clear one to widen the list.
+    unknown_maker: Unidentified maker
+    also_marked: 'also marked {aliases}'
+    board_count:
+      one: '{count} board'
+      other: '{count} boards'
+    unidentified: Unidentified board
+    soc_install: 'Install OpenIPC on {soc}'
+    soc_not_catalogued: Not in the OpenIPC catalogue
+    family: '{family} family'
+    sensor: Sensor
+    flash: Flash
+    unknown: unknown
+    tag_photo_front: front
+    tag_photo_back: back
+    tag_photo_other: photo
+    tag_pinout: pinout
+    photo_alt: '{what} of {board}'
+    no_photos: No photos yet
+    cov_photos: Photos
+    cov_pinout: Pinout
+    cov_flash_dump: Flash dump
+    cov_uboot_env: U-Boot console
+    cov_boot_log: Boot log
+    kind_flash_dump: Flash dump
+    kind_uboot_env: U-Boot console
+    kind_boot_log: Boot log
+    kind_note: Note
+    kind_document: Document
+    lines:
+      one: '{count} line'
+      other: '{count} lines'
+    text_loading: Loading…
+    text_error: 'This file could not be loaded ({error}).'
+    units:
+      one: '{count} unit on record'
+      other: '{count} units on record'
+    ask: Have this board?
+    send_photos: Send us its photos
+    send_pinout: Send us the pinout
+    send_flash_dump: Send us the flash dump
+    send_uboot_env: Send us the U-Boot console
+    send_boot_log: Send us the boot log
+    issue_title: 'Board {board}: adding evidence'
+    issue_body: "Board: {board} ({id})\n\nWhat I can add (photos, UART pinout, flash dump, U-Boot console, boot log):\n\n"
+    query_short: Type at least three characters to search.
+    searching: Searching…
+    search_error: 'The search could not run ({error}).'
+    hits_lines:
+      one: '{count} matching line'
+      other: '{count} matching lines'
+    hits_boards:
+      one: 'in {count} board'
+      other: 'in {count} boards'
+    hits_scope: 'searching: {scope}'
+    hits_truncated: 'Only the first matches are shown. Make the search more specific to see the rest.'
+    hits_none: 'No line matches “{q}” here.'
+    hits_none_boot_log: No boot logs have been contributed yet.
+    line: 'line {n}'
+    known_title: 'Known boards with {soc}'
+    known_link: See them in the board catalogue →
+    known_credit_html: 'Boards from the <a href="https://github.com/OpenHisiIpCam">OpenHisiIpCam</a> catalogue (2018), republished with its author''s permission.'

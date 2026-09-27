@@ -85,6 +85,16 @@
     "path": "/api/v1/wall/socket"
   },
   {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/boards"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/boards/search"
+  },
+  {
     "role": "firmware",
     "method": "GET",
     "path": "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"

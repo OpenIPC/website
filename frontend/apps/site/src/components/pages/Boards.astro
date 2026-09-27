@@ -1,0 +1,34 @@
+---
+/**
+ * The board catalogue: camera boards found in real cameras, with their photos,
+ * UART pinouts, flash dumps and console captures.
+ *
+ * The page is the hardware tab strip, a heading and one island; the island
+ * reads /api/v1/boards, which the Go web role answers from what was imported
+ * (service/internal/boards), so there is nothing about the boards to
+ * prerender. It is handed the catalogue's SoCs so a board built on one links
+ * to that SoC's installation wizard.
+ */
+import HardwareTabs from '../HardwareTabs.astro';
+import ZoomDialog from '../ZoomDialog.astro';
+import Boards from '../boards/Boards.tsx';
+import { VENDORS, socPath } from '../../lib/hardware';
+import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const socs = Object.fromEntries(VENDORS.flatMap((vendor) => vendor.socs.map((soc) => [
+  soc.urlname,
+  { model: soc.model, href: pathFor(locale, socPath(vendor, soc)) },
+])));
+---
+<div class="site-container mt-4">
+  <HardwareTabs locale={locale} view="boards" />
+  <h1 class="mt-7 mb-0 text-h1 font-semibold text-balance">{t('pages.boards.heading')}</h1>
+  <p class="mt-2.5 mb-1.5 max-w-[65ch] text-lg">{t('pages.boards.lede')}</p>
+  <p class="mb-0 text-[13px] text-body-secondary" set:html={t('pages.boards.credit_html')} />
+</div>
+<Boards client:load locale={locale} socs={socs} />
+<ZoomDialog />

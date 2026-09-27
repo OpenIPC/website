@@ -58,6 +58,7 @@ export function menuFor(locale: Locale): MenuItems {
         link('web-interface', 'nav.webui', '/web-interface'),
         link('stages', 'nav.stages', '/stages-of-firmware-development'),
         link('firmware-explorer', 'nav.firmware_explorer', '/firmware-explorer'),
+        link('boards', 'nav.boards', '/cameras/boards'),
         {
           id: 'web-tools',
           label: t('nav.header_web_tools'),
@@ -133,6 +134,7 @@ export function footerFor(locale: Locale): FooterColumn[] {
       links: [
         link('nav.get_started', '/get-started'),
         link('nav.supported_hardware', '/supported-hardware'),
+        link('nav.boards', '/cameras/boards'),
         link('footer.firmware_source', 'https://github.com/OpenIPC/firmware'),
         link('nav.webui', '/web-interface'),
         link('nav.stages', '/stages-of-firmware-development'),

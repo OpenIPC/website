@@ -32,6 +32,11 @@ now. It is encrypted to
 an age recipient whose **private key is not on the server** — it lives only in
 the team password manager. The server can write backups it cannot read.
 
+**Backed up when they change:** the board catalogue's files
+(`/srv/www/shared/boards`: photos, pinouts, factory flash dumps, console
+captures), as `boards/boards-<date>-<id>.tar`, outside the daily lifecycle.
+The newest one is the current set; see step 3c.
+
 **Not backed up, by decision:** the wall images (snapshots purge at 2 days and
 cameras re-upload continuously), the firmware cache (`/srv/www/shared/firmware`,
 one version of each image, rebuilt on the next request), `/srv/github-releases`
@@ -113,6 +118,20 @@ order is: run the installer with no database present only if you have no
 archive, otherwise create the user first (`useradd --system
 --no-create-home --shell /usr/sbin/nologin openipc-analytics`), restore, then
 run the installer.
+
+### 3c. Restore the board catalogue's files
+
+```bash
+aws s3 ls s3://openipc-org-backup/boards/ | sort | tail -1     # the newest set
+aws s3 cp s3://openipc-org-backup/boards/boards-<date>-<id>.tar .
+install -d -o 1000 -g 1000 -m 0755 /srv/www/shared/boards
+tar -C /srv/www/shared/boards -xf boards-<date>-<id>.tar && chown -R 1000:1000 /srv/www/shared/boards
+```
+
+Their rows come back with the database in step 4. Without the tar, the rows
+point at files that are not there; `openipc boards import-openhisiipcam`
+rewrites the OpenHisiIpCam ones from GitHub while the archive exists, but
+skips every unit it already holds, so delete those units' rows first.
 
 ### 4. The database
 

@@ -99,11 +99,11 @@ env_set() {
 
 warn() { printf '\033[33m==>\033[0m %s\n' "$*" >&2; }
 
-#            web         firmware          ports      tag         rollback file  firmware cache                 release cache                          wall
+#            web         firmware          ports      tag         rollback file  firmware cache                 release cache                          wall                    boards
 target_for() {
   case "$1" in
-    prod) echo "go-web-prod go-firmware-prod 3002 3003 GO_PROD_TAG .previous-prod /srv/www/shared/firmware     /srv/www/shared/go-release-cache     /srv/www/shared/wall" ;;
-    dev)  echo "go-web-dev  go-firmware-dev  3012 3013 GO_DEV_TAG  .previous-dev  /srv/www/shared/dev-firmware /srv/www/shared/dev-go-release-cache /srv/www/shared/dev-wall" ;;
+    prod) echo "go-web-prod go-firmware-prod 3002 3003 GO_PROD_TAG .previous-prod /srv/www/shared/firmware     /srv/www/shared/go-release-cache     /srv/www/shared/wall     /srv/www/shared/boards" ;;
+    dev)  echo "go-web-dev  go-firmware-dev  3012 3013 GO_DEV_TAG  .previous-dev  /srv/www/shared/dev-firmware /srv/www/shared/dev-go-release-cache /srv/www/shared/dev-wall /srv/www/shared/dev-boards" ;;
     *)    die "unknown target '$1' (expected prod or dev)" ;;
   esac
 }
@@ -161,8 +161,8 @@ do_deploy() {
   # off $1 rather than env_name below so it can stay first.
   checkout_warn "$CHECKOUT_DIR" "$(checkout_branch_for "${1:-prod}")"
   local env_name=$1 sha=${2:-latest}
-  local web fw web_port fw_port tag_key prev_file fw_cache rel_cache wall_root
-  read -r web fw web_port fw_port tag_key prev_file fw_cache rel_cache wall_root <<<"$(target_for "$env_name")"
+  local web fw web_port fw_port tag_key prev_file fw_cache rel_cache wall_root boards_root
+  read -r web fw web_port fw_port tag_key prev_file fw_cache rel_cache wall_root boards_root <<<"$(target_for "$env_name")"
   local prev_path="${STATE_DIR}/${prev_file}"
 
   [ -f "/srv/www/.env.go-${env_name}" ] \
@@ -173,6 +173,9 @@ do_deploy() {
   # The Open Wall's variants. Absent, every upload is accepted and no image is
   # ever written.
   ensure_uid_1000_root "$wall_root"
+  # The board catalogue's files, written by `openipc boards
+  # import-openhisiipcam` inside the web container and served by nginx.
+  ensure_uid_1000_root "$boards_root"
   install_legacy_images
 
   local previous

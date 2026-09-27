@@ -5,6 +5,7 @@
   "cameras": {
     "socs": {
       "index": {
+        "boards": "主板",
         "featured": "推荐的",
         "full_list": "所有列表",
         "installable_title": "{total} 款中有 {count} 款可以安装",
@@ -44,6 +45,7 @@
   },
   "go": "进行",
   "nav": {
+    "boards": "摄像头主板",
     "business": "面向企业",
     "business_overview": "概览",
     "community": "社区",
@@ -87,6 +89,12 @@
   "pages": {
     "bandwidth_calculator": {
       "title": "带宽计算器"
+    },
+    "boards": {
+      "credit_html": "最早的 25 块主板来自 <a href=\"https://github.com/OpenHisiIpCam\">OpenHisiIpCam</a> 项目（2018 年）的硬件目录，经作者许可重新发布。",
+      "heading": "你的主板很可能就在这里",
+      "lede": "来自真实摄像头的主板：正反两面的照片、UART 引脚图、出厂闪存转储和 U-Boot 控制台输出。先找到与你手中 PCB 相同的主板，再在它的 SoC 上安装 OpenIPC。",
+      "title": "摄像头主板"
     },
     "business": {
       "contact_alt_html": "更喜欢即时沟通？在 <a href=\"https://t.me/openipc\">Telegram</a> 上给我们发消息。",

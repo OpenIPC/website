@@ -485,6 +485,27 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/supported-hardware/full-list"/>
   </url>
   <url>
+    <loc>https://openipc.org/cameras/boards</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/boards"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/boards"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/boards"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/boards"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/boards</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/boards"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/boards"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/boards"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/boards"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/boards</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/boards"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/boards"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/boards"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/boards"/>
+  </url>
+  <url>
     <loc>https://openipc.org/tools/firmware-partitions-calculation</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/tools/firmware-partitions-calculation"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/tools/firmware-partitions-calculation"/>

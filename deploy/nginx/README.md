@@ -124,6 +124,7 @@ what the restore procedure knows about:
 | `/dl/` | `/srv/www/shared/dl` |
 | `/images/` | `/srv/www/shared/images` |
 | `/firmware-cache/` | `/srv/www/shared/firmware` (prod), `dev-firmware` (dev) |
+| `/board-files/` | `/srv/www/shared/boards` (prod), `dev-boards` (dev) — the board catalogue, written by `openipc boards import-openhisiipcam` in the web container |
 
 None of them reaches through `/srv/www/org-openipc`, the checkout that stopped
 serving traffic when the app moved into a container. Two did until 2026-08-24:

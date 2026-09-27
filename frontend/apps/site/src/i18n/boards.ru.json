@@ -1,0 +1,127 @@
+{
+  "boards": {
+    "also_marked": "также маркируется {aliases}",
+    "ask": "Есть такая плата?",
+    "board_count": {
+      "few": "{count} платы",
+      "many": "{count} плат",
+      "one": "{count} плата",
+      "other": "{count} платы"
+    },
+    "clear": "Сбросить фильтры",
+    "cov_boot_log": "Лог загрузки",
+    "cov_flash_dump": "Дамп флеш",
+    "cov_photos": "Фото",
+    "cov_pinout": "Распиновка",
+    "cov_uboot_env": "Консоль U-Boot",
+    "empty": "Ни одна плата не подходит под эти фильтры. Уберите какой-нибудь из них.",
+    "error": "Не удалось загрузить каталог плат ({error}). Обновите страницу, чтобы попробовать ещё раз.",
+    "family": "семейство {family}",
+    "filter_any": "все",
+    "filter_maker": "Производитель",
+    "filter_missing": "Не хватает",
+    "filter_sensor": "Сенсор",
+    "filter_soc": "SoC",
+    "flash": "Флеш",
+    "hits_boards": {
+      "few": "на {count} платах",
+      "many": "на {count} платах",
+      "one": "на {count} плате",
+      "other": "на {count} платы"
+    },
+    "hits_lines": {
+      "few": "{count} совпадающие строки",
+      "many": "{count} совпадающих строк",
+      "one": "{count} совпадающая строка",
+      "other": "{count} совпадающей строки"
+    },
+    "hits_none": "Здесь нет строк с «{q}».",
+    "hits_none_boot_log": "Логов загрузки пока никто не прислал.",
+    "hits_scope": "где искали: {scope}",
+    "hits_truncated": "Показаны только первые совпадения. Уточните запрос, чтобы увидеть остальные.",
+    "issue_body": "Плата: {board} ({id})\n\nЧто я могу добавить (фото, распиновка UART, дамп флеш-памяти, консоль U-Boot, лог загрузки):\n\n",
+    "issue_title": "Плата {board}: новые материалы",
+    "kind_boot_log": "Лог загрузки",
+    "kind_document": "Документ",
+    "kind_flash_dump": "Дамп флеш",
+    "kind_note": "Заметка",
+    "kind_uboot_env": "Консоль U-Boot",
+    "known_credit_html": "Платы из каталога <a href=\"https://github.com/OpenHisiIpCam\">OpenHisiIpCam</a> (2018), опубликованы с разрешения его автора.",
+    "known_link": "Смотреть в каталоге плат →",
+    "known_title": "Известные платы на {soc}",
+    "line": "строка {n}",
+    "lines": {
+      "few": "{count} строки",
+      "many": "{count} строк",
+      "one": "{count} строка",
+      "other": "{count} строки"
+    },
+    "loading": "Загружаем платы…",
+    "missing_any": "всё есть",
+    "missing_boot_log": "нет лога загрузки",
+    "missing_flash_dump": "нет дампа флеш-памяти",
+    "missing_pinout": "нет распиновки",
+    "missing_uboot_env": "нет консоли U-Boot",
+    "no_photos": "Фотографий пока нет",
+    "photo_alt": "{what}: {board}",
+    "query_short": "Для поиска введите хотя бы три символа.",
+    "scope_all": "Везде",
+    "scope_boot_log": "Логи загрузки",
+    "scope_label": "Где искать",
+    "scope_note": "Заметки",
+    "scope_uboot_env": "Консоль U-Boot",
+    "search_error": "Поиск не удался ({error}).",
+    "search_label": "Поиск по материалам плат",
+    "search_placeholder": "Поиск по консолям U-Boot и заметкам: mtdparts, 0x82000000, xm25qh64a…",
+    "searching": "Ищем…",
+    "send_boot_log": "Пришлите нам лог загрузки",
+    "send_flash_dump": "Пришлите нам дамп флеш-памяти",
+    "send_photos": "Пришлите нам её фотографии",
+    "send_pinout": "Пришлите нам распиновку",
+    "send_uboot_env": "Пришлите нам консоль U-Boot",
+    "sensor": "Сенсор",
+    "soc_install": "Установить OpenIPC на {soc}",
+    "soc_not_catalogued": "Этого SoC нет в каталоге OpenIPC",
+    "stats_boards": {
+      "few": "платы",
+      "many": "плат",
+      "one": "плата",
+      "other": "платы"
+    },
+    "stats_dumps": {
+      "few": "заводских дампа флеш-памяти",
+      "many": "заводских дампов флеш-памяти",
+      "one": "заводской дамп флеш-памяти",
+      "other": "заводского дампа флеш-памяти"
+    },
+    "stats_makers": {
+      "few": "известных производителя",
+      "many": "известных производителей",
+      "one": "известный производитель",
+      "other": "известного производителя"
+    },
+    "stats_need_pinout": {
+      "one": "ещё ждёт распиновку",
+      "other": "ещё ждут распиновку"
+    },
+    "stats_pinouts": {
+      "one": "с распиновкой UART",
+      "other": "с распиновкой UART"
+    },
+    "tag_photo_back": "оборот",
+    "tag_photo_front": "лицо",
+    "tag_photo_other": "фото",
+    "tag_pinout": "распиновка",
+    "text_error": "Не удалось загрузить файл ({error}).",
+    "text_loading": "Загружаем…",
+    "unidentified": "Неопознанная плата",
+    "units": {
+      "few": "{count} экземпляра в каталоге",
+      "many": "{count} экземпляров в каталоге",
+      "one": "{count} экземпляр в каталоге",
+      "other": "{count} экземпляра в каталоге"
+    },
+    "unknown": "неизвестно",
+    "unknown_maker": "Производитель неизвестен"
+  }
+}

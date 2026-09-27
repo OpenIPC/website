@@ -160,7 +160,7 @@ func boot() (func(), error) {
 	os.Setenv("CONFORMANCE_BLACKLISTED_MAC", black)
 	os.Setenv("CONFORMANCE_WHITELISTED_IP", white)
 	if os.Getenv("CONFORMANCE_SURFACES") == "" {
-		os.Setenv("CONFORMANCE_SURFACES", "upload,wall")
+		os.Setenv("CONFORMANCE_SURFACES", "upload,wall,boards")
 	}
 	return func() {
 		server.Process.Signal(os.Interrupt)

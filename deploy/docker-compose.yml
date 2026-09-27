@@ -51,6 +51,7 @@ services:
     volumes:
       - /var/run/postgresql:/var/run/postgresql
       - /srv/www/shared/wall:/srv/wall
+      - /srv/www/shared/boards:/srv/boards
 
   go-firmware-prod:
     <<: *go-common
@@ -86,6 +87,7 @@ services:
     volumes:
       - /var/run/postgresql:/var/run/postgresql
       - /srv/www/shared/dev-wall:/srv/wall
+      - /srv/www/shared/dev-boards:/srv/boards
 
   go-firmware-dev:
     <<: *go-common

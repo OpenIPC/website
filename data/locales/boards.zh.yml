@@ -1,0 +1,111 @@
+zh:
+  pages:
+    boards:
+      title: 摄像头主板
+      heading: 你的主板很可能就在这里
+      lede: '来自真实摄像头的主板：正反两面的照片、UART 引脚图、出厂闪存转储和 U-Boot 控制台输出。先找到与你手中 PCB 相同的主板，再在它的 SoC 上安装 OpenIPC。'
+      credit_html: '最早的 25 块主板来自 <a href="https://github.com/OpenHisiIpCam">OpenHisiIpCam</a> 项目（2018 年）的硬件目录，经作者许可重新发布。'
+  nav:
+    boards: 摄像头主板
+  cameras:
+    socs:
+      index:
+        boards: 主板
+  boards:
+    stats_boards:
+      one: 块主板
+      other: 块主板
+    stats_makers:
+      one: 家已知厂商
+      other: 家已知厂商
+    stats_pinouts:
+      one: 块有 UART 引脚图
+      other: 块有 UART 引脚图
+    stats_dumps:
+      one: 份出厂闪存转储
+      other: 份出厂闪存转储
+    stats_need_pinout:
+      one: 块仍缺引脚图
+      other: 块仍缺引脚图
+    search_label: 搜索主板资料
+    search_placeholder: '搜索 U-Boot 控制台和备注：mtdparts、0x82000000、xm25qh64a…'
+    scope_label: 搜索范围
+    scope_uboot_env: U-Boot 控制台
+    scope_boot_log: 启动日志
+    scope_note: 备注
+    scope_all: 全部
+    filter_maker: 厂商
+    filter_soc: SoC
+    filter_sensor: 传感器
+    filter_missing: 缺少
+    filter_any: 全部
+    missing_any: 不限
+    missing_pinout: 缺引脚图
+    missing_flash_dump: 缺闪存转储
+    missing_uboot_env: 缺 U-Boot 控制台
+    missing_boot_log: 缺启动日志
+    clear: 清除筛选
+    loading: 正在加载主板…
+    error: '无法加载主板目录（{error}）。请刷新页面重试。'
+    empty: 没有符合这些筛选条件的主板。去掉一个条件试试。
+    unknown_maker: 未知厂商
+    also_marked: '也标作 {aliases}'
+    board_count:
+      one: '{count} 块主板'
+      other: '{count} 块主板'
+    unidentified: 未识别的主板
+    soc_install: '在 {soc} 上安装 OpenIPC'
+    soc_not_catalogued: 不在 OpenIPC 目录中
+    family: '{family} 系列'
+    sensor: 传感器
+    flash: 闪存
+    unknown: 未知
+    tag_photo_front: 正面
+    tag_photo_back: 背面
+    tag_photo_other: 照片
+    tag_pinout: 引脚图
+    photo_alt: '{board}：{what}'
+    no_photos: 暂无照片
+    cov_photos: 照片
+    cov_pinout: 引脚图
+    cov_flash_dump: 闪存转储
+    cov_uboot_env: U-Boot 控制台
+    cov_boot_log: 启动日志
+    kind_flash_dump: 闪存转储
+    kind_uboot_env: U-Boot 控制台
+    kind_boot_log: 启动日志
+    kind_note: 备注
+    kind_document: 文档
+    lines:
+      one: '{count} 行'
+      other: '{count} 行'
+    text_loading: 正在加载…
+    text_error: '无法加载此文件（{error}）。'
+    units:
+      one: '已收录 {count} 件实物'
+      other: '已收录 {count} 件实物'
+    ask: 你有这块主板？
+    send_photos: 把它的照片发给我们
+    send_pinout: 把引脚图发给我们
+    send_flash_dump: 把闪存转储发给我们
+    send_uboot_env: 把 U-Boot 控制台输出发给我们
+    send_boot_log: 把启动日志发给我们
+    issue_title: '主板 {board}：补充资料'
+    issue_body: "主板：{board}（{id}）\n\n我可以补充（照片、UART 引脚图、闪存转储、U-Boot 控制台、启动日志）：\n\n"
+    query_short: 请至少输入三个字符再搜索。
+    searching: 正在搜索…
+    search_error: '搜索失败（{error}）。'
+    hits_lines:
+      one: '{count} 行匹配'
+      other: '{count} 行匹配'
+    hits_boards:
+      one: '来自 {count} 块主板'
+      other: '来自 {count} 块主板'
+    hits_scope: '搜索范围：{scope}'
+    hits_truncated: '只显示了前面的匹配结果。请把搜索词写得更具体，以查看其余结果。'
+    hits_none: '这里没有包含“{q}”的行。'
+    hits_none_boot_log: 还没有人提供启动日志。
+    line: '第 {n} 行'
+    known_title: '使用 {soc} 的已知主板'
+    known_link: 在主板目录中查看 →
+    known_credit_html: '主板来自 <a href="https://github.com/OpenHisiIpCam">OpenHisiIpCam</a> 目录（2018 年），经作者许可重新发布。'

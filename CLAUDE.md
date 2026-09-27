@@ -120,6 +120,14 @@ restores the image but never the schema, so keep migrations additive.
 - `internal/wizard` — the installation wizard's per-SoC JSON, served live by
   the firmware role at `/api/v1/wizard/{soc}.json`. An 8 MB chip or layout is
   offered only where the build's size report says it fits (#285).
+- `internal/boards` — the **board catalogue** (firmware#659): manufacturer →
+  board model → unit → file (photos, pinouts, factory flash dumps, U-Boot
+  console captures, boot logs), in PostgreSQL (migration 003), files under
+  `BOARDS_ROOT` served by nginx at `/board-files/`. The web role answers
+  `/api/v1/boards` (the tree) and `/api/v1/boards/search` (lines of text
+  evidence, scoped by kind). Seeded once per environment by
+  `openipc boards import-openhisiipcam`; the dumps are published byte-identical
+  (lab hardware, nothing redacted).
 - `internal/catalogue` — **the hardware catalogue is `data/catalogue/*.yml` and
   nothing else** (#289). The service reads it at start; the site reads its
   export. Change it by editing the YAML in a pull request, then run the export.

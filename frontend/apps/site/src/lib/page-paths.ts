@@ -87,6 +87,9 @@ export const PAGE_PATHS: PagePath[] = [
   // wall page worth indexing and a page needs a canonical of its own to be.
   { path: '/open-wall', titleKey: 'title.openwall' },
 
+  // Camera boards from real cameras, read at runtime from /api/v1/boards.
+  { path: '/cameras/boards', titleKey: 'pages.boards.title', descriptionKey: 'pages.boards.lede' },
+
   { path: '/business', titleKey: 'pages.business.title' },
   { path: '/community', titleKey: 'pages.community.title' },
   { path: '/digital-twins', titleKey: 'pages.digital_twins.title' },
