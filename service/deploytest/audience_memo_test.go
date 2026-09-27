@@ -44,6 +44,18 @@ func memoLog(t testing.TB) string {
 	b.WriteString(line("17/Oct/2026:09:07:00", "p=ext%3Agithub.com&e=true&t=x&s=1280&b=0&rnd=x1", "200", "https://openipc.org/ecosystem"))
 	// A completed firmware download (status 200), SigmaStar SSC338Q, FPV edition.
 	b.WriteString(fmt.Sprintf(`198.51.100.4 - - [17/Oct/2026:09:10:00 +0000] "GET /cameras/vendors/sigmastar/socs/ssc338q/download_full_image?flash_type=nor&flash_size=16&fw_release=fpv&layout=nor16m HTTP/2.0" 200 8300000 "-" %s xff="-" cache=- rt=0.5 urt="0.4" al="-" peer=198.51.100.4`+"\n", ua))
+	// The wall/snapshot harvest: raw GET requests (not beacon, spoofed browser
+	// UAs), one per address — two opaque-page 200 shells and one retired-numeric
+	// 410. These must be tracked separately from the self-declared crawler line.
+	snapLine := func(ip, day, id, code string) string {
+		return fmt.Sprintf(`%s - - [%s +0000] "GET /snapshots/%s HTTP/2.0" %s 26285 "-" %s xff="-" cache=- rt=0.01 urt="-" al="-" peer=%s`+"\n", ip, day, id, code, ua, ip)
+	}
+	b.WriteString(snapLine("198.51.100.10", "15/Oct/2026:08:00:00", "fba61be18382f74bb51f", "200"))
+	b.WriteString(snapLine("198.51.100.11", "16/Oct/2026:08:00:00", "a404361c55a8f88cc2ee", "200"))
+	b.WriteString(snapLine("198.51.100.12", "16/Oct/2026:08:01:00", "12345", "410"))
+	// A snapshot-only day: 20 Oct has harvest traffic but NO beacon page view,
+	// so it must still count toward the raw-log coverage-day divisor.
+	b.WriteString(snapLine("198.51.100.13", "20/Oct/2026:08:00:00", "c0ffee1234567890abcd", "200"))
 	// A page view in the PREVIOUS month, which must not be counted in October.
 	b.WriteString(line("20/Sep/2026:09:10:00", "p=%2Fget-started&t=x&s=1920&b=0&rnd=z", "200", "https://openipc.org/get-started"))
 	return writeFile(t, filepath.Join(t.TempDir(), "access.log"), b.String())
@@ -121,6 +133,20 @@ func TestAudienceMemo(t *testing.T) {
 	t.Run("outbound ext: clicks are attributed by host", func(t *testing.T) {
 		mustContain(t, memo, "Outbound link clicks by destination host", "ext: events are surfaced as external attribution")
 		mustMatch(t, `(?m)^- github.com:`, memo, "the ext:github.com click is attributed, not dropped into other")
+	})
+	t.Run("the wall/snapshot harvest is tracked for periodic review", func(t *testing.T) {
+		mustContain(t, memo, "Wall/snapshot harvest", "the spoofed-UA harvest is a tracked line, since the crawler line cannot see it")
+		mustContain(t, memo, "direct nginx access-log aggregate, not openipc-log-report",
+			"the harvest values name their real source, not the log-report heading above them")
+		// 4 snapshot requests across 4 covered days (one of them a snapshot-only
+		// day with no beacon view) => 1/day, proving the divisor is raw-log
+		// coverage days, not beacon-active days.
+		mustMatch(t, `\*\*1/day\*\* requests to /snapshots/ \(4 over 4 raw-log day\(s\) covered\)`, memo,
+			"the rate divisor is raw-log coverage days, including the snapshot-only day")
+		mustMatch(t, `4 distinct addresses, 4 of them at a single request`, memo,
+			"distinct addresses and the one-request residential-proxy signature are counted")
+		mustMatch(t, `3 opaque-page 200s .* and 1 retired-numeric 410s`, memo,
+			"the shell-200 vs retired-410 split is reported")
 	})
 	t.Run("the engaged spine is aggregated from the daily series, with the previous month", func(t *testing.T) {
 		mustContain(t, memo, "Engaged readers/day (>=5 pageviews outside the wall): **11**",
