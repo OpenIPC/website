@@ -127,8 +127,12 @@ def xiongmai_model(r, files, builds, index):
         if t:
             texts[l] = t
     links = [{"kind": "vendor_page", "label": f"xiongmaitech.com ({p['lang']})", "url": p["url"]} for p in r["pages"]]
+    for f in r.get("family", []):
+        links.append({"kind": "related", "label": f, "code": f})
     for fw in r.get("firmware", []):
-        links.append({"kind": "stock_firmware", "label": fw, "url": None})
+        # The firmware tab mostly repeats the model name; only a build is a link.
+        if re.match(r"^[0-9A-F]{8}", fw.strip()):
+            links.append({"kind": "stock_firmware", "label": fw, "url": firmware_url(fw, builds, index)})
     used, fl = set(), []
     for i, p in enumerate(r["photos"], 1):
         name, path = files.add(p["file"], f"photo-{i}{os.path.splitext(p['url'])[1] or '.png'}", used)
@@ -141,7 +145,13 @@ def xiongmai_model(r, files, builds, index):
             name, path = files.add(d["file"], os.path.basename(d["url"]), used)
             fl.append({"kind": "document", "name": name, "path": path})
     original = [l for l in ("en", "zh") if r["title"].get(l)]
-    return {"maker": "xiongmai", "code": r["code"], "aliases": r.get("aliases", []), "category": r.get("category"), "soc_label": r.get("soc_label"),
+    code = r["code"]
+    if r.get("code_from_title"):
+        # No model row: the page names the board only in words. A stable code
+        # from the vendor's page id keeps it one model across imports.
+        first = r["pages"][0]
+        code = f"XM-{first['lang'].upper()}-{first['id']}"
+    return {"maker": "xiongmai", "code": code, "category": r.get("category"), "soc_label": r.get("soc_label"),
             "sensor": r.get("sensor"), "tags": r["tags"], "texts": texts, "original": original,
             "translated_from": r.get("translated_from", "en"), "specs": r["specs"], "links": links, "files": fl}
 

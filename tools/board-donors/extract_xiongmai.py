@@ -87,6 +87,25 @@ def category_from_title(title):
     return None
 
 
+SOC = re.compile(r"\b(Hi35\d\d[A-Z]?(?:V\d{3})?|Hi3518[CE]?V?\d*|XM5\d\d[A-Z]*|GK7\d{3}[A-Z]?V?\d*)\b", re.I)
+SENSOR = re.compile(r"\b(IMX\d{3}\w*|SC\d{4}\w*|OV\d{4}\w*|AR0\d{3}\w*|PS\d{4}|MIS\d{4}|GC\d{4}|JX-?[FHK]\d{2}|[FHK]\d{2}(?=\s|$|\W))", re.I)
+
+
+def soc_sensor(specs):
+    """The SoC and sensor a specification names: the SoC from wherever it is
+    printed (often "DSP(Hi3518EV200)" under "System structure"), the sensor
+    from the row that says so."""
+    soc = sensor = None
+    for label, value in specs:
+        if not soc:
+            m = SOC.search(value)
+            soc = m.group(1) if m else None
+        if not sensor and re.search(r"sensor|传感器|图像传感器", label, re.I):
+            m = SENSOR.search(value)
+            sensor = m.group(1).upper() if m else None
+    return soc, sensor
+
+
 def photos(cap, page, media):
     """The product's own pictures: the detail gallery, not the menus."""
     own = set()
@@ -103,9 +122,7 @@ def main():
             for lang, tree in json.load(f)["trees"].items():
                 trees.append((cap, lang, tree))
     site = "https://www.xiongmaitech.com"
-    by_code = defaultdict(lambda: {"source": "xiongmai", "maker": "xiongmai", "title": {}, "features": {},
-                                   "specs": {}, "photos": [], "interface": [], "downloads": [], "firmware": [],
-                                   "lines": set(), "pages": [], "code_from_title": False})
+    pages = []
     for cap, lang, tree in trees:
         names = tree.get("list_names", {})
         for p in tree["products"]:
@@ -113,24 +130,55 @@ def main():
             tabs = {k: load(cap, v.get("file")) for k, v in p["tabs"].items()}
             specs = spec_rows(tabs.get("jscs", ""))
             codes, from_title = codes_of(specs, p["title"])
-            code = codes[0]
-            key = re.sub(r"[\s_/.]+", "-", code.strip().upper())
-            r = by_code[key]
-            r["code"] = r.get("code") or code
-            r.setdefault("aliases", [])
-            for c in codes[1:]:
-                if c not in r["aliases"] and c != r["code"]:
-                    r["aliases"].append(c)
-            r["code_from_title"] = r["code_from_title"] or from_title
-            r["title"][lang] = p["title"]
-            r["features"][lang] = features(tabs.get("cpgs", ""))
-            r["specs"][lang] = specs
-            r["pages"].append({"lang": lang, "id": p["id"], "url": p["url"]})
-            media = p["media"]
+            pages.append({"cap": cap, "lang": lang, "names": names, "p": p, "page": page, "tabs": tabs,
+                          "specs": specs, "codes": codes, "from_title": from_title})
+    # A model row naming several codes is a product family, not one board:
+    # page 71 lists IPG-50H10PE-S, IPG-50H10PE-SL (a 32x32 board) and
+    # IPG-53H13PE-S (1.3 MP, with a page of its own). So every code is its own
+    # model; a family page supplies a code's text only in a language where the
+    # code has no page of its own, and the family members are linked as
+    # related. Identity is the code, exactly.
+    key = lambda c: re.sub(r"[\s_/.]+", "-", c.strip().upper())
+    own = {(key(pg["codes"][0]), pg["lang"]) for pg in pages if len(pg["codes"]) == 1}
+    by_code = defaultdict(lambda: {"source": "xiongmai", "maker": "xiongmai", "title": {}, "features": {},
+                                   "specs": {}, "photos": [], "interface": [], "downloads": [], "firmware": [],
+                                   "lines": set(), "pages": [], "code_from_title": False, "aliases": [],
+                                   "family": [], "text_from_family": {}, "sensor": None, "soc_label": None})
+    for pg in pages:
+        p, lang, specs, codes, names = pg["p"], pg["lang"], pg["specs"], pg["codes"], pg["names"]
+        for c in codes:
+            k = key(c)
+            family = len(codes) > 1
+            if family and (k, lang) in own:
+                # the code's own page speaks for it in this language; the
+                # family page is only a link
+                by_code[k]["pages"].append({"lang": lang, "id": p["id"], "url": p["url"], "family": True})
+                continue
+            r = by_code[k]
+            r["code"] = r.get("code") or c
+            r["code_from_title"] = r["code_from_title"] or pg["from_title"]
+            for f in codes:
+                if key(f) != k and f not in r["family"]:
+                    r["family"].append(f)
+            if lang not in r["title"]:
+                r["title"][lang] = p["title"]
+                r["features"][lang] = features(pg["tabs"].get("cpgs", ""))
+                r["specs"][lang] = specs
+                if family:
+                    r["text_from_family"][lang] = True
+            soc, sensor = soc_sensor(specs)
+            r["soc_label"] = r.get("soc_label") or soc
+            # a family row's sensor may be another member's: only an own page
+            # says which sensor this code has
+            if not family:
+                r["sensor"] = r.get("sensor") or sensor
+            r["pages"].append({"lang": lang, "id": p["id"], "url": p["url"], "family": family})
+            tabs, page, media = pg["tabs"], pg["page"], p["media"]
             iface = set(re.findall(r'upload/[^"\'\s]+\.(?:png|jpe?g|gif)', tabs.get("dhxh", ""), re.I))
-            for m in photos(cap, page, media):
-                if m["sha256"] and m["sha256"] not in {x["sha256"] for x in r["photos"]}:
-                    r["photos"].append({**m, "role": "photo"})
+            if not family or not r["photos"]:
+                for m in photos(pg["cap"], page, media):
+                    if m["sha256"] and m["sha256"] not in {x["sha256"] for x in r["photos"]}:
+                        r["photos"].append({**m, "role": "photo"})
             for m in media:
                 if any(m["url"].endswith(o) for o in iface) and m["sha256"] not in {x["sha256"] for x in r["interface"]}:
                     r["interface"].append({**m, "role": "interface"})
@@ -140,11 +188,15 @@ def main():
             fw = clean(tabs.get("wdxz_t", ""))
             if fw and fw not in r["firmware"]:
                 r["firmware"].append(fw)
-            for k in p.get("listed_in", []):
-                parts = k.split("/")
+            for kk in p.get("listed_in", []):
+                parts = kk.split("/")
                 line = names.get(parts[0], parts[0])
-                sub = names.get(k, k) if len(parts) > 1 else ""
+                sub = names.get(kk, kk) if len(parts) > 1 else ""
                 r["lines"].add((lang, line, sub))
+    # a code seen only as a family page's link (its own page already taken)
+    for k, r in list(by_code.items()):
+        if "code" not in r:
+            del by_code[k]
     recs = []
     for key, r in sorted(by_code.items()):
         lines = sorted(r.pop("lines"))

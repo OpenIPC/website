@@ -222,11 +222,13 @@ func TestTheTreeSpeaksTheReadersLanguageAndFallsBackToEnglish(t *testing.T) {
 	}
 }
 
-func TestAVendorPageNamingSeveralCodesIsOneModelTheShopsListingsJoin(t *testing.T) {
+// A source that says outright that several codes are one board (not a
+// vendor's family row: tools/board-donors never sends those as aliases).
+func TestCodesASourceDeclaresOneBoardAreOneModelOtherListingsJoin(t *testing.T) {
 	pool, root := imported(t)
 	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
 	ctx := context.Background()
-	// Xiongmai first: one page, one board in three variants.
+	// A source declaring one board under three codes.
 	xm := donor(t, "xiongmai", model("xiongmai", "IPG-50HV20PES-S", map[string]any{"aliases": []string{"IPG-50HV20PET-S", "IPG-50HV20PET-A"}}))
 	if n, err := im.FromSnapshot(ctx, xm); err != nil || n != 1 {
 		t.Fatalf("xiongmai: %d, %v", n, err)

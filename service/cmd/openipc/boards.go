@@ -68,13 +68,18 @@ func boardsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, ar
 func importSnapshot(ctx context.Context, cfg *config.Config, log *slog.Logger, args []string) error {
 	fs := flag.NewFlagSet("import-snapshot", flag.ExitOnError)
 	source := fs.String("source", "", "the donor the snapshot is from (cctvsp, xiongmai)")
+	unpinned := fs.Bool("allow-unpinned", false, "import a snapshot that is not pinned: local previews only, never an environment")
 	_ = fs.Parse(args)
 	if *source == "" || fs.NArg() != 1 {
 		return fmt.Errorf("usage: openipc boards import-snapshot --source <id> <snapshot.tar>")
 	}
 	file := fs.Arg(0)
-	if err := boards.VerifySnapshot(file, *source); err != nil {
-		return err
+	if !*unpinned {
+		if err := boards.VerifySnapshot(file, *source); err != nil {
+			return err
+		}
+	} else {
+		log.Warn("boards: importing an unpinned snapshot", "file", file)
 	}
 	cat, err := catalogue.Load(cfg.CatalogueDir)
 	if err != nil {

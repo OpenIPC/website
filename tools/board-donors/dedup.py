@@ -66,7 +66,7 @@ def main():
             # A vendor page naming several codes says they are one board:
             # each code is an item of the same group, merged by the source's
             # own word rather than by a guess.
-            for c in [r["code"]] + r.get("aliases", []):
+            for c in [r["code"]]:
                 items.append({"source": r["source"], "maker": r.get("maker"), "code": c, "group": group,
                               "soc_label": r.get("soc_label"), "sensor": r.get("sensor"),
                               "title": next(iter(r.get("title", {}).values()), r["code"]),
@@ -120,7 +120,9 @@ def main():
                 seen.add(pair)
                 line = (f"`{a[1]}` ({A['source']}: {A['soc_label']} + {A['sensor']}) vs "
                         f"`{b[1]}` ({B['source']}: {B['soc_label']} + {B['sensor']})")
-                (cross if {i['source'] for i in by_code[a]} != {i['source'] for i in by_code[b]} else within).append(line)
+                # Cross-source only when no one source lists both codes.
+                sa_, sb_ = {i['source'] for i in by_code[a]}, {i['source'] for i in by_code[b]}
+                (within if sa_ & sb_ else cross).append(line)
     print("\n## Candidates across sources: decide each (same board / different boards / successor)\n")
     for i, l in enumerate(cross, 1):
         print(f"{i}. {l}")
