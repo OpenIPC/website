@@ -3,9 +3,9 @@
  * chosen; a day with more than one build offers them by time, which is the
  * only place a reader meets a time or a commit.
  */
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Build } from '../../lib/explorer/types';
-import { byDay, dayOf, fmtDay, fmtDayShort, fmtMonth, monthGrid, monthOf, shiftMonth, timeOf, weekdays } from '../../lib/explorer/calendar';
+import { byDay, dayOf, fmtDay, fmtDayShort, fmtMonth, monthGrid, monthOf, shiftIntoView, shiftMonth, timeOf, timesDay, weekdays } from '../../lib/explorer/calendar';
 import type { ExplorerT } from '../../lib/explorer-i18n';
 import type { Locale } from '../../lib/i18n';
 
@@ -30,6 +30,9 @@ export default function BuildPicker({ id, labelId, builds, value, onChange, excl
   const [day, setDay] = useState<string | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
+  /** How far left the calendar moves so it stays inside the window. */
+  const [shift, setShift] = useState(0);
   const days = useMemo(() => byDay(builds), [builds]);
   const selected = builds.find((b) => b.id === value) ?? null;
   const excluded = exclude ? builds.find((b) => b.id === exclude) ?? null : null;
@@ -45,6 +48,15 @@ export default function BuildPicker({ id, labelId, builds, value, onChange, excl
     return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape); };
   }, [open]);
 
+  // Opened next to a field near the window's right edge, the calendar would
+  // run past it; move it left, but never past the left edge.
+  useLayoutEffect(() => {
+    if (!open || !dialog.current) return;
+    const r = dialog.current.getBoundingClientRect();
+    const next = shiftIntoView(r.left + shift, r.right + shift, window.innerWidth);
+    if (next !== shift) setShift(next);
+  }, [open]);
+
   if (builds.length === 0) return null;
   const first = monthOf(builds[builds.length - 1].built_at);
   const last = monthOf(builds[0].built_at);
@@ -53,6 +65,7 @@ export default function BuildPicker({ id, labelId, builds, value, onChange, excl
     if (!open) {
       setMonth(monthOf((selected ?? builds[0]).built_at));
       setDay(null);
+      setShift(0);
     }
     setOpen(!open);
   };
@@ -63,7 +76,8 @@ export default function BuildPicker({ id, labelId, builds, value, onChange, excl
   };
 
   const selectedDay = selected ? dayOf(selected.built_at) : null;
-  const shownDay = day ?? (selectedDay && (days.get(selectedDay)?.length ?? 0) > 1 ? selectedDay : null);
+  const shownDay = open ? timesDay(month, day, selectedDay, days) : null;
+  const page = (n: number) => { setMonth(shiftMonth(month, n)); setDay(null); };
   const shown = shownDay ? days.get(shownDay) ?? [] : [];
   const grid = open ? monthGrid(month) : null;
 
@@ -87,12 +101,12 @@ export default function BuildPicker({ id, labelId, builds, value, onChange, excl
       </button>
 
       {open && grid && (
-        <div role="dialog" aria-label={t('calendar_label')}
+        <div role="dialog" aria-label={t('calendar_label')} ref={dialog} style={shift ? { transform: `translateX(-${shift}px)` } : undefined}
           class="absolute top-[calc(100%+6px)] left-0 z-20 w-[20rem] max-w-[calc(100vw-2rem)] rounded-lg border border-hairline bg-white p-3 shadow-[0_8px_28px_rgba(20,28,60,.14)]">
           <div class="mb-1.5 flex items-center justify-between">
-            <MonthButton label={t('calendar_prev')} disabled={month <= first} onClick={() => setMonth(shiftMonth(month, -1))}>‹</MonthButton>
+            <MonthButton label={t('calendar_prev')} disabled={month <= first} onClick={() => page(-1)}>‹</MonthButton>
             <strong class="font-semibold">{fmtMonth(month, locale)}</strong>
-            <MonthButton label={t('calendar_next')} disabled={month >= last} onClick={() => setMonth(shiftMonth(month, 1))}>›</MonthButton>
+            <MonthButton label={t('calendar_next')} disabled={month >= last} onClick={() => page(1)}>›</MonthButton>
           </div>
           <div class="grid grid-cols-7 gap-0.5 text-center">
             {weekdays(locale).map((w) => <div key={w} class="py-1 text-[11px] font-semibold text-[#8a93a3] uppercase">{w}</div>)}

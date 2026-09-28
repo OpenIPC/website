@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { byDay, dayOf, fmtDay, fmtDayShort, fmtMonth, monthGrid, shiftMonth, timeOf, weekdays } from "./calendar";
+import { byDay, dayOf, fmtDay, fmtDayShort, fmtMonth, monthGrid, shiftIntoView, shiftMonth, timeOf, timesDay, weekdays } from "./calendar";
 import type { Build } from "./types";
 
 const build = (id: string, built_at: string): Build => ({ id, sha: id, short: id.slice(0, 7), built_at, platforms: ["x-lite"] });
@@ -49,5 +49,44 @@ describe("wording", () => {
   it("names the weekdays from Monday", () => {
     expect(weekdays("en")).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
     expect(weekdays("ru")[0]).toBe("пн");
+  });
+});
+
+describe("timesDay", () => {
+  const days = byDay([
+    build("c", "2026-09-17T17:35:19Z"),
+    build("b", "2026-09-17T04:10:59Z"),
+    build("a", "2026-08-29T17:36:43Z"),
+    build("z", "2026-08-29T04:36:43Z"),
+    build("y", "2026-08-20T17:36:43Z"),
+  ]);
+
+  it("lists the selected build's day when it had more than one build", () => {
+    expect(timesDay("2026-09", null, "2026-09-17", days)).toBe("2026-09-17");
+    expect(timesDay("2026-08", null, "2026-08-20", days)).toBeNull();
+  });
+
+  it("prefers the day just clicked", () => {
+    expect(timesDay("2026-08", "2026-08-29", "2026-08-20", days)).toBe("2026-08-29");
+  });
+
+  it("hides another month's times after paging, selected or clicked", () => {
+    expect(timesDay("2026-08", null, "2026-09-17", days)).toBeNull();
+    expect(timesDay("2026-09", "2026-08-29", null, days)).toBeNull();
+  });
+});
+
+describe("shiftIntoView", () => {
+  it("leaves a calendar that fits alone", () => {
+    expect(shiftIntoView(100, 420, 1280)).toBe(0);
+  });
+
+  it("moves one that runs past the right edge back inside it", () => {
+    expect(shiftIntoView(300, 620, 500)).toBe(136);
+  });
+
+  it("never moves it past the left edge", () => {
+    expect(shiftIntoView(40, 400, 300)).toBe(24);
+    expect(shiftIntoView(12, 332, 320)).toBe(0);
   });
 });

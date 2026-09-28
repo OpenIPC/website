@@ -13,7 +13,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { SOURCES, type IndexFile, type Sizes, type Source } from '../../lib/explorer/types';
 import { fetchIndex, fetchSizes, NotFound } from '../../lib/explorer/api';
-import { buildCatalog, buildsFor, carryBuild, carryVariant, type Catalog } from '../../lib/explorer/platforms';
+import { buildCatalog, buildsFor, carryBuild, carryVariant, settle, type Catalog } from '../../lib/explorer/platforms';
 import { readQueryString, writeQueryString, TABS, type Tab } from '../../lib/explorer/url';
 import { useExplorerTranslations } from '../../lib/explorer-i18n';
 import type { Locale } from '../../lib/i18n';
@@ -43,6 +43,8 @@ export default function Explorer({ locale }: { locale: Locale }) {
   const [tab, setTab] = useState<Tab>(initial.tab);
   const [helpOpen, setHelpOpen] = useState(initial.helpOpen);
   const [index, setIndex] = useState<Load<Catalog>>({ state: 'loading' });
+  /** Why a source's list did not load, when the other's did. */
+  const [partial, setPartial] = useState<string | null>(null);
   const [sizes, setSizes] = useState<Load<Sizes>>({ state: 'loading' });
 
   useEffect(() => {
@@ -54,28 +56,27 @@ export default function Explorer({ locale }: { locale: Locale }) {
         if (r.status === 'fulfilled') got[SOURCES[i]] = r.value;
         else error ||= (r.reason as Error).message;
       });
-      setIndex(Object.keys(got).length > 0 ? { state: 'ok', value: buildCatalog(got) } : { state: 'error', error });
+      const loaded = Object.keys(got).length;
+      setPartial(loaded > 0 && loaded < SOURCES.length ? error : null);
+      setIndex(loaded > 0 ? { state: 'ok', value: buildCatalog(got) } : { state: 'error', error });
     });
   }, []);
 
   const catalog = index.state === 'ok' ? index.value : null;
   const variant = catalog && platform ? catalog.byPlatform[platform] ?? null : null;
-  const source = variant?.source ?? null;
   const builds = useMemo(() => (catalog && variant ? buildsFor(catalog, variant) : []), [catalog, variant]);
   const build = builds.find((b) => b.id === buildId) ?? null;
+  // Each build's reports are fetched from the source that built it.
+  const source = build?.source ?? null;
 
-  // Settle what the address asked for against what exists: a SoC it names, else
-  // the one its platform belongs to (links from before the SoC came first),
-  // else the first; that SoC's platform if the address gave one, else its first.
+  // Settle what the address asked for against what loaded (see settle()).
   useEffect(() => {
     if (!catalog) return;
-    const known = platform ? catalog.byPlatform[platform] : undefined;
-    const s = soc && catalog.variants[soc] ? soc : known?.soc ?? catalog.groups[0]?.socs[0] ?? null;
-    if (!s) return;
-    const v = known && known.soc === s ? known : carryVariant(catalog, s, null);
-    if (s !== soc) setSoc(s);
-    if (v && v.platform !== platform) setPlatform(v.platform);
-  }, [catalog, soc, platform]);
+    const next = settle(catalog, soc, platform, partial !== null);
+    if (!next) return;
+    if (next.soc !== soc) setSoc(next.soc);
+    if (next.platform !== platform) setPlatform(next.platform);
+  }, [catalog, soc, platform, partial]);
 
   useEffect(() => {
     if (variant && !build) setBuildId(builds[0]?.id ?? null);
@@ -83,6 +84,7 @@ export default function Explorer({ locale }: { locale: Locale }) {
 
   const others = build ? builds.filter((b) => b.id !== build.id) : [];
   const compare = others.some((b) => b.id === compareId) ? compareId : others[0]?.id ?? null;
+  const compareSource = others.find((b) => b.id === compare)?.source ?? source;
 
   useEffect(() => {
     setSizes({ state: 'loading' });
@@ -100,7 +102,10 @@ export default function Explorer({ locale }: { locale: Locale }) {
     window.history.replaceState(window.history.state, '', window.location.pathname + q + window.location.hash);
   }, [soc, buildId, platform, compareId, tab, helpOpen]);
 
-  const kconfig = catalog && platform ? catalog.kconfig.has(platform) : false;
+  // The build's own source if it published a Kconfig graph for this platform, else the other's.
+  const kconfigSource = catalog && platform && variant
+    ? [source, ...variant.sources].find((s): s is Source => !!s && catalog.kconfig[s].has(platform)) ?? null
+    : null;
 
   // A new SoC keeps the variant if it has one of the same name, and a new
   // variant keeps the build's night if it was built then.
@@ -176,6 +181,7 @@ export default function Explorer({ locale }: { locale: Locale }) {
       <div class="site-container pt-7 pb-12">
         {index.state === 'loading' && <p class="text-body-secondary">{t('loading_index')}</p>}
         {index.state === 'error' && <Notice tone="error">{t('error_index', { error: index.error })}</Notice>}
+        {partial && <div class="mb-5"><Notice tone="error">{t('error_partial', { error: partial })}</Notice></div>}
         {catalog && catalog.groups.length === 0 && <Notice>{t('empty')}</Notice>}
         {build && platform && sizes.state === 'loading' && <p class="text-body-secondary">{t('loading')}</p>}
         {sizes.state === 'missing' && platform && <Notice>{t('missing_report', { platform })}</Notice>}
@@ -207,11 +213,11 @@ export default function Explorer({ locale }: { locale: Locale }) {
                 </div>
               )}
               {tab === 'drift' && (
-                <Drift source={source} builds={builds} base={sizes.value} baseBuild={build.id} compareBuild={compare} platform={platform} t={t} />
+                <Drift source={compareSource ?? source} builds={builds} base={sizes.value} baseBuild={build.id} compareBuild={compare} platform={platform} t={t} />
               )}
               {tab === 'trends' && <Trends source={source} platform={platform} t={t} />}
-              {tab === 'whatif' && (kconfig
-                ? <WhatIf source={source} platform={platform} sizes={sizes.value} t={t} />
+              {tab === 'whatif' && (kconfigSource
+                ? <WhatIf source={kconfigSource} platform={platform} sizes={sizes.value} t={t} />
                 : <p class="text-body-secondary">{t('whatif_unavailable')}</p>)}
             </section>
           </>

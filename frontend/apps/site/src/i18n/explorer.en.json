@@ -47,6 +47,7 @@
     "empty": "No builds have reached openipc.org yet. They arrive from the CI once per nightly build.",
     "error_generic": "This could not be loaded ({error}).",
     "error_index": "The list of builds could not be loaded ({error}). Reload the page to try again.",
+    "error_partial": "Some builds could not be loaded ({error}), so the lists below may be incomplete. Reload the page to try again.",
     "error_report": "This build's report for {platform} could not be loaded ({error}).",
     "fact_compressed": "Compressed",
     "fact_counts": "{packages} packages · {modules} modules",

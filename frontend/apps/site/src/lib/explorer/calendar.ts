@@ -72,3 +72,22 @@ export function weekdays(locale: string): string[] {
   // 2024-01-01 was a Monday.
   return Array.from({ length: 7 }, (_, i) => f.format(noon(`2024-01-0${i + 1}`)));
 }
+
+/**
+ * The day whose builds the calendar lists by time: the day the reader just
+ * clicked, else the selected build's day if it had more than one build; and
+ * only while that day's month is the one on screen.
+ */
+export function timesDay(month: string, clicked: string | null, selectedDay: string | null, days: Map<string, Build[]>): string | null {
+  const day = clicked ?? (selectedDay && (days.get(selectedDay)?.length ?? 0) > 1 ? selectedDay : null);
+  return day && monthOf(day) === month ? day : null;
+}
+
+/**
+ * How far left to move a popover measured at `left`..`right` so it ends
+ * `margin` inside a window `width` wide, never moving it past the left margin.
+ */
+export function shiftIntoView(left: number, right: number, width: number, margin = 16): number {
+  const over = right - (width - margin);
+  return over > 0 ? Math.max(0, Math.min(over, left - margin)) : 0;
+}

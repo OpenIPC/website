@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCatalog, buildsFor, carryBuild, carryVariant, parsePlatform, vendorOf } from "./platforms";
+import { buildCatalog, buildsFor, carryBuild, carryVariant, parsePlatform, settle, vendorOf } from "./platforms";
 import type { Build, IndexFile, Source } from "./types";
 
 const build = (id: string, built_at: string, platforms: string[]): Build => ({ id, sha: id.padEnd(40, "0"), short: id.slice(0, 7), built_at, platforms });
@@ -50,13 +50,30 @@ describe("vendorOf", () => {
 
 describe("buildCatalog", () => {
   it("merges both sources under the SoC, generic variants first", () => {
-    expect(catalog.variants.gk7205v300.map((v) => [v.label, v.source])).toEqual([
-      ["lite", "firmware"],
-      ["ultimate", "firmware"],
-      ["fpv", "builder"],
-      ["venc", "builder"],
-      ["lite · vixand-ivg-g6s", "builder"],
+    expect(catalog.variants.gk7205v300.map((v) => [v.label, v.sources])).toEqual([
+      ["lite", ["firmware"]],
+      ["ultimate", ["firmware"]],
+      ["fpv", ["builder"]],
+      ["venc", ["builder"]],
+      ["lite · vixand-ivg-g6s", ["builder"]],
     ]);
+  });
+
+  it("keeps both sources' builds of a name they share, each fetched from its own", () => {
+    const both = buildCatalog({
+      firmware: index("firmware", [build("fw-2", "2026-09-27T17:35:26Z", ["t31-lite"]), build("fw-1", "2026-09-25T17:35:26Z", ["t31-lite"])]),
+      builder: index("builder", [build("bd-1", "2026-09-26T18:57:46Z", ["t31-lite"])]),
+    });
+    expect(both.byPlatform["t31-lite"].sources).toEqual(["firmware", "builder"]);
+    expect(buildsFor(both, both.byPlatform["t31-lite"]).map((b) => [b.id, b.source])).toEqual([
+      ["fw-2", "firmware"], ["bd-1", "builder"], ["fw-1", "firmware"],
+    ]);
+  });
+
+  it("offers a name it cannot read as a chip of its own", () => {
+    const odd = buildCatalog({ builder: index("builder", [build("b", "2026-09-26T18:57:46Z", ["GK7205V300.special"])]) });
+    expect(odd.byPlatform["GK7205V300.special"]).toMatchObject({ soc: "GK7205V300.special", board: null });
+    expect(odd.groups).toEqual([{ vendor: null, socs: ["GK7205V300.special"] }]);
   });
 
   it("groups SoCs by maker, the popular makers first", () => {
@@ -109,5 +126,25 @@ describe("carryBuild", () => {
   it("falls back to the newest", () => {
     expect(carryBuild(fw, bd[1])?.id).toBe("fw-0927");
     expect(carryBuild(fw, null)?.id).toBe("fw-0927");
+  });
+});
+
+describe("settle", () => {
+  it("opens a link from before the SoC came first on its platform", () => {
+    expect(settle(catalog, null, "t31_lite_wyze-v3b", false)).toEqual({ soc: "t31", platform: "t31_lite_wyze-v3b" });
+  });
+
+  it("takes a SoC alone to its first variant, and a bare page to the first SoC", () => {
+    expect(settle(catalog, "t31", null, false)).toEqual({ soc: "t31", platform: "t31-lite" });
+    expect(settle(catalog, null, null, false)).toEqual({ soc: "gk7205v300", platform: "gk7205v300-lite" });
+  });
+
+  it("replaces a platform nobody builds when every source loaded", () => {
+    expect(settle(catalog, null, "gone-lite", false)).toEqual({ soc: "gk7205v300", platform: "gk7205v300-lite" });
+  });
+
+  it("leaves a link alone when its platform may be in a source that failed", () => {
+    const firmwareOnly = buildCatalog({ firmware });
+    expect(settle(firmwareOnly, "t31", "t31_lite_wyze-v3b", true)).toBeNull();
   });
 });

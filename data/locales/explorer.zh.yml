@@ -21,6 +21,7 @@ zh:
     loading: 加载中…
     loading_index: 正在加载构建列表…
     error_index: '无法加载构建列表（{error}）。请刷新页面重试。'
+    error_partial: '部分构建未能加载（{error}），因此下面的列表可能不完整。请刷新页面重试。'
     error_report: '无法加载该构建在 {platform} 上的报告（{error}）。'
     error_generic: '无法加载（{error}）。'
     empty: '尚无构建到达 openipc.org。每次夜间构建完成后，CI 会发送一次数据。'
