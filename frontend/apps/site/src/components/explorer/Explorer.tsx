@@ -142,12 +142,11 @@ export default function Explorer({ locale }: { locale: Locale }) {
                 </select>
               </label>
               {variants.length > 0 && (
-                // Capped: a device name as long as `ultimate · rostelecom-ipc8232swc-we`
-                // would otherwise push Compare onto a second row; the heading below
-                // and each option's title carry the full name.
+                // Capped so the longest device name cannot push Help onto a second
+                // row; the heading below and each option's title carry the full name.
                 <label class="flex min-w-0 flex-col gap-1">
                   <span class={LABEL}>{t('variant_label')}</span>
-                  <select id="explorer-variant" class={`${SELECT} sm:max-w-[15rem]`} value={platform ?? ''}
+                  <select id="explorer-variant" class={`${SELECT} sm:max-w-[24rem]`} value={platform ?? ''}
                     onChange={(e) => chooseVariant((e.target as HTMLSelectElement).value)}>
                     {generic.map((v) => <option key={v.platform} value={v.platform} title={v.platform}>{v.label}</option>)}
                     {boards.length > 0 && (
@@ -167,22 +166,12 @@ export default function Explorer({ locale }: { locale: Locale }) {
                   </select>
                 </label>
               )}
-              {others.length > 0 && (
-                <label class="flex min-w-0 flex-col gap-1 lg:ml-auto">
-                  <span class={LABEL}>{t('compare_label')}</span>
-                  <select id="explorer-compare" class={SELECT} value={compare ?? ''}
-                    onChange={(e) => setCompareId((e.target as HTMLSelectElement).value)}>
-                    {others.map((b) => <option key={b.id} value={b.id} title={b.id}>{buildOptionLabel(b, false)}</option>)}
-                  </select>
-                </label>
-              )}
             </>
           )}
-          {sizes.state !== 'ok' && (
-            <button type="button" class="site-btn site-btn-outline-primary site-btn-sm" onClick={() => setHelpOpen(true)}>
-              {t('help_open')}
-            </button>
-          )}
+          {/* One place for Help, whatever is loaded; it used to move to the tab row once a report arrived. */}
+          <button type="button" class="site-btn site-btn-outline-primary site-btn-sm ml-auto" onClick={() => setHelpOpen(true)}>
+            {t('help_open')}
+          </button>
         </div>
       </div>
 
@@ -205,15 +194,22 @@ export default function Explorer({ locale }: { locale: Locale }) {
                   {t(`tab_${k}`)}
                 </button>
               ))}
-              <button type="button" class="ml-auto shrink-0 cursor-pointer self-center px-3 text-[15px] text-brand-blue" onClick={() => setHelpOpen(true)}>
-                {t('help_open')}
-              </button>
             </div>
             <section id="explorer-panel" role="tabpanel" aria-labelledby={`explorer-tab-${tab}`} class="pt-5">
               {tab === 'composition' && <Treemap packages={sizes.value.packages} t={t} />}
               {tab === 'packages' && <PackageTable packages={sizes.value.packages} t={t} />}
               {tab === 'modules' && <ModuleTable modules={sizes.value.linux_components.modules} t={t} />}
               {tab === 'removed' && <RemovedTable removed={sizes.value.removed_by_finalize} t={t} />}
+              {tab === 'drift' && others.length > 0 && (
+                // Only Drift compares, so the choice lives with it rather than in the bar.
+                <label class="mb-5 flex max-w-full flex-col gap-1 sm:w-fit">
+                  <span class={LABEL}>{t('compare_label')}</span>
+                  <select id="explorer-compare" class={SELECT} value={compare ?? ''}
+                    onChange={(e) => setCompareId((e.target as HTMLSelectElement).value)}>
+                    {others.map((b) => <option key={b.id} value={b.id} title={b.id}>{buildOptionLabel(b, false)}</option>)}
+                  </select>
+                </label>
+              )}
               {tab === 'drift' && (
                 <Drift source={source} builds={builds} base={sizes.value} baseBuild={build.id} compareBuild={compare} platform={platform} t={t} />
               )}
