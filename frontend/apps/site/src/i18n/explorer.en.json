@@ -35,8 +35,7 @@
     "compressed_note": "Squashfs compresses across packages, so a per-package compressed size can only be approximated from the image's overall ratio.",
     "drift_intro": "Every package and module whose installed size changed between {before} and {after}, largest change first.",
     "drift_none_other": "No other build has a report for {platform}; drift needs two.",
-    "empty_build": "This build published no size reports, so there is nothing to show for it. Pick another build.",
-    "empty_source": "No {source} builds have reached openipc.org yet. They arrive from the CI once per nightly build.",
+    "empty": "No builds have reached openipc.org yet. They arrive from the CI once per nightly build.",
     "error_generic": "This could not be loaded ({error}).",
     "error_index": "The list of builds could not be loaded ({error}). Reload the page to try again.",
     "error_report": "This build's report for {platform} could not be loaded ({error}).",
@@ -53,7 +52,7 @@
     "growers_summary": "{shown} of {total}",
     "help": {
       "first_look": {
-        "html": "<ol><li><strong>Source.</strong> Firmware lists boards and variants (<code>hi3518ev300-lite</code>); Builder lists devices (<code>gk7205v200_lite_tiandy-tc-c321n</code>).</li><li><strong>Build.</strong> The newest is selected. Build IDs read <code>nightly-YYYYMMDD-shortsha</code>.</li><li><strong>Platform.</strong> Only platforms that reported sizes for that build are listed.</li><li><strong>Tabs.</strong> Composition for what dominates, Packages and Kernel modules for detail, Drift against another build, Trends for the long view, What if… to model removals.</li></ol>",
+        "html": "<ol><li><strong>SoC.</strong> Pick the chip in your camera (<code>gk7205v300</code>), grouped by maker.</li><li><strong>Variant.</strong> Every build made for that chip: the firmware variants (<code>lite</code>, <code>ultimate</code>, <code>fpv</code>…) first, then builds for a particular device (<code>lite · xg521</code>).</li><li><strong>Build.</strong> Only the nights that built that variant are listed, newest first. Build IDs read <code>nightly-YYYYMMDD-shortsha</code>.</li><li><strong>Tabs.</strong> Composition for what dominates, Packages and Kernel modules for detail, Drift against another build, Trends for the long view, What if… to model removals.</li></ol>",
         "title": "First look"
       },
       "flash_map": {
@@ -61,7 +60,7 @@
         "title": "The flash map and the meters"
       },
       "links": {
-        "html": "<p>The address carries the view — <code>source</code>, <code>build</code>, <code>plat</code>, <code>compare</code>, <code>tab</code> — so any view can be shared. openipc.org keeps the newest 90 builds of each source, as the release pages do; a platform that failed to build one night is missing from that build and leaves a gap in its trends.</p>",
+        "html": "<p>The address carries the view — <code>soc</code>, <code>plat</code>, <code>build</code>, <code>compare</code>, <code>tab</code> — so any view can be shared; <code>?soc=t31</code> alone opens that chip's first variant at its newest build. openipc.org keeps the newest 90 builds, as the release pages do; a variant that failed to build one night is missing from that build and leaves a gap in its trends.</p>",
         "title": "Links and history"
       },
       "tabs": {
@@ -109,7 +108,6 @@
     "no_removed": "This build removes nothing after install.",
     "no_top_files": "No per-file breakdown ({total} files).",
     "only_points": "only {count} point(s)",
-    "platform_label": "Platform",
     "projection": "At this rate it runs out in {days} days ({date})",
     "removed_intro": "Files a package installs that OpenIPC's finalize hooks remove before the root filesystem is built — trims such as the libstdc++ strip and per-board exclude lists.",
     "removed_summary": "{count} files · {bytes} reclaimed",
@@ -119,9 +117,8 @@
     "segment_rootfs": "Root filesystem",
     "segment_used": "used {kb}",
     "selectors": "{count} selector(s)",
-    "source_builder": "Builder",
-    "source_firmware": "Firmware",
-    "source_label": "Source",
+    "soc_label": "SoC",
+    "soc_other": "Other",
     "state_crit": "almost full",
     "state_ok": "room to grow",
     "state_over": "over the cap",
@@ -142,6 +139,8 @@
     "treemap_note": "Area = uncompressed bytes each package installs",
     "trends_none": "No history for this platform yet.",
     "trends_summary": "{count} builds, {first} → {last}",
+    "variant_boards": "Board-specific",
+    "variant_label": "Variant",
     "whatif_blocked": "Held on",
     "whatif_copied": "Copied",
     "whatif_copy": "Copy defconfig fragment",

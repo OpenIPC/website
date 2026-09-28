@@ -1,10 +1,10 @@
 zh:
   explorer:
-    source_label: 来源
-    source_firmware: Firmware
-    source_builder: Builder
+    soc_label: SoC
+    variant_label: 变体
+    variant_boards: 特定设备
+    soc_other: 其他
     build_label: 构建
-    platform_label: 平台
     compare_label: 对比
     newest: 最新
     help_open: 帮助
@@ -14,8 +14,7 @@ zh:
     error_index: '无法加载构建列表（{error}）。请刷新页面重试。'
     error_report: '无法加载该构建在 {platform} 上的报告（{error}）。'
     error_generic: '无法加载（{error}）。'
-    empty_source: '尚无 {source} 构建到达 openipc.org。每次夜间构建完成后，CI 会发送一次数据。'
-    empty_build: '该构建没有发布大小报告，因此无可显示的内容。请选择其他构建。'
+    empty: '尚无构建到达 openipc.org。每次夜间构建完成后，CI 会发送一次数据。'
     missing_report: '该构建没有提供 {platform} 的大小数据：大小报告生成失败，或该平台当晚未能构建。'
     flash_layout: '{mb} MB NOR 闪存布局'
     kernel_version: '内核 {version}'
@@ -135,7 +134,7 @@ zh:
         html: '<p>只读地查看每个 OpenIPC 构建的内容：哪些软件包和内核模块进入了根文件系统、各占多少空间、在保留的构建中如何变化，以及（如果构建发布了 Kconfig 依赖图）去掉某些软件包能节省多少。您可以由此复制 Buildroot defconfig 片段，或在 <code>OpenIPC/builder</code> 发起构建申请。</p><p>这里显示的一切都来自 <code>OpenIPC/firmware</code> 和 <code>OpenIPC/builder</code> 每次夜间构建发布时发送到 openipc.org 的大小报告和 Kconfig 依赖图。使用本页时不会从 GitHub 获取任何内容。</p>'
       first_look:
         title: 快速了解
-        html: '<ol><li><strong>来源。</strong>Firmware 列出板型与变体（<code>hi3518ev300-lite</code>）；Builder 列出设备（<code>gk7205v200_lite_tiandy-tc-c321n</code>）。</li><li><strong>构建。</strong>默认选中最新构建。构建 ID 形如 <code>nightly-YYYYMMDD-短提交号</code>。</li><li><strong>平台。</strong>只列出在该构建中报告了大小的平台。</li><li><strong>标签页。</strong>“构成”看占用最大的部分，“软件包”和“内核模块”看细节，“变化”与另一个构建对比，“趋势”看长期走势，“假如…”模拟去掉软件包。</li></ol>'
+        html: '<ol><li><strong>SoC。</strong>选择您摄像头中的芯片（<code>gk7205v300</code>），按厂商分组。</li><li><strong>变体。</strong>为该芯片构建的全部内容：先是固件变体（<code>lite</code>、<code>ultimate</code>、<code>fpv</code>…），然后是针对特定设备的构建（<code>lite · xg521</code>）。</li><li><strong>构建。</strong>只列出成功构建该变体的夜间构建，最新的在前。构建 ID 形如 <code>nightly-YYYYMMDD-短提交号</code>。</li><li><strong>标签页。</strong>“构成”看占用最大的部分，“软件包”和“内核模块”看细节，“变化”与另一个构建对比，“趋势”看长期走势，“假如…”模拟去掉软件包。</li></ol>'
       flash_map:
         title: 闪存布局图与指示条
         html: '<p>横条就是构建所用布局下的芯片：U-Boot 及其环境变量、内核分区、根文件系统分区，以及保存您设置的覆盖层，按构建自检所用的上限绘制。每个分区中颜色较深的部分是构建实际占用的空间。指示条给出相同的数字和状态：剩余不足 10% 为<em>紧张</em>，不足 2% 为<em>几乎已满</em>。</p>'
@@ -147,4 +146,4 @@ zh:
         html: '<p>Buildroot 的 Kconfig 有 <code>depends on</code> 和 <code>select</code>。关闭一个软件包也会关闭只由它选中的内容；如果某个仍启用的项目选中了该软件包，它会保留，表格会说明是什么保留了它。节省量是将被移除的软件包在此构建中的安装字节数。<em>复制 defconfig 片段</em>会给出形如 <code># BR2_PACKAGE_FOO is not set</code> 的行，可追加到板型 defconfig；<em>申请此构建</em>会在 <code>OpenIPC/builder</code> 打开一个预填好的 issue。</p>'
       links:
         title: 链接与历史
-        html: '<p>地址中包含当前视图——<code>source</code>、<code>build</code>、<code>plat</code>、<code>compare</code>、<code>tab</code>——因此任何视图都可以分享。openipc.org 为每个来源保留最新的 90 个构建，与发布页面一致；某个平台某晚构建失败时，该构建中就没有它，趋势图中也会留下空缺。</p>'
+        html: '<p>地址中包含当前视图——<code>soc</code>、<code>plat</code>、<code>build</code>、<code>compare</code>、<code>tab</code>——因此任何视图都可以分享；仅用 <code>?soc=t31</code> 即可打开该芯片第一个变体的最新构建。openipc.org 保留最新的 90 个构建，与发布页面一致；某个变体某晚构建失败时，该构建中就没有它，趋势图中也会留下空缺。</p>'

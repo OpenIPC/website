@@ -35,8 +35,7 @@
     "compressed_note": "Squashfs 会跨软件包压缩，因此单个软件包的压缩大小只能按镜像的整体压缩比估算。",
     "drift_intro": "在 {before} 与 {after} 之间安装大小发生变化的所有软件包和模块，按变化幅度从大到小排列。",
     "drift_none_other": "没有其他构建包含 {platform} 的报告；对比需要两个构建。",
-    "empty_build": "该构建没有发布大小报告，因此无可显示的内容。请选择其他构建。",
-    "empty_source": "尚无 {source} 构建到达 openipc.org。每次夜间构建完成后，CI 会发送一次数据。",
+    "empty": "尚无构建到达 openipc.org。每次夜间构建完成后，CI 会发送一次数据。",
     "error_generic": "无法加载（{error}）。",
     "error_index": "无法加载构建列表（{error}）。请刷新页面重试。",
     "error_report": "无法加载该构建在 {platform} 上的报告（{error}）。",
@@ -53,7 +52,7 @@
     "growers_summary": "{shown} / {total}",
     "help": {
       "first_look": {
-        "html": "<ol><li><strong>来源。</strong>Firmware 列出板型与变体（<code>hi3518ev300-lite</code>）；Builder 列出设备（<code>gk7205v200_lite_tiandy-tc-c321n</code>）。</li><li><strong>构建。</strong>默认选中最新构建。构建 ID 形如 <code>nightly-YYYYMMDD-短提交号</code>。</li><li><strong>平台。</strong>只列出在该构建中报告了大小的平台。</li><li><strong>标签页。</strong>“构成”看占用最大的部分，“软件包”和“内核模块”看细节，“变化”与另一个构建对比，“趋势”看长期走势，“假如…”模拟去掉软件包。</li></ol>",
+        "html": "<ol><li><strong>SoC。</strong>选择您摄像头中的芯片（<code>gk7205v300</code>），按厂商分组。</li><li><strong>变体。</strong>为该芯片构建的全部内容：先是固件变体（<code>lite</code>、<code>ultimate</code>、<code>fpv</code>…），然后是针对特定设备的构建（<code>lite · xg521</code>）。</li><li><strong>构建。</strong>只列出成功构建该变体的夜间构建，最新的在前。构建 ID 形如 <code>nightly-YYYYMMDD-短提交号</code>。</li><li><strong>标签页。</strong>“构成”看占用最大的部分，“软件包”和“内核模块”看细节，“变化”与另一个构建对比，“趋势”看长期走势，“假如…”模拟去掉软件包。</li></ol>",
         "title": "快速了解"
       },
       "flash_map": {
@@ -61,7 +60,7 @@
         "title": "闪存布局图与指示条"
       },
       "links": {
-        "html": "<p>地址中包含当前视图——<code>source</code>、<code>build</code>、<code>plat</code>、<code>compare</code>、<code>tab</code>——因此任何视图都可以分享。openipc.org 为每个来源保留最新的 90 个构建，与发布页面一致；某个平台某晚构建失败时，该构建中就没有它，趋势图中也会留下空缺。</p>",
+        "html": "<p>地址中包含当前视图——<code>soc</code>、<code>plat</code>、<code>build</code>、<code>compare</code>、<code>tab</code>——因此任何视图都可以分享；仅用 <code>?soc=t31</code> 即可打开该芯片第一个变体的最新构建。openipc.org 保留最新的 90 个构建，与发布页面一致；某个变体某晚构建失败时，该构建中就没有它，趋势图中也会留下空缺。</p>",
         "title": "链接与历史"
       },
       "tabs": {
@@ -109,7 +108,6 @@
     "no_removed": "此构建安装后未删除任何内容。",
     "no_top_files": "没有按文件的明细（共 {total} 个文件）。",
     "only_points": "仅 {count} 个数据点",
-    "platform_label": "平台",
     "projection": "按此速度，{days} 天后（{date}）空间将耗尽",
     "removed_intro": "软件包安装、但 OpenIPC 的精简钩子在生成根文件系统之前删除的文件，例如 libstdc++ 裁剪和按板型的排除列表。",
     "removed_summary": "{count} 个文件 · 回收 {bytes}",
@@ -119,9 +117,8 @@
     "segment_rootfs": "根文件系统",
     "segment_used": "已用 {kb}",
     "selectors": "{count} 个选择者",
-    "source_builder": "Builder",
-    "source_firmware": "Firmware",
-    "source_label": "来源",
+    "soc_label": "SoC",
+    "soc_other": "其他",
     "state_crit": "几乎已满",
     "state_ok": "空间充足",
     "state_over": "超出上限",
@@ -142,6 +139,8 @@
     "treemap_note": "面积 = 每个软件包安装的未压缩字节数",
     "trends_none": "该平台暂无历史数据。",
     "trends_summary": "{count} 个构建，{first} → {last}",
+    "variant_boards": "特定设备",
+    "variant_label": "变体",
     "whatif_blocked": "被保留",
     "whatif_copied": "已复制",
     "whatif_copy": "复制 defconfig 片段",

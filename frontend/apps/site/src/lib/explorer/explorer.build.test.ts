@@ -29,7 +29,7 @@ describe('/firmware-explorer', () => {
         expect(t('pages.firmware_explorer.title'), `${locale} has no title of its own`).not.toBe('Firmware explorer');
         const own = JSON.parse(readFileSync(join(root, 'src', 'i18n', `explorer.${locale}.json`), 'utf8'));
         const en = JSON.parse(readFileSync(join(root, 'src', 'i18n', 'explorer.en.json'), 'utf8'));
-        expect(own.explorer.source_label, `${locale} explorer strings fall back to English`).not.toBe(en.explorer.source_label);
+        expect(own.explorer.variant_label, `${locale} explorer strings fall back to English`).not.toBe(en.explorer.variant_label);
         expect(Object.keys(own.explorer).sort(), `${locale} explorer keys differ from English`).toEqual(Object.keys(en.explorer).sort());
       }
       expect(html, `${locale} is indexable`).not.toContain('noindex');

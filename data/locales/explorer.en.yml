@@ -1,10 +1,10 @@
 en:
   explorer:
-    source_label: Source
-    source_firmware: Firmware
-    source_builder: Builder
+    soc_label: SoC
+    variant_label: Variant
+    variant_boards: Board-specific
+    soc_other: Other
     build_label: Build
-    platform_label: Platform
     compare_label: Compare with
     newest: newest
     help_open: Help
@@ -14,8 +14,7 @@ en:
     error_index: 'The list of builds could not be loaded ({error}). Reload the page to try again.'
     error_report: 'This build''s report for {platform} could not be loaded ({error}).'
     error_generic: 'This could not be loaded ({error}).'
-    empty_source: 'No {source} builds have reached openipc.org yet. They arrive from the CI once per nightly build.'
-    empty_build: 'This build published no size reports, so there is nothing to show for it. Pick another build.'
+    empty: 'No builds have reached openipc.org yet. They arrive from the CI once per nightly build.'
     missing_report: 'The build did not report sizes for {platform}. Its size report failed or the platform did not build that night.'
     flash_layout: '{mb} MB NOR flash layout'
     kernel_version: 'kernel {version}'
@@ -135,7 +134,7 @@ en:
         html: '<p>A read-only view of what goes into every OpenIPC build: which packages and kernel modules ship in the root filesystem, how much space each takes, how that has moved over the retained builds, and — where the build published its Kconfig graph — what leaving packages out would save. From there you can copy a Buildroot defconfig fragment or open a build request on <code>OpenIPC/builder</code>.</p><p>Everything shown comes from the size report and Kconfig graph each nightly build of <code>OpenIPC/firmware</code> and <code>OpenIPC/builder</code> sends to openipc.org when it publishes. Nothing is fetched from GitHub while you use the page.</p>'
       first_look:
         title: First look
-        html: '<ol><li><strong>Source.</strong> Firmware lists boards and variants (<code>hi3518ev300-lite</code>); Builder lists devices (<code>gk7205v200_lite_tiandy-tc-c321n</code>).</li><li><strong>Build.</strong> The newest is selected. Build IDs read <code>nightly-YYYYMMDD-shortsha</code>.</li><li><strong>Platform.</strong> Only platforms that reported sizes for that build are listed.</li><li><strong>Tabs.</strong> Composition for what dominates, Packages and Kernel modules for detail, Drift against another build, Trends for the long view, What if… to model removals.</li></ol>'
+        html: '<ol><li><strong>SoC.</strong> Pick the chip in your camera (<code>gk7205v300</code>), grouped by maker.</li><li><strong>Variant.</strong> Every build made for that chip: the firmware variants (<code>lite</code>, <code>ultimate</code>, <code>fpv</code>…) first, then builds for a particular device (<code>lite · xg521</code>).</li><li><strong>Build.</strong> Only the nights that built that variant are listed, newest first. Build IDs read <code>nightly-YYYYMMDD-shortsha</code>.</li><li><strong>Tabs.</strong> Composition for what dominates, Packages and Kernel modules for detail, Drift against another build, Trends for the long view, What if… to model removals.</li></ol>'
       flash_map:
         title: The flash map and the meters
         html: '<p>The bar is the chip as the build lays it out: U-Boot and its environment, the kernel partition, the root filesystem partition and the overlay that keeps your settings, drawn to the caps the build checks against. The darker part of each partition is what the build uses. The meters give the same numbers and a state: <em>tight</em> under 10% free, <em>almost full</em> under 2%.</p>'
@@ -147,4 +146,4 @@ en:
         html: '<p>Buildroot''s Kconfig has <code>depends on</code> and <code>select</code>. Switching off a package also switches off what only it selects; if something still enabled selects a package, it stays on and the table says what holds it. Savings are the installed bytes of the packages that go, measured by this build. <em>Copy defconfig fragment</em> gives lines of the form <code># BR2_PACKAGE_FOO is not set</code> to append to a board defconfig; <em>Request this build</em> opens a pre-filled issue on <code>OpenIPC/builder</code>.</p>'
       links:
         title: Links and history
-        html: '<p>The address carries the view — <code>source</code>, <code>build</code>, <code>plat</code>, <code>compare</code>, <code>tab</code> — so any view can be shared. openipc.org keeps the newest 90 builds of each source, as the release pages do; a platform that failed to build one night is missing from that build and leaves a gap in its trends.</p>'
+        html: '<p>The address carries the view — <code>soc</code>, <code>plat</code>, <code>build</code>, <code>compare</code>, <code>tab</code> — so any view can be shared; <code>?soc=t31</code> alone opens that chip''s first variant at its newest build. openipc.org keeps the newest 90 builds, as the release pages do; a variant that failed to build one night is missing from that build and leaves a gap in its trends.</p>'
