@@ -711,6 +711,18 @@ func TestWhatIsInsideAFinishedDevice(t *testing.T) {
 	if c := got["xiongmai-ipc-hx8340pgf-ir2r-pat confirmed"]; c.Source != Owners || c.Basis != "owner" || c.BoardID == nil {
 		t.Errorf("confirmed: %+v", c)
 	}
+	// Filtering by the owners finds the device they confirmed.
+	tree, err := Tree(ctx, pool, "en", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			if mo.ID == "xiongmai-ipc-hx8340pgf-ir2r-pat" && !slices.Contains(mo.Sources, Owners) {
+				t.Errorf("the confirmed camera's sources %v leave out the owners", mo.Sources)
+			}
+		}
+	}
 	// Re-importing the donor keeps the owner's row; a later contents.yml
 	// without the line withdraws it.
 	if _, err := im.FromSnapshot(ctx, donor(t, "jftech", model("xiongmai", "IPC-HX8340PGF-IR2R-PAT", map[string]any{"kind": "camera"}))); err != nil {

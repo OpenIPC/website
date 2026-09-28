@@ -198,6 +198,14 @@ func summarise(m *modelJSON) {
 			seen[u.Source] = true
 		}
 	}
+	// An owner who confirmed what is inside is a source of the device too,
+	// so filtering by them finds it.
+	for _, c := range m.Contents {
+		if !seen[c.Source] {
+			m.Sources = append(m.Sources, c.Source)
+			seen[c.Source] = true
+		}
+	}
 }
 
 type linkJSON struct {
@@ -698,7 +706,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 		       (SELECT count(*) FROM board_model_tags) || '|' || (SELECT count(*) FROM board_links) || '|' ||
 		       (SELECT coalesce(md5(string_agg(id || ':' || coalesce(listed_year::text, '') || ':' || kind, ',' ORDER BY id)), '') FROM board_models) || '|' ||
 		       (SELECT coalesce(md5(string_agg(source || key || version || asset_url || coalesce(sha256, ''), ',' ORDER BY source, key, version)), '') FROM vendor_firmware) || '|' || (SELECT count(*) FROM board_device_ids) || '|' ||
-		       (SELECT coalesce(md5(string_agg(model_id || ':' || board_code || ':' || status || ':' || source || ':' || evidence, ',' ORDER BY model_id, board_code, source)), '') FROM board_contents)`).Scan(&units, &files, &last, &about); err != nil {
+		       (SELECT coalesce(md5(string_agg(model_id || ':' || board_code || ':' || status || ':' || basis || ':' || source || ':' || evidence || ':' || coalesce(evidence_label, ''), ',' ORDER BY model_id, board_code, source)), '') FROM board_contents)`).Scan(&units, &files, &last, &about); err != nil {
 		a.Log.Error("boards: no revision", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})
 		return

@@ -153,11 +153,29 @@ export interface Inside {
   label: string | null;
 }
 
-const byIdCache = new WeakMap<Entry[], Map<string, Entry>>();
-function byId(all: Entry[]): Map<string, Entry> {
-  let m = byIdCache.get(all);
-  if (!m) byIdCache.set(all, m = new Map(all.map((e) => [e.id, e])));
-  return m;
+/** Lookups over one catalogue, built once per array: by id, boards by device ID, devices by the board inside. */
+interface CatalogueIndex {
+  byId: Map<string, Entry>;
+  boardsByDevice: Map<string, { board: Entry; device: string }[]>;
+  holders?: Map<string, { device: Entry; status: Content['status'] }[]>;
+}
+const indexCache = new WeakMap<Entry[], CatalogueIndex>();
+function indexOf(all: Entry[]): CatalogueIndex {
+  let ix = indexCache.get(all);
+  if (!ix) {
+    const boardsByDevice = new Map<string, { board: Entry; device: string }[]>();
+    for (const b of all) {
+      if (kindOf(b) !== 'board') continue;
+      for (const d of b.devices ?? []) {
+        const list = boardsByDevice.get(d.id) ?? [];
+        list.push({ board: b, device: d.id });
+        boardsByDevice.set(d.id, list);
+      }
+    }
+    ix = { byId: new Map(all.map((e) => [e.id, e])), boardsByDevice };
+    indexCache.set(all, ix);
+  }
+  return ix;
 }
 
 /**
@@ -168,18 +186,18 @@ function byId(all: Entry[]): Map<string, Entry> {
  */
 export function insideOf(m: Entry, all: Entry[]): Inside[] {
   if (kindOf(m) === 'board') return [];
-  const index = byId(all);
+  const ix = indexOf(all);
   const rows: Inside[] = (m.contents ?? []).map((c) => ({
-    code: c.code, board: c.board_id ? index.get(c.board_id) ?? null : null,
+    code: c.code, board: c.board_id ? ix.byId.get(c.board_id) ?? null : null,
     status: c.status, basis: c.basis, evidence: c.evidence, label: c.label,
   }));
   const confirmed = rows.filter((r) => r.status === 'confirmed');
   const out = confirmed.length > 0 ? confirmed : rows;
   if (confirmed.length === 0) {
-    const ids = new Set((m.devices ?? []).map((d) => d.id));
-    for (const b of ids.size > 0 ? all : []) {
-      const shared = b.id !== m.id && kindOf(b) === 'board' ? (b.devices ?? []).find((d) => ids.has(d.id)) : undefined;
-      if (shared) out.push({ code: printedCode(b.model) ?? b.id, board: b, status: 'likely', basis: 'device_id', evidence: null, label: shared.id });
+    for (const d of m.devices ?? []) {
+      for (const { board, device } of ix.boardsByDevice.get(d.id) ?? []) {
+        if (board.id !== m.id) out.push({ code: printedCode(board.model) ?? board.id, board, status: 'likely', basis: 'device_id', evidence: null, label: device });
+      }
     }
   }
   const seen = new Set<string>();
@@ -194,10 +212,21 @@ export function insideOf(m: Entry, all: Entry[]): Inside[] {
 /** The finished devices a board is found in, each with how sure that is. */
 export function foundIn(b: Entry, all: Entry[]): { device: Entry; status: Content['status'] }[] {
   if (kindOf(b) !== 'board') return [];
-  return all.flatMap((d) => {
-    const hit = kindOf(d) === 'board' ? undefined : insideOf(d, all).find((r) => r.board?.id === b.id);
-    return hit ? [{ device: d, status: hit.status }] : [];
-  });
+  const ix = indexOf(all);
+  if (!ix.holders) {
+    // Once per catalogue: every device's boards, turned around.
+    const holders = new Map<string, { device: Entry; status: Content['status'] }[]>();
+    for (const d of all) {
+      for (const r of insideOf(d, all)) {
+        if (!r.board) continue;
+        const list = holders.get(r.board.id) ?? [];
+        list.push({ device: d, status: r.status });
+        holders.set(r.board.id, list);
+      }
+    }
+    ix.holders = holders;
+  }
+  return ix.holders.get(b.id) ?? [];
 }
 
 /**

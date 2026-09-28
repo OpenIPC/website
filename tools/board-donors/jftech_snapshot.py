@@ -105,7 +105,11 @@ MODULE = re.compile(r"^(?:XMJP_)?IPC_(?:LITEOS_)?[A-Z0-9]+_([A-Z0-9-]+)")
 def firmware_page(path):
     """What a landing page says: (file name, device ID, named board or None,
     build or None); None when it is not a firmware page."""
-    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", open(path, encoding="utf-8", errors="replace").read()))
+    return firmware_page_text(open(path, encoding="utf-8", errors="replace").read())
+
+
+def firmware_page_text(page):
+    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", page))
     m = FILE_NAME.search(text)
     if not m:
         return None
@@ -115,8 +119,33 @@ def firmware_page(path):
         return name, named.group(1).upper(), named.group(2), None
     built = BUILT.match(name)
     if built:
-        return name, built.group(1).upper(), None, built.group(2)
+        # 000559A7.1 IPC_HI3516EV200_... puts a space after the revision.
+        return name, built.group(1).upper(), None, built.group(2).strip()
     return None
+
+
+def module_of(build):
+    """The module a firmware build is for: IPC_GK7205V200_G4F_S38 -> G4F."""
+    m = MODULE.match((build or "").strip().upper())
+    return m.group(1) if m else None
+
+
+def check_parsing():
+    """The firmware names the vendor's pages use, and what they must give; a
+    builder that stops reading one fails rather than drops its contents."""
+    cases = {
+        "J91659N7.1IPC_GK7205V200_G4F_S38.Nat.dss.OnvifS.HIK_V5.00.R02": ("J91659N7", None, "G4F"),
+        "000559A7.1 IPC_HI3516EV200_50H20AI_S38.Nat.dss": ("000559A7", None, "50H20AI"),
+        "000729ML.1XMJP_IPC_LITEOS_GK7202V300_G4-D-Y3_S38_HI3861L_V1.01.LITEOS.R01": ("000729ML", None, "G4-D-Y3"),
+        "C638024T（AHB80N04R-GS-V3）": ("C638024T", "AHB80N04R-GS-V3", None),
+        "C6380249(AHB80N32F-LME)": ("C6380249", "AHB80N32F-LME", None),
+    }
+    for name, want in cases.items():
+        page = f"<td>FileName</td><td>{name}.zip</td>"
+        got = firmware_page_text(page)
+        have = (got[1], got[2], module_of(got[3])) if got else None
+        if have != want:
+            sys.exit(f"firmware name {name!r} reads as {have}, want {want}")
 
 
 def pdf_year(path):
@@ -145,6 +174,7 @@ def main():
     ap.add_argument("dictionary", nargs="?")
     ap.add_argument("--known", nargs="*", default=[])
     args = ap.parse_args()
+    check_parsing()
     cap, work, xmu, out = args.cap, args.work, args.xmu, args.out
     dic = json.load(open(args.dictionary)) if args.dictionary and os.path.exists(args.dictionary) else {}
     os.makedirs(work, exist_ok=True)
@@ -237,11 +267,11 @@ def main():
             if chip and "soc_label" not in m:
                 m["soc_label"] = chip.group(1)
             if kind != "board":
-                module = MODULE.match((build or "").upper())
+                module = module_of(build)
                 if named:
                     m["contents"] = [{"code": norm(named), "basis": "firmware_page", "evidence": page, "label": fname}]
                 elif module:
-                    m["contents"] = [{"code": board_code(module.group(1)), "basis": "firmware_build", "evidence": page, "label": fname}]
+                    m["contents"] = [{"code": board_code(module), "basis": "firmware_build", "evidence": page, "label": fname}]
                 inside += "contents" in m
         if year:
             m["listed_year"] = year
