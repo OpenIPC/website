@@ -54,8 +54,13 @@ CHIP = re.compile(r"(?<![A-Z0-9])(HI35\d\d[A-Z0-9]*|GK7\d{3}[A-Z0-9]*|XM\d{3}[A-
 DEVICE_ID = re.compile(r"^[0-9A-Z]{8}$")
 
 
+CODE = re.compile(r"^[A-Z0-9][A-Z0-9-]*$")  # the importer's code shape
+
+
 def norm(code):
-    return re.sub(r"-{2,}", "-", re.sub(r"[\s_/.]+", "-", (code or "").strip().upper())).strip("-")
+    """A code as the importer takes it: anything but letters, digits and
+    hyphens reads as a separator (NBD80N16RA-KL(EP)-V3 -> NBD80N16RA-KL-EP-V3)."""
+    return re.sub(r"-{2,}", "-", re.sub(r"[^A-Z0-9-]+", "-", (code or "").strip().upper())).strip("-")
 
 
 def landing(url):
@@ -172,6 +177,8 @@ def main():
         models.append(m)
 
     for m in models:
+        if not CODE.match(m["code"]):
+            sys.exit(f"{m['code']}: not a code the importer takes")
         if not m.get("category"):
             sys.exit(f"{m['code']}: no product line")
     manifest = {"source": dict(SOURCE), "models": models}
