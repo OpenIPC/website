@@ -281,6 +281,8 @@ export const KNOWN_LINES = new Set([
   'pet-feeder-module', 'network-camera', 'coaxial-camera', 'wi-fi-camera', 'battery-camera', 'aov-camera',
   '4g-5g-camera', 'multi-lens-wi-fi-camera', 'network-video-recorder', 'coaxial-video-recorder',
   'wi-fi-base-station', 'smart-video-doorbell',
+  // Anjoy Vision's pan-tilt modules (摇头机); its other lines are the ones above.
+  'ptz-camera-module',
 ]);
 
 /** A product line in the reader's language, or as the source names it. */

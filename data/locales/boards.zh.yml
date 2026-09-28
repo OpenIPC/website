@@ -160,6 +160,7 @@ zh:
       coaxial-video-recorder: "同轴硬盘录像机"
       wi-fi-base-station: "Wi-Fi 基站"
       smart-video-doorbell: "可视门铃"
+      ptz-camera-module: "云台摄像机模组"
     show_all:
       one: '显示全部 {count} 块'
       other: '显示全部 {count} 块'
@@ -251,6 +252,7 @@ zh:
     card_inside_likely: "很可能内置："
     card_inside_confirmed: "内置："
     source_note_jftech: "JFTech 的产品目录：雄迈产品线的当前品牌，模组型号相同，固件来自相同的下载服务器（2026 年存档）。"
+    source_note_anjoy: "安佳威视的文档存档（anjvision.com:8021/pdf）：厂商为其摄像机模组提供的规格书、接线图和主板照片，2026 年存档。"
     link_stock_firmware: 原厂固件
     link_successor: 后继型号
     link_predecessor: 取代型号

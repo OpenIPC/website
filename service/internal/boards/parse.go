@@ -65,7 +65,10 @@ var makers = map[string]Manufacturer{
 	"JVT":       {ID: "jvt", Name: "JVT", Position: 3},
 	"TOPSEE":    {ID: "topsee", Name: "TOPSEE", Position: 4},
 	"HiSilicon": {ID: "hisilicon", Name: "HiSilicon", Position: 5},
-	"?":         {ID: "unknown", Name: "Unidentified maker", Position: 99},
+	// Anjoy Vision (深圳市安佳威视): camera modules from its own document
+	// archive, a donor snapshot only.
+	"ANJOY": {ID: "anjoy", Name: "Anjoy Vision", Aliases: []string{"安佳威视"}, Position: 6},
+	"?":     {ID: "unknown", Name: "Unidentified maker", Position: 99},
 }
 
 // socFixes are the archive's typos, one per line, with the reason.

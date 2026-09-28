@@ -5,8 +5,11 @@
  */
 import { describe, expect, test } from 'vitest';
 import type { BoardFile, BoardsFile, Hit, Model } from './types';
+import en from '../../i18n/boards.en.json';
+import ru from '../../i18n/boards.ru.json';
+import zh from '../../i18n/boards.zh.json';
 import {
-  lineLabel,
+  KNOWN_LINES, lineLabel,
   addsIPeye, bySeller, cardFiles, formatDay, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, paragraphs, sensorKey, sensorOptions, slug,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
@@ -541,5 +544,16 @@ describe("sellers' builds on the page", () => {
     }
     expect(formatDay(null, 'en-US')).toBeNull();
     expect(formatDay('not a date', 'en-US')).toBeNull();
+  });
+});
+
+describe('product lines', () => {
+  test('every line the catalogue knows has a label in English, Russian and Chinese', () => {
+    for (const [locale, file] of [['en', en], ['ru', ru], ['zh', zh]] as const) {
+      const labels = file.boards.product_line as Record<string, string>;
+      const missing = [...KNOWN_LINES].filter((k) => !labels[k]);
+      expect(missing, locale).toEqual([]);
+    }
+    expect(lineLabel('PTZ camera module', (k) => (en.boards as unknown as Record<string, Record<string, string>>).product_line[k.split('.')[1]])).toBe('PTZ camera modules');
   });
 });
