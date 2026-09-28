@@ -7,6 +7,7 @@ package vendorfw
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -21,6 +22,7 @@ var Sources = map[string]string{
 var (
 	deviceID = regexp.MustCompile(`^[0-9A-Z]{8}$`)
 	hexSHA   = regexp.MustCompile(`^[0-9a-f]{64}$`)
+	origin   = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{0,63}$`)
 )
 
 const maxItems = 50000
@@ -44,6 +46,15 @@ type Item struct {
 	Size        int64      `json:"size,omitempty"`
 	PublishedAt *time.Time `json:"published_at,omitempty"`
 	SoC         string     `json:"soc,omitempty"`
+	// Origin names the archive a file was mirrored from when it is not the
+	// vendor's own download page (cctvsp.ru), OriginURL its page there.
+	Origin    string `json:"origin,omitempty"`
+	OriginURL string `json:"origin_url,omitempty"`
+}
+
+func webPage(s string) bool {
+	u, err := url.Parse(s)
+	return err == nil && (u.Scheme == "https" || u.Scheme == "http") && u.Host != "" && !strings.ContainsAny(s, " \n\"<>")
 }
 
 // DeviceID normalises a device ID as cameras print it; "" when it is not one.
@@ -98,6 +109,13 @@ func Decode(doc []byte) (*Payload, error) {
 		}
 		if it.Size < 0 {
 			return nil, fmt.Errorf("%s: negative size", at)
+		}
+		it.Origin, it.OriginURL = strings.TrimSpace(it.Origin), strings.TrimSpace(it.OriginURL)
+		if it.Origin != "" && !origin.MatchString(it.Origin) {
+			return nil, fmt.Errorf("%s: origin %q is not a short lower-case name (cctvsp.ru)", at, it.Origin)
+		}
+		if it.OriginURL != "" && (it.Origin == "" || !webPage(it.OriginURL)) {
+			return nil, fmt.Errorf("%s: origin_url needs an origin and must be an http(s) page", at)
 		}
 		k := [2]string{it.Key, it.Version}
 		if seen[k] {

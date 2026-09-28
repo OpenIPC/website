@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
 import type { BoardFile, BoardsFile, Hit, Model } from './types';
 import {
   lineLabel,
-  cardFiles, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
+  addsIPeye, bySeller, cardFiles, formatDay, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, paragraphs, sensorKey, sensorOptions, slug,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
@@ -515,5 +515,31 @@ describe('product lines', () => {
     expect(lineLabel('Something New', t)).toBe('Something New');
     expect(slug('XVI&AHD Hybrid Camera Module')).toBe('xvi-ahd-hybrid-camera-module');
     expect(slug('H.265 XVI DVR Board')).toBe('h-265-xvi-dvr-board');
+  });
+});
+
+describe("a seller's build", () => {
+  test('says it adds the IPeye cloud when its file says so', () => {
+    expect(addsIPeye({ key: 'c214__00001532.20170705__IPEYE_1532_IPC_HI3516C_53H20L.bin', build: 'IPEYE_1532_IPC_HI3516C_53H20L' })).toBe(true);
+    expect(addsIPeye({ key: 'id1__000559A7.1__IPC_HI3516EV200.zip', build: 'IPC_HI3516EV200_50H20AI_S38' })).toBe(false);
+  });
+});
+
+describe("sellers' builds on the page", () => {
+  test('each seller is credited with its own builds', () => {
+    const got = bySeller([{ origin: 'cctvsp.ru', k: 1 }, { origin: 'example.org', k: 2 }, { origin: 'cctvsp.ru', k: 3 }]);
+    expect(got.map((g) => [g.origin, g.files.map((f) => f.k)])).toEqual([['cctvsp.ru', [1, 3]], ['example.org', [2]]]);
+  });
+
+  test("a seller's calendar date is the same day wherever the reader is", () => {
+    const tz = process.env.TZ;
+    process.env.TZ = 'America/Los_Angeles';
+    try {
+      expect(formatDay('2019-03-21T00:00:00Z', 'en-US', true)).toBe('Mar 21, 2019');
+    } finally {
+      process.env.TZ = tz;
+    }
+    expect(formatDay(null, 'en-US')).toBeNull();
+    expect(formatDay('not a date', 'en-US')).toBeNull();
   });
 });

@@ -468,3 +468,30 @@ func TestAChangedBoardInsideChangesTheETag(t *testing.T) {
 		}
 	}
 }
+
+// A seller's corrected date is news: the tree shows it.
+func TestACorrectedFirmwareDateChangesTheETag(t *testing.T) {
+	pool, _ := imported(t)
+	s := serve(t, pool)
+	ctx := context.Background()
+	etag := func() string {
+		resp, err := http.Get(s.URL + "/api/v1/boards")
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.Header.Get("ETag")
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO vendor_firmware (source, key, version, device_id, build, asset_url, published_at, origin, origin_url, pushed_by)
+		VALUES ('xmupdates', 'c214', '00001532.20170705', '00001532', 'IPEYE_1532', 'https://github.com/OpenIPC/xmupdates/releases/download/firmware-archive/c214.bin',
+		        '2019-03-21', 'cctvsp.ru', 'https://www.cctvsp.ru/support/a', 'test')`); err != nil {
+		t.Fatal(err)
+	}
+	before := etag()
+	if _, err := pool.Exec(ctx, `UPDATE vendor_firmware SET published_at = '2019-03-22'`); err != nil {
+		t.Fatal(err)
+	}
+	if after := etag(); after == before {
+		t.Errorf("ETag %s unchanged after the date moved", after)
+	}
+}

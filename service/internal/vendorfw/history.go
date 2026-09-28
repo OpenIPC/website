@@ -20,13 +20,19 @@ import (
 // builds the same list.
 func FromXMUpdates(index []byte) ([]Item, error) {
 	var idx map[string]struct {
-		Name      string `json:"name"`
+		Name string `json:"name"`
+		// Origin and Page: a seller's archive the entry was mirrored from
+		// (cctvsp.ru), and the file's page there.
+		Origin    string `json:"origin"`
+		Page      string `json:"page"`
 		Revisions []struct {
 			Version    string     `json:"version"`
 			AssetURL   string     `json:"asset_url"`
 			SHA256     string     `json:"sha256"`
 			Size       int64      `json:"size"`
 			ArchivedAt *time.Time `json:"archived_at"`
+			// PublishedAt is when a seller says it published the build.
+			PublishedAt *time.Time `json:"published_at"`
 		} `json:"revisions"`
 	}
 	if err := json.Unmarshal(index, &idx); err != nil {
@@ -48,8 +54,15 @@ func FromXMUpdates(index []byte) ([]Item, error) {
 				continue
 			}
 			seen[r.AssetURL] = true
-			out = append(out, Item{Key: path.Base(r.AssetURL), DeviceID: dev, Version: r.Version, Build: name,
-				AssetURL: r.AssetURL, SHA256: strings.ToLower(r.SHA256), Size: r.Size, PublishedAt: r.ArchivedAt})
+			it := Item{Key: path.Base(r.AssetURL), DeviceID: dev, Version: r.Version, Build: name,
+				AssetURL: r.AssetURL, SHA256: strings.ToLower(r.SHA256), Size: r.Size, PublishedAt: r.ArchivedAt}
+			if r.PublishedAt != nil {
+				it.PublishedAt = r.PublishedAt
+			}
+			if e.Origin != "" {
+				it.Origin, it.OriginURL = e.Origin, e.Page
+			}
+			out = append(out, it)
 		}
 	}
 	return out, nil

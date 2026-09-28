@@ -20,14 +20,22 @@ type Firmware struct {
 	Size        *int64     `json:"size"`
 	PublishedAt *time.Time `json:"published_at"`
 	SoC         *string    `json:"soc,omitempty"`
+	// Origin is the archive the file was mirrored from when it is not the
+	// vendor's own download page; OriginURL is the file's page there.
+	Origin    *string `json:"origin,omitempty"`
+	OriginURL *string `json:"origin_url,omitempty"`
 }
 
 // Device is what a device ID can be flashed with: every stock build the
 // vendor published for it, newest first -- people move between them when one
 // has a bug -- and the coupler image. Either may be empty.
 type Device struct {
-	ID      string     `json:"id"`
-	Stock   []Firmware `json:"stock"`
+	ID    string     `json:"id"`
+	Stock []Firmware `json:"stock"`
+	// Sellers are builds a seller publishes (cctvsp.ru's IPeye builds),
+	// offered only when the vendor has no build for the device: they are not
+	// stock, and never stand in for it.
+	Sellers []Firmware `json:"sellers"`
 	Coupler *Firmware  `json:"coupler"`
 }
 
@@ -37,30 +45,34 @@ type querier interface {
 
 // ForDevices answers, for each device ID asked, its stock builds (newest
 // published first; the same file listed once however many catalogue rows
-// carry it) and its newest coupler image.
+// carry it), a seller's builds when there is no stock one, and its newest
+// coupler image.
 func ForDevices(ctx context.Context, db querier, ids []string) (map[string]*Device, error) {
 	out := map[string]*Device{}
 	if len(ids) == 0 {
 		return out, nil
 	}
 	rows, err := db.Query(ctx, `
-		SELECT device_id, source, key, version, build, asset_url, sha256, size, published_at, soc
+		SELECT device_id, source, key, version, build, asset_url, sha256, size, published_at, soc, origin, origin_url
 		FROM vendor_firmware WHERE device_id = ANY($1)
 		ORDER BY device_id, source, published_at DESC NULLS LAST, version DESC, key`, ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	seen := map[[2]string]bool{} // (device ID, sha256): a file once per device
+	// (device ID, stock or seller, sha256): a file once per device in each
+	// list. Kept apart, so a seller's copy of a vendor file never hides the
+	// vendor's, which then hides the seller's list.
+	seen := map[[3]string]bool{}
 	for rows.Next() {
 		var id, source string
 		var f Firmware
-		if err := rows.Scan(&id, &source, &f.Key, &f.Version, &f.Build, &f.URL, &f.SHA256, &f.Size, &f.PublishedAt, &f.SoC); err != nil {
+		if err := rows.Scan(&id, &source, &f.Key, &f.Version, &f.Build, &f.URL, &f.SHA256, &f.Size, &f.PublishedAt, &f.SoC, &f.Origin, &f.OriginURL); err != nil {
 			return nil, err
 		}
 		d := out[id]
 		if d == nil {
-			d = &Device{ID: id, Stock: []Firmware{}}
+			d = &Device{ID: id, Stock: []Firmware{}, Sellers: []Firmware{}}
 			out[id] = d
 		}
 		if source == "coupler" {
@@ -69,16 +81,32 @@ func ForDevices(ctx context.Context, db querier, ids []string) (map[string]*Devi
 			}
 			continue
 		}
+		list := "stock"
+		if f.Origin != nil {
+			list = "sellers"
+		}
 		if f.SHA256 != nil {
-			k := [2]string{id, *f.SHA256}
+			k := [3]string{id, list, *f.SHA256}
 			if seen[k] {
 				continue
 			}
 			seen[k] = true
 		}
-		d.Stock = append(d.Stock, f)
+		if f.Origin != nil {
+			d.Sellers = append(d.Sellers, f)
+		} else {
+			d.Stock = append(d.Stock, f)
+		}
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	for _, d := range out {
+		if len(d.Stock) > 0 {
+			d.Sellers = []Firmware{}
+		}
+	}
+	return out, nil
 }
 
 // BoardDevicesSQL lists (model_id, device_id): the catalogue boards known to
@@ -131,7 +159,7 @@ func (a *API) device(w http.ResponseWriter, r *http.Request) {
 	}
 	d := found[id]
 	if d == nil {
-		d = &Device{ID: id, Stock: []Firmware{}}
+		d = &Device{ID: id, Stock: []Firmware{}, Sellers: []Firmware{}}
 	}
 	boards := []boardRef{}
 	rows, err := a.DB.Query(ctx, `

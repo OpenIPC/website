@@ -5,7 +5,7 @@
  * a description that link to other boards. Pure functions, so they are
  * tested without a browser.
  */
-import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model } from './types';
+import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model, VendorFirmware } from './types';
 import type { BoardsState, Missing } from './url';
 
 /** A board model with the manufacturer it is filed under. */
@@ -548,4 +548,31 @@ export function formatBytes(bytes: number, locale: string): string {
   if (bytes >= 1 << 20) return `${fmt(bytes / 1048576)} MB`;
   if (bytes >= 1024) return `${fmt(bytes / 1024)} KB`;
   return `${bytes} B`;
+}
+
+/** Whether a seller's build says it adds the IPeye cloud: cctvsp.ru names every such file IPEYE_... */
+export function addsIPeye(f: Pick<VendorFirmware, 'key' | 'build'>): boolean {
+  return /ipeye/i.test(`${f.key} ${f.build}`);
+}
+
+/** Sellers' builds grouped by seller, in the order they first appear: each block credits its own seller. */
+export function bySeller<F extends Pick<VendorFirmware, 'origin'>>(sellers: F[]): { origin: string; files: F[] }[] {
+  const groups = new Map<string, F[]>();
+  for (const f of sellers) {
+    const k = f.origin ?? '';
+    groups.set(k, [...(groups.get(k) ?? []), f]);
+  }
+  return [...groups].map(([origin, files]) => ({ origin, files }));
+}
+
+/**
+ * A day as the reader's locale writes it. A seller's date is a calendar date
+ * stored as midnight UTC, so it is read in UTC (utc = true), or a reader west
+ * of Greenwich would see the day before.
+ */
+export function formatDay(iso: string | null, locale: string, utc = false): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null
+    : new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', ...(utc ? { timeZone: 'UTC' } : {}) }).format(d);
 }

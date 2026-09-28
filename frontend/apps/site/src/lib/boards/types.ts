@@ -181,6 +181,10 @@ export interface VendorFirmware {
   size: number | null;
   published_at: string | null;
   soc?: string | null;
+  /** The seller's archive the file was mirrored from (cctvsp.ru), when it is not the vendor's own download. */
+  origin?: string | null;
+  /** The file's page in that archive. */
+  origin_url?: string | null;
 }
 
 /**
@@ -206,6 +210,8 @@ export interface Content {
 export interface VendorDevice {
   id: string;
   stock: VendorFirmware[];
+  /** A seller's builds (cctvsp.ru's IPeye builds), only when the vendor has none. */
+  sellers?: VendorFirmware[];
   coupler: VendorFirmware | null;
 }
 

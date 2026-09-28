@@ -16,24 +16,30 @@ func Save(ctx context.Context, db *pgxpool.Pool, p *Payload, by string) (int, er
 		}
 		rows := make([][]any, len(p.Items))
 		for i, it := range p.Items {
-			var sha, soc *string
+			var sha, soc, org, orgURL *string
 			if it.SHA256 != "" {
 				sha = &it.SHA256
 			}
 			if it.SoC != "" {
 				soc = &it.SoC
 			}
+			if it.Origin != "" {
+				org = &it.Origin
+			}
+			if it.OriginURL != "" {
+				orgURL = &it.OriginURL
+			}
 			var size *int64
 			if it.Size > 0 {
 				size = &it.Size
 			}
-			rows[i] = []any{p.Source, it.Key, it.Version, it.DeviceID, it.Build, it.AssetURL, sha, size, it.PublishedAt, soc, by}
+			rows[i] = []any{p.Source, it.Key, it.Version, it.DeviceID, it.Build, it.AssetURL, sha, size, it.PublishedAt, soc, org, orgURL, by}
 		}
 		if len(rows) == 0 {
 			return nil
 		}
 		_, err := tx.CopyFrom(ctx, pgx.Identifier{"vendor_firmware"},
-			[]string{"source", "key", "version", "device_id", "build", "asset_url", "sha256", "size", "published_at", "soc", "pushed_by"},
+			[]string{"source", "key", "version", "device_id", "build", "asset_url", "sha256", "size", "published_at", "soc", "origin", "origin_url", "pushed_by"},
 			pgx.CopyFromRows(rows))
 		return err
 	})
