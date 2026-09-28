@@ -51,6 +51,11 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--delay", type=float, default=1.0)
     args = ap.parse_args()
+    # An earlier run's listing must not outlive a capture that fails now:
+    # the snapshot builder trusts whatever listing.json it finds.
+    listing = os.path.join(args.out, "listing.json")
+    if os.path.exists(listing):
+        os.remove(listing)
     cap = Capture(args.out, delay=args.delay)
     files, failed, dirs, seen = [], [], [ROOT], set()
     while dirs:
@@ -88,8 +93,9 @@ def main():
             say(f"  missing: {f}")
         sys.exit(f"{len(failed)} requests failed; listing.json not written")
     files.sort(key=lambda f: f["path"])
-    with open(os.path.join(args.out, "listing.json"), "w") as out:
+    with open(listing + ".tmp", "w") as out:
         json.dump({"root": ROOT, "files": files}, out, ensure_ascii=False, indent=1)
+    os.replace(listing + ".tmp", listing)
     say(f"{len(files)} files, {sum(f['bytes'] for f in files) // 1_000_000} MB")
 
 

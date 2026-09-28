@@ -44,11 +44,11 @@ var Snapshots = map[string]string{
 	// current brand), 198 products: 132 boards and 66 finished devices, 39 of
 	// them with the board their firmware page names or is built for.
 	"jftech": "96378d036c160261e0cc90bd441254722beb34b22925a71967438310c39b05aa",
-	// boards-donors/anjoy/snapshot-4b5e50f39b78.tar: Anjoy Vision's document archive,
+	// boards-donors/anjoy/snapshot-13aea65ba130.tar: Anjoy Vision's document archive,
 	// 191 models (182 modules, 9 NVRs), 167 with wiring pinouts, 175 with
 	// photos (the archive's own, or those inside its documents); Chinese
 	// original with English and Russian; the capture beside it.
-	"anjoy": "4b5e50f39b78d474b432874d086e3162e4054fe8577058f5a131db939dacb955",
+	"anjoy": "13aea65ba130c19ff4513c1b2c93636409bc585df0093e523fad07024ae19b10",
 }
 
 type Snapshot struct {

@@ -643,6 +643,7 @@ def main():
         title, lead, features, rows, _ = sheets[0]["sheet"] if sheets else ("", [], [], [], "")
         spec = dict(rows)
         used, fl, pinouts, year = set(), [], [], None
+        seen_pages = set()  # cropped pages are named by their content
         for e in keep:
             if e.get("pdf"):
                 y = pdf_year(e["pdf"])
@@ -684,7 +685,11 @@ def main():
                     # wiring document also has a cover and a spec table.
                     if not pin_page(run("pdftotext", "-f", str(n_page), "-l", str(n_page), "-layout", e["pdf"], "-")):
                         continue
-                    n, p = files.add(cropped(os.path.join(d, png), args.work), f"{code}-pinout-{len(pinouts) + 1}.png", used)
+                    page = cropped(os.path.join(d, png), args.work)
+                    if page in seen_pages:
+                        continue  # the same page in two of the module's wiring documents
+                    seen_pages.add(page)
+                    n, p = files.add(page, f"{code}-pinout-{len(pinouts) + 1}.png", used)
                     pinouts.append({"kind": "pinout", "name": n, "path": p})
             what = ("parameters" if group["nvr"] else "spec-sheet") if e.get("sheet") else "wiring-diagram" if wiring(e) else "document"
             lang = "-en" if "【英文】" in e["name"] else "-zh" if "【中文】" in e["name"] else ""
@@ -695,7 +700,14 @@ def main():
         if not fl:
             continue
 
-        haystack = " ".join([title] + [e["name"] for e in es] + [e["folder"] for e in es])
+        # Only the module's own files say its line: a wiring diagram shared
+        # from a variant's folder (MC-D40-4G) must not make MC-D40 a 4G module.
+        # The module's folder in the archive: its spec sheet's, else any of
+        # its own files', not a misfiled file's (MY-F13S's diagram in MC-H12S).
+        home = next((e for e in sorted(es, key=lambda e: not e.get("sheet")) if key(folder_code(e["folder"]) or "") == k), es[0])
+        mine = [e for e in es if key(folder_code(e["folder"]) or "") == k
+                or key(name_code(e["name"], photo=e["ext"] == ".png") or "") == k]
+        haystack = " ".join([title] + [e["name"] for e in mine] + [e["folder"] for e in mine])
         line = "Network video recorder" if group["nvr"] else next((l for rx, l in LINES if rx.search(haystack)), DEFAULT_LINE)
         # An intro or a note is the description (paragraphs); the feature list
         # is the features (one per line), as the panel shows them.
@@ -716,7 +728,7 @@ def main():
              "texts": {k: v for k, v in texts.items() if v}, "original": ["zh"], "translated_from": "zh",
              "specs": specs, "tags": [], "files": fl,
              "links": [{"kind": "source_page", "label": "anjvision.com",
-                        "url": urllib.parse.urljoin(es[0]["url"], ".")}]}
+                        "url": urllib.parse.urljoin(home["url"], ".")}]}
         chip_text = next((spec[k] for k in CHIP_LABELS if spec.get(k)), "")
         if not chip_text and sheets:
             # The old sheets say it in prose: 采用最新 MSTAR SSC328Q 方案.
