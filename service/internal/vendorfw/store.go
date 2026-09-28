@@ -29,6 +29,9 @@ func Save(ctx context.Context, db *pgxpool.Pool, p *Payload, by string) (int, er
 			}
 			rows[i] = []any{p.Source, it.Key, it.Version, it.DeviceID, it.Build, it.AssetURL, sha, size, it.PublishedAt, soc, by}
 		}
+		if len(rows) == 0 {
+			return nil
+		}
 		_, err := tx.CopyFrom(ctx, pgx.Identifier{"vendor_firmware"},
 			[]string{"source", "key", "version", "device_id", "build", "asset_url", "sha256", "size", "published_at", "soc", "pushed_by"},
 			pgx.CopyFromRows(rows))

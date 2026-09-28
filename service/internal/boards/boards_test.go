@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/OpenIPC/website/service/internal/vendorfw"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -297,6 +298,34 @@ func TestAYearCorrectionChangesTheETag(t *testing.T) {
 	set(2011, 2019)
 	if after := etag(); after == before {
 		t.Errorf("ETag %s unchanged after the years moved", after)
+	}
+}
+
+// Re-sending the same firmware list is a retry, not news: the boards keep their ETag.
+func TestAnIdenticalFirmwarePushKeepsTheETag(t *testing.T) {
+	pool, _ := imported(t)
+	s := serve(t, pool)
+	ctx := context.Background()
+	etag := func() string {
+		resp, err := http.Get(s.URL + "/api/v1/boards")
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.Header.Get("ETag")
+	}
+	p := &vendorfw.Payload{Schema: 1, Source: "coupler", Items: []vendorfw.Item{{Key: "a.bin", DeviceID: "000559A7", Version: "1", Build: "b",
+		AssetURL: vendorfw.Sources["coupler"] + "latest/a.bin"}}}
+	if _, err := vendorfw.Save(ctx, pool, p, "run 1"); err != nil {
+		t.Fatal(err)
+	}
+	before := etag()
+	time.Sleep(10 * time.Millisecond)
+	if _, err := vendorfw.Save(ctx, pool, p, "run 2"); err != nil {
+		t.Fatal(err)
+	}
+	if after := etag(); after != before {
+		t.Errorf("an identical push moved the ETag %s -> %s", before, after)
 	}
 }
 

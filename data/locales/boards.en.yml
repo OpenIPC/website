@@ -187,6 +187,7 @@ en:
       one: "{count} catalogue board runs this device ID:"
       other: "{count} catalogue boards run this device ID:"
     fw_no_boards: "No catalogue board is known to run this device ID yet."
+    fw_error: "Could not check the firmware for device {id} ({error}). Try again in a moment."
     link_stock_firmware: Stock firmware
     link_successor: Replaced by
     link_predecessor: Replaces

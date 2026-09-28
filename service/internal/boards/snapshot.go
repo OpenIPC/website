@@ -259,6 +259,11 @@ func (im *Importer) FromSnapshot(ctx context.Context, fsys fs.FS) (int, error) {
 			src, s.Source.Name, s.Source.URL, s.Source.Note, s.Source.Ref); err != nil {
 			return err
 		}
+		// The source's device IDs are what this snapshot says, whole: a link
+		// a later snapshot drops, or one whose board no longer resolves, goes.
+		if _, err := tx.Exec(ctx, `DELETE FROM board_device_ids WHERE source = $1`, src); err != nil {
+			return err
+		}
 		ids := map[int]string{}
 		for i, m := range s.Models {
 			id, isNew, err := im.saveModel(ctx, tx, fsys, src, i, m, dec)
@@ -380,6 +385,11 @@ func (im *Importer) socFor(label string) string {
 }
 
 func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src string, position int, m SnapModel, dec map[[2]string]string) (string, bool, error) {
+	if m.LinkOnly {
+		// Device IDs are all a link-only entry adds; anything else it carries
+		// is not the source's say about the board.
+		m = SnapModel{Maker: m.Maker, Code: m.Code, DeviceIDs: m.DeviceIDs, LinkOnly: true}
+	}
 	norm := NormCode(m.Code)
 	if !codeShape.MatchString(norm) {
 		return "", false, fmt.Errorf("code %q does not normalise to a code", m.Code)
@@ -463,9 +473,14 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 			}
 		}
 		// This source's say about the model replaces what it said last time.
-		for _, t := range []string{"board_model_texts", "board_model_specs", "board_model_tags", "board_links", "board_device_ids"} {
-			if _, err := tx.Exec(ctx, `DELETE FROM `+t+` WHERE model_id = $1 AND source = $2`, id, src); err != nil {
-				return err
+		// A listing is the source's whole say about the board and replaces it.
+		// A link-only entry adds device IDs to a board and replaces nothing:
+		// the board's rows from this source may come from its own listing.
+		if !m.LinkOnly {
+			for _, t := range []string{"board_model_texts", "board_model_specs", "board_model_tags", "board_links"} {
+				if _, err := tx.Exec(ctx, `DELETE FROM `+t+` WHERE model_id = $1 AND source = $2`, id, src); err != nil {
+					return err
+				}
 			}
 		}
 		original := map[string]bool{}

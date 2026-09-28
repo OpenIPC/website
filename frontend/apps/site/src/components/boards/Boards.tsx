@@ -229,7 +229,10 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
         )}
         {data.state === 'ok' && (searching
           ? <>
-            {device?.state === 'ok' && (device.value.device.stock.length > 0 || device.value.device.coupler || device.value.boards.length > 0) && (
+            {device?.state === 'error' && (
+              <div class="site-alert site-alert-warning mt-5" role="alert"><p class="mb-0">{t('fw_error', { id: deviceId ?? '', error: device.error })}</p></div>
+            )}
+            {device?.state === 'ok' && (
               <div class="mt-5 grid gap-2">
                 <Firmware device={device.value.device} heading={t('fw_your_device', { id: device.value.device.id })}
                   note={device.value.device.coupler ? undefined : t('fw_no_coupler')} locale={locale} t={t} />

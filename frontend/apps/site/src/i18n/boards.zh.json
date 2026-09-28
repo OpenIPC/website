@@ -48,6 +48,7 @@
     "fw_device_hint": "System version 的第 4 段：V5.00.R02.{id}.10010…",
     "fw_download": "下载",
     "fw_earlier": "较早",
+    "fw_error": "暂时无法查询设备 {id} 的固件（{error}），请稍后再试。",
     "fw_latest": "最新",
     "fw_no_boards": "目录中暂无已知使用此设备 ID 的主板。",
     "fw_no_coupler": "此设备暂无迁移到 OpenIPC 的镜像",

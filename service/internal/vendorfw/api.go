@@ -51,7 +51,7 @@ func ForDevices(ctx context.Context, db querier, ids []string) (map[string]*Devi
 		return nil, err
 	}
 	defer rows.Close()
-	seen := map[string]bool{}
+	seen := map[[2]string]bool{} // (device ID, sha256): a file once per device
 	for rows.Next() {
 		var id, source string
 		var f Firmware
@@ -70,10 +70,11 @@ func ForDevices(ctx context.Context, db querier, ids []string) (map[string]*Devi
 			continue
 		}
 		if f.SHA256 != nil {
-			if seen[*f.SHA256] {
+			k := [2]string{id, *f.SHA256}
+			if seen[k] {
 				continue
 			}
-			seen[*f.SHA256] = true
+			seen[k] = true
 		}
 		d.Stock = append(d.Stock, f)
 	}
@@ -85,12 +86,16 @@ func ForDevices(ctx context.Context, db querier, ids []string) (map[string]*Devi
 // firmware pages, cctvsp), or the vendor did, naming a device's firmware
 // after the board itself -- NBD7024H-P's firmware is called NBD7024H-P. That
 // second kind is read from the pushed lists, so it follows each push; only an
-// exact code counts, normalised as the board aliases are.
+// exact code counts, normalised as boards.NormCode normalises the aliases.
+// Only the vendor's own firmware names a board: a coupler image is named by
+// OpenIPC after the build it replaces, and is not evidence of a board.
 const BoardDevicesSQL = `
 	SELECT model_id, device_id FROM board_device_ids
 	UNION
 	SELECT a.model_id, v.device_id FROM vendor_firmware v
-	JOIN board_model_aliases a ON a.code_norm = upper(btrim(regexp_replace(v.build, '[[:space:]_/.]+', '-', 'g'), '-'))`
+	JOIN board_model_aliases a ON a.code_norm = btrim(regexp_replace(regexp_replace(upper(btrim(v.build)),
+		'[[:space:]_/.]+', '-', 'g'), '-{2,}', '-', 'g'), '-')
+	WHERE v.source = 'xmupdates'`
 
 // API serves GET /api/v1/vendor-firmware/{deviceId}: what a visitor who read
 // the device ID off their camera can flash, and which boards run it.

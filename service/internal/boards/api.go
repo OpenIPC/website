@@ -689,7 +689,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 		       (SELECT count(*) FROM board_model_texts) || '|' || (SELECT count(*) FROM board_model_specs) || '|' ||
 		       (SELECT count(*) FROM board_model_tags) || '|' || (SELECT count(*) FROM board_links) || '|' ||
 		       (SELECT coalesce(md5(string_agg(id || ':' || listed_year, ',' ORDER BY id)), '') FROM board_models WHERE listed_year IS NOT NULL) || '|' ||
-		       (SELECT count(*) || ':' || coalesce(max(pushed_at)::text, '') FROM vendor_firmware) || '|' || (SELECT count(*) FROM board_device_ids)`).Scan(&units, &files, &last, &about); err != nil {
+		       (SELECT coalesce(md5(string_agg(source || key || version || asset_url || coalesce(sha256, ''), ',' ORDER BY source, key, version)), '') FROM vendor_firmware) || '|' || (SELECT count(*) FROM board_device_ids)`).Scan(&units, &files, &last, &about); err != nil {
 		a.Log.Error("boards: no revision", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})
 		return

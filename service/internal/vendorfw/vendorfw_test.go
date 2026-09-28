@@ -54,9 +54,10 @@ func TestDecodeRefusesWhatCannotBeStored(t *testing.T) {
 		t.Fatalf("a good push: %v %+v", err, p)
 	}
 	for name, doc := range map[string][]byte{
-		"another source":    body(t, "hikvision", good),
-		"no items":          body(t, "xmupdates"),
-		"a short device id": body(t, "xmupdates", item("a", "559A7", "1", "xmupdates")),
+		"another source":     body(t, "hikvision", good),
+		"no items, not said": body(t, "xmupdates"),
+		"empty with items":   []byte(`{"schema":1,"source":"coupler","empty":true,"items":[{"key":"a","device_id":"000559A7","version":"1","build":"b","asset_url":"https://github.com/OpenIPC/coupler/releases/download/latest/a.bin"}]}`),
+		"a short device id":  body(t, "xmupdates", item("a", "559A7", "1", "xmupdates")),
 		"another repo's asset": body(t, "xmupdates", Item{Key: "a", DeviceID: "000559A7", Version: "1", Build: "b",
 			AssetURL: "https://github.com/evil/x/releases/download/latest/a.bin"}),
 		"coupler's asset as xmupdates": body(t, "xmupdates", item("a", "000559A7", "1", "coupler")),
@@ -69,11 +70,18 @@ func TestDecodeRefusesWhatCannotBeStored(t *testing.T) {
 	}
 }
 
+func TestAnEmptyListIsPublishedOnlyWhenSaid(t *testing.T) {
+	if _, err := Decode([]byte(`{"schema":1,"source":"coupler","empty":true,"items":[]}`)); err != nil {
+		t.Errorf("an explicit empty list: %v", err)
+	}
+}
+
 func TestXMUpdatesIndexBecomesAPush(t *testing.T) {
 	at := "2026-05-04T12:00:00Z"
 	index := `{
 	 "2281": {"name": "IPC_XM530V200_R80XV50B", "revisions": [
 	   {"version": "000809Q4.1", "asset_url": "https://github.com/OpenIPC/xmupdates/releases/download/firmware-archive/id2281.zip", "sha256": "` + strings.Repeat("A", 64) + `", "size": 6798757, "archived_at": "` + at + `"},
+	   {"version": "000809Q4.1", "asset_url": "https://github.com/OpenIPC/xmupdates/releases/download/firmware-archive/id2281b.zip"},
 	   {"version": "000809Q4.2", "asset_url": ""}]},
 	 "1299": {"name": "BLK5008A-S", "revisions": [], "unavailable": [{"version": "00000001"}]},
 	 "p1475": {"name": "IPC_X2C", "revisions": [{"version": "short", "asset_url": "https://github.com/OpenIPC/xmupdates/releases/download/firmware-archive/p1475.zip"}]}
@@ -82,7 +90,15 @@ func TestXMUpdatesIndexBecomesAPush(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) != 1 || items[0].DeviceID != "000809Q4" || items[0].SHA256 != strings.Repeat("a", 64) || items[0].PublishedAt == nil {
+	// The same version archived twice is two files, each keyed by its asset.
+	if len(items) != 2 {
+		t.Fatalf("%+v", items)
+	}
+	byKey := map[string]Item{}
+	for _, it := range items {
+		byKey[it.Key] = it
+	}
+	if a := byKey["id2281.zip"]; a.DeviceID != "000809Q4" || a.SHA256 != strings.Repeat("a", 64) || a.PublishedAt == nil || byKey["id2281b.zip"].Version != "000809Q4.1" {
 		t.Fatalf("%+v", items)
 	}
 	if _, err := Decode(body(t, "xmupdates", items...)); err != nil {
@@ -172,6 +188,19 @@ func TestAPushReplacesItsSourceAndOnlyItsSource(t *testing.T) {
 	// Every stock build, newest first, the same file once; trimmed.
 	if st := got.Device.Stock; len(st) != 2 || st[0].Key != "d" || st[0].Version != "000559A7" || st[0].Build != "IPC_x" || st[1].Key != "a" || got.Device.Coupler == nil {
 		t.Errorf("device 000559A7: %+v", got.Device)
+	}
+	// A file two device IDs share is listed for each of them.
+	shared := item("s", "00002520", "00002520.1", "xmupdates")
+	shared.SHA256 = strings.Repeat("a", 64)
+	if rec := post(xmupdates, nil, body(t, "xmupdates", a, shared)); rec.Code != http.StatusCreated {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	both, err := ForDevices(context.Background(), pool, []string{"000559A7", "00002520"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(both["000559A7"].Stock) != 1 || len(both["00002520"].Stock) != 1 {
+		t.Errorf("a shared file: %+v %+v", both["000559A7"], both["00002520"])
 	}
 	if resp, _ := http.Get(srv.URL + "/nope"); resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("a malformed id: %d", resp.StatusCode)

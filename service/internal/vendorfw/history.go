@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path"
 	"strings"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 )
 
 // FromXMUpdates turns xmupdates' archive/index.json into a push: every
-// archived revision, its device ID the version's first eight characters
+// archived file, keyed by its asset name, its device ID the version's first eight characters
 // (000559A7.1 -> 000559A7). Revisions without an asset, and versions that
 // are not an XM device ID, are left out. push_openipc_org.py in xmupdates
 // builds the same list.
@@ -32,8 +33,8 @@ func FromXMUpdates(index []byte) ([]Item, error) {
 		return nil, fmt.Errorf("archive/index.json: %v", err)
 	}
 	var out []Item
-	seen := map[[2]string]bool{}
-	for key, e := range idx {
+	seen := map[string]bool{}
+	for _, e := range idx {
 		name := strings.TrimSpace(e.Name)
 		for _, r := range e.Revisions {
 			r.Version = strings.TrimSpace(r.Version)
@@ -41,11 +42,13 @@ func FromXMUpdates(index []byte) ([]Item, error) {
 			if len(r.Version) >= 8 {
 				dev = DeviceID(r.Version[:8])
 			}
-			if r.AssetURL == "" || dev == "" || name == "" || seen[[2]string{key, r.Version}] {
+			// The vendor re-publishes under the same version; each archived
+			// file is its own item, named by its asset (id2281__000809Q4.1__...).
+			if r.AssetURL == "" || dev == "" || name == "" || seen[r.AssetURL] {
 				continue
 			}
-			seen[[2]string{key, r.Version}] = true
-			out = append(out, Item{Key: key, DeviceID: dev, Version: r.Version, Build: name,
+			seen[r.AssetURL] = true
+			out = append(out, Item{Key: path.Base(r.AssetURL), DeviceID: dev, Version: r.Version, Build: name,
 				AssetURL: r.AssetURL, SHA256: strings.ToLower(r.SHA256), Size: r.Size, PublishedAt: r.ArchivedAt})
 		}
 	}

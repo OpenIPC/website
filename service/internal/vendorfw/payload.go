@@ -29,6 +29,9 @@ type Payload struct {
 	Schema int    `json:"schema"`
 	Source string `json:"source"`
 	Items  []Item `json:"items"`
+	// Empty says the source publishes nothing now: its last file withdrawn.
+	// An empty list without it is refused, since a broken producer sends that too.
+	Empty bool `json:"empty,omitempty"`
 }
 
 type Item struct {
@@ -65,9 +68,12 @@ func Decode(doc []byte) (*Payload, error) {
 	if !ok {
 		return nil, fmt.Errorf("unknown source %q", p.Source)
 	}
-	// An empty list would wipe the source: a broken producer, not a decision.
-	if len(p.Items) == 0 {
-		return nil, fmt.Errorf("no items")
+	// An empty list wipes the source: only when the producer says it means to.
+	if len(p.Items) == 0 && !p.Empty {
+		return nil, fmt.Errorf("no items; a source that publishes nothing sends \"empty\": true")
+	}
+	if len(p.Items) > 0 && p.Empty {
+		return nil, fmt.Errorf("\"empty\": true with items")
 	}
 	if len(p.Items) > maxItems {
 		return nil, fmt.Errorf("%d items, at most %d", len(p.Items), maxItems)

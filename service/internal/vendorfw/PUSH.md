@@ -46,7 +46,7 @@ The workflow needs `permissions: id-token: write`.
   "source": "xmupdates",
   "items": [
     {
-      "key": "2281",
+      "key": "id2281__000809Q4.1__IPC_….zip",
       "device_id": "000809Q4",
       "version": "000809Q4.1",
       "build": "IPC_XM530V200_R80XV50B_WIFIXM713G",
@@ -60,7 +60,8 @@ The workflow needs `permissions: id-token: write`.
 ```
 
 - `key`: what the project calls the file.
-  - xmupdates: the `archive/index.json` key (`2281`, `p1475`).
+  - xmupdates: the asset's file name (`id2281__000809Q4.1__….zip`), since the
+    vendor re-publishes under the same version and each archived file counts.
   - coupler: the asset name.
   - `(key, version)` must be unique within a push.
 - `device_id`: the device ID, `[0-9A-Z]{8}` (lower case is accepted and
@@ -86,8 +87,11 @@ one has a bug. A file carried by several catalogue rows (the same sha256) is
 listed once.
 
 A push **replaces** the source's list in one transaction: an item left out is
-gone, and pushing the same body again changes nothing. An empty `items` is
-refused, because it would wipe the source.
+gone, and pushing the same body again changes nothing (the board API's cache
+revision is taken from the list's content, not from when it arrived). An
+empty `items` is refused unless the body says `"empty": true`: a source that
+withdraws its last file says so, while a producer that merely lost its list
+does not wipe the site.
 
 ## Response
 

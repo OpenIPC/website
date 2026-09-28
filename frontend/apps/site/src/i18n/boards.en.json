@@ -48,6 +48,7 @@
     "fw_device_hint": "the 4th field of the System version: V5.00.R02.{id}.10010…",
     "fw_download": "Download",
     "fw_earlier": "Earlier",
+    "fw_error": "Could not check the firmware for device {id} ({error}). Try again in a moment.",
     "fw_latest": "Latest",
     "fw_no_boards": "No catalogue board is known to run this device ID yet.",
     "fw_no_coupler": "no OpenIPC transition image for this device yet",
