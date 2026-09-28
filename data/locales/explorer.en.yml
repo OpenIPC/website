@@ -6,6 +6,15 @@ en:
     soc_other: Other
     build_label: Build
     compare_label: Compare with
+    calendar_label: Choose a build date
+    calendar_prev: Previous month
+    calendar_next: Next month
+    calendar_newest: Newest
+    calendar_newest_other: Newest other
+    calendar_no_build: no build
+    calendar_day_builds: 'builds: {count}'
+    calendar_builds_on: '{count} builds on {day}:'
+    calendar_span: '{count} builds · {first} – {last}'
     newest: newest
     help_open: Help
     help_close: Close help
@@ -134,7 +143,7 @@ en:
         html: '<p>A read-only view of what goes into every OpenIPC build: which packages and kernel modules ship in the root filesystem, how much space each takes, how that has moved over the retained builds, and — where the build published its Kconfig graph — what leaving packages out would save. From there you can copy a Buildroot defconfig fragment or open a build request on <code>OpenIPC/builder</code>.</p><p>Everything shown comes from the size report and Kconfig graph each nightly build of <code>OpenIPC/firmware</code> and <code>OpenIPC/builder</code> sends to openipc.org when it publishes. Nothing is fetched from GitHub while you use the page.</p>'
       first_look:
         title: First look
-        html: '<ol><li><strong>SoC.</strong> Pick the chip in your camera (<code>gk7205v300</code>), grouped by maker.</li><li><strong>Variant.</strong> Every build made for that chip: the firmware variants (<code>lite</code>, <code>ultimate</code>, <code>fpv</code>…) first, then builds for a particular device (<code>lite · xg521</code>).</li><li><strong>Build.</strong> Only the nights that built that variant are listed, newest first. Build IDs read <code>nightly-YYYYMMDD-shortsha</code>.</li><li><strong>Tabs.</strong> Composition for what dominates, Packages and Kernel modules for detail, Drift against another build, Trends for the long view, What if… to model removals.</li></ol>'
+        html: '<ol><li><strong>SoC.</strong> Pick the chip in your camera (<code>gk7205v300</code>), grouped by maker.</li><li><strong>Variant.</strong> Every build made for that chip: the firmware variants (<code>lite</code>, <code>ultimate</code>, <code>fpv</code>…) first, then builds for a particular device (<code>lite · xg521</code>).</li><li><strong>Build.</strong> Pick a day on the calendar; only days that built that variant can be picked, and the newest is selected. A dot marks a day with more than one build, which are then offered by time (UTC).</li><li><strong>Tabs.</strong> Composition for what dominates, Packages and Kernel modules for detail, Drift against another build, Trends for the long view, What if… to model removals.</li></ol>'
       flash_map:
         title: The flash map and the meters
         html: '<p>The bar is the chip as the build lays it out: U-Boot and its environment, the kernel partition, the root filesystem partition and the overlay that keeps your settings, drawn to the caps the build checks against. The darker part of each partition is what the build uses. The meters give the same numbers and a state: <em>tight</em> under 10% free, <em>almost full</em> under 2%.</p>'

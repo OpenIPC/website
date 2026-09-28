@@ -1,6 +1,15 @@
 {
   "explorer": {
     "build_label": "构建",
+    "calendar_builds_on": "{day} 有 {count} 个构建：",
+    "calendar_day_builds": "{count} 个构建",
+    "calendar_label": "选择构建日期",
+    "calendar_newest": "最新",
+    "calendar_newest_other": "最新的其他构建",
+    "calendar_next": "下个月",
+    "calendar_no_build": "无构建",
+    "calendar_prev": "上个月",
+    "calendar_span": "{count} 个构建 · {first} – {last}",
     "category_kernel": "内核与内置模块",
     "category_other": "其他",
     "category_overlay": "覆盖层 / post-build",
@@ -52,7 +61,7 @@
     "growers_summary": "{shown} / {total}",
     "help": {
       "first_look": {
-        "html": "<ol><li><strong>SoC。</strong>选择您摄像头中的芯片（<code>gk7205v300</code>），按厂商分组。</li><li><strong>变体。</strong>为该芯片构建的全部内容：先是固件变体（<code>lite</code>、<code>ultimate</code>、<code>fpv</code>…），然后是针对特定设备的构建（<code>lite · xg521</code>）。</li><li><strong>构建。</strong>只列出成功构建该变体的夜间构建，最新的在前。构建 ID 形如 <code>nightly-YYYYMMDD-短提交号</code>。</li><li><strong>标签页。</strong>“构成”看占用最大的部分，“软件包”和“内核模块”看细节，“变化”与另一个构建对比，“趋势”看长期走势，“假如…”模拟去掉软件包。</li></ol>",
+        "html": "<ol><li><strong>SoC。</strong>选择您摄像头中的芯片（<code>gk7205v300</code>），按厂商分组。</li><li><strong>变体。</strong>为该芯片构建的全部内容：先是固件变体（<code>lite</code>、<code>ultimate</code>、<code>fpv</code>…），然后是针对特定设备的构建（<code>lite · xg521</code>）。</li><li><strong>构建。</strong>在日历中选择日期：只有构建了该变体的日期可选，默认选中最新构建。带圆点的日期有多个构建，可按时间（UTC）选择。</li><li><strong>标签页。</strong>“构成”看占用最大的部分，“软件包”和“内核模块”看细节，“变化”与另一个构建对比，“趋势”看长期走势，“假如…”模拟去掉软件包。</li></ol>",
         "title": "快速了解"
       },
       "flash_map": {

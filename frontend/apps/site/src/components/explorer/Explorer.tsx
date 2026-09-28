@@ -15,7 +15,6 @@ import { SOURCES, type IndexFile, type Sizes, type Source } from '../../lib/expl
 import { fetchIndex, fetchSizes, NotFound } from '../../lib/explorer/api';
 import { buildCatalog, buildsFor, carryBuild, carryVariant, type Catalog } from '../../lib/explorer/platforms';
 import { readQueryString, writeQueryString, TABS, type Tab } from '../../lib/explorer/url';
-import { buildOptionLabel } from '../../lib/explorer/build-label';
 import { useExplorerTranslations } from '../../lib/explorer-i18n';
 import type { Locale } from '../../lib/i18n';
 import Summary from './Summary';
@@ -25,6 +24,7 @@ import Drift from './Drift';
 import Trends from './Trends';
 import WhatIf from './WhatIf';
 import Help from './Help';
+import BuildPicker from './BuildPicker';
 
 type Load<T> = { state: 'loading' } | { state: 'ok'; value: T } | { state: 'missing' } | { state: 'error'; error: string };
 
@@ -158,13 +158,11 @@ export default function Explorer({ locale }: { locale: Locale }) {
                 </label>
               )}
               {builds.length > 0 && (
-                <label class="flex min-w-0 flex-col gap-1">
-                  <span class={LABEL}>{t('build_label')}</span>
-                  <select id="explorer-build" class={SELECT} value={buildId ?? ''}
-                    onChange={(e) => { setBuildId((e.target as HTMLSelectElement).value); setCompareId(null); }}>
-                    {builds.map((b, i) => <option key={b.id} value={b.id} title={b.id}>{buildOptionLabel(b, i === 0, t('newest'))}</option>)}
-                  </select>
-                </label>
+                <div class="flex min-w-0 flex-col gap-1">
+                  <span class={LABEL} id="explorer-build-label">{t('build_label')}</span>
+                  <BuildPicker id="explorer-build" labelId="explorer-build-label" builds={builds} value={buildId} locale={locale} t={t}
+                    onChange={(id) => { setBuildId(id); setCompareId(null); }} />
+                </div>
               )}
             </>
           )}
@@ -202,13 +200,11 @@ export default function Explorer({ locale }: { locale: Locale }) {
               {tab === 'removed' && <RemovedTable removed={sizes.value.removed_by_finalize} t={t} />}
               {tab === 'drift' && others.length > 0 && (
                 // Only Drift compares, so the choice lives with it rather than in the bar.
-                <label class="mb-5 flex max-w-full flex-col gap-1 sm:w-fit">
-                  <span class={LABEL}>{t('compare_label')}</span>
-                  <select id="explorer-compare" class={SELECT} value={compare ?? ''}
-                    onChange={(e) => setCompareId((e.target as HTMLSelectElement).value)}>
-                    {others.map((b) => <option key={b.id} value={b.id} title={b.id}>{buildOptionLabel(b, false)}</option>)}
-                  </select>
-                </label>
+                <div class="mb-5 flex max-w-full flex-col gap-1 sm:w-fit">
+                  <span class={LABEL} id="explorer-compare-label">{t('compare_label')}</span>
+                  <BuildPicker id="explorer-compare" labelId="explorer-compare-label" builds={builds} value={compare} exclude={build?.id ?? null}
+                    locale={locale} t={t} onChange={setCompareId} />
+                </div>
               )}
               {tab === 'drift' && (
                 <Drift source={source} builds={builds} base={sizes.value} baseBuild={build.id} compareBuild={compare} platform={platform} t={t} />

@@ -1,6 +1,15 @@
 {
   "explorer": {
     "build_label": "Build",
+    "calendar_builds_on": "{count} builds on {day}:",
+    "calendar_day_builds": "builds: {count}",
+    "calendar_label": "Choose a build date",
+    "calendar_newest": "Newest",
+    "calendar_newest_other": "Newest other",
+    "calendar_next": "Next month",
+    "calendar_no_build": "no build",
+    "calendar_prev": "Previous month",
+    "calendar_span": "{count} builds · {first} – {last}",
     "category_kernel": "Kernel + in-tree modules",
     "category_other": "Other",
     "category_overlay": "Overlay / post-build",
@@ -52,7 +61,7 @@
     "growers_summary": "{shown} of {total}",
     "help": {
       "first_look": {
-        "html": "<ol><li><strong>SoC.</strong> Pick the chip in your camera (<code>gk7205v300</code>), grouped by maker.</li><li><strong>Variant.</strong> Every build made for that chip: the firmware variants (<code>lite</code>, <code>ultimate</code>, <code>fpv</code>…) first, then builds for a particular device (<code>lite · xg521</code>).</li><li><strong>Build.</strong> Only the nights that built that variant are listed, newest first. Build IDs read <code>nightly-YYYYMMDD-shortsha</code>.</li><li><strong>Tabs.</strong> Composition for what dominates, Packages and Kernel modules for detail, Drift against another build, Trends for the long view, What if… to model removals.</li></ol>",
+        "html": "<ol><li><strong>SoC.</strong> Pick the chip in your camera (<code>gk7205v300</code>), grouped by maker.</li><li><strong>Variant.</strong> Every build made for that chip: the firmware variants (<code>lite</code>, <code>ultimate</code>, <code>fpv</code>…) first, then builds for a particular device (<code>lite · xg521</code>).</li><li><strong>Build.</strong> Pick a day on the calendar; only days that built that variant can be picked, and the newest is selected. A dot marks a day with more than one build, which are then offered by time (UTC).</li><li><strong>Tabs.</strong> Composition for what dominates, Packages and Kernel modules for detail, Drift against another build, Trends for the long view, What if… to model removals.</li></ol>",
         "title": "First look"
       },
       "flash_map": {
