@@ -607,3 +607,42 @@ func TestALinkOnlyEntryNeverCreatesABoard(t *testing.T) {
 		t.Errorf("a device linked to a board the catalogue lacks")
 	}
 }
+
+func TestAFinishedDeviceKeepsItsKindAndABoardStaysABoard(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "jftech",
+		model("xiongmai", "NVR8016SY-SKL", map[string]any{"kind": "recorder", "category": "Network Video Recorder"}),
+		model("xiongmai", "IVG-N12", nil))); err != nil {
+		t.Fatal(err)
+	}
+	kind := func(id string) (k string) {
+		_ = pool.QueryRow(ctx, `SELECT kind FROM board_models WHERE id = $1`, id).Scan(&k)
+		return
+	}
+	if k := kind("xiongmai-nvr8016sy-skl"); k != "recorder" {
+		t.Errorf("recorder is %q", k)
+	}
+	if k := kind("xiongmai-ivg-n12"); k != "board" {
+		t.Errorf("a module with no kind is %q, want board", k)
+	}
+	// Another source listing the recorder without a kind does not demote it.
+	if _, err := im.FromSnapshot(ctx, donor(t, "cctvsp", model("xiongmai", "NVR8016SY-SKL", nil))); err != nil {
+		t.Fatal(err)
+	}
+	if k := kind("xiongmai-nvr8016sy-skl"); k != "recorder" {
+		t.Errorf("after a board-only source, the recorder is %q", k)
+	}
+	tree, err := Tree(ctx, pool, "en", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			if mo.Kind == "" {
+				t.Errorf("%s: no kind in the tree", mo.ID)
+			}
+		}
+	}
+}

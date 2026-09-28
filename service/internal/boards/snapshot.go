@@ -83,6 +83,9 @@ type SnapModel struct {
 	// firmware page's "download firmware for IPG-50H20PLS-S") is evidence
 	// about it, not a listing of it.
 	LinkOnly bool `json:"link_only,omitempty"`
+	// Kind is what the entry is: a board (the default) or a finished device
+	// (camera, recorder, doorbell, base_station).
+	Kind string `json:"kind,omitempty"`
 }
 
 type SnapDevice struct {
@@ -448,15 +451,18 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 				id = slug(m.Maker + "-" + m.Code + "-" + src)
 			}
 			if _, err := tx.Exec(ctx, `
-				INSERT INTO board_models (id, manufacturer_id, model, soc, soc_label, category, listed_year, position)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, 1000 + $8)`,
-				id, maker.ID, m.Code, null(im.socFor(m.SoCLabel)), null(m.SoCLabel), null(m.Category), nullInt(m.ListedYear), position); err != nil {
+				INSERT INTO board_models (id, manufacturer_id, model, soc, soc_label, category, listed_year, kind, position)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, coalesce($8, 'board'), 1000 + $9)`,
+				id, maker.ID, m.Code, null(im.socFor(m.SoCLabel)), null(m.SoCLabel), null(m.Category), nullInt(m.ListedYear), null(m.Kind), position); err != nil {
 				return err
 			}
 		} else if _, err := tx.Exec(ctx, `
 			UPDATE board_models SET category = coalesce(category, $2), soc = coalesce(soc, $3), soc_label = coalesce(soc_label, $4),
-			       listed_year = least(listed_year, $5)
-			WHERE id = $1`, id, null(m.Category), null(im.socFor(m.SoCLabel)), null(m.SoCLabel), nullInt(m.ListedYear)); err != nil {
+			       listed_year = least(listed_year, $5),
+			       -- a source that says the entry is a finished device is believed
+			       -- over the default; one board-only source never demotes it
+			       kind = CASE WHEN $6::text IS NOT NULL AND $6::text <> 'board' THEN $6::text ELSE kind END
+			WHERE id = $1`, id, null(m.Category), null(im.socFor(m.SoCLabel)), null(m.SoCLabel), nullInt(m.ListedYear), null(m.Kind)); err != nil {
 			return err
 		}
 		for _, c := range codes {

@@ -14,7 +14,7 @@ import type { BoardLink, LinkKind, ModelDetail, Source } from '../../lib/boards/
 import { fetchModel } from '../../lib/boards/api';
 import Firmware from './Firmware';
 import {
-  HEADING_CLASS, couplerDevices, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, subtitle, unitFiles, unitPhotos,
+  HEADING_CLASS, boardsInside, couplerDevices, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, subtitle, unitFiles, unitPhotos,
   type CodeIndex, type Entry, type Heading,
 } from '../../lib/boards/model';
 import type { BoardsT } from '../../lib/boards-i18n';
@@ -29,11 +29,13 @@ const HEADING = 'mb-2 text-base font-semibold';
 const LINK_ORDER: LinkKind[] = ['stock_firmware', 'pcb', 'on_pcb', 'successor', 'predecessor', 'related', 'vendor_page', 'source_page'];
 const EXTERNAL: LinkKind[] = ['vendor_page', 'source_page'];
 
-export default function BoardPanel({ id, entry, loaded, locale, t, sources, index, socs, names, href, onOpen, onClose }: {
+export default function BoardPanel({ id, entry, all, loaded, locale, t, sources, index, socs, names, href, onOpen, onClose }: {
   id: string;
   /** The board as the tree has it; undefined for an id the catalogue does not know, or before it has loaded. */
   entry: Entry | undefined;
   loaded: boolean;
+  /** The whole catalogue: a finished device names the boards inside it. */
+  all: Entry[];
   locale: Locale;
   t: BoardsT;
   sources: Map<string, Source>;
@@ -87,6 +89,7 @@ export default function BoardPanel({ id, entry, loaded, locale, t, sources, inde
   const missing = entry ? firstMissing(entry) : null;
   const devices = entry?.devices ?? (detail.state === 'ok' ? detail.value.devices ?? [] : []);
   const ready = couplerDevices({ devices });
+  const inside = entry ? boardsInside(entry, all) : [];
   const notFound = detail.state === 'error' && detail.error === 'HTTP 404';
 
   return (
@@ -101,7 +104,7 @@ export default function BoardPanel({ id, entry, loaded, locale, t, sources, inde
             {entry && <SocChip m={entry} socs={socs} names={names} t={t} />}
           </div>
           {name && <p class="m-0 text-sm text-body-secondary">{name}</p>}
-          {entry && <Tags tags={entry.tags} line={entry.category} t={t} />}
+          {entry && <Tags tags={entry.tags} line={entry.category} kind={entry.kind} t={t} />}
           {ready.length > 0 && (
             <p class="m-0 text-[13px] text-body-secondary">
               <b class="text-[#146c3c]">{t('ready_because_label')}</b> {t('ready_because', { ids: ready.join(', ') })}
@@ -157,6 +160,19 @@ export default function BoardPanel({ id, entry, loaded, locale, t, sources, inde
             </div>
           </section>
         ))}
+
+        {inside.length > 0 && (
+          <p class="m-0 rounded-md bg-surface-alt px-3 py-2 text-sm">
+            <b>{t('board_inside')}</b>{' '}
+            {inside.map((b, i) => (
+              <Fragment key={b.id}>
+                {i > 0 && ', '}
+                <a href={href(b.id)} onClick={follow(b.id)} class="font-mono">{b.model}</a>
+              </Fragment>
+            ))}{' '}
+            <span class="text-body-secondary">{t('board_inside_why')}</span>
+          </p>
+        )}
 
         {devices.length > 0 && (
           <section aria-labelledby="board-panel-firmware" class="grid gap-3">

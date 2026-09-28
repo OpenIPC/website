@@ -67,7 +67,10 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
                 <span class="grid min-w-0 content-start gap-1 px-3 py-2.5 text-[13px]">
                   <b class={`text-sm ${HEADING_CLASS[head.kind]}`}>{title}</b>
                   {name && <span class="leading-snug">{name}</span>}
-                  <span class="text-body-secondary">{makerName(m.maker.id, m.maker.name, t)} · {sensors}</span>
+                  <span class="text-body-secondary">
+                    {m.kind && m.kind !== 'board' && <b class="font-semibold text-[#8a4b00]">{t(`kind_${m.kind}`)} · </b>}
+                    {makerName(m.maker.id, m.maker.name, t)} · {sensors}
+                  </span>
                   <span class="flex flex-wrap gap-1.5">
                     {SHOWN.map((k) => <Chip key={k} ok={has(m, k)}>{t(`cov_${k}`)}</Chip>)}
                   </span>

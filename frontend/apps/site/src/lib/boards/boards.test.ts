@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
 import type { BoardFile, BoardsFile, Hit, Model } from './types';
 import {
   lineLabel,
-  cardFiles, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
+  boardsInside, cardFiles, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, paragraphs, sensorKey, sensorOptions, slug,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
@@ -170,6 +170,28 @@ describe('XM device IDs', () => {
   });
 });
 
+describe('finished devices', () => {
+  const fw = { key: 'k', version: 'v', build: 'b', url: 'u', sha256: null, size: null, published_at: null };
+  const list = entries({ ...FILE, manufacturers: [{ id: 'xiongmai', name: 'Xiongmai', aliases: [], website: null, models: [
+    model('nbd', { model: 'NBD80S16S-KL', devices: [{ id: 'C6380233', stock: [fw], coupler: null }] }),
+    model('nvr', { model: 'NVR8016SY-SKL', kind: 'recorder', devices: [{ id: 'C6380233', stock: [fw], coupler: null }] }),
+    model('cam', { model: 'JF-IPC-EO8340PG-IR4R-PA', kind: 'camera' }),
+  ] }] });
+
+  test('an entry is a board unless a source says otherwise, and the type filter narrows', () => {
+    expect(list.map(kindOf)).toEqual(['board', 'recorder', 'camera']);
+    expect(filterBoards(list, { ...EMPTY, kind: 'recorder' }).map((m) => m.id)).toEqual(['nvr']);
+    expect(filterBoards(list, { ...EMPTY, kind: 'board' }).map((m) => m.id)).toEqual(['nbd']);
+  });
+
+  test('a finished device names the board that runs its firmware; a board names none', () => {
+    const [nbd, nvr, cam] = list;
+    expect(boardsInside(nvr, list).map((m) => m.id)).toEqual(['nbd']);
+    expect(boardsInside(cam, list)).toEqual([]);
+    expect(boardsInside(nbd, list)).toEqual([]);
+  });
+});
+
 describe('what a board is headed by', () => {
   const summary = (name: string) => ({ name, lead: null, locale: 'en', translated_from: null });
 
@@ -280,7 +302,10 @@ describe('the layout', () => {
 
 describe('stats', () => {
   test('counts boards, named makers, pinouts and dumps', () => {
-    expect(stats(ALL)).toEqual({ boards: 4, makers: 1, pinouts: 1, dumps: 3, needPinout: 3 });
+    expect(stats(ALL)).toEqual({ boards: 4, devices: 0, makers: 1, pinouts: 1, dumps: 3, needPinout: 3 });
+    const withNvr = [...ALL, ...entries({ ...FILE, manufacturers: [{ id: 'xiongmai', name: 'Xiongmai', aliases: [], website: null,
+      models: [model('nvr', { kind: 'recorder' })] }] })];
+    expect(stats(withNvr)).toMatchObject({ boards: 4, devices: 1 });
   });
 });
 
@@ -425,10 +450,10 @@ describe('the query string', () => {
   test('round-trips every field', () => {
     const s = {
       q: 'xm25qh64a', scope: 'all' as const, maker: 'hsell', soc: 'hi3516cv300', sensor: 'IMX323', missing: 'pinout' as const,
-      line: 'XVI&AHD Hybrid Camera Module', source: 'cctvsp', ready: true, model: 'xiongmai-ipg-50h20pls-s',
+      line: 'XVI&AHD Hybrid Camera Module', source: 'cctvsp', ready: true, kind: 'recorder' as const, model: 'xiongmai-ipg-50h20pls-s',
     };
     expect(writeQueryString(s)).toBe('?q=xm25qh64a&scope=all&maker=hsell&soc=hi3516cv300&sensor=IMX323&missing=pinout'
-      + '&line=XVI%26AHD+Hybrid+Camera+Module&source=cctvsp&ready=1&model=xiongmai-ipg-50h20pls-s');
+      + '&line=XVI%26AHD+Hybrid+Camera+Module&source=cctvsp&ready=1&kind=recorder&model=xiongmai-ipg-50h20pls-s');
     expect(readQueryString(writeQueryString(s))).toEqual(s);
   });
 

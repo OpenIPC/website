@@ -48,12 +48,14 @@ export function Chip({ ok, children }: { ok: boolean; children: string }) {
  * OpenIPC-ready first and highlighted, Discontinued muted, then the product
  * line as a neutral tag. Tags the site has no words for are left out.
  */
-export function Tags({ tags, line, t }: { tags: string[]; line?: string | null; t: BoardsT }) {
+export function Tags({ tags, line, kind, t }: { tags: string[]; line?: string | null; kind?: string; t: BoardsT }) {
   const ready = tags.includes(READY);
   const old = tags.includes(DISCONTINUED);
-  if (!ready && !old && !line) return null;
+  const device = kind && kind !== 'board';
+  if (!ready && !old && !line && !device) return null;
   return (
     <div class="flex flex-wrap gap-1.5">
+      {device && <span class="rounded-[5px] bg-[#fdf1e3] px-2 py-0.5 text-xs font-semibold text-[#8a4b00]">{t(`kind_${kind}`)}</span>}
       {ready && <span class="rounded-[5px] bg-[#e3f5ec] px-2 py-0.5 text-xs font-semibold text-[#146c3c]">{t('tag_ready')}</span>}
       {old && <span class="rounded-[5px] bg-[#eceef2] px-2 py-0.5 text-xs text-body-secondary">{t('tag_discontinued')}</span>}
       {line && <span class="rounded-[5px] bg-[#eef0fb] px-2 py-0.5 text-xs text-link-hover">{lineLabel(line, t)}</span>}

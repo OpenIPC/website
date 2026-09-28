@@ -10,6 +10,10 @@ export type Scope = (typeof SCOPES)[number];
 export const MISSING = ['pinout', 'flash_dump', 'uboot_env', 'boot_log'] as const;
 export type Missing = (typeof MISSING)[number];
 
+/** What a catalogue entry is: a bare board, or a finished device. */
+export const KINDS = ['board', 'camera', 'recorder', 'doorbell', 'base_station'] as const;
+export type Kind = (typeof KINDS)[number];
+
 export type BoardsState = {
   q: string;
   scope: Scope;
@@ -23,13 +27,15 @@ export type BoardsState = {
   source: string | null;
   /** Only boards tagged openipc-ready. */
   ready: boolean;
+  /** A board or one kind of finished device. */
+  kind: Kind | null;
   /** The board whose details panel is open. */
   model: string | null;
 };
 
 export const EMPTY: BoardsState = {
   q: '', scope: 'uboot_env', maker: null, soc: null, sensor: null, missing: null,
-  line: null, source: null, ready: false, model: null,
+  line: null, source: null, ready: false, kind: null, model: null,
 };
 
 const oneOf = <T extends string>(list: readonly T[], v: string | null): T | null =>
@@ -47,6 +53,7 @@ export function readQueryString(search: string): BoardsState {
     line: p.get('line') || null,
     source: p.get('source') || null,
     ready: p.get('ready') === '1',
+    kind: oneOf(KINDS, p.get('kind')),
     model: p.get('model') || null,
   };
 }
@@ -62,6 +69,7 @@ export function writeQueryString(s: BoardsState): string {
   if (s.line) p.set('line', s.line);
   if (s.source) p.set('source', s.source);
   if (s.ready) p.set('ready', '1');
+  if (s.kind) p.set('kind', s.kind);
   if (s.model) p.set('model', s.model);
   const out = p.toString();
   return out ? `?${out}` : '';

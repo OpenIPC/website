@@ -87,14 +87,16 @@ type coverageJSON struct {
 }
 
 type modelJSON struct {
-	ID       string   `json:"id"`
-	Model    *string  `json:"model"`
-	SoC      *string  `json:"soc"`
-	SoCLabel *string  `json:"soc_label"`
-	Family   *string  `json:"family"`
-	Notes    *string  `json:"notes"`
-	Category *string  `json:"category"`
-	Tags     []string `json:"tags"`
+	ID       string  `json:"id"`
+	Model    *string `json:"model"`
+	SoC      *string `json:"soc"`
+	SoCLabel *string `json:"soc_label"`
+	Family   *string `json:"family"`
+	Notes    *string `json:"notes"`
+	Category *string `json:"category"`
+	// Kind is board, or the finished device it is: camera, recorder, ...
+	Kind string   `json:"kind"`
+	Tags []string `json:"tags"`
 	// Aliases are the other codes the sources print for this board, so a
 	// search by any of them finds its card.
 	Aliases []string `json:"aliases"`
@@ -254,7 +256,7 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 
 	byModel := map[string]*modelJSON{}
 	rows, err = tx.Query(ctx, `
-		SELECT m.id, m.manufacturer_id, m.model, m.soc, m.soc_label, m.family, m.notes, m.category, m.listed_year::int,
+		SELECT m.id, m.manufacturer_id, m.model, m.soc, m.soc_label, m.family, m.notes, m.category, m.kind, m.listed_year::int,
 		       ARRAY(SELECT DISTINCT a.code_as_printed FROM board_model_aliases a
 		             WHERE a.model_id = m.id AND upper(a.code_as_printed) <> upper(coalesce(m.model, ''))
 		             ORDER BY a.code_as_printed),
@@ -269,7 +271,7 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 		m := &modelJSON{Units: []*unitJSON{}}
 		var maker string
 		c := &m.Coverage
-		if err := rows.Scan(&m.ID, &maker, &m.Model, &m.SoC, &m.SoCLabel, &m.Family, &m.Notes, &m.Category, &m.ListedYear, &m.Aliases,
+		if err := rows.Scan(&m.ID, &maker, &m.Model, &m.SoC, &m.SoCLabel, &m.Family, &m.Notes, &m.Category, &m.Kind, &m.ListedYear, &m.Aliases,
 			&c.Units, &c.Photos, &c.Pinouts, &c.FlashDumps, &c.UBootEnvs, &c.BootLogs, &c.Documents); err != nil {
 			rows.Close()
 			return nil, err
@@ -548,8 +550,8 @@ func ModelDetail(ctx context.Context, db *pgxpool.Pool, id, locale string) (map[
 	}
 	defer tx.Rollback(ctx)
 	m := &modelJSON{ID: id}
-	if err := tx.QueryRow(ctx, `SELECT model, soc, soc_label, category FROM board_models WHERE id = $1`, id).
-		Scan(&m.Model, &m.SoC, &m.SoCLabel, &m.Category); err != nil {
+	if err := tx.QueryRow(ctx, `SELECT model, soc, soc_label, category, kind FROM board_models WHERE id = $1`, id).
+		Scan(&m.Model, &m.SoC, &m.SoCLabel, &m.Category, &m.Kind); err != nil {
 		return nil, err
 	}
 	one := map[string]*modelJSON{id: m}
@@ -559,7 +561,7 @@ func ModelDetail(ctx context.Context, db *pgxpool.Pool, id, locale string) (map[
 	if err := devices(ctx, tx, one); err != nil {
 		return nil, err
 	}
-	return map[string]any{"schema": 1, "locale": locale, "id": id, "model": m.Model, "about": m.About, "links": m.Links, "tags": m.Tags, "devices": m.Devices}, nil
+	return map[string]any{"schema": 1, "locale": locale, "id": id, "model": m.Model, "about": m.About, "links": m.Links, "tags": m.Tags, "devices": m.Devices, "kind": m.Kind}, nil
 }
 
 type hitJSON struct {
@@ -688,7 +690,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 		       (SELECT coalesce(string_agg(id || ':' || ref, ',' ORDER BY id), '') FROM board_sources) || '|' ||
 		       (SELECT count(*) FROM board_model_texts) || '|' || (SELECT count(*) FROM board_model_specs) || '|' ||
 		       (SELECT count(*) FROM board_model_tags) || '|' || (SELECT count(*) FROM board_links) || '|' ||
-		       (SELECT coalesce(md5(string_agg(id || ':' || listed_year, ',' ORDER BY id)), '') FROM board_models WHERE listed_year IS NOT NULL) || '|' ||
+		       (SELECT coalesce(md5(string_agg(id || ':' || coalesce(listed_year::text, '') || ':' || kind, ',' ORDER BY id)), '') FROM board_models) || '|' ||
 		       (SELECT coalesce(md5(string_agg(source || key || version || asset_url || coalesce(sha256, ''), ',' ORDER BY source, key, version)), '') FROM vendor_firmware) || '|' || (SELECT count(*) FROM board_device_ids)`).Scan(&units, &files, &last, &about); err != nil {
 		a.Log.Error("boards: no revision", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})
