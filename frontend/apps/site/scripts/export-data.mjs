@@ -47,7 +47,7 @@ const yamlFile = (path) => parse(readFileSync(path, 'utf8'));
 
 // --- i18n --------------------------------------------------------------------
 
-const NAMESPACES = ['button', 'footer', 'go', 'nav', 'site', 'str', 'support', 'title', 'pages'];
+const NAMESPACES = ['button', 'footer', 'go', 'nav', 'site', 'str', 'support', 'title', 'pages', 'ways'];
 const INCLUDED = [
   ['snapshots', 'index', 'no_signal'],
   ['cameras', 'socs', 'index'],

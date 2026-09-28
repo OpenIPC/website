@@ -33,7 +33,6 @@ import MajesticEndpoints from '../components/pages/MajesticEndpoints.astro';
 import OurTeam from '../components/pages/OurTeam.astro';
 import Privacy from '../components/pages/Privacy.astro';
 import QrCodeGenerator from '../components/pages/QrCodeGenerator.astro';
-import StagesOfFirmwareDevelopment from '../components/pages/StagesOfFirmwareDevelopment.astro';
 import Teleoperation from '../components/pages/Teleoperation.astro';
 import Utilities from '../components/pages/Utilities.astro';
 import WebInterface from '../components/pages/WebInterface.astro';
@@ -104,7 +103,6 @@ const COMPONENTS: Record<string, Renderer> = {
   '/majestic-endpoints': { component: MajesticEndpoints },
   '/our-team': { component: OurTeam },
   '/privacy': { component: Privacy },
-  '/stages-of-firmware-development': { component: StagesOfFirmwareDevelopment },
   '/teleoperation': { component: Teleoperation },
   '/utilities': { component: Utilities },
   '/web-interface': { component: WebInterface },

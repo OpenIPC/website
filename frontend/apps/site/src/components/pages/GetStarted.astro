@@ -2,15 +2,10 @@
 /**
  * The get started page (#160).
  *
- * The terminal is step 1's command, so it sits directly after step 1 in the
- * markup and a narrow screen reads 1, command, 2, 3. On a desktop it moves to
- * the end of the row, where the three steps are side by side and the command
- * wants the full width beneath them.
- *
- * It used to live inside the step-1 column, where the ipctool URL is longer
- * than a third of the article is wide: the visible line ended at
- * "https://github.com/OpenI" and the rest sat behind a horizontal scrollbar
- * most systems do not draw.
+ * Step 1 is getting a camera OpenIPC runs on, by the four ways on the
+ * supported hardware page. It was "run ipctool on the camera", which needs a
+ * UART or a way into the vendor's Linux: the step a newcomer could not take.
+ * ipctool is offered to reverse engineers there instead.
  *
  * The four WebUI screenshots are the first four in the manifest rather than a
  * chosen set. An earlier draft hardcoded four filenames; the gallery was
@@ -21,7 +16,6 @@
 import Icon from '../Icon.astro';
 import PageHeader from '../PageHeader.astro';
 import CtaBand from '../CtaBand.astro';
-import Terminal from '../Terminal.astro';
 import WebuiTile from '../WebuiTile.astro';
 import ZoomDialog from '../ZoomDialog.astro';
 import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
@@ -31,38 +25,24 @@ const { locale } = Astro.props as { locale: Locale };
 const t = useTranslations(locale);
 const k = (s: string) => t(`pages.get_started.${s}`);
 
-const IPCTOOL = 'curl -L -o /tmp/ipctool https://github.com/OpenIPC/ipctool/releases/download/latest/ipctool\n'
-  + 'chmod +x /tmp/ipctool && /tmp/ipctool';
 ---
 <PageHeader title={k('hero_title')} lede={k('hero_lede')} />
 
 <div class="site-container">
   <article>
     <div class="mb-12 grid gap-6 lg:grid-cols-3">
-      <div>
+      <div id="identify">
         <h2 class="mb-2 text-xl leading-6 font-semibold"><span class="mr-2 text-brand-blue">1</span>{k('step1_title')}</h2>
-        <p class="mb-4 text-body-secondary" set:html={k('step1_text_html')} />
-      </div>
-      {/*
-        min-w-0, or the page scrolls sideways on a phone. A grid item's
-        min-width is `auto`, which means "at least as wide as my content" --
-        and this item's content is a 96-character curl command. The <pre>
-        inside has `overflow-x: auto` and never gets to use it, because the
-        track it sits in has already been widened to fit the line: 815px of
-        page in a 390px viewport, with the whole document scrolling rather
-        than the code block.
-      */}
-      <div class="min-w-0 lg:order-last lg:col-span-3">
-        <Terminal id="ipctool-cmd" title="camera shell" code={IPCTOOL} />
+        <p class="mb-4 text-body-secondary">{k('step1_text')}</p>
+        <p class="mb-4">
+          <a class="site-btn site-btn-primary" href={pathFor(locale, '/supported-hardware/featured')}>
+            {k('cta_ways')}
+          </a>
+        </p>
       </div>
       <div>
         <h2 class="mb-2 text-xl leading-6 font-semibold"><span class="mr-2 text-brand-blue">2</span>{k('step2_title')}</h2>
         <p class="mb-4 text-body-secondary">{k('step2_text')}</p>
-        <p class="mb-4">
-          <a class="site-btn site-btn-primary" href={pathFor(locale, '/supported-hardware')}>
-            {k('cta_find_soc')}
-          </a>
-        </p>
       </div>
       <div>
         <h2 class="mb-2 text-xl leading-6 font-semibold"><span class="mr-2 text-brand-blue">3</span>{k('step3_title')}</h2>
@@ -111,8 +91,8 @@ const IPCTOOL = 'curl -L -o /tmp/ipctool https://github.com/OpenIPC/ipctool/rele
 
 <CtaBand
   title={k('hero_title')}
-  primaryLabel={k('cta_find_soc')}
-  primaryHref={pathFor(locale, '/supported-hardware')}
+  primaryLabel={k('cta_ways')}
+  primaryHref={pathFor(locale, '/supported-hardware/featured')}
 />
 
 <ZoomDialog />

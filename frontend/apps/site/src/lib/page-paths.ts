@@ -106,7 +106,6 @@ export const PAGE_PATHS: PagePath[] = [
   { path: '/our-team', titleKey: 'pages.our_team.title' },
   { path: '/privacy', titleKey: 'pages.privacy.title' },
   { path: '/reverse-engineering', titleKey: 'pages.reverse_engineering.title' },
-  { path: '/stages-of-firmware-development', titleKey: 'pages.stages_of_firmware_development.title' },
   { path: '/teleoperation', titleKey: 'pages.teleoperation.title' },
   { path: '/turnkey-hardware', titleKey: 'pages.turnkey_hardware.title' },
   { path: '/utilities', titleKey: 'pages.utilities.title' },

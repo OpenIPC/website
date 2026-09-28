@@ -63,7 +63,7 @@ zh:
       contrib3_title: 测试早期版本
       contrib4_text_html: 完善<a href="https://github.com/OpenIPC/wiki">维基</a>，校对网站文字，让它读起来像母语。
       contrib4_title: 撰写与翻译
-      contrib5_text_html: 停产的老板子对我们非常宝贵——标记为 NEQ 的平台等的正是这类硬件。<a href="/stages-of-firmware-development">了解各阶段的含义</a>。
+      contrib5_text_html: 停产的老板子对我们非常宝贵——标记为 NEQ 的平台等的正是这类硬件。<a href="/supported-hardware/full-list#stages">了解各阶段的含义</a>。
       contrib5_title: 捐赠退役硬件
       contrib6_text: 写一篇文章、录一段视频、展示你的作品。真实用户的真实故事，是我们永远买不到的最好宣传。
       contrib6_title: 帮我们传播
@@ -288,7 +288,7 @@ zh:
       section_lowlat_title: 低延迟与 URLLC
       section_tools_text: 为摄像机与媒体工程师提供的免费工具——即使你从不刷入我们的固件，它们同样有用。
       section_tools_title: 专业工具
-      stage_legend_html: 每个项目都带有诚实的状态标记——与我们用于固件平台的是同一套说法。<a href="/stages-of-firmware-development">各阶段是怎么划分的</a>。
+      stage_legend_html: 每个项目都带有诚实的状态标记——与我们用于固件平台的是同一套说法。<a href="/supported-hardware/full-list#stages">各阶段是怎么划分的</a>。
       title: 生态
     edge_ai:
       bring_driver_text: 为 HiSilicon 的视觉引擎和神经引擎从反汇编与内核跟踪中写出的洁净室内核驱动，与原厂驱动逐字节一致——在原厂测试卡死的地方更稳。厂商沉默不是障碍。
@@ -364,18 +364,18 @@ zh:
       unit_bytes: 字节
       unit_kb: KB
     get_started:
-      cta_find_soc: 查找你的 SoC
+      cta_ways: "查看四种方式"
       editions_text: Lite 版适配 8 MB 闪存，覆盖基本功能。Ultimate 版增加了云推流、隧道和更多编解码器等扩展功能，需要 16 MB 闪存。
       editions_title: 两个版本
       hero_lede: 从原厂固件到 OpenIPC，大约半小时——并附上为你的具体芯片生成的指南。
       hero_title: 给你的摄像机第二次生命。
-      step1_text_html: 在摄像机上运行 <a href="https://github.com/OpenIPC/ipctool">ipctool</a>（通过 telnet 或串口终端），确认 SoC、传感器和闪存芯片。查看标签或搜索 FCC ID 也可以作为备选办法。
-      step1_title: 确认你的硬件
-      step2_text: 在支持硬件列表中查找你的芯片。向导会直接在浏览器里为你的具体配置组装固件镜像并生成分步安装指南。
-      step2_title: 找到你的 SoC
+      step1_text: "购买预装 OpenIPC 的摄像机、通过网络升级，或者识别你手上的这台。四种方式，从最简单的开始，都不需要烙铁。"
+      step1_title: "获得一台能运行 OpenIPC 的摄像机"
+      step2_text: "知道主板或芯片后，它的页面会告诉你能否安装 OpenIPC。对于受支持的芯片，向导会直接在浏览器里为你的具体配置组装固件镜像并生成分步指南。买的是预装 OpenIPC 的？那就已经完成了。"
+      step2_title: "找到它的安装指南"
       step3_text: 按生成的指南操作。第一步就是完整备份原厂固件——不要跳过。
       step3_title: 先备份，再刷机
-      stuck_text_html: 社区每天都在回答问题。<a href="/community">到聊天群里提问</a>——请附上你的 SoC、传感器，以及启动日志（如果有）。
+      stuck_text_html: "社区每天都在回答问题。<a href=\"/community\">在聊天群里提问</a>——附上摄像机上的标签和主板正反两面的照片。"
       stuck_title: 卡住了？
       title: 快速上手
       wall_text_html: 在 Web 界面里打开一个开关，你的摄像机快照就会出现在我们的实时<a href="/open-wall">开放墙</a>上——来和社区打个招呼。

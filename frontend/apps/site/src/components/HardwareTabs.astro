@@ -1,7 +1,10 @@
 ---
 /**
- * The tab strip over the hardware pages: recommended, one tab per vendor, the
- * full list, and the board catalogue.
+ * The tab strip over the hardware pages: recommended, the board catalogue, one
+ * tab per vendor, and the full list. The board catalogue is second, and in
+ * the same weight as the recommended list, because it is the way in for a
+ * reader who knows their camera and not its chip. What the vendor badges
+ * count is said under the strip: a `title` is not read on a phone.
  *
  * The vendor badges count the SoCs with firmware as of the build, and are
  * corrected on load from /api/v1/hardware/availability.json: by
@@ -42,6 +45,13 @@ const installable = (v: Vendor) => v.socs.filter((s) => (states[s.urlname] ?? 'n
       aria-current={view === 'featured' ? 'page' : undefined}
     >{k('featured')}</a>
   </li>
+  <li>
+    <a
+      class="site-tab font-bold"
+      href={p('/cameras/boards')}
+      aria-current={view === 'boards' ? 'page' : undefined}
+    >{k('boards')}</a>
+  </li>
   {VENDORS.map((v) => (
     <li hidden={installable(v) === 0 && !(view === 'vendor' && v.urlname === vendorSlug)}>
       <a
@@ -66,14 +76,8 @@ const installable = (v: Vendor) => v.socs.filter((s) => (states[s.urlname] ?? 'n
       aria-current={view === 'full-list' ? 'page' : undefined}
     >{k('full_list')}</a>
   </li>
-  <li>
-    <a
-      class="site-tab site-tab-muted"
-      href={p('/cameras/boards')}
-      aria-current={view === 'boards' ? 'page' : undefined}
-    >{k('boards')}</a>
-  </li>
 </ul>
+<p class="mb-6 text-sm text-body-secondary">{k('badge_legend')}</p>
 
 {view === 'boards' && (
   <script

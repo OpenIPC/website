@@ -359,27 +359,6 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/our-team"/>
   </url>
   <url>
-    <loc>https://openipc.org/stages-of-firmware-development</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/stages-of-firmware-development"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/stages-of-firmware-development"/>
-    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/stages-of-firmware-development"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/stages-of-firmware-development"/>
-  </url>
-  <url>
-    <loc>https://openipc.org/ru/stages-of-firmware-development</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/stages-of-firmware-development"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/stages-of-firmware-development"/>
-    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/stages-of-firmware-development"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/stages-of-firmware-development"/>
-  </url>
-  <url>
-    <loc>https://openipc.org/zh/stages-of-firmware-development</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/stages-of-firmware-development"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/stages-of-firmware-development"/>
-    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/stages-of-firmware-development"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/stages-of-firmware-development"/>
-  </url>
-  <url>
     <loc>https://openipc.org/firmware-explorer</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/firmware-explorer"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/firmware-explorer"/>

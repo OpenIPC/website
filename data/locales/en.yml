@@ -11,18 +11,28 @@ en:
         paragraph2: Please refer to the detailed instructions available on our Wiki at
         subtitle: on an NVR with {soc_name} SoC and {flash_type} SPI flash chip
       index:
-        installable_title: "{count} of {total} can be installed"
-        nothing_installable_html: "None of the {total} {vendor} chips can be installed yet — there is no OpenIPC build for any of them. Each row below says why, and several are waiting on a donated board or a developer rather than on us."
+        badge_legend: "The number beside a chip maker counts its chips you can install today."
+        chip_installable_html: "{count} of the {total} chips we know of can take OpenIPC today. Find yours to see how."
+        chip_lede: "Find yours to see whether you can install OpenIPC on it, and how."
+        chip_title: "Already know the chip?"
         featured: Recommended
         full_list: Full list
-        recommended_alert_html: Please note. Support for different SoCs is at different stages of development. <a href="/supported-hardware/featured">This list</a> shows the most fully supported and, therefore, the most recommended ones.
-        stages_of_development: Stages of firmware development explained
+        installable_title: "{count} of {total} can be installed"
+        list_featured: "Recommended chips"
+        list_featured_intro: "The chips OpenIPC supports best. Chips at an earlier stage are on the full list."
+        list_full: "Every chip we know of"
+        list_vendor: "{vendor} chips"
+        nothing_installable_html: "None of the {total} {vendor} chips can be installed yet — there is no OpenIPC build for any of them. Each row below says why, and several are waiting on a donated board or a developer rather than on us."
+        stages_details: "What do the development stages mean?"
         th_baseaddr: Load address
-        th_docs: Installation
-        th_soc_model: SoC Model
+        th_docs: "Can I install it?"
+        th_soc_model: "Chip (SoC)"
         th_stage: Stage
-        th_status: Build status
-        title: Supported Hardware by SoC
+        title: "Supported Hardware"
+        verdict_firmware_only: "Experts only"
+        verdict_none: "Not yet"
+        verdict_wizard: "Guided install"
+        ways_link: "New to this? Four ways to get a camera running OpenIPC"
       show:
         export_unreachable: "The installation commands for this camera could not be loaded, so this page cannot show them right now. It is this site's fault, not your camera's — nothing has gone wrong with the hardware."
         export_unreachable_link: "Try again"
@@ -31,7 +41,7 @@ en:
         unavailable_hlp_html: "We have a {name} board and need someone to do the work. If you write C for embedded Linux, <a href=\"/community\">the chat</a> is where to start."
         unavailable_html: "There is no OpenIPC build for {name} yet."
         unavailable_mvp_html: "There is an early {name} build that does not yet do enough to publish. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>."
-        unavailable_neq_html: "We have the vendor SDK for {name} but no board to develop on, and that is the only thing in the way. If you have one to spare, say so in <a href=\"/community\">the chat</a> — a donated board is how most of the supported list got here. <a href=\"/donate\">A donation</a> buys one just as well. What happens once a board arrives is on the <a href=\"/stages-of-firmware-development\">development stages</a> page."
+        unavailable_neq_html: "We have the vendor SDK for {name} but no board to develop on, and that is the only thing in the way. If you have one to spare, say so in <a href=\"/community\">the chat</a> — a donated board is how most of the supported list got here. <a href=\"/donate\">A donation</a> buys one just as well. What happens once a board arrives is on the <a href=\"/supported-hardware/full-list#stages\">development stages</a> page."
         unavailable_rnd_html: "Work on {name} is at the research stage — we are reading the SDK and finding out what is possible. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>."
         unavailable_wip_html: "{name} is being worked on now. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>."
         bootloader: OpenIPC Bootloader
@@ -55,7 +65,7 @@ en:
         paragraph1: The installation of OpenIPC firmware on a SigmaStar module with NAND flash memory requires a specific procedure that is not included in this guide.
         paragraph2: Please refer to the detailed instructions available on our Wiki at
       soc:
-        firmware_only: "Firmware only — flash through the stock bootloader"
+        firmware_only: "Install by hand from the camera’s own bootloader"
         unavailable: "Not available yet"
         unavailable_hlp: "Not available — looking for a developer"
         unavailable_mvp: "Not available — early build"
@@ -218,7 +228,6 @@ en:
     qr_code_generator: QR Code Generator
     snapshot: 'Snapshot #{number}'
     snapshots: Latest Snapshots
-    stages: Development stages
     supported_hardware: Supported Hardware
     team: Our Team
     teleoperation: Teleoperation
