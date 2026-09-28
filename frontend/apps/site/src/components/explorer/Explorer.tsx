@@ -142,9 +142,12 @@ export default function Explorer({ locale }: { locale: Locale }) {
                 </select>
               </label>
               {variants.length > 0 && (
+                // Capped: a device name as long as `ultimate · rostelecom-ipc8232swc-we`
+                // would otherwise push Compare onto a second row; the heading below
+                // and each option's title carry the full name.
                 <label class="flex min-w-0 flex-col gap-1">
                   <span class={LABEL}>{t('variant_label')}</span>
-                  <select id="explorer-variant" class={SELECT} value={platform ?? ''}
+                  <select id="explorer-variant" class={`${SELECT} sm:max-w-[15rem]`} value={platform ?? ''}
                     onChange={(e) => chooseVariant((e.target as HTMLSelectElement).value)}>
                     {generic.map((v) => <option key={v.platform} value={v.platform} title={v.platform}>{v.label}</option>)}
                     {boards.length > 0 && (
