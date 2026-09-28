@@ -207,7 +207,7 @@ zh:
     fw_seller_why: "厂商的下载目录中没有此设备 ID 的固件。经销商 {origin} 发布了这一版本的固件，它不是雄迈的原厂固件。"
     fw_seller_ipeye: 该版本加入了 IPeye 云服务。
     fw_seller_page: "{origin} 上的页面"
-    fw_published: "发布于 {date}"
+    fw_updated: "经销商更新于 {date}"
     fw_no_coupler: "此设备暂无迁移到 OpenIPC 的镜像"
     fw_boards:
       one: "目录中有 {count} 块主板使用此设备 ID："

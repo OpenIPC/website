@@ -21,7 +21,7 @@ function day(iso: string | null, locale: string): string | null {
   return Number.isNaN(d.getTime()) ? null : new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' }).format(d);
 }
 
-function facts(f: VendorFirmware, locale: string, t: BoardsT, when: 'built' | 'archived' | 'published'): string {
+function facts(f: VendorFirmware, locale: string, t: BoardsT, when: 'built' | 'archived' | 'updated'): string {
   const d = day(f.published_at, locale);
   return [f.size ? formatBytes(f.size, locale) : null, d ? t(`fw_${when}`, { date: d }) : null,
     f.sha256 ? `sha256 ${f.sha256.slice(0, 8)}…` : null].filter(Boolean).join(' · ');
@@ -102,7 +102,7 @@ export default function Firmware({ device, heading, note, locale, t }: {
                 <span class="grid min-w-0 flex-1 gap-0.5">
                   <span class="font-mono text-[12.5px] break-all">{f.build}</span>
                   <span class="text-[12.5px] text-body-secondary">
-                    {facts(f, locale, t, 'published')}
+                    {facts(f, locale, t, 'updated')}
                     {f.origin_url && <> · <a href={f.origin_url} class="text-inherit underline">{t('fw_seller_page', { origin: f.origin ?? '' })} ↗</a></>}
                   </span>
                 </span>

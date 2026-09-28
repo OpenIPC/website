@@ -61,7 +61,6 @@
     "fw_no_boards": "目录中暂无已知使用此设备 ID 的主板。",
     "fw_no_coupler": "此设备暂无迁移到 OpenIPC 的镜像",
     "fw_none": "此设备 ID 暂无存档：既没有原厂固件，也没有迁移到 OpenIPC 的镜像。仍可通过 UART 安装 OpenIPC，见该 SoC 页面。",
-    "fw_published": "发布于 {date}",
     "fw_recovery": "恢复指南",
     "fw_runs": "已知使用此设备 ID：{what}",
     "fw_seller": "{origin} 自己的版本（非原厂）",
@@ -73,6 +72,7 @@
     "fw_stock_several": "厂商多次发布过此固件。如果某个版本有问题，可以回退到更早的版本。",
     "fw_stock_source": "雄迈固件，由 OpenIPC/xmupdates 镜像。",
     "fw_title": "固件",
+    "fw_updated": "经销商更新于 {date}",
     "fw_your_device": "您的设备 {id}",
     "group_other": "其他主板",
     "hits_boards": {
