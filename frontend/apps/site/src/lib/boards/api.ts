@@ -4,7 +4,7 @@
  * per page and shared by every island on it, and a failed fetch is forgotten
  * so a retry asks again.
  */
-import type { BoardsFile, ModelDetail, SearchResult } from './types';
+import type { BoardsFile, DeviceAnswer, ModelDetail, SearchResult } from './types';
 import type { Scope } from './url';
 
 async function json<T>(url: string, signal?: AbortSignal): Promise<T> {
@@ -42,6 +42,11 @@ export function searchBoards(q: string, scope: Scope, soc: string | null, signal
   const p = new URLSearchParams({ q, kind: scope });
   if (soc) p.set('soc', soc);
   return json<SearchResult>(`/api/v1/boards/search?${p.toString()}`, signal);
+}
+
+/** What a device ID read off a camera can be flashed with, and the boards known to run it. */
+export function fetchDevice(id: string): Promise<DeviceAnswer> {
+  return once<DeviceAnswer>(`/api/v1/vendor-firmware/${encodeURIComponent(id.toUpperCase())}`);
 }
 
 const texts = new Map<string, Promise<string>>();

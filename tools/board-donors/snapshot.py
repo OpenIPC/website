@@ -148,9 +148,13 @@ def cctvsp_model(r, files, builds, index):
         ext = ".pdf" if "pdf" in (d["type"] or "") else (".zip" if "zip" in (d["type"] or "") else ".bin")
         name, path = files.add(d["file"], ("firmware" if d["role"] == "firmware" else f"{code}-manual") + ext, used)
         fl.append({"kind": "firmware" if d["role"] == "firmware" else "document", "name": name, "path": path})
+    # The stock builds the shop lists start with the device ID the module
+    # reports ("000559A7.1 IPC_HI3516EV200_50H20AI_S38").
+    devices = sorted({m.group(1) for b in r["firmware_builds"] for m in [re.match(r"\s*([0-9A-Z]{8})\b", b.upper())] if m})
     return {"maker": r["maker"] or "unknown", "code": code, "category": "IP Camera Module" if r["code"] else "Accessory",
             "soc_label": soc, "sensor": sensor, "tags": r["tags"], "texts": texts, "original": ["ru"],
-            "translated_from": "ru", "specs": r["specs"], "links": links, "files": fl}
+            "translated_from": "ru", "specs": r["specs"], "links": links, "files": fl,
+            "device_ids": [{"id": d, "evidence": r.get("source_url") or ""} for d in devices]}
 
 
 def load_dictionary(path):

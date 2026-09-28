@@ -3,8 +3,10 @@ package boards
 import (
 	"context"
 	"encoding/json"
+	"github.com/OpenIPC/website/service/internal/vendorfw"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -483,5 +485,125 @@ func TestAPCBAndItsModulesLinkBothWays(t *testing.T) {
 	}
 	if n := count(t, pool, `SELECT count(*) FROM board_units WHERE source = 'tehno32'`); n != 2 {
 		t.Errorf("%d tehno32 units", n)
+	}
+}
+
+func TestACouplerImageMakesABoardOpenIPCReadyAndItsWithdrawalUndoesIt(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	snap := donor(t, "tehno32", model("xiongmai", "IPG-50H20PLS-S", map[string]any{
+		"device_ids": []map[string]string{{"id": "00002520", "evidence": "https://tehno32.ru/doc/product_xm/50h20pls-s"}}}))
+	if _, err := im.FromSnapshot(ctx, snap); err != nil {
+		t.Fatal(err)
+	}
+	push := func(source string, items ...vendorfw.Item) {
+		t.Helper()
+		if _, err := vendorfw.Save(ctx, pool, &vendorfw.Payload{Schema: 1, Source: source, Items: items}, "test"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	asset := func(source, name string) string { return vendorfw.Sources[source] + "latest/" + name }
+	board := func() *modelJSON {
+		t.Helper()
+		tree, err := Tree(ctx, pool, "en", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, m := range tree["manufacturers"].([]*makerJSON) {
+			for _, mo := range m.Models {
+				if mo.ID == "xiongmai-ipg-50h20pls-s" {
+					return mo
+				}
+			}
+		}
+		t.Fatal("board missing")
+		return nil
+	}
+	push("xmupdates", vendorfw.Item{Key: "1520", DeviceID: "00002520", Version: "00002520.1", Build: "IPC_HI3516C_50H20L", AssetURL: asset("xmupdates", "a.zip")})
+	if b := board(); slices.Contains(b.Tags, Ready) || len(b.Devices) != 1 || len(b.Devices[0].Stock) != 1 || b.Devices[0].Coupler != nil {
+		t.Fatalf("stock only: tags %v devices %+v", b.Tags, b.Devices)
+	}
+	push("coupler", vendorfw.Item{Key: "00002520_OpenIPC_50H20L.bin", DeviceID: "00002520", Version: "2026-09-26", Build: "50H20L", AssetURL: asset("coupler", "00002520_OpenIPC_50H20L.bin")})
+	if b := board(); !slices.Contains(b.Tags, Ready) || b.Devices[0].Coupler == nil {
+		t.Errorf("with a coupler image: tags %v", b.Tags)
+	}
+	// Withdrawing the last image, said explicitly, withdraws the status.
+	if _, err := vendorfw.Save(ctx, pool, &vendorfw.Payload{Schema: 1, Source: "coupler", Empty: true}, "test"); err != nil {
+		t.Fatal(err)
+	}
+	if b := board(); slices.Contains(b.Tags, Ready) {
+		t.Errorf("the image withdrawn, the board is still ready: %v", b.Tags)
+	}
+	// A coupler image named after the board is not evidence the board runs it.
+	push("coupler", vendorfw.Item{Key: "00007777_OpenIPC_IPG-50H20PLS-S.bin", DeviceID: "00007777", Version: "2026-09-27", Build: "IPG-50H20PLS-S", AssetURL: asset("coupler", "00007777_OpenIPC_IPG-50H20PLS-S.bin")})
+	if b := board(); slices.Contains(b.Tags, Ready) || len(b.Devices) != 1 {
+		t.Errorf("a coupler name made the board ready: %v %+v", b.Tags, b.Devices)
+	}
+	// The vendor named a device's firmware after the board: that links them,
+	// for as long as the pushed list says so.
+	push("xmupdates", vendorfw.Item{Key: "9", DeviceID: "00000107", Version: "00000107", Build: " ipg--50h20pls s\n", AssetURL: asset("xmupdates", "b.zip")})
+	if b := board(); len(b.Devices) != 2 || b.Devices[0].ID != "00000107" || len(b.Devices[0].Stock) != 1 {
+		t.Errorf("a firmware named after the board: %+v", b.Devices)
+	}
+}
+
+func TestALinkOnlyEntryAddsAndADroppedLinkGoes(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	dev := func(id string) []map[string]string { return []map[string]string{{"id": id, "evidence": "e"}} }
+	// The board's own listing, then a link-only entry printed differently that
+	// resolves to it: the listing's texts and links survive.
+	first := donor(t, "tehno32",
+		model("xiongmai", "IPG-53H20PL-S", map[string]any{"device_ids": dev("00002532"),
+			"links": []map[string]string{{"kind": "source_page", "label": "p", "url": "https://tehno32.ru/x"}}}),
+		model("xiongmai", "ipg 53h20pl s", map[string]any{"link_only": true, "device_ids": dev("00001532"), "texts": map[string]any{}}))
+	if _, err := im.FromSnapshot(ctx, first); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_model_texts WHERE model_id = 'xiongmai-ipg-53h20pl-s' AND source = 'tehno32'`); n == 0 {
+		t.Error("a link-only entry erased the listing's texts")
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_links WHERE model_id = 'xiongmai-ipg-53h20pl-s' AND source = 'tehno32' AND kind = 'source_page'`); n != 1 {
+		t.Errorf("%d links after a link-only entry, want the listing's 1", n)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_device_ids WHERE model_id = 'xiongmai-ipg-53h20pl-s'`); n != 2 {
+		t.Errorf("%d device links, want both", n)
+	}
+	// The next snapshot drops the link-only entry: its device link goes.
+	if _, err := im.FromSnapshot(ctx, donor(t, "tehno32", model("xiongmai", "IPG-53H20PL-S", map[string]any{"device_ids": dev("00002532")}))); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_device_ids WHERE device_id = '00001532'`); n != 0 {
+		t.Error("a device link the snapshot dropped is still there")
+	}
+}
+
+func TestALinkOnlyEntryNeverCreatesABoard(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "cctvsp", model("xiongmai", "IPG-53H20PL-S", nil))); err != nil {
+		t.Fatal(err)
+	}
+	before := count(t, pool, `SELECT count(*) FROM board_models`)
+	dev := func(id string) []map[string]string {
+		return []map[string]string{{"id": id, "evidence": "https://tehno32.ru/doc/product_xm/x"}}
+	}
+	n, err := im.FromSnapshot(ctx, donor(t, "tehno32",
+		model("xiongmai", "IPG-53H20PL-S", map[string]any{"link_only": true, "device_ids": dev("00002532")}),
+		model("xiongmai", "IPG-99X99-NOPE", map[string]any{"link_only": true, "device_ids": dev("00009999")})))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after := count(t, pool, `SELECT count(*) FROM board_models`); n != 0 || after != before {
+		t.Errorf("link-only entries created %d boards (%d -> %d)", n, before, after)
+	}
+	if c := count(t, pool, `SELECT count(*) FROM board_device_ids WHERE device_id = '00002532' AND source = 'tehno32'`); c != 1 {
+		t.Errorf("%d device links for the known board", c)
+	}
+	if c := count(t, pool, `SELECT count(*) FROM board_device_ids WHERE device_id = '00009999'`); c != 0 {
+		t.Errorf("a device linked to a board the catalogue lacks")
 	}
 }

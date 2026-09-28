@@ -100,6 +100,16 @@
     "path": "/api/v1/boards/models/{id}"
   },
   {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/vendor-firmware"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/vendor-firmware/{deviceId}"
+  },
+  {
     "role": "firmware",
     "method": "GET",
     "path": "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"

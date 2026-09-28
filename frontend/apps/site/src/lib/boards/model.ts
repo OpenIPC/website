@@ -83,6 +83,23 @@ export function filterBoards(all: Entry[], s: Filters): Entry[] {
     && (!s.ready || m.tags.includes(READY)));
 }
 
+/**
+ * An XM device ID as a visitor types it off their camera's System version
+ * (V5.00.R02.000559A7.10010...): eight letters and digits, mostly digits
+ * (000559A7, 000929ZR, C2106510). A word (mtdparts) or a hex literal
+ * (0x820000) is something else to search for.
+ */
+export function deviceIdOf(q: string): string | null {
+  const s = q.trim().toUpperCase();
+  if (!/^[0-9A-Z]{8}$/.test(s) || s.startsWith('0X')) return null;
+  return (s.match(/[0-9]/g) ?? []).length >= 4 ? s : null;
+}
+
+/** The device IDs of a board that coupler has an image for: why it is OpenIPC-ready. */
+export function couplerDevices(m: Pick<Model, 'devices'>): string[] {
+  return (m.devices ?? []).filter((d) => d.coupler).map((d) => d.id);
+}
+
 /** A code with its separators squeezed out: "n81820" is in "JZC-N81820S". */
 const squeeze = (s: string): string => s.toLowerCase().replace(/[-_ /.()（）]/g, '');
 
@@ -97,7 +114,7 @@ export function matchBoards(all: Entry[], q: string): Entry[] {
   const whole = squeeze(q);
   const found: { m: Entry; rank: number }[] = [];
   for (const m of all) {
-    const codes = [m.model, ...(m.aliases ?? [])].filter((c): c is string => !!c);
+    const codes = [m.model, ...(m.aliases ?? []), ...(m.devices ?? []).map((d) => d.id)].filter((c): c is string => !!c);
     const fields = [...codes, m.summary?.name, m.summary?.lead, m.soc, m.soc_label, m.category, m.family,
       ...m.units.map((u) => u.sensor), ...sensorsOf(m)]
       .filter((f): f is string => !!f);

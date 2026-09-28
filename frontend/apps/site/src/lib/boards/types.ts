@@ -70,6 +70,8 @@ export interface Model {
   tags: string[];
   /** The other codes sources print for this board. */
   aliases?: string[];
+  /** The XM device IDs the board runs, with what each can be flashed with. */
+  devices?: VendorDevice[];
   /** The year the maker's own catalogue first showed the board, where a source dates it. */
   listed_year?: number | null;
   summary: Summary | null;
@@ -136,6 +138,7 @@ export interface ModelDetail {
   tags: string[];
   about: About[];
   links: BoardLink[];
+  devices?: VendorDevice[];
 }
 
 export type TextKind = 'uboot_env' | 'boot_log' | 'note';
@@ -162,4 +165,33 @@ export interface SearchResult {
   soc: string;
   truncated: boolean;
   hits: Hit[];
+}
+
+/** A firmware file OpenIPC's own projects publish (xmupdates, coupler). */
+export interface VendorFirmware {
+  key: string;
+  version: string;
+  build: string;
+  url: string;
+  sha256: string | null;
+  size: number | null;
+  published_at: string | null;
+  soc?: string | null;
+}
+
+/**
+ * What an XM device ID can be flashed with: every stock build the vendor
+ * published, newest first (OpenIPC/xmupdates), and the image that moves it
+ * to OpenIPC (OpenIPC/coupler).
+ */
+export interface VendorDevice {
+  id: string;
+  stock: VendorFirmware[];
+  coupler: VendorFirmware | null;
+}
+
+/** GET /api/v1/vendor-firmware/{deviceId}. */
+export interface DeviceAnswer {
+  device: VendorDevice;
+  boards: { id: string; model: string | null }[];
 }

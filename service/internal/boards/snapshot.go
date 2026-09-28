@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/OpenIPC/website/service/internal/vendorfw"
 	"io"
 	"io/fs"
 	"os"
@@ -25,16 +26,20 @@ import (
 // manifest.json and the files it names, tarred. The tar's sha256 is pinned
 // in Snapshots, so what reaches the catalogue is exactly what was reviewed.
 //
+// errSkip leaves a link-only entry out: the board it names is not in the catalogue.
+var errSkip = errors.New("names no catalogue board")
+
 // Snapshots are kept in the backup bucket under boards-donors/<source>/;
 // the capture they were made from sits beside them.
 var Snapshots = map[string]string{
-	// boards-donors/cctvsp/snapshot-1a8c5b9e28d9.tar: 57 modules, translated from Russian; pinouts reviewed by eye.
-	"cctvsp": "1a8c5b9e28d9e696f5539f06388bf7e4ceb3711ed118a8f3928188d9bf6a766f",
+	// boards-donors/cctvsp/snapshot-70c2bc568d61.tar: 57 modules, translated from Russian; pinouts reviewed by eye; device IDs.
+	"cctvsp": "70c2bc568d61318ac1435adc2fb5b2ed70a66f2300ff5744504f3ed8295eedad",
 	// boards-donors/xiongmai/snapshot-dd6963582f41.tar: 684 models from the EN and ZH trees, each picture once, dated; ZH-only pages translated.
 	"xiongmai": "dd6963582f41e1db50fc7151348d22ae5429a0f30957a79737e3740e9040ba2b",
-	// boards-donors/tehno32/snapshot-3d66f98135f2.tar: Xiongmai's board documents from
-	// tehno32.ru's archive, on 542 modules and 71 PCBs, with 651 pinout pages.
-	"tehno32": "3d66f98135f21bbd98414b1fea44af4488c82c20b304cdb34b98cb2b895a5635",
+	// boards-donors/tehno32/snapshot-f7137bd8a94d.tar: Xiongmai's board documents from
+	// tehno32.ru's archive, on 541 modules and 71 PCBs, with 650 pinout pages,
+	// and the device IDs its firmware pages name.
+	"tehno32": "f7137bd8a94dc3f7776f868e67cf5fa063dbbb4ce7d638ca00cbc382ec15a651",
 }
 
 type Snapshot struct {
@@ -70,6 +75,19 @@ type SnapModel struct {
 	// ListedYear is the year the maker's own catalogue first showed the
 	// board, where the source dates it; 0 when it does not.
 	ListedYear int `json:"listed_year,omitempty"`
+	// DeviceIDs are the XM device IDs the source says the board runs, each
+	// with the page that says so.
+	DeviceIDs []SnapDevice `json:"device_ids,omitempty"`
+	// LinkOnly adds what the entry carries to a board the catalogue has, and
+	// never creates one: a source that names a board only in passing (a
+	// firmware page's "download firmware for IPG-50H20PLS-S") is evidence
+	// about it, not a listing of it.
+	LinkOnly bool `json:"link_only,omitempty"`
+}
+
+type SnapDevice struct {
+	ID       string `json:"id"`
+	Evidence string `json:"evidence"`
 }
 
 type SnapLink struct {
@@ -241,6 +259,11 @@ func (im *Importer) FromSnapshot(ctx context.Context, fsys fs.FS) (int, error) {
 			src, s.Source.Name, s.Source.URL, s.Source.Note, s.Source.Ref); err != nil {
 			return err
 		}
+		// The source's device IDs are what this snapshot says, whole: a link
+		// a later snapshot drops, or one whose board no longer resolves, goes.
+		if _, err := tx.Exec(ctx, `DELETE FROM board_device_ids WHERE source = $1`, src); err != nil {
+			return err
+		}
 		ids := map[int]string{}
 		for i, m := range s.Models {
 			id, isNew, err := im.saveModel(ctx, tx, fsys, src, i, m, dec)
@@ -362,6 +385,11 @@ func (im *Importer) socFor(label string) string {
 }
 
 func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src string, position int, m SnapModel, dec map[[2]string]string) (string, bool, error) {
+	if m.LinkOnly {
+		// Device IDs are all a link-only entry adds; anything else it carries
+		// is not the source's say about the board.
+		m = SnapModel{Maker: m.Maker, Code: m.Code, DeviceIDs: m.DeviceIDs, LinkOnly: true}
+	}
 	norm := NormCode(m.Code)
 	if !codeShape.MatchString(norm) {
 		return "", false, fmt.Errorf("code %q does not normalise to a code", m.Code)
@@ -406,6 +434,9 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 				id = found
 			}
 		}
+		if id == "" && m.LinkOnly {
+			return errSkip
+		}
 		if id == "" {
 			isNew = true
 			id = slug(m.Maker + "-" + m.Code)
@@ -442,9 +473,14 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 			}
 		}
 		// This source's say about the model replaces what it said last time.
-		for _, t := range []string{"board_model_texts", "board_model_specs", "board_model_tags", "board_links"} {
-			if _, err := tx.Exec(ctx, `DELETE FROM `+t+` WHERE model_id = $1 AND source = $2`, id, src); err != nil {
-				return err
+		// A listing is the source's whole say about the board and replaces it.
+		// A link-only entry adds device IDs to a board and replaces nothing:
+		// the board's rows from this source may come from its own listing.
+		if !m.LinkOnly {
+			for _, t := range []string{"board_model_texts", "board_model_specs", "board_model_tags", "board_links"} {
+				if _, err := tx.Exec(ctx, `DELETE FROM `+t+` WHERE model_id = $1 AND source = $2`, id, src); err != nil {
+					return err
+				}
 			}
 		}
 		original := map[string]bool{}
@@ -471,6 +507,16 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 				}
 			}
 		}
+		for _, d := range m.DeviceIDs {
+			dev := vendorfw.DeviceID(d.ID)
+			if dev == "" {
+				return fmt.Errorf("device id %q is not an 8-character XM device ID", d.ID)
+			}
+			if _, err := tx.Exec(ctx, `INSERT INTO board_device_ids (model_id, device_id, source, evidence) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+				id, dev, src, null(d.Evidence)); err != nil {
+				return err
+			}
+		}
 		for _, tag := range m.Tags {
 			if _, err := tx.Exec(ctx, `INSERT INTO board_model_tags (model_id, source, tag) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`, id, src, tag); err != nil {
 				return err
@@ -484,6 +530,10 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 		}
 		return nil
 	})
+	if errors.Is(err, errSkip) {
+		im.Log.Info("boards: link-only entry names no catalogue board, skipped", "source", src, "code", m.Code)
+		return "", false, nil
+	}
 	if err == nil && have {
 		// The snapshot is the source's say about its unit: a corrected
 		// sensor replaces the old one, with or without files to refresh.

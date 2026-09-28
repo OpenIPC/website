@@ -32,11 +32,15 @@ type Claims struct {
 	RunAttempt      string `json:"run_attempt"`
 }
 
-// Who may push which source: the repository and the workflow file, on master.
+// Who may push which source: the repository and workflow file, on the branch
+// that repository publishes from (master for firmware and builder; main for
+// xmupdates and coupler, vendorfw/PUSH.md).
 var pushers = map[string][]string{
-	"firmware": {"OpenIPC/firmware/.github/workflows/build.yml"},
-	"builder":  {"OpenIPC/builder/.github/workflows/master.yml"},
-	"uboot":    {"OpenIPC/firmware/.github/workflows/uboot.yml"},
+	"firmware":  {"OpenIPC/firmware/.github/workflows/build.yml@refs/heads/master"},
+	"builder":   {"OpenIPC/builder/.github/workflows/master.yml@refs/heads/master"},
+	"uboot":     {"OpenIPC/firmware/.github/workflows/uboot.yml@refs/heads/master"},
+	"xmupdates": {"OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
+	"coupler":   {"OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main"},
 }
 
 // Verifier checks a bearer token end to end. Keys come from the issuer's
@@ -88,7 +92,7 @@ func (v *Verifier) Verify(ctx context.Context, raw string) (*Claims, error) {
 // Allows says whether these claims may push this source.
 func (c *Claims) Allows(source string) error {
 	for _, wf := range pushers[source] {
-		if c.JobWorkflowRef == wf+"@refs/heads/master" && strings.HasPrefix(wf, c.Repository+"/") {
+		if c.JobWorkflowRef == wf && strings.HasPrefix(wf, c.Repository+"/") {
 			return nil
 		}
 	}
