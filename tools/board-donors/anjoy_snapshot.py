@@ -283,7 +283,7 @@ def spec_sheet(text):
     elif "注：" in title:
         title, note = title.split("注：", 1)
         title, lead = title.strip(), ["注：" + note.strip()]
-    return title, lead + features, rows
+    return title, lead, features, rows
 
 
 CJK = "\u3000-\u303f\u4e00-\u9fff\uff00-\uffef"
@@ -360,7 +360,7 @@ def main():
         sheet = spec_sheet(e.get("text", ""))
         if sheet:
             e["sheet"] = sheet
-            model = dict(sheet[2]).get("型号") or dict(sheet[2]).get("产品型号", "")
+            model = dict(sheet[3]).get("型号") or dict(sheet[3]).get("产品型号", "")
             for c in re.split(r"[/、,，\s]+", model):
                 if norm(c) and CODE.match(norm(c)) and re.search(r"\d", c):
                     known.setdefault(key(norm(c)), norm(c))
@@ -408,7 +408,7 @@ def main():
         # The Chinese sheet, the newest first, speaks for the module (the
         # archive keeps older ones, and English versions of some).
         sheets.sort(key=lambda e: ("【中文】" in e["name"], datetime.strptime(e["listed"], "%d-%b-%Y %H:%M")), reverse=True)
-        title, features, rows = sheets[0]["sheet"] if sheets else ("", [], [])
+        title, lead, features, rows = sheets[0]["sheet"] if sheets else ("", [], [], [])
         spec = dict(rows)
         used, fl, pinouts, year = set(), [], [], None
         for e in keep:
@@ -454,13 +454,16 @@ def main():
 
         haystack = " ".join([title] + [e["name"] for e in es] + [e["folder"] for e in es])
         line = "Network video recorder" if group["nvr"] else next((l for rx, l in LINES if rx.search(haystack)), DEFAULT_LINE)
-        texts = {"zh": {k: v for k, v in (("name", title), ("description", "\n".join(features))) if v}}
+        # An intro or a note is the description (paragraphs); the feature list
+        # is the features (one per line), as the panel shows them.
+        texts = {"zh": {k: v for k, v in (("name", title), ("description", "\n\n".join(lead)),
+                                          ("features", "\n".join(features))) if v}}
         specs = {"zh": rows} if rows else {}
         for lang in ("en", "ru"):
-            t = {k: tr(v, lang) for k, v in texts["zh"].items()}
-            if texts["zh"].get("description"):
-                done = [tr(x, lang) for x in features]
-                t["description"] = "\n".join(done) if all(done) else None
+            t = {"name": tr(title, lang) if title else None}
+            for field, parts, sep in (("description", lead, "\n\n"), ("features", features, "\n")):
+                done = [tr(x, lang) for x in parts]
+                t[field] = sep.join(done) if parts and all(done) else None
             t = {k: v for k, v in t.items() if v}
             if t:
                 texts[lang] = t
