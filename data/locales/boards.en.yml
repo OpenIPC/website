@@ -224,8 +224,23 @@ en:
       one: finished device
       other: finished devices
     successor_xiongmai: "Xiongmai's product line continues under the JFTech brand: the same module codes and firmware from the same download servers. What Xiongmai listed up to 2023 comes from its archived catalogue at xiongmaitech.com; the current line comes from"
-    board_inside: "Board inside:"
-    board_inside_why: "(it runs the same firmware, the same device ID)"
+    inside_title: "What's inside"
+    inside_likely: Most likely
+    inside_confirmed: "✓ Confirmed by an owner"
+    inside_why_firmware_page: "The vendor's firmware page for this device names the board:"
+    inside_why_firmware_build: "The vendor's firmware for this device is built for this board's module:"
+    inside_why_device_id: "It runs the same firmware as this board: device ID {id}."
+    inside_why_owner: "An owner opened one and sent a photo of the board:"
+    inside_unconfirmed: Not yet confirmed by an owner.
+    inside_not_listed: "Not in the catalogue yet: no photos or pinout."
+    inside_ask: "Bought one? Open it and"
+    inside_ask_link: send us a photo of the board
+    inside_ask_after: The code printed on the board settles it for everyone buying the next one.
+    inside_issue_title: "What's inside {device}"
+    inside_issue_body: "Device: {device} ({id})\n\nThe code printed on the board inside:\n\nPhotos of the board, both sides (drag them here):\n\n"
+    found_in_title: Found in
+    card_inside_likely: "Most likely inside:"
+    card_inside_confirmed: "Inside:"
     source_note_jftech: "JFTech's product catalogue: Xiongmai's product line under its current brand, with the same module codes and firmware from the same download servers (captured 2026)."
     link_stock_firmware: Stock firmware
     link_successor: Replaced by

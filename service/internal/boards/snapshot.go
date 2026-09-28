@@ -40,9 +40,10 @@ var Snapshots = map[string]string{
 	// tehno32.ru's archive, on 541 modules and 71 PCBs, with 650 pinout pages,
 	// and the device IDs its firmware pages name.
 	"tehno32": "f7137bd8a94dc3f7776f868e67cf5fa063dbbb4ce7d638ca00cbc382ec15a651",
-	// boards-donors/jftech/snapshot-ecb792772e81.tar: JFTech's catalogue (Xiongmai's
-	// current brand), 198 products: 132 boards and 66 finished devices.
-	"jftech": "ecb792772e818d49995d4f4432a5d10c0d5da42a4b14b19f2d77bedb0b726b7d",
+	// boards-donors/jftech/snapshot-96378d036c16.tar: JFTech's catalogue (Xiongmai's
+	// current brand), 198 products: 132 boards and 66 finished devices, 39 of
+	// them with the board their firmware page names or is built for.
+	"jftech": "96378d036c160261e0cc90bd441254722beb34b22925a71967438310c39b05aa",
 }
 
 type Snapshot struct {
@@ -89,6 +90,22 @@ type SnapModel struct {
 	// Kind is what the entry is: a board (the default) or a finished device
 	// (camera, recorder, doorbell, base_station).
 	Kind string `json:"kind,omitempty"`
+	// Contents are the boards a finished device most likely holds, with the
+	// vendor page that says so (migration 010). A snapshot's say is always
+	// "likely"; only an owner's photo (contents.yml) confirms.
+	Contents []SnapContent `json:"contents,omitempty"`
+}
+
+// SnapContent is one board a finished device is built on.
+type SnapContent struct {
+	// Code is the board as the evidence names it.
+	Code string `json:"code"`
+	// Basis is firmware_page (the page names the board) or firmware_build
+	// (the firmware is built for the board's module).
+	Basis    string `json:"basis"`
+	Evidence string `json:"evidence"`
+	// Label is what the evidence shows, quoted: the firmware file's name.
+	Label string `json:"label"`
 }
 
 type SnapDevice struct {
@@ -270,6 +287,10 @@ func (im *Importer) FromSnapshot(ctx context.Context, fsys fs.FS) (int, error) {
 		if _, err := tx.Exec(ctx, `DELETE FROM board_device_ids WHERE source = $1`, src); err != nil {
 			return err
 		}
+		// So are what it says finished devices hold.
+		if _, err := tx.Exec(ctx, `DELETE FROM board_contents WHERE source = $1`, src); err != nil {
+			return err
+		}
 		ids := map[int]string{}
 		for i, m := range s.Models {
 			id, isNew, err := im.saveModel(ctx, tx, fsys, src, i, m, dec)
@@ -279,6 +300,14 @@ func (im *Importer) FromSnapshot(ctx context.Context, fsys fs.FS) (int, error) {
 			ids[i] = id
 			if isNew {
 				created++
+			}
+		}
+		for i, m := range s.Models {
+			if ids[i] == "" || m.LinkOnly {
+				continue
+			}
+			if err := saveContents(ctx, tx, src, ids[i], m.Contents); err != nil {
+				return fmt.Errorf("%s %s: %w", m.Maker, m.Code, err)
 			}
 		}
 		// Links to other models resolve once every model of the snapshot exists.

@@ -14,8 +14,8 @@ import type { BoardLink, LinkKind, ModelDetail, Source } from '../../lib/boards/
 import { fetchModel } from '../../lib/boards/api';
 import Firmware from './Firmware';
 import {
-  HEADING_CLASS, boardsInside, couplerDevices, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, subtitle, unitFiles, unitPhotos,
-  type CodeIndex, type Entry, type Heading,
+  HEADING_CLASS, couplerDevices, foundIn, frontPhoto, insideOf, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, subtitle, unitFiles, unitPhotos,
+  type CodeIndex, type Entry, type Heading, type Inside,
 } from '../../lib/boards/model';
 import type { BoardsT } from '../../lib/boards-i18n';
 import type { Locale } from '../../lib/i18n';
@@ -89,7 +89,8 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
   const missing = entry ? firstMissing(entry) : null;
   const devices = entry?.devices ?? (detail.state === 'ok' ? detail.value.devices ?? [] : []);
   const ready = couplerDevices({ devices });
-  const inside = entry ? boardsInside(entry, all) : [];
+  const inside = entry ? insideOf(entry, all) : [];
+  const holders = entry ? foundIn(entry, all) : [];
   const notFound = detail.state === 'error' && detail.error === 'HTTP 404';
 
   return (
@@ -161,17 +162,25 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
           </section>
         ))}
 
-        {inside.length > 0 && (
-          <p class="m-0 rounded-md bg-surface-alt px-3 py-2 text-sm">
-            <b>{t('board_inside')}</b>{' '}
-            {inside.map((b, i) => (
-              <Fragment key={b.id}>
-                {i > 0 && ', '}
-                <a href={href(b.id)} onClick={follow(b.id)} class="font-mono">{b.model}</a>
-              </Fragment>
-            ))}{' '}
-            <span class="text-body-secondary">{t('board_inside_why')}</span>
-          </p>
+        {inside.length > 0 && entry && (
+          <InsideBlock rows={inside} device={entry} title={title} href={href} follow={follow} t={t} />
+        )}
+
+        {holders.length > 0 && (
+          <section aria-labelledby="board-panel-found" class="grid gap-2 rounded-md bg-surface-alt px-3 py-2.5 text-sm">
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 id="board-panel-found" class="m-0 text-sm font-semibold">{t('found_in_title')}</h3>
+            </div>
+            <ul class="m-0 grid gap-1 pl-5">
+              {holders.map(({ device, status }) => (
+                <li key={device.id}>
+                  <a href={href(device.id)} onClick={follow(device.id)} class="font-mono">{printedCode(device.model) ?? device.id}</a>
+                  {subtitle(device) && <span class="text-body-secondary">: {subtitle(device)}</span>}{' '}
+                  <Status status={status} t={t} />
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
         {devices.length > 0 && (
@@ -287,4 +296,67 @@ function LinkItem({ link, href, follow, t, sourceName }: {
     );
   }
   return <span class="font-mono">{link.label}{by}</span>;
+}
+
+function Status({ status, t }: { status: Inside['status']; t: BoardsT }) {
+  return status === 'confirmed'
+    ? <span class="whitespace-nowrap rounded px-1.5 py-px text-xs font-semibold bg-[#e3f5ec] text-[#146c3c]">{t('inside_confirmed')}</span>
+    : <span class="whitespace-nowrap rounded px-1.5 py-px text-xs font-semibold bg-[#fdf1e3] text-[#8a4b00]">{t('inside_likely')}</span>;
+}
+
+/**
+ * What a finished device holds: each board with its photo and why the
+ * catalogue says so, marked most likely until an owner's photo confirms it,
+ * and, until then, how to send that photo.
+ */
+function InsideBlock({ rows, device, title, href, follow, t }: {
+  rows: Inside[]; device: Entry; title: string; href: (model: string | null) => string;
+  follow: (target: string) => (e: MouseEvent) => void; t: BoardsT;
+}) {
+  const confirmed = rows[0].status === 'confirmed';
+  return (
+    <section aria-labelledby="board-panel-inside" class="grid gap-2 rounded-md bg-surface-alt px-3 py-2.5 text-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 id="board-panel-inside" class="m-0 text-sm font-semibold">{t('inside_title')}</h3>
+        <Status status={rows[0].status} t={t} />
+      </div>
+      {rows.map((r) => {
+        const photo = r.board ? frontPhoto(r.board) : null;
+        const meta = r.board
+          ? [r.board.soc_label, r.board.coverage.pinouts > 0 ? t('cov_pinout') : null, ...(r.board.devices ?? []).map((d) => d.id)].filter(Boolean).join(' · ')
+          : t('inside_not_listed');
+        const card = (
+          <>
+            {photo && <img src={photo.thumb_url ?? photo.url} alt="" loading="lazy" class="h-[66px] w-[88px] rounded bg-white object-contain" />}
+            <div class="min-w-0">
+              <div class="font-mono text-[15px] font-semibold">{r.code}{r.board && ' →'}</div>
+              <div class="text-[13px] text-body-secondary">{meta}</div>
+            </div>
+          </>
+        );
+        const box = `grid ${photo ? 'grid-cols-[88px_1fr]' : 'grid-cols-1'} items-center gap-3 rounded-md border border-hairline bg-white p-2 text-inherit no-underline`;
+        return (
+          <div key={r.board?.id ?? r.code} class="grid gap-1.5">
+            {r.board
+              ? <a href={href(r.board.id)} onClick={follow(r.board.id)} class={`${box} hover:border-brand-blue`}>{card}</a>
+              : <div class={box}>{card}</div>}
+            <p class="m-0 text-[13px] text-body-secondary">
+              {r.basis === 'device_id'
+                ? t('inside_why_device_id', { id: r.label ?? '' })
+                : <>{t(`inside_why_${r.basis}`)} <a href={r.evidence ?? undefined} class="break-all font-mono">{r.label ?? r.evidence}</a></>}
+              {!confirmed && <> {t('inside_unconfirmed')}</>}
+            </p>
+          </div>
+        );
+      })}
+      {!confirmed && (
+        <p class="m-0 border-t border-dashed border-hairline pt-2 text-[13px]">
+          {t('inside_ask')} <a class="font-semibold" href={`${ISSUE}?${new URLSearchParams({
+            title: t('inside_issue_title', { device: title }),
+            body: t('inside_issue_body', { device: `${device.maker.name} ${title}`, id: device.id }),
+          }).toString()}`}>{t('inside_ask_link')} ↗</a>. {t('inside_ask_after')}
+        </p>
+      )}
+    </section>
+  );
 }

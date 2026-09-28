@@ -228,8 +228,23 @@ zh:
       one: 台整机
       other: 台整机
     successor_xiongmai: "雄迈的产品线以 JFTech（杰峰）品牌延续：相同的模组型号，固件来自相同的下载服务器。雄迈 2023 年以前发布的产品来自 xiongmaitech.com 的归档目录，当前产品线来自"
-    board_inside: "内置主板："
-    board_inside_why: "（相同的固件、相同的设备 ID）"
+    inside_title: 内部主板
+    inside_likely: 很可能
+    inside_confirmed: "✓ 已由用户确认"
+    inside_why_firmware_page: "厂商为此设备提供的固件页面写明了主板："
+    inside_why_firmware_build: "厂商为此设备提供的固件是为此主板的模组编译的："
+    inside_why_device_id: "它与此主板运行相同的固件：设备 ID {id}。"
+    inside_why_owner: "有用户拆开设备并发来了主板照片："
+    inside_unconfirmed: 尚未由用户确认。
+    inside_not_listed: "目录中暂无此主板：没有照片或引脚图。"
+    inside_ask: "买了这款设备？拆开后"
+    inside_ask_link: 把主板照片发给我们
+    inside_ask_after: 主板上印的型号能帮到之后购买的每一个人。
+    inside_issue_title: "{device} 内部是什么主板"
+    inside_issue_body: "设备：{device}（{id}）\n\n内部主板上印的型号：\n\n主板正反两面的照片（拖到这里）：\n\n"
+    found_in_title: 用于以下设备
+    card_inside_likely: "很可能内置："
+    card_inside_confirmed: "内置："
     source_note_jftech: "JFTech 的产品目录：雄迈产品线的当前品牌，模组型号相同，固件来自相同的下载服务器（2026 年存档）。"
     link_stock_firmware: 原厂固件
     link_successor: 后继型号

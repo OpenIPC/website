@@ -5,7 +5,7 @@
  * a description that link to other boards. Pure functions, so they are
  * tested without a browser.
  */
-import type { BoardFile, BoardsFile, Hit, Manufacturer, Model } from './types';
+import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model } from './types';
 import type { BoardsState, Missing } from './url';
 
 /** A board model with the manufacturer it is filed under. */
@@ -140,17 +140,64 @@ export function kindOf(m: Pick<Model, 'kind'>): string {
   return m.kind || 'board';
 }
 
+/** One board a finished device holds, and why the catalogue says so. */
+export interface Inside {
+  code: string;
+  /** The catalogue's card for the board, when it has one. */
+  board: Entry | null;
+  status: Content['status'];
+  /** As Content, plus device_id: a board that runs the device's own firmware. */
+  basis: Content['basis'] | 'device_id';
+  evidence: string | null;
+  /** The firmware file's name, or the shared device ID. */
+  label: string | null;
+}
+
+const byIdCache = new WeakMap<Entry[], Map<string, Entry>>();
+function byId(all: Entry[]): Map<string, Entry> {
+  let m = byIdCache.get(all);
+  if (!m) byIdCache.set(all, m = new Map(all.map((e) => [e.id, e])));
+  return m;
+}
+
 /**
- * The boards a finished device is built on, as far as the evidence goes: a
- * board running the same firmware -- the same XM device ID -- as the device.
- * NVR8016SY-SKL runs device C6380233, whose firmware is the NBD80S16S-KL
- * board's.
+ * The boards a finished device is built on. An owner's photo settles it:
+ * once one is confirmed, only confirmed boards are shown. Until then, the
+ * boards the vendor's firmware names, and any board running the same XM
+ * device ID -- each "most likely".
  */
-export function boardsInside(m: Entry, all: Entry[]): Entry[] {
+export function insideOf(m: Entry, all: Entry[]): Inside[] {
   if (kindOf(m) === 'board') return [];
-  const ids = new Set((m.devices ?? []).map((d) => d.id));
-  if (ids.size === 0) return [];
-  return all.filter((b) => b.id !== m.id && kindOf(b) === 'board' && (b.devices ?? []).some((d) => ids.has(d.id)));
+  const index = byId(all);
+  const rows: Inside[] = (m.contents ?? []).map((c) => ({
+    code: c.code, board: c.board_id ? index.get(c.board_id) ?? null : null,
+    status: c.status, basis: c.basis, evidence: c.evidence, label: c.label,
+  }));
+  const confirmed = rows.filter((r) => r.status === 'confirmed');
+  const out = confirmed.length > 0 ? confirmed : rows;
+  if (confirmed.length === 0) {
+    const ids = new Set((m.devices ?? []).map((d) => d.id));
+    for (const b of ids.size > 0 ? all : []) {
+      const shared = b.id !== m.id && kindOf(b) === 'board' ? (b.devices ?? []).find((d) => ids.has(d.id)) : undefined;
+      if (shared) out.push({ code: printedCode(b.model) ?? b.id, board: b, status: 'likely', basis: 'device_id', evidence: null, label: shared.id });
+    }
+  }
+  const seen = new Set<string>();
+  return out.filter((r) => {
+    const key = r.board?.id ?? r.code;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** The finished devices a board is found in, each with how sure that is. */
+export function foundIn(b: Entry, all: Entry[]): { device: Entry; status: Content['status'] }[] {
+  if (kindOf(b) !== 'board') return [];
+  return all.flatMap((d) => {
+    const hit = kindOf(d) === 'board' ? undefined : insideOf(d, all).find((r) => r.board?.id === b.id);
+    return hit ? [{ device: d, status: hit.status }] : [];
+  });
 }
 
 /**

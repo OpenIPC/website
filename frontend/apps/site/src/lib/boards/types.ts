@@ -74,6 +74,8 @@ export interface Model {
   kind?: string;
   /** The XM device IDs the board runs, with what each can be flashed with. */
   devices?: VendorDevice[];
+  /** A finished device's boards: confirmed by an owner, or most likely from the vendor's firmware. */
+  contents?: Content[];
   /** The year the maker's own catalogue first showed the board, where a source dates it. */
   listed_year?: number | null;
   summary: Summary | null;
@@ -186,6 +188,21 @@ export interface VendorFirmware {
  * published, newest first (OpenIPC/xmupdates), and the image that moves it
  * to OpenIPC (OpenIPC/coupler).
  */
+/** One board a finished device holds, as the tree gives it. */
+export interface Content {
+  /** The board as the evidence names it. */
+  code: string;
+  /** The catalogue's board of that code; null until it lists one. */
+  board_id: string | null;
+  status: 'likely' | 'confirmed';
+  /** firmware_page: the vendor's page names the board; firmware_build: the firmware is built for its module; owner: a photo. */
+  basis: 'firmware_page' | 'firmware_build' | 'owner';
+  evidence: string;
+  /** What the evidence shows: the firmware file's name. */
+  label: string | null;
+  source: string;
+}
+
 export interface VendorDevice {
   id: string;
   stock: VendorFirmware[];

@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
 import type { BoardFile, BoardsFile, Hit, Model } from './types';
 import {
   lineLabel,
-  boardsInside, cardFiles, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
+  cardFiles, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, paragraphs, sensorKey, sensorOptions, slug,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
@@ -194,9 +194,42 @@ describe('finished devices', () => {
 
   test('a finished device names the board that runs its firmware; a board names none', () => {
     const [nbd, nvr, cam] = list;
-    expect(boardsInside(nvr, list).map((m) => m.id)).toEqual(['nbd']);
-    expect(boardsInside(cam, list)).toEqual([]);
-    expect(boardsInside(nbd, list)).toEqual([]);
+    expect(insideOf(nvr, list).map((r) => [r.board?.id, r.status, r.basis, r.label])).toEqual([['nbd', 'likely', 'device_id', 'C6380233']]);
+    expect(insideOf(cam, list)).toEqual([]);
+    expect(insideOf(nbd, list)).toEqual([]);
+    expect(foundIn(nbd, list).map((f) => [f.device.id, f.status])).toEqual([['nvr', 'likely']]);
+    expect(foundIn(nvr, list)).toEqual([]);
+  });
+
+  test("the vendor's firmware makes a board most likely inside; an owner's photo settles it", () => {
+    const page = 'https://download.jftech.com/d/MDAwMDE1OTM=';
+    const likely = (code: string, board_id: string | null) =>
+      ({ code, board_id, status: 'likely' as const, basis: 'firmware_build' as const, evidence: page, label: 'J91659N7.1IPC_GK7205V200_G4F_S38', source: 'jftech' });
+    const g4f = model('g4f', { model: 'IVG-G4F', devices: [{ id: '000659N7', stock: [], coupler: null }] });
+    const other = model('g4h', { model: 'IVG-G4H' });
+    const cam = model('cam', { model: 'IPC-HX8340PGF-IR2R-PAT', kind: 'camera', devices: [{ id: 'J91659N7', stock: [], coupler: null }],
+      contents: [likely('IVG-G4F', 'g4f'), likely('AHB80N04R-GS-V3', null)] });
+    const two = entries({ ...FILE, manufacturers: [{ id: 'xiongmai', name: 'Xiongmai', aliases: [], website: null, models: [g4f, other, cam] }] });
+    const [b, , c] = two;
+    expect(insideOf(c, two).map((r) => [r.code, r.board?.id ?? null, r.status])).toEqual([
+      ['IVG-G4F', 'g4f', 'likely'], ['AHB80N04R-GS-V3', null, 'likely']]);
+    expect(foundIn(b, two).map((f) => f.device.id)).toEqual(['cam']);
+
+    // A confirmed board, even a different one, replaces every likely one.
+    const confirmed = { ...likely('IVG-G4H', 'g4h'), status: 'confirmed' as const, basis: 'owner' as const, source: 'owners' };
+    const settled = entries({ ...FILE, manufacturers: [{ id: 'xiongmai', name: 'Xiongmai', aliases: [], website: null,
+      models: [g4f, other, { ...cam, contents: [confirmed, likely('IVG-G4F', 'g4f')] }] }] });
+    expect(insideOf(settled[2], settled).map((r) => [r.code, r.status])).toEqual([['IVG-G4H', 'confirmed']]);
+    expect(foundIn(settled[0], settled)).toEqual([]);
+    expect(foundIn(settled[1], settled).map((f) => [f.device.id, f.status])).toEqual([['cam', 'confirmed']]);
+  });
+
+  test('a board named by the firmware and sharing the device ID is listed once', () => {
+    const nbd = model('nbd', { model: 'NBD80S16S-KL', devices: [{ id: 'C6380233', stock: [], coupler: null }] });
+    const nvr = model('nvr', { model: 'NVR8016SY-SKL', kind: 'recorder', devices: [{ id: 'C6380233', stock: [], coupler: null }],
+      contents: [{ code: 'NBD80S16S-KL', board_id: 'nbd', status: 'likely', basis: 'firmware_page', evidence: 'https://download.jftech.com/d/x', label: 'C6380233（NBD80S16S-KL）', source: 'jftech' }] });
+    const l = entries({ ...FILE, manufacturers: [{ id: 'xiongmai', name: 'Xiongmai', aliases: [], website: null, models: [nbd, nvr] }] });
+    expect(insideOf(l[1], l).map((r) => r.basis)).toEqual(['firmware_page']);
   });
 });
 
