@@ -1,62 +1,64 @@
-// Package variants turns an uploaded original into the four JPEGs the wall
-// serves, without a queue broker.
+// Package variants publishes an uploaded frame as the wall will serve it,
+// without a queue broker -- and without re-encoding it.
 //
 // The filesystem and the table are the queue. An upload writes its original to
-// wall/<public_id>/original and inserts a row with variants_generated_at NULL;
-// the handler answers 201 and hands the id to a bounded pool here. When the four
-// files are on disk the row is marked and the original unlinked. A restart
-// loses the in-memory channel and nothing else: Recover re-enqueues every row
-// still marked pending.
+// wall/<public_id>/original (and, from a camera that sends one, its
+// substream's keyframe to thumb-original) and inserts a row with
+// variants_generated_at NULL; the handler answers 201 and hands the id to a
+// bounded pool here. When the published files are on disk the row is marked
+// and the originals unlinked. A restart loses the in-memory channel and
+// nothing else: Recover re-enqueues every row still marked pending.
 //
-// The pipeline: `vips thumbnail` with --size down, a sharpen mask through
-// `vips conv`, then jpegsave with Q and strip. The output is pinned byte for
-// byte on the service image's libvips (#295), so a libvips upgrade is a
-// change to what the wall looks like.
+// Nothing a camera sends is re-encoded; the wall keeps it as it came:
+//   - HEIF, what OpenIPC cameras send: the file is checked (keyframe.Parse,
+//     then keyframe.Check decodes it once) and published byte for byte as
+//     main.heif. Its substream keyframe, when there is one, becomes
+//     thumb.heif on the same terms, and the grid shows that rather than
+//     having every visitor's browser scale the main picture down.
+//   - JPEG, from cameras that cannot be updated: its metadata segments are
+//     dropped without touching a pixel (keyframe.StripJPEG) and it is
+//     published as main.jpg.
+//   - Anything else, or a HEIF that is not one decodable keyframe: refused.
+//     The row and its files are removed; the camera was already answered 201,
+//     which is the frozen contract, and simply has no frame on the wall.
+//
+// "Variant" survives as the word the grants and the socket use for the size a
+// page asks for; wallsocket.Resolve maps it onto these files.
 package variants
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
+
+	"github.com/OpenIPC/website/service/internal/keyframe"
 )
-
-// Variant is one of the four sizes.
-type Variant struct {
-	Name          string
-	Width, Height int
-	Quality       int
-}
-
-// All is WallImage::VARIANTS with the definitions Snapshot#file carried.
-var All = []Variant{
-	{"icon", 90, 60, 80},
-	{"icon2", 240, 135, 80},
-	{"thumb", 480, 360, 80},
-	{"fullhd", 1920, 1080, 85},
-}
-
-// sharpenMask is ImageProcessing::Vips::SHARPEN_MASK as a vips matrix file:
-// width height scale offset, then rows.
-const sharpenMask = "3 3 24 0\n-1 -1 -1\n-1 32 -1\n-1 -1 -1\n"
 
 // Wall is the tree the frame socket reads frames from.
 type Wall struct{ Root string }
 
 func (w Wall) Dir(id string) string            { return filepath.Join(w.Root, id) }
-func (w Wall) Path(id, variant string) string  { return filepath.Join(w.Root, id, variant+".jpg") }
 func (w Wall) Original(id string) string       { return filepath.Join(w.Root, id, "original") }
+func (w Wall) ThumbOriginal(id string) string  { return filepath.Join(w.Root, id, "thumb-original") }
 func (w Wall) Purge(id string) error           { return os.RemoveAll(w.Dir(id)) }
 func (w Wall) HasOriginal(id string) bool      { _, err := os.Stat(w.Original(id)); return err == nil }
 func (w Wall) mkdir(id string) (string, error) { d := w.Dir(id); return d, os.MkdirAll(d, 0o755) }
+
+// The published files. wallsocket reads these names.
+const (
+	MainHEIF  = "main.heif"
+	MainJPEG  = "main.jpg"
+	ThumbHEIF = "thumb.heif"
+)
 
 // WriteOriginal stores an upload before its row exists, atomically.
 func (w Wall) WriteOriginal(id string, data []byte) error {
@@ -65,6 +67,19 @@ func (w Wall) WriteOriginal(id string, data []byte) error {
 		return err
 	}
 	return writeAtomically(dir, "original", func(f *os.File) error {
+		_, err := f.Write(data)
+		return err
+	})
+}
+
+// WriteThumb stores the substream keyframe an upload carried beside its
+// original. Written before the row exists, like the original.
+func (w Wall) WriteThumb(id string, data []byte) error {
+	dir, err := w.mkdir(id)
+	if err != nil {
+		return err
+	}
+	return writeAtomically(dir, "thumb-original", func(f *os.File) error {
 		_, err := f.Write(data)
 		return err
 	})
@@ -99,6 +114,7 @@ func writeAtomically(dir, name string, fill func(*os.File) error) error {
 // Store is what the worker needs from the table.
 type Store interface {
 	Exists(ctx context.Context, publicID string) (bool, error)
+	Delete(ctx context.Context, publicID string) error
 	MarkGenerated(ctx context.Context, publicID string, width, height int) (bool, error)
 	Pending(ctx context.Context) ([]string, error)
 	Generated(ctx context.Context) ([]string, error)
@@ -106,29 +122,19 @@ type Store interface {
 
 // Processor is the pool.
 type Processor struct {
-	Wall       Wall
-	Store      Store
-	Log        *slog.Logger
-	Vips       string
-	VipsHeader string
-	Workers    int
+	Wall    Wall
+	Store   Store
+	Log     *slog.Logger
+	FFmpeg  string // decodes each keyframe once before it is published
+	Workers int
 
-	queue   chan string
-	queued  sync.Map
-	wg      sync.WaitGroup
-	maskDir string
+	queue  chan string
+	queued sync.Map
+	wg     sync.WaitGroup
 }
 
 // Start runs the workers until ctx is done.
 func (p *Processor) Start(ctx context.Context) error {
-	dir, err := os.MkdirTemp("", "openipc-variants-")
-	if err != nil {
-		return err
-	}
-	p.maskDir = dir
-	if err := os.WriteFile(filepath.Join(dir, "sharpen.mat"), []byte(sharpenMask), 0o644); err != nil {
-		return err
-	}
 	if p.Workers < 1 {
 		p.Workers = 1
 	}
@@ -154,9 +160,6 @@ func (p *Processor) Start(ctx context.Context) error {
 // Wait blocks until the workers have stopped.
 func (p *Processor) Wait() {
 	p.wg.Wait()
-	if p.maskDir != "" {
-		os.RemoveAll(p.maskDir)
-	}
 }
 
 // Enqueue hands an id to the pool. A full channel drops it, which costs
@@ -202,8 +205,10 @@ func (p *Processor) Recover(ctx context.Context) (int, error) {
 }
 
 func (p *Processor) removeOriginal(id string) {
-	if err := os.Remove(p.Wall.Original(id)); err != nil && !os.IsNotExist(err) {
-		p.Log.Warn("variants: original not removed; the sweep will retry", "public_id", id, "err", err)
+	for _, path := range []string{p.Wall.Original(id), p.Wall.ThumbOriginal(id)} {
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			p.Log.Warn("variants: original not removed; the sweep will retry", "public_id", id, "err", err)
+		}
 	}
 }
 
@@ -220,6 +225,19 @@ func (p *Processor) process(ctx context.Context, id string) {
 		return
 	}
 	width, height, err := p.Generate(ctx, id)
+	var refused ErrRefused
+	if errors.As(err, &refused) {
+		// Not a frame the wall can show. Row first: a row whose files are gone
+		// is a blank tile, files whose row is gone are an orphan the purge
+		// removes.
+		if err := p.Store.Delete(ctx, id); err != nil {
+			p.Log.Error("variants: could not remove a refused frame", "public_id", id, "err", err)
+			return
+		}
+		_ = p.Wall.Purge(id)
+		p.Log.Warn("variants: refused", "public_id", id, "reason", refused.Reason)
+		return
+	}
 	if err != nil {
 		p.Log.Error("variants: failed", "public_id", id, "err", err)
 		return
@@ -237,79 +255,77 @@ func (p *Processor) process(ctx context.Context, id string) {
 	p.Log.Info("variants: generated", "public_id", id, "ms", time.Since(start).Milliseconds())
 }
 
-// Generate writes the four variants for id from its original, and returns the
-// original's dimensions.
+// ErrRefused is an upload the wall will not publish, as opposed to a failure
+// worth retrying.
+type ErrRefused struct{ Reason string }
+
+func (e ErrRefused) Error() string { return "refused: " + e.Reason }
+
+// Generate publishes id's original as-is and returns the picture's size.
 func (p *Processor) Generate(ctx context.Context, id string) (int, int, error) {
-	original := p.Wall.Original(id)
-	width, height, err := p.dimensions(ctx, original)
+	data, err := os.ReadFile(p.Wall.Original(id))
 	if err != nil {
 		return 0, 0, err
 	}
-	work, err := os.MkdirTemp("", "openipc-variant-"+id+"-")
-	if err != nil {
-		return 0, 0, err
-	}
-	defer os.RemoveAll(work)
 	dir := p.Wall.Dir(id)
-	for _, v := range All {
-		thumb := filepath.Join(work, v.Name+".thumb.v")
-		sharp := filepath.Join(work, v.Name+".sharp.v")
-		out := filepath.Join(work, v.Name+".jpg")
-		steps := [][]string{
-			{"thumbnail", original, thumb, strconv.Itoa(v.Width), "--height", strconv.Itoa(v.Height), "--size", "down"},
-			{"conv", thumb, sharp, filepath.Join(p.maskDir, "sharpen.mat"), "--precision", "integer"},
-			{"jpegsave", sharp, out, "--Q", strconv.Itoa(v.Quality), "--strip"},
-		}
-		for _, args := range steps {
-			if err := p.run(ctx, p.Vips, args...); err != nil {
-				return 0, 0, fmt.Errorf("%s: %w", v.Name, err)
-			}
-		}
-		err := writeAtomically(dir, v.Name+".jpg", func(f *os.File) error {
-			data, err := os.ReadFile(out)
-			if err != nil {
-				return err
-			}
-			_, err = f.Write(data)
-			return err
-		})
+	switch {
+	case len(data) >= 12 && string(data[4:8]) == "ftyp":
+		f, err := p.keyframe(ctx, data)
 		if err != nil {
 			return 0, 0, err
 		}
-	}
-	return width, height, nil
-}
-
-func (p *Processor) dimensions(ctx context.Context, path string) (int, int, error) {
-	var dims [2]int
-	for i, field := range []string{"width", "height"} {
-		out, err := p.output(ctx, p.VipsHeader, "-f", field, path)
-		if err != nil {
+		if err := publish(dir, MainHEIF, data); err != nil {
 			return 0, 0, err
 		}
-		n, err := strconv.Atoi(strings.TrimSpace(out))
+		p.thumb(ctx, id)
+		return f.Width, f.Height, nil
+	case bytes.HasPrefix(data, []byte{0xFF, 0xD8, 0xFF}):
+		// REMOVE AFTER 2027-06, with keyframe.StripJPEG.
+		out, w, h, err := keyframe.StripJPEG(data)
 		if err != nil {
-			return 0, 0, fmt.Errorf("vipsheader %s: %q", field, out)
+			return 0, 0, ErrRefused{err.Error()}
 		}
-		dims[i] = n
+		return w, h, publish(dir, MainJPEG, out)
 	}
-	return dims[0], dims[1], nil
+	return 0, 0, ErrRefused{"neither a HEIF keyframe nor a JPEG"}
 }
 
-func (p *Processor) run(ctx context.Context, bin string, args ...string) error {
-	_, err := p.output(ctx, bin, args...)
-	return err
-}
-
-func (p *Processor) output(ctx context.Context, bin string, args ...string) (string, error) {
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, bin, args...)
-	var stderr strings.Builder
-	cmd.Stderr = &stderr
-	out, err := cmd.Output()
+// keyframe parses and decodes a HEIF. A file that is not one keyframe, or
+// that the decoder rejects, is refused; a decoder that could not be run at all
+// is a failure to retry, not a verdict on the frame.
+func (p *Processor) keyframe(ctx context.Context, data []byte) (*keyframe.Frame, error) {
+	f, err := keyframe.Parse(data)
 	if err != nil {
-		return "", fmt.Errorf("%s %s: %w: %s", bin, strings.Join(args, " "), err, strings.TrimSpace(stderr.String()))
+		return nil, ErrRefused{err.Error()}
 	}
-	return string(out), nil
+	if err := keyframe.Check(ctx, p.FFmpeg, f); err != nil {
+		if errors.Is(err, exec.ErrNotFound) || ctx.Err() != nil {
+			return nil, err
+		}
+		return nil, ErrRefused{err.Error()}
+	}
+	return f, nil
+}
+
+// thumb publishes the substream keyframe if the upload carried a good one.
+// A bad one costs the frame nothing: the grid falls back to the main picture.
+func (p *Processor) thumb(ctx context.Context, id string) {
+	data, err := os.ReadFile(p.Wall.ThumbOriginal(id))
+	if err != nil {
+		return
+	}
+	if _, err := p.keyframe(ctx, data); err != nil {
+		p.Log.Warn("variants: substream keyframe not published", "public_id", id, "err", err)
+		return
+	}
+	if err := publish(p.Wall.Dir(id), ThumbHEIF, data); err != nil {
+		p.Log.Warn("variants: substream keyframe not published", "public_id", id, "err", err)
+	}
+}
+
+func publish(dir, name string, data []byte) error {
+	return writeAtomically(dir, name, func(f *os.File) error {
+		_, err := f.Write(data)
+		return err
+	})
 }

@@ -17,6 +17,7 @@ import {
   FALLBACK_AFTER, MAX_PER_REQUEST, ORIGIN, RECONNECT_DELAYS, SOCKET_URL, STALE_AFTER,
   fallbackSocketUrl, keyFor, requestFrames, requestFramesOrFallBack, socketUrl, unmask,
 } from './wall-frames';
+import type { WallFrame } from './wall-decode';
 
 class FakeSocket {
   static all: FakeSocket[] = [];
@@ -88,8 +89,8 @@ describe('the protocol', () => {
   });
 
   it('unmasks a frame with the key the hello carried', () => {
-    const frames: Array<[string, string, Uint8Array]> = [];
-    requestFrames({ ...options, requests: [], onFrame: (id, variant, bytes) => frames.push([id, variant, bytes]) });
+    const frames: Array<[string, string, WallFrame]> = [];
+    requestFrames({ ...options, requests: [], onFrame: (id, variant, frame) => frames.push([id, variant, frame]) });
     const [socket] = FakeSocket.all;
     const cid = 'fedcba9876543210';
     socket.hello(cid);
@@ -100,7 +101,33 @@ describe('the protocol', () => {
 
     expect(frames).toHaveLength(1);
     expect(frames[0][0]).toBe('aaa');
-    expect(Array.from(frames[0][2])).toEqual(Array.from(original));
+    expect(Array.from(frames[0][2].data)).toEqual(Array.from(original));
+    // A frame that names no codec is a legacy JPEG.
+    expect(frames[0][2].codec).toBe('jpeg');
+  });
+
+  it('carries the codec, the size and the configuration record, which is not masked', () => {
+    const frames: WallFrame[] = [];
+    requestFrames({ ...options, requests: [], onFrame: (_id, _variant, frame) => frames.push(frame) });
+    const [socket] = FakeSocket.all;
+    const cid = 'fedcba9876543210';
+    socket.hello(cid);
+
+    const record = Uint8Array.from([1, 0x4d, 0, 0x33, 0xff, 0xe1]);
+    const au = Uint8Array.from({ length: 300 }, (_, i) => i % 7);
+    socket.receive({
+      type: 'frame', id: 'aaa', variant: 'fullhd', codec: 'avc1.4D0033', width: 3840, height: 2160,
+      description: btoa(String.fromCharCode(...record)),
+      frame: btoa(String.fromCharCode(...unmask(au, keyFor(cid)))),
+    });
+    socket.receive({ type: 'frame', id: 'bbb', variant: 'fullhd', codec: 'hvc1.1.6.L153.B0', range: 'full', frame: '' + btoa('x') });
+
+    expect(frames[0].codec).toBe('avc1.4D0033');
+    expect([frames[0].width, frames[0].height]).toEqual([3840, 2160]);
+    expect(Array.from(frames[0].description!)).toEqual(Array.from(record));
+    expect(Array.from(frames[0].data)).toEqual(Array.from(au));
+    expect(frames[0].fullRange).toBe(false);
+    expect(frames[1].fullRange).toBe(true);
   });
 
   it('reports an error the server sends', () => {

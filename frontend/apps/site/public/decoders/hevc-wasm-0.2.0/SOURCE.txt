@@ -1,0 +1,11 @@
+de265.js and de265.wasm are OpenIPC/hevc-wasm v0.2.0, unmodified:
+  https://github.com/OpenIPC/hevc-wasm/tree/v0.2.0/dist
+
+The wrapper is MIT. de265.wasm is built from libde265, which is LGPL
+(COPYING.libde265, beside this file). The build script and the exact
+libde265 revision it compiles are published at the same tag, so the
+library can be rebuilt and replaced:
+  https://github.com/OpenIPC/hevc-wasm/tree/v0.2.0
+
+The Open Wall loads these only for an H.265 frame this browser cannot decode
+with WebCodecs (frontend/apps/site/src/lib/wall-decode.ts).

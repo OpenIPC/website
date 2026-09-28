@@ -23,7 +23,8 @@ import {
 import { dataUrl, localised, wallAddress, type WallView } from '../../lib/wall-route';
 import { useWallTranslations } from '../../lib/wall-i18n';
 import { type Locale } from '../../lib/i18n';
-import type { FrameVariant } from '../../lib/wall-sizes';
+import { boxFor, type FrameVariant } from '../../lib/wall-sizes';
+import { paintFrame } from '../../lib/wall-decode';
 import Frame from './Frame';
 
 interface Card {
@@ -153,9 +154,9 @@ export default function Wall({ locale, placeholder }: Props) {
         stop = requestFramesOrFallBack({
           grant: payload.grant!,
           requests: framesWanted(here.route!, payload),
-          onFrame: async (id, variant, bytes) => {
+          onFrame: async (id, variant, frame) => {
             const key = `${id}:${variant}`;
-            if (await paint(canvases.current.get(key), bytes) && live) {
+            if (await paintFrame(canvases.current.get(key), frame, boxFor(variant)) && live) {
               setPainted((seen) => new Set(seen).add(key));
             }
           },
@@ -455,21 +456,4 @@ function Slideshow({ data, t, p, register }: {
 function At({ at }: { at: number }) {
   const when = new Date(at * 1000);
   return <time dateTime={when.toISOString()}>{when.toLocaleString()}</time>;
-}
-
-async function paint(canvas: HTMLCanvasElement | undefined, bytes: Uint8Array): Promise<boolean> {
-  if (!canvas) return false;
-
-  let bitmap: ImageBitmap;
-  try {
-    bitmap = await createImageBitmap(new Blob([bytes as BlobPart], { type: 'image/jpeg' }));
-  } catch {
-    return false;
-  }
-
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  canvas.getContext('2d')?.drawImage(bitmap, 0, 0);
-  bitmap.close?.();
-  return true;
 }
