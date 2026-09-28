@@ -40,6 +40,9 @@ var Snapshots = map[string]string{
 	// tehno32.ru's archive, on 541 modules and 71 PCBs, with 650 pinout pages,
 	// and the device IDs its firmware pages name.
 	"tehno32": "f7137bd8a94dc3f7776f868e67cf5fa063dbbb4ce7d638ca00cbc382ec15a651",
+	// boards-donors/jftech/snapshot-62cbd60edccd.tar: JFTech's catalogue (Xiongmai's
+	// current brand), 198 products: 132 boards and 66 finished devices.
+	"jftech": "62cbd60edccdc380d0ac8d38bafdcc78f96a2310dafc142552573e2d1aec30c0",
 }
 
 type Snapshot struct {
