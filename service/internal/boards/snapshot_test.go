@@ -780,3 +780,29 @@ func TestTheOwnersSourceIsListedOnlyWhileItConfirmsSomething(t *testing.T) {
 		t.Error("a confirmation waiting for its device lists the owners as a source")
 	}
 }
+
+func TestAnAnjoyModuleImportsUnderItsMakerWithChineseAsTheOriginal(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "anjoy",
+		model("anjoy", "MC-J31H", map[string]any{"category": "IP camera module", "soc_label": "SSC38X", "sensor": "",
+			"texts":    map[string]map[string]string{"zh": {"name": "500万 臻全彩模组"}, "en": {"name": "5MP full-colour module"}},
+			"original": []string{"zh"}, "translated_from": "zh"}),
+		model("anjoy", "MN3236B", map[string]any{"kind": "recorder", "category": "Network video recorder"}))); err != nil {
+		t.Fatal(err)
+	}
+	var maker, name, kind string
+	if err := pool.QueryRow(ctx, `SELECT m.manufacturer_id, f.name, m.kind FROM board_models m JOIN board_manufacturers f ON f.id = m.manufacturer_id WHERE m.id = 'anjoy-mc-j31h'`).Scan(&maker, &name, &kind); err != nil {
+		t.Fatal(err)
+	}
+	if maker != "anjoy" || name != "Anjoy Vision" || kind != "board" {
+		t.Errorf("MC-J31H: maker %q %q, kind %q", maker, name, kind)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE id = 'anjoy-mn3236b' AND kind = 'recorder'`); n != 1 {
+		t.Error("the NVR is not a recorder")
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_model_texts WHERE model_id = 'anjoy-mc-j31h' AND source = 'anjoy' AND locale = 'en' AND translated_from = 'zh'`); n != 1 {
+		t.Error("the English text is not marked as translated from Chinese")
+	}
+}

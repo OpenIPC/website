@@ -180,6 +180,7 @@ ru:
       coaxial-video-recorder: "Коаксиальные видеорегистраторы"
       wi-fi-base-station: "Базовые станции Wi-Fi"
       smart-video-doorbell: "Видеозвонки"
+      ptz-camera-module: "Модули поворотных камер"
     show_all:
       one: 'Показать все {count} плату'
       few: 'Показать все {count} платы'
@@ -279,6 +280,7 @@ ru:
     card_inside_likely: "Скорее всего внутри:"
     card_inside_confirmed: "Внутри:"
     source_note_jftech: "Каталог продукции JFTech: линейка Xiongmai под её текущим брендом, с теми же кодами модулей и прошивками с тех же серверов загрузки (сохранён в 2026 году)."
+    source_note_anjoy: "Архив документов Anjoy Vision (anjvision.com:8021/pdf): спецификации, схемы подключения и фото плат модулей камер от самого производителя, на китайском, сохранён в 2026 году."
     link_stock_firmware: Заводская прошивка
     link_successor: Заменён на
     link_predecessor: Заменяет
