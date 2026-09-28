@@ -32,7 +32,8 @@ const STATE_BAR: Record<HeadroomState, string> = {
 
 const kib = (n: number) => fmtNum(n);
 
-export default function Summary({ sizes, t }: { sizes: Sizes; t: ExplorerT }) {
+/** `title` names what the reader picked (`gk7205v300 · lite · xg521`); the report itself knows only board and variant. */
+export default function Summary({ sizes, title, t }: { sizes: Sizes; title?: string; t: ExplorerT }) {
   const segs = flashSegments(sizes);
   const total = (sizes.flash_mb ?? 0) * 1024;
 
@@ -40,7 +41,7 @@ export default function Summary({ sizes, t }: { sizes: Sizes; t: ExplorerT }) {
     <section class="grid items-start gap-7 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
       <div class="min-w-0">
         <div class="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-          <strong class="text-[22px] font-semibold">{sizes.board}{sizes.variant ? ` · ${sizes.variant}` : ''}</strong>
+          <strong class="text-[22px] font-semibold">{title ?? `${sizes.board}${sizes.variant ? ` · ${sizes.variant}` : ''}`}</strong>
           <span class="text-sm text-body-secondary">
             {sizes.flash_mb ? t('flash_layout', { mb: sizes.flash_mb }) : ''}
             {sizes.flash_mb && sizes.kernel_version ? ' · ' : ''}

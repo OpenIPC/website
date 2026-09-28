@@ -11,6 +11,7 @@ import type { ExplorerT } from '../../lib/explorer-i18n';
 import { NUM, TABLE, TD, TH, TableBox } from './Tables';
 
 interface Props {
+  /** Where the comparison build's report is fetched from. */
   source: Source;
   builds: Build[];
   base: Sizes;

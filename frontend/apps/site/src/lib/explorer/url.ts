@@ -1,11 +1,13 @@
-import type { Source } from "./types";
-
 export const TABS = ["composition", "packages", "modules", "removed", "drift", "trends", "whatif"] as const;
 export type Tab = (typeof TABS)[number];
 
-/** Everything a shared link carries. */
+/**
+ * Everything a shared link carries. The source is not among it: a platform's
+ * name says which one it came from, so links from before the SoC-first
+ * selectors (`?source=builder&plat=…`) open the same view with `source` ignored.
+ */
 export type ViewState = {
-  source: Source;
+  soc: string | null;
   buildId: string | null;
   platform: string | null;
   /** The Drift tab's comparison build; null means the newest other build. */
@@ -16,10 +18,9 @@ export type ViewState = {
 
 export function readQueryString(search: string): ViewState {
   const p = new URLSearchParams(search);
-  const source: Source = p.get("source") === "builder" ? "builder" : "firmware";
   const tab = p.get("tab");
   return {
-    source,
+    soc: p.get("soc")?.toLowerCase() || null,
     buildId: p.get("build"),
     platform: p.get("plat"),
     compareBuildId: p.get("compare"),
@@ -30,11 +31,12 @@ export function readQueryString(search: string): ViewState {
 
 export function writeQueryString(state: ViewState): string {
   const p = new URLSearchParams();
-  p.set("source", state.source);
-  if (state.buildId) p.set("build", state.buildId);
+  if (state.soc) p.set("soc", state.soc);
   if (state.platform) p.set("plat", state.platform);
+  if (state.buildId) p.set("build", state.buildId);
   if (state.compareBuildId) p.set("compare", state.compareBuildId);
   if (state.tab !== "composition") p.set("tab", state.tab);
   if (state.helpOpen) p.set("help", "1");
-  return "?" + p.toString();
+  const q = p.toString();
+  return q ? "?" + q : "";
 }

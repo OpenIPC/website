@@ -41,68 +41,42 @@ describe("categorise", () => {
 // ---------------------------------------------------------------------------
 
 describe("url query (de)serialisation", () => {
-  it("defaults to firmware when source unset", () => {
-    expect(readQueryString("").source).toBe("firmware");
-  });
-
-  it("accepts builder source", () => {
-    expect(readQueryString("?source=builder").source).toBe("builder");
-  });
-
-  it("rejects unknown source by falling back to firmware", () => {
-    expect(readQueryString("?source=garbage").source).toBe("firmware");
-  });
+  const base = { soc: null, buildId: null, platform: null, compareBuildId: null, helpOpen: false, tab: "composition" as const };
 
   it("round-trips full state", () => {
-    const state = {
-      source: "builder" as const,
-      buildId: "nightly-20260604-679c2c7",
-      platform: "gk7205v210_lite_tiandy-tc-c32qn",
-      compareBuildId: null,
-      helpOpen: false,
-      tab: "composition" as const,
-    };
-    const q = writeQueryString(state);
-    expect(readQueryString(q)).toEqual(state);
+    const state = { ...base, soc: "gk7205v210", buildId: "nightly-20260604-679c2c7", platform: "gk7205v210_lite_tiandy-tc-c32qn" };
+    expect(writeQueryString(state)).toBe("?soc=gk7205v210&plat=gk7205v210_lite_tiandy-tc-c32qn&build=nightly-20260604-679c2c7");
+    expect(readQueryString(writeQueryString(state))).toEqual(state);
+  });
+
+  it("opens a link from before the SoC-first selectors, source ignored", () => {
+    // The platform alone says which source it came from.
+    expect(readQueryString("?source=builder&build=nightly-20260604-679c2c7&plat=gk7205v210_lite_tiandy-tc-c32qn")).toEqual({
+      ...base, buildId: "nightly-20260604-679c2c7", platform: "gk7205v210_lite_tiandy-tc-c32qn",
+    });
+  });
+
+  it("takes a SoC alone, in any case", () => {
+    expect(readQueryString("?soc=T31")).toEqual({ ...base, soc: "t31" });
+    expect(readQueryString("?soc=").soc).toBeNull();
   });
 
   it("round-trips Drift compare build", () => {
-    const state = {
-      source: "firmware" as const,
-      buildId: "nightly-20260605-d7e89a8",
-      platform: "hi3518ev300-lite",
-      compareBuildId: "nightly-20260604-679c2c7",
-      helpOpen: false,
-      tab: "composition" as const,
-    };
+    const state = { ...base, soc: "hi3518ev300", buildId: "nightly-20260605-d7e89a8", platform: "hi3518ev300-lite", compareBuildId: "nightly-20260604-679c2c7" };
     const q = writeQueryString(state);
     expect(q).toContain("compare=nightly-20260604-679c2c7");
     expect(readQueryString(q)).toEqual(state);
   });
 
   it("round-trips help-open flag", () => {
-    const state = {
-      source: "firmware" as const,
-      buildId: null,
-      platform: null,
-      compareBuildId: null,
-      helpOpen: true,
-      tab: "composition" as const,
-    };
+    const state = { ...base, helpOpen: true };
     const q = writeQueryString(state);
     expect(q).toContain("help=1");
     expect(readQueryString(q)).toEqual(state);
   });
 
   it("round-trips a tab and drops the default one", () => {
-    const state = {
-      source: "firmware" as const,
-      buildId: "nightly-20260925-230295e",
-      platform: "gk7205v200-lite",
-      compareBuildId: null,
-      helpOpen: false,
-      tab: "trends" as const,
-    };
+    const state = { ...base, soc: "gk7205v200", buildId: "nightly-20260925-230295e", platform: "gk7205v200-lite", tab: "trends" as const };
     const q = writeQueryString(state);
     expect(q).toContain("tab=trends");
     expect(readQueryString(q)).toEqual(state);
@@ -116,15 +90,7 @@ describe("url query (de)serialisation", () => {
   });
 
   it("omits null fields", () => {
-    const state = {
-      source: "firmware" as const,
-      buildId: null,
-      platform: null,
-      compareBuildId: null,
-      helpOpen: false,
-      tab: "composition" as const,
-    };
-    expect(writeQueryString(state)).toBe("?source=firmware");
+    expect(writeQueryString(base)).toBe("");
   });
 });
 
