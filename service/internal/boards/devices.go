@@ -53,7 +53,7 @@ func devices(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON) erro
 		for _, dev := range devs {
 			d := found[dev]
 			if d == nil {
-				d = &vendorfw.Device{ID: dev, Stock: []vendorfw.Firmware{}}
+				d = &vendorfw.Device{ID: dev, Stock: []vendorfw.Firmware{}, Sellers: []vendorfw.Firmware{}}
 			}
 			m.Devices = append(m.Devices, d)
 			if d.Coupler != nil && !slices.Contains(m.Tags, Ready) {

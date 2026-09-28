@@ -5,7 +5,7 @@
  * a description that link to other boards. Pure functions, so they are
  * tested without a browser.
  */
-import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model } from './types';
+import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model, VendorFirmware } from './types';
 import type { BoardsState, Missing } from './url';
 
 /** A board model with the manufacturer it is filed under. */
@@ -548,4 +548,9 @@ export function formatBytes(bytes: number, locale: string): string {
   if (bytes >= 1 << 20) return `${fmt(bytes / 1048576)} MB`;
   if (bytes >= 1024) return `${fmt(bytes / 1024)} KB`;
   return `${bytes} B`;
+}
+
+/** Whether a seller's build says it adds the IPeye cloud: cctvsp.ru names every such file IPEYE_... */
+export function addsIPeye(f: Pick<VendorFirmware, 'key' | 'build'>): boolean {
+  return /ipeye/i.test(`${f.key} ${f.build}`);
 }

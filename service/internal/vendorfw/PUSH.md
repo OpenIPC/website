@@ -79,6 +79,13 @@ The workflow needs `permissions: id-token: write`.
 - `sha256`, `size`, `published_at`: optional. `published_at` is xmupdates'
   `archived_at`, or coupler's build time.
 - `soc`: optional (coupler: the chip the image is for).
+- `origin`, `origin_url`: optional, xmupdates only in practice. A file
+  mirrored from a seller's firmware archive rather than the vendor's download
+  pages names the archive in `origin` (`cctvsp.ru`: lower-case, at most 64
+  characters of letters, digits, dots and hyphens) and its page there in
+  `origin_url`. Such a file is the seller's own build (cctvsp.ru's add the
+  IPeye cloud), so the site never lists it as stock: `GET` returns it under
+  `sellers`, and only for a device ID the vendor has no build for.
 
 xmupdates sends every archived revision. The site offers them all, newest
 first, because the vendor re-publishes a device's firmware (often under the
@@ -106,7 +113,7 @@ does not wipe the site.
 ## Reading it
 
 `GET /api/v1/vendor-firmware/{deviceId}` returns
-`{"device": {"id", "stock": [...], "coupler"}, "boards": [{"id", "model"}]}`:
-every stock build newest first, the newest coupler image, and the catalogue
-boards known to run the device ID. The board tree (`/api/v1/boards`) gives each board its `devices` in the
+`{"device": {"id", "stock": [...], "sellers": [...], "coupler"}, "boards": [{"id", "model", "kind"}]}`:
+every stock build newest first, a seller's builds when there is no stock one,
+the newest coupler image, and the catalogue boards known to run the device ID. The board tree (`/api/v1/boards`) gives each board its `devices` in the
 same shape.

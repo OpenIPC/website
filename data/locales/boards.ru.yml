@@ -225,6 +225,11 @@ ru:
     fw_latest: Последняя
     fw_earlier: Ранее
     fw_stock_source: "Прошивки Xiongmai в зеркале OpenIPC/xmupdates."
+    fw_seller: "Сборка {origin} (не заводская)"
+    fw_seller_why: "В каталоге загрузок производителя нет сборки для этого ID устройства. {origin}, продавец этих камер, публикует свою сборку прошивки; это не прошивка Xiongmai."
+    fw_seller_ipeye: В неё добавлен облачный сервис IPeye.
+    fw_seller_page: "страница на {origin}"
+    fw_published: "опубликована {date}"
     fw_no_coupler: "образа перехода на OpenIPC для этого устройства пока нет"
     fw_boards:
       one: "Этот ID устройства у {count} платы каталога:"

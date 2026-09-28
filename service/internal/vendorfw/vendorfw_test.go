@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -60,9 +61,12 @@ func TestDecodeRefusesWhatCannotBeStored(t *testing.T) {
 		"a short device id":  body(t, "xmupdates", item("a", "559A7", "1", "xmupdates")),
 		"another repo's asset": body(t, "xmupdates", Item{Key: "a", DeviceID: "000559A7", Version: "1", Build: "b",
 			AssetURL: "https://github.com/evil/x/releases/download/latest/a.bin"}),
-		"coupler's asset as xmupdates": body(t, "xmupdates", item("a", "000559A7", "1", "coupler")),
-		"a listing twice":              body(t, "xmupdates", good, good),
-		"schema 2":                     []byte(`{"schema":2,"source":"xmupdates","items":[]}`),
+		"coupler's asset as xmupdates":      body(t, "xmupdates", item("a", "000559A7", "1", "coupler")),
+		"a listing twice":                   body(t, "xmupdates", good, good),
+		"schema 2":                          []byte(`{"schema":2,"source":"xmupdates","items":[]}`),
+		"an origin that is not a name":      body(t, "xmupdates", func() Item { i := good; i.Origin = "CCTVSP <b>"; return i }()),
+		"an origin page without origin":     body(t, "xmupdates", func() Item { i := good; i.OriginURL = "https://www.cctvsp.ru/support/x"; return i }()),
+		"an origin page that is not a page": body(t, "xmupdates", func() Item { i := good; i.Origin, i.OriginURL = "cctvsp.ru", "javascript:alert(1)"; return i }()),
 	} {
 		if _, err := Decode(doc); err == nil {
 			t.Errorf("%s: accepted", name)
@@ -84,19 +88,28 @@ func TestXMUpdatesIndexBecomesAPush(t *testing.T) {
 	   {"version": "000809Q4.1", "asset_url": "https://github.com/OpenIPC/xmupdates/releases/download/firmware-archive/id2281b.zip"},
 	   {"version": "000809Q4.2", "asset_url": ""}]},
 	 "1299": {"name": "BLK5008A-S", "revisions": [], "unavailable": [{"version": "00000001"}]},
-	 "p1475": {"name": "IPC_X2C", "revisions": [{"version": "short", "asset_url": "https://github.com/OpenIPC/xmupdates/releases/download/firmware-archive/p1475.zip"}]}
+	 "p1475": {"name": "IPC_X2C", "revisions": [{"version": "short", "asset_url": "https://github.com/OpenIPC/xmupdates/releases/download/firmware-archive/p1475.zip"}]},
+	 "c214": {"name": "IPEYE_1532_IPC_HI3516C_53H20L", "source": "cctvsp", "origin": "cctvsp.ru", "page": "https://www.cctvsp.ru/support/proshivka-dlya-ip-kamery-00001532-53h20l",
+	   "revisions": [{"version": "00001532.20170705", "asset_url": "https://github.com/OpenIPC/xmupdates/releases/download/firmware-archive/c214.bin", "archived_at": "` + at + `", "published_at": "2019-03-21T00:00:00Z"}]}
 	}`
 	items, err := FromXMUpdates([]byte(index))
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The same version archived twice is two files, each keyed by its asset.
-	if len(items) != 2 {
+	// The same version archived twice is two files, each keyed by its asset;
+	// a seller's build keeps its archive and its own date.
+	if len(items) != 3 {
 		t.Fatalf("%+v", items)
 	}
 	byKey := map[string]Item{}
 	for _, it := range items {
 		byKey[it.Key] = it
+	}
+	if c := byKey["c214.bin"]; c.Origin != "cctvsp.ru" || c.OriginURL == "" || c.DeviceID != "00001532" || c.PublishedAt == nil || c.PublishedAt.Year() != 2019 {
+		t.Errorf("the seller's build: %+v", c)
+	}
+	if byKey["id2281.zip"].Origin != "" {
+		t.Error("a vendor build has an origin")
 	}
 	if a := byKey["id2281.zip"]; a.DeviceID != "000809Q4" || a.SHA256 != strings.Repeat("a", 64) || a.PublishedAt == nil || byKey["id2281b.zip"].Version != "000809Q4.1" {
 		t.Fatalf("%+v", items)
@@ -204,5 +217,49 @@ func TestAPushReplacesItsSourceAndOnlyItsSource(t *testing.T) {
 	}
 	if resp, _ := http.Get(srv.URL + "/nope"); resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("a malformed id: %d", resp.StatusCode)
+	}
+}
+
+func TestASellersBuildIsOfferedOnlyWhereTheVendorHasNone(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	older, newer := time.Date(2019, 3, 21, 0, 0, 0, 0, time.UTC), time.Date(2025, 12, 24, 0, 0, 0, 0, time.UTC)
+	seller := func(key, dev string, at *time.Time, sha string) Item {
+		i := item(key, dev, dev+".2017", "xmupdates")
+		i.PublishedAt, i.SHA256, i.Origin, i.OriginURL = at, strings.Repeat(sha, 64), "cctvsp.ru", "https://www.cctvsp.ru/support/"+key
+		return i
+	}
+	// 00001532: only cctvsp.ru's IPeye build. 000739AG: two of them. 000559A7:
+	// the vendor's own build too, so the seller's is not offered.
+	vendor := item("id1", "000559A7", "000559A7.1", "xmupdates")
+	vendor.PublishedAt, vendor.SHA256 = &older, strings.Repeat("f", 64)
+	p, err := Decode(body(t, "xmupdates", vendor,
+		seller("c214", "00001532", &older, "a"),
+		seller("c459", "000739AG", &older, "b"), seller("c471", "000739AG", &newer, "c"),
+		seller("c406", "000559A7", &newer, "d")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Save(ctx, pool, p, "test"); err != nil {
+		t.Fatal(err)
+	}
+	found, err := ForDevices(ctx, pool, []string{"00001532", "000739AG", "000559A7"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	keys := func(fs []Firmware) (out []string) {
+		for _, f := range fs {
+			out = append(out, f.Key)
+		}
+		return
+	}
+	if d := found["00001532"]; len(d.Stock) != 0 || !slices.Equal(keys(d.Sellers), []string{"c214"}) || *d.Sellers[0].Origin != "cctvsp.ru" {
+		t.Errorf("00001532: stock %v, sellers %v; want only the seller's build, its archive named", keys(d.Stock), keys(d.Sellers))
+	}
+	if d := found["000739AG"]; !slices.Equal(keys(d.Sellers), []string{"c471", "c459"}) {
+		t.Errorf("000739AG: sellers %v, want newest first", keys(d.Sellers))
+	}
+	if d := found["000559A7"]; !slices.Equal(keys(d.Stock), []string{"id1"}) || len(d.Sellers) != 0 {
+		t.Errorf("000559A7: stock %v, sellers %v; want the vendor's only", keys(d.Stock), keys(d.Sellers))
 	}
 }

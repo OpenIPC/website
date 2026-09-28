@@ -199,6 +199,11 @@ en:
     fw_latest: Latest
     fw_earlier: Earlier
     fw_stock_source: "Xiongmai firmware, mirrored by OpenIPC/xmupdates."
+    fw_seller: "{origin}'s own build (not stock)"
+    fw_seller_why: "The vendor's download catalogue has no build for this device ID. {origin}, a seller of these cameras, publishes this build of the firmware; it is not Xiongmai's."
+    fw_seller_ipeye: It adds the IPeye cloud service.
+    fw_seller_page: "its page at {origin}"
+    fw_published: "published {date}"
     fw_no_coupler: "no OpenIPC transition image for this device yet"
     fw_boards:
       one: "{count} catalogue board runs this device ID:"
