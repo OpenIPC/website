@@ -60,7 +60,10 @@ func ForDevices(ctx context.Context, db querier, ids []string) (map[string]*Devi
 		return nil, err
 	}
 	defer rows.Close()
-	seen := map[[2]string]bool{} // (device ID, sha256): a file once per device
+	// (device ID, stock or seller, sha256): a file once per device in each
+	// list. Kept apart, so a seller's copy of a vendor file never hides the
+	// vendor's, which then hides the seller's list.
+	seen := map[[3]string]bool{}
 	for rows.Next() {
 		var id, source string
 		var f Firmware
@@ -78,8 +81,12 @@ func ForDevices(ctx context.Context, db querier, ids []string) (map[string]*Devi
 			}
 			continue
 		}
+		list := "stock"
+		if f.Origin != nil {
+			list = "sellers"
+		}
 		if f.SHA256 != nil {
-			k := [2]string{id, *f.SHA256}
+			k := [3]string{id, list, *f.SHA256}
 			if seen[k] {
 				continue
 			}

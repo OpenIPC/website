@@ -263,3 +263,30 @@ func TestASellersBuildIsOfferedOnlyWhereTheVendorHasNone(t *testing.T) {
 		t.Errorf("000559A7: stock %v, sellers %v; want the vendor's only", keys(d.Stock), keys(d.Sellers))
 	}
 }
+
+// A seller's newer copy of the vendor's file must not hide the vendor's: the
+// device has stock, so the seller's list stays empty.
+func TestASellersCopyNeverHidesTheVendorsFile(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	older, newer := time.Date(2017, 7, 5, 0, 0, 0, 0, time.UTC), time.Date(2019, 3, 21, 0, 0, 0, 0, time.UTC)
+	vendor := item("id1", "00001532", "00001532.1", "xmupdates")
+	vendor.PublishedAt, vendor.SHA256 = &older, strings.Repeat("a", 64)
+	copyOf := item("c214", "00001532", "00001532.20170705", "xmupdates")
+	copyOf.PublishedAt, copyOf.SHA256, copyOf.Origin, copyOf.OriginURL = &newer, strings.Repeat("a", 64), "cctvsp.ru", "https://www.cctvsp.ru/support/a"
+	p, err := Decode(body(t, "xmupdates", copyOf, vendor))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Save(ctx, pool, p, "test"); err != nil {
+		t.Fatal(err)
+	}
+	found, err := ForDevices(ctx, pool, []string{"00001532"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := found["00001532"]
+	if len(d.Stock) != 1 || d.Stock[0].Key != "id1" || len(d.Sellers) != 0 {
+		t.Errorf("stock %+v, sellers %+v; want the vendor's file and no seller's", d.Stock, d.Sellers)
+	}
+}
