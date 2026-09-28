@@ -20,16 +20,15 @@ type Config struct {
 	LogLevel    string
 
 	// Web role.
-	WallRoot       string   // where wall/<public_id>/<variant>.jpg live; the frame socket reads the same tree
+	WallRoot       string   // where wall/<public_id>/{main.heif,thumb.heif,main.jpg} live; the frame socket reads the same tree
 	WallGrantKey   []byte   // WALL_GRANT_KEY, hex: signs the wall's frame grants
 	CameraTokenKey string   // CAMERA_TOKEN_KEY, raw: camera tokens are HMAC-SHA256 over it
 	MACBlacklist   []string // SNAPSHOT_MAC_BLACKLIST
 	IPWhitelist    []string // SNAPSHOT_IP_WHITELIST
 	VariantWorkers int
-	VipsBin        string
-	VipsHeaderBin  string
-	Shadow         bool // a mirror of production traffic: log decisions, write only its own store
-	GrantsDisabled bool // WALL_GRANTS_DISABLED=1: the frame socket serves without grants (the emergency switch)
+	FFmpegBin      string // decodes each uploaded keyframe once before it is published
+	Shadow         bool   // a mirror of production traffic: log decisions, write only its own store
+	GrantsDisabled bool   // WALL_GRANTS_DISABLED=1: the frame socket serves without grants (the emergency switch)
 	SnapshotMaxAge time.Duration
 	BoardsRoot     string // the board catalogue's files, served by nginx at /board-files/
 
@@ -54,8 +53,7 @@ func Load() (*Config, error) {
 		MACBlacklist:        list("SNAPSHOT_MAC_BLACKLIST"),
 		IPWhitelist:         list("SNAPSHOT_IP_WHITELIST"),
 		VariantWorkers:      num("VARIANT_WORKERS", 2),
-		VipsBin:             str("VIPS_BIN", "vips"),
-		VipsHeaderBin:       str("VIPSHEADER_BIN", "vipsheader"),
+		FFmpegBin:           str("FFMPEG_BIN", "ffmpeg"),
 		Shadow:              os.Getenv("SHADOW") == "1",
 		GrantsDisabled:      os.Getenv("WALL_GRANTS_DISABLED") == "1",
 		SnapshotMaxAge:      48 * time.Hour,

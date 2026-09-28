@@ -30,8 +30,13 @@ var attributes = []string{"caption", "firmware", "flash_size", "hostname", "sens
 // Wall is where originals go.
 type Wall interface {
 	WriteOriginal(id string, data []byte) error
+	WriteThumb(id string, data []byte) error
 	Purge(id string) error
 }
+
+// MaxThumb bounds the optional substream keyframe. A substream is at most a
+// few hundred kilobytes a frame; the whole request is capped at 1 MB by nginx.
+const MaxThumb = 512 << 10
 
 // Upload handles POST /snapshots, /ru/snapshots and /zh/snapshots -- the one
 // request on the site whose clients cannot be updated. Everything it answers
@@ -146,6 +151,14 @@ func (h *UploadHandler) create(r *http.Request, u *Upload, mac string, minElapse
 		if err := h.Wall.WriteOriginal(id, u.File); err != nil {
 			return "", err
 		}
+		// The substream keyframe is an addition cameras may make to the frozen
+		// request, never a condition of it: whatever it is, the answer is the
+		// one the upload alone earns. The worker decides whether to publish it.
+		if len(u.Thumb) > 0 && len(u.Thumb) <= MaxThumb {
+			if err := h.Wall.WriteThumb(id, u.Thumb); err != nil {
+				h.Log.Warn("upload: substream keyframe not stored", "err", err)
+			}
+		}
 		err := h.Store.InsertIfDue(r.Context(), NewRow{
 			PublicID: id, MAC: mac, IP: u.RemoteIP, Attributes: u.Attributes,
 			ContentType: contentType, ByteSize: int64(len(u.File)),
@@ -197,6 +210,11 @@ func read(r *http.Request) (*Upload, error) {
 				u.Declared = files[0].Header.Get("Content-Type")
 			} else if err == nil {
 				err = derr
+			}
+		}
+		if files := r.MultipartForm.File["thumb"]; len(files) > 0 {
+			if data, derr := readPart(files[0]); derr == nil {
+				u.Thumb = data
 			}
 		}
 	}

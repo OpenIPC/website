@@ -233,7 +233,7 @@ func (st *Store) DayOf(ctx context.Context, subject *Snapshot, limit int) ([]*Sn
 	return scanAll(rows)
 }
 
-// Pending is every frame whose variants are not on disk yet, oldest first:
+// Pending is every frame not yet published, oldest first:
 // the variant queue, recovered at boot.
 func (st *Store) Pending(ctx context.Context) ([]string, error) {
 	rows, err := st.DB.Query(ctx, `SELECT public_id FROM snapshots
@@ -289,4 +289,13 @@ func (st *Store) Exists(ctx context.Context, publicID string) (bool, error) {
 	var ok bool
 	err := st.DB.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM snapshots WHERE public_id = $1)`, publicID).Scan(&ok)
 	return ok, err
+}
+
+// MarkRefused closes the row of an upload the wall will not publish: done, so
+// neither the sweep nor the probe's stuck-queue count sees it again, and
+// without dimensions, because there is no picture. The row itself stays --
+// the camera was answered 201, and an accepted upload has a row.
+func (st *Store) MarkRefused(ctx context.Context, publicID string) error {
+	_, err := st.DB.Exec(ctx, `UPDATE snapshots SET variants_generated_at = now() WHERE public_id = $1`, publicID)
+	return err
 }

@@ -283,8 +283,8 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 
 	store := &snapshots.Store{DB: pool, TokenKey: cfg.CameraTokenKey}
 	wallFS := variants.Wall{Root: cfg.WallRoot}
-	proc := &variants.Processor{Wall: wallFS, Store: store, Log: log, Vips: cfg.VipsBin,
-		VipsHeader: cfg.VipsHeaderBin, Workers: cfg.VariantWorkers}
+	proc := &variants.Processor{Wall: wallFS, Store: store, Log: log, FFmpeg: cfg.FFmpegBin,
+		Workers: cfg.VariantWorkers}
 	bg, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	if err := proc.Start(bg); err != nil {
 		cancel()

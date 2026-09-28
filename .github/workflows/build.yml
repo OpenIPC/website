@@ -40,11 +40,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The variant tests shell out to vips, as the service does in its image.
-      - name: Install libvips
+      # The keyframe and variants tests decode with ffmpeg, as the service does
+      # in its image. They fail rather than skip when CI is set and it is missing.
+      - name: Install ffmpeg
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libvips-tools libheif1
+          sudo apt-get install -y --no-install-recommends ffmpeg
 
       # --- the Go service (#287) ---------------------------------------------
       - uses: actions/setup-go@v5

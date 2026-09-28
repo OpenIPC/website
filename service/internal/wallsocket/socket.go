@@ -8,7 +8,8 @@
 //	server -> {"type":"ping"}                                   every PingEvery
 //	client -> {"type":"grant","grant":"<token>"}                any number of times
 //	client -> {"type":"request","variant":"thumb","ids":[...]}
-//	server -> {"type":"frame","id":..,"variant":..,"frame":"<base64>"}
+//	server -> {"type":"frame","id":..,"variant":..,"codec":..,"width":..,"height":..,
+//	           ["range":"full",] "description":"<base64>","frame":"<base64>"}
 //	server -> {"type":"error","error":"no grant" | "unknown variant" | ...}
 //
 // The rules:
@@ -20,8 +21,14 @@
 //     socket stays open. It is logged as wall_grant_refused, a marker
 //     deploy/log-report.sh counts.
 //   - A request over MaxPerRequest ids is refused whole.
-//   - Each frame is the file's bytes with the first MaskBytes XORed against the
-//     connection id's characters -- obfuscation, not encryption -- base64.
+//   - A frame is the camera's own keyframe, never a picture file:
+//     `codec` is the WebCodecs codec string, `description` the avcC/hvcC
+//     record, and `frame` the access unit as the HEIF held it, length-prefixed
+//     NAL units. Nothing on the wire is a file a crawler could save and open.
+//     A camera that still uploads JPEG is served `codec: "jpeg"` and the JPEG
+//     in `frame`, until 2027-06 (Resolve).
+//   - `frame` has its first MaskBytes XORed against the connection id's
+//     characters -- obfuscation, not encryption -- and is base64.
 //   - `wall: connection served N distinct frames` when the socket closes,
 //     which deploy/log-report.sh counts.
 package wallsocket
@@ -36,18 +43,22 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/coder/websocket"
 
 	"github.com/OpenIPC/website/service/internal/httpx"
+	"github.com/OpenIPC/website/service/internal/keyframe"
+	"github.com/OpenIPC/website/service/internal/variants"
 )
 
 // The socket's numbers. MaskBytes must equal the client's MASK_BYTES; the
@@ -346,15 +357,17 @@ func (c *conn) deliver(ctx context.Context, id, variant string) {
 				c.ip, b.Limit, spent))
 		}
 	}
-	f, err := os.Open(filepath.Join(c.server.WallRoot, id, variant+".jpg"))
+	fr, err := Resolve(c.server.WallRoot, id, variant)
 	if err != nil {
 		if b := c.server.Budget; b != nil {
 			b.Refund(c.ip, time.Now())
 		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			c.server.Log.Warn("wall socket: frame unreadable", "err", err, "public_id", id)
+		}
 		return
 	}
-	defer f.Close()
-	if err := c.transmitFrame(ctx, id, variant, f); err != nil {
+	if err := c.transmitFrame(ctx, id, variant, fr); err != nil {
 		// Not delivered, so not spent: the observe-only log would otherwise
 		// count every frame a reader hung up on.
 		if b := c.server.Budget; b != nil {
@@ -366,16 +379,64 @@ func (c *conn) deliver(ctx context.Context, id, variant string) {
 	c.served[id] = true
 }
 
-// transmitFrame streams {"type":"frame","id","variant","frame"} without
-// holding the file: the head is read and masked, and the rest is copied
-// through a base64 encoder straight into the WebSocket message.
-func (c *conn) transmitFrame(ctx context.Context, id, variant string, f *os.File) error {
-	head := make([]byte, MaskBytes)
-	n, err := io.ReadFull(f, head)
-	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
-		return err
+// Frame is what one socket message carries.
+type Frame struct {
+	Codec         string // WebCodecs codec string, or "jpeg"
+	Width, Height int    // 0 for a JPEG: the browser reads its own
+	// FullRange is an H.265 frame whose samples are full range. WebCodecs
+	// reads that from the stream itself; the WebAssembly painter is told.
+	FullRange   bool
+	Description []byte // avcC/hvcC; nil for a JPEG
+	Data        []byte
+}
+
+// Resolve picks the file that answers id at variant and reads it.
+//
+// The grid's sizes (icon, icon2, thumb) take the camera's substream keyframe
+// when it sent one and the main picture otherwise; fullhd is the main picture.
+// A camera's main keyframe is its full sensor resolution, which is more than
+// fullhd ever was -- the name is the page's, and no longer a promise about
+// pixels.
+//
+// The <variant>.jpg names are the re-encoded variants frames uploaded before
+// the wall stopped re-encoding; they age out with the two-day purge.
+// REMOVE AFTER 2027-06 together with main.jpg.
+func Resolve(root, id, variant string) (*Frame, error) {
+	dir := filepath.Join(root, id)
+	candidates := []string{variants.MainHEIF, variants.MainJPEG, variant + ".jpg"}
+	if variant != "fullhd" {
+		candidates = append([]string{variants.ThumbHEIF}, candidates...)
 	}
-	head = head[:n]
+	for _, name := range candidates {
+		data, err := os.ReadFile(filepath.Join(dir, name))
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		if !strings.HasSuffix(name, ".heif") {
+			return &Frame{Codec: "jpeg", Data: data}, nil
+		}
+		k, err := keyframe.Parse(data)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", name, err)
+		}
+		fr := &Frame{Codec: k.Codec, Width: k.Width, Height: k.Height, Description: k.Description, Data: k.Data}
+		if k.HEVC {
+			// A signal type that cannot be read is painted as video range,
+			// which is also what a stream without one means.
+			fr.FullRange, _ = keyframe.FullRange(k)
+		}
+		return fr, nil
+	}
+	return nil, fs.ErrNotExist
+}
+
+// transmitFrame writes one frame message, the head of the frame masked.
+func (c *conn) transmitFrame(ctx context.Context, id, variant string, fr *Frame) error {
+	head := make([]byte, min(MaskBytes, len(fr.Data)))
+	copy(head, fr.Data)
 	key := []byte(c.id)
 	for i := range head {
 		head[i] ^= key[i%len(key)]
@@ -387,19 +448,28 @@ func (c *conn) transmitFrame(ctx context.Context, id, variant string, f *os.File
 	if err != nil {
 		return err
 	}
-	prefix := fmt.Sprintf(`{"type":"frame","id":%s,"variant":%s,"frame":"`, jsonString(id), jsonString(variant))
+	prefix := fmt.Sprintf(`{"type":"frame","id":%s,"variant":%s,"codec":%s`,
+		jsonString(id), jsonString(variant), jsonString(fr.Codec))
+	if fr.Width > 0 {
+		prefix += fmt.Sprintf(`,"width":%d,"height":%d`, fr.Width, fr.Height)
+	}
+	if fr.FullRange {
+		prefix += `,"range":"full"`
+	}
+	if fr.Description != nil {
+		prefix += `,"description":"` + base64.StdEncoding.EncodeToString(fr.Description) + `"`
+	}
+	prefix += `,"frame":"`
 	if _, err := io.WriteString(w, prefix); err != nil {
 		w.Close()
 		return err
 	}
 	enc := base64.NewEncoder(base64.StdEncoding, w)
-	if _, err := enc.Write(head); err != nil {
-		w.Close()
-		return err
-	}
-	if _, err := io.Copy(enc, f); err != nil {
-		w.Close()
-		return err
+	for _, part := range [][]byte{head, fr.Data[len(head):]} {
+		if _, err := enc.Write(part); err != nil {
+			w.Close()
+			return err
+		}
 	}
 	if err := enc.Close(); err != nil {
 		w.Close()

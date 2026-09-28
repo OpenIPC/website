@@ -15,12 +15,19 @@
  *   server -> {type:"ping"}                                  every 15 s
  *   client -> {type:"grant", grant}
  *   client -> {type:"request", variant, ids}
- *   server -> {type:"frame", id, variant, frame}             base64, head masked
+ *   server -> {type:"frame", id, variant, codec, width, height, description, frame}
+ *                                                            frame base64, head masked
  *   server -> {type:"error", error}
+ *
+ * A frame is the camera's own keyframe, not a picture file: `codec` is the
+ * WebCodecs codec string, `description` the avcC/hvcC record (base64, not
+ * masked) and `frame` the access unit. `wall-decode.ts` turns it into pixels.
+ * `codec: "jpeg"` is a camera that has not been updated, until 2027-06.
  *
  * `MASK_BYTES` MUST equal the server's `MaskBytes`; a test asserts the round
  * trip rather than trusting either copy.
  */
+import type { WallFrame } from './wall-decode';
 
 /** Only the head is masked. */
 const MASK_BYTES = 4096;
@@ -138,6 +145,11 @@ interface Message {
   id?: string;
   variant?: string;
   frame?: string;
+  codec?: string;
+  width?: number;
+  height?: number;
+  description?: string;
+  range?: string;
   error?: string;
 }
 
@@ -183,7 +195,7 @@ export function requestFrames({ grant, requests, onFrame, onUnavailable, onOpen,
    * request, so two requests on one socket is what that is.
    */
   requests: FrameRequest[];
-  onFrame: (id: string, variant: string, bytes: Uint8Array) => void;
+  onFrame: (id: string, variant: string, frame: WallFrame) => void;
   onUnavailable: () => void;
   /** The socket said hello, so it is up. */
   onOpen?: () => void;
@@ -235,7 +247,14 @@ export function requestFrames({ grant, requests, onFrame, onUnavailable, onOpen,
           break;
         case 'frame':
           if (!key || !data.id || !data.frame || !data.variant) return;
-          onFrame(data.id, data.variant, unmask(decode(data.frame), key));
+          onFrame(data.id, data.variant, {
+            codec: data.codec ?? 'jpeg',
+            width: data.width,
+            height: data.height,
+            description: data.description ? decode(data.description) : undefined,
+            fullRange: data.range === 'full',
+            data: unmask(decode(data.frame), key),
+          });
           break;
         case 'error':
           onUnavailable();

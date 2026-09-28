@@ -17,6 +17,8 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   FRAME_DEADLINE, MOSAIC_URL, captionFor, requestFramesOrFallBack, type Mosaic, type MosaicTile,
 } from '../lib/wall-frames';
+import { boxFor } from '../lib/wall-sizes';
+import { paintFrame } from '../lib/wall-decode';
 
 /** The thumb variant's size, so the page does not reflow when frames land. */
 const THUMB = { width: 480, height: 360 };
@@ -92,11 +94,13 @@ export default function WallMosaic({
         frames = requestFramesOrFallBack({
           grant: loaded.grant!,
           requests: [{ variant: loaded.variant, ids: loaded.tiles.map((tile) => tile.id) }],
-          onFrame: async (id, _variant, bytes) => {
-            // Recorded only once the bitmap is actually on the canvas, so a
+          onFrame: async (id, variant, frame) => {
+            // Recorded only once the picture is actually on the canvas, so a
             // frame that will not decode counts as unanswered rather than as
-            // drawn.
-            if (await paint(canvases.current.get(id), bytes) && live) {
+            // drawn -- and leaves the canvas as it is: sized, with its
+            // background and its aria-label, which is also what a purged
+            // snapshot looks like.
+            if (await paintFrame(canvases.current.get(id), frame, boxFor(variant)) && live) {
               setPainted((seen) => new Set(seen).add(id));
             }
           },
@@ -210,26 +214,4 @@ function Caption({ tile }: { tile: MosaicTile }) {
 
 function register(map: Map<string, HTMLCanvasElement>, id: string, el: HTMLCanvasElement | null) {
   if (el) map.set(id, el); else map.delete(id);
-}
-
-/**
- * A frame that will not decode leaves the canvas as it is: sized, with its
- * background, and carrying its aria-label. Better than a broken-image glyph,
- * and it is what a purged snapshot looks like.
- */
-async function paint(canvas: HTMLCanvasElement | undefined, bytes: Uint8Array): Promise<boolean> {
-  if (!canvas) return false;
-
-  let bitmap: ImageBitmap;
-  try {
-    bitmap = await createImageBitmap(new Blob([bytes as BlobPart], { type: 'image/jpeg' }));
-  } catch {
-    return false;
-  }
-
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  canvas.getContext('2d')?.drawImage(bitmap, 0, 0);
-  bitmap.close?.();
-  return true;
 }

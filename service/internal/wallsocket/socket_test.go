@@ -20,6 +20,7 @@ import (
 
 	"github.com/coder/websocket"
 
+	"github.com/OpenIPC/website/service/internal/keyframe"
 	"github.com/OpenIPC/website/service/internal/wall"
 	"github.com/OpenIPC/website/service/internal/wallsocket"
 )
@@ -43,7 +44,18 @@ type rig struct {
 const (
 	big   = "0123456789abcdef0123" // 10 KB fullhd and thumb: masked head, copied tail
 	small = "aaaaaaaaaaaaaaaaaaa1" // 1 KB thumb: shorter than the mask
+	both  = "bbbbbbbbbbbbbbbbbbb1" // main.heif (H.264) and thumb.heif (H.265)
+	solo  = "ccccccccccccccccccc1" // main.heif only
 )
+
+func fixture(t *testing.T, name string) []byte {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join("..", "keyframe", "testdata", name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
 
 func newRig(t *testing.T, disabled bool) *rig {
 	r := &rig{granter: &wall.Granter{Key: []byte("test key")}, logs: &logBuf{}, root: t.TempDir(), files: map[string][]byte{}}
@@ -58,6 +70,15 @@ func newRig(t *testing.T, disabled bool) *rig {
 	put(big, "fullhd", 10_000)
 	put(big, "icon2", 5_000)
 	put(small, "thumb", 1_000)
+	for id, files := range map[string]map[string]string{
+		both: {"main.heif": "testsrc-320x240-avc.heif", "thumb.heif": "testsrc-320x240-hevc.heif"},
+		solo: {"main.heif": "testsrc-320x240-avc.heif"},
+	} {
+		os.MkdirAll(filepath.Join(r.root, id), 0o755)
+		for name, src := range files {
+			os.WriteFile(filepath.Join(r.root, id, name), fixture(t, src), 0o644)
+		}
+	}
 	s := &wallsocket.Server{WallRoot: r.root, Grants: r.granter, GrantsDisabled: disabled,
 		Log: slog.New(slog.NewTextHandler(r.logs, nil)), Budget: &wallsocket.Budget{Limit: 1000},
 		PingEvery: 100 * time.Millisecond}
@@ -345,4 +366,51 @@ func waitFor(t *testing.T, ok func() bool) {
 		time.Sleep(20 * time.Millisecond)
 	}
 	t.Error("condition not met in time")
+}
+
+// A camera's HEIF goes out as its keyframe -- codec, configuration record and
+// access unit -- never as the file. The grid's sizes take the substream's
+// keyframe when there is one, and the main picture otherwise.
+func TestKeyframesGoOutAsCodecRecords(t *testing.T) {
+	r := newRig(t, true)
+	c := r.dial(t, "https://openipc.org")
+	for _, tc := range []struct {
+		id, variant, fixture, prefix string
+	}{
+		{both, "fullhd", "testsrc-320x240-avc.heif", "avc1."},
+		{both, "thumb", "testsrc-320x240-hevc.heif", "hvc1."},
+		{both, "icon2", "testsrc-320x240-hevc.heif", "hvc1."},
+		{solo, "thumb", "testsrc-320x240-avc.heif", "avc1."},
+	} {
+		c.request(tc.variant, tc.id)
+		m := c.must(time.Second)
+		_, _, got := c.unmask(m)
+		k, err := keyframe.Parse(fixture(t, tc.fixture))
+		if err != nil {
+			t.Fatal(err)
+		}
+		desc, _ := base64.StdEncoding.DecodeString(m["description"].(string))
+		if m["codec"] != k.Codec || !strings.HasPrefix(k.Codec, tc.prefix) ||
+			m["width"] != 320.0 || m["height"] != 240.0 {
+			t.Errorf("%s/%s: %v %v %v", tc.id, tc.variant, m["codec"], m["width"], m["height"])
+		}
+		if !bytes.Equal(got, k.Data) || !bytes.Equal(desc, k.Description) {
+			t.Errorf("%s/%s: not the keyframe as stored", tc.id, tc.variant)
+		}
+		if bytes.Contains(got, []byte("ftyp")) || bytes.Contains(got, []byte("mdat")) {
+			t.Errorf("%s/%s: a HEIF box went out", tc.id, tc.variant)
+		}
+	}
+}
+
+// Frames uploaded before the wall stopped re-encoding are served as they are,
+// and say so.
+func TestLegacyJPEGIsLabelled(t *testing.T) {
+	r := newRig(t, true)
+	c := r.dial(t, "https://openipc.org")
+	c.request("thumb", small)
+	m := c.must(time.Second)
+	if m["codec"] != "jpeg" || m["description"] != nil || m["width"] != nil {
+		t.Errorf("got %v", m)
+	}
 }

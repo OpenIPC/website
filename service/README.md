@@ -59,9 +59,10 @@ The goldens below are fixed: nothing regenerates them.
   `service/conformance`, and `bin/conformance --mutations` shows the suite fails
   when the contract is broken. The recorded corpora (`content_types.json`,
   `mac_addresses.json`) are replayed by `internal/snapshots` on every `go test`.
-- **Variants** are pinned byte for byte on the runtime image's libvips
-  (Debian bookworm, 8.14), so a libvips upgrade is a change to what the wall
-  looks like.
+- **Wall frames** are what the camera sent, byte for byte: nothing is
+  re-encoded. `internal/keyframe` holds the HEIF parser's fixtures, wrapped the
+  way majestic writes them, and `internal/variants` pins that a published file
+  is the upload itself.
 - **Grants**: `internal/wall/testdata/grant.json` was computed outside Go, and
   `Granter.Sign` must reproduce it byte for byte.
 - **Firmware images**: `internal/firmware/testdata/manifests.json` holds full

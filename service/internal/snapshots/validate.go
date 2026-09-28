@@ -34,6 +34,7 @@ type Upload struct {
 	Declared   string
 	RemoteIP   string
 	Attributes map[string]*string // caption, firmware, ...
+	Thumb      []byte             // the substream keyframe, when the camera sent one
 }
 
 // Errors are the X-Error sentences, in the contract's order: the file

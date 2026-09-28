@@ -105,8 +105,11 @@ restores the image but never the schema, so keep migrations additive.
 - `internal/snapshots` — `POST /snapshots`, the cameras' frozen contract: MAC
   and IP validation, the blacklist and whitelist from `SNAPSHOT_MAC_BLACKLIST` /
   `SNAPSHOT_IP_WHITELIST`, and a **15-minute per-camera interval** with two
-  minutes of hysteresis (429 with `Retry-After`). `internal/variants` makes the
-  four wall sizes with `vips`.
+  minutes of hysteresis (429 with `Retry-After`). `internal/variants`
+  publishes each upload as-is -- a camera's HEIF keyframe (and its substream's,
+  sent as the optional `thumb` part), checked by `internal/keyframe`, or a
+  legacy JPEG with its metadata dropped. **Nothing a camera sends is
+  re-encoded.**
 - `internal/wall`, `internal/wallsocket` — the wall's JSON and the frame socket
   (a small JSON protocol at `/api/v1/wall/socket`), with signed
   grants keyed by `WALL_GRANT_KEY`.
