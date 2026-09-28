@@ -139,6 +139,23 @@ en:
       dual-lens-camera-module: "Dual-lens camera modules"
       accessory: "Accessories"
       pcb: "PCBs"
+      4g-camera-module: "4G camera modules"
+      multi-lens-camera-module: "Multi-lens camera modules"
+      wi-fi-camera-module: "Wi-Fi camera modules"
+      aov-camera-module: "AOV camera modules"
+      video-door-lock-module: "Video door-lock modules"
+      pet-feeder-module: "Pet feeder modules"
+      network-camera: "Network cameras"
+      coaxial-camera: "Coaxial cameras"
+      wi-fi-camera: "Wi-Fi cameras"
+      battery-camera: "Battery cameras"
+      aov-camera: "AOV cameras"
+      4g-5g-camera: "4G/5G cameras"
+      multi-lens-wi-fi-camera: "Multi-lens Wi-Fi cameras"
+      network-video-recorder: "Network video recorders"
+      coaxial-video-recorder: "Coaxial video recorders"
+      wi-fi-base-station: "Wi-Fi base stations"
+      smart-video-doorbell: "Video doorbells"
     show_all:
       one: 'Show all {count} board'
       other: 'Show all {count} boards'
@@ -186,8 +203,30 @@ en:
     fw_boards:
       one: "{count} catalogue board runs this device ID:"
       other: "{count} catalogue boards run this device ID:"
+    device_count:
+      one: '{count} finished device'
+      other: '{count} finished devices'
+    fw_runs: "Known to run this device ID: {what}"
     fw_no_boards: "No catalogue board is known to run this device ID yet."
     fw_error: "Could not check the firmware for device {id} ({error}). Try again in a moment."
+    filter_kind: Type
+    kind_board: Board
+    kind_camera: Camera
+    kind_recorder: Recorder
+    kind_doorbell: Doorbell
+    kind_base_station: Base station
+    kind_board_plural: Boards
+    kind_camera_plural: Cameras
+    kind_recorder_plural: Recorders
+    kind_doorbell_plural: Doorbells
+    kind_base_station_plural: Base stations
+    stats_devices:
+      one: finished device
+      other: finished devices
+    successor_xiongmai: "Xiongmai's product line continues under the JFTech brand: the same module codes and firmware from the same download servers. What Xiongmai listed up to 2023 comes from its archived catalogue at xiongmaitech.com; the current line comes from"
+    board_inside: "Board inside:"
+    board_inside_why: "(it runs the same firmware, the same device ID)"
+    source_note_jftech: "JFTech's product catalogue: Xiongmai's product line under its current brand, with the same module codes and firmware from the same download servers (captured 2026)."
     link_stock_firmware: Stock firmware
     link_successor: Replaced by
     link_predecessor: Replaces

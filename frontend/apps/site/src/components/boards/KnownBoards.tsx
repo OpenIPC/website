@@ -10,7 +10,7 @@
 import { Fragment } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { fetchBoards } from '../../lib/boards/api';
-import { HEADING_CLASS, entries, frontPhoto, has, heading, newestFirst, subtitle, type Entry } from '../../lib/boards/model';
+import { HEADING_CLASS, entries, frontPhoto, has, heading, newestFirst, subtitle, tally, type Entry } from '../../lib/boards/model';
 import type { Source } from '../../lib/boards/types';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import type { Locale } from '../../lib/i18n';
@@ -46,7 +46,7 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
     <section class="site-container mt-12 mb-12 grid gap-3.5" aria-labelledby="known-boards">
       <header class="flex flex-wrap items-baseline justify-between gap-3">
         <h2 id="known-boards" class="mb-0 text-h3 font-semibold">
-          {t('known_title', { soc: model })} <small class="text-sm font-normal text-body-secondary">({boards.length})</small>
+          {t('known_title', { soc: model })} <small class="text-sm font-normal text-body-secondary">({tally(boards, t)})</small>
         </h2>
         <a href={`${catalogueHref}?soc=${encodeURIComponent(soc)}`}>{t('known_link')}</a>
       </header>
@@ -67,7 +67,10 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
                 <span class="grid min-w-0 content-start gap-1 px-3 py-2.5 text-[13px]">
                   <b class={`text-sm ${HEADING_CLASS[head.kind]}`}>{title}</b>
                   {name && <span class="leading-snug">{name}</span>}
-                  <span class="text-body-secondary">{makerName(m.maker.id, m.maker.name, t)} · {sensors}</span>
+                  <span class="text-body-secondary">
+                    {m.kind && m.kind !== 'board' && <b class="font-semibold text-[#8a4b00]">{t(`kind_${m.kind}`)} · </b>}
+                    {makerName(m.maker.id, m.maker.name, t)} · {sensors}
+                  </span>
                   <span class="flex flex-wrap gap-1.5">
                     {SHOWN.map((k) => <Chip key={k} ok={has(m, k)}>{t(`cov_${k}`)}</Chip>)}
                   </span>

@@ -143,6 +143,23 @@ zh:
       dual-lens-camera-module: "双目摄像机模组"
       accessory: "配件"
       pcb: "PCB 板"
+      4g-camera-module: "4G 摄像机模组"
+      multi-lens-camera-module: "多目摄像机模组"
+      wi-fi-camera-module: "Wi-Fi 摄像机模组"
+      aov-camera-module: "AOV 摄像机模组"
+      video-door-lock-module: "可视门锁模组"
+      pet-feeder-module: "宠物喂食器模组"
+      network-camera: "网络摄像机"
+      coaxial-camera: "同轴摄像机"
+      wi-fi-camera: "Wi-Fi 摄像机"
+      battery-camera: "电池摄像机"
+      aov-camera: "AOV 摄像机"
+      4g-5g-camera: "4G/5G 摄像机"
+      multi-lens-wi-fi-camera: "多目 Wi-Fi 摄像机"
+      network-video-recorder: "网络硬盘录像机"
+      coaxial-video-recorder: "同轴硬盘录像机"
+      wi-fi-base-station: "Wi-Fi 基站"
+      smart-video-doorbell: "可视门铃"
     show_all:
       one: '显示全部 {count} 块'
       other: '显示全部 {count} 块'
@@ -190,8 +207,30 @@ zh:
     fw_boards:
       one: "目录中有 {count} 块主板使用此设备 ID："
       other: "目录中有 {count} 块主板使用此设备 ID："
+    device_count:
+      one: '{count} 台整机'
+      other: '{count} 台整机'
+    fw_runs: "已知使用此设备 ID：{what}"
     fw_no_boards: "目录中暂无已知使用此设备 ID 的主板。"
     fw_error: "暂时无法查询设备 {id} 的固件（{error}），请稍后再试。"
+    filter_kind: 类型
+    kind_board: 主板
+    kind_camera: 摄像机
+    kind_recorder: 录像机
+    kind_doorbell: 门铃
+    kind_base_station: 基站
+    kind_board_plural: 主板
+    kind_camera_plural: 摄像机
+    kind_recorder_plural: 录像机
+    kind_doorbell_plural: 可视门铃
+    kind_base_station_plural: 基站
+    stats_devices:
+      one: 台整机
+      other: 台整机
+    successor_xiongmai: "雄迈的产品线以 JFTech（杰峰）品牌延续：相同的模组型号，固件来自相同的下载服务器。雄迈 2023 年以前发布的产品来自 xiongmaitech.com 的归档目录，当前产品线来自"
+    board_inside: "内置主板："
+    board_inside_why: "（相同的固件、相同的设备 ID）"
+    source_note_jftech: "JFTech 的产品目录：雄迈产品线的当前品牌，模组型号相同，固件来自相同的下载服务器（2026 年存档）。"
     link_stock_firmware: 原厂固件
     link_successor: 后继型号
     link_predecessor: 取代型号

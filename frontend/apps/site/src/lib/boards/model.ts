@@ -70,7 +70,7 @@ export function sensorsOf(m: Model): string[] {
 export const READY = 'openipc-ready';
 export const DISCONTINUED = 'discontinued';
 
-export type Filters = Pick<BoardsState, 'maker' | 'soc' | 'sensor' | 'missing' | 'line' | 'source' | 'ready'>;
+export type Filters = Pick<BoardsState, 'maker' | 'soc' | 'sensor' | 'missing' | 'line' | 'source' | 'ready' | 'kind'>;
 
 export function filterBoards(all: Entry[], s: Filters): Entry[] {
   return all.filter((m) =>
@@ -80,7 +80,8 @@ export function filterBoards(all: Entry[], s: Filters): Entry[] {
     && (!s.missing || !has(m, s.missing as Missing))
     && (!s.line || m.category === s.line)
     && (!s.source || m.sources.includes(s.source))
-    && (!s.ready || m.tags.includes(READY)));
+    && (!s.ready || m.tags.includes(READY))
+    && (!s.kind || kindOf(m) === s.kind));
 }
 
 /**
@@ -134,7 +135,39 @@ export function filterHits(hits: Hit[], kept: Entry[]): Hit[] {
   return hits.filter((h) => ids.has(h.model_id));
 }
 
+/** What an entry is: a board unless a source says it is a finished device. */
+export function kindOf(m: Pick<Model, 'kind'>): string {
+  return m.kind || 'board';
+}
+
+/**
+ * The boards a finished device is built on, as far as the evidence goes: a
+ * board running the same firmware -- the same XM device ID -- as the device.
+ * NVR8016SY-SKL runs device C6380233, whose firmware is the NBD80S16S-KL
+ * board's.
+ */
+export function boardsInside(m: Entry, all: Entry[]): Entry[] {
+  if (kindOf(m) === 'board') return [];
+  const ids = new Set((m.devices ?? []).map((d) => d.id));
+  if (ids.size === 0) return [];
+  return all.filter((b) => b.id !== m.id && kindOf(b) === 'board' && (b.devices ?? []).some((d) => ids.has(d.id)));
+}
+
+/**
+ * A count for a list that can hold both boards and finished devices: "12
+ * boards", "3 finished devices", or both. A total labelled boards must not
+ * count cameras.
+ */
+export function tally(list: Pick<Model, 'kind'>[], t: (key: string, vars?: Record<string, unknown>) => string): string {
+  const devices = list.filter((m) => kindOf(m) !== 'board').length;
+  const boards = list.length - devices;
+  return [boards > 0 || devices === 0 ? t('board_count', { count: boards }) : null,
+    devices > 0 ? t('device_count', { count: devices }) : null].filter(Boolean).join(' · ');
+}
+
 export interface Stats {
+  /** Finished devices: cameras, recorders and the like. */
+  devices: number;
   boards: number;
   makers: number;
   pinouts: number;
@@ -144,7 +177,8 @@ export interface Stats {
 
 export function stats(all: Entry[]): Stats {
   return {
-    boards: all.length,
+    boards: all.filter((m) => kindOf(m) === 'board').length,
+    devices: all.filter((m) => kindOf(m) !== 'board').length,
     makers: new Set(all.filter((m) => m.maker.id !== 'unknown').map((m) => m.maker.id)).size,
     pinouts: all.filter((m) => has(m, 'pinout')).length,
     dumps: all.reduce((n, m) => n + m.coverage.flash_dumps, 0),
@@ -166,6 +200,11 @@ export const KNOWN_LINES = new Set([
   'ip-camera-module', 'dvr-board', 'nvr-board', 'consumer-module', 'ahd-camera-module', 'xvi-ahd-hybrid-camera-module',
   'af-module', 'panoramic-vr', 'wifi-kit', 'h-265-xvi-dvr-board', 'intelligent-analysis-module',
   'battery-camera-module', 'xvi-ahd-dvr-board', 'dual-lens-camera-module', 'accessory', 'pcb',
+  // JFTech's lines (Xiongmai's current brand), modules and finished devices.
+  '4g-camera-module', 'multi-lens-camera-module', 'wi-fi-camera-module', 'aov-camera-module', 'video-door-lock-module',
+  'pet-feeder-module', 'network-camera', 'coaxial-camera', 'wi-fi-camera', 'battery-camera', 'aov-camera',
+  '4g-5g-camera', 'multi-lens-wi-fi-camera', 'network-video-recorder', 'coaxial-video-recorder',
+  'wi-fi-base-station', 'smart-video-doorbell',
 ]);
 
 /** A product line in the reader's language, or as the source names it. */

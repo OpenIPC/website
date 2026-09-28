@@ -40,6 +40,9 @@ var Snapshots = map[string]string{
 	// tehno32.ru's archive, on 541 modules and 71 PCBs, with 650 pinout pages,
 	// and the device IDs its firmware pages name.
 	"tehno32": "f7137bd8a94dc3f7776f868e67cf5fa063dbbb4ce7d638ca00cbc382ec15a651",
+	// boards-donors/jftech/snapshot-ecb792772e81.tar: JFTech's catalogue (Xiongmai's
+	// current brand), 198 products: 132 boards and 66 finished devices.
+	"jftech": "ecb792772e818d49995d4f4432a5d10c0d5da42a4b14b19f2d77bedb0b726b7d",
 }
 
 type Snapshot struct {
@@ -83,6 +86,9 @@ type SnapModel struct {
 	// firmware page's "download firmware for IPG-50H20PLS-S") is evidence
 	// about it, not a listing of it.
 	LinkOnly bool `json:"link_only,omitempty"`
+	// Kind is what the entry is: a board (the default) or a finished device
+	// (camera, recorder, doorbell, base_station).
+	Kind string `json:"kind,omitempty"`
 }
 
 type SnapDevice struct {
@@ -448,15 +454,18 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 				id = slug(m.Maker + "-" + m.Code + "-" + src)
 			}
 			if _, err := tx.Exec(ctx, `
-				INSERT INTO board_models (id, manufacturer_id, model, soc, soc_label, category, listed_year, position)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, 1000 + $8)`,
-				id, maker.ID, m.Code, null(im.socFor(m.SoCLabel)), null(m.SoCLabel), null(m.Category), nullInt(m.ListedYear), position); err != nil {
+				INSERT INTO board_models (id, manufacturer_id, model, soc, soc_label, category, listed_year, kind, position)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, coalesce($8, 'board'), 1000 + $9)`,
+				id, maker.ID, m.Code, null(im.socFor(m.SoCLabel)), null(m.SoCLabel), null(m.Category), nullInt(m.ListedYear), null(m.Kind), position); err != nil {
 				return err
 			}
 		} else if _, err := tx.Exec(ctx, `
 			UPDATE board_models SET category = coalesce(category, $2), soc = coalesce(soc, $3), soc_label = coalesce(soc_label, $4),
-			       listed_year = least(listed_year, $5)
-			WHERE id = $1`, id, null(m.Category), null(im.socFor(m.SoCLabel)), null(m.SoCLabel), nullInt(m.ListedYear)); err != nil {
+			       listed_year = least(listed_year, $5),
+			       -- a source that says the entry is a finished device is believed
+			       -- over the default; one board-only source never demotes it
+			       kind = CASE WHEN $6::text IS NOT NULL AND $6::text <> 'board' THEN $6::text ELSE kind END
+			WHERE id = $1`, id, null(m.Category), null(im.socFor(m.SoCLabel)), null(m.SoCLabel), nullInt(m.ListedYear), null(m.Kind)); err != nil {
 			return err
 		}
 		for _, c := range codes {

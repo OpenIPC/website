@@ -70,6 +70,8 @@ export interface Model {
   tags: string[];
   /** The other codes sources print for this board. */
   aliases?: string[];
+  /** board, or the finished device it is (camera, recorder, doorbell, base_station). */
+  kind?: string;
   /** The XM device IDs the board runs, with what each can be flashed with. */
   devices?: VendorDevice[];
   /** The year the maker's own catalogue first showed the board, where a source dates it. */
@@ -193,5 +195,6 @@ export interface VendorDevice {
 /** GET /api/v1/vendor-firmware/{deviceId}. */
 export interface DeviceAnswer {
   device: VendorDevice;
-  boards: { id: string; model: string | null }[];
+  /** The catalogue entries that run the device ID: boards and finished devices. */
+  boards: { id: string; model: string | null; kind?: string }[];
 }

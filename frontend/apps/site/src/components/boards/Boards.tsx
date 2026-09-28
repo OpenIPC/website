@@ -16,9 +16,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import type { BoardsFile, DeviceAnswer, Hit, SearchResult, Source } from '../../lib/boards/types';
 import { fetchBoards, fetchDevice, searchBoards } from '../../lib/boards/api';
 import Firmware from './Firmware';
-import { EMPTY, MISSING, SCOPES, readQueryString, writeQueryString, type BoardsState, type Scope } from '../../lib/boards/url';
+import { EMPTY, KINDS, MISSING, SCOPES, readQueryString, writeQueryString, type BoardsState, type Scope } from '../../lib/boards/url';
 import {
-  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, deviceIdOf, entries, filterBoards, filterHits, heading, matchBoards, flashOf, has, highlight, layout, lead,
+  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, flashOf, has, highlight, layout, lead,
   lineLabel, lineOptions, sensorOptions, socName, socOptions, stats, subtitle, type Entry, type Group, type Heading,
 } from '../../lib/boards/model';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
@@ -117,7 +117,7 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
   const sources = useMemo(() => new Map((data.state === 'ok' ? data.value.sources : []).map((s) => [s.id, s])), [data]);
   const names = useMemo(() => Object.fromEntries(Object.entries(socs).map(([k, v]) => [k, v.model])), [socs]);
   const kept = useMemo(() => filterBoards(all, view),
-    [all, view.maker, view.soc, view.sensor, view.missing, view.line, view.source, view.ready]);
+    [all, view.maker, view.soc, view.sensor, view.missing, view.line, view.source, view.ready, view.kind]);
   const sections = useMemo(() => (data.state === 'ok' ? layout(data.value.manufacturers, kept, undefined, all) : []), [data, kept, all]);
   const q = view.q.trim();
   const searching = q.length >= MIN_QUERY;
@@ -149,7 +149,7 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
   }, [q, view.scope, serverSoc, searching]);
 
   const s = stats(all);
-  const filtered = view.maker || view.soc || view.sensor || view.missing || view.line || view.source || view.ready || view.q;
+  const filtered = view.maker || view.soc || view.sensor || view.missing || view.line || view.source || view.ready || view.kind || view.q;
   const card = { socs, names, sources, t, href, onOpen: openModel };
 
   return (
@@ -171,7 +171,8 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
       {data.state === 'ok' && (
         <dl class="my-6 flex flex-wrap gap-x-7 gap-y-3 tabular-nums">
           {([
-            [s.boards, 'stats_boards'], [s.makers, 'stats_makers'], [s.pinouts, 'stats_pinouts'],
+            [s.boards, 'stats_boards'], ...(s.devices > 0 ? [[s.devices, 'stats_devices'] as const] : []),
+            [s.makers, 'stats_makers'], [s.pinouts, 'stats_pinouts'],
             [s.dumps, 'stats_dumps'], [s.needPinout, 'stats_need_pinout'],
           ] as const).map(([n, key]) => (
             <div key={key} class="flex flex-col-reverse text-sm text-body-secondary">
@@ -205,6 +206,9 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
             options={socOptions(all, names)} onChange={(v) => set({ soc: v })} />
           <Select label={t('filter_sensor')} id="boards-sensor" value={view.sensor} any={t('filter_any')}
             options={sensorOptions(all)} onChange={(v) => set({ sensor: v })} />
+          <Select label={t('filter_kind')} id="boards-kind" value={view.kind} any={t('filter_any')}
+            options={KINDS.filter((k) => all.some((m) => kindOf(m) === k)).map((k) => [k, t(`kind_${k}_plural`)])}
+            onChange={(v) => set({ kind: (KINDS as readonly string[]).includes(v ?? '') ? (v as BoardsState['kind']) : null })} />
           <Select label={t('filter_source')} id="boards-source" value={view.source} any={t('filter_any')}
             options={[...sources.values()].map((src) => [src.id, src.name])} onChange={(v) => set({ source: v })} />
           <Select label={t('filter_missing')} id="boards-missing" value={view.missing} any={t('missing_any')}
@@ -237,7 +241,9 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
                 <Firmware device={device.value.device} heading={t('fw_your_device', { id: device.value.device.id })}
                   note={device.value.device.coupler ? undefined : t('fw_no_coupler')} locale={locale} t={t} />
                 <p class="m-0 text-sm text-body-secondary">
-                  {device.value.boards.length > 0 ? t('fw_boards', { count: device.value.boards.length }) : t('fw_no_boards')}
+                  {device.value.boards.length > 0
+                    ? t('fw_runs', { what: tally(device.value.boards, t) })
+                    : t('fw_no_boards')}
                 </p>
               </div>
             )}
@@ -261,9 +267,14 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
                   {makerName(maker.id, maker.name, t)}
                   <small class="text-sm font-normal text-body-secondary">
                     {maker.aliases.length > 0 && `${t('also_marked', { aliases: maker.aliases.join(', ') })} · `}
-                    {t('board_count', { count })}
+                    {tally(groups.flatMap((g) => g.entries), t)}
                   </small>
                 </h2>
+                {maker.id === 'xiongmai' && (
+                  <p class="m-0 mt-1.5 max-w-[80ch] text-sm text-body-secondary">
+                    {t('successor_xiongmai')} <a href="https://en.jftech.com" target="_blank" rel="noopener">JFTech ↗</a>
+                  </p>
+                )}
                 {groups.map((g) => (
                   <GroupView key={g.key} group={g} split={groups.length > 1} all={expanded.has(g.key)}
                     onAll={() => setExpanded((x) => new Set(x).add(g.key))} card={card} />
@@ -274,7 +285,7 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
       </div>
 
       {open && (
-        <BoardPanel id={open} entry={all.find((m) => m.id === open)} loaded={data.state !== 'loading'} locale={locale}
+        <BoardPanel id={open} entry={all.find((m) => m.id === open)} all={all} loaded={data.state !== 'loading'} locale={locale}
           t={t} sources={sources} index={index} socs={socs} names={names} href={href} onOpen={openModel} onClose={closeModel} />
       )}
     </div>
@@ -312,7 +323,7 @@ function GroupView({ group, split, all, onAll, card }: {
       {split && (
         <h3 id={`line-${group.key}`} class="mb-0 scroll-mt-24 flex flex-wrap items-baseline gap-x-2 text-lg font-semibold">
           {group.label ? lineLabel(group.label, t) : t('group_other')}
-          <small class="text-sm font-normal text-body-secondary">{t('board_count', { count: group.entries.length })}</small>
+          <small class="text-sm font-normal text-body-secondary">{tally(group.entries, t)}</small>
         </h3>
       )}
       <div class="mt-3.5 grid grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-4">
@@ -358,7 +369,7 @@ function Card({ m, level, socs, names, sources, t, href, onOpen }: CardProps & {
           </div>
           <SocChip m={m} socs={socs} names={names} t={t} />
         </div>
-        <Tags tags={m.tags} line={m.category} t={t} />
+        <Tags tags={m.tags} line={m.category} kind={m.kind} t={t} />
         {text && <p class="m-0 line-clamp-3 text-[13.5px] leading-normal">{text}</p>}
         {(sensors || flash) && (
           <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-0.5 text-[13.5px]">
