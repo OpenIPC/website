@@ -59,13 +59,16 @@ describe("buildCatalog", () => {
     ]);
   });
 
-  it("groups SoCs by maker", () => {
+  it("groups SoCs by maker, the popular makers first", () => {
     expect(catalog.groups).toEqual([
       { vendor: "Goke", socs: ["gk7205v300"] },
       { vendor: "HiSilicon", socs: ["hi3516cv6xx"] },
-      { vendor: "Ingenic", socs: ["t31"] },
       { vendor: "SigmaStar", socs: ["ssc338q"] },
+      { vendor: "Ingenic", socs: ["t31"] },
     ]);
+    const more = buildCatalog({ builder: index("builder", [build("b", "2026-09-26T18:57:46Z",
+      ["xm530-lite", "v851s-lite", "rv1106-lite", "ak3918-lite", "t31-lite", "gk7102-lite"])]) });
+    expect(more.groups.map((g) => g.vendor)).toEqual(["Goke", "Ingenic", "Rockchip", "Allwinner", "Xiongmai", null]);
   });
 
   it("drops builds that reported no sizes", () => {

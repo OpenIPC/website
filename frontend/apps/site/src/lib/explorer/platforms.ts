@@ -25,7 +25,7 @@ export type Variant = {
 export type VendorGroup = { vendor: string | null; socs: string[] };
 
 export type Catalog = {
-  /** SoCs grouped by maker, makers alphabetical, the unknown ones last. */
+  /** SoCs grouped by maker, the popular makers first, the unknown ones last. */
   groups: VendorGroup[];
   /** Per SoC, generic variants first, then device builds. */
   variants: Record<string, Variant[]>;
@@ -56,6 +56,11 @@ const VENDORS: Array<[string, string]> = [
   ["v8", "Allwinner"],
   ["t", "Ingenic"],
 ];
+
+// The makers most cameras carry, in that order; the rest follow alphabetically,
+// an unknown one last.
+const POPULAR = ["Goke", "HiSilicon", "SigmaStar", "Ingenic", "Rockchip"];
+const vendorRank = (v: string | null) => (v === null ? POPULAR.length + 1 : POPULAR.includes(v) ? POPULAR.indexOf(v) : POPULAR.length);
 
 /** The chip's maker, by its model's prefix; null when none matches. */
 export function vendorOf(soc: string): string | null {
@@ -98,7 +103,7 @@ export function buildCatalog(indexes: Partial<Record<Source, IndexFile>>): Catal
   }
   const groups = [...bucket.entries()]
     .map(([vendor, socs]) => ({ vendor, socs }))
-    .sort((a, b) => (a.vendor === null ? 1 : b.vendor === null ? -1 : a.vendor.localeCompare(b.vendor)));
+    .sort((a, b) => vendorRank(a.vendor) - vendorRank(b.vendor) || (a.vendor ?? '').localeCompare(b.vendor ?? ''));
   const kconfig = new Set((["firmware", "builder"] as const).flatMap((s) => indexes[s]?.kconfig_available_for ?? []));
   return { groups, variants, byPlatform, builds, kconfig };
 }
