@@ -5,7 +5,7 @@
  * a description that link to other boards. Pure functions, so they are
  * tested without a browser.
  */
-import type { BoardFile, BoardsFile, Hit, Manufacturer, Model } from './types';
+import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model } from './types';
 import type { BoardsState, Missing } from './url';
 
 /** A board model with the manufacturer it is filed under. */
@@ -140,17 +140,93 @@ export function kindOf(m: Pick<Model, 'kind'>): string {
   return m.kind || 'board';
 }
 
+/** One board a finished device holds, and why the catalogue says so. */
+export interface Inside {
+  code: string;
+  /** The catalogue's card for the board, when it has one. */
+  board: Entry | null;
+  status: Content['status'];
+  /** As Content, plus device_id: a board that runs the device's own firmware. */
+  basis: Content['basis'] | 'device_id';
+  evidence: string | null;
+  /** The firmware file's name, or the shared device ID. */
+  label: string | null;
+}
+
+/** Lookups over one catalogue, built once per array: by id, boards by device ID, devices by the board inside. */
+interface CatalogueIndex {
+  byId: Map<string, Entry>;
+  boardsByDevice: Map<string, { board: Entry; device: string }[]>;
+  holders?: Map<string, { device: Entry; status: Content['status'] }[]>;
+}
+const indexCache = new WeakMap<Entry[], CatalogueIndex>();
+function indexOf(all: Entry[]): CatalogueIndex {
+  let ix = indexCache.get(all);
+  if (!ix) {
+    const boardsByDevice = new Map<string, { board: Entry; device: string }[]>();
+    for (const b of all) {
+      if (kindOf(b) !== 'board') continue;
+      for (const d of b.devices ?? []) {
+        const list = boardsByDevice.get(d.id) ?? [];
+        list.push({ board: b, device: d.id });
+        boardsByDevice.set(d.id, list);
+      }
+    }
+    ix = { byId: new Map(all.map((e) => [e.id, e])), boardsByDevice };
+    indexCache.set(all, ix);
+  }
+  return ix;
+}
+
 /**
- * The boards a finished device is built on, as far as the evidence goes: a
- * board running the same firmware -- the same XM device ID -- as the device.
- * NVR8016SY-SKL runs device C6380233, whose firmware is the NBD80S16S-KL
- * board's.
+ * The boards a finished device is built on. An owner's photo settles it:
+ * once one is confirmed, only confirmed boards are shown. Until then, the
+ * boards the vendor's firmware names, and any board running the same XM
+ * device ID -- each "most likely".
  */
-export function boardsInside(m: Entry, all: Entry[]): Entry[] {
+export function insideOf(m: Entry, all: Entry[]): Inside[] {
   if (kindOf(m) === 'board') return [];
-  const ids = new Set((m.devices ?? []).map((d) => d.id));
-  if (ids.size === 0) return [];
-  return all.filter((b) => b.id !== m.id && kindOf(b) === 'board' && (b.devices ?? []).some((d) => ids.has(d.id)));
+  const ix = indexOf(all);
+  const rows: Inside[] = (m.contents ?? []).map((c) => ({
+    code: c.code, board: c.board_id ? ix.byId.get(c.board_id) ?? null : null,
+    status: c.status, basis: c.basis, evidence: c.evidence, label: c.label,
+  }));
+  const confirmed = rows.filter((r) => r.status === 'confirmed');
+  const out = confirmed.length > 0 ? confirmed : rows;
+  if (confirmed.length === 0) {
+    for (const d of m.devices ?? []) {
+      for (const { board, device } of ix.boardsByDevice.get(d.id) ?? []) {
+        if (board.id !== m.id) out.push({ code: printedCode(board.model) ?? board.id, board, status: 'likely', basis: 'device_id', evidence: null, label: device });
+      }
+    }
+  }
+  const seen = new Set<string>();
+  return out.filter((r) => {
+    const key = r.board?.id ?? r.code;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** The finished devices a board is found in, each with how sure that is. */
+export function foundIn(b: Entry, all: Entry[]): { device: Entry; status: Content['status'] }[] {
+  if (kindOf(b) !== 'board') return [];
+  const ix = indexOf(all);
+  if (!ix.holders) {
+    // Once per catalogue: every device's boards, turned around.
+    const holders = new Map<string, { device: Entry; status: Content['status'] }[]>();
+    for (const d of all) {
+      for (const r of insideOf(d, all)) {
+        if (!r.board) continue;
+        const list = holders.get(r.board.id) ?? [];
+        list.push({ device: d, status: r.status });
+        holders.set(r.board.id, list);
+      }
+    }
+    ix.holders = holders;
+  }
+  return ix.holders.get(b.id) ?? [];
 }
 
 /**

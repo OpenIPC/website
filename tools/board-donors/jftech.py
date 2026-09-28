@@ -10,6 +10,13 @@ JFTech brand at jftech.com, a single-page app reading a JSON API:
   POST .../product/productList.json    {"categoryId": N, "page": P, "limit": L}
   POST .../product/productDetail.json  {"productId": N}
 
+Each product's firmwareAddr is a landing page on Xiongmai's download server,
+fetched too: its title is the firmware file, which names the board a
+recorder's firmware is for (C638024T（AHB80N04R-GS-V3）) or the module a
+camera's is built for (IPC_GK7205V200_G4F_S38). The same ids are served from
+download.xm030.cn (whose certificate has lapsed) and download.jftech.com; the
+capture asks the latter.
+
 The API answers only HTTP/2 (an HTTP/1.1 client is redirected to plain http,
 which breaks the POST), so those calls go through curl --http2; the photos
 and parameter sheets they link (en-static.jftech.com) are ordinary GETs.
@@ -24,6 +31,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -32,6 +40,14 @@ from capture import Capture, say
 
 API = "https://en.jftech.com/api-portal/product/"
 PAGE = 50
+LANDING = "https://download.jftech.com/d/"
+
+
+def landing(url):
+    """The firmware landing page a product links, on the host the capture
+    asks; None for a placeholder ("0", a cloud-drive link)."""
+    m = re.search(r"download\.(?:xm030\.cn|jftech\.com)/d/([A-Za-z0-9=]+)", url or "")
+    return LANDING + m.group(1) if m else None
 
 
 class Api:
@@ -130,6 +146,12 @@ def main():
                 if body is None:
                     say(f"  {e.get('status')} {url}")
                     failed.append(url)
+        page = landing(d.get("firmwareAddr"))
+        if page:
+            e, body = cap.get(page)
+            if body is None:
+                say(f"  {e.get('status')} {page}")
+                failed.append(page)
     if failed:
         # api.json is what the snapshot builder trusts; a short capture must
         # not become one. Rerun it (the files already fetched are not fetched

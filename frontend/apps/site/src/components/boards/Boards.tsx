@@ -18,7 +18,7 @@ import { fetchBoards, fetchDevice, searchBoards } from '../../lib/boards/api';
 import Firmware from './Firmware';
 import { EMPTY, KINDS, MISSING, SCOPES, readQueryString, writeQueryString, type BoardsState, type Scope } from '../../lib/boards/url';
 import {
-  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, flashOf, has, highlight, layout, lead,
+  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, deviceIdOf, entries, insideOf, kindOf, tally, filterBoards, filterHits, heading, matchBoards, flashOf, has, highlight, layout, lead,
   lineLabel, lineOptions, sensorOptions, socName, socOptions, stats, subtitle, type Entry, type Group, type Heading,
 } from '../../lib/boards/model';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
@@ -150,7 +150,7 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
 
   const s = stats(all);
   const filtered = view.maker || view.soc || view.sensor || view.missing || view.line || view.source || view.ready || view.kind || view.q;
-  const card = { socs, names, sources, t, href, onOpen: openModel };
+  const card = { socs, names, sources, t, href, onOpen: openModel, catalogue: all };
 
   return (
     <div class="site-container pb-12">
@@ -311,6 +311,8 @@ function Select({ label, id, value, any, options, onChange }: {
 type CardProps = {
   socs: SocLinks; names: Record<string, string>; sources: Map<string, Source>; t: BoardsT;
   href: (model: string | null) => string; onOpen: (id: string) => void;
+  /** Every entry: a finished device's card names the board inside it. */
+  catalogue: Entry[];
 };
 
 function GroupView({ group, split, all, onAll, card }: {
@@ -339,7 +341,7 @@ function GroupView({ group, split, all, onAll, card }: {
   );
 }
 
-function Card({ m, level, socs, names, sources, t, href, onOpen }: CardProps & { m: Entry; level: 3 | 4 }) {
+function Card({ m, level, socs, names, sources, t, href, onOpen, catalogue }: CardProps & { m: Entry; level: 3 | 4 }) {
   const head = heading(m);
   const title = head.text ?? t('unidentified');
   const name = subtitle(m);
@@ -348,6 +350,7 @@ function Card({ m, level, socs, names, sources, t, href, onOpen }: CardProps & {
   const sensors = [...new Set(m.units.map((u) => u.sensor).filter(Boolean))].join('; ');
   const flash = flashOf(m);
   const Title = level === 3 ? 'h3' : 'h4';
+  const inside = insideOf(m, catalogue);
 
   return (
     <article class="flex flex-col overflow-hidden rounded-lg border border-hairline bg-white transition-colors hover:border-[#c5cbe0]">
@@ -370,6 +373,12 @@ function Card({ m, level, socs, names, sources, t, href, onOpen }: CardProps & {
           <SocChip m={m} socs={socs} names={names} t={t} />
         </div>
         <Tags tags={m.tags} line={m.category} kind={m.kind} t={t} />
+        {inside.length > 0 && (
+          <p class="m-0 text-[13px]">
+            {t(inside[0].status === 'confirmed' ? 'card_inside_confirmed' : 'card_inside_likely')}{' '}
+            <b class="font-mono">{inside.map((r) => r.code).join(', ')}</b>
+          </p>
+        )}
         {text && <p class="m-0 line-clamp-3 text-[13.5px] leading-normal">{text}</p>}
         {(sensors || flash) && (
           <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-0.5 text-[13.5px]">

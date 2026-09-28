@@ -1,0 +1,15 @@
+# What owners found inside the devices they bought: each line was checked by
+# a person against the owner's photo of the board, once. The web role applies
+# the file whenever it starts, and a confirmed board replaces the "most
+# likely" one on the device's card.
+#
+#   maker:    the catalogue's manufacturer id (xiongmai)
+#   device:   the finished device's code (IPC-HX8340PGF-IR2R-PAT)
+#   board:    the code printed on the board inside (IVG-G4F)
+#   evidence: where the photo is: the owner's issue or comment
+#
+# - maker: xiongmai
+#   device: IPC-HX8340PGF-IR2R-PAT
+#   board: IVG-G4F
+#   evidence: https://github.com/OpenIPC/website/issues/...
+[]

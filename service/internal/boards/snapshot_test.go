@@ -646,3 +646,137 @@ func TestAFinishedDeviceKeepsItsKindAndABoardStaysABoard(t *testing.T) {
 		}
 	}
 }
+
+func TestWhatIsInsideAFinishedDevice(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	page := "https://download.jftech.com/d/MDAwMDE1OTM="
+	if _, err := im.FromSnapshot(ctx, donor(t, "jftech",
+		model("xiongmai", "IPC-HX8340PGF-IR2R-PAT", map[string]any{"kind": "camera", "category": "Network Camera",
+			"contents": []map[string]any{{"code": "IVG-G4F", "basis": "firmware_build", "evidence": page,
+				"label": "J91659N7.1IPC_GK7205V200_G4F_S38.Nat.dss.OnvifS.HIK_V5.00.R02"}}}),
+		model("xiongmai", "ADVR8004A-NGS-V4", map[string]any{"kind": "recorder", "category": "Coaxial Video Recorder",
+			"contents": []map[string]any{{"code": "AHB80N04R-GS-V3", "basis": "firmware_page", "evidence": page}}}),
+		model("xiongmai", "IVG-G4F", nil))); err != nil {
+		t.Fatal(err)
+	}
+	inside := func() map[string]contentJSON {
+		tree, err := Tree(ctx, pool, "en", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := map[string]contentJSON{}
+		for _, m := range tree["manufacturers"].([]*makerJSON) {
+			for _, mo := range m.Models {
+				if mo.Contents == nil {
+					t.Fatalf("%s: contents is null, want a list", mo.ID)
+				}
+				for _, c := range mo.Contents {
+					out[mo.ID+" "+c.Status] = c
+				}
+			}
+		}
+		return out
+	}
+	got := inside()
+	cam := got["xiongmai-ipc-hx8340pgf-ir2r-pat likely"]
+	if cam.Code != "IVG-G4F" || cam.BoardID == nil || *cam.BoardID != "xiongmai-ivg-g4f" || cam.Basis != "firmware_build" || cam.Label == nil {
+		t.Errorf("camera: %+v, want likely IVG-G4F linked to its card", cam)
+	}
+	// A board the catalogue does not list is named, and linked once it is.
+	dvr := got["xiongmai-advr8004a-ngs-v4 likely"]
+	if dvr.Code != "AHB80N04R-GS-V3" || dvr.BoardID != nil {
+		t.Errorf("recorder: %+v, want AHB80N04R-GS-V3 with no card yet", dvr)
+	}
+	if _, err := im.FromSnapshot(ctx, donor(t, "cctvsp", model("xiongmai", "AHB80N04R-GS-V3", nil))); err != nil {
+		t.Fatal(err)
+	}
+	if dvr := inside()["xiongmai-advr8004a-ngs-v4 likely"]; dvr.BoardID == nil {
+		t.Error("the recorder's board did not link once the catalogue listed it")
+	}
+
+	// An owner's photo confirms; a line for a device the catalogue lacks waits.
+	missing, err := ApplyConfirmations(ctx, pool, []Confirmation{
+		{Maker: "xiongmai", Device: "IPC-HX8340PGF-IR2R-PAT", Board: "IVG-G4F", Evidence: "https://github.com/OpenIPC/website/issues/1"},
+		{Maker: "xiongmai", Device: "NO-SUCH-CAMERA", Board: "IVG-G4F", Evidence: "https://github.com/OpenIPC/website/issues/2"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(missing) != 1 || missing[0] != "xiongmai NO-SUCH-CAMERA" {
+		t.Errorf("missing = %v", missing)
+	}
+	got = inside()
+	if c := got["xiongmai-ipc-hx8340pgf-ir2r-pat confirmed"]; c.Source != Owners || c.Basis != "owner" || c.BoardID == nil {
+		t.Errorf("confirmed: %+v", c)
+	}
+	// Filtering by the owners finds the device they confirmed.
+	tree, err := Tree(ctx, pool, "en", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			if mo.ID == "xiongmai-ipc-hx8340pgf-ir2r-pat" && !slices.Contains(mo.Sources, Owners) {
+				t.Errorf("the confirmed camera's sources %v leave out the owners", mo.Sources)
+			}
+		}
+	}
+	// Re-importing the donor keeps the owner's row; a later contents.yml
+	// without the line withdraws it.
+	if _, err := im.FromSnapshot(ctx, donor(t, "jftech", model("xiongmai", "IPC-HX8340PGF-IR2R-PAT", map[string]any{"kind": "camera"}))); err != nil {
+		t.Fatal(err)
+	}
+	got = inside()
+	if _, ok := got["xiongmai-ipc-hx8340pgf-ir2r-pat confirmed"]; !ok {
+		t.Error("a donor re-import dropped the owner's confirmation")
+	}
+	if _, ok := got["xiongmai-ipc-hx8340pgf-ir2r-pat likely"]; ok {
+		t.Error("the donor's likely row survived a snapshot that no longer says it")
+	}
+	if _, err := ApplyConfirmations(ctx, pool, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := inside()["xiongmai-ipc-hx8340pgf-ir2r-pat confirmed"]; ok {
+		t.Error("a confirmation removed from contents.yml is still shown")
+	}
+
+	// A snapshot's contents must be a code and a web page.
+	for _, bad := range []map[string]any{
+		{"code": "IVG G4F?", "basis": "firmware_build", "evidence": page},
+		{"code": "IVG-G4F", "basis": "owner", "evidence": page},
+		{"code": "IVG-G4F", "basis": "firmware_page", "evidence": "C638024T"},
+	} {
+		if _, err := im.FromSnapshot(ctx, donor(t, "jftech", model("xiongmai", "IPC-HX8340PGF-IR2R-PAT",
+			map[string]any{"kind": "camera", "contents": []map[string]any{bad}}))); err == nil {
+			t.Errorf("imported contents %v", bad)
+		}
+	}
+}
+
+func TestContentsYAMLIsWellFormed(t *testing.T) {
+	if _, err := Confirmations(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTheOwnersSourceIsListedOnlyWhileItConfirmsSomething(t *testing.T) {
+	pool, _ := imported(t)
+	ctx := context.Background()
+	listed := func() bool {
+		return count(t, pool, `SELECT count(*) FROM board_sources WHERE id = $1`, Owners) == 1
+	}
+	if _, err := ApplyConfirmations(ctx, pool, nil); err != nil {
+		t.Fatal(err)
+	}
+	if listed() {
+		t.Error("an empty contents.yml lists the owners as a source")
+	}
+	if _, err := ApplyConfirmations(ctx, pool, []Confirmation{{Maker: "xiongmai", Device: "NO-SUCH", Board: "IVG-G4F", Evidence: "https://example.org/1"}}); err != nil {
+		t.Fatal(err)
+	}
+	if listed() {
+		t.Error("a confirmation waiting for its device lists the owners as a source")
+	}
+}

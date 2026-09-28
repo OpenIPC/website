@@ -274,6 +274,12 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		lock.Release()
 		return nil, err
 	}
+	// What owners found inside their devices (boards/contents.yml), reviewed
+	// in the repository: applied on every start, so a deploy publishes it.
+	if err := applyConfirmations(ctx, pool, log); err != nil {
+		lock.Release()
+		return nil, err
+	}
 
 	store := &snapshots.Store{DB: pool, TokenKey: cfg.CameraTokenKey}
 	wallFS := variants.Wall{Root: cfg.WallRoot}

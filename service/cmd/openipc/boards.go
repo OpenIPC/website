@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/OpenIPC/website/service/internal/boards"
 	"github.com/OpenIPC/website/service/internal/catalogue"
 	"github.com/OpenIPC/website/service/internal/config"
@@ -102,5 +104,25 @@ func importSnapshot(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		return err
 	}
 	log.Info("boards: snapshot imported", "source", *source, "new_models", n)
+	// A confirmation waiting for a device this snapshot brought applies now.
+	return applyConfirmations(ctx, pool, log)
+}
+
+// applyConfirmations publishes contents.yml: what owners found inside the
+// devices they bought. A line whose device the catalogue does not have yet
+// waits, reported, for the snapshot that brings it.
+func applyConfirmations(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger) error {
+	list, err := boards.Confirmations()
+	if err != nil {
+		return err
+	}
+	missing, err := boards.ApplyConfirmations(ctx, pool, list)
+	if err != nil {
+		return fmt.Errorf("boards: contents.yml: %w", err)
+	}
+	for _, m := range missing {
+		log.Warn("boards: contents.yml names a device the catalogue does not have", "device", m)
+	}
+	log.Info("boards: confirmed contents applied", "lines", len(list)-len(missing))
 	return nil
 }

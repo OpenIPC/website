@@ -103,6 +103,9 @@ type modelJSON struct {
 	// Devices are the XM device IDs the board runs, with the stock update and
 	// the coupler image each can be flashed with.
 	Devices []*vendorfw.Device `json:"devices"`
+	// Contents are the boards a finished device holds: confirmed by an
+	// owner, or most likely from the vendor's firmware (contents.go).
+	Contents []contentJSON `json:"contents"`
 	// ListedYear is the year the maker's catalogue first showed the board,
 	// where a source dates it.
 	ListedYear *int `json:"listed_year"`
@@ -193,6 +196,14 @@ func summarise(m *modelJSON) {
 		if !seen[u.Source] {
 			m.Sources = append(m.Sources, u.Source)
 			seen[u.Source] = true
+		}
+	}
+	// An owner who confirmed what is inside is a source of the device too,
+	// so filtering by them finds it.
+	for _, c := range m.Contents {
+		if !seen[c.Source] {
+			m.Sources = append(m.Sources, c.Source)
+			seen[c.Source] = true
 		}
 	}
 }
@@ -355,6 +366,9 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 		return nil, err
 	}
 	if err := devices(ctx, tx, byModel); err != nil {
+		return nil, err
+	}
+	if err := contents(ctx, tx, byModel); err != nil {
 		return nil, err
 	}
 	for _, m := range byModel {
@@ -691,7 +705,8 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 		       (SELECT count(*) FROM board_model_texts) || '|' || (SELECT count(*) FROM board_model_specs) || '|' ||
 		       (SELECT count(*) FROM board_model_tags) || '|' || (SELECT count(*) FROM board_links) || '|' ||
 		       (SELECT coalesce(md5(string_agg(id || ':' || coalesce(listed_year::text, '') || ':' || kind, ',' ORDER BY id)), '') FROM board_models) || '|' ||
-		       (SELECT coalesce(md5(string_agg(source || key || version || asset_url || coalesce(sha256, ''), ',' ORDER BY source, key, version)), '') FROM vendor_firmware) || '|' || (SELECT count(*) FROM board_device_ids)`).Scan(&units, &files, &last, &about); err != nil {
+		       (SELECT coalesce(md5(string_agg(source || key || version || asset_url || coalesce(sha256, ''), ',' ORDER BY source, key, version)), '') FROM vendor_firmware) || '|' || (SELECT count(*) FROM board_device_ids) || '|' ||
+		       (SELECT coalesce(md5(string_agg(model_id || ':' || board_code || ':' || status || ':' || basis || ':' || source || ':' || evidence || ':' || coalesce(evidence_label, ''), ',' ORDER BY model_id, board_code, source)), '') FROM board_contents)`).Scan(&units, &files, &last, &about); err != nil {
 		a.Log.Error("boards: no revision", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})
 		return

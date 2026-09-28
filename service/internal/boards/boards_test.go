@@ -429,3 +429,42 @@ func TestTheImportReadsThePinnedTarball(t *testing.T) {
 		t.Errorf("scratch left behind: %v", left)
 	}
 }
+
+// What a device holds is in the revision, down to why and the firmware quoted:
+// a re-import that only rewords the evidence must not answer 304.
+func TestAChangedBoardInsideChangesTheETag(t *testing.T) {
+	pool, _ := imported(t)
+	s := serve(t, pool)
+	ctx := context.Background()
+	etag := func() string {
+		resp, err := http.Get(s.URL + "/api/v1/boards")
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.Header.Get("ETag")
+	}
+	var id string
+	if err := pool.QueryRow(ctx, `SELECT min(id) FROM board_models`).Scan(&id); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO board_sources (id, name, url, note, ref) VALUES ('jftech', 'JFTech', 'https://en.jftech.com', '', '')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO board_contents (model_id, board_code, status, basis, evidence, evidence_label, source)
+		VALUES ($1, 'IVG-G4F', 'likely', 'firmware_build', 'https://download.jftech.com/d/x', 'J91659N7.1IPC_GK7205V200_G4F', 'jftech')`, id); err != nil {
+		t.Fatal(err)
+	}
+	for _, change := range []string{
+		`UPDATE board_contents SET evidence_label = 'J91659N7.2IPC_GK7205V200_G4F'`,
+		`UPDATE board_contents SET basis = 'firmware_page'`,
+	} {
+		before := etag()
+		if _, err := pool.Exec(ctx, change); err != nil {
+			t.Fatal(err)
+		}
+		if after := etag(); after == before {
+			t.Errorf("ETag %s unchanged after %s", after, change)
+		}
+	}
+}

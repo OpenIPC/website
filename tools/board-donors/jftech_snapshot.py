@@ -2,7 +2,8 @@
 
   docker run --rm -v ~/reports/boards-catalogue/donors:/w -v $PWD/tools/board-donors:/t \\
     -v ~/git/xmupdates:/x board-render:1 python3 /t/jftech_snapshot.py \\
-    /w/raw/jftech /w/jftech-work /x /w/snapshots/jftech-snapshot.tar [/w/translate/jftech-dictionary.json]
+    /w/raw/jftech /w/jftech-work /x /w/snapshots/jftech-snapshot.tar [/w/translate/jftech-dictionary.json] \\
+    --known /w/snapshots/xiongmai-snapshot.tar /w/snapshots/tehno32-snapshot.tar /w/snapshots/cctvsp-snapshot.tar
 
 Runs in board-render:1 (poppler for the parameter sheets' dates and pinout
 pages). Reads jftech.py's capture and OpenIPC/xmupdates' firmware lists.
@@ -24,9 +25,18 @@ rather than a second card.
   firmware landing page, and xmupdates lists the build behind it
   (IPC_AX620U_A4 -> AX620U; the version's first eight characters, the device
   ID);
-- listed_year: the parameter sheet's own creation date, where it has one.
+- listed_year: the parameter sheet's own creation date, where it has one;
+- contents, for a finished device: the board it most likely holds, from its
+  firmware landing page (captured by jftech.py). A recorder's page names the
+  board (C638024T（AHB80N04R-GS-V3）); a camera's build names the module
+  (IPC_GK7205V200_G4F_S38 -> G4F), which is written as the catalogue code it
+  is known by (IVG-G4F), looked up in JFTech's own codes and the --known
+  snapshots, or left as the vendor wrote it. "Likely", never confirmed: that
+  takes an owner's photo (service/internal/boards/contents.yml). The page
+  also gives a device ID and chip where xmupdates does not know it.
 """
 
+import argparse
 import hashlib
 import io
 import json
@@ -39,6 +49,7 @@ import tarfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from snapshot import Files  # noqa: E402
 from tehno32_snapshot import GARBLE, pages, run, trimmed  # noqa: E402
+from jftech import landing as landing_page  # noqa: E402
 
 SOURCE = {"id": "jftech", "name": "JFTech", "url": "https://en.jftech.com",
           "note": "JFTech's product catalogue: Xiongmai's product line under its current brand, "
@@ -84,6 +95,59 @@ def xm_builds(repo):
     return out
 
 
+FILE_NAME = re.compile(r"FileName\s*(.+?)\.zip", re.S)
+NAMED = re.compile(r"^([0-9A-Za-z]{8})\s*[（(]\s*([^）)]+?)\s*[）)]$")
+BUILT = re.compile(r"^([0-9A-Za-z]{8})\.\d+(.+)$")
+# IPC_<chip>_<module>_..., XMJP_IPC_LITEOS_<chip>_<module>_...
+MODULE = re.compile(r"^(?:XMJP_)?IPC_(?:LITEOS_)?[A-Z0-9]+_([A-Z0-9-]+)")
+
+
+def firmware_page(path):
+    """What a landing page says: (file name, device ID, named board or None,
+    build or None); None when it is not a firmware page."""
+    return firmware_page_text(open(path, encoding="utf-8", errors="replace").read())
+
+
+def firmware_page_text(page):
+    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", page))
+    m = FILE_NAME.search(text)
+    if not m:
+        return None
+    name = m.group(1).strip()
+    named = NAMED.match(name)
+    if named:
+        return name, named.group(1).upper(), named.group(2), None
+    built = BUILT.match(name)
+    if built:
+        # 000559A7.1 IPC_HI3516EV200_... puts a space after the revision.
+        return name, built.group(1).upper(), None, built.group(2).strip()
+    return None
+
+
+def module_of(build):
+    """The module a firmware build is for: IPC_GK7205V200_G4F_S38 -> G4F."""
+    m = MODULE.match((build or "").strip().upper())
+    return m.group(1) if m else None
+
+
+def check_parsing():
+    """The firmware names the vendor's pages use, and what they must give; a
+    builder that stops reading one fails rather than drops its contents."""
+    cases = {
+        "J91659N7.1IPC_GK7205V200_G4F_S38.Nat.dss.OnvifS.HIK_V5.00.R02": ("J91659N7", None, "G4F"),
+        "000559A7.1 IPC_HI3516EV200_50H20AI_S38.Nat.dss": ("000559A7", None, "50H20AI"),
+        "000729ML.1XMJP_IPC_LITEOS_GK7202V300_G4-D-Y3_S38_HI3861L_V1.01.LITEOS.R01": ("000729ML", None, "G4-D-Y3"),
+        "C638024T（AHB80N04R-GS-V3）": ("C638024T", "AHB80N04R-GS-V3", None),
+        "C6380249(AHB80N32F-LME)": ("C6380249", "AHB80N32F-LME", None),
+    }
+    for name, want in cases.items():
+        page = f"<td>FileName</td><td>{name}.zip</td>"
+        got = firmware_page_text(page)
+        have = (got[1], got[2], module_of(got[3])) if got else None
+        if have != want:
+            sys.exit(f"firmware name {name!r} reads as {have}, want {want}")
+
+
 def pdf_year(path):
     try:
         info = run("pdfinfo", path)
@@ -93,9 +157,26 @@ def pdf_year(path):
     return int(m.group(1)) if m and 2005 <= int(m.group(1)) <= 2100 else None
 
 
+def known_codes(tars):
+    """Every code (and alias) the other pinned snapshots list."""
+    out = set()
+    for path in tars:
+        with tarfile.open(path) as t:
+            for m in json.load(t.extractfile("manifest.json"))["models"]:
+                out.update(norm(c) for c in [m["code"]] + (m.get("aliases") or []))
+    return out
+
+
 def main():
-    cap, work, xmu, out = sys.argv[1:5]
-    dic = json.load(open(sys.argv[5])) if len(sys.argv) > 5 and os.path.exists(sys.argv[5]) else {}
+    ap = argparse.ArgumentParser()
+    for a in ("cap", "work", "xmu", "out"):
+        ap.add_argument(a)
+    ap.add_argument("dictionary", nargs="?")
+    ap.add_argument("--known", nargs="*", default=[])
+    args = ap.parse_args()
+    check_parsing()
+    cap, work, xmu, out = args.cap, args.work, args.xmu, args.out
+    dic = json.load(open(args.dictionary)) if args.dictionary and os.path.exists(args.dictionary) else {}
     os.makedirs(work, exist_ok=True)
     api = json.load(open(os.path.join(cap, "api.json")))
     by_url = {}
@@ -109,7 +190,16 @@ def main():
     def tr(text, lang):
         return (dic.get((text or "").strip()) or {}).get(lang)
 
-    models, codes, joined = [], {}, 0
+    known = known_codes(args.known) | {norm(d.get("modelKey")) for d in api["products"].values()}
+
+    def board_code(module):
+        """A module as the catalogue knows it: G4F -> IVG-G4F."""
+        for c in (module, "IVG-" + module, "IPG-" + module):
+            if norm(c) in known:
+                return norm(c)
+        return norm(module)
+
+    models, codes, joined, inside = [], {}, 0, 0
     for pid, d in sorted(api["products"].items(), key=lambda kv: int(kv[0])):
         code = norm(d.get("modelKey"))
         if not code or GARBLE.search(code):
@@ -167,6 +257,22 @@ def main():
             chip = CHIP.search(build.upper())
             if chip:
                 m["soc_label"] = chip.group(1)
+        page = landing_page(d.get("firmwareAddr"))
+        said = firmware_page(by_url[page]) if page in by_url else None
+        if said:
+            fname, device, named, build = said
+            if "device_ids" not in m and DEVICE_ID.match(device):
+                m["device_ids"] = [{"id": device, "evidence": page}]
+            chip = CHIP.search((build or "").upper())
+            if chip and "soc_label" not in m:
+                m["soc_label"] = chip.group(1)
+            if kind != "board":
+                module = module_of(build)
+                if named:
+                    m["contents"] = [{"code": norm(named), "basis": "firmware_page", "evidence": page, "label": fname}]
+                elif module:
+                    m["contents"] = [{"code": board_code(module), "basis": "firmware_build", "evidence": page, "label": fname}]
+                inside += "contents" in m
         if year:
             m["listed_year"] = year
         if code in codes:
@@ -183,6 +289,10 @@ def main():
                 prev.setdefault(k, m.get(k))
             if m.get("listed_year"):
                 prev["listed_year"] = min(prev.get("listed_year") or m["listed_year"], m["listed_year"])
+            have = {c["code"] for c in prev.get("contents", [])}
+            prev.setdefault("contents", []).extend(c for c in m.get("contents", []) if c["code"] not in have)
+            if not prev["contents"]:
+                del prev["contents"]
             if prev["kind"] == "board" and m["kind"] != "board":
                 prev["kind"] = m["kind"]
             continue
@@ -190,6 +300,9 @@ def main():
         models.append(m)
 
     for m in models:
+        for c in m.get("contents", []):
+            if not CODE.match(c["code"]):
+                sys.exit(f"{m['code']}: board {c['code']} is not a code the importer takes")
         if not CODE.match(m["code"]):
             sys.exit(f"{m['code']}: not a code the importer takes")
         if not m.get("category"):
@@ -214,7 +327,7 @@ def main():
     kinds = {}
     for m in models:
         kinds[m["kind"]] = kinds.get(m["kind"], 0) + 1
-    print(f"jftech: {len(models)} products {kinds}, {joined} joined to xmupdates, "
+    print(f"jftech: {len(models)} products {kinds}, {joined} joined to xmupdates, {inside} with a board inside, "
           f"{sum(1 for m in models if m.get('listed_year'))} dated, {len(files.out)} files; sha256 {h.hexdigest()}", file=sys.stderr)
 
 
