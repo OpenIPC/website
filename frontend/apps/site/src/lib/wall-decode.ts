@@ -135,13 +135,24 @@ function configFor(frame: WallFrame): VideoDecoderConfig {
   };
 }
 
-function canWebCodecs(frame: WallFrame): Promise<boolean> {
+/**
+ * The whole configuration, not just the codec string: two cameras can share
+ * `avc1.4D0033` and differ in size or parameter sets, and a platform that
+ * refuses one must not be taken to refuse the other.
+ */
+export function configKey(frame: WallFrame): string {
+  const desc = frame.description ? Array.from(frame.description, (b) => b.toString(16).padStart(2, '0')).join('') : '';
+  return `${frame.codec}|${frame.width ?? ''}x${frame.height ?? ''}|${desc}`;
+}
+
+export function canWebCodecs(frame: WallFrame): Promise<boolean> {
   if (typeof VideoDecoder === 'undefined') return Promise.resolve(false);
-  let answer = supported.get(frame.codec);
+  const key = configKey(frame);
+  let answer = supported.get(key);
   if (!answer) {
     answer = VideoDecoder.isConfigSupported(configFor(frame))
       .then((r) => r.supported === true, () => false);
-    supported.set(frame.codec, answer);
+    supported.set(key, answer);
   }
   return answer;
 }

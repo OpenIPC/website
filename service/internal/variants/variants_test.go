@@ -12,6 +12,9 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
+
+	"github.com/OpenIPC/website/service/internal/keyframe"
 )
 
 // The worker is where "store what the camera sent" is either true or not, and
@@ -163,5 +166,24 @@ func TestLegacyJPEGIsStrippedNotReencoded(t *testing.T) {
 	}
 	if st.marked["j"] != [2]int{40, 30} {
 		t.Errorf("marked %v", st.marked["j"])
+	}
+}
+
+// A check that runs out of time leaves the upload pending, to be tried again.
+func TestATimedOutCheckIsRetriedNotRefused(t *testing.T) {
+	p, st := rig(t)
+	slow := filepath.Join(t.TempDir(), "ffmpeg")
+	if err := os.WriteFile(slow, []byte("#!/bin/sh\nexec sleep 5\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	p.FFmpeg = slow
+	defer func(old time.Duration) { keyframe.CheckTimeout = old }(keyframe.CheckTimeout)
+	keyframe.CheckTimeout = 200 * time.Millisecond
+	upload(t, p, st, "slow", fixture(t, "testsrc-320x240-avc.heif"), nil)
+	if len(st.refused) != 0 || !p.Wall.HasOriginal("slow") {
+		t.Errorf("refused %v, original kept %v", st.refused, p.Wall.HasOriginal("slow"))
+	}
+	if _, marked := st.marked["slow"]; marked {
+		t.Error("published without a check")
 	}
 }

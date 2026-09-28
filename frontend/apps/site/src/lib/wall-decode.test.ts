@@ -4,7 +4,7 @@
  * so every way out of it is pinned here rather than trusted.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fit, hevcAnnexB, paintFrame, route, viaWebCodecs, type WallFrame } from './wall-decode';
+import { canWebCodecs, fit, hevcAnnexB, paintFrame, route, viaWebCodecs, type WallFrame } from './wall-decode';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -121,5 +121,23 @@ describe('paintFrame', () => {
     expect(await paintFrame(canvas, { ...frame, codec: 'hvc1.1.6.L93.B0' }, { width: 480, height: 360 })).toBe(false);
     expect(await paintFrame(canvas, { ...frame, codec: 'image/png' }, { width: 480, height: 360 })).toBe(false);
     expect(await paintFrame(undefined, frame, { width: 480, height: 360 })).toBe(false);
+  });
+});
+
+describe('canWebCodecs', () => {
+  it('asks per configuration, so one refused camera does not blank another with the same codec string', async () => {
+    const asked: number[] = [];
+    vi.stubGlobal('VideoDecoder', {
+      isConfigSupported: async (config: { codedWidth: number }) => {
+        asked.push(config.codedWidth);
+        return { supported: config.codedWidth <= 1920 };
+      },
+    });
+    const big = { ...frame, codec: 'avc1.640034', width: 7680, height: 4320 };
+    const small = { ...frame, codec: 'avc1.640034', width: 1920, height: 1080 };
+    expect(await canWebCodecs(big)).toBe(false);
+    expect(await canWebCodecs(small)).toBe(true);
+    expect(await canWebCodecs(small)).toBe(true);
+    expect(asked).toEqual([7680, 1920]);
   });
 });

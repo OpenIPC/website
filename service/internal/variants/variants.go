@@ -300,7 +300,7 @@ func (p *Processor) keyframe(ctx context.Context, data []byte) (*keyframe.Frame,
 		return nil, ErrRefused{err.Error()}
 	}
 	if err := keyframe.Check(ctx, p.FFmpeg, f); err != nil {
-		if errors.Is(err, exec.ErrNotFound) || ctx.Err() != nil {
+		if errors.Is(err, exec.ErrNotFound) || errors.Is(err, keyframe.ErrCheckTimeout) || ctx.Err() != nil {
 			return nil, err
 		}
 		return nil, ErrRefused{err.Error()}

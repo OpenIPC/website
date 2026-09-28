@@ -41,6 +41,12 @@ type Frame struct {
 	HEVC bool
 }
 
+// pictureItems are the HEIF item types that hold or compose a picture.
+var pictureItems = map[string]bool{
+	"avc1": true, "hvc1": true, "hev1": true, "av01": true, "vvc1": true, "jpeg": true,
+	"j2k1": true, "unci": true, "grid": true, "iden": true, "iovl": true, "tmap": true,
+}
+
 // Limits on what is accepted. The size bound is a sanity bound, not a policy:
 // the largest sensors OpenIPC runs on are 4K and 8M.
 const (
@@ -176,6 +182,16 @@ func Parse(file []byte) (*Frame, error) {
 	if itemType != "avc1" && itemType != "hvc1" {
 		// grid, iden, iovl, av01, jpeg ... none of them is a camera keyframe.
 		return nil, fmt.Errorf("primary item is %q, not avc1 or hvc1", itemType)
+	}
+	// Exactly one picture in the file. The whole file is what gets stored, so a
+	// second picture riding beside the primary one -- a thumbnail, an
+	// alternative, anything -- would be kept on the site unchecked even though
+	// only the primary is ever served. Metadata items (Exif, XMP) are not
+	// pictures and are never sent anywhere.
+	for id, typ := range types {
+		if id != primary && pictureItems[typ] {
+			return nil, fmt.Errorf("a second picture item (%q) beside the primary one", typ)
+		}
 	}
 	locs, err := parseIloc(find(mb, "iloc"))
 	if err != nil {

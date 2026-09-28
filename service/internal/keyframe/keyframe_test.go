@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -13,6 +14,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 // The fixtures are one synthetic keyframe per codec (ffmpeg's testsrc2, 320x240,
@@ -124,6 +126,7 @@ type layout struct {
 	itemType, handler string
 	skipIspe, skipCfg bool
 	extentPad         int
+	extraItem         string // a second item, id 2, of this type
 }
 
 // heif wraps a sample the way majestic's writer does.
@@ -154,7 +157,11 @@ func heif(s sample, w, h int, l layout) []byte {
 	iprp := mkbox("iprp", mkbox("ipco", props...), ipma)
 	hdlr := mkbox("hdlr", u32(0), u32(0), []byte(handler), make([]byte, 12), []byte("PictHandler\x00"))
 	pitm := mkbox("pitm", u32(0), u16(1))
-	iinf := mkbox("iinf", u32(0), u16(1), mkbox("infe", []byte{2, 0, 0, 0}, u16(1), u16(0), []byte(itemType+"Image\x00")))
+	entries := [][]byte{mkbox("infe", []byte{2, 0, 0, 0}, u16(1), u16(0), []byte(itemType+"Image\x00"))}
+	if l.extraItem != "" {
+		entries = append(entries, mkbox("infe", []byte{2, 0, 0, 0}, u16(2), u16(0), []byte(l.extraItem+"Extra\x00")))
+	}
+	iinf := mkbox("iinf", u32(0), u16(len(entries)), bytes.Join(entries, nil))
 	iloc := func(offset int) []byte {
 		return mkbox("iloc", u32(0), []byte{0x44, 0x00}, u16(1), u16(1), u16(0), u16(1), u32(offset), u32(len(s.au)+l.extentPad))
 	}
@@ -233,6 +240,8 @@ func TestParseRefuses(t *testing.T) {
 	}
 	cases := map[string][]byte{
 		"grid item":        heif(s, 320, 240, layout{itemType: "grid"}),
+		"second picture":   heif(s, 320, 240, layout{extraItem: "hvc1"}),
+		"a grid beside it": heif(s, 320, 240, layout{extraItem: "grid"}),
 		"jpeg item":        heif(s, 320, 240, layout{itemType: "jpeg"}),
 		"not pict":         heif(s, 320, 240, layout{handler: "vide"}),
 		"no ispe":          heif(s, 320, 240, layout{skipIspe: true}),
@@ -252,6 +261,13 @@ func TestParseRefuses(t *testing.T) {
 }
 
 // Every truncation of a valid file is refused, and none panics.
+// Metadata beside the picture is allowed: it is stored, never sent.
+func TestParseAllowsMetadataItems(t *testing.T) {
+	if _, err := Parse(heif(avcSample(t), 320, 240, layout{extraItem: "Exif"})); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestParseTruncated(t *testing.T) {
 	for _, s := range []sample{avcSample(t), hevcSample(t)} {
 		file := heif(s, 320, 240, layout{})
@@ -322,8 +338,18 @@ func TestSamples(t *testing.T) {
 	}
 	bin := ffmpegOrSkip(t)
 	files, _ := filepath.Glob(filepath.Join(dir, "*.heif"))
-	if len(files) == 0 {
+	jpegs, _ := filepath.Glob(filepath.Join(dir, "*.jpg"))
+	if len(files)+len(jpegs) == 0 {
 		t.Fatal("no samples")
+	}
+	for _, p := range jpegs {
+		b, _ := os.ReadFile(p)
+		out, w, h, err := StripJPEG(b)
+		if err != nil {
+			t.Errorf("%s: %v", p, err)
+			continue
+		}
+		t.Logf("%s: JPEG %dx%d, %d of %d bytes kept", filepath.Base(p), w, h, len(out), len(b))
 	}
 	for _, p := range files {
 		b, _ := os.ReadFile(p)
@@ -423,5 +449,60 @@ func TestFullRange(t *testing.T) {
 	f, _ := Parse(heif(avcSample(t), 320, 240, layout{}))
 	if _, err := FullRange(f); err == nil {
 		t.Error("an H.264 frame answered")
+	}
+}
+
+// A decode that runs out of time says nothing about the frame, and must not
+// read as a refusal.
+func TestCheckTimeoutIsItsOwnError(t *testing.T) {
+	slow := filepath.Join(t.TempDir(), "ffmpeg")
+	if err := os.WriteFile(slow, []byte("#!/bin/sh\nexec sleep 5\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	defer func(old time.Duration) { CheckTimeout = old }(CheckTimeout)
+	CheckTimeout = 200 * time.Millisecond
+	f, err := Parse(heif(avcSample(t), 320, 240, layout{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Check(context.Background(), slow, f); !errors.Is(err, ErrCheckTimeout) {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func baselineJPEG(t *testing.T) []byte {
+	img := image.NewRGBA(image.Rect(0, 0, 64, 48))
+	for i := range img.Pix {
+		img.Pix[i] = byte(i * 7)
+	}
+	var enc bytes.Buffer
+	if err := jpeg.Encode(&enc, img, nil); err != nil {
+		t.Fatal(err)
+	}
+	return enc.Bytes()
+}
+
+// Metadata after a scan is metadata too; a file cut short, or with no end, is
+// refused rather than published to paint nothing.
+func TestStripJPEGWalksTheWholeFile(t *testing.T) {
+	plain := baselineJPEG(t)
+	eoi := len(plain) - 2
+	com := append([]byte{0xFF, 0xFE}, u16(2+11)...)
+	com = append(com, "after scan!"...)
+	late := append(append(append([]byte{}, plain[:eoi]...), com...), plain[eoi:]...)
+	out, _, _, err := StripJPEG(late)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(out, []byte("after scan!")) || !bytes.Equal(out, plain) {
+		t.Error("a comment after the scan survived")
+	}
+	for name, b := range map[string][]byte{
+		"cut inside the scan": plain[:eoi-40],
+		"no end of image":     plain[:eoi],
+	} {
+		if _, _, _, err := StripJPEG(b); err == nil {
+			t.Errorf("%s: accepted", name)
+		}
 	}
 }
