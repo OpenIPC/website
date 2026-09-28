@@ -169,9 +169,22 @@ def main():
                 m["soc_label"] = chip.group(1)
         if year:
             m["listed_year"] = year
-        if code in codes:  # the same code listed twice: one entry, both sets of files
+        if code in codes:
+            # The same code listed twice: one entry, with everything both say.
             prev = codes[code]
             prev["files"] += [f for f in m["files"] if f["path"] not in {g["path"] for g in prev["files"]}]
+            ids = {d["id"] for d in prev.get("device_ids", [])}
+            prev.setdefault("device_ids", []).extend(d for d in m.get("device_ids", []) if d["id"] not in ids)
+            if not prev["device_ids"]:
+                del prev["device_ids"]
+            for k in ("soc_label", "category"):
+                if m.get(k) and prev.get(k) and m[k] != prev[k]:
+                    sys.exit(f"{code}: two listings disagree on {k}: {prev[k]} / {m[k]}")
+                prev.setdefault(k, m.get(k))
+            if m.get("listed_year"):
+                prev["listed_year"] = min(prev.get("listed_year") or m["listed_year"], m["listed_year"])
+            if prev["kind"] == "board" and m["kind"] != "board":
+                prev["kind"] = m["kind"]
             continue
         codes[code] = m
         models.append(m)

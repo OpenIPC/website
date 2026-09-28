@@ -18,6 +18,10 @@
     "cov_uboot_env": "U-Boot 控制台",
     "details": "详情",
     "details_of": "{board} 的详情",
+    "device_count": {
+      "one": "{count} 台整机",
+      "other": "{count} 台整机"
+    },
     "empty": "没有符合这些筛选条件的主板。去掉一个条件试试。",
     "error": "无法加载主板目录（{error}）。请刷新页面重试。",
     "family": "{family} 系列",
@@ -57,6 +61,7 @@
     "fw_no_coupler": "此设备暂无迁移到 OpenIPC 的镜像",
     "fw_none": "此设备 ID 暂无存档：既没有原厂固件，也没有迁移到 OpenIPC 的镜像。仍可通过 UART 安装 OpenIPC，见该 SoC 页面。",
     "fw_recovery": "恢复指南",
+    "fw_runs": "已知使用此设备 ID：{what}",
     "fw_stock": "保留原厂固件并保持更新",
     "fw_stock_one": "该设备当前的原厂固件。",
     "fw_stock_several": "厂商多次发布过此固件。如果某个版本有问题，可以回退到更早的版本。",

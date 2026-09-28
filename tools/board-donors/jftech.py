@@ -25,6 +25,7 @@ import hashlib
 import json
 import os
 import subprocess
+import sys
 import time
 
 from capture import Capture, say
@@ -94,17 +95,23 @@ def main():
     api = Api(cap, args.delay)
     tree = api.post("categoryTree.json", {})
     if tree is None:
-        return say("no category tree")
-    products, listed = {}, {}
+        sys.exit("no category tree")
+    products, listed, failed = {}, {}, []
     for cid, path in leaves(tree):
-        page = 1
+        page, seen = 1, 0
         while True:
             got = api.post("productList.json", {"categoryId": cid, "page": page, "limit": PAGE})
-            if not got:
+            if got is None:
+                # A failed request is not the end of a list: the capture is short.
+                failed.append(f"category {cid} page {page}")
                 break
-            for p in got.get("data") or []:
+            rows = got.get("data") or []
+            seen += len(rows)
+            for p in rows:
                 listed.setdefault(str(p["id"]), []).append({"id": cid, "path": list(path)})
-            if page * PAGE >= (got.get("total") or 0):
+            if not rows or page * PAGE >= (got.get("total") or 0):
+                if seen < (got.get("total") or 0):
+                    failed.append(f"category {cid}: {seen} of {got.get('total')} listed")
                 break
             page += 1
     say(f"{len(listed)} products in {sum(1 for _ in leaves(tree))} leaf categories")
@@ -112,6 +119,7 @@ def main():
     for pid in sorted(listed, key=int):
         d = api.post("productDetail.json", {"productId": int(pid)})
         if d is None:
+            failed.append(f"product {pid}")
             continue
         products[pid] = d
         for f in (d.get("detailImageList") or []) + (d.get("detailDocList") or []):
@@ -121,6 +129,14 @@ def main():
                 files += body is not None
                 if body is None:
                     say(f"  {e.get('status')} {url}")
+                    failed.append(url)
+    if failed:
+        # api.json is what the snapshot builder trusts; a short capture must
+        # not become one. Rerun it (the files already fetched are not fetched
+        # again; the API answers are).
+        for f in failed[:20]:
+            say(f"  missing: {f}")
+        sys.exit(f"{len(failed)} requests failed; api.json not written")
     with open(os.path.join(args.out, "api.json"), "w") as f:
         json.dump({"tree": tree, "products": products, "listed": listed}, f, ensure_ascii=False, indent=1)
     say(f"{len(products)} products, {files} files")

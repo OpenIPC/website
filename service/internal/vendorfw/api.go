@@ -111,6 +111,9 @@ func (a *API) Handlers() map[string]http.Handler {
 type boardRef struct {
 	ID    string  `json:"id"`
 	Model *string `json:"model"`
+	// Kind is board, or the finished device (camera, recorder, ...) that
+	// runs the device ID: the site counts the two apart.
+	Kind string `json:"kind"`
 }
 
 func (a *API) device(w http.ResponseWriter, r *http.Request) {
@@ -132,12 +135,12 @@ func (a *API) device(w http.ResponseWriter, r *http.Request) {
 	}
 	boards := []boardRef{}
 	rows, err := a.DB.Query(ctx, `
-		SELECT DISTINCT m.id, m.model FROM (`+BoardDevicesSQL+`) d JOIN board_models m ON m.id = d.model_id
+		SELECT DISTINCT m.id, m.model, m.kind FROM (`+BoardDevicesSQL+`) d JOIN board_models m ON m.id = d.model_id
 		WHERE d.device_id = $1 ORDER BY m.id`, id)
 	if err == nil {
 		for rows.Next() {
 			var b boardRef
-			if err = rows.Scan(&b.ID, &b.Model); err != nil {
+			if err = rows.Scan(&b.ID, &b.Model, &b.Kind); err != nil {
 				break
 			}
 			boards = append(boards, b)

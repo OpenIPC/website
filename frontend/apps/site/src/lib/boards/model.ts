@@ -153,6 +153,18 @@ export function boardsInside(m: Entry, all: Entry[]): Entry[] {
   return all.filter((b) => b.id !== m.id && kindOf(b) === 'board' && (b.devices ?? []).some((d) => ids.has(d.id)));
 }
 
+/**
+ * A count for a list that can hold both boards and finished devices: "12
+ * boards", "3 finished devices", or both. A total labelled boards must not
+ * count cameras.
+ */
+export function tally(list: Pick<Model, 'kind'>[], t: (key: string, vars?: Record<string, unknown>) => string): string {
+  const devices = list.filter((m) => kindOf(m) !== 'board').length;
+  const boards = list.length - devices;
+  return [boards > 0 || devices === 0 ? t('board_count', { count: boards }) : null,
+    devices > 0 ? t('device_count', { count: devices }) : null].filter(Boolean).join(' · ');
+}
+
 export interface Stats {
   /** Finished devices: cameras, recorders and the like. */
   devices: number;

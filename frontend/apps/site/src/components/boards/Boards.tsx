@@ -18,7 +18,7 @@ import { fetchBoards, fetchDevice, searchBoards } from '../../lib/boards/api';
 import Firmware from './Firmware';
 import { EMPTY, KINDS, MISSING, SCOPES, readQueryString, writeQueryString, type BoardsState, type Scope } from '../../lib/boards/url';
 import {
-  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, deviceIdOf, entries, kindOf, filterBoards, filterHits, heading, matchBoards, flashOf, has, highlight, layout, lead,
+  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, flashOf, has, highlight, layout, lead,
   lineLabel, lineOptions, sensorOptions, socName, socOptions, stats, subtitle, type Entry, type Group, type Heading,
 } from '../../lib/boards/model';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
@@ -241,7 +241,9 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
                 <Firmware device={device.value.device} heading={t('fw_your_device', { id: device.value.device.id })}
                   note={device.value.device.coupler ? undefined : t('fw_no_coupler')} locale={locale} t={t} />
                 <p class="m-0 text-sm text-body-secondary">
-                  {device.value.boards.length > 0 ? t('fw_boards', { count: device.value.boards.length }) : t('fw_no_boards')}
+                  {device.value.boards.length > 0
+                    ? t('fw_runs', { what: tally(device.value.boards, t) })
+                    : t('fw_no_boards')}
                 </p>
               </div>
             )}
@@ -265,7 +267,7 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
                   {makerName(maker.id, maker.name, t)}
                   <small class="text-sm font-normal text-body-secondary">
                     {maker.aliases.length > 0 && `${t('also_marked', { aliases: maker.aliases.join(', ') })} · `}
-                    {t('board_count', { count })}
+                    {tally(groups.flatMap((g) => g.entries), t)}
                   </small>
                 </h2>
                 {maker.id === 'xiongmai' && (
@@ -321,7 +323,7 @@ function GroupView({ group, split, all, onAll, card }: {
       {split && (
         <h3 id={`line-${group.key}`} class="mb-0 scroll-mt-24 flex flex-wrap items-baseline gap-x-2 text-lg font-semibold">
           {group.label ? lineLabel(group.label, t) : t('group_other')}
-          <small class="text-sm font-normal text-body-secondary">{t('board_count', { count: group.entries.length })}</small>
+          <small class="text-sm font-normal text-body-secondary">{tally(group.entries, t)}</small>
         </h3>
       )}
       <div class="mt-3.5 grid grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-4">

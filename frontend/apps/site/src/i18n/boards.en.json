@@ -18,6 +18,10 @@
     "cov_uboot_env": "U-Boot console",
     "details": "Details",
     "details_of": "Details of {board}",
+    "device_count": {
+      "one": "{count} finished device",
+      "other": "{count} finished devices"
+    },
     "empty": "No board matches these filters. Clear one to widen the list.",
     "error": "The board catalogue could not be loaded ({error}). Reload the page to try again.",
     "family": "{family} family",
@@ -57,6 +61,7 @@
     "fw_no_coupler": "no OpenIPC transition image for this device yet",
     "fw_none": "Nothing is archived for this device ID yet: no stock build and no OpenIPC transition image. OpenIPC can still be installed over UART from the SoC's page.",
     "fw_recovery": "recovery guide",
+    "fw_runs": "Known to run this device ID: {what}",
     "fw_stock": "Stay on stock, updated",
     "fw_stock_one": "The vendor's firmware for this device, current.",
     "fw_stock_several": "The vendor published this firmware more than once. If a build misbehaves, an earlier one is here to go back to.",

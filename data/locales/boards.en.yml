@@ -203,6 +203,10 @@ en:
     fw_boards:
       one: "{count} catalogue board runs this device ID:"
       other: "{count} catalogue boards run this device ID:"
+    device_count:
+      one: '{count} finished device'
+      other: '{count} finished devices'
+    fw_runs: "Known to run this device ID: {what}"
     fw_no_boards: "No catalogue board is known to run this device ID yet."
     fw_error: "Could not check the firmware for device {id} ({error}). Try again in a moment."
     filter_kind: Type

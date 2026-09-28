@@ -195,5 +195,6 @@ export interface VendorDevice {
 /** GET /api/v1/vendor-firmware/{deviceId}. */
 export interface DeviceAnswer {
   device: VendorDevice;
-  boards: { id: string; model: string | null }[];
+  /** The catalogue entries that run the device ID: boards and finished devices. */
+  boards: { id: string; model: string | null; kind?: string }[];
 }

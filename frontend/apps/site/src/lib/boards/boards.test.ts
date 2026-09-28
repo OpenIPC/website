@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
 import type { BoardFile, BoardsFile, Hit, Model } from './types';
 import {
   lineLabel,
-  boardsInside, cardFiles, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
+  boardsInside, cardFiles, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, paragraphs, sensorKey, sensorOptions, slug,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
@@ -182,6 +182,14 @@ describe('finished devices', () => {
     expect(list.map(kindOf)).toEqual(['board', 'recorder', 'camera']);
     expect(filterBoards(list, { ...EMPTY, kind: 'recorder' }).map((m) => m.id)).toEqual(['nvr']);
     expect(filterBoards(list, { ...EMPTY, kind: 'board' }).map((m) => m.id)).toEqual(['nbd']);
+  });
+
+  test('a total counts boards and finished devices apart', () => {
+    const t = (k: string, v?: Record<string, unknown>) => `${String(v?.count)} ${k}`;
+    expect(tally(list, t)).toBe('1 board_count · 2 device_count');
+    expect(tally(list.slice(1), t)).toBe('2 device_count');
+    expect(tally(list.slice(0, 1), t)).toBe('1 board_count');
+    expect(tally([], t)).toBe('0 board_count');
   });
 
   test('a finished device names the board that runs its firmware; a board names none', () => {
