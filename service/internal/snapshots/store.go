@@ -291,8 +291,11 @@ func (st *Store) Exists(ctx context.Context, publicID string) (bool, error) {
 	return ok, err
 }
 
-// Delete removes a frame the wall refused to publish.
-func (st *Store) Delete(ctx context.Context, publicID string) error {
-	_, err := st.DB.Exec(ctx, `DELETE FROM snapshots WHERE public_id = $1`, publicID)
+// MarkRefused closes the row of an upload the wall will not publish: done, so
+// neither the sweep nor the probe's stuck-queue count sees it again, and
+// without dimensions, because there is no picture. The row itself stays --
+// the camera was answered 201, and an accepted upload has a row.
+func (st *Store) MarkRefused(ctx context.Context, publicID string) error {
+	_, err := st.DB.Exec(ctx, `UPDATE snapshots SET variants_generated_at = now() WHERE public_id = $1`, publicID)
 	return err
 }

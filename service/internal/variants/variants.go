@@ -19,8 +19,10 @@
 //     dropped without touching a pixel (keyframe.StripJPEG) and it is
 //     published as main.jpg.
 //   - Anything else, or a HEIF that is not one decodable keyframe: refused.
-//     The row and its files are removed; the camera was already answered 201,
-//     which is the frozen contract, and simply has no frame on the wall.
+//     Its files are removed and its row is closed with no picture. The row
+//     stays: the camera was answered 201, which is the frozen contract, and an
+//     accepted upload has a row. On the wall it is a tile that never paints,
+//     which is what an undecodable upload has always been.
 //
 // "Variant" survives as the word the grants and the socket use for the size a
 // page asks for; wallsocket.Resolve maps it onto these files.
@@ -114,7 +116,7 @@ func writeAtomically(dir, name string, fill func(*os.File) error) error {
 // Store is what the worker needs from the table.
 type Store interface {
 	Exists(ctx context.Context, publicID string) (bool, error)
-	Delete(ctx context.Context, publicID string) error
+	MarkRefused(ctx context.Context, publicID string) error
 	MarkGenerated(ctx context.Context, publicID string, width, height int) (bool, error)
 	Pending(ctx context.Context) ([]string, error)
 	Generated(ctx context.Context) ([]string, error)
@@ -227,14 +229,13 @@ func (p *Processor) process(ctx context.Context, id string) {
 	width, height, err := p.Generate(ctx, id)
 	var refused ErrRefused
 	if errors.As(err, &refused) {
-		// Not a frame the wall can show. Row first: a row whose files are gone
-		// is a blank tile, files whose row is gone are an orphan the purge
-		// removes.
-		if err := p.Store.Delete(ctx, id); err != nil {
-			p.Log.Error("variants: could not remove a refused frame", "public_id", id, "err", err)
+		// Not a frame the wall can show. Files first: if closing the row then
+		// fails, the sweep finds no original and leaves it alone.
+		_ = p.Wall.Purge(id)
+		if err := p.Store.MarkRefused(ctx, id); err != nil {
+			p.Log.Error("variants: could not close a refused frame", "public_id", id, "err", err)
 			return
 		}
-		_ = p.Wall.Purge(id)
 		p.Log.Warn("variants: refused", "public_id", id, "reason", refused.Reason)
 		return
 	}

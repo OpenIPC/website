@@ -21,7 +21,7 @@ import (
 type fakeStore struct {
 	mu      sync.Mutex
 	rows    map[string]bool
-	deleted []string
+	refused []string
 	marked  map[string][2]int
 }
 
@@ -31,11 +31,10 @@ func (s *fakeStore) Exists(_ context.Context, id string) (bool, error) {
 	return s.rows[id], nil
 }
 
-func (s *fakeStore) Delete(_ context.Context, id string) error {
+func (s *fakeStore) MarkRefused(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.rows, id)
-	s.deleted = append(s.deleted, id)
+	s.refused = append(s.refused, id)
 	return nil
 }
 
@@ -124,12 +123,14 @@ func TestBadThumbIsDropped(t *testing.T) {
 	if !f[MainHEIF] || f[ThumbHEIF] || len(f) != 1 {
 		t.Errorf("got %v", f)
 	}
-	if len(st.deleted) != 0 {
+	if len(st.refused) != 0 {
 		t.Error("the frame was refused for its thumbnail")
 	}
 }
 
-func TestRefusedUploadsLeaveNothing(t *testing.T) {
+// A refused upload keeps its row -- the camera was told 201 -- closed with no
+// picture, and nothing on disk.
+func TestRefusedUploadsLeaveNoFiles(t *testing.T) {
 	p, st := rig(t)
 	heif := fixture(t, "testsrc-320x240-hevc.heif")
 	for id, file := range map[string][]byte{
@@ -137,8 +138,11 @@ func TestRefusedUploadsLeaveNothing(t *testing.T) {
 		"truncated": heif[:len(heif)-100],
 	} {
 		upload(t, p, st, id, file, nil)
-		if st.rows[id] {
-			t.Errorf("%s: row kept", id)
+		if !st.rows[id] || len(st.refused) == 0 || st.refused[len(st.refused)-1] != id {
+			t.Errorf("%s: row not closed as refused", id)
+		}
+		if _, marked := st.marked[id]; marked {
+			t.Errorf("%s: marked as published", id)
 		}
 		if _, err := os.Stat(p.Wall.Dir(id)); !os.IsNotExist(err) {
 			t.Errorf("%s: files kept", id)
