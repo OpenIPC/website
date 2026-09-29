@@ -36,11 +36,13 @@ func TestOnlyTheReportsPackageTouchesReports(t *testing.T) {
 	// owned by uid 1000, the backup that copies it off the host, and nginx's
 	// internal location that sends a published file.
 	mayNameRoot := map[string]bool{
-		"service/internal/config/config.go":            true,
-		"deploy/docker-compose.yml":                    true,
-		"deploy/install-go-service.sh":                 true,
-		"deploy/deploy.sh":                             true,
-		"deploy/backup-db.sh":                          true,
+		"service/internal/config/config.go": true,
+		"deploy/docker-compose.yml":         true,
+		"deploy/install-go-service.sh":      true,
+		"deploy/deploy.sh":                  true,
+		"deploy/backup-db.sh":               true,
+		// a fixture file in its throwaway container, to prove /report-files/ is internal
+		"deploy/nginx/check-config.sh":                 true,
 		"deploy/refresh-dev.sh":                        true,
 		"deploy/nginx/sites-available/org.openipc":     true,
 		"deploy/nginx/sites-available/org.openipc.dev": true,
