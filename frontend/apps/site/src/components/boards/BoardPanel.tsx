@@ -390,7 +390,7 @@ function SharedNote({ count, source, others, href, follow, t }: {
   const rest = others.length - shown.length;
   const items = [
     <Fragment key="self">{t('shared_this')}</Fragment>,
-    ...shown.map((o) => <a key={o.id} href={href(o.id)} onClick={follow(o.id)} class="font-mono text-[12.5px] text-inherit">{printedCode(o.model) ?? o.id}</a>),
+    ...shown.map((o) => <a key={o.id} href={href(o.id)} onClick={follow(o.id)} class="font-mono text-[12.5px] whitespace-nowrap text-inherit">{printedCode(o.model) ?? o.id}</a>),
     ...(rest > 0 ? [<button key="more" type="button" class="p-0 text-inherit underline" onClick={() => setAll(true)}>{t('shared_more', { count: rest })}</button>] : []),
   ];
   return (
