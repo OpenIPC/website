@@ -52,11 +52,20 @@ export async function proof(key, who, share, pageNonce, cameraNonce, cameraFp, p
 
 export class ShareError extends Error {}
 
+const FRAME_NAMES = { 2: 'WELCOME', 3: 'REFUSED', 4: 'BYE', 5: 'CHALLENGE' };
+
+// "host udp", "srflx udp", "relay tcp": what a candidate is, without its address.
+function candType(c) {
+  const m = / typ (\w+)/.exec(c || '');
+  const proto = / (udp|tcp) /i.exec(c || '');
+  return (m ? m[1] : '?') + (proto ? ' ' + proto[1].toLowerCase() : '');
+}
+
 export class Tunnel {
   // signal: a WebSocket URL speaking the camera's signalling protocol, the
   // relay's or the camera's own. iceServers: for the RTCPeerConnection.
-  constructor({ signal, share, secret, iceServers = [], policy }) {
-    Object.assign(this, { signal, share, secret, iceServers, policy });
+  constructor({ signal, share, secret, iceServers = [], policy, trace = () => {} }) {
+    Object.assign(this, { signal, share, secret, iceServers, policy, trace });
     this.streams = new Map();
     this.next = 1;
     this.waiting = []; // senders held back for the channel's buffer
@@ -81,28 +90,37 @@ export class Tunnel {
       const cfg = { iceServers: this.iceServers };
       if (this.policy) cfg.iceTransportPolicy = this.policy;
       const pc = (this.pc = new RTCPeerConnection(cfg));
+      this.trace('peer connection', { iceServers: this.iceServers.map((x) => [].concat(x.urls).join(' ')), policy: this.policy || 'all' });
+      pc.oniceconnectionstatechange = () => this.trace('ice state', pc.iceConnectionState);
+      pc.onicegatheringstatechange = () => this.trace('ice gathering', pc.iceGatheringState);
       const dc = (this.dc = pc.createDataChannel('mj-tunnel', { ordered: true }));
       dc.binaryType = 'arraybuffer';
       dc.bufferedAmountLowThreshold = HIGH_WATER / 2;
       dc.onbufferedamountlow = () => this.drain();
       const ws = (this.ws = new WebSocket(this.signal));
       pc.onicecandidate = (e) => {
+        if (e.candidate && e.candidate.candidate) this.trace('local candidate', candType(e.candidate.candidate));
         if (e.candidate && e.candidate.candidate && ws.readyState === 1)
           ws.send(JSON.stringify({ req: 'candidate', data: e.candidate.candidate }));
       };
       pc.onconnectionstatechange = () => {
+        this.trace('connection state', pc.connectionState);
+        if (pc.connectionState === 'connected') this.pairInfo().then((p) => this.trace('selected pair', p));
         if (pc.connectionState === 'failed') {
           if (!settled) done(new ShareError('Could not reach the camera over the network.'));
           else this.lost('The connection to the camera was lost.');
         }
       };
       ws.onopen = async () => {
+        this.trace('signalling open');
         await pc.setLocalDescription(await pc.createOffer());
+        this.trace('offer sent', `${pc.localDescription.sdp.length} bytes`);
         ws.send(JSON.stringify({ req: 'offer', data: pc.localDescription.sdp }));
       };
       ws.onmessage = async (ev) => {
         let m;
-        try { m = JSON.parse(ev.data); } catch (e) { return; }
+        try { m = JSON.parse(ev.data); } catch (e) { this.trace('signalling: unreadable message'); return; }
+        this.trace('signalling ← ' + m.reply, m.reply === 'candidate' ? candType(m.data) : m.reply === 'answer' ? `${(m.data || '').length} bytes` : m.data);
         if (m.reply === 'answer') {
           this.cameraFp = normaliseFingerprint(m.data);
           await pc.setRemoteDescription({ type: 'answer', sdp: m.data });
@@ -112,25 +130,30 @@ export class Tunnel {
           done(new ShareError(m.data || 'The camera refused the connection.'));
         }
       };
-      ws.onerror = () => done(new ShareError('Could not reach the sharing service.'));
+      ws.onerror = () => { this.trace('signalling error'); done(new ShareError('Could not reach the sharing service.')); };
+      ws.onclose = (e) => this.trace('signalling closed', `code ${e.code}${e.reason ? ' ' + e.reason : ''}`);
       const nonce = hex(crypto.getRandomValues(new Uint8Array(16)));
       let key;
       dc.onopen = async () => {
+        this.trace('data channel open');
         key = await shareKey(this.secret);
         this.pageFp = normaliseFingerprint(pc.localDescription.sdp);
         dc.send(frame(T.HELLO, 0, JSON.stringify({ share: this.share, nonce })));
       };
-      dc.onclose = () => { if (!settled) done(new ShareError('The camera closed the connection.')); else this.lost('The camera closed the connection.'); };
+      dc.onclose = () => {
+        this.trace('data channel closed'); if (!settled) done(new ShareError('The camera closed the connection.')); else this.lost('The camera closed the connection.'); };
       dc.onmessage = async (ev) => {
         const b = new Uint8Array(ev.data);
         const type = b[0];
         const id = new DataView(b.buffer).getUint32(4);
         const payload = b.subarray(HEADER);
+        if (type < 16) this.trace('camera → ' + (FRAME_NAMES[type] || 'frame ' + type), type === T.REFUSED || type === T.BYE ? dec.decode(payload) : undefined);
         switch (type) {
           case T.CHALLENGE: {
             const c = JSON.parse(dec.decode(payload));
             const want = await proof(key, 'camera', this.share, nonce, c.nonce, this.cameraFp, this.pageFp);
             if (want !== c.proof) {
+              this.trace('camera proof does not verify');
               // Not the camera that holds this share's key -- or not the
               // DTLS endpoint the answer named. Say nothing more to it.
               done(new ShareError('This link is not valid.'));
@@ -167,7 +190,25 @@ export class Tunnel {
     });
   }
 
+  // The nominated candidate pair, without addresses: what the path is.
+  async pairInfo() {
+    try {
+      const stats = await this.pc.getStats();
+      let pair;
+      stats.forEach((r) => { if (r.type === 'transport' && r.selectedCandidatePairId) pair = stats.get(r.selectedCandidatePairId); });
+      if (!pair) stats.forEach((r) => { if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') pair = r; });
+      if (!pair) return 'none';
+      const l = stats.get(pair.localCandidateId) || {}, r = stats.get(pair.remoteCandidateId) || {};
+      return { local: `${l.candidateType} ${l.protocol}`, remote: `${r.candidateType} ${r.protocol}`,
+        rtt_ms: pair.currentRoundTripTime != null ? Math.round(pair.currentRoundTripTime * 1000) : undefined,
+        sent: pair.bytesSent, received: pair.bytesReceived };
+    } catch (e) {
+      return 'unavailable';
+    }
+  }
+
   lost(why) {
+    this.trace('lost', why);
     if (this.gone) return;
     this.gone = why || 'The connection to the camera ended.';
     for (const s of this.streams.values()) s.onreset();

@@ -14,6 +14,11 @@ const DROP_REQ = new Set(['connection', 'keep-alive', 'host', 'accept-encoding',
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+// A page loaded without this worker in control -- a hard reload bypasses it --
+// asks to be claimed rather than wait for an activation that already happened.
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'claim') e.waitUntil(self.clients.claim());
+});
 
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
