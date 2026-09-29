@@ -164,7 +164,16 @@ func goRoutes(t testing.TB) []route {
 	if err := json.Unmarshal([]byte(read(t, "service/routes.json")), &rs); err != nil {
 		t.Fatal(err)
 	}
-	return rs
+	// The share role is served on hosts of its own (<id>.share.openipc.org),
+	// never behind the static bundle or the openipc.org vhosts: none of its
+	// addresses is one a bundle file could shadow.
+	out := rs[:0]
+	for _, r := range rs {
+		if r.Role != "share" {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // The wizard's command blocks (#164) and the build push (builds/PUSH.md) are
