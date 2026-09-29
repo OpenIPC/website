@@ -359,3 +359,33 @@ func TestVerifyFindsAChangedFile(t *testing.T) {
 		t.Errorf("verify missed the change: %v", bad)
 	}
 }
+
+// ipctool sends --note as a field; a note file is a part with a filename.
+// The two share a name, and the field must not become a file.
+func TestANoteFieldIsTheReportsNoteAndANoteFileIsAFile(t *testing.T) {
+	e := newEnv(t)
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	_ = mw.WriteField("yaml", fixture(t, "t31-sc2332.txt"))
+	_ = mw.WriteField("note", "bought at a market in Shenzhen")
+	w, _ := mw.CreateFormFile("note", "findings.txt")
+	w.Write([]byte("UART pads next to the flash\n"))
+	mw.Close()
+	req := httptest.NewRequest("POST", "/api/v1/reports", &body)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.RemoteAddr = "203.0.113.12:1"
+	rec := httptest.NewRecorder()
+	e.mux.ServeHTTP(rec, req)
+	var out struct {
+		ID    string `json:"id"`
+		Files []struct{ Kind, Name string }
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &out)
+	if rec.Code != 201 || len(out.Files) != 1 || out.Files[0].Name != "findings.txt" {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	r, _ := (&Store{DB: e.pool}).Private(context.Background(), out.ID)
+	if r.Note != "bought at a market in Shenzhen" {
+		t.Errorf("note %q", r.Note)
+	}
+}

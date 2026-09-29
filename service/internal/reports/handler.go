@@ -303,7 +303,16 @@ func (a *API) read(r *http.Request) (*received, int, error) {
 			return in, http.StatusBadRequest, errors.New("the multipart body is cut short")
 		}
 		name := p.FormName()
+		// "note" is both a field (a line of text) and a file kind (a note
+		// file): a part with a filename is a file, one without is a field.
+		isField := p.FileName() == "" && (name == "consent" || name == "channel" || name == "tool" || name == "note")
 		switch {
+		case isField:
+			b, err := io.ReadAll(io.LimitReader(p, maxField+1))
+			if err != nil || len(b) > maxField || !utf8.Valid(b) {
+				return in, http.StatusBadRequest, fmt.Errorf("%s: at most %d characters of text", name, maxField)
+			}
+			in.fields[name] = strings.TrimSpace(string(b))
 		case name == "yaml":
 			b, err := io.ReadAll(io.LimitReader(p, MaxYAML+1))
 			if err != nil || len(b) > MaxYAML {
@@ -334,12 +343,6 @@ func (a *API) read(r *http.Request) (*received, int, error) {
 				return in, http.StatusUnsupportedMediaType, fmt.Errorf("%s %s: %v", name, pt.name, err)
 			}
 			in.parts[len(in.parts)-1].mime = mt
-		case name == "consent" || name == "channel" || name == "tool" || name == "note":
-			b, err := io.ReadAll(io.LimitReader(p, maxField+1))
-			if err != nil || len(b) > maxField || !utf8.Valid(b) {
-				return in, http.StatusBadRequest, fmt.Errorf("%s: at most %d characters of text", name, maxField)
-			}
-			in.fields[name] = strings.TrimSpace(string(b))
 		default:
 			return in, http.StatusBadRequest, fmt.Errorf("%q is not a part a report has: yaml, backup, photo, boot_log, uboot_env, note, document, consent, channel, tool", name)
 		}
