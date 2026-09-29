@@ -907,6 +907,15 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-brand-blue);
 }
 
+/* A finger's size wherever the pointer is one -- a tablet as well as a phone. */
+@media (pointer: coarse) {
+  .socs .chip-link {
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-block: -0.5rem;
+  }
+}
+
 @media (hover: hover) {
   .socs .chip-link {
     opacity: 0;
@@ -1013,10 +1022,20 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 1rem;
   }
 
+  /* The badge from the row's corner: beside a long model name on a narrow
+   * screen it would run past the edge of the table and be cut off. */
+  .socs tr {
+    position: relative;
+  }
+
   .socs .chip-link {
-    width: 2.75rem;
-    height: 2.75rem;
-    margin-block: -0.5rem;
+    position: static;
+  }
+
+  .socs .chip-link.is-copied::after {
+    top: 0.75rem;
+    right: 0;
+    left: auto;
   }
 
   .socs .stage {
