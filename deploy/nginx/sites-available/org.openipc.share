@@ -40,6 +40,11 @@ server {
     add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
 
     location / {
+        # conf.d/openipc-share-conc.conf: a bound of the share hosts' own on
+        # the workers every other site on this host shares.
+        limit_conn share_perip 50;
+        limit_conn share_total 1500;
+        limit_conn_status 429;
         proxy_pass http://127.0.0.1:3004;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
