@@ -77,6 +77,8 @@ ru:
       load_failed: "Не удалось загрузить отчёт. Попробуйте через минуту."
       reports_title: "Отчёты владельцев"
       reports_same_board: "та же плата, что в другом отчёте"
+      reports_app: "приложение"
+      reports_board: "плата"
       reports_yaml: "Вывод ipctool"
       reports_ask: "Есть такая плата?"
       reports_send: "Пришлите её отчёт"

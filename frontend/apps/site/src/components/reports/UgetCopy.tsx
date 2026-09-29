@@ -41,7 +41,7 @@ export default function UgetCopy({ locale, label }: { locale: Locale; label: str
           value={chosen} onChange={(e) => { setFile((e.target as HTMLSelectElement).value); setState('idle'); }}>
           {builds.map((b) => <option key={b.file} value={b.file}>{b.toolchain}</option>)}
         </select>
-        <button type="button" class="site-btn rounded-md border border-[#cdd3e0] bg-white px-3 py-2 text-sm font-medium text-ink hover:bg-surface-alt" onClick={copy}>
+        <button type="button" class="site-btn site-btn-outline-secondary site-btn-sm" onClick={copy}>
           {t('report.copy_uget')}
         </button>
       </div>

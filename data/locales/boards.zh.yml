@@ -77,6 +77,8 @@ zh:
       load_failed: "无法加载报告。请稍后再试。"
       reports_title: "用户报告"
       reports_same_board: "与另一份报告是同一块板"
+      reports_app: "应用"
+      reports_board: "电路板"
       reports_yaml: "ipctool 的输出"
       reports_ask: "有这块板？"
       reports_send: "发送它的报告"

@@ -46,8 +46,8 @@ export default function OwnerReports({ model, locale, t }: { model: string; loca
               </a>
             </div>
             <div class="flex flex-wrap gap-x-4.5 gap-y-1 text-sm text-body-secondary">
-              {r.facts?.main_app && <span>stock app <b class="font-medium text-body">{r.facts.main_app}</b></span>}
-              {r.facts?.board_model && <span>board <b class="font-medium text-body">{r.facts.board_vendor} {r.facts.board_model}</b></span>}
+              {r.facts?.main_app && <span>{t('report.reports_app')} <b class="font-medium text-body">{r.facts.main_app}</b></span>}
+              {r.facts?.board_model && <span>{t('report.reports_board')} <b class="font-medium text-body">{r.facts.board_vendor} {r.facts.board_model}</b></span>}
               {r.same_board > 0 && <span>{t('report.reports_same_board')}</span>}
             </div>
             {r.files.length > 0 && (

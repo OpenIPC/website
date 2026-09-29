@@ -39,7 +39,7 @@ export default function Receipt({ locale }: { locale: Locale }) {
       <label for="receipt-id">{t('report.lookup_label')}</label>
       <input id="receipt-id" name="id" value={id} spellcheck={false} autocomplete="off" placeholder="r-xxxxxxxx"
         class="w-[14ch] rounded-md border border-[#cdd3e0] px-3 py-1.5 font-mono text-[15px]" />
-      <button type="submit" class="site-btn rounded-md bg-ink px-4 py-1.5 font-semibold text-white hover:bg-ink-2">{t('report.lookup_button')}</button>
+      <button type="submit" class="site-btn site-btn-dark">{t('report.lookup_button')}</button>
     </form>
   );
 

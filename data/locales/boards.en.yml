@@ -77,6 +77,8 @@ en:
       load_failed: "The report could not be loaded. Try again in a minute."
       reports_title: "Reports from owners"
       reports_same_board: "same board as another report"
+      reports_app: "app"
+      reports_board: "board"
       reports_yaml: "ipctool's output"
       reports_ask: "Have this board?"
       reports_send: "Send us its report"

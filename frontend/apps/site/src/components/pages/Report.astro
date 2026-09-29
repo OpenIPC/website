@@ -34,7 +34,7 @@ const flags: [string, string][] = [
   <Receipt client:load locale={locale} />
 
   <div class="mt-8 grid gap-5 lg:grid-cols-2">
-    <section class="flex flex-col gap-3 rounded-xl border border-hairline p-6" aria-labelledby="report-shell">
+    <section class="flex min-w-0 flex-col gap-3 rounded-xl border border-hairline p-6" aria-labelledby="report-shell">
       <h2 id="report-shell" class="mb-0 text-xl font-semibold">{p('shell_title')}</h2>
       <p class="mb-0 text-sm text-body-secondary" set:html={p('shell_lede_html')} />
       <UgetCopy client:visible locale={locale} label={p('step_uget')} />
@@ -57,10 +57,10 @@ const flags: [string, string][] = [
       </dl>
     </section>
 
-    <section class="flex flex-col gap-3 rounded-xl border border-hairline p-6" aria-labelledby="report-agent">
+    <section class="flex min-w-0 flex-col gap-3 rounded-xl border border-hairline p-6" aria-labelledby="report-agent">
       <h2 id="report-agent" class="mb-0 text-xl font-semibold">{p('agent_title')}</h2>
       <p class="mb-0 text-sm text-body-secondary">{p('agent_lede')}</p>
-      <Terminal id="report-agent-prompt" title="prompt" code={p('agent_prompt')} />
+      <Terminal id="report-agent-prompt" title="prompt" code={p('agent_prompt')} wrap />
       <ol class="m-0 grid gap-2 ps-5 text-[.9375rem] [&_code]:rounded [&_code]:border [&_code]:border-hairline [&_code]:bg-surface-alt [&_code]:px-1 [&_code]:text-[13.5px]">
         <li set:html={p('agent_step1_html')} />
         <li>{p('agent_step2')}</li>
