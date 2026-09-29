@@ -30,8 +30,8 @@ BASE="${NGINX_IMAGE:-nginx:1.26-alpine}"   # matches webber-eu (nginx/1.26.3)
 # once and reused for every later run, so a vhost that names a certificate the
 # image does not carry fails `nginx -t` on every machine that already has the
 # old image. Bump this whenever the domain list below changes. :2 added
-# openipc.eu.
-FIXTURE=openipc-nginx-check:2
+# openipc.eu, :3 share.openipc.org.
+FIXTURE=openipc-nginx-check:3
 
 die() { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 ok() { printf '\033[32m ok\033[0m %s\n' "$*"; }
@@ -46,7 +46,7 @@ if ! docker image inspect "$FIXTURE" >/dev/null 2>&1; then
 FROM ${BASE}
 RUN apk add --no-cache openssl curl \\
  && (adduser -S -D -H www-data || true) \\
- && for d in openipc.org dev.openipc.org wiki.openipc.org analytics.openipc.org openipc.net openipc.eu; do \\
+ && for d in openipc.org dev.openipc.org wiki.openipc.org analytics.openipc.org openipc.net openipc.eu share.openipc.org; do \\
       mkdir -p /var/lib/dehydrated/certs/\$d; \\
       openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=\$d" \\
         -keyout /var/lib/dehydrated/certs/\$d/privkey.pem \\

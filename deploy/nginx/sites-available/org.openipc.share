@@ -1,9 +1,8 @@
 # Camera sharing links: share.openipc.org and <id>.share.openipc.org.
 #
-# NOT IN sites-available ON PURPOSE. push-nginx.sh installs every file there
-# and runs `nginx -t`, and this vhost names a certificate that does not exist
-# until the wildcard has been issued -- so moving it in before then would fail
-# every nginx push, for every site. deploy/SHARE.md has the order.
+# One wildcard certificate, issued by dehydrated over DNS-01 (a wildcard
+# cannot be issued over HTTP-01): see deploy/SHARE.md for the hook and the
+# per-certificate config that select it.
 #
 # Everything is the share role's: the relay's sockets, the page, its worker.
 # Each share is its own host, so no two shared cameras ever run script in the
