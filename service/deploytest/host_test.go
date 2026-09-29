@@ -107,6 +107,31 @@ func TestMirrorConfig(t *testing.T) {
 	})
 }
 
+// openipc.ru and openipc.kz send the bare `/` to the Russian pages. The
+// language picker's English entry is a link to `/`, so a redirect that does
+// not let a reader from the same name through makes English unreachable on
+// that name -- it did, on both, until 2026-09-29. And a `location = /` that
+// is let through must still reach the origin the way `location /` does,
+// because a prefix location inherits nothing from its sibling.
+func TestMirrorRootLetsThePickerThrough(t *testing.T) {
+	for _, m := range []struct{ name, file string }{
+		{"openipc.kz", "deploy/nginx/mirrors/kz/sites-available/kz.openipc"},
+		{"openipc.ru", "deploy/nginx/mirrors/ru.openipc.snippet"},
+	} {
+		t.Run(m.name, func(t *testing.T) {
+			root := find(read(t, m.file), regexp.MustCompile(`(?sm)^\s*(location = / \{.*?\}.*?\})`), 1) // the `if`, then the location
+			host := regexp.QuoteMeta(m.name)
+			mustMatch(t, `\$http_referer !~\* "\^https://`+regexp.QuoteMeta(regexp.QuoteMeta(m.name))+`/"`, root,
+				"the redirect does not exempt a reader coming from "+m.name+", so the picker's English entry bounces back to /ru")
+			mustMatch(t, `return 302 https://`+host+`/ru\$is_args\$args;`, root, "the root no longer goes to the Russian pages")
+			mustMatch(t, `proxy_pass https://openipc\.org;`, root, "the exempted reader is not proxied to the origin")
+			mustMatch(t, `proxy_ssl_verify\s+on;`, root, "the origin's certificate is not verified")
+			mustMatch(t, `proxy_ssl_name\s+openipc\.org;`, root, "the origin is not named in the handshake")
+			mustMatch(t, `X-Forwarded-For\s+\$proxy_add_x_forwarded_for;`, root, "the reader's address is not forwarded")
+		})
+	}
+}
+
 // The host installers are run by copying deploy/ to the host and executing a
 // script out of the copy. `scp -P 35242 -r deploy host:/tmp/openipc-deploy` is
 // correct exactly once: on a re-run the destination already exists, so scp
