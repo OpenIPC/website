@@ -249,7 +249,7 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
                   )}
                   {photos.filter((f) => (f.shared ?? 0) > 1).map((f) => (
                     <SharedNote key={`shared-${f.url}`} count={f.shared ?? 0} source={sourceName(u.source)}
-                      others={detail.state === 'ok' ? detail.value.shared_photos?.[f.sha256] ?? [] : []} href={href} follow={follow} t={t} />
+                      others={detail.state === 'ok' ? detail.value.shared_photos?.[u.source]?.[f.sha256] ?? [] : []} href={href} follow={follow} t={t} />
                   ))}
                   {files.length > 0 && (
                     <div class="grid gap-1.5">

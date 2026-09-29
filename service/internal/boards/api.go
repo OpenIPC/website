@@ -62,8 +62,10 @@ type fileJSON struct {
 	Width    int    `json:"width,omitempty"`
 	Height   int    `json:"height,omitempty"`
 	Lines    int    `json:"lines,omitempty"`
-	// Shared is, for a photo whose file (the same bytes) a source shows for
-	// other boards too, how many boards show it -- this one included. A
+	// Shared is, for a photo whose file (the same bytes) its source shows for
+	// other boards too, how many of that source's boards show it -- this one
+	// included. Another source carrying the same bytes does not count: the
+	// note says what one catalogue does. A
 	// maker's catalogue often uses one family member's picture for its lens
 	// and channel-count variants; the site says so rather than passing it off
 	// as this board's own.
@@ -344,16 +346,17 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 
 	rows, err = tx.Query(ctx, `
 		WITH shared AS (
-			SELECT a.sha256, count(DISTINCT u.model_id) AS n
+			SELECT u.source, a.sha256, count(DISTINCT u.model_id) AS n
 			FROM board_artifacts a JOIN board_units u ON u.id = a.unit_id
 			WHERE a.kind::text IN `+photoKinds+`
-			GROUP BY a.sha256 HAVING count(DISTINCT u.model_id) > 1
+			GROUP BY u.source, a.sha256 HAVING count(DISTINCT u.model_id) > 1
 		)
 		SELECT a.unit_id, a.kind::text, a.name, a.path, coalesce(a.thumb_path, ''), a.mime, a.bytes, a.sha256,
 		       coalesce(a.width, 0), coalesce(a.height, 0),
 		       coalesce(array_length(regexp_split_to_array(rtrim(a.content, E'\n'), E'\n'), 1), 0),
 		       CASE WHEN a.kind::text IN `+photoKinds+` THEN coalesce(s.n, 0) ELSE 0 END
-		FROM board_artifacts a LEFT JOIN shared s ON s.sha256 = a.sha256
+		FROM board_artifacts a JOIN board_units au ON au.id = a.unit_id
+		LEFT JOIN shared s ON s.source = au.source AND s.sha256 = a.sha256
 		WHERE $1 = '' OR a.unit_id IN (SELECT u.id FROM board_units u JOIN board_models m ON m.id = u.model_id WHERE m.soc = $1)
 		ORDER BY a.unit_id, a.position, a.id`, soc)
 	if err != nil {
@@ -814,30 +817,34 @@ type sharedBoard struct {
 	Model *string `json:"model"`
 }
 
-// sharedPhotos lists, for each photo of a board that other boards show too
-// (keyed by its sha256), those other boards by code.
-func sharedPhotos(ctx context.Context, tx pgx.Tx, id string) (map[string][]sharedBoard, error) {
+// sharedPhotos lists, for each photo of a board that its source shows for
+// other boards too, those other boards by code: keyed by source, then by the
+// photo's sha256.
+func sharedPhotos(ctx context.Context, tx pgx.Tx, id string) (map[string]map[string][]sharedBoard, error) {
 	rows, err := tx.Query(ctx, `
-		SELECT DISTINCT a.sha256, m.id, m.model
+		SELECT DISTINCT mu.source::text, a.sha256, m.id, m.model
 		FROM board_artifacts mine
 		JOIN board_units mu ON mu.id = mine.unit_id AND mu.model_id = $1
 		JOIN board_artifacts a ON a.sha256 = mine.sha256 AND a.kind::text IN `+photoKinds+`
-		JOIN board_units u ON u.id = a.unit_id AND u.model_id <> $1
+		JOIN board_units u ON u.id = a.unit_id AND u.model_id <> $1 AND u.source = mu.source
 		JOIN board_models m ON m.id = u.model_id
 		WHERE mine.kind::text IN `+photoKinds+`
-		ORDER BY a.sha256, m.model, m.id`, id)
+		ORDER BY 1, a.sha256, m.model, m.id`, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	out := map[string][]sharedBoard{}
+	out := map[string]map[string][]sharedBoard{}
 	for rows.Next() {
-		var sha string
+		var source, sha string
 		var b sharedBoard
-		if err := rows.Scan(&sha, &b.ID, &b.Model); err != nil {
+		if err := rows.Scan(&source, &sha, &b.ID, &b.Model); err != nil {
 			return nil, err
 		}
-		out[sha] = append(out[sha], b)
+		if out[source] == nil {
+			out[source] = map[string][]sharedBoard{}
+		}
+		out[source][sha] = append(out[source][sha], b)
 	}
 	return out, rows.Err()
 }

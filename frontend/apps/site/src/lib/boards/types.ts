@@ -147,8 +147,8 @@ export interface ModelDetail {
   devices?: VendorDevice[];
   /** The builds a maker whose firmware is keyed by board model (Anjoy Vision) made for this board, newest first. */
   firmware?: ModelBuild[];
-  /** For each of the board's shared photos (by sha256), the other boards shown with it. */
-  shared_photos?: Record<string, { id: string; model: string | null }[]>;
+  /** For each of the board's shared photos, by source then sha256: the other boards that source shows it for. */
+  shared_photos?: Record<string, Record<string, { id: string; model: string | null }[]>>;
 }
 
 export type TextKind = 'uboot_env' | 'boot_log' | 'note';

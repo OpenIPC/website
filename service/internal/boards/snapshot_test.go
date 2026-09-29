@@ -955,6 +955,11 @@ func TestASharedPhotoSaysSo(t *testing.T) {
 	if _, err := im.FromSnapshot(ctx, snap); err != nil {
 		t.Fatal(err)
 	}
+	// Another source carrying the same bytes for another board is its own
+	// say: it does not add to what Xiongmai's catalogue shows.
+	if _, err := im.FromSnapshot(ctx, donor(t, "cctvsp", model("xiongmai", "IPG-OTHER-9", nil))); err != nil {
+		t.Fatal(err)
+	}
 	tree, err := Tree(ctx, pool, "en", "")
 	if err != nil {
 		t.Fatal(err)
@@ -972,6 +977,7 @@ func TestASharedPhotoSaysSo(t *testing.T) {
 	for k, want := range map[string]string{
 		"xiongmai-ipg-h100t-s-80 photo_other": "2", "xiongmai-ipg-h131s-s-36 photo_other": "2",
 		"xiongmai-ipg-own-1 photo_front": "0", "xiongmai-ipg-pin-1 pinout": "0", "xiongmai-ipg-h131s-s-36 document": "0",
+		"xiongmai-ipg-other-9 photo_other": "0",
 	} {
 		if got[k] != want {
 			t.Errorf("%s: shared %q, want %s", k, got[k], want)
@@ -981,16 +987,17 @@ func TestASharedPhotoSaysSo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	shared := d["shared_photos"].(map[string][]sharedBoard)
-	if len(shared) != 1 {
-		t.Fatalf("shared photos %v, want the one", shared)
+	bySource := d["shared_photos"].(map[string]map[string][]sharedBoard)
+	shared := bySource["xiongmai"]
+	if len(bySource) != 1 || len(shared) != 1 {
+		t.Fatalf("shared photos %v, want Xiongmai's one", bySource)
 	}
 	for _, others := range shared {
 		if len(others) != 1 || others[0].ID != "xiongmai-ipg-h100t-s-80" {
-			t.Errorf("the others %v, want IPG-H100T-S-80 only (not the pinout's board)", others)
+			t.Errorf("the others %v, want IPG-H100T-S-80 only (not the pinout's board, not cctvsp's)", others)
 		}
 	}
-	if d, err := ModelDetail(ctx, pool, "xiongmai-ipg-own-1", "en"); err != nil || len(d["shared_photos"].(map[string][]sharedBoard)) != 0 {
+	if d, err := ModelDetail(ctx, pool, "xiongmai-ipg-own-1", "en"); err != nil || len(d["shared_photos"].(map[string]map[string][]sharedBoard)) != 0 {
 		t.Errorf("a board's own photo is listed as shared: %v %v", d["shared_photos"], err)
 	}
 }
