@@ -11,7 +11,7 @@ import zh from '../../i18n/boards.zh.json';
 import {
   KNOWN_LINES, lineLabel,
   addsIPeye, buildGroups, bySeller, cardFiles, formatDay, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
-  highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, paragraphs, sensorKey, sensorOptions, slug,
+  highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, ownPhoto, paragraphs, sensorKey, sensorOptions, slug,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
 import { EMPTY, readQueryString, writeQueryString } from './url';
@@ -96,6 +96,21 @@ describe('filters', () => {
     expect(ids({ ready: true, line: 'NVR Board' })).toEqual([]);
     expect(lineOptions(ALL)).toEqual([['ip-camera-module', 'IP Camera Module'], ['nvr-board', 'NVR Board']]);
     expect(ids({ line: 'nvr-board' })).toEqual(['b']);
+  });
+
+  test('"no photo of its own" lists boards with no photo, or only photos shown for other boards too', () => {
+    const photo = (sha256: string, shared?: number): BoardFile => ({ kind: 'photo_front', name: `${sha256}.jpg`, url: `/${sha256}.jpg`, thumb_url: `/t-${sha256}.jpg`, mime: 'image/jpeg', bytes: 1, sha256, shared });
+    const pinout: BoardFile = { kind: 'pinout', name: 'p.jpg', url: '/p.jpg', thumb_url: '/tp.jpg', mime: 'image/jpeg', bytes: 1, sha256: 'p' };
+    const boards = [
+      { ...ALL[0], id: 'own', units: [{ ...ALL[0].units[0], files: [photo('o')] }] },
+      { ...ALL[0], id: 'shared', units: [{ ...ALL[0].units[0], files: [photo('s', 49), pinout] }] },
+      { ...ALL[0], id: 'both', units: [{ ...ALL[0].units[0], files: [photo('s', 49), photo('b')] }] },
+      { ...ALL[2], id: 'none' },
+    ];
+    expect(ownPhoto(boards[0])).toBe(true);
+    expect(ownPhoto(boards[1])).toBe(false);
+    expect(ownPhoto(boards[2])).toBe(true);
+    expect(filterBoards(boards, { ...EMPTY, missing: 'photo' }).map((m) => m.id)).toEqual(['shared', 'none']);
   });
 
   test('a product line two sources capitalise differently is one option, and both match it', () => {
@@ -402,6 +417,10 @@ describe('a card', () => {
     expect(firstMissing(ALL[1])).toBe('pinout');
     expect(firstMissing(ALL[2])).toBe('pinout');
     expect(firstMissing(model('p', { coverage: cov({ pinouts: 1 }) }))).toBe('photos');
+    // a board whose only photo its maker shows for other boards too still asks for one of its own
+    const sharedOnly = model('s', { coverage: cov({ photos: 1, pinouts: 1 }) }, null, [
+      { kind: 'photo_front', name: 'f.jpg', url: '/f.jpg', thumb_url: '/t.jpg', mime: 'image/jpeg', bytes: 1, sha256: 'x', shared: 49 }]);
+    expect(firstMissing(sharedOnly)).toBe('photos');
     expect(firstMissing(model('full', { coverage: cov({ photos: 1, pinouts: 1, flash_dumps: 1, uboot_envs: 1, boot_logs: 1 }) }))).toBeNull();
   });
 

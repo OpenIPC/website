@@ -40,6 +40,7 @@ zh:
     filter_any: 全部
     missing_any: 不限
     missing_pinout: 缺引脚图
+    missing_photo: 缺本板照片
     missing_flash_dump: 缺闪存转储
     missing_uboot_env: 缺 U-Boot 控制台
     missing_boot_log: 缺启动日志
@@ -63,6 +64,22 @@ zh:
     tag_photo_back: 背面
     tag_photo_other: 照片
     tag_pinout: 引脚图
+    tag_shared: 共用
+    shared_title: 共用照片。
+    shared_count:
+      one: "{source} 的产品目录将此图片用于 {count} 块主板"
+      other: "{source} 的产品目录将此图片用于 {count} 块主板"
+    shared_colon: "："
+    shared_stop: "。"
+    shared_gap: ""
+    shared_this: 本板
+    shared_sep: "、"
+    shared_and: 和
+    shared_more:
+      one: "其余 {count} 块"
+      other: "其余 {count} 块"
+    shared_tail: 图中可能是同系列的另一块主板，传感器或镜头可能不同。
+    shared_tail_two: 图中可能是另一块。
     photo_alt: '{board}：{what}'
     no_photos: 暂无照片
     cov_photos: 照片

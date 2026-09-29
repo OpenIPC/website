@@ -196,6 +196,7 @@
     "missing_any": "всё есть",
     "missing_boot_log": "нет лога загрузки",
     "missing_flash_dump": "нет дампа флеш-памяти",
+    "missing_photo": "нет собственного фото",
     "missing_pinout": "нет распиновки",
     "missing_uboot_env": "нет консоли U-Boot",
     "new_tab": "откроется в новой вкладке",
@@ -259,6 +260,27 @@
     "send_pinout": "Пришлите нам распиновку",
     "send_uboot_env": "Пришлите нам консоль U-Boot",
     "sensor": "Сенсор",
+    "shared_and": " и ",
+    "shared_colon": ": ",
+    "shared_count": {
+      "few": "В каталоге {source} эта фотография показана для {count} плат",
+      "many": "В каталоге {source} эта фотография показана для {count} плат",
+      "one": "В каталоге {source} эта фотография показана для {count} платы",
+      "other": "В каталоге {source} эта фотография показана для {count} платы"
+    },
+    "shared_gap": " ",
+    "shared_more": {
+      "few": "ещё {count}",
+      "many": "ещё {count}",
+      "one": "ещё {count}",
+      "other": "ещё {count}"
+    },
+    "shared_sep": ", ",
+    "shared_stop": ".",
+    "shared_tail": "На ней может быть другая плата той же серии, с другим сенсором или объективом.",
+    "shared_tail_two": "На ней может быть другая из двух.",
+    "shared_this": "этой",
+    "shared_title": "Общее фото.",
     "show_all": {
       "few": "Показать все {count} платы",
       "many": "Показать все {count} плат",
@@ -314,6 +336,7 @@
     "tag_photo_other": "фото",
     "tag_pinout": "распиновка",
     "tag_ready": "Готов к OpenIPC",
+    "tag_shared": "общее",
     "text_error": "Не удалось загрузить файл ({error}).",
     "text_loading": "Загружаем…",
     "translated_from_en": "Перевод с английского",

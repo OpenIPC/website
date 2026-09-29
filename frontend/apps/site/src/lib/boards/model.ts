@@ -33,6 +33,20 @@ export function has(m: Model, key: CoverageKey): boolean {
 }
 
 /**
+ * Whether a board has a photo of its own: one its source shows for no other
+ * board. A maker's catalogue often uses one family member's picture for all
+ * its variants; such a board still wants a photo of itself.
+ */
+export function ownPhoto(m: Pick<Model, 'units' | 'coverage'>): boolean {
+  if (!has(m as Model, 'photos')) return false;
+  const photos = m.units.flatMap((u) => u.files.filter((f) => BOARD_PHOTOS.includes(f.kind)));
+  return photos.length === 0 || photos.some((f) => !((f.shared ?? 0) > 1));
+}
+
+/** The kinds that are pictures of the board itself (a pinout is a drawing). */
+const BOARD_PHOTOS: BoardFile['kind'][] = ['photo_front', 'photo_back', 'photo_other'];
+
+/**
  * What a card asks a visitor for, most useful first: a pinout is what
  * somebody holding the board needs, a boot log is the easiest thing to send
  * and so is asked for only once everything else is there.
@@ -41,7 +55,7 @@ const ASK: CoverageKey[] = ['pinout', 'photos', 'uboot_env', 'flash_dump', 'boot
 
 /** The first thing a card asks a visitor for, or null when it has it all. */
 export function firstMissing(m: Model): CoverageKey | null {
-  return ASK.find((k) => !has(m, k)) ?? null;
+  return ASK.find((k) => !(k === 'photos' ? ownPhoto(m) : has(m, k))) ?? null;
 }
 
 /**
@@ -77,7 +91,7 @@ export function filterBoards(all: Entry[], s: Filters): Entry[] {
     (!s.maker || m.maker.id === s.maker)
     && (!s.soc || socKey(m) === s.soc)
     && (!s.sensor || sensorsOf(m).includes(s.sensor))
-    && (!s.missing || !has(m, s.missing as Missing))
+    && (!s.missing || (s.missing === 'photo' ? !ownPhoto(m) : !has(m, s.missing)))
     && (!s.line || (!!m.category && slug(m.category) === slug(s.line)))
     && (!s.source || m.sources.includes(s.source))
     && (!s.ready || m.tags.includes(READY))

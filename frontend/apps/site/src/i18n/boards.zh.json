@@ -174,6 +174,7 @@
     "missing_any": "不限",
     "missing_boot_log": "缺启动日志",
     "missing_flash_dump": "缺闪存转储",
+    "missing_photo": "缺本板照片",
     "missing_pinout": "缺引脚图",
     "missing_uboot_env": "缺 U-Boot 控制台",
     "new_tab": "在新标签页中打开",
@@ -237,6 +238,23 @@
     "send_pinout": "把引脚图发给我们",
     "send_uboot_env": "把 U-Boot 控制台输出发给我们",
     "sensor": "传感器",
+    "shared_and": "和",
+    "shared_colon": "：",
+    "shared_count": {
+      "one": "{source} 的产品目录将此图片用于 {count} 块主板",
+      "other": "{source} 的产品目录将此图片用于 {count} 块主板"
+    },
+    "shared_gap": "",
+    "shared_more": {
+      "one": "其余 {count} 块",
+      "other": "其余 {count} 块"
+    },
+    "shared_sep": "、",
+    "shared_stop": "。",
+    "shared_tail": "图中可能是同系列的另一块主板，传感器或镜头可能不同。",
+    "shared_tail_two": "图中可能是另一块。",
+    "shared_this": "本板",
+    "shared_title": "共用照片。",
     "show_all": {
       "one": "显示全部 {count} 块",
       "other": "显示全部 {count} 块"
@@ -282,6 +300,7 @@
     "tag_photo_other": "照片",
     "tag_pinout": "引脚图",
     "tag_ready": "支持 OpenIPC",
+    "tag_shared": "共用",
     "text_error": "无法加载此文件（{error}）。",
     "text_loading": "正在加载…",
     "translated_from_en": "译自英语",

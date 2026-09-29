@@ -16,8 +16,8 @@ export type SocLinks = Record<string, { model: string; href: string }>;
  * clicks on img[data-zoom]; the button around it is what a keyboard reaches,
  * and pressing it clicks the image.
  */
-export function Thumb({ file, alt, tag, highlight = false, class: cls = '' }: {
-  file: BoardFile; alt: string; tag?: string; highlight?: boolean; class?: string;
+export function Thumb({ file, alt, tag, highlight = false, shared = false, class: cls = '' }: {
+  file: BoardFile; alt: string; tag?: string; highlight?: boolean; shared?: boolean; class?: string;
 }) {
   return (
     <button type="button" class={`relative block cursor-zoom-in overflow-hidden bg-surface-alt p-0 ${cls}`}
@@ -27,7 +27,7 @@ export function Thumb({ file, alt, tag, highlight = false, class: cls = '' }: {
       <img src={file.thumb_url} data-zoom={file.url} alt={alt} loading="lazy" decoding="async"
         class="block size-full object-cover" />
       {tag && (
-        <span class={`pointer-events-none absolute bottom-1 left-1 rounded-sm px-1.5 py-0.5 font-mono text-[10px] leading-none font-medium tracking-wide uppercase ${highlight ? 'bg-accent text-ink' : 'bg-ink/80 text-white'}`}>
+        <span class={`pointer-events-none absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] truncate rounded-sm px-1.5 py-0.5 font-mono text-[10px] leading-none font-medium tracking-wide whitespace-nowrap uppercase ${shared ? 'bg-[#fff4e2] text-[#8a5200]' : highlight ? 'bg-accent text-ink' : 'bg-ink/80 text-white'}`}>
           {tag}
         </span>
       )}
