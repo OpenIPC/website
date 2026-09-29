@@ -104,7 +104,12 @@ exec_sh() { docker exec -i "$cid" sh -s; }
 # seam and not the application. Both answer 200 to everything, which is what
 # makes the expected statuses below deterministic.
 cat > /etc/nginx/conf.d/zz-stub-upstream.conf <<'STUB'
-server { listen 127.0.0.1:3002; location / { return 200 "GO-WEB-PROD\n"; } }
+server { listen 127.0.0.1:3002;
+  location ^~ /api/v1/reports/r-test/files/ {
+    add_header X-Accel-Redirect /report-files/sha256/ab/abcd;
+    return 200 "";
+  }
+  location / { return 200 "GO-WEB-PROD\n"; } }
 server { listen 127.0.0.1:3003;
   location = /api/v1/hardware/availability.json { return 200 "GO-AVAILABILITY\n"; }
   location ^~ /api/v1/wizard/ { return 200 "GO-WIZARD\n"; }
@@ -117,6 +122,10 @@ server { listen 127.0.0.1:3013; location / { return 200 "GO-FIRMWARE-DEV\n"; } }
 STUB
 install -d -m 0755 /srv/www/shared/firmware
 printf 'IMAGE\n' > /srv/www/shared/firmware/image.bin
+install -d -m 0755 /srv/www/shared/tools
+printf 'IPCTOOL-ARM\n' > /srv/www/shared/tools/ipctool
+install -d -m 0755 /srv/www/shared/owner-reports/sha256/ab
+printf 'REPORT-FILE\n' > /srv/www/shared/owner-reports/sha256/ab/abcd
 
 # One page, which is exactly what the real bundle holds today.
 install -d -m 0755 /srv/www/static/prod/site-test/_smoke
@@ -565,13 +574,53 @@ grep -q GO-WIZARD /tmp/b || { echo "  the wizard did not reach the Go firmware p
 # CI pushes each build to the web role, once (builds/PUSH.md).
 posts /api/v1/builds                200 go
 grep -q GO-WEB-PROD /tmp/pb || { echo "  the build push did not reach the Go web process"; fail=1; }
+# Owner reports (service/internal/reports): the upload and identify reach the
+# web role on 443 and on plain 80 (ipctool on stock firmware has no TLS); a
+# report's file reaches /report-files/ only through the web role's
+# X-Accel-Redirect, never by its address.
+posts /api/v1/reports               200 go
+grep -q GO-WEB-PROD /tmp/pb || { echo "  the report upload did not reach the Go web process"; fail=1; }
+posts /api/v1/boards/identify       200 go
+for probe in "200 POST /api/v1/reports" "200 POST /api/v1/boards/identify" "301 GET /api/v1/reports/r-x" "301 POST /snapshots"; do
+  set -- $probe
+  got=$(curl -sS -o /tmp/p80 -w '%{http_code}' --max-time 5 -X "$2" -F yaml=chip: \
+    --resolve "openipc.org:80:127.0.0.1" "http://openipc.org$3" 2>/dev/null)
+  if [ "$got" = "$1" ]; then
+    printf '  %-32s %-5s (%s over plain HTTP)\n' "$3" "$got" "$2"
+  else
+    printf '  %-32s %-5s (%s over plain HTTP) MISMATCH: want %s\n' "$3" "$got" "$2" "$1"
+    fail=1
+  fi
+done
+# ipctool for uget: the file over plain HTTP, never a redirect; over HTTPS
+# /ipctool is still the way to the project on GitHub.
+got=$(curl -sS -o /tmp/it -w '%{http_code}' --max-time 5 --http1.0 \
+  --resolve "openipc.org:80:127.0.0.1" "http://openipc.org/ipctool" 2>/dev/null)
+if [ "$got" = 200 ] && grep -q IPCTOOL-ARM /tmp/it; then
+  printf '  %-32s %-5s (the binary, plain HTTP/1.0)\n' /ipctool "$got"
+else
+  printf '  %-32s %-5s MISMATCH: uget cannot fetch ipctool\n' /ipctool "$got"
+  fail=1
+fi
+redirects_to openipc.org /ipctool https://github.com/OpenIPC/ipctool/
+expect /api/v1/reports/r-x          200 go     hsts
+expect /api/v1/reports/r-test/files/1 200 go   hsts
+grep -q REPORT-FILE /tmp/b || { echo "  a report's file did not reach /report-files/"; fail=1; }
+got=$(curl -sS -o /tmp/rf -w '%{http_code}' -k --max-time 5 --resolve "openipc.org:443:127.0.0.1" \
+  "https://openipc.org/report-files/sha256/ab/abcd" 2>/dev/null)
+if [ "$got" = 404 ] && ! grep -q REPORT-FILE /tmp/rf; then
+  printf '  %-32s %-5s (internal only)\n' /report-files/sha256/ab/abcd "$got"
+else
+  printf '  %-32s %-5s MISMATCH: a report file is reachable by its address\n' /report-files/sha256/ab/abcd "$got"
+  fail=1
+fi
 # From a blocked range: refused everywhere, except the push GitHub's runners
 # make from Azure (conf.d/openipc-datacentre-block.conf).
 from_dc() {
   curl -sS -o /dev/null -w '%{http_code}' -k --max-time 5 --interface 127.0.0.2 \
     --resolve "openipc.org:443:127.0.0.1" "$@" 2>/dev/null
 }
-for probe in "403 GET /" "403 GET /.git/config" "403 POST /snapshots" "200 POST /api/v1/builds"; do
+for probe in "403 GET /" "403 GET /.git/config" "403 POST /snapshots" "200 POST /api/v1/builds" "200 POST /api/v1/reports"; do
   set -- $probe
   got=$(from_dc -X "$2" "https://openipc.org$3")
   if [ "$got" = "$1" ]; then

@@ -14,6 +14,7 @@ import type { BoardLink, LinkKind, ModelDetail, Source } from '../../lib/boards/
 import { fetchModel } from '../../lib/boards/api';
 import Firmware from './Firmware';
 import ModelFirmware from './ModelFirmware';
+import OwnerReports from '../reports/OwnerReports';
 import {
   HEADING_CLASS, couplerDevices, foundIn, frontPhoto, insideOf, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, subtitle, unitFiles, unitPhotos,
   type CodeIndex, type Entry, type Heading, type Inside,
@@ -270,6 +271,8 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
             })}
           </section>
         )}
+
+        <OwnerReports model={id} locale={locale} t={t} />
 
         {entry && (
           <div class="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-4">

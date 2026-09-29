@@ -16,6 +16,9 @@
 #      The board catalogue's files (/srv/www/shared/boards) go up too, but
 #      only when they change, under boards/ rather than daily/: the archive
 #      they came from may not outlive us, and the rows name them.
+#      Owner reports' files (/srv/www/shared/owner-reports) go up one object
+#      per file under boards/owner-reports/, each once, the night after it
+#      arrives: they exist nowhere else.
 # Out: the wall's images (snapshots purge at 2 days and cameras re-upload
 #      continuously), /srv/github-releases (refreshed hourly from GitHub) and
 #      the firmware cache (rebuilt on demand).
@@ -230,6 +233,43 @@ if [ -d "$BOARDS_ROOT" ]; then
   fi
 else
   log "no board files on this host, skipping"
+fi
+
+# ------------------------------------------------------------ owner reports
+# What camera owners and agents sent (service/internal/reports): ipctool's
+# output, photos, console captures, and flash backups -- some of them private,
+# which is why the bucket is private and TLS-only. The rows are in the dump
+# above; the files exist on this host and nowhere else, so every one goes up
+# the night after it arrives. Content-addressed and written once, so a file
+# is uploaded once, under its own name, and never overwritten or deleted:
+# boards/owner-reports/sha256/<ab>/<sum>, inside the prefix the backup's IAM
+# policy already lets this host write. The mark lists what is up already.
+REPORTS_ROOT=/srv/www/shared/owner-reports
+REPORTS_MARK=/srv/www/.owner-reports-backed-up
+if [ -d "$REPORTS_ROOT/sha256" ]; then
+  touch "$REPORTS_MARK"
+  up=0
+  while IFS= read -r -d '' f; do
+    sum=$(basename "$f")
+    grep -qx "$sum" "$REPORTS_MARK" && continue
+    [ "$(sha256sum "$f" | cut -d' ' -f1)" = "$sum" ] || fail "owner report file ${sum} does not hold the bytes its name says"
+    key="boards/owner-reports/sha256/${sum:0:2}/${sum}"
+    size=$(stat -c %s "$f")
+    if [ "$DRY_RUN" = 1 ]; then
+      log "DRY RUN would upload ${key} (${size} bytes)"
+      continue
+    fi
+    "${AWS[@]}" s3 cp --only-show-errors "$f" "s3://${S3_BUCKET}/${key}" \
+      || fail "upload of owner report file ${sum} failed"
+    REMOTE=$("${AWS[@]}" s3api head-object --bucket "$S3_BUCKET" --key "$key" \
+      --query ContentLength --output text 2>/dev/null) || fail "owner report file ${sum} is not readable back"
+    [ "$REMOTE" = "$size" ] || fail "owner report file ${sum}: local ${size} bytes, remote ${REMOTE}"
+    echo "$sum" >> "$REPORTS_MARK"
+    up=$((up + 1))
+  done < <(find "$REPORTS_ROOT/sha256" -type f -print0)
+  log "owner report files: ${up} uploaded, $(wc -l < "$REPORTS_MARK") backed up in all"
+else
+  log "no owner report files on this host, skipping"
 fi
 
 log "backup complete"

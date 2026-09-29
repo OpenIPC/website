@@ -37,6 +37,12 @@ the team password manager. The server can write backups it cannot read.
 captures), as `boards/boards-<date>-<id>.tar`, outside the daily lifecycle.
 The newest one is the current set; see step 3c.
 
+**Backed up the night after they arrive:** owner reports' files
+(`/srv/www/shared/owner-reports`: what camera owners and agents sent, private
+flash backups among them), one object per file as
+`boards/owner-reports/sha256/<ab>/<sha256>`, never overwritten or deleted;
+see step 3d.
+
 **Not backed up, by decision:** the wall images (snapshots purge at 2 days and
 cameras re-upload continuously), the firmware cache (`/srv/www/shared/firmware`,
 one version of each image, rebuilt on the next request), `/srv/github-releases`
@@ -122,7 +128,7 @@ run the installer.
 ### 3c. Restore the board catalogue's files
 
 ```bash
-aws s3 ls s3://openipc-org-backup/boards/ | sort | tail -1     # the newest set
+aws s3 ls s3://openipc-org-backup/boards/ | grep ' boards-' | sort | tail -1     # the newest set
 aws s3 cp s3://openipc-org-backup/boards/boards-<date>-<id>.tar .
 install -d -o 1000 -g 1000 -m 0755 /srv/www/shared/boards
 tar -C /srv/www/shared/boards -xf boards-<date>-<id>.tar && chown -R 1000:1000 /srv/www/shared/boards
@@ -132,6 +138,21 @@ Their rows come back with the database in step 4. Without the tar, the rows
 point at files that are not there; `openipc boards import-openhisiipcam`
 rewrites the OpenHisiIpCam ones from GitHub while the archive exists, but
 skips every unit it already holds, so delete those units' rows first.
+
+### 3d. Restore owner reports' files
+
+```bash
+install -d -o 1000 -g 1000 -m 0755 /srv/www/shared/owner-reports
+aws s3 cp --recursive s3://openipc-org-backup/boards/owner-reports/sha256/ /srv/www/shared/owner-reports/sha256/
+chown -R 1000:1000 /srv/www/shared/owner-reports
+find /srv/www/shared/owner-reports/sha256 -type f -exec chmod 0444 {} +
+```
+
+Each file is named by its sha256, so the copy checks itself. Once the
+database is back (step 4), `docker exec openipc-go-web-prod openipc reports
+verify` re-reads every file the rows name and fails on any missing or
+changed. These files exist nowhere else: a report whose file is lost cannot
+be sent again by anyone.
 
 ### 4. The database
 

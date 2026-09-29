@@ -24,6 +24,46 @@ server {
         return 301 https://$host$request_uri;
     }
 
+    # ipctool's builds for a camera on stock firmware, whose only downloader
+    # is uget: plain HTTP, port 80, no redirects (internal/tools). Over HTTPS
+    # /ipctool still leads a browser to the project on GitHub.
+    location ~ ^/(ipctool|ipctool-mips32|ipctool-arm64)$ {
+        alias /srv/www/shared/tools/$1;
+        default_type application/octet-stream;
+        add_header Cache-Control "no-cache" always;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By nginx always;
+    }
+
+    # ipctool uploads a report over plain HTTP: stock camera firmware has no
+    # TLS. Only the upload and identify are answered here; everything else
+    # redirects.
+    location = /api/v1/reports {
+        client_max_body_size 300m;
+        client_body_timeout 300;
+        proxy_request_buffering off;
+        proxy_read_timeout 300;
+        proxy_send_timeout 300;
+        proxy_pass http://127.0.0.1:3002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Request-Id $request_id;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+    }
+
+    location = /api/v1/boards/identify {
+        client_max_body_size 256k;
+        limit_req zone=boards_search burst=20 nodelay;
+        limit_req_status 429;
+        proxy_pass http://127.0.0.1:3002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Request-Id $request_id;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+    }
+
     location / {
         return 301 https://$host$request_uri;
     }
@@ -307,6 +347,67 @@ server {
         proxy_set_header X-Request-Id $request_id;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
+    }
+
+    # Owner reports (service/internal/reports): ipctool's output, a board's
+    # flash backup, photos and console captures, sent by a camera's owner or
+    # an AI agent on a bench. The web role streams each part to disk as it
+    # arrives, so nothing is buffered here; 300m covers a 256 MB SPI NAND
+    # backup and its multipart framing. Also answered on port 80 above:
+    # ipctool on stock firmware has no TLS.
+    location = /api/v1/reports {
+        client_max_body_size 300m;
+        client_body_timeout 300;
+        proxy_request_buffering off;
+        proxy_read_timeout 300;
+        proxy_send_timeout 300;
+        proxy_pass http://127.0.0.1:3002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Request-Id $request_id;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+    }
+
+    # A report's receipt and, once published, its files. The web role decides
+    # what may be served and hands it to /report-files/ below.
+    location ^~ /api/v1/reports/ {
+        limit_req zone=boards_search burst=20 nodelay;
+        limit_req_status 429;
+        gzip on;
+        gzip_proxied any;
+        gzip_types application/json;
+        proxy_pass http://127.0.0.1:3002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Request-Id $request_id;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+    }
+
+    # Which catalogue boards ipctool's output may be from. Stores nothing.
+    location = /api/v1/boards/identify {
+        client_max_body_size 256k;
+        limit_req zone=boards_search burst=20 nodelay;
+        limit_req_status 429;
+        proxy_pass http://127.0.0.1:3002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Request-Id $request_id;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+    }
+
+    # The reports' files, content-addressed. Internal: reachable only through
+    # the web role's X-Accel-Redirect, which sends a published report's
+    # shareable files and never a private backup. Never alias this directory
+    # anywhere else.
+    location ^~ /report-files/ {
+        internal;
+        alias /srv/www/shared/owner-reports/;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+        add_header X-Content-Type-Options nosniff always;
     }
 
     # Where OpenIPC/xmupdates and OpenIPC/coupler push the firmware they
@@ -814,6 +915,18 @@ server {
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By static always;
         add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+
+    # The protocol page for AI coding agents (/cameras/report links it), as
+    # Markdown text: nginx's types have no .md, and an octet-stream answer
+    # reads as a download to a fetch tool.
+    location = /agents.md {
+        root /srv/www/static/prod/current;
+        default_type "text/markdown; charset=utf-8";
+        try_files $uri =404;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By static always;
+        add_header Cache-Control "no-cache" always;
     }
 
     location / {

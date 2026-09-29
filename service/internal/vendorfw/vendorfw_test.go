@@ -298,12 +298,12 @@ func TestAModelKeyedPushNamesADeviceType(t *testing.T) {
 		t.Fatalf("a good push: %v", err)
 	}
 	for name, it := range map[string]Item{
-		"an XM device ID":    func() Item { i := good; i.DeviceID = "000559A7"; return i }(),
-		"no device type":     func() Item { i := good; i.DeviceType = ""; return i }(),
-		"a bad category":     func() Item { i := good; i.Category = "toaster"; return i }(),
+		"an XM device ID":       func() Item { i := good; i.DeviceID = "000559A7"; return i }(),
+		"no device type":        func() Item { i := good; i.DeviceType = ""; return i }(),
+		"a bad category":        func() Item { i := good; i.Category = "toaster"; return i }(),
 		"an unknown collection": func() Item { i := good; i.Collection = "pre-2019"; return i }(),
-		"a variant in Latin": func() Item { i := good; i.Variant = map[string]string{"la": "x"}; return i }(),
-		"another repo":       func() Item { i := good; i.AssetURL = Sources["xmupdates"] + "x/r12.bin"; return i }(),
+		"a variant in Latin":    func() Item { i := good; i.Variant = map[string]string{"la": "x"}; return i }(),
+		"another repo":          func() Item { i := good; i.AssetURL = Sources["xmupdates"] + "x/r12.bin"; return i }(),
 	} {
 		if _, err := Decode(body(t, "anjoyupdates", it)); err == nil {
 			t.Errorf("%s: accepted", name)

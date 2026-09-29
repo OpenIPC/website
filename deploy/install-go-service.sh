@@ -177,7 +177,7 @@ ensure_keys() {
 }
 
 make_directories() {
-  for d in firmware dev-firmware go-release-cache dev-go-release-cache wall dev-wall boards dev-boards; do
+  for d in firmware dev-firmware go-release-cache dev-go-release-cache wall dev-wall boards dev-boards owner-reports dev-owner-reports tools dev-tools; do
     install -d -o 1000 -g 1000 -m 0755 "${SHARED}/${d}"
   done
   ok "directories under ${SHARED}"

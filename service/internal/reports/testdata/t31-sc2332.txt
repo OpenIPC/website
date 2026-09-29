@@ -1,0 +1,48 @@
+The ipctool installed as remote GitHub plugin
+---
+chip:
+  vendor: Ingenic
+  model: T31L
+board:
+  vendor: OpenIPC
+  version: 2.6.09.26
+ethernet:
+  mac: "38:01:46:a2:e6:38"
+rom:
+- type: nor
+  block: 32K
+  partitions:
+    - name: boot
+      size: 0x40000
+      sha1: 0d15c549
+    - name: env
+      size: 0x10000
+      sha1: 40d9a686
+      contains:
+        - name: uboot-env
+          offset: 0x0
+    - name: kernel
+      size: 0x200000
+      sha1: a921d79b
+    - name: rootfs
+      size: 0x500000
+      sha1: dbcd094a
+    - name: rootfs_data
+      size: 0x8b0000
+      path: /overlay,jffs2,rw
+  size: 16M
+ram:
+  total: 64M
+  media: 25M
+firmware:
+  u-boot: "2013.07-g90873ad (May 01 2024 - 19:56:32)"
+  kernel: "3.10.14__isvp_swan_1.0__ (PREEMPT Sat Sep 26 20:35:08 UTC 2026)"
+  toolchain: buildroot-gcc-13.3.0
+  main-app: majestic
+sensors:
+- vendor: SmartSens
+  model: SC2332
+  control:
+    bus: 0
+    type: i2c
+    addr: 0x60

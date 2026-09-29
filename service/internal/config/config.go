@@ -31,6 +31,20 @@ type Config struct {
 	GrantsDisabled bool   // WALL_GRANTS_DISABLED=1: the frame socket serves without grants (the emergency switch)
 	SnapshotMaxAge time.Duration
 	BoardsRoot     string // the board catalogue's files, served by nginx at /board-files/
+	// Owner reports' files, content-addressed and written once; never inside
+	// BoardsRoot, and not the analytics' /srv/www/shared/reports either
+	// (internal/reports). Served only through the web role, which
+	// hands a published file to nginx's internal location ReportsAccelPrefix.
+	ReportsRoot        string
+	ReportsAccelPrefix string
+	// ipctool's builds, pushed by its release job and served by nginx over
+	// plain HTTP at http://openipc.org/<name> (internal/tools); the NFS role
+	// exports the same directory read-only.
+	ToolsRoot string
+
+	// NFS role: the portmapper's and NFS's addresses (UDP and TCP both).
+	NFSAddr     string
+	PortmapAddr string
 
 	// Firmware role.
 	CatalogueDir        string
@@ -58,6 +72,11 @@ func Load() (*Config, error) {
 		GrantsDisabled:      os.Getenv("WALL_GRANTS_DISABLED") == "1",
 		SnapshotMaxAge:      48 * time.Hour,
 		BoardsRoot:          str("BOARDS_ROOT", "/srv/boards"),
+		ReportsRoot:         str("REPORTS_ROOT", "/srv/owner-reports"),
+		ReportsAccelPrefix:  str("REPORTS_ACCEL_PREFIX", "/report-files/"),
+		ToolsRoot:           str("TOOLS_ROOT", "/srv/tools"),
+		NFSAddr:             str("NFS_ADDR", ":2049"),
+		PortmapAddr:         str("PORTMAP_ADDR", ":111"),
 		CatalogueDir:        str("CATALOGUE_DIR", "/app/catalogue"),
 		ReleaseCacheRoot:    str("RELEASE_CACHE_ROOT", "/srv/release-cache"),
 		FirmwareCacheRoot:   str("FIRMWARE_CACHE_ROOT", "/srv/firmware"),

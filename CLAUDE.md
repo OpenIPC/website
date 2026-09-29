@@ -140,6 +140,26 @@ restores the image but never the schema, so keep migrations additive.
   environment once. Boards link to device IDs through `board_device_ids`
   (tehno32's firmware pages, cctvsp) or a firmware named after the board; a
   board with a coupler image is OpenIPC-ready, derived on read, never stored.
+- `internal/reports` — **owner reports**: ipctool's output, flash backups,
+  photos and console captures that camera owners and AI agents send to
+  `POST /api/v1/reports` (and `POST /api/v1/boards/identify`, which stores
+  nothing). Public only after `openipc reports publish`; identifiers replaced
+  by keyed hashes in the public copy; a backup served only with
+  `consent=public`. **Nothing but this package may write them**: triggers
+  refuse changes, board links are `ON DELETE RESTRICT`, files are
+  content-addressed and written once under `REPORTS_ROOT`
+  (`/srv/www/shared/owner-reports` -- not `shared/reports`, which is the
+  analytics'), and `internal/boards/survival_test.go` runs every importer
+  over stored reports.
+- `internal/tools`, `internal/nfsro` — **ipctool for stock firmware**, which
+  has no curl and no TLS. ipctool's release job pushes each build to
+  `PUT /api/v1/tools/{name}` (OIDC, `internal/tools/PUSH.md`); nginx serves
+  them over plain HTTP at `http://openipc.org/ipctool` (`-mips32`, `-arm64`)
+  for uget, and `serve --role nfs` (the `go-nfs` container, production only)
+  exports the same directory read-only: portmapper, MOUNT v1/v3 and NFS v2/v3
+  over UDP and TCP, so `mount -o nolock openipc.org:/ipctool /tmp/o` works
+  as busybox does it. Handles are keyed to the client's address, so the UDP
+  READ path cannot be used for reflection.
 - `internal/catalogue` — **the hardware catalogue is `data/catalogue/*.yml` and
   nothing else** (#289). The service reads it at start; the site reads its
   export. Change it by editing the YAML in a pull request, then run the export.

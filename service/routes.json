@@ -110,6 +110,41 @@
     "path": "/api/v1/vendor-firmware/{deviceId}"
   },
   {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/reports"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/reports"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/reports/{id}"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/reports/{id}/files/{position}"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/boards/identify"
+  },
+  {
+    "role": "web",
+    "method": "PUT",
+    "path": "/api/v1/tools/{name}"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/tools"
+  },
+  {
     "role": "firmware",
     "method": "GET",
     "path": "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"

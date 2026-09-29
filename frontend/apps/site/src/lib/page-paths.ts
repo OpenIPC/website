@@ -89,6 +89,8 @@ export const PAGE_PATHS: PagePath[] = [
 
   // Camera boards from real cameras, read at runtime from /api/v1/boards.
   { path: '/cameras/boards', titleKey: 'pages.boards.title', descriptionKey: 'pages.boards.lede' },
+  // How a new board reaches the catalogue: ipctool or an agent, and a report's receipt (?id=).
+  { path: '/cameras/report', titleKey: 'pages.report.title', descriptionKey: 'pages.report.lede' },
 
   { path: '/business', titleKey: 'pages.business.title' },
   { path: '/community', titleKey: 'pages.community.title' },
