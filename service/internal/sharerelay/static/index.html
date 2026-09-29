@@ -28,6 +28,12 @@
   .notice.bad h1 { color: var(--bad); }
   .spin { width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: s 0.9s linear infinite; }
   @keyframes s { to { transform: rotate(360deg); } }
+  .diag { margin-top: 12px; text-align: left; max-width: min(860px, 100%); width: 100%; }
+  .diag > button, .diag div > button { font: inherit; padding: 4px 12px; border: 1px solid var(--line); background: transparent; color: var(--fg); border-radius: 6px; cursor: pointer; }
+  .diag > button { display: block; margin: 0 auto; }
+  .diag pre { max-height: 40vh; overflow: auto; background: var(--bar); border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; word-break: break-all; }
+  .diag p { color: var(--muted); margin: 8px 0; text-align: left; }
+  .popover { position: absolute; right: 16px; top: 8px; z-index: 10; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; width: min(860px, calc(100% - 32px)); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
 </style>
 </head>
 <body>
@@ -36,6 +42,7 @@
   <span class="muted" id="scope"></span>
   <span class="grow"></span>
   <span class="muted" id="left"></span>
+  <button id="diag-open" type="button">Diagnostics</button>
   <button id="leave" type="button">Disconnect</button>
 </header>
 <main id="main">

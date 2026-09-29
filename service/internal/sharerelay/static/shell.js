@@ -2,9 +2,13 @@
 // the camera's own interface through it (or, for a view-only link, a player).
 import { Tunnel, ShareError, concat } from './tunnel.js';
 import { openWebSocket } from './websocket.js';
+import { trace, detailsControl } from './diag.js';
 
 const $ = (id) => document.getElementById(id);
 const SCOPES = { view: 'can watch', admin: 'can watch and change settings', full: 'full access' };
+
+// What the diagnostics add to their header: where the page is, and the path.
+const diagExtra = () => ({ stage, share: shareId(), scope: tunnel && tunnel.welcome ? tunnel.welcome.scope : '-' });
 
 function notice(title, text, bad) {
   const n = $('notice') || Object.assign(document.createElement('div'), { id: 'notice' });
@@ -13,6 +17,11 @@ function notice(title, text, bad) {
   if (!bad) n.append(Object.assign(document.createElement('div'), { className: 'spin' }));
   n.append(Object.assign(document.createElement('h1'), { textContent: title }));
   if (text) n.append(Object.assign(document.createElement('p'), { textContent: text }));
+  // Every failure carries the page's own account of what happened.
+  if (bad) {
+    trace('shown to the guest', `${title}: ${text || ''}`);
+    detailsControl(n, diagExtra);
+  }
   $('main').replaceChildren(n);
 }
 
@@ -58,6 +67,7 @@ function onWorkerMessage(e) {
   if (!e.data || e.data.type !== 'fetch') return;
   const port = e.ports[0];
   if (!tunnel || tunnel.gone) { port.postMessage({ type: 'error', message: 'not connected' }); return; }
+  if (e.data.html) trace('page load', e.data.path.split('?')[0]);
   const { method, path, headers, body, html } = e.data;
   let head = null;
   let parts = null;
@@ -97,7 +107,10 @@ function onWorkerMessage(e) {
       }
       port.postMessage({ type: 'end' });
     },
-    onError(err) { port.postMessage({ type: 'error', message: String(err && err.message || err) }); },
+    onError(err) {
+      trace('request failed', `${method} ${path.split('?')[0]}: ${err && err.message || err}`);
+      port.postMessage({ type: 'error', message: String(err && err.message || err) });
+    },
   });
   port.onmessage = (m) => { if (m.data && m.data.type === 'abort' && s.abort) s.abort(); };
 }
@@ -110,17 +123,59 @@ function inject(bytes) {
   return concat([bytes.subarray(0, at), SHIM, bytes.subarray(at)]);
 }
 
+// What the page is doing, for a stall to name.
+let stage = 'starting';
+
+// Resolves with p, or rejects after ms with a sentence naming the stage.
+function within(p, ms, what) {
+  return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new ShareError(what)), ms))]);
+}
+
 async function worker() {
   if (!('serviceWorker' in navigator)) throw new ShareError('This browser cannot open shared cameras.');
   navigator.serviceWorker.addEventListener('message', onWorkerMessage);
   await navigator.serviceWorker.register('/__share/sw.js', { scope: '/' });
-  await navigator.serviceWorker.ready;
-  if (!navigator.serviceWorker.controller) {
-    await new Promise((r) => navigator.serviceWorker.addEventListener('controllerchange', r, { once: true }));
+  const reg = await navigator.serviceWorker.ready;
+  trace('service worker', { active: reg.active ? reg.active.state : 'none', controlling: !!navigator.serviceWorker.controller });
+  if (navigator.serviceWorker.controller) return;
+  trace('service worker not in control; asking it to claim this page');
+  // Active but not in control of this page: a hard reload, or a page that
+  // loaded while the worker was being replaced. Its activation -- where it
+  // claims pages -- is already over, so waiting for controllerchange alone
+  // waits for ever. Ask it to claim this page; failing that, reload once,
+  // which an active worker always controls.
+  const changed = new Promise((r) => navigator.serviceWorker.addEventListener('controllerchange', r, { once: true }));
+  if (reg.active) reg.active.postMessage({ type: 'claim' });
+  try {
+    await within(changed, 5000, 'worker');
+  } catch (e) {
+    trace('service worker did not claim the page');
+    if (!sessionStorage.getItem('share-reloaded')) {
+      sessionStorage.setItem('share-reloaded', '1');
+      location.reload();
+      await new Promise(() => {});
+    }
+    throw new ShareError('This page could not take charge of the camera’s pages. Close the tab and open the link again.');
   }
 }
 
 async function main() {
+  trace('page', { path: location.pathname, hasSecretInLink: location.hash.length > 1, reloadedOnce: !!sessionStorage.getItem('share-reloaded') });
+  // Still connecting after 10 s: the guest can see why, and send it.
+  setTimeout(() => {
+    const n = $('notice');
+    if (stage !== 'connected' && n && !n.classList.contains('bad') && !n.querySelector('.diag')) {
+      n.append(Object.assign(document.createElement('p'), { textContent: 'This is taking longer than it should.' }));
+      detailsControl(n, diagExtra);
+    }
+  }, 10000);
+  $('diag-open').onclick = () => {
+    const open = document.querySelector('.popover');
+    if (open) { open.remove(); return; }
+    const pop = Object.assign(document.createElement('div'), { className: 'popover' });
+    detailsControl(pop, diagExtra).querySelector('button').click();
+    $('main').append(pop);
+  };
   const id = shareId();
   const { secret, opts } = secretFor(id);
   if (!/^[0-9a-f]{16}$/.test(id) || !secret) {
@@ -128,15 +183,27 @@ async function main() {
     return;
   }
   try {
-    const ice = await fetch('/__share/ice').then((r) => r.json()).catch(() => ({ iceServers: [] }));
+    stage = 'ice';
+    trace('stage', stage);
+    const ctl = new AbortController();
+    setTimeout(() => ctl.abort(), 8000);
+    const ice = await fetch('/__share/ice', { signal: ctl.signal }).then((r) => r.json()).catch(() => ({ iceServers: [] }));
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     tunnel = new Tunnel({
       signal: `${proto}://${location.host}/__share/signal?share=${id}`,
       share: id, secret, iceServers: ice.iceServers || [],
       policy: opts.get('relay') != null ? 'relay' : undefined,
+      trace,
     });
-    await worker();
+    stage = 'worker';
+    trace('stage', stage);
+    await within(worker(), 15000, 'The page did not finish starting. Close the tab and open the link again.');
+    sessionStorage.removeItem('share-reloaded');
+    stage = 'camera';
+    trace('stage', stage);
     const welcome = await tunnel.open();
+    stage = 'connected';
+    trace('stage', stage);
     window.__share = { openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h), welcome };
     tunnel.onclose = (why) => {
       $('bar').hidden = true;
@@ -169,5 +236,21 @@ async function main() {
     window.__shareError = e.message;
   }
 }
+
+// Nothing may leave the page spinning: an error that escaped, or a promise
+// that failed with no one to hear it, is said on the page with where it
+// happened, and in the console for whoever looks.
+function fatal(what) {
+  if (stage === 'connected') return;
+  console.error('share page stalled at', stage, what);
+  trace('error', what);
+  notice('Could not open the shared camera', `${what} (at: ${stage})`, true);
+  window.__shareError = `${stage}: ${what}`;
+}
+window.addEventListener('error', (e) => fatal(e.message || 'a script error'));
+window.addEventListener('unhandledrejection', (e) => fatal((e.reason && e.reason.message) || String(e.reason)));
+// The whole start, bounded: tunnel.open() has its own 30 s, and the rest
+// cannot take this long unless something is wrong.
+setTimeout(() => { if (stage !== 'connected' && !window.__shareError) fatal('Starting took too long'); }, 45000);
 
 main();
