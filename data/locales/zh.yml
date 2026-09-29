@@ -15,9 +15,12 @@ zh:
         chip_installable_html: "我们已知的 {total} 款芯片中，目前有 {count} 款可以安装 OpenIPC。找到你的芯片，看看怎么装。"
         chip_lede: "找到你的芯片，看看能否安装 OpenIPC、怎么安装。"
         chip_title: "已经知道芯片型号？"
+        copy_link: "复制此芯片的链接"
+        copy_link_to: "复制 {chip} 的链接"
         featured: 推荐的
         full_list: 所有列表
         installable_title: "{total} 款中有 {count} 款可以安装"
+        link_copied: "链接已复制"
         list_featured: "推荐芯片"
         list_featured_intro: "OpenIPC 支持最完善的芯片。处于较早阶段的芯片见完整列表。"
         list_full: "我们已知的全部芯片"

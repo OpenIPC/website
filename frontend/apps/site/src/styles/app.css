@@ -881,16 +881,57 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-block;
 }
 
-/* The anchor beside a model name, which appears on hover as the origin's does. */
-.socs .anchor {
+/*
+ * The link icon beside a model name: copies the row's address, says so in its
+ * title and to a screen reader, and answers "Link copied" when it has. Where
+ * there is a hover it waits for one, as the old bare "#" did; on a touch
+ * screen there is none to wait for, so it is always there, at a size a finger
+ * can hit.
+ */
+.socs .chip-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
   margin-inline-start: 0.25rem;
-  opacity: 0;
+  border-radius: 0.375rem;
+  color: var(--color-body-secondary);
+  vertical-align: middle;
 }
 
-/* Hidden by opacity rather than display, so the keyboard can still reach it. */
-.socs tr:hover .anchor,
-.socs .anchor:focus-visible {
-  opacity: 1;
+.socs .chip-link:hover,
+.socs .chip-link:focus-visible {
+  background-color: var(--color-surface-alt);
+  color: var(--color-brand-blue);
+}
+
+@media (hover: hover) {
+  .socs .chip-link {
+    opacity: 0;
+  }
+
+  .socs tr:hover .chip-link,
+  .socs .chip-link:focus-visible,
+  .socs .chip-link.is-copied {
+    opacity: 1;
+  }
+}
+
+.socs .chip-link.is-copied::after {
+  content: attr(data-copied);
+  position: absolute;
+  left: 100%;
+  margin-inline-start: 0.25rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background-color: var(--color-ink);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* The answer, in a word, before the link or the reason. */
@@ -970,6 +1011,12 @@ h1, h2, h3, h4, h5, h6 {
 
   .socs tbody th .model {
     font-size: 1rem;
+  }
+
+  .socs .chip-link {
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-block: -0.5rem;
   }
 
   .socs .stage {

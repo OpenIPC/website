@@ -365,6 +365,20 @@ describe('the hardware catalogue is the catalogue (#162)', () => {
     expect(existsSync(join(dist, 'stages-of-firmware-development'))).toBe(false);
   });
 
+  test('every row links to itself on the list it is on, and says so', () => {
+    // It was a bare "#" that appeared on hover and pointed at
+    // /supported-hardware#<soc>, which redirects to the recommended list.
+    for (const [html, list] of [[featured, '/supported-hardware/featured'], [fullList, '/supported-hardware/full-list']]) {
+      const rows = [...html.matchAll(/<tr id="([^"]+)">/g)].map((m) => m[1]);
+      expect(rows.length).toBeGreaterThan(20);
+      for (const soc of rows) {
+        expect(html, `${soc} has no link to itself on ${list}`)
+          .toMatch(new RegExp(`<a class="chip-link" href="${list}#${soc}" title="Copy link to this chip"`));
+      }
+    }
+    expect(featured).toMatch(/<span class="sr-only">Copy link to Goke GK7205V200<\/span>/);
+  });
+
   test('the wizard is still linked', () => {
     // #163 moves it. Until then these links leave the bundle and fall through
     // the seam, and a link that stopped pointing at it would strand the one
