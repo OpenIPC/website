@@ -17,7 +17,8 @@
 //     at least one live share, and registers each by id and expiry. A camera
 //     with no live share never connects.
 //
-//     camera -> {"type":"register","share":"<16 hex>","expires":<unix>}
+//     camera -> {"type":"register","share":"<16 hex>","expires":<unix>,
+//     "token":"<64 hex>"}
 //     camera -> {"type":"unregister","share":"<id>"}
 //     camera -> {"type":"signal","session":"<sid>","reply":"answer"|"candidate"|
 //     "error"|"busy"|"closed","data":"...","mid":"..."}
@@ -34,6 +35,12 @@
 //     "candidate","data":...} out, {"reply":...,"data":...,"mid":...} in. The
 //     relay tags each page socket with a session id and forwards.
 //
+// A registration carries a TOKEN, HMAC-SHA256(key, "mj-share-relay-v1|" id)
+// over the share's key. It tells the relay nothing about the key, and the
+// first registration of an id binds it: a later one -- the same camera
+// reconnecting -- must present the same token, so a socket that merely knows
+// a link's id cannot displace the camera that serves it.
+//
 // State is in memory: one process, and a camera re-registers its shares
 // whenever it reconnects, so a restart costs a reconnect and nothing else.
 package sharerelay
@@ -41,6 +48,7 @@ package sharerelay
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"log/slog"
@@ -70,9 +78,21 @@ const (
 	// A page that has not connected within this long never will; its
 	// socket is closed so it cannot sit on a session slot.
 	PageLifetime = 2 * time.Minute
+	// Allowed between the camera's clock and this one when a registration
+	// names its end. The camera enforces the share's real lifetime on its
+	// own clock; this only refuses what no camera would send.
+	ClockSkew = time.Hour
+	// Shares registered at once, across every camera: a bound on what
+	// sockets that register and never serve can hold.
+	MaxShares = 100_000
+	// How often expired registrations are reaped.
+	ReapEvery = time.Minute
 )
 
-var shareID = regexp.MustCompile(`^[0-9a-f]{16}$`)
+var (
+	shareID    = regexp.MustCompile(`^[0-9a-f]{16}$`)
+	shareToken = regexp.MustCompile(`^[0-9a-f]{64}$`)
+)
 
 // Hub pairs page sockets with the camera that registered their share.
 type Hub struct {
@@ -87,6 +107,7 @@ type Hub struct {
 
 type share struct {
 	id      string
+	token   string
 	expires time.Time
 	dev     *device
 	pages   map[string]*page
@@ -220,6 +241,7 @@ type deviceMsg struct {
 	Type    string `json:"type"`
 	Share   string `json:"share"`
 	Expires int64  `json:"expires"`
+	Token   string `json:"token"`
 	Session string `json:"session"`
 	Reply   string `json:"reply"`
 	Data    string `json:"data"`
@@ -249,7 +271,11 @@ func (h *Hub) onDevice(d *device, raw []byte) {
 				if m.Mid != "" {
 					out["mid"] = m.Mid
 				}
-				trySend(p.out, marshal(out))
+				if !trySend(p.out, marshal(out)) {
+					// A page that stopped reading loses its session rather
+					// than a message it would wait for forever.
+					h.dropPage(p)
+				}
 				return
 			}
 		}
@@ -269,16 +295,26 @@ func (h *Hub) register(d *device, m deviceMsg) {
 	case !exp.After(time.Now()):
 		refuse("already expired")
 		return
-	case exp.After(time.Now().Add(MaxShareLifetime + time.Hour)):
+	case exp.After(time.Now().Add(MaxShareLifetime + ClockSkew)):
 		refuse("longer than a share may live")
 		return
+	case !shareToken.MatchString(m.Token):
+		refuse("no token")
+		return
 	}
+	h.reap(time.Now())
 	if sh, ok := h.shares[m.Share]; ok {
+		if subtle.ConstantTimeCompare([]byte(sh.token), []byte(m.Token)) != 1 {
+			// Not the camera that registered this share first.
+			refuse("registered by another camera")
+			return
+		}
 		if sh.dev != d {
-			// Ids are 64 random bits and a camera re-registers on every
-			// reconnect: the likely case is that camera's own new socket
-			// racing its old one, and the newer socket is the live one.
-			delete(sh.dev.shares, sh.id)
+			// The same camera's new socket racing its old one: the newer
+			// socket is the live one.
+			if sh.dev != nil {
+				delete(sh.dev.shares, sh.id)
+			}
 			sh.dev = d
 		}
 		sh.expires = exp
@@ -288,32 +324,80 @@ func (h *Hub) register(d *device, m deviceMsg) {
 			refuse("too many shares on one camera")
 			return
 		}
-		sh := &share{id: m.Share, expires: exp, dev: d, pages: map[string]*page{}}
+		if len(h.shares) >= MaxShares {
+			refuse("the relay is full")
+			return
+		}
+		sh := &share{id: m.Share, token: m.Token, expires: exp, dev: d, pages: map[string]*page{}}
 		h.shares[sh.id] = sh
 		d.shares[sh.id] = sh
 	}
 	trySend(d.out, marshal(map[string]string{"type": "registered", "share": m.Share}))
 }
 
+// dropDevice detaches a camera's socket from its shares but keeps the shares,
+// token and all, until they expire: the camera will reconnect and re-register,
+// and the registration must still be the one only it can make -- dropping it
+// would hand the id to whoever registered it first during the camera's
+// backoff.
 func (h *Hub) dropDevice(d *device) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	for _, sh := range d.shares {
 		if sh.dev == d {
-			h.dropShare(sh, "the camera went offline")
+			for _, p := range sh.pages {
+				h.closePage(p, "the camera went offline")
+			}
+			sh.dev = nil
 		}
 	}
 	d.conn.Close(websocket.StatusNormalClosure, "")
 	h.Log.Info("share: camera disconnected", "remote", d.remote)
 }
 
+// reap drops every registration past its end; called with h.mu held.
+func (h *Hub) reap(now time.Time) {
+	for _, sh := range h.shares {
+		if !sh.expires.After(now) {
+			h.dropShare(sh, "this link has expired")
+		}
+	}
+}
+
+// Reaper drops expired registrations until ctx ends, so a share whose camera
+// stays connected and whose link nobody opens does not hold a slot past its
+// end.
+func (h *Hub) Reaper(ctx context.Context) {
+	t := time.NewTicker(ReapEvery)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case now := <-t.C:
+			h.mu.Lock()
+			h.init()
+			h.reap(now)
+			h.mu.Unlock()
+		}
+	}
+}
+
+// closePage tells a page why and closes it; called with h.mu held.
+func (h *Hub) closePage(p *page, why string) {
+	if p.sh.pages[p.sid] != p {
+		return
+	}
+	trySend(p.out, marshal(map[string]string{"reply": "closed", "data": why}))
+	close(p.out)
+	delete(p.sh.pages, p.sid)
+}
+
 // dropShare is called with h.mu held.
 func (h *Hub) dropShare(sh *share, why string) {
 	for _, p := range sh.pages {
-		trySend(p.out, marshal(map[string]string{"reply": "closed", "data": why}))
-		close(p.out)
+		h.closePage(p, why)
 	}
-	sh.pages = map[string]*page{}
 	delete(h.shares, sh.id)
 	if sh.dev != nil {
 		delete(sh.dev.shares, sh.id)
@@ -417,19 +501,30 @@ func (h *Hub) forward(p *page, kind, data string) {
 	if kind == "offer" {
 		msg["share"] = p.sh.id
 	}
-	trySend(p.sh.dev.out, marshal(msg))
+	if !trySend(p.sh.dev.out, marshal(msg)) {
+		// The camera is not keeping up: say so, rather than let the page
+		// wait out its own timeout for an offer that was never delivered.
+		trySend(p.out, marshal(map[string]string{"reply": "busy", "data": "the camera is not answering; try again shortly"}))
+		h.dropPage(p)
+	}
+}
+
+// dropPage ends one page's session; called with h.mu held.
+func (h *Hub) dropPage(p *page) {
+	if p.sh.pages[p.sid] != p {
+		return
+	}
+	delete(p.sh.pages, p.sid)
+	close(p.out)
+	if p.sh.dev != nil {
+		trySend(p.sh.dev.out, marshal(map[string]string{"type": "close", "session": p.sid}))
+	}
 }
 
 func (h *Hub) detach(p *page) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if p.sh.pages[p.sid] == p {
-		delete(p.sh.pages, p.sid)
-		close(p.out)
-		if p.sh.dev != nil {
-			trySend(p.sh.dev.out, marshal(map[string]string{"type": "close", "session": p.sid}))
-		}
-	}
+	h.dropPage(p)
 	p.conn.Close(websocket.StatusNormalClosure, "")
 }
 

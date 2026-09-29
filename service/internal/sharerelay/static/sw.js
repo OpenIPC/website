@@ -23,20 +23,30 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(viaTunnel(e.request, url));
 });
 
-async function shell() {
+// The shells that could carry a request, focused first. A worker cannot ask
+// which tab an iframe belongs to; every live shell on this origin reaches the
+// same camera with the same access, so any live one serves -- and one that
+// answers "not connected" is passed over for the next.
+async function shells() {
   const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-  const tops = all.filter((c) => c.frameType === 'top-level');
-  return tops.find((c) => c.focused) || tops[tops.length - 1];
+  return all.filter((c) => c.frameType === 'top-level').sort((a, b) => b.focused - a.focused);
 }
 
 async function viaTunnel(req, url) {
-  const c = await shell();
-  if (!c) return new Response('The shared camera is not connected.', { status: 503 });
   const body = req.method === 'GET' || req.method === 'HEAD' ? null : await req.arrayBuffer();
   const headers = {};
   for (const [k, v] of req.headers) if (!DROP_REQ.has(k)) headers[k] = v;
-  const { port1, port2 } = new MessageChannel();
   const html = req.mode === 'navigate';
+  for (const c of await shells()) {
+    const r = await ask(c, req, url, headers, body ? body.slice(0) : null, html);
+    if (r) return r;
+  }
+  return new Response('The shared camera is not connected.', { status: 503 });
+}
+
+// One shell's answer, or null when that shell has no tunnel.
+function ask(c, req, url, headers, body, html) {
+  const { port1, port2 } = new MessageChannel();
   c.postMessage({ type: 'fetch', method: req.method, path: url.pathname + url.search, headers, body, html },
     body ? [port2, body] : [port2]);
   return new Promise((resolve) => {
@@ -69,6 +79,7 @@ async function viaTunnel(req, url) {
         try { controller.close(); } catch (e) { /* cancelled already */ }
         port1.close();
       } else if (d.type === 'error') {
+        if (!answered && d.message === 'not connected') { port1.close(); resolve(null); return; }
         if (!answered) resolve(new Response(d.message, { status: 502 }));
         else try { controller.error(new Error(d.message)); } catch (e) { /* done already */ }
         port1.close();

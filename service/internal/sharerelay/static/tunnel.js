@@ -136,11 +136,15 @@ export class Tunnel {
               done(new ShareError('This link is not valid.'));
               return;
             }
+            this.verified = true;
             const mine = await proof(key, 'page', this.share, nonce, c.nonce, this.cameraFp, this.pageFp);
             dc.send(frame(T.PROOF, 0, JSON.stringify({ proof: mine })));
             return;
           }
           case T.WELCOME:
+            // Only after this end has checked the camera's proof: a WELCOME
+            // from an endpoint that never proved the key is not the camera.
+            if (!this.verified) { done(new ShareError('This link is not valid.')); return; }
             this.welcome = JSON.parse(dec.decode(payload));
             done(null, this.welcome);
             return;
@@ -151,6 +155,8 @@ export class Tunnel {
             this.lost(dec.decode(payload));
             return;
         }
+        // Nothing but the handshake before the camera has proved itself.
+        if (!this.welcome) return;
         const s = this.streams.get(id);
         if (!s) return;
         if (type === T.DATA) s.ondata(payload.slice());

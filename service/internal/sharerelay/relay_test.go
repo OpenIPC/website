@@ -15,7 +15,10 @@ import (
 	"github.com/coder/websocket"
 )
 
-const id = "0123456789abcdef"
+const (
+	id    = "0123456789abcdef"
+	token = "aa00000000000000000000000000000000000000000000000000000000000000"
+)
 
 func rig(t *testing.T) (*Hub, *httptest.Server) {
 	t.Helper()
@@ -66,7 +69,7 @@ func recv(t *testing.T, c *websocket.Conn) map[string]any {
 
 func register(t *testing.T, srv *httptest.Server, expires time.Time) *websocket.Conn {
 	cam := dial(t, srv, "/__share/device")
-	send(t, cam, map[string]any{"type": "register", "share": id, "expires": expires.Unix()})
+	send(t, cam, map[string]any{"type": "register", "share": id, "expires": expires.Unix(), "token": token})
 	if m := recv(t, cam); m["type"] != "registered" {
 		t.Fatalf("register answered %v", m)
 	}
@@ -128,7 +131,7 @@ func TestRegistrationIsBounded(t *testing.T) {
 		{id, time.Now().Add(-time.Minute)},
 		{id, time.Now().Add(30 * 24 * time.Hour)},
 	} {
-		send(t, cam, map[string]any{"type": "register", "share": c.share, "expires": c.expires.Unix()})
+		send(t, cam, map[string]any{"type": "register", "share": c.share, "expires": c.expires.Unix(), "token": token})
 		if m := recv(t, cam); m["type"] != "refused" {
 			t.Fatalf("%s until %v: %v", c.share, c.expires, m)
 		}
@@ -152,7 +155,7 @@ func TestABrowserCannotPoseAsACamera(t *testing.T) {
 }
 
 func TestPagesHearWhenTheCameraGoesAway(t *testing.T) {
-	h, srv := rig(t)
+	_, srv := rig(t)
 	cam := register(t, srv, time.Now().Add(time.Hour))
 	page := dial(t, srv, "/__share/signal?share="+id)
 	send(t, page, map[string]string{"req": "offer", "data": "x"})
@@ -161,14 +164,43 @@ func TestPagesHearWhenTheCameraGoesAway(t *testing.T) {
 	if m := recv(t, page); m["reply"] != "closed" {
 		t.Fatalf("page got %v", m)
 	}
-	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) {
-		if n, _ := h.Stats(); n == 0 {
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
+	// While it is away, its link says so.
+	later := dial(t, srv, "/__share/signal?share="+id)
+	if m := recv(t, later); m["reply"] != "error" {
+		t.Fatalf("page got %v", m)
 	}
-	t.Fatal("the share outlived its camera")
+}
+
+func TestOnlyTheRegisteringCameraCanTakeAShareBack(t *testing.T) {
+	_, srv := rig(t)
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	cam.Close(websocket.StatusNormalClosure, "")
+	time.Sleep(50 * time.Millisecond)
+
+	// Someone who knows the id, during the camera's reconnect backoff.
+	thief := dial(t, srv, "/__share/device")
+	send(t, thief, map[string]any{"type": "register", "share": id, "expires": time.Now().Add(time.Hour).Unix(),
+		"token": strings.Repeat("b", 64)})
+	if m := recv(t, thief); m["type"] != "refused" {
+		t.Fatalf("a stranger took the share: %v", m)
+	}
+	send(t, thief, map[string]any{"type": "register", "share": id, "expires": time.Now().Add(time.Hour).Unix()})
+	if m := recv(t, thief); m["type"] != "refused" {
+		t.Fatalf("a registration without a token was taken: %v", m)
+	}
+	// The camera itself, back.
+	register(t, srv, time.Now().Add(time.Hour))
+}
+
+func TestExpiredRegistrationsAreReaped(t *testing.T) {
+	h, srv := rig(t)
+	register(t, srv, time.Now().Add(2*time.Second))
+	h.mu.Lock()
+	h.reap(time.Now().Add(3 * time.Second))
+	h.mu.Unlock()
+	if n, _ := h.Stats(); n != 0 {
+		t.Fatalf("%d shares outlived their end", n)
+	}
 }
 
 func TestUnregisterEndsThePages(t *testing.T) {

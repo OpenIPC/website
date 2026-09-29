@@ -218,7 +218,7 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, args []str
 		// remembers which camera socket holds which share, for as long as
 		// the socket is up.
 		mux := http.NewServeMux()
-		if err := shareRole(cfg, log, mux); err != nil {
+		if err := shareRole(ctx, cfg, log, mux); err != nil {
 			return err
 		}
 		return listenAndServe(ctx, log, *listen, mux, nil)
@@ -435,8 +435,9 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 	}, nil
 }
 
-func shareRole(cfg *config.Config, log *slog.Logger, mux *http.ServeMux) error {
+func shareRole(ctx context.Context, cfg *config.Config, log *slog.Logger, mux *http.ServeMux) error {
 	hub := &sharerelay.Hub{Log: log, OriginPatterns: cfg.ShareOrigins}
+	go hub.Reaper(ctx)
 	ice := sharerelay.ICE{STUN: cfg.ShareSTUN, TURN: cfg.ShareTURN, TURNSecret: cfg.ShareTURNSecret}
 	handlers := sharerelay.Handlers(hub, ice)
 	for _, r := range routes {
