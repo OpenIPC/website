@@ -13,7 +13,14 @@ import (
 // which is what the tools push got in production before this test existed.
 func TestEveryAPIRouteReachesTheService(t *testing.T) {
 	param := regexp.MustCompile(`\{[^}]+\}`)
+	// The upstream each route must reach, by vhost and role: a dev location
+	// pointed at production's port would pass a looser check.
+	want := map[string]struct{ env, web, firmware string }{
+		"org.openipc":     {"prod", "3002", "3003"},
+		"org.openipc.dev": {"dev", "3012", "3013"},
+	}
 	for _, name := range []string{"org.openipc", "org.openipc.dev"} {
+		w := want[name]
 		conf := vhost(t, name)
 		tls := conf[strings.Index(conf, "listen 443"):]
 		locs := locations(tls)
@@ -27,8 +34,16 @@ func TestEveryAPIRouteReachesTheService(t *testing.T) {
 				t.Errorf("%s: no location for %s %s", name, rt.Method, rt.Path)
 				continue
 			}
-			if !strings.Contains(l.Body, "proxy_pass http://127.0.0.1:30") && !strings.Contains(l.Body, "proxy_pass http://$openipc_up_") {
-				t.Errorf("%s: %s %s lands in `%s`, which does not proxy to the service", name, rt.Method, rt.Path, l.Header)
+			port := w.web
+			if rt.Role == "firmware" {
+				port = w.firmware
+			}
+			direct := strings.Contains(l.Body, "proxy_pass http://127.0.0.1:"+port+";")
+			// The routed surfaces (openipc-route) proxy through a variable
+			// named after their environment.
+			routed := strings.Contains(l.Body, "proxy_pass http://$openipc_up_"+w.env+"_")
+			if !direct && !routed {
+				t.Errorf("%s: %s %s lands in `%s`, which does not proxy to the %s role on %s", name, rt.Method, rt.Path, l.Header, rt.Role, port)
 			}
 		}
 	}
