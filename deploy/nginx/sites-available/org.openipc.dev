@@ -753,6 +753,18 @@ server {
     # must not touch what openipc.org serves. See the long note in
     # sites-available/org.openipc for why the try_files elements are these two
     # and not `$uri $uri/`.
+    # The protocol page for AI coding agents (/cameras/report links it), as
+    # Markdown text: nginx's types have no .md, and an octet-stream answer
+    # reads as a download to a fetch tool.
+    location = /agents.md {
+        root /srv/www/static/dev/current;
+        default_type "text/markdown; charset=utf-8";
+        try_files $uri =404;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By static always;
+        add_header Cache-Control "no-cache" always;
+    }
+
     location / {
         root /srv/www/static/dev/current;
         try_files $uri $uri/index.html @fallback;

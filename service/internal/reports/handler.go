@@ -112,6 +112,10 @@ func (a *API) upload(w http.ResponseWriter, r *http.Request) {
 		a.refuse(w, status, err.Error())
 		return
 	}
+	if len(in.fields["tool"]) > 200 {
+		a.refuse(w, http.StatusBadRequest, "tool: at most 200 characters, a name and a version")
+		return
+	}
 	channel := orDefault(in.fields["channel"], "ipctool")
 	if channel != "ipctool" && channel != "agent" && channel != "web" {
 		a.refuse(w, http.StatusBadRequest, "channel is ipctool, agent or web")
