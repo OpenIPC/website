@@ -78,7 +78,7 @@ export function filterBoards(all: Entry[], s: Filters): Entry[] {
     && (!s.soc || socKey(m) === s.soc)
     && (!s.sensor || sensorsOf(m).includes(s.sensor))
     && (!s.missing || !has(m, s.missing as Missing))
-    && (!s.line || m.category === s.line)
+    && (!s.line || (!!m.category && slug(m.category) === slug(s.line)))
     && (!s.source || m.sources.includes(s.source))
     && (!s.ready || m.tags.includes(READY))
     && (!s.kind || kindOf(m) === s.kind));
@@ -291,9 +291,15 @@ export function lineLabel(line: string, t: (key: string) => string): string {
   return KNOWN_LINES.has(key) ? t(`product_line.${key}`) : line;
 }
 
-/** Every product line on record, alphabetically in the reader's language. */
+/**
+ * Every product line on record, alphabetically in the reader's language: one
+ * option per line, however its sources capitalise it ("IP Camera Module" from
+ * Xiongmai, "IP camera module" from Anjoy Vision), keyed by its slug.
+ */
 export function lineOptions(all: Entry[], label: (line: string) => string = (l) => l): Option[] {
-  return [...new Set(all.map((m) => m.category).filter((c): c is string => !!c))].map((c): Option => [c, label(c)]).sort(byLabel);
+  const lines = new Map<string, string>();
+  for (const c of all.map((m) => m.category)) if (c && !lines.has(slug(c))) lines.set(slug(c), c);
+  return [...lines].map(([key, c]): Option => [key, label(c)]).sort(byLabel);
 }
 
 export function sensorOptions(all: Entry[]): Option[] {
@@ -393,17 +399,21 @@ export function layout(makers: Manufacturer[], kept: Entry[], splitOver = SPLIT_
     const found = byMaker.get(maker.id);
     if (!found) return [];
     const mine = newestFirst(found, dated);
+    // A line two spellings name ("IP Camera Module", "IP camera module") is one.
     const lines = new Map<string | null, Entry[]>();
+    const spelt = new Map<string, string>();
     for (const m of mine) {
-      const list = lines.get(m.category);
-      if (list) list.push(m); else lines.set(m.category, [m]);
+      const key = m.category ? slug(m.category) : null;
+      if (key && m.category && !spelt.has(key)) spelt.set(key, m.category);
+      const list = lines.get(key);
+      if (list) list.push(m); else lines.set(key, [m]);
     }
     if (mine.length <= splitOver || lines.size < 2) {
       return [{ maker, count: mine.length, groups: [{ key: `${maker.id}`, label: null, entries: mine }] }];
     }
     const groups = [...lines.entries()]
       .sort(([a, x], [b, y]) => (a === null ? 1 : 0) - (b === null ? 1 : 0) || y.length - x.length || String(a).localeCompare(String(b)))
-      .map(([label, entries]): Group => ({ key: `${maker.id}-${label === null ? 'other' : slug(label)}`, label, entries }));
+      .map(([key, entries]): Group => ({ key: `${maker.id}-${key ?? 'other'}`, label: key === null ? null : spelt.get(key) ?? key, entries }));
     return [{ maker, count: mine.length, groups }];
   });
 }

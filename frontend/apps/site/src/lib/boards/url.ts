@@ -21,7 +21,7 @@ export type BoardsState = {
   soc: string | null;
   sensor: string | null;
   missing: Missing | null;
-  /** The product line: the source's category, as written. */
+  /** The product line: its slug (a category as a source wrote it still matches). */
   line: string | null;
   /** A source id. */
   source: string | null;

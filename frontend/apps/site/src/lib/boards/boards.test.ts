@@ -94,7 +94,16 @@ describe('filters', () => {
     expect(ids({ source: 's' })).toEqual(['c', 'd']);
     expect(ids({ ready: true })).toEqual(['a']);
     expect(ids({ ready: true, line: 'NVR Board' })).toEqual([]);
-    expect(lineOptions(ALL)).toEqual([['IP Camera Module', 'IP Camera Module'], ['NVR Board', 'NVR Board']]);
+    expect(lineOptions(ALL)).toEqual([['ip-camera-module', 'IP Camera Module'], ['nvr-board', 'NVR Board']]);
+    expect(ids({ line: 'nvr-board' })).toEqual(['b']);
+  });
+
+  test('a product line two sources capitalise differently is one option, and both match it', () => {
+    const both = [...ALL, { ...ALL[0], id: 'e', category: 'IP camera module' }];
+    expect(lineOptions(both)).toEqual([['ip-camera-module', 'IP Camera Module'], ['nvr-board', 'NVR Board']]);
+    const ids = (line: string) => filterBoards(both, { ...EMPTY, line }).map((m) => m.id);
+    expect(ids('ip-camera-module')).toEqual(['a', 'e']);
+    expect(ids('IP camera module')).toEqual(['a', 'e']); // an address from before
   });
 
   test('search hits are kept only for boards the filters leave', () => {

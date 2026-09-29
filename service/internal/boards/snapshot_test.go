@@ -11,6 +11,7 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -341,6 +342,84 @@ func TestAReviewedFamilyLinksBothBoardsWithoutMergingThem(t *testing.T) {
 	}
 	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE id IN ('xiongmai-53h20-s', 'xiongmai-ipg-53h20pl-s')`); n != 2 {
 		t.Errorf("%d models: related boards stay two", n)
+	}
+	// Other sources' imports -- one describing the board, one not -- leave
+	// the pair to the source that wrote it rather than adding their own copy.
+	for _, snap := range []fstest.MapFS{donor(t, "cctvsp", model("xiongmai", "IPG-53H20PL-S", nil)), donor(t, "anjoy", model("anjoy", "MC-A31", nil))} {
+		if _, err := im.FromSnapshot(ctx, snap); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_links WHERE kind = 'related' AND model_id IN ('xiongmai-53h20-s', 'xiongmai-ipg-53h20pl-s')`); n != 2 {
+		t.Errorf("%d family links after two more sources' imports, want one each way", n)
+	}
+	// A copy stored before that is shown once.
+	if _, err := pool.Exec(ctx, `INSERT INTO board_links (model_id, source, position, kind, label, target_model_id)
+		VALUES ('xiongmai-53h20-s', 'cctvsp', 20000, 'related', 'IPG-53H20PL-S', 'xiongmai-ipg-53h20pl-s')`); err != nil {
+		t.Fatal(err)
+	}
+	d, err := ModelDetail(ctx, pool, "xiongmai-53h20-s", "en")
+	if err != nil {
+		t.Fatal(err)
+	}
+	related := 0
+	for _, l := range d["links"].([]linkJSON) {
+		if l.Kind == "related" {
+			related++
+		}
+	}
+	if related != 1 {
+		t.Errorf("the detail links the related board %d times, want once", related)
+	}
+}
+
+// A source that files one file under two names, or repeats a spec row word
+// for word, is shown with each once; rows that share a label with other
+// values (a table's sub-rows) all stay.
+func TestTheSameFileAndSpecRowAreShownOnce(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "tehno32", model("xiongmai", "AHB780XR-3520D", map[string]any{
+		"specs": map[string][][2]string{"en": {{"Audio", "2 ch"}, {"Interface", "Video input / 16ch BNC"}, {"Audio", "2 ch"}, {"Interface", "User interface / mouse"}}},
+		"files": []map[string]string{{"kind": "document", "name": "outline.pdf", "path": "files/doc.pdf"}, {"kind": "document", "name": "outline-2.pdf", "path": "files/doc.pdf"},
+			// the same picture as a photo and as the pinout: two roles, both stay
+			{"kind": "photo_other", "name": "board.jpg", "path": "files/a.jpg"}, {"kind": "pinout", "name": "board-pinout.jpg", "path": "files/a.jpg"}},
+	}))); err != nil {
+		t.Fatal(err)
+	}
+	tree, err := Tree(ctx, pool, "en", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			if mo.ID != "xiongmai-ahb780xr-3520d" {
+				continue
+			}
+			var names []string
+			for _, u := range mo.Units {
+				for _, f := range u.Files {
+					names = append(names, f.Name)
+				}
+			}
+			if strings.Join(names, ",") != "outline.pdf,board.jpg,board-pinout.jpg" {
+				t.Errorf("files %v, want the document once by its first name, the picture in both its roles", names)
+			}
+		}
+	}
+	d, err := ModelDetail(ctx, pool, "xiongmai-ahb780xr-3520d", "en")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rows []string
+	for _, a := range d["about"].([]*aboutJSON) {
+		for _, s := range a.Specs {
+			rows = append(rows, s[0]+"="+s[1])
+		}
+	}
+	if got := strings.Join(rows, "; "); got != "Audio=2 ch; Interface=Video input / 16ch BNC; Interface=User interface / mouse" {
+		t.Errorf("specs %q", got)
 	}
 }
 
@@ -804,5 +883,56 @@ func TestAnAnjoyModuleImportsUnderItsMakerWithChineseAsTheOriginal(t *testing.T)
 	}
 	if n := count(t, pool, `SELECT count(*) FROM board_model_texts WHERE model_id = 'anjoy-mc-j31h' AND source = 'anjoy' AND locale = 'en' AND translated_from = 'zh'`); n != 1 {
 		t.Error("the English text is not marked as translated from Chinese")
+	}
+}
+
+// Migration 014 drops the family links relate() wrote once per source, and
+// only those: a related link a source brings itself stays, and outranks a
+// generated copy of it.
+func TestMigration014DropsOnlyGeneratedCopies(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported,
+		ExtraAliases: []Alias{{Maker: "xiongmai", Code: "53H20-S", Related: "IPG-53H20PL-S"}}}
+	ctx := context.Background()
+	for _, snap := range []fstest.MapFS{donor(t, "xiongmai", model("xiongmai", "IPG-53H20PL-S", nil)), donor(t, "cctvsp", model("xiongmai", "IPG-TEST-1", nil))} {
+		if _, err := im.FromSnapshot(ctx, snap); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// What the imports before relate() learned to leave a pair alone stored:
+	// cctvsp's generated copies, both ways, and a related link cctvsp brings.
+	for _, q := range []string{
+		`INSERT INTO board_links (model_id, source, position, kind, label, target_model_id) VALUES ('xiongmai-53h20-s', 'cctvsp', 10000, 'related', 'IPG-53H20PL-S', 'xiongmai-ipg-53h20pl-s')`,
+		`INSERT INTO board_links (model_id, source, position, kind, label, target_model_id) VALUES ('xiongmai-ipg-53h20pl-s', 'cctvsp', 10001, 'related', '53H20-S', 'xiongmai-53h20-s')`,
+		`INSERT INTO board_links (model_id, source, position, kind, label, target_model_id) VALUES ('xiongmai-53h20-s', 'cctvsp', 1, 'related', 'the PL-S board', 'xiongmai-ipg-53h20pl-s')`,
+	} {
+		if _, err := pool.Exec(ctx, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	sql, err := os.ReadFile("../db/migrations/014_board_links_once.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, string(sql)); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := pool.Query(ctx, `SELECT model_id || ' ' || source || CASE WHEN position >= 10000 THEN ' generated' ELSE ' own' END FROM board_links WHERE kind = 'related' ORDER BY 1`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "xiongmai-53h20-s cctvsp own,xiongmai-ipg-53h20pl-s xiongmai generated"; strings.Join(got, ",") != want {
+		t.Errorf("related links %v, want %s", got, want)
+	}
+	// And a re-import adds no generated copy beside the source's own link.
+	if _, err := im.FromSnapshot(ctx, donor(t, "xiongmai", model("xiongmai", "IPG-53H20PL-S", nil))); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_links WHERE kind = 'related' AND model_id = 'xiongmai-53h20-s'`); n != 1 {
+		t.Errorf("%d related links on 53H20-S after a re-import, want the source's own", n)
 	}
 }

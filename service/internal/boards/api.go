@@ -343,6 +343,11 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 	if err != nil {
 		return nil, err
 	}
+	// A source can file one file under several names (tehno32's outline.dxf
+	// and outline-2.dxf ... -5.dxf): a unit lists it once per kind, by its
+	// first name. The same bytes in another role (a photo that is also the
+	// pinout) stay in each.
+	seenFile := map[[3]string]bool{}
 	for rows.Next() {
 		var unit, p, thumb string
 		var f fileJSON
@@ -359,6 +364,11 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 			rows.Close()
 			return nil, fmt.Errorf("file %s: no unit %s", p, unit)
 		}
+		k := [3]string{unit, f.Kind, f.SHA256}
+		if seenFile[k] {
+			continue
+		}
+		seenFile[k] = true
 		parent.Files = append(parent.Files, f)
 	}
 	rows.Close()
@@ -524,6 +534,10 @@ func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale
 	if err != nil {
 		return err
 	}
+	// A row a source repeats word for word (a sheet covering two models,
+	// MN3109T and MN3116T) is shown once; rows sharing a label with other
+	// values are a table's sub-rows and all stay.
+	seenSpec := map[[4]string]bool{}
 	for rows.Next() {
 		var k key
 		var l, label, value string
@@ -532,24 +546,42 @@ func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale
 			return err
 		}
 		if chosen[k] == l {
-			a := get(k)
-			a.Specs = append(a.Specs, [2]string{label, value})
+			if s := [4]string{k.model, k.source, label, value}; !seenSpec[s] {
+				seenSpec[s] = true
+				a := get(k)
+				a.Specs = append(a.Specs, [2]string{label, value})
+			}
 		}
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
 		return err
 	}
-	rows, err = tx.Query(ctx, `SELECT model_id, source, kind, label, url, target_model_id FROM board_links WHERE model_id = ANY($1) ORDER BY model_id, source, position`, ids)
+	// Sources in the catalogue's order, a source's own links before the
+	// reviewed families relate() adds (positions from 10000 up).
+	rows, err = tx.Query(ctx, `
+		SELECT l.model_id, l.source, l.kind, l.label, l.url, l.target_model_id
+		FROM board_links l JOIN board_sources s ON s.id = l.source
+		WHERE l.model_id = ANY($1) ORDER BY l.model_id, s.position, l.source, l.position`, ids)
 	if err != nil {
 		return err
 	}
+	// A board is linked to another once per kind, whichever sources say so:
+	// the first in that order stays, as migration 014 keeps it.
+	seenLink := map[[3]string]bool{}
 	for rows.Next() {
 		var id string
 		var l linkJSON
 		if err := rows.Scan(&id, &l.Source, &l.Kind, &l.Label, &l.URL, &l.Target); err != nil {
 			rows.Close()
 			return err
+		}
+		if l.Target != nil {
+			k := [3]string{id, l.Kind, *l.Target}
+			if seenLink[k] {
+				continue
+			}
+			seenLink[k] = true
 		}
 		if m := byModel[id]; m != nil {
 			m.Links = append(m.Links, l)
