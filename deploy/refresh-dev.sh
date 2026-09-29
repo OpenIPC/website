@@ -113,6 +113,22 @@ find "$DEV_WALL" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 cp -al "$PROD_WALL/." "$DEV_WALL/" || fail "could not link production's frames into ${DEV_WALL}"
 log "wall linked: $(find "$DEV_WALL" -mindepth 1 -maxdepth 1 -type d | wc -l) snapshot directories"
 
+# ------------------------------------------------------------- migrate
+# The restored schema is production's as of last night, and dev usually runs
+# a branch ahead of it: `serve` refuses a database behind its binary, so
+# without this dev stays down after the refresh until someone deploys to it
+# (2026-09-28 and -29: dev needed migrations 10 and 13, the backups had 9).
+# Migrations are additive, so dev's own image brings the restored schema up
+# to what dev runs, exactly as `openipc-deploy dev` does.
+SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+COMPOSE_FILE="$(dirname "$SELF")/docker-compose.yml"
+ENV_FILE="$(dirname "$COMPOSE_FILE")/.env"
+if docker ps -a --format '{{.Names}}' | grep -qx openipc-go-web-dev; then
+  log "migrating ${DST_DB} to dev's schema"
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps -T go-web-dev migrate \
+    || fail "openipc migrate failed on the restored ${DST_DB}"
+fi
+
 # ------------------------------------------------------------- restart
 # They hold connections (and the web role's single-process lock) that the drop
 # just severed. Wait for them to answer again rather than exiting the moment
