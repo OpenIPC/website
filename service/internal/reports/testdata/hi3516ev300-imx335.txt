@@ -1,0 +1,70 @@
+---
+chip:
+  vendor: HiSilicon
+  model: 3516EV300
+  id: 02143906de0038e9c170030a8771e5942649f51410cf29e3
+board:
+  vendor: OpenIPC
+  version: 2.6.09.22
+  possible-IR-cut-GPIO: 10,11
+ethernet:
+  mac: "02:8f:5c:94:d7:e7"
+  u-mdio-phyaddr: 1
+  phy-id: 0x20669903
+  d-mdio-phyaddr: 0
+rom:
+- type: nor
+  block: 64K
+  partitions:
+    - name: boot
+      size: 0x40000
+      sha1: 3426b679
+    - name: env
+      size: 0x10000
+      sha1: b5431ca7
+      contains:
+        - name: uboot-env
+          offset: 0x0
+    - name: kernel
+      size: 0x200000
+      sha1: 96768830
+    - name: rootfs
+      size: 0x500000
+      sha1: 2ea3b982
+    - name: rootfs_data
+      size: 0x8b0000
+      path: /overlay,jffs2,rw
+  size: 16M
+  addr-mode: 3-byte
+ram:
+  total: 128M
+  media: 96M
+firmware:
+  kernel: "4.9.37 (Tue Sep 22 17:53:30 UTC 2026)"
+  toolchain: buildroot-gcc-13.3.0
+  sdk: "Hi3516EV200_MPP_V1.0.1.2 B030 Release (Oct 18 2019, 18:21:00)"
+  main-app: majestic
+sensors:
+- vendor: Sony
+  model: IMX335
+  control:
+    bus: 0
+    type: i2c
+    addr: 0x34
+  data:
+    type: MIPI
+    input-data-type: DATA_TYPE_RAW_12BIT
+    lane-id:
+      - 0
+      - 1
+      - 2
+      - 3
+    image: 2592x1944
+  clock: 37.125MHz
+clocks:
+  cpu_pll:
+    freq_mhz: 900
+  ddr:
+    data_rate_mbps: 1800
+  hpm:
+    bin: mid

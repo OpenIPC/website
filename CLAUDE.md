@@ -140,6 +140,17 @@ restores the image but never the schema, so keep migrations additive.
   environment once. Boards link to device IDs through `board_device_ids`
   (tehno32's firmware pages, cctvsp) or a firmware named after the board; a
   board with a coupler image is OpenIPC-ready, derived on read, never stored.
+- `internal/reports` — **owner reports**: ipctool's output, flash backups,
+  photos and console captures that camera owners and AI agents send to
+  `POST /api/v1/reports` (and `POST /api/v1/boards/identify`, which stores
+  nothing). Public only after `openipc reports publish`; identifiers replaced
+  by keyed hashes in the public copy; a backup served only with
+  `consent=public`. **Nothing but this package may write them**: triggers
+  refuse changes, board links are `ON DELETE RESTRICT`, files are
+  content-addressed and written once under `REPORTS_ROOT`
+  (`/srv/www/shared/owner-reports` -- not `shared/reports`, which is the
+  analytics'), and `internal/boards/survival_test.go` runs every importer
+  over stored reports.
 - `internal/catalogue` — **the hardware catalogue is `data/catalogue/*.yml` and
   nothing else** (#289). The service reads it at start; the site reads its
   export. Change it by editing the YAML in a pull request, then run the export.

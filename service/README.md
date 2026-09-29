@@ -28,6 +28,7 @@ key the wall JSON signs them with.
 | `probe` | the numbers only a probe sees: all-digit `public_id`s, HEIF uploads, a stuck variant queue |
 | `builds import-history [--keep 90] [--kconfig-all] [--skip-builder]` | once per environment: the builds GitHub still holds, into PostgreSQL |
 | `boards import-openhisiipcam [--from <dir>]` | once per environment: the OpenHisiIpCam board archive (firmware#659, pinned commit) into the board catalogue, its files under `BOARDS_ROOT`; a second run adds nothing. Run it in the web container, which mounts that directory |
+| `reports list\|show\|publish\|reject\|link\|unlink\|takedown\|verify` | the owner reports' review queue (`internal/reports`): nothing a camera owner or an agent sends is public until `publish`; `takedown` is the one way a report's content is ever removed; `verify` re-hashes every stored file and runs nightly |
 | `routes --json` | the routes table |
 | `version` | the commit the binary was built from |
 
@@ -92,6 +93,21 @@ The goldens below are fixed: nothing regenerates them.
   download. It is keyed by the digests of the exact release assets. When upstream
   publishes, the old image and tarball are deleted, both on the index change and
   by the nightly purge. Errors are a page, never a flash cookie.
+
+- **Owner reports are never lost to a rebuild.** What people and agents send
+  (`POST /api/v1/reports`: ipctool's output, a flash backup, photos, console
+  captures) exists once, on this host, so it is kept apart from everything
+  the board importers rewrite: its own tables, which no other package may
+  name (`deploytest`); triggers that refuse UPDATE, DELETE and TRUNCATE
+  unless `openipc reports takedown|unlink` stood them down for its own
+  transaction; a link to a board model that is `ON DELETE RESTRICT`; files
+  content-addressed under `REPORTS_ROOT`, written once, beside
+  `BOARDS_ROOT`; and a test that runs every importer, push and purge over
+  stored reports and requires them byte-identical afterwards
+  (`internal/boards/survival_test.go`). Each file goes to S3 the night after
+  it arrives. The public copy of a report has the MAC, die ID and cloud ID
+  replaced by keyed hashes; a backup is served only if its owner sent
+  `consent=public`.
 
 ## Operating it
 

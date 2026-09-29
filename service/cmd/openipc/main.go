@@ -9,6 +9,7 @@
 //	openipc builds import-history  once: the builds GitHub still holds, into PostgreSQL
 //	openipc vendor-firmware import-history  once: xmupdates and coupler as published so far
 //	openipc boards import-openhisiipcam  once: the OpenHisiIpCam board archive, into the board catalogue
+//	openipc reports list|show|publish|reject|link|unlink|takedown|verify   the owner reports' review queue
 //	openipc routes --json          what this binary answers, for the nginx seam test
 //
 // Configuration is the environment; see internal/config.
@@ -40,6 +41,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/firmware"
 	"github.com/OpenIPC/website/service/internal/httpx"
 	"github.com/OpenIPC/website/service/internal/purge"
+	"github.com/OpenIPC/website/service/internal/reports"
 	"github.com/OpenIPC/website/service/internal/snapshots"
 	"github.com/OpenIPC/website/service/internal/variants"
 	"github.com/OpenIPC/website/service/internal/vendorfw"
@@ -79,6 +81,8 @@ func main() {
 		err = vendorFirmwareCommand(ctx, cfg, log, args)
 	case "boards":
 		err = boardsCommand(ctx, cfg, log, args)
+	case "reports":
+		err = reportsCommand(ctx, cfg, log, args)
 	case "routes":
 		err = printRoutes()
 	case "version":
@@ -92,7 +96,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | boards import-snapshot | vendor-firmware import-history | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | boards import-snapshot | reports list|show|publish|reject|link|unlink|takedown|verify | vendor-firmware import-history | routes --json | version")
 	os.Exit(2)
 }
 
@@ -159,6 +163,10 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/boards/models/{id}"},
 	{"web", "POST", "/api/v1/vendor-firmware"},
 	{"web", "GET", "/api/v1/vendor-firmware/{deviceId}"},
+	{"web", "POST", "/api/v1/reports"},
+	{"web", "GET", "/api/v1/reports/{id}"},
+	{"web", "GET", "/api/v1/reports/{id}/files/{position}"},
+	{"web", "POST", "/api/v1/boards/identify"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 }
@@ -345,6 +353,12 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		handlers[k] = h
 	}
 	for k, h := range (&vendorfw.API{DB: pool, Log: log}).Handlers() {
+		handlers[k] = h
+	}
+	// Owner reports (internal/reports): uploaded by anyone, public after
+	// review, and kept apart from everything the board importers touch.
+	for k, h := range (&reports.API{DB: pool, Files: &reports.Files{Root: cfg.ReportsRoot},
+		AccelPrefix: cfg.ReportsAccelPrefix, Log: log}).Handlers() {
 		handlers[k] = h
 	}
 	for _, r := range routes {

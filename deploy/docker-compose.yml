@@ -52,6 +52,7 @@ services:
       - /var/run/postgresql:/var/run/postgresql
       - /srv/www/shared/wall:/srv/wall
       - /srv/www/shared/boards:/srv/boards
+      - /srv/www/shared/owner-reports:/srv/owner-reports
 
   go-firmware-prod:
     <<: *go-common
@@ -88,6 +89,7 @@ services:
       - /var/run/postgresql:/var/run/postgresql
       - /srv/www/shared/dev-wall:/srv/wall
       - /srv/www/shared/dev-boards:/srv/boards
+      - /srv/www/shared/dev-owner-reports:/srv/owner-reports
 
   go-firmware-dev:
     <<: *go-common

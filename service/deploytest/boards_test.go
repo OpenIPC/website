@@ -52,7 +52,7 @@ func TestBoardCatalogueServing(t *testing.T) {
 	}
 	deploy := read(t, "deploy/deploy.sh")
 	mustContain(t, deploy, `ensure_uid_1000_root "$boards_root"`, "deploy.sh does not create the boards directory owned by uid 1000")
-	for _, d := range []string{"/srv/www/shared/boards\"", "/srv/www/shared/dev-boards\""} {
+	for _, d := range []string{"/srv/www/shared/boards ", "/srv/www/shared/dev-boards "} {
 		mustContain(t, deploy, d, "deploy.sh's target_for does not name "+d)
 	}
 	mustContain(t, read(t, "deploy/install-go-service.sh"), "wall dev-wall boards dev-boards", "the installer does not create the boards directories")

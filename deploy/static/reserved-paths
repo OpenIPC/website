@@ -52,6 +52,8 @@
 /firmware-cache/
 # The board catalogue's files (firmware#659), written by the web role's import.
 /board-files/
+# Owner reports' files, internal: reached only through the web role's X-Accel-Redirect for a published report.
+/report-files/
 
 # --- the expensive leaf ------------------------------------------------------
 # /cameras/ is deliberately NOT reserved: the catalogue is exactly what #162

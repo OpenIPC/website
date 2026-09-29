@@ -113,6 +113,19 @@ find "$DEV_WALL" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 cp -al "$PROD_WALL/." "$DEV_WALL/" || fail "could not link production's frames into ${DEV_WALL}"
 log "wall linked: $(find "$DEV_WALL" -mindepth 1 -maxdepth 1 -type d | wc -l) snapshot directories"
 
+# ------------------------------------------------------- owner reports
+# The restored rows name production's report files. Linked the same way, and
+# never removed: the store is content-addressed and written once, so dev's
+# tree only gains names, and a file dev already has is the same bytes.
+PROD_REPORTS=/srv/www/shared/owner-reports
+DEV_REPORTS=/srv/www/shared/dev-owner-reports
+if [ -d "$PROD_REPORTS/sha256" ]; then
+  [ "$(stat -c %d "$PROD_REPORTS")" = "$(stat -c %d "$DEV_REPORTS")" ] \
+    || fail "${PROD_REPORTS} and ${DEV_REPORTS} are on different filesystems; hard links would be copies"
+  cp -aln "$PROD_REPORTS/sha256" "$DEV_REPORTS/" || fail "could not link production's owner report files into ${DEV_REPORTS}"
+  log "owner report files linked: $(find "$DEV_REPORTS/sha256" -type f | wc -l)"
+fi
+
 # ------------------------------------------------------------- migrate
 # The restored schema is production's as of last night, and dev usually runs
 # a branch ahead of it: `serve` refuses a database behind its binary, so

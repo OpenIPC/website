@@ -58,5 +58,15 @@ if running openipc-go-web-prod; then
     || log "WARNING: the probe found trouble (above)"
 fi
 
+# Owner reports are never purged; this only proves they are all still there.
+# Every file their rows name is re-read and hashed; one missing or changed
+# fails the run (service/internal/reports).
+for env_name in prod dev; do
+  if running "openipc-go-web-${env_name}"; then
+    docker exec "openipc-go-web-${env_name}" openipc reports verify 2>&1 | tail -3 \
+      || { log "WARNING: owner report files are missing or changed (${env_name})"; status=1; }
+  fi
+done
+
 log "purge complete"
 exit "$status"
