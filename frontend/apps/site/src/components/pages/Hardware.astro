@@ -173,7 +173,10 @@ const here = p(view === 'featured' ? '/supported-hardware/featured'
         <tr id={soc.urlname}>
           <th scope="row" class="chip">
             <span class="vendor">{v.name}</span> <span class="model">{soc.model}</span>
-            <a class="anchor" href={`${here}#${soc.urlname}`} aria-label={`${fullName(v, soc)}: #${soc.urlname}`}>#</a>
+            <a class="chip-link" href={`${here}#${soc.urlname}`} title={k('copy_link')} data-copied={k('link_copied')}>
+              <Icon name="link-45deg" class="size-4" />
+              <span class="sr-only">{k('copy_link_to').replace('{chip}', fullName(v, soc))}</span>
+            </a>
           </th>
           {showLoadAddress && <td class="addr" data-label={k('th_baseaddr')}>{soc.load_address}</td>}
           {showStage && (
@@ -230,9 +233,32 @@ const here = p(view === 'featured' ? '/supported-hardware/featured'
   page in this locale, so the script moves cells between them rather than
   fetching sentences.
 */}
+<p id="copy-status" class="sr-only" aria-live="polite"></p>
+
 <script is:inline>
   // /stages-of-firmware-development redirects to #stages: open what it names.
   if (location.hash === '#stages') document.getElementById('stages').open = true;
+
+  // A row's link icon copies the row's address. It is a real link underneath,
+  // so with no clipboard (plain http, an old browser, a refusal) it does what a
+  // link does and puts the address in the bar instead.
+  const copyStatus = document.getElementById('copy-status');
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest('.chip-link');
+    if (!link || !navigator.clipboard) return;
+    event.preventDefault();
+    navigator.clipboard.writeText(link.href).then(() => {
+      history.replaceState(null, '', link.hash);
+      link.classList.add('is-copied');
+      copyStatus.textContent = link.dataset.copied;
+      setTimeout(() => {
+        link.classList.remove('is-copied');
+        copyStatus.textContent = '';
+      }, 2000);
+    }, () => {
+      location.hash = link.hash;
+    });
+  });
 </script>
 
 <script

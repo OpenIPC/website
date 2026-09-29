@@ -15,9 +15,12 @@ en:
         chip_installable_html: "{count} of the {total} chips we know of can take OpenIPC today. Find yours to see how."
         chip_lede: "Find yours to see whether you can install OpenIPC on it, and how."
         chip_title: "Already know the chip?"
+        copy_link: "Copy link to this chip"
+        copy_link_to: "Copy link to {chip}"
         featured: Recommended
         full_list: Full list
         installable_title: "{count} of {total} can be installed"
+        link_copied: "Link copied"
         list_featured: "Recommended chips"
         list_featured_intro: "The chips OpenIPC supports best. Chips at an earlier stage are on the full list."
         list_full: "Every chip we know of"
