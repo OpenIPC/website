@@ -40,6 +40,7 @@ en:
     filter_any: all
     missing_any: anything
     missing_pinout: no pinout
+    missing_photo: no photo of its own
     missing_flash_dump: no flash dump
     missing_uboot_env: no U-Boot console
     missing_boot_log: no boot log
@@ -63,6 +64,22 @@ en:
     tag_photo_back: back
     tag_photo_other: photo
     tag_pinout: pinout
+    tag_shared_photo: shared photo
+    tag_shared: shared
+    shared_title: A shared photo.
+    shared_count:
+      one: "{source}'s catalogue shows this picture for {count} board"
+      other: "{source}'s catalogue shows this picture for {count} boards"
+    shared_colon: ": "
+    shared_stop: "."
+    shared_this: this one
+    shared_sep: ", "
+    shared_and: " and "
+    shared_more:
+      one: "{count} more"
+      other: "{count} more"
+    shared_tail: It may show another board of the family, with a different sensor or lens.
+    shared_tail_two: It may show the other.
     photo_alt: '{what} of {board}'
     no_photos: No photos yet
     cov_photos: Photos

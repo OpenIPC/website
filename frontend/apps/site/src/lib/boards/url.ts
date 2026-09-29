@@ -7,7 +7,7 @@
 export const SCOPES = ['uboot_env', 'boot_log', 'note', 'all'] as const;
 export type Scope = (typeof SCOPES)[number];
 
-export const MISSING = ['pinout', 'flash_dump', 'uboot_env', 'boot_log'] as const;
+export const MISSING = ['pinout', 'photo', 'flash_dump', 'uboot_env', 'boot_log'] as const;
 export type Missing = (typeof MISSING)[number];
 
 /** What a catalogue entry is: a bare board, or a finished device. */

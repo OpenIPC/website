@@ -237,12 +237,20 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
                   {u.notes && <p class="m-0 text-body-secondary">{u.notes}</p>}
                   {photos.length > 0 && (
                     <div class="flex flex-wrap gap-1.5">
-                      {photos.map((f) => (
-                        <Thumb key={f.url} file={f} class="h-[90px] w-[120px] rounded-md" tag={t(`tag_${f.kind}`, { fallback: '' }) || undefined}
-                          highlight={f.kind === 'pinout'} alt={t('photo_alt', { what: t(`tag_${f.kind}`, { fallback: t('tag_photo_other') }), board: title })} />
-                      ))}
+                      {photos.map((f) => {
+                        const kind = t(`tag_${f.kind}`, { fallback: '' });
+                        const tag = (f.shared ?? 0) > 1 ? [kind, t('tag_shared')].filter(Boolean).join(' · ') : kind;
+                        return (
+                          <Thumb key={f.url} file={f} class="h-[90px] w-[120px] rounded-md" tag={tag || undefined}
+                            highlight={f.kind === 'pinout'} alt={t('photo_alt', { what: t(`tag_${f.kind}`, { fallback: t('tag_photo_other') }), board: title })} />
+                        );
+                      })}
                     </div>
                   )}
+                  {photos.filter((f) => (f.shared ?? 0) > 1).map((f) => (
+                    <SharedNote key={`shared-${f.url}`} count={f.shared ?? 0} source={sourceName(u.source)}
+                      others={detail.state === 'ok' ? detail.value.shared_photos?.[f.sha256] ?? [] : []} href={href} follow={follow} t={t} />
+                  ))}
                   {files.length > 0 && (
                     <div class="grid gap-1.5">
                       {files.map((f) => (f.kind === 'uboot_env' || f.kind === 'boot_log' || f.kind === 'note'
@@ -363,5 +371,36 @@ function InsideBlock({ rows, device, title, href, follow, t }: {
         </p>
       )}
     </section>
+  );
+}
+
+const SHOWN_OTHERS = 3;
+
+/**
+ * Under a photo its source shows for other boards too: how many, which (the
+ * first few, the rest behind a button), and that it may be another board of
+ * the family.
+ */
+function SharedNote({ count, source, others, href, follow, t }: {
+  count: number; source: string; others: { id: string; model: string | null }[];
+  href: (model: string | null) => string; follow: (target: string) => (e: MouseEvent) => void; t: BoardsT;
+}) {
+  const [all, setAll] = useState(false);
+  const shown = all ? others : others.slice(0, SHOWN_OTHERS);
+  const rest = others.length - shown.length;
+  const items = [
+    <Fragment key="self">{t('shared_this')}</Fragment>,
+    ...shown.map((o) => <a key={o.id} href={href(o.id)} onClick={follow(o.id)} class="font-mono text-[12.5px] text-inherit">{printedCode(o.model) ?? o.id}</a>),
+    ...(rest > 0 ? [<button key="more" type="button" class="p-0 text-inherit underline" onClick={() => setAll(true)}>{t('shared_more', { count: rest })}</button>] : []),
+  ];
+  return (
+    <p class="m-0 max-w-[80ch] rounded-md bg-[#fff4e2] px-3 py-2 text-[13px] text-[#8a5200]">
+      <b>{t('shared_title')}</b>{' '}
+      {t('shared_count', { count, source })}
+      {others.length > 0 && <>{t('shared_colon')}{items.map((item, i) => (
+        <Fragment key={i}>{i > 0 && (i === items.length - 1 ? t('shared_and') : t('shared_sep'))}{item}</Fragment>
+      ))}</>}
+      {t('shared_stop')}{' '}{t(count === 2 ? 'shared_tail_two' : 'shared_tail')}
+    </p>
   );
 }

@@ -174,6 +174,7 @@
     "missing_any": "anything",
     "missing_boot_log": "no boot log",
     "missing_flash_dump": "no flash dump",
+    "missing_photo": "no photo of its own",
     "missing_pinout": "no pinout",
     "missing_uboot_env": "no U-Boot console",
     "new_tab": "opens in a new tab",
@@ -237,6 +238,22 @@
     "send_pinout": "Send us the pinout",
     "send_uboot_env": "Send us the U-Boot console",
     "sensor": "Sensor",
+    "shared_and": " and ",
+    "shared_colon": ": ",
+    "shared_count": {
+      "one": "{source}'s catalogue shows this picture for {count} board",
+      "other": "{source}'s catalogue shows this picture for {count} boards"
+    },
+    "shared_more": {
+      "one": "{count} more",
+      "other": "{count} more"
+    },
+    "shared_sep": ", ",
+    "shared_stop": ".",
+    "shared_tail": "It may show another board of the family, with a different sensor or lens.",
+    "shared_tail_two": "It may show the other.",
+    "shared_this": "this one",
+    "shared_title": "A shared photo.",
     "show_all": {
       "one": "Show all {count} board",
       "other": "Show all {count} boards"
@@ -279,6 +296,8 @@
     "tag_photo_other": "photo",
     "tag_pinout": "pinout",
     "tag_ready": "OpenIPC-ready",
+    "tag_shared": "shared",
+    "tag_shared_photo": "shared photo",
     "text_error": "This file could not be loaded ({error}).",
     "text_loading": "Loading…",
     "translated_from_en": "Translated from English",

@@ -46,6 +46,7 @@ ru:
     filter_any: все
     missing_any: всё есть
     missing_pinout: нет распиновки
+    missing_photo: нет собственного фото
     missing_flash_dump: нет дампа флеш-памяти
     missing_uboot_env: нет консоли U-Boot
     missing_boot_log: нет лога загрузки
@@ -71,6 +72,26 @@ ru:
     tag_photo_back: обратная
     tag_photo_other: фото
     tag_pinout: распиновка
+    tag_shared_photo: общее фото
+    tag_shared: общее фото
+    shared_title: Общее фото.
+    shared_count:
+      one: "В каталоге {source} эта фотография показана для {count} платы"
+      few: "В каталоге {source} эта фотография показана для {count} плат"
+      many: "В каталоге {source} эта фотография показана для {count} плат"
+      other: "В каталоге {source} эта фотография показана для {count} платы"
+    shared_colon: ": "
+    shared_stop: "."
+    shared_this: этой
+    shared_sep: ", "
+    shared_and: " и "
+    shared_more:
+      one: "ещё {count}"
+      few: "ещё {count}"
+      many: "ещё {count}"
+      other: "ещё {count}"
+    shared_tail: На ней может быть другая плата той же серии, с другим сенсором или объективом.
+    shared_tail_two: На ней может быть другая из двух.
     photo_alt: '{what}: {board}'
     no_photos: Фотографий пока нет
     cov_photos: Фото

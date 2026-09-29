@@ -3,7 +3,7 @@ package boards
 import (
 	"context"
 	"encoding/json"
-	"github.com/OpenIPC/website/service/internal/vendorfw"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -13,6 +13,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/OpenIPC/website/service/internal/vendorfw"
 )
 
 // donor is a snapshot in the shape tools/board-donors writes.
@@ -934,5 +936,61 @@ func TestMigration014DropsOnlyGeneratedCopies(t *testing.T) {
 	}
 	if n := count(t, pool, `SELECT count(*) FROM board_links WHERE kind = 'related' AND model_id = 'xiongmai-53h20-s'`); n != 1 {
 		t.Errorf("%d related links on 53H20-S after a re-import, want the source's own", n)
+	}
+}
+
+// A photo a source shows for several boards says how many, and a board's
+// detail names the others; a picture only one board has, and a pinout with
+// the same bytes as a shared photo, are not marked.
+func TestASharedPhotoSaysSo(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	own := map[string]any{"files": []map[string]string{{"kind": "photo_front", "name": "own.jpg", "path": "files/b.jpg"}}}
+	pin := map[string]any{"files": []map[string]string{{"kind": "pinout", "name": "pinout.jpg", "path": "files/a.jpg"}}}
+	snap := donor(t, "xiongmai",
+		model("xiongmai", "IPG-H100T-S-80", nil), model("xiongmai", "IPG-H131S-S-36", nil),
+		model("xiongmai", "IPG-OWN-1", own), model("xiongmai", "IPG-PIN-1", pin))
+	snap["files/b.jpg"] = &fstest.MapFile{Data: jpg(320, 240)}
+	if _, err := im.FromSnapshot(ctx, snap); err != nil {
+		t.Fatal(err)
+	}
+	tree, err := Tree(ctx, pool, "en", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]string{}
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			for _, u := range mo.Units {
+				for _, f := range u.Files {
+					got[mo.ID+" "+f.Kind] = fmt.Sprint(f.Shared)
+				}
+			}
+		}
+	}
+	for k, want := range map[string]string{
+		"xiongmai-ipg-h100t-s-80 photo_other": "2", "xiongmai-ipg-h131s-s-36 photo_other": "2",
+		"xiongmai-ipg-own-1 photo_front": "0", "xiongmai-ipg-pin-1 pinout": "0", "xiongmai-ipg-h131s-s-36 document": "0",
+	} {
+		if got[k] != want {
+			t.Errorf("%s: shared %q, want %s", k, got[k], want)
+		}
+	}
+	d, err := ModelDetail(ctx, pool, "xiongmai-ipg-h131s-s-36", "en")
+	if err != nil {
+		t.Fatal(err)
+	}
+	shared := d["shared_photos"].(map[string][]sharedBoard)
+	if len(shared) != 1 {
+		t.Fatalf("shared photos %v, want the one", shared)
+	}
+	for _, others := range shared {
+		if len(others) != 1 || others[0].ID != "xiongmai-ipg-h100t-s-80" {
+			t.Errorf("the others %v, want IPG-H100T-S-80 only (not the pinout's board)", others)
+		}
+	}
+	if d, err := ModelDetail(ctx, pool, "xiongmai-ipg-own-1", "en"); err != nil || len(d["shared_photos"].(map[string][]sharedBoard)) != 0 {
+		t.Errorf("a board's own photo is listed as shared: %v %v", d["shared_photos"], err)
 	}
 }

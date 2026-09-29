@@ -62,7 +62,16 @@ type fileJSON struct {
 	Width    int    `json:"width,omitempty"`
 	Height   int    `json:"height,omitempty"`
 	Lines    int    `json:"lines,omitempty"`
+	// Shared is, for a photo whose file (the same bytes) a source shows for
+	// other boards too, how many boards show it -- this one included. A
+	// maker's catalogue often uses one family member's picture for its lens
+	// and channel-count variants; the site says so rather than passing it off
+	// as this board's own.
+	Shared int `json:"shared,omitempty"`
 }
+
+// photoKinds are the artifact kinds that are pictures of the board itself.
+const photoKinds = `('photo_front', 'photo_back', 'photo_other')`
 
 type unitJSON struct {
 	ID            string     `json:"id"`
@@ -334,12 +343,19 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 	}
 
 	rows, err = tx.Query(ctx, `
-		SELECT unit_id, kind::text, name, path, coalesce(thumb_path, ''), mime, bytes, sha256,
-		       coalesce(width, 0), coalesce(height, 0),
-		       coalesce(array_length(regexp_split_to_array(rtrim(content, E'\n'), E'\n'), 1), 0)
-		FROM board_artifacts
-		WHERE $1 = '' OR unit_id IN (SELECT u.id FROM board_units u JOIN board_models m ON m.id = u.model_id WHERE m.soc = $1)
-		ORDER BY unit_id, position, id`, soc)
+		WITH shared AS (
+			SELECT a.sha256, count(DISTINCT u.model_id) AS n
+			FROM board_artifacts a JOIN board_units u ON u.id = a.unit_id
+			WHERE a.kind::text IN `+photoKinds+`
+			GROUP BY a.sha256 HAVING count(DISTINCT u.model_id) > 1
+		)
+		SELECT a.unit_id, a.kind::text, a.name, a.path, coalesce(a.thumb_path, ''), a.mime, a.bytes, a.sha256,
+		       coalesce(a.width, 0), coalesce(a.height, 0),
+		       coalesce(array_length(regexp_split_to_array(rtrim(a.content, E'\n'), E'\n'), 1), 0),
+		       CASE WHEN a.kind::text IN `+photoKinds+` THEN coalesce(s.n, 0) ELSE 0 END
+		FROM board_artifacts a LEFT JOIN shared s ON s.sha256 = a.sha256
+		WHERE $1 = '' OR a.unit_id IN (SELECT u.id FROM board_units u JOIN board_models m ON m.id = u.model_id WHERE m.soc = $1)
+		ORDER BY a.unit_id, a.position, a.id`, soc)
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +367,7 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 	for rows.Next() {
 		var unit, p, thumb string
 		var f fileJSON
-		if err := rows.Scan(&unit, &f.Kind, &f.Name, &p, &thumb, &f.Mime, &f.Bytes, &f.SHA256, &f.Width, &f.Height, &f.Lines); err != nil {
+		if err := rows.Scan(&unit, &f.Kind, &f.Name, &p, &thumb, &f.Mime, &f.Bytes, &f.SHA256, &f.Width, &f.Height, &f.Lines, &f.Shared); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -614,7 +630,11 @@ func ModelDetail(ctx context.Context, db *pgxpool.Pool, id, locale string) (map[
 	if err := modelFirmware(ctx, tx, one, locale); err != nil {
 		return nil, err
 	}
-	return map[string]any{"schema": 1, "locale": locale, "id": id, "model": m.Model, "about": m.About, "links": m.Links, "tags": m.Tags, "devices": m.Devices, "kind": m.Kind, "firmware": m.Firmware}, nil
+	shared, err := sharedPhotos(ctx, tx, id)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"schema": 1, "locale": locale, "id": id, "model": m.Model, "about": m.About, "links": m.Links, "tags": m.Tags, "devices": m.Devices, "kind": m.Kind, "firmware": m.Firmware, "shared_photos": shared}, nil
 }
 
 type hitJSON struct {
@@ -786,4 +806,38 @@ func contains(list []string, s string) bool {
 		}
 	}
 	return false
+}
+
+// sharedBoard is another board a shared photo is shown for.
+type sharedBoard struct {
+	ID    string  `json:"id"`
+	Model *string `json:"model"`
+}
+
+// sharedPhotos lists, for each photo of a board that other boards show too
+// (keyed by its sha256), those other boards by code.
+func sharedPhotos(ctx context.Context, tx pgx.Tx, id string) (map[string][]sharedBoard, error) {
+	rows, err := tx.Query(ctx, `
+		SELECT DISTINCT a.sha256, m.id, m.model
+		FROM board_artifacts mine
+		JOIN board_units mu ON mu.id = mine.unit_id AND mu.model_id = $1
+		JOIN board_artifacts a ON a.sha256 = mine.sha256 AND a.kind::text IN `+photoKinds+`
+		JOIN board_units u ON u.id = a.unit_id AND u.model_id <> $1
+		JOIN board_models m ON m.id = u.model_id
+		WHERE mine.kind::text IN `+photoKinds+`
+		ORDER BY a.sha256, m.model, m.id`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string][]sharedBoard{}
+	for rows.Next() {
+		var sha string
+		var b sharedBoard
+		if err := rows.Scan(&sha, &b.ID, &b.Model); err != nil {
+			return nil, err
+		}
+		out[sha] = append(out[sha], b)
+	}
+	return out, rows.Err()
 }
