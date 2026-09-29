@@ -194,6 +194,25 @@ func TestOnlyAHolderOfTheTokenCanRegisterAnId(t *testing.T) {
 	register(t, srv, time.Now().Add(time.Hour))
 }
 
+func TestASocketThatRegistersNothingIsClosed(t *testing.T) {
+	old := RegisterDeadline
+	RegisterDeadline = 150 * time.Millisecond
+	defer func() { RegisterDeadline = old }()
+	_, srv := rig(t)
+	idle := dial(t, srv, "/__share/device")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	for {
+		_, _, err := idle.Read(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				t.Fatal("an idle camera socket was kept open")
+			}
+			return
+		}
+	}
+}
+
 func TestExpiredRegistrationsAreReaped(t *testing.T) {
 	h, srv := rig(t)
 	register(t, srv, time.Now().Add(2*time.Second))

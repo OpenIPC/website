@@ -10,17 +10,23 @@ other two roles; what it cannot do on its own is give it a name. In order:
    `wss://share.openipc.org/__share/device`; guests open `<id>.share.openipc.org`.
 
 2. **Certificate.** One wildcard, `share.openipc.org` + `*.share.openipc.org`,
-   issued by dehydrated with a DNS-01 hook into
-   `/var/lib/dehydrated/certs/share.openipc.org/`. HTTP-01 cannot issue a
-   wildcard. The chain must end in ISRG Root X1 or X2: cameras pin those two
-   and nothing else.
+   in `/var/lib/dehydrated/certs/share.openipc.org/`. HTTP-01 cannot issue a
+   wildcard, so this one certificate uses DNS-01 and the others keep HTTP-01:
+   - `/etc/dehydrated/domains.txt` lists `share.openipc.org *.share.openipc.org`;
+   - `/var/lib/dehydrated/certs/share.openipc.org/config` sets
+     `CHALLENGETYPE="dns-01"` for it alone;
+   - `/etc/dehydrated/hook.sh` hands `deploy_challenge`/`clean_challenge` for
+     those two names to `/etc/dehydrated/hetzner-dns01.py`, which adds the
+     `_acme-challenge.share` TXT value through the Hetzner Cloud API, waits for
+     every authoritative nameserver to serve it, and removes it afterwards;
+   - the API token is `/etc/dehydrated/hetzner-dns.token` (0600, root).
 
-3. **The vhost.** Move `deploy/nginx/share/org.openipc.share` into
-   `deploy/nginx/sites-available/`, add `share.openipc.org` to the fixture's
-   domain list in `deploy/nginx/check-config.sh` (and bump its tag), run
-   `deploy/nginx/check-config.sh`, then `push-nginx.sh`. Not before step 2:
-   `nginx -t` fails on a missing certificate, and push-nginx pushes every site
-   at once.
+   The nightly `dehydrated -c -g` renews it with the rest. The chain must end
+   in ISRG Root X1 or X2: cameras pin those two and nothing else.
+
+3. **The vhost**, `deploy/nginx/sites-available/org.openipc.share`, goes out
+   with `deploy/push-nginx.sh --apply` like every other. It names the
+   certificate above, so it only belongs on a host that has one.
 
 4. **Deploy** as usual (`openipc-deploy prod <sha>`); it now starts
    `go-share-prod` and waits for `:3004/up`.

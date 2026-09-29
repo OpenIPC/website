@@ -77,6 +77,7 @@ const (
 	PingEvery  = 25 * time.Second
 	// A camera that answers no ping for this long is gone.
 	DeviceTimeout = 70 * time.Second
+
 	// A page that has not connected within this long never will; its
 	// socket is closed so it cannot sit on a session slot.
 	PageLifetime = 2 * time.Minute
@@ -89,6 +90,15 @@ const (
 	MaxShares = 100_000
 	// How often expired registrations are reaped.
 	ReapEvery = time.Minute
+)
+
+// A camera socket must register a share this soon after connecting, and one
+// that holds no share for DeviceIdle is closed: a camera dials only while it
+// is sharing, so anything else is a socket holding a slot on workers the rest
+// of the site shares. Variables so the suite can shorten them.
+var (
+	RegisterDeadline = 30 * time.Second
+	DeviceIdle       = 5 * time.Minute
 )
 
 var shareID = regexp.MustCompile(`^[0-9a-f]{16}$`)
@@ -129,6 +139,9 @@ type device struct {
 	remote string
 	shares map[string]*share
 	pong   time.Time
+	// When the socket last held no share (connecting counts), or zero while
+	// it holds one.
+	emptySince time.Time
 }
 
 type page struct {
@@ -212,7 +225,7 @@ func (h *Hub) Device() http.Handler {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		d := &device{hub: h, conn: c, out: make(chan []byte, 64), remote: clientIP(r),
-			shares: map[string]*share{}, pong: time.Now()}
+			shares: map[string]*share{}, pong: time.Now(), emptySince: time.Now()}
 		go writer(ctx, c, d.out)
 		go d.pinger(ctx, cancel)
 		h.Log.Info("share: camera connected", "remote", d.remote)
@@ -228,13 +241,34 @@ func (h *Hub) Device() http.Handler {
 }
 
 func (d *device) pinger(ctx context.Context, cancel context.CancelFunc) {
-	t := time.NewTicker(PingEvery)
-	defer t.Stop()
+	ping := time.NewTicker(PingEvery)
+	defer ping.Stop()
+	idle := time.NewTicker(RegisterDeadline / 3)
+	defer idle.Stop()
+	registered := false
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-t.C:
+		case <-idle.C:
+			d.hub.mu.Lock()
+			if len(d.shares) > 0 {
+				registered = true
+				d.emptySince = time.Time{}
+			} else if d.emptySince.IsZero() {
+				d.emptySince = time.Now()
+			}
+			limit := DeviceIdle
+			if !registered {
+				limit = RegisterDeadline
+			}
+			empty := !d.emptySince.IsZero() && time.Since(d.emptySince) > limit
+			d.hub.mu.Unlock()
+			if empty {
+				cancel()
+				return
+			}
+		case <-ping.C:
 			d.hub.mu.Lock()
 			stale := time.Since(d.pong) > DeviceTimeout
 			d.hub.mu.Unlock()
