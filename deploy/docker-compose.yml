@@ -30,6 +30,10 @@ services:
   #                                      socket, /up
   #   firmware  :3003 prod / :3013 dev   full images, one version each, their
   #                                      stats, and the catalogue's availability
+  #   share     :3004 prod / :3014 dev   camera sharing links: the signalling
+  #                                      relay and the share page. No database
+  #                                      and no volumes; its state is the
+  #                                      cameras' sockets.
   #
   # Their settings are /srv/www/.env.go-<env>, written by
   # deploy/install-go-service.sh. PostgreSQL is reached over its bind-mounted
@@ -134,3 +138,31 @@ services:
       - /var/run/postgresql:/var/run/postgresql
       - /srv/www/shared/dev-firmware:/srv/firmware
       - /srv/www/shared/dev-go-release-cache:/srv/release-cache
+
+  go-share-prod:
+    <<: *go-common
+    container_name: openipc-go-share-prod
+    image: ghcr.io/openipc/website-go:${GO_PROD_TAG:-none}
+    command: ["serve", "--role", "share"]
+    env_file:
+      - path: /srv/www/.env.go-prod
+        format: raw
+    ports:
+      - "127.0.0.1:3004:3004"
+    healthcheck:
+      <<: *go-health
+      test: ["CMD", "curl", "-fsS", "http://localhost:3004/up"]
+
+  go-share-dev:
+    <<: *go-common
+    container_name: openipc-go-share-dev
+    image: ghcr.io/openipc/website-go:${GO_DEV_TAG:-none}
+    command: ["serve", "--role", "share"]
+    env_file:
+      - path: /srv/www/.env.go-dev
+        format: raw
+    ports:
+      - "127.0.0.1:3014:3004"
+    healthcheck:
+      <<: *go-health
+      test: ["CMD", "curl", "-fsS", "http://localhost:3004/up"]

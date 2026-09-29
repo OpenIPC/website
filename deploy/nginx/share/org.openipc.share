@@ -1,0 +1,58 @@
+# Camera sharing links: share.openipc.org and <id>.share.openipc.org.
+#
+# NOT IN sites-available ON PURPOSE. push-nginx.sh installs every file there
+# and runs `nginx -t`, and this vhost names a certificate that does not exist
+# until the wildcard has been issued -- so moving it in before then would fail
+# every nginx push, for every site. deploy/SHARE.md has the order.
+#
+# Everything is the share role's: the relay's sockets, the page, its worker.
+# Each share is its own host, so no two shared cameras ever run script in the
+# same origin, and no openipc.org cookie ever reaches one.
+
+server {
+    listen 80;
+    server_name share.openipc.org *.share.openipc.org;
+    access_log /var/log/nginx/org.openipc.share.access.log openipc;
+
+    location ^~ /.well-known/acme-challenge {
+        default_type "text/plain";
+        alias /var/lib/dehydrated/acme-challenges;
+    }
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name share.openipc.org *.share.openipc.org;
+    access_log /var/log/nginx/org.openipc.share.access.log openipc;
+    error_log /var/log/nginx/org.openipc.share.error.log warn;
+
+    # One wildcard certificate covers every share host and the bare name.
+    ssl_certificate /var/lib/dehydrated/certs/share.openipc.org/fullchain.pem;
+    ssl_certificate_key /var/lib/dehydrated/certs/share.openipc.org/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+    add_header Strict-Transport-Security max-age=15768000 always;
+    add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+
+    location / {
+        proxy_pass http://127.0.0.1:3004;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # The relay's sockets: a camera holds one for as long as it has a
+        # share, and pings every 25 s.
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+    }
+}

@@ -53,7 +53,14 @@ func Handlers(h *Hub, ice ICE) map[string]http.Handler {
 		h.Set("X-Robots-Tag", "noindex")
 		_, _ = w.Write(b)
 	})
+	up := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		_, _ = w.Write([]byte("ok\n"))
+	})
 	return map[string]http.Handler{
+		// What deploy.sh waits on, as it does for the other roles. Exact, so
+		// it does not shadow the shell at /up... on a share host nothing does.
+		"GET /up":             up,
 		"GET /__share/device": h.Device(),
 		"GET /__share/signal": h.Signal(),
 		"GET /__share/ice":    ice,

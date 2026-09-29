@@ -174,6 +174,7 @@ var routes = []Route{
 	{"web", "POST", "/api/v1/boards/identify"},
 	{"web", "PUT", "/api/v1/tools/{name}"},
 	{"web", "GET", "/api/v1/tools"},
+	{"share", "GET", "/up"},
 	{"share", "GET", "/__share/device"},
 	{"share", "GET", "/__share/signal"},
 	{"share", "GET", "/__share/ice"},
