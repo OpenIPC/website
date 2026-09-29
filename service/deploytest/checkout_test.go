@@ -166,3 +166,18 @@ func TestDevRefreshLinksTheWall(t *testing.T) {
 		t.Error("the frames are linked before the rows that name them are restored")
 	}
 }
+
+// The restored schema is production's; dev runs a branch that is often ahead
+// of it, and `serve` refuses a database behind its binary. The refresh brings
+// the schema up with dev's own image before restarting, or dev stays down
+// until the next deploy (it did, the nights of 2026-09-28 and -29).
+func TestDevRefreshMigratesBeforeRestarting(t *testing.T) {
+	s := directives(read(t, "deploy/refresh-dev.sh"))
+	mustContain(t, s, `run --rm --no-deps -T go-web-dev migrate`, "the refresh does not migrate the restored database with dev's image")
+	restore := strings.Index(s, "pg_restore --no-owner")
+	migrate := strings.Index(s, "go-web-dev migrate")
+	restart := strings.Index(s, `docker restart "$c"`)
+	if restore < 0 || migrate < restore || restart < migrate {
+		t.Errorf("want restore, then migrate, then restart; got restore %d, migrate %d, restart %d", restore, migrate, restart)
+	}
+}
