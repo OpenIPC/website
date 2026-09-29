@@ -43,6 +43,10 @@ location ^~ /api/v1/wall/socket {
     proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
     proxy_ssl_verify_depth        3;
 
+    # The server block sets its own HSTS; the origin's would be a second copy
+    # of the header on every response (as kz/snippets/openipc-mirror.conf).
+    proxy_hide_header Strict-Transport-Security;
+
     # A socket is idle most of its life. The default would close it mid-session
     # and the reader would lose their frames with no error.
     proxy_buffering    off;
@@ -56,7 +60,9 @@ location ^~ /api/v1/wall/socket {
 # be chosen on openipc.ru at all. The origin's home page makes the same
 # exception (frontend/apps/site/src/pages/index.astro). Applied by hand on
 # 2026-09-29, in the openipc.ru server block, replacing the unconditional
-# `location = / { return 302 ...; }`.
+# `location = / { return 302 ...; }`. The same day `location /` on that host
+# was given `proxy_hide_header Strict-Transport-Security;` too, for the reason
+# given in the socket location above.
 
 location = / {
     if ($http_referer !~* "^https://openipc\.ru/") {
@@ -72,4 +78,5 @@ location = / {
     proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
     proxy_ssl_verify_depth        3;
     proxy_http_version 1.1;
+    proxy_hide_header Strict-Transport-Security;
 }

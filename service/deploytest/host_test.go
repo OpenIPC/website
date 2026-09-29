@@ -128,6 +128,9 @@ func TestMirrorRootLetsThePickerThrough(t *testing.T) {
 			mustMatch(t, `proxy_ssl_verify\s+on;`, root, "the origin's certificate is not verified")
 			mustMatch(t, `proxy_ssl_name\s+openipc\.org;`, root, "the origin is not named in the handshake")
 			mustMatch(t, `X-Forwarded-For\s+\$proxy_add_x_forwarded_for;`, root, "the reader's address is not forwarded")
+			// The mirror's server block sets HSTS itself; passing the origin's
+			// through sends the header twice.
+			mustMatch(t, `proxy_hide_header\s+Strict-Transport-Security;`, root, "the origin's HSTS header is passed through as a second copy")
 		})
 	}
 }
