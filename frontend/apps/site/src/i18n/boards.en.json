@@ -244,6 +244,7 @@
       "one": "{source}'s catalogue shows this picture for {count} board",
       "other": "{source}'s catalogue shows this picture for {count} boards"
     },
+    "shared_gap": " ",
     "shared_more": {
       "one": "{count} more",
       "other": "{count} more"

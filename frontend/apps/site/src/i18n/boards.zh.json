@@ -244,6 +244,7 @@
       "one": "{source} 的产品目录将此图片用于 {count} 块主板",
       "other": "{source} 的产品目录将此图片用于 {count} 块主板"
     },
+    "shared_gap": "",
     "shared_more": {
       "one": "其余 {count} 块",
       "other": "其余 {count} 块"

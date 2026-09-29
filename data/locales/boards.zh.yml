@@ -72,6 +72,7 @@ zh:
       other: "{source} 的产品目录将此图片用于 {count} 块主板"
     shared_colon: "："
     shared_stop: "。"
+    shared_gap: ""
     shared_this: 本板
     shared_sep: "、"
     shared_and: 和

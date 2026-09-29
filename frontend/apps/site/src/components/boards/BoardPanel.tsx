@@ -395,12 +395,12 @@ function SharedNote({ count, source, others, href, follow, t }: {
   ];
   return (
     <p class="m-0 max-w-[80ch] rounded-md bg-[#fff4e2] px-3 py-2 text-[13px] text-[#8a5200]">
-      <b>{t('shared_title')}</b>{' '}
+      <b>{t('shared_title')}</b>{t('shared_gap')}
       {t('shared_count', { count, source })}
       {others.length > 0 && <>{t('shared_colon')}{items.map((item, i) => (
         <Fragment key={i}>{i > 0 && (i === items.length - 1 ? t('shared_and') : t('shared_sep'))}{item}</Fragment>
       ))}</>}
-      {t('shared_stop')}{' '}{t(count === 2 ? 'shared_tail_two' : 'shared_tail')}
+      {t('shared_stop')}{t('shared_gap')}{t(count === 2 ? 'shared_tail_two' : 'shared_tail')}
     </p>
   );
 }

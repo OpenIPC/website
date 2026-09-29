@@ -82,6 +82,7 @@ ru:
       other: "В каталоге {source} эта фотография показана для {count} платы"
     shared_colon: ": "
     shared_stop: "."
+    shared_gap: " "
     shared_this: этой
     shared_sep: ", "
     shared_and: " и "

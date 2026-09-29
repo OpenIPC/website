@@ -268,6 +268,7 @@
       "one": "В каталоге {source} эта фотография показана для {count} платы",
       "other": "В каталоге {source} эта фотография показана для {count} платы"
     },
+    "shared_gap": " ",
     "shared_more": {
       "few": "ещё {count}",
       "many": "ещё {count}",
