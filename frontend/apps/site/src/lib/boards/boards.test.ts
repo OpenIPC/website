@@ -561,8 +561,10 @@ describe('product lines', () => {
 describe("a maker's builds for a board model", () => {
   test('are grouped by the device type each is for, the newest group first', () => {
     const b = (key: string, device_type: string) => ({ key, device_type });
-    const got = buildGroups([b('r3', 'MCF46-4GD_V5'), b('r2', 'MCF46_V1'), b('r1', 'MCF46-4GD_V5')]);
-    expect(got.map((g) => [g.deviceType, g.builds.map((x) => x.key)])).toEqual([
-      ['MCF46-4GD_V5', ['r3', 'r1']], ['MCF46_V1', ['r2']]]);
+    const got = buildGroups([b('r3', 'MCF46-4GD_V5'), b('r2', 'MCF46_V1'), b('r1', 'MCF46-4GD_V5'),
+      { ...b('b1', 'MC200E6_V0-H5'), variant: 'standard IR' }, { ...b('b2', 'MC200E6_V0-H5'), variant: 'warm light' }]);
+    expect(got.map((g) => [g.deviceType, g.variant, g.builds.map((x) => x.key)])).toEqual([
+      ['MCF46-4GD_V5', null, ['r3', 'r1']], ['MCF46_V1', null, ['r2']],
+      ['MC200E6_V0-H5', 'standard IR', ['b1']], ['MC200E6_V0-H5', 'warm light', ['b2']]]);
   });
 });

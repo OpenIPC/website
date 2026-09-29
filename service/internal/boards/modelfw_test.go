@@ -54,6 +54,16 @@ func TestAnjoyBuildsLandOnTheirBoards(t *testing.T) {
 		build("r4", "D55G_V0_AF", "public", "d", day), // a finished camera the catalogue does not list
 		pre,
 	}
+	// The same checksum-free file listed twice for one device type: shown once.
+	for _, rid := range []string{"r5", "r6"} {
+		it := build(rid, "MCA31_V0_BU_LIGHT", "public", "f", older)
+		it.SHA256, it.AssetURL = "", vendorfw.Sources["anjoyupdates"]+"firmware-archive/same.bin"
+		items = append(items, it)
+	}
+	// One file in two variant folders: listed under each.
+	warm := pre
+	warm.Key, warm.Variant = "b2", map[string]string{"zh": "暖光", "en": "warm light", "ru": "тёплый свет"}
+	items = append(items, warm)
 	p := &vendorfw.Payload{Schema: 1, Source: "anjoyupdates", Items: items}
 	if _, err := vendorfw.Save(ctx, pool, p, "test"); err != nil {
 		t.Fatal(err)
@@ -65,10 +75,18 @@ func TestAnjoyBuildsLandOnTheirBoards(t *testing.T) {
 	got := map[string][]vendorfw.Build{}
 	for _, m := range tree["manufacturers"].([]*makerJSON) {
 		for _, mo := range m.Models {
-			if mo.Firmware == nil {
-				t.Fatalf("%s: firmware is null, want a list", mo.ID)
+			if mo.Firmware != nil {
+				t.Errorf("%s: the tree carries its firmware; only its detail should", mo.ID)
 			}
-			got[mo.ID] = mo.Firmware
+			d, err := ModelDetail(ctx, pool, mo.ID, "ru")
+			if err != nil {
+				t.Fatal(err)
+			}
+			fw, ok := d["firmware"].([]vendorfw.Build)
+			if !ok || fw == nil {
+				t.Fatalf("%s: firmware is %T %v, want a list", mo.ID, d["firmware"], d["firmware"])
+			}
+			got[mo.ID] = fw
 		}
 	}
 	keys := func(id string) (out []string) {
@@ -77,8 +95,8 @@ func TestAnjoyBuildsLandOnTheirBoards(t *testing.T) {
 		}
 		return
 	}
-	if k := keys("anjoy-mc-a31"); len(k) != 1 || k[0] != "r1" {
-		t.Errorf("MC-A31: %v, want its own build", k)
+	if k := keys("anjoy-mc-a31"); len(k) != 2 || k[0] != "r1" || k[1] != "r5" {
+		t.Errorf("MC-A31: %v, want its own build and the checksum-free file once", k)
 	}
 	if k := keys("anjoy-mc-a3"); len(k) != 0 {
 		t.Errorf("MC-A3 took %v: a code must not end in the middle of a number", k)
@@ -91,7 +109,10 @@ func TestAnjoyBuildsLandOnTheirBoards(t *testing.T) {
 		t.Errorf("MC-F46 apps: %s, %s", f46[0].App, f46[1].App)
 	}
 	e6 := got["anjoy-mc200e6"]
-	if len(e6) != 1 || e6[0].Variant == nil || *e6[0].Variant != "обычная ИК-подсветка" || e6[0].Collection == nil || *e6[0].Collection != "pre-2022" {
+	if len(e6) != 2 {
+		t.Errorf("MC200E6: %d builds, want one file under each of its two variants", len(e6))
+	}
+	if len(e6) == 0 || e6[0].Variant == nil || *e6[0].Variant != "обычная ИК-подсветка" || e6[0].Collection == nil || *e6[0].Collection != "pre-2022" {
 		t.Errorf("MC200E6: %+v, want the pre-2022 build by its folder's module, its variant in Russian", e6)
 	}
 }

@@ -201,14 +201,21 @@ en:
     fw_earlier: Earlier
     fw_stock_source: "Xiongmai firmware, mirrored by OpenIPC/xmupdates."
     mfw_title: "{maker} firmware"
-    mfw_count: "{builds} builds for {types} device types"
+    mfw_builds:
+      one: '{count} build'
+      other: '{count} builds'
+    mfw_types:
+      one: '{count} device type'
+      other: '{count} device types'
     mfw_lead: "Each build is made for one device type: the module, its hardware revision (V0, V5) and its flavour (4G, TF card, AF zoom, a lens block). Flash only the build made for your board. Newest first."
     mfw_notes_label: "{maker}'s own notes:"
     mfw_notes: "for camera modules it publishes the bare module's firmware only; a finished camera's maker may ship a customised build (AF zoom, PTZ, GB28181) that a module build can remove. Upgrading long-used older modules carries a risk of bricking them."
     mfw_own: "{maker}'s build"
     mfw_customer: "made for a customer's app ({app})"
     mfw_collection_pre-2022: "from {maker}'s collection for pre-2022 modules (Baidu Pan)"
-    mfw_more: "Show {n} more device types"
+    mfw_more:
+      one: 'Show {count} more device type'
+      other: 'Show {count} more device types'
     mfw_source: "{maker} firmware, mirrored by OpenIPC/anjoyupdates."
     mfw_cat_camera: camera module
     mfw_cat_wifi: Wi-Fi

@@ -107,8 +107,9 @@ type modelJSON struct {
 	// owner, or most likely from the vendor's firmware (contents.go).
 	Contents []contentJSON `json:"contents"`
 	// Firmware are the builds made for this board by a maker whose firmware
-	// is keyed by board model (Anjoy Vision's), newest first (modelfw.go).
-	Firmware []vendorfw.Build `json:"firmware"`
+	// is keyed by board model (Anjoy Vision's), newest first (modelfw.go):
+	// in one board's detail only, the tree does not carry them.
+	Firmware []vendorfw.Build `json:"firmware,omitempty"`
 	// ListedYear is the year the maker's catalogue first showed the board,
 	// where a source dates it.
 	ListedYear *int `json:"listed_year"`
@@ -374,9 +375,6 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 	if err := contents(ctx, tx, byModel); err != nil {
 		return nil, err
 	}
-	if err := modelFirmware(ctx, tx, byModel, locale); err != nil {
-		return nil, err
-	}
 	for _, m := range byModel {
 		summarise(m)
 		m.About, m.Links = nil, nil
@@ -581,7 +579,10 @@ func ModelDetail(ctx context.Context, db *pgxpool.Pool, id, locale string) (map[
 	if err := devices(ctx, tx, one); err != nil {
 		return nil, err
 	}
-	return map[string]any{"schema": 1, "locale": locale, "id": id, "model": m.Model, "about": m.About, "links": m.Links, "tags": m.Tags, "devices": m.Devices, "kind": m.Kind}, nil
+	if err := modelFirmware(ctx, tx, one, locale); err != nil {
+		return nil, err
+	}
+	return map[string]any{"schema": 1, "locale": locale, "id": id, "model": m.Model, "about": m.About, "links": m.Links, "tags": m.Tags, "devices": m.Devices, "kind": m.Kind, "firmware": m.Firmware}, nil
 }
 
 type hitJSON struct {

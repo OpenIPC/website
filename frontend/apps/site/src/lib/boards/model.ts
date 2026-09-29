@@ -580,11 +580,17 @@ export function formatDay(iso: string | null, locale: string, utc = false): stri
 }
 
 /**
- * A board's builds by the device type each is for, the group with the newest
- * build first and each group newest first (the list comes newest first).
+ * A board's builds by the device type each is for and the variant (a
+ * collection's folder) it was filed under, the group with the newest build
+ * first and each group newest first (the list comes newest first).
  */
-export function buildGroups<B extends Pick<ModelBuild, 'device_type'>>(builds: B[]): { deviceType: string; builds: B[] }[] {
-  const groups = new Map<string, B[]>();
-  for (const b of builds) groups.set(b.device_type, [...(groups.get(b.device_type) ?? []), b]);
-  return [...groups].map(([deviceType, list]) => ({ deviceType, builds: list }));
+export function buildGroups<B extends Pick<ModelBuild, 'device_type' | 'variant'>>(builds: B[]): { deviceType: string; variant: string | null; builds: B[] }[] {
+  const groups = new Map<string, { deviceType: string; variant: string | null; builds: B[] }>();
+  for (const b of builds) {
+    const k = `${b.device_type}\u0000${b.variant ?? ''}`;
+    const g = groups.get(k) ?? { deviceType: b.device_type, variant: b.variant ?? null, builds: [] };
+    g.builds.push(b);
+    groups.set(k, g);
+  }
+  return [...groups.values()];
 }

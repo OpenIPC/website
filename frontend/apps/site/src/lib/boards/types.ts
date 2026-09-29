@@ -76,8 +76,6 @@ export interface Model {
   devices?: VendorDevice[];
   /** A finished device's boards: confirmed by an owner, or most likely from the vendor's firmware. */
   contents?: Content[];
-  /** The builds a maker whose firmware is keyed by board model (Anjoy Vision) made for this board, newest first. */
-  firmware?: ModelBuild[];
   /** The year the maker's own catalogue first showed the board, where a source dates it. */
   listed_year?: number | null;
   summary: Summary | null;
@@ -145,6 +143,8 @@ export interface ModelDetail {
   about: About[];
   links: BoardLink[];
   devices?: VendorDevice[];
+  /** The builds a maker whose firmware is keyed by board model (Anjoy Vision) made for this board, newest first. */
+  firmware?: ModelBuild[];
 }
 
 export type TextKind = 'uboot_env' | 'boot_log' | 'note';

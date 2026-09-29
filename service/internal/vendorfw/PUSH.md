@@ -136,7 +136,10 @@ MC-E12 takes MCE12A). An item of this source carries, instead of
 - `module`, `variant`, `collection`: for a collection kept apart from the
   maker's upgrade server (the pre-2022 builds on Baidu Pan): the module and
   variant its folders name (`variant` as `{"zh", "en", "ru"}`) and the
-  collection's name (`pre-2022`).
+  collection's name, one the site names (`pre-2022`; a new collection is
+  added to `vendorfw.Collections` and the locales before it is pushed).
 
-The board tree gives each board these builds as `firmware`, newest first,
-the variant in the reader's language.
+A board's detail (`/api/v1/boards/models/{id}`) gives it these builds as
+`firmware`, newest first, the variant in the reader's language; the same
+file filed under one device type and variant is listed once. The board tree
+does not carry them.

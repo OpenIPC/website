@@ -209,7 +209,8 @@ type Build struct {
 
 // ModelBuilds lists every build of the sources keyed by board model, newest
 // first, the variant in the locale asked for (else English, else Chinese).
-// The same file listed twice for one device type is listed once.
+// The same file listed twice for one device type and variant is listed once
+// (the file known by its sha256, else by its asset).
 func ModelBuilds(ctx context.Context, db querier, locale string) ([]Build, error) {
 	sources := make([]string, 0, len(ByModel))
 	for s := range ByModel {
@@ -225,7 +226,7 @@ func ModelBuilds(ctx context.Context, db querier, locale string) ([]Build, error
 	}
 	defer rows.Close()
 	var out []Build
-	seen := map[[2]string]bool{}
+	seen := map[[3]string]bool{}
 	for rows.Next() {
 		var b Build
 		var source string
@@ -233,13 +234,19 @@ func ModelBuilds(ctx context.Context, db querier, locale string) ([]Build, error
 			&b.DeviceType, &b.App, &b.Category, &b.Module, &b.Variant, &b.Collection); err != nil {
 			return nil, err
 		}
+		file := b.URL
 		if b.SHA256 != nil {
-			k := [2]string{b.DeviceType, *b.SHA256}
-			if seen[k] {
-				continue
-			}
-			seen[k] = true
+			file = *b.SHA256
 		}
+		variant := ""
+		if b.Variant != nil {
+			variant = *b.Variant
+		}
+		k := [3]string{b.DeviceType, variant, file}
+		if seen[k] {
+			continue
+		}
+		seen[k] = true
 		b.Maker = ByModel[source]
 		out = append(out, b)
 	}

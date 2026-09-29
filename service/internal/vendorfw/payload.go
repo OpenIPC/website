@@ -28,6 +28,11 @@ var ByModel = map[string]string{"anjoyupdates": "anjoy"}
 
 var categories = map[string]bool{"camera": true, "wifi": true, "4g": true, "nvr": true, "dvr": true, "other": true}
 
+// Collections are the sets of builds kept apart from a maker's upgrade server
+// that the site knows how to name (mfw_collection_<name> in each locale): a
+// new one is added here and to the locales together.
+var Collections = map[string]bool{"pre-2022": true}
+
 var (
 	deviceID = regexp.MustCompile(`^[0-9A-Z]{8}$`)
 	hexSHA   = regexp.MustCompile(`^[0-9a-f]{64}$`)
@@ -95,8 +100,8 @@ func checkModelItem(it *Item) error {
 	if it.Module != "" && !deviceType.MatchString(it.Module) {
 		return fmt.Errorf("module %q is not a code", it.Module)
 	}
-	if it.Collection != "" && !origin.MatchString(it.Collection) {
-		return fmt.Errorf("collection %q is not a short lower-case name", it.Collection)
+	if it.Collection != "" && !Collections[it.Collection] {
+		return fmt.Errorf("collection %q is not one the site names", it.Collection)
 	}
 	for k, v := range it.Variant {
 		if k != "zh" && k != "en" && k != "ru" || v == "" || len(v) > 300 {
