@@ -36,7 +36,8 @@ type Facts struct {
 	// Identify keys them (IDHashes) and Redact replaces them.
 	MAC     string `json:"-"`
 	DieID   string `json:"-"`
-	CloudID string `json:"-"`
+	CloudID string `json:"-"` // board.cloudId (Xiongmai)
+	ChipID  string `json:"-"` // board.chip-id (SigmaStar boards)
 }
 
 // Parse reads ipctool's output: the YAML as printed, or with whatever a
@@ -95,12 +96,9 @@ func Parse(raw string) (string, Facts, error) {
 			break
 		}
 	}
-	for _, k := range []string{"cloudId", "chip-id"} {
-		if v := str(y.Board[k]); v != "" {
-			f.CloudID = v
-			break
-		}
-	}
+	// Both can be present, with different values: each is redacted.
+	f.CloudID = str(y.Board["cloudId"])
+	f.ChipID = str(y.Board["chip-id"])
 	f.MainApp = str(y.Firmware["main-app"])
 	if len(y.Sensors) > 0 {
 		f.Sensor = strings.TrimSpace(y.Sensors[0].Vendor + " " + y.Sensors[0].Model)
@@ -179,7 +177,7 @@ type Identifier struct {
 // Identifiers lists the board's identifiers, as found.
 func (f Facts) Identifiers() []Identifier {
 	var out []Identifier
-	for _, id := range []Identifier{{"mac", f.MAC}, {"die_id", f.DieID}, {"cloud_id", f.CloudID}} {
+	for _, id := range []Identifier{{"mac", f.MAC}, {"die_id", f.DieID}, {"cloud_id", f.CloudID}, {"chip_id", f.ChipID}} {
 		// Shorter than six characters is not an identifier, and replacing it
 		// everywhere would take the document apart with it.
 		if v := strings.TrimSpace(id.Value); len(v) >= 6 && !zeroish(v) {
@@ -215,8 +213,8 @@ func (f Facts) IDHashes(key string) map[string]string {
 // Redact replaces every spelling of the board's identifiers in text --
 // ipctool's YAML, a boot log, a U-Boot environment -- with a placeholder
 // naming its keyed hash, so the public copy still shows that two reports
-// come from one board. A MAC is found with any separator or none, in either
-// case.
+// come from one board. A MAC is found with any separator or none -- colons,
+// hyphens, dots, Cisco's 0012.3456.789a -- in either case.
 func Redact(text string, f Facts, key string) string {
 	for _, id := range f.Identifiers() {
 		mark := "<" + id.Name + ":" + Keyed(key, id.Name, id.Value) + ">"
@@ -234,7 +232,7 @@ func spellings(id Identifier) *regexp.Regexp {
 			for i := 0; i < 12; i += 2 {
 				parts = append(parts, regexp.QuoteMeta(hexd[i:i+2]))
 			}
-			return regexp.MustCompile(`(?i)` + strings.Join(parts, `[:-]?`))
+			return regexp.MustCompile(`(?i)` + strings.Join(parts, `[:.-]?`))
 		}
 	}
 	v = strings.TrimPrefix(strings.TrimPrefix(v, "0x"), "0X")

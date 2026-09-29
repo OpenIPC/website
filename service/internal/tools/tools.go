@@ -138,6 +138,13 @@ func check(b []byte, want elf.Machine) error {
 	if f.Type != elf.ET_EXEC && f.Type != elf.ET_DYN {
 		return errors.New("not an executable")
 	}
+	// Static only: a stock camera has its vendor's libc or none, and a
+	// dynamically linked build asks for a loader it does not have.
+	for _, p := range f.Progs {
+		if p.Type == elf.PT_INTERP {
+			return errors.New("dynamically linked; a camera on stock firmware needs a static build")
+		}
+	}
 	return nil
 }
 

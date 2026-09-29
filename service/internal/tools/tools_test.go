@@ -93,6 +93,7 @@ func TestAReleasePushReplacesTheFileCamerasFetch(t *testing.T) {
 		"mips build under the arm name": {"ipctool", exe(elf.ELFCLASS32, elf.EM_MIPS, ""), 400},
 		"not an ELF":                    {"ipctool", []byte("#!/bin/sh\necho hi\n"), 400},
 		"a name nobody serves":          {"busybox", arm1, 404},
+		"a dynamically linked build":    {"ipctool", dynamic(), 400},
 	} {
 		if rec := put(c.tool, "x", c.body); rec.Code != c.want {
 			t.Errorf("%s: %d, want %d", name, rec.Code, c.want)
@@ -117,4 +118,15 @@ func TestAReleasePushReplacesTheFileCamerasFetch(t *testing.T) {
 	if len(out.Tools) != 3 || out.Tools[0].Name != "ipctool" || out.Tools[0].Version != "51fe1fe" || out.Tools[0].URL != "http://openipc.org/ipctool" {
 		t.Errorf("list: %s", rec.Body)
 	}
+}
+
+// dynamic is an ARM executable with a PT_INTERP program header.
+func dynamic() []byte {
+	b := exe(elf.ELFCLASS32, elf.EM_ARM, "")
+	le := binary.LittleEndian
+	le.PutUint32(b[28:], 52) // e_phoff: right after the header
+	le.PutUint16(b[44:], 1)  // e_phnum
+	ph := make([]byte, 32)
+	le.PutUint32(ph[0:], uint32(elf.PT_INTERP))
+	return append(b, ph...)
 }

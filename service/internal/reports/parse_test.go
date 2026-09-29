@@ -85,7 +85,7 @@ func TestThePublicCopyHasNoIdentifierInAnySpelling(t *testing.T) {
 	if !strings.Contains(pub, "<mac:"+Keyed(key, "mac", f.MAC)+">") {
 		t.Error("the MAC's placeholder is missing")
 	}
-	log := "ethaddr=02:8F:5C:94:D7:E7\nMAC 02-8f-5c-94-d7-e7, raw 028f5c94d7e7\nchip id 0x02143906DE0038E9C170030A8771E5942649F51410CF29E3\n"
+	log := "ethaddr=02:8F:5C:94:D7:E7\nMAC 02-8f-5c-94-d7-e7, raw 028f5c94d7e7, cisco 028f.5c94.d7e7, dotted 02.8f.5c.94.d7.e7\nchip id 0x02143906DE0038E9C170030A8771E5942649F51410CF29E3\n"
 	got := Redact(log, f, key)
 	if strings.Contains(strings.ToLower(got), "8f5c94") || strings.Contains(strings.ToLower(got), "0038e9c1") {
 		t.Errorf("an identifier survived:\n%s", got)
@@ -152,5 +152,21 @@ func TestTheCatalogueNamesTheChipAsIpctoolDoesNot(t *testing.T) {
 	}
 	if c := socCandidates("t31l"); len(c) != 2 || c[1] != "t31" {
 		t.Errorf("t31l candidates %v", c)
+	}
+}
+
+// A SigmaStar board prints chip-id, a Xiongmai one cloudId; a board with both
+// has both redacted.
+func TestBothBoardIdentifiersAreRedacted(t *testing.T) {
+	yaml := "board:\n  vendor: X\n  cloudId: 3beae2b40d84f889\n  chip-id: 5a5a0123456789ab\nchip:\n  vendor: SigmaStar\n  model: SSC335\n"
+	doc, f, err := Parse(yaml)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub := Redact(doc, f, "k")
+	for _, v := range []string{"3beae2b40d84f889", "5a5a0123456789ab"} {
+		if strings.Contains(pub, v) {
+			t.Errorf("%s survived:\n%s", v, pub)
+		}
 	}
 }

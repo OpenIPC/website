@@ -6,7 +6,7 @@
  */
 import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
-import type { Locale } from '../../lib/i18n';
+import { pathFor, type Locale } from '../../lib/i18n';
 import { NotFound, RECEIPT_ID, fetchReport, size, summary, type Report } from '../../lib/reports';
 
 type Load = { state: 'none' } | { state: 'loading' } | { state: 'ok'; value: Report } | { state: 'missing' } | { state: 'error' };
@@ -113,14 +113,14 @@ export default function Receipt({ locale }: { locale: Locale }) {
         <p class="m-0 mt-5 rounded-lg border border-hairline bg-surface-alt px-4 py-3 text-[.9375rem]">
           {t('report.filed_under')}{' '}
           {r.models.map((m, i) => (
-            <span key={m.id}>{i > 0 && ', '}<a href={`/cameras/boards?model=${encodeURIComponent(m.id)}`}><b>{m.manufacturer} {m.model}</b></a></span>
+            <span key={m.id}>{i > 0 && ', '}<a href={`${pathFor(locale, '/cameras/boards')}?model=${encodeURIComponent(m.id)}`}><b>{m.manufacturer} {m.model}</b></a></span>
           ))}
         </p>
       )}
       {!published && r.guess && (
         <p class="m-0 mt-5 flex flex-wrap items-baseline gap-x-3.5 gap-y-1 rounded-lg border border-hairline bg-surface-alt px-4 py-3 text-[.9375rem]">
           <span>{t('report.looks_like', { board: `${r.guess.manufacturer} ${r.guess.model}` }).split(`${r.guess.manufacturer} ${r.guess.model}`)
-            .flatMap((part, i) => (i === 0 ? [part] : [<a key="b" href={r.guess!.url}><b>{r.guess!.manufacturer} {r.guess!.model}</b></a>, part]))}</span>
+            .flatMap((part, i) => (i === 0 ? [part] : [<a key="b" href={`${pathFor(locale, '/cameras/boards')}?model=${encodeURIComponent(r.guess!.model_id)}`}><b>{r.guess!.manufacturer} {r.guess!.model}</b></a>, part]))}</span>
           <span class="text-[13.5px] text-body-secondary">{r.guess.why.join(' · ')} · {t('report.looks_like_why')}</span>
         </p>
       )}

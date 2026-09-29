@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -99,7 +100,7 @@ func TestAReportIsAReceiptUntilPublishedAndThenNamesNoCamera(t *testing.T) {
 	ctx := context.Background()
 	yaml := fixture(t, "xiongmai-50h20l-readme.yml")
 	rec, out := e.post(t, upload{
-		fields: map[string]string{"channel": "agent", "tool": "defib onboard 0.9"},
+		fields: map[string]string{"channel": "agent", "tool": "defib onboard 0.9", "note": "bought used; label says MAC 00-12-89-12-88-E1"},
 		files: map[string][]byte{
 			"backup":   backupOf(yaml, bytes.Repeat([]byte{0xff}, 8<<10)),
 			"photo":    jpeg,
@@ -140,7 +141,10 @@ func TestAReportIsAReceiptUntilPublishedAndThenNamesNoCamera(t *testing.T) {
 	if v["status"] != "published" || !strings.Contains(whole, "HiSilicon") || !strings.Contains(whole, "xiongmai-50h20l") {
 		t.Fatalf("published report: %s", whole)
 	}
-	for _, secret := range []string{"00:12:89:12:88:e1", "3beae2b40d84f889"} {
+	if !strings.Contains(whole, "bought used") {
+		t.Errorf("the published note is missing: %s", whole)
+	}
+	for _, secret := range []string{"00:12:89:12:88:e1", "00-12-89-12-88-e1", "3beae2b40d84f889"} {
 		if strings.Contains(strings.ToLower(whole), secret) {
 			t.Errorf("%s is in the public report", secret)
 		}
@@ -416,5 +420,61 @@ func TestABoardListsOnlyItsPublishedReports(t *testing.T) {
 	}
 	if rec, _ := e.get(t, "/api/v1/reports?model="); rec.Code != 400 {
 		t.Errorf("no model: %d", rec.Code)
+	}
+}
+
+// Uploads racing each other from one address stop at the limit together:
+// the count is taken again under the address's lock as each report goes in.
+func TestParallelUploadsFromOneAddressStopAtTheLimit(t *testing.T) {
+	e := newEnv(t)
+	yaml := fixture(t, "hi3516cv300-imx291.txt")
+	codes := make(chan int, 2*DailyPerClient)
+	var wg sync.WaitGroup
+	for i := 0; i < 2*DailyPerClient; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rec, _ := e.post(t, upload{fields: map[string]string{"yaml": yaml}}, "198.51.100.9")
+			codes <- rec.Code
+		}()
+	}
+	wg.Wait()
+	close(codes)
+	created := 0
+	for c := range codes {
+		if c == 201 {
+			created++
+		} else if c != 429 {
+			t.Errorf("answered %d", c)
+		}
+	}
+	if created != DailyPerClient {
+		t.Errorf("%d reports went in from one address, the limit is %d", created, DailyPerClient)
+	}
+}
+
+// A takedown's file is deleted only if, under its lock, nothing names it: a
+// report that arrived with the same bytes since keeps it.
+func TestTakedownLeavesAFileANewReportNames(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	st := &Store{DB: e.pool}
+	yaml := fixture(t, "t31-sc2332.txt")
+	_, a := e.post(t, upload{fields: map[string]string{"yaml": yaml}, files: map[string][]byte{"photo": jpeg}}, "203.0.113.30")
+	orphans, err := st.Takedown(ctx, a["id"].(string), "test", "owner asked")
+	if err != nil || len(orphans) != 1 {
+		t.Fatalf("orphans %v, %v", orphans, err)
+	}
+	// the same photo arrives before the takedown gets to the file
+	rec, _ := e.post(t, upload{fields: map[string]string{"yaml": yaml}, files: map[string][]byte{"photo": jpeg}}, "203.0.113.31")
+	if rec.Code != 201 {
+		t.Fatal(rec.Body)
+	}
+	removed, err := st.RemoveUnreferenced(ctx, e.api.Files, orphans[0])
+	if err != nil || removed {
+		t.Fatalf("removed %v (%v): the new report's photo is gone", removed, err)
+	}
+	if ok, _ := e.api.Files.Has(orphans[0]); !ok {
+		t.Error("the file the new report names is not on disk")
 	}
 }

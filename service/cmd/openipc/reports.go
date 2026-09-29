@@ -126,12 +126,17 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		if err != nil {
 			return err
 		}
-		for _, s := range orphans {
-			if err := files.Remove(s); err != nil {
+		deleted := 0
+		for _, sum := range orphans {
+			ok, err := st.RemoveUnreferenced(ctx, files, sum)
+			if err != nil {
 				return err
 			}
+			if ok {
+				deleted++
+			}
 		}
-		log.Info("reports: taken down", "report", pos[0], "by", *by, "files_deleted", len(orphans))
+		log.Info("reports: taken down", "report", pos[0], "by", *by, "files_deleted", deleted)
 		return nil
 	case "verify":
 		checked, bad, err := reports.Verify(ctx, st, files)

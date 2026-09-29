@@ -35,6 +35,10 @@ type Server struct {
 	// Budget is how many bytes one address may be sent over UDP per minute.
 	// A mount and a read of ipctool is ~250 KB.
 	Budget int
+	// MaxConns bounds the TCP connections served at once (default 128); a
+	// connection over it is closed at once. A camera mounts, reads ~200 KB
+	// and unmounts: a handful are ever open.
+	MaxConns int
 
 	mu    sync.Mutex
 	spent map[string]*spend
@@ -97,28 +101,55 @@ func (s *Server) ServeUDP(ctx context.Context, conn net.PacketConn) error {
 	}
 }
 
-// ServeTCP answers record-marked calls (RFC 5531 §11) on every connection.
+// ServeTCP answers record-marked calls (RFC 5531 §11), at most MaxConns
+// connections at once.
 func (s *Server) ServeTCP(ctx context.Context, l net.Listener) error {
 	go func() { <-ctx.Done(); l.Close() }()
+	max := s.MaxConns
+	if max <= 0 {
+		max = 128
+	}
+	slots := make(chan struct{}, max)
 	for {
 		c, err := l.Accept()
 		if err != nil {
 			if ctx.Err() != nil {
 				return nil
 			}
+			var ne net.Error
+			if errors.As(err, &ne) && ne.Timeout() {
+				continue
+			}
 			return err
 		}
-		go s.conn(c)
+		select {
+		case slots <- struct{}{}:
+			go func() {
+				defer func() { <-slots }()
+				s.conn(c)
+			}()
+		default:
+			c.Close()
+		}
 	}
 }
+
+// Deadlines: a client says something within firstCall of connecting, and
+// then within idle of its last call; a mount is over in seconds.
+const (
+	firstCall = 15 * time.Second
+	idle      = time.Minute
+)
 
 const maxRecord = 1 << 20
 
 func (s *Server) conn(c net.Conn) {
 	defer c.Close()
 	host := hostOf(c.RemoteAddr())
+	wait := firstCall
 	for {
-		_ = c.SetReadDeadline(time.Now().Add(5 * time.Minute))
+		_ = c.SetReadDeadline(time.Now().Add(wait))
+		wait = idle
 		var rec []byte
 		for {
 			var hdr [4]byte

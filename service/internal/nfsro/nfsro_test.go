@@ -263,3 +263,37 @@ func TestUDPAnswersStopAtTheBudget(t *testing.T) {
 		t.Errorf("%d of 50 answered with a 1000-byte budget", answered)
 	}
 }
+
+// Past MaxConns a TCP connection is closed at once, so idle clients cannot
+// hold the server's descriptors.
+func TestTCPConnectionsAreCapped(t *testing.T) {
+	s, _, _ := start(t, 0)
+	s.MaxConns = 2
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go s.ServeTCP(ctx, l)
+	var held []net.Conn
+	for i := 0; i < 2; i++ {
+		c, err := net.Dial("tcp", l.Addr().String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		held = append(held, c)
+	}
+	time.Sleep(100 * time.Millisecond)
+	extra, err := net.Dial("tcp", l.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = extra.SetReadDeadline(time.Now().Add(2 * time.Second))
+	if _, err := extra.Read(make([]byte, 1)); err != io.EOF {
+		t.Errorf("the third connection was not closed: %v", err)
+	}
+	for _, c := range held {
+		c.Close()
+	}
+}

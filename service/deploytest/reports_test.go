@@ -21,10 +21,12 @@ func TestOnlyTheReportsPackageTouchesReports(t *testing.T) {
 	named := regexp.MustCompile(`\b(report_files|report_reviews|report_models|report_key|reports_guard)\b`)
 	root := regexp.MustCompile(`REPORTS_ROOT|owner-reports`)
 
+	migration := regexp.MustCompile(`^service/internal/db/migrations/\d+_reports?(_[a-z_]+)?\.sql$`)
 	allowed := func(rel string) bool {
 		switch {
 		case strings.HasPrefix(rel, "service/internal/reports/"),
-			rel == "service/internal/db/migrations/016_reports.sql",
+			// the reports' own migrations: 016_reports.sql, 018_report_note_public.sql
+			migration.MatchString(rel),
 			strings.HasSuffix(rel, "_test.go"),
 			strings.HasSuffix(rel, ".md"):
 			return true

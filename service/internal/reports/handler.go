@@ -156,44 +156,40 @@ func (a *API) upload(w http.ResponseWriter, r *http.Request) {
 
 	rep := &Report{
 		Channel: channel, Tool: in.fields["tool"], Note: in.fields["note"],
-		YAML: doc, YAMLPublic: Redact(doc, facts, key), Facts: facts,
+		NotePublic: Redact(in.fields["note"], facts, key),
+		YAML:       doc, YAMLPublic: Redact(doc, facts, key), Facts: facts,
 		IDHashes: facts.IDHashes(key), Consent: consent, ClientHash: client,
 	}
 	sum := sha256.Sum256([]byte(doc))
 	rep.YAMLSHA256 = hex.EncodeToString(sum[:])
 
-	var kept []string
-	keep := func(p part) (File, error) {
-		f := File{Kind: p.kind, Name: p.name, Mime: p.mime, Bytes: p.in.Bytes}
-		var text []byte
-		if textKinds[p.kind] {
-			rd, err := p.in.Open()
-			if err != nil {
-				return f, err
-			}
-			if text, err = io.ReadAll(rd); err != nil {
-				return f, err
-			}
-		}
-		s, err := a.Files.Keep(p.in)
-		if err != nil {
-			return f, err
-		}
-		kept = append(kept, s)
-		f.SHA256 = s
+	// Every file's name (its sha256) is known before anything is placed, so
+	// the insert can lock them: the files go into the store inside the
+	// transaction that names them, and a takedown removing the same bytes
+	// waits for it (Store.Insert, Store.RemoveUnreferenced).
+	var places []func() error
+	prepare := func(p part) (File, error) {
+		f := File{Kind: p.kind, Name: p.name, Mime: p.mime, Bytes: p.in.Bytes, SHA256: p.in.Sum()}
+		inc := p.in
+		places = append(places, func() error { _, err := a.Files.Keep(inc); return err })
 		switch {
 		case p.kind == "backup" && consent != "public":
 			// stored for the maintainers, never served
 		case textKinds[p.kind]:
-			pub := []byte(Redact(string(text), facts, key))
-			ps, err := a.Files.Put(pub)
+			rd, err := p.in.Open()
 			if err != nil {
 				return f, err
 			}
-			kept = append(kept, ps)
-			f.PublicSHA256, f.PublicBytes = ps, int64(len(pub))
+			text, err := io.ReadAll(rd)
+			if err != nil {
+				return f, err
+			}
+			pub := []byte(Redact(string(text), facts, key))
+			ps := sha256.Sum256(pub)
+			f.PublicSHA256, f.PublicBytes = hex.EncodeToString(ps[:]), int64(len(pub))
+			places = append(places, func() error { _, err := a.Files.Put(pub); return err })
 		default:
-			f.PublicSHA256, f.PublicBytes = s, f.Bytes
+			f.PublicSHA256, f.PublicBytes = f.SHA256, f.Bytes
 		}
 		return f, nil
 	}
@@ -202,18 +198,27 @@ func (a *API) upload(w http.ResponseWriter, r *http.Request) {
 		all = append([]part{{kind: "backup", name: "backup.bin", mime: "application/octet-stream", in: in.backup}}, all...)
 	}
 	for _, p := range all {
-		f, err := keep(p)
+		f, err := prepare(p)
 		if err != nil {
 			a.fail(w, "a file", err)
 			return
 		}
 		rep.Files = append(rep.Files, f)
 	}
-	if err := st.Insert(ctx, rep); err != nil {
-		// The files already kept stay: another upload may have kept the
-		// same bytes a moment ago and be about to name them. A file no row
-		// names is harmless, and `openipc reports verify` counts them.
-		a.Log.Warn("reports: files kept for a report that was not stored", "sums", kept)
+	err = st.Insert(ctx, rep, DailyPerClient, func() error {
+		for _, place := range places {
+			if err := place(); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if errors.Is(err, ErrQuota) {
+		w.Header().Set("Retry-After", "3600")
+		a.refuse(w, http.StatusTooManyRequests, fmt.Sprintf("%d reports a day from one address is the limit; send the rest tomorrow", DailyPerClient))
+		return
+	}
+	if err != nil {
 		a.fail(w, "the report", err)
 		return
 	}

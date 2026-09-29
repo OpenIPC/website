@@ -57,7 +57,7 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 	var f Facts
 	var hashes []byte
 	err := s.DB.QueryRow(ctx, `
-		SELECT received_at, channel, backup_consent, tool, note, yaml_public,
+		SELECT received_at, channel, backup_consent, tool, note_public, yaml_public,
 		  chip_vendor, chip_model, sensor, flash_id, flash_size, board_vendor, board_model, main_app, id_hashes
 		FROM reports WHERE id = $1`, id).Scan(&v.ReceivedAt, &v.Channel, &v.Consent, &v.Tool, &v.Note, &v.YAML,
 		&f.ChipVendor, &f.ChipModel, &f.Sensor, &f.FlashID, &f.FlashSize, &f.BoardVendor, &f.BoardModel, &f.MainApp, &hashes)

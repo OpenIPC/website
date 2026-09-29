@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -26,6 +25,7 @@ type Report struct {
 	Channel    string
 	Tool       string
 	Note       string
+	NotePublic string
 	YAML       string
 	YAMLPublic string
 	YAMLSHA256 string
@@ -76,49 +76,118 @@ func (s *Store) UploadsSince(ctx context.Context, client string, since time.Time
 	return n, err
 }
 
-// Insert stores a report and its files' rows in one transaction; the files
-// themselves are already in place. The id is retried on a collision.
-func (s *Store) Insert(ctx context.Context, r *Report) error {
+// ErrQuota is an address that has sent its day's reports.
+var ErrQuota = errors.New("the daily limit is reached")
+
+// Lock keys: one per client address (the daily limit) and one per stored
+// file (placing and removing it).
+const (
+	lockClient = `SELECT pg_advisory_xact_lock(hashtextextended('report-client:' || $1, 0))`
+	lockFileSh = `SELECT pg_advisory_xact_lock_shared(hashtextextended('report-file:' || $1, 0))`
+	lockFileEx = `SELECT pg_advisory_xact_lock(hashtextextended('report-file:' || $1, 0))`
+)
+
+// Insert stores a report and its files' rows in one transaction. Under the
+// client's lock it counts the client's reports again, so uploads racing each
+// other cannot pass the limit together. Under a shared lock on each file it
+// calls place, which puts the files in the store, then inserts the rows that
+// name them: a takedown removing the same bytes holds the exclusive lock, so
+// it either finishes first (and place writes the file back) or waits and
+// finds the new row.
+func (s *Store) Insert(ctx context.Context, r *Report, limit int, place func() error) error {
 	hashes, err := json.Marshal(r.IDHashes)
 	if err != nil {
 		return err
 	}
-	for attempt := 0; ; attempt++ {
-		r.ID = NewID()
-		err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
-			f := r.Facts
-			if err := tx.QueryRow(ctx, `
-				INSERT INTO reports (id, channel, tool, note, yaml, yaml_public, yaml_sha256,
-				  chip_vendor, chip_model, sensor, flash_id, flash_size, board_vendor, board_model, main_app,
-				  id_hashes, backup_consent, client_hash)
-				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
-				RETURNING received_at`,
-				r.ID, r.Channel, r.Tool, r.Note, r.YAML, r.YAMLPublic, r.YAMLSHA256,
-				f.ChipVendor, f.ChipModel, f.Sensor, f.FlashID, f.FlashSize, f.BoardVendor, f.BoardModel, f.MainApp,
-				hashes, r.Consent, r.ClientHash).Scan(&r.ReceivedAt); err != nil {
-				return err
-			}
-			for i, file := range r.Files {
-				var pub *string
-				var pubBytes *int64
-				if file.PublicSHA256 != "" {
-					pub, pubBytes = &r.Files[i].PublicSHA256, &r.Files[i].PublicBytes
-				}
-				if _, err := tx.Exec(ctx, `
-					INSERT INTO report_files (report_id, position, kind, name, mime, sha256, bytes, public_sha256, public_bytes)
-					VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-					r.ID, i+1, file.Kind, file.Name, file.Mime, file.SHA256, file.Bytes, pub, pubBytes); err != nil {
-					return err
-				}
-				r.Files[i].Position = i + 1
-			}
-			return nil
-		})
-		var pg *pgconn.PgError
-		if err == nil || !errors.As(err, &pg) || pg.Code != "23505" || attempt >= 3 {
+	return pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, lockClient, r.ClientHash); err != nil {
 			return err
 		}
-	}
+		var n int
+		if err := tx.QueryRow(ctx, `SELECT count(*) FROM reports WHERE client_hash = $1 AND received_at >= now() - interval '24 hours'`,
+			r.ClientHash).Scan(&n); err != nil {
+			return err
+		}
+		if n >= limit {
+			return ErrQuota
+		}
+		for _, f := range r.Files {
+			for _, sum := range []string{f.SHA256, f.PublicSHA256} {
+				if sum == "" {
+					continue
+				}
+				if _, err := tx.Exec(ctx, lockFileSh, sum); err != nil {
+					return err
+				}
+			}
+		}
+		if err := place(); err != nil {
+			return err
+		}
+		// A fresh id; the space is 32^8, a clash is checked, not caught.
+		for {
+			r.ID = NewID()
+			var taken bool
+			if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM reports WHERE id = $1)`, r.ID).Scan(&taken); err != nil {
+				return err
+			}
+			if !taken {
+				break
+			}
+		}
+		f := r.Facts
+		if err := tx.QueryRow(ctx, `
+			INSERT INTO reports (id, channel, tool, note, note_public, yaml, yaml_public, yaml_sha256,
+			  chip_vendor, chip_model, sensor, flash_id, flash_size, board_vendor, board_model, main_app,
+			  id_hashes, backup_consent, client_hash)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+			RETURNING received_at`,
+			r.ID, r.Channel, r.Tool, r.Note, r.NotePublic, r.YAML, r.YAMLPublic, r.YAMLSHA256,
+			f.ChipVendor, f.ChipModel, f.Sensor, f.FlashID, f.FlashSize, f.BoardVendor, f.BoardModel, f.MainApp,
+			hashes, r.Consent, r.ClientHash).Scan(&r.ReceivedAt); err != nil {
+			return err
+		}
+		for i, file := range r.Files {
+			var pub *string
+			var pubBytes *int64
+			if file.PublicSHA256 != "" {
+				pub, pubBytes = &r.Files[i].PublicSHA256, &r.Files[i].PublicBytes
+			}
+			if _, err := tx.Exec(ctx, `
+				INSERT INTO report_files (report_id, position, kind, name, mime, sha256, bytes, public_sha256, public_bytes)
+				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+				r.ID, i+1, file.Kind, file.Name, file.Mime, file.SHA256, file.Bytes, pub, pubBytes); err != nil {
+				return err
+			}
+			r.Files[i].Position = i + 1
+		}
+		return nil
+	})
+}
+
+// RemoveUnreferenced deletes a stored file if, under its exclusive lock, no
+// row names it any more. Takedown's candidates go through here one by one.
+func (s *Store) RemoveUnreferenced(ctx context.Context, files *Files, sum string) (bool, error) {
+	removed := false
+	err := pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, lockFileEx, sum); err != nil {
+			return err
+		}
+		var used bool
+		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM report_files WHERE sha256 = $1 OR public_sha256 = $1)`,
+			sum).Scan(&used); err != nil {
+			return err
+		}
+		if used {
+			return nil
+		}
+		if err := files.Remove(sum); err != nil {
+			return err
+		}
+		removed = true
+		return nil
+	})
+	return removed, err
 }
 
 // Status is a report's newest review: pending, published, rejected or
@@ -236,7 +305,7 @@ func (s *Store) Takedown(ctx context.Context, id, by, note string) ([]string, er
 			return err
 		}
 		if _, err := tx.Exec(ctx, `
-			UPDATE reports SET yaml = '', yaml_public = '', yaml_sha256 = repeat('0', 64), note = '', id_hashes = '{}',
+			UPDATE reports SET yaml = '', yaml_public = '', yaml_sha256 = repeat('0', 64), note = '', note_public = '', id_hashes = '{}',
 			  chip_vendor = '', chip_model = '', sensor = '', flash_id = '', flash_size = '',
 			  board_vendor = '', board_model = '', main_app = ''
 			WHERE id = $1`, id); err != nil {
