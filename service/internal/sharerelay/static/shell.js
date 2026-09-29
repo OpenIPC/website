@@ -125,6 +125,17 @@ function inject(bytes) {
 
 // What the page is doing, for a stall to name.
 let stage = 'starting';
+// Set once the start has an outcome -- connected, failed, or a link that was
+// never complete. Nothing that finishes later may change what the guest saw:
+// not a late connection, not the watchdog, not the worker's reload.
+let settled = false;
+function settle() {
+  if (settled) return false;
+  settled = true;
+  clearTimeout(watchdog);
+  return true;
+}
+let watchdog;
 
 // Resolves with p, or rejects after ms with a sentence naming the stage.
 function within(p, ms, what) {
@@ -150,6 +161,7 @@ async function worker() {
     await within(changed, 5000, 'worker');
   } catch (e) {
     trace('service worker did not claim the page');
+    if (settled) return;
     if (!sessionStorage.getItem('share-reloaded')) {
       sessionStorage.setItem('share-reloaded', '1');
       location.reload();
@@ -179,6 +191,7 @@ async function main() {
   const id = shareId();
   const { secret, opts } = secretFor(id);
   if (!/^[0-9a-f]{16}$/.test(id) || !secret) {
+    settle();
     notice('This link is not complete', 'Ask the camera’s owner to send the whole link again.', true);
     return;
   }
@@ -202,6 +215,12 @@ async function main() {
     stage = 'camera';
     trace('stage', stage);
     const welcome = await tunnel.open();
+    if (!settle()) {
+      // The start was already declared failed; a connection that arrives
+      // afterwards is closed rather than shown over the error.
+      tunnel.close();
+      return;
+    }
     stage = 'connected';
     trace('stage', stage);
     window.__share = { openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h), welcome };
@@ -231,6 +250,7 @@ async function main() {
     }
     window.__shareReady = welcome;
   } catch (e) {
+    if (!settle()) return;
     const known = e instanceof ShareError;
     notice('Could not open the shared camera', known ? e.message : 'Something went wrong: ' + e.message, true);
     window.__shareError = e.message;
@@ -241,7 +261,7 @@ async function main() {
 // that failed with no one to hear it, is said on the page with where it
 // happened, and in the console for whoever looks.
 function fatal(what) {
-  if (stage === 'connected') return;
+  if (!settle()) return;
   console.error('share page stalled at', stage, what);
   trace('error', what);
   notice('Could not open the shared camera', `${what} (at: ${stage})`, true);
@@ -249,8 +269,9 @@ function fatal(what) {
 }
 window.addEventListener('error', (e) => fatal(e.message || 'a script error'));
 window.addEventListener('unhandledrejection', (e) => fatal((e.reason && e.reason.message) || String(e.reason)));
-// The whole start, bounded: tunnel.open() has its own 30 s, and the rest
-// cannot take this long unless something is wrong.
-setTimeout(() => { if (stage !== 'connected' && !window.__shareError) fatal('Starting took too long'); }, 45000);
+// The whole start, bounded, and longer than its stages' own budgets put end
+// to end (ICE 8 s + worker 15 s + camera 30 s), so a stage always gets to say
+// its own reason first.
+watchdog = setTimeout(() => fatal('Starting took too long'), 60000);
 
 main();
