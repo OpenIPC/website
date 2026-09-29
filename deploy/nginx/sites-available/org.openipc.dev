@@ -290,6 +290,21 @@ server {
         add_header X-Served-By go always;
     }
 
+    # ipctool's builds: pushed by OpenIPC/ipctool's release job over its OIDC
+    # token (PUT /api/v1/tools/<name>, service/internal/tools/PUSH.md), and
+    # listed at GET /api/v1/tools. The files themselves are served on port 80
+    # at /ipctool. A UPX-packed build is ~200 KB; the service's limit is 4 MB.
+    location ^~ /api/v1/tools {
+        client_max_body_size 8m;
+        proxy_request_buffering on;
+        proxy_pass http://127.0.0.1:3012;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Request-Id $request_id;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+    }
+
     # Owner reports (service/internal/reports): ipctool's output, a board's
     # flash backup, photos and console captures, sent by a camera's owner or
     # an AI agent on a bench. The web role streams each part to disk as it
