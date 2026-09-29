@@ -344,8 +344,10 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 		return nil, err
 	}
 	// A source can file one file under several names (tehno32's outline.dxf
-	// and outline-2.dxf ... -5.dxf): a unit lists it once, by its first name.
-	seenFile := map[[2]string]bool{}
+	// and outline-2.dxf ... -5.dxf): a unit lists it once per kind, by its
+	// first name. The same bytes in another role (a photo that is also the
+	// pinout) stay in each.
+	seenFile := map[[3]string]bool{}
 	for rows.Next() {
 		var unit, p, thumb string
 		var f fileJSON
@@ -362,10 +364,11 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 			rows.Close()
 			return nil, fmt.Errorf("file %s: no unit %s", p, unit)
 		}
-		if seenFile[[2]string{unit, f.SHA256}] {
+		k := [3]string{unit, f.Kind, f.SHA256}
+		if seenFile[k] {
 			continue
 		}
-		seenFile[[2]string{unit, f.SHA256}] = true
+		seenFile[k] = true
 		parent.Files = append(parent.Files, f)
 	}
 	rows.Close()
@@ -554,11 +557,17 @@ func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale
 	if err := rows.Err(); err != nil {
 		return err
 	}
-	rows, err = tx.Query(ctx, `SELECT model_id, source, kind, label, url, target_model_id FROM board_links WHERE model_id = ANY($1) ORDER BY model_id, source, position`, ids)
+	// Sources in the catalogue's order, a source's own links before the
+	// reviewed families relate() adds (positions from 10000 up).
+	rows, err = tx.Query(ctx, `
+		SELECT l.model_id, l.source, l.kind, l.label, l.url, l.target_model_id
+		FROM board_links l JOIN board_sources s ON s.id = l.source
+		WHERE l.model_id = ANY($1) ORDER BY l.model_id, s.position, l.source, l.position`, ids)
 	if err != nil {
 		return err
 	}
-	// A board is linked to another once per kind, whichever sources say so.
+	// A board is linked to another once per kind, whichever sources say so:
+	// the first in that order stays, as migration 014 keeps it.
 	seenLink := map[[3]string]bool{}
 	for rows.Next() {
 		var id string
