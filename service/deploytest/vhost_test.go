@@ -21,7 +21,7 @@ func vhost(t testing.TB, name string) string { return read(t, "deploy/nginx/site
 //
 // page_cache asked this of one location; this asks it of every location.
 func TestInheritedHeaders(t *testing.T) {
-	serverHeader := regexp.MustCompile(`(?m)^ {4}(add_header .*;)$`)
+	serverHeader := regexp.MustCompile(`(?m)^ {3,4}(add_header .*;)$`)
 	for _, name := range vhosts {
 		t.Run(name+": no location drops a header the server block sends", func(t *testing.T) {
 			text := vhost(t, name)

@@ -33,6 +33,7 @@ server {
         add_header Cache-Control "no-cache" always;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By nginx always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     # ipctool uploads a report over plain HTTP: stock camera firmware has no
@@ -50,6 +51,7 @@ server {
         proxy_set_header X-Request-Id $request_id;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     location = /api/v1/boards/identify {
@@ -62,6 +64,7 @@ server {
         proxy_set_header X-Request-Id $request_id;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     location / {
@@ -177,6 +180,7 @@ server {
         proxy_set_header X-Request-Id $request_id;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     # The firmware explorer's data (/firmware-explorer): the pushed builds,
@@ -189,6 +193,7 @@ server {
         proxy_set_header X-Request-Id $request_id;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     # The board catalogue (/cameras/boards, firmware#659): the tree of makers,
@@ -288,6 +293,23 @@ server {
         proxy_set_header X-Request-Id $request_id;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+    }
+
+    # ipctool's builds: pushed by OpenIPC/ipctool's release job over its OIDC
+    # token (PUT /api/v1/tools/<name>, service/internal/tools/PUSH.md), and
+    # listed at GET /api/v1/tools. The files themselves are served on port 80
+    # at /ipctool. A UPX-packed build is ~200 KB; the service's limit is 4 MB.
+    location ^~ /api/v1/tools {
+        client_max_body_size 8m;
+        proxy_request_buffering on;
+        proxy_pass http://127.0.0.1:3012;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Request-Id $request_id;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     # Owner reports (service/internal/reports): ipctool's output, a board's
@@ -308,6 +330,7 @@ server {
         proxy_set_header X-Request-Id $request_id;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     # A report's receipt and, once published, its files. The web role decides
@@ -324,6 +347,7 @@ server {
         proxy_set_header X-Request-Id $request_id;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     # Which catalogue boards ipctool's output may be from. Stores nothing.
@@ -337,6 +361,7 @@ server {
         proxy_set_header X-Request-Id $request_id;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     # The reports' files, content-addressed. Internal: reachable only through
@@ -349,6 +374,7 @@ server {
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
         add_header X-Content-Type-Options nosniff always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     # Where OpenIPC/xmupdates and OpenIPC/coupler push the firmware they
@@ -364,6 +390,7 @@ server {
         proxy_set_header X-Request-Id $request_id;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     # What a device ID can be flashed with: the board search asks when a
@@ -377,6 +404,7 @@ server {
         proxy_set_header X-Request-Id $request_id;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     location @no_support_stats {
@@ -763,6 +791,7 @@ server {
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By static always;
         add_header Cache-Control "no-cache" always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
     location / {
