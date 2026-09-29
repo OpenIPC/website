@@ -218,10 +218,22 @@ func TestUnregisterEndsThePages(t *testing.T) {
 }
 
 func TestSessionsPerShareAreBounded(t *testing.T) {
-	_, srv := rig(t)
+	h, srv := rig(t)
 	register(t, srv, time.Now().Add(time.Hour))
 	for i := 0; i < MaxSessionsPerShare; i++ {
 		dial(t, srv, "/__share/signal?share="+id)
+		// The handshake completes before the server attaches the page to
+		// its share: wait for that, or the next dial races it for a slot.
+		deadline := time.Now().Add(2 * time.Second)
+		for {
+			if _, pages := h.Stats(); pages == i+1 {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatalf("page %d never attached", i+1)
+			}
+			time.Sleep(5 * time.Millisecond)
+		}
 	}
 	extra := dial(t, srv, "/__share/signal?share="+id)
 	if m := recv(t, extra); m["reply"] != "error" || !strings.Contains(m["data"].(string), "too many") {
