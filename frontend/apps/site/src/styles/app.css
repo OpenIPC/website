@@ -654,6 +654,37 @@ h1, h2, h3, h4, h5, h6 {
   color: #fff;
 }
 
+.site-btn-dark {
+  background-color: var(--color-ink);
+  border-color: var(--color-ink);
+  color: #fff;
+}
+
+.site-btn-dark:hover,
+.site-btn-dark:focus-visible {
+  background-color: var(--color-ink-2);
+  border-color: var(--color-ink-2);
+  color: #fff;
+}
+
+/* A four-ways button: label and arrow on one line. `.site-btn` is unlayered and
+ * sets its own display, which a `flex` utility cannot beat. */
+.site-btn.ways-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* The device ID and chip markings the four ways ask a reader to look for. */
+.ways-code code {
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.3rem;
+  background-color: #e6eaf4;
+  color: var(--color-ink);
+  font-size: 0.9em;
+}
+
 /* .btn-outline-light: the band's second button, which inverts on hover. */
 .site-btn-outline-light {
   border-color: #f8f9fa;
@@ -698,41 +729,48 @@ h1, h2, h3, h4, h5, h6 {
 .site-tabs {
   display: flex;
   flex-wrap: wrap;
-  margin: 0 0 1.5rem;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
   padding: 0;
   list-style: none;
   font-size: 0.875rem;
-  border-bottom: 1px solid var(--color-hairline);
 }
 
+/* Pills: the chip makers are a filter over one list, not the pages of a book. */
 .site-tab {
-  display: block;
-  /* --bs-nav-link-padding-x is .3rem on this page, not Bootstrap's 1rem. */
-  padding: 0.5rem 0.3rem;
-  border: 1px solid transparent;
-  border-top-left-radius: 0.375rem;
-  border-top-right-radius: 0.375rem;
-  color: var(--color-brand-blue);
-  line-height: 1.6;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: 999px;
+  background-color: #fff;
+  color: var(--color-body);
+  font-weight: 500;
+  line-height: 1.2;
   text-decoration: none;
-  margin-bottom: -1px;
+  white-space: nowrap;
 }
 
 .site-tab:hover {
-  border-color: #e9ecef #e9ecef var(--color-hairline);
-  color: var(--color-link-hover);
+  border-color: var(--color-brand-blue);
+  color: var(--color-brand-blue);
 }
 
-/* `.nav-link.text-muted` on the last tab. A utility cannot say it: this rule
- * is unlayered and would beat it. */
 .site-tab-muted {
   color: var(--color-body-secondary);
 }
 
 .site-tab[aria-current='page'] {
-  color: #000;
+  border-color: var(--color-ink);
+  background-color: var(--color-ink);
+  color: #fff;
+}
+
+.site-tab[aria-current='page'] .site-badge-primary {
   background-color: #fff;
-  border-color: var(--color-hairline) var(--color-hairline) #fff;
+  color: var(--color-brand-blue);
 }
 
 /* .badge.rounded-pill: .75em of the tab's 14px, in a pill. */
@@ -784,29 +822,54 @@ h1, h2, h3, h4, h5, h6 {
     border-color: #f8dfc0;
   }
 
-  /*
-   * The table is a <dl> grid, as the origin's is: a definition list reads as a
-   * list of chips to a screen reader, where a <table> would announce four
-   * columns of layout.
-   */
 }
 
-.socs dl {
-  display: flex;
-  flex-wrap: wrap;
-  /* `dl.row`: the negative gutter Bootstrap's row carries, which is what makes
-   * the first column's text line up with the heading above it rather than
-   * 12px inside it. */
-  margin: 0 -0.75rem 1rem;
-  border-bottom: 1px solid var(--color-hairline);
+.socs {
+  width: 100%;
+  border: 1px solid var(--color-hairline);
+  border-radius: 0.875rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
 }
 
-.socs dd {
-  /* Bootstrap's reboot puts .5rem under a dd and the rows are built from it:
-   * without it every row is 8px shorter, which over 126 of them is a page a
-   * quarter shorter than the one it replaces. */
-  margin: 0 0 0.5rem;
-  padding: 0 0.75rem;
+/*
+ * A real table, headed: each row is one chip, and the column a camera owner
+ * reads -- can I install it? -- is announced as such. It was a <dl> grid of
+ * <dd>s with no <dt>, which gave a screen reader neither.
+ */
+.socs th,
+.socs td {
+  padding: 0.8rem 1.25rem;
+  border-top: 1px solid var(--color-hairline);
+  text-align: start;
+  vertical-align: middle;
+}
+
+.socs thead th {
+  border-top: 0;
+  background-color: var(--color-surface-alt);
+  color: var(--color-body-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.socs tbody th {
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.socs .vendor {
+  color: var(--color-body-secondary);
+  font-size: 0.875rem;
+}
+
+.socs .model {
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-weight: 500;
 }
 
 .socs .stage {
@@ -820,11 +883,103 @@ h1, h2, h3, h4, h5, h6 {
 
 /* The anchor beside a model name, which appears on hover as the origin's does. */
 .socs .anchor {
-  display: none;
+  margin-inline-start: 0.25rem;
+  opacity: 0;
 }
 
-.socs dd:hover .anchor {
-  display: inline;
+/* Hidden by opacity rather than display, so the keyboard can still reach it. */
+.socs tr:hover .anchor,
+.socs .anchor:focus-visible {
+  opacity: 1;
+}
+
+/* The answer, in a word, before the link or the reason. */
+.soc-verdict {
+  display: inline-block;
+  margin-inline-end: 0.5rem;
+  padding: 0.2em 0.6em;
+  border: 1px solid;
+  border-radius: 50rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.soc-verdict::before {
+  content: '';
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-inline-end: 0.4em;
+  border-radius: 50%;
+  background-color: currentColor;
+  vertical-align: 0.1em;
+}
+
+.soc-verdict-wizard {
+  color: #144329;
+  background-color: #d6eee1;
+  border-color: #addcc2;
+}
+
+.soc-verdict-firmware_only {
+  color: #5d4018;
+  background-color: #faecd8;
+  border-color: #f8dfc0;
+}
+
+.soc-verdict-none {
+  color: #2b2f32;
+  background-color: #e2e3e5;
+  border-color: #c4c8cb;
+}
+
+/*
+ * On a phone a row is a card: the chip, then the answer beneath it, rather
+ * than three columns squeezed to a word each. The header row is kept for a
+ * screen reader and hidden from sight.
+ */
+@media (max-width: 575.98px) {
+  .socs thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .socs {
+    border: 0;
+    border-radius: 0;
+  }
+
+  .socs tr {
+    display: block;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--color-hairline);
+  }
+
+  .socs th,
+  .socs td {
+    display: block;
+    padding: 0.15rem 0;
+    border: 0;
+  }
+
+  .socs tbody th .model {
+    font-size: 1rem;
+  }
+
+  .socs .stage {
+    text-align: start;
+  }
+
+  .socs .addr::before {
+    content: attr(data-label) ': ';
+    color: var(--color-body-secondary);
+  }
 }
 
 @layer components {

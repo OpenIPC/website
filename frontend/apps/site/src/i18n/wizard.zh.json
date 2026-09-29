@@ -54,7 +54,7 @@
         "unavailable_hlp_html": "我们有 {name} 的板子，缺的是动手做的人。如果你写嵌入式 Linux 的 C，请从<a href=\"/zh/community\">聊天室</a>开始。",
         "unavailable_html": "{name} 目前还没有 OpenIPC 构建。",
         "unavailable_mvp_html": "{name} 有一个早期构建，但功能还不足以发布。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。",
-        "unavailable_neq_html": "我们有 {name} 的厂商 SDK，但没有可供开发的板子——这是唯一的障碍。如果你有多余的，请到<a href=\"/zh/community\">聊天室</a>说一声：现有支持列表大多是这样来的。也可以<a href=\"/zh/donate\">捐助项目</a>，由我们去买板子。板子到手之后会经历什么，见<a href=\"/zh/stages-of-firmware-development\">开发阶段</a>页面。",
+        "unavailable_neq_html": "我们有 {name} 的厂商 SDK，但没有可供开发的板子——这是唯一的障碍。如果你有多余的，请到<a href=\"/zh/community\">聊天室</a>说一声：现有支持列表大多是这样来的。也可以<a href=\"/zh/donate\">捐助项目</a>，由我们去买板子。板子到手之后会经历什么，见<a href=\"/zh/supported-hardware/full-list#stages\">开发阶段</a>页面。",
         "unavailable_rnd_html": "{name} 的工作还在研究阶段——我们正在读 SDK，弄清能做到什么。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。",
         "unavailable_wip_html": "{name} 正在开发中。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
       },

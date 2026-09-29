@@ -59,14 +59,14 @@ describe('the three locale trees', () => {
       '/business', '/community', '/digital-twins', '/donate', '/ecosystem', '/edge-ai',
       '/get-started', '/green_life', '/isp-sensors', '/low-latency', '/majestic-endpoints',
       '/our-team', '/privacy', '/reverse-engineering',
-      '/stages-of-firmware-development', '/teleoperation', '/tools/firmware-partitions-calculation',
+      '/teleoperation', '/tools/firmware-partitions-calculation',
       '/tools/high-resolution-timer', '/tools/qr-code-generator', '/turnkey-hardware',
       '/utilities', '/video-encoding', '/web-interface',
     ];
 
     const claimed = new Set(PAGE_PATHS.map((page) => page.path));
     expect(ROUTED.filter((path) => !claimed.has(path))).toEqual([]);
-    expect(ROUTED.length).toBe(23);
+    expect(ROUTED.length).toBe(22);
   });
 
   test('each page declares its own language', () => {

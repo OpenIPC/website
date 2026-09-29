@@ -16,7 +16,7 @@ import Wizard from '../wizard/Wizard.tsx';
 import KnownBoards from '../boards/KnownBoards.tsx';
 import ZoomDialog from '../ZoomDialog.astro';
 import { pathFor, type Locale } from '../../lib/i18n';
-import { VENDORS, fullName, socPath, vendorPath, type Soc, type Vendor } from '../../lib/hardware';
+import { STATUS_WORDS, VENDORS, fullName, socPath, vendorPath, type Soc, type Vendor } from '../../lib/hardware';
 import { useTranslations } from '../../lib/i18n';
 import { SUPPORT_GOAL } from '../../data/support-goal';
 
@@ -25,16 +25,6 @@ const STAGE_ICONS = import.meta.glob<ImageMetadata>(
   { eager: true, import: 'default' },
 );
 const WARNING = await import('../../assets/icons/pose/warning_front.png');
-
-/** `Soc::STATUS`, which is the stage link's title attribute and is English on both halves. */
-const STATUS: Record<string, string> = {
-  neq: 'No equipment on hands',
-  rnd: 'Research and development',
-  hlp: 'Looking for help',
-  wip: 'Work in progress',
-  mvp: 'Minimum viable product',
-  done: 'Done and done!',
-};
 
 /** `Soc::SEGMENTS`. Anything else is `unknown`, as `segment_name` has it. */
 const SEGMENTS = ['fpv', 'cctv', 'consumer', 'unknown'];
@@ -87,7 +77,7 @@ const here = p(socPath(vendor, soc));
     fullName: fullName(vendor, soc),
     model: soc.model,
     status: soc.status,
-    statusTitle: STATUS[soc.status] ?? soc.status,
+    statusTitle: STATUS_WORDS[soc.status] ?? soc.status,
     stageSrc: stage.src,
     segment: SEGMENTS.includes(soc.segment ?? '') ? soc.segment! : 'unknown',
     vendorName: vendor.name,
@@ -95,7 +85,7 @@ const here = p(socPath(vendor, soc));
     socHref: here,
     vendorsHref: p('/supported-hardware/featured'),
     homeHref: p('/'),
-    stagesHref: p('/stages-of-firmware-development'),
+    stagesHref: `${p('/supported-hardware/full-list')}#stages`,
   }}
 />
 

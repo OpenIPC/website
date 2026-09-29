@@ -9,7 +9,7 @@ en:
   cameras:
     socs:
       index:
-        boards: Boards
+        boards: Find by board or camera
   boards:
     stats_boards:
       one: board

@@ -56,7 +56,6 @@ export function menuFor(locale: Locale): MenuItems {
         link('ecosystem-overview', 'nav.ecosystem_overview', '/ecosystem'),
         link('open-wall', 'nav.openwall', '/open-wall'),
         link('web-interface', 'nav.webui', '/web-interface'),
-        link('stages', 'nav.stages', '/stages-of-firmware-development'),
         link('firmware-explorer', 'nav.firmware_explorer', '/firmware-explorer'),
         link('boards', 'nav.boards', '/cameras/boards'),
         {
@@ -137,7 +136,6 @@ export function footerFor(locale: Locale): FooterColumn[] {
         link('nav.boards', '/cameras/boards'),
         link('footer.firmware_source', 'https://github.com/OpenIPC/firmware'),
         link('nav.webui', '/web-interface'),
-        link('nav.stages', '/stages-of-firmware-development'),
         link('nav.firmware_explorer', '/firmware-explorer'),
       ],
     },

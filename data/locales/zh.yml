@@ -11,18 +11,28 @@ zh:
         paragraph2: 请参阅我们的 Wiki 上提供的详细说明：
         subtitle: 在具有 {soc_name} SoC 和 {flash_type} SPI 闪存芯片的 NVR 上
       index:
-        installable_title: "{total} 款中有 {count} 款可以安装"
-        nothing_installable_html: "{vendor} 的 {total} 款芯片目前都无法安装——它们都还没有 OpenIPC 构建。下面每一行都写明了原因，其中不少是在等一块板子或一位开发者，而不是等我们。"
+        badge_legend: "芯片厂商旁边的数字表示其中目前可以安装的芯片数量。"
+        chip_installable_html: "我们已知的 {total} 款芯片中，目前有 {count} 款可以安装 OpenIPC。找到你的芯片，看看怎么装。"
+        chip_lede: "找到你的芯片，看看能否安装 OpenIPC、怎么安装。"
+        chip_title: "已经知道芯片型号？"
         featured: 推荐的
         full_list: 所有列表
-        recommended_alert_html: 请注意。对不同 SoC 的支持处于不同的开发阶段。<a href="/supported-hardware/featured">此列表</a>显示了最受支持的，因此也是最推荐的。
-        stages_of_development: 固件开发阶段说明
+        installable_title: "{total} 款中有 {count} 款可以安装"
+        list_featured: "推荐芯片"
+        list_featured_intro: "OpenIPC 支持最完善的芯片。处于较早阶段的芯片见完整列表。"
+        list_full: "我们已知的全部芯片"
+        list_vendor: "{vendor} 芯片"
+        nothing_installable_html: "{vendor} 的 {total} 款芯片目前都无法安装——它们都还没有 OpenIPC 构建。下面每一行都写明了原因，其中不少是在等一块板子或一位开发者，而不是等我们。"
+        stages_details: "开发阶段是什么意思？"
         th_baseaddr: 加载地址
-        th_docs: 文档
-        th_soc_model: 芯片型号
+        th_docs: "能安装吗？"
+        th_soc_model: "芯片 (SoC)"
         th_stage: 阶段
-        th_status: 构建状态
-        title: SoC 支持的硬件
+        title: "支持的硬件"
+        verdict_firmware_only: "仅限高级用户"
+        verdict_none: "暂不支持"
+        verdict_wizard: "向导安装"
+        ways_link: "第一次来？让摄像机运行 OpenIPC 的四种方式"
       show:
         export_unreachable: "无法加载这颗芯片的安装命令，因此本页暂时无法显示它们。这是本站的问题，与您的摄像机无关——硬件没有任何故障。"
         export_unreachable_link: "重试"
@@ -31,7 +41,7 @@ zh:
         unavailable_hlp_html: "我们有 {name} 的板子，缺的是动手做的人。如果你写嵌入式 Linux 的 C，请从<a href=\"/zh/community\">聊天室</a>开始。"
         unavailable_html: "{name} 目前还没有 OpenIPC 构建。"
         unavailable_mvp_html: "{name} 有一个早期构建，但功能还不足以发布。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
-        unavailable_neq_html: "我们有 {name} 的厂商 SDK，但没有可供开发的板子——这是唯一的障碍。如果你有多余的，请到<a href=\"/zh/community\">聊天室</a>说一声：现有支持列表大多是这样来的。也可以<a href=\"/zh/donate\">捐助项目</a>，由我们去买板子。板子到手之后会经历什么，见<a href=\"/zh/stages-of-firmware-development\">开发阶段</a>页面。"
+        unavailable_neq_html: "我们有 {name} 的厂商 SDK，但没有可供开发的板子——这是唯一的障碍。如果你有多余的，请到<a href=\"/zh/community\">聊天室</a>说一声：现有支持列表大多是这样来的。也可以<a href=\"/zh/donate\">捐助项目</a>，由我们去买板子。板子到手之后会经历什么，见<a href=\"/zh/supported-hardware/full-list#stages\">开发阶段</a>页面。"
         unavailable_rnd_html: "{name} 的工作还在研究阶段——我们正在读 SDK，弄清能做到什么。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
         unavailable_wip_html: "{name} 正在开发中。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
         bootloader: OpenIPC 引导程序
@@ -55,7 +65,7 @@ zh:
         paragraph1: 在具有 NAND 闪存的 SigmaStar 模块上安装 OpenIPC 固件需要特定的过程，本指南中未包含该过程。
         paragraph2: 请参阅我们的 Wiki 上提供的详细说明：
       soc:
-        firmware_only: "仅有固件——通过原厂引导程序刷入"
+        firmware_only: "通过摄像机原厂引导程序手动安装"
         unavailable: "暂不可用"
         unavailable_hlp: "不可用——正在寻找开发者"
         unavailable_mvp: "不可用——早期版本"
@@ -218,7 +228,6 @@ zh:
     qr_code_generator: 二维码生成器
     snapshot: '快照 #{number}'
     snapshots: 最新快照
-    stages: 开发阶段
     supported_hardware: 支持的硬件
     team: 我们的团队
     teleoperation: 遥操作

@@ -9,7 +9,7 @@ zh:
   cameras:
     socs:
       index:
-        boards: 主板
+        boards: 按主板或摄像机查找
   boards:
     stats_boards:
       one: 块主板

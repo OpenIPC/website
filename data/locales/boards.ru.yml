@@ -9,7 +9,7 @@ ru:
   cameras:
     socs:
       index:
-        boards: Платы
+        boards: Поиск по плате или камере
   boards:
     stats_boards:
       one: плата

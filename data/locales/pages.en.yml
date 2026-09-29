@@ -63,7 +63,7 @@ en:
       contrib3_title: Test early builds
       contrib4_text_html: Improve the <a href="https://github.com/OpenIPC/wiki">wiki</a>, proofread the website, make it sound native in your language.
       contrib4_title: Write and translate
-      contrib5_text_html: Old boards past end-of-life are gold to us — platforms marked NEQ wait for exactly that hardware. <a href="/stages-of-firmware-development">What the stages mean</a>.
+      contrib5_text_html: Old boards past end-of-life are gold to us — platforms marked NEQ wait for exactly that hardware. <a href="/supported-hardware/full-list#stages">What the stages mean</a>.
       contrib5_title: Donate retired hardware
       contrib6_text: Write a post, record a video, show your build. Real stories from real users are the best advertising we will never buy.
       contrib6_title: Spread the word
@@ -288,7 +288,7 @@ en:
       section_lowlat_title: Low latency & URLLC
       section_tools_text: Free tools for camera and media engineers — useful even if you never flash our firmware.
       section_tools_title: Pro tools
-      stage_legend_html: Every project carries an honest status badge — the same vocabulary we use for firmware platforms. <a href="/stages-of-firmware-development">How stages work</a>.
+      stage_legend_html: Every project carries an honest status badge — the same vocabulary we use for firmware platforms. <a href="/supported-hardware/full-list#stages">How stages work</a>.
       title: Ecosystem
     edge_ai:
       bring_driver_text: Cleanroom kernel drivers for HiSilicon's vision and neural engines, built from disassembly and kernel tracing, byte-identical to the vendor's own — and more robust where the vendor's test hangs. Vendor silence is not a blocker.
@@ -364,18 +364,18 @@ en:
       unit_bytes: bytes
       unit_kb: KB
     get_started:
-      cta_find_soc: Find your SoC
+      cta_ways: "See the four ways"
       editions_text: Lite fits 8 MB flash chips and covers the essentials. Ultimate adds extras like cloud streaming, tunnels, and more codecs — it needs 16 MB flash.
       editions_title: Two editions
       hero_lede: From stock firmware to OpenIPC in about half an hour — with a guide generated for your exact chip.
       hero_title: Give your camera a second life.
-      step1_text_html: Run <a href="https://github.com/OpenIPC/ipctool">ipctool</a> on the camera (telnet or serial console) to learn the SoC, the sensor, and the flash chip. A label or FCC ID search works as a fallback.
-      step1_title: Identify your hardware
-      step2_text: Look your chip up in the supported hardware table. The wizard assembles a firmware image and a step-by-step installation guide for your exact configuration, right in your browser.
-      step2_title: Find your SoC
+      step1_text: "Buy one with OpenIPC already installed, switch one over the air, or identify the one you have. Four ways, easiest first, and none of them needs a soldering iron."
+      step1_title: "Get a camera OpenIPC runs on"
+      step2_text: "Once you know the board or the chip, its page says whether OpenIPC installs on it. For a supported chip the wizard assembles a firmware image and a step-by-step guide for your exact configuration, right in your browser. Bought one with OpenIPC installed? You are already done."
+      step2_title: "Find its installation guide"
       step3_text: Follow the generated guide. It starts with a full backup of the stock firmware — do not skip it.
       step3_title: Back up, then flash
-      stuck_text_html: The community answers questions every day. <a href="/community">Ask in the chat</a> — include your SoC, sensor, and a boot log if you have one.
+      stuck_text_html: "The community answers questions every day. <a href=\"/community\">Ask in the chat</a> — include the label on the camera and a photo of each side of its board."
       stuck_title: Stuck?
       title: Get Started
       wall_text_html: One setting in the web interface puts your camera's snapshots on our live <a href="/open-wall">Open Wall</a> — say hello to the community.

@@ -294,7 +294,7 @@ describe('the hardware catalogue is the catalogue (#162)', () => {
 
   test('the recommended list holds the featured SoCs and no others', () => {
     const wanted = VENDORS.flatMap((v) => v.socs.filter((s) => s.featured).map((s) => s.urlname));
-    const shown = [...featured.matchAll(/<dl id="([^"]+)"/g)].map((m) => m[1]);
+    const shown = [...featured.matchAll(/<tr id="([^"]+)"/g)].map((m) => m[1]);
 
     expect(shown.sort()).toEqual(wanted.sort());
     expect(shown.length).toBeGreaterThan(20);
@@ -334,6 +334,35 @@ describe('the hardware catalogue is the catalogue (#162)', () => {
       expect(Number(badge![1]), `${vendor.name}'s badge counts the wrong total`)
         .toBe(vendor.socs.length);
     }
+  });
+
+  test('the recommended list opens with the four ways, easiest first', () => {
+    const ways = ['buy', 'ota', 'identify', 'ask'].map((id) => featured.indexOf(`id="${id}"`));
+    expect(ways.every((at) => at > 0), 'a way is missing').toBe(true);
+    expect([...ways].sort((a, b) => a - b)).toEqual(ways);
+    expect(ways[3], 'the ways come before the chips').toBeLessThan(featured.indexOf('<table class="socs'));
+    // Way 2 and way 3 are GETs to the board catalogue, whose island reads them.
+    expect(featured).toContain('href="/cameras/boards?ready=1"');
+    expect(featured).toMatch(/<form[^>]*action="\/cameras\/boards"[^>]*>/);
+    // Way 1 is the partner wall's manufacturers and integrators.
+    expect(featured).toContain('href="/business#partners"');
+  });
+
+  test('the home page offers the same four ways', () => {
+    for (const locale of LOCALES) {
+      const home = readFileSync(join(dist, pathFor(locale, '/').replace(/^\//, ''), 'index.html'), 'utf8');
+      for (const id of ['buy', 'ota', 'identify', 'ask']) {
+        expect(home, `${locale} home has no way to #${id}`)
+          .toContain(`href="${pathFor(locale, '/supported-hardware/featured')}#${id}"`);
+      }
+    }
+  });
+
+  test('the stages are in the catalogue rather than a page of their own', () => {
+    // /stages-of-firmware-development took a menu entry for something a camera
+    // owner does not need; the route map sends it to #stages on the full list.
+    expect(fullList).toContain('id="stages"');
+    expect(existsSync(join(dist, 'stages-of-firmware-development'))).toBe(false);
   });
 
   test('the wizard is still linked', () => {
@@ -466,16 +495,14 @@ describe('the pages say what they are for', () => {
     }
   });
 
-  test('the ipctool command reaches the page complete', () => {
-    // It is pasted into a root shell on a camera. The URL was being clipped by
-    // CSS, and the tempting fix is to shorten the command rather than let it
-    // wrap.
+  test('get started sends a newcomer to the four ways, not to a shell', () => {
+    // Step one was "run ipctool on the camera", which needs a UART or a way
+    // into the vendor's Linux. A newcomer could not take it; the four ways on
+    // the supported hardware page ask for neither.
     for (const locale of LOCALES) {
       const html = readFileSync(join(dist, pathFor(locale, '/get-started'), 'index.html'), 'utf8');
-      expect(html).toContain(
-        'https://github.com/OpenIPC/ipctool/releases/download/latest/ipctool',
-      );
-      expect(html).toContain('chmod +x /tmp/ipctool');
+      expect(html).toContain(`href="${pathFor(locale, '/supported-hardware/featured')}"`);
+      expect(html).not.toContain('chmod +x /tmp/ipctool');
     }
   });
 

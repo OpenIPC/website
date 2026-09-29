@@ -16,6 +16,7 @@
  *     a number baked into a bundle could not honour that.
  */
 import Icon from './Icon.astro';
+import FourWays from './FourWays.astro';
 import LogoWall from './LogoWall.astro';
 import { pathFor, useTranslations, type Locale } from '../lib/i18n';
 import { partnerRows } from '../lib/partners';
@@ -89,6 +90,27 @@ const PILLARS = [
         </p>
       </div>
     </div>
+  </div>
+</section>
+
+{/*
+  ---- Four ways in ----
+  The camera owner's door, straight after the hero: what to do next without
+  knowing what a SoC is. Each card opens its full version on the supported
+  hardware page.
+*/}
+<section class="bg-surface-alt py-section">
+  <div class="site-container">
+    <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div class="max-w-[42rem]">
+        <h2 class="mb-2 text-h2 font-bold tracking-tight">{t('ways.home_title')}</h2>
+        <p class="mb-0 text-lg text-body-secondary">{t('ways.home_lede')}</p>
+      </div>
+      <a class="inline-flex shrink-0 items-center gap-1.5 font-semibold no-underline" href={p('/supported-hardware/featured')}>
+        {t('ways.home_all')}<Icon name="arrow-right" />
+      </a>
+    </div>
+    <FourWays locale={locale} variant="home" />
   </div>
 </section>
 

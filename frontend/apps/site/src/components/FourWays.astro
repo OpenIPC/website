@@ -1,0 +1,202 @@
+---
+/**
+ * The four ways to a camera running OpenIPC, easiest first: buy one with it
+ * installed, switch one over the air with a Coupler image, open up the one you
+ * have and identify its board, or ask the community.
+ *
+ * This is where a camera owner starts, and it is written for one: none of the
+ * four asks for a soldering iron or a shell. ipctool was step one here, and it
+ * needs a UART or a way into the vendor's Linux -- a reverse engineer's
+ * tool, which is where it now sits, in the strip under the cards.
+ *
+ * `full` is the supported hardware page's version, with the partners' logos
+ * and the two searches, which are plain GETs to the board catalogue: its
+ * island reads `q` and `ready` from the address (lib/boards/url.ts), and a
+ * board's device IDs are among what `q` matches. `home` is the home page's,
+ * four links to the same cards.
+ *
+ * No counts in the copy. The board catalogue is the service's, a 2.8 MB answer,
+ * and a number baked into the page would be wrong the day a source is
+ * imported; "more than a thousand" stays true.
+ */
+import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
+import { logosIn } from '../lib/partners';
+import { pathFor, useTranslations, type Locale } from '../lib/i18n';
+
+const LOGOS = import.meta.glob<ImageMetadata>('../assets/partners/*.png', { eager: true, import: 'default' });
+
+interface Props {
+  locale: Locale;
+  variant: 'full' | 'home';
+}
+const { locale, variant } = Astro.props;
+
+const t = useTranslations(locale);
+const w = (key: string) => t(`ways.${key}`);
+const p = (path: string) => pathFor(locale, path);
+const way = (n: number) => w('way').replace('{n}', String(n));
+
+const hardware = p('/supported-hardware/featured');
+const boards = p('/cameras/boards');
+const partners = `${p('/business')}#partners`;
+
+const logo = (img: string) => {
+  const src = LOGOS[`../assets/partners/${img}.png`];
+  if (!src) throw new Error(`No partner logo "${img}.png" in src/assets/partners/.`);
+  return src;
+};
+
+/**
+ * Two rows of two per group. The Russian integrators run to nineteen, which
+ * would make the first card three times the height of the others, so a group
+ * longer than its four slots shows three and a tile that says how many more,
+ * leading to the whole wall.
+ */
+const SLOTS = 4;
+const groups = (['manufacturers', 'integrators'] as const)
+  .map((key) => {
+    const all = logosIn(locale, key);
+    const shown = all.length > SLOTS ? all.slice(0, SLOTS - 1) : all;
+    return { key, shown, more: all.length - shown.length };
+  })
+  .filter((g) => g.shown.length > 0);
+
+const card = 'flex min-w-0 flex-col gap-4 rounded-2xl p-6';
+const eyebrow = 'text-xs font-semibold tracking-[.06em] uppercase';
+const badge = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold';
+---
+
+{variant === 'full' ? (
+  <div class="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <section id="buy" class:list={[card, 'scroll-mt-4 border-[1.5px] border-brand-blue bg-[#eef1fc]']}>
+      <div class="flex items-center justify-between">
+        <span class="flex size-11 items-center justify-center rounded-xl bg-brand-blue text-white"><Icon name="bag" class="size-5" /></span>
+        <span class:list={[badge, 'bg-white text-body-secondary']}>{w('buy_when')}</span>
+      </div>
+      <div>
+        <p class:list={[eyebrow, 'mb-1 text-body-secondary']}>{way(1)}</p>
+        <h2 class="mb-0 text-xl leading-tight font-bold">{w('buy_title')}</h2>
+      </div>
+      <p class="mb-0 text-[.9375rem]">{w('buy_text')}</p>
+      {groups.map((g) => (
+        <div>
+          <p class:list={[eyebrow, 'mb-2 text-body-secondary']}>{t(`site.partners.${g.key}`)}</p>
+          <div class="grid grid-cols-2 gap-2">
+            {g.shown.map((partner) => (
+              <a class="flex h-13 items-center justify-center rounded-lg border border-hairline bg-white px-3 py-2" href={partner.url} title={partner.name}>
+                <Image src={logo(partner.img)} alt={partner.name} loading="lazy" class="max-h-7 w-auto" />
+              </a>
+            ))}
+            {g.more > 0 && (
+              <a class="flex h-13 items-center justify-center rounded-lg border border-dashed border-[#c9d0e0] bg-white text-sm font-semibold no-underline" href={partners}>
+                {w('buy_more').replace('{count}', String(g.more))}
+              </a>
+            )}
+          </div>
+        </div>
+      ))}
+      <a class="site-btn site-btn-primary ways-btn mt-auto" href={partners}>
+        {w('buy_cta')}<Icon name="arrow-right" />
+      </a>
+    </section>
+
+    <section id="ota" class:list={[card, 'scroll-mt-4 border border-hairline bg-white']}>
+      <div class="flex items-center justify-between">
+        <span class="flex size-11 items-center justify-center rounded-xl bg-brand-blue text-white"><Icon name="cloud-arrow-up" class="size-5" /></span>
+        <span class:list={[badge, 'bg-surface-alt text-body-secondary']}>{w('ota_when')}</span>
+      </div>
+      <div>
+        <p class:list={[eyebrow, 'mb-1 text-body-secondary']}>{way(2)}</p>
+        <h2 class="mb-0 text-xl leading-tight font-bold">{w('ota_title')}</h2>
+      </div>
+      <p class="mb-0 text-[.9375rem]" set:html={w('ota_text_html')} />
+      <div class="flex flex-col gap-3 rounded-xl bg-surface-alt p-3">
+        <p class="ways-code mb-0 text-sm text-body-secondary" set:html={w('ota_device_help_html')} />
+        <form class="flex gap-2" action={boards} method="get" role="search">
+          <label class="sr-only" for="ways-device">{w('ota_device_label')}</label>
+          <input id="ways-device" class="site-form-control min-w-0 flex-1" type="search" name="q" minlength="3" maxlength="100"
+            required autocomplete="off" spellcheck="false" placeholder={w('ota_device_placeholder')} />
+          <button class="site-btn site-btn-dark" type="submit">{w('ota_check')}</button>
+        </form>
+      </div>
+      <a class="site-btn site-btn-outline-primary ways-btn mt-auto" href={`${boards}?ready=1`}>
+        {w('ota_cta')}<Icon name="arrow-right" />
+      </a>
+    </section>
+
+    <section id="identify" class:list={[card, 'scroll-mt-4 border border-hairline bg-white']}>
+      <div class="flex items-center justify-between">
+        <span class="flex size-11 items-center justify-center rounded-xl bg-brand-blue text-white"><Icon name="screwdriver" class="size-5" /></span>
+        <span class:list={[badge, 'bg-surface-alt text-body-secondary']}>{w('open_when')}</span>
+      </div>
+      <div>
+        <p class:list={[eyebrow, 'mb-1 text-body-secondary']}>{way(3)}</p>
+        <h2 class="mb-0 text-xl leading-tight font-bold">{w('open_title')}</h2>
+      </div>
+      <p class="mb-0 text-[.9375rem]">{w('open_text')}</p>
+      <div class="flex items-center gap-3 rounded-xl bg-surface-alt p-3">
+        {/* A chip as a reader finds one: dark, square, its marking on top. */}
+        <span class="flex size-16 shrink-0 items-center justify-center rounded-lg bg-ink-2" aria-hidden="true">
+          <span class="flex size-10 items-center justify-center rounded-sm border border-[#3a4563] bg-[#2b344d] text-center font-mono text-[.5rem] leading-tight text-[#c9d0e0]">SSC335<br />2231</span>
+        </span>
+        <p class="ways-code mb-0 text-sm text-body-secondary" set:html={w('open_chip_html')} />
+      </div>
+      <form class="mt-auto flex gap-2" action={boards} method="get" role="search">
+        <label class="sr-only" for="ways-board">{w('open_label')}</label>
+        <input id="ways-board" class="site-form-control min-w-0 flex-1" type="search" name="q" minlength="3" maxlength="100"
+          required autocomplete="off" spellcheck="false" placeholder={w('open_placeholder')} />
+        <button class="site-btn site-btn-dark" type="submit">{w('open_search')}</button>
+      </form>
+    </section>
+
+    <section id="ask" class:list={[card, 'scroll-mt-4 bg-ink text-white/85']}>
+      <div class="flex items-center justify-between">
+        <span class="flex size-11 items-center justify-center rounded-xl bg-accent text-ink"><Icon name="chat-dots" class="size-5" /></span>
+        <span class:list={[badge, 'bg-white/10 text-white']}>{w('ask_when')}</span>
+      </div>
+      <div>
+        <p class:list={[eyebrow, 'mb-1 text-white/60']}>{way(4)}</p>
+        <h2 class="mb-0 text-xl leading-tight font-bold text-white">{w('ask_title')}</h2>
+      </div>
+      <p class="mb-0 text-[.9375rem]">{w('ask_text')}</p>
+      <ul class="mb-0 flex list-none flex-col gap-2 ps-0 text-sm">
+        {['ask_item_label', 'ask_item_photos', 'ask_item_version'].map((key) => (
+          <li class="flex items-center gap-2"><Icon name="check2" class="size-4 shrink-0 text-accent" />{w(key)}</li>
+        ))}
+      </ul>
+      <a class="site-btn ways-btn mt-auto border-accent bg-accent font-semibold text-ink hover:bg-[#ffc473] hover:text-ink" href={p('/community')}>
+        {w('ask_cta')}<Icon name="arrow-right" />
+      </a>
+    </section>
+  </div>
+
+  <div class="mb-10 flex flex-col gap-4 rounded-xl border border-hairline bg-surface-alt px-5 py-4 sm:flex-row sm:items-center">
+    <span class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-hairline bg-white"><Icon name="terminal" /></span>
+    <p class="mb-0 text-[.9375rem] text-body-secondary [&_strong]:text-body" set:html={w('experts_html')} />
+  </div>
+) : (
+  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    {[
+      { n: 1, id: 'buy', icon: 'bag', key: 'buy', title: 'buy_short' },
+      { n: 2, id: 'ota', icon: 'cloud-arrow-up', key: 'ota', title: 'ota_short' },
+      { n: 3, id: 'identify', icon: 'screwdriver', key: 'open', title: 'open_short' },
+      { n: 4, id: 'ask', icon: 'chat-dots', key: 'ask', title: 'ask_short' },
+    ].map((c) => (
+      <a class="flex flex-col gap-3 rounded-2xl border border-hairline bg-white p-6 text-body no-underline shadow-sm transition hover:border-brand-blue hover:text-body" href={`${hardware}#${c.id}`}>
+        <span class="flex items-center justify-between">
+          <span class:list={['flex size-11 items-center justify-center rounded-xl', c.n === 4 ? 'bg-accent text-ink' : 'bg-brand-blue text-white']}><Icon name={c.icon} class="size-5" /></span>
+          <span class:list={[badge, 'bg-surface-alt text-body-secondary']}>{w(`${c.key}_tag`)}</span>
+        </span>
+        <span>
+          <span class:list={[eyebrow, 'mb-1 block text-body-secondary']}>{way(c.n)}</span>
+          <span class="block text-xl leading-tight font-bold">{w(c.title)}</span>
+        </span>
+        <span class="text-[.9375rem] text-body-secondary">{w(`${c.key}_home_text`)}</span>
+        <span class="mt-auto inline-flex items-center gap-1.5 font-semibold text-brand-blue">
+          {w(c.key === 'ask' ? 'ask_cta' : `${c.key}_home_cta`)}<Icon name="arrow-right" />
+        </span>
+      </a>
+    ))}
+  </div>
+)}

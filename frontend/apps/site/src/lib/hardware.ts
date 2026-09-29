@@ -85,6 +85,20 @@ export function socPath(vendor: Vendor, soc: Soc): string {
 
 export const STATUSES: Status[] = ['neq', 'rnd', 'hlp', 'wip', 'mvp', 'done'];
 
+/**
+ * Each stage in words: `Soc::STATUS`, English in every locale as the origin
+ * had it. It is the stage icon's title and alt, on the catalogue and in the
+ * wizard, where an acronym -- "HLP" -- told a reader nothing.
+ */
+export const STATUS_WORDS: Record<Status, string> = {
+  neq: 'No equipment on hands',
+  rnd: 'Research and development',
+  hlp: 'Looking for help',
+  wip: 'Work in progress',
+  mvp: 'Minimum viable product',
+  done: 'Done and done!',
+};
+
 export const SOC_COUNT = allRows().length;
 
 export const VENDOR_NAMES = VENDORS.map((v) => v.name);
