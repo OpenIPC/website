@@ -4,6 +4,7 @@
 //	openipc serve --role web       uploads, variants, the wall, build pushes  (:3002)
 //	openipc serve --role firmware  full images, their stats, the wizard, availability  (:3003)
 //	openipc serve --role nfs       ipctool's builds, read-only over NFS, for stock firmware  (:111, :2049)
+//	openipc serve --role share     camera sharing links: signalling relay and the share page (:3004)
 //	openipc migrate                bring PostgreSQL to this binary's schema
 //	openipc purge [--snapshots] [--firmware] [--builds]   nightly retention
 //	openipc probe                  nightly health numbers, non-zero on trouble
@@ -43,6 +44,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/httpx"
 	"github.com/OpenIPC/website/service/internal/purge"
 	"github.com/OpenIPC/website/service/internal/reports"
+	"github.com/OpenIPC/website/service/internal/sharerelay"
 	"github.com/OpenIPC/website/service/internal/snapshots"
 	"github.com/OpenIPC/website/service/internal/tools"
 	"github.com/OpenIPC/website/service/internal/variants"
@@ -172,6 +174,11 @@ var routes = []Route{
 	{"web", "POST", "/api/v1/boards/identify"},
 	{"web", "PUT", "/api/v1/tools/{name}"},
 	{"web", "GET", "/api/v1/tools"},
+	{"share", "GET", "/__share/device"},
+	{"share", "GET", "/__share/signal"},
+	{"share", "GET", "/__share/ice"},
+	{"share", "GET", "/__share/"},
+	{"share", "GET", "/"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 }
@@ -195,16 +202,26 @@ func prefixed(next http.Handler) http.Handler {
 
 func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, args []string) error {
 	fs := flag.NewFlagSet("serve", flag.ExitOnError)
-	role := fs.String("role", "", "web, firmware or nfs")
+	role := fs.String("role", "", "web, firmware, nfs or share")
 	listen := fs.String("listen", cfg.Listen, "address to listen on")
 	_ = fs.Parse(args)
 	if *role == "nfs" {
 		return nfsRole(ctx, cfg, log.With("role", "nfs", "version", version))
 	}
 	if *listen == "" {
-		*listen = map[string]string{"web": ":3002", "firmware": ":3003"}[*role]
+		*listen = map[string]string{"web": ":3002", "firmware": ":3003", "share": ":3004"}[*role]
 	}
 	log = log.With("role", *role, "version", version)
+	if *role == "share" {
+		// No database: a share lives on the camera, and the relay only
+		// remembers which camera socket holds which share, for as long as
+		// the socket is up.
+		mux := http.NewServeMux()
+		if err := shareRole(cfg, log, mux); err != nil {
+			return err
+		}
+		return listenAndServe(ctx, log, *listen, mux, nil)
+	}
 
 	pool, err := open(ctx, cfg)
 	if err != nil {
@@ -242,11 +259,14 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, args []str
 		}
 		background = append(background, stopBg)
 	default:
-		return fmt.Errorf("--role must be web, firmware or nfs")
+		return fmt.Errorf("--role must be web, firmware, nfs or share")
 	}
+	return listenAndServe(ctx, log, *listen, mux, background)
+}
 
+func listenAndServe(ctx context.Context, log *slog.Logger, listen string, mux *http.ServeMux, background []func()) error {
 	srv := &http.Server{
-		Addr:              *listen,
+		Addr:              listen,
 		Handler:           httpx.Log(log, mux),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       60 * time.Second,
@@ -256,7 +276,7 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, args []str
 	}
 	errc := make(chan error, 1)
 	go func() {
-		log.Info("listening", "addr", *listen)
+		log.Info("listening", "addr", listen)
 		errc <- srv.ListenAndServe()
 	}()
 	select {
@@ -268,7 +288,7 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, args []str
 	}
 	shutdown, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	err = srv.Shutdown(shutdown)
+	err := srv.Shutdown(shutdown)
 	for _, f := range background {
 		f()
 	}
@@ -412,6 +432,28 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		proc.Wait()
 		lock.Release()
 	}, nil
+}
+
+func shareRole(cfg *config.Config, log *slog.Logger, mux *http.ServeMux) error {
+	hub := &sharerelay.Hub{Log: log, OriginPatterns: cfg.ShareOrigins}
+	ice := sharerelay.ICE{STUN: cfg.ShareSTUN, TURN: cfg.ShareTURN, TURNSecret: cfg.ShareTURNSecret}
+	handlers := sharerelay.Handlers(hub, ice)
+	for _, r := range routes {
+		if r.Role != "share" {
+			continue
+		}
+		k := r.Method + " " + r.Path
+		h, ok := handlers[k]
+		if !ok {
+			return fmt.Errorf("share route %s has no handler", k)
+		}
+		mux.Handle(k, h)
+		delete(handlers, k)
+	}
+	for k := range handlers {
+		return fmt.Errorf("share handler %s is not in the routes table", k)
+	}
+	return nil
 }
 
 func firmwareRole(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool, mux *http.ServeMux) (func(), error) {
