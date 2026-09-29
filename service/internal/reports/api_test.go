@@ -142,8 +142,12 @@ func TestAReportIsAReceiptUntilPublishedAndThenNamesNoCamera(t *testing.T) {
 			t.Errorf("%s is in the public report", secret)
 		}
 	}
-	files := v["files"].([]any)
-	backup, photo, log := files[0].(map[string]any), files[1].(map[string]any), files[2].(map[string]any)
+	// parts arrive in map order; find each by its kind
+	byKind := map[string]map[string]any{}
+	for _, f := range v["files"].([]any) {
+		byKind[f.(map[string]any)["kind"].(string)] = f.(map[string]any)
+	}
+	backup, photo, log := byKind["backup"], byKind["photo"], byKind["boot_log"]
 	if backup["private"] != true || backup["url"] != nil {
 		t.Errorf("the private backup is offered: %v", backup)
 	}
