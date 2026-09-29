@@ -2,6 +2,8 @@ package sharerelay
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
@@ -15,10 +17,13 @@ import (
 	"github.com/coder/websocket"
 )
 
-const (
-	id    = "0123456789abcdef"
-	token = "aa00000000000000000000000000000000000000000000000000000000000000"
-)
+// A token and the id it derives: id = hex(SHA-256(token))[:16].
+var token, id = func() (string, string) {
+	raw := make([]byte, 32)
+	raw[0] = 0xaa
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(raw), hex.EncodeToString(sum[:8])
+}()
 
 func rig(t *testing.T) (*Hub, *httptest.Server) {
 	t.Helper()
@@ -171,24 +176,21 @@ func TestPagesHearWhenTheCameraGoesAway(t *testing.T) {
 	}
 }
 
-func TestOnlyTheRegisteringCameraCanTakeAShareBack(t *testing.T) {
+func TestOnlyAHolderOfTheTokenCanRegisterAnId(t *testing.T) {
 	_, srv := rig(t)
+	// Someone who saw the link's host name: the id, and no token for it --
+	// whether the camera has registered yet or not.
+	thief := dial(t, srv, "/__share/device")
+	for _, tok := range []string{"", strings.Repeat("b", 64), "zz"} {
+		send(t, thief, map[string]any{"type": "register", "share": id,
+			"expires": time.Now().Add(time.Hour).Unix(), "token": tok})
+		if m := recv(t, thief); m["type"] != "refused" {
+			t.Fatalf("token %q took the share: %v", tok, m)
+		}
+	}
+	// The camera, and the camera again after a reconnect: the newer wins.
 	cam := register(t, srv, time.Now().Add(time.Hour))
 	cam.Close(websocket.StatusNormalClosure, "")
-	time.Sleep(50 * time.Millisecond)
-
-	// Someone who knows the id, during the camera's reconnect backoff.
-	thief := dial(t, srv, "/__share/device")
-	send(t, thief, map[string]any{"type": "register", "share": id, "expires": time.Now().Add(time.Hour).Unix(),
-		"token": strings.Repeat("b", 64)})
-	if m := recv(t, thief); m["type"] != "refused" {
-		t.Fatalf("a stranger took the share: %v", m)
-	}
-	send(t, thief, map[string]any{"type": "register", "share": id, "expires": time.Now().Add(time.Hour).Unix()})
-	if m := recv(t, thief); m["type"] != "refused" {
-		t.Fatalf("a registration without a token was taken: %v", m)
-	}
-	// The camera itself, back.
 	register(t, srv, time.Now().Add(time.Hour))
 }
 
@@ -216,10 +218,22 @@ func TestUnregisterEndsThePages(t *testing.T) {
 }
 
 func TestSessionsPerShareAreBounded(t *testing.T) {
-	_, srv := rig(t)
+	h, srv := rig(t)
 	register(t, srv, time.Now().Add(time.Hour))
 	for i := 0; i < MaxSessionsPerShare; i++ {
 		dial(t, srv, "/__share/signal?share="+id)
+		// The handshake completes before the server attaches the page to
+		// its share: wait for that, or the next dial races it for a slot.
+		deadline := time.Now().Add(2 * time.Second)
+		for {
+			if _, pages := h.Stats(); pages == i+1 {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatalf("page %d never attached", i+1)
+			}
+			time.Sleep(5 * time.Millisecond)
+		}
 	}
 	extra := dial(t, srv, "/__share/signal?share="+id)
 	if m := recv(t, extra); m["reply"] != "error" || !strings.Contains(m["data"].(string), "too many") {

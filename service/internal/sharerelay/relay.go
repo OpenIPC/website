@@ -35,11 +35,12 @@
 //     "candidate","data":...} out, {"reply":...,"data":...,"mid":...} in. The
 //     relay tags each page socket with a session id and forwards.
 //
-// A registration carries a TOKEN, HMAC-SHA256(key, "mj-share-relay-v1|" id)
-// over the share's key. It tells the relay nothing about the key, and the
-// first registration of an id binds it: a later one -- the same camera
-// reconnecting -- must present the same token, so a socket that merely knows
-// a link's id cannot displace the camera that serves it.
+// A registration carries the share's TOKEN, and the share's id is the first
+// 64 bits of SHA-256 of it (the camera derives both from the share's key).
+// The relay checks one against the other: the link carries the id and not the
+// token, so only a holder of the key -- the camera, or a guest the share was
+// given to -- can register an id. Among those the newest registration wins,
+// which is the camera's own reconnect.
 //
 // State is in memory: one process, and a camera re-registers its shares
 // whenever it reconnects, so a restart costs a reconnect and nothing else.
@@ -48,6 +49,7 @@ package sharerelay
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
@@ -89,10 +91,18 @@ const (
 	ReapEvery = time.Minute
 )
 
-var (
-	shareID    = regexp.MustCompile(`^[0-9a-f]{16}$`)
-	shareToken = regexp.MustCompile(`^[0-9a-f]{64}$`)
-)
+var shareID = regexp.MustCompile(`^[0-9a-f]{16}$`)
+
+// TokenMatches reports whether token (64 hex) is the one share id was derived
+// from: id is the first 64 bits of SHA-256 of the token's bytes.
+func TokenMatches(id, token string) bool {
+	raw, err := hex.DecodeString(token)
+	if err != nil || len(raw) != 32 || !shareID.MatchString(id) {
+		return false
+	}
+	sum := sha256.Sum256(raw)
+	return subtle.ConstantTimeCompare([]byte(hex.EncodeToString(sum[:8])), []byte(id)) == 1
+}
 
 // Hub pairs page sockets with the camera that registered their share.
 type Hub struct {
@@ -107,7 +117,6 @@ type Hub struct {
 
 type share struct {
 	id      string
-	token   string
 	expires time.Time
 	dev     *device
 	pages   map[string]*page
@@ -298,17 +307,12 @@ func (h *Hub) register(d *device, m deviceMsg) {
 	case exp.After(time.Now().Add(MaxShareLifetime + ClockSkew)):
 		refuse("longer than a share may live")
 		return
-	case !shareToken.MatchString(m.Token):
-		refuse("no token")
+	case !TokenMatches(m.Share, m.Token):
+		refuse("the token is not this share's")
 		return
 	}
 	h.reap(time.Now())
 	if sh, ok := h.shares[m.Share]; ok {
-		if subtle.ConstantTimeCompare([]byte(sh.token), []byte(m.Token)) != 1 {
-			// Not the camera that registered this share first.
-			refuse("registered by another camera")
-			return
-		}
 		if sh.dev != d {
 			// The same camera's new socket racing its old one: the newer
 			// socket is the live one.
@@ -328,18 +332,16 @@ func (h *Hub) register(d *device, m deviceMsg) {
 			refuse("the relay is full")
 			return
 		}
-		sh := &share{id: m.Share, token: m.Token, expires: exp, dev: d, pages: map[string]*page{}}
+		sh := &share{id: m.Share, expires: exp, dev: d, pages: map[string]*page{}}
 		h.shares[sh.id] = sh
 		d.shares[sh.id] = sh
 	}
 	trySend(d.out, marshal(map[string]string{"type": "registered", "share": m.Share}))
 }
 
-// dropDevice detaches a camera's socket from its shares but keeps the shares,
-// token and all, until they expire: the camera will reconnect and re-register,
-// and the registration must still be the one only it can make -- dropping it
-// would hand the id to whoever registered it first during the camera's
-// backoff.
+// dropDevice detaches a camera's socket from its shares but keeps them until
+// they expire, so a page asking in the meantime hears that the camera is
+// offline rather than that the link is not valid.
 func (h *Hub) dropDevice(d *device) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
