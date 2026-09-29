@@ -25,7 +25,7 @@ everything except the file below.
 | host | names | ssh | configuration |
 |---|---|---|---|
 | `194.238.42.216` | openipc.kz, openipc.cloud | `ubuntu@`, port 22, sudo | `kz/`, installed by `kz/push.sh` |
-| `194.58.109.202` (`natrium.zftlab.org`) | openipc.ru, опенипц.рф | root, port 35242, **through the origin**: `ssh -J root@openipc.org:35242 -p 35242 root@194.58.109.202` | `ru.openipc.snippet`, by hand |
+| `194.58.109.202` (`natrium.zftlab.org`) | openipc.ru, опенипц.рф | root, port 35242, **through the origin**: `ssh -J root@openipc.org:35242 -p 35242 root@194.58.109.202` | `ru.openipc.snippet` (wall socket, root redirect), by hand |
 
 natrium's ssh port is filtered from the build host and open from the origin,
 which is what "did not answer" meant here on 2026-09-23 — `-J
@@ -158,6 +158,25 @@ arrangement as the origin and natrium. `--bootstrap` with `HETZNER_DNS_TOKEN`
 issues over DNS-01 for a name that does not point at the host yet, writing the
 token 0600 and shredding it in the same run: Hetzner does not scope DNS tokens
 to a zone, so one left on a mirror could edit openipc.org's.
+
+## The root redirect must let the language picker through (2026-09-29)
+
+openipc.ru and openipc.kz send their bare `/` to `/ru`, and did so
+unconditionally. The language picker's English entry is a link to `/`, so on
+those two names English could not be chosen: the mirror bounced the click back
+to `/ru` before the origin was asked. Chinese (`/zh`) and every inner page
+were unaffected, which is why it looked like one broken menu item.
+
+Both now redirect only a reader who did not come from the same name, and
+proxy `/` to the origin for one who did — the rule the origin's home page
+already applies in the browser. openipc.kz's is in `kz/sites-available/kz.openipc`;
+openipc.ru's is at the end of `ru.openipc.snippet`, **applied by hand
+2026-09-29**. `service/deploytest` holds both. To check a mirror:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -e https://openipc.ru/ru/ https://openipc.ru/   # 200
+curl -s -o /dev/null -w '%{http_code}\n' https://openipc.ru/                             # 302
+```
 
 ## A latent outage found while applying this (2026-09-23)
 
