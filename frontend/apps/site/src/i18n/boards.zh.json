@@ -145,6 +145,32 @@
       "one": "{count} 块主板符合条件",
       "other": "{count} 块主板符合条件"
     },
+    "mfw_builds": {
+      "one": "{count} 个版本",
+      "other": "{count} 个版本"
+    },
+    "mfw_cat_4g": "4G",
+    "mfw_cat_camera": "摄像机模组",
+    "mfw_cat_dvr": "DVR",
+    "mfw_cat_nvr": "NVR",
+    "mfw_cat_other": "",
+    "mfw_cat_wifi": "Wi-Fi",
+    "mfw_collection_pre-2022": "来自 {maker} 2022 年前型号固件合集（百度网盘）",
+    "mfw_customer": "为客户应用定制（{app}）",
+    "mfw_lead": "每个版本对应一种设备类型：模组、其硬件版本（V0、V5）及功能版本（4G、TF 卡、AF 变焦、镜头模组）。只刷写为您的主板制作的版本。按时间从新到旧排列。",
+    "mfw_more": {
+      "one": "显示其余 {count} 种设备类型",
+      "other": "显示其余 {count} 种设备类型"
+    },
+    "mfw_notes": "摄像机模组只提供模组本身的固件；整机厂出货的固件可能是定制扩展功能的固件（AF 聚焦、云台控制、GB28181），升级模组固件后此类功能可能无法使用。用久了的老模组升级有一定挂掉的风险。",
+    "mfw_notes_label": "{maker} 的说明：",
+    "mfw_own": "{maker} 原厂版本",
+    "mfw_source": "{maker} 固件，由 OpenIPC/anjoyupdates 镜像。",
+    "mfw_title": "{maker} 固件",
+    "mfw_types": {
+      "one": "{count} 种设备类型",
+      "other": "{count} 种设备类型"
+    },
     "missing_any": "不限",
     "missing_boot_log": "缺启动日志",
     "missing_flash_dump": "缺闪存转储",

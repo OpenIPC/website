@@ -5,7 +5,7 @@
  * a description that link to other boards. Pure functions, so they are
  * tested without a browser.
  */
-import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model, VendorFirmware } from './types';
+import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model, ModelBuild, VendorFirmware } from './types';
 import type { BoardsState, Missing } from './url';
 
 /** A board model with the manufacturer it is filed under. */
@@ -577,4 +577,20 @@ export function formatDay(iso: string | null, locale: string, utc = false): stri
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? null
     : new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', ...(utc ? { timeZone: 'UTC' } : {}) }).format(d);
+}
+
+/**
+ * A board's builds by the device type each is for and the variant (a
+ * collection's folder) it was filed under, the group with the newest build
+ * first and each group newest first (the list comes newest first).
+ */
+export function buildGroups<B extends Pick<ModelBuild, 'device_type' | 'variant'>>(builds: B[]): { deviceType: string; variant: string | null; builds: B[] }[] {
+  const groups = new Map<string, { deviceType: string; variant: string | null; builds: B[] }>();
+  for (const b of builds) {
+    const k = `${b.device_type}\u0000${b.variant ?? ''}`;
+    const g = groups.get(k) ?? { deviceType: b.device_type, variant: b.variant ?? null, builds: [] };
+    g.builds.push(b);
+    groups.set(k, g);
+  }
+  return [...groups.values()];
 }

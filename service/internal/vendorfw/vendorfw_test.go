@@ -290,3 +290,28 @@ func TestASellersCopyNeverHidesTheVendorsFile(t *testing.T) {
 		t.Errorf("stock %+v, sellers %+v; want the vendor's file and no seller's", d.Stock, d.Sellers)
 	}
 }
+
+func TestAModelKeyedPushNamesADeviceType(t *testing.T) {
+	good := Item{Key: "r12__3.4.0.4", Version: "3.4.0.4", Build: "firmware_MYF18.bin", DeviceType: "MYF18B_V4-AIOT_TF",
+		App: "public", Category: "4g", AssetURL: Sources["anjoyupdates"] + "firmware-archive/r12.bin"}
+	if _, err := Decode(body(t, "anjoyupdates", good)); err != nil {
+		t.Fatalf("a good push: %v", err)
+	}
+	for name, it := range map[string]Item{
+		"an XM device ID":    func() Item { i := good; i.DeviceID = "000559A7"; return i }(),
+		"no device type":     func() Item { i := good; i.DeviceType = ""; return i }(),
+		"a bad category":     func() Item { i := good; i.Category = "toaster"; return i }(),
+		"an unknown collection": func() Item { i := good; i.Collection = "pre-2019"; return i }(),
+		"a variant in Latin": func() Item { i := good; i.Variant = map[string]string{"la": "x"}; return i }(),
+		"another repo":       func() Item { i := good; i.AssetURL = Sources["xmupdates"] + "x/r12.bin"; return i }(),
+	} {
+		if _, err := Decode(body(t, "anjoyupdates", it)); err == nil {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+	// An XM source still needs its device ID.
+	if _, err := Decode(body(t, "xmupdates", Item{Key: "a", Version: "1", Build: "b", DeviceType: "X_V0",
+		AssetURL: Sources["xmupdates"] + "x/a.bin"})); err == nil {
+		t.Error("an xmupdates item without a device ID was accepted")
+	}
+}

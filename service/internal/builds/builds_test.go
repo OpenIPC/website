@@ -321,6 +321,9 @@ func TestVerifier(t *testing.T) {
 		{"OpenIPC/coupler", "OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main", "coupler", true},
 		{"OpenIPC/coupler", "OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main", "xmupdates", false},
 		{"OpenIPC/firmware", "OpenIPC/firmware/.github/workflows/build.yml@refs/heads/main", "firmware", false},
+		{"OpenIPC/anjoyupdates", "OpenIPC/anjoyupdates/.github/workflows/weekly-update.yml@refs/heads/main", "anjoyupdates", true},
+		{"OpenIPC/anjoyupdates", "OpenIPC/anjoyupdates/.github/workflows/weekly-update.yml@refs/heads/main", "xmupdates", false},
+		{"OpenIPC/xmupdates", "OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/main", "anjoyupdates", false},
 	} {
 		c, err := v.Verify(ctx, s.token(t, func(_ *jwt.Claims, m map[string]any) {
 			m["repository"], m["job_workflow_ref"] = tc.repo, tc.ref

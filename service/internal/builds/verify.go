@@ -34,13 +34,15 @@ type Claims struct {
 
 // Who may push which source: the repository and workflow file, on the branch
 // that repository publishes from (master for firmware and builder; main for
-// xmupdates and coupler, vendorfw/PUSH.md).
+// xmupdates, coupler and anjoyupdates, vendorfw/PUSH.md).
 var pushers = map[string][]string{
 	"firmware":  {"OpenIPC/firmware/.github/workflows/build.yml@refs/heads/master"},
 	"builder":   {"OpenIPC/builder/.github/workflows/master.yml@refs/heads/master"},
 	"uboot":     {"OpenIPC/firmware/.github/workflows/uboot.yml@refs/heads/master"},
 	"xmupdates": {"OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
 	"coupler":   {"OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main"},
+	// Anjoy Vision's firmware builds, keyed by board model (vendorfw/PUSH.md).
+	"anjoyupdates": {"OpenIPC/anjoyupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
 }
 
 // Verifier checks a bearer token end to end. Keys come from the issuer's

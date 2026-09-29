@@ -143,6 +143,8 @@ export interface ModelDetail {
   about: About[];
   links: BoardLink[];
   devices?: VendorDevice[];
+  /** The builds a maker whose firmware is keyed by board model (Anjoy Vision) made for this board, newest first. */
+  firmware?: ModelBuild[];
 }
 
 export type TextKind = 'uboot_env' | 'boot_log' | 'note';
@@ -205,6 +207,19 @@ export interface Content {
   /** What the evidence shows: the firmware file's name. */
   label: string | null;
   source: string;
+}
+
+/** A firmware build for a board model, as the maker names it. */
+export interface ModelBuild extends VendorFirmware {
+  /** What it is for: MCA31_V0_BU_LIGHT is module MC-A31, hardware revision V0, a flavour. */
+  device_type: string;
+  /** "public" for the maker's own build, else the customer's tag. */
+  app: string;
+  category?: string | null;
+  /** A collection's variant folder, in the reader's language. */
+  variant?: string | null;
+  /** The collection it came from ("pre-2022"), for builds kept apart from the upgrade server. */
+  collection?: string | null;
 }
 
 export interface VendorDevice {
