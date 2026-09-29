@@ -5,7 +5,7 @@
  * a description that link to other boards. Pure functions, so they are
  * tested without a browser.
  */
-import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model, VendorFirmware } from './types';
+import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model, ModelBuild, VendorFirmware } from './types';
 import type { BoardsState, Missing } from './url';
 
 /** A board model with the manufacturer it is filed under. */
@@ -577,4 +577,14 @@ export function formatDay(iso: string | null, locale: string, utc = false): stri
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? null
     : new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', ...(utc ? { timeZone: 'UTC' } : {}) }).format(d);
+}
+
+/**
+ * A board's builds by the device type each is for, the group with the newest
+ * build first and each group newest first (the list comes newest first).
+ */
+export function buildGroups<B extends Pick<ModelBuild, 'device_type'>>(builds: B[]): { deviceType: string; builds: B[] }[] {
+  const groups = new Map<string, B[]>();
+  for (const b of builds) groups.set(b.device_type, [...(groups.get(b.device_type) ?? []), b]);
+  return [...groups].map(([deviceType, list]) => ({ deviceType, builds: list }));
 }

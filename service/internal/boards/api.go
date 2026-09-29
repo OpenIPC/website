@@ -106,6 +106,9 @@ type modelJSON struct {
 	// Contents are the boards a finished device holds: confirmed by an
 	// owner, or most likely from the vendor's firmware (contents.go).
 	Contents []contentJSON `json:"contents"`
+	// Firmware are the builds made for this board by a maker whose firmware
+	// is keyed by board model (Anjoy Vision's), newest first (modelfw.go).
+	Firmware []vendorfw.Build `json:"firmware"`
 	// ListedYear is the year the maker's catalogue first showed the board,
 	// where a source dates it.
 	ListedYear *int `json:"listed_year"`
@@ -369,6 +372,9 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 		return nil, err
 	}
 	if err := contents(ctx, tx, byModel); err != nil {
+		return nil, err
+	}
+	if err := modelFirmware(ctx, tx, byModel, locale); err != nil {
 		return nil, err
 	}
 	for _, m := range byModel {
@@ -705,7 +711,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 		       (SELECT count(*) FROM board_model_texts) || '|' || (SELECT count(*) FROM board_model_specs) || '|' ||
 		       (SELECT count(*) FROM board_model_tags) || '|' || (SELECT count(*) FROM board_links) || '|' ||
 		       (SELECT coalesce(md5(string_agg(id || ':' || coalesce(listed_year::text, '') || ':' || kind, ',' ORDER BY id)), '') FROM board_models) || '|' ||
-		       (SELECT coalesce(md5(string_agg(source || key || version || asset_url || coalesce(sha256, '') || coalesce(origin, '') || coalesce(origin_url, '') || coalesce(published_at::text, '-'), ',' ORDER BY source, key, version)), '') FROM vendor_firmware) || '|' || (SELECT count(*) FROM board_device_ids) || '|' ||
+		       (SELECT coalesce(md5(string_agg(source || key || version || asset_url || coalesce(sha256, '') || coalesce(origin, '') || coalesce(origin_url, '') || coalesce(published_at::text, '-') || coalesce(device_type, '') || coalesce(app, '') || coalesce(category, '') || coalesce(module, '') || coalesce(variant::text, '') || coalesce(collection, ''), ',' ORDER BY source, key, version)), '') FROM vendor_firmware) || '|' || (SELECT count(*) FROM board_device_ids) || '|' ||
 		       (SELECT coalesce(md5(string_agg(model_id || ':' || board_code || ':' || status || ':' || basis || ':' || source || ':' || evidence || ':' || coalesce(evidence_label, ''), ',' ORDER BY model_id, board_code, source)), '') FROM board_contents)`).Scan(&units, &files, &last, &about); err != nil {
 		a.Log.Error("boards: no revision", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})

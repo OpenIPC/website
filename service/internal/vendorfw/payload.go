@@ -17,7 +17,16 @@ import (
 var Sources = map[string]string{
 	"xmupdates": "https://github.com/OpenIPC/xmupdates/releases/download/",
 	"coupler":   "https://github.com/OpenIPC/coupler/releases/download/",
+	// Anjoy Vision's builds: keyed by device type (the board model), not by
+	// an XM device ID.
+	"anjoyupdates": "https://github.com/OpenIPC/anjoyupdates/releases/download/",
 }
+
+// ByModel are the sources whose items name a device type instead of an XM
+// device ID; they are matched to catalogue boards when read.
+var ByModel = map[string]string{"anjoyupdates": "anjoy"}
+
+var categories = map[string]bool{"camera": true, "wifi": true, "4g": true, "nvr": true, "dvr": true, "other": true}
 
 var (
 	deviceID = regexp.MustCompile(`^[0-9A-Z]{8}$`)
@@ -50,6 +59,51 @@ type Item struct {
 	// vendor's own download page (cctvsp.ru), OriginURL its page there.
 	Origin    string `json:"origin,omitempty"`
 	OriginURL string `json:"origin_url,omitempty"`
+	// For a source keyed by board model (ByModel): what the build is for, as
+	// the maker names it (MCA31_V0_BU_LIGHT), whose build it is (public, or a
+	// customer's tag), its category, and for a collection's builds the module
+	// and variant its folders name and the collection itself.
+	DeviceType string            `json:"device_type,omitempty"`
+	App        string            `json:"app,omitempty"`
+	Category   string            `json:"category,omitempty"`
+	Module     string            `json:"module,omitempty"`
+	Variant    map[string]string `json:"variant,omitempty"`
+	Collection string            `json:"collection,omitempty"`
+}
+
+var (
+	deviceType = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.+-]{0,127}$`)
+	shortTag   = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,32}$`)
+)
+
+// checkModelItem checks an item of a source keyed by board model: a device
+// type, and no XM device ID; its optional fields in their shapes.
+func checkModelItem(it *Item) error {
+	it.DeviceType, it.App, it.Module = strings.TrimSpace(it.DeviceType), strings.TrimSpace(it.App), strings.TrimSpace(it.Module)
+	if it.DeviceID != "" {
+		return fmt.Errorf("device_id is for XM devices; this source names a device_type")
+	}
+	if !deviceType.MatchString(it.DeviceType) {
+		return fmt.Errorf("device_type %q is not a build name", it.DeviceType)
+	}
+	if it.App != "" && !shortTag.MatchString(it.App) {
+		return fmt.Errorf("app %q is not a short tag", it.App)
+	}
+	if it.Category != "" && !categories[it.Category] {
+		return fmt.Errorf("category %q", it.Category)
+	}
+	if it.Module != "" && !deviceType.MatchString(it.Module) {
+		return fmt.Errorf("module %q is not a code", it.Module)
+	}
+	if it.Collection != "" && !origin.MatchString(it.Collection) {
+		return fmt.Errorf("collection %q is not a short lower-case name", it.Collection)
+	}
+	for k, v := range it.Variant {
+		if k != "zh" && k != "en" && k != "ru" || v == "" || len(v) > 300 {
+			return fmt.Errorf("variant %s: a zh, en or ru text of at most 300 bytes", k)
+		}
+	}
+	return nil
 }
 
 func webPage(s string) bool {
@@ -98,7 +152,11 @@ func Decode(doc []byte) (*Payload, error) {
 		if it.Key == "" || it.Version == "" || it.Build == "" {
 			return nil, fmt.Errorf("%s: key, version and build are required", at)
 		}
-		if it.DeviceID = DeviceID(it.DeviceID); it.DeviceID == "" {
+		if _, byModel := ByModel[p.Source]; byModel {
+			if err := checkModelItem(it); err != nil {
+				return nil, fmt.Errorf("%s: %v", at, err)
+			}
+		} else if it.DeviceID = DeviceID(it.DeviceID); it.DeviceID == "" {
 			return nil, fmt.Errorf("%s: device_id is not an 8-character XM device ID", at)
 		}
 		if !strings.HasPrefix(it.AssetURL, prefix) || strings.ContainsAny(it.AssetURL, " \n\"<>") {

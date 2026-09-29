@@ -10,7 +10,7 @@ import ru from '../../i18n/boards.ru.json';
 import zh from '../../i18n/boards.zh.json';
 import {
   KNOWN_LINES, lineLabel,
-  addsIPeye, bySeller, cardFiles, formatDay, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
+  addsIPeye, buildGroups, bySeller, cardFiles, formatDay, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, paragraphs, sensorKey, sensorOptions, slug,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
@@ -555,5 +555,14 @@ describe('product lines', () => {
       expect(missing, locale).toEqual([]);
     }
     expect(lineLabel('PTZ camera module', (k) => (en.boards as unknown as Record<string, Record<string, string>>).product_line[k.split('.')[1]])).toBe('PTZ camera modules');
+  });
+});
+
+describe("a maker's builds for a board model", () => {
+  test('are grouped by the device type each is for, the newest group first', () => {
+    const b = (key: string, device_type: string) => ({ key, device_type });
+    const got = buildGroups([b('r3', 'MCF46-4GD_V5'), b('r2', 'MCF46_V1'), b('r1', 'MCF46-4GD_V5')]);
+    expect(got.map((g) => [g.deviceType, g.builds.map((x) => x.key)])).toEqual([
+      ['MCF46-4GD_V5', ['r3', 'r1']], ['MCF46_V1', ['r2']]]);
   });
 });

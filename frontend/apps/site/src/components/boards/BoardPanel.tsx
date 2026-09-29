@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { BoardLink, LinkKind, ModelDetail, Source } from '../../lib/boards/types';
 import { fetchModel } from '../../lib/boards/api';
 import Firmware from './Firmware';
+import ModelFirmware from './ModelFirmware';
 import {
   HEADING_CLASS, couplerDevices, foundIn, frontPhoto, insideOf, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, subtitle, unitFiles, unitPhotos,
   type CodeIndex, type Entry, type Heading, type Inside,
@@ -190,6 +191,10 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
               <Firmware key={d.id} device={d} heading={t('fw_device', { id: d.id })} note={t('fw_device_hint', { id: d.id })} locale={locale} t={t} />
             ))}
           </section>
+        )}
+
+        {entry && (entry.firmware?.length ?? 0) > 0 && (
+          <ModelFirmware builds={entry.firmware ?? []} maker={entry.maker.name} locale={locale} t={t} />
         )}
 
         {detail.state === 'ok' && detail.value.links.length > 0 && (

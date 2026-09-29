@@ -35,6 +35,7 @@ pull-request events. It must also come from one of these workflows:
 |---|---|---|
 | `xmupdates` | OpenIPC/xmupdates | `OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/main` |
 | `coupler` | OpenIPC/coupler | `OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main` |
+| `anjoyupdates` | OpenIPC/anjoyupdates | `OpenIPC/anjoyupdates/.github/workflows/weekly-update.yml@refs/heads/main` |
 
 The workflow needs `permissions: id-token: write`.
 
@@ -117,3 +118,25 @@ does not wipe the site.
 every stock build newest first, a seller's builds when there is no stock one,
 the newest coupler image, and the catalogue boards known to run the device ID. The board tree (`/api/v1/boards`) gives each board its `devices` in the
 same shape.
+
+## Firmware keyed by board model (`anjoyupdates`)
+
+Anjoy Vision's builds are not keyed by an XM device ID. Each names what it is
+for in its own way, `MCA31_V0_BU_LIGHT` (module MC-A31, hardware revision V0,
+a build flavour), and openipc.org matches it to a catalogue board when read:
+the board of the maker (`anjoy`) whose code, hyphens aside, is the longest
+one the build's `module` (if given) or its `device_type` up to `_V<n>` starts
+with, the match ending where a code can end (MC-A3 does not take MCA31;
+MC-E12 takes MCE12A). An item of this source carries, instead of
+`device_id`:
+
+- `device_type`: required, the maker's name for the build's target;
+- `app`: `public` for the maker's own build, else the customer's tag (`_WTD`);
+- `category`: `camera`, `wifi`, `4g`, `nvr`, `dvr` or `other`;
+- `module`, `variant`, `collection`: for a collection kept apart from the
+  maker's upgrade server (the pre-2022 builds on Baidu Pan): the module and
+  variant its folders name (`variant` as `{"zh", "en", "ru"}`) and the
+  collection's name (`pre-2022`).
+
+The board tree gives each board these builds as `firmware`, newest first,
+the variant in the reader's language.

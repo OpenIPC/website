@@ -16,7 +16,18 @@ func Save(ctx context.Context, db *pgxpool.Pool, p *Payload, by string) (int, er
 		}
 		rows := make([][]any, len(p.Items))
 		for i, it := range p.Items {
-			var sha, soc, org, orgURL *string
+			var sha, soc, org, orgURL, dev, dtype, app, cat, module, coll *string
+			var variant any
+			str := func(v string) *string {
+				if v == "" {
+					return nil
+				}
+				return &v
+			}
+			dev, dtype, app, cat, module, coll = str(it.DeviceID), str(it.DeviceType), str(it.App), str(it.Category), str(it.Module), str(it.Collection)
+			if len(it.Variant) > 0 {
+				variant = it.Variant
+			}
 			if it.SHA256 != "" {
 				sha = &it.SHA256
 			}
@@ -33,13 +44,13 @@ func Save(ctx context.Context, db *pgxpool.Pool, p *Payload, by string) (int, er
 			if it.Size > 0 {
 				size = &it.Size
 			}
-			rows[i] = []any{p.Source, it.Key, it.Version, it.DeviceID, it.Build, it.AssetURL, sha, size, it.PublishedAt, soc, org, orgURL, by}
+			rows[i] = []any{p.Source, it.Key, it.Version, dev, it.Build, it.AssetURL, sha, size, it.PublishedAt, soc, org, orgURL, by, dtype, app, cat, module, variant, coll}
 		}
 		if len(rows) == 0 {
 			return nil
 		}
 		_, err := tx.CopyFrom(ctx, pgx.Identifier{"vendor_firmware"},
-			[]string{"source", "key", "version", "device_id", "build", "asset_url", "sha256", "size", "published_at", "soc", "origin", "origin_url", "pushed_by"},
+			[]string{"source", "key", "version", "device_id", "build", "asset_url", "sha256", "size", "published_at", "soc", "origin", "origin_url", "pushed_by", "device_type", "app", "category", "module", "variant", "collection"},
 			pgx.CopyFromRows(rows))
 		return err
 	})
