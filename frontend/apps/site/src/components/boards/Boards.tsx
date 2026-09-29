@@ -358,8 +358,8 @@ function Card({ m, level, socs, names, sources, t, href, onOpen, catalogue }: Ca
         ? (
           <div class="grid grid-cols-4 gap-0.5 bg-hairline">
             {photos.map((f) => (
-              <Thumb key={f.url} file={f} class="aspect-[4/3]" tag={(f.shared ?? 0) > 1 ? t('tag_shared_photo') : t(`tag_${f.kind}`)}
-                highlight={f.kind === 'pinout' || (f.shared ?? 0) > 1} alt={t('photo_alt', { what: t(`tag_${f.kind}`), board: title })} />
+              <Thumb key={f.url} file={f} class="aspect-[4/3]" tag={(f.shared ?? 0) > 1 ? t('tag_shared') : t(`tag_${f.kind}`)}
+                highlight={f.kind === 'pinout'} shared={(f.shared ?? 0) > 1} alt={t('photo_alt', { what: t(`tag_${f.kind}`), board: title })} />
             ))}
           </div>
         )

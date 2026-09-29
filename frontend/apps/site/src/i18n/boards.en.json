@@ -298,7 +298,6 @@
     "tag_pinout": "pinout",
     "tag_ready": "OpenIPC-ready",
     "tag_shared": "shared",
-    "tag_shared_photo": "shared photo",
     "text_error": "This file could not be loaded ({error}).",
     "text_loading": "Loading…",
     "translated_from_en": "Translated from English",

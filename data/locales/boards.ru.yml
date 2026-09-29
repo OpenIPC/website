@@ -72,8 +72,7 @@ ru:
     tag_photo_back: обратная
     tag_photo_other: фото
     tag_pinout: распиновка
-    tag_shared_photo: общее фото
-    tag_shared: общее фото
+    tag_shared: общее
     shared_title: Общее фото.
     shared_count:
       one: "В каталоге {source} эта фотография показана для {count} платы"

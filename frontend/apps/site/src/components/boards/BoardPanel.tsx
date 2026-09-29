@@ -242,7 +242,7 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
                         const tag = (f.shared ?? 0) > 1 ? [kind, t('tag_shared')].filter(Boolean).join(' · ') : kind;
                         return (
                           <Thumb key={f.url} file={f} class="h-[90px] w-[120px] rounded-md" tag={tag || undefined}
-                            highlight={f.kind === 'pinout'} alt={t('photo_alt', { what: t(`tag_${f.kind}`, { fallback: t('tag_photo_other') }), board: title })} />
+                            highlight={f.kind === 'pinout'} shared={(f.shared ?? 0) > 1} alt={t('photo_alt', { what: t(`tag_${f.kind}`, { fallback: t('tag_photo_other') }), board: title })} />
                         );
                       })}
                     </div>
