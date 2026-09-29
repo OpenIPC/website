@@ -166,6 +166,7 @@ var routes = []Route{
 	{"web", "POST", "/api/v1/vendor-firmware"},
 	{"web", "GET", "/api/v1/vendor-firmware/{deviceId}"},
 	{"web", "POST", "/api/v1/reports"},
+	{"web", "GET", "/api/v1/reports"},
 	{"web", "GET", "/api/v1/reports/{id}"},
 	{"web", "GET", "/api/v1/reports/{id}/files/{position}"},
 	{"web", "POST", "/api/v1/boards/identify"},

@@ -29,6 +29,9 @@ type View struct {
 	// reports come from the same physical board.
 	Models    []ViewModel `json:"models"`
 	SameBoard int         `json:"same_board"`
+	// Guess is, while a report waits for review, the catalogue board it most
+	// likely is -- a name from the catalogue, nothing from the report.
+	Guess *Match `json:"guess,omitempty"`
 }
 
 type ViewFile struct {
@@ -98,6 +101,11 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 		return nil, err
 	}
 	if !published {
+		if v.State == "pending" {
+			if id, err := Identify(ctx, s.DB, f); err == nil && len(id.Matches) > 0 {
+				v.Guess = &id.Matches[0]
+			}
+		}
 		return v, nil
 	}
 	mrows, err := s.DB.Query(ctx, `
@@ -126,6 +134,32 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 		}
 	}
 	return v, nil
+}
+
+// ForModel is every published report linked to one board, newest first:
+// what the board's panel lists.
+func (s *Store) ForModel(ctx context.Context, model string) ([]*View, error) {
+	rows, err := s.DB.Query(ctx, `
+		SELECT r.id FROM reports r JOIN report_models rm ON rm.report_id = r.id
+		WHERE rm.model_id = $1
+		  AND (SELECT decision FROM report_reviews rv WHERE rv.report_id = r.id ORDER BY rv.id DESC LIMIT 1) = 'publish'
+		ORDER BY r.received_at DESC LIMIT 50`, model)
+	if err != nil {
+		return nil, err
+	}
+	ids, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return nil, err
+	}
+	out := []*View{}
+	for _, id := range ids {
+		v, err := s.Public(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, nil
 }
 
 // Served is a published report's file, for the download handler: the stored

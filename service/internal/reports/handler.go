@@ -45,6 +45,7 @@ type API struct {
 func (a *API) Handlers() map[string]http.Handler {
 	return map[string]http.Handler{
 		"POST /api/v1/reports":                      http.HandlerFunc(a.upload),
+		"GET /api/v1/reports":                       http.HandlerFunc(a.forModel),
 		"GET /api/v1/reports/{id}":                  http.HandlerFunc(a.view),
 		"GET /api/v1/reports/{id}/files/{position}": http.HandlerFunc(a.file),
 		"POST /api/v1/boards/identify":              http.HandlerFunc(a.identify),
@@ -416,6 +417,24 @@ func (a *API) view(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, v)
+}
+
+// forModel is GET /api/v1/reports?model=<board model id>: the board's
+// published reports, for its panel.
+func (a *API) forModel(w http.ResponseWriter, r *http.Request) {
+	model := r.URL.Query().Get("model")
+	if model == "" || len(model) > 200 {
+		a.refuse(w, http.StatusBadRequest, "?model= names a board of the catalogue")
+		return
+	}
+	vs, err := a.store().ForModel(r.Context(), model)
+	if err != nil {
+		a.fail(w, "the board's reports", err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=60")
+	_ = json.NewEncoder(w).Encode(map[string]any{"schema": 1, "model": model, "reports": vs})
 }
 
 // file is GET /api/v1/reports/{id}/files/{position}: a published report's

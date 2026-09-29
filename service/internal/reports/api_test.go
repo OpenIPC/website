@@ -121,6 +121,9 @@ func TestAReportIsAReceiptUntilPublishedAndThenNamesNoCamera(t *testing.T) {
 	if v["status"] != "pending" || v["yaml"] != nil || v["facts"] != nil {
 		t.Errorf("an unreviewed report shows its content: %v", v)
 	}
+	if g, _ := v["guess"].(map[string]any); g == nil || g["model_id"] != "xiongmai-50h20l" {
+		t.Errorf("the receipt does not say which board it looks like: %v", v["guess"])
+	}
 	if rec, _ := e.get(t, "/api/v1/reports/"+id+"/files/2"); rec.Code != 404 {
 		t.Errorf("an unreviewed report's photo: %d", rec.Code)
 	}
@@ -387,5 +390,31 @@ func TestANoteFieldIsTheReportsNoteAndANoteFileIsAFile(t *testing.T) {
 	r, _ := (&Store{DB: e.pool}).Private(context.Background(), out.ID)
 	if r.Note != "bought at a market in Shenzhen" {
 		t.Errorf("note %q", r.Note)
+	}
+}
+
+func TestABoardListsOnlyItsPublishedReports(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	st := &Store{DB: e.pool}
+	yaml := fixture(t, "xiongmai-50h20l-readme.yml")
+	var ids []string
+	for i := 0; i < 3; i++ {
+		_, out := e.post(t, upload{fields: map[string]string{"yaml": yaml}}, "203.0.113.20")
+		ids = append(ids, out["id"].(string))
+		_ = st.Link(ctx, ids[i], "xiongmai-50h20l", "test")
+	}
+	_ = st.Review(ctx, ids[0], "publish", "test", "")
+	_ = st.Review(ctx, ids[1], "reject", "test", "")
+	rec, out := e.get(t, "/api/v1/reports?model=xiongmai-50h20l")
+	reports := out["reports"].([]any)
+	if rec.Code != 200 || len(reports) != 1 || reports[0].(map[string]any)["id"] != ids[0] {
+		t.Errorf("%d %s", rec.Code, rec.Body)
+	}
+	if strings.Contains(rec.Body.String(), "3beae2b40d84f889") {
+		t.Error("the cloud ID is in the board's list")
+	}
+	if rec, _ := e.get(t, "/api/v1/reports?model="); rec.Code != 400 {
+		t.Errorf("no model: %d", rec.Code)
 	}
 }

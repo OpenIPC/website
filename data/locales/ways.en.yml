@@ -19,7 +19,7 @@ en:
     buy_text: "These manufacturers and integrators ship cameras with OpenIPC on them. Plug one in and open its web interface."
     buy_title: "Buy one with OpenIPC already installed"
     buy_when: "Easiest · no tools"
-    experts_html: "<strong>Reverse engineering a new camera?</strong> Get a shell on it and run <a href=\"https://github.com/OpenIPC/ipctool\">ipctool</a>, or have an AI coding agent dig through the vendor firmware, then <a href=\"/community\">send us the report</a>. That is how new boards reach this list."
+    experts_html: "<strong>Reverse engineering a new camera?</strong> Get a shell on it and run <a href=\"https://github.com/OpenIPC/ipctool\">ipctool</a>, or have an AI coding agent dig through the vendor firmware, then <a href=\"/cameras/report\">send us the report</a>. That is how new boards reach this list."
     home_all: "All supported hardware"
     home_lede: "You don’t need to know what a SoC is, and none of these needs a soldering iron."
     home_title: "Four ways to get started, easiest first"

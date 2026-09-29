@@ -19,7 +19,7 @@ zh:
     buy_text: "这些制造商和集成商出售预装 OpenIPC 的摄像机。接上电，打开它的网页界面即可。"
     buy_title: "购买预装 OpenIPC 的摄像机"
     buy_when: "最简单 · 无需工具"
-    experts_html: "<strong>在逆向一台新摄像机？</strong>拿到它的命令行后运行 <a href=\"https://github.com/OpenIPC/ipctool\">ipctool</a>，或者让 AI 编程助手去分析厂商固件，然后<a href=\"/community\">把报告发给我们</a>。新的主板就是这样进入这个列表的。"
+    experts_html: "<strong>在逆向一台新摄像机？</strong>拿到它的命令行后运行 <a href=\"https://github.com/OpenIPC/ipctool\">ipctool</a>，或者让 AI 编程助手去分析厂商固件，然后<a href=\"/cameras/report\">把报告发给我们</a>。新的主板就是这样进入这个列表的。"
     home_all: "全部支持的硬件"
     home_lede: "你不需要知道什么是 SoC，而且都不需要烙铁。"
     home_title: "四种入门方式，从最简单的开始"
