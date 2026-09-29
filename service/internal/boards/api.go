@@ -343,6 +343,9 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 	if err != nil {
 		return nil, err
 	}
+	// A source can file one file under several names (tehno32's outline.dxf
+	// and outline-2.dxf ... -5.dxf): a unit lists it once, by its first name.
+	seenFile := map[[2]string]bool{}
 	for rows.Next() {
 		var unit, p, thumb string
 		var f fileJSON
@@ -359,6 +362,10 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 			rows.Close()
 			return nil, fmt.Errorf("file %s: no unit %s", p, unit)
 		}
+		if seenFile[[2]string{unit, f.SHA256}] {
+			continue
+		}
+		seenFile[[2]string{unit, f.SHA256}] = true
 		parent.Files = append(parent.Files, f)
 	}
 	rows.Close()
@@ -524,6 +531,10 @@ func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale
 	if err != nil {
 		return err
 	}
+	// A row a source repeats word for word (a sheet covering two models,
+	// MN3109T and MN3116T) is shown once; rows sharing a label with other
+	// values are a table's sub-rows and all stay.
+	seenSpec := map[[4]string]bool{}
 	for rows.Next() {
 		var k key
 		var l, label, value string
@@ -532,8 +543,11 @@ func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale
 			return err
 		}
 		if chosen[k] == l {
-			a := get(k)
-			a.Specs = append(a.Specs, [2]string{label, value})
+			if s := [4]string{k.model, k.source, label, value}; !seenSpec[s] {
+				seenSpec[s] = true
+				a := get(k)
+				a.Specs = append(a.Specs, [2]string{label, value})
+			}
 		}
 	}
 	rows.Close()
@@ -544,12 +558,21 @@ func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale
 	if err != nil {
 		return err
 	}
+	// A board is linked to another once per kind, whichever sources say so.
+	seenLink := map[[3]string]bool{}
 	for rows.Next() {
 		var id string
 		var l linkJSON
 		if err := rows.Scan(&id, &l.Source, &l.Kind, &l.Label, &l.URL, &l.Target); err != nil {
 			rows.Close()
 			return err
+		}
+		if l.Target != nil {
+			k := [3]string{id, l.Kind, *l.Target}
+			if seenLink[k] {
+				continue
+			}
+			seenLink[k] = true
 		}
 		if m := byModel[id]; m != nil {
 			m.Links = append(m.Links, l)

@@ -342,6 +342,82 @@ func TestAReviewedFamilyLinksBothBoardsWithoutMergingThem(t *testing.T) {
 	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE id IN ('xiongmai-53h20-s', 'xiongmai-ipg-53h20pl-s')`); n != 2 {
 		t.Errorf("%d models: related boards stay two", n)
 	}
+	// Other sources' imports -- one describing the board, one not -- leave
+	// the pair to the source that wrote it rather than adding their own copy.
+	for _, snap := range []fstest.MapFS{donor(t, "cctvsp", model("xiongmai", "IPG-53H20PL-S", nil)), donor(t, "anjoy", model("anjoy", "MC-A31", nil))} {
+		if _, err := im.FromSnapshot(ctx, snap); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_links WHERE kind = 'related' AND model_id IN ('xiongmai-53h20-s', 'xiongmai-ipg-53h20pl-s')`); n != 2 {
+		t.Errorf("%d family links after two more sources' imports, want one each way", n)
+	}
+	// A copy stored before that is shown once.
+	if _, err := pool.Exec(ctx, `INSERT INTO board_links (model_id, source, position, kind, label, target_model_id)
+		VALUES ('xiongmai-53h20-s', 'cctvsp', 20000, 'related', 'IPG-53H20PL-S', 'xiongmai-ipg-53h20pl-s')`); err != nil {
+		t.Fatal(err)
+	}
+	d, err := ModelDetail(ctx, pool, "xiongmai-53h20-s", "en")
+	if err != nil {
+		t.Fatal(err)
+	}
+	related := 0
+	for _, l := range d["links"].([]linkJSON) {
+		if l.Kind == "related" {
+			related++
+		}
+	}
+	if related != 1 {
+		t.Errorf("the detail links the related board %d times, want once", related)
+	}
+}
+
+// A source that files one file under two names, or repeats a spec row word
+// for word, is shown with each once; rows that share a label with other
+// values (a table's sub-rows) all stay.
+func TestTheSameFileAndSpecRowAreShownOnce(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "tehno32", model("xiongmai", "AHB780XR-3520D", map[string]any{
+		"specs": map[string][][2]string{"en": {{"Audio", "2 ch"}, {"Interface", "Video input / 16ch BNC"}, {"Audio", "2 ch"}, {"Interface", "User interface / mouse"}}},
+		"files": []map[string]string{{"kind": "document", "name": "outline.pdf", "path": "files/doc.pdf"}, {"kind": "document", "name": "outline-2.pdf", "path": "files/doc.pdf"}},
+	}))); err != nil {
+		t.Fatal(err)
+	}
+	tree, err := Tree(ctx, pool, "en", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			if mo.ID != "xiongmai-ahb780xr-3520d" {
+				continue
+			}
+			var names []string
+			for _, u := range mo.Units {
+				for _, f := range u.Files {
+					names = append(names, f.Name)
+				}
+			}
+			if strings.Join(names, ",") != "outline.pdf" {
+				t.Errorf("files %v, want the one file once, by its first name", names)
+			}
+		}
+	}
+	d, err := ModelDetail(ctx, pool, "xiongmai-ahb780xr-3520d", "en")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rows []string
+	for _, a := range d["about"].([]*aboutJSON) {
+		for _, s := range a.Specs {
+			rows = append(rows, s[0]+"="+s[1])
+		}
+	}
+	if got := strings.Join(rows, "; "); got != "Audio=2 ch; Interface=Video input / 16ch BNC; Interface=User interface / mouse" {
+		t.Errorf("specs %q", got)
+	}
 }
 
 func TestAFailedSnapshotPublishesNothing(t *testing.T) {

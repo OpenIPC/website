@@ -348,9 +348,11 @@ func (im *Importer) FromSnapshot(ctx context.Context, fsys fs.FS) (int, error) {
 }
 
 // relate adds the reviewed "same family" links, both ways, for every pair
-// whose two boards the catalogue has. They are this import's source's say,
-// at fixed positions past any the source brings, so a re-import rewrites
-// rather than repeats them.
+// whose two boards the catalogue has, at fixed positions past any the source
+// brings, so a re-import rewrites rather than repeats them. The list is
+// OpenIPC's, not the source's: a pair another source's import already wrote
+// is left to it, or every source would add its own copy (five of each once
+// Anjoy Vision's archive was imported).
 func (im *Importer) relate(ctx context.Context, tx pgx.Tx, src string, dec map[[2]string]string) error {
 	list, err := reviewed(im.ExtraAliases)
 	if err != nil {
@@ -375,6 +377,14 @@ func (im *Importer) relate(ctx context.Context, tx pgx.Tx, src string, dec map[[
 		// the same pair written twice, or both ways, links once
 		linked[[2]string{x, y}], linked[[2]string{y, x}] = true, true
 		for _, l := range [][3]string{{x, y, a.Related}, {y, x, a.Code}} {
+			var elsewhere bool
+			if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM board_links WHERE model_id = $1 AND kind = 'related' AND target_model_id = $2 AND source <> $3)`,
+				l[0], l[1], src).Scan(&elsewhere); err != nil {
+				return err
+			}
+			if elsewhere {
+				continue
+			}
 			if _, err := tx.Exec(ctx, `
 				INSERT INTO board_links (model_id, source, position, kind, label, target_model_id)
 				VALUES ($1, $2, $3, 'related', $4, $5)
