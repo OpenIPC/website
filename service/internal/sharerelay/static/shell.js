@@ -1,0 +1,173 @@
+// The share page: reads the link, opens the tunnel to the camera, and shows
+// the camera's own interface through it (or, for a view-only link, a player).
+import { Tunnel, ShareError, concat } from './tunnel.js';
+import { openWebSocket } from './websocket.js';
+
+const $ = (id) => document.getElementById(id);
+const SCOPES = { view: 'can watch', admin: 'can watch and change settings', full: 'full access' };
+
+function notice(title, text, bad) {
+  const n = $('notice') || Object.assign(document.createElement('div'), { id: 'notice' });
+  n.className = 'notice' + (bad ? ' bad' : '');
+  n.innerHTML = '';
+  if (!bad) n.append(Object.assign(document.createElement('div'), { className: 'spin' }));
+  n.append(Object.assign(document.createElement('h1'), { textContent: title }));
+  if (text) n.append(Object.assign(document.createElement('p'), { textContent: text }));
+  $('main').replaceChildren(n);
+}
+
+// The share is the first label of the host (<id>.share.openipc.org); ?share=
+// is for a developer serving the page somewhere else.
+function shareId() {
+  const q = new URLSearchParams(location.search).get('share');
+  return q || location.hostname.split('.')[0];
+}
+
+// The secret arrives in the fragment and is moved out of the address bar at
+// once, into this tab's session storage, so a reload still works and a
+// screenshot or a shoulder does not carry it off.
+function secretFor(id) {
+  const [secret, ...opts] = location.hash.slice(1).split('&');
+  const k = 'share-secret:' + id;
+  if (secret) {
+    sessionStorage.setItem(k, secret);
+    sessionStorage.setItem(k + ':opts', opts.join('&'));
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  return { secret: sessionStorage.getItem(k), opts: new URLSearchParams(sessionStorage.getItem(k + ':opts') || '') };
+}
+
+function countdown(expires) {
+  const tick = () => {
+    const s = Math.max(0, expires - Date.now() / 1000);
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    $('left').textContent = 'Link expires in ' + (d ? `${d} d ${h} h` : h ? `${h} h ${m} min` : `${m} min`);
+  };
+  tick();
+  setInterval(tick, 30000);
+}
+
+let tunnel;
+
+// The service worker hands every camera request to this page, which is the
+// one holding the tunnel.
+const HOP_RESP = new Set(['connection', 'keep-alive', 'transfer-encoding', 'set-cookie', 'upgrade']);
+const SHIM = new TextEncoder().encode('<script src="/__share/shim.js"></script>');
+
+function onWorkerMessage(e) {
+  if (!e.data || e.data.type !== 'fetch') return;
+  const port = e.ports[0];
+  if (!tunnel || tunnel.gone) { port.postMessage({ type: 'error', message: 'not connected' }); return; }
+  const { method, path, headers, body, html } = e.data;
+  let head = null;
+  let parts = null;
+  const get = (n) => (head.headers.find(([k]) => k.toLowerCase() === n) || [])[1];
+  const s = tunnel.request({ method, path, headers, body }, {
+    onHead(h) {
+      head = h;
+      const hdrs = h.headers.filter(([k]) => !HOP_RESP.has(k.toLowerCase()));
+      const msg = { type: 'head', status: h.status, statusText: h.statusText, headers: hdrs,
+        location: get('location'), gzip: /gzip/i.test(get('content-encoding') || '') };
+      if (html && /text\/html/i.test(get('content-type') || '') && !msg.location) {
+        parts = [];
+        head.msg = msg;
+        return;
+      }
+      port.postMessage(msg);
+    },
+    onBody(b) {
+      if (parts) { parts.push(b); return; }
+      const copy = b.slice();
+      port.postMessage({ type: 'body', data: copy.buffer }, [copy.buffer]);
+    },
+    async onEnd() {
+      if (parts) {
+        const msg = head.msg;
+        let bytes = concat(parts);
+        if (msg.gzip) {
+          bytes = new Uint8Array(await new Response(new Blob([bytes]).stream()
+            .pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+          msg.gzip = false;
+          msg.headers = msg.headers.filter(([k]) => k.toLowerCase() !== 'content-encoding');
+        }
+        msg.headers = msg.headers.filter(([k]) => k.toLowerCase() !== 'content-length');
+        port.postMessage(msg);
+        const out = inject(bytes);
+        port.postMessage({ type: 'body', data: out.buffer }, [out.buffer]);
+      }
+      port.postMessage({ type: 'end' });
+    },
+    onError(err) { port.postMessage({ type: 'error', message: String(err && err.message || err) }); },
+  });
+  port.onmessage = (m) => { if (m.data && m.data.type === 'abort' && s.abort) s.abort(); };
+}
+
+// The shim goes first in <head>, before any of the page's own scripts.
+function inject(bytes) {
+  const text = new TextDecoder('latin1').decode(bytes.subarray(0, Math.min(bytes.length, 4096)));
+  const m = /<head[^>]*>/i.exec(text);
+  const at = m ? m.index + m[0].length : 0;
+  return concat([bytes.subarray(0, at), SHIM, bytes.subarray(at)]);
+}
+
+async function worker() {
+  if (!('serviceWorker' in navigator)) throw new ShareError('This browser cannot open shared cameras.');
+  navigator.serviceWorker.addEventListener('message', onWorkerMessage);
+  await navigator.serviceWorker.register('/__share/sw.js', { scope: '/' });
+  await navigator.serviceWorker.ready;
+  if (!navigator.serviceWorker.controller) {
+    await new Promise((r) => navigator.serviceWorker.addEventListener('controllerchange', r, { once: true }));
+  }
+}
+
+async function main() {
+  const id = shareId();
+  const { secret, opts } = secretFor(id);
+  if (!/^[0-9a-f]{16}$/.test(id) || !secret) {
+    notice('This link is not complete', 'Ask the camera’s owner to send the whole link again.', true);
+    return;
+  }
+  try {
+    const ice = await fetch('/__share/ice').then((r) => r.json()).catch(() => ({ iceServers: [] }));
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    tunnel = new Tunnel({
+      signal: `${proto}://${location.host}/__share/signal?share=${id}`,
+      share: id, secret, iceServers: ice.iceServers || [],
+      policy: opts.get('relay') != null ? 'relay' : undefined,
+    });
+    await worker();
+    const welcome = await tunnel.open();
+    window.__share = { openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h), welcome };
+    tunnel.onclose = (why) => {
+      $('bar').hidden = true;
+      notice('The camera is no longer shared with you', why, true);
+    };
+    $('scope').textContent = SCOPES[welcome.scope] || welcome.scope;
+    countdown(welcome.expires);
+    $('bar').hidden = false;
+    $('leave').onclick = () => tunnel.lost('You disconnected.');
+    if (welcome.scope === 'view') {
+      const p = Object.assign(document.createElement('div'), { className: 'player' });
+      p.append(Object.assign(document.createElement('img'), { src: '/mjpeg', alt: 'Live video' }));
+      $('main').replaceChildren(p);
+    } else {
+      const f = document.createElement('iframe');
+      f.title = 'Camera';
+      f.src = location.pathname === '/' ? '/' : location.pathname + location.search;
+      f.addEventListener('load', () => {
+        try {
+          const l = f.contentWindow.location;
+          history.replaceState(null, '', l.pathname + l.search);
+        } catch (e) { /* not ours to read */ }
+      });
+      $('main').replaceChildren(f);
+    }
+    window.__shareReady = welcome;
+  } catch (e) {
+    const known = e instanceof ShareError;
+    notice('Could not open the shared camera', known ? e.message : 'Something went wrong: ' + e.message, true);
+    window.__shareError = e.message;
+  }
+}
+
+main();

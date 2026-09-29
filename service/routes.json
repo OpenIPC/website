@@ -145,6 +145,36 @@
     "path": "/api/v1/tools"
   },
   {
+    "role": "share",
+    "method": "GET",
+    "path": "/up"
+  },
+  {
+    "role": "share",
+    "method": "GET",
+    "path": "/__share/device"
+  },
+  {
+    "role": "share",
+    "method": "GET",
+    "path": "/__share/signal"
+  },
+  {
+    "role": "share",
+    "method": "GET",
+    "path": "/__share/ice"
+  },
+  {
+    "role": "share",
+    "method": "GET",
+    "path": "/__share/"
+  },
+  {
+    "role": "share",
+    "method": "GET",
+    "path": "/"
+  },
+  {
     "role": "firmware",
     "method": "GET",
     "path": "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"

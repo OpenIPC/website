@@ -108,6 +108,17 @@ target_for() {
   esac
 }
 
+# The share role (camera sharing links): the same image and tag, no database,
+# no volumes. Deployed and rolled back with the other two, and judged healthy
+# on its own port.
+#                 service        port
+share_for() {
+  case "$1" in
+    prod) echo "go-share-prod 3004" ;;
+    dev)  echo "go-share-dev  3014" ;;
+  esac
+}
+
 # The image runs as uid 1000. A missing bind-mount source is created root-owned
 # by Docker -- a rebuilt host, a restore -- and the container then fails every
 # write with EACCES while still reporting healthy. Create each with the right
@@ -164,6 +175,8 @@ do_deploy() {
   local web fw web_port fw_port tag_key prev_file fw_cache rel_cache wall_root boards_root reports_root tools_root
   read -r web fw web_port fw_port tag_key prev_file fw_cache rel_cache wall_root boards_root reports_root tools_root <<<"$(target_for "$env_name")"
   local prev_path="${STATE_DIR}/${prev_file}"
+  local share share_port
+  read -r share share_port <<<"$(share_for "$env_name")"
 
   [ -f "/srv/www/.env.go-${env_name}" ] \
     || die "no /srv/www/.env.go-${env_name}: run deploy/install-go-service.sh first"
@@ -216,17 +229,17 @@ do_deploy() {
     die "migration failed; tag left at ${previous:-unchanged}"
   fi
 
-  info "starting ${web} and ${fw}"
-  compose up -d --no-deps "$web" "$fw"
+  info "starting ${web}, ${fw} and ${share}"
+  compose up -d --no-deps "$web" "$fw" "$share"
 
-  if wait_healthy "$web_port" && wait_healthy "$fw_port"; then
+  if wait_healthy "$web_port" && wait_healthy "$fw_port" && wait_healthy "$share_port"; then
     # Record what was running BEFORE this deploy, so `rollback` steps back one
     # release. Recording the current tag would make rollback a no-op.
     if [ -n "$previous" ] && [ "$previous" != "$sha" ]; then
       echo "$previous" > "$prev_path"
     fi
-    ok "${env_name} is serving ${sha} on :${web_port} and :${fw_port}"
-    compose ps "$web" "$fw"
+    ok "${env_name} is serving ${sha} on :${web_port}, :${fw_port} and :${share_port}"
+    compose ps "$web" "$fw" "$share"
     # The NFS export of ipctool's builds follows production's image. It holds
     # no state and nothing depends on it, so it is started, not gated.
     if [ "$env_name" = prod ]; then
@@ -236,11 +249,11 @@ do_deploy() {
   else
     printf '\033[31m==> health check failed; rolling back\033[0m\n' >&2
     echo "--- last 40 log lines ---" >&2
-    compose logs --tail=40 "$web" "$fw" >&2 || true
+    compose logs --tail=40 "$web" "$fw" "$share" >&2 || true
     if [ -n "$previous" ]; then
       env_set "$tag_key" "$previous"
-      compose up -d --no-deps "$web" "$fw"
-      wait_healthy "$web_port" && wait_healthy "$fw_port" \
+      compose up -d --no-deps "$web" "$fw" "$share"
+      wait_healthy "$web_port" && wait_healthy "$fw_port" && wait_healthy "$share_port" \
         && printf '\033[33m==> rolled back to %s\033[0m\n' "$previous" >&2
     fi
     exit 1
@@ -284,7 +297,7 @@ do_status() {
   printf '\ncontainers:\n'
   compose ps 2>/dev/null | sed 's/^/  /'
   printf '\nhealth:\n'
-  for p in 3002 3003 3012 3013; do
+  for p in 3002 3003 3004 3012 3013 3014; do
     printf '  :%s ' "$p"
     curl -fsS --max-time 3 "http://127.0.0.1:${p}/up" >/dev/null 2>&1 && echo "ok" || echo "DOWN"
   done

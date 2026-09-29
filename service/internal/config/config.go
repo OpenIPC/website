@@ -54,6 +54,12 @@ type Config struct {
 	FirmwareCacheMax    int64  // bytes; a backstop, not the eviction policy
 	BuildsPerMinute     int
 	DownloadBase        string
+
+	// Share role.
+	ShareOrigins    []string // SHARE_ORIGINS: host patterns a page's WebSocket may come from
+	ShareSTUN       []string // SHARE_STUN_URLS
+	ShareTURN       []string // SHARE_TURN_URLS
+	ShareTURNSecret []byte   // SHARE_TURN_SECRET, raw: coturn's static-auth-secret
 }
 
 // Load reads everything; Require checks what a given command needs.
@@ -84,6 +90,10 @@ func Load() (*Config, error) {
 		FirmwareCacheMax:    int64(num("FIRMWARE_CACHE_MAX_MB", 4096)) << 20,
 		BuildsPerMinute:     num("FIRMWARE_BUILDS_PER_MINUTE", 6),
 		DownloadBase:        str("RELEASE_DOWNLOAD_BASE", "https://github.com/OpenIPC/firmware/releases/download"),
+		ShareOrigins:        listOr("SHARE_ORIGINS", []string{"*.share.openipc.org"}),
+		ShareSTUN:           listOr("SHARE_STUN_URLS", []string{"stun:stun.cloudflare.com:3478"}),
+		ShareTURN:           list("SHARE_TURN_URLS"),
+		ShareTURNSecret:     []byte(os.Getenv("SHARE_TURN_SECRET")),
 	}
 	if raw := os.Getenv("WALL_GRANT_KEY"); raw != "" {
 		key, err := hex.DecodeString(strings.TrimSpace(raw))
@@ -143,4 +153,11 @@ func list(name string) []string {
 		}
 	}
 	return out
+}
+
+func listOr(name string, fallback []string) []string {
+	if l := list(name); len(l) > 0 {
+		return l
+	}
+	return fallback
 }
