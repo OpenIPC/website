@@ -43,6 +43,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/purge"
 	"github.com/OpenIPC/website/service/internal/reports"
 	"github.com/OpenIPC/website/service/internal/snapshots"
+	"github.com/OpenIPC/website/service/internal/tools"
 	"github.com/OpenIPC/website/service/internal/variants"
 	"github.com/OpenIPC/website/service/internal/vendorfw"
 	"github.com/OpenIPC/website/service/internal/wall"
@@ -167,6 +168,8 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/reports/{id}"},
 	{"web", "GET", "/api/v1/reports/{id}/files/{position}"},
 	{"web", "POST", "/api/v1/boards/identify"},
+	{"web", "PUT", "/api/v1/tools/{name}"},
+	{"web", "GET", "/api/v1/tools"},
 	{"firmware", "GET", "/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 	{"firmware", "GET", "/{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image"},
 }
@@ -359,6 +362,11 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 	// review, and kept apart from everything the board importers touch.
 	for k, h := range (&reports.API{DB: pool, Files: &reports.Files{Root: cfg.ReportsRoot},
 		AccelPrefix: cfg.ReportsAccelPrefix, Log: log}).Handlers() {
+		handlers[k] = h
+	}
+	// ipctool's builds, pushed by its release job (tools/PUSH.md).
+	for k, h := range (&tools.API{Verifier: &builds.LazyVerifier{Issuer: builds.GitHubIssuer},
+		DB: pool, Root: cfg.ToolsRoot, Log: log}).Handlers() {
 		handlers[k] = h
 	}
 	for _, r := range routes {

@@ -122,6 +122,8 @@ server { listen 127.0.0.1:3013; location / { return 200 "GO-FIRMWARE-DEV\n"; } }
 STUB
 install -d -m 0755 /srv/www/shared/firmware
 printf 'IMAGE\n' > /srv/www/shared/firmware/image.bin
+install -d -m 0755 /srv/www/shared/tools
+printf 'IPCTOOL-ARM\n' > /srv/www/shared/tools/ipctool
 install -d -m 0755 /srv/www/shared/owner-reports/sha256/ab
 printf 'REPORT-FILE\n' > /srv/www/shared/owner-reports/sha256/ab/abcd
 
@@ -590,6 +592,17 @@ for probe in "200 POST /api/v1/reports" "200 POST /api/v1/boards/identify" "301 
     fail=1
   fi
 done
+# ipctool for uget: the file over plain HTTP, never a redirect; over HTTPS
+# /ipctool is still the way to the project on GitHub.
+got=$(curl -sS -o /tmp/it -w '%{http_code}' --max-time 5 --http1.0 \
+  --resolve "openipc.org:80:127.0.0.1" "http://openipc.org/ipctool" 2>/dev/null)
+if [ "$got" = 200 ] && grep -q IPCTOOL-ARM /tmp/it; then
+  printf '  %-32s %-5s (the binary, plain HTTP/1.0)\n' /ipctool "$got"
+else
+  printf '  %-32s %-5s MISMATCH: uget cannot fetch ipctool\n' /ipctool "$got"
+  fail=1
+fi
+redirects_to openipc.org /ipctool https://github.com/OpenIPC/ipctool/
 expect /api/v1/reports/r-x          200 go     hsts
 expect /api/v1/reports/r-test/files/1 200 go   hsts
 grep -q REPORT-FILE /tmp/b || { echo "  a report's file did not reach /report-files/"; fail=1; }

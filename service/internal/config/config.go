@@ -37,6 +37,10 @@ type Config struct {
 	// hands a published file to nginx's internal location ReportsAccelPrefix.
 	ReportsRoot        string
 	ReportsAccelPrefix string
+	// ipctool's builds, pushed by its release job and served by nginx over
+	// plain HTTP at http://openipc.org/<name> (internal/tools); the NFS role
+	// exports the same directory read-only.
+	ToolsRoot string
 
 	// Firmware role.
 	CatalogueDir        string
@@ -66,6 +70,7 @@ func Load() (*Config, error) {
 		BoardsRoot:          str("BOARDS_ROOT", "/srv/boards"),
 		ReportsRoot:         str("REPORTS_ROOT", "/srv/owner-reports"),
 		ReportsAccelPrefix:  str("REPORTS_ACCEL_PREFIX", "/report-files/"),
+		ToolsRoot:           str("TOOLS_ROOT", "/srv/tools"),
 		CatalogueDir:        str("CATALOGUE_DIR", "/app/catalogue"),
 		ReleaseCacheRoot:    str("RELEASE_CACHE_ROOT", "/srv/release-cache"),
 		FirmwareCacheRoot:   str("FIRMWARE_CACHE_ROOT", "/srv/firmware"),

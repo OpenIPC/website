@@ -99,11 +99,11 @@ env_set() {
 
 warn() { printf '\033[33m==>\033[0m %s\n' "$*" >&2; }
 
-#            web         firmware          ports      tag         rollback file  firmware cache                 release cache                          wall                    boards                    owner reports
+#            web         firmware          ports      tag         rollback file  firmware cache                 release cache                          wall                    boards                    owner reports                     tools
 target_for() {
   case "$1" in
-    prod) echo "go-web-prod go-firmware-prod 3002 3003 GO_PROD_TAG .previous-prod /srv/www/shared/firmware     /srv/www/shared/go-release-cache     /srv/www/shared/wall     /srv/www/shared/boards     /srv/www/shared/owner-reports" ;;
-    dev)  echo "go-web-dev  go-firmware-dev  3012 3013 GO_DEV_TAG  .previous-dev  /srv/www/shared/dev-firmware /srv/www/shared/dev-go-release-cache /srv/www/shared/dev-wall /srv/www/shared/dev-boards /srv/www/shared/dev-owner-reports" ;;
+    prod) echo "go-web-prod go-firmware-prod 3002 3003 GO_PROD_TAG .previous-prod /srv/www/shared/firmware     /srv/www/shared/go-release-cache     /srv/www/shared/wall     /srv/www/shared/boards     /srv/www/shared/owner-reports     /srv/www/shared/tools" ;;
+    dev)  echo "go-web-dev  go-firmware-dev  3012 3013 GO_DEV_TAG  .previous-dev  /srv/www/shared/dev-firmware /srv/www/shared/dev-go-release-cache /srv/www/shared/dev-wall /srv/www/shared/dev-boards /srv/www/shared/dev-owner-reports /srv/www/shared/dev-tools" ;;
     *)    die "unknown target '$1' (expected prod or dev)" ;;
   esac
 }
@@ -161,8 +161,8 @@ do_deploy() {
   # off $1 rather than env_name below so it can stay first.
   checkout_warn "$CHECKOUT_DIR" "$(checkout_branch_for "${1:-prod}")"
   local env_name=$1 sha=${2:-latest}
-  local web fw web_port fw_port tag_key prev_file fw_cache rel_cache wall_root boards_root reports_root
-  read -r web fw web_port fw_port tag_key prev_file fw_cache rel_cache wall_root boards_root reports_root <<<"$(target_for "$env_name")"
+  local web fw web_port fw_port tag_key prev_file fw_cache rel_cache wall_root boards_root reports_root tools_root
+  read -r web fw web_port fw_port tag_key prev_file fw_cache rel_cache wall_root boards_root reports_root tools_root <<<"$(target_for "$env_name")"
   local prev_path="${STATE_DIR}/${prev_file}"
 
   [ -f "/srv/www/.env.go-${env_name}" ] \
@@ -180,6 +180,8 @@ do_deploy() {
   # role. Not /srv/www/shared/reports: that is the analytics' directory, and
   # dev serves it to anyone with the staging password.
   ensure_uid_1000_root "$reports_root"
+  # ipctool's builds, pushed by its release job, served by nginx on port 80.
+  ensure_uid_1000_root "$tools_root"
   install_legacy_images
 
   local previous

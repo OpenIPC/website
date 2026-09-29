@@ -53,6 +53,7 @@ services:
       - /srv/www/shared/wall:/srv/wall
       - /srv/www/shared/boards:/srv/boards
       - /srv/www/shared/owner-reports:/srv/owner-reports
+      - /srv/www/shared/tools:/srv/tools
 
   go-firmware-prod:
     <<: *go-common
@@ -90,6 +91,7 @@ services:
       - /srv/www/shared/dev-wall:/srv/wall
       - /srv/www/shared/dev-boards:/srv/boards
       - /srv/www/shared/dev-owner-reports:/srv/owner-reports
+      - /srv/www/shared/dev-tools:/srv/tools
 
   go-firmware-dev:
     <<: *go-common

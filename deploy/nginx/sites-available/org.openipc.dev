@@ -24,6 +24,17 @@ server {
         return 301 https://$host$request_uri;
     }
 
+    # ipctool's builds for a camera on stock firmware, whose only downloader
+    # is uget: plain HTTP, port 80, no redirects (internal/tools). Over HTTPS
+    # /ipctool still leads a browser to the project on GitHub.
+    location ~ ^/(ipctool|ipctool-mips32|ipctool-arm64)$ {
+        alias /srv/www/shared/dev-tools/$1;
+        default_type application/octet-stream;
+        add_header Cache-Control "no-cache" always;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By nginx always;
+    }
+
     # ipctool uploads a report over plain HTTP: stock camera firmware has no
     # TLS. Only the upload and identify are answered here; everything else
     # redirects.
