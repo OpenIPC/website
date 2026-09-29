@@ -29,6 +29,7 @@ key the wall JSON signs them with.
 | `builds import-history [--keep 90] [--kconfig-all] [--skip-builder]` | once per environment: the builds GitHub still holds, into PostgreSQL |
 | `boards import-openhisiipcam [--from <dir>]` | once per environment: the OpenHisiIpCam board archive (firmware#659, pinned commit) into the board catalogue, its files under `BOARDS_ROOT`; a second run adds nothing. Run it in the web container, which mounts that directory |
 | `reports list\|show\|publish\|reject\|link\|unlink\|takedown\|verify` | the owner reports' review queue (`internal/reports`): nothing a camera owner or an agent sends is public until `publish`; `takedown` is the one way a report's content is ever removed; `verify` re-hashes every stored file and runs nightly |
+| `serve --role nfs` | ipctool's builds from `TOOLS_ROOT`, read-only over NFS (portmapper :111, MOUNT and NFS :2049, UDP and TCP), for cameras on stock firmware; no database |
 | `routes --json` | the routes table |
 | `version` | the commit the binary was built from |
 

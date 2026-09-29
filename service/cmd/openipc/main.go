@@ -3,6 +3,7 @@
 //
 //	openipc serve --role web       uploads, variants, the wall, build pushes  (:3002)
 //	openipc serve --role firmware  full images, their stats, the wizard, availability  (:3003)
+//	openipc serve --role nfs       ipctool's builds, read-only over NFS, for stock firmware  (:111, :2049)
 //	openipc migrate                bring PostgreSQL to this binary's schema
 //	openipc purge [--snapshots] [--firmware] [--builds]   nightly retention
 //	openipc probe                  nightly health numbers, non-zero on trouble
@@ -193,9 +194,12 @@ func prefixed(next http.Handler) http.Handler {
 
 func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, args []string) error {
 	fs := flag.NewFlagSet("serve", flag.ExitOnError)
-	role := fs.String("role", "", "web or firmware")
+	role := fs.String("role", "", "web, firmware or nfs")
 	listen := fs.String("listen", cfg.Listen, "address to listen on")
 	_ = fs.Parse(args)
+	if *role == "nfs" {
+		return nfsRole(ctx, cfg, log.With("role", "nfs", "version", version))
+	}
 	if *listen == "" {
 		*listen = map[string]string{"web": ":3002", "firmware": ":3003"}[*role]
 	}
@@ -237,7 +241,7 @@ func serve(ctx context.Context, cfg *config.Config, log *slog.Logger, args []str
 		}
 		background = append(background, stopBg)
 	default:
-		return fmt.Errorf("--role must be web or firmware")
+		return fmt.Errorf("--role must be web, firmware or nfs")
 	}
 
 	srv := &http.Server{

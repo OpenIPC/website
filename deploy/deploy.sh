@@ -227,6 +227,11 @@ do_deploy() {
     fi
     ok "${env_name} is serving ${sha} on :${web_port} and :${fw_port}"
     compose ps "$web" "$fw"
+    # The NFS export of ipctool's builds follows production's image. It holds
+    # no state and nothing depends on it, so it is started, not gated.
+    if [ "$env_name" = prod ]; then
+      compose up -d --no-deps go-nfs || warn "the NFS export (go-nfs) did not start"
+    fi
     check_analytics
   else
     printf '\033[31m==> health check failed; rolling back\033[0m\n' >&2
