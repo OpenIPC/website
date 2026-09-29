@@ -929,7 +929,6 @@
     "home_lede": "You don’t need to know what a SoC is, and none of these needs a soldering iron.",
     "home_title": "Four ways to get started, easiest first",
     "lede": "Four ways, easiest first. The first two need no tools at all, and none of them needs a soldering iron.",
-    "nav_label": "Four ways to get OpenIPC",
     "open_chip_html": "The chip is the largest square one, often under a metal plate. Its top line reads like <code>SSC335</code>, <code>T31X</code> or <code>Hi3516EV300</code>.",
     "open_home_cta": "Identify my board",
     "open_home_text": "Match the board against more than a thousand photographed ones, or read the chip.",

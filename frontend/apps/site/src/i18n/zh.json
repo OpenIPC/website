@@ -929,7 +929,6 @@
     "home_lede": "你不需要知道什么是 SoC，而且都不需要烙铁。",
     "home_title": "四种入门方式，从最简单的开始",
     "lede": "四种方式，从最简单的开始。前两种完全不需要工具，而且都不需要烙铁。",
-    "nav_label": "获取 OpenIPC 的四种方式",
     "open_chip_html": "芯片是最大的那颗方形芯片，常在金属片下面。它第一行的丝印类似 <code>SSC335</code>、<code>T31X</code> 或 <code>Hi3516EV300</code>。",
     "open_home_cta": "识别我的主板",
     "open_home_text": "把主板和一千多块已拍照的主板对比，或者读芯片丝印。",
