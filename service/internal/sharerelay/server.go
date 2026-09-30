@@ -128,11 +128,13 @@ func Handlers(h *Hub, ice ICE) map[string]http.Handler {
 	return map[string]http.Handler{
 		// What deploy.sh waits on, as it does for the other roles. Exact, so
 		// it does not shadow the shell at /up... on a share host nothing does.
-		"GET /up":             up,
-		"GET /__share/device": h.Device(),
-		"GET /__share/signal": h.Signal(),
-		"GET /__share/ice":    ice,
-		"GET /__share/":       assets,
-		"GET /":               shell,
+		"GET /up":                 up,
+		"GET /__share/device":     h.Device(),
+		"GET /__share/signal":     h.Signal(),
+		"POST /__share/signal":    h.SignalStream(),
+		"POST /__share/candidate": h.Candidate(),
+		"GET /__share/ice":        ice,
+		"GET /__share/":           assets,
+		"GET /":                   shell,
 	}
 }

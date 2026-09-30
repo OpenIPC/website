@@ -227,9 +227,8 @@ async function main() {
     const iceServers = relayToken(secret)
       .then((token) => fetch(`/__share/ice?share=${id}`, { signal: ctl.signal, headers: { 'X-Share-Token': token } }))
       .then((r) => r.json()).then((ice) => ice.iceServers || []).catch(() => []);
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     tunnel = new Tunnel({
-      signal: `${proto}://${location.host}/__share/signal?share=${id}`,
+      signal: `${location.origin}/__share/signal?share=${id}`,
       share: id, secret, iceServers,
       policy: opts.get('relay') != null ? 'relay' : undefined,
       trace,

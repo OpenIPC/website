@@ -35,6 +35,15 @@
 //     "candidate","data":...} out, {"reply":...,"data":...,"mid":...} in. The
 //     relay tags each page socket with a session id and forwards.
 //
+//     The same session also runs on the page's open HTTP/2 connection, which
+//     a WebSocket cannot use: every socket is a new TCP and TLS handshake
+//     through the front door, 0.13 s more than a request on the connection
+//     the page already holds, and on the critical path of every open.
+//     POST /__share/signal?share=<id> carries the offer and answers with a
+//     stream of the same replies, one JSON object per line, the first being
+//     {"reply":"session","data":"<sid>"}; the page's candidates follow as
+//     POST /__share/candidate?share=<id>&session=<sid>.
+//
 //     relay  -> {"reply":"closed","data":"<why>","ended":"true"} when the
 //     share itself ended (revoked or expired). A connected page acts on it:
 //     the camera says so too, with BYE, but it closes the transport at once,
@@ -61,8 +70,11 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"path"
 	"regexp"
 	"strings"
 	"sync"
@@ -583,7 +595,9 @@ func (h *Hub) detach(p *page) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.dropPage(p)
-	p.conn.Close(websocket.StatusNormalClosure, "")
+	if p.conn != nil {
+		p.conn.Close(websocket.StatusNormalClosure, "")
+	}
 }
 
 // Stats is what /__share/stats reports, for the operator.
@@ -612,4 +626,122 @@ func clientIP(r *http.Request) string {
 		return ip
 	}
 	return r.RemoteAddr
+}
+
+// originAllowed is the WebSocket library's rule for a plain request: the
+// page's own host, or one of OriginPatterns. A POST from another site's page
+// could otherwise open sessions in a guest's name.
+func (h *Hub) originAllowed(r *http.Request) bool {
+	o := r.Header.Get("Origin")
+	if o == "" {
+		return false
+	}
+	u, err := url.Parse(o)
+	if err != nil {
+		return false
+	}
+	if strings.EqualFold(u.Host, r.Host) {
+		return true
+	}
+	for _, pat := range h.OriginPatterns {
+		if ok, _ := path.Match(strings.ToLower(pat), strings.ToLower(u.Host)); ok {
+			return true
+		}
+	}
+	return false
+}
+
+func readSmall(r *http.Request) ([]byte, bool) {
+	b, err := io.ReadAll(io.LimitReader(r.Body, MaxMessage+1))
+	return b, err == nil && len(b) <= MaxMessage
+}
+
+// SignalStream is POST /__share/signal: a page's session on the connection it
+// already has open. The body is the offer; the reply streams the camera's
+// answers for as long as a WebSocket session would last.
+func (h *Hub) SignalStream() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !h.originAllowed(r) {
+			http.Error(w, "not from a share page", http.StatusForbidden)
+			return
+		}
+		// Through ResponseController: the service's request log wraps the
+		// writer, and only unwraps for it.
+		rc := http.NewResponseController(w)
+		body, small := readSmall(r)
+		var m struct {
+			Req  string `json:"req"`
+			Data string `json:"data"`
+		}
+		if !small || json.Unmarshal(body, &m) != nil || m.Req != "offer" {
+			http.Error(w, "an offer is expected", http.StatusBadRequest)
+			return
+		}
+		hd := w.Header()
+		hd.Set("Content-Type", "application/x-ndjson")
+		hd.Set("Cache-Control", "no-store")
+		hd.Set("X-Accel-Buffering", "no")
+		// Each line has ten seconds to leave: a page that stops reading
+		// would otherwise block the write, and with it the lifetime check
+		// and the release of its session slot.
+		line := func(b []byte) bool {
+			_ = rc.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if _, err := w.Write(append(b, '\n')); err != nil {
+				return false
+			}
+			return rc.Flush() == nil
+		}
+		p, why := h.attach(ShareFromRequest(r), nil)
+		if p == nil {
+			line(marshal(map[string]string{"reply": "error", "data": why}))
+			return
+		}
+		defer h.detach(p)
+		if !line(marshal(map[string]string{"reply": "session", "data": p.sid})) {
+			return
+		}
+		h.forward(p, "offer", m.Data)
+		// As long as a socket session, and no longer: see Signal.
+		ctx, cancel := context.WithTimeout(r.Context(), PageLifetime)
+		defer cancel()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg, ok := <-p.out:
+				if !ok || !line(msg) {
+					return
+				}
+			}
+		}
+	})
+}
+
+// Candidate is POST /__share/candidate: one of the page's ICE candidates, for
+// the streamed session it names.
+func (h *Hub) Candidate() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !h.originAllowed(r) {
+			http.Error(w, "not from a share page", http.StatusForbidden)
+			return
+		}
+		body, small := readSmall(r)
+		if !small {
+			http.Error(w, "too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		id, sid := ShareFromRequest(r), r.URL.Query().Get("session")
+		h.mu.Lock()
+		var p *page
+		if sh := h.shares[id]; sh != nil {
+			p = sh.pages[sid]
+		}
+		h.mu.Unlock()
+		if p == nil || p.conn != nil {
+			http.Error(w, "no such session", http.StatusNotFound)
+			return
+		}
+		h.forward(p, "candidate", string(body))
+		w.WriteHeader(http.StatusNoContent)
+	})
 }

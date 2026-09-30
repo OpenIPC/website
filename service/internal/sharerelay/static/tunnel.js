@@ -60,6 +60,92 @@ export async function proof(key, who, share, pageNonce, cameraNonce, cameraFp, p
 
 export class ShareError extends Error {}
 
+// Signalling to the relay on the connection the page already holds: the
+// offer goes up as a POST whose response streams the relay's replies, one
+// JSON object per line, and the page's candidates follow as POSTs of their
+// own. A WebSocket would cost a new TCP and TLS handshake through the front
+// door first -- measured at 0.13 s more, on the critical path of every open.
+// It looks like a WebSocket to open() below; the camera's own signalling, on
+// its own network, is a real one.
+class StreamSignal {
+  constructor(url, trace = () => {}) {
+    this.url = url;
+    this.trace = trace;
+    this.readyState = 1; // nothing to open: the offer is the first request
+    this.ctl = new AbortController();
+    this.sid = null;
+    this.early = []; // candidates made before the relay named the session
+    queueMicrotask(() => this.onopen && this.onopen());
+  }
+
+  send(text) {
+    const m = JSON.parse(text);
+    if (m.req === 'offer') this.stream(text);
+    else if (this.sid) this.candidate(m.data);
+    else this.early.push(m.data);
+  }
+
+  // One retry for a network failure or a relay error; a candidate that still
+  // does not go is said in the trace. It is not the end of the session: ICE
+  // usually succeeds on the others, and a failure there is reported anyway.
+  candidate(data, retry = true) {
+    const u = this.url.replace('/__share/signal', '/__share/candidate') + '&session=' + this.sid;
+    const failed = (why) => {
+      if (this.readyState === 3) return;
+      if (retry) setTimeout(() => this.candidate(data, false), 200);
+      else this.trace('candidate not delivered', why);
+    };
+    fetch(u, { method: 'POST', body: data, signal: this.ctl.signal })
+      // Read to its end, empty as it is: Chrome counts a response nobody
+      // read as an aborted request, although the relay has it.
+      .then(async (r) => { await r.arrayBuffer(); if (!r.ok) failed(`HTTP ${r.status}`); })
+      .catch((e) => failed(String(e && e.message || e)));
+  }
+
+  async stream(offer) {
+    try {
+      const r = await fetch(this.url, { method: 'POST', body: offer, signal: this.ctl.signal });
+      if (!r.ok || !r.body) throw new Error(`HTTP ${r.status}`);
+      const reader = r.body.pipeThrough(new TextDecoderStream()).getReader();
+      let buf = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += value;
+        let i;
+        while ((i = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, i);
+          buf = buf.slice(i + 1);
+          if (!line) continue;
+          const m = JSON.parse(line);
+          if (m.reply === 'session') {
+            this.sid = m.data;
+            for (const c of this.early.splice(0)) this.candidate(c);
+            continue;
+          }
+          if (this.onmessage) this.onmessage({ data: line });
+        }
+      }
+      this.finish(1000, '');
+    } catch (e) {
+      if (this.readyState === 3) return;
+      if (this.onerror) this.onerror(e);
+      this.finish(1006, String(e && e.message || e));
+    }
+  }
+
+  finish(code, reason) {
+    if (this.readyState === 3) return;
+    this.readyState = 3;
+    if (this.onclose) this.onclose({ code, reason });
+  }
+
+  close() {
+    this.ctl.abort();
+    this.finish(1000, '');
+  }
+}
+
 // "the owner revoked this link" -> "The owner revoked this link."
 function sentence(s) {
   if (!s) return '';
@@ -94,8 +180,8 @@ export function unreachableByRelay(c) {
 }
 
 export class Tunnel {
-  // signal: a WebSocket URL speaking the camera's signalling protocol, the
-  // relay's or the camera's own. iceServers: for the RTCPeerConnection, or a
+  // signal: where the camera's signalling protocol is spoken -- the relay's
+  // (https://, streamed on the page's connection) or the camera's own (ws://). iceServers: for the RTCPeerConnection, or a
   // promise of them -- the signalling socket does not wait for it.
   constructor({ signal, share, secret, iceServers = [], policy, trace = () => {} }) {
     Object.assign(this, { signal, share, secret, iceServers, policy, trace });
@@ -125,7 +211,7 @@ export class Tunnel {
       // runs while the ICE servers are still arriving, instead of after them.
       // The peer connection is made when they do, and the offer goes once
       // both the socket and the connection are there.
-      const ws = (this.ws = new WebSocket(this.signal));
+      const ws = (this.ws = /^https?:/.test(this.signal) ? new StreamSignal(this.signal, this.trace) : new WebSocket(this.signal));
       let pc = null;
       let dc = null;
       let offered = false;
