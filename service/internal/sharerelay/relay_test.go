@@ -292,14 +292,19 @@ func TestTURNCredentialsFollowTheRESTConvention(t *testing.T) {
 	}
 }
 
-// A relay is given only to a page of a share a camera is serving right now:
-// the endpoint is public, and TURN credentials are bandwidth.
-func TestTURNIsOnlyForALiveShare(t *testing.T) {
+// A relay is given only to a page that shows the share's token -- which takes
+// the link's secret to derive -- of a share a camera is serving right now:
+// the endpoint is public, the id is in the host name, and TURN credentials
+// are bandwidth.
+func TestTURNIsOnlyForAHolderOfALiveShare(t *testing.T) {
 	_, srv := rig(t)
-	turn := func(host string) bool {
+	turn := func(host, tok string) bool {
 		t.Helper()
 		req, _ := http.NewRequest("GET", srv.URL+"/__share/ice", nil)
 		req.Host = host
+		if tok != "" {
+			req.Header.Set("X-Share-Token", tok)
+		}
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			t.Fatal(err)
@@ -319,19 +324,25 @@ func TestTURNIsOnlyForALiveShare(t *testing.T) {
 		return false
 	}
 	host := id + ".share.openipc.org"
-	if turn(host) {
+	if turn(host, token) {
 		t.Fatal("TURN for a share no camera has registered")
 	}
-	if turn("share.openipc.org") {
-		t.Fatal("TURN without a share")
-	}
 	cam := register(t, srv, time.Now().Add(time.Hour))
-	if !turn(host) {
+	if !turn(host, token) {
 		t.Fatal("no TURN for a live share")
+	}
+	if turn(host, "") {
+		t.Fatal("TURN for the host name alone")
+	}
+	if turn(host, strings.Repeat("0", 64)) {
+		t.Fatal("TURN for a token that is not the share's")
+	}
+	if turn("share.openipc.org", token) {
+		t.Fatal("TURN without a share")
 	}
 	cam.Close(websocket.StatusNormalClosure, "")
 	deadline := time.Now().Add(5 * time.Second)
-	for turn(host) {
+	for turn(host, token) {
 		if time.Now().After(deadline) {
 			t.Fatal("TURN still offered after the camera left")
 		}

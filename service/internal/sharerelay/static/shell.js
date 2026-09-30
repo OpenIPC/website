@@ -1,6 +1,6 @@
 // The share page: reads the link, opens the tunnel to the camera, and shows
 // the camera's own interface through it (or, for a view-only link, a player).
-import { Tunnel, ShareError, concat } from './tunnel.js';
+import { Tunnel, ShareError, concat, relayToken } from './tunnel.js';
 import { openWebSocket } from './websocket.js';
 import { trace, detailsControl } from './diag.js';
 
@@ -200,7 +200,9 @@ async function main() {
     trace('stage', stage);
     const ctl = new AbortController();
     setTimeout(() => ctl.abort(), 8000);
-    const ice = await fetch('/__share/ice', { signal: ctl.signal }).then((r) => r.json()).catch(() => ({ iceServers: [] }));
+    const ice = await fetch(`/__share/ice?share=${id}`, {
+      signal: ctl.signal, headers: { 'X-Share-Token': await relayToken(secret) },
+    }).then((r) => r.json()).catch(() => ({ iceServers: [] }));
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     tunnel = new Tunnel({
       signal: `${proto}://${location.host}/__share/signal?share=${id}`,

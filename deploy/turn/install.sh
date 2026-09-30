@@ -26,7 +26,9 @@ SRC="$(cd "$(dirname "$0")" && pwd)"
 SSH=(ssh -o BatchMode=yes "$@")
 
 secret="$(tr -d '\n' <"$TURN_SECRET_FILE")"
-[ ${#secret} -ge 32 ] || { echo "secret too short" >&2; exit 1; }
+# Hex or alphanumeric only: it is spliced into the config with sed, and the
+# share role and coturn must end up holding byte-for-byte the same string.
+[[ "$secret" =~ ^[A-Za-z0-9]{32,}$ ]] || { echo "secret must be 32+ letters and digits (openssl rand -hex 32)" >&2; exit 1; }
 
 render() { sed -e "s/@IP@/$IP/g" -e "s/@SECRET@/$secret/" "$SRC/turnserver.conf"; }
 
@@ -43,7 +45,8 @@ if [ "${TURN_DOCKER:-0}" = 1 ]; then
         --log-opt max-size=10m --log-opt max-file=3 \
         -v /etc/coturn-share/turnserver.conf:/etc/coturn/turnserver.conf:ro \
         $IMAGE -c /etc/coturn/turnserver.conf --log-file=stdout >/dev/null &&
-      sleep 2 && docker inspect -f {{.State.Status}} coturn-share'"
+      sleep 2 && test \"\$(docker inspect -f {{.State.Status}} coturn-share)\" = running &&
+      echo running'"
   exit
 fi
 

@@ -16,8 +16,9 @@ import (
 //
 // TURN credentials follow the TURN REST convention coturn implements
 // (use-auth-secret): username "<expiry>:<share id>", password
-// base64(HMAC-SHA1(secret, username)). They are handed only to a page of a
-// share that is live right now, and they expire CredentialLifetime later: the
+// base64(HMAC-SHA1(secret, username)). They are handed only to a page that
+// shows the share's relay token -- which takes the link's secret to derive --
+// of a share that is live right now, and they expire CredentialLifetime later: the
 // relay checks them when the page allocates, which it does within seconds of
 // asking, and keeps the allocation it granted for as long as the page
 // refreshes it. So a credential copied out of a page is worth minutes of
@@ -58,8 +59,11 @@ func (i ICE) Servers(now time.Time, id string) []iceServer {
 func (i ICE) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
+	// The id is in the page's host name, so anyone can name it; the token it
+	// derives from takes the link's secret to compute (and never appears in
+	// a URL, where it would be logged).
 	id := ShareFromRequest(r)
-	if !shareID.MatchString(id) || i.Live == nil || !i.Live(id) {
+	if !TokenMatches(id, r.Header.Get("X-Share-Token")) || i.Live == nil || !i.Live(id) {
 		id = ""
 	}
 	_ = json.NewEncoder(w).Encode(map[string]any{"iceServers": i.Servers(time.Now(), id)})

@@ -67,7 +67,9 @@ SHARE_TURN_URLS=turn:openipc.org:3478?transport=udp,turn:openipc.kz:3478?transpo
 The page is given every URL and ICE keeps whichever relay works; a direct
 path, when there is one, still wins over all of them.
 
-**Credentials.** `/__share/ice` issues a TURN credential only to a page of a
+**Credentials.** `/__share/ice` issues a TURN credential only to a page that
+sends the share's relay token (`X-Share-Token`, derived from the link's
+secret; the share id alone is in the host name and proves nothing) for a
 share a camera is serving right now, and it expires five minutes later, named
 `<expiry>:<share id>` so coturn's log says whose relay it was. coturn checks
 it when the page allocates; an allocation it granted lives on for as long as
@@ -89,7 +91,8 @@ TURN_SECRET_FILE=~/turn.secret TURN_DOCKER=1 deploy/turn/install.sh 194.58.109.2
 openipc.ru's host is shared with other sites, so coturn runs there as the
 upstream image (`coturn-share`, host network) and leaves its packages alone.
 Rotating the secret means all three hosts and `SHARE_TURN_SECRET`, then a
-restart of the share role; sessions already relayed keep their allocations.
+restart of the share role. Restarting coturn drops the sessions it is
+relaying at that moment; direct ones are untouched.
 
 **Check** a host without a browser, from any other one, with a credential
 minted from the secret: `turnutils_uclient -e <public echo peer> -u <user> -w

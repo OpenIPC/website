@@ -44,6 +44,14 @@ export async function shareKey(secret) {
   return new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(secret)));
 }
 
+// The token the camera registers the share with, and the relay derives its id
+// from: showing it is how a page proves it holds the link, not just its host
+// name, when it asks for a relay.
+export async function relayToken(secret) {
+  const k = await crypto.subtle.importKey('raw', await shareKey(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return hex(await crypto.subtle.sign('HMAC', k, enc.encode('mj-share-relay-v1')));
+}
+
 export async function proof(key, who, share, pageNonce, cameraNonce, cameraFp, pageFp) {
   const k = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const msg = `${who}|mj-share-v1|${share}|${pageNonce}|${cameraNonce}|${cameraFp}|${pageFp}`;
