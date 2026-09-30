@@ -60,6 +60,13 @@ export async function proof(key, who, share, pageNonce, cameraNonce, cameraFp, p
 
 export class ShareError extends Error {}
 
+// "the owner revoked this link" -> "The owner revoked this link."
+function sentence(s) {
+  if (!s) return '';
+  const t = s.charAt(0).toUpperCase() + s.slice(1);
+  return /[.!?]$/.test(t) ? t : t + '.';
+}
+
 const FRAME_NAMES = { 2: 'WELCOME', 3: 'REFUSED', 4: 'BYE', 5: 'CHALLENGE' };
 
 // "host udp", "srflx udp", "relay tcp": what a candidate is, without its address.
@@ -155,6 +162,11 @@ export class Tunnel {
             return;
           }
           await pc.addIceCandidate({ candidate: m.data, sdpMid: m.mid || '0' }).catch(() => {});
+        } else if (m.reply === 'closed' && m.ended && this.welcome) {
+          // The share ended -- revoked or expired. The camera's BYE says the
+          // same, but it can be lost on a lossy link, and then only ICE would
+          // tell, many seconds later and with the wrong reason.
+          this.lost(sentence(m.data) || 'This link has ended.');
         } else if (m.reply === 'error' || m.reply === 'busy' || m.reply === 'closed') {
           done(new ShareError(m.data || 'The camera refused the connection.'));
         }

@@ -66,7 +66,12 @@ const SHIM = new TextEncoder().encode('<script src="/__share/shim.js"></script>'
 function onWorkerMessage(e) {
   if (!e.data || e.data.type !== 'fetch') return;
   const port = e.ports[0];
-  if (!tunnel || tunnel.gone) { port.postMessage({ type: 'error', message: 'not connected' }); return; }
+  // Only once the camera has proved itself and let this page in: a tunnel
+  // that is still connecting has no channel to carry anything, and on a
+  // reload the worker is already in charge and hands over the browser's
+  // own first requests (the favicon) before it is -- which used to throw
+  // out of here and fail the whole start.
+  if (!tunnel || tunnel.gone || !tunnel.welcome) { port.postMessage({ type: 'error', message: 'not connected' }); return; }
   if (e.data.html) trace('page load', e.data.path.split('?')[0]);
   const { method, path, headers, body, html } = e.data;
   let head = null;
@@ -196,6 +201,12 @@ async function main() {
     return;
   }
   try {
+    // The worker only has to be in charge by the time the camera's pages
+    // load, after WELCOME; the tunnel does not need it. Registered alongside
+    // the connection rather than before it, its download and activation are
+    // hidden inside the handshake's round trips instead of added to them.
+    const ready = within(worker(), 15000, 'The page did not finish starting. Close the tab and open the link again.');
+    ready.catch(() => {}); // answered below, with the tunnel's outcome
     stage = 'ice';
     trace('stage', stage);
     const ctl = new AbortController();
@@ -210,13 +221,14 @@ async function main() {
       policy: opts.get('relay') != null ? 'relay' : undefined,
       trace,
     });
-    stage = 'worker';
-    trace('stage', stage);
-    await within(worker(), 15000, 'The page did not finish starting. Close the tab and open the link again.');
-    sessionStorage.removeItem('share-reloaded');
     stage = 'camera';
     trace('stage', stage);
-    const welcome = await tunnel.open();
+    const opened = tunnel.open();
+    opened.catch(() => {}); // answered below, with the worker's outcome
+    await ready;
+    sessionStorage.removeItem('share-reloaded');
+    trace('stage', 'worker ready');
+    const welcome = await opened;
     if (!settle()) {
       // The start was already declared failed; a connection that arrives
       // afterwards is closed rather than shown over the error.
@@ -227,6 +239,8 @@ async function main() {
     trace('stage', stage);
     window.__share = { openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h), welcome };
     tunnel.onclose = (why) => {
+      // What the worker kept for this share goes with it.
+      caches.delete('mj-share-http').catch(() => {});
       $('bar').hidden = true;
       notice('The camera is no longer shared with you', why, true);
     };
@@ -252,6 +266,9 @@ async function main() {
     }
     window.__shareReady = welcome;
   } catch (e) {
+    // The worker and the connection start together, so one can fail with
+    // the other up: a session nobody will use is closed, not left to time out.
+    if (tunnel) tunnel.close();
     if (!settle()) return;
     const known = e instanceof ShareError;
     notice('Could not open the shared camera', known ? e.message : 'Something went wrong: ' + e.message, true);

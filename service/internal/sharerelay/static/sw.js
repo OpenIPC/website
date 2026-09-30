@@ -7,6 +7,15 @@
 // Left alone: the shell itself (a top-level navigation), and /__share/*,
 // which is this site's, not the camera's.
 const RESERVED = '/__share/';
+// What the camera sent with a validator, kept so the next load asks "still
+// this?" instead of fetching it again. A worker's own Response never reaches
+// the browser's HTTP cache, so without this every page the guest opened
+// pulled every script through the tunnel whole: 1.1 MB for the Live page,
+// ten seconds of it on a lossy 4G link. The camera answers no-cache and an
+// ETag, i.e. "revalidate first", which is exactly what this does. Each share
+// is its own origin, so this cache is one share's; the shell deletes it when
+// the share ends.
+const CACHE = 'mj-share-http';
 const NULL_BODY = new Set([101, 204, 205, 304]);
 const REDIRECT = new Set([301, 302, 303, 307, 308]);
 // Hop-by-hop, or the browser's to set.
@@ -25,7 +34,7 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith(RESERVED)) return;
   if (e.request.mode === 'navigate' && e.request.destination === 'document') return;
-  e.respondWith(viaTunnel(e.request, url));
+  e.respondWith(viaTunnel(e, e.request, url));
 });
 
 // The shells that could carry a request, focused first. A worker cannot ask
@@ -37,20 +46,46 @@ async function shells() {
   return all.filter((c) => c.frameType === 'top-level').sort((a, b) => b.focused - a.focused);
 }
 
-async function viaTunnel(req, url) {
+async function viaTunnel(e, req, url) {
   const body = req.method === 'GET' || req.method === 'HEAD' ? null : await req.arrayBuffer();
   const headers = {};
   for (const [k, v] of req.headers) if (!DROP_REQ.has(k)) headers[k] = v;
+  // gzip is the one encoding this end can undo (DecompressionStream); the
+  // browser's own list names others it cannot.
+  if (req.method === 'GET') headers['accept-encoding'] = 'gzip';
   const html = req.mode === 'navigate';
+  const cached = await fromCache(req, headers);
+  if (cached) headers['if-none-match'] = cached.headers.get('etag');
   for (const c of await shells()) {
-    const r = await ask(c, req, url, headers, body ? body.slice(0) : null, html);
+    const r = await ask(c, e, req, url, headers, body ? body.slice(0) : null, html, cached);
     if (r) return r;
   }
   return new Response('The shared camera is not connected.', { status: 503 });
 }
 
+// A stored answer this request may revalidate, or null. Only a plain GET: a
+// request carrying its own validators or no-store is the page's business.
+async function fromCache(req, headers) {
+  if (req.method !== 'GET' || headers['if-none-match'] || headers['if-modified-since'] ||
+      /no-store/i.test(req.headers.get('cache-control') || '') || req.cache === 'no-store') return null;
+  try {
+    const hit = await (await caches.open(CACHE)).match(req.url);
+    return hit && hit.headers.get('etag') ? hit : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Whether an answer may be kept: a whole 200 with a validator, and nothing
+// in its Cache-Control forbidding it.
+function storable(req, status, headers) {
+  if (req.method !== 'GET' || status !== 200) return false;
+  const get = (n) => (headers.find(([k]) => k.toLowerCase() === n) || [])[1];
+  return !!get('etag') && !/no-store|private/i.test(get('cache-control') || '') && !get('content-range');
+}
+
 // One shell's answer, or null when that shell has no tunnel.
-function ask(c, req, url, headers, body, html) {
+function ask(c, e, req, url, headers, body, html, cached) {
   const { port1, port2 } = new MessageChannel();
   c.postMessage({ type: 'fetch', method: req.method, path: url.pathname + url.search, headers, body, html },
     body ? [port2, body] : [port2]);
@@ -70,6 +105,11 @@ function ask(c, req, url, headers, body, html) {
           resolve(Response.redirect(new URL(d.location, url).href, d.status));
           return;
         }
+        if (d.status === 304 && cached) {
+          // Still what we hold: served from here, nothing more comes.
+          resolve(cached);
+          return;
+        }
         let out = stream;
         let hdrs = d.headers;
         if (d.gzip) {
@@ -77,6 +117,14 @@ function ask(c, req, url, headers, body, html) {
           hdrs = hdrs.filter(([k]) => k.toLowerCase() !== 'content-encoding' && k.toLowerCase() !== 'content-length');
         }
         const empty = NULL_BODY.has(d.status) || req.method === 'HEAD';
+        if (!empty && storable(req, d.status, hdrs)) {
+          // The page reads one copy while the other is written down. A
+          // stream that fails part-way fails the put, and nothing is kept.
+          const [page, keep] = out.tee();
+          out = page;
+          const init = { status: d.status, statusText: d.statusText, headers: hdrs };
+          e.waitUntil(caches.open(CACHE).then((c) => c.put(req.url, new Response(keep, init))).catch(() => {}));
+        }
         resolve(new Response(empty ? null : out, { status: d.status, statusText: d.statusText, headers: hdrs }));
       } else if (d.type === 'body') {
         controller.enqueue(new Uint8Array(d.data));

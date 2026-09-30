@@ -35,6 +35,14 @@
 //     "candidate","data":...} out, {"reply":...,"data":...,"mid":...} in. The
 //     relay tags each page socket with a session id and forwards.
 //
+//     relay  -> {"reply":"closed","data":"<why>","ended":"true"} when the
+//     share itself ended (revoked or expired). A connected page acts on it:
+//     the camera says so too, with BYE, but it closes the transport at once,
+//     and on a lossy link BYE is lost with nothing left to resend it -- the
+//     page then waited out ICE (16 s on a 4G link with burst loss) and gave
+//     the wrong reason. Without "ended" (the camera went offline) a connected
+//     page carries on: its session does not depend on the relay.
+//
 // A registration carries the share's TOKEN, and the share's id is the first
 // 64 bits of SHA-256 of it (the camera derives both from the share's key).
 // The relay checks one against the other: the link carries the id and not the
@@ -90,6 +98,10 @@ const (
 	MaxShares = 100_000
 	// How often expired registrations are reaped.
 	ReapEvery = time.Minute
+	// A camera's unregister this close to the share's registered end is its
+	// expiry, not the owner ending it: the two clocks differ a little, and
+	// an owner ending a link in its last seconds loses nothing by the name.
+	unregisterSlack = 30 * time.Second
 )
 
 // A camera socket must register a share this soon after connecting, and one
@@ -305,7 +317,13 @@ func (h *Hub) onDevice(d *device, raw []byte) {
 		h.register(d, m)
 	case "unregister":
 		if sh := d.shares[m.Share]; sh != nil {
-			h.dropShare(sh, "the owner revoked this link")
+			// The camera withdraws a share when it expires as well as when
+			// the owner ends it; which one is told by the registered end.
+			why := "the owner revoked this link"
+			if !sh.expires.After(time.Now().Add(unregisterSlack)) {
+				why = "this link has expired"
+			}
+			h.dropShare(sh, why)
 		}
 	case "signal":
 		for _, sh := range d.shares {
@@ -382,7 +400,7 @@ func (h *Hub) dropDevice(d *device) {
 	for _, sh := range d.shares {
 		if sh.dev == d {
 			for _, p := range sh.pages {
-				h.closePage(p, "the camera went offline")
+				h.closePage(p, "the camera went offline", false)
 			}
 			sh.dev = nil
 		}
@@ -420,11 +438,15 @@ func (h *Hub) Reaper(ctx context.Context) {
 }
 
 // closePage tells a page why and closes it; called with h.mu held.
-func (h *Hub) closePage(p *page, why string) {
+func (h *Hub) closePage(p *page, why string, ended bool) {
 	if p.sh.pages[p.sid] != p {
 		return
 	}
-	trySend(p.out, marshal(map[string]string{"reply": "closed", "data": why}))
+	msg := map[string]string{"reply": "closed", "data": why}
+	if ended {
+		msg["ended"] = "true"
+	}
+	trySend(p.out, marshal(msg))
 	close(p.out)
 	delete(p.sh.pages, p.sid)
 }
@@ -432,7 +454,7 @@ func (h *Hub) closePage(p *page, why string) {
 // dropShare is called with h.mu held.
 func (h *Hub) dropShare(sh *share, why string) {
 	for _, p := range sh.pages {
-		h.closePage(p, why)
+		h.closePage(p, why, true)
 	}
 	delete(h.shares, sh.id)
 	if sh.dev != nil {
