@@ -9,14 +9,23 @@ signalling relay and the page behind links like
 providers -- Russia's among them -- filter openipc.org's addresses, so a
 guest behind one could not open a link served from here, and a camera behind
 one could not register a share. The openipc.kz host (194.238.42.216) is
-reachable from both sides, so the share names point there, and its nginx
-passes everything on to the one share role here. One role, because it keeps
-its registry in memory: a second copy on the openipc.kz host would split
-cameras from their guests. Only signalling takes this path -- a session's
-traffic goes peer to peer, or through a TURN relay (below).
+reachable from both sides, so the share names point there.
 
-`deploy.sh` deploys the role with the other two; what it cannot do on its own
-is give it a name. In order:
+**The relay runs there too.** Pages and cameras both come in through that
+host's nginx. With the relay on the origin, every signalling message crossed
+to it and back -- 58 ms each way, twice for an offer and its answer. So the
+share role runs on the openipc.kz host as a systemd service on
+127.0.0.1:3004 (`mirrors/kz/share-relay/`), and its nginx passes the share
+names to it. There is still **one** relay: it keeps its registry in memory,
+and a second one answering the same names would split cameras from their
+guests. The origin keeps its share role and its door-closed vhost as the
+way back, but the share names no longer reach it. Only signalling takes this
+path -- a session's traffic goes peer to peer, or through a TURN relay
+(below).
+
+`deploy.sh` still deploys the origin's share role with the other two. The
+relay that serves the names is installed separately, and what neither can do
+on its own is give it a name. In order:
 
 1. **DNS.** `share.openipc.cloud` and `*.share.openipc.cloud`, A records to
    194.238.42.216, in the Hetzner zone `openipc.cloud`.
@@ -49,25 +58,42 @@ is give it a name. In order:
    root, leaves a pair it already has alone, and swaps both files together,
    restoring the previous pair if nginx will not take the new one.
 
-3. **The vhosts.** Here, `deploy/nginx/sites-available/cloud.openipc.share`,
-   with `deploy/push-nginx.sh --apply`: it serves the share names with the
-   wildcard and closes every connection that does not come from the
-   openipc.kz host. There,
+3. **The vhosts.** There,
    `deploy/nginx/mirrors/kz/sites-available/cloud.openipc.share`, with that
-   directory's `push.sh --apply`: it proxies to this host by address,
-   checking this certificate's name, with the reader's Host (the share role
-   reads the share id from it) and X-Forwarded-For (which nginx.conf here
-   trusts from that host). Both name the certificate, so it goes first.
+   directory's `push.sh --apply`: it serves the share names with the wildcard
+   and passes them to the relay on 127.0.0.1:3004, with the reader's Host (the
+   relay reads the share id from it) and X-Real-IP (its per-address limits
+   read it). Here, `deploy/nginx/sites-available/cloud.openipc.share`, with
+   `deploy/push-nginx.sh --apply`: the standby that answers the share names
+   from the openipc.kz host alone, for the way back.
 
-4. **Deploy** as usual (`openipc-deploy prod <sha>`); it starts
-   `go-share-prod` and waits for `:3004/up`.
+4. **The relay**, with `deploy/nginx/mirrors/kz/share-relay/install.sh <sha>`:
+   - It takes the static binary out of the release image and runs it there
+     under systemd, keeping the previous version to roll back to
+     (`install.sh rollback`).
+   - Its settings are the `SHARE_*` lines of the production env file, copied
+     over the first time; `KZ_SHARE_ENV_REFRESH=1` copies them again after
+     one changes.
+   - **Run it for every release that changes `service/internal/sharerelay`:**
+     `openipc-deploy prod <sha>` updates only the origin's standby.
+   - The first time, and whenever cameras must move from one relay to the
+     other, restart the relay they are leaving. A camera holds its socket
+     through the old path until it drops, and reconnects to wherever the
+     names now go within its 1 s backoff.
 
 5. **Check.**
-   `curl -s https://share.openipc.cloud/__share/ice` answers the ICE list (STUN
-   only: TURN is for a live share's own host);
-   `curl -si https://share.openipc.cloud/__share/device` answers 426 (a
-   WebSocket is expected). Then share a camera from its WebUI and open the
-   link from another network.
+   - `curl -s https://share.openipc.cloud/__share/ice` answers the ICE list
+     (STUN only: TURN is for a live share's own host).
+   - `curl -si https://share.openipc.cloud/__share/device` answers 426 (a
+     WebSocket is expected).
+   - `install.sh status` answers from the relay itself.
+   - Then share a camera from its WebUI and open the link from another
+     network.
+
+**The way back.** Point `share_relay` in the openipc.kz vhost at
+`openipc.org:443`, with the `proxy_ssl_*` checks git history has for it, and
+apply it with `push.sh --apply`. Then restart the openipc.kz relay so cameras
+move over.
 
 ## Settings
 
