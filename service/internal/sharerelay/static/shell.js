@@ -61,7 +61,10 @@ let tunnel;
 // The service worker hands every camera request to this page, which is the
 // one holding the tunnel.
 const HOP_RESP = new Set(['connection', 'keep-alive', 'transfer-encoding', 'set-cookie', 'upgrade']);
-const SHIM = new TextEncoder().encode('<script src="/__share/shim.js"></script>');
+// Beside this script, so under the same version and out of the browser's
+// cache: every camera page loads it, and none of them should cost a trip to
+// the share site for it.
+const SHIM = new TextEncoder().encode(`<script src="${new URL('./shim.js', import.meta.url).pathname}"></script>`);
 
 function onWorkerMessage(e) {
   if (!e.data || e.data.type !== 'fetch') return;
@@ -219,13 +222,15 @@ async function main() {
     trace('stage', stage);
     const ctl = new AbortController();
     setTimeout(() => ctl.abort(), 8000);
-    const ice = await fetch(`/__share/ice?share=${id}`, {
-      signal: ctl.signal, headers: { 'X-Share-Token': await relayToken(secret) },
-    }).then((r) => r.json()).catch(() => ({ iceServers: [] }));
+    // Not awaited: the tunnel opens its signalling socket meanwhile, and
+    // makes its peer connection when these arrive.
+    const iceServers = relayToken(secret)
+      .then((token) => fetch(`/__share/ice?share=${id}`, { signal: ctl.signal, headers: { 'X-Share-Token': token } }))
+      .then((r) => r.json()).then((ice) => ice.iceServers || []).catch(() => []);
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     tunnel = new Tunnel({
       signal: `${proto}://${location.host}/__share/signal?share=${id}`,
-      share: id, secret, iceServers: ice.iceServers || [],
+      share: id, secret, iceServers,
       policy: opts.get('relay') != null ? 'relay' : undefined,
       trace,
     });

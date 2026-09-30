@@ -19,8 +19,13 @@
 # openipc.org too. A session resumed from there comes back with openipc.org's
 # certificate, which fails the check against share.openipc.cloud below -- a
 # 502 for every share request.
+# Its connections are kept: the origin is 122 ms from here, and a new
+# connection costs a TCP and a TLS handshake -- 0.26 s measured -- before each
+# request. The share page makes its requests one after another, so that was
+# paid in series on every open.
 upstream share_origin {
     server openipc.org:443;
+    keepalive 16;
 }
 
 server {
@@ -69,8 +74,9 @@ server {
         proxy_ssl_verify_depth        3;
         proxy_http_version 1.1;
         # A camera holds its relay socket for as long as it has a share.
+        # Anything else leaves its connection to the origin open for reuse.
         proxy_set_header Upgrade    $http_upgrade;
-        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Connection $connection_upgrade_keepalive;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
         proxy_buffering off;

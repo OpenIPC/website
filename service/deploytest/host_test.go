@@ -391,3 +391,27 @@ func TestLogRetention(t *testing.T) {
 			"a rebuilt host follows RESTORE.md; without the step it keeps addresses for the distribution's default")
 	})
 }
+
+// The share page makes its requests one after another, through this mirror,
+// to an origin 122 ms away. A connection per request made each of them pay a
+// TCP and TLS handshake to the origin first: 0.26 s, measured from the
+// mirror, on every script and every page open.
+func TestShareMirrorKeepsItsOriginConnections(t *testing.T) {
+	share := read(t, "deploy/nginx/mirrors/kz/sites-available/cloud.openipc.share")
+	maps := read(t, "deploy/nginx/mirrors/kz/conf.d/openipc-upgrade.conf")
+	upstream := find(share, regexp.MustCompile(`(?s)(upstream share_origin \{.*?\n\})`), 1)
+	if upstream == "" {
+		t.Fatal("the share vhost has no upstream of its own")
+	}
+	mustMatch(t, `keepalive\s+\d+;`, upstream, "no connections are kept to the origin")
+	mustMatch(t, `proxy_http_version\s+1\.1;`, share, "HTTP/1.0 cannot keep a connection or carry an Upgrade")
+	// Keeping connections needs the request to say nothing: `Connection: close`
+	// ends each one after its request whatever the upstream keeps.
+	mustMatch(t, `proxy_set_header Connection\s+\$connection_upgrade_keepalive;`, share,
+		"the share vhost closes its origin connection after every request")
+	mustMatch(t, `(?s)map \$http_upgrade \$connection_upgrade_keepalive \{\s*default\s+upgrade;\s*''\s+"";`, maps,
+		"the keep-alive map must send upgrade for a WebSocket and nothing otherwise")
+	// Cameras' relay sockets and pages' signalling go through the same
+	// location: they still have to upgrade.
+	mustMatch(t, `proxy_set_header Upgrade\s+\$http_upgrade;`, share, "no Upgrade header")
+}

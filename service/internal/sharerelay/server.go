@@ -1,10 +1,14 @@
 package sharerelay
 
 import (
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"io/fs"
 	"net/http"
 	"path"
+	"sort"
+	"strings"
 )
 
 //go:embed static
@@ -19,20 +23,77 @@ const csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'
 	"connect-src 'self'; worker-src 'self' blob:; frame-src 'self'; frame-ancestors 'none'; " +
 	"base-uri 'self'; form-action 'self'"
 
+// The share page's scripts are the same bytes until the next deploy, and a
+// guest may be a phone on the far side of two proxies: every request is a
+// round trip or three. So the page names its scripts under a path that
+// carries a digest of them all -- /__share/v/<version>/shell.js -- and those
+// are cached for good; only the page itself is asked about again, and that
+// answers 304 while the version stands. The scripts import each other by
+// relative path, so the version follows them down.
+const versioned = "/__share/v/"
+
+// version is a digest of every file the page serves: any change to any of
+// them is a new version, and a page names only the one it came with.
+func version(sub fs.FS) string {
+	var names []string
+	_ = fs.WalkDir(sub, ".", func(p string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			names = append(names, p)
+		}
+		return nil
+	})
+	sort.Strings(names)
+	sum := sha256.New()
+	for _, n := range names {
+		b, _ := fs.ReadFile(sub, n)
+		sum.Write([]byte(n + "\x00"))
+		sum.Write(b)
+	}
+	return hex.EncodeToString(sum.Sum(nil))[:12]
+}
+
+// renderShell names the scripts under the version, and has the browser fetch
+// the shell's imports alongside it instead of after it: one round, not two.
+func renderShell(sub fs.FS, ver string) []byte {
+	b, _ := fs.ReadFile(sub, "index.html")
+	page := string(b)
+	base := versioned + ver + "/"
+	var preload strings.Builder
+	for _, m := range []string{"tunnel.js", "websocket.js", "diag.js"} {
+		preload.WriteString(`<link rel="modulepreload" href="` + base + m + `">` + "\n")
+	}
+	page = strings.Replace(page, "</head>", preload.String()+"</head>", 1)
+	page = strings.Replace(page, `src="/__share/shell.js"`, `src="`+base+`shell.js"`, 1)
+	return []byte(page)
+}
+
 // Handlers are the share role's routes, keyed as the routes table names them.
 func Handlers(h *Hub, ice ICE) map[string]http.Handler {
 	if ice.Live == nil {
 		ice.Live = h.Live
 	}
 	sub, _ := fs.Sub(static, "static")
+	ver := version(sub)
+	page := renderShell(sub, ver)
+	etag := `"` + ver + `"`
 	files := http.FileServerFS(sub)
 	assets := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// /__share/<name>, or /__share/v/<version>/<name>. A version that is
+		// not this one is a page from before a deploy asking mid-way: it gets
+		// today's file, and is told not to keep it.
+		cache := "no-cache"
+		if rest, ok := strings.CutPrefix(r.URL.Path, versioned); ok {
+			v, _, _ := strings.Cut(rest, "/")
+			if v == ver {
+				cache = "public, max-age=31536000, immutable"
+			}
+		}
 		name := path.Base(r.URL.Path)
 		if _, err := fs.Stat(sub, name); err != nil || name == "index.html" {
 			http.NotFound(w, r)
 			return
 		}
-		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Cache-Control", cache)
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		if name == "sw.js" {
 			// Served from /__share/ and in charge of the whole origin.
@@ -46,15 +107,19 @@ func Handlers(h *Hub, ice ICE) map[string]http.Handler {
 	// through the tunnel, at the same path -- so a reload of any of them lands
 	// here and reopens it.
 	shell := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, _ := fs.ReadFile(sub, "index.html")
 		h := w.Header()
 		h.Set("Content-Type", "text/html; charset=utf-8")
 		h.Set("Cache-Control", "no-cache")
+		h.Set("ETag", etag)
 		h.Set("Content-Security-Policy", csp)
 		h.Set("Referrer-Policy", "no-referrer")
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("X-Robots-Tag", "noindex")
-		_, _ = w.Write(b)
+		if inm := r.Header.Get("If-None-Match"); inm != "" && strings.Contains(inm, etag) {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		_, _ = w.Write(page)
 	})
 	up := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
