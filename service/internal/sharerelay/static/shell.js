@@ -25,7 +25,7 @@ function notice(title, text, bad) {
   $('main').replaceChildren(n);
 }
 
-// The share is the first label of the host (<id>.share.openipc.org); ?share=
+// The share is the first label of the host (<id>.share.openipc.cloud); ?share=
 // is for a developer serving the page somewhere else.
 function shareId() {
   const q = new URLSearchParams(location.search).get('share');

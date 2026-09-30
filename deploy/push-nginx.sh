@@ -38,6 +38,16 @@ SSH=(ssh -p "$PORT" -o BatchMode=yes "$USER@$HOST")
 # whole tree -- but it belongs at the top of the report for the same reason.
 files() { (cd "$SRC" && { echo nginx.conf; find sites-available conf.d -type f; }); }
 
+# Paths nginx/RETIRED says must not exist there -- each with its sites-enabled
+# link, for a vhost.
+retired() { grep -v '^[[:space:]]*\(#\|$\)' "$SRC/RETIRED" 2>/dev/null || true; }
+retired_paths() {
+  for f in $(retired); do
+    echo "$f"
+    case "$f" in sites-available/*) echo "sites-enabled/${f#sites-available/}" ;; esac
+  done
+}
+
 echo "origin: $USER@$HOST:$PORT"
 echo
 
@@ -65,6 +75,15 @@ done
 echo
 for f in $("${SSH[@]}" "ls /etc/nginx/conf.d/*.conf 2>/dev/null | xargs -n1 basename" 2>/dev/null || true); do
   [ -f "$SRC/conf.d/$f" ] || { echo "  UNMANAGED on origin: conf.d/$f"; drift=1; }
+done
+
+# What the repository retired must be gone, or a renamed vhost goes on serving
+# under its old name beside the new one.
+for f in $(retired_paths); do
+  if "${SSH[@]}" "test -e '/etc/nginx/$f' || test -L '/etc/nginx/$f'" 2>/dev/null; then
+    echo "  RETIRED but present on origin: $f"
+    drift=1
+  fi
 done
 
 # The same for the links themselves: nginx reads sites-enabled, so a vhost
@@ -117,6 +136,12 @@ restore() {
     for b in \$(find /etc/nginx -name '*.bak.$STAMP'); do
       mv -f \"\$b\" \"\${b%.bak.$STAMP}\"
     done
+    # retired paths: back where they were
+    if [ -d '/etc/nginx/retired.$STAMP' ]; then
+      (cd '/etc/nginx/retired.$STAMP' && find . \\( -type f -o -type l \\) | while read -r r; do
+        mv -f \"\$r\" \"/etc/nginx/\$r\"; done)
+      rm -rf '/etc/nginx/retired.$STAMP'
+    fi
     # files this run created: remove them, or the tree keeps a file that has
     # never been reviewed and was never running
     for a in \$(find /etc/nginx -name '*.absent.$STAMP'); do
@@ -145,6 +170,17 @@ trap restore EXIT
       touch \"/etc/nginx/\$f.absent.$STAMP\"
     fi
     install -m 0644 \"$STAGE/\$f\" \"/etc/nginx/\$f\"
+  done
+  # Retired paths are moved into retired.<stamp>/, which nothing includes --
+  # not beside themselves: nginx globs sites-enabled/*, so a backup there is
+  # loaded, and a link backed up there points at a file that has just moved.
+  # The restore brings them back from it.
+  for f in $(retired_paths | tr '\n' ' '); do
+    if [ -e \"/etc/nginx/\$f\" ] || [ -L \"/etc/nginx/\$f\" ]; then
+      mkdir -p \"/etc/nginx/retired.$STAMP/\$(dirname \"\$f\")\"
+      mv -f \"/etc/nginx/\$f\" \"/etc/nginx/retired.$STAMP/\$f\"
+      echo \"  retired \$f\"
+    fi
   done
 "
 echo "  installed $(files | wc -l) files"
@@ -175,6 +211,8 @@ if "${SSH[@]}" 'systemctl reload nginx'; then
   "${SSH[@]}" "rm -rf '$STAGE'; find /etc/nginx -name '*.absent.$STAMP' -delete"
   echo
   echo "reloaded. backups left at *.bak.$STAMP"
+  "${SSH[@]}" "test -d '/etc/nginx/retired.$STAMP'" 2>/dev/null &&
+    echo "retired paths kept in /etc/nginx/retired.$STAMP/" || true
 else
   echo "systemctl reload failed" >&2
   exit 1

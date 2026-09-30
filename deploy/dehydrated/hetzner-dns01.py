@@ -9,7 +9,8 @@ what is there, so the wildcard and the bare name can be validated together),
 then waits until every authoritative nameserver of the zone serves it.
 `remove` takes that one value out again. The token is read from
 /etc/dehydrated/hetzner-dns.token and never printed. The zone is whichever of
-ZONES the domain is in; the token is the project's, so it reaches all of them.
+ZONES the domain is in; the token is the project's, so it reaches any zone
+there that is added to the list.
 """
 import json
 import subprocess
@@ -20,7 +21,7 @@ import urllib.request
 
 API = "https://api.hetzner.cloud/v1"
 TOKEN_FILE = "/etc/dehydrated/hetzner-dns.token"
-ZONES = ("openipc.org", "openipc.cloud")
+ZONES = ("openipc.cloud",)
 TTL = 60
 PROPAGATION_TIMEOUT = 300
 

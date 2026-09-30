@@ -43,6 +43,15 @@ They proxy `https://openipc.org/` with `proxy_ssl_server_name on`, appending
 `X-Forwarded-For`; `set_real_ip_from` on the origin turns that back into the
 reader's address before any `limit_conn` or `limit_req` sees it.
 
+**The share names ride on the openipc.kz host too.** `share.openipc.cloud`
+and its wildcard point at it, and `kz/sites-available/cloud.openipc.share`
+proxies them to the origin (upstream `share_origin`, by the name
+openipc.org), whose share vhost admits only the peers in nginx.conf's
+`geo $share_door` -- beside `set_real_ip_from`, and checked against it by
+`check-config.sh`. Moving that host means both lines and the two A records;
+moving the origin means only openipc.org's own records. A refused peer shows
+as a 444 in the origin's `cloud.openipc.share.access.log`.
+
 ## Why this matters more than it looks
 
 **openipc.org is blocked in Russia at provider level.** Russian readers reach

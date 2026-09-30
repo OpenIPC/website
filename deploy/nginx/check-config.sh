@@ -30,11 +30,23 @@ BASE="${NGINX_IMAGE:-nginx:1.26-alpine}"   # matches webber-eu (nginx/1.26.3)
 # once and reused for every later run, so a vhost that names a certificate the
 # image does not carry fails `nginx -t` on every machine that already has the
 # old image. Bump this whenever the domain list below changes. :2 added
-# openipc.eu, :3 share.openipc.org.
-FIXTURE=openipc-nginx-check:3
+# openipc.eu, :3 share.openipc.org, :4 share.openipc.cloud in its place.
+FIXTURE=openipc-nginx-check:4
 
 die() { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 ok() { printf '\033[32m ok\033[0m %s\n' "$*"; }
+
+# The share vhost's door (nginx.conf's geo $share_door) must name only hosts
+# whose X-Forwarded-For is trusted: a door for a host realip does not trust
+# would admit it and then limit every reader behind it as one address. Plain
+# text, so it runs before, and without, docker.
+door=$(awk '/geo \$realip_remote_addr \$share_door/{g=1;next} g&&/}/{g=0} g&&$2~/^1;/{print $1}' "$HERE/nginx.conf")
+[ -n "$door" ] || die "nginx.conf: no address in geo \$share_door"
+for a in $door; do
+  grep -qE "^[[:space:]]*set_real_ip_from[[:space:]]+${a//./\\.};" "$HERE/nginx.conf" ||
+    die "nginx.conf: share door $a is not in set_real_ip_from"
+done
+ok "share door ($door) is trusted by set_real_ip_from"
 
 command -v docker >/dev/null || die "docker is needed to run ${BASE}"
 
@@ -46,7 +58,7 @@ if ! docker image inspect "$FIXTURE" >/dev/null 2>&1; then
 FROM ${BASE}
 RUN apk add --no-cache openssl curl \\
  && (adduser -S -D -H www-data || true) \\
- && for d in openipc.org dev.openipc.org wiki.openipc.org analytics.openipc.org openipc.net openipc.eu share.openipc.org; do \\
+ && for d in openipc.org dev.openipc.org wiki.openipc.org analytics.openipc.org openipc.net openipc.eu share.openipc.cloud; do \\
       mkdir -p /var/lib/dehydrated/certs/\$d; \\
       openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=\$d" \\
         -keyout /var/lib/dehydrated/certs/\$d/privkey.pem \\

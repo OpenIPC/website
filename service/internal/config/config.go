@@ -90,7 +90,7 @@ func Load() (*Config, error) {
 		FirmwareCacheMax:    int64(num("FIRMWARE_CACHE_MAX_MB", 4096)) << 20,
 		BuildsPerMinute:     num("FIRMWARE_BUILDS_PER_MINUTE", 6),
 		DownloadBase:        str("RELEASE_DOWNLOAD_BASE", "https://github.com/OpenIPC/firmware/releases/download"),
-		ShareOrigins:        listOr("SHARE_ORIGINS", []string{"*.share.openipc.org", "*.share.openipc.cloud"}),
+		ShareOrigins:        listOr("SHARE_ORIGINS", []string{"*.share.openipc.cloud"}),
 		ShareSTUN:           listOr("SHARE_STUN_URLS", []string{"stun:stun.cloudflare.com:3478"}),
 		ShareTURN:           list("SHARE_TURN_URLS"),
 		ShareTURNSecret:     []byte(os.Getenv("SHARE_TURN_SECRET")),

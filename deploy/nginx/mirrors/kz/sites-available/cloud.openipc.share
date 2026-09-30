@@ -1,17 +1,27 @@
 # Camera sharing links for everyone: share.openipc.cloud and
 # <id>.share.openipc.cloud.
 #
-# openipc.org's addresses are filtered by Russian providers, so a share link
-# on share.openipc.org fails for a guest there, and a camera there cannot
-# reach its relay. This host is reachable from both sides, so it is the front
-# door every camera and guest can use; behind it is the one share role on the
-# origin, whose registry therefore holds every camera whichever name it
-# dials. Only signalling passes through here -- a session's traffic goes
-# peer to peer, or through a TURN relay.
+# openipc.org's addresses are filtered by some providers -- Russia's among
+# them -- so the share names point here, a host both sides reach. Behind it is
+# the one share role on the origin, reached as openipc.org -- these names
+# resolve to this host -- and made to present the same wildcard, which it
+# serves only to this host (its vhost, sites-available/cloud.openipc.share,
+# and the geo beside set_real_ip_from in its nginx.conf). Only signalling passes through here -- a session's traffic goes peer
+# to peer, or through a TURN relay.
 #
 # The wildcard is issued on the origin over DNS-01 and handed over by its
 # dehydrated hook (share-cert/ in this directory), because this host keeps no
 # DNS token.
+
+# An upstream of its own, not `proxy_pass https://openipc.org` inline: nginx
+# makes every inline proxy_pass to the same name one implicit upstream, with
+# one TLS session cache, and snippets/openipc-mirror.conf proxies to
+# openipc.org too. A session resumed from there comes back with openipc.org's
+# certificate, which fails the check against share.openipc.cloud below -- a
+# 502 for every share request.
+upstream share_origin {
+    server openipc.org:443;
+}
 
 server {
     listen 80;
@@ -42,18 +52,18 @@ server {
     client_max_body_size 64k;
 
     location / {
-        # To the origin's share vhost, which answers these names too. The
-        # Host is kept: the share role reads the share id from it, and the
+        # To the origin's share vhost, which answers these names. The Host
+        # is kept: the share role reads the share id from it, and the
         # page's origin is checked against it. The reader's address goes on
         # in X-Forwarded-For, which the origin trusts from this host, so its
         # per-address limits bound a reader, not this whole mirror.
-        proxy_pass https://share.openipc.org;
+        proxy_pass https://share_origin;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
         proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_ssl_server_name         on;
-        proxy_ssl_name                share.openipc.org;
+        proxy_ssl_name                share.openipc.cloud;
         proxy_ssl_verify              on;
         proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
         proxy_ssl_verify_depth        3;

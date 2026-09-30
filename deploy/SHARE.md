@@ -1,78 +1,73 @@
-# Camera sharing links: bringing up share.openipc.org
+# Camera sharing links: share.openipc.cloud
 
 The `share` role (`openipc serve --role share`, :3004 prod / :3014 dev) is the
 signalling relay and the page behind links like
-`https://<id>.share.openipc.org/#<secret>`. `deploy.sh` deploys it with the
-other two roles; what it cannot do on its own is give it a name. In order:
+`https://<id>.share.openipc.cloud/#<secret>`. Cameras dial
+`wss://share.openipc.cloud/__share/device`.
 
-1. **DNS.** `share.openipc.org` and `*.share.openipc.org` → this host
-   (A/AAAA, same addresses as openipc.org). Cameras dial
-   `wss://share.openipc.org/__share/device`; guests open `<id>.share.openipc.org`.
+**Why these names, and why they point at the openipc.kz host.** Some
+providers -- Russia's among them -- filter openipc.org's addresses, so a
+guest behind one could not open a link served from here, and a camera behind
+one could not register a share. The openipc.kz host (194.238.42.216) is
+reachable from both sides, so the share names point there, and its nginx
+passes everything on to the one share role here. One role, because it keeps
+its registry in memory: a second copy on the openipc.kz host would split
+cameras from their guests. Only signalling takes this path -- a session's
+traffic goes peer to peer, or through a TURN relay (below).
 
-2. **Certificate.** One wildcard, `share.openipc.org` + `*.share.openipc.org`,
-   in `/var/lib/dehydrated/certs/share.openipc.org/`. HTTP-01 cannot issue a
-   wildcard, so this one certificate uses DNS-01 and the others keep HTTP-01:
-   - `/etc/dehydrated/domains.txt` lists `share.openipc.org *.share.openipc.org`;
-   - `/var/lib/dehydrated/certs/share.openipc.org/config` sets
+`deploy.sh` deploys the role with the other two; what it cannot do on its own
+is give it a name. In order:
+
+1. **DNS.** `share.openipc.cloud` and `*.share.openipc.cloud`, A records to
+   194.238.42.216, in the Hetzner zone `openipc.cloud`.
+
+2. **Certificate.** One wildcard, `share.openipc.cloud` + `*.share.openipc.cloud`,
+   issued here, in `/var/lib/dehydrated/certs/share.openipc.cloud/`. HTTP-01
+   cannot issue a wildcard, so this one certificate uses DNS-01 and the others
+   keep HTTP-01:
+   - `/etc/dehydrated/domains.txt` lists `share.openipc.cloud *.share.openipc.cloud`;
+   - `/var/lib/dehydrated/certs/share.openipc.cloud/config` sets
      `CHALLENGETYPE="dns-01"` for it alone;
-   - `/etc/dehydrated/hook.sh` hands `deploy_challenge`/`clean_challenge` for
-     those two names to `/etc/dehydrated/hetzner-dns01.py`, which adds the
-     `_acme-challenge.share` TXT value through the Hetzner Cloud API, waits for
-     every authoritative nameserver to serve it, and removes it afterwards;
+   - `/etc/dehydrated/hook.sh` (`deploy/dehydrated/`) hands
+     `deploy_challenge`/`clean_challenge` for those two names to
+     `/etc/dehydrated/hetzner-dns01.py`, which adds the `_acme-challenge.share`
+     TXT value through the Hetzner Cloud API, waits for every authoritative
+     nameserver to serve it, and removes it afterwards;
    - the API token is `/etc/dehydrated/hetzner-dns.token` (0600, root).
 
    The nightly `dehydrated -c -g` renews it with the rest. The chain must end
    in ISRG Root X1 or X2: cameras pin those two and nothing else.
 
-3. **The vhost**, `deploy/nginx/sites-available/org.openipc.share`, goes out
-   with `deploy/push-nginx.sh --apply` like every other. It names the
-   certificate above, so it only belongs on a host that has one.
+   The openipc.kz host needs the same certificate and keeps no DNS token by
+   design (its `install-tls.sh` says why), so `hook.sh` hands the pair over on
+   every run -- `deploy_cert` and the nightly `unchanged_cert` alike, so a
+   failed hand-over is retried the next night -- as a tar over ssh with
+   `/root/.ssh/share-cert-push`. Its authorized_keys entry there is
+   `restrict,command="sudo -n /usr/local/sbin/install-share-cert"`, and that
+   installer (`mirrors/kz/share-cert/`) accepts exactly two regular files,
+   checks that they are a pair naming the wildcard and chaining to a trusted
+   root, leaves a pair it already has alone, and swaps both files together,
+   restoring the previous pair if nginx will not take the new one.
 
-4. **Deploy** as usual (`openipc-deploy prod <sha>`); it now starts
+3. **The vhosts.** Here, `deploy/nginx/sites-available/cloud.openipc.share`,
+   with `deploy/push-nginx.sh --apply`: it serves the share names with the
+   wildcard and closes every connection that does not come from the
+   openipc.kz host. There,
+   `deploy/nginx/mirrors/kz/sites-available/cloud.openipc.share`, with that
+   directory's `push.sh --apply`: it proxies to this host by address,
+   checking this certificate's name, with the reader's Host (the share role
+   reads the share id from it) and X-Forwarded-For (which nginx.conf here
+   trusts from that host). Both name the certificate, so it goes first.
+
+4. **Deploy** as usual (`openipc-deploy prod <sha>`); it starts
    `go-share-prod` and waits for `:3004/up`.
 
 5. **Check.**
-   `curl -s https://share.openipc.org/__share/ice` answers the ICE list (STUN
+   `curl -s https://share.openipc.cloud/__share/ice` answers the ICE list (STUN
    only: TURN is for a live share's own host);
-   `curl -si https://share.openipc.org/__share/device` answers 426 (a WebSocket
-   is expected). Then share a camera from its WebUI and open the link from
-   another network.
-
-## share.openipc.cloud, the name every camera and guest can reach
-
-Some providers -- Russia's among them -- filter openipc.org's addresses. A
-guest behind one cannot open a link on share.openipc.org, and a camera behind
-one cannot register a share there. So current firmware dials
-`wss://share.openipc.cloud/__share/device` and gives links on
-`<id>.share.openipc.cloud`, and that name is served by the openipc.kz host
-(194.238.42.216), which both sides reach:
-
-- **DNS:** `share.openipc.cloud` and `*.share.openipc.cloud`, A records to
-  194.238.42.216, in the Hetzner zone `openipc.cloud`.
-- **The vhost there,** `deploy/nginx/mirrors/kz/sites-available/cloud.openipc.share`,
-  installed by that directory's `push.sh --apply`, proxies everything to the
-  vhost here, with the reader's Host (the share role reads the share id from
-  it) and X-Forwarded-For (which this host trusts from that one). This vhost
-  answers the .cloud names for exactly that reason.
-- **One relay behind both names.** The share role keeps its registry in
-  memory, so a second copy on the openipc.kz host would split cameras from
-  their guests. Behind one proxy there is one registry: a camera on either
-  name is found from a link on either name, and firmware that still dials
-  share.openipc.org keeps working wherever it did.
-- **The certificate** is a wildcard too, so it is issued here over DNS-01 --
-  `/etc/dehydrated/domains.txt` lists `share.openipc.cloud *.share.openipc.cloud`,
-  its `certs/share.openipc.cloud/config` selects dns-01, and
-  `hetzner-dns01.py` finds the zone from the name. The openipc.kz host keeps
-  no DNS token by design (its `install-tls.sh` says why), so `hook.sh` hands
-  every renewal over: a tar of the key and chain over ssh with
-  `/root/.ssh/share-cert-push`, whose authorized_keys entry there is
-  `restrict,command="sudo -n /usr/local/sbin/install-share-cert"`. That
-  installer (`mirrors/kz/share-cert/`) checks the pair, the name and the
-  expiry, installs, and puts the old pair back if nginx refuses the new one.
-  The hook and the helper are in `deploy/dehydrated/`.
-
-Only signalling passes through the openipc.kz host: sessions go peer to peer,
-or through a TURN relay, and the relays are listed with openipc.kz first.
+   `curl -si https://share.openipc.cloud/__share/device` answers 426 (a
+   WebSocket is expected). Then share a camera from its WebUI and open the
+   link from another network.
 
 ## Settings
 
@@ -80,7 +75,7 @@ In `/srv/www/.env.go-<env>`, all optional:
 
 | Variable | Default | |
 |---|---|---|
-| `SHARE_ORIGINS` | `*.share.openipc.org,*.share.openipc.cloud` | Hosts a page's signalling socket may come from. |
+| `SHARE_ORIGINS` | `*.share.openipc.cloud` | Hosts a page's signalling socket may come from. |
 | `SHARE_STUN_URLS` | `stun:stun.cloudflare.com:3478` | Given to the page. Prod: `stun:openipc.kz:3478` first -- Cloudflare is throttled in places. |
 | `SHARE_TURN_URLS` | none | TURN for guests whose network and the camera's cannot meet directly. |
 | `SHARE_TURN_SECRET` | none | coturn's `static-auth-secret`; credentials are minted per page (TURN REST). |

@@ -2,16 +2,14 @@
 
 # dehydrated's hook on the origin, installed as /etc/dehydrated/hook.sh.
 #
-# DNS-01, for the certificates that need it: the share wildcards,
-# share.openipc.org and share.openipc.cloud (a wildcard cannot be issued over
-# HTTP-01). Their per-certificate configs, /var/lib/dehydrated/certs/<name>/config,
-# select dns-01; every other certificate stays on HTTP-01 and never reaches
+# DNS-01, for the one certificate that needs it: the share wildcard,
+# share.openipc.cloud (a wildcard cannot be issued over HTTP-01). Its
+# per-certificate config, /var/lib/dehydrated/certs/share.openipc.cloud/config,
+# selects dns-01; every other certificate stays on HTTP-01 and never reaches
 # these lines.
 case "$1:$2" in
-  deploy_challenge:share.openipc.org|deploy_challenge:\*.share.openipc.org|\
   deploy_challenge:share.openipc.cloud|deploy_challenge:\*.share.openipc.cloud)
     exec /etc/dehydrated/hetzner-dns01.py add "$2" "$4" ;;
-  clean_challenge:share.openipc.org|clean_challenge:\*.share.openipc.org|\
   clean_challenge:share.openipc.cloud|clean_challenge:\*.share.openipc.cloud)
     exec /etc/dehydrated/hetzner-dns01.py remove "$2" "$4" ;;
 esac
