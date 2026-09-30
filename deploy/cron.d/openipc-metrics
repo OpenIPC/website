@@ -24,3 +24,9 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # after logrotate. The memo lands in the reports directory; a person fills in
 # the two commentary paragraphs and the manual sources, then sends it.
 30 5 1 * *  root  /usr/local/sbin/openipc-audience-memo >>/var/log/openipc-audience-memo.log 2>&1
+
+# What people searched for (#179): the search consoles' queries into a daily
+# archive under the reports directory, which the monthly memo reads. Google
+# finalises a day two to three days late and each run fills whatever is new, so
+# the hour does not matter beyond running before the memo on the 1st.
+47 4 * * *  root  /usr/local/sbin/openipc-search-queries fetch >>/var/log/openipc-search-queries.log 2>&1

@@ -154,6 +154,11 @@ log "encrypting secrets to ${AGE_RECIPIENT:0:20}..."
 [ -f /srv/www/.env.go-prod ] || fail "no /srv/www/.env.go-prod to back up"
 tar -C /srv/www -cf "${WORK}/secrets.tar" .env.go-prod
 [ -f /srv/www/.env.go-dev ] && tar -C /srv/www -rf "${WORK}/secrets.tar" .env.go-dev
+# The search consoles' read credentials (#179): the Google service-account key
+# cannot be downloaded again once lost, only replaced from the console.
+for f in .gsc-service-account.json .env.search; do
+  [ -f "/srv/www/$f" ] && tar -C /srv/www -rf "${WORK}/secrets.tar" "$f"
+done
 gzip -9 "${WORK}/secrets.tar"
 age -r "$AGE_RECIPIENT" -o "${WORK}/secrets.tar.gz.age" "${WORK}/secrets.tar.gz" \
   || fail "age encryption failed"
