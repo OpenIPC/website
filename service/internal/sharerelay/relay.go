@@ -565,6 +565,16 @@ func (h *Hub) detach(p *page) {
 }
 
 // Stats is what /__share/stats reports, for the operator.
+// Live reports whether share id has a camera registered for it and has not
+// expired: what a page must be opening before it is given a relay.
+func (h *Hub) Live(id string) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.init()
+	sh := h.shares[id]
+	return sh != nil && sh.dev != nil && sh.expires.After(time.Now())
+}
+
 func (h *Hub) Stats() (shares, pages int) {
 	h.mu.Lock()
 	defer h.mu.Unlock()

@@ -21,6 +21,9 @@ const csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'
 
 // Handlers are the share role's routes, keyed as the routes table names them.
 func Handlers(h *Hub, ice ICE) map[string]http.Handler {
+	if ice.Live == nil {
+		ice.Live = h.Live
+	}
 	sub, _ := fs.Sub(static, "static")
 	files := http.FileServerFS(sub)
 	assets := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

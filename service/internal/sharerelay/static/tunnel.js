@@ -44,6 +44,14 @@ export async function shareKey(secret) {
   return new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(secret)));
 }
 
+// The token the camera registers the share with, and the relay derives its id
+// from: showing it is how a page proves it holds the link, not just its host
+// name, when it asks for a relay.
+export async function relayToken(secret) {
+  const k = await crypto.subtle.importKey('raw', await shareKey(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return hex(await crypto.subtle.sign('HMAC', k, enc.encode('mj-share-relay-v1')));
+}
+
 export async function proof(key, who, share, pageNonce, cameraNonce, cameraFp, pageFp) {
   const k = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const msg = `${who}|mj-share-v1|${share}|${pageNonce}|${cameraNonce}|${cameraFp}|${pageFp}`;
@@ -59,6 +67,23 @@ function candType(c) {
   const m = / typ (\w+)/.exec(c || '');
   const proto = / (udp|tcp) /i.exec(c || '');
   return (m ? m[1] : '?') + (proto ? ' ' + proto[1].toLowerCase() : '');
+}
+
+// Whether a candidate names an address no relay of ours may reach: private,
+// shared, loopback and link-local IPv4, unique-local and link-local IPv6, and
+// mDNS names. The relays refuse all of them as peers, so in relay-only mode a
+// pair with one fails at once -- and, trickled ahead of the camera's public
+// address, it can be the only pair Chrome has, which it then calls failed.
+export function unreachableByRelay(c) {
+  const f = (c || '').split(' ');
+  const a = (f[4] || '').toLowerCase();
+  if (a.endsWith('.local')) return true;
+  if (a.includes(':')) return /^(fc|fd|fe[89ab])/.test(a) || a === '::1';
+  const o = a.split('.').map(Number);
+  if (o.length !== 4 || o.some((n) => !(n >= 0 && n <= 255))) return false;
+  return o[0] === 10 || o[0] === 127 || (o[0] === 169 && o[1] === 254) ||
+    (o[0] === 172 && o[1] >= 16 && o[1] <= 31) || (o[0] === 192 && o[1] === 168) ||
+    (o[0] === 100 && o[1] >= 64 && o[1] <= 127);
 }
 
 export class Tunnel {
@@ -125,6 +150,10 @@ export class Tunnel {
           this.cameraFp = normaliseFingerprint(m.data);
           await pc.setRemoteDescription({ type: 'answer', sdp: m.data });
         } else if (m.reply === 'candidate' && m.data) {
+          if (this.policy === 'relay' && unreachableByRelay(m.data)) {
+            this.trace('candidate skipped', 'private address; a relay cannot reach it');
+            return;
+          }
           await pc.addIceCandidate({ candidate: m.data, sdpMid: m.mid || '0' }).catch(() => {});
         } else if (m.reply === 'error' || m.reply === 'busy' || m.reply === 'closed') {
           done(new ShareError(m.data || 'The camera refused the connection.'));

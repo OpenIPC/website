@@ -32,7 +32,8 @@ other two roles; what it cannot do on its own is give it a name. In order:
    `go-share-prod` and waits for `:3004/up`.
 
 5. **Check.**
-   `curl -s https://share.openipc.org/__share/ice` answers the ICE list;
+   `curl -s https://share.openipc.org/__share/ice` answers the ICE list (STUN
+   only: TURN is for a live share's own host);
    `curl -si https://share.openipc.org/__share/device` answers 426 (a WebSocket
    is expected). Then share a camera from its WebUI and open the link from
    another network.
@@ -45,12 +46,59 @@ In `/srv/www/.env.go-<env>`, all optional:
 |---|---|---|
 | `SHARE_ORIGINS` | `*.share.openipc.org` | Hosts a page's signalling socket may come from. |
 | `SHARE_STUN_URLS` | `stun:stun.cloudflare.com:3478` | Given to the page. |
-| `SHARE_TURN_URLS` | none | TURN for guests behind networks that block UDP. |
+| `SHARE_TURN_URLS` | none | TURN for guests whose network and the camera's cannot meet directly. |
 | `SHARE_TURN_SECRET` | none | coturn's `static-auth-secret`; credentials are minted per page (TURN REST). |
 
-Without TURN a guest whose network blocks UDP entirely cannot connect;
-everything else goes peer to peer. The camera itself needs no TURN: it reaches
-whatever relay the page allocates with ordinary outbound UDP.
+Without TURN a guest whose network blocks UDP, or two ends that both sit
+behind address-per-destination NATs (mobile carriers, some offices), cannot
+connect; everything else goes peer to peer. The camera itself needs no TURN:
+it reaches whatever relay the page allocates with ordinary outbound UDP.
+
+## TURN
+
+coturn runs on the three hosts behind openipc.org, openipc.kz and openipc.ru,
+each on UDP and TCP 3478 with relay ports 49160-49999, all holding the same
+secret:
+
+```
+SHARE_TURN_URLS=turn:openipc.org:3478?transport=udp,turn:openipc.kz:3478?transport=udp,turn:openipc.ru:3478?transport=udp,turn:openipc.org:3478?transport=tcp,turn:openipc.kz:3478?transport=tcp,turn:openipc.ru:3478?transport=tcp
+```
+
+The page is given every URL and ICE keeps whichever relay works; a direct
+path, when there is one, still wins over all of them.
+
+**Credentials.** `/__share/ice` issues a TURN credential only to a page that
+sends the share's relay token (`X-Share-Token`, derived from the link's
+secret; the share id alone is in the host name and proves nothing) for a
+share a camera is serving right now, and it expires five minutes later, named
+`<expiry>:<share id>` so coturn's log says whose relay it was. coturn checks
+it when the page allocates; an allocation it granted lives on for as long as
+the page refreshes it, so a session outlasts its credential. A credential
+copied out of a page is worth minutes of relay, not the link's lifetime.
+
+**What a relay may reach.** Only the Internet: `deploy/turn/turnserver.conf`
+denies every private, loopback, link-local and multicast range, and the host's
+own address, as a peer. TCP relaying is off -- the camera end is always UDP.
+
+**Install or update** with `deploy/turn/install.sh`, the secret in a file:
+
+```
+TURN_SECRET_FILE=~/turn.secret deploy/turn/install.sh 37.27.251.71 -p 35242 root@openipc.org
+TURN_SECRET_FILE=~/turn.secret deploy/turn/install.sh 194.238.42.216 ubuntu@194.238.42.216
+TURN_SECRET_FILE=~/turn.secret TURN_DOCKER=1 deploy/turn/install.sh 194.58.109.202 -p 35242 root@194.58.109.202
+```
+
+openipc.ru's host is shared with other sites, so coturn runs there as the
+upstream image (`coturn-share`, host network) and leaves its packages alone.
+Rotating the secret means all three hosts and `SHARE_TURN_SECRET`, then a
+restart of the share role. Restarting coturn drops the sessions it is
+relaying at that moment; direct ones are untouched.
+
+**Check** a host without a browser, from any other one, with a credential
+minted from the secret: `turnutils_uclient -e <public echo peer> -u <user> -w
+<pass> <host>` answers with the round trip, and an expired credential must be
+refused. In a browser, `#<secret>&relay` on a share link forces the page to use
+a relay, and Diagnostics shows which one it took.
 
 ## What the relay holds
 
