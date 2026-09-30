@@ -161,6 +161,16 @@
   },
   {
     "role": "share",
+    "method": "POST",
+    "path": "/__share/signal"
+  },
+  {
+    "role": "share",
+    "method": "POST",
+    "path": "/__share/candidate"
+  },
+  {
+    "role": "share",
     "method": "GET",
     "path": "/__share/ice"
   },

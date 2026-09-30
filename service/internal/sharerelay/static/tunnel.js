@@ -68,8 +68,9 @@ export class ShareError extends Error {}
 // It looks like a WebSocket to open() below; the camera's own signalling, on
 // its own network, is a real one.
 class StreamSignal {
-  constructor(url) {
+  constructor(url, trace = () => {}) {
     this.url = url;
+    this.trace = trace;
     this.readyState = 1; // nothing to open: the offer is the first request
     this.ctl = new AbortController();
     this.sid = null;
@@ -84,11 +85,21 @@ class StreamSignal {
     else this.early.push(m.data);
   }
 
-  candidate(data) {
+  // One retry for a network failure or a relay error; a candidate that still
+  // does not go is said in the trace. It is not the end of the session: ICE
+  // usually succeeds on the others, and a failure there is reported anyway.
+  candidate(data, retry = true) {
     const u = this.url.replace('/__share/signal', '/__share/candidate') + '&session=' + this.sid;
-    // Read to its end, empty as it is: Chrome counts a response nobody read
-    // as an aborted request, although the relay has it.
-    fetch(u, { method: 'POST', body: data, signal: this.ctl.signal }).then((r) => r.arrayBuffer()).catch(() => {});
+    const failed = (why) => {
+      if (this.readyState === 3) return;
+      if (retry) setTimeout(() => this.candidate(data, false), 200);
+      else this.trace('candidate not delivered', why);
+    };
+    fetch(u, { method: 'POST', body: data, signal: this.ctl.signal })
+      // Read to its end, empty as it is: Chrome counts a response nobody
+      // read as an aborted request, although the relay has it.
+      .then(async (r) => { await r.arrayBuffer(); if (!r.ok) failed(`HTTP ${r.status}`); })
+      .catch((e) => failed(String(e && e.message || e)));
   }
 
   async stream(offer) {
@@ -200,7 +211,7 @@ export class Tunnel {
       // runs while the ICE servers are still arriving, instead of after them.
       // The peer connection is made when they do, and the offer goes once
       // both the socket and the connection are there.
-      const ws = (this.ws = /^https?:/.test(this.signal) ? new StreamSignal(this.signal) : new WebSocket(this.signal));
+      const ws = (this.ws = /^https?:/.test(this.signal) ? new StreamSignal(this.signal, this.trace) : new WebSocket(this.signal));
       let pc = null;
       let dc = null;
       let offered = false;

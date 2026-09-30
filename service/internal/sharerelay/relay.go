@@ -681,9 +681,15 @@ func (h *Hub) SignalStream() http.Handler {
 		hd.Set("Content-Type", "application/x-ndjson")
 		hd.Set("Cache-Control", "no-store")
 		hd.Set("X-Accel-Buffering", "no")
-		line := func(b []byte) {
-			_, _ = w.Write(append(b, '\n'))
-			_ = rc.Flush()
+		// Each line has ten seconds to leave: a page that stops reading
+		// would otherwise block the write, and with it the lifetime check
+		// and the release of its session slot.
+		line := func(b []byte) bool {
+			_ = rc.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if _, err := w.Write(append(b, '\n')); err != nil {
+				return false
+			}
+			return rc.Flush() == nil
 		}
 		p, why := h.attach(ShareFromRequest(r), nil)
 		if p == nil {
@@ -691,7 +697,9 @@ func (h *Hub) SignalStream() http.Handler {
 			return
 		}
 		defer h.detach(p)
-		line(marshal(map[string]string{"reply": "session", "data": p.sid}))
+		if !line(marshal(map[string]string{"reply": "session", "data": p.sid})) {
+			return
+		}
 		h.forward(p, "offer", m.Data)
 		// As long as a socket session, and no longer: see Signal.
 		ctx, cancel := context.WithTimeout(r.Context(), PageLifetime)
@@ -701,10 +709,9 @@ func (h *Hub) SignalStream() http.Handler {
 			case <-ctx.Done():
 				return
 			case msg, ok := <-p.out:
-				if !ok {
+				if !ok || !line(msg) {
 					return
 				}
-				line(msg)
 			}
 		}
 	})

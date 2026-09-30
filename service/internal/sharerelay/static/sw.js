@@ -46,7 +46,8 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith(RESERVED)) return;
   if (e.request.mode === 'navigate' && e.request.destination === 'document') {
-    e.respondWith(shell(e));
+    // Every path is the shell, except the service's health check.
+    if (url.pathname !== '/up') e.respondWith(shell(e));
     return;
   }
   e.respondWith(viaTunnel(e, e.request, url));
@@ -60,7 +61,9 @@ self.addEventListener('fetch', (e) => {
 // the whole it was; the next open runs the new one.
 async function shell(e) {
   const fresh = fetch(e.request).then(async (r) => {
-    if (r.status === 200) {
+    // Only the shell itself is kept: anything else answering a navigation
+    // must never be served in its place.
+    if (r.status === 200 && /^text\/html/i.test(r.headers.get('content-type') || '')) {
       const c = await caches.open(SHELL);
       await c.put('/', r.clone());
     }
