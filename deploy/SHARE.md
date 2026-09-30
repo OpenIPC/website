@@ -38,14 +38,50 @@ other two roles; what it cannot do on its own is give it a name. In order:
    is expected). Then share a camera from its WebUI and open the link from
    another network.
 
+## share.openipc.cloud, the name every camera and guest can reach
+
+Some providers -- Russia's among them -- filter openipc.org's addresses. A
+guest behind one cannot open a link on share.openipc.org, and a camera behind
+one cannot register a share there. So current firmware dials
+`wss://share.openipc.cloud/__share/device` and gives links on
+`<id>.share.openipc.cloud`, and that name is served by the openipc.kz host
+(194.238.42.216), which both sides reach:
+
+- **DNS:** `share.openipc.cloud` and `*.share.openipc.cloud`, A records to
+  194.238.42.216, in the Hetzner zone `openipc.cloud`.
+- **The vhost there,** `deploy/nginx/mirrors/kz/sites-available/cloud.openipc.share`,
+  installed by that directory's `push.sh --apply`, proxies everything to the
+  vhost here, with the reader's Host (the share role reads the share id from
+  it) and X-Forwarded-For (which this host trusts from that one). This vhost
+  answers the .cloud names for exactly that reason.
+- **One relay behind both names.** The share role keeps its registry in
+  memory, so a second copy on the openipc.kz host would split cameras from
+  their guests. Behind one proxy there is one registry: a camera on either
+  name is found from a link on either name, and firmware that still dials
+  share.openipc.org keeps working wherever it did.
+- **The certificate** is a wildcard too, so it is issued here over DNS-01 --
+  `/etc/dehydrated/domains.txt` lists `share.openipc.cloud *.share.openipc.cloud`,
+  its `certs/share.openipc.cloud/config` selects dns-01, and
+  `hetzner-dns01.py` finds the zone from the name. The openipc.kz host keeps
+  no DNS token by design (its `install-tls.sh` says why), so `hook.sh` hands
+  every renewal over: a tar of the key and chain over ssh with
+  `/root/.ssh/share-cert-push`, whose authorized_keys entry there is
+  `restrict,command="sudo -n /usr/local/sbin/install-share-cert"`. That
+  installer (`mirrors/kz/share-cert/`) checks the pair, the name and the
+  expiry, installs, and puts the old pair back if nginx refuses the new one.
+  The hook and the helper are in `deploy/dehydrated/`.
+
+Only signalling passes through the openipc.kz host: sessions go peer to peer,
+or through a TURN relay, and the relays are listed with openipc.kz first.
+
 ## Settings
 
 In `/srv/www/.env.go-<env>`, all optional:
 
 | Variable | Default | |
 |---|---|---|
-| `SHARE_ORIGINS` | `*.share.openipc.org` | Hosts a page's signalling socket may come from. |
-| `SHARE_STUN_URLS` | `stun:stun.cloudflare.com:3478` | Given to the page. |
+| `SHARE_ORIGINS` | `*.share.openipc.org,*.share.openipc.cloud` | Hosts a page's signalling socket may come from. |
+| `SHARE_STUN_URLS` | `stun:stun.cloudflare.com:3478` | Given to the page. Prod: `stun:openipc.kz:3478` first -- Cloudflare is throttled in places. |
 | `SHARE_TURN_URLS` | none | TURN for guests whose network and the camera's cannot meet directly. |
 | `SHARE_TURN_SECRET` | none | coturn's `static-auth-secret`; credentials are minted per page (TURN REST). |
 
@@ -61,11 +97,12 @@ each on UDP and TCP 3478 with relay ports 49160-49999, all holding the same
 secret:
 
 ```
-SHARE_TURN_URLS=turn:openipc.org:3478?transport=udp,turn:openipc.kz:3478?transport=udp,turn:openipc.ru:3478?transport=udp,turn:openipc.org:3478?transport=tcp,turn:openipc.kz:3478?transport=tcp,turn:openipc.ru:3478?transport=tcp
+SHARE_TURN_URLS=turn:openipc.kz:3478?transport=udp,turn:openipc.ru:3478?transport=udp,turn:openipc.org:3478?transport=udp,turn:openipc.kz:3478?transport=tcp,turn:openipc.ru:3478?transport=tcp,turn:openipc.org:3478?transport=tcp
 ```
 
-The page is given every URL and ICE keeps whichever relay works; a direct
-path, when there is one, still wins over all of them.
+The page is given every URL and ICE keeps whichever relay works -- Chrome
+prefers them in the order given, so openipc.kz, reachable from everywhere,
+comes first. A direct path, when there is one, still wins over all of them.
 
 **Credentials.** `/__share/ice` issues a TURN credential only to a page that
 sends the share's relay token (`X-Share-Token`, derived from the link's

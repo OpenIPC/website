@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# Install the share.openipc.cloud wildcard handed over by the origin, then
+# reload nginx. Installed as /usr/local/sbin/install-share-cert, and the only
+# thing the origin's hand-over key may run here:
+#
+#   authorized_keys (ubuntu):
+#   restrict,command="sudo -n /usr/local/sbin/install-share-cert" ssh-ed25519 ... share-cert-push@webber-eu
+#
+# stdin is a tar of privkey.pem and fullchain.pem. They are checked -- a pair,
+# naming the share wildcard, not expiring within a day -- before they replace
+# anything, and the previous pair comes back if nginx will not take the new.
+set -eu
+
+DIR=/etc/nginx/certs/share.openipc.cloud
+NAME='*.share.openipc.cloud'
+[ "$(id -u)" = 0 ] || { echo "install-share-cert: needs root" >&2; exit 1; }
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+umask 077
+head -c 1048576 | tar -xf - -C "$tmp" --no-same-owner --no-same-permissions privkey.pem fullchain.pem
+
+key="$tmp/privkey.pem"
+crt="$tmp/fullchain.pem"
+[ "$(openssl pkey -in "$key" -pubout 2>/dev/null | sha256sum)" = \
+  "$(openssl x509 -in "$crt" -noout -pubkey 2>/dev/null | sha256sum)" ] ||
+  { echo "install-share-cert: key and certificate are not a pair" >&2; exit 1; }
+openssl x509 -in "$crt" -noout -ext subjectAltName 2>/dev/null | grep -qF "DNS:$NAME" ||
+  { echo "install-share-cert: certificate does not name $NAME" >&2; exit 1; }
+openssl x509 -in "$crt" -noout -checkend 86400 >/dev/null ||
+  { echo "install-share-cert: certificate expires within a day" >&2; exit 1; }
+
+mkdir -p "$DIR"
+chmod 700 "$DIR"
+for f in privkey.pem fullchain.pem; do
+  [ -f "$DIR/$f" ] && cp -p "$DIR/$f" "$DIR/$f.prev"
+  install -m 600 -o root -g root "$tmp/$f" "$DIR/$f.new"
+  mv "$DIR/$f.new" "$DIR/$f"
+done
+
+if nginx -t -q 2>/dev/null; then
+  systemctl reload nginx
+  echo "install-share-cert: installed, valid until $(openssl x509 -in "$DIR/fullchain.pem" -noout -enddate | cut -d= -f2)"
+else
+  for f in privkey.pem fullchain.pem; do
+    [ -f "$DIR/$f.prev" ] && mv "$DIR/$f.prev" "$DIR/$f"
+  done
+  echo "install-share-cert: nginx -t failed; previous certificate restored" >&2
+  exit 1
+fi
