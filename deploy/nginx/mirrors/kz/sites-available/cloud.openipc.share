@@ -1,0 +1,69 @@
+# Camera sharing links for everyone: share.openipc.cloud and
+# <id>.share.openipc.cloud.
+#
+# openipc.org's addresses are filtered by Russian providers, so a share link
+# on share.openipc.org fails for a guest there, and a camera there cannot
+# reach its relay. This host is reachable from both sides, so it is the front
+# door every camera and guest can use; behind it is the one share role on the
+# origin, whose registry therefore holds every camera whichever name it
+# dials. Only signalling passes through here -- a session's traffic goes
+# peer to peer, or through a TURN relay.
+#
+# The wildcard is issued on the origin over DNS-01 and handed over by its
+# dehydrated hook (share-cert/ in this directory), because this host keeps no
+# DNS token.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name share.openipc.cloud *.share.openipc.cloud;
+    access_log /var/log/nginx/cloud.openipc.share.access.log;
+    error_log  /var/log/nginx/cloud.openipc.share.error.log;
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name share.openipc.cloud *.share.openipc.cloud;
+    access_log /var/log/nginx/cloud.openipc.share.access.log;
+    error_log  /var/log/nginx/cloud.openipc.share.error.log;
+
+    ssl_certificate     /etc/nginx/certs/share.openipc.cloud/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/share.openipc.cloud/privkey.pem;
+    include snippets/openipc-tls.conf;
+
+    add_header Strict-Transport-Security "max-age=15768000" always;
+    add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+
+    # Signalling is small; nothing here takes a body worth the name.
+    client_max_body_size 64k;
+
+    location / {
+        # To the origin's share vhost, which answers these names too. The
+        # Host is kept: the share role reads the share id from it, and the
+        # page's origin is checked against it. The reader's address goes on
+        # in X-Forwarded-For, which the origin trusts from this host, so its
+        # per-address limits bound a reader, not this whole mirror.
+        proxy_pass https://share.openipc.org;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_ssl_server_name         on;
+        proxy_ssl_name                share.openipc.org;
+        proxy_ssl_verify              on;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+        proxy_ssl_verify_depth        3;
+        proxy_http_version 1.1;
+        # A camera holds its relay socket for as long as it has a share.
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+        proxy_hide_header Strict-Transport-Security;
+    }
+}
