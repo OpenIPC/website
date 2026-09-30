@@ -378,7 +378,12 @@ Yandex account). openipc.ru's DNS is at axelname.ru, not Hetzner, so for the
 Yandex login that reads search statistics (#179) it was verified on
 2026-09-30 by an HTML file instead: `/var/www/yandex-verification/` on natrium,
 served by an exact `location` in its `ru.openipc` vhost. A rebuild of natrium
-must bring that back, or Yandex drops the site from that login. Bing carries no TXT record, so
+must bring that back, or Yandex drops the site from that login: Yandex
+Webmaster shows the file's name and content again under the site's
+**Настройки → Права доступа** (Settings → Access rights), and it goes back as
+`location = /yandex_<code>.html { root /var/www/yandex-verification; }` in the
+HTTPS server block. It is kept out of the repository on purpose, like the DNS
+tokens: it belongs to this name and this login, not to the site's code. Bing carries no TXT record, so
 it was registered by one of the other routes Bing offers — most likely the
 import from Google Search Console, which needs no record of its own.
 

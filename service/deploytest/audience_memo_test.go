@@ -441,3 +441,74 @@ func TestSearchQueriesListedFloor(t *testing.T) {
 		"the floor is the queries' sum, position weighted by impressions: (1*10+5*30)/40")
 	mustContain(t, readAbs(t, filepath.Join(dir, "b.tsv")), "#total\t0\t0\t0.00\n", "an empty day stays an honest zero")
 }
+
+// searchQueriesPy runs a Python snippet with the fetcher imported as `sq`.
+func searchQueriesPy(t *testing.T, body string) string {
+	t.Helper()
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skip("python3 not available")
+	}
+	script := "import importlib.util, sys\n" +
+		"spec = importlib.util.spec_from_file_location('sq', sys.argv[1])\n" +
+		"sq = importlib.util.module_from_spec(spec); spec.loader.exec_module(sq)\n" + body
+	out, ok := run(t, nil, "", "python3", "-c", script, abs(t, "deploy/search-queries.py"))
+	if !ok {
+		t.Fatalf("python failed:\n%s", out)
+	}
+	return out
+}
+
+// The filter holds sexual and abuse searches in English and Russian, and
+// prints the camera searches that share words with them (#356 review).
+func TestSearchQueriesWithheld(t *testing.T) {
+	out := searchQueriesPy(t, `
+held = ["+nn preteen top sites +list", "preteenies.org", "csam videos", "underage pornography",
+        "security cam sex telegram", "ip cam nude family", "secrethentai", "teen models",
+        "детское порно", "малолетки", "эротика"]
+kept = ["nn models for hi3516", "hi3516 nn model", "sexagesimal", "essex camera",
+        "openipc прошивка камеры", "sigmastar ssc338q"]
+for q in held:
+    print("HELD" if sq.WITHHELD.search(q.lower()) else "MISSED", q)
+for q in kept:
+    print("WRONGLY-HELD" if sq.WITHHELD.search(q.lower()) else "KEPT", q)
+`)
+	mustNotContain(t, out, "MISSED", "a sexual or abuse search would reach the memo")
+	mustNotContain(t, out, "WRONGLY-HELD", "a camera search is hidden as abuse")
+}
+
+// One engine failing does not stop the other, one Yandex host failing does not
+// stop the next, and the exit status still says something failed (#356 review).
+func TestSearchQueriesFailuresAreIsolated(t *testing.T) {
+	out := searchQueriesPy(t, `
+import types
+calls = []
+def bad_google(conf, args, since, days):
+    calls.append("google"); raise OSError("no route to host")
+def fake_yandex(conf, args, since, days):
+    calls.append("yandex")
+sq.fetch_google, real_yandex, sq.fetch_yandex = bad_google, sq.fetch_yandex, fake_yandex
+rc = sq.fetch(types.SimpleNamespace(since="2026-09-01", dir="/nonexistent"))
+print("engines", calls, "rc", rc)
+
+hosts = []
+def host(get, user, h, args, since, days):
+    hosts.append(h)
+    if h.startswith("https:first"):
+        raise RuntimeError("403 ACCESS_FORBIDDEN")
+    return user
+sq.fetch_yandex_host = host
+try:
+    real_yandex({"YANDEX_OAUTH_TOKEN": "x", "YANDEX_HOSTS": "https:first:443 https:second:443"}, None, None, [])
+    print("hosts", hosts, "no error")
+except RuntimeError as e:
+    print("hosts", hosts, "error", e)
+
+try:
+    sq.http_json("http://127.0.0.1:9/")
+except RuntimeError as e:
+    print("connection error is RuntimeError")
+`)
+	mustContain(t, out, "engines ['google', 'yandex'] rc 1", "Google failing stopped Yandex, or the exit status hid it")
+	mustContain(t, out, "hosts ['https:first:443', 'https:second:443'] error", "a failing host stopped the next, or the failure was swallowed")
+	mustContain(t, out, "connection error is RuntimeError", "a refused connection escapes the engine boundary")
+}

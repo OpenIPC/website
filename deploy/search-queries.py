@@ -41,9 +41,12 @@ the label "#listed" in place of "#total", and `top` says how many such days
 its figures include -- the sum is a floor, not the real total.
 
 Search statistics bring in whatever strangers type. `top` never prints a query
-matching WITHHELD -- searches for child sexual abuse material, which do land on
-this site from spam and scraper traffic -- but counts it, and says how many it
-kept back. The archive stays verbatim, so the count can be checked.
+matching WITHHELD -- sexual searches, among them searches for child sexual
+abuse material, which do land on this site -- but counts it, and says how many
+it kept back. The archive stays verbatim, so the count can be checked.
+
+`fetch` fails per engine and per Yandex host: one that errors is reported on
+stderr and the others still run, and the exit status is non-zero if any did.
 
 `top` aggregates a month of the archive into the Markdown the memo prints.
 Positions are averaged weighted by impressions, which is how the console
@@ -61,8 +64,8 @@ Credentials are read on the host, never from the repository:
 
 either from the environment or from /srv/www/.env.search (SEARCH_ENV). The
 service account is a Restricted user of the property, which reads and cannot
-change anything; the Yandex token can add sites, and this only reads. An engine without credentials is skipped with a line saying
-so. No third-party modules: the host has python3 and openssl, which is enough
+change anything; the Yandex token can add sites, and this only reads. An
+engine without credentials is skipped with a line saying so. No third-party modules: the host has python3 and openssl, which is enough
 to sign the token request.
 """
 import argparse
@@ -83,9 +86,25 @@ import urllib.request
 DEFAULT_DIR = "/srv/www/shared/reports/search"
 YANDEX_API = "https://api.webmaster.yandex.net/v4"
 
-# Matched against the lower-cased query. Deliberately narrow: each term has no
-# innocent reading on a camera-firmware site.
-WITHHELD = re.compile(r"preteen|pre-teen|\bpthc\b|jailbait|\bloli(ta)?\b|child ?porn|\bnn\b.*\b(sites?|models?|girls?)\b")
+# What one engine or one host may fail with without stopping the others: a
+# request (RuntimeError, from http_json), a reply missing a field, the key file
+# or openssl failing while Google's token is signed.
+FETCH_ERRORS = (RuntimeError, KeyError, TypeError, ValueError, OSError,
+                subprocess.CalledProcessError)
+
+# Matched against the lower-cased query. Broad on purpose: any sexual or abuse
+# term, English or Russian, since none of them has an innocent reading on a
+# camera-firmware site and a false positive only costs one row of the memo,
+# while a miss prints the search. "nn" is held only next to "girls" or "sites":
+# "nn models" is also how people search for neural-network models, which the
+# edge-AI pages attract, and the abuse searches that use it carry one of the
+# other terms ("preteen", "teen", "sites") as well. Not a guarantee: `top`
+# reports how many rows it held, and the archive is there to be read.
+WITHHELD = re.compile(
+    r"preteen|pre-teen|\bpthc\b|jailbait|\bloli(ta|con)?\b|\bpedo|\bcsam\b|underage|"
+    r"child\s*porn|\bnn\s+(girls?|sites?)\b|\bteens?\b|porn|\bxxx\b|\bnude|\bnsfw\b|hentai|"
+    r"\bsex(y|ual)?\b|\berotic|"
+    r"порн|малолет|педо|\bсекс|эрот|\bголы[еймх]")
 
 
 def settings():
@@ -108,12 +127,18 @@ def settings():
 
 
 def http_json(url, data=None, headers=None):
+    """Every way a request can fail -- an HTTP error, a timeout, a refused
+    connection, a reply that is not JSON -- comes out as RuntimeError, which
+    is what the engine and host boundaries in `fetch` catch."""
     req = urllib.request.Request(url, data=data, headers=headers or {})
+    where = url.split("?")[0]
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
             return json.load(r)
     except urllib.error.HTTPError as e:
-        raise RuntimeError("%s -> HTTP %d: %s" % (url.split("?")[0], e.code, e.read().decode(errors="replace")[:300]))
+        raise RuntimeError("%s -> HTTP %d: %s" % (where, e.code, e.read().decode(errors="replace")[:300]))
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        raise RuntimeError("%s -> %s" % (where, e))
 
 
 def google_token(key_file):
@@ -263,25 +288,39 @@ def fetch_yandex(conf, args, since, days):
         return
     get = yandex_api(conf["YANDEX_OAUTH_TOKEN"])
     user = None
+    failed = []
     for host in conf["YANDEX_HOSTS"].split():
-        label = "yandex %s" % host
-        dirpath = os.path.join(args.dir, yandex_dir(host))
-        have, gaps = missing(dirpath, days)
-        if not gaps:
-            print("%s: archive complete from %s" % (label, since))
-            continue
-        if user is None:
-            user = get("/user")["user_id"]
-        base = "/user/%s/hosts/%s" % (user, host)
-        final = yandex_final_days(get, base, since.isoformat(), days[-1].isoformat())
-        wrote = []
-        for day in sorted(set(final) - have):
-            rows = yandex_queries(get, base, day)
-            write_day(os.path.join(dirpath, day + ".tsv"), final[day], rows)
-            wrote.append("%s (%d queries)" % (day, len(rows)))
-        print("%s: wrote %s" % (label, ", ".join(wrote) or "nothing new"))
-        if final:
-            print("%s: through %s; Yandex publishes every few days" % (label, max(final)))
+        # One site losing its rights, or one failed request, must not keep
+        # the other site's archive from being filled.
+        try:
+            user = fetch_yandex_host(get, user, host, args, since, days)
+        except FETCH_ERRORS as e:
+            print("yandex %s: failed: %s" % (host, e), file=sys.stderr)
+            failed.append(host)
+    if failed:
+        raise RuntimeError("%d of %d Yandex host(s) failed" % (len(failed), len(conf["YANDEX_HOSTS"].split())))
+
+
+def fetch_yandex_host(get, user, host, args, since, days):
+    label = "yandex %s" % host
+    dirpath = os.path.join(args.dir, yandex_dir(host))
+    have, gaps = missing(dirpath, days)
+    if not gaps:
+        print("%s: archive complete from %s" % (label, since))
+        return user
+    if user is None:
+        user = get("/user")["user_id"]
+    base = "/user/%s/hosts/%s" % (user, host)
+    final = yandex_final_days(get, base, since.isoformat(), days[-1].isoformat())
+    wrote = []
+    for day in sorted(set(final) - have):
+        rows = yandex_queries(get, base, day)
+        write_day(os.path.join(dirpath, day + ".tsv"), final[day], rows)
+        wrote.append("%s (%d queries)" % (day, len(rows)))
+    print("%s: wrote %s" % (label, ", ".join(wrote) or "nothing new"))
+    if final:
+        print("%s: through %s; Yandex publishes every few days" % (label, max(final)))
+    return user
 
 
 def fetch(args):
@@ -295,7 +334,7 @@ def fetch(args):
     for name, run in (("google", fetch_google), ("yandex", fetch_yandex)):
         try:
             run(conf, args, since, days)
-        except RuntimeError as e:
+        except FETCH_ERRORS as e:
             print("%s: failed: %s" % (name, e), file=sys.stderr)
             failed.append(name)
     return 1 if failed else 0

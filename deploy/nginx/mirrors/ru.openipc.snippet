@@ -94,12 +94,10 @@ location = / {
 # submitted to Yandex Webmaster for https:openipc.ru:443 the same day.
 #
 # sub_filter cannot read a compressed body, so BOTH proxying locations that
-# serve pages -- `location = /` above and the host's `location /` -- carry
-#
-#     proxy_set_header Accept-Encoding "";
-#
-# (a location that sets any proxy_set_header inherits none from its server).
-# The mirror still gzips HTML to the reader itself.
+# serve pages -- `location = /` above and `location /` below -- carry
+# `proxy_set_header Accept-Encoding "";` (a location that sets any
+# proxy_set_header inherits none from its server). The mirror still gzips HTML
+# to the reader itself.
 
 sub_filter_once  off;
 sub_filter_types text/xml application/xml;
@@ -107,3 +105,37 @@ sub_filter 'rel="canonical" href="https://openipc.org/ru'      'rel="canonical" 
 sub_filter 'hreflang="ru" href="https://openipc.org/ru'        'hreflang="ru" href="https://openipc.ru/ru';
 sub_filter 'property="og:url" content="https://openipc.org/ru' 'property="og:url" content="https://openipc.ru/ru';
 sub_filter '<loc>https://openipc.org/ru'                       '<loc>https://openipc.ru/ru';
+
+# The host's catch-all, as it stands on 2026-09-30, recorded so the header the
+# rewrite depends on is held by a test rather than by memory. It was on the
+# host before this directory existed; only the Accept-Encoding line is new.
+
+location / {
+    proxy_pass https://openipc.org/;
+    proxy_set_header Accept-Encoding   "";
+
+    # Передаём основному серверу, кто на самом деле пришёл.
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # Указываем имя узла в TLS-рукопожатии: на основном сервере
+    # несколько сайтов на одном адресе.
+    proxy_ssl_server_name on;
+    proxy_ssl_name        openipc.org;
+
+    # Проверка сертификата основного сервера
+    proxy_ssl_verify              on;
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    proxy_ssl_verify_depth        3;
+
+    # По умолчанию nginx ходит к upstream по HTTP/1.0.
+    proxy_http_version 1.1;
+
+    # Тот же предел, что и на основном сервере. Через зеркала
+    # камеры загружают снимки — пределы обязаны совпадать.
+    client_max_body_size 1m;
+
+    # Этот server сам ставит HSTS; копия с основного сервера -- вторая.
+    proxy_hide_header Strict-Transport-Security;
+}

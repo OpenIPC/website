@@ -153,9 +153,13 @@ func TestRuMirrorOwnsTheRussianPages(t *testing.T) {
 	}
 	mustMatch(t, `(?m)^sub_filter_once\s+off;`, snippet, "only the first occurrence on each page would be rewritten")
 	mustMatch(t, `(?m)^sub_filter_types\s+text/xml`, snippet, "the sitemap is not rewritten")
+	// Both locations that proxy pages must ask the origin for an uncompressed
+	// body; a gzipped one passes through sub_filter unrewritten.
 	root := find(snippet, regexp.MustCompile(`(?sm)^\s*(location = / \{.*?\}.*?\})`), 1)
-	mustMatch(t, `proxy_set_header\s+Accept-Encoding\s+"";`, root, "a gzipped upstream body passes through sub_filter unrewritten")
-	mustContain(t, snippet, `location /`, "the note naming the host's location / as needing the same header")
+	mustMatch(t, `proxy_set_header\s+Accept-Encoding\s+"";`, root, "location = / lets a gzipped body through sub_filter")
+	catchall := find(snippet, regexp.MustCompile(`(?sm)^(location / \{.*?^\})`), 1)
+	mustMatch(t, `proxy_pass https://openipc\.org/;`, catchall, "the recorded catch-all is not the one that proxies pages")
+	mustMatch(t, `proxy_set_header\s+Accept-Encoding\s+"";`, catchall, "location / lets a gzipped body through sub_filter")
 }
 
 // The host installers are run by copying deploy/ to the host and executing a
