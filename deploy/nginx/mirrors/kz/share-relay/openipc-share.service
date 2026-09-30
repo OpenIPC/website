@@ -1,0 +1,36 @@
+# The share relay on the host that serves share.openipc.cloud.
+#
+# Pages and cameras both reach share.openipc.cloud through this host's nginx.
+# With the relay on the origin, every signalling message crossed to it and
+# back -- 58 ms each way, twice for an offer and its answer -- so it runs here,
+# next to the nginx in front of it. The same binary as the origin's share
+# role, from the same release image (install.sh), with only its SHARE_*
+# settings: no database, nothing else of the website's.
+[Unit]
+Description=OpenIPC share relay (serve --role share)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/lib/openipc-share/current serve --role share --listen 127.0.0.1:3004
+EnvironmentFile=/etc/openipc-share.env
+Restart=always
+RestartSec=2
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+# A one-CPU, one-gigabyte host that also runs nginx and coturn: the relay
+# holds a socket per camera with a live share and a few per open page.
+MemoryMax=192M
+
+[Install]
+WantedBy=multi-user.target
