@@ -205,10 +205,8 @@ func TestOnlyAHolderOfTheTokenCanRegisterAnId(t *testing.T) {
 }
 
 func TestASocketThatRegistersNothingIsClosed(t *testing.T) {
-	old := RegisterDeadline
-	RegisterDeadline = 150 * time.Millisecond
-	defer func() { RegisterDeadline = old }()
-	_, srv := rig(t)
+	h, srv := rig(t)
+	h.RegisterDeadline = 150 * time.Millisecond
 	idle := dial(t, srv, "/__share/device")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -538,5 +536,111 @@ func TestASessionRunsOnThePagesOwnConnection(t *testing.T) {
 	nresp.Body.Close()
 	if nresp.StatusCode != http.StatusNotFound {
 		t.Fatalf("unknown session: %d", nresp.StatusCode)
+	}
+}
+
+// openStream starts a streamed session and returns its session id and a
+// reader of its lines.
+func openStream(t *testing.T, srv *httptest.Server) (string, func() map[string]string) {
+	t.Helper()
+	req, _ := http.NewRequest("POST", srv.URL+"/__share/signal?share="+id, strings.NewReader(`{"req":"offer","data":"v=0"}`))
+	req.Header.Set("Origin", srv.URL)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { resp.Body.Close() })
+	lines := bufio.NewScanner(resp.Body)
+	next := func() map[string]string {
+		t.Helper()
+		if !lines.Scan() {
+			t.Fatalf("the stream ended: %v", lines.Err())
+		}
+		var m map[string]string
+		_ = json.Unmarshal(lines.Bytes(), &m)
+		return m
+	}
+	first := next()
+	if first["reply"] != "session" {
+		t.Fatalf("first line %v", first)
+	}
+	return first["data"], next
+}
+
+func post(t *testing.T, srv *httptest.Server, path string) int {
+	t.Helper()
+	req, _ := http.NewRequest("POST", srv.URL+path, nil)
+	req.Header.Set("Origin", srv.URL)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	return resp.StatusCode
+}
+
+// A page the camera has admitted keeps its stream to hear the share end,
+// however long the guest stays, and gives up its session slot to do it.
+func TestAnAdmittedPageHearsTheShareEndForTheWholeSession(t *testing.T) {
+	h, srv := rig(t)
+	h.ListenerPing = 50 * time.Millisecond
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	sid, next := openStream(t, srv)
+	recv(t, cam) // the offer
+
+	if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusNoContent {
+		t.Fatalf("connected: %d", c)
+	}
+	// Its slot is free: three more pages can set up.
+	for i := 0; i < MaxSessionsPerShare; i++ {
+		if s, _ := openStream(t, srv); s == "" {
+			t.Fatal("no session")
+		}
+		recv(t, cam)
+	}
+	// The stream is kept open.
+	if m := next(); m["reply"] != "ping" {
+		t.Fatalf("got %v", m)
+	}
+	// And the end of the share reaches it.
+	send(t, cam, map[string]string{"type": "unregister", "share": id})
+	for {
+		m := next()
+		if m["reply"] == "ping" {
+			continue
+		}
+		if m["reply"] != "closed" || m["ended"] != "true" {
+			t.Fatalf("got %v", m)
+		}
+		break
+	}
+	// A session nobody holds, or one already a listener, cannot be promoted.
+	if c := post(t, srv, "/__share/connected?share="+id+"&session=0000000000000000"); c != http.StatusNotFound {
+		t.Fatalf("unknown session: %d", c)
+	}
+}
+
+// Listeners hold no slot, so they are bounded on their own: someone who knows
+// only a share's name cannot make the relay keep much for it.
+func TestListenersAreBounded(t *testing.T) {
+	h, srv := rig(t)
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	for i := 0; i < MaxListenersPerShare; i++ {
+		sid, _ := openStream(t, srv)
+		recv(t, cam)
+		if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusNoContent {
+			t.Fatalf("listener %d: %d", i, c)
+		}
+	}
+	sid, _ := openStream(t, srv)
+	recv(t, cam)
+	if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusTooManyRequests {
+		t.Fatalf("past the bound: %d", c)
+	}
+	h.mu.Lock()
+	n := len(h.shares[id].listeners)
+	h.mu.Unlock()
+	if n != MaxListenersPerShare {
+		t.Fatalf("%d listeners", n)
 	}
 }

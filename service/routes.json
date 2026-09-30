@@ -171,6 +171,11 @@
   },
   {
     "role": "share",
+    "method": "POST",
+    "path": "/__share/connected"
+  },
+  {
+    "role": "share",
     "method": "GET",
     "path": "/__share/ice"
   },
