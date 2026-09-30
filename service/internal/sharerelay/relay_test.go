@@ -647,9 +647,12 @@ func TestAnAdmittedPageHearsTheShareEndForTheWholeSession(t *testing.T) {
 func TestAListenerEndsWithTheCamerasSession(t *testing.T) {
 	h, srv := rig(t)
 	cam := register(t, srv, time.Now().Add(time.Hour))
-	sid, _ := openStream(t, srv)
+	sid, next := openStream(t, srv)
 	recv(t, cam)
 	admit(t, cam, sid)
+	if m := next(); m["reply"] != "answer" {
+		t.Fatalf("got %v", m)
+	}
 	if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusNoContent {
 		t.Fatalf("connected: %d", c)
 	}
@@ -672,9 +675,14 @@ func TestListenersAreBounded(t *testing.T) {
 	h, srv := rig(t)
 	cam := register(t, srv, time.Now().Add(time.Hour))
 	promote := func(addr string) int {
-		sid, _ := openStream(t, srv, addr)
+		sid, next := openStream(t, srv, addr)
 		recv(t, cam)
 		admit(t, cam, sid)
+		// The relay takes the camera's answer in its own time: the page has
+		// it once it is on the stream, and only then may it ask.
+		if m := next(); m["reply"] != "answer" {
+			t.Fatalf("got %v", m)
+		}
 		return post(t, srv, "/__share/connected?share="+id+"&session="+sid)
 	}
 	for i := 0; i < MaxListenersPerAddress; i++ {
