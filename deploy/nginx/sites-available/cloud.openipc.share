@@ -31,9 +31,10 @@ server {
     add_header Strict-Transport-Security max-age=15768000 always;
     add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
 
-    # $realip_remote_addr is the peer itself; $remote_addr is already the
-    # reader the openipc.kz host names in X-Forwarded-For (nginx.conf trusts it).
-    if ($realip_remote_addr != 194.238.42.216) {
+    # $share_door (nginx.conf, beside set_real_ip_from) is whether the peer
+    # itself is the openipc.kz host; $remote_addr is already the reader it
+    # names in X-Forwarded-For.
+    if ($share_door = 0) {
         return 444;
     }
 

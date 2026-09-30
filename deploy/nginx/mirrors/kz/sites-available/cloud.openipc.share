@@ -3,18 +3,24 @@
 #
 # openipc.org's addresses are filtered by some providers -- Russia's among
 # them -- so the share names point here, a host both sides reach. Behind it is
-# the one share role on the origin, reached by address: these names resolve
-# to this host, so the origin is asked for by IP and must present the same
-# wildcard (its vhost, sites-available/cloud.openipc.share, admits nobody
-# else). Only signalling passes through here -- a session's traffic goes peer
+# the one share role on the origin, reached as openipc.org -- these names
+# resolve to this host -- and made to present the same wildcard, which it
+# serves only to this host (its vhost, sites-available/cloud.openipc.share,
+# and the geo beside set_real_ip_from in its nginx.conf). Only signalling passes through here -- a session's traffic goes peer
 # to peer, or through a TURN relay.
 #
 # The wildcard is issued on the origin over DNS-01 and handed over by its
 # dehydrated hook (share-cert/ in this directory), because this host keeps no
 # DNS token.
 
+# An upstream of its own, not `proxy_pass https://openipc.org` inline: nginx
+# makes every inline proxy_pass to the same name one implicit upstream, with
+# one TLS session cache, and snippets/openipc-mirror.conf proxies to
+# openipc.org too. A session resumed from there comes back with openipc.org's
+# certificate, which fails the check against share.openipc.cloud below -- a
+# 502 for every share request.
 upstream share_origin {
-    server 37.27.251.71:443;
+    server openipc.org:443;
 }
 
 server {

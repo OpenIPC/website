@@ -1,0 +1,14 @@
+# Paths under /etc/nginx that must NOT exist on the origin: files this
+# repository once installed and has since renamed or dropped. push-nginx.sh
+# never deletes what is not in the repository on its own, so a vhost that is
+# only renamed here would go on serving there. It reports every path below
+# that is still present, and --apply moves each aside (as *.bak.<stamp>, with
+# its sites-enabled link for a vhost) in the same pass and under the same
+# restore as everything else it installs.
+#
+# One path per line; a line is removed from here only once no host could
+# still have it.
+
+# Renamed to sites-available/cloud.openipc.share when share.openipc.org was
+# retired for share.openipc.cloud (2026-09-30).
+sites-available/org.openipc.share

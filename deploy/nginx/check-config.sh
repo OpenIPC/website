@@ -36,6 +36,18 @@ FIXTURE=openipc-nginx-check:4
 die() { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 ok() { printf '\033[32m ok\033[0m %s\n' "$*"; }
 
+# The share vhost's door (nginx.conf's geo $share_door) must name only hosts
+# whose X-Forwarded-For is trusted: a door for a host realip does not trust
+# would admit it and then limit every reader behind it as one address. Plain
+# text, so it runs before, and without, docker.
+door=$(awk '/geo \$realip_remote_addr \$share_door/{g=1;next} g&&/}/{g=0} g&&$2~/^1;/{print $1}' "$HERE/nginx.conf")
+[ -n "$door" ] || die "nginx.conf: no address in geo \$share_door"
+for a in $door; do
+  grep -qE "^[[:space:]]*set_real_ip_from[[:space:]]+${a//./\\.};" "$HERE/nginx.conf" ||
+    die "nginx.conf: share door $a is not in set_real_ip_from"
+done
+ok "share door ($door) is trusted by set_real_ip_from"
+
 command -v docker >/dev/null || die "docker is needed to run ${BASE}"
 
 # Built once and cached. openssl dhparam 2048 takes minutes, so generating it
