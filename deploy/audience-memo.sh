@@ -363,9 +363,15 @@ fi
 # keeps daily (#179). Google keeps sixteen months and the day lands two to three
 # days late, so the memo on the 1st misses the month's last few days; the block
 # says which days it covers.
-search_block=""
+# Its errors go to stderr, which the cron entry sends to the memo's log; a
+# failure says so in the memo rather than passing for a missing tool.
+search_block="" search_state=absent
 if command -v python3 >/dev/null && [ -f "$SEARCH_QUERIES" ]; then
-  search_block=$(python3 "$SEARCH_QUERIES" top "$month" --n 20 --dir "$SEARCH_DIR" 2>/dev/null || true)
+  if search_block=$(python3 "$SEARCH_QUERIES" top "$month" --n 20 --dir "$SEARCH_DIR"); then
+    search_state=ok
+  else
+    search_state=failed search_block=""
+  fi
 fi
 
 gh_block=""
@@ -516,13 +522,20 @@ mkdir -p "$(dirname "$OUT")"
   echo
   echo "What people searched for before arriving, top 20 queries by clicks (openipc-search-queries, from the daily archive):"
   echo
-  if [ -n "$search_block" ]; then
-    printf '%s\n' "$search_block"
-    echo
-  else
-    echo "> _[MANUAL: paste the top queries from Search Console, Bing and Yandex Webmaster;"
-    echo "> openipc-search-queries is not installed on this host]_"
-  fi
+  case $search_state in
+    ok)
+      printf '%s\n' "$search_block"
+      echo
+      ;;
+    failed)
+      echo "> _[MANUAL: openipc-search-queries failed -- see /var/log/openipc-audience-memo.log;"
+      echo "> paste the top queries from Search Console, Bing and Yandex Webmaster]_"
+      ;;
+    *)
+      echo "> _[MANUAL: paste the top queries from Search Console, Bing and Yandex Webmaster;"
+      echo "> openipc-search-queries is not installed on this host]_"
+      ;;
+  esac
   echo "> _[MANUAL: Bing and Yandex Webmaster are not archived yet -- paste their top queries]_"
   echo
 

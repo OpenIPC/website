@@ -16,6 +16,11 @@ engine per day, never rewriting a day it already has:
     #total  <clicks>  <impressions>  <position>   every query, withheld ones too
     <query> <clicks>  <impressions>  <position>   the queries Google names
 
+The total is the first line by position, not by its label: someone can search
+for "#total", and that search is a query like any other. Query text is written
+with every control character replaced by a space, so a line is always four
+tab-separated fields.
+
 Google names only queries enough people typed; the rest are counted in #total
 and nowhere else, so the named rows never add up to the total and `top` says
 how much of it they cover. A day enters the archive once Google reports it
@@ -133,10 +138,10 @@ def google_queries(query, day):
 def write_day(path, total, rows):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
-    with open(tmp, "w") as f:
+    with open(tmp, "w", newline="\n") as f:
         f.write("#total\t%d\t%d\t%.2f\n" % (total["clicks"], total["impressions"], total["position"]))
         for q, c, i, p in sorted(rows, key=lambda r: (-r[1], -r[2], r[0])):
-            q = q.replace("\t", " ").replace("\n", " ")
+            q = "".join(" " if ch < " " or ch == "\x7f" else ch for ch in q)
             f.write("%s\t%d\t%d\t%.2f\n" % (q, c, i, p))
     os.replace(tmp, path)
 
@@ -181,18 +186,29 @@ def top(args):
         tc = ti = 0
         tpos = 0.0
         agg = {}
+        bad = 0
         for path in files:
-            with open(path) as f:
-                for line in f:
-                    q, c, i, p = line.rstrip("\n").split("\t")
-                    c, i, p = int(c), int(i), float(p)
-                    if q == "#total":
+            with open(path, newline="\n") as f:
+                for n, line in enumerate(f):
+                    fields = line.rstrip("\n").split("\t")
+                    try:
+                        q, c, i, p = fields
+                        c, i, p = int(c), int(i), float(p)
+                    except ValueError:
+                        bad += 1
+                        continue
+                    if n == 0:
                         tc, ti, tpos = tc + c, ti + i, tpos + p * i
                         continue
                     a = agg.setdefault(q, [0, 0, 0.0])
                     a[0] += c
                     a[1] += i
                     a[2] += p * i
+        if bad:
+            # Not fatal: one unreadable line must not cost the month its
+            # section, but it is said where the cron log will show it.
+            print("search-queries.py: %s: skipped %d malformed line(s) in %s"
+                  % (engine, bad, args.month), file=sys.stderr)
         named = sum(a[0] for a in agg.values())
         first, last = os.path.basename(files[0])[:10], os.path.basename(files[-1])[:10]
         print("%s, %s to %s (%d day(s) archived):" % (label, first, last, len(files)))
