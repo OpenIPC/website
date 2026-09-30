@@ -11,11 +11,11 @@
 # retrieve it with `scp` or rsync to ~/reports/ for the maintainers.
 #
 # NUMBERS ARE GENERATED, COMMENTARY IS WRITTEN BY A PERSON. Every number names
-# its source in the memo. Google's search queries come from the archive
-# deploy/search-queries.py keeps (#179); Bing's and Yandex's, and the PayWall
-# figures, still need credentials or a maintainer export, so the memo prints a
-# labelled placeholder for those and for the two commentary paragraphs, to be
-# filled in before it is sent.
+# its source in the memo. The search queries -- Google, Yandex for openipc.org
+# and openipc.ru, Bing -- come from the archive deploy/search-queries.py keeps
+# (#179). The PayWall figures still need a maintainer export, so the memo
+# prints a labelled placeholder for those and for the two commentary
+# paragraphs, to be filled in before it is sent.
 #
 # The engaged-reader spine and the country split are READ from the daily series
 # deploy/audience-report.sh already writes (engaged.tsv, engaged-countries.tsv),
@@ -536,8 +536,6 @@ mkdir -p "$(dirname "$OUT")"
       echo "> openipc-search-queries is not installed on this host]_"
       ;;
   esac
-  echo "> _[MANUAL: Bing Webmaster is not archived yet -- paste its top queries]_"
-  echo
 
   echo "## Bot share and 429s (openipc-log-report)"
   echo

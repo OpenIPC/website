@@ -113,6 +113,17 @@ func memoSearchArchive(t testing.TB) string {
 		"#listed\t7\t20\t2.00\nopenipc\t6\t10\t1.00\npreteen example\t1\t10\t3.00\n")
 	writeFile(t, filepath.Join(dir, "yandex", "2026-10-21.tsv"),
 		"#total\t5\t40\t4.00\nщзут мзп окп\t3\t9\t4.00\n")
+	// Bing: daily totals with no queries and no position, and a weekly list
+	// whose "#week" line must add nothing to the totals.
+	if err := os.MkdirAll(filepath.Join(dir, "bing"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(dir, "bing", "2026-10-08.tsv"), "#total\t30\t300\t-\n")
+	writeFile(t, filepath.Join(dir, "bing", "2026-10-09.tsv"), "#total\t12\t100\t-\n")
+	writeFile(t, filepath.Join(dir, "bing", "week-2026-10-09.tsv"),
+		"#week\t0\t0\t-\nopen ipc\t9\t40\t-\nssc377d\t2\t8\t-\n")
+	writeFile(t, filepath.Join(dir, "bing", "week-2026-09-25.tsv"),
+		"#week\t0\t0\t-\nseptember week\t50\t50\t-\n")
 	return dir
 }
 
@@ -212,7 +223,7 @@ func TestAudienceMemo(t *testing.T) {
 		mustNotContain(t, memo, "WITHHELD", "no harvester country is present, so the block is not withheld")
 	})
 	t.Run("the manual sources and commentary are labelled placeholders", func(t *testing.T) {
-		mustContain(t, memo, "Bing Webmaster is not archived yet", "the engine without an archive is a fill-in")
+		mustNotContain(t, memo, "not archived yet", "every engine is archived now; no search engine is a fill-in")
 		mustContain(t, memo, "MANUAL: from the maintainers' monthly PayWall export", "PayWall is a fill-in")
 		mustContain(t, memo, "[commentary", "the two commentary paragraphs are placeholders")
 	})
@@ -240,6 +251,17 @@ func TestAudienceMemo(t *testing.T) {
 		mustContain(t, memo, "1 query (1 click(s)) not printed: abuse-seeking searches", "the withheld query is counted")
 		mustNotContain(t, memo, "preteen", "an abuse-seeking query reached the memo")
 		mustContain(t, memo, "| щзут мзп окп | 3 | 9 | 4.0 |", "Cyrillic queries pass through intact")
+	})
+	t.Run("bing's totals come from its days, its queries from its weeks", func(t *testing.T) {
+		if _, err := exec.LookPath("python3"); err != nil {
+			t.Skip("python3 not available; the memo falls back to a placeholder")
+		}
+		mustContain(t, memo, "Bing Webmaster (openipc.org), 2026-10-08 to 2026-10-09 (2 day(s) archived, queries from 1 weekly list(s))",
+			"the Bing block names its days and its weekly list")
+		mustContain(t, memo, "all searches: **42 clicks**, 400 impressions\n", "totals are the days' only, with no position to average")
+		mustContain(t, memo, "Bing's weekly top 100", "the weekly lists are not presented as a share of the totals")
+		mustContain(t, memo, "| open ipc | 9 | 40 | – |", "an unknown position prints as a dash, not 0.0")
+		mustNotContain(t, memo, "september week", "a week labelled in another month leaked in")
 	})
 	t.Run("openipc.ru is its own section, and an empty archive says so", func(t *testing.T) {
 		if _, err := exec.LookPath("python3"); err != nil {
@@ -403,6 +425,7 @@ func TestSearchQueriesOffline(t *testing.T) {
 		"SEARCH_ENV":         filepath.Join(dir, "absent.env"),
 		"GSC_KEY_FILE":       filepath.Join(dir, "absent.json"),
 		"YANDEX_OAUTH_TOKEN": "",
+		"BING_API_KEY":       "",
 	}
 	out, ok := run(t, env, "", "python3", abs(t, "deploy/search-queries.py"), "fetch", "--dir", dir)
 	if !ok {
@@ -410,6 +433,7 @@ func TestSearchQueriesOffline(t *testing.T) {
 	}
 	mustContain(t, out, "google: no key at", "a missing key is reported, not an error")
 	mustContain(t, out, "yandex: no YANDEX_OAUTH_TOKEN, skipped", "a missing Yandex token is reported, not an error")
+	mustContain(t, out, "bing: no BING_API_KEY, skipped", "a missing Bing key is reported, not an error")
 	out, ok = run(t, env, "", "python3", abs(t, "deploy/search-queries.py"), "top", "2026-10", "--dir", dir)
 	if !ok {
 		t.Fatalf("top on an empty archive failed:\n%s", out)
@@ -511,4 +535,13 @@ except RuntimeError as e:
 	mustContain(t, out, "engines ['google', 'yandex'] rc 1", "Google failing stopped Yandex, or the exit status hid it")
 	mustContain(t, out, "hosts ['https:first:443', 'https:second:443'] error", "a failing host stopped the next, or the failure was swallowed")
 	mustContain(t, out, "connection error is RuntimeError", "a refused connection escapes the engine boundary")
+}
+
+// Bing's dates are .NET JSON ("/Date(ms)/", sometimes with an offset); they
+// are read as UTC days.
+func TestSearchQueriesBingDate(t *testing.T) {
+	out := searchQueriesPy(t, `
+print(sq.bing_date("/Date(1790294400000)/"), sq.bing_date("/Date(1790294400000-0700)/"))
+`)
+	mustContain(t, out, "2026-09-25 2026-09-25", "Bing's date label is not read as the UTC day")
 }
