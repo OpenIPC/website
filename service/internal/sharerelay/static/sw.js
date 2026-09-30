@@ -16,6 +16,11 @@ const RESERVED = '/__share/';
 // is its own origin, so this cache is one share's; the shell deletes it when
 // the share ends.
 const CACHE = 'mj-share-http';
+// Set once the shell says the share ended: nothing more is kept, and the
+// cache is deleted after the writes already under way (kept here) land --
+// a delete that raced one would see the cache written back after it.
+let ended = false;
+const writes = new Set();
 const NULL_BODY = new Set([101, 204, 205, 304]);
 const REDIRECT = new Set([301, 302, 303, 307, 308]);
 // Hop-by-hop, or the browser's to set.
@@ -27,6 +32,10 @@ self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 // asks to be claimed rather than wait for an activation that already happened.
 self.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'claim') e.waitUntil(self.clients.claim());
+  if (e.data && e.data.type === 'ended') {
+    ended = true;
+    e.waitUntil(Promise.allSettled([...writes]).then(() => caches.delete(CACHE)));
+  }
 });
 
 self.addEventListener('fetch', (e) => {
@@ -66,7 +75,9 @@ async function viaTunnel(e, req, url) {
 // A stored answer this request may revalidate, or null. Only a plain GET: a
 // request carrying its own validators or no-store is the page's business.
 async function fromCache(req, headers) {
-  if (req.method !== 'GET' || headers['if-none-match'] || headers['if-modified-since'] ||
+  // A range is the camera's to answer: a stored whole file is not one.
+  if (ended || req.method !== 'GET' || headers['if-none-match'] || headers['if-modified-since'] ||
+      req.headers.has('range') || req.headers.has('if-range') ||
       /no-store/i.test(req.headers.get('cache-control') || '') || req.cache === 'no-store') return null;
   try {
     const hit = await (await caches.open(CACHE)).match(req.url);
@@ -79,7 +90,7 @@ async function fromCache(req, headers) {
 // Whether an answer may be kept: a whole 200 with a validator, and nothing
 // in its Cache-Control forbidding it.
 function storable(req, status, headers) {
-  if (req.method !== 'GET' || status !== 200) return false;
+  if (ended || req.method !== 'GET' || status !== 200 || req.headers.has('range')) return false;
   const get = (n) => (headers.find(([k]) => k.toLowerCase() === n) || [])[1];
   return !!get('etag') && !/no-store|private/i.test(get('cache-control') || '') && !get('content-range');
 }
@@ -123,7 +134,10 @@ function ask(c, e, req, url, headers, body, html, cached) {
           const [page, keep] = out.tee();
           out = page;
           const init = { status: d.status, statusText: d.statusText, headers: hdrs };
-          e.waitUntil(caches.open(CACHE).then((c) => c.put(req.url, new Response(keep, init))).catch(() => {}));
+          const w = caches.open(CACHE).then((c) => c.put(req.url, new Response(keep, init))).catch(() => {});
+          writes.add(w);
+          w.finally(() => writes.delete(w));
+          e.waitUntil(w);
         }
         resolve(new Response(empty ? null : out, { status: d.status, statusText: d.statusText, headers: hdrs }));
       } else if (d.type === 'body') {

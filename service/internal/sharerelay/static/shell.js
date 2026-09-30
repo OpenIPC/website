@@ -100,8 +100,16 @@ function onWorkerMessage(e) {
         const msg = head.msg;
         let bytes = concat(parts);
         if (msg.gzip) {
-          bytes = new Uint8Array(await new Response(new Blob([bytes]).stream()
-            .pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+          try {
+            bytes = new Uint8Array(await new Response(new Blob([bytes]).stream()
+              .pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+          } catch (err) {
+            // Nothing has gone to the worker yet: fail the page's request
+            // rather than leave it waiting for a head that never comes.
+            trace('request failed', `${method} ${path.split('?')[0]}: the page did not decompress`);
+            port.postMessage({ type: 'error', message: 'the camera sent a page that did not decompress' });
+            return;
+          }
           msg.gzip = false;
           msg.headers = msg.headers.filter(([k]) => k.toLowerCase() !== 'content-encoding');
         }
@@ -229,6 +237,10 @@ async function main() {
     sessionStorage.removeItem('share-reloaded');
     trace('stage', 'worker ready');
     const welcome = await opened;
+    // The share can end between WELCOME and the worker being ready, before
+    // onclose below is there to hear it: say so rather than show a page
+    // with nothing behind it.
+    if (tunnel.gone) throw new ShareError(tunnel.gone);
     if (!settle()) {
       // The start was already declared failed; a connection that arrives
       // afterwards is closed rather than shown over the error.
@@ -239,8 +251,10 @@ async function main() {
     trace('stage', stage);
     window.__share = { openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h), welcome };
     tunnel.onclose = (why) => {
-      // What the worker kept for this share goes with it.
-      caches.delete('mj-share-http').catch(() => {});
+      // What the worker kept for this share goes with it: the worker stops
+      // keeping anything and deletes the cache once its writes in flight
+      // have landed, which a delete from here could not wait for.
+      navigator.serviceWorker.ready.then((r) => r.active && r.active.postMessage({ type: 'ended' })).catch(() => {});
       $('bar').hidden = true;
       notice('The camera is no longer shared with you', why, true);
     };
