@@ -38,7 +38,8 @@ status)
   exit 0 ;;
 rollback)
   "${SSH[@]}" "set -e; p=\$(readlink $DIR/previous); c=\$(readlink $DIR/current); sudo ln -sfn \"\$p\" $DIR/current; sudo ln -sfn \"\$c\" $DIR/previous; sudo systemctl restart openipc-share"
-  up && echo "rolled back to $("${SSH[@]}" "readlink $DIR/current")"
+  if ! up; then echo "rolled back, but the relay does not answer /up" >&2; exit 1; fi
+  echo "rolled back to $("${SSH[@]}" "readlink $DIR/current")"
   exit 0 ;;
 ""|-*)
   sed -n '3,9p' "$0"; exit 2 ;;
@@ -59,8 +60,15 @@ scp -q -P "$PORT" -o BatchMode=yes "$work/openipc" "$USER@$HOST:/tmp/openipc-$SH
 scp -q -P "$PORT" -o BatchMode=yes "$SRC/openipc-share.service" "$USER@$HOST:/tmp/openipc-share.service"
 
 if [ "${KZ_SHARE_ENV_REFRESH:-0}" = 1 ] || ! "${SSH[@]}" "sudo test -s /etc/openipc-share.env"; then
-  ssh -p "$ORIGIN_PORT" -o BatchMode=yes "$ORIGIN" "grep -E '^SHARE_[A-Z_]+=' /srv/www/.env.go-prod" \
-    | "${SSH[@]}" "sudo install -m 600 /dev/stdin /etc/openipc-share.env"
+  # Read whole and checked before anything on the host changes: a failed or
+  # partial read must not replace settings that work -- the TURN secret has to
+  # match coturn's.
+  ssh -p "$ORIGIN_PORT" -o BatchMode=yes "$ORIGIN" "grep -E '^SHARE_[A-Z_]+=' /srv/www/.env.go-prod" > "$work/share.env"
+  for k in SHARE_TURN_SECRET SHARE_TURN_URLS SHARE_STUN_URLS; do
+    grep -q "^$k=." "$work/share.env" || { echo "the origin's settings have no $k; nothing changed" >&2; exit 1; }
+  done
+  "${SSH[@]}" "umask 077; cat > /tmp/openipc-share.env.new" < "$work/share.env"
+  "${SSH[@]}" "sudo install -m 600 /tmp/openipc-share.env.new /etc/openipc-share.env.new && rm -f /tmp/openipc-share.env.new && sudo mv /etc/openipc-share.env.new /etc/openipc-share.env"
   echo "settings: $("${SSH[@]}" "sudo cut -d= -f1 /etc/openipc-share.env | tr '\n' ' '")"
 fi
 

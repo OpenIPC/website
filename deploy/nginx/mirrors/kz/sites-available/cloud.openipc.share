@@ -56,6 +56,11 @@ server {
     client_max_body_size 64k;
 
     location / {
+        # conf.d/openipc-share-conc.conf: the share names' own bound on this
+        # host's one worker. Per reader: $remote_addr is the reader here.
+        limit_conn share_perip 50;
+        limit_conn share_total 250;
+        limit_conn_status 429;
         # To the share relay on this host. The Host is kept: the relay reads
         # the share id from it, and the page's origin is checked against it.
         # The reader's address goes in X-Real-IP, which the relay's

@@ -420,6 +420,12 @@ func TestShareRelayRunsBesideTheShareNames(t *testing.T) {
 	// The relay's per-address limits read X-Real-IP; without it every reader
 	// is 127.0.0.1 and one reader's limit is everyone's.
 	mustMatch(t, `proxy_set_header X-Real-IP\s+\$remote_addr;`, share, "the relay cannot tell readers apart")
+	// The share names get a connection budget that fits this host's one worker.
+	conc := read(t, "deploy/nginx/mirrors/kz/conf.d/openipc-share-conc.conf")
+	mustMatch(t, `limit_conn_zone \$binary_remote_addr zone=share_perip:`, conc, "no per-address zone")
+	mustMatch(t, `limit_conn_zone \$server_name zone=share_total:`, conc, "no total zone")
+	mustMatch(t, `limit_conn share_perip \d+;`, share, "one address can hold every socket")
+	mustMatch(t, `limit_conn share_total \d+;`, share, "the share names can take every worker connection")
 	// The unit and the install agree on where the relay listens and runs from.
 	mustMatch(t, `--listen 127\.0\.0\.1:3004`, unit, "the unit does not listen where nginx sends")
 	mustMatch(t, `ExecStart=/usr/local/lib/openipc-share/current serve --role share`, unit, "the unit does not run the installed relay")
