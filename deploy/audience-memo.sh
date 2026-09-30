@@ -11,10 +11,11 @@
 # retrieve it with `scp` or rsync to ~/reports/ for the maintainers.
 #
 # NUMBERS ARE GENERATED, COMMENTARY IS WRITTEN BY A PERSON. Every number names
-# its source in the memo. Two inputs cannot be pulled without credentials or a
-# maintainer export -- the search-console queries and the PayWall figures -- so
-# the memo prints a labelled placeholder for those and for the two commentary
-# paragraphs, to be filled in before it is sent.
+# its source in the memo. Google's search queries come from the archive
+# deploy/search-queries.py keeps (#179); Bing's and Yandex's, and the PayWall
+# figures, still need credentials or a maintainer export, so the memo prints a
+# labelled placeholder for those and for the two commentary paragraphs, to be
+# filled in before it is sent.
 #
 # The engaged-reader spine and the country split are READ from the daily series
 # deploy/audience-report.sh already writes (engaged.tsv, engaged-countries.tsv),
@@ -32,6 +33,8 @@
 #   OC_LEDGER_JSON       a pre-fetched ledger, to skip the live GraphQL fetch
 #   OC_SPENT_CENTS       spent figure, when not fetched
 #   OC_MONTHLY_PY        path to oc-monthly.py
+#   SEARCH_QUERIES       path to search-queries.py (openipc-search-queries)
+#   SEARCH_DIR           its archive (default REPORTS_DIR/search)
 #   LOG_REPORT           path to openipc-log-report (empty to skip)
 #   MEMO_SKIP_GH=1       skip the GitHub traffic pull
 #   OUT                  output path
@@ -41,6 +44,8 @@ REPORTS_DIR=${REPORTS_DIR:-/srv/www/shared/reports}
 FIRMWARE_SEGMENTS=${FIRMWARE_SEGMENTS:-/srv/www/shared/firmware-segments.tsv}
 OC_MONTHLY_PY=${OC_MONTHLY_PY:-/usr/local/lib/openipc-memo/oc-monthly.py}
 LOG_REPORT=${LOG_REPORT-/usr/local/sbin/openipc-log-report}
+SEARCH_QUERIES=${SEARCH_QUERIES:-/usr/local/sbin/openipc-search-queries}
+SEARCH_DIR=${SEARCH_DIR:-$REPORTS_DIR/search}
 OC_API=${OC_API:-https://api.opencollective.com/graphql/v2}
 OC_SLUG=${OC_SLUG:-openipc}
 
@@ -354,6 +359,21 @@ if [ "$have_oc" = 1 ] && command -v python3 >/dev/null && [ -f "$OC_MONTHLY_PY" 
 fi
 
 # --- GitHub traffic referrers -----------------------------------------------
+# The search consoles' queries, from the archive openipc-search-queries fetch
+# keeps daily (#179). Google keeps sixteen months and the day lands two to three
+# days late, so the memo on the 1st misses the month's last few days; the block
+# says which days it covers.
+# Its errors go to stderr, which the cron entry sends to the memo's log; a
+# failure says so in the memo rather than passing for a missing tool.
+search_block="" search_state=absent
+if command -v python3 >/dev/null && [ -f "$SEARCH_QUERIES" ]; then
+  if search_block=$(python3 "$SEARCH_QUERIES" top "$month" --n 20 --dir "$SEARCH_DIR"); then
+    search_state=ok
+  else
+    search_state=failed search_block=""
+  fi
+fi
+
 gh_block=""
 if [ "${MEMO_SKIP_GH:-0}" != 1 ] && command -v gh >/dev/null; then
   for repo in OpenIPC/firmware OpenIPC/wiki; do
@@ -500,9 +520,23 @@ mkdir -p "$(dirname "$OUT")"
   echo "GitHub traffic referrers (GitHub only exposes a trailing 14-day window, so this is a point-in-time snapshot, not the full month):"
   if [ -n "$gh_block" ]; then printf '%b' "$gh_block"; else echo "  _[gh/token not available on the host that runs this — pull from a machine with repo access, or install gh here]_"; fi
   echo
-  echo "Search-console / Bing / Yandex top 20 queries:"
-  echo "> _[MANUAL: paste the top queries from Search Console, Bing and Yandex Webmaster;"
-  echo "> no API credentials are configured for these]_"
+  echo "What people searched for before arriving, top 20 queries by clicks (openipc-search-queries, from the daily archive):"
+  echo
+  case $search_state in
+    ok)
+      printf '%s\n' "$search_block"
+      echo
+      ;;
+    failed)
+      echo "> _[MANUAL: openipc-search-queries failed -- see /var/log/openipc-audience-memo.log;"
+      echo "> paste the top queries from Search Console, Bing and Yandex Webmaster]_"
+      ;;
+    *)
+      echo "> _[MANUAL: paste the top queries from Search Console, Bing and Yandex Webmaster;"
+      echo "> openipc-search-queries is not installed on this host]_"
+      ;;
+  esac
+  echo "> _[MANUAL: Bing and Yandex Webmaster are not archived yet -- paste their top queries]_"
   echo
 
   echo "## Bot share and 429s (openipc-log-report)"

@@ -26,7 +26,8 @@ dump. Nothing restores it any more; the last one is kept for the record.
 
 `secrets.tar.gz.age` holds the Go service's settings, `.env.go-prod` and
 `.env.go-dev`: the database passwords and the two keys that keep shared camera
-links and frame grants valid. Backups written before #304 also hold the
+links and frame grants valid. Since #179 it also holds the search consoles'
+read credentials, `.gsc-service-account.json` and `.env.search`. Backups written before #304 also hold the
 retired application's `master.key` and `production.env`, which nothing needs
 now. It is encrypted to
 an age recipient whose **private key is not on the server** — it lives only in
@@ -94,8 +95,9 @@ none yet.)
 
 ```bash
 age -d -i /path/to/openipc-backup-age.key -o secrets.tar.gz secrets.tar.gz.age
-tar -xzf secrets.tar.gz                   # -> .env.go-prod, .env.go-dev
-install -m 0600 .env.go-prod .env.go-dev /srv/www/
+tar -xzf secrets.tar.gz                   # -> .env.go-prod, .env.go-dev, and the search
+install -m 0600 .env.go-prod .env.go-dev /srv/www/   # console credentials if present:
+for f in .gsc-service-account.json .env.search; do [ -f "$f" ] && install -m 0600 "$f" /srv/www/; done
 ```
 
 Without them the service still comes up — the installer generates what is
@@ -383,6 +385,22 @@ account that can read it is the maintainers', not a personal one.
 If HTML-file verification is ever used instead, commit the file to
 `frontend/apps/site/public/`. It ships in the static bundle and survives a
 rebuild.
+
+### The query archive reads them with its own credentials
+
+`openipc-search-queries fetch` (`deploy/search-queries.py`, daily from
+`deploy/cron.d/openipc-metrics`) copies the consoles' search queries into
+`/srv/www/shared/reports/search/`, where the monthly memo reads them. It holds
+its own read-only credentials, backed up in `secrets.tar.gz.age`:
+
+| file on the host | what it is | if it is lost |
+|---|---|---|
+| `/srv/www/.gsc-service-account.json` | JSON key of `search-report@openipc-search.iam.gserviceaccount.com`, Google Cloud project `openipc-search`, a **Restricted** user of `sc-domain:openipc.org` | Google cannot re-download a key: in the Cloud console, Service accounts → `search-report` → Keys, delete the old key, add a new JSON key, install it `0600 root` |
+| `/srv/www/.env.search` | optional overrides (`GSC_KEY_FILE`, `GSC_SITE`); later the Yandex token and Bing key | recreate by hand |
+
+The archive itself is not in the backup. Google's side keeps sixteen months,
+so a lost archive refills with `openipc-search-queries fetch --since <date>`
+for anything younger than that.
 
 ### The mirrors do not need their own properties
 

@@ -22,7 +22,7 @@
 #   sha256sum deploy/openipc-sample-rss deploy/cron.d/openipc-metrics \
 #             deploy/memory-probe.sh deploy/audience-report.sh \
 #             deploy/oc-stats.sh deploy/audience-memo.sh deploy/log-report.sh \
-#             deploy/oc-memo/oc-monthly.py deploy/firmware-segments.tsv \
+#             deploy/search-queries.py deploy/oc-memo/oc-monthly.py deploy/firmware-segments.tsv \
 #             deploy/paywall-support.json | cut -c1-16
 #
 # rsync has to exist at both ends. It is in deploy/RESTORE.md's prerequisites
@@ -46,6 +46,7 @@ ocstats=/usr/local/sbin/openipc-oc-stats
 # until now was only ever streamed over ssh and so absent from a rebuilt host.
 memo=/usr/local/sbin/openipc-audience-memo
 logreport=/usr/local/sbin/openipc-log-report
+searchq=/usr/local/sbin/openipc-search-queries
 memolib=/usr/local/lib/openipc-memo
 fwseg=/srv/www/shared/firmware-segments.tsv
 # The uid the image runs as, and the owner every writable mount already has.
@@ -80,6 +81,7 @@ install -m 0755 -o root -g root "$here/audience-report.sh" "$audience"
 install -m 0755 -o root -g root "$here/oc-stats.sh" "$ocstats"
 install -m 0755 -o root -g root "$here/audience-memo.sh" "$memo"
 install -m 0755 -o root -g root "$here/log-report.sh" "$logreport"
+install -m 0755 -o root -g root "$here/search-queries.py" "$searchq"
 
 # The memo's Open Collective helper, and the SoC->family/segment table it maps
 # firmware downloads through. The table is generated from the catalogue and
@@ -104,7 +106,7 @@ echo "installed $sampler, $cron, $probe, $audience, $ocstats, $memo, $logreport,
 # landed in the wrong place leaves this script reporting success over stale
 # files, and the only way to see it is to compare these against
 # `sha256sum deploy/*.sh cron.d/openipc-metrics` in the checkout.
-for f in "$sampler" "$cron" "$probe" "$audience" "$ocstats" "$memo" "$logreport" "$memolib/oc-monthly.py" "$fwseg" "$paywall"; do
+for f in "$sampler" "$cron" "$probe" "$audience" "$ocstats" "$memo" "$logreport" "$searchq" "$memolib/oc-monthly.py" "$fwseg" "$paywall"; do
   printf '  %s  %s\n' "$(sha256sum "$f" | cut -c1-16)" "$f"
 done
 

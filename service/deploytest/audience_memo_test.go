@@ -87,6 +87,28 @@ const octoberLedger = `{"data":{"account":{"received":{"nodes":[` +
 	`]}}}}`
 
 // runMemo runs the generator for the fixture month and returns the memo text.
+// memoSearchArchive is two October days and one September day of the archive
+// deploy/search-queries.py keeps. The September day must not reach the memo.
+func memoSearchArchive(t testing.TB) string {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "google"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(dir, "google", "2026-10-14.tsv"),
+		"#total\t100\t1000\t5.00\nopenipc\t40\t100\t1.00\nssc338q\t5\t300\t4.00\n")
+	// A search for "#total" is a query, not a second total (Qodo on #351), and
+	// a malformed line is skipped rather than costing the month its section.
+	writeFile(t, filepath.Join(dir, "google", "2026-10-15.tsv"),
+		"#total\t60\t1000\t3.00\nopenipc\t20\t100\t2.00\nrtl8812eu\t10\t50\t3.00\n#total\t1\t10\t9.00\nhalf a line\n")
+	writeFile(t, filepath.Join(dir, "google", "2026-09-30.tsv"),
+		"#total\t999\t9999\t1.00\nseptember only\t999\t9999\t1.00\n")
+	return dir
+}
+
+// memoEnv overrides runMemo's environment; tests that set it restore it.
+var memoEnv map[string]string
+
 func runMemo(t testing.TB, reportsDir, countries string) string {
 	t.Helper()
 	log := memoLog(t)
@@ -104,7 +126,12 @@ func runMemo(t testing.TB, reportsDir, countries string) string {
 		"OC_MONTHLY_PY":      abs(t, "deploy/oc-memo/oc-monthly.py"),
 		"LOG_REPORT":         "",
 		"MEMO_SKIP_GH":       "1",
+		"SEARCH_QUERIES":     abs(t, "deploy/search-queries.py"),
+		"SEARCH_DIR":         memoSearchArchive(t),
 		"OUT":                out,
+	}
+	for k, v := range memoEnv {
+		env[k] = v
 	}
 	if o, ok := run(t, env, "", "bash", abs(t, "deploy/audience-memo.sh"), memoMonth); !ok {
 		t.Fatalf("audience-memo.sh failed:\n%s", o)
@@ -175,9 +202,23 @@ func TestAudienceMemo(t *testing.T) {
 		mustNotContain(t, memo, "WITHHELD", "no harvester country is present, so the block is not withheld")
 	})
 	t.Run("the manual sources and commentary are labelled placeholders", func(t *testing.T) {
-		mustContain(t, memo, "MANUAL: paste the top queries", "search-console queries are a fill-in")
+		mustContain(t, memo, "Bing and Yandex Webmaster are not archived yet", "the engines without an archive are a fill-in")
 		mustContain(t, memo, "MANUAL: from the maintainers' monthly PayWall export", "PayWall is a fill-in")
 		mustContain(t, memo, "[commentary", "the two commentary paragraphs are placeholders")
+	})
+	t.Run("google's queries come from the archive, the target month only", func(t *testing.T) {
+		if _, err := exec.LookPath("python3"); err != nil {
+			t.Skip("python3 not available; the memo falls back to a placeholder")
+		}
+		mustContain(t, memo, "2026-10-14 to 2026-10-15 (2 day(s) archived)", "the block says which days it covers")
+		mustContain(t, memo, "all searches: **160 clicks**, 2,000 impressions, average position 4.0",
+			"totals are summed, position weighted by impressions: (5*1000+3*1000)/2000")
+		mustContain(t, memo, "account for 76 of those clicks (48%)", "the withheld share is stated: 76 of 160 named")
+		mustContain(t, memo, "| #total | 1 | 10 | 9.0 |", "a search for #total is listed as a query, not added to the total")
+		mustContain(t, memo, "| openipc | 60 | 200 | 1.5 |", "a query is summed across days, position weighted")
+		mustMatch(t, `(?s)\| openipc \|.*\| rtl8812eu \|.*\| ssc338q \|`, memo, "ordered by clicks")
+		mustNotContain(t, memo, "september only", "a day outside the month leaked in")
+		mustNotContain(t, memo, "MANUAL: paste the top queries", "the archive replaces the paste-by-hand line")
 	})
 	t.Run("the hypothesis register is carried", func(t *testing.T) {
 		mustContain(t, memo, "| H1 |", "the register's five rows travel with every memo")
@@ -273,5 +314,78 @@ func TestFirmwareSegmentsCurrent(t *testing.T) {
 	if strings.Join(got, "\n") != strings.Join(want, "\n") {
 		t.Errorf("deploy/firmware-segments.tsv is stale: %d rows, catalogue has %d.\n"+
 			"Regenerate it with the jq line in the file's header.", len(got), len(want))
+	}
+}
+
+// Without the fetcher on the host the memo falls back to the paste-by-hand
+// placeholder rather than printing nothing.
+func TestAudienceMemoWithoutSearchQueries(t *testing.T) {
+	memoEnv = map[string]string{"SEARCH_QUERIES": filepath.Join(t.TempDir(), "absent.py")}
+	t.Cleanup(func() { memoEnv = nil })
+	memo := runMemo(t, "", octoberCountries)
+	mustContain(t, memo, "MANUAL: paste the top queries", "no fetcher, so the queries are a fill-in")
+	mustContain(t, memo, "is not installed on this host", "an absent fetcher is named as absent")
+}
+
+// A fetcher that is installed but fails is reported as failing, pointing at the
+// log, not passed off as a missing tool (Qodo on #351).
+func TestAudienceMemoSearchQueriesFailing(t *testing.T) {
+	broken := writeFile(t, filepath.Join(t.TempDir(), "broken.py"), "import sys\nsys.exit('archive unreadable')\n")
+	memoEnv = map[string]string{"SEARCH_QUERIES": broken}
+	t.Cleanup(func() { memoEnv = nil })
+	memo := runMemo(t, "", octoberCountries)
+	mustContain(t, memo, "openipc-search-queries failed", "a failing fetcher is reported as failing")
+	mustNotContain(t, memo, "is not installed on this host", "a failing fetcher is not a missing one")
+}
+
+// Query text with a carriage return or other control character is written as
+// one line, so the day it lands in stays readable (Qodo on #351).
+func TestSearchQueriesControlCharacters(t *testing.T) {
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skip("python3 not available")
+	}
+	dir := t.TempDir()
+	script := "import importlib.util, sys\n" +
+		"spec = importlib.util.spec_from_file_location('sq', sys.argv[1])\n" +
+		"sq = importlib.util.module_from_spec(spec); spec.loader.exec_module(sq)\n" +
+		"sq.write_day(sys.argv[2], {'clicks': 3, 'impressions': 30, 'position': 2.0}," +
+		" [('cr\\rlf\\r\\n', 2, 20, 1.0), ('tab\\there', 1, 10, 3.0)])\n"
+	day := filepath.Join(dir, "google", "2026-10-03.tsv")
+	if out, ok := run(t, nil, "", "python3", "-c", script, abs(t, "deploy/search-queries.py"), day); !ok {
+		t.Fatalf("write_day failed:\n%s", out)
+	}
+	mustContain(t, readAbs(t, day), "cr lf  \t2\t20\t1.00\n", "control characters become spaces")
+	out, ok := run(t, nil, "", "python3", abs(t, "deploy/search-queries.py"), "top", "2026-10", "--dir", dir)
+	if !ok {
+		t.Fatalf("top failed on a day written with control characters:\n%s", out)
+	}
+	mustContain(t, out, "| cr lf   | 2 | 20 | 1.0 |", "the query survives as one row")
+	mustNotContain(t, out, "malformed", "nothing was skipped")
+}
+
+// The fetcher's offline paths (#179): no key means a line saying so and success,
+// so a host without credentials does not mail cron errors every night; and a
+// month with no archive says so in the memo instead of printing an empty table.
+func TestSearchQueriesOffline(t *testing.T) {
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skip("python3 not available")
+	}
+	dir := t.TempDir()
+	env := map[string]string{
+		"SEARCH_ENV":   filepath.Join(dir, "absent.env"),
+		"GSC_KEY_FILE": filepath.Join(dir, "absent.json"),
+	}
+	out, ok := run(t, env, "", "python3", abs(t, "deploy/search-queries.py"), "fetch", "--dir", dir)
+	if !ok {
+		t.Fatalf("fetch without a key must succeed and say so:\n%s", out)
+	}
+	mustContain(t, out, "google: no key at", "a missing key is reported, not an error")
+	out, ok = run(t, env, "", "python3", abs(t, "deploy/search-queries.py"), "top", "2026-10", "--dir", dir)
+	if !ok {
+		t.Fatalf("top on an empty archive failed:\n%s", out)
+	}
+	mustContain(t, out, "no archive for 2026-10", "an empty month is named, not an empty table")
+	if _, ok := run(t, env, "", "python3", abs(t, "deploy/search-queries.py"), "top", "October", "--dir", dir); ok {
+		t.Error("top accepted a month that is not YYYY-MM")
 	}
 }
