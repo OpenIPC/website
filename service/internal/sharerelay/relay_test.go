@@ -8,8 +8,10 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -389,5 +391,73 @@ func TestEveryPathIsTheShellAndSWMayControlTheOrigin(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != 404 {
 		t.Fatalf("got %d", resp.StatusCode)
+	}
+}
+
+// The page's scripts are fetched once per version and then come out of the
+// browser's cache; only the page itself is asked about again, and while the
+// version stands it answers 304. A phone behind two proxies otherwise paid a
+// round trip for every script on every open.
+func TestTheShellNamesVersionedScriptsThatAreCachedForGood(t *testing.T) {
+	_, srv := rig(t)
+	resp, err := http.Get(srv.URL + "/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	etag := resp.Header.Get("ETag")
+	if etag == "" || resp.Header.Get("Cache-Control") != "no-cache" {
+		t.Fatalf("shell: etag %q cache %q", etag, resp.Header.Get("Cache-Control"))
+	}
+	m := regexp.MustCompile(`src="(/__share/v/([0-9a-f]{12})/shell\.js)"`).FindStringSubmatch(string(body))
+	if m == nil {
+		t.Fatalf("the shell names no versioned script:\n%s", body)
+	}
+	if etag != `"`+m[2]+`"` {
+		t.Fatalf("etag %s is not the version %s", etag, m[2])
+	}
+	for _, dep := range []string{"tunnel.js", "websocket.js", "diag.js"} {
+		if !strings.Contains(string(body), `<link rel="modulepreload" href="/__share/v/`+m[2]+`/`+dep+`">`) {
+			t.Fatalf("%s is not preloaded", dep)
+		}
+	}
+
+	// The version's scripts, and the files they reach by relative path.
+	for _, f := range []string{"shell.js", "tunnel.js", "shim.js"} {
+		resp, err := http.Get(srv.URL + "/__share/v/" + m[2] + "/" + f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != 200 || resp.Header.Get("Cache-Control") != "public, max-age=31536000, immutable" {
+			t.Fatalf("%s: %d %q", f, resp.StatusCode, resp.Header.Get("Cache-Control"))
+		}
+	}
+
+	// A page from before a deploy gets today's file, and is told not to keep it.
+	resp, _ = http.Get(srv.URL + "/__share/v/000000000000/shell.js")
+	resp.Body.Close()
+	if resp.StatusCode != 200 || resp.Header.Get("Cache-Control") != "no-cache" {
+		t.Fatalf("stale version: %d %q", resp.StatusCode, resp.Header.Get("Cache-Control"))
+	}
+
+	// The worker stays where it is registered, asked about every time.
+	resp, _ = http.Get(srv.URL + "/__share/sw.js")
+	resp.Body.Close()
+	if resp.Header.Get("Cache-Control") != "no-cache" || resp.Header.Get("Service-Worker-Allowed") != "/" {
+		t.Fatalf("worker: %q %q", resp.Header.Get("Cache-Control"), resp.Header.Get("Service-Worker-Allowed"))
+	}
+
+	// Asked again with the tag, the page is unchanged.
+	req, _ := http.NewRequest("GET", srv.URL+"/cgi-bin/live.cgi", nil)
+	req.Header.Set("If-None-Match", etag)
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusNotModified {
+		t.Fatalf("revalidation got %d", resp.StatusCode)
 	}
 }

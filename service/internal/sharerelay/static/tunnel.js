@@ -95,7 +95,8 @@ export function unreachableByRelay(c) {
 
 export class Tunnel {
   // signal: a WebSocket URL speaking the camera's signalling protocol, the
-  // relay's or the camera's own. iceServers: for the RTCPeerConnection.
+  // relay's or the camera's own. iceServers: for the RTCPeerConnection, or a
+  // promise of them -- the signalling socket does not wait for it.
   constructor({ signal, share, secret, iceServers = [], policy, trace = () => {} }) {
     Object.assign(this, { signal, share, secret, iceServers, policy, trace });
     this.streams = new Map();
@@ -119,35 +120,25 @@ export class Tunnel {
         if (err) { this.close(); reject(err); } else resolve(v);
       };
       const timer = setTimeout(() => done(new ShareError('The camera did not answer in time.')), timeoutMs);
-      const cfg = { iceServers: this.iceServers };
-      if (this.policy) cfg.iceTransportPolicy = this.policy;
-      const pc = (this.pc = new RTCPeerConnection(cfg));
-      this.trace('peer connection', { iceServers: this.iceServers.map((x) => [].concat(x.urls).join(' ')), policy: this.policy || 'all' });
-      pc.oniceconnectionstatechange = () => this.trace('ice state', pc.iceConnectionState);
-      pc.onicegatheringstatechange = () => this.trace('ice gathering', pc.iceGatheringState);
-      const dc = (this.dc = pc.createDataChannel('mj-tunnel', { ordered: true }));
-      dc.binaryType = 'arraybuffer';
-      dc.bufferedAmountLowThreshold = HIGH_WATER / 2;
-      dc.onbufferedamountlow = () => this.drain();
+      // The signalling socket first, with every handler on it at once (an
+      // event with no handler yet is lost): its handshake with the relay then
+      // runs while the ICE servers are still arriving, instead of after them.
+      // The peer connection is made when they do, and the offer goes once
+      // both the socket and the connection are there.
       const ws = (this.ws = new WebSocket(this.signal));
-      pc.onicecandidate = (e) => {
-        if (e.candidate && e.candidate.candidate) this.trace('local candidate', candType(e.candidate.candidate));
-        if (e.candidate && e.candidate.candidate && ws.readyState === 1)
-          ws.send(JSON.stringify({ req: 'candidate', data: e.candidate.candidate }));
-      };
-      pc.onconnectionstatechange = () => {
-        this.trace('connection state', pc.connectionState);
-        if (pc.connectionState === 'connected') this.pairInfo().then((p) => this.trace('selected pair', p));
-        if (pc.connectionState === 'failed') {
-          if (!settled) done(new ShareError('Could not reach the camera over the network.'));
-          else this.lost('The connection to the camera was lost.');
-        }
-      };
-      ws.onopen = async () => {
-        this.trace('signalling open');
+      let pc = null;
+      let dc = null;
+      let offered = false;
+      const offer = async () => {
+        if (!pc || ws.readyState !== 1 || offered || settled) return;
+        offered = true;
         await pc.setLocalDescription(await pc.createOffer());
         this.trace('offer sent', `${pc.localDescription.sdp.length} bytes`);
         ws.send(JSON.stringify({ req: 'offer', data: pc.localDescription.sdp }));
+      };
+      ws.onopen = () => {
+        this.trace('signalling open');
+        offer();
       };
       ws.onmessage = async (ev) => {
         let m;
@@ -173,61 +164,90 @@ export class Tunnel {
       };
       ws.onerror = () => { this.trace('signalling error'); done(new ShareError('Could not reach the sharing service.')); };
       ws.onclose = (e) => this.trace('signalling closed', `code ${e.code}${e.reason ? ' ' + e.reason : ''}`);
-      const nonce = hex(crypto.getRandomValues(new Uint8Array(16)));
-      let key;
-      dc.onopen = async () => {
-        this.trace('data channel open');
-        key = await shareKey(this.secret);
-        this.pageFp = normaliseFingerprint(pc.localDescription.sdp);
-        dc.send(frame(T.HELLO, 0, JSON.stringify({ share: this.share, nonce })));
-      };
-      dc.onclose = () => {
-        this.trace('data channel closed'); if (!settled) done(new ShareError('The camera closed the connection.')); else this.lost('The camera closed the connection.'); };
-      dc.onmessage = async (ev) => {
-        const b = new Uint8Array(ev.data);
-        const type = b[0];
-        const id = new DataView(b.buffer).getUint32(4);
-        const payload = b.subarray(HEADER);
-        if (type < 16) this.trace('camera → ' + (FRAME_NAMES[type] || 'frame ' + type), type === T.REFUSED || type === T.BYE ? dec.decode(payload) : undefined);
-        switch (type) {
-          case T.CHALLENGE: {
-            const c = JSON.parse(dec.decode(payload));
-            const want = await proof(key, 'camera', this.share, nonce, c.nonce, this.cameraFp, this.pageFp);
-            if (want !== c.proof) {
-              this.trace('camera proof does not verify');
-              // Not the camera that holds this share's key -- or not the
-              // DTLS endpoint the answer named. Say nothing more to it.
-              done(new ShareError('This link is not valid.'));
+      const build = (servers) => {
+        if (settled) return;
+        this.iceServers = servers || [];
+        const cfg = { iceServers: this.iceServers };
+        if (this.policy) cfg.iceTransportPolicy = this.policy;
+        pc = this.pc = new RTCPeerConnection(cfg);
+        this.trace('peer connection', { iceServers: this.iceServers.map((x) => [].concat(x.urls).join(' ')), policy: this.policy || 'all' });
+        pc.oniceconnectionstatechange = () => this.trace('ice state', pc.iceConnectionState);
+        pc.onicegatheringstatechange = () => this.trace('ice gathering', pc.iceGatheringState);
+        dc = this.dc = pc.createDataChannel('mj-tunnel', { ordered: true });
+        dc.binaryType = 'arraybuffer';
+        dc.bufferedAmountLowThreshold = HIGH_WATER / 2;
+        dc.onbufferedamountlow = () => this.drain();
+        pc.onicecandidate = (e) => {
+          if (e.candidate && e.candidate.candidate) this.trace('local candidate', candType(e.candidate.candidate));
+          if (e.candidate && e.candidate.candidate && ws.readyState === 1)
+            ws.send(JSON.stringify({ req: 'candidate', data: e.candidate.candidate }));
+        };
+        pc.onconnectionstatechange = () => {
+          this.trace('connection state', pc.connectionState);
+          if (pc.connectionState === 'connected') this.pairInfo().then((p) => this.trace('selected pair', p));
+          if (pc.connectionState === 'failed') {
+            if (!settled) done(new ShareError('Could not reach the camera over the network.'));
+            else this.lost('The connection to the camera was lost.');
+          }
+        };
+        const nonce = hex(crypto.getRandomValues(new Uint8Array(16)));
+        let key;
+        dc.onopen = async () => {
+          this.trace('data channel open');
+          key = await shareKey(this.secret);
+          this.pageFp = normaliseFingerprint(pc.localDescription.sdp);
+          dc.send(frame(T.HELLO, 0, JSON.stringify({ share: this.share, nonce })));
+        };
+        dc.onclose = () => {
+          this.trace('data channel closed'); if (!settled) done(new ShareError('The camera closed the connection.')); else this.lost('The camera closed the connection.'); };
+        dc.onmessage = async (ev) => {
+          const b = new Uint8Array(ev.data);
+          const type = b[0];
+          const id = new DataView(b.buffer).getUint32(4);
+          const payload = b.subarray(HEADER);
+          if (type < 16) this.trace('camera → ' + (FRAME_NAMES[type] || 'frame ' + type), type === T.REFUSED || type === T.BYE ? dec.decode(payload) : undefined);
+          switch (type) {
+            case T.CHALLENGE: {
+              const c = JSON.parse(dec.decode(payload));
+              const want = await proof(key, 'camera', this.share, nonce, c.nonce, this.cameraFp, this.pageFp);
+              if (want !== c.proof) {
+                this.trace('camera proof does not verify');
+                // Not the camera that holds this share's key -- or not the
+                // DTLS endpoint the answer named. Say nothing more to it.
+                done(new ShareError('This link is not valid.'));
+                return;
+              }
+              this.verified = true;
+              const mine = await proof(key, 'page', this.share, nonce, c.nonce, this.cameraFp, this.pageFp);
+              dc.send(frame(T.PROOF, 0, JSON.stringify({ proof: mine })));
               return;
             }
-            this.verified = true;
-            const mine = await proof(key, 'page', this.share, nonce, c.nonce, this.cameraFp, this.pageFp);
-            dc.send(frame(T.PROOF, 0, JSON.stringify({ proof: mine })));
-            return;
+            case T.WELCOME:
+              // Only after this end has checked the camera's proof: a WELCOME
+              // from an endpoint that never proved the key is not the camera.
+              if (!this.verified) { done(new ShareError('This link is not valid.')); return; }
+              this.welcome = JSON.parse(dec.decode(payload));
+              done(null, this.welcome);
+              return;
+            case T.REFUSED:
+              done(new ShareError(dec.decode(payload) || 'This link is not valid.'));
+              return;
+            case T.BYE:
+              this.lost(dec.decode(payload));
+              return;
           }
-          case T.WELCOME:
-            // Only after this end has checked the camera's proof: a WELCOME
-            // from an endpoint that never proved the key is not the camera.
-            if (!this.verified) { done(new ShareError('This link is not valid.')); return; }
-            this.welcome = JSON.parse(dec.decode(payload));
-            done(null, this.welcome);
-            return;
-          case T.REFUSED:
-            done(new ShareError(dec.decode(payload) || 'This link is not valid.'));
-            return;
-          case T.BYE:
-            this.lost(dec.decode(payload));
-            return;
-        }
-        // Nothing but the handshake before the camera has proved itself.
-        if (!this.welcome) return;
-        const s = this.streams.get(id);
-        if (!s) return;
-        if (type === T.DATA) s.ondata(payload.slice());
-        else if (type === T.CREDIT) { s.window += new DataView(b.buffer, b.byteOffset).getUint32(HEADER); s.flush(); }
-        else if (type === T.FIN) { this.streams.delete(id); s.onfin(); }
-        else if (type === T.RESET) { this.streams.delete(id); s.onreset(); }
+          // Nothing but the handshake before the camera has proved itself.
+          if (!this.welcome) return;
+          const s = this.streams.get(id);
+          if (!s) return;
+          if (type === T.DATA) s.ondata(payload.slice());
+          else if (type === T.CREDIT) { s.window += new DataView(b.buffer, b.byteOffset).getUint32(HEADER); s.flush(); }
+          else if (type === T.FIN) { this.streams.delete(id); s.onfin(); }
+          else if (type === T.RESET) { this.streams.delete(id); s.onreset(); }
+        };
+        offer();
       };
+      Promise.resolve(this.iceServers).then(build, () => build([]));
     });
   }
 
