@@ -58,6 +58,17 @@ export async function proof(key, who, share, pageNonce, cameraNonce, cameraFp, p
   return hex(await crypto.subtle.sign('HMAC', k, enc.encode(msg)));
 }
 
+// The one-round-trip handshake (v2): the page proves itself in HELLO, and the
+// camera answers WELCOME with its own proof. No camera nonce -- the page's
+// DTLS fingerprint, which the camera has matched to this page's certificate,
+// is what a replay would need. A camera that predates v2 ignores the proof
+// and answers CHALLENGE, and the page carries on with v1.
+export async function proofV2(key, who, share, pageNonce, cameraFp, pageFp) {
+  const k = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const msg = `${who}|mj-share-v2|${share}|${pageNonce}|${cameraFp}|${pageFp}`;
+  return hex(await crypto.subtle.sign('HMAC', k, enc.encode(msg)));
+}
+
 export class ShareError extends Error {}
 
 // Signalling to the relay on the connection the page already holds: the
@@ -294,7 +305,8 @@ export class Tunnel {
           this.trace('data channel open');
           key = await shareKey(this.secret);
           this.pageFp = normaliseFingerprint(pc.localDescription.sdp);
-          dc.send(frame(T.HELLO, 0, JSON.stringify({ share: this.share, nonce })));
+          const mine = await proofV2(key, 'page', this.share, nonce, this.cameraFp, this.pageFp);
+          dc.send(frame(T.HELLO, 0, JSON.stringify({ share: this.share, nonce, proof: mine })));
         };
         dc.onclose = () => {
           this.trace('data channel closed'); if (!settled) done(new ShareError('The camera closed the connection.')); else this.lost('The camera closed the connection.'); };
@@ -320,14 +332,24 @@ export class Tunnel {
               dc.send(frame(T.PROOF, 0, JSON.stringify({ proof: mine })));
               return;
             }
-            case T.WELCOME:
+            case T.WELCOME: {
               // Only after this end has checked the camera's proof: a WELCOME
               // from an endpoint that never proved the key is not the camera.
+              // After a CHALLENGE (v1) it is checked already; a WELCOME that
+              // answers the HELLO's own proof (v2) carries the camera's.
+              const w = JSON.parse(dec.decode(payload));
+              if (!this.verified && w.proof &&
+                  w.proof === await proofV2(key, 'camera', this.share, nonce, this.cameraFp, this.pageFp)) {
+                this.verified = true;
+                this.trace('camera proved itself in one round trip');
+              }
               if (!this.verified) { done(new ShareError('This link is not valid.')); return; }
-              this.welcome = JSON.parse(dec.decode(payload));
+              delete w.proof;
+              this.welcome = w;
               if (ws instanceof StreamSignal) ws.connected();
               done(null, this.welcome);
               return;
+            }
             case T.REFUSED:
               done(new ShareError(dec.decode(payload) || 'This link is not valid.'));
               return;
