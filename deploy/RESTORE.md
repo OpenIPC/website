@@ -373,7 +373,12 @@ else records them and a rebuilt host does not bring them back (#179).
 
 Verification for the first two is by DNS TXT on the Hetzner zone
 (`google-site-verification=0IN-3sAB…`, `yandex-verification: 0aad82e3…`, and
-`yandex-verification: 8e9e2f61…` on the mirror). Bing carries no TXT record, so
+`yandex-verification: 8e9e2f61…` on the mirror, which belongs to another
+Yandex account). openipc.ru's DNS is at axelname.ru, not Hetzner, so for the
+Yandex login that reads search statistics (#179) it was verified on
+2026-09-30 by an HTML file instead: `/var/www/yandex-verification/` on natrium,
+served by an exact `location` in its `ru.openipc` vhost. A rebuild of natrium
+must bring that back, or Yandex drops the site from that login. Bing carries no TXT record, so
 it was registered by one of the other routes Bing offers — most likely the
 import from Google Search Console, which needs no record of its own.
 

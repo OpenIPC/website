@@ -14,6 +14,8 @@ engine per day, never rewriting a day it already has:
 
   DIR/google/YYYY-MM-DD.tsv                Google, sc-domain:openipc.org
   DIR/yandex/YYYY-MM-DD.tsv                Yandex, https:openipc.org:443
+  DIR/yandex-openipc.ru/YYYY-MM-DD.tsv     Yandex, https:openipc.ru:443, the Russian
+                                           mirror, where Yandex's audience is
   DIR/yandex-<host>/YYYY-MM-DD.tsv         Yandex, any further host in YANDEX_HOSTS
     #total  <clicks>  <impressions>  <position>   every query, withheld ones too
     <query> <clicks>  <impressions>  <position>   the queries Google names
@@ -54,7 +56,8 @@ Credentials are read on the host, never from the repository:
   YANDEX_OAUTH_TOKEN   token of an app with both Yandex.Webmaster permissions;
                        the search statistics need the one named for adding
                        sites ("COMMON"), the links one alone answers 403
-  YANDEX_HOSTS   space-separated host ids   (default https:openipc.org:443)
+  YANDEX_HOSTS   space-separated host ids   (default https:openipc.org:443
+                                             https:openipc.ru:443)
 
 either from the environment or from /srv/www/.env.search (SEARCH_ENV). The
 service account is a Restricted user of the property, which reads and cannot
@@ -100,7 +103,7 @@ def settings():
     conf.update({k: v for k, v in os.environ.items() if k.startswith(("GSC_", "YANDEX_"))})
     conf.setdefault("GSC_KEY_FILE", "/srv/www/.gsc-service-account.json")
     conf.setdefault("GSC_SITE", "sc-domain:openipc.org")
-    conf.setdefault("YANDEX_HOSTS", "https:openipc.org:443")
+    conf.setdefault("YANDEX_HOSTS", "https:openipc.org:443 https:openipc.ru:443")
     return conf
 
 
@@ -299,14 +302,17 @@ def fetch(args):
 
 
 def engines(root):
-    """(directory, label) for Google, Yandex for openipc.org, then any other
-    Yandex host that has an archive. The first two are always listed, so a
-    missing archive is said rather than silently left out."""
+    """(directory, label, engine) for Google, Yandex for openipc.org and for
+    openipc.ru, then any other Yandex host that has an archive. The first
+    three are always listed, so a missing archive is said rather than
+    silently left out."""
     found = [("google", "Google Search Console", "Google"),
-             ("yandex", "Yandex Webmaster (openipc.org)", "Yandex")]
+             ("yandex", "Yandex Webmaster (openipc.org)", "Yandex"),
+             ("yandex-openipc.ru", "Yandex Webmaster (openipc.ru)", "Yandex")]
     for path in sorted(glob.glob(os.path.join(root, "yandex-*"))):
         name = os.path.basename(path)
-        found.append((name, "Yandex Webmaster (%s)" % name[len("yandex-"):], "Yandex"))
+        if name not in [f[0] for f in found]:
+            found.append((name, "Yandex Webmaster (%s)" % name[len("yandex-"):], "Yandex"))
     return found
 
 

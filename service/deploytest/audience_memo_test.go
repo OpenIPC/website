@@ -241,6 +241,13 @@ func TestAudienceMemo(t *testing.T) {
 		mustNotContain(t, memo, "preteen", "an abuse-seeking query reached the memo")
 		mustContain(t, memo, "| щзут мзп окп | 3 | 9 | 4.0 |", "Cyrillic queries pass through intact")
 	})
+	t.Run("openipc.ru is its own section, and an empty archive says so", func(t *testing.T) {
+		if _, err := exec.LookPath("python3"); err != nil {
+			t.Skip("python3 not available; the memo falls back to a placeholder")
+		}
+		mustContain(t, memo, "Yandex Webmaster (openipc.ru): _[no archive for 2026-10",
+			"the Russian mirror is always listed, so a missing archive is visible")
+	})
 	t.Run("the hypothesis register is carried", func(t *testing.T) {
 		mustContain(t, memo, "| H1 |", "the register's five rows travel with every memo")
 		mustContain(t, memo, "| H5 |", "")
