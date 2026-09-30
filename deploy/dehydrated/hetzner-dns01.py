@@ -78,7 +78,11 @@ def nameservers(zone):
 
 
 def served_everywhere(zone, fqdn, value):
-    for ns in nameservers(zone):
+    servers = nameservers(zone)
+    if not servers:
+        # A lookup that failed is not a zone with no servers to wait for.
+        return False
+    for ns in servers:
         out = subprocess.run(["dig", "+short", "TXT", fqdn, "@" + ns], capture_output=True, text=True).stdout
         if f'"{value}"' not in out:
             return False

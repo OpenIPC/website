@@ -7,45 +7,75 @@
 #   authorized_keys (ubuntu):
 #   restrict,command="sudo -n /usr/local/sbin/install-share-cert" ssh-ed25519 ... share-cert-push@webber-eu
 #
-# stdin is a tar of privkey.pem and fullchain.pem. They are checked -- a pair,
-# naming the share wildcard, not expiring within a day -- before they replace
-# anything, and the previous pair comes back if nginx will not take the new.
+# stdin is a tar of privkey.pem and fullchain.pem. The origin sends it every
+# night, so a pair already installed is left alone. A new one is checked --
+# two regular files, a key and certificate that belong together, naming the
+# share wildcard, chaining to a root this host trusts, not expiring within a
+# day -- before anything live is touched; then both files are swapped
+# together, and on any failure after that the previous pair comes back.
 set -eu
 
 DIR=/etc/nginx/certs/share.openipc.cloud
 NAME='*.share.openipc.cloud'
-[ "$(id -u)" = 0 ] || { echo "install-share-cert: needs root" >&2; exit 1; }
+CA=/etc/ssl/certs/ca-certificates.crt
+FILES="privkey.pem fullchain.pem"
+die() { echo "install-share-cert: $*" >&2; exit 1; }
+[ "$(id -u)" = 0 ] || die "needs root"
 
+umask 077
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-umask 077
-head -c 1048576 | tar -xf - -C "$tmp" --no-same-owner --no-same-permissions privkey.pem fullchain.pem
+head -c 1048576 >"$tmp/in.tar"
 
-key="$tmp/privkey.pem"
-crt="$tmp/fullchain.pem"
+# Exactly the two members, as regular files: a link or a FIFO by either
+# name would have the checks below read something else, or wait forever.
+members="$(tar -tvf "$tmp/in.tar" 2>/dev/null)" || die "not a tar archive"
+[ "$(printf '%s\n' "$members" | awk '{print $NF}' | sort | tr '\n' ' ')" = "fullchain.pem privkey.pem " ] ||
+  die "the archive must hold privkey.pem and fullchain.pem and nothing else"
+printf '%s\n' "$members" | grep -qv '^-' && die "privkey.pem and fullchain.pem must be regular files"
+mkdir "$tmp/new"
+tar -xf "$tmp/in.tar" -C "$tmp/new" --no-same-owner --no-same-permissions $FILES
+for f in $FILES; do
+  [ -f "$tmp/new/$f" ] && [ ! -L "$tmp/new/$f" ] || die "$f is not a regular file"
+done
+
+key="$tmp/new/privkey.pem"
+crt="$tmp/new/fullchain.pem"
+if [ -f "$DIR/privkey.pem" ] && cmp -s "$key" "$DIR/privkey.pem" && cmp -s "$crt" "$DIR/fullchain.pem"; then
+  echo "install-share-cert: unchanged"
+  exit 0
+fi
+
 [ "$(openssl pkey -in "$key" -pubout 2>/dev/null | sha256sum)" = \
   "$(openssl x509 -in "$crt" -noout -pubkey 2>/dev/null | sha256sum)" ] ||
-  { echo "install-share-cert: key and certificate are not a pair" >&2; exit 1; }
+  die "key and certificate are not a pair"
 openssl x509 -in "$crt" -noout -ext subjectAltName 2>/dev/null | grep -qF "DNS:$NAME" ||
-  { echo "install-share-cert: certificate does not name $NAME" >&2; exit 1; }
-openssl x509 -in "$crt" -noout -checkend 86400 >/dev/null ||
-  { echo "install-share-cert: certificate expires within a day" >&2; exit 1; }
+  die "certificate does not name $NAME"
+openssl x509 -in "$crt" -noout -checkend 86400 >/dev/null || die "certificate expires within a day"
+# The leaf against the chain that came with it, up to a root in this host's
+# store: a self-signed pair would pass every check above and fail every guest.
+openssl x509 -in "$crt" -out "$tmp/leaf.pem"
+openssl verify -CAfile "$CA" -untrusted "$crt" -purpose sslserver "$tmp/leaf.pem" >/dev/null 2>&1 ||
+  die "certificate does not chain to a trusted root"
 
 mkdir -p "$DIR"
 chmod 700 "$DIR"
-for f in privkey.pem fullchain.pem; do
-  [ -f "$DIR/$f" ] && cp -p "$DIR/$f" "$DIR/$f.prev"
-  install -m 600 -o root -g root "$tmp/$f" "$DIR/$f.new"
-  mv "$DIR/$f.new" "$DIR/$f"
+# Stage both, then swap both; from here any failure restores the old pair.
+for f in $FILES; do
+  install -m 600 -o root -g root "$tmp/new/$f" "$DIR/$f.new"
+  if [ -f "$DIR/$f" ]; then cp -p "$DIR/$f" "$DIR/$f.prev"; else rm -f "$DIR/$f.prev"; fi
 done
-
-if nginx -t -q 2>/dev/null; then
-  systemctl reload nginx
-  echo "install-share-cert: installed, valid until $(openssl x509 -in "$DIR/fullchain.pem" -noout -enddate | cut -d= -f2)"
-else
-  for f in privkey.pem fullchain.pem; do
-    [ -f "$DIR/$f.prev" ] && mv "$DIR/$f.prev" "$DIR/$f"
+restore() {
+  for f in $FILES; do
+    if [ -f "$DIR/$f.prev" ]; then mv -f "$DIR/$f.prev" "$DIR/$f"; else rm -f "$DIR/$f"; fi
+    rm -f "$DIR/$f.new"
   done
-  echo "install-share-cert: nginx -t failed; previous certificate restored" >&2
-  exit 1
-fi
+  nginx -t -q 2>/dev/null && systemctl reload nginx || true
+}
+trap 'restore; rm -rf "$tmp"' EXIT
+for f in $FILES; do mv -f "$DIR/$f.new" "$DIR/$f"; done
+nginx -t -q 2>/dev/null || die "nginx -t failed with the new pair; previous pair restored"
+systemctl reload nginx || die "nginx did not reload; previous pair restored"
+trap 'rm -rf "$tmp"' EXIT
+rm -f "$DIR/privkey.pem.prev" "$DIR/fullchain.pem.prev"
+echo "install-share-cert: installed, valid until $(openssl x509 -in "$DIR/fullchain.pem" -noout -enddate | cut -d= -f2)"
