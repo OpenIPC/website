@@ -135,6 +135,33 @@ func TestMirrorRootLetsThePickerThrough(t *testing.T) {
 	}
 }
 
+// openipc.ru names itself, not openipc.org, for the Russian pages (#179): the
+// origin is filtered in Russia, and Yandex's readers are there. Every rewrite
+// is from openipc.org/ru to openipc.ru/ru -- English and Chinese stay on the
+// origin -- and sub_filter only works on an uncompressed upstream body.
+func TestRuMirrorOwnsTheRussianPages(t *testing.T) {
+	snippet := read(t, "deploy/nginx/mirrors/ru.openipc.snippet")
+	subs := regexp.MustCompile(`(?m)^sub_filter '([^']*)'\s+'([^']*)';`).FindAllStringSubmatch(snippet, -1)
+	if len(subs) != 4 {
+		t.Fatalf("expected the canonical, ru alternate, og:url and sitemap rewrites, found %d sub_filter lines", len(subs))
+	}
+	for _, m := range subs {
+		from, to := m[1], m[2]
+		if !strings.HasSuffix(from, "https://openipc.org/ru") || to != strings.Replace(from, "https://openipc.org/ru", "https://openipc.ru/ru", 1) {
+			t.Errorf("sub_filter %q -> %q is not a rewrite of the Russian tree from openipc.org to openipc.ru", from, to)
+		}
+	}
+	mustMatch(t, `(?m)^sub_filter_once\s+off;`, snippet, "only the first occurrence on each page would be rewritten")
+	mustMatch(t, `(?m)^sub_filter_types\s+text/xml`, snippet, "the sitemap is not rewritten")
+	// Both locations that proxy pages must ask the origin for an uncompressed
+	// body; a gzipped one passes through sub_filter unrewritten.
+	root := find(snippet, regexp.MustCompile(`(?sm)^\s*(location = / \{.*?\}.*?\})`), 1)
+	mustMatch(t, `proxy_set_header\s+Accept-Encoding\s+"";`, root, "location = / lets a gzipped body through sub_filter")
+	catchall := find(snippet, regexp.MustCompile(`(?sm)^(location / \{.*?^\})`), 1)
+	mustMatch(t, `proxy_pass https://openipc\.org/;`, catchall, "the recorded catch-all is not the one that proxies pages")
+	mustMatch(t, `proxy_set_header\s+Accept-Encoding\s+"";`, catchall, "location / lets a gzipped body through sub_filter")
+}
+
 // The host installers are run by copying deploy/ to the host and executing a
 // script out of the copy. `scp -P 35242 -r deploy host:/tmp/openipc-deploy` is
 // correct exactly once: on a re-run the destination already exists, so scp

@@ -373,7 +373,17 @@ else records them and a rebuilt host does not bring them back (#179).
 
 Verification for the first two is by DNS TXT on the Hetzner zone
 (`google-site-verification=0IN-3sAB…`, `yandex-verification: 0aad82e3…`, and
-`yandex-verification: 8e9e2f61…` on the mirror). Bing carries no TXT record, so
+`yandex-verification: 8e9e2f61…` on the mirror, which belongs to another
+Yandex account). openipc.ru's DNS is at axelname.ru, not Hetzner, so for the
+Yandex login that reads search statistics (#179) it was verified on
+2026-09-30 by an HTML file instead: `/var/www/yandex-verification/` on natrium,
+served by an exact `location` in its `ru.openipc` vhost. A rebuild of natrium
+must bring that back, or Yandex drops the site from that login: Yandex
+Webmaster shows the file's name and content again under the site's
+**Настройки → Права доступа** (Settings → Access rights), and it goes back as
+`location = /yandex_<code>.html { root /var/www/yandex-verification; }` in the
+HTTPS server block. It is kept out of the repository on purpose, like the DNS
+tokens: it belongs to this name and this login, not to the site's code. Bing carries no TXT record, so
 it was registered by one of the other routes Bing offers — most likely the
 import from Google Search Console, which needs no record of its own.
 
@@ -396,7 +406,7 @@ its own read-only credentials, backed up in `secrets.tar.gz.age`:
 | file on the host | what it is | if it is lost |
 |---|---|---|
 | `/srv/www/.gsc-service-account.json` | JSON key of `search-report@openipc-search.iam.gserviceaccount.com`, Google Cloud project `openipc-search`, a **Restricted** user of `sc-domain:openipc.org` | Google cannot re-download a key: in the Cloud console, Service accounts → `search-report` → Keys, delete the old key, add a new JSON key, install it `0600 root` |
-| `/srv/www/.env.search` | optional overrides (`GSC_KEY_FILE`, `GSC_SITE`); later the Yandex token and Bing key | recreate by hand |
+| `/srv/www/.env.search` | `YANDEX_OAUTH_TOKEN`: OAuth app `openipc-search-report` on the Yandex login that owns openipc.org in Webmaster, with **both** Webmaster permissions (the statistics need the one named for adding sites); optional overrides (`GSC_KEY_FILE`, `GSC_SITE`, `YANDEX_HOSTS`) | the owner opens `https://oauth.yandex.ru/authorize?response_type=token&client_id=<the app's ClientID>` and takes `access_token` from the address; a token lives about a year |
 
 The archive itself is not in the backup. Google's side keeps sixteen months,
 so a lost archive refills with `openipc-search-queries fetch --since <date>`
