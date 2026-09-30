@@ -167,7 +167,8 @@ func TestPagesHearWhenTheCameraGoesAway(t *testing.T) {
 	send(t, page, map[string]string{"req": "offer", "data": "x"})
 	recv(t, cam)
 	cam.Close(websocket.StatusNormalClosure, "")
-	if m := recv(t, page); m["reply"] != "closed" {
+	// Not "ended": a page already connected to the camera keeps its session.
+	if m := recv(t, page); m["reply"] != "closed" || m["ended"] != nil {
 		t.Fatalf("page got %v", m)
 	}
 	// While it is away, its link says so.
@@ -232,7 +233,21 @@ func TestUnregisterEndsThePages(t *testing.T) {
 	send(t, page, map[string]string{"req": "offer", "data": "x"})
 	recv(t, cam)
 	send(t, cam, map[string]string{"type": "unregister", "share": id})
-	if m := recv(t, page); m["reply"] != "closed" {
+	// "ended": a connected page acts on it, since the camera's own BYE can be
+	// lost on the way.
+	if m := recv(t, page); m["reply"] != "closed" || m["ended"] != "true" || m["data"] != "the owner revoked this link" {
+		t.Fatalf("page got %v", m)
+	}
+}
+
+func TestACameraWithdrawingAtTheEndIsAnExpiry(t *testing.T) {
+	_, srv := rig(t)
+	cam := register(t, srv, time.Now().Add(5*time.Second))
+	page := dial(t, srv, "/__share/signal?share="+id)
+	send(t, page, map[string]string{"req": "offer", "data": "x"})
+	recv(t, cam)
+	send(t, cam, map[string]string{"type": "unregister", "share": id})
+	if m := recv(t, page); m["ended"] != "true" || m["data"] != "this link has expired" {
 		t.Fatalf("page got %v", m)
 	}
 }
