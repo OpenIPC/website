@@ -133,6 +133,7 @@ func Handlers(h *Hub, ice ICE) map[string]http.Handler {
 		"GET /__share/signal":     h.Signal(),
 		"POST /__share/signal":    h.SignalStream(),
 		"POST /__share/candidate": h.Candidate(),
+		"POST /__share/connected": h.Connected(),
 		"GET /__share/ice":        ice,
 		"GET /__share/":           assets,
 		"GET /":                   shell,

@@ -118,6 +118,7 @@ class StreamSignal {
           buf = buf.slice(i + 1);
           if (!line) continue;
           const m = JSON.parse(line);
+          if (m.reply === 'ping') continue; // the relay keeping the stream open
           if (m.reply === 'session') {
             this.sid = m.data;
             for (const c of this.early.splice(0)) this.candidate(c);
@@ -132,6 +133,17 @@ class StreamSignal {
       if (this.onerror) this.onerror(e);
       this.finish(1006, String(e && e.message || e));
     }
+  }
+
+  // The camera has admitted the page: the relay keeps this stream open past
+  // its setup deadline, so the share's end still reaches the page after the
+  // first two minutes. Not fatal if it fails: BYE and ICE still say it.
+  connected() {
+    if (!this.sid) return;
+    const u = this.url.replace('/__share/signal', '/__share/connected') + '&session=' + this.sid;
+    fetch(u, { method: 'POST', signal: this.ctl.signal })
+      .then(async (r) => { await r.arrayBuffer(); if (!r.ok) this.trace('relay will not keep the stream', `HTTP ${r.status}`); })
+      .catch((e) => this.trace('relay will not keep the stream', String(e && e.message || e)));
   }
 
   finish(code, reason) {
@@ -313,6 +325,7 @@ export class Tunnel {
               // from an endpoint that never proved the key is not the camera.
               if (!this.verified) { done(new ShareError('This link is not valid.')); return; }
               this.welcome = JSON.parse(dec.decode(payload));
+              if (ws instanceof StreamSignal) ws.connected();
               done(null, this.welcome);
               return;
             case T.REFUSED:

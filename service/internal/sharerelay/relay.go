@@ -42,7 +42,11 @@
 //     POST /__share/signal?share=<id> carries the offer and answers with a
 //     stream of the same replies, one JSON object per line, the first being
 //     {"reply":"session","data":"<sid>"}; the page's candidates follow as
-//     POST /__share/candidate?share=<id>&session=<sid>.
+//     POST /__share/candidate?share=<id>&session=<sid>. Once the camera has
+//     admitted it, the page says so with POST /__share/connected?share=<id>&
+//     session=<sid>: it gives up its session slot and keeps the stream, to
+//     hear the share end, for as long as it stays. The stream carries
+//     {"reply":"ping"} every ListenerPing, so no proxy times it out.
 //
 //     relay  -> {"reply":"closed","data":"<why>","ended":"true"} when the
 //     share itself ended (revoked or expired). A connected page acts on it:
@@ -83,6 +87,11 @@ import (
 	"github.com/coder/websocket"
 )
 
+// A listener's stream carries nothing for hours at a time, and a proxy in
+// front times an idle response out (nginx here after an hour): a line every
+// so often keeps it open.
+const ListenerPing = 25 * time.Second
+
 // The relay's numbers.
 const (
 	// Shares one camera connection may hold: the camera's own ceiling.
@@ -101,6 +110,13 @@ const (
 	// A page that has not connected within this long never will; its
 	// socket is closed so it cannot sit on a session slot.
 	PageLifetime = 2 * time.Minute
+	// Admitted pages kept per share to hear it end. More than a camera can
+	// serve, so every real guest fits; few enough that a stranger who knows
+	// a share's name cannot make the relay hold much for it.
+	MaxListenersPerShare = 16
+	// And per reader's address on one share: a household's guests fit, and
+	// one stranger does not reach the bound above.
+	MaxListenersPerAddress = 4
 	// Allowed between the camera's clock and this one when a registration
 	// names its end. The camera enforces the share's real lifetime on its
 	// own clock; this only refuses what no camera would send.
@@ -119,8 +135,10 @@ const (
 // A camera socket must register a share this soon after connecting, and one
 // that holds no share for DeviceIdle is closed: a camera dials only while it
 // is sharing, so anything else is a socket holding a slot on workers the rest
-// of the site shares. Variables so the suite can shorten them.
-var (
+// of the site shares. A Hub may shorten them for the suite (its fields of the
+// same names); package variables did that once, and a test's change raced the
+// servers other tests had left running.
+const (
 	RegisterDeadline = 30 * time.Second
 	DeviceIdle       = 5 * time.Minute
 )
@@ -144,6 +162,8 @@ type Hub struct {
 	// OriginPatterns a page's WebSocket may come from (coder/websocket
 	// syntax): the share origins, and whatever a developer serves locally.
 	OriginPatterns []string
+	// Zero is the package default of the same name; the suite shortens them.
+	RegisterDeadline, DeviceIdle, ListenerPing time.Duration
 
 	mu     sync.Mutex
 	shares map[string]*share
@@ -154,6 +174,9 @@ type share struct {
 	expires time.Time
 	dev     *device
 	pages   map[string]*page
+	// Pages the camera has admitted, kept only to be told when the share
+	// ends (see Connected); they hold none of the session slots.
+	listeners map[string]*page
 }
 
 type device struct {
@@ -173,6 +196,21 @@ type page struct {
 	sh   *share
 	conn *websocket.Conn
 	out  chan []byte
+	// The setup deadline of a streamed session, stopped once the page is a
+	// listener. Set and stopped under h.mu.
+	lifetime *time.Timer
+	// The camera has answered this session's offer, on its own socket: what
+	// a page must have before it may become a listener. Under h.mu.
+	answered bool
+	// The reader's address, for the per-address bound on listeners.
+	remote string
+}
+
+func or(d, def time.Duration) time.Duration {
+	if d > 0 {
+		return d
+	}
+	return def
 }
 
 func (h *Hub) init() {
@@ -267,7 +305,8 @@ func (h *Hub) Device() http.Handler {
 func (d *device) pinger(ctx context.Context, cancel context.CancelFunc) {
 	ping := time.NewTicker(PingEvery)
 	defer ping.Stop()
-	idle := time.NewTicker(RegisterDeadline / 3)
+	register := or(d.hub.RegisterDeadline, RegisterDeadline)
+	idle := time.NewTicker(register / 3)
 	defer idle.Stop()
 	registered := false
 	for {
@@ -282,9 +321,9 @@ func (d *device) pinger(ctx context.Context, cancel context.CancelFunc) {
 			} else if d.emptySince.IsZero() {
 				d.emptySince = time.Now()
 			}
-			limit := DeviceIdle
+			limit := or(d.hub.DeviceIdle, DeviceIdle)
 			if !registered {
-				limit = RegisterDeadline
+				limit = register
 			}
 			empty := !d.emptySince.IsZero() && time.Since(d.emptySince) > limit
 			d.hub.mu.Unlock()
@@ -339,7 +378,21 @@ func (h *Hub) onDevice(d *device, raw []byte) {
 		}
 	case "signal":
 		for _, sh := range d.shares {
+			// A listener's camera session has ended: it stops listening.
+			// This is what binds a listener to a session the camera really
+			// holds -- one that never passes the camera's key proof is
+			// closed by the camera within seconds, and its listener with it.
+			if p := sh.listeners[m.Session]; p != nil {
+				if m.Reply == "closed" {
+					delete(sh.listeners, m.Session)
+					close(p.out)
+				}
+				return
+			}
 			if p := sh.pages[m.Session]; p != nil {
+				if m.Reply == "answer" {
+					p.answered = true
+				}
 				out := map[string]string{"reply": m.Reply, "data": m.Data}
 				if m.Mid != "" {
 					out["mid"] = m.Mid
@@ -396,7 +449,7 @@ func (h *Hub) register(d *device, m deviceMsg) {
 			refuse("the relay is full")
 			return
 		}
-		sh := &share{id: m.Share, expires: exp, dev: d, pages: map[string]*page{}}
+		sh := &share{id: m.Share, expires: exp, dev: d, pages: map[string]*page{}, listeners: map[string]*page{}}
 		h.shares[sh.id] = sh
 		d.shares[sh.id] = sh
 	}
@@ -467,6 +520,11 @@ func (h *Hub) closePage(p *page, why string, ended bool) {
 func (h *Hub) dropShare(sh *share, why string) {
 	for _, p := range sh.pages {
 		h.closePage(p, why, true)
+	}
+	for sid, p := range sh.listeners {
+		trySend(p.out, marshal(map[string]string{"reply": "closed", "data": why, "ended": "true"}))
+		close(p.out)
+		delete(sh.listeners, sid)
 	}
 	delete(h.shares, sh.id)
 	if sh.dev != nil {
@@ -595,6 +653,11 @@ func (h *Hub) detach(p *page) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.dropPage(p)
+	if p.sh.listeners[p.sid] == p {
+		// Its session is the peers' own by now: the camera is not told.
+		delete(p.sh.listeners, p.sid)
+		close(p.out)
+	}
 	if p.conn != nil {
 		p.conn.Close(websocket.StatusNormalClosure, "")
 	}
@@ -611,12 +674,16 @@ func (h *Hub) Live(id string) bool {
 	return sh != nil && sh.dev != nil && sh.expires.After(time.Now())
 }
 
-func (h *Hub) Stats() (shares, pages int) {
+// Stats counts the relay's shares, the pages setting up on them, and the
+// admitted pages kept listening -- each of those a stream held for as long as
+// its guest stays.
+func (h *Hub) Stats() (shares, pages, listeners int) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	for _, sh := range h.shares {
 		shares++
 		pages += len(sh.pages)
+		listeners += len(sh.listeners)
 	}
 	return
 }
@@ -696,18 +763,33 @@ func (h *Hub) SignalStream() http.Handler {
 			line(marshal(map[string]string{"reply": "error", "data": why}))
 			return
 		}
+		h.mu.Lock()
+		p.remote = clientIP(r)
+		h.mu.Unlock()
 		defer h.detach(p)
 		if !line(marshal(map[string]string{"reply": "session", "data": p.sid})) {
 			return
 		}
 		h.forward(p, "offer", m.Data)
-		// As long as a socket session, and no longer: see Signal.
-		ctx, cancel := context.WithTimeout(r.Context(), PageLifetime)
+		// Setting up, as long as a socket session and no longer (see
+		// Signal); once the camera has admitted the page, for as long as
+		// the page stays -- to hear the share end (see Connected).
+		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
+		h.mu.Lock()
+		p.lifetime = time.AfterFunc(PageLifetime, cancel)
+		h.mu.Unlock()
+		defer p.lifetime.Stop()
+		ping := time.NewTicker(or(h.ListenerPing, ListenerPing))
+		defer ping.Stop()
 		for {
 			select {
 			case <-ctx.Done():
 				return
+			case <-ping.C:
+				if !line([]byte(`{"reply":"ping"}`)) {
+					return
+				}
 			case msg, ok := <-p.out:
 				if !ok || !line(msg) {
 					return
@@ -742,6 +824,55 @@ func (h *Hub) Candidate() http.Handler {
 			return
 		}
 		h.forward(p, "candidate", string(body))
+		w.WriteHeader(http.StatusNoContent)
+	})
+}
+
+// Connected is POST /__share/connected: the camera has admitted the page. Its
+// session is peer to peer from here, so the page gives up its session slot
+// and keeps its stream only to hear the share end -- a revoke or an expiry the
+// camera's own BYE may not deliver on a lossy link. Without this the stream
+// ended with the setup deadline, and a guest past their first two minutes
+// learned of a revoke only when ICE gave up, with the wrong reason.
+func (h *Hub) Connected() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !h.originAllowed(r) {
+			http.Error(w, "not from a share page", http.StatusForbidden)
+			return
+		}
+		id, sid := ShareFromRequest(r), r.URL.Query().Get("session")
+		h.mu.Lock()
+		defer h.mu.Unlock()
+		var p *page
+		sh := h.shares[id]
+		if sh != nil {
+			p = sh.pages[sid]
+		}
+		if p == nil || p.conn != nil || p.lifetime == nil {
+			http.Error(w, "no such session", http.StatusNotFound)
+			return
+		}
+		// Holding a session id proves nothing -- the relay hands it out
+		// before the camera has seen the offer. The camera's answer, on
+		// the camera's own socket, is the least a listener must have; the
+		// camera closing the session unmakes it (see onDevice).
+		if !p.answered {
+			http.Error(w, "the camera has not answered this session", http.StatusConflict)
+			return
+		}
+		same := 0
+		for _, l := range sh.listeners {
+			if l.remote == p.remote {
+				same++
+			}
+		}
+		if len(sh.listeners) >= MaxListenersPerShare || same >= MaxListenersPerAddress {
+			http.Error(w, "too many listeners on this share", http.StatusTooManyRequests)
+			return
+		}
+		delete(sh.pages, sid)
+		sh.listeners[sid] = p
+		p.lifetime.Stop()
 		w.WriteHeader(http.StatusNoContent)
 	})
 }
