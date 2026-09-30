@@ -1,0 +1,61 @@
+# Camera sharing links, share.openipc.cloud and <id>.share.openipc.cloud: the
+# origin's half.
+#
+# Those names resolve to the openipc.kz host, which every camera and guest can
+# reach (openipc.org's addresses are filtered by some providers), and whose
+# nginx (mirrors/kz/sites-available/cloud.openipc.share) passes everything on
+# to this vhost by address, checking this certificate's name. Nothing else
+# has a reason to connect here, so nothing else is served: a connection that
+# does not come from that host is closed before it reaches the share role.
+#
+# The wildcard is issued here over DNS-01 and handed to the openipc.kz host by
+# dehydrated's hook (deploy/dehydrated/, deploy/SHARE.md).
+#
+# Everything is the share role's: the relay's sockets, the page, its worker.
+# Each share is its own host, so no two shared cameras ever run script in the
+# same origin, and no openipc.org cookie ever reaches one.
+
+server {
+    listen 443 ssl http2;
+    server_name share.openipc.cloud *.share.openipc.cloud;
+    access_log /var/log/nginx/cloud.openipc.share.access.log openipc;
+    error_log /var/log/nginx/cloud.openipc.share.error.log warn;
+
+    ssl_certificate /var/lib/dehydrated/certs/share.openipc.cloud/fullchain.pem;
+    ssl_certificate_key /var/lib/dehydrated/certs/share.openipc.cloud/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+    add_header Strict-Transport-Security max-age=15768000 always;
+    add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+
+    # $realip_remote_addr is the peer itself; $remote_addr is already the
+    # reader the openipc.kz host names in X-Forwarded-For (nginx.conf trusts it).
+    if ($realip_remote_addr != 194.238.42.216) {
+        return 444;
+    }
+
+    location / {
+        # conf.d/openipc-share-conc.conf: a bound of the share hosts' own on
+        # the workers every other site on this host shares. Per reader, since
+        # realip has already put the reader's address in $remote_addr.
+        limit_conn share_perip 50;
+        limit_conn share_total 1500;
+        limit_conn_status 429;
+        proxy_pass http://127.0.0.1:3004;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # The relay's sockets: a camera holds one for as long as it has a
+        # share, and pings every 25 s.
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+    }
+}

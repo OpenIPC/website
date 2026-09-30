@@ -263,7 +263,7 @@ func TestSessionsPerShareAreBounded(t *testing.T) {
 
 func TestTheShareIsReadFromTheHost(t *testing.T) {
 	r := httptest.NewRequest("GET", "/__share/signal", nil)
-	r.Host = id + ".share.openipc.org"
+	r.Host = id + ".share.openipc.cloud"
 	if got := ShareFromRequest(r); got != id {
 		t.Fatalf("got %q", got)
 	}
@@ -323,7 +323,7 @@ func TestTURNIsOnlyForAHolderOfALiveShare(t *testing.T) {
 		}
 		return false
 	}
-	host := id + ".share.openipc.org"
+	host := id + ".share.openipc.cloud"
 	if turn(host, token) {
 		t.Fatal("TURN for a share no camera has registered")
 	}
@@ -337,7 +337,7 @@ func TestTURNIsOnlyForAHolderOfALiveShare(t *testing.T) {
 	if turn(host, strings.Repeat("0", 64)) {
 		t.Fatal("TURN for a token that is not the share's")
 	}
-	if turn("share.openipc.org", token) {
+	if turn("share.openipc.cloud", token) {
 		t.Fatal("TURN without a share")
 	}
 	cam.Close(websocket.StatusNormalClosure, "")

@@ -2,7 +2,7 @@
 //
 // A camera owner mints a share on the camera and gets a link
 //
-//	https://<id>.share.openipc.org/#<secret>
+//	https://<id>.share.openipc.cloud/#<secret>
 //
 // The id names the share; the secret stays in the fragment, which browsers do
 // not send to servers. Nothing that passes through this relay is secret: the
@@ -443,7 +443,7 @@ func (h *Hub) dropShare(sh *share, why string) {
 // ---- pages -------------------------------------------------------------
 
 // ShareFromRequest names the share a page asks for: ?share=, else the first
-// label of the host (<id>.share.openipc.org).
+// label of the host (<id>.share.openipc.cloud).
 func ShareFromRequest(r *http.Request) string {
 	if s := r.URL.Query().Get("share"); s != "" {
 		return s

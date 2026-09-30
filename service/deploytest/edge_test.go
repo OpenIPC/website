@@ -164,7 +164,7 @@ func goRoutes(t testing.TB) []route {
 	if err := json.Unmarshal([]byte(read(t, "service/routes.json")), &rs); err != nil {
 		t.Fatal(err)
 	}
-	// The share role is served on hosts of its own (<id>.share.openipc.org),
+	// The share role is served on hosts of its own (<id>.share.openipc.cloud),
 	// never behind the static bundle or the openipc.org vhosts: none of its
 	// addresses is one a bundle file could shadow.
 	out := rs[:0]
