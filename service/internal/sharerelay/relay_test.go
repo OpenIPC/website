@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -227,7 +228,7 @@ func TestExpiredRegistrationsAreReaped(t *testing.T) {
 	h.mu.Lock()
 	h.reap(time.Now().Add(3 * time.Second))
 	h.mu.Unlock()
-	if n, _ := h.Stats(); n != 0 {
+	if n, _, _ := h.Stats(); n != 0 {
 		t.Fatalf("%d shares outlived their end", n)
 	}
 }
@@ -267,7 +268,7 @@ func TestSessionsPerShareAreBounded(t *testing.T) {
 		// its share: wait for that, or the next dial races it for a slot.
 		deadline := time.Now().Add(2 * time.Second)
 		for {
-			if _, pages := h.Stats(); pages == i+1 {
+			if _, pages, _ := h.Stats(); pages == i+1 {
 				break
 			}
 			if time.Now().After(deadline) {
@@ -541,10 +542,13 @@ func TestASessionRunsOnThePagesOwnConnection(t *testing.T) {
 
 // openStream starts a streamed session and returns its session id and a
 // reader of its lines.
-func openStream(t *testing.T, srv *httptest.Server) (string, func() map[string]string) {
+func openStream(t *testing.T, srv *httptest.Server, addr ...string) (string, func() map[string]string) {
 	t.Helper()
 	req, _ := http.NewRequest("POST", srv.URL+"/__share/signal?share="+id, strings.NewReader(`{"req":"offer","data":"v=0"}`))
 	req.Header.Set("Origin", srv.URL)
+	if len(addr) > 0 {
+		req.Header.Set("X-Real-IP", addr[0])
+	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
@@ -579,7 +583,13 @@ func post(t *testing.T, srv *httptest.Server, path string) int {
 	return resp.StatusCode
 }
 
-// A page the camera has admitted keeps its stream to hear the share end,
+// admit has the camera answer a session's offer, on its own socket.
+func admit(t *testing.T, cam *websocket.Conn, sid string) {
+	t.Helper()
+	send(t, cam, map[string]string{"type": "signal", "session": sid, "reply": "answer", "data": "v=0 answer"})
+}
+
+// A page the camera has answered keeps its stream to hear the share end,
 // however long the guest stays, and gives up its session slot to do it.
 func TestAnAdmittedPageHearsTheShareEndForTheWholeSession(t *testing.T) {
 	h, srv := rig(t)
@@ -588,8 +598,20 @@ func TestAnAdmittedPageHearsTheShareEndForTheWholeSession(t *testing.T) {
 	sid, next := openStream(t, srv)
 	recv(t, cam) // the offer
 
+	// A session id is not enough: the relay hands it out before the camera
+	// has seen the offer.
+	if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusConflict {
+		t.Fatalf("promoted before the camera answered: %d", c)
+	}
+	admit(t, cam, sid)
+	if m := next(); m["reply"] != "answer" {
+		t.Fatalf("got %v", m)
+	}
 	if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusNoContent {
 		t.Fatalf("connected: %d", c)
+	}
+	if _, _, l := h.Stats(); l != 1 {
+		t.Fatalf("stats count %d listeners", l)
 	}
 	// Its slot is free: three more pages can set up.
 	for i := 0; i < MaxSessionsPerShare; i++ {
@@ -614,33 +636,64 @@ func TestAnAdmittedPageHearsTheShareEndForTheWholeSession(t *testing.T) {
 		}
 		break
 	}
-	// A session nobody holds, or one already a listener, cannot be promoted.
 	if c := post(t, srv, "/__share/connected?share="+id+"&session=0000000000000000"); c != http.StatusNotFound {
 		t.Fatalf("unknown session: %d", c)
 	}
 }
 
-// Listeners hold no slot, so they are bounded on their own: someone who knows
-// only a share's name cannot make the relay keep much for it.
+// A listener lasts as long as the camera's session: when the camera says the
+// session closed -- as it does for one that never proves the key -- the relay
+// stops keeping it.
+func TestAListenerEndsWithTheCamerasSession(t *testing.T) {
+	h, srv := rig(t)
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	sid, _ := openStream(t, srv)
+	recv(t, cam)
+	admit(t, cam, sid)
+	if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusNoContent {
+		t.Fatalf("connected: %d", c)
+	}
+	send(t, cam, map[string]string{"type": "signal", "session": sid, "reply": "closed", "data": "the guest's proof did not verify"})
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		if _, _, l := h.Stats(); l == 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the listener outlived the camera's session")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// Listeners hold no slot, so they are bounded on their own: per address, and
+// per share.
 func TestListenersAreBounded(t *testing.T) {
 	h, srv := rig(t)
 	cam := register(t, srv, time.Now().Add(time.Hour))
-	for i := 0; i < MaxListenersPerShare; i++ {
-		sid, _ := openStream(t, srv)
+	promote := func(addr string) int {
+		sid, _ := openStream(t, srv, addr)
 		recv(t, cam)
-		if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusNoContent {
+		admit(t, cam, sid)
+		return post(t, srv, "/__share/connected?share="+id+"&session="+sid)
+	}
+	for i := 0; i < MaxListenersPerAddress; i++ {
+		if c := promote("192.0.2.1"); c != http.StatusNoContent {
 			t.Fatalf("listener %d: %d", i, c)
 		}
 	}
-	sid, _ := openStream(t, srv)
-	recv(t, cam)
-	if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusTooManyRequests {
-		t.Fatalf("past the bound: %d", c)
+	if c := promote("192.0.2.1"); c != http.StatusTooManyRequests {
+		t.Fatalf("past the address bound: %d", c)
 	}
-	h.mu.Lock()
-	n := len(h.shares[id].listeners)
-	h.mu.Unlock()
-	if n != MaxListenersPerShare {
-		t.Fatalf("%d listeners", n)
+	for i := MaxListenersPerAddress; i < MaxListenersPerShare; i++ {
+		if c := promote(fmt.Sprintf("192.0.2.%d", 10+i)); c != http.StatusNoContent {
+			t.Fatalf("listener %d: %d", i, c)
+		}
+	}
+	if c := promote("198.51.100.1"); c != http.StatusTooManyRequests {
+		t.Fatalf("past the share bound: %d", c)
+	}
+	if _, _, l := h.Stats(); l != MaxListenersPerShare {
+		t.Fatalf("%d listeners", l)
 	}
 }

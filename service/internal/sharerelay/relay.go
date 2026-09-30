@@ -114,6 +114,9 @@ const (
 	// serve, so every real guest fits; few enough that a stranger who knows
 	// a share's name cannot make the relay hold much for it.
 	MaxListenersPerShare = 16
+	// And per reader's address on one share: a household's guests fit, and
+	// one stranger does not reach the bound above.
+	MaxListenersPerAddress = 4
 	// Allowed between the camera's clock and this one when a registration
 	// names its end. The camera enforces the share's real lifetime on its
 	// own clock; this only refuses what no camera would send.
@@ -196,6 +199,11 @@ type page struct {
 	// The setup deadline of a streamed session, stopped once the page is a
 	// listener. Set and stopped under h.mu.
 	lifetime *time.Timer
+	// The camera has answered this session's offer, on its own socket: what
+	// a page must have before it may become a listener. Under h.mu.
+	answered bool
+	// The reader's address, for the per-address bound on listeners.
+	remote string
 }
 
 func or(d, def time.Duration) time.Duration {
@@ -370,7 +378,21 @@ func (h *Hub) onDevice(d *device, raw []byte) {
 		}
 	case "signal":
 		for _, sh := range d.shares {
+			// A listener's camera session has ended: it stops listening.
+			// This is what binds a listener to a session the camera really
+			// holds -- one that never passes the camera's key proof is
+			// closed by the camera within seconds, and its listener with it.
+			if p := sh.listeners[m.Session]; p != nil {
+				if m.Reply == "closed" {
+					delete(sh.listeners, m.Session)
+					close(p.out)
+				}
+				return
+			}
 			if p := sh.pages[m.Session]; p != nil {
+				if m.Reply == "answer" {
+					p.answered = true
+				}
 				out := map[string]string{"reply": m.Reply, "data": m.Data}
 				if m.Mid != "" {
 					out["mid"] = m.Mid
@@ -652,12 +674,16 @@ func (h *Hub) Live(id string) bool {
 	return sh != nil && sh.dev != nil && sh.expires.After(time.Now())
 }
 
-func (h *Hub) Stats() (shares, pages int) {
+// Stats counts the relay's shares, the pages setting up on them, and the
+// admitted pages kept listening -- each of those a stream held for as long as
+// its guest stays.
+func (h *Hub) Stats() (shares, pages, listeners int) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	for _, sh := range h.shares {
 		shares++
 		pages += len(sh.pages)
+		listeners += len(sh.listeners)
 	}
 	return
 }
@@ -737,6 +763,9 @@ func (h *Hub) SignalStream() http.Handler {
 			line(marshal(map[string]string{"reply": "error", "data": why}))
 			return
 		}
+		h.mu.Lock()
+		p.remote = clientIP(r)
+		h.mu.Unlock()
 		defer h.detach(p)
 		if !line(marshal(map[string]string{"reply": "session", "data": p.sid})) {
 			return
@@ -823,7 +852,21 @@ func (h *Hub) Connected() http.Handler {
 			http.Error(w, "no such session", http.StatusNotFound)
 			return
 		}
-		if len(sh.listeners) >= MaxListenersPerShare {
+		// Holding a session id proves nothing -- the relay hands it out
+		// before the camera has seen the offer. The camera's answer, on
+		// the camera's own socket, is the least a listener must have; the
+		// camera closing the session unmakes it (see onDevice).
+		if !p.answered {
+			http.Error(w, "the camera has not answered this session", http.StatusConflict)
+			return
+		}
+		same := 0
+		for _, l := range sh.listeners {
+			if l.remote == p.remote {
+				same++
+			}
+		}
+		if len(sh.listeners) >= MaxListenersPerShare || same >= MaxListenersPerAddress {
 			http.Error(w, "too many listeners on this share", http.StatusTooManyRequests)
 			return
 		}
