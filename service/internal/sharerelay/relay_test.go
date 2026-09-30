@@ -2,11 +2,11 @@ package sharerelay
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"crypto/hmac"
 	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -29,7 +29,8 @@ func rig(t *testing.T) (*Hub, *httptest.Server) {
 	t.Helper()
 	h := &Hub{OriginPatterns: []string{"*"}}
 	mux := http.NewServeMux()
-	for k, v := range Handlers(h, ICE{STUN: []string{"stun:example.org:3478"}}) {
+	for k, v := range Handlers(h, ICE{STUN: []string{"stun:example.org:3478"},
+		TURN: []string{"turn:turn.example:3478"}, TURNSecret: []byte("s3cret")}) {
 		mux.Handle(k, v)
 	}
 	srv := httptest.NewServer(mux)
@@ -271,20 +272,70 @@ func TestTheShareIsReadFromTheHost(t *testing.T) {
 func TestTURNCredentialsFollowTheRESTConvention(t *testing.T) {
 	ice := ICE{TURN: []string{"turn:turn.example:3478"}, TURNSecret: []byte("s3cret")}
 	now := time.Unix(1_800_000_000, 0)
-	srv := ice.Servers(now)
+	srv := ice.Servers(now, id)
 	if len(srv) != 1 {
 		t.Fatalf("got %v", srv)
 	}
-	if !strings.HasPrefix(srv[0].Username, "1800043200:") {
-		t.Fatalf("username %q", srv[0].Username)
+	if want := "1800000300:" + id; srv[0].Username != want {
+		t.Fatalf("username %q, want %q", srv[0].Username, want)
 	}
 	mac := hmac.New(sha1.New, []byte("s3cret"))
 	mac.Write([]byte(srv[0].Username))
 	if srv[0].Credential != base64.StdEncoding.EncodeToString(mac.Sum(nil)) {
 		t.Fatal("credential does not verify")
 	}
-	if len((ICE{TURN: []string{"turn:x"}}).Servers(now)) != 0 {
+	if len((ICE{TURN: []string{"turn:x"}}).Servers(now, id)) != 0 {
 		t.Fatal("TURN offered without a secret")
+	}
+	if len(ice.Servers(now, "")) != 0 {
+		t.Fatal("TURN offered without a share")
+	}
+}
+
+// A relay is given only to a page of a share a camera is serving right now:
+// the endpoint is public, and TURN credentials are bandwidth.
+func TestTURNIsOnlyForALiveShare(t *testing.T) {
+	_, srv := rig(t)
+	turn := func(host string) bool {
+		t.Helper()
+		req, _ := http.NewRequest("GET", srv.URL+"/__share/ice", nil)
+		req.Host = host
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		var body struct {
+			IceServers []iceServer `json:"iceServers"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		for _, s := range body.IceServers {
+			if s.Credential != "" {
+				return true
+			}
+		}
+		return false
+	}
+	host := id + ".share.openipc.org"
+	if turn(host) {
+		t.Fatal("TURN for a share no camera has registered")
+	}
+	if turn("share.openipc.org") {
+		t.Fatal("TURN without a share")
+	}
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	if !turn(host) {
+		t.Fatal("no TURN for a live share")
+	}
+	cam.Close(websocket.StatusNormalClosure, "")
+	deadline := time.Now().Add(5 * time.Second)
+	for turn(host) {
+		if time.Now().After(deadline) {
+			t.Fatal("TURN still offered after the camera left")
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
 }
 
