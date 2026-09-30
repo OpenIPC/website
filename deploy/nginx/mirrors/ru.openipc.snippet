@@ -72,6 +72,7 @@ location = / {
     proxy_set_header X-Real-IP         $remote_addr;
     proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Accept-Encoding   "";   # for the sub_filter below
     proxy_ssl_server_name         on;
     proxy_ssl_name                openipc.org;
     proxy_ssl_verify              on;
@@ -80,3 +81,29 @@ location = / {
     proxy_http_version 1.1;
     proxy_hide_header Strict-Transport-Security;
 }
+
+# openipc.ru is the main address of the Russian pages (#179). openipc.org sits
+# on Hetzner addresses that Russian providers filter, and every Russian page
+# served through this mirror named openipc.org as its canonical -- asking
+# Yandex, whose audience is here, to send readers to an address they may not be
+# able to open. Pages served through this mirror now name openipc.ru for the
+# Russian tree: the canonical, the ru alternate, og:url and the sitemap's
+# entries. English and Chinese keep openipc.org, and openipc.org itself is
+# unchanged, so Google's picture of the site does not move. Applied by hand on
+# 2026-09-30, at server level in the openipc.ru server block, and the sitemap
+# submitted to Yandex Webmaster for https:openipc.ru:443 the same day.
+#
+# sub_filter cannot read a compressed body, so BOTH proxying locations that
+# serve pages -- `location = /` above and the host's `location /` -- carry
+#
+#     proxy_set_header Accept-Encoding "";
+#
+# (a location that sets any proxy_set_header inherits none from its server).
+# The mirror still gzips HTML to the reader itself.
+
+sub_filter_once  off;
+sub_filter_types text/xml application/xml;
+sub_filter 'rel="canonical" href="https://openipc.org/ru'      'rel="canonical" href="https://openipc.ru/ru';
+sub_filter 'hreflang="ru" href="https://openipc.org/ru'        'hreflang="ru" href="https://openipc.ru/ru';
+sub_filter 'property="og:url" content="https://openipc.org/ru' 'property="og:url" content="https://openipc.ru/ru';
+sub_filter '<loc>https://openipc.org/ru'                       '<loc>https://openipc.ru/ru';
