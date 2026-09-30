@@ -1,6 +1,7 @@
 package sharerelay
 
 import (
+	"bufio"
 	"context"
 	"crypto/hmac"
 	"crypto/sha1"
@@ -9,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -16,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/OpenIPC/website/service/internal/httpx"
 	"github.com/coder/websocket"
 )
 
@@ -35,7 +38,10 @@ func rig(t *testing.T) (*Hub, *httptest.Server) {
 		TURN: []string{"turn:turn.example:3478"}, TURNSecret: []byte("s3cret")}) {
 		mux.Handle(k, v)
 	}
-	srv := httptest.NewServer(mux)
+	// Behind the service's own request log, as in production: its writer
+	// wraps the connection's, and a handler that asserts the connection's
+	// interfaces directly works here only if it works there.
+	srv := httptest.NewServer(httpx.Log(slog.New(slog.NewTextHandler(io.Discard, nil)), mux))
 	t.Cleanup(srv.Close)
 	return h, srv
 }
@@ -459,5 +465,78 @@ func TestTheShellNamesVersionedScriptsThatAreCachedForGood(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusNotModified {
 		t.Fatalf("revalidation got %d", resp.StatusCode)
+	}
+}
+
+// A page can hold its session on the connection it already has: the offer as
+// a POST whose response streams the relay's replies, and its candidates as
+// POSTs of their own. The camera sees the same session either way.
+func TestASessionRunsOnThePagesOwnConnection(t *testing.T) {
+	_, srv := rig(t)
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	req, _ := http.NewRequest("POST", srv.URL+"/__share/signal?share="+id, strings.NewReader(`{"req":"offer","data":"v=0 offer"}`))
+	req.Header.Set("Origin", srv.URL)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	lines := bufio.NewScanner(resp.Body)
+	next := func() map[string]string {
+		t.Helper()
+		if !lines.Scan() {
+			t.Fatalf("the stream ended: %v", lines.Err())
+		}
+		var m map[string]string
+		if err := json.Unmarshal(lines.Bytes(), &m); err != nil {
+			t.Fatalf("not a JSON line: %q", lines.Text())
+		}
+		return m
+	}
+	first := next()
+	if first["reply"] != "session" || first["data"] == "" {
+		t.Fatalf("first line %v", first)
+	}
+	sid := first["data"]
+	if m := recv(t, cam); m["type"] != "offer" || m["session"] != sid || m["data"] != "v=0 offer" {
+		t.Fatalf("camera got %v", m)
+	}
+
+	// The camera's answer comes down the stream.
+	send(t, cam, map[string]string{"type": "signal", "session": sid, "reply": "answer", "data": "v=0 answer"})
+	if m := next(); m["reply"] != "answer" || m["data"] != "v=0 answer" {
+		t.Fatalf("page got %v", m)
+	}
+
+	// The page's candidate goes up on its own request.
+	creq, _ := http.NewRequest("POST", srv.URL+"/__share/candidate?share="+id+"&session="+sid, strings.NewReader("candidate:1 1 udp 1 192.0.2.1 5000 typ host"))
+	creq.Header.Set("Origin", srv.URL)
+	cresp, err := http.DefaultClient.Do(creq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cresp.Body.Close()
+	if cresp.StatusCode != http.StatusNoContent {
+		t.Fatalf("candidate: %d", cresp.StatusCode)
+	}
+	if m := recv(t, cam); m["type"] != "candidate" || m["session"] != sid {
+		t.Fatalf("camera got %v", m)
+	}
+
+	// Another site's page is refused, and so is a session nobody holds.
+	bad, _ := http.NewRequest("POST", srv.URL+"/__share/signal?share="+id, strings.NewReader(`{"req":"offer","data":"x"}`))
+	bad.Header.Set("Origin", "https://evil.example")
+	h2 := &Hub{OriginPatterns: []string{"*.share.openipc.cloud"}}
+	w := httptest.NewRecorder()
+	h2.SignalStream().ServeHTTP(w, bad)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("foreign origin: %d", w.Code)
+	}
+	nreq, _ := http.NewRequest("POST", srv.URL+"/__share/candidate?share="+id+"&session=0000000000000000", strings.NewReader("x"))
+	nreq.Header.Set("Origin", srv.URL)
+	nresp, _ := http.DefaultClient.Do(nreq)
+	nresp.Body.Close()
+	if nresp.StatusCode != http.StatusNotFound {
+		t.Fatalf("unknown session: %d", nresp.StatusCode)
 	}
 }

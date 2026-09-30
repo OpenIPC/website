@@ -177,6 +177,8 @@ var routes = []Route{
 	{"share", "GET", "/up"},
 	{"share", "GET", "/__share/device"},
 	{"share", "GET", "/__share/signal"},
+	{"share", "POST", "/__share/signal"},
+	{"share", "POST", "/__share/candidate"},
 	{"share", "GET", "/__share/ice"},
 	{"share", "GET", "/__share/"},
 	{"share", "GET", "/"},
