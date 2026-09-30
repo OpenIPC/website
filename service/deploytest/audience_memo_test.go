@@ -103,6 +103,16 @@ func memoSearchArchive(t testing.TB) string {
 		"#total\t60\t1000\t3.00\nopenipc\t20\t100\t2.00\nrtl8812eu\t10\t50\t3.00\n#total\t1\t10\t9.00\nhalf a line\n")
 	writeFile(t, filepath.Join(dir, "google", "2026-09-30.tsv"),
 		"#total\t999\t9999\t1.00\nseptember only\t999\t9999\t1.00\n")
+	// Yandex: one day with a total, one from before the account had totals
+	// (#listed, a floor), and an abuse-seeking query that must be counted and
+	// never printed.
+	if err := os.MkdirAll(filepath.Join(dir, "yandex"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(dir, "yandex", "2026-10-02.tsv"),
+		"#listed\t7\t20\t2.00\nopenipc\t6\t10\t1.00\npreteen example\t1\t10\t3.00\n")
+	writeFile(t, filepath.Join(dir, "yandex", "2026-10-21.tsv"),
+		"#total\t5\t40\t4.00\nщзут мзп окп\t3\t9\t4.00\n")
 	return dir
 }
 
@@ -202,7 +212,7 @@ func TestAudienceMemo(t *testing.T) {
 		mustNotContain(t, memo, "WITHHELD", "no harvester country is present, so the block is not withheld")
 	})
 	t.Run("the manual sources and commentary are labelled placeholders", func(t *testing.T) {
-		mustContain(t, memo, "Bing and Yandex Webmaster are not archived yet", "the engines without an archive are a fill-in")
+		mustContain(t, memo, "Bing Webmaster is not archived yet", "the engine without an archive is a fill-in")
 		mustContain(t, memo, "MANUAL: from the maintainers' monthly PayWall export", "PayWall is a fill-in")
 		mustContain(t, memo, "[commentary", "the two commentary paragraphs are placeholders")
 	})
@@ -219,6 +229,17 @@ func TestAudienceMemo(t *testing.T) {
 		mustMatch(t, `(?s)\| openipc \|.*\| rtl8812eu \|.*\| ssc338q \|`, memo, "ordered by clicks")
 		mustNotContain(t, memo, "september only", "a day outside the month leaked in")
 		mustNotContain(t, memo, "MANUAL: paste the top queries", "the archive replaces the paste-by-hand line")
+	})
+	t.Run("yandex's queries come from the archive, abuse searches counted but never printed", func(t *testing.T) {
+		if _, err := exec.LookPath("python3"); err != nil {
+			t.Skip("python3 not available; the memo falls back to a placeholder")
+		}
+		mustContain(t, memo, "Yandex Webmaster (openipc.org), 2026-10-02 to 2026-10-21 (2 day(s) archived)", "the Yandex block is present")
+		mustContain(t, memo, "all searches: **12 clicks**, 60 impressions", "a #listed day's floor is summed with a real total")
+		mustContain(t, memo, "1 of those days have no total from Yandex", "the floor is declared, not passed off as a total")
+		mustContain(t, memo, "1 query (1 click(s)) not printed: abuse-seeking searches", "the withheld query is counted")
+		mustNotContain(t, memo, "preteen", "an abuse-seeking query reached the memo")
+		mustContain(t, memo, "| щзут мзп окп | 3 | 9 | 4.0 |", "Cyrillic queries pass through intact")
 	})
 	t.Run("the hypothesis register is carried", func(t *testing.T) {
 		mustContain(t, memo, "| H1 |", "the register's five rows travel with every memo")
@@ -372,14 +393,16 @@ func TestSearchQueriesOffline(t *testing.T) {
 	}
 	dir := t.TempDir()
 	env := map[string]string{
-		"SEARCH_ENV":   filepath.Join(dir, "absent.env"),
-		"GSC_KEY_FILE": filepath.Join(dir, "absent.json"),
+		"SEARCH_ENV":         filepath.Join(dir, "absent.env"),
+		"GSC_KEY_FILE":       filepath.Join(dir, "absent.json"),
+		"YANDEX_OAUTH_TOKEN": "",
 	}
 	out, ok := run(t, env, "", "python3", abs(t, "deploy/search-queries.py"), "fetch", "--dir", dir)
 	if !ok {
 		t.Fatalf("fetch without a key must succeed and say so:\n%s", out)
 	}
 	mustContain(t, out, "google: no key at", "a missing key is reported, not an error")
+	mustContain(t, out, "yandex: no YANDEX_OAUTH_TOKEN, skipped", "a missing Yandex token is reported, not an error")
 	out, ok = run(t, env, "", "python3", abs(t, "deploy/search-queries.py"), "top", "2026-10", "--dir", dir)
 	if !ok {
 		t.Fatalf("top on an empty archive failed:\n%s", out)
@@ -388,4 +411,26 @@ func TestSearchQueriesOffline(t *testing.T) {
 	if _, ok := run(t, env, "", "python3", abs(t, "deploy/search-queries.py"), "top", "October", "--dir", dir); ok {
 		t.Error("top accepted a month that is not YYYY-MM")
 	}
+}
+
+// A day Yandex lists queries for but has no total for (before the site was on
+// the account) is written with the queries' sum as a floor, labelled #listed so
+// the memo can say so; a day with neither is an honest zero.
+func TestSearchQueriesListedFloor(t *testing.T) {
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skip("python3 not available")
+	}
+	dir := t.TempDir()
+	script := "import importlib.util, sys\n" +
+		"spec = importlib.util.spec_from_file_location('sq', sys.argv[1])\n" +
+		"sq = importlib.util.module_from_spec(spec); spec.loader.exec_module(sq)\n" +
+		"zero = {'clicks': 0, 'impressions': 0, 'position': 0}\n" +
+		"sq.write_day(sys.argv[2] + '/a.tsv', zero, [('openipc', 3, 10, 1.0), ('ssc338q', 1, 30, 5.0)])\n" +
+		"sq.write_day(sys.argv[2] + '/b.tsv', zero, [])\n"
+	if out, ok := run(t, nil, "", "python3", "-c", script, abs(t, "deploy/search-queries.py"), dir); !ok {
+		t.Fatalf("write_day failed:\n%s", out)
+	}
+	mustContain(t, readAbs(t, filepath.Join(dir, "a.tsv")), "#listed\t4\t40\t4.00\n",
+		"the floor is the queries' sum, position weighted by impressions: (1*10+5*30)/40")
+	mustContain(t, readAbs(t, filepath.Join(dir, "b.tsv")), "#total\t0\t0\t0.00\n", "an empty day stays an honest zero")
 }

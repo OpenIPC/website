@@ -12,7 +12,9 @@ consoles' own retention (Google keeps sixteen months).
 `fetch` runs daily from deploy/cron.d/openipc-metrics and writes one file per
 engine per day, never rewriting a day it already has:
 
-  DIR/google/YYYY-MM-DD.tsv
+  DIR/google/YYYY-MM-DD.tsv                Google, sc-domain:openipc.org
+  DIR/yandex/YYYY-MM-DD.tsv                Yandex, https:openipc.org:443
+  DIR/yandex-<host>/YYYY-MM-DD.tsv         Yandex, any further host in YANDEX_HOSTS
     #total  <clicks>  <impressions>  <position>   every query, withheld ones too
     <query> <clicks>  <impressions>  <position>   the queries Google names
 
@@ -26,6 +28,21 @@ and nowhere else, so the named rows never add up to the total and `top` says
 how much of it they cover. A day enters the archive once Google reports it
 final, two to three days after it ends.
 
+Yandex publishes in batches every few days, with no "final" flag. A day enters
+the archive once a LATER day has data, so the newest day in a batch, which may
+still be filling, is left for the next run. Its per-day list is complete where
+Google's is not, but its daily total still carries queries it will not name.
+Its daily totals start only when the site was added to the account (for
+openipc.org, 2026-09-20), while its query lists go back further. A day with
+queries and no total is written with the sum of its queries as the total and
+the label "#listed" in place of "#total", and `top` says how many such days
+its figures include -- the sum is a floor, not the real total.
+
+Search statistics bring in whatever strangers type. `top` never prints a query
+matching WITHHELD -- searches for child sexual abuse material, which do land on
+this site from spam and scraper traffic -- but counts it, and says how many it
+kept back. The archive stays verbatim, so the count can be checked.
+
 `top` aggregates a month of the archive into the Markdown the memo prints.
 Positions are averaged weighted by impressions, which is how the console
 averages them.
@@ -34,10 +51,14 @@ Credentials are read on the host, never from the repository:
 
   GSC_KEY_FILE   service-account JSON key   (default /srv/www/.gsc-service-account.json)
   GSC_SITE       Search Console property    (default sc-domain:openipc.org)
+  YANDEX_OAUTH_TOKEN   token of an app with both Yandex.Webmaster permissions;
+                       the search statistics need the one named for adding
+                       sites ("COMMON"), the links one alone answers 403
+  YANDEX_HOSTS   space-separated host ids   (default https:openipc.org:443)
 
 either from the environment or from /srv/www/.env.search (SEARCH_ENV). The
 service account is a Restricted user of the property, which reads and cannot
-change anything. An engine without credentials is skipped with a line saying
+change anything; the Yandex token can add sites, and this only reads. An engine without credentials is skipped with a line saying
 so. No third-party modules: the host has python3 and openssl, which is enough
 to sign the token request.
 """
@@ -47,6 +68,7 @@ import datetime
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -56,7 +78,11 @@ import urllib.parse
 import urllib.request
 
 DEFAULT_DIR = "/srv/www/shared/reports/search"
-ENGINES = (("google", "Google Search Console"),)
+YANDEX_API = "https://api.webmaster.yandex.net/v4"
+
+# Matched against the lower-cased query. Deliberately narrow: each term has no
+# innocent reading on a camera-firmware site.
+WITHHELD = re.compile(r"preteen|pre-teen|\bpthc\b|jailbait|\bloli(ta)?\b|child ?porn|\bnn\b.*\b(sites?|models?|girls?)\b")
 
 
 def settings():
@@ -71,9 +97,10 @@ def settings():
                     conf[k.strip()] = v.strip()
     except FileNotFoundError:
         pass
-    conf.update({k: v for k, v in os.environ.items() if k.startswith("GSC_")})
+    conf.update({k: v for k, v in os.environ.items() if k.startswith(("GSC_", "YANDEX_"))})
     conf.setdefault("GSC_KEY_FILE", "/srv/www/.gsc-service-account.json")
     conf.setdefault("GSC_SITE", "sc-domain:openipc.org")
+    conf.setdefault("YANDEX_HOSTS", "https:openipc.org:443")
     return conf
 
 
@@ -135,31 +162,86 @@ def google_queries(query, day):
     return [(r["keys"][0], r["clicks"], r["impressions"], r["position"]) for r in rows]
 
 
+def yandex_dir(host):
+    name = host.split(":")[1] if host.count(":") == 2 else host
+    return "yandex" if name == "openipc.org" else "yandex-" + name
+
+
+def yandex_api(token):
+    headers = {"Authorization": "OAuth " + token}
+
+    def get(path, **params):
+        query = urllib.parse.urlencode(params, doseq=True)
+        return http_json("%s%s?%s" % (YANDEX_API, path, query), headers=headers)
+    return get
+
+
+def yandex_final_days(get, base, start, end):
+    """{day: total} for the days before the newest one with data."""
+    ind = get(base + "/search-queries/all/history", date_from=start, date_to=end,
+              query_indicator=["TOTAL_CLICKS", "TOTAL_SHOWS", "AVG_SHOW_POSITION"])["indicators"]
+    by_day = {}
+    for name, key in (("TOTAL_CLICKS", "clicks"), ("TOTAL_SHOWS", "impressions"),
+                      ("AVG_SHOW_POSITION", "position")):
+        for point in ind.get(name, []):
+            by_day.setdefault(point["date"][:10], {})[key] = point["value"] or 0
+    shown = [d for d, v in by_day.items() if v.get("impressions")]
+    if not shown:
+        return {}
+    newest = max(shown)
+    return {d: {"clicks": v.get("clicks", 0), "impressions": v.get("impressions", 0),
+                "position": v.get("position", 0)}
+            for d, v in by_day.items() if d < newest}
+
+
+def yandex_queries(get, base, day):
+    rows, offset = [], 0
+    while True:
+        page = get(base + "/search-queries/popular", date_from=day, date_to=day,
+                   order_by="TOTAL_SHOWS", limit=500, offset=offset,
+                   query_indicator=["TOTAL_CLICKS", "TOTAL_SHOWS", "AVG_SHOW_POSITION"])
+        got = page.get("queries", [])
+        for q in got:
+            i = q["indicators"]
+            rows.append((q["query_text"], i.get("TOTAL_CLICKS") or 0, i.get("TOTAL_SHOWS") or 0,
+                         i.get("AVG_SHOW_POSITION") or 0))
+        offset += len(got)
+        if not got or offset >= page.get("count", 0):
+            return rows
+
+
 def write_day(path, total, rows):
+    label = "#total"
+    if not total["impressions"] and rows:
+        # A console that lists queries for a day it has no total for: the
+        # listed queries are the most that can be said, and the file says so.
+        label = "#listed"
+        shows = sum(r[2] for r in rows)
+        total = {"clicks": sum(r[1] for r in rows), "impressions": shows,
+                 "position": sum(r[3] * r[2] for r in rows) / shows if shows else 0}
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
     with open(tmp, "w", newline="\n") as f:
-        f.write("#total\t%d\t%d\t%.2f\n" % (total["clicks"], total["impressions"], total["position"]))
+        f.write("%s\t%d\t%d\t%.2f\n" % (label, total["clicks"], total["impressions"], total["position"]))
         for q, c, i, p in sorted(rows, key=lambda r: (-r[1], -r[2], r[0])):
             q = "".join(" " if ch < " " or ch == "\x7f" else ch for ch in q)
             f.write("%s\t%d\t%d\t%.2f\n" % (q, c, i, p))
     os.replace(tmp, path)
 
 
-def fetch(args):
-    conf = settings()
-    today = datetime.date.today()
-    since = (datetime.date.fromisoformat(args.since) if args.since
-             else today - datetime.timedelta(days=30))
-    days = [since + datetime.timedelta(days=n) for n in range((today - since).days)]
+def missing(dirpath, days):
+    have = {os.path.basename(p)[:10] for p in glob.glob(os.path.join(dirpath, "*.tsv"))}
+    return have, not all(d.isoformat() in have for d in days)
 
+
+def fetch_google(conf, args, since, days):
     if not os.path.isfile(conf["GSC_KEY_FILE"]):
         print("google: no key at %s, skipped" % conf["GSC_KEY_FILE"])
-        return 0
-    have = {os.path.basename(p)[:10] for p in glob.glob(os.path.join(args.dir, "google", "*.tsv"))}
-    if all(d.isoformat() in have for d in days):
+        return
+    have, gaps = missing(os.path.join(args.dir, "google"), days)
+    if not gaps:
         print("google: archive complete from %s" % since)
-        return 0
+        return
     query = google_api(google_token(conf["GSC_KEY_FILE"]), conf["GSC_SITE"])
     final = google_final_days(query, since.isoformat(), days[-1].isoformat())
     wrote = []
@@ -170,13 +252,68 @@ def fetch(args):
     print("google: wrote %s" % (", ".join(wrote) or "nothing new"))
     if final:
         print("google: final through %s; later days arrive in two to three days" % max(final))
-    return 0
+
+
+def fetch_yandex(conf, args, since, days):
+    if not conf.get("YANDEX_OAUTH_TOKEN"):
+        print("yandex: no YANDEX_OAUTH_TOKEN, skipped")
+        return
+    get = yandex_api(conf["YANDEX_OAUTH_TOKEN"])
+    user = None
+    for host in conf["YANDEX_HOSTS"].split():
+        label = "yandex %s" % host
+        dirpath = os.path.join(args.dir, yandex_dir(host))
+        have, gaps = missing(dirpath, days)
+        if not gaps:
+            print("%s: archive complete from %s" % (label, since))
+            continue
+        if user is None:
+            user = get("/user")["user_id"]
+        base = "/user/%s/hosts/%s" % (user, host)
+        final = yandex_final_days(get, base, since.isoformat(), days[-1].isoformat())
+        wrote = []
+        for day in sorted(set(final) - have):
+            rows = yandex_queries(get, base, day)
+            write_day(os.path.join(dirpath, day + ".tsv"), final[day], rows)
+            wrote.append("%s (%d queries)" % (day, len(rows)))
+        print("%s: wrote %s" % (label, ", ".join(wrote) or "nothing new"))
+        if final:
+            print("%s: through %s; Yandex publishes every few days" % (label, max(final)))
+
+
+def fetch(args):
+    conf = settings()
+    today = datetime.date.today()
+    since = (datetime.date.fromisoformat(args.since) if args.since
+             else today - datetime.timedelta(days=30))
+    days = [since + datetime.timedelta(days=n) for n in range((today - since).days)]
+    # One engine failing must not stop the other; the exit status still says so.
+    failed = []
+    for name, run in (("google", fetch_google), ("yandex", fetch_yandex)):
+        try:
+            run(conf, args, since, days)
+        except RuntimeError as e:
+            print("%s: failed: %s" % (name, e), file=sys.stderr)
+            failed.append(name)
+    return 1 if failed else 0
+
+
+def engines(root):
+    """(directory, label) for Google, Yandex for openipc.org, then any other
+    Yandex host that has an archive. The first two are always listed, so a
+    missing archive is said rather than silently left out."""
+    found = [("google", "Google Search Console", "Google"),
+             ("yandex", "Yandex Webmaster (openipc.org)", "Yandex")]
+    for path in sorted(glob.glob(os.path.join(root, "yandex-*"))):
+        name = os.path.basename(path)
+        found.append((name, "Yandex Webmaster (%s)" % name[len("yandex-"):], "Yandex"))
+    return found
 
 
 def top(args):
     if len(args.month) != 7 or args.month[4] != "-":
         sys.exit("search-queries.py: month must be YYYY-MM, got %r" % args.month)
-    for engine, label in ENGINES:
+    for engine, label, who in engines(args.dir):
         files = sorted(glob.glob(os.path.join(args.dir, engine, args.month + "-??.tsv")))
         if not files:
             print("%s: _[no archive for %s under %s -- no credentials on the host, or the fetcher "
@@ -186,7 +323,7 @@ def top(args):
         tc = ti = 0
         tpos = 0.0
         agg = {}
-        bad = 0
+        bad = listed = 0
         for path in files:
             with open(path, newline="\n") as f:
                 for n, line in enumerate(f):
@@ -199,6 +336,7 @@ def top(args):
                         continue
                     if n == 0:
                         tc, ti, tpos = tc + c, ti + i, tpos + p * i
+                        listed += q == "#listed"
                         continue
                     a = agg.setdefault(q, [0, 0, 0.0])
                     a[0] += c
@@ -209,14 +347,24 @@ def top(args):
             # section, but it is said where the cron log will show it.
             print("search-queries.py: %s: skipped %d malformed line(s) in %s"
                   % (engine, bad, args.month), file=sys.stderr)
+        held = [q for q in agg if WITHHELD.search(q.lower())]
+        held_clicks = sum(agg[q][0] for q in held)
         named = sum(a[0] for a in agg.values())
         first, last = os.path.basename(files[0])[:10], os.path.basename(files[-1])[:10]
         print("%s, %s to %s (%d day(s) archived):" % (label, first, last, len(files)))
         print()
         print("- all searches: **%s clicks**, %s impressions, average position %.1f"
               % (format(tc, ","), format(ti, ","), tpos / ti if ti else 0))
-        print("- the queries Google names account for %s of those clicks (%d%%); the rest it withholds as rare"
-              % (format(named, ","), round(100 * named / tc) if tc else 0))
+        if listed:
+            print("- %d of those days have no total from %s; for them the listed queries stand in, "
+                  "so the totals above are a floor" % (listed, who))
+        print("- the queries %s names account for %s of those clicks (%d%%); the rest it withholds as rare"
+              % (who, format(named, ","), round(100 * named / tc) if tc else 0))
+        if held:
+            print("- %d quer%s (%d click(s)) not printed: abuse-seeking searches, kept in the archive"
+                  % (len(held), "y" if len(held) == 1 else "ies", held_clicks))
+            for q in held:
+                del agg[q]
         print()
         print("| query | clicks | impressions | avg position |")
         print("|---|---:|---:|---:|")

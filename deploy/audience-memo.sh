@@ -536,7 +536,7 @@ mkdir -p "$(dirname "$OUT")"
       echo "> openipc-search-queries is not installed on this host]_"
       ;;
   esac
-  echo "> _[MANUAL: Bing and Yandex Webmaster are not archived yet -- paste their top queries]_"
+  echo "> _[MANUAL: Bing Webmaster is not archived yet -- paste its top queries]_"
   echo
 
   echo "## Bot share and 429s (openipc-log-report)"
