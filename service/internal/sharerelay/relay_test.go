@@ -1,6 +1,7 @@
 package sharerelay
 
 import (
+	"bufio"
 	"context"
 	"crypto/hmac"
 	"crypto/sha1"
@@ -8,7 +9,9 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -16,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/OpenIPC/website/service/internal/httpx"
 	"github.com/coder/websocket"
 )
 
@@ -35,7 +39,10 @@ func rig(t *testing.T) (*Hub, *httptest.Server) {
 		TURN: []string{"turn:turn.example:3478"}, TURNSecret: []byte("s3cret")}) {
 		mux.Handle(k, v)
 	}
-	srv := httptest.NewServer(mux)
+	// Behind the service's own request log, as in production: its writer
+	// wraps the connection's, and a handler that asserts the connection's
+	// interfaces directly works here only if it works there.
+	srv := httptest.NewServer(httpx.Log(slog.New(slog.NewTextHandler(io.Discard, nil)), mux))
 	t.Cleanup(srv.Close)
 	return h, srv
 }
@@ -199,10 +206,8 @@ func TestOnlyAHolderOfTheTokenCanRegisterAnId(t *testing.T) {
 }
 
 func TestASocketThatRegistersNothingIsClosed(t *testing.T) {
-	old := RegisterDeadline
-	RegisterDeadline = 150 * time.Millisecond
-	defer func() { RegisterDeadline = old }()
-	_, srv := rig(t)
+	h, srv := rig(t)
+	h.RegisterDeadline = 150 * time.Millisecond
 	idle := dial(t, srv, "/__share/device")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -223,7 +228,7 @@ func TestExpiredRegistrationsAreReaped(t *testing.T) {
 	h.mu.Lock()
 	h.reap(time.Now().Add(3 * time.Second))
 	h.mu.Unlock()
-	if n, _ := h.Stats(); n != 0 {
+	if n, _, _ := h.Stats(); n != 0 {
 		t.Fatalf("%d shares outlived their end", n)
 	}
 }
@@ -263,7 +268,7 @@ func TestSessionsPerShareAreBounded(t *testing.T) {
 		// its share: wait for that, or the next dial races it for a slot.
 		deadline := time.Now().Add(2 * time.Second)
 		for {
-			if _, pages := h.Stats(); pages == i+1 {
+			if _, pages, _ := h.Stats(); pages == i+1 {
 				break
 			}
 			if time.Now().After(deadline) {
@@ -459,5 +464,244 @@ func TestTheShellNamesVersionedScriptsThatAreCachedForGood(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusNotModified {
 		t.Fatalf("revalidation got %d", resp.StatusCode)
+	}
+}
+
+// A page can hold its session on the connection it already has: the offer as
+// a POST whose response streams the relay's replies, and its candidates as
+// POSTs of their own. The camera sees the same session either way.
+func TestASessionRunsOnThePagesOwnConnection(t *testing.T) {
+	_, srv := rig(t)
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	req, _ := http.NewRequest("POST", srv.URL+"/__share/signal?share="+id, strings.NewReader(`{"req":"offer","data":"v=0 offer"}`))
+	req.Header.Set("Origin", srv.URL)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	lines := bufio.NewScanner(resp.Body)
+	next := func() map[string]string {
+		t.Helper()
+		if !lines.Scan() {
+			t.Fatalf("the stream ended: %v", lines.Err())
+		}
+		var m map[string]string
+		if err := json.Unmarshal(lines.Bytes(), &m); err != nil {
+			t.Fatalf("not a JSON line: %q", lines.Text())
+		}
+		return m
+	}
+	first := next()
+	if first["reply"] != "session" || first["data"] == "" {
+		t.Fatalf("first line %v", first)
+	}
+	sid := first["data"]
+	if m := recv(t, cam); m["type"] != "offer" || m["session"] != sid || m["data"] != "v=0 offer" {
+		t.Fatalf("camera got %v", m)
+	}
+
+	// The camera's answer comes down the stream.
+	send(t, cam, map[string]string{"type": "signal", "session": sid, "reply": "answer", "data": "v=0 answer"})
+	if m := next(); m["reply"] != "answer" || m["data"] != "v=0 answer" {
+		t.Fatalf("page got %v", m)
+	}
+
+	// The page's candidate goes up on its own request.
+	creq, _ := http.NewRequest("POST", srv.URL+"/__share/candidate?share="+id+"&session="+sid, strings.NewReader("candidate:1 1 udp 1 192.0.2.1 5000 typ host"))
+	creq.Header.Set("Origin", srv.URL)
+	cresp, err := http.DefaultClient.Do(creq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cresp.Body.Close()
+	if cresp.StatusCode != http.StatusNoContent {
+		t.Fatalf("candidate: %d", cresp.StatusCode)
+	}
+	if m := recv(t, cam); m["type"] != "candidate" || m["session"] != sid {
+		t.Fatalf("camera got %v", m)
+	}
+
+	// Another site's page is refused, and so is a session nobody holds.
+	bad, _ := http.NewRequest("POST", srv.URL+"/__share/signal?share="+id, strings.NewReader(`{"req":"offer","data":"x"}`))
+	bad.Header.Set("Origin", "https://evil.example")
+	h2 := &Hub{OriginPatterns: []string{"*.share.openipc.cloud"}}
+	w := httptest.NewRecorder()
+	h2.SignalStream().ServeHTTP(w, bad)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("foreign origin: %d", w.Code)
+	}
+	nreq, _ := http.NewRequest("POST", srv.URL+"/__share/candidate?share="+id+"&session=0000000000000000", strings.NewReader("x"))
+	nreq.Header.Set("Origin", srv.URL)
+	nresp, _ := http.DefaultClient.Do(nreq)
+	nresp.Body.Close()
+	if nresp.StatusCode != http.StatusNotFound {
+		t.Fatalf("unknown session: %d", nresp.StatusCode)
+	}
+}
+
+// openStream starts a streamed session and returns its session id and a
+// reader of its lines.
+func openStream(t *testing.T, srv *httptest.Server, addr ...string) (string, func() map[string]string) {
+	t.Helper()
+	req, _ := http.NewRequest("POST", srv.URL+"/__share/signal?share="+id, strings.NewReader(`{"req":"offer","data":"v=0"}`))
+	req.Header.Set("Origin", srv.URL)
+	if len(addr) > 0 {
+		req.Header.Set("X-Real-IP", addr[0])
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { resp.Body.Close() })
+	lines := bufio.NewScanner(resp.Body)
+	next := func() map[string]string {
+		t.Helper()
+		if !lines.Scan() {
+			t.Fatalf("the stream ended: %v", lines.Err())
+		}
+		var m map[string]string
+		_ = json.Unmarshal(lines.Bytes(), &m)
+		return m
+	}
+	first := next()
+	if first["reply"] != "session" {
+		t.Fatalf("first line %v", first)
+	}
+	return first["data"], next
+}
+
+func post(t *testing.T, srv *httptest.Server, path string) int {
+	t.Helper()
+	req, _ := http.NewRequest("POST", srv.URL+path, nil)
+	req.Header.Set("Origin", srv.URL)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	return resp.StatusCode
+}
+
+// admit has the camera answer a session's offer, on its own socket.
+func admit(t *testing.T, cam *websocket.Conn, sid string) {
+	t.Helper()
+	send(t, cam, map[string]string{"type": "signal", "session": sid, "reply": "answer", "data": "v=0 answer"})
+}
+
+// A page the camera has answered keeps its stream to hear the share end,
+// however long the guest stays, and gives up its session slot to do it.
+func TestAnAdmittedPageHearsTheShareEndForTheWholeSession(t *testing.T) {
+	h, srv := rig(t)
+	h.ListenerPing = 50 * time.Millisecond
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	sid, next := openStream(t, srv)
+	recv(t, cam) // the offer
+
+	// A session id is not enough: the relay hands it out before the camera
+	// has seen the offer.
+	if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusConflict {
+		t.Fatalf("promoted before the camera answered: %d", c)
+	}
+	admit(t, cam, sid)
+	if m := next(); m["reply"] != "answer" {
+		t.Fatalf("got %v", m)
+	}
+	if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusNoContent {
+		t.Fatalf("connected: %d", c)
+	}
+	if _, _, l := h.Stats(); l != 1 {
+		t.Fatalf("stats count %d listeners", l)
+	}
+	// Its slot is free: three more pages can set up.
+	for i := 0; i < MaxSessionsPerShare; i++ {
+		if s, _ := openStream(t, srv); s == "" {
+			t.Fatal("no session")
+		}
+		recv(t, cam)
+	}
+	// The stream is kept open.
+	if m := next(); m["reply"] != "ping" {
+		t.Fatalf("got %v", m)
+	}
+	// And the end of the share reaches it.
+	send(t, cam, map[string]string{"type": "unregister", "share": id})
+	for {
+		m := next()
+		if m["reply"] == "ping" {
+			continue
+		}
+		if m["reply"] != "closed" || m["ended"] != "true" {
+			t.Fatalf("got %v", m)
+		}
+		break
+	}
+	if c := post(t, srv, "/__share/connected?share="+id+"&session=0000000000000000"); c != http.StatusNotFound {
+		t.Fatalf("unknown session: %d", c)
+	}
+}
+
+// A listener lasts as long as the camera's session: when the camera says the
+// session closed -- as it does for one that never proves the key -- the relay
+// stops keeping it.
+func TestAListenerEndsWithTheCamerasSession(t *testing.T) {
+	h, srv := rig(t)
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	sid, next := openStream(t, srv)
+	recv(t, cam)
+	admit(t, cam, sid)
+	if m := next(); m["reply"] != "answer" {
+		t.Fatalf("got %v", m)
+	}
+	if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusNoContent {
+		t.Fatalf("connected: %d", c)
+	}
+	send(t, cam, map[string]string{"type": "signal", "session": sid, "reply": "closed", "data": "the guest's proof did not verify"})
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		if _, _, l := h.Stats(); l == 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the listener outlived the camera's session")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// Listeners hold no slot, so they are bounded on their own: per address, and
+// per share.
+func TestListenersAreBounded(t *testing.T) {
+	h, srv := rig(t)
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	promote := func(addr string) int {
+		sid, next := openStream(t, srv, addr)
+		recv(t, cam)
+		admit(t, cam, sid)
+		// The relay takes the camera's answer in its own time: the page has
+		// it once it is on the stream, and only then may it ask.
+		if m := next(); m["reply"] != "answer" {
+			t.Fatalf("got %v", m)
+		}
+		return post(t, srv, "/__share/connected?share="+id+"&session="+sid)
+	}
+	for i := 0; i < MaxListenersPerAddress; i++ {
+		if c := promote("192.0.2.1"); c != http.StatusNoContent {
+			t.Fatalf("listener %d: %d", i, c)
+		}
+	}
+	if c := promote("192.0.2.1"); c != http.StatusTooManyRequests {
+		t.Fatalf("past the address bound: %d", c)
+	}
+	for i := MaxListenersPerAddress; i < MaxListenersPerShare; i++ {
+		if c := promote(fmt.Sprintf("192.0.2.%d", 10+i)); c != http.StatusNoContent {
+			t.Fatalf("listener %d: %d", i, c)
+		}
+	}
+	if c := promote("198.51.100.1"); c != http.StatusTooManyRequests {
+		t.Fatalf("past the share bound: %d", c)
+	}
+	if _, _, l := h.Stats(); l != MaxListenersPerShare {
+		t.Fatalf("%d listeners", l)
 	}
 }

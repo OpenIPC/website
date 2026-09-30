@@ -419,26 +419,44 @@ func TestLogRetention(t *testing.T) {
 	})
 }
 
-// The share page makes its requests one after another, through this mirror,
-// to an origin 122 ms away. A connection per request made each of them pay a
-// TCP and TLS handshake to the origin first: 0.26 s, measured from the
-// mirror, on every script and every page open.
-func TestShareMirrorKeepsItsOriginConnections(t *testing.T) {
+// The share relay runs on the host that serves share.openipc.cloud, so pages
+// and cameras meet without their messages crossing to the origin and back
+// (58 ms each way, twice for an offer and its answer). Its connections from
+// nginx are kept: the share page makes its requests one after another.
+func TestShareRelayRunsBesideTheShareNames(t *testing.T) {
 	share := read(t, "deploy/nginx/mirrors/kz/sites-available/cloud.openipc.share")
 	maps := read(t, "deploy/nginx/mirrors/kz/conf.d/openipc-upgrade.conf")
-	upstream := find(share, regexp.MustCompile(`(?s)(upstream share_origin \{.*?\n\})`), 1)
+	unit := read(t, "deploy/nginx/mirrors/kz/share-relay/openipc-share.service")
+	install := read(t, "deploy/nginx/mirrors/kz/share-relay/install.sh")
+	upstream := find(share, regexp.MustCompile(`(?s)(upstream share_relay \{.*?\n\})`), 1)
 	if upstream == "" {
-		t.Fatal("the share vhost has no upstream of its own")
+		t.Fatal("the share vhost has no upstream for the relay")
 	}
-	mustMatch(t, `keepalive\s+\d+;`, upstream, "no connections are kept to the origin")
+	mustMatch(t, `server\s+127\.0\.0\.1:3004;`, upstream, "the relay is not the one on this host")
+	mustMatch(t, `keepalive\s+\d+;`, upstream, "no connections are kept to the relay")
+	mustMatch(t, `proxy_pass\s+http://share_relay;`, share, "the share names do not go to the relay")
+	mustNotMatch(t, `openipc\.org:443`, share, "share traffic still crosses to the origin")
 	mustMatch(t, `proxy_http_version\s+1\.1;`, share, "HTTP/1.0 cannot keep a connection or carry an Upgrade")
 	// Keeping connections needs the request to say nothing: `Connection: close`
 	// ends each one after its request whatever the upstream keeps.
 	mustMatch(t, `proxy_set_header Connection\s+\$connection_upgrade_keepalive;`, share,
-		"the share vhost closes its origin connection after every request")
+		"the share vhost closes its relay connection after every request")
 	mustMatch(t, `(?s)map \$http_upgrade \$connection_upgrade_keepalive \{\s*default\s+upgrade;\s*''\s+"";`, maps,
 		"the keep-alive map must send upgrade for a WebSocket and nothing otherwise")
-	// Cameras' relay sockets and pages' signalling go through the same
-	// location: they still have to upgrade.
-	mustMatch(t, `proxy_set_header Upgrade\s+\$http_upgrade;`, share, "no Upgrade header")
+	mustMatch(t, `proxy_set_header Upgrade\s+\$http_upgrade;`, share, "cameras' relay sockets cannot upgrade")
+	// The relay's per-address limits read X-Real-IP; without it every reader
+	// is 127.0.0.1 and one reader's limit is everyone's.
+	mustMatch(t, `proxy_set_header X-Real-IP\s+\$remote_addr;`, share, "the relay cannot tell readers apart")
+	// The share names get a connection budget that fits this host's one worker.
+	conc := read(t, "deploy/nginx/mirrors/kz/conf.d/openipc-share-conc.conf")
+	mustMatch(t, `limit_conn_zone \$binary_remote_addr zone=share_perip:`, conc, "no per-address zone")
+	mustMatch(t, `limit_conn_zone \$server_name zone=share_total:`, conc, "no total zone")
+	mustMatch(t, `limit_conn share_perip \d+;`, share, "one address can hold every socket")
+	mustMatch(t, `limit_conn share_total \d+;`, share, "the share names can take every worker connection")
+	// The unit and the install agree on where the relay listens and runs from.
+	mustMatch(t, `--listen 127\.0\.0\.1:3004`, unit, "the unit does not listen where nginx sends")
+	mustMatch(t, `ExecStart=/usr/local/lib/openipc-share/current serve --role share`, unit, "the unit does not run the installed relay")
+	mustMatch(t, `DIR=/usr/local/lib/openipc-share`, install, "install.sh puts the relay somewhere the unit does not look")
+	mustMatch(t, `EnvironmentFile=/etc/openipc-share\.env`, unit, "the unit reads no settings")
+	mustMatch(t, `/etc/openipc-share\.env`, install, "install.sh writes no settings")
 }

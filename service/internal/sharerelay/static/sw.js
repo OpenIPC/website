@@ -4,8 +4,9 @@
 // (the top-level shell) does the carrying; this only hands requests to it
 // and streams the answers back.
 //
-// Left alone: the shell itself (a top-level navigation), and /__share/*,
-// which is this site's, not the camera's.
+// Left alone: /__share/*, which is this site's, not the camera's. The shell
+// itself -- a top-level navigation -- is answered from a copy kept here and
+// refreshed behind it (see shell() below).
 const RESERVED = '/__share/';
 // What the camera sent with a validator, kept so the next load asks "still
 // this?" instead of fetching it again. A worker's own Response never reaches
@@ -21,6 +22,8 @@ const CACHE = 'mj-share-http';
 // a delete that raced one would see the cache written back after it.
 let ended = false;
 const writes = new Set();
+// The shell: one page for every path, the same bytes until a deploy.
+const SHELL = 'mj-share-shell';
 const NULL_BODY = new Set([101, 204, 205, 304]);
 const REDIRECT = new Set([301, 302, 303, 307, 308]);
 // Hop-by-hop, or the browser's to set.
@@ -42,9 +45,42 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith(RESERVED)) return;
-  if (e.request.mode === 'navigate' && e.request.destination === 'document') return;
+  if (e.request.mode === 'navigate' && e.request.destination === 'document') {
+    // Every path is the shell, except the service's health check.
+    if (url.pathname !== '/up') e.respondWith(shell(e));
+    return;
+  }
   e.respondWith(viaTunnel(e, e.request, url));
 });
+
+// Reopening a link used to begin with a round trip to ask whether the shell
+// had changed -- 0.13 s through the front door before anything else could
+// start. The copy kept here answers at once, and the network's answer
+// replaces it for the next open. A shell that is one deploy old names its own
+// version's scripts, which the browser keeps for good, so it still runs as
+// the whole it was; the next open runs the new one.
+async function shell(e) {
+  const fresh = fetch(e.request).then(async (r) => {
+    // Only the shell itself is kept: anything else answering a navigation
+    // must never be served in its place.
+    if (r.status === 200 && /^text\/html/i.test(r.headers.get('content-type') || '')) {
+      const c = await caches.open(SHELL);
+      await c.put('/', r.clone());
+    }
+    return r;
+  });
+  let kept;
+  try {
+    kept = await (await caches.open(SHELL)).match('/');
+  } catch (err) {
+    kept = undefined;
+  }
+  if (kept) {
+    e.waitUntil(fresh.catch(() => {}));
+    return kept;
+  }
+  return fresh;
+}
 
 // The shells that could carry a request, focused first. A worker cannot ask
 // which tab an iframe belongs to; every live shell on this origin reaches the

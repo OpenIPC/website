@@ -2,11 +2,13 @@
 # origin's half.
 #
 # Those names resolve to the openipc.kz host, which every camera and guest can
-# reach (openipc.org's addresses are filtered by some providers), and whose
-# nginx (mirrors/kz/sites-available/cloud.openipc.share) passes everything on
-# to this vhost by address, checking this certificate's name. Nothing else
-# has a reason to connect here, so nothing else is served: a connection that
-# does not come from that host is closed before it reaches the share role.
+# reach (openipc.org's addresses are filtered by some providers), and the
+# share relay runs there beside its nginx (mirrors/kz/share-relay/). This
+# vhost and the share role behind it are the standby: pointing that nginx's
+# share_relay upstream back here, by address and checking this certificate's
+# name, is the way back (deploy/SHARE.md). Nothing else has a reason to connect
+# here, so nothing else is served: a connection that does not come from that
+# host is closed before it reaches the share role.
 #
 # The wildcard is issued here over DNS-01 and handed to the openipc.kz host by
 # dehydrated's hook (deploy/dehydrated/, deploy/SHARE.md).
