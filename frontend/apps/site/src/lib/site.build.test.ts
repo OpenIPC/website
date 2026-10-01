@@ -293,13 +293,26 @@ describe('the click events', () => {
   });
 
   test('every page strips the landing tag before the beacon counts the page', () => {
-    // Order is the point: count.js reads the address when it runs, so a tag
-    // still in it fragments the page report into one row per channel.
+    // count.js reads the address when it runs, so a tag still in it fragments
+    // the page report into one row per channel. The strip is an inline script
+    // and count.js is deferred, so the strip runs first wherever it sits.
     const wrong = pages.filter((page) => {
       const html = read(page);
-      const strip = html.indexOf("searchParams.delete('ref')");
-      return strip < 0 || strip > html.indexOf('src="/api/a/c.js"');
+      return !html.includes("searchParams.delete('ref')")
+        || !/<script[^>]*src="\/api\/a\/c\.js"[^>]*\bdefer\b/.test(html);
     });
     expect(wrong, 'pages that count ?ref= into the page path').toEqual([]);
+  });
+
+  test('the home page\'s language redirect sees the tag before it is stripped', () => {
+    // A Russian or Chinese reader is sent on before `load`, so the tag has to
+    // travel with the redirect and be counted where it lands.
+    for (const page of ['index.html']) {
+      const html = read(page);
+      const redirect = html.indexOf('window.location.replace(');
+      expect(redirect, `${page} has no language redirect`).toBeGreaterThan(-1);
+      expect(html.indexOf("searchParams.delete('ref')"), `${page} strips ?ref= before redirecting`)
+        .toBeGreaterThan(redirect);
+    }
   });
 });
