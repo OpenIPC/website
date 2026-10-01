@@ -368,8 +368,15 @@ else records them and a rebuilt host does not bring them back (#179).
 
 | domain | Google | Yandex | Bing |
 |---|---|---|---|
-| `openipc.org` | verified | verified | registered 2026-09-20 |
-| `openipc.ru` | — | verified | — |
+| `openipc.org` | verified (DNS TXT), read daily by the query archive | verified (DNS TXT), sitemap submitted 2026-09-30, read daily | registered 2026-09-20, read daily |
+| `openipc.ru` | — | verified twice (DNS TXT for an older login, HTML file for the statistics login), sitemap submitted 2026-09-30, read daily | — |
+
+"Read daily" is `openipc-search-queries fetch` (below), with credentials of its
+own; nothing in this table depends on them, and losing them loses only the
+archive's new days. openipc.ru names itself, not openipc.org, as the canonical
+address of the Russian pages -- a rewrite on natrium recorded in
+`deploy/nginx/mirrors/ru.openipc.snippet` -- which is why its sitemap is worth
+submitting separately.
 
 Verification for the first two is by DNS TXT on the Hetzner zone
 (`google-site-verification=0IN-3sAB…`, `yandex-verification: 0aad82e3…`, and
