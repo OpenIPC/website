@@ -272,8 +272,8 @@ describe('the analytics beacon', () => {
 });
 
 describe('the click events', () => {
-  // The click sender (src/lib/events.ts, #183) lived in the Rails asset
-  // pipeline and was deleted with Rails without a port: from 26 September to
+  // The click sender (src/lib/events.ts, #183) lived in the previous stack's
+  // asset pipeline and was deleted with it without a port: from 26 September to
   // #360 the site counted no click, and nothing failed, because a missing
   // event reads exactly like nobody clicking. So the property is checked on
   // the output, on every page: the script that counts clicks is actually

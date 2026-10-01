@@ -6,9 +6,10 @@
  * server, so the access log cannot see them; the only record is a GoatCounter
  * event, which the monthly memo (deploy/audience-memo.sh) reads by name.
  *
- * This lived in the Rails asset pipeline and went with Rails in f8d1a57
- * without a port, and the site counted no click from 26 September until it
- * came back. Nothing reported it: a missing event reads as nobody clicking.
+ * The previous stack's asset pipeline carried this, and it was deleted with
+ * that stack in f8d1a57 without a port: the site counted no click from 26
+ * September until #360 brought it back. Nothing reported it: a missing
+ * event reads as nobody clicking.
  * site.build.test.ts now fails a build whose pages do not ship it.
  *
  * One listener, delegated from `document`. The wizard's download-step links
