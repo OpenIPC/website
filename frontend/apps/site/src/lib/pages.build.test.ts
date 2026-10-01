@@ -538,6 +538,23 @@ describe('the pages say what they are for', () => {
     }
   });
 
+  test('the low-latency page offers FPV support hours, and counts both doors (#193)', () => {
+    // The offer is the Open Collective "Technical support" tier, bought at its
+    // own checkout; the memo reads the two events as the FPV segment's
+    // business clicks, so a renamed event is a hypothesis that stops being
+    // measured without anything failing.
+    for (const locale of LOCALES) {
+      const html = readFileSync(join(dist, pathFor(locale, '/low-latency'), 'index.html'), 'utf8');
+      const block = html.match(/<div[^>]*id="support"[^>]*>[\s\S]*?data-event="lowlat:offer:business"[^>]*>/)?.[0];
+      expect(block, `${locale} /low-latency has no #support block`).toBeTruthy();
+      expect(block).toMatch(
+        /href="https:\/\/opencollective\.com\/openipc\/contribute\/technical-support-56715\/checkout" data-event="lowlat:offer"/,
+      );
+      // Astro escapes the ampersand as &#38;; a browser reads either the same.
+      expect(block?.replace(/&#38;|&amp;/g, '&')).toContain(`href="${pathFor(locale, '/business')}?ref=lowlat&segment=fpv"`);
+    }
+  });
+
   test('the community page names a way in that does not need Telegram', () => {
     // Telegram does not open from every network, and this page is nothing but
     // Telegram rooms otherwise.

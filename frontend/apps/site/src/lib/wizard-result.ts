@@ -70,6 +70,28 @@ export function stockBootloaderOnly(doc: {
     && doc.load_address !== '';
 }
 
+/** The download step's attribution, carried by every business link it shows (#190). */
+export function downloadStepQuery(edition: string, soc: string): string {
+  return `?edition=${encodeURIComponent(edition)}&ref=download-step&soc=${encodeURIComponent(soc)}`;
+}
+
+/**
+ * Where the licence notice's business line leads (#193).
+ *
+ * An FPV chip goes to the support offer on /low-latency, which names a price
+ * and can be bought today; every other segment goes to /business. The query is
+ * the same either way, so the landing page records `ref:download-step` and the
+ * click keeps its `download-step:business:<segment>` event whichever page it
+ * opens.
+ */
+export function licenceBusinessHref(
+  segment: string,
+  links: { business: string; lowLatency: string },
+  query: string,
+): string {
+  return segment === 'fpv' ? `${links.lowLatency}${query}#support` : `${links.business}${query}`;
+}
+
 /** `Camera#flash_type_type`. */
 export function flashFamily(chip: string): 'nor' | 'nand' {
   return chip === 'nand' ? 'nand' : 'nor';

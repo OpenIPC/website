@@ -474,6 +474,11 @@ en:
       robotics_text1: The same link carries video for industrial robots, AGVs, inspection rigs, and remote operation — anywhere a closed video system would lock you in or a cloud hop would add seconds.
       robotics_text2: On supported SoCs, frames carry wall-clock timestamps tied to the sensor frame start — millisecond-class synchronization for multi-camera rigs without extra hardware.
       robotics_title: 'Beyond drones: robots and teleoperation'
+      support_business: "Building a product on it? Commercial terms →"
+      support_cta: "Book support hours"
+      support_rate_html: "<b>$55</b> an hour suggested · <b>$50</b> minimum · paid through Open Collective"
+      support_text: "OpenIPC's core developers take paid support sessions through the project's Open Collective: an hour on your air unit, your link or your integration."
+      support_title: "Stuck on a build? Book an hour with a core developer"
       title: Low-Latency Video
     majestic_endpoints:
       moved_html: 'The list of endpoints your camera serves now lives in the camera''s own web interface, under <b>Majestic &rarr; Endpoints</b>. Open <code>http://&lt;camera-address&gt;/</code> in a browser and pick it from the menu.'
