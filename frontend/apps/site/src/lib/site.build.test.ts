@@ -272,24 +272,29 @@ describe('the analytics beacon', () => {
 });
 
 describe('the click events', () => {
-  // The click sender (src/lib/events.ts, #183) lived in the previous stack's
-  // asset pipeline and was deleted with it without a port: from 26 September to
-  // #360 the site counted no click, and nothing failed, because a missing
-  // event reads exactly like nobody clicking. So the property is checked on
-  // the output, on every page: the script that counts clicks is actually
-  // shipped, inline or as a bundle file the page references.
-  const scriptsOf = (html: string) => [
-    ...[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]),
-    ...[...html.matchAll(/<script\b[^>]*\bsrc="\/(_astro\/[^"]+\.js)"/g)].map((m) => read(m[1])),
-  ];
+  // The click sender (src/lib/beacon.inline.js, #183) lived in the previous
+  // stack's asset pipeline and was deleted with it without a port: from 26
+  // September to #360 the site counted no click, and nothing failed, because
+  // a missing event reads exactly like nobody clicking. So the property is
+  // checked on the output, on every page.
   const pages = walk(dist).filter((f) => f.endsWith('index.html'));
 
-  test('every page ships the click sender', () => {
+  test('every page ships the click sender inline in the head, before any link', () => {
+    // Inline and in the head, so the listener exists while the page is still
+    // parsing; from a deferred module, an early click was lost (Qodo on #362).
     const missing = pages.filter((page) => {
-      const code = scriptsOf(read(page));
-      return !code.some((js) => js.includes('data-event') && js.includes('ext:'));
+      const html = read(page);
+      const head = html.slice(0, html.indexOf('<body'));
+      return ![...head.matchAll(/<script>([\s\S]*?)<\/script>/g)]
+        .some((m) => m[1].includes('data-event') && m[1].includes('ext:'));
     });
     expect(missing, 'pages whose clicks are never counted').toEqual([]);
+  });
+
+  test('the shipped scripts carry no comments', () => {
+    // The layout strips them; they are for the repository, not every reader.
+    expect(read('index.html')).not.toContain('// The beacon');
+    expect(read('index.html')).not.toContain('// The landing tag');
   });
 
   test('every page strips the landing tag before the beacon counts the page', () => {
