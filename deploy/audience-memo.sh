@@ -128,12 +128,13 @@ awk -F'\t' '
     if ($3 ~ /^ref:/)                reftag[substr($3, 5)] += $4
     else if ($3 ~ /^ext:/)           exthost[substr($3, 5)] += $4
     else if ($3 == "business-mail")  ev_businessmail += $4
-    # The business clicks a segment can be read from (#190, #193): the
-    # download step names the segment of the chip, and the /low-latency support
-    # offer is FPV by construction.
+    # The business clicks a segment can be read from (#190, #193): only the
+    # download step names one, the segment of the chip. The /low-latency offer
+    # is counted apart: the FPV download step leads into it, so adding it here
+    # would count one visitor twice, and robot builders read that page too.
     else if ($3 ~ /^download-step:business:/) evbiz[substr($3, 24)] += $4
-    else if ($3 == "lowlat:offer")          { evbiz["fpv"] += $4; ev_lowlat_offer += $4 }
-    else if ($3 == "lowlat:offer:business") { evbiz["fpv"] += $4; ev_lowlat_business += $4 }
+    else if ($3 == "lowlat:offer")           ev_lowlat_offer += $4
+    else if ($3 == "lowlat:offer:business")  ev_lowlat_business += $4
     else if ($3 == "oc-checkout")    ev_occheckout += $4
     else if ($3 == "tg-join")        ev_tgjoin += $4
   }
@@ -237,6 +238,17 @@ if [ -f "$FIRMWARE_SEGMENTS" ]; then
     esac
     printf "%s\t%s\n" "$k" "$n"
   done | awk -F'\t' '{ c[$1] += $2 } END { for (k in c) printf "%s\t%d\n", k, c[k] }' | sort > "$work/fwseg"
+fi
+# H3 compares business clicks with downloads, and a download-step click takes
+# its segment from the chip alone, so the downloads it is set against are
+# classified by the same rule: the chip's catalogue segment, whatever edition.
+: > "$work/fwchip"
+if [ -f "$FIRMWARE_SEGMENTS" ]; then
+  awk -F'\t' '
+    FILENAME == ARGV[1] { seg[$1] = $4; next }
+    $1 ~ /^FW / { split($0, f, " "); k = (f[3] in seg && seg[f[3]] != "") ? seg[f[3]] : "unknown"; c[k] += f[2] }
+    END { for (k in c) printf "%s\t%d\n", k, c[k] }
+  ' "$FIRMWARE_SEGMENTS" "$work/agg" | sort > "$work/fwchip"
 fi
 ndays=$(val DAYS); ndays=${ndays:-0}
 cover_min=$(val COVER_MIN); cover_max=$(val COVER_MAX)
@@ -584,43 +596,37 @@ mkdir -p "$(dirname "$OUT")"
   echo "## FPV segment: business clicks against downloads (H3, #193)"
   echo
   awk -v mail="$(val EV_BUSINESSMAIL)" -v offer="$(val EV_LOWLAT_OFFER)" -v obiz="$(val EV_LOWLAT_BUSINESS)" '
-    FILENAME ~ /fwseg$/ { dl[$1] = $2; dltotal += $2; next }
+    FILENAME ~ /fwchip$/ { dl[$1] = $2; dltotal += $2; next }
     $1 == "EVBIZ" { biz[$3] = $2; biztotal += $2 }
     END {
-      fpvdl = dl["FPV"] + 0; fpvbiz = biz["fpv"] + 0
+      fpvdl = dl["fpv"] + 0; fpvbiz = biz["fpv"] + 0
       if (biztotal == 0) {
-        print "- No segment-attributed business clicks this month."
+        print "- No download-step business clicks this month."
       } else {
-        print "_Source: beacon events. The download step names the chip'"'"'s segment (`download-step:business:<segment>`); the /low-latency support offer (`lowlat:offer`, `lowlat:offer:business`) is FPV by construction._"
+        print "_Source: beacon `download-step:business:<segment>` events, the one business click that names a segment (the chip'"'"'s, from the catalogue). Downloads are classified by the same rule, the chip'"'"'s segment whatever the edition, so the two shares compare like with like._"
         print ""
-        print "| segment | business clicks | share |"
-        print "|---|---:|---:|"
-        for (k in biz) printf "%d\t| %s | %d | %.0f%% |\n", biz[k], k, biz[k], 100 * biz[k] / biztotal | "sort -rn | cut -f2-"
+        print "| segment | download-step business clicks | share | downloads | share | clicks per 100 downloads |"
+        print "|---|---:|---:|---:|---:|---:|"
+        for (k in biz) {
+          line = sprintf("| %s | %d | %.0f%% | %d | %s | %s |", k, biz[k], 100 * biz[k] / biztotal, dl[k] + 0,
+            dltotal > 0 ? sprintf("%.0f%%", 100 * dl[k] / dltotal) : "–",
+            dl[k] > 0 ? sprintf("%.1f", 100 * biz[k] / dl[k]) : "–")
+          printf "%d\t%s\n", biz[k], line | "sort -rn | cut -f2-"
+        }
         close("sort -rn | cut -f2-")
         print ""
       }
       if (biztotal > 0 && dltotal > 0)
-        printf "- FPV share of business clicks: **%.0f%%** (%d of %d), against its share of completed downloads: **%.0f%%** (%d of %d). H3 invests at twice the download share (**%.0f%%** this month; the register fixed it at 28%% from the 14%% baseline) and drops below it.\n", \
-          100 * fpvbiz / biztotal, fpvbiz, biztotal, 100 * fpvdl / dltotal, fpvdl, dltotal, 200 * fpvdl / dltotal
+        printf "- FPV share of business clicks: **%.0f%%** (%d of %d), against its share of completed downloads: **%.0f%%** (%d of %d). H3 invests above **28%%** (twice the 14%% baseline share, fixed in the register) and drops below FPV'"'"'s download share.\n", \
+          100 * fpvbiz / biztotal, fpvbiz, biztotal, 100 * fpvdl / dltotal, fpvdl, dltotal
       else
-        printf "- FPV share: not computable this month (%d segment-attributed business clicks, %d classified downloads).\n", biztotal, dltotal
-      printf "- On /low-latency: `lowlat:offer` (support hours, to the Open Collective checkout) **%d**, `lowlat:offer:business` **%d**.\n", offer, obiz
-      printf "- Download-step business clicks per 100 downloads:"
-      n = 0
-      split("fpv:FPV cctv:CCTV", pairs, " ")
-      for (i = 1; i <= 2; i++) {
-        split(pairs[i], kv, ":")
-        clicks = biz[kv[1]] + 0
-        if (kv[1] == "fpv") clicks -= offer + obiz
-        if (dl[kv[2]] > 0) { printf "%s %s %.1f", (n++ ? "," : ""), kv[1], 100 * clicks / dl[kv[2]] }
-      }
-      if (n == 0) printf " no downloads to divide by"
-      print "."
+        printf "- FPV share: not computable this month (%d download-step business clicks, %d classified downloads).\n", biztotal, dltotal
+      printf "- The support offer on /low-latency, counted apart (not in the share: the FPV download step leads there, and the page also speaks to robot builders): `lowlat:offer` (support hours, to the Open Collective checkout) **%d**, `lowlat:offer:business` (commercial terms) **%d**.\n", offer, obiz
       printf "- `business-mail` clicks (%d) are not counted above: they are the /business page'"'"'s own button, a later step of the same visitors, and name no segment.\n", mail
       print "- Leads with `segment=fpv`: none recorded until the business form (#186) stores them."
       print "- Paid engagements: the Technical support tier'"'"'s payments under Open Collective below."
     }
-  ' "$work/fwseg" "$work/agg"
+  ' "$work/fwchip" "$work/agg"
   echo
 
   echo "## Attribution"
@@ -718,7 +724,7 @@ mkdir -p "$(dirname "$OUT")"
   echo "|---|---|---|---|---|---|"
   echo "| H1 | Money pages are not found, not refused | #190/#191/#189, events #183 | business & donate clicks per 100 downloads, by segment; donate-page reach | keep and extend to the hardware list at >=1 business click / 100 downloads and >=1 form submission a week; if < 0.2 / 100 after 5,000 downloads the offer, not discoverability, is the problem | downloads per SoC-page visitor must not fall > 5% |"
   echo "| H2 | A form beats a mailto | #186, \`lead\` event, ref=download-step | submissions/month; share with company and volume; baseline = business@ mails over the prior three months | keep at >=4 qualified leads/month; 0-1 in a quarter with > 100 business views/month means the page reaches the wrong people — next move is positioning (#116), not the form | none |"
-  echo "| H3 | FPV is the paying hobby | #193 offer: the Open Collective Technical support tier on /low-latency#support, where the FPV download-step line now leads; segment from #190, honest downloads from #188 | FPV share of business clicks and leads vs its ~14% download share (section above); Technical support payments | invest at >=2x its download share (> 28%) or >=3 paid engagements over the quarter; drop below its share; one more quarter in between, copy changed once. Review 2027-03-31 | downloads per /low-latency and per FPV SoC-page visitor must not fall > 5% |"
+  echo "| H3 | FPV is the paying hobby | #193 offer: the Open Collective Technical support tier on /low-latency#support, where the FPV download-step line now leads; segment from #190, honest downloads from #188 | FPV share of download-step business clicks and leads vs its download share, both by chip segment (section above); /low-latency offer clicks; Technical support payments | invest above 28% (2x the 14% baseline) or at >=3 paid engagements over the quarter; drop below its share; one more quarter in between, copy changed once. Review 2027-03-31 | downloads per /low-latency and per FPV SoC-page visitor must not fall > 5% |"
   echo "| H4 | The Chinese channel has no door | #194 door, language share from #181, indexable zh pages from #154/#179 | zh share of people; zh visitors reaching /business and clicking a contact, vs the en rate | build out at >=15% of people and en-rate contact clicks, two indexed months after #154; deprioritise for a year under 5% | none |"
   echo "| H5 | Tag what the project posts | #183 \`?ref=\` and ref: events | share of previously no-referrer traffic now attributed; backers and leads per 1,000 visits per channel | judged one month after tags go live: >=50% attributed, else the finding is about deployment, not channels; the best channel per 1,000 visits gets the next promotional effort | none |"
   echo
