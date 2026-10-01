@@ -270,3 +270,36 @@ describe('the analytics beacon', () => {
     });
   }
 });
+
+describe('the click events', () => {
+  // The click sender (src/lib/events.ts, #183) lived in the Rails asset
+  // pipeline and was deleted with Rails without a port: from 26 September to
+  // #360 the site counted no click, and nothing failed, because a missing
+  // event reads exactly like nobody clicking. So the property is checked on
+  // the output, on every page: the script that counts clicks is actually
+  // shipped, inline or as a bundle file the page references.
+  const scriptsOf = (html: string) => [
+    ...[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]),
+    ...[...html.matchAll(/<script\b[^>]*\bsrc="\/(_astro\/[^"]+\.js)"/g)].map((m) => read(m[1])),
+  ];
+  const pages = walk(dist).filter((f) => f.endsWith('index.html'));
+
+  test('every page ships the click sender', () => {
+    const missing = pages.filter((page) => {
+      const code = scriptsOf(read(page));
+      return !code.some((js) => js.includes('data-event') && js.includes('ext:'));
+    });
+    expect(missing, 'pages whose clicks are never counted').toEqual([]);
+  });
+
+  test('every page strips the landing tag before the beacon counts the page', () => {
+    // Order is the point: count.js reads the address when it runs, so a tag
+    // still in it fragments the page report into one row per channel.
+    const wrong = pages.filter((page) => {
+      const html = read(page);
+      const strip = html.indexOf("searchParams.delete('ref')");
+      return strip < 0 || strip > html.indexOf('src="/api/a/c.js"');
+    });
+    expect(wrong, 'pages that count ?ref= into the page path').toEqual([]);
+  });
+});

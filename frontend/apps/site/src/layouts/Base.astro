@@ -115,10 +115,33 @@ const metaDescription = description ?? t('site.default_meta_description');
     This is a JSX comment, not an HTML one, so it is stripped from the page
     rather than shipped to every reader.
   */}
+  {/*
+    The landing tag (#183, restored in #360). The project posts links to itself
+    with ?ref=<tag> -- Telegram pins, READMEs, the camera WebUI's link home --
+    because many readers arrive with no referrer at all. The tag is recorded as
+    one `ref:<tag>` event and stripped from the address BEFORE count.js counts
+    the page, which is why this is inline and runs at parse time: count.js is
+    deferred and reads the address when it runs, so a stripped address means
+    one row for the page instead of one per channel. Only a well-formed tag is
+    recorded, so a junk ?ref= cannot mint rows in the memo's report.
+  */}
   <script is:inline>
-    (() => { window.goatcounter = { endpoint: '/api/a/count' } })()
+    (() => {
+      window.goatcounter = { endpoint: '/api/a/count' }
+      const url = new URL(location.href)
+      const tag = (url.searchParams.get('ref') || '').toLowerCase()
+      if (!url.searchParams.has('ref')) return
+      url.searchParams.delete('ref')
+      history.replaceState(history.state, '', url.pathname + url.search + url.hash)
+      if (!/^[a-z0-9-]{1,24}$/.test(tag)) return
+      addEventListener('load', () => window.goatcounter.count?.({ path: 'ref:' + tag, event: true }))
+    })()
   </script>
   <script is:inline src="/api/a/c.js" data-goatcounter="/api/a/count" defer></script>
+  <script>
+    import { initEvents } from '../lib/events';
+    initEvents(document, location.hostname);
+  </script>
 </head>
 
 <body id="page-top" class="bg-white text-body">
