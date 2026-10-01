@@ -29,8 +29,11 @@ import (
 // errSkip leaves a link-only entry out: the board it names is not in the catalogue.
 var errSkip = errors.New("names no catalogue board")
 
-// Snapshots are kept in the backup bucket under boards-donors/<source>/;
-// the capture they were made from sits beside them.
+// Snapshots are kept in the backup bucket as recipes,
+// boards/recipes/boards-donors/<source>/snapshot-<sha12>.tar.recipe.gz, over
+// file contents stored once under boards/sha256/; the capture they were made
+// from sits beside them. tools/boards-backup/tarpack.py packs a new one and
+// rebuilds the tar byte for byte, so the pins below still hold (RESTORE.md 3c).
 var Snapshots = map[string]string{
 	// boards-donors/cctvsp/snapshot-70c2bc568d61.tar: 57 modules, translated from Russian; pinouts reviewed by eye; device IDs.
 	"cctvsp": "70c2bc568d61318ac1435adc2fb5b2ed70a66f2300ff5744504f3ed8295eedad",
