@@ -9,6 +9,10 @@ import { alternates, pathFor, useTranslations, type Locale } from '../lib/i18n';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import '../styles/app.css';
+// Inlined, so each runs at its place in the parse (see the files). Their
+// whole-line comments are for the repository, not for every page view.
+import beaconSource from '../lib/beacon.inline.js?raw';
+import landingSource from '../lib/landing.inline.js?raw';
 
 interface Props {
   locale: Locale;
@@ -37,6 +41,10 @@ const site = 'https://openipc.org';
 const alt = alternates(path);
 const here = pathFor(locale, path);
 const metaDescription = description ?? t('site.default_meta_description');
+
+const uncommented = (js: string) => js.replace(/^\s*\/\/.*\n/gm, '');
+const beacon = uncommented(beaconSource);
+const landing = uncommented(landingSource);
 ---
 <!doctype html>
 <html dir="ltr" lang={locale}>
@@ -115,9 +123,7 @@ const metaDescription = description ?? t('site.default_meta_description');
     This is a JSX comment, not an HTML one, so it is stripped from the page
     rather than shipped to every reader.
   */}
-  <script is:inline>
-    (() => { window.goatcounter = { endpoint: '/api/a/count' } })()
-  </script>
+  <script is:inline set:html={beacon} />
   <script is:inline src="/api/a/c.js" data-goatcounter="/api/a/count" defer></script>
 </head>
 
@@ -131,5 +137,8 @@ const metaDescription = description ?? t('site.default_meta_description');
   </main>
 
   <SiteFooter locale={locale} />
+
+  {/* Last in the body, after the home page's redirect: see the file. */}
+  <script is:inline set:html={landing} />
 </body>
 </html>

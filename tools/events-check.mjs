@@ -76,21 +76,36 @@ check('a junk tag is not recorded at all',
       !counts.some(x => (x.path || '').startsWith('ref:script')),
       counts.slice(-3).map(x => x.path).join(' '))
 
-// Back, after a tagged landing. Stripping ?ref= rewrites the history entry,
-// and rewriting it with an empty state deletes the restorationIdentifier Turbo
-// needs to put the cached body back -- so the address returns and the page does
-// not. Nothing server-side can see that; it is two navigations and a cache.
+// Back, after a tagged landing. Stripping ?ref= rewrites the history entry;
+// Back from the next page must still land on the page, not just its address.
 await p.goto(`${base}/?ref=tg-ru`, { waitUntil: 'networkidle' })
-await p.evaluate(() => window.Turbo.visit('/donate'))
-await p.waitForTimeout(1200)
-const away = (await p.textContent('h1, .display-3').catch(() => '')) || ''
-await p.goBack()
-await p.waitForTimeout(1500)
-const home = (await p.textContent('h1, .display-3').catch(() => '')) || ''
-
+await p.goto(`${base}/donate`, { waitUntil: 'networkidle' })
+const away = (await p.textContent('h1').catch(() => '')) || ''
+await p.goBack({ waitUntil: 'networkidle' })
+const home = (await p.textContent('h1').catch(() => '')) || ''
 check('Back after a tagged landing restores the page, not just the address',
       home.trim() !== away.trim() && !p.url().includes('ref='),
       `left on "${away.trim().slice(0, 24)}", came back to "${home.trim().slice(0, 24)}"`)
+
+// A Russian browser on / is sent to /ru before `load`. The tag has to travel
+// with it and be counted there, once (#360) -- that is the Russian Telegram pin.
+const ru = await b.newContext({
+  httpCredentials: { username: user, password: pass },
+  locale: 'ru-RU',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+})
+const rp = await ru.newPage()
+const ruCounts = []
+rp.on('request', r => {
+  const u = new URL(r.url())
+  if (u.pathname === '/api/a/count') ruCounts.push(u.searchParams.get('p'))
+})
+await rp.goto(`${base}/?ref=tg-ru`, { waitUntil: 'networkidle' })
+await rp.waitForTimeout(900)
+check('a redirected Russian reader lands on /ru without the tag in the address',
+      new URL(rp.url()).pathname === '/ru' && !rp.url().includes('ref='), rp.url().replace(base, ''))
+check('and the tag is counted exactly once',
+      ruCounts.filter(x => x === 'ref:tg-ru').length === 1, ruCounts.join(' '))
 
 await b.close()
 const failed = results.filter(r => !r).length

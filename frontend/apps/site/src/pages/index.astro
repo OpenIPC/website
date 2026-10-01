@@ -78,6 +78,9 @@ const t = useTranslations(DEFAULT_LOCALE);
       // `?locale=` is consumed; everything else a campaign put on the URL
       // travels with the reader.
       here.searchParams.delete('locale');
+      // Read by the landing-tag script in Base.astro: ?ref= travels with
+      // this redirect and is counted where it lands, not on the way out.
+      window.openipcLeaving = true;
       window.location.replace(to + here.search + here.hash);
     }());
   </script>

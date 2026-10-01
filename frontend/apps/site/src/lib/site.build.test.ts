@@ -270,3 +270,54 @@ describe('the analytics beacon', () => {
     });
   }
 });
+
+describe('the click events', () => {
+  // The click sender (src/lib/beacon.inline.js, #183) lived in the previous
+  // stack's asset pipeline and was deleted with it without a port: from 26
+  // September to #360 the site counted no click, and nothing failed, because
+  // a missing event reads exactly like nobody clicking. So the property is
+  // checked on the output, on every page.
+  const pages = walk(dist).filter((f) => f.endsWith('index.html'));
+
+  test('every page ships the click sender inline in the head, before any link', () => {
+    // Inline and in the head, so the listener exists while the page is still
+    // parsing; from a deferred module, an early click was lost (Qodo on #362).
+    const missing = pages.filter((page) => {
+      const html = read(page);
+      const head = html.slice(0, html.indexOf('<body'));
+      return ![...head.matchAll(/<script>([\s\S]*?)<\/script>/g)]
+        .some((m) => m[1].includes('data-event') && m[1].includes('ext:'));
+    });
+    expect(missing, 'pages whose clicks are never counted').toEqual([]);
+  });
+
+  test('the shipped scripts carry no comments', () => {
+    // The layout strips them; they are for the repository, not every reader.
+    expect(read('index.html')).not.toContain('// The beacon');
+    expect(read('index.html')).not.toContain('// The landing tag');
+  });
+
+  test('every page strips the landing tag before the beacon counts the page', () => {
+    // count.js reads the address when it runs, so a tag still in it fragments
+    // the page report into one row per channel. The strip is an inline script
+    // and count.js is deferred, so the strip runs first wherever it sits.
+    const wrong = pages.filter((page) => {
+      const html = read(page);
+      return !html.includes("searchParams.delete('ref')")
+        || !/<script[^>]*src="\/api\/a\/c\.js"[^>]*\bdefer\b/.test(html);
+    });
+    expect(wrong, 'pages that count ?ref= into the page path').toEqual([]);
+  });
+
+  test('the home page\'s language redirect sees the tag before it is stripped', () => {
+    // A Russian or Chinese reader is sent on before `load`, so the tag has to
+    // travel with the redirect and be counted where it lands.
+    for (const page of ['index.html']) {
+      const html = read(page);
+      const redirect = html.indexOf('window.location.replace(');
+      expect(redirect, `${page} has no language redirect`).toBeGreaterThan(-1);
+      expect(html.indexOf("searchParams.delete('ref')"), `${page} strips ?ref= before redirecting`)
+        .toBeGreaterThan(redirect);
+    }
+  });
+});

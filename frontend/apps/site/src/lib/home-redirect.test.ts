@@ -93,4 +93,10 @@ describe("the home page's language decision", () => {
       .toBe('/ru?utm_source=telegram');
     expect(visit({ href: 'https://openipc.org/#supported', languages: ['zh'] })).toBe('/zh#supported');
   });
+
+  it('carries the landing tag, so it is counted on the page the reader lands on', () => {
+    // The project's Russian Telegram pin is the case this exists for (#360):
+    // the tag is counted by Base.astro's script on /ru, not here.
+    expect(visit({ href: 'https://openipc.org/?ref=tg-ru', languages: ['ru'] })).toBe('/ru?ref=tg-ru');
+  });
 });
