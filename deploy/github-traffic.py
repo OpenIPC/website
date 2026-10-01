@@ -115,25 +115,41 @@ def clean(s):
     return re.sub(r"[\x00-\x1f\x7f]", " ", str(s)).strip() or "-"
 
 
+def shaped(data, key, where):
+    """The list of day rows under `key`, or an error naming the endpoint: a
+    reply of the wrong shape is this repository's failure, never the run's
+    (Qodo on #367)."""
+    rows = data.get(key) if isinstance(data, dict) else None
+    if not isinstance(rows, list) or not all(
+            isinstance(r, dict) and isinstance(r.get("timestamp"), str) for r in rows):
+        raise RuntimeError("%s: unexpected reply, no %s list of days" % (where, key))
+    return rows
+
+
 def fetch_repo(conf, root, repo, today):
-    views = get(conf, "/repos/%s/traffic/views?per=day" % repo)
-    clones = get(conf, "/repos/%s/traffic/clones?per=day" % repo)
+    views = shaped(get(conf, "/repos/%s/traffic/views?per=day" % repo), "views", repo + " views")
+    clones = shaped(get(conf, "/repos/%s/traffic/clones?per=day" % repo), "clones", repo + " clones")
     refs = get(conf, "/repos/%s/traffic/popular/referrers" % repo)
+    if not isinstance(refs, list) or not all(isinstance(r, dict) for r in refs):
+        raise RuntimeError("%s referrers: unexpected reply, not a list" % repo)
 
     d = repo_dir(root, repo)
     os.makedirs(d, exist_ok=True)
     path = os.path.join(d, "days.tsv")
     days = read_days(path)
-    fresh = {}
-    for kind, data in (("views", views), ("clones", clones)):
-        for row in data.get(kind, []):
+    # Each reply updates only the two counters it carries. A day one reply
+    # reports and the other does not keeps what the archive already had for
+    # the other, rather than having it overwritten with zero (Qodo on #367);
+    # a day new to the archive starts from zero.
+    fresh = set()
+    for off, rows in ((0, views), (2, clones)):
+        for row in rows:
             day = row["timestamp"][:10]
             if day >= today:          # still counting
                 continue
-            r = fresh.setdefault(day, [0, 0, 0, 0])
-            off = 0 if kind == "views" else 2
+            r = days.setdefault(day, [0, 0, 0, 0])
             r[off], r[off + 1] = int(row["count"]), int(row["uniques"])
-    days.update(fresh)
+            fresh.add(day)
     tmp = path + ".new"
     with open(tmp, "w") as f:
         f.write("# date\tviews\tview-uniques\tclones\tclone-uniques -- GitHub traffic, %s (#318)\n" % repo)
@@ -141,10 +157,19 @@ def fetch_repo(conf, root, repo, today):
             f.write("%s\t%s\n" % (day, "\t".join(str(x) for x in days[day])))
     os.replace(tmp, path)
 
-    # GitHub's referrer window is the 14 days before the fetch, today included
-    # as far as it has counted; it is named by the last finished day.
-    last = (datetime.date.fromisoformat(today) - datetime.timedelta(days=1)).isoformat()
-    first = (datetime.date.fromisoformat(today) - datetime.timedelta(days=14)).isoformat()
+    # The referrer total covers the same 14 days as the views reply, so the
+    # window is taken from GitHub's own dates rather than assumed: it ends on
+    # the last day the views reply lists (on 2026-10-01 at 12:48 UTC that was
+    # the 30th -- today is not in it) and spans 14 days. Were GitHub to start
+    # listing today, the window would end today and the month it belongs to
+    # would follow (Qodo on #367). With no days listed at all, the 14 days
+    # before the fetch.
+    listed = sorted(row["timestamp"][:10] for row in views)
+    end = datetime.date.fromisoformat(listed[-1] if listed else today)
+    if not listed:
+        end -= datetime.timedelta(days=1)
+    last = end.isoformat()
+    first = (end - datetime.timedelta(days=13)).isoformat()
     rpath = os.path.join(d, "referrers-%s.tsv" % last)
     with open(rpath + ".new", "w") as f:
         f.write("#window\t%s\t%s\n" % (first, last))
@@ -165,7 +190,7 @@ def fetch(args):
         try:
             n = fetch_repo(conf, args.dir, repo, today)
             print("github: %s, %d finished day(s) fetched" % (repo, n))
-        except (RuntimeError, KeyError, TypeError, ValueError, OSError) as e:
+        except (RuntimeError, KeyError, TypeError, ValueError, AttributeError, OSError) as e:
             print("github: %s failed: %s" % (repo, e), file=sys.stderr)
             failed += 1
     return 1 if failed else 0

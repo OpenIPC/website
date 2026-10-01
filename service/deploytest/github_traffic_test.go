@@ -82,9 +82,75 @@ func TestGitHubTraffic(t *testing.T) {
 		if len(rows) != 2 || !hasRow(rows, "2026-10-14", "200", "60", "200", "60") {
 			t.Errorf("two finished days, once each, today left out: %v", rows)
 		}
-		w := readAbs(t, filepath.Join(dir, "OpenIPC-firmware", "referrers-2026-10-14.tsv"))
-		mustContain(t, w, "#window\t2026-10-01\t2026-10-14\n", "the window is the 14 days before the fetch")
+		// This reply lists today, so the referrer total covers it: the window
+		// follows GitHub's dates, not an assumption (Qodo on #367).
+		w := readAbs(t, filepath.Join(dir, "OpenIPC-firmware", "referrers-2026-10-15.tsv"))
+		mustContain(t, w, "#window\t2026-10-02\t2026-10-15\n", "14 days ending on the last day GitHub lists")
 		mustContain(t, w, "openipc.org\t40\t20\n", "")
+	})
+
+	t.Run("a reply that ends yesterday gives a window that ends yesterday", func(t *testing.T) {
+		dir := t.TempDir()
+		api := fakeGitHub(t, map[string][][3]any{"OpenIPC/firmware": {{"2026-09-17", 1, 1}, {"2026-09-30", 2, 1}}},
+			map[string]string{"OpenIPC/firmware": refs})
+		if out, ok := traffic(t, map[string]string{"GITHUB_API": api, "GITHUB_TRAFFIC_REPOS": "OpenIPC/firmware", "GITHUB_TRAFFIC_TODAY": "2026-10-01"},
+			"fetch", "--dir", dir); !ok {
+			t.Fatalf("fetch failed:\n%s", out)
+		}
+		mustContain(t, readAbs(t, filepath.Join(dir, "OpenIPC-firmware", "referrers-2026-09-30.tsv")),
+			"#window\t2026-09-17\t2026-09-30\n", "what GitHub returned on 2026-10-01: 17 to 30 September, the 1st not in it")
+	})
+
+	t.Run("a day one reply omits keeps the other's archived count (Qodo on #367)", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(dir, "OpenIPC-firmware"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		writeFile(t, filepath.Join(dir, "OpenIPC-firmware", "days.tsv"), "# h\n2026-10-10\t100\t50\t30\t9\n")
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch {
+			case strings.HasSuffix(r.URL.Path, "/views"):
+				fmt.Fprint(w, `{"views":[{"timestamp":"2026-10-10T00:00:00Z","count":101,"uniques":51}]}`)
+			case strings.HasSuffix(r.URL.Path, "/clones"):
+				fmt.Fprint(w, `{"clones":[]}`)
+			default:
+				fmt.Fprint(w, `[]`)
+			}
+		}))
+		t.Cleanup(srv.Close)
+		if out, ok := traffic(t, map[string]string{"GITHUB_API": srv.URL, "GITHUB_TRAFFIC_REPOS": "OpenIPC/firmware", "GITHUB_TRAFFIC_TODAY": "2026-10-15"},
+			"fetch", "--dir", dir); !ok {
+			t.Fatalf("fetch failed:\n%s", out)
+		}
+		if rows := dataRows(t, filepath.Join(dir, "OpenIPC-firmware", "days.tsv")); !hasRow(rows, "2026-10-10", "101", "51", "30", "9") {
+			t.Errorf("views updated, clones kept: %v", rows)
+		}
+	})
+
+	t.Run("a reply of the wrong shape fails that repository only (Qodo on #367)", func(t *testing.T) {
+		dir := t.TempDir()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch {
+			case strings.Contains(r.URL.Path, "/firmware/"):
+				fmt.Fprint(w, `["not", "an", "object"]`)
+			case strings.HasSuffix(r.URL.Path, "/views"):
+				fmt.Fprint(w, `{"views":[{"timestamp":"2026-10-14T00:00:00Z","count":5,"uniques":2}]}`)
+			case strings.HasSuffix(r.URL.Path, "/clones"):
+				fmt.Fprint(w, `{"clones":[]}`)
+			default:
+				fmt.Fprint(w, `[]`)
+			}
+		}))
+		t.Cleanup(srv.Close)
+		out, ok := traffic(t, map[string]string{"GITHUB_API": srv.URL, "GITHUB_TRAFFIC_TODAY": "2026-10-15"}, "fetch", "--dir", dir)
+		if ok {
+			t.Error("the malformed repository must fail the run")
+		}
+		mustContain(t, out, "OpenIPC/firmware failed: OpenIPC/firmware views: unexpected reply", "the endpoint is named")
+		mustNotContain(t, out, "Traceback", "it must not escape the per-repository handler")
+		if rows := dataRows(t, filepath.Join(dir, "OpenIPC-wiki", "days.tsv")); !hasRow(rows, "2026-10-14", "5", "2", "0", "0") {
+			t.Errorf("the wiki is still fetched: %v", rows)
+		}
 	})
 
 	t.Run("one repository failing does not stop the other, and says so", func(t *testing.T) {
