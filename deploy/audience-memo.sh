@@ -104,8 +104,11 @@ awk -F'\t' '
 
 # The days the month is made of, from each source, for the coverage line.
 series_days=$(awk -F'\t' '$2 == "covered"' "$work/series" | wc -l)
-raw_days=$(awk -F'\t' 'NR == FNR { if ($2 == "covered") have[$1] = 1; next } $2 == "covered" && !($1 in have)' \
-  "$work/series" "$work/raw" | wc -l)
+# By file name, not NR == FNR: with no series rows for the month the first file
+# is empty, NR == FNR then holds for the whole raw file, and its days would
+# vanish from the count while their numbers stayed in the totals.
+raw_days=$(awk -F'\t' 'FILENAME ~ /series$/ { if ($2 == "covered") have[$1] = 1; next }
+  $2 == "covered" && !($1 in have)' "$work/series" "$work/raw" | wc -l)
 
 # Back into the KEY VALUE lines the memo below reads, so its sections are the
 # same whichever source a day came from.

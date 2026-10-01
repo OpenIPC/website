@@ -532,13 +532,21 @@ engaged_countries() {
 # itself over whatever raw log is left for the days it does not -- one
 # aggregator, so the two sources cannot drift apart.
 #
-# Names, hosts and languages come from the client, so each is held to the shape
-# a real one has; anything else is counted under `other` rather than becoming a
-# row of its own. The file cannot be grown by someone making up event names.
+# Names, hosts and languages come from the client, so three rules hold for each
+# before it is kept, and anything that fails one is counted under `other`:
+#   - the shape a real one has;
+#   - no address of any kind -- a dotted-quad host, or an event naming one
+#     (ext:192.168.1.10), would put an address in a file that outlives the
+#     logs, which is what /privacy says the site does not keep;
+#   - at most DAILY_KEYS distinct keys per kind per day, the busiest, so
+#     inventing valid-looking names cannot grow the file (Qodo on #363). A
+#     real day has a few dozen events and a handful of referer hosts.
+DAILY_KEYS=${DAILY_KEYS:-100}
 daily() {
   zcat -f "$@" | awk -F'"' '
     function urldecode(s) { gsub(/%2[Ff]/, "/", s); gsub(/%3[Aa]/, ":", s); return s }
     function add(kind, key) { n[day SUBSEP kind SUBSEP key]++ }
+    function addressless(v) { return v !~ /[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ }
     BEGIN {
       split("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec", mn, " ")
       for (i = 1; i <= 12; i++) num[mn[i]] = sprintf("%02d", i)
@@ -574,7 +582,7 @@ daily() {
 
       # #183 events: the name is p= (not a path) or is flagged e=true.
       if ((req ~ /[?&]e=true/) || (p != "" && substr(p, 1, 1) != "/")) {
-        add("event", p ~ /^[a-z0-9][a-z0-9:._-]*$/ && length(p) <= 64 ? p : "other")
+        add("event", p ~ /^[a-z0-9][a-z0-9:._-]*$/ && length(p) <= 64 && addressless(p) ? p : "other")
         next
       }
       if (p == "" || substr(p, 1, 1) != "/") next
@@ -615,12 +623,25 @@ daily() {
       ref = $4
       if (ref != "" && ref != "-") {
         host = tolower(ref); sub(/^[a-z]+:\/\//, "", host); sub(/\/.*/, "", host); sub(/:.*/, "", host)
-        if (host != "" && host !~ /openipc\.org$/) add("refhost", host ~ /^[a-z0-9.-]+$/ && length(host) <= 253 ? host : "other")
+        if (host != "" && host !~ /openipc\.org$/) add("refhost", host ~ /^[a-z0-9.-]+$/ && length(host) <= 253 && addressless(host) ? host : "other")
       }
     }
     END {
       for (k in n) { split(k, part, SUBSEP); printf "%s\t%s\t%s\t%d\n", part[1], part[2], part[3], n[k] }
     }
+  ' | LC_ALL=C sort -t$'\t' -k1,1 -k2,2 -k4,4nr -k3,3 | awk -F'\t' -v cap="$DAILY_KEYS" '
+    # The busiest DAILY_KEYS keys of each kind each day stand; the rest are
+    # folded into that kind'"'"'s `other`. Sorted busiest first above, so the
+    # cut is by count and the same input always keeps the same keys.
+    function flush() { if (fold > 0) printf "%s\tother\t%d\n", group, fold + 0; fold = 0 }
+    {
+      g = $1 "\t" $2
+      if (g != group) { flush(); group = g; kept = 0 }
+      if ($3 == "other") { fold += $4; next }
+      if (++kept > cap) { fold += $4; next }
+      print
+    }
+    END { flush() }
   ' | LC_ALL=C sort
 }
 
@@ -643,12 +664,18 @@ main_day() {
 # hour, and without the cut the minutes past the next midnight would stand as a
 # partial row for a day that has not been recorded yet. Re-recording a day
 # replaces its rows, as engaged.tsv does.
+#
+# A log with no dated line at all says nothing about which day it is, so the
+# caller may name the day it expects: the nightly knows it ran for yesterday.
+# That day is then recorded as covered with nothing in it, which is a zero and
+# not a gap (Qodo on #363). Without a name, an empty log is an error.
 record_daily() {
-  local log=$1 outdir=$2
-  shift 2
+  local log=$1 outdir=$2 expected=$3
+  shift 3
   local history="$outdir/daily.tsv" main scratch
 
   main=$(main_day "$log")
+  [ -n "$main" ] || main=$expected
   [ -n "$main" ] || { echo "audience-report: no dated lines in $log" >&2; return 1; }
 
   mkdir -p "$outdir"
@@ -656,7 +683,11 @@ record_daily() {
   (
     flock 9
     [ -f "$history" ] && awk -v d="$main" -F'\t' '!/^#/ && $1 != d' "$history" > "$scratch"
-    daily "$log" "$@" | awk -v d="$main" -F'\t' '$1 == d' >> "$scratch"
+    {
+      daily "$log" "$@" | awk -v d="$main" -F'\t' '$1 == d'
+      # Always: a day whose log held nothing of it is covered, and zero.
+      printf '%s\tcovered\t-\t1\n' "$main"
+    } | LC_ALL=C sort -u >> "$scratch"
     {
       printf '# date\tkind\tkey\tcount -- the day'"'"'s numbers for the monthly memo; no addresses (#316)\n'
       LC_ALL=C sort "$scratch"
@@ -692,7 +723,7 @@ if [ "${1:-}" = '--record-daily' ]; then
   day_out=${3:-/srv/www/shared/reports}
   shift $(( $# < 3 ? $# : 3 ))
   [ $# -gt 0 ] || set -- $(earlier_log "$day_log")
-  record_daily "$day_log" "$day_out" "$@"
+  record_daily "$day_log" "$day_out" "" "$@"
   exit 0
 fi
 
@@ -846,4 +877,4 @@ iso=$(iso_day "$day")
 
 # After the lock above is released: record_daily takes the same lock itself.
 # shellcheck disable=SC2046
-record_daily "$log" "$outdir" $(earlier_log "$log")
+record_daily "$log" "$outdir" "$iso" $(earlier_log "$log")

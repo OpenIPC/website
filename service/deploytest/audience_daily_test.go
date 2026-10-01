@@ -84,6 +84,42 @@ func TestAudienceDaily(t *testing.T) {
 		mustContain(t, out, "2026-10-05\trefhost\topenipc.ru\t1\n", "the /ru/business view; the click on the same page is an event")
 	})
 
+	t.Run("an address the client supplies is never kept (Qodo on #363)", func(t *testing.T) {
+		ua := `"Mozilla/5.0 (X11; Linux x86_64; rv:156.0) Gecko/20100101 Firefox/156.0"`
+		log := writeFile(t, filepath.Join(t.TempDir(), "access.log"),
+			`203.0.113.90 - - [05/Oct/2026:09:00:00 +0000] "POST /api/a/count?p=ext%3A192.168.1.10&e=true&b=0 HTTP/2.0" 200 43 "https://openipc.org/" `+ua+` xff="-" cache=- rt=0.002 urt="-" al="en" peer=203.0.113.90`+"\n"+
+				`203.0.113.90 - - [05/Oct/2026:09:01:00 +0000] "POST /api/a/count?p=%2F&b=0 HTTP/2.0" 200 43 "http://10.1.2.3:8080/x" `+ua+` xff="-" cache=- rt=0.002 urt="-" al="en" peer=203.0.113.90`+"\n")
+		got, ok := run(t, nil, "", "bash", abs(t, "deploy/audience-report.sh"), "--daily", log)
+		if !ok {
+			t.Fatalf("--daily failed:\n%s", got)
+		}
+		mustNotMatch(t, `\d+\.\d+\.\d+\.\d+`, got, "an event naming an address, or an address as referer host, reached the series")
+		mustContain(t, got, "2026-10-05\tevent\tother\t1\n", "the address-valued event is counted, as other")
+		mustContain(t, got, "2026-10-05\trefhost\tother\t1\n", "the address-valued referer is counted, as other")
+	})
+
+	t.Run("invented names cannot grow the series (Qodo on #363)", func(t *testing.T) {
+		var b strings.Builder
+		// Five real clicks, then 150 names nobody's page has.
+		for i := 0; i < 5; i++ {
+			fmt.Fprintf(&b, `203.0.113.91 - - [05/Oct/2026:09:00:%02d +0000] "POST /api/a/count?p=business-mail&e=true HTTP/2.0" 200 43 "-" "UA" xff="-" cache=- rt=0 urt="-" al="en" peer=203.0.113.91`+"\n", i)
+		}
+		for i := 0; i < 150; i++ {
+			fmt.Fprintf(&b, `203.0.113.91 - - [05/Oct/2026:10:00:00 +0000] "POST /api/a/count?p=made-up-%d&e=true HTTP/2.0" 200 43 "-" "UA" xff="-" cache=- rt=0 urt="-" al="en" peer=203.0.113.91`+"\n", i)
+		}
+		got, ok := run(t, map[string]string{"DAILY_KEYS": "20"}, "", "bash", abs(t, "deploy/audience-report.sh"), "--daily",
+			writeFile(t, filepath.Join(t.TempDir(), "access.log"), b.String()))
+		if !ok {
+			t.Fatalf("--daily failed:\n%s", got)
+		}
+		events := regexp.MustCompile(`(?m)^2026-10-05\tevent\t`).FindAllString(got, -1)
+		if len(events) != 21 {
+			t.Errorf("%d event rows; twenty kept and one other", len(events))
+		}
+		mustContain(t, got, "2026-10-05\tevent\tbusiness-mail\t5\n", "the busiest name is the one kept first")
+		mustContain(t, got, "2026-10-05\tevent\tother\t131\n", "the 131 names past the cap are counted, not lost")
+	})
+
 	t.Run("recording keeps only the day the log is, and a re-run replaces it", func(t *testing.T) {
 		dir := t.TempDir()
 		record := func(log string) {
@@ -155,6 +191,19 @@ func TestAudienceDaily(t *testing.T) {
 		}
 	})
 
+	t.Run("a day whose log is empty is a zero, not a gap (Qodo on #363)", func(t *testing.T) {
+		dir := t.TempDir()
+		empty := writeFile(t, filepath.Join(t.TempDir(), "empty.log"), "")
+		if o, ok := run(t, nil, "", "bash", abs(t, "deploy/audience-report.sh"), "--record-daily", empty, dir); ok {
+			t.Errorf("by hand, an empty log names no day and must say so, not succeed:\n%s", o)
+		}
+		runReport(t, empty, dir, reportOpts{day: "20261009"})
+		rows := dataRows(t, filepath.Join(dir, "daily.tsv"))
+		if !hasRow(rows, "2026-10-09", "covered", "-", "1") || len(rows) != 1 {
+			t.Errorf("the nightly knows its day; it should be covered and empty: %v", rows)
+		}
+	})
+
 	t.Run("the nightly records its day", func(t *testing.T) {
 		dir := t.TempDir()
 		runReport(t, dailyLog(t), dir, reportOpts{day: "20261005"})
@@ -195,6 +244,12 @@ func TestAudienceMemoFromSeries(t *testing.T) {
 		mustContain(t, memo, "business-mail` clicks: **1 → 1**", "the funnel from 3 October, beyond the 14-day logs")
 		mustMatch(t, `INFINITY6E \| 1`, memo, "the download from 5 October")
 		mustMatch(t, `(?m)^- tg-ru: 2$`, memo, "a landing tag from the series")
+	})
+
+	t.Run("with no series for the month, the raw-log days are still counted (Qodo on #363)", func(t *testing.T) {
+		memo := runMemo(t, "", octoberCountries)
+		mustContain(t, memo, "**Beacon figures cover 4 of 31 days of 2026-10** (0 from the daily series, 4 from raw logs still on the host)",
+			"the raw log's four days are in the totals, so they are in the coverage")
 	})
 
 	t.Run("days the series lacks come from the raw log, and the memo says so", func(t *testing.T) {
