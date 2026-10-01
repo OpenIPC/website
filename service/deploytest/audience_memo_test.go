@@ -545,3 +545,53 @@ print(sq.bing_date("/Date(1790294400000)/"), sq.bing_date("/Date(1790294400000-0
 `)
 	mustContain(t, out, "2026-09-25 2026-09-25", "Bing's date label is not read as the UTC day")
 }
+
+// A run with --since today has no finished day; it says so and succeeds rather
+// than crashing the engine that indexes the last day (#357 review).
+func TestSearchQueriesSinceToday(t *testing.T) {
+	out := searchQueriesPy(t, `
+import types, datetime
+called = []
+sq.settings = lambda: {"BING_API_KEY": "x", "BING_SITE": "https://openipc.org/"}
+sq.fetch_bing = lambda conf, args, since, days: called.append(days[-1])
+for since in (datetime.date.today(), datetime.date.today() + datetime.timedelta(days=3)):
+    print("rc", sq.fetch(types.SimpleNamespace(since=since.isoformat(), dir="/nonexistent")))
+print("engines called", called)
+`)
+	mustContain(t, out, "nothing to fetch", "an empty range is not reported")
+	mustNotContain(t, out, "rc 1", "an empty range is reported as a failure")
+	mustContain(t, out, "engines called []", "an engine was asked about an empty range")
+}
+
+// A BING_SITE override gets its own archive and its own label; only
+// openipc.org is "bing" (#357 review).
+func TestSearchQueriesBingSiteArchive(t *testing.T) {
+	out := searchQueriesPy(t, `
+print(sq.bing_dir("https://openipc.org/"), sq.bing_dir("https://openipc.ru/"))
+import tempfile, os
+d = tempfile.mkdtemp(); os.makedirs(d + "/bing-openipc.ru")
+print([e[1] for e in sq.engines(d)][-1])
+`)
+	mustContain(t, out, "bing bing-openipc.ru", "another site's archive shares openipc.org's")
+	mustContain(t, out, "Bing Webmaster (openipc.ru)", "another site's archive is labelled as openipc.org")
+}
+
+// A month with Bing's weekly lists and no daily totals says the totals are
+// missing instead of printing zero traffic (#357 review).
+func TestSearchQueriesWeeksWithoutDays(t *testing.T) {
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skip("python3 not available")
+	}
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "bing"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(dir, "bing", "week-2026-11-06.tsv"), "#week\t0\t0\t-\nopen ipc\t9\t40\t-\n")
+	out, ok := run(t, nil, "", "python3", abs(t, "deploy/search-queries.py"), "top", "2026-11", "--dir", dir)
+	if !ok {
+		t.Fatalf("top failed:\n%s", out)
+	}
+	mustContain(t, out, "no daily totals archived for 2026-11", "missing totals are not said")
+	mustNotContain(t, out, "**0 clicks**", "missing totals are printed as zero traffic")
+	mustContain(t, out, "| open ipc | 9 | 40 | – |", "the weekly queries are still printed")
+}

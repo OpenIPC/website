@@ -207,6 +207,13 @@ def google_queries(query, day):
     return [(r["keys"][0], r["clicks"], r["impressions"], r["position"]) for r in rows]
 
 
+def bing_dir(site):
+    """bing/ for openipc.org, bing-<host>/ for any other BING_SITE, so a site
+    override can never land in, or be labelled as, openipc.org's archive."""
+    host = urllib.parse.urlsplit(site).hostname or site
+    return "bing" if host == "openipc.org" else "bing-" + host
+
+
 def yandex_dir(host):
     name = host.split(":")[1] if host.count(":") == 2 else host
     return "yandex" if name == "openipc.org" else "yandex-" + name
@@ -362,7 +369,7 @@ def fetch_bing(conf, args, since, days):
         # out of the cron log.
         return http_json("%s/%s?%s" % (BING_API, method, params))["d"] or []
 
-    dirpath = os.path.join(args.dir, "bing")
+    dirpath = os.path.join(args.dir, bing_dir(conf["BING_SITE"]))
     first, last = since.isoformat(), days[-1].isoformat()
 
     daily = {bing_date(r["Date"]): r for r in get("GetRankAndTrafficStats")}
@@ -396,6 +403,10 @@ def fetch(args):
     since = (datetime.date.fromisoformat(args.since) if args.since
              else today - datetime.timedelta(days=30))
     days = [since + datetime.timedelta(days=n) for n in range((today - since).days)]
+    if not days:
+        # --since today or later: no finished day to ask any engine about.
+        print("nothing to fetch: --since %s is not before today" % since)
+        return 0
     # One engine failing must not stop the other; the exit status still says so.
     failed = []
     for name, run in (("google", fetch_google), ("yandex", fetch_yandex), ("bing", fetch_bing)):
@@ -409,17 +420,18 @@ def fetch(args):
 
 def engines(root):
     """(directory, label, engine) for Google, Yandex for openipc.org and for
-    openipc.ru, Bing, then any other Yandex host that has an archive. The first
-    four are always listed, so a missing archive is said rather than
+    openipc.ru, Bing for openipc.org, then any other Yandex host or Bing site
+    that has an archive. The first four are always listed, so a missing archive is said rather than
     silently left out."""
     found = [("google", "Google Search Console", "Google"),
              ("yandex", "Yandex Webmaster (openipc.org)", "Yandex"),
              ("yandex-openipc.ru", "Yandex Webmaster (openipc.ru)", "Yandex"),
              ("bing", "Bing Webmaster (openipc.org)", "Bing")]
-    for path in sorted(glob.glob(os.path.join(root, "yandex-*"))):
-        name = os.path.basename(path)
-        if name not in [f[0] for f in found]:
-            found.append((name, "Yandex Webmaster (%s)" % name[len("yandex-"):], "Yandex"))
+    for prefix, console, who in (("yandex-", "Yandex Webmaster", "Yandex"), ("bing-", "Bing Webmaster", "Bing")):
+        for path in sorted(glob.glob(os.path.join(root, prefix + "*"))):
+            name = os.path.basename(path)
+            if name not in [f[0] for f in found]:
+                found.append((name, "%s (%s)" % (console, name[len(prefix):]), who))
     return found
 
 
@@ -473,8 +485,12 @@ def top(args):
             label, span[0], span[-1], len(files),
             ", queries from %d weekly list(s)" % len(weeks) if weeks else ""))
         print()
-        print("- all searches: **%s clicks**, %s impressions%s"
-              % (format(tc, ","), format(ti, ","), ", average position " + pos(tot) if tot[3] else ""))
+        if files:
+            print("- all searches: **%s clicks**, %s impressions%s"
+                  % (format(tc, ","), format(ti, ","), ", average position " + pos(tot) if tot[3] else ""))
+        else:
+            print("- all searches: _no daily totals archived for %s_; only the weekly query lists below"
+                  % args.month)
         if listed:
             print("- %d of those days have no total from %s; for them the listed queries stand in, "
                   "so the totals above are a floor" % (listed, who))
