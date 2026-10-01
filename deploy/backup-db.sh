@@ -220,6 +220,10 @@ echo "$SIZE" > "$LAST_SIZE_FILE"
 BOARDS_ROOT=/srv/www/shared/boards
 BOARDS_MARK=/srv/www/.last-boards-set
 BOARDS_BLOBS_MARK=/srv/www/.boards-blobs-backed-up
+# What goes up is a copy, hashed again: the file itself could be rewritten
+# between the check and the upload, and a blob must hold the bytes its name
+# says. Beside the boards on disk, not in ${WORK}: a dump can be tens of MB.
+BOARDS_COPY=/srv/www/shared/.boards-backup-copy
 if [ -d "$BOARDS_ROOT" ]; then
   # The set is identified by every file's contents, not by names and sizes: a
   # dump corrected in place keeps its length. A second or two a night.
@@ -240,15 +244,16 @@ if [ -d "$BOARDS_ROOT" ]; then
     while IFS=$'\t' read -r sum path; do
       f="${BOARDS_ROOT}/${path#./}"
       key="boards/sha256/${sum:0:2}/${sum}"
-      [ "$(sha256sum < "$f" | cut -d' ' -f1)" = "$sum" ] || fail "board file ${path} changed while it was being backed up"
       if "${AWS[@]}" s3api head-object --bucket "$S3_BUCKET" --key "$key" >/dev/null 2>&1; then
         have=$((have + 1))   # an earlier set, a donor snapshot, or another name for the same bytes
       elif [ "$DRY_RUN" = 1 ]; then
         log "DRY RUN would upload ${key} ($(stat -c %s "$f") bytes, ${path})"
         continue
       else
-        size=$(stat -c %s "$f")
-        "${AWS[@]}" s3 cp --only-show-errors "$f" "s3://${S3_BUCKET}/${key}" \
+        cp "$f" "$BOARDS_COPY" || fail "copying board file ${path} failed"
+        [ "$(sha256sum < "$BOARDS_COPY" | cut -d' ' -f1)" = "$sum" ] || fail "board file ${path} changed while it was being backed up"
+        size=$(stat -c %s "$BOARDS_COPY")
+        "${AWS[@]}" s3 cp --only-show-errors "$BOARDS_COPY" "s3://${S3_BUCKET}/${key}" \
           || fail "upload of board file ${path} failed"
         REMOTE=$("${AWS[@]}" s3api head-object --bucket "$S3_BUCKET" --key "$key" \
           --query ContentLength --output text 2>/dev/null) || fail "board file ${sum} is not readable back"
@@ -258,6 +263,7 @@ if [ -d "$BOARDS_ROOT" ]; then
       [ "$DRY_RUN" = 1 ] || echo "$sum" >> "$BOARDS_BLOBS_MARK"
     done < <(awk 'FILENAME == ARGV[1] { up[$1]; next } !($1 in up) && !seen[$1]++ { print $1 "\t" substr($0, 67) }' \
                "$BOARDS_BLOBS_MARK" "$BOARDS_LIST")
+    rm -f "$BOARDS_COPY"
     # The list goes up last: a set in the bucket never names bytes that are not.
     SET_KEY="boards/sets/boards-${STAMP}-${BOARDS_ID}.sha256"
     if [ "$DRY_RUN" = 1 ]; then

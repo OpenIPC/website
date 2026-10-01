@@ -66,6 +66,9 @@ func TestBoardCatalogueServing(t *testing.T) {
 	mustContain(t, backup, `key="boards/sha256/${sum:0:2}/${sum}"`, "the board files are not stored by their contents")
 	mustContain(t, backup, `boards/sets/boards-${STAMP}-${BOARDS_ID}.sha256`, "a board set is not kept as its list of sums")
 	mustNotContain(t, backup, "boards_tar", "the board files go up as a whole tar again")
+	// A blob must hold the bytes its name says: what goes up is a copy, hashed
+	// again, not the file a writer could still be changing.
+	mustContain(t, backup, `s3 cp --only-show-errors "$BOARDS_COPY"`, "a board file goes up without being hashed as it is sent")
 	// An empty mark must not swallow the list: NR == FNR holds for the second
 	// file when the first is empty, and then nothing would ever go up.
 	mustNotContain(t, backup, "NR == FNR", "the first night's empty mark hides every board file")
@@ -79,5 +82,7 @@ func TestBoardCatalogueServing(t *testing.T) {
 		t.Error("RESTORE.md does not say how to bring the board files back")
 	}
 	mustContain(t, restore, "sha256sum -c --quiet /root/boards.sha256", "the board restore does not check the files it brought back")
+	// read -r sum p would strip a name's trailing space; the list is by column.
+	mustContain(t, restore, "p=${line:66}", "the board restore splits names on whitespace")
 	mustContain(t, restore, "tarpack.py unpack", "RESTORE.md does not say how to rebuild a donor snapshot or an old set")
 }

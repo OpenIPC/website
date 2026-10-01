@@ -138,7 +138,8 @@ aws s3 ls s3://openipc-org-backup/boards/sets/ | sort | tail -1     # the newest
 aws s3 cp s3://openipc-org-backup/boards/sets/boards-<date>-<id>.sha256 /root/boards.sha256
 install -d -o 1000 -g 1000 -m 0755 /srv/www/shared/boards
 cd /srv/www/shared/boards
-while read -r sum p; do
+while IFS= read -r line; do
+  sum=${line:0:64} p=${line:66}     # by column: a name may end in a space
   install -d "$(dirname "$p")"
   aws s3 cp --only-show-errors "s3://openipc-org-backup/boards/sha256/${sum:0:2}/${sum}" "$p"
 done < /root/boards.sha256
@@ -147,7 +148,7 @@ sha256sum -c --quiet /root/boards.sha256 && chown -R 1000:1000 /srv/www/shared/b
 
 One request per file, a few minutes for the whole set; `sha256sum -c` proves
 every file is the one the list names. The backup refuses names with a newline
-or backslash, so `read` takes every line as it is.
+or backslash, so every line is the sum, two spaces and the name as it is.
 
 Their rows come back with the database in step 4. Without the files, the rows
 point at files that are not there; `openipc boards import-openhisiipcam`
