@@ -513,6 +513,189 @@ engaged_countries() {
 }
 
 
+# The day's numbers the monthly memo needs, as address-free rows (#316).
+#
+# The origin deletes its access logs after 14 days -- the promise on /privacy,
+# held by service/deploytest -- so a memo written on the 1st for the month that
+# just closed could only see the second half of it. This runs over each day's
+# log while it still exists and keeps what the memo needs from it, never an
+# address: page views, the locale the site served, the reader's browser
+# language, sections, the #183 events by name, the hosts on the beacon's
+# referer, and completed firmware downloads.
+#
+#   deploy/audience-report.sh --daily [log...]       # rows for every day in the logs
+#   deploy/audience-report.sh --record-daily [log] [outdir] [earlier log...]
+#
+# One row per day per kind and key: date, kind, key, count. Every day carries a
+# `covered` row, so a day nobody read is a zero and not a gap. The memo reads
+# the same rows from daily.tsv for the days the series holds, and runs --daily
+# itself over whatever raw log is left for the days it does not -- one
+# aggregator, so the two sources cannot drift apart.
+#
+# Names, hosts and languages come from the client, so each is held to the shape
+# a real one has; anything else is counted under `other` rather than becoming a
+# row of its own. The file cannot be grown by someone making up event names.
+daily() {
+  zcat -f "$@" | awk -F'"' '
+    function urldecode(s) { gsub(/%2[Ff]/, "/", s); gsub(/%3[Aa]/, ":", s); return s }
+    function add(kind, key) { n[day SUBSEP kind SUBSEP key]++ }
+    BEGIN {
+      split("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec", mn, " ")
+      for (i = 1; i <= 12; i++) num[mn[i]] = sprintf("%02d", i)
+    }
+    {
+      if (!match($1, /\[[0-9][0-9]\/[A-Za-z][A-Za-z][A-Za-z]\/[0-9][0-9][0-9][0-9]/)) next
+      stamp = substr($1, RSTART + 1, RLENGTH - 1)
+      day = substr(stamp, 8, 4) "-" num[substr(stamp, 4, 3)] "-" substr(stamp, 1, 2)
+      if (!(day in seen)) { seen[day] = 1; n[day SUBSEP "covered" SUBSEP "-"] = 1 }
+      requests[day]++
+
+      req = $2
+      split($3, st, " "); code = st[1]
+      split(req, r, " "); path = r[2]
+
+      # A completed full-image download: status 200 on the download path. The
+      # SoC is the segment after /socs/, the edition fw_release=, kept together
+      # so the memo can let an FPV edition override the SoC segment.
+      if (code == "200" && path ~ /\/socs\/[^\/]+\/download_full_image/) {
+        soc = path; sub(/.*\/socs\//, "", soc); sub(/\/download_full_image.*/, "", soc)
+        rel = "none"
+        if (match(path, /[?&]fw_release=[^&]*/)) { rel = substr(path, RSTART + 12, RLENGTH - 12); if (rel == "") rel = "none" }
+        if (soc !~ /^[a-z0-9_-]+$/ || length(soc) > 32) soc = "other"
+        if (rel !~ /^[a-z0-9_-]+$/ || length(rel) > 32) rel = "other"
+        add("fw", soc "/" rel)
+        next
+      }
+
+      if (req !~ /\/api\/a\/count/) next
+
+      p = ""
+      if (match(req, /[?&]p=[^& ]*/)) p = urldecode(substr(req, RSTART + 3, RLENGTH - 3))
+
+      # #183 events: the name is p= (not a path) or is flagged e=true.
+      if ((req ~ /[?&]e=true/) || (p != "" && substr(p, 1, 1) != "/")) {
+        add("event", p ~ /^[a-z0-9][a-z0-9:._-]*$/ && length(p) <= 64 ? p : "other")
+        next
+      }
+      if (p == "" || substr(p, 1, 1) != "/") next
+
+      add("pv", "-")
+
+      # The locale the SITE served, from the path prefix.
+      loc = "en"
+      if (p ~ /^\/ru(\/|$)/) loc = "ru"
+      else if (p ~ /^\/zh(\/|$)/) loc = "zh"
+      add("locale", loc)
+
+      # The reader'"'"'s own language, Accept-Language primary subtag.
+      lang = "unknown"
+      if (match($0, /al="[^"]*"/)) {
+        al = tolower(substr($0, RSTART + 4, RLENGTH - 5))
+        sub(/[,;].*/, "", al); sub(/-.*/, "", al)
+        if (al ~ /^[a-z][a-z][a-z]?$/) lang = al
+      }
+      add("lang", lang)
+
+      q = p; sub(/^\/(ru|zh)(\/|$)/, "/", q)
+      if (q ~ /^\/(supported-hardware|cameras)(\/|$)/)                              s = "hardware+wizard"
+      else if (q ~ /^\/(low-latency|teleoperation|edge-ai)(\/|$)/)                  s = "low-latency"
+      else if (q ~ /^\/get-started(\/|$)/)                                          s = "get-started"
+      else if (q ~ /^\/(open-wall|snapshots)(\/|$)/)                                s = "open-wall"
+      else if (q ~ /^\/(ecosystem|web-interface|stages-of-firmware-development|firmware-explorer|tools|utilities)(\/|$)/) s = "ecosystem"
+      else if (q ~ /^\/(community|our-team|green_life)(\/|$)/)                       s = "community"
+      else if (q ~ /^\/(business|video-encoding|isp-sensors|reverse-engineering|turnkey-hardware|digital-twins|donate)(\/|$)/) s = "business+donate"
+      else s = "other"
+      add("section", s)
+
+      if (q ~ /^\/business(\/|$)/) add("page", "business")
+      if (q ~ /^\/donate(\/|$)/)   add("page", "donate")
+
+      # The beacon carries the page it counts as its referer, so a host here
+      # other than openipc.org is mostly one of the mirrors.
+      ref = $4
+      if (ref != "" && ref != "-") {
+        host = tolower(ref); sub(/^[a-z]+:\/\//, "", host); sub(/\/.*/, "", host); sub(/:.*/, "", host)
+        if (host != "" && host !~ /openipc\.org$/) add("refhost", host ~ /^[a-z0-9.-]+$/ && length(host) <= 253 ? host : "other")
+      }
+    }
+    END {
+      for (k in n) { split(k, part, SUBSEP); printf "%s\t%s\t%s\t%d\n", part[1], part[2], part[3], n[k] }
+    }
+  ' | LC_ALL=C sort
+}
+
+# Which day a log IS: the date most of its lines carry.
+main_day() {
+  zcat -f "$1" | awk -F'[' '{ d = substr($2, 1, 11); if (++n[d] > most) { most = n[d]; main = d } }
+    END { print main }' | {
+    IFS= read -r d || true
+    if [ -n "$d" ]; then date -u -d "${d//\// }" +%Y-%m-%d; fi
+  }
+}
+
+# The day a log is, into daily.tsv, and only that day.
+#
+# A rotated log is not a calendar day. logrotate runs from a systemd timer with
+# a random delay, so on this host access.log.1 starts somewhere between 00:00
+# and 01:00 -- on 2026-10-01, at 00:21 for the 30th -- and the first part of its
+# day is at the end of the log before it. So the earlier log is read too, and
+# both are cut to the one day: without it every day would be short by up to an
+# hour, and without the cut the minutes past the next midnight would stand as a
+# partial row for a day that has not been recorded yet. Re-recording a day
+# replaces its rows, as engaged.tsv does.
+record_daily() {
+  local log=$1 outdir=$2
+  shift 2
+  local history="$outdir/daily.tsv" main scratch
+
+  main=$(main_day "$log")
+  [ -n "$main" ] || { echo "audience-report: no dated lines in $log" >&2; return 1; }
+
+  mkdir -p "$outdir"
+  scratch=$(mktemp)
+  (
+    flock 9
+    [ -f "$history" ] && awk -v d="$main" -F'\t' '!/^#/ && $1 != d' "$history" > "$scratch"
+    daily "$log" "$@" | awk -v d="$main" -F'\t' '$1 == d' >> "$scratch"
+    {
+      printf '# date\tkind\tkey\tcount -- the day'"'"'s numbers for the monthly memo; no addresses (#316)\n'
+      LC_ALL=C sort "$scratch"
+    } > "$history"
+  ) 9> "$outdir/.history.lock"
+  rm -f "$scratch"
+  printf '  daily series        %s  %d rows\n' "$main" "$(awk -v d="$main" -F'\t' '$1 == d' "$history" | wc -l)"
+}
+
+# The log before this one in logrotate's numbering, if it is there:
+# access.log.1 -> access.log.2.gz, access.log.5.gz -> access.log.6.gz.
+earlier_log() {
+  local base n
+  [[ $1 =~ ^(.*)\.([0-9]+)(\.gz)?$ ]] || return 0
+  base=${BASH_REMATCH[1]} n=$(( BASH_REMATCH[2] + 1 ))
+  for f in "$base.$n.gz" "$base.$n"; do [ -r "$f" ] && { echo "$f"; return 0; }; done
+}
+
+if [ "${1:-}" = '--daily' ]; then
+  shift
+  [ $# -gt 0 ] || set -- /var/log/nginx/org.openipc.access.log.1
+  daily "$@"
+  exit 0
+fi
+
+# By hand, for a day the nightly missed or to backfill the retained logs:
+#   for n in $(seq 2 13); do
+#     openipc-audience-report --record-daily /var/log/nginx/org.openipc.access.log.$n.gz
+#   done
+# The earlier log is found by its number when none is given.
+if [ "${1:-}" = '--record-daily' ]; then
+  day_log=${2:-/var/log/nginx/org.openipc.access.log.1}
+  day_out=${3:-/srv/www/shared/reports}
+  shift $(( $# < 3 ? $# : 3 ))
+  [ $# -gt 0 ] || set -- $(earlier_log "$day_log")
+  record_daily "$day_log" "$day_out" "$@"
+  exit 0
+fi
+
 if [ "${1:-}" = '--visitors' ]; then
   visitor_log=${2:-/var/log/nginx/org.openipc.access.log.1}
   [ -r "$visitor_log" ] || { echo "audience-report: cannot read ${visitor_log}" >&2; exit 1; }
@@ -660,3 +843,7 @@ iso=$(iso_day "$day")
   record_history "$beacon_counts" "$outdir" "$iso" "$previous"
   engaged_countries "$beacon_counts" "$work" "$outdir" "$iso" "$previous"
 ) 9> "$outdir/.history.lock"
+
+# After the lock above is released: record_daily takes the same lock itself.
+# shellcheck disable=SC2046
+record_daily "$log" "$outdir" $(earlier_log "$log")
