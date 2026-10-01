@@ -30,3 +30,11 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # finalises a day two to three days late and each run fills whatever is new, so
 # the hour does not matter beyond running before the memo on the 1st.
 47 4 * * *  root  /usr/local/sbin/openipc-search-queries fetch >>/var/log/openipc-search-queries.log 2>&1
+
+# GitHub traffic to OpenIPC/firmware and OpenIPC/wiki (#318). GitHub keeps only
+# the last 14 days and cannot push it, so it is fetched before it rolls off:
+# every Monday, and on the 1st and 15th so there is always a referrer window
+# ending on the 14th and one ending on the month's last day. Cron runs a line
+# whose day-of-month and day-of-week are both set on EITHER, which is what this
+# wants. Before the memo at 05:30 on the 1st.
+53 4 1,15 * 1  root  /usr/local/sbin/openipc-github-traffic fetch >>/var/log/openipc-github-traffic.log 2>&1
