@@ -42,7 +42,8 @@
 #   SEARCH_QUERIES       path to search-queries.py (openipc-search-queries)
 #   SEARCH_DIR           its archive (default REPORTS_DIR/search)
 #   LOG_REPORT           path to openipc-log-report (empty to skip)
-#   MEMO_SKIP_GH=1       skip the GitHub traffic pull
+#   GITHUB_TRAFFIC       path to github-traffic.py (openipc-github-traffic)
+#   GITHUB_TRAFFIC_DIR   its archive (default REPORTS_DIR/github)
 #   OUT                  output path
 set -euo pipefail
 
@@ -53,6 +54,8 @@ LOG_REPORT=${LOG_REPORT-/usr/local/sbin/openipc-log-report}
 SEARCH_QUERIES=${SEARCH_QUERIES:-/usr/local/sbin/openipc-search-queries}
 AUDIENCE_REPORT=${AUDIENCE_REPORT:-/usr/local/sbin/openipc-audience-report}
 SEARCH_DIR=${SEARCH_DIR:-$REPORTS_DIR/search}
+GITHUB_TRAFFIC=${GITHUB_TRAFFIC:-/usr/local/sbin/openipc-github-traffic}
+GITHUB_TRAFFIC_DIR=${GITHUB_TRAFFIC_DIR:-$REPORTS_DIR/github}
 OC_API=${OC_API:-https://api.opencollective.com/graphql/v2}
 OC_SLUG=${OC_SLUG:-openipc}
 
@@ -404,18 +407,17 @@ if command -v python3 >/dev/null && [ -f "$SEARCH_QUERIES" ]; then
   fi
 fi
 
-gh_block=""
-if [ "${MEMO_SKIP_GH:-0}" != 1 ] && command -v gh >/dev/null; then
-  for repo in OpenIPC/firmware OpenIPC/wiki; do
-    refs=$(gh api "repos/$repo/traffic/popular/referrers" 2>/dev/null \
-      | python3 -c 'import json,sys
-try: d=json.load(sys.stdin)
-except Exception: d=[]
-for r in d[:6]: print("    %-22s %5d views / %4d uniques" % (r.get("referrer","?"), r.get("count",0), r.get("uniques",0)))' 2>/dev/null || true)
-    if [ -n "$refs" ]; then
-      gh_block="${gh_block}\n  ${repo} (traffic/popular/referrers, trailing 14 days):\n${refs}\n"
-    fi
-  done
+# GitHub traffic to the firmware and wiki repositories, from the archive
+# openipc-github-traffic fetch keeps (#318). GitHub shows only the last 14
+# days, so the month is whatever the archive holds of it, and the block says
+# how many days that is. Its errors go to stderr, i.e. to the memo's log.
+gh_block="" gh_state=absent
+if command -v python3 >/dev/null && [ -f "$GITHUB_TRAFFIC" ]; then
+  if gh_block=$(python3 "$GITHUB_TRAFFIC" month "$month" --dir "$GITHUB_TRAFFIC_DIR"); then
+    gh_state=ok
+  else
+    gh_state=failed gh_block=""
+  fi
 fi
 
 # --- assemble ---------------------------------------------------------------
@@ -585,8 +587,15 @@ mkdir -p "$(dirname "$OUT")"
     echo "- none recorded."
   fi
   echo
-  echo "GitHub traffic referrers (GitHub only exposes a trailing 14-day window, so this is a point-in-time snapshot, not the full month):"
-  if [ -n "$gh_block" ]; then printf '%b' "$gh_block"; else echo "  _[gh/token not available on the host that runs this — pull from a machine with repo access, or install gh here]_"; fi
+  echo "GitHub traffic (openipc-github-traffic, from the weekly archive; unique visitors are GitHub's per day, so summed they are visitor-days, not people):"
+  echo
+  case $gh_state in
+    ok) printf '%s\n' "$gh_block" ;;
+    failed)
+      echo "> _[MANUAL: openipc-github-traffic failed -- see /var/log/openipc-audience-memo.log]_" ;;
+    *)
+      echo "> _[MANUAL: GitHub traffic -- openipc-github-traffic is missing here; run install-metrics.sh]_" ;;
+  esac
   echo
   echo "What people searched for before arriving, top 20 queries by clicks (openipc-search-queries, from the daily archive):"
   echo
