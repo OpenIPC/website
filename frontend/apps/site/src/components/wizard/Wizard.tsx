@@ -19,9 +19,9 @@ import { combinationFor, type WizardDocument } from '../../lib/wizard-export';
 import {
   DEFAULTS, fromPermalink, toPermalink, type WizardSettings,
 } from '../../lib/wizard-input';
-import { FLASH_CHIPS, generateMac, narrow, openOn, type Availability } from '../../lib/wizard-menu';
+import { generateMac, narrow, openOn, type Availability } from '../../lib/wizard-menu';
 import {
-  flashSize, fromForm, isFormSubmission, layoutSize, settle, toFormQuery, type FlashMessage,
+  fromForm, isFormSubmission, reopenAfterMissing, settle, toFormQuery, type FlashMessage,
 } from '../../lib/wizard-result';
 import { useWizardTranslations } from '../../lib/wizard-i18n';
 import type { Locale } from '../../lib/i18n';
@@ -239,34 +239,26 @@ function availabilityOf(doc: WizardDocument): Availability {
 /**
  * What the page says when the commands loaded but none match the request.
  *
- * Where the reason is the flash size, it is named, and the link reopens the
- * form on the smallest chip that holds the build with everything else kept;
- * otherwise the link reopens the form on what was asked, and the menus narrow
- * it to something that exists.
+ * Where the reason is the flash size it is named, and the link reopens the
+ * form with only what was too small changed (`reopenAfterMissing`).
  */
 function NoCombination({ t, facts, doc, settings }: {
   t: (key: string, options?: Record<string, unknown>) => string;
   facts: SocFacts; doc: WizardDocument; settings: WizardSettings;
 }) {
-  const need = doc.needs_flash_mb ?? 0;
-  const asked = Math.min(flashSize(settings.flashType), layoutSize(settings.partitionLayout ?? settings.flashType));
-  const tooSmall = need > 8 && settings.flashType !== 'nand' && asked < need;
-  const chip = tooSmall ? (FLASH_CHIPS.find((c) => c !== 'nand' && flashSize(c) >= need) ?? doc.default_flash_chip) : settings.flashType;
-  const reopen = facts.socHref + toPermalink({
-    ...settings,
-    flashType: chip,
-    partitionLayout: tooSmall ? undefined : settings.partitionLayout,
-  });
+  const reopen = reopenAfterMissing(settings, doc.needs_flash_mb, doc.default_flash_chip);
+  const { need, asked } = reopen;
+  const href = facts.socHref + toPermalink(reopen.settings);
 
   return (
     <div class="site-container">
       <div class="site-alert site-alert-warning mt-12" role="alert">
         <p class="mb-0">
-          {tooSmall
-            ? t('cameras.socs.show.no_combination_size', { need, asked })
-            : t('cameras.socs.show.no_combination')}{' '}
-          <a href={reopen}>
-            {tooSmall
+          {reopen.reason === 'other'
+            ? t('cameras.socs.show.no_combination')
+            : t('cameras.socs.show.no_combination_size', { need, asked })}{' '}
+          <a href={href}>
+            {reopen.reason === 'chip'
               ? t('cameras.socs.show.no_combination_size_link', { need })
               : t('cameras.socs.show.no_combination_link')}
           </a>

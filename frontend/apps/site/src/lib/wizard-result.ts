@@ -92,6 +92,36 @@ export function licenceBusinessHref(
   return segment === 'fpv' ? `${links.lowLatency}${query}#support` : `${links.business}${query}`;
 }
 
+/**
+ * Where to send a visitor whose request has no commands behind it (#370).
+ *
+ * Only what is too small is changed. A chip smaller than the build moves to
+ * the smallest that holds it, and its layout goes with it; a chip that is big
+ * enough keeps its size -- the guide's flash sizes and backup commands are the
+ * chip's -- and only a layout too small for the build is dropped, so the form
+ * gives the chip its own. Anything else is reopened as asked, and the menus
+ * narrow it to something that exists.
+ */
+export function reopenAfterMissing(
+  settings: WizardSettings,
+  needsFlashMb: number | undefined,
+  defaultFlashChip: string,
+): { settings: WizardSettings; reason: 'chip' | 'layout' | 'other'; need: number; asked: number } {
+  const need = needsFlashMb ?? 0;
+  if (need > 8 && settings.flashType !== 'nand') {
+    const chip = flashSize(settings.flashType);
+    if (chip < need) {
+      const bigger = FLASH_CHIPS.find((c) => c !== 'nand' && flashSize(c) >= need) ?? defaultFlashChip;
+      return { settings: { ...settings, flashType: bigger, partitionLayout: undefined }, reason: 'chip', need, asked: chip };
+    }
+    const layout = settings.partitionLayout;
+    if (layout && layoutSize(layout) < need) {
+      return { settings: { ...settings, partitionLayout: undefined }, reason: 'layout', need, asked: layoutSize(layout) };
+    }
+  }
+  return { settings, reason: 'other', need, asked: 0 };
+}
+
 /** `Camera#flash_type_type`. */
 export function flashFamily(chip: string): 'nor' | 'nand' {
   return chip === 'nand' ? 'nand' : 'nor';
