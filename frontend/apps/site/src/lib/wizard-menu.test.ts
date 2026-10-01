@@ -131,6 +131,34 @@ describe('where a shared link opens the form', () => {
   });
 });
 
+describe('a SoC whose builds need more than 8MB (#370)', () => {
+  // ssc338q, hi3516cv500 and four more: Lite does not fit 8MB, so the export
+  // has no 8MB combination and says so in needs_flash_mb.
+  const SIXTEEN: Availability = { nor: ['lite', 'ultimate'], nand: ['ultimate'], needsFlashMb: 16 };
+
+  test('does not offer the 8MB chip, and moves off it', () => {
+    const opened = openOn({ chip: 'nor8m', edition: 'lite' }, SIXTEEN, OFFERABLE);
+    expect(opened.chip).toBe('nor16m');
+    expect(opened.layout).toBe('nor16m');
+    expect(opened.edition).toBe('lite');
+    expect(selectable(opened.chips)).toEqual(['nor16m', 'nor32m', 'nand']);
+  });
+
+  test('does not offer the 8MB layout on a bigger chip', () => {
+    const state = narrow({ chip: 'nor32m', layout: 'nor8m', edition: 'lite', layoutChosen: true }, SIXTEEN, OFFERABLE);
+    expect(state.layout).toBe('nor16m');
+    expect(selectable(state.layouts)).toEqual(['nor16m']);
+    expect(allowedLayouts('nor16m', SIXTEEN)).toEqual(['nor16m']);
+  });
+
+  test('a SoC that fits 8MB is exactly as before', () => {
+    const opened = openOn({ chip: 'nor8m', edition: 'lite' }, BOTH, OFFERABLE);
+    expect(opened.chip).toBe('nor8m');
+    expect(selectable(opened.chips)).toEqual(['nor8m', 'nor16m', 'nor32m', 'nand']);
+    expect(allowedLayouts('nor16m', BOTH)).toEqual(['nor8m', 'nor16m']);
+  });
+});
+
 describe('the generated MAC', () => {
   test('is locally administered and unicast', () => {
     const mac = generateMac(() => 0.999);

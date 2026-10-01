@@ -22,6 +22,23 @@ export const PARTITION_LAYOUTS = ['nor8m', 'nor16m'] as const;
 export interface Availability {
   nor: string[];
   nand: string[];
+  /**
+   * The smallest NOR chip, in MB, that anything published fits, when that is
+   * more than 8 (#285, #370): the export's `needs_flash_mb`. Absent means 8 MB
+   * holds a build. A chip or layout smaller than this has no commands, so it is
+   * not offered; offering it sent the form's own default to a page with
+   * nothing on it.
+   */
+  needsFlashMb?: number;
+}
+
+/** The size of a NOR chip or layout, in MB. */
+const NOR_MB: Record<string, number | undefined> = { nor8m: 8, nor16m: 16, nor32m: 32 };
+
+/** Whether a NOR chip or layout can hold what is published. NAND always can. */
+function holds(value: string, availability: Availability): boolean {
+  const size = NOR_MB[value];
+  return size === undefined || size >= (availability.needsFlashMb ?? 0);
 }
 
 /**
@@ -49,20 +66,29 @@ const PREFERRED: Record<string, string | undefined> = { nor32m: 'ultimate', nand
  * past the end of an 8MB part; the 8MB one fits anything, and on a larger chip
  * it leaves rootfs_data that much bigger. NAND has mtdpartsubi and no choice.
  */
-export function allowedLayouts(chip: string): string[] {
+export function allowedLayouts(chip: string, availability?: Availability): string[] {
   if (chip.startsWith('nand')) return [];
-  return chip === 'nor8m' ? ['nor8m'] : ['nor8m', 'nor16m'];
+  const fits = chip === 'nor8m' ? ['nor8m'] : ['nor8m', 'nor16m'];
+  // A layout too small for the build is not a choice either (#370). Never
+  // empty for a NOR chip that is itself offered: that chip is at least as big
+  // as the build, and its own layout is the largest it can hold.
+  const held = availability ? fits.filter((layout) => holds(layout, availability)) : fits;
+  return held.length > 0 ? held : fits;
 }
 
 /** The layout a chip wears unless told otherwise: the largest it can hold. */
-export function naturalLayout(chip: string): string {
-  const allowed = allowedLayouts(chip);
+export function naturalLayout(chip: string, availability?: Availability): string {
+  const allowed = allowedLayouts(chip, availability);
   return allowed.length > 0 ? allowed[allowed.length - 1] : '';
 }
 
-/** A chip upstream builds nothing for cannot be chosen. */
+/**
+ * A chip upstream builds nothing for cannot be chosen, and neither can a NOR
+ * chip smaller than every build (#370).
+ */
 export function chipIsOffered(chip: string, availability: Availability): boolean {
-  return (chip.startsWith('nand') ? availability.nand : availability.nor).length > 0;
+  return (chip.startsWith('nand') ? availability.nand : availability.nor).length > 0
+    && holds(chip, availability);
 }
 
 /**
@@ -123,10 +149,10 @@ export interface Narrowed extends MenuState {
 export function narrow(state: MenuState, availability: Availability, offerable: string[]): Narrowed {
   const chip = useAnOfferedFlashType(state.chip, availability);
 
-  const allowed = allowedLayouts(chip);
+  const allowed = allowedLayouts(chip, availability);
   let { layout } = state;
   if (allowed.length > 0 && !(state.layoutChosen && allowed.includes(layout))) {
-    layout = naturalLayout(chip);
+    layout = naturalLayout(chip, availability);
   }
   // Nothing, rather than whatever the hidden menu happens to hold, when the
   // chip has no NOR layout to choose. The menu keeps its value while hidden, so
@@ -169,7 +195,8 @@ export function openOn(
 ): Narrowed {
   const chip = useAnOfferedFlashType(asked.chip, availability);
   const layout = asked.layout ?? '';
-  const layoutChosen = allowedLayouts(chip).length > 0 && layout !== '' && layout !== naturalLayout(chip);
+  const layoutChosen = allowedLayouts(chip, availability).length > 0 && layout !== ''
+    && layout !== naturalLayout(chip, availability);
 
   return narrow({ chip, layout, edition: asked.edition, layoutChosen }, availability, offerable);
 }

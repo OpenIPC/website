@@ -17,11 +17,11 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import { combinationFor, type WizardDocument } from '../../lib/wizard-export';
 import {
-  DEFAULTS, fromPermalink, type WizardSettings,
+  DEFAULTS, fromPermalink, toPermalink, type WizardSettings,
 } from '../../lib/wizard-input';
-import { generateMac, narrow, openOn } from '../../lib/wizard-menu';
+import { FLASH_CHIPS, generateMac, narrow, openOn, type Availability } from '../../lib/wizard-menu';
 import {
-  fromForm, isFormSubmission, settle, toFormQuery, type FlashMessage,
+  flashSize, fromForm, isFormSubmission, layoutSize, settle, toFormQuery, type FlashMessage,
 } from '../../lib/wizard-result';
 import { useWizardTranslations } from '../../lib/wizard-i18n';
 import type { Locale } from '../../lib/i18n';
@@ -86,9 +86,13 @@ export default function Wizard({
     if (!doc || !query || isFormSubmission(query)) return;
 
     const asked = fromPermalink(query, doc.patterns);
+    // A bare address, or a link that names no chip, opens on the chip the
+    // export says suits this SoC (#370). fromPermalink fills in DEFAULTS'
+    // nor8m, which is no answer for a SoC whose builds need 16MB.
+    const chip = (query.get('rom') ?? '').trim() !== '' ? asked.flashType : doc.default_flash_chip;
     const opened = openOn(
-      { chip: asked.flashType, layout: asked.partitionLayout, edition: asked.firmwareVersion },
-      doc.editions,
+      { chip, layout: asked.partitionLayout, edition: asked.firmwareVersion },
+      availabilityOf(doc),
       doc.offerable,
     );
 
@@ -110,7 +114,7 @@ export default function Wizard({
         edition: settings.firmwareVersion,
         layoutChosen,
       },
-      doc.editions,
+      availabilityOf(doc),
       doc.offerable,
     );
   }, [doc, settings, layoutChosen]);
@@ -173,7 +177,12 @@ export default function Wizard({
       );
     }
 
-    if (!result.combination) return page(<Unreachable t={t} facts={facts} source={source} />);
+    // The document loaded and has no commands for what was asked -- a link
+    // made before #285, or a hand-edited address. That is not "could not be
+    // loaded", and saying so blamed a fetch that worked (#370).
+    if (!result.combination) {
+      return page(<NoCombination t={t} facts={facts} doc={doc} settings={result.settings} />);
+    }
 
     return page(
       <Result
@@ -219,6 +228,51 @@ export default function Wizard({
         setQuery(new URLSearchParams(toFormQuery(settings)));
       }}
     />,
+  );
+}
+
+/** The export's flash facts in the shape the menus narrow on. */
+function availabilityOf(doc: WizardDocument): Availability {
+  return { ...doc.editions, needsFlashMb: doc.needs_flash_mb };
+}
+
+/**
+ * What the page says when the commands loaded but none match the request.
+ *
+ * Where the reason is the flash size, it is named, and the link reopens the
+ * form on the smallest chip that holds the build with everything else kept;
+ * otherwise the link reopens the form on what was asked, and the menus narrow
+ * it to something that exists.
+ */
+function NoCombination({ t, facts, doc, settings }: {
+  t: (key: string, options?: Record<string, unknown>) => string;
+  facts: SocFacts; doc: WizardDocument; settings: WizardSettings;
+}) {
+  const need = doc.needs_flash_mb ?? 0;
+  const asked = Math.min(flashSize(settings.flashType), layoutSize(settings.partitionLayout ?? settings.flashType));
+  const tooSmall = need > 8 && settings.flashType !== 'nand' && asked < need;
+  const chip = tooSmall ? (FLASH_CHIPS.find((c) => c !== 'nand' && flashSize(c) >= need) ?? doc.default_flash_chip) : settings.flashType;
+  const reopen = facts.socHref + toPermalink({
+    ...settings,
+    flashType: chip,
+    partitionLayout: tooSmall ? undefined : settings.partitionLayout,
+  });
+
+  return (
+    <div class="site-container">
+      <div class="site-alert site-alert-warning mt-12" role="alert">
+        <p class="mb-0">
+          {tooSmall
+            ? t('cameras.socs.show.no_combination_size', { need, asked })
+            : t('cameras.socs.show.no_combination')}{' '}
+          <a href={reopen}>
+            {tooSmall
+              ? t('cameras.socs.show.no_combination_size_link', { need })
+              : t('cameras.socs.show.no_combination_link')}
+          </a>
+        </p>
+      </div>
+    </div>
   );
 }
 
