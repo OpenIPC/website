@@ -68,6 +68,18 @@ visitors() {
       return out s
     }
 
+    # The reader'"'"'s own language, from the same line the country split
+    # geolocates (#317): the Accept-Language primary subtag, lower case. A
+    # field that is absent -- a row from before #143 -- is unknown; anything
+    # that is not the shape of a language tag is other. An engaged reader
+    # always sent the header (see quiet below), so neither should be common.
+    function lang_of(line,   al) {
+      if (!match(line, /al="[^"]*"/)) return "unknown"
+      al = tolower(substr(line, RSTART + 4, RLENGTH - 5))
+      sub(/[,;].*/, "", al); sub(/-.*/, "", al)
+      return al ~ /^[a-z][a-z][a-z]?$/ ? al : "other"
+    }
+
     BEGIN {
       for (i = 0; i <= 9; i++) hex[i "" ] = i
       split("a b c d e f", letters, " ")
@@ -193,6 +205,7 @@ visitors() {
             if (deepest[v] + 0 >= engaged_min) {
               engaged++
               engaged_line[v] = rep[v]
+              engaged_lang[lang_of(rep[v])]++
             }
           }
         }
@@ -225,6 +238,7 @@ visitors() {
       # does anything else -- an address in the output would make this report
       # the individual record the privacy page says the site does not keep.
       for (v in engaged_line) printf "engaged-line %s\n", engaged_line[v]
+      for (l in engaged_lang) printf "engaged-lang %d %s\n", engaged_lang[l], l
       printf "events-only %d\n", events_only
       printf "no-language %d\n", no_language
       for (p in page) printf "page %d %s\n", page[p], p
@@ -726,6 +740,62 @@ if [ "${1:-}" = '--record-daily' ]; then
   record_daily "$day_log" "$day_out" "" "$@"
   exit 0
 fi
+# The same engaged readers by the language their browser asks for (#317).
+#
+# The memo already split page views by Accept-Language, but page views are
+# mostly automated here, and a people count by language had to wait for a
+# population that is bot-filtered and deduplicated: this one, the engaged
+# readers above, counted from each one's own line. No database is needed, so
+# unlike the country split it cannot fail half way.
+#
+# Every day writes an `all` row with its engaged total, zero included. A day
+# with nobody engaged is then a recorded zero rather than missing, and the
+# memo can check, day by day, that the languages add up to the engaged count
+# in engaged.tsv -- the same population, or the split is withheld.
+engaged_languages() {
+  local counts=$1 outdir=$2 day=$3 prev=$4
+  local history="$outdir/engaged-languages.tsv" scratch engaged
+  local prev_day prev_engaged prev_min
+
+  IFS=$'\t' read -r prev_day prev_engaged prev_min <<< "$prev"
+  engaged=$(awk '$1 == "engaged" { print $2 }' <<< "$counts")
+
+  scratch=$(mktemp)
+  [ -f "$history" ] && awk -v d="$day" -F'\t' '!/^#/ && $1 != d' "$history" > "$scratch"
+  {
+    printf '%s\tall\t%s\n' "$day" "$engaged"
+    awk -v d="$day" '$1 == "engaged-lang" { printf "%s\t%s\t%s\n", d, $3, $2 }' <<< "$counts"
+  } >> "$scratch"
+  {
+    printf '# date\tlanguage\tengaged readers -- beacon, Accept-Language primary subtag; "all" is the day'"'"'s total\n'
+    LC_ALL=C sort "$scratch"
+  } > "$history"
+  rm -f "$scratch"
+
+  [ "${engaged:-0}" -gt 0 ] || return 0
+
+  local comparable=
+  [ -n "$prev_day" ] && [ "$prev_min" = "$ENGAGED_MIN" ] && comparable=1
+  if [ -n "$comparable" ]; then
+    printf '  engaged readers by browser language, against %s  [beacon; Accept-Language]\n' "$prev_day"
+  else
+    printf '  engaged readers by browser language  [beacon; Accept-Language]\n'
+  fi
+  awk -F'\t' -v d="$day" -v p="$prev_day" -v have_prev="$comparable" -v total="$engaged" '
+    /^#/ || $2 == "all" { next }
+    $1 == p { was[$2] = $3 }
+    $1 == d { now[$2] = $3 }
+    END {
+      for (l in now) printf "%d\t%s\t%d\n", now[l], l, now[l] - ((l in was) ? was[l] : 0)
+    }
+  ' "$history" | LC_ALL=C sort -t$'\t' -k1,1nr -k2,2 | awk -F'\t' -v have_prev="$comparable" -v total="$engaged" '
+    NR > 10 { next }
+    {
+      share = 100 * $1 / total
+      if (have_prev) printf "    %6d  %3.0f%%  %-8s (%+d)\n", $1, share, $2, $3
+      else           printf "    %6d  %3.0f%%  %s\n", $1, share, $2
+    }'
+}
 
 if [ "${1:-}" = '--visitors' ]; then
   visitor_log=${2:-/var/log/nginx/org.openipc.access.log.1}
@@ -873,6 +943,7 @@ iso=$(iso_day "$day")
   previous=$(previous_run "$outdir/engaged.tsv" "$iso")
   record_history "$beacon_counts" "$outdir" "$iso" "$previous"
   engaged_countries "$beacon_counts" "$work" "$outdir" "$iso" "$previous"
+  engaged_languages "$beacon_counts" "$outdir" "$iso" "$previous"
 ) 9> "$outdir/.history.lock"
 
 # After the lock above is released: record_daily takes the same lock itself.
