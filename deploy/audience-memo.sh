@@ -17,17 +17,23 @@
 # prints a labelled placeholder for those and for the two commentary
 # paragraphs, to be filled in before it is sent.
 #
-# The engaged-reader spine and the country split are READ from the daily series
-# deploy/audience-report.sh already writes (engaged.tsv, engaged-countries.tsv),
-# which store the threshold per row precisely so a monthly delta is only taken
-# across equal thresholds. Everything else beacon-derived is one awk pass over
-# the month's access logs; firmware from the same logs (status 200 on the
-# download path, not the downloads table -- #188 is not yet live and range
-# fetches inflate that table); bots and 429s from openipc-log-report; Open
-# Collective from the public GraphQL v2 via oc-monthly.py.
+# Everything beacon-derived is READ from the daily series
+# deploy/audience-report.sh writes each night while the day's log still exists:
+# the engaged-reader spine and the country split (engaged.tsv,
+# engaged-countries.tsv, which store the threshold per row so a monthly delta is
+# only taken across equal thresholds), and page views, locales, languages,
+# sections, events, referer hosts and firmware (daily.tsv, #316). The origin
+# keeps its logs for 14 days, so only the series can cover a closed month. A day
+# the series lacks is filled from whatever raw log is left, through the same
+# aggregator (audience-report.sh --daily), and the memo says which days it
+# covers. Firmware is status 200 on the download path, not the downloads table.
+# What needs addresses stays on the raw log and says so: the snapshot harvest's
+# distinct sources, and bots and 429s from openipc-log-report. Open Collective
+# comes from the public GraphQL v2 via oc-monthly.py.
 #
 # Overridable for tests and by-hand runs:
-#   REPORTS_DIR          where engaged*.tsv live and the memo is written
+#   REPORTS_DIR          where engaged*.tsv and daily.tsv live and the memo is written
+#   AUDIENCE_REPORT      path to openipc-audience-report, for --daily over raw logs
 #   AUDIENCE_MEMO_LOGS   log files to read (default: the reports host's nginx logs)
 #   FIRMWARE_SEGMENTS    soc->vendor/family/segment table
 #   OC_LEDGER_JSON       a pre-fetched ledger, to skip the live GraphQL fetch
@@ -45,6 +51,7 @@ FIRMWARE_SEGMENTS=${FIRMWARE_SEGMENTS:-/srv/www/shared/firmware-segments.tsv}
 OC_MONTHLY_PY=${OC_MONTHLY_PY:-/usr/local/lib/openipc-memo/oc-monthly.py}
 LOG_REPORT=${LOG_REPORT-/usr/local/sbin/openipc-log-report}
 SEARCH_QUERIES=${SEARCH_QUERIES:-/usr/local/sbin/openipc-search-queries}
+AUDIENCE_REPORT=${AUDIENCE_REPORT:-/usr/local/sbin/openipc-audience-report}
 SEARCH_DIR=${SEARCH_DIR:-$REPORTS_DIR/search}
 OC_API=${OC_API:-https://api.opencollective.com/graphql/v2}
 OC_SLUG=${OC_SLUG:-openipc}
@@ -69,168 +76,73 @@ trap 'rm -rf "$work"' EXIT
 # The month before this one, for the deltas the series exists to make possible.
 prev_month=$(date -u -d "$month-01 -1 day" +%Y-%m 2>/dev/null || echo "")
 
-# The month's raw log lines, once, for every raw-log section (the awk pass and
-# the bot report both read this). The origin deletes access logs after 14 days
+# The month's raw log lines, once. The origin deletes access logs after 14 days
 # (the /privacy promise, enforced by service/deploytest), so on a run for a
-# closed month this holds only the tail of the month -- the coverage window is
-# reported and the raw-log sections are framed as shares and per-day rates,
-# which stay comparable month to month regardless of how many days survived.
+# closed month this holds only the tail of the month. It fills days the daily
+# series lacks, and feeds the two sections that need addresses and so are never
+# persisted: the snapshot harvest's distinct sources, and the bot report.
 mon_abbr=$(date -u -d "$month-01" +%b 2>/dev/null || date -u -j -f %Y-%m-%d "$month-01" +%b 2>/dev/null || echo "")
 year=${month%%-*}
 zcat -f "${logs[@]}" 2>/dev/null | grep -aF "/$mon_abbr/$year:" > "$work/month.log" || true
 
-# --- one awk pass over the month's logs -------------------------------------
+# --- the month's daily rows ---------------------------------------------------
 #
-# Emits KEY VALUE lines the shell below reads back. Field split on the double
-# quote, so $1 carries the address and timestamp, $2 the request, $4 the
-# referer and $6 the user agent -- the same shape deploy/audience-report.sh and
-# deploy/log-report.sh read.
-awk -F'"' -v month="$month" '
-  function urldecode(s) { gsub(/%2[Ff]/, "/", s); gsub(/%3[Aa]/, ":", s); return s }
-  BEGIN {
-    split("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec", mn, " ")
-    for (i = 1; i <= 12; i++) num[mn[i]] = sprintf("%02d", i)
+# daily.tsv for every day it holds, the raw log for the days it does not. A day
+# is taken whole from one source or the other, never summed from both: the
+# series row for a day IS that day's log, so adding the log again would count it
+# twice.
+awk -F'\t' -v m="$month" '!/^#/ && substr($1, 1, 7) == m' "$REPORTS_DIR/daily.tsv" \
+  > "$work/series" 2>/dev/null || true
+: > "$work/raw"
+if [ -s "$work/month.log" ] && [ -x "$AUDIENCE_REPORT" ]; then
+  "$AUDIENCE_REPORT" --daily "$work/month.log" | awk -F'\t' -v m="$month" 'substr($1, 1, 7) == m' > "$work/raw" || true
+fi
+awk -F'\t' '
+  FILENAME ~ /series$/ { have[$1] = 1; print; next }
+  !($1 in have)        { print }
+' "$work/series" "$work/raw" > "$work/rows"
+
+# The days the month is made of, from each source, for the coverage line.
+series_days=$(awk -F'\t' '$2 == "covered"' "$work/series" | wc -l)
+# By file name, not NR == FNR: with no series rows for the month the first file
+# is empty, NR == FNR then holds for the whole raw file, and its days would
+# vanish from the count while their numbers stayed in the totals.
+raw_days=$(awk -F'\t' 'FILENAME ~ /series$/ { if ($2 == "covered") have[$1] = 1; next }
+  $2 == "covered" && !($1 in have)' "$work/series" "$work/raw" | wc -l)
+
+# Back into the KEY VALUE lines the memo below reads, so its sections are the
+# same whichever source a day came from.
+awk -F'\t' '
+  $2 == "covered" { days++ }
+  $2 == "pv"      { pv += $4 }
+  $2 == "page" && $3 == "business" { pv_business += $4 }
+  $2 == "page" && $3 == "donate"   { pv_donate += $4 }
+  $2 == "locale"  { locale[$3] += $4 }
+  $2 == "lang"    { lang[$3] += $4 }
+  $2 == "section" { sec[$3] += $4 }
+  $2 == "refhost" { refhost[$3] += $4 }
+  $2 == "event" {
+    if ($3 ~ /^ref:/)                reftag[substr($3, 5)] += $4
+    else if ($3 ~ /^ext:/)           exthost[substr($3, 5)] += $4
+    else if ($3 == "business-mail")  ev_businessmail += $4
+    else if ($3 == "oc-checkout")    ev_occheckout += $4
+    else if ($3 == "tg-join")        ev_tgjoin += $4
   }
-  {
-    # Target-month filter, from [dd/Mon/yyyy:...
-    if (!match($1, /\[[0-9][0-9]\/[A-Za-z][A-Za-z][A-Za-z]\/[0-9][0-9][0-9][0-9]/)) next
-    stamp = substr($1, RSTART + 1, RLENGTH - 1)          # dd/Mon/yyyy
-    ym = substr(stamp, 8, 4) "-" num[substr(stamp, 4, 3)]
-    if (ym != month) next
-    day = substr(stamp, 8, 4) "-" num[substr(stamp, 4, 3)] "-" substr(stamp, 1, 2)
-    # Coverage of the month actually present in the logs. The origin deletes
-    # access logs after 14 days (the /privacy promise), so a month run on the
-    # 1st sees only the tail of the month for everything read from the raw log.
-    if (cmin == "" || day < cmin) cmin = day
-    if (day > cmax) cmax = day
-    # Distinct raw-log coverage days, counted for EVERY request before the
-    # branching below, so a day with snapshot traffic but no beacon page views
-    # still counts toward the divisor for the raw-log rates.
-    if (!(day in covd)) { covd[day] = 1; covdays++ }
-
-    req = $2
-    split($3, st, " "); code = st[1]                     # " STATUS BYTES " -> split on " " strips the leading space, so status is st[1]
-    split(req, r, " "); path = r[2]
-
-    # Firmware: a completed full-image download, status 200 on the download
-    # path. soc is the segment after /socs/; the edition is fw_release=.
-    if (code == "200" && path ~ /\/socs\/[^\/]+\/download_full_image/) {
-      soc = path; sub(/.*\/socs\//, "", soc); sub(/\/download_full_image.*/, "", soc)
-      rel = "none"
-      if (match(path, /[?&]fw_release=[^&]*/)) { rel = substr(path, RSTART + 12, RLENGTH - 12); if (rel == "") rel = "none" }
-      fw[soc]++; fwrel[soc SUBSEP rel]++   # every download, so the FPV edition can override the SoC segment
-      fwtotal++
-      next
-    }
-
-    # The wall/snapshot harvest. A large automated fleet fetches the snapshot
-    # HTML page with spoofed browser user agents, so it never appears in the
-    # self-declared-crawler line and never runs the beacon. Since the frames
-    # moved to the WebSocket transport the page is a content-free shell, so the
-    # harvest gets nothing -- but it is worth watching, and a drop is the signal
-    # they have noticed. Tracked here as requests, distinct source addresses,
-    # one-request addresses (the residential-proxy signature), opaque-page 200s
-    # and retired-numeric 410s.
-    if (path ~ /^\/(ru\/|zh\/)?snapshots\//) {
-      split($1, ipf, " "); ip = ipf[1]
-      snap++
-      if (!(ip in snapip)) { snapip[ip] = 0; snapips++ }
-      snapip[ip]++
-      # The id after /snapshots/. Length-checked rather than matched with a
-      # {20} interval, which older mawk does not implement (deploy/log-report.sh
-      # does the same). An opaque page is 20 lowercase-hex chars; a retired
-      # numeric id is digits.
-      id = path; sub(/^\/(ru\/|zh\/)?snapshots\//, "", id); sub(/[\/?].*/, "", id)
-      if (code == "200" && id ~ /^[0-9a-f]+$/ && length(id) == 20) snap_shell200++
-      else if (code == "410" && id ~ /^[0-9]+$/) snap_num410++
-      next
-    }
-
-    # Beacon only from here.
-    if (req !~ /\/api\/a\/count/) next
-
-    p = ""
-    if (match(req, /[?&]p=[^& ]*/)) p = urldecode(substr(req, RSTART + 3, RLENGTH - 3))
-    isevent = (req ~ /[?&]e=true/) || (p != "" && substr(p, 1, 1) != "/")
-
-    if (isevent) {
-      # #183 events: the name is p= (not a path) or is flagged e=true.
-      name = p
-      if (name ~ /^ref:/)          reftag[substr(name, 5)]++
-      else if (name ~ /^ext:/)     exthost[substr(name, 5)]++
-      else if (name == "business-mail") ev_businessmail++
-      else if (name == "oc-checkout")   ev_occheckout++
-      else if (name == "tg-join")       ev_tgjoin++
-      else ev_other[name]++
-      next
-    }
-    if (p == "" || substr(p, 1, 1) != "/") next          # not a page view
-
-    pv++; days[day] = 1
-
-    # Site locale the visitor read, from the path prefix. This is page views,
-    # not deduplicated people, and is the locale the SITE served -- distinct
-    # from the browser language below.
-    loc = "en"
-    if (p ~ /^\/ru(\/|$)/) loc = "ru"
-    else if (p ~ /^\/zh(\/|$)/) loc = "zh"
-    locale[loc]++
-
-    # Browser language, from the Accept-Language header (al=), primary subtag
-    # only. Also page views, not people. Absent or "-" is unknown.
-    lang = "unknown"
-    if (match($0, /al="[^"]*"/)) {
-      al = substr($0, RSTART + 4, RLENGTH - 5)
-      if (al != "" && al != "-") { lang = al; sub(/[,;].*/, "", lang); sub(/-.*/, "", lang); if (lang == "") lang = "unknown" }
-    }
-    brlang[lang]++
-
-    # Section, after stripping the optional locale prefix.
-    q = p; sub(/^\/(ru|zh)(\/|$)/, "/", q)
-    if (q ~ /^\/(supported-hardware|cameras)(\/|$)/)                              sec["hardware+wizard"]++
-    else if (q ~ /^\/(low-latency|teleoperation|edge-ai)(\/|$)/)                  sec["low-latency"]++
-    else if (q ~ /^\/get-started(\/|$)/)                                          sec["get-started"]++
-    else if (q ~ /^\/(open-wall|snapshots)(\/|$)/)                                sec["open-wall"]++
-    else if (q ~ /^\/(ecosystem|web-interface|stages-of-firmware-development|firmware-explorer|tools|utilities)(\/|$)/) sec["ecosystem"]++
-    else if (q ~ /^\/(community|our-team|green_life)(\/|$)/)                       sec["community"]++
-    else if (q ~ /^\/(business|video-encoding|isp-sensors|reverse-engineering|turnkey-hardware|digital-twins|donate)(\/|$)/) sec["business+donate"]++
-    else sec["other"]++
-
-    # Funnel numerators: page views of the two money pages.
-    if (q ~ /^\/business(\/|$)/) pv_business++
-    if (q ~ /^\/donate(\/|$)/)   pv_donate++
-
-    # Referer hosts seen on beacon requests. On this site the beacon POST
-    # carries the current page as its referer, so non-openipc hosts here are
-    # mostly our own mirrors, not marketing referrers -- labelled as such in
-    # the memo. True outbound attribution is the ext: events above.
-    ref = $4
-    if (ref != "" && ref != "-") {
-      host = ref; sub(/^[a-z]+:\/\//, "", host); sub(/\/.*/, "", host); sub(/:.*/, "", host)
-      if (host !~ /openipc\.org$/ && host != "") refhost[host]++
-    }
+  $2 == "fw" {
+    split($3, f, "/")
+    fw[f[1]] += $4; fwrel[f[1] SUBSEP f[2]] += $4; fwtotal += $4
   }
   END {
-    nd = 0; for (d in days) nd++
     print "PV", pv + 0
-    print "DAYS", nd
-    print "COVER_MIN", cmin
-    print "COVER_MAX", cmax
-    print "COVER_DAYS", covdays + 0
+    print "DAYS", days + 0
     print "PV_BUSINESS", pv_business + 0
     print "PV_DONATE", pv_donate + 0
     print "EV_BUSINESSMAIL", ev_businessmail + 0
     print "EV_OCCHECKOUT", ev_occheckout + 0
     print "EV_TGJOIN", ev_tgjoin + 0
-    print "SNAP", snap + 0
-    print "SNAP_IPS", snapips + 0
-    print "SNAP_SHELL200", snap_shell200 + 0
-    print "SNAP_NUM410", snap_num410 + 0
-    snapone = 0; for (k in snapip) if (snapip[k] == 1) snapone++
-    print "SNAP_ONEREQ", snapone + 0
     print "FWTOTAL", fwtotal + 0
     for (k in locale)  print "LOCALE", k, locale[k]
-    for (k in brlang)  print "LANG", brlang[k], k
+    for (k in lang)    print "LANG", lang[k], k
     for (k in sec)     print "SEC", k, sec[k]
     for (k in reftag)  print "REF", reftag[k], k
     for (k in exthost) print "EXT", exthost[k], k
@@ -238,16 +150,77 @@ awk -F'"' -v month="$month" '
     for (k in fw)      print "FW", fw[k], k
     for (k in fwrel)   { split(k, a, SUBSEP); print "FWREL", fwrel[k], a[1], a[2] }
   }
-' "$work/month.log" > "$work/agg" || true
+' "$work/rows" > "$work/agg"
+
+# --- what needs addresses, from the raw log only -----------------------------
+#
+# The wall/snapshot harvest. A large automated fleet fetches the snapshot HTML
+# page with spoofed browser user agents, so it never appears in the
+# self-declared-crawler line and never runs the beacon. Since the frames moved
+# to the WebSocket transport the page is a content-free shell, so the harvest
+# gets nothing -- but it is worth watching, and a drop is the signal they have
+# noticed. Tracked as requests, distinct source addresses, one-request
+# addresses (the residential-proxy signature), opaque-page 200s and
+# retired-numeric 410s. Distinct addresses cannot be summed across days, and
+# keeping them would keep addresses, so this one stays on the retained log.
+awk -F'"' -v month="$month" '
+  BEGIN {
+    split("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec", mn, " ")
+    for (i = 1; i <= 12; i++) num[mn[i]] = sprintf("%02d", i)
+  }
+  {
+    if (!match($1, /\[[0-9][0-9]\/[A-Za-z][A-Za-z][A-Za-z]\/[0-9][0-9][0-9][0-9]/)) next
+    stamp = substr($1, RSTART + 1, RLENGTH - 1)
+    if (substr(stamp, 8, 4) "-" num[substr(stamp, 4, 3)] != month) next
+    day = substr(stamp, 8, 4) "-" num[substr(stamp, 4, 3)] "-" substr(stamp, 1, 2)
+    if (cmin == "" || day < cmin) cmin = day
+    if (day > cmax) cmax = day
+    # Every request counts toward the raw-log days, so a day with snapshot
+    # traffic but no beacon page view is still in the divisor.
+    if (!(day in covd)) { covd[day] = 1; covdays++ }
+
+    split($3, st, " "); code = st[1]
+    split($2, r, " "); path = r[2]
+    if (path !~ /^\/(ru\/|zh\/)?snapshots\//) next
+    split($1, ipf, " "); ip = ipf[1]
+    snap++
+    if (!(ip in snapip)) { snapip[ip] = 0; snapips++ }
+    snapip[ip]++
+    # The id after /snapshots/. Length-checked rather than matched with a {20}
+    # interval, which older mawk does not implement (deploy/log-report.sh does
+    # the same). An opaque page is 20 lowercase-hex chars; a retired numeric id
+    # is digits.
+    id = path; sub(/^\/(ru\/|zh\/)?snapshots\//, "", id); sub(/[\/?].*/, "", id)
+    if (code == "200" && id ~ /^[0-9a-f]+$/ && length(id) == 20) snap_shell200++
+    else if (code == "410" && id ~ /^[0-9]+$/) snap_num410++
+  }
+  END {
+    print "COVER_MIN", cmin
+    print "COVER_MAX", cmax
+    print "COVER_DAYS", covdays + 0
+    print "SNAP", snap + 0
+    print "SNAP_IPS", snapips + 0
+    print "SNAP_SHELL200", snap_shell200 + 0
+    print "SNAP_NUM410", snap_num410 + 0
+    snapone = 0; for (k in snapip) if (snapip[k] == 1) snapone++
+    print "SNAP_ONEREQ", snapone + 0
+  }
+' "$work/month.log" >> "$work/agg" || true
 
 val() { awk -v k="$1" '$1 == k { print $2; exit }' "$work/agg"; }
 
 pv=$(val PV); pv=${pv:-0}
 ndays=$(val DAYS); ndays=${ndays:-0}
 cover_min=$(val COVER_MIN); cover_max=$(val COVER_MAX)
+
+# The days of the month the beacon figures stand on. A closed month should be
+# whole from the series; a month still running, or one the series started part
+# way through, says which days it has and where they came from.
+month_days=$(date -u -d "$month-01 +1 month -1 day" +%d 2>/dev/null || echo 31)
+month_days=$((10#$month_days))
 cover_note=""
-if [ -n "$cover_min" ] && [ "$cover_min" != "$month-01" ]; then
-  cover_note="**Raw-log coverage: $cover_min to $cover_max only.** Earlier days of $month are past the origin's 14-day log retention (the /privacy promise), so the beacon, section, funnel, firmware, attribution and bot figures below are for that window. They are given as shares and per-day rates, which stay month-to-month comparable; absolute monthly totals for these are not. The engaged-reader and country figures are unaffected — they come from the daily series, which persists aggregates, not logs."
+if [ "$ndays" -lt "$month_days" ]; then
+  cover_note="**Beacon figures cover $ndays of $month_days days of $month** ($series_days from the daily series, $raw_days from raw logs still on the host). The page-view, section, funnel, firmware and attribution totals below are for those days; shares and per-day rates stay comparable month to month, absolute totals do not."
 fi
 
 # --- engaged spine, from the daily series -----------------------------------
@@ -416,10 +389,10 @@ mkdir -p "$(dirname "$OUT")"
     echo "- No engaged-reader rows for $month in engaged.tsv. _[the daily series did not cover this month]_"
   fi
   if [ "$ndays" -gt 0 ]; then
-    printf -- "- Beacon page views: **%d** over %d day(s) covered = **%d/day** (source: nginx /api/a/count).\n" \
+    printf -- "- Beacon page views: **%d** over %d day(s) covered = **%d/day** (source: nginx /api/a/count, via daily.tsv).\n" \
       "$pv" "$ndays" "$(( pv / ndays ))"
   else
-    printf -- "- Beacon page views: **%d** (source: nginx /api/a/count).\n" "$pv"
+    printf -- "- Beacon page views: **%d** (source: nginx /api/a/count, via daily.tsv).\n" "$pv"
   fi
   echo "- Page views by site locale (URL path — the language the site served, not deduplicated people):"
   awk -v tot="$pv" '$1 == "LOCALE" { printf "%d\t%s\n", $3, $2 }' "$work/agg" | sort -rn | while IFS=$'\t' read -r n l; do
@@ -551,8 +524,8 @@ mkdir -p "$(dirname "$OUT")"
   cover_days=$(val COVER_DAYS); cover_days=${cover_days:-0}
   echo "Wall/snapshot harvest (direct nginx access-log aggregate, not openipc-log-report; automated, spoofed browser UAs, so not in the crawler line above):"
   if [ "$snap" -gt 0 ] && [ "$cover_days" -gt 0 ]; then
-    printf -- "- **%d/day** requests to /snapshots/ (%d over %d raw-log day(s) covered), from %d distinct addresses, %d of them at a single request (the residential-proxy signature).\n" \
-      "$(( snap / cover_days ))" "$snap" "$cover_days" "$(val SNAP_IPS)" "$(val SNAP_ONEREQ)"
+    printf -- "- **%d/day** requests to /snapshots/ (%d over %d raw-log day(s) covered, %s to %s), from %d distinct addresses, %d of them at a single request (the residential-proxy signature).\n" \
+      "$(( snap / cover_days ))" "$snap" "$cover_days" "$cover_min" "$cover_max" "$(val SNAP_IPS)" "$(val SNAP_ONEREQ)"
     printf -- "- Of these: %d opaque-page 200s (content-free shells since the WebSocket migration) and %d retired-numeric 410s.\n" \
       "$(val SNAP_SHELL200)" "$(val SNAP_NUM410)"
     echo "- _The frames themselves are served only over the grant-gated WebSocket (/api/v1/wall/socket), which this fleet does not use. A sustained drop here is the signal they have noticed the page went empty._"

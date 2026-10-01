@@ -141,6 +141,7 @@ func runMemo(t testing.TB, reportsDir, countries string) string {
 	env := map[string]string{
 		"REPORTS_DIR":        reportsDir,
 		"AUDIENCE_MEMO_LOGS": log,
+		"AUDIENCE_REPORT":    abs(t, "deploy/audience-report.sh"),
 		"FIRMWARE_SEGMENTS":  abs(t, "deploy/firmware-segments.tsv"),
 		"OC_LEDGER_JSON":     ledger,
 		"OC_SPENT_CENTS":     "12345",
@@ -189,7 +190,7 @@ func TestAudienceMemo(t *testing.T) {
 		// 4 snapshot requests across 4 covered days (one of them a snapshot-only
 		// day with no beacon view) => 1/day, proving the divisor is raw-log
 		// coverage days, not beacon-active days.
-		mustMatch(t, `\*\*1/day\*\* requests to /snapshots/ \(4 over 4 raw-log day\(s\) covered\)`, memo,
+		mustMatch(t, `\*\*1/day\*\* requests to /snapshots/ \(4 over 4 raw-log day\(s\) covered, 2026-10-15 to 2026-10-20\)`, memo,
 			"the rate divisor is raw-log coverage days, including the snapshot-only day")
 		mustMatch(t, `4 distinct addresses, 4 of them at a single request`, memo,
 			"distinct addresses and the one-request residential-proxy signature are counted")
