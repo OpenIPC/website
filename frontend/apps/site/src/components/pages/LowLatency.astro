@@ -16,6 +16,14 @@
  * per value as well as once under the axis, because a screen reader reaches
  * the numbers one at a time and would otherwise hear "26 to 67" with nothing
  * saying what of.
+ *
+ * The support block (#193) is the test of whether FPV builders pay. It sells
+ * the Open Collective "Technical support" tier as it stands -- an hour with a
+ * core developer -- and says nothing the tier page does not. It sits under the
+ * builds because that is where a builder has just picked one; the wizard's
+ * download step sends FPV chips here (`#support`) rather than to /business.
+ * Both links name their events, which the monthly memo counts as the FPV
+ * segment's business clicks.
  */
 import Icon from '../Icon.astro';
 import PageHeader from '../PageHeader.astro';
@@ -35,6 +43,7 @@ const CHAIN: [string, string][] = [
 
 const GUIDE = 'https://github.com/OpenIPC/wiki/blob/master/en/fpv.md';
 const FPV_CHAT = 'https://t.me/+BMyMoolVOpkzNWUy';
+const SUPPORT_HOURS = 'https://opencollective.com/openipc/contribute/technical-support-56715/checkout';
 ---
 <PageHeader title={k('hero_title')} lede={k('hero_lede')} />
 
@@ -84,6 +93,24 @@ const FPV_CHAT = 'https://t.me/+BMyMoolVOpkzNWUy';
             <p class="mb-0 text-sm text-body-secondary">{k(`build_${build}_text`)}</p>
           </div>
         ))}
+      </div>
+    </div>
+
+    <div
+      class="mb-12 grid scroll-mt-4 items-center gap-x-10 gap-y-5 rounded-lg border border-hairline bg-surface-alt p-6 md:grid-cols-[minmax(0,1fr)_auto]"
+      id="support"
+    >
+      <div>
+        <h2 class="mb-1 text-2xl">{k('support_title')}</h2>
+        <p class="mb-3 text-body-secondary">{k('support_text')}</p>
+        <p class="mb-0 font-mono text-[.8125rem] text-body-secondary" set:html={k('support_rate_html')} />
+      </div>
+      <div class="flex flex-col items-start gap-3">
+        <a class="site-btn site-btn-primary" href={SUPPORT_HOURS} data-event="lowlat:offer">{k('support_cta')}</a>
+        <a
+          href={`${pathFor(locale, '/business')}?ref=lowlat&segment=fpv`}
+          data-event="lowlat:offer:business"
+        >{k('support_business')}</a>
       </div>
     </div>
 

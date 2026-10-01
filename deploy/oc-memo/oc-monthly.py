@@ -107,6 +107,13 @@ def main():
         print("| **spent, total** | %d |" % round(spent_cents / 100))
     print()
 
+    # H3's paid engagements (#193): the tier sells hours, so a payment is an
+    # engagement and the payers are how many people bought one. Counts only.
+    support = [t for t in this if tier(t) == "Technical support"]
+    print("Technical support tier: **%d payment(s) from %d payer(s)** this month "
+          "(H3's paid engagements)." % (len(support), len({ident(t) for t in support})))
+    print()
+
     # Cohorts of individual monthly backers, computed against the whole history
     # so "new" and "stopped" are first-ever / last-ever, not first/last seen in
     # this file's window. Names are used only to group; none are printed.

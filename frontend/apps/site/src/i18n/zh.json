@@ -537,6 +537,11 @@
       "robotics_text1": "同一条链路也为工业机器人、AGV、巡检设备和远程操作传输视频——凡是封闭视频系统会把你锁死、或者绕行云端会带来数秒延迟的场合，都用得上。",
       "robotics_text2": "在受支持的 SoC 上，画面帧会携带与传感器曝光起始对齐的挂钟时间戳——无需额外硬件即可实现多摄像机毫秒级同步。",
       "robotics_title": "不止于无人机：机器人与遥操作",
+      "support_business": "要基于它做产品？商业授权 →",
+      "support_cta": "购买支持时长",
+      "support_rate_html": "建议每小时 <b>$55</b> · 最低 <b>$50</b> · 通过 Open Collective 支付",
+      "support_text": "OpenIPC 核心开发者通过项目的 Open Collective 提供付费技术咨询：针对你的机载端、图传链路或集成方案，按小时计。",
+      "support_title": "搭建卡住了？约核心开发者一小时",
       "title": "低延迟视频"
     },
     "majestic_endpoints": {

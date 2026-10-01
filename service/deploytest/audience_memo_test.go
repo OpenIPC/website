@@ -42,6 +42,13 @@ func memoLog(t testing.TB) string {
 	b.WriteString(line("16/Oct/2026:12:01:00", "p=oc-checkout&e=true&t=x&s=1920&b=0&rnd=e", "200", "https://openipc.org/donate"))
 	b.WriteString(line("17/Oct/2026:09:05:00", "p=ref%3Atg&e=true&t=x&s=1280&b=0&rnd=g", "200", "https://openipc.org/"))
 	b.WriteString(line("17/Oct/2026:09:07:00", "p=ext%3Agithub.com&e=true&t=x&s=1280&b=0&rnd=x1", "200", "https://openipc.org/ecosystem"))
+	// The segment-attributed business clicks (#190, #193): the download step
+	// for an FPV and a CCTV chip, and the /low-latency support offer.
+	b.WriteString(line("17/Oct/2026:09:11:00", "p=download-step%3Abusiness%3Afpv&e=true&t=x&s=1280&b=0&rnd=s1", "200", "https://openipc.org/cameras/vendors/sigmastar/socs/ssc338q"))
+	b.WriteString(line("17/Oct/2026:09:12:00", "p=download-step%3Abusiness%3Acctv&e=true&t=x&s=1280&b=0&rnd=s2", "200", "https://openipc.org/cameras/vendors/hisilicon/socs/hi3516ev300"))
+	b.WriteString(line("17/Oct/2026:09:13:00", "p=lowlat%3Aoffer&e=true&t=x&s=1280&b=0&rnd=s3", "200", "https://openipc.org/low-latency"))
+	// A completed CCTV download, so FPV's share of downloads is a share.
+	b.WriteString(fmt.Sprintf(`198.51.100.5 - - [17/Oct/2026:09:20:00 +0000] "GET /cameras/vendors/hisilicon/socs/hi3516ev300/download_full_image?flash_type=nor&flash_size=8&fw_release=lite&layout=nor8m HTTP/2.0" 200 8300000 "-" %s xff="-" cache=- rt=0.5 urt="0.4" al="-" peer=198.51.100.5`+"\n", ua))
 	// A completed firmware download (status 200), SigmaStar SSC338Q, FPV edition.
 	b.WriteString(fmt.Sprintf(`198.51.100.4 - - [17/Oct/2026:09:10:00 +0000] "GET /cameras/vendors/sigmastar/socs/ssc338q/download_full_image?flash_type=nor&flash_size=16&fw_release=fpv&layout=nor16m HTTP/2.0" 200 8300000 "-" %s xff="-" cache=- rt=0.5 urt="0.4" al="-" peer=198.51.100.4`+"\n", ua))
 	// The wall/snapshot harvest: raw GET requests (not beacon, spoofed browser
@@ -216,6 +223,19 @@ func TestAudienceMemo(t *testing.T) {
 		mustMatch(t, `INFINITY6E \| 1`, memo, "SSC338Q is INFINITY6E")
 		mustContain(t, memo, "FPV: 1", "SSC338Q is an FPV SoC and the edition is fpv")
 	})
+	t.Run("H3 sets the FPV share of business clicks against its share of downloads", func(t *testing.T) {
+		mustContain(t, memo, "## FPV segment: business clicks against downloads (H3, #193)", "the H3 section is present")
+		mustContain(t, memo, "| fpv | 2 | 67% |", "the FPV download-step click and the lowlat:offer click are both FPV")
+		mustContain(t, memo, "| cctv | 1 | 33% |", "the CCTV download-step click keeps its segment")
+		mustContain(t, memo, "FPV share of business clicks: **67%** (2 of 3), against its share of completed downloads: **50%** (1 of 2)",
+			"the share is read against the downloads, which are one FPV and one CCTV")
+		mustContain(t, memo, "(**100%** this month", "the bar is twice the download share")
+		mustContain(t, memo, "`lowlat:offer` (support hours, to the Open Collective checkout) **1**, `lowlat:offer:business` **0**",
+			"the /low-latency doors are reported apart")
+		mustContain(t, memo, "per 100 downloads: fpv 100.0, cctv 100.0.",
+			"the lowlat offer is not a download-step click, so FPV's rate counts only the one")
+		mustContain(t, memo, "- CCTV: 1", "the hi3516ev300 download classifies as CCTV")
+	})
 	t.Run("ref tags survive percent-encoding of the colon", func(t *testing.T) {
 		mustMatch(t, `(?m)^- tg: 1$`, memo, "ref%3Atg must decode to the tg tag, not fall through to other")
 	})
@@ -285,6 +305,8 @@ func TestAudienceMemo(t *testing.T) {
 		mustContain(t, memo, "| **received, total** | 510 |", "10 individual monthly + 500 tech support")
 		mustContain(t, memo, "paid service (Technical support tier) | 500", "the org's payment is paid service, not a donation")
 		mustContain(t, memo, "| **spent, total** | 123 |", "spent is printed beside received")
+		mustContain(t, memo, "Technical support tier: **1 payment(s) from 1 payer(s)** this month",
+			"H3's paid engagements are counted, not only summed")
 		mustContain(t, memo, "active 1, new 0, stopped 1",
 			"Alice is active but first paid in September, so she is not new this month")
 		mustNotContain(t, memo, "Alice", "no backer name reaches the memo")

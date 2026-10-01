@@ -13,7 +13,8 @@ import type { Block, Combination, WizardDocument } from '../../lib/wizard-export
 import { fillHoles, type WizardSettings } from '../../lib/wizard-input';
 import { toPermalink } from '../../lib/wizard-input';
 import {
-  flashArguments, flashFamily, stockBootloaderOnly, type FlashMessage,
+  downloadStepQuery, flashArguments, flashFamily, licenceBusinessHref, stockBootloaderOnly,
+  type FlashMessage,
 } from '../../lib/wizard-result';
 import SupportCount from '../SupportCount.tsx';
 import Icon from './Icon.tsx';
@@ -27,11 +28,13 @@ export interface SupportLabels {
 }
 
 export interface ResultLinks {
-  /** `locale_path('/business')`, `/donate`, `/open-wall`, `/community`. */
+  /** `locale_path('/business')`, `/donate`, `/open-wall`, `/community`, `/low-latency`. */
   business: string;
   donate: string;
   wall: string;
   community: string;
+  /** The FPV support offer is `#support` on this page (#193). */
+  lowLatency: string;
 }
 
 interface Props {
@@ -152,8 +155,9 @@ export default function Result({
     + `&flash_type=${combination.flash_family}&fw_release=${settings.firmwareVersion}`
     + `&layout=${combination.layout_size}`;
 
-  const businessHref = `${links.business}?edition=${encodeURIComponent(settings.firmwareVersion)}`
-    + `&ref=download-step&soc=${encodeURIComponent(doc.soc)}`;
+  const stepQuery = downloadStepQuery(settings.firmwareVersion, doc.soc);
+  const businessHref = `${links.business}${stepQuery}`;
+  const licenceHref = licenceBusinessHref(facts.segment, links, stepQuery);
 
   const [expertsOpen, setExpertsOpen] = useState(false);
 
@@ -334,7 +338,7 @@ export default function Result({
               </div>
               {/* Full width under both columns, after everything that gets
                   pasted into a bootloader and never among it (#190). */}
-              <LicenceNotice t={t} facts={facts} businessHref={businessHref} />
+              <LicenceNotice t={t} facts={facts} businessHref={licenceHref} />
             </section>
           )}
 
@@ -470,7 +474,7 @@ function LicenceNotice({ t, facts, businessHref }: {
             data-event={`download-step:business:${facts.segment}`}
             data-volume-text={install('licence_volume_ask')}
             data-volume-link={install('licence_volume_link')}
-          >{install('licence_business_link')}</a>.
+          >{install(facts.segment === 'fpv' ? 'licence_offer_link' : 'licence_business_link')}</a>.
         </p>
       )}
     </div>
