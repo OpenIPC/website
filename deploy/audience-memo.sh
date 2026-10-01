@@ -299,6 +299,24 @@ lang_prev=""
 [ -n "$prev_month" ] && lang_prev=$(lang_stats "$prev_month" "$m_thresh")
 lang_prev_days=$(awk '$1 == "DAYS" { print $2 }' <<< "$lang_prev"); lang_prev_days=${lang_prev_days:-0}
 
+# The previous month is printed beside this one, so it is held to the same two
+# checks (Qodo on #364). A day that fails reconciliation would stay in the
+# divisor while its languages are dropped, and a month with the wall harvester
+# in its countries is not the readers either. Either way the comparison column
+# goes, and the memo says why, rather than print a number nobody should use.
+lang_prev_bad=$(awk '$1 == "BAD" { print $2 }' <<< "$lang_prev"); lang_prev_bad=${lang_prev_bad:-0}
+prev_sg=$(awk -F'\t' -v m="$prev_month" '!/^#/ && substr($1, 1, 7) == m { c[$2] += $3 }
+  END { for (k in c) printf "%d\t%s\n", c[k], k }' "$countries_tsv" 2>/dev/null |
+  sort -rn | awk -F'\t' 'NR <= 5 && ($2 ~ /Singapore/ || $2 ~ /^SG /) { print "yes"; exit }')
+lang_prev_note=""
+if [ "$lang_prev_days" -gt 0 ] && [ "$lang_prev_bad" -gt 0 ]; then
+  lang_prev_note="No comparison with $prev_month: on $lang_prev_bad of its day(s) the languages do not add up to the engaged count."
+  lang_prev_days=0
+elif [ "$lang_prev_days" -gt 0 ] && [ "$prev_sg" = "yes" ]; then
+  lang_prev_note="No comparison with $prev_month: Singapore, the Open Wall harvester, is in that month's engaged top five."
+  lang_prev_days=0
+fi
+
 # --- bots and 429s ----------------------------------------------------------
 bot_line=""
 if [ -n "$LOG_REPORT" ] && [ -x "$LOG_REPORT" ] && [ -s "$work/month.log" ]; then
@@ -475,6 +493,7 @@ mkdir -p "$(dirname "$OUT")"
     [ "$lang_days" -lt "$m_days" ] && printf ' -- the split began part way through the month; the engaged mean above covers %d day(s)' "$m_days"
     printf '. Readers per day, not page views._\n'
     echo
+    if [ -n "$lang_prev_note" ]; then echo "_${lang_prev_note}_"; echo; fi
     if [ "$lang_prev_days" -gt 0 ]; then
       echo "| language | readers/day | share | previous month |"
       echo "|---|---:|---:|---:|"

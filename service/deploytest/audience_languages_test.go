@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -94,6 +95,27 @@ func TestAudienceMemoLanguages(t *testing.T) {
 		memo := runMemo(t, dir, "")
 		mustContain(t, memo, "**WITHHELD** with the country block", "same population, same guard")
 		mustNotContain(t, memo, "| en | 6.5", "")
+	})
+
+	t.Run("a previous month that does not add up is not compared with (Qodo on #364)", func(t *testing.T) {
+		dir := memoReports(t, octoberCountries)
+		// 30 Sep says 8 engaged and lists 5; a second September day would only
+		// hide that the divisor counted a day whose languages were dropped.
+		bad := strings.Replace(engagedLanguagesTSV, "2026-09-30\ten\t8\n", "2026-09-30\ten\t5\n", 1)
+		writeFile(t, filepath.Join(dir, "engaged-languages.tsv"), bad)
+		memo := runMemo(t, dir, "")
+		mustContain(t, memo, "No comparison with 2026-09: on 1 of its day(s) the languages do not add up", "the reason is given")
+		mustContain(t, memo, "| en | 6.5 | 59% |\n", "October still prints, without a previous-month column")
+		mustNotContain(t, memo, "previous month |", "no comparison column")
+	})
+
+	t.Run("a previous month with the wall harvester in it is not compared with (Qodo on #364)", func(t *testing.T) {
+		dir := memoReports(t, octoberCountries+"2026-09-30\tSG Singapore\t40\n")
+		writeFile(t, filepath.Join(dir, "engaged-languages.tsv"), engagedLanguagesTSV)
+		memo := runMemo(t, dir, "")
+		mustNotContain(t, memo, "**WITHHELD**", "October itself is clean")
+		mustContain(t, memo, "No comparison with 2026-09: Singapore", "September's population is not the readers")
+		mustContain(t, memo, "| en | 6.5 | 59% |\n", "")
 	})
 
 	t.Run("a month before the split began says so", func(t *testing.T) {
