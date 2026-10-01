@@ -260,6 +260,63 @@ awk -F'\t' -v m="$month" '$1 ~ ("^" m) { c[$2] += $3; tot += $3 }
 country_total=$(awk -F'\t' '$2 == "TOTAL" { print $1 }' "$work/countries"); country_total=${country_total:-0}
 sg_top=$(awk -F'\t' '$2 != "TOTAL" { n++; if (n <= 5 && ($2 ~ /Singapore/ || $2 ~ /^SG /)) print "yes" }' "$work/countries" | head -1)
 
+# Engaged readers by browser language, from engaged-languages.tsv (#317): the
+# same bot-filtered, wall-excluded people as the spine above, per day, by the
+# Accept-Language primary subtag of each reader's own line.
+#
+# Days are only those the language series recorded (an `all` row, zero
+# included) at the month's threshold, since a mean across two definitions is
+# not one number. Each such day's languages must add up to its `all` row and to
+# engaged.tsv's count for that day: if they do not, the series is describing a
+# different population and the block is withheld, as the country block is when
+# Singapore -- the wall harvester -- reaches its top five.
+languages_tsv="$REPORTS_DIR/engaged-languages.tsv"
+lang_stats() {
+  # $1 month, $2 threshold. Prints DAYS n, BAD n, then LANG <sum> <code>.
+  awk -F'\t' -v m="$1" -v thr="$2" '
+    FILENAME ~ /engaged\.tsv$/ { if ($1 !~ /^#/ && substr($1, 1, 7) == m) { engaged[$1] = $4; t[$1] = $5 }; next }
+    /^#/ || substr($1, 1, 7) != m { next }
+    $2 == "all" { all[$1] = $3; next }
+    { sum[$1] += $3; lang[$2] += $3; seen[$1 SUBSEP $2] = $3 }
+    END {
+      for (d in all) {
+        if (!(d in t) || t[d] != thr) continue
+        days++
+        if (sum[d] + 0 != all[d] + 0 || engaged[d] + 0 != all[d] + 0) bad++
+        else keep[d] = 1
+      }
+      print "DAYS", days + 0
+      print "BAD", bad + 0
+      for (k in seen) { split(k, a, SUBSEP); if (a[1] in keep) total[a[2]] += seen[k] }
+      for (l in total) print "LANG", total[l], l
+    }
+  ' "$engaged_tsv" "$languages_tsv" 2>/dev/null || true
+}
+lang_cur=$(lang_stats "$month" "$m_thresh")
+lang_days=$(awk '$1 == "DAYS" { print $2 }' <<< "$lang_cur"); lang_days=${lang_days:-0}
+lang_bad=$(awk '$1 == "BAD" { print $2 }' <<< "$lang_cur"); lang_bad=${lang_bad:-0}
+lang_prev=""
+[ -n "$prev_month" ] && lang_prev=$(lang_stats "$prev_month" "$m_thresh")
+lang_prev_days=$(awk '$1 == "DAYS" { print $2 }' <<< "$lang_prev"); lang_prev_days=${lang_prev_days:-0}
+
+# The previous month is printed beside this one, so it is held to the same two
+# checks (Qodo on #364). A day that fails reconciliation would stay in the
+# divisor while its languages are dropped, and a month with the wall harvester
+# in its countries is not the readers either. Either way the comparison column
+# goes, and the memo says why, rather than print a number nobody should use.
+lang_prev_bad=$(awk '$1 == "BAD" { print $2 }' <<< "$lang_prev"); lang_prev_bad=${lang_prev_bad:-0}
+prev_sg=$(awk -F'\t' -v m="$prev_month" '!/^#/ && substr($1, 1, 7) == m { c[$2] += $3 }
+  END { for (k in c) printf "%d\t%s\n", c[k], k }' "$countries_tsv" 2>/dev/null |
+  sort -rn | awk -F'\t' 'NR <= 5 && ($2 ~ /Singapore/ || $2 ~ /^SG /) { print "yes"; exit }')
+lang_prev_note=""
+if [ "$lang_prev_days" -gt 0 ] && [ "$lang_prev_bad" -gt 0 ]; then
+  lang_prev_note="No comparison with $prev_month: on $lang_prev_bad of its day(s) the languages do not add up to the engaged count."
+  lang_prev_days=0
+elif [ "$lang_prev_days" -gt 0 ] && [ "$prev_sg" = "yes" ]; then
+  lang_prev_note="No comparison with $prev_month: Singapore, the Open Wall harvester, is in that month's engaged top five."
+  lang_prev_days=0
+fi
+
 # --- bots and 429s ----------------------------------------------------------
 bot_line=""
 if [ -n "$LOG_REPORT" ] && [ -x "$LOG_REPORT" ] && [ -s "$work/month.log" ]; then
@@ -402,7 +459,7 @@ mkdir -p "$(dirname "$OUT")"
   awk -v tot="$pv" '$1 == "LANG" { printf "%d\t%s\n", $2, $3 }' "$work/agg" | sort -rn | head -8 | while IFS=$'\t' read -r n l; do
     if [ "$pv" -gt 0 ]; then printf -- "  - %s: %d (%.0f%%)\n" "$l" "$n" "$(awk -v a="$n" -v b="$pv" 'BEGIN{printf "%.0f",100*a/b}')"; fi
   done
-  echo "- _People per day are the engaged/reader means above and the country split below (deduplicated, bot-filtered via audience-report.sh). A per-language people cut would need that engaged pipeline extended and is not attempted from raw page views, which are bot-inflated._"
+  echo "- _People per day are the engaged/reader means above, and the country and browser-language splits below (deduplicated, bot-filtered via audience-report.sh). The two page-view splits above are bot-inflated; read languages from the people split._"
   echo
 
   echo "## Country composition (engaged readers)"
@@ -419,6 +476,44 @@ mkdir -p "$(dirname "$OUT")"
     awk -F'\t' -v tot="$country_total" '$2 != "TOTAL" { printf "| %s | %d | %.0f%% |\n", $2, $1, 100*$1/tot }' "$work/countries" | head -10
   else
     echo "- No engaged-country rows for $month. _[series did not cover this month]_"
+  fi
+  echo
+
+  echo "## Browser language (engaged readers)"
+  echo
+  if [ "$sg_top" = "yes" ]; then
+    echo "**WITHHELD** with the country block: the engaged population includes the Open Wall"
+    echo "harvester, so its languages are not the readers' either."
+  elif [ "$lang_bad" -gt 0 ]; then
+    echo "**WITHHELD.** On $lang_bad day(s) the languages in engaged-languages.tsv do not add up"
+    echo "to the engaged count in engaged.tsv, so the two series describe different people."
+    echo "Find the day that disagrees before publishing this split."
+  elif [ "$lang_days" -gt 0 ]; then
+    printf '_Source: engaged-languages.tsv (beacon, Accept-Language primary subtag), %d day(s) at the threshold of %s' "$lang_days" "$m_thresh"
+    [ "$lang_days" -lt "$m_days" ] && printf ' -- the split began part way through the month; the engaged mean above covers %d day(s)' "$m_days"
+    printf '. Readers per day, not page views._\n'
+    echo
+    if [ -n "$lang_prev_note" ]; then echo "_${lang_prev_note}_"; echo; fi
+    if [ "$lang_prev_days" -gt 0 ]; then
+      echo "| language | readers/day | share | previous month |"
+      echo "|---|---:|---:|---:|"
+    else
+      echo "| language | readers/day | share |"
+      echo "|---|---:|---:|"
+    fi
+    awk -v days="$lang_days" -v pdays="$lang_prev_days" '
+      FNR == NR { if ($1 == "LANG") prev[$3] = $2; next }
+      $1 == "LANG" { now[$3] = $2; total += $2 }
+      END {
+        for (l in now) {
+          line = sprintf("| %s | %.1f | %.0f%% |", l, now[l] / days, total > 0 ? 100 * now[l] / total : 0)
+          if (pdays > 0) line = line sprintf(" %.1f |", (l in prev ? prev[l] : 0) / pdays)
+          printf "%d\t%s\n", now[l], line
+        }
+      }
+    ' <(printf '%s\n' "$lang_prev") <(printf '%s\n' "$lang_cur") | sort -rn | head -10 | cut -f2-
+  else
+    echo "- No engaged-language rows for $month. _[the split starts with #317; earlier days have none]_"
   fi
   echo
 
