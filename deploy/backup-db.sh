@@ -15,7 +15,9 @@
 #      and .env.go-dev, encrypted.
 #      The board catalogue's files (/srv/www/shared/boards) go up too, but
 #      only when they change, under boards/ rather than daily/: the archive
-#      they came from may not outlive us, and the rows name them.
+#      they came from may not outlive us, and the rows name them. Each
+#      file's bytes are stored once, under boards/sha256/, and each set is a
+#      list of sums and paths under boards/sets/.
 #      Owner reports' files (/srv/www/shared/owner-reports) go up one object
 #      per file under boards/owner-reports/, each once, the night after it
 #      arrives: they exist nowhere else.
@@ -201,39 +203,73 @@ echo "$SIZE" > "$LAST_SIZE_FILE"
 
 # ------------------------------------------------------------- boards
 # The board catalogue's files (firmware#659): photos, pinouts, factory flash
-# dumps, console captures -- about 160 MB, written once by `openipc boards
-# import-openhisiipcam` and added to rarely. Their rows are in the dump above;
+# dumps, console captures, written by `openipc boards import-openhisiipcam`
+# and `import-snapshot` and added to rarely. Their rows are in the dump above;
 # the files are not rebuilt from anything once the archive they came from is
-# gone, so they are kept, but a nightly copy of bytes that never change would
-# be 160 MB a night for nothing. Uploaded when the set of files changes, under
-# boards/ -- outside the daily/weekly/monthly lifecycle, so nothing expires it.
+# gone, so they are kept -- outside the daily/weekly/monthly lifecycle, so
+# nothing expires them.
+#
+# Each file's bytes go up once, content-addressed like the owner reports
+# below: boards/sha256/<ab>/<sum>, written once and never overwritten. A set
+# is the list `sha256sum` prints for it, uploaded as
+# boards/sets/boards-<date>-<id>.sha256 when it changes; RESTORE.md step 3c
+# rebuilds the tree from the newest one. A whole tar per change used to put
+# every unchanged photo up again, and kept each copy for good. The donor
+# snapshots' bytes are under the same prefix (tools/boards-backup/tarpack.py),
+# so the files an import took from one are up already.
 BOARDS_ROOT=/srv/www/shared/boards
-BOARDS_MARK=/srv/www/.last-boards-backup
+BOARDS_MARK=/srv/www/.last-boards-set
+BOARDS_BLOBS_MARK=/srv/www/.boards-blobs-backed-up
 if [ -d "$BOARDS_ROOT" ]; then
   # The set is identified by every file's contents, not by names and sizes: a
-  # dump corrected in place keeps its length. About 160 MB to hash, a second
-  # or two a night.
-  BOARDS_ID=$(cd "$BOARDS_ROOT" && find . \( -path './.import-*' -o -path './.incoming-*' \) -prune -o -type f -print0 \
-    | LC_ALL=C sort -z | xargs -0r sha256sum | sha256sum | cut -c1-16)
+  # dump corrected in place keeps its length. A second or two a night.
+  BOARDS_LIST="${WORK}/boards.sha256"
+  (cd "$BOARDS_ROOT" && find . \( -path './.import-*' -o -path './.incoming-*' \) -prune -o -type f -print0 \
+    | LC_ALL=C sort -z | xargs -0r sha256sum) > "$BOARDS_LIST" || fail "hashing the board files failed"
+  # sha256sum escapes a name holding a newline or backslash and marks the line
+  # with a leading backslash; the loop below reads names verbatim.
+  grep -q '^\\' "$BOARDS_LIST" && fail "a board file's name holds a newline or backslash"
+  BOARDS_ID=$(sha256sum < "$BOARDS_LIST" | cut -c1-16)
   if [ "$(cat "$BOARDS_MARK" 2>/dev/null || true)" = "$BOARDS_ID" ]; then
     log "board files unchanged (${BOARDS_ID}), not uploaded"
   else
-    BOARDS_TAR="boards-${STAMP}-${BOARDS_ID}.tar"
-    # Streamed, never staged: the archive is 160 MB and more, and ${WORK} is
-    # on /tmp, which on this host is a tmpfs with a few hundred MB free. The
-    # size comes from a second pass over the same files, for the read-back.
-    boards_tar() { tar -C "$BOARDS_ROOT" --exclude='./.import-*' --exclude='./.incoming-*' -cf - .; }
-    BOARDS_SIZE=$(boards_tar | wc -c) || fail "reading the board files failed"
+    touch "$BOARDS_BLOBS_MARK"
+    up=0 have=0
+    # Each sum not yet known to be up, once, with one path that holds it. A
+    # sha256sum line is 64 hex digits, two spaces, then the name.
+    while IFS=$'\t' read -r sum path; do
+      f="${BOARDS_ROOT}/${path#./}"
+      key="boards/sha256/${sum:0:2}/${sum}"
+      [ "$(sha256sum < "$f" | cut -d' ' -f1)" = "$sum" ] || fail "board file ${path} changed while it was being backed up"
+      if "${AWS[@]}" s3api head-object --bucket "$S3_BUCKET" --key "$key" >/dev/null 2>&1; then
+        have=$((have + 1))   # an earlier set, a donor snapshot, or another name for the same bytes
+      elif [ "$DRY_RUN" = 1 ]; then
+        log "DRY RUN would upload ${key} ($(stat -c %s "$f") bytes, ${path})"
+        continue
+      else
+        size=$(stat -c %s "$f")
+        "${AWS[@]}" s3 cp --only-show-errors "$f" "s3://${S3_BUCKET}/${key}" \
+          || fail "upload of board file ${path} failed"
+        REMOTE=$("${AWS[@]}" s3api head-object --bucket "$S3_BUCKET" --key "$key" \
+          --query ContentLength --output text 2>/dev/null) || fail "board file ${sum} is not readable back"
+        [ "$REMOTE" = "$size" ] || fail "board file ${sum}: local ${size} bytes, remote ${REMOTE}"
+        up=$((up + 1))
+      fi
+      [ "$DRY_RUN" = 1 ] || echo "$sum" >> "$BOARDS_BLOBS_MARK"
+    done < <(awk 'FILENAME == ARGV[1] { up[$1]; next } !($1 in up) && !seen[$1]++ { print $1 "\t" substr($0, 67) }' \
+               "$BOARDS_BLOBS_MARK" "$BOARDS_LIST")
+    # The list goes up last: a set in the bucket never names bytes that are not.
+    SET_KEY="boards/sets/boards-${STAMP}-${BOARDS_ID}.sha256"
     if [ "$DRY_RUN" = 1 ]; then
-      log "DRY RUN would upload ${BOARDS_TAR} (${BOARDS_SIZE} bytes) -> s3://${S3_BUCKET}/boards/"
+      log "DRY RUN would upload ${SET_KEY} ($(wc -l < "$BOARDS_LIST") files)"
     else
-      boards_tar | "${AWS[@]}" s3 cp --only-show-errors --expected-size "$BOARDS_SIZE" - "s3://${S3_BUCKET}/boards/${BOARDS_TAR}" \
-        || fail "upload of the board files failed"
-      REMOTE=$("${AWS[@]}" s3api head-object --bucket "$S3_BUCKET" --key "boards/${BOARDS_TAR}" \
-        --query ContentLength --output text 2>/dev/null) || fail "the board files are not readable back"
-      [ "$REMOTE" = "$BOARDS_SIZE" ] || fail "board files size mismatch: local ${BOARDS_SIZE}, remote ${REMOTE}"
+      "${AWS[@]}" s3 cp --only-show-errors "$BOARDS_LIST" "s3://${S3_BUCKET}/${SET_KEY}" \
+        || fail "upload of the board set's list failed"
+      REMOTE=$("${AWS[@]}" s3api head-object --bucket "$S3_BUCKET" --key "$SET_KEY" \
+        --query ContentLength --output text 2>/dev/null) || fail "the board set's list is not readable back"
+      [ "$REMOTE" = "$(stat -c %s "$BOARDS_LIST")" ] || fail "board set list size mismatch"
       echo "$BOARDS_ID" > "$BOARDS_MARK"
-      log "uploaded boards/${BOARDS_TAR}, ${BOARDS_SIZE} bytes"
+      log "uploaded ${SET_KEY}: ${up} files new, ${have} up already"
     fi
   fi
 else

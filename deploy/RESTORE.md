@@ -35,8 +35,12 @@ the team password manager. The server can write backups it cannot read.
 
 **Backed up when they change:** the board catalogue's files
 (`/srv/www/shared/boards`: photos, pinouts, factory flash dumps, console
-captures), as `boards/boards-<date>-<id>.tar`, outside the daily lifecycle.
-The newest one is the current set; see step 3c.
+captures), outside the daily lifecycle. Each file's bytes are stored once, as
+`boards/sha256/<ab>/<sha256>`, and each set as the list of sums and paths
+`sha256sum` prints for it, `boards/sets/boards-<date>-<id>.sha256`. The newest
+list is the current set; see step 3c. Sets backed up before October 2026 were
+whole tars; they, and the donor snapshots the catalogue was imported from,
+are kept as recipes over the same blobs (step 3c, last part).
 
 **Backed up the night after they arrive:** owner reports' files
 (`/srv/www/shared/owner-reports`: what camera owners and agents sent, private
@@ -130,16 +134,44 @@ run the installer.
 ### 3c. Restore the board catalogue's files
 
 ```bash
-aws s3 ls s3://openipc-org-backup/boards/ | grep ' boards-' | sort | tail -1     # the newest set
-aws s3 cp s3://openipc-org-backup/boards/boards-<date>-<id>.tar .
+aws s3 ls s3://openipc-org-backup/boards/sets/ | sort | tail -1     # the newest set, by upload time
+aws s3 cp s3://openipc-org-backup/boards/sets/boards-<date>-<id>.sha256 /root/boards.sha256
 install -d -o 1000 -g 1000 -m 0755 /srv/www/shared/boards
-tar -C /srv/www/shared/boards -xf boards-<date>-<id>.tar && chown -R 1000:1000 /srv/www/shared/boards
+cd /srv/www/shared/boards
+while read -r sum p; do
+  install -d "$(dirname "$p")"
+  aws s3 cp --only-show-errors "s3://openipc-org-backup/boards/sha256/${sum:0:2}/${sum}" "$p"
+done < /root/boards.sha256
+sha256sum -c --quiet /root/boards.sha256 && chown -R 1000:1000 /srv/www/shared/boards
 ```
 
-Their rows come back with the database in step 4. Without the tar, the rows
+One request per file, a few minutes for the whole set; `sha256sum -c` proves
+every file is the one the list names. The backup refuses names with a newline
+or backslash, so `read` takes every line as it is.
+
+Their rows come back with the database in step 4. Without the files, the rows
 point at files that are not there; `openipc boards import-openhisiipcam`
 rewrites the OpenHisiIpCam ones from GitHub while the archive exists, but
 skips every unit it already holds, so delete those units' rows first.
+
+**A tar from before the sets, or a donor snapshot.** Every board set uploaded
+as a tar and every tar under `boards-donors/` (the snapshots pinned in
+`service/internal/boards/snapshot.go` and the captures they were made from)
+has a recipe under `boards/recipes/<its key>.recipe.gz`, and the tar is
+rebuilt byte for byte, checked against the sha256 it was packed with:
+
+```bash
+aws s3 ls --recursive s3://openipc-org-backup/boards/recipes/
+python3 tools/boards-backup/tarpack.py unpack \
+  boards/recipes/boards-donors/tehno32/snapshot-f7137bd8a94d.tar.recipe.gz -o snapshot.tar
+openipc boards import-snapshot --source tehno32 snapshot.tar   # checks the pin again
+```
+
+For many tars, `aws s3 sync s3://openipc-org-backup/boards/sha256/ <dir>` once
+and pass `--blobs <dir>`: one listing instead of a request per file. The
+original tars go once they are 30 days old (lifecycle rule
+`repacked-originals`), and only those tagged `repacked=verified` -- a tag set
+by hand after their recipe had rebuilt them byte for byte.
 
 ### 3d. Restore owner reports' files
 

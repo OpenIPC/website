@@ -60,11 +60,24 @@ func TestBoardCatalogueServing(t *testing.T) {
 	mustContain(t, backup, "BOARDS_ROOT=/srv/www/shared/boards", "the backup leaves out the board files, which nothing can rebuild")
 	// A file corrected in place keeps its length; only its contents say it changed.
 	mustContain(t, backup, "xargs -0r sha256sum", "the backup decides the board files changed by names and sizes alone")
-	// Streamed to S3: staged in ${WORK} on the host's small /tmp tmpfs, the
-	// 160 MB archive can fill it and fail the whole run.
-	mustContain(t, backup, `boards_tar | "${AWS[@]}" s3 cp`, "the board files are staged on disk before the upload")
-	mustNotContain(t, backup, `-cf "${WORK}/${BOARDS_TAR}"`, "the board files are staged in ${WORK}")
-	if !strings.Contains(read(t, "deploy/RESTORE.md"), "Restore the board catalogue's files") {
+	// Each file's bytes once, under its sum: a whole tar per change put every
+	// unchanged photo up again and kept each copy for good. Never staged in
+	// ${WORK} either, the host's small /tmp tmpfs.
+	mustContain(t, backup, `key="boards/sha256/${sum:0:2}/${sum}"`, "the board files are not stored by their contents")
+	mustContain(t, backup, `boards/sets/boards-${STAMP}-${BOARDS_ID}.sha256`, "a board set is not kept as its list of sums")
+	mustNotContain(t, backup, "boards_tar", "the board files go up as a whole tar again")
+	// An empty mark must not swallow the list: NR == FNR holds for the second
+	// file when the first is empty, and then nothing would ever go up.
+	mustNotContain(t, backup, "NR == FNR", "the first night's empty mark hides every board file")
+	for _, l := range strings.Split(backup, "\n") {
+		if strings.Contains(l, "boards/") && (strings.Contains(l, " s3 rm") || strings.Contains(l, "--delete")) {
+			t.Errorf("the backup deletes board files: %s", strings.TrimSpace(l))
+		}
+	}
+	restore := read(t, "deploy/RESTORE.md")
+	if !strings.Contains(restore, "Restore the board catalogue's files") {
 		t.Error("RESTORE.md does not say how to bring the board files back")
 	}
+	mustContain(t, restore, "sha256sum -c --quiet /root/boards.sha256", "the board restore does not check the files it brought back")
+	mustContain(t, restore, "tarpack.py unpack", "RESTORE.md does not say how to rebuild a donor snapshot or an old set")
 }
