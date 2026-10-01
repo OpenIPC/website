@@ -17,6 +17,8 @@ engine per day, never rewriting a day it already has:
   DIR/yandex-openipc.ru/YYYY-MM-DD.tsv     Yandex, https:openipc.ru:443, the Russian
                                            mirror, where Yandex's audience is
   DIR/yandex-<host>/YYYY-MM-DD.tsv         Yandex, any further host in YANDEX_HOSTS
+  DIR/bing/YYYY-MM-DD.tsv                  Bing, https://openipc.org/, the day's total only
+  DIR/bing/week-YYYY-MM-DD.tsv             Bing, that week's top queries, "#week" first
     #total  <clicks>  <impressions>  <position>   every query, withheld ones too
     <query> <clicks>  <impressions>  <position>   the queries Google names
 
@@ -45,6 +47,15 @@ matching WITHHELD -- sexual searches, among them searches for child sexual
 abuse material, which do land on this site -- but counts it, and says how many
 it kept back. The archive stays verbatim, so the count can be checked.
 
+Bing reports a day's clicks and impressions, but its queries only as a weekly
+top 100, labelled by a date Bing chooses, and the newest week is still filling:
+it is rewritten on every run until a newer week appears, then left alone. The
+week files carry no total ("#week", zeros), so they add queries without
+counting clicks twice, and a week belongs to the month its label falls in. Its
+positions are not archived ("-"): the API's figures do not fit the click rates
+beside them, and a number nobody has checked against the console would be
+printed as if it had been.
+
 `fetch` fails per engine and per Yandex host: one that errors is reported on
 stderr and the others still run, and the exit status is non-zero if any did.
 
@@ -61,12 +72,16 @@ Credentials are read on the host, never from the repository:
                        sites ("COMMON"), the links one alone answers 403
   YANDEX_HOSTS   space-separated host ids   (default https:openipc.org:443
                                              https:openipc.ru:443)
+  BING_API_KEY   Bing Webmaster API key (Settings -> API access); it reads every
+                 site on its account
+  BING_SITE      site URL                   (default https://openipc.org/)
 
 either from the environment or from /srv/www/.env.search (SEARCH_ENV). The
 service account is a Restricted user of the property, which reads and cannot
 change anything; the Yandex token can add sites, and this only reads. An
-engine without credentials is skipped with a line saying so. No third-party modules: the host has python3 and openssl, which is enough
-to sign the token request.
+engine without credentials is skipped with a line saying so. No third-party
+modules: the host has python3 and openssl, which is enough to sign the token
+request.
 """
 import argparse
 import base64
@@ -85,6 +100,7 @@ import urllib.request
 
 DEFAULT_DIR = "/srv/www/shared/reports/search"
 YANDEX_API = "https://api.webmaster.yandex.net/v4"
+BING_API = "https://ssl.bing.com/webmaster/api.svc/json"
 
 # What one engine or one host may fail with without stopping the others: a
 # request (RuntimeError, from http_json), a reply missing a field, the key file
@@ -119,10 +135,11 @@ def settings():
                     conf[k.strip()] = v.strip()
     except FileNotFoundError:
         pass
-    conf.update({k: v for k, v in os.environ.items() if k.startswith(("GSC_", "YANDEX_"))})
+    conf.update({k: v for k, v in os.environ.items() if k.startswith(("GSC_", "YANDEX_", "BING_"))})
     conf.setdefault("GSC_KEY_FILE", "/srv/www/.gsc-service-account.json")
     conf.setdefault("GSC_SITE", "sc-domain:openipc.org")
     conf.setdefault("YANDEX_HOSTS", "https:openipc.org:443 https:openipc.ru:443")
+    conf.setdefault("BING_SITE", "https://openipc.org/")
     return conf
 
 
@@ -190,6 +207,13 @@ def google_queries(query, day):
     return [(r["keys"][0], r["clicks"], r["impressions"], r["position"]) for r in rows]
 
 
+def bing_dir(site):
+    """bing/ for openipc.org, bing-<host>/ for any other BING_SITE, so a site
+    override can never land in, or be labelled as, openipc.org's archive."""
+    host = urllib.parse.urlsplit(site).hostname or site
+    return "bing" if host == "openipc.org" else "bing-" + host
+
+
 def yandex_dir(host):
     name = host.split(":")[1] if host.count(":") == 2 else host
     return "yandex" if name == "openipc.org" else "yandex-" + name
@@ -238,22 +262,27 @@ def yandex_queries(get, base, day):
             return rows
 
 
-def write_day(path, total, rows):
-    label = "#total"
-    if not total["impressions"] and rows:
+def fmt_pos(p):
+    return "-" if p is None else "%.2f" % p
+
+
+def write_day(path, total, rows, label="#total"):
+    if label == "#total" and not total["impressions"] and rows:
         # A console that lists queries for a day it has no total for: the
         # listed queries are the most that can be said, and the file says so.
         label = "#listed"
         shows = sum(r[2] for r in rows)
+        known = [r for r in rows if r[3] is not None]
+        kshows = sum(r[2] for r in known)
         total = {"clicks": sum(r[1] for r in rows), "impressions": shows,
-                 "position": sum(r[3] * r[2] for r in rows) / shows if shows else 0}
+                 "position": sum(r[3] * r[2] for r in known) / kshows if kshows else None}
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
     with open(tmp, "w", newline="\n") as f:
-        f.write("%s\t%d\t%d\t%.2f\n" % (label, total["clicks"], total["impressions"], total["position"]))
+        f.write("%s\t%d\t%d\t%s\n" % (label, total["clicks"], total["impressions"], fmt_pos(total["position"])))
         for q, c, i, p in sorted(rows, key=lambda r: (-r[1], -r[2], r[0])):
             q = "".join(" " if ch < " " or ch == "\x7f" else ch for ch in q)
-            f.write("%s\t%d\t%d\t%.2f\n" % (q, c, i, p))
+            f.write("%s\t%d\t%d\t%s\n" % (q, c, i, fmt_pos(p)))
     os.replace(tmp, path)
 
 
@@ -323,15 +352,64 @@ def fetch_yandex_host(get, user, host, args, since, days):
     return user
 
 
+def bing_date(value):
+    """Bing's "/Date(1790294400000)/", or with an offset, as YYYY-MM-DD (UTC)."""
+    ms = int(re.search(r"-?\d+", value).group())
+    return datetime.datetime.fromtimestamp(ms / 1000, datetime.timezone.utc).date().isoformat()
+
+
+def fetch_bing(conf, args, since, days):
+    if not conf.get("BING_API_KEY"):
+        print("bing: no BING_API_KEY, skipped")
+        return
+    params = urllib.parse.urlencode({"siteUrl": conf["BING_SITE"], "apikey": conf["BING_API_KEY"]})
+
+    def get(method):
+        # http_json names the failed URL without its query, so the key stays
+        # out of the cron log.
+        return http_json("%s/%s?%s" % (BING_API, method, params))["d"] or []
+
+    dirpath = os.path.join(args.dir, bing_dir(conf["BING_SITE"]))
+    first, last = since.isoformat(), days[-1].isoformat()
+
+    daily = {bing_date(r["Date"]): r for r in get("GetRankAndTrafficStats")}
+    have = {os.path.basename(p)[:10] for p in glob.glob(os.path.join(dirpath, "????-??-??.tsv"))}
+    newest = max(daily) if daily else ""
+    wrote = []
+    for day in sorted(daily):
+        if first <= day <= last and day < newest and day not in have:
+            r = daily[day]
+            write_day(os.path.join(dirpath, day + ".tsv"),
+                      {"clicks": r["Clicks"], "impressions": r["Impressions"], "position": None}, [])
+            wrote.append(day)
+    print("bing: daily totals %s" % (", ".join(wrote) or "nothing new"))
+
+    weeks = {}
+    for r in get("GetQueryStats"):
+        weeks.setdefault(bing_date(r["Date"]), []).append((r["Query"], r["Clicks"], r["Impressions"], None))
+    newest = max(weeks) if weeks else ""
+    wrote = []
+    for week, rows in sorted(weeks.items()):
+        path = os.path.join(dirpath, "week-%s.tsv" % week)
+        if week >= first and (week == newest or not os.path.exists(path)):
+            write_day(path, {"clicks": 0, "impressions": 0, "position": None}, rows, label="#week")
+            wrote.append("%s (%d queries%s)" % (week, len(rows), ", still filling" if week == newest else ""))
+    print("bing: weekly queries %s" % (", ".join(wrote) or "nothing new"))
+
+
 def fetch(args):
     conf = settings()
     today = datetime.date.today()
     since = (datetime.date.fromisoformat(args.since) if args.since
              else today - datetime.timedelta(days=30))
     days = [since + datetime.timedelta(days=n) for n in range((today - since).days)]
+    if not days:
+        # --since today or later: no finished day to ask any engine about.
+        print("nothing to fetch: --since %s is not before today" % since)
+        return 0
     # One engine failing must not stop the other; the exit status still says so.
     failed = []
-    for name, run in (("google", fetch_google), ("yandex", fetch_yandex)):
+    for name, run in (("google", fetch_google), ("yandex", fetch_yandex), ("bing", fetch_bing)):
         try:
             run(conf, args, since, days)
         except FETCH_ERRORS as e:
@@ -342,16 +420,18 @@ def fetch(args):
 
 def engines(root):
     """(directory, label, engine) for Google, Yandex for openipc.org and for
-    openipc.ru, then any other Yandex host that has an archive. The first
-    three are always listed, so a missing archive is said rather than
+    openipc.ru, Bing for openipc.org, then any other Yandex host or Bing site
+    that has an archive. The first four are always listed, so a missing archive is said rather than
     silently left out."""
     found = [("google", "Google Search Console", "Google"),
              ("yandex", "Yandex Webmaster (openipc.org)", "Yandex"),
-             ("yandex-openipc.ru", "Yandex Webmaster (openipc.ru)", "Yandex")]
-    for path in sorted(glob.glob(os.path.join(root, "yandex-*"))):
-        name = os.path.basename(path)
-        if name not in [f[0] for f in found]:
-            found.append((name, "Yandex Webmaster (%s)" % name[len("yandex-"):], "Yandex"))
+             ("yandex-openipc.ru", "Yandex Webmaster (openipc.ru)", "Yandex"),
+             ("bing", "Bing Webmaster (openipc.org)", "Bing")]
+    for prefix, console, who in (("yandex-", "Yandex Webmaster", "Yandex"), ("bing-", "Bing Webmaster", "Bing")):
+        for path in sorted(glob.glob(os.path.join(root, prefix + "*"))):
+            name = os.path.basename(path)
+            if name not in [f[0] for f in found]:
+                found.append((name, "%s (%s)" % (console, name[len(prefix):]), who))
     return found
 
 
@@ -360,33 +440,36 @@ def top(args):
         sys.exit("search-queries.py: month must be YYYY-MM, got %r" % args.month)
     for engine, label, who in engines(args.dir):
         files = sorted(glob.glob(os.path.join(args.dir, engine, args.month + "-??.tsv")))
-        if not files:
+        weeks = sorted(glob.glob(os.path.join(args.dir, engine, "week-" + args.month + "-??.tsv")))
+        if not files and not weeks:
             print("%s: _[no archive for %s under %s -- no credentials on the host, or the fetcher "
                   "has not run]_" % (label, args.month, os.path.join(args.dir, engine)))
             print()
             continue
-        tc = ti = 0
-        tpos = 0.0
+        # [clicks, impressions, position*impressions, impressions with a known position]
+        tot = [0, 0, 0.0, 0]
         agg = {}
         bad = listed = 0
-        for path in files:
+        for path in files + weeks:
             with open(path, newline="\n") as f:
                 for n, line in enumerate(f):
                     fields = line.rstrip("\n").split("\t")
                     try:
                         q, c, i, p = fields
-                        c, i, p = int(c), int(i), float(p)
+                        c, i = int(c), int(i)
+                        p = None if p == "-" else float(p)
                     except ValueError:
                         bad += 1
                         continue
-                    if n == 0:
-                        tc, ti, tpos = tc + c, ti + i, tpos + p * i
-                        listed += q == "#listed"
-                        continue
-                    a = agg.setdefault(q, [0, 0, 0.0])
+                    a = tot if n == 0 else agg.setdefault(q, [0, 0, 0.0, 0])
                     a[0] += c
                     a[1] += i
-                    a[2] += p * i
+                    if p is not None:
+                        a[2] += p * i
+                        a[3] += i
+                    if n == 0:
+                        listed += q == "#listed"
+                        continue
         if bad:
             # Not fatal: one unreadable line must not cost the month its
             # section, but it is said where the cron log will show it.
@@ -395,16 +478,28 @@ def top(args):
         held = [q for q in agg if WITHHELD.search(q.lower())]
         held_clicks = sum(agg[q][0] for q in held)
         named = sum(a[0] for a in agg.values())
-        first, last = os.path.basename(files[0])[:10], os.path.basename(files[-1])[:10]
-        print("%s, %s to %s (%d day(s) archived):" % (label, first, last, len(files)))
+        tc, ti = tot[0], tot[1]
+        pos = lambda a: "%.1f" % (a[2] / a[3]) if a[3] else "–"
+        span = [os.path.basename(p)[-14:-4] for p in files] or [os.path.basename(p)[-14:-4] for p in weeks]
+        print("%s, %s to %s (%d day(s) archived%s):" % (
+            label, span[0], span[-1], len(files),
+            ", queries from %d weekly list(s)" % len(weeks) if weeks else ""))
         print()
-        print("- all searches: **%s clicks**, %s impressions, average position %.1f"
-              % (format(tc, ","), format(ti, ","), tpos / ti if ti else 0))
+        if files:
+            print("- all searches: **%s clicks**, %s impressions%s"
+                  % (format(tc, ","), format(ti, ","), ", average position " + pos(tot) if tot[3] else ""))
+        else:
+            print("- all searches: _no daily totals archived for %s_; only the weekly query lists below"
+                  % args.month)
         if listed:
             print("- %d of those days have no total from %s; for them the listed queries stand in, "
                   "so the totals above are a floor" % (listed, who))
-        print("- the queries %s names account for %s of those clicks (%d%%); the rest it withholds as rare"
-              % (who, format(named, ","), round(100 * named / tc) if tc else 0))
+        if weeks:
+            print("- the queries are %s's weekly top 100, labelled by week, so they cover different "
+                  "days from the totals and are not a share of them" % who)
+        else:
+            print("- the queries %s names account for %s of those clicks (%d%%); the rest it withholds as rare"
+                  % (who, format(named, ","), round(100 * named / tc) if tc else 0))
         if held:
             print("- %d quer%s (%d click(s)) not printed: abuse-seeking searches, kept in the archive"
                   % (len(held), "y" if len(held) == 1 else "ies", held_clicks))
@@ -413,8 +508,8 @@ def top(args):
         print()
         print("| query | clicks | impressions | avg position |")
         print("|---|---:|---:|---:|")
-        for q, (c, i, p) in sorted(agg.items(), key=lambda kv: (-kv[1][0], -kv[1][1], kv[0]))[:args.n]:
-            print("| %s | %d | %d | %.1f |" % (q.replace("|", "\\|"), c, i, p / i if i else 0))
+        for q, a in sorted(agg.items(), key=lambda kv: (-kv[1][0], -kv[1][1], kv[0]))[:args.n]:
+            print("| %s | %d | %d | %s |" % (q.replace("|", "\\|"), a[0], a[1], pos(a)))
         print()
     return 0
 
