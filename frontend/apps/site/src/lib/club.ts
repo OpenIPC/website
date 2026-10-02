@@ -98,16 +98,20 @@ export function remembered(): boolean {
   try { return localStorage.getItem(FLAG) === '1'; } catch { return false; }
 }
 
-function remember(on: boolean) {
+/** The event the navbar's badge listens for: who is signed in now, or null. */
+export const CHANGED = 'openipc-club';
+
+function remember(member: Member | null) {
   try {
-    if (on) localStorage.setItem(FLAG, '1');
+    if (member) localStorage.setItem(FLAG, '1');
     else localStorage.removeItem(FLAG);
   } catch { /* private mode */ }
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent<Member | null>(CHANGED, { detail: member }));
 }
 
 export async function fetchMe(): Promise<Me> {
   const me = await call<Me>('/me');
-  remember(me.member !== null);
+  remember(me.member);
   return me;
 }
 
@@ -120,7 +124,7 @@ export type Poll =
 
 export async function pollLogin(): Promise<Poll> {
   const p = await call<Poll>('/login');
-  if (p.state === 'signed_in') remember(true);
+  if (p.state === 'signed_in') remember(p.member);
   return p;
 }
 
@@ -128,7 +132,7 @@ export const startEmail = (email: string, locale: string) => post<{ sent: boolea
 
 export async function signOut(): Promise<void> {
   await post('/logout');
-  remember(false);
+  remember(null);
 }
 
 export const setQuiet = (quiet: boolean) => post<{ member: Member }>('/quiet', { quiet });
