@@ -37,12 +37,12 @@ import (
 	"github.com/OpenIPC/website/service/internal/boards"
 	"github.com/OpenIPC/website/service/internal/builds"
 	"github.com/OpenIPC/website/service/internal/catalogue"
+	"github.com/OpenIPC/website/service/internal/club"
 	"github.com/OpenIPC/website/service/internal/config"
 	"github.com/OpenIPC/website/service/internal/db"
 	"github.com/OpenIPC/website/service/internal/downloads"
 	"github.com/OpenIPC/website/service/internal/firmware"
 	"github.com/OpenIPC/website/service/internal/httpx"
-	"github.com/OpenIPC/website/service/internal/club"
 	"github.com/OpenIPC/website/service/internal/purge"
 	"github.com/OpenIPC/website/service/internal/reports"
 	"github.com/OpenIPC/website/service/internal/sharerelay"
@@ -178,6 +178,9 @@ var routes = []Route{
 	{"web", "POST", "/api/v1/club/quiet"},
 	{"web", "GET", "/api/v1/club/login"},
 	{"web", "GET", "/api/v1/club/finish"},
+	{"web", "GET", "/api/v1/club/finish/who"},
+	{"web", "POST", "/api/v1/club/finish"},
+	{"web", "POST", "/api/v1/club/name"},
 	{"web", "POST", "/api/v1/club/telegram"},
 	{"web", "POST", "/api/v1/club/telegram/webhook"},
 	{"web", "POST", "/api/v1/club/email"},

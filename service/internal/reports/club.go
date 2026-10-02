@@ -41,11 +41,13 @@ func Points(kind string, known bool) int {
 
 // MemberReport is one report as its sender sees it on their page.
 type MemberReport struct {
-	ID         string       `json:"id"`
-	ReceivedAt time.Time    `json:"received_at"`
-	Status     string       `json:"status"`
-	ReviewedAt *time.Time   `json:"reviewed_at,omitempty"`
-	Note       string       `json:"note,omitempty"`
+	ID         string     `json:"id"`
+	ReceivedAt time.Time  `json:"received_at"`
+	Status     string     `json:"status"`
+	ReviewedAt *time.Time `json:"reviewed_at,omitempty"`
+	Note       string     `json:"note,omitempty"`
+	// ReviewNote is what the reviewer wrote for the sender with the decision.
+	ReviewNote string       `json:"review_note,omitempty"`
 	Board      *ViewModel   `json:"board,omitempty"`
 	Chip       string       `json:"chip,omitempty"`
 	Files      []MemberFile `json:"files"`
@@ -118,6 +120,12 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 		return nil, err
 	}
 	m.Status, m.ReviewedAt = st.State, st.At
+	if m.Status == "published" || m.Status == "rejected" {
+		if err := s.DB.QueryRow(ctx, `SELECT note FROM report_reviews WHERE report_id = $1 ORDER BY id DESC LIMIT 1`, id).
+			Scan(&m.ReviewNote); err != nil {
+			return nil, err
+		}
+	}
 	var b ViewModel
 	err = s.DB.QueryRow(ctx, `
 		SELECT bm.id, coalesce(bm.model, ''), mf.name FROM report_submissions rs
@@ -166,7 +174,7 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 				continue
 			}
 			var earned bool
-			if err := s.DB.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM report_stars WHERE report_id = $1 AND position = $2 AND kind = 'award')`,
+			if err := s.DB.QueryRow(ctx, `SELECT coalesce(sum(points), 0) > 0 FROM report_stars WHERE report_id = $1 AND position = $2`,
 				id, f.Position).Scan(&earned); err != nil {
 				return nil, err
 			}
@@ -211,16 +219,11 @@ func (s *Store) potential(ctx context.Context, id string, hasYAML bool) (map[int
 	return out, rows.Err()
 }
 
-// StarsOf is a member's stars, and what their reports waiting for review
-// would add.
-func (s *Store) StarsOf(ctx context.Context, member string) (total, pending int, err error) {
-	if err = s.DB.QueryRow(ctx, `SELECT coalesce(sum(points), 0) FROM report_stars WHERE member_id = $1`, member).Scan(&total); err != nil {
-		return
-	}
-	mine, err := s.Mine(ctx, member)
-	for _, m := range mine {
-		pending += m.Pending
-	}
+// StarsOf is a member's stars: one sum over the ledger. What their reports
+// waiting for review would add is Mine's to say, where the reports are
+// read anyway; the navbar asks for the total on every page.
+func (s *Store) StarsOf(ctx context.Context, member string) (total int, err error) {
+	err = s.DB.QueryRow(ctx, `SELECT coalesce(sum(points), 0) FROM report_stars WHERE member_id = $1`, member).Scan(&total)
 	return
 }
 
@@ -344,37 +347,60 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 	if owner == "" {
 		return d, nil
 	}
+	// The ledger is a net per part of the report: publishing brings each
+	// part up to what it earns now, rejecting brings it back to zero. A
+	// report published, rejected and published again is whole again; one
+	// published twice earns once. Under the report's lock, so two reviews
+	// at once cannot both write the difference.
 	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
-		if decision == "publish" {
-			for pos, pts := range potential {
-				if pts == 0 {
-					continue
-				}
-				tag, err := tx.Exec(ctx, `
-					INSERT INTO report_stars (member_id, report_id, position, points, kind, reason)
-					VALUES ($1, $2, $3, $4, 'award', $5) ON CONFLICT DO NOTHING`, owner, id, pos, pts, "published by "+by)
-				if err != nil {
-					return err
-				}
-				if tag.RowsAffected() > 0 {
-					d.Points += pts
-				}
-			}
-			return nil
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, id); err != nil {
+			return err
 		}
-		rows, err := tx.Query(ctx, `
-			INSERT INTO report_stars (member_id, report_id, position, points, kind, reason)
-			SELECT a.member_id, a.report_id, a.position, -a.points, 'revoke', $2
-			FROM report_stars a WHERE a.report_id = $1 AND a.kind = 'award'
-			ON CONFLICT DO NOTHING RETURNING points`, id, "rejected by "+by)
+		rows, err := tx.Query(ctx, `SELECT position, sum(points)::int FROM report_stars WHERE report_id = $1 GROUP BY position`, id)
 		if err != nil {
 			return err
 		}
-		pts, err := pgx.CollectRows(rows, pgx.RowTo[int])
-		for _, p := range pts {
-			d.Points += p
+		net := map[int]int{}
+		for rows.Next() {
+			var pos, pts int
+			if err := rows.Scan(&pos, &pts); err != nil {
+				rows.Close()
+				return err
+			}
+			net[pos] = pts
 		}
-		return err
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		want := map[int]int{}
+		if decision == "publish" {
+			want = potential
+		}
+		positions := map[int]bool{}
+		for p := range want {
+			positions[p] = true
+		}
+		for p := range net {
+			positions[p] = true
+		}
+		for pos := range positions {
+			diff := want[pos] - net[pos]
+			if diff == 0 {
+				continue
+			}
+			kind, reason := "award", "published by "+by
+			if diff < 0 {
+				kind, reason = "revoke", decision+"ed by "+by
+			}
+			if _, err := tx.Exec(ctx, `
+				INSERT INTO report_stars (member_id, report_id, position, points, kind, reason)
+				VALUES ($1, $2, $3, $4, $5, $6)`, owner, id, pos, diff, kind, reason); err != nil {
+				return err
+			}
+			d.Points += diff
+		}
+		return nil
 	})
 	if err != nil {
 		return d, err

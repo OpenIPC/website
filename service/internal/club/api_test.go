@@ -39,7 +39,7 @@ func (f *fakeTelegram) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case strings.HasSuffix(r.URL.Path, "/getMe"):
 		_, _ = io.WriteString(w, `{"ok":true,"result":{"username":"OpenIPCTestBot"}}`)
-	case strings.HasSuffix(r.URL.Path, "/sendMessage"):
+	case strings.HasSuffix(r.URL.Path, "/sendMessage"), strings.HasSuffix(r.URL.Path, "/editMessageText"):
 		f.mu.Lock()
 		f.sent = append(f.sent, in)
 		f.mu.Unlock()
@@ -59,8 +59,13 @@ func (f *fakeTelegram) last(t *testing.T) (text string, button string) {
 	m := f.sent[len(f.sent)-1]
 	text, _ = m["text"].(string)
 	if rm, ok := m["reply_markup"].(map[string]any); ok {
-		kb := rm["inline_keyboard"].([]any)
-		button = kb[0].([]any)[0].(map[string]any)["url"].(string)
+		if kb := rm["inline_keyboard"].([]any); len(kb) > 0 {
+			b := kb[0].([]any)[0].(map[string]any)
+			button, _ = b["url"].(string)
+			if button == "" {
+				button, _ = b["callback_data"].(string)
+			}
+		}
 	}
 	return
 }
@@ -143,7 +148,9 @@ type browser struct {
 	ip      string
 }
 
-func (e *env) browser(ip string) *browser { return &browser{e: e, cookies: map[string]string{}, ip: ip} }
+func (e *env) browser(ip string) *browser {
+	return &browser{e: e, cookies: map[string]string{}, ip: ip}
+}
 
 func (b *browser) do(t *testing.T, method, path string, body io.Reader, ct string) *httptest.ResponseRecorder {
 	t.Helper()
@@ -211,6 +218,33 @@ func (e *env) webhook(t *testing.T, from int64, username, lang, text string) {
 	}
 }
 
+// answer is Telegram delivering a tap on a button under the bot's message.
+func (e *env) answer(t *testing.T, from int64, data string) {
+	t.Helper()
+	u := map[string]any{"update_id": 2, "callback_query": map[string]any{
+		"id": "cb", "from": map[string]any{"id": from, "language_code": "en"}, "data": data,
+		"message": map[string]any{"message_id": 5, "chat": map[string]any{"id": from}},
+	}}
+	raw, _ := json.Marshal(u)
+	req := httptest.NewRequest("POST", site+"/api/v1/club/telegram/webhook", bytes.NewReader(raw))
+	req.Header.Set("X-Telegram-Bot-Api-Secret-Token", e.api.Telegram.Secret())
+	rec := httptest.NewRecorder()
+	e.mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("callback: %d %s", rec.Code, rec.Body)
+	}
+}
+
+// startAndConfirm is a person tapping Start on a link and then Yes.
+func (e *env) startAndConfirm(t *testing.T, from int64, username, lang, code string) {
+	t.Helper()
+	e.webhook(t, from, username, lang, "/start "+code)
+	if _, data := e.tg.last(t); data != "y:"+code {
+		t.Fatalf("the bot did not ask; its button is %q", data)
+	}
+	e.answer(t, from, "y:"+code)
+}
+
 func codeOf(t *testing.T, link string) string {
 	t.Helper()
 	u, err := url.Parse(link)
@@ -269,9 +303,23 @@ func TestTelegramSignsInTheBrowserThatAskedAndOnlyOnce(t *testing.T) {
 		t.Errorf("a webhook without the secret: %d", rec.Code)
 	}
 
+	// Start alone signs nobody in: the bot asks, naming where the sign-in
+	// was asked for, so a start link someone else sent is recognisable.
 	e.webhook(t, 777, "ivan_k", "ru", "/start "+start)
-	if text, _ := e.tg.last(t); !strings.Contains(text, "@ivan_k") || !strings.Contains(text, "Вы вошли") {
-		t.Errorf("the bot said %q", text)
+	if text, data := e.tg.last(t); !strings.Contains(text, "@ivan_k") || !strings.Contains(text, "198.51.100.1") || data != "y:"+start {
+		t.Errorf("the bot asked %q with %q", text, data)
+	}
+	if _, out := b.json(t, "GET", "/api/v1/club/login", nil); out["state"] != "pending" {
+		t.Fatalf("after Start, before Yes: %v", out)
+	}
+	// Somebody else's Yes is nobody's.
+	e.answer(t, 888, "y:"+start)
+	if _, out := b.json(t, "GET", "/api/v1/club/login", nil); out["state"] != "pending" {
+		t.Fatalf("after a stranger's Yes: %v", out)
+	}
+	e.answer(t, 777, "y:"+start)
+	if text, _ := e.tg.last(t); !strings.Contains(text, "@ivan_k") {
+		t.Errorf("after Yes the bot said %q", text)
 	}
 	_, out = b.json(t, "GET", "/api/v1/club/login", nil)
 	if out["state"] != "signed_in" {
@@ -294,6 +342,22 @@ func TestTelegramSignsInTheBrowserThatAskedAndOnlyOnce(t *testing.T) {
 	}
 }
 
+func TestNoInTelegramSignsNobodyIn(t *testing.T) {
+	e := newEnv(t)
+	b := e.browser("198.51.100.1")
+	_, out := b.json(t, "POST", "/api/v1/club/telegram", nil)
+	start := codeOf(t, out["link"].(string))
+	e.webhook(t, 777, "ivan_k", "en", "/start "+start)
+	e.answer(t, 777, "n:"+start)
+	if text, _ := e.tg.last(t); !strings.HasPrefix(text, "Nobody was signed in") {
+		t.Errorf("after No the bot said %q", text)
+	}
+	e.answer(t, 777, "y:"+start)
+	if _, out := b.json(t, "GET", "/api/v1/club/login", nil); out["state"] == "signed_in" || b.me(t) != nil {
+		t.Errorf("signed in after No: %v", out)
+	}
+}
+
 func TestAnExpiredStartStillSignsInFromTheChat(t *testing.T) {
 	e := newEnv(t)
 	b := e.browser("198.51.100.1")
@@ -308,15 +372,22 @@ func TestAnExpiredStartStillSignsInFromTheChat(t *testing.T) {
 	if !strings.Contains(text, "expired") || !strings.HasPrefix(button, site+"/api/v1/club/finish?code=") {
 		t.Fatalf("%q %q", text, button)
 	}
+	// The chat's link asks before it signs in: the page shows whose account.
 	phone := e.browser("192.0.2.4")
+	code := codeOf(t, button)
 	rec := phone.do(t, "GET", strings.TrimPrefix(button, site), nil, "")
-	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/club/?signin=ok" || phone.me(t) == nil {
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/club/?confirm="+code || phone.me(t) != nil {
 		t.Fatalf("the chat's link: %d %s", rec.Code, rec.Header().Get("Location"))
 	}
+	if _, who := phone.json(t, "GET", "/api/v1/club/finish/who?code="+code, nil); who["who"] != "@ivan_k" {
+		t.Errorf("who: %v", who)
+	}
+	if st, out := phone.json(t, "POST", "/api/v1/club/finish", map[string]string{"code": code}); st != 200 || phone.me(t) == nil {
+		t.Fatalf("confirm: %d %v", st, out)
+	}
 	again := e.browser("192.0.2.5")
-	again.do(t, "GET", strings.TrimPrefix(button, site), nil, "")
-	if again.me(t) != nil {
-		t.Error("the chat's link signed in a second browser")
+	if st, _ := again.json(t, "POST", "/api/v1/club/finish", map[string]string{"code": code}); st != http.StatusGone || again.me(t) != nil {
+		t.Errorf("the chat's link signed in a second browser: %d", st)
 	}
 }
 
@@ -332,19 +403,45 @@ func TestEmailSendsALinkThatSignsInOnce(t *testing.T) {
 	}
 	i := strings.Index(e.mail.body, site)
 	link := strings.Fields(e.mail.body[i:])[0]
+	// Opened on a phone, not where it was asked for: the page asks first,
+	// so a link someone sent for their own address is not taken blindly.
 	phone := e.browser("192.0.2.4")
-	phone.do(t, "GET", strings.TrimPrefix(link, site), nil, "")
+	rec := phone.do(t, "GET", strings.TrimPrefix(link, site), nil, "")
+	if !strings.HasPrefix(rec.Header().Get("Location"), "/club/?confirm=") || phone.me(t) != nil {
+		t.Fatalf("a link from another browser: %s", rec.Header().Get("Location"))
+	}
+	if _, who := phone.json(t, "GET", "/api/v1/club/finish/who?code="+codeOf(t, link), nil); who["who"] != "owner@example.org" {
+		t.Errorf("who: %v", who)
+	}
+	phone.json(t, "POST", "/api/v1/club/finish", map[string]string{"code": codeOf(t, link)})
 	m := phone.me(t)
-	if m == nil || m["name"] != "owner" {
+	// The public name is never the address.
+	if m == nil || m["name"] != "OpenIPC member" {
 		t.Fatalf("me: %v", m)
 	}
 	ids := m["identities"].([]any)
 	if len(ids) != 1 || ids[0].(map[string]any)["handle"] != "owner@example.org" {
 		t.Errorf("identities: %v", ids)
 	}
-	rec := e.browser("192.0.2.5").do(t, "GET", strings.TrimPrefix(link, site), nil, "")
+	rec = e.browser("192.0.2.5").do(t, "GET", strings.TrimPrefix(link, site), nil, "")
 	if !strings.Contains(rec.Header().Get("Location"), "expired") {
 		t.Errorf("the link worked twice: %s", rec.Header().Get("Location"))
+	}
+
+	// Opened in the browser that asked for it, a link signs in at once.
+	b.json(t, "POST", "/api/v1/club/email", map[string]string{"email": "owner@example.org"})
+	j := strings.Index(e.mail.body, site)
+	rec = b.do(t, "GET", strings.TrimPrefix(strings.Fields(e.mail.body[j:])[0], site), nil, "")
+	if rec.Header().Get("Location") != "/club/?signin=ok" || b.me(t) == nil {
+		t.Errorf("the asking browser: %s", rec.Header().Get("Location"))
+	}
+
+	// A member names themselves; an address is refused as a name.
+	if st, _ := phone.json(t, "POST", "/api/v1/club/name", map[string]string{"name": "me@example.org"}); st != 400 {
+		t.Errorf("an address as a name: %d", st)
+	}
+	if st, out := phone.json(t, "POST", "/api/v1/club/name", map[string]string{"name": "  Ivan  K. "}); st != 200 || phone.me(t)["name"] != "Ivan K." {
+		t.Errorf("rename: %d %v", st, out)
 	}
 }
 
@@ -370,13 +467,22 @@ func TestGitHubMakesAMaintainerOfTheOrganisationsMembers(t *testing.T) {
 	if m := b.me(t); m == nil || m["maintainer"] != true || m["name"] != "The Octocat" {
 		t.Fatalf("me: %v", m)
 	}
+	// A GitHub sign-in proves membership for a week; after that, review
+	// waits for the next one, which asks GitHub again.
+	e.clock = e.clock.Add(8 * 24 * time.Hour)
+	if m := b.me(t); m["maintainer"] != false {
+		t.Errorf("a maintainer a week on: %v", m)
+	}
+	if code, _ := b.json(t, "GET", "/api/v1/club/review", nil); code != http.StatusForbidden {
+		t.Errorf("the queue a week on: %d", code)
+	}
 }
 
 func TestASecondWayInJoinsTheAccountItWasAskedFrom(t *testing.T) {
 	e := newEnv(t)
 	b := e.browser("198.51.100.1")
 	_, out := b.json(t, "POST", "/api/v1/club/telegram", nil)
-	e.webhook(t, 777, "ivan_k", "en", "/start "+codeOf(t, out["link"].(string)))
+	e.startAndConfirm(t, 777, "ivan_k", "en", codeOf(t, out["link"].(string)))
 	b.json(t, "GET", "/api/v1/club/login", nil)
 	first := b.me(t)["id"]
 
@@ -405,7 +511,7 @@ func (e *env) signedIn(t *testing.T, tgID int64, name, ip string) *browser {
 	t.Helper()
 	b := e.browser(ip)
 	_, out := b.json(t, "POST", "/api/v1/club/telegram", nil)
-	e.webhook(t, tgID, name, "en", "/start "+codeOf(t, out["link"].(string)))
+	e.startAndConfirm(t, tgID, name, "en", codeOf(t, out["link"].(string)))
 	if _, out := b.json(t, "GET", "/api/v1/club/login", nil); out["state"] != "signed_in" {
 		t.Fatalf("sign-in: %v", out)
 	}
@@ -635,5 +741,29 @@ func TestTheHostsOwnRelayTakesTheMailWithoutTLS(t *testing.T) {
 	m.Addr = addr2
 	if err := m.Send("owner@example.org", "x", "y"); err == nil || !strings.Contains(err.Error(), "without TLS") {
 		t.Errorf("err = %v", err)
+	}
+}
+
+func TestRepublishingARejectedReportEarnsItsStarsBack(t *testing.T) {
+	e := newEnv(t)
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	_, out := ivan.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10"}, map[string][]byte{"boot_log": []byte("U-Boot\n")})
+	id := out["id"].(string)
+	maint := e.browser("198.51.100.3")
+	loc, _ := url.Parse(maint.do(t, "GET", "/api/v1/club/github", nil, "").Header().Get("Location"))
+	maint.do(t, "GET", "/api/v1/club/github/callback?code=maint&state="+loc.Query().Get("state"), nil, "")
+	for i, step := range []struct {
+		decision      string
+		points, total float64
+	}{{"publish", 1, 1}, {"reject", -1, 0}, {"publish", 1, 1}, {"publish", 0, 1}} {
+		_, d := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": step.decision, "note": "step"})
+		if d["points"] != step.points || d["total"] != step.total {
+			t.Errorf("step %d %s: %v", i, step.decision, d)
+		}
+	}
+	// The sender reads the reviewer's note with the decision.
+	_, mine := ivan.json(t, "GET", "/api/v1/club/reports", nil)
+	if r := mine["reports"].([]any)[0].(map[string]any); r["review_note"] != "step" {
+		t.Errorf("review note: %v", r)
 	}
 }

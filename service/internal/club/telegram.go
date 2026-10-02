@@ -96,27 +96,44 @@ func (t *Telegram) Start(ctx context.Context, siteURL string) error {
 	return t.call(ctx, "setWebhook", map[string]any{
 		"url":             strings.TrimSuffix(siteURL, "/") + "/api/v1/club/telegram/webhook",
 		"secret_token":    t.Secret(),
-		"allowed_updates": []string{"message"},
+		"allowed_updates": []string{"message", "callback_query"},
 	}, nil)
 }
 
-// Button is an inline button under a message that opens a page.
+// Button is an inline button under a message: one that opens a page (URL)
+// or one that answers the bot (Data).
 type Button struct {
 	Text string `json:"text"`
-	URL  string `json:"url"`
+	URL  string `json:"url,omitempty"`
+	Data string `json:"callback_data,omitempty"`
 }
 
 // Send writes to a private chat. text is Telegram HTML.
 func (t *Telegram) Send(ctx context.Context, chat int64, text string, buttons ...Button) error {
 	msg := map[string]any{"chat_id": chat, "text": text, "parse_mode": "HTML", "link_preview_options": map[string]bool{"is_disabled": true}}
 	if len(buttons) > 0 {
-		rows := [][]Button{}
-		for _, b := range buttons {
-			rows = append(rows, []Button{b})
-		}
-		msg["reply_markup"] = map[string]any{"inline_keyboard": rows}
+		msg["reply_markup"] = keyboard(buttons)
 	}
 	return t.call(ctx, "sendMessage", msg, nil)
+}
+
+func keyboard(buttons []Button) map[string]any {
+	rows := [][]Button{}
+	for _, b := range buttons {
+		rows = append(rows, []Button{b})
+	}
+	return map[string]any{"inline_keyboard": rows}
+}
+
+// Edit replaces a message the bot sent, and its buttons with none.
+func (t *Telegram) Edit(ctx context.Context, chat int64, message int64, text string) error {
+	return t.call(ctx, "editMessageText", map[string]any{"chat_id": chat, "message_id": message, "text": text,
+		"parse_mode": "HTML", "reply_markup": map[string]any{"inline_keyboard": [][]Button{}}}, nil)
+}
+
+// Answer stops the spinner on a tapped button.
+func (t *Telegram) Answer(ctx context.Context, id, text string) error {
+	return t.call(ctx, "answerCallbackQuery", map[string]any{"callback_query_id": id, "text": text}, nil)
 }
 
 // telegramStart is POST /api/v1/club/telegram: a sign-in for this browser,
@@ -156,6 +173,20 @@ type tgUpdate struct {
 		} `json:"from"`
 		Text string `json:"text"`
 	} `json:"message"`
+	Callback *struct {
+		ID   string `json:"id"`
+		From struct {
+			ID           int64  `json:"id"`
+			LanguageCode string `json:"language_code"`
+		} `json:"from"`
+		Data    string `json:"data"`
+		Message *struct {
+			ID   int64 `json:"message_id"`
+			Chat struct {
+				ID int64 `json:"id"`
+			} `json:"chat"`
+		} `json:"message"`
+	} `json:"callback_query"`
 }
 
 // telegramWebhook is POST /api/v1/club/telegram/webhook: Telegram, with
@@ -177,6 +208,12 @@ func (a *API) telegramWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	// Telegram retries anything but a 200; what went wrong is ours to log.
 	w.WriteHeader(http.StatusOK)
+	if cb := u.Callback; cb != nil {
+		if err := a.onAnswer(context.WithoutCancel(r.Context()), cb.ID, cb.From.ID, localeOf(cb.From.LanguageCode), cb.Data, cb.Message); err != nil {
+			a.Log.Error("club: telegram answer failed", "err", err)
+		}
+		return
+	}
 	m := u.Message
 	if m == nil || m.From == nil || m.From.IsBot || m.Chat.Type != "private" {
 		return
@@ -238,45 +275,52 @@ func (a *API) onMessage(ctx context.Context, chat int64, who signIn, text string
 	return a.Telegram.Send(ctx, chat, t(l, "help"), Button{Text: t(l, "open_club"), URL: a.Cfg.SiteURL + "/club/"})
 }
 
-// tgStart finishes the sign-in whose code Start carried. Without a code, or
-// with one that expired, it still signs the person up and sends a link
-// that opens the site signed in -- the browser tab may be long closed.
+// tgStart takes the code Start carried. It does not sign anyone in yet: it
+// asks the person who tapped Start whether they asked for this sign-in,
+// where and when it was asked for -- a start link sent to them by someone
+// else would otherwise sign that someone's browser in as them. Their Yes
+// (onAnswer) finishes it.
+//
+// Without a code, or with one that expired, it still signs the person up
+// and sends a link that opens the site; the site asks before it signs in.
 func (a *API) tgStart(ctx context.Context, chat int64, who signIn, code string) error {
 	l := who.Locale
-	var member string
-	var done bool
+	var member, from string
+	var asked time.Time
+	var valid bool
 	err := pgx.BeginFunc(ctx, a.DB, func(tx pgx.Tx) error {
 		var forMember *string
 		var expires time.Time
 		var finished *string
 		err := tx.QueryRow(ctx, `
-			SELECT for_member, expires_at, member_id FROM club_logins
+			SELECT for_member, expires_at, member_id, requested_from, created_at FROM club_logins
 			WHERE code_sha256 = $1 AND provider = 'telegram' AND used_at IS NULL FOR UPDATE`, sha(code)).
-			Scan(&forMember, &expires, &finished)
-		valid := code != "" && err == nil && finished == nil && expires.After(a.now())
+			Scan(&forMember, &expires, &finished, &from, &asked)
+		valid = code != "" && err == nil && finished == nil && expires.After(a.now())
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
-		member, err = identify(ctx, tx, who, func() string {
-			if valid {
-				return deref(forMember)
-			}
-			return ""
-		}())
+		link := ""
+		if valid {
+			link = deref(forMember)
+		}
+		member, err = identify(ctx, tx, who, link)
 		if err != nil {
 			return err
 		}
 		if valid {
-			_, err = tx.Exec(ctx, `UPDATE club_logins SET member_id = $2 WHERE code_sha256 = $1`, sha(code), member)
-			done = true
+			_, err = tx.Exec(ctx, `UPDATE club_logins SET claimed_by = $2 WHERE code_sha256 = $1`, sha(code), member)
 		}
 		return err
 	})
 	if err != nil {
 		return err
 	}
-	if done {
-		return a.Telegram.Send(ctx, chat, fmt.Sprintf(t(l, "signed_in"), html.EscapeString(who.Handle)))
+	if valid {
+		return a.Telegram.Send(ctx, chat,
+			fmt.Sprintf(t(l, "confirm"), html.EscapeString(who.Handle), html.EscapeString(orElse(from, "?")), asked.UTC().Format("15:04")),
+			Button{Text: t(l, "confirm_yes"), Data: "y:" + code},
+			Button{Text: t(l, "confirm_no"), Data: "n:" + code})
 	}
 	link := randomString(18)
 	if _, err := a.DB.Exec(ctx, `
@@ -290,6 +334,72 @@ func (a *API) tgStart(ctx context.Context, chat int64, who signIn, code string) 
 	}
 	return a.Telegram.Send(ctx, chat, t(l, key),
 		Button{Text: t(l, "open_signed_in"), URL: a.Cfg.SiteURL + "/api/v1/club/finish?code=" + link})
+}
+
+// onAnswer is a tap on Yes or No under the sign-in question. Only the
+// Telegram account that tapped Start may answer it.
+func (a *API) onAnswer(ctx context.Context, id string, from int64, l, data string, msg *struct {
+	ID   int64 `json:"message_id"`
+	Chat struct {
+		ID int64 `json:"id"`
+	} `json:"chat"`
+}) error {
+	verb, code, ok := strings.Cut(data, ":")
+	if !ok || (verb != "y" && verb != "n") {
+		return a.Telegram.Answer(ctx, id, "")
+	}
+	var handle string
+	var done bool
+	err := pgx.BeginFunc(ctx, a.DB, func(tx pgx.Tx) error {
+		var claimed *string
+		var expires time.Time
+		var member *string
+		err := tx.QueryRow(ctx, `
+			SELECT claimed_by, expires_at, member_id FROM club_logins
+			WHERE code_sha256 = $1 AND provider = 'telegram' AND used_at IS NULL FOR UPDATE`, sha(code)).
+			Scan(&claimed, &expires, &member)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		// The answer must come from whoever tapped Start.
+		if claimed == nil || member != nil || !expires.After(a.now()) {
+			return nil
+		}
+		if err := tx.QueryRow(ctx, `SELECT handle FROM club_identities WHERE provider = 'telegram' AND subject = $1 AND member_id = $2`,
+			fmt.Sprint(from), *claimed).Scan(&handle); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil
+			}
+			return err
+		}
+		if verb == "y" {
+			_, err = tx.Exec(ctx, `UPDATE club_logins SET member_id = claimed_by WHERE code_sha256 = $1`, sha(code))
+		} else {
+			_, err = tx.Exec(ctx, `UPDATE club_logins SET expires_at = $2 WHERE code_sha256 = $1`, sha(code), a.now())
+		}
+		done = err == nil
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	text := t(l, "confirm_gone")
+	switch {
+	case done && verb == "y":
+		text = fmt.Sprintf(t(l, "signed_in"), html.EscapeString(handle))
+	case done:
+		text = t(l, "confirm_refused")
+	}
+	if err := a.Telegram.Answer(ctx, id, ""); err != nil {
+		return err
+	}
+	if msg != nil {
+		return a.Telegram.Edit(ctx, msg.Chat.ID, msg.ID, text)
+	}
+	return nil
 }
 
 // notify writes to a member through the bot, when they have it and have
@@ -332,49 +442,64 @@ func (a *API) notifyDecision(ctx context.Context, member, report, decision strin
 
 var messages = map[string]map[string]string{
 	"en": {
-		"signed_in":      "✅ Signed in to openipc.org as <b>%s</b>. You can go back to the browser.",
-		"welcome":        "Hi! I sign you in to openipc.org and tell you what happens to the boards, logs and dumps you send. I never see your chats or your phone number.",
-		"expired":        "That sign-in code has expired. This button opens openipc.org signed in:",
-		"open_signed_in": "Open openipc.org signed in",
-		"open_club":      "My submissions",
-		"help":           "I sign you in to openipc.org and tell you what happens to what you send.\n/quiet mutes me, /loud unmutes, /stop unlinks Telegram.",
-		"quiet":          "Muted. Your submissions are still listed on openipc.org/club. Send /loud to hear from me again, or /stop to unlink Telegram.",
-		"loud":           "I'll tell you again when something you sent is reviewed.",
-		"stopped":        "Telegram is unlinked from your openipc.org account. Sign in with Telegram again to link it back.",
-		"not_member":     "You haven't signed in to openipc.org with Telegram yet.",
-		"accepted":       "✅ Your report <b>%s</b> was accepted. <b>+%d ★</b>, %d in total.",
-		"accepted_known": "✅ Your report <b>%s</b> was accepted. The catalogue already had what it brings, so it earns no stars this time. Thank you anyway.",
-		"rejected":       "⚪ Your report <b>%s</b> was not accepted. Your page on openipc.org says why when the reviewer left a note.",
+		"signed_in":       "✅ Signed in to openipc.org as <b>%s</b>. You can go back to the browser.",
+		"welcome":         "Hi! I sign you in to openipc.org and tell you what happens to the boards, logs and dumps you send. I never see your chats or your phone number.",
+		"expired":         "That sign-in code has expired. This button opens openipc.org signed in:",
+		"open_signed_in":  "Open openipc.org signed in",
+		"open_club":       "My submissions",
+		"help":            "I sign you in to openipc.org and tell you what happens to what you send.\n/quiet mutes me, /loud unmutes, /stop unlinks Telegram.",
+		"quiet":           "Muted. Your submissions are still listed on openipc.org/club. Send /loud to hear from me again, or /stop to unlink Telegram.",
+		"loud":            "I'll tell you again when something you sent is reviewed.",
+		"stopped":         "Telegram is unlinked from your openipc.org account. Sign in with Telegram again to link it back.",
+		"not_member":      "You haven't signed in to openipc.org with Telegram yet.",
+		"accepted":        "✅ Your report <b>%s</b> was accepted. <b>+%d ★</b>, %d in total.",
+		"accepted_known":  "✅ Your report <b>%s</b> was accepted. The catalogue already had what it brings, so it earns no stars this time. Thank you anyway.",
+		"rejected":        "⚪ Your report <b>%s</b> was not accepted. Your page on openipc.org says why when the reviewer left a note.",
+		"confirm":         "Sign in to openipc.org as <b>%s</b>?\nAsked for from %s at %s UTC. Tap Yes only if you asked for it yourself, just now.",
+		"confirm_yes":     "✅ Yes, sign me in",
+		"confirm_no":      "✖ No, it was not me",
+		"confirm_refused": "Nobody was signed in. If someone sent you that link, they wanted your account: ignore them.",
+		"confirm_gone":    "That sign-in has expired or was already answered. Start again on openipc.org.",
 	},
 	"ru": {
-		"signed_in":      "✅ Вы вошли на openipc.org как <b>%s</b>. Можно вернуться в браузер.",
-		"welcome":        "Привет! Я вхожу за вас на openipc.org и сообщаю, что стало с платами, логами и дампами, которые вы прислали. Ваших чатов и номера телефона я не вижу.",
-		"expired":        "Этот код входа устарел. Кнопка ниже откроет openipc.org уже с входом:",
-		"open_signed_in": "Открыть openipc.org с входом",
-		"open_club":      "Мои материалы",
-		"help":           "Я вхожу за вас на openipc.org и сообщаю, что стало с присланным.\n/quiet — не писать, /loud — писать снова, /stop — отвязать Telegram.",
-		"quiet":          "Больше не пишу. Ваши материалы по-прежнему видны на openipc.org/club. /loud — писать снова, /stop — отвязать Telegram.",
-		"loud":           "Снова сообщу, когда присланное проверят.",
-		"stopped":        "Telegram отвязан от вашей учётной записи на openipc.org. Войдите через Telegram снова, чтобы привязать.",
-		"not_member":     "Вы ещё не входили на openipc.org через Telegram.",
-		"accepted":       "✅ Ваш отчёт <b>%s</b> принят. <b>+%d ★</b>, всего %d.",
-		"accepted_known": "✅ Ваш отчёт <b>%s</b> принят. В каталоге это уже было, поэтому звёзд в этот раз нет. Всё равно спасибо.",
-		"rejected":       "⚪ Ваш отчёт <b>%s</b> не принят. Если проверяющий оставил пояснение, оно на вашей странице на openipc.org.",
+		"signed_in":       "✅ Вы вошли на openipc.org как <b>%s</b>. Можно вернуться в браузер.",
+		"welcome":         "Привет! Я вхожу за вас на openipc.org и сообщаю, что стало с платами, логами и дампами, которые вы прислали. Ваших чатов и номера телефона я не вижу.",
+		"expired":         "Этот код входа устарел. Кнопка ниже откроет openipc.org уже с входом:",
+		"open_signed_in":  "Открыть openipc.org с входом",
+		"open_club":       "Мои материалы",
+		"help":            "Я вхожу за вас на openipc.org и сообщаю, что стало с присланным.\n/quiet — не писать, /loud — писать снова, /stop — отвязать Telegram.",
+		"quiet":           "Больше не пишу. Ваши материалы по-прежнему видны на openipc.org/club. /loud — писать снова, /stop — отвязать Telegram.",
+		"loud":            "Снова сообщу, когда присланное проверят.",
+		"stopped":         "Telegram отвязан от вашей учётной записи на openipc.org. Войдите через Telegram снова, чтобы привязать.",
+		"not_member":      "Вы ещё не входили на openipc.org через Telegram.",
+		"accepted":        "✅ Ваш отчёт <b>%s</b> принят. <b>+%d ★</b>, всего %d.",
+		"accepted_known":  "✅ Ваш отчёт <b>%s</b> принят. В каталоге это уже было, поэтому звёзд в этот раз нет. Всё равно спасибо.",
+		"rejected":        "⚪ Ваш отчёт <b>%s</b> не принят. Если проверяющий оставил пояснение, оно на вашей странице на openipc.org.",
+		"confirm":         "Войти на openipc.org как <b>%s</b>?\nЗапрос с адреса %s в %s UTC. Нажмите «Да», только если вы сами запросили вход только что.",
+		"confirm_yes":     "✅ Да, войти",
+		"confirm_no":      "✖ Нет, это не я",
+		"confirm_refused": "Вход не выполнен. Если ссылку вам прислал кто-то другой, он хотел получить доступ к вашей учётной записи: не отвечайте ему.",
+		"confirm_gone":    "Этот вход устарел или на него уже ответили. Начните заново на openipc.org.",
 	},
 	"zh": {
-		"signed_in":      "✅ 已以 <b>%s</b> 身份登录 openipc.org。现在可以回到浏览器。",
-		"welcome":        "你好！我帮你登录 openipc.org，并告诉你提交的电路板、日志和固件转储的审核结果。我看不到你的聊天记录或手机号。",
-		"expired":        "该登录码已过期。点击下方按钮即可直接登录 openipc.org：",
-		"open_signed_in": "登录并打开 openipc.org",
-		"open_club":      "我的提交",
-		"help":           "我帮你登录 openipc.org，并告诉你提交内容的审核结果。\n/quiet 静音，/loud 取消静音，/stop 解除 Telegram 绑定。",
-		"quiet":          "已静音。你的提交仍列在 openipc.org/club。发送 /loud 恢复通知，或 /stop 解除 Telegram 绑定。",
-		"loud":           "你的提交被审核后我会再通知你。",
-		"stopped":        "已从你的 openipc.org 账户解除 Telegram 绑定。再次用 Telegram 登录即可重新绑定。",
-		"not_member":     "你还没有用 Telegram 登录过 openipc.org。",
-		"accepted":       "✅ 你的报告 <b>%s</b> 已通过。<b>+%d ★</b>，共 %d。",
-		"accepted_known": "✅ 你的报告 <b>%s</b> 已通过。目录中已有相同内容，因此本次没有星星。仍然感谢！",
-		"rejected":       "⚪ 你的报告 <b>%s</b> 未通过。审核者如留有说明，可在 openipc.org 的个人页面查看。",
+		"signed_in":       "✅ 已以 <b>%s</b> 身份登录 openipc.org。现在可以回到浏览器。",
+		"welcome":         "你好！我帮你登录 openipc.org，并告诉你提交的电路板、日志和固件转储的审核结果。我看不到你的聊天记录或手机号。",
+		"expired":         "该登录码已过期。点击下方按钮即可直接登录 openipc.org：",
+		"open_signed_in":  "登录并打开 openipc.org",
+		"open_club":       "我的提交",
+		"help":            "我帮你登录 openipc.org，并告诉你提交内容的审核结果。\n/quiet 静音，/loud 取消静音，/stop 解除 Telegram 绑定。",
+		"quiet":           "已静音。你的提交仍列在 openipc.org/club。发送 /loud 恢复通知，或 /stop 解除 Telegram 绑定。",
+		"loud":            "你的提交被审核后我会再通知你。",
+		"stopped":         "已从你的 openipc.org 账户解除 Telegram 绑定。再次用 Telegram 登录即可重新绑定。",
+		"not_member":      "你还没有用 Telegram 登录过 openipc.org。",
+		"accepted":        "✅ 你的报告 <b>%s</b> 已通过。<b>+%d ★</b>，共 %d。",
+		"accepted_known":  "✅ 你的报告 <b>%s</b> 已通过。目录中已有相同内容，因此本次没有星星。仍然感谢！",
+		"rejected":        "⚪ 你的报告 <b>%s</b> 未通过。审核者如留有说明，可在 openipc.org 的个人页面查看。",
+		"confirm":         "以 <b>%s</b> 身份登录 openipc.org？\n请求来自 %s，时间 %s UTC。仅当这是你刚刚亲自发起的登录时才点“是”。",
+		"confirm_yes":     "✅ 是，登录",
+		"confirm_no":      "✖ 不是我",
+		"confirm_refused": "未登录任何账户。如果是别人发给你的链接，对方想获取你的账户：请不要理会。",
+		"confirm_gone":    "该登录已过期或已处理。请在 openipc.org 重新开始。",
 	},
 }
 

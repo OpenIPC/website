@@ -32,14 +32,14 @@ var contributionsFS embed.FS
 
 // Contribution is one entry of contributions.yml.
 type Contribution struct {
-	Unit      string   `yaml:"unit"`
-	Model     string   `yaml:"model"`
-	By        string   `yaml:"by"`
-	Evidence  []string `yaml:"evidence"`
-	Sensor    string   `yaml:"sensor"`
-	FlashChip string   `yaml:"flash_chip"`
-	FlashMB   int      `yaml:"flash_mb"`
-	Note      string   `yaml:"note"`
+	Unit      string            `yaml:"unit"`
+	Model     string            `yaml:"model"`
+	By        string            `yaml:"by"`
+	Evidence  []string          `yaml:"evidence"`
+	Sensor    string            `yaml:"sensor"`
+	FlashChip string            `yaml:"flash_chip"`
+	FlashMB   int               `yaml:"flash_mb"`
+	Note      string            `yaml:"note"`
 	Files     []ContributedFile `yaml:"files"`
 }
 
@@ -137,6 +137,20 @@ func (im *Importer) applyContributions(ctx context.Context, fsys fs.FS, list []C
 }
 
 func (im *Importer) apply(ctx context.Context, fsys fs.FS, list []Contribution, fromReports bool) (missing []string, err error) {
+	// One apply at a time, across processes: the web role at start, after
+	// each review, and `openipc reports publish` in the same container all
+	// write these units and their directories.
+	conn, err := im.Pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Release()
+	if _, err := conn.Exec(ctx, `SELECT pg_advisory_lock(hashtextextended('board-contributions', 0))`); err != nil {
+		return nil, err
+	}
+	defer func() {
+		_, _ = conn.Exec(context.WithoutCancel(ctx), `SELECT pg_advisory_unlock(hashtextextended('board-contributions', 0))`)
+	}()
 	var keep []string
 	for i, c := range list {
 		var exists bool
@@ -159,56 +173,90 @@ func (im *Importer) apply(ctx context.Context, fsys fs.FS, list []Contribution, 
 			}
 			u.Files = append(u.Files, File{Kind: f.Kind, Name: f.File, Source: src})
 		}
-		same, err := im.unchanged(ctx, fsys, c, u)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", c.Unit, err)
-		}
-		if same {
-			continue
-		}
-		// Checked before the directory is touched: it may be another
-		// source's unit.
-		var other string
-		err = im.Pool.QueryRow(ctx, `SELECT source::text FROM board_units WHERE id = $1`, c.Unit).Scan(&other)
-		if err == nil && other != Contributors {
-			return nil, fmt.Errorf("%s: the unit id is already taken by %s", c.Unit, other)
-		}
-		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			return nil, err
-		}
-		if err := os.RemoveAll(filepath.Join(im.Root, c.Unit)); err != nil {
-			return nil, err
-		}
-		arts, err := im.files(fsys, u)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", c.Unit, err)
-		}
-		if err := pgx.BeginFunc(ctx, im.Pool, func(tx pgx.Tx) error {
-			if _, err := tx.Exec(ctx, `DELETE FROM board_units WHERE source = $1 AND (id = $2 OR source_ref = $3)`,
-				Contributors, c.Unit, u.SourceRef); err != nil {
-				return err
+		if err := im.applyOne(ctx, fsys, c, u); err != nil {
+			if !fromReports {
+				return nil, err
 			}
-			var flash *int
-			if c.FlashMB > 0 {
-				flash = &c.FlashMB
-			}
-			if _, err := tx.Exec(ctx, `
-				INSERT INTO board_units (id, model_id, sensor, flash_chip, flash_size_mb, source, source_ref, contributed_by, notes, position)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-				u.ID, c.Model, null(c.Sensor), null(c.FlashChip), flash, Contributors, u.SourceRef, c.By, null(c.Note), u.Position); err != nil {
-				return err
-			}
-			return insertArtifacts(ctx, tx, u.ID, arts)
-		}); err != nil {
-			return nil, fmt.Errorf("%s: %w", c.Unit, err)
+			// One report's unusable file (a photo nothing can decode) costs
+			// that report its unit, not every report after it. What it had
+			// is kept as it was.
+			im.Log.Error("boards: a published report's unit not listed", "unit", c.Unit, "err", err)
 		}
-		im.Log.Info("boards: contribution applied", "unit", c.Unit, "files", len(arts))
 	}
+	return missing, im.prune(ctx, keep, fromReports)
+}
 
+// applyOne makes one unit what its entry says.
+func (im *Importer) applyOne(ctx context.Context, fsys fs.FS, c Contribution, u *Unit) error {
+	same, err := im.unchanged(ctx, fsys, c, u)
+	if err != nil {
+		return fmt.Errorf("%s: %w", c.Unit, err)
+	}
+	if same {
+		return nil
+	}
+	// Every file must read, and every picture decode, before anything of
+	// the unit's is touched: a unit that cannot be written stays as it was.
+	for _, f := range u.Files {
+		b, err := fs.ReadFile(fsys, f.Source)
+		if err != nil {
+			return fmt.Errorf("%s: %w", c.Unit, err)
+		}
+		switch f.Kind {
+		case "photo_front", "photo_back", "photo_other", "pinout":
+			if _, _, _, err := Thumbnail(b, 8); err != nil {
+				return fmt.Errorf("%s: %s: %w", c.Unit, f.Name, err)
+			}
+		}
+	}
+	// Checked before the directory is touched: it may be another source's
+	// unit.
+	var other string
+	err = im.Pool.QueryRow(ctx, `SELECT source::text FROM board_units WHERE id = $1`, c.Unit).Scan(&other)
+	if err == nil && other != Contributors {
+		return fmt.Errorf("%s: the unit id is already taken by %s", c.Unit, other)
+	}
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return err
+	}
+	if err := os.RemoveAll(filepath.Join(im.Root, c.Unit)); err != nil {
+		return err
+	}
+	arts, err := im.files(fsys, u)
+	if err != nil {
+		return fmt.Errorf("%s: %w", c.Unit, err)
+	}
+	if err := pgx.BeginFunc(ctx, im.Pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `DELETE FROM board_units WHERE source = $1 AND (id = $2 OR source_ref = $3)`,
+			Contributors, c.Unit, u.SourceRef); err != nil {
+			return err
+		}
+		var flash *int
+		if c.FlashMB > 0 {
+			flash = &c.FlashMB
+		}
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO board_units (id, model_id, sensor, flash_chip, flash_size_mb, source, source_ref, contributed_by, notes, position)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+			u.ID, c.Model, null(c.Sensor), null(c.FlashChip), flash, Contributors, u.SourceRef, c.By, null(c.Note), u.Position); err != nil {
+			return err
+		}
+		return insertArtifacts(ctx, tx, u.ID, arts)
+	}); err != nil {
+		return fmt.Errorf("%s: %w", c.Unit, err)
+	}
+	im.Log.Info("boards: contribution applied", "unit", c.Unit, "files", len(arts))
+	return nil
+}
+
+// prune removes the units of this list (contributions.yml's, or the
+// reports') that keep does not name, with their files, and lists the
+// contributor source only while it has a unit.
+func (im *Importer) prune(ctx context.Context, keep []string, fromReports bool) error {
 	if keep == nil {
 		keep = []string{}
 	}
-	err = pgx.BeginFunc(ctx, im.Pool, func(tx pgx.Tx) error {
+	return pgx.BeginFunc(ctx, im.Pool, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, `
 			DELETE FROM board_units WHERE source = $1 AND NOT id = ANY($2) AND (strpos(source_ref, $3) > 0) = $4
 			RETURNING id`, Contributors, keep, ReceiptMark, fromReports)
@@ -225,7 +273,6 @@ func (im *Importer) apply(ctx context.Context, fsys fs.FS, list []Contribution, 
 			}
 			im.Log.Info("boards: contribution removed", "unit", id)
 		}
-		// The source is listed only while it has a unit.
 		var any bool
 		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM board_units WHERE source = $1)`, Contributors).Scan(&any); err != nil {
 			return err
@@ -242,7 +289,6 @@ func (im *Importer) apply(ctx context.Context, fsys fs.FS, list []Contribution, 
 			ON CONFLICT (id) DO NOTHING`, Contributors)
 		return err
 	})
-	return missing, err
 }
 
 // unchanged says whether the unit is stored exactly as the entry describes

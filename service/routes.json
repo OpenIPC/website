@@ -161,6 +161,21 @@
   },
   {
     "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/finish/who"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/finish"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/name"
+  },
+  {
+    "role": "web",
     "method": "POST",
     "path": "/api/v1/club/telegram"
   },

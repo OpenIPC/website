@@ -22,7 +22,7 @@ import (
 func newClub(bg context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool, ownerReports *reports.API) *club.API {
 	httpc := &http.Client{Timeout: 20 * time.Second}
 	api := &club.API{DB: pool, Log: log, Reports: ownerReports,
-		Cfg: club.Config{SiteURL: cfg.ClubSiteURL, MaintainerOrg: cfg.ClubMaintainerOrg, Maintainers: cfg.ClubMaintainers},
+		Cfg:        club.Config{SiteURL: cfg.ClubSiteURL, MaintainerOrg: cfg.ClubMaintainerOrg, Maintainers: cfg.ClubMaintainers},
 		OnReviewed: func(ctx context.Context) { refreshReportUnits(ctx, cfg, log, pool) },
 	}
 	if cfg.TelegramBotToken != "" {
@@ -70,8 +70,10 @@ func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logge
 		if by == "" {
 			by = "an owner"
 		}
+		// A report published on several boards is a unit on each, and each
+		// unit's reference is its own (board_units.source_ref is unique).
 		c := boards.Contribution{Unit: t.Model + "-" + t.Report, Model: t.Model, By: by,
-			Evidence: []string{cfg.ClubSiteURL + boards.ReceiptMark + t.Report}}
+			Evidence: []string{cfg.ClubSiteURL + boards.ReceiptMark + t.Report + "&board=" + t.Model}}
 		for _, f := range t.Files {
 			c.Files = append(c.Files, boards.ContributedFile{Kind: kinds[f.Kind], File: fmt.Sprintf("%d-%s", f.Position, f.Name), Source: f.Path})
 		}

@@ -65,21 +65,24 @@ func (a *API) now() time.Time {
 
 func (a *API) Handlers() map[string]http.Handler {
 	return map[string]http.Handler{
-		"GET /api/v1/club/me":                                http.HandlerFunc(a.me),
-		"POST /api/v1/club/logout":                           a.post(a.logout),
-		"POST /api/v1/club/quiet":                            a.post(a.quiet),
-		"GET /api/v1/club/login":                             http.HandlerFunc(a.poll),
-		"GET /api/v1/club/finish":                            http.HandlerFunc(a.finish),
-		"POST /api/v1/club/telegram":                         a.post(a.telegramStart),
-		"POST /api/v1/club/telegram/webhook":                 http.HandlerFunc(a.telegramWebhook),
-		"POST /api/v1/club/email":                            a.post(a.emailStart),
-		"GET /api/v1/club/github":                            http.HandlerFunc(a.githubStart),
-		"GET /api/v1/club/github/callback":                   http.HandlerFunc(a.githubCallback),
-		"POST /api/v1/club/reports":                          a.post(a.send),
-		"GET /api/v1/club/reports":                           http.HandlerFunc(a.mine),
-		"GET /api/v1/club/reports/{id}/files/{position}":     http.HandlerFunc(a.file),
-		"GET /api/v1/club/review":                            http.HandlerFunc(a.queue),
-		"POST /api/v1/club/review/{id}":                      a.post(a.decide),
+		"GET /api/v1/club/me":                            http.HandlerFunc(a.me),
+		"POST /api/v1/club/logout":                       a.post(a.logout),
+		"POST /api/v1/club/quiet":                        a.post(a.quiet),
+		"GET /api/v1/club/login":                         http.HandlerFunc(a.poll),
+		"GET /api/v1/club/finish":                        http.HandlerFunc(a.finish),
+		"GET /api/v1/club/finish/who":                    http.HandlerFunc(a.finishWho),
+		"POST /api/v1/club/finish":                       a.post(a.finishConfirmed),
+		"POST /api/v1/club/name":                         a.post(a.rename),
+		"POST /api/v1/club/telegram":                     a.post(a.telegramStart),
+		"POST /api/v1/club/telegram/webhook":             http.HandlerFunc(a.telegramWebhook),
+		"POST /api/v1/club/email":                        a.post(a.emailStart),
+		"GET /api/v1/club/github":                        http.HandlerFunc(a.githubStart),
+		"GET /api/v1/club/github/callback":               http.HandlerFunc(a.githubCallback),
+		"POST /api/v1/club/reports":                      a.post(a.send),
+		"GET /api/v1/club/reports":                       http.HandlerFunc(a.mine),
+		"GET /api/v1/club/reports/{id}/files/{position}": http.HandlerFunc(a.file),
+		"GET /api/v1/club/review":                        http.HandlerFunc(a.queue),
+		"POST /api/v1/club/review/{id}":                  a.post(a.decide),
 	}
 }
 
@@ -224,9 +227,9 @@ func (a *API) newLogin(w http.ResponseWriter, r *http.Request, provider, email s
 	code = randomString(18)
 	expires = a.now().Add(loginTTL)
 	_, err = a.DB.Exec(r.Context(), `
-		INSERT INTO club_logins (code_sha256, provider, browser_sha256, email, for_member, expires_at)
-		VALUES ($1, $2, $3, nullif($4, ''), nullif($5, ''), $6)`,
-		sha(code), provider, sha(secret), email, forMember, expires)
+		INSERT INTO club_logins (code_sha256, provider, browser_sha256, email, for_member, expires_at, requested_from)
+		VALUES ($1, $2, $3, nullif($4, ''), nullif($5, ''), $6, $7)`,
+		sha(code), provider, sha(secret), email, forMember, expires, clientKey(r))
 	if err == nil {
 		a.setCookie(w, loginCookie, secret, loginTTL)
 	}
@@ -303,41 +306,138 @@ func (a *API) signInOnce(w http.ResponseWriter, r *http.Request, code, member st
 
 var errUsed = errors.New("used")
 
-// finish is GET /api/v1/club/finish?code=: a link that signs in whichever
-// browser opens it -- the emailed link, or the one the bot sends into a
-// member's own chat when the browser's sign-in has expired. A browser-bound
-// login (a Telegram QR code, GitHub's state) is never finished here, so a
-// code seen over someone's shoulder signs nobody in.
+// finish is GET /api/v1/club/finish?code=: a link that signs a browser in
+// -- the emailed link, or the one the bot sends into a member's own chat
+// when a sign-in expired. Opened in the browser that asked for it, it signs
+// in at once. Opened anywhere else it only asks: the page shows whose
+// account the link is for (finishWho) and signs in when that is confirmed
+// (finishConfirmed). Otherwise anyone could ask for a link to their own
+// address, get it opened in someone else's browser, and have what that
+// person sends next land in their account.
+//
+// A browser-bound Telegram code (the QR code) is never finished here.
 func (a *API) finish(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
-	ctx := r.Context()
-	var provider string
-	var email, forMember, member *string
-	var bound *string
-	var expires time.Time
-	var used *time.Time
-	err := a.DB.QueryRow(ctx, `
-		SELECT provider, email, for_member, member_id, browser_sha256, expires_at, used_at
-		FROM club_logins WHERE code_sha256 = $1`, sha(code)).
-		Scan(&provider, &email, &forMember, &member, &bound, &expires, &used)
-	if errors.Is(err, pgx.ErrNoRows) || err == nil && (used != nil || !expires.After(a.now())) {
-		http.Redirect(w, r, "/club/?signin=expired", http.StatusSeeOther)
-		return
-	}
+	l, err := a.login(r.Context(), code)
 	if err != nil {
 		a.fail(w, "the sign-in", err)
 		return
 	}
-	if bound != nil && provider != "email" {
+	switch {
+	case l == nil || !l.usable(a.now()):
+		http.Redirect(w, r, "/club/?signin=expired", http.StatusSeeOther)
+	case l.bound != "" && l.provider != "email":
 		http.Redirect(w, r, "/club/?signin=elsewhere", http.StatusSeeOther)
+	case l.bound != "" && a.sameBrowser(r, l.bound):
+		if a.complete(w, r, code, l) {
+			http.Redirect(w, r, "/club/?signin=ok", http.StatusSeeOther)
+		}
+	default:
+		http.Redirect(w, r, "/club/?confirm="+url.QueryEscape(code), http.StatusSeeOther)
+	}
+}
+
+// finishWho is GET /api/v1/club/finish/who?code=: whose account a link
+// opened in another browser signs into, for the page to ask about. Only
+// the holder of the link can ask, and it tells them nothing the link would
+// not.
+func (a *API) finishWho(w http.ResponseWriter, r *http.Request) {
+	l, err := a.login(r.Context(), r.URL.Query().Get("code"))
+	if err != nil {
+		a.fail(w, "the sign-in", err)
 		return
 	}
-	if provider == "email" && member == nil {
+	if l == nil || !l.usable(a.now()) || (l.bound != "" && l.provider != "email") {
+		a.refuse(w, http.StatusGone, "this sign-in link has expired or was already used")
+		return
+	}
+	who := deref(l.email)
+	if l.member != nil {
+		var handle string
+		_ = a.DB.QueryRow(r.Context(), `SELECT handle FROM club_identities WHERE member_id = $1 AND provider = $2 ORDER BY seen_at DESC LIMIT 1`,
+			*l.member, l.provider).Scan(&handle)
+		who = handle
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"provider": l.provider, "who": who})
+}
+
+// finishConfirmed is POST /api/v1/club/finish {"code": ...}: the page's
+// "Yes, that is my account".
+func (a *API) finishConfirmed(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Code string `json:"code"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&in); err != nil || in.Code == "" {
+		a.refuse(w, http.StatusBadRequest, `send {"code": "..."}`)
+		return
+	}
+	l, err := a.login(r.Context(), in.Code)
+	if err != nil {
+		a.fail(w, "the sign-in", err)
+		return
+	}
+	if l == nil || !l.usable(a.now()) || (l.bound != "" && l.provider != "email") {
+		a.refuse(w, http.StatusGone, "this sign-in link has expired or was already used")
+		return
+	}
+	if !a.complete(w, r, in.Code, l) {
+		return
+	}
+	m, err := a.member(r.Context(), deref(l.member))
+	if err != nil {
+		a.fail(w, "the member", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"member": m})
+}
+
+// pending is one row of club_logins, as finish reads it.
+type pending struct {
+	provider         string
+	email, forMember *string
+	member           *string
+	bound            string
+	expires          time.Time
+	used             bool
+}
+
+func (l *pending) usable(now time.Time) bool { return !l.used && l.expires.After(now) }
+
+func (a *API) login(ctx context.Context, code string) (*pending, error) {
+	if code == "" || len(code) > 100 {
+		return nil, nil
+	}
+	l := &pending{}
+	var bound *string
+	var used *time.Time
+	err := a.DB.QueryRow(ctx, `
+		SELECT provider, email, for_member, member_id, browser_sha256, expires_at, used_at
+		FROM club_logins WHERE code_sha256 = $1`, sha(code)).
+		Scan(&l.provider, &l.email, &l.forMember, &l.member, &bound, &l.expires, &used)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	l.bound, l.used = deref(bound), used != nil
+	return l, err
+}
+
+func (a *API) sameBrowser(r *http.Request, bound string) bool {
+	c, err := r.Cookie(loginCookie)
+	return err == nil && c.Value != "" && sha(c.Value) == bound
+}
+
+// complete signs this browser in with a login: an emailed one becomes the
+// address's identity first.
+func (a *API) complete(w http.ResponseWriter, r *http.Request, code string, l *pending) bool {
+	ctx := r.Context()
+	if l.provider == "email" && l.member == nil {
 		var id string
 		err := pgx.BeginFunc(ctx, a.DB, func(tx pgx.Tx) error {
-			addr := strings.ToLower(*email)
-			id, err = identify(ctx, tx, signIn{Provider: "email", Subject: addr, Handle: addr,
-				Name: strings.SplitN(addr, "@", 2)[0]}, deref(forMember))
+			addr := strings.ToLower(deref(l.email))
+			var err error
+			// The name is never the address: it is shown on the boards a
+			// member's reports are listed on. They choose one on /club.
+			id, err = identify(ctx, tx, signIn{Provider: "email", Subject: addr, Handle: addr, Name: ""}, deref(l.forMember))
 			if err != nil {
 				return err
 			}
@@ -346,18 +446,46 @@ func (a *API) finish(w http.ResponseWriter, r *http.Request) {
 		})
 		if err != nil {
 			a.fail(w, "the sign-in", err)
-			return
+			return false
 		}
-		member = &id
+		l.member = &id
 	}
-	if member == nil {
-		http.Redirect(w, r, "/club/?signin=expired", http.StatusSeeOther)
+	if l.member == nil {
+		a.refuse(w, http.StatusGone, "this sign-in link has expired or was already used")
+		return false
+	}
+	return a.signInOnce(w, r, sha(code), *l.member)
+}
+
+// rename is POST /api/v1/club/name {"name": ...}: what a member is called
+// on their page and in the credit on the boards their reports reach.
+func (a *API) rename(w http.ResponseWriter, r *http.Request) {
+	m, ok := a.signedIn(w, r)
+	if !ok {
 		return
 	}
-	if !a.signInOnce(w, r, sha(code), *member) {
+	var in struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&in); err != nil {
+		a.refuse(w, http.StatusBadRequest, `send {"name": "..."}`)
 		return
 	}
-	http.Redirect(w, r, "/club/?signin=ok", http.StatusSeeOther)
+	name := cleanName(in.Name)
+	if strings.TrimSpace(in.Name) == "" || strings.Contains(name, "@") {
+		a.refuse(w, http.StatusBadRequest, "a name is 1 to 80 characters, and not an email address")
+		return
+	}
+	if _, err := a.DB.Exec(r.Context(), `UPDATE club_members SET name = $2 WHERE id = $1`, m.ID, name); err != nil {
+		a.fail(w, "the name", err)
+		return
+	}
+	m.Name = name
+	if a.OnReviewed != nil {
+		// The credit on the boards is the name; list it anew.
+		a.OnReviewed(context.WithoutCancel(r.Context()))
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"member": m})
 }
 
 // send is POST /api/v1/club/reports: the site's send form. Signed in or
@@ -383,6 +511,9 @@ func (a *API) mine(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		a.fail(w, "the reports", err)
 		return
+	}
+	for _, rep := range list {
+		m.Pending += rep.Pending
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"member": m, "reports": list})
 }

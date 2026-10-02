@@ -5,8 +5,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"testing/fstest"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // contributed is a contributions tree for the fixture's xiongmai-53h20-s.
@@ -287,5 +290,90 @@ func TestReportUnitsAndContributionsLeaveEachOtherAlone(t *testing.T) {
 	}
 	if y, r := count(); y != 1 || r != 0 {
 		t.Errorf("after the report was withdrawn: %d from contributions.yml, %d from reports", y, r)
+	}
+}
+
+// A tiny lossless WebP (1x1), as the send form accepts them.
+var webp1x1 = []byte{0x52, 0x49, 0x46, 0x46, 0x1a, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x4c,
+	0x0d, 0x00, 0x00, 0x00, 0x2f, 0x00, 0x00, 0x00, 0x10, 0x07, 0x10, 0x11, 0x11, 0x88, 0x88, 0xfe, 0x07, 0x00}
+
+func reportUnit(unit, model, report, src, kind, file string) Contribution {
+	return Contribution{Unit: unit, Model: model, By: "Ivan",
+		Evidence: []string{"https://openipc.org" + ReceiptMark + report + "&board=" + model},
+		Files:    []ContributedFile{{Kind: kind, File: file, Source: src}}}
+}
+
+func TestAWebPPhotoIsThumbnailedAndABrokenOneCostsOnlyItsReport(t *testing.T) {
+	pool, root := imported(t)
+	ctx := context.Background()
+	im := &Importer{Pool: pool, Log: quiet(), Root: root}
+	store := fstest.MapFS{
+		"aa/webp":   {Data: webp1x1},
+		"bb/broken": {Data: []byte("not a picture")},
+		"cc/text":   {Data: []byte("U-Boot\n")},
+	}
+	list := []Contribution{
+		reportUnit("xiongmai-53h20-s-r-aaaaaaaa", "xiongmai-53h20-s", "r-aaaaaaaa", "aa/webp", "photo_other", "1-front.webp"),
+		reportUnit("xiongmai-53h20-s-r-bbbbbbbb", "xiongmai-53h20-s", "r-bbbbbbbb", "bb/broken", "photo_other", "1-x.webp"),
+		reportUnit("xiongmai-53h20-s-r-cccccccc", "xiongmai-53h20-s", "r-cccccccc", "cc/text", "boot_log", "1-boot.txt"),
+	}
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	var units []string
+	rows, _ := pool.Query(ctx, `SELECT id FROM board_units WHERE source = 'contributor' ORDER BY id`)
+	units, _ = pgx.CollectRows(rows, pgx.RowTo[string])
+	if strings.Join(units, " ") != "xiongmai-53h20-s-r-aaaaaaaa xiongmai-53h20-s-r-cccccccc" {
+		t.Errorf("units: %v", units)
+	}
+	if _, err := os.Stat(filepath.Join(root, "xiongmai-53h20-s-r-aaaaaaaa", "thumb-1-front.jpg")); err != nil {
+		t.Error(err)
+	}
+
+	// A unit that was fine and now cannot be written stays as it was.
+	list[0].Files[0].Source = "bb/broken"
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "xiongmai-53h20-s-r-aaaaaaaa", "1-front.webp")); err != nil {
+		t.Errorf("the earlier unit's file: %v", err)
+	}
+}
+
+func TestAReportOnTwoBoardsIsAUnitOnEachAndTwoRefreshesAtOnceAgree(t *testing.T) {
+	pool, root := imported(t)
+	ctx := context.Background()
+	store := fstest.MapFS{"cc/text": {Data: []byte("U-Boot\n")}}
+	list := []Contribution{
+		reportUnit("xiongmai-53h20-s-r-cccccccc", "xiongmai-53h20-s", "r-cccccccc", "cc/text", "boot_log", "1-boot.txt"),
+		reportUnit("unknown-unidentified-hi3516cv200-3-r-cccccccc", "unknown-unidentified-hi3516cv200-3", "r-cccccccc", "cc/text", "boot_log", "1-boot.txt"),
+	}
+	var wg sync.WaitGroup
+	errs := make(chan error, 4)
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			im := &Importer{Pool: pool, Log: quiet(), Root: root}
+			_, err := im.ApplyReportUnits(ctx, store, list)
+			errs <- err
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	var n int
+	_ = pool.QueryRow(ctx, `SELECT count(*) FROM board_units WHERE source = 'contributor'`).Scan(&n)
+	if n != 2 {
+		t.Errorf("%d units, want one on each board", n)
+	}
+	for _, c := range list {
+		if _, err := os.Stat(filepath.Join(root, c.Unit, "1-boot.txt")); err != nil {
+			t.Error(err)
+		}
 	}
 }

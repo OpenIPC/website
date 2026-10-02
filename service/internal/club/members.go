@@ -34,6 +34,10 @@ type execer interface {
 const (
 	sessionDays = 90
 	loginTTL    = 10 * time.Minute
+	// maintainerDays is how long a GitHub sign-in proves membership of the
+	// maintainers' organisation. Someone removed from it stops reviewing
+	// within a week, whatever sessions they hold.
+	maintainerDays = 7
 )
 
 // Member is a signed-in person, as /api/v1/club/me shows them.
@@ -44,7 +48,9 @@ type Member struct {
 	Quiet      bool       `json:"quiet"`
 	Identities []Identity `json:"identities"`
 	Stars      int        `json:"stars"`
-	Pending    int        `json:"pending"`
+	// Pending is filled where the member's reports are read anyway
+	// (GET /api/v1/club/reports); /me leaves it 0.
+	Pending int `json:"pending"`
 }
 
 type Identity struct {
@@ -151,8 +157,8 @@ func (a *API) member(ctx context.Context, id string) (*Member, error) {
 		return nil, err
 	}
 	rows, err := a.DB.Query(ctx, `
-		SELECT provider, handle, maintainer, chat_id IS NOT NULL FROM club_identities
-		WHERE member_id = $1 ORDER BY provider`, id)
+		SELECT provider, handle, maintainer AND provider = 'github' AND seen_at > $2, chat_id IS NOT NULL FROM club_identities
+		WHERE member_id = $1 ORDER BY provider`, id, a.now().Add(-maintainerDays*24*time.Hour))
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +179,7 @@ func (a *API) member(ctx context.Context, id string) (*Member, error) {
 	for _, x := range a.Cfg.Maintainers {
 		m.Maintainer = m.Maintainer || x == id
 	}
-	m.Stars, m.Pending, err = a.Reports.Store().StarsOf(ctx, id)
+	m.Stars, err = a.Reports.Store().StarsOf(ctx, id)
 	return m, err
 }
 

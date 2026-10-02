@@ -12,7 +12,7 @@ import { QrCodeWidget } from '@openipc/ui';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import {
-  clock, fetchMe, fetchMine, pollLogin, secondsLeft, setQuiet, signOut, startEmail, startTelegram,
+  clock, fetchMe, fetchMine, finishConfirm, finishWho, pollLogin, rename, secondsLeft, setQuiet, signOut, startEmail, startTelegram,
   type Me, type Member, type MemberReport,
 } from '../../lib/club';
 import { size } from '../../lib/reports';
@@ -24,13 +24,23 @@ export default function Club({ locale }: { locale: Locale }) {
   const t = useBoardsTranslations(locale);
   const [load, setLoad] = useState<Load>({ state: 'loading' });
   const [notice, setNotice] = useState<string | null>(null);
+  // A sign-in link opened in a browser other than the one that asked for
+  // it: whose account it is for, asked before anything is signed in.
+  const [confirm, setConfirm] = useState<{ code: string; who: string } | null>(null);
 
   const reload = () => fetchMe().then((me) => setLoad({ state: 'ok', me })).catch(() => setLoad({ state: 'error' }));
 
   useEffect(() => {
-    const q = new URLSearchParams(location.search).get('signin');
+    const params = new URLSearchParams(location.search);
+    const q = params.get('signin');
+    const code = params.get('confirm');
     if (q && q !== 'ok') setNotice(t(`club.signin_${q === 'unavailable' ? 'failed' : q}`, { fallback: t('club.signin_failed') }));
-    if (q) history.replaceState(null, '', location.pathname);
+    if (code) {
+      finishWho(code)
+        .then((r) => setConfirm({ code, who: r.who }))
+        .catch(() => setNotice(t('club.signin_expired')));
+    }
+    if (q || code) history.replaceState(null, '', location.pathname);
     reload();
   }, []);
 
@@ -40,6 +50,20 @@ export default function Club({ locale }: { locale: Locale }) {
   return (
     <>
       {notice && <p class="mt-6 mb-0 rounded-md bg-[#fff4e2] px-3 py-2 text-sm text-[#9a5b00]" role="alert">{notice}</p>}
+      {confirm && (
+        <section class="mt-6 grid max-w-[640px] gap-3 rounded-xl border border-[#e8c58f] bg-[#fff4e2] p-5" aria-labelledby="club-confirm">
+          <h2 id="club-confirm" class="m-0 text-lg font-semibold">{t('club.confirm_title', { who: confirm.who })}</h2>
+          <p class="m-0 text-sm text-[#7a4a00]">{t('club.confirm_text', { who: confirm.who })}</p>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="site-btn site-btn-primary" onClick={() => finishConfirm(confirm.code)
+              .then(() => { setConfirm(null); reload(); })
+              .catch(() => { setConfirm(null); setNotice(t('club.signin_expired')); })}>
+              {t('club.confirm_button')}
+            </button>
+            <button type="button" class="site-btn site-btn-outline-secondary" onClick={() => setConfirm(null)}>{t('club.confirm_cancel')}</button>
+          </div>
+        </section>
+      )}
       {me.member
         ? <MemberPage member={me.member} ways={me.sign_in} locale={locale} t={t} onChange={reload} />
         : <SignIn ways={me.sign_in} locale={locale} t={t} onSignedIn={reload} />}
@@ -209,6 +233,12 @@ function MemberPage({ member, ways, locale, t, onChange }: {
   const [reports, setReports] = useState<MemberReport[] | null>(null);
   const [error, setError] = useState(false);
   const [linking, setLinking] = useState(false);
+  const [naming, setNaming] = useState(false);
+  const [name, setName] = useState(member.name);
+  const [nameError, setNameError] = useState<string | null>(null);
+  // What waits for review comes with the reports, not with /me: the navbar
+  // asks /me on every page and needs only the total.
+  const pending = (reports ?? []).reduce((n, r) => n + (r.status === 'pending' ? r.pending : 0), 0);
 
   useEffect(() => {
     fetchMine().then((r) => setReports(r.reports)).catch(() => setError(true));
@@ -230,8 +260,25 @@ function MemberPage({ member, ways, locale, t, onChange }: {
         </div>
         <div>
           <Stars n={member.stars} big />
-          {member.pending > 0 && <div class="text-[13.5px] text-body-secondary">{t('club.pending', { n: member.pending })}</div>}
+          {pending > 0 && <div class="text-[13.5px] text-body-secondary">{t('club.pending', { n: pending })}</div>}
         </div>
+        {naming
+          ? (
+            <form class="grid gap-1.5" onSubmit={(e) => {
+              e.preventDefault();
+              setNameError(null);
+              rename(name).then(() => { setNaming(false); onChange(); }).catch((err: Error) => setNameError(err.message));
+            }}>
+              <label for="club-name" class="text-[12.5px] text-body-secondary">{t('club.rename_label')}</label>
+              <div class="flex gap-1.5">
+                <input id="club-name" value={name} maxLength={80} onInput={(e) => setName((e.target as HTMLInputElement).value)}
+                  class="min-w-0 flex-1 rounded-md border border-hairline px-2 py-1 text-sm" />
+                <button type="submit" class="site-btn site-btn-primary site-btn-sm">{t('club.rename_save')}</button>
+              </div>
+              {nameError && <span class="text-[12.5px] text-[#a3262e]" role="alert">{nameError}</span>}
+            </form>
+          )
+          : <button type="button" class="w-fit cursor-pointer p-0 text-[13px] text-brand-blue underline" onClick={() => setNaming(true)}>{t('club.rename')}</button>}
         {member.maintainer && <a class="site-btn site-btn-dark site-btn-sm w-fit" href={pathFor(locale, '/club/review')}>{t('club.review_link')}</a>}
         {telegram && (
           <div class="grid gap-1.5 text-[13px] text-body-secondary">
@@ -294,6 +341,9 @@ function Ledger({ reports, locale, t }: { reports: MemberReport[]; locale: Local
                     ))}
                   </ul>
                   {r.duplicate && <span class="text-[12.5px] text-body-secondary">{t('club.duplicate')}</span>}
+                  {r.review_note && (
+                    <span class="text-[12.5px] text-body"><b class="font-semibold">{t('club.review_note_label')}:</b> {r.review_note}</span>
+                  )}
                 </td>
                 <td class="px-4 py-3"><span class={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12.5px] font-semibold ${STATUS_TONE[r.status]}`}>{t(`club.status_${r.status}`)}</span></td>
                 <td class={`px-4 py-3 text-right font-semibold whitespace-nowrap tabular-nums ${r.status === 'pending' ? 'font-normal text-body-secondary' : shown > 0 ? 'text-[#9a5b00]' : 'text-body-secondary'}`}>

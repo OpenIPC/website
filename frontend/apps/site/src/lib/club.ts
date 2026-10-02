@@ -45,6 +45,7 @@ export interface MemberReport {
   status: ReportState;
   reviewed_at?: string;
   note?: string;
+  review_note?: string;
   board?: BoardRef;
   chip?: string;
   files: MemberFile[];
@@ -136,6 +137,22 @@ export async function signOut(): Promise<void> {
 }
 
 export const setQuiet = (quiet: boolean) => post<{ member: Member }>('/quiet', { quiet });
+
+export async function rename(name: string): Promise<Member> {
+  const r = await post<{ member: Member }>('/name', { name });
+  remember(r.member);
+  return r.member;
+}
+
+/** Whose account a link opened in another browser signs into. */
+export const finishWho = (code: string) =>
+  call<{ provider: 'telegram' | 'email'; who: string }>(`/finish/who?${new URLSearchParams({ code })}`);
+
+export async function finishConfirm(code: string): Promise<Member> {
+  const r = await post<{ member: Member }>('/finish', { code });
+  remember(r.member);
+  return r.member;
+}
 
 export const fetchMine = () => call<{ member: Member; reports: MemberReport[] }>('/reports');
 
