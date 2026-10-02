@@ -13,6 +13,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/OpenIPC/website/service/internal/httpx"
 )
 
 // Explorer is the firmware explorer's read API, answered from the builds
@@ -73,7 +75,7 @@ func (e *Explorer) serve(w http.ResponseWriter, r *http.Request, src string, loa
 	h := w.Header()
 	h.Set("Cache-Control", "public, max-age=300")
 	h.Set("ETag", etag)
-	if r.Header.Get("If-None-Match") == etag {
+	if httpx.Revisited(r, etag) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}

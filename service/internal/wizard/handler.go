@@ -10,6 +10,7 @@ import (
 
 	"github.com/OpenIPC/website/service/internal/catalogue"
 	"github.com/OpenIPC/website/service/internal/firmware"
+	"github.com/OpenIPC/website/service/internal/httpx"
 )
 
 // Handler is GET /api/v1/wizard/{soc}.json: one SoC's installation data,
@@ -67,7 +68,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hd.Set("Content-Type", "application/json")
 	hd.Set("Cache-Control", "public, max-age=300")
 	hd.Set("ETag", c.etag)
-	if r.Header.Get("If-None-Match") == c.etag {
+	if httpx.Revisited(r, c.etag) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
