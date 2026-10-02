@@ -276,6 +276,10 @@ async function main() {
     $('leave').onclick = () => tunnel.lost('You disconnected.');
     if (welcome.scope === 'view') {
       const { mount } = await import('./player.js');
+      // The link can end while the player loads; the close handler has shown
+      // that already, and a player mounted now would cover it with a blank
+      // one on a closed tunnel.
+      if (tunnel.gone) return;
       player = mount($('main'), {
         openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h),
         iceServers, camera: welcome.camera, trace,

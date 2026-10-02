@@ -159,12 +159,22 @@ export function mount(main, { openWebSocket, iceServers, camera, trace }) {
       return;
     }
     const peer = pc;
+    // One stream for every track this session brings: the audio arriving
+    // after the video, in a stream of its own or none, must join the picture
+    // rather than replace it.
+    const stream = new MediaStream();
     peer.ontrack = (ev) => {
       if (my !== attempt) return;
-      video.srcObject = ev.streams && ev.streams[0] ? ev.streams[0] : new MediaStream([ev.track]);
+      stream.addTrack(ev.track);
+      if (video.srcObject !== stream) video.srcObject = stream;
       video.muted = !wantAudio;
       video.play().catch(() => {});
     };
+    // The camera's candidates, held until its answer is in: one that arrives
+    // first would be refused, and the path it names lost.
+    let answered = false;
+    const pending = [];
+    const addCandidate = (c) => peer.addIceCandidate(c).catch(() => {});
     peer.onicecandidate = (ev) => { if (ev.candidate && sig) send('candidate', ev.candidate.candidate); };
     peer.oniceconnectionstatechange = () => {
       if (my !== attempt) return;
@@ -194,7 +204,10 @@ export function mount(main, { openWebSocket, iceServers, camera, trace }) {
         if (!m || typeof m.reply !== 'string') return;
         if (m.reply === 'answer') {
           peer.setRemoteDescription({ type: 'answer', sdp: m.data }).then(() => {
-            if (my !== attempt || !wantAudio) return;
+            if (my !== attempt) return;
+            answered = true;
+            pending.splice(0).forEach(addCandidate);
+            if (!wantAudio) return;
             // Did the camera take the audio offered? The negotiated
             // direction says, before any track event does.
             const a = peer.getTransceivers().find((t) => t.receiver.track && t.receiver.track.kind === 'audio');
@@ -203,7 +216,11 @@ export function mount(main, { openWebSocket, iceServers, camera, trace }) {
             if (!ok) { wantAudio = false; video.muted = true; }
           }).catch(() => fail('the camera’s answer was refused'));
         } else if (m.reply === 'candidate') {
-          peer.addIceCandidate({ candidate: m.data, sdpMid: m.mid }).catch(() => {});
+          // A candidate the camera sends without its media ID belongs to the
+          // first m-line, the video -- as the tunnel's own connection reads it.
+          const c = m.mid != null && m.mid !== '' ? { candidate: m.data, sdpMid: String(m.mid) }
+            : { candidate: m.data, sdpMLineIndex: 0 };
+          if (answered) addCandidate(c); else pending.push(c);
         } else if (m.reply === 'busy' || m.reply === 'error') {
           fail(`${m.reply}: ${m.data || ''}`);
         } else if (m.reply === 'closed') {
@@ -301,19 +318,26 @@ export function mount(main, { openWebSocket, iceServers, camera, trace }) {
     dropSource();
     playing = key;
     hevc = /hvc1|hev1/.test(mime);
-    ms = new MS();
-    url = URL.createObjectURL(ms);
+    const my = attempt;
+    const src = new MS();
+    ms = src;
+    url = URL.createObjectURL(src);
     video.src = url;
-    ms.addEventListener('sourceopen', () => {
+    // Bound to this source and this attempt: a later init may have replaced
+    // the source, or the player moved on, by the time this one opens.
+    src.addEventListener('sourceopen', () => {
+      if (src !== ms || my !== attempt) return;
+      let buf;
       try {
-        sb = ms.addSourceBuffer(mime);
+        buf = src.addSourceBuffer(mime);
       } catch (e) {
         mjpeg('This browser refused the camera’s video, so a slower picture is shown instead.');
         return;
       }
-      sb.mode = 'segments';
-      sb.addEventListener('updateend', () => { edge(); pump(); });
-      if (MANAGED) ms.addEventListener('startstreaming', pump);
+      sb = buf;
+      buf.mode = 'segments';
+      buf.addEventListener('updateend', () => { if (sb === buf) { edge(); pump(); } });
+      if (MANAGED) src.addEventListener('startstreaming', () => { if (src === ms) pump(); });
       pump();
     }, { once: true });
     trace('player', `mse ${info.codec} ${info.width}x${info.height}`);
@@ -335,7 +359,7 @@ export function mount(main, { openWebSocket, iceServers, camera, trace }) {
         if (typeof d === 'string') {
           let info;
           try { info = JSON.parse(d); } catch (e) { return; }
-          if (info && info.type === 'init') { started = true; reconnects = 0; onInit(info); }
+          if (info && info.type === 'init') { started = true; onInit(info); }
           return;
         }
         if (skipBinary) { skipBinary = false; return; }
@@ -362,7 +386,15 @@ export function mount(main, { openWebSocket, iceServers, camera, trace }) {
 
   // ---- shared -------------------------------------------------------------
 
-  video.addEventListener('playing', () => { if (rung !== 'mjpeg') say(''); });
+  video.addEventListener('playing', () => {
+    if (rung === 'mjpeg') return;
+    say('');
+    // A socket that played is a socket that worked: only then do its
+    // reconnects start counting from nothing. An init alone proves nothing --
+    // a camera that announces and then drops would otherwise never reach the
+    // floor.
+    if (rung === 'mse') reconnects = 0;
+  });
   video.addEventListener('error', () => {
     if (rung !== 'mse' || !sb) return;
     trace('player', `decode error ${video.error && video.error.code}`);
