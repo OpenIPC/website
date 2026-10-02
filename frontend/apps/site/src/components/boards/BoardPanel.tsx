@@ -15,8 +15,9 @@ import { fetchModel } from '../../lib/boards/api';
 import Firmware from './Firmware';
 import ModelFirmware from './ModelFirmware';
 import OwnerReports from '../reports/OwnerReports';
+import SendForm, { type SendKind } from '../club/SendForm';
 import {
-  HEADING_CLASS, couplerDevices, foundIn, frontPhoto, insideOf, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, subtitle, unitFiles, unitPhotos,
+  HEADING_CLASS, couplerDevices, foundIn, frontPhoto, insideOf, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, sentBy, subtitle, unitFiles, unitPhotos,
   type CodeIndex, type Entry, type Heading, type Inside,
 } from '../../lib/boards/model';
 import type { BoardsT } from '../../lib/boards-i18n';
@@ -25,7 +26,8 @@ import { SocChip, SourceChips, Tags, TextFile, Thumb, type SocLinks } from './pa
 
 type Load = { state: 'loading' } | { state: 'ok'; value: ModelDetail } | { state: 'error'; error: string };
 
-const ISSUE = 'https://github.com/OpenIPC/website/issues/new';
+/** What the ask offers to send first, for what the board lacks first. */
+const SEND_FOR: Record<string, SendKind> = { pinout: 'photo', photos: 'photo', uboot_env: 'uboot_env', flash_dump: 'backup', boot_log: 'boot_log' };
 const HEADING = 'mb-2 text-base font-semibold';
 /** The order the links are listed in: what to download, where the board went, where it came from. */
 const LINK_ORDER: LinkKind[] = ['stock_firmware', 'pcb', 'on_pcb', 'successor', 'predecessor', 'related', 'vendor_page', 'source_page'];
@@ -50,12 +52,14 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [detail, setDetail] = useState<Load>({ state: 'loading' });
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     const d = dialog.current;
     if (d && !d.open) d.showModal();
     // A panel opened from another panel starts at the top.
     if (d) d.scrollTop = 0;
+    setSending(false);
   }, [id]);
 
   useEffect(() => {
@@ -165,7 +169,7 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
         ))}
 
         {inside.length > 0 && entry && (
-          <InsideBlock rows={inside} device={entry} title={title} href={href} follow={follow} t={t} />
+          <InsideBlock rows={inside} device={entry} title={title} href={href} follow={follow} locale={locale} t={t} />
         )}
 
         {holders.length > 0 && (
@@ -224,10 +228,18 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
             {entry.units.map((u) => {
               const photos = unitPhotos(u.files);
               const files = unitFiles(u.files);
+              const sent = sentBy(u);
               return (
                 <div key={u.id} class="grid gap-2 text-sm">
                   <div class="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                    <b>{t('from_source', { source: sourceName(u.source) })}</b>
+                    {sent
+                      ? (
+                        <span>
+                          <b>{t('sent_by', { who: sent.who })}</b>
+                          {sent.url && <> · <a href={sent.url} target="_blank" rel="noopener" title={t('new_tab')}>{sent.label} <span aria-hidden="true">↗</span></a></>}
+                        </span>
+                      )
+                      : <b>{t('from_source', { source: sourceName(u.source) })}</b>}
                     {u.sensor && <span class="text-body-secondary">{t('sensor')}: <span class="font-mono text-body">{u.sensor}</span></span>}
                     {(u.flash_chip || u.flash_size_mb) && (
                       <span class="text-body-secondary">{t('flash')}: <span class="font-mono text-body">
@@ -275,16 +287,18 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
         <OwnerReports model={id} locale={locale} t={t} />
 
         {entry && (
-          <div class="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-4">
-            <SourceChips ids={entry.sources} sources={sources} />
-            {missing && (
-              <p class="m-0 rounded-md bg-[#fff4e2] px-2.5 py-1.5 text-[13px] text-[#9a5b00]">
-                {t('ask')} <a class="font-semibold text-inherit" href={`${ISSUE}?${new URLSearchParams({
-                  title: t('issue_title', { board: title }),
-                  body: t('issue_body', { board: `${entry.maker.name} ${title}`, id: entry.id }),
-                }).toString()}`}>{t(`send_${missing}`)}</a>.
-              </p>
-            )}
+          <div class="grid gap-3 border-t border-hairline pt-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <SourceChips ids={entry.sources} sources={sources} />
+              {!sending && (
+                <p class="m-0 rounded-md bg-[#fff4e2] px-2.5 py-1.5 text-[13px] text-[#9a5b00]">
+                  {t('ask')} <button type="button" class="cursor-pointer p-0 font-semibold text-inherit underline" onClick={() => setSending(true)}>
+                    {t(missing ? `send_${missing}` : 'send_boot_log')}
+                  </button>.
+                </p>
+              )}
+            </div>
+            {sending && <SendForm model={entry.id} kind={SEND_FOR[missing ?? 'boot_log']} locale={locale} t={t} />}
           </div>
         )}
       </div>
@@ -325,11 +339,12 @@ function Status({ status, t }: { status: Inside['status']; t: BoardsT }) {
  * catalogue says so, marked most likely until an owner's photo confirms it,
  * and, until then, how to send that photo.
  */
-function InsideBlock({ rows, device, title, href, follow, t }: {
+function InsideBlock({ rows, device, title, href, follow, locale, t }: {
   rows: Inside[]; device: Entry; title: string; href: (model: string | null) => string;
-  follow: (target: string) => (e: MouseEvent) => void; t: BoardsT;
+  follow: (target: string) => (e: MouseEvent) => void; locale: Locale; t: BoardsT;
 }) {
   const confirmed = rows[0].status === 'confirmed';
+  const [sending, setSending] = useState(false);
   return (
     <section aria-labelledby="board-panel-inside" class="grid gap-2 rounded-md bg-surface-alt px-3 py-2.5 text-sm">
       <div class="flex flex-wrap items-center gap-2">
@@ -366,12 +381,14 @@ function InsideBlock({ rows, device, title, href, follow, t }: {
         );
       })}
       {!confirmed && (
-        <p class="m-0 border-t border-dashed border-hairline pt-2 text-[13px]">
-          {t('inside_ask')} <a class="font-semibold" href={`${ISSUE}?${new URLSearchParams({
-            title: t('inside_issue_title', { device: title }),
-            body: t('inside_issue_body', { device: `${device.maker.name} ${title}`, id: device.id }),
-          }).toString()}`}>{t('inside_ask_link')} ↗</a>. {t('inside_ask_after')}
-        </p>
+        <div class="grid gap-2 border-t border-dashed border-hairline pt-2 text-[13px]">
+          <p class="m-0">
+            {t('inside_ask')} <button type="button" class="cursor-pointer p-0 font-semibold text-brand-blue underline" onClick={() => setSending(true)}>
+              {t('inside_ask_link')}
+            </button>. {t('inside_ask_after')}
+          </p>
+          {sending && <SendForm model={device.id} kind="photo" locale={locale} t={t} note={t('inside_issue_title', { device: `${device.maker.name} ${title}` })} />}
+        </div>
       )}
     </section>
   );

@@ -26,6 +26,7 @@
  */
 import { LOCALE_NAMES, alternates, pathFor, useTranslations, type Locale } from '../lib/i18n';
 import { menuFor } from '../lib/nav';
+import ClubBadge from './club/ClubBadge.tsx';
 import logo from '../assets/openipc-logo-white.svg';
 import translate from '../assets/icons/translate.svg?raw';
 import github from '../assets/icons/github.svg?raw';
@@ -97,6 +98,10 @@ const alt = alternates(path);
           )}
         </li>
       ))}
+
+      <li class="site-nav-item empty:hidden">
+        <ClubBadge client:idle locale={locale} />
+      </li>
 
       <li class="site-nav-item">
         <a class="site-nav-link" href="https://github.com/OpenIPC" title="OpenIPC on GitHub">

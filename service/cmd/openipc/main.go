@@ -37,6 +37,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/boards"
 	"github.com/OpenIPC/website/service/internal/builds"
 	"github.com/OpenIPC/website/service/internal/catalogue"
+	"github.com/OpenIPC/website/service/internal/club"
 	"github.com/OpenIPC/website/service/internal/config"
 	"github.com/OpenIPC/website/service/internal/db"
 	"github.com/OpenIPC/website/service/internal/downloads"
@@ -172,6 +173,24 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/reports/{id}"},
 	{"web", "GET", "/api/v1/reports/{id}/files/{position}"},
 	{"web", "POST", "/api/v1/boards/identify"},
+	{"web", "GET", "/api/v1/club/me"},
+	{"web", "POST", "/api/v1/club/logout"},
+	{"web", "POST", "/api/v1/club/quiet"},
+	{"web", "GET", "/api/v1/club/login"},
+	{"web", "GET", "/api/v1/club/finish"},
+	{"web", "GET", "/api/v1/club/finish/who"},
+	{"web", "POST", "/api/v1/club/finish"},
+	{"web", "POST", "/api/v1/club/name"},
+	{"web", "POST", "/api/v1/club/telegram"},
+	{"web", "POST", "/api/v1/club/telegram/webhook"},
+	{"web", "POST", "/api/v1/club/email"},
+	{"web", "GET", "/api/v1/club/github"},
+	{"web", "GET", "/api/v1/club/github/callback"},
+	{"web", "POST", "/api/v1/club/reports"},
+	{"web", "GET", "/api/v1/club/reports"},
+	{"web", "GET", "/api/v1/club/reports/{id}/files/{position}"},
+	{"web", "GET", "/api/v1/club/review"},
+	{"web", "POST", "/api/v1/club/review/{id}"},
 	{"web", "PUT", "/api/v1/tools/{name}"},
 	{"web", "GET", "/api/v1/tools"},
 	{"share", "GET", "/up"},
@@ -320,6 +339,13 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		lock.Release()
 		return nil, err
 	}
+	// What owners sent about their own boards (boards/contributions.yml),
+	// the same way, and what the club's maintainers published since.
+	if err := applyContributions(ctx, pool, log, cfg.BoardsRoot); err != nil {
+		lock.Release()
+		return nil, err
+	}
+	refreshReportUnits(ctx, cfg, log, pool)
 
 	store := &snapshots.Store{DB: pool, TokenKey: cfg.CameraTokenKey}
 	wallFS := variants.Wall{Root: cfg.WallRoot}
@@ -389,8 +415,14 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 	}
 	// Owner reports (internal/reports): uploaded by anyone, public after
 	// review, and kept apart from everything the board importers touch.
-	for k, h := range (&reports.API{DB: pool, Files: &reports.Files{Root: cfg.ReportsRoot},
-		AccelPrefix: cfg.ReportsAccelPrefix, Log: log}).Handlers() {
+	ownerReports := &reports.API{DB: pool, Files: &reports.Files{Root: cfg.ReportsRoot},
+		AccelPrefix: cfg.ReportsAccelPrefix, Log: log}
+	for k, h := range ownerReports.Handlers() {
+		handlers[k] = h
+	}
+	// The OpenIPC Club (internal/club): signing in, the send form, members'
+	// own reports and the maintainers' review. Each way in only when set.
+	for k, h := range newClub(bg, cfg, log, pool, ownerReports).Handlers() {
 		handlers[k] = h
 	}
 	// ipctool's builds, pushed by its release job (tools/PUSH.md).
@@ -574,6 +606,12 @@ func runPurge(ctx context.Context, cfg *config.Config, log *slog.Logger, args []
 		p := &purge.Snapshots{DB: pool, WallRoot: cfg.WallRoot, MaxAge: cfg.SnapshotMaxAge, Log: log}
 		rows, orphans, err := p.Run(ctx)
 		log.Info("purge: snapshots", "rows", rows, "orphan_dirs", orphans)
+		if err != nil {
+			return err
+		}
+		// The club's expired sessions and sign-ins: the web role's database too.
+		sessions, logins, err := club.Purge(ctx, pool)
+		log.Info("purge: club", "sessions", sessions, "logins", logins)
 		if err != nil {
 			return err
 		}

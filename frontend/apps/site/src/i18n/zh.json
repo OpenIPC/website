@@ -153,6 +153,16 @@
       "why4_title": "开源就是你的托管保障",
       "why_title": "企业为什么选择 OpenIPC"
     },
+    "club": {
+      "eyebrow": "OpenIPC 俱乐部",
+      "lede": "登录后可跟踪你提交到电路板目录的内容、让固件转储保持私密，并为通过审核的内容获得星星。",
+      "title": "OpenIPC 俱乐部"
+    },
+    "club_review": {
+      "eyebrow": "OpenIPC 俱乐部",
+      "lede": "等待维护者审核的用户报告。",
+      "title": "审核队列"
+    },
     "community": {
       "bot_warning": "新成员加入后需要回答欢迎机器人提出的两个简单问题。如果你错过了提示且无法发言，请退出并重新加入群组，然后留意机器人的消息。",
       "channel_dev": "直接来自 GitHub 的构建通知。",

@@ -11,7 +11,7 @@ import zh from '../../i18n/boards.zh.json';
 import {
   KNOWN_LINES, lineLabel,
   addsIPeye, buildGroups, bySeller, cardFiles, formatDay, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
-  highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, ownPhoto, paragraphs, sensorKey, sensorOptions, slug,
+  highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, ownPhoto, paragraphs, sensorKey, sensorOptions, sentBy, slug,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
 import { EMPTY, readQueryString, writeQueryString } from './url';
@@ -374,6 +374,23 @@ describe('stats', () => {
     const withNvr = [...ALL, ...entries({ ...FILE, manufacturers: [{ id: 'xiongmai', name: 'Xiongmai', aliases: [], website: null,
       models: [model('nvr', { kind: 'recorder' })] }] })];
     expect(stats(withNvr)).toMatchObject({ boards: 4, devices: 1 });
+  });
+});
+
+describe('who sent a unit', () => {
+  const unit = (source: string, source_ref: string, contributed_by: string) => ({ source, source_ref, contributed_by });
+
+  test('an owner, credited with the issue they sent it in', () => {
+    expect(sentBy(unit('contributor', 'https://github.com/OpenIPC/website/issues/365', 'sansarus')))
+      .toEqual({ who: 'sansarus', url: 'https://github.com/OpenIPC/website/issues/365', label: '#365' });
+    expect(sentBy(unit('contributor', 'https://github.com/OpenIPC/firmware/issues/12', 'x'))?.label).toBe('firmware#12');
+    expect(sentBy(unit('contributor', 'https://example.org/post/1', 'x'))?.label).toBe('example.org');
+    expect(sentBy(unit('contributor', 'https://openipc.org/cameras/report/?id=r-abcd2345', 'Ivan'))?.label).toBe('r-abcd2345');
+    expect(sentBy(unit('contributor', 'not a url', 'x'))).toEqual({ who: 'x', url: '', label: '' });
+  });
+
+  test('nobody, for a unit a catalogue brought', () => {
+    expect(sentBy(unit('openhisiipcam', 'https://github.com/OpenHisiIpCam', 'OpenHisiIpCam'))).toBeNull();
   });
 });
 

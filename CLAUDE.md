@@ -151,6 +151,21 @@ restores the image but never the schema, so keep migrations additive.
   (`/srv/www/shared/owner-reports` -- not `shared/reports`, which is the
   analytics'), and `internal/boards/survival_test.go` runs every importer
   over stored reports.
+- `internal/club` -- **the OpenIPC Club**: signing in with Telegram (the bot
+  takes Start with a code the asking browser shows, then tells the member
+  what happened to what they sent), GitHub (a member of `CLUB_MAINTAINER_ORG`
+  reviews) or an emailed link, each only when configured
+  (`TELEGRAM_BOT_TOKEN`, `GITHUB_OAUTH_*`, `CLUB_SMTP_*`). Mail goes to the
+  host's own exim at `172.18.0.1:25`, which says HELO as `webber-eu.openipc.org`
+  (its PTR) and signs DKIM selector `webber2026`; openipc.org's SPF names
+  37.27.251.71 and DMARC is `p=none` (Hetzner DNS). Accounts and sessions
+  only: a member's reports, their private dumps, the review queue at
+  `/club/review` and the stars ledger (`report_stars`, written by a review's
+  decision, never by an upload) are `internal/reports`'. The board panel's
+  send form posts to `/api/v1/club/reports` instead of opening a GitHub
+  issue, and a published report's text and photos become a contributed unit
+  on its board (`boards.ApplyReportUnits`), as `boards/contributions.yml`
+  does for what arrived as issues (#365, #366).
 - `internal/tools`, `internal/nfsro` — **ipctool for stock firmware**, which
   has no curl and no TLS. ipctool's release job pushes each build to
   `PUT /api/v1/tools/{name}` (OIDC, `internal/tools/PUSH.md`); nginx serves
@@ -185,8 +200,10 @@ restores the image but never the schema, so keep migrations additive.
 
 ### Conventions & gotchas
 
-- There is no admin and no sign-in (#288). `/admin` answers 410; nothing on the
-  site sets a cookie.
+- There is no admin (#288): `/admin` answers 410. The one sign-in is the
+  OpenIPC Club (`internal/club`), and its session cookie's path is
+  `/api/v1/club`: pages stay static and cached, and a visitor who never signs
+  in is never sent a cookie.
 - `deploy/static/reserved-paths` lists the addresses a bundle file must never
   shadow (the upload, the firmware download, the service's APIs, nginx's own
   locations); `service/deploytest` derives what must be in it and fails when an

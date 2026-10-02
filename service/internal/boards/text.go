@@ -6,6 +6,10 @@ import (
 	"image/color"
 	"image/jpeg"
 	_ "image/png"
+
+	// The send form takes WebP photos too; a published one is thumbnailed
+	// like any other.
+	_ "golang.org/x/image/webp"
 	"regexp"
 	"strings"
 )

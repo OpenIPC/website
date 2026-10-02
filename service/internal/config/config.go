@@ -37,6 +37,18 @@ type Config struct {
 	// hands a published file to nginx's internal location ReportsAccelPrefix.
 	ReportsRoot        string
 	ReportsAccelPrefix string
+	// The OpenIPC Club (internal/club): where its links point, and each way
+	// in, which works only when configured.
+	ClubSiteURL        string   // CLUB_SITE_URL: https://openipc.org, https://dev.openipc.org
+	TelegramBotToken   string   // TELEGRAM_BOT_TOKEN, from @BotFather; one bot per environment
+	GitHubClientID     string   // GITHUB_OAUTH_CLIENT_ID
+	GitHubClientSecret string   // GITHUB_OAUTH_CLIENT_SECRET
+	ClubMaintainerOrg  string   // CLUB_MAINTAINER_ORG: its members review; OpenIPC
+	ClubMaintainers    []string // CLUB_MAINTAINERS: member ids that review without it
+	SMTPAddr           string   // CLUB_SMTP_ADDR host:port, a relay openipc.org's SPF names
+	SMTPUser           string   // CLUB_SMTP_USER
+	SMTPPassword       string   // CLUB_SMTP_PASSWORD
+	MailFrom           string   // CLUB_MAIL_FROM
 	// ipctool's builds, pushed by its release job and served by nginx over
 	// plain HTTP at http://openipc.org/<name> (internal/tools); the NFS role
 	// exports the same directory read-only.
@@ -81,6 +93,16 @@ func Load() (*Config, error) {
 		ReportsRoot:         str("REPORTS_ROOT", "/srv/owner-reports"),
 		ReportsAccelPrefix:  str("REPORTS_ACCEL_PREFIX", "/report-files/"),
 		ToolsRoot:           str("TOOLS_ROOT", "/srv/tools"),
+		ClubSiteURL:         strings.TrimSuffix(str("CLUB_SITE_URL", "https://openipc.org"), "/"),
+		TelegramBotToken:    os.Getenv("TELEGRAM_BOT_TOKEN"),
+		GitHubClientID:      os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
+		GitHubClientSecret:  os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
+		ClubMaintainerOrg:   str("CLUB_MAINTAINER_ORG", "OpenIPC"),
+		ClubMaintainers:     list("CLUB_MAINTAINERS"),
+		SMTPAddr:            os.Getenv("CLUB_SMTP_ADDR"),
+		SMTPUser:            os.Getenv("CLUB_SMTP_USER"),
+		SMTPPassword:        os.Getenv("CLUB_SMTP_PASSWORD"),
+		MailFrom:            str("CLUB_MAIL_FROM", "OpenIPC <noreply@openipc.org>"),
 		NFSAddr:             str("NFS_ADDR", ":2049"),
 		PortmapAddr:         str("PORTMAP_ADDR", ":111"),
 		CatalogueDir:        str("CATALOGUE_DIR", "/app/catalogue"),

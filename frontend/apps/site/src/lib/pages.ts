@@ -19,6 +19,8 @@ import Smoke from '../components/Smoke.astro';
 import Wall from '../components/pages/Wall.astro';
 import Boards from '../components/pages/Boards.astro';
 import Report from '../components/pages/Report.astro';
+import Club from '../components/pages/Club.astro';
+import ClubReview from '../components/pages/ClubReview.astro';
 import Business from '../components/pages/Business.astro';
 import Community from '../components/pages/Community.astro';
 import Donate from '../components/pages/Donate.astro';
@@ -92,6 +94,8 @@ const COMPONENTS: Record<string, Renderer> = {
   // The board catalogue, beside the SoC catalogue it links into.
   '/cameras/boards': { component: Boards },
   '/cameras/report': { component: Report },
+  '/club': { component: Club },
+  '/club/review': { component: ClubReview },
 
   '/business': { component: Business },
   '/community': { component: Community },

@@ -104,8 +104,32 @@ func importSnapshot(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		return err
 	}
 	log.Info("boards: snapshot imported", "source", *source, "new_models", n)
-	// A confirmation waiting for a device this snapshot brought applies now.
-	return applyConfirmations(ctx, pool, log)
+	// A confirmation or a contribution waiting for a model this snapshot
+	// brought applies now.
+	if err := applyConfirmations(ctx, pool, log); err != nil {
+		return err
+	}
+	return applyContributions(ctx, pool, log, cfg.BoardsRoot)
+}
+
+// applyContributions publishes contributions.yml: what owners sent about
+// their own boards, as units credited to them. An entry whose model the
+// catalogue does not have yet waits, reported, for the import that brings it.
+func applyContributions(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger, root string) error {
+	list, err := boards.Contributions()
+	if err != nil {
+		return err
+	}
+	im := &boards.Importer{Pool: pool, Log: log, Root: root}
+	missing, err := im.ApplyContributions(ctx, list)
+	if err != nil {
+		return fmt.Errorf("boards: contributions.yml: %w", err)
+	}
+	for _, m := range missing {
+		log.Warn("boards: contributions.yml names a model the catalogue does not have", "model", m)
+	}
+	log.Info("boards: contributions applied", "units", len(list)-len(missing))
+	return nil
 }
 
 // applyConfirmations publishes contents.yml: what owners found inside the

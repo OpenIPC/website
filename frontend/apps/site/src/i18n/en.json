@@ -153,6 +153,16 @@
       "why4_title": "Open source is your escrow",
       "why_title": "Why companies build on OpenIPC"
     },
+    "club": {
+      "eyebrow": "OpenIPC Club",
+      "lede": "Sign in to follow what you sent to the board catalogue, keep your flash dumps private, and collect stars for what is accepted.",
+      "title": "OpenIPC Club"
+    },
+    "club_review": {
+      "eyebrow": "OpenIPC Club",
+      "lede": "Owner reports waiting for a maintainer's decision.",
+      "title": "Review queue"
+    },
     "community": {
       "bot_warning": "New members answer two quick questions from our Welcome Bot after joining. If you miss the prompt and cannot post, leave and re-join the group, then watch for the bot's message.",
       "channel_dev": "Build notifications straight from GitHub.",
