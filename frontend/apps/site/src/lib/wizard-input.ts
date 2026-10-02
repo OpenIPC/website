@@ -140,17 +140,25 @@ export function fromPermalink(query: URLSearchParams, patterns: Patterns): Wizar
   return settings;
 }
 
-/** `Camera#permalink`: the address that reopens this configuration. */
+/**
+ * `Camera#permalink`: the address that reopens this configuration.
+ *
+ * Each value is encoded (Qodo on #373). Everything the menus and patterns let
+ * through -- addresses, a dashed MAC, chip and edition names -- is unreserved
+ * and comes out byte for byte as before; a hand-edited value carrying `&` or
+ * `camera[...]` would otherwise have turned the link into a form submission.
+ */
 export function toPermalink(settings: WizardSettings): string {
+  const e = encodeURIComponent;
   return [
-    '?mac=', settings.cameraMacAddress.replaceAll(':', '-'),
-    '&cip=', settings.cameraIpAddress,
-    '&sip=', settings.serverIpAddress,
-    '&net=', settings.networkInterface,
-    '&rom=', settings.flashType,
-    '&part=', settings.partitionLayout ?? '',
-    '&ver=', settings.firmwareVersion,
-    '&sd=', settings.sdCardSlot,
+    '?mac=', e(settings.cameraMacAddress.replaceAll(':', '-')),
+    '&cip=', e(settings.cameraIpAddress),
+    '&sip=', e(settings.serverIpAddress),
+    '&net=', e(settings.networkInterface),
+    '&rom=', e(settings.flashType),
+    '&part=', e(settings.partitionLayout ?? ''),
+    '&ver=', e(settings.firmwareVersion),
+    '&sd=', e(settings.sdCardSlot),
   ].join('');
 }
 

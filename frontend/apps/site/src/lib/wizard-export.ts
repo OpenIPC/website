@@ -68,6 +68,8 @@ export interface WizardDocument {
   editions: Availability;
   offerable: string[];
   default_flash_chip: string;
+  /** The smallest NOR chip, in MB, any build fits, when more than 8 (#285). */
+  needs_flash_mb?: number;
   special_pages: Record<string, string | undefined>;
   blocks: Record<string, Block>;
   mac_variants: Record<string, string[]>;
