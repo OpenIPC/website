@@ -24,11 +24,13 @@ export default function SendForm({ model, kind, locale, t, note }: {
   const [files, setFiles] = useState<File[]>([]);
   const [extra, setExtra] = useState(note ?? '');
   const [publicDump, setPublicDump] = useState(false);
-  const [member, setMember] = useState<Member | null>(null);
+  // undefined while a browser that has signed in before asks who it is:
+  // the line under the button says nothing until it knows.
+  const [member, setMember] = useState<Member | null | undefined>(() => (remembered() ? undefined : null));
   const [state, setState] = useState<{ s: 'idle' | 'sending' } | { s: 'sent'; sent: Sent } | { s: 'error'; error: string }>({ s: 'idle' });
 
   useEffect(() => {
-    if (remembered()) fetchMe().then((me) => setMember(me.member)).catch(() => {});
+    if (remembered()) fetchMe().then((me) => setMember(me.member)).catch(() => setMember(null));
   }, []);
 
   const textual = chosen === 'boot_log' || chosen === 'uboot_env';
@@ -101,11 +103,13 @@ export default function SendForm({ model, kind, locale, t, note }: {
         <button type="submit" class="site-btn site-btn-primary site-btn-sm" disabled={state.s === 'sending'}>
           {state.s === 'sending' ? t('club.sending') : t('club.send_button')}
         </button>
-        <span class="text-[12.5px] text-body-secondary">
-          {member
-            ? t('club.send_signed_in', { name: member.name })
-            : <>{t('club.send_guest')} <a href={pathFor(locale, '/club')}>{t('club.sign_in_link')}</a></>}
-        </span>
+        {member !== undefined && (
+          <span class="text-[12.5px] text-body-secondary">
+            {member
+              ? t('club.send_signed_in', { name: member.name })
+              : <>{t('club.send_guest')} <a href={pathFor(locale, '/club')}>{t('club.sign_in_link')}</a></>}
+          </span>
+        )}
       </div>
       {state.s === 'error' && <p class="m-0 text-[13px] text-[#a3262e]" role="alert">{state.error}</p>}
     </form>

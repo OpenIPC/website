@@ -78,3 +78,15 @@ describe('the Telegram countdown', () => {
     expect(clock(5)).toBe('0:05');
   });
 });
+
+describe('a browser that signed in before', () => {
+  test('says nothing about signing in until it knows, then names the member', async () => {
+    localStorage.setItem('openipc.club', '1');
+    let answer: (r: Response) => void = () => {};
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((r) => { answer = r; })));
+    const { queryByText, findByText } = render(<SendForm model="anjoy-ms-j10" kind="boot_log" locale="en" t={t} />);
+    expect(queryByText(/without signing in/)).toBeNull();
+    answer(new Response(JSON.stringify({ member: { id: 'm-1', name: 'Ivan', maintainer: false, quiet: false, identities: [], stars: 3, pending: 0 }, sign_in: {} })));
+    expect(await findByText(/Signed in as Ivan/)).toBeTruthy();
+  });
+});
