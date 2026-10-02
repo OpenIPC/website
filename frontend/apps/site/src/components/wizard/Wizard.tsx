@@ -128,7 +128,14 @@ export default function Wizard({
       && layout === settings.partitionLayout
       && narrowed.edition === settings.firmwareVersion) return;
 
-    setSettings((current) => ({
+    // Only onto the settings these menus were narrowed from. When the export
+    // arrives, the shared link's settings are set by the effect above in the
+    // same commit as this one runs on the menus narrowed from DEFAULTS; written
+    // unconditionally, this update landed second and put every permanent link
+    // back on nor8m and Lite, keeping only its addresses (#370). The link's
+    // own settings get narrowed on the next render instead.
+    const basis = settings;
+    setSettings((current) => (current !== basis ? current : {
       ...current,
       flashType: narrowed.chip,
       partitionLayout: layout,
