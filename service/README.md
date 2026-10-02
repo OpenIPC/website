@@ -127,7 +127,15 @@ The goldens below are fixed: nothing regenerates them.
   | `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET` | GitHub sign-in; callback `<CLUB_SITE_URL>/api/v1/club/github/callback` |
   | `CLUB_MAINTAINER_ORG` | its active members review (default `OpenIPC`) |
   | `CLUB_MAINTAINERS` | member ids that review without it |
-  | `CLUB_SMTP_ADDR`, `CLUB_SMTP_USER`, `CLUB_SMTP_PASSWORD`, `CLUB_MAIL_FROM` | email sign-in, through a relay openipc.org's SPF names |
+  | `CLUB_SMTP_ADDR`, `CLUB_SMTP_USER`, `CLUB_SMTP_PASSWORD`, `CLUB_MAIL_FROM` | email sign-in: `172.18.0.1:25`, the host's own exim on the docker bridge (no TLS on that hop, so no password either); any other relay must offer STARTTLS |
+
+  The host's exim says HELO as `webber-eu.openipc.org`, the PTR of
+  37.27.251.71, and signs openipc.org's DKIM with selector `webber2026`
+  (`/etc/exim4/dkim/`, `/etc/exim4/conf.d/main/00_local_macros`). In
+  openipc.org's zone on Hetzner DNS: SPF `v=spf1 ip4:194.58.109.202
+  ip4:37.27.251.71 ~all` (natrium and this host), `webber2026._domainkey`,
+  `_dmarc` at `p=none`, and `webber-eu` with its own A and `v=spf1 a -all`.
+  mail-tester scored a sign-in link 10/10 on 2026-10-02.
 
 ## Operating it
 

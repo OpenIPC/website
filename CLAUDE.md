@@ -155,8 +155,10 @@ restores the image but never the schema, so keep migrations additive.
   takes Start with a code the asking browser shows, then tells the member
   what happened to what they sent), GitHub (a member of `CLUB_MAINTAINER_ORG`
   reviews) or an emailed link, each only when configured
-  (`TELEGRAM_BOT_TOKEN`, `GITHUB_OAUTH_*`, `CLUB_SMTP_*`; mail must go through
-  a relay openipc.org's SPF names, not this host). Accounts and sessions
+  (`TELEGRAM_BOT_TOKEN`, `GITHUB_OAUTH_*`, `CLUB_SMTP_*`). Mail goes to the
+  host's own exim at `172.18.0.1:25`, which says HELO as `webber-eu.openipc.org`
+  (its PTR) and signs DKIM selector `webber2026`; openipc.org's SPF names
+  37.27.251.71 and DMARC is `p=none` (Hetzner DNS). Accounts and sessions
   only: a member's reports, their private dumps, the review queue at
   `/club/review` and the stars ledger (`report_stars`, written by a review's
   decision, never by an upload) are `internal/reports`'. The board panel's
