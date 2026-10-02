@@ -254,7 +254,9 @@ async function main() {
     stage = 'connected';
     trace('stage', stage);
     window.__share = { openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h), welcome };
+    let player = null;
     tunnel.onclose = (why) => {
+      if (player) { player.close(); player = null; }
       // What the worker kept for this share goes with it: the worker stops
       // keeping anything and deletes the cache once its writes in flight
       // have landed, which a delete from here could not wait for.
@@ -262,14 +264,22 @@ async function main() {
       $('bar').hidden = true;
       notice('The camera is no longer shared with you', why, true);
     };
+    // The camera names itself in WELCOME, so a guest with links to two
+    // cameras can tell the tabs apart.
+    if (welcome.camera) {
+      $('camera').textContent = welcome.camera;
+      document.title = `${welcome.camera} · Shared camera · OpenIPC`;
+    }
     $('scope').textContent = SCOPES[welcome.scope] || welcome.scope;
     countdown(welcome.expires);
     $('bar').hidden = false;
     $('leave').onclick = () => tunnel.lost('You disconnected.');
     if (welcome.scope === 'view') {
-      const p = Object.assign(document.createElement('div'), { className: 'player' });
-      p.append(Object.assign(document.createElement('img'), { src: '/mjpeg', alt: 'Live video' }));
-      $('main').replaceChildren(p);
+      const { mount } = await import('./player.js');
+      player = mount($('main'), {
+        openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h),
+        iceServers, camera: welcome.camera, trace,
+      });
     } else {
       const f = document.createElement('iframe');
       f.title = 'Camera';
