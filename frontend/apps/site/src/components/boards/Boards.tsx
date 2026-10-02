@@ -323,7 +323,7 @@ function GroupView({ group, split, all, onAll, card }: {
   return (
     <div class={split ? 'mt-6' : ''}>
       {split && (
-        <h3 id={`line-${group.key}`} class="mb-0 scroll-mt-24 flex flex-wrap items-baseline gap-x-2 text-lg font-semibold">
+        <h3 id={`line-${group.key}`} class="mb-0 flex flex-wrap items-baseline gap-x-2 text-lg font-semibold">
           {group.label ? lineLabel(group.label, t) : t('group_other')}
           <small class="text-sm font-normal text-body-secondary">{tally(group.entries, t)}</small>
         </h3>
