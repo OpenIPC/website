@@ -1,6 +1,7 @@
 package club
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -20,8 +21,9 @@ type Mailer interface {
 	Send(to, subject, body string) error
 }
 
-// SMTP sends through a relay that may send for openipc.org (its SPF names
-// the relay's address, not this host's).
+// SMTP sends through a relay that may send for openipc.org: on the host,
+// its own exim (CLUB_SMTP_ADDR=172.18.0.1:25), which signs openipc.org's
+// DKIM and whose address openipc.org's SPF names.
 type SMTP struct {
 	Addr     string // host:port
 	User     string
@@ -35,10 +37,6 @@ func (s *SMTP) Send(to, subject, body string) error {
 		return err
 	}
 	host, _, _ := net.SplitHostPort(s.Addr)
-	var auth smtp.Auth
-	if s.User != "" {
-		auth = smtp.PlainAuth("", s.User, s.Password, host)
-	}
 	msg := strings.Join([]string{
 		"From: " + from.String(),
 		"To: " + to,
@@ -52,7 +50,57 @@ func (s *SMTP) Send(to, subject, body string) error {
 		"",
 		body,
 	}, "\r\n")
-	return smtp.SendMail(s.Addr, auth, from.Address, []string{to}, []byte(msg))
+	return s.deliver(host, from.Address, to, []byte(msg))
+}
+
+// deliver hands the message to the relay. The host's own exim, over the
+// docker bridge, offers STARTTLS with a certificate for its public name,
+// which no client dialling 172.18.0.1 can verify; a hop that never leaves
+// the host is sent in the clear. Any other relay must take TLS, and a
+// password only ever travels inside it.
+func (s *SMTP) deliver(host, from, to string, msg []byte) error {
+	c, err := smtp.Dial(s.Addr)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	local := false
+	if ip := net.ParseIP(host); ip != nil && (ip.IsLoopback() || ip.IsPrivate()) {
+		local = true
+	}
+	if !local {
+		if ok, _ := c.Extension("STARTTLS"); !ok {
+			return fmt.Errorf("%s offers no STARTTLS", s.Addr)
+		}
+		if err := c.StartTLS(&tls.Config{ServerName: host}); err != nil {
+			return err
+		}
+	}
+	if s.User != "" {
+		if local {
+			return fmt.Errorf("refusing to send a password to %s without TLS", s.Addr)
+		}
+		if err := c.Auth(smtp.PlainAuth("", s.User, s.Password, host)); err != nil {
+			return err
+		}
+	}
+	if err := c.Mail(from); err != nil {
+		return err
+	}
+	if err := c.Rcpt(to); err != nil {
+		return err
+	}
+	w, err := c.Data()
+	if err != nil {
+		return err
+	}
+	if _, err := w.Write(msg); err != nil {
+		return err
+	}
+	if err := w.Close(); err != nil {
+		return err
+	}
+	return c.Quit()
 }
 
 // mimeWord encodes a non-ASCII subject (Russian, Chinese) for the header.

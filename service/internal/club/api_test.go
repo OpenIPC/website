@@ -1,12 +1,14 @@
 package club
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -558,5 +560,80 @@ func TestThePurgeDropsWhatExpiredAndKeepsWhatLives(t *testing.T) {
 	}
 	if b.me(t) == nil {
 		t.Error("the purge signed out a live session")
+	}
+}
+
+// fakeSMTP is a relay that offers STARTTLS it cannot back with a certificate
+// the client could verify -- the host's exim seen from the docker bridge.
+func fakeSMTP(t *testing.T) (addr string, got chan string) {
+	t.Helper()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { l.Close() })
+	got = make(chan string, 1)
+	go func() {
+		c, err := l.Accept()
+		if err != nil {
+			return
+		}
+		defer c.Close()
+		r := bufio.NewReader(c)
+		say := func(s string) { _, _ = io.WriteString(c, s+"\r\n") }
+		say("220 relay")
+		var data strings.Builder
+		inData := false
+		for {
+			line, err := r.ReadString('\n')
+			if err != nil {
+				return
+			}
+			if inData {
+				if line == ".\r\n" {
+					inData = false
+					say("250 queued")
+					got <- data.String()
+					continue
+				}
+				data.WriteString(line)
+				continue
+			}
+			switch cmd := strings.ToUpper(strings.TrimSpace(line)); {
+			case strings.HasPrefix(cmd, "EHLO"):
+				say("250-relay")
+				say("250 STARTTLS")
+			case strings.HasPrefix(cmd, "STARTTLS"):
+				say("454 not here")
+			case cmd == "DATA":
+				inData = true
+				say("354 go")
+			case cmd == "QUIT":
+				say("221 bye")
+				return
+			default:
+				say("250 ok")
+			}
+		}
+	}()
+	return l.Addr().String(), got
+}
+
+func TestTheHostsOwnRelayTakesTheMailWithoutTLS(t *testing.T) {
+	addr, got := fakeSMTP(t)
+	m := &SMTP{Addr: addr, From: "OpenIPC <noreply@openipc.org>"}
+	if err := m.Send("owner@example.org", "Вход на openipc.org", "link\n"); err != nil {
+		t.Fatal(err)
+	}
+	msg := <-got
+	if !strings.Contains(msg, "Subject: =?utf-8?b?") || !strings.Contains(msg, "From: \"OpenIPC\" <noreply@openipc.org>") {
+		t.Errorf("%s", msg)
+	}
+	// A password is never sent in the clear, even to the host's own relay.
+	m.User, m.Password = "u", "p"
+	addr2, _ := fakeSMTP(t)
+	m.Addr = addr2
+	if err := m.Send("owner@example.org", "x", "y"); err == nil || !strings.Contains(err.Error(), "without TLS") {
+		t.Errorf("err = %v", err)
 	}
 }
