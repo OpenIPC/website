@@ -162,9 +162,9 @@ func Log(log *slog.Logger, next http.Handler) http.Handler {
 	})
 }
 
-// ETagMatches reports whether an If-None-Match header names etag, by the weak
+// ETagMatches reports whether an If-None-Match value names etag, by the weak
 // comparison RFC 9110 (13.1.2) prescribes for it: a W/ prefix is ignored on
-// either side, the header may list several tags, and "*" matches anything.
+// either side, and the value may list several tags.
 //
 // The weak half is not a nicety. nginx's gzip turns a strong ETag into a weak
 // one on its way out (W/"..."), and the browser sends back what it was given,
@@ -172,33 +172,53 @@ func Log(log *slog.Logger, next http.Handler) http.Handler {
 // every revisit through nginx with the whole body -- while the same request
 // straight to the service got its 304, which is why nothing failed until a
 // check went through the front door.
+//
+// Strict where it can afford to be, because the cost of saying no is only a
+// full response: a value that is not a well-formed list of entity-tags matches
+// nothing, and "*" matches nothing either -- every handler here decides 304
+// before it has looked the resource up, so "*" would answer 304 for one that
+// does not exist, and no browser sends it on a GET.
 func ETagMatches(header, etag string) bool {
 	want := strings.TrimPrefix(etag, "W/")
-	if want == "" {
+	if len(want) < 2 || want[0] != '"' || want[len(want)-1] != '"' {
 		return false
 	}
-	for s := strings.TrimSpace(header); s != ""; {
-		s = strings.TrimLeft(s, " \t,")
+	matched := false
+	s := strings.TrimLeft(strings.TrimSpace(header), " \t,")
+	for first := true; ; first = false {
+		s = strings.TrimLeft(s, " \t")
 		if s == "" {
-			break
+			return matched && !first
 		}
-		if s[0] == '*' {
-			return true
+		if !first {
+			// Tags are separated by commas; empty list elements are allowed.
+			if s[0] != ',' {
+				return false
+			}
+			s = strings.TrimLeft(s[1:], " \t,")
+			if s == "" {
+				return matched
+			}
 		}
 		s = strings.TrimPrefix(s, "W/")
 		if s == "" || s[0] != '"' {
-			return false // not an entity-tag: nothing after it can be trusted
+			return false // "*", or not an entity-tag at all
 		}
 		end := strings.IndexByte(s[1:], '"')
 		if end < 0 {
 			return false
 		}
 		if s[:end+2] == want {
-			return true
+			matched = true
 		}
 		s = s[end+2:]
 	}
-	return false
+}
+
+// Revisited reports whether the request already holds etag: every
+// If-None-Match field it carries, not only the first, read as one list.
+func Revisited(r *http.Request, etag string) bool {
+	return ETagMatches(strings.Join(r.Header.Values("If-None-Match"), ","), etag)
 }
 
 // WriteJSON sends a body with conditional-GET behaviour: a weak ETag
@@ -209,7 +229,7 @@ func WriteJSON(w http.ResponseWriter, r *http.Request, body []byte) {
 	h := w.Header()
 	h.Set("Content-Type", "application/json; charset=utf-8")
 	h.Set("Etag", etag)
-	if ETagMatches(r.Header.Get("If-None-Match"), etag) {
+	if Revisited(r, etag) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}

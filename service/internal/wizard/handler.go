@@ -68,7 +68,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hd.Set("Content-Type", "application/json")
 	hd.Set("Cache-Control", "public, max-age=300")
 	hd.Set("ETag", c.etag)
-	if httpx.ETagMatches(r.Header.Get("If-None-Match"), c.etag) {
+	if httpx.Revisited(r, c.etag) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
