@@ -136,6 +136,81 @@
   },
   {
     "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/me"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/logout"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/quiet"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/login"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/finish"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/telegram"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/telegram/webhook"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/email"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/github"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/github/callback"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/reports"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/reports"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/reports/{id}/files/{position}"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/review"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/review/{id}"
+  },
+  {
+    "role": "web",
     "method": "PUT",
     "path": "/api/v1/tools/{name}"
   },

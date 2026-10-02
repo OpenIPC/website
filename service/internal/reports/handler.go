@@ -54,6 +54,9 @@ func (a *API) Handlers() map[string]http.Handler {
 
 func (a *API) store() *Store { return &Store{DB: a.DB} }
 
+// Store is the reports' rows, for the club's pages.
+func (a *API) Store() *Store { return a.store() }
+
 func (a *API) now() time.Time {
 	if a.Now != nil {
 		return a.Now()
@@ -85,6 +88,15 @@ var fileKinds = map[string]int64{"photo": maxPhoto, "boot_log": maxText, "uboot_
 // `ipctool | curl --data-binary @- .../api/v1/reports`, ipctool's output as
 // the whole body.
 func (a *API) upload(w http.ResponseWriter, r *http.Request) {
+	a.Submit(w, r, "")
+}
+
+// Submit is an upload, from ipctool or from the site's send form
+// (POST /api/v1/club/reports, member set when the sender is signed in).
+// A send that names a catalogue board (the field model) needs no ipctool
+// output: a boot log or a photo of a known board is a report too, and so is
+// a flash dump read with a programmer rather than ipctool.
+func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	ctx := r.Context()
 	st := a.store()
 	key, err := st.Key(ctx)
@@ -122,27 +134,60 @@ func (a *API) upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	model := in.fields["model"]
+	if model != "" {
+		if channel != "web" {
+			a.refuse(w, http.StatusBadRequest, "model is the send form's field: channel web")
+			return
+		}
+		known, err := st.ModelExists(ctx, model)
+		if err != nil {
+			a.fail(w, "the board", err)
+			return
+		}
+		if !known {
+			a.refuse(w, http.StatusBadRequest, "model: the catalogue has no board "+model)
+			return
+		}
+	}
+
 	// A backup carries the YAML it was taken with; alone, it is the report.
+	// For a named board, a whole flash image read with a programmer is one
+	// too: the bytes as they are, a power of two from 1 MB.
 	var backup Backup
+	raw := false
 	if in.backup != nil {
 		f, err := in.backup.Open()
 		if err == nil {
 			backup, err = ReadBackup(f)
 		}
+		if err != nil && model != "" && flashImage(in.backup.Bytes) {
+			raw, err = true, nil
+		}
 		if err != nil {
 			a.refuse(w, http.StatusBadRequest, "backup: "+err.Error())
 			return
 		}
-		if in.yaml == "" {
+		if raw {
+			// the image says nothing about itself; the board is the sender's word
+		} else if in.yaml == "" {
 			in.yaml = backup.YAML
 		} else if Clean(in.yaml) != Clean(backup.YAML) {
 			a.refuse(w, http.StatusBadRequest, "the backup was taken with other ipctool output than the yaml sent with it")
 			return
 		}
 	}
-	doc, facts, err := Parse(in.yaml)
-	if err != nil {
-		a.refuse(w, http.StatusBadRequest, err.Error())
+	var doc string
+	var facts Facts
+	if in.yaml != "" || model == "" {
+		doc, facts, err = Parse(in.yaml)
+		if err != nil {
+			a.refuse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+	if doc == "" && in.backup == nil && len(in.parts) == 0 && in.fields["note"] == "" {
+		a.refuse(w, http.StatusBadRequest, "nothing to send: add a file, a photo or a note")
 		return
 	}
 	consent := "none"
@@ -159,6 +204,7 @@ func (a *API) upload(w http.ResponseWriter, r *http.Request) {
 		NotePublic: Redact(in.fields["note"], facts, key),
 		YAML:       doc, YAMLPublic: Redact(doc, facts, key), Facts: facts,
 		IDHashes: facts.IDHashes(key), Consent: consent, ClientHash: client,
+		Member: member, Model: model,
 	}
 	sum := sha256.Sum256([]byte(doc))
 	rep.YAMLSHA256 = hex.EncodeToString(sum[:])
@@ -195,7 +241,11 @@ func (a *API) upload(w http.ResponseWriter, r *http.Request) {
 	}
 	all := in.parts
 	if in.backup != nil {
-		all = append([]part{{kind: "backup", name: "backup.bin", mime: "application/octet-stream", in: in.backup}}, all...)
+		name := "backup.bin"
+		if raw {
+			name = "flash.bin"
+		}
+		all = append([]part{{kind: "backup", name: name, mime: "application/octet-stream", in: in.backup}}, all...)
 	}
 	for _, p := range all {
 		f, err := prepare(p)
@@ -247,10 +297,28 @@ func (a *API) upload(w http.ResponseWriter, r *http.Request) {
 		"next": "OpenIPC's maintainers review each report before it is published. Nothing identifying the camera " +
 			"(MAC, die ID, cloud ID) is ever shown; the receipt shows the report's state.",
 	}
-	if in.backup != nil {
+	if raw {
+		out["backup"] = map[string]any{"partitions": 0, "flash_bytes": in.backup.Bytes}
+	} else if in.backup != nil {
 		out["backup"] = map[string]any{"partitions": len(backup.Blocks), "flash_bytes": backup.Size()}
 	}
+	if member != "" {
+		out["receipt_url"] = clubURL(r)
+	}
 	writeJSON(w, http.StatusCreated, out)
+}
+
+// flashImage: the size of a whole NOR or NAND chip, 1 to 256 MB.
+func flashImage(n int64) bool {
+	return n >= 1<<20 && n <= MaxBackup && n&(n-1) == 0
+}
+
+func clubURL(r *http.Request) string {
+	host := r.Host
+	if host == "" {
+		host = "openipc.org"
+	}
+	return "https://" + host + "/club/"
 }
 
 func receiptURL(r *http.Request, id string) string {
@@ -315,7 +383,7 @@ func (a *API) read(r *http.Request) (*received, int, error) {
 		name := p.FormName()
 		// "note" is both a field (a line of text) and a file kind (a note
 		// file): a part with a filename is a file, one without is a field.
-		isField := p.FileName() == "" && (name == "consent" || name == "channel" || name == "tool" || name == "note")
+		isField := p.FileName() == "" && (name == "consent" || name == "channel" || name == "tool" || name == "note" || name == "model")
 		switch {
 		case isField:
 			b, err := io.ReadAll(io.LimitReader(p, maxField+1))
@@ -354,10 +422,10 @@ func (a *API) read(r *http.Request) (*received, int, error) {
 			}
 			in.parts[len(in.parts)-1].mime = mt
 		default:
-			return in, http.StatusBadRequest, fmt.Errorf("%q is not a part a report has: yaml, backup, photo, boot_log, uboot_env, note, document, consent, channel, tool", name)
+			return in, http.StatusBadRequest, fmt.Errorf("%q is not a part a report has: yaml, backup, photo, boot_log, uboot_env, note, document, consent, channel, tool, model", name)
 		}
 	}
-	if in.yaml == "" && in.backup == nil {
+	if in.yaml == "" && in.backup == nil && in.fields["model"] == "" {
 		return in, http.StatusBadRequest, errors.New("a report needs ipctool's output: a yaml part, or a backup")
 	}
 	return in, 0, nil
@@ -464,14 +532,34 @@ func (a *API) file(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "the file", err)
 		return
 	}
+	a.send(w, r.PathValue("id"), sum, name, mt, kind, "public, max-age=86400")
+}
+
+// ServeStored is any file of a report -- a private backup too, as it was
+// sent -- for its sender or a maintainer (internal/club decides who). The
+// caller has checked; this only hands the file to nginx.
+func (a *API) ServeStored(w http.ResponseWriter, r *http.Request, id string, position int) {
+	sum, name, mt, kind, err := a.store().StoredFile(r.Context(), id, position)
+	if errors.Is(err, ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		a.fail(w, "the file", err)
+		return
+	}
+	a.send(w, id, sum, name, mt, kind, "private, no-store")
+}
+
+func (a *API) send(w http.ResponseWriter, id, sum, name, mt, kind, cache string) {
 	disposition := "inline"
 	if kind == "backup" || kind == "document" {
 		disposition = "attachment"
 	}
 	w.Header().Set("Content-Type", mt)
-	w.Header().Set("Content-Disposition", disposition+`; filename="`+r.PathValue("id")+"-"+name+`"`)
+	w.Header().Set("Content-Disposition", disposition+`; filename="`+id+"-"+name+`"`)
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Header().Set("Cache-Control", cache)
 	w.Header().Set("X-Accel-Redirect", strings.TrimSuffix(a.AccelPrefix, "/")+"/"+Rel(sum))
 	w.WriteHeader(http.StatusOK)
 }

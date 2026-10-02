@@ -110,6 +110,25 @@ The goldens below are fixed: nothing regenerates them.
   replaced by keyed hashes; a backup is served only if its owner sent
   `consent=public`.
 
+- **The club signs people in without making the site dynamic.** Telegram,
+  GitHub or an emailed link (`internal/club`, each only when its settings
+  are there), one session cookie whose path is `/api/v1/club`, and pages
+  that stay static: a page asks `/api/v1/club/me` who it is showing. A
+  Telegram sign-in is tied to the browser that showed the code, so a
+  forwarded QR code signs in nobody else. Stars are rows in an append-only
+  ledger (`report_stars`) that only a review writes: +1 per accepted item,
+  +10 per flash dump the catalogue did not already hold, and the negative
+  of each when a published report is rejected afterwards.
+
+  | setting | what it turns on |
+  |---|---|
+  | `CLUB_SITE_URL` | where links point and cookies are for (`https://dev.openipc.org` on dev) |
+  | `TELEGRAM_BOT_TOKEN` | the bot, one per environment; its webhook is set at start |
+  | `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET` | GitHub sign-in; callback `<CLUB_SITE_URL>/api/v1/club/github/callback` |
+  | `CLUB_MAINTAINER_ORG` | its active members review (default `OpenIPC`) |
+  | `CLUB_MAINTAINERS` | member ids that review without it |
+  | `CLUB_SMTP_ADDR`, `CLUB_SMTP_USER`, `CLUB_SMTP_PASSWORD`, `CLUB_MAIL_FROM` | email sign-in, through a relay openipc.org's SPF names |
+
 ## Operating it
 
 - `deploy/install-go-service.sh`: PostgreSQL, the two databases, and

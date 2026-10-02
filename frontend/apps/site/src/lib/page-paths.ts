@@ -91,6 +91,11 @@ export const PAGE_PATHS: PagePath[] = [
   { path: '/cameras/boards', titleKey: 'pages.boards.title', descriptionKey: 'pages.boards.lede' },
   // How a new board reaches the catalogue: ipctool or an agent, and a report's receipt (?id=).
   { path: '/cameras/report', titleKey: 'pages.report.title', descriptionKey: 'pages.report.lede' },
+  // The OpenIPC Club: signing in, a member's own reports and stars (service/internal/club).
+  { path: '/club', titleKey: 'pages.club.title', descriptionKey: 'pages.club.lede' },
+  // The maintainers' review queue. The page is a shell: the queue is only
+  // ever in the answer /api/v1/club/review gives a maintainer.
+  { path: '/club/review', titleKey: 'pages.club_review.title', descriptionKey: 'pages.club_review.lede' },
 
   { path: '/business', titleKey: 'pages.business.title' },
   { path: '/community', titleKey: 'pages.community.title' },

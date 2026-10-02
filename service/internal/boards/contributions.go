@@ -40,11 +40,20 @@ type Contribution struct {
 	FlashChip string   `yaml:"flash_chip"`
 	FlashMB   int      `yaml:"flash_mb"`
 	Note      string   `yaml:"note"`
-	Files     []struct {
-		Kind string `yaml:"kind"`
-		File string `yaml:"file"`
-	} `yaml:"files"`
+	Files     []ContributedFile `yaml:"files"`
 }
+
+type ContributedFile struct {
+	Kind string `yaml:"kind"`
+	File string `yaml:"file"`
+	// Source is the file's path in the tree it is read from: for
+	// contributions.yml, contributions/<unit>/<file>.
+	Source string `yaml:"-"`
+}
+
+// ReceiptMark is in the reference of every unit an owner report made: such
+// units are ApplyReportUnits', and contributions.yml never touches them.
+const ReceiptMark = "/cameras/report/?id="
 
 // contributedKinds are what an owner's paste can be. A flash dump is not
 // one: it is an owner report's backup, never a file in the repository.
@@ -116,7 +125,18 @@ func (im *Importer) ApplyContributions(ctx context.Context, list []Contribution)
 	return im.applyContributions(ctx, contributionsFS, list)
 }
 
+// ApplyReportUnits does the same for the published owner reports' text and
+// photos (reports.PublishedTexts), read from fsys -- the reports' store --
+// at each file's Source. Its units are those whose reference is a receipt.
+func (im *Importer) ApplyReportUnits(ctx context.Context, fsys fs.FS, list []Contribution) (missing []string, err error) {
+	return im.apply(ctx, fsys, list, true)
+}
+
 func (im *Importer) applyContributions(ctx context.Context, fsys fs.FS, list []Contribution) (missing []string, err error) {
+	return im.apply(ctx, fsys, list, false)
+}
+
+func (im *Importer) apply(ctx context.Context, fsys fs.FS, list []Contribution, fromReports bool) (missing []string, err error) {
 	var keep []string
 	for i, c := range list {
 		var exists bool
@@ -133,7 +153,11 @@ func (im *Importer) applyContributions(ctx context.Context, fsys fs.FS, list []C
 		u := &Unit{ID: c.Unit, Sensor: c.Sensor, FlashChip: c.FlashChip, FlashSizeMB: c.FlashMB,
 			SourceRef: c.Evidence[0], Position: contributedPosition + i, Source: Contributors, ContributedBy: c.By}
 		for _, f := range c.Files {
-			u.Files = append(u.Files, File{Kind: f.Kind, Name: f.File, Source: "contributions/" + c.Unit + "/" + f.File})
+			src := f.Source
+			if src == "" {
+				src = "contributions/" + c.Unit + "/" + f.File
+			}
+			u.Files = append(u.Files, File{Kind: f.Kind, Name: f.File, Source: src})
 		}
 		same, err := im.unchanged(ctx, fsys, c, u)
 		if err != nil {
@@ -185,7 +209,9 @@ func (im *Importer) applyContributions(ctx context.Context, fsys fs.FS, list []C
 		keep = []string{}
 	}
 	err = pgx.BeginFunc(ctx, im.Pool, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `DELETE FROM board_units WHERE source = $1 AND NOT id = ANY($2) RETURNING id`, Contributors, keep)
+		rows, err := tx.Query(ctx, `
+			DELETE FROM board_units WHERE source = $1 AND NOT id = ANY($2) AND (strpos(source_ref, $3) > 0) = $4
+			RETURNING id`, Contributors, keep, ReceiptMark, fromReports)
 		if err != nil {
 			return err
 		}
@@ -200,7 +226,11 @@ func (im *Importer) applyContributions(ctx context.Context, fsys fs.FS, list []C
 			im.Log.Info("boards: contribution removed", "unit", id)
 		}
 		// The source is listed only while it has a unit.
-		if len(keep) == 0 {
+		var any bool
+		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM board_units WHERE source = $1)`, Contributors).Scan(&any); err != nil {
+			return err
+		}
+		if !any {
 			_, err = tx.Exec(ctx, `DELETE FROM board_sources WHERE id = $1`, Contributors)
 			return err
 		}

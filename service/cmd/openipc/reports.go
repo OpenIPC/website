@@ -95,15 +95,15 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		if err := need(1); err != nil {
 			return err
 		}
-		for _, m := range models {
-			if err := st.Link(ctx, pos[0], m, *by); err != nil {
-				return fmt.Errorf("link %s: %w", m, err)
-			}
-		}
-		if err := st.Review(ctx, pos[0], cmd, *by, *note); err != nil {
+		// The same decision the club's review page makes: links, the
+		// review, the sender's stars, and the boards' copy of the text.
+		d, err := st.Decide(ctx, pos[0], cmd, *by, *note, models)
+		if err != nil {
 			return err
 		}
-		log.Info("reports: reviewed", "report", pos[0], "decision", cmd, "by", *by, "models", []string(models))
+		refreshReportUnits(ctx, cfg, log, pool)
+		log.Info("reports: reviewed", "report", pos[0], "decision", cmd, "by", *by, "models", []string(models),
+			"member", d.Member, "stars", d.Points)
 		return nil
 	case "link":
 		if err := need(2); err != nil {

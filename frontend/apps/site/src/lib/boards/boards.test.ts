@@ -385,6 +385,7 @@ describe('who sent a unit', () => {
       .toEqual({ who: 'sansarus', url: 'https://github.com/OpenIPC/website/issues/365', label: '#365' });
     expect(sentBy(unit('contributor', 'https://github.com/OpenIPC/firmware/issues/12', 'x'))?.label).toBe('firmware#12');
     expect(sentBy(unit('contributor', 'https://example.org/post/1', 'x'))?.label).toBe('example.org');
+    expect(sentBy(unit('contributor', 'https://openipc.org/cameras/report/?id=r-abcd2345', 'Ivan'))?.label).toBe('r-abcd2345');
     expect(sentBy(unit('contributor', 'not a url', 'x'))).toEqual({ who: 'x', url: '', label: '' });
   });
 

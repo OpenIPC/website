@@ -253,3 +253,39 @@ func TestContributionsYAMLIsChecked(t *testing.T) {
 		}
 	}
 }
+
+// A published owner report's text is a unit too (ApplyReportUnits), and the
+// two lists keep out of each other's way: contributions.yml never removes a
+// report's unit, nor the reports' list one of contributions.yml's.
+func TestReportUnitsAndContributionsLeaveEachOtherAlone(t *testing.T) {
+	pool, root := imported(t)
+	ctx := context.Background()
+	im := &Importer{Pool: pool, Log: quiet(), Root: root}
+	applyFS(t, im, contributed(oneContribution, ownersConsole))
+
+	store := fstest.MapFS{"ab/abcdef": {Data: []byte("U-Boot 2015.01\nbootcmd=sf probe 0\n")}}
+	report := []Contribution{{Unit: "xiongmai-53h20-s-r-abcd2345", Model: "xiongmai-53h20-s", By: "Ivan",
+		Evidence: []string{"https://openipc.org" + ReceiptMark + "r-abcd2345"},
+		Files:    []ContributedFile{{Kind: "uboot_env", File: "2-uboot_env.txt", Source: "ab/abcdef"}}}}
+	if _, err := im.ApplyReportUnits(ctx, store, report); err != nil {
+		t.Fatal(err)
+	}
+	count := func() (yml, rep int) {
+		_ = pool.QueryRow(ctx, `SELECT count(*) FILTER (WHERE strpos(source_ref, $1) = 0), count(*) FILTER (WHERE strpos(source_ref, $1) > 0)
+			FROM board_units WHERE source = 'contributor'`, ReceiptMark).Scan(&yml, &rep)
+		return
+	}
+	if y, r := count(); y != 1 || r != 1 {
+		t.Fatalf("%d from contributions.yml, %d from reports", y, r)
+	}
+	applyFS(t, im, contributed(oneContribution, ownersConsole))
+	if _, r := count(); r != 1 {
+		t.Error("applying contributions.yml removed a report's unit")
+	}
+	if _, err := im.ApplyReportUnits(ctx, store, nil); err != nil {
+		t.Fatal(err)
+	}
+	if y, r := count(); y != 1 || r != 0 {
+		t.Errorf("after the report was withdrawn: %d from contributions.yml, %d from reports", y, r)
+	}
+}

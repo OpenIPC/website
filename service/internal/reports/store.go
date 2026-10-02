@@ -34,6 +34,10 @@ type Report struct {
 	Consent    string
 	ClientHash string
 	Files      []File
+	// Through the site's send form: the signed-in sender, and the board they
+	// said it is. Empty for ipctool's uploads.
+	Member string
+	Model  string
 }
 
 // File is one file a report brought.
@@ -161,8 +165,28 @@ func (s *Store) Insert(ctx context.Context, r *Report, limit int, place func() e
 			}
 			r.Files[i].Position = i + 1
 		}
+		if r.Member != "" || r.Model != "" {
+			if _, err := tx.Exec(ctx, `INSERT INTO report_submissions (report_id, member_id, model_id) VALUES ($1, $2, $3)`,
+				r.ID, nullable(r.Member), nullable(r.Model)); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
+}
+
+// ModelExists says whether the catalogue has the board a sender named.
+func (s *Store) ModelExists(ctx context.Context, model string) (bool, error) {
+	var ok bool
+	err := s.DB.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM board_models WHERE id = $1)`, model).Scan(&ok)
+	return ok, err
+}
+
+func nullable(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 // RemoveUnreferenced deletes a stored file if, under its exclusive lock, no

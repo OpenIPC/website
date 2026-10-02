@@ -61,7 +61,7 @@ export function firstMissing(m: Model): CoverageKey | null {
 /**
  * Who sent a unit and where, when an owner did (source contributor): the
  * sender as they signed, and the issue as "#365" (another repository's as
- * "firmware#12"), any other page as its host. Null for a unit a catalogue
+ * "firmware#12"), a report's receipt as its id, any other page as its host. Null for a unit a catalogue
  * brought.
  */
 export function sentBy(u: Pick<Unit, 'source' | 'source_ref' | 'contributed_by'>): { who: string; url: string; label: string } | null {
@@ -73,7 +73,9 @@ export function sentBy(u: Pick<Unit, 'source' | 'source_ref' | 'contributed_by'>
     return { who: u.contributed_by, url: '', label: '' };
   }
   const issue = url.host === 'github.com' ? url.pathname.match(/^\/([^/]+)\/([^/]+)\/(?:issues|pull)\/(\d+)$/) : null;
-  const label = !issue ? url.host : `${issue[1] === 'OpenIPC' && issue[2] === 'website' ? '' : issue[2]}#${issue[3]}`;
+  // A report sent through the board's send form links to its receipt.
+  const receipt = /\/cameras\/report\/?$/.test(url.pathname) ? url.searchParams.get('id') : null;
+  const label = receipt ?? (!issue ? url.host : `${issue[1] === 'OpenIPC' && issue[2] === 'website' ? '' : issue[2]}#${issue[3]}`);
   return { who: u.contributed_by, url: u.source_ref, label };
 }
 
