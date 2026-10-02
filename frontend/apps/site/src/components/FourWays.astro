@@ -69,7 +69,7 @@ const badge = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-
 
 {variant === 'full' ? (
   <div class="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-    <section id="buy" class:list={[card, 'scroll-mt-4 border-[1.5px] border-brand-blue bg-[#eef1fc]']}>
+    <section id="buy" class:list={[card, 'border-[1.5px] border-brand-blue bg-[#eef1fc]']}>
       <div class="flex items-center justify-between">
         <span class="flex size-11 items-center justify-center rounded-xl bg-brand-blue text-white"><Icon name="bag" class="size-5" /></span>
         <span class:list={[badge, 'bg-white text-body-secondary']}>{w('buy_when')}</span>
@@ -101,7 +101,7 @@ const badge = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-
       </a>
     </section>
 
-    <section id="ota" class:list={[card, 'scroll-mt-4 border border-hairline bg-white']}>
+    <section id="ota" class:list={[card, 'border border-hairline bg-white']}>
       <div class="flex items-center justify-between">
         <span class="flex size-11 items-center justify-center rounded-xl bg-brand-blue text-white"><Icon name="cloud-arrow-up" class="size-5" /></span>
         <span class:list={[badge, 'bg-surface-alt text-body-secondary']}>{w('ota_when')}</span>
@@ -125,7 +125,7 @@ const badge = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-
       </a>
     </section>
 
-    <section id="identify" class:list={[card, 'scroll-mt-4 border border-hairline bg-white']}>
+    <section id="identify" class:list={[card, 'border border-hairline bg-white']}>
       <div class="flex items-center justify-between">
         <span class="flex size-11 items-center justify-center rounded-xl bg-brand-blue text-white"><Icon name="screwdriver" class="size-5" /></span>
         <span class:list={[badge, 'bg-surface-alt text-body-secondary']}>{w('open_when')}</span>
@@ -150,7 +150,7 @@ const badge = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-
       </form>
     </section>
 
-    <section id="ask" class:list={[card, 'scroll-mt-4 bg-ink text-white/85']}>
+    <section id="ask" class:list={[card, 'bg-ink text-white/85']}>
       <div class="flex items-center justify-between">
         <span class="flex size-11 items-center justify-center rounded-xl bg-accent text-ink"><Icon name="chat-dots" class="size-5" /></span>
         <span class:list={[badge, 'bg-white/10 text-white']}>{w('ask_when')}</span>

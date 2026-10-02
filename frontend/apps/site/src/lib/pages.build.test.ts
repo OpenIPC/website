@@ -538,6 +538,20 @@ describe('the pages say what they are for', () => {
     }
   });
 
+  test('a jump to an anchor lands below the sticky header, set once for the site (#375)', () => {
+    // html's scroll-padding-top clears the header for every anchor. A section
+    // that also carries scroll-mt-* adds to it, which is how the offsets came
+    // to be wrong in both directions: 16px under a 60px header, or 96px on top
+    // of the padding.
+    const css = walk(dist).filter((f) => f.endsWith('.css'))
+      .map((f) => readFileSync(join(dist, f), 'utf8')).join('\n');
+    expect(css).toMatch(/html\{[^}]*scroll-padding-top:calc\(var\(--site-nav-height\) \+ 1rem\)/);
+    expect(css).toMatch(/--site-nav-height:60px/);
+    for (const [locale, path, html] of builtPages()) {
+      expect(html.match(/class="[^"]*\bscroll-mt-[^"]*"/)?.[0], `${locale} ${path}`).toBeUndefined();
+    }
+  });
+
   test('the low-latency page offers FPV support hours, and counts both doors (#193)', () => {
     // The offer is the Open Collective "Technical support" tier, bought at its
     // own checkout; the memo reads the two events as the FPV segment's

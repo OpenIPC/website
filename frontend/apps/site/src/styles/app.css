@@ -95,6 +95,20 @@
 }
 
 @layer base {
+  /*
+   * Where a jump to `#anchor` lands (#375). The site header is sticky and its
+   * bottom edge sits at 60px at every width, so a target scrolled to the top of
+   * the viewport lands under it -- /business#partners and
+   * /supported-hardware/full-list#stages did, at 16px, with their headings
+   * hidden. Set once here for every anchor on the site, in place of a
+   * per-section `scroll-mt-*` that each page had to remember and that was
+   * measured against a page with no header. A section must not add one of its
+   * own: the two add up. --site-nav-height is the header's, kept beside it.
+   */
+  html {
+    scroll-padding-top: calc(var(--site-nav-height) + 1rem);
+  }
+
   body {
     color: var(--color-body);
     font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -221,6 +235,12 @@ h1, h2, h3, h4, h5, h6 {
  * viewport -- the whole document scrolling sideways, on every page, which the
  * sweep caught and a desktop screenshot never would.
  */
+:root {
+  /* The sticky header's height: py-2 around the 32px brand line, plus its
+   * border. html's scroll-padding-top reads it (#375). */
+  --site-nav-height: 60px;
+}
+
 .site-nav-collapse {
   display: none;
   flex-basis: 100%;
