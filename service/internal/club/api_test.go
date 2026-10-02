@@ -630,6 +630,12 @@ func TestWhatAMemberSendsIsTheirsAndEarnsStarsWhenAccepted(t *testing.T) {
 	if d["points"].(float64) != -11 || ivan.me(t)["stars"].(float64) != 0 {
 		t.Errorf("reject: %v, stars %v", d, ivan.me(t)["stars"])
 	}
+	// Published again, Ivan's report is whole again: he sent the dump first,
+	// and Petr's later copy does not take it from him.
+	_, d = maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish"})
+	if d["points"].(float64) != 11 || ivan.me(t)["stars"].(float64) != 11 {
+		t.Errorf("published again: %v, stars %v", d, ivan.me(t)["stars"])
+	}
 	if _, err := e.pool.Exec(ctx, `UPDATE report_stars SET points = 100`); err == nil {
 		t.Error("the ledger accepted an edit")
 	}

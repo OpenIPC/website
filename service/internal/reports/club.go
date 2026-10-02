@@ -17,8 +17,10 @@ import (
 // read and written here.
 
 // Stars for what a maintainer accepts. A flash dump the catalogue already
-// holds -- the same bytes in another published report or a board's files --
-// earns nothing.
+// holds -- the same bytes in a board's files, or in a published report sent
+// before this one -- earns nothing. The first sender of a dump keeps it: a
+// later copy published meanwhile does not take it from them if their own
+// report is rejected and published again.
 const (
 	StarsPerItem = 1
 	StarsPerDump = 10
@@ -199,8 +201,10 @@ func (s *Store) potential(ctx context.Context, id string, hasYAML bool) (map[int
 	rows, err := s.DB.Query(ctx, `
 		SELECT f.position, f.kind,
 		  f.kind = 'backup' AND (
-		    EXISTS (SELECT 1 FROM report_files o WHERE o.sha256 = f.sha256 AND o.report_id <> f.report_id
-		            AND (SELECT decision FROM report_reviews rv WHERE rv.report_id = o.report_id ORDER BY rv.id DESC LIMIT 1) = 'publish')
+		    EXISTS (SELECT 1 FROM report_files o JOIN reports ro ON ro.id = o.report_id
+		            WHERE o.sha256 = f.sha256 AND o.report_id <> f.report_id
+		              AND ro.received_at < (SELECT received_at FROM reports WHERE id = f.report_id)
+		              AND (SELECT decision FROM report_reviews rv WHERE rv.report_id = o.report_id ORDER BY rv.id DESC LIMIT 1) = 'publish')
 		    OR EXISTS (SELECT 1 FROM board_artifacts a WHERE a.sha256 = f.sha256))
 		FROM report_files f WHERE f.report_id = $1`, id)
 	if err != nil {
