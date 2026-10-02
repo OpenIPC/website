@@ -1,0 +1,147 @@
+IPL g05c44be
+D-15
+SPI 54M
+64MB
+BIST0_0001-OK
+[SPI_NOR]
+MXP found at 0x0000f000
+offset:00007000
+Checksum OK
+
+IPL_CUST g05c44be
+runUBOOT()
+[SPI_NOR]
+MXP found at 0x0000f000
+offset:00020000
+ -Decompress BDMA XZ
+ -Decompress BDMA XZ
+XZ decomp_size=0x00049be4
+ pvLoadAddr:23d00000
+ pvRunAddr:23e00000
+ -Verify CRC32 passed!
+  decomp_size=0x00000000
+Disable MMU and D-cache before jump to UBOOT▒
+
+U-Boot 2015.01 (Nov 24 2022 - 17:53:59)
+
+Version: I6g#######
+I2C:   ready
+DRAM:
+WARNING: Caches not enabled
+MMC:   MStar SD/MMC: 0
+nor_flash_mxp allocated success!!
+Flash is detected (0x0B03, 0xC8, 0x40, 0x17)
+SF: Detected nor0 with total size 8 MiB
+MXP found at mxp_offset[2]=0x0000F000, size=0x1000
+env_offset=0x3F000 env_size=0x1000
+Flash is detected (0x0B03, 0xC8, 0x40, 0x17)
+SF: Detected nor0 with total size 8 MiB
+In:    serial
+Out:   serial
+Err:   serial
+Net:   MAC Address 00:00:B4:67:B7:76
+Auto-Negotiation...
+Link Status Speed:100 Full-duplex:1
+sstar_emac
+reset key up !!!
+Init wifi gpio
+
+
+Anjoy # printenv
+baudrate=115200
+bootargs=console=ttyS0,115200 root=/dev/mtdblock2 rootfstype=squashfs ro init=/linuxrc LX_MEM=0x3fe0000 mma_heap=mma_heap_name0,miu=0,sz=0x152C000 mma_memblock_remove=1
+bootcmd=sf probe 0;sf read 0x21000000 0x00040000 0x001C0000;bootm 0x21000000
+bootdelay=0
+builddate=202312281015
+ethact=sstar_emac
+ethaddr=00:00:B4:67:B7:76
+fileaddr=21000000
+filesize=70954c
+fsversion=3.3.0.2
+ipaddr=192.168.1.197
+reset_key=up
+sdupgrade=1
+serverip=192.168.1.253
+stderr=serial
+stdin=serial
+stdout=serial
+version_kernel=MSTAR_I6B0_LINUX_335
+version_rootfs=MSJ10_V1
+
+Environment size: 602/4092 bytes
+
+
+Anjoy # help
+?       - alias for 'help'
+aes     - Control Mstar AES engine
+base    - print or set address offset
+bootm   - boot application image from memory
+bootp   - boot image via network using BOOTP/TFTP protocol
+btime   - Show booting time
+cmp     - memory compare
+cp      - memory copy
+crc32   - checksum calculation
+dbg     - set debug message level. Default level is INFO
+dcache  - enable or disable data cache
+debug   - Disable uart rx via PAD_DDCA to use debug tool
+dhcp    - boot image via network using DHCP/TFTP protocol
+dstar   - script via SD/MMC
+eeprom  - EEPROM sub-system
+env     - environment handling commands
+estar   - script via network
+estart  - EMAC start
+exit    - exit script
+false   - do nothing, unsuccessfully
+fatinfo - print information about filesystem
+fatload - load binary file from a dos filesystem
+fatls   - list files in a directory (default /)
+fatsize - determine a file's size
+go      - start application at address 'addr'
+gpio    - Config gpio port
+help    - print command description/usage
+i2c     - I2C sub-system
+icache  - enable or disable instruction cache
+initDbgLevel- Initial varaible 'dbgLevel'
+loop    - infinite loop on address range
+macaddr - setup EMAC MAC addr
+md      - memory display
+mm      - memory modify (auto-incrementing address)
+mmc     - MMC sub system
+mmcinfo - display MMC info
+mssdmmc - Mstar SD/MMC IP Verification System
+mstar   - script via TFTP
+mw      - memory write (fill)
+mxp     - MXP function for Mstar MXP partition
+nm      - memory modify (constant address)
+ping    - send ICMP ECHO_REQUEST to network host
+printenv- print environment variables
+pwm     - Set 5000Hz duty 50% pwm waveform and use PAD_FUART_RX
+Sample: pwm 0 100000 200000 14
+
+reset   - Perform RESET of the CPU
+riu     - riu  - riu command
+
+run     - run commands in an environment variable
+saveenv - save environment variables to persistent storage
+sdstar  - script via sd package
+secauth - Control Sstar security authenticate sequence
+setenv  - set environment variables
+sf      - SPI flash sub-system
+sfbin   - for uploading sf image to a server(via network using TFTP protocol)
+showvar - print local hushshell variables
+sigauth - Only verify digital signature and aes
+srcfg   - sensor pin and mclk configuration.
+test    - minimal test like /bin/sh
+test_sig- Test runAuthenticate2
+
+tftpboot- boot image via network using TFTP protocol
+true    - do nothing, successfully
+uart    - UART sub-system
+udpbc   - Send or receive UDP broadcast to/from server using UDP protocol
+version - print monitor, compiler and linker version
+
+Anjoy # version
+
+U-Boot 2015.01 (Nov 24 2022 - 17:53:59)
+arm-buildroot-linux-uclibcgnueabihf-gcc.br_real (Buildroot 2017.08-g239d7d0) 4.9.4
+GNU ld (GNU Binutils) 2.28.1

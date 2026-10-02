@@ -285,6 +285,7 @@
     "send_pinout": "Send us the pinout",
     "send_uboot_env": "Send us the U-Boot console",
     "sensor": "Sensor",
+    "sent_by": "Sent by {who}",
     "shared_and": " and ",
     "shared_colon": ": ",
     "shared_count": {

@@ -307,6 +307,7 @@
     "send_pinout": "Пришлите нам распиновку",
     "send_uboot_env": "Пришлите нам консоль U-Boot",
     "sensor": "Сенсор",
+    "sent_by": "Прислано: {who}",
     "shared_and": " и ",
     "shared_colon": ": ",
     "shared_count": {

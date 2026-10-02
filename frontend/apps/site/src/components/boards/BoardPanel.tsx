@@ -16,7 +16,7 @@ import Firmware from './Firmware';
 import ModelFirmware from './ModelFirmware';
 import OwnerReports from '../reports/OwnerReports';
 import {
-  HEADING_CLASS, couplerDevices, foundIn, frontPhoto, insideOf, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, subtitle, unitFiles, unitPhotos,
+  HEADING_CLASS, couplerDevices, foundIn, frontPhoto, insideOf, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, sentBy, subtitle, unitFiles, unitPhotos,
   type CodeIndex, type Entry, type Heading, type Inside,
 } from '../../lib/boards/model';
 import type { BoardsT } from '../../lib/boards-i18n';
@@ -224,10 +224,18 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
             {entry.units.map((u) => {
               const photos = unitPhotos(u.files);
               const files = unitFiles(u.files);
+              const sent = sentBy(u);
               return (
                 <div key={u.id} class="grid gap-2 text-sm">
                   <div class="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                    <b>{t('from_source', { source: sourceName(u.source) })}</b>
+                    {sent
+                      ? (
+                        <span>
+                          <b>{t('sent_by', { who: sent.who })}</b>
+                          {sent.url && <> · <a href={sent.url} target="_blank" rel="noopener" title={t('new_tab')}>{sent.label} <span aria-hidden="true">↗</span></a></>}
+                        </span>
+                      )
+                      : <b>{t('from_source', { source: sourceName(u.source) })}</b>}
                     {u.sensor && <span class="text-body-secondary">{t('sensor')}: <span class="font-mono text-body">{u.sensor}</span></span>}
                     {(u.flash_chip || u.flash_size_mb) && (
                       <span class="text-body-secondary">{t('flash')}: <span class="font-mono text-body">

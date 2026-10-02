@@ -373,4 +373,5 @@ en:
     new_tab: opens in a new tab
     files_title: Photos and files
     from_source: 'From {source}'
+    sent_by: 'Sent by {who}'
     known_sources: 'Sources: '

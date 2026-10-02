@@ -285,6 +285,7 @@
     "send_pinout": "把引脚图发给我们",
     "send_uboot_env": "把 U-Boot 控制台输出发给我们",
     "sensor": "传感器",
+    "sent_by": "{who} 提供",
     "shared_and": "和",
     "shared_colon": "：",
     "shared_count": {

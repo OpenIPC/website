@@ -376,4 +376,5 @@ zh:
     new_tab: 在新标签页中打开
     files_title: 照片与文件
     from_source: '来源：{source}'
+    sent_by: '{who} 提供'
     known_sources: '来源：'

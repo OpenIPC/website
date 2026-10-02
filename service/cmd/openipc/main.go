@@ -320,6 +320,12 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		lock.Release()
 		return nil, err
 	}
+	// What owners sent about their own boards (boards/contributions.yml),
+	// the same way.
+	if err := applyContributions(ctx, pool, log, cfg.BoardsRoot); err != nil {
+		lock.Release()
+		return nil, err
+	}
 
 	store := &snapshots.Store{DB: pool, TokenKey: cfg.CameraTokenKey}
 	wallFS := variants.Wall{Root: cfg.WallRoot}

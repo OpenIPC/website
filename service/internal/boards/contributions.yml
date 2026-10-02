@@ -1,0 +1,31 @@
+# What board owners sent about their own boards -- boot logs and U-Boot
+# consoles, pasted into an issue -- each checked by a person and recorded
+# here, the text under contributions/<unit>/. The web role applies the file
+# whenever it starts: each entry is one unit on an existing model, credited
+# to whoever sent it, and the catalogue's contributed units are exactly
+# these. A changed entry replaces its unit; a removed one is removed.
+#
+#   unit:     the unit's id, <model>-c<issue number>
+#   model:    the catalogue's model id; a contribution never creates one
+#   by:       who sent it, as they signed the issue
+#   evidence: where they sent it; the first is the unit's reference
+#   sensor, flash_chip, flash_mb: what the text itself shows, when it does
+#   note:     anything a reader needs to read the files right
+#   files:    kind (boot_log, uboot_env, note, or a photo kind) and the file
+#             under contributions/<unit>/
+
+- unit: anjoy-ms-j10-c365
+  model: anjoy-ms-j10
+  by: sansarus
+  evidence:
+    - https://github.com/OpenIPC/website/issues/365
+    - https://github.com/OpenIPC/website/issues/366
+  sensor: IMX307
+  flash_chip: GD25Q64
+  flash_mb: 8
+  note: Stock firmware 3.3.0.2 (builddate 202312281015). The kernel calls the SoC INFINITY6B0 SSC009A-S01A, Anjoy calls it SSC335.
+  files:
+    - kind: uboot_env
+      file: uboot.txt
+    - kind: boot_log
+      file: boot.log

@@ -414,4 +414,5 @@ ru:
     new_tab: откроется в новой вкладке
     files_title: Фото и файлы
     from_source: 'Источник: {source}'
+    sent_by: 'Прислано: {who}'
     known_sources: 'Источники: '

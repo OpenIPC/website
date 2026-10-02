@@ -5,7 +5,7 @@
  * a description that link to other boards. Pure functions, so they are
  * tested without a browser.
  */
-import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model, ModelBuild, VendorFirmware } from './types';
+import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model, ModelBuild, Unit, VendorFirmware } from './types';
 import type { BoardsState, Missing } from './url';
 
 /** A board model with the manufacturer it is filed under. */
@@ -56,6 +56,25 @@ const ASK: CoverageKey[] = ['pinout', 'photos', 'uboot_env', 'flash_dump', 'boot
 /** The first thing a card asks a visitor for, or null when it has it all. */
 export function firstMissing(m: Model): CoverageKey | null {
   return ASK.find((k) => !(k === 'photos' ? ownPhoto(m) : has(m, k))) ?? null;
+}
+
+/**
+ * Who sent a unit and where, when an owner did (source contributor): the
+ * sender as they signed, and the issue as "#365" (another repository's as
+ * "firmware#12"), any other page as its host. Null for a unit a catalogue
+ * brought.
+ */
+export function sentBy(u: Pick<Unit, 'source' | 'source_ref' | 'contributed_by'>): { who: string; url: string; label: string } | null {
+  if (u.source !== 'contributor' || !u.contributed_by) return null;
+  let url: URL;
+  try {
+    url = new URL(u.source_ref);
+  } catch {
+    return { who: u.contributed_by, url: '', label: '' };
+  }
+  const issue = url.host === 'github.com' ? url.pathname.match(/^\/([^/]+)\/([^/]+)\/(?:issues|pull)\/(\d+)$/) : null;
+  const label = !issue ? url.host : `${issue[1] === 'OpenIPC' && issue[2] === 'website' ? '' : issue[2]}#${issue[3]}`;
+  return { who: u.contributed_by, url: u.source_ref, label };
 }
 
 /**
