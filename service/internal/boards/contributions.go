@@ -24,6 +24,9 @@ import (
 // Contributors is the source of contributed units (migration 003's enum).
 const Contributors = "contributor"
 
+// contributedPosition is past any position an import gives a unit.
+const contributedPosition = 1_000_000
+
 //go:embed contributions.yml contributions
 var contributionsFS embed.FS
 
@@ -125,8 +128,10 @@ func (im *Importer) applyContributions(ctx context.Context, fsys fs.FS, list []C
 			continue
 		}
 		keep = append(keep, c.Unit)
+		// After every catalogue's own units of the model: the source's photos
+		// and pinout lead, what an owner sent follows.
 		u := &Unit{ID: c.Unit, Sensor: c.Sensor, FlashChip: c.FlashChip, FlashSizeMB: c.FlashMB,
-			SourceRef: c.Evidence[0], Position: 1000 + i, Source: Contributors, ContributedBy: c.By}
+			SourceRef: c.Evidence[0], Position: contributedPosition + i, Source: Contributors, ContributedBy: c.By}
 		for _, f := range c.Files {
 			u.Files = append(u.Files, File{Kind: f.Kind, Name: f.File, Source: "contributions/" + c.Unit + "/" + f.File})
 		}
@@ -216,10 +221,11 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 	var model, ref, by string
 	var sensor, chip, note *string
 	var flash *int
+	var position int
 	err := im.Pool.QueryRow(ctx, `
-		SELECT model_id, source_ref, coalesce(contributed_by, ''), sensor, flash_chip, flash_size_mb, notes
+		SELECT model_id, source_ref, coalesce(contributed_by, ''), sensor, flash_chip, flash_size_mb, notes, position
 		FROM board_units WHERE id = $1 AND source = $2`, c.Unit, Contributors).
-		Scan(&model, &ref, &by, &sensor, &chip, &flash, &note)
+		Scan(&model, &ref, &by, &sensor, &chip, &flash, &note, &position)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
@@ -227,7 +233,7 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 		return false, err
 	}
 	if model != c.Model || ref != u.SourceRef || by != c.By || deref(sensor) != c.Sensor ||
-		deref(chip) != c.FlashChip || deref(note) != c.Note || derefInt(flash) != c.FlashMB {
+		deref(chip) != c.FlashChip || deref(note) != c.Note || derefInt(flash) != c.FlashMB || position != u.Position {
 		return false, nil
 	}
 	rows, err := im.Pool.Query(ctx, `SELECT kind::text || ' ' || name || ' ' || sha256 FROM board_artifacts WHERE unit_id = $1 ORDER BY position`, c.Unit)

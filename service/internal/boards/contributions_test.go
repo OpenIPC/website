@@ -105,6 +105,12 @@ func TestAContributionIsAUnitCreditedToItsSender(t *testing.T) {
 		WHERE a.unit_id = 'xiongmai-53h20-s-c9' AND v.key = 'ethaddr'`).Scan(&v); err != nil || v != "00:12:34:56:78:9a" {
 		t.Errorf("ethaddr %q, %v", v, err)
 	}
+	// It follows the model's own units.
+	var after bool
+	if err := pool.QueryRow(ctx, `SELECT (SELECT position FROM board_units WHERE id = 'xiongmai-53h20-s-c9') >
+		(SELECT max(position) FROM board_units WHERE source <> 'contributor')`).Scan(&after); err != nil || !after {
+		t.Errorf("the contributed unit sorts before the archive's: %v", err)
+	}
 	if b, err := os.ReadFile(filepath.Join(root, "xiongmai-53h20-s-c9", "boot.log")); err != nil || !strings.Contains(string(b), "System startup") {
 		t.Errorf("boot.log on disk: %q, %v", b, err)
 	}
