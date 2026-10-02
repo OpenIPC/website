@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"sync"
 
 	"github.com/jackc/pgx/v5"
 	"go.yaml.in/yaml/v3"
@@ -20,6 +21,9 @@ import (
 // What owners sent about their own boards (contributions.yml): a boot log or
 // a U-Boot console pasted into an issue, reviewed in the repository and
 // published as a unit of the model, source contributor, credited to them.
+
+// applying queues this process's applies in front of the advisory lock.
+var applying sync.Mutex
 
 // Contributors is the source of contributed units (migration 003's enum).
 const Contributors = "contributor"
@@ -139,7 +143,11 @@ func (im *Importer) applyContributions(ctx context.Context, fsys fs.FS, list []C
 func (im *Importer) apply(ctx context.Context, fsys fs.FS, list []Contribution, fromReports bool) (missing []string, err error) {
 	// One apply at a time, across processes: the web role at start, after
 	// each review, and `openipc reports publish` in the same container all
-	// write these units and their directories.
+	// write these units and their directories. Within a process a mutex
+	// queues them first, so the waiters do not each hold a pool connection
+	// on the advisory lock and leave none for the apply that has it.
+	applying.Lock()
+	defer applying.Unlock()
 	conn, err := im.Pool.Acquire(ctx)
 	if err != nil {
 		return nil, err

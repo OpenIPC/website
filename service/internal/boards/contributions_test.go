@@ -10,6 +10,7 @@ import (
 	"testing/fstest"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // contributed is a contributions tree for the fixture's xiongmai-53h20-s.
@@ -348,13 +349,22 @@ func TestAReportOnTwoBoardsIsAUnitOnEachAndTwoRefreshesAtOnceAgree(t *testing.T)
 		reportUnit("xiongmai-53h20-s-r-cccccccc", "xiongmai-53h20-s", "r-cccccccc", "cc/text", "boot_log", "1-boot.txt"),
 		reportUnit("unknown-unidentified-hi3516cv200-3-r-cccccccc", "unknown-unidentified-hi3516cv200-3", "r-cccccccc", "cc/text", "boot_log", "1-boot.txt"),
 	}
+	// A pool as small as CI's: waiters must not starve the apply that holds
+	// the lock of the connection it needs.
+	cfg := pool.Config()
+	cfg.MaxConns = 2
+	small, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer small.Close()
 	var wg sync.WaitGroup
-	errs := make(chan error, 4)
-	for i := 0; i < 4; i++ {
+	errs := make(chan error, 6)
+	for i := 0; i < 6; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			im := &Importer{Pool: pool, Log: quiet(), Root: root}
+			im := &Importer{Pool: small, Log: quiet(), Root: root}
 			_, err := im.ApplyReportUnits(ctx, store, list)
 			errs <- err
 		}()
