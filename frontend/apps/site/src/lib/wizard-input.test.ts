@@ -4,6 +4,7 @@ import {
   type Patterns,
 } from './wizard-input';
 import fixture from './wizard-input.fixture.json';
+import { isFormSubmission } from './wizard-result';
 
 // The patterns as the export carries them, which are the ones
 // the reference gave the form.
@@ -110,6 +111,26 @@ describe('a permanent link is the one door a stranger can send you through', () 
     };
 
     expect(read(toPermalink(settings).slice(1))).toEqual(settings);
+  });
+
+  test('a hand-edited value cannot turn the link into a form submission (Qodo on #373)', () => {
+    const settings = {
+      cameraMacAddress: '', cameraIpAddress: '10.0.0.5', serverIpAddress: '10.0.0.1',
+      flashType: 'nand', partitionLayout: undefined, firmwareVersion: 'x&camera[flash_type]=nor8m',
+      networkInterface: '', sdCardSlot: '',
+    };
+    const link = toPermalink(settings);
+    const query = new URLSearchParams(link.slice(1));
+    expect(isFormSubmission(query)).toBe(false);
+    expect(query.get('rom')).toBe('nand');
+    expect(query.get('ver')).toBe('x&camera[flash_type]=nor8m');
+  });
+
+  test('a link from valid settings is byte for byte what it was', () => {
+    expect(toPermalink({
+      cameraMacAddress: 'aa:bb:cc:dd:ee:ff', cameraIpAddress: '10.0.0.5', serverIpAddress: '10.0.0.1',
+      flashType: 'nor16m', partitionLayout: 'nor16m', firmwareVersion: 'ultimate', networkInterface: 'eth', sdCardSlot: 'sd',
+    })).toBe('?mac=aa-bb-cc-dd-ee-ff&cip=10.0.0.5&sip=10.0.0.1&net=eth&rom=nor16m&part=nor16m&ver=ultimate&sd=sd');
   });
 });
 
