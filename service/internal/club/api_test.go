@@ -509,6 +509,13 @@ func TestWhatAMemberSendsIsTheirsAndEarnsStarsWhenAccepted(t *testing.T) {
 	if d["points"].(float64) != 0 {
 		t.Errorf("a known dump earned %v", d["points"])
 	}
+	// Ivan's dump was the first: it stays the one that counted.
+	if _, mine := ivan.json(t, "GET", "/api/v1/club/reports", nil); mine["reports"].([]any)[0].(map[string]any)["duplicate"] == true {
+		t.Error("the first copy of a dump is called a duplicate once a second is published")
+	}
+	if _, theirs := petr.json(t, "GET", "/api/v1/club/reports", nil); theirs["reports"].([]any)[0].(map[string]any)["duplicate"] != true {
+		t.Error("the second copy is not called a duplicate")
+	}
 
 	// Rejected afterwards: Ivan's stars are taken back, and the ledger says so.
 	_, d = maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "reject", "note": "wrong board"})

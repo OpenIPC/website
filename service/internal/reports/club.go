@@ -157,6 +157,22 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 	if err := s.DB.QueryRow(ctx, `SELECT coalesce(sum(points), 0) FROM report_stars WHERE report_id = $1`, id).Scan(&m.Stars); err != nil {
 		return nil, err
 	}
+	// Once decided, a dump is a duplicate only if it earned nothing: the
+	// first copy stays the one that counted when a later copy is published.
+	if m.Status != "pending" {
+		m.Duplicate = false
+		for _, f := range m.Files {
+			if f.Kind != "backup" {
+				continue
+			}
+			var earned bool
+			if err := s.DB.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM report_stars WHERE report_id = $1 AND position = $2 AND kind = 'award')`,
+				id, f.Position).Scan(&earned); err != nil {
+				return nil, err
+			}
+			m.Duplicate = m.Duplicate || (!earned && m.Status == "published")
+		}
+	}
 	if m.Status == "pending" {
 		for _, p := range potential {
 			m.Pending += p

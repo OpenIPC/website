@@ -15,9 +15,9 @@ export default function ClubBadge({ locale }: { locale: Locale }) {
   }, []);
   if (!member) return null;
   return (
-    <a class="site-nav-link inline-flex items-center gap-2" href={pathFor(locale, '/club')} title={member.name}>
+    <a class="site-nav-link" href={pathFor(locale, '/club')} title={member.name}>
       <Stars n={member.stars} onDark />
-      <span class="max-w-[12ch] truncate">{member.name}</span>
+      <span class="ms-2 inline-block max-w-[12ch] truncate align-bottom">{member.name}</span>
     </a>
   );
 }
