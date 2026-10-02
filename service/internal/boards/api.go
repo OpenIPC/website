@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/OpenIPC/website/service/internal/httpx"
 	"github.com/OpenIPC/website/service/internal/vendorfw"
 	"log/slog"
 	"net/http"
@@ -775,7 +776,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 	}
 	sum := sha256.Sum256([]byte(fmt.Sprintf("%d|%d|%d|%s|%s", units, files, last.UnixNano(), about, r.URL.RequestURI())))
 	etag := `"` + hex.EncodeToString(sum[:12]) + `"`
-	if r.Header.Get("If-None-Match") == etag {
+	if httpx.ETagMatches(r.Header.Get("If-None-Match"), etag) {
 		w.Header().Set("ETag", etag)
 		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", maxAge))
 		w.WriteHeader(http.StatusNotModified)

@@ -162,6 +162,45 @@ func Log(log *slog.Logger, next http.Handler) http.Handler {
 	})
 }
 
+// ETagMatches reports whether an If-None-Match header names etag, by the weak
+// comparison RFC 9110 (13.1.2) prescribes for it: a W/ prefix is ignored on
+// either side, the header may list several tags, and "*" matches anything.
+//
+// The weak half is not a nicety. nginx's gzip turns a strong ETag into a weak
+// one on its way out (W/"..."), and the browser sends back what it was given,
+// so a handler comparing the header with its own ETag as strings answered
+// every revisit through nginx with the whole body -- while the same request
+// straight to the service got its 304, which is why nothing failed until a
+// check went through the front door.
+func ETagMatches(header, etag string) bool {
+	want := strings.TrimPrefix(etag, "W/")
+	if want == "" {
+		return false
+	}
+	for s := strings.TrimSpace(header); s != ""; {
+		s = strings.TrimLeft(s, " \t,")
+		if s == "" {
+			break
+		}
+		if s[0] == '*' {
+			return true
+		}
+		s = strings.TrimPrefix(s, "W/")
+		if s == "" || s[0] != '"' {
+			return false // not an entity-tag: nothing after it can be trusted
+		}
+		end := strings.IndexByte(s[1:], '"')
+		if end < 0 {
+			return false
+		}
+		if s[:end+2] == want {
+			return true
+		}
+		s = s[end+2:]
+	}
+	return false
+}
+
 // WriteJSON sends a body with conditional-GET behaviour: a weak ETag
 // over the bytes, and 304 when the client already has them.
 func WriteJSON(w http.ResponseWriter, r *http.Request, body []byte) {
@@ -170,7 +209,7 @@ func WriteJSON(w http.ResponseWriter, r *http.Request, body []byte) {
 	h := w.Header()
 	h.Set("Content-Type", "application/json; charset=utf-8")
 	h.Set("Etag", etag)
-	if match := r.Header.Get("If-None-Match"); match != "" && match == etag {
+	if ETagMatches(r.Header.Get("If-None-Match"), etag) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
