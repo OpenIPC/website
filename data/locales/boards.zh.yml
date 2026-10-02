@@ -407,7 +407,7 @@ zh:
       unavailable: '本站暂不可用。'
       tg_title: '使用 Telegram 登录'
       tg_step1: '用手机相机扫描二维码，或在本电脑上打开 Telegram。'
-      tg_step2: '在与 OpenIPC 机器人的对话中点击“开始”。'
+      tg_step2: '在与 {bot} 的对话中点击“开始”。'
       tg_step3: '回到此页面，它会自动完成登录。'
       tg_open: '打开 Telegram'
       tg_other: '改用 GitHub 或邮箱'

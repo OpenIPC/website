@@ -123,7 +123,7 @@ The goldens below are fixed: nothing regenerates them.
   | setting | what it turns on |
   |---|---|
   | `CLUB_SITE_URL` | where links point and cookies are for (`https://dev.openipc.org` on dev) |
-  | `TELEGRAM_BOT_TOKEN` | the bot, one per environment; its webhook is set at start |
+  | `TELEGRAM_BOT_TOKEN` | the bot, one per environment: @OpenIPCClubBot_bot, @OpenIPCClubBotDev_bot; its webhook is set at start |
   | `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET` | GitHub sign-in; callback `<CLUB_SITE_URL>/api/v1/club/github/callback` |
   | `CLUB_MAINTAINER_ORG` | its active members review (default `OpenIPC`) |
   | `CLUB_MAINTAINERS` | member ids that review without it |

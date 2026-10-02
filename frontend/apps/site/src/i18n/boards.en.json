@@ -110,7 +110,7 @@
       "tg_other": "Use GitHub or email instead",
       "tg_retry": "Get a new code",
       "tg_step1": "Scan the code with your phone's camera, or open Telegram on this computer.",
-      "tg_step2": "Tap Start in the chat with the OpenIPC bot.",
+      "tg_step2": "Tap Start in the chat with {bot}.",
       "tg_step3": "Come back here. This page signs you in by itself.",
       "tg_title": "Sign in with Telegram",
       "tg_waiting": "Waiting for Telegram… This code works for {time} more.",

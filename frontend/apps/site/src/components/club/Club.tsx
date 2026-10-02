@@ -115,7 +115,7 @@ function SignIn({ ways, locale, t, onSignedIn, compact }: {
             <div class="p-6">{buttons}</div>
           </section>
         )}
-      {sheet && ways.telegram && <TelegramSheet t={t} onClose={() => setSheet(false)} onSignedIn={() => { setSheet(false); onSignedIn(); }} />}
+      {sheet && ways.telegram && <TelegramSheet bot={ways.telegram} t={t} onClose={() => setSheet(false)} onSignedIn={() => { setSheet(false); onSignedIn(); }} />}
       {!compact && <Rules t={t} />}
     </>
   );
@@ -125,7 +125,7 @@ function SignIn({ ways, locale, t, onSignedIn, compact }: {
  * The QR code, the steps, and a countdown, while the page polls every two
  * seconds for the Start tap. A phone gets the link to open straight away.
  */
-function TelegramSheet({ t, onClose, onSignedIn }: { t: BoardsT; onClose: () => void; onSignedIn: () => void }) {
+function TelegramSheet({ bot, t, onClose, onSignedIn }: { bot: string; t: BoardsT; onClose: () => void; onSignedIn: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [link, setLink] = useState<{ url: string; expires: string } | null>(null);
   const [left, setLeft] = useState(600);
@@ -175,14 +175,17 @@ function TelegramSheet({ t, onClose, onSignedIn }: { t: BoardsT; onClose: () => 
         <button type="button" aria-label={t('club.close')} onClick={() => dialog.current?.close()} class="cursor-pointer px-2 text-xl leading-none text-body-secondary hover:text-body">✕</button>
       </div>
       <div class="grid gap-5 p-5 sm:grid-cols-[172px_1fr]">
-        <div class="w-[172px] max-w-full rounded-[10px] border border-hairline bg-white p-3">
+        {/* The shared widget frames its code in grey for the Wi-Fi page; here
+            the tile is the frame, so the code fills it. */}
+        <div class="aspect-square w-[172px] max-w-full rounded-[10px] border border-hairline bg-white p-2 [&_svg]:!bg-white [&_svg]:!p-0">
           {link && left > 0
             ? <QrCodeWidget textToCode={link.url} />
-            : <div class="grid aspect-square place-items-center text-center text-sm text-body-secondary">{error ?? (left === 0 ? t('club.tg_expired') : '…')}</div>}
-          <p class="mt-2 mb-0 text-center font-mono text-[10.5px] break-all text-body-secondary">t.me/{link?.url.split('/')[3]?.split('?')[0] ?? ''}</p>
+            : <div class="grid h-full place-items-center text-center text-sm text-body-secondary">{error ?? (left === 0 ? t('club.tg_expired') : '…')}</div>}
         </div>
         <ol class="m-0 grid list-decimal content-start gap-2 ps-5 text-[.9375rem]">
-          <li>{t('club.tg_step1')}</li><li>{t('club.tg_step2')}</li><li>{t('club.tg_step3')}</li>
+          <li>{t('club.tg_step1')}</li>
+          <li>{t('club.tg_step2', { bot: `@${bot}` })}</li>
+          <li>{t('club.tg_step3')}</li>
         </ol>
       </div>
       <div class="flex flex-wrap gap-2 px-5 pb-5">
