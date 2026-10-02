@@ -92,7 +92,7 @@ function SignIn({ ways, locale, t, onSignedIn, compact }: {
             <input id="club-email" type="email" required autocomplete="email" placeholder={t('club.email_placeholder')} value={email}
               disabled={!ways.email} onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
               class="min-w-0 flex-[1_1_200px] rounded-md border border-hairline px-2.5 py-2 text-[15px]" />
-            <button type="submit" class="site-btn site-btn-primary" disabled={!ways.email || mail.state === 'sending'}>{t('club.email_button')}</button>
+            <button type="submit" class="site-btn site-btn-primary disabled:cursor-not-allowed disabled:opacity-55" disabled={!ways.email || mail.state === 'sending'}>{t('club.email_button')}</button>
             {mail.state === 'error' && <p class="m-0 basis-full text-sm text-[#a3262e]" role="alert">{mail.error}</p>}
           </form>
         )}
@@ -107,7 +107,7 @@ function SignIn({ ways, locale, t, onSignedIn, compact }: {
           <section class="mt-8 grid overflow-hidden rounded-xl border border-hairline md:grid-cols-[1fr_1.1fr]" aria-labelledby="club-why">
             <div class="grid content-start gap-3 bg-surface-alt p-6">
               <h2 id="club-why" class="m-0 text-lg font-semibold">{t('club.why_title')}</h2>
-              <ul class="m-0 grid gap-1.5 ps-5 text-[.9375rem]">
+              <ul class="m-0 grid list-disc gap-1.5 ps-5 text-[.9375rem]">
                 <li>{t('club.why_1')}</li><li>{t('club.why_2')}</li><li>{t('club.why_3')}</li>
               </ul>
               <p class="m-0 text-[12.5px] text-body-secondary">{t('club.why_note')}</p>
@@ -181,7 +181,7 @@ function TelegramSheet({ t, onClose, onSignedIn }: { t: BoardsT; onClose: () => 
             : <div class="grid aspect-square place-items-center text-center text-sm text-body-secondary">{error ?? (left === 0 ? t('club.tg_expired') : '…')}</div>}
           <p class="mt-2 mb-0 text-center font-mono text-[10.5px] break-all text-body-secondary">t.me/{link?.url.split('/')[3]?.split('?')[0] ?? ''}</p>
         </div>
-        <ol class="m-0 grid content-start gap-2 ps-5 text-[.9375rem]">
+        <ol class="m-0 grid list-decimal content-start gap-2 ps-5 text-[.9375rem]">
           <li>{t('club.tg_step1')}</li><li>{t('club.tg_step2')}</li><li>{t('club.tg_step3')}</li>
         </ol>
       </div>
@@ -314,7 +314,7 @@ function Rules({ t }: { t: BoardsT }) {
           {([['rules_item', '+1 ★'], ['rules_dump', '+10 ★'], ['rules_none', '0']] as const).map(([k, v]) => (
             <tr key={k} class="border-b border-hairline">
               <td class="py-1.5">{t(`club.${k}`)}</td>
-              <td class="py-1.5 text-right font-semibold whitespace-nowrap text-[#9a5b00] tabular-nums">{v}</td>
+              <td class={`py-1.5 text-right font-semibold whitespace-nowrap tabular-nums ${v === '0' ? 'text-body-secondary' : 'text-[#9a5b00]'}`}>{v}</td>
             </tr>
           ))}
         </tbody>
