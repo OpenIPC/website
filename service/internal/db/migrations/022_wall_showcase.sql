@@ -13,34 +13,27 @@
 --
 -- A camera nobody knows yet. Anyone can make a camera upload anything, and a
 -- new one could put a picture of its choosing on the front page within
--- fifteen minutes. A camera appears there only once it has been uploading for
--- thirty days, which needs the day it was first seen -- and snapshots are
--- purged after two. cameras keeps that day per camera, written by the
--- trigger below on every upload and never purged: one row per camera, a few
--- thousand rows at most.
+-- fifteen minutes. A camera appears there only once it has been uploading
+-- for a month, on many separate days -- one upload and a month of silence is
+-- not a camera anyone has watched. That needs a camera's history, and
+-- snapshots are purged after two days, so cameras keeps it: the first frame
+-- the wall accepted, and on how many UTC days it has accepted one. Written
+-- by snapshots.Store.MarkGenerated, so an upload the wall refused counts for
+-- nothing; never purged, one row per camera.
 ALTER TABLE snapshots ADD COLUMN luma_p5 smallint;
 ALTER TABLE snapshots ADD COLUMN luma_p50 smallint;
 ALTER TABLE snapshots ADD COLUMN luma_p95 smallint;
 
 CREATE TABLE cameras (
     mac_key    text PRIMARY KEY,
-    first_seen timestamptz NOT NULL
+    first_seen timestamptz NOT NULL,
+    last_day   date NOT NULL,
+    days       integer NOT NULL
 );
 
-CREATE FUNCTION cameras_seen() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-    INSERT INTO cameras (mac_key, first_seen) VALUES (NEW.mac_key, NEW.created_at)
-    ON CONFLICT (mac_key) DO NOTHING;
-    RETURN NEW;
-END $$;
-
-CREATE TRIGGER cameras_seen AFTER INSERT ON snapshots
-    FOR EACH ROW EXECUTE FUNCTION cameras_seen();
-
--- Every camera on the wall at the moment this runs. Earlier sightings, from
--- before the two days snapshots keep, can only lower first_seen:
---   INSERT ... ON CONFLICT (mac_key) DO UPDATE
---     SET first_seen = LEAST(cameras.first_seen, EXCLUDED.first_seen)
-INSERT INTO cameras (mac_key, first_seen)
-    SELECT mac_key, min(created_at) FROM snapshots GROUP BY mac_key
-    ON CONFLICT (mac_key) DO NOTHING;
+-- The frames on the wall at the moment this runs: those with a picture (a
+-- refused upload has no dimensions).
+INSERT INTO cameras (mac_key, first_seen, last_day, days)
+    SELECT mac_key, min(created_at), max((created_at AT TIME ZONE 'UTC')::date),
+           count(DISTINCT (created_at AT TIME ZONE 'UTC')::date)
+    FROM snapshots WHERE width IS NOT NULL GROUP BY mac_key;

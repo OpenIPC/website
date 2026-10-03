@@ -217,19 +217,22 @@ const (
 	// ShowcaseMinAge: how long a camera has to have been uploading before its
 	// frames reach the front page, so a new one cannot deface it.
 	ShowcaseMinAge = 30 * 24 * time.Hour
+	// ShowcaseMinDays: and on how many separate days. A camera that uploaded
+	// once a month ago, or a MAC invented then, has one.
+	ShowcaseMinDays = 20
 )
 
 // Showcase is LatestPerCamera for the home page: the newest measured frame of
 // every camera seen in the last day, leaving out a camera that has been
-// uploading for less than ShowcaseMinAge or whose newest frame has nothing to
-// see in it. Its newest frame, not its best one: a camera that has gone dark
+// uploading for less than ShowcaseMinAge, or on fewer than ShowcaseMinDays
+// days, or whose newest frame has nothing to see in it. Its newest frame, not its best one: a camera that has gone dark
 // is not shown by a picture from before it did.
 func (st *Store) Showcase(ctx context.Context, limit int) ([]*Snapshot, error) {
 	q := `SELECT ` + columns + ` FROM (
 			SELECT DISTINCT ON (s.mac_key) s.* FROM snapshots s
 			JOIN cameras c ON c.mac_key = s.mac_key
 			WHERE s.created_at > now() - interval '1 day' AND s.luma_p50 IS NOT NULL
-			  AND c.first_seen <= now() - make_interval(secs => $1)
+			  AND c.first_seen <= now() - make_interval(secs => $1) AND c.days >= $5
 			ORDER BY s.mac_key, s.created_at DESC, s.id DESC
 		) latest
 		WHERE luma_p95 - luma_p5 >= $2 AND luma_p50 < $3 AND luma_p95 >= $4
@@ -237,7 +240,7 @@ func (st *Store) Showcase(ctx context.Context, limit int) ([]*Snapshot, error) {
 	if limit > 0 {
 		q += fmt.Sprintf(" LIMIT %d", limit)
 	}
-	rows, err := st.DB.Query(ctx, q, ShowcaseMinAge.Seconds(), ShowcaseMinSpread, ShowcaseMaxMedian, ShowcaseMinBright)
+	rows, err := st.DB.Query(ctx, q, ShowcaseMinAge.Seconds(), ShowcaseMinSpread, ShowcaseMaxMedian, ShowcaseMinBright, ShowcaseMinDays)
 	if err != nil {
 		return nil, err
 	}
@@ -318,16 +321,30 @@ func (st *Store) Generated(ctx context.Context) ([]string, error) {
 }
 
 // MarkGenerated records the variants, the image's dimensions and its
-// brightness. It reports whether the row still exists: a frame purged while
-// its variants were being made must have its files removed by the caller.
+// brightness, and counts the frame toward its camera's history (cameras,
+// migration 022) -- here and not on insert, so only a frame the wall accepted
+// counts. It reports whether the row still exists: a frame purged while its
+// variants were being made must have its files removed by the caller.
 func (st *Store) MarkGenerated(ctx context.Context, publicID string, width, height int, luma keyframe.Luma) (bool, error) {
-	tag, err := st.DB.Exec(ctx, `UPDATE snapshots SET variants_generated_at = now(),
-		width = $2, height = $3, luma_p5 = $4, luma_p50 = $5, luma_p95 = $6 WHERE public_id = $1`,
-		publicID, width, height, int16(luma.P5), int16(luma.P50), int16(luma.P95))
+	var n int
+	err := st.DB.QueryRow(ctx, `WITH frame AS (
+			UPDATE snapshots SET variants_generated_at = now(),
+				width = $2, height = $3, luma_p5 = $4, luma_p50 = $5, luma_p95 = $6
+			WHERE public_id = $1 RETURNING mac_key, created_at
+		), seen AS (
+			INSERT INTO cameras (mac_key, first_seen, last_day, days)
+			SELECT mac_key, created_at, (created_at AT TIME ZONE 'UTC')::date, 1 FROM frame
+			ON CONFLICT (mac_key) DO UPDATE SET
+				first_seen = LEAST(cameras.first_seen, EXCLUDED.first_seen),
+				days = cameras.days + (EXCLUDED.last_day > cameras.last_day)::int,
+				last_day = GREATEST(cameras.last_day, EXCLUDED.last_day)
+		)
+		SELECT count(*) FROM frame`,
+		publicID, width, height, int16(luma.P5), int16(luma.P50), int16(luma.P95)).Scan(&n)
 	if err != nil {
 		return false, err
 	}
-	return tag.RowsAffected() == 1, nil
+	return n == 1, nil
 }
 
 // Exists is a cheap check for the worker.

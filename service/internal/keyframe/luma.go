@@ -30,19 +30,23 @@ func lumaOf(grey []byte) Luma {
 }
 
 // lumaOfImage box-averages a decoded picture down to LumaW x LumaH and takes
-// its percentiles. A JPEG decodes to YCbCr, whose Y plane is read directly;
-// anything else goes through color.GrayModel.
+// its percentiles. A picture smaller than that in either direction is sampled
+// instead, each cell reading at least one source pixel. A JPEG decodes to
+// YCbCr, whose Y plane is read directly; anything else goes through
+// color.GrayModel.
 func lumaOfImage(img image.Image) Luma {
 	b := img.Bounds()
-	if b.Dx() < LumaW || b.Dy() < LumaH {
+	if b.Empty() {
 		return Luma{}
 	}
 	yc, isYCbCr := img.(*image.YCbCr)
 	grey := make([]byte, 0, LumaW*LumaH)
 	for cy := range LumaH {
 		y0, y1 := b.Min.Y+cy*b.Dy()/LumaH, b.Min.Y+(cy+1)*b.Dy()/LumaH
+		y1 = max(y1, y0+1)
 		for cx := range LumaW {
 			x0, x1 := b.Min.X+cx*b.Dx()/LumaW, b.Min.X+(cx+1)*b.Dx()/LumaW
+			x1 = max(x1, x0+1)
 			var sum, count int
 			for y := y0; y < y1; y++ {
 				for x := x0; x < x1; x++ {

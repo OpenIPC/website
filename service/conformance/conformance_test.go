@@ -223,6 +223,7 @@ func start(t *testing.T, surface string) *suite {
 		}
 		for _, mac := range s.macs {
 			s.db.Exec(context.Background(), "DELETE FROM snapshots WHERE mac_address = $1", mac)
+			s.db.Exec(context.Background(), "DELETE FROM cameras WHERE mac_key = lower(translate($1, ':-', ''))", mac)
 		}
 		s.db.Close(context.Background())
 	})

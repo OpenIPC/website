@@ -177,7 +177,8 @@ func TestWallAddresses(t *testing.T) {
 	}
 	seed(t, store, "AA-BB-CC-00-00-02", 60, nil) // no soc: null, not an empty string
 	// Cameras the front page knows (snapshots.ShowcaseMinAge).
-	if _, err := pool.Exec(context.Background(), `UPDATE cameras SET first_seen = now() - interval '60 days'`); err != nil {
+	if _, err := pool.Exec(context.Background(), `INSERT INTO cameras (mac_key, first_seen, last_day, days)
+		SELECT DISTINCT mac_key, now() - interval '60 days', current_date, 60 FROM snapshots`); err != nil {
 		t.Fatal(err)
 	}
 

@@ -61,6 +61,17 @@ func TestLumaOfJPEG(t *testing.T) {
 	}
 }
 
+// A picture smaller than the 64x36 copy is sampled, not measured as black.
+func TestLumaOfASmallJPEG(t *testing.T) {
+	_, _, _, l, err := StripJPEG(encodeJPEG(t, 32, 20, func(x, _ int) uint8 { return uint8(x * 8) }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l.P95-l.P5 < 100 || l.P50 < 100 || l.P50 > 160 {
+		t.Errorf("a 32x20 gradient measured as %+v", l)
+	}
+}
+
 func TestLumaOfPercentiles(t *testing.T) {
 	grey := make([]byte, 100)
 	for i := range grey {

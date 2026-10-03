@@ -19,10 +19,12 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/OpenIPC/website/service/internal/db/dbtest"
+	"github.com/OpenIPC/website/service/internal/keyframe"
 	"github.com/OpenIPC/website/service/internal/snapshots"
 	"github.com/OpenIPC/website/service/internal/variants"
 )
@@ -305,10 +307,10 @@ func TestConcurrentFramesFromOneCamera(t *testing.T) {
 	}
 }
 
-// The home page's mosaic: a camera that has been uploading for a month, whose
-// newest measured frame has something in it. The two frames reported on
-// 2026-10-03 are here by their measurements -- a flat grey frame with a clock
-// on it (54/54/54) and a white one (254/254/254).
+// The home page's mosaic: a camera that has been uploading for a month on many
+// days, whose newest measured frame has something in it. The two frames
+// reported on 2026-10-03 are here by their measurements -- a flat grey frame
+// with a clock on it (54/54/54) and a white one (254/254/254).
 func TestShowcase(t *testing.T) {
 	r := newRig(t)
 	ctx := context.Background()
@@ -325,19 +327,33 @@ func TestShowcase(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	camera := func(mac string, ageDays, days int) {
+		t.Helper()
+		if _, err := r.pool.Exec(ctx, `INSERT INTO cameras (mac_key, first_seen, last_day, days)
+			VALUES (lower(translate($1, ':-', '')), now() - make_interval(days => $2), current_date, $3)
+			ON CONFLICT (mac_key) DO UPDATE SET first_seen = EXCLUDED.first_seen, days = EXCLUDED.days`,
+			mac, ageDays, days); err != nil {
+			t.Fatal(err)
+		}
+	}
 	scene, grey, white, black := &[3]int{18, 96, 210}, &[3]int{54, 54, 54}, &[3]int{254, 254, 254}, &[3]int{3, 5, 9}
-	frame("02:00:00:00:00:01", 5, scene)  // shown
+	frame("02:00:00:00:00:01", 5, scene) // shown
+	camera("02:00:00:00:00:01", 31, 30)
 	frame("02:00:00:00:00:02", 30, scene) // went flat after a good frame: not shown
 	frame("02:00:00:00:00:02", 5, grey)
+	camera("02:00:00:00:00:02", 31, 30)
 	frame("02:00:00:00:00:03", 5, white)
+	camera("02:00:00:00:00:03", 31, 30)
 	frame("02:00:00:00:00:04", 5, black)
+	camera("02:00:00:00:00:04", 31, 30)
 	frame("02:00:00:00:00:05", 20, scene) // newest frame not measured yet: the one before it stands
 	frame("02:00:00:00:00:05", 1, nil)
+	camera("02:00:00:00:00:05", 31, 30)
 	frame("02:00:00:00:00:06", 5, scene) // new to the wall
-	if _, err := r.pool.Exec(ctx, `UPDATE cameras SET first_seen = now() - interval '31 days'
-		WHERE mac_key <> '020000000006'`); err != nil {
-		t.Fatal(err)
-	}
+	camera("02:00:00:00:00:06", 2, 2)
+	frame("02:00:00:00:00:07", 5, scene) // one upload a month ago, then silence
+	camera("02:00:00:00:00:07", 31, 1)
+	frame("02:00:00:00:00:08", 5, scene) // never counted: no history at all
 	rows, err := r.store.Showcase(ctx, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -350,32 +366,58 @@ func TestShowcase(t *testing.T) {
 		t.Errorf("showcase %v, want %v", got, want)
 	}
 
-	// Ageing in: the same camera a day past the month is shown.
-	r.pool.Exec(ctx, `UPDATE cameras SET first_seen = now() - interval '31 days' WHERE mac_key = '020000000006'`)
+	// Ageing in: the new camera, a month and twenty days of uploads later.
+	camera("02:00:00:00:00:06", 31, snapshots.ShowcaseMinDays)
 	if rows, _ := r.store.Showcase(ctx, 0); len(rows) != 3 {
-		t.Errorf("%d cameras once the new one is a month old, want 3", len(rows))
+		t.Errorf("%d cameras once the new one is established, want 3", len(rows))
 	}
 }
 
-// first_seen is written by the first upload and never moved by a later one,
-// whichever way the MAC is spelt; snapshots are purged, cameras are not.
-func TestCamerasFirstSeen(t *testing.T) {
+// A camera's history is written by the frames the wall accepted: the first
+// one, and one day for each UTC day with any. A refused upload counts for
+// nothing, and the history outlives the purge.
+func TestCameraHistory(t *testing.T) {
 	r := newRig(t)
 	ctx := context.Background()
-	r.seed(t, "aa:bb:cc:dd:ee:10", 3600)
-	r.seed(t, "AA-BB-CC-DD-EE-10", 60)
-	var n int
-	var age float64
-	if err := r.pool.QueryRow(ctx, `SELECT count(*), extract(epoch FROM now() - min(first_seen))
-		FROM cameras WHERE mac_key = 'aabbccddee10'`).Scan(&n, &age); err != nil {
+	luma := keyframe.Luma{P5: 20, P50: 100, P95: 200}
+	at := func(mac, when string) string {
+		t.Helper()
+		id := snapshots.NewPublicID()
+		if _, err := r.pool.Exec(ctx, `INSERT INTO snapshots (public_id, mac_address, camera_token, content_type, byte_size, created_at)
+			VALUES ($1, $2, 'x', 'image/jpeg', 1, $3::timestamptz)`, id, mac, when); err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	history := func() (first time.Time, days int, ok bool) {
+		err := r.pool.QueryRow(ctx, `SELECT first_seen, days FROM cameras WHERE mac_key = 'aabbccddee10'`).Scan(&first, &days)
+		return first, days, err == nil
+	}
+
+	refused := at("aa:bb:cc:dd:ee:10", "2026-09-01 10:00:00+00")
+	if err := r.store.MarkRefused(ctx, refused); err != nil {
 		t.Fatal(err)
 	}
-	if n != 1 || age < 3590 || age > 3700 {
-		t.Errorf("%d rows, first seen %.0fs ago; want one row from the first upload, an hour ago", n, age)
+	if _, _, ok := history(); ok {
+		t.Fatal("a refused upload started a camera's history")
+	}
+	for _, f := range []struct{ mac, when string }{
+		{"aa:bb:cc:dd:ee:10", "2026-09-02 10:00:00+00"},
+		{"AA-BB-CC-DD-EE-10", "2026-09-02 23:45:00+00"}, // same day, another spelling
+		{"aa:bb:cc:dd:ee:10", "2026-09-04 00:15:00+00"},
+		{"aa:bb:cc:dd:ee:10", "2026-09-03 12:00:00+00"}, // processed late: an earlier day, not a new one
+	} {
+		if still, err := r.store.MarkGenerated(ctx, at(f.mac, f.when), 640, 360, luma); err != nil || !still {
+			t.Fatalf("%v %v", still, err)
+		}
+	}
+	first, days, _ := history()
+	if want := time.Date(2026, 9, 2, 10, 0, 0, 0, time.UTC); !first.Equal(want) || days != 2 {
+		t.Errorf("first seen %v on %d days, want %v on 2 (the 2nd and the 4th; the 3rd arrived after the 4th)", first, days, want)
 	}
 	r.pool.Exec(ctx, `DELETE FROM snapshots`)
-	if r.pool.QueryRow(ctx, `SELECT count(*) FROM cameras`).Scan(&n); n != 1 {
-		t.Errorf("purging the snapshots took the camera's first sighting with it")
+	if _, _, ok := history(); !ok {
+		t.Error("purging the snapshots took the camera's history with it")
 	}
 }
 
