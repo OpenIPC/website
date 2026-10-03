@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dataUrl, localised, wallAddress } from './wall-route';
+import { dataUrl, galleryBlanks, localised, wallAddress } from './wall-route';
 
 const ID = 'a'.repeat(20);
 const TOKEN = 'b'.repeat(16);
@@ -66,5 +66,19 @@ describe('localised', () => {
   it('keeps a link in the page\'s own language', () => {
     expect(localised('ru', '/open-wall')).toBe('/ru/open-wall');
     expect(localised('', '/open-wall')).toBe('/open-wall');
+  });
+});
+
+describe('galleryBlanks', () => {
+  it('pads a wall of one page to nine, as the original did', () => {
+    expect(galleryBlanks(0, 1)).toBe(9);
+    expect(galleryBlanks(4, 1)).toBe(5);
+    expect(galleryBlanks(12, 1)).toBe(0);
+  });
+
+  it('never pads a page of a wall that has more than one', () => {
+    // 2026-10-03: 22 cameras, 18 a page; page 2 had 4 and five dead-looking cards.
+    expect(galleryBlanks(4, 2)).toBe(0);
+    expect(galleryBlanks(18, 2)).toBe(0);
   });
 });

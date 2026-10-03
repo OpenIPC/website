@@ -34,7 +34,7 @@ func (s *fakeStore) Exists(_ context.Context, id string) (bool, error) {
 	return s.rows[id], nil
 }
 
-func (s *fakeStore) MarkRefused(_ context.Context, id string) error {
+func (s *fakeStore) MarkRefused(_ context.Context, id, _ string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.refused = append(s.refused, id)

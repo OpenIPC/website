@@ -20,7 +20,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   FRAME_DEADLINE, requestFramesOrFallBack, type FrameRequest, type FrameStream,
 } from '../../lib/wall-frames';
-import { dataUrl, localised, wallAddress, type WallView } from '../../lib/wall-route';
+import { dataUrl, galleryBlanks, localised, wallAddress, type WallView } from '../../lib/wall-route';
 import { useWallTranslations } from '../../lib/wall-i18n';
 import { type Locale } from '../../lib/i18n';
 import { boxFor, type FrameVariant } from '../../lib/wall-sizes';
@@ -256,9 +256,9 @@ function Gallery({ data, t, p, register, placeholder, painted, resolved }: {
   register: (key: string, el: HTMLCanvasElement | null) => void;
 }) {
   const tiles = data.tiles ?? [];
-  // The original page padded to nine with "no signal" cards, which is what an empty
-  // wall looks like there too.
-  const blanks = Math.max(0, 9 - tiles.length);
+  // "No signal" cards on a wall of one page only: past the first page they
+  // read as cameras that have gone dark. See galleryBlanks.
+  const blanks = galleryBlanks(tiles.length, data.pages ?? 1);
 
   return (
     <>

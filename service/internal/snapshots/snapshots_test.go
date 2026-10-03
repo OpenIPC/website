@@ -395,7 +395,7 @@ func TestCameraHistory(t *testing.T) {
 	}
 
 	refused := at("aa:bb:cc:dd:ee:10", "2026-09-01 10:00:00+00")
-	if err := r.store.MarkRefused(ctx, refused); err != nil {
+	if err := r.store.MarkRefused(ctx, refused, "test"); err != nil {
 		t.Fatal(err)
 	}
 	if _, _, ok := history(); ok {
@@ -418,6 +418,64 @@ func TestCameraHistory(t *testing.T) {
 	r.pool.Exec(ctx, `DELETE FROM snapshots`)
 	if _, _, ok := history(); !ok {
 		t.Error("purging the snapshots took the camera's history with it")
+	}
+}
+
+// A refused frame keeps its row and loses its picture. The gallery, a camera's
+// permalink and a camera's day show the frame before it; a camera whose only
+// frame was refused is not shown at all -- on 2026-10-03 it was a blank card
+// sized "x" -- and why it was refused is on the row.
+func TestARefusedFrameIsNotShown(t *testing.T) {
+	r := newRig(t)
+	ctx := context.Background()
+	frame := func(mac string, minutesAgo int) string {
+		t.Helper()
+		id := snapshots.NewPublicID()
+		if _, err := r.pool.Exec(ctx, `INSERT INTO snapshots (public_id, mac_address, camera_token, content_type, byte_size, created_at)
+			VALUES ($1, $2, $3, 'image/heif', 1, now() - make_interval(mins => $4))`,
+			id, mac, r.store.CameraToken(mac), minutesAgo); err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	good := frame("02:00:00:00:00:21", 30)
+	if _, err := r.store.MarkGenerated(ctx, good, 1920, 1080, keyframe.Luma{P5: 20, P50: 100, P95: 200}); err != nil {
+		t.Fatal(err)
+	}
+	bad := frame("02:00:00:00:00:21", 5)
+	only := frame("02:00:00:00:00:22", 5)
+	pending := frame("02:00:00:00:00:23", 1) // not processed yet: shown, its picture follows
+	for _, id := range []string{bad, only} {
+		if err := r.store.MarkRefused(ctx, id, "HEIF: not one keyframe"); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	rows, err := r.store.LatestPerCamera(ctx, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, s := range rows {
+		got = append(got, s.PublicID)
+	}
+	if want := []string{pending, good}; !slices.Equal(got, want) {
+		t.Errorf("gallery %v, want the pending frame and the camera's last good one %v", got, want)
+	}
+	if s, _ := r.store.ByCameraToken(ctx, r.store.CameraToken("02:00:00:00:00:21")); s == nil || s.PublicID != good {
+		t.Errorf("the camera's permalink is %v, want its last good frame", s)
+	}
+	if s, _ := r.store.ByCameraToken(ctx, r.store.CameraToken("02:00:00:00:00:22")); s != nil {
+		t.Errorf("a camera with no picture has a permalink frame: %s", s.PublicID)
+	}
+	subject, _ := r.store.ByPublicID(ctx, good)
+	if day, _ := r.store.DayOf(ctx, subject, 0); len(day) != 1 || day[0].PublicID != good {
+		t.Errorf("the camera's day has %d frames, want only the good one", len(day))
+	}
+	var reason string
+	r.pool.QueryRow(ctx, `SELECT refused_reason FROM snapshots WHERE public_id = $1`, only).Scan(&reason)
+	if reason != "HEIF: not one keyframe" {
+		t.Errorf("refused_reason %q", reason)
 	}
 }
 
