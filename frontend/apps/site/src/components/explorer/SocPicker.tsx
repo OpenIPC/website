@@ -95,10 +95,17 @@ export default function SocPicker({ id, labelId, groups, value, onChange, t }: P
         class="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-body-secondary">
         <path d="M2.5 4.5 6 8l3.5-3.5" />
       </svg>
-      {open && (
+      {/* Mounted before anything changes, so a screen reader hears what typing left: how many chips, or none. */}
+      <p role="status" class="sr-only">{open && query !== null ? (flat.length ? t('soc_count', { count: flat.length }) : t('soc_none')) : ''}</p>
+      {open && flat.length === 0 && (
+        <p aria-hidden="true"
+          class="absolute top-[calc(100%+6px)] left-0 z-20 m-0 w-[14rem] max-w-[calc(100vw-2rem)] rounded-lg border border-hairline bg-white px-3.5 py-2.5 text-sm text-body-secondary shadow-[0_8px_28px_rgba(20,28,60,.14)]">
+          {t('soc_none')}
+        </p>
+      )}
+      {open && flat.length > 0 && (
         <ul id={listId} ref={list} role="listbox" aria-labelledby={labelId}
           class="absolute top-[calc(100%+6px)] left-0 z-20 m-0 max-h-80 w-[14rem] max-w-[calc(100vw-2rem)] list-none overflow-auto rounded-lg border border-hairline bg-white p-1 shadow-[0_8px_28px_rgba(20,28,60,.14)]">
-          {flat.length === 0 && <li class="px-2.5 py-1.5 text-sm text-body-secondary">{t('soc_none')}</li>}
           {shown.map((g) => (
             <li key={g.vendor ?? ''} role="presentation">
               <div role="presentation" class="px-2.5 pt-1.5 pb-0.5 text-xs font-semibold tracking-wide text-[#8a93a3] uppercase">
@@ -110,8 +117,11 @@ export default function SocPicker({ id, labelId, groups, value, onChange, t }: P
                   return (
                     <li key={s} id={optionId(s)} role="option" aria-selected={i === active}
                       class={`cursor-pointer rounded-md px-2.5 py-1 text-[15px] ${i === active ? 'bg-surface-alt' : ''} ${s === value ? 'font-semibold text-brand-blue' : ''}`}
-                      // mousedown, not click: the input's blur would close the list first.
-                      onMouseDown={(e) => { e.preventDefault(); pick(s); }}
+                      // Picked on click, which assistive technology sends without a
+                      // mousedown; the mousedown only keeps focus in the box, whose
+                      // blur would otherwise close the list before the click lands.
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => pick(s)}
                       onMouseMove={() => i !== active && setActive(i)}>
                       {s}
                     </li>

@@ -6,6 +6,7 @@ ru:
     soc_other: Другие
     soc_search: Начните вводить
     soc_none: Нет такого SoC
+    soc_count: 'найдено SoC: {count}'
     build_label: Сборка
     compare_label: Сравнить с
     calendar_label: Выберите дату сборки

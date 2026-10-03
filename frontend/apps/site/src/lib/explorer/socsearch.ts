@@ -10,6 +10,13 @@ import type { VendorGroup } from './platforms';
 const fold = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 /**
+ * How much of a maker's name must be typed before its middle matches:
+ * `star` finds SigmaStar, but the `s` that starts `ssc335` must not offer
+ * every HiSilicon chip.
+ */
+const VENDOR_INNER_MIN = 3;
+
+/**
  * The groups, filtered to what matches `query`, in their own order. Within a
  * group, chips whose name starts with the query come first; a maker whose
  * name matches keeps every chip. An empty query offers everything.
@@ -17,9 +24,11 @@ const fold = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 export function searchSocs(groups: VendorGroup[], query: string): VendorGroup[] {
   const q = fold(query);
   if (!q) return groups;
+  const vendorMatches = (v: string | null) =>
+    !!v && (fold(v).startsWith(q) || (q.length >= VENDOR_INNER_MIN && fold(v).includes(q)));
   const out: VendorGroup[] = [];
   for (const g of groups) {
-    if (g.vendor && fold(g.vendor).startsWith(q)) {
+    if (vendorMatches(g.vendor)) {
       out.push(g);
       continue;
     }

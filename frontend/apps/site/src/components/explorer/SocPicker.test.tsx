@@ -74,13 +74,27 @@ describe('the SoC box', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  test('nothing matching says so; a click picks', () => {
-    const { box, getByText, getByRole, onChange } = mount();
+  test('what typing leaves is announced: how many chips, or that none matches', () => {
+    const { box, getByRole, queryByRole } = mount();
+    const status = getByRole('status');
+    expect(status.textContent).toBe('');
     fireEvent.focus(box);
+    fireEvent.input(box, { target: { value: '335' } });
+    expect(status.textContent).toBe('2 SoCs');
     fireEvent.input(box, { target: { value: 'zzz' } });
-    getByText('No SoC matches');
+    expect(status.textContent).toBe('No SoC matches');
+    expect(queryByRole('listbox')).toBeNull();
+    expect(box.hasAttribute('aria-activedescendant')).toBe(false);
+  });
+
+  test('a click alone picks, as assistive technology sends it; a mousedown keeps focus and picks nothing', () => {
+    const { box, getByRole, onChange } = mount();
+    fireEvent.focus(box);
     fireEvent.input(box, { target: { value: 'fh88' } });
-    fireEvent.mouseDown(getByRole('option', { name: 'fh8852v100' }));
+    const option = getByRole('option', { name: 'fh8852v100' });
+    expect(fireEvent.mouseDown(option)).toBe(false);
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.click(option);
     expect(onChange).toHaveBeenCalledWith('fh8852v100');
   });
 });

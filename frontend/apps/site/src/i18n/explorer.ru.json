@@ -129,6 +129,7 @@
     "segment_rootfs": "Корневая ФС",
     "segment_used": "занято {kb}",
     "selectors": "включают: {count}",
+    "soc_count": "найдено SoC: {count}",
     "soc_label": "SoC",
     "soc_none": "Нет такого SoC",
     "soc_other": "Другие",

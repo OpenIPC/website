@@ -32,6 +32,14 @@ describe('searchSocs', () => {
   test("a maker's name offers all its chips", () => {
     expect(searchSocs(groups, 'sigma')).toEqual([groups[1]]);
     expect(flat('full')).toEqual(['fh8833v100', 'fh8852v100']);
+    expect(searchSocs(groups, 'silicon')).toEqual([groups[0]]);
+    expect(searchSocs(groups, 'star')).toEqual([groups[1]]);
+  });
+
+  test("the middle of a maker's name needs three letters, so a chip's first letter does not offer a whole maker", () => {
+    expect(flat('s')).toEqual(['ssc325', 'ssc333', 'ssc335', 'ssc335de', 'ssc338q']);
+    expect(flat('il')).toEqual([]);
+    expect(flat('sil')).toEqual(['hi3516cv300', 'hi3516ev200', 'hi3518ev200']);
   });
 
   test('a group whose chip starts with the query comes before one that only contains it', () => {

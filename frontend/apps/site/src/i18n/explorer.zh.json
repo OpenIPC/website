@@ -129,6 +129,7 @@
     "segment_rootfs": "根文件系统",
     "segment_used": "已用 {kb}",
     "selectors": "{count} 个选择者",
+    "soc_count": "{count} 个 SoC",
     "soc_label": "SoC",
     "soc_none": "没有匹配的 SoC",
     "soc_other": "其他",
