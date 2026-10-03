@@ -467,6 +467,13 @@ func TestExplorerRoundTrip(t *testing.T) {
 	if len(got["removed_by_finalize"].([]any)) != len(want["removed_by_finalize"].([]any)) {
 		t.Error("removed_by_finalize differs from what was pushed")
 	}
+	// The board's own tarball, not the other board's, at its dated release.
+	if dl := jsonOf(got["downloads"]); dl != jsonOf([]map[string]any{{
+		"name": "openipc.gk7205v200-nor-lite.tgz", "size": 7_000_000, "sha256": sum, "storage": "nor",
+		"url": "https://github.com/OpenIPC/firmware/releases/download/nightly-20260925-230295e/openipc.gk7205v200-nor-lite.tgz",
+	}}) {
+		t.Errorf("downloads %s", dl)
+	}
 
 	code, tr, _ := get("/api/v1/explorer/firmware/platforms/gk7205v200-lite/trends")
 	if code != 200 || len(tr["headroom_rootfs"].([]any)) != 1 || len(tr["packages"].(map[string]any)) != 35 {
@@ -557,5 +564,40 @@ func TestFingerprintFollowsDigests(t *testing.T) {
 	b := firmware.NewIndex("b", []firmware.Asset{{Name: "x.tgz", Size: 1, Digest: "sha256:" + strings.Repeat("0", 64), Release: "b"}}, nil, nil)
 	if a.Fingerprint() == b.Fingerprint() {
 		t.Error("a changed digest left the fingerprint alone")
+	}
+}
+
+// Builder's device tarballs are <device>-<storage>.tgz; a device whose name
+// is a prefix of another's is not offered the other's.
+func TestExplorerBuilderDownloads(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	day := time.Date(2026, 10, 2, 18, 54, 32, 0, time.UTC)
+	p := &Payload{
+		Schema: 1, Source: "builder",
+		Build: Build{ID: "nightly-20261002-31bbf17", Release: "nightly-20261002-31bbf17", SHA: strings.Repeat("b", 40), BuiltAt: day, PublishedAt: day},
+		Assets: []Asset{
+			{Name: "gk7205v200_lite_vixand-ipc-1-nor.tgz", Size: 8_000_000, SHA256: sum},
+			{Name: "gk7205v200_lite_vixand-ipc-1-w-nor.tgz", Size: 8_000_000, SHA256: sum},
+		},
+		Platforms: []Platform{{Name: "gk7205v200_lite_vixand-ipc-1", Sizes: readJSON[SizeReport](t, "testdata/sizes.gk7205v200-lite.json")}},
+	}
+	if _, err := Save(ctx, pool, p, "test"); err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	(&Explorer{DB: pool, Log: slog.New(slog.DiscardHandler)}).Routes(mux)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/api/v1/explorer/builder/builds/nightly-20261002-31bbf17/platforms/gk7205v200_lite_vixand-ipc-1", nil))
+	var got map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &got)
+	if rec.Code != 200 {
+		t.Fatalf("report: %d %s", rec.Code, rec.Body)
+	}
+	if dl := jsonOf(got["downloads"]); dl != jsonOf([]map[string]any{{
+		"name": "gk7205v200_lite_vixand-ipc-1-nor.tgz", "size": 8_000_000, "sha256": sum, "storage": "nor",
+		"url": "https://github.com/OpenIPC/builder/releases/download/nightly-20261002-31bbf17/gk7205v200_lite_vixand-ipc-1-nor.tgz",
+	}}) {
+		t.Errorf("downloads %s", dl)
 	}
 }

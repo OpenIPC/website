@@ -88,6 +88,18 @@ export default function Summary({ sizes, title, t }: { sizes: Sizes; title?: str
           )}
           <span>{t('fact_counts', { packages: sizes.packages.length, modules: sizes.linux_components.modules.length })}</span>
         </div>
+        {sizes.downloads && sizes.downloads.length > 0 && (
+          <div class="mt-3.5 flex flex-wrap items-center gap-2 text-sm">
+            <span class="text-body-secondary">{t('download_label')}</span>
+            {sizes.downloads.map((d) => (
+              <a key={d.name} href={d.url} download
+                title={t('download_title', { storage: (d.storage ?? '').toUpperCase(), sha: d.sha256 })}
+                class="rounded-md border border-hairline bg-white px-2.5 py-1 font-mono text-[13px] text-brand-blue no-underline hover:border-brand-blue">
+                {d.name} · {fmtBytes(d.size)}
+              </a>
+            ))}
+          </div>
+        )}
         {needsMoreThanEight(sizes) && (
           <p class="mt-3.5 mb-0 border-l-[3px] border-[#b26b00] bg-[#fbf0dd] px-3 py-2 text-sm">
             {t('needs_16mb', { mb: sizes.flash_mb, rootfs: kib(sizes.headroom.rootfs.used_kb ?? 0) })}
