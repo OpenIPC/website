@@ -22,7 +22,7 @@ import (
 func newClub(bg context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool, ownerReports *reports.API) *club.API {
 	httpc := &http.Client{Timeout: 20 * time.Second}
 	api := &club.API{DB: pool, Log: log, Reports: ownerReports,
-		Cfg:        club.Config{SiteURL: cfg.ClubSiteURL, MaintainerOrg: cfg.ClubMaintainerOrg, Maintainers: cfg.ClubMaintainers},
+		Cfg:        club.Config{SiteURL: cfg.ClubSiteURL, Mirrors: cfg.ClubMirrorOrigins, MaintainerOrg: cfg.ClubMaintainerOrg, Maintainers: cfg.ClubMaintainers},
 		OnReviewed: func(ctx context.Context) { refreshReportUnits(ctx, cfg, log, pool) },
 	}
 	if cfg.TelegramBotToken != "" {

@@ -106,6 +106,37 @@ sub_filter 'hreflang="ru" href="https://openipc.org/ru'        'hreflang="ru" hr
 sub_filter 'property="og:url" content="https://openipc.org/ru' 'property="og:url" content="https://openipc.ru/ru';
 sub_filter '<loc>https://openipc.org/ru'                       '<loc>https://openipc.ru/ru';
 
+# Owner reports and the Club's send form, with the origin's limits rather than
+# the catch-all's 1m: a report carries photos, documents and a flash backup,
+# and the origin takes it up to 300m with five minutes to arrive
+# (sites-available/org.openipc, `location = /api/v1/reports` and
+# `location ^~ /api/v1/club/`). Since the origin sends every Russian network
+# here with a 301 (conf.d/openipc-blocked-nets.conf), this is the only way a
+# reader in Russia can send one. Unbuffered, so a large body streams through
+# instead of being spooled to this host's disk first. Applied by hand on
+# 2026-10-03, in the openipc.ru server block, before `location /`.
+
+location ~ ^/api/v1/(?:reports$|club/) {
+    proxy_pass https://openipc.org;
+    proxy_set_header Accept-Encoding   "";
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_ssl_server_name         on;
+    proxy_ssl_name                openipc.org;
+    proxy_ssl_verify              on;
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    proxy_ssl_verify_depth        3;
+    proxy_http_version 1.1;
+    proxy_hide_header Strict-Transport-Security;
+
+    client_max_body_size 300m;
+    client_body_timeout 300;
+    proxy_request_buffering off;
+    proxy_read_timeout 300;
+    proxy_send_timeout 300;
+}
+
 # The host's catch-all, as it stands on 2026-09-30, recorded so the header the
 # rewrite depends on is held by a test rather than by memory. It was on the
 # host before this directory existed; only the Accept-Encoding line is new.

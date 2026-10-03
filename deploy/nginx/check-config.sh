@@ -76,7 +76,7 @@ set -e
 cp /repo/nginx.conf /etc/nginx/nginx.conf
 mkdir -p /etc/nginx/conf.d /etc/nginx/sites-available /etc/nginx/sites-enabled
 rm -f /etc/nginx/conf.d/default.conf
-cp /repo/conf.d/*.conf /etc/nginx/conf.d/
+cp /repo/conf.d/*.conf /repo/conf.d/*.list /etc/nginx/conf.d/
 cp /repo/sites-available/* /etc/nginx/sites-available/
 for f in /etc/nginx/sites-available/*; do ln -sf "$f" /etc/nginx/sites-enabled/; done
 # The route state openipc-route owns on the host (deploy/route.sh): all go.
@@ -196,6 +196,9 @@ printf 'PNG\n' > /srv/www/shared/images/logo_openipc.png
 # and CI's way through it are measured rather than read off the map.
 sed -i 's|^geo \$openipc_datacentre_client {|&\n    127.0.0.2/32 1;|' \
   /etc/nginx/conf.d/openipc-datacentre-block.conf
+# And a third for a network the TSPU cuts off, which is sent to the mirror.
+sed -i 's|^    include /etc/nginx/conf.d/openipc-blocked-nets.list;|&\n    127.0.0.3/32 1;|' \
+  /etc/nginx/conf.d/openipc-blocked-nets.conf
 
 # Redirected explicitly. A daemonised nginx still inherits this exec's stdout
 # and stderr, and `docker exec` does not return until those close -- so
@@ -639,6 +642,23 @@ for probe in "403 GET /" "403 GET /.git/config" "403 POST /snapshots" "200 POST 
     printf '  %-32s %-5s (%s from a datacentre)\n' "$3" "$got" "$2"
   else
     printf '  %-32s %-5s (%s from a datacentre) MISMATCH: want %s\n' "$3" "$got" "$2" "$1"
+    fail=1
+  fi
+done
+# From a network cut off from the origin: the same address on the mirror,
+# query and all, whatever the method -- a camera's upload included
+# (conf.d/openipc-blocked-nets.conf). Nothing else is redirected.
+from_blocked() {
+  curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' -k --max-time 5 --interface 127.0.0.3 \
+    --resolve "openipc.org:443:127.0.0.1" "$@" 2>/dev/null
+}
+for probe in "GET /ru/get-started?a=1" "POST /snapshots" "GET /api/v1/wizard/gk7205v300.json"; do
+  set -- $probe
+  got=$(from_blocked -X "$1" "https://openipc.org$2")
+  if [ "$got" = "301 https://openipc.ru$2" ]; then
+    printf '  %-32s %-5s (%s from a blocked network)\n' "$2" "${got%% *}" "$1"
+  else
+    printf '  %-32s %-5s (%s from a blocked network) MISMATCH: want 301 to https://openipc.ru%s\n' "$2" "$got" "$1" "$2"
     fail=1
   fi
 done

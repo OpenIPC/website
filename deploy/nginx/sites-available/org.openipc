@@ -104,6 +104,12 @@ server {
         return 403;
     }
 
+    # Networks the TSPU cuts off from this host go to the mirror, uploads
+    # included. See conf.d/openipc-blocked-nets.conf.
+    if ($openipc_blocked_net) {
+        return 301 https://openipc.ru$request_uri;
+    }
+
     location /dl/ {
         alias /srv/www/shared/dl/;
         allow all;
