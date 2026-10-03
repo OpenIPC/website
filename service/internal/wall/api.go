@@ -31,6 +31,7 @@ var (
 // Snapshots is what the API reads.
 type Snapshots interface {
 	LatestPerCamera(ctx context.Context, limit int) ([]*snapshots.Snapshot, error)
+	Showcase(ctx context.Context, limit int) ([]*snapshots.Snapshot, error)
 	ByPublicID(ctx context.Context, id string) (*snapshots.Snapshot, error)
 	ByCameraToken(ctx context.Context, token string) (*snapshots.Snapshot, error)
 	DayOf(ctx context.Context, subject *snapshots.Snapshot, limit int) ([]*snapshots.Snapshot, error)
@@ -186,7 +187,9 @@ func (a *API) fail(w http.ResponseWriter, err error) {
 }
 
 func (a *API) mosaic(w http.ResponseWriter, r *http.Request) {
-	rows, err := a.Store.LatestPerCamera(r.Context(), MosaicTiles)
+	// The home page's mosaic, which is not the wall: only cameras that have
+	// been uploading for a month, and only frames with something in them.
+	rows, err := a.Store.Showcase(r.Context(), MosaicTiles)
 	if err != nil {
 		a.fail(w, err)
 		return

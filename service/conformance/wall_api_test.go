@@ -1,8 +1,14 @@
 package conformance
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/color"
+	imagejpeg "image/jpeg"
+	mathrand "math/rand/v2"
 	"reflect"
 	"regexp"
 	"strings"
@@ -33,10 +39,16 @@ func (s *suite) wallSetup() {
 
 // frames uploads count frames for one camera, oldest first, and returns their ids.
 func (s *suite) frames(mac string, count int, fields map[string]string) []string {
+	return s.framesOf(mac, count, fields, nil)
+}
+
+// framesOf is frames with a picture of the caller's: nil sends the default
+// JPEG, which is a header and padding and which the wall refuses to publish.
+func (s *suite) framesOf(mac string, count int, fields map[string]string, f *file) []string {
 	s.t.Helper()
 	var ids []string
 	for range count {
-		r := s.upload(upload{mac: &mac, headers: map[string]string{"X-Forwarded-For": whitelisted}, fields: fields})
+		r := s.upload(upload{mac: &mac, file: f, headers: map[string]string{"X-Forwarded-For": whitelisted}, fields: fields})
 		if r.StatusCode != 201 {
 			s.t.Fatalf("upload: %d %q", r.StatusCode, r.Header.Get("X-Error"))
 		}
@@ -80,16 +92,68 @@ func assertKeys(t *testing.T, got, want []string, what string) {
 	}
 }
 
-func TestTheMosaicIsTheNewestFrameOfEachCameraWithAThumbGrant(t *testing.T) {
+// picture is a JPEG with something in it -- a gradient under noise -- over
+// the upload's minimum size, so the wall publishes it and measures it as a
+// scene rather than a blank frame.
+func picture() *file {
+	img := image.NewRGBA(image.Rect(0, 0, 320, 180))
+	rng := mathrand.New(mathrand.NewPCG(1, 2))
+	for y := range 180 {
+		for x := range 320 {
+			v := uint8(x*200/320 + rng.IntN(48))
+			img.SetRGBA(x, y, color.RGBA{v, uint8(y), 255 - v, 255})
+		}
+	}
+	var buf bytes.Buffer
+	imagejpeg.Encode(&buf, img, &imagejpeg.Options{Quality: 95})
+	return &file{name: "snapshot.jpg", declared: str("image/jpeg"), data: buf.Bytes()}
+}
+
+// measured waits for the wall to publish and measure a frame.
+func (s *suite) measured(id string) {
+	s.t.Helper()
+	for range 100 {
+		var done bool
+		if err := s.db.QueryRow(context.Background(),
+			"SELECT luma_p50 IS NOT NULL FROM snapshots WHERE public_id = $1", id).Scan(&done); err != nil {
+			s.t.Fatal(err)
+		}
+		if done {
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	s.t.Fatalf("%s was not published and measured in 10 s", id)
+}
+
+// The mosaic is the home page's, not the wall's: a camera reaches it once it
+// has been uploading for a month on many days (snapshots.Showcase), so a
+// camera that has just uploaded is not on it until the database says it is
+// established.
+func TestTheMosaicIsTheNewestFrameOfEachEstablishedCameraWithAThumbGrant(t *testing.T) {
 	s := start(t, "wall")
 	s.wallSetup()
-	ids := s.frames(s.freshMAC(), 2, map[string]string{"soc": "hi3516ev300", "sensor": "imx335"})
+	mac := s.freshMAC()
+	ids := s.framesOf(mac, 2, map[string]string{"soc": "hi3516ev300", "sensor": "imx335"}, picture())
+	s.measured(ids[1])
 
 	var body struct {
 		Variant string
 		Grant   *string
 		Tiles   []map[string]any
 	}
+	s.wallJSON("/api/v1/wall/mosaic.json", &body)
+	for _, tile := range body.Tiles {
+		if tile["id"] == ids[0] || tile["id"] == ids[1] {
+			t.Error("a camera that started uploading a moment ago is on the front page")
+		}
+	}
+	if _, err := s.db.Exec(context.Background(), `UPDATE cameras
+		SET first_seen = now() - interval '31 days', days = 31 WHERE mac_key = lower(translate($1, ':-', ''))`, mac); err != nil {
+		t.Fatal(err)
+	}
+
+	body.Tiles = nil
 	r := s.wallJSON("/api/v1/wall/mosaic.json", &body)
 	s.assertWallHeaders(r, "mosaic")
 	assertKeys(t, keys(t, r.body), []string{"variant", "grant", "tiles"}, "mosaic")
@@ -107,7 +171,7 @@ func TestTheMosaicIsTheNewestFrameOfEachCameraWithAThumbGrant(t *testing.T) {
 	}
 	want := map[string]any{"id": ids[1], "soc": "hi3516ev300", "sensor": "imx335"}
 	if !reflect.DeepEqual(ours, want) {
-		t.Errorf("the newest frame of a camera that just uploaded: %v, want %v", ours, want)
+		t.Errorf("the newest frame of an established camera: %v, want %v", ours, want)
 	}
 	assertKeys(t, keys(t, firstObject(t, r.body, "tiles")), []string{"id", "soc", "sensor"}, "tile")
 }

@@ -112,7 +112,11 @@ restores the image but never the schema, so keep migrations additive.
   publishes each upload as-is -- a camera's HEIF keyframe (and its substream's,
   sent as the optional `thumb` part), checked by `internal/keyframe`, or a
   legacy JPEG with its metadata dropped. **Nothing a camera sends is
-  re-encoded.**
+  re-encoded.** Each frame's brightness is measured from the decode it is
+  checked with, and the home page's mosaic (`Store.Showcase`) leaves out
+  flat, black or blown-out frames and any camera first seen less than 30
+  days ago (`cameras`, migration 022), so a new camera cannot deface the
+  front page.
 - `internal/wall`, `internal/wallsocket` — the wall's JSON and the frame socket
   (a small JSON protocol at `/api/v1/wall/socket`), with signed
   grants keyed by `WALL_GRANT_KEY`.

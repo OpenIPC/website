@@ -297,8 +297,13 @@ func TestCheckDecodes(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := Check(context.Background(), bin, f); err != nil {
+		l, err := Check(context.Background(), bin, f)
+		if err != nil {
 			t.Errorf("hevc=%v: %v", s.hevc, err)
+		}
+		// testsrc is bars, a gradient and a counter: anything but flat.
+		if l.P95-l.P5 < 100 {
+			t.Errorf("hevc=%v: testsrc measured as %+v", s.hevc, l)
 		}
 	}
 }
@@ -325,7 +330,7 @@ func TestCheckRefusesGarbage(t *testing.T) {
 		if _, err := NALs(bad, 4); err != nil {
 			t.Fatal(err)
 		}
-		if err := Check(context.Background(), bin, f); err == nil {
+		if _, err := Check(context.Background(), bin, f); err == nil {
 			t.Errorf("hevc=%v: noise decoded cleanly", s.hevc)
 		}
 	}
@@ -344,12 +349,12 @@ func TestSamples(t *testing.T) {
 	}
 	for _, p := range jpegs {
 		b, _ := os.ReadFile(p)
-		out, w, h, err := StripJPEG(b)
+		out, w, h, l, err := StripJPEG(b)
 		if err != nil {
 			t.Errorf("%s: %v", p, err)
 			continue
 		}
-		t.Logf("%s: JPEG %dx%d, %d of %d bytes kept", filepath.Base(p), w, h, len(out), len(b))
+		t.Logf("%s: JPEG %dx%d, %d of %d bytes kept, luma %d %d %d", filepath.Base(p), w, h, len(out), len(b), l.P5, l.P50, l.P95)
 	}
 	for _, p := range files {
 		b, _ := os.ReadFile(p)
@@ -358,9 +363,11 @@ func TestSamples(t *testing.T) {
 			t.Errorf("%s: %v", p, err)
 			continue
 		}
-		if err := Check(context.Background(), bin, f); err != nil {
+		l, err := Check(context.Background(), bin, f)
+		if err != nil {
 			t.Errorf("%s: %v", p, err)
 		}
+		t.Logf("%s: luma %d %d %d", filepath.Base(p), l.P5, l.P50, l.P95)
 		full, rerr := false, error(nil)
 		if f.HEVC {
 			full, rerr = FullRange(f)
@@ -386,7 +393,7 @@ func TestStripJPEG(t *testing.T) {
 	com = append(com, "hello"...)
 	tagged := append(append(append([]byte{0xFF, 0xD8}, exif...), com...), plain[2:]...)
 
-	out, w, h, err := StripJPEG(tagged)
+	out, w, h, _, err := StripJPEG(tagged)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -405,7 +412,7 @@ func TestStripJPEG(t *testing.T) {
 		t.Fatal(err)
 	}
 	for n := range len(tagged) / 2 {
-		if _, _, _, err := StripJPEG(tagged[:n]); err == nil {
+		if _, _, _, _, err := StripJPEG(tagged[:n]); err == nil {
 			t.Fatalf("accepted a JPEG cut at %d", n)
 		}
 	}
@@ -465,7 +472,7 @@ func TestCheckTimeoutIsItsOwnError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Check(context.Background(), slow, f); !errors.Is(err, ErrCheckTimeout) {
+	if _, err := Check(context.Background(), slow, f); !errors.Is(err, ErrCheckTimeout) {
 		t.Fatalf("got %v", err)
 	}
 }
@@ -490,7 +497,7 @@ func TestStripJPEGWalksTheWholeFile(t *testing.T) {
 	com := append([]byte{0xFF, 0xFE}, u16(2+11)...)
 	com = append(com, "after scan!"...)
 	late := append(append(append([]byte{}, plain[:eoi]...), com...), plain[eoi:]...)
-	out, _, _, err := StripJPEG(late)
+	out, _, _, _, err := StripJPEG(late)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -501,7 +508,7 @@ func TestStripJPEGWalksTheWholeFile(t *testing.T) {
 		"cut inside the scan": plain[:eoi-40],
 		"no end of image":     plain[:eoi],
 	} {
-		if _, _, _, err := StripJPEG(b); err == nil {
+		if _, _, _, _, err := StripJPEG(b); err == nil {
 			t.Errorf("%s: accepted", name)
 		}
 	}

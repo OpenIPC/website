@@ -146,9 +146,9 @@ func seed(t *testing.T, store *snapshots.Store, mac string, secondsAgo int, soc 
 	id := snapshots.NewPublicID()
 	_, err := store.DB.Exec(context.Background(), `INSERT INTO snapshots
 		(public_id, mac_address, camera_token, content_type, byte_size, width, height, soc, sensor,
-		 firmware, streamer, uptime, soc_temperature, caption, created_at)
+		 firmware, streamer, uptime, soc_temperature, caption, luma_p5, luma_p50, luma_p95, created_at)
 		VALUES ($1, $2, $3, 'image/jpeg', 534513, 2592, 1520, $4, 'imx335', '2.6.09.15-lite', 'majestic',
-		        '8 days', '55.73', '', now() - make_interval(secs => $5))`,
+		        '8 days', '55.73', '', 30, 120, 220, now() - make_interval(secs => $5))`,
 		id, mac, store.CameraToken(mac), soc, secondsAgo)
 	if err != nil {
 		t.Fatal(err)
@@ -176,6 +176,11 @@ func TestWallAddresses(t *testing.T) {
 		ids = append(ids, seed(t, store, "aa:bb:cc:00:00:01", i*900, &gk))
 	}
 	seed(t, store, "AA-BB-CC-00-00-02", 60, nil) // no soc: null, not an empty string
+	// Cameras the front page knows (snapshots.ShowcaseMinAge).
+	if _, err := pool.Exec(context.Background(), `INSERT INTO cameras (mac_key, first_seen, last_day, days)
+		SELECT DISTINCT mac_key, now() - interval '60 days', current_date, 60 FROM snapshots`); err != nil {
+		t.Fatal(err)
+	}
 
 	// mosaic: the key order the pages read, byte for byte.
 	rec := get(t, mux, "/api/v1/wall/mosaic.json")
