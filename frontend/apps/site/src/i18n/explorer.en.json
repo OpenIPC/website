@@ -129,8 +129,14 @@
     "segment_rootfs": "Root filesystem",
     "segment_used": "used {kb}",
     "selectors": "{count} selector(s)",
+    "soc_count": {
+      "one": "{count} SoC",
+      "other": "{count} SoCs"
+    },
     "soc_label": "SoC",
+    "soc_none": "No SoC matches",
     "soc_other": "Other",
+    "soc_search": "Type to search",
     "state_crit": "almost full",
     "state_ok": "room to grow",
     "state_over": "over the cap",
