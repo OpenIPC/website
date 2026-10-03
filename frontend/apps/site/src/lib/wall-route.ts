@@ -82,3 +82,15 @@ export function dataUrl(route: WallView): string {
 export function localised(locale: string, path: string): string {
   return locale ? `/${locale}${path}` : path;
 }
+
+/**
+ * How many "no signal" cards follow a gallery page's cameras. The original
+ * page padded every page to nine, which on the last page of a full wall
+ * reads as cameras that have gone dark: on 2026-10-03 page 2 showed four
+ * cameras and five such cards, and none of the five was a camera. A wall
+ * with fewer than nine cameras -- one page -- is still padded, which is what
+ * a quiet wall looks like; a page past the first never is.
+ */
+export function galleryBlanks(tiles: number, pages: number): number {
+  return pages <= 1 ? Math.max(0, 9 - tiles) : 0;
+}

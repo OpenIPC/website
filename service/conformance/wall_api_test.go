@@ -37,13 +37,14 @@ func (s *suite) wallSetup() {
 	}
 }
 
-// frames uploads count frames for one camera, oldest first, and returns their ids.
+// frames uploads count frames for one camera, oldest first, and returns their
+// ids. Each is a real picture: the default upload is a JPEG header and
+// padding, which the wall refuses, and a refused frame is not shown.
 func (s *suite) frames(mac string, count int, fields map[string]string) []string {
-	return s.framesOf(mac, count, fields, nil)
+	return s.framesOf(mac, count, fields, picture())
 }
 
-// framesOf is frames with a picture of the caller's: nil sends the default
-// JPEG, which is a header and padding and which the wall refuses to publish.
+// framesOf is frames with a picture of the caller's.
 func (s *suite) framesOf(mac string, count int, fields map[string]string, f *file) []string {
 	s.t.Helper()
 	var ids []string
@@ -134,7 +135,7 @@ func TestTheMosaicIsTheNewestFrameOfEachEstablishedCameraWithAThumbGrant(t *test
 	s := start(t, "wall")
 	s.wallSetup()
 	mac := s.freshMAC()
-	ids := s.framesOf(mac, 2, map[string]string{"soc": "hi3516ev300", "sensor": "imx335"}, picture())
+	ids := s.frames(mac, 2, map[string]string{"soc": "hi3516ev300", "sensor": "imx335"})
 	s.measured(ids[1])
 
 	var body struct {
@@ -228,7 +229,7 @@ func TestAPageOfTheGalleryHasCardsInTheirOrderAndNothingPastTheEnd(t *testing.T)
 			t.Errorf("card %s = %v, want %q", k, c[k], v)
 		}
 	}
-	if c["bytes"] != float64(12_288) {
+	if c["bytes"] != float64(len(picture().data)) {
 		t.Errorf("bytes %v", c["bytes"])
 	}
 	if !regexp.MustCompile(`^(\d+x\d+|x)$`).MatchString(fmt.Sprint(c["dimensions"])) {

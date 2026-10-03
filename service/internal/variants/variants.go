@@ -116,7 +116,7 @@ func writeAtomically(dir, name string, fill func(*os.File) error) error {
 // Store is what the worker needs from the table.
 type Store interface {
 	Exists(ctx context.Context, publicID string) (bool, error)
-	MarkRefused(ctx context.Context, publicID string) error
+	MarkRefused(ctx context.Context, publicID, reason string) error
 	MarkGenerated(ctx context.Context, publicID string, width, height int, luma keyframe.Luma) (bool, error)
 	Pending(ctx context.Context) ([]string, error)
 	Generated(ctx context.Context) ([]string, error)
@@ -232,7 +232,7 @@ func (p *Processor) process(ctx context.Context, id string) {
 		// Not a frame the wall can show. Files first: if closing the row then
 		// fails, the sweep finds no original and leaves it alone.
 		_ = p.Wall.Purge(id)
-		if err := p.Store.MarkRefused(ctx, id); err != nil {
+		if err := p.Store.MarkRefused(ctx, id, refused.Reason); err != nil {
 			p.Log.Error("variants: could not close a refused frame", "public_id", id, "err", err)
 			return
 		}

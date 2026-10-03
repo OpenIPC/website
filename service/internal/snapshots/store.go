@@ -183,12 +183,18 @@ func IsUniqueViolation(err error) bool {
 	return errors.As(err, &pg) && pg.Code == "23505"
 }
 
-// LatestPerCamera is the newest frame of every camera seen in the last day,
-// newest first. DISTINCT ON walks snapshots_by_camera, one group per camera.
+// shown leaves out a frame the wall refused: its row stays, but it has no
+// picture, and a card for it is a blank with "x" for its size that never
+// paints. A frame still being published is shown; its picture follows.
+const shown = `NOT (variants_generated_at IS NOT NULL AND width IS NULL)`
+
+// LatestPerCamera is the newest shown frame of every camera seen in the last
+// day, newest first. DISTINCT ON walks snapshots_by_camera, one group per
+// camera.
 func (st *Store) LatestPerCamera(ctx context.Context, limit int) ([]*Snapshot, error) {
 	q := `SELECT ` + columns + ` FROM (
 			SELECT DISTINCT ON (mac_key) * FROM snapshots
-			WHERE created_at > now() - interval '1 day'
+			WHERE created_at > now() - interval '1 day' AND ` + shown + `
 			ORDER BY mac_key, created_at DESC, id DESC
 		) latest ORDER BY created_at DESC, id DESC`
 	if limit > 0 {
@@ -256,9 +262,9 @@ func (st *Store) ByPublicID(ctx context.Context, id string) (*Snapshot, error) {
 	return s, err
 }
 
-// ByCameraToken is the camera's newest frame; nil when there is none.
+// ByCameraToken is the camera's newest shown frame; nil when there is none.
 func (st *Store) ByCameraToken(ctx context.Context, token string) (*Snapshot, error) {
-	s, err := scan(st.DB.QueryRow(ctx, `SELECT `+columns+` FROM snapshots WHERE camera_token = $1
+	s, err := scan(st.DB.QueryRow(ctx, `SELECT `+columns+` FROM snapshots WHERE camera_token = $1 AND `+shown+`
 		ORDER BY created_at DESC, id DESC LIMIT 1`, token))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
@@ -269,7 +275,7 @@ func (st *Store) ByCameraToken(ctx context.Context, token string) (*Snapshot, er
 // DayOf is a camera's last day, newest first, limited when limit > 0.
 func (st *Store) DayOf(ctx context.Context, subject *Snapshot, limit int) ([]*Snapshot, error) {
 	q := `SELECT ` + columns + ` FROM snapshots
-		WHERE mac_key = $1 AND created_at BETWEEN now() - interval '1 day' AND now()
+		WHERE mac_key = $1 AND created_at BETWEEN now() - interval '1 day' AND now() AND ` + shown + `
 		ORDER BY created_at DESC, id DESC`
 	if limit > 0 {
 		q += fmt.Sprintf(" LIMIT %d", limit)
@@ -358,7 +364,8 @@ func (st *Store) Exists(ctx context.Context, publicID string) (bool, error) {
 // neither the sweep nor the probe's stuck-queue count sees it again, and
 // without dimensions, because there is no picture. The row itself stays --
 // the camera was answered 201, and an accepted upload has a row.
-func (st *Store) MarkRefused(ctx context.Context, publicID string) error {
-	_, err := st.DB.Exec(ctx, `UPDATE snapshots SET variants_generated_at = now() WHERE public_id = $1`, publicID)
+func (st *Store) MarkRefused(ctx context.Context, publicID, reason string) error {
+	_, err := st.DB.Exec(ctx, `UPDATE snapshots SET variants_generated_at = now(), refused_reason = $2
+		WHERE public_id = $1`, publicID, reason)
 	return err
 }
