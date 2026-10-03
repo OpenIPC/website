@@ -14,6 +14,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/OpenIPC/website/service/internal/keyframe"
 )
 
 // PublicIDFormat is what a snapshot's address looks like.
@@ -199,6 +201,49 @@ func (st *Store) LatestPerCamera(ctx context.Context, limit int) ([]*Snapshot, e
 	return scanAll(rows)
 }
 
+// What the home page's mosaic leaves out (migration 022). Measured on the
+// wall's 4,123 frames of 2026-10-03, where 309 fell under one of these and
+// every one of them was a frame with nothing to see: flat grey or white with
+// at most the camera's clock on it, a night scene with no light, or a garden
+// camera blown out to white.
+const (
+	// ShowcaseMinSpread: the 5th to 95th percentile of brightness. Flat
+	// frames measure 0-7; the dimmest picture still worth showing, about 24.
+	ShowcaseMinSpread = 16
+	// ShowcaseMaxMedian: half the frame at least this bright is blown out.
+	ShowcaseMaxMedian = 245
+	// ShowcaseMinBright: the brightest 5% darker than this is a black frame.
+	ShowcaseMinBright = 20
+	// ShowcaseMinAge: how long a camera has to have been uploading before its
+	// frames reach the front page, so a new one cannot deface it.
+	ShowcaseMinAge = 30 * 24 * time.Hour
+)
+
+// Showcase is LatestPerCamera for the home page: the newest measured frame of
+// every camera seen in the last day, leaving out a camera that has been
+// uploading for less than ShowcaseMinAge or whose newest frame has nothing to
+// see in it. Its newest frame, not its best one: a camera that has gone dark
+// is not shown by a picture from before it did.
+func (st *Store) Showcase(ctx context.Context, limit int) ([]*Snapshot, error) {
+	q := `SELECT ` + columns + ` FROM (
+			SELECT DISTINCT ON (s.mac_key) s.* FROM snapshots s
+			JOIN cameras c ON c.mac_key = s.mac_key
+			WHERE s.created_at > now() - interval '1 day' AND s.luma_p50 IS NOT NULL
+			  AND c.first_seen <= now() - make_interval(secs => $1)
+			ORDER BY s.mac_key, s.created_at DESC, s.id DESC
+		) latest
+		WHERE luma_p95 - luma_p5 >= $2 AND luma_p50 < $3 AND luma_p95 >= $4
+		ORDER BY created_at DESC, id DESC`
+	if limit > 0 {
+		q += fmt.Sprintf(" LIMIT %d", limit)
+	}
+	rows, err := st.DB.Query(ctx, q, ShowcaseMinAge.Seconds(), ShowcaseMinSpread, ShowcaseMaxMedian, ShowcaseMinBright)
+	if err != nil {
+		return nil, err
+	}
+	return scanAll(rows)
+}
+
 // ByPublicID finds one frame; nil when there is none.
 func (st *Store) ByPublicID(ctx context.Context, id string) (*Snapshot, error) {
 	s, err := scan(st.DB.QueryRow(ctx, `SELECT `+columns+` FROM snapshots WHERE public_id = $1`, id))
@@ -272,12 +317,13 @@ func (st *Store) Generated(ctx context.Context) ([]string, error) {
 	return ids, rows.Err()
 }
 
-// MarkGenerated records the variants and the image's dimensions. It reports
-// whether the row still exists: a frame purged while its variants were being
-// made must have its files removed by the caller.
-func (st *Store) MarkGenerated(ctx context.Context, publicID string, width, height int) (bool, error) {
+// MarkGenerated records the variants, the image's dimensions and its
+// brightness. It reports whether the row still exists: a frame purged while
+// its variants were being made must have its files removed by the caller.
+func (st *Store) MarkGenerated(ctx context.Context, publicID string, width, height int, luma keyframe.Luma) (bool, error) {
 	tag, err := st.DB.Exec(ctx, `UPDATE snapshots SET variants_generated_at = now(),
-		width = $2, height = $3 WHERE public_id = $1`, publicID, width, height)
+		width = $2, height = $3, luma_p5 = $4, luma_p50 = $5, luma_p95 = $6 WHERE public_id = $1`,
+		publicID, width, height, int16(luma.P5), int16(luma.P50), int16(luma.P95))
 	if err != nil {
 		return false, err
 	}

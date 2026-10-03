@@ -117,7 +117,7 @@ func writeAtomically(dir, name string, fill func(*os.File) error) error {
 type Store interface {
 	Exists(ctx context.Context, publicID string) (bool, error)
 	MarkRefused(ctx context.Context, publicID string) error
-	MarkGenerated(ctx context.Context, publicID string, width, height int) (bool, error)
+	MarkGenerated(ctx context.Context, publicID string, width, height int, luma keyframe.Luma) (bool, error)
 	Pending(ctx context.Context) ([]string, error)
 	Generated(ctx context.Context) ([]string, error)
 }
@@ -226,7 +226,7 @@ func (p *Processor) process(ctx context.Context, id string) {
 		_ = p.Wall.Purge(id)
 		return
 	}
-	width, height, err := p.Generate(ctx, id)
+	width, height, luma, err := p.Generate(ctx, id)
 	var refused ErrRefused
 	if errors.As(err, &refused) {
 		// Not a frame the wall can show. Files first: if closing the row then
@@ -243,7 +243,7 @@ func (p *Processor) process(ctx context.Context, id string) {
 		p.Log.Error("variants: failed", "public_id", id, "err", err)
 		return
 	}
-	still, err := p.Store.MarkGenerated(ctx, id, width, height)
+	still, err := p.Store.MarkGenerated(ctx, id, width, height, luma)
 	if err != nil {
 		p.Log.Error("variants: could not mark", "public_id", id, "err", err)
 		return
@@ -262,50 +262,52 @@ type ErrRefused struct{ Reason string }
 
 func (e ErrRefused) Error() string { return "refused: " + e.Reason }
 
-// Generate publishes id's original as-is and returns the picture's size.
-func (p *Processor) Generate(ctx context.Context, id string) (int, int, error) {
+// Generate publishes id's original as-is and returns the picture's size and
+// brightness, measured from the decode it was checked with.
+func (p *Processor) Generate(ctx context.Context, id string) (int, int, keyframe.Luma, error) {
 	data, err := os.ReadFile(p.Wall.Original(id))
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, keyframe.Luma{}, err
 	}
 	dir := p.Wall.Dir(id)
 	switch {
 	case len(data) >= 12 && string(data[4:8]) == "ftyp":
-		f, err := p.keyframe(ctx, data)
+		f, luma, err := p.keyframe(ctx, data)
 		if err != nil {
-			return 0, 0, err
+			return 0, 0, keyframe.Luma{}, err
 		}
 		if err := publish(dir, MainHEIF, data); err != nil {
-			return 0, 0, err
+			return 0, 0, keyframe.Luma{}, err
 		}
 		p.thumb(ctx, id)
-		return f.Width, f.Height, nil
+		return f.Width, f.Height, luma, nil
 	case bytes.HasPrefix(data, []byte{0xFF, 0xD8, 0xFF}):
 		// REMOVE AFTER 2027-06, with keyframe.StripJPEG.
-		out, w, h, err := keyframe.StripJPEG(data)
+		out, w, h, luma, err := keyframe.StripJPEG(data)
 		if err != nil {
-			return 0, 0, ErrRefused{err.Error()}
+			return 0, 0, keyframe.Luma{}, ErrRefused{err.Error()}
 		}
-		return w, h, publish(dir, MainJPEG, out)
+		return w, h, luma, publish(dir, MainJPEG, out)
 	}
-	return 0, 0, ErrRefused{"neither a HEIF keyframe nor a JPEG"}
+	return 0, 0, keyframe.Luma{}, ErrRefused{"neither a HEIF keyframe nor a JPEG"}
 }
 
 // keyframe parses and decodes a HEIF. A file that is not one keyframe, or
 // that the decoder rejects, is refused; a decoder that could not be run at all
 // is a failure to retry, not a verdict on the frame.
-func (p *Processor) keyframe(ctx context.Context, data []byte) (*keyframe.Frame, error) {
+func (p *Processor) keyframe(ctx context.Context, data []byte) (*keyframe.Frame, keyframe.Luma, error) {
 	f, err := keyframe.Parse(data)
 	if err != nil {
-		return nil, ErrRefused{err.Error()}
+		return nil, keyframe.Luma{}, ErrRefused{err.Error()}
 	}
-	if err := keyframe.Check(ctx, p.FFmpeg, f); err != nil {
+	luma, err := keyframe.Check(ctx, p.FFmpeg, f)
+	if err != nil {
 		if errors.Is(err, exec.ErrNotFound) || errors.Is(err, keyframe.ErrCheckTimeout) || ctx.Err() != nil {
-			return nil, err
+			return nil, keyframe.Luma{}, err
 		}
-		return nil, ErrRefused{err.Error()}
+		return nil, keyframe.Luma{}, ErrRefused{err.Error()}
 	}
-	return f, nil
+	return f, luma, nil
 }
 
 // thumb publishes the substream keyframe if the upload carried a good one.
@@ -315,7 +317,7 @@ func (p *Processor) thumb(ctx context.Context, id string) {
 	if err != nil {
 		return
 	}
-	if _, err := p.keyframe(ctx, data); err != nil {
+	if _, _, err := p.keyframe(ctx, data); err != nil {
 		p.Log.Warn("variants: substream keyframe not published", "public_id", id, "err", err)
 		return
 	}

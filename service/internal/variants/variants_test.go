@@ -41,7 +41,7 @@ func (s *fakeStore) MarkRefused(_ context.Context, id string) error {
 	return nil
 }
 
-func (s *fakeStore) MarkGenerated(_ context.Context, id string, w, h int) (bool, error) {
+func (s *fakeStore) MarkGenerated(_ context.Context, id string, w, h int, _ keyframe.Luma) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.marked[id] = [2]int{w, h}

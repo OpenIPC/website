@@ -7,8 +7,8 @@ import (
 	"image/jpeg"
 )
 
-// StripJPEG returns a JPEG without its application and comment segments, and
-// the picture's size. No pixel changes: every entropy-coded scan is copied
+// StripJPEG returns a JPEG without its application and comment segments, the
+// picture's size, and its brightness (Luma). No pixel changes: every entropy-coded scan is copied
 // verbatim.
 //
 // Only cameras that cannot be updated still send JPEG, and the wall keeps
@@ -18,22 +18,23 @@ import (
 // wherever they sit, between scans of a progressive file as well as before
 // the first, and the file must run to its end-of-image marker.
 //
-// The result is then decoded once and thrown away. The browser is handed
-// these bytes as they are, so a file cut short or corrupted inside a scan
-// would otherwise be published and paint nothing.
+// The result is then decoded once, measured and thrown away. The browser is
+// handed these bytes as they are, so a file cut short or corrupted inside a
+// scan would otherwise be published and paint nothing.
 //
 // REMOVE AFTER 2027-06, with the legacy frame path in wallsocket and in
 // frontend/apps/site/src/lib/wall-decode.ts: by then a camera still uploading
 // JPEG has had a year of firmware that sends HEIF.
-func StripJPEG(b []byte) ([]byte, int, int, error) {
+func StripJPEG(b []byte) ([]byte, int, int, Luma, error) {
 	out, w, h, err := strip(b)
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, 0, 0, Luma{}, err
 	}
-	if _, err := jpeg.Decode(bytes.NewReader(out)); err != nil {
-		return nil, 0, 0, errors.New("JPEG: does not decode: " + err.Error())
+	img, err := jpeg.Decode(bytes.NewReader(out))
+	if err != nil {
+		return nil, 0, 0, Luma{}, errors.New("JPEG: does not decode: " + err.Error())
 	}
-	return out, w, h, nil
+	return out, w, h, lumaOfImage(img), nil
 }
 
 func strip(b []byte) ([]byte, int, int, error) {
