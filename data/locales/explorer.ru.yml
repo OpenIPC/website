@@ -4,6 +4,8 @@ ru:
     variant_label: Вариант
     variant_boards: Под конкретное устройство
     soc_other: Другие
+    soc_search: Начните вводить
+    soc_none: Нет такого SoC
     build_label: Сборка
     compare_label: Сравнить с
     calendar_label: Выберите дату сборки

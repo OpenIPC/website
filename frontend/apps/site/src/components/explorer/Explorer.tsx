@@ -25,6 +25,7 @@ import Trends from './Trends';
 import WhatIf from './WhatIf';
 import Help from './Help';
 import BuildPicker from './BuildPicker';
+import SocPicker from './SocPicker';
 
 type Load<T> = { state: 'loading' } | { state: 'ok'; value: T } | { state: 'missing' } | { state: 'error'; error: string };
 
@@ -135,17 +136,10 @@ export default function Explorer({ locale }: { locale: Locale }) {
         <div class="site-container flex flex-wrap items-end gap-x-5 gap-y-3 py-3">
           {catalog && catalog.groups.length > 0 && (
             <>
-              <label class="flex min-w-0 flex-col gap-1">
-                <span class={LABEL}>{t('soc_label')}</span>
-                <select id="explorer-soc" class={SELECT} value={soc ?? ''}
-                  onChange={(e) => chooseSoc((e.target as HTMLSelectElement).value)}>
-                  {catalog.groups.map((g) => (
-                    <optgroup key={g.vendor ?? ''} label={g.vendor ?? t('soc_other')}>
-                      {g.socs.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </optgroup>
-                  ))}
-                </select>
-              </label>
+              <div class="flex min-w-0 flex-col gap-1">
+                <label class={LABEL} id="explorer-soc-label" for="explorer-soc">{t('soc_label')}</label>
+                <SocPicker id="explorer-soc" labelId="explorer-soc-label" groups={catalog.groups} value={soc} onChange={chooseSoc} t={t} />
+              </div>
               {variants.length > 0 && (
                 // Capped so the longest device name cannot push Help onto a second
                 // row; the heading below and each option's title carry the full name.

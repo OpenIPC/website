@@ -4,6 +4,8 @@ zh:
     variant_label: 变体
     variant_boards: 特定设备
     soc_other: 其他
+    soc_search: 输入以搜索
+    soc_none: 没有匹配的 SoC
     build_label: 构建
     compare_label: 对比
     calendar_label: 选择构建日期

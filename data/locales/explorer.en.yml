@@ -4,6 +4,8 @@ en:
     variant_label: Variant
     variant_boards: Board-specific
     soc_other: Other
+    soc_search: Type to search
+    soc_none: No SoC matches
     build_label: Build
     compare_label: Compare with
     calendar_label: Choose a build date
