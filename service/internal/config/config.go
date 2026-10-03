@@ -40,6 +40,7 @@ type Config struct {
 	// The OpenIPC Club (internal/club): where its links point, and each way
 	// in, which works only when configured.
 	ClubSiteURL        string   // CLUB_SITE_URL: https://openipc.org, https://dev.openipc.org
+	ClubMirrorOrigins  []string // CLUB_MIRROR_ORIGINS: the mirrors whose pages may post to the club
 	TelegramBotToken   string   // TELEGRAM_BOT_TOKEN, from @BotFather; one bot per environment
 	GitHubClientID     string   // GITHUB_OAUTH_CLIENT_ID
 	GitHubClientSecret string   // GITHUB_OAUTH_CLIENT_SECRET
@@ -94,6 +95,7 @@ func Load() (*Config, error) {
 		ReportsAccelPrefix:  str("REPORTS_ACCEL_PREFIX", "/report-files/"),
 		ToolsRoot:           str("TOOLS_ROOT", "/srv/tools"),
 		ClubSiteURL:         strings.TrimSuffix(str("CLUB_SITE_URL", "https://openipc.org"), "/"),
+		ClubMirrorOrigins:   listOr("CLUB_MIRROR_ORIGINS", mirrorOrigins),
 		TelegramBotToken:    os.Getenv("TELEGRAM_BOT_TOKEN"),
 		GitHubClientID:      os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
 		GitHubClientSecret:  os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
@@ -150,6 +152,11 @@ func (c *Config) RequireWeb() error {
 	}
 	return nil
 }
+
+// mirrorOrigins are the names deploy/nginx/mirrors/README.md lists as
+// proxying the site. The origin sends Russian networks to openipc.ru, so a
+// reader there posts to the club from the mirror's page.
+var mirrorOrigins = []string{"https://openipc.ru", "https://xn--e1agocfd3c.xn--p1ai", "https://openipc.kz", "https://openipc.cloud"}
 
 func str(name, fallback string) string {
 	if v := strings.TrimSpace(os.Getenv(name)); v != "" {

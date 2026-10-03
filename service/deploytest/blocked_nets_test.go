@@ -89,4 +89,24 @@ func TestBlockedNetsGoToTheMirror(t *testing.T) {
 		mustNotContain(t, directives(vhost(t, "org.openipc.dev")), "openipc_blocked_net",
 			"dev would send its testers to the production mirror")
 	})
+
+	// The redirect makes openipc.ru the only way in from Russia, so whatever
+	// the origin accepts a reader sending, the mirror has to accept too: a
+	// report up to the origin's own limit, not the catch-all's 1m.
+	t.Run("openipc.ru takes a report as large as the origin does", func(t *testing.T) {
+		mirror := directives(read(t, "deploy/nginx/mirrors/ru.openipc.snippet"))
+		up := find(mirror, regexp.MustCompile(`(?s)(location ~ \^/api/v1/\(\?:reports\$\|club/\) \{.*?\n\})`), 1)
+		if up == "" {
+			t.Fatal("the mirror has no location for /api/v1/reports and /api/v1/club/; the catch-all's 1m refuses a report with a photo in it")
+		}
+		origin := block(v, "location = /api/v1/reports {")
+		for _, d := range []string{"client_max_body_size", "client_body_timeout", "proxy_request_buffering", "proxy_read_timeout", "proxy_send_timeout"} {
+			re := regexp.MustCompile(`(?m)^\s*` + d + `\s+(\S+);`)
+			if want, got := find(origin, re, 1), find(up, re, 1); want == "" || got != want {
+				t.Errorf("%s is %q on the origin's report upload and %q on the mirror's", d, want, got)
+			}
+		}
+		mustMatch(t, `X-Forwarded-For\s+\$proxy_add_x_forwarded_for;`, up, "the reader's address is not forwarded")
+		mustMatch(t, `proxy_ssl_verify\s+on;`, up, "the origin's certificate is not verified")
+	})
 }

@@ -29,6 +29,10 @@ type Config struct {
 	// SiteURL is where links point and cookies are for:
 	// https://openipc.org, https://dev.openipc.org.
 	SiteURL string
+	// Mirrors: the origins that proxy SiteURL (CLUB_MIRROR_ORIGINS). A reader
+	// in Russia is sent to openipc.ru by the origin's nginx, so the page they
+	// post from is the mirror's, and its Origin is the mirror's too.
+	Mirrors []string
 	// Telegram: the bot's token from @BotFather. Its username is read from
 	// Telegram when the role starts.
 	TelegramToken string
@@ -104,8 +108,15 @@ func (a *API) post(h http.HandlerFunc) http.Handler {
 
 func (a *API) sameSite(origin string) bool {
 	o, err := url.Parse(origin)
-	s, err2 := url.Parse(a.Cfg.SiteURL)
-	return err == nil && err2 == nil && o.Scheme == s.Scheme && o.Host == s.Host
+	if err != nil {
+		return false
+	}
+	for _, site := range append([]string{a.Cfg.SiteURL}, a.Cfg.Mirrors...) {
+		if s, err := url.Parse(site); err == nil && o.Scheme == s.Scheme && o.Host == s.Host {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *API) secure() bool { return strings.HasPrefix(a.Cfg.SiteURL, "https://") }

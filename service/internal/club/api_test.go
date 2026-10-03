@@ -27,6 +27,9 @@ func quiet() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)
 
 const site = "https://openipc.test"
 
+// mirror proxies site, as openipc.ru proxies openipc.org.
+const mirror = "https://mirror.test"
+
 // fakeTelegram is the Bot API: it remembers what the bot sent.
 type fakeTelegram struct {
 	mu   sync.Mutex
@@ -95,7 +98,7 @@ func newEnv(t *testing.T) *env {
 	gh := httptest.NewServer(http.HandlerFunc(fakeGitHub))
 	t.Cleanup(gh.Close)
 	rep := &reports.API{DB: pool, Files: &reports.Files{Root: t.TempDir()}, AccelPrefix: "/report-files/", Log: quiet()}
-	e.api = &API{DB: pool, Log: quiet(), Reports: rep, Cfg: Config{SiteURL: site, MaintainerOrg: "OpenIPC"},
+	e.api = &API{DB: pool, Log: quiet(), Reports: rep, Cfg: Config{SiteURL: site, Mirrors: []string{mirror}, MaintainerOrg: "OpenIPC"},
 		Telegram: &Telegram{Token: "123:abc", API: tgs.URL, HTTP: tgs.Client(), Log: quiet()},
 		GitHub:   &GitHub{ClientID: "id", Secret: "secret", Web: gh.URL, API: gh.URL, HTTP: gh.Client()},
 		Mail:     e.mail, Now: func() time.Time { return e.clock }}
@@ -503,6 +506,21 @@ func TestAnotherSitesPageCannotPost(t *testing.T) {
 	e.mux.ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden || rec.Header().Get("Set-Cookie") != "" {
 		t.Errorf("%d %q", rec.Code, rec.Header().Get("Set-Cookie"))
+	}
+}
+
+// A reader the origin sends to openipc.ru posts from the mirror's page. That
+// is the site's own page, and must be let through; anything else still is not.
+func TestAMirrorsPageCanPost(t *testing.T) {
+	e := newEnv(t)
+	for origin, want := range map[string]bool{mirror: true, "http://mirror.test": false, "https://mirror.test.evil.example": false} {
+		req := httptest.NewRequest("POST", site+"/api/v1/club/telegram", nil)
+		req.Header.Set("Origin", origin)
+		rec := httptest.NewRecorder()
+		e.mux.ServeHTTP(rec, req)
+		if got := rec.Code != http.StatusForbidden; got != want {
+			t.Errorf("Origin %s: %d, let through %v, want %v", origin, rec.Code, got, want)
+		}
 	}
 }
 
