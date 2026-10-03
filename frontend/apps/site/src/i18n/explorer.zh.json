@@ -42,6 +42,8 @@
     "col_window_delta": "期间变化",
     "compare_label": "对比",
     "compressed_note": "Squashfs 会跨软件包压缩，因此单个软件包的压缩大小只能按镜像的整体压缩比估算。",
+    "download_label": "下载此构建：",
+    "download_title": "{storage} 闪存的发布压缩包，SHA-256 {sha}",
     "drift_intro": "在 {before} 与 {after} 之间安装大小发生变化的所有软件包和模块，按变化幅度从大到小排列。",
     "drift_none_other": "没有其他构建包含 {platform} 的报告；对比需要两个构建。",
     "empty": "尚无构建到达 openipc.org。每次夜间构建完成后，CI 会发送一次数据。",

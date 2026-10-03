@@ -41,6 +41,8 @@ zh:
     fact_installed: 安装大小
     fact_compressed: 压缩后
     fact_counts: '{packages} 个软件包 · {modules} 个模块'
+    download_label: '下载此构建：'
+    download_title: '{storage} 闪存的发布压缩包，SHA-256 {sha}'
     needs_16mb: '此构建仅适用于 {mb} MB 闪存：其根文件系统（{rootfs} KiB）放不进 8 MB 芯片上 5,120 KiB 的分区，因此安装向导只为 {mb} MB 芯片提供它。'
     meter_kernel: 内核
     meter_rootfs: 根文件系统

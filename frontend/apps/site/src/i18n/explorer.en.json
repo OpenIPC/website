@@ -42,6 +42,8 @@
     "col_window_delta": "Change in window",
     "compare_label": "Compare with",
     "compressed_note": "Squashfs compresses across packages, so a per-package compressed size can only be approximated from the image's overall ratio.",
+    "download_label": "Download this build:",
+    "download_title": "Release tarball for {storage} flash, SHA-256 {sha}",
     "drift_intro": "Every package and module whose installed size changed between {before} and {after}, largest change first.",
     "drift_none_other": "No other build has a report for {platform}; drift needs two.",
     "empty": "No builds have reached openipc.org yet. They arrive from the CI once per nightly build.",

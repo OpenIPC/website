@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -152,21 +153,76 @@ func (e *Explorer) report(w http.ResponseWriter, r *http.Request) {
 	e.serve(w, r, src, func(ctx context.Context) (any, error) { return loadReport(ctx, e.DB, src, build, plat) })
 }
 
-// loadReport reassembles size_report.py's document from rows.
+// releaseDownload is where each source's release assets are fetched from;
+// a build's release tag and an asset's name complete the address.
+var releaseDownload = map[string]string{
+	"firmware": "https://github.com/OpenIPC/firmware/releases/download/",
+	"builder":  "https://github.com/OpenIPC/builder/releases/download/",
+}
+
+// builderTarball is builder's device tarball, <device>-<storage>.tgz.
+var builderTarball = regexp.MustCompile(`^(.+)-(nor|nand|emmc|sd)\.tgz$`)
+
+type download struct {
+	Name    string  `json:"name"`
+	Size    int64   `json:"size"`
+	SHA256  string  `json:"sha256"`
+	Storage *string `json:"storage"`
+	URL     string  `json:"url"`
+}
+
+// downloads is the tarballs this build published for one platform: firmware's
+// openipc.<board>-<storage>-<edition>.tgz for the report's board and variant,
+// builder's <device>-<storage>.tgz for the device.
+func downloads(ctx context.Context, db *pgxpool.Pool, src, build, release, plat string, board, variant *string) ([]download, error) {
+	rows, err := db.Query(ctx, `SELECT name, size, sha256, board, storage::text, edition FROM build_assets
+		WHERE build_id = $1 AND name LIKE '%.tgz' ORDER BY storage NULLS LAST, name`, build)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []download{}
+	for rows.Next() {
+		var d download
+		var b, ed *string
+		if err := rows.Scan(&d.Name, &d.Size, &d.SHA256, &b, &d.Storage, &ed); err != nil {
+			return nil, err
+		}
+		switch src {
+		case "firmware":
+			if b == nil || ed == nil || board == nil || variant == nil || *b != *board || *ed != *variant {
+				continue
+			}
+		case "builder":
+			m := builderTarball.FindStringSubmatch(d.Name)
+			if m == nil || m[1] != plat {
+				continue
+			}
+			d.Storage = &m[2]
+		}
+		d.URL = releaseDownload[src] + release + "/" + d.Name
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
+// loadReport reassembles size_report.py's document from rows, with the
+// tarballs the build published for the platform.
 func loadReport(ctx context.Context, db *pgxpool.Pool, src, build, plat string) (map[string]any, error) {
 	var (
 		id                                int64
+		release                           string
 		board, variant, kver, kpath, comp *string
 		flash, kused, kcap, rused, rcap   *int
 		kuimage, kvmlinux, runcomp, rcomp *int64
 	)
 	err := db.QueryRow(ctx, `
-		SELECT p.id, p.board, p.variant, p.flash_mb, p.kernel_version, p.kernel_image_path,
+		SELECT p.id, b.release, p.board, p.variant, p.flash_mb, p.kernel_version, p.kernel_image_path,
 		       p.kernel_uimage_bytes, p.kernel_vmlinux_bytes, p.kernel_used_kb, p.kernel_cap_kb,
 		       p.rootfs_used_kb, p.rootfs_cap_kb, p.rootfs_uncompressed, p.rootfs_compressed, p.rootfs_compression
 		FROM platform_reports p JOIN builds b ON b.id = p.build_id
 		WHERE b.source = $1 AND b.id = $2 AND p.platform = $3`, src, build, plat).Scan(
-		&id, &board, &variant, &flash, &kver, &kpath, &kuimage, &kvmlinux, &kused, &kcap, &rused, &rcap, &runcomp, &rcomp, &comp)
+		&id, &release, &board, &variant, &flash, &kver, &kpath, &kuimage, &kvmlinux, &kused, &kcap, &rused, &rcap, &runcomp, &rcomp, &comp)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +330,15 @@ func loadReport(ctx context.Context, db *pgxpool.Pool, src, build, plat string) 
 	}
 	rows.Close()
 	doc["removed_by_finalize"] = removed
-	return doc, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	dl, err := downloads(ctx, db, src, build, release, plat, board, variant)
+	if err != nil {
+		return nil, err
+	}
+	doc["downloads"] = dl
+	return doc, nil
 }
 
 func names(ctx context.Context, db *pgxpool.Pool, q string, id int64) ([]string, error) {

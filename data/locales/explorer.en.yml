@@ -41,6 +41,8 @@ en:
     fact_installed: Installed
     fact_compressed: Compressed
     fact_counts: '{packages} packages · {modules} modules'
+    download_label: 'Download this build:'
+    download_title: 'Release tarball for {storage} flash, SHA-256 {sha}'
     needs_16mb: 'This build is made for {mb} MB flash only: its root filesystem ({rootfs} KiB) does not fit the 5,120 KiB slot of an 8 MB chip, so the installer offers it for {mb} MB chips only.'
     meter_kernel: Kernel
     meter_rootfs: Root filesystem

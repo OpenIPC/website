@@ -106,4 +106,14 @@ export type Sizes = {
     autoload_list: string[];
   };
   removed_by_finalize: SizesRemoved[];
+  /** The tarballs the build published for this platform, added by the service. */
+  downloads?: SizesDownload[];
+};
+
+export type SizesDownload = {
+  name: string;
+  size: number;
+  sha256: string;
+  storage: string | null;
+  url: string;
 };
