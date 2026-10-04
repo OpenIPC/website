@@ -1,6 +1,9 @@
 package wizard
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // doNotPaste stands for the helper's `do_not_copy_paste` span: a line that
 // starts with markup, so it never reaches the exported lines and only sets a
@@ -111,17 +114,16 @@ func (c *camera) writeSizeFor(fixed string) string {
 }
 
 func (c *camera) firmwareBackup() []string {
+	if c.nand() {
+		return c.nandBackup()
+	}
 	la := c.soc.LoadAddress
 	text := []string{doNotPaste, "printenv ethaddr"}
 	if c.iface != "wifi" {
 		text = append(text, c.env())
 	}
 	text = append(text, "mw.b "+la+" 0xff "+c.flashSizeHex())
-	if c.flashType == "nand" {
-		text = append(text, "nand read "+la+" 0x0 "+c.flashSizeHex())
-	} else {
-		text = append(text, "sf probe 0; sf read "+la+" 0x0 "+c.flashSizeHex())
-	}
+	text = append(text, "sf probe 0; sf read "+la+" 0x0 "+c.flashSizeHex())
 	if c.sdWifi() {
 		text = append(text,
 			"mmc dev 0; mmc erase 0x10 "+c.flashSizeBlocks()+"; mmc write "+la+" 0x10 "+c.flashSizeBlocks(),
@@ -135,6 +137,62 @@ func (c *camera) firmwareBackup() []string {
 			"# if there is no tftpput but tftp then run this instead",
 			"# (the third argument is what makes tftp upload rather than download)",
 			"tftp "+la+" "+c.backupFilename()+" "+c.flashSizeHex())
+	}
+	return text
+}
+
+// A NAND chip is backed up in nandChunks pieces of nandChunkHex: 128 MiB is
+// more than the RAM U-Boot has to hold it in. `nand read` and `nand write`
+// skip bad blocks, so a piece holds the first good blocks from its offset
+// and runs past its end by as many blocks as it skipped. The pieces are kept
+// as separate files and go back piece by piece, at the same offsets, onto
+// the chip they came from, which has the same bad blocks.
+const (
+	nandChunkHex    = "0x800000"
+	nandChunkBlocks = 0x4000 // nandChunkHex in 512-byte SD card blocks
+	nandChunkSize   = 0x800000
+	nandChunks      = 16 // nandSizeHex / nandChunkHex
+)
+
+func nandChunkOffset(i int) string { return fmt.Sprintf("0x%x", i*nandChunkSize) }
+
+func nandChunkBlock(i int) string { return fmt.Sprintf("0x%x", 0x10+i*nandChunkBlocks) }
+
+// nandChunkFilename is backupFilename with the piece number before ".bin".
+func (c *camera) nandChunkFilename(i int) string {
+	return strings.TrimSuffix(c.backupFilename(), ".bin") + fmt.Sprintf("-%02d.bin", i)
+}
+
+func (c *camera) nandBackup() []string {
+	la := c.soc.LoadAddress
+	text := []string{doNotPaste, "printenv ethaddr"}
+	if c.iface != "wifi" {
+		text = append(text, c.env())
+	}
+	text = append(text, "mw.b "+la+" 0xff "+nandChunkHex)
+	if c.sdWifi() {
+		text = append(text, "mmc dev 0; mmc erase 0x10 "+c.flashSizeBlocks())
+	}
+	for i := 0; i < nandChunks; i++ {
+		read := "nand read " + la + " " + nandChunkOffset(i) + " " + nandChunkHex + " && "
+		if c.sdWifi() {
+			text = append(text, read+"mmc write "+la+" "+nandChunkBlock(i)+" "+fmt.Sprintf("0x%x", nandChunkBlocks))
+		} else {
+			text = append(text, read+"tftpput "+la+" "+nandChunkHex+" "+c.nandChunkFilename(i))
+		}
+	}
+	if c.sdWifi() {
+		text = append(text,
+			"",
+			"# Use the following command to copy the pieces to files on a PC",
+			"# (replace /dev/sdc with your SD card device):",
+			fmt.Sprintf("# for i in $(seq 0 %d); do sudo dd bs=512 skip=$((16 + i * %d)) count=%d if=/dev/sdc of=./%s-$(printf %%02d $i).bin; done",
+				nandChunks-1, nandChunkBlocks, nandChunkBlocks, strings.TrimSuffix(c.backupFilename(), ".bin")))
+	} else {
+		text = append(text,
+			"# if there is no tftpput but tftp then use it instead, with the file name",
+			"# before the size (the third argument is what makes tftp upload):",
+			"# nand read "+la+" 0x0 "+nandChunkHex+" && tftp "+la+" "+c.nandChunkFilename(0)+" "+nandChunkHex)
 	}
 	return text
 }
@@ -237,6 +295,9 @@ func (c *camera) flashingLinux() []string {
 }
 
 func (c *camera) restoreFromBackup() []string {
+	if c.nand() {
+		return c.nandRestore()
+	}
 	la := c.soc.LoadAddress
 	ws := c.writeSizeFor(c.flashSizeHex())
 	text := []string{doNotPaste}
@@ -249,6 +310,32 @@ func (c *camera) restoreFromBackup() []string {
 		text = append(text, c.guardedFlash("fatload mmc 0:1 "+la+" "+c.backupFilename(), "0x0", c.flashSizeHex(), ws))
 	} else {
 		text = append(text, c.guardedFlash("tftpboot "+la+" "+c.backupFilename(), "0x0", c.flashSizeHex(), ws))
+	}
+	return text
+}
+
+// nandRestore writes the nandBackup pieces back in order. Each one erases
+// its own range and the next piece's: a piece that skipped bad blocks on the
+// way out runs into the next range on the way back, and that has to be
+// erased before it is written. The next piece erases it again and writes the
+// same data there, since its own read started at the same good blocks.
+func (c *camera) nandRestore() []string {
+	la := c.soc.LoadAddress
+	text := []string{doNotPaste}
+	if c.iface != "wifi" {
+		text = append(text, c.env())
+	}
+	text = append(text, "mw.b "+la+" 0xff "+nandChunkHex)
+	for i := 0; i < nandChunks; i++ {
+		erase := fmt.Sprintf("0x%x", 2*nandChunkSize)
+		if i == nandChunks-1 {
+			erase = nandChunkHex
+		}
+		transfer := "tftpboot " + la + " " + c.nandChunkFilename(i)
+		if c.sdWifi() {
+			transfer = "fatload mmc 0:1 " + la + " " + c.nandChunkFilename(i)
+		}
+		text = append(text, c.guardedFlash(transfer, nandChunkOffset(i), erase, nandChunkHex))
 	}
 	return text
 }

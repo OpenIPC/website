@@ -349,3 +349,60 @@ func TestNANDBoardIsUsedForNANDOnly(t *testing.T) {
 		t.Errorf("no NAND combination for gk7205v510")
 	}
 }
+
+// A NAND backup is 16 pieces of 8 MiB, never one 128 MiB read: no camera has
+// the RAM for it. The restore writes them back at the same offsets, each one
+// erasing the next piece's range as well, where a piece that skipped bad
+// blocks runs on to.
+func TestNANDBackupInPieces(t *testing.T) {
+	cat, _ := inputs(t)
+	for _, soc := range []string{"gk7205v510", "hi3516av100"} {
+		c := &camera{soc: cat.SoC(soc), flashType: "nand", iface: "eth", sd: "nosd",
+			ip: ipaddr, server: serverip, mac: "5a:8c:a8:5f:dd:f8"}
+		la := c.soc.LoadAddress
+		backup := strings.Join(c.firmwareBackup(), "\n")
+		name := "backup-" + strings.ToLower(c.soc.Model) + "-nand-5a8ca85fddf8"
+		for _, want := range []string{
+			"mw.b " + la + " 0xff 0x800000",
+			"nand read " + la + " 0x0 0x800000 && tftpput " + la + " 0x800000 " + name + "-00.bin",
+			"nand read " + la + " 0x7800000 0x800000 && tftpput " + la + " 0x800000 " + name + "-15.bin",
+		} {
+			if !strings.Contains(backup, want) {
+				t.Errorf("%s backup lacks %q:\n%s", soc, want, backup)
+			}
+		}
+		if strings.Contains(backup, "0x8000000") || strings.Contains(backup, "-16.bin") {
+			t.Errorf("%s backup reads the whole chip or too many pieces:\n%s", soc, backup)
+		}
+		restore := strings.Join(c.restoreFromBackup(), "\n")
+		for _, want := range []string{
+			"tftpboot " + la + " " + name + "-00.bin && nand erase 0x0 0x1000000 && nand write " + la + " 0x0 0x800000",
+			"tftpboot " + la + " " + name + "-14.bin && nand erase 0x7000000 0x1000000 && nand write " + la + " 0x7000000 0x800000",
+			"tftpboot " + la + " " + name + "-15.bin && nand erase 0x7800000 0x800000 && nand write " + la + " 0x7800000 0x800000",
+		} {
+			if !strings.Contains(restore, want) {
+				t.Errorf("%s restore lacks %q:\n%s", soc, want, restore)
+			}
+		}
+		if strings.Contains(restore, "0x8000000") || strings.Contains(restore, "trimffs") {
+			t.Errorf("%s restore:\n%s", soc, restore)
+		}
+
+		c.iface, c.sd = "wifi", "sd"
+		backup = strings.Join(c.firmwareBackup(), "\n")
+		for _, want := range []string{
+			"mmc dev 0; mmc erase 0x10 0x40000",
+			"nand read " + la + " 0x0 0x800000 && mmc write " + la + " 0x10 0x4000",
+			"nand read " + la + " 0x7800000 0x800000 && mmc write " + la + " 0x3c010 0x4000",
+			"of=./" + name + "-$(printf %02d $i).bin",
+		} {
+			if !strings.Contains(backup, want) {
+				t.Errorf("%s SD backup lacks %q:\n%s", soc, want, backup)
+			}
+		}
+		restore = strings.Join(c.restoreFromBackup(), "\n")
+		if !strings.Contains(restore, "fatload mmc 0:1 "+la+" "+name+"-15.bin && nand erase 0x7800000 0x800000") {
+			t.Errorf("%s SD restore:\n%s", soc, restore)
+		}
+	}
+}

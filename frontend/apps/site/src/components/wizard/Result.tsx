@@ -247,28 +247,25 @@ export default function Result({
                 {sdcardRequired && (
                   <div class="site-alert site-alert-warning"><p class="mb-0">{update('sdcard_required_0')}</p></div>
                 )}
-                {nand
-                  ? <p class="site-alert site-alert-warning">This part is currently under development. Stay tuned.</p>
-                  : (
-                    <>
-                      <Commands
-                        t={t} doc={doc} combination={combination} settings={settings}
-                        name="firmware_backup" stockOnly={stockOnly}
-                      />
-                      {/*
-                        Without a MAC the name carries nothing that tells one
-                        camera from another, and the second backup of a batch
-                        overwrites the first. Shown only when the name really is
-                        shared.
-                      */}
-                      {settings.cameraMacAddress === '' && (
-                        <p class="site-alert site-alert-warning">{install('backup.shared_name')}</p>
-                      )}
-                      {settings.flashType === 'nor32m' && (
-                        <p class="site-alert site-alert-warning">{install('backup_32')}</p>
-                      )}
-                    </>
-                  )}
+                <Commands
+                  t={t} doc={doc} combination={combination} settings={settings}
+                  name="firmware_backup" stockOnly={stockOnly}
+                />
+                {nand && (
+                  <p class="site-alert site-alert-warning">{install('backup.nand_pieces')}</p>
+                )}
+                {/*
+                  Without a MAC the name carries nothing that tells one
+                  camera from another, and the second backup of a batch
+                  overwrites the first. Shown only when the name really is
+                  shared.
+                */}
+                {settings.cameraMacAddress === '' && (
+                  <p class="site-alert site-alert-warning">{install('backup.shared_name')}</p>
+                )}
+                {settings.flashType === 'nor32m' && (
+                  <p class="site-alert site-alert-warning">{install('backup_32')}</p>
+                )}
               </div>
             </div>
             <Html
@@ -560,7 +557,6 @@ function Experts({ t, doc, combination, settings, facts, sdcardRequired, edition
   const update = (key: string) => t(`cameras.socs.update.${key}`);
   const install = (key: string, options?: Record<string, unknown>) =>
     t(`firmware.installation.${key}`, options);
-  const nand = settings.flashType === 'nand';
   // The file the U-Boot commands below write: on a UBI-only NAND SoC that is
   // the NAND build, not the NOR one uboot_filename names.
   const bootloader = bootloaderFor(doc, settings.flashType);
@@ -641,22 +637,20 @@ function Experts({ t, doc, combination, settings, facts, sdcardRequired, edition
             </div>
           </div>
 
-      {!nand && (
-        <div class="site-alert site-alert-warning">
-          <h3 class="mb-6 font-bold">{t('firmware.restore.title')}</h3>
-          <div class="site-row">
-            <div class="site-col site-col-lg-4">
-              <p>{t('firmware.restore.info')}</p>
-            </div>
-            <div class="site-col site-col-lg-8">
-              <Commands
-                t={t} doc={doc} combination={combination} settings={settings}
-                name="restore_from_backup"
-              />
-            </div>
+      <div class="site-alert site-alert-warning">
+        <h3 class="mb-6 font-bold">{t('firmware.restore.title')}</h3>
+        <div class="site-row">
+          <div class="site-col site-col-lg-4">
+            <p>{t('firmware.restore.info')}</p>
+          </div>
+          <div class="site-col site-col-lg-8">
+            <Commands
+              t={t} doc={doc} combination={combination} settings={settings}
+              name="restore_from_backup"
+            />
           </div>
         </div>
-      )}
+      </div>
     </>
   );
 }
@@ -742,27 +736,25 @@ function StockBootloader({ t, doc, facts, settings, combination }: {
 
       {/*
         The backup's counterpart, and the reason step 1 is worth the trouble.
-        It writes the whole chip back from the file, needs no macro, and is
+        It writes the whole chip back from the backup, needs no macro, and is
         the way out of a write that went somewhere it should not have.
       */}
-      {settings.flashType !== 'nand' && (
-        <section class="border-t border-hairline py-6">
-          <h2 class="site-h4 mb-4">
-            <span class="me-2 text-brand-blue">4</span>{t('firmware.restore.title')}
-          </h2>
-          <div class="site-row site-row-g4">
-            <div class="site-col-lg-4">
-              <p class="text-body-secondary">{t('firmware.restore.info')}</p>
-            </div>
-            <div class="site-col-lg-8">
-              <Commands
-                t={t} doc={doc} combination={combination} settings={settings}
-                name="restore_from_backup"
-              />
-            </div>
+      <section class="border-t border-hairline py-6">
+        <h2 class="site-h4 mb-4">
+          <span class="me-2 text-brand-blue">4</span>{t('firmware.restore.title')}
+        </h2>
+        <div class="site-row site-row-g4">
+          <div class="site-col-lg-4">
+            <p class="text-body-secondary">{t('firmware.restore.info')}</p>
           </div>
-        </section>
-      )}
+          <div class="site-col-lg-8">
+            <Commands
+              t={t} doc={doc} combination={combination} settings={settings}
+              name="restore_from_backup"
+            />
+          </div>
+        </div>
+      </section>
     </>
   );
 }
