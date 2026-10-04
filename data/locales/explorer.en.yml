@@ -119,11 +119,12 @@ en:
     upstream_rootfs: 'The root filesystem is {delta} against it.'
     upstream_sizes_heading: Size against the base build
     upstream_same_sizes: Every package and module is the same size as in the base build.
-    upstream_kconfig_heading: Packages the configuration turns on or off
+    upstream_kconfig_heading: Kconfig symbols the configuration sets or leaves out
     upstream_kconfig_unavailable: Not shown until both builds have published a Kconfig graph.
     upstream_added: 'Added by this device ({count})'
     upstream_dropped: 'Left out by this device ({count})'
     upstream_none: None
+    upstream_in_package: 'in {package}'
     upstream_files_note: Files this device replaces in the firmware tree, and whether firmware has changed them since, are tracked in
     upstream_files_link: the Builder drift report
     kind_package: package

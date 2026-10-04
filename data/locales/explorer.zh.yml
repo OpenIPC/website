@@ -117,11 +117,12 @@ zh:
     upstream_rootfs: '根文件系统相差 {delta}。'
     upstream_sizes_heading: 相对基础构建的大小
     upstream_same_sizes: 所有软件包和模块的大小都与基础构建相同。
-    upstream_kconfig_heading: 配置开启或关闭的软件包
+    upstream_kconfig_heading: 配置设置或省略的 Kconfig 符号
     upstream_kconfig_unavailable: 两个构建都发布 Kconfig 依赖图后才会显示。
     upstream_added: '此设备新增（{count}）'
     upstream_dropped: '此设备去除（{count}）'
     upstream_none: 无
+    upstream_in_package: '属于 {package}'
     upstream_files_note: 此设备在固件树中替换的文件，以及 Firmware 之后是否修改过它们，记录在
     upstream_files_link: Builder 偏离报告
     kind_package: 软件包

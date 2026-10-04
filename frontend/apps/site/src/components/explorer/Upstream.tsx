@@ -103,8 +103,8 @@ export default function Upstream({ catalog, platform, build, sizes, t }: Props) 
       {graphs && graphs !== 'missing' && 'error' in graphs && <p class="text-red">{t('error_generic', { error: graphs.error })}</p>}
       {delta && graphs && graphs !== 'missing' && 'device' in graphs && (
         <div class="grid gap-4 md:grid-cols-2">
-          <SymbolList title={t('upstream_added', { count: delta.added.length })} symbols={delta.added} graph={graphs.device} empty={t('upstream_none')} />
-          <SymbolList title={t('upstream_dropped', { count: delta.dropped.length })} symbols={delta.dropped} graph={graphs.parent} empty={t('upstream_none')} />
+          <SymbolList title={t('upstream_added', { count: delta.added.length })} symbols={delta.added} graph={graphs.device} t={t} />
+          <SymbolList title={t('upstream_dropped', { count: delta.dropped.length })} symbols={delta.dropped} graph={graphs.parent} t={t} />
         </div>
       )}
 
@@ -116,7 +116,9 @@ export default function Upstream({ catalog, platform, build, sizes, t }: Props) 
   );
 }
 
-function SymbolList({ title, symbols, graph, empty }: { title: string; symbols: string[]; graph: KconfigGraph; empty: string }) {
+// A symbol is a package or one of its options (BR2_PACKAGE_UBOOT_TOOLS_FWPRINTENV
+// belongs to uboot-tools), so each row names the package it belongs to.
+function SymbolList({ title, symbols, graph, t }: { title: string; symbols: string[]; graph: KconfigGraph; t: ExplorerT }) {
   return (
     <TableBox>
       <table class={TABLE}>
@@ -127,10 +129,11 @@ function SymbolList({ title, symbols, graph, empty }: { title: string; symbols: 
               <td class={TD}>
                 <span class="font-mono text-[13px]">{s}</span>
                 {graph.symbols[s]?.prompt && <span class="text-body-secondary"> — {graph.symbols[s].prompt}</span>}
+                {graph.symbols[s]?.package && <span class="block text-xs text-body-secondary">{t('upstream_in_package', { package: graph.symbols[s].package! })}</span>}
               </td>
             </tr>
           ))}
-          {symbols.length === 0 && <tr><td class={`${TD} text-body-secondary`}>{empty}</td></tr>}
+          {symbols.length === 0 && <tr><td class={`${TD} text-body-secondary`}>{t('upstream_none')}</td></tr>}
         </tbody>
       </table>
     </TableBox>

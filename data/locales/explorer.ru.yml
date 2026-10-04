@@ -117,11 +117,12 @@ ru:
     upstream_rootfs: 'Корневая файловая система отличается на {delta}.'
     upstream_sizes_heading: Размер относительно базовой сборки
     upstream_same_sizes: Все пакеты и модули того же размера, что и в базовой сборке.
-    upstream_kconfig_heading: Пакеты, которые конфигурация включает или выключает
+    upstream_kconfig_heading: Символы Kconfig, которые конфигурация задаёт или опускает
     upstream_kconfig_unavailable: Появится, когда обе сборки опубликуют граф Kconfig.
     upstream_added: 'Добавлено этим устройством ({count})'
     upstream_dropped: 'Исключено этим устройством ({count})'
     upstream_none: Нет
+    upstream_in_package: 'в пакете {package}'
     upstream_files_note: Файлы, которые это устройство подменяет в дереве прошивки, и изменения в них со стороны Firmware отслеживаются в
     upstream_files_link: отчёте о расхождениях Builder
     kind_package: пакет
