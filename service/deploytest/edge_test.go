@@ -60,6 +60,9 @@ func TestDatacentreBlock(t *testing.T) {
 		mustMatch(t, `"1:/api/v1/builds"\s+0;`, conf, "a runner in a blocked range cannot push its build")
 		mustMatch(t, `~\^1:\s+1;`, conf, "the rest of a blocked range is no longer refused")
 		mustContain(t, v, "location = /api/v1/builds", "the exemption names an address the vhost does not serve")
+		// Builder's daily drift report comes from the same runners.
+		mustMatch(t, `"1:/api/v1/drift"\s+0;`, conf, "a runner in a blocked range cannot push the drift report")
+		mustContain(t, v, "location = /api/v1/drift", "the drift exemption names an address the vhost does not serve")
 	})
 	// nginx fails to start on a mismatch, which is a bad way to find out.
 	t.Run("the snapshot rate zone is declared and used under one name", func(t *testing.T) {
@@ -188,6 +191,13 @@ func TestWizardAndBuildsServing(t *testing.T) {
 		push := blockRe(c, regexp.MustCompile(`location = /api/v1/builds \{`))
 		mustContain(t, push, "proxy_pass http://127.0.0.1:"+p[1]+";", name+": the build push does not reach its web role")
 		mustContain(t, push, "client_max_body_size 64m;", name+": a firmware build's push would be refused by nginx")
+		dr := blockRe(c, regexp.MustCompile(`location = /api/v1/drift \{`))
+		mustContain(t, dr, "proxy_pass http://127.0.0.1:"+p[1]+";", name+": the drift report does not reach its web role")
+		mustContain(t, dr, "client_max_body_size 4m;", name+": a drift report's push would be refused by nginx")
+		if name == "org.openipc.dev" {
+			// The CI has no staging password; the service checks its token.
+			mustContain(t, dr, "auth_basic off;", name+": the drift push would meet the staging password")
+		}
 		mustNotContain(t, c, "/srv/www/shared/wizard", name+" still serves the retired export files")
 	}
 	for _, f := range []string{"deploy/docker-compose.yml", "deploy/cron.d/openipc-metrics", "deploy/install-metrics.sh"} {
