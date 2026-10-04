@@ -2,6 +2,7 @@ package wizard
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -153,6 +154,11 @@ const (
 	nandChunkSize   = 0x800000
 	nandChunks      = 16 // nandSizeHex / nandChunkHex
 	nandBlockSize   = 0x20000
+	// nandBootSize is what a restore writes plain at the start of the chip:
+	// boot and env on the UBI-only layout, and the boot partition of the
+	// stock layouts these SoCs ship with.
+	nandBootSize = 0x100000
+	nandBootHex  = "0x100000"
 	// nandTailBadBlocks is how many bad blocks in the last piece the backup
 	// gets round; each is one more branch on a line U-Boot reads into a
 	// 1 KiB console buffer.
@@ -167,6 +173,15 @@ func (c *camera) nandChunkSave(i, size int) string {
 		return fmt.Sprintf("mmc write %s %s 0x%x", la, nandChunkBlock(i), size/512)
 	}
 	return fmt.Sprintf("tftpput %s 0x%x %s", la, size, c.nandChunkFilename(i))
+}
+
+// addHex adds n to the hex address a, as U-Boot reads it.
+func addHex(a string, n int) string {
+	v, err := strconv.ParseUint(strings.TrimPrefix(a, "0x"), 16, 64)
+	if err != nil {
+		panic("load address " + a + ": " + err.Error())
+	}
+	return fmt.Sprintf("0x%x", v+uint64(n))
 }
 
 func nandChunkOffset(i int) string { return fmt.Sprintf("0x%x", i*nandChunkSize) }
@@ -360,17 +375,26 @@ func (c *camera) nandRestore() []string {
 		}
 		return "tftpboot " + la + " " + c.nandChunkFilename(i)
 	}
-	// Piece 0 holds the bootloader, and that goes on with a plain write, as
-	// the install's U-Boot step does: the boot ROM does not take erased
-	// pages in it. A Hi3516EV300 restored with write.trimffs there stopped at
-	// "System startup". The rest is written as UBI is (see writeCmd).
+	// The first MiB of piece 0, the bootloader and its environment, goes on
+	// with a plain write, as the install's U-Boot step does: the boot ROM
+	// does not take a bootloader with unprogrammed pages in it, and one
+	// written with write.trimffs never reaches U-Boot. Everything after it
+	// is written as UBI is (see writeCmd). Piece 0 is always a full 8 MiB,
+	// so the rest of it is a fixed size from a fixed address in the buffer.
 	w := c.writeCmd()
 	for i := 0; i < nandChunks-1; i++ {
-		wi := w
-		if i == 0 {
-			wi = "write"
+		erase := fmt.Sprintf("0x%x", 2*nandChunkSize)
+		if i == 0 && w != "write" {
+			text = append(text, c.guardedWrite(load(i), "0x0", erase, "write", nandBootHex)+
+				" && nand "+w+" "+addHex(la, nandBootSize)+" "+nandBootHex+fmt.Sprintf(" 0x%x", nandChunkSize-nandBootSize),
+				// A bad block below the split makes the plain write run past
+				// it, and U-Boot cannot work out where it stopped. Bad blocks
+				// are rare there, and `nand bad` shows them.
+				"# if `nand bad` lists a block below 0x100000, write piece 0 like this instead:",
+				"# "+c.guardedWrite(load(i), "0x0", erase, "write", "${filesize}"))
+			continue
 		}
-		text = append(text, c.guardedWrite(load(i), nandChunkOffset(i), fmt.Sprintf("0x%x", 2*nandChunkSize), wi, "${filesize}"))
+		text = append(text, c.guardedWrite(load(i), nandChunkOffset(i), erase, w, "${filesize}"))
 	}
 	// The last piece was read one block shorter for each bad block in it,
 	// and a copy off the SD card is padded to 8 MiB again. Either way the

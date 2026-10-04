@@ -379,10 +379,16 @@ func TestNANDBackupInPieces(t *testing.T) {
 			t.Errorf("%s backup reads the whole chip or too many pieces:\n%s", soc, backup)
 		}
 		w := c.writeCmd()
+		piece0 := "${filesize}\n"
+		if w == "write.trimffs" {
+			piece0 = "0x100000 && nand write.trimffs 0x42100000 0x100000 0x700000\n" +
+				"# if `nand bad` lists a block below 0x100000, write piece 0 like this instead:\n" +
+				"# tftpboot " + la + " " + name + "-00.bin && nand erase 0x0 0x1000000 && nand write " + la + " 0x0 ${filesize}\n"
+		}
 		restore := strings.Join(c.restoreFromBackup(), "\n")
 		for _, want := range []string{
-			// The bootloader's piece goes on with a plain write, whatever the rest.
-			"tftpboot " + la + " " + name + "-00.bin && nand erase 0x0 0x1000000 && nand write " + la + " 0x0 ${filesize}",
+			// The bootloader's MiB goes on with a plain write, whatever the rest.
+			"tftpboot " + la + " " + name + "-00.bin && nand erase 0x0 0x1000000 && nand write " + la + " 0x0 " + piece0,
 			"tftpboot " + la + " " + name + "-01.bin && nand erase 0x800000 0x1000000 && nand " + w + " " + la + " 0x800000 ${filesize}",
 			"tftpboot " + la + " " + name + "-14.bin && nand erase 0x7000000 0x1000000 && nand " + w + " " + la + " 0x7000000 ${filesize}",
 			"if tftpboot " + la + " " + name + "-15.bin && nand erase 0x7800000 0x800000; then if nand " + w + " " + la + " 0x7800000 0x800000; ",
