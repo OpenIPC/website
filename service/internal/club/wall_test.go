@@ -69,7 +69,7 @@ func TestAMemberLinksACameraAndEarnsStars(t *testing.T) {
 	e.api.NotifyLinked(ctx, *linked)
 	// Its month on the wall runs from the link; this test is about what
 	// follows once it has had one.
-	e.exec(t, `UPDATE camera_links SET linked_at = now() - interval '45 days' WHERE mac_key = $1`, key)
+	e.exec(t, `UPDATE camera_links SET linked_at = now() - interval '45 days', counted_since = now() - interval '45 days' WHERE mac_key = $1`, key)
 	if text, button := e.tg.last(t); !strings.Contains(text, "“Garden &lt;b&gt;”") || !strings.HasSuffix(button, "/club/#cameras") {
 		t.Errorf("linked notice %q %q", text, button)
 	}
@@ -175,7 +175,7 @@ func TestAnUndeliveredNoticeIsSentByTheNextRun(t *testing.T) {
 	e.exec(t, `INSERT INTO cameras (mac_key, first_seen, last_day, days) VALUES ($1, now() - interval '45 days', current_date, 40)`, key)
 	e.exec(t, `INSERT INTO camera_days (mac_key, day, frames, lit, varied, first_hash)
 		SELECT $1, current_date - i, 96, true, true, 1 FROM generate_series(0, 39) i`, key)
-	e.exec(t, `INSERT INTO camera_links (mac_key, member_id, linked_at) VALUES ($1, $2, now() - interval '45 days')`, key, member)
+	e.exec(t, `INSERT INTO camera_links (mac_key, member_id, linked_at, counted_since) VALUES ($1, $2, now() - interval '45 days', now() - interval '45 days')`, key, member)
 
 	before := e.tg.count()
 	e.tg.setFail(true)

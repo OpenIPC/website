@@ -63,6 +63,19 @@ func (s *Store) Settle(ctx context.Context, now time.Time) (*Settled, error) {
 		if name == "" {
 			name = joinNonEmpty(c.SoC, c.Sensor)
 		}
+		// A camera that just got a slot starts counting now; one over the cap
+		// stops, so it builds up nothing to cash in later.
+		switch {
+		case c.counted && c.countedAt == nil:
+			if _, err := conn.Exec(ctx, `UPDATE camera_links SET counted_since = now() WHERE mac_key = $1 AND member_id = $2`, c.macKey, c.member); err != nil {
+				return nil, err
+			}
+			c.counted = false // its days start today: nothing to pay this run
+		case !c.counted && c.countedAt != nil:
+			if _, err := conn.Exec(ctx, `UPDATE camera_links SET counted_since = NULL WHERE mac_key = $1 AND member_id = $2`, c.macKey, c.member); err != nil {
+				return nil, err
+			}
+		}
 		if c.counted {
 			n := Notice{Member: c.member, Kind: "stars", Camera: name, Token: c.Token, Days: c.Days}
 			if c.joined(now) {

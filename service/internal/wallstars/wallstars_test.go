@@ -68,8 +68,8 @@ func (r *rig) frame(mac, caption, soc, sensor, code string) string {
 // link links a camera as of its first frame -- so its whole history counts --
 // less minutesEarlier, which orders a member's cameras.
 func (r *rig) link(mac, member string, minutesEarlier int) {
-	r.exec(`INSERT INTO camera_links (mac_key, member_id, linked_at)
-		SELECT mac_key, $2, first_seen - make_interval(mins => $3) FROM cameras WHERE mac_key = $1`,
+	r.exec(`INSERT INTO camera_links (mac_key, member_id, linked_at, counted_since)
+		SELECT mac_key, $2, first_seen - make_interval(mins => $3), first_seen - make_interval(mins => $3) FROM cameras WHERE mac_key = $1`,
 		snapshots.MACKey(mac), member, minutesEarlier)
 }
 
@@ -407,7 +407,7 @@ func TestHistoryBeforeTheLinkDoesNotPay(t *testing.T) {
 	ctx := context.Background()
 	r.member("m-alice00000", "Alice")
 	r.camera("02:00:00:00:0b:01", 200, 150, "gk7205v300", "sc223a", "")
-	r.exec(`INSERT INTO camera_links (mac_key, member_id, linked_at) VALUES ($1, 'm-alice00000', now())`, snapshots.MACKey("02:00:00:00:0b:01"))
+	r.exec(`INSERT INTO camera_links (mac_key, member_id, linked_at, counted_since) VALUES ($1, 'm-alice00000', now(), now())`, snapshots.MACKey("02:00:00:00:0b:01"))
 	if res := r.settle(); res.Awarded != 0 || len(res.Notices) != 0 {
 		t.Errorf("paid %d and told %d things on the day of linking", res.Awarded, len(res.Notices))
 	}
@@ -466,5 +466,58 @@ func TestNoticesWaitForDelivery(t *testing.T) {
 	r.exec(`INSERT INTO wall_notices (member_id, kind, camera, token, created_at) VALUES ('m-alice00000', 'silent', 'Roof', 'x', now() - interval '8 days')`)
 	if old, _ := r.store.Pending(ctx); len(old) != 0 {
 		t.Error("a notice older than a week is still tried")
+	}
+}
+
+// A camera over the cap builds up nothing: when a slot frees, it starts
+// counting from then, and the days it spent over the cap do not pay.
+func TestACameraOverTheCapBuildsUpNothing(t *testing.T) {
+	r := newRig(t)
+	ctx := context.Background()
+	r.member("m-alice00000", "Alice")
+	macs := []string{"02:00:00:00:10:01", "02:00:00:00:10:02", "02:00:00:00:10:03", "02:00:00:00:10:04"}
+	for i, mac := range macs[:3] {
+		r.camera(mac, 10, 10, "ssc335", "gc2053", "") // too young to have been paid
+		r.link(mac, "m-alice00000", 100-i)
+	}
+	r.camera(macs[3], 90, 80, "ssc335", "gc2053", "") // established, but over the cap
+	r.link(macs[3], "m-alice00000", 0)
+	r.exec(`UPDATE camera_links SET linked_at = now() + interval '1 minute' WHERE mac_key = $1`, snapshots.MACKey(macs[3]))
+	r.settle()
+	var counted *time.Time
+	r.pool.QueryRow(ctx, `SELECT counted_since FROM camera_links WHERE mac_key = $1`, snapshots.MACKey(macs[3])).Scan(&counted)
+	if counted != nil {
+		t.Fatal("a camera over the cap is still counting")
+	}
+	// An unpaid camera's slot frees when it is unlinked; the fourth takes it,
+	// and starts from nothing.
+	r.store.Unlink(ctx, "m-alice00000", r.snaps.CameraToken(macs[0]))
+	if res := r.settle(); res.Awarded != 0 {
+		t.Errorf("paid %d for days spent over the cap", res.Awarded)
+	}
+	cams, _ := r.store.Cameras(ctx, "m-alice00000", r.now)
+	last := cams[len(cams)-1]
+	if last.Status != "counting" || last.Days > 1 {
+		t.Errorf("the promoted camera: %s with %d days", last.Status, last.Days)
+	}
+}
+
+// A camera's card shows what its current owner was paid, not an earlier one.
+func TestACardShowsItsOwnersStars(t *testing.T) {
+	r := newRig(t)
+	ctx := context.Background()
+	r.member("m-alice00000", "Alice")
+	r.member("m-bob0000000", "Bob")
+	r.camera("02:00:00:00:11:01", 90, 60, "x", "y", "")
+	r.link("02:00:00:00:11:01", "m-alice00000", 0)
+	r.settle()
+	r.store.Unlink(ctx, "m-alice00000", r.snaps.CameraToken("02:00:00:00:11:01"))
+	r.link("02:00:00:00:11:01", "m-bob0000000", 0)
+	cams, _ := r.store.Cameras(ctx, "m-bob0000000", r.now)
+	if len(cams) != 1 || cams[0].Stars != 0 {
+		t.Errorf("Bob's card shows %+v", cams)
+	}
+	if res := r.settle(); res.Awarded != 0 {
+		t.Errorf("the camera was paid %d again under a new owner", res.Awarded)
 	}
 }

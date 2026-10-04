@@ -210,7 +210,7 @@ func (s *Store) Claim(ctx context.Context, publicID string) (*Linked, error) {
 		if owner != nil {
 			return nil // already theirs
 		}
-		if _, err := tx.Exec(ctx, `INSERT INTO camera_links (mac_key, member_id, name) VALUES ($1, $2, nullif($3, ''))`,
+		if _, err := tx.Exec(ctx, `INSERT INTO camera_links (mac_key, member_id, name, counted_since) VALUES ($1, $2, nullif($3, ''), now())`,
 			key, member, deref(caption)); err != nil {
 			return err
 		}
@@ -290,7 +290,8 @@ type Camera struct {
 
 	macKey     string
 	member     string
-	since      time.Time // the later of its first frame and its link
+	since      time.Time  // the later of its first frame and when it began to count
+	countedAt  *time.Time // camera_links.counted_since
 	counted    bool
 	revoked    bool
 	lastDay    *time.Time
@@ -305,10 +306,10 @@ type Camera struct {
 // member's, or everybody's when member is "".
 func (s *Store) load(ctx context.Context, member string, now time.Time) ([]*Camera, error) {
 	rows, err := s.DB.Query(ctx, `
-		SELECT l.mac_key, l.member_id, l.linked_at, l.show_owner, l.milestone, l.silent_day,
+		SELECT l.mac_key, l.member_id, l.linked_at, l.counted_since, l.show_owner, l.milestone, l.silent_day,
 		       c.first_seen, c.days,
 		       (SELECT count(*) FROM camera_days d WHERE d.mac_key = l.mac_key AND d.lit AND d.varied
-		          AND d.day >= (l.linked_at AT TIME ZONE 'UTC')::date)::int,
+		          AND d.day >= (l.counted_since AT TIME ZONE 'UTC')::date)::int,
 		       last.day, coalesce(last.lit, false),
 		       EXISTS (SELECT 1 FROM wall_revoked r WHERE r.mac_key = l.mac_key),
 		       coalesce(f.caption, l.name), f.soc, f.sensor, f.firmware, f.created_at
@@ -326,7 +327,7 @@ func (s *Store) load(ctx context.Context, member string, now time.Time) ([]*Came
 	for rows.Next() {
 		c := &Camera{paid: map[string]bool{}}
 		var caption, soc, sensor, firmware *string
-		if err := rows.Scan(&c.macKey, &c.member, &c.LinkedAt, &c.ShowOwner, &c.milestone, &c.silentDay,
+		if err := rows.Scan(&c.macKey, &c.member, &c.LinkedAt, &c.countedAt, &c.ShowOwner, &c.milestone, &c.silentDay,
 			&c.FirstSeen, &c.WallDays, &c.Days, &c.lastDay, &c.lastLit, &c.revoked,
 			&caption, &soc, &sensor, &firmware, &c.LastFrame); err != nil {
 			rows.Close()
@@ -338,8 +339,12 @@ func (s *Store) load(ctx context.Context, member string, now time.Time) ([]*Came
 		}
 		c.Token = s.Token(c.macKey)
 		c.since = c.FirstSeen
-		if c.LinkedAt.After(c.since) {
-			c.since = c.LinkedAt
+		start := now // not counting yet: no days, no age
+		if c.countedAt != nil {
+			start = *c.countedAt
+		}
+		if start.After(c.since) {
+			c.since = start
 		}
 		out = append(out, c)
 	}
@@ -349,8 +354,8 @@ func (s *Store) load(ctx context.Context, member string, now time.Time) ([]*Came
 	}
 	// What each camera has been paid, net, and which awards stand.
 	paid, err := s.DB.Query(ctx, `
-		SELECT mac_key, reason, sum(points)::int, bool_or(kind = 'revoke') FROM wall_stars
-		WHERE mac_key = ANY($1) GROUP BY mac_key, reason`, macKeys(out))
+		SELECT mac_key, member_id, reason, sum(points)::int, bool_or(kind = 'revoke') FROM wall_stars
+		WHERE mac_key = ANY($1) GROUP BY mac_key, member_id, reason`, macKeys(out))
 	if err != nil {
 		return nil, err
 	}
@@ -359,16 +364,18 @@ func (s *Store) load(ctx context.Context, member string, now time.Time) ([]*Came
 		byKey[c.macKey] = c
 	}
 	for paid.Next() {
-		var key, reason string
+		var key, who, reason string
 		var points int
 		var revoked bool
-		if err := paid.Scan(&key, &reason, &points, &revoked); err != nil {
+		if err := paid.Scan(&key, &who, &reason, &points, &revoked); err != nil {
 			paid.Close()
 			return nil, err
 		}
 		c := byKey[key]
-		c.paid[reason] = true
-		c.Stars += points
+		c.paid[reason] = true // once per camera, to whoever it went
+		if who == c.member {
+			c.Stars += points // what the card shows is what its owner got
+		}
 		if reason == "join" {
 			c.joinedPaid = true
 		}

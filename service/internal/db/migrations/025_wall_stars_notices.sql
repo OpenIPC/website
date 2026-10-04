@@ -24,3 +24,10 @@ CREATE TABLE wall_notices (
     sent_at    timestamptz
 );
 CREATE INDEX wall_notices_pending ON wall_notices (created_at) WHERE sent_at IS NULL;
+
+-- When a linked camera took one of its member's slots. Days count from here,
+-- not from the link: a camera over the cap of three builds up nothing it can
+-- cash in when a slot frees. Set at the link, cleared while the camera is
+-- over the cap, and set again when it gets a slot (wallstars.Settle).
+ALTER TABLE camera_links ADD COLUMN counted_since timestamptz;
+UPDATE camera_links SET counted_since = linked_at;

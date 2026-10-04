@@ -26,7 +26,7 @@ func TestAnAwardChecksTheCameraAgainUnderItsLock(t *testing.T) {
 	exec(`INSERT INTO club_members (id, name) VALUES ('m-alice00000', 'Alice'), ('m-bob0000000', 'Bob')`)
 	for _, key := range []string{"020000000e01", "020000000e02", "020000000e03"} {
 		exec(`INSERT INTO cameras (mac_key, first_seen, last_day, days) VALUES ($1, now() - interval '60 days', current_date, 30)`, key)
-		exec(`INSERT INTO camera_links (mac_key, member_id, linked_at) VALUES ($1, 'm-alice00000', now() - interval '60 days')`, key)
+		exec(`INSERT INTO camera_links (mac_key, member_id, linked_at, counted_since) VALUES ($1, 'm-alice00000', now() - interval '60 days', now() - interval '60 days')`, key)
 	}
 	cams, err := s.load(ctx, "", time.Now())
 	if err != nil || len(cams) != 3 {
