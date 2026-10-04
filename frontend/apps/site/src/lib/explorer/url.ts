@@ -1,4 +1,4 @@
-export const TABS = ["composition", "packages", "modules", "removed", "drift", "trends", "whatif"] as const;
+export const TABS = ["composition", "packages", "modules", "removed", "drift", "trends", "upstream", "whatif"] as const;
 export type Tab = (typeof TABS)[number];
 
 /**
