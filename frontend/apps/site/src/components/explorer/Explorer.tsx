@@ -23,6 +23,7 @@ import { ModuleTable, PackageTable, RemovedTable } from './Tables';
 import Drift from './Drift';
 import Trends from './Trends';
 import WhatIf from './WhatIf';
+import Upstream from './Upstream';
 import Help from './Help';
 import BuildPicker from './BuildPicker';
 import SocPicker from './SocPicker';
@@ -108,6 +109,11 @@ export default function Explorer({ locale }: { locale: Locale }) {
     ? [source, ...variant.sources].find((s): s is Source => !!s && catalog.kconfig[s].has(platform)) ?? null
     : null;
 
+  // Upstream compares a Builder device with what it is built from, so only a
+  // Builder build has it; anywhere else the address's tab=upstream falls back.
+  const tabs = TABS.filter((k) => k !== 'upstream' || source === 'builder');
+  const shown: Tab = tabs.includes(tab) ? tab : 'composition';
+
   // A new SoC keeps the variant if it has one of the same name, and a new
   // variant keeps the build's night if it was built then.
   const chooseSoc = (s: string) => {
@@ -185,20 +191,20 @@ export default function Explorer({ locale }: { locale: Locale }) {
           <>
             <Summary sizes={sizes.value} title={variant ? `${variant.soc} · ${variant.label}` : undefined} t={t} />
             <div class="mt-9 flex gap-1 overflow-x-auto border-b border-hairline" role="tablist">
-              {TABS.map((k) => (
-                <button key={k} type="button" role="tab" id={`explorer-tab-${k}`} aria-selected={tab === k} aria-controls="explorer-panel"
-                  class={`-mb-px cursor-pointer border-b-2 px-3.5 py-2.5 text-[15px] whitespace-nowrap ${tab === k ? 'border-brand-blue font-medium text-body' : 'border-transparent text-body-secondary'}`}
+              {tabs.map((k) => (
+                <button key={k} type="button" role="tab" id={`explorer-tab-${k}`} aria-selected={shown === k} aria-controls="explorer-panel"
+                  class={`-mb-px cursor-pointer border-b-2 px-3.5 py-2.5 text-[15px] whitespace-nowrap ${shown === k ? 'border-brand-blue font-medium text-body' : 'border-transparent text-body-secondary'}`}
                   onClick={() => setTab(k)}>
                   {t(`tab_${k}`)}
                 </button>
               ))}
             </div>
-            <section id="explorer-panel" role="tabpanel" aria-labelledby={`explorer-tab-${tab}`} class="pt-5">
-              {tab === 'composition' && <Treemap packages={sizes.value.packages} t={t} />}
-              {tab === 'packages' && <PackageTable packages={sizes.value.packages} t={t} />}
-              {tab === 'modules' && <ModuleTable modules={sizes.value.linux_components.modules} t={t} />}
-              {tab === 'removed' && <RemovedTable removed={sizes.value.removed_by_finalize} t={t} />}
-              {tab === 'drift' && others.length > 0 && (
+            <section id="explorer-panel" role="tabpanel" aria-labelledby={`explorer-tab-${shown}`} class="pt-5">
+              {shown === 'composition' && <Treemap packages={sizes.value.packages} t={t} />}
+              {shown === 'packages' && <PackageTable packages={sizes.value.packages} t={t} />}
+              {shown === 'modules' && <ModuleTable modules={sizes.value.linux_components.modules} t={t} />}
+              {shown === 'removed' && <RemovedTable removed={sizes.value.removed_by_finalize} t={t} />}
+              {shown === 'drift' && others.length > 0 && (
                 // Only Drift compares, so the choice lives with it rather than in the bar.
                 <div class="mb-5 flex max-w-full flex-col gap-1 sm:w-fit">
                   <span class={LABEL} id="explorer-compare-label">{t('compare_label')}</span>
@@ -206,11 +212,12 @@ export default function Explorer({ locale }: { locale: Locale }) {
                     locale={locale} t={t} onChange={setCompareId} />
                 </div>
               )}
-              {tab === 'drift' && (
+              {shown === 'drift' && (
                 <Drift source={compareSource ?? source} builds={builds} base={sizes.value} baseBuild={build.id} compareBuild={compare} platform={platform} t={t} />
               )}
-              {tab === 'trends' && <Trends source={source} platform={platform} t={t} />}
-              {tab === 'whatif' && (kconfigSource
+              {shown === 'trends' && <Trends source={source} platform={platform} t={t} />}
+              {shown === 'upstream' && catalog && <Upstream catalog={catalog} platform={platform} build={build} sizes={sizes.value} t={t} />}
+              {shown === 'whatif' && (kconfigSource
                 ? <WhatIf source={kconfigSource} platform={platform} sizes={sizes.value} t={t} />
                 : <p class="text-body-secondary">{t('whatif_unavailable')}</p>)}
             </section>

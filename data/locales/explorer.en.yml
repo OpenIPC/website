@@ -64,6 +64,7 @@ en:
     tab_removed: Removed by finalize
     tab_drift: Drift
     tab_trends: Trends
+    tab_upstream: Vs firmware
     tab_whatif: What if…
     whatif_unavailable: No kconfig graph has been published for this platform yet.
     category_vendor: Vendor SDK / drivers
@@ -112,6 +113,20 @@ en:
     drift_intro: 'Every package and module whose installed size changed between {before} and {after}, largest change first.'
     drift_none_other: 'No other build has a report for {platform}; drift needs two.'
     no_drift: Nothing changed size between these two builds.
+    upstream_no_parent: '{platform} has no build to compare with: Firmware does not build this variant, and it is Builder''s own generic build of it.'
+    upstream_intro_firmware: '{platform} against Firmware''s {parent} (build {build}), which it is built from: every package and module whose size differs.'
+    upstream_intro_builder: '{platform} against Builder''s generic {parent} (build {build}) -- Firmware does not build this variant: every package and module whose size differs.'
+    upstream_rootfs: 'The root filesystem is {delta} against it.'
+    upstream_sizes_heading: Size against the base build
+    upstream_same_sizes: Every package and module is the same size as in the base build.
+    upstream_kconfig_heading: Kconfig symbols the configuration sets or leaves out
+    upstream_kconfig_unavailable: Not shown until both builds have published a Kconfig graph.
+    upstream_added: 'Added by this device ({count})'
+    upstream_dropped: 'Left out by this device ({count})'
+    upstream_none: None
+    upstream_in_package: 'in {package}'
+    upstream_files_note: Files this device replaces in the firmware tree, and whether firmware has changed them since, are tracked in
+    upstream_files_link: the Builder drift report
     kind_package: package
     kind_module: module
     trends_summary: '{count} builds, {first} → {last}'
@@ -157,7 +172,7 @@ en:
         html: '<p>The bar is the chip as the build lays it out: U-Boot and its environment, the kernel partition, the root filesystem partition and the overlay that keeps your settings, drawn to the caps the build checks against. The darker part of each partition is what the build uses. The meters give the same numbers and a state: <em>tight</em> under 10% free, <em>almost full</em> under 2%.</p>'
       tabs:
         title: The tabs
-        html: '<p><strong>Composition</strong> draws each package as a rectangle whose area is the bytes it installs, coloured by kind. <strong>Packages</strong> sorts them; a row opens to its largest files. <strong>Kernel modules</strong> lists every <code>.ko</code> and whether it loads at boot; large on-demand modules are the usual candidates to drop. <strong>Removed by finalize</strong> lists what OpenIPC''s hooks strip after install. <strong>Drift</strong> compares two builds of the same platform. <strong>Trends</strong> follows headroom and the fastest-growing packages over the retained builds, and projects when headroom runs out if the trend continues.</p>'
+        html: '<p><strong>Composition</strong> draws each package as a rectangle whose area is the bytes it installs, coloured by kind. <strong>Packages</strong> sorts them; a row opens to its largest files. <strong>Kernel modules</strong> lists every <code>.ko</code> and whether it loads at boot; large on-demand modules are the usual candidates to drop. <strong>Removed by finalize</strong> lists what OpenIPC''s hooks strip after install. <strong>Drift</strong> compares two builds of the same platform. <strong>Trends</strong> follows headroom and the fastest-growing packages over the retained builds, and projects when headroom runs out if the trend continues. On a build made for a particular device, <strong>Vs firmware</strong> compares it with the firmware build it is based on: sizes from the same night, and the packages its configuration adds or leaves out.</p>'
       what_if:
         title: What if…
         html: '<p>Buildroot''s Kconfig has <code>depends on</code> and <code>select</code>. Switching off a package also switches off what only it selects; if something still enabled selects a package, it stays on and the table says what holds it. Savings are the installed bytes of the packages that go, measured by this build. <em>Copy defconfig fragment</em> gives lines of the form <code># BR2_PACKAGE_FOO is not set</code> to append to a board defconfig; <em>Request this build</em> opens a pre-filled issue on <code>OpenIPC/builder</code>.</p>'

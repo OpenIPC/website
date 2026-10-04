@@ -62,6 +62,7 @@ zh:
     tab_removed: 精简时移除
     tab_drift: 变化
     tab_trends: 趋势
+    tab_upstream: 对比固件
     tab_whatif: 假如…
     whatif_unavailable: 该平台尚未发布 Kconfig 依赖图。
     category_vendor: 厂商 SDK / 驱动
@@ -110,6 +111,20 @@ zh:
     drift_intro: '在 {before} 与 {after} 之间安装大小发生变化的所有软件包和模块，按变化幅度从大到小排列。'
     drift_none_other: '没有其他构建包含 {platform} 的报告；对比需要两个构建。'
     no_drift: 这两个构建之间没有大小变化。
+    upstream_no_parent: '{platform} 没有可对比的构建：Firmware 不构建此变体，而它本身就是 Builder 的通用构建。'
+    upstream_intro_firmware: '{platform} 与其所基于的 Firmware {parent}（构建 {build}）对比：所有大小不同的软件包和模块。'
+    upstream_intro_builder: '{platform} 与 Builder 的通用构建 {parent}（构建 {build}）对比——Firmware 不构建此变体：所有大小不同的软件包和模块。'
+    upstream_rootfs: '根文件系统相差 {delta}。'
+    upstream_sizes_heading: 相对基础构建的大小
+    upstream_same_sizes: 所有软件包和模块的大小都与基础构建相同。
+    upstream_kconfig_heading: 配置设置或省略的 Kconfig 符号
+    upstream_kconfig_unavailable: 两个构建都发布 Kconfig 依赖图后才会显示。
+    upstream_added: '此设备新增（{count}）'
+    upstream_dropped: '此设备去除（{count}）'
+    upstream_none: 无
+    upstream_in_package: '属于 {package}'
+    upstream_files_note: 此设备在固件树中替换的文件，以及 Firmware 之后是否修改过它们，记录在
+    upstream_files_link: Builder 偏离报告
     kind_package: 软件包
     kind_module: 模块
     trends_summary: '{count} 个构建，{first} → {last}'
@@ -155,7 +170,7 @@ zh:
         html: '<p>横条就是构建所用布局下的芯片：U-Boot 及其环境变量、内核分区、根文件系统分区，以及保存您设置的覆盖层，按构建自检所用的上限绘制。每个分区中颜色较深的部分是构建实际占用的空间。指示条给出相同的数字和状态：剩余不足 10% 为<em>紧张</em>，不足 2% 为<em>几乎已满</em>。</p>'
       tabs:
         title: 各标签页
-        html: '<p><strong>构成</strong>把每个软件包画成一个矩形，面积为其安装字节数，颜色表示类型。<strong>软件包</strong>对它们排序；点开一行可看其最大的文件。<strong>内核模块</strong>列出每个 <code>.ko</code> 以及是否在启动时加载；较大的按需模块通常是可以去掉的候选。<strong>精简时移除</strong>列出 OpenIPC 钩子在安装后删除的内容。<strong>变化</strong>比较同一平台的两个构建。<strong>趋势</strong>跟踪保留构建中的剩余空间和增长最快的软件包，并在趋势持续时预测空间何时耗尽。</p>'
+        html: '<p><strong>构成</strong>把每个软件包画成一个矩形，面积为其安装字节数，颜色表示类型。<strong>软件包</strong>对它们排序；点开一行可看其最大的文件。<strong>内核模块</strong>列出每个 <code>.ko</code> 以及是否在启动时加载；较大的按需模块通常是可以去掉的候选。<strong>精简时移除</strong>列出 OpenIPC 钩子在安装后删除的内容。<strong>变化</strong>比较同一平台的两个构建。<strong>趋势</strong>跟踪保留构建中的剩余空间和增长最快的软件包，并在趋势持续时预测空间何时耗尽。对于为特定设备制作的构建，<strong>对比固件</strong>会将其与所基于的固件构建对比：同一晚的大小，以及其配置新增或去除的软件包。</p>'
       what_if:
         title: 假如…
         html: '<p>Buildroot 的 Kconfig 有 <code>depends on</code> 和 <code>select</code>。关闭一个软件包也会关闭只由它选中的内容；如果某个仍启用的项目选中了该软件包，它会保留，表格会说明是什么保留了它。节省量是将被移除的软件包在此构建中的安装字节数。<em>复制 defconfig 片段</em>会给出形如 <code># BR2_PACKAGE_FOO is not set</code> 的行，可追加到板型 defconfig；<em>申请此构建</em>会在 <code>OpenIPC/builder</code> 打开一个预填好的 issue。</p>'
