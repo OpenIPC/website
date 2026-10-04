@@ -129,6 +129,10 @@ type Processor struct {
 	Log     *slog.Logger
 	FFmpeg  string // decodes each keyframe once before it is published
 	Workers int
+	// Published runs after a frame is published, with its public id: the
+	// club code it carried is tried then (internal/wallstars), so a frame the
+	// wall refused links nothing.
+	Published func(ctx context.Context, publicID string)
 
 	queue  chan string
 	queued sync.Map
@@ -254,6 +258,9 @@ func (p *Processor) process(ctx context.Context, id string) {
 	}
 	p.removeOriginal(id)
 	p.Log.Info("variants: generated", "public_id", id, "ms", time.Since(start).Milliseconds())
+	if p.Published != nil {
+		p.Published(ctx, id)
+	}
 }
 
 // ErrRefused is an upload the wall will not publish, as opposed to a failure

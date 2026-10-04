@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/jpeg"
+	mbits "math/bits"
 	"testing"
 )
 
@@ -82,5 +83,43 @@ func TestLumaOfPercentiles(t *testing.T) {
 	}
 	if l := lumaOf(nil); l != (Luma{}) {
 		t.Errorf("empty: %+v", l)
+	}
+}
+
+// The hash tells a scene from itself a little later apart from another scene,
+// and a flat frame hashes to nothing.
+func TestDhash(t *testing.T) {
+	scene := func(shift int) []byte {
+		g := make([]byte, LumaW*LumaH)
+		for y := range LumaH {
+			for x := range LumaW {
+				v := (x*x + 3*y*y + x*y) % 251
+				g[y*LumaW+x] = byte(min(255, v+shift))
+			}
+		}
+		return g
+	}
+	a, b := dhash(scene(0)), dhash(scene(0))
+	if a != b {
+		t.Fatal("the same picture hashed twice differs")
+	}
+	if a == 0 {
+		t.Fatal("a picture with detail hashed to 0")
+	}
+	if d := mbits.OnesCount64(a ^ dhash(scene(4))); d > 8 {
+		t.Errorf("a slightly brighter copy differs in %d bits", d)
+	}
+	other := make([]byte, LumaW*LumaH)
+	for i := range other {
+		other[i] = byte((i * 37) % 256)
+	}
+	if d := mbits.OnesCount64(a ^ dhash(other)); d < 10 {
+		t.Errorf("another picture differs in only %d bits", d)
+	}
+	if h := dhash(make([]byte, LumaW*LumaH)); h != 0 {
+		t.Errorf("a flat frame hashed to %x", h)
+	}
+	if lumaOf(scene(0)).Hash != a {
+		t.Error("lumaOf does not carry the hash")
 	}
 }

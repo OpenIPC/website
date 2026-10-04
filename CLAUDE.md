@@ -36,7 +36,7 @@ No Go on the host; Node 24 for the frontend.
   nginx configuration.
 - `bin/conformance` — the black-box suite (`service/conformance`) against the
   binary on a scratch database. `bin/conformance --mutations` breaks the upload
-  six ways and requires the suite to fail each time.
+  seven ways and requires the suite to fail each time.
   `service/conformance/run.sh <base-url>` points it at a running site.
 - In `frontend/`: `npm ci`, then `npm run lint`, `npm run typecheck`,
   `npm test`, `npm run build`; `npm run dev -w @openipc/site` for a local server.
@@ -167,12 +167,31 @@ restores the image but never the schema, so keep migrations additive.
   (its PTR) and signs DKIM selector `webber2026`; openipc.org's SPF names
   37.27.251.71 and DMARC is `p=none` (Hetzner DNS). Accounts and sessions
   only: a member's reports, their private dumps, the review queue at
-  `/club/review` and the stars ledger (`report_stars`, written by a review's
-  decision, never by an upload) are `internal/reports`'. The board panel's
+  `/club/review` and the reports' stars ledger (`report_stars`, written by a
+  review's decision, never by an upload) are `internal/reports`', and a
+  member's cameras and their stars are `internal/wallstars`'. The board panel's
   send form posts to `/api/v1/club/reports` instead of opening a GitHub
   issue, and a published report's text and photos become a contributed unit
   on its board (`boards.ApplyReportUnits`), as `boards/contributions.yml`
   does for what arrived as issues (#365, #366).
+- `internal/wallstars` -- **stars for keeping a camera on the Open Wall**
+  (migration 024). A member links a camera by making it upload a one-time
+  code from `/club`: pasted at the end of the WebUI's OpenWall caption on
+  firmware already in the field, or sent as the upload's optional `club`
+  field. `snapshots.TakeClubCode` cuts it out of the caption before the row
+  is stored, and the frame's code is tried only once the wall has published
+  it (`variants.Processor.Published`). Stars are never written by an upload:
+  `openipc club settle-wall`, run by the nightly purge, pays each linked
+  camera what it earned and not yet been paid (`wall_stars`, append-only,
+  guarded like `report_stars`): 5 when it meets the home page's bar, 1 per
+  further 30 qualifying days, 2 with the join for the first camera on the
+  wall with its chip or sensor; at most 3 cameras per member. A qualifying
+  day (`camera_days`, written by `MarkGenerated`) had a picture with
+  something in it and pictures that changed (a difference hash,
+  `keyframe.Luma.Hash`), so a looped stock picture earns nothing.
+  `openipc club wall-revoke` takes a faked camera's stars back. The owner's
+  name on the camera's wall page and the leaderboard (`/club/leaderboard`)
+  are each opt-in.
 - `internal/tools`, `internal/nfsro` — **ipctool for stock firmware**, which
   has no curl and no TLS. ipctool's release job pushes each build to
   `PUT /api/v1/tools/{name}` (OIDC, `internal/tools/PUSH.md`); nginx serves

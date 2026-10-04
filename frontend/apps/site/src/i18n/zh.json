@@ -155,8 +155,13 @@
     },
     "club": {
       "eyebrow": "OpenIPC 俱乐部",
-      "lede": "登录后可跟踪你提交到电路板目录的内容、让固件转储保持私密，并为通过审核的内容获得星星。",
+      "lede": "登录后可跟踪你提交到电路板目录的内容、让固件转储保持私密、绑定你在 Open Wall 上的摄像头，并因此获得星星。",
       "title": "OpenIPC 俱乐部"
+    },
+    "club_leaderboard": {
+      "eyebrow": "OpenIPC 俱乐部",
+      "lede": "为记录摄像头电路板和让摄像头持续出现在 Open Wall 上获得的星星，仅列出选择公开的成员。",
+      "title": "贡献排行"
     },
     "club_review": {
       "eyebrow": "OpenIPC 俱乐部",
@@ -594,6 +599,9 @@
       "retention_title": "各项保留多久",
       "retention_what": "内容",
       "retention_where": "位置",
+      "row_days_long": "保留",
+      "row_days_what": "Open Wall 摄像头历史（按天，不含画面）",
+      "row_days_where": "我们的服务器",
       "row_details_long": "最多 3 天",
       "row_details_what": "Open Wall 摄像机信息",
       "row_details_where": "我们的服务器",
@@ -612,6 +620,8 @@
       "sessions_html": "为了把一个人读三页算作一次访问而不是三次，统计程序会从您的地址和浏览器推导出一个短暂的键。它只存在于内存中，最多八小时，从不写入磁盘。您的地址统计程序完全不保存。",
       "sessions_title": "唯一听起来像追踪的东西",
       "title": "隐私",
+      "wall_club_html": "<strong>OpenIPC 俱乐部：</strong>绑定摄像头的成员只有在为该摄像头选择显示时，才会在其页面上署名；只有选择上榜时，才会出现在排行榜上。绑定码会在保存任何内容之前从说明中删除。",
+      "wall_history_html": "<strong>保留：</strong>每台摄像头首次发送画面的日期，以及此后每一天其画面是否有内容、当天是否有变化——每天几个数字，不含画面，也不含地址。首页据此区分老摄像头和新摄像头，OpenIPC 俱乐部据此统计已绑定摄像头的天数。",
       "wall_lede": "运行 OpenIPC 的摄像机可以向墙上发送图片。这一节讲的是摄像机，不是您。",
       "wall_published_html": "<strong>公开：</strong>图片本身，以及摄像机对自己的描述——芯片、传感器、固件、推流程序、运行时间和芯片温度。",
       "wall_retention_html": "每晚的清理会删除已满 2 天的图片及随附的描述——因此任何内容都不会超过 3 天。",
@@ -928,7 +938,10 @@
       "trade": "厂商与集成商"
     },
     "snapshot": {
-      "link_to_camera": "此摄像机的固定链接"
+      "join_club": "想让你的摄像头带着你的名字出现在这里吗？",
+      "join_club_link": "加入 OpenIPC 俱乐部",
+      "link_to_camera": "此摄像机的固定链接",
+      "owner": "OpenIPC 俱乐部成员 · 上墙 {days} 天"
     }
   },
   "snapshots": {

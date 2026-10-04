@@ -363,3 +363,16 @@ func TestTwoFetchesInsideOneGrantWindowAreByteIdentical(t *testing.T) {
 	}
 	t.Fatal("could not fetch twice inside one five-minute window")
 }
+
+// A club code in the caption (internal/wallstars) is accepted like any
+// caption, and never shown: the wall's JSON carries the caption without it.
+func TestAClubCodeInTheCaptionIsNeverShown(t *testing.T) {
+	s := start(t, "wall")
+	s.wallSetup()
+	ids := s.frames(s.freshMAC(), 1, map[string]string{"soc": "ssc30kq", "sensor": "sc4336p", "caption": "Roof club-7K3Q-9XPA"})
+	var body struct{ Snapshot map[string]any }
+	r := s.wallJSON("/api/v1/wall/snapshot/"+ids[0]+".json", &body)
+	if r.StatusCode != 200 || body.Snapshot["caption"] != "Roof" || strings.Contains(strings.ToLower(string(r.body)), "club-") {
+		t.Errorf("caption %v in %.300s", body.Snapshot["caption"], r.body)
+	}
+}

@@ -262,6 +262,9 @@ en:
     disclaimer: The information contained on this site is for general informational purposes only and is not intended to be relied upon by the visitor. All software and firmware available on this site is provided AS IS and for research purposes only. OpenIPC shall not be liable for any loss or damage caused by the use of these files or the use of, or reliance upon, any information contained in this site.
     snapshot:
       link_to_camera: Permanent link to this camera
+      owner: 'OpenIPC Club member · on the wall {days} days'
+      join_club: 'Want your camera here with your name on it?'
+      join_club_link: 'Join the OpenIPC Club'
   snapshots:
     icon:
       snapshot_alt: 'Image: Snapshot'

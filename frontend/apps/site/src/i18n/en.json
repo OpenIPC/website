@@ -155,8 +155,13 @@
     },
     "club": {
       "eyebrow": "OpenIPC Club",
-      "lede": "Sign in to follow what you sent to the board catalogue, keep your flash dumps private, and collect stars for what is accepted.",
+      "lede": "Sign in to follow what you sent to the board catalogue, keep your flash dumps private, link your cameras on the Open Wall, and collect stars for both.",
       "title": "OpenIPC Club"
+    },
+    "club_leaderboard": {
+      "eyebrow": "OpenIPC Club",
+      "lede": "Stars for documenting camera boards and for keeping cameras on the Open Wall, from the members who chose to be listed.",
+      "title": "Who helps the most"
     },
     "club_review": {
       "eyebrow": "OpenIPC Club",
@@ -594,6 +599,9 @@
       "retention_title": "How long things are kept",
       "retention_what": "What",
       "retention_where": "Where",
+      "row_days_long": "kept",
+      "row_days_what": "Open Wall camera history (days, no pictures)",
+      "row_days_where": "Our server",
       "row_details_long": "up to 3 days",
       "row_details_what": "Open Wall camera details",
       "row_details_where": "Our server",
@@ -612,6 +620,8 @@
       "sessions_html": "To count one person reading three pages as one visit rather than three, the counter derives a short-lived key from your address and browser. It exists in memory for at most eight hours and is never written down. Your address is not stored by the counter at all.",
       "sessions_title": "The one thing that sounds like tracking",
       "title": "Privacy",
+      "wall_club_html": "<strong>OpenIPC Club:</strong> a member who links a camera is named on the camera's page only if they choose it for that camera, and appears on the leaderboard only if they choose that too. The code that links a camera is cut out of its caption before anything is stored.",
+      "wall_history_html": "<strong>Kept:</strong> for each camera, the day it first sent a picture and, for every day since, whether its pictures had something in them and changed during the day — a few numbers a day, never a picture or an address. That is how the home page tells an established camera from a new one, and how the OpenIPC Club counts a linked camera's days.",
       "wall_lede": "Cameras running OpenIPC can send a picture to the wall. This part is about the camera, not about you.",
       "wall_published_html": "<strong>Published:</strong> the picture, and what the camera says about itself — chip, sensor, firmware, streamer, uptime and chip temperature.",
       "wall_retention_html": "A nightly sweep removes pictures, and the descriptions that came with them, once they are 2 days old, so nothing stays beyond 3.",
@@ -928,7 +938,10 @@
       "trade": "Manufacturers and integrators"
     },
     "snapshot": {
-      "link_to_camera": "Permanent link to this camera"
+      "join_club": "Want your camera here with your name on it?",
+      "join_club_link": "Join the OpenIPC Club",
+      "link_to_camera": "Permanent link to this camera",
+      "owner": "OpenIPC Club member · on the wall {days} days"
     }
   },
   "snapshots": {

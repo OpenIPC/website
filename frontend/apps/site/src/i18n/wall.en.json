@@ -6,7 +6,10 @@
   },
   "site": {
     "snapshot": {
-      "link_to_camera": "Permanent link to this camera"
+      "join_club": "Want your camera here with your name on it?",
+      "join_club_link": "Join the OpenIPC Club",
+      "link_to_camera": "Permanent link to this camera",
+      "owner": "OpenIPC Club member · on the wall {days} days"
     }
   },
   "snapshots": {

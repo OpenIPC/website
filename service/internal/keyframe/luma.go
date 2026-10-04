@@ -16,9 +16,18 @@ const LumaW, LumaH = 64, 36
 // brightest pixel, so an on-screen clock on a flat grey frame does not make
 // it look like a picture. The wall's mosaic uses them to leave out frames
 // with nothing in them (internal/snapshots, Showcase).
-type Luma struct{ P5, P50, P95 uint8 }
+//
+// Hash is a difference hash of the same copy: 64 bits, each saying whether a
+// cell of a 9x8 grid is darker than its right-hand neighbour. Two frames of
+// one scene differ in a few bits as the light moves; a camera sending one
+// picture over and over sends the same hash (internal/wallstars).
+type Luma struct {
+	P5, P50, P95 uint8
+	Hash         uint64
+}
 
-// lumaOf takes the percentiles of a greyscale copy, one byte per pixel.
+// lumaOf takes the percentiles and the hash of a LumaW x LumaH greyscale
+// copy, one byte per pixel.
 func lumaOf(grey []byte) Luma {
 	if len(grey) == 0 {
 		return Luma{}
@@ -26,7 +35,39 @@ func lumaOf(grey []byte) Luma {
 	px := slices.Clone(grey)
 	slices.Sort(px)
 	n := len(px)
-	return Luma{P5: px[n*5/100], P50: px[n/2], P95: px[n*95/100]}
+	return Luma{P5: px[n*5/100], P50: px[n/2], P95: px[n*95/100], Hash: dhash(grey)}
+}
+
+// dhash box-averages the copy to 9x8 and compares each cell with the next.
+func dhash(grey []byte) uint64 {
+	if len(grey) != LumaW*LumaH {
+		return 0
+	}
+	const gw, gh = 9, 8
+	var cells [gh][gw]int
+	for gy := range gh {
+		y0, y1 := gy*LumaH/gh, (gy+1)*LumaH/gh
+		for gx := range gw {
+			x0, x1 := gx*LumaW/gw, (gx+1)*LumaW/gw
+			sum := 0
+			for y := y0; y < y1; y++ {
+				for x := x0; x < x1; x++ {
+					sum += int(grey[y*LumaW+x])
+				}
+			}
+			cells[gy][gx] = sum / ((y1 - y0) * (x1 - x0))
+		}
+	}
+	var h uint64
+	for gy := range gh {
+		for gx := range gw - 1 {
+			h <<= 1
+			if cells[gy][gx] < cells[gy][gx+1] {
+				h |= 1
+			}
+		}
+	}
+	return h
 }
 
 // lumaOfImage box-averages a decoded picture down to LumaW x LumaH and takes

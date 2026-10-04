@@ -40,6 +40,8 @@ interface Card {
   at: number;
   caption?: string | null;
   camera?: string;
+  /** The club member who linked the camera and chose to be named on it. */
+  owner?: { name: string; stars: number; days: number };
 }
 
 interface Icon { id: string; at: number }
@@ -349,10 +351,22 @@ function Snapshot({ data, t, p, register }: {
         <p>{t('snapshots.show.uptime')}: {card.uptime}.
           {card.soc_temperature && ` ${t('snapshots.show.temperature')}: ${card.soc_temperature}°C.`}</p>
         {card.caption && <p class="mt-2">{card.caption}</p>}
+        {card.owner && (
+          <p class="mt-3 flex items-center gap-3 rounded-lg border border-hairline px-3 py-2">
+            <span class="grid size-9 shrink-0 place-items-center rounded-full bg-ink-2 font-semibold text-accent" aria-hidden="true">
+              {card.owner.name.slice(0, 1).toUpperCase()}
+            </span>
+            <span>
+              <b>{card.owner.name}</b> · <span class="font-semibold text-[#9a5b00]">★ {card.owner.stars}</span><br />
+              <span class="text-muted">{t('site.snapshot.owner', { days: card.owner.days })}</span>
+            </span>
+          </p>
+        )}
         {card.camera && (
           <p class="mt-2"><a href={p(`/open-wall/camera/${card.camera}`)}>
             {t('site.snapshot.link_to_camera')}</a></p>
         )}
+        <p class="mt-2 text-muted">{t('site.snapshot.join_club')} <a href={p('/club')}>{t('site.snapshot.join_club_link')}</a></p>
       </div>
 
       {strip.length > 0 && (

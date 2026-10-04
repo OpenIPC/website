@@ -52,6 +52,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/vendorfw"
 	"github.com/OpenIPC/website/service/internal/wall"
 	"github.com/OpenIPC/website/service/internal/wallsocket"
+	"github.com/OpenIPC/website/service/internal/wallstars"
 	"github.com/OpenIPC/website/service/internal/wizard"
 )
 
@@ -88,6 +89,8 @@ func main() {
 		err = boardsCommand(ctx, cfg, log, args)
 	case "reports":
 		err = reportsCommand(ctx, cfg, log, args)
+	case "club":
+		err = clubCommand(ctx, cfg, log, args)
 	case "routes":
 		err = printRoutes()
 	case "version":
@@ -101,7 +104,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | boards import-snapshot | reports list|show|publish|reject|link|unlink|takedown|verify | vendor-firmware import-history | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | boards import-snapshot | reports list|show|publish|reject|link|unlink|takedown|verify | club settle-wall|wall-revoke | vendor-firmware import-history | routes --json | version")
 	os.Exit(2)
 }
 
@@ -191,6 +194,12 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/club/reports/{id}/files/{position}"},
 	{"web", "GET", "/api/v1/club/review"},
 	{"web", "POST", "/api/v1/club/review/{id}"},
+	{"web", "GET", "/api/v1/club/cameras"},
+	{"web", "POST", "/api/v1/club/cameras/code"},
+	{"web", "POST", "/api/v1/club/cameras/{camera}/unlink"},
+	{"web", "POST", "/api/v1/club/cameras/{camera}/owner"},
+	{"web", "POST", "/api/v1/club/listed"},
+	{"web", "GET", "/api/v1/club/leaderboard"},
 	{"web", "PUT", "/api/v1/tools/{name}"},
 	{"web", "GET", "/api/v1/tools"},
 	{"share", "GET", "/up"},
@@ -349,9 +358,30 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 
 	store := &snapshots.Store{DB: pool, TokenKey: cfg.CameraTokenKey}
 	wallFS := variants.Wall{Root: cfg.WallRoot}
-	proc := &variants.Processor{Wall: wallFS, Store: store, Log: log, FFmpeg: cfg.FFmpegBin,
-		Workers: cfg.VariantWorkers}
 	bg, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	// Owner reports (internal/reports): uploaded by anyone, public after
+	// review, and kept apart from everything the board importers touch.
+	ownerReports := &reports.API{DB: pool, Files: &reports.Files{Root: cfg.ReportsRoot},
+		AccelPrefix: cfg.ReportsAccelPrefix, Log: log}
+	// The OpenIPC Club (internal/club): signing in, the send form, members'
+	// own reports and cameras, and the maintainers' review. Each way in only
+	// when set. Built before the variant workers start, because a published
+	// frame may link a camera and the club tells its member.
+	wallStars := &wallstars.Store{DB: pool, Token: store.CameraToken}
+	clubAPI := newClub(bg, cfg, log, pool, ownerReports, wallStars)
+	proc := &variants.Processor{Wall: wallFS, Store: store, Log: log, FFmpeg: cfg.FFmpegBin,
+		Workers: cfg.VariantWorkers,
+		Published: func(ctx context.Context, id string) {
+			linked, err := wallStars.Claim(ctx, id)
+			if err != nil {
+				log.Error("wallstars: a club code could not be tried", "public_id", id, "err", err)
+				return
+			}
+			if linked != nil {
+				log.Info("wallstars: camera linked", "member", linked.Member, "camera", store.CameraToken(linked.MACKey))
+				clubAPI.NotifyLinked(ctx, *linked)
+			}
+		}}
 	if err := proc.Start(bg); err != nil {
 		cancel()
 		lock.Release()
@@ -404,7 +434,15 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 	for k, h := range (&builds.Explorer{DB: pool, Log: log}).Handlers() {
 		handlers[k] = h
 	}
-	for k, h := range (&wall.API{Store: store, Granter: granter, Log: log}).Handlers() {
+	wallAPI := &wall.API{Store: store, Granter: granter, Log: log,
+		Owner: func(ctx context.Context, macKey string) (*wall.Owner, error) {
+			o, err := wallStars.OwnerOf(ctx, macKey)
+			if o == nil || err != nil {
+				return nil, err
+			}
+			return &wall.Owner{Name: o.Name, Stars: o.Stars, Days: o.Days}, nil
+		}}
+	for k, h := range wallAPI.Handlers() {
 		handlers[k] = h
 	}
 	for k, h := range (&boards.API{DB: pool, Log: log}).Handlers() {
@@ -413,16 +451,10 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 	for k, h := range (&vendorfw.API{DB: pool, Log: log}).Handlers() {
 		handlers[k] = h
 	}
-	// Owner reports (internal/reports): uploaded by anyone, public after
-	// review, and kept apart from everything the board importers touch.
-	ownerReports := &reports.API{DB: pool, Files: &reports.Files{Root: cfg.ReportsRoot},
-		AccelPrefix: cfg.ReportsAccelPrefix, Log: log}
 	for k, h := range ownerReports.Handlers() {
 		handlers[k] = h
 	}
-	// The OpenIPC Club (internal/club): signing in, the send form, members'
-	// own reports and the maintainers' review. Each way in only when set.
-	for k, h := range newClub(bg, cfg, log, pool, ownerReports).Handlers() {
+	for k, h := range clubAPI.Handlers() {
 		handlers[k] = h
 	}
 	// ipctool's builds, pushed by its release job (tools/PUSH.md).
@@ -613,6 +645,10 @@ func runPurge(ctx context.Context, cfg *config.Config, log *slog.Logger, args []
 		sessions, logins, err := club.Purge(ctx, pool)
 		log.Info("purge: club", "sessions", sessions, "logins", logins)
 		if err != nil {
+			return err
+		}
+		// And the Open Wall's stars for the day just ended (internal/wallstars).
+		if err := settleWall(ctx, cfg, log, pool); err != nil {
 			return err
 		}
 	}

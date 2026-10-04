@@ -283,3 +283,33 @@ func TestWallAddresses(t *testing.T) {
 		t.Errorf("page 9: %s", p)
 	}
 }
+
+// A camera whose club member chose to be named carries the credit after its
+// other keys; every other camera's JSON is byte for byte what it was.
+func TestCameraOwnerCredit(t *testing.T) {
+	pool := dbtest.New(t)
+	store := &snapshots.Store{DB: pool, TokenKey: "secret"}
+	credited := snapshots.MACKey("aa:bb:cc:00:00:31")
+	api := &wall.API{Store: store, Granter: &wall.Granter{Key: []byte("k")},
+		Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Owner: func(_ context.Context, macKey string) (*wall.Owner, error) {
+			if macKey == credited {
+				return &wall.Owner{Name: "Andrei", Stars: 37, Days: 142}, nil
+			}
+			return nil, nil
+		}}
+	mux := http.NewServeMux()
+	api.Routes(mux)
+	gk := "gk7205v300"
+	seed(t, store, "aa:bb:cc:00:00:31", 60, &gk)
+	seed(t, store, "aa:bb:cc:00:00:32", 60, &gk)
+
+	with := get(t, mux, "/api/v1/wall/camera/"+store.CameraToken("aa:bb:cc:00:00:31")+".json").Body.String()
+	if !strings.Contains(with, `"camera":"`+store.CameraToken("aa:bb:cc:00:00:31")+`","owner":{"name":"Andrei","stars":37,"days":142}}`) {
+		t.Errorf("credited camera: %s", with)
+	}
+	without := get(t, mux, "/api/v1/wall/camera/"+store.CameraToken("aa:bb:cc:00:00:32")+".json").Body.String()
+	if strings.Contains(without, `"owner"`) || !strings.Contains(without, `"camera":"`+store.CameraToken("aa:bb:cc:00:00:32")+`"},`) {
+		t.Errorf("uncredited camera: %s", without)
+	}
+}

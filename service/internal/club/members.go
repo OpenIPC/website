@@ -48,6 +48,9 @@ type Member struct {
 	Quiet      bool       `json:"quiet"`
 	Identities []Identity `json:"identities"`
 	Stars      int        `json:"stars"`
+	// The stars' two sources: accepted reports, and cameras on the Open Wall.
+	ReportStars int `json:"report_stars"`
+	WallStars   int `json:"wall_stars"`
 	// Pending is filled where the member's reports are read anyway
 	// (GET /api/v1/club/reports); /me leaves it 0.
 	Pending int `json:"pending"`
@@ -179,8 +182,16 @@ func (a *API) member(ctx context.Context, id string) (*Member, error) {
 	for _, x := range a.Cfg.Maintainers {
 		m.Maintainer = m.Maintainer || x == id
 	}
-	m.Stars, err = a.Reports.Store().StarsOf(ctx, id)
-	return m, err
+	if m.ReportStars, err = a.Reports.Store().StarsOf(ctx, id); err != nil {
+		return nil, err
+	}
+	if a.Wall != nil {
+		if m.WallStars, err = a.Wall.StarsOf(ctx, id); err != nil {
+			return nil, err
+		}
+	}
+	m.Stars = m.ReportStars + m.WallStars
+	return m, nil
 }
 
 // Purge drops what the nightly purge may: sessions past their expiry, and
