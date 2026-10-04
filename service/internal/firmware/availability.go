@@ -26,17 +26,30 @@ func Availability(soc *catalogue.SoC, idx *Index) string {
 		}
 		return "none"
 	}
-	board := Board(soc, idx)
-	if len(idx.Releases(board, "nor")) == 0 && len(idx.Releases(board, "nand")) == 0 {
+	nor, nand := BoardFor(soc, idx, "nor"), BoardFor(soc, idx, "nand")
+	if len(idx.Releases(nor, "nor")) == 0 && len(idx.Releases(nand, "nand")) == 0 {
 		return "none"
 	}
-	if soc.UBootFilename == "" {
-		return "firmware_only"
+	// A flash type counts when it has firmware and the bootloader that flash
+	// type installs. That is one file for most SoCs, and two -- the NOR and
+	// the NAND build -- for the UBI-only ones, which upstream publishes apart.
+	for _, ft := range []string{"nor", "nand"} {
+		if len(idx.Releases(BoardFor(soc, idx, ft), ft)) > 0 && BootloaderPublished(soc, idx, ft) {
+			return "wizard"
+		}
 	}
-	if _, ok := idx.Asset(soc.UBootFilename); !ok {
-		return "firmware_only"
+	return "firmware_only"
+}
+
+// BootloaderPublished says whether the bootloader a flash type installs is in
+// the index.
+func BootloaderPublished(soc *catalogue.SoC, idx *Index, flashType string) bool {
+	name := soc.Bootloader(flashType)
+	if name == "" {
+		return false
 	}
-	return "wizard"
+	_, ok := idx.Asset(name)
+	return ok
 }
 
 // AvailabilityMap is every SoC's state, keyed by slug.

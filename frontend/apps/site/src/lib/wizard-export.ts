@@ -63,6 +63,15 @@ export interface WizardDocument {
   kernel_file: string;
   rootfs_file: string;
   bl_url: string;
+  /**
+   * The NAND bootloader, present only on the SoCs whose NAND is one UBI
+   * device (u-boot-xmedia's 768k(boot),256k(env),-(ubi)). Upstream builds it
+   * apart from the NOR one, which `uboot_filename` and `bl_url` then name.
+   * Absent everywhere else: one bootloader serves both flash types there.
+   */
+  uboot_nand_filename?: string;
+  bl_nand_url?: string;
+  bootloader_nand_published?: boolean;
   published: PublishedBundle[];
   patterns: Patterns;
   editions: Availability;
@@ -98,4 +107,24 @@ export function combinationFor(
     && entry.edition === settings.firmwareVersion
     && entry.network_interface === network
     && entry.sd_card_slot === sd) ?? null;
+}
+
+/**
+ * The bootloader a flash chip installs: the NAND build on NAND where the SoC
+ * has one, and the single (or NOR) build otherwise. The commands already name
+ * the right file; this is the download link beside them, which must match.
+ */
+export function bootloaderFor(
+  document: Pick<WizardDocument, 'uboot_filename' | 'bl_url' | 'bootloader_published'
+    | 'uboot_nand_filename' | 'bl_nand_url' | 'bootloader_nand_published'>,
+  flashType: string,
+): { filename: string; url: string; published: boolean } {
+  if (flashType === 'nand' && document.uboot_nand_filename) {
+    return {
+      filename: document.uboot_nand_filename,
+      url: document.bl_nand_url ?? '',
+      published: document.bootloader_nand_published ?? false,
+    };
+  }
+  return { filename: document.uboot_filename, url: document.bl_url, published: document.bootloader_published };
 }

@@ -1,4 +1,4 @@
-# Goke — 13 SoC(s).
+# Goke — 16 SoC(s).
 #
 # Exported from the catalogue table (#161). This file is the source of
 # truth for the hardware pages: edit it in a pull request, not in the
@@ -176,6 +176,52 @@ socs:
   urlname: gk7205v300
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/gk7205v300_images.yml/badge.svg
   featured: true
+  segment: cctv
+- family: GK7205V500
+  model: GK7205V500
+  version: ''
+  status: done
+  load_address: '0x42000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: u-boot-gk7205v500-nor.bin
+  uboot_nand_filename: u-boot-gk7205v500-nand.bin
+  linux_filename: openipc.gk7205v500-nor-lite.tgz
+  notes: ''
+  urlname: gk7205v500
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/gk7205v500_images.yml/badge.svg
+  featured: false
+  segment: cctv
+- family: GK7205V500
+  model: GK7205V510
+  version: ''
+  status: done
+  load_address: '0x42000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: u-boot-gk7205v510-nor.bin
+  uboot_nand_filename: u-boot-gk7205v510-nand.bin
+  linux_filename: openipc.gk7205v510-nor-lite.tgz
+  nand_board: gk7205v500
+  notes: ''
+  urlname: gk7205v510
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/gk7205v500_images.yml/badge.svg
+  featured: false
+  segment: cctv
+- family: GK7205V500
+  model: GK7205V530
+  version: ''
+  status: done
+  load_address: '0x42000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: u-boot-gk7205v530-nor.bin
+  uboot_nand_filename: u-boot-gk7205v530-nand.bin
+  linux_filename: openipc.gk7205v500-nor-lite.tgz
+  notes: ''
+  urlname: gk7205v530
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/gk7205v500_images.yml/badge.svg
+  featured: false
   segment: cctv
 - family: GK7205V200
   model: GK7605V100

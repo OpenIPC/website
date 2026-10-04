@@ -133,7 +133,8 @@ socs:
   load_address: '0x42000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516dv200-universal.bin
+  uboot_filename: u-boot-hi3516dv200-nor.bin
+  uboot_nand_filename: u-boot-hi3516dv200-nand.bin
   linux_filename: openipc.hi3516dv200-nor-lite.tgz
   notes: ''
   urlname: hi3516dv200
@@ -175,7 +176,8 @@ socs:
   load_address: '0x42000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516ev200-universal.bin
+  uboot_filename: u-boot-hi3516ev200-nor.bin
+  uboot_nand_filename: u-boot-hi3516ev200-nand.bin
   linux_filename: openipc.hi3516ev200-nor-lite.tgz
   notes: f23 f37 gc2053 imx307 imx335 sc2231 sc2232h sc2239 sc2315e sc3235 sc4236 sp2305
   urlname: hi3516ev200
@@ -189,7 +191,8 @@ socs:
   load_address: '0x42000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516ev300-universal.bin
+  uboot_filename: u-boot-hi3516ev300-nor.bin
+  uboot_nand_filename: u-boot-hi3516ev300-nand.bin
   linux_filename: openipc.hi3516ev300-nor-lite.tgz
   notes: ''
   urlname: hi3516ev300
@@ -259,7 +262,8 @@ socs:
   load_address: '0x42000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3518ev300-universal.bin
+  uboot_filename: u-boot-hi3518ev300-nor.bin
+  uboot_nand_filename: u-boot-hi3518ev300-nand.bin
   linux_filename: openipc.hi3518ev300-nor-lite.tgz
   notes: ''
   urlname: hi3518ev300

@@ -57,7 +57,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	in, err := Resolve(spec, idx)
 	if err != nil {
 		h.Log.Warn("firmware: no upstream asset", "soc", soc.URLName, "err", err)
-		h.page(w, r, http.StatusNotFound, missingAssetMessage(soc, idx), soc)
+		h.page(w, r, http.StatusNotFound, missingAssetMessage(soc, spec.FlashType, idx), soc)
 		return
 	}
 
@@ -137,14 +137,16 @@ func (h *Handler) buildFailed(w http.ResponseWriter, r *http.Request, soc *catal
 // missingAssetMessage says which half is missing, because for Xiongmai and the
 // GK7102 family it is the bootloader, permanently, and "does not exist" sends
 // that visitor looking for a fault that is not there.
-func missingAssetMessage(soc *catalogue.SoC, idx *Index) string {
-	board := Board(soc, idx)
-	published := len(idx.Releases(board, "nor")) > 0 || len(idx.Releases(board, "nand")) > 0
-	_, bootloader := idx.Asset(soc.UBootFilename)
+//
+// The bootloader asked about is the one the requested flash type installs: a
+// UBI-only SoC publishes its NAND bootloader apart from the NOR one.
+func missingAssetMessage(soc *catalogue.SoC, flashType string, idx *Index) string {
+	published := len(idx.Releases(BoardFor(soc, idx, "nor"), "nor")) > 0 ||
+		len(idx.Releases(BoardFor(soc, idx, "nand"), "nand")) > 0
 	switch {
 	case !published:
 		return "OpenIPC does not publish firmware for this SoC yet."
-	case soc.UBootFilename == "" || !bootloader:
+	case !BootloaderPublished(soc, idx, flashType):
 		return "OpenIPC does not publish a bootloader for this SoC, so a full flash image cannot be " +
 			"assembled for it. The firmware bundle on the SoC page is published and can be " +
 			"installed with the bootloader your camera already has."
@@ -215,7 +217,7 @@ func pathBase(path string) string { return filepath.Base(path) }
 // tooLargeMessage names the flash the build is made for when its build said so
 // (#285): "try the Lite edition" is no help to somebody already on Lite.
 func tooLargeMessage(spec Spec, idx *Index) string {
-	if f, ok := idx.Fit(Board(spec.SoC, idx), spec.Release); ok && f.FlashMB > spec.SizeMB {
+	if f, ok := idx.Fit(BoardFor(spec.SoC, idx, spec.FlashType), spec.Release); ok && f.FlashMB > spec.SizeMB {
 		return fmt.Sprintf("This firmware is built for %d MB flash and does not fit %d MB. "+
 			"Choose a %d MB chip on the installation page.", f.FlashMB, spec.SizeMB, f.FlashMB)
 	}

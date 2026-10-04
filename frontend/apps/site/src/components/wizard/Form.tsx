@@ -72,8 +72,10 @@ export default function Form({
   // filename: a SoC can name a bootloader upstream does not publish, and the
   // blank check let it through to a form offering to build an image around a
   // bootloader that does not exist.
+  // A UBI-only NAND SoC publishes its NAND bootloader apart from the NOR one,
+  // and either is enough to install with.
   const usable = doc === null
-    || (doc.bootloader_published && doc.linux_filename !== ''
+    || ((doc.bootloader_published || doc.bootloader_nand_published === true) && doc.linux_filename !== ''
       && doc.load_address !== '' && doc.availability !== 'none');
 
   // Firmware but no bootloader, and a load address to work with. See
@@ -359,10 +361,28 @@ function Unavailable({ t, facts, doc }: { t: Props['t']; facts: SocFacts; doc: W
           download being broken. Both of these are asked of the release index,
           not built from a filename.
         */}
+        {/*
+          Two links where the SoC has a NAND bootloader of its own, each named
+          for its flash the way the bundles below are; one, unnamed, where a
+          single bootloader serves both.
+        */}
         {doc.bootloader_published && (
           <div class="site-alert site-alert-info github">
             <Icon name="github" size="github" class="float-end" />
-            <h5 class="site-h5 mb-1"><a href={doc.bl_url}>{show('bootloader')}</a></h5>
+            <h5 class="site-h5 mb-1">
+              <a href={doc.bl_url} title={doc.uboot_filename}>
+                {doc.uboot_nand_filename ? `${show('bootloader')} NOR` : show('bootloader')}
+              </a>
+            </h5>
+            <p class="mb-0 text-[.875em]">{show('for', { name: facts.fullName })}</p>
+          </div>
+        )}
+        {doc.bootloader_nand_published === true && doc.uboot_nand_filename && (
+          <div class="site-alert site-alert-info github">
+            <Icon name="github" size="github" class="float-end" />
+            <h5 class="site-h5 mb-1">
+              <a href={doc.bl_nand_url} title={doc.uboot_nand_filename}>{`${show('bootloader')} NAND`}</a>
+            </h5>
             <p class="mb-0 text-[.875em]">{show('for', { name: facts.fullName })}</p>
           </div>
         )}

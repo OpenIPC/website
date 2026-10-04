@@ -61,6 +61,14 @@ func Document(soc *catalogue.SoC, idx *firmware.Index) []byte {
 	d.set("kernel_file", "uImage."+e.board)
 	d.set("rootfs_file", "rootfs.squashfs."+e.board)
 	d.set("bl_url", e.url(soc.UBootFilename))
+	// Only where the SoC has a NAND bootloader of its own, so every other
+	// document stays byte for byte what it was. The page offers this one for
+	// NAND and uboot_filename for NOR.
+	if soc.UBINand() {
+		d.set("uboot_nand_filename", soc.UBootNANDFilename)
+		d.set("bl_nand_url", e.url(soc.UBootNANDFilename))
+		d.set("bootloader_nand_published", e.published(soc.UBootNANDFilename))
+	}
 	published := []any{}
 	for _, ft := range flashTypes {
 		for _, rel := range e.releases(ft) {
@@ -119,7 +127,14 @@ func nonNil(o obj) obj {
 
 // releases is Soc#published_releases: what the index says, in display order.
 func (e *exporter) releases(ft string) []string {
-	rels := slices.Clone(e.idx.Releases(e.board, ft))
+	// A UBI-only SoC publishes a bootloader per flash type, and its
+	// instructions write the one for the flash chosen: without it that flash
+	// type cannot be installed, so it is not offered at all. (Elsewhere a
+	// missing bootloader means installing with the camera's own, which stays.)
+	if e.soc.UBINand() && !firmware.BootloaderPublished(e.soc, e.idx, ft) {
+		return []string{}
+	}
+	rels := slices.Clone(e.idx.Releases(e.boardFor(ft), ft))
 	rank := func(r string) int {
 		if i := slices.Index(releaseOrder, r); i >= 0 {
 			return i
@@ -214,26 +229,27 @@ func (e *exporter) needsFlashMB() int {
 }
 
 func (e *exporter) linuxFilename(release, ft string) string {
-	return fmt.Sprintf("openipc.%s-%s-%s.tgz", e.board, ft, release)
+	return fmt.Sprintf("openipc.%s-%s-%s.tgz", e.boardFor(ft), ft, release)
 }
 
-func (e *exporter) bootloaderPublished() bool {
-	if strings.TrimSpace(e.soc.UBootFilename) == "" {
+// boardFor is the build a flash type's firmware comes from (nand_board).
+func (e *exporter) boardFor(ft string) string { return firmware.BoardFor(e.soc, e.idx, ft) }
+
+// bootloaderPublished is the NOR (or only) bootloader's; the NAND one, where
+// there is one, is bootloader_nand_published.
+func (e *exporter) bootloaderPublished() bool { return e.published(e.soc.UBootFilename) }
+
+func (e *exporter) published(name string) bool {
+	if strings.TrimSpace(name) == "" {
 		return false
 	}
-	_, ok := e.idx.Asset(e.soc.UBootFilename)
+	_, ok := e.idx.Asset(name)
 	return ok
 }
 
-func (e *exporter) availability() string {
-	if len(e.releases("nor")) == 0 && len(e.releases("nand")) == 0 {
-		return "none"
-	}
-	if e.bootloaderPublished() {
-		return "wizard"
-	}
-	return "firmware_only"
-}
+// availability is firmware.Availability, which knows a SoC may publish its
+// NOR and NAND bootloaders separately.
+func (e *exporter) availability() string { return firmware.Availability(e.soc, e.idx) }
 
 func (e *exporter) specialPage(ft string) string {
 	if e.soc.Vendor.Name == "SigmaStar" && ft == "nand" {
@@ -266,6 +282,11 @@ func layoutsFor(ft string) []*string {
 }
 
 func (e *exporter) editionsFor(ft string, layout *string) []string {
+	// Not the nothing-published menu below: firmware is there, the bootloader
+	// this flash type installs is not (see releases).
+	if e.soc.UBINand() && !firmware.BootloaderPublished(e.soc, e.idx, familyOf(ft)) {
+		return nil
+	}
 	published := e.releases(familyOf(ft))
 	offered := published
 	if len(published) == 0 {
@@ -319,7 +340,7 @@ func (e *exporter) combinations() []any {
 }
 
 func (e *exporter) camera(ft string, layout *string, edition, iface, sd, mac string) *camera {
-	c := &camera{soc: e.soc, board: e.board, flashType: ft, edition: edition, iface: iface, sd: sd,
+	c := &camera{soc: e.soc, board: e.boardFor(ft), flashType: ft, edition: edition, iface: iface, sd: sd,
 		ip: ipaddr, server: serverip, mac: mac}
 	if layout != nil {
 		c.layout = *layout

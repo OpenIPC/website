@@ -71,12 +71,18 @@ func (c *camera) unlock(text []string) []string {
 
 // guardedFlash is the one line that erases only after the transfer worked.
 func (c *camera) guardedFlash(transfer, offset, eraseSize, writeSize string) string {
+	return c.guardedWrite(transfer, offset, eraseSize, "write", writeSize)
+}
+
+// guardedWrite is guardedFlash with the write command named: `write.trimffs`
+// for anything carrying a UBI image (see writeCmd).
+func (c *camera) guardedWrite(transfer, offset, eraseSize, write, writeSize string) string {
 	cmd := "sf"
 	if c.flashType == "nand" {
 		cmd = "nand"
 	}
 	return transfer + " && " + cmd + " erase " + offset + " " + eraseSize + " && " + cmd +
-		" write " + c.soc.LoadAddress + " " + offset + " " + writeSize
+		" " + write + " " + c.soc.LoadAddress + " " + offset + " " + writeSize
 }
 
 func (c *camera) writeSizeFor(fixed string) string {
@@ -120,34 +126,38 @@ func (c *camera) flashingEverything() []string {
 	fw := c.fullImageFilename()
 	text := []string{doNotPaste, c.env(), "mw.b " + la + " 0xff " + c.stagingSizeHex()}
 	text = c.unlock(text)
+	// The full image holds the UBI image, so on the UBI-only layout it goes
+	// on with write.trimffs like rootfs.ubi does on its own.
+	w := c.writeCmd()
 	if c.sdWifi() {
-		text = append(text, c.guardedFlash("fatload mmc 0:1 "+la+" "+fw, "0x0", c.flashSizeHex(), "${filesize}"))
+		text = append(text, c.guardedWrite("fatload mmc 0:1 "+la+" "+fw, "0x0", c.flashSizeHex(), w, "${filesize}"))
 	} else {
 		text = append(text,
-			c.guardedFlash("tftpboot "+la+" "+fw, "0x0", c.flashSizeHex(), "${filesize}"),
+			c.guardedWrite("tftpboot "+la+" "+fw, "0x0", c.flashSizeHex(), w, "${filesize}"),
 			"# if there is no tftpboot but tftp then run this instead",
-			c.guardedFlash("tftp "+la+" "+fw, "0x0", c.flashSizeHex(), "${filesize}"))
+			c.guardedWrite("tftp "+la+" "+fw, "0x0", c.flashSizeHex(), w, "${filesize}"))
 	}
 	return append(text, "reset")
 }
 
 func (c *camera) flashingUboot() []string {
 	la := c.soc.LoadAddress
-	ub := c.soc.UBootFilename
-	ws := c.writeSizeFor("0x50000")
+	ub := c.bootloader()
+	size := c.bootSize()
+	ws := c.writeSizeFor(size)
 	text := []string{doNotPaste}
 	if c.iface != "wifi" {
 		text = append(text, c.env())
 	}
-	text = append(text, "mw.b "+la+" 0xff 0x50000")
+	text = append(text, "mw.b "+la+" 0xff "+size)
 	text = c.unlock(text)
 	if c.sdWifi() {
-		text = append(text, c.guardedFlash("fatload mmc 0:1 "+la+" "+ub, "0x0", "0x50000", ws))
+		text = append(text, c.guardedFlash("fatload mmc 0:1 "+la+" "+ub, "0x0", size, ws))
 	} else {
 		text = append(text,
-			c.guardedFlash("tftpboot "+la+" "+ub, "0x0", "0x50000", ws),
+			c.guardedFlash("tftpboot "+la+" "+ub, "0x0", size, ws),
 			"# if there is no tftpboot but tftp then run this instead",
-			c.guardedFlash("tftp "+la+" "+ub, "0x0", "0x50000", ws))
+			c.guardedFlash("tftp "+la+" "+ub, "0x0", size, ws))
 	}
 	return append(text, "reset")
 }
@@ -162,6 +172,26 @@ func (c *camera) flashingLinux() []string {
 			text = append(text, "setenv ethaddr "+c.mac)
 		}
 		text = append(text, "saveenv")
+	}
+	if c.ubi() {
+		// One file, one region: the whole UBI device is erased and the image
+		// written with write.trimffs, never a plain write (see writeCmd). No
+		// staging blank: the write is ${filesize} long, and blanking the
+		// region would be 127 MiB of RAM the camera may not have.
+		ubi := "rootfs.ubi." + c.board
+		// The UBI partition runs to the end of the chip (-(ubi)); the erase
+		// below covers a 128 MiB one, the size the wizard installs for.
+		text = append(text, "# erases a 128 MiB chip: on a 256 MiB one use 0xff00000 instead of 0x7f00000")
+		if c.sdWifi() {
+			text = append(text, c.guardedWrite("fatload mmc 0:1 "+la+" "+ubi,
+				ubiOffset, ubiRegionSize, c.writeCmd(), "${filesize}"), "")
+		} else {
+			text = append(text,
+				c.guardedWrite("tftpboot "+la+" "+ubi, ubiOffset, ubiRegionSize, c.writeCmd(), "${filesize}"),
+				"# if there is no tftpboot but tftp then run this instead",
+				c.guardedWrite("tftp "+la+" "+ubi, ubiOffset, ubiRegionSize, c.writeCmd(), "${filesize}"))
+		}
+		return append(text, "reset")
 	}
 	if c.sdWifi() {
 		text = append(text, "mw.b "+la+" 0xff 0x200000")

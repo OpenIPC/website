@@ -40,6 +40,20 @@ const (
 	nandStagingSizeHex = "0x1800000"
 )
 
+// The UBI-only NAND layout, for the SoCs whose catalogue entry names a NAND
+// bootloader (catalogue.SoC.UBINand): u-boot-xmedia's
+// mtdparts=<hinand|nand>:768k(boot),256k(env),-(ubi). The kernel is a FIT
+// volume inside the one UBI device, so there is no raw kernel partition, no
+// uknand/urnand pair and no `run setnand` -- the bootloader's own mtdparts is
+// already the layout, and rootfs.ubi.<board> (volumes kernel, rootfs and
+// rootfs_data) is the only file an install writes. The UBI region runs to the
+// end of the 128 MiB chip the rest of the NAND page assumes.
+const (
+	ubiBootSize   = "0xc0000"
+	ubiOffset     = "0x100000"
+	ubiRegionSize = "0x7f00000"
+)
+
 type norTable struct{ kernelOffset, kernelMax, rootfsOffset, rootfsMax, overlayOffset int64 }
 
 // FlashLayout: keyed on the layout's size, and on the vendor for the two
@@ -71,6 +85,34 @@ type camera struct {
 }
 
 func (c *camera) nand() bool { return c.flashType == "nand" }
+
+// ubi is a NAND install on the UBI-only layout; see ubiBootSize.
+func (c *camera) ubi() bool { return c.nand() && c.soc.UBINand() }
+
+// bootloader is the U-Boot file this install writes.
+func (c *camera) bootloader() string { return c.soc.Bootloader(c.flashTypeType()) }
+
+// bootSize is the boot partition: what the U-Boot step blanks, erases and
+// writes.
+func (c *camera) bootSize() string {
+	if c.ubi() {
+		return ubiBootSize
+	}
+	return "0x50000"
+}
+
+// writeCmd is how an image holding UBI goes onto NAND. A plain `nand write`
+// programs every page it is given, the 0xFF padding at the end of each PEB
+// included; UBIFS later writes those pages again, and a page programmed twice
+// fails its ECC (OpenIPC/firmware#2519). `write.trimffs` leaves trailing
+// all-0xFF pages erased instead, which is what UBI expects of them. Only the
+// UBI-only SoCs get it, so the split layout's commands stay as they were.
+func (c *camera) writeCmd() string {
+	if c.ubi() {
+		return "write.trimffs"
+	}
+	return "write"
+}
 
 func (c *camera) flashTypeType() string {
 	switch c.flashType {
@@ -213,6 +255,11 @@ func (c *camera) postFlashCommands() []string {
 }
 
 func (c *camera) layoutCommands() []string {
+	if c.ubi() {
+		// The NAND bootloader boots with the UBI-only mtdparts already; there
+		// is nothing to remap, and it defines no setnand to run.
+		return nil
+	}
 	if !c.fixedMtdparts() {
 		return []string{"run set" + c.bootloaderMacroSuffix()}
 	}
@@ -227,6 +274,11 @@ func (c *camera) layoutCommands() []string {
 }
 
 func (c *camera) bootloaderVariables() []string {
+	if c.ubi() {
+		// None of the install is a bootloader macro here, so the page has no
+		// uknand, urnand or setnand to point at `printenv` for.
+		return []string{}
+	}
 	s := c.bootloaderMacroSuffix()
 	names := []string{"uk" + s, "ur" + s}
 	if !c.fixedMtdparts() {
