@@ -85,6 +85,24 @@ func (c *camera) guardedWrite(transfer, offset, eraseSize, write, writeSize stri
 		" " + write + " " + c.soc.LoadAddress + " " + offset + " " + writeSize
 }
 
+// ubiFlash is guardedWrite for the UBI-only layout, where nothing on the
+// flash has a size the wizard can know: the chip may be 128 MiB or bigger.
+// The UBI partition is erased by name (`nand erase.part ubi`, which the
+// u-boot-xmedia NAND build carries and the U-Boot step installs first), so
+// to the end of the chip whatever its size; blocks left with stale data past
+// the image would be corrupted PEBs to UBI. A full image, written from
+// whatever U-Boot the camera has, erases the whole chip instead.
+func (c *camera) ubiFlash(transfer string, whole bool) string {
+	// The partition by name for the write too, so it lands where the erase
+	// was: both resolve from the bootloader's mtdparts.
+	erase, offset := "nand erase.part ubi", "ubi"
+	if whole {
+		erase, offset = "nand erase.chip", "0x0"
+	}
+	return transfer + " && " + erase + " && nand " + c.writeCmd() + " " + c.soc.LoadAddress + " " +
+		offset + " ${filesize}"
+}
+
 func (c *camera) writeSizeFor(fixed string) string {
 	if c.flashType == "nand" {
 		return fixed
@@ -129,6 +147,17 @@ func (c *camera) flashingEverything() []string {
 	// The full image holds the UBI image, so on the UBI-only layout it goes
 	// on with write.trimffs like rootfs.ubi does on its own.
 	w := c.writeCmd()
+	if c.ubi() {
+		if c.sdWifi() {
+			text = append(text, c.ubiFlash("fatload mmc 0:1 "+la+" "+fw, true))
+		} else {
+			text = append(text,
+				c.ubiFlash("tftpboot "+la+" "+fw, true),
+				"# if there is no tftpboot but tftp then run this instead",
+				c.ubiFlash("tftp "+la+" "+fw, true))
+		}
+		return append(text, "reset")
+	}
 	if c.sdWifi() {
 		text = append(text, c.guardedWrite("fatload mmc 0:1 "+la+" "+fw, "0x0", c.flashSizeHex(), w, "${filesize}"))
 	} else {
@@ -179,17 +208,13 @@ func (c *camera) flashingLinux() []string {
 		// staging blank: the write is ${filesize} long, and blanking the
 		// region would be 127 MiB of RAM the camera may not have.
 		ubi := "rootfs.ubi." + c.board
-		// The UBI partition runs to the end of the chip (-(ubi)); the erase
-		// below covers a 128 MiB one, the size the wizard installs for.
-		text = append(text, "# erases a 128 MiB chip: on a 256 MiB one use 0xff00000 instead of 0x7f00000")
 		if c.sdWifi() {
-			text = append(text, c.guardedWrite("fatload mmc 0:1 "+la+" "+ubi,
-				ubiOffset, ubiRegionSize, c.writeCmd(), "${filesize}"), "")
+			text = append(text, c.ubiFlash("fatload mmc 0:1 "+la+" "+ubi, false), "")
 		} else {
 			text = append(text,
-				c.guardedWrite("tftpboot "+la+" "+ubi, ubiOffset, ubiRegionSize, c.writeCmd(), "${filesize}"),
+				c.ubiFlash("tftpboot "+la+" "+ubi, false),
 				"# if there is no tftpboot but tftp then run this instead",
-				c.guardedWrite("tftp "+la+" "+ubi, ubiOffset, ubiRegionSize, c.writeCmd(), "${filesize}"))
+				c.ubiFlash("tftp "+la+" "+ubi, false))
 		}
 		return append(text, "reset")
 	}

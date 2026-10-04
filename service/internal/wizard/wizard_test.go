@@ -257,12 +257,14 @@ func TestUBINandLines(t *testing.T) {
 			t.Errorf("U-Boot block:\n%s", uboot)
 		}
 		linux := block(c, "flashing_linux")
-		if !strings.Contains(linux, "rootfs.ubi.hi3516ev300 && nand erase 0x100000 0x7f00000 && "+
-			"nand write.trimffs 0x42000000 0x100000 ${filesize}") {
+		// Erased by name, to the end of the chip whatever its size.
+		if !strings.Contains(linux, "rootfs.ubi.hi3516ev300 && nand erase.part ubi && "+
+			"nand write.trimffs 0x42000000 ubi ${filesize}") || strings.Contains(linux, "0x7f00000") {
 			t.Errorf("Linux block:\n%s", linux)
 		}
 		full := block(c, "flashing_everything")
-		if !strings.Contains(full, "nand write.trimffs 0x42000000 0x0 ${filesize}") || strings.Contains(full, "nand write 0x") {
+		if !strings.Contains(full, "&& nand erase.chip && nand write.trimffs 0x42000000 0x0 ${filesize}") ||
+			strings.Contains(full, "nand write 0x") || strings.Contains(full, "nand erase 0x0") {
 			t.Errorf("full image block:\n%s", full)
 		}
 		for name := range c["blocks"].(map[string]any) {
