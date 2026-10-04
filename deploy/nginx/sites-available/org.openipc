@@ -355,6 +355,20 @@ server {
         add_header X-Served-By go always;
     }
 
+    # Builder's daily firmware-drift report (service/internal/drift/PUSH.md),
+    # pushed from a GitHub runner like a build and verified the same way, by
+    # its OIDC token. Today's report is ~15 KB gzipped; the service takes 4 MB.
+    location = /api/v1/drift {
+        client_max_body_size 4m;
+        proxy_request_buffering on;
+        proxy_pass http://127.0.0.1:3002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Request-Id $request_id;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+    }
+
     # ipctool's builds: pushed by OpenIPC/ipctool's release job over its OIDC
     # token (PUT /api/v1/tools/<name>, service/internal/tools/PUSH.md), and
     # listed at GET /api/v1/tools. The files themselves are served on port 80

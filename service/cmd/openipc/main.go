@@ -41,6 +41,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/config"
 	"github.com/OpenIPC/website/service/internal/db"
 	"github.com/OpenIPC/website/service/internal/downloads"
+	"github.com/OpenIPC/website/service/internal/drift"
 	"github.com/OpenIPC/website/service/internal/firmware"
 	"github.com/OpenIPC/website/service/internal/httpx"
 	"github.com/OpenIPC/website/service/internal/purge"
@@ -165,6 +166,8 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/explorer/{source}/builds/{build}/platforms/{platform}"},
 	{"web", "GET", "/api/v1/explorer/{source}/platforms/{platform}/trends"},
 	{"web", "GET", "/api/v1/explorer/{source}/platforms/{platform}/kconfig"},
+	{"web", "POST", "/api/v1/drift"},
+	{"web", "GET", "/api/v1/explorer/builder/upstream"},
 	{"web", "GET", "/api/v1/wall/socket"},
 	{"web", "GET", "/api/v1/boards"},
 	{"web", "GET", "/api/v1/boards/search"},
@@ -432,6 +435,9 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		// pushed by those projects' CI (vendorfw/PUSH.md).
 		"POST /api/v1/vendor-firmware": &vendorfw.Handler{
 			Verifier: &builds.LazyVerifier{Issuer: builds.GitHubIssuer}, DB: pool, Log: log},
+		// Builder's daily firmware-drift report (drift/PUSH.md).
+		"POST /api/v1/drift": &drift.Handler{
+			Verifier: &builds.LazyVerifier{Issuer: builds.GitHubIssuer}, DB: pool, Log: log},
 		"GET /api/v1/wall/socket": &wallsocket.Server{WallRoot: cfg.WallRoot, Grants: granter, Log: log,
 			GrantsDisabled: cfg.GrantsDisabled, Budget: &wallsocket.Budget{Limit: 1000}},
 	}
@@ -441,6 +447,9 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		}
 	}
 	for k, h := range (&builds.Explorer{DB: pool, Log: log}).Handlers() {
+		handlers[k] = h
+	}
+	for k, h := range (&drift.API{DB: pool, Log: log}).Handlers() {
 		handlers[k] = h
 	}
 	wallAPI := &wall.API{Store: store, Granter: granter, Log: log,

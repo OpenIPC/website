@@ -589,6 +589,9 @@ grep -q GO-WIZARD /tmp/b || { echo "  the wizard did not reach the Go firmware p
 # CI pushes each build to the web role, once (builds/PUSH.md).
 posts /api/v1/builds                200 go
 grep -q GO-WEB-PROD /tmp/pb || { echo "  the build push did not reach the Go web process"; fail=1; }
+# Builder's daily drift report goes the same way (drift/PUSH.md).
+posts /api/v1/drift                 200 go
+grep -q GO-WEB-PROD /tmp/pb || { echo "  the drift push did not reach the Go web process"; fail=1; }
 # Owner reports (service/internal/reports): the upload and identify reach the
 # web role on 443 and on plain 80 (ipctool on stock firmware has no TLS); a
 # report's file reaches /report-files/ only through the web role's
@@ -635,7 +638,7 @@ from_dc() {
   curl -sS -o /dev/null -w '%{http_code}' -k --max-time 5 --interface 127.0.0.2 \
     --resolve "openipc.org:443:127.0.0.1" "$@" 2>/dev/null
 }
-for probe in "403 GET /" "403 GET /.git/config" "403 POST /snapshots" "200 POST /api/v1/builds" "200 POST /api/v1/reports"; do
+for probe in "403 GET /" "403 GET /.git/config" "403 POST /snapshots" "200 POST /api/v1/builds" "200 POST /api/v1/drift" "200 POST /api/v1/reports"; do
   set -- $probe
   got=$(from_dc -X "$2" "https://openipc.org$3")
   if [ "$got" = "$1" ]; then

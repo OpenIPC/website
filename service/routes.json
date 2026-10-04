@@ -81,6 +81,16 @@
   },
   {
     "role": "web",
+    "method": "POST",
+    "path": "/api/v1/drift"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/explorer/builder/upstream"
+  },
+  {
+    "role": "web",
     "method": "GET",
     "path": "/api/v1/wall/socket"
   },

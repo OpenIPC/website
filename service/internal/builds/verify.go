@@ -45,6 +45,9 @@ var pushers = map[string][]string{
 	"anjoyupdates": {"OpenIPC/anjoyupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
 	// ipctool's static builds, served to cameras over plain HTTP (tools/PUSH.md).
 	"ipctool": {"OpenIPC/ipctool/.github/workflows/release.yml@refs/heads/master"},
+	// Builder's daily firmware-drift report, not a build (drift/PUSH.md); its
+	// own key, so neither workflow can push the other's document.
+	"builder-drift": {"OpenIPC/builder/.github/workflows/firmware-drift.yml@refs/heads/master"},
 }
 
 // Verifier checks a bearer token end to end. Keys come from the issuer's
