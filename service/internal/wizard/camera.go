@@ -45,13 +45,11 @@ const (
 // mtdparts=<hinand|nand>:768k(boot),256k(env),-(ubi). The kernel is a FIT
 // volume inside the one UBI device, so there is no raw kernel partition, no
 // uknand/urnand pair and no `run setnand` -- the bootloader's own mtdparts is
-// already the layout, and rootfs.ubi.<board> (volumes kernel, rootfs and
-// rootfs_data) is the only file an install writes. The UBI region runs to the
-// end of the 128 MiB chip the rest of the NAND page assumes.
+// already the layout, and rootfs.ubi.<board> (volumes rootfs, with the kernel
+// in its /boot, and rootfs_data) is the only file an install writes. The UBI region runs to the
+// end of the chip, whatever its size: it is erased by name (ubiFlash).
 const (
-	ubiBootSize   = "0xc0000"
-	ubiOffset     = "0x100000"
-	ubiRegionSize = "0x7f00000"
+	ubiBootSize = "0xc0000"
 )
 
 type norTable struct{ kernelOffset, kernelMax, rootfsOffset, rootfsMax, overlayOffset int64 }
