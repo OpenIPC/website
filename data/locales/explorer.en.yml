@@ -143,6 +143,7 @@ en:
     symkind_stale_entry: listed in firmware-drift.json, but nothing selects it
     upstream_drift_heading: Firmware files this device replaces
     upstream_drift_summary: '{total} firmware file(s) are replaced by this device''s own copy; {attention} need a look.'
+    upstream_drift_absent: 'This device is not in the newest firmware-drift report: it may no longer be built.'
     upstream_drift_none: This device replaces no firmware file.
     upstream_drift_checked: 'Checked {date}.'
     upstream_drift_missing: No firmware-drift report has been published yet.

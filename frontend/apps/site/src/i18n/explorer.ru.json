@@ -185,6 +185,7 @@
     "upstream_commits_unknown": "Сверенной версии нет в истории Firmware; изменения Firmware с {date}:",
     "upstream_compare": "Все изменения Firmware одним diff",
     "upstream_copy": "Копировать",
+    "upstream_drift_absent": "Этого устройства нет в последнем отчёте о расхождениях: возможно, его больше не собирают.",
     "upstream_drift_checked": "Проверено {date}.",
     "upstream_drift_heading": "Файлы прошивки, которые подменяет устройство",
     "upstream_drift_missing": "Отчёт о расхождениях с прошивкой ещё не опубликован.",

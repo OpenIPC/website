@@ -141,6 +141,7 @@ ru:
     symkind_stale_entry: указан в firmware-drift.json, но нигде не выбран
     upstream_drift_heading: Файлы прошивки, которые подменяет устройство
     upstream_drift_summary: 'Устройство подменяет своей копией файлов прошивки: {total}; требуют внимания: {attention}.'
+    upstream_drift_absent: 'Этого устройства нет в последнем отчёте о расхождениях: возможно, его больше не собирают.'
     upstream_drift_none: Устройство не подменяет ни одного файла прошивки.
     upstream_drift_checked: 'Проверено {date}.'
     upstream_drift_missing: Отчёт о расхождениях с прошивкой ещё не опубликован.

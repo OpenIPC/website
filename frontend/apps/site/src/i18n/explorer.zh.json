@@ -185,6 +185,7 @@
     "upstream_commits_unknown": "核对的版本不在 Firmware 的历史中；Firmware 自 {date} 以来的修改：",
     "upstream_compare": "以单个 diff 查看 Firmware 的全部修改",
     "upstream_copy": "复制",
+    "upstream_drift_absent": "此设备不在最新的固件偏离报告中：它可能已不再构建。",
     "upstream_drift_checked": "检查于 {date}。",
     "upstream_drift_heading": "此设备替换的固件文件",
     "upstream_drift_missing": "尚未发布固件偏离报告。",

@@ -136,15 +136,31 @@ export function fleetRows(report: UpstreamReport, opts: { attentionOnly: boolean
 
 const GH = "https://github.com/OpenIPC";
 
+/** A repository path as a URL path: each segment encoded, so a `#` or `?` in a name stays in the name. */
+const urlPath = (path: string) => path.split("/").map(encodeURIComponent).join("/");
+
 export const links = {
-  builderFile: (r: UpstreamReport, path: string) => `${GH}/builder/blob/${r.report.builder_commit}/${path}`,
-  firmwareFile: (r: UpstreamReport, path: string) => `${GH}/firmware/blob/${r.report.firmware_commit}/${path}`,
+  builderFile: (r: UpstreamReport, path: string) => `${GH}/builder/blob/${r.report.builder_commit}/${urlPath(path)}`,
+  firmwareFile: (r: UpstreamReport, path: string) => `${GH}/firmware/blob/${r.report.firmware_commit}/${urlPath(path)}`,
   firmwareCommit: (sha: string) => `${GH}/firmware/commit/${sha}`,
-  /** Firmware's whole change to the file since the pin, as one diff. */
-  compare: (r: UpstreamReport, s: UpstreamShadow) =>
-    s.pinned_commit ? `${GH}/firmware/compare/${s.pinned_commit}...${r.report.firmware_commit}` : null,
+  /**
+   * Firmware's whole change to the file since the pin, as one diff: the range
+   * from the pinned commit to the one checked, opened at this file's diff.
+   * GitHub anchors a file in a comparison as `diff-` and the SHA-256 of its
+   * path, which the caller computes (it is asynchronous in a browser).
+   */
+  compare: (r: UpstreamReport, s: UpstreamShadow, pathSha256?: string) =>
+    s.pinned_commit
+      ? `${GH}/firmware/compare/${s.pinned_commit}...${r.report.firmware_commit}` + (pathSha256 ? `#diff-${pathSha256}` : "")
+      : null,
   editConfig: `${GH}/builder/edit/master/.github/firmware-drift.json`,
 };
+
+/** The hex SHA-256 of a string, as GitHub's file anchors in a comparison use. */
+export async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 /**
  * The firmware-drift.json entry that records "someone looked at firmware's

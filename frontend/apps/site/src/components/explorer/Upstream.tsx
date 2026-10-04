@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { KconfigGraph, Sizes, UpstreamReport, UpstreamShadow, UpstreamSymbol } from '../../lib/explorer/types';
 import { fetchKconfig, fetchSizes, fetchUpstream, NotFound } from '../../lib/explorer/api';
 import type { Catalog, SourcedBuild } from '../../lib/explorer/platforms';
-import { compareWithParent, deviceOf, findingsFor, isOpen, kconfigDelta, links, needsLook, pairParentBuild, parentOf, repinSnippet } from '../../lib/explorer/upstream';
+import { compareWithParent, deviceOf, findingsFor, isOpen, kconfigDelta, links, needsLook, pairParentBuild, parentOf, repinSnippet, sha256Hex } from '../../lib/explorer/upstream';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { fmtBytes, fmtSignedBytes } from '../../lib/explorer/format';
 import type { ExplorerT } from '../../lib/explorer-i18n';
@@ -189,7 +189,9 @@ function DriftFindings({ platform, locale, t }: { platform: string; locale: Loca
       {report.state === 'ok' && found && (
         <>
           <p class="mt-0 mb-3 max-w-[70ch] text-body-secondary">
-            {found.shadows.length === 0
+            {!found.row
+              ? t('upstream_drift_absent')
+              : found.shadows.length === 0
               ? t('upstream_drift_none')
               : t('upstream_drift_summary', { total: found.shadows.length, attention: found.shadows.filter(needsLook).length })}{' '}
             {t('upstream_drift_checked', { date: day(report.value.report.checked_at) })}{' '}
@@ -225,7 +227,17 @@ function DriftFindings({ platform, locale, t }: { platform: string; locale: Loca
 function ShadowRow({ r, s, t }: { r: UpstreamReport; s: UpstreamShadow; t: ExplorerT }) {
   const [copied, setCopied] = useState(false);
   const snippet = repinSnippet(r, s, new Date().toISOString().slice(0, 10));
-  const compare = links.compare(r, s);
+  const [anchor, setAnchor] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    if (s.status === 'moved') sha256Hex(s.firmware).then((h) => live && setAnchor(h), () => {});
+    return () => { live = false; };
+  }, [s.firmware, s.status]);
+  const compare = links.compare(r, s, anchor);
+  // A side the report says is gone is named, not linked to a file that is not there.
+  const path = (href: string | null, text: string) => href
+    ? <a class={`${A} font-mono text-[13px] break-all`} href={href} target="_blank" rel="noopener noreferrer">{text}</a>
+    : <span class="font-mono text-[13px] break-all text-body-secondary line-through">{text}</span>;
   return (
     <tr>
       <td class={`${TD} whitespace-nowrap`}>
@@ -233,9 +245,9 @@ function ShadowRow({ r, s, t }: { r: UpstreamReport; s: UpstreamShadow; t: Explo
         {s.since && <span class="mt-1 block text-xs text-body-secondary">{t('upstream_since', { date: day(s.since) })}</span>}
       </td>
       <td class={TD}>
-        <a class={`${A} font-mono text-[13px] break-all`} href={links.builderFile(r, s.builder)} target="_blank" rel="noopener noreferrer">{s.builder}</a>
+        {path(s.status === 'missing_builder' ? null : links.builderFile(r, s.builder), s.builder)}
         <span class="text-body-secondary"> → </span>
-        <a class={`${A} font-mono text-[13px] break-all`} href={links.firmwareFile(r, s.firmware)} target="_blank" rel="noopener noreferrer">{s.firmware}</a>
+        {path(s.status === 'firmware_gone' ? null : links.firmwareFile(r, s.firmware), s.firmware)}
         {s.devices.length > 1 && <span class="block text-xs text-body-secondary" title={s.devices.join(', ')}>{t('upstream_shared', { count: s.devices.length })}</span>}
         {s.note && <span class="block text-xs text-body-secondary">{s.note}</span>}
         {s.status === 'moved' && s.commits && s.commits.length > 0 && (

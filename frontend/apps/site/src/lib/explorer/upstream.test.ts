@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildCatalog } from "./platforms";
-import { deviceOf, findingsFor, fleetRows, kconfigDelta, links, pairParentBuild, parentOf, platformOf, repinSnippet } from "./upstream";
+import { deviceOf, findingsFor, fleetRows, kconfigDelta, links, pairParentBuild, parentOf, platformOf, repinSnippet, sha256Hex } from "./upstream";
 import type { Build, IndexFile, KconfigGraph, KconfigSymbol, Source, UpstreamReport } from "./types";
 import { readQueryString, writeQueryString } from "./url";
 
@@ -174,6 +174,7 @@ describe("repinSnippet", () => {
 describe("links", () => {
   it("diffs firmware from the pinned commit to the report's, and only when the pin is placed", () => {
     expect(links.compare(report, report.shadows[0])).toBe(`https://github.com/OpenIPC/firmware/compare/${sha("3")}...${sha("f")}`);
+    expect(links.compare(report, report.shadows[0], "ab12")).toMatch(/#diff-ab12$/);
     expect(links.compare(report, report.shadows[2])).toBeNull();
   });
 });
@@ -189,5 +190,17 @@ describe("a device's explorer platform", () => {
   ])("%s is published as %s, and back", (device, platform) => {
     expect(platformOf(device)).toBe(platform);
     expect(deviceOf(platform)).toBe(device);
+  });
+});
+
+describe("file links", () => {
+  it("keep a # or ? in a name inside the path", () => {
+    expect(links.firmwareFile(report, "general/overlay/etc/a#b?c")).toBe(`https://github.com/OpenIPC/firmware/blob/${sha("f")}/general/overlay/etc/a%23b%3Fc`);
+  });
+
+  it("anchor a file in a comparison the way GitHub does: diff- and the SHA-256 of its path", async () => {
+    // Python's hashlib.sha256(b"general/overlay/etc/init.d/S40network").hexdigest()
+    expect(await sha256Hex("general/overlay/etc/init.d/S40network"))
+      .toBe("7a693c4912a78597e847b8b972415467664740a292ec68edca122f5c27760020");
   });
 });

@@ -141,6 +141,7 @@ zh:
     symkind_stale_entry: 列在 firmware-drift.json 中，但没有任何地方选择它
     upstream_drift_heading: 此设备替换的固件文件
     upstream_drift_summary: '此设备用自己的副本替换了 {total} 个固件文件；{attention} 个需要查看。'
+    upstream_drift_absent: '此设备不在最新的固件偏离报告中：它可能已不再构建。'
     upstream_drift_none: 此设备没有替换任何固件文件。
     upstream_drift_checked: '检查于 {date}。'
     upstream_drift_missing: 尚未发布固件偏离报告。

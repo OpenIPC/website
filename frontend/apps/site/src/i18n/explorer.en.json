@@ -188,6 +188,7 @@
     "upstream_commits_unknown": "The reconciled version is not in Firmware's history; Firmware's changes since {date}:",
     "upstream_compare": "Firmware's whole change as one diff",
     "upstream_copy": "Copy",
+    "upstream_drift_absent": "This device is not in the newest firmware-drift report: it may no longer be built.",
     "upstream_drift_checked": "Checked {date}.",
     "upstream_drift_heading": "Firmware files this device replaces",
     "upstream_drift_missing": "No firmware-drift report has been published yet.",
