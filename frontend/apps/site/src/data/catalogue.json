@@ -359,6 +359,36 @@
           "segment": "cctv"
         },
         {
+          "model": "GK7205V500",
+          "family": "GK7205V500",
+          "version": "",
+          "urlname": "gk7205v500",
+          "status": "done",
+          "load_address": "0x42000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7205V510",
+          "family": "GK7205V500",
+          "version": "",
+          "urlname": "gk7205v510",
+          "status": "done",
+          "load_address": "0x42000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7205V530",
+          "family": "GK7205V500",
+          "version": "",
+          "urlname": "gk7205v530",
+          "status": "done",
+          "load_address": "0x42000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
           "model": "GK7605V100",
           "family": "GK7205V200",
           "version": "",

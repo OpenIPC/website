@@ -45,6 +45,18 @@ const (
 	mb               = 1 << 20
 )
 
+// The UBI-only NAND layout (catalogue.SoC.UBINand), u-boot-xmedia's
+// 768k(boot),256k(env),-(ubi): the NAND bootloader at 0 within its 768 KiB
+// boot partition, the env left erased, and rootfs.ubi.<board> -- the whole
+// UBI device, kernel volume included -- at 0x100000, bounded by the end of
+// the 128 MiB chip the installation page assumes. The image still ends at the
+// UBI image rounded up to a page; the wizard writes it with write.trimffs.
+const (
+	ubiBootLimit = 0xc0000
+	ubiOffset    = 0x100000
+	ubiChipEnd   = 128 * mb
+)
+
 var (
 	norSizes     = []int{8, 16, 32}
 	norLayoutsMB = []int{8, 16}
@@ -153,46 +165,65 @@ func (s Spec) LinuxAsset(idx *Index) string {
 	return fmt.Sprintf("openipc.%s-%s-%s.tgz", Board(s.SoC, idx), s.FlashType, s.Release)
 }
 
-// Members are the tarball entries the image is made of.
+func (s Spec) ubi() bool { return s.nand() && s.SoC.UBINand() }
+
+// Bootloader is the U-Boot asset the image starts with.
+func (s Spec) Bootloader() string { return s.SoC.Bootloader(s.FlashType) }
+
+// Members are the tarball entries the image is made of. On the UBI-only
+// layout the kernel is a volume inside rootfs.ubi, so there is no kernel
+// member and kernel is "".
 func (s Spec) Members(idx *Index) (kernel, rootfs string) {
 	board := Board(s.SoC, idx)
+	if s.ubi() {
+		return "", "rootfs.ubi." + board
+	}
 	if s.nand() {
 		return "uImage." + board, "rootfs.ubi." + board
 	}
 	return "uImage." + board, "rootfs.squashfs." + board
 }
 
-// part is one region of the image.
+// part is one region of the image: the bootloader, or the tarball member
+// named by member.
 type part struct {
 	name          string
+	member        string
 	offset, limit int64
 	limitName     string
 }
 
-// parts are the three regions, each bounded by the next. For NAND the rootfs
-// is bounded only by the image, which it defines.
-func (s Spec) parts() [3]part {
+// parts are the regions in flash order, the bootloader first, each bounded by
+// the next. For the split NAND layout the rootfs is bounded only by the
+// image, which it defines; on the UBI-only layout by the end of the chip.
+func (s Spec) parts(kernel, rootfs string) []part {
+	if s.ubi() {
+		return []part{
+			{"u-boot", "", 0, ubiBootLimit, "the boot partition"},
+			{"rootfs", rootfs, ubiOffset, ubiChipEnd, "the end of the chip"},
+		}
+	}
 	if s.nand() {
-		return [3]part{
-			{"u-boot", 0, nandKernelOffset, "the kernel offset"},
-			{"kernel", nandKernelOffset, nandRootfsOffset, "the rootfs offset"},
-			{"rootfs", nandRootfsOffset, 1 << 40, "the end of the image"},
+		return []part{
+			{"u-boot", "", 0, nandKernelOffset, "the kernel offset"},
+			{"kernel", kernel, nandKernelOffset, nandRootfsOffset, "the rootfs offset"},
+			{"rootfs", rootfs, nandRootfsOffset, 1 << 40, "the end of the image"},
 		}
 	}
 	l := s.nor()
-	return [3]part{
-		{"u-boot", 0, l.KernelOffset, "the kernel offset"},
-		{"kernel", l.KernelOffset, l.RootfsOffset, "the rootfs offset"},
-		{"rootfs", l.RootfsOffset, l.OverlayOffset, "the rootfs partition"},
+	return []part{
+		{"u-boot", "", 0, l.KernelOffset, "the kernel offset"},
+		{"kernel", kernel, l.KernelOffset, l.RootfsOffset, "the rootfs offset"},
+		{"rootfs", rootfs, l.RootfsOffset, l.OverlayOffset, "the rootfs partition"},
 	}
 }
 
-// imageSize is the chip for NOR, and the end of the rootfs rounded up to a
-// page for NAND.
-func (s Spec) imageSize(rootfsBytes int64) int64 {
+// imageSize is the chip for NOR, and the end of the rootfs (the last part)
+// rounded up to a page for NAND.
+func (s Spec) imageSize(rootfs part, rootfsBytes int64) int64 {
 	if !s.nand() {
 		return int64(s.SizeMB) * mb
 	}
-	end := nandRootfsOffset + rootfsBytes
+	end := rootfs.offset + rootfsBytes
 	return (end + nandPage - 1) / nandPage * nandPage
 }

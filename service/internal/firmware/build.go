@@ -71,7 +71,10 @@ const BuildDeadline = 150 * time.Second
 
 // layoutVersion changes whenever the way an image is assembled changes, so
 // that every cached image made the old way stops matching and is rebuilt.
-const layoutVersion = "1"
+//
+// 2: NAND images for the UBI-only SoCs became the NAND bootloader and
+// rootfs.ubi at 0x100000, with no uImage.
+const layoutVersion = "2"
 
 // Key names the image these inputs produce.
 func (in Inputs) Key() string {
@@ -86,7 +89,7 @@ func (in Inputs) Key() string {
 // Resolve turns a spec into inputs against the current index.
 func Resolve(s Spec, idx *Index) (Inputs, error) {
 	in := Inputs{Spec: s}
-	name := s.SoC.UBootFilename
+	name := s.Bootloader()
 	if !plainName(name) {
 		return in, ErrUnknownAsset{fmt.Sprintf("%q", name)}
 	}
@@ -228,7 +231,7 @@ type extent struct{ from, to int64 }
 // memory. Everything no member covers is 0xFF -- erased flash, not zeros.
 func (im *Images) assemble(in Inputs, ubootPath, linuxPath, dest string) error {
 	s := in.Spec
-	parts := s.parts()
+	parts := s.parts(in.Kernel, in.Rootfs)
 	filename := s.Filename()
 
 	if err := os.MkdirAll(im.Root, 0o755); err != nil {
@@ -269,22 +272,26 @@ func (im *Images) assemble(in Inputs, ubootPath, linuxPath, dest string) error {
 	}
 	written = append(written, extent{parts[0].offset, parts[0].offset + n})
 
-	sizes, present, err := im.streamMembers(linuxPath, map[string]part{in.Kernel: parts[1], in.Rootfs: parts[2]}, f, fits)
+	members := parts[1:]
+	want := map[string]part{}
+	for _, p := range members {
+		want[p.member] = p
+	}
+	sizes, present, err := im.streamMembers(linuxPath, want, f, fits)
 	if err != nil {
 		return err
 	}
-	for _, name := range []string{in.Kernel, in.Rootfs} {
-		if _, ok := sizes[name]; !ok {
+	for _, p := range members {
+		if _, ok := sizes[p.member]; !ok {
 			sort.Strings(present)
 			return ErrMissingMember{fmt.Sprintf("%s is not in %s (members: %s)",
-				name, filepath.Base(in.Linux.Name), strings.Join(present, ", "))}
+				p.member, filepath.Base(in.Linux.Name), strings.Join(present, ", "))}
 		}
+		written = append(written, extent{p.offset, p.offset + sizes[p.member]})
 	}
-	written = append(written,
-		extent{parts[1].offset, parts[1].offset + sizes[in.Kernel]},
-		extent{parts[2].offset, parts[2].offset + sizes[in.Rootfs]})
 
-	size := s.imageSize(sizes[in.Rootfs])
+	last := members[len(members)-1]
+	size := s.imageSize(last, sizes[last.member])
 	if err := fillErased(f, written, size); err != nil {
 		return err
 	}

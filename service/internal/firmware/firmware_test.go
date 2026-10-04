@@ -83,6 +83,7 @@ func TestBoardsMatchReference(t *testing.T) {
 	}
 	var want []struct {
 		URLName, Vendor, Board, UBoot string
+		UBootNAND                     string `json:"uboot_nand"`
 		NorLite                       string `json:"nor_lite"`
 		NandLite                      string `json:"nand_lite"`
 	}
@@ -101,6 +102,10 @@ func TestBoardsMatchReference(t *testing.T) {
 		}
 		if soc.UBootFilename != w.UBoot {
 			t.Errorf("%s: bootloader %q, the reference says %q", w.URLName, soc.UBootFilename, w.UBoot)
+		}
+		// Blank in the reference for every SoC still on the split NAND layout.
+		if soc.UBootNANDFilename != w.UBootNAND {
+			t.Errorf("%s: NAND bootloader %q, the reference says %q", w.URLName, soc.UBootNANDFilename, w.UBootNAND)
 		}
 		for flash, name := range map[string]string{"nor": w.NorLite, "nand": w.NandLite} {
 			s := Spec{SoC: soc, FlashType: flash, Release: "lite"}
@@ -390,5 +395,89 @@ func TestLimiterCountsBuildsPerAddress(t *testing.T) {
 	}
 	if !l.Allow("198.51.100.1", now.Add(61*time.Second)) {
 		t.Error("still refused after the window")
+	}
+}
+
+// The UBI-only NAND image (hi3516ev300 and the other u-boot-xmedia SoCs): the
+// NAND bootloader at 0, rootfs.ubi -- the whole UBI device, kernel volume
+// included -- at 0x100000, nothing of the tarball's uImage, erased flash in
+// between, and the image ending at the UBI image rounded up to a page. A
+// bootloader past the 768 KiB boot partition is refused, not written into the
+// env.
+func TestUBINandImage(t *testing.T) {
+	cat := loadCatalogue(t)
+	soc := cat.SoC("hi3516ev300")
+	if !soc.UBINand() {
+		t.Fatal("hi3516ev300 is not on the UBI-only NAND layout")
+	}
+	board := "hi3516ev300"
+	dir := t.TempDir()
+	releases := &Releases{Root: filepath.Join(dir, "rel")}
+	images := &Images{Root: filepath.Join(dir, "img"), Releases: releases}
+	uboot := synthetic("uboot-nand", 300_000)
+	ubi := synthetic("ubi", 3_000_001) // not a whole page: the image rounds up
+	kernel := synthetic("kernel", 1_500_000)
+	build := func(bootloader []byte) (string, error) {
+		idx := &Index{assets: map[string]Asset{}, builds: map[[2]string][]string{}}
+		put := func(name string, data []byte) {
+			sum := sha256.Sum256(data)
+			a := Asset{Name: name, Size: int64(len(data)), Digest: "sha256:" + hex.EncodeToString(sum[:])}
+			idx.assets[name] = a
+			os.MkdirAll(filepath.Join(releases.Root, "blobs"), 0o755)
+			os.WriteFile(releases.Path(a), data, 0o644)
+		}
+		// The NOR bootloader is there too, and must not be the one used.
+		put(soc.UBootFilename, synthetic("uboot-nor", 200_000))
+		put(soc.UBootNANDFilename, bootloader)
+		put("openipc."+board+"-nand-lite.tgz", tgz(t, [][2]any{
+			{"fitImage." + board, kernel}, {"uImage." + board, kernel},
+			{"rootfs.ubifs." + board, synthetic("ubifs", 2_000_000)}, {"rootfs.ubi." + board, ubi}}))
+		spec, err := NewSpec(soc, "nand", "lite", 0, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		in, err := Resolve(spec, idx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if in.UBoot.Name != soc.UBootNANDFilename || in.Kernel != "" || in.Rootfs != "rootfs.ubi."+board {
+			t.Fatalf("resolved %s, kernel %q, rootfs %q", in.UBoot.Name, in.Kernel, in.Rootfs)
+		}
+		return images.Build(context.Background(), in)
+	}
+
+	path, err := build(uboot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(path)
+	end := int64(0x100000 + len(ubi))
+	if want := (end + 2047) / 2048 * 2048; int64(len(data)) != want {
+		t.Fatalf("%d bytes, want %d", len(data), want)
+	}
+	if !bytes.Equal(data[:len(uboot)], uboot) {
+		t.Error("the NAND bootloader is not at 0")
+	}
+	if !bytes.Equal(data[0x100000:end], ubi) {
+		t.Error("rootfs.ubi is not at 0x100000")
+	}
+	if bytes.Contains(data, kernel[:64]) {
+		t.Error("the image carries the tarball's kernel outside the UBI image")
+	}
+	for i, b := range data[len(uboot):0x100000] {
+		if b != 0xFF {
+			t.Fatalf("byte 0x%x between the bootloader and the UBI image is 0x%02x, not erased", len(uboot)+i, b)
+		}
+	}
+	for _, b := range data[end:] {
+		if b != 0xFF {
+			t.Fatal("the page tail after the UBI image is not erased")
+		}
+	}
+
+	if _, err := build(synthetic("uboot-big", 0xc0000+1)); err == nil {
+		t.Error("a bootloader past the 768 KiB boot partition was accepted")
+	} else if tl := (ErrTooLarge{}); !errors.As(err, &tl) {
+		t.Errorf("an oversized bootloader failed with %v, want ErrTooLarge", err)
 	}
 }

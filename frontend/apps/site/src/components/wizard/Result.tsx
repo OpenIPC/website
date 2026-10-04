@@ -9,7 +9,7 @@
  */
 import { useRef, useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
-import type { Block, Combination, WizardDocument } from '../../lib/wizard-export';
+import { bootloaderFor, type Block, type Combination, type WizardDocument } from '../../lib/wizard-export';
 import { fillHoles, type WizardSettings } from '../../lib/wizard-input';
 import { toPermalink } from '../../lib/wizard-input';
 import {
@@ -380,12 +380,19 @@ export default function Result({
                 />
               </Collapse>
 
-              <Html
-                html={t('firmware.info_html', {
-                  commands: (combination.bootloader_variables ?? [])
-                    .map((name) => `<code>${name}</code>`).join(', '),
-                })}
-              />
+              {/*
+                Nothing to name on the UBI-only NAND layout: that install is
+                rootfs.ubi written by hand, not a bootloader macro, and the
+                sentence with an empty list reads as a fault.
+              */}
+              {(combination.bootloader_variables ?? []).length > 0 && (
+                <Html
+                  html={t('firmware.info_html', {
+                    commands: (combination.bootloader_variables ?? [])
+                      .map((name) => `<code>${name}</code>`).join(', '),
+                  })}
+                />
+              )}
 
               <a
                 href="#collapseExperts"
@@ -554,6 +561,9 @@ function Experts({ t, doc, combination, settings, facts, sdcardRequired, edition
   const install = (key: string, options?: Record<string, unknown>) =>
     t(`firmware.installation.${key}`, options);
   const nand = settings.flashType === 'nand';
+  // The file the U-Boot commands below write: on a UBI-only NAND SoC that is
+  // the NAND build, not the NOR one uboot_filename names.
+  const bootloader = bootloaderFor(doc, settings.flashType);
 
   return (
     <>
@@ -563,11 +573,11 @@ function Experts({ t, doc, combination, settings, facts, sdcardRequired, edition
             <h3 class="mb-6 font-bold">{install('flashing_uboot.title')}</h3>
             <div class="site-row">
               <div class="site-col site-col-lg-4">
-                {doc.uboot_filename !== '' && (
+                {bootloader.filename !== '' && (
                   <div class="github">
                     <Icon name="github" size="github" class="float-start me-2" />
                     <h6 class="site-h6 mb-0">
-                      <a href={doc.bl_url} title={doc.uboot_filename}>{install('flashing_uboot.link')}</a>
+                      <a href={bootloader.url} title={bootloader.filename}>{install('flashing_uboot.link')}</a>
                     </h6>
                     <p>for {facts.fullName}</p>
                     <p class="mb-0">{install('flashing_uboot.info')}</p>

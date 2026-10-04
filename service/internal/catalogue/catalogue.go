@@ -15,14 +15,22 @@ import (
 )
 
 type SoC struct {
-	URLName       string  `yaml:"urlname"`
-	Model         string  `yaml:"model"`
-	Family        string  `yaml:"family"`
-	Status        string  `yaml:"status"`
-	UBootFilename string  `yaml:"uboot_filename"`
-	LinuxFilename string  `yaml:"linux_filename"`
-	LoadAddress   string  `yaml:"load_address"`
-	Vendor        *Vendor `yaml:"-"`
+	URLName       string `yaml:"urlname"`
+	Model         string `yaml:"model"`
+	Family        string `yaml:"family"`
+	Status        string `yaml:"status"`
+	UBootFilename string `yaml:"uboot_filename"`
+	// UBootNANDFilename is the bootloader for NAND when upstream builds one
+	// apart from the NOR one, and its presence is what moves the SoC's NAND
+	// installs onto the UBI-only layout: u-boot-xmedia's
+	// 768k(boot),256k(env),-(ubi), with the kernel a volume in the one UBI
+	// device rather than a raw partition at 0x100000. Empty everywhere else,
+	// which keeps the split layout (boot, env, kernel, ubi) and its `run
+	// uknand; run urnand` for every SoC that still boots that way.
+	UBootNANDFilename string  `yaml:"uboot_nand_filename"`
+	LinuxFilename     string  `yaml:"linux_filename"`
+	LoadAddress       string  `yaml:"load_address"`
+	Vendor            *Vendor `yaml:"-"`
 }
 
 type Vendor struct {
@@ -95,6 +103,20 @@ func (c *Catalogue) All() []*SoC {
 		return out[i].Model < out[j].Model
 	})
 	return out
+}
+
+// UBINand says whether this SoC's NAND is one UBI device from 0x100000 to the
+// end of the chip, written from rootfs.ubi.<board> alone; see
+// UBootNANDFilename.
+func (s *SoC) UBINand() bool { return s.UBootNANDFilename != "" }
+
+// Bootloader is the U-Boot file for a flash type ("nor" or "nand"): the NAND
+// build where there is one, and the single universal or NOR build otherwise.
+func (s *SoC) Bootloader(flashType string) string {
+	if flashType == "nand" && s.UBINand() {
+		return s.UBootNANDFilename
+	}
+	return s.UBootFilename
 }
 
 // ModelDowncase is what file names use.

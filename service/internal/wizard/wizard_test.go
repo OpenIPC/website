@@ -217,3 +217,83 @@ func TestHandler(t *testing.T) {
 		t.Errorf("no index: %d, want 503", w.Code)
 	}
 }
+
+// The UBI-only NAND layout (hi3516ev300 and the other u-boot-xmedia SoCs):
+// the NAND bootloader into a 768 KiB boot partition, rootfs.ubi alone into
+// the UBI region with write.trimffs, the full image with write.trimffs too,
+// and no bootloader macro anywhere -- the NAND bootloader defines no
+// uknand/urnand/setnand. A SoC still on the split layout keeps all of that.
+func TestUBINandLines(t *testing.T) {
+	cat, idx := inputs(t)
+	d := decode(t, Document(cat.SoC("hi3516ev300"), idx))
+	if d["uboot_nand_filename"] != "u-boot-hi3516ev300-nand.bin" || d["bootloader_nand_published"] != true ||
+		!strings.HasSuffix(d["bl_nand_url"].(string), "/u-boot-hi3516ev300-nand.bin") {
+		t.Errorf("NAND bootloader fields: %v, %v, %v", d["uboot_nand_filename"], d["bootloader_nand_published"], d["bl_nand_url"])
+	}
+	if d["uboot_filename"] != "u-boot-hi3516ev300-nor.bin" {
+		t.Errorf("uboot_filename %v, want the NOR build", d["uboot_filename"])
+	}
+	pool := d["blocks"].(map[string]any)
+	block := func(c map[string]any, name string) string {
+		var lines []string
+		for _, l := range pool[c["blocks"].(map[string]any)[name].(string)].(map[string]any)["lines"].([]any) {
+			lines = append(lines, l.(string))
+		}
+		return strings.Join(lines, "\n")
+	}
+	seen := 0
+	for _, raw := range d["combinations"].([]any) {
+		c := raw.(map[string]any)
+		if c["flash_type"] != "nand" {
+			continue
+		}
+		seen++
+		if v := c["bootloader_variables"].([]any); len(v) != 0 || c["layout_commands"] != false {
+			t.Errorf("NAND advertises bootloader macros %v (layout_commands %v)", v, c["layout_commands"])
+		}
+		uboot := block(c, "flashing_uboot")
+		if !strings.Contains(uboot, "u-boot-hi3516ev300-nand.bin && nand erase 0x0 0xc0000 && nand write 0x42000000 0x0 0xc0000") ||
+			!strings.Contains(uboot, "mw.b 0x42000000 0xff 0xc0000") || strings.Contains(uboot, "0x50000") {
+			t.Errorf("U-Boot block:\n%s", uboot)
+		}
+		linux := block(c, "flashing_linux")
+		if !strings.Contains(linux, "rootfs.ubi.hi3516ev300 && nand erase 0x100000 0x7f00000 && "+
+			"nand write.trimffs 0x42000000 0x100000 ${filesize}") {
+			t.Errorf("Linux block:\n%s", linux)
+		}
+		full := block(c, "flashing_everything")
+		if !strings.Contains(full, "nand write.trimffs 0x42000000 0x0 ${filesize}") || strings.Contains(full, "nand write 0x") {
+			t.Errorf("full image block:\n%s", full)
+		}
+		for name := range c["blocks"].(map[string]any) {
+			for _, bad := range []string{"uknand", "urnand", "setnand", "uImage", "rootfs.squashfs"} {
+				if strings.Contains(block(c, name), bad) {
+					t.Errorf("%s mentions %s:\n%s", name, bad, block(c, name))
+				}
+			}
+		}
+	}
+	if seen == 0 {
+		t.Fatal("hi3516ev300 offers no NAND combination")
+	}
+
+	// hi3516av100 is still on the split layout, so nothing about it moves.
+	d = decode(t, Document(cat.SoC("hi3516av100"), idx))
+	if _, ok := d["uboot_nand_filename"]; ok {
+		t.Error("a split-layout SoC grew a NAND bootloader")
+	}
+	pool = d["blocks"].(map[string]any)
+	for _, raw := range d["combinations"].([]any) {
+		c := raw.(map[string]any)
+		if c["flash_type"] != "nand" {
+			continue
+		}
+		if linux := block(c, "flashing_linux"); !strings.Contains(linux, "run uknand; run urnand") {
+			t.Errorf("split-layout Linux block:\n%s", linux)
+		}
+		if full := block(c, "flashing_everything"); strings.Contains(full, "trimffs") {
+			t.Errorf("split-layout full image block:\n%s", full)
+		}
+		break
+	}
+}
