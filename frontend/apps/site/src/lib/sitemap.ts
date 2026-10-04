@@ -22,6 +22,7 @@ export const SITEMAP_PAGES = [
   '/', '/get-started', '/low-latency', '/teleoperation', '/edge-ai', '/ecosystem', '/business', '/community',
   '/donate', '/video-encoding', '/isp-sensors', '/reverse-engineering', '/turnkey-hardware', '/digital-twins',
   '/majestic-endpoints', '/green_life', '/our-team', '/firmware-explorer',
+  '/firmware-explorer/upstream',
   '/utilities', '/web-interface', '/supported-hardware/featured',
   '/supported-hardware/full-list', '/cameras/boards', '/tools/firmware-partitions-calculation',
   '/tools/high-resolution-timer', '/tools/qr-code-generator', '/open-wall',

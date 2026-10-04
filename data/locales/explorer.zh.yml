@@ -123,8 +123,48 @@ zh:
     upstream_dropped: '此设备去除（{count}）'
     upstream_none: 无
     upstream_in_package: '属于 {package}'
-    upstream_files_note: 此设备在固件树中替换的文件，以及 Firmware 之后是否修改过它们，记录在
-    upstream_files_link: Builder 偏离报告
+    col_file: 文件
+    col_finding: 发现
+    col_device: 设备
+    col_replaced: 替换的固件文件
+    col_need_look: 需要查看
+    col_symbol_findings: 符号问题
+    status_ok: 一致
+    status_unpinned: 从未核对
+    status_moved: 固件已修改
+    status_firmware_gone: 已从固件移除
+    status_missing_builder: 条目指向缺失的文件
+    symkind_dead: 没有任何 Kconfig 声明：该行不起作用
+    symkind_known_dead: 没有任何 Kconfig 声明（已知）
+    symkind_stray: 仅允许用于其他设备
+    symkind_firmware_retired: Firmware 的 defconfig 已不再选择它
+    symkind_stale_entry: 列在 firmware-drift.json 中，但没有任何地方选择它
+    upstream_drift_heading: 此设备替换的固件文件
+    upstream_drift_summary: '此设备用自己的副本替换了 {total} 个固件文件；{attention} 个需要查看。'
+    upstream_drift_none: 此设备没有替换任何固件文件。
+    upstream_drift_checked: '检查于 {date}。'
+    upstream_drift_missing: 尚未发布固件偏离报告。
+    upstream_fleet_link: 所有 Builder 设备
+    upstream_since: '自 {date} 起'
+    upstream_shared: '{count} 台设备共用'
+    upstream_commits: '在 {date} 核对后，Firmware 修改了它：'
+    upstream_commits_unknown: '核对的版本不在 Firmware 的历史中；Firmware 自 {date} 以来的修改：'
+    upstream_truncated: （仅显示前 200 个）
+    upstream_compare: 以单个 diff 查看 Firmware 的全部修改
+    upstream_repin: 已核对此副本？记录它的条目
+    upstream_repin_hint: 将 .github/firmware-drift.json 中此文件的条目替换为：
+    upstream_copy: 复制
+    upstream_edit_config: 编辑 firmware-drift.json
+    upstream_allowed: '允许用于 {globs}'
+    upstream_symbols_heading: 需要查看的 defconfig 符号
+    fleet_report: '检查于 {date}：共 {devices} 台设备，其中 {needing} 台需要查看。'
+    fleet_run: 运行记录
+    fleet_attention_only: 仅显示需要查看的设备
+    fleet_search: 查找设备
+    fleet_none: 没有匹配的设备。
+    fleet_repo_wide: 整个仓库
+    fleet_acknowledged: 已知
+    fleet_how: 当设备在 devices/ 下的目录中有一个与固件相同路径的文件时，该设备就替换了这个固件文件，因为 builder.sh 会把该目录复制到全新的固件树之上。此后 Firmware 对该文件的修改不会到达设备，直到有人对比两者并记录到 .github/firmware-drift.json；每台设备的标签页中都有相关提交和对应条目。
     kind_package: 软件包
     kind_module: 模块
     trends_summary: '{count} 个构建，{first} → {last}'

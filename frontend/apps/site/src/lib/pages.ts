@@ -28,6 +28,7 @@ import Donate from '../components/pages/Donate.astro';
 import EdgeAi from '../components/pages/EdgeAi.astro';
 import Ecosystem from '../components/pages/Ecosystem.astro';
 import FirmwareExplorer from '../components/pages/FirmwareExplorer.astro';
+import FirmwareUpstream from '../components/pages/FirmwareUpstream.astro';
 import FirmwarePartitionsCalculation from '../components/pages/FirmwarePartitionsCalculation.astro';
 import GetStarted from '../components/pages/GetStarted.astro';
 import GreenLife from '../components/pages/GreenLife.astro';
@@ -105,6 +106,7 @@ const COMPONENTS: Record<string, Renderer> = {
   '/ecosystem': { component: Ecosystem },
   '/edge-ai': { component: EdgeAi },
   '/firmware-explorer': { component: FirmwareExplorer },
+  '/firmware-explorer/upstream': { component: FirmwareUpstream },
   '/get-started': { component: GetStarted },
   '/green_life': { component: GreenLife },
   '/low-latency': { component: LowLatency },

@@ -7,7 +7,7 @@
 
 import { diffSizes, type DriftRow } from "./drift";
 import { parsePlatform, type Catalog, type SourcedBuild } from "./platforms";
-import type { KconfigGraph, Sizes, Source } from "./types";
+import type { KconfigGraph, Sizes, Source, UpstreamDevice, UpstreamReport, UpstreamShadow, UpstreamSymbol } from "./types";
 
 export type Parent = {
   source: Source;
@@ -81,4 +81,74 @@ export function kconfigDelta(parent: KconfigGraph, device: KconfigGraph): Kconfi
     added: [...d].filter((s) => !p.has(s)).sort(),
     dropped: [...p].filter((s) => !d.has(s)).sort(),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Builder's firmware-drift report: which firmware files a device replaces, and
+// whether firmware has changed them since someone last reconciled the two.
+// ---------------------------------------------------------------------------
+
+/** Whether a shadowed file needs someone to look at it. */
+export const needsLook = (s: UpstreamShadow): boolean => s.status !== "ok";
+
+/** A known-dead symbol is acknowledged in firmware-drift.json; the rest are open. */
+export const isOpen = (s: UpstreamSymbol): boolean => s.kind !== "known_dead";
+
+/**
+ * What the report says about one device: the files it replaces in firmware,
+ * those needing a look first, and the symbol findings in its defconfig.
+ */
+export function findingsFor(report: UpstreamReport, device: string): {
+  row: UpstreamDevice | null;
+  shadows: UpstreamShadow[];
+  symbols: UpstreamSymbol[];
+} {
+  const shadows = report.shadows
+    .filter((s) => s.devices.includes(device))
+    .sort((a, b) => Number(needsLook(b)) - Number(needsLook(a)) || a.builder.localeCompare(b.builder));
+  const symbols = report.symbols.filter((s) => s.devices.includes(device));
+  return { row: report.devices.find((d) => d.device === device) ?? null, shadows, symbols };
+}
+
+/** The fleet table's rows: needing attention first (the API's order), optionally only those, matching a query. */
+export function fleetRows(report: UpstreamReport, opts: { attentionOnly: boolean; query: string }): UpstreamDevice[] {
+  const q = opts.query.trim().toLowerCase();
+  return report.devices.filter(
+    (d) => (!opts.attentionOnly || d.attention + d.symbols > 0) && (!q || d.device.toLowerCase().includes(q)),
+  );
+}
+
+const GH = "https://github.com/OpenIPC";
+
+export const links = {
+  builderFile: (r: UpstreamReport, path: string) => `${GH}/builder/blob/${r.report.builder_commit}/${path}`,
+  firmwareFile: (r: UpstreamReport, path: string) => `${GH}/firmware/blob/${r.report.firmware_commit}/${path}`,
+  firmwareCommit: (sha: string) => `${GH}/firmware/commit/${sha}`,
+  /** Firmware's whole change to the file since the pin, as one diff. */
+  compare: (r: UpstreamReport, s: UpstreamShadow) =>
+    s.pinned_commit ? `${GH}/firmware/compare/${s.pinned_commit}...${r.report.firmware_commit}` : null,
+  editConfig: `${GH}/builder/edit/master/.github/firmware-drift.json`,
+};
+
+/**
+ * The firmware-drift.json entry that records "someone looked at firmware's
+ * current version of this file and was satisfied": the blob firmware has now,
+ * the commit it was read at, and today. Only for a moved or unpinned file,
+ * and only once the copy has actually been reconciled -- pasting this is the
+ * act of saying so.
+ */
+export function repinSnippet(r: UpstreamReport, s: UpstreamShadow, today: string): string | null {
+  if ((s.status !== "moved" && s.status !== "unpinned") || !s.current_blob) return null;
+  const entry = {
+    builder: s.builder,
+    firmware: s.firmware,
+    blob: s.current_blob,
+    commit: r.report.firmware_commit,
+    reconciled: today,
+    note: s.note ?? "",
+  };
+  return JSON.stringify(entry, null, 2)
+    .split("\n")
+    .map((l) => "    " + l)
+    .join("\n");
 }

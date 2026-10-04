@@ -381,6 +381,10 @@
       "unit_bytes": "bytes",
       "unit_kb": "KB"
     },
+    "firmware_upstream": {
+      "lede": "Every device OpenIPC/builder makes firmware for, against the OpenIPC/firmware it is built on: which firmware files a device replaces with its own copy, which of those firmware has changed since, and which defconfig symbols firmware no longer uses. Checked once a day.",
+      "title": "Builder devices against firmware"
+    },
     "get_started": {
       "cta_ways": "See the four ways",
       "editions_text": "Lite fits 8 MB flash chips and covers the essentials. Ultimate adds extras like cloud streaming, tunnels, and more codecs — it needs 16 MB flash.",

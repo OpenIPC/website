@@ -125,8 +125,48 @@ en:
     upstream_dropped: 'Left out by this device ({count})'
     upstream_none: None
     upstream_in_package: 'in {package}'
-    upstream_files_note: Files this device replaces in the firmware tree, and whether firmware has changed them since, are tracked in
-    upstream_files_link: the Builder drift report
+    col_file: File
+    col_finding: Finding
+    col_device: Device
+    col_replaced: Firmware files replaced
+    col_need_look: Need a look
+    col_symbol_findings: Symbol findings
+    status_ok: in step
+    status_unpinned: never reconciled
+    status_moved: firmware changed it
+    status_firmware_gone: gone from firmware
+    status_missing_builder: entry names a missing file
+    symkind_dead: 'declared by no Kconfig: the line does nothing'
+    symkind_known_dead: declared by no Kconfig (acknowledged)
+    symkind_stray: allowlisted only for other devices
+    symkind_firmware_retired: no Firmware defconfig selects it any more
+    symkind_stale_entry: listed in firmware-drift.json, but nothing selects it
+    upstream_drift_heading: Firmware files this device replaces
+    upstream_drift_summary: '{total} firmware file(s) are replaced by this device''s own copy; {attention} need a look.'
+    upstream_drift_none: This device replaces no firmware file.
+    upstream_drift_checked: 'Checked {date}.'
+    upstream_drift_missing: No firmware-drift report has been published yet.
+    upstream_fleet_link: Every Builder device
+    upstream_since: 'open since {date}'
+    upstream_shared: 'shared by {count} devices'
+    upstream_commits: 'Firmware changed it after it was reconciled on {date}:'
+    upstream_commits_unknown: 'The reconciled version is not in Firmware''s history; Firmware''s changes since {date}:'
+    upstream_truncated: '(the first 200 are shown)'
+    upstream_compare: Firmware's whole change as one diff
+    upstream_repin: Reconciled this copy? The entry that records it
+    upstream_repin_hint: 'Replace this file''s entry in .github/firmware-drift.json with:'
+    upstream_copy: Copy
+    upstream_edit_config: Edit firmware-drift.json
+    upstream_allowed: 'allowlisted for {globs}'
+    upstream_symbols_heading: Defconfig symbols to look at
+    fleet_report: 'Checked {date}: {devices} devices, {needing} of them need a look.'
+    fleet_run: the run
+    fleet_attention_only: Only devices that need a look
+    fleet_search: Find a device
+    fleet_none: No device matches.
+    fleet_repo_wide: For the whole repository
+    fleet_acknowledged: Acknowledged
+    fleet_how: A device replaces a firmware file when its directory under devices/ holds a file at the same path, because builder.sh copies the directory over a fresh firmware tree. Firmware changes to such a file then never reach the device until someone looks at both and records it in .github/firmware-drift.json; each device's tab has the commits and the entry.
     kind_package: package
     kind_module: module
     trends_summary: '{count} builds, {first} → {last}'

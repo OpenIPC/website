@@ -381,6 +381,10 @@
       "unit_bytes": "字节",
       "unit_kb": "KB"
     },
+    "firmware_upstream": {
+      "lede": "OpenIPC/builder 为其制作固件的每台设备，与其所基于的 OpenIPC/firmware 对比：设备用自己的副本替换了哪些固件文件，其中哪些 Firmware 之后又修改过，以及哪些 defconfig 符号固件已不再使用。每天检查一次。",
+      "title": "Builder 设备对比固件"
+    },
     "get_started": {
       "cta_ways": "查看四种方式",
       "editions_text": "Lite 版适配 8 MB 闪存，覆盖基本功能。Ultimate 版增加了云推流、隧道和更多编解码器等扩展功能，需要 16 MB 闪存。",
