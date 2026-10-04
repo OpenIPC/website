@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildCatalog } from "./platforms";
-import { findingsFor, fleetRows, kconfigDelta, links, pairParentBuild, parentOf, repinSnippet } from "./upstream";
+import { deviceOf, findingsFor, fleetRows, kconfigDelta, links, pairParentBuild, parentOf, platformOf, repinSnippet } from "./upstream";
 import type { Build, IndexFile, KconfigGraph, KconfigSymbol, Source, UpstreamReport } from "./types";
 import { readQueryString, writeQueryString } from "./url";
 
@@ -175,5 +175,19 @@ describe("links", () => {
   it("diffs firmware from the pinned commit to the report's, and only when the pin is placed", () => {
     expect(links.compare(report, report.shadows[0])).toBe(`https://github.com/OpenIPC/firmware/compare/${sha("3")}...${sha("f")}`);
     expect(links.compare(report, report.shadows[2])).toBeNull();
+  });
+});
+
+describe("a device's explorer platform", () => {
+  it.each([
+    ["ssc338q_apfpv", "ssc338q-apfpv"],
+    ["gk7205v200_fpv", "gk7205v200-fpv"],
+    ["hi3518ev200_mini", "hi3518ev200-mini"],
+    ["ssc338q_fpv_caddx-fly", "ssc338q_fpv_caddx-fly"],
+    ["gk7205v200_fpv_8812eu", "gk7205v200_fpv_8812eu"],
+    ["ssc338q_rubyfpv_thinker_internal_wifi", "ssc338q_rubyfpv_thinker_internal_wifi"],
+  ])("%s is published as %s, and back", (device, platform) => {
+    expect(platformOf(device)).toBe(platform);
+    expect(deviceOf(platform)).toBe(device);
   });
 });

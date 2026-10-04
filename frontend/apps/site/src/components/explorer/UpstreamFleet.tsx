@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { UpstreamReport } from '../../lib/explorer/types';
 import { fetchUpstream, NotFound } from '../../lib/explorer/api';
-import { fleetRows, isOpen } from '../../lib/explorer/upstream';
+import { fleetRows, isOpen, platformOf } from '../../lib/explorer/upstream';
 import { setFormatLocale } from '../../lib/explorer/format';
 import { useExplorerTranslations } from '../../lib/explorer-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
@@ -86,7 +86,7 @@ export default function UpstreamFleet({ locale }: { locale: Locale }) {
             {rows.map((d) => (
               <tr key={d.device}>
                 <td class={TD}>
-                  <a class={`${A} font-mono text-[13px]`} href={`${explorer}?plat=${encodeURIComponent(d.device)}&tab=upstream`}>{d.device}</a>
+                  <a class={`${A} font-mono text-[13px]`} href={`${explorer}?plat=${encodeURIComponent(platformOf(d.device))}&tab=upstream`}>{d.device}</a>
                   {d.dir !== d.device && <span class="block text-xs text-body-secondary">devices/{d.dir}</span>}
                 </td>
                 <td class={`${TD} ${NUM}`}>{d.shadows}</td>

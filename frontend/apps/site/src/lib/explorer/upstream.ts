@@ -88,6 +88,22 @@ export function kconfigDelta(parent: KconfigGraph, device: KconfigGraph): Kconfi
 // whether firmware has changed them since someone last reconciled the two.
 // ---------------------------------------------------------------------------
 
+/**
+ * The drift report names a device by its defconfig (`ssc338q_apfpv`), the
+ * explorer by the platform Builder published it as. A device in a compound
+ * directory publishes under its own name (`ssc338q_fpv_caddx-fly`), but one
+ * with a single underscore -- devices/common's fpv/lte/venc/mini, apfpv --
+ * publishes under Firmware's form, `ssc338q-apfpv` (master.yml keeps the
+ * size report's name for those).
+ */
+export function platformOf(device: string): string {
+  return (device.match(/_/g) ?? []).length === 1 ? device.replace("_", "-") : device;
+}
+
+export function deviceOf(platform: string): string {
+  return /^[a-z0-9]+-[a-z0-9]+$/.test(platform) ? platform.replace("-", "_") : platform;
+}
+
 /** Whether a shadowed file needs someone to look at it. */
 export const needsLook = (s: UpstreamShadow): boolean => s.status !== "ok";
 

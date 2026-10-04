@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { KconfigGraph, Sizes, UpstreamReport, UpstreamShadow, UpstreamSymbol } from '../../lib/explorer/types';
 import { fetchKconfig, fetchSizes, fetchUpstream, NotFound } from '../../lib/explorer/api';
 import type { Catalog, SourcedBuild } from '../../lib/explorer/platforms';
-import { compareWithParent, findingsFor, isOpen, kconfigDelta, links, needsLook, pairParentBuild, parentOf, repinSnippet } from '../../lib/explorer/upstream';
+import { compareWithParent, deviceOf, findingsFor, isOpen, kconfigDelta, links, needsLook, pairParentBuild, parentOf, repinSnippet } from '../../lib/explorer/upstream';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { fmtBytes, fmtSignedBytes } from '../../lib/explorer/format';
 import type { ExplorerT } from '../../lib/explorer-i18n';
@@ -177,7 +177,7 @@ function DriftFindings({ platform, locale, t }: { platform: string; locale: Loca
     return () => { live = false; };
   }, []);
 
-  const found = useMemo(() => (report.state === 'ok' ? findingsFor(report.value, platform) : null), [report, platform]);
+  const found = useMemo(() => (report.state === 'ok' ? findingsFor(report.value, deviceOf(platform)) : null), [report, platform]);
   const fleet = pathFor(locale, '/firmware-explorer/upstream');
 
   return (
