@@ -104,7 +104,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | boards import-snapshot | reports list|show|publish|reject|link|unlink|takedown|verify | club settle-wall|wall-revoke | vendor-firmware import-history | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | boards import-snapshot | reports list|show|publish|reject|link|unlink|takedown|verify | club settle-wall|wall-revoke|wall-unlink | vendor-firmware import-history | routes --json | version")
 	os.Exit(2)
 }
 
@@ -398,6 +398,15 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 				log.Error("variants: sweep failed", "err", err)
 			} else if n > 0 {
 				log.Info("variants: sweep", "enqueued", n)
+			}
+			// And any club code whose claim failed when its frame was published.
+			linked, err := wallStars.ClaimPending(bg)
+			if err != nil {
+				log.Error("wallstars: pending codes not tried", "err", err)
+			}
+			for _, l := range linked {
+				log.Info("wallstars: camera linked", "member", l.Member, "camera", store.CameraToken(l.MACKey))
+				clubAPI.NotifyLinked(bg, l)
 			}
 			select {
 			case <-bg.Done():

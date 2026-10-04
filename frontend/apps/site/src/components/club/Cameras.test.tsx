@@ -9,7 +9,7 @@ import { cleanup, fireEvent, render, waitFor } from '@testing-library/preact';
 import Club from './Club.tsx';
 import Leaderboard from './Leaderboard.tsx';
 import { ago } from './Cameras.tsx';
-import type { Camera } from '../../lib/club';
+import type { Camera, LinkCode } from '../../lib/club';
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); localStorage.clear(); });
 
@@ -22,7 +22,7 @@ const cam = (over: Partial<Camera>): Camera => ({
   next_star: 10, rare: true, show_owner: false, ...over,
 });
 
-function stub(cameras: Camera[], code: { code: string; expires_at: string } | null = null) {
+function stub(cameras: Camera[], code: LinkCode | null = null) {
   const calls: string[] = [];
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
     calls.push(`${init?.method ?? 'GET'} ${url}${init?.body ? ' ' + String(init.body) : ''}`);
@@ -102,4 +102,10 @@ test('ago speaks the page language', () => {
   const now = Date.parse('2026-10-04T12:00:00Z');
   expect(ago('2026-10-04T11:54:00Z', 'en', now)).toBe('6 minutes ago');
   expect(ago('2026-10-02T12:00:00Z', 'en', now)).toBe('2 days ago');
+});
+
+test('a code a camera linked elsewhere sent says why nothing happened', async () => {
+  stub([], { code: 'club-7K3Q-9XPA', expires_at: '2026-10-05T07:00:00Z', blocked: true });
+  const { findByRole } = render(<Club locale="en" />);
+  expect((await findByRole('alert')).textContent).toContain('linked to another account');
 });

@@ -137,6 +137,7 @@ function AddCamera({ code, max, locale, t, onChange }: {
                   <output class="rounded-md border border-hairline bg-white px-3 py-2 font-mono text-xl font-semibold tracking-wider text-ink select-all">{code.code}</output>
                   <button type="button" class="site-btn site-btn-outline-primary site-btn-sm" onClick={copy}>{copied ? t('club.add_copied') : t('club.add_copy')}</button>
                 </div>
+                {code.blocked && <p class="m-0 rounded-md bg-[#fff4e2] px-3 py-2 text-[13px] text-[#8a4b00]" role="alert">{t('club.add_blocked')}</p>}
                 <p class="m-0 text-[12.5px] text-body-secondary">{t('club.add_valid', { time: new Date(code.expires_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) })}</p>
                 <button type="button" class="w-fit cursor-pointer p-0 text-[13px] text-brand-blue underline disabled:opacity-55" disabled={busy} onClick={ask}>{t('club.add_new_code')}</button>
               </>

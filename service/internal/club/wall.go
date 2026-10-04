@@ -162,33 +162,43 @@ func (a *API) leaderboard(w http.ResponseWriter, r *http.Request) {
 
 // NotifyLinked tells a member a camera of theirs was just linked.
 func (a *API) NotifyLinked(ctx context.Context, l wallstars.Linked) {
-	a.notify(ctx, l.Member, func(loc string) string {
+	_ = a.notify(ctx, l.Member, func(loc string) string {
 		return fmt.Sprintf(t(loc, "camera_linked"), cameraName(loc, l.Name), wallstars.JoinDays)
 	}, a.camerasButton)
 }
 
-// SettleWall runs the settlement and tells each owner what it did.
+// SettleWall runs the settlement and tells each owner what it did -- and
+// what an earlier run could not tell them: a notice stays pending until the
+// bot has delivered it.
 func (a *API) SettleWall(ctx context.Context) (*wallstars.Settled, error) {
 	res, err := a.Wall.Settle(ctx, a.now())
 	if err != nil {
 		return nil, err
 	}
-	for _, n := range res.Notices {
-		a.notifyWall(ctx, n)
+	pending, err := a.Wall.Pending(ctx)
+	if err != nil {
+		return res, err
+	}
+	for _, n := range pending {
+		if a.notifyWall(ctx, n) != nil {
+			continue // tried again by the next run
+		}
+		if err := a.Wall.Delivered(ctx, n.ID); err != nil {
+			return res, err
+		}
 	}
 	return res, nil
 }
 
-func (a *API) notifyWall(ctx context.Context, n wallstars.Notice) {
+func (a *API) notifyWall(ctx context.Context, n wallstars.Notice) error {
 	total := 0
 	if n.Kind == "stars" {
 		var err error
 		if total, err = a.totalStars(ctx, n.Member); err != nil {
-			a.Log.Warn("club: stars unreadable for a notice", "member", n.Member, "err", err)
-			return
+			return err
 		}
 	}
-	a.notify(ctx, n.Member, func(loc string) string {
+	return a.notify(ctx, n.Member, func(loc string) string {
 		name := cameraName(loc, n.Camera)
 		switch {
 		case n.Kind == "stars" && n.Join && n.Rare:

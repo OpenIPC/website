@@ -65,9 +65,12 @@ func (r *rig) frame(mac, caption, soc, sensor, code string) string {
 	return id
 }
 
-func (r *rig) link(mac, member string, minutesAgo int) {
-	r.exec(`INSERT INTO camera_links (mac_key, member_id, linked_at) VALUES ($1, $2, now() - make_interval(mins => $3))`,
-		snapshots.MACKey(mac), member, minutesAgo)
+// link links a camera as of its first frame -- so its whole history counts --
+// less minutesEarlier, which orders a member's cameras.
+func (r *rig) link(mac, member string, minutesEarlier int) {
+	r.exec(`INSERT INTO camera_links (mac_key, member_id, linked_at)
+		SELECT mac_key, $2, first_seen - make_interval(mins => $3) FROM cameras WHERE mac_key = $1`,
+		snapshots.MACKey(mac), member, minutesEarlier)
 }
 
 func (r *rig) stars(member string) int {
@@ -129,13 +132,26 @@ func TestClaim(t *testing.T) {
 		t.Error("a spent code is still offered")
 	}
 
-	// Whoever controls the camera can move it with a code of their own.
+	// Nobody else moves it with a code of theirs: anyone can upload as any
+	// MAC. The code is blocked, and stays unspent for when the camera is free.
 	bob, _ := r.store.NewCode(ctx, "m-bob0000000")
-	if l, _ := r.store.Claim(ctx, r.frame("02:00:00:00:01:01", "", "", "", bob.Code)); l == nil || l.Member != "m-bob0000000" {
-		t.Fatalf("moved to %+v", l)
+	if l, _ := r.store.Claim(ctx, r.frame("02:00:00:00:01:01", "", "", "", bob.Code)); l != nil {
+		t.Fatalf("a code took a camera linked to someone else: %+v", l)
 	}
-	if cams, _ := r.store.Cameras(ctx, "m-alice00000", r.now); len(cams) != 0 {
-		t.Error("the camera is still Alice's")
+	if got, _ := r.store.CurrentCode(ctx, "m-bob0000000"); got == nil || !got.Blocked {
+		t.Fatalf("the blocked code is not reported as blocked: %+v", got)
+	}
+	if cams, _ := r.store.Cameras(ctx, "m-alice00000", r.now); len(cams) != 1 {
+		t.Fatal("the camera left Alice")
+	}
+	// A maintainer frees it; the camera's next frame (or the sweep, for the
+	// frame it already sent) links it to Bob.
+	if done, err := r.store.ForceUnlink(ctx, r.snaps.CameraToken("02:00:00:00:01:01")); err != nil || !done {
+		t.Fatalf("force unlink: %v %v", done, err)
+	}
+	r.exec(`UPDATE club_camera_codes SET blocked_at = NULL WHERE code = $1`, bob.Code)
+	if linked, err := r.store.ClaimPending(ctx); err != nil || len(linked) != 1 || linked[0].Member != "m-bob0000000" {
+		t.Fatalf("pending claims: %+v %v", linked, err)
 	}
 
 	// An expired code links nothing.
@@ -205,7 +221,7 @@ func TestSettlePaysOnceAndByTheBar(t *testing.T) {
 	// Another month of good days pays one more star, and nothing else.
 	key := snapshots.MACKey("02:00:00:00:02:01")
 	for i := range wallstars.MonthDays {
-		r.exec(`INSERT INTO camera_days (mac_key, day, frames, lit, varied, first_hash) VALUES ($1, '2000-01-01'::date + $2::int, 1, true, true, 1)`, key, i)
+		r.exec(`INSERT INTO camera_days (mac_key, day, frames, lit, varied, first_hash) VALUES ($1, current_date - 56 - $2::int, 1, true, true, 1)`, key, i)
 	}
 	if res := r.settle(); res.Awarded != wallstars.MonthStars || res.Notices[0].Join {
 		t.Errorf("month two paid %d, notices %+v", res.Awarded, res.Notices)
@@ -381,5 +397,74 @@ func TestLeaderboard(t *testing.T) {
 	}
 	if rows[0].Wall != rows[0].Stars || rows[0].Reports != 0 {
 		t.Errorf("split %+v", rows[0])
+	}
+}
+
+// Linking an established camera pays nothing until it has earned it: only
+// days since the link count, and its month runs from the link.
+func TestHistoryBeforeTheLinkDoesNotPay(t *testing.T) {
+	r := newRig(t)
+	ctx := context.Background()
+	r.member("m-alice00000", "Alice")
+	r.camera("02:00:00:00:0b:01", 200, 150, "gk7205v300", "sc223a", "")
+	r.exec(`INSERT INTO camera_links (mac_key, member_id, linked_at) VALUES ($1, 'm-alice00000', now())`, snapshots.MACKey("02:00:00:00:0b:01"))
+	if res := r.settle(); res.Awarded != 0 || len(res.Notices) != 0 {
+		t.Errorf("paid %d and told %d things on the day of linking", res.Awarded, len(res.Notices))
+	}
+	cams, _ := r.store.Cameras(ctx, "m-alice00000", r.now)
+	if cams[0].Days != 1 || cams[0].Status != "counting" || cams[0].NeedAge < 29 {
+		t.Errorf("%+v", cams[0])
+	}
+}
+
+// A camera that was paid keeps its member's slot after it is unlinked.
+func TestUnlinkingAPaidCameraDoesNotFreeItsSlot(t *testing.T) {
+	r := newRig(t)
+	ctx := context.Background()
+	r.member("m-alice00000", "Alice")
+	macs := []string{"02:00:00:00:0c:01", "02:00:00:00:0c:02", "02:00:00:00:0c:03", "02:00:00:00:0c:04"}
+	for i, mac := range macs[:3] {
+		r.camera(mac, 60, wallstars.JoinDays, "ssc335", "gc2053", "")
+		r.link(mac, "m-alice00000", 100-i)
+	}
+	r.settle()
+	paid := r.stars("m-alice00000")
+	if done, _ := r.store.Unlink(ctx, "m-alice00000", r.snaps.CameraToken(macs[0])); !done {
+		t.Fatal("unlink")
+	}
+	r.camera(macs[3], 60, wallstars.JoinDays, "ssc335", "gc2053", "")
+	r.link(macs[3], "m-alice00000", 0)
+	if res := r.settle(); res.Awarded != 0 || r.stars("m-alice00000") != paid {
+		t.Errorf("a fourth camera was paid %d after the first was unlinked", res.Awarded)
+	}
+	cams, _ := r.store.Cameras(ctx, "m-alice00000", r.now)
+	if cams[len(cams)-1].Status != "limit" {
+		t.Errorf("the fourth camera is %s", cams[len(cams)-1].Status)
+	}
+}
+
+// Undelivered notices stay pending until marked delivered, for a week.
+func TestNoticesWaitForDelivery(t *testing.T) {
+	r := newRig(t)
+	ctx := context.Background()
+	r.member("m-alice00000", "Alice")
+	r.camera("02:00:00:00:0d:01", 60, wallstars.JoinDays, "x", "y", "Roof")
+	r.link("02:00:00:00:0d:01", "m-alice00000", 0)
+	r.settle()
+	pending, err := r.store.Pending(ctx)
+	if err != nil || len(pending) != 1 || pending[0].Points != wallstars.JoinStars+wallstars.RareStars || !pending[0].Join {
+		t.Fatalf("%+v %v", pending, err)
+	}
+	r.settle()
+	if again, _ := r.store.Pending(ctx); len(again) != 1 {
+		t.Errorf("a second run duplicated the notice: %d", len(again))
+	}
+	r.store.Delivered(ctx, pending[0].ID)
+	if left, _ := r.store.Pending(ctx); len(left) != 0 {
+		t.Error("a delivered notice is still pending")
+	}
+	r.exec(`INSERT INTO wall_notices (member_id, kind, camera, token, created_at) VALUES ('m-alice00000', 'silent', 'Roof', 'x', now() - interval '8 days')`)
+	if old, _ := r.store.Pending(ctx); len(old) != 0 {
+		t.Error("a notice older than a week is still tried")
 	}
 }

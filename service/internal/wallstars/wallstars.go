@@ -22,8 +22,17 @@
 //
 // A qualifying day is one with a frame worth showing (lit) and frames that
 // changed during it (varied): a camera looping one stock picture earns
-// nothing. At most MaxCameras of a member's cameras count, the earliest
-// linked first, and an award is paid once per camera and reason, ever.
+// nothing. Only days since the camera was linked count, and its month on the
+// wall runs from the later of its first frame and its link, so linking an
+// established camera pays nothing until it has earned it. A member has
+// MaxCameras slots, and a camera that was paid keeps its slot after it is
+// unlinked; an award is paid once per camera and reason, ever.
+//
+// A code never moves a camera that is linked to another member: anyone can
+// upload as any MAC, so the owner unlinks it first (or a maintainer does).
+// Claim, the settlement's awards and Revoke each hold the camera's lock
+// (lockCamera), so a link that moves or a camera revoked during a settlement
+// cannot be paid against what the settlement read before.
 package wallstars
 
 import (
@@ -80,6 +89,8 @@ var ErrTooMany = errors.New("too many codes today; use the one you have")
 type Code struct {
 	Code      string    `json:"code"`
 	ExpiresAt time.Time `json:"expires_at"`
+	// Blocked: a camera sent it, but that camera is linked to another member.
+	Blocked bool `json:"blocked,omitempty"`
 }
 
 func newCode() string {
@@ -100,9 +111,9 @@ func newCode() string {
 // CurrentCode is the member's newest code that can still link a camera, or nil.
 func (s *Store) CurrentCode(ctx context.Context, member string) (*Code, error) {
 	c := &Code{}
-	err := s.DB.QueryRow(ctx, `SELECT code, expires_at FROM club_camera_codes
+	err := s.DB.QueryRow(ctx, `SELECT code, expires_at, blocked_at IS NOT NULL FROM club_camera_codes
 		WHERE member_id = $1 AND used_at IS NULL AND expires_at > now()
-		ORDER BY created_at DESC LIMIT 1`, member).Scan(&c.Code, &c.ExpiresAt)
+		ORDER BY created_at DESC LIMIT 1`, member).Scan(&c.Code, &c.ExpiresAt, &c.Blocked)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -150,38 +161,102 @@ type Linked struct {
 	Name   string
 }
 
+// lockCamera takes the camera's transaction lock: linking it, paying it and
+// revoking it happen one at a time.
+func lockCamera(ctx context.Context, tx pgx.Tx, macKey string) error {
+	_, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('wallstars-camera:' || $1, 0))`, macKey)
+	return err
+}
+
 // Claim tries the code a published frame carried: a code that can still
 // link one links the frame's camera to the code's member, and is spent. It
 // runs after the frame is published (variants), so a frame the wall refused
-// links nothing. nil when nothing was linked.
+// links nothing. A camera linked to another member is not moved: the code is
+// marked blocked and stays unspent. nil when nothing was linked.
 func (s *Store) Claim(ctx context.Context, publicID string) (*Linked, error) {
-	l := &Linked{}
+	var key, code string
 	var caption *string
-	err := s.DB.QueryRow(ctx, `WITH f AS (
-			SELECT mac_key, club_code, caption FROM snapshots
-			WHERE public_id = $1 AND club_code IS NOT NULL AND width IS NOT NULL
-		), spent AS (
-			UPDATE club_camera_codes c SET used_at = now(), mac_key = f.mac_key FROM f
-			WHERE c.code = f.club_code AND c.used_at IS NULL AND c.expires_at > now()
-			RETURNING c.member_id, f.mac_key, f.caption
-		), linked AS (
-			INSERT INTO camera_links (mac_key, member_id, name) SELECT mac_key, member_id, nullif(caption, '') FROM spent
-			ON CONFLICT (mac_key) DO UPDATE SET member_id = EXCLUDED.member_id, linked_at = now(), name = EXCLUDED.name,
-				show_owner = false, milestone = 0, silent_day = NULL
-			RETURNING member_id, mac_key
-		)
-		SELECT linked.member_id, linked.mac_key, spent.caption FROM linked JOIN spent USING (mac_key)`, publicID).
-		Scan(&l.Member, &l.MACKey, &caption)
+	err := s.DB.QueryRow(ctx, `SELECT mac_key, club_code, caption FROM snapshots
+		WHERE public_id = $1 AND club_code IS NOT NULL AND width IS NOT NULL`, publicID).Scan(&key, &code, &caption)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	if caption != nil {
-		l.Name = *caption
+	var l *Linked
+	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
+		if err := lockCamera(ctx, tx, key); err != nil {
+			return err
+		}
+		var member string
+		var owner *string
+		err := tx.QueryRow(ctx, `SELECT c.member_id, l.member_id FROM club_camera_codes c
+			LEFT JOIN camera_links l ON l.mac_key = $2
+			WHERE c.code = $1 AND c.used_at IS NULL AND c.expires_at > now()`, code, key).Scan(&member, &owner)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil // no such code, or spent, or expired
+		}
+		if err != nil {
+			return err
+		}
+		if owner != nil && *owner != member {
+			_, err := tx.Exec(ctx, `UPDATE club_camera_codes SET blocked_at = coalesce(blocked_at, now()), mac_key = $2 WHERE code = $1`, code, key)
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE club_camera_codes SET used_at = now(), blocked_at = NULL, mac_key = $2 WHERE code = $1`, code, key); err != nil {
+			return err
+		}
+		if owner != nil {
+			return nil // already theirs
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO camera_links (mac_key, member_id, name) VALUES ($1, $2, nullif($3, ''))`,
+			key, member, deref(caption)); err != nil {
+			return err
+		}
+		l = &Linked{Member: member, MACKey: key, Name: deref(caption)}
+		return nil
+	})
+	return l, err
+}
+
+// ClaimPending tries again every code a published frame carried that is
+// still waiting: a claim that failed when its frame was published (a lost
+// connection, a restart) is not lost with it. The next frame from the camera
+// would carry the code again anyway; this does not wait for it.
+func (s *Store) ClaimPending(ctx context.Context) ([]Linked, error) {
+	rows, err := s.DB.Query(ctx, `
+		SELECT DISTINCT ON (s.mac_key) s.public_id FROM snapshots s
+		JOIN club_camera_codes c ON c.code = s.club_code
+		WHERE s.width IS NOT NULL AND c.used_at IS NULL AND c.blocked_at IS NULL AND c.expires_at > now()
+		ORDER BY s.mac_key, s.created_at DESC`)
+	if err != nil {
+		return nil, err
 	}
-	return l, nil
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	var out []Linked
+	for _, id := range ids {
+		l, err := s.Claim(ctx, id)
+		if err != nil {
+			return out, err
+		}
+		if l != nil {
+			out = append(out, *l)
+		}
+	}
+	return out, nil
 }
 
 // Camera is one linked camera as its owner sees it on /club.
@@ -215,6 +290,7 @@ type Camera struct {
 
 	macKey     string
 	member     string
+	since      time.Time // the later of its first frame and its link
 	counted    bool
 	revoked    bool
 	lastDay    *time.Time
@@ -231,7 +307,8 @@ func (s *Store) load(ctx context.Context, member string, now time.Time) ([]*Came
 	rows, err := s.DB.Query(ctx, `
 		SELECT l.mac_key, l.member_id, l.linked_at, l.show_owner, l.milestone, l.silent_day,
 		       c.first_seen, c.days,
-		       (SELECT count(*) FROM camera_days d WHERE d.mac_key = l.mac_key AND d.lit AND d.varied)::int,
+		       (SELECT count(*) FROM camera_days d WHERE d.mac_key = l.mac_key AND d.lit AND d.varied
+		          AND d.day >= (l.linked_at AT TIME ZONE 'UTC')::date)::int,
 		       last.day, coalesce(last.lit, false),
 		       EXISTS (SELECT 1 FROM wall_revoked r WHERE r.mac_key = l.mac_key),
 		       coalesce(f.caption, l.name), f.soc, f.sensor, f.firmware, f.created_at
@@ -260,6 +337,10 @@ func (s *Store) load(ctx context.Context, member string, now time.Time) ([]*Came
 			c.LastDay = c.lastDay.Format(time.DateOnly)
 		}
 		c.Token = s.Token(c.macKey)
+		c.since = c.FirstSeen
+		if c.LinkedAt.After(c.since) {
+			c.since = c.LinkedAt
+		}
 		out = append(out, c)
 	}
 	rows.Close()
@@ -299,18 +380,51 @@ func (s *Store) load(ctx context.Context, member string, now time.Time) ([]*Came
 	if err := paid.Err(); err != nil {
 		return nil, err
 	}
-	s.judge(out, now)
+	// A camera a member was paid for keeps its slot after it is unlinked.
+	used := map[string]int{}
+	slots, err := s.DB.Query(ctx, `
+		SELECT w.member_id, count(DISTINCT w.mac_key)::int FROM wall_stars w
+		WHERE w.kind = 'award' AND w.member_id = ANY($1)
+		  AND NOT EXISTS (SELECT 1 FROM camera_links l WHERE l.mac_key = w.mac_key AND l.member_id = w.member_id)
+		  AND NOT EXISTS (SELECT 1 FROM wall_revoked r WHERE r.mac_key = w.mac_key)
+		GROUP BY w.member_id`, members(out))
+	if err != nil {
+		return nil, err
+	}
+	for slots.Next() {
+		var m string
+		var n int
+		if err := slots.Scan(&m, &n); err != nil {
+			slots.Close()
+			return nil, err
+		}
+		used[m] = n
+	}
+	slots.Close()
+	if err := slots.Err(); err != nil {
+		return nil, err
+	}
+	s.judge(out, used, now)
 	return out, nil
 }
 
+// joined: the camera has met the home page's bar since it was linked.
+func (c *Camera) joined(now time.Time) bool {
+	return now.Sub(c.since) >= JoinAge && c.Days >= JoinDays
+}
+
 // judge decides which cameras count and what each one's status is. The list
-// is ordered by member, then by when each camera was linked.
-func (s *Store) judge(cams []*Camera, now time.Time) {
+// is ordered by member, then by when each camera was linked; used is the
+// slots each member's unlinked, paid cameras still hold.
+func (s *Store) judge(cams []*Camera, used map[string]int, now time.Time) {
 	counted := map[string]int{}
+	for m, n := range used {
+		counted[m] = n
+	}
 	today := day(now)
 	for _, c := range cams {
-		age := now.Sub(c.FirstSeen)
-		joined := age >= JoinAge && c.Days >= JoinDays
+		age := now.Sub(c.since)
+		joined := c.joined(now)
 		c.NeedDays = max(0, JoinDays-c.Days)
 		c.NeedAge = max(0, int((JoinAge-age+24*time.Hour-1)/(24*time.Hour)))
 		if joined {
@@ -480,18 +594,15 @@ func (s *Store) OwnerOf(ctx context.Context, macKey string) (*Owner, error) {
 // nothing more and every award it was paid is taken back, from whoever it
 // was paid to. It returns the stars taken back.
 func (s *Store) Revoke(ctx context.Context, camera, reason string) (int, error) {
-	key := snapshots.MACKey(camera)
-	if len(camera) == 16 && !strings.ContainsAny(camera, ":-") {
-		var err error
-		if key, err = s.keyOfToken(ctx, camera); err != nil {
-			return 0, err
-		}
-	}
-	if key == "" {
-		return 0, errors.New("no camera has that name or MAC")
+	key, err := s.keyOf(ctx, camera)
+	if err != nil {
+		return 0, err
 	}
 	var taken int
-	err := pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
+	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
+		if err := lockCamera(ctx, tx, key); err != nil {
+			return err
+		}
 		if _, err := tx.Exec(ctx, `INSERT INTO wall_revoked (mac_key, reason) VALUES ($1, $2) ON CONFLICT DO NOTHING`, key, reason); err != nil {
 			return err
 		}
@@ -503,6 +614,33 @@ func (s *Store) Revoke(ctx context.Context, camera, reason string) (int, error) 
 			) SELECT coalesce(-sum(points), 0)::int FROM back`, key).Scan(&taken)
 	})
 	return taken, err
+}
+
+// ForceUnlink is a maintainer unlinking a camera, by its public name or MAC,
+// for an owner whose camera someone else linked first. What it earned stays
+// with whoever it was paid to. It reports whether there was a link.
+func (s *Store) ForceUnlink(ctx context.Context, camera string) (bool, error) {
+	key, err := s.keyOf(ctx, camera)
+	if err != nil {
+		return false, err
+	}
+	tag, err := s.DB.Exec(ctx, `DELETE FROM camera_links WHERE mac_key = $1`, key)
+	return tag.RowsAffected() == 1, err
+}
+
+// keyOf is a camera's key from its public name (16 hex characters) or a MAC.
+func (s *Store) keyOf(ctx context.Context, camera string) (string, error) {
+	key := snapshots.MACKey(camera)
+	if len(camera) == 16 && !strings.ContainsAny(camera, ":-") {
+		var err error
+		if key, err = s.keyOfToken(ctx, camera); err != nil {
+			return "", err
+		}
+	}
+	if key == "" {
+		return "", errors.New("no camera has that name or MAC")
+	}
+	return key, nil
 }
 
 // keyOfToken finds a camera by its public name among those that ever sent a
@@ -523,6 +661,14 @@ func (s *Store) keyOfToken(ctx context.Context, token string) (string, error) {
 		}
 	}
 	return "", rows.Err()
+}
+
+func members(cams []*Camera) []string {
+	out := make([]string, len(cams))
+	for i, c := range cams {
+		out[i] = c.member
+	}
+	return out
 }
 
 func macKeys(cams []*Camera) []string {

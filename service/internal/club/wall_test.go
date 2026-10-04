@@ -67,6 +67,9 @@ func TestAMemberLinksACameraAndEarnsStars(t *testing.T) {
 		t.Fatalf("claim: %+v %v", linked, err)
 	}
 	e.api.NotifyLinked(ctx, *linked)
+	// Its month on the wall runs from the link; this test is about what
+	// follows once it has had one.
+	e.exec(t, `UPDATE camera_links SET linked_at = now() - interval '45 days' WHERE mac_key = $1`, key)
 	if text, button := e.tg.last(t); !strings.Contains(text, "“Garden &lt;b&gt;”") || !strings.HasSuffix(button, "/club/#cameras") {
 		t.Errorf("linked notice %q %q", text, button)
 	}
@@ -158,5 +161,42 @@ func TestCameraRoutesRefuseAnotherSite(t *testing.T) {
 	e.mux.ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
 		t.Errorf("%d", rec.Code)
+	}
+}
+
+// A notice the bot could not deliver is sent by the next run, once.
+func TestAnUndeliveredNoticeIsSentByTheNextRun(t *testing.T) {
+	e := newEnv(t)
+	e.withWall(t)
+	ctx := context.Background()
+	b := e.signedIn(t, 5004, "ivan", "203.0.113.10")
+	member := b.me(t)["id"].(string)
+	key := "02000000f001"
+	e.exec(t, `INSERT INTO cameras (mac_key, first_seen, last_day, days) VALUES ($1, now() - interval '45 days', current_date, 40)`, key)
+	e.exec(t, `INSERT INTO camera_days (mac_key, day, frames, lit, varied, first_hash)
+		SELECT $1, current_date - i, 96, true, true, 1 FROM generate_series(0, 39) i`, key)
+	e.exec(t, `INSERT INTO camera_links (mac_key, member_id, linked_at) VALUES ($1, $2, now() - interval '45 days')`, key, member)
+
+	before := e.tg.count()
+	e.tg.setFail(true)
+	if _, err := e.api.SettleWall(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if pending, _ := e.api.Wall.Pending(ctx); len(pending) != 1 {
+		t.Fatalf("%d pending after a failed delivery", len(pending))
+	}
+	e.tg.setFail(false)
+	if _, err := e.api.SettleWall(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if text, _ := e.tg.last(t); !strings.Contains(text, "stars in total") {
+		t.Errorf("delivered %q", text)
+	}
+	if pending, _ := e.api.Wall.Pending(ctx); len(pending) != 0 {
+		t.Error("still pending after delivery")
+	}
+	e.api.SettleWall(ctx)
+	if sent := e.tg.count() - before; sent != 1 {
+		t.Errorf("%d messages delivered, want 1", sent)
 	}
 }

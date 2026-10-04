@@ -96,7 +96,8 @@ func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logge
 
 const clubUsage = `usage: openipc club
   settle-wall                          pay what linked cameras earned on the Open Wall, and tell their owners (also run by purge)
-  wall-revoke <camera> --reason text   a camera found faked, by its public name or MAC: it earns nothing more, and its stars are taken back`
+  wall-revoke <camera> --reason text   a camera found faked, by its public name or MAC: it earns nothing more, and its stars are taken back
+  wall-unlink <camera>                 unlink a camera someone else linked first, so its owner can link it; what it earned stays`
 
 // clubCommand is `openipc club ...`, run in the web container.
 func clubCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, args []string) error {
@@ -127,6 +128,17 @@ func clubCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, args
 			return err
 		}
 		log.Info("wallstars: camera revoked", "camera", pos[0], "stars_taken_back", taken)
+		return nil
+	case "wall-unlink":
+		if len(args) != 2 {
+			return errors.New(clubUsage)
+		}
+		st := &wallstars.Store{DB: pool, Token: (&snapshots.Store{TokenKey: cfg.CameraTokenKey}).CameraToken}
+		done, err := st.ForceUnlink(ctx, args[1])
+		if err != nil {
+			return err
+		}
+		log.Info("wallstars: camera unlinked", "camera", args[1], "was_linked", done)
 		return nil
 	}
 	return errors.New(clubUsage)

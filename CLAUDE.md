@@ -188,10 +188,17 @@ restores the image but never the schema, so keep migrations additive.
   wall with its chip or sensor; at most 3 cameras per member. A qualifying
   day (`camera_days`, written by `MarkGenerated`) had a picture with
   something in it and pictures that changed (a difference hash,
-  `keyframe.Luma.Hash`), so a looped stock picture earns nothing.
-  `openipc club wall-revoke` takes a faked camera's stars back. The owner's
-  name on the camera's wall page and the leaderboard (`/club/leaderboard`)
-  are each opt-in.
+  `keyframe.Luma.Hash`), so a looped stock picture earns nothing. Only days
+  since the link count, and the month runs from the link, so linking an
+  established camera pays nothing at once; a paid camera keeps its slot after
+  it is unlinked. A code never moves a camera linked to another member
+  (anyone can upload as any MAC): it is marked blocked, and the owner or
+  `openipc club wall-unlink` frees the camera. Claim, each award and revoke
+  hold the camera's advisory lock; a claim that failed is retried by the
+  ten-minute sweep, and a notice the bot could not deliver stays in
+  `wall_notices` for the next run. `openipc club wall-revoke` takes a faked
+  camera's stars back. The owner's name on the camera's wall page and the
+  leaderboard (`/club/leaderboard`) are each opt-in.
 - `internal/tools`, `internal/nfsro` — **ipctool for stock firmware**, which
   has no curl and no TLS. ipctool's release job pushes each build to
   `PUT /api/v1/tools/{name}` (OIDC, `internal/tools/PUSH.md`); nginx serves

@@ -403,10 +403,12 @@ func (a *API) onAnswer(ctx context.Context, id string, from int64, l, data strin
 }
 
 // notify writes to a member through the bot, when they have it and have
-// not muted it. A member without Telegram reads the same on their page.
-func (a *API) notify(ctx context.Context, member string, text func(locale string) string, buttons func(locale string) []Button) {
+// not muted it. A member without Telegram reads the same on their page. The
+// error is the bot's failing to deliver; a member it may not write to is not
+// one.
+func (a *API) notify(ctx context.Context, member string, text func(locale string) string, buttons func(locale string) []Button) error {
 	if a.Telegram == nil {
-		return
+		return nil
 	}
 	var chat int64
 	var locale string
@@ -415,7 +417,7 @@ func (a *API) notify(ctx context.Context, member string, text func(locale string
 		WHERE i.member_id = $1 AND i.provider = 'telegram' AND i.chat_id IS NOT NULL AND NOT m.quiet
 		ORDER BY i.seen_at DESC LIMIT 1`, member).Scan(&chat, &locale)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return
+		return nil
 	}
 	if err == nil {
 		err = a.Telegram.Send(ctx, chat, text(locale), buttons(locale)...)
@@ -423,6 +425,7 @@ func (a *API) notify(ctx context.Context, member string, text func(locale string
 	if err != nil {
 		a.Log.Warn("club: telegram notice failed", "member", member, "err", err)
 	}
+	return err
 }
 
 func (a *API) notifyDecision(ctx context.Context, member, report, decision string, d reports.Decided) {
@@ -433,7 +436,7 @@ func (a *API) notifyDecision(ctx context.Context, member, report, decision strin
 			total += wall
 		}
 	}
-	a.notify(ctx, member, func(l string) string {
+	_ = a.notify(ctx, member, func(l string) string {
 		switch {
 		case decision == "publish" && d.Points > 0:
 			return fmt.Sprintf(t(l, "accepted"), report, d.Points, total)

@@ -6,10 +6,12 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Notice is something the settlement tells a camera's owner.
 type Notice struct {
+	ID     int64 // its row in wall_notices, from Pending
 	Member string
 	// Kind: stars (Points were paid; Join says the camera met the home
 	// page's bar in this run), milestone (Days qualifying days), silent (no
@@ -24,7 +26,8 @@ type Notice struct {
 	LastDay time.Time
 }
 
-// Settled is what one run did.
+// Settled is what one run did. Notices are also kept in wall_notices until
+// they are delivered (Pending, Delivered).
 type Settled struct {
 	Cameras int
 	Awarded int
@@ -32,9 +35,9 @@ type Settled struct {
 }
 
 // Settle pays every linked camera what it has earned and not yet been paid,
-// and collects the notices for the owners. Running it twice pays nothing
+// and records the notices for the owners. Running it twice pays nothing
 // twice: an award is unique per camera and reason. Runs are serialized by an
-// advisory lock held for the run.
+// advisory lock held for the run, and each award by the camera's lock.
 func (s *Store) Settle(ctx context.Context, now time.Time) (*Settled, error) {
 	conn, err := s.DB.Acquire(ctx)
 	if err != nil {
@@ -62,8 +65,7 @@ func (s *Store) Settle(ctx context.Context, now time.Time) (*Settled, error) {
 		}
 		if c.counted {
 			n := Notice{Member: c.member, Kind: "stars", Camera: name, Token: c.Token, Days: c.Days}
-			joined := now.Sub(c.FirstSeen) >= JoinAge && c.Days >= JoinDays
-			if joined {
+			if c.joined(now) {
 				paid, err := s.award(ctx, conn, c, "join", JoinStars)
 				if err != nil {
 					return nil, err
@@ -118,31 +120,78 @@ func (s *Store) Settle(ctx context.Context, now time.Time) (*Settled, error) {
 				LastDay: *c.lastDay, Days: int(today.Sub(*c.lastDay) / (24 * time.Hour))})
 		}
 	}
+	for _, n := range out.Notices {
+		if _, err := conn.Exec(ctx, `INSERT INTO wall_notices (member_id, kind, camera, token, points, joined, rare, days)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`, n.Member, n.Kind, n.Camera, n.Token, n.Points, n.Join, n.Rare, n.Days); err != nil {
+			return nil, err
+		}
+	}
 	return out, nil
+}
+
+// NoticeRetention is how long an undelivered notice is tried again.
+const NoticeRetention = 7 * 24 * time.Hour
+
+// Pending is every notice not yet delivered and not older than
+// NoticeRetention, oldest first, with its row id in ID.
+func (s *Store) Pending(ctx context.Context) ([]Notice, error) {
+	rows, err := s.DB.Query(ctx, `SELECT id, member_id, kind, camera, token, points, joined, rare, days FROM wall_notices
+		WHERE sent_at IS NULL AND created_at > now() - make_interval(secs => $1) ORDER BY id`, NoticeRetention.Seconds())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Notice
+	for rows.Next() {
+		var n Notice
+		if err := rows.Scan(&n.ID, &n.Member, &n.Kind, &n.Camera, &n.Token, &n.Points, &n.Join, &n.Rare, &n.Days); err != nil {
+			return nil, err
+		}
+		out = append(out, n)
+	}
+	return out, rows.Err()
+}
+
+// Delivered marks a notice said.
+func (s *Store) Delivered(ctx context.Context, id int64) error {
+	_, err := s.DB.Exec(ctx, `UPDATE wall_notices SET sent_at = now() WHERE id = $1`, id)
+	return err
 }
 
 type querier interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-// award pays one award to the camera's current owner, unless it was paid
-// before -- to anyone. It reports whether it paid now.
-func (s *Store) award(ctx context.Context, q querier, c *Camera, reason string, points int) (bool, error) {
+// award pays one award, unless it was paid before -- to anyone. It is paid
+// under the camera's lock, and only while the camera is still linked as the
+// settlement read it and not revoked: a link moved, removed or revoked since
+// then pays nothing this run. It reports whether it paid now.
+func (s *Store) award(ctx context.Context, conn *pgxpool.Conn, c *Camera, reason string, points int) (bool, error) {
 	if c.paid[reason] {
 		return false, nil
 	}
-	var id int64
-	err := q.QueryRow(ctx, `INSERT INTO wall_stars (member_id, mac_key, kind, reason, points)
-		VALUES ($1, $2, 'award', $3, $4) ON CONFLICT DO NOTHING RETURNING id`, c.member, c.macKey, reason, points).Scan(&id)
-	if errors.Is(err, pgx.ErrNoRows) {
-		c.paid[reason] = true
-		return false, nil
-	}
+	paid := false
+	err := pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
+		if err := lockCamera(ctx, tx, c.macKey); err != nil {
+			return err
+		}
+		var id int64
+		err := tx.QueryRow(ctx, `INSERT INTO wall_stars (member_id, mac_key, kind, reason, points)
+			SELECT l.member_id, l.mac_key, 'award', $3, $4 FROM camera_links l
+			WHERE l.mac_key = $1 AND l.member_id = $2 AND l.linked_at = $5
+			  AND NOT EXISTS (SELECT 1 FROM wall_revoked r WHERE r.mac_key = l.mac_key)
+			ON CONFLICT DO NOTHING RETURNING id`, c.macKey, c.member, reason, points, c.LinkedAt).Scan(&id)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		paid = err == nil
+		return err
+	})
 	if err != nil {
 		return false, err
 	}
 	c.paid[reason] = true
-	return true, nil
+	return paid, nil
 }
 
 // rare: no other camera that meets the home page's bar and sent a frame in

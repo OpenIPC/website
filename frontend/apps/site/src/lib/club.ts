@@ -205,7 +205,7 @@ export interface Camera {
   show_owner: boolean;
 }
 
-export interface LinkCode { code: string; expires_at: string }
+export interface LinkCode { code: string; expires_at: string; blocked?: boolean }
 
 export interface Cameras { cameras: Camera[]; code: LinkCode | null; listed: boolean; max_cameras: number }
 
