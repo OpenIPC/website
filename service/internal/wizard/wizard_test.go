@@ -381,7 +381,9 @@ func TestNANDBackupInPieces(t *testing.T) {
 		w := c.writeCmd()
 		piece0 := "${filesize}\n"
 		if w == "write.trimffs" {
-			piece0 = "0x100000 && nand write.trimffs 0x42100000 0x100000 0x700000\n"
+			piece0 = "0x100000 && nand write.trimffs 0x42100000 0x100000 0x700000\n" +
+				"# if `nand bad` lists a block below 0x100000, write piece 0 like this instead:\n" +
+				"# tftpboot " + la + " " + name + "-00.bin && nand erase 0x0 0x1000000 && nand write " + la + " 0x0 ${filesize}\n"
 		}
 		restore := strings.Join(c.restoreFromBackup(), "\n")
 		for _, want := range []string{

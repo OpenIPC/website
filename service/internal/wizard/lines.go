@@ -386,7 +386,12 @@ func (c *camera) nandRestore() []string {
 		erase := fmt.Sprintf("0x%x", 2*nandChunkSize)
 		if i == 0 && w != "write" {
 			text = append(text, c.guardedWrite(load(i), "0x0", erase, "write", nandBootHex)+
-				" && nand "+w+" "+addHex(la, nandBootSize)+" "+nandBootHex+fmt.Sprintf(" 0x%x", nandChunkSize-nandBootSize))
+				" && nand "+w+" "+addHex(la, nandBootSize)+" "+nandBootHex+fmt.Sprintf(" 0x%x", nandChunkSize-nandBootSize),
+				// A bad block below the split makes the plain write run past
+				// it, and U-Boot cannot work out where it stopped. Bad blocks
+				// are rare there, and `nand bad` shows them.
+				"# if `nand bad` lists a block below 0x100000, write piece 0 like this instead:",
+				"# "+c.guardedWrite(load(i), "0x0", erase, "write", "${filesize}"))
 			continue
 		}
 		text = append(text, c.guardedWrite(load(i), nandChunkOffset(i), erase, w, "${filesize}"))
