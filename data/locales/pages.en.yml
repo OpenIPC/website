@@ -225,6 +225,8 @@ en:
       wall_published_html: "<strong>Published:</strong> the picture, and what the camera says about itself — chip, sensor, firmware, streamer, uptime and chip temperature."
       wall_withheld_html: "<strong>Not published:</strong> the camera's MAC and IP addresses, both visible only to maintainers. The MAC decides two things: one camera may upload every 15 minutes, and a camera on the block list is refused. Each camera's page is named by a token that cannot be turned back into either address."
       wall_retention_html: "A nightly sweep removes pictures, and the descriptions that came with them, once they are 2 days old, so nothing stays beyond 3."
+      wall_history_html: "<strong>Kept:</strong> for each camera, the day it first sent a picture and, for every day since, whether its pictures had something in them and changed during the day — a few numbers a day, never a picture or an address. That is how the home page tells an established camera from a new one, and how the OpenIPC Club counts a linked camera's days."
+      wall_club_html: "<strong>OpenIPC Club:</strong> a member who links a camera is named on the camera's page only if they choose it for that camera, and appears on the leaderboard only if they choose that too. The code that links a camera is cut out of its caption before anything is stored."
       retention_title: "How long things are kept"
       retention_what: "What"
       retention_where: "Where"
@@ -244,6 +246,9 @@ en:
       row_details_what: "Open Wall camera details"
       row_details_where: "Our server"
       row_details_long: "up to 3 days"
+      row_days_what: "Open Wall camera history (days, no pictures)"
+      row_days_where: "Our server"
+      row_days_long: "kept"
     donate:
       business_band_html: If your company depends on OpenIPC, the sustainable way to support it is a commercial relationship. <a href="/business">See what we offer</a>.
       accounting: We're committed to open and transparent accounting, and are grateful for any support you can provide to our efforts to advance OpenIPC and our mission toward a sustainable future.

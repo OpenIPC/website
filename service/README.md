@@ -24,11 +24,12 @@ key the wall JSON signs them with.
 |---|---|
 | `serve --role web\|firmware` | the two HTTP processes above |
 | `migrate` | applies the embedded SQL migrations, under an advisory lock |
-| `purge [--snapshots] [--firmware]` | snapshots past two days with their images, orphan wall directories, and firmware of any release but the current one |
+| `purge [--snapshots] [--firmware]` | snapshots past two days with their images, orphan wall directories, and firmware of any release but the current one; with `--snapshots`, the Open Wall's stars are settled afterwards |
 | `probe` | the numbers only a probe sees: all-digit `public_id`s, HEIF uploads, a stuck variant queue |
 | `builds import-history [--keep 90] [--kconfig-all] [--skip-builder]` | once per environment: the builds GitHub still holds, into PostgreSQL |
 | `boards import-openhisiipcam [--from <dir>]` | once per environment: the OpenHisiIpCam board archive (firmware#659, pinned commit) into the board catalogue, its files under `BOARDS_ROOT`; a second run adds nothing. Run it in the web container, which mounts that directory |
 | `reports list\|show\|publish\|reject\|link\|unlink\|takedown\|verify` | the owner reports' review queue (`internal/reports`): nothing a camera owner or an agent sends is public until `publish`; `takedown` is the one way a report's content is ever removed; `verify` re-hashes every stored file and runs nightly |
+| `club settle-wall\|wall-revoke <camera> --reason text\|wall-unlink <camera>` | the Open Wall's stars (`internal/wallstars`): `settle-wall` pays linked cameras what they earned and tells their owners through the bot (the nightly purge runs it too); `wall-revoke` takes a faked camera's stars back, by its public name or MAC; `wall-unlink` frees a camera someone else linked first |
 | `serve --role nfs` | ipctool's builds from `TOOLS_ROOT`, read-only over NFS (portmapper :111, MOUNT and NFS :2049, UDP and TCP), for cameras on stock firmware; no database |
 | `routes --json` | the routes table |
 | `version` | the commit the binary was built from |
@@ -45,7 +46,7 @@ read the same tables.
 service/run.sh build            # service/bin/openipc
 service/run.sh test             # go vet + go test, against a throwaway postgres:17 container
 bin/conformance                 # build, then the black-box suite (service/conformance) against the binary
-bin/conformance --mutations     # break the upload six ways; the suite must fail every time
+bin/conformance --mutations     # break the upload seven ways; the suite must fail every time
 service/conformance/run.sh https://openipc.org   # the suite against a running server, read-only without a DB URL
 ```
 
@@ -118,7 +119,11 @@ The goldens below are fixed: nothing regenerates them.
   forwarded QR code signs in nobody else. Stars are rows in an append-only
   ledger (`report_stars`) that only a review writes: +1 per accepted item,
   +10 per flash dump the catalogue did not already hold, and the negative
-  of each when a published report is rejected afterwards.
+  of each when a published report is rejected afterwards. A second ledger,
+  `wall_stars`, pays for cameras kept on the Open Wall (`internal/wallstars`):
+  a member links a camera by having it upload a one-time code, and a nightly
+  settlement pays it from the days it sent pictures worth showing -- never
+  the upload itself.
 
   | setting | what it turns on |
   |---|---|

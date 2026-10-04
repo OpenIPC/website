@@ -146,6 +146,7 @@ func (h *UploadHandler) fail(w http.ResponseWriter, what string, err error) int 
 
 func (h *UploadHandler) create(r *http.Request, u *Upload, mac string, minElapsed float64) (string, error) {
 	contentType := ContentType(u.File, u.Declared, u.Filename)
+	clubCode := TakeClubCode(u)
 	for attempt := 0; ; attempt++ {
 		id := NewPublicID()
 		if err := h.Wall.WriteOriginal(id, u.File); err != nil {
@@ -161,7 +162,7 @@ func (h *UploadHandler) create(r *http.Request, u *Upload, mac string, minElapse
 		}
 		err := h.Store.InsertIfDue(r.Context(), NewRow{
 			PublicID: id, MAC: mac, IP: u.RemoteIP, Attributes: u.Attributes,
-			ContentType: contentType, ByteSize: int64(len(u.File)),
+			ContentType: contentType, ByteSize: int64(len(u.File)), ClubCode: clubCode,
 		}, minElapsed)
 		if err == nil {
 			return id, nil
@@ -199,6 +200,7 @@ func read(r *http.Request) (*Upload, error) {
 		return nil
 	}
 	u.MAC = field("mac_address")
+	u.Club = field("club")
 	for _, name := range attributes {
 		u.Attributes[name] = field(name)
 	}

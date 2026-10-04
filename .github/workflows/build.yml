@@ -67,7 +67,7 @@ jobs:
       - name: Conformance suite
         run: bin/conformance
 
-      # The check on the check: six ways a port could break the upload, each
+      # The check on the check: seven ways a port could break the upload, each
       # applied to the tree in turn. Every one must turn the suite red, or it
       # does not cover what it claims to.
       - name: Conformance suite fails against a broken server

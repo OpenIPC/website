@@ -35,6 +35,7 @@ type Upload struct {
 	RemoteIP   string
 	Attributes map[string]*string // caption, firmware, ...
 	Thumb      []byte             // the substream keyframe, when the camera sent one
+	Club       *string            // the optional club code field (TakeClubCode)
 }
 
 // Errors are the X-Error sentences, in the contract's order: the file

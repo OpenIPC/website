@@ -121,6 +121,8 @@ type NewRow struct {
 	Attributes  map[string]*string
 	ContentType string
 	ByteSize    int64
+	// ClubCode is the code the upload carried, "" for none (TakeClubCode).
+	ClubCode string
 }
 
 // ErrTooSoon is the interval refusing a frame; Elapsed is the seconds since
@@ -169,11 +171,11 @@ func insert(ctx context.Context, db execer, st *Store, row NewRow) error {
 	a := row.Attributes
 	_, err := db.Exec(ctx, `INSERT INTO snapshots
 		(public_id, mac_address, camera_token, ip_address, caption, firmware, flash_size, hostname,
-		 sensor, soc, soc_temperature, streamer, uptime, content_type, byte_size)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+		 sensor, soc, soc_temperature, streamer, uptime, content_type, byte_size, club_code)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, nullif($16, ''))`,
 		row.PublicID, row.MAC, st.CameraToken(row.MAC), row.IP,
 		a["caption"], a["firmware"], a["flash_size"], a["hostname"], a["sensor"], a["soc"],
-		a["soc_temperature"], a["streamer"], a["uptime"], row.ContentType, row.ByteSize)
+		a["soc_temperature"], a["streamer"], a["uptime"], row.ContentType, row.ByteSize, row.ClubCode)
 	return err
 }
 
@@ -326,16 +328,17 @@ func (st *Store) Generated(ctx context.Context) ([]string, error) {
 	return ids, rows.Err()
 }
 
-// MarkGenerated records the variants, the image's dimensions and its
-// brightness, and counts the frame toward its camera's history (cameras,
-// migration 022) -- here and not on insert, so only a frame the wall accepted
-// counts. It reports whether the row still exists: a frame purged while its
-// variants were being made must have its files removed by the caller.
+// MarkGenerated records the variants, the image's dimensions, brightness
+// and hash, and counts the frame toward its camera's history -- cameras
+// (migration 022) and the day's row in camera_days (migration 024) -- here
+// and not on insert, so only a frame the wall accepted counts. It reports
+// whether the row still exists: a frame purged while its variants were being
+// made must have its files removed by the caller.
 func (st *Store) MarkGenerated(ctx context.Context, publicID string, width, height int, luma keyframe.Luma) (bool, error) {
 	var n int
 	err := st.DB.QueryRow(ctx, `WITH frame AS (
 			UPDATE snapshots SET variants_generated_at = now(),
-				width = $2, height = $3, luma_p5 = $4, luma_p50 = $5, luma_p95 = $6
+				width = $2, height = $3, luma_p5 = $4, luma_p50 = $5, luma_p95 = $6, frame_hash = $7
 			WHERE public_id = $1 RETURNING mac_key, created_at
 		), seen AS (
 			INSERT INTO cameras (mac_key, first_seen, last_day, days)
@@ -344,14 +347,35 @@ func (st *Store) MarkGenerated(ctx context.Context, publicID string, width, heig
 				first_seen = LEAST(cameras.first_seen, EXCLUDED.first_seen),
 				days = cameras.days + (EXCLUDED.last_day > cameras.last_day)::int,
 				last_day = GREATEST(cameras.last_day, EXCLUDED.last_day)
+		), today AS (
+			INSERT INTO camera_days (mac_key, day, frames, lit, varied, first_hash)
+			SELECT mac_key, (created_at AT TIME ZONE 'UTC')::date, 1, $8, false, $7 FROM frame
+			ON CONFLICT (mac_key, day) DO UPDATE SET
+				frames = camera_days.frames + 1,
+				lit = camera_days.lit OR EXCLUDED.lit,
+				varied = camera_days.varied
+					OR bit_count((camera_days.first_hash # EXCLUDED.first_hash)::bit(64)) >= $9
 		)
 		SELECT count(*) FROM frame`,
-		publicID, width, height, int16(luma.P5), int16(luma.P50), int16(luma.P95)).Scan(&n)
+		publicID, width, height, int16(luma.P5), int16(luma.P50), int16(luma.P95),
+		int64(luma.Hash), Lit(luma), VariedBits).Scan(&n)
 	if err != nil {
 		return false, err
 	}
 	return n == 1, nil
 }
+
+// Lit is the home page's rule for a frame with something in it: the same
+// thresholds Showcase applies in SQL.
+func Lit(l keyframe.Luma) bool {
+	return int(l.P95)-int(l.P5) >= ShowcaseMinSpread && int(l.P50) < ShowcaseMaxMedian && int(l.P95) >= ShowcaseMinBright
+}
+
+// VariedBits is how many bits of its hash a frame must differ in from its
+// camera's first frame of the day for the day to count as one in which the
+// camera saw something change. A real scene drifts past it within hours as
+// the light moves; the same picture sent again differs in none.
+const VariedBits = 3
 
 // Exists is a cheap check for the worker.
 func (st *Store) Exists(ctx context.Context, publicID string) (bool, error) {

@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/OpenIPC/website/service/internal/reports"
+	"github.com/OpenIPC/website/service/internal/wallstars"
 )
 
 const (
@@ -46,10 +47,12 @@ type Config struct {
 
 // API is the club's addresses on the web role.
 type API struct {
-	DB       *pgxpool.Pool
-	Log      *slog.Logger
-	Cfg      Config
-	Reports  *reports.API
+	DB      *pgxpool.Pool
+	Log     *slog.Logger
+	Cfg     Config
+	Reports *reports.API
+	// Wall is the members' cameras on the Open Wall and their stars.
+	Wall     *wallstars.Store
 	Telegram *Telegram
 	GitHub   *GitHub
 	Mail     Mailer
@@ -68,7 +71,7 @@ func (a *API) now() time.Time {
 }
 
 func (a *API) Handlers() map[string]http.Handler {
-	return map[string]http.Handler{
+	h := map[string]http.Handler{
 		"GET /api/v1/club/me":                            http.HandlerFunc(a.me),
 		"POST /api/v1/club/logout":                       a.post(a.logout),
 		"POST /api/v1/club/quiet":                        a.post(a.quiet),
@@ -88,6 +91,12 @@ func (a *API) Handlers() map[string]http.Handler {
 		"GET /api/v1/club/review":                        http.HandlerFunc(a.queue),
 		"POST /api/v1/club/review/{id}":                  a.post(a.decide),
 	}
+	if a.Wall != nil {
+		for k, v := range a.wallHandlers() {
+			h[k] = v
+		}
+	}
+	return h
 }
 
 // post refuses a state-changing request from another site's page. The

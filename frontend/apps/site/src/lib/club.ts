@@ -19,6 +19,9 @@ export interface Member {
   quiet: boolean;
   identities: Identity[];
   stars: number;
+  /** The stars' two sources: accepted reports, and cameras on the Open Wall. */
+  report_stars?: number;
+  wall_stars?: number;
   pending: number;
 }
 
@@ -172,8 +175,54 @@ export async function sendReport(form: FormData): Promise<Sent> {
   return body as Sent;
 }
 
-/** What one accepted thing earns, as the service counts it (reports.Points). */
-export const STARS = { item: 1, dump: 10 } as const;
+/**
+ * What one accepted thing earns, as the service counts it: reports.Points
+ * for reports, wallstars.JoinStars/MonthStars/RareStars for cameras.
+ */
+export const STARS = { item: 1, dump: 10, join: 5, month: 1, rare: 2 } as const;
+
+/** A camera of the member's on the Open Wall (service/internal/wallstars). */
+export interface Camera {
+  token: string;
+  name: string;
+  soc: string;
+  sensor: string;
+  firmware: string;
+  linked_at: string;
+  first_seen: string;
+  last_frame?: string;
+  /** The last UTC day with a picture, YYYY-MM-DD. */
+  last_day?: string;
+  /** Qualifying days: a picture worth showing, and pictures that changed. */
+  days: number;
+  wall_days: number;
+  stars: number;
+  status: 'counting' | 'joined' | 'limit' | 'dark' | 'silent' | 'revoked';
+  need_days: number;
+  need_age: number;
+  next_star: number;
+  rare: boolean;
+  show_owner: boolean;
+}
+
+export interface LinkCode { code: string; expires_at: string; blocked?: boolean }
+
+export interface Cameras { cameras: Camera[]; code: LinkCode | null; listed: boolean; max_cameras: number }
+
+export const fetchCameras = () => call<Cameras>('/cameras');
+
+export const newCameraCode = () => post<{ code: LinkCode }>('/cameras/code');
+
+export const unlinkCamera = (token: string) => post<{ unlinked: boolean }>(`/cameras/${encodeURIComponent(token)}/unlink`);
+
+export const showOwner = (token: string, show: boolean) => post<{ show: boolean }>(`/cameras/${encodeURIComponent(token)}/owner`, { show });
+
+export const setListed = (listed: boolean) => post<{ listed: boolean }>('/listed', { listed });
+
+export interface Leader { rank: number; name: string; reports: number; wall: number; stars: number; you?: boolean }
+
+export const fetchLeaderboard = (period: 'all' | '30d') =>
+  call<{ period: string; members: Leader[] }>(`/leaderboard?${new URLSearchParams({ period })}`);
 
 /** Seconds left until an ISO time, never below zero. */
 export function secondsLeft(iso: string, now = Date.now()): number {

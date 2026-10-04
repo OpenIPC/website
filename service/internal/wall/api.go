@@ -42,6 +42,16 @@ type API struct {
 	Store   Snapshots
 	Granter *Granter
 	Log     *slog.Logger
+	// Owner is who a camera's page credits, nil when nobody: a club member
+	// who linked the camera and chose to be named (internal/wallstars).
+	Owner func(ctx context.Context, macKey string) (*Owner, error)
+}
+
+// Owner is the credit on a camera's page.
+type Owner struct {
+	Name  string `json:"name"`
+	Stars int    `json:"stars"`
+	Days  int    `json:"days"`
 }
 
 // Routes registers the five addresses on mux. The path segment carries the
@@ -96,10 +106,12 @@ type detail struct {
 	card
 	Caption *string `json:"caption"`
 	Camera  string  `json:"camera"`
+	Owner   *Owner  `json:"owner,omitempty"`
 }
 
 // MarshalJSON keeps detail's keys in a fixed order: the card's, then caption
-// and camera. Embedding alone would do that too; this makes it explicit.
+// and camera, then the owner when the camera has one to credit. Embedding
+// alone would do that too; this makes it explicit.
 func (d detail) MarshalJSON() ([]byte, error) {
 	c, err := json.Marshal(d.card)
 	if err != nil {
@@ -108,7 +120,8 @@ func (d detail) MarshalJSON() ([]byte, error) {
 	extra, err := json.Marshal(struct {
 		Caption *string `json:"caption"`
 		Camera  string  `json:"camera"`
-	}{d.Caption, d.Camera})
+		Owner   *Owner  `json:"owner,omitempty"`
+	}{d.Caption, d.Camera, d.Owner})
 	if err != nil {
 		return nil, err
 	}
@@ -301,6 +314,13 @@ func (a *API) renderSnapshot(w http.ResponseWriter, r *http.Request, subject *sn
 		a.fail(w, err)
 		return
 	}
+	var owner *Owner
+	if a.Owner != nil {
+		if owner, err = a.Owner(r.Context(), subject.MACKey); err != nil {
+			a.fail(w, err)
+			return
+		}
+	}
 	strip := rows[:min(len(rows), StripEager)]
 	icons := make([]icon, len(strip))
 	for i, s := range strip {
@@ -314,7 +334,7 @@ func (a *API) renderSnapshot(w http.ResponseWriter, r *http.Request, subject *sn
 		StripMore    bool    `json:"strip_more"`
 		Grant        *string `json:"grant"`
 	}{"fullhd", "icon2",
-		detail{card: toCard(subject), Caption: snapshots.Presence(subject.Caption), Camera: subject.CameraToken},
+		detail{card: toCard(subject), Caption: snapshots.Presence(subject.Caption), Camera: subject.CameraToken, Owner: owner},
 		icons, len(rows) > StripEager,
 		a.Granter.Issue(append(pairs(strip, "icon2"), Pair(subject.PublicID, "fullhd")))})
 }

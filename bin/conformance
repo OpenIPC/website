@@ -3,7 +3,7 @@
 #
 #   bin/conformance                  build service/bin/openipc, boot it on a scratch
 #                                    PostgreSQL database, run service/conformance
-#   bin/conformance --mutations      the check on the check: break the upload six
+#   bin/conformance --mutations      the check on the check: break the upload seven
 #                                    ways, and require the suite to fail every time
 #
 # The suite boots the binary itself: a scratch database on the PostgreSQL named
@@ -15,7 +15,7 @@
 # To point the suite at something already running -- dev or production --
 # use service/conformance/run.sh <base-url>.
 #
-# The mutations below are six mistakes a port of the upload could make, made
+# The mutations below are seven mistakes a port of the upload could make, made
 # in the Go handler.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -51,8 +51,10 @@ fi
 # clean tree.
 #
 # The sixth is the exemption the fleet depends on: the whitelisted address
-# that is never rate limited.
+# that is never rate limited. The seventh publishes the club code a member
+# pasted into the caption (internal/wallstars), which must never be shown.
 UPLOAD=service/internal/snapshots/upload.go
+CLUBCODE=service/internal/snapshots/clubcode.go
 MUTATIONS=(
   "hysteresis 2 minutes -> 0|$UPLOAD|HysteresisSeconds = 120|HysteresisSeconds = 0"
   "X-Error dropped|$UPLOAD|w.Header().Set(\"X-Error\", strings.Join(errs, \". \"))|_ = strings.Join(errs, \". \")"
@@ -60,6 +62,7 @@ MUTATIONS=(
   "403 -> 422|$UPLOAD|httpx.Empty(w, http.StatusForbidden)|httpx.Empty(w, http.StatusUnprocessableEntity)"
   "Location absolute|$UPLOAD|location := \"/snapshots/\" + id|location := \"https://openipc.org/snapshots/\" + id"
   "whitelist exemption dropped|$UPLOAD|exempt := contains(h.Whitelist, u.RemoteIP)|exempt := false && contains(h.Whitelist, u.RemoteIP)"
+  "club code left in the caption|$CLUBCODE|u.Attributes[\"caption\"] = &rest|_ = rest"
 )
 
 MUTATED=()

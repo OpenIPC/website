@@ -262,6 +262,9 @@ zh:
     disclaimer: 本网站包含的信息仅供一般参考之用，访问者不应依赖这些信息。本网站上提供的所有软件和固件均按原样提供，仅供研究使用。对于因使用这些文件或依赖本网站中包含的任何信息而造成的任何损失或损害，OpenIPC 概不负责。
     snapshot:
       link_to_camera: 此摄像机的固定链接
+      owner: 'OpenIPC 俱乐部成员 · 上墙 {days} 天'
+      join_club: '想让你的摄像头带着你的名字出现在这里吗？'
+      join_club_link: '加入 OpenIPC 俱乐部'
   snapshots:
     icon:
       snapshot_alt: 图片：快照

@@ -96,6 +96,8 @@ export const PAGE_PATHS: PagePath[] = [
   // The maintainers' review queue. The page is a shell: the queue is only
   // ever in the answer /api/v1/club/review gives a maintainer.
   { path: '/club/review', titleKey: 'pages.club_review.title', descriptionKey: 'pages.club_review.lede' },
+  // The leaderboard: members who chose to be listed, by stars (service/internal/wallstars).
+  { path: '/club/leaderboard', titleKey: 'pages.club_leaderboard.title', descriptionKey: 'pages.club_leaderboard.lede' },
 
   { path: '/business', titleKey: 'pages.business.title' },
   { path: '/community', titleKey: 'pages.community.title' },

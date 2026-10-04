@@ -34,7 +34,12 @@ const mirror = "https://mirror.test"
 type fakeTelegram struct {
 	mu   sync.Mutex
 	sent []map[string]any
+	fail bool // sendMessage answers as a Bot API that is down
 }
+
+func (f *fakeTelegram) setFail(v bool) { f.mu.Lock(); f.fail = v; f.mu.Unlock() }
+
+func (f *fakeTelegram) count() int { f.mu.Lock(); defer f.mu.Unlock(); return len(f.sent) }
 
 func (f *fakeTelegram) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var in map[string]any
@@ -44,6 +49,12 @@ func (f *fakeTelegram) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, `{"ok":true,"result":{"username":"OpenIPCTestBot"}}`)
 	case strings.HasSuffix(r.URL.Path, "/sendMessage"), strings.HasSuffix(r.URL.Path, "/editMessageText"):
 		f.mu.Lock()
+		if f.fail {
+			f.mu.Unlock()
+			w.WriteHeader(http.StatusBadGateway)
+			_, _ = io.WriteString(w, `{"ok":false,"description":"Bad Gateway"}`)
+			return
+		}
 		f.sent = append(f.sent, in)
 		f.mu.Unlock()
 		_, _ = io.WriteString(w, `{"ok":true,"result":{}}`)

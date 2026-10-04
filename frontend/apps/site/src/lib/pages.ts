@@ -21,6 +21,7 @@ import Boards from '../components/pages/Boards.astro';
 import Report from '../components/pages/Report.astro';
 import Club from '../components/pages/Club.astro';
 import ClubReview from '../components/pages/ClubReview.astro';
+import ClubLeaderboard from '../components/pages/ClubLeaderboard.astro';
 import Business from '../components/pages/Business.astro';
 import Community from '../components/pages/Community.astro';
 import Donate from '../components/pages/Donate.astro';
@@ -96,6 +97,7 @@ const COMPONENTS: Record<string, Renderer> = {
   '/cameras/report': { component: Report },
   '/club': { component: Club },
   '/club/review': { component: ClubReview },
+  '/club/leaderboard': { component: ClubLeaderboard },
 
   '/business': { component: Business },
   '/community': { component: Community },

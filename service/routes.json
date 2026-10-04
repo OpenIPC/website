@@ -226,6 +226,36 @@
   },
   {
     "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/cameras"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/cameras/code"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/cameras/{camera}/unlink"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/cameras/{camera}/owner"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/listed"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/leaderboard"
+  },
+  {
+    "role": "web",
     "method": "PUT",
     "path": "/api/v1/tools/{name}"
   },

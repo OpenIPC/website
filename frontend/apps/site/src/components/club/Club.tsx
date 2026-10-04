@@ -12,10 +12,11 @@ import { QrCodeWidget } from '@openipc/ui';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import {
-  clock, fetchMe, fetchMine, finishConfirm, finishWho, pollLogin, rename, secondsLeft, setQuiet, signOut, startEmail, startTelegram,
-  type Me, type Member, type MemberReport,
+  clock, fetchCameras, fetchMe, fetchMine, finishConfirm, finishWho, pollLogin, rename, secondsLeft, setListed, setQuiet, signOut,
+  startEmail, startTelegram, STARS, type Cameras as CameraData, type Me, type Member, type MemberReport,
 } from '../../lib/club';
 import { size } from '../../lib/reports';
+import Cameras from './Cameras';
 import { STATUS_TONE, Stars } from './parts';
 
 type Load = { state: 'loading' } | { state: 'ok'; me: Me } | { state: 'error' };
@@ -231,6 +232,7 @@ function MemberPage({ member, ways, locale, t, onChange }: {
   member: Member; ways: Me['sign_in']; locale: Locale; t: BoardsT; onChange: () => void;
 }) {
   const [reports, setReports] = useState<MemberReport[] | null>(null);
+  const [cams, setCams] = useState<CameraData | null>(null);
   const [error, setError] = useState(false);
   const [linking, setLinking] = useState(false);
   const [naming, setNaming] = useState(false);
@@ -243,6 +245,12 @@ function MemberPage({ member, ways, locale, t, onChange }: {
   useEffect(() => {
     fetchMine().then((r) => setReports(r.reports)).catch(() => setError(true));
   }, [member.id]);
+  const loadCams = () => fetchCameras().then(setCams).catch(() => setError(true));
+  useEffect(() => { void loadCams(); }, [member.id]);
+  // A link to #cameras (the bot's "My cameras") lands on the section once it exists.
+  useEffect(() => {
+    if (cams && location.hash === '#cameras') document.getElementById('cameras')?.scrollIntoView();
+  }, [cams !== null]);
 
   const telegram = member.identities.some((i) => i.provider === 'telegram' && i.chat);
   const missing = (['telegram', 'github', 'email'] as const).filter((p) => !member.identities.some((i) => i.provider === p));
@@ -261,7 +269,22 @@ function MemberPage({ member, ways, locale, t, onChange }: {
         <div>
           <Stars n={member.stars} big />
           {pending > 0 && <div class="text-[13.5px] text-body-secondary">{t('club.pending', { n: pending })}</div>}
+          <dl class="m-0 mt-2 grid gap-0.5 text-[13px]">
+            <div class="flex justify-between gap-2"><dt class="text-body-secondary">{t('club.side_from_reports')}</dt><dd class="m-0"><Stars n={member.report_stars ?? member.stars} /></dd></div>
+            <div class="flex justify-between gap-2"><dt class="text-body-secondary">{t('club.side_from_wall')}</dt><dd class="m-0"><Stars n={member.wall_stars ?? 0} /></dd></div>
+          </dl>
         </div>
+        {cams && (
+          <label class="flex cursor-pointer items-start gap-2 text-[13px]">
+            <input type="checkbox" class="mt-0.5 accent-brand-blue" checked={cams.listed}
+              onChange={(e) => {
+                const listed = (e.target as HTMLInputElement).checked;
+                setCams({ ...cams, listed });
+                setListed(listed).catch(() => setCams({ ...cams, listed: !listed }));
+              }} />
+            <span>{t('club.listed')} · <a href={pathFor(locale, '/club/leaderboard')}>{t('club.leaderboard_link')}</a></span>
+          </label>
+        )}
         {naming
           ? (
             <form class="grid gap-1.5" onSubmit={(e) => {
@@ -296,6 +319,9 @@ function MemberPage({ member, ways, locale, t, onChange }: {
         <button type="button" class="site-btn site-btn-outline-secondary site-btn-sm w-fit" onClick={() => signOut().then(onChange)}>{t('club.sign_out')}</button>
       </aside>
       <div class="min-w-0">
+        {cams
+          ? <Cameras data={cams} locale={locale} t={t} onChange={() => { void loadCams(); onChange(); }} />
+          : !error && <div class="m-4 h-24 animate-pulse rounded bg-surface-alt" />}
         <h2 id="club-mine" class="m-0 border-b border-hairline px-4 py-3 text-lg font-semibold">{t('club.mine_title')}</h2>
         {error && <p class="m-4 text-sm text-[#9a5b00]" role="alert">{t('club.load_failed')}</p>}
         {!error && reports === null && <div class="m-4 h-24 animate-pulse rounded bg-surface-alt" />}
@@ -364,7 +390,11 @@ function Rules({ t }: { t: BoardsT }) {
       <h2 id="club-rules" class="m-0 text-base font-semibold">{t('club.rules_title')}</h2>
       <table class="w-full border-collapse">
         <tbody>
-          {([['rules_item', '+1 ★'], ['rules_dump', '+10 ★'], ['rules_none', '0']] as const).map(([k, v]) => (
+          {([
+            ['rules_item', `+${STARS.item} ★`], ['rules_dump', `+${STARS.dump} ★`],
+            ['rules_join', `+${STARS.join} ★`], ['rules_month', `+${STARS.month} ★`], ['rules_rare', `+${STARS.rare} ★`],
+            ['rules_none', '0'],
+          ] as const).map(([k, v]) => (
             <tr key={k} class="border-b border-hairline">
               <td class="py-1.5">{t(`club.${k}`)}</td>
               <td class={`py-1.5 text-right font-semibold whitespace-nowrap tabular-nums ${v === '0' ? 'text-body-secondary' : 'text-[#9a5b00]'}`}>{v}</td>

@@ -20,7 +20,7 @@ const k = (s: string) => t(`pages.privacy.${s}`);
 
 const RECORDS = ['page', 'place', 'device', 'clicks', 'tag'];
 const NEVER = ['cookies', 'individuals', 'region'];
-const ROWS = ['totals', 'session', 'log', 'images', 'details'];
+const ROWS = ['totals', 'session', 'log', 'images', 'details', 'days'];
 ---
 <PageHeader title={k('hero_title')} lede={k('hero_lede')} />
 
@@ -93,7 +93,9 @@ const ROWS = ['totals', 'session', 'log', 'images', 'details'];
         <p class="mb-4 text-body-secondary">{k('wall_lede')}</p>
         <p class="mb-3" set:html={k('wall_published_html')} />
         <p class="mb-3" set:html={k('wall_withheld_html')} />
-        <p class="mb-0" set:html={k('wall_retention_html')} />
+        <p class="mb-3" set:html={k('wall_retention_html')} />
+        <p class="mb-3" set:html={k('wall_history_html')} />
+        <p class="mb-0" set:html={k('wall_club_html')} />
       </div>
     </div>
   </div>

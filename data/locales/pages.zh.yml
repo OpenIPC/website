@@ -225,6 +225,8 @@ zh:
       wall_published_html: "<strong>公开：</strong>图片本身，以及摄像机对自己的描述——芯片、传感器、固件、推流程序、运行时间和芯片温度。"
       wall_withheld_html: "<strong>不公开：</strong>摄像机的 MAC 与 IP 地址，两者仅维护者可见。MAC 决定两件事：一台摄像机每 15 分钟可上传一次，列入封禁名单的摄像机会被拒绝。每台摄像机的页面以一个令牌命名，无法还原为任一地址。"
       wall_retention_html: "每晚的清理会删除已满 2 天的图片及随附的描述——因此任何内容都不会超过 3 天。"
+      wall_history_html: "<strong>保留：</strong>每台摄像头首次发送画面的日期，以及此后每一天其画面是否有内容、当天是否有变化——每天几个数字，不含画面，也不含地址。首页据此区分老摄像头和新摄像头，OpenIPC 俱乐部据此统计已绑定摄像头的天数。"
+      wall_club_html: "<strong>OpenIPC 俱乐部：</strong>绑定摄像头的成员只有在为该摄像头选择显示时，才会在其页面上署名；只有选择上榜时，才会出现在排行榜上。绑定码会在保存任何内容之前从说明中删除。"
       retention_title: "各项保留多久"
       retention_what: "内容"
       retention_where: "位置"
@@ -244,6 +246,9 @@ zh:
       row_details_what: "Open Wall 摄像机信息"
       row_details_where: "我们的服务器"
       row_details_long: "最多 3 天"
+      row_days_what: "Open Wall 摄像头历史（按天，不含画面）"
+      row_days_where: "我们的服务器"
+      row_days_long: "保留"
     donate:
       business_band_html: 如果贵公司依赖 OpenIPC，更可持续的支持方式是建立商业合作关系。<a href="/business">看看我们能提供什么</a>。
       accounting: 我们致力于共建一个开放和透明的数字环境，并由衷地感谢你对我们的努力提供的任何支持，以推动OpenIPC和我们的使命走向一个可持续的未来。
