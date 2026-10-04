@@ -641,7 +641,7 @@ function Experts({ t, doc, combination, settings, facts, sdcardRequired, edition
         <h3 class="mb-6 font-bold">{t('firmware.restore.title')}</h3>
         <div class="site-row">
           <div class="site-col site-col-lg-4">
-            <p>{t('firmware.restore.info')}</p>
+            <p>{t(settings.flashType === 'nand' ? 'firmware.restore.nand_info' : 'firmware.restore.info')}</p>
           </div>
           <div class="site-col site-col-lg-8">
             <Commands
@@ -745,7 +745,9 @@ function StockBootloader({ t, doc, facts, settings, combination }: {
         </h2>
         <div class="site-row site-row-g4">
           <div class="site-col-lg-4">
-            <p class="text-body-secondary">{t('firmware.restore.info')}</p>
+            <p class="text-body-secondary">
+                {t(settings.flashType === 'nand' ? 'firmware.restore.nand_info' : 'firmware.restore.info')}
+              </p>
           </div>
           <div class="site-col-lg-8">
             <Commands

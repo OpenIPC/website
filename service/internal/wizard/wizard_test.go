@@ -365,7 +365,11 @@ func TestNANDBackupInPieces(t *testing.T) {
 		for _, want := range []string{
 			"mw.b " + la + " 0xff 0x800000",
 			"nand read " + la + " 0x0 0x800000 && tftpput " + la + " 0x800000 " + name + "-00.bin",
-			"nand read " + la + " 0x7800000 0x800000 && tftpput " + la + " 0x800000 " + name + "-15.bin",
+			"nand read " + la + " 0x7000000 0x800000 && tftpput " + la + " 0x800000 " + name + "-14.bin",
+			// The last piece steps down a block per bad block in it.
+			"if nand read " + la + " 0x7800000 0x800000; then tftpput " + la + " 0x800000 " + name + "-15.bin; " +
+				"elif nand read " + la + " 0x7800000 0x7e0000; then tftpput " + la + " 0x7e0000 " + name + "-15.bin; ",
+			"elif nand read " + la + " 0x7800000 0x780000; then tftpput " + la + " 0x780000 " + name + "-15.bin; fi",
 		} {
 			if !strings.Contains(backup, want) {
 				t.Errorf("%s backup lacks %q:\n%s", soc, want, backup)
@@ -374,18 +378,32 @@ func TestNANDBackupInPieces(t *testing.T) {
 		if strings.Contains(backup, "0x8000000") || strings.Contains(backup, "-16.bin") {
 			t.Errorf("%s backup reads the whole chip or too many pieces:\n%s", soc, backup)
 		}
+		w := c.writeCmd()
 		restore := strings.Join(c.restoreFromBackup(), "\n")
 		for _, want := range []string{
-			"tftpboot " + la + " " + name + "-00.bin && nand erase 0x0 0x1000000 && nand write " + la + " 0x0 0x800000",
-			"tftpboot " + la + " " + name + "-14.bin && nand erase 0x7000000 0x1000000 && nand write " + la + " 0x7000000 0x800000",
-			"tftpboot " + la + " " + name + "-15.bin && nand erase 0x7800000 0x800000 && nand write " + la + " 0x7800000 0x800000",
+			// The bootloader's piece goes on with a plain write, whatever the rest.
+			"tftpboot " + la + " " + name + "-00.bin && nand erase 0x0 0x1000000 && nand write " + la + " 0x0 ${filesize}",
+			"tftpboot " + la + " " + name + "-01.bin && nand erase 0x800000 0x1000000 && nand " + w + " " + la + " 0x800000 ${filesize}",
+			"tftpboot " + la + " " + name + "-14.bin && nand erase 0x7000000 0x1000000 && nand " + w + " " + la + " 0x7000000 ${filesize}",
+			"if tftpboot " + la + " " + name + "-15.bin && nand erase 0x7800000 0x800000; then if nand " + w + " " + la + " 0x7800000 0x800000; ",
+			"elif nand " + w + " " + la + " 0x7800000 0x780000; then echo restored; fi; fi",
 		} {
 			if !strings.Contains(restore, want) {
 				t.Errorf("%s restore lacks %q:\n%s", soc, want, restore)
 			}
 		}
-		if strings.Contains(restore, "0x8000000") || strings.Contains(restore, "trimffs") {
+		if strings.Contains(restore, "0x8000000") || strings.Contains(restore, "-16.bin") {
 			t.Errorf("%s restore:\n%s", soc, restore)
+		}
+		// UBI goes back with write.trimffs where the bootloader has it.
+		if c.ubi() != (w == "write.trimffs") {
+			t.Errorf("%s restores with nand %s", soc, w)
+		}
+		// U-Boot reads a command line into a 1 KiB buffer.
+		for _, l := range append(c.firmwareBackup(), c.restoreFromBackup()...) {
+			if len(l) >= 1024 {
+				t.Errorf("%s line of %d bytes: %s", soc, len(l), l)
+			}
 		}
 
 		c.iface, c.sd = "wifi", "sd"
@@ -393,7 +411,8 @@ func TestNANDBackupInPieces(t *testing.T) {
 		for _, want := range []string{
 			"mmc dev 0; mmc erase 0x10 0x40000",
 			"nand read " + la + " 0x0 0x800000 && mmc write " + la + " 0x10 0x4000",
-			"nand read " + la + " 0x7800000 0x800000 && mmc write " + la + " 0x3c010 0x4000",
+			"if nand read " + la + " 0x7800000 0x800000; then mmc write " + la + " 0x3c010 0x4000; " +
+				"elif nand read " + la + " 0x7800000 0x7e0000; then mmc write " + la + " 0x3c010 0x3f00; ",
 			"of=./" + name + "-$(printf %02d $i).bin",
 		} {
 			if !strings.Contains(backup, want) {
@@ -401,7 +420,7 @@ func TestNANDBackupInPieces(t *testing.T) {
 			}
 		}
 		restore = strings.Join(c.restoreFromBackup(), "\n")
-		if !strings.Contains(restore, "fatload mmc 0:1 "+la+" "+name+"-15.bin && nand erase 0x7800000 0x800000") {
+		if !strings.Contains(restore, "if fatload mmc 0:1 "+la+" "+name+"-15.bin && nand erase 0x7800000 0x800000; then") {
 			t.Errorf("%s SD restore:\n%s", soc, restore)
 		}
 	}

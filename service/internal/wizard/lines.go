@@ -152,7 +152,22 @@ const (
 	nandChunkBlocks = 0x4000 // nandChunkHex in 512-byte SD card blocks
 	nandChunkSize   = 0x800000
 	nandChunks      = 16 // nandSizeHex / nandChunkHex
+	nandBlockSize   = 0x20000
+	// nandTailBadBlocks is how many bad blocks in the last piece the backup
+	// gets round; each is one more branch on a line U-Boot reads into a
+	// 1 KiB console buffer.
+	nandTailBadBlocks = 4
 )
+
+// nandChunkSave sends piece i, size bytes long, to the TFTP server or the
+// SD card.
+func (c *camera) nandChunkSave(i, size int) string {
+	la := c.soc.LoadAddress
+	if c.sdWifi() {
+		return fmt.Sprintf("mmc write %s %s 0x%x", la, nandChunkBlock(i), size/512)
+	}
+	return fmt.Sprintf("tftpput %s 0x%x %s", la, size, c.nandChunkFilename(i))
+}
 
 func nandChunkOffset(i int) string { return fmt.Sprintf("0x%x", i*nandChunkSize) }
 
@@ -173,21 +188,32 @@ func (c *camera) nandBackup() []string {
 	if c.sdWifi() {
 		text = append(text, "mmc dev 0; mmc erase 0x10 "+c.flashSizeBlocks())
 	}
-	for i := 0; i < nandChunks; i++ {
-		read := "nand read " + la + " " + nandChunkOffset(i) + " " + nandChunkHex + " && "
-		if c.sdWifi() {
-			text = append(text, read+"mmc write "+la+" "+nandChunkBlock(i)+" "+fmt.Sprintf("0x%x", nandChunkBlocks))
-		} else {
-			text = append(text, read+"tftpput "+la+" "+nandChunkHex+" "+c.nandChunkFilename(i))
-		}
+	for i := 0; i < nandChunks-1; i++ {
+		text = append(text, "nand read "+la+" "+nandChunkOffset(i)+" "+nandChunkHex+" && "+c.nandChunkSave(i, nandChunkSize))
 	}
+	// The last piece has no blocks after it to skip on to: with a bad block
+	// in it, an 8 MiB read runs past the end of the chip and fails. Each
+	// branch tries one block less, for up to nandTailBadBlocks of them.
+	last := nandChunks - 1
+	tail := ""
+	for bad := 0; bad <= nandTailBadBlocks; bad++ {
+		size := nandChunkSize - bad*nandBlockSize
+		kw := "elif"
+		if bad == 0 {
+			kw = "if"
+		}
+		tail += fmt.Sprintf("%s nand read %s %s 0x%x; then %s; ", kw, la, nandChunkOffset(last), size, c.nandChunkSave(last, size))
+	}
+	text = append(text, tail+"fi")
 	if c.sdWifi() {
 		text = append(text,
 			"",
-			"# Use the following command to copy the pieces to files on a PC",
+			"# Then copy the pieces to files on a PC. Run this there, without the leading #",
 			"# (replace /dev/sdc with your SD card device):",
 			fmt.Sprintf("# for i in $(seq 0 %d); do sudo dd bs=512 skip=$((16 + i * %d)) count=%d if=/dev/sdc of=./%s-$(printf %%02d $i).bin; done",
-				nandChunks-1, nandChunkBlocks, nandChunkBlocks, strings.TrimSuffix(c.backupFilename(), ".bin")))
+				nandChunks-1, nandChunkBlocks, nandChunkBlocks, strings.TrimSuffix(c.backupFilename(), ".bin")),
+			"# The last piece comes off the card at 8 MiB even when it was read shorter;",
+			"# the restore writes no more of it than fits before the end of the chip.")
 	} else {
 		text = append(text,
 			"# if there is no tftpput but tftp then use it instead, with the file name",
@@ -319,6 +345,8 @@ func (c *camera) restoreFromBackup() []string {
 // way out runs into the next range on the way back, and that has to be
 // erased before it is written. The next piece erases it again and writes the
 // same data there, since its own read started at the same good blocks.
+// Each writes ${filesize}, what was loaded, so a short file writes no RAM
+// left over from the piece before.
 func (c *camera) nandRestore() []string {
 	la := c.soc.LoadAddress
 	text := []string{doNotPaste}
@@ -326,16 +354,37 @@ func (c *camera) nandRestore() []string {
 		text = append(text, c.env())
 	}
 	text = append(text, "mw.b "+la+" 0xff "+nandChunkHex)
-	for i := 0; i < nandChunks; i++ {
-		erase := fmt.Sprintf("0x%x", 2*nandChunkSize)
-		if i == nandChunks-1 {
-			erase = nandChunkHex
-		}
-		transfer := "tftpboot " + la + " " + c.nandChunkFilename(i)
+	load := func(i int) string {
 		if c.sdWifi() {
-			transfer = "fatload mmc 0:1 " + la + " " + c.nandChunkFilename(i)
+			return "fatload mmc 0:1 " + la + " " + c.nandChunkFilename(i)
 		}
-		text = append(text, c.guardedFlash(transfer, nandChunkOffset(i), erase, nandChunkHex))
+		return "tftpboot " + la + " " + c.nandChunkFilename(i)
 	}
-	return text
+	// Piece 0 holds the bootloader, and that goes on with a plain write, as
+	// the install's U-Boot step does: the boot ROM does not take erased
+	// pages in it. A Hi3516EV300 restored with write.trimffs there stopped at
+	// "System startup". The rest is written as UBI is (see writeCmd).
+	w := c.writeCmd()
+	for i := 0; i < nandChunks-1; i++ {
+		wi := w
+		if i == 0 {
+			wi = "write"
+		}
+		text = append(text, c.guardedWrite(load(i), nandChunkOffset(i), fmt.Sprintf("0x%x", 2*nandChunkSize), wi, "${filesize}"))
+	}
+	// The last piece was read one block shorter for each bad block in it,
+	// and a copy off the SD card is padded to 8 MiB again. Either way the
+	// longest write that fits before the end of the chip is the piece: a
+	// write that does not fit fails before it writes anything.
+	last := nandChunks - 1
+	off := nandChunkOffset(last)
+	tail := "mw.b " + la + " 0xff " + nandChunkHex + "; if " + load(last) + " && nand erase " + off + " " + nandChunkHex + "; then "
+	for bad := 0; bad <= nandTailBadBlocks; bad++ {
+		kw := "elif"
+		if bad == 0 {
+			kw = "if"
+		}
+		tail += fmt.Sprintf("%s nand %s %s %s 0x%x; then echo restored; ", kw, w, la, off, nandChunkSize-bad*nandBlockSize)
+	}
+	return append(text, tail+"fi; fi")
 }

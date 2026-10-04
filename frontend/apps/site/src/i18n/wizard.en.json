@@ -92,7 +92,7 @@
       "backup": {
         "info": "OpenIPC U-Boot overwrites the original crypto partition making it impossible to revert to the factory firmware unless you have a full flash backup for this particular camera! To create a full firmware backup start a TFTP server and run these commands in bootloader shell.",
         "more_info_html": "Please refer to <a href=\"https://github.com/OpenIPC/wiki/blob/master/en/installation.md\">Installation instructions</a> in the project's wiki for more information.",
-        "nand_pieces": "NAND is backed up in 16 pieces of 8 MiB, one file each: the whole chip does not fit in the camera's RAM. Keep all 16 files together. They go back the same way, piece by piece, and only onto this camera: reading and writing NAND skip its bad blocks, so the pieces are not one image of the chip and not something to write with a programmer.",
+        "nand_pieces": "NAND is backed up in 16 pieces of 8 MiB, one file each: the whole chip does not fit in the camera's RAM. Keep all 16 files together. They go back the same way, piece by piece, and only onto this camera: reading and writing NAND skip its bad blocks, so the pieces are not one image of the chip and not something to write with a programmer. These commands are for a 128 MiB chip, the size U-Boot prints when it starts (“Chipsize:128 MiB” or “NAND: 128 MiB”); on a bigger chip they leave out everything past the first 128 MiB.",
         "shared_name": "The name above is the same for every camera of this model and chip, so backing up a second one writes over the first — and this file is the only way back to a camera's stock firmware. Give each camera's backup a name of its own, and use that same name when restoring it. Or fill in the MAC address above: when the form has one, it becomes part of the name.",
         "subtitle": "Back up your stock firmware, don't skip this part of the installation process!",
         "title": "Save the original firmware"
@@ -169,6 +169,7 @@
     },
     "restore": {
       "info": "If you need to restore the original firmware, use the backup file you have created using the commands above. Place the backup file into the root directory of your TFTP server and run these commands in bootloader shell.",
+      "nand_info": "To restore the original firmware, use the 16 files the backup above saved from this camera. Put them in the root directory of your TFTP server, or in the root of the SD card's FAT partition if the backup went to the card, and run these commands in the bootloader shell one line at a time, in order.",
       "title": "Restore camera stock firmware"
     },
     "version": {
