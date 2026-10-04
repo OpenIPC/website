@@ -107,6 +107,8 @@ export const PAGE_PATHS: PagePath[] = [
   { path: '/edge-ai', titleKey: 'pages.edge_ai.title', descriptionKey: 'pages.edge_ai.meta_description' },
   // What every build puts on the chip, from the reports the CI pushes (builds/PUSH.md).
   { path: '/firmware-explorer', titleKey: 'pages.firmware_explorer.title', descriptionKey: 'pages.firmware_explorer.lede' },
+  // Every Builder device against firmware, from the report Builder's CI pushes (drift/PUSH.md).
+  { path: '/firmware-explorer/upstream', titleKey: 'pages.firmware_upstream.title', descriptionKey: 'pages.firmware_upstream.lede' },
   { path: '/get-started', titleKey: 'pages.get_started.title' },
   { path: '/green_life', titleKey: 'pages.green_life.title' },
   { path: '/isp-sensors', titleKey: 'pages.isp_sensors.title' },

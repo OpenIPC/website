@@ -1,0 +1,18 @@
+---
+/**
+ * Every Builder device against OpenIPC/firmware: the firmware-drift report
+ * Builder's CI pushes once a day (service/internal/drift), which used to be the
+ * text of a GitHub issue. One island reading the site's own API.
+ */
+import PageHeader from '../PageHeader.astro';
+import UpstreamFleet from '../explorer/UpstreamFleet.tsx';
+import { useTranslations, type Locale } from '../../lib/i18n';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+<PageHeader title={t('pages.firmware_upstream.title')} lede={t('pages.firmware_upstream.lede')} />
+<div class="site-container pb-12">
+  <UpstreamFleet client:load locale={locale} />
+</div>

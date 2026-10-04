@@ -216,7 +216,7 @@ export default function Explorer({ locale }: { locale: Locale }) {
                 <Drift source={compareSource ?? source} builds={builds} base={sizes.value} baseBuild={build.id} compareBuild={compare} platform={platform} t={t} />
               )}
               {shown === 'trends' && <Trends source={source} platform={platform} t={t} />}
-              {shown === 'upstream' && catalog && <Upstream catalog={catalog} platform={platform} build={build} sizes={sizes.value} t={t} />}
+              {shown === 'upstream' && catalog && <Upstream catalog={catalog} platform={platform} build={build} sizes={sizes.value} locale={locale} t={t} />}
               {shown === 'whatif' && (kconfigSource
                 ? <WhatIf source={kconfigSource} platform={platform} sizes={sizes.value} t={t} />
                 : <p class="text-body-secondary">{t('whatif_unavailable')}</p>)}

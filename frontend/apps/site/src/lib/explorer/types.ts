@@ -117,3 +117,57 @@ export type SizesDownload = {
   storage: string | null;
   url: string;
 };
+
+// The firmware-drift report Builder pushes once a day, as
+// GET /api/v1/explorer/builder/upstream answers it (service/internal/drift).
+
+export type UpstreamCommit = { sha: string; date: string; author: string; subject: string };
+
+export type UpstreamShadow = {
+  /** The file under devices/ that builder.sh copies over firmware's. */
+  builder: string;
+  firmware: string;
+  status: "ok" | "unpinned" | "missing_builder" | "firmware_gone" | "moved";
+  pinned_blob?: string;
+  current_blob?: string;
+  /** The firmware commit the pin was reconciled against, when known. */
+  pinned_commit?: string;
+  pin_unknown?: boolean;
+  truncated?: boolean;
+  reconciled?: string;
+  note?: string;
+  devices: string[];
+  /** Firmware's changes to the file since the pin, newest first. */
+  commits?: UpstreamCommit[];
+  /** Open since: the oldest report in the unbroken run that had it. */
+  since?: string;
+};
+
+export type UpstreamSymbol = {
+  symbol: string;
+  kind: "dead" | "known_dead" | "stray" | "firmware_retired" | "stale_entry";
+  reason?: string;
+  allowed?: string[];
+  devices: string[];
+  since?: string;
+};
+
+export type UpstreamDevice = { device: string; dir: string; shadows: number; attention: number; symbols: number };
+
+export type UpstreamReport = {
+  schema: 1;
+  report: {
+    checked_at: string;
+    received_at: string;
+    builder_commit: string;
+    firmware_commit: string;
+    buildroot_version: string;
+    run_url: string;
+    retained: number;
+    oldest_checked_at: string;
+  };
+  devices: UpstreamDevice[];
+  shadows: UpstreamShadow[];
+  symbols: UpstreamSymbol[];
+  notices: string[];
+};

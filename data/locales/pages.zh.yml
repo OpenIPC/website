@@ -354,6 +354,9 @@ zh:
     firmware_explorer:
       lede: '每个 OpenIPC 构建包含什么：闪存空间如何分配、哪些软件包和内核模块占用了它、90 个夜间构建中的变化，以及哪些内容可以去掉。'
       title: 固件构成
+    firmware_upstream:
+      lede: 'OpenIPC/builder 为其制作固件的每台设备，与其所基于的 OpenIPC/firmware 对比：设备用自己的副本替换了哪些固件文件，其中哪些 Firmware 之后又修改过，以及哪些 defconfig 符号固件已不再使用。每天检查一次。'
+      title: Builder 设备对比固件
     firmware_partitions_calculation:
       end_address: 结束地址
       flash_size_mb: 闪存大小，MB

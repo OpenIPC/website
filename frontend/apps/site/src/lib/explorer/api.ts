@@ -4,7 +4,7 @@
  * cached per URL for the life of the page; a failed fetch is forgotten so a
  * retry asks again.
  */
-import type { IndexFile, KconfigGraph, KconfigHelp, Sizes, Source } from "./types";
+import type { IndexFile, KconfigGraph, KconfigHelp, Sizes, Source, UpstreamReport } from "./types";
 import type { TrendsFile } from "./timeseries";
 
 /** The API answered 404: the build, platform or its data does not exist. */
@@ -42,3 +42,6 @@ export type KconfigDoc = { build: string; graph: KconfigGraph; help: KconfigHelp
 
 export const fetchKconfig = (source: Source, platform: string) =>
   get<KconfigDoc>(`${base(source)}/platforms/${seg(platform)}/kconfig`);
+
+/** Builder's newest firmware-drift report (service/internal/drift). */
+export const fetchUpstream = () => get<UpstreamReport>("/api/v1/explorer/builder/upstream");

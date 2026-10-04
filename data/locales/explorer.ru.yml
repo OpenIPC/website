@@ -123,8 +123,49 @@ ru:
     upstream_dropped: 'Исключено этим устройством ({count})'
     upstream_none: Нет
     upstream_in_package: 'в пакете {package}'
-    upstream_files_note: Файлы, которые это устройство подменяет в дереве прошивки, и изменения в них со стороны Firmware отслеживаются в
-    upstream_files_link: отчёте о расхождениях Builder
+    col_file: Файл
+    col_finding: Находка
+    col_device: Устройство
+    col_replaced: Подменённых файлов
+    col_need_look: Требуют внимания
+    col_symbol_findings: Находки по символам
+    status_ok: в порядке
+    status_unpinned: не сверялся
+    status_moved: Firmware изменила
+    status_firmware_gone: удалён из Firmware
+    status_missing_builder: запись указывает на отсутствующий файл
+    symkind_dead: 'не объявлен ни в одном Kconfig: строка ничего не делает'
+    symkind_known_dead: не объявлен ни в одном Kconfig (известно)
+    symkind_stray: разрешён только для других устройств
+    symkind_firmware_retired: ни один defconfig Firmware его больше не выбирает
+    symkind_stale_entry: указан в firmware-drift.json, но нигде не выбран
+    upstream_drift_heading: Файлы прошивки, которые подменяет устройство
+    upstream_drift_summary: 'Устройство подменяет своей копией файлов прошивки: {total}; требуют внимания: {attention}.'
+    upstream_drift_absent: 'Этого устройства нет в последнем отчёте о расхождениях: возможно, его больше не собирают.'
+    upstream_drift_none: Устройство не подменяет ни одного файла прошивки.
+    upstream_drift_checked: 'Проверено {date}.'
+    upstream_drift_missing: Отчёт о расхождениях с прошивкой ещё не опубликован.
+    upstream_fleet_link: Все устройства Builder
+    upstream_since: 'с {date}'
+    upstream_shared: 'общий для устройств: {count}'
+    upstream_commits: 'Firmware изменила его после сверки {date}:'
+    upstream_commits_unknown: 'Сверенной версии нет в истории Firmware; изменения Firmware с {date}:'
+    upstream_truncated: '(показаны первые 200)'
+    upstream_compare: Все изменения Firmware одним diff
+    upstream_repin: Сверили копию? Запись, которая это фиксирует
+    upstream_repin_hint: 'Замените запись этого файла в .github/firmware-drift.json на:'
+    upstream_copy: Копировать
+    upstream_edit_config: Изменить firmware-drift.json
+    upstream_allowed: 'разрешён для {globs}'
+    upstream_symbols_heading: Символы defconfig, требующие внимания
+    fleet_report: 'Проверено {date}: устройств {devices}, требуют внимания {needing}.'
+    fleet_run: запуск
+    fleet_attention_only: Только устройства, требующие внимания
+    fleet_search: Найти устройство
+    fleet_none: Подходящих устройств нет.
+    fleet_repo_wide: Для всего репозитория
+    fleet_acknowledged: Известные
+    fleet_how: 'Устройство подменяет файл прошивки, когда в его каталоге в devices/ лежит файл по тому же пути: builder.sh копирует каталог поверх свежего дерева прошивки. Изменения Firmware в таком файле не доходят до устройства, пока кто-то не сравнит обе версии и не запишет это в .github/firmware-drift.json; на вкладке устройства есть коммиты и готовая запись.'
     kind_package: пакет
     kind_module: модуль
     trends_summary: 'сборок: {count}, {first} → {last}'
