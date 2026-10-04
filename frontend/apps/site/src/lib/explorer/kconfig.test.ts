@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   BUILD_REQUEST_LABEL,
   BUILD_REQUEST_MAX_BODY,
-  BUILD_REQUEST_REPO,
+  BUILD_REQUEST_REPOS,
+  buildPlatform,
   buildRequest,
   closeDisable,
   defconfigFragment,
@@ -172,16 +173,19 @@ describe("buildRequest", () => {
   const shareUrl =
     "https://openipc.org/firmware-explorer?source=firmware&build=nightly-XYZ&plat=hi3518ev300-lite";
 
-  it("targets OpenIPC/builder with the build-request label", () => {
+  it("targets the repository that builds the platform, with the build-request label", () => {
     const g = graph({ BR2_PACKAGE_FOO: sym() });
     const r = buildRequest({
+      source: "firmware",
+      platform: "hi3518ev300-lite",
       graph: g,
       disabled: new Set(["BR2_PACKAGE_FOO"]),
       savingsBytes: 50_000,
       newHeadroomKb: 120,
       shareUrl,
     });
-    expect(r.url).toContain(`github.com/${BUILD_REQUEST_REPO}/issues/new`);
+    expect(r.url).toContain(`github.com/${BUILD_REQUEST_REPOS.firmware}/issues/new`);
+    expect(r.url).toContain("github.com/OpenIPC/firmware/issues/new");
     expect(r.url).toContain(`labels=${BUILD_REQUEST_LABEL}`);
     expect(r.truncated).toBe(false);
   });
@@ -192,6 +196,8 @@ describe("buildRequest", () => {
       BR2_PACKAGE_R8188EU: sym({ package: "r8188eu" }),
     });
     const r = buildRequest({
+      source: "firmware",
+      platform: "hi3518ev300-lite",
       graph: g,
       disabled: new Set(["BR2_PACKAGE_MAJESTIC", "BR2_PACKAGE_R8188EU"]),
       savingsBytes: 200_000,
@@ -211,13 +217,15 @@ describe("buildRequest", () => {
       BR2_PACKAGE_B: sym(),
     });
     const r = buildRequest({
+      source: "firmware",
+      platform: "hi3518ev300-lite",
       graph: g,
       disabled: new Set(["BR2_PACKAGE_A", "BR2_PACKAGE_B"]),
       savingsBytes: 0,
       newHeadroomKb: null,
       shareUrl,
     });
-    expect(r.title).toBe("Build request: test-t (2 symbols off)");
+    expect(r.title).toBe("Build request: hi3518ev300_lite (2 symbols off)");
     // URL-encoded title makes it through URLSearchParams unmodified semantically.
     const params = new URLSearchParams(new URL(r.url).search);
     expect(params.get("title")).toBe(r.title);
@@ -227,6 +235,8 @@ describe("buildRequest", () => {
   it("URL-encodes payload that contains symbols / newlines / hashes", () => {
     const g = graph({ BR2_PACKAGE_X: sym() });
     const r = buildRequest({
+      source: "firmware",
+      platform: "hi3518ev300-lite",
       graph: g,
       disabled: new Set(["BR2_PACKAGE_X"]),
       savingsBytes: 0,
@@ -248,6 +258,8 @@ describe("buildRequest", () => {
     }
     const g = graph(syms);
     const r = buildRequest({
+      source: "firmware",
+      platform: "hi3518ev300-lite",
       graph: g,
       disabled: new Set(Object.keys(syms)),
       savingsBytes: 9_999_999,
@@ -264,6 +276,8 @@ describe("buildRequest", () => {
   it("omits the projected-headroom line when newHeadroomKb is null", () => {
     const g = graph({ BR2_PACKAGE_X: sym() });
     const r = buildRequest({
+      source: "firmware",
+      platform: "hi3518ev300-lite",
       graph: g,
       disabled: new Set(["BR2_PACKAGE_X"]),
       savingsBytes: 1024,
@@ -271,5 +285,33 @@ describe("buildRequest", () => {
       shareUrl,
     });
     expect(r.body).not.toContain("Projected rootfs headroom");
+  });
+});
+
+describe("build-one's platform name", () => {
+  it("turns a firmware platform into its defconfig name", () => {
+    expect(buildPlatform("firmware", "ssc337-ultimate")).toBe("ssc337_ultimate");
+    expect(buildPlatform("firmware", "t31-lite")).toBe("t31_lite");
+  });
+
+  it("leaves a builder platform alone, hyphens in the device name included", () => {
+    expect(buildPlatform("builder", "ssc337_lite_tiandy-tc-c321n-v2")).toBe("ssc337_lite_tiandy-tc-c321n-v2");
+    expect(buildPlatform("builder", "hi3518ev200_mini")).toBe("hi3518ev200_mini");
+  });
+
+  it("files a builder platform's request on OpenIPC/builder", () => {
+    const g = graph({ BR2_PACKAGE_X: sym() });
+    const r = buildRequest({
+      source: "builder",
+      platform: "ssc337_lite_tiandy-tc-c321n-v2",
+      graph: g,
+      disabled: new Set(["BR2_PACKAGE_X"]),
+      savingsBytes: 0,
+      newHeadroomKb: null,
+      shareUrl: "https://openipc.org/firmware-explorer",
+    });
+    expect(r.url).toContain("github.com/OpenIPC/builder/issues/new");
+    expect(r.body).toContain("platform=ssc337_lite_tiandy-tc-c321n-v2");
+    expect(r.body).toContain("request_issue=");
   });
 });

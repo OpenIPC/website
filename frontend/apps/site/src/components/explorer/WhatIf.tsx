@@ -58,7 +58,7 @@ export default function WhatIf({ source, platform, sizes, t }: { source: Source;
   const newHeadroom = headroom + Math.round(saved / 1024);
   const fragment = defconfigFragment(graph, closure.disabled);
   const request = buildRequest({
-    graph, disabled: closure.disabled, savingsBytes: saved, newHeadroomKb: newHeadroom,
+    source, platform, graph, disabled: closure.disabled, savingsBytes: saved, newHeadroomKb: newHeadroom,
     shareUrl: typeof window === 'undefined' ? '' : window.location.href,
   });
   const none = closure.disabled.size === 0;
