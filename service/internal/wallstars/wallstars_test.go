@@ -149,7 +149,6 @@ func TestClaim(t *testing.T) {
 	if done, err := r.store.ForceUnlink(ctx, r.snaps.CameraToken("02:00:00:00:01:01")); err != nil || !done {
 		t.Fatalf("force unlink: %v %v", done, err)
 	}
-	r.exec(`UPDATE club_camera_codes SET blocked_at = NULL WHERE code = $1`, bob.Code)
 	if linked, err := r.store.ClaimPending(ctx); err != nil || len(linked) != 1 || linked[0].Member != "m-bob0000000" {
 		t.Fatalf("pending claims: %+v %v", linked, err)
 	}

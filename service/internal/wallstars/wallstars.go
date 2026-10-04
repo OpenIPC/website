@@ -493,7 +493,18 @@ func (s *Store) Unlink(ctx context.Context, member, token string) (bool, error) 
 		return false, err
 	}
 	_, err = s.DB.Exec(ctx, `DELETE FROM camera_links WHERE mac_key = $1 AND member_id = $2`, key, member)
+	if err == nil {
+		err = s.unblock(ctx, key)
+	}
 	return err == nil, err
+}
+
+// unblock lets the codes a freed camera sent and was refused link it now:
+// the sweep (ClaimPending) tries them without waiting for its next frame.
+func (s *Store) unblock(ctx context.Context, macKey string) error {
+	_, err := s.DB.Exec(ctx, `UPDATE club_camera_codes SET blocked_at = NULL
+		WHERE mac_key = $1 AND used_at IS NULL AND blocked_at IS NOT NULL`, macKey)
+	return err
 }
 
 // ShowOwner puts the member's name on the camera's wall page, or takes it off.
@@ -632,7 +643,10 @@ func (s *Store) ForceUnlink(ctx context.Context, camera string) (bool, error) {
 		return false, err
 	}
 	tag, err := s.DB.Exec(ctx, `DELETE FROM camera_links WHERE mac_key = $1`, key)
-	return tag.RowsAffected() == 1, err
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() == 1, s.unblock(ctx, key)
 }
 
 // keyOf is a camera's key from its public name (16 hex characters) or a MAC.
