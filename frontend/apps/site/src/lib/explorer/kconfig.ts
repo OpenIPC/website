@@ -1,4 +1,4 @@
-import type { KconfigGraph } from "./types";
+import type { KconfigGraph, Source } from "./types";
 
 // ---------------------------------------------------------------------------
 // Dependency closure
@@ -136,8 +136,10 @@ export function defconfigFragment(
 }
 
 // ---------------------------------------------------------------------------
-// Build-request flow — pre-fill a GitHub issue on OpenIPC/builder with the
-// user's defconfig fragment so maintainers can dispatch a custom build.
+// Build-request flow — pre-fill a GitHub issue, in the repository that builds
+// the platform, with the user's defconfig fragment. A maintainer dispatches
+// that repository's build-one.yml with the issue's number; it applies the
+// fragment's `# BR2_... is not set` lines, builds, and replies on the issue.
 // ---------------------------------------------------------------------------
 
 /**
@@ -147,10 +149,24 @@ export function defconfigFragment(
  * marker rather than producing a silently broken URL.
  */
 export const BUILD_REQUEST_MAX_BODY = 6000;
-export const BUILD_REQUEST_REPO = "OpenIPC/builder";
+export const BUILD_REQUEST_REPOS: Record<Source, string> = {
+  firmware: "OpenIPC/firmware",
+  builder: "OpenIPC/builder",
+};
 export const BUILD_REQUEST_LABEL = "build-request";
 
+/**
+ * The name build-one.yml takes for a platform: its defconfig's, without
+ * `_defconfig`. Builder platforms already are that (`ssc337_lite_tiandy-…`);
+ * firmware publishes `ssc337-ultimate` for the `ssc337_ultimate` defconfig.
+ */
+export function buildPlatform(source: Source, platform: string): string {
+  return source === "firmware" ? platform.replace(/^([a-z0-9]+)-/, "$1_") : platform;
+}
+
 export type BuildRequestInput = {
+  source: Source;
+  platform: string;
   graph: KconfigGraph;
   disabled: ReadonlySet<string>;
   savingsBytes: number;
@@ -166,20 +182,22 @@ export type BuildRequest = {
 };
 
 /**
- * Compose a GitHub issue URL on OpenIPC/builder pre-filled with the
- * user's defconfig fragment and a short context block. Pure function:
+ * Compose a GitHub issue URL, on the repository that builds the platform,
+ * pre-filled with the user's defconfig fragment and a short context block. Pure function:
  * given identical inputs, returns byte-identical output (modulo the
  * shareUrl that the caller passes through).
  */
 export function buildRequest(input: BuildRequestInput): BuildRequest {
-  const { graph, disabled, savingsBytes, newHeadroomKb, shareUrl } = input;
+  const { source, platform, graph, disabled, savingsBytes, newHeadroomKb, shareUrl } = input;
+  const repo = BUILD_REQUEST_REPOS[source];
+  const target = buildPlatform(source, platform);
 
-  const title = `Build request: ${graph.board}-${graph.variant} (${disabled.size} symbols off)`;
+  const title = `Build request: ${target} (${disabled.size} symbols off)`;
 
   const fragment = defconfigFragment(graph, disabled);
 
   const summary = [
-    `**Board**: \`${graph.board}-${graph.variant}\``,
+    `**Platform**: \`${target}\``,
     `**Disabled symbols**: ${disabled.size}`,
     `**Estimated rootfs savings**: ~${Math.round(savingsBytes / 1024)} KB`,
     newHeadroomKb !== null
@@ -190,10 +208,14 @@ export function buildRequest(input: BuildRequestInput): BuildRequest {
     .filter((s): s is string => s !== null)
     .join("\n");
 
+  // What happens next, for the maintainer and the requester alike: only the
+  // `is not set` lines are applied (build-one refuses anything else), and a
+  // symbol another package selects stays on -- the reply says which.
   const note =
-    "<!-- Submitted from openipc.org/firmware-explorer. A maintainer can pick up this " +
-    "request and dispatch `build-one.yml` with the fragment below appended " +
-    "to the board defconfig. -->";
+    `<!-- Submitted from openipc.org/firmware-explorer. To build it: dispatch ` +
+    `build-one.yml in ${repo} with platform=${target} and request_issue=<this issue's number>. -->\n` +
+    "A maintainer builds this with the fragment below applied and posts the image here. " +
+    "A symbol that another package selects stays enabled; the reply will name any.";
 
   let truncated = false;
   let fragmentBlock = fragment;
@@ -223,7 +245,7 @@ export function buildRequest(input: BuildRequestInput): BuildRequest {
   params.set("labels", BUILD_REQUEST_LABEL);
   params.set("title", title);
   params.set("body", body);
-  const url = `https://github.com/${BUILD_REQUEST_REPO}/issues/new?${params.toString()}`;
+  const url = `https://github.com/${repo}/issues/new?${params.toString()}`;
 
   return { title, body, url, truncated };
 }
