@@ -160,9 +160,21 @@ func Board(soc *catalogue.SoC, idx *Index) string {
 	return board
 }
 
+// BoardFor is the build name a flash type's firmware is published under:
+// Board, unless the SoC names a separate NAND build (nand_board).
+func BoardFor(soc *catalogue.SoC, idx *Index, flashType string) string {
+	if flashType == "nand" && soc.NANDBoard != "" {
+		if idx != nil {
+			return idx.CanonicalBoard(soc.NANDBoard)
+		}
+		return soc.NANDBoard
+	}
+	return Board(soc, idx)
+}
+
 // LinuxAsset is the tarball carrying the kernel and rootfs.
 func (s Spec) LinuxAsset(idx *Index) string {
-	return fmt.Sprintf("openipc.%s-%s-%s.tgz", Board(s.SoC, idx), s.FlashType, s.Release)
+	return fmt.Sprintf("openipc.%s-%s-%s.tgz", BoardFor(s.SoC, idx, s.FlashType), s.FlashType, s.Release)
 }
 
 func (s Spec) ubi() bool { return s.nand() && s.SoC.UBINand() }
@@ -174,7 +186,7 @@ func (s Spec) Bootloader() string { return s.SoC.Bootloader(s.FlashType) }
 // layout the kernel is a volume inside rootfs.ubi, so there is no kernel
 // member and kernel is "".
 func (s Spec) Members(idx *Index) (kernel, rootfs string) {
-	board := Board(s.SoC, idx)
+	board := BoardFor(s.SoC, idx, s.FlashType)
 	if s.ubi() {
 		return "", "rootfs.ubi." + board
 	}

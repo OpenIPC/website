@@ -127,7 +127,14 @@ func nonNil(o obj) obj {
 
 // releases is Soc#published_releases: what the index says, in display order.
 func (e *exporter) releases(ft string) []string {
-	rels := slices.Clone(e.idx.Releases(e.board, ft))
+	// A UBI-only SoC publishes a bootloader per flash type, and its
+	// instructions write the one for the flash chosen: without it that flash
+	// type cannot be installed, so it is not offered at all. (Elsewhere a
+	// missing bootloader means installing with the camera's own, which stays.)
+	if e.soc.UBINand() && !firmware.BootloaderPublished(e.soc, e.idx, ft) {
+		return []string{}
+	}
+	rels := slices.Clone(e.idx.Releases(e.boardFor(ft), ft))
 	rank := func(r string) int {
 		if i := slices.Index(releaseOrder, r); i >= 0 {
 			return i
@@ -222,8 +229,11 @@ func (e *exporter) needsFlashMB() int {
 }
 
 func (e *exporter) linuxFilename(release, ft string) string {
-	return fmt.Sprintf("openipc.%s-%s-%s.tgz", e.board, ft, release)
+	return fmt.Sprintf("openipc.%s-%s-%s.tgz", e.boardFor(ft), ft, release)
 }
+
+// boardFor is the build a flash type's firmware comes from (nand_board).
+func (e *exporter) boardFor(ft string) string { return firmware.BoardFor(e.soc, e.idx, ft) }
 
 // bootloaderPublished is the NOR (or only) bootloader's; the NAND one, where
 // there is one, is bootloader_nand_published.
@@ -272,6 +282,11 @@ func layoutsFor(ft string) []*string {
 }
 
 func (e *exporter) editionsFor(ft string, layout *string) []string {
+	// Not the nothing-published menu below: firmware is there, the bootloader
+	// this flash type installs is not (see releases).
+	if e.soc.UBINand() && !firmware.BootloaderPublished(e.soc, e.idx, familyOf(ft)) {
+		return nil
+	}
 	published := e.releases(familyOf(ft))
 	offered := published
 	if len(published) == 0 {
@@ -325,7 +340,7 @@ func (e *exporter) combinations() []any {
 }
 
 func (e *exporter) camera(ft string, layout *string, edition, iface, sd, mac string) *camera {
-	c := &camera{soc: e.soc, board: e.board, flashType: ft, edition: edition, iface: iface, sd: sd,
+	c := &camera{soc: e.soc, board: e.boardFor(ft), flashType: ft, edition: edition, iface: iface, sd: sd,
 		ip: ipaddr, server: serverip, mac: mac}
 	if layout != nil {
 		c.layout = *layout

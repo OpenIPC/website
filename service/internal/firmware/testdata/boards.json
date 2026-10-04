@@ -301,10 +301,10 @@
     "urlname": "gk7205v510",
     "vendor": "Goke",
     "model": "GK7205V510",
-    "board": "gk7205v500",
+    "board": "gk7205v510",
     "uboot": "u-boot-gk7205v510-nor.bin",
     "uboot_nand": "u-boot-gk7205v510-nand.bin",
-    "nor_lite": "openipc.gk7205v500-nor-lite.tgz",
+    "nor_lite": "openipc.gk7205v510-nor-lite.tgz",
     "nand_lite": "openipc.gk7205v500-nand-lite.tgz"
   },
   {

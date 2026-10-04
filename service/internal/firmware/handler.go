@@ -141,8 +141,8 @@ func (h *Handler) buildFailed(w http.ResponseWriter, r *http.Request, soc *catal
 // The bootloader asked about is the one the requested flash type installs: a
 // UBI-only SoC publishes its NAND bootloader apart from the NOR one.
 func missingAssetMessage(soc *catalogue.SoC, flashType string, idx *Index) string {
-	board := Board(soc, idx)
-	published := len(idx.Releases(board, "nor")) > 0 || len(idx.Releases(board, "nand")) > 0
+	published := len(idx.Releases(BoardFor(soc, idx, "nor"), "nor")) > 0 ||
+		len(idx.Releases(BoardFor(soc, idx, "nand"), "nand")) > 0
 	switch {
 	case !published:
 		return "OpenIPC does not publish firmware for this SoC yet."
@@ -217,7 +217,7 @@ func pathBase(path string) string { return filepath.Base(path) }
 // tooLargeMessage names the flash the build is made for when its build said so
 // (#285): "try the Lite edition" is no help to somebody already on Lite.
 func tooLargeMessage(spec Spec, idx *Index) string {
-	if f, ok := idx.Fit(Board(spec.SoC, idx), spec.Release); ok && f.FlashMB > spec.SizeMB {
+	if f, ok := idx.Fit(BoardFor(spec.SoC, idx, spec.FlashType), spec.Release); ok && f.FlashMB > spec.SizeMB {
 		return fmt.Sprintf("This firmware is built for %d MB flash and does not fit %d MB. "+
 			"Choose a %d MB chip on the installation page.", f.FlashMB, spec.SizeMB, f.FlashMB)
 	}

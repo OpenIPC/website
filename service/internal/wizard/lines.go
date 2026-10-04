@@ -179,6 +179,9 @@ func (c *camera) flashingLinux() []string {
 		// staging blank: the write is ${filesize} long, and blanking the
 		// region would be 127 MiB of RAM the camera may not have.
 		ubi := "rootfs.ubi." + c.board
+		// The UBI partition runs to the end of the chip (-(ubi)); the erase
+		// below covers a 128 MiB one, the size the wizard installs for.
+		text = append(text, "# erases a 128 MiB chip: on a 256 MiB one use 0xff00000 instead of 0x7f00000")
 		if c.sdWifi() {
 			text = append(text, c.guardedWrite("fatload mmc 0:1 "+la+" "+ubi,
 				ubiOffset, ubiRegionSize, c.writeCmd(), "${filesize}"), "")

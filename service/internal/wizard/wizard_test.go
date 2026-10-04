@@ -297,3 +297,53 @@ func TestUBINandLines(t *testing.T) {
 		break
 	}
 }
+
+// A UBI-only SoC installs the bootloader its flash type names, so a flash type
+// whose bootloader is not published is not offered at all: no editions, no
+// combinations, no install lines pointing at a file that is not there.
+func TestUBINandWithoutItsBootloaderIsNotOffered(t *testing.T) {
+	cat, idx := inputs(t)
+	soc := *cat.SoC("hi3516ev300")
+	soc.UBootNANDFilename = "u-boot-hi3516ev300-unpublished-nand.bin"
+	d := decode(t, Document(&soc, idx))
+	if nand := d["editions"].(map[string]any)["nand"].([]any); len(nand) != 0 {
+		t.Errorf("NAND editions %v offered without a published NAND bootloader", nand)
+	}
+	for _, raw := range d["combinations"].([]any) {
+		if raw.(map[string]any)["flash_type"] == "nand" {
+			t.Fatalf("a NAND combination was exported without a published NAND bootloader")
+		}
+	}
+	if nor := d["editions"].(map[string]any)["nor"].([]any); len(nor) == 0 {
+		t.Errorf("NOR stopped being offered too")
+	}
+}
+
+// GK7205V510 has a NOR build of its own; its NAND firmware is the GK7205V500
+// build (nand_board), and each flash type names its own.
+func TestNANDBoardIsUsedForNANDOnly(t *testing.T) {
+	cat, idx := inputs(t)
+	d := decode(t, Document(cat.SoC("gk7205v510"), idx))
+	if d["board"] != "gk7205v510" {
+		t.Errorf("board %v, want the NOR build gk7205v510", d["board"])
+	}
+	pool := d["blocks"].(map[string]any)
+	sawNand := false
+	for _, raw := range d["combinations"].([]any) {
+		c := raw.(map[string]any)
+		if c["flash_type"] != "nand" {
+			continue
+		}
+		sawNand = true
+		var lines []string
+		for _, l := range pool[c["blocks"].(map[string]any)["flashing_linux"].(string)].(map[string]any)["lines"].([]any) {
+			lines = append(lines, l.(string))
+		}
+		if all := strings.Join(lines, "\n"); !strings.Contains(all, "rootfs.ubi.gk7205v500") {
+			t.Errorf("NAND install does not use the gk7205v500 build:\n%s", all)
+		}
+	}
+	if !sawNand {
+		t.Errorf("no NAND combination for gk7205v510")
+	}
+}

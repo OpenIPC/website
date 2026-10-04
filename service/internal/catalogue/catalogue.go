@@ -28,6 +28,10 @@ type SoC struct {
 	// which keeps the split layout (boot, env, kernel, ubi) and its `run
 	// uknand; run urnand` for every SoC that still boots that way.
 	UBootNANDFilename string  `yaml:"uboot_nand_filename"`
+	// NANDBoard is the build name upstream publishes this SoC's NAND
+	// firmware under, when that is not the NOR one: GK7205V510 has a NOR
+	// build of its own, but its NAND firmware is the GK7205V500 build.
+	NANDBoard string `yaml:"nand_board"`
 	LinuxFilename     string  `yaml:"linux_filename"`
 	LoadAddress       string  `yaml:"load_address"`
 	Vendor            *Vendor `yaml:"-"`

@@ -573,7 +573,7 @@ function Experts({ t, doc, combination, settings, facts, sdcardRequired, edition
             <h3 class="mb-6 font-bold">{install('flashing_uboot.title')}</h3>
             <div class="site-row">
               <div class="site-col site-col-lg-4">
-                {bootloader.filename !== '' && (
+                {bootloader.filename !== '' && bootloader.published && (
                   <div class="github">
                     <Icon name="github" size="github" class="float-start me-2" />
                     <h6 class="site-h6 mb-0">
