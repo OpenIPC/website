@@ -117,8 +117,21 @@ func (a *API) upstream(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Load assembles the newest report.
+// Load assembles the newest report, in one read-only snapshot: a push that
+// replaces or trims reports meanwhile must not leave it a header whose rows
+// are gone.
 func Load(ctx context.Context, pool *pgxpool.Pool) (*upstream, error) {
+	var doc *upstream
+	err := pgx.BeginTxFunc(ctx, pool, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly},
+		func(tx pgx.Tx) error {
+			var err error
+			doc, err = load(ctx, tx)
+			return err
+		})
+	return doc, err
+}
+
+func load(ctx context.Context, pool pgx.Tx) (*upstream, error) {
 	// Retained reports, newest first: the newest is the one shown, the rest
 	// say how long each of its findings has stood.
 	rows, err := pool.Query(ctx, `
@@ -127,6 +140,7 @@ func Load(ctx context.Context, pool *pgxpool.Pool) (*upstream, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	type rep struct {
 		id   int64
 		head reportHead
@@ -162,6 +176,7 @@ func Load(ctx context.Context, pool *pgxpool.Pool) (*upstream, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer hist.Close()
 	for hist.Next() {
 		var id int64
 		var key string
@@ -322,7 +337,7 @@ func Load(ctx context.Context, pool *pgxpool.Pool) (*upstream, error) {
 	return doc, nil
 }
 
-func collect(ctx context.Context, pool *pgxpool.Pool, q string, id int64, each func(pgx.Rows) error) error {
+func collect(ctx context.Context, pool pgx.Tx, q string, id int64, each func(pgx.Rows) error) error {
 	rows, err := pool.Query(ctx, q, id)
 	if err != nil {
 		return err

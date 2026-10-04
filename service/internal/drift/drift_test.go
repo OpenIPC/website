@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -240,5 +241,43 @@ func TestPushAndRead(t *testing.T) {
 	_ = pool.QueryRow(context.Background(), `SELECT count(*) FROM drift_reports`).Scan(&n)
 	if n != Keep {
 		t.Errorf("%d reports retained, want %d", n, Keep)
+	}
+}
+
+// Retries of one run and pushes of several, all at once: none may fail on the
+// pushed_by key, and the trim must still leave exactly Keep.
+func TestConcurrentSaves(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	base := report(t).CheckedAt
+	for i := 0; i < Keep; i++ {
+		r := report(t)
+		r.CheckedAt = base.Add(time.Duration(i) * time.Hour)
+		if _, err := Save(ctx, pool, r, fmt.Sprintf("OpenIPC/builder run %d/1", i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	errs := make(chan error, 12)
+	for i := 0; i < 12; i++ {
+		go func(i int) {
+			r := report(t)
+			r.CheckedAt = base.Add(time.Duration(Keep+i) * time.Hour)
+			by := "OpenIPC/builder run retried/1" // half are retries of one run
+			if i%2 == 1 {
+				by = fmt.Sprintf("OpenIPC/builder run new-%d/1", i)
+			}
+			_, err := Save(ctx, pool, r, by)
+			errs <- err
+		}(i)
+	}
+	for i := 0; i < 12; i++ {
+		if err := <-errs; err != nil {
+			t.Errorf("a concurrent save failed: %v", err)
+		}
+	}
+	var n int
+	_ = pool.QueryRow(ctx, `SELECT count(*) FROM drift_reports`).Scan(&n)
+	if n != Keep {
+		t.Errorf("%d reports after concurrent saves, want %d", n, Keep)
 	}
 }

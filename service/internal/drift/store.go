@@ -13,12 +13,20 @@ import (
 // "since" can look back over.
 const Keep = 60
 
+// saveLock serialises Save: a retried push replaces its run's report by
+// delete-then-insert, and the trim picks the oldest rows past Keep; two pushes
+// interleaving either would collide on pushed_by or both trim the same row.
+const saveLock = 0x6472696674 // "drift"
+
 // Save stores a report in one transaction. A report from the same run
 // attempt replaces the earlier one (the push was retried), and anything past
 // the newest Keep is trimmed in the same transaction.
 func Save(ctx context.Context, pool *pgxpool.Pool, r *Report, pushedBy string) (int64, error) {
 	var id int64
 	err := pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock($1)`, int64(saveLock)); err != nil {
+			return err
+		}
 		if _, err := tx.Exec(ctx, `DELETE FROM drift_reports WHERE pushed_by = $1`, pushedBy); err != nil {
 			return err
 		}
