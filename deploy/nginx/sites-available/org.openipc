@@ -27,7 +27,16 @@ server {
     # ipctool's builds for a camera on stock firmware, whose only downloader
     # is uget: plain HTTP, port 80, no redirects (internal/tools). Over HTTPS
     # /ipctool still leads a browser to the project on GitHub.
+    #
+    # A network the TSPU cuts off gets it from openipc.ru's port 80, which
+    # proxies it from here: ~200 KB never arrives through the freeze. wget
+    # follows the redirect; uget follows none, and fails at once with exit 32
+    # instead of hanging. The report page read on openipc.ru names openipc.ru
+    # in its commands, so neither has to. See conf.d/openipc-blocked-nets.conf.
     location ~ ^/(ipctool|ipctool-mips32|ipctool-arm64)$ {
+        if ($openipc_blocked_net) {
+            return 302 http://openipc.ru$request_uri;
+        }
         alias /srv/www/shared/tools/$1;
         default_type application/octet-stream;
         add_header Cache-Control "no-cache" always;

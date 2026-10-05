@@ -666,7 +666,9 @@
       "shell_title": "您能进入摄像头的 shell",
       "step_fetch": "2. 下载 ipctool 并发送报告",
       "step_uget": "1. 把 uget 粘贴到 telnet 会话中",
-      "title": "提交电路板"
+      "title": "提交电路板",
+      "wget_hint_html": "wget 会跟随重定向，所以在 uget 无法使用的地方也能用。<code>-mips32</code> 和 <code>-arm64</code> 版本在同一地址。",
+      "wget_title": "固件带 wget（busybox）：无需 uget"
     },
     "reverse_engineering": {
       "bring1_text": "可以构建、打补丁并带到下一个内核的内核驱动与固件。我们逐个函数替换二进制，并用跟踪比对证明等价。",

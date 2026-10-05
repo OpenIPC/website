@@ -81,7 +81,12 @@ func Parse(raw string) (string, Facts, error) {
 			Model  string `yaml:"model"`
 		} `yaml:"sensors"`
 	}
-	if err := yaml.Unmarshal([]byte(doc), &y); err != nil {
+	var node yaml.Node
+	if err := yaml.Unmarshal([]byte(doc), &node); err != nil {
+		return "", f, fmt.Errorf("ipctool's output does not read as YAML: %v", err)
+	}
+	lastKeyWins(&node)
+	if err := node.Decode(&y); err != nil {
 		return "", f, fmt.Errorf("ipctool's output does not read as YAML: %v", err)
 	}
 	if y.Chip.Model == "" && y.Chip.Vendor == "" {
@@ -116,6 +121,29 @@ func Parse(raw string) (string, Facts, error) {
 		}
 	}
 	return doc, f, nil
+}
+
+// lastKeyWins drops all but the last of a mapping's repeated keys, in place.
+// ipctool repeats one on SigmaStar boards -- board.model, the SoC board's name
+// and then the vendor's -- and the YAML decoder refuses a repeated key. The
+// document stored is the one sent; only what is read from it changes.
+func lastKeyWins(n *yaml.Node) {
+	if n.Kind == yaml.MappingNode {
+		last := map[string]int{}
+		for i := 0; i+1 < len(n.Content); i += 2 {
+			last[n.Content[i].Value] = i
+		}
+		kept := n.Content[:0]
+		for i := 0; i+1 < len(n.Content); i += 2 {
+			if last[n.Content[i].Value] == i {
+				kept = append(kept, n.Content[i], n.Content[i+1])
+			}
+		}
+		n.Content = kept
+	}
+	for _, c := range n.Content {
+		lastKeyWins(c)
+	}
 }
 
 func str(v any) string {

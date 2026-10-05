@@ -1,0 +1,50 @@
+---
+chip:
+  vendor: SigmaStar
+  model: SSC37X
+  family: infinity6c
+  tag: "MVX4##I6C#gd11293fROM########XVMH\u0004\u0004"
+board:
+  model: INFINITY6C SSC027D-S01A
+  chip-id: 0xF9
+  chip-version: 0
+  soc-family: I6C
+  soc-id: 249
+  soc-revision: 1
+  vendor: Anjoy
+  model: MC800S5
+  possible-IR-cut-GPIO: 26,32,54,80,81
+ethernet:
+  mac: "02:12:34:56:78:9a"
+rom:
+- type: nor
+  block: 4K
+  partitions:
+    - name: BOOT
+      size: 0x30000
+      sha1: c4e08f66
+    - name: kernel
+      size: 0x200000
+      sha1: d770fdd1
+    - name: rootfs
+      size: 0xcd0000
+      path: /,squashfs
+      sha1: 2433fe5d
+    - name: DATA
+      size: 0x100000
+      path: /mnt/nand,jffs2,rw
+  size: 16M
+ram:
+  total: 256M
+  media: 150M
+firmware:
+  kernel: "5.10.61 (PREEMPT Thu Nov 2 18:50:24 CST 2023)"
+  toolchain: arm-sigmastar-linux-uclibcgnueabihf-9.1.0-gcc (crosstool-NG 1.24.0) 9.1.0, GNU ld (crosstool-NG 1.24.0) 2.32
+  libc: uClibc 1.0.31
+sensors:
+- vendor: Sony
+  model: IMX415
+  control:
+    bus: 1
+    type: i2c
+    addr: 0x34

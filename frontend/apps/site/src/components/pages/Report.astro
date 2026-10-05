@@ -7,8 +7,14 @@
  * Stock camera firmware has no curl and no TLS, so the shell route never
  * says curl: uget, pasted in as text over telnet, fetches ipctool from
  * http://openipc.org/ipctool (plain HTTP, no redirect: uget follows none),
- * and a firmware with an NFS client mounts the same files instead
+ * a firmware with busybox's wget fetches the same file without it, and one
+ * with an NFS client mounts the same files instead
  * (service/internal/tools, service/internal/nfsro).
+ *
+ * Read on openipc.ru, the commands name openipc.ru: in Russia the TSPU
+ * freezes a connection to the origin after ~20 KB, and the mirror's port 80
+ * proxies ipctool and the report (deploy/nginx/mirrors/ru.openipc.snippet).
+ * NFS is not mirrored, so there it is not offered.
  */
 import Terminal from '../Terminal.astro';
 import UgetCopy from '../reports/UgetCopy.tsx';
@@ -43,6 +49,11 @@ const flags: [string, string][] = [
         <Terminal id="report-fetch" title="telnet" code={'/tmp/uget openipc.org/ipctool > /tmp/ipctool\nchmod +x /tmp/ipctool\n/tmp/ipctool upload'} />
       </div>
       <details class="text-sm">
+        <summary class="cursor-pointer text-brand-blue">{p('wget_title')}</summary>
+        <Terminal id="report-wget" title="telnet" code={'wget -O /tmp/ipctool http://openipc.org/ipctool\nchmod +x /tmp/ipctool\n/tmp/ipctool upload'} />
+        <p class="mb-0 text-body-secondary" set:html={p('wget_hint_html')} />
+      </details>
+      <details class="text-sm" id="report-nfs-route">
         <summary class="cursor-pointer text-brand-blue">{p('nfs_title')}</summary>
         <Terminal id="report-nfs" title="telnet" code={'mkdir /tmp/o && mount -o nolock openipc.org:/ipctool /tmp/o\n/tmp/o/ipctool upload'} />
         <p class="mb-0 text-body-secondary" set:html={p('nfs_hint_html')} />
@@ -84,3 +95,16 @@ const flags: [string, string][] = [
     </div>
   </div>
 </div>
+
+<script>
+  import { cameraHost, forCameraHost } from '../../lib/reports';
+
+  const host = cameraHost(location.host);
+  if (host !== 'openipc.org') {
+    for (const id of ['report-fetch', 'report-wget']) {
+      const code = document.getElementById(id);
+      if (code?.textContent) code.textContent = forCameraHost(code.textContent, host);
+    }
+    document.getElementById('report-nfs-route')?.setAttribute('hidden', '');
+  }
+</script>

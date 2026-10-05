@@ -666,7 +666,9 @@
       "shell_title": "You have a shell on the camera",
       "step_fetch": "2. Fetch ipctool and send the report",
       "step_uget": "1. Paste uget into the telnet session",
-      "title": "Send us a board"
+      "title": "Send us a board",
+      "wget_hint_html": "wget follows a redirect, so it also works where uget cannot. The <code>-mips32</code> and <code>-arm64</code> builds are at the same address.",
+      "wget_title": "The firmware has wget (busybox): no uget needed"
     },
     "reverse_engineering": {
       "bring1_text": "Kernel drivers and firmware you can build, patch and carry to the next kernel. We replace the binary function by function and prove parity by comparing traces.",

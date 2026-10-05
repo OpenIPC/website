@@ -665,6 +665,27 @@ for probe in "GET /ru/get-started?a=1" "POST /snapshots" "GET /api/v1/wizard/gk7
     fail=1
   fi
 done
+# On port 80 only ipctool's downloads go, to the mirror's own port 80; the
+# report upload stays, since ipctool follows no redirect.
+plain_blocked() {
+  curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 5 --interface 127.0.0.3 \
+    --resolve "openipc.org:80:127.0.0.1" "$@" 2>/dev/null
+}
+for probe in "302 GET /ipctool http://openipc.ru/ipctool" "302 GET /ipctool-mips32 http://openipc.ru/ipctool-mips32"; do
+  set -- $probe
+  got=$(plain_blocked -X "$2" "http://openipc.org$3")
+  if [ "$got" = "$1 $4" ]; then
+    printf '  %-32s %-5s (%s over HTTP from a blocked network)\n' "$3" "$1" "$2"
+  else
+    printf '  %-32s %-5s (%s over HTTP from a blocked network) MISMATCH: want %s to %s\n' "$3" "$got" "$2" "$1" "$4"
+    fail=1
+  fi
+done
+got=$(plain_blocked -X POST "http://openipc.org/api/v1/reports")
+case "$got" in
+  3*) printf '  %-32s %-5s MISMATCH: a report over HTTP from a blocked network is redirected\n' /api/v1/reports "$got"; fail=1 ;;
+  *)  printf '  %-32s %-5s (POST over HTTP from a blocked network, not redirected)\n' /api/v1/reports "${got%% *}" ;;
+esac
 expect $FW                          200 go     hsts
 grep -q IMAGE /tmp/b || { echo "  the firmware X-Accel-Redirect did not reach /firmware-cache/"; fail=1; }
 redirects_to openipc.org /snapshots https://openipc.org/open-wall
