@@ -16,9 +16,24 @@ import (
 // buildsCommand is `openipc builds import-history`: once per environment, the
 // builds GitHub still holds, converted into the builds tables. After it, the
 // CIs push every new build themselves (internal/builds/PUSH.md).
+//
+// `openipc builds import-uboot` re-reads only the u-boot binaries on
+// firmware's `latest`, for when one was uploaded by a repository that does
+// not push: the full images are built from those bytes and refuse any that
+// do not match the index.
 func buildsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, args []string) error {
+	if len(args) > 0 && args[0] == "import-uboot" {
+		pool, err := open(ctx, cfg)
+		if err != nil {
+			return err
+		}
+		defer pool.Close()
+		h := &builds.History{Pool: pool, Log: log, Token: os.Getenv("GITHUB_TOKEN"),
+			API: "https://api.github.com", HTTP: &http.Client{Timeout: 2 * time.Minute}}
+		return h.ImportUBoot(ctx, "OpenIPC/firmware")
+	}
 	if len(args) == 0 || args[0] != "import-history" {
-		return fmt.Errorf("usage: openipc builds import-history [--keep 90] [--kconfig-all] [--skip-builder]")
+		return fmt.Errorf("usage: openipc builds import-history [--keep 90] [--kconfig-all] [--skip-builder] | import-uboot")
 	}
 	fs := flag.NewFlagSet("import-history", flag.ExitOnError)
 	keep := fs.Int("keep", 90, "dated builds per source, as upstream's cleanup keeps")

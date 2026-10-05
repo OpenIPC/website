@@ -24,7 +24,7 @@ signature against GitHub's published keys and then checks these claims:
 | `iss` | `https://token.actions.githubusercontent.com` |
 | `aud` | `https://openipc.org` |
 | `repository_owner_id` | OpenIPC's numeric organisation id |
-| `repository` | `OpenIPC/firmware` or `OpenIPC/builder` |
+| `repository` | `OpenIPC/firmware`, `OpenIPC/builder` or `OpenIPC/u-boot-xmedia` |
 | `job_workflow_ref` | `<repository>/.github/workflows/<build.yml, master.yml or uboot.yml>@refs/heads/master` |
 | `event_name` | anything except `pull_request` or `pull_request_target` |
 
@@ -38,6 +38,7 @@ The `source` field in the body must match the repository that pushed it:
 | OpenIPC/firmware, build workflow | `firmware` |
 | OpenIPC/builder | `builder` |
 | OpenIPC/firmware, `uboot.yml` | `uboot` |
+| OpenIPC/u-boot-xmedia, `build.yml` | `uboot` |
 
 ## Body
 
@@ -73,6 +74,11 @@ The `source` field in the body must match the repository that pushed it:
 - `build.release`: the release tag the assets download from. For firmware and
   builder it is the dated tag, the same as the id. For `uboot`, which uploads
   to `latest`, it is `latest`, and the id is `uboot-<UTC yyyymmddThhmmssZ>-<short sha>`.
+  More than one repository uploads u-boot binaries to `latest`. Each pushes only
+  the files it uploaded: the index takes, per file, the newest build naming it,
+  and retention keeps a uboot build for as long as it is the newest for any of
+  its files. A repository that uploads without pushing breaks the full images
+  built from its binaries until `openipc builds import-uboot` re-reads `latest`.
 - `assets`: every file the build published that openipc.org may hand out:
   - firmware tarballs, named `openipc.<board>-<nor|nand|emmc|sd>-<edition>.tgz`;
   - for builder, device tarballs;
