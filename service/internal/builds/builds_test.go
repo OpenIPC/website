@@ -652,3 +652,75 @@ func TestTrimKeepsUBootBuildsStillNamingAFile(t *testing.T) {
 		t.Errorf("the newest push is not the index's: %+v %v", a, ok)
 	}
 }
+
+// import-uboot is a snapshot of `latest` as it is now: it wins over an
+// earlier push of the same file, and a file the release no longer holds
+// leaves the index.
+func TestImportUBootSnapshotsLatest(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	t0 := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	if _, err := Save(ctx, pool, push(t, "nightly-20261001-a74b007", t0, "gk7205v200"), "test"); err != nil {
+		t.Fatal(err)
+	}
+	other := strings.Repeat("c", 64)
+	for _, b := range []struct {
+		id    string
+		at    time.Time
+		files map[string]int64
+	}{
+		{"uboot-import-20261001T120000Z", t0, map[string]int64{"u-boot-v851s-nor.bin": 100, "u-boot-gone-nor.bin": 50}},
+		{"uboot-20261003T120000Z-2222222", t0.Add(48 * time.Hour), map[string]int64{"u-boot-gk7205v510-nand.bin": 200}},
+	} {
+		p := &Payload{Schema: 1, Source: "uboot",
+			Build: Build{ID: b.id, Release: "latest", SHA: strings.Repeat("b", 40), BuiltAt: b.at, PublishedAt: b.at}}
+		for n, size := range b.files {
+			p.Assets = append(p.Assets, Asset{Name: n, Size: size, SHA256: sum})
+		}
+		if _, err := Save(ctx, pool, p, "test"); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// `latest`, published long before either build: the gk7205v510 binary
+	// replaced on it without a push, the "gone" one deleted.
+	gh := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/OpenIPC/firmware/releases/tags/latest":
+			w.Write([]byte(`{"id": 7, "tag_name": "latest", "published_at": "2025-01-01T00:00:00Z"}`))
+		case "/repos/OpenIPC/firmware/releases/7/assets":
+			if r.URL.Query().Get("page") != "1" {
+				w.Write([]byte(`[]`))
+				return
+			}
+			w.Write([]byte(`[
+				{"name": "u-boot-gk7205v510-nand.bin", "size": 300, "digest": "sha256:` + other + `"},
+				{"name": "u-boot-v851s-nor.bin", "size": 100, "digest": "sha256:` + sum + `"},
+				{"name": "openipc.gk7205v200-nor-lite.tgz", "size": 1, "digest": "sha256:` + sum + `"}]`))
+		case "/repos/OpenIPC/firmware/commits/latest":
+			w.Write([]byte(`{"sha": "` + strings.Repeat("d", 40) + `"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer gh.Close()
+	h := &History{Pool: pool, Log: slog.New(slog.DiscardHandler), API: gh.URL, HTTP: gh.Client(),
+		Now: func() time.Time { return t0.Add(72 * time.Hour) }}
+	if err := h.ImportUBoot(ctx, "OpenIPC/firmware"); err != nil {
+		t.Fatal(err)
+	}
+
+	idx, err := LoadIndex(ctx, pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a, ok := idx.Asset("u-boot-gk7205v510-nand.bin"); !ok || a.Size != 300 || a.SHA256() != other {
+		t.Errorf("the replaced binary is still the pushed one: %+v %v", a, ok)
+	}
+	if a, ok := idx.Asset("u-boot-v851s-nor.bin"); !ok || a.Size != 100 {
+		t.Errorf("an unchanged binary went missing: %+v %v", a, ok)
+	}
+	if a, ok := idx.Asset("u-boot-gone-nor.bin"); ok {
+		t.Errorf("a binary deleted from latest is still offered: %+v", a)
+	}
+}

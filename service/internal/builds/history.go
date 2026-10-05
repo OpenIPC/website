@@ -39,11 +39,14 @@ type History struct {
 	// ManifestURL gives the aliases of the newest firmware build, which no
 	// release carries.
 	ManifestURL string
+	// Now is the clock ImportUBoot stamps its snapshot with; time.Now when nil.
+	Now func() time.Time
 }
 
 var datedTag = regexp.MustCompile(`^nightly-(\d{8})-[0-9a-f]{7}$`)
 
 type ghRelease struct {
+	ID          int64     `json:"id"`
 	TagName     string    `json:"tag_name"`
 	Body        string    `json:"body"`
 	PublishedAt time.Time `json:"published_at"`
@@ -113,12 +116,33 @@ func (h *History) Import(ctx context.Context, repo, source string) (imported int
 	return imported, nil
 }
 
-// ImportUBoot stores the u-boot binaries on `latest`, which upstream uploads by
-// hand and no build pushes yet, as one uboot build.
+// ImportUBoot stores the u-boot binaries on `latest` as one uboot build: a
+// snapshot of what the release holds now. Some repositories upload there
+// without pushing, and the full images refuse any binary whose bytes the
+// index does not describe, so this is also how the index is repaired after
+// such an upload (`openipc builds import-uboot`).
+//
+// The snapshot is stamped with the time it was taken, not the release's: it
+// has to win over every push that came before it for the same file. And it
+// is the whole truth about `latest` at that moment, so an earlier build's
+// record of a file the release no longer holds is dropped.
 func (h *History) ImportUBoot(ctx context.Context, repo string) error {
 	var r ghRelease
 	if err := h.api(ctx, "/repos/"+repo+"/releases/tags/latest", &r); err != nil {
 		return err
+	}
+	// The release object's list is not guaranteed complete; a file missing
+	// from it here would be dropped from the index below.
+	var assets []ghAsset
+	for page := 1; ; page++ {
+		var batch []ghAsset
+		if err := h.api(ctx, fmt.Sprintf("/repos/%s/releases/%d/assets?per_page=100&page=%d", repo, r.ID, page), &batch); err != nil {
+			return err
+		}
+		assets = append(assets, batch...)
+		if len(batch) < 100 {
+			break
+		}
 	}
 	var commit struct {
 		SHA string `json:"sha"`
@@ -126,13 +150,15 @@ func (h *History) ImportUBoot(ctx context.Context, repo string) error {
 	if err := h.api(ctx, "/repos/"+repo+"/commits/latest", &commit); err != nil {
 		return err
 	}
-	p := &Payload{Schema: 1, Source: "uboot",
-		Build: Build{ID: "uboot-import-" + time.Now().UTC().Format("20060102T150405Z"), Release: "latest",
-			SHA: commit.SHA, BuiltAt: r.PublishedAt, PublishedAt: r.PublishedAt}}
-	if p.Build.BuiltAt.IsZero() {
-		p.Build.BuiltAt, p.Build.PublishedAt = r.CreatedAt, r.CreatedAt
+	now := time.Now
+	if h.Now != nil {
+		now = h.Now
 	}
-	for _, a := range r.Assets {
+	at := now().UTC().Truncate(time.Second)
+	p := &Payload{Schema: 1, Source: "uboot",
+		Build: Build{ID: "uboot-import-" + at.Format("20060102T150405Z"), Release: "latest",
+			SHA: commit.SHA, BuiltAt: at, PublishedAt: at}}
+	for _, a := range assets {
 		if !ubootName.MatchString(a.Name) {
 			continue
 		}
@@ -142,19 +168,35 @@ func (h *History) ImportUBoot(ctx context.Context, repo string) error {
 			// few hundred kilobytes: hash it here rather than lose it.
 			sum, size, err := h.hash(ctx, a.DownloadURL)
 			if err != nil {
-				h.Log.Warn("history: u-boot asset not hashed", "name", a.Name, "err", err)
-				continue
+				return fmt.Errorf("%s not hashed, nothing imported: %w", a.Name, err)
 			}
 			sha, a.Size = sum, size
 		}
 		p.Assets = append(p.Assets, Asset{Name: a.Name, Size: a.Size, SHA256: sha})
 	}
+	if len(p.Assets) == 0 {
+		return fmt.Errorf("%s latest lists no u-boot binaries; the index is left as it is", repo)
+	}
 	if err := p.Validate(); err != nil {
+		return err
+	}
+	names := make([]string, len(p.Assets))
+	for i, a := range p.Assets {
+		names[i] = a.Name
+	}
+	// Before the snapshot is saved, so its NOTIFY reloads an index that
+	// already lacks them. Only builds older than the snapshot: a push that
+	// lands meanwhile describes a newer upload.
+	tag, err := h.Pool.Exec(ctx, `
+		DELETE FROM build_assets a USING builds b
+		WHERE a.build_id = b.id AND b.source = 'uboot' AND b.release = 'latest'
+		AND b.built_at < $1 AND NOT (a.name = ANY($2))`, at, names)
+	if err != nil {
 		return err
 	}
 	c, err := Save(ctx, h.Pool, p, "history import from "+repo)
 	if err == nil {
-		h.Log.Info("history: u-boot imported", "assets", c.Assets)
+		h.Log.Info("history: u-boot imported", "assets", c.Assets, "dropped", tag.RowsAffected())
 	}
 	return err
 }
