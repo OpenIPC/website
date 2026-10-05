@@ -82,3 +82,30 @@ export const UGET_BUILDS: { file: string; libc: 'uclibc' | 'glibc'; toolchain: s
   { file: 'uget.arm-himix200-linux.sh', libc: 'glibc', toolchain: 'himix200' },
   { file: 'uget.arm-hisiv600-linux.sh', libc: 'glibc', toolchain: 'hisiv600' },
 ];
+
+/**
+ * Mirrors whose port 80 serves what a stock camera needs -- /ipctool,
+ * /ipctool-mips32, /ipctool-arm64, POST /api/v1/reports -- proxied to the
+ * origin (deploy/nginx/mirrors/ru.openipc.snippet). A list, not a rule on the
+ * host: a mirror whose plain-HTTP server only redirects to HTTPS would break
+ * every command named after it, because uget and ipctool follow no redirect.
+ */
+export const CAMERA_MIRRORS: readonly string[] = ['openipc.ru'];
+
+/**
+ * The host a camera's commands should name when this page is read on `host`:
+ * the mirror it was reached through, when that mirror carries camera traffic
+ * (in Russia the TSPU freezes a connection to the origin after ~20 KB, and
+ * ipctool is ~200 KB), otherwise openipc.org.
+ */
+export function cameraHost(host: string): string {
+  return CAMERA_MIRRORS.includes(host) ? host : 'openipc.org';
+}
+
+/** A command block written for openipc.org, rewritten to name `host`. */
+export function forCameraHost(code: string, host: string): string {
+  if (host === 'openipc.org') return code;
+  return code
+    .replaceAll('openipc.org', host)
+    .replace(/ipctool upload(?! --host)/g, `ipctool upload --host ${host}`);
+}

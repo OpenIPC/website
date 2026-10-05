@@ -75,7 +75,7 @@ func TestBlockedNetsGoToTheMirror(t *testing.T) {
 		}
 	})
 
-	t.Run("the redirect is the HTTPS vhost's, and port 80 is left alone", func(t *testing.T) {
+	t.Run("the redirect is the HTTPS vhost's, and on port 80 only ipctool's", func(t *testing.T) {
 		servers := strings.Split("\n"+directives(v), "\nserver {")
 		if len(servers) != 3 {
 			t.Fatalf("expected two server blocks in org.openipc, found %d", len(servers)-1)
@@ -84,8 +84,12 @@ func TestBlockedNetsGoToTheMirror(t *testing.T) {
 		mustContain(t, tls, "listen 443", "the second server block is not the HTTPS one")
 		mustMatch(t, `if \(\$openipc_blocked_net\) \{\s*return 301 https://openipc\.ru\$request_uri;`, tls,
 			"the cut-off networks are not sent to the mirror, or lose their path and query on the way")
-		mustNotContain(t, plain, "openipc_blocked_net",
-			"stock firmware fetches ipctool and sends reports over plain HTTP, and has no TLS to follow a redirect into")
+		tools := block(plain, "location ~ ^/(ipctool|ipctool-mips32|ipctool-arm64)$ {")
+		mustMatch(t, `if \(\$openipc_blocked_net\) \{\s*return 302 http://openipc\.ru\$request_uri;`, tools,
+			"a cut-off network fetching ipctool is not sent to the mirror's plain HTTP, where it gets through")
+		if strings.Count(plain, "openipc_blocked_net") != 1 {
+			t.Error("port 80 redirects more than ipctool: stock firmware sends its report there and follows no redirect")
+		}
 		mustNotContain(t, directives(vhost(t, "org.openipc.dev")), "openipc_blocked_net",
 			"dev would send its testers to the production mirror")
 	})
@@ -107,6 +111,29 @@ func TestBlockedNetsGoToTheMirror(t *testing.T) {
 			}
 		}
 		mustMatch(t, `X-Forwarded-For\s+\$proxy_add_x_forwarded_for;`, up, "the reader's address is not forwarded")
+		mustMatch(t, `proxy_ssl_verify\s+on;`, up, "the origin's certificate is not verified")
+	})
+
+	// The origin's port 80 sends a cut-off network's ipctool download to the
+	// mirror's port 80, and the report page on openipc.ru names it to uget and
+	// ipctool: there, it has to be served, not redirected to HTTPS.
+	t.Run("openipc.ru's port 80 carries ipctool and the report", func(t *testing.T) {
+		mirror := directives(read(t, "deploy/nginx/mirrors/ru.openipc.snippet"))
+		tools := find(mirror, regexp.MustCompile(`(?s)(location ~ \^/\(\?:ipctool\|ipctool-mips32\|ipctool-arm64\)\$ \{.*?\n\})`), 1)
+		up := find(mirror, regexp.MustCompile(`(?s)(location ~ \^/api/v1/\(\?:reports\|boards/identify\)\$ \{.*?\n\})`), 1)
+		if tools == "" || up == "" {
+			t.Fatal("the mirror's port 80 has no location for ipctool or for the report")
+		}
+		origin := block(v, "location = /api/v1/reports {")
+		for _, d := range []string{"client_max_body_size", "client_body_timeout", "proxy_request_buffering", "proxy_read_timeout", "proxy_send_timeout"} {
+			re := regexp.MustCompile(`(?m)^\s*` + d + `\s+(\S+);`)
+			if want, got := find(origin, re, 1), find(up, re, 1); want == "" || got != want {
+				t.Errorf("%s is %q on the origin's report upload and %q on the mirror's port 80", d, want, got)
+			}
+		}
+		// Over HTTPS the origin's /ipctool is a redirect to GitHub.
+		mustMatch(t, `proxy_pass\s+http://openipc\.org;`, tools, "ipctool is not proxied from the origin's port 80, the only place it is served")
+		mustMatch(t, `proxy_pass\s+https://openipc\.org;`, up, "the report is not proxied to the origin")
 		mustMatch(t, `proxy_ssl_verify\s+on;`, up, "the origin's certificate is not verified")
 	})
 }

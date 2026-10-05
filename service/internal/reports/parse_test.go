@@ -27,6 +27,8 @@ func TestRealOutputIsReadWithWhateverTheShellPrintedAroundIt(t *testing.T) {
 		{"t31-sc2332.txt", "T31L", "", "", "38:01:46:a2:e6:38"},
 		{"hi3516ev300-imx335.txt", "3516EV300", "Sony IMX335", "", "02:8f:5c:94:d7:e7"},
 		{"xiongmai-50h20l-readme.yml", "3516CV300", "Sony IMX291", "8M", "00:12:89:12:88:e1"},
+		// board: has model twice, the SoC board's and the vendor's.
+		{"ssc37x-anjoy-mc800s5.yml", "SSC37X", "Sony IMX415", "16M", "02:12:34:56:78:9a"},
 	}
 	for _, c := range cases {
 		raw := fixture(t, c.file)
@@ -168,5 +170,44 @@ func TestBothBoardIdentifiersAreRedacted(t *testing.T) {
 		if strings.Contains(pub, v) {
 			t.Errorf("%s survived:\n%s", v, pub)
 		}
+	}
+}
+
+// SigmaStar boards print board.model twice: the SoC board's name from the
+// chip, then the vendor's model. The vendor's is the one the catalogue knows.
+func TestARepeatedKeyIsReadAsItsLastValue(t *testing.T) {
+	doc, f, err := Parse(fixture(t, "ssc37x-anjoy-mc800s5.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.BoardVendor != "Anjoy" || f.BoardModel != "MC800S5" {
+		t.Errorf("board: %q %q", f.BoardVendor, f.BoardModel)
+	}
+	// The document is kept as sent, both lines included.
+	if !strings.Contains(doc, "INFINITY6C SSC027D-S01A") {
+		t.Error("the stored document lost the first board.model")
+	}
+}
+
+// A repeated key's earlier value is not the board's, but it is in the
+// document: the public copy must not show it either.
+func TestAnIdentifierARepeatedKeyShadowsIsRedactedToo(t *testing.T) {
+	raw := strings.Replace(fixture(t, "ssc37x-anjoy-mc800s5.yml"),
+		"  mac: \"02:12:34:56:78:9a\"\n", "  mac: \"02:aa:bb:cc:dd:ee\"\n  mac: \"02:12:34:56:78:9a\"\n", 1)
+	doc, f, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.MAC != "02:12:34:56:78:9a" {
+		t.Errorf("mac %q", f.MAC)
+	}
+	pub := Redact(doc, f, "k")
+	for _, mac := range []string{"02:aa:bb:cc:dd:ee", "02:12:34:56:78:9a"} {
+		if strings.Contains(pub, mac) {
+			t.Errorf("%s is in the public copy", mac)
+		}
+	}
+	if got, want := f.IDHashes("k")["mac"], Keyed("k", "mac", "02:12:34:56:78:9a"); got != want {
+		t.Errorf("the mac hash is %s, not the board's own %s", got, want)
 	}
 }
