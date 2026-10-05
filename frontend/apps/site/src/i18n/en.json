@@ -662,7 +662,7 @@
       "lede": "A camera nobody has reported yet reaches the catalogue from one report: what ipctool reads off the board and, if you want to help port OpenIPC to it, the flash it came with.",
       "nfs_hint_html": "Other ways in, over UART, TFTP or an SD card: <a href=\"https://github.com/OpenIPC/ipctool#alternative-launch-methods\">ipctool's README</a>.",
       "nfs_title": "The firmware has an NFS client (most Xiongmai do)",
-      "shell_lede_html": "Telnet into the stock firmware, or a UART console. Stock firmware has no curl, so ipctool comes over plain HTTP from openipc.org, fetched by <a href=\"https://github.com/OpenIPC/uget\">uget</a>: a 5 KB downloader you paste in as text.",
+      "shell_lede_html": "Telnet into the stock firmware, or a UART console. Stock firmware has no curl, so ipctool comes from this site over plain HTTP, fetched by <a href=\"https://github.com/OpenIPC/uget\">uget</a>: a 5 KB downloader you paste in as text.",
       "shell_title": "You have a shell on the camera",
       "step_fetch": "2. Fetch ipctool and send the report",
       "step_uget": "1. Paste uget into the telnet session",

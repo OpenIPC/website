@@ -38,6 +38,10 @@ type Facts struct {
 	DieID   string `json:"-"`
 	CloudID string `json:"-"` // board.cloudId (Xiongmai)
 	ChipID  string `json:"-"` // board.chip-id (SigmaStar boards)
+
+	// The values a repeated key held before its last one: never read as the
+	// board's, but still in the document, so still redacted.
+	shadowed []Identifier
 }
 
 // Parse reads ipctool's output: the YAML as printed, or with whatever a
@@ -85,6 +89,7 @@ func Parse(raw string) (string, Facts, error) {
 	if err := yaml.Unmarshal([]byte(doc), &node); err != nil {
 		return "", f, fmt.Errorf("ipctool's output does not read as YAML: %v", err)
 	}
+	shadowed := idValues(&node)
 	lastKeyWins(&node)
 	if err := node.Decode(&y); err != nil {
 		return "", f, fmt.Errorf("ipctool's output does not read as YAML: %v", err)
@@ -105,6 +110,7 @@ func Parse(raw string) (string, Facts, error) {
 	f.CloudID = str(y.Board["cloudId"])
 	f.ChipID = str(y.Board["chip-id"])
 	f.MainApp = str(y.Firmware["main-app"])
+	f.shadowed = shadowed
 	if len(y.Sensors) > 0 {
 		f.Sensor = strings.TrimSpace(y.Sensors[0].Vendor + " " + y.Sensors[0].Model)
 	}
@@ -121,6 +127,55 @@ func Parse(raw string) (string, Facts, error) {
 		}
 	}
 	return doc, f, nil
+}
+
+// idPaths are where ipctool prints the board's identifiers.
+var idPaths = []struct {
+	name string
+	path []string
+}{
+	{"mac", []string{"ethernet", "mac"}},
+	{"die_id", []string{"chip", "id"}},
+	{"cloud_id", []string{"board", "cloudId"}},
+	{"chip_id", []string{"board", "chip-id"}},
+}
+
+// idValues lists every value the identifiers' keys hold, a repeated key's
+// earlier ones included, as written in the document.
+func idValues(n *yaml.Node) []Identifier {
+	var out []Identifier
+	for _, p := range idPaths {
+		for _, v := range scalarsAt(n, p.path) {
+			out = append(out, Identifier{p.name, v})
+		}
+	}
+	return out
+}
+
+func scalarsAt(n *yaml.Node, path []string) []string {
+	if n.Kind == yaml.DocumentNode {
+		var out []string
+		for _, c := range n.Content {
+			out = append(out, scalarsAt(c, path)...)
+		}
+		return out
+	}
+	if len(path) == 0 {
+		if n.Kind == yaml.ScalarNode {
+			return []string{n.Value}
+		}
+		return nil
+	}
+	if n.Kind != yaml.MappingNode {
+		return nil
+	}
+	var out []string
+	for i := 0; i+1 < len(n.Content); i += 2 {
+		if n.Content[i].Value == path[0] {
+			out = append(out, scalarsAt(n.Content[i+1], path[1:])...)
+		}
+	}
+	return out
 }
 
 // lastKeyWins drops all but the last of a mapping's repeated keys, in place.
@@ -202,15 +257,21 @@ type Identifier struct {
 	Value string
 }
 
-// Identifiers lists the board's identifiers, as found.
+// Identifiers lists the board's identifiers, as found, then any other value
+// a repeated key held, each once. A name can appear twice: Redact replaces
+// every one, IDHashes keys the first.
 func (f Facts) Identifiers() []Identifier {
 	var out []Identifier
-	for _, id := range []Identifier{{"mac", f.MAC}, {"die_id", f.DieID}, {"cloud_id", f.CloudID}, {"chip_id", f.ChipID}} {
+	seen := map[Identifier]bool{}
+	for _, id := range append([]Identifier{{"mac", f.MAC}, {"die_id", f.DieID}, {"cloud_id", f.CloudID}, {"chip_id", f.ChipID}}, f.shadowed...) {
 		// Shorter than six characters is not an identifier, and replacing it
 		// everywhere would take the document apart with it.
-		if v := strings.TrimSpace(id.Value); len(v) >= 6 && !zeroish(v) {
-			out = append(out, Identifier{id.Name, v})
+		v := strings.TrimSpace(id.Value)
+		if len(v) < 6 || zeroish(v) || seen[Identifier{id.Name, strings.ToLower(v)}] {
+			continue
 		}
+		seen[Identifier{id.Name, strings.ToLower(v)}] = true
+		out = append(out, Identifier{id.Name, v})
 	}
 	return out
 }
@@ -233,7 +294,9 @@ func Keyed(key, name, value string) string {
 func (f Facts) IDHashes(key string) map[string]string {
 	out := map[string]string{}
 	for _, id := range f.Identifiers() {
-		out[id.Name] = Keyed(key, id.Name, id.Value)
+		if _, ok := out[id.Name]; !ok {
+			out[id.Name] = Keyed(key, id.Name, id.Value)
+		}
 	}
 	return out
 }

@@ -681,11 +681,16 @@ for probe in "302 GET /ipctool http://openipc.ru/ipctool" "302 GET /ipctool-mips
     fail=1
   fi
 done
-got=$(plain_blocked -X POST "http://openipc.org/api/v1/reports")
-case "$got" in
-  3*) printf '  %-32s %-5s MISMATCH: a report over HTTP from a blocked network is redirected\n' /api/v1/reports "$got"; fail=1 ;;
-  *)  printf '  %-32s %-5s (POST over HTTP from a blocked network, not redirected)\n' /api/v1/reports "${got%% *}" ;;
-esac
+# The report has to reach the service (the stub answers 200, with the
+# location's X-Served-By): a redirect, a 5xx or no answer means it does not.
+got=$(curl -sS -o /dev/null -D - --max-time 5 --interface 127.0.0.3 --resolve "openipc.org:80:127.0.0.1" \
+  -X POST "http://openipc.org/api/v1/reports" 2>/dev/null | tr -d '\r' | awk 'NR==1{s=$2} tolower($1)=="x-served-by:"{b=$2} END{print s" "b}')
+if [ "$got" = "200 go" ]; then
+  printf '  %-32s %-5s (POST over HTTP from a blocked network, reaches the service)\n' /api/v1/reports 200
+else
+  printf '  %-32s %-5s MISMATCH: a report over HTTP from a blocked network does not reach the service\n' /api/v1/reports "$got"
+  fail=1
+fi
 expect $FW                          200 go     hsts
 grep -q IMAGE /tmp/b || { echo "  the firmware X-Accel-Redirect did not reach /firmware-cache/"; fail=1; }
 redirects_to openipc.org /snapshots https://openipc.org/open-wall

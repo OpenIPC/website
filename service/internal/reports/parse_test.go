@@ -188,3 +188,26 @@ func TestARepeatedKeyIsReadAsItsLastValue(t *testing.T) {
 		t.Error("the stored document lost the first board.model")
 	}
 }
+
+// A repeated key's earlier value is not the board's, but it is in the
+// document: the public copy must not show it either.
+func TestAnIdentifierARepeatedKeyShadowsIsRedactedToo(t *testing.T) {
+	raw := strings.Replace(fixture(t, "ssc37x-anjoy-mc800s5.yml"),
+		"  mac: \"02:12:34:56:78:9a\"\n", "  mac: \"02:aa:bb:cc:dd:ee\"\n  mac: \"02:12:34:56:78:9a\"\n", 1)
+	doc, f, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.MAC != "02:12:34:56:78:9a" {
+		t.Errorf("mac %q", f.MAC)
+	}
+	pub := Redact(doc, f, "k")
+	for _, mac := range []string{"02:aa:bb:cc:dd:ee", "02:12:34:56:78:9a"} {
+		if strings.Contains(pub, mac) {
+			t.Errorf("%s is in the public copy", mac)
+		}
+	}
+	if got, want := f.IDHashes("k")["mac"], Keyed("k", "mac", "02:12:34:56:78:9a"); got != want {
+		t.Errorf("the mac hash is %s, not the board's own %s", got, want)
+	}
+}
