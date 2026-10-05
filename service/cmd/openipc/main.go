@@ -9,6 +9,7 @@
 //	openipc purge [--snapshots] [--firmware] [--builds]   nightly retention
 //	openipc probe                  nightly health numbers, non-zero on trouble
 //	openipc builds import-history  once: the builds GitHub still holds, into PostgreSQL
+//	openipc builds import-uboot  the u-boot binaries on firmware's latest, re-read
 //	openipc vendor-firmware import-history  once: xmupdates and coupler as published so far
 //	openipc boards import-openhisiipcam  once: the OpenHisiIpCam board archive, into the board catalogue
 //	openipc reports list|show|publish|reject|link|unlink|takedown|verify   the owner reports' review queue
@@ -105,7 +106,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history | boards import-openhisiipcam | boards import-snapshot | reports list|show|publish|reject|link|unlink|takedown|verify | club settle-wall|wall-revoke|wall-unlink | vendor-firmware import-history | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history|import-uboot | boards import-openhisiipcam | boards import-snapshot | reports list|show|publish|reject|link|unlink|takedown|verify | club settle-wall|wall-revoke|wall-unlink | vendor-firmware import-history | routes --json | version")
 	os.Exit(2)
 }
 

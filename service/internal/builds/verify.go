@@ -36,9 +36,15 @@ type Claims struct {
 // that repository publishes from (master for firmware and builder; main for
 // xmupdates, coupler and anjoyupdates, vendorfw/PUSH.md).
 var pushers = map[string][]string{
-	"firmware":  {"OpenIPC/firmware/.github/workflows/build.yml@refs/heads/master"},
-	"builder":   {"OpenIPC/builder/.github/workflows/master.yml@refs/heads/master"},
-	"uboot":     {"OpenIPC/firmware/.github/workflows/uboot.yml@refs/heads/master"},
+	"firmware": {"OpenIPC/firmware/.github/workflows/build.yml@refs/heads/master"},
+	"builder":  {"OpenIPC/builder/.github/workflows/master.yml@refs/heads/master"},
+	// u-boot-xmedia uploads its NOR and NAND images to firmware's `latest`
+	// itself, so it reports them too: the full images are built from these
+	// bytes, and an upload the index does not know breaks every one of them.
+	"uboot": {
+		"OpenIPC/firmware/.github/workflows/uboot.yml@refs/heads/master",
+		"OpenIPC/u-boot-xmedia/.github/workflows/build.yml@refs/heads/master",
+	},
 	"xmupdates": {"OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
 	"coupler":   {"OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main"},
 	// Anjoy Vision's firmware builds, keyed by board model (vendorfw/PUSH.md).

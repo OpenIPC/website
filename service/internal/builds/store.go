@@ -241,12 +241,23 @@ func (e ErrOtherSource) Error() string {
 // Trim keeps the newest n builds of each source, as upstream's release cleanup
 // does, and returns how many it removed. Download stats are elsewhere and are
 // never trimmed.
+//
+// A uboot build is kept while it is still the newest to name one of its
+// files. Its assets live on `latest`, which no cleanup deletes, and several
+// repositories upload there, each pushing only its own files. Ranking those
+// builds alone would drop one repository's binaries from the index after
+// enough pushes from another.
 func Trim(ctx context.Context, pool *pgxpool.Pool, n int) (int64, error) {
 	tag, err := pool.Exec(ctx, `
 		DELETE FROM builds WHERE id IN (
 			SELECT id FROM (
 				SELECT id, row_number() OVER (PARTITION BY source ORDER BY built_at DESC, id DESC) AS rank
 				FROM builds) ranked
-			WHERE rank > $1)`, n)
+			WHERE rank > $1)
+		AND id NOT IN (
+			SELECT DISTINCT ON (a.name) b.id
+			FROM build_assets a JOIN builds b ON b.id = a.build_id
+			WHERE b.source = 'uboot'
+			ORDER BY a.name, b.built_at DESC, b.id DESC)`, n)
 	return tag.RowsAffected(), err
 }
