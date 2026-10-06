@@ -16,6 +16,9 @@ import (
 // migration's triggers refuse any change it does not make through Unguarded.
 type Store struct {
 	DB *pgxpool.Pool
+	// SoC maps a SoC as written to the catalogue's slug, for a board a
+	// review adds (boards.CreateModel); nil keeps only the label.
+	SoC func(string) string
 }
 
 // Report is one upload, as stored.
@@ -38,6 +41,16 @@ type Report struct {
 	// said it is. Empty for ipctool's uploads.
 	Member string
 	Model  string
+	// Proposal: a camera the catalogue does not have, as the sender names it.
+	Proposal *Proposal
+}
+
+// Proposal is a camera the catalogue does not have yet, as its sender names
+// it (migration 028).
+type Proposal struct {
+	Maker string `json:"maker"`
+	Board string `json:"board"`
+	SoC   string `json:"soc,omitempty"`
 }
 
 // File is one file a report brought.
@@ -171,8 +184,24 @@ func (s *Store) Insert(ctx context.Context, r *Report, limit int, place func() e
 				return err
 			}
 		}
+		if p := r.Proposal; p != nil {
+			if _, err := tx.Exec(ctx, `INSERT INTO report_proposals (report_id, maker, board, soc) VALUES ($1, $2, $3, $4)`,
+				r.ID, p.Maker, p.Board, p.SoC); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
+}
+
+// ProposalOf is the camera a report proposes, nil when it names none.
+func (s *Store) ProposalOf(ctx context.Context, id string) (*Proposal, error) {
+	p := &Proposal{}
+	err := s.DB.QueryRow(ctx, `SELECT maker, board, soc FROM report_proposals WHERE report_id = $1`, id).Scan(&p.Maker, &p.Board, &p.SoC)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return p, err
 }
 
 // ModelExists says whether the catalogue has the board a sender named.

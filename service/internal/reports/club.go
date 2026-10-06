@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/OpenIPC/website/service/internal/boards"
 )
 
 // What the OpenIPC Club (internal/club) asks of owner reports: a member's
@@ -49,10 +52,12 @@ type MemberReport struct {
 	ReviewedAt *time.Time `json:"reviewed_at,omitempty"`
 	Note       string     `json:"note,omitempty"`
 	// ReviewNote is what the reviewer wrote for the sender with the decision.
-	ReviewNote string       `json:"review_note,omitempty"`
-	Board      *ViewModel   `json:"board,omitempty"`
-	Chip       string       `json:"chip,omitempty"`
-	Files      []MemberFile `json:"files"`
+	ReviewNote string     `json:"review_note,omitempty"`
+	Board      *ViewModel `json:"board,omitempty"`
+	// Proposal: the camera the sender named, when the catalogue had none.
+	Proposal *Proposal    `json:"proposal,omitempty"`
+	Chip     string       `json:"chip,omitempty"`
+	Files    []MemberFile `json:"files"`
 	// Stars: what it earned, net of anything taken back; Pending: what it
 	// would earn if accepted, while it waits.
 	Stars   int `json:"stars"`
@@ -136,6 +141,9 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 	if err == nil {
 		m.Board = &b
 	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, err
+	}
+	if m.Proposal, err = s.ProposalOf(ctx, id); err != nil {
 		return nil, err
 	}
 	potential, err := s.potential(ctx, id, yaml != "")
@@ -253,6 +261,10 @@ type Queued struct {
 	Guess     *Match       `json:"guess,omitempty"`
 	FileList  []MemberFile `json:"file_list"`
 	Potential int          `json:"potential"`
+	// Proposal and NewBoard: a camera the catalogue does not have, as the
+	// sender named it, and the board publishing it would add.
+	Proposal *Proposal          `json:"proposal,omitempty"`
+	NewBoard *boards.Suggestion `json:"new_board,omitempty"`
 }
 
 // Queue is the review queue: the reports in one state (pending by default),
@@ -280,7 +292,14 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 		if err != nil {
 			return nil, err
 		}
-		q.Board, q.FileList = m.Board, m.Files
+		q.Board, q.FileList, q.Proposal = m.Board, m.Files, m.Proposal
+		if p := m.Proposal; p != nil {
+			sug, err := boards.Suggest(ctx, s.DB, p.Maker, p.Board, p.SoC)
+			if err != nil {
+				return nil, err
+			}
+			q.NewBoard = &sug
+		}
 		for _, f := range m.Files {
 			q.Potential += f.Points
 		}
@@ -298,38 +317,38 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 	return out, nil
 }
 
-// Decided is what a review did to the sender's stars.
+// Decided is what a review did to the sender's stars, and the board it
+// added, if it added one.
 type Decided struct {
 	Member string
 	Points int
 	Total  int
+	Board  string
 }
 
 // Decide records a maintainer's decision and its stars: publishing links
-// the report to its boards (the sender's board when none is named) and
-// awards each accepted part; rejecting takes back anything it had earned.
-func (s *Store) Decide(ctx context.Context, id, decision, by, note string, models []string) (Decided, error) {
+// the report to its boards (the sender's board when none is named), adds
+// the board newBoard describes first when the catalogue did not have it,
+// and awards each accepted part; rejecting takes back anything it had
+// earned.
+func (s *Store) Decide(ctx context.Context, id, decision, by, note string, models []string, newBoard *boards.NewModel) (Decided, error) {
 	var d Decided
 	if decision != "publish" && decision != "reject" {
 		return d, fmt.Errorf("a review publishes or rejects")
+	}
+	if newBoard != nil && decision != "publish" {
+		return d, errors.New("a new board is added by publishing the report")
 	}
 	owner, err := s.Owner(ctx, id)
 	if err != nil {
 		return d, err
 	}
 	d.Member = owner
-	if decision == "publish" {
-		if len(models) == 0 {
-			var hint *string
-			_ = s.DB.QueryRow(ctx, `SELECT model_id FROM report_submissions WHERE report_id = $1`, id).Scan(&hint)
-			if hint != nil {
-				models = []string{*hint}
-			}
-		}
-		for _, m := range models {
-			if err := s.Link(ctx, id, m, by); err != nil {
-				return d, fmt.Errorf("link %s: %w", m, err)
-			}
+	if decision == "publish" && len(models) == 0 && newBoard == nil {
+		var hint *string
+		_ = s.DB.QueryRow(ctx, `SELECT model_id FROM report_submissions WHERE report_id = $1`, id).Scan(&hint)
+		if hint != nil {
+			models = []string{*hint}
 		}
 	}
 	// The potential is read before the decision, so this report's own
@@ -345,7 +364,33 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 	if err != nil {
 		return d, err
 	}
-	if err := s.Review(ctx, id, decision, by, note); err != nil {
+	// The board a review adds, the report's links and the review are one
+	// transaction: a board that cannot be added, or a link to one the
+	// catalogue does not have, leaves nothing behind.
+	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
+		if newBoard != nil {
+			id, err := boards.CreateModel(ctx, tx, *newBoard, s.SoC)
+			if err != nil {
+				return err
+			}
+			d.Board, models = id, append(models, id)
+		}
+		for _, m := range models {
+			if _, err := tx.Exec(ctx, `INSERT INTO report_models (report_id, model_id, by) VALUES ($1,$2,$3)
+				ON CONFLICT DO NOTHING`, id, m, by); err != nil {
+				var pe *pgconn.PgError
+				if errors.As(err, &pe) && pe.Code == "23503" {
+					return fmt.Errorf("link %s: the catalogue has no such board", m)
+				}
+				return fmt.Errorf("link %s: %w", m, err)
+			}
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO report_reviews (report_id, decision, by, note) VALUES ($1,$2,$3,$4)`,
+			id, decision, by, note)
+		return err
+	})
+	if err != nil {
+		d.Board = ""
 		return d, err
 	}
 	if owner == "" {

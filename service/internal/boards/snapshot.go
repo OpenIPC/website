@@ -429,14 +429,7 @@ func (im *Importer) resolve(ctx context.Context, q querier, maker, code string, 
 }
 
 func (im *Importer) socFor(label string) string {
-	l := strings.ToLower(strings.ReplaceAll(label, " ", ""))
-	if full, ok := socShorthand[l]; ok {
-		l = full
-	}
-	if im.Resolve == nil || l == "" {
-		return ""
-	}
-	return im.Resolve(l)
+	return socSlug(label, im.Resolve)
 }
 
 func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src string, position int, m SnapModel, dec map[[2]string]string) (string, bool, error) {

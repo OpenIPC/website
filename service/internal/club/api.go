@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/OpenIPC/website/service/internal/boards"
 	"github.com/OpenIPC/website/service/internal/reports"
 	"github.com/OpenIPC/website/service/internal/wallstars"
 )
@@ -586,8 +587,10 @@ func (a *API) queue(w http.ResponseWriter, r *http.Request) {
 }
 
 // decide is POST /api/v1/club/review/{id} {"decision": "publish"|"reject",
-// "models": [...], "note": "..."}: a maintainer's decision, its stars, and
-// a message to the sender when the bot can reach them.
+// "models": [...], "new_board": {...}, "note": "..."}: a maintainer's
+// decision, its stars, and a message to the sender when the bot can reach
+// them. new_board (boards.NewModel) adds the camera a report proposed to
+// the catalogue, and links the report to it.
 func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 	m, ok := a.signedIn(w, r)
 	if !ok {
@@ -598,9 +601,10 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var in struct {
-		Decision string   `json:"decision"`
-		Models   []string `json:"models"`
-		Note     string   `json:"note"`
+		Decision string           `json:"decision"`
+		Models   []string         `json:"models"`
+		NewBoard *boards.NewModel `json:"new_board"`
+		Note     string           `json:"note"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&in); err != nil {
 		a.refuse(w, http.StatusBadRequest, `send {"decision": "publish" or "reject", "models": [...], "note": "..."}`)
@@ -608,7 +612,7 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.PathValue("id")
 	by := m.Name + " (" + m.ID + ")"
-	d, err := a.Reports.Store().Decide(r.Context(), id, in.Decision, by, in.Note, in.Models)
+	d, err := a.Reports.Store().Decide(r.Context(), id, in.Decision, by, in.Note, in.Models, in.NewBoard)
 	if errors.Is(err, reports.ErrNotFound) {
 		a.refuse(w, http.StatusNotFound, "no report has this id")
 		return
@@ -617,14 +621,14 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 		a.refuse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	a.Log.Info("club: reviewed", "report", id, "decision", in.Decision, "by", m.ID, "member", d.Member, "points", d.Points)
+	a.Log.Info("club: reviewed", "report", id, "decision", in.Decision, "by", m.ID, "member", d.Member, "points", d.Points, "new_board", d.Board)
 	if a.OnReviewed != nil {
 		a.OnReviewed(context.WithoutCancel(r.Context()))
 	}
 	if d.Member != "" {
 		a.notifyDecision(context.WithoutCancel(r.Context()), d.Member, id, in.Decision, d)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"id": id, "decision": in.Decision, "points": d.Points, "total": d.Total})
+	writeJSON(w, http.StatusOK, map[string]any{"id": id, "decision": in.Decision, "points": d.Points, "total": d.Total, "board": d.Board})
 }
 
 func (a *API) refuse(w http.ResponseWriter, status int, reason string) {

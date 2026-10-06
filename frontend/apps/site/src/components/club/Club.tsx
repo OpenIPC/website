@@ -322,7 +322,10 @@ function MemberPage({ member, ways, locale, t, onChange }: {
         {cams
           ? <Cameras data={cams} locale={locale} t={t} onChange={() => { void loadCams(); onChange(); }} />
           : !error && <div class="m-4 h-24 animate-pulse rounded bg-surface-alt" />}
-        <h2 id="club-mine" class="m-0 border-b border-hairline px-4 py-3 text-lg font-semibold">{t('club.mine_title')}</h2>
+        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-hairline px-4 py-3">
+          <h2 id="club-mine" class="m-0 text-lg font-semibold">{t('club.mine_title')}</h2>
+          <a href={`${pathFor(locale, '/cameras/report')}#new`} class="text-sm">{t('club.new_link')}</a>
+        </div>
         {error && <p class="m-4 text-sm text-[#9a5b00]" role="alert">{t('club.load_failed')}</p>}
         {!error && reports === null && <div class="m-4 h-24 animate-pulse rounded bg-surface-alt" />}
         {reports && reports.length === 0 && (
@@ -349,7 +352,9 @@ function Ledger({ reports, locale, t }: { reports: MemberReport[]; locale: Local
         <tbody>
           {reports.map((r) => {
             const shown = r.status === 'pending' ? r.pending : r.stars;
-            const board = r.board ? `${r.board.manufacturer} ${r.board.model}` : (r.chip || t('club.no_board'));
+            const board = r.board ? `${r.board.manufacturer} ${r.board.model}`
+              : r.proposal ? t('club.proposed', { board: `${r.proposal.maker} ${r.proposal.board}` })
+              : (r.chip || t('club.no_board'));
             return (
               <tr key={r.id} class="border-t border-hairline align-top">
                 <td class="grid gap-1 px-4 py-3">

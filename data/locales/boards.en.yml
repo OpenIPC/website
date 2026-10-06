@@ -32,6 +32,7 @@ en:
       fact2: "The MAC, the chip's serial and the cloud ID are replaced with hashes in everything published, in the report and in any log."
       fact3_title: "A backup is private unless you say otherwise"
       fact3_html: "It holds everything the camera stores, including Wi-Fi keys and passwords. It is published only if you sent it with <code>--public</code>."
+      new_title: "No shell on the camera? Send its photos"
     club:
       eyebrow: 'OpenIPC Club'
       title: 'OpenIPC Club'
@@ -134,6 +135,8 @@ en:
     loading: Loading the boards…
     error: 'The board catalogue could not be loaded ({error}). Reload the page to try again.'
     empty: No board matches these filters. Clear one to widen the list.
+    new_missing: Not in the catalogue?
+    new_add: Add your camera
     unknown_maker: Unidentified maker
     also_marked: 'also marked {aliases}'
     board_count:
@@ -453,6 +456,19 @@ en:
       kind_document: 'Document'
       kind_yaml: 'ipctool report'
       no_board: 'No board named'
+      new_link: 'Add a camera that is not in the catalogue'
+      new_lede: 'Name the maker and the board, and add photos of it: the board''s front and back, and the label. A maintainer adds it to the catalogue when they publish your report; each photo and file earns {n} ★.'
+      new_maker: 'Maker'
+      new_maker_hint: 'Xiongmai, Jooan, Hikvision…'
+      new_board: 'Board marking or model'
+      new_board_hint: 'What is printed on the board, or the model on the box'
+      new_soc: 'SoC, if you know it'
+      new_photos: 'Photos (at least one)'
+      new_more: 'Have ipctool''s output or a boot log? Add them too'
+      new_ipctool: 'ipctool''s output'
+      new_boot_log: 'Boot log or U-Boot console'
+      new_need: 'Name the maker and the board, and add at least one photo.'
+      proposed: 'New: {board}'
       rules_title: 'How stars work'
       rules_item: 'Boot log, U-Boot console, photo, pinout, ipctool report'
       rules_dump: 'Full flash dump the catalogue doesn''t have'
@@ -496,6 +512,17 @@ en:
       review_points: '{points} ★'
       review_done_publish: 'Published. {points} ★ to the sender.'
       review_done_reject: 'Rejected.'
+      review_proposal: 'Proposed by the sender'
+      review_existing: 'The catalogue already has {board}: the report is published there unless you change the board ids below.'
+      review_new_board: 'Add this board to the catalogue when publishing'
+      review_maker_known: 'its maker is in the catalogue'
+      review_maker_new: 'a new maker'
+      review_new_maker_name: 'Maker'
+      review_new_maker_id: 'Maker id'
+      review_new_model: 'Marking, as printed'
+      review_new_model_id: 'Board id'
+      review_new_soc: 'SoC'
+      review_done_board: 'Published, and {board} added to the catalogue. {points} ★ to the sender.'
       show_yaml: 'ipctool output'
       tab_pending: 'Waiting'
       tab_published: 'Published'

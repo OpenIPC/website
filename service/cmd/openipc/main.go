@@ -368,6 +368,13 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 	// review, and kept apart from everything the board importers touch.
 	ownerReports := &reports.API{DB: pool, Files: &reports.Files{Root: cfg.ReportsRoot},
 		AccelPrefix: cfg.ReportsAccelPrefix, Log: log}
+	// A board a review adds keeps its SoC as written; with the catalogue it
+	// is also filed under the SoC's slug, as the importers file theirs.
+	if cat, err := catalogue.Load(cfg.CatalogueDir); err == nil {
+		ownerReports.SoC = socResolver(cat)
+	} else {
+		log.Warn("reports: no catalogue; a board a review adds keeps only its SoC's label", "err", err)
+	}
 	// The OpenIPC Club (internal/club): signing in, the send form, members'
 	// own reports and cameras, and the maintainers' review. Each way in only
 	// when set. Built before the variant workers start, because a published

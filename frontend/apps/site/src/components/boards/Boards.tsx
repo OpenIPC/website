@@ -22,7 +22,7 @@ import {
   lineLabel, lineOptions, sensorOptions, socName, socOptions, stats, subtitle, type Entry, type Group, type Heading,
 } from '../../lib/boards/model';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
-import type { Locale } from '../../lib/i18n';
+import { pathFor, type Locale } from '../../lib/i18n';
 import BoardPanel from './BoardPanel';
 import { Chip, SocChip, SourceChips, Tags, Thumb, makerName, type SocLinks } from './parts';
 
@@ -42,6 +42,7 @@ const depthOf = (state: unknown): number =>
 
 export default function Boards({ locale, socs }: { locale: Locale; socs: SocLinks }) {
   const t = useBoardsTranslations(locale);
+  const addNew = <AddNew href={`${pathFor(locale, '/cameras/report')}#new`} t={t} />;
   const initial = useMemo(() => readQueryString(typeof window === 'undefined' ? '' : window.location.search), []);
   const [view, setView] = useState<BoardsState>({ ...initial, model: null });
   const [open, setOpen] = useState<string | null>(initial.model);
@@ -255,12 +256,12 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
               </section>
             )}
             <Hits found={found} kept={kept} q={q} scope={view.scope} none={s.boards > 0 && all.every((m) => !has(m, 'boot_log'))}
-            t={t} names={names} href={href} onOpen={openModel} />
+            t={t} names={names} href={href} onOpen={openModel} addNew={addNew} />
           </>
           : <>
             {q.length > 0 && <p class="mt-6 mb-0 text-sm text-body-secondary">{t('query_short')}</p>}
             {filtered && kept.length > 0 && <p class="mt-5 mb-0 text-sm text-body-secondary">{t('matching', { count: kept.length })}</p>}
-            {kept.length === 0 && <Notice>{t('empty')}</Notice>}
+            {kept.length === 0 && <Notice>{t('empty')} {addNew}</Notice>}
             {sections.map(({ maker, count, groups }) => (
               <section key={maker.id} class="mt-9" aria-labelledby={`maker-${maker.id}`}>
                 <h2 id={`maker-${maker.id}`} class="mb-0 flex flex-wrap items-baseline gap-x-2.5 text-h3 font-semibold">
@@ -402,9 +403,9 @@ function Card({ m, level, socs, names, sources, t, href, onOpen, catalogue }: Ca
 
 const HIT_CLASS: Record<Heading['kind'], string> = { code: 'font-mono font-bold', name: 'font-semibold', none: 'font-medium' };
 
-function Hits({ found, kept, q, scope, none, t, names, href, onOpen }: {
+function Hits({ found, kept, q, scope, none, t, names, href, onOpen, addNew }: {
   found: Load<SearchResult> | null; kept: Entry[]; q: string; scope: Scope; none: boolean; t: BoardsT; names: Record<string, string>;
-  href: (model: string | null) => string; onOpen: (id: string) => void;
+  href: (model: string | null) => string; onOpen: (id: string) => void; addNew: ComponentChildren;
 }) {
   if (!found || found.state === 'loading') return <p class="mt-8 text-body-secondary">{t('searching')}</p>;
   if (found.state === 'error') {
@@ -424,7 +425,7 @@ function Hits({ found, kept, q, scope, none, t, names, href, onOpen }: {
         {t('hits_lines', { count: hits.length })} {t('hits_boards', { count: boards })} · {t('hits_scope', { scope: t(`scope_${scope}`) })}
       </p>
       {hits.length === 0 && (
-        <Notice>{t('hits_none', { q })}{scope === 'boot_log' && none ? ` ${t('hits_none_boot_log')}` : ''}</Notice>
+        <Notice>{t('hits_none', { q })}{scope === 'boot_log' && none ? ` ${t('hits_none_boot_log')}` : ''} {addNew}</Notice>
       )}
       {hits.map((h) => (
         <div key={`${h.url}:${h.line}`} class="grid gap-1.5 rounded-lg border border-hairline bg-white px-3.5 py-3">
@@ -446,6 +447,11 @@ function Hits({ found, kept, q, scope, none, t, names, href, onOpen }: {
       {found.value.truncated && <Notice>{t('hits_truncated')}</Notice>}
     </div>
   );
+}
+
+/** A camera the catalogue lacks is added from the report page's form. */
+function AddNew({ href, t }: { href: string; t: BoardsT }) {
+  return <>{t('new_missing')} <a href={href}>{t('new_add')}</a></>;
 }
 
 function Notice({ children }: { children: ComponentChildren }) {
