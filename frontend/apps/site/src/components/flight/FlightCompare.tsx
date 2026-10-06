@@ -17,7 +17,7 @@
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type shakaNs from 'shaka-player/dist/shaka-player.dash.js';
-import { clock, originalOf, rungKind, syncAction, type RungKind } from '../../lib/flight-sync';
+import { clock, originalOf, rungKind, SEEK_DRIFT, syncAction, type RungKind } from '../../lib/flight-sync';
 
 type Shaka = typeof shakaNs;
 type Player = InstanceType<Shaka['Player']>;
@@ -70,6 +70,11 @@ const BOTH_WAYS = 'M1 8l4-4v3h6V4l4 4-4 4V9H5v3z';
 const FLICKER_MS = 500;
 
 export default function FlightCompare({ base, poster, start, end, rndPlayer, labels }: Props) {
+  // Never exactly on the ground station's first frame: a playhead a rounding
+  // error before its buffered range has no picture, and Shaka steps over that
+  // gap only while the video plays -- which a side held for the other never
+  // does, so both waited for good. Five milliseconds in is the same frame.
+  const begin = start + 0.005;
   const box = useRef<HTMLDivElement>(null);
   const lead = useRef<HTMLVideoElement>(null);
   const follow = useRef<HTMLVideoElement>(null);
@@ -78,7 +83,7 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [playing, setPlaying] = useState(false);
-  const [time, setTime] = useState(start);
+  const [time, setTime] = useState(begin);
   const [split, setSplit] = useState(50);
   const [mode, setMode] = useState<'split' | 'flicker'>('split');
   const [flickerOn, setFlickerOn] = useState(true);
@@ -117,7 +122,7 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
         p.addEventListener('adaptation', () => describe(side));
         p.addEventListener('variantchanged', () => describe(side));
         players.current[side] = p;
-        await p.load(`${base}${side}.mpd`, start);
+        await p.load(`${base}${side}.mpd`, begin);
         describe(side);
       }));
     } catch {
@@ -145,9 +150,13 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
     };
     const onSeek = () => {
       // Before the window the ground station has no picture yet.
-      if (a.currentTime < start) { a.currentTime = start; return; }
-      b.currentTime = a.currentTime;
+      if (a.currentTime < begin) { a.currentTime = begin; return; }
       setTime(a.currentTime);
+      // Not while the follower is still starting: a seek that lands before
+      // Shaka's first append left it seeking with nothing buffered for good
+      // (about one start in six). The hold below lines it up once it has a
+      // picture.
+      if (b.readyState >= 2) b.currentTime = a.currentTime;
     };
     const onEnded = () => { setPlaying(false); b.pause(); };
     a.addEventListener('play', onPlay);
@@ -169,16 +178,36 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
         setTime(shown);
       }
       // If either side is starved, both wait: a side that ran on alone would
-      // be compared with a picture from seconds before.
-      const starved = a.readyState < 3 || b.readyState < 3;
-      if (!a.paused && starved && !a.seeking && !b.seeking) {
+      // be compared with a picture from seconds before. Seeking and Shaka's
+      // own buffering count as starved -- a leader that kept playing while
+      // the follower sought would be further ahead when the seek landed, and
+      // the follower would chase it for ever.
+      const pa = players.current.onboard, pb = players.current.gs;
+      const aStarved = a.readyState < 3 || a.seeking || !!pa?.isBuffering();
+      const bStarved = b.readyState < 3 || b.seeking || !!pb?.isBuffering();
+      const starved = aStarved || bStarved;
+      if (!a.paused && starved) {
         held.current = true;
         a.pause();
-        b.pause();
+      }
+      if (held.current && starved) {
+        // A starved follower is left playing: it cannot move without data,
+        // and Shaka gets a stalled stream going again only while it plays --
+        // paused while still starting, it was seen to wait for ever. Only a
+        // follower that has data, and would run ahead, is stopped.
+        if (bStarved && b.paused) void b.play().catch(() => {});
+        if (!bStarved && !b.paused) b.pause();
         return;
       }
       if (held.current && !starved) {
+        // Line the follower up with the stopped leader if it is really
+        // elsewhere, then go. Only a real gap: a follower left running while
+        // it waited is a few milliseconds on by the time it is seen ready, and
+        // re-seeking that -- a seek decodes from the keyframe before it -- had
+        // the two take turns being ready for good. The nudge closes the rest.
+        if (Math.abs(b.currentTime - a.currentTime) > SEEK_DRIFT) { b.currentTime = a.currentTime; return; }
         held.current = false;
+        b.playbackRate = 1;
         void a.play().catch(() => {});
         void b.play().catch(() => {});
         return;
@@ -227,7 +256,9 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
     const a = lead.current;
     if (phase === 'idle') { void load(); return; }
     if (!a || phase !== 'ready') return;
-    held.current = false;
+    // Held for a starved side counts as playing: Pause has to stop both,
+    // including a follower left running while it waits for data.
+    if (held.current) { held.current = false; follow.current?.pause(); return; }
     if (a.paused) void a.play(); else a.pause();
   };
 
@@ -235,7 +266,7 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
     const a = lead.current;
     if (!a || phase !== 'ready') return;
     a.pause();
-    a.currentTime = Math.min(end, Math.max(start, a.currentTime + by));
+    a.currentTime = Math.min(end, Math.max(begin, a.currentTime + by));
   };
 
   // The split follows the pointer while it is down anywhere on the picture,
@@ -347,7 +378,7 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
         <input
           type="range"
           class="min-w-40 flex-1 accent-brand-blue"
-          min={start}
+          min={begin}
           max={end}
           step={FRAME}
           value={time}

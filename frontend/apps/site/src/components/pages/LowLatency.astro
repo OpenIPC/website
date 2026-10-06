@@ -25,13 +25,11 @@
  * Both links name their events, which the monthly memo counts as the FPV
  * segment's business clicks.
  *
- * The flight comes first, straight under the hero, because it is the claim
- * the rest of the page makes, shown rather than stated: one real flight
- * recorded on the drone and on the ground station, cut onto one timeline by
- * tools/flight-ab and compared frame by frame (../flight/FlightCompare.tsx).
- * Its numbers are the run's own stats (../../data/flight.ts), and say what the
- * pilot's screen got, gaps included -- a page about a link that hid its
- * freezes would be the old latency table again.
+ * The flight sits under the latency chart, as the evidence for it rather than
+ * the page's opening: the page sells the stack first, and the reader who wants
+ * to see it gets one real flight recorded on the drone and on the ground
+ * station, cut onto one timeline by tools/flight-ab and compared frame by
+ * frame (../flight/FlightCompare.tsx). Nothing loads until play.
  */
 import Icon from '../Icon.astro';
 import PageHeader from '../PageHeader.astro';
@@ -77,41 +75,11 @@ const flightLabels: FlightLabels = {
   seek: k('flight_seek'),
   openRnd: k('flight_open_rnd'),
 };
-const FLIGHT_STATS: [string, string][] = [
-  [String(FLIGHT.minutes), k('flight_stat_duration')],
-  [`${FLIGHT.shown.toFixed(1)}%`, k('flight_stat_shown')],
-  [String(FLIGHT.holdsOver50), t('pages.low_latency.flight_stat_holds', { ms: FLIGHT.longestHoldMs })],
-];
 ---
 <PageHeader title={k('hero_title')} lede={k('hero_lede')} />
 
 <div class="site-container">
   <article>
-    <section class="mb-12" id="flight">
-      <h2 class="mb-3 text-2xl">{k('flight_title')}</h2>
-      <p class="mb-5 max-w-3xl text-body-secondary">{k('flight_lede')}</p>
-      <FlightCompare
-        client:visible
-        base={FLIGHT.base}
-        poster={poster.src}
-        start={FLIGHT.start}
-        end={FLIGHT.end}
-        rndPlayer={rndPlayerUrl(Astro.site!.origin)}
-        labels={flightLabels}
-      />
-      <p class="mt-3 mb-6 max-w-3xl text-sm text-body-secondary">{k('flight_note')}</p>
-      <div class="mb-6 grid gap-6 md:grid-cols-3">
-        {FLIGHT_STATS.map(([value, text]) => (
-          <div class="rounded-lg border border-hairline p-5">
-            <p class="mb-1 font-mono text-3xl text-brand-blue">{value}</p>
-            <p class="mb-0 text-sm text-body-secondary">{text}</p>
-          </div>
-        ))}
-      </div>
-      <p class="mb-3 max-w-3xl text-body-secondary" set:html={k('flight_latency_html')} />
-      <p class="mb-0 max-w-3xl text-sm text-body-secondary" set:html={k('flight_credit_html')} />
-    </section>
-
     <h2 class="mb-6 text-2xl">{k('how_title')}</h2>
     <div class="mb-4 grid gap-6 text-center md:grid-cols-3">
       {CHAIN.map(([icon, key]) => (
@@ -201,6 +169,25 @@ const FLIGHT_STATS: [string, string][] = [
           </span>
           <span class="col-start-3 text-xs text-body-secondary" aria-hidden="true">{k('latency_axis_unit')}</span>
         </div>
+      </div>
+    </div>
+
+    <div class="mb-12 flex flex-wrap items-center gap-8 border-t border-hairline pt-8" id="flight">
+      <div class="min-w-0 grow-[2] basis-[520px]">
+        <FlightCompare
+          client:idle
+          base={FLIGHT.base}
+          poster={poster.src}
+          start={FLIGHT.start}
+          end={FLIGHT.end}
+          rndPlayer={rndPlayerUrl(Astro.site!.origin)}
+          labels={flightLabels}
+        />
+      </div>
+      <div class="-order-1 min-w-0 grow basis-[300px] lg:order-none">
+        <h3 class="mb-2 text-xl font-semibold">{k('flight_title')}</h3>
+        <p class="mb-3 text-body-secondary">{k('flight_text')}</p>
+        <p class="mb-0 text-sm text-body-secondary" set:html={k('flight_credit_html')} />
       </div>
     </div>
 
