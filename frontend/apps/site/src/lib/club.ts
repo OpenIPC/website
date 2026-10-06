@@ -42,6 +42,19 @@ export interface MemberFile {
 
 export interface BoardRef { id: string; model: string; manufacturer: string }
 
+/** A camera the catalogue does not have, as its sender named it. */
+export interface Proposal { maker: string; board: string; soc?: string }
+
+/** The board publishing a proposal adds (service boards.NewModel). */
+export interface NewBoard { maker_id: string; maker_name: string; model_id: string; model: string; soc?: string }
+
+/** What the review page offers for a proposal (boards.Suggestion). */
+export interface Suggestion extends NewBoard {
+  maker_known: boolean;
+  /** A board that already answers to the marking: link to it instead. */
+  existing?: string;
+}
+
 export interface MemberReport {
   id: string;
   received_at: string;
@@ -50,6 +63,7 @@ export interface MemberReport {
   note?: string;
   review_note?: string;
   board?: BoardRef;
+  proposal?: Proposal;
   chip?: string;
   files: MemberFile[];
   stars: number;
@@ -74,6 +88,8 @@ export interface Queued {
   guess?: { model_id: string; model: string; manufacturer: string };
   file_list: MemberFile[];
   potential: number;
+  proposal?: Proposal;
+  new_board?: Suggestion;
 }
 
 const BASE = '/api/v1/club';
@@ -161,8 +177,9 @@ export const fetchMine = () => call<{ member: Member; reports: MemberReport[] }>
 
 export const fetchQueue = (status = 'pending') => call<{ reports: Queued[] }>(`/review?${new URLSearchParams({ status })}`);
 
-export const decide = (id: string, decision: 'publish' | 'reject', models: string[], note: string) =>
-  post<{ points: number; total: number }>(`/review/${encodeURIComponent(id)}`, { decision, models, note });
+export const decide = (id: string, decision: 'publish' | 'reject', models: string[], note: string, newBoard?: NewBoard) =>
+  post<{ points: number; total: number; board?: string }>(`/review/${encodeURIComponent(id)}`,
+    newBoard ? { decision, models, note, new_board: newBoard } : { decision, models, note });
 
 /** The send form's answer: the report's receipt. */
 export interface Sent { id: string; receipt_url: string; files: { kind: string; name: string; private?: boolean }[] }

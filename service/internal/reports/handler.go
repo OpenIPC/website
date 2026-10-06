@@ -40,6 +40,8 @@ type API struct {
 	AccelPrefix string
 	Log         *slog.Logger
 	Now         func() time.Time
+	// SoC maps a SoC as written to the catalogue's slug (Store.SoC).
+	SoC func(string) string
 }
 
 func (a *API) Handlers() map[string]http.Handler {
@@ -52,7 +54,7 @@ func (a *API) Handlers() map[string]http.Handler {
 	}
 }
 
-func (a *API) store() *Store { return &Store{DB: a.DB} }
+func (a *API) store() *Store { return &Store{DB: a.DB, SoC: a.SoC} }
 
 // Store is the reports' rows, for the club's pages.
 func (a *API) Store() *Store { return a.store() }
@@ -95,7 +97,9 @@ func (a *API) upload(w http.ResponseWriter, r *http.Request) {
 // (POST /api/v1/club/reports, member set when the sender is signed in).
 // A send that names a catalogue board (the field model) needs no ipctool
 // output: a boot log or a photo of a known board is a report too, and so is
-// a flash dump read with a programmer rather than ipctool.
+// a flash dump read with a programmer rather than ipctool. So is a camera
+// the catalogue does not have, proposed by its maker and marking (the
+// fields maker, board and soc) with at least one photo of it.
 func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	ctx := r.Context()
 	st := a.store()
@@ -135,6 +139,11 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	}
 
 	model := in.fields["model"]
+	prop, err := proposalOf(in, channel, model)
+	if err != nil {
+		a.refuse(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	if model != "" {
 		if channel != "web" {
 			a.refuse(w, http.StatusBadRequest, "model is the send form's field: channel web")
@@ -179,7 +188,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	}
 	var doc string
 	var facts Facts
-	if in.yaml != "" || model == "" {
+	if in.yaml != "" || model == "" && prop == nil {
 		doc, facts, err = Parse(in.yaml)
 		if err != nil {
 			a.refuse(w, http.StatusBadRequest, err.Error())
@@ -204,7 +213,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		NotePublic: Redact(in.fields["note"], facts, key),
 		YAML:       doc, YAMLPublic: Redact(doc, facts, key), Facts: facts,
 		IDHashes: facts.IDHashes(key), Consent: consent, ClientHash: client,
-		Member: member, Model: model,
+		Member: member, Model: model, Proposal: prop,
 	}
 	sum := sha256.Sum256([]byte(doc))
 	rep.YAMLSHA256 = hex.EncodeToString(sum[:])
@@ -308,6 +317,36 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	writeJSON(w, http.StatusCreated, out)
 }
 
+var formFields = map[string]bool{"consent": true, "channel": true, "tool": true, "note": true, "model": true,
+	"maker": true, "board": true, "soc": true}
+
+// proposalOf is the camera a send proposes, nil when it proposes none: the
+// send form's, for a board the catalogue does not have, with a photo of it.
+func proposalOf(in *received, channel, model string) (*Proposal, error) {
+	p := &Proposal{Maker: in.fields["maker"], Board: in.fields["board"], SoC: in.fields["soc"]}
+	if p.Maker == "" && p.Board == "" && p.SoC == "" {
+		return nil, nil
+	}
+	switch {
+	case channel != "web":
+		return nil, errors.New("maker, board and soc are the send form's fields: channel web")
+	case model != "":
+		return nil, errors.New("a report names a catalogue board (model) or proposes a new one (maker, board), not both")
+	case p.Maker == "" || p.Board == "":
+		return nil, errors.New("a new camera needs its maker and its board's marking or model name")
+	case utf8.RuneCountInString(p.Maker) > 80 || utf8.RuneCountInString(p.Board) > 80:
+		return nil, errors.New("maker and board: at most 80 characters each")
+	case utf8.RuneCountInString(p.SoC) > 40:
+		return nil, errors.New("soc: at most 40 characters")
+	}
+	for _, pt := range in.parts {
+		if pt.kind == "photo" {
+			return p, nil
+		}
+	}
+	return nil, errors.New("a new camera needs at least one photo of it")
+}
+
 // flashImage: the size of a whole NOR or NAND chip, 1 to 256 MB.
 func flashImage(n int64) bool {
 	return n >= 1<<20 && n <= MaxBackup && n&(n-1) == 0
@@ -383,7 +422,7 @@ func (a *API) read(r *http.Request) (*received, int, error) {
 		name := p.FormName()
 		// "note" is both a field (a line of text) and a file kind (a note
 		// file): a part with a filename is a file, one without is a field.
-		isField := p.FileName() == "" && (name == "consent" || name == "channel" || name == "tool" || name == "note" || name == "model")
+		isField := p.FileName() == "" && formFields[name]
 		switch {
 		case isField:
 			b, err := io.ReadAll(io.LimitReader(p, maxField+1))
@@ -422,10 +461,10 @@ func (a *API) read(r *http.Request) (*received, int, error) {
 			}
 			in.parts[len(in.parts)-1].mime = mt
 		default:
-			return in, http.StatusBadRequest, fmt.Errorf("%q is not a part a report has: yaml, backup, photo, boot_log, uboot_env, note, document, consent, channel, tool, model", name)
+			return in, http.StatusBadRequest, fmt.Errorf("%q is not a part a report has: yaml, backup, photo, boot_log, uboot_env, note, document, consent, channel, tool, model, maker, board, soc", name)
 		}
 	}
-	if in.yaml == "" && in.backup == nil && in.fields["model"] == "" {
+	if in.yaml == "" && in.backup == nil && in.fields["model"] == "" && in.fields["maker"] == "" && in.fields["board"] == "" {
 		return in, http.StatusBadRequest, errors.New("a report needs ipctool's output: a yaml part, or a backup")
 	}
 	return in, 0, nil

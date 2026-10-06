@@ -478,3 +478,65 @@ func TestTakedownLeavesAFileANewReportNames(t *testing.T) {
 		t.Error("the file the new report names is not on disk")
 	}
 }
+
+// A camera the catalogue does not have: the send form proposes it by its
+// maker and marking, with a photo of it, and needs no ipctool output. The
+// proposal is kept as sent, and only the send form's channel may make one.
+func TestANewCameraIsProposedWithAPhotoAndNoIpctool(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	newCam := map[string]string{"channel": "web", "maker": "Jooan", "board": "Q9 v2", "soc": "SSC335", "note": "flashed in December"}
+	rec, out := e.post(t, upload{fields: newCam, files: map[string][]byte{"photo": jpeg, "photo#2": jpeg, "boot_log": []byte("U-Boot 2015.01\n")}}, "203.0.113.20")
+	if rec.Code != 201 {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	id := out["id"].(string)
+	p, err := e.api.Store().ProposalOf(ctx, id)
+	if err != nil || p == nil || *p != (Proposal{Maker: "Jooan", Board: "Q9 v2", SoC: "SSC335"}) {
+		t.Fatalf("proposal %+v (%v)", p, err)
+	}
+	if _, err := e.pool.Exec(ctx, `UPDATE report_proposals SET board = 'other'`); err == nil {
+		t.Error("a proposal was changed")
+	}
+
+	with := func(over map[string]string) map[string]string {
+		m := map[string]string{}
+		for k, v := range newCam {
+			m[k] = v
+		}
+		for k, v := range over {
+			if v == "" {
+				delete(m, k)
+			} else {
+				m[k] = v
+			}
+		}
+		return m
+	}
+	photo := map[string][]byte{"photo": jpeg}
+	for name, u := range map[string]upload{
+		"no photo":         {fields: newCam, files: map[string][]byte{"boot_log": []byte("U-Boot\n")}},
+		"no maker":         {fields: with(map[string]string{"maker": ""}), files: photo},
+		"no board":         {fields: with(map[string]string{"board": ""}), files: photo},
+		"a catalogue one":  {fields: with(map[string]string{"model": "xiongmai-50h20l"}), files: photo},
+		"not the form":     {fields: with(map[string]string{"channel": "ipctool"}), files: photo},
+		"a long name":      {fields: with(map[string]string{"board": strings.Repeat("Q", 81)}), files: photo},
+		"a long soc":       {fields: with(map[string]string{"soc": strings.Repeat("s", 41)}), files: photo},
+		"a raw flash dump": {fields: newCam, files: map[string][]byte{"photo": jpeg, "backup": bytes.Repeat([]byte{1}, 1<<20)}},
+	} {
+		if rec, _ := e.post(t, u, "203.0.113.21"); rec.Code != 400 {
+			t.Errorf("%s: %d %s", name, rec.Code, rec.Body)
+		}
+	}
+	var n int
+	_ = e.pool.QueryRow(ctx, `SELECT count(*) FROM reports`).Scan(&n)
+	if n != 1 {
+		t.Errorf("%d reports, want only the first", n)
+	}
+
+	// With ipctool's output too, the output is read as always.
+	rec, out = e.post(t, upload{fields: with(map[string]string{"yaml": fixture(t, "hi3516cv300-imx291.txt")}), files: photo}, "203.0.113.22")
+	if rec.Code != 201 || out["facts"].(map[string]any)["chip_model"] == nil {
+		t.Errorf("with yaml: %d %v", rec.Code, out)
+	}
+}

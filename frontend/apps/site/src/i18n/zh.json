@@ -660,6 +660,7 @@
       "flag_public": "审核后，备份随报告一起公开",
       "flag_upload": "硬件报告：SoC、传感器、闪存分区、固件版本",
       "lede": "一台还没人报告过的摄像头，只需一份报告就能进入目录：ipctool 从板子上读到的信息；如果您愿意帮助移植 OpenIPC，再附上出厂闪存。",
+      "new_title": "无法进入摄像头的命令行？发送照片",
       "nfs_hint_html": "其他途径（UART、TFTP 或 SD 卡）：见 <a href=\"https://github.com/OpenIPC/ipctool#alternative-launch-methods\">ipctool 的 README</a>。",
       "nfs_title": "固件带 NFS 客户端（大多数雄迈固件都有）",
       "shell_lede_html": "通过 telnet 进入原厂固件，或使用 UART 控制台。原厂固件没有 curl，所以 ipctool 由 <a href=\"https://github.com/OpenIPC/uget\">uget</a> 通过普通 HTTP 从本站下载：uget 是一个 5 KB 的下载器，以文本形式粘贴进去即可。",

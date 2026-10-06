@@ -429,14 +429,7 @@ func (im *Importer) resolve(ctx context.Context, q querier, maker, code string, 
 }
 
 func (im *Importer) socFor(label string) string {
-	l := strings.ToLower(strings.ReplaceAll(label, " ", ""))
-	if full, ok := socShorthand[l]; ok {
-		l = full
-	}
-	if im.Resolve == nil || l == "" {
-		return ""
-	}
-	return im.Resolve(l)
+	return socSlug(label, im.Resolve)
 }
 
 func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src string, position int, m SnapModel, dec map[[2]string]string) (string, bool, error) {
@@ -450,6 +443,16 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 		return "", false, fmt.Errorf("code %q does not normalise to a code", m.Code)
 	}
 	maker, ok := makersByID()[m.Maker]
+	if !ok {
+		// A maker a review added with its first board (CreateModel) was a
+		// maintainer's decision too.
+		err := tx.QueryRow(ctx, `SELECT id, name, aliases, position FROM board_manufacturers WHERE id = $1`, m.Maker).
+			Scan(&maker.ID, &maker.Name, &maker.Aliases, &maker.Position)
+		ok = err == nil
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return "", false, err
+		}
+	}
 	if !ok {
 		return "", false, fmt.Errorf("unknown maker %q", m.Maker)
 	}

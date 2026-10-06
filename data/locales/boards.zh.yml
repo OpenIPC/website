@@ -32,6 +32,7 @@ zh:
       fact2: "在所有公开内容中（报告和日志），MAC、芯片序列号和云 ID 都会被替换为哈希值。"
       fact3_title: "备份默认不公开"
       fact3_html: "备份包含摄像头存储的一切，包括 Wi-Fi 密钥和密码。只有使用 <code>--public</code> 发送时才会公开。"
+      new_title: "无法进入摄像头的命令行？发送照片"
     club:
       eyebrow: 'OpenIPC 俱乐部'
       title: 'OpenIPC 俱乐部'
@@ -134,6 +135,8 @@ zh:
     loading: 正在加载主板…
     error: '无法加载主板目录（{error}）。请刷新页面重试。'
     empty: 没有符合这些筛选条件的主板。去掉一个条件试试。
+    new_missing: 目录中没有？
+    new_add: 添加你的摄像头
     unknown_maker: 未知厂商
     also_marked: '也标作 {aliases}'
     board_count:
@@ -456,6 +459,19 @@ zh:
       kind_document: '文档'
       kind_yaml: 'ipctool 报告'
       no_board: '未指定电路板'
+      new_link: '添加目录中没有的摄像头'
+      new_lede: '填写厂商和电路板，并附上照片：电路板正反面和标签。维护者发布你的报告时会把它加入目录；每张照片和每个文件可获得 {n} ★。'
+      new_maker: '厂商'
+      new_maker_hint: 'Xiongmai、Jooan、Hikvision…'
+      new_board: '电路板丝印或型号'
+      new_board_hint: '电路板上印的文字，或包装盒上的型号'
+      new_soc: 'SoC（如果知道）'
+      new_photos: '照片（至少一张）'
+      new_more: '有 ipctool 输出或启动日志？也一起添加'
+      new_ipctool: 'ipctool 输出'
+      new_boot_log: '启动日志或 U-Boot 控制台'
+      new_need: '请填写厂商和电路板，并至少添加一张照片。'
+      proposed: '新：{board}'
       rules_title: '星星如何计算'
       rules_item: '启动日志、U-Boot 控制台、照片、引脚图、ipctool 报告'
       rules_dump: '目录中没有的完整闪存转储'
@@ -499,6 +515,17 @@ zh:
       review_points: '{points} ★'
       review_done_publish: '已发布。提交者获得 {points} ★。'
       review_done_reject: '已拒绝。'
+      review_proposal: '发送者提议'
+      review_existing: '目录中已有 {board}：除非修改下方的电路板 ID，报告将发布在那里。'
+      review_new_board: '发布时将此电路板加入目录'
+      review_maker_known: '厂商已在目录中'
+      review_maker_new: '新厂商'
+      review_new_maker_name: '厂商'
+      review_new_maker_id: '厂商 ID'
+      review_new_model: '丝印（按原样）'
+      review_new_model_id: '电路板 ID'
+      review_new_soc: 'SoC'
+      review_done_board: '已发布，{board} 已加入目录。发送者获得 {points} ★。'
       show_yaml: 'ipctool 输出'
       tab_pending: '待审核'
       tab_published: '已发布'

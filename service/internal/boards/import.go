@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -227,11 +228,24 @@ type beginner interface {
 func (im *Importer) saveIn(ctx context.Context, db beginner, u *Unit, arts []artifact) (bool, error) {
 	saved := false
 	err := pgx.BeginFunc(ctx, db, func(tx pgx.Tx) error {
-		m, mk := u.Model, u.Model.Manufacturer
+		m, mk := *u.Model, u.Model.Manufacturer
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO board_manufacturers (id, name, aliases, position) VALUES ($1, $2, $3, $4)
 			ON CONFLICT (id) DO NOTHING`, mk.ID, mk.Name, nonNil(mk.Aliases), mk.Position); err != nil {
 			return err
+		}
+		// A board a review added from an owner's photos (CreateModel) under
+		// an id of the reviewer's: the archive's unit of the same marking
+		// joins it rather than making a twin of it.
+		if m.Model != "" {
+			var club string
+			err := tx.QueryRow(ctx, `SELECT model_id FROM board_model_aliases WHERE maker_id = $1 AND code_norm = $2 AND source = 'club'`,
+				mk.ID, NormCode(m.Model)).Scan(&club)
+			if err == nil {
+				m.ID = club
+			} else if !errors.Is(err, pgx.ErrNoRows) {
+				return err
+			}
 		}
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO board_models (id, manufacturer_id, model, soc, soc_label, family, position)

@@ -211,3 +211,16 @@ func TestAnIdentifierARepeatedKeyShadowsIsRedactedToo(t *testing.T) {
 		t.Errorf("the mac hash is %s, not the board's own %s", got, want)
 	}
 }
+
+// Without ipctool's output there are no facts to redact by, and a boot log
+// or a U-Boot environment still carries the camera's MAC: any MAC written
+// as six pairs is replaced, the same board hashing the same in either case.
+func TestAMACIsRedactedWithoutIpctoolsOutput(t *testing.T) {
+	env := "bootargs=mem=64M console=ttyAMA0\nethaddr=00:12:41:AB:cd:ef\nother=00-12-41-ab-cd-ef\nnone=00:00:00:00:00:00\n"
+	got := Redact(env, Facts{}, "k")
+	mark := "<mac:" + Keyed("k", "mac", "00:12:41:ab:cd:ef") + ">"
+	if strings.Contains(strings.ToLower(got), "41:ab:cd") || strings.Contains(strings.ToLower(got), "41-ab-cd") ||
+		strings.Count(got, mark) != 2 || !strings.Contains(got, "none=00:00:00:00:00:00") {
+		t.Errorf("redacted:\n%s", got)
+	}
+}

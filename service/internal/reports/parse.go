@@ -306,12 +306,31 @@ func (f Facts) IDHashes(key string) map[string]string {
 // naming its keyed hash, so the public copy still shows that two reports
 // come from one board. A MAC is found with any separator or none -- colons,
 // hyphens, dots, Cisco's 0012.3456.789a -- in either case.
+//
+// A MAC written as six colon- or hyphen-separated pairs is replaced even when
+// ipctool's output did not name it: a boot log or a U-Boot environment sent
+// without ipctool (to a catalogue board, or with a new camera's photos)
+// carries its ethaddr all the same.
 func Redact(text string, f Facts, key string) string {
 	for _, id := range f.Identifiers() {
 		mark := "<" + id.Name + ":" + Keyed(key, id.Name, id.Value) + ">"
 		text = spellings(id).ReplaceAllString(text, mark)
 	}
+	for _, re := range anyMAC {
+		text = re.ReplaceAllStringFunc(text, func(m string) string {
+			if zeroish(m) {
+				return m
+			}
+			v := strings.ToLower(strings.ReplaceAll(m, "-", ":"))
+			return "<mac:" + Keyed(key, "mac", v) + ">"
+		})
+	}
 	return text
+}
+
+var anyMAC = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\b`),
+	regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}-){5}[0-9a-f]{2}\b`),
 }
 
 func spellings(id Identifier) *regexp.Regexp {

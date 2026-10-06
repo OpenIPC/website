@@ -10,6 +10,8 @@ import (
 	"os"
 	"os/user"
 
+	"github.com/OpenIPC/website/service/internal/boards"
+	"github.com/OpenIPC/website/service/internal/catalogue"
 	"github.com/OpenIPC/website/service/internal/config"
 	"github.com/OpenIPC/website/service/internal/reports"
 )
@@ -17,7 +19,8 @@ import (
 const reportsUsage = `usage: openipc reports
   list [--status pending|published|rejected|withdrawn]   the review queue, newest first (JSON)
   show <id>                                     the report whole, as sent: YAML, identifiers' hashes, files
-  publish <id> [--model <board model id>]... [--by who] [--note text]
+  publish <id> [--model <board model id>]... [--new-board] [--by who] [--note text]
+                                                --new-board: add the camera the report proposed, as the review page suggests
   reject <id> [--by who] [--note text]
   link <id> <board model id> [--by who]         say which board a report is from
   unlink <id> <board model id>                  undo a link made in error
@@ -45,6 +48,7 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 	status := fs.String("status", "", "list only reports in this state")
 	var models multi
 	fs.Var(&models, "model", "the board model id the report is from (repeatable)")
+	newBoard := fs.Bool("new-board", false, "add the camera the report proposed to the catalogue, and link the report to it")
 	cmd := args[0]
 	pos, err := parseInterleaved(fs, args[1:])
 	if err != nil {
@@ -97,13 +101,19 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		}
 		// The same decision the club's review page makes: links, the
 		// review, the sender's stars, and the boards' copy of the text.
-		d, err := st.Decide(ctx, pos[0], cmd, *by, *note, models)
+		var nb *boards.NewModel
+		if *newBoard {
+			if nb, err = suggestedBoard(ctx, cfg, st, pos[0]); err != nil {
+				return err
+			}
+		}
+		d, err := st.Decide(ctx, pos[0], cmd, *by, *note, models, nb)
 		if err != nil {
 			return err
 		}
 		refreshReportUnits(ctx, cfg, log, pool)
 		log.Info("reports: reviewed", "report", pos[0], "decision", cmd, "by", *by, "models", []string(models),
-			"member", d.Member, "stars", d.Points)
+			"new_board", d.Board, "member", d.Member, "stars", d.Points)
 		return nil
 	case "link":
 		if err := need(2); err != nil {
@@ -150,6 +160,39 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		return nil
 	}
 	return errors.New(reportsUsage)
+}
+
+// suggestedBoard is the board the review page would add for a report's
+// proposal, with the catalogue to resolve its SoC.
+func suggestedBoard(ctx context.Context, cfg *config.Config, st *reports.Store, id string) (*boards.NewModel, error) {
+	p, err := st.ProposalOf(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if p == nil {
+		return nil, fmt.Errorf("%s proposes no new camera; link it with --model", id)
+	}
+	sug, err := boards.Suggest(ctx, st.DB, p.Maker, p.Board, p.SoC)
+	if err != nil {
+		return nil, err
+	}
+	if sug.Existing != "" {
+		return nil, fmt.Errorf("the catalogue already has %s; publish with --model %s", sug.Existing, sug.Existing)
+	}
+	if cat, err := catalogue.Load(cfg.CatalogueDir); err == nil {
+		st.SoC = socResolver(cat)
+	}
+	return &sug.NewModel, nil
+}
+
+// socResolver maps a SoC to the catalogue's slug, as the importers do.
+func socResolver(cat *catalogue.Catalogue) func(string) string {
+	return func(label string) string {
+		if s := cat.SoC(label); s != nil {
+			return s.URLName
+		}
+		return ""
+	}
 }
 
 // parseInterleaved lets flags follow the positional arguments

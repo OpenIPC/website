@@ -17,8 +17,8 @@ import (
 // names the reports' tables in SQL, stands the guard down, or touches their
 // files' root is an error here, in Go, SQL and shell alike. Tests may.
 func TestOnlyTheReportsPackageTouchesReports(t *testing.T) {
-	sql := regexp.MustCompile(`(?i)\b(from|into|update|join|truncate|table|references)\s+(only\s+)?(reports|report_files|report_reviews|report_models|report_key)\b`)
-	named := regexp.MustCompile(`\b(report_files|report_reviews|report_models|report_key|reports_guard)\b`)
+	sql := regexp.MustCompile(`(?i)\b(from|into|update|join|truncate|table|references)\s+(only\s+)?(reports|report_files|report_reviews|report_models|report_key|report_proposals)\b`)
+	named := regexp.MustCompile(`\b(report_files|report_reviews|report_models|report_key|report_proposals|reports_guard)\b`)
 	root := regexp.MustCompile(`REPORTS_ROOT|owner-reports`)
 
 	migration := regexp.MustCompile(`^service/internal/db/migrations/\d+_reports?(_[a-z_]+)?\.sql$`)

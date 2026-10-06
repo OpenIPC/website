@@ -660,6 +660,7 @@
       "flag_public": "the backup is published with the report, once reviewed",
       "flag_upload": "the hardware report: SoC, sensor, flash layout, firmware versions",
       "lede": "A camera nobody has reported yet reaches the catalogue from one report: what ipctool reads off the board and, if you want to help port OpenIPC to it, the flash it came with.",
+      "new_title": "No shell on the camera? Send its photos",
       "nfs_hint_html": "Other ways in, over UART, TFTP or an SD card: <a href=\"https://github.com/OpenIPC/ipctool#alternative-launch-methods\">ipctool's README</a>.",
       "nfs_title": "The firmware has an NFS client (most Xiongmai do)",
       "shell_lede_html": "Telnet into the stock firmware, or a UART console. Stock firmware has no curl, so ipctool comes from this site over plain HTTP, fetched by <a href=\"https://github.com/OpenIPC/uget\">uget</a>: a 5 KB downloader you paste in as text.",
