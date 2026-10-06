@@ -22,8 +22,13 @@ export const FLIGHT = {
   longestHoldMs: stats.gs_longest_hold_ms,
 };
 
-/** The R&D Player with both sides of the flight loaded into its compare. */
+/**
+ * The R&D Player with both sides of the flight loaded into its compare.
+ *
+ * `/current/`, not the root: the root redirects there and drops the query
+ * string, which leaves the player with an empty address box.
+ */
 export function rndPlayerUrl(origin: string): string {
   const mpd = (side: string) => encodeURIComponent(`${origin}${FLIGHT.base}${side}.mpd`);
-  return `https://openipc.github.io/rnd-player/?v=${mpd('onboard')}&compare=${mpd('gs')}`;
+  return `https://openipc.github.io/rnd-player/current/?v=${mpd('onboard')}&compare=${mpd('gs')}`;
 }
