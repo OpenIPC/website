@@ -7,6 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/OpenIPC/website/service/internal/db/dbtest"
 )
 
 func create(t *testing.T, pool *pgxpool.Pool, m NewModel) (string, error) {
@@ -93,5 +95,49 @@ func TestANewMakerComesWithItsBoardAndBadIdsAreRefused(t *testing.T) {
 	}
 	if n := count(t, pool, `SELECT count(*) FROM board_manufacturers WHERE id = 'jooan'`); n != 0 {
 		t.Error("a refused board left its maker behind")
+	}
+}
+
+// The archive imported after a review added one of its boards under the
+// reviewer's id puts its unit on that board instead of making a twin; a
+// donor naming a maker only a review added is imported, not refused.
+func TestImportersJoinWhatAReviewAdded(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	if _, err := create(t, pool, NewModel{MakerID: "xiongmai", MakerName: "Xiongmai", ModelID: "xiongmai-club-53h20", Model: "53H20-S"}); err != nil {
+		t.Fatal(err)
+	}
+	im := &Importer{Pool: pool, Log: quiet(), Root: t.TempDir(), Resolve: supported}
+	if _, err := im.FromFS(ctx, archive()); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE id = 'xiongmai-53h20-s'`); n != 0 {
+		t.Error("the archive made a twin of the club's board")
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_units WHERE model_id = 'xiongmai-club-53h20' AND source = 'openhisiipcam'`); n == 0 {
+		t.Error("the archive's unit is not on the club's board")
+	}
+
+	if _, err := create(t, pool, NewModel{MakerID: "jooan", MakerName: "Jooan", ModelID: "jooan-q9", Model: "Q9"}); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := im.FromSnapshot(ctx, donor(t, "cctvsp", model("jooan", "Q9", nil), model("jooan", "Q10", nil))); err != nil || n != 1 {
+		t.Fatalf("a donor with a club maker: created %d (%v), want Q10 only", n, err)
+	}
+}
+
+// A suggested id never outgrows what CreateModel accepts.
+func TestASuggestedIdFitsTheCatalogue(t *testing.T) {
+	pool := dbtest.New(t)
+	sug, err := Suggest(context.Background(), pool, strings.Repeat("m", 70), strings.Repeat("q", 80), "")
+	if err != nil || len(sug.MakerID) != 64 || len(sug.ModelID) > 128 || !modelID.MatchString(sug.ModelID) || !makerID.MatchString(sug.MakerID) {
+		t.Fatalf("%q %q (%v)", sug.MakerID, sug.ModelID, err)
+	}
+	if _, err := create(t, pool, NewModel{MakerID: sug.MakerID, MakerName: "M", ModelID: sug.ModelID, Model: sug.Model}); err != nil {
+		t.Error(err)
+	}
+	// A maker the importers know but the database has no board of yet.
+	if sug, _ := Suggest(context.Background(), pool, "anjoy vision", "X1", ""); sug.MakerID != "anjoy" || !sug.MakerKnown {
+		t.Errorf("%+v", sug)
 	}
 }

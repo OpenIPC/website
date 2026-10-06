@@ -444,6 +444,16 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 	}
 	maker, ok := makersByID()[m.Maker]
 	if !ok {
+		// A maker a review added with its first board (CreateModel) was a
+		// maintainer's decision too.
+		err := tx.QueryRow(ctx, `SELECT id, name, aliases, position FROM board_manufacturers WHERE id = $1`, m.Maker).
+			Scan(&maker.ID, &maker.Name, &maker.Aliases, &maker.Position)
+		ok = err == nil
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return "", false, err
+		}
+	}
+	if !ok {
 		return "", false, fmt.Errorf("unknown maker %q", m.Maker)
 	}
 	var (

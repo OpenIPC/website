@@ -51,9 +51,10 @@ type queryer interface {
 
 // Suggest turns a sender's maker, marking and SoC into the board a reviewer
 // would add: the catalogue's own maker when the name or one of its aliases
-// matches, ids made the way the importers make them.
+// matches -- in the database, or among the makers the importers know -- and
+// ids made the way the importers make them, cut to the ids' lengths.
 func Suggest(ctx context.Context, q queryer, maker, model, soc string) (Suggestion, error) {
-	s := Suggestion{NewModel: NewModel{MakerID: slug(maker), MakerName: strings.TrimSpace(maker),
+	s := Suggestion{NewModel: NewModel{MakerID: fit(slug(maker), 64), MakerName: strings.TrimSpace(maker),
 		Model: strings.TrimSpace(model), SoC: strings.TrimSpace(soc)}}
 	err := q.QueryRow(ctx, `
 		SELECT id, name FROM board_manufacturers
@@ -64,8 +65,12 @@ func Suggest(ctx context.Context, q queryer, maker, model, soc string) (Suggesti
 		s.MakerKnown = true
 	case !errors.Is(err, pgx.ErrNoRows):
 		return s, err
+	default:
+		if mk, ok := knownMaker(s.MakerName); ok {
+			s.MakerID, s.MakerName, s.MakerKnown = mk.ID, mk.Name, true
+		}
 	}
-	s.ModelID = slug(s.MakerID + "-" + s.Model)
+	s.ModelID = fit(slug(s.MakerID+"-"+s.Model), 128)
 	err = q.QueryRow(ctx, `
 		SELECT model_id FROM board_model_aliases WHERE maker_id = $1 AND code_norm = $2
 		UNION ALL SELECT id FROM board_models WHERE id = $3
@@ -126,6 +131,30 @@ func CreateModel(ctx context.Context, tx pgx.Tx, m NewModel, resolve func(string
 		return "", err
 	}
 	return m.ModelID, nil
+}
+
+// knownMaker is the importers' maker (parse.go's makers) a name means: by
+// the archive's vendor column, the id, the name or an alias, in any case.
+func knownMaker(name string) (Manufacturer, bool) {
+	for vendor, m := range makers {
+		if strings.EqualFold(name, vendor) || strings.EqualFold(name, m.ID) || strings.EqualFold(name, m.Name) {
+			return m, true
+		}
+		for _, a := range m.Aliases {
+			if strings.EqualFold(name, a) {
+				return m, true
+			}
+		}
+	}
+	return Manufacturer{}, false
+}
+
+// fit cuts an id made by slug to n characters, never ending on a hyphen.
+func fit(id string, n int) string {
+	if len(id) > n {
+		id = strings.TrimRight(id[:n], "-")
+	}
+	return id
 }
 
 // socSlug is the catalogue's slug for a SoC as a person or a shop wrote it.

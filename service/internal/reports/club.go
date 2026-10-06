@@ -364,38 +364,11 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 	if err != nil {
 		return d, err
 	}
-	// The board a review adds, the report's links and the review are one
-	// transaction: a board that cannot be added, or a link to one the
-	// catalogue does not have, leaves nothing behind.
-	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
-		if newBoard != nil {
-			id, err := boards.CreateModel(ctx, tx, *newBoard, s.SoC)
-			if err != nil {
-				return err
-			}
-			d.Board, models = id, append(models, id)
-		}
-		for _, m := range models {
-			if _, err := tx.Exec(ctx, `INSERT INTO report_models (report_id, model_id, by) VALUES ($1,$2,$3)
-				ON CONFLICT DO NOTHING`, id, m, by); err != nil {
-				var pe *pgconn.PgError
-				if errors.As(err, &pe) && pe.Code == "23503" {
-					return fmt.Errorf("link %s: the catalogue has no such board", m)
-				}
-				return fmt.Errorf("link %s: %w", m, err)
-			}
-		}
-		_, err := tx.Exec(ctx, `INSERT INTO report_reviews (report_id, decision, by, note) VALUES ($1,$2,$3,$4)`,
-			id, decision, by, note)
-		return err
-	})
-	if err != nil {
-		d.Board = ""
-		return d, err
-	}
-	if owner == "" {
-		return d, nil
-	}
+	// The board a review adds, the report's links, the review and the
+	// sender's stars are one transaction: a board that cannot be added, a
+	// link to one the catalogue does not have, or a ledger that cannot be
+	// written leaves nothing behind, and the same decision can be made again.
+	//
 	// The ledger is a net per part of the report: publishing brings each
 	// part up to what it earns now, rejecting brings it back to zero. A
 	// report published, rejected and published again is whole again; one
@@ -404,6 +377,32 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, id); err != nil {
 			return err
+		}
+		if decision == "publish" {
+			if newBoard != nil {
+				board, err := boards.CreateModel(ctx, tx, *newBoard, s.SoC)
+				if err != nil {
+					return err
+				}
+				d.Board, models = board, append(models, board)
+			}
+			for _, m := range models {
+				if _, err := tx.Exec(ctx, `INSERT INTO report_models (report_id, model_id, by) VALUES ($1,$2,$3)
+					ON CONFLICT DO NOTHING`, id, m, by); err != nil {
+					var pe *pgconn.PgError
+					if errors.As(err, &pe) && pe.Code == "23503" {
+						return fmt.Errorf("link %s: the catalogue has no such board", m)
+					}
+					return fmt.Errorf("link %s: %w", m, err)
+				}
+			}
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO report_reviews (report_id, decision, by, note) VALUES ($1,$2,$3,$4)`,
+			id, decision, by, note); err != nil {
+			return err
+		}
+		if owner == "" {
+			return nil
 		}
 		rows, err := tx.Query(ctx, `SELECT position, sum(points)::int FROM report_stars WHERE report_id = $1 GROUP BY position`, id)
 		if err != nil {
@@ -452,7 +451,11 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 		return nil
 	})
 	if err != nil {
+		d.Board, d.Points = "", 0
 		return d, err
+	}
+	if owner == "" {
+		return d, nil
 	}
 	err = s.DB.QueryRow(ctx, `SELECT coalesce(sum(points), 0) FROM report_stars WHERE member_id = $1`, owner).Scan(&d.Total)
 	return d, err

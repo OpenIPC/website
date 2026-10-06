@@ -104,3 +104,21 @@ func TestANewCameraBecomesABoardWhenItsReportIsPublished(t *testing.T) {
 		t.Errorf("linked to the board that exists: %d %v", code, d)
 	}
 }
+
+// Rejecting a report never links it to a board, whatever board ids the
+// review page sent with it.
+func TestRejectingLinksNothing(t *testing.T) {
+	e := newEnv(t)
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	_, out := ivan.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10"}, map[string][]byte{"photo": photo})
+	id := out["id"].(string)
+	maint := e.maintainer(t)
+	if code, _ := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "reject", "models": []string{"anjoy-ms-j10"}}); code != 200 {
+		t.Fatalf("reject: %d", code)
+	}
+	var links int
+	_ = e.pool.QueryRow(context.Background(), `SELECT count(*) FROM report_models WHERE report_id = $1`, id).Scan(&links)
+	if links != 0 {
+		t.Errorf("a rejected report has %d links", links)
+	}
+}

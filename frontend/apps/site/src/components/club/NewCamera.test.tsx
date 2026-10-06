@@ -23,7 +23,7 @@ function capture() {
 }
 
 /** The field whose label reads label: exactly, else at its start. */
-function input(c: HTMLElement, label: string) {
+function input(c: Element, label: string) {
   const labels = [...c.querySelectorAll('label')];
   const own = (l: HTMLLabelElement) => l.childNodes[0]?.textContent?.trim() ?? '';
   const l = labels.find((x) => own(x) === label) ?? labels.find((x) => own(x).startsWith(label));
