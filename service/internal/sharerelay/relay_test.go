@@ -749,12 +749,18 @@ func TestAConnectedPageRestartsICEThroughTheRelay(t *testing.T) {
 		t.Fatalf("the hint did not reach the page: %v", m)
 	}
 
-	// The page's restart offer reaches the camera, for the same session.
-	if c := postBody(t, srv, "/__share/restart?share="+id+"&session="+sid, `{"req":"offer","data":"v=0 restart"}`); c != http.StatusAccepted {
+	// A connected page has no business sending candidates but a restart's.
+	if c := postBody(t, srv, "/__share/candidate?share="+id+"&session="+sid, "candidate:0"); c != http.StatusTooManyRequests {
+		t.Fatalf("a candidate with no restart: %d", c)
+	}
+
+	// The page's restart offer reaches the camera, for the same session,
+	// with the page's tag for it.
+	if c := postBody(t, srv, "/__share/restart?share="+id+"&session="+sid, `{"req":"offer","data":"v=0 restart","rid":"r1"}`); c != http.StatusAccepted {
 		t.Fatalf("restart: %d", c)
 	}
 	m := recv(t, cam)
-	if m["type"] != "offer" || m["session"] != sid || m["share"] != id || m["data"] != "v=0 restart" {
+	if m["type"] != "offer" || m["session"] != sid || m["share"] != id || m["data"] != "v=0 restart" || m["rid"] != "r1" {
 		t.Fatalf("the camera got %v", m)
 	}
 	// Its candidates too, now that it is a listener.
@@ -764,9 +770,10 @@ func TestAConnectedPageRestartsICEThroughTheRelay(t *testing.T) {
 	if m := recv(t, cam); m["type"] != "candidate" || m["session"] != sid {
 		t.Fatalf("the camera got %v", m)
 	}
-	// And the camera's answer and candidate come back on the stream.
-	send(t, cam, map[string]string{"type": "signal", "session": sid, "reply": "answer", "data": "v=0 restarted"})
-	if m := skip(); m["reply"] != "answer" || m["data"] != "v=0 restarted" {
+	// And the camera's answer, with the tag echoed, and candidate come back
+	// on the stream.
+	send(t, cam, map[string]string{"type": "signal", "session": sid, "reply": "answer", "data": "v=0 restarted", "rid": "r1"})
+	if m := skip(); m["reply"] != "answer" || m["data"] != "v=0 restarted" || m["rid"] != "r1" {
 		t.Fatalf("got %v", m)
 	}
 	send(t, cam, map[string]string{"type": "signal", "session": sid, "reply": "candidate", "data": "candidate:2", "mid": "0"})
@@ -784,6 +791,21 @@ func TestAConnectedPageRestartsICEThroughTheRelay(t *testing.T) {
 	}
 	if c := postBody(t, srv, "/__share/restart?share="+id+"&session="+sid, `{"req":"candidate","data":"x"}`); c != http.StatusBadRequest {
 		t.Fatalf("not an offer: %d", c)
+	}
+	if c := postBody(t, srv, "/__share/restart?share="+id+"&session="+sid, `{"req":"offer","data":"v=0","rid":"<script>"}`); c != http.StatusBadRequest {
+		t.Fatalf("a tag that is not a token: %d", c)
+	}
+	// So many candidates per restart and no more: a listener lives as long
+	// as the share, and the camera's queue is every guest's.
+	taken := 1 // the one above
+	for ; taken < RestartCandidateMax; taken++ {
+		if c := postBody(t, srv, "/__share/candidate?share="+id+"&session="+sid, "candidate:1"); c != http.StatusNoContent {
+			t.Fatalf("candidate %d: %d", taken, c)
+		}
+		recv(t, cam)
+	}
+	if c := postBody(t, srv, "/__share/candidate?share="+id+"&session="+sid, "candidate:1"); c != http.StatusTooManyRequests {
+		t.Fatalf("one past the cap: %d", c)
 	}
 }
 

@@ -123,7 +123,15 @@ class StreamSignal {
   restart(offer) {
     const u = this.url.replace('/__share/signal', '/__share/restart') + '&session=' + this.sid;
     fetch(u, { method: 'POST', body: offer, signal: this.ctl.signal })
-      .then(async (r) => { await r.arrayBuffer(); if (!r.ok) this.trace('restart not delivered', `HTTP ${r.status}`); })
+      .then(async (r) => {
+        await r.arrayBuffer();
+        if (r.ok) return;
+        this.trace('restart not delivered', `HTTP ${r.status}`);
+        // The relay no longer knows the session (its stream ended, or the
+        // relay restarted): no restart can reach the camera from here, and
+        // saying so lets the tunnel stop asking.
+        if (r.status === 404) this.finish(1006, 'the relay no longer holds this session');
+      })
       .catch((e) => this.trace('restart not delivered', String(e && e.message || e)));
   }
 
@@ -302,8 +310,12 @@ export class Tunnel {
         this.trace('signalling ← ' + m.reply, m.reply === 'candidate' ? candType(m.data) : m.reply === 'answer' ? `${(m.data || '').length} bytes` : m.data);
         if (m.reply === 'answer') {
           // One that answers no offer of ours -- a restart's, overtaken by
-          // the next -- would only be refused.
+          // the next -- would only be refused. A camera that echoes the
+          // restart's tag says which offer it answers; a late answer to an
+          // offer since replaced would otherwise be applied to its
+          // replacement, and the replacement's own answer then dropped.
           if (pc.signalingState !== 'have-local-offer') return;
+          if (m.rid && this.rid && m.rid !== this.rid) return;
           this.cameraFp = normaliseFingerprint(m.data);
           await pc.setRemoteDescription({ type: 'answer', sdp: m.data });
         } else if (m.reply === 'candidate' && m.data) {
@@ -487,6 +499,15 @@ export class Tunnel {
   // whatever is in flight, and a fresh allowance of time.
   async restart(moved) {
     if (this.gone || !this.pc || (this.restarting && !moved)) return;
+    // No signalling, no restart: the session is the path it has. A blip may
+    // still pass; once ICE has failed, it is lost, as it always was.
+    if (!this.ws || this.ws.readyState !== 1) {
+      const st = this.pc.iceConnectionState;
+      if (st === 'failed' || this.pc.connectionState === 'failed') {
+        this.lost('The connection to the camera was lost.');
+      }
+      return;
+    }
     const now = Date.now();
     const early = (this.offeredAt || 0) + RESTART_GAP_MS - now;
     if (early > 0) {
@@ -507,9 +528,13 @@ export class Tunnel {
     clearTimeout(this.restartTimer);
     this.restartTimer = setTimeout(() => {
       // Not back in time: another attempt, or the end of the session. A
-      // restart of a path that never went down may never say it is done.
+      // restart of a path that never went down may never say it is done --
+      // and if it was never answered either, its offer is taken back, so the
+      // connection is not left waiting on an answer that will not come.
       this.restarting = false;
       if (!this.up()) this.restart();
+      else if (this.pc && this.pc.signalingState === 'have-local-offer')
+        this.pc.setLocalDescription({ type: 'rollback' }).catch(() => {});
     }, RESTART_WAIT_MS);
     try {
       this.pc.restartIce();
@@ -517,7 +542,8 @@ export class Tunnel {
       await this.pc.setLocalDescription(offer);
       if (this.ws && this.ws.readyState === 1) {
         this.offeredAt = Date.now();
-        this.ws.send(JSON.stringify({ req: 'offer', data: this.pc.localDescription.sdp }));
+        this.rid = `r${(this.ridSeq = (this.ridSeq || 0) + 1)}`;
+        this.ws.send(JSON.stringify({ req: 'offer', data: this.pc.localDescription.sdp, rid: this.rid }));
       }
     } catch (e) {
       this.trace('ice restart failed', String(e && e.message || e));

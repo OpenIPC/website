@@ -195,6 +195,11 @@ export function mount(main, { openWebSocket, iceServers, camera, trace, link }) 
     // before the tunnel went is held by its channel and delivered when it
     // returns, and a second would cross its answer.
     let restarts = 0, blip = null, restartTimer = null, offered = false;
+    // Restart offers sent and replies seen. The camera replies to every offer,
+    // in order, on a channel that loses nothing, so the Nth reply is the Nth
+    // offer's: an answer to one a later attempt replaced is told apart from
+    // the one that counts, rather than applied to its replacement.
+    let restartsSent = 0, repliesSeen = 0;
     // Not back in time: another attempt. Unless ICE says connected: a
     // restart of a path that never went down -- the camera's hint arrives
     // before ICE has noticed anything -- may never change the state, and then
@@ -219,7 +224,7 @@ export function mount(main, { openWebSocket, iceServers, camera, trace, link }) 
         peer.restartIce();
         const offer = await peer.createOffer({ iceRestart: true });
         await peer.setLocalDescription(offer);
-        if (my === attempt) { send('offer', peer.localDescription.sdp); offered = true; }
+        if (my === attempt) { send('offer', peer.localDescription.sdp); offered = true; restartsSent++; }
       } catch (e) { trace('player', 'webrtc: ice restart failed'); }
     };
     peer.oniceconnectionstatechange = () => {
@@ -272,6 +277,7 @@ export function mount(main, { openWebSocket, iceServers, camera, trace, link }) 
         if (m.reply === 'answer') {
           // One that answers no offer of ours is a restart's, overtaken.
           if (peer.signalingState !== 'have-local-offer') return;
+          if (restartsSent > 0 && ++repliesSeen !== restartsSent) return;
           offered = false;
           peer.setRemoteDescription({ type: 'answer', sdp: m.data }).then(() => {
             if (my !== attempt) return;
@@ -292,6 +298,10 @@ export function mount(main, { openWebSocket, iceServers, camera, trace, link }) 
             : { candidate: m.data, sdpMLineIndex: 0 };
           if (answered) addCandidate(c); else pending.push(c);
         } else if (m.reply === 'busy' || m.reply === 'error') {
+          // In reply to a restart, it is the restart the camera refused, not
+          // the picture this session has been showing: a new session, not a
+          // step down to the next rung.
+          if (restartsSent > repliesSeen) { repliesSeen++; again(`restart refused: ${m.data || ''}`); return; }
           fail(`${m.reply}: ${m.data || ''}`);
         } else if (m.reply === 'closed') {
           again(`closed: ${m.data || ''}`);
