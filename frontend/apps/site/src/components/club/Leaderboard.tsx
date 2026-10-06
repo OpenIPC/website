@@ -39,7 +39,7 @@ export default function Leaderboard({ locale }: { locale: Locale }) {
       </div>
       {error && <p class="m-0 rounded-md bg-[#fff4e2] px-3 py-2 text-[#9a5b00]" role="alert">{t('club.load_failed')}</p>}
       {!error && rows === null && <div class="h-48 animate-pulse rounded-xl bg-surface-alt" aria-busy="true" />}
-      {rows && rows.length === 0 && <p class="m-0 text-body-secondary">{t('club.lb_empty')}</p>}
+      {rows && rows.length === 0 && <p class="m-0 text-body-secondary">{t(period === '30d' ? 'club.lb_empty_30d' : 'club.lb_empty')}</p>}
       {rows && rows.length > 0 && (
         <div class="overflow-x-auto rounded-xl border border-hairline">
           <table class="w-full min-w-[480px] border-collapse text-[15px]">
