@@ -11,7 +11,7 @@ import stats from './flight-mabur-2026-10.json';
 
 export const FLIGHT = {
   /** Where tools/flight-ab's output was uploaded, under /srv/www/shared/media/. */
-  base: '/media/flights/mabur-2026-10/v1/',
+  base: '/media/flights/mabur-2026-10/v2/',
   start: stats.start_s,
   end: stats.end_s,
   /** Whole minutes, as the headline reads them. */

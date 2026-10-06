@@ -172,6 +172,19 @@ pkg() { # mpd, then name=file pairs
 }
 pkg onboard.mpd original=onboard.orig.mp4 1080p=onboard.1080p.mp4 720p=onboard.720p.mp4 540p=onboard.540p.mp4
 pkg gs.mpd original=gs.orig.mp4 720p-hevc=gs.720p-hevc.mp4 540p-hevc=gs.540p-hevc.mp4 h264=gs.h264.mp4 720p=gs.720p.mp4 540p=gs.540p.mp4
+# shaka-packager sets presentationTimeOffset to the first segment's timestamp,
+# which tells a player "this media time is the start of the period": it plays
+# the ground station's first frame, 0.70 s into the drone's timeline, at 0 and
+# shifts that whole side 0.70 s early. Both sides already share one media
+# timeline, so neither may carry an offset. Removed here and refused below.
+python3 - "$out" <<'PY'
+import re, sys
+for side in ('onboard', 'gs'):
+    p = f'{sys.argv[1]}/{side}.mpd'
+    s = open(p).read()
+    open(p, 'w').write(re.sub(r' presentationTimeOffset="\d+"', '', s))
+PY
+
 # Every rendition of a side must cut at the same instants, or a switch between
 # them skips or repeats a moment. Checked on what the player will read: the
 # segments' start times, not their durations, which differ by a frame where the
@@ -192,6 +205,8 @@ for side in ('onboard', 'gs'):
     mpd = open(f'{sys.argv[1]}/{side}.mpd').read()
     if 'type="static"' not in mpd:
         sys.exit(f'{side}.mpd is not a static presentation')
+    if 'presentationTimeOffset' in mpd:
+        sys.exit(f'{side}.mpd carries a presentationTimeOffset, which moves that side off the shared timeline')
     reps = re.findall(r'<Representation.*?</Representation>', mpd, re.S)
     if len({starts(r) for r in reps}) != 1:
         sys.exit(f'the renditions of {side}.mpd do not start their segments at the same instants')

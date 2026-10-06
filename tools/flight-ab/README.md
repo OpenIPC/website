@@ -7,7 +7,7 @@ both. This tool turns the two recordings into what that player streams.
 
 ```bash
 tools/flight-ab/run.sh --onboard onboard.mp4 --gs record-0015.mp4 \
-  --out tmp/flight-ab/publish/flights/mabur-2026-10/v1
+  --out tmp/flight-ab/publish/flights/mabur-2026-10/v2
 ```
 
 Requirements: Docker, and python3 with numpy for the alignment. ffmpeg runs in
