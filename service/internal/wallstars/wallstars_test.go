@@ -385,8 +385,8 @@ func TestLeaderboard(t *testing.T) {
 		r.link(mac, m, 10)
 	}
 	r.settle()
-	r.store.SetListed(ctx, "m-alice00000", true)
-	r.store.SetListed(ctx, "m-bob0000000", true)
+	// Everyone is listed until they opt out.
+	r.store.SetListed(ctx, "m-hidden0000", false)
 	rows, err := r.store.Leaderboard(ctx, time.Time{}, "m-alice00000")
 	if err != nil {
 		t.Fatal(err)

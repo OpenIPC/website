@@ -197,8 +197,8 @@ restores the image but never the schema, so keep migrations additive.
   hold the camera's advisory lock; a claim that failed is retried by the
   ten-minute sweep, and a notice the bot could not deliver stays in
   `wall_notices` for the next run. `openipc club wall-revoke` takes a faked
-  camera's stars back. The owner's name on the camera's wall page and the
-  leaderboard (`/club/leaderboard`) are each opt-in.
+  camera's stars back. The owner's name on the camera's wall page is opt-in;
+  the leaderboard (`/club/leaderboard`) is opt-out (migration 027).
 - `internal/tools`, `internal/nfsro` — **ipctool for stock firmware**, which
   has no curl and no TLS. ipctool's release job pushes each build to
   `PUT /api/v1/tools/{name}` (OIDC, `internal/tools/PUSH.md`); nginx serves

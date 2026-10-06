@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
  * A member's cameras on /club: each says what it earns or why it does not, a
- * code links another, and the leaderboard lists only who asked, marking the
- * member's own row.
+ * code links another, and the leaderboard lists every member who did not opt
+ * out, marking the member's own row.
  */
 import { afterEach, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/preact';
@@ -96,6 +96,15 @@ test('the leaderboard marks the member, and switches period', async () => {
   expect(getByText('· you')).toBeTruthy();
   fireEvent.click(getByRole('tab', { name: 'Last 30 days' }));
   await waitFor(() => expect(calls).toContain('/api/v1/club/leaderboard?period=30d'));
+});
+
+test('an empty leaderboard says when stars start, or that the month had none', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+    new Response(JSON.stringify({ period: url.endsWith('30d') ? '30d' : 'all', members: [] }))));
+  const { findByText, getByRole } = render(<Leaderboard locale="en" />);
+  expect((await findByText(/^Nobody on the leaderboard has stars yet/)).textContent).toContain('no sooner than 30 days after it was linked');
+  fireEvent.click(getByRole('tab', { name: 'Last 30 days' }));
+  expect(await findByText('Nobody on the leaderboard earned stars in the last 30 days.')).toBeTruthy();
 });
 
 test('ago speaks the page language', () => {

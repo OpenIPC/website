@@ -550,7 +550,7 @@ type Leader struct {
 // LeaderboardSize is how many rows the leaderboard shows.
 const LeaderboardSize = 100
 
-// Leaderboard ranks the members who asked to be listed by their stars from
+// Leaderboard ranks the members who have not opted out by their stars from
 // both ledgers, since a moment (the zero time for all of them). Members with
 // no stars in the period are left out. you marks the asking member's row.
 func (s *Store) Leaderboard(ctx context.Context, since time.Time, you string) ([]Leader, error) {
