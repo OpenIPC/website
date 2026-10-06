@@ -60,7 +60,16 @@ the poster to `frontend/apps/site/src/assets/pages/flight-<name>.jpg`, and point
 come from the same run as the streams, so they cannot disagree.
 
 `/srv/www/shared/media/` is in no backup. It is rebuilt from the two source
-recordings with this script, so keep those.
+recordings with this script, so the sources are kept on the host, outside every
+served path, at `/srv/www/flight-sources/<name>/` with a `SHA256SUMS`:
+
+| flight | file | sha256 |
+|---|---|---|
+| mabur-2026-10 | `onboard.mp4` (898 MB) | `eb6c961f1fec08997adf511563b97ffdd7c8bcf7b787715e053d25bd571a7f61` |
+| mabur-2026-10 | `record-0015.mp4` (353 MB) | `31392ad36cc7abdb2ffae015c3ab988bb034cec752a0a6a367335f9ff094fa37` |
+
+They are not in the S3 backup: the backup's IAM user may write only its own
+prefixes, and refused `media-sources/`.
 
 ## Traps
 
