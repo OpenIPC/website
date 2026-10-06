@@ -306,6 +306,11 @@
   },
   {
     "role": "share",
+    "method": "POST",
+    "path": "/__share/restart"
+  },
+  {
+    "role": "share",
     "method": "GET",
     "path": "/__share/ice"
   },

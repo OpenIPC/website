@@ -28,6 +28,10 @@ const AUDIO = ['opus', 'mp4a.40.2'];
 // long one may freeze before the session is taken for dead -- a stalled
 // stream is invisible to signalling, the socket and ICE both stay up.
 const RTC_FIRST_MS = 10000;
+// ICE restart: disconnected this long is a path that has gone; each restart
+// gets RTC_RESTART_WAIT_MS before the next, or before a new session.
+const RTC_RESTART_AFTER_MS = 2000;
+const RTC_RESTART_WAIT_MS = 15000;
 const RTC_STALL_MS = 8000;
 // MSE: how far behind the newest frame playback may drift before it is moved
 // back to the live edge, where it lands, and how much played video to keep.
@@ -63,9 +67,12 @@ function concat(parts) {
   return out;
 }
 
-// mount(main, { openWebSocket, iceServers, camera, trace }): fills `main`
-// with the player. `iceServers` may be a promise.
-export function mount(main, { openWebSocket, iceServers, camera, trace }) {
+// mount(main, { openWebSocket, iceServers, camera, trace, link }): fills
+// `main` with the player. `iceServers` may be a promise. `link`, the tunnel
+// the signalling rides: up() whether it is, onRestored(fn) to hear when to
+// look for a path again -- the tunnel back, or the camera moved (returning
+// the function that stops that).
+export function mount(main, { openWebSocket, iceServers, camera, trace, link }) {
   const video = el('video', { muted: true, autoplay: true, playsInline: true });
   video.setAttribute('playsinline', '');
   if (MANAGED) video.disableRemotePlayback = true;
@@ -84,7 +91,7 @@ export function mount(main, { openWebSocket, iceServers, camera, trace }) {
   // numbers every start, so a handler left over from an earlier one does
   // nothing.
   let rung = '', attempt = 0, wantAudio = false, gone = false;
-  let sig = null, pc = null, firstTimer = null, stallTimer = null, lastFrames = -1, rtcRetried = false;
+  let sig = null, pc = null, firstTimer = null, stallTimer = null, lastFrames = -1, rtcRetried = false, offLink = null;
   let ws = null, ms = null, sb = null, url = null, retry = null;
   let queue = [], timer = null, hevc = false, playing = '', skipBinary = false;
   let decodeErrs = 0, reconnects = 0;
@@ -97,6 +104,7 @@ export function mount(main, { openWebSocket, iceServers, camera, trace }) {
   function stopRtc() {
     clearTimeout(firstTimer); clearInterval(stallTimer);
     firstTimer = stallTimer = null;
+    if (offLink) { offLink(); offLink = null; }
     if (sig) { const s = sig; sig = null; try { s.close(); } catch (e) { /* gone */ } }
     if (pc) { const p = pc; pc = null; p.ontrack = p.onicecandidate = p.oniceconnectionstatechange = null; try { p.close(); } catch (e) { /* gone */ } }
     if (video.srcObject) video.srcObject = null;
@@ -176,10 +184,74 @@ export function mount(main, { openWebSocket, iceServers, camera, trace }) {
     const pending = [];
     const addCandidate = (c) => peer.addIceCandidate(c).catch(() => {});
     peer.onicecandidate = (ev) => { if (ev.candidate && sig) send('candidate', ev.candidate.candidate); };
+    // A path that stops answering -- the camera moved to another uplink --
+    // is found again with an ICE restart (RFC 8445 9) on the same signalling
+    // socket: the camera answers a second offer on it as a restart, and the
+    // session, its decoder and the picture on screen stay. Only if that does
+    // not bring it back is the session redone from scratch.
+    // The offers ride the tunnel, so while the tunnel itself is down nobody
+    // hears them: the player waits for it (link.onRestored) rather than
+    // spend its attempts, and keeps one offer out at a time -- one sent just
+    // before the tunnel went is held by its channel and delivered when it
+    // returns, and a second would cross its answer.
+    let restarts = 0, blip = null, restartTimer = null, offered = false;
+    // Restart offers sent and replies seen. The camera replies to every offer,
+    // in order, on a channel that loses nothing, so the Nth reply is the Nth
+    // offer's: an answer to one a later attempt replaced is told apart from
+    // the one that counts, rather than applied to its replacement.
+    let restartsSent = 0, repliesSeen = 0;
+    // Not back in time: another attempt. Unless ICE says connected: a
+    // restart of a path that never went down -- the camera's hint arrives
+    // before ICE has noticed anything -- may never change the state, and then
+    // this is the only word that it is over.
+    const waitForRestart = () => {
+      clearTimeout(restartTimer);
+      restartTimer = setTimeout(() => {
+        const st = peer.iceConnectionState;
+        if (st === 'connected' || st === 'completed') { restarts = 0; offered = false; return; }
+        restart();
+      }, RTC_RESTART_WAIT_MS);
+    };
+    const restart = async () => {
+      if (my !== attempt || !played || !sig || pc !== peer) return;
+      if (link && !link.up()) return;
+      if (++restarts > 2) { again('the connection to the camera was lost'); return; }
+      trace('player', `webrtc: ice restart ${restarts}`);
+      clearTimeout(restartTimer);
+      waitForRestart();
+      try {
+        answered = false; // the camera's new candidates wait for its new answer
+        peer.restartIce();
+        const offer = await peer.createOffer({ iceRestart: true });
+        await peer.setLocalDescription(offer);
+        if (my === attempt) { send('offer', peer.localDescription.sdp); offered = true; restartsSent++; }
+      } catch (e) { trace('player', 'webrtc: ice restart failed'); }
+    };
     peer.oniceconnectionstatechange = () => {
       if (my !== attempt) return;
-      if (peer.iceConnectionState === 'failed') again('the connection to the camera failed');
+      const st = peer.iceConnectionState;
+      if (st === 'connected' || st === 'completed') {
+        clearTimeout(blip); clearTimeout(restartTimer); restarts = 0; offered = false;
+      } else if (st === 'disconnected' && played) {
+        clearTimeout(blip);
+        blip = setTimeout(restart, RTC_RESTART_AFTER_MS);
+      } else if (st === 'failed') {
+        if (played && sig) restart();
+        else again('the connection to the camera failed');
+      }
     };
+    // The tunnel back, or the camera saying it moved: a restart now, with
+    // its attempts fresh -- unless an offer is out, which the tunnel is
+    // delivering now; that one gets its time to be answered first. A camera
+    // that moved has left this connection's path behind even while ICE still
+    // reads it as up.
+    if (link) offLink = link.onRestored(() => {
+      if (my !== attempt || pc !== peer || !played) return;
+      restarts = 0;
+      clearTimeout(blip); clearTimeout(restartTimer);
+      if (offered) waitForRestart();
+      else restart();
+    });
     const send = (req, data) => { if (sig) sig.sendText(JSON.stringify({ req, data: data === undefined ? '' : data })); };
     // A session that played once and then dropped is worth one more WebRTC
     // try before the next rung; one that never played is not.
@@ -203,6 +275,10 @@ export function mount(main, { openWebSocket, iceServers, camera, trace }) {
         try { m = JSON.parse(d); } catch (e) { return; }
         if (!m || typeof m.reply !== 'string') return;
         if (m.reply === 'answer') {
+          // One that answers no offer of ours is a restart's, overtaken.
+          if (peer.signalingState !== 'have-local-offer') return;
+          if (restartsSent > 0 && ++repliesSeen !== restartsSent) return;
+          offered = false;
           peer.setRemoteDescription({ type: 'answer', sdp: m.data }).then(() => {
             if (my !== attempt) return;
             answered = true;
@@ -222,6 +298,10 @@ export function mount(main, { openWebSocket, iceServers, camera, trace }) {
             : { candidate: m.data, sdpMLineIndex: 0 };
           if (answered) addCandidate(c); else pending.push(c);
         } else if (m.reply === 'busy' || m.reply === 'error') {
+          // In reply to a restart, it is the restart the camera refused, not
+          // the picture this session has been showing: a new session, not a
+          // step down to the next rung.
+          if (restartsSent > repliesSeen) { repliesSeen++; again(`restart refused: ${m.data || ''}`); return; }
           fail(`${m.reply}: ${m.data || ''}`);
         } else if (m.reply === 'closed') {
           again(`closed: ${m.data || ''}`);
@@ -245,6 +325,11 @@ export function mount(main, { openWebSocket, iceServers, camera, trace }) {
       // The frame counter is the only witness to a frozen picture.
       stallTimer = setInterval(async () => {
         if (my !== attempt || !pc) return;
+        // No path, no frames: while ICE is looking for one, the restart above
+        // owns the recovery, and a picture still from the outage is not a
+        // frozen decoder.
+        const st = pc.iceConnectionState;
+        if (st !== 'connected' && st !== 'completed') { lastFrames = -1; return; }
         let frames = -1;
         try {
           (await pc.getStats()).forEach((r) => { if (r.type === 'inbound-rtp' && r.kind === 'video') frames = r.framesDecoded || 0; });

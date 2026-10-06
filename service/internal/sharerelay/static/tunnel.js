@@ -71,6 +71,22 @@ export async function proofV2(key, who, share, pageNonce, cameraFp, pageFp) {
 
 export class ShareError extends Error {}
 
+// ICE restart: a path that has been disconnected this long is treated as gone
+// (a blip recovers well inside it). An attempt not answered in RESTART_WAIT_MS
+// is made again, and the session is given up only once the path has been gone
+// for RESTART_GIVE_UP_MS: a camera whose uplink died upstream finds out from
+// its own health check, tens of seconds later, and only then has a new one to
+// be reached on. Its hint that it has moved starts a fresh attempt at once.
+const RESTART_AFTER_MS = 2000;
+const RESTART_WAIT_MS = 15000;
+const RESTART_GIVE_UP_MS = 120000;
+// The relay takes one restart offer per page in RestartInterval (relay.go)
+// and refuses the next with a 429. One asked for sooner -- the camera's hint
+// that it moved, close behind an attempt the page made on its own -- waits
+// for the gap instead: that hint is the attempt that reaches the camera where
+// it is now, and the one it follows went to where it was.
+const RESTART_GAP_MS = 2100;
+
 // Signalling to the relay on the connection the page already holds: the
 // offer goes up as a POST whose response streams the relay's replies, one
 // JSON object per line, and the page's candidates follow as POSTs of their
@@ -91,9 +107,32 @@ class StreamSignal {
 
   send(text) {
     const m = JSON.parse(text);
-    if (m.req === 'offer') this.stream(text);
+    // A second offer on a session the relay has named is an ICE restart:
+    // it goes to the camera for the same session, and its answer comes back
+    // on the stream this page kept (see restart below).
+    if (m.req === 'offer' && this.sid) this.restart(text);
+    else if (m.req === 'offer') this.stream(text);
     else if (this.sid) this.candidate(m.data);
     else this.early.push(m.data);
+  }
+
+  // An ICE restart offer (RFC 8445 9) for the session this page already
+  // holds. Only the delivery is reported here; the answer arrives as any
+  // other reply. A relay or a camera that cannot take it is said in the
+  // trace, and the tunnel's own timer decides what happens next.
+  restart(offer) {
+    const u = this.url.replace('/__share/signal', '/__share/restart') + '&session=' + this.sid;
+    fetch(u, { method: 'POST', body: offer, signal: this.ctl.signal })
+      .then(async (r) => {
+        await r.arrayBuffer();
+        if (r.ok) return;
+        this.trace('restart not delivered', `HTTP ${r.status}`);
+        // The relay no longer knows the session (its stream ended, or the
+        // relay restarted): no restart can reach the camera from here, and
+        // saying so lets the tunnel stop asking.
+        if (r.status === 404) this.finish(1006, 'the relay no longer holds this session');
+      })
+      .catch((e) => this.trace('restart not delivered', String(e && e.message || e)));
   }
 
   // One retry for a network failure or a relay error; a candidate that still
@@ -214,6 +253,22 @@ export class Tunnel {
     this.active = 0; // HTTP exchanges in flight
     this.queued = []; // and those waiting for one to finish
     this.onclose = null;
+    this.restored = new Set(); // called when a lost path is found again
+  }
+
+  // Whether the path to the camera is up now.
+  up() {
+    const st = this.pc && this.pc.iceConnectionState;
+    return st === 'connected' || st === 'completed';
+  }
+
+  // `fn` runs each time the path comes back after going away, and when the
+  // camera says it has moved to another uplink -- either way, the moment for
+  // anything else on the camera to look for its path again. The returned
+  // function stops that.
+  onRestored(fn) {
+    this.restored.add(fn);
+    return () => this.restored.delete(fn);
   }
 
   open(timeoutMs = 30000) {
@@ -254,6 +309,13 @@ export class Tunnel {
         try { m = JSON.parse(ev.data); } catch (e) { this.trace('signalling: unreadable message'); return; }
         this.trace('signalling ← ' + m.reply, m.reply === 'candidate' ? candType(m.data) : m.reply === 'answer' ? `${(m.data || '').length} bytes` : m.data);
         if (m.reply === 'answer') {
+          // One that answers no offer of ours -- a restart's, overtaken by
+          // the next -- would only be refused. A camera that echoes the
+          // restart's tag says which offer it answers; a late answer to an
+          // offer since replaced would otherwise be applied to its
+          // replacement, and the replacement's own answer then dropped.
+          if (pc.signalingState !== 'have-local-offer') return;
+          if (m.rid && this.rid && m.rid !== this.rid) return;
           this.cameraFp = normaliseFingerprint(m.data);
           await pc.setRemoteDescription({ type: 'answer', sdp: m.data });
         } else if (m.reply === 'candidate' && m.data) {
@@ -262,6 +324,15 @@ export class Tunnel {
             return;
           }
           await pc.addIceCandidate({ candidate: m.data, sdpMid: m.mid || '0' }).catch(() => {});
+        } else if (m.reply === 'restart' && this.welcome) {
+          // The camera has just moved to another uplink: its end of the
+          // path is gone, and waiting for ICE to notice costs seconds. Any
+          // attempt still out went to where the camera was. The player's own
+          // connection went with it; its offer, sent now, waits in the data
+          // channel for this restart and is not late by the seconds ICE takes
+          // to notice.
+          this.restart(true);
+          for (const f of [...this.restored]) f();
         } else if (m.reply === 'closed' && m.ended && this.welcome) {
           // The share ended -- revoked or expired. The camera's BYE says the
           // same, but it can be lost on a lossy link, and then only ICE would
@@ -280,7 +351,10 @@ export class Tunnel {
         if (this.policy) cfg.iceTransportPolicy = this.policy;
         pc = this.pc = new RTCPeerConnection(cfg);
         this.trace('peer connection', { iceServers: this.iceServers.map((x) => [].concat(x.urls).join(' ')), policy: this.policy || 'all' });
-        pc.oniceconnectionstatechange = () => this.trace('ice state', pc.iceConnectionState);
+        pc.oniceconnectionstatechange = () => {
+          this.trace('ice state', pc.iceConnectionState);
+          this.iceChanged();
+        };
         pc.onicegatheringstatechange = () => this.trace('ice gathering', pc.iceGatheringState);
         dc = this.dc = pc.createDataChannel('mj-tunnel', { ordered: true });
         dc.binaryType = 'arraybuffer';
@@ -296,6 +370,9 @@ export class Tunnel {
           if (pc.connectionState === 'connected') this.pairInfo().then((p) => this.trace('selected pair', p));
           if (pc.connectionState === 'failed') {
             if (!settled) done(new ShareError('Could not reach the camera over the network.'));
+            // A session that was working: try to get the path back before
+            // giving it up (restart() says lost() when it has run out).
+            else if (this.welcome) this.restart();
             else this.lost('The connection to the camera was lost.');
           }
         };
@@ -386,6 +463,90 @@ export class Tunnel {
         sent: pair.bytesSent, received: pair.bytesReceived };
     } catch (e) {
       return 'unavailable';
+    }
+  }
+
+  // The path to the camera stopped answering. A blip comes back on its own
+  // within a second or two; past that, or once ICE has failed outright, the
+  // path is gone -- typically the camera moved to another uplink -- and an
+  // ICE restart (RFC 8445 9, W3C restartIce) finds the new one while the
+  // DTLS session, the data channel and everything riding on it stay up.
+  iceChanged() {
+    const state = this.pc && this.pc.iceConnectionState;
+    if (state === 'connected' || state === 'completed') {
+      clearTimeout(this.blip);
+      clearTimeout(this.restartTimer);
+      if (this.restarting) this.trace('ice restart', 'connected again');
+      this.restarting = false;
+      this.restarts = 0;
+      if (this.downSince) {
+        this.downSince = 0;
+        for (const f of [...this.restored]) f();
+      }
+      return;
+    }
+    if (!this.downSince) this.downSince = Date.now();
+    if (!this.welcome || this.gone) return;
+    if (state === 'disconnected') {
+      clearTimeout(this.blip);
+      this.blip = setTimeout(() => this.restart(), RESTART_AFTER_MS);
+    } else if (state === 'failed') {
+      this.restart();
+    }
+  }
+
+  // `moved`: the camera says it is somewhere new -- worth an attempt now,
+  // whatever is in flight, and a fresh allowance of time.
+  async restart(moved) {
+    if (this.gone || !this.pc || (this.restarting && !moved)) return;
+    // No signalling, no restart: the session is the path it has. A blip may
+    // still pass; once ICE has failed, it is lost, as it always was.
+    if (!this.ws || this.ws.readyState !== 1) {
+      const st = this.pc.iceConnectionState;
+      if (st === 'failed' || this.pc.connectionState === 'failed') {
+        this.lost('The connection to the camera was lost.');
+      }
+      return;
+    }
+    const now = Date.now();
+    const early = (this.offeredAt || 0) + RESTART_GAP_MS - now;
+    if (early > 0) {
+      clearTimeout(this.gapTimer);
+      this.gapTimer = setTimeout(() => this.restart(moved), early);
+      return;
+    }
+    // Restarting a path that still works (the camera moved back to the
+    // uplink it prefers) puts no clock on the session.
+    if (moved || !this.downSince) this.downSince = this.up() ? 0 : now;
+    if (this.downSince && now - this.downSince > RESTART_GIVE_UP_MS) {
+      this.lost('The connection to the camera was lost.');
+      return;
+    }
+    this.restarts = (this.restarts || 0) + 1;
+    this.restarting = true;
+    this.trace('ice restart', `attempt ${this.restarts}`);
+    clearTimeout(this.restartTimer);
+    this.restartTimer = setTimeout(() => {
+      // Not back in time: another attempt, or the end of the session. A
+      // restart of a path that never went down may never say it is done --
+      // and if it was never answered either, its offer is taken back, so the
+      // connection is not left waiting on an answer that will not come.
+      this.restarting = false;
+      if (!this.up()) this.restart();
+      else if (this.pc && this.pc.signalingState === 'have-local-offer')
+        this.pc.setLocalDescription({ type: 'rollback' }).catch(() => {});
+    }, RESTART_WAIT_MS);
+    try {
+      this.pc.restartIce();
+      const offer = await this.pc.createOffer({ iceRestart: true });
+      await this.pc.setLocalDescription(offer);
+      if (this.ws && this.ws.readyState === 1) {
+        this.offeredAt = Date.now();
+        this.rid = `r${(this.ridSeq = (this.ridSeq || 0) + 1)}`;
+        this.ws.send(JSON.stringify({ req: 'offer', data: this.pc.localDescription.sdp, rid: this.rid }));
+      }
+    } catch (e) {
+      this.trace('ice restart failed', String(e && e.message || e));
     }
   }
 
@@ -498,6 +659,9 @@ export class Tunnel {
   }
 
   close() {
+    clearTimeout(this.blip);
+    clearTimeout(this.gapTimer);
+    clearTimeout(this.restartTimer);
     try { this.pc && this.pc.close(); } catch (e) { /* already closed */ }
     try { this.ws && this.ws.close(); } catch (e) { /* already closed */ }
   }

@@ -283,6 +283,7 @@ async function main() {
       player = mount($('main'), {
         openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h),
         iceServers, camera: welcome.camera, trace,
+        link: { up: () => tunnel.up(), onRestored: (fn) => tunnel.onRestored(fn) },
       });
     } else {
       const f = document.createElement('iframe');

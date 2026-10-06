@@ -21,7 +21,7 @@
 //     "token":"<64 hex>"}
 //     camera -> {"type":"unregister","share":"<id>"}
 //     camera -> {"type":"signal","session":"<sid>","reply":"answer"|"candidate"|
-//     "error"|"busy"|"closed","data":"...","mid":"..."}
+//     "error"|"busy"|"closed"|"restart","data":"...","mid":"..."}
 //     camera -> {"type":"pong"}
 //     relay  -> {"type":"registered","share":"<id>"}
 //     relay  -> {"type":"refused","share":"<id>","error":"..."}
@@ -47,6 +47,17 @@
 //     session=<sid>: it gives up its session slot and keeps the stream, to
 //     hear the share end, for as long as it stays. The stream carries
 //     {"reply":"ping"} every ListenerPing, so no proxy times it out.
+//
+//     A connected page whose path to the camera dies -- the camera's uplink
+//     changed, the guest's network moved -- restarts ICE (RFC 8445 9) rather
+//     than starting over: POST /__share/restart?share=<id>&session=<sid> with
+//     {"req":"offer","data":"<sdp>"} sends its restart offer to the camera,
+//     its candidates go to /__share/candidate as before, and the camera's
+//     answer and candidates come back on the stream it kept. The camera can
+//     ask for one: {"reply":"restart"} on that stream, sent when it has just
+//     moved to another uplink, so the page need not wait to notice. A camera
+//     that does not know restarts ignores the offer; the page then gives up
+//     on the session as it always did.
 //
 //     relay  -> {"reply":"closed","data":"<why>","ended":"true"} when the
 //     share itself ended (revoked or expired). A connected page acts on it:
@@ -204,6 +215,13 @@ type page struct {
 	answered bool
 	// The reader's address, for the per-address bound on listeners.
 	remote string
+	// When this listener last sent a restart offer, so a page cannot turn
+	// the endpoint into a way to make the camera renegotiate on a loop.
+	// Under h.mu.
+	restarted time.Time
+	// Candidates taken since that restart: a connected page has a reason to
+	// send them only for a restart, and only so many.
+	restartCandidates int
 }
 
 func or(d, def time.Duration) time.Duration {
@@ -352,6 +370,8 @@ type deviceMsg struct {
 	Reply   string `json:"reply"`
 	Data    string `json:"data"`
 	Mid     string `json:"mid"`
+	// The page's tag for a restart offer, echoed with its answer.
+	Rid string `json:"rid"`
 }
 
 func (h *Hub) onDevice(d *device, raw []byte) {
@@ -386,7 +406,20 @@ func (h *Hub) onDevice(d *device, raw []byte) {
 				if m.Reply == "closed" {
 					delete(sh.listeners, m.Session)
 					close(p.out)
+					return
 				}
+				// A restart's answer and candidates, or the camera asking
+				// for one: the stream the page kept is how they reach it.
+				// Best-effort -- a listener that is not reading misses it
+				// and finds out from ICE, as it would have anyway.
+				out := map[string]string{"reply": m.Reply, "data": m.Data}
+				if m.Mid != "" {
+					out["mid"] = m.Mid
+				}
+				if m.Rid != "" {
+					out["rid"] = m.Rid
+				}
+				trySend(p.out, marshal(out))
 				return
 			}
 			if p := sh.pages[m.Session]; p != nil {
@@ -637,6 +670,26 @@ func (h *Hub) forward(p *page, kind, data string) {
 	}
 }
 
+// forwardListener passes a connected page's restart offer or candidate to its
+// camera; false if the camera is offline or not keeping up. Unlike forward it
+// never drops the page: its session is peer to peer, and a restart that does
+// not go is one the page can try again.
+func (h *Hub) forwardListener(p *page, kind, data, rid string) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if p.sh.dev == nil || p.sh.listeners[p.sid] != p {
+		return false
+	}
+	msg := map[string]string{"type": kind, "session": p.sid, "data": data}
+	if kind == "offer" {
+		msg["share"] = p.sh.id
+	}
+	if rid != "" {
+		msg["rid"] = rid
+	}
+	return trySend(p.sh.dev.out, marshal(msg))
+}
+
 // dropPage ends one page's session; called with h.mu held.
 func (h *Hub) dropPage(p *page) {
 	if p.sh.pages[p.sid] != p {
@@ -814,11 +867,33 @@ func (h *Hub) Candidate() http.Handler {
 		}
 		id, sid := ShareFromRequest(r), r.URL.Query().Get("session")
 		h.mu.Lock()
-		var p *page
+		var p, l *page
 		if sh := h.shares[id]; sh != nil {
 			p = sh.pages[sid]
+			l = sh.listeners[sid]
+		}
+		// A connected page's candidates are a restart's (see Restart): taken
+		// in the window after one, and only so many. A listener lives as long
+		// as the share, and the camera's queue is every guest's -- one page
+		// posting without end would fill it and get the others refused.
+		if l != nil {
+			if time.Since(l.restarted) > RestartCandidateWindow ||
+				l.restartCandidates >= RestartCandidateMax {
+				h.mu.Unlock()
+				http.Error(w, "no restart to take candidates for", http.StatusTooManyRequests)
+				return
+			}
+			l.restartCandidates++
 		}
 		h.mu.Unlock()
+		if l != nil {
+			if !h.forwardListener(l, "candidate", string(body), "") {
+				http.Error(w, "the camera is offline", http.StatusServiceUnavailable)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		if p == nil || p.conn != nil {
 			http.Error(w, "no such session", http.StatusNotFound)
 			return
@@ -874,5 +949,80 @@ func (h *Hub) Connected() http.Handler {
 		sh.listeners[sid] = p
 		p.lifetime.Stop()
 		w.WriteHeader(http.StatusNoContent)
+	})
+}
+
+// RestartInterval is the least time between two restart offers from one
+// listener. An ICE restart that is going to work answers well inside it.
+const RestartInterval = 2 * time.Second
+
+// A connected page's candidates are taken for RestartCandidateWindow after
+// a restart, and at most RestartCandidateMax of them: a browser gathers a
+// handful per network interface.
+const (
+	RestartCandidateWindow = 30 * time.Second
+	RestartCandidateMax    = 32
+)
+
+// validRid is a restart tag the relay will carry: absent, or a short token.
+func validRid(rid string) bool {
+	if len(rid) > 32 {
+		return false
+	}
+	for _, c := range rid {
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '-' || c == '_') {
+			return false
+		}
+	}
+	return true
+}
+
+// Restart is POST /__share/restart: a connected page's ICE restart offer
+// (RFC 8445 9), for the session it holds as a listener. The camera's answer
+// and candidates come back on the page's stream; this only says whether the
+// offer went.
+func (h *Hub) Restart() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !h.originAllowed(r) {
+			http.Error(w, "not from a share page", http.StatusForbidden)
+			return
+		}
+		body, small := readSmall(r)
+		var m struct {
+			Req  string `json:"req"`
+			Data string `json:"data"`
+			// The page's tag for this offer, so it can tell the answer to
+			// it from a late one to an offer it has since replaced.
+			Rid string `json:"rid"`
+		}
+		if !small || json.Unmarshal(body, &m) != nil || m.Req != "offer" || m.Data == "" ||
+			!validRid(m.Rid) {
+			http.Error(w, "an offer is expected", http.StatusBadRequest)
+			return
+		}
+		id, sid := ShareFromRequest(r), r.URL.Query().Get("session")
+		h.mu.Lock()
+		var p *page
+		if sh := h.shares[id]; sh != nil {
+			p = sh.listeners[sid]
+		}
+		if p == nil {
+			h.mu.Unlock()
+			http.Error(w, "no such session", http.StatusNotFound)
+			return
+		}
+		if time.Since(p.restarted) < RestartInterval {
+			h.mu.Unlock()
+			http.Error(w, "too soon after the last restart", http.StatusTooManyRequests)
+			return
+		}
+		p.restarted = time.Now()
+		p.restartCandidates = 0
+		h.mu.Unlock()
+		if !h.forwardListener(p, "offer", m.Data, m.Rid) {
+			http.Error(w, "the camera is offline", http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusAccepted)
 	})
 }

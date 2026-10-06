@@ -705,3 +705,139 @@ func TestListenersAreBounded(t *testing.T) {
 		t.Fatalf("%d listeners", l)
 	}
 }
+
+func postBody(t *testing.T, srv *httptest.Server, path, body string) int {
+	t.Helper()
+	req, _ := http.NewRequest("POST", srv.URL+path, strings.NewReader(body))
+	req.Header.Set("Origin", srv.URL)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	return resp.StatusCode
+}
+
+// A connected page restarts ICE through the relay when its path to the camera
+// dies -- the camera moved to another uplink -- and keeps its session: the
+// restart offer reaches the camera, and the answer and both ends' candidates
+// travel on the stream the page kept. The camera can ask for the restart.
+func TestAConnectedPageRestartsICEThroughTheRelay(t *testing.T) {
+	_, srv := rig(t)
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	sid, next := openStream(t, srv)
+	recv(t, cam) // the first offer
+	admit(t, cam, sid)
+	if m := next(); m["reply"] != "answer" {
+		t.Fatalf("got %v", m)
+	}
+	if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusNoContent {
+		t.Fatalf("connected: %d", c)
+	}
+	skip := func() map[string]string {
+		t.Helper()
+		for {
+			if m := next(); m["reply"] != "ping" {
+				return m
+			}
+		}
+	}
+
+	// The camera asks: it has just moved to another uplink.
+	send(t, cam, map[string]string{"type": "signal", "session": sid, "reply": "restart"})
+	if m := skip(); m["reply"] != "restart" {
+		t.Fatalf("the hint did not reach the page: %v", m)
+	}
+
+	// A connected page has no business sending candidates but a restart's.
+	if c := postBody(t, srv, "/__share/candidate?share="+id+"&session="+sid, "candidate:0"); c != http.StatusTooManyRequests {
+		t.Fatalf("a candidate with no restart: %d", c)
+	}
+
+	// The page's restart offer reaches the camera, for the same session,
+	// with the page's tag for it.
+	if c := postBody(t, srv, "/__share/restart?share="+id+"&session="+sid, `{"req":"offer","data":"v=0 restart","rid":"r1"}`); c != http.StatusAccepted {
+		t.Fatalf("restart: %d", c)
+	}
+	m := recv(t, cam)
+	if m["type"] != "offer" || m["session"] != sid || m["share"] != id || m["data"] != "v=0 restart" || m["rid"] != "r1" {
+		t.Fatalf("the camera got %v", m)
+	}
+	// Its candidates too, now that it is a listener.
+	if c := postBody(t, srv, "/__share/candidate?share="+id+"&session="+sid, "candidate:1 1 udp 1 192.0.2.7 9 typ srflx"); c != http.StatusNoContent {
+		t.Fatalf("candidate: %d", c)
+	}
+	if m := recv(t, cam); m["type"] != "candidate" || m["session"] != sid {
+		t.Fatalf("the camera got %v", m)
+	}
+	// And the camera's answer, with the tag echoed, and candidate come back
+	// on the stream.
+	send(t, cam, map[string]string{"type": "signal", "session": sid, "reply": "answer", "data": "v=0 restarted", "rid": "r1"})
+	if m := skip(); m["reply"] != "answer" || m["data"] != "v=0 restarted" || m["rid"] != "r1" {
+		t.Fatalf("got %v", m)
+	}
+	send(t, cam, map[string]string{"type": "signal", "session": sid, "reply": "candidate", "data": "candidate:2", "mid": "0"})
+	if m := skip(); m["reply"] != "candidate" || m["mid"] != "0" {
+		t.Fatalf("got %v", m)
+	}
+
+	// Not on a loop.
+	if c := postBody(t, srv, "/__share/restart?share="+id+"&session="+sid, `{"req":"offer","data":"v=0 again"}`); c != http.StatusTooManyRequests {
+		t.Fatalf("a second restart at once: %d", c)
+	}
+	// Only for a session the camera admitted.
+	if c := postBody(t, srv, "/__share/restart?share="+id+"&session=0000000000000000", `{"req":"offer","data":"v=0"}`); c != http.StatusNotFound {
+		t.Fatalf("unknown session: %d", c)
+	}
+	if c := postBody(t, srv, "/__share/restart?share="+id+"&session="+sid, `{"req":"candidate","data":"x"}`); c != http.StatusBadRequest {
+		t.Fatalf("not an offer: %d", c)
+	}
+	if c := postBody(t, srv, "/__share/restart?share="+id+"&session="+sid, `{"req":"offer","data":"v=0","rid":"<script>"}`); c != http.StatusBadRequest {
+		t.Fatalf("a tag that is not a token: %d", c)
+	}
+	// So many candidates per restart and no more: a listener lives as long
+	// as the share, and the camera's queue is every guest's.
+	taken := 1 // the one above
+	for ; taken < RestartCandidateMax; taken++ {
+		if c := postBody(t, srv, "/__share/candidate?share="+id+"&session="+sid, "candidate:1"); c != http.StatusNoContent {
+			t.Fatalf("candidate %d: %d", taken, c)
+		}
+		recv(t, cam)
+	}
+	if c := postBody(t, srv, "/__share/candidate?share="+id+"&session="+sid, "candidate:1"); c != http.StatusTooManyRequests {
+		t.Fatalf("one past the cap: %d", c)
+	}
+}
+
+// A restart while the camera is between relay sockets -- it reconnects as it
+// moves uplinks -- says so, and the page tries again.
+func TestARestartWhileTheCameraIsOfflineSaysSo(t *testing.T) {
+	h, srv := rig(t)
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	sid, next := openStream(t, srv)
+	recv(t, cam)
+	admit(t, cam, sid)
+	if m := next(); m["reply"] != "answer" {
+		t.Fatalf("got %v", m)
+	}
+	if c := post(t, srv, "/__share/connected?share="+id+"&session="+sid); c != http.StatusNoContent {
+		t.Fatalf("connected: %d", c)
+	}
+	cam.Close(websocket.StatusNormalClosure, "")
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		h.mu.Lock()
+		gone := h.shares[id] != nil && h.shares[id].dev == nil
+		h.mu.Unlock()
+		if gone {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the camera was not dropped")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if c := postBody(t, srv, "/__share/restart?share="+id+"&session="+sid, `{"req":"offer","data":"v=0"}`); c != http.StatusServiceUnavailable {
+		t.Fatalf("restart with the camera offline: %d", c)
+	}
+}
