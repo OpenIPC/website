@@ -24,12 +24,24 @@
  * download step sends FPV chips here (`#support`) rather than to /business.
  * Both links name their events, which the monthly memo counts as the FPV
  * segment's business clicks.
+ *
+ * The flight comes first, straight under the hero, because it is the claim
+ * the rest of the page makes, shown rather than stated: one real flight
+ * recorded on the drone and on the ground station, cut onto one timeline by
+ * tools/flight-ab and compared frame by frame (../flight/FlightCompare.tsx).
+ * Its numbers are the run's own stats (../../data/flight.ts), and say what the
+ * pilot's screen got, gaps included -- a page about a link that hid its
+ * freezes would be the old latency table again.
  */
 import Icon from '../Icon.astro';
 import PageHeader from '../PageHeader.astro';
 import CtaBand from '../CtaBand.astro';
 import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
 import { LATENCY_PATHS, LATENCY_SCALE_MAX, latencyBarStyle } from '../../data/latency';
+import { getImage } from 'astro:assets';
+import FlightCompare, { type FlightLabels } from '../flight/FlightCompare';
+import { FLIGHT, rndPlayerUrl } from '../../data/flight';
+import flightPoster from '../../assets/pages/flight-mabur-2026-10.jpg';
 
 const { locale } = Astro.props as { locale: Locale };
 const t = useTranslations(locale);
@@ -44,11 +56,62 @@ const CHAIN: [string, string][] = [
 const GUIDE = 'https://github.com/OpenIPC/wiki/blob/master/en/fpv.md';
 const FPV_CHAT = 'https://t.me/+BMyMoolVOpkzNWUy';
 const SUPPORT_HOURS = 'https://opencollective.com/openipc/contribute/technical-support-56715/checkout';
+
+const poster = await getImage({ src: flightPoster, width: 1920, format: 'webp', quality: 80 });
+const flightLabels: FlightLabels = {
+  play: k('flight_play'),
+  pause: k('flight_pause'),
+  loading: k('flight_loading'),
+  error: k('flight_error'),
+  onboard: k('flight_onboard'),
+  gs: k('flight_gs'),
+  split: k('flight_split'),
+  flicker: k('flight_flicker'),
+  original: k('flight_original'),
+  reduced: k('flight_reduced'),
+  copy: k('flight_copy'),
+  fullscreen: k('flight_fullscreen'),
+  frameBack: k('flight_frame_back'),
+  frameForward: k('flight_frame_forward'),
+  handle: k('flight_handle'),
+  seek: k('flight_seek'),
+  openRnd: k('flight_open_rnd'),
+};
+const FLIGHT_STATS: [string, string][] = [
+  [String(FLIGHT.minutes), k('flight_stat_duration')],
+  [`${FLIGHT.shown.toFixed(1)}%`, k('flight_stat_shown')],
+  [String(FLIGHT.holdsOver50), t('pages.low_latency.flight_stat_holds', { ms: FLIGHT.longestHoldMs })],
+];
 ---
 <PageHeader title={k('hero_title')} lede={k('hero_lede')} />
 
 <div class="site-container">
   <article>
+    <section class="mb-12" id="flight">
+      <h2 class="mb-3 text-2xl">{k('flight_title')}</h2>
+      <p class="mb-5 max-w-3xl text-body-secondary">{k('flight_lede')}</p>
+      <FlightCompare
+        client:visible
+        base={FLIGHT.base}
+        poster={poster.src}
+        start={FLIGHT.start}
+        end={FLIGHT.end}
+        rndPlayer={rndPlayerUrl(Astro.site!.origin)}
+        labels={flightLabels}
+      />
+      <p class="mt-3 mb-6 max-w-3xl text-sm text-body-secondary">{k('flight_note')}</p>
+      <div class="mb-6 grid gap-6 md:grid-cols-3">
+        {FLIGHT_STATS.map(([value, text]) => (
+          <div class="rounded-lg border border-hairline p-5">
+            <p class="mb-1 font-mono text-3xl text-brand-blue">{value}</p>
+            <p class="mb-0 text-sm text-body-secondary">{text}</p>
+          </div>
+        ))}
+      </div>
+      <p class="mb-3 max-w-3xl text-body-secondary" set:html={k('flight_latency_html')} />
+      <p class="mb-0 max-w-3xl text-sm text-body-secondary" set:html={k('flight_credit_html')} />
+    </section>
+
     <h2 class="mb-6 text-2xl">{k('how_title')}</h2>
     <div class="mb-4 grid gap-6 text-center md:grid-cols-3">
       {CHAIN.map(([icon, key]) => (

@@ -310,6 +310,11 @@ Only needed on a rebuilt host:
 - `/srv/www/shared/wall` — the wall's images. **Not** in the backup; the Open
   Wall is empty until cameras re-upload, so an empty directory owned by uid
   1000 is a complete restore.
+- `/srv/www/shared/media` — the recorded flight the A/B player on
+  `/low-latency` streams. **Not** in the backup: about 2.5 GB, rebuilt from the
+  two source recordings by `tools/flight-ab/run.sh` and uploaded as its README
+  says. Until then the page shows its poster and the player says it cannot
+  play.
 - **analytics**, via `deploy/install-analytics.sh` (#181). It installs
   GoatCounter, its account and its systemd unit, and creates the site on first
   run from `ANALYTICS_EMAIL` and `ANALYTICS_PASSWORD`. The SQLite database is

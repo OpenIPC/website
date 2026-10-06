@@ -457,6 +457,31 @@ zh:
       credits_title: 站在开放的肩膀上
       cta_chat: 加入 FPV 聊天群
       cta_guide: 阅读搭建指南
+      flight_copy: H.264 副本
+      flight_credit_html: 飞行与两段录像均来自 <a href="https://github.com/gilankpam">gilankpam</a>，机载端使用 <a href="https://github.com/gilankpam/mabur">mabur</a>：SSC338Q 天空端，经 OpenIPC 的 devourer 驱动在 RTL8812EU 上发射。
+      flight_error: 此浏览器无法播放该视频流
+      flight_flicker: 闪烁对比
+      flight_frame_back: 上一帧
+      flight_frame_forward: 下一帧
+      flight_fullscreen: 全屏
+      flight_gs: 飞手屏幕上
+      flight_handle: 两段录像之间的分隔线
+      flight_latency_html: 右侧底部的数字是链路自己的遥测，由地面站实时绘制。<code>lat</code> 是 mabur 测得的链路延迟（毫秒），旁边是信号强度、调制方式和丢包。
+      flight_lede: 一次真实飞行的六分钟，录了两遍。分隔线左边是无人机机载录制：1080p、每秒 60 帧、19 Mbit/s。右边是经无线链路到达飞手屏幕的画面，空中码率约 5 Mbit/s。拖动分隔线或切换到闪烁对比，比较同一帧。
+      flight_loading: 加载中…
+      flight_note: 两侧各自根据你的网络自适应，角标会提示某一侧低于原始录像。勾选“原始画质”即可比较录像本身。地面站一侧保存时以 8 Mbit/s 重新编码过，因此比飞手实时看到的画面略软。
+      flight_onboard: 无人机机载
+      flight_open_rnd: 在 R&D Player 中打开
+      flight_original: 原始画质
+      flight_pause: 暂停
+      flight_play: 播放
+      flight_reduced: 已降低
+      flight_seek: 飞行中的位置
+      flight_split: 分屏
+      flight_stat_duration: 分钟飞行，从头到尾，未剪辑
+      flight_stat_holds: 次超过 50 毫秒的停顿（整次飞行）；最长一次画面停留 {ms} 毫秒
+      flight_stat_shown: 的帧到达了飞手屏幕；其余每一帧都由前一帧代替
+      flight_title: 一次真实飞行，逐帧对比
       fpv_text: '一套完全开放的数字 FPV 系统：没有封闭生态，没有配对绑定的硬件，也没有固件上限。用受支持的摄像机搭建天空端，挑选你的地面站，并可调节管线的每一个环节。'
       fpv_title: 'FPV：从镜头到眼镜'
       hardware_text_html: 天空端由受支持的摄像机和 AIO 板搭建——请从<a href="/supported-hardware">支持硬件列表</a>开始。RunCam 等厂商出厂即提供基于 OpenIPC 的 FPV 硬件。

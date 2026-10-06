@@ -457,6 +457,31 @@ en:
       credits_title: Standing on open shoulders
       cta_chat: Join the FPV chat
       cta_guide: Read the build guide
+      flight_copy: H.264 copy
+      flight_credit_html: Flight and both recordings by <a href="https://github.com/gilankpam">gilankpam</a>, flying <a href="https://github.com/gilankpam/mabur">mabur</a> — an SSC338Q air unit transmitting through OpenIPC's devourer driver on an RTL8812EU.
+      flight_error: This browser cannot play the stream
+      flight_flicker: Flicker
+      flight_frame_back: Previous frame
+      flight_frame_forward: Next frame
+      flight_fullscreen: Full screen
+      flight_gs: On the pilot's screen
+      flight_handle: Divider between the two recordings
+      flight_latency_html: The figures along the bottom of the right side are the link's own telemetry, drawn live by the ground station. <code>lat</code> is the latency mabur measures across the link, in milliseconds; beside it are signal strength, modulation and loss.
+      flight_lede: Six minutes of one real flight, recorded twice. Left of the line is what the drone recorded on board, 1080p at 60 frames per second and 19 Mbit/s. Right of it is what reached the pilot's screen over the radio link, at about 5 Mbit/s on air. Drag the line, or switch to flicker, and compare the same frame.
+      flight_loading: Loading…
+      flight_note: Each side adapts to your connection on its own, and its badge says when it is showing less than its recording. Tick Original quality to compare the recordings themselves. The ground station's side was re-encoded at 8 Mbit/s when it was saved, so it is a little softer than the pilot's live picture.
+      flight_onboard: On the drone
+      flight_open_rnd: Open in R&D Player
+      flight_original: Original quality
+      flight_pause: Pause
+      flight_play: Play
+      flight_reduced: reduced
+      flight_seek: Position in the flight
+      flight_split: Split
+      flight_stat_duration: minutes of flight, start to finish, nothing cut
+      flight_stat_holds: pauses longer than 50 ms in the whole flight; the longest held one picture for {ms} ms
+      flight_stat_shown: of the frames reached the pilot's screen; the rest were each replaced by the frame before
+      flight_title: A real flight, frame by frame
       fpv_text: 'A fully open digital FPV system: no locked ecosystem, no paired hardware, no firmware ceiling. Build the air unit from a supported camera, pick your ground station, and tune every stage of the pipeline.'
       fpv_title: 'FPV: from lens to goggles'
       hardware_text_html: Air units are built from supported cameras and AIO boards — start from the <a href="/supported-hardware">supported hardware list</a>. RunCam and other vendors ship OpenIPC-based FPV hardware out of the box.

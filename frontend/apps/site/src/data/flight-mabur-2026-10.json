@@ -1,0 +1,28 @@
+{
+  "offset_s": 1.0043,
+  "offset_spread_ms": 26.7,
+  "match_score_median": 0.9992,
+  "onboard": {
+    "cut_s": 0.0
+  },
+  "gs": {
+    "cut_s": 1.708867
+  },
+  "start_s": 0.7046,
+  "end_s": 360.7273,
+  "duration_s": 360.023,
+  "gs_frames_shown": 21060,
+  "gs_frames_expected": 21701,
+  "gs_frames_missing_by_run": {
+    "1": 524,
+    "2": 39,
+    "3": 7,
+    "18": 1
+  },
+  "gs_longest_hold_ms": 315,
+  "gs_longest_hold_at_s": 32.7,
+  "gs_holds_over_50ms": 8,
+  "onboard_longest_gap_ms": 250,
+  "onboard_longest_gap_at_s": 127.56,
+  "poster_at_s": 120.71
+}

@@ -54,6 +54,8 @@
 /board-files/
 # Owner reports' files, internal: reached only through the web role's X-Accel-Redirect for a published report.
 /report-files/
+# Recorded flights for the A/B player on /low-latency (tools/flight-ab), host-only.
+/media/
 
 # --- the expensive leaf ------------------------------------------------------
 # /cameras/ is deliberately NOT reserved: the catalogue is exactly what #162
