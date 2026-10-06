@@ -212,6 +212,7 @@ var routes = []Route{
 	{"share", "POST", "/__share/signal"},
 	{"share", "POST", "/__share/candidate"},
 	{"share", "POST", "/__share/connected"},
+	{"share", "POST", "/__share/restart"},
 	{"share", "GET", "/__share/ice"},
 	{"share", "GET", "/__share/"},
 	{"share", "GET", "/"},
