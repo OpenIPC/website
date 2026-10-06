@@ -1,7 +1,7 @@
 /**
  * /club/leaderboard: members ranked by stars, from both ledgers, all time or
- * the last 30 days. Only members who ticked "Show me on the leaderboard" on
- * /club are in the answer; the signed-in member's own row is marked.
+ * the last 30 days. Every member is in the answer unless they untick "Show me
+ * on the leaderboard" on /club; the signed-in member's own row is marked.
  */
 import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations } from '../../lib/boards-i18n';

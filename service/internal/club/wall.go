@@ -134,7 +134,7 @@ func (a *API) listed(w http.ResponseWriter, r *http.Request) {
 }
 
 // leaderboard is GET /api/v1/club/leaderboard?period=all|30d: public, and
-// only members who asked to be on it.
+// every member who has not opted out.
 func (a *API) leaderboard(w http.ResponseWriter, r *http.Request) {
 	var since time.Time
 	period := r.URL.Query().Get("period")

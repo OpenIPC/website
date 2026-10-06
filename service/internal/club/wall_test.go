@@ -112,10 +112,16 @@ func TestAMemberLinksACameraAndEarnsStars(t *testing.T) {
 		t.Errorf("owner %+v", o)
 	}
 
-	// The leaderboard is public and lists only who asked.
+	// The leaderboard is public and lists every member until they opt out.
 	anon := e.browser("203.0.113.8")
+	if _, out := anon.json(t, "GET", "/api/v1/club/leaderboard", nil); len(out["members"].([]any)) != 1 {
+		t.Errorf("a new member is not listed: %v", out)
+	}
+	if code, _ := b.json(t, "POST", "/api/v1/club/listed", map[string]bool{"listed": false}); code != 200 {
+		t.Fatal("unlisting")
+	}
 	if _, out := anon.json(t, "GET", "/api/v1/club/leaderboard", nil); len(out["members"].([]any)) != 0 {
-		t.Errorf("listed without asking: %v", out)
+		t.Errorf("listed after opting out: %v", out)
 	}
 	if code, _ := b.json(t, "POST", "/api/v1/club/listed", map[string]bool{"listed": true}); code != 200 {
 		t.Fatal("listing")

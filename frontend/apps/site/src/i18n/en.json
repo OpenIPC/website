@@ -624,7 +624,7 @@
       "sessions_html": "To count one person reading three pages as one visit rather than three, the counter derives a short-lived key from your address and browser. It exists in memory for at most eight hours and is never written down. Your address is not stored by the counter at all.",
       "sessions_title": "The one thing that sounds like tracking",
       "title": "Privacy",
-      "wall_club_html": "<strong>OpenIPC Club:</strong> a member who links a camera is named on the camera's page only if they choose it for that camera, and appears on the leaderboard only if they choose that too. The code that links a camera is cut out of its caption before anything is stored.",
+      "wall_club_html": "<strong>OpenIPC Club:</strong> a member who links a camera is named on the camera's page only if they choose it for that camera, and appears on the leaderboard with their stars unless they opt out on their club page. The code that links a camera is cut out of its caption before anything is stored.",
       "wall_history_html": "<strong>Kept:</strong> for each camera, the day it first sent a picture and, for every day since, whether its pictures had something in them and changed during the day — a few numbers a day, never a picture or an address. That is how the home page tells an established camera from a new one, and how the OpenIPC Club counts a linked camera's days.",
       "wall_lede": "Cameras running OpenIPC can send a picture to the wall. This part is about the camera, not about you.",
       "wall_published_html": "<strong>Published:</strong> the picture, and what the camera says about itself — chip, sensor, firmware, streamer, uptime and chip temperature.",
