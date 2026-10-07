@@ -24,12 +24,22 @@
  * download step sends FPV chips here (`#support`) rather than to /business.
  * Both links name their events, which the monthly memo counts as the FPV
  * segment's business clicks.
+ *
+ * The flight sits under the latency chart, as the evidence for it rather than
+ * the page's opening: the page sells the stack first, and the reader who wants
+ * to see it gets one real flight recorded on the drone and on the ground
+ * station, cut onto one timeline by tools/flight-ab and compared frame by
+ * frame (../flight/FlightCompare.tsx). Nothing loads until play.
  */
 import Icon from '../Icon.astro';
 import PageHeader from '../PageHeader.astro';
 import CtaBand from '../CtaBand.astro';
 import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
 import { LATENCY_PATHS, LATENCY_SCALE_MAX, latencyBarStyle } from '../../data/latency';
+import { getImage } from 'astro:assets';
+import FlightCompare, { type FlightLabels } from '../flight/FlightCompare';
+import { FLIGHT, rndPlayerUrl } from '../../data/flight';
+import flightPoster from '../../assets/pages/flight-mabur-2026-10.jpg';
 
 const { locale } = Astro.props as { locale: Locale };
 const t = useTranslations(locale);
@@ -44,6 +54,26 @@ const CHAIN: [string, string][] = [
 const GUIDE = 'https://github.com/OpenIPC/wiki/blob/master/en/fpv.md';
 const FPV_CHAT = 'https://t.me/+BMyMoolVOpkzNWUy';
 const SUPPORT_HOURS = 'https://opencollective.com/openipc/contribute/technical-support-56715/checkout';
+
+const poster = await getImage({ src: flightPoster, width: 1920, format: 'webp', quality: 80 });
+const flightLabels: FlightLabels = {
+  play: k('flight_play'),
+  pause: k('flight_pause'),
+  loading: k('flight_loading'),
+  error: k('flight_error'),
+  failed: k('flight_failed'),
+  onboard: k('flight_onboard'),
+  gs: k('flight_gs'),
+  original: k('flight_original'),
+  reduced: k('flight_reduced'),
+  copy: k('flight_copy'),
+  fullscreen: k('flight_fullscreen'),
+  frameBack: k('flight_frame_back'),
+  frameForward: k('flight_frame_forward'),
+  handle: k('flight_handle'),
+  seek: k('flight_seek'),
+  openRnd: k('flight_open_rnd'),
+};
 ---
 <PageHeader title={k('hero_title')} lede={k('hero_lede')} />
 
@@ -138,6 +168,25 @@ const SUPPORT_HOURS = 'https://opencollective.com/openipc/contribute/technical-s
           </span>
           <span class="col-start-3 text-xs text-body-secondary" aria-hidden="true">{k('latency_axis_unit')}</span>
         </div>
+      </div>
+    </div>
+
+    <div class="mb-12 flex flex-wrap items-center gap-8 border-t border-hairline pt-8" id="flight">
+      <div class="min-w-0 grow-[2] basis-[520px]">
+        <FlightCompare
+          client:idle
+          base={FLIGHT.base}
+          poster={poster.src}
+          start={FLIGHT.start}
+          end={FLIGHT.end}
+          rndPlayer={rndPlayerUrl(Astro.site!.origin)}
+          labels={flightLabels}
+        />
+      </div>
+      <div class="-order-1 min-w-0 grow basis-[300px] lg:order-none">
+        <h3 class="mb-2 text-xl font-semibold">{k('flight_title')}</h3>
+        <p class="mb-3 text-body-secondary">{k('flight_text')}</p>
+        <p class="mb-0 text-sm text-body-secondary" set:html={k('flight_credit_html')} />
       </div>
     </div>
 

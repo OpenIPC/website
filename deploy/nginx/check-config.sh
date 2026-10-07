@@ -191,6 +191,10 @@ ln -s site-test /srv/www/static/prod/current
 printf 'TOKEN-OK\n' > /var/lib/dehydrated/acme-challenges/probe-token
 install -d -m 0755 /srv/www/shared/images
 printf 'PNG\n' > /srv/www/shared/images/logo_openipc.png
+# A recorded flight for the A/B player on /low-latency (tools/flight-ab).
+install -d -m 0755 /srv/www/shared/media/flights/test/v1/gs/original
+printf '<MPD/>\n' > /srv/www/shared/media/flights/test/v1/gs.mpd
+printf '0123456789' > /srv/www/shared/media/flights/test/v1/gs/original/1.m4s
 
 # A second loopback address stands in for a datacentre client, so the block
 # and CI's way through it are measured rather than read off the map.
@@ -440,6 +444,30 @@ expect_cache /no-such-page-at-all   "no-cache"
 expect /fonts/ibm-plex-sans-latin-400-normal.woff2 200 static hsts
 expect_cache /fonts/ibm-plex-sans-latin-400-normal.woff2 "public, max-age=31536000, immutable"
 expect /assets/application.css      410 -      no-hsts
+
+# Recorded flights (tools/flight-ab): versioned directories never rewritten, so
+# a year of cache; the types DASH players insist on; ranges, which a player
+# may ask for; and CORS for the R&D Player's origin and nobody else's.
+expect /media/flights/test/v1/gs.mpd 200 -      hsts
+expect_cache /media/flights/test/v1/gs.mpd "public, max-age=31536000, immutable"
+media_header() {
+  path=$1; header=$2; want=$3; shift 3
+  curl -sS -o /dev/null -D /tmp/hm -k --max-time 5 "$@" \
+    --resolve "openipc.org:443:127.0.0.1" "https://openipc.org$path" >/dev/null 2>&1
+  if [ "$header" = status ]; then got=$(awk 'NR==1{print $2}' /tmp/hm)
+  else got=$(grep -i "^$header:" /tmp/hm | tr -d '\r' | cut -d' ' -f2- | head -1); fi
+  if [ "$got" = "$want" ]; then
+    printf '  %-32s %s: %s\n' "$path" "$header" "$got"
+  else
+    printf '  %-32s MISMATCH: %s is %s (want %s)\n' "$path" "$header" "${got:-<none>}" "$want"
+    fail=1
+  fi
+}
+media_header /media/flights/test/v1/gs.mpd content-type application/dash+xml
+media_header /media/flights/test/v1/gs/original/1.m4s content-type video/iso.segment
+media_header /media/flights/test/v1/gs/original/1.m4s status 206 -H 'Range: bytes=2-5'
+media_header /media/flights/test/v1/gs.mpd access-control-allow-origin https://openipc.github.io
+expect /media/flights/test/v1/none.mpd 404 -     no-hsts
 # The home page keeps its address when its content changes, like every other
 # page in the bundle, so it may be cached and must always be revalidated.
 expect_cache /                      "public, max-age=0, must-revalidate"

@@ -772,6 +772,33 @@ server {
     }
 
 
+    # Recorded flights, streamed as DASH by the A/B player on /low-latency
+    # (tools/flight-ab). Each flight is one versioned directory that is never
+    # rewritten -- a new cut is a new v<N>/ -- so a year of immutable cache is
+    # safe. Host-only and in no backup: the tree is regenerated from the two
+    # source recordings by tools/flight-ab/run.sh.
+    #
+    # The CORS header is for one origin only, the R&D Player's, which the page
+    # offers as "open in R&D Player" and which fetches the manifests and
+    # segments cross-origin. Both players fetch a segment per stream at a
+    # time, well inside the http-level per_subnet twenty.
+    location ^~ /media/ {
+        alias /srv/www/shared/media/;
+        types {
+            application/dash+xml mpd;
+            video/iso.segment m4s;
+            video/mp4 mp4;
+            application/json json;
+            image/jpeg jpg;
+        }
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Content-Type-Options nosniff always;
+        add_header Access-Control-Allow-Origin https://openipc.github.io always;
+        # Not `always`: a 404 cached for a year would outlive the upload.
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+    }
+
     # The Go firmware process's image cache (#299): one version of each image,
     # built on first request. Reachable only through its X-Accel-Redirect.
     location /firmware-cache/ {

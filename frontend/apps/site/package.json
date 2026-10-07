@@ -18,7 +18,8 @@
   "dependencies": {
     "@openipc/ui": "*",
     "d3-hierarchy": "^3.1.2",
-    "preact": "10.27.2"
+    "preact": "10.27.2",
+    "shaka-player": "^4.16.51"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
