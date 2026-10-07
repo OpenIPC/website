@@ -54,15 +54,20 @@ def coarse_offset(a, ta, b, tb):
     ia = np.clip(np.searchsorted(ta, grid), 0, len(a) - 1)
     ib = np.clip(np.searchsorted(tb, grid), 0, len(b) - 1)
     sa, sb = a[ia], b[ib]
+    # At least a minute of overlap, or half the shorter recording when that is
+    # shorter, so a short flight can still be aligned.
+    least = min(600, len(grid) // 2)
     best = None
     for lag in range(-300, 301):  # +-30 s
         i0, j0 = max(0, -lag), max(0, lag)
         n = min(len(sa) - i0, len(sb) - j0)
-        if n < 600:
+        if n < max(least, 1):
             continue
         c = float((sa[i0:i0 + n] * sb[j0:j0 + n]).mean())
         if best is None or c > best[0]:
             best = (c, lag / 10)
+    if best is None:
+        sys.exit('the recordings are too short to overlap at any offset within 30 s')
     return best[1]
 
 

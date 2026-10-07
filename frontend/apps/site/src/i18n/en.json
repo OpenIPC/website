@@ -534,6 +534,7 @@
       "flight_copy": "H.264 copy",
       "flight_credit_html": "Flight by <a href=\"https://github.com/gilankpam\">gilankpam</a> on <a href=\"https://github.com/gilankpam/mabur\">mabur</a> · SSC338Q + RTL8812EU",
       "flight_error": "This browser cannot play the stream",
+      "flight_failed": "The flight did not load. Try again",
       "flight_frame_back": "Previous frame",
       "flight_frame_forward": "Next frame",
       "flight_fullscreen": "Full screen",

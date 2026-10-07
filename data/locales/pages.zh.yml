@@ -460,6 +460,7 @@ zh:
       flight_copy: H.264 副本
       flight_credit_html: '飞行：<a href="https://github.com/gilankpam">gilankpam</a>，使用 <a href="https://github.com/gilankpam/mabur">mabur</a> · SSC338Q + RTL8812EU'
       flight_error: 此浏览器无法播放该视频流
+      flight_failed: '飞行视频未能加载，请重试'
       flight_frame_back: 上一帧
       flight_frame_forward: 下一帧
       flight_fullscreen: 全屏

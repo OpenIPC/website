@@ -67,14 +67,19 @@ if [ "$package_only" = no ]; then
 # The centre crop keeps the ground station's OSD out of the comparison; 64x30
 # grey is plenty to tell one frame of a flight from the next.
 say "extracting a thumbnail per frame"
+# A bare `wait` returns success whatever its jobs did, so each one is waited
+# for by its pid and a failure stops the run.
+jobs_ok() { local pid; for pid in "$@"; do wait "$pid" || die "a background step failed; see above"; done; }
+pids=()
 for side in onboard gs; do
+  rm -f "$work/$side.thumbs" "$work/$side.pkt"
   # -v fatal: the rawvideo muxer complains about every pair of equal
   # timestamps in a variable-rate source, which is harmless here.
   ff -v fatal -i "$side.src.mp4" -vf 'crop=iw*2/3:ih*5/9:iw/6:ih/9,scale=64:30,format=gray' \
-     -fps_mode passthrough -f rawvideo "$side.thumbs" &
-  fp -select_streams v:0 -show_entries packet=pts_time,flags -of csv=p=0 "$side.src.mp4" > "$work/$side.pkt" &
+     -fps_mode passthrough -f rawvideo "$side.thumbs" & pids+=($!)
+  fp -select_streams v:0 -show_entries packet=pts_time,flags -of csv=p=0 "$side.src.mp4" > "$work/$side.pkt" & pids+=($!)
 done
-wait
+jobs_ok "${pids[@]}"
 
 say "aligning"
 python3 "$here/align.py" "$work/onboard.thumbs" "$work/onboard.pkt" "$work/gs.thumbs" "$work/gs.pkt" > "$work/align.json"
@@ -133,19 +138,23 @@ keys() { awk -F, '$2 ~ /K/ {printf "%s%s", sep, $1; sep=","}' "$work/$1.orig.pkt
 onboard_keys=$(keys onboard); gs_keys=$(keys gs)
 
 say "encoding the lower rungs"
-rung onboard h264 1080 8M 10M 1080p &
-rung onboard h264 720 4M 5M 720p &
-rung onboard h264 540 2M 2500k 540p &
+# The work directory outlives a run: a rendition left from an earlier one must
+# not pass for this run's if its encode fails.
+rm -f "$work"/onboard.{1080p,720p,540p}.mp4 "$work"/gs.{720p-hevc,540p-hevc,h264,720p,540p}.mp4
+pids=()
+rung onboard h264 1080 8M 10M 1080p & pids+=($!)
+rung onboard h264 720 4M 5M 720p & pids+=($!)
+rung onboard h264 540 2M 2500k 540p & pids+=($!)
 # The ground station's original is HEVC, so its own ladder is HEVC too. An
 # H.264 set stands beside it for what cannot decode HEVC -- Firefox on Linux,
 # older browsers -- topped by a 10 Mbit/s copy of the original. Shaka keeps one
 # codec family per presentation, so each family has to be a ladder of its own.
-rung gs hevc 720 3M 4M 720p-hevc &
-rung gs hevc 540 1500k 2M 540p-hevc &
-rung gs h264 1080 10M 12M h264 &
-rung gs h264 720 4M 5M 720p &
-rung gs h264 540 2M 2500k 540p &
-wait
+rung gs hevc 720 3M 4M 720p-hevc & pids+=($!)
+rung gs hevc 540 1500k 2M 540p-hevc & pids+=($!)
+rung gs h264 1080 10M 12M h264 & pids+=($!)
+rung gs h264 720 4M 5M 720p & pids+=($!)
+rung gs h264 540 2M 2500k 540p & pids+=($!)
+jobs_ok "${pids[@]}"
 for f in onboard.1080p onboard.720p onboard.540p gs.720p-hevc gs.540p-hevc gs.h264 gs.720p gs.540p; do
   [ -s "$work/$f.mp4" ] || die "encoding $f failed"
   got=$(fp -select_streams v:0 -show_entries packet=pts_time,flags -of csv=p=0 "$f.mp4" | sort -g | awk -F, '$2 ~ /K/ {printf "%s%s", sep, $1; sep=","}')

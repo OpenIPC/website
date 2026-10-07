@@ -28,6 +28,7 @@ export interface FlightLabels {
   pause: string;
   loading: string;
   error: string;
+  failed: string;
   onboard: string;
   gs: string;
   original: string;
@@ -52,7 +53,7 @@ interface Props {
   labels: FlightLabels;
 }
 
-type Phase = 'idle' | 'loading' | 'ready' | 'error';
+type Phase = 'idle' | 'loading' | 'ready' | 'failed' | 'unsupported';
 interface Badge { height: number | null; kind: RungKind }
 
 const FRAME = 1 / 60;
@@ -94,12 +95,32 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
     setBadges((b) => ({ ...b, [side]: { height: active.height, kind: rungKind(side, active, tracks) } }));
   };
 
+  // Both players go together: one left attached beside a failed other would
+  // keep its buffers for nothing.
+  async function teardown() {
+    const ps = Object.values(players.current);
+    players.current = {};
+    held.current = false;
+    setBadges({});
+    setPlaying(false);
+    await Promise.all(ps.map((p) => p?.destroy().catch(() => {})));
+  }
+
+  // A browser without MSE is told so; anything else -- the media tree missing,
+  // a network failure, a stream that breaks mid-flight -- is a failure the
+  // reader can retry, and is logged rather than blamed on the browser.
+  async function fail(err: unknown) {
+    console.error('flight: the streams failed', err);
+    await teardown();
+    setPhase('failed');
+  }
+
   async function load() {
     setPhase('loading');
     try {
       const { default: shaka } = await import('shaka-player/dist/shaka-player.dash.js');
       shaka.polyfill.installAll();
-      if (!shaka.Player.isBrowserSupported()) throw new Error('no MSE');
+      if (!shaka.Player.isBrowserSupported()) { setPhase('unsupported'); return; }
       const sides: [Side, HTMLVideoElement][] = [['onboard', lead.current!], ['gs', follow.current!]];
       await Promise.all(sides.map(async ([side, video]) => {
         const p = new shaka.Player();
@@ -114,14 +135,18 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
           streaming: { bufferingGoal: 20, rebufferingGoal: 1 },
           abr: { defaultBandwidthEstimate: 8_000_000 },
         });
+        p.addEventListener('error', (e) => {
+          const err = (e as unknown as { detail?: { severity?: number } }).detail;
+          if (err?.severity === shaka.util.Error.Severity.CRITICAL) void fail(err);
+        });
         p.addEventListener('adaptation', () => describe(side));
         p.addEventListener('variantchanged', () => describe(side));
         players.current[side] = p;
         await p.load(`${base}${side}.mpd`, begin);
         describe(side);
       }));
-    } catch {
-      setPhase('error');
+    } catch (err) {
+      await fail(err);
       return;
     }
     setPhase('ready');
@@ -243,7 +268,7 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
 
   const toggle = () => {
     const a = lead.current;
-    if (phase === 'idle') { void load(); return; }
+    if (phase === 'idle' || phase === 'failed') { void load(); return; }
     if (!a || phase !== 'ready') return;
     // Held for a starved side counts as playing: Pause has to stop both,
     // including a follower left running while it waits for data.
@@ -254,7 +279,10 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
   const step = (by: number) => {
     const a = lead.current;
     if (!a || phase !== 'ready') return;
+    // A step is a decision to stop here: a hold must not resume over it.
+    held.current = false;
     a.pause();
+    follow.current?.pause();
     a.currentTime = Math.min(end, Math.max(begin, a.currentTime + by));
   };
 
@@ -319,11 +347,11 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
             class="absolute inset-0 flex size-full cursor-pointer items-center justify-center border-0 bg-cover bg-center p-0"
             style={{ backgroundImage: `url(${poster})` }}
             onClick={toggle}
-            disabled={phase === 'loading'}
+            disabled={phase === 'loading' || phase === 'unsupported'}
             aria-label={labels.play}
           >
             <span class="rounded-full bg-black/70 px-5 py-3 text-base font-semibold text-white">
-              {phase === 'loading' ? labels.loading : phase === 'error' ? labels.error : labels.play}
+              {phase === 'loading' ? labels.loading : phase === 'unsupported' ? labels.error : phase === 'failed' ? labels.failed : labels.play}
             </span>
           </button>
         )}
@@ -357,7 +385,7 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
       </div>
 
       <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-        <button type="button" class="site-btn site-btn-primary min-w-24" onClick={toggle} disabled={phase === 'loading'}>
+        <button type="button" class="site-btn site-btn-primary min-w-24" onClick={toggle} disabled={phase === 'loading' || phase === 'unsupported'}>
           {playing ? labels.pause : labels.play}
         </button>
         <button type="button" class="site-btn site-btn-outline-primary px-3" onClick={() => step(-FRAME)} disabled={phase !== 'ready'} aria-label={labels.frameBack} title={labels.frameBack}><Glyph d={STEP_BACK} /></button>
