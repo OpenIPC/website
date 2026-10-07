@@ -59,17 +59,63 @@ the poster to `frontend/apps/site/src/assets/pages/flight-<name>.jpg`, and point
 `frontend/apps/site/src/data/flight.ts` at the directory. The page's numbers
 come from the same run as the streams, so they cannot disagree.
 
-`/srv/www/shared/media/` is in no backup. It is rebuilt from the two source
-recordings with this script, so the sources are kept on the host, outside every
-served path, at `/srv/www/flight-sources/<name>/` with a `SHA256SUMS`:
+`/srv/www/shared/media/` is in no backup, by design: it is 2.6 GB that this
+script rebuilds from two source recordings, and the source recordings are
+what is backed up.
 
-| flight | file | sha256 |
-|---|---|---|
-| mabur-2026-10 | `onboard.mp4` (898 MB) | `eb6c961f1fec08997adf511563b97ffdd7c8bcf7b787715e053d25bd571a7f61` |
-| mabur-2026-10 | `record-0015.mp4` (353 MB) | `31392ad36cc7abdb2ffae015c3ab988bb034cec752a0a6a367335f9ff094fa37` |
+## The source recordings
 
-They are not in the S3 backup: the backup's IAM user may write only its own
-prefixes, and refused `media-sources/`.
+Kept once, in the S3 backup bucket, beside a `SHA256SUMS`. Under `boards/`
+because that is the prefix the backup's IAM user may write and outside the
+daily/weekly/monthly expiry (`deploy/RESTORE.md`); the user cannot delete,
+so treat what is there as permanent. A copy may also be on the host at
+`/srv/www/flight-sources/<name>/`, outside every served path.
+
+| flight | object | size | sha256 |
+|---|---|---|---|
+| mabur-2026-10 | `s3://openipc-org-backup/boards/flights/mabur-2026-10/onboard.mp4` | 898,285,071 | `eb6c961f1fec08997adf511563b97ffdd7c8bcf7b787715e053d25bd571a7f61` |
+| mabur-2026-10 | `s3://openipc-org-backup/boards/flights/mabur-2026-10/record-0015.mp4` | 352,513,886 | `31392ad36cc7abdb2ffae015c3ab988bb034cec752a0a6a367335f9ff094fa37` |
+
+`onboard.mp4` is the drone's recording, `record-0015.mp4` the ground station's,
+both from gilankpam, who gave them for publishing. (`boards/flights/probe`, six
+bytes, is a write test left behind because the user cannot delete it.)
+
+## Rebuilding the published tree for mabur-2026-10
+
+What `/low-latency` streams is `/media/flights/mabur-2026-10/v2/`
+(`frontend/apps/site/src/data/flight.ts`). To make it again -- after a host
+loss, or to change the ladder:
+
+```bash
+# 1. Fetch and check the sources (backup credentials: deploy/RESTORE.md, step 0).
+mkdir -p tmp/flight-src && cd tmp/flight-src
+for f in onboard.mp4 record-0015.mp4 SHA256SUMS; do
+  aws s3 cp "s3://openipc-org-backup/boards/flights/mabur-2026-10/$f" .
+done
+sha256sum -c SHA256SUMS && cd ../..
+
+# 2. Align, cut, encode, package (about half an hour on 32 cores).
+tools/flight-ab/run.sh --onboard tmp/flight-src/onboard.mp4 \
+  --gs tmp/flight-src/record-0015.mp4 --poster-at 120.71 \
+  --out tmp/flight-ab/publish/flights/mabur-2026-10/v2
+
+# 3. Publish.
+rsync -a --chmod=D0755,F0644 -e 'ssh -p 35242' \
+  tmp/flight-ab/publish/flights/ root@openipc.org:/srv/www/shared/media/flights/
+```
+
+The run must report the offset as 1.0043 s and the common window as
+0.7046 s..360.7273 s, and its `stats.json` must equal
+`frontend/apps/site/src/data/flight-mabur-2026-10.json`; the poster at 120.71 s
+is `frontend/apps/site/src/assets/pages/flight-mabur-2026-10.jpg`. Those two
+are already in the repository, so a rebuild for a restored host needs nothing
+committed. Rebuild into `v2` there -- the address the page names. A changed
+ladder, on the other hand, is a new `v<N>/` and a change to `flight.ts`, because
+`/media/` is cached as immutable for a year.
+
+The page trims its own window: the drone sits still on the ground for the
+first seven seconds, so `flight.ts` starts the player eight seconds in. That is
+not in the streams.
 
 ## Traps
 

@@ -48,6 +48,10 @@ flash backups among them), one object per file as
 `boards/owner-reports/sha256/<ab>/<sha256>`, never overwritten or deleted;
 see step 3d.
 
+**Backed up once, by hand:** the source recordings of the flight on
+`/low-latency`, as `boards/flights/<name>/` with a `SHA256SUMS`; the streams
+are rebuilt from them (`tools/flight-ab/README.md`).
+
 **Not backed up, by decision:** the wall images (snapshots purge at 2 days and
 cameras re-upload continuously), the firmware cache (`/srv/www/shared/firmware`,
 one version of each image, rebuilt on the next request), `/srv/github-releases`
@@ -311,11 +315,13 @@ Only needed on a rebuilt host:
   Wall is empty until cameras re-upload, so an empty directory owned by uid
   1000 is a complete restore.
 - `/srv/www/shared/media` — the recorded flight the A/B player on
-  `/low-latency` streams. **Not** in the backup: about 2.5 GB, rebuilt from the
-  two source recordings by `tools/flight-ab/run.sh` and uploaded as its README
-  says. The sources are on this host too (`/srv/www/flight-sources/`, not in
-  S3), so a rebuilt host needs them from wherever else they were kept. Until then the page shows its poster and the player says it cannot
-  play.
+  `/low-latency` streams. **Not** in the backup, by design: about 2.6 GB that
+  `tools/flight-ab/run.sh` rebuilds from the two source recordings, which
+  **are** backed up, once, at `s3://openipc-org-backup/boards/flights/<name>/`
+  with a `SHA256SUMS`. The recipe, commands and expected results are in
+  `tools/flight-ab/README.md` ("Rebuilding the published tree"). Until it is
+  rebuilt the page shows its poster and the player says the flight did not
+  load.
 - **analytics**, via `deploy/install-analytics.sh` (#181). It installs
   GoatCounter, its account and its systemd unit, and creates the site on first
   run from `ANALYTICS_EMAIL` and `ANALYTICS_PASSWORD`. The SQLite database is
