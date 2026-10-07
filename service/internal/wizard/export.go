@@ -225,9 +225,15 @@ func (e *exporter) fitsEight(edition string) bool {
 	f, ok := e.idx.Fit(e.board, edition)
 	if !ok {
 		// Builder's FPV builds are 16 MB images; one without a report is
-		// not assumed to be the legacy 8 MB tarball the rule above is for.
-		a, held := e.idx.Asset(e.linuxFilename(edition, "nor"))
-		return !held || a.Repo != firmware.RepoBuilder
+		// not assumed to be the legacy 8 MB tarball the rule above is for --
+		// on either flash type, since the menu offers a NAND-only edition on
+		// NOR too when NOR has nothing published.
+		for _, ft := range flashTypes {
+			if a, held := e.idx.Asset(e.linuxFilename(edition, ft)); held && a.Repo == firmware.RepoBuilder {
+				return false
+			}
+		}
+		return true
 	}
 	return f.FlashMB <= 8 && f.KernelKB <= eightKernelKB && f.RootfsKB <= eightRootfsKB
 }

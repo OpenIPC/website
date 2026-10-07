@@ -110,6 +110,12 @@ func TestFPVMap(t *testing.T) {
 		{Name: "openipc.ssc338q-nor-apfpv.tgz", Repo: RepoBuilder},
 		{Name: "openipc.ssc338q-nor-rubyfpv.tgz", File: "ssc338q_rubyfpv_generic-nor.tgz", Repo: RepoBuilder},
 		{Name: "openipc.ssc378qe-nor-apfpv.tgz", Repo: RepoBuilder},
+		// NAND only: the page links the NOR installer, which would open on Lite.
+		{Name: "openipc.ssc338q-nand-waybeam.tgz", Repo: RepoBuilder},
+		// Firmware's, should it ever publish an FPV name: not a builder stack.
+		{Name: "u-boot-ssc30kq-nor.bin"},
+		{Name: "openipc.ssc30kq-nor-lite.tgz"},
+		{Name: "openipc.ssc30kq-nor-apfpv.tgz"},
 	}, nil, nil)
 	got := FPVMap(cat, idx)
 	if !slices.Equal(got["ssc338q"], []string{"fpv", "rubyfpv", "apfpv"}) {

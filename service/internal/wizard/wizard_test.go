@@ -493,3 +493,21 @@ func TestBuilderEditions(t *testing.T) {
 		t.Error("no rubyfpv combination")
 	}
 }
+
+// A builder edition with no size report is not taken for an 8 MB build on
+// either flash type: when NOR has nothing published, the menu offers the
+// NAND-only editions on NOR as well.
+func TestBuilderEditionWithoutAReportIsNotEightMegabytes(t *testing.T) {
+	cat, _ := inputs(t)
+	idx := firmware.NewIndex("b", []firmware.Asset{
+		{Name: "openipc.ssc338q-nand-waybeam.tgz", Repo: firmware.RepoBuilder},
+		{Name: "openipc.ssc338q-nand-ultimate.tgz"},
+	}, nil, nil)
+	e := &exporter{idx: idx, board: "ssc338q", soc: cat.SoC("ssc338q")}
+	if e.fitsEight("waybeam") {
+		t.Error("a NAND-only builder build with no report is offered on 8 MB")
+	}
+	if !e.fitsEight("ultimate") {
+		t.Error("firmware's rule changed: no report is not evidence of either")
+	}
+}

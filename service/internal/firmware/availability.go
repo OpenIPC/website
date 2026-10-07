@@ -62,24 +62,24 @@ func AvailabilityMap(cat *catalogue.Catalogue, idx *Index) map[string]string {
 	return out
 }
 
-// FPVMap is, for each SoC whose wizard can install one, the FPV editions
-// builder publishes for it (#390), in FPVEditions order. /low-latency reads it
-// to link each stack to the SoCs it can be installed on.
+// FPVMap is, for each SoC whose wizard can install one on NOR, the FPV
+// editions builder publishes for it (#390), in FPVEditions order. /low-latency
+// reads it to link each stack into the installer as a 16 MB NOR camera, so a
+// NAND-only build is not listed: the installer would open on Lite instead.
 func FPVMap(cat *catalogue.Catalogue, idx *Index) map[string][]string {
 	out := map[string][]string{}
 	if idx == nil {
 		return out
 	}
 	for _, soc := range cat.All() {
+		if !BootloaderPublished(soc, idx, "nor") {
+			continue
+		}
+		board := BoardFor(soc, idx, "nor")
 		var eds []string
-		for _, ft := range []string{"nor", "nand"} {
-			if !BootloaderPublished(soc, idx, ft) {
-				continue
-			}
-			for _, e := range idx.Releases(BoardFor(soc, idx, ft), ft) {
-				if slices.Contains(FPVEditions, e) && !slices.Contains(eds, e) {
-					eds = append(eds, e)
-				}
+		for _, e := range idx.Releases(board, "nor") {
+			if a, ok := idx.Asset(IndexName(board, "nor", e)); ok && a.Repo == RepoBuilder && slices.Contains(FPVEditions, e) {
+				eds = append(eds, e)
 			}
 		}
 		if len(eds) > 0 {

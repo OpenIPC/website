@@ -106,12 +106,15 @@ func LoadIndex(ctx context.Context, pool *pgxpool.Pool) (*firmware.Index, error)
 	}
 	// Builder's size reports name a generic build by its platform --
 	// ssc338q-fpv or ssc338q_rubyfpv_generic -- and carry its board and
-	// variant, which is the key a fit is looked up by.
+	// variant, which is the key a fit is looked up by. One that does not
+	// measure both partitions is no report: the wizard then keeps the build
+	// off 8 MB, rather than reading the missing sizes as zero.
 	rows, err = pool.Query(ctx, `
 		SELECT DISTINCT ON (r.board, r.variant) r.board, r.variant, r.flash_mb,
-			coalesce(r.kernel_used_kb, 0), coalesce(r.rootfs_used_kb, 0)
+			r.kernel_used_kb, r.rootfs_used_kb
 		FROM platform_reports r JOIN builds b ON b.id = r.build_id
 		WHERE b.source = 'builder' AND r.flash_mb IS NOT NULL
+		  AND r.kernel_used_kb IS NOT NULL AND r.rootfs_used_kb IS NOT NULL
 		  AND r.variant = ANY($1)
 		  AND (r.platform = r.board || '-' || r.variant OR r.platform = r.board || '_' || r.variant || '_generic')
 		ORDER BY r.board, r.variant, b.built_at DESC, b.id DESC`, firmware.FPVEditions)

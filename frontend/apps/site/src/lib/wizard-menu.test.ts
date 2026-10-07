@@ -279,3 +279,12 @@ describe('a builder edition from a link', () => {
     expect(openOn({ chip: 'nor8m', edition: 'rubyfpv' }, availability, offerable).edition).toBe('lite');
   });
 });
+
+// After builder's rename a link still saying `ver=fpv` means the wfb-ng build.
+test('a link to fpv opens on wfbng once that is what is published', () => {
+  const availability = { nor: ['lite', 'ultimate', 'wfbng'], nand: [] };
+  const opened = openOn({ chip: 'nor16m', edition: 'fpv' }, availability, ['lite', 'ultimate', 'wfbng']);
+  expect(opened.edition).toBe('wfbng');
+  const before = { nor: ['lite', 'fpv'], nand: [] };
+  expect(openOn({ chip: 'nor16m', edition: 'fpv' }, before, ['lite', 'fpv']).edition).toBe('fpv');
+});

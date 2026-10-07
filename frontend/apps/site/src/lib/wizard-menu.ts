@@ -60,6 +60,14 @@ const LAYOUT_LIMITS: Record<string, string[] | undefined> = { nor8m: ['lite'] };
 const PREFERRED: Record<string, string | undefined> = { nor32m: 'ultimate', nand: 'ultimate' };
 
 /**
+ * An edition's former name, read as the one it became (#390). OpenIPC/builder
+ * renamed its fpv variant wfbng; a link that says `ver=fpv` -- a page
+ * prerendered before the rename, a permalink someone kept -- still means the
+ * wfb-ng build, and must not quietly open on Lite once only wfbng is offered.
+ */
+const RENAMED: Record<string, string | undefined> = { fpv: 'wfbng' };
+
+/**
  * Which layouts a chip can wear.
  *
  * The 16MB one puts 10240KB of rootfs at 0x350000 and so ends at 0xD50000,
@@ -163,6 +171,8 @@ export function narrow(state: MenuState, availability: Availability, offerable: 
 
   const editions = allowedEditions(chip, effectiveLayout, availability);
   let { edition } = state;
+  const renamed = RENAMED[edition];
+  if (!editions.includes(edition) && renamed && editions.includes(renamed)) edition = renamed;
   if (!editions.includes(edition)) {
     const preferred = PREFERRED[chip];
     edition = preferred && editions.includes(preferred) ? preferred : (editions[0] ?? '');
