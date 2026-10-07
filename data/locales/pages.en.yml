@@ -446,12 +446,17 @@ en:
     low_latency:
       build_apfpv_name: apfpv
       build_apfpv_text: Plain WiFi instead of broadcast. The air unit runs an access point and the ground station joins it, so anything with a WiFi adapter can receive the stream.
-      build_fpv_name: fpv
-      build_fpv_text: The OpenIPC link, and what the build guide sets up. wfb-ng broadcasts the video with no pairing and no association, and adaptive-link moves the bitrate as the signal changes.
-      build_rubyfpv_name: rubyfpv
+      build_wfbng_name: wfb-ng
+      build_wfbng_text: The OpenIPC link, and what the build guide sets up. wfb-ng broadcasts the video with no pairing and no association, and adaptive-link moves the bitrate as the signal changes.
+      build_rubyfpv_name: RubyFPV
       build_rubyfpv_text: For a RubyFPV ground station. RubyFPV's own link and telemetry take the place of wfb-ng; the camera side is otherwise the same.
-      builds_lede: Three builds of the air unit, differing in the radio link and nothing else. Which one you want is decided by what is at the other end.
-      builds_title: Pick the build to match your ground station
+      build_install_on: Install on
+      build_not_built: Not built for any SoC yet.
+      build_upstream: Project page
+      build_waybeam_name: Waybeam
+      build_waybeam_text: "wfb-ng's link with Waybeam in place of Majestic: an open-source encoder for SigmaStar SSC338Q/SSC30KQ with sensor modes unlocked up to 144 fps, its own web page and HTTP API. Experimental."
+      builds_lede: Four builds of the air unit. wfb-ng, RubyFPV and apfpv differ in the radio link; Waybeam keeps wfb-ng and changes the encoder. Which one you want is decided by what is at the other end. Each installs from the same instructions as any other OpenIPC firmware.
+      builds_title: Pick the build, and install it
       business_bridge_html: Building a product on this link? <a href="/business">Talk to us</a> — we do custom development and OEM work.
       credits_text_html: The radio link exists thanks to wfb-ng and devourer, and the ecosystem grows with friends like <a href="https://rubyfpv.com/">RubyFPV</a> and <a href="https://www.youtube.com/@mariofpv">Mario FPV</a>. Open source is a team sport.
       credits_title: Standing on open shoulders
@@ -487,7 +492,7 @@ en:
       how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> turns a Rockchip board into a dedicated ground station — the fastest way to receive. <a href="https://github.com/OpenIPC/aviateur">Aviateur</a> runs on the Windows, Linux, or macOS machine you already own.
       how_rx_title: RX — your side
       how_title: How the link works
-      how_tx_text_html: An OpenIPC camera runs the <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> encoder, turning the sensor into a stream and handing it straight to the radio. The frame rate set here decides most of your latency budget.
+      how_tx_text_html: An OpenIPC camera runs the <a href="https://github.com/OpenIPC/waybeam">Waybeam</a> encoder, turning the sensor into a stream and handing it straight to the radio. The frame rate set here decides most of your latency budget.
       how_tx_title: TX — the air side
       latency_axis_unit: ms glass-to-glass
       latency_intro: What decides your number is the ground station, far more than the resolution you pick. These are figures people report from flying this stack on their own hardware.

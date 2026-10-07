@@ -484,12 +484,17 @@ ru:
     low_latency:
       build_apfpv_name: apfpv
       build_apfpv_text: Обычный Wi-Fi вместо широковещания. Камера поднимает точку доступа, наземная станция подключается к ней — принять поток может любое устройство с Wi-Fi.
-      build_fpv_name: fpv
-      build_fpv_text: Родной линк OpenIPC, именно его настраивает руководство по сборке. wfb-ng вещает видео без пары и без ассоциации, а adaptive-link меняет битрейт вслед за сигналом.
-      build_rubyfpv_name: rubyfpv
+      build_wfbng_name: wfb-ng
+      build_wfbng_text: Родной линк OpenIPC, именно его настраивает руководство по сборке. wfb-ng вещает видео без пары и без ассоциации, а adaptive-link меняет битрейт вслед за сигналом.
+      build_rubyfpv_name: RubyFPV
       build_rubyfpv_text: Для наземной станции RubyFPV. Вместо wfb-ng стоят собственные линк и телеметрия RubyFPV; со стороны камеры всё остальное то же самое.
-      builds_lede: Три сборки для воздушной части. Отличаются радиолинком и больше ничем, а выбор определяется тем, что стоит на земле.
-      builds_title: Выберите сборку под свою наземную станцию
+      build_install_on: Установить на
+      build_not_built: Пока не собрана ни для одного SoC.
+      build_upstream: Страница проекта
+      build_waybeam_name: Waybeam
+      build_waybeam_text: "Линк wfb-ng, но вместо Majestic стоит Waybeam: открытый энкодер для SigmaStar SSC338Q/SSC30KQ с разблокированными режимами сенсора до 144 к/с, собственной веб-страницей и HTTP API. Экспериментальная сборка."
+      builds_lede: Четыре сборки для воздушной части. wfb-ng, RubyFPV и apfpv отличаются радиолинком; Waybeam оставляет wfb-ng и меняет энкодер. Выбор определяется тем, что стоит на земле. Каждая ставится по тем же инструкциям, что и любая другая прошивка OpenIPC.
+      builds_title: Выберите сборку и установите её
       business_bridge_html: Строите продукт на этом линке? <a href="/business">Напишите нам</a> — мы делаем заказную разработку и OEM.
       credits_text_html: Радиолинк существует благодаря wfb-ng и devourer, а экосистема растёт вместе с друзьями — <a href="https://rubyfpv.com/">RubyFPV</a> и <a href="https://www.youtube.com/@mariofpv">Mario FPV</a>. Open source — командный спорт.
       credits_title: Стоим на открытых плечах
@@ -525,7 +530,7 @@ ru:
       how_rx_text_html: <a href="https://github.com/OpenIPC/PixelPilot_rk">PixelPilot</a> превращает плату на Rockchip в выделенную наземную станцию — самый быстрый способ принимать. <a href="https://github.com/OpenIPC/aviateur">Aviateur</a> работает на том компьютере с Windows, Linux или macOS, который у вас уже есть.
       how_rx_title: RX — ваша сторона
       how_title: Как устроен линк
-      how_tx_text_html: Камера с OpenIPC и энкодером <a href="https://github.com/OpenIPC/waybeam_venc">Waybeam</a> превращает картинку сенсора в поток и отдаёт его прямо в радиолинк. Заданная здесь частота кадров определяет большую часть бюджета задержки.
+      how_tx_text_html: Камера с OpenIPC и энкодером <a href="https://github.com/OpenIPC/waybeam">Waybeam</a> превращает картинку сенсора в поток и отдаёт его прямо в радиолинк. Заданная здесь частота кадров определяет большую часть бюджета задержки.
       how_tx_title: TX — борт
       latency_axis_unit: мс «от стекла до стекла»
       latency_intro: Задержку решает наземная станция, а вовсе не выбранное разрешение. Это цифры, которые присылают те, кто реально летает на этом стеке, на своём железе.

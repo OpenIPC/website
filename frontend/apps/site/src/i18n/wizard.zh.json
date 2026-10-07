@@ -111,6 +111,7 @@
         "title": "为 OpenIPC Linux 准备摄像机"
       },
       "flashing_footfs2": {
+        "builder": "此版本由 OpenIPC/builder 仓库构建，sysupgrade 也会从那里更新它。",
         "info": "下载固件包并将其解压缩到 TFTP 服务器的根目录中。",
         "link": "下载 OpenIPC 固件 ({name}) 包",
         "title": "烧录 OpenIPC Linux 内核和根文件系统"
@@ -173,11 +174,16 @@
       "title": "恢复摄像机原始固件"
     },
     "version": {
+      "apfpv": "APFPV (Wi-Fi 热点)",
+      "fpv": "wfb-ng (FPV)",
       "lite": "Lite",
       "nand": "Nand",
       "neo": "Neo",
+      "rubyfpv": "RubyFPV",
       "ultimate": "Ultimate",
-      "venc": "VENC"
+      "venc": "VENC",
+      "waybeam": "Waybeam (FPV)",
+      "wfbng": "wfb-ng (FPV)"
     }
   },
   "flash_chip": {

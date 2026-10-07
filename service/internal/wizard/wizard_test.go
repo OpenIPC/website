@@ -431,3 +431,65 @@ func TestNANDBackupInPieces(t *testing.T) {
 		}
 	}
 }
+
+// The FPV stacks builder builds are offered beside firmware's editions
+// (#390): after them, linked to builder's release under the name builder
+// published, and never on an 8 MB layout -- with a size report saying 16 MB
+// or, for a build that sent none, without one.
+func TestBuilderEditions(t *testing.T) {
+	cat, base := inputs(t)
+	var assets []firmware.Asset
+	for _, a := range base.Assets() {
+		assets = append(assets, a)
+	}
+	rel := "nightly-20261006-31bbf17"
+	assets = append(assets,
+		firmware.Asset{Name: "openipc.ssc338q-nor-fpv.tgz", Repo: firmware.RepoBuilder, Release: rel},
+		firmware.Asset{Name: "openipc.ssc338q-nor-rubyfpv.tgz", File: "ssc338q_rubyfpv_generic-nor.tgz", Repo: firmware.RepoBuilder, Release: rel},
+		firmware.Asset{Name: "openipc.ssc338q-nor-apfpv.tgz", Repo: firmware.RepoBuilder, Release: rel})
+	idx := firmware.NewIndex(base.Build, assets, nil, map[string]firmware.Fit{
+		"ssc338q-fpv":     {FlashMB: 16, KernelKB: 1999, RootfsKB: 7860},
+		"ssc338q-rubyfpv": {FlashMB: 16, KernelKB: 1991, RootfsKB: 7856},
+	})
+	d := decode(t, Document(cat.SoC("ssc338q"), idx))
+
+	nor := d["editions"].(map[string]any)["nor"].([]any)
+	var got []string
+	for _, e := range nor {
+		got = append(got, e.(string))
+	}
+	if strings.Join(got, ",") != "lite,ultimate,fpv,rubyfpv,apfpv" {
+		t.Errorf("nor editions %v", got)
+	}
+	for _, p := range d["published"].([]any) {
+		p := p.(map[string]any)
+		switch p["release"] {
+		case "rubyfpv":
+			if p["url"] != "https://github.com/OpenIPC/builder/releases/download/"+rel+"/ssc338q_rubyfpv_generic-nor.tgz" ||
+				p["filename"] != "ssc338q_rubyfpv_generic-nor.tgz" {
+				t.Errorf("rubyfpv published as %v", p)
+			}
+		case "fpv":
+			if p["url"] != "https://github.com/OpenIPC/builder/releases/download/"+rel+"/openipc.ssc338q-nor-fpv.tgz" {
+				t.Errorf("fpv published as %v", p)
+			}
+		}
+	}
+	count := 0
+	for _, c := range d["combinations"].([]any) {
+		c := c.(map[string]any)
+		ed := c["edition"].(string)
+		if ed == "rubyfpv" {
+			count++
+		}
+		if (ed == "fpv" || ed == "rubyfpv" || ed == "apfpv") && (c["flash_type"] == "nor8m" || c["partition_layout"] == "nor8m") {
+			t.Errorf("%s offered as %v/%v", ed, c["flash_type"], c["partition_layout"])
+		}
+		if ed == "rubyfpv" && c["firmware_filename"] != "ssc338q_rubyfpv_generic-nor.tgz" {
+			t.Errorf("rubyfpv combination names %v", c["firmware_filename"])
+		}
+	}
+	if count == 0 {
+		t.Error("no rubyfpv combination")
+	}
+}

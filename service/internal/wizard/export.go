@@ -20,14 +20,16 @@ const (
 	ethaddrPlain = "{{ethaddr_plain}}"
 	sampleMAC    = "aa:bb:cc:dd:ee:ff"
 	ghDownload   = "https://github.com/OpenIPC/firmware/releases/download/"
+	ghBuilder    = "https://github.com/OpenIPC/builder/releases/download/"
 	// The form's validation patterns.
 	macPattern = `^([a-fA-F\d]{2}[:\-]){5}[a-fA-F\d]{2}$`
 	ipPattern  = `^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$`
 )
 
 var (
-	flashTypes   = []string{"nor", "nand"}
-	releaseOrder = []string{"lite", "ultimate", "neo"}
+	flashTypes = []string{"nor", "nand"}
+	// Firmware's editions, then the FPV stacks builder builds (#390).
+	releaseOrder = []string{"lite", "ultimate", "neo", "wfbng", "fpv", "waybeam", "rubyfpv", "apfpv"}
 )
 
 // exporter is one SoC's document in progress: the two pools are per file.
@@ -74,7 +76,7 @@ func Document(soc *catalogue.SoC, idx *firmware.Index) []byte {
 		for _, rel := range e.releases(ft) {
 			name := e.linuxFilename(rel, ft)
 			published = append(published, obj{{"flash_type", ft}, {"release", rel},
-				{"url", e.url(name)}, {"filename", name}})
+				{"url", e.url(name)}, {"filename", e.upstream(name)}})
 		}
 	}
 	d.set("published", published)
@@ -189,9 +191,22 @@ func (e *exporter) offerable() []string {
 // published in that case anyway).
 func (e *exporter) url(name string) string {
 	if a, ok := e.idx.Asset(name); ok && a.Release != "" {
-		return ghDownload + a.Release + "/" + name
+		base := ghDownload
+		if a.Repo == firmware.RepoBuilder {
+			base = ghBuilder
+		}
+		return base + a.Release + "/" + a.Upstream()
 	}
 	return ghDownload + "latest/" + name
+}
+
+// upstream is the name an indexed tarball downloads under, which for a
+// builder generic device is not the name the index holds it by.
+func (e *exporter) upstream(name string) string {
+	if a, ok := e.idx.Asset(name); ok {
+		return a.Upstream()
+	}
+	return name
 }
 
 // Eight-megabyte NOR gives the kernel 2048 KiB and the rootfs 5120 KiB.
@@ -209,7 +224,10 @@ const (
 func (e *exporter) fitsEight(edition string) bool {
 	f, ok := e.idx.Fit(e.board, edition)
 	if !ok {
-		return true
+		// Builder's FPV builds are 16 MB images; one without a report is
+		// not assumed to be the legacy 8 MB tarball the rule above is for.
+		a, held := e.idx.Asset(e.linuxFilename(edition, "nor"))
+		return !held || a.Repo != firmware.RepoBuilder
 	}
 	return f.FlashMB <= 8 && f.KernelKB <= eightKernelKB && f.RootfsKB <= eightRootfsKB
 }
@@ -375,7 +393,7 @@ func (e *exporter) entry(ft string, layout *string, edition, iface, sd string) o
 	o.set("layout_size", c.layoutSize())
 	o.set("flash_family", c.flashTypeType())
 	o.set("firmware_url", e.url(c.firmwareFilename()))
-	o.set("firmware_filename", c.firmwareFilename())
+	o.set("firmware_filename", e.upstream(c.firmwareFilename()))
 	o.set("default_bootloader_layout", c.defaultBootloaderLayout())
 	o.set("layout_commands", len(c.layoutCommands()) > 0)
 	o.set("bootloader_variables", c.bootloaderVariables())

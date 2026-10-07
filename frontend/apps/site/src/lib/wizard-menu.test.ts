@@ -261,3 +261,21 @@ describe('the frames a prerendered mosaic paints', () => {
     expect(captionFor({ id: 'a', soc: null, sensor: '  ' })).toBe('');
   });
 });
+
+// /low-latency links a stack into the installer as `?rom=nor16m&ver=<edition>`
+// (#390): the builder editions are 16 MB images, and on the 8 MB chip the
+// layout rule would turn the edition asked for into Lite.
+describe('a builder edition from a link', () => {
+  const availability = { nor: ['lite', 'ultimate', 'fpv', 'rubyfpv'], nand: [] };
+  const offerable = ['lite', 'ultimate', 'fpv', 'rubyfpv'];
+
+  test('opens as asked on the 16 MB chip', () => {
+    const opened = openOn({ chip: 'nor16m', edition: 'rubyfpv' }, availability, offerable);
+    expect(opened.edition).toBe('rubyfpv');
+    expect(opened.layout).toBe('nor16m');
+  });
+
+  test('would not survive the 8 MB chip, which is why the link names the chip', () => {
+    expect(openOn({ chip: 'nor8m', edition: 'rubyfpv' }, availability, offerable).edition).toBe('lite');
+  });
+});

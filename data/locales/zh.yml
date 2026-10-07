@@ -135,6 +135,7 @@ zh:
         info: 在引导加载程序的命令行中，根据您的闪存大小和类型重新映射 ROM 分区。
         title: 为 OpenIPC Linux 准备摄像机
       flashing_footfs2:
+        builder: 此版本由 OpenIPC/builder 仓库构建，sysupgrade 也会从那里更新它。
         info: 下载固件包并将其解压缩到 TFTP 服务器的根目录中。
         link: 下载 OpenIPC 固件 ({name}) 包
         title: 烧录 OpenIPC Linux 内核和根文件系统
@@ -183,11 +184,16 @@ zh:
       nand_info: "要恢复原厂固件，请使用上面的备份命令从这台摄像机保存的 16 个文件。把它们放到 TFTP 服务器的根目录；如果备份写到了 SD 卡，则放到卡上 FAT 分区的根目录。然后在引导程序命令行中按顺序逐行执行这些命令。"
       title: 恢复摄像机原始固件
     version:
+      apfpv: APFPV (Wi-Fi 热点)
+      fpv: wfb-ng (FPV)
       lite: Lite
       nand: Nand
       neo: Neo
+      rubyfpv: RubyFPV
       ultimate: Ultimate
       venc: VENC
+      waybeam: Waybeam (FPV)
+      wfbng: wfb-ng (FPV)
   flash_chip:
     nand: NAND
     nor16m: NOR 16M

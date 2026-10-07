@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -722,5 +723,72 @@ func TestImportUBootSnapshotsLatest(t *testing.T) {
 	}
 	if a, ok := idx.Asset("u-boot-gone-nor.bin"); ok {
 		t.Errorf("a binary deleted from latest is still offered: %+v", a)
+	}
+}
+
+// Builder's generic builds of the FPV stacks enter the index as editions
+// (#390): devices/common's openipc.<soc>-<storage>-<edition>.tgz as it is, a
+// <soc>_<variant>_generic device under the edition's name with its own file
+// remembered, each with the fit its size report gives. Device builds and
+// builder's non-FPV variants stay out, and a name firmware publishes is
+// firmware's.
+func TestLoadIndexBuilderEditions(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	d1 := time.Date(2026, 10, 6, 21, 0, 0, 0, time.UTC)
+	if _, err := Save(ctx, pool, push(t, "nightly-20261006-a74b007", d1, "ssc338q"), "test"); err != nil {
+		t.Fatal(err)
+	}
+	sixteen, kernel, rootfs := 16, 1991, 7856
+	report := func(board, variant string) *SizeReport {
+		s := &SizeReport{Schema: 1, Board: board, Variant: variant, FlashMB: &sixteen}
+		s.Headroom.Kernel.UsedKB, s.Headroom.Rootfs.UsedKB = &kernel, &rootfs
+		return s
+	}
+	b := &Payload{Schema: 1, Source: "builder",
+		Build: Build{ID: "nightly-20261006-31bbf17", Release: "nightly-20261006-31bbf17", SHA: strings.Repeat("b", 40),
+			BuiltAt: d1.Add(time.Hour), PublishedAt: d1.Add(2 * time.Hour)}}
+	for _, name := range []string{"openipc.ssc338q-nor-fpv.tgz", "ssc338q_rubyfpv_generic-nor.tgz",
+		"ssc338q_fpv_caddx-fly-nor.tgz", "openipc.ssc338q-nor-lite.tgz", "openipc.gk7205v200-nor-lte.tgz"} {
+		b.Assets = append(b.Assets, Asset{Name: name, Size: 10_000_000, SHA256: sum})
+	}
+	b.Platforms = []Platform{
+		{Name: "ssc338q-fpv", Sizes: report("ssc338q", "fpv")},
+		{Name: "ssc338q_rubyfpv_generic", Sizes: report("ssc338q", "rubyfpv")},
+		{Name: "ssc338q_fpv_caddx-fly", Sizes: report("ssc338q", "fpv")},
+	}
+	if _, err := Save(ctx, pool, b, "test"); err != nil {
+		t.Fatal(err)
+	}
+
+	idx, err := LoadIndex(ctx, pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if idx.Build != "nightly-20261006-a74b007" {
+		t.Errorf("the index is as of %s, a builder build", idx.Build)
+	}
+	if a, ok := idx.Asset("openipc.ssc338q-nor-fpv.tgz"); !ok || a.Repo != firmware.RepoBuilder || a.Upstream() != "openipc.ssc338q-nor-fpv.tgz" {
+		t.Errorf("fpv: %+v %v", a, ok)
+	}
+	if a, ok := idx.Asset("openipc.ssc338q-nor-rubyfpv.tgz"); !ok || a.Repo != firmware.RepoBuilder ||
+		a.Upstream() != "ssc338q_rubyfpv_generic-nor.tgz" || a.Release != "nightly-20261006-31bbf17" {
+		t.Errorf("rubyfpv: %+v %v", a, ok)
+	}
+	if a, _ := idx.Asset("openipc.ssc338q-nor-lite.tgz"); a.Repo != "" || a.Release != "nightly-20261006-a74b007" {
+		t.Errorf("firmware's lite lost to builder's: %+v", a)
+	}
+	for _, name := range []string{"ssc338q_fpv_caddx-fly-nor.tgz", "openipc.gk7205v200-nor-lte.tgz"} {
+		if _, ok := idx.Asset(name); ok {
+			t.Errorf("%s is in the index", name)
+		}
+	}
+	if got := idx.Releases("ssc338q", "nor"); !slices.Equal(got, []string{"fpv", "lite", "rubyfpv"}) {
+		t.Errorf("ssc338q editions %v", got)
+	}
+	for _, ed := range []string{"fpv", "rubyfpv"} {
+		if f, ok := idx.Fit("ssc338q", ed); !ok || f.FlashMB != 16 || f.RootfsKB != 7856 {
+			t.Errorf("%s fit %+v %v", ed, f, ok)
+		}
 	}
 }

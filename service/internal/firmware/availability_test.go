@@ -25,8 +25,8 @@ func TestAvailabilityMatchesReference(t *testing.T) {
 		t.Fatal(err)
 	}
 	at := time.Date(2026, 9, 26, 10, 32, 5, 0, time.UTC)
-	got := string(availabilityJSON(AvailabilityMap(cat, idx), at))
-	want := `{"generated_at":"2026-09-26T10:32:05Z","socs":` + strings.TrimSpace(string(golden)) + `}`
+	got := string(availabilityJSON(AvailabilityMap(cat, idx), FPVMap(cat, idx), at))
+	want := `{"generated_at":"2026-09-26T10:32:05Z","socs":` + strings.TrimSpace(string(golden)) + `,"fpv":{}}`
 	if got != want {
 		t.Fatalf("availability differs from the reference:\n got %.300s\nwant %.300s", got, want)
 	}

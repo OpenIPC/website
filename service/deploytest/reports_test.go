@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -73,7 +74,7 @@ func TestOnlyTheReportsPackageTouchesReports(t *testing.T) {
 			}
 			for i, line := range strings.Split(string(raw), "\n") {
 				if sql.MatchString(line) || named.MatchString(line) || (root.MatchString(line) && !mayNameRoot[rel]) {
-					found = append(found, rel+":"+itoa(i+1)+": "+strings.TrimSpace(line))
+					found = append(found, rel+":"+strconv.Itoa(i+1)+": "+strings.TrimSpace(line))
 				}
 			}
 			return nil

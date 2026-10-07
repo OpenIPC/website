@@ -137,6 +137,7 @@ ru:
         info: В оболочке загрузчика переназначьте разделы ПЗУ в соответствии с размером и типом вашей флэш-памяти.
         title: Подготовьте камеру для OpenIPC Linux
       flashing_footfs2:
+        builder: Эта редакция собирается в репозитории OpenIPC/builder, и sysupgrade обновляет её оттуда же.
         info: Загрузите комплект прошивки и распакуйте его в корневой каталог вашего TFTP-сервера.
         link: Загрузить пакет прошивки OpenIPC ({name})
         title: Ядро Flash OpenIPC Linux и корневая файловая система
@@ -185,11 +186,16 @@ ru:
       nand_info: "Чтобы восстановить оригинальную прошивку, используйте 16 файлов, сохранённых командами выше с этой камеры. Положите их в корневой каталог TFTP-сервера или, если копия делалась на SD-карту, в корень её FAT-раздела, и выполните эти команды в консоли загрузчика по одной строке, по порядку."
       title: Восстановить стоковую прошивку камеры
     version:
+      apfpv: APFPV (точка доступа Wi-Fi)
+      fpv: wfb-ng (FPV)
       lite: Lite
       nand: NAND
       neo: Neo
+      rubyfpv: RubyFPV
       ultimate: Ultimate
       venc: VENC
+      waybeam: Waybeam (FPV)
+      wfbng: wfb-ng (FPV)
   flash_chip:
     nand: NAND
     nor16m: NOR 16M

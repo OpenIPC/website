@@ -25,6 +25,59 @@ type Asset struct {
 	Size    int64  `json:"size"`
 	Digest  string `json:"digest"` // "sha256:<hex>"
 	Release string `json:"release"`
+	// Repo is the repository whose releases hold the file: "" for
+	// OpenIPC/firmware (and u-boot), RepoBuilder for OpenIPC/builder.
+	Repo string `json:"repo,omitempty"`
+	// File is the name upstream published it under, when the index holds it
+	// under another: a builder generic device build is indexed as the
+	// edition it is (see BuilderEdition).
+	File string `json:"file,omitempty"`
+}
+
+// RepoBuilder marks an asset from OpenIPC/builder's releases.
+const RepoBuilder = "builder"
+
+// Upstream is the file name to download.
+func (a Asset) Upstream() string {
+	if a.File != "" {
+		return a.File
+	}
+	return a.Name
+}
+
+// FPVEditions are the editions the site takes from OpenIPC/builder (#390):
+// each an FPV stack firmware does not build. wfbng is the wfb-ng air unit,
+// called fpv until builder renamed it; both are accepted while cameras in the
+// field still report the old name, and only one is offered (see NewIndex).
+var FPVEditions = []string{"wfbng", "fpv", "waybeam", "rubyfpv", "apfpv"}
+
+// builderGeneric is a builder device named for its SoC and variant alone,
+// <soc>_<variant>_generic-<storage>.tgz: builder publishes these where it has
+// no devices/common profile, as for RubyFPV.
+var builderGeneric = regexp.MustCompile(`^([a-z0-9]+)_([a-z0-9]+)_generic-(nor|nand)\.tgz$`)
+
+// BuilderEdition says which board, storage and edition a builder asset is,
+// when it is a generic build of an FPV edition: openipc.<board>-<storage>-
+// <edition>.tgz as firmware names them, or <soc>_<variant>_generic-<storage>.tgz.
+// Anything else builder publishes (device builds, lite variants of its own,
+// size reports) is not offered by the wizard.
+func BuilderEdition(name string) (board, storage, edition string, ok bool) {
+	if m := assetName.FindStringSubmatch(name); m != nil {
+		board, storage, edition = m[1], m[2], m[3]
+	} else if m := builderGeneric.FindStringSubmatch(name); m != nil {
+		board, storage, edition = m[1], m[3], m[2]
+	} else {
+		return "", "", "", false
+	}
+	if !slices.Contains(FPVEditions, edition) {
+		return "", "", "", false
+	}
+	return board, storage, edition, true
+}
+
+// IndexName is the name the index holds an edition's tarball under.
+func IndexName(board, storage, edition string) string {
+	return fmt.Sprintf("openipc.%s-%s-%s.tgz", board, storage, edition)
 }
 
 // SHA256 is the digest without its "sha256:" prefix, or "" when there is none.
@@ -90,8 +143,14 @@ func NewIndex(build string, assets []Asset, aliases map[string]string, fits map[
 			idx.builds[k] = append(idx.builds[k], m[3])
 		}
 	}
-	for k := range idx.builds {
-		slices.Sort(idx.builds[k])
+	for k, eds := range idx.builds {
+		// wfbng is what fpv became: while builder publishes both names for
+		// the cameras still on the old one, offer the new name only.
+		if slices.Contains(eds, "wfbng") {
+			eds = slices.DeleteFunc(eds, func(e string) bool { return e == "fpv" })
+		}
+		slices.Sort(eds)
+		idx.builds[k] = eds
 	}
 	names := make([]string, 0, len(idx.assets))
 	for n := range idx.assets {
@@ -101,7 +160,7 @@ func NewIndex(build string, assets []Asset, aliases map[string]string, fits map[
 	h := sha256.New()
 	for _, n := range names {
 		a := idx.assets[n]
-		fmt.Fprintf(h, "%s\x00%d\x00%s\x00%s\n", n, a.Size, a.Digest, a.Release)
+		fmt.Fprintf(h, "%s\x00%d\x00%s\x00%s\x00%s\x00%s\n", n, a.Size, a.Digest, a.Release, a.Repo, a.File)
 	}
 	idx.fingerprint = hex.EncodeToString(h.Sum(nil))
 	return idx

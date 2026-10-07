@@ -11,6 +11,7 @@ import { useRef, useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import { bootloaderFor, type Block, type Combination, type WizardDocument } from '../../lib/wizard-export';
 import { fillHoles, type WizardSettings } from '../../lib/wizard-input';
+import { fromBuilder } from '../../lib/editions';
 import { toPermalink } from '../../lib/wizard-input';
 import {
   downloadStepQuery, flashArguments, flashFamily, licenceBusinessHref, stockBootloaderOnly,
@@ -625,6 +626,9 @@ function Experts({ t, doc, combination, settings, facts, sdcardRequired, edition
                     </h6>
                     <p>for {facts.fullName}</p>
                     <p class="mb-0">{install('flashing_footfs2.info')}</p>
+                    {fromBuilder(settings.firmwareVersion) && (
+                      <p class="mt-2 mb-0">{install('flashing_footfs2.builder')}</p>
+                    )}
                   </div>
                 )}
               </div>

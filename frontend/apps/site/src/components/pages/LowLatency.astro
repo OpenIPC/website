@@ -4,10 +4,12 @@
  *
  * The air-unit builds section (#190) exists because the FPV copy above it
  * tells the reader to "pick your ground station" and the site never said what
- * there was to pick from. There are three builds, they differ in the radio
- * link and in nothing else the reader cares about, and which one someone wants
- * is decided entirely by what is on the bench at the other end. Named in the
- * order people meet them: the OpenIPC link first, then the two that replace it.
+ * there was to pick from. Since #390 each build can be installed from here:
+ * the stacks are editions the installer takes from OpenIPC/builder, and every
+ * card links the SoCs it is published for into their installer with the
+ * edition chosen (../../data/fpv-stacks.ts, corrected on load from the
+ * availability feed). Named in the order people meet them: the OpenIPC link
+ * first, Waybeam on the same link, then the two that replace it.
  *
  * The latency chart is one measure across four receive paths, so the bars are
  * one hue on a shared scale rather than four colours -- the reader is
@@ -40,6 +42,8 @@ import { getImage } from 'astro:assets';
 import FlightCompare, { type FlightLabels } from '../flight/FlightCompare';
 import { FLIGHT, rndPlayerUrl } from '../../data/flight';
 import flightPoster from '../../assets/pages/flight-mabur-2026-10.jpg';
+import { FPV_STACKS } from '../../data/fpv-stacks';
+import { VENDORS } from '../../lib/hardware';
 
 const { locale } = Astro.props as { locale: Locale };
 const t = useTranslations(locale);
@@ -54,6 +58,17 @@ const CHAIN: [string, string][] = [
 const GUIDE = 'https://github.com/OpenIPC/wiki/blob/master/en/fpv.md';
 const FPV_CHAT = 'https://t.me/+BMyMoolVOpkzNWUy';
 const SUPPORT_HOURS = 'https://opencollective.com/openipc/contribute/technical-support-56715/checkout';
+
+// Every SoC by slug, as [vendor slug, model]: the stacks' lists are corrected
+// on load from the availability feed, which may name any of them.
+const SOCS: Record<string, [string, string]> = Object.fromEntries(
+  VENDORS.flatMap((v) => v.socs.map((s) => [s.urlname, [v.urlname, s.model]])),
+);
+const VENDOR_BASE = pathFor(locale, '/cameras/vendors');
+// The FPV builds are 16 MB images: on a chip the wizard would open as 8 MB
+// only Lite is offered, and the edition asked for would quietly become Lite.
+const installHref = (slug: string, edition: string) =>
+  `${VENDOR_BASE}/${SOCS[slug]?.[0]}/socs/${slug}?rom=nor16m&ver=${edition}`;
 
 const poster = await getImage({ src: flightPoster, width: 1920, format: 'webp', quality: 80 });
 const flightLabels: FlightLabels = {
@@ -116,11 +131,22 @@ const flightLabels: FlightLabels = {
     <div class="mb-12" id="builds">
       <h2 class="mb-1 text-2xl">{k('builds_title')}</h2>
       <p class="mb-6 text-body-secondary">{k('builds_lede')}</p>
-      <div class="grid gap-6 lg:grid-cols-3">
-        {['fpv', 'rubyfpv', 'apfpv'].map((build) => (
-          <div class="h-full rounded-lg border border-hairline p-5">
-            <h3 class="mb-2 text-base font-semibold">{k(`build_${build}_name`)}</h3>
-            <p class="mb-0 text-sm text-body-secondary">{k(`build_${build}_text`)}</p>
+      <div class="grid gap-6 md:grid-cols-2">
+        {FPV_STACKS.map((stack) => (
+          <div class="flex h-full flex-col rounded-lg border border-hairline p-5" data-stack={stack.key}>
+            <h3 class="mb-2 text-base font-semibold">{k(`build_${stack.key}_name`)}</h3>
+            <p class="mb-3 text-sm text-body-secondary">{k(`build_${stack.key}_text`)}</p>
+            <p class="mb-3 text-sm"><a href={stack.upstream}>{k('build_upstream')}</a></p>
+            <p class="mt-auto mb-1 text-sm font-semibold">{k('build_install_on')}</p>
+            <p class="stack-socs mb-0 flex flex-wrap gap-2 text-sm">
+              {Object.keys(stack.socs).length === 0 && (
+                <span class="text-body-secondary">{k('build_not_built')}</span>
+              )}
+              {Object.entries(stack.socs).map(([slug, edition]) => (
+                <a class="site-btn site-btn-sm site-btn-outline-primary" href={installHref(slug, edition)}
+                  data-event={`lowlat:try:${stack.key}:${slug}`}>{SOCS[slug]?.[1] ?? slug}</a>
+              ))}
+            </p>
           </div>
         ))}
       </div>
@@ -211,3 +237,52 @@ const flightLabels: FlightLabels = {
   secondaryHref={FPV_CHAT}
   noteHtml={k('business_bridge_html')}
 />
+
+<script
+  is:inline
+  define:vars={{
+    stacks: Object.fromEntries(FPV_STACKS.map((s) => [s.key, s.editions])),
+    socs: SOCS,
+    base: VENDOR_BASE,
+    notBuilt: k('build_not_built'),
+  }}
+>
+  // The lists above are what builder published when the page was built; the
+  // availability feed's `fpv` map is the same answer, live (#390).
+  (async () => {
+    let live;
+    try {
+      const response = await fetch('/api/v1/hardware/availability.json', { headers: { accept: 'application/json' } });
+      if (!response.ok) return;
+      live = await response.json();
+    } catch {
+      return;
+    }
+    if (!live || typeof live.fpv !== 'object' || live.fpv === null) return;
+
+    for (const card of document.querySelectorAll('[data-stack]')) {
+      const editions = stacks[card.dataset.stack] || [];
+      const list = card.querySelector('.stack-socs');
+      const links = [];
+      for (const [slug, published] of Object.entries(live.fpv)) {
+        const edition = editions.find((e) => published.includes(e));
+        if (!edition || !socs[slug]) continue;
+        const a = document.createElement('a');
+        a.className = 'site-btn site-btn-sm site-btn-outline-primary';
+        a.href = `${base}/${socs[slug][0]}/socs/${slug}?rom=nor16m&ver=${edition}`;
+        a.dataset.event = `lowlat:try:${card.dataset.stack}:${slug}`;
+        a.textContent = socs[slug][1];
+        links.push(a);
+      }
+      list.textContent = '';
+      if (links.length === 0) {
+        const span = document.createElement('span');
+        span.className = 'text-body-secondary';
+        span.textContent = notBuilt;
+        list.append(span);
+      } else {
+        list.append(...links);
+      }
+    }
+  })();
+</script>
