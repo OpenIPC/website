@@ -562,7 +562,7 @@ func firmwareRole(ctx context.Context, cfg *config.Config, log *slog.Logger, poo
 			return nil, err
 		}
 	}
-	releases := &firmware.Releases{Root: cfg.ReleaseCacheRoot, Base: cfg.DownloadBase, HTTP: firmware.NewHTTPClient()}
+	releases := &firmware.Releases{Root: cfg.ReleaseCacheRoot, Base: cfg.DownloadBase, BuilderBase: cfg.BuilderBase, HTTP: firmware.NewHTTPClient()}
 	images := &firmware.Images{Root: cfg.FirmwareCacheRoot, Releases: releases, MaxBytes: cfg.FirmwareCacheMax, Log: log}
 	// The index is the builds tables, reloaded when a build is stored
 	// (LISTEN builds). When it moves, the old version goes: images once nginx

@@ -73,7 +73,7 @@ export function vendorOf(soc: string): string | null {
 }
 
 // The order a reader expects generic variants in; anything else follows, alphabetically.
-const ORDER = ["lite", "neo", "ultimate", "fpv", "apfpv", "rubyfpv", "lte", "venc", "mini", "otg"];
+const ORDER = ["lite", "neo", "ultimate", "wfbng", "fpv", "waybeam", "apfpv", "rubyfpv", "lte", "venc", "mini", "otg"];
 const rank = (v: string) => {
   const i = ORDER.indexOf(v);
   return i < 0 ? ORDER.length : i;

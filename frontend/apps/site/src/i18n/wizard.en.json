@@ -111,6 +111,7 @@
         "title": "Prepare the camera for OpenIPC Linux"
       },
       "flashing_footfs2": {
+        "builder": "This edition is built in the OpenIPC/builder repository, and sysupgrade keeps it updated from there.",
         "info": "Download firmware bundle and unpack it into the root directory of your TFTP server.",
         "link": "Download OpenIPC Firmware ({name}) bundle",
         "title": "Flash OpenIPC Linux kernel and root filesystem"
@@ -173,11 +174,16 @@
       "title": "Restore camera stock firmware"
     },
     "version": {
+      "apfpv": "APFPV (Wi-Fi AP)",
+      "fpv": "wfb-ng (FPV)",
       "lite": "Lite",
       "nand": "NAND",
       "neo": "Neo",
+      "rubyfpv": "RubyFPV",
       "ultimate": "Ultimate",
-      "venc": "VENC"
+      "venc": "VENC",
+      "waybeam": "Waybeam (FPV)",
+      "wfbng": "wfb-ng (FPV)"
     }
   },
   "flash_chip": {

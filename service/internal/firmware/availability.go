@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"slices"
 	"sort"
 	"time"
 
@@ -61,6 +62,36 @@ func AvailabilityMap(cat *catalogue.Catalogue, idx *Index) map[string]string {
 	return out
 }
 
+// FPVMap is, for each SoC whose wizard can install one on NOR, the FPV
+// editions builder publishes for it (#390), in FPVEditions order. /low-latency
+// reads it to link each stack into the installer as a 16 MB NOR camera, so a
+// NAND-only build is not listed: the installer would open on Lite instead.
+func FPVMap(cat *catalogue.Catalogue, idx *Index) map[string][]string {
+	out := map[string][]string{}
+	if idx == nil {
+		return out
+	}
+	for _, soc := range cat.All() {
+		if !BootloaderPublished(soc, idx, "nor") {
+			continue
+		}
+		board := BoardFor(soc, idx, "nor")
+		var eds []string
+		for _, e := range idx.Releases(board, "nor") {
+			if a, ok := idx.Asset(IndexName(board, "nor", e)); ok && a.Repo == RepoBuilder && slices.Contains(FPVEditions, e) {
+				eds = append(eds, e)
+			}
+		}
+		if len(eds) > 0 {
+			slices.SortFunc(eds, func(a, b string) int {
+				return slices.Index(FPVEditions, a) - slices.Index(FPVEditions, b)
+			})
+			out[soc.URLName] = eds
+		}
+	}
+	return out
+}
+
 // AvailabilityHandler answers /api/v1/hardware/availability.json: socs in slug
 // order, and when the answer was made, because the page decides whether to
 // trust it.
@@ -79,14 +110,14 @@ func (h *AvailabilityHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	if h.Now != nil {
 		now = h.Now
 	}
-	body := availabilityJSON(AvailabilityMap(h.Catalogue, idx), now())
+	body := availabilityJSON(AvailabilityMap(h.Catalogue, idx), FPVMap(h.Catalogue, idx), now())
 	hd := w.Header()
 	hd.Set("Cache-Control", "max-age=300, public, stale-while-revalidate=3600")
 	httpx.VaryByAcceptLanguage(hd)
 	httpx.WriteJSON(w, r, body)
 }
 
-func availabilityJSON(socs map[string]string, at time.Time) []byte {
+func availabilityJSON(socs map[string]string, fpv map[string][]string, at time.Time) []byte {
 	slugs := make([]string, 0, len(socs))
 	for s := range socs {
 		slugs = append(slugs, s)
@@ -107,6 +138,10 @@ func availabilityJSON(socs map[string]string, at time.Time) []byte {
 		b.WriteByte(':')
 		b.Write(v)
 	}
-	b.WriteString(`}}`)
+	b.WriteString(`},"fpv":`)
+	// encoding/json writes map keys sorted, so the body stays stable.
+	f, _ := json.Marshal(fpv)
+	b.Write(f)
+	b.WriteByte('}')
 	return b.Bytes()
 }

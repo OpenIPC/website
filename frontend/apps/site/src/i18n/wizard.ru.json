@@ -111,6 +111,7 @@
         "title": "Подготовьте камеру для OpenIPC Linux"
       },
       "flashing_footfs2": {
+        "builder": "Эта редакция собирается в репозитории OpenIPC/builder, и sysupgrade обновляет её оттуда же.",
         "info": "Загрузите комплект прошивки и распакуйте его в корневой каталог вашего TFTP-сервера.",
         "link": "Загрузить пакет прошивки OpenIPC ({name})",
         "title": "Ядро Flash OpenIPC Linux и корневая файловая система"
@@ -173,11 +174,16 @@
       "title": "Восстановить стоковую прошивку камеры"
     },
     "version": {
+      "apfpv": "APFPV (точка доступа Wi-Fi)",
+      "fpv": "wfb-ng (FPV)",
       "lite": "Lite",
       "nand": "NAND",
       "neo": "Neo",
+      "rubyfpv": "RubyFPV",
       "ultimate": "Ultimate",
-      "venc": "VENC"
+      "venc": "VENC",
+      "waybeam": "Waybeam (FPV)",
+      "wfbng": "wfb-ng (FPV)"
     }
   },
   "flash_chip": {

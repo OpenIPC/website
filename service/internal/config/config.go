@@ -67,6 +67,7 @@ type Config struct {
 	FirmwareCacheMax    int64  // bytes; a backstop, not the eviction policy
 	BuildsPerMinute     int
 	DownloadBase        string
+	BuilderBase         string
 
 	// Share role.
 	ShareOrigins    []string // SHARE_ORIGINS: host patterns a page's WebSocket may come from
@@ -114,6 +115,7 @@ func Load() (*Config, error) {
 		FirmwareCacheMax:    int64(num("FIRMWARE_CACHE_MAX_MB", 4096)) << 20,
 		BuildsPerMinute:     num("FIRMWARE_BUILDS_PER_MINUTE", 6),
 		DownloadBase:        str("RELEASE_DOWNLOAD_BASE", "https://github.com/OpenIPC/firmware/releases/download"),
+		BuilderBase:         str("BUILDER_DOWNLOAD_BASE", "https://github.com/OpenIPC/builder/releases/download"),
 		ShareOrigins:        listOr("SHARE_ORIGINS", []string{"*.share.openipc.cloud"}),
 		ShareSTUN:           listOr("SHARE_STUN_URLS", []string{"stun:stun.cloudflare.com:3478"}),
 		ShareTURN:           list("SHARE_TURN_URLS"),

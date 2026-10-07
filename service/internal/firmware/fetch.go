@@ -39,7 +39,10 @@ func (e ErrUnavailable) Unwrap() error { return e.Err }
 type Releases struct {
 	Root string
 	Base string // https://github.com/OpenIPC/firmware/releases/download
-	HTTP *http.Client
+	// BuilderBase is where OpenIPC/builder's releases download from: the
+	// FPV editions are built there (#390). Empty means Base.
+	BuilderBase string
+	HTTP        *http.Client
 
 	flight singleflight.Group
 }
@@ -106,7 +109,11 @@ func (r *Releases) fetch(ctx context.Context, a Asset, dest string) error {
 	tmp := filepath.Join(filepath.Dir(dest), ".tmp-"+filepath.Base(dest)+"-"+hex.EncodeToString(b[:]))
 	defer os.Remove(tmp)
 
-	src := r.Base + "/" + url.PathEscape(a.Release) + "/" + url.PathEscape(a.Name)
+	base := r.Base
+	if a.Repo == RepoBuilder && r.BuilderBase != "" {
+		base = r.BuilderBase
+	}
+	src := base + "/" + url.PathEscape(a.Release) + "/" + url.PathEscape(a.Upstream())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, src, nil)
 	if err != nil {
 		return ErrUnavailable{err}
