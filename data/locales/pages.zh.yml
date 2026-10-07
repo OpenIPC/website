@@ -460,7 +460,6 @@ zh:
       flight_copy: H.264 副本
       flight_credit_html: '飞行：<a href="https://github.com/gilankpam">gilankpam</a>，使用 <a href="https://github.com/gilankpam/mabur">mabur</a> · SSC338Q + RTL8812EU'
       flight_error: 此浏览器无法播放该视频流
-      flight_flicker: 闪烁对比
       flight_frame_back: 上一帧
       flight_frame_forward: 下一帧
       flight_fullscreen: 全屏
@@ -474,7 +473,6 @@ zh:
       flight_play: 播放
       flight_reduced: 已降低
       flight_seek: 飞行中的位置
-      flight_split: 分屏
       flight_text: '无人机机载录像与经链路到达飞手屏幕的画面，逐帧对照。拖动分隔线进行比较；链路延迟显示在底部的遥测中。'
       flight_title: '在真实飞行中看看'
       fpv_text: '一套完全开放的数字 FPV 系统：没有封闭生态，没有配对绑定的硬件，也没有固件上限。用受支持的摄像机搭建天空端，挑选你的地面站，并可调节管线的每一个环节。'

@@ -30,8 +30,6 @@ export interface FlightLabels {
   error: string;
   onboard: string;
   gs: string;
-  split: string;
-  flicker: string;
   original: string;
   reduced: string;
   copy: string;
@@ -67,7 +65,6 @@ const Glyph = ({ d }: { d: string }) => (
 const STEP_BACK = 'M3 3h2v10H3zM13 3v10L6 8z';
 const STEP_FORWARD = 'M11 3h2v10h-2zM3 3v10l7-5z';
 const BOTH_WAYS = 'M1 8l4-4v3h6V4l4 4-4 4V9H5v3z';
-const FLICKER_MS = 500;
 
 export default function FlightCompare({ base, poster, start, end, rndPlayer, labels }: Props) {
   // Never exactly on the ground station's first frame: a playhead a rounding
@@ -85,8 +82,6 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(begin);
   const [split, setSplit] = useState(50);
-  const [mode, setMode] = useState<'split' | 'flicker'>('split');
-  const [flickerOn, setFlickerOn] = useState(true);
   const [pinned, setPinned] = useState(false);
   const [badges, setBadges] = useState<Partial<Record<Side, Badge>>>({});
 
@@ -228,12 +223,6 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
     };
   }, [phase]);
 
-  useEffect(() => {
-    if (mode !== 'flicker') { setFlickerOn(true); return; }
-    const id = setInterval(() => setFlickerOn((v) => !v), FLICKER_MS);
-    return () => clearInterval(id);
-  }, [mode]);
-
   useEffect(() => () => {
     for (const p of Object.values(players.current)) void p?.destroy();
   }, []);
@@ -282,9 +271,7 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
     if (e.key === 'ArrowRight') { setSplit((s) => Math.min(100, s + 2)); e.preventDefault(); }
   };
 
-  const clip = mode === 'flicker'
-    ? (flickerOn ? 'none' : 'inset(0 100% 0 0)')
-    : `inset(0 ${100 - split}% 0 0)`;
+  const clip = `inset(0 ${100 - split}% 0 0)`;
 
   const badge = (side: Side) => {
     const b = badges[side];
@@ -298,8 +285,8 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
     );
   };
 
-  const showOnboardLabel = mode === 'split' ? split > 0 : flickerOn;
-  const showGsLabel = mode === 'split' ? split < 100 : !flickerOn;
+  const showOnboardLabel = split > 0;
+  const showGsLabel = split < 100;
 
   return (
     <figure class="m-0">
@@ -307,7 +294,7 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
         ref={box}
         class="relative aspect-video w-full touch-none overflow-hidden rounded-lg bg-black select-none"
         onPointerDown={(e) => {
-          if (phase !== 'ready' || mode !== 'split') return;
+          if (phase !== 'ready') return;
           dragging.current = true;
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
           place(e.clientX);
@@ -348,7 +335,7 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
 
         {/* Only once there is something to divide: over the poster it would
             sit on the play button and take its click. */}
-        {phase === 'ready' && mode === 'split' && (
+        {phase === 'ready' && (
           <div
             class="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-white/90 shadow"
             style={{ left: `${split}%` }}
@@ -390,18 +377,6 @@ export default function FlightCompare({ base, poster, start, end, rndPlayer, lab
       </div>
 
       <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-        <span class="inline-flex overflow-hidden rounded border border-hairline" role="group">
-          {(['split', 'flicker'] as const).map((m) => (
-            <button
-              type="button"
-              class={`border-0 px-3 py-1 ${mode === m ? 'bg-brand-blue text-white' : 'bg-white'}`}
-              aria-pressed={mode === m}
-              onClick={() => setMode(m)}
-            >
-              {m === 'split' ? labels.split : labels.flicker}
-            </button>
-          ))}
-        </span>
         <label class="inline-flex items-center gap-2">
           <input type="checkbox" checked={pinned} disabled={phase !== 'ready'} onChange={(e) => void pin((e.target as HTMLInputElement).checked)} />
           {labels.original}
