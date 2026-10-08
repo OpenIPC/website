@@ -61,6 +61,24 @@ describe('every page is a page', () => {
     }
   });
 
+  // A search engine takes pages that share a title and a description for
+  // copies of one page. Yandex did exactly that to the chips in October 2026,
+  // folding gk7205v210 into gk7102ca and hi3516av100 into nt98566.
+  test('no two vendor or chip pages share a title or a description', () => {
+    const catalogue = PAGES.filter(([, path]) => path.startsWith('/cameras/vendors/'));
+    for (const locale of LOCALES) {
+      const own = catalogue.filter(([l]) => l === locale);
+      for (const pattern of [/<title>([^<]*)<\/title>/, /<meta name="description" content="([^"]*)"/]) {
+        const seen = new Map<string, string>();
+        for (const [, path, html] of own) {
+          const value = html.match(pattern)?.[1] ?? '';
+          expect(seen.get(value), `${locale}${path} repeats ${value}`).toBeUndefined();
+          seen.set(value, path);
+        }
+      }
+    }
+  });
+
   test('each declares its own language, and its own canonical if it has one', () => {
     for (const [locale, path, html] of PAGES) {
       expect(html, `${locale}${path}`).toContain(`lang="${locale}"`);

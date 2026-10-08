@@ -27,6 +27,8 @@
         "th_soc_model": "芯片 (SoC)",
         "th_stage": "阶段",
         "title": "支持的硬件",
+        "vendor_meta_description": "OpenIPC 已知的每一款 {vendor} 摄像机芯片（SoC）、其支持所处的阶段，以及现在能否在其上安装开源固件。",
+        "vendor_page_title": "{vendor} 芯片：支持的硬件",
         "verdict_firmware_only": "仅限高级用户",
         "verdict_none": "暂不支持",
         "verdict_wizard": "向导安装",
@@ -38,6 +40,8 @@
       "soc": {
         "firmware_only": "通过摄像机原厂引导程序手动安装",
         "generate_guide": "生成安装指南",
+        "meta_description": "在使用 {chip} 芯片的摄像机上安装 OpenIPC 开源 IP 摄像机固件：现在能否安装、适用于您闪存芯片的引导程序和固件，以及将它们写入摄像机的命令。",
+        "page_title": "{chip} 安装指南",
         "unavailable": "暂不可用",
         "unavailable_hlp": "不可用——正在寻找开发者",
         "unavailable_mvp": "不可用——早期版本",

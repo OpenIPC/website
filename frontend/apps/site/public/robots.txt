@@ -30,3 +30,10 @@ Disallow: /*/rails/active_storage/
 # prove that nginx is serving the bundle rather than falling through to @fallback
 # (#157). It carries a noindex of its own; this is the belt to that's braces.
 Disallow: /_smoke/
+
+# Where the list of pages is. Yandex had openipc.org's sitemap submitted by hand
+# on 2026-09-30 and a week later still reported none (NO_SITEMAPS); a crawler
+# reads this file before anything else. openipc.ru serves the same file, and
+# names its own sitemap in Yandex Webmaster: a Sitemap line on another host is
+# ignored there, not followed.
+Sitemap: https://openipc.org/sitemap.xml

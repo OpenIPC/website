@@ -36,6 +36,8 @@ en:
         verdict_none: "Not yet"
         verdict_wizard: "Guided install"
         ways_link: "New to this? Four ways to get a camera running OpenIPC"
+        vendor_page_title: "{vendor} chips: supported hardware"
+        vendor_meta_description: "Every {vendor} camera chip (SoC) OpenIPC knows of, the stage its support has reached, and whether you can install the open-source firmware on it today."
       show:
         export_unreachable: "The installation commands for this camera could not be loaded, so this page cannot show them right now. It is this site's fault, not your camera's — nothing has gone wrong with the hardware."
         export_unreachable_link: "Try again"
@@ -80,6 +82,8 @@ en:
         unavailable_rnd: "Not available — in research"
         unavailable_wip: "Not available — in progress"
         generate_guide: Generate an installation guide
+        page_title: "{chip} installation guide"
+        meta_description: "Installing OpenIPC, the open-source IP camera firmware, on a camera with the {chip} chip: whether it can be done today, the bootloader and firmware for your flash chip, and the commands that put them on the camera."
       warnings:
         edition_not_published: OpenIPC does not publish a {edition} build for this SoC on {flash} flash. Showing {shown} instead.
         eight_meg_chip: 8MB Flash ROM can only be flashed with Lite or FPV edition!
