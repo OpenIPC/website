@@ -22,7 +22,7 @@
  *   * the ~33 redirects, the two `410 Gone` routes and the catch-all, which
  *     are cheap, tested, and reached by falling through the seam.
  */
-import { VENDORS } from './hardware';
+import { VENDORS, fullName } from './hardware';
 /**
  * The catalogue's own addresses (#162), derived from the same data the pages
  * render: recommended, one tab per vendor, and the full list. Written out here
@@ -33,16 +33,25 @@ function hardwarePaths(): PagePath[] {
   return [
     { path: '/supported-hardware/featured', titleKey: 'cameras.socs.index.title' },
     { path: '/supported-hardware/full-list', titleKey: 'cameras.socs.index.title' },
+    // Each vendor and each chip is titled and described by name. One title
+    // for all 14 vendors and one for all 126 chips was what Yandex saw on
+    // 2026-10-04: it folded unrelated chips into each other as duplicates
+    // (gk7205v210 into gk7102ca, hi3516av100 into nt98566) and listed every
+    // wizard in its results as "Installation Guide".
     ...VENDORS.map((vendor) => ({
       path: `/cameras/vendors/${vendor.urlname}`,
-      titleKey: 'cameras.socs.index.title',
+      titleKey: 'cameras.socs.index.vendor_page_title',
+      descriptionKey: 'cameras.socs.index.vendor_meta_description',
+      vars: { vendor: vendor.name },
     })),
 
     // One wizard per SoC (#164). 126 of them, and the address is the one
     // it always had: a link anyone has shared still opens the page it opened.
     ...VENDORS.flatMap((vendor) => vendor.socs.map((soc) => ({
       path: `/cameras/vendors/${vendor.urlname}/socs/${soc.urlname}`,
-      titleKey: 'cameras.socs.show.title',
+      titleKey: 'cameras.socs.soc.page_title',
+      descriptionKey: 'cameras.socs.soc.meta_description',
+      vars: { chip: fullName(vendor, soc) },
     }))),
   ];
 }
@@ -54,6 +63,8 @@ export interface PagePath {
   titleKey: string;
   /** The catalogue key for the meta description, when the page sets its own. */
   descriptionKey?: string;
+  /** Values for the `{name}`s in the title and the description. */
+  vars?: Record<string, string>;
   /** Keep it out of search results. The smoke page only. */
   noindex?: boolean;
   /** Served at addresses it cannot know, so it claims none. See Base.astro. */

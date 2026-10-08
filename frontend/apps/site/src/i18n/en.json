@@ -27,6 +27,8 @@
         "th_soc_model": "Chip (SoC)",
         "th_stage": "Stage",
         "title": "Supported Hardware",
+        "vendor_meta_description": "Every {vendor} camera chip (SoC) OpenIPC knows of, the stage its support has reached, and whether you can install the open-source firmware on it today.",
+        "vendor_page_title": "{vendor} chips: supported hardware",
         "verdict_firmware_only": "Experts only",
         "verdict_none": "Not yet",
         "verdict_wizard": "Guided install",
@@ -38,6 +40,8 @@
       "soc": {
         "firmware_only": "Install by hand from the camera’s own bootloader",
         "generate_guide": "Generate an installation guide",
+        "meta_description": "Installing OpenIPC, the open-source IP camera firmware, on a camera with the {chip} chip: whether it can be done today, the bootloader and firmware for your flash chip, and the commands that put them on the camera.",
+        "page_title": "{chip} installation guide",
         "unavailable": "Not available yet",
         "unavailable_hlp": "Not available — looking for a developer",
         "unavailable_mvp": "Not available — early build",

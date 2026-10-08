@@ -36,6 +36,8 @@ zh:
         verdict_none: "暂不支持"
         verdict_wizard: "向导安装"
         ways_link: "第一次来？让摄像机运行 OpenIPC 的四种方式"
+        vendor_page_title: "{vendor} 芯片：支持的硬件"
+        vendor_meta_description: "OpenIPC 已知的每一款 {vendor} 摄像机芯片（SoC）、其支持所处的阶段，以及现在能否在其上安装开源固件。"
       show:
         export_unreachable: "无法加载这颗芯片的安装命令，因此本页暂时无法显示它们。这是本站的问题，与您的摄像机无关——硬件没有任何故障。"
         export_unreachable_link: "重试"
@@ -80,6 +82,8 @@ zh:
         unavailable_rnd: "不可用——研究中"
         unavailable_wip: "不可用——进行中"
         generate_guide: 生成安装指南
+        page_title: "{chip} 安装指南"
+        meta_description: "在使用 {chip} 芯片的摄像机上安装 OpenIPC 开源 IP 摄像机固件：现在能否安装、适用于您闪存芯片的引导程序和固件，以及将它们写入摄像机的命令。"
       warnings:
         edition_not_published: OpenIPC 未为该 SoC 在 {flash} 闪存上发布 {edition} 版本。现显示 {shown}。
         eight_meg_chip: 8MB 闪存只能刷写 Lite 或 FPV 版本！
