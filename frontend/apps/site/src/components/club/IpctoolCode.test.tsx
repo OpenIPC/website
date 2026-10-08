@@ -39,3 +39,13 @@ test('a code for no report in particular asks for none', async () => {
   expect(await findByText('ipctool upload --note club-7K3Q-9XPA')).toBeTruthy();
   expect(calls[0].body).toEqual({});
 });
+
+test('copying where the browser has no clipboard leaves the command to select', async () => {
+  stub();
+  vi.stubGlobal('navigator', { ...navigator, clipboard: undefined });
+  const { getByText, findByText } = render(<IpctoolCode locale="en" t={t} label="Send ipctool's report from a camera" />);
+  fireEvent.click(getByText("Send ipctool's report from a camera"));
+  await findByText('ipctool upload --note club-7K3Q-9XPA');
+  expect(() => fireEvent.click(getByText('Copy'))).not.toThrow();
+  expect(getByText('ipctool upload --note club-7K3Q-9XPA')).toBeTruthy();
+});

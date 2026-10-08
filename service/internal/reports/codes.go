@@ -28,9 +28,13 @@ const (
 // codeAlphabet has no 0/O or 1/I to misread off a terminal.
 const codeAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 
-// codeInText finds anything shaped like a code, valid or not, so a mistyped
-// one is cut out of the note too rather than published.
-var codeInText = regexp.MustCompile(`(?i)\bclub-[0-9a-z]{4}-[0-9a-z]{4}\b`)
+// codeInText finds a code; nearCode anything a person meant as one -- a
+// group too short or too long -- so a mistyped code is refused with how to
+// fix it rather than published in the note and ignored.
+var (
+	codeInText = regexp.MustCompile(`(?i)\bclub-[0-9a-z]{4}-[0-9a-z]{4}\b`)
+	nearCode   = regexp.MustCompile(`(?i)\bclub-[0-9a-z]{3,5}-[0-9a-z]{3,5}\b`)
+)
 
 // Code is a member's code, as /club shows it.
 type Code struct {
@@ -47,6 +51,10 @@ var (
 	ErrNotYours = errors.New("that report is not yours")
 	// ErrBadCode is a code no live, unused code matches.
 	ErrBadCode = errors.New("the club code is unknown, used or expired")
+	// ErrNotACode is text meant as a code that is not one.
+	ErrNotACode = errors.New("is not a club code: club- and two groups of four letters and digits")
+	// ErrOthersCode is a code sent by another signed-in member.
+	ErrOthersCode = errors.New("the club code is another member's")
 )
 
 func newCode() string {
@@ -103,20 +111,28 @@ func (s *Store) NewCode(ctx context.Context, member, joins string) (*Code, error
 	return out, err
 }
 
-// takeCode cuts every code out of the note and returns the one to use: the
-// `club` field's when it carries one, else the note's first. "" when the
-// upload names none.
-func takeCode(fields map[string]string) string {
-	code := canonicalCode(fields["club"])
+// takeCode cuts every code, and everything meant as one, out of the note
+// and returns the one to use: the `club` field's when it carries one, else
+// the note's first. "" when the upload names none; ErrNotACode, with what
+// was sent, when it meant one and the text is not a code.
+func takeCode(fields map[string]string) (string, error) {
+	sent := strings.TrimSpace(fields["club"])
 	if note := fields["note"]; note != "" {
-		if found := codeInText.FindString(note); found != "" {
-			if code == "" {
-				code = canonicalCode(found)
+		if found := nearCode.FindString(note); found != "" {
+			if sent == "" {
+				sent = found
 			}
-			fields["note"] = strings.Join(strings.Fields(codeInText.ReplaceAllString(note, " ")), " ")
+			fields["note"] = strings.Join(strings.Fields(nearCode.ReplaceAllString(note, " ")), " ")
 		}
 	}
-	return code
+	if sent == "" {
+		return "", nil
+	}
+	code := canonicalCode(sent)
+	if code == "" {
+		return "", fmt.Errorf("%q %w", sent, ErrNotACode)
+	}
+	return code, nil
 }
 
 // canonicalCode is a code as it is stored: lower-case prefix, upper-case
@@ -151,19 +167,25 @@ func useCode(ctx context.Context, tx pgx.Tx, r *Report) error {
 	if err != nil {
 		return err
 	}
-	if r.Member == "" {
-		r.Member = member
+	if r.Member != "" && r.Member != member {
+		return ErrOthersCode
 	}
+	r.Member = member
 	if joins != nil {
 		r.Joins = *joins
 		if r.Model == "" && r.Proposal == nil {
+			// The board the joined report was published on, else the one its
+			// sender named, else the camera it proposed.
 			var model *string
-			if err := tx.QueryRow(ctx, `SELECT model_id FROM report_submissions WHERE report_id = $1`, *joins).Scan(&model); err != nil &&
-				!errors.Is(err, pgx.ErrNoRows) {
+			if err := tx.QueryRow(ctx, `
+				SELECT coalesce(
+				  (SELECT model_id FROM report_models WHERE report_id = $1 ORDER BY model_id LIMIT 1),
+				  (SELECT model_id FROM report_submissions WHERE report_id = $1))`, *joins).Scan(&model); err != nil {
 				return err
 			}
 			if model != nil {
 				r.Model = *model
+				return nil
 			}
 			p := &Proposal{}
 			err := tx.QueryRow(ctx, `SELECT maker, board, soc FROM report_proposals WHERE report_id = $1`, *joins).Scan(&p.Maker, &p.Board, &p.SoC)
@@ -188,8 +210,13 @@ func markUsed(ctx context.Context, tx pgx.Tx, r *Report) error {
 func (s *Store) JoinsOf(ctx context.Context, id string) (string, error) {
 	var joins *string
 	err := s.DB.QueryRow(ctx, `SELECT joins FROM report_codes WHERE used_by = $1`, id).Scan(&joins)
-	if errors.Is(err, pgx.ErrNoRows) || joins == nil {
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return "", nil
+	case err != nil:
+		return "", err
+	case joins == nil:
 		return "", nil
 	}
-	return *joins, err
+	return *joins, nil
 }

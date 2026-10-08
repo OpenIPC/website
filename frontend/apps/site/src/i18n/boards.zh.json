@@ -58,6 +58,7 @@
       "code_own": "请在一天内在摄像头上运行此命令。维护者接受后，报告归你所有并获得星星。",
       "code_stock": "原厂固件没有 ipctool？",
       "code_stock_link": "如何在摄像头上运行它",
+      "code_valid": "有效期至 {time}，仅限一次。其他人看不到它：在保存报告之前，它会从备注中删除。",
       "col_stars": "星星",
       "col_status": "状态",
       "col_submission": "提交内容",

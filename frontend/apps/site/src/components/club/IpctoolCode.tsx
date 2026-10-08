@@ -25,6 +25,8 @@ export default function IpctoolCode({ joins, locale, t, label }: {
     newReportCode(joins).then(setCode).catch((e: Error) => setError(e.message)).finally(() => setBusy(false));
   };
   const command = code ? `ipctool upload --note ${code.code}` : '';
+  // Where the Clipboard API is missing (plain HTTP, an old browser) the
+  // optional chain ends the whole call, and the command is there to select.
   const copy = () => {
     navigator.clipboard?.writeText(command).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }, () => {});
   };
@@ -47,7 +49,7 @@ export default function IpctoolCode({ joins, locale, t, label }: {
         <button type="button" class="site-btn site-btn-outline-primary site-btn-sm" onClick={copy}>{copied ? t('club.add_copied') : t('club.add_copy')}</button>
       </div>
       <p class="m-0 text-[12.5px] text-body-secondary">
-        {t('club.add_valid', { time: new Date(code.expires_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) })}{' '}
+        {t('club.code_valid', { time: new Date(code.expires_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) })}{' '}
         {t('club.code_stock')} <a href={pathFor(locale, '/cameras/report')}>{t('club.code_stock_link')}</a>
       </p>
     </div>

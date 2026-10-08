@@ -464,6 +464,7 @@ en:
       code_add_ipctool: 'Add ipctool''s report from this camera'
       code_own: 'Run this on the camera within a day. The report becomes yours and earns stars once a maintainer accepts it.'
       code_joins: 'Run this on the same camera within a day. Its report becomes yours and goes with this one, under the same board.'
+      code_valid: 'Works until {time}, once. Nobody else sees it: it is cut out of the note before the report is stored.'
       code_stock: 'Stock firmware without ipctool?'
       code_stock_link: 'How to get it onto the camera'
       goes_with: 'goes with {id}'

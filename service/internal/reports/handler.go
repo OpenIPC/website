@@ -142,7 +142,11 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	// member's; it is cut out of the note before anything is stored, and a
 	// code that cannot be used is refused before the files are kept, with
 	// what to do -- ipctool prints the reason.
-	code := takeCode(in.fields)
+	code, err := takeCode(in.fields)
+	if err != nil {
+		a.refuse(w, http.StatusBadRequest, err.Error()+"; copy it from "+clubURL(r)+" or send without it")
+		return
+	}
 	if code != "" {
 		live, err := st.CodeLive(ctx, code)
 		if err != nil {
@@ -293,6 +297,10 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		}
 		return nil
 	})
+	if errors.Is(err, ErrOthersCode) {
+		a.refuse(w, http.StatusBadRequest, code+": "+ErrOthersCode.Error()+"; send it signed out, from the camera, or take your own at "+clubURL(r))
+		return
+	}
 	if errors.Is(err, ErrBadCode) {
 		a.refuse(w, http.StatusBadRequest, code+": "+ErrBadCode.Error()+"; take a new one at "+clubURL(r)+" or send without it")
 		return

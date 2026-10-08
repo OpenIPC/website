@@ -58,6 +58,7 @@
       "code_own": "Run this on the camera within a day. The report becomes yours and earns stars once a maintainer accepts it.",
       "code_stock": "Stock firmware without ipctool?",
       "code_stock_link": "How to get it onto the camera",
+      "code_valid": "Works until {time}, once. Nobody else sees it: it is cut out of the note before the report is stored.",
       "col_stars": "Stars",
       "col_status": "Status",
       "col_submission": "Submission",

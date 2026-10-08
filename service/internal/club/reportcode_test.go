@@ -140,3 +140,51 @@ func TestIpctoolsReportJoinsThePhotosByAClubCode(t *testing.T) {
 		t.Error("the report is nobody's")
 	}
 }
+
+// What review found (#406): a mistyped code is refused rather than ignored
+// or published, a signed-in sender cannot spend another member's code, and
+// a report joining one already published takes the board it was published
+// on, so publishing it needs no board named.
+func TestAClubCodeIsNeverMisused(t *testing.T) {
+	e := newEnv(t)
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	petr := e.signedIn(t, 888, "petr", "198.51.100.2")
+
+	for name, fields := range map[string]map[string]string{
+		"a short group in the note":  {"note": "from the shop club-7K3-9XPA"},
+		"a long group in the note":   {"note": "club-7K3QX-9XPA"},
+		"a malformed club field":     {"club": "club-7K3Q"},
+		"something else as the code": {"club": "1234"},
+	} {
+		if status, out := e.ipctoolUpload(t, fields); status != 400 || !strings.Contains(out["error"].(string), "is not a club code") {
+			t.Errorf("%s: %d %v", name, status, out)
+		}
+	}
+
+	_, c := ivan.json(t, "POST", "/api/v1/club/reports/code", map[string]string{})
+	ivans := c["code"].(map[string]any)["code"].(string)
+	if code, out := petr.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10", "club": ivans}, map[string][]byte{"photo": photo}); code != 400 ||
+		!strings.Contains(out["error"].(string), "another member's") {
+		t.Errorf("Petr spending Ivan's code: %d %v", code, out)
+	}
+
+	_, out := ivan.send(t, map[string]string{"channel": "web", "maker": "Jooan", "board": "Q9 v2"}, map[string][]byte{"photo": photo})
+	photos := out["id"].(string)
+	maint := e.maintainer(t)
+	_, q := maint.json(t, "GET", "/api/v1/club/review", nil)
+	nb := q["reports"].([]any)[0].(map[string]any)["new_board"]
+	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+photos, map[string]any{"decision": "publish", "new_board": nb}); code != 200 {
+		t.Fatalf("publish: %d %v", code, d)
+	}
+	_, c = ivan.json(t, "POST", "/api/v1/club/reports/code", map[string]string{"joins": photos})
+	status, up := e.ipctoolUpload(t, map[string]string{"note": c["code"].(map[string]any)["code"].(string)})
+	if status != 201 {
+		t.Fatalf("ipctool: %d %v", status, up)
+	}
+	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+up["id"].(string), map[string]any{"decision": "publish"}); code != 200 || d["points"].(float64) != 1 {
+		t.Fatalf("publish with no board named: %d %v", code, d)
+	}
+	if pub, _ := e.api.Reports.Store().Public(context.Background(), up["id"].(string)); len(pub.Models) != 1 || pub.Models[0].ID != "jooan-q9-v2" {
+		t.Errorf("ipctool's report is on %v, not the photos' board", pub.Models)
+	}
+}
