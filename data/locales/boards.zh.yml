@@ -20,6 +20,7 @@ zh:
       flag_backup: "附带整个闪存，仅 OpenIPC 维护者可见。ipctool 会先要求您输入 yes。"
       flag_public: "审核后，备份随报告一起公开"
       flag_note: "购买渠道和销售名称"
+      flag_club: "你在 OpenIPC 俱乐部（openipc.org/club）获取的一次性代码：报告归你所有，与你发送的照片关联，并可获得星星"
       agent_title: "由 AI 编程代理来分析"
       agent_lede: "把这个页面交给它。它会先查目录，再把发现的内容作为单独的报告发送。"
       agent_prompt: "Read https://openipc.org/agents.md and follow it to identify this camera and send openipc.org a report."
@@ -462,6 +463,14 @@ zh:
       new_link: '添加目录中没有的摄像头'
       new_lede: '填写厂商和电路板，并附上照片：电路板正反面和标签。维护者发布你的报告时会把它加入目录；每张照片和每个文件可获得 {n} ★，我们还没有的完整闪存转储可获得 {dump} ★。'
       new_dump_hint: '可选。如果摄像头上无法运行 ipctool（例如 U-Boot 设有密码），可以用编程器读取闪存芯片；我们还没有的转储可获得 {n} ★。'
+      code_get: '从摄像头发送 ipctool 报告'
+      code_add_ipctool: '添加这台摄像头的 ipctool 报告'
+      code_own: '请在一天内在摄像头上运行此命令。维护者接受后，报告归你所有并获得星星。'
+      code_joins: '请在一天内在同一台摄像头上运行此命令。它的报告归你所有，并与这份报告归入同一块电路板。'
+      code_stock: '原厂固件没有 ipctool？'
+      code_stock_link: '如何在摄像头上运行它'
+      goes_with: '与 {id} 一起'
+      review_joins_label: '一起发送'
       new_maker: '厂商'
       new_maker_hint: 'Xiongmai、Jooan、Hikvision…'
       new_board: '电路板丝印或型号'

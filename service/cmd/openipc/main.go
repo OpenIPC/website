@@ -195,6 +195,7 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/club/github/callback"},
 	{"web", "POST", "/api/v1/club/reports"},
 	{"web", "GET", "/api/v1/club/reports"},
+	{"web", "POST", "/api/v1/club/reports/code"},
 	{"web", "GET", "/api/v1/club/reports/{id}/files/{position}"},
 	{"web", "GET", "/api/v1/club/review"},
 	{"web", "POST", "/api/v1/club/review/{id}"},

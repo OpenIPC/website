@@ -43,6 +43,10 @@ type Report struct {
 	Model  string
 	// Proposal: a camera the catalogue does not have, as the sender names it.
 	Proposal *Proposal
+	// Code: a Club code the upload carried (codes.go); Insert makes the
+	// report its member's, and Joins the report it was given to go with.
+	Code  string
+	Joins string
 }
 
 // Proposal is a camera the catalogue does not have yet, as its sender names
@@ -128,6 +132,11 @@ func (s *Store) Insert(ctx context.Context, r *Report, limit int, place func() e
 		if n >= limit {
 			return ErrQuota
 		}
+		if r.Code != "" {
+			if err := useCode(ctx, tx, r); err != nil {
+				return err
+			}
+		}
 		for _, f := range r.Files {
 			for _, sum := range []string{f.SHA256, f.PublicSHA256} {
 				if sum == "" {
@@ -181,6 +190,11 @@ func (s *Store) Insert(ctx context.Context, r *Report, limit int, place func() e
 		if r.Member != "" || r.Model != "" {
 			if _, err := tx.Exec(ctx, `INSERT INTO report_submissions (report_id, member_id, model_id) VALUES ($1, $2, $3)`,
 				r.ID, nullable(r.Member), nullable(r.Model)); err != nil {
+				return err
+			}
+		}
+		if r.Code != "" {
+			if err := markUsed(ctx, tx, r); err != nil {
 				return err
 			}
 		}

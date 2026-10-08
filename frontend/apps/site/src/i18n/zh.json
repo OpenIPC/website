@@ -680,6 +680,7 @@
       "fact3_html": "备份包含摄像头存储的一切，包括 Wi-Fi 密钥和密码。只有使用 <code>--public</code> 发送时才会公开。",
       "fact3_title": "备份默认不公开",
       "flag_backup": "附带整个闪存，仅 OpenIPC 维护者可见。ipctool 会先要求您输入 yes。",
+      "flag_club": "你在 OpenIPC 俱乐部（openipc.org/club）获取的一次性代码：报告归你所有，与你发送的照片关联，并可获得星星",
       "flag_note": "购买渠道和销售名称",
       "flag_public": "审核后，备份随报告一起公开",
       "flag_upload": "硬件报告：SoC、传感器、闪存分区、固件版本",

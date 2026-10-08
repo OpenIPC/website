@@ -88,6 +88,7 @@ func (a *API) Handlers() map[string]http.Handler {
 		"GET /api/v1/club/github/callback":               http.HandlerFunc(a.githubCallback),
 		"POST /api/v1/club/reports":                      a.post(a.send),
 		"GET /api/v1/club/reports":                       http.HandlerFunc(a.mine),
+		"POST /api/v1/club/reports/code":                 a.post(a.reportCode),
 		"GET /api/v1/club/reports/{id}/files/{position}": http.HandlerFunc(a.file),
 		"GET /api/v1/club/review":                        http.HandlerFunc(a.queue),
 		"POST /api/v1/club/review/{id}":                  a.post(a.decide),
@@ -519,6 +520,38 @@ func (a *API) send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.Reports.Submit(w, r, member)
+}
+
+// reportCode is POST /api/v1/club/reports/code {"joins": "r-..."}: a code
+// for a report sent from the camera -- `ipctool upload --note <code>` -- that
+// makes it the member's, joining one of their reports when joins names it.
+func (a *API) reportCode(w http.ResponseWriter, r *http.Request) {
+	m, ok := a.signedIn(w, r)
+	if !ok {
+		return
+	}
+	var in struct {
+		Joins string `json:"joins"`
+	}
+	if r.ContentLength != 0 {
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&in); err != nil {
+			a.refuse(w, http.StatusBadRequest, `send {} or {"joins": "<one of your reports>"}`)
+			return
+		}
+	}
+	code, err := a.Reports.Store().NewCode(r.Context(), m.ID, in.Joins)
+	switch {
+	case errors.Is(err, reports.ErrTooManyCodes):
+		a.refuse(w, http.StatusTooManyRequests, err.Error())
+		return
+	case errors.Is(err, reports.ErrNotYours):
+		a.refuse(w, http.StatusNotFound, err.Error())
+		return
+	case err != nil:
+		a.fail(w, "the code", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"code": code})
 }
 
 // mine is GET /api/v1/club/reports: what the member sent, its state and
