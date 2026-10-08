@@ -9,9 +9,10 @@
  * but removing it is #158's business and not this change's.
  *
  * The icons are inlined rather than fetched. Each is under 2 KB, they are the
- * same six SVGs app/assets/images carries, and every one of them already draws
- * with `fill="currentColor"` -- so the dark footer colours them by inheritance
- * instead of with the `filter: invert(1)` the Bootstrap footer needs.
+ * six SVGs app/assets/images carried plus Simple Icons' Bluesky (#402), and
+ * every one of them already draws with `fill="currentColor"` -- so the dark
+ * footer colours them by inheritance instead of with the `filter: invert(1)`
+ * the Bootstrap footer needs.
  */
 import { footerFor, SOCIAL_LINKS } from '../lib/nav';
 import { useTranslations, type Locale } from '../lib/i18n';
@@ -22,9 +23,10 @@ import telegram from '../assets/social/telegram.svg?raw';
 import youtube from '../assets/social/youtube.svg?raw';
 import twitter from '../assets/social/twitter.svg?raw';
 import instagram from '../assets/social/instagram.svg?raw';
+import bluesky from '../assets/social/bluesky.svg?raw';
 
 const ICONS: Record<string, string> = {
-  github, opencollective, telegram, youtube, twitter, instagram,
+  github, opencollective, telegram, youtube, twitter, instagram, bluesky,
 };
 
 interface Props { locale: Locale }
