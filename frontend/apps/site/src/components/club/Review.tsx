@@ -107,6 +107,8 @@ function Item({ q, locale, t, onDone }: { q: Queued; locale: Locale; t: BoardsT;
         <dd class="m-0">{q.member ? t('club.review_from', { who: q.member }) : t('club.review_anon')}</dd>
         {q.board && <><dt class="text-body-secondary">{t('club.review_board')}</dt>
           <dd class="m-0"><a href={`${pathFor(locale, '/cameras/boards')}?model=${encodeURIComponent(q.board.id)}`} class="font-mono">{q.board.id}</a></dd></>}
+        {q.joins && <><dt class="text-body-secondary">{t('club.review_joins_label')}</dt>
+          <dd class="m-0">{t('club.goes_with', { id: q.joins })}</dd></>}
         {q.proposal && <><dt class="text-body-secondary">{t('club.review_proposal')}</dt>
           <dd class="m-0">{[q.proposal.maker, q.proposal.board, q.proposal.soc].filter(Boolean).join(' · ')}</dd></>}
         {q.guess && <><dt class="text-body-secondary">ipctool</dt><dd class="m-0">{t('club.review_guess', { board: `${q.guess.manufacturer} ${q.guess.model}` })} <span class="font-mono text-[12px]">{q.guess.model_id}</span></dd></>}

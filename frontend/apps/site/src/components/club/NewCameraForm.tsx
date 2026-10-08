@@ -13,6 +13,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { STARS, fetchMe, remembered, sendReport, type Member, type Sent } from '../../lib/club';
+import IpctoolCode from './IpctoolCode';
 
 const field = 'rounded-md border border-hairline px-2.5 py-1.5 text-sm text-body';
 const area = 'min-h-[72px] w-full resize-y rounded-md border border-hairline bg-surface-alt p-2 font-mono text-[12.5px] leading-snug text-body';
@@ -70,6 +71,11 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
             ? <a href={pathFor(locale, '/club')}>{t('club.my_link')}</a>
             : <a href={`${pathFor(locale, '/cameras/report')}?id=${id}`}>{t('club.receipt')}</a>}
         </p>
+        {member && (
+          <div class="text-body">
+            <IpctoolCode joins={id} locale={locale} t={t} label={t('club.code_add_ipctool')} />
+          </div>
+        )}
       </div>
     );
   }

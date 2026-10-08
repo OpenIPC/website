@@ -20,6 +20,7 @@ en:
       flag_backup: "adds the whole flash, kept private for OpenIPC's maintainers. ipctool asks you to type yes first."
       flag_public: "the backup is published with the report, once reviewed"
       flag_note: "where you bought it and what it is sold as"
+      flag_club: "your one-time code from the OpenIPC Club (openipc.org/club): the report is yours, goes with the photos you sent, and earns stars"
       agent_title: "An AI coding agent is doing the digging"
       agent_lede: "Give it this page. It checks the catalogue first, then sends what it found as a report of its own."
       agent_prompt: "Read https://openipc.org/agents.md and follow it to identify this camera and send openipc.org a report."
@@ -459,6 +460,15 @@ en:
       new_link: 'Add a camera that is not in the catalogue'
       new_lede: 'Name the maker and the board, and add photos of it: the board''s front and back, and the label. A maintainer adds it to the catalogue when they publish your report; each photo and file earns {n} ★, and a whole-flash dump nobody sent before {dump} ★.'
       new_dump_hint: 'Optional. Read the chip with a programmer when ipctool cannot run on the camera, for example behind a U-Boot password; a dump nobody sent before earns {n} ★.'
+      code_get: 'Send ipctool''s report from a camera'
+      code_add_ipctool: 'Add ipctool''s report from this camera'
+      code_own: 'Run this on the camera within a day. The report becomes yours and earns stars once a maintainer accepts it.'
+      code_joins: 'Run this on the same camera within a day. Its report becomes yours and goes with this one, under the same board.'
+      code_valid: 'Works until {time}, once. Nobody else sees it: it is cut out of the note before the report is stored.'
+      code_stock: 'Stock firmware without ipctool?'
+      code_stock_link: 'How to get it onto the camera'
+      goes_with: 'goes with {id}'
+      review_joins_label: 'Sent with'
       new_maker: 'Maker'
       new_maker_hint: 'Xiongmai, Jooan, Hikvision…'
       new_board: 'Board marking or model'

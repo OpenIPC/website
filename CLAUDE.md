@@ -177,7 +177,12 @@ restores the image but never the schema, so keep migrations additive.
   lacks is sent from `/cameras/report#new` as its maker, its marking and
   photos (`report_proposals`, migration 028), and publishing it from the
   review queue adds the board (`boards.CreateModel`, alias source `club`)
-  -- the only way a model is made besides the importers.
+  -- the only way a model is made besides the importers. A report sent from
+  the camera is a member's when it carries a one-time code from `/club`
+  (`report_codes`, migration 029), in the note because every ipctool in the
+  field can send one: `ipctool upload --note club-XXXX-XXXX`. A code may
+  join one of the member's reports, and the new one takes its board or
+  proposal, so ipctool's report and the photos land on one board.
 - `internal/wallstars` -- **stars for keeping a camera on the Open Wall**
   (migration 024). A member links a camera by making it upload a one-time
   code from `/club`: pasted at the end of the WebUI's OpenWall caption on

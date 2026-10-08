@@ -17,6 +17,7 @@ import {
 } from '../../lib/club';
 import { size } from '../../lib/reports';
 import Cameras from './Cameras';
+import IpctoolCode from './IpctoolCode';
 import { STATUS_TONE, Stars } from './parts';
 
 type Load = { state: 'loading' } | { state: 'ok'; me: Me } | { state: 'error' };
@@ -324,7 +325,10 @@ function MemberPage({ member, ways, locale, t, onChange }: {
           : !error && <div class="m-4 h-24 animate-pulse rounded bg-surface-alt" />}
         <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-hairline px-4 py-3">
           <h2 id="club-mine" class="m-0 text-lg font-semibold">{t('club.mine_title')}</h2>
-          <a href={`${pathFor(locale, '/cameras/report')}#new`} class="text-sm">{t('club.new_link')}</a>
+          <span class="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+            <a href={`${pathFor(locale, '/cameras/report')}#new`}>{t('club.new_link')}</a>
+            <IpctoolCode locale={locale} t={t} label={t('club.code_get')} />
+          </span>
         </div>
         {error && <p class="m-4 text-sm text-[#9a5b00]" role="alert">{t('club.load_failed')}</p>}
         {!error && reports === null && <div class="m-4 h-24 animate-pulse rounded bg-surface-alt" />}
@@ -361,6 +365,7 @@ function Ledger({ reports, locale, t }: { reports: MemberReport[]; locale: Local
                   <span>
                     {r.board ? <a href={`${pathFor(locale, '/cameras/boards')}?model=${encodeURIComponent(r.board.id)}`}>{board}</a> : board}
                     <span class="ms-2 font-mono text-[12px] text-body-secondary">{r.id}</span>
+                    {r.joins && <span class="ms-2 text-[12px] text-body-secondary">{t('club.goes_with', { id: r.joins })}</span>}
                   </span>
                   <ul class="m-0 grid list-none gap-0.5 p-0 text-[12.5px] text-body-secondary">
                     {r.files.map((f) => (
@@ -372,6 +377,7 @@ function Ledger({ reports, locale, t }: { reports: MemberReport[]; locale: Local
                     ))}
                   </ul>
                   {r.duplicate && <span class="text-[12.5px] text-body-secondary">{t('club.duplicate')}</span>}
+                  {r.status !== 'rejected' && !r.joins && <IpctoolCode joins={r.id} locale={locale} t={t} label={t('club.code_add_ipctool')} />}
                   {r.review_note && (
                     <span class="text-[12.5px] text-body"><b class="font-semibold">{t('club.review_note_label')}:</b> {r.review_note}</span>
                   )}

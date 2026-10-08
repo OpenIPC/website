@@ -138,6 +138,27 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		return
 	}
 
+	// A Club code, in the note or the club field, makes the report a
+	// member's; it is cut out of the note before anything is stored, and a
+	// code that cannot be used is refused before the files are kept, with
+	// what to do -- ipctool prints the reason.
+	code, err := takeCode(in.fields)
+	if err != nil {
+		a.refuse(w, http.StatusBadRequest, err.Error()+"; copy it from "+clubURL(r)+" or send without it")
+		return
+	}
+	if code != "" {
+		live, err := st.CodeLive(ctx, code)
+		if err != nil {
+			a.fail(w, "the club code", err)
+			return
+		}
+		if !live {
+			a.refuse(w, http.StatusBadRequest, code+": "+ErrBadCode.Error()+"; take a new one at "+clubURL(r)+" or send without it")
+			return
+		}
+	}
+
 	model := in.fields["model"]
 	prop, err := proposalOf(in, channel, model)
 	if err != nil {
@@ -217,7 +238,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		NotePublic: Redact(in.fields["note"], facts, key),
 		YAML:       doc, YAMLPublic: Redact(doc, facts, key), Facts: facts,
 		IDHashes: facts.IDHashes(key), Consent: consent, ClientHash: client,
-		Member: member, Model: model, Proposal: prop,
+		Member: member, Model: model, Proposal: prop, Code: code,
 	}
 	sum := sha256.Sum256([]byte(doc))
 	rep.YAMLSHA256 = hex.EncodeToString(sum[:])
@@ -276,6 +297,14 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		}
 		return nil
 	})
+	if errors.Is(err, ErrOthersCode) {
+		a.refuse(w, http.StatusBadRequest, code+": "+ErrOthersCode.Error()+"; send it signed out, from the camera, or take your own at "+clubURL(r))
+		return
+	}
+	if errors.Is(err, ErrBadCode) {
+		a.refuse(w, http.StatusBadRequest, code+": "+ErrBadCode.Error()+"; take a new one at "+clubURL(r)+" or send without it")
+		return
+	}
 	if errors.Is(err, ErrQuota) {
 		w.Header().Set("Retry-After", "3600")
 		a.refuse(w, http.StatusTooManyRequests, fmt.Sprintf("%d reports a day from one address is the limit; send the rest tomorrow", DailyPerClient))
@@ -290,7 +319,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		a.Log.Warn("reports: identify failed", "report", rep.ID, "err", err)
 	}
 	a.Log.Info("reports: received", "report", rep.ID, "channel", channel, "chip", facts.ChipModel,
-		"files", len(rep.Files), "consent", consent, "known", ident.Known)
+		"files", len(rep.Files), "consent", consent, "known", ident.Known, "member", rep.Member, "joins", rep.Joins)
 
 	type receivedFile struct {
 		Kind    string `json:"kind"`
@@ -315,14 +344,17 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	} else if in.backup != nil {
 		out["backup"] = map[string]any{"partitions": len(backup.Blocks), "flash_bytes": backup.Size()}
 	}
-	if member != "" {
+	if rep.Member != "" {
 		out["receipt_url"] = clubURL(r)
+	}
+	if rep.Joins != "" {
+		out["joins"] = rep.Joins
 	}
 	writeJSON(w, http.StatusCreated, out)
 }
 
 var formFields = map[string]bool{"consent": true, "channel": true, "tool": true, "note": true, "model": true,
-	"maker": true, "board": true, "soc": true}
+	"maker": true, "board": true, "soc": true, "club": true}
 
 // proposalOf is the camera a send proposes, nil when it proposes none: the
 // send form's, for a board the catalogue does not have, with a photo of it.
@@ -406,7 +438,7 @@ func (a *API) read(r *http.Request) (*received, int, error) {
 			return in, http.StatusRequestEntityTooLarge, fmt.Errorf("ipctool's output is larger than %d KB", MaxYAML>>10)
 		}
 		in.yaml = string(body)
-		for _, k := range []string{"channel", "tool", "note"} {
+		for _, k := range []string{"channel", "tool", "note", "club"} {
 			in.fields[k] = r.URL.Query().Get(k)
 		}
 		return in, 0, nil
@@ -465,7 +497,7 @@ func (a *API) read(r *http.Request) (*received, int, error) {
 			}
 			in.parts[len(in.parts)-1].mime = mt
 		default:
-			return in, http.StatusBadRequest, fmt.Errorf("%q is not a part a report has: yaml, backup, photo, boot_log, uboot_env, note, document, consent, channel, tool, model, maker, board, soc", name)
+			return in, http.StatusBadRequest, fmt.Errorf("%q is not a part a report has: yaml, backup, photo, boot_log, uboot_env, note, document, consent, channel, tool, model, maker, board, soc, club", name)
 		}
 	}
 	if in.yaml == "" && in.backup == nil && in.fields["model"] == "" && in.fields["maker"] == "" && in.fields["board"] == "" {

@@ -12,6 +12,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { STARS, fetchMe, remembered, sendReport, type Member, type Sent } from '../../lib/club';
+import IpctoolCode from './IpctoolCode';
 
 export type SendKind = 'boot_log' | 'uboot_env' | 'photo' | 'backup';
 const KINDS: SendKind[] = ['uboot_env', 'boot_log', 'photo', 'backup'];
@@ -66,6 +67,11 @@ export default function SendForm({ model, kind, locale, t, note }: {
             {t('club.send_another')}
           </button>
         </p>
+        {member && (
+          <div class="text-body">
+            <IpctoolCode joins={id} locale={locale} t={t} label={t('club.code_add_ipctool')} />
+          </div>
+        )}
       </div>
     );
   }

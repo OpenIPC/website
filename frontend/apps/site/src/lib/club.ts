@@ -64,6 +64,8 @@ export interface MemberReport {
   review_note?: string;
   board?: BoardRef;
   proposal?: Proposal;
+  /** The report this one was sent to go with, by a Club code. */
+  joins?: string;
   chip?: string;
   files: MemberFile[];
   stars: number;
@@ -90,6 +92,7 @@ export interface Queued {
   potential: number;
   proposal?: Proposal;
   new_board?: Suggestion;
+  joins?: string;
 }
 
 const BASE = '/api/v1/club';
@@ -180,6 +183,13 @@ export const fetchQueue = (status = 'pending') => call<{ reports: Queued[] }>(`/
 export const decide = (id: string, decision: 'publish' | 'reject', models: string[], note: string, newBoard?: NewBoard) =>
   post<{ points: number; total: number; board?: string }>(`/review/${encodeURIComponent(id)}`,
     newBoard ? { decision, models, note, new_board: newBoard } : { decision, models, note });
+
+/** A code that makes `ipctool upload --note <code>` the member's report. */
+export interface ReportCode { code: string; expires_at: string; joins?: string }
+
+/** A code for a report sent from the camera, joining report joins if given. */
+export const newReportCode = (joins?: string) =>
+  post<{ code: ReportCode }>('/reports/code', joins ? { joins } : {}).then((r) => r.code);
 
 /** The send form's answer: the report's receipt. */
 export interface Sent { id: string; receipt_url: string; files: { kind: string; name: string; private?: boolean }[] }
