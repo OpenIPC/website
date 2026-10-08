@@ -584,6 +584,9 @@ answered GET  "/tools/high-resolution-timer?locale=ru" 301 "$O/ru/tools/high-res
 answered GET  "/low-latency?locale=ru"  301 "$O/ru/low-latency"              static
 answered GET  "/cameras/boards?locale=ru" 301 "$O/ru/cameras/boards"        static
 answered POST "/donate?locale=ru"       405 -                                static
+# Percent-encoded paths and repeated locales are left as they were (Qodo on #409).
+answered GET  "/%72u/donate?locale=zh"  200 -                                static
+answered GET  "/donate?locale=ru&locale=zh" 200 -                            static
 answered GET  /telemetry/anything       410 -                                nginx
 answered GET  /zh/merchandise           410 -                                nginx
 answered GET  /admin/snapshots          410 -                                nginx
