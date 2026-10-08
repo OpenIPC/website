@@ -559,6 +559,34 @@ answered GET  /coupler                  301 https://github.com/OpenIPC/coupler/ 
 answered GET  /wiki/some/deep/path      301 https://github.com/OpenIPC/wiki  nginx
 answered GET  /binaries                 410 -                                nginx
 answered POST /binaries.json            410 -                                nginx
+# An old `?locale=ru|zh` address goes to the page in that language, with the
+# rest of its query (conf.d/openipc-locale-param.conf). Not when the address
+# already names a language, not for English, not for a file, not for a write.
+answered GET  "/donate?locale=ru"       301 "$O/ru/donate"                   static
+answered HEAD "/donate/?locale=zh"      301 "$O/zh/donate/"                  static
+answered GET  "/?locale=ru"             301 "$O/ru"                          static
+answered GET  "/?utm_source=x&locale=zh" 301 "$O/zh?utm_source=x"           static
+answered GET  "/donate?locale=ru&utm_source=x" 301 "$O/ru/donate?utm_source=x" static
+answered GET  "/donate?a=1&locale=ru&b=2" 301 "$O/ru/donate?a=1&b=2"        static
+answered GET  "/ru/donate?locale=ru"    200 -                                static
+answered GET  "/zh/donate?locale=ru"    404 -                                static
+answered GET  "/donate?locale=en"       200 -                                static
+answered GET  "/donate?locale=de"       200 -                                static
+answered GET  "/donate?locale=RU"       200 -                                static
+answered GET  "/favicon.png?locale=ru"  200 -                                static
+# The route map answers its own addresses first, and the next hop localises.
+answered GET  "/community?locale=zh"    301 "$O/zh/community"                static
+# The addresses the engines actually hold, which the stub bundle does not:
+# the redirect turns on the route map, not on the files.
+answered GET  "/cameras/vendors/sigmastar/socs/ssc30kq?locale=ru" 301 "$O/ru/cameras/vendors/sigmastar/socs/ssc30kq" static
+answered GET  "/cameras/vendors/goke?locale=zh" 301 "$O/zh/cameras/vendors/goke" static
+answered GET  "/tools/high-resolution-timer?locale=ru" 301 "$O/ru/tools/high-resolution-timer" static
+answered GET  "/low-latency?locale=ru"  301 "$O/ru/low-latency"              static
+answered GET  "/cameras/boards?locale=ru" 301 "$O/ru/cameras/boards"        static
+answered POST "/donate?locale=ru"       405 -                                static
+# Percent-encoded paths and repeated locales are left as they were (Qodo on #409).
+answered GET  "/%72u/donate?locale=zh"  200 -                                static
+answered GET  "/donate?locale=ru&locale=zh" 200 -                            static
 answered GET  /telemetry/anything       410 -                                nginx
 answered GET  /zh/merchandise           410 -                                nginx
 answered GET  /admin/snapshots          410 -                                nginx

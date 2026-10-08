@@ -876,6 +876,10 @@ server {
     }
 
     location / {
+        # An old `?locale=ru|zh` address goes to the page in that language
+        # (conf.d/openipc-locale-param.conf).
+        if ($openipc_locale_param_target) { return 301 $openipc_locale_param_target; }
+
         root /srv/www/static/dev/current;
         try_files $uri $uri/index.html @fallback;
 
