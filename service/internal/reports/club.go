@@ -475,7 +475,9 @@ type BoardText struct {
 	Report string
 	Model  string
 	By     string
-	Files  []BoardTextFile
+	// Note is the sender's note as published: redacted (note_public).
+	Note  string
+	Files []BoardTextFile
 }
 
 type BoardTextFile struct {
@@ -490,7 +492,7 @@ type BoardTextFile struct {
 // served text and photo files. A private backup is never among them.
 func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 	rows, err := s.DB.Query(ctx, `
-		SELECT r.id, rm.model_id, coalesce(cm.name, ''), f.position, f.kind, f.name, f.public_sha256
+		SELECT r.id, rm.model_id, coalesce(cm.name, ''), r.note_public, f.position, f.kind, f.name, f.public_sha256
 		FROM reports r
 		JOIN report_models rm ON rm.report_id = r.id
 		JOIN report_files f ON f.report_id = r.id
@@ -505,13 +507,13 @@ func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 	defer rows.Close()
 	var out []BoardText
 	for rows.Next() {
-		var id, model, by, kind, name, sum string
+		var id, model, by, note, kind, name, sum string
 		var pos int
-		if err := rows.Scan(&id, &model, &by, &pos, &kind, &name, &sum); err != nil {
+		if err := rows.Scan(&id, &model, &by, &note, &pos, &kind, &name, &sum); err != nil {
 			return nil, err
 		}
 		if n := len(out); n == 0 || out[n-1].Report != id || out[n-1].Model != model {
-			out = append(out, BoardText{Report: id, Model: model, By: by})
+			out = append(out, BoardText{Report: id, Model: model, By: by, Note: note})
 		}
 		t := &out[len(out)-1]
 		t.Files = append(t.Files, BoardTextFile{Position: pos, Kind: kind, Name: name, Path: Rel(sum)})

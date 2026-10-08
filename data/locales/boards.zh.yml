@@ -89,6 +89,7 @@ zh:
       looks_like: "看起来像目录中的 {board}"
       looks_like_why: "审核后才能确定"
       filed_under: "归属"
+      owner_note: '所有者的备注：'
       not_found: "没有与此回执对应的报告。请检查 ipctool 打印的地址。"
       load_failed: "无法加载报告。请稍后再试。"
       reports_title: "用户报告"
@@ -550,6 +551,7 @@ zh:
       rename_label: '你的名字，会显示在你的提交所属的电路板上'
       rename_save: '保存'
       review_note_label: '审核者'
+      your_note: '你的备注'
       cameras_title: '我在 Open Wall 上的摄像头'
       cameras_count: '{n} / {max} 台计入星星'
       cameras_empty: '还没有绑定摄像头。在下方绑定一台：它每持续一个月向 Open Wall 发送真实画面，就会获得星星。'

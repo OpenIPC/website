@@ -109,6 +109,9 @@ export default function Receipt({ locale }: { locale: Locale }) {
         </table>
       </div>
 
+      {r.note && (
+        <p class="m-0 mt-5 text-[.9375rem] whitespace-pre-wrap"><b class="font-semibold">{t('report.owner_note')}</b> {r.note}</p>
+      )}
       {published && r.models.length > 0 && (
         <p class="m-0 mt-5 rounded-lg border border-hairline bg-surface-alt px-4 py-3 text-[.9375rem]">
           {t('report.filed_under')}{' '}

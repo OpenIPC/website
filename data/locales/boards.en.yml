@@ -89,6 +89,7 @@ en:
       looks_like: "Looks like {board} in the catalogue"
       looks_like_why: "not certain until reviewed"
       filed_under: "Filed under"
+      owner_note: 'The owner''s note:'
       not_found: "No report has this receipt. Check the address ipctool printed."
       load_failed: "The report could not be loaded. Try again in a minute."
       reports_title: "Reports from owners"
@@ -547,6 +548,7 @@ en:
       rename_label: 'Your name, as it appears on the boards your reports reach'
       rename_save: 'Save'
       review_note_label: 'Reviewer'
+      your_note: 'Your note'
       cameras_title: 'My cameras on the Open Wall'
       cameras_count: '{n} of {max} count towards stars'
       cameras_empty: 'No camera linked yet. Link one below: it earns stars for every month it keeps sending real pictures to the Open Wall.'
