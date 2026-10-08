@@ -505,3 +505,51 @@ func TestConcurrentUploadsKeepTheLimit(t *testing.T) {
 		t.Fatalf("%d created, the limit is %d", created, DailyPerCamera)
 	}
 }
+
+// A bundle the WebUI downloaded carries the firmware's meta.json: it is kept
+// beside the log, and names the chip and sensor when the log no longer does.
+func TestMetaInTheBundle(t *testing.T) {
+	e := newEnv(t)
+	meta := `{"soc": "GK7205V300", "sensor": "imx335", "cmdline": "ip=192.0.2.7", "config": ["video0:", "  codec: h265"]}`
+	b := tgz(t, map[string]string{"dmesg-ramoops-0": string(oops(3)), "meta.json": meta})
+	code, out := e.send(b, nil, "10.0.0.1")
+	if code != 201 {
+		t.Fatalf("%d %v", code, out)
+	}
+	var soc, sensor, stored string
+	if err := e.pool.QueryRow(context.Background(), `SELECT soc, sensor, meta::text FROM crash_events`).Scan(&soc, &sensor, &stored); err != nil {
+		t.Fatal(err)
+	}
+	if soc != "gk7205v300" || sensor != "imx335" {
+		t.Fatalf("soc %q sensor %q", soc, sensor)
+	}
+	if strings.Contains(stored, "192.0.2.7") || !strings.Contains(stored, "codec: h265") {
+		t.Fatalf("meta %s", stored)
+	}
+	// What the camera says outright wins over meta.json.
+	b = tgz(t, map[string]string{"dmesg-ramoops-0": string(oops(4)), "meta.json": `{"soc": "hi3516ev300"}`})
+	code, out = e.send(b, map[string]string{"soc": "gk7205v200"}, "10.0.0.1")
+	if code != 201 {
+		t.Fatal(code)
+	}
+	// Every event here has the test's one fixed time: find this one by its id.
+	if err := e.pool.QueryRow(context.Background(), `SELECT soc FROM crash_events WHERE id = $1`, out["id"]).Scan(&soc); err != nil {
+		t.Fatal(err)
+	}
+	if soc != "gk7205v200" {
+		t.Fatalf("form soc lost to meta: %q", soc)
+	}
+	// A broken meta.json in the bundle does not cost the crash.
+	b = tgz(t, map[string]string{"dmesg-ramoops-0": string(oops(5)), "meta.json": `{"soc": `})
+	if code, out := e.send(b, nil, "10.0.0.1"); code != 201 {
+		t.Fatalf("a broken embedded meta.json refused the crash: %d %v", code, out)
+	}
+	// Sixteen records and a meta.json are within the limit.
+	files := map[string]string{"meta.json": meta}
+	for i := 0; i < maxRecords; i++ {
+		files[fmt.Sprintf("dmesg-ramoops-%d", i)] = string(oops(6))
+	}
+	if _, err := Unpack(tgz(t, files)); err != nil {
+		t.Fatalf("16 records and meta.json: %v", err)
+	}
+}

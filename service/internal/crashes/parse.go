@@ -180,6 +180,7 @@ func Unpack(data []byte) (map[string]string, error) {
 		return nil, fmt.Errorf("the bundle unpacks to more than %d bytes", MaxUnpacked)
 	}
 	out := map[string]string{}
+	records := 0
 	if len(raw) >= 512 && bytes.Equal(raw[257:262], []byte("ustar")) {
 		tr := tar.NewReader(bytes.NewReader(raw))
 		for {
@@ -194,11 +195,16 @@ func Unpack(data []byte) (map[string]string, error) {
 				continue
 			}
 			name := h.Name[strings.LastIndex(h.Name, "/")+1:]
-			if !strings.HasPrefix(name, "dmesg-") && name != "failsafe" && name != "pending" {
+			if !strings.HasPrefix(name, "dmesg-") && name != "failsafe" && name != "pending" && name != "meta.json" {
 				continue
 			}
-			if len(out) == maxRecords {
-				return nil, fmt.Errorf("more than %d records", maxRecords)
+			// The limit is on records; failsafe, pending and meta.json are one
+			// each at most, and the tar's own entries say which.
+			if strings.HasPrefix(name, "dmesg-") {
+				if records == maxRecords {
+					return nil, fmt.Errorf("more than %d records", maxRecords)
+				}
+				records++
 			}
 			b, err := io.ReadAll(tr)
 			if err != nil {
