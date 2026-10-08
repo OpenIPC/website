@@ -58,10 +58,12 @@ var ErrQuota = errors.New("the daily limit is reached")
 // Insert stores the event, its bundle and its signature. A crash already
 // stored from the same camera (the same records, sent again) is not stored
 // twice: dup is true and the stored event's id and signature are returned.
-// Otherwise the client's and the camera's crashes since are counted under
-// their locks, so uploads racing each other cannot pass the daily limits
-// together.
-func (s *Store) Insert(ctx context.Context, e *Event, since time.Time) (id, signature string, dup bool, err error) {
+// Otherwise the client's and the camera's crashes in the day before at are
+// counted under their locks, so uploads racing each other cannot pass the
+// daily limits together. at stamps the event too: the window and what it
+// counts are read off one clock.
+func (s *Store) Insert(ctx context.Context, e *Event, at time.Time) (id, signature string, dup bool, err error) {
+	since := at.Add(-24 * time.Hour)
 	c := e.Crash
 	fatal, _ := json.Marshal(c.Fatal)
 	before, _ := json.Marshal(orEmpty(c.Before))
@@ -126,13 +128,13 @@ func (s *Store) Insert(ctx context.Context, e *Event, since time.Time) (id, sign
 		_, err = tx.Exec(ctx, `
 			INSERT INTO crash_events (id, content_sum, signature_id, channel, mac_key, member_id, client_key, kind, in_irq,
 				self_inflicted, title, firmware, majestic, soc, sensor, board, machine, kernel, kernel_build, kernel_built,
-				cmdline, uptime, records, modules, fatal, before, anomalies, leadup, meta, redacted, bundle_sha256)
+				cmdline, uptime, records, modules, fatal, before, anomalies, leadup, meta, redacted, bundle_sha256, received_at)
 			VALUES ($1, $2, $3, $4, $5, nullif($6, ''), $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-				$21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)`,
+				$21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)`,
 			e.ID, c.ContentSum, e.SignatureID, e.Channel, e.MACKey, e.Member, e.ClientKey, c.Kind, c.Fatal.InIRQ,
 			c.SelfInflicted, c.Fatal.Title(), e.Firmware, e.Majestic, e.SoC, e.Sensor, c.Board, c.Machine, c.Kernel,
 			c.KernelBuild, built, c.Cmdline, uptime, c.Records, orEmpty(c.Modules), fatal, before, anomalies, leadup,
-			meta, e.Redacted, e.BundleSHA256)
+			meta, e.Redacted, e.BundleSHA256, at)
 		return err
 	})
 	return id, signature, dup, err

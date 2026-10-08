@@ -139,7 +139,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member, channel str
 		}
 		e.Meta = json.RawMessage(red)
 	}
-	id, sig, dup, err := a.Store().Insert(ctx, e, a.now().Add(-24*time.Hour))
+	id, sig, dup, err := a.Store().Insert(ctx, e, a.now())
 	if errors.Is(err, ErrQuota) {
 		w.Header().Set("Retry-After", "3600")
 		a.refuse(w, http.StatusTooManyRequests, fmt.Sprintf("%d crashes a day from one address, %d from one camera, is the limit", DailyPerClient, DailyPerCamera))
