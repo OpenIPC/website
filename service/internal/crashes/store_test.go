@@ -537,4 +537,17 @@ func TestMetaInTheBundle(t *testing.T) {
 	if soc != "gk7205v200" {
 		t.Fatalf("form soc lost to meta: %q", soc)
 	}
+	// A broken meta.json in the bundle does not cost the crash.
+	b = tgz(t, map[string]string{"dmesg-ramoops-0": string(oops(5)), "meta.json": `{"soc": `})
+	if code, out := e.send(b, nil, "10.0.0.1"); code != 201 {
+		t.Fatalf("a broken embedded meta.json refused the crash: %d %v", code, out)
+	}
+	// Sixteen records and a meta.json are within the limit.
+	files := map[string]string{"meta.json": meta}
+	for i := 0; i < maxRecords; i++ {
+		files[fmt.Sprintf("dmesg-ramoops-%d", i)] = string(oops(6))
+	}
+	if _, err := Unpack(tgz(t, files)); err != nil {
+		t.Fatalf("16 records and meta.json: %v", err)
+	}
 }

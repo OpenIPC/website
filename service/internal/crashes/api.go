@@ -136,8 +136,12 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member, channel str
 	// from the WebUI and sent from /club carries. The log is the tail of the
 	// kernel's; on a camera whose log filled up, the lines naming the chip and
 	// the sensor are gone from it, and meta.json still names them.
+	// Sent as the field, it must be JSON; found in the bundle, one that is not
+	// is left out rather than costing the crash it came with.
 	if in.meta == "" && len(files["meta.json"]) <= maxMeta {
-		in.meta = strings.TrimSpace(files["meta.json"])
+		if m := strings.TrimSpace(files["meta.json"]); json.Valid([]byte(m)) {
+			in.meta = m
+		}
 	}
 	if in.meta != "" {
 		red := Redact(in.meta, mac, key)
