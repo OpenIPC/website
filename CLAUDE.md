@@ -216,7 +216,7 @@ restores the image but never the schema, so keep migrations additive.
   -- the top five backtrace frames, `fn [module]` without offsets -- so one
   bug from many cameras is one row (migration 030); the records pstore keeps
   twice (`Oops#1`, `Panic#2`) are one crash, and the same records sent again
-  are one event. Ranked by kind, how many cameras and whether today's
+  by one camera are one event. Ranked by kind, how many cameras and whether today's
   firmware still has it; public at `/crashes` (signatures only), triaged by
   maintainers at `/club/crashes` or `openipc crashes status`. Logs are
   redacted (MACs and IPs keyed-hashed) and maintainers' only; bundles are
@@ -224,8 +224,10 @@ restores the image but never the schema, so keep migrations additive.
   bundles are guarded like owner reports. Stars go into `crash_stars`, the
   third ledger, paid by the nightly `settle` only: 1 per camera and bug, 3 to
   the first reporter once confirmed, 5 more when fixed, at most 10 a month;
-  a crash asked for (sysrq) pays nothing and `bogus` takes everything back.
-  A camera's crash is its owner's through the Open Wall's link.
+  a crash asked for (sysrq) pays nothing. The ledger is net per bug, through
+  merges: `bogus` takes back what a bug and the signatures merged into it
+  paid, and undoing it lets the settlement pay again. A crash with a MAC is
+  the camera's linked owner's, whoever sent it.
 - `internal/tools`, `internal/nfsro` — **ipctool for stock firmware**, which
   has no curl and no TLS. ipctool's release job pushes each build to
   `PUT /api/v1/tools/{name}` (OIDC, `internal/tools/PUSH.md`); nginx serves

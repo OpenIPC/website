@@ -19,7 +19,7 @@ instead; include it in the tar as `failsafe` and it is filed as a boot loop.
 | part | | |
 |---|---|---|
 | `bundle` | required | the tar.gz as `S98crashlog` made it (a plain tar, or one record as text, also works); at most 256 KB, 1 MB unpacked |
-| `mac` | optional | the camera's MAC, as the Open Wall upload sends it. It is what makes the crash its linked owner's, for stars |
+| `mac` | optional | the camera's MAC, as the Open Wall upload sends it. A crash with a MAC is the camera's linked owner's, for stars, whoever sent it; a member sending from `/club` may name only a camera linked to them |
 | `firmware` | optional | `/etc/os-release`'s version, e.g. `2.6.10.05-lite` |
 | `majestic` | optional | `majestic -v` |
 | `soc`, `sensor` | optional | as `ipcinfo` says; the log's own `sensor=… chip=…` line is used when absent |
@@ -37,8 +37,8 @@ with a 301, and curl repeats a POST across a 301 only when told to.
 
 ## The answer
 
-`201` for a new crash, `200` for one already received (the same records,
-however packed), both:
+`201` for a new crash, `200` for one this camera already sent (the same
+records, however packed), both:
 
 ```json
 {"id": "c-…", "signature": "6b1f0c2a9e44", "title": "NULL pointer dereference in __wake_up_common ← RGN_PutRegion [open_rgn]",

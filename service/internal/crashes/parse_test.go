@@ -136,14 +136,24 @@ const mips = `<1>CPU 0 Unable to handle kernel paging request at virtual address
 `
 
 func TestMIPS(t *testing.T) {
-	// The MIPS oops line starts with "CPU 0 Unable to handle"; it is the
-	// "Oops[#1]" that opens it.
-	c := parseBundle(t, []byte(strings.Replace(mips, "Oops[#1]:", "Internal error: Oops[#1]:", 1)))
+	c := parseBundle(t, []byte(mips))
 	if c.Kind != KindPanic || c.Fatal.Comm != "majestic" || c.Fatal.PC != "tx_isp_frame_done" || !c.Fatal.InIRQ {
 		t.Fatalf("%+v", c.Fatal)
 	}
 	if len(c.Fatal.Frames) != 2 || c.Fatal.Frames[1].String() != "isp_irq_handle [tx-isp-t31]" {
 		t.Fatalf("frames %v", c.Fatal.Frames)
+	}
+	if c.Fatal.Reason != "Paging request" {
+		t.Fatalf("reason %q", c.Fatal.Reason)
+	}
+	// MIPS without the "Unable to handle" line: the Oops header alone opens it.
+	c = parseBundle(t, []byte(strings.Replace(mips, "<1>CPU 0 Unable to handle kernel paging request at virtual address 00000010, epc == 80123456, ra == 80123400\n", "", 1)))
+	if c.Fatal.Kind != KindOops || len(c.Fatal.Frames) != 2 {
+		t.Fatalf("header-only MIPS oops: %+v", c.Fatal)
+	}
+	// pstore's record header is not an oops.
+	if _, err := Parse(map[string]string{"dmesg-ramoops-0": "Oops#1 Part1\n<6>Booting Linux\n"}); err == nil {
+		t.Fatal("a record header alone is a crash")
 	}
 }
 

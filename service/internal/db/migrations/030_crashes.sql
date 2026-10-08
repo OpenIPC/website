@@ -56,8 +56,9 @@ CREATE TABLE crash_bundles (
 CREATE TABLE crash_events (
     id             text PRIMARY KEY CHECK (id ~ '^c-[a-z0-9]{8}$'),
     -- the records' content, whatever tar or gzip carried them: the same
-    -- crash sent twice is one event
-    content_sum    text NOT NULL UNIQUE CHECK (content_sum ~ '^[0-9a-f]{64}$'),
+    -- crash sent twice from one camera is one event (UNIQUE below; two
+    -- cameras' identical failsafe notes are two)
+    content_sum    text NOT NULL CHECK (content_sum ~ '^[0-9a-f]{64}$'),
     signature_id   text NOT NULL REFERENCES crash_signatures,
     received_at    timestamptz NOT NULL DEFAULT now(),
     channel        text NOT NULL CHECK (channel IN ('webui', 'club', 'api')),
@@ -92,7 +93,8 @@ CREATE TABLE crash_events (
     meta           jsonb,
     -- every record, the identifiers replaced by keyed hashes
     redacted       text NOT NULL,
-    bundle_sha256  text NOT NULL REFERENCES crash_bundles ON DELETE RESTRICT
+    bundle_sha256  text NOT NULL REFERENCES crash_bundles ON DELETE RESTRICT,
+    UNIQUE (content_sum, mac_key)
 );
 CREATE INDEX crash_events_by_signature ON crash_events (signature_id, received_at);
 CREATE INDEX crash_events_by_member ON crash_events (member_id, received_at) WHERE member_id IS NOT NULL;
@@ -127,12 +129,14 @@ CREATE TRIGGER crash_bundles_no_truncate BEFORE TRUNCATE ON crash_bundles
     FOR EACH STATEMENT EXECUTE FUNCTION crashes_guard();
 
 -- The crashes' stars ledger, beside report_stars and wall_stars: inserted,
--- never changed. An award is paid once per member, signature, camera and
--- reason, ever.
---   reason: report (a crash of the signature from the member's camera, or
---   sent by them: mac_key '' when they did not say which camera), first (they
---   reported it first and a maintainer confirmed it), fixed (it was fixed);
---   a revoke row repeats the reason of the award it takes back.
+-- never changed. What a member holds for a bug is the net of their rows
+-- under it -- its signature and every signature merged into it -- so a
+-- revoke (a signature found bogus) and a later award (the decision undone)
+-- are both just rows, and the settlement pays only what is not held.
+--   reason: report (a crash of the bug from the member's linked camera, or
+--   sent by them from /club without a camera: mac_key ''), first (they
+--   reported the bug first and a maintainer confirmed it), fixed (it was
+--   fixed); a revoke row repeats the reason of the award it takes back.
 CREATE TABLE crash_stars (
     id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     member_id    text NOT NULL REFERENCES club_members ON DELETE CASCADE,
@@ -141,10 +145,10 @@ CREATE TABLE crash_stars (
     kind         text NOT NULL CHECK (kind IN ('award', 'revoke')),
     reason       text NOT NULL CHECK (reason IN ('report', 'first', 'fixed')),
     points       int NOT NULL,
-    at           timestamptz NOT NULL DEFAULT now(),
-    UNIQUE (member_id, signature_id, mac_key, kind, reason)
+    at           timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX crash_stars_by_member ON crash_stars (member_id, at);
+CREATE INDEX crash_stars_by_signature ON crash_stars (signature_id);
 
 CREATE FUNCTION crash_stars_guard() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN

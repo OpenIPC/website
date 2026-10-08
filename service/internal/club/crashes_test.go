@@ -23,10 +23,13 @@ func (e *env) withCrashes(t *testing.T) {
 	}
 }
 
-func (b *browser) sendCrash(t *testing.T, bundle []byte) (int, map[string]any) {
+func (b *browser) sendCrash(t *testing.T, bundle []byte, fields ...string) (int, map[string]any) {
 	t.Helper()
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
+	for i := 0; i+1 < len(fields); i += 2 {
+		_ = mw.WriteField(fields[i], fields[i+1])
+	}
 	w, _ := mw.CreateFormFile("bundle", "crashlog.tar.gz")
 	_, _ = w.Write(bundle)
 	_ = mw.Close()
@@ -51,6 +54,10 @@ func TestAMemberSendsACrashAndAMaintainerTriagesIt(t *testing.T) {
 		t.Fatalf("anonymous send from /club: %d", code)
 	}
 	ivan := e.signedIn(t, 6001, "ivan", "203.0.113.5")
+	// A camera that is not his: its crashes pay its owner, so he cannot name it.
+	if code, out := ivan.sendCrash(t, lab, "mac", "02:00:00:00:0a:99"); code != http.StatusBadRequest || !strings.Contains(out["error"].(string), "not linked to you") {
+		t.Fatalf("someone else's camera: %d %v", code, out)
+	}
 	code, out := ivan.sendCrash(t, lab)
 	if code != http.StatusCreated {
 		t.Fatalf("send: %d %v", code, out)

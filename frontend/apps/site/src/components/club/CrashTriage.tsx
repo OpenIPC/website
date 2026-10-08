@@ -65,7 +65,8 @@ function Open({ g, t, onDone }: { g: Signature; t: BoardsT; onDone: () => void }
   const [status, setStatus] = useState<Status>(g.status);
   const [fixedIn, setFixedIn] = useState(g.fixed_in ?? '');
   const [issue, setIssue] = useState(g.issue_url ?? '');
-  const [merge, setMerge] = useState('');
+  // Saving sends every field: what is shown is kept, an emptied field is cleared.
+  const [merge, setMerge] = useState(g.merged_into ?? '');
   const [note, setNote] = useState(g.note ?? '');
   const [msg, setMsg] = useState<string | null>(null);
   useEffect(() => { fetchCrashDetail(g.id).then(setData).catch((e: Error) => setMsg(e.message)); }, [g.id]);

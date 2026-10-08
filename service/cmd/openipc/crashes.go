@@ -19,7 +19,8 @@ const crashesUsage = `usage: openipc crashes
   list                                          every signature, worst first, bogus and merged too (JSON)
   show <signature>                              where it was seen, on which builds, and its crashes' redacted logs (JSON)
   status <signature> open|confirmed|fixed|wontfix|bogus [--fixed-in v] [--issue url] [--merge-into sig] [--by who] [--note text]
-                                                triage; bogus takes back every star it paid
+                                                triage; a flag left out keeps its value, --merge-into '' unmerges;
+                                                bogus takes back every star the bug paid, any other status lets them be paid again
   settle                                        pay what crashes earned (also run by purge)
   takedown <crash id>                           delete one crash and, when nothing else came in it, its bundle`
 
@@ -77,8 +78,21 @@ func crashesCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		if len(pos) != 2 {
 			return errors.New(crashesUsage)
 		}
-		taken, err := st.Decide(ctx, pos[0], *by, crashes.Triage{Status: pos[1], FixedIn: *fixedIn, IssueURL: *issue,
-			MergeInto: *mergeInto, Note: *note})
+		// Only the flags given change the signature; --merge-into '' unmerges.
+		t := crashes.Triage{Status: pos[1]}
+		fs.Visit(func(f *flag.Flag) {
+			switch f.Name {
+			case "fixed-in":
+				t.FixedIn = fixedIn
+			case "issue":
+				t.IssueURL = issue
+			case "merge-into":
+				t.MergeInto = mergeInto
+			case "note":
+				t.Note = note
+			}
+		})
+		taken, err := st.Decide(ctx, pos[0], *by, t)
 		if err != nil {
 			return err
 		}

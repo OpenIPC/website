@@ -52,10 +52,16 @@ func NewID() string {
 // kindOrder is the kinds, mildest first, for SQL's array_position.
 const kindOrder = `ARRAY['warning','bug','oops','panic','bootloop']`
 
+// ErrQuota is a client address or a camera past its daily limit.
+var ErrQuota = errors.New("the daily limit is reached")
+
 // Insert stores the event, its bundle and its signature. A crash already
-// stored (the same records, sent again) is not stored twice: dup is true and
-// the stored event's id and signature are returned.
-func (s *Store) Insert(ctx context.Context, e *Event) (id, signature string, dup bool, err error) {
+// stored from the same camera (the same records, sent again) is not stored
+// twice: dup is true and the stored event's id and signature are returned.
+// Otherwise the client's and the camera's crashes since are counted under
+// their locks, so uploads racing each other cannot pass the daily limits
+// together.
+func (s *Store) Insert(ctx context.Context, e *Event, since time.Time) (id, signature string, dup bool, err error) {
 	c := e.Crash
 	fatal, _ := json.Marshal(c.Fatal)
 	before, _ := json.Marshal(orEmpty(c.Before))
@@ -79,16 +85,30 @@ func (s *Store) Insert(ctx context.Context, e *Event) (id, signature string, dup
 		meta = string(e.Meta)
 	}
 	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('crash:' || $1, 0))`, c.ContentSum); err != nil {
-			return err
+		// Locks in one order: the camera, then the client, then the crash.
+		for _, k := range []string{"crash-camera:" + e.MACKey, "crash-client:" + e.ClientKey, "crash:" + c.ContentSum + ":" + e.MACKey} {
+			if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, k); err != nil {
+				return err
+			}
 		}
-		err := tx.QueryRow(ctx, `SELECT id, signature_id FROM crash_events WHERE content_sum = $1`, c.ContentSum).Scan(&id, &signature)
+		err := tx.QueryRow(ctx, `SELECT id, signature_id FROM crash_events WHERE content_sum = $1 AND mac_key = $2`,
+			c.ContentSum, e.MACKey).Scan(&id, &signature)
 		if err == nil {
 			dup = true
 			return nil
 		}
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return err
+		}
+		var byClient, byCamera int
+		if err := tx.QueryRow(ctx, `
+			SELECT count(*) FILTER (WHERE client_key = $1), count(*) FILTER (WHERE $2 <> '' AND mac_key = $2)
+			FROM crash_events WHERE received_at >= $3 AND (client_key = $1 OR ($2 <> '' AND mac_key = $2))`,
+			e.ClientKey, e.MACKey, since).Scan(&byClient, &byCamera); err != nil {
+			return err
+		}
+		if byClient >= DailyPerClient || byCamera >= DailyPerCamera {
+			return ErrQuota
 		}
 		if _, err := tx.Exec(ctx, `INSERT INTO crash_bundles (sha256, bytes) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
 			e.BundleSHA256, e.Bundle); err != nil {
@@ -125,16 +145,18 @@ func orEmpty[T any](s []T) []T {
 	return s
 }
 
-// SentSince counts the events a client address, or a camera, sent in the
-// window, for the daily limits.
-func (s *Store) SentSince(ctx context.Context, client, macKey string, since time.Time) (byClient, byCamera int, err error) {
-	err = s.DB.QueryRow(ctx, `
-		SELECT count(*) FILTER (WHERE client_key = $1),
-		       count(*) FILTER (WHERE $2 <> '' AND mac_key = $2)
-		FROM crash_events WHERE received_at >= $3 AND (client_key = $1 OR ($2 <> '' AND mac_key = $2))`,
-		client, macKey, since).Scan(&byClient, &byCamera)
-	return
+// LinkedTo says whether the camera is linked to the member on the Open Wall.
+func (s *Store) LinkedTo(ctx context.Context, macKey, member string) (bool, error) {
+	var ok bool
+	err := s.DB.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM camera_links WHERE mac_key = $1 AND member_id = $2)`,
+		macKey, member).Scan(&ok)
+	return ok, err
 }
+
+// camera is how the rankings count cameras: by MAC, and a crash sent
+// without one as its sender's address, so one person sending many crashes
+// without a MAC is one camera.
+const camera = `CASE WHEN %[1]smac_key <> '' THEN 'm:' || %[1]smac_key ELSE 'c:' || %[1]sclient_key END`
 
 // Signature is a bug as the public list and the maintainers see it.
 type Signature struct {
@@ -201,7 +223,7 @@ func (s *Store) ranked(ctx context.Context, maintainers bool, only string, now t
 		SELECT r.id, r.class,
 		       coalesce((`+kindOrder+`)[max(array_position(`+kindOrder+`, ev.kind))], r.kind), r.title, r.frames, r.status, r.fixed_in, r.issue_url, r.first_seen,
 		       coalesce(r.merged_into, ''), r.note,
-		       count(ev.id)::int, count(DISTINCT CASE WHEN ev.mac_key <> '' THEN ev.mac_key ELSE ev.id END)::int,
+		       count(ev.id)::int, count(DISTINCT `+fmt.Sprintf(camera, "ev.")+`)::int,
 		       coalesce(bool_or(ev.in_irq), false), coalesce(max(ev.received_at), r.first_seen),
 		       coalesce(array_agg(DISTINCT ev.soc) FILTER (WHERE ev.soc <> ''), '{}'),
 		       coalesce(array_agg(DISTINCT ev.sensor) FILTER (WHERE ev.sensor <> ''), '{}'),
@@ -316,7 +338,7 @@ func (s *Store) Combos(ctx context.Context, id string, detailed bool) ([]Combo, 
 		cols = `soc, sensor, kernel, kernel_built, firmware, majestic`
 	}
 	rows, err := s.DB.Query(ctx, `
-		SELECT `+cols+`, count(*)::int, count(DISTINCT CASE WHEN mac_key <> '' THEN mac_key ELSE e.id END)::int
+		SELECT `+cols+`, count(*)::int, count(DISTINCT `+fmt.Sprintf(camera, "e.")+`)::int
 		FROM crash_events e JOIN crash_signatures sig ON sig.id = e.signature_id
 		WHERE coalesce(sig.merged_into, sig.id) = $1 AND NOT e.self_inflicted
 		GROUP BY 1, 2, 3, 4, 5, 6 ORDER BY 8 DESC, 7 DESC, 1, 2`, id)
@@ -455,13 +477,14 @@ func (s *Store) Mine(ctx context.Context, member string) ([]Mine, error) {
 	return pgx.CollectRows(rows, pgx.RowToStructByPos[Mine])
 }
 
-// Triage is a maintainer's decision on a signature.
+// Triage is a maintainer's decision on a signature. A field left out (nil)
+// keeps what the signature has; "" clears it -- MergeInto "" unmerges.
 type Triage struct {
-	Status    string `json:"status"`
-	FixedIn   string `json:"fixed_in"`
-	IssueURL  string `json:"issue_url"`
-	MergeInto string `json:"merge_into"`
-	Note      string `json:"note"`
+	Status    string  `json:"status"`
+	FixedIn   *string `json:"fixed_in"`
+	IssueURL  *string `json:"issue_url"`
+	MergeInto *string `json:"merge_into"`
+	Note      *string `json:"note"`
 }
 
 var statuses = map[string]bool{"open": true, "confirmed": true, "fixed": true, "wontfix": true, "bogus": true}
@@ -469,69 +492,96 @@ var statuses = map[string]bool{"open": true, "confirmed": true, "fixed": true, "
 // ErrInvalid is a triage that cannot be applied as sent.
 var ErrInvalid = errors.New("invalid triage")
 
-// Decide applies a maintainer's triage. A signature marked bogus has every
-// star it paid taken back. Merging moves the signature's events under the
-// other (and whatever was merged into this one, too).
+// Decide applies a maintainer's triage. Merging files the signature's
+// events (and whatever was merged into it) under the other's. A signature
+// marked bogus has every star it and the signatures merged into it paid
+// taken back; marking it anything else again lets the settlement pay them
+// anew. Bogus is a decision about a bug, so a signature merged into another
+// is not marked bogus on its own: the one it is merged into is.
 func (s *Store) Decide(ctx context.Context, id, by string, t Triage) (taken int, err error) {
 	if !statuses[t.Status] {
 		return 0, fmt.Errorf("%w: status is open, confirmed, fixed, wontfix or bogus", ErrInvalid)
 	}
-	if t.IssueURL != "" && !httpsURL(t.IssueURL) {
+	if t.IssueURL != nil && *t.IssueURL != "" && !httpsURL(*t.IssueURL) {
 		return 0, fmt.Errorf("%w: issue_url is an https:// link", ErrInvalid)
 	}
-	if len(t.FixedIn) > 200 || len(t.Note) > 4000 {
+	if t.FixedIn != nil && len(*t.FixedIn) > 200 || t.Note != nil && len(*t.Note) > 4000 {
 		return 0, fmt.Errorf("%w: fixed_in is at most 200 characters, note 4000", ErrInvalid)
 	}
-	if t.MergeInto == id {
+	if t.MergeInto != nil && *t.MergeInto == id {
 		return 0, fmt.Errorf("%w: a signature is not merged into itself", ErrInvalid)
 	}
 	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
+		// The settlement's lock: a decision and a payment never interleave.
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('crash-stars-settle', 0))`); err != nil {
 			return err
 		}
-		var exists bool
-		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM crash_signatures WHERE id = $1)`, id).Scan(&exists); err != nil {
-			return err
-		}
-		if !exists {
+		var cur Triage
+		var fixedIn, issue, note string
+		var merged *string
+		err := tx.QueryRow(ctx, `SELECT status, fixed_in, issue_url, note, merged_into FROM crash_signatures WHERE id = $1 FOR UPDATE`, id).
+			Scan(&cur.Status, &fixedIn, &issue, &note, &merged)
+		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrNoSignature
 		}
-		var merge *string
-		if t.MergeInto != "" {
-			var target string
-			err := tx.QueryRow(ctx, `SELECT coalesce(merged_into, id) FROM crash_signatures WHERE id = $1`, t.MergeInto).Scan(&target)
-			if errors.Is(err, pgx.ErrNoRows) {
-				return fmt.Errorf("merge_into: %w", ErrNoSignature)
+		if err != nil {
+			return err
+		}
+		keep := func(v *string, old string) string {
+			if v == nil {
+				return old
 			}
-			if err != nil {
-				return err
+			return *v
+		}
+		fixedIn, issue, note = keep(t.FixedIn, fixedIn), keep(t.IssueURL, issue), keep(t.Note, note)
+		if t.MergeInto != nil {
+			merged = nil
+			if *t.MergeInto != "" {
+				var target string
+				err := tx.QueryRow(ctx, `SELECT coalesce(merged_into, id) FROM crash_signatures WHERE id = $1`, *t.MergeInto).Scan(&target)
+				if errors.Is(err, pgx.ErrNoRows) {
+					return fmt.Errorf("merge_into: %w", ErrNoSignature)
+				}
+				if err != nil {
+					return err
+				}
+				if target == id {
+					return fmt.Errorf("%w: %s is already merged into this one", ErrInvalid, *t.MergeInto)
+				}
+				merged = &target
+				if _, err := tx.Exec(ctx, `UPDATE crash_signatures SET merged_into = $2, updated_at = now() WHERE merged_into = $1`, id, target); err != nil {
+					return err
+				}
 			}
-			if target == id {
-				return fmt.Errorf("%w: %s is already merged into this one", ErrInvalid, t.MergeInto)
-			}
-			merge = &target
-			if _, err := tx.Exec(ctx, `UPDATE crash_signatures SET merged_into = $2, updated_at = now() WHERE merged_into = $1`, id, target); err != nil {
-				return err
-			}
+		}
+		if t.Status == "bogus" && merged != nil {
+			return fmt.Errorf("%w: this signature is merged into %s; mark that one bogus, or unmerge this one first", ErrInvalid, *merged)
 		}
 		if _, err := tx.Exec(ctx, `
 			UPDATE crash_signatures SET status = $2, fixed_in = $3, issue_url = $4, note = $5, merged_into = $6, updated_at = now()
-			WHERE id = $1`, id, t.Status, t.FixedIn, t.IssueURL, t.Note, merge); err != nil {
+			WHERE id = $1`, id, t.Status, fixedIn, issue, note, merged); err != nil {
 			return err
 		}
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO crash_triage (signature_id, by_member, status, fixed_in, issue_url, merged_into, note)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)`, id, by, t.Status, t.FixedIn, t.IssueURL, merge, t.Note); err != nil {
+			VALUES ($1, $2, $3, $4, $5, $6, $7)`, id, by, t.Status, fixedIn, issue, merged, note); err != nil {
 			return err
 		}
 		if t.Status != "bogus" {
 			return nil
 		}
-		return tx.QueryRow(ctx, `WITH back AS (
+		// What is still held under this bug -- awards booked under it and
+		// under each signature merged into it -- is taken back, each row
+		// under the signature it was booked under.
+		return tx.QueryRow(ctx, `WITH held AS (
+				SELECT c.member_id, c.signature_id, c.mac_key, c.reason, sum(c.points) AS points
+				FROM crash_stars c JOIN crash_signatures sig ON sig.id = c.signature_id
+				WHERE coalesce(sig.merged_into, sig.id) = $1
+				GROUP BY 1, 2, 3, 4 HAVING sum(c.points) > 0
+			), back AS (
 				INSERT INTO crash_stars (member_id, signature_id, mac_key, kind, reason, points)
-				SELECT member_id, signature_id, mac_key, 'revoke', reason, -points FROM crash_stars
-				WHERE signature_id = $1 AND kind = 'award'
-				ON CONFLICT DO NOTHING RETURNING points
+				SELECT member_id, signature_id, mac_key, 'revoke', reason, -points FROM held
+				RETURNING points
 			) SELECT coalesce(-sum(points), 0)::int FROM back`, id).Scan(&taken)
 	})
 	return taken, err

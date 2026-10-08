@@ -405,11 +405,14 @@ var (
 	otherFrame = regexp.MustCompile(`^(?:\[<[0-9a-f]+>\] )?\s*([A-Za-z_][\w.$]*)\+0x[0-9a-f]+/0x[0-9a-f]+(?: \[([\w-]+)\])?\s*$`)
 	pcRe       = regexp.MustCompile(`^(?:PC is at |pc : (?:\[<[0-9a-f]+>\] )?|epc\s*: [0-9a-f]+ )([A-Za-z_][\w.$]*)`)
 	commRe     = regexp.MustCompile(`^CPU: \d+ PID: \d+ Comm: (\S+)`)
-	faultRe    = regexp.MustCompile(`^Unable to handle kernel (NULL pointer dereference|paging request) at virtual address`)
-	bugRe      = regexp.MustCompile(`^(?:kernel BUG at (\S+)!|BUG: (.+))$`)
-	warnRe     = regexp.MustCompile(`^WARNING: (?:CPU: \d+ PID: \d+ )?at (\S+)`)
-	endRe      = regexp.MustCompile(`^---\[ end trace ([0-9a-f]+) \]---`)
-	panicRe    = regexp.MustCompile(`^Kernel panic - not syncing: (.*)$`)
+	faultRe    = regexp.MustCompile(`^(?:CPU \d+ )?Unable to handle kernel (NULL pointer dereference|paging request) at virtual address`)
+	// ARM's "Internal error: Oops: 5 [#1] ARM", MIPS's "Oops[#1]:" -- never
+	// pstore's own "Oops#1 Part1" record header.
+	oopsRe  = regexp.MustCompile(`^(?:Internal error: )?Oops(?:\[#\d+\]|: )`)
+	bugRe   = regexp.MustCompile(`^(?:kernel BUG at (\S+)!|BUG: (.+))$`)
+	warnRe  = regexp.MustCompile(`^WARNING: (?:CPU: \d+ PID: \d+ )?at (\S+)`)
+	endRe   = regexp.MustCompile(`^---\[ end trace ([0-9a-f]+) \]---`)
+	panicRe = regexp.MustCompile(`^Kernel panic - not syncing: (.*)$`)
 )
 
 // glue: frames every crash has. They say how the kernel got to the report,
@@ -456,7 +459,7 @@ func traces1(lines []string) ([]*Trace, string) {
 			m := faultRe.FindStringSubmatch(l)
 			start(KindOops, strings.ToUpper(m[1][:1])+m[1][1:])
 			continue
-		case strings.HasPrefix(l, "Internal error: Oops"):
+		case oopsRe.MatchString(l):
 			if cur == nil || cur.Kind != KindOops || len(cur.Frames) > 0 {
 				start(KindOops, "Oops")
 			}
@@ -546,7 +549,7 @@ func fatalIn(ts []*Trace) bool {
 func leadup(lines []string) ([]string, float64) {
 	for i, raw := range lines {
 		l := clean(raw)
-		if faultRe.MatchString(l) || strings.HasPrefix(l, "Internal error:") || bugRe.MatchString(l) || panicRe.MatchString(l) {
+		if faultRe.MatchString(l) || oopsRe.MatchString(l) || bugRe.MatchString(l) || panicRe.MatchString(l) {
 			var out []string
 			for _, p := range lines[max(0, i-8):i] {
 				p = strings.TrimSpace(clean(p))

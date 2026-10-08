@@ -89,17 +89,27 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member, channel str
 			macKey = ""
 		}
 	}
+	soc, sensor := strings.ToLower(in.fields["soc"]), strings.ToLower(in.fields["sensor"])
+	for name, v := range map[string]string{"soc": soc, "sensor": sensor} {
+		if v != "" && !hardwareRe.MatchString(v) {
+			a.refuse(w, http.StatusBadRequest, name+": a chip's name as ipcinfo prints it, like gk7205v300 or imx335")
+			return
+		}
+	}
+	// A member names only a camera of theirs: the MAC is what pays a
+	// crash's stars to the camera's owner.
+	if member != "" && macKey != "" {
+		mine, err := a.Store().LinkedTo(ctx, macKey, member)
+		if err != nil {
+			a.fail(w, "the camera", err)
+			return
+		}
+		if !mine {
+			a.refuse(w, http.StatusBadRequest, "mac: that camera is not linked to you on the Open Wall; link it from /club, or send the crash without it")
+			return
+		}
+	}
 	client := reports.Keyed(key, "client", httpx.ClientIP(r))
-	byClient, byCamera, err := a.Store().SentSince(ctx, client, macKey, a.now().Add(-24*time.Hour))
-	if err != nil {
-		a.fail(w, "the daily count", err)
-		return
-	}
-	if byClient >= DailyPerClient || byCamera >= DailyPerCamera {
-		w.Header().Set("Retry-After", "3600")
-		a.refuse(w, http.StatusTooManyRequests, fmt.Sprintf("%d crashes a day from one address, %d from one camera, is the limit", DailyPerClient, DailyPerCamera))
-		return
-	}
 
 	files, err := Unpack(in.bundle)
 	if err != nil {
@@ -111,11 +121,12 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member, channel str
 		a.refuse(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
+	redactCrash(c, mac, key)
 	sum := sha256.Sum256(in.bundle)
 	e := &Event{
 		ID: NewID(), Channel: channel, MACKey: macKey, Member: member, ClientKey: client,
 		Firmware: in.fields["firmware"], Majestic: in.fields["majestic"],
-		SoC: orDefault(strings.ToLower(in.fields["soc"]), c.SoC), Sensor: orDefault(strings.ToLower(in.fields["sensor"]), c.Sensor),
+		SoC: orDefault(soc, c.SoC), Sensor: orDefault(sensor, c.Sensor),
 		Crash: c, Bundle: in.bundle, BundleSHA256: hex.EncodeToString(sum[:]),
 		SignatureID: c.Fatal.Signature(),
 		Redacted:    Redact(c.Text, mac, key),
@@ -128,7 +139,12 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member, channel str
 		}
 		e.Meta = json.RawMessage(red)
 	}
-	id, sig, dup, err := a.Store().Insert(ctx, e)
+	id, sig, dup, err := a.Store().Insert(ctx, e, a.now().Add(-24*time.Hour))
+	if errors.Is(err, ErrQuota) {
+		w.Header().Set("Retry-After", "3600")
+		a.refuse(w, http.StatusTooManyRequests, fmt.Sprintf("%d crashes a day from one address, %d from one camera, is the limit", DailyPerClient, DailyPerCamera))
+		return
+	}
 	if err != nil {
 		a.fail(w, "the crash", err)
 		return
@@ -146,7 +162,31 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member, channel str
 	})
 }
 
-var macRe = regexp.MustCompile(`^[0-9a-f]{2}([:-]?[0-9a-f]{2}){5}$`)
+var (
+	macRe      = regexp.MustCompile(`^[0-9a-f]{2}([:-]?[0-9a-f]{2}){5}$`)
+	hardwareRe = regexp.MustCompile(`^[a-z0-9][a-z0-9._+-]{0,39}$`)
+)
+
+// redactCrash replaces identifiers in every part of a parsed crash that is
+// stored apart from the log -- the command line, the lines before it, each
+// trace's reason (a panic's message is free text) -- and drops a SoC or
+// sensor the log names in any shape but a chip's. The title and the
+// signature are made from what is left.
+func redactCrash(c *Crash, mac, key string) {
+	c.Cmdline = Redact(c.Cmdline, mac, key)
+	for i := range c.Leadup {
+		c.Leadup[i] = Redact(c.Leadup[i], mac, key)
+	}
+	for _, t := range append([]*Trace{c.Fatal}, c.Before...) {
+		t.Reason = Redact(t.Reason, mac, key)
+	}
+	if !hardwareRe.MatchString(c.SoC) {
+		c.SoC = ""
+	}
+	if !hardwareRe.MatchString(c.Sensor) {
+		c.Sensor = ""
+	}
+}
 
 type upload struct {
 	bundle []byte
@@ -226,29 +266,71 @@ func orDefault(s, d string) string {
 	return s
 }
 
-// Redact replaces the camera's MAC (and any other) and every IP address in a
-// crash's text with a keyed hash: two crashes of one camera still show they
-// are one camera's, and neither says which.
+// Redact replaces the camera's MAC (and any other, in any of its spellings)
+// and every IP address in a crash's text with a keyed hash: two crashes of
+// one camera still show they are one camera's, and neither says which.
 func Redact(text, mac, key string) string {
 	text = reports.Redact(text, reports.Facts{MAC: mac}, key)
+	text = replace(text, dottedMAC, func(m string) string { return "<mac:" + reports.Keyed(key, "mac", m) + ">" },
+		func(prev, next byte) bool { return !hexOrDot(prev) && !hexOrDot(next) })
+	text = replace(text, ipv4, func(m string) string {
+		if m == "0.0.0.0" || strings.HasPrefix(m, "127.") || strings.HasPrefix(m, "255.") {
+			return m
+		}
+		return "<ip:" + reports.Keyed(key, "ip", m) + ">"
+	}, func(prev, next byte) bool { return !digitOrDot(prev) && !digitOrDot(next) })
+	return replace(text, ipv6, func(m string) string {
+		if m == "::" || m == "::1" {
+			return m
+		}
+		return "<ip:" + reports.Keyed(key, "ip", strings.ToLower(m)) + ">"
+	}, func(prev, next byte) bool { return !hexOrColon(prev) && !hexOrColon(next) })
+}
+
+// replace rewrites each match of re whose neighbours ok accepts. The
+// neighbours are looked at, never matched, so two addresses one separator
+// apart -- ip=10.0.0.2:10.0.0.1 -- are both found.
+func replace(text string, re *regexp.Regexp, with func(string) string, ok func(prev, next byte) bool) string {
 	var b strings.Builder
 	last := 0
-	for _, m := range ipv4.FindAllStringSubmatchIndex(text, -1) {
-		ip := text[m[2]:m[3]]
-		if ip == "0.0.0.0" || strings.HasPrefix(ip, "127.") || strings.HasPrefix(ip, "255.") {
+	for _, m := range re.FindAllStringIndex(text, -1) {
+		var prev, next byte
+		if m[0] > 0 {
+			prev = text[m[0]-1]
+		}
+		if m[1] < len(text) {
+			next = text[m[1]]
+		}
+		if !ok(prev, next) {
 			continue
 		}
-		b.WriteString(text[last:m[2]])
-		b.WriteString("<ip:" + reports.Keyed(key, "ip", ip) + ">")
-		last = m[3]
+		b.WriteString(text[last:m[0]])
+		b.WriteString(with(text[m[0]:m[1]]))
+		last = m[1]
 	}
 	b.WriteString(text[last:])
 	return b.String()
 }
 
-// ipv4 is a dotted quad that is not part of a longer dotted number (a
-// version, 4.9.37.1.2).
-var ipv4 = regexp.MustCompile(`(?:^|[^\d.])((?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3})(?:$|[^\d.])`)
+func digitOrDot(c byte) bool { return c == '.' || c >= '0' && c <= '9' }
+func hexOrDot(c byte) bool   { return c == '.' || isHex(c) }
+func hexOrColon(c byte) bool {
+	return c == ':' || isHex(c)
+}
+func isHex(c byte) bool {
+	return c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F'
+}
+
+var (
+	// ipv4 is a dotted quad; replace refuses one inside a longer dotted
+	// number (a version, 4.9.37.1.2).
+	ipv4 = regexp.MustCompile(`(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}`)
+	// ipv6: eight groups, or fewer with "::". Never a time (17:57:19) or a
+	// register dump (9dc0:), which have neither.
+	ipv6 = regexp.MustCompile(`(?i)(?:[0-9a-f]{1,4}:){7}[0-9a-f]{1,4}|(?:[0-9a-f]{1,4}:){1,7}:(?:[0-9a-f]{1,4}(?::[0-9a-f]{1,4}){0,6})?|::(?:[0-9a-f]{1,4}(?::[0-9a-f]{1,4}){0,6})?`)
+	// dottedMAC is Cisco's 0012.3456.789a.
+	dottedMAC = regexp.MustCompile(`(?i)[0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4}`)
+)
 
 // list is GET /api/v1/crashes: the signatures, worst first. No log, no
 // camera, no member.

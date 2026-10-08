@@ -33,12 +33,18 @@ type due struct {
 	at                                time.Time
 }
 
-// Settle pays every member what their crashes earned and were not yet paid.
-// A crash is the member's when they sent it from /club, or when it came from
-// a camera linked to them (now, or when it is settled) on the Open Wall. A
-// self-inflicted crash, a revoked camera's and a bogus signature's pay
-// nothing. Running it twice pays nothing twice: an award is unique per
-// member, signature, camera and reason.
+// Settle pays every member what their crashes earned and they do not hold.
+// A crash with a camera's MAC is that camera's linked owner's, whoever sent
+// it -- anyone can send any MAC, and a member can name only a camera of
+// theirs (Submit) -- so a crash from a camera linked later pays then. A crash
+// without one is the member's who sent it from /club. A self-inflicted
+// crash, a revoked camera's and a bogus bug's pay nothing.
+//
+// What is held is the net of the ledger's rows under the bug, through every
+// signature merged into it: running twice pays nothing twice, a merge does
+// not pay again what either signature paid, and a bug marked bogus and then
+// restored is paid again. A report is held per member and camera; the first
+// reporter's bonuses per bug.
 func (s *Store) Settle(ctx context.Context, now time.Time) (*Settled, error) {
 	out := &Settled{}
 	err := pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
@@ -48,7 +54,7 @@ func (s *Store) Settle(ctx context.Context, now time.Time) (*Settled, error) {
 		rows, err := tx.Query(ctx, `
 			WITH ev AS (
 				SELECT e.id, e.received_at, coalesce(sig.merged_into, sig.id) AS root, e.mac_key,
-				       coalesce(e.member_id, l.member_id) AS member
+				       CASE WHEN e.mac_key <> '' THEN l.member_id ELSE e.member_id END AS member
 				FROM crash_events e
 				JOIN crash_signatures sig ON sig.id = e.signature_id
 				LEFT JOIN camera_links l ON e.mac_key <> '' AND l.mac_key = e.mac_key
@@ -73,8 +79,9 @@ func (s *Store) Settle(ctx context.Context, now time.Time) (*Settled, error) {
 				SELECT * FROM per_camera UNION ALL SELECT * FROM bonuses
 			)
 			SELECT o.member, o.root, o.mac_key, o.reason, o.points, o.received_at FROM owed o
-			WHERE NOT EXISTS (SELECT 1 FROM crash_stars c WHERE c.member_id = o.member AND c.signature_id = o.root
-				AND c.mac_key = o.mac_key AND c.reason = o.reason AND c.kind = 'award')
+			WHERE coalesce((SELECT sum(c.points) FROM crash_stars c JOIN crash_signatures s ON s.id = c.signature_id
+				WHERE coalesce(s.merged_into, s.id) = o.root AND c.reason = o.reason
+				  AND (o.reason <> 'report' OR (c.member_id = o.member AND c.mac_key = o.mac_key))), 0) <= 0
 			ORDER BY o.member, o.received_at, o.root, o.reason`, ReportStars, FirstStars, FixedStars)
 		if err != nil {
 			return err
@@ -91,8 +98,9 @@ func (s *Store) Settle(ctx context.Context, now time.Time) (*Settled, error) {
 		for _, d := range list {
 			if _, ok := paid[d.member]; !ok {
 				var n int
+				// Net: stars taken back and paid again are not paid twice.
 				if err := tx.QueryRow(ctx, `SELECT coalesce(sum(points), 0) FROM crash_stars
-					WHERE member_id = $1 AND kind = 'award' AND at > $2`, d.member, now.Add(-30*24*time.Hour)).Scan(&n); err != nil {
+					WHERE member_id = $1 AND at > $2`, d.member, now.Add(-30*24*time.Hour)).Scan(&n); err != nil {
 					return err
 				}
 				paid[d.member] = n
@@ -102,16 +110,13 @@ func (s *Store) Settle(ctx context.Context, now time.Time) (*Settled, error) {
 				out.Held += d.points
 				continue
 			}
-			tag, err := tx.Exec(ctx, `INSERT INTO crash_stars (member_id, signature_id, mac_key, kind, reason, points, at)
-				VALUES ($1, $2, $3, 'award', $4, $5, $6) ON CONFLICT DO NOTHING`,
-				d.member, d.signature, d.macKey, d.reason, d.points, now)
-			if err != nil {
+			if _, err := tx.Exec(ctx, `INSERT INTO crash_stars (member_id, signature_id, mac_key, kind, reason, points, at)
+				VALUES ($1, $2, $3, 'award', $4, $5, $6)`,
+				d.member, d.signature, d.macKey, d.reason, d.points, now); err != nil {
 				return err
 			}
-			if tag.RowsAffected() == 1 {
-				paid[d.member] += d.points
-				out.Awarded += d.points
-			}
+			paid[d.member] += d.points
+			out.Awarded += d.points
 		}
 		return nil
 	})
