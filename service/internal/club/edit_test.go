@@ -147,3 +147,47 @@ func TestAMemberEditsAReportAndAnEditAfterReviewIsReviewedAgain(t *testing.T) {
 		t.Error("the edit history accepted a change")
 	}
 }
+
+// What review found (#412): a decision on a report edited since the queue
+// was read is refused; a backup cannot be taken out; changing the camera
+// unlinks the board the old one was published on.
+func TestAnEditNeverSlipsPastAReviewer(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	maint := e.maintainer(t)
+
+	_, out := ivan.send(t, map[string]string{"channel": "web", "maker": "Jooan", "board": "Q9"}, map[string][]byte{"photo": photo})
+	id := out["id"].(string)
+	_, q := maint.json(t, "GET", "/api/v1/club/review", nil)
+	seen := q["reports"].([]any)[0].(map[string]any)
+	if code, _ := ivan.edit(t, id, nil, map[string][]byte{"photo": photo}); code != 200 {
+		t.Fatal("edit")
+	}
+	code, d := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish", "new_board": seen["new_board"], "revision": seen["revision"]})
+	if code != 409 || !strings.Contains(d["error"].(string), "changed this report since you opened it") {
+		t.Fatalf("a decision on what the reviewer did not see: %d %v", code, d)
+	}
+	_, q = maint.json(t, "GET", "/api/v1/club/review", nil)
+	now := q["reports"].([]any)[0].(map[string]any)
+	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish", "new_board": now["new_board"], "revision": now["revision"]}); code != 200 || d["points"].(float64) != 2 {
+		t.Fatalf("a decision on what the reviewer saw: %d %v", code, d)
+	}
+
+	// A new marking: the board the old one made is no longer the report's.
+	if code, _ := ivan.edit(t, id, map[string]string{"maker": "Jooan", "board": "Q9 Max"}, nil); code != 200 {
+		t.Fatal("camera edit")
+	}
+	var links int
+	_ = e.pool.QueryRow(ctx, `SELECT count(*) FROM report_models WHERE report_id = $1`, id).Scan(&links)
+	if links != 0 {
+		t.Errorf("still linked to the old camera's board (%d)", links)
+	}
+
+	// A backup stays as sent.
+	_, out = ivan.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10"},
+		map[string][]byte{"backup": bytes.Repeat([]byte{0x5a}, 1<<20), "photo": photo})
+	if code, d := ivan.edit(t, out["id"].(string), nil, nil, 1); code != 400 || !strings.Contains(d["error"].(string), "backup stays") {
+		t.Errorf("taking out a backup: %d %v", code, d)
+	}
+}

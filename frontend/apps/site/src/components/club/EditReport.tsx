@@ -71,10 +71,10 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
         <textarea value={note} maxLength={4000} onInput={(e) => setNote((e.target as HTMLTextAreaElement).value)}
           class={`${field} min-h-[56px] resize-y`} />
       </label>
-      {report.files.length > 0 && (
+      {report.files.some((f) => f.kind !== 'backup') && (
         <fieldset class="m-0 grid gap-1 border-0 p-0">
           <legend class="mb-1 p-0 text-body-secondary">{t('club.edit_remove')}</legend>
-          {report.files.map((f) => (
+          {report.files.filter((f) => f.kind !== 'backup').map((f) => (
             <label key={f.position} class="flex items-center gap-2">
               <input type="checkbox" checked={remove.has(f.position)} onChange={() => toggle(f.position)} />
               <span class={remove.has(f.position) ? 'line-through text-body-secondary' : ''}>{t(`club.kind_${f.kind}`)} · {f.name}</span>
@@ -88,7 +88,8 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
           <select value={kind} onChange={(e) => { setKind((e.target as HTMLSelectElement).value as AddKind); setAdd([]); }} class={field}>
             {ADD_KINDS.map((k) => <option key={k} value={k}>{t(`club.kind_${k}`)}</option>)}
           </select>
-          <input type="file" multiple aria-label={t('club.edit_add')} accept={kind === 'photo' ? 'image/jpeg,image/png,image/webp' : '.txt,.log,text/plain'}
+          {/* keyed on the kind: switching it clears what was picked, input and all */}
+          <input key={kind} type="file" multiple aria-label={t('club.edit_add')} accept={kind === 'photo' ? 'image/jpeg,image/png,image/webp' : '.txt,.log,text/plain'}
             onChange={(e) => setAdd([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
         </div>
       </div>

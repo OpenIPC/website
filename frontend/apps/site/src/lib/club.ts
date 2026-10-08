@@ -97,6 +97,8 @@ export interface Queued {
   new_board?: Suggestion;
   joins?: string;
   edited_at?: string;
+  /** Its sender's edits; sent back with a decision, which is refused if it moved. */
+  revision: number;
 }
 
 const BASE = '/api/v1/club';
@@ -184,9 +186,10 @@ export const fetchMine = () => call<{ member: Member; reports: MemberReport[] }>
 
 export const fetchQueue = (status = 'pending') => call<{ reports: Queued[] }>(`/review?${new URLSearchParams({ status })}`);
 
-export const decide = (id: string, decision: 'publish' | 'reject', models: string[], note: string, newBoard?: NewBoard) =>
-  post<{ points: number; total: number; board?: string }>(`/review/${encodeURIComponent(id)}`,
-    newBoard ? { decision, models, note, new_board: newBoard } : { decision, models, note });
+export const decide = (id: string, decision: 'publish' | 'reject', models: string[], note: string, newBoard?: NewBoard, revision?: number) =>
+  post<{ points: number; total: number; board?: string }>(`/review/${encodeURIComponent(id)}`, {
+    decision, models, note, ...(newBoard ? { new_board: newBoard } : {}), ...(revision !== undefined ? { revision } : {}),
+  });
 
 /** A code that makes `ipctool upload --note <code>` the member's report. */
 export interface ReportCode { code: string; expires_at: string; joins?: string }

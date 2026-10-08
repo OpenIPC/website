@@ -660,7 +660,9 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 		Decision string           `json:"decision"`
 		Models   []string         `json:"models"`
 		NewBoard *boards.NewModel `json:"new_board"`
-		Note     string           `json:"note"`
+		// Revision is the queue's, so a report changed since is not decided.
+		Revision *int   `json:"revision"`
+		Note     string `json:"note"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&in); err != nil {
 		a.refuse(w, http.StatusBadRequest, `send {"decision": "publish" or "reject", "models": [...], "note": "..."}`)
@@ -668,7 +670,11 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.PathValue("id")
 	by := m.Name + " (" + m.ID + ")"
-	d, err := a.Reports.Store().Decide(r.Context(), id, in.Decision, by, in.Note, in.Models, in.NewBoard)
+	d, err := a.Reports.Store().Decide(r.Context(), id, in.Decision, by, in.Note, in.Models, in.NewBoard, in.Revision)
+	if errors.Is(err, reports.ErrChanged) {
+		a.refuse(w, http.StatusConflict, err.Error())
+		return
+	}
 	if errors.Is(err, reports.ErrNotFound) {
 		a.refuse(w, http.StatusNotFound, "no report has this id")
 		return

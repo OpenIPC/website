@@ -85,7 +85,7 @@ test('a dump read with a programmer goes with the photos, private unless ticked'
 
 const queued = (over: Partial<Queued>): Queued => ({
   id: 'r-new23456', received_at: '2026-10-06T10:00:00Z', channel: 'web', status: 'pending', chip: '', sensor: '',
-  board: null, models: [], backup_consent: 'none', member: 'Ivan', file_list: [], potential: 2,
+  board: null, models: [], backup_consent: 'none', member: 'Ivan', file_list: [], potential: 2, revision: 0,
   proposal: { maker: 'Jooan', board: 'Q9 v2', soc: 'SSC335' },
   new_board: { maker_id: 'jooan', maker_name: 'Jooan', model_id: 'jooan-q9-v2', model: 'Q9 v2', soc: 'SSC335', maker_known: false },
   ...over,
@@ -114,7 +114,7 @@ test('the reviewer publishes a proposal as the board they corrected', async () =
   fireEvent.click(getByRole('button', { name: /^Publish ·/ }));
   await waitFor(() => expect(calls).toHaveLength(1));
   expect(calls[0].body).toEqual({
-    decision: 'publish', models: [], note: '',
+    decision: 'publish', models: [], note: '', revision: 0,
     new_board: { maker_id: 'jooan', maker_name: 'Jooan', model_id: 'jooan-q9', model: 'Q9 v2', soc: 'SSC335' },
   });
   expect(await findByText(/jooan-q9 added to the catalogue/)).toBeTruthy();
@@ -126,5 +126,5 @@ test('a proposal the catalogue already has is published on that board, not a twi
   expect(await findByText(/already has jooan-q9-v2/)).toBeTruthy();
   fireEvent.click(getByRole('button', { name: /^Publish ·/ }));
   await waitFor(() => expect(calls).toHaveLength(1));
-  expect(calls[0].body).toEqual({ decision: 'publish', models: ['jooan-q9-v2'], note: '' });
+  expect(calls[0].body).toEqual({ decision: 'publish', models: ['jooan-q9-v2'], note: '', revision: 0 });
 });

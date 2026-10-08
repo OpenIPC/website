@@ -81,7 +81,7 @@ function Item({ q, locale, t, onDone }: { q: Queued; locale: Locale; t: BoardsT;
     setBusy(true);
     setError(null);
     const ids = models.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
-    decide(q.id, decision, ids, note, decision === 'publish' && create && board ? board : undefined)
+    decide(q.id, decision, ids, note, decision === 'publish' && create && board ? board : undefined, q.revision)
       .then((r) => {
         setResult(r.board ? t('club.review_done_board', { board: r.board, points: r.points }) : t(`club.review_done_${decision}`, { points: r.points }));
         setTimeout(onDone, 1200);

@@ -22,6 +22,9 @@ import (
 var (
 	// ErrNotEditable is a report its member cannot change: withdrawn.
 	ErrNotEditable = errors.New("a withdrawn report cannot be edited")
+	// ErrChanged is a decision on a report its sender has edited since the
+	// reviewer read it.
+	ErrChanged = errors.New("the sender has changed this report since you opened it: read it again before deciding")
 	// ErrNothingChanged is an edit that changes nothing.
 	ErrNothingChanged = errors.New("nothing to change: edit the note or the camera, or add or remove a file")
 )
@@ -99,6 +102,11 @@ func (s *Store) Edit(ctx context.Context, id, member, by string, c Change, noteP
 				id, c.Proposal.Maker, c.Proposal.Board, c.Proposal.SoC); err != nil {
 				return err
 			}
+			// The board a review linked it to was for the camera it named
+			// then: the next review decides afresh.
+			if _, err := tx.Exec(ctx, `DELETE FROM report_models WHERE report_id = $1`, id); err != nil {
+				return err
+			}
 			what = append(what, "camera")
 		}
 
@@ -124,8 +132,12 @@ func (s *Store) Edit(ctx context.Context, id, member, by string, c Change, noteP
 		}
 		removed := map[int]bool{}
 		for _, pos := range c.Remove {
-			if _, ok := files[pos]; !ok {
+			h, ok := files[pos]
+			if !ok {
 				return refusal{fmt.Errorf("remove: the report has no file %d", pos)}
+			}
+			if h.kind == "backup" {
+				return refusal{errors.New("remove: a backup stays as it was sent; ask a maintainer to take the report down instead")}
 			}
 			removed[pos] = true
 		}
@@ -241,6 +253,17 @@ func (s *Store) Edit(ctx context.Context, id, member, by string, c Change, noteP
 	return out, err
 }
 
+// revisionOf counts a report's edits.
+func revisionOf(ctx context.Context, q querier, id string) (int, error) {
+	var n int
+	err := q.QueryRow(ctx, `SELECT count(*) FROM report_edits WHERE report_id = $1`, id).Scan(&n)
+	return n, err
+}
+
+type rowsQuerier interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+}
+
 // refusal is an edit the request asked wrongly for, answered 400.
 type refusal struct{ error }
 
@@ -324,6 +347,17 @@ func (a *API) Edit(w http.ResponseWriter, r *http.Request, member, by, id string
 		}
 		return nil
 	})
+	if err != nil {
+		// What place put in the store before the edit failed belongs to no
+		// report: take it back out (a sum another report holds stays).
+		for _, f := range c.Add {
+			for _, sum := range []string{f.SHA256, f.PublicSHA256} {
+				if sum != "" {
+					_, _ = st.RemoveUnreferenced(ctx, a.Files, sum)
+				}
+			}
+		}
+	}
 	switch {
 	case errors.Is(err, ErrNotFound):
 		a.refuse(w, http.StatusNotFound, "no report of yours has this id")

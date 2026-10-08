@@ -353,6 +353,11 @@ func (s *Store) Takedown(ctx context.Context, id, by, note string) ([]string, er
 	}
 	var orphans []string
 	err := Unguarded(ctx, s.DB, func(tx pgx.Tx) error {
+		// The report's lock, as an edit and a review hold it: an edit cannot
+		// write into a report this takes down.
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, id); err != nil {
+			return err
+		}
 		rows, err := tx.Query(ctx, `
 			DELETE FROM report_files WHERE report_id = $1 RETURNING sha256, public_sha256`, id)
 		if err != nil {
