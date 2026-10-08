@@ -42,7 +42,7 @@ export const TEAM: TeamSection[] = [
         name: 'OpenIPC',
         avatar: 'https://avatars.githubusercontent.com/u/46071473',
         role: 'Official community account on all platforms and sites',
-        socials: [{ url: 'https://github.com/OpenIPC/', icon: 'github', handle: '@OpenIPC' }, { url: 'https://opencollective.com/openipc', icon: 'opencollective', handle: '@OpenIPC' }, { url: 'https://t.me/OpenIPC', icon: 'telegram', handle: '@OpenIPC' }, { url: 'http://youtube.com/@openipc', icon: 'youtube', handle: '@OpenIPC' }, { url: 'http://twitter.com/openipc', icon: 'twitter', handle: '@OpenIPC' }],
+        socials: [{ url: 'https://github.com/OpenIPC/', icon: 'github', handle: '@OpenIPC' }, { url: 'https://opencollective.com/openipc', icon: 'opencollective', handle: '@OpenIPC' }, { url: 'https://t.me/OpenIPC', icon: 'telegram', handle: '@OpenIPC' }, { url: 'http://youtube.com/@openipc', icon: 'youtube', handle: '@OpenIPC' }, { url: 'http://twitter.com/openipc', icon: 'twitter', handle: '@OpenIPC' }, { url: 'https://bsky.app/profile/openipc.org', icon: 'bluesky', handle: '@openipc.org' }],
       },
       {
         name: 'FlyRouter',
