@@ -109,6 +109,10 @@ export const PAGE_PATHS: PagePath[] = [
   { path: '/club/review', titleKey: 'pages.club_review.title', descriptionKey: 'pages.club_review.lede' },
   // The leaderboard: members who chose to be listed, by stars (service/internal/wallstars).
   { path: '/club/leaderboard', titleKey: 'pages.club_leaderboard.title', descriptionKey: 'pages.club_leaderboard.lede' },
+  // The maintainers' triage of kernel crashes; a shell, as the review queue is.
+  { path: '/club/crashes', titleKey: 'pages.club_crashes.title', descriptionKey: 'pages.club_crashes.lede' },
+  // Kernel crashes cameras recovered from, one row per bug (service/internal/crashes).
+  { path: '/crashes', titleKey: 'pages.crashes.title', descriptionKey: 'pages.crashes.lede' },
 
   { path: '/business', titleKey: 'pages.business.title' },
   { path: '/community', titleKey: 'pages.community.title' },

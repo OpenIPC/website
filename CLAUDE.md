@@ -208,6 +208,26 @@ restores the image but never the schema, so keep migrations additive.
   `wall_notices` for the next run. `openipc club wall-revoke` takes a faked
   camera's stars back. The owner's name on the camera's wall page is opt-in;
   the leaderboard (`/club/leaderboard`) is opt-out (migration 027).
+- `internal/crashes` -- **kernel crashes cameras recovered from**: the
+  bundle the firmware's `S98crashlog` makes of pstore's records after an
+  oops or a panic, which the WebUI offers its owner. Sent by the WebUI to
+  `POST /api/v1/crashes` (the contract is `internal/crashes/CRASH.md`), or
+  downloaded and sent by a member from `/club`. Filed under a **signature**
+  -- the top five backtrace frames, `fn [module]` without offsets -- so one
+  bug from many cameras is one row (migration 030); the records pstore keeps
+  twice (`Oops#1`, `Panic#2`) are one crash, and the same records sent again
+  by one camera are one event. Ranked by kind, how many cameras and whether today's
+  firmware still has it; public at `/crashes` (signatures only), triaged by
+  maintainers at `/club/crashes` or `openipc crashes status`. Logs are
+  redacted (MACs and IPs keyed-hashed) and maintainers' only; bundles are
+  kept as sent in PostgreSQL (`crash_bundles`), never served; events and
+  bundles are guarded like owner reports. Stars go into `crash_stars`, the
+  third ledger, paid by the nightly `settle` only: 1 per camera and bug, 3 to
+  the first reporter once confirmed, 5 more when fixed, at most 10 a month;
+  a crash asked for (sysrq) pays nothing. The ledger is net per bug, through
+  merges: `bogus` takes back what a bug and the signatures merged into it
+  paid, and undoing it lets the settlement pay again. A crash with a MAC is
+  the camera's linked owner's, whoever sent it.
 - `internal/tools`, `internal/nfsro` — **ipctool for stock firmware**, which
   has no curl and no TLS. ipctool's release job pushes each build to
   `PUT /api/v1/tools/{name}` (OIDC, `internal/tools/PUSH.md`); nginx serves

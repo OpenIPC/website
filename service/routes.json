@@ -271,6 +271,46 @@
   },
   {
     "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/crashes"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/crashes"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/crashes/triage"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/club/crashes/{id}"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/crashes/{id}"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/crashes"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/crashes"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/crashes/{id}"
+  },
+  {
+    "role": "web",
     "method": "PUT",
     "path": "/api/v1/tools/{name}"
   },

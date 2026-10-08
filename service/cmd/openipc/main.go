@@ -40,6 +40,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/catalogue"
 	"github.com/OpenIPC/website/service/internal/club"
 	"github.com/OpenIPC/website/service/internal/config"
+	"github.com/OpenIPC/website/service/internal/crashes"
 	"github.com/OpenIPC/website/service/internal/db"
 	"github.com/OpenIPC/website/service/internal/downloads"
 	"github.com/OpenIPC/website/service/internal/drift"
@@ -93,6 +94,8 @@ func main() {
 		err = reportsCommand(ctx, cfg, log, args)
 	case "club":
 		err = clubCommand(ctx, cfg, log, args)
+	case "crashes":
+		err = crashesCommand(ctx, cfg, log, args)
 	case "routes":
 		err = printRoutes()
 	case "version":
@@ -106,7 +109,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history|import-uboot | boards import-openhisiipcam | boards import-snapshot | reports list|show|publish|reject|link|unlink|takedown|verify | club settle-wall|wall-revoke|wall-unlink | vendor-firmware import-history | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history|import-uboot | boards import-openhisiipcam | boards import-snapshot | reports list|show|publish|reject|link|unlink|takedown|verify | club settle-wall|wall-revoke|wall-unlink | crashes list|show|status|settle|takedown | vendor-firmware import-history | routes --json | version")
 	os.Exit(2)
 }
 
@@ -205,6 +208,14 @@ var routes = []Route{
 	{"web", "POST", "/api/v1/club/cameras/{camera}/owner"},
 	{"web", "POST", "/api/v1/club/listed"},
 	{"web", "GET", "/api/v1/club/leaderboard"},
+	{"web", "POST", "/api/v1/club/crashes"},
+	{"web", "GET", "/api/v1/club/crashes"},
+	{"web", "GET", "/api/v1/club/crashes/triage"},
+	{"web", "GET", "/api/v1/club/crashes/{id}"},
+	{"web", "POST", "/api/v1/club/crashes/{id}"},
+	{"web", "POST", "/api/v1/crashes"},
+	{"web", "GET", "/api/v1/crashes"},
+	{"web", "GET", "/api/v1/crashes/{id}"},
 	{"web", "PUT", "/api/v1/tools/{name}"},
 	{"web", "GET", "/api/v1/tools"},
 	{"share", "GET", "/up"},
@@ -382,6 +393,10 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 	// frame may link a camera and the club tells its member.
 	wallStars := &wallstars.Store{DB: pool, Token: store.CameraToken}
 	clubAPI := newClub(bg, cfg, log, pool, ownerReports, wallStars)
+	// Kernel crashes cameras recovered from (internal/crashes): sent by the
+	// WebUI or from /club, triaged by the maintainers in the club.
+	crashAPI := &crashes.API{DB: pool, Log: log, SiteURL: cfg.ClubSiteURL}
+	clubAPI.Crashes = crashAPI
 	proc := &variants.Processor{Wall: wallFS, Store: store, Log: log, FFmpeg: cfg.FFmpegBin,
 		Workers: cfg.VariantWorkers,
 		Published: func(ctx context.Context, id string) {
@@ -483,6 +498,9 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		handlers[k] = h
 	}
 	for k, h := range clubAPI.Handlers() {
+		handlers[k] = h
+	}
+	for k, h := range crashAPI.Handlers() {
 		handlers[k] = h
 	}
 	// ipctool's builds, pushed by its release job (tools/PUSH.md).
@@ -677,6 +695,10 @@ func runPurge(ctx context.Context, cfg *config.Config, log *slog.Logger, args []
 		}
 		// And the Open Wall's stars for the day just ended (internal/wallstars).
 		if err := settleWall(ctx, cfg, log, pool); err != nil {
+			return err
+		}
+		// And what the crashes cameras sent have earned (internal/crashes).
+		if err := settleCrashes(ctx, log, pool); err != nil {
 			return err
 		}
 	}

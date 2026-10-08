@@ -228,7 +228,7 @@ func cameraName(loc, name string) string {
 	return "“" + html.EscapeString(name) + "”"
 }
 
-// totalStars is a member's stars from both ledgers.
+// totalStars is a member's stars from every ledger.
 func (a *API) totalStars(ctx context.Context, member string) (int, error) {
 	reports, err := a.Reports.Store().StarsOf(ctx, member)
 	if err != nil {
@@ -238,5 +238,9 @@ func (a *API) totalStars(ctx context.Context, member string) (int, error) {
 		return reports, nil
 	}
 	wall, err := a.Wall.StarsOf(ctx, member)
-	return reports + wall, err
+	if err != nil || a.Crashes == nil {
+		return reports + wall, err
+	}
+	crash, err := a.Crashes.Store().StarsOf(ctx, member)
+	return reports + wall + crash, err
 }

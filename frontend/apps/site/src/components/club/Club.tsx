@@ -17,6 +17,7 @@ import {
 } from '../../lib/club';
 import { size } from '../../lib/reports';
 import Cameras from './Cameras';
+import Crashes from './Crashes';
 import IpctoolCode from './IpctoolCode';
 import { STATUS_TONE, Stars } from './parts';
 
@@ -273,6 +274,7 @@ function MemberPage({ member, ways, locale, t, onChange }: {
           <dl class="m-0 mt-2 grid gap-0.5 text-[13px]">
             <div class="flex justify-between gap-2"><dt class="text-body-secondary">{t('club.side_from_reports')}</dt><dd class="m-0"><Stars n={member.report_stars ?? member.stars} /></dd></div>
             <div class="flex justify-between gap-2"><dt class="text-body-secondary">{t('club.side_from_wall')}</dt><dd class="m-0"><Stars n={member.wall_stars ?? 0} /></dd></div>
+            <div class="flex justify-between gap-2"><dt class="text-body-secondary">{t('club.side_from_crashes')}</dt><dd class="m-0"><Stars n={member.crash_stars ?? 0} /></dd></div>
           </dl>
         </div>
         {cams && (
@@ -304,6 +306,7 @@ function MemberPage({ member, ways, locale, t, onChange }: {
           )
           : <button type="button" class="w-fit cursor-pointer p-0 text-[13px] text-brand-blue underline" onClick={() => setNaming(true)}>{t('club.rename')}</button>}
         {member.maintainer && <a class="site-btn site-btn-dark site-btn-sm w-fit" href={pathFor(locale, '/club/review')}>{t('club.review_link')}</a>}
+        {member.maintainer && <a class="site-btn site-btn-outline-secondary site-btn-sm w-fit" href={pathFor(locale, '/club/crashes')}>{t('crashes.triage_link')}</a>}
         {telegram && (
           <div class="grid gap-1.5 text-[13px] text-body-secondary">
             <span>{member.quiet ? t('club.bot_muted') : t('club.bot_on')}</span>
@@ -323,6 +326,7 @@ function MemberPage({ member, ways, locale, t, onChange }: {
         {cams
           ? <Cameras data={cams} locale={locale} t={t} onChange={() => { void loadCams(); onChange(); }} />
           : !error && <div class="m-4 h-24 animate-pulse rounded bg-surface-alt" />}
+        <Crashes locale={locale} t={t} onChange={onChange} />
         <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-hairline px-4 py-3">
           <h2 id="club-mine" class="m-0 text-lg font-semibold">{t('club.mine_title')}</h2>
           <span class="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">

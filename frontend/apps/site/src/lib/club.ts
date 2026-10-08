@@ -19,9 +19,10 @@ export interface Member {
   quiet: boolean;
   identities: Identity[];
   stars: number;
-  /** The stars' two sources: accepted reports, and cameras on the Open Wall. */
+  /** The stars' sources: accepted reports, cameras on the Open Wall, and kernel crashes. */
   report_stars?: number;
   wall_stars?: number;
+  crash_stars?: number;
   pending: number;
 }
 
@@ -246,7 +247,7 @@ export const showOwner = (token: string, show: boolean) => post<{ show: boolean 
 
 export const setListed = (listed: boolean) => post<{ listed: boolean }>('/listed', { listed });
 
-export interface Leader { rank: number; name: string; reports: number; wall: number; stars: number; you?: boolean }
+export interface Leader { rank: number; name: string; reports: number; wall: number; crashes: number; stars: number; you?: boolean }
 
 export const fetchLeaderboard = (period: 'all' | '30d') =>
   call<{ period: string; members: Leader[] }>(`/leaderboard?${new URLSearchParams({ period })}`);

@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/OpenIPC/website/service/internal/boards"
+	"github.com/OpenIPC/website/service/internal/crashes"
 	"github.com/OpenIPC/website/service/internal/reports"
 	"github.com/OpenIPC/website/service/internal/wallstars"
 )
@@ -53,7 +54,9 @@ type API struct {
 	Cfg     Config
 	Reports *reports.API
 	// Wall is the members' cameras on the Open Wall and their stars.
-	Wall     *wallstars.Store
+	Wall *wallstars.Store
+	// Crashes is the kernel crashes cameras sent, and their stars.
+	Crashes  *crashes.API
 	Telegram *Telegram
 	GitHub   *GitHub
 	Mail     Mailer
@@ -95,6 +98,11 @@ func (a *API) Handlers() map[string]http.Handler {
 	}
 	if a.Wall != nil {
 		for k, v := range a.wallHandlers() {
+			h[k] = v
+		}
+	}
+	if a.Crashes != nil {
+		for k, v := range a.crashHandlers() {
 			h[k] = v
 		}
 	}
