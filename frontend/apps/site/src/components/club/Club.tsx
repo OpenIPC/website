@@ -376,6 +376,9 @@ function Ledger({ reports, locale, t }: { reports: MemberReport[]; locale: Local
                       </li>
                     ))}
                   </ul>
+                  {r.note && (
+                    <span class="text-[12.5px] whitespace-pre-wrap text-body"><b class="font-semibold">{t('club.your_note')}:</b> {r.note}</span>
+                  )}
                   {r.duplicate && <span class="text-[12.5px] text-body-secondary">{t('club.duplicate')}</span>}
                   {r.status !== 'rejected' && !r.joins && <IpctoolCode joins={r.id} locale={locale} t={t} label={t('club.code_add_ipctool')} />}
                   {r.review_note && (

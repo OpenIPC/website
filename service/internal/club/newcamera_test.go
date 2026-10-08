@@ -175,3 +175,54 @@ func TestANewCameraComesWithAProgrammersDump(t *testing.T) {
 		t.Errorf("published texts: %+v (%v)", texts, err)
 	}
 }
+
+// The note under a send -- where it was bought, what it is sold as -- is
+// the sender's to see on /club as written, and once published it goes onto
+// the board's unit redacted: a MAC pasted into it never reaches the page.
+func TestTheSendersNoteIsShownAndPublishedRedacted(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	note := "bought on Ozon as Jooan Q9, MAC 00:12:41:ab:cd:ef"
+	_, out := ivan.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10", "note": note}, map[string][]byte{"photo": photo})
+	id := out["id"].(string)
+	if _, mine := ivan.json(t, "GET", "/api/v1/club/reports", nil); mine["reports"].([]any)[0].(map[string]any)["note"] != note {
+		t.Errorf("the sender's own note: %v", mine["reports"])
+	}
+	maint := e.maintainer(t)
+	if code, _ := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish"}); code != 200 {
+		t.Fatal("publish")
+	}
+	texts, err := e.api.Reports.Store().PublishedTexts(ctx)
+	if err != nil || len(texts) != 1 {
+		t.Fatalf("%v %v", texts, err)
+	}
+	if n := texts[0].Note; !strings.HasPrefix(n, "bought on Ozon as Jooan Q9, MAC <mac:") || strings.Contains(n, "ab:cd:ef") {
+		t.Errorf("the board's note: %q", n)
+	}
+}
+
+// A published report with a note and no public file -- a note alone, or one
+// beside a private dump -- still makes a unit on its board, for its note;
+// the dump never goes with it.
+func TestANoteWithoutAPublicFileStillReachesTheBoard(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	maint := e.maintainer(t)
+	for _, files := range []map[string][]byte{nil, {"backup": bytes.Repeat([]byte{0x5a}, 1<<20)}} {
+		_, out := ivan.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10", "note": "sold as Jooan Q9"}, files)
+		if code, d := maint.json(t, "POST", "/api/v1/club/review/"+out["id"].(string), map[string]any{"decision": "publish"}); code != 200 {
+			t.Fatalf("publish: %d %v", code, d)
+		}
+	}
+	texts, err := e.api.Reports.Store().PublishedTexts(ctx)
+	if err != nil || len(texts) != 2 {
+		t.Fatalf("%+v %v", texts, err)
+	}
+	for _, x := range texts {
+		if x.Note != "sold as Jooan Q9" || len(x.Files) != 0 || x.Model != "anjoy-ms-j10" {
+			t.Errorf("%+v", x)
+		}
+	}
+}

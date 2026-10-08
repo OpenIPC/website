@@ -76,7 +76,9 @@ func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logge
 		}
 		// A report published on several boards is a unit on each, and each
 		// unit's reference is its own (board_units.source_ref is unique).
-		c := boards.Contribution{Unit: t.Model + "-" + t.Report, Model: t.Model, By: by,
+		// The sender's note -- where it was bought, what it is sold as -- is
+		// the unit's, as published (redacted).
+		c := boards.Contribution{Unit: t.Model + "-" + t.Report, Model: t.Model, By: by, Note: t.Note,
 			Evidence: []string{cfg.ClubSiteURL + boards.ReceiptMark + t.Report + "&board=" + t.Model}}
 		for _, f := range t.Files {
 			c.Files = append(c.Files, boards.ContributedFile{Kind: kinds[f.Kind], File: fmt.Sprintf("%d-%s", f.Position, f.Name), Source: f.Path})

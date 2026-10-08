@@ -219,7 +219,8 @@
       "why_2": "让固件转储保持私密：只有你和 OpenIPC 维护者可以下载。",
       "why_3": "为你记录的电路板和保持在线的 Open Wall 摄像头获得星星，并在你记录的电路板旁显示你的名字。",
       "why_note": "浏览目录或下载固件无需账户。对不登录的访客，本站不设置任何 cookie。",
-      "why_title": "为什么要登录"
+      "why_title": "为什么要登录",
+      "your_note": "你的备注"
     },
     "cov_boot_log": "启动日志",
     "cov_document": "文档",
@@ -458,6 +459,7 @@
       "lookup_button": "查看状态",
       "lookup_label": "有回执？",
       "not_found": "没有与此回执对应的报告。请检查 ipctool 打印的地址。",
+      "owner_note": "所有者的备注：",
       "received": "来自 {channel}",
       "reports_app": "应用",
       "reports_ask": "有这块板？",

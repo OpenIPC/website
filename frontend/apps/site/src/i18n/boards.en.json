@@ -219,7 +219,8 @@
       "why_2": "Keep your flash dumps private: only you and OpenIPC's maintainers can download them.",
       "why_3": "Collect stars for what you document and for keeping a camera on the Open Wall, and your name next to the boards you documented.",
       "why_note": "You don't need an account to browse or download firmware. The site sets no cookie for anyone who doesn't sign in.",
-      "why_title": "Why sign in"
+      "why_title": "Why sign in",
+      "your_note": "Your note"
     },
     "cov_boot_log": "Boot log",
     "cov_document": "Docs",
@@ -458,6 +459,7 @@
       "lookup_button": "Show its state",
       "lookup_label": "Have a receipt?",
       "not_found": "No report has this receipt. Check the address ipctool printed.",
+      "owner_note": "The owner's note:",
       "received": "Received from {channel}",
       "reports_app": "app",
       "reports_ask": "Have this board?",
