@@ -131,6 +131,14 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member, channel str
 		SignatureID: c.Fatal.Signature(),
 		Redacted:    Redact(c.Text, mac, key),
 	}
+	// What the firmware wrote about the camera when it kept the crash: the
+	// meta field, or the meta.json in the bundle, which a bundle downloaded
+	// from the WebUI and sent from /club carries. The log is the tail of the
+	// kernel's; on a camera whose log filled up, the lines naming the chip and
+	// the sensor are gone from it, and meta.json still names them.
+	if in.meta == "" && len(files["meta.json"]) <= maxMeta {
+		in.meta = strings.TrimSpace(files["meta.json"])
+	}
 	if in.meta != "" {
 		red := Redact(in.meta, mac, key)
 		if !json.Valid([]byte(red)) {
@@ -138,6 +146,15 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member, channel str
 			return
 		}
 		e.Meta = json.RawMessage(red)
+		var named struct{ SoC, Sensor string }
+		if json.Unmarshal(e.Meta, &named) == nil {
+			if v := strings.ToLower(named.SoC); e.SoC == "" && hardwareRe.MatchString(v) {
+				e.SoC = v
+			}
+			if v := strings.ToLower(named.Sensor); e.Sensor == "" && hardwareRe.MatchString(v) {
+				e.Sensor = v
+			}
+		}
 	}
 	id, sig, dup, err := a.Store().Insert(ctx, e, a.now())
 	if errors.Is(err, ErrQuota) {

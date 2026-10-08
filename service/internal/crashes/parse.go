@@ -194,7 +194,7 @@ func Unpack(data []byte) (map[string]string, error) {
 				continue
 			}
 			name := h.Name[strings.LastIndex(h.Name, "/")+1:]
-			if !strings.HasPrefix(name, "dmesg-") && name != "failsafe" && name != "pending" {
+			if !strings.HasPrefix(name, "dmesg-") && name != "failsafe" && name != "pending" && name != "meta.json" {
 				continue
 			}
 			if len(out) == maxRecords {

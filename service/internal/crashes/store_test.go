@@ -505,3 +505,36 @@ func TestConcurrentUploadsKeepTheLimit(t *testing.T) {
 		t.Fatalf("%d created, the limit is %d", created, DailyPerCamera)
 	}
 }
+
+// A bundle the WebUI downloaded carries the firmware's meta.json: it is kept
+// beside the log, and names the chip and sensor when the log no longer does.
+func TestMetaInTheBundle(t *testing.T) {
+	e := newEnv(t)
+	meta := `{"soc": "GK7205V300", "sensor": "imx335", "cmdline": "ip=192.0.2.7", "config": ["video0:", "  codec: h265"]}`
+	b := tgz(t, map[string]string{"dmesg-ramoops-0": string(oops(3)), "meta.json": meta})
+	code, out := e.send(b, nil, "10.0.0.1")
+	if code != 201 {
+		t.Fatalf("%d %v", code, out)
+	}
+	var soc, sensor, stored string
+	if err := e.pool.QueryRow(context.Background(), `SELECT soc, sensor, meta::text FROM crash_events`).Scan(&soc, &sensor, &stored); err != nil {
+		t.Fatal(err)
+	}
+	if soc != "gk7205v300" || sensor != "imx335" {
+		t.Fatalf("soc %q sensor %q", soc, sensor)
+	}
+	if strings.Contains(stored, "192.0.2.7") || !strings.Contains(stored, "codec: h265") {
+		t.Fatalf("meta %s", stored)
+	}
+	// What the camera says outright wins over meta.json.
+	b = tgz(t, map[string]string{"dmesg-ramoops-0": string(oops(4)), "meta.json": `{"soc": "hi3516ev300"}`})
+	if code, _ := e.send(b, map[string]string{"soc": "gk7205v200"}, "10.0.0.1"); code != 201 {
+		t.Fatal(code)
+	}
+	if err := e.pool.QueryRow(context.Background(), `SELECT soc FROM crash_events ORDER BY received_at DESC, id LIMIT 1`).Scan(&soc); err != nil {
+		t.Fatal(err)
+	}
+	if soc != "gk7205v200" {
+		t.Fatalf("form soc lost to meta: %q", soc)
+	}
+}

@@ -23,7 +23,7 @@ instead; include it in the tar as `failsafe` and it is filed as a boot loop.
 | `firmware` | optional | `/etc/os-release`'s version, e.g. `2.6.10.05-lite` |
 | `majestic` | optional | `majestic -v` |
 | `soc`, `sensor` | optional | as `ipcinfo` says; the log's own `sensor=… chip=…` line is used when absent |
-| `meta` | optional | JSON, at most 64 KB: anything else that helps reproduce it -- `/proc/cmdline`, `lsmod`, the flash size, uptime, and `majestic.yaml` **with passwords, keys, Wi-Fi and URLs removed** |
+| `meta` | optional | JSON, at most 64 KB: what helps reproduce it. The firmware writes it as `meta.json` in the bundle (OpenIPC/firmware `S98crashlog`: the build, kernel, command line, chip, sensor, majestic version, and the pipeline's settings **without passwords, keys, accounts or servers**); a bundle carrying it needs no `meta` field, and its `soc` and `sensor` are used when the camera sends neither and the log no longer names them |
 
 ```sh
 curl -sS -L --post301 --max-time 30 \
