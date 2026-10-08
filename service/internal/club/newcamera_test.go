@@ -122,3 +122,56 @@ func TestRejectingLinksNothing(t *testing.T) {
 		t.Errorf("a rejected report has %d links", links)
 	}
 }
+
+// A camera ipctool could not run on: its photos and the whole chip read
+// with a programmer. The dump earns what a dump earns, stays private to its
+// sender and the maintainers, and only the photo goes onto the new board.
+func TestANewCameraComesWithAProgrammersDump(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	dump := bytes.Repeat([]byte{0x5a}, 1<<20)
+	code, out := ivan.send(t, map[string]string{"channel": "web", "maker": "Jooan", "board": "Q9 v2"},
+		map[string][]byte{"photo": photo, "backup": dump})
+	if code != http.StatusCreated {
+		t.Fatalf("send: %d %v", code, out)
+	}
+	id := out["id"].(string)
+
+	maint := e.maintainer(t)
+	_, q := maint.json(t, "GET", "/api/v1/club/review", nil)
+	queued := q["reports"].([]any)[0].(map[string]any)
+	if queued["potential"].(float64) != 11 {
+		t.Fatalf("potential: %v", queued["potential"])
+	}
+	var dumpURL string
+	for _, f := range queued["file_list"].([]any) {
+		if f := f.(map[string]any); f["kind"] == "backup" {
+			dumpURL = f["url"].(string)
+			if f["private"] != true || f["name"] != "flash.bin" {
+				t.Errorf("the dump: %v", f)
+			}
+		}
+	}
+	if dumpURL == "" {
+		t.Fatalf("no dump in %v", queued["file_list"])
+	}
+	code, d := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish", "new_board": queued["new_board"]})
+	if code != 200 || d["points"].(float64) != 11 || d["board"] != "jooan-q9-v2" {
+		t.Fatalf("publish: %d %v", code, d)
+	}
+	if rec := ivan.do(t, "GET", dumpURL, nil, ""); rec.Code != 200 {
+		t.Errorf("the sender's download: %d", rec.Code)
+	}
+	if rec := maint.do(t, "GET", dumpURL, nil, ""); rec.Code != 200 {
+		t.Errorf("the maintainer's download: %d", rec.Code)
+	}
+	petr := e.signedIn(t, 888, "petr", "198.51.100.2")
+	if rec := petr.do(t, "GET", dumpURL, nil, ""); rec.Code != 404 {
+		t.Errorf("another member's download: %d", rec.Code)
+	}
+	texts, err := e.api.Reports.Store().PublishedTexts(ctx)
+	if err != nil || len(texts) != 1 || len(texts[0].Files) != 1 || texts[0].Files[0].Kind != "photo" {
+		t.Errorf("published texts: %+v (%v)", texts, err)
+	}
+}

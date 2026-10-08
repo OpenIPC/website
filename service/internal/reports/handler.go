@@ -161,8 +161,11 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	}
 
 	// A backup carries the YAML it was taken with; alone, it is the report.
-	// For a named board, a whole flash image read with a programmer is one
-	// too: the bytes as they are, a power of two from 1 MB.
+	// For a named board, or a camera the sender proposes, a whole flash
+	// image read with a programmer is one too: the bytes as they are, a
+	// power of two from 1 MB. ipctool cannot always run -- a U-Boot behind a
+	// password, a firmware with no shell -- and a programmer reads the chip
+	// regardless.
 	var backup Backup
 	raw := false
 	if in.backup != nil {
@@ -170,7 +173,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		if err == nil {
 			backup, err = ReadBackup(f)
 		}
-		if err != nil && model != "" && flashImage(in.backup.Bytes) {
+		if err != nil && (model != "" || prop != nil) && flashImage(in.backup.Bytes) {
 			raw, err = true, nil
 		}
 		if err != nil {
@@ -178,7 +181,8 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 			return
 		}
 		if raw {
-			// the image says nothing about itself; the board is the sender's word
+			// the image says nothing about itself; the board is the sender's word,
+			// named or proposed
 		} else if in.yaml == "" {
 			in.yaml = backup.YAML
 		} else if Clean(in.yaml) != Clean(backup.YAML) {
