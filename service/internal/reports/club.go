@@ -54,6 +54,8 @@ type MemberReport struct {
 	// ReviewNote is what the reviewer wrote for the sender with the decision.
 	ReviewNote string     `json:"review_note,omitempty"`
 	Board      *ViewModel `json:"board,omitempty"`
+	// EditedAt: when its sender last changed it (Store.Edit).
+	EditedAt *time.Time `json:"edited_at,omitempty"`
 	// Joins: the report this one was sent to go with (a Club code's).
 	Joins string `json:"joins,omitempty"`
 	// Proposal: the camera the sender named, when the catalogue had none.
@@ -149,6 +151,9 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 		return nil, err
 	}
 	if m.Joins, err = s.JoinsOf(ctx, id); err != nil {
+		return nil, err
+	}
+	if err := s.DB.QueryRow(ctx, `SELECT max(at) FROM report_edits WHERE report_id = $1`, id).Scan(&m.EditedAt); err != nil {
 		return nil, err
 	}
 	potential, err := s.potential(ctx, id, yaml != "")
@@ -272,6 +277,8 @@ type Queued struct {
 	NewBoard *boards.Suggestion `json:"new_board,omitempty"`
 	// Joins: the report this one was sent to go with.
 	Joins string `json:"joins,omitempty"`
+	// EditedAt: when its sender last changed it.
+	EditedAt *time.Time `json:"edited_at,omitempty"`
 }
 
 // Queue is the review queue: the reports in one state (pending by default),
@@ -299,7 +306,7 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 		if err != nil {
 			return nil, err
 		}
-		q.Board, q.FileList, q.Proposal, q.Joins = m.Board, m.Files, m.Proposal, m.Joins
+		q.Board, q.FileList, q.Proposal, q.Joins, q.EditedAt = m.Board, m.Files, m.Proposal, m.Joins, m.EditedAt
 		if p := m.Proposal; p != nil {
 			sug, err := boards.Suggest(ctx, s.DB, p.Maker, p.Board, p.SoC)
 			if err != nil {

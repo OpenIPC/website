@@ -92,6 +92,7 @@ func (a *API) Handlers() map[string]http.Handler {
 		"POST /api/v1/club/reports":                      a.post(a.send),
 		"GET /api/v1/club/reports":                       http.HandlerFunc(a.mine),
 		"POST /api/v1/club/reports/code":                 a.post(a.reportCode),
+		"POST /api/v1/club/reports/{id}/edit":            a.post(a.editReport),
 		"GET /api/v1/club/reports/{id}/files/{position}": http.HandlerFunc(a.file),
 		"GET /api/v1/club/review":                        http.HandlerFunc(a.queue),
 		"POST /api/v1/club/review/{id}":                  a.post(a.decide),
@@ -528,6 +529,20 @@ func (a *API) send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.Reports.Submit(w, r, member)
+}
+
+// editReport is POST /api/v1/club/reports/{id}/edit: the member changing a
+// report of theirs (reports.API.Edit). One a maintainer had decided is
+// pending again, and the boards drop it until it is accepted once more.
+func (a *API) editReport(w http.ResponseWriter, r *http.Request) {
+	m, ok := a.signedIn(w, r)
+	if !ok {
+		return
+	}
+	by := m.Name + " (" + m.ID + ")"
+	if a.Reports.Edit(w, r, m.ID, by, r.PathValue("id")) && a.OnReviewed != nil {
+		a.OnReviewed(context.WithoutCancel(r.Context()))
+	}
 }
 
 // reportCode is POST /api/v1/club/reports/code {"joins": "r-..."}: a code

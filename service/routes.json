@@ -226,6 +226,11 @@
   },
   {
     "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/reports/{id}/edit"
+  },
+  {
+    "role": "web",
     "method": "GET",
     "path": "/api/v1/club/reports/{id}/files/{position}"
   },

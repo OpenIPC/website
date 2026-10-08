@@ -177,7 +177,13 @@ restores the image but never the schema, so keep migrations additive.
   lacks is sent from `/cameras/report#new` as its maker, its marking and
   photos (`report_proposals`, migration 028), and publishing it from the
   review queue adds the board (`boards.CreateModel`, alias source `club`)
-  -- the only way a model is made besides the importers. A report sent from
+  -- the only way a model is made besides the importers. A member may edit
+  their own report from `/club` (`reports.Store.Edit`, migration 031): the
+  note, the camera proposed, files out and in; ipctool's output and a backup
+  stay as sent. Like takedown it stands the guard down for its transaction,
+  and every change is logged in append-only `report_edits`. An edit to a
+  report already decided adds a review row `edit`: pending again, off the
+  board until a maintainer accepts it once more, the stars settled then. A report sent from
   the camera is a member's when it carries a one-time code from `/club`
   (`report_codes`, migration 029), in the note because every ipctool in the
   field can send one: `ipctool upload --note club-XXXX-XXXX`. A code may
