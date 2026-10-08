@@ -15,6 +15,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/boards"
 	"github.com/OpenIPC/website/service/internal/club"
 	"github.com/OpenIPC/website/service/internal/config"
+	"github.com/OpenIPC/website/service/internal/crashes"
 	"github.com/OpenIPC/website/service/internal/reports"
 	"github.com/OpenIPC/website/service/internal/snapshots"
 	"github.com/OpenIPC/website/service/internal/wallstars"
@@ -152,7 +153,7 @@ func clubCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, args
 func settleWall(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool) error {
 	st := &wallstars.Store{DB: pool, Token: (&snapshots.Store{TokenKey: cfg.CameraTokenKey}).CameraToken}
 	api := &club.API{DB: pool, Log: log, Reports: &reports.API{DB: pool}, Wall: st,
-		Cfg: club.Config{SiteURL: cfg.ClubSiteURL}}
+		Crashes: &crashes.API{DB: pool, Log: log}, Cfg: club.Config{SiteURL: cfg.ClubSiteURL}}
 	if cfg.TelegramBotToken != "" {
 		api.Telegram = &club.Telegram{Token: cfg.TelegramBotToken, API: "https://api.telegram.org",
 			HTTP: &http.Client{Timeout: 20 * time.Second}, Log: log}

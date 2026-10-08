@@ -162,6 +162,11 @@
       "lede": "Sign in to follow what you sent to the board catalogue, keep your flash dumps private, link your cameras on the Open Wall, and collect stars for both.",
       "title": "OpenIPC Club"
     },
+    "club_crashes": {
+      "eyebrow": "OpenIPC Club",
+      "lede": "Kernel crashes cameras sent, worst first, with what it takes to reproduce each one.",
+      "title": "Crash triage"
+    },
     "club_leaderboard": {
       "eyebrow": "OpenIPC Club",
       "lede": "Stars for documenting camera boards and for keeping cameras on the Open Wall, from the members who chose to be listed.",
@@ -205,6 +210,11 @@
       "reach_title": "If Telegram does not open",
       "reach_wiki_html": "<a href=\"https://github.com/OpenIPC/wiki\" data-event=\"reach-wiki\">The wiki</a> — installation, FPV and troubleshooting guides.",
       "title": "Community"
+    },
+    "crashes": {
+      "eyebrow": "OpenIPC firmware",
+      "lede": "When a camera running OpenIPC crashes, it keeps the kernel's last words and offers them to its owner. Sent here, the same bug from many cameras becomes one row, ranked by how badly and how widely it hurts, so it can be fixed.",
+      "title": "Kernel crashes from the field"
     },
     "digital_twins": {
       "bring1_text": "Your production image boots in the model — the same bytes you ship. No test build, no stubbed drivers, nothing to argue about later.",

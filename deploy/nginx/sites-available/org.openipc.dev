@@ -368,6 +368,27 @@ server {
         add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 
+    # Kernel crashes cameras recovered from (service/internal/crashes): the
+    # crash log a camera's WebUI sends (a tar.gz of pstore's records, at most
+    # 256 KB), and the public list of signatures, which the web role lets
+    # caches keep for five minutes. The upload is limited per address and per
+    # camera by the web role itself.
+    location ^~ /api/v1/crashes {
+        client_max_body_size 512k;
+        limit_req zone=boards_search burst=20 nodelay;
+        limit_req_status 429;
+        gzip on;
+        gzip_proxied any;
+        gzip_types application/json;
+        proxy_pass http://127.0.0.1:3012;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Request-Id $request_id;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+    }
+
     # The OpenIPC Club (service/internal/club): signing in, the send form,
     # members' own reports and the maintainers' review. Its session cookie's
     # path is this prefix, so nothing else on the site ever receives it, and

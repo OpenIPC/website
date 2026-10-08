@@ -1,5 +1,5 @@
 /**
- * /club/leaderboard: members ranked by stars, from both ledgers, all time or
+ * /club/leaderboard: members ranked by stars, from every ledger, all time or
  * the last 30 days. Every member is in the answer unless they untick "Show me
  * on the leaderboard" on /club; the signed-in member's own row is marked.
  */
@@ -42,13 +42,14 @@ export default function Leaderboard({ locale }: { locale: Locale }) {
       {rows && rows.length === 0 && <p class="m-0 text-body-secondary">{t(period === '30d' ? 'club.lb_empty_30d' : 'club.lb_empty')}</p>}
       {rows && rows.length > 0 && (
         <div class="overflow-x-auto rounded-xl border border-hairline">
-          <table class="w-full min-w-[480px] border-collapse text-[15px]">
+          <table class="w-full min-w-[560px] border-collapse text-[15px]">
             <thead>
               <tr class="bg-surface-alt text-left text-[13px] text-body-secondary">
                 <th class="w-12 px-4 py-2.5 font-medium">{t('club.lb_rank')}</th>
                 <th class="px-4 py-2.5 font-medium">{t('club.lb_member')}</th>
                 <th class="px-4 py-2.5 text-right font-medium">{t('club.lb_reports')}</th>
                 <th class="px-4 py-2.5 text-right font-medium">{t('club.lb_wall')}</th>
+                <th class="px-4 py-2.5 text-right font-medium">{t('club.lb_crashes')}</th>
                 <th class="px-4 py-2.5 text-right font-medium">{t('club.lb_stars')}</th>
               </tr>
             </thead>
@@ -62,6 +63,7 @@ export default function Leaderboard({ locale }: { locale: Locale }) {
                   </td>
                   <td class="px-4 py-2.5 text-right tabular-nums">{r.reports}</td>
                   <td class="px-4 py-2.5 text-right tabular-nums">{r.wall}</td>
+                  <td class="px-4 py-2.5 text-right tabular-nums">{r.crashes ?? 0}</td>
                   <td class="px-4 py-2.5 text-right font-semibold whitespace-nowrap text-[#9a5b00] tabular-nums">★ {r.stars}</td>
                 </tr>
               ))}

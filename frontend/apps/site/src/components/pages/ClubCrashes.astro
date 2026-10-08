@@ -1,0 +1,19 @@
+---
+/**
+ * The maintainers' triage of kernel crashes (service/internal/crashes). The
+ * page is a shell: the signatures, logs and builds are only ever in the
+ * answer /api/v1/club/crashes/triage gives a maintainer.
+ */
+import CrashTriage from '../club/CrashTriage.tsx';
+import { useTranslations, type Locale } from '../../lib/i18n';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+<div class="site-container mt-10 mb-16">
+  <p class="mb-1 text-xs font-semibold tracking-[.08em] text-body-secondary uppercase">{t('pages.club_crashes.eyebrow')}</p>
+  <h1 class="mb-0 text-h1 font-semibold text-balance">{t('pages.club_crashes.title')}</h1>
+  <p class="mt-3 mb-0 max-w-[62ch] text-lg text-body-secondary">{t('pages.club_crashes.lede')}</p>
+  <CrashTriage client:load locale={locale} />
+</div>

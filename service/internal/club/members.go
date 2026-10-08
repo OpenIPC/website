@@ -51,6 +51,7 @@ type Member struct {
 	// The stars' two sources: accepted reports, and cameras on the Open Wall.
 	ReportStars int `json:"report_stars"`
 	WallStars   int `json:"wall_stars"`
+	CrashStars  int `json:"crash_stars"`
 	// Pending is filled where the member's reports are read anyway
 	// (GET /api/v1/club/reports); /me leaves it 0.
 	Pending int `json:"pending"`
@@ -190,7 +191,12 @@ func (a *API) member(ctx context.Context, id string) (*Member, error) {
 			return nil, err
 		}
 	}
-	m.Stars = m.ReportStars + m.WallStars
+	if a.Crashes != nil {
+		if m.CrashStars, err = a.Crashes.Store().StarsOf(ctx, id); err != nil {
+			return nil, err
+		}
+	}
+	m.Stars = m.ReportStars + m.WallStars + m.CrashStars
 	return m, nil
 }
 

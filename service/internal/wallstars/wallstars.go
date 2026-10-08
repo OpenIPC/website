@@ -543,6 +543,7 @@ type Leader struct {
 	Name    string `json:"name"`
 	Reports int    `json:"reports"`
 	Wall    int    `json:"wall"`
+	Crashes int    `json:"crashes"`
 	Stars   int    `json:"stars"`
 	You     bool   `json:"you,omitempty"`
 }
@@ -551,16 +552,19 @@ type Leader struct {
 const LeaderboardSize = 100
 
 // Leaderboard ranks the members who have not opted out by their stars from
-// both ledgers, since a moment (the zero time for all of them). Members with
-// no stars in the period are left out. you marks the asking member's row.
+// every ledger -- reports, the wall, crashes -- since a moment (the zero time
+// for all of them). Members with no stars in the period are left out. you marks the asking member's row.
 func (s *Store) Leaderboard(ctx context.Context, since time.Time, you string) ([]Leader, error) {
 	rows, err := s.DB.Query(ctx, `
 		WITH ledger AS (
-			SELECT member_id, points, 0 AS wall FROM report_stars WHERE at >= $1
+			SELECT member_id, points, 0 AS wall, 0 AS crash FROM report_stars WHERE at >= $1
 			UNION ALL
-			SELECT member_id, points, points FROM wall_stars WHERE at >= $1
+			SELECT member_id, points, points, 0 FROM wall_stars WHERE at >= $1
+			UNION ALL
+			SELECT member_id, points, 0, points FROM crash_stars WHERE at >= $1
 		)
-		SELECT m.id, m.name, (sum(l.points) - sum(l.wall))::int, sum(l.wall)::int, sum(l.points)::int
+		SELECT m.id, m.name, (sum(l.points) - sum(l.wall) - sum(l.crash))::int, sum(l.wall)::int, sum(l.crash)::int,
+		       sum(l.points)::int
 		FROM ledger l JOIN club_members m ON m.id = l.member_id
 		WHERE m.listed
 		GROUP BY m.id, m.name
@@ -575,7 +579,7 @@ func (s *Store) Leaderboard(ctx context.Context, since time.Time, you string) ([
 	for rows.Next() {
 		var id string
 		var l Leader
-		if err := rows.Scan(&id, &l.Name, &l.Reports, &l.Wall, &l.Stars); err != nil {
+		if err := rows.Scan(&id, &l.Name, &l.Reports, &l.Wall, &l.Crashes, &l.Stars); err != nil {
 			return nil, err
 		}
 		l.Rank, l.You = len(out)+1, id == you
@@ -599,6 +603,7 @@ func (s *Store) OwnerOf(ctx context.Context, macKey string) (*Owner, error) {
 		SELECT m.name, c.days,
 		       (SELECT coalesce(sum(points), 0) FROM report_stars WHERE member_id = m.id)
 		     + (SELECT coalesce(sum(points), 0) FROM wall_stars WHERE member_id = m.id)
+		     + (SELECT coalesce(sum(points), 0) FROM crash_stars WHERE member_id = m.id)
 		FROM camera_links l JOIN club_members m ON m.id = l.member_id JOIN cameras c ON c.mac_key = l.mac_key
 		WHERE l.mac_key = $1 AND l.show_owner
 		  AND NOT EXISTS (SELECT 1 FROM wall_revoked r WHERE r.mac_key = l.mac_key)`, macKey).Scan(&o.Name, &o.Days, &o.Stars)
