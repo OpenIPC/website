@@ -65,6 +65,8 @@ export interface MemberReport {
   review_note?: string;
   board?: BoardRef;
   proposal?: Proposal;
+  /** When its sender last changed it. */
+  edited_at?: string;
   /** The report this one was sent to go with, by a Club code. */
   joins?: string;
   chip?: string;
@@ -94,6 +96,9 @@ export interface Queued {
   proposal?: Proposal;
   new_board?: Suggestion;
   joins?: string;
+  edited_at?: string;
+  /** Its sender's edits; sent back with a decision, which is refused if it moved. */
+  revision: number;
 }
 
 const BASE = '/api/v1/club';
@@ -181,9 +186,10 @@ export const fetchMine = () => call<{ member: Member; reports: MemberReport[] }>
 
 export const fetchQueue = (status = 'pending') => call<{ reports: Queued[] }>(`/review?${new URLSearchParams({ status })}`);
 
-export const decide = (id: string, decision: 'publish' | 'reject', models: string[], note: string, newBoard?: NewBoard) =>
-  post<{ points: number; total: number; board?: string }>(`/review/${encodeURIComponent(id)}`,
-    newBoard ? { decision, models, note, new_board: newBoard } : { decision, models, note });
+export const decide = (id: string, decision: 'publish' | 'reject', models: string[], note: string, newBoard?: NewBoard, revision?: number) =>
+  post<{ points: number; total: number; board?: string }>(`/review/${encodeURIComponent(id)}`, {
+    decision, models, note, ...(newBoard ? { new_board: newBoard } : {}), ...(revision !== undefined ? { revision } : {}),
+  });
 
 /** A code that makes `ipctool upload --note <code>` the member's report. */
 export interface ReportCode { code: string; expires_at: string; joins?: string }
@@ -194,6 +200,15 @@ export const newReportCode = (joins?: string) =>
 
 /** The send form's answer: the report's receipt. */
 export interface Sent { id: string; receipt_url: string; files: { kind: string; name: string; private?: boolean }[] }
+
+/** A member's change to a report of theirs; pending again if it had been decided. */
+export async function editReport(id: string, form: FormData): Promise<{ status: ReportState; rereview: boolean }> {
+  const r = await fetch(`${BASE}/reports/${encodeURIComponent(id)}/edit`, { method: 'POST', body: form, credentials: 'same-origin' });
+  let body: unknown = null;
+  try { body = await r.json(); } catch { /* not JSON */ }
+  if (!r.ok) throw new ClubError(r.status, (body as { error?: string } | null)?.error ?? `HTTP ${r.status}`);
+  return body as { status: ReportState; rereview: boolean };
+}
 
 export async function sendReport(form: FormData): Promise<Sent> {
   const r = await fetch(`${BASE}/reports`, { method: 'POST', body: form, credentials: 'same-origin' });

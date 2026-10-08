@@ -74,10 +74,12 @@ type part struct {
 
 // received is an upload read off the wire.
 type received struct {
-	yaml    string
-	backup  *Incoming
-	parts   []part
-	fields  map[string]string
+	yaml   string
+	backup *Incoming
+	parts  []part
+	fields map[string]string
+	// removes: the positions an edit takes out (Edit).
+	removes []int
 	discard func()
 }
 
@@ -120,7 +122,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		return
 	}
 
-	in, status, err := a.read(r)
+	in, status, err := a.read(r, false)
 	if in != nil {
 		defer in.discard()
 	}
@@ -248,31 +250,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	// transaction that names them, and a takedown removing the same bytes
 	// waits for it (Store.Insert, Store.RemoveUnreferenced).
 	var places []func() error
-	prepare := func(p part) (File, error) {
-		f := File{Kind: p.kind, Name: p.name, Mime: p.mime, Bytes: p.in.Bytes, SHA256: p.in.Sum()}
-		inc := p.in
-		places = append(places, func() error { _, err := a.Files.Keep(inc); return err })
-		switch {
-		case p.kind == "backup" && consent != "public":
-			// stored for the maintainers, never served
-		case textKinds[p.kind]:
-			rd, err := p.in.Open()
-			if err != nil {
-				return f, err
-			}
-			text, err := io.ReadAll(rd)
-			if err != nil {
-				return f, err
-			}
-			pub := []byte(Redact(string(text), facts, key))
-			ps := sha256.Sum256(pub)
-			f.PublicSHA256, f.PublicBytes = hex.EncodeToString(ps[:]), int64(len(pub))
-			places = append(places, func() error { _, err := a.Files.Put(pub); return err })
-		default:
-			f.PublicSHA256, f.PublicBytes = f.SHA256, f.Bytes
-		}
-		return f, nil
-	}
+	prepare := func(p part) (File, error) { return a.prepare(p, consent, facts, key, &places) }
 	all := in.parts
 	if in.backup != nil {
 		name := "backup.bin"
@@ -383,6 +361,35 @@ func proposalOf(in *received, channel, model string) (*Proposal, error) {
 	return nil, errors.New("a new camera needs at least one photo of it")
 }
 
+// prepare makes a received file a report's, and adds to places what puts it
+// in the store: the bytes, and for text a copy with the board's identifiers
+// replaced. A backup is served only when its owner said public.
+func (a *API) prepare(p part, consent string, facts Facts, key string, places *[]func() error) (File, error) {
+	f := File{Kind: p.kind, Name: p.name, Mime: p.mime, Bytes: p.in.Bytes, SHA256: p.in.Sum()}
+	inc := p.in
+	*places = append(*places, func() error { _, err := a.Files.Keep(inc); return err })
+	switch {
+	case p.kind == "backup" && consent != "public":
+		// stored for the maintainers, never served
+	case textKinds[p.kind]:
+		rd, err := p.in.Open()
+		if err != nil {
+			return f, err
+		}
+		text, err := io.ReadAll(rd)
+		if err != nil {
+			return f, err
+		}
+		pub := []byte(Redact(string(text), facts, key))
+		ps := sha256.Sum256(pub)
+		f.PublicSHA256, f.PublicBytes = hex.EncodeToString(ps[:]), int64(len(pub))
+		*places = append(*places, func() error { _, err := a.Files.Put(pub); return err })
+	default:
+		f.PublicSHA256, f.PublicBytes = f.SHA256, f.Bytes
+	}
+	return f, nil
+}
+
 // flashImage: the size of a whole NOR or NAND chip, 1 to 256 MB.
 func flashImage(n int64) bool {
 	return n >= 1<<20 && n <= MaxBackup && n&(n-1) == 0
@@ -419,8 +426,10 @@ func fileName(given, kind string, i int) string {
 }
 
 // read takes the body apart, streaming every file to .incoming/ as it
-// arrives, so a 128 MB backup never sits in memory.
-func (a *API) read(r *http.Request) (*received, int, error) {
+// arrives, so a 128 MB backup never sits in memory. An edit's body (Edit)
+// is the same parts but for a report that already has its YAML and backup:
+// note, maker, board and soc, files to add, and `remove` positions.
+func (a *API) read(r *http.Request, edit bool) (*received, int, error) {
 	in := &received{fields: map[string]string{}}
 	in.discard = func() {
 		in.backup.Discard()
@@ -456,6 +465,21 @@ func (a *API) read(r *http.Request) (*received, int, error) {
 			return in, http.StatusBadRequest, errors.New("the multipart body is cut short")
 		}
 		name := p.FormName()
+		if edit {
+			switch {
+			case p.FileName() == "" && name == "remove":
+				b, _ := io.ReadAll(io.LimitReader(p, 12))
+				pos, err := strconv.Atoi(strings.TrimSpace(string(b)))
+				if err != nil || pos < 1 {
+					return in, http.StatusBadRequest, errors.New("remove: a file's position")
+				}
+				in.removes = append(in.removes, pos)
+				continue
+			case p.FileName() == "" && name != "note" && name != "maker" && name != "board" && name != "soc",
+				name == "yaml", name == "backup":
+				return in, http.StatusBadRequest, fmt.Errorf("%q cannot be edited: an edit changes the note, the camera proposed, and adds or removes photos and text files", name)
+			}
+		}
 		// "note" is both a field (a line of text) and a file kind (a note
 		// file): a part with a filename is a file, one without is a field.
 		isField := p.FileName() == "" && formFields[name]
@@ -500,7 +524,7 @@ func (a *API) read(r *http.Request) (*received, int, error) {
 			return in, http.StatusBadRequest, fmt.Errorf("%q is not a part a report has: yaml, backup, photo, boot_log, uboot_env, note, document, consent, channel, tool, model, maker, board, soc, club", name)
 		}
 	}
-	if in.yaml == "" && in.backup == nil && in.fields["model"] == "" && in.fields["maker"] == "" && in.fields["board"] == "" {
+	if !edit && in.yaml == "" && in.backup == nil && in.fields["model"] == "" && in.fields["maker"] == "" && in.fields["board"] == "" {
 		return in, http.StatusBadRequest, errors.New("a report needs ipctool's output: a yaml part, or a backup")
 	}
 	return in, 0, nil

@@ -264,7 +264,9 @@ type Status struct {
 	At    *time.Time `json:"reviewed_at,omitempty"`
 }
 
-var states = map[string]string{"publish": "published", "reject": "rejected", "withdraw": "withdrawn"}
+// An 'edit' row is the member changing a decided report (Store.Edit): it is
+// pending again until a maintainer decides once more.
+var states = map[string]string{"publish": "published", "reject": "rejected", "withdraw": "withdrawn", "edit": "pending"}
 
 func (s *Store) status(ctx context.Context, q querier, id string) (Status, error) {
 	var decision string
@@ -290,7 +292,7 @@ var ErrNotFound = errors.New("no such report")
 // Review records a decision. Publishing and rejecting are rows added, never
 // a row changed: the history is the state.
 func (s *Store) Review(ctx context.Context, id, decision, by, note string) error {
-	if _, ok := states[decision]; !ok || decision == "withdraw" {
+	if _, ok := states[decision]; !ok || decision == "withdraw" || decision == "edit" {
 		return fmt.Errorf("a review publishes or rejects; withdrawing is takedown")
 	}
 	if err := s.exists(ctx, id); err != nil {
@@ -351,6 +353,11 @@ func (s *Store) Takedown(ctx context.Context, id, by, note string) ([]string, er
 	}
 	var orphans []string
 	err := Unguarded(ctx, s.DB, func(tx pgx.Tx) error {
+		// The report's lock, as an edit and a review hold it: an edit cannot
+		// write into a report this takes down.
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, id); err != nil {
+			return err
+		}
 		rows, err := tx.Query(ctx, `
 			DELETE FROM report_files WHERE report_id = $1 RETURNING sha256, public_sha256`, id)
 		if err != nil {

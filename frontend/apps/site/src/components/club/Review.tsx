@@ -81,7 +81,7 @@ function Item({ q, locale, t, onDone }: { q: Queued; locale: Locale; t: BoardsT;
     setBusy(true);
     setError(null);
     const ids = models.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
-    decide(q.id, decision, ids, note, decision === 'publish' && create && board ? board : undefined)
+    decide(q.id, decision, ids, note, decision === 'publish' && create && board ? board : undefined, q.revision)
       .then((r) => {
         setResult(r.board ? t('club.review_done_board', { board: r.board, points: r.points }) : t(`club.review_done_${decision}`, { points: r.points }));
         setTimeout(onDone, 1200);
@@ -107,6 +107,8 @@ function Item({ q, locale, t, onDone }: { q: Queued; locale: Locale; t: BoardsT;
         <dd class="m-0">{q.member ? t('club.review_from', { who: q.member }) : t('club.review_anon')}</dd>
         {q.board && <><dt class="text-body-secondary">{t('club.review_board')}</dt>
           <dd class="m-0"><a href={`${pathFor(locale, '/cameras/boards')}?model=${encodeURIComponent(q.board.id)}`} class="font-mono">{q.board.id}</a></dd></>}
+        {q.edited_at && <><dt class="text-body-secondary">{t('club.review_edited_label')}</dt>
+          <dd class="m-0">{new Date(q.edited_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}</dd></>}
         {q.joins && <><dt class="text-body-secondary">{t('club.review_joins_label')}</dt>
           <dd class="m-0">{t('club.goes_with', { id: q.joins })}</dd></>}
         {q.proposal && <><dt class="text-body-secondary">{t('club.review_proposal')}</dt>

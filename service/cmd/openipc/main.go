@@ -199,6 +199,7 @@ var routes = []Route{
 	{"web", "POST", "/api/v1/club/reports"},
 	{"web", "GET", "/api/v1/club/reports"},
 	{"web", "POST", "/api/v1/club/reports/code"},
+	{"web", "POST", "/api/v1/club/reports/{id}/edit"},
 	{"web", "GET", "/api/v1/club/reports/{id}/files/{position}"},
 	{"web", "GET", "/api/v1/club/review"},
 	{"web", "POST", "/api/v1/club/review/{id}"},

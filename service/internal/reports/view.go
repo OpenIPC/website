@@ -205,7 +205,7 @@ type Listed struct {
 func (s *Store) List(ctx context.Context, state string) ([]Listed, error) {
 	rows, err := s.DB.Query(ctx, `
 		SELECT r.id, r.received_at, r.channel,
-		  coalesce((SELECT CASE decision WHEN 'publish' THEN 'published' WHEN 'reject' THEN 'rejected' ELSE 'withdrawn' END
+		  coalesce((SELECT CASE decision WHEN 'publish' THEN 'published' WHEN 'reject' THEN 'rejected' WHEN 'withdraw' THEN 'withdrawn' ELSE 'pending' END
 		            FROM report_reviews rv WHERE rv.report_id = r.id ORDER BY rv.id DESC LIMIT 1), 'pending'),
 		  trim(r.chip_vendor || ' ' || r.chip_model), r.sensor, trim(r.board_vendor || ' ' || r.board_model),
 		  (SELECT count(*) FROM report_files f WHERE f.report_id = r.id)::int, r.backup_consent,

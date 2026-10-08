@@ -54,6 +54,8 @@ type MemberReport struct {
 	// ReviewNote is what the reviewer wrote for the sender with the decision.
 	ReviewNote string     `json:"review_note,omitempty"`
 	Board      *ViewModel `json:"board,omitempty"`
+	// EditedAt: when its sender last changed it (Store.Edit).
+	EditedAt *time.Time `json:"edited_at,omitempty"`
 	// Joins: the report this one was sent to go with (a Club code's).
 	Joins string `json:"joins,omitempty"`
 	// Proposal: the camera the sender named, when the catalogue had none.
@@ -151,7 +153,10 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 	if m.Joins, err = s.JoinsOf(ctx, id); err != nil {
 		return nil, err
 	}
-	potential, err := s.potential(ctx, id, yaml != "")
+	if err := s.DB.QueryRow(ctx, `SELECT max(at) FROM report_edits WHERE report_id = $1`, id).Scan(&m.EditedAt); err != nil {
+		return nil, err
+	}
+	potential, err := s.potential(ctx, s.DB, id, yaml != "")
 	if err != nil {
 		return nil, err
 	}
@@ -206,12 +211,12 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 
 // potential is what each part of a report would earn now: position 0 for
 // ipctool's output, the file's position for each file.
-func (s *Store) potential(ctx context.Context, id string, hasYAML bool) (map[int]int, error) {
+func (s *Store) potential(ctx context.Context, q rowsQuerier, id string, hasYAML bool) (map[int]int, error) {
 	out := map[int]int{}
 	if hasYAML {
 		out[0] = Points("yaml", false)
 	}
-	rows, err := s.DB.Query(ctx, `
+	rows, err := q.Query(ctx, `
 		SELECT f.position, f.kind,
 		  f.kind = 'backup' AND (
 		    EXISTS (SELECT 1 FROM report_files o JOIN reports ro ON ro.id = o.report_id
@@ -272,6 +277,11 @@ type Queued struct {
 	NewBoard *boards.Suggestion `json:"new_board,omitempty"`
 	// Joins: the report this one was sent to go with.
 	Joins string `json:"joins,omitempty"`
+	// EditedAt: when its sender last changed it.
+	EditedAt *time.Time `json:"edited_at,omitempty"`
+	// Revision counts its sender's edits; a decision sent with it is refused
+	// when the report has changed since (ErrChanged).
+	Revision int `json:"revision"`
 }
 
 // Queue is the review queue: the reports in one state (pending by default),
@@ -299,7 +309,10 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 		if err != nil {
 			return nil, err
 		}
-		q.Board, q.FileList, q.Proposal, q.Joins = m.Board, m.Files, m.Proposal, m.Joins
+		q.Board, q.FileList, q.Proposal, q.Joins, q.EditedAt = m.Board, m.Files, m.Proposal, m.Joins, m.EditedAt
+		if q.Revision, err = revisionOf(ctx, s.DB, l.ID); err != nil {
+			return nil, err
+		}
 		if p := m.Proposal; p != nil {
 			sug, err := boards.Suggest(ctx, s.DB, p.Maker, p.Board, p.SoC)
 			if err != nil {
@@ -338,7 +351,7 @@ type Decided struct {
 // the board newBoard describes first when the catalogue did not have it,
 // and awards each accepted part; rejecting takes back anything it had
 // earned.
-func (s *Store) Decide(ctx context.Context, id, decision, by, note string, models []string, newBoard *boards.NewModel) (Decided, error) {
+func (s *Store) Decide(ctx context.Context, id, decision, by, note string, models []string, newBoard *boards.NewModel, revision *int) (Decided, error) {
 	var d Decided
 	if decision != "publish" && decision != "reject" {
 		return d, fmt.Errorf("a review publishes or rejects")
@@ -358,17 +371,11 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 			models = []string{*hint}
 		}
 	}
-	// The potential is read before the decision, so this report's own
-	// backup is not found "already published" by itself.
 	var yaml string
 	if err := s.DB.QueryRow(ctx, `SELECT yaml FROM reports WHERE id = $1`, id).Scan(&yaml); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return d, ErrNotFound
 		}
-		return d, err
-	}
-	potential, err := s.potential(ctx, id, yaml != "")
-	if err != nil {
 		return d, err
 	}
 	// The board a review adds, the report's links, the review and the
@@ -383,6 +390,24 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 	// at once cannot both write the difference.
 	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, id); err != nil {
+			return err
+		}
+		// What the reviewer saw is what is decided: a report its sender
+		// changed since the queue was read is refused, to be read again.
+		if revision != nil {
+			now, err := revisionOf(ctx, tx, id)
+			if err != nil {
+				return err
+			}
+			if now != *revision {
+				return ErrChanged
+			}
+		}
+		// The potential is read under the lock an edit holds, so it is the
+		// files as they are; and before this decision's row, so the report's
+		// own backup is not found "already published" by itself.
+		potential, err := s.potential(ctx, tx, id, yaml != "")
+		if err != nil {
 			return err
 		}
 		if decision == "publish" {

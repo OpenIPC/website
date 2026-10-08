@@ -92,6 +92,7 @@ func (a *API) Handlers() map[string]http.Handler {
 		"POST /api/v1/club/reports":                      a.post(a.send),
 		"GET /api/v1/club/reports":                       http.HandlerFunc(a.mine),
 		"POST /api/v1/club/reports/code":                 a.post(a.reportCode),
+		"POST /api/v1/club/reports/{id}/edit":            a.post(a.editReport),
 		"GET /api/v1/club/reports/{id}/files/{position}": http.HandlerFunc(a.file),
 		"GET /api/v1/club/review":                        http.HandlerFunc(a.queue),
 		"POST /api/v1/club/review/{id}":                  a.post(a.decide),
@@ -530,6 +531,20 @@ func (a *API) send(w http.ResponseWriter, r *http.Request) {
 	a.Reports.Submit(w, r, member)
 }
 
+// editReport is POST /api/v1/club/reports/{id}/edit: the member changing a
+// report of theirs (reports.API.Edit). One a maintainer had decided is
+// pending again, and the boards drop it until it is accepted once more.
+func (a *API) editReport(w http.ResponseWriter, r *http.Request) {
+	m, ok := a.signedIn(w, r)
+	if !ok {
+		return
+	}
+	by := m.Name + " (" + m.ID + ")"
+	if a.Reports.Edit(w, r, m.ID, by, r.PathValue("id")) && a.OnReviewed != nil {
+		a.OnReviewed(context.WithoutCancel(r.Context()))
+	}
+}
+
 // reportCode is POST /api/v1/club/reports/code {"joins": "r-..."}: a code
 // for a report sent from the camera -- `ipctool upload --note <code>` -- that
 // makes it the member's, joining one of their reports when joins names it.
@@ -645,7 +660,9 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 		Decision string           `json:"decision"`
 		Models   []string         `json:"models"`
 		NewBoard *boards.NewModel `json:"new_board"`
-		Note     string           `json:"note"`
+		// Revision is the queue's, so a report changed since is not decided.
+		Revision *int   `json:"revision"`
+		Note     string `json:"note"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&in); err != nil {
 		a.refuse(w, http.StatusBadRequest, `send {"decision": "publish" or "reject", "models": [...], "note": "..."}`)
@@ -653,7 +670,11 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.PathValue("id")
 	by := m.Name + " (" + m.ID + ")"
-	d, err := a.Reports.Store().Decide(r.Context(), id, in.Decision, by, in.Note, in.Models, in.NewBoard)
+	d, err := a.Reports.Store().Decide(r.Context(), id, in.Decision, by, in.Note, in.Models, in.NewBoard, in.Revision)
+	if errors.Is(err, reports.ErrChanged) {
+		a.refuse(w, http.StatusConflict, err.Error())
+		return
+	}
 	if errors.Is(err, reports.ErrNotFound) {
 		a.refuse(w, http.StatusNotFound, "no report has this id")
 		return

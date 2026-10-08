@@ -19,6 +19,7 @@ import { size } from '../../lib/reports';
 import Cameras from './Cameras';
 import Crashes from './Crashes';
 import IpctoolCode from './IpctoolCode';
+import EditReport from './EditReport';
 import { STATUS_TONE, Stars } from './parts';
 
 type Load = { state: 'loading' } | { state: 'ok'; me: Me } | { state: 'error' };
@@ -244,9 +245,8 @@ function MemberPage({ member, ways, locale, t, onChange }: {
   // asks /me on every page and needs only the total.
   const pending = (reports ?? []).reduce((n, r) => n + (r.status === 'pending' ? r.pending : 0), 0);
 
-  useEffect(() => {
-    fetchMine().then((r) => setReports(r.reports)).catch(() => setError(true));
-  }, [member.id]);
+  const loadReports = () => fetchMine().then((r) => setReports(r.reports)).catch(() => setError(true));
+  useEffect(() => { void loadReports(); }, [member.id]);
   const loadCams = () => fetchCameras().then(setCams).catch(() => setError(true));
   useEffect(() => { void loadCams(); }, [member.id]);
   // A link to #cameras (the bot's "My cameras") lands on the section once it exists.
@@ -339,14 +339,15 @@ function MemberPage({ member, ways, locale, t, onChange }: {
         {reports && reports.length === 0 && (
           <p class="m-4 text-body-secondary">{t('club.mine_empty')} <a href={pathFor(locale, '/cameras/boards')}>{t('club.boards_link')}</a></p>
         )}
-        {reports && reports.length > 0 && <Ledger reports={reports} locale={locale} t={t} />}
+        {reports && reports.length > 0 && <Ledger reports={reports} locale={locale} t={t} onChange={() => { void loadReports(); onChange(); }} />}
         <div class="border-t border-hairline px-4 py-4"><Rules t={t} /></div>
       </div>
     </section>
   );
 }
 
-function Ledger({ reports, locale, t }: { reports: MemberReport[]; locale: Locale; t: BoardsT }) {
+function Ledger({ reports, locale, t, onChange }: { reports: MemberReport[]; locale: Locale; t: BoardsT; onChange: () => void }) {
+  const [editing, setEditing] = useState<string | null>(null);
   return (
     <div class="overflow-x-auto">
       <table class="w-full min-w-[520px] border-collapse text-sm">
@@ -384,6 +385,18 @@ function Ledger({ reports, locale, t }: { reports: MemberReport[]; locale: Local
                     <span class="text-[12.5px] whitespace-pre-wrap text-body"><b class="font-semibold">{t('club.your_note')}:</b> {r.note}</span>
                   )}
                   {r.duplicate && <span class="text-[12.5px] text-body-secondary">{t('club.duplicate')}</span>}
+                  {r.edited_at && (
+                    <span class="text-[12px] text-body-secondary">
+                      {t('club.edited_at', { time: new Date(r.edited_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) })}
+                    </span>
+                  )}
+                  {editing === r.id
+                    ? <EditReport report={r} t={t} onCancel={() => setEditing(null)} onSaved={() => { setEditing(null); onChange(); }} />
+                    : r.status !== 'withdrawn' && (
+                      <button type="button" class="w-fit cursor-pointer p-0 text-left text-[13px] text-brand-blue underline" onClick={() => setEditing(r.id)}>
+                        {t('club.edit')}
+                      </button>
+                    )}
                   {r.status !== 'rejected' && !r.joins && <IpctoolCode joins={r.id} locale={locale} t={t} label={t('club.code_add_ipctool')} />}
                   {r.review_note && (
                     <span class="text-[12.5px] text-body"><b class="font-semibold">{t('club.review_note_label')}:</b> {r.review_note}</span>

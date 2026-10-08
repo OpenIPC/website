@@ -107,7 +107,7 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 				return err
 			}
 		}
-		d, err := st.Decide(ctx, pos[0], cmd, *by, *note, models, nb)
+		d, err := st.Decide(ctx, pos[0], cmd, *by, *note, models, nb, nil)
 		if err != nil {
 			return err
 		}
