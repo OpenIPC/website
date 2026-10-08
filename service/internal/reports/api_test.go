@@ -515,14 +515,15 @@ func TestANewCameraIsProposedWithAPhotoAndNoIpctool(t *testing.T) {
 	}
 	photo := map[string][]byte{"photo": jpeg}
 	for name, u := range map[string]upload{
-		"no photo":         {fields: newCam, files: map[string][]byte{"boot_log": []byte("U-Boot\n")}},
-		"no maker":         {fields: with(map[string]string{"maker": ""}), files: photo},
-		"no board":         {fields: with(map[string]string{"board": ""}), files: photo},
-		"a catalogue one":  {fields: with(map[string]string{"model": "xiongmai-50h20l"}), files: photo},
-		"not the form":     {fields: with(map[string]string{"channel": "ipctool"}), files: photo},
-		"a long name":      {fields: with(map[string]string{"board": strings.Repeat("Q", 81)}), files: photo},
-		"a long soc":       {fields: with(map[string]string{"soc": strings.Repeat("s", 41)}), files: photo},
-		"a raw flash dump": {fields: newCam, files: map[string][]byte{"photo": jpeg, "backup": bytes.Repeat([]byte{1}, 1<<20)}},
+		"no photo":          {fields: newCam, files: map[string][]byte{"boot_log": []byte("U-Boot\n")}},
+		"no maker":          {fields: with(map[string]string{"maker": ""}), files: photo},
+		"no board":          {fields: with(map[string]string{"board": ""}), files: photo},
+		"a catalogue one":   {fields: with(map[string]string{"model": "xiongmai-50h20l"}), files: photo},
+		"not the form":      {fields: with(map[string]string{"channel": "ipctool"}), files: photo},
+		"a long name":       {fields: with(map[string]string{"board": strings.Repeat("Q", 81)}), files: photo},
+		"a long soc":        {fields: with(map[string]string{"soc": strings.Repeat("s", 41)}), files: photo},
+		"not a chip's size": {fields: newCam, files: map[string][]byte{"photo": jpeg, "backup": bytes.Repeat([]byte{1}, 3<<20)}},
+		"a dump, no photo":  {fields: newCam, files: map[string][]byte{"backup": bytes.Repeat([]byte{1}, 1<<20)}},
 	} {
 		if rec, _ := e.post(t, u, "203.0.113.21"); rec.Code != 400 {
 			t.Errorf("%s: %d %s", name, rec.Code, rec.Body)
@@ -532,6 +533,17 @@ func TestANewCameraIsProposedWithAPhotoAndNoIpctool(t *testing.T) {
 	_ = e.pool.QueryRow(ctx, `SELECT count(*) FROM reports`).Scan(&n)
 	if n != 1 {
 		t.Errorf("%d reports, want only the first", n)
+	}
+
+	// A whole chip read with a programmer -- ipctool could not run -- comes
+	// with the photos, private unless the sender says otherwise.
+	rec, out = e.post(t, upload{fields: newCam, files: map[string][]byte{"photo": jpeg, "backup": bytes.Repeat([]byte{1}, 1<<20)}}, "203.0.113.23")
+	if rec.Code != 201 || out["backup_consent"] != "private" {
+		t.Fatalf("a programmer's dump: %d %v", rec.Code, out)
+	}
+	files := out["files"].([]any)
+	if f := files[0].(map[string]any); f["kind"] != "backup" || f["name"] != "flash.bin" || f["private"] != true {
+		t.Errorf("the dump: %v", files)
 	}
 
 	// With ipctool's output too, the output is read as always.

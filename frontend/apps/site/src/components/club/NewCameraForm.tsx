@@ -1,8 +1,10 @@
 /**
  * A camera the catalogue does not have: its maker, its board's marking and
  * photos of it are a report (POST /api/v1/club/reports, channel web, maker,
- * board and soc instead of a board's model). ipctool's output and a boot log
- * help the reviewer and are optional. A maintainer who publishes the report
+ * board and soc instead of a board's model). A whole-flash dump -- read
+ * with a programmer when ipctool cannot run, or ipctool's backup -- is
+ * private unless the sender ticks the box, as on the board pages; ipctool's
+ * output and a boot log help the reviewer. All of them are optional. A maintainer who publishes the report
  * adds the board to the catalogue, and the photos become its first unit.
  *
  * Signing in is not required, as with SendForm; stars are a member's.
@@ -21,6 +23,8 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
   const [board, setBoard] = useState('');
   const [soc, setSoc] = useState('');
   const [photos, setPhotos] = useState<File[]>([]);
+  const [dump, setDump] = useState<File | null>(null);
+  const [publicDump, setPublicDump] = useState(false);
   const [ipctool, setIpctool] = useState('');
   const [bootLog, setBootLog] = useState('');
   const [note, setNote] = useState('');
@@ -46,6 +50,10 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
     if (ipctool.trim()) form.set('yaml', ipctool);
     if (bootLog.trim()) form.append('boot_log', new Blob([bootLog], { type: 'text/plain' }), 'boot_log.txt');
     for (const f of photos) form.append('photo', f, f.name);
+    if (dump) {
+      form.append('backup', dump, dump.name);
+      form.set('consent', publicDump ? 'public' : 'private');
+    }
     setState({ s: 'sending' });
     sendReport(form)
       .then((sent) => setState({ s: 'sent', sent }))
@@ -68,7 +76,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
 
   return (
     <form class="grid gap-3 rounded-lg border-[1.5px] border-dashed border-[#e8c58f] bg-white p-4 text-sm" onSubmit={submit}>
-      <p class="m-0 text-body-secondary">{t('club.new_lede', { n: STARS.item })}</p>
+      <p class="m-0 text-body-secondary">{t('club.new_lede', { n: STARS.item, dump: STARS.dump })}</p>
       <div class="grid gap-3 sm:grid-cols-[1fr_1fr_10rem]">
         <label class="grid gap-1 text-[12.5px] text-body-secondary">{t('club.new_maker')}
           <input required value={maker} maxLength={80} placeholder={t('club.new_maker_hint')}
@@ -87,6 +95,18 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
         <input type="file" multiple required accept="image/jpeg,image/png,image/webp"
           onChange={(e) => setPhotos([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
       </label>
+      <div class="grid gap-1">
+        <label class="grid gap-1 text-[12.5px] text-body-secondary">{t('club.send_dump')}
+          <input type="file" onChange={(e) => setDump((e.target as HTMLInputElement).files?.[0] ?? null)} class="text-sm text-body" />
+        </label>
+        <p class="m-0 text-[12px] text-body-secondary">{t('club.new_dump_hint', { n: STARS.dump })}</p>
+        {dump && (
+          <label class="flex items-start gap-2 text-[12.5px] text-body-secondary">
+            <input type="checkbox" checked={publicDump} onChange={(e) => setPublicDump((e.target as HTMLInputElement).checked)} class="mt-0.5" />
+            {t('club.send_public')}
+          </label>
+        )}
+      </div>
       <details class="text-[12.5px] text-body-secondary">
         <summary class="cursor-pointer text-brand-blue">{t('club.new_more')}</summary>
         <div class="mt-2 grid gap-3">

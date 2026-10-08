@@ -48,6 +48,8 @@ test('the form sends the maker, the marking and the photos, and no board id', as
   expect(f.get('soc')).toBe('SSC335');
   expect(f.get('model')).toBeNull();
   expect(f.get('yaml')).toBeNull();
+  expect(f.get('backup')).toBeNull();
+  expect(f.get('consent')).toBeNull();
   expect(f.getAll('photo').map((p) => (p as File).name)).toEqual(['front.jpg', 'back.jpg']);
   expect(await (f.get('boot_log') as File).text()).toBe('U-Boot 2015.01\n');
 });
@@ -60,6 +62,25 @@ test('the form asks for the maker, the board and a photo before sending', () => 
   fireEvent.submit(container.querySelector('form')!);
   expect(getByRole('alert').textContent).toContain('at least one photo');
   expect(sent).toHaveLength(0);
+});
+
+test('a dump read with a programmer goes with the photos, private unless ticked', async () => {
+  for (const tick of [false, true]) {
+    const sent = capture();
+    const { container, getByText, unmount } = render(<NewCameraForm locale="en" />);
+    fireEvent.input(input(container, 'Maker'), { target: { value: 'Jooan' } });
+    fireEvent.input(input(container, 'Board marking'), { target: { value: 'Q9' } });
+    const [photosIn, dumpIn] = [...container.querySelectorAll('input[type=file]')];
+    fireEvent.change(photosIn, { target: { files: [new File(['a'], 'front.jpg', { type: 'image/jpeg' })] } });
+    fireEvent.change(dumpIn, { target: { files: [new File([new Uint8Array(16)], 'w25q64.bin')] } });
+    if (tick) fireEvent.click(getByText(/Publish the dump with the report/));
+    fireEvent.submit(container.querySelector('form')!);
+    await waitFor(() => expect(getByText(/Received as/)).toBeTruthy());
+    expect((sent[0].get('backup') as File).name).toBe('w25q64.bin');
+    expect(sent[0].get('consent')).toBe(tick ? 'public' : 'private');
+    unmount();
+    vi.unstubAllGlobals();
+  }
 });
 
 const queued = (over: Partial<Queued>): Queued => ({
