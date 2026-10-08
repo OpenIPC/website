@@ -201,3 +201,28 @@ func TestTheSendersNoteIsShownAndPublishedRedacted(t *testing.T) {
 		t.Errorf("the board's note: %q", n)
 	}
 }
+
+// A published report with a note and no public file -- a note alone, or one
+// beside a private dump -- still makes a unit on its board, for its note;
+// the dump never goes with it.
+func TestANoteWithoutAPublicFileStillReachesTheBoard(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	maint := e.maintainer(t)
+	for _, files := range []map[string][]byte{nil, {"backup": bytes.Repeat([]byte{0x5a}, 1<<20)}} {
+		_, out := ivan.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10", "note": "sold as Jooan Q9"}, files)
+		if code, d := maint.json(t, "POST", "/api/v1/club/review/"+out["id"].(string), map[string]any{"decision": "publish"}); code != 200 {
+			t.Fatalf("publish: %d %v", code, d)
+		}
+	}
+	texts, err := e.api.Reports.Store().PublishedTexts(ctx)
+	if err != nil || len(texts) != 2 {
+		t.Fatalf("%+v %v", texts, err)
+	}
+	for _, x := range texts {
+		if x.Note != "sold as Jooan Q9" || len(x.Files) != 0 || x.Model != "anjoy-ms-j10" {
+			t.Errorf("%+v", x)
+		}
+	}
+}

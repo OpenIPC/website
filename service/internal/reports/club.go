@@ -489,16 +489,19 @@ type BoardTextFile struct {
 }
 
 // PublishedTexts lists, for every published report linked to a board, its
-// served text and photo files. A private backup is never among them.
+// served text and photo files and its published note. A report with a note
+// and no such file -- a note alone, or one beside a private backup -- is
+// listed too, for its note. A private backup is never among them.
 func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 	rows, err := s.DB.Query(ctx, `
 		SELECT r.id, rm.model_id, coalesce(cm.name, ''), r.note_public, f.position, f.kind, f.name, f.public_sha256
 		FROM reports r
 		JOIN report_models rm ON rm.report_id = r.id
-		JOIN report_files f ON f.report_id = r.id
+		LEFT JOIN report_files f ON f.report_id = r.id
+		  AND f.public_sha256 IS NOT NULL AND f.kind IN ('photo', 'boot_log', 'uboot_env', 'note')
 		LEFT JOIN report_submissions rs ON rs.report_id = r.id
 		LEFT JOIN club_members cm ON cm.id = rs.member_id
-		WHERE f.public_sha256 IS NOT NULL AND f.kind IN ('photo', 'boot_log', 'uboot_env', 'note')
+		WHERE (f.report_id IS NOT NULL OR r.note_public <> '')
 		  AND (SELECT decision FROM report_reviews rv WHERE rv.report_id = r.id ORDER BY rv.id DESC LIMIT 1) = 'publish'
 		ORDER BY r.received_at, r.id, rm.model_id, f.position`)
 	if err != nil {
@@ -507,16 +510,19 @@ func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 	defer rows.Close()
 	var out []BoardText
 	for rows.Next() {
-		var id, model, by, note, kind, name, sum string
-		var pos int
+		var id, model, by, note string
+		var pos *int
+		var kind, name, sum *string
 		if err := rows.Scan(&id, &model, &by, &note, &pos, &kind, &name, &sum); err != nil {
 			return nil, err
 		}
 		if n := len(out); n == 0 || out[n-1].Report != id || out[n-1].Model != model {
 			out = append(out, BoardText{Report: id, Model: model, By: by, Note: note})
 		}
-		t := &out[len(out)-1]
-		t.Files = append(t.Files, BoardTextFile{Position: pos, Kind: kind, Name: name, Path: Rel(sum)})
+		if pos != nil {
+			t := &out[len(out)-1]
+			t.Files = append(t.Files, BoardTextFile{Position: *pos, Kind: *kind, Name: *name, Path: Rel(*sum)})
+		}
 	}
 	return out, rows.Err()
 }
