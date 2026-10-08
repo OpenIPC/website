@@ -528,10 +528,12 @@ func TestMetaInTheBundle(t *testing.T) {
 	}
 	// What the camera says outright wins over meta.json.
 	b = tgz(t, map[string]string{"dmesg-ramoops-0": string(oops(4)), "meta.json": `{"soc": "hi3516ev300"}`})
-	if code, _ := e.send(b, map[string]string{"soc": "gk7205v200"}, "10.0.0.1"); code != 201 {
+	code, out = e.send(b, map[string]string{"soc": "gk7205v200"}, "10.0.0.1")
+	if code != 201 {
 		t.Fatal(code)
 	}
-	if err := e.pool.QueryRow(context.Background(), `SELECT soc FROM crash_events ORDER BY received_at DESC, id LIMIT 1`).Scan(&soc); err != nil {
+	// Every event here has the test's one fixed time: find this one by its id.
+	if err := e.pool.QueryRow(context.Background(), `SELECT soc FROM crash_events WHERE id = $1`, out["id"]).Scan(&soc); err != nil {
 		t.Fatal(err)
 	}
 	if soc != "gk7205v200" {
