@@ -15,7 +15,7 @@ const stamp = (date: string) => `${date}T00:00:00Z`;
  * posts' canonical addresses, which never change once published.
  */
 export function atomXml(posts: Post[] = POSTS): string {
-  const updated = posts.length > 0 ? stamp(posts[0].date) : '2026-10-10T00:00:00Z';
+  const updated = posts.length > 0 ? stamp(posts[0].date) : '2026-10-09T00:00:00Z';
   const out = [
     '<?xml version="1.0" encoding="utf-8"?>',
     '<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">',

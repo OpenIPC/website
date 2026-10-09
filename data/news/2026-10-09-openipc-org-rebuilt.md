@@ -1,6 +1,6 @@
 ---
 title: openipc.org, rebuilt
-date: 2026-10-10
+date: 2026-10-09
 summary: The site is now a static bundle in three languages and a small Go service. It also has a board catalogue, the OpenIPC Club, a firmware explorer and this news section.
 author: OpenIPC team
 ---
