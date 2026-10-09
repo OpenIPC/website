@@ -73,6 +73,8 @@ const landing = uncommented(landingSource);
         <link rel="alternate" hreflang={code} href={`${site}${p}`} />
       ))}
       <link rel="alternate" hreflang="x-default" href={`${site}${alt.en}`} />
+      {/* The news feed (#212), for a reader that looks for one on any page. */}
+      <link rel="alternate" type="application/atom+xml" title="OpenIPC news" href="/news.atom" />
     </>
   )}
 

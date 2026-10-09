@@ -415,6 +415,8 @@ describe('internal links resolve', () => {
   function resolves(href: string): boolean {
     const path = href.split(/[?#]/)[0].replace(/\/$/, '') || '/';
     if (claimed.has(path)) return true;
+    // A file the bundle carries that is not a page: /news.atom.
+    if (/\.[a-z0-9]+$/i.test(path) && existsSync(join(dist, path.slice(1)))) return true;
 
     // An address the origin answers, with or without the locale prefix the page gave it.
     const bare = path.replace(new RegExp(`^/(${LOCALES.join('|')})(?=/|$)`), '') || '/';

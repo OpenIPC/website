@@ -82,6 +82,7 @@
     "isp_sensors": "ISP 与传感器",
     "low_latency": "低延迟",
     "low_latency_fpv": "FPV 与视频链路",
+    "news": "新闻",
     "next": "下一个",
     "openwall": "公开展板",
     "partition_calc": "固件分区计算器",
@@ -600,6 +601,15 @@
       "see_wiki": "维基中的 Majestic",
       "title": "Majestic Endpoints",
       "why": "该页面由实际运行的固件生成，这是本站的静态页面无法做到的："
+    },
+    "news": {
+      "back": "全部新闻",
+      "by": "作者：{author}",
+      "empty": "暂无内容。",
+      "english_only": "本文为英文。",
+      "lede": "OpenIPC 项目的公告，写在代码仓库中，以拉取请求的方式发布。",
+      "subscribe": "通过 Atom 订阅",
+      "title": "新闻"
     },
     "our_team": {
       "contributors_link": "所有 GitHub 贡献者列表",

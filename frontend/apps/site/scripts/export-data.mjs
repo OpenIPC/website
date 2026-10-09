@@ -6,12 +6,13 @@
  *   node scripts/export-data.mjs           write every generated file
  *   node scripts/export-data.mjs --check   exit 1 if any committed file is stale
  *
- * Three exports:
+ * Four exports:
  *
  *   i18n       data/locales/*.yml     -> src/i18n/{en,ru,zh}.json and the
  *                                         wizard.*, wall.*, explorer.* and boards.* island catalogues
  *   catalogue  data/catalogue/*.yml   -> src/data/catalogue.json
  *   webui      data/webui_gallery.yml -> src/data/webui-gallery.json
+ *   news       data/news/*.md         -> src/data/news.json
  *
  * Output is JSON.stringify with two-space indentation and a trailing newline.
  * Keys are written in a fixed order (sorted for the catalogues, as declared
@@ -181,6 +182,83 @@ export function webuiGallery(root = REPO) {
   }));
 }
 
+// --- news ----------------------------------------------------------------------
+//
+// One Markdown file per post (#212), named <YYYY-MM-DD>-<slug>.md, with a YAML
+// front matter block. What is checked here is what a reader would otherwise
+// meet as a broken page: a missing title, a date that is not one, a slug the
+// filename and the front matter disagree on, a key nobody reads. The body is
+// exported as written; src/lib/news.ts renders it, and refuses raw HTML.
+
+const NEWS_FILE = /^(\d{4}-\d{2}-\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$/;
+const NEWS_FIELDS = ['title', 'date', 'summary', 'author'];
+const NEWS_REQUIRED = ['title', 'date', 'summary'];
+
+/** One post from its filename and text, or an Error naming the file and what is wrong. */
+export function newsPost(file, text) {
+  const fail = (why) => {
+    throw new Error(`data/news/${file}: ${why}`);
+  };
+  const name = NEWS_FILE.exec(file);
+  if (!name) fail('the name must be <YYYY-MM-DD>-<slug>.md, the slug lower-case letters, digits and single hyphens');
+
+  const block = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(text);
+  if (!block) fail('no front matter: the file must start with a --- line and close the block with another');
+
+  let meta;
+  try {
+    // Dates stay strings: YAML 1.1 would make 2026-10-10 a timestamp.
+    meta = parse(block[1], { schema: 'core' });
+  } catch (err) {
+    fail(`front matter is not YAML: ${err.message}`);
+  }
+  if (!isHash(meta)) fail('front matter must be a mapping');
+
+  const unknown = Object.keys(meta).filter((k) => !NEWS_FIELDS.includes(k));
+  if (unknown.length > 0) fail(`unknown front matter ${unknown.join(', ')} (allowed: ${NEWS_FIELDS.join(', ')})`);
+  for (const key of NEWS_FIELDS) {
+    if (!(key in meta)) {
+      if (NEWS_REQUIRED.includes(key)) fail(`front matter has no ${key}`);
+      continue;
+    }
+    if (typeof meta[key] !== 'string' || meta[key].trim() === '') fail(`${key} must be a non-empty string`);
+  }
+
+  const date = meta.date;
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) {
+    fail(`date ${JSON.stringify(date)} is not a YYYY-MM-DD day`);
+  }
+  if (date !== name[1]) fail(`date ${date} is not the ${name[1]} in the file name`);
+
+  const body = block[2].trim();
+  if (body === '') fail('the post has no body');
+
+  return {
+    slug: name[2],
+    date,
+    title: meta.title.trim(),
+    summary: meta.summary.trim(),
+    ...(meta.author ? { author: meta.author.trim() } : {}),
+    body: `${body}\n`,
+  };
+}
+
+/** Every post, newest first; two posts may not share a slug. */
+export function news(root = REPO) {
+  const dir = join(root, 'data', 'news');
+  const posts = readdirSync(dir)
+    .filter((f) => !f.startsWith('.') && f !== 'README.md')
+    .sort(byteOrder)
+    .map((f) => newsPost(f, readFileSync(join(dir, f), 'utf8')));
+  const seen = new Set();
+  for (const post of posts) {
+    if (seen.has(post.slug)) throw new Error(`data/news: two posts are called ${post.slug}; /news/${post.slug} can be only one`);
+    seen.add(post.slug);
+  }
+  return posts.sort((a, b) => byteOrder(b.date, a.date) || byteOrder(a.slug, b.slug));
+}
+
 // --- the files ---------------------------------------------------------------
 
 /** Every generated file, as [path relative to the site, contents]. */
@@ -194,6 +272,7 @@ export function generated(root = REPO) {
   }
   out.push(['src/data/catalogue.json', toJSON(catalogue(root))]);
   out.push(['src/data/webui-gallery.json', toJSON(webuiGallery(root))]);
+  out.push(['src/data/news.json', toJSON(news(root))]);
   return out;
 }
 

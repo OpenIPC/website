@@ -249,6 +249,14 @@ ru:
       row_days_what: "История камер Open Wall (дни, без снимков)"
       row_days_where: "Наш сервер"
       row_days_long: "хранится"
+    news:
+      title: Новости
+      lede: Объявления проекта OpenIPC. Они пишутся в репозитории и публикуются через pull request.
+      subscribe: Подписаться на Atom
+      back: Все новости
+      by: автор — {author}
+      english_only: Эта запись на английском языке.
+      empty: Пока ничего не опубликовано.
     donate:
       # Russia-only, and deliberately absent from pages.en.yml and pages.zh.yml
       # (#201). Open Collective cannot be paid with a card issued in Russia, so

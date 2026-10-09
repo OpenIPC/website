@@ -249,6 +249,14 @@ en:
       row_days_what: "Open Wall camera history (days, no pictures)"
       row_days_where: "Our server"
       row_days_long: "kept"
+    news:
+      title: News
+      lede: Announcements from the OpenIPC project, written in the repository and published as pull requests.
+      subscribe: Subscribe with Atom
+      back: All news
+      by: by {author}
+      english_only: This post is in English.
+      empty: Nothing has been posted yet.
     donate:
       business_band_html: If your company depends on OpenIPC, the sustainable way to support it is a commercial relationship. <a href="/business">See what we offer</a>.
       accounting: We're committed to open and transparent accounting, and are grateful for any support you can provide to our efforts to advance OpenIPC and our mission toward a sustainable future.

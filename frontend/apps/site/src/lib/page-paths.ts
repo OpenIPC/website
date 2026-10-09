@@ -23,6 +23,7 @@
  *     are cheap, tested, and reached by falling through the seam.
  */
 import { VENDORS, fullName } from './hardware';
+import newsJson from '../data/news.json';
 /**
  * The catalogue's own addresses (#162), derived from the same data the pages
  * render: recommended, one tab per vendor, and the full list. Written out here
@@ -56,6 +57,24 @@ function hardwarePaths(): PagePath[] {
   ];
 }
 
+/**
+ * The news section (#212): the index and one page per post in data/news.
+ * Posts are English, and their titles are the post's own rather than
+ * catalogue keys; every locale tree still carries them, so a link from a
+ * Russian page lands on a Russian page with an English article in it.
+ */
+function newsPaths(): PagePath[] {
+  return [
+    { path: '/news', titleKey: 'pages.news.title', descriptionKey: 'pages.news.lede' },
+    ...newsJson.map((post) => ({
+      path: `/news/${post.slug}`,
+      titleKey: 'pages.news.title',
+      title: post.title,
+      description: post.summary,
+    })),
+  ];
+}
+
 export interface PagePath {
   /** Locale-free address, leading slash, no trailing slash. */
   path: string;
@@ -63,6 +82,10 @@ export interface PagePath {
   titleKey: string;
   /** The catalogue key for the meta description, when the page sets its own. */
   descriptionKey?: string;
+  /** A title that is not a catalogue key, used in place of titleKey's: a news post's. */
+  title?: string;
+  /** The same for the meta description. */
+  description?: string;
   /** Values for the `{name}`s in the title and the description. */
   vars?: Record<string, string>;
   /** Keep it out of search results. The smoke page only. */
@@ -73,6 +96,7 @@ export interface PagePath {
 
 export const PAGE_PATHS: PagePath[] = [
   ...hardwarePaths(),
+  ...newsPaths(),
 
   // The diagnostic. Not a marketing page and never indexed, but it is an
   // address the bundle claims and it belongs in the same list as the rest --

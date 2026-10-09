@@ -3613,4 +3613,46 @@
     <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/xiongmai/socs/xm550"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/xiongmai/socs/xm550"/>
   </url>
+  <url>
+    <loc>https://openipc.org/news</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/news</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/news</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/news/openipc-org-rebuilt</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/openipc-org-rebuilt"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/news/openipc-org-rebuilt</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/openipc-org-rebuilt"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/news/openipc-org-rebuilt</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/openipc-org-rebuilt"/>
+  </url>
 </urlset>

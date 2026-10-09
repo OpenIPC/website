@@ -5,3 +5,12 @@ export const LOCALES: string[];
 export function toJSON(node: unknown): string;
 /** Every generated file, as [path relative to the site, contents]. */
 export function generated(root?: string): [string, string][];
+/** One news post from its file name and text; throws naming the file and what is wrong. */
+export function newsPost(file: string, text: string): {
+  slug: string;
+  date: string;
+  title: string;
+  summary: string;
+  author?: string;
+  body: string;
+};

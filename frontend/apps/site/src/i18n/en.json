@@ -82,6 +82,7 @@
     "isp_sensors": "ISP & sensors",
     "low_latency": "Low Latency",
     "low_latency_fpv": "FPV & the video link",
+    "news": "News",
     "next": "Next",
     "openwall": "Open Wall",
     "partition_calc": "Firmware Partition Calculator",
@@ -610,6 +611,15 @@
       "see_wiki": "Majestic in the wiki",
       "title": "Majestic Endpoints",
       "why": "It is generated there from the firmware that is actually running, which a page on this site cannot be:"
+    },
+    "news": {
+      "back": "All news",
+      "by": "by {author}",
+      "empty": "Nothing has been posted yet.",
+      "english_only": "This post is in English.",
+      "lede": "Announcements from the OpenIPC project, written in the repository and published as pull requests.",
+      "subscribe": "Subscribe with Atom",
+      "title": "News"
     },
     "our_team": {
       "contributors_link": "List of all GitHub contributors",

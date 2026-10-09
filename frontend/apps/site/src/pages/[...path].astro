@@ -51,7 +51,7 @@ const t = useTranslations(locale);
 // tab that says what they are looking at.
 const title = page.path === '/_smoke'
   ? 'openipc.org static bundle'
-  : `${t(page.titleKey, page.vars)} - OpenIPC`;
+  : `${page.title ?? t(page.titleKey, page.vars)} - OpenIPC`;
 
 const Content = page.component;
 ---
@@ -59,7 +59,7 @@ const Content = page.component;
   locale={locale}
   path={page.path}
   title={title}
-  description={page.descriptionKey ? t(page.descriptionKey, page.vars) : undefined}
+  description={page.description ?? (page.descriptionKey ? t(page.descriptionKey, page.vars) : undefined)}
   noindex={page.noindex}
   addressless={page.addressless}
 >

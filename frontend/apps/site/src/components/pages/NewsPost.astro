@@ -1,0 +1,34 @@
+---
+/**
+ * /news/<slug> (#212): one post, rendered from its Markdown at build time by
+ * ../../lib/news.ts, which refuses raw HTML and gives the post's links to the
+ * site the reader's language. Posts are English; under /ru/ and /zh/ the
+ * article says so and is marked lang="en" for screen readers and translators.
+ */
+import { formatDate, postBySlug, renderPost, DEFAULT_AUTHOR } from '../../lib/news';
+import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
+
+interface Props { locale: Locale; slug: string }
+const { locale, slug } = Astro.props;
+const t = useTranslations(locale);
+const post = postBySlug(slug);
+const html = renderPost(post, locale);
+---
+<div class="site-container mt-10 pb-16">
+  <p class="mb-6 text-sm">
+    <a href={pathFor(locale, '/news')}>← {t('pages.news.back')}</a>
+  </p>
+  {locale !== 'en' && (
+    <p class="mb-6 max-w-[68ch] rounded-lg bg-surface-alt px-4 py-2 text-sm text-body-secondary">{t('pages.news.english_only')}</p>
+  )}
+  <article lang="en">
+    <header class="mb-8 max-w-[68ch]">
+      <h1 class="mb-3 text-h1 font-semibold text-balance">{post.title}</h1>
+      <p class="mb-0 text-sm text-body-secondary" lang={locale}>
+        <time datetime={post.date}>{formatDate(post.date, locale)}</time>
+        <span> · {t('pages.news.by', { author: post.author ?? DEFAULT_AUTHOR })}</span>
+      </p>
+    </header>
+    <div class="news-body" set:html={html} />
+  </article>
+</div>
