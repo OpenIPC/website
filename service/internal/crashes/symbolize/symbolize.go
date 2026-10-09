@@ -50,8 +50,11 @@ var outermost = map[string]bool{
 }
 
 // Symbolize unwinds a dump. ErrNotPublished means majestic's build is not
-// one CI published (yet); anything else may be worth trying again.
-func (s *Symbolizer) Symbolize(ctx context.Context, raw []byte, fw Firmware) (*Result, error) {
+// one CI published (yet); anything else may be worth trying again. A
+// firmware build that cannot be had right now is worth waiting for, unless
+// lastTry says this is the last try: then the backtrace is made without its
+// libraries rather than not at all.
+func (s *Symbolizer) Symbolize(ctx context.Context, raw []byte, fw Firmware, lastTry bool) (*Result, error) {
 	d, err := crashes.ReadDump(raw)
 	if err != nil {
 		return nil, err
@@ -70,9 +73,12 @@ func (s *Symbolizer) Symbolize(ctx context.Context, raw []byte, fw Firmware) (*R
 	libs := map[string]string{}
 	if s.Rootfs != nil && fw.Build != "" {
 		root, err := s.Rootfs.Dir(ctx, fw.Build, fw.Platform)
-		if err != nil {
+		switch {
+		case err != nil && !errors.Is(err, ErrNoBuild) && !lastTry:
+			return nil, fmt.Errorf("the firmware's libraries: %w", err)
+		case err != nil:
 			sources["libraries_error"] = err.Error()
-		} else {
+		default:
 			sources["firmware"] = fw.Build + "/" + fw.Platform
 			var found []string
 			for _, m := range d.Modules[1:] {

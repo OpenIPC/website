@@ -40,6 +40,10 @@ func Scan(d *crashes.Dump, from uint64, code Memory) []Candidate {
 	if from < d.StackAt {
 		from = d.StackAt
 	}
+	// An address gdb read off a crafted or broken stack can be anything.
+	if from-d.StackAt >= uint64(len(d.Stack)) {
+		return nil
+	}
 	size := 4
 	if d.Is64() {
 		size = 8

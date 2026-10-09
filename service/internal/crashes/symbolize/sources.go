@@ -159,6 +159,9 @@ var ErrNoBuild = errors.New("the firmware build is not among the pushed builds")
 
 var safeName = regexp.MustCompile(`^[A-Za-z0-9._-]{1,128}$`)
 
+// rootfsName is the image, never its rootfs.squashfs.<soc>.md5sum beside it.
+var rootfsName = regexp.MustCompile(`^rootfs\.squashfs(\.[A-Za-z0-9_-]+)?$`)
+
 // Dir is the unpacked rootfs of the build (meta.json's firmware.build_id)
 // for the platform (its firmware.platform, as gk7205v300_lite).
 func (r *Rootfs) Dir(ctx context.Context, build, platform string) (string, error) {
@@ -257,7 +260,7 @@ func rootfsOf(tgz, dest string) error {
 		if err != nil {
 			return err
 		}
-		if h.Typeflag == tar.TypeReg && strings.HasPrefix(filepath.Base(h.Name), "rootfs.squashfs") {
+		if h.Typeflag == tar.TypeReg && rootfsName.MatchString(filepath.Base(h.Name)) {
 			return writeAtomic(dest, tr, 256<<20)
 		}
 	}

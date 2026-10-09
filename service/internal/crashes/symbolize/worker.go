@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -114,36 +115,54 @@ func (w *Worker) Drain(ctx context.Context) {
 			return
 		}
 		for _, d := range due {
-			w.one(ctx, st, d)
+			// What cannot be stored is left for the next tick, not tried
+			// again at once: the same dump would only fail the same way.
+			if !w.one(ctx, st, d) {
+				return
+			}
 		}
 	}
 }
 
-func (w *Worker) one(ctx context.Context, st *crashes.Store, d crashes.Due) {
-	fw := firmwareOf(d.Meta)
-	res, err := w.Symbolizer.Symbolize(ctx, d.Dump, fw)
-	if err == nil {
-		sig, err := st.Symbolized(ctx, d.EventID, res.Frames, res.Sources, w.now())
-		if err != nil {
-			w.Log.Error("crashes: symbolized, not stored", "id", d.EventID, "err", err)
-			return
+// symbolize runs the symbolizer, a panic in it -- the dumps come from
+// anyone -- being one more failure of that dump's.
+func (w *Worker) symbolize(ctx context.Context, d crashes.Due) (res *Result, err error) {
+	defer func() {
+		if p := recover(); p != nil {
+			res, err = nil, fmt.Errorf("symbolizer panicked: %v", p)
 		}
-		w.Log.Info("crashes: symbolized", "id", d.EventID, "signature", sig, "frames", len(res.Frames))
-		return
+	}()
+	return w.Symbolizer.Symbolize(ctx, d.Dump, firmwareOf(d.Meta), crashes.LastTry(d.Attempts))
+}
+
+// one symbolizes a dump, and says whether what came of it was stored.
+func (w *Worker) one(ctx context.Context, st *crashes.Store, d crashes.Due) bool {
+	res, err := w.symbolize(ctx, d)
+	if err == nil {
+		sig, serr := st.Symbolized(ctx, d.EventID, res.Frames, res.Sources, w.now())
+		if serr == nil {
+			w.Log.Info("crashes: symbolized", "id", d.EventID, "signature", sig, "frames", len(res.Frames))
+			return true
+		}
+		w.Log.Error("crashes: symbolized, not stored", "id", d.EventID, "err", serr)
+		// Counted as a failed try, so a backtrace that cannot be stored is
+		// given up on like any other.
+		err = serr
 	}
 	if ctx.Err() != nil {
-		return
+		return false
 	}
 	gaveUp, ferr := st.SymbolizeFailed(ctx, d.EventID, err.Error(), w.now())
 	if ferr != nil {
 		w.Log.Error("crashes: symbolize failure not stored", "id", d.EventID, "err", ferr)
-		return
+		return false
 	}
 	level := slog.LevelWarn
 	if errors.Is(err, ErrNotPublished) {
 		level = slog.LevelInfo
 	}
 	w.Log.Log(ctx, level, "crashes: not symbolized", "id", d.EventID, "attempt", d.Attempts+1, "gave_up", gaveUp, "err", err)
+	return true
 }
 
 // firmwareOf is the build meta.json names.

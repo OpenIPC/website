@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -378,5 +381,127 @@ func TestUserSignatureFrames(t *testing.T) {
 	}
 	if title := userTitle("SIGSEGV", userSigFrames(frames)); title != "SIGSEGV in memcpy [libc.so] ← a" {
 		t.Fatalf("%q", title)
+	}
+}
+
+func TestMajesticsCrashesNeverCountOnThePublicList(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	st := e.api.Store()
+	code, kernel := e.send(oops(1), map[string]string{"mac": "02:00:00:00:00:31"}, "10.0.1.1")
+	if code != 201 {
+		t.Fatalf("%d %v", code, kernel)
+	}
+	code, user := e.send(dumpFixture(t, "arm-own.dump"), map[string]string{"mac": "02:00:00:00:00:32", "soc": "gk7205v300"}, "10.0.1.2")
+	if code != 201 {
+		t.Fatalf("%d %v", code, user)
+	}
+	// A maintainer cannot make them one bug, either way.
+	for _, pair := range [][2]string{{user["signature"].(string), kernel["signature"].(string)}, {kernel["signature"].(string), user["signature"].(string)}} {
+		if _, err := st.Decide(ctx, pair[0], "m-maint00000", Triage{Status: "open", MergeInto: ptr(pair[1])}); !errors.Is(err, ErrInvalid) {
+			t.Fatalf("merging %s into %s: %v", pair[0], pair[1], err)
+		}
+	}
+	// And were they one row, the public list still counts the kernel's alone.
+	e.exec(`UPDATE crash_signatures SET merged_into = $2 WHERE id = $1`, user["signature"], kernel["signature"])
+	list := e.get("/api/v1/crashes")["signatures"].([]any)
+	if len(list) != 1 || list[0].(map[string]any)["cameras"].(float64) != 1 {
+		t.Fatalf("%v", list)
+	}
+	raw, _ := json.Marshal(e.get("/api/v1/crashes/" + kernel["signature"].(string)))
+	if bytes.Contains(raw, []byte("gk7205v300")) {
+		t.Fatalf("the public signature shows the majestic crash's chip: %s", raw)
+	}
+}
+
+func TestATriageGoesWithTheCrashToItsBacktrace(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	st := e.api.Store()
+	frames := []Frame{{Fn: "store"}, {Fn: "parse_level"}}
+
+	// Confirmed while it waited: the bug it is refiled under is confirmed.
+	_, out := e.send(dumpFixture(t, "arm-own.dump"), nil, "10.0.2.1")
+	if _, err := st.Decide(ctx, out["signature"].(string), "m-maint00000", Triage{Status: "confirmed", IssueURL: ptr("https://github.com/OpenIPC/majestic/issues/1")}); err != nil {
+		t.Fatal(err)
+	}
+	sig, err := st.Symbolized(ctx, out["id"].(string), frames, nil, e.now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, _ := st.Get(ctx, sig, true, e.now)
+	if sig == out["signature"] || g.Status != "confirmed" || g.IssueURL == "" {
+		t.Fatalf("%s: %+v", sig, g)
+	}
+
+	// Found bogus while it waited: it stays where the maintainer put it.
+	_, out = e.send(dumpFixture(t, "x86_64-own.dump"), nil, "10.0.2.2")
+	if _, err := st.Decide(ctx, out["signature"].(string), "m-maint00000", Triage{Status: "bogus"}); err != nil {
+		t.Fatal(err)
+	}
+	if sig, err := st.Symbolized(ctx, out["id"].(string), frames, nil, e.now); err != nil || sig != out["signature"] {
+		t.Fatalf("%v: refiled a bogus crash under %s", err, sig)
+	}
+}
+
+func TestABacktraceWithoutMajesticsFramesKeepsTheProvisionalSignature(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	_, out := e.send(dumpFixture(t, "arm-libc.dump"), nil, "10.0.3.1")
+	// strlen, and nothing of majestic's: every caller of strlen would be
+	// this one bug.
+	frames := []Frame{{Fn: "strlen", Module: "libc.so"}, {Fn: "?", Module: "libevent_core-2.2.so"}}
+	sig, err := e.api.Store().Symbolized(ctx, out["id"].(string), frames, nil, e.now)
+	if err != nil || sig != out["signature"] {
+		t.Fatalf("%v: filed under %s, want %s", err, sig, out["signature"])
+	}
+	var status string
+	e.pool.QueryRow(ctx, `SELECT status FROM crash_symbolizations`).Scan(&status)
+	if status != "done" {
+		t.Fatalf("status %s", status)
+	}
+}
+
+func TestWhatGDBSaysIsStoredWhateverBytesItHolds(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	st := e.api.Store()
+	_, out := e.send(dumpFixture(t, "arm-own.dump"), nil, "10.0.4.1")
+	if _, err := st.SymbolizeFailed(ctx, out["id"].(string), "unsquashfs: \x00bad \xff", e.now); err != nil {
+		t.Fatal(err)
+	}
+	frames := []Frame{{Fn: "sto\x00re", File: "toy\xff.c"}, {Fn: "parse_level"}}
+	if _, err := st.Symbolized(ctx, out["id"].(string), frames, map[string]any{"gdb_stopped": "x\x00y", "libraries": []string{"a\x00"}}, e.now); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestEventsLeavingOneProvisionalSignatureTogetherTidyIt(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	st := e.api.Store()
+	raw := dumpFixture(t, "arm-own.dump")
+	var ids []string
+	var provisional string
+	for i, thrd := range []string{"1 a\n", "1 b\n", "1 c\n", "1 d\n"} {
+		_, out := e.send(rebuild(t, raw, "THRD", []byte(thrd)), nil, fmt.Sprintf("10.0.5.%d", i+1))
+		ids = append(ids, out["id"].(string))
+		provisional = out["signature"].(string)
+	}
+	var wg sync.WaitGroup
+	for _, id := range ids {
+		wg.Add(1)
+		go func(id string) {
+			defer wg.Done()
+			if _, err := st.Symbolized(ctx, id, []Frame{{Fn: "store"}, {Fn: "parse_level"}}, nil, e.now); err != nil {
+				t.Error(err)
+			}
+		}(id)
+	}
+	wg.Wait()
+	var n int
+	e.pool.QueryRow(ctx, `SELECT count(*) FROM crash_signatures WHERE id = $1`, provisional).Scan(&n)
+	if n != 0 {
+		t.Fatal("the provisional signature outlived its last event")
 	}
 }

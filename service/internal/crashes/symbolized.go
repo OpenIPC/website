@@ -89,18 +89,62 @@ func userSigFrames(frames []Frame) []Frame {
 	return out
 }
 
+// ownFrame says whether a signature's frames hold one of majestic's own:
+// without one -- a crash in a library function that every caller reaches,
+// or in nothing anyone could name -- the backtrace would file unrelated
+// crashes as one bug, and the module and offset it arrived under say more.
+func ownFrame(frames []Frame) bool {
+	for _, f := range frames {
+		if f.Module == "" {
+			return true
+		}
+	}
+	return false
+}
+
 // maxFrames is how many frames of a backtrace are kept.
 const maxFrames = 48
 
-// Symbolized files the event under the signature its backtrace makes, keeps
-// the backtrace and deletes the dump. The provisional signature it leaves is
-// deleted when nothing else is filed under it, or merged into the new one
-// when a triage or stars were booked under it meanwhile.
+// storable makes what came from gdb, a library's symbols or an error storable:
+// PostgreSQL takes neither a NUL nor invalid UTF-8, in text or in jsonb.
+func storable(s string) string {
+	return strings.ReplaceAll(strings.ToValidUTF8(s, "?"), "\x00", "")
+}
+
+func cleanAny(v any) any {
+	switch x := v.(type) {
+	case string:
+		return storable(x)
+	case []string:
+		out := make([]string, len(x))
+		for i, s := range x {
+			out[i] = storable(s)
+		}
+		return out
+	case map[string]any:
+		out := make(map[string]any, len(x))
+		for k, e := range x {
+			out[storable(k)] = cleanAny(e)
+		}
+		return out
+	}
+	return v
+}
+
+// Symbolized keeps the backtrace, deletes the dump, and files the event
+// under the signature its backtrace makes -- unless that would say less than
+// the provisional one (no frame of majestic's own), or a maintainer has found
+// the crash bogus already. The provisional signature it leaves is deleted
+// when nothing else is filed under it, or merged into the new one, with its
+// triage, when a decision or stars were booked under it meanwhile.
 func (s *Store) Symbolized(ctx context.Context, eventID string, frames []Frame, sources map[string]any, now time.Time) (string, error) {
 	if len(frames) > maxFrames {
 		frames = frames[:maxFrames]
 	}
-	src, _ := json.Marshal(sources)
+	for i := range frames {
+		frames[i].Fn, frames[i].Module, frames[i].File = storable(frames[i].Fn), storable(frames[i].Module), storable(frames[i].File)
+	}
+	src, _ := json.Marshal(cleanAny(map[string]any(sources)))
 	all, _ := json.Marshal(orEmpty(frames))
 	var sig string
 	err := pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
@@ -119,26 +163,37 @@ func (s *Store) Symbolized(ctx context.Context, eventID string, frames []Frame, 
 		if err != nil {
 			return err
 		}
+		// Events leaving one provisional signature, one at a time: the last
+		// to leave is the one that tidies it.
+		var status string
+		if err := tx.QueryRow(ctx, `SELECT root.status FROM crash_signatures p
+			JOIN crash_signatures root ON root.id = coalesce(p.merged_into, p.id)
+			WHERE p.id = $1 FOR UPDATE OF p`, provisional).Scan(&status); err != nil {
+			return err
+		}
 		var t Trace
 		if err := json.Unmarshal(fatal, &t); err != nil {
 			return err
 		}
 		t.Frames, t.Provisional, t.Build = frames, false, ""
-		sig = t.Signature()
-		title := t.Title()
-		trace, _ := json.Marshal(&t)
-		if _, err := tx.Exec(ctx, `
-			INSERT INTO crash_signatures (id, class, kind, title, frames, first_seen)
-			SELECT $1, 'user', $2, $3, $4, received_at FROM crash_events WHERE id = $5
-			ON CONFLICT (id) DO UPDATE SET first_seen = least(crash_signatures.first_seen, EXCLUDED.first_seen)`,
-			sig, KindSignal, title, all, eventID); err != nil {
-			return err
+		sig = provisional
+		if status != "bogus" && ownFrame(userSigFrames(frames)) {
+			sig = t.Signature()
 		}
-		if _, err := tx.Exec(ctx, `UPDATE crash_events SET signature_id = $2, title = $3, fatal = $4 WHERE id = $1`,
-			eventID, sig, title, trace); err != nil {
-			return err
-		}
-		if provisional != sig {
+		if sig != provisional {
+			title := t.Title()
+			trace, _ := json.Marshal(&t)
+			if _, err := tx.Exec(ctx, `
+				INSERT INTO crash_signatures (id, class, kind, title, frames, first_seen)
+				SELECT $1, 'user', $2, $3, $4, received_at FROM crash_events WHERE id = $5
+				ON CONFLICT (id) DO UPDATE SET first_seen = least(crash_signatures.first_seen, EXCLUDED.first_seen)`,
+				sig, KindSignal, title, all, eventID); err != nil {
+				return err
+			}
+			if _, err := tx.Exec(ctx, `UPDATE crash_events SET signature_id = $2, title = $3, fatal = $4 WHERE id = $1`,
+				eventID, sig, title, trace); err != nil {
+				return err
+			}
 			if err := leave(ctx, tx, provisional, sig); err != nil {
 				return err
 			}
@@ -172,13 +227,30 @@ func leave(ctx context.Context, tx pgx.Tx, provisional, sig string) error {
 		_, err := tx.Exec(ctx, `DELETE FROM crash_signatures WHERE id = $1`, provisional)
 		return err
 	}
-	// Stars paid under it stay held under the bug they were for.
-	var root string
-	if err := tx.QueryRow(ctx, `SELECT coalesce(merged_into, id) FROM crash_signatures WHERE id = $1`, sig).Scan(&root); err != nil {
+	// Stars paid under it stay held under the bug they were for, and what a
+	// maintainer decided about it goes with it to a bug nobody has decided
+	// about yet.
+	var root, rootStatus string
+	if err := tx.QueryRow(ctx, `SELECT r.id, r.status FROM crash_signatures s JOIN crash_signatures r ON r.id = coalesce(s.merged_into, s.id)
+		WHERE s.id = $1 FOR UPDATE OF r`, sig).Scan(&root, &rootStatus); err != nil {
 		return err
 	}
 	if root == provisional {
 		return nil
+	}
+	if rootStatus == "open" {
+		tag, err := tx.Exec(ctx, `UPDATE crash_signatures r SET status = p.status, fixed_in = p.fixed_in, issue_url = p.issue_url,
+				note = p.note, updated_at = now()
+			FROM crash_signatures p WHERE r.id = $2 AND p.id = $1 AND p.status <> 'open'`, provisional, root)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() > 0 {
+			if _, err := tx.Exec(ctx, `INSERT INTO crash_triage (signature_id, by_member, status, fixed_in, issue_url, merged_into, note)
+				SELECT id, 'symbolizer', status, fixed_in, issue_url, NULL, note FROM crash_signatures WHERE id = $1`, root); err != nil {
+				return err
+			}
+		}
 	}
 	if _, err := tx.Exec(ctx, `UPDATE crash_signatures SET merged_into = $2, updated_at = now() WHERE merged_into = $1`,
 		provisional, root); err != nil {
@@ -187,6 +259,10 @@ func leave(ctx context.Context, tx pgx.Tx, provisional, sig string) error {
 	_, err := tx.Exec(ctx, `UPDATE crash_signatures SET merged_into = $2, updated_at = now() WHERE id = $1`, provisional, root)
 	return err
 }
+
+// LastTry says whether a dump that has been tried attempts times is on its
+// last try: what can be made of it then is kept, whatever is missing.
+func LastTry(attempts int) bool { return attempts >= len(retryAfter) }
 
 // Tries: how often a dump is tried, and how long after each failure.
 var retryAfter = []time.Duration{
@@ -200,7 +276,7 @@ func (s *Store) SymbolizeFailed(ctx context.Context, eventID, reason string, now
 	if len(reason) > 2000 {
 		reason = reason[:2000]
 	}
-	reason = strings.ToValidUTF8(reason, "?")
+	reason = storable(reason)
 	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
 		var attempts int
 		err := tx.QueryRow(ctx, `SELECT attempts FROM crash_symbolizations WHERE event_id = $1 AND status = 'pending' FOR UPDATE`,

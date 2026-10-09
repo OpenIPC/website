@@ -123,7 +123,7 @@ func TestSymbolizeUnwindsTheFaultThroughMajesticsOwnFrames(t *testing.T) {
 		t.Run(arch, func(t *testing.T) {
 			raw := fixture(t, arch+"-own.dump")
 			s := &Symbolizer{Symbols: published(t, arch, raw)}
-			res, err := s.Symbolize(context.Background(), raw, Firmware{})
+			res, err := s.Symbolize(context.Background(), raw, Firmware{}, false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -155,7 +155,7 @@ func TestSymbolizeNamesALibraryFrameFromTheFirmwaresOwnLibrary(t *testing.T) {
 		t.Run(arch, func(t *testing.T) {
 			raw := fixture(t, arch+"-lib.dump")
 			s := &Symbolizer{Symbols: published(t, arch, raw), Rootfs: withLibrary(t, arch)}
-			res, err := s.Symbolize(context.Background(), raw, Firmware{Build: "nightly-20261009-0000000", Platform: "toy_lite"})
+			res, err := s.Symbolize(context.Background(), raw, Firmware{Build: "nightly-20261009-0000000", Platform: "toy_lite"}, false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -177,7 +177,7 @@ func TestSymbolizeWithoutTheLibraryNamesItsModule(t *testing.T) {
 	needGDB(t)
 	raw := fixture(t, "arm-libc.dump")
 	s := &Symbolizer{Symbols: published(t, "arm", raw)}
-	res, err := s.Symbolize(context.Background(), raw, Firmware{})
+	res, err := s.Symbolize(context.Background(), raw, Firmware{}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +192,7 @@ func TestSymbolizeWithoutTheLibraryNamesItsModule(t *testing.T) {
 func TestSymbolizeWithoutPublishedSymbolsWaits(t *testing.T) {
 	raw := fixture(t, "arm-own.dump")
 	s := &Symbolizer{Symbols: &Symbols{Root: t.TempDir(), Base: "http://127.0.0.1:1"}}
-	if _, err := s.Symbolize(context.Background(), raw, Firmware{}); err == nil {
+	if _, err := s.Symbolize(context.Background(), raw, Firmware{}, false); err == nil {
 		t.Fatal("symbolized without the executable")
 	}
 }
@@ -359,6 +359,53 @@ func TestSourcePathDropsTheBuildMachinesDirectories(t *testing.T) {
 	} {
 		if got := sourcePath(in); got != want {
 			t.Errorf("sourcePath(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestScanIgnoresAStartOffTheStack(t *testing.T) {
+	d, err := crashes.ReadDump(fixture(t, "x86_64-own.dump"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, from := range []uint64{d.StackAt + uint64(len(d.Stack)), d.StackAt + 1<<63 + 8, ^uint64(0)} {
+		if got := Scan(d, from, nil); got != nil {
+			t.Fatalf("from %#x: %v", from, got)
+		}
+	}
+}
+
+// failing is a firmware build that cannot be had right now.
+type failing struct{}
+
+func (failing) Dir(context.Context, string, string) (string, error) {
+	return "", fmt.Errorf("release asset unavailable: github.com answered 502")
+}
+
+func TestAFirmwareBuildThatCannotBeHadIsWaitedFor(t *testing.T) {
+	needGDB(t)
+	raw := fixture(t, "arm-lib.dump")
+	s := &Symbolizer{Symbols: published(t, "arm", raw), Rootfs: failing{}}
+	fw := Firmware{Build: "nightly-20261009-0000000", Platform: "toy_lite"}
+	if _, err := s.Symbolize(context.Background(), raw, fw, false); err == nil {
+		t.Fatal("symbolized without the libraries it could have later")
+	}
+	// The last try keeps what it can make.
+	res, err := s.Symbolize(context.Background(), raw, fw, true)
+	if err != nil || res.Sources["libraries_error"] == nil {
+		t.Fatalf("%v %v", err, res)
+	}
+}
+
+func TestRootfsNameIsTheImage(t *testing.T) {
+	for name, want := range map[string]bool{
+		"rootfs.squashfs":                   true,
+		"rootfs.squashfs.gk7205v300":        true,
+		"rootfs.squashfs.gk7205v300.md5sum": false,
+		"rootfs.ubi.gk7205v300":             false,
+	} {
+		if rootfsName.MatchString(name) != want {
+			t.Errorf("%s: %v", name, !want)
 		}
 	}
 }

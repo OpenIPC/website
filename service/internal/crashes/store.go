@@ -235,7 +235,9 @@ func (s *Store) ranked(ctx context.Context, maintainers bool, only string, now t
 		WITH ev AS (
 			SELECT coalesce(sig.merged_into, sig.id) AS root, e.*
 			FROM crash_events e JOIN crash_signatures sig ON sig.id = e.signature_id
-			WHERE $1 OR NOT e.self_inflicted
+			-- majestic's crashes count only for maintainers, whatever they
+			-- are merged into
+			WHERE $1 OR (NOT e.self_inflicted AND e.kind <> 'signal')
 		)
 		SELECT r.id, r.class,
 		       coalesce((`+kindOrder+`)[max(array_position(`+kindOrder+`, ev.kind))], r.kind), r.title, r.frames, r.status, r.fixed_in, r.issue_url, r.first_seen,
@@ -357,8 +359,8 @@ func (s *Store) Combos(ctx context.Context, id string, detailed bool) ([]Combo, 
 	rows, err := s.DB.Query(ctx, `
 		SELECT `+cols+`, count(*)::int, count(DISTINCT `+fmt.Sprintf(camera, "e.")+`)::int
 		FROM crash_events e JOIN crash_signatures sig ON sig.id = e.signature_id
-		WHERE coalesce(sig.merged_into, sig.id) = $1 AND NOT e.self_inflicted
-		GROUP BY 1, 2, 3, 4, 5, 6 ORDER BY 8 DESC, 7 DESC, 1, 2`, id)
+		WHERE coalesce(sig.merged_into, sig.id) = $1 AND NOT e.self_inflicted AND ($2 OR e.kind <> 'signal')
+		GROUP BY 1, 2, 3, 4, 5, 6 ORDER BY 8 DESC, 7 DESC, 1, 2`, id, detailed)
 	if err != nil {
 		return nil, err
 	}
@@ -571,7 +573,9 @@ func (s *Store) Decide(ctx context.Context, id, by string, t Triage) (taken int,
 			merged = nil
 			if *t.MergeInto != "" {
 				var target string
-				err := tx.QueryRow(ctx, `SELECT coalesce(merged_into, id) FROM crash_signatures WHERE id = $1`, *t.MergeInto).Scan(&target)
+				var sameClass bool
+				err := tx.QueryRow(ctx, `SELECT coalesce(t.merged_into, t.id), t.class = s.class FROM crash_signatures t, crash_signatures s
+					WHERE t.id = $1 AND s.id = $2`, *t.MergeInto, id).Scan(&target, &sameClass)
 				if errors.Is(err, pgx.ErrNoRows) {
 					return fmt.Errorf("merge_into: %w", ErrNoSignature)
 				}
@@ -580,6 +584,11 @@ func (s *Store) Decide(ctx context.Context, id, by string, t Triage) (taken int,
 				}
 				if target == id {
 					return fmt.Errorf("%w: %s is already merged into this one", ErrInvalid, *t.MergeInto)
+				}
+				// A kernel crash and majestic's are never one bug, and
+				// majestic's must not be counted on the public list.
+				if !sameClass {
+					return fmt.Errorf("%w: %s is a crash of another kind (kernel or majestic)", ErrInvalid, *t.MergeInto)
 				}
 				merged = &target
 				if _, err := tx.Exec(ctx, `UPDATE crash_signatures SET merged_into = $2, updated_at = now() WHERE merged_into = $1`, id, target); err != nil {
