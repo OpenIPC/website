@@ -30,6 +30,8 @@ const (
 	maxText        = 4 << 20
 	maxDocument    = 20 << 20
 	maxField       = 4000
+	// UploadIdle: how long an upload may go without a byte arriving.
+	UploadIdle = 60 * time.Second
 )
 
 // API is the reports' addresses on the web role.
@@ -122,6 +124,8 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		return
 	}
 
+	// A backup takes as long as it keeps arriving, not the server's 60 s.
+	httpx.KeepReading(w, r, UploadIdle)
 	in, status, err := a.read(r, false)
 	if in != nil {
 		defer in.discard()

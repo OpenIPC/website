@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -243,4 +244,32 @@ func WriteJSON(w http.ResponseWriter, r *http.Request, body []byte) {
 func Empty(w http.ResponseWriter, status int) {
 	w.Header().Set("Content-Length", "0")
 	w.WriteHeader(status)
+}
+
+// KeepReading lets a large upload take as long as it keeps moving: each read
+// of r.Body pushes the connection's read deadline idle ahead, in place of the
+// server's ReadTimeout, which counts from the request's first byte. A flash
+// backup of 100 MB from a camera on a slow link needs minutes; it was cut off
+// at 60 s with "i/o timeout" (OpenIPC/ipctool#234). nginx in front streams
+// the body with a 300 s idle timeout of its own and no limit on the total.
+// The write deadline moves with it, so the answer still has its time after a
+// long upload.
+func KeepReading(w http.ResponseWriter, r *http.Request, idle time.Duration) {
+	rc := http.NewResponseController(w)
+	r.Body = &keepReading{ReadCloser: r.Body, rc: rc, idle: idle}
+}
+
+type keepReading struct {
+	io.ReadCloser
+	rc   *http.ResponseController
+	idle time.Duration
+}
+
+func (k *keepReading) Read(p []byte) (int, error) {
+	now := time.Now()
+	// Errors mean the writer cannot set deadlines (a test recorder): the
+	// server's own timeouts stay in force.
+	_ = k.rc.SetReadDeadline(now.Add(k.idle))
+	_ = k.rc.SetWriteDeadline(now.Add(k.idle + 5*time.Minute))
+	return k.ReadCloser.Read(p)
 }
