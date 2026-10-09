@@ -188,3 +188,27 @@ func TestAClubCodeIsNeverMisused(t *testing.T) {
 		t.Errorf("ipctool's report is on %v, not the photos' board", pub.Models)
 	}
 }
+
+// The review queue shows ipctool's output and the note as they will be
+// published: a maintainer decides on the public copy, and the board's MAC is
+// a keyed hash there, as on the report's public page.
+func TestTheReviewQueueShowsThePublishedCopy(t *testing.T) {
+	e := newEnv(t)
+	const mac = "00:12:31:5e:e0:d2" // in the test report's YAML
+	if code, out := e.ipctoolUpload(t, map[string]string{"note": "eth0 is " + mac}); code != http.StatusCreated {
+		t.Fatalf("upload: %d %v", code, out)
+	}
+	maint := e.maintainer(t)
+	_, q := maint.json(t, "GET", "/api/v1/club/review", nil)
+	queued := q["reports"].([]any)
+	if len(queued) != 1 {
+		t.Fatalf("queue: %v", queued)
+	}
+	r := queued[0].(map[string]any)
+	for _, field := range []string{"yaml", "note"} {
+		v, _ := r[field].(string)
+		if strings.Contains(strings.ToLower(v), mac) || !strings.Contains(v, "<mac:") {
+			t.Errorf("the queue's %s shows the MAC in clear, or not hashed: %q", field, v)
+		}
+	}
+}

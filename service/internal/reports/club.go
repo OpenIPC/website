@@ -263,6 +263,7 @@ func (s *Store) StoredFile(ctx context.Context, id string, position int) (sum, n
 // Queued is one report in the maintainers' review queue.
 type Queued struct {
 	Listed
+	// Note and YAML are the published copy, identifiers already hashed.
 	Note      string       `json:"note,omitempty"`
 	Tool      string       `json:"tool,omitempty"`
 	YAML      string       `json:"yaml,omitempty"`
@@ -304,7 +305,14 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 		if err != nil {
 			return nil, err
 		}
-		q.Note, q.Tool, q.YAML = r.Note, r.Tool, r.YAML
+		// The YAML and the note as they will be published: the reviewer
+		// decides on what the public copy shows, and needs no MAC, chip ID
+		// or cloud ID in clear to do it (#232's sender saw their MACs in the
+		// queue). The backup and other files stay whole for maintainers.
+		q.Tool, q.YAML = r.Tool, r.YAMLPublic
+		if err := s.DB.QueryRow(ctx, `SELECT note_public FROM reports WHERE id = $1`, l.ID).Scan(&q.Note); err != nil {
+			return nil, err
+		}
 		m, err := s.memberReport(ctx, l.ID)
 		if err != nil {
 			return nil, err
