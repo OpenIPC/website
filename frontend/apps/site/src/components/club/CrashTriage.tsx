@@ -5,6 +5,9 @@
  * matches its kernel, and each crash's redacted log, warnings and lead-up, or
  * for majestic's, its backtrace from the debuginfo of its build.
  *
+ * /club/crashes/#<signature> opens that signature: the link a maintainer
+ * shares, and the one a sent crash answers with.
+ *
  * Confirming a bug pays its first reporter, fixing it pays them again;
  * bogus takes back every star it paid. The same is `openipc crashes status`.
  */
@@ -30,6 +33,27 @@ export default function CrashTriage({ locale }: { locale: Locale }) {
     .catch((e) => setLoad(e instanceof ClubError && (e.status === 401 || e.status === 403) ? { state: 'forbidden' } : { state: 'error' }));
   useEffect(() => { void fetchMe().catch(() => {}); void reload(); }, []);
 
+  // The signature the address names: on arrival, and when the hash changes
+  // under an open page (a second link followed in the same tab).
+  useEffect(() => {
+    const follow = () => {
+      const hash = location.hash.slice(1);
+      if (/^[0-9a-f]{12}$/.test(hash)) setOpen(hash);
+    };
+    follow();
+    addEventListener('hashchange', follow);
+    return () => removeEventListener('hashchange', follow);
+  }, []);
+  const listed = load.state === 'ok';
+  useEffect(() => {
+    if (open && listed) document.getElementById(open)?.scrollIntoView({ block: 'start' });
+  }, [open, listed]);
+  const toggle = (id: string) => {
+    const next = open === id ? null : id;
+    setOpen(next);
+    history.replaceState(null, '', next ? `#${next}` : location.pathname);
+  };
+
   if (load.state === 'forbidden') {
     return (
       <p class="mt-8 rounded-md bg-[#fff4e2] px-3 py-2 text-[#9a5b00]" role="alert">
@@ -43,9 +67,9 @@ export default function CrashTriage({ locale }: { locale: Locale }) {
       {load.state === 'error' && <p class="m-0 text-[#9a5b00]" role="alert">{t('club.load_failed')}</p>}
       {load.state === 'ok' && load.list.length === 0 && <p class="m-0 text-body-secondary">{t('crashes.empty')}</p>}
       {load.state === 'ok' && load.list.map((g) => (
-        <article key={g.id} class={`grid gap-2 rounded-lg border p-3 ${g.merged_into || g.status === 'bogus' ? 'opacity-60' : ''} ${open === g.id ? 'border-brand-blue' : 'border-hairline'}`}>
+        <article key={g.id} id={g.id} class={`grid gap-2 rounded-lg border p-3 ${g.merged_into || g.status === 'bogus' ? 'opacity-60' : ''} ${open === g.id ? 'border-brand-blue' : 'border-hairline'}`}>
           <button type="button" class="grid cursor-pointer gap-1 bg-transparent p-0 text-left" aria-expanded={open === g.id}
-            onClick={() => setOpen(open === g.id ? null : g.id)}>
+            onClick={() => toggle(g.id)}>
             <span class="flex flex-wrap items-center gap-2 text-[12px]">
               <span class="font-mono font-semibold tabular-nums">{g.score}</span>
               <span class={`rounded-full px-2 py-0.5 font-semibold ${KIND_TONE[g.kind]}`}>{t(`crashes.kind_${g.kind}`)}{g.in_irq ? ` · ${t('crashes.in_irq')}` : ''}</span>

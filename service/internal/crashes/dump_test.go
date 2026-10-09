@@ -182,7 +182,7 @@ func TestAMajesticCrashIsTheMaintainersOnly(t *testing.T) {
 		t.Fatalf("%d %v", code, out)
 	}
 	// The sender is told the signal; where in majestic is the maintainers'.
-	if !strings.HasSuffix(out["url"].(string), "/club/crashes/") || out["title"] != "SIGSEGV (NULL pointer)" {
+	if !strings.HasSuffix(out["url"].(string), "/club/crashes/#"+out["signature"].(string)) || out["title"] != "SIGSEGV (NULL pointer)" {
 		t.Fatalf("url %v, title %v", out["url"], out["title"])
 	}
 	provisional := out["signature"].(string)
