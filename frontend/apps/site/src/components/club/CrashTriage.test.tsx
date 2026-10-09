@@ -55,3 +55,37 @@ test('opening a signature puts its address in the bar, closing takes it out', as
   fireEvent.click(first);
   expect(location.hash).toBe('');
 });
+
+test("a crash's own id opens the signature it is filed under now", async () => {
+  Element.prototype.scrollIntoView = vi.fn();
+  history.replaceState(null, '', '/club/crashes/#c-abcd2345');
+  const details: string[] = [];
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    if (url === '/api/v1/club/crashes/triage') {
+      return new Response(JSON.stringify({ signatures: [sig('0123456789aa', 'SIGSEGV in first'), sig('0123456789bb', 'SIGSEGV in second')] }));
+    }
+    const m = url.match(/^\/api\/v1\/club\/crashes\/([0-9a-z-]+)$/);
+    if (m) {
+      details.push(m[1]);
+      return new Response(JSON.stringify({ signature: sig('0123456789bb', 'SIGSEGV in second'), seen_on: [], crashes: [] }));
+    }
+    return new Response('{}', { status: 401 });
+  }));
+  const { findByText } = render(<CrashTriage locale="en" />);
+  const second = (await findByText('SIGSEGV in second')).closest('button')!;
+  await waitFor(() => expect(second.getAttribute('aria-expanded')).toBe('true'));
+  expect(details[0]).toBe('c-abcd2345');
+  expect(location.hash).toBe('#0123456789bb');
+});
+
+test('an address that names no signature closes the one open', async () => {
+  Element.prototype.scrollIntoView = vi.fn();
+  history.replaceState(null, '', '/club/crashes/#0123456789aa');
+  stub();
+  const { findByText } = render(<CrashTriage locale="en" />);
+  const first = (await findByText('SIGSEGV in first')).closest('button')!;
+  await waitFor(() => expect(first.getAttribute('aria-expanded')).toBe('true'));
+  history.replaceState(null, '', '/club/crashes/');
+  window.dispatchEvent(new HashChangeEvent('hashchange'));
+  await waitFor(() => expect(first.getAttribute('aria-expanded')).toBe('false'));
+});

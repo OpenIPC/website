@@ -6,7 +6,9 @@
  * for majestic's, its backtrace from the debuginfo of its build.
  *
  * /club/crashes/#<signature> opens that signature: the link a maintainer
- * shares, and the one a sent crash answers with.
+ * shares. /club/crashes/#<crash id> opens the signature that crash is filed
+ * under now -- the link a sent majestic crash answers with, which outlives
+ * the signature it arrived under.
  *
  * Confirming a bug pays its first reporter, fixing it pays them again;
  * bogus takes back every star it paid. The same is `openipc crashes status`.
@@ -38,7 +40,18 @@ export default function CrashTriage({ locale }: { locale: Locale }) {
   useEffect(() => {
     const follow = () => {
       const hash = location.hash.slice(1);
-      if (/^[0-9a-f]{12}$/.test(hash)) setOpen(hash);
+      if (/^[0-9a-f]{12}$/.test(hash)) {
+        setOpen(hash);
+      } else if (/^c-[a-z0-9]{8}$/.test(hash)) {
+        fetchCrashDetail(hash)
+          .then((r) => {
+            setOpen(r.signature.id);
+            history.replaceState(null, '', `#${r.signature.id}`);
+          })
+          .catch(() => setOpen(null));
+      } else {
+        setOpen(null);
+      }
     };
     follow();
     addEventListener('hashchange', follow);

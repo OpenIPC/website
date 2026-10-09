@@ -182,7 +182,7 @@ func TestAMajesticCrashIsTheMaintainersOnly(t *testing.T) {
 		t.Fatalf("%d %v", code, out)
 	}
 	// The sender is told the signal; where in majestic is the maintainers'.
-	if !strings.HasSuffix(out["url"].(string), "/club/crashes/#"+out["signature"].(string)) || out["title"] != "SIGSEGV (NULL pointer)" {
+	if !strings.HasSuffix(out["url"].(string), "/club/crashes/#"+out["id"].(string)) || out["title"] != "SIGSEGV (NULL pointer)" {
 		t.Fatalf("url %v, title %v", out["url"], out["title"])
 	}
 	provisional := out["signature"].(string)
@@ -247,6 +247,11 @@ func TestAMajesticCrashIsTheMaintainersOnly(t *testing.T) {
 	g, err := st.Get(ctx, sig, true, e.now)
 	if err != nil || g.Title != "SIGSEGV (NULL pointer) in store" || g.Events != 1 {
 		t.Fatalf("%v %+v", err, g)
+	}
+	// The link the sender was given still finds the crash, under its new
+	// signature.
+	if now, err := st.SignatureOf(ctx, id); err != nil || now != sig {
+		t.Fatalf("%v: %s, want %s", err, now, sig)
 	}
 	details, err := st.Details(ctx, sig)
 	if err != nil || len(details) != 1 || details[0].Symbolization == nil || details[0].Symbolization.Status != "done" ||
