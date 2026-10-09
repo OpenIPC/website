@@ -24,6 +24,7 @@
  */
 import { VENDORS, fullName } from './hardware';
 import newsJson from '../data/news.json';
+import type { Locale } from './i18n';
 /**
  * The catalogue's own addresses (#162), derived from the same data the pages
  * render: recommended, one tab per vendor, and the full list. Written out here
@@ -59,21 +60,36 @@ function hardwarePaths(): PagePath[] {
 
 /**
  * The news section (#212): the index and one page per post in data/news.
- * Posts are English, and their titles are the post's own rather than
- * catalogue keys; every locale tree still carries them, so a link from a
- * Russian page lands on a Russian page with an English article in it.
+ * A post's title is its own rather than a catalogue key, and it has one per
+ * language it is written in -- the tab, the description and the social card
+ * have to follow the article, or a Russian page reads in Russian under an
+ * English title. A language the post has no translation for falls back to
+ * English, as the article does.
  */
 function newsPaths(): PagePath[] {
+  const byLocale = (post: (typeof newsJson)[number], field: 'title' | 'summary') => ({
+    en: post[field],
+    ...Object.fromEntries(
+      Object.entries((post as { i18n?: Record<string, Record<string, string>> }).i18n ?? {})
+        .map(([locale, text]) => [locale, text[field]]),
+    ),
+  });
   return [
     { path: '/news', titleKey: 'pages.news.title', descriptionKey: 'pages.news.lede' },
     ...newsJson.map((post) => ({
       path: `/news/${post.slug}`,
       titleKey: 'pages.news.title',
-      title: post.title,
-      description: post.summary,
+      title: byLocale(post, 'title'),
+      description: byLocale(post, 'summary'),
     })),
   ];
 }
+
+/** A title or description that is written per language: the reader's, or English. */
+export const inPageLocale = (
+  value: string | Partial<Record<Locale, string>> | undefined,
+  locale: Locale,
+): string | undefined => (typeof value === 'string' || value === undefined ? value : value[locale] ?? value.en);
 
 export interface PagePath {
   /** Locale-free address, leading slash, no trailing slash. */
@@ -82,10 +98,13 @@ export interface PagePath {
   titleKey: string;
   /** The catalogue key for the meta description, when the page sets its own. */
   descriptionKey?: string;
-  /** A title that is not a catalogue key, used in place of titleKey's: a news post's. */
-  title?: string;
+  /**
+   * A title that is not a catalogue key, used in place of titleKey's: a news
+   * post's. A map gives it per language; read it with `inPageLocale`.
+   */
+  title?: string | Partial<Record<Locale, string>>;
   /** The same for the meta description. */
-  description?: string;
+  description?: string | Partial<Record<Locale, string>>;
   /** Values for the `{name}`s in the title and the description. */
   vars?: Record<string, string>;
   /** Keep it out of search results. The smoke page only. */

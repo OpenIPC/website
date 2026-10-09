@@ -24,6 +24,7 @@
 import Base from '../layouts/Base.astro';
 import { LOCALES, pathFor, useTranslations, type Locale } from '../lib/i18n';
 import { pagesWithComponents, type PageSpec } from '../lib/pages';
+import { inPageLocale } from '../lib/page-paths';
 
 export function getStaticPaths() {
   const pages = pagesWithComponents();
@@ -49,9 +50,11 @@ const t = useTranslations(locale);
 // for the site, `noindex` or not: the wall's shell is noindex because of the
 // addresses it is served at, and a reader who lands on one still deserves a
 // tab that says what they are looking at.
+const ownTitle = inPageLocale(page.title, locale);
+const ownDescription = inPageLocale(page.description, locale);
 const title = page.path === '/_smoke'
   ? 'openipc.org static bundle'
-  : `${page.title ?? t(page.titleKey, page.vars)} - OpenIPC`;
+  : `${ownTitle ?? t(page.titleKey, page.vars)} - OpenIPC`;
 
 const Content = page.component;
 ---
@@ -59,7 +62,7 @@ const Content = page.component;
   locale={locale}
   path={page.path}
   title={title}
-  description={page.description ?? (page.descriptionKey ? t(page.descriptionKey, page.vars) : undefined)}
+  description={ownDescription ?? (page.descriptionKey ? t(page.descriptionKey, page.vars) : undefined)}
   noindex={page.noindex}
   addressless={page.addressless}
 >
