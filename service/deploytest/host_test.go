@@ -107,15 +107,29 @@ func TestMirrorConfig(t *testing.T) {
 		up := read(t, "deploy/nginx/mirrors/kz/snippets/openipc-reports-proxy.conf")
 		mustContain(t, reports, "location ~ ^/api/v1/(?:reports$|club/) {", "no HTTPS location for the report and the Club's form")
 		mustContain(t, reports, "include snippets/openipc-reports-proxy.conf;", "the HTTPS report location does not use the shared proxy")
-		mustContain(t, plain, "location ~ ^/api/v1/(?:reports|boards/identify)$ {", "port 80 does not carry ipctool's report")
+		mustContain(t, plain, "location = /api/v1/reports {", "port 80 does not carry ipctool's report")
+		size := regexp.MustCompile(`(?m)^\s*client_max_body_size\s+(\S+);`)
+		identify := find(plain, regexp.MustCompile(`(?s)(location = /api/v1/boards/identify \{.*?\n\})`), 1)
+		if want, got := find(block(org, "location = /api/v1/boards/identify {"), size, 1), find(identify, size, 1); want == "" || got != want {
+			t.Errorf("identify takes %q on the origin and %q on the mirror's port 80", want, got)
+		}
 		mustContain(t, plain, "include snippets/openipc-reports-proxy.conf;", "the port 80 report location does not use the shared proxy")
 		mustNotMatch(t, `(?m)^location .*club`, plain, "the Club over plain HTTP would send its session cookie in clear")
 		mustMatch(t, `proxy_pass\s+http://openipc\.org;`, plain, "ipctool is not proxied from the origin's port 80, the only place it is served")
 		origin := block(org, "location = /api/v1/reports {")
-		for _, d := range []string{"client_max_body_size", "client_body_timeout", "proxy_request_buffering", "proxy_read_timeout", "proxy_send_timeout"} {
+		for _, d := range []string{"client_body_timeout", "proxy_request_buffering", "proxy_read_timeout", "proxy_send_timeout"} {
 			re := regexp.MustCompile(`(?m)^\s*` + d + `\s+(\S+);`)
 			if want, got := find(origin, re, 1), find(up, re, 1); want == "" || got != want {
 				t.Errorf("%s is %q on the origin's report upload and %q on the mirror's", d, want, got)
+			}
+		}
+		mustNotMatch(t, `(?m)^\s*client_max_body_size`, up, "the shared proxy sets the size, and a location that sets its own is a duplicate nginx refuses")
+		for name, loc := range map[string]string{
+			"HTTPS":   find(reports, regexp.MustCompile(`(?s)(location ~ \^/api/v1/\(\?:reports\$\|club/\) \{.*?\n\})`), 1),
+			"port 80": find(plain, regexp.MustCompile(`(?s)(location = /api/v1/reports \{.*?\n\})`), 1),
+		} {
+			if want, got := find(origin, size, 1), find(loc, size, 1); want == "" || got != want {
+				t.Errorf("a report may be %q on the origin and %q on the mirror's %s", want, got, name)
 			}
 		}
 		mustMatch(t, `X-Forwarded-For\s+\$proxy_add_x_forwarded_for;`, up, "the reader's address is not forwarded")
