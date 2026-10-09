@@ -30,8 +30,11 @@ export function atomXml(posts: Post[] = POSTS): string {
   ];
   for (const post of posts) {
     const url = `${SITE}${newsPath(post)}`;
-    // Absolute links: a feed reader has no page to resolve `/club` against.
-    const content = renderPost(post, 'en').replace(/(href|src)="\/(?!\/)/g, `$1="${SITE}/`);
+    // Absolute links: a feed reader has no page to resolve `/club` or a
+    // section's `#details` against.
+    const content = renderPost(post, 'en')
+      .replace(/(href|src)="\/(?!\/)/g, `$1="${SITE}/`)
+      .replace(/(href)="#/g, `$1="${url}#`);
     out.push(
       '  <entry>',
       `    <title>${escapeXml(post.title)}</title>`,

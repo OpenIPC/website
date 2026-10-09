@@ -136,8 +136,14 @@ describe('/news.atom', () => {
       const content = one(entry, 'content')[0];
       expect(content.getAttribute('type')).toBe('html');
       // A feed reader has no page to resolve a site-relative link against.
-      expect(content.textContent).not.toMatch(/(href|src)="\/(?!\/)/);
+      expect(content.textContent).not.toMatch(/(href|src)="[/#](?!\/)/);
     });
+  });
+
+  test("points a section link at the post's own address", () => {
+    const xml = atomXml([post('See [below](#below) and [boards](/cameras/boards).')]);
+    expect(xml).toContain('href=&quot;https://openipc.org/news/test#below&quot;');
+    expect(xml).toContain('href=&quot;https://openipc.org/cameras/boards&quot;');
   });
 
   test('escapes what it carries', () => {
