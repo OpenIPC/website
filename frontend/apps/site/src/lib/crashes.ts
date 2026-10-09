@@ -159,6 +159,21 @@ export const decideCrash = (id: string, t: Triage) =>
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(t),
   });
 
+/**
+ * A crash's text with majestic's log section first. The text is sections
+ * headed "==> name <==" (the dump's header, its log, threads, memory map;
+ * for a kernel crash, its pstore records); what majestic logged last is
+ * what a maintainer reads first, so "log" leads and the rest keep their
+ * order. Text without one is returned as it is.
+ */
+export function logFirst(text: string): string {
+  const parts = text.split(/(?=^==> .+ <==$)/m);
+  const at = parts.findIndex((p) => p.startsWith('==> log <=='));
+  if (at <= 0) return text;
+  const log = parts[at].endsWith('\n') ? parts[at] : `${parts[at]}\n`;
+  return [log, ...parts.slice(0, at), ...parts.slice(at + 1)].join('');
+}
+
 /** A frame as a backtrace prints it: fn [module]. */
 export const frame = (f: Frame) => (f.module ? `${f.fn} [${f.module}]` : f.fn);
 

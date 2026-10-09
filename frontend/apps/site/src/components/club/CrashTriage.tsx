@@ -19,7 +19,7 @@ import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { ClubError, fetchMe } from '../../lib/club';
 import {
-  decideCrash, fetchCrashDetail, fetchTriage, frame, frameAt, KIND_TONE, STATUS_TONE, type Combo, type Detail, type Frame, type Signature,
+  decideCrash, fetchCrashDetail, fetchTriage, frame, frameAt, KIND_TONE, logFirst, STATUS_TONE, type Combo, type Detail, type Frame, type Signature,
   type Status,
 } from '../../lib/crashes';
 
@@ -223,7 +223,7 @@ function Crash({ d, t, shown, focused, scrollTo }: { d: Detail; t: BoardsT; show
       {d.symbolization && <Symbolized s={d.symbolization} t={t} />}
       {d.leadup.length > 0 && <pre class="mt-2 mb-0 overflow-x-auto rounded bg-surface-alt p-2 font-mono text-[11.5px]">{d.leadup.join('\n')}</pre>}
       {d.meta != null && <pre class="mt-2 mb-0 max-h-60 overflow-auto rounded bg-surface-alt p-2 font-mono text-[11.5px]">{JSON.stringify(d.meta, null, 2)}</pre>}
-      {d.log && <pre class="mt-2 mb-0 max-h-96 overflow-auto rounded bg-ink p-2 font-mono text-[11.5px] text-white">{d.log}</pre>}
+      {d.log && <pre class="mt-2 mb-0 max-h-[70vh] overflow-auto rounded bg-ink p-2 font-mono text-[11.5px] text-white">{logFirst(d.log)}</pre>}
     </details>
   );
 }
