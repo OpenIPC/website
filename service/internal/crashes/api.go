@@ -363,8 +363,9 @@ func isHex(c byte) bool {
 
 var (
 	// ipv4 is a dotted quad; replace refuses one inside a longer dotted
-	// number (a version, 4.9.37.1.2).
-	ipv4 = regexp.MustCompile(`(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}`)
+	// number (a version, 4.9.37.1.2). An octet is never written with a
+	// leading zero, and a version often is: OpenIPC's own are 2.6.10.05.
+	ipv4 = regexp.MustCompile(`(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}`)
 	// ipv6: eight groups, or fewer with "::". Never a time (17:57:19) or a
 	// register dump (9dc0:), which have neither.
 	ipv6 = regexp.MustCompile(`(?i)(?:[0-9a-f]{1,4}:){7}[0-9a-f]{1,4}|(?:[0-9a-f]{1,4}:){1,7}:(?:[0-9a-f]{1,4}(?::[0-9a-f]{1,4}){0,6})?|::(?:[0-9a-f]{1,4}(?::[0-9a-f]{1,4}){0,6})?`)

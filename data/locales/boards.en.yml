@@ -49,7 +49,7 @@ en:
     club_crashes:
       eyebrow: 'OpenIPC Club'
       title: 'Crash triage'
-      lede: 'Kernel crashes cameras sent, worst first, with what it takes to reproduce each one.'
+      lede: 'Crashes cameras sent, the kernel''s and majestic''s, worst first, with what it takes to reproduce each one.'
     crashes:
       eyebrow: 'OpenIPC firmware'
       title: 'Kernel crashes from the field'
