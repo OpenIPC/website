@@ -75,7 +75,7 @@ func TestBlockedNetsGoToTheMirror(t *testing.T) {
 		}
 	})
 
-	t.Run("the redirect is the HTTPS vhost's, and on port 80 only ipctool's", func(t *testing.T) {
+	t.Run("the redirect is the HTTPS vhost's, and on port 80 only ipctool's and its report's", func(t *testing.T) {
 		servers := strings.Split("\n"+directives(v), "\nserver {")
 		if len(servers) != 3 {
 			t.Fatalf("expected two server blocks in org.openipc, found %d", len(servers)-1)
@@ -87,8 +87,12 @@ func TestBlockedNetsGoToTheMirror(t *testing.T) {
 		tools := block(plain, "location ~ ^/(ipctool|ipctool-mips32|ipctool-arm64)$ {")
 		mustMatch(t, `if \(\$openipc_blocked_net\) \{\s*return 302 http://openipc\.ru\$request_uri;`, tools,
 			"a cut-off network fetching ipctool is not sent to the mirror's plain HTTP, where it gets through")
-		if strings.Count(plain, "openipc_blocked_net") != 1 {
-			t.Error("port 80 redirects more than ipctool: stock firmware sends its report there and follows no redirect")
+		// A 307, not a 302: the report is a POST and its body has to follow.
+		report := block(plain, "location = /api/v1/reports {")
+		mustMatch(t, `if \(\$openipc_blocked_net\) \{\s*return 307 http://openipc\.ru\$request_uri;`, report,
+			"a cut-off network's report is not sent to the mirror's plain HTTP, and freezes at its first kilobytes")
+		if strings.Count(plain, "openipc_blocked_net") != 2 {
+			t.Error("port 80 redirects more than ipctool and its report")
 		}
 		mustNotContain(t, directives(vhost(t, "org.openipc.dev")), "openipc_blocked_net",
 			"dev would send its testers to the production mirror")

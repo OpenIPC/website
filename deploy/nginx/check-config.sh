@@ -721,13 +721,14 @@ for probe in "GET /ru/get-started?a=1" "POST /snapshots" "GET /api/v1/wizard/gk7
     fail=1
   fi
 done
-# On port 80 only ipctool's downloads go, to the mirror's own port 80; the
-# report upload stays, since ipctool follows no redirect.
+# On port 80 ipctool's downloads and its report go to the mirror's own port
+# 80 -- the report with a 307, so the POST follows as it is.
 plain_blocked() {
   curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 5 --interface 127.0.0.3 \
     --resolve "openipc.org:80:127.0.0.1" "$@" 2>/dev/null
 }
-for probe in "302 GET /ipctool http://openipc.ru/ipctool" "302 GET /ipctool-mips32 http://openipc.ru/ipctool-mips32"; do
+for probe in "302 GET /ipctool http://openipc.ru/ipctool" "302 GET /ipctool-mips32 http://openipc.ru/ipctool-mips32" \
+             "307 POST /api/v1/reports http://openipc.ru/api/v1/reports"; do
   set -- $probe
   got=$(plain_blocked -X "$2" "http://openipc.org$3")
   if [ "$got" = "$1 $4" ]; then
@@ -737,14 +738,15 @@ for probe in "302 GET /ipctool http://openipc.ru/ipctool" "302 GET /ipctool-mips
     fail=1
   fi
 done
-# The report has to reach the service (the stub answers 200, with the
-# location's X-Served-By): a redirect, a 5xx or no answer means it does not.
+# Identify stays: it is a few kilobytes, which the freeze lets through. It
+# has to reach the service (the stub answers 200, with the location's
+# X-Served-By): a redirect, a 5xx or no answer means it does not.
 got=$(curl -sS -o /dev/null -D - --max-time 5 --interface 127.0.0.3 --resolve "openipc.org:80:127.0.0.1" \
-  -X POST "http://openipc.org/api/v1/reports" 2>/dev/null | tr -d '\r' | awk 'NR==1{s=$2} tolower($1)=="x-served-by:"{b=$2} END{print s" "b}')
+  -X POST "http://openipc.org/api/v1/boards/identify" 2>/dev/null | tr -d '\r' | awk 'NR==1{s=$2} tolower($1)=="x-served-by:"{b=$2} END{print s" "b}')
 if [ "$got" = "200 go" ]; then
-  printf '  %-32s %-5s (POST over HTTP from a blocked network, reaches the service)\n' /api/v1/reports 200
+  printf '  %-32s %-5s (POST over HTTP from a blocked network, reaches the service)\n' /api/v1/boards/identify 200
 else
-  printf '  %-32s %-5s MISMATCH: a report over HTTP from a blocked network does not reach the service\n' /api/v1/reports "$got"
+  printf '  %-32s %-5s MISMATCH: identify over HTTP from a blocked network does not reach the service\n' /api/v1/boards/identify "$got"
   fail=1
 fi
 expect $FW                          200 go     hsts
