@@ -5,81 +5,83 @@ summary: "GK7201V200 is supported, a motorised lens can be set from a ladder by 
 author: OpenIPC team
 ---
 
-## GK7201V200 is supported
+What turned up this week:
 
-The cheapest ARM part XiongMai puts on a board, at 600 MHz. Builds for it are
-in CI with the rest.
+- **GK7201V200 is supported** — the cheapest ARM part at 600 MHz on XiongMai
+  boards.
 
-## Focusing by ear
+- **A new page on motorised lenses.** The camera focuses itself and the lens
+  can be driven from the web interface, but the interesting part is focusing
+  by ear. An installer up a ladder has no time to look at a phone, so the
+  camera beeps: the sharper the picture, the faster and higher the beeps. Go
+  past the best point and you get a low note. Come back and it is a steady
+  tone, which means stop turning. You can listen to part of the frame rather
+  than all of it: a plate under a lamp, a doorway across a yard.
+  <https://github.com/OpenIPC/wiki/blob/master/en/autofocus.md>
+  <https://github.com/OpenIPC/wiki/blob/master/en/autofocus.md#focusing-by-ear>
 
-A camera with a motorised lens can be focused from the web interface and can
-focus itself. The part worth having is neither: an installer up a ladder has
-no spare hand for a phone, so the sharpness reading becomes a sound.
+- **A new page on shooting in almost complete darkness**: a telescope, an
+  X-ray screen, a night sky. It all rests on one rule: the exposure cannot be
+  longer than the frame itself. There is no separate long-exposure mode, there
+  is a slow camera. Want a five second exposure — the camera has to produce
+  one frame every five seconds.
 
-The beeps come faster and higher the closer the picture is to the best it has
-been. Go past the sharpest point and you get a low note; come back and it
-turns into one held tone, which is the signal to stop turning. A rising
-two-note chime means a new and clearly sharper point has been found, so keep
-going.
+  Hence the main trap, the one that costs people an evening. The sensor's
+  speed is set by the stream frame rates, not by the sensor profile, and both
+  streams have to be slowed. Leave the second at its factory fifteen frames
+  and the exposure stops at 66 milliseconds however high you set it, while the
+  camera looks broken. Below one frame per second the streams cannot go: past
+  that a fraction goes in the sensor profile. On an IMX335 at 5 MP the limit
+  is about 7.7 seconds.
 
-You can also point the sound at part of the frame rather than all of it — a
-plate under a lamp, a doorway across a yard — and the camera outlines the
-cells of its focus grid that the rectangle covers.
+  Heat was measured too, and it barely matters: at room temperature the
+  thermal noise is lost in the ordinary noise. What does grow is the number of
+  hot pixels, the ones that glow on their own. Even those come to under one
+  percent of the frame in a quarter of an hour, and they are easy to remove:
+  a hot pixel is always in the same place, so a frame shot with the lens
+  capped subtracts it.
+  <https://github.com/OpenIPC/wiki/blob/master/en/very-long-exposure.md>
 
-The page also covers the lens controls, what an autofocus pass actually does,
-and the calibration tool in the raw editor's Focus tab. Every screenshot comes
-from one camera: a Hi3516EV300 with an IMX335 and a XiongMai motorised zoom
-block.
+- **The camera adjusts the picture to the weather.** It was set up on
+  installation day, for that day's weather, and then fog arrives, or the sun
+  drops low and the frame holds bright sky and deep shade at once. The camera
+  now watches what it is sending and moves up to four settings. On by default
+  since the September builds. It works quietly: if the picture is fine, it
+  touches nothing.
+  <https://github.com/OpenIPC/wiki/blob/master/en/automatic-image-tuning.md>
 
-## Exposures measured in seconds
+- **Tuning the picture with the vendor tools, written out end to end**: how to
+  export a profile, where to put it so it survives a reboot, and how to bake
+  it into firmware. It also explains an old oddity: you set a value and it
+  comes back. That is the camera moving the same settings at the same time as
+  you. It can now be told not to interfere while you work. It saves nothing
+  while it holds off, so take the result yourself.
+  <https://github.com/OpenIPC/wiki/blob/master/en/image-quality-tuning.md>
 
-For a telescope, an X-ray screen, a fluorescence rig or a night sky. One rule
-governs every setting on the page: **a frame cannot be exposed for longer than
-it lasts.** There is no long-exposure mode, only a slow camera, so a five
-second exposure means a sensor running at one frame every five seconds.
+- **The IR-cut filter and the lamp each have their own mode now**: automatic,
+  by hand, or leave it alone. "Leave it alone" does not mean "not wired": the
+  pins stay configured, and only who decides changes. Worth remembering when
+  looking for a cause: a filter sitting open in daylight turns the picture
+  pink, and the mode may be at fault rather than the wiring. There is also a
+  new pause on the switch, for anyone who was seeing a colour frame slip
+  through.
+  <https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md#who-moves-the-filter-and-the-lamp>
 
-The trap that costs people an afternoon is where that rate comes from. It is
-not `Isp_FrameRate` in the sensor profile; it is the stream frame rates, and
-they apply whether or not anything is watching. Leave the second stream at its
-default of 15 and exposure stops at 66 ms however high you set it. Both
-streams have to come down. Below one frame per second the streams cannot go,
-and a fraction in the sensor profile takes over. On an IMX335 at 5 MP the
-ceiling is about 7.7 seconds.
+- **The camera counts how much it has written to the card** and shows it on
+  the card page. The counter lives on the card itself and travels with it into
+  another camera. A large number means nothing bad on its own; it is mileage.
+  <https://github.com/OpenIPC/wiki/blob/master/en/sd-card-diagnostics.md#written-by-this-camera>
 
-The page also settles the usual warning about heat. At room temperature in a
-light-tight box, dark current on this sensor was too small to measure: the
-frame would need more than an hour and a half to fill from it. What does grow
-is hot pixels, and even at a quarter of an hour they are under one percent of
-the frame — and they sit in the same place every time, so a dark frame
-subtracts them exactly.
+- **A raw frame straight off the sensor**, with no processing, is now served
+  by SigmaStar and by Ingenic T31 and T23 as well. It used to be HiSilicon and
+  Goke only. On SigmaStar and T23 it is off by default; the pages say why and
+  how to turn it on.
+  <https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md#on-sigmastar>
+  <https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md#on-ingenic-t31-and-t23>
 
-## Tuning the picture
-
-Two pages, for the two ends of it.
-
-**Automatic image tuning** watches the picture the camera is sending and moves
-up to four settings to follow it, because settings chosen on installation day
-were chosen for that day's weather. It is on by default from the September
-builds, and deliberately undramatic: on a picture that already uses its range
-it does nothing.
-
-**Tuning it yourself with the vendor tools** is now written down end to end:
-exporting a profile, putting it somewhere that survives a reboot, and baking
-it into a firmware image. It also explains the old puzzle where a value you
-set comes back on its own — that is the camera moving the same settings while
-you work, and it can now be told to keep its hands off for the session.
-
-## Also
-
-- **The IR-cut filter and the lamp each have a mode of their own** now:
-  automatic, manual, or left alone. None of the three means "nothing is
-  wired", which is worth knowing when a filter sitting open in daylight gives
-  you a pink picture.
-- **How much this camera has written to the card**, kept on the card itself so
-  it travels with it. A large number is mileage, not a diagnosis.
-- **Raw frames on SigmaStar and Ingenic T31/T23**, where it used to be
-  HiSilicon and Goke only. Off by default on SigmaStar and T23.
-- **Smaller things**: the raw editor's screenshots were retaken, all from one
-  scene and with a real colour chart, and its tabs go by their current names;
-  more SSC377D detail in the GPIO tables; and the table of contents had a
-  tidy.
+- **Smaller things**: the raw editor's screenshots were replaced — they are
+  now from one scene and with a real colour chart, and the tabs go by their
+  new names. More SSC377D detail was added. The links in the table of contents
+  had a tidy.
+  <https://github.com/OpenIPC/wiki/blob/master/en/raw-editor.md>
+  <https://github.com/OpenIPC/wiki/blob/master/en/gpio-settings.md>

@@ -1,111 +1,86 @@
 ---
 title: A camera with no speaker plays tunes, and shares itself by link
 date: 2026-10-03
-summary: "The IR-cut filter's coil becomes a buzzer that plays Nokia ringtones, Wi-Fi is set up by showing the camera a QR code, and a share link lets someone watch without a port forward."
+summary: "The IR-cut filter's coil becomes a buzzer that plays Nokia ringtones, Wi-Fi is set up by showing the camera a QR code, and a camera can be shown to anyone by a link."
 author: OpenIPC team
 ---
 
-## A camera with no speaker can play tunes
+What's new:
 
-Most cameras have no speaker. Nearly all of them have an IR-cut filter: a
-small shutter moved by a coil. Pulse that coil and it clicks; pulse it a few
-hundred times a second and it buzzes at a pitch you choose.
+- **A camera can beep even with no speaker in it.** It beeps with the
+  infrared filter: the coil that moves it clicks on every pulse, and a few
+  hundred pulses a second turn the clicks into a hum whose pitch you choose.
+  Exactly how the Commodore 1541 drive was made to sing in 1985 — it played
+  *Daisy Bell* with its head. The firmware has ready-made cues, and you can
+  send a tune of your own in RTTTL. That is the Nokia ringtone format: any of
+  those thousands of tunes plays unchanged. Handy for hearing that a camera
+  has booted or that the network is gone, and for working out which of five
+  cameras on the roof is the one.
+  <https://github.com/OpenIPC/wiki/blob/master/en/ircut-tunes.md>
 
-That is the trick the Commodore 1541 drive-music demo used in 1985 to play
-*Daisy Bell* on a floppy drive's head, and majestic now uses it. There are
-built-in cues, and `/night/chime?rtttl=...` plays anything written in RTTTL —
-the Nokia ringtone format, so any of the thousands of old Nokia ringtones
-plays as it is.
+- **Wi-Fi is set up with a QR code**: show the camera a code and it reads it
+  itself. Firmware with the scanner looks for a code for half a minute after
+  power-on. A code from [our generator](/tools/qr-code-generator) will do, and
+  so will the one a phone shows when it shares its network; spaces and
+  non-Latin letters in the password are no trouble. The camera first makes
+  sure the network lets it in, and only then saves. It reports the result on
+  that same filter: two short rising notes — the code was read; four notes up
+  — connected, got an address, saving and rebooting; three low buzzes — wrong
+  password. If it did not work, the camera keeps looking: fix the code on the
+  phone and show it again.
+  <https://github.com/OpenIPC/wiki/blob/master/en/wireless-settings.md#or-show-the-camera-a-qr-code>
 
-Useful for a sound when something finishes booting, when the network drops, or
-simply to find out which camera on the roof is which.
+- **A camera can be handed to your own AI assistant to identify.** The
+  procedure for it is at [agents.md](/agents.md), and
+  [the report page](/cameras/report) has a ready-made line: copy it to the
+  assistant and it works on its own from there. First it runs ipctool and
+  asks the catalogue whether it knows the board. It does — that is it, take
+  the firmware. It does not — the assistant takes the boot log and the U-Boot
+  environment, reads the flash with your permission, and sends a report. The
+  rules are on the page too: the camera has to be yours, no guessing
+  passwords, and the whole flash only with permission, because your Wi-Fi
+  passwords are in it. Nothing goes anywhere until the project team has
+  reviewed the report, and the MAC, the die number and the cloud id are
+  replaced with hashes when it is published.
+  <https://openipc.org/cameras/report>
+  <https://openipc.org/agents.md>
 
-## Wi-Fi by showing the camera a QR code
+- **The board catalogue.** Every board we have, sorted by maker: one board,
+  one card, even if five sources wrote about it. Open a card and you see what
+  each of them says — the maker's documentation, a seller's firmware, the
+  Anjoy Vision archive, what owners sent in. Search goes by the text and not
+  only the name, so a board is found by a chip marking or by a line out of a
+  boot log. What you have open is what is in the address: send the link and
+  the other person sees exactly that.
+  <https://openipc.org/cameras/boards>
 
-Firmware with the scanner looks for a code for about half a minute after boot.
-It takes the code [OpenIPC's generator](/tools/qr-code-generator) makes and
-the one a phone shows when it shares its network; spaces and non-Latin
-characters in the name or password are fine.
+- **The OpenIPC Club.** Got a board? Tell us about it straight from its page:
+  the boot log, the U-Boot console, ipctool's output, photos, a flash dump.
+  Sign in and what you sent stays yours; you can sign in through the Telegram
+  bot, through GitHub, or by a link to your email. Each accepted item earns a
+  star, and a dump we did not have earns ten. Dumps are seen by you and the
+  project team only.
+  <https://openipc.org/club>
 
-The camera joins the network before it saves anything, and reports what
-happened on that same filter:
+- **A camera can be shown by a link.** You make the link on the camera itself
+  and send it to whoever you like: they open it in a browser and see the
+  camera. No port to forward and no VPN to raise. The link's key sits in the
+  address after the hash, and browsers do not send that part of an address to
+  a server — so we do not have it, and the camera and the guest check each
+  other themselves. The link opens not just the picture but the camera's whole
+  interface. And if you gave view-only access, the guest gets a player with
+  sound, a snapshot and full screen: WebRTC first, under a second of latency;
+  if that will not go, MSE; MJPEG at worst.
 
-| you hear | meaning |
-| --- | --- |
-| two quick rising notes | the code was read |
-| a rising four-note run | joined, got an address, saving and rebooting |
-| three low buzzes | the network refused the password |
-| high-low, twice | no network by that name answered |
-| three falling notes | no code seen; scanning has stopped |
+Also worth a look:
 
-After a failure it reconnects to whatever it had and keeps looking, so you can
-fix the code on your phone and show it again.
+- **The supported hardware page** opens with four ways to install OpenIPC,
+  easiest first: buy a camera that already has it; switch your own over the
+  air with a Coupler image; open it up and read the chip marking; ask the
+  community. Then comes the chip table, and each one says whether it installs
+  by the guide, is for the experienced only, or cannot be done yet.
+  <https://openipc.org/supported-hardware>
 
-## Showing a camera by link
-
-A camera with a live share holds a connection out to a relay. Whoever opens
-the link is told how to reach the camera, and from then on the video goes
-straight between the browser and the camera. No port to forward and no VPN to
-set up.
-
-The link's key sits after the hash, and browsers never send that part of an
-address to a server, so the relay does not have it: the camera and the page
-prove themselves to each other, bound to both ends' connection fingerprints.
-A service worker carries the camera's own pages through the same tunnel, so
-the link hands over the camera rather than a view of it.
-
-A guest with a view-only link gets a real player: WebRTC first for sub-second
-latency, MSE where WebRTC will not go, and the camera's MJPEG as a floor, with
-sound on request, a snapshot that downloads, and full screen.
-
-## Put an AI coding agent to work on a camera
-
-[agents.md](/agents.md) is a protocol page for an AI coding agent, and
-[the report page](/cameras/report) has the line to paste. The agent gets
-ipctool's output, asks the catalogue whether the board is already known and
-stops there with its firmware if it is; otherwise it collects the boot log and
-the U-Boot environment, reads the flash if the owner agrees, and posts the lot
-as a report.
-
-The rules are on the page: only a camera its owner can open, no password
-guessing, and ask before reading the whole flash, because that holds their
-Wi-Fi keys. Nothing is published before a maintainer has reviewed it, and the
-MAC, the die ID and the cloud ID are hashed in anything that is.
-
-## The board catalogue
-
-Every camera board on record is [in the catalogue](/cameras/boards), grouped
-by maker: one card per board however many sources describe it. Open a card and
-you see what each of them says — the maker's documentation, a seller's
-firmware, Anjoy Vision's archive, and what owners have sent in.
-
-Search reads the text rather than only the names, so a board is found by a
-chip marking or by a line out of a boot log. Whatever you are looking at is
-in the address, so the link you send shows somebody else exactly that.
-
-## The OpenIPC Club
-
-Have a board? Tell us about it from its own page: the boot log, the U-Boot
-console, ipctool's output, photos, a flash dump. [Sign in](/club) and what you
-sent stays yours — through the Telegram bot, through GitHub, or by a link to
-your email.
-
-Each accepted item earns a star, and a dump the catalogue did not have earns
-ten. Dumps are visible to you and the project team only.
-
-## Supported hardware, written for owners
-
-Owners said [the page](/supported-hardware) was too technical: it asked which
-chip at which stage of development, and step one was running ipctool, which
-needs a serial console or a way into the vendor's Linux.
-
-It now opens with four ways in, easiest first. Buy a camera with OpenIPC
-already on it; switch one over the air with a Coupler image; open the case and
-read the chip; or ask the community. The chip table follows, with a column
-that answers the question people actually have: guided install, experts only,
-or not yet.
-
-The [firmware explorer](/firmware-explorer) was turned around the same way. It
-used to ask which CI built the image, which is nobody's question; you now pick
-the chip, then the variant, then the build from a calendar of the nights that
-built it.
+- **Firmware is now looked up by chip**: pick the chip, then the variant, then
+  the build from a calendar of the nights it was built on.
+  <https://openipc.org/firmware-explorer>

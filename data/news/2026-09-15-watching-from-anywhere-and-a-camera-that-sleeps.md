@@ -1,77 +1,65 @@
 ---
 title: Watching from anywhere, and a camera that sleeps
 date: 2026-09-15
-summary: "Watch a camera from anywhere without a vendor, cut its power draw in half when nobody is looking, and get a clip out of one that has no memory card at all."
+summary: "Your own cloud view of a camera without a vendor, a camera that halves its power draw when nobody is watching, encrypted recordings, and swapping the SD card without stopping the stream."
 author: OpenIPC team
 ---
 
-A fortnight of work on the wiki, most of it describing firmware that had
-landed without anyone writing it down.
+What turned up that is worth a look:
 
-## Watch a camera from anywhere, without a vendor
+- **Your own "cloud" view of a camera from anywhere** — no port forwarding, no
+  dynamic DNS, no vendor server. The camera pushes its video over WHIP to your
+  own VPS and you watch it in a browser; latency is a couple of hundred
+  milliseconds instead of the several seconds HLS costs.
+  <https://github.com/OpenIPC/wiki/blob/master/en/howto-self-hosted-cloud-camera.md>
 
-Flashing OpenIPC removes the manufacturer's cloud, which is usually the point.
-It also removes the thing that made the vendor's app convenient: the camera
-dialling out, so nothing had to be opened on the router.
+- **The camera sleeps when nobody is watching**: the sensor and the image
+  pipeline stop, not just the encoders. 2.06 W → 1.01 W on a Hi3516EV300 with
+  an IMX335, while RTSP, the API and the microphone keep working.
+  <https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md#stopping-the-sensor-and-isp-when-nothing-is-watching>
 
-A camera can now push its video over WHIP to a server you control, and you
-watch it in a browser. Latency is a few hundred milliseconds against the
-several seconds an HLS setup costs. The guide uses MediaMTX on the cheapest
-VPS; the video passes through untouched, so the relay does no transcoding.
+- **HLS no longer conflicts with recording** — the two together are cheaper:
+  the playlist points at the clip already being written to the card, nothing
+  is held in RAM, and the live edge is about a second behind rather than a
+  whole GOP.
+  <https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md#live-hls>
 
-## A camera that sleeps when nobody is watching
+- **Encrypted recordings on the card**: four modes and an honest table of what
+  each one really protects against — the card stolen, the flash cloned, the
+  whole camera carried off. And why the old `records.key` was not encryption
+  and is gone.
+  <https://github.com/OpenIPC/wiki/blob/master/en/recording-encryption.md>
 
-Turning both streams off stops the encoders, but the sensor and the image
-pipeline keep running, and that is where most of the power goes. On HiSilicon
-and Goke the camera can now stop those too. Measured at the PoE port on a
-Hi3516EV300 with an IMX335:
+- **Detections are published in one format for everything**: a websocket, an
+  HTTP endpoint, an overlay in the browser, ONVIF metadata, a track inside the
+  recording, and a per-day index the timeline is drawn from.
+  <https://github.com/OpenIPC/wiki/blob/master/en/analytics-metadata.md>
 
-| state | power | die temperature |
-| --- | --- | --- |
-| both streams and audio | 2.06 W | 62.1 °C |
-| encoders off, sensor still running | 1.77 W | 56.2 °C |
-| idle-suspended | 1.01 W | 49.5 °C |
+- **Changing the SD card on a running camera**: a wizard in the web interface
+  closes the current clip, unmounts the card and waits for the next one — the
+  stream is not interrupted. And an explanation of why, on firmware older than
+  September, pulling the card silently killed the slot until a reboot.
+  <https://github.com/OpenIPC/wiki/blob/master/en/sd-card-swap.md>
 
-Audio, RTSP, the web server and the API keep running throughout.
+- **Raw**: a frame straight off the sensor as Adobe DNG, and an editor in the
+  browser — develop it, measure the sensor, calibrate colour against a chart
+  (HiSilicon and Goke).
+  <https://github.com/OpenIPC/wiki/blob/master/en/raw-editor.md>
+  <https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md#raw-sensor-data-as-adobe-dng>
 
-## HLS runs beside recording now
+- **A second camera**: a USB (UVC) webcam is published beside the built-in one
+  as a source of its own, with its own streams. The Goke gk7205v200/v500 OTG
+  builds have it first; other platforms follow as they are tested on hardware.
+  <https://github.com/OpenIPC/wiki/blob/master/en/majestic-streamer.md#a-second-camera>
 
-The two used to be mutually exclusive. Running both is now the better
-configuration rather than merely a permitted one: when the camera is
-recording, the playlist describes byte ranges of the clip on the card instead
-of holding a second copy in RAM, so it costs no memory, and the live edge is
-about a second behind rather than a whole keyframe interval.
+- **Setting audio levels by ear, from the web interface**: play a test tone
+  through the speaker, set the microphone level from what comes back, and
+  listen to the result.
+  <https://github.com/OpenIPC/wiki/blob/master/en/audio-soundcheck.md>
 
-## Encrypted recordings
-
-`records.encryption` decides what a thief gets when the card is pulled. There
-are four modes, and the page is a table of what each one survives: the card
-copied, the flash cloned, the camera stolen with a shell on it, the camera
-dead. Only one of them survives a stolen camera, and it is the one where the
-camera cannot play its own recordings.
-
-The old `records.key`, which XORed the payload with a repeating key kept in
-plain text beside it, was obfuscation rather than encryption and has been
-removed.
-
-## What the camera detects, and what to do about it
-
-Detections are now published once, in one shape, and everything reads the same
-answer: a websocket, a polling endpoint, a browser overlay, an ONVIF metadata
-stream, a track inside the recording, and a per-day index the recordings page
-draws a timeline from.
-
-A second page covers the practical half — the two moments you can hook, the
-script that runs when a clip closes, and how to get a clip at all on a camera
-with no card, by asking its own HTTP server for one.
-
-## Also
-
-- **Changing the SD card on a running camera**, with a guided swap that closes
-  the current clip first. On firmware older than September, pulling a card
-  cost you the slot until a reboot, with nothing in the log to explain it.
-- **Raw frames as Adobe DNG**, and a raw editor that opens one in the browser:
-  develop, measure the sensor, calibrate colour from a chart.
-- **A USB webcam as a second camera**, on Goke OTG builds first.
-- **Setting audio levels by ear** from the browser, with a test tone and a
-  microphone meter, since the camera has no level anywhere in its API.
+- **What to do when the camera has seen something**: two hooks — one when
+  movement starts, one when a clip is finished — a worked example with a
+  script and a way to reject false alarms by the size of what moved, and how
+  to get a clip at all on a camera with no card, with
+  `GET /video.mp4?duration=N`.
+  <https://github.com/OpenIPC/wiki/blob/master/en/motion-events.md>
