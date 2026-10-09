@@ -41,11 +41,13 @@ jobs:
       - uses: actions/checkout@v4
 
       # The keyframe and variants tests decode with ffmpeg, as the service does
-      # in its image. They fail rather than skip when CI is set and it is missing.
-      - name: Install ffmpeg
+      # in its image; the crash symbolizer's unwind with gdb-multiarch and
+      # unpack firmware with unsquashfs. They fail rather than skip when CI is
+      # set and one is missing.
+      - name: Install ffmpeg, gdb-multiarch and squashfs-tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends ffmpeg
+          sudo apt-get install -y --no-install-recommends ffmpeg gdb-multiarch squashfs-tools
 
       # --- the Go service (#287) ---------------------------------------------
       - uses: actions/setup-go@v5

@@ -234,6 +234,21 @@ restores the image but never the schema, so keep migrations additive.
   merges: `bogus` takes back what a bug and the signatures merged into it
   paid, and undoing it lets the settlement pay again. A crash with a MAC is
   the camera's linked owner's, whoever sent it.
+  **majestic's own crashes** come the same way, as `/etc/crash/majestic.dump`
+  (class `user`, kind `signal`, migration 032), and are the maintainers'
+  only: never on `/crashes`, and a member is shown the signal, not where.
+  One arrives filed under a provisional signature (module and offset of the
+  faulting instruction) with its dump in `crash_dumps`; the firmware role's
+  `internal/crashes/symbolize` (woken by `NOTIFY crash_symbolize`) builds an
+  ELF core from it and unwinds it with `gdb-multiarch` against the
+  executable and debuginfo majestic's CI publishes by build-id
+  (`MAJESTIC_SYMBOLS_BASE`), naming library frames from the firmware build's
+  own rootfs (`unsquashfs` of its release tarball), and scanning the stack
+  for probable callers where gdb stops. Then the event is refiled under its
+  backtrace's signature (the crashes package's one change to an event) and
+  the dump -- majestic's memory -- is deleted. Retried for days when the
+  debuginfo is not there, then given up on. Cache under
+  `RELEASE_CACHE_ROOT/symbols`, swept after 30 days unused.
 - `internal/tools`, `internal/nfsro` — **ipctool for stock firmware**, which
   has no curl and no TLS. ipctool's release job pushes each build to
   `PUT /api/v1/tools/{name}` (OIDC, `internal/tools/PUSH.md`); nginx serves

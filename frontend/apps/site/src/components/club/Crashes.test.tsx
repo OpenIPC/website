@@ -42,3 +42,18 @@ test('a crash log is sent and filed under its bug', async () => {
   // The list reloads: the crash is there too, under its bug.
   await waitFor(() => expect(getAllByText(/RGN_PutRegion/).length).toBe(2));
 });
+
+test("a crash of majestic's is named by its signal, and not linked to the public list", async () => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    if (url === '/api/v1/club/crashes') {
+      return new Response(JSON.stringify({ crashes: [{ id: 'c-majestic2', signature: '0123456789ac', title: 'SIGSEGV (NULL pointer)',
+        kind: 'signal', status: 'open', soc: 'gk7205v300', sensor: 'imx335', received_at: '2026-10-09T01:00:00Z', self_inflicted: false,
+        camera: true }], stars: 0, rules: { report: 1, first: 3, fixed: 5, month_cap: 10 } }));
+    }
+    return new Response('{}', { status: 404 });
+  }));
+  const { findByText } = render(<Harness />);
+  const title = await findByText('SIGSEGV (NULL pointer)');
+  expect(title.closest('a')).toBeNull();
+  expect(await findByText('majestic crashed')).toBeTruthy();
+});

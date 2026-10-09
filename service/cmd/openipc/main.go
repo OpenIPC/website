@@ -29,6 +29,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -41,6 +42,7 @@ import (
 	"github.com/OpenIPC/website/service/internal/club"
 	"github.com/OpenIPC/website/service/internal/config"
 	"github.com/OpenIPC/website/service/internal/crashes"
+	"github.com/OpenIPC/website/service/internal/crashes/symbolize"
 	"github.com/OpenIPC/website/service/internal/db"
 	"github.com/OpenIPC/website/service/internal/downloads"
 	"github.com/OpenIPC/website/service/internal/drift"
@@ -625,8 +627,16 @@ func firmwareRole(ctx context.Context, cfg *config.Config, log *slog.Logger, poo
 		}
 	}
 
+	// majestic's crash dumps, unwound here because the release tarballs
+	// their libraries come from are (internal/crashes/symbolize).
+	sym := &symbolize.Worker{Pool: pool, Log: log, KeepFor: 30 * 24 * time.Hour, Symbolizer: &symbolize.Symbolizer{
+		Symbols: &symbolize.Symbols{Root: filepath.Join(cfg.ReleaseCacheRoot, "symbols"), Base: cfg.SymbolsBase},
+		Rootfs:  &symbolize.Rootfs{Root: filepath.Join(cfg.ReleaseCacheRoot, "symbols"), DB: pool, Releases: releases},
+	}}
+
 	bg, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	go index.Run(bg)
+	go sym.Run(bg)
 	return cancel, nil
 }
 
