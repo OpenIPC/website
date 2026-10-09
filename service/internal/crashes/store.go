@@ -338,6 +338,17 @@ func (s *Store) Get(ctx context.Context, id string, maintainers bool, now time.T
 	return list[0], nil
 }
 
+// SignatureOf is the signature a crash is filed under now, merges followed.
+func (s *Store) SignatureOf(ctx context.Context, eventID string) (string, error) {
+	var sig string
+	err := s.DB.QueryRow(ctx, `SELECT coalesce(sig.merged_into, sig.id) FROM crash_events e
+		JOIN crash_signatures sig ON sig.id = e.signature_id WHERE e.id = $1`, eventID).Scan(&sig)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", ErrNoSignature
+	}
+	return sig, err
+}
+
 // Combo is one SoC, sensor and build a signature was seen on.
 type Combo struct {
 	SoC         string     `json:"soc"`

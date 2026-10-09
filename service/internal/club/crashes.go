@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/OpenIPC/website/service/internal/crashes"
 )
@@ -97,6 +98,21 @@ func (a *API) crashDetail(w http.ResponseWriter, r *http.Request) {
 	}
 	st := a.Crashes.Store()
 	id := r.PathValue("id")
+	// A crash's own id (c-...) is answered with the signature it is filed
+	// under now: a link to a crash outlives the signature it arrived under,
+	// which symbolizing majestic's crashes replaces.
+	if strings.HasPrefix(id, "c-") {
+		sig, err := st.SignatureOf(r.Context(), id)
+		if errors.Is(err, crashes.ErrNoSignature) {
+			a.refuse(w, http.StatusNotFound, err.Error())
+			return
+		}
+		if err != nil {
+			a.fail(w, "the crash", err)
+			return
+		}
+		id = sig
+	}
 	g, err := st.Get(r.Context(), id, true, a.now())
 	if errors.Is(err, crashes.ErrNoSignature) {
 		a.refuse(w, http.StatusNotFound, err.Error())

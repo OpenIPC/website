@@ -72,7 +72,8 @@ it logged before it died. Send each dump
 as its own bundle -- a tar.gz holding `majestic.dump`, and `meta.json` when
 the firmware wrote one, or the dump alone as the body -- to the same
 address, with the same fields. The answer is the same, with `kind`
-`signal`, a title that names only the signal, and a `url` to `/club/crashes`.
+`signal`, a title that names only the signal, and a `url` to
+`/club/crashes/#<signature>`, the maintainers' page open at it.
 
 These are the maintainers' only. The log lines are redacted like the
 kernel's log -- MACs and addresses hashed, a URL's user and password

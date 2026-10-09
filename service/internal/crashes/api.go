@@ -192,7 +192,8 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member, channel str
 	link := strings.TrimRight(a.SiteURL, "/") + "/crashes/#" + sig
 	title := c.Fatal.Title()
 	if Class(c.Kind) == "user" {
-		link = strings.TrimRight(a.SiteURL, "/") + "/club/crashes/"
+		// The crash, not its signature: symbolizing refiles it under another.
+		link = strings.TrimRight(a.SiteURL, "/") + "/club/crashes/#" + id
 		title = c.Fatal.Reason
 	}
 	writeJSON(w, code, map[string]any{
