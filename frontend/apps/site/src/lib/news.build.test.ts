@@ -9,6 +9,10 @@ import { fileURLToPath } from 'node:url';
 import { LOCALES, pathFor } from './i18n';
 import { inLocale, newsPath, POSTS } from './news';
 import { atomXml, feedPath } from './news-feed';
+import { SITE } from './sitemap';
+
+/** pages.news.title per language, as the feed and the autodiscovery link use it. */
+const NEWS_TITLE: Record<string, string> = { en: 'News', ru: 'Новости', zh: '新闻' };
 
 const dist = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'dist');
 const page = (path: string) => readFileSync(join(dist, path.slice(1), 'index.html'), 'utf8');
@@ -44,7 +48,20 @@ describe('news in the bundle', () => {
     expect(html).not.toContain('href="/cameras/boards"');
   });
 
-  test('every page tells a feed reader where the feed is', () => {
-    expect(page('/donate')).toContain('<link rel="alternate" type="application/atom+xml" title="OpenIPC news" href="/news.atom">');
+  // In the reader's own language. This test asserted /news.atom on every
+  // page, which is how the English feed came to be advertised under /ru/.
+  test.each(LOCALES)('a %s page tells a feed reader where its own feed is', (locale) => {
+    const html = page(pathFor(locale, '/donate'));
+    expect(html).toContain(`type="application/atom+xml" title="OpenIPC — ${NEWS_TITLE[locale]}" href="${feedPath(locale)}"`);
+  });
+
+  test.each(LOCALES)('the %s feed is a feed of its own, not a copy under another name', (locale) => {
+    const xml = atomXml(POSTS, locale);
+    expect(xml).toContain(`<id>${SITE}${pathFor(locale, '/news')}</id>`);
+    // An English entry under a translated root has to say it is English.
+    for (const post of POSTS) {
+      const text = inLocale(post, locale);
+      if (text.lang !== locale) expect(xml).toContain(`<entry xml:lang="${text.lang}">`);
+    }
   });
 });
