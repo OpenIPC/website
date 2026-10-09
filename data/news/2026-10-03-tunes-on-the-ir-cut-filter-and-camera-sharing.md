@@ -1,6 +1,6 @@
 ---
 title: A camera with no speaker plays tunes, and shares itself by link
-date: 2026-10-02
+date: 2026-10-03
 summary: "The IR-cut filter's coil becomes a buzzer that plays Nokia ringtones, Wi-Fi is set up by showing the camera a QR code, and a share link lets someone watch without a port forward."
 author: OpenIPC team
 ---
@@ -71,6 +71,27 @@ The rules are on the page: only a camera its owner can open, no password
 guessing, and ask before reading the whole flash, because that holds their
 Wi-Fi keys. Nothing is published before a maintainer has reviewed it, and the
 MAC, the die ID and the cloud ID are hashed in anything that is.
+
+## The board catalogue
+
+Every camera board on record is [in the catalogue](/cameras/boards), grouped
+by maker: one card per board however many sources describe it. Open a card and
+you see what each of them says — the maker's documentation, a seller's
+firmware, Anjoy Vision's archive, and what owners have sent in.
+
+Search reads the text rather than only the names, so a board is found by a
+chip marking or by a line out of a boot log. Whatever you are looking at is
+in the address, so the link you send shows somebody else exactly that.
+
+## The OpenIPC Club
+
+Have a board? Tell us about it from its own page: the boot log, the U-Boot
+console, ipctool's output, photos, a flash dump. [Sign in](/club) and what you
+sent stays yours — through the Telegram bot, through GitHub, or by a link to
+your email.
+
+Each accepted item earns a star, and a dump the catalogue did not have earns
+ten. Dumps are visible to you and the project team only.
 
 ## Supported hardware, written for owners
 

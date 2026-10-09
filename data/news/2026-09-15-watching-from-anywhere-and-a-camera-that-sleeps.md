@@ -1,7 +1,7 @@
 ---
-title: Recording on motion, failsafe recovery, and a camera that sleeps
+title: Watching from anywhere, and a camera that sleeps
 date: 2026-09-15
-summary: "A fortnight of firmware documentation: watch a camera from anywhere without a vendor, recover a bricked Goke over the network, and cut a camera's power draw in half when nobody is watching."
+summary: "Watch a camera from anywhere without a vendor, cut its power draw in half when nobody is looking, and get a clip out of one that has no memory card at all."
 author: OpenIPC team
 ---
 
@@ -18,18 +18,6 @@ A camera can now push its video over WHIP to a server you control, and you
 watch it in a browser. Latency is a few hundred milliseconds against the
 several seconds an HLS setup costs. The guide uses MediaMTX on the cheapest
 VPS; the video passes through untouched, so the relay does no transcoding.
-
-## Failsafe mode on Goke
-
-An interrupted update used to leave a camera rebooting forever, with no
-picture, no web interface and no shell, recoverable only with a soldering
-iron. On gk7205v200 and gk7205v300 the bootloader now counts failed boots, and
-after the limit it brings the camera up with networking and SSH only. From
-there you can look at what went wrong and put it right over the network or
-from an SD card.
-
-The counter lives in RAM, so a healthy boot adds no flash wear, and pulling
-the power grants a fresh set of attempts.
 
 ## A camera that sleeps when nobody is watching
 
@@ -85,12 +73,5 @@ with no card, by asking its own HTTP server for one.
 - **Raw frames as Adobe DNG**, and a raw editor that opens one in the browser:
   develop, measure the sensor, calibrate colour from a chart.
 - **A USB webcam as a second camera**, on Goke OTG builds first.
-- **Who may call the camera over SIP**: a registering camera trusts its
-  registrar and refuses everyone else, and deployments without one name the
-  addresses or ask for a password.
-- **`isp.exposure` means three different things.** A limit in milliseconds on
-  HiSilicon, Goke and SigmaStar; the exposure itself in microseconds on
-  Ingenic, where setting it also stops the metering. Three orders of magnitude
-  apart.
 - **Setting audio levels by ear** from the browser, with a test tone and a
   microphone meter, since the camera has no level anywhere in its API.

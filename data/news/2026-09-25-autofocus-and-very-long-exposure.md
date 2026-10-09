@@ -1,9 +1,14 @@
 ---
 title: Focusing by ear, and exposures measured in seconds
 date: 2026-09-25
-summary: "A motorised lens can be set from a ladder by listening to the camera, and a page on exposures of seconds for telescopes and other very dark scenes."
+summary: "GK7201V200 is supported, a motorised lens can be set from a ladder by listening to the camera, and a page covers exposures of seconds for telescopes and other very dark scenes."
 author: OpenIPC team
 ---
+
+## GK7201V200 is supported
+
+The cheapest ARM part XiongMai puts on a board, at 600 MHz. Builds for it are
+in CI with the rest.
 
 ## Focusing by ear
 
@@ -74,3 +79,7 @@ you work, and it can now be told to keep its hands off for the session.
   it travels with it. A large number is mileage, not a diagnosis.
 - **Raw frames on SigmaStar and Ingenic T31/T23**, where it used to be
   HiSilicon and Goke only. Off by default on SigmaStar and T23.
+- **Smaller things**: the raw editor's screenshots were retaken, all from one
+  scene and with a real colour chart, and its tabs go by their current names;
+  more SSC377D detail in the GPIO tables; and the table of contents had a
+  tidy.

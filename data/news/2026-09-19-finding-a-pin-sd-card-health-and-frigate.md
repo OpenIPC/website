@@ -91,9 +91,14 @@ beside the settings that cause it.
   overriding the sensor's tuning", not "no sharpening".
 - **Number plates read in the browser** from a raw frame, and — more useful —
   an explanation of what is stopping the ones it cannot read.
+- **The self-hosted cloud camera carries sound**, from the 17 September
+  builds. Worth knowing: a camera with its microphone on starts publishing it
+  the moment it is updated, with nothing configured, which on a metered uplink
+  is a bill nobody asked for. One line on the destination keeps it quiet.
+- **Telling a camera about its own hardware**, two ways. Settings on the camera
+  itself work at once but go with a factory reset; a device profile in the
+  firmware builder is applied on first boot to every unit of that model and
+  survives one.
 - **A night lamp can burn out what you were trying to see.** Auto-exposure
   holds the average, so a bright lamp close to a face or a plate washes it out
   while the average stays where it should.
-- **`fw_setenv memsz` does nothing on SigmaStar**: the bootloader rewrites it
-  on every boot before `bootcmd`. `/proc/cmdline` is the honest answer.
-- **`isp.antiFlicker`** for the banding mains lighting leaves in the picture.
