@@ -505,3 +505,41 @@ func TestEventsLeavingOneProvisionalSignatureTogetherTidyIt(t *testing.T) {
 		t.Fatal("the provisional signature outlived its last event")
 	}
 }
+
+// withSection adds a section to a dump, before its END.
+func withSection(raw []byte, tag string, body []byte) []byte {
+	end := bytes.LastIndex(raw, []byte("END "))
+	var out bytes.Buffer
+	out.Write(raw[:end])
+	out.WriteString(tag)
+	l := len(body)
+	out.Write([]byte{byte(l), byte(l >> 8), byte(l >> 16), byte(l >> 24)})
+	out.Write(body)
+	out.Write(raw[end:])
+	return out.Bytes()
+}
+
+func TestWhatMajesticLoggedLastIsReadRedacted(t *testing.T) {
+	e := newEnv(t)
+	raw := withSection(dumpFixture(t, "arm-own.dump"), "LOGS", []byte(
+		"04:43:24 DEBUG <majestic> [sdk] sdk_take_jpeg@2003: take jpeg venc_chn(1)\n"+
+			"04:43:25 INFO  <majestic> [rtmp] push@12: pushing to rtmp://admin:s3cret@10.216.128.9/live\n"+
+			"04:43:25 ERROR <majestic> [levent] libevent_log_cb@18: Assertion failed in evbuffer_add\n"))
+	code, out := e.send(raw, nil, "10.0.6.1")
+	if code != 201 {
+		t.Fatalf("%d %v", code, out)
+	}
+	var log string
+	if err := e.pool.QueryRow(context.Background(), `SELECT redacted FROM crash_events WHERE id = $1`, out["id"]).Scan(&log); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(log, "==> log <==") || !strings.Contains(log, "Assertion failed in evbuffer_add") ||
+		!strings.Contains(log, "take jpeg venc_chn(1)") {
+		t.Fatalf("the log is not there:\n%s", log)
+	}
+	for _, leak := range []string{"s3cret", "admin:", "10.216.128.9"} {
+		if strings.Contains(log, leak) {
+			t.Fatalf("%q survived:\n%s", leak, log)
+		}
+	}
+}

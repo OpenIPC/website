@@ -31,6 +31,7 @@ import (
 //	AUXV  /proc/self/auxv
 //	MODS  text, per loaded object: build-id in hex or -, start, load bias, path
 //	THRD  text, "tid name" per thread
+//	LOGS  text, the last lines majestic logged before the crash, oldest first
 //	END   empty
 //
 // Unknown sections are skipped, so the format grows by adding them.
@@ -431,8 +432,13 @@ func parseUserCrash(raw []byte) (*Crash, *Dump, error) {
 	sort.Strings(mods)
 	c.Modules = mods
 	// What maintainers read, as the log is for a kernel crash: the header,
-	// the threads and the memory map. Never the stack.
-	c.Text = "==> majestic.dump <==\n" + string(d.Sections["HDR "]) +
+	// what majestic logged last, the threads and the memory map. Never the
+	// stack. It is redacted with the rest (Submit).
+	logs := ""
+	if l := d.Sections["LOGS"]; len(l) > 0 {
+		logs = "\n==> log <==\n" + strings.ToValidUTF8(strings.ReplaceAll(string(l), "\x00", ""), "?")
+	}
+	c.Text = "==> majestic.dump <==\n" + string(d.Sections["HDR "]) + logs +
 		"\n==> threads <==\n" + d.Threads +
 		"\n==> modules <==\n" + string(d.Sections["MODS"]) +
 		"\n==> maps <==\n" + string(d.Sections["MAPS"])

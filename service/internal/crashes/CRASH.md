@@ -67,13 +67,16 @@ listed and never pays: send real ones.
 When majestic itself dies of SIGSEGV, SIGBUS, SIGILL, SIGFPE or SIGABRT it
 leaves `/etc/crash/majestic.dump` (the previous one as `majestic.dump.1`):
 the registers at the fault, a slice of the faulting thread's stack, its
-memory map, and the build-id of every module it had loaded. Send each dump
+memory map, the build-id of every module it had loaded, and the last lines
+it logged before it died. Send each dump
 as its own bundle -- a tar.gz holding `majestic.dump`, and `meta.json` when
 the firmware wrote one, or the dump alone as the body -- to the same
 address, with the same fields. The answer is the same, with `kind`
 `signal`, a title that names only the signal, and a `url` to `/club/crashes`.
 
-These are the maintainers' only. The stack slice is majestic's memory at
+These are the maintainers' only. The log lines are redacted like the
+kernel's log -- MACs and addresses hashed, a URL's user and password
+removed -- before anyone reads them. The stack slice is majestic's memory at
 the crash and can hold what it was handling (a request, its environment):
 it is kept only until the dump is symbolized -- unwound with gdb against
 the executable and debuginfo majestic's CI publishes for the build-id, and
