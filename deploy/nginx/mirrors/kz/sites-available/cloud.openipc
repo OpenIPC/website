@@ -25,6 +25,8 @@ server {
         allow all;
     }
 
+    include snippets/openipc-reports-plain.conf;
+
     location / {
         return 301 https://$host$request_uri;
     }
@@ -54,5 +56,6 @@ server {
     # the origin would never see the request.
     client_max_body_size 1m;
 
+    include snippets/openipc-reports.conf;
     include snippets/openipc-mirror.conf;
 }
