@@ -47,7 +47,18 @@ server {
     # ipctool uploads a report over plain HTTP: stock camera firmware has no
     # TLS. Only the upload and identify are answered here; everything else
     # redirects.
+    #
+    # A network the TSPU cuts off is sent to openipc.ru's port 80, which
+    # proxies the report back here: a flash backup never gets through the
+    # freeze, and the upload sat at "Sending 0%" until it timed out
+    # (ipctool#232). 307, so the POST and its body go as they are. ipctool
+    # since that issue waits a moment for an answer to the headers before it
+    # sends the body, and follows a plain-HTTP 307; an older one reports the
+    # 307 and stops, which is quicker than the freeze.
     location = /api/v1/reports {
+        if ($openipc_blocked_net) {
+            return 307 http://openipc.ru$request_uri;
+        }
         client_max_body_size 300m;
         client_body_timeout 300;
         proxy_request_buffering off;
