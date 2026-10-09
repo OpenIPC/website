@@ -89,12 +89,14 @@ export default function CrashTriage({ locale }: { locale: Locale }) {
     );
   }
   return (
-    <div class="mt-8 grid gap-3">
+    // min-w-0 down the tree: a grid item is otherwise as wide as its widest
+    // content, and one long log line then widens the whole page.
+    <div class="mt-8 grid min-w-0 gap-3">
       {load.state === 'loading' && <div class="h-40 animate-pulse rounded-xl bg-surface-alt" aria-busy="true" />}
       {load.state === 'error' && <p class="m-0 text-[#9a5b00]" role="alert">{t('club.load_failed')}</p>}
       {load.state === 'ok' && load.list.length === 0 && <p class="m-0 text-body-secondary">{t('crashes.empty')}</p>}
       {load.state === 'ok' && load.list.map((g) => (
-        <article key={g.id} id={g.id} class={`grid gap-2 rounded-lg border p-3 ${g.merged_into || g.status === 'bogus' ? 'opacity-60' : ''} ${open === g.id ? 'border-brand-blue' : 'border-hairline'}`}>
+        <article key={g.id} id={g.id} class={`grid min-w-0 scroll-mt-20 gap-2 rounded-lg border p-3 ${g.merged_into || g.status === 'bogus' ? 'opacity-60' : ''} ${open === g.id ? 'border-brand-blue' : 'border-hairline'}`}>
           <button type="button" class="grid cursor-pointer gap-1 bg-transparent p-0 text-left" aria-expanded={open === g.id}
             onClick={() => toggle(g.id)}>
             <span class="flex flex-wrap items-center gap-2 text-[12px]">
@@ -133,7 +135,7 @@ function Open({ g, t, focus, onDone }: { g: Signature; t: BoardsT; focus: string
   };
   const field = 'min-w-0 rounded-md border border-hairline px-2 py-1 text-sm';
   return (
-    <div class="grid gap-3 border-t border-hairline pt-3 text-[13px]">
+    <div class="grid min-w-0 gap-3 border-t border-hairline pt-3 text-[13px]">
       <Backtrace frames={g.frames.slice(0, 10)} t={t} />
       <form class="grid gap-2 sm:grid-cols-2" onSubmit={save}>
         <label class="grid gap-1">{t('crashes.f_status')}
@@ -200,7 +202,7 @@ function Crash({ d, t, shown, focused, scrollTo }: { d: Detail; t: BoardsT; show
   }, [scrollTo]);
   const anomalies = Object.entries(d.anomalies ?? {});
   return (
-    <details ref={ref} id={d.id} open={shown} class={`rounded-md border p-2.5 ${focused ? 'border-brand-blue' : 'border-hairline'}`}>
+    <details ref={ref} id={d.id} open={shown} class={`min-w-0 scroll-mt-20 rounded-md border p-2.5 ${focused ? 'border-brand-blue' : 'border-hairline'}`}>
       <summary class="cursor-pointer">
         <span class="font-mono">{d.id}</span> · {d.received_at.slice(0, 16).replace('T', ' ')} · {d.channel}
         {d.self_inflicted && ` · ${t('crashes.self_inflicted')}`}
