@@ -117,3 +117,26 @@ test('an address that names no signature closes the one open', async () => {
   window.dispatchEvent(new HashChangeEvent('hashchange'));
   await waitFor(() => expect(first.getAttribute('aria-expanded')).toBe('false'));
 });
+
+test('a crash lookup that comes back after another link was followed is ignored', async () => {
+  Element.prototype.scrollIntoView = vi.fn();
+  history.replaceState(null, '', '/club/crashes/#c-slow2345');
+  let release: (r: Response) => void = () => {};
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    if (url === '/api/v1/club/crashes/triage') {
+      return new Response(JSON.stringify({ signatures: [sig('0123456789aa', 'SIGSEGV in first'), sig('0123456789bb', 'SIGSEGV in second')] }));
+    }
+    if (url === '/api/v1/club/crashes/c-slow2345') return new Promise<Response>((r) => { release = r; });
+    const m = url.match(/^\/api\/v1\/club\/crashes\/([0-9a-f]{12})$/);
+    if (m) return new Response(JSON.stringify({ signature: sig(m[1], 'x'), seen_on: [], crashes: [] }));
+    return new Response('{}', { status: 401 });
+  }));
+  const { findByText } = render(<CrashTriage locale="en" />);
+  const first = (await findByText('SIGSEGV in first')).closest('button')!;
+  fireEvent.click(first);
+  expect(location.hash).toBe('#0123456789aa');
+  release(new Response(JSON.stringify({ signature: sig('0123456789bb', 'x'), seen_on: [], crashes: [] })));
+  await new Promise((r) => setTimeout(r, 20));
+  expect(first.getAttribute('aria-expanded')).toBe('true');
+  expect((await findByText('SIGSEGV in second')).closest('button')!.getAttribute('aria-expanded')).toBe('false');
+});

@@ -47,12 +47,20 @@ export default function CrashTriage({ locale }: { locale: Locale }) {
         setOpen(hash);
         setFocus(null);
       } else if (/^c-[a-z0-9]{8}$/.test(hash)) {
+        // Applied only if the address still names it: a link followed or a
+        // signature opened meanwhile wins over a lookup that came back late.
+        const current = () => location.hash.slice(1) === hash;
         fetchCrashDetail(hash)
           .then((r) => {
+            if (!current()) return;
             setOpen(r.signature.id);
             setFocus(hash);
           })
-          .catch(() => { setOpen(null); setFocus(null); });
+          .catch(() => {
+            if (!current()) return;
+            setOpen(null);
+            setFocus(null);
+          });
       } else {
         setOpen(null);
         setFocus(null);
@@ -163,10 +171,10 @@ function Open({ g, t, focus, onDone }: { g: Signature; t: BoardsT; focus: string
           </table>
           {/* The crash named, or -- when it is not among the newest the page
               lists -- the newest. */}
-          {data.crashes.map((d, i, all) => (
-            <Crash key={d.id} d={d} t={t} focused={d.id === focus}
-              shown={all.some((c) => c.id === focus) ? d.id === focus : i === 0} />
-          ))}
+          {data.crashes.map((d, i, all) => {
+            const shown = all.some((c) => c.id === focus) ? d.id === focus : i === 0;
+            return <Crash key={d.id} d={d} t={t} shown={shown} focused={d.id === focus} scrollTo={!!focus && shown} />;
+          })}
         </>
       )}
     </div>
@@ -183,11 +191,13 @@ function Backtrace({ frames, t }: { frames: Frame[]; t: BoardsT }) {
 }
 
 /** A crash, shown open when it is the one the address names, or the newest. */
-function Crash({ d, t, shown, focused }: { d: Detail; t: BoardsT; shown: boolean; focused: boolean }) {
+function Crash({ d, t, shown, focused, scrollTo }: { d: Detail; t: BoardsT; shown: boolean; focused: boolean; scrollTo: boolean }) {
   const ref = useRef<HTMLDetailsElement>(null);
+  // A crash link scrolls to the crash it shows: the one named, or the
+  // newest when that one is older than the page lists.
   useEffect(() => {
-    if (focused) ref.current?.scrollIntoView({ block: 'start' });
-  }, [focused]);
+    if (scrollTo) ref.current?.scrollIntoView({ block: 'start' });
+  }, [scrollTo]);
   const anomalies = Object.entries(d.anomalies ?? {});
   return (
     <details ref={ref} id={d.id} open={shown} class={`rounded-md border p-2.5 ${focused ? 'border-brand-blue' : 'border-hairline'}`}>
