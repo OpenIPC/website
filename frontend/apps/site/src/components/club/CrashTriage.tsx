@@ -5,15 +5,16 @@
  * matches its kernel, and each crash's redacted log, warnings and lead-up, or
  * for majestic's, its backtrace from the debuginfo of its build.
  *
- * /club/crashes/#<signature> opens that signature: the link a maintainer
- * shares. /club/crashes/#<crash id> opens the signature that crash is filed
- * under now -- the link a sent majestic crash answers with, which outlives
- * the signature it arrived under.
+ * /club/crashes/#<signature> opens that signature, its newest crash shown:
+ * the link a maintainer shares. /club/crashes/#<crash id> opens the
+ * signature that crash is filed under now with that crash shown -- the link
+ * a sent majestic crash answers with, which outlives the signature it
+ * arrived under.
  *
  * Confirming a bug pays its first reporter, fixing it pays them again;
  * bogus takes back every star it paid. The same is `openipc crashes status`.
  */
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { ClubError, fetchMe } from '../../lib/club';
@@ -29,6 +30,8 @@ export default function CrashTriage({ locale }: { locale: Locale }) {
   const t = useBoardsTranslations(locale);
   const [load, setLoad] = useState<Load>({ state: 'loading' });
   const [open, setOpen] = useState<string | null>(null);
+  // The crash the address names, shown open in its signature.
+  const [focus, setFocus] = useState<string | null>(null);
 
   const reload = () => fetchTriage()
     .then((r) => setLoad({ state: 'ok', list: r.signatures }))
@@ -42,15 +45,25 @@ export default function CrashTriage({ locale }: { locale: Locale }) {
       const hash = location.hash.slice(1);
       if (/^[0-9a-f]{12}$/.test(hash)) {
         setOpen(hash);
+        setFocus(null);
       } else if (/^c-[a-z0-9]{8}$/.test(hash)) {
+        // Applied only if the address still names it: a link followed or a
+        // signature opened meanwhile wins over a lookup that came back late.
+        const current = () => location.hash.slice(1) === hash;
         fetchCrashDetail(hash)
           .then((r) => {
+            if (!current()) return;
             setOpen(r.signature.id);
-            history.replaceState(null, '', `#${r.signature.id}`);
+            setFocus(hash);
           })
-          .catch(() => setOpen(null));
+          .catch(() => {
+            if (!current()) return;
+            setOpen(null);
+            setFocus(null);
+          });
       } else {
         setOpen(null);
+        setFocus(null);
       }
     };
     follow();
@@ -59,11 +72,12 @@ export default function CrashTriage({ locale }: { locale: Locale }) {
   }, []);
   const listed = load.state === 'ok';
   useEffect(() => {
-    if (open && listed) document.getElementById(open)?.scrollIntoView({ block: 'start' });
-  }, [open, listed]);
+    if (open && listed && !focus) document.getElementById(open)?.scrollIntoView({ block: 'start' });
+  }, [open, listed, focus]);
   const toggle = (id: string) => {
     const next = open === id ? null : id;
     setOpen(next);
+    setFocus(null);
     history.replaceState(null, '', next ? `#${next}` : location.pathname);
   };
 
@@ -92,14 +106,14 @@ export default function CrashTriage({ locale }: { locale: Locale }) {
             </span>
             <span class="font-mono text-[14px] font-semibold break-words text-ink">{g.title}</span>
           </button>
-          {open === g.id && <Open g={g} t={t} onDone={() => { void reload(); }} />}
+          {open === g.id && <Open g={g} t={t} focus={focus} onDone={() => { void reload(); }} />}
         </article>
       ))}
     </div>
   );
 }
 
-function Open({ g, t, onDone }: { g: Signature; t: BoardsT; onDone: () => void }) {
+function Open({ g, t, focus, onDone }: { g: Signature; t: BoardsT; focus: string | null; onDone: () => void }) {
   const [data, setData] = useState<{ seen_on: Combo[]; crashes: Detail[] } | null>(null);
   const [status, setStatus] = useState<Status>(g.status);
   const [fixedIn, setFixedIn] = useState(g.fixed_in ?? '');
@@ -155,7 +169,12 @@ function Open({ g, t, onDone }: { g: Signature; t: BoardsT; onDone: () => void }
               ))}
             </tbody>
           </table>
-          {data.crashes.map((d) => <Crash key={d.id} d={d} t={t} />)}
+          {/* The crash named, or -- when it is not among the newest the page
+              lists -- the newest. */}
+          {data.crashes.map((d, i, all) => {
+            const shown = all.some((c) => c.id === focus) ? d.id === focus : i === 0;
+            return <Crash key={d.id} d={d} t={t} shown={shown} focused={d.id === focus} scrollTo={!!focus && shown} />;
+          })}
         </>
       )}
     </div>
@@ -171,10 +190,17 @@ function Backtrace({ frames, t }: { frames: Frame[]; t: BoardsT }) {
   );
 }
 
-function Crash({ d, t }: { d: Detail; t: BoardsT }) {
+/** A crash, shown open when it is the one the address names, or the newest. */
+function Crash({ d, t, shown, focused, scrollTo }: { d: Detail; t: BoardsT; shown: boolean; focused: boolean; scrollTo: boolean }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  // A crash link scrolls to the crash it shows: the one named, or the
+  // newest when that one is older than the page lists.
+  useEffect(() => {
+    if (scrollTo) ref.current?.scrollIntoView({ block: 'start' });
+  }, [scrollTo]);
   const anomalies = Object.entries(d.anomalies ?? {});
   return (
-    <details class="rounded-md border border-hairline p-2.5">
+    <details ref={ref} id={d.id} open={shown} class={`rounded-md border p-2.5 ${focused ? 'border-brand-blue' : 'border-hairline'}`}>
       <summary class="cursor-pointer">
         <span class="font-mono">{d.id}</span> · {d.received_at.slice(0, 16).replace('T', ' ')} · {d.channel}
         {d.self_inflicted && ` · ${t('crashes.self_inflicted')}`}
