@@ -23,6 +23,8 @@ server {
         allow all;
     }
 
+    include snippets/openipc-reports-plain.conf;
+
     location / {
         return 301 https://$host$request_uri;
     }
@@ -81,5 +83,6 @@ server {
         proxy_hide_header Strict-Transport-Security;
     }
 
+    include snippets/openipc-reports.conf;
     include snippets/openipc-mirror.conf;
 }

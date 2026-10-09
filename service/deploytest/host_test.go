@@ -97,6 +97,36 @@ func TestMirrorConfig(t *testing.T) {
 				"the proxy itself is shared, so the two names cannot drift apart")
 		})
 	}
+	// A report from a reader the origin sends away, or one who picked this
+	// name, has to get through here at the origin's size: until 2026-10-09 a
+	// 16 MB backup was refused 413 by this host's 1m and never reached it.
+	t.Run("openipc.kz and openipc.cloud take a report as large as the origin does", func(t *testing.T) {
+		org := read(t, "deploy/nginx/sites-available/org.openipc")
+		reports := read(t, "deploy/nginx/mirrors/kz/snippets/openipc-reports.conf")
+		plain := read(t, "deploy/nginx/mirrors/kz/snippets/openipc-reports-plain.conf")
+		up := read(t, "deploy/nginx/mirrors/kz/snippets/openipc-reports-proxy.conf")
+		mustContain(t, reports, "location ~ ^/api/v1/(?:reports$|club/) {", "no HTTPS location for the report and the Club's form")
+		mustContain(t, reports, "include snippets/openipc-reports-proxy.conf;", "the HTTPS report location does not use the shared proxy")
+		mustContain(t, plain, "location ~ ^/api/v1/(?:reports|boards/identify)$ {", "port 80 does not carry ipctool's report")
+		mustContain(t, plain, "include snippets/openipc-reports-proxy.conf;", "the port 80 report location does not use the shared proxy")
+		mustNotMatch(t, `(?m)^location .*club`, plain, "the Club over plain HTTP would send its session cookie in clear")
+		mustMatch(t, `proxy_pass\s+http://openipc\.org;`, plain, "ipctool is not proxied from the origin's port 80, the only place it is served")
+		origin := block(org, "location = /api/v1/reports {")
+		for _, d := range []string{"client_max_body_size", "client_body_timeout", "proxy_request_buffering", "proxy_read_timeout", "proxy_send_timeout"} {
+			re := regexp.MustCompile(`(?m)^\s*` + d + `\s+(\S+);`)
+			if want, got := find(origin, re, 1), find(up, re, 1); want == "" || got != want {
+				t.Errorf("%s is %q on the origin's report upload and %q on the mirror's", d, want, got)
+			}
+		}
+		mustMatch(t, `X-Forwarded-For\s+\$proxy_add_x_forwarded_for;`, up, "the reader's address is not forwarded")
+		mustMatch(t, `proxy_ssl_verify\s+on;`, up, "the origin's certificate is not verified")
+		mustMatch(t, `proxy_ssl_session_reuse\s+off;`, up, "a cached failed verify of the origin answers every later report 502 until a reload")
+		for _, v := range []string{"kz.openipc", "cloud.openipc"} {
+			config := read(t, "deploy/nginx/mirrors/kz/sites-available/"+v)
+			mustContain(t, config, "include snippets/openipc-reports.conf;", v+" refuses a report over 1m")
+			mustContain(t, config, "include snippets/openipc-reports-plain.conf;", v+" redirects ipctool's plain-HTTP report to HTTPS, which it cannot speak")
+		}
+	})
 	t.Run("the origin certificate is verified, not merely named", func(t *testing.T) {
 		if n := len(regexp.MustCompile(`proxy_ssl_verify\s+on;`).FindAllString(proxy, -1)); n != 2 {
 			t.Errorf("proxy_ssl_verify on appears %d times, not 2", n)

@@ -135,6 +135,7 @@ func TestBlockedNetsGoToTheMirror(t *testing.T) {
 				t.Errorf("%s is %q on the origin's report upload and %q on the mirror's port 80", d, want, got)
 			}
 		}
+		mustMatch(t, `proxy_ssl_session_reuse\s+off;`, up, "a cached failed verify of the origin answers every later report 502 until a reload")
 		// Over HTTPS the origin's /ipctool is a redirect to GitHub.
 		mustMatch(t, `proxy_pass\s+http://openipc\.org;`, tools, "ipctool is not proxied from the origin's port 80, the only place it is served")
 		mustMatch(t, `proxy_pass\s+https://openipc\.org;`, up, "the report is not proxied to the origin")
