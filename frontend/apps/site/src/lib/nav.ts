@@ -96,6 +96,7 @@ export function menuFor(locale: Locale): MenuItems {
         link('green-life', 'nav.green_life', '/green_life'),
       ],
     },
+    link('news', 'nav.news', '/news'),
     { id: 'github', label: 'GitHub', type: 'link', url: 'https://github.com/OpenIPC' },
   ];
 }
@@ -171,7 +172,7 @@ export function footerFor(locale: Locale): FooterColumn[] {
     {
       id: 'community',
       title: t('footer.column_community'),
-      links: [link('nav.community_chat', '/community')],
+      links: [link('nav.community_chat', '/community'), link('nav.news', '/news')],
     },
   ];
 }

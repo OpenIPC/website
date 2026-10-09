@@ -1426,6 +1426,54 @@ h1, h2, h3, h4, h5, h6 {
     color: inherit;
     word-break: normal;
   }
+
+  /*
+   * A news post's body (#212), which is Markdown rendered to bare elements:
+   * nothing in it can carry a utility class, so its rhythm is set here, on
+   * the same scale as the rest of the site. Measure is capped for reading.
+   */
+  .news-body {
+    max-width: 68ch;
+    font-size: 1.0625rem;
+    line-height: 1.7;
+  }
+
+  .news-body > * + * { margin-top: 1rem; }
+  .news-body h2 { margin-top: 2.5rem; font-size: var(--text-h3); line-height: 1.3; }
+  .news-body h3 { margin-top: 2rem; font-size: 1.125rem; }
+  .news-body ul { list-style: disc; padding-left: 1.5rem; }
+  .news-body ol { list-style: decimal; padding-left: 1.5rem; }
+  .news-body li + li { margin-top: .375rem; }
+  .news-body img { max-width: 100%; height: auto; border-radius: var(--radius-lg); }
+  .news-body hr { border-color: var(--color-hairline); margin-block: 2rem; }
+
+  .news-body blockquote {
+    border-left: 3px solid var(--color-hairline);
+    padding-left: 1rem;
+    color: var(--color-body-secondary);
+  }
+
+  .news-body code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    color: #b23a78;
+    word-wrap: break-word;
+  }
+
+  .news-body pre {
+    overflow-x: auto;
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-ink);
+    color: #e6e9f2;
+    font-size: .875rem;
+    line-height: 1.6;
+  }
+
+  .news-body pre code { font-size: inherit; color: inherit; word-break: normal; }
+
+  .news-body table { width: 100%; border-collapse: collapse; font-size: .9375rem; }
+  .news-body th, .news-body td { border-bottom: 1px solid var(--color-hairline); padding: .5rem .75rem .5rem 0; text-align: left; }
 }
 
 @layer utilities {

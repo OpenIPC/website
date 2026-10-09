@@ -37,6 +37,8 @@ import GreenLife from '../components/pages/GreenLife.astro';
 import HighResolutionTimer from '../components/pages/HighResolutionTimer.astro';
 import LowLatency from '../components/pages/LowLatency.astro';
 import MajesticEndpoints from '../components/pages/MajesticEndpoints.astro';
+import NewsIndex from '../components/pages/NewsIndex.astro';
+import NewsPost from '../components/pages/NewsPost.astro';
 import OurTeam from '../components/pages/OurTeam.astro';
 import Privacy from '../components/pages/Privacy.astro';
 import QrCodeGenerator from '../components/pages/QrCodeGenerator.astro';
@@ -44,6 +46,7 @@ import Teleoperation from '../components/pages/Teleoperation.astro';
 import Utilities from '../components/pages/Utilities.astro';
 import WebInterface from '../components/pages/WebInterface.astro';
 import { VENDORS } from './hardware';
+import { newsPath, POSTS } from './news';
 import { PAGE_PATHS, type PagePath } from './page-paths';
 
 /** One services whitepaper's arguments. See ../components/Service.astro. */
@@ -103,6 +106,10 @@ const COMPONENTS: Record<string, Renderer> = {
   '/club/leaderboard': { component: ClubLeaderboard },
   '/club/crashes': { component: ClubCrashes },
   '/crashes': { component: Crashes },
+
+  // News (#212): the index and one page per post in data/news.
+  '/news': { component: NewsIndex },
+  ...Object.fromEntries(POSTS.map((post) => [newsPath(post), { component: NewsPost, props: { slug: post.slug } }])),
 
   '/business': { component: Business },
   '/community': { component: Community },
