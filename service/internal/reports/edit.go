@@ -10,6 +10,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+
+	"github.com/OpenIPC/website/service/internal/httpx"
 )
 
 // A member changes what they sent (migration 031): the note, the camera
@@ -279,6 +281,8 @@ func (a *API) Edit(w http.ResponseWriter, r *http.Request, member, by, id string
 		a.fail(w, "the report key", err)
 		return false
 	}
+	// A backup takes as long as it keeps arriving, not the server's 60 s.
+	httpx.KeepReading(w, r, UploadIdle)
 	in, status, err := a.read(r, true)
 	if in != nil {
 		defer in.discard()
