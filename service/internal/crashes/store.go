@@ -50,7 +50,7 @@ func NewID() string {
 }
 
 // kindOrder is the kinds, mildest first, for SQL's array_position.
-const kindOrder = `ARRAY['warning','bug','oops','panic','bootloop']`
+const kindOrder = `ARRAY['warning','signal','bug','oops','panic','bootloop']`
 
 // ErrQuota is a client address or a camera past its daily limit.
 var ErrQuota = errors.New("the daily limit is reached")
@@ -70,10 +70,7 @@ func (s *Store) Insert(ctx context.Context, e *Event, at time.Time) (id, signatu
 	anomalies, _ := json.Marshal(c.Anomalies)
 	leadup, _ := json.Marshal(orEmpty(c.Leadup))
 	frames, _ := json.Marshal(orEmpty(c.Fatal.Frames))
-	class := "fatal"
-	if c.Fatal.Kind == KindWarning {
-		class = "warning"
-	}
+	class := Class(c.Fatal.Kind)
 	var built *time.Time
 	if !c.KernelBuilt.IsZero() {
 		built = &c.KernelBuilt
@@ -135,6 +132,19 @@ func (s *Store) Insert(ctx context.Context, e *Event, at time.Time) (id, signatu
 			c.SelfInflicted, c.Fatal.Title(), e.Firmware, e.Majestic, e.SoC, e.Sensor, c.Board, c.Machine, c.Kernel,
 			c.KernelBuild, built, c.Cmdline, uptime, c.Records, orEmpty(c.Modules), fatal, before, anomalies, leadup,
 			meta, e.Redacted, e.BundleSHA256, at)
+		if err != nil || c.Dump == nil {
+			return err
+		}
+		// majestic's dump waits for the symbolizer, which the notice wakes.
+		if _, err := tx.Exec(ctx, `INSERT INTO crash_dumps (event_id, bytes, received_at) VALUES ($1, $2, $3)`,
+			e.ID, c.Dump, at); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO crash_symbolizations (event_id, status, next_try, provisional, at)
+			VALUES ($1, 'pending', $2, $3, $2)`, e.ID, at, e.SignatureID); err != nil {
+			return err
+		}
+		_, err = tx.Exec(ctx, `SELECT pg_notify('crash_symbolize', $1)`, e.ID)
 		return err
 	})
 	return id, signature, dup, err
@@ -201,6 +211,10 @@ func base(kind string, irq bool) float64 {
 		return 25
 	case KindBug:
 		return 20
+	case KindSignal:
+		// No video until majestic is back: the firmware restarts it, and
+		// stops trying when it keeps crashing.
+		return 15
 	}
 	return 3
 }
@@ -210,7 +224,8 @@ func base(kind string, irq bool) float64 {
 const CurrentWindow = 14 * 24 * time.Hour
 
 // Ranked is the signatures, worst first. maintainers also see the bogus,
-// the merged and the self-inflicted (which public lists leave out).
+// the merged, the self-inflicted and majestic's crashes (which public lists
+// leave out).
 func (s *Store) Ranked(ctx context.Context, maintainers bool, now time.Time) ([]*Signature, error) {
 	return s.ranked(ctx, maintainers, "", now)
 }
@@ -220,7 +235,9 @@ func (s *Store) ranked(ctx context.Context, maintainers bool, only string, now t
 		WITH ev AS (
 			SELECT coalesce(sig.merged_into, sig.id) AS root, e.*
 			FROM crash_events e JOIN crash_signatures sig ON sig.id = e.signature_id
-			WHERE $1 OR NOT e.self_inflicted
+			-- majestic's crashes count only for maintainers, whatever they
+			-- are merged into
+			WHERE $1 OR (NOT e.self_inflicted AND e.kind <> 'signal')
 		)
 		SELECT r.id, r.class,
 		       coalesce((`+kindOrder+`)[max(array_position(`+kindOrder+`, ev.kind))], r.kind), r.title, r.frames, r.status, r.fixed_in, r.issue_url, r.first_seen,
@@ -232,7 +249,7 @@ func (s *Store) ranked(ctx context.Context, maintainers bool, only string, now t
 		       coalesce(array_agg(DISTINCT ev.firmware) FILTER (WHERE ev.firmware <> ''), '{}'),
 		       max(ev.kernel_built)
 		FROM crash_signatures r LEFT JOIN ev ON ev.root = r.id
-		WHERE ($1 OR (r.merged_into IS NULL AND r.status <> 'bogus')) AND ($2 = '' OR r.id = $2)
+		WHERE ($1 OR (r.merged_into IS NULL AND r.status <> 'bogus' AND r.class <> 'user')) AND ($2 = '' OR r.id = $2)
 		GROUP BY r.id
 		HAVING $1 OR count(ev.id) > 0`, maintainers, only)
 	if err != nil {
@@ -342,8 +359,8 @@ func (s *Store) Combos(ctx context.Context, id string, detailed bool) ([]Combo, 
 	rows, err := s.DB.Query(ctx, `
 		SELECT `+cols+`, count(*)::int, count(DISTINCT `+fmt.Sprintf(camera, "e.")+`)::int
 		FROM crash_events e JOIN crash_signatures sig ON sig.id = e.signature_id
-		WHERE coalesce(sig.merged_into, sig.id) = $1 AND NOT e.self_inflicted
-		GROUP BY 1, 2, 3, 4, 5, 6 ORDER BY 8 DESC, 7 DESC, 1, 2`, id)
+		WHERE coalesce(sig.merged_into, sig.id) = $1 AND NOT e.self_inflicted AND ($2 OR e.kind <> 'signal')
+		GROUP BY 1, 2, 3, 4, 5, 6 ORDER BY 8 DESC, 7 DESC, 1, 2`, id, detailed)
 	if err != nil {
 		return nil, err
 	}
@@ -383,6 +400,8 @@ type Detail struct {
 	// Builds: the firmware builds whose time matches the kernel's, newest
 	// guess first -- the build to flash to reproduce it.
 	Builds []Build `json:"builds,omitempty"`
+	// Symbolization: a majestic crash's backtrace, or why there is none yet.
+	Symbolization *Symbolization `json:"symbolization,omitempty"`
 }
 
 // Build is a pushed firmware build.
@@ -401,8 +420,10 @@ func (s *Store) Details(ctx context.Context, id string) ([]Detail, error) {
 	rows, err := s.DB.Query(ctx, `
 		SELECT e.id, e.signature_id, e.received_at, e.channel, e.kind, e.self_inflicted, e.firmware, e.majestic,
 		       e.soc, e.sensor, e.board, e.machine, e.kernel, e.kernel_build, e.kernel_built, e.cmdline, e.uptime,
-		       e.modules, e.fatal, e.before, e.anomalies, e.leadup, e.meta, e.redacted
+		       e.modules, e.fatal, e.before, e.anomalies, e.leadup, e.meta, e.redacted,
+		       y.status, y.attempts, y.frames, y.sources, y.error, y.at
 		FROM crash_events e JOIN crash_signatures sig ON sig.id = e.signature_id
+		LEFT JOIN crash_symbolizations y ON y.event_id = e.id
 		WHERE coalesce(sig.merged_into, sig.id) = $1
 		ORDER BY e.received_at DESC LIMIT $2`, id, MaxDetails)
 	if err != nil {
@@ -410,12 +431,21 @@ func (s *Store) Details(ctx context.Context, id string) ([]Detail, error) {
 	}
 	out, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (Detail, error) {
 		var d Detail
-		var meta []byte
+		var meta, frames, sources []byte
+		var status, symErr *string
+		var attempts *int
+		var at *time.Time
 		err := r.Scan(&d.ID, &d.Signature, &d.ReceivedAt, &d.Channel, &d.Kind, &d.SelfInflicted, &d.Firmware, &d.Majestic,
 			&d.SoC, &d.Sensor, &d.Board, &d.Machine, &d.Kernel, &d.KernelBuild, &d.KernelBuilt, &d.Cmdline, &d.Uptime,
-			&d.Modules, &d.Fatal, &d.Before, &d.Anomalies, &d.Leadup, &meta, &d.Log)
+			&d.Modules, &d.Fatal, &d.Before, &d.Anomalies, &d.Leadup, &meta, &d.Log,
+			&status, &attempts, &frames, &sources, &symErr, &at)
 		if len(meta) > 0 {
 			d.Meta = meta
+		}
+		if status != nil {
+			y := &Symbolization{Status: *status, Attempts: *attempts, Sources: sources, Error: *symErr, At: *at}
+			_ = json.Unmarshal(frames, &y.Frames)
+			d.Symbolization = y
 		}
 		return d, err
 	})
@@ -462,10 +492,13 @@ type Mine struct {
 	Camera        bool `json:"camera"`
 }
 
-// Mine is the crashes the member sent or their linked cameras did.
+// Mine is the crashes the member sent or their linked cameras did. A crash
+// of majestic's is named by its signal alone: where in majestic's source it
+// happened is for the maintainers.
 func (s *Store) Mine(ctx context.Context, member string) ([]Mine, error) {
 	rows, err := s.DB.Query(ctx, `
-		SELECT e.id, coalesce(sig.merged_into, sig.id), e.title, e.kind, root.status, e.soc, e.sensor, e.received_at,
+		SELECT e.id, coalesce(sig.merged_into, sig.id), CASE WHEN e.kind = 'signal' THEN e.fatal->>'reason' ELSE e.title END,
+		       e.kind, root.status, e.soc, e.sensor, e.received_at,
 		       e.self_inflicted, l.member_id IS NOT NULL
 		FROM crash_events e
 		JOIN crash_signatures sig ON sig.id = e.signature_id
@@ -540,7 +573,9 @@ func (s *Store) Decide(ctx context.Context, id, by string, t Triage) (taken int,
 			merged = nil
 			if *t.MergeInto != "" {
 				var target string
-				err := tx.QueryRow(ctx, `SELECT coalesce(merged_into, id) FROM crash_signatures WHERE id = $1`, *t.MergeInto).Scan(&target)
+				var sameClass bool
+				err := tx.QueryRow(ctx, `SELECT coalesce(t.merged_into, t.id), t.class = s.class FROM crash_signatures t, crash_signatures s
+					WHERE t.id = $1 AND s.id = $2`, *t.MergeInto, id).Scan(&target, &sameClass)
 				if errors.Is(err, pgx.ErrNoRows) {
 					return fmt.Errorf("merge_into: %w", ErrNoSignature)
 				}
@@ -549,6 +584,11 @@ func (s *Store) Decide(ctx context.Context, id, by string, t Triage) (taken int,
 				}
 				if target == id {
 					return fmt.Errorf("%w: %s is already merged into this one", ErrInvalid, *t.MergeInto)
+				}
+				// A kernel crash and majestic's are never one bug, and
+				// majestic's must not be counted on the public list.
+				if !sameClass {
+					return fmt.Errorf("%w: %s is a crash of another kind (kernel or majestic)", ErrInvalid, *t.MergeInto)
 				}
 				merged = &target
 				if _, err := tx.Exec(ctx, `UPDATE crash_signatures SET merged_into = $2, updated_at = now() WHERE merged_into = $1`, id, target); err != nil {

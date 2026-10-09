@@ -6,7 +6,10 @@
 # The runtime is Debian bookworm. The wall publishes what cameras send without
 # re-encoding it, and ffmpeg is here only to decode each uploaded keyframe once
 # before it is published (internal/keyframe.Check): those bytes go to visitors'
-# decoders untouched. The binary itself is static (CGO_ENABLED=0).
+# decoders untouched. gdb-multiarch and squashfs-tools are the crash
+# symbolizer's (internal/crashes/symbolize): it unwinds majestic's crash dumps
+# with gdb, and takes the libraries the camera ran out of its firmware's
+# rootfs. The binary itself is static (CGO_ENABLED=0).
 
 FROM golang:1.27.1 AS build
 WORKDIR /src/service
@@ -18,7 +21,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${REVISION}
 
 FROM debian:bookworm-slim
 RUN apt-get update -qq \
- && apt-get install -y --no-install-recommends ca-certificates curl git ffmpeg \
+ && apt-get install -y --no-install-recommends ca-certificates curl git ffmpeg gdb-multiarch squashfs-tools \
  && rm -rf /var/lib/apt/lists/* \
  && groupadd --gid 1000 openipc \
  && useradd --uid 1000 --gid 1000 --no-create-home --shell /usr/sbin/nologin openipc

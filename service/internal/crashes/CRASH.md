@@ -62,6 +62,27 @@ Public: the signature, the chips and sensors it was seen on, and its status.
 A crash asked for -- `echo c > /proc/sysrq-trigger` -- is kept but never
 listed and never pays: send real ones.
 
+## majestic's own crashes
+
+When majestic itself dies of SIGSEGV, SIGBUS, SIGILL, SIGFPE or SIGABRT it
+leaves `/etc/crash/majestic.dump` (the previous one as `majestic.dump.1`):
+the registers at the fault, a slice of the faulting thread's stack, its
+memory map, and the build-id of every module it had loaded. Send each dump
+as its own bundle -- a tar.gz holding `majestic.dump`, and `meta.json` when
+the firmware wrote one, or the dump alone as the body -- to the same
+address, with the same fields. The answer is the same, with `kind`
+`signal`, a title that names only the signal, and a `url` to `/club/crashes`.
+
+These are the maintainers' only. The stack slice is majestic's memory at
+the crash and can hold what it was handling (a request, its environment):
+it is kept only until the dump is symbolized -- unwound with gdb against
+the executable and debuginfo majestic's CI publishes for the build-id, and
+the libraries of the firmware build `meta.json` names -- and then deleted,
+leaving the backtrace. Never served, never public: no signature of
+majestic's appears on `/crashes`. A signal another process sent (a `kill`)
+is kept as caused on purpose and pays nothing; majestic aborting itself is
+a bug like a fault.
+
 ## Sending automatically
 
 Only with the owner's consent: a setting the owner turns on, after which

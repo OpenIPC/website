@@ -68,6 +68,9 @@ type Config struct {
 	BuildsPerMinute     int
 	DownloadBase        string
 	BuilderBase         string
+	// SymbolsBase is where majestic's CI publishes each build's executable
+	// and debuginfo by build-id, for symbolizing its crashes.
+	SymbolsBase string
 
 	// Share role.
 	ShareOrigins    []string // SHARE_ORIGINS: host patterns a page's WebSocket may come from
@@ -116,6 +119,7 @@ func Load() (*Config, error) {
 		BuildsPerMinute:     num("FIRMWARE_BUILDS_PER_MINUTE", 6),
 		DownloadBase:        str("RELEASE_DOWNLOAD_BASE", "https://github.com/OpenIPC/firmware/releases/download"),
 		BuilderBase:         str("BUILDER_DOWNLOAD_BASE", "https://github.com/OpenIPC/builder/releases/download"),
+		SymbolsBase:         str("MAJESTIC_SYMBOLS_BASE", "https://openipc.s3.eu-west-1.amazonaws.com/buildid"),
 		ShareOrigins:        listOr("SHARE_ORIGINS", []string{"*.share.openipc.cloud"}),
 		ShareSTUN:           listOr("SHARE_STUN_URLS", []string{"stun:stun.cloudflare.com:3478"}),
 		ShareTURN:           list("SHARE_TURN_URLS"),

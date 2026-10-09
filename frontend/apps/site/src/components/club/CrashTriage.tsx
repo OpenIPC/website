@@ -1,8 +1,9 @@
 /**
- * /club/crashes: the maintainers' triage of kernel crashes. Every signature,
- * worst first; one opens to what it takes to reproduce it -- the chips,
- * sensors and builds it was seen on, the firmware builds whose time matches
- * its kernel, and each crash's redacted log, warnings and lead-up.
+ * /club/crashes: the maintainers' triage of kernel crashes and majestic's.
+ * Every signature, worst first; one opens to what it takes to reproduce it --
+ * the chips, sensors and builds it was seen on, the firmware builds whose time
+ * matches its kernel, and each crash's redacted log, warnings and lead-up, or
+ * for majestic's, its backtrace from the debuginfo of its build.
  *
  * Confirming a bug pays its first reporter, fixing it pays them again;
  * bogus takes back every star it paid. The same is `openipc crashes status`.
@@ -12,7 +13,8 @@ import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { ClubError, fetchMe } from '../../lib/club';
 import {
-  decideCrash, fetchCrashDetail, fetchTriage, frame, KIND_TONE, STATUS_TONE, type Combo, type Detail, type Signature, type Status,
+  decideCrash, fetchCrashDetail, fetchTriage, frame, frameAt, KIND_TONE, STATUS_TONE, type Combo, type Detail, type Frame, type Signature,
+  type Status,
 } from '../../lib/crashes';
 
 type Load = { state: 'loading' } | { state: 'ok'; list: Signature[] } | { state: 'forbidden' } | { state: 'error' };
@@ -81,9 +83,7 @@ function Open({ g, t, onDone }: { g: Signature; t: BoardsT; onDone: () => void }
   const field = 'min-w-0 rounded-md border border-hairline px-2 py-1 text-sm';
   return (
     <div class="grid gap-3 border-t border-hairline pt-3 text-[13px]">
-      <pre class="m-0 overflow-x-auto rounded-md bg-surface-alt p-2.5 font-mono text-[12px] leading-relaxed">
-        {g.frames.slice(0, 10).map((f, i) => `${i === 0 ? '' : '← '}${frame(f)}`).join('\n')}
-      </pre>
+      <Backtrace frames={g.frames.slice(0, 10)} t={t} />
       <form class="grid gap-2 sm:grid-cols-2" onSubmit={save}>
         <label class="grid gap-1">{t('crashes.f_status')}
           <select class={field} value={status} onChange={(e) => setStatus((e.target as HTMLSelectElement).value as Status)}>
@@ -125,6 +125,15 @@ function Open({ g, t, onDone }: { g: Signature; t: BoardsT; onDone: () => void }
   );
 }
 
+/** A backtrace, innermost first; the scan's probable callers marked so. */
+function Backtrace({ frames, t }: { frames: Frame[]; t: BoardsT }) {
+  return (
+    <pre class="m-0 overflow-x-auto rounded-md bg-surface-alt p-2.5 font-mono text-[12px] leading-relaxed">
+      {frames.map((f, i) => `${i === 0 ? '' : '← '}${frameAt(f)}${f.probable ? `  (${t('crashes.probable')})` : ''}`).join('\n')}
+    </pre>
+  );
+}
+
 function Crash({ d, t }: { d: Detail; t: BoardsT }) {
   const anomalies = Object.entries(d.anomalies ?? {});
   return (
@@ -136,19 +145,35 @@ function Crash({ d, t }: { d: Detail; t: BoardsT }) {
       <dl class="m-0 mt-2 grid gap-x-3 gap-y-0.5 sm:grid-cols-[max-content_1fr]">
         <dt class="text-body-secondary">{t('crashes.d_hardware')}</dt><dd class="m-0 font-mono">{[d.soc, d.sensor, d.board, d.machine].filter(Boolean).join(' · ')}</dd>
         <dt class="text-body-secondary">{t('crashes.d_firmware')}</dt><dd class="m-0 font-mono">{[d.firmware, d.majestic && `majestic ${d.majestic}`].filter(Boolean).join(' · ') || '?'}</dd>
-        <dt class="text-body-secondary">{t('crashes.d_kernel')}</dt><dd class="m-0 font-mono">{d.kernel} {d.kernel_build}</dd>
+        {d.kernel && <><dt class="text-body-secondary">{t('crashes.d_kernel')}</dt><dd class="m-0 font-mono">{d.kernel} {d.kernel_build}</dd></>}
         {d.builds && d.builds.length > 0 && (
           <><dt class="text-body-secondary">{t('crashes.d_builds')}</dt><dd class="m-0 font-mono">{d.builds.map((b) => `${b.release} (${b.sha.slice(0, 7)})`).join(', ')}</dd></>
         )}
         <dt class="text-body-secondary">{t('crashes.d_task')}</dt><dd class="m-0 font-mono">{d.fatal.comm ?? '?'}{d.fatal.interrupted?.length ? ` · ${t('crashes.d_interrupted')} ${d.fatal.interrupted.map(frame).join(' ← ')}` : ''}</dd>
         {d.uptime != null && <><dt class="text-body-secondary">{t('crashes.d_uptime')}</dt><dd class="m-0 tabular-nums">{Math.round(d.uptime)} s</dd></>}
-        <dt class="text-body-secondary">{t('crashes.d_cmdline')}</dt><dd class="m-0 font-mono break-all">{d.cmdline}</dd>
+        {d.cmdline && <><dt class="text-body-secondary">{t('crashes.d_cmdline')}</dt><dd class="m-0 font-mono break-all">{d.cmdline}</dd></>}
         {anomalies.length > 0 && <><dt class="text-body-secondary">{t('crashes.d_anomalies')}</dt><dd class="m-0 font-mono">{anomalies.map(([k, v]) => `${k} ×${v}`).join(', ')}</dd></>}
         {d.before.length > 0 && <><dt class="text-body-secondary">{t('crashes.d_before')}</dt><dd class="m-0 font-mono">{d.before.map((b) => `${b.reason} (${b.comm ?? '?'}) ${b.frames.slice(0, 3).map(frame).join(' ← ')}`).join('; ')}</dd></>}
       </dl>
+      {d.symbolization && <Symbolized s={d.symbolization} t={t} />}
       {d.leadup.length > 0 && <pre class="mt-2 mb-0 overflow-x-auto rounded bg-surface-alt p-2 font-mono text-[11.5px]">{d.leadup.join('\n')}</pre>}
       {d.meta != null && <pre class="mt-2 mb-0 max-h-60 overflow-auto rounded bg-surface-alt p-2 font-mono text-[11.5px]">{JSON.stringify(d.meta, null, 2)}</pre>}
       {d.log && <pre class="mt-2 mb-0 max-h-96 overflow-auto rounded bg-ink p-2 font-mono text-[11.5px] text-white">{d.log}</pre>}
     </details>
+  );
+}
+
+/** How a majestic crash's dump was unwound: its backtrace, or why not yet. */
+function Symbolized({ s, t }: { s: NonNullable<Detail['symbolization']>; t: BoardsT }) {
+  return (
+    <div class="mt-2 grid gap-1">
+      <span class="text-body-secondary">
+        {t('crashes.d_backtrace')}
+        {s.status === 'pending' && ` · ${t('crashes.sym_pending', { n: s.attempts })}`}
+        {s.status === 'failed' && ` · ${t('crashes.sym_failed')}`}
+        {s.error && <span class="font-mono"> · {s.error}</span>}
+      </span>
+      {s.frames.length > 0 && <Backtrace frames={s.frames} t={t} />}
+    </div>
   );
 }

@@ -3,18 +3,24 @@
  * (service/internal/crashes): the public list of signatures at
  * /api/v1/crashes, and under /api/v1/club the member's own crashes and the
  * maintainers' triage. A signature is the top of a crash's backtrace: one bug,
- * however many cameras sent it.
+ * however many cameras sent it. majestic's own crashes (kind signal, class
+ * user) are the maintainers' only: the public list never has them.
  */
 import { ClubError } from './club';
 
-export type Kind = 'bootloop' | 'panic' | 'oops' | 'bug' | 'warning';
+export type Kind = 'bootloop' | 'panic' | 'oops' | 'bug' | 'signal' | 'warning';
 export type Status = 'open' | 'confirmed' | 'fixed' | 'wontfix' | 'bogus';
 
-export interface Frame { fn: string; module?: string }
+/**
+ * A function in a backtrace. A frame of majestic's says where in its source;
+ * a probable one was found by scanning the stack past where the unwinder
+ * stopped.
+ */
+export interface Frame { fn: string; module?: string; file?: string; line?: number; probable?: boolean }
 
 export interface Signature {
   id: string;
-  class: 'fatal' | 'warning';
+  class: 'fatal' | 'warning' | 'user';
   kind: Kind;
   title: string;
   frames: Frame[];
@@ -84,6 +90,17 @@ export interface Detail {
   meta?: unknown;
   log?: string;
   builds?: { id: string; release: string; sha: string; built_at: string }[];
+  /** A majestic crash's backtrace, or why it has none yet. */
+  symbolization?: Symbolization;
+}
+
+export interface Symbolization {
+  status: 'pending' | 'done' | 'failed';
+  attempts: number;
+  frames: Frame[];
+  sources?: Record<string, unknown>;
+  error?: string;
+  at: string;
 }
 
 export interface Mine {
@@ -145,11 +162,15 @@ export const decideCrash = (id: string, t: Triage) =>
 /** A frame as a backtrace prints it: fn [module]. */
 export const frame = (f: Frame) => (f.module ? `${f.fn} [${f.module}]` : f.fn);
 
+/** A frame with where in the source it is, when that is known. */
+export const frameAt = (f: Frame) => (f.file ? `${frame(f)}  ${f.file}:${f.line ?? 0}` : frame(f));
+
 export const KIND_TONE: Record<Kind, string> = {
   bootloop: 'bg-[#fbe9ea] text-[#a3262e]',
   panic: 'bg-[#fbe9ea] text-[#a3262e]',
   oops: 'bg-[#fff4e2] text-[#8a4b00]',
   bug: 'bg-[#fff4e2] text-[#8a4b00]',
+  signal: 'bg-[#fff4e2] text-[#8a4b00]',
   warning: 'bg-surface-alt text-body-secondary',
 };
 

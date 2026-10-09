@@ -70,7 +70,9 @@ export default function Crashes({ locale, t, onChange }: { locale: Locale; t: Bo
         {state.s === 'sent' && (
           <p class="m-0 rounded-md bg-[#e7f5ee] px-3 py-2 text-sm text-[#1f7a4d]" role="status">
             {t(state.r.self_inflicted ? 'crashes.sent_self' : state.r.duplicate ? 'crashes.sent_again' : 'crashes.sent')}{' '}
-            <a href={`${pathFor(locale, '/crashes')}#${state.r.signature}`} class="font-mono">{state.r.title}</a>
+            {state.r.kind === 'signal'
+              ? <span class="font-mono">{state.r.title}</span>
+              : <a href={`${pathFor(locale, '/crashes')}#${state.r.signature}`} class="font-mono">{state.r.title}</a>}
           </p>
         )}
         {state.s === 'error' && <p class="m-0 text-sm text-[#a3262e]" role="alert">{state.error}</p>}
@@ -87,7 +89,10 @@ export default function Crashes({ locale, t, onChange }: { locale: Locale; t: Bo
                 {c.self_inflicted && <span class="text-[12px] text-body-secondary">{t('crashes.self_inflicted')}</span>}
                 <span class="text-[12px] text-body-secondary">{c.received_at.slice(0, 10)} · {[c.soc, c.sensor].filter(Boolean).join(' · ').toUpperCase()}</span>
               </span>
-              <a class="font-mono break-words" href={`${pathFor(locale, '/crashes')}#${c.signature}`}>{c.title}</a>
+              {/* majestic's crashes are not on the public list. */}
+              {c.kind === 'signal'
+                ? <span class="font-mono break-words">{c.title}</span>
+                : <a class="font-mono break-words" href={`${pathFor(locale, '/crashes')}#${c.signature}`}>{c.title}</a>}
             </li>
           ))}
         </ul>

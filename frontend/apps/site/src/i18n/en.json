@@ -164,7 +164,7 @@
     },
     "club_crashes": {
       "eyebrow": "OpenIPC Club",
-      "lede": "Kernel crashes cameras sent, worst first, with what it takes to reproduce each one.",
+      "lede": "Crashes cameras sent, the kernel's and majestic's, worst first, with what it takes to reproduce each one.",
       "title": "Crash triage"
     },
     "club_leaderboard": {

@@ -40,17 +40,37 @@ const (
 	KindOops     = "oops"
 	KindBug      = "bug"
 	KindWarning  = "warning"
+	// KindSignal is majestic's own crash, from its dump (dump.go): the
+	// streamer died, the camera did not.
+	KindSignal = "signal"
 )
 
-var kindRank = map[string]int{KindBootloop: 5, KindPanic: 4, KindOops: 3, KindBug: 2, KindWarning: 1}
+var kindRank = map[string]int{KindBootloop: 6, KindPanic: 5, KindOops: 4, KindBug: 3, KindSignal: 2, KindWarning: 1}
+
+// Class is the signatures' class a kind is filed under: the kernel's fatal
+// crashes and its warnings, and majestic's (user), which only maintainers see.
+func Class(kind string) string {
+	switch kind {
+	case KindWarning:
+		return "warning"
+	case KindSignal:
+		return "user"
+	}
+	return "fatal"
+}
 
 // Worse says whether kind a is worse than b.
 func Worse(a, b string) bool { return kindRank[a] > kindRank[b] }
 
-// Frame is one function in a backtrace.
+// Frame is one function in a backtrace. A frame of majestic's also says
+// where in its source; Probable is one found by scanning the stack past where
+// the unwinder stopped, likely but not certain.
 type Frame struct {
-	Fn     string `json:"fn"`
-	Module string `json:"module,omitempty"`
+	Fn       string `json:"fn"`
+	Module   string `json:"module,omitempty"`
+	File     string `json:"file,omitempty"`
+	Line     int    `json:"line,omitempty"`
+	Probable bool   `json:"probable,omitempty"`
 }
 
 func (f Frame) String() string {
@@ -72,24 +92,32 @@ type Trace struct {
 	Frames []Frame `json:"frames"`
 	// Interrupted: what the CPU was doing when the interrupt that crashed came.
 	Interrupted []Frame `json:"interrupted,omitempty"`
-	end         string  // the "end trace" id, to tell the same trace in two records
+	// Provisional: a majestic crash not yet symbolized, whose one frame is
+	// the faulting instruction's module and offset in Build (the build-id).
+	Provisional bool   `json:"provisional,omitempty"`
+	Build       string `json:"build,omitempty"`
+	end         string // the "end trace" id, to tell the same trace in two records
 }
 
 // Signature is the trace's identity: the same bug on any build gives the same.
 func (t *Trace) Signature() string {
-	class := "fatal"
-	if t.Kind == KindWarning {
-		class = "warning"
-	}
 	var b strings.Builder
-	b.WriteString(class)
-	for i, f := range t.Frames {
+	b.WriteString(Class(t.Kind))
+	// An offset means something only in its build.
+	if t.Provisional {
+		b.WriteString("\nbuild " + t.Build)
+	}
+	frames := t.Frames
+	if t.Kind == KindSignal && !t.Provisional {
+		frames = userSigFrames(frames)
+	}
+	for i, f := range frames {
 		if i == sigFrames {
 			break
 		}
 		b.WriteString("\n" + f.String())
 	}
-	if len(t.Frames) == 0 {
+	if len(frames) == 0 {
 		b.WriteString("\n" + t.Reason)
 	}
 	sum := sha256.Sum256([]byte(b.String()))
@@ -100,6 +128,12 @@ func (t *Trace) Signature() string {
 func (t *Trace) Title() string {
 	if len(t.Frames) == 0 {
 		return t.Reason
+	}
+	if t.Kind == KindSignal {
+		if t.Provisional {
+			return t.Reason + " in " + t.Frames[0].String()
+		}
+		return userTitle(t.Reason, userSigFrames(t.Frames))
 	}
 	where := t.Frames[0].Fn
 	// The first frame in a vendor module says more than a kernel helper,
@@ -113,6 +147,24 @@ func (t *Trace) Title() string {
 		}
 	}
 	return t.Reason + " in " + where
+}
+
+// userTitle names where majestic crashed: the function, and when that is in
+// a library, the first of majestic's own that called it.
+func userTitle(reason string, frames []Frame) string {
+	if len(frames) == 0 {
+		return reason
+	}
+	where := frames[0].String()
+	if frames[0].Module != "" {
+		for _, f := range frames[1:] {
+			if f.Module == "" {
+				where += " ← " + f.Fn
+				break
+			}
+		}
+	}
+	return reason + " in " + where
 }
 
 func wrapperModule(m string) bool {
@@ -148,6 +200,10 @@ type Crash struct {
 	// firmware's note that the bootlimit ran out.
 	Records  int  `json:"records"`
 	Failsafe bool `json:"failsafe,omitempty"`
+	// Majestic: the version majestic's own dump says it was.
+	Majestic string `json:"majestic,omitempty"`
+	// Dump: majestic's dump, for a crash of majestic.
+	Dump []byte `json:"-"`
 
 	// Text is every record, as sent; ContentSum identifies the crash
 	// whatever tar or gzip carried it.
@@ -156,7 +212,7 @@ type Crash struct {
 }
 
 // ErrNotACrash is a bundle with nothing a crash leaves.
-var ErrNotACrash = errors.New("the bundle has no pstore record (dmesg-*) and no failsafe note: nothing crashed")
+var ErrNotACrash = errors.New("the bundle has no pstore record (dmesg-*), no failsafe note and no majestic.dump: nothing crashed")
 
 // Unpack reads a crash bundle -- a tar.gz, a plain tar, or a single record
 // as text -- into its records by name.
@@ -195,7 +251,8 @@ func Unpack(data []byte) (map[string]string, error) {
 				continue
 			}
 			name := h.Name[strings.LastIndex(h.Name, "/")+1:]
-			if !strings.HasPrefix(name, "dmesg-") && name != "failsafe" && name != "pending" && name != "meta.json" {
+			if !strings.HasPrefix(name, "dmesg-") && name != "failsafe" && name != "pending" && name != "meta.json" &&
+				name != "majestic.dump" {
 				continue
 			}
 			// The limit is on records; failsafe, pending and meta.json are one
@@ -212,6 +269,8 @@ func Unpack(data []byte) (map[string]string, error) {
 			}
 			out[name] = string(b)
 		}
+	} else if bytes.HasPrefix(raw, []byte("MJCD")) {
+		out["majestic.dump"] = string(raw)
 	} else if printable(raw) {
 		out["dmesg-0"] = string(raw)
 	} else {
@@ -233,8 +292,17 @@ func printable(b []byte) bool {
 	return bad*100 < len(b)
 }
 
-// Parse reads the records a bundle unpacked to.
+// Parse reads the records a bundle unpacked to. A bundle with majestic's dump
+// is a crash of majestic, whatever else it carries.
 func Parse(files map[string]string) (*Crash, error) {
+	if raw, ok := files["majestic.dump"]; ok {
+		c, _, err := parseUserCrash([]byte(raw))
+		if err != nil {
+			return nil, err
+		}
+		c.Dump = []byte(raw)
+		return c, nil
+	}
 	var names []string
 	for n := range files {
 		if strings.HasPrefix(n, "dmesg-") {
