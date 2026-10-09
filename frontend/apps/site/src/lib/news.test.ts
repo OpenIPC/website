@@ -5,9 +5,12 @@
  * -- rather than in front of a reader.
  */
 import { describe, expect, test } from 'vitest';
-import { newsPost } from '../../scripts/export-data.mjs';
+import { news, newsPost } from '../../scripts/export-data.mjs';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { LOCALES } from './i18n';
-import { localize, POSTS, renderPost, type Post } from './news';
+import { inLocale, localize, POSTS, renderPost, type Post } from './news';
 import { atomXml } from './news-feed';
 
 const post = (body: string): Post => ({ slug: 'test', date: '2026-10-10', title: 'Test', summary: 'A test.', body });
@@ -36,7 +39,7 @@ describe('the posts in data/news', () => {
 describe('front matter', () => {
   test('a good post is read', () => {
     expect(newsPost('2026-10-10-a-post.md', file(`${GOOD}\nauthor: Someone`))).toEqual({
-      slug: 'a-post', date: '2026-10-10', title: 'A post', summary: 'What it says.', author: 'Someone', body: 'Hello.\n',
+      slug: 'a-post', locale: 'en', date: '2026-10-10', title: 'A post', summary: 'What it says.', author: 'Someone', body: 'Hello.\n',
     });
   });
 
@@ -150,5 +153,78 @@ describe('/news.atom', () => {
     const tricky = atomXml([{ ...post('A & B < C'), title: 'Q&A <today>' }]);
     const parsed = new DOMParser().parseFromString(tricky, 'application/xml');
     expect(parsed.getElementsByTagNameNS(NS, 'title')[1].textContent).toBe('Q&A <today>');
+  });
+});
+
+describe('translations', () => {
+  const ru = { title: 'Запись', summary: 'О чём она.', body: 'Привет.\n' };
+  const both: Post = { ...post('Hello.\n'), i18n: { ru } };
+
+  test('a .ru.md file is read as Russian', () => {
+    expect(newsPost('2026-10-10-a-post.ru.md', file(GOOD))).toMatchObject({ slug: 'a-post', locale: 'ru' });
+  });
+
+  test('a language the site does not have is refused', () => {
+    expect(() => newsPost('2026-10-10-a-post.fr.md', file(GOOD))).toThrow(/not one of the site's languages/);
+  });
+
+  test('a reader of a translated language gets the translation', () => {
+    expect(inLocale(both, 'ru')).toMatchObject({ title: 'Запись', lang: 'ru' });
+  });
+
+  // The fallback has to say which language it fell back to, or the page marks
+  // English text as Russian and a screen reader reads it aloud as Russian.
+  test('a reader of an untranslated language gets English, and is told so', () => {
+    expect(inLocale(both, 'zh')).toMatchObject({ title: 'Test', lang: 'en' });
+    expect(inLocale(post('Hello.\n'), 'ru')).toMatchObject({ title: 'Test', lang: 'en' });
+  });
+
+  test('the body rendered is the one in that language', () => {
+    expect(renderPost(both, 'ru')).toContain('Привет.');
+    expect(renderPost(both, 'zh')).toContain('Hello.');
+  });
+
+  test('each language has its own feed, and an entry keeps one id across them', () => {
+    const en = atomXml([both], 'en');
+    const rux = atomXml([both], 'ru');
+    expect(en).toContain('<title>Test</title>');
+    expect(rux).toContain('<title>Запись</title>');
+    expect(rux).toContain('xml:lang="ru"');
+    expect(rux).toContain('/ru/news/test');
+    for (const feed of [en, rux]) expect(feed).toContain('<id>https://openipc.org/news/test</id>');
+  });
+});
+
+describe('a post and its translations are one post', () => {
+  /** A data/news with these files in it, as news() reads from a repository root. */
+  const root = (files: Record<string, string>) => {
+    const dir = mkdtempSync(join(tmpdir(), 'news-'));
+    mkdirSync(join(dir, 'data', 'news'), { recursive: true });
+    for (const [name, text] of Object.entries(files)) writeFileSync(join(dir, 'data', 'news', name), text);
+    return dir;
+  };
+  const RU = 'title: Запись\ndate: 2026-10-10\nsummary: О чём она.';
+
+  test('the translation goes under i18n, English stays on top', () => {
+    const [post] = news(root({
+      '2026-10-10-a-post.md': file(GOOD),
+      '2026-10-10-a-post.ru.md': file(RU, 'Привет.\n'),
+    }));
+    expect(post).toMatchObject({ slug: 'a-post', title: 'A post', i18n: { ru: { title: 'Запись', body: 'Привет.\n' } } });
+  });
+
+  // Otherwise a reader of any other language gets a page with nothing on it.
+  test('a translation with no English post is refused', () => {
+    expect(() => news(root({ '2026-10-10-a-post.ru.md': file(RU) })))
+      .toThrow(/written in ru but not in English/);
+  });
+
+  // The date is in the file name and in the front matter of both files, so
+  // the two can disagree; the post is one post and has one day.
+  test('a translation dated differently is refused', () => {
+    expect(() => news(root({
+      '2026-10-10-a-post.md': file(GOOD),
+      '2026-10-11-a-post.ru.md': file('title: Запись\ndate: 2026-10-11\nsummary: О чём она.'),
+    }))).toThrow(/is dated 2026-10-11 and the English post 2026-10-10/);
   });
 });

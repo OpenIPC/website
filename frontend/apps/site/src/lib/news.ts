@@ -16,6 +16,11 @@
  *     translateIn does for links in translated copy: `/cameras/boards` in a
  *     post read under /ru/ is `/ru/cameras/boards`. An address with a file
  *     extension (`/news.atom`) is a file, not a page, and is left alone.
+ *
+ * A post is written in English and may be translated: `<date>-<slug>.ru.md`
+ * beside `<date>-<slug>.md`. English stays at the top level, because it is the
+ * original and the fallback; `inLocale` picks what a given reader gets and
+ * says which language that turned out to be, so a page can mark it.
  */
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
@@ -25,15 +30,32 @@ import rehypeStringify from 'rehype-stringify';
 import posts from '../data/news.json';
 import { pathFor, type Locale } from './i18n';
 
-export interface Post {
-  slug: string;
-  /** YYYY-MM-DD, the day in the file name. */
-  date: string;
+/** A post's text in one language. */
+export interface Text {
   title: string;
   summary: string;
   author?: string;
   /** Markdown, as written. */
   body: string;
+}
+
+export interface Post extends Text {
+  slug: string;
+  /** YYYY-MM-DD, the day in the file name. Translations share it. */
+  date: string;
+  /** Translations, by language. English is the post itself, so it is not here. */
+  i18n?: Partial<Record<Locale, Text>>;
+}
+
+/**
+ * The post as this reader gets it, and the language that turned out to be.
+ * An untranslated post is served in English under every prefix, and `lang`
+ * says so rather than letting the page claim otherwise.
+ */
+export function inLocale(post: Post, locale: Locale): Text & { lang: Locale } {
+  const text = locale === 'en' ? undefined : post.i18n?.[locale];
+  if (text) return { ...text, lang: locale };
+  return { title: post.title, summary: post.summary, author: post.author, body: post.body, lang: 'en' };
 }
 
 /** Every post, newest first. */
@@ -87,7 +109,9 @@ export function localize(href: string, locale: Locale): string {
 
 /** The post's body as HTML, its links in `locale`. Throws on anything the module comment refuses. */
 export function renderPost(post: Post, locale: Locale): string {
-  const where = `data/news/${post.date}-${post.slug}.md`;
+  const text = inLocale(post, locale);
+  const suffix = text.lang === 'en' ? '' : `.${text.lang}`;
+  const where = `data/news/${post.date}-${post.slug}${suffix}.md`;
 
   const markdown = () => (tree: Tree) => {
     walk(tree, (node) => {
@@ -122,7 +146,7 @@ export function renderPost(post: Post, locale: Locale): string {
       .use(remarkRehype)
       .use(html)
       .use(rehypeStringify)
-      .processSync(post.body),
+      .processSync(text.body),
   );
 }
 

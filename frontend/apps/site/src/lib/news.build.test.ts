@@ -7,28 +7,34 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LOCALES, pathFor } from './i18n';
-import { newsPath, POSTS } from './news';
-import { atomXml } from './news-feed';
+import { inLocale, newsPath, POSTS } from './news';
+import { atomXml, feedPath } from './news-feed';
 
 const dist = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'dist');
 const page = (path: string) => readFileSync(join(dist, path.slice(1), 'index.html'), 'utf8');
 
 describe('news in the bundle', () => {
-  test('/news.atom is the feed', () => {
-    expect(readFileSync(join(dist, 'news.atom'), 'utf8')).toBe(atomXml());
+  test.each(LOCALES)('%s has a feed of its own', (locale) => {
+    const path = feedPath(locale);
+    expect(readFileSync(join(dist, path.slice(1)), 'utf8')).toBe(atomXml(POSTS, locale));
   });
 
   test.each(LOCALES)('the %s index lists every post in its own language', (locale) => {
     const html = page(pathFor(locale, '/news'));
     for (const post of POSTS) expect(html).toContain(`href="${pathFor(locale, newsPath(post))}"`);
-    expect(html).toContain('href="/news.atom"');
+    expect(html).toContain(`href="${feedPath(locale)}"`);
   });
 
-  test.each(LOCALES)('every post is a %s page titled by the post', (locale) => {
+  // The tab, the description and the article have to be the same language:
+  // a Russian article under an English title is what the per-locale title
+  // in page-paths.ts exists to prevent.
+  test.each(LOCALES)('every post is a %s page titled in the language it is shown in', (locale) => {
     for (const post of POSTS) {
       const html = page(pathFor(locale, newsPath(post)));
-      expect(html).toContain(`<title>${post.title.replace(/&/g, '&amp;')} - OpenIPC</title>`);
-      expect(html).toContain('<article lang="en">');
+      const text = inLocale(post, locale);
+      expect(html).toContain(`<title>${text.title.replace(/&/g, '&amp;')} - OpenIPC</title>`);
+      // An untranslated post is English under a translated prefix, and says so.
+      expect(html).toContain(text.lang === locale ? '<article>' : `<article lang="${text.lang}">`);
     }
   });
 
