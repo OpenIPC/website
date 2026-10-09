@@ -310,8 +310,9 @@ func orDefault(s, d string) string {
 // and every IP address in a crash's text with a keyed hash: two crashes of
 // one camera still show they are one camera's, and neither says which.
 func Redact(text, mac, key string) string {
-	// A URL's user and password -- majestic logs the stream addresses it
-	// pushes to -- go whole, not hashed: there is nothing to match them by.
+	// A URL's user and password, or its user alone -- majestic logs the
+	// stream addresses it pushes to -- go whole, not hashed: there is
+	// nothing to match them by.
 	text = credentials.ReplaceAllString(text, "${1}<credentials>@")
 	text = reports.Redact(text, reports.Facts{MAC: mac}, key)
 	text = replace(text, dottedMAC, func(m string) string { return "<mac:" + reports.Keyed(key, "mac", m) + ">" },
@@ -372,8 +373,9 @@ var (
 	// ipv6: eight groups, or fewer with "::". Never a time (17:57:19) or a
 	// register dump (9dc0:), which have neither.
 	ipv6 = regexp.MustCompile(`(?i)(?:[0-9a-f]{1,4}:){7}[0-9a-f]{1,4}|(?:[0-9a-f]{1,4}:){1,7}:(?:[0-9a-f]{1,4}(?::[0-9a-f]{1,4}){0,6})?|::(?:[0-9a-f]{1,4}(?::[0-9a-f]{1,4}){0,6})?`)
-	// credentials is a URL's userinfo: scheme://user:password@.
-	credentials = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.-]*://)[^\s/@:]*:[^\s/@]*@`)
+	// credentials is a URL's userinfo: scheme://user:password@ or
+	// scheme://user@.
+	credentials = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.-]*://)[^\s/@]+@`)
 	// dottedMAC is Cisco's 0012.3456.789a.
 	dottedMAC = regexp.MustCompile(`(?i)[0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4}`)
 )

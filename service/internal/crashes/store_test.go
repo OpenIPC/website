@@ -359,9 +359,9 @@ func TestRankingAndMerge(t *testing.T) {
 func TestRedact(t *testing.T) {
 	in := "ip=10.0.0.2:10.0.0.1:10.0.0.254:255.255.255.0 then 1.2.3.4 5.6.7.8, v6 fe80::1ff:fe23:4567:890a and 2001:db8:0:0:0:0:2:1, " +
 		"cisco 0012.3456.789a, colon aa:bb:cc:dd:ee:ff, kept: Linux version 4.9.37.1.2, 17:57:19, 9dc0: bf12bef8, ::1, 127.0.0.1, " +
-		"\"version\": \"2.6.10.05\", push rtmp://admin:s3cret@live.example.net/app"
+		"\"version\": \"2.6.10.05\", push rtmp://admin:s3cret@live.example.net/app, pull rtsp://operator@cam.example.net/live"
 	out := Redact(in, "", "k")
-	for _, leak := range []string{"admin:s3cret", "s3cret", "10.0.0.2", "10.0.0.1", "10.0.0.254", "1.2.3.4", "5.6.7.8", "fe80::", "2001:db8", "0012.3456", "aa:bb:cc"} {
+	for _, leak := range []string{"admin:s3cret", "s3cret", "operator@", "10.0.0.2", "10.0.0.1", "10.0.0.254", "1.2.3.4", "5.6.7.8", "fe80::", "2001:db8", "0012.3456", "aa:bb:cc"} {
 		if strings.Contains(out, leak) {
 			t.Errorf("%q survived: %s", leak, out)
 		}
