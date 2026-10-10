@@ -194,7 +194,10 @@ const clubLabels = Object.fromEntries(
 
   const menuOpen = () => collapse?.hasAttribute('data-open') ?? false;
 
+  // Every way of closing the menu closes its panels too, or the next opening
+  // shows whichever one was left open.
   function closeMenu() {
+    closeAll();
     collapse?.removeAttribute('data-open');
     toggler?.setAttribute('aria-expanded', 'false');
   }
