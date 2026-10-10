@@ -417,9 +417,14 @@ func TestFirmwareSegmentsCurrent(t *testing.T) {
 			"Regenerate it with the jq line in the file's header.", len(got), len(want))
 	}
 	// Current here is not current on the host unless something installs it:
-	// every production deploy does.
-	mustMatch(t, `(?m)^\s*\[ "\$env_name" = prod \] && install_firmware_segments$`, read(t, "deploy/deploy.sh"),
-		"openipc-deploy prod must install firmware-segments.tsv, or the host's copy goes stale")
+	// every healthy production deploy reruns install-metrics.sh, after the
+	// health gate, so a failed release does not install anything.
+	deploy := read(t, "deploy/deploy.sh")
+	mustMatch(t, `(?m)^      install_metrics$`, deploy,
+		"openipc-deploy prod must reinstall the metrics tools, or the host's copies go stale")
+	if i, j := strings.Index(deploy, "if wait_healthy \"$web_port\""), strings.Index(deploy, "\n      install_metrics\n"); i < 0 || j < i {
+		t.Error("install_metrics must run after the health gate, not before it")
+	}
 }
 
 // Without the fetcher on the host the memo falls back to the paste-by-hand
@@ -655,7 +660,9 @@ func TestSearchQueriesWeeksWithoutDays(t *testing.T) {
 // memo reads the month from it -- whole, where the log holds 14 days -- and the
 // coverage caveat stops naming firmware.
 func TestAudienceMemoDownloadsTable(t *testing.T) {
-	table := "ssc338q\twfbng\t3\ngk7205v200\tlite\t5\nhi3516ev300\twaybeam\t1\n"
+	// The fixture's beacon covers 15-20 October; the waybeam download on the
+	// 3rd is the month's, but not H3's, whose clicks are from covered days.
+	table := "2026-10-17\tssc338q\twfbng\t3\n2026-10-17\tgk7205v200\tlite\t5\n2026-10-03\thi3516ev300\twaybeam\t1\n"
 	memoEnv = map[string]string{"DOWNLOADS_TSV": writeFile(t, filepath.Join(t.TempDir(), "downloads.tsv"), table)}
 	defer func() { memoEnv = nil }()
 	memo := runMemo(t, "", octoberCountries)
@@ -665,6 +672,8 @@ func TestAudienceMemoDownloadsTable(t *testing.T) {
 	mustContain(t, memo, "- FPV: 4", "wfbng and waybeam are FPV editions, whatever the chip")
 	mustContain(t, memo, "- CCTV: 5", "a lite build on a CCTV chip is CCTV")
 	mustNotContain(t, memo, "funnel, firmware and attribution", "firmware is whole-month, so not under the coverage caveat")
+	mustContain(t, memo, "against its share of completed downloads: **38%** (3 of 8)",
+		"H3 sets covered-day clicks against covered-day downloads, not the whole month's 9")
 }
 
 // A download counts as FPV by its edition, and the editions are the service's.
