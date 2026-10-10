@@ -316,6 +316,10 @@
       "one": "其他文件中有 {count} 行：在全部中搜索。",
       "other": "其他文件中有 {count} 行：在全部中搜索。"
     },
+    "hits_elsewhere_more": {
+      "one": "其他文件中超过 {count} 行：在全部中搜索。",
+      "other": "其他文件中超过 {count} 行：在全部中搜索。"
+    },
     "hits_hidden": {
       "one": "另有 {count} 行匹配，位于被筛选条件排除的主板上。",
       "other": "另有 {count} 行匹配，位于被筛选条件排除的主板上。"

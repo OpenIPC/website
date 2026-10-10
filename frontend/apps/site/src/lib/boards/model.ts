@@ -175,7 +175,6 @@ export function filterHits(hits: Hit[], kept: Entry[]): Hit[] {
   return hits.filter((h) => ids.has(h.model_id));
 }
 
-/** What an entry is: a board unless a source says it is a finished device. */
 /**
  * How many matching lines each place to search in holds, from one search of
  * all of them: what the scope switch shows beside each choice, so a reader
@@ -187,6 +186,7 @@ export function countByScope(hits: Pick<Hit, 'kind'>[]): Record<Scope, number> {
   return n;
 }
 
+/** What an entry is: a board unless a source says it is a finished device. */
 export function kindOf(m: Pick<Model, 'kind'>): string {
   return m.kind || 'board';
 }

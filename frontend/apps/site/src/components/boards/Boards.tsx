@@ -51,8 +51,9 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
   const [open, setOpen] = useState<string | null>(initial.model);
   const [data, setData] = useState<Load<BoardsFile>>({ state: 'loading' });
   const [found, setFound] = useState<Load<SearchResult> | null>(null);
-  // The same search over every kind of file, for the counts beside each scope (the list when the scope is All).
-  const [everywhere, setEverywhere] = useState<SearchResult | null>(null);
+  // The same search over every kind of file, for the counts beside each scope (the list when the scope is All),
+  // with the query and SoC it answered: a count is shown only while it is still this search's.
+  const [everywhere, setEverywhere] = useState<{ key: string; value: SearchResult } | null>(null);
   const [device, setDevice] = useState<Load<DeviceAnswer> | null>(null);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   // On a phone the filters fold behind a button, so the first result is near the search.
@@ -153,6 +154,7 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
     return () => { live = false; };
   }, [deviceId]);
   const serverSoc = view.soc && all.some((m) => m.soc === view.soc) ? view.soc : null;
+  const searchKey = `${q}\n${serverSoc ?? ''}`;
 
   useEffect(() => {
     if (!searching) { setFound(null); setEverywhere(null); return; }
@@ -162,15 +164,16 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
       // All answers both questions; a narrower scope asks its own as well, so its list is not cut at All's limit.
       const allOf = searchBoards(q, 'all', serverSoc, abort.signal);
       const scoped = view.scope === 'all' ? allOf : searchBoards(q, view.scope, serverSoc, abort.signal);
-      allOf.then((v) => setEverywhere(v)).catch(() => { if (!abort.signal.aborted) setEverywhere(null); });
+      allOf.then((v) => setEverywhere({ key: searchKey, value: v })).catch(() => { if (!abort.signal.aborted) setEverywhere(null); });
       scoped
         .then((v) => setFound({ state: 'ok', value: v }))
         .catch((e: Error) => { if (!abort.signal.aborted) setFound({ state: 'error', error: e.message }); });
     }, 250);
     return () => { window.clearTimeout(timer); abort.abort(); };
   }, [q, view.scope, serverSoc, searching]);
-  // Counted over the boards the filters leave, as the list is.
-  const counts = useMemo(() => (everywhere ? countByScope(filterHits(everywhere.hits, kept)) : null), [everywhere, kept]);
+  // Counted over the boards the filters leave, as the list is; none while the search that made them is not this one.
+  const current = everywhere?.key === searchKey ? everywhere.value : null;
+  const counts = useMemo(() => (current ? countByScope(filterHits(current.hits, kept)) : null), [current, kept]);
 
   const s = stats(all);
   const filters = [view.maker, view.soc, view.sensor, view.missing, view.line, view.source, view.ready || null, view.kind].filter(Boolean).length;
@@ -199,7 +202,7 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
             {SCOPES.map((k) => {
               // All is boards by name as well as lines, so a line count beside it would undersell it.
               const n = counts && searching && k !== 'all' ? counts[k] : null;
-              const more = everywhere?.truncated ? '+' : '';
+              const more = current?.truncated ? '+' : '';
               return (
                 <button key={k} type="button" aria-pressed={k === view.scope}
                   class={`flex min-h-11 cursor-pointer items-center justify-center gap-1.5 px-2 py-1.5 text-sm whitespace-nowrap sm:min-h-0 sm:px-3 ${k === view.scope ? 'bg-brand-blue text-white' : 'bg-white text-body-secondary hover:text-body'}`}
@@ -331,7 +334,7 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
                   onAll={() => setExpanded((x) => new Set(x).add('matched'))} card={card} />
               </section>
             )}
-            <Hits found={found} kept={kept} q={q} scope={view.scope} matched={matched.length} named={named.length} counts={counts} onScope={(k) => set({ scope: k })}
+            <Hits found={found} kept={kept} q={q} scope={view.scope} matched={matched.length} named={named.length} counts={counts} capped={!!current?.truncated} onScope={(k) => set({ scope: k })}
               none={s.boards > 0 && all.every((m) => !has(m, 'boot_log'))}
             t={t} names={names} href={href} onOpen={openModel} addNew={addNew} />
           </>
@@ -494,7 +497,7 @@ function Card({ m, level, line, socs, names, sources, t, href, onOpen, catalogue
 
 const HIT_CLASS: Record<Heading['kind'], string> = { code: 'font-mono font-bold', name: 'font-semibold', none: 'font-medium' };
 
-function Hits({ found, kept, q, scope, matched, named, counts, onScope, none, t, names, href, onOpen, addNew }: {
+function Hits({ found, kept, q, scope, matched, named, counts, capped, onScope, none, t, names, href, onOpen, addNew }: {
   found: Load<SearchResult> | null; kept: Entry[]; q: string; scope: Scope;
   /** Boards matched by model or name above: a search that found one has not come up empty. */
   matched: number;
@@ -502,6 +505,8 @@ function Hits({ found, kept, q, scope, matched, named, counts, onScope, none, t,
   named: number;
   /** Lines in each scope, from the search of all of them: where else to look when this one has none. */
   counts: Record<Scope, number> | null;
+  /** The search of everything stopped at the server's limit: its counts are a lower bound. */
+  capped: boolean;
   onScope: (k: Scope) => void;
   none: boolean; t: BoardsT; names: Record<string, string>;
   href: (model: string | null) => string; onOpen: (id: string) => void; addNew: ComponentChildren;
@@ -535,7 +540,7 @@ function Hits({ found, kept, q, scope, matched, named, counts, onScope, none, t,
             {t(`hits_none_in_${scope}`, { q })}{scope === 'boot_log' && none ? ` ${t('hits_none_boot_log')}` : ''}
             {counts && counts.all > 0 && (
               <> <button type="button" class="cursor-pointer p-0 text-left text-brand-blue underline" onClick={() => onScope('all')}>
-                {t('hits_elsewhere', { count: counts.all })}
+                {t(capped ? 'hits_elsewhere_more' : 'hits_elsewhere', { count: counts.all })}
               </button></>
             )}
             {named > 0 && (

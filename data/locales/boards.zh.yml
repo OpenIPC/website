@@ -226,6 +226,9 @@ zh:
     hits_elsewhere:
       one: "其他文件中有 {count} 行：在全部中搜索。"
       other: "其他文件中有 {count} 行：在全部中搜索。"
+    hits_elsewhere_more:
+      one: "其他文件中超过 {count} 行：在全部中搜索。"
+      other: "其他文件中超过 {count} 行：在全部中搜索。"
     hits_named:
       one: "有 {count} 块主板叫这个名字：在全部中搜索。"
       other: "有 {count} 块主板叫这个名字：在全部中搜索。"

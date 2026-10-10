@@ -234,6 +234,9 @@ en:
     hits_elsewhere:
       one: "It is in {count} line elsewhere: search All."
       other: "It is in {count} lines elsewhere: search All."
+    hits_elsewhere_more:
+      one: "It is in more than {count} line elsewhere: search All."
+      other: "It is in more than {count} lines elsewhere: search All."
     hits_named:
       one: "{count} board is called that: search All."
       other: "{count} boards are called that: search All."

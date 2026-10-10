@@ -393,6 +393,10 @@
       "one": "It is in {count} line elsewhere: search All.",
       "other": "It is in {count} lines elsewhere: search All."
     },
+    "hits_elsewhere_more": {
+      "one": "It is in more than {count} line elsewhere: search All.",
+      "other": "It is in more than {count} lines elsewhere: search All."
+    },
     "hits_hidden": {
       "one": "{count} more matching line is on a board the filters leave out.",
       "other": "{count} more matching lines are on boards the filters leave out."
