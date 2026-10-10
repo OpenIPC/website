@@ -258,7 +258,8 @@
     "filter_line": "产品线",
     "filter_maker": "厂商",
     "filter_missing": "缺少",
-    "filter_ready": "仅显示支持 OpenIPC 的",
+    "filter_ready": "仅显示一步安装",
+    "filter_ready_hint": "coupler 镜像可将其从原厂固件切换到 OpenIPC",
     "filter_sensor": "传感器",
     "filter_soc": "SoC",
     "filter_source": "来源",
@@ -311,6 +312,14 @@
       "one": "来自 {count} 块主板",
       "other": "来自 {count} 块主板"
     },
+    "hits_elsewhere": {
+      "one": "其他文件中有 {count} 行：在全部中搜索。",
+      "other": "其他文件中有 {count} 行：在全部中搜索。"
+    },
+    "hits_elsewhere_more": {
+      "one": "其他文件中超过 {count} 行：在全部中搜索。",
+      "other": "其他文件中超过 {count} 行：在全部中搜索。"
+    },
     "hits_hidden": {
       "one": "另有 {count} 行匹配，位于被筛选条件排除的主板上。",
       "other": "另有 {count} 行匹配，位于被筛选条件排除的主板上。"
@@ -318,6 +327,10 @@
     "hits_lines": {
       "one": "{count} 行匹配",
       "other": "{count} 行匹配"
+    },
+    "hits_named": {
+      "one": "有 {count} 块主板叫这个名字：在全部中搜索。",
+      "other": "有 {count} 块主板叫这个名字：在全部中搜索。"
     },
     "hits_none": "这里没有包含“{q}”的行。",
     "hits_none_boot_log": "还没有人提供启动日志。",
@@ -464,8 +477,8 @@
       "xvi-ahd-hybrid-camera-module": "XVI/AHD 混合摄像机模组"
     },
     "query_short": "请至少输入三个字符再搜索。",
-    "ready_because": "设备 {ids} 有迁移镜像",
-    "ready_because_label": "OpenIPC 支持：",
+    "ready_because": "coupler 镜像可将设备 {ids} 从原厂固件切换到 OpenIPC，见下方“固件”。",
+    "ready_because_label": "一步安装：",
     "report": {
       "backup_private": "备份：不公开",
       "backup_public": "备份：公开",
@@ -591,7 +604,7 @@
     "tag_photo_front": "正面",
     "tag_photo_other": "照片",
     "tag_pinout": "引脚图",
-    "tag_ready": "支持 OpenIPC",
+    "tag_ready": "一步安装",
     "tag_shared": "共用",
     "text_error": "无法加载此文件（{error}）。",
     "text_loading": "正在加载…",
