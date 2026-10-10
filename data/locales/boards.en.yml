@@ -231,6 +231,9 @@ en:
     hits_none_in_boot_log: 'No boot log mentions “{q}”.'
     hits_none_in_note: 'No note mentions “{q}”.'
     hits_none_in_all: 'No U-Boot console, boot log or note mentions “{q}”.'
+    hits_hidden:
+      one: '{count} more matching line is on a board the filters leave out.'
+      other: '{count} more matching lines are on boards the filters leave out.'
     filters: Filters
     filters_count:
       one: 'Filters ({count})'

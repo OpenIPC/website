@@ -59,7 +59,8 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
           const sensors = [...new Set(m.units.map((u) => u.sensor).filter(Boolean))].join('; ') || t('unknown');
           return (
             <li key={m.id}>
-              <a href={`${catalogueHref}?model=${encodeURIComponent(m.id)}`} aria-label={t('details_of', { board: title })}
+              {/* Named by its contents, title first, so the coverage chips' has/missing is heard too. */}
+              <a href={`${catalogueHref}?model=${encodeURIComponent(m.id)}`}
                 class="grid h-full grid-cols-[110px_1fr] overflow-hidden rounded-lg border border-hairline bg-white text-body no-underline transition-colors hover:border-brand-blue">
                 {photo
                   ? <img src={photo.thumb_url} alt="" loading="lazy" decoding="async" class="block h-full min-h-[96px] w-[110px] bg-surface-alt object-cover" />

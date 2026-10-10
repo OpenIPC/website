@@ -223,6 +223,9 @@ zh:
     hits_none_in_boot_log: '没有启动日志提到“{q}”。'
     hits_none_in_note: '没有备注提到“{q}”。'
     hits_none_in_all: 'U-Boot 控制台、启动日志和备注中都没有“{q}”。'
+    hits_hidden:
+      one: '另有 {count} 行匹配，位于被筛选条件排除的主板上。'
+      other: '另有 {count} 行匹配，位于被筛选条件排除的主板上。'
     filters: 筛选
     filters_count:
       one: '筛选（{count}）'

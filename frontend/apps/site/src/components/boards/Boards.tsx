@@ -239,7 +239,8 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
               <dt>
                 <button type="button" aria-pressed={view.missing === 'pinout'}
                   class="cursor-pointer p-0 text-left text-brand-blue underline decoration-brand-blue/40 underline-offset-2 hover:text-link-hover"
-                  onClick={() => set({ missing: view.missing === 'pinout' ? null : 'pinout' })}>
+                  // The count is the whole catalogue's, so it opens on the whole catalogue: no query, no other filter.
+                  onClick={() => setView({ ...EMPTY, scope: view.scope, missing: view.missing === 'pinout' ? null : 'pinout' })}>
                   {t('stats_need_pinout', { count: s.needPinout })}
                 </button>
               </dt>
@@ -468,6 +469,8 @@ function Hits({ found, kept, q, scope, matched, none, t, names, href, onOpen, ad
     return <div class="site-alert site-alert-warning mt-8" role="alert"><p class="mb-0">{t('search_error', { error: found.error })}</p></div>;
   }
   const hits = filterHits(found.value.hits, kept);
+  // Lines the server found on boards the filters leave out: the search is not empty, the selection is.
+  const hidden = found.value.hits.length - hits.length;
   const byId = new Map(kept.map((m) => [m.id, m]));
   // A hit is headed as its card is: the printed code, else the product name.
   const headOf = (h: Hit): Heading => {
@@ -482,9 +485,10 @@ function Hits({ found, kept, q, scope, matched, none, t, names, href, onOpen, ad
           {t('hits_lines', { count: hits.length })} {t('hits_boards', { count: boards })} · {t('hits_scope', { scope: t(`scope_${scope}`) })}
         </p>
       )}
-      {hits.length === 0 && (matched > 0
+      {hits.length === 0 && hidden === 0 && (matched > 0
         ? <p class="m-0 text-sm text-body-secondary">{t(`hits_none_in_${scope}`, { q })}</p>
         : <Notice>{t(`hits_none_in_${scope}`, { q })}{scope === 'boot_log' && none ? ` ${t('hits_none_boot_log')}` : ''} {addNew}</Notice>)}
+      {hidden > 0 && <p class="m-0 text-sm text-body-secondary">{t('hits_hidden', { count: hidden })}</p>}
       {hits.map((h) => (
         <div key={`${h.url}:${h.line}`} class="grid gap-1.5 rounded-lg border border-hairline bg-white px-3.5 py-3">
           <header class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 text-sm">

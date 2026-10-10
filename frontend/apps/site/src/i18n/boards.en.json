@@ -387,6 +387,10 @@
       "one": "in {count} board",
       "other": "in {count} boards"
     },
+    "hits_hidden": {
+      "one": "{count} more matching line is on a board the filters leave out.",
+      "other": "{count} more matching lines are on boards the filters leave out."
+    },
     "hits_lines": {
       "one": "{count} matching line",
       "other": "{count} matching lines"

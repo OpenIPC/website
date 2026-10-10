@@ -310,6 +310,10 @@
       "one": "来自 {count} 块主板",
       "other": "来自 {count} 块主板"
     },
+    "hits_hidden": {
+      "one": "另有 {count} 行匹配，位于被筛选条件排除的主板上。",
+      "other": "另有 {count} 行匹配，位于被筛选条件排除的主板上。"
+    },
     "hits_lines": {
       "one": "{count} 行匹配",
       "other": "{count} 行匹配"
