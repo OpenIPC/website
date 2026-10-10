@@ -250,13 +250,29 @@ ru:
       row_days_where: "Наш сервер"
       row_days_long: "хранится"
     news:
-      title: Новости
-      lede: Объявления проекта OpenIPC. Они пишутся в репозитории и публикуются через pull request.
-      subscribe: Подписаться на Atom
+      about: 'Об этой записи'
+      also_in: 'Другие языки'
       back: Все новости
       by: автор — {author}
-      english_only: Эта запись на английском языке.
+      earlier: 'Ранее'
       empty: Пока ничего не опубликовано.
+      english_only: Эта запись на английском языке.
+      eyebrow: 'Новости проекта'
+      feed: 'Лента Atom'
+      follow: 'Следить'
+      hero_title: 'Что нового в OpenIPC'
+      in_this_post: 'В этой записи'
+      latest: 'Последнее'
+      lede: 'Новое в прошивке, новые чипы и изменения на этом сайте — раз в неделю или две. На английском, русском и китайском.'
+      newer: 'Новее'
+      older: 'Раньше'
+      on_this_page: 'На этой странице'
+      published: 'Опубликовано'
+      read: 'Читать'
+      read_post: 'Читать запись'
+      subscribe: Подписаться на Atom
+      telegram: 'Канал в Telegram'
+      title: Новости
     donate:
       # Russia-only, and deliberately absent from pages.en.yml and pages.zh.yml
       # (#201). Open Collective cannot be paid with a card issued in Russia, so

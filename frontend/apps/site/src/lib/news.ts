@@ -107,8 +107,33 @@ export function localize(href: string, locale: Locale): string {
   return pathFor(locale, path) + rest;
 }
 
+/** A section of a post: an `<h2>` and the anchor it was given. */
+export interface Heading {
+  id: string;
+  text: string;
+}
+
+function textOf(node: Tree): string {
+  if (node.type === 'text') return node.value ?? '';
+  return (node.children ?? []).map(textOf).join('');
+}
+
+/** An anchor from a heading, in any script: "Sharp while you turn" -> "sharp-while-you-turn". */
+export function anchorFor(text: string): string {
+  return text.toLowerCase().normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '') || 'section';
+}
+
 /** The post's body as HTML, its links in `locale`. Throws on anything the module comment refuses. */
 export function renderPost(post: Post, locale: Locale): string {
+  return renderArticle(post, locale).html;
+}
+
+/**
+ * The body as HTML and its sections, for the page's "On this page" list.
+ * Every `<h2>` and `<h3>` gets an id from its text, made unique within the
+ * post, so a section can be linked to; only the `<h2>`s are listed.
+ */
+export function renderArticle(post: Post, locale: Locale): { html: string; headings: Heading[] } {
   const text = inLocale(post, locale);
   const suffix = text.lang === 'en' ? '' : `.${text.lang}`;
   const where = `data/news/${post.date}-${post.slug}${suffix}.md`;
@@ -124,10 +149,22 @@ export function renderPost(post: Post, locale: Locale): string {
     });
   };
 
+  const headings: Heading[] = [];
+  const used = new Set<string>();
+
   const html = () => (tree: Tree) => {
     walk(tree, (node) => {
       if (node.type === 'raw') throw new Error(`${where}: raw HTML is not allowed in a post`);
       if (node.type !== 'element' || !node.properties) return;
+      if (node.tagName === 'h2' || node.tagName === 'h3') {
+        const text = textOf(node).trim();
+        const base = anchorFor(text);
+        let id = base;
+        for (let n = 2; used.has(id); n++) id = `${base}-${n}`;
+        used.add(id);
+        node.properties.id = id;
+        if (node.tagName === 'h2') headings.push({ id, text });
+      }
       const href = node.properties.href;
       if (typeof href === 'string') {
         checkUrl(href, where);
@@ -138,7 +175,7 @@ export function renderPost(post: Post, locale: Locale): string {
     });
   };
 
-  return String(
+  const out = String(
     unified()
       .use(remarkParse)
       .use(remarkGfm)
@@ -148,7 +185,18 @@ export function renderPost(post: Post, locale: Locale): string {
       .use(rehypeStringify)
       .processSync(text.body),
   );
+  return { html: out, headings };
 }
+
+/** The posts either side of this one: `newer` and `older`, either may be absent. */
+export function neighbours(post: Post): { newer?: Post; older?: Post } {
+  const i = POSTS.indexOf(post);
+  return { newer: i > 0 ? POSTS[i - 1] : undefined, older: POSTS[i + 1] };
+}
+
+/** The languages this post can be read in besides English, as written. */
+export const translations = (post: Post): Locale[] =>
+  (Object.keys(post.i18n ?? {}) as Locale[]).filter((l) => l !== 'en');
 
 /** "10 October 2026", in the reader's language. */
 export function formatDate(date: string, locale: Locale): string {

@@ -250,13 +250,29 @@ en:
       row_days_where: "Our server"
       row_days_long: "kept"
     news:
-      title: News
-      lede: Announcements from the OpenIPC project, written in the repository and published as pull requests.
-      subscribe: Subscribe with Atom
+      about: 'About this post'
+      also_in: 'Also in'
       back: All news
       by: by {author}
-      english_only: This post is in English.
+      earlier: 'Earlier'
       empty: Nothing has been posted yet.
+      english_only: This post is in English.
+      eyebrow: 'Project news'
+      feed: 'Atom feed'
+      follow: 'Follow'
+      hero_title: 'What changed in OpenIPC'
+      in_this_post: 'In this post'
+      latest: 'Latest'
+      lede: 'Firmware features, new chips and changes to this site, written up every week or two. In English, Russian and Chinese.'
+      newer: 'Newer'
+      older: 'Older'
+      on_this_page: 'On this page'
+      published: 'Published'
+      read: 'Read'
+      read_post: 'Read the post'
+      subscribe: Subscribe with Atom
+      telegram: 'Telegram channel'
+      title: News
     donate:
       business_band_html: If your company depends on OpenIPC, the sustainable way to support it is a commercial relationship. <a href="/business">See what we offer</a>.
       accounting: We're committed to open and transparent accounting, and are grateful for any support you can provide to our efforts to advance OpenIPC and our mission toward a sustainable future.
