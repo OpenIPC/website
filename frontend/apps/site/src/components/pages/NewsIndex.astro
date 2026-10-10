@@ -3,35 +3,106 @@
  * /news (#212): every post, newest first, from data/news. A post is shown in
  * the reader's language where it has been translated, and in English where it
  * has not -- marked lang="en" so a screen reader or a translator knows.
+ *
+ * The newest post leads as a wide card with its sections listed beside it;
+ * the rest follow as a grid of cards, two across on a wide screen and one on
+ * a phone.
  */
-import PageHeader from '../PageHeader.astro';
-import { formatDate, inLocale, newsPath, POSTS } from '../../lib/news';
+import { formatDate, inLocale, newsPath, POSTS, renderArticle } from '../../lib/news';
 import { feedPath } from '../../lib/news-feed';
 import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
 
 interface Props { locale: Locale }
 const { locale } = Astro.props;
 const t = useTranslations(locale);
-const shown = POSTS.map((post) => ({ post, text: inLocale(post, locale) }));
+const k = (key: string) => t(`pages.news.${key}`);
+const shown = POSTS.map((post) => {
+  const text = inLocale(post, locale);
+  return { post, text, lang: text.lang === locale ? undefined : text.lang };
+});
+const [latest, ...earlier] = shown;
+const sections = latest ? renderArticle(latest.post, locale).headings : [];
+const eyebrow = 'mb-5 font-mono text-sm font-medium tracking-[.08em] text-body-secondary uppercase';
 ---
-<PageHeader title={t('pages.news.title')} lede={t('pages.news.lede')} />
-<div class="site-container pb-16">
-  <p class="mb-8">
-    <a href={feedPath(locale)} type="application/atom+xml">{t('pages.news.subscribe')}</a>
-  </p>
-  {shown.length === 0
-    ? <p class="text-body-secondary">{t('pages.news.empty')}</p>
+<header class="bg-ink text-white">
+  <div class="site-container flex flex-wrap items-end gap-x-12 gap-y-8 pt-16 pb-14 lg:pt-20">
+    <div class="min-w-0 flex-[999_1_32rem]">
+      <p class="mb-4 font-mono text-sm tracking-[.08em] text-[#9aa6ff] uppercase">{k('eyebrow')}</p>
+      <h1 class="mb-0 text-[2.5rem] leading-[1.05] font-bold tracking-[-.02em] text-balance sm:text-[3.25rem] lg:text-[4rem]">{k('hero_title')}</h1>
+      <p class="mt-5 mb-0 max-w-[40ch] text-lg leading-[1.55] text-white/80 sm:text-[1.3125rem]">{k('lede')}</p>
+    </div>
+    <div class="flex flex-[1_1_16rem] flex-wrap gap-3">
+      <a
+        href={feedPath(locale)}
+        type="application/atom+xml"
+        class="inline-flex min-h-12 items-center gap-2.5 rounded-lg bg-brand-blue px-5 text-[1.0625rem] font-semibold text-white no-underline hover:bg-link-hover hover:text-white"
+      >
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9" /><path d="M4 4a16 16 0 0 1 16 16" /><circle cx="5" cy="19" r="1.2" /></svg>
+        {k('subscribe')}
+      </a>
+      <a
+        href="https://t.me/openipc"
+        class="inline-flex min-h-12 items-center rounded-lg border border-white/30 px-5 text-[1.0625rem] font-medium text-white no-underline hover:border-white/60 hover:text-white"
+      >{k('telegram')}</a>
+    </div>
+  </div>
+</header>
+
+<div class="site-container pt-12 pb-20 lg:pt-14 lg:pb-24">
+  {!latest
+    ? <p class="text-lg text-body-secondary">{k('empty')}</p>
     : (
-      <ol class="max-w-[68ch] divide-y divide-hairline border-t border-hairline">
-        {shown.map(({ post, text }) => (
-          <li class="py-6">
-            <time datetime={post.date} class="text-sm text-body-secondary">{formatDate(post.date, locale)}</time>
-            <h2 class="mt-1 mb-2 text-h3 leading-[1.3]" lang={text.lang === locale ? undefined : text.lang}>
-              <a href={pathFor(locale, newsPath(post))} class="text-body no-underline hover:underline">{text.title}</a>
-            </h2>
-            <p class="mb-0 text-body-secondary" lang={text.lang === locale ? undefined : text.lang}>{text.summary}</p>
-          </li>
-        ))}
-      </ol>
+      <>
+        <h2 class={eyebrow}>{k('latest')}</h2>
+        <a
+          href={pathFor(locale, newsPath(latest.post))}
+          class="news-card group flex flex-wrap gap-x-14 gap-y-8 rounded-xl border border-hairline bg-surface-alt p-6 text-body no-underline hover:text-body sm:p-10 lg:px-12 lg:py-11"
+        >
+          <div class="min-w-0 flex-[999_1_28rem]">
+            <p class="mb-3.5 font-mono text-[.9375rem] text-body-secondary">
+              <time datetime={latest.post.date}>{formatDate(latest.post.date, locale)}</time>
+            </p>
+            <h3 class="news-card-title mb-0 text-[1.875rem] leading-[1.12] font-bold tracking-[-.015em] text-ink text-balance sm:text-[2.75rem]" lang={latest.lang}>{latest.text.title}</h3>
+            <p class="mt-5 mb-0 text-lg leading-[1.6] text-[#3a4357] sm:text-xl" lang={latest.lang}>{latest.text.summary}</p>
+            <p class="mt-7 mb-0 text-lg font-semibold text-brand-blue">{k('read_post')} →</p>
+          </div>
+          {sections.length > 0 && (
+            <div class="flex-[1_1_17rem] border-t border-[#d9deea] pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
+              <p class="mb-3.5 font-mono text-[.8125rem] tracking-[.08em] text-body-secondary uppercase">{k('in_this_post')}</p>
+              <ol class="m-0 flex list-none flex-col gap-3.5 p-0 text-[1.0625rem] leading-[1.45]" lang={latest.lang}>
+                {sections.map((section, i) => (
+                  <li class="flex gap-3">
+                    <span class="pt-0.5 font-mono text-[.9375rem] text-brand-blue" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                    <span>{section.text}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </a>
+
+        {earlier.length > 0 && (
+          <>
+            <h2 class={`${eyebrow} mt-16 lg:mt-[4.5rem]`}>{k('earlier')}</h2>
+            <ol class="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,30rem),1fr))] gap-6 p-0">
+              {earlier.map(({ post, text, lang }) => (
+                <li class="flex">
+                  <a
+                    href={pathFor(locale, newsPath(post))}
+                    class="news-card flex w-full flex-col rounded-xl border border-hairline bg-white px-6 pt-7 pb-6 text-body no-underline hover:border-[#c9d0e2] hover:text-body sm:px-8 sm:pt-8 sm:pb-7"
+                  >
+                    <p class="mb-3 font-mono text-[.9375rem] text-body-secondary">
+                      <time datetime={post.date}>{formatDate(post.date, locale)}</time>
+                    </p>
+                    <h3 class="news-card-title mb-0 text-2xl leading-[1.2] font-bold text-ink sm:text-[1.75rem]" lang={lang}>{text.title}</h3>
+                    <p class="mt-3.5 mb-0 grow text-[1.0625rem] leading-[1.6] text-[#3a4357] sm:text-lg" lang={lang}>{text.summary}</p>
+                    <p class="mt-5 mb-0 text-[1.0625rem] font-semibold text-brand-blue">{k('read')} →</p>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </>
+        )}
+      </>
     )}
 </div>

@@ -64,4 +64,13 @@ describe('news in the bundle', () => {
       if (text.lang !== locale) expect(xml).toContain(`<entry xml:lang="${text.lang}">`);
     }
   });
+
+  test.each(LOCALES)('every %s post\'s "on this page" links land on a section of it', (locale) => {
+    for (const post of POSTS) {
+      const html = page(pathFor(locale, newsPath(post)));
+      const ids = new Set([...html.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]));
+      const toc = [...html.matchAll(/<a href="#([^"]+)"/g)].map((m) => m[1]).filter((id) => id !== 'main');
+      expect(toc.filter((id) => !ids.has(id)), `${locale} ${post.slug}`).toEqual([]);
+    }
+  });
 });

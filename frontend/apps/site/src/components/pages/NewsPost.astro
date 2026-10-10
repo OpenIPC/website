@@ -5,33 +5,98 @@
  * site the reader's language. A post translated into this language is shown in
  * it; one that is not is shown in English, said so above the article and
  * marked lang="en" for screen readers and translators.
+ *
+ * The article is a reading column of about seventy characters; beside it on a
+ * wide screen, and under it on a phone, are its sections, the other languages
+ * it is in and where to follow the news.
  */
-import { formatDate, inLocale, postBySlug, renderPost, DEFAULT_AUTHOR } from '../../lib/news';
-import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
+import {
+  formatDate, inLocale, neighbours, newsPath, postBySlug, renderArticle, translations, DEFAULT_AUTHOR,
+} from '../../lib/news';
+import { feedPath } from '../../lib/news-feed';
+import { LOCALE_NAMES, pathFor, useTranslations, type Locale } from '../../lib/i18n';
 
 interface Props { locale: Locale; slug: string }
 const { locale, slug } = Astro.props;
 const t = useTranslations(locale);
+const k = (key: string, vars?: Record<string, string>) => t(`pages.news.${key}`, vars);
 const post = postBySlug(slug);
 const text = inLocale(post, locale);
 const translated = text.lang === locale;
-const html = renderPost(post, locale);
+const lang = translated ? undefined : text.lang;
+const { html, headings } = renderArticle(post, locale);
+const { newer, older } = neighbours(post);
+const others = (['en', ...translations(post)] as Locale[]).filter((l) => l !== text.lang);
+const label = 'mb-3.5 font-mono text-[.8125rem] tracking-[.08em] text-body-secondary uppercase';
 ---
-<div class="site-container mt-10 pb-16">
-  <p class="mb-6 text-sm">
-    <a href={pathFor(locale, '/news')}>← {t('pages.news.back')}</a>
-  </p>
-  {!translated && (
-    <p class="mb-6 max-w-[68ch] rounded-lg bg-surface-alt px-4 py-2 text-sm text-body-secondary">{t('pages.news.english_only')}</p>
-  )}
-  <article lang={translated ? undefined : text.lang}>
-    <header class="mb-8 max-w-[68ch]">
-      <h1 class="mb-3 text-h1 font-semibold text-balance">{text.title}</h1>
-      <p class="mb-0 text-sm text-body-secondary" lang={locale}>
-        <time datetime={post.date}>{formatDate(post.date, locale)}</time>
-        <span> · {t('pages.news.by', { author: text.author ?? DEFAULT_AUTHOR })}</span>
-      </p>
-    </header>
-    <div class="news-body" set:html={html} />
-  </article>
+<header class="bg-ink text-white">
+  <div class="site-container pt-8 pb-14 lg:pt-12 lg:pb-16">
+    <a href={pathFor(locale, '/news')} class="inline-flex min-h-11 items-center font-medium text-[#b9c1ff] no-underline hover:text-white">← {k('back')}</a>
+    <p class="mt-4 mb-0 font-mono text-[.9375rem] text-white/[.72]">
+      <time datetime={post.date}>{formatDate(post.date, locale)}</time>
+      <span> · {k('by', { author: text.author ?? DEFAULT_AUTHOR })}</span>
+    </p>
+    <h1 class="mt-4 mb-0 max-w-[20ch] text-[2.25rem] leading-[1.08] font-bold tracking-[-.02em] text-balance sm:text-5xl lg:text-[3.75rem]" lang={lang}>{text.title}</h1>
+    <p class="mt-6 mb-0 max-w-[46ch] text-lg leading-[1.55] text-white/[.82] sm:text-[1.375rem]" lang={lang}>{text.summary}</p>
+  </div>
+</header>
+
+<div class="site-container flex flex-wrap items-start gap-x-[4.5rem] gap-y-12 pt-10 pb-20 lg:pt-14 lg:pb-24">
+  <div class="min-w-0 max-w-[46.25rem] flex-[999_1_37.5rem]">
+    {!translated && (
+      <p class="mb-8 rounded-lg bg-surface-alt px-4 py-3 text-base text-body-secondary">{k('english_only')}</p>
+    )}
+    <article lang={lang}>
+      <div class="news-body" set:html={html} />
+    </article>
+    {(newer || older) && (
+      <nav aria-label={`${k('older')} / ${k('newer')}`} class="mt-16 flex flex-wrap justify-between gap-x-6 gap-y-4 border-t border-hairline pt-7">
+        {older
+          ? (
+            <a href={pathFor(locale, newsPath(older))} class="flex min-h-11 max-w-[22rem] flex-col justify-center no-underline">
+              <span class="text-sm text-body-secondary">← {k('older')}</span>
+              <span class="text-[1.0625rem] font-semibold" lang={inLocale(older, locale).lang === locale ? undefined : 'en'}>{inLocale(older, locale).title}</span>
+            </a>
+          )
+          : <span />}
+        {newer && (
+          <a href={pathFor(locale, newsPath(newer))} class="flex min-h-11 max-w-[22rem] flex-col justify-center text-right no-underline">
+            <span class="text-sm text-body-secondary">{k('newer')} →</span>
+            <span class="text-[1.0625rem] font-semibold" lang={inLocale(newer, locale).lang === locale ? undefined : 'en'}>{inLocale(newer, locale).title}</span>
+          </a>
+        )}
+      </nav>
+    )}
+  </div>
+
+  <aside aria-label={k('about')} class="flex min-w-0 flex-[1_1_16rem] flex-col gap-7 lg:sticky lg:top-[calc(var(--site-nav-height)+1.5rem)]">
+    {headings.length > 1 && (
+      <nav aria-label={k('on_this_page')} class="rounded-xl border border-hairline bg-surface-alt p-6">
+        <p class={label}>{k('on_this_page')}</p>
+        <ol class="m-0 flex list-none flex-col gap-1 p-0 text-base leading-[1.45]" lang={lang}>
+          {headings.map((heading) => (
+            <li><a href={`#${heading.id}`} class="block rounded-lg px-3 py-2 text-[#3a4357] no-underline hover:bg-white hover:text-ink">{heading.text}</a></li>
+          ))}
+        </ol>
+      </nav>
+    )}
+    <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-5 gap-y-3 px-1 text-base leading-normal">
+      <dt class="text-body-secondary">{k('published')}</dt>
+      <dd class="m-0"><time datetime={post.date}>{formatDate(post.date, locale)}</time></dd>
+      {others.length > 0 && (
+        <>
+          <dt class="text-body-secondary">{k('also_in')}</dt>
+          <dd class="m-0">
+            {others.map((other, i) => (
+              <>{i > 0 && ' · '}<a href={pathFor(other, newsPath(post))} hreflang={other} lang={other}>{LOCALE_NAMES[other]}</a></>
+            ))}
+          </dd>
+        </>
+      )}
+      <dt class="text-body-secondary">{k('follow')}</dt>
+      <dd class="m-0">
+        <a href={feedPath(locale)} type="application/atom+xml">{k('feed')}</a> · <a href="https://t.me/openipc">Telegram</a>
+      </dd>
+    </dl>
+  </aside>
 </div>

@@ -10,7 +10,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { LOCALES } from './i18n';
-import { inLocale, localize, POSTS, renderPost, type Post } from './news';
+import { inLocale, localize, POSTS, renderPost, type Post, anchorFor, neighbours, renderArticle } from './news';
 import { atomXml } from './news-feed';
 
 const post = (body: string): Post => ({ slug: 'test', date: '2026-10-10', title: 'Test', summary: 'A test.', body });
@@ -34,6 +34,15 @@ describe('the posts in data/news', () => {
       expect(renderPost(p, locale)).toMatch(/<p>/);
     },
   );
+});
+
+test('a post knows the posts either side of it', () => {
+  expect(neighbours(POSTS[0]).newer).toBeUndefined();
+  expect(neighbours(POSTS.at(-1)!).older).toBeUndefined();
+  if (POSTS.length > 1) {
+    expect(neighbours(POSTS[0]).older).toBe(POSTS[1]);
+    expect(neighbours(POSTS[1]).newer).toBe(POSTS[0]);
+  }
 });
 
 describe('front matter', () => {
@@ -67,6 +76,33 @@ describe('front matter', () => {
 });
 
 describe('rendering', () => {
+  test('gives every section an anchor and lists the top-level ones', () => {
+    const { html, headings } = renderArticle(post('## One thing\n\nText.\n\n### A detail\n\n## One thing\n\nMore.'), 'en');
+    expect(headings).toEqual([{ id: 'one-thing', text: 'One thing' }, { id: 'one-thing-2', text: 'One thing' }]);
+    expect(html).toContain('<h2 id="one-thing">');
+    expect(html).toContain('<h3 id="a-detail">');
+    expect(html).toContain('<h2 id="one-thing-2">');
+  });
+
+  test('names a heading that is a picture by its alt text', () => {
+    const { headings } = renderArticle(post('## ![The new board](https://openipc.org/board.png)\n\nText.\n\n## After'), 'en');
+    expect(headings).toEqual([{ id: 'the-new-board', text: 'The new board' }, { id: 'after', text: 'After' }]);
+  });
+
+  test('anchors a heading in any script', () => {
+    expect(anchorFor('Резкость на повороте')).toBe('резкость-на-повороте');
+    expect(anchorFor('转动时依然清晰')).toBe('转动时依然清晰');
+    expect(anchorFor('`isp.exposure`, explained!')).toBe('isp-exposure-explained');
+    expect(anchorFor('!!!')).toBe('section');
+  });
+
+  test('every post in every language has anchors no other section shares', () => {
+    for (const p of POSTS) for (const locale of LOCALES) {
+      const ids = [...renderPost(p, locale).matchAll(/ id="([^"]+)"/g)].map((m) => m[1]);
+      expect(new Set(ids).size, `${p.slug} ${locale}`).toBe(ids.length);
+    }
+  });
+
   test.each([
     ['a script', '<script>alert(1)</script>'],
     ['an iframe', 'Look: <iframe src="https://example.com"></iframe>'],
