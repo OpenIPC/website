@@ -211,11 +211,12 @@ en:
   footer:
     column_community: Community
     column_ecosystem: Ecosystem
-    column_platform: Platform
+    column_platform: 'Hardware & firmware'
     column_project: Project
     firmware_source: Firmware source code
     license_note: MIT core; some components are licensed separately.
     tagline: No backdoors. No subscriptions. No nonsense.
+    column_solutions: 'Use cases & business'
   nav:
     business: For Business
     business_overview: 'Overview'
@@ -255,6 +256,20 @@ en:
     vendors: Vendors
     webui: Web Interface
     wiki: Our Wiki
+    use_cases: Use cases
+    report_camera: Report a camera
+    club: OpenIPC Club
+    my_club: My Club page
+    leaderboard: Leaderboard
+    send_report: Send a report
+    review_queue: Review queue
+    crash_triage: Crash triage
+    sign_out_failed: 'Sign-out failed. You are still signed in; try again.'
+    sign_out: Sign out
+    crashes: Kernel crashes
+    menu: Menu
+    language: Language
+    member_menu: Your Club account
   net_iface:
     both: Camera has both Ethernet and Wireless networks
     eth: Camera only has Ethernet network
