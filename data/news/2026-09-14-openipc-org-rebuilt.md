@@ -1,13 +1,12 @@
 ---
 title: openipc.org, rebuilt
-date: 2026-10-09
+date: 2026-09-14
 summary: The site is now a static bundle in three languages and a small Go service. It also has a board catalogue, the OpenIPC Club, a firmware explorer and this news section.
 author: OpenIPC team
 ---
 
-Over the past six weeks openipc.org has been rebuilt from scratch, and the old
-Rails application is gone. This post covers what changed and what you can do
-here now.
+openipc.org has been rebuilt from scratch, and the old Rails application is
+gone. This post covers what changed and what you can do here.
 
 ## A static site, in three languages
 
@@ -50,8 +49,8 @@ be listed appear on the [leaderboard](/club/leaderboard).
 
 ## News, here
 
-From now on, announcements are posted on this page. Each post is a Markdown
-file in the [website repository](https://github.com/OpenIPC/website), so
-publishing one is a pull request like any other change. Posts are written in
-English. To follow them in a feed reader, subscribe to
-[the Atom feed](/news.atom).
+Announcements are posted on this page. Each post is a Markdown file in the
+[website repository](https://github.com/OpenIPC/website), so publishing one is
+a pull request like any other change. Posts are written in English and
+translated into Russian and Chinese. To follow them in a feed reader, subscribe
+to [the Atom feed](/news.atom).

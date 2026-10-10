@@ -3656,27 +3656,6 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/npu-detection-and-sharper-ptz"/>
   </url>
   <url>
-    <loc>https://openipc.org/news/openipc-org-rebuilt</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/openipc-org-rebuilt"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/openipc-org-rebuilt"/>
-    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/openipc-org-rebuilt"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/openipc-org-rebuilt"/>
-  </url>
-  <url>
-    <loc>https://openipc.org/ru/news/openipc-org-rebuilt</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/openipc-org-rebuilt"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/openipc-org-rebuilt"/>
-    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/openipc-org-rebuilt"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/openipc-org-rebuilt"/>
-  </url>
-  <url>
-    <loc>https://openipc.org/zh/news/openipc-org-rebuilt</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/openipc-org-rebuilt"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/openipc-org-rebuilt"/>
-    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/openipc-org-rebuilt"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/openipc-org-rebuilt"/>
-  </url>
-  <url>
     <loc>https://openipc.org/news/tunes-on-the-ir-cut-filter-and-camera-sharing</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/tunes-on-the-ir-cut-filter-and-camera-sharing"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/tunes-on-the-ir-cut-filter-and-camera-sharing"/>
@@ -3759,5 +3738,26 @@
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/watching-from-anywhere-and-a-camera-that-sleeps"/>
     <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/watching-from-anywhere-and-a-camera-that-sleeps"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/watching-from-anywhere-and-a-camera-that-sleeps"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/news/openipc-org-rebuilt</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/openipc-org-rebuilt"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/news/openipc-org-rebuilt</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/openipc-org-rebuilt"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/news/openipc-org-rebuilt</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/openipc-org-rebuilt"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/openipc-org-rebuilt"/>
   </url>
 </urlset>

@@ -128,8 +128,14 @@ describe('rendering', () => {
     expect(renderPost(post(body), 'en')).toContain('href="/supported-hardware/featured"');
   });
 
+  test("sends a link to the feed to the reader's own", () => {
+    expect(localize('/news.atom', 'ru')).toBe('/ru/news.atom');
+    expect(localize('/news.atom', 'zh')).toBe('/zh/news.atom');
+  });
+
   test('leaves files and other sites alone', () => {
-    expect(localize('/news.atom', 'ru')).toBe('/news.atom');
+    expect(localize('/sitemap.xml', 'ru')).toBe('/sitemap.xml');
+    expect(localize('/news.atom', 'en')).toBe('/news.atom');
     expect(localize('https://github.com/OpenIPC', 'ru')).toBe('https://github.com/OpenIPC');
     expect(localize('#top', 'zh')).toBe('#top');
   });
