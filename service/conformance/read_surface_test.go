@@ -27,7 +27,8 @@ var permanent = map[string]string{
 }
 
 var gone = []string{"/binaries", "/binaries.json", "/telemetry", "/telemetry/anything", "/merchandise",
-	"/ru/merchandise", "/zh/merchandise", "/snapshots/12345"}
+	"/ru/merchandise", "/zh/merchandise",
+	"/tools/firmware-partitions-calculation", "/ru/tools/firmware-partitions-calculation", "/snapshots/12345"}
 
 var github = []string{"coupler", "firmware", "ipctool", "microbe-web", "smolrtsp", "yaml-cli", "wiki"}
 

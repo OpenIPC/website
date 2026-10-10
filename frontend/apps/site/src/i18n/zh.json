@@ -85,7 +85,6 @@
     "news": "新闻",
     "next": "下一个",
     "openwall": "公开展板",
-    "partition_calc": "固件分区计算器",
     "pause_transitions": "将鼠标光标放在快照上可以暂停自动转换。",
     "previous": "以前的",
     "privacy": "隐私",
@@ -370,21 +369,6 @@
     "firmware_explorer": {
       "lede": "每个 OpenIPC 构建包含什么：闪存空间如何分配、哪些软件包和内核模块占用了它、90 个夜间构建中的变化，以及哪些内容可以去掉。",
       "title": "固件构成"
-    },
-    "firmware_partitions_calculation": {
-      "end_address": "结束地址",
-      "flash_size_mb": "闪存大小，MB",
-      "free_space": "剩余空间",
-      "mtd_name": "MTD 设备名称",
-      "offset": "初始偏移量，十进制或十六进制",
-      "partition_name": "分区 {number} 名称",
-      "partition_size": "分区 {number} 大小，KB",
-      "recalculate": "重新计算",
-      "size_hex": "十六进制大小，字节",
-      "start_address": "起始地址",
-      "title": "固件分区计算",
-      "unit_bytes": "字节",
-      "unit_kb": "KB"
     },
     "firmware_upstream": {
       "lede": "OpenIPC/builder 为其制作固件的每台设备，与其所基于的 OpenIPC/firmware 对比：设备用自己的副本替换了哪些固件文件，其中哪些 Firmware 之后又修改过，以及哪些 defconfig 符号固件已不再使用。每天检查一次。",

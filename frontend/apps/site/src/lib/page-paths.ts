@@ -181,11 +181,10 @@ export const PAGE_PATHS: PagePath[] = [
   { path: '/video-encoding', titleKey: 'pages.video_encoding.title' },
   { path: '/web-interface', titleKey: 'pages.web_interface.title' },
 
-  // The three web tools. Their addresses carry a directory that is not a page:
+  // The web tools. Their addresses carry a directory that is not a page:
   // `/tools/` itself has no index.html and must not get one. check-bundle.sh
   // allows a directory that is not empty, and nginx's try_files misses it and
   // falls through to @fallback, which answers it with the 404 page.
-  { path: '/tools/firmware-partitions-calculation', titleKey: 'pages.firmware_partitions_calculation.title' },
   { path: '/tools/high-resolution-timer', titleKey: 'pages.high_resolution_timer.title' },
   { path: '/tools/qr-code-generator', titleKey: 'pages.qr_code_generator.title' },
 ];

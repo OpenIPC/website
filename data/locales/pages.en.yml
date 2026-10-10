@@ -381,20 +381,6 @@ en:
     firmware_upstream:
       lede: 'Every device OpenIPC/builder makes firmware for, against the OpenIPC/firmware it is built on: which firmware files a device replaces with its own copy, which of those firmware has changed since, and which defconfig symbols firmware no longer uses. Checked once a day.'
       title: Builder devices against firmware
-    firmware_partitions_calculation:
-      end_address: End address
-      flash_size_mb: Flash size, MB
-      free_space: Free space
-      mtd_name: MTD device name
-      offset: Initial offset, dec or hex
-      partition_name: Partition {number} name
-      partition_size: Partition {number} size, KB
-      recalculate: Recalculate
-      size_hex: Hex size, bytes
-      start_address: Start address
-      title: Firmware Partitions Calculation
-      unit_bytes: bytes
-      unit_kb: KB
     get_started:
       cta_ways: "See the four ways"
       editions_text: Lite fits 8 MB flash chips and covers the essentials. Ultimate adds extras like cloud streaming, tunnels, and more codecs — it needs 16 MB flash.

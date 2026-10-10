@@ -125,9 +125,9 @@ describe('every page is a page', () => {
     // the page did not supply. translate() leaves it visible on purpose.
     //
     // <astro-island> is excluded, and deliberately: it carries an island's
-    // props as JSON for hydration, and the partition calculator's props are
-    // label TEMPLATES -- `Partition {number} name` -- which the widget fills
-    // itself, once per row. Finding one there is the design working.
+    // props as JSON for hydration, and an island may be handed a label
+    // TEMPLATE that the widget fills itself. Finding one there is the design
+    // working.
     //
     // A <script> is excluded for the same reason: the catalogue's refresh
     // script is handed `installable_title` as a template and fills it per

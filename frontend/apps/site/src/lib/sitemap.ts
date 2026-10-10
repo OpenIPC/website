@@ -25,7 +25,7 @@ export const SITEMAP_PAGES = [
   '/majestic-endpoints', '/green_life', '/our-team', '/firmware-explorer',
   '/firmware-explorer/upstream',
   '/utilities', '/web-interface', '/supported-hardware/featured',
-  '/supported-hardware/full-list', '/cameras/boards', '/tools/firmware-partitions-calculation',
+  '/supported-hardware/full-list', '/cameras/boards',
   '/tools/high-resolution-timer', '/tools/qr-code-generator', '/open-wall',
   '/privacy',
 ];

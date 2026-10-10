@@ -63,7 +63,6 @@ export function menuFor(locale: Locale): MenuItems {
           label: t('nav.header_web_tools'),
           type: 'parent',
           children: [
-            link('partition-calc', 'nav.partition_calc', '/tools/firmware-partitions-calculation'),
             link('hires-timer', 'nav.hires_timer', '/tools/high-resolution-timer'),
             link('qr-code', 'nav.qr_code_generator', '/tools/qr-code-generator'),
             link('utilities', 'nav.utilities', '/utilities'),

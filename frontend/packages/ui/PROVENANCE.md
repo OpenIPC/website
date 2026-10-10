@@ -18,7 +18,8 @@ has a shelf life.
 `src/assets/{fonts,icons}`, 43 of the 44 Storybook stories, the design tokens from
 `global.css`, and `src/sites/main/pages/tools/fw-part-calc/` — a firmware
 partition calculator that was a widget living under a page by accident, and is
-now `widgets/firmware-partition-calculator/`. The 44th story belonged to
+now `widgets/firmware-partition-calculator/` (retired with its page, which
+nobody used, in October 2026). The 44th story belonged to
 the installation-guide page rather than to a widget, and stayed behind
 with the rest of the SPA.
 
