@@ -356,6 +356,25 @@ h1, h2, h3, h4, h5, h6 {
   background-color: #2b3035;
 }
 
+/*
+ * Where the reader is: the page's own entry, and the group that holds it.
+ * Brighter text and an amber rule under the label -- colour alone would be
+ * the 0.78 -> 1.0 white step, which nobody reads as "you are here".
+ */
+.site-nav .site-nav-link[aria-current="page"],
+.site-nav .site-nav-link[data-active] {
+  color: #fff;
+  text-decoration: underline;
+  text-decoration-color: var(--color-accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.45em;
+}
+
+.site-nav .site-dropdown-item[aria-current="page"] {
+  color: #fff;
+  box-shadow: inset 2px 0 0 var(--color-accent);
+}
+
 .site-nav .site-dropdown-item[aria-current="true"] {
   font-weight: 600;
   color: #fff;
@@ -383,11 +402,15 @@ h1, h2, h3, h4, h5, h6 {
   color: #94a0e8;
 }
 
+/*
+ * #adb5bd, not Bootstrap's #6c757d: that is 3.4:1 on the panel, under AA for
+ * 14px text, and the header now carries the member's name.
+ */
 .site-nav .site-dropdown-header {
   margin: 0;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  color: #6c757d;
+  color: #adb5bd;
 }
 
 .site-nav .site-divider {

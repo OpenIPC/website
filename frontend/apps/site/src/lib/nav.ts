@@ -1,22 +1,19 @@
 /**
  * The site's navigation, as data (#160).
  *
- * The site's navbar and footer are the source this
- * reproduces, entry for entry, because while the seam is open a visitor can
- * cross between pages and must not see the navigation
- * change shape. When one of those files changes, this changes with it --
- * src/lib/nav.test.ts pins the set of addresses so the two cannot drift
- * quietly.
- *
- * Two things the original navbar does that are worth keeping in mind here:
+ * The bar began as a copy of the Rails navbar, entry for entry. It has since
+ * been regrouped (News was the entry that made it wrap): six top-level entries
+ * at most, each a kind of page rather than a grab-bag, so the bar fits one row
+ * at 1200px in all three languages with a member signed in.
+ * src/lib/pages.build.test.ts holds the count and a width budget per locale.
  *
  *   * /majestic-endpoints is deliberately absent. 3f0753c took it out of the
  *     menu when the page stopped being a list to browse; the URL stays for the
  *     inbound links and the menu entry does not come back.
- *   * The Ecosystem dropdown's "Web tools" heading is a Bootstrap
- *     `dropdown-header` between two dividers. @openipc/ui's menu has no such
- *     ornament, and a nested group says the same thing with structure instead
- *     of with a horizontal rule.
+ *   * The Ecosystem dropdown's "Web tools" heading is a nested group, drawn as
+ *     a header between two dividers.
+ *   * The Club is in Community for everyone; a signed-in member also gets the
+ *     star chip and its menu (CLUB_MENU, components/club/ClubMenu.tsx).
  */
 import type { MenuItems } from '@openipc/ui';
 import { pathFor, useTranslations, type Locale } from './i18n';
@@ -37,10 +34,20 @@ export function menuFor(locale: Locale): MenuItems {
 
   return [
     link('get-started', 'nav.get_started', '/get-started'),
-    link('hardware', 'nav.hardware', '/supported-hardware'),
     {
-      id: 'low-latency',
-      label: t('nav.low_latency'),
+      id: 'hardware',
+      label: t('nav.hardware'),
+      type: 'parent',
+      children: [
+        link('supported-hardware', 'nav.supported_hardware', '/supported-hardware'),
+        link('boards', 'nav.boards', '/cameras/boards'),
+        link('report-camera', 'nav.report_camera', '/cameras/report'),
+        link('firmware-explorer', 'nav.firmware_explorer', '/firmware-explorer'),
+      ],
+    },
+    {
+      id: 'use-cases',
+      label: t('nav.use_cases'),
       type: 'parent',
       children: [
         link('low-latency-fpv', 'nav.low_latency_fpv', '/low-latency'),
@@ -54,10 +61,7 @@ export function menuFor(locale: Locale): MenuItems {
       type: 'parent',
       children: [
         link('ecosystem-overview', 'nav.ecosystem_overview', '/ecosystem'),
-        link('open-wall', 'nav.openwall', '/open-wall'),
         link('web-interface', 'nav.webui', '/web-interface'),
-        link('firmware-explorer', 'nav.firmware_explorer', '/firmware-explorer'),
-        link('boards', 'nav.boards', '/cameras/boards'),
         {
           id: 'web-tools',
           label: t('nav.header_web_tools'),
@@ -89,15 +93,54 @@ export function menuFor(locale: Locale): MenuItems {
       label: t('nav.community'),
       type: 'parent',
       children: [
+        link('news', 'nav.news', '/news'),
         link('community-chat', 'nav.community_chat', '/community'),
-        link('donate', 'nav.donate', '/donate'),
+        link('open-wall', 'nav.openwall', '/open-wall'),
+        link('club', 'nav.club', '/club'),
         link('team', 'nav.team', '/our-team'),
+        link('donate', 'nav.donate', '/donate'),
         link('green-life', 'nav.green_life', '/green_life'),
       ],
     },
-    link('news', 'nav.news', '/news'),
     { id: 'github', label: 'GitHub', type: 'link', url: 'https://github.com/OpenIPC' },
   ];
+}
+
+/**
+ * The signed-in member's menu, under the star chip. Keys are nav.*; the
+ * maintainer's entries show only to a member of CLUB_MAINTAINER_ORG, and the
+ * review queue carries the count of reports waiting.
+ */
+export interface ClubMenuEntry {
+  key: string;
+  path: string;
+  maintainer?: boolean;
+  pending?: boolean;
+}
+
+export const CLUB_MENU: ClubMenuEntry[] = [
+  { key: 'my_club', path: '/club' },
+  { key: 'leaderboard', path: '/club/leaderboard' },
+  { key: 'send_report', path: '/cameras/report' },
+  { key: 'review_queue', path: '/club/review', maintainer: true, pending: true },
+  { key: 'crash_triage', path: '/club/crashes', maintainer: true },
+];
+
+/** Sections a menu entry owns beyond its own address: the SoC catalogue's vendor and wizard pages. */
+const OWNS: Record<string, string[]> = {
+  '/supported-hardware': ['/cameras/vendors'],
+};
+
+/**
+ * Whether a menu entry is the page being built or the section it is in --
+ * /news owns every post, /firmware-explorer its upstream view. Both sides are
+ * locale-free paths; external links are never current.
+ */
+export function isCurrent(url: string | undefined, locale: Locale, path: string): boolean {
+  if (!url || url.startsWith('http')) return false;
+  const under = (base: string) => path === base || path.startsWith(`${base}/`);
+  const own = url.slice(pathFor(locale, '/').replace(/\/$/, '').length) || '/';
+  return under(own) || (OWNS[own] ?? []).some(under);
 }
 
 export interface FooterLink {
@@ -112,7 +155,7 @@ export interface FooterColumn {
 }
 
 /**
- * The four footer columns.
+ * The four footer columns, the bar's groups folded into four.
  *
  * Two links from the draft of this footer are absent for reasons that postdate
  * it and still hold: /binaries answers 410 since 2cf8bc9, and linking a retired
@@ -134,36 +177,36 @@ export function footerFor(locale: Locale): FooterColumn[] {
         link('nav.get_started', '/get-started'),
         link('nav.supported_hardware', '/supported-hardware'),
         link('nav.boards', '/cameras/boards'),
+        link('nav.report_camera', '/cameras/report'),
+        link('nav.firmware_explorer', '/firmware-explorer'),
         link('footer.firmware_source', 'https://github.com/OpenIPC/firmware'),
         link('nav.webui', '/web-interface'),
-        link('nav.firmware_explorer', '/firmware-explorer'),
       ],
     },
     {
-      id: 'ecosystem',
-      title: t('footer.column_ecosystem'),
+      id: 'solutions',
+      title: t('footer.column_solutions'),
       links: [
-        link('nav.ecosystem_overview', '/ecosystem'),
-        link('nav.low_latency', '/low-latency'),
+        link('nav.low_latency_fpv', '/low-latency'),
         link('nav.teleoperation', '/teleoperation'),
         link('nav.edge_ai', '/edge-ai'),
-        link('nav.openwall', '/open-wall'),
-        link('nav.utilities', '/utilities'),
-        link('nav.wiki', 'https://github.com/OpenIPC/wiki'),
-      ],
-    },
-    {
-      id: 'project',
-      title: t('footer.column_project'),
-      links: [
         link('nav.business', '/business'),
         link('nav.video_encoding', '/video-encoding'),
         link('nav.isp_sensors', '/isp-sensors'),
         link('nav.reverse_engineering', '/reverse-engineering'),
         link('nav.turnkey_hardware', '/turnkey-hardware'),
         link('nav.digital_twins', '/digital-twins'),
-        link('nav.donate', '/donate'),
+      ],
+    },
+    {
+      id: 'project',
+      title: t('footer.column_project'),
+      links: [
+        link('nav.ecosystem_overview', '/ecosystem'),
+        link('nav.utilities', '/utilities'),
+        link('nav.wiki', 'https://github.com/OpenIPC/wiki'),
         link('nav.team', '/our-team'),
+        link('nav.donate', '/donate'),
         link('nav.green_life', '/green_life'),
         link('nav.privacy', '/privacy'),
       ],
@@ -171,7 +214,14 @@ export function footerFor(locale: Locale): FooterColumn[] {
     {
       id: 'community',
       title: t('footer.column_community'),
-      links: [link('nav.community_chat', '/community'), link('nav.news', '/news')],
+      links: [
+        link('nav.news', '/news'),
+        link('nav.community_chat', '/community'),
+        link('nav.openwall', '/open-wall'),
+        link('nav.club', '/club'),
+        link('nav.leaderboard', '/club/leaderboard'),
+        link('nav.crashes', '/crashes'),
+      ],
     },
   ];
 }

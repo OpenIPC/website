@@ -268,6 +268,40 @@ describe('the shell behaves the way the site\'s shell always has', () => {
     }
   });
 
+  test('the bar fits one row at 1200px, in every language', () => {
+    // News as a seventh entry wrapped the Russian bar onto a second row for a
+    // signed-in member from 1200px to about 1380 -- the 1366 laptop included --
+    // and a 102px header under a 60px --site-nav-height drops every anchor jump
+    // under it. Six entries at most, and a budget of label width, so the next
+    // entry fails here instead of on a reader's screen. A CJK glyph is about two
+    // Latin ones wide. 66 is Russian's measured 60 (a 900px row with the
+    // member's chip, in a 1000px slot) plus room for a reworded label.
+    for (const locale of LOCALES) {
+      const top = menuFor(locale).filter((item) => item.id !== 'github');
+      expect(top.length, `${locale} has ${top.length} top-level entries`).toBeLessThanOrEqual(6);
+      const width = top.reduce((sum, item) => sum + [...item.label].reduce(
+        (w, ch) => w + (/[　-鿿＀-￯]/.test(ch) ? 2 : 1), 0), 0);
+      expect(width, `${locale}'s top-level labels are ${width} wide`).toBeLessThanOrEqual(66);
+    }
+  });
+
+  test('the bar marks where the reader is', () => {
+    // The page's own entry and the group it is in; and nothing on a page the
+    // menu does not reach.
+    for (const [loc, path, html] of PAGES) {
+      const header = html.split('<main')[0];
+      const own = attrs(header, /<a[^>]*href="([^"]+)"[^>]*aria-current="page"/g);
+      const groups = attrs(header, /<a[^>]*data-active[^>]*>([^<]*)<\/a>/g);
+      if (path === '/teleoperation') {
+        expect(own, `${loc}${path}`).toEqual([pathFor(loc, '/teleoperation')]);
+        expect(groups, `${loc}${path}`).toEqual([menuFor(loc).find((i) => i.id === 'use-cases')!.label]);
+      }
+      if (path.startsWith('/news/')) expect(own, `${loc}${path}`).toEqual([pathFor(loc, '/news')]);
+      if (path.startsWith('/cameras/vendors/')) expect(own, `${loc}${path}`).toEqual([pathFor(loc, '/supported-hardware')]);
+      if (path === '/privacy') expect([...own, ...groups], `${loc}${path}`).toEqual([]);
+    }
+  });
+
   test('a dropdown is closed at rest', () => {
     // The other half of rendering it always: present in the markup, and not
     // painted over the page until somebody asks for it.

@@ -213,11 +213,12 @@ ru:
   footer:
     column_community: Сообщество
     column_ecosystem: Экосистема
-    column_platform: Платформа
+    column_platform: Железо и прошивка
     column_project: Проект
     firmware_source: Исходный код прошивки
     license_note: Ядро под MIT; отдельные компоненты лицензируются иначе.
     tagline: Без бэкдоров. Без подписок. Без ерунды.
+    column_solutions: Применение и бизнес
   nav:
     business: Для бизнеса
     business_overview: 'Обзор'
@@ -255,8 +256,21 @@ ru:
     teleoperation: Телеуправление
     utilities: Утилиты
     vendors: Продавцы
-    webui: Веб интерфейс
+    webui: Веб-интерфейс
     wiki: Wiki
+    use_cases: Применение
+    report_camera: Сообщить о камере
+    club: Клуб OpenIPC
+    my_club: Моя страница в Клубе
+    leaderboard: Рейтинг
+    send_report: Отправить отчёт
+    review_queue: Очередь проверки
+    crash_triage: Разбор падений
+    sign_out: Выйти
+    crashes: Падения ядра
+    menu: Меню
+    language: Язык
+    member_menu: Ваш аккаунт в Клубе
   net_iface:
     both: Камера имеет как Ethernet, так и беспроводную сеть.
     eth: Камера имеет только сеть Ethernet

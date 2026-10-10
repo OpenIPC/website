@@ -211,11 +211,12 @@ zh:
   footer:
     column_community: 社区
     column_ecosystem: 生态
-    column_platform: 平台
+    column_platform: 硬件与固件
     column_project: 项目
     firmware_source: 固件源代码
     license_note: 核心采用 MIT 许可；部分组件另行授权。
     tagline: 没有后门。没有订阅。不折腾。
+    column_solutions: 应用与商务
   nav:
     business: 面向企业
     business_overview: '概览'
@@ -251,10 +252,23 @@ zh:
     supported_hardware: 支持的硬件
     team: 我们的团队
     teleoperation: 遥操作
-    utilities: 公用设施
+    utilities: 实用工具
     vendors: 供应商
-    webui: 页面展示
+    webui: Web 界面
     wiki: 我们的维基
+    use_cases: 应用场景
+    report_camera: 提交摄像头
+    club: OpenIPC 俱乐部
+    my_club: 我的俱乐部
+    leaderboard: 排行榜
+    send_report: 发送报告
+    review_queue: 审核队列
+    crash_triage: 崩溃分诊
+    sign_out: 退出登录
+    crashes: 内核崩溃
+    menu: 菜单
+    language: 语言
+    member_menu: 你的俱乐部账户
   net_iface:
     both: 摄像机同时拥有以太网和无线网络
     eth: 摄像机只有以太网络
