@@ -6,9 +6,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/OpenIPC/website/service/internal/firmware"
 )
 
 // deploy/audience-memo.sh assembles the monthly memo (#184) from one awk pass
@@ -150,6 +153,9 @@ func runMemo(t testing.TB, reportsDir, countries string) string {
 		"AUDIENCE_MEMO_LOGS": log,
 		"AUDIENCE_REPORT":    abs(t, "deploy/audience-report.sh"),
 		"FIRMWARE_SEGMENTS":  abs(t, "deploy/firmware-segments.tsv"),
+		// No service settings, so no database: the firmware section comes
+		// from the log unless a test hands it DOWNLOADS_TSV.
+		"GO_ENV_FILE":        filepath.Join(t.TempDir(), "absent.env"),
 		"OC_LEDGER_JSON":     ledger,
 		"OC_SPENT_CENTS":     "12345",
 		"OC_MONTHLY_PY":      abs(t, "deploy/oc-memo/oc-monthly.py"),
@@ -222,6 +228,10 @@ func TestAudienceMemo(t *testing.T) {
 	t.Run("firmware is tabulated by family and FPV/CCTV from the download path", func(t *testing.T) {
 		mustMatch(t, `INFINITY6E \| 1`, memo, "SSC338Q is INFINITY6E")
 		mustContain(t, memo, "FPV: 1", "SSC338Q is an FPV SoC and the edition is fpv")
+		mustContain(t, memo, "## Firmware downloads (nginx status-200 on the download path)",
+			"without the table the section names the log as its source")
+		mustContain(t, memo, "Not the downloads table: the downloads table could not be read",
+			"and says why it is not the table")
 	})
 	t.Run("H3 sets the FPV share of business clicks against its share of downloads", func(t *testing.T) {
 		mustContain(t, memo, "## FPV segment: business clicks against downloads (H3, #193)", "the H3 section is present")
@@ -406,6 +416,10 @@ func TestFirmwareSegmentsCurrent(t *testing.T) {
 		t.Errorf("deploy/firmware-segments.tsv is stale: %d rows, catalogue has %d.\n"+
 			"Regenerate it with the jq line in the file's header.", len(got), len(want))
 	}
+	// Current here is not current on the host unless something installs it:
+	// every production deploy does.
+	mustMatch(t, `(?m)^\s*\[ "\$env_name" = prod \] && install_firmware_segments$`, read(t, "deploy/deploy.sh"),
+		"openipc-deploy prod must install firmware-segments.tsv, or the host's copy goes stale")
 }
 
 // Without the fetcher on the host the memo falls back to the paste-by-hand
@@ -635,4 +649,37 @@ func TestSearchQueriesWeeksWithoutDays(t *testing.T) {
 	mustContain(t, out, "no daily totals archived for 2026-11", "missing totals are not said")
 	mustNotContain(t, out, "**0 clicks**", "missing totals are printed as zero traffic")
 	mustContain(t, out, "| open ipc | 9 | 40 | – |", "the weekly queries are still printed")
+}
+
+// #188 made the downloads table count a download once, so from October the
+// memo reads the month from it -- whole, where the log holds 14 days -- and the
+// coverage caveat stops naming firmware.
+func TestAudienceMemoDownloadsTable(t *testing.T) {
+	table := "ssc338q\twfbng\t3\ngk7205v200\tlite\t5\nhi3516ev300\twaybeam\t1\n"
+	memoEnv = map[string]string{"DOWNLOADS_TSV": writeFile(t, filepath.Join(t.TempDir(), "downloads.tsv"), table)}
+	defer func() { memoEnv = nil }()
+	memo := runMemo(t, "", octoberCountries)
+	mustContain(t, memo, "## Firmware downloads (the service's downloads table", "the table is the source")
+	mustMatch(t, `GK7205V200 \| 5`, memo, "the table's rows replace the log's")
+	mustNotMatch(t, `INFINITY6E \| 1 \|`, memo, "the log's one download is not added to the table's")
+	mustContain(t, memo, "- FPV: 4", "wfbng and waybeam are FPV editions, whatever the chip")
+	mustContain(t, memo, "- CCTV: 5", "a lite build on a CCTV chip is CCTV")
+	mustNotContain(t, memo, "funnel, firmware and attribution", "firmware is whole-month, so not under the coverage caveat")
+}
+
+// A download counts as FPV by its edition, and the editions are the service's.
+// A new one in firmware.FPVEditions that the memo does not know would be
+// counted under its chip's segment, as wfbng and waybeam once were.
+func TestAudienceMemoFPVEditionsMatchService(t *testing.T) {
+	m := regexp.MustCompile(`(?m)^FPV_EDITIONS="([^"]*)"$`).FindStringSubmatch(read(t, "deploy/audience-memo.sh"))
+	if m == nil {
+		t.Fatal("deploy/audience-memo.sh has no FPV_EDITIONS line")
+	}
+	got := strings.Fields(m[1])
+	want := append([]string(nil), firmware.FPVEditions...)
+	sort.Strings(got)
+	sort.Strings(want)
+	if strings.Join(got, " ") != strings.Join(want, " ") {
+		t.Errorf("audience-memo.sh FPV_EDITIONS = %v, firmware.FPVEditions = %v", got, want)
+	}
 }

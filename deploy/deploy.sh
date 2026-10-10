@@ -155,6 +155,19 @@ install_legacy_images() {
   done
 }
 
+# The table the monthly memo classifies firmware downloads by, generated from
+# the catalogue (#184). install-metrics.sh puts it on the host, but nothing
+# re-ran that when the catalogue grew, and October's memo met gk7205v500 as an
+# unknown SoC. Production only: dev's checkout is another branch, and the memo
+# is production's.
+install_firmware_segments() {
+  local src
+  src="$(dirname "$SELF")/firmware-segments.tsv"
+  [ -f "$src" ] || return 0
+  install -m 0644 -o root -g root "$src" /srv/www/shared/firmware-segments.tsv \
+    || die "cannot install firmware-segments.tsv"
+}
+
 wait_healthy() {
   local port=$1 deadline=$((SECONDS + HEALTH_TIMEOUT))
   info "waiting for http://127.0.0.1:${port}/up"
@@ -196,6 +209,7 @@ do_deploy() {
   # ipctool's builds, pushed by its release job, served by nginx on port 80.
   ensure_uid_1000_root "$tools_root"
   install_legacy_images
+  [ "$env_name" = prod ] && install_firmware_segments
 
   local previous
   previous=$(env_get "$tag_key")
