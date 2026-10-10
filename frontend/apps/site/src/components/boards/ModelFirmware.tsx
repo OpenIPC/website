@@ -38,7 +38,7 @@ export default function ModelFirmware({ builds, maker, locale, t }: {
           </div>
           {g.builds.map((b, i) => (
             <div key={b.key} class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-hairline px-2.5 py-1.5 text-[13px]">
-              {i === 0 && <span class="rounded-[5px] bg-[#e3f5ec] px-1.5 py-0.5 font-mono text-[11px] font-semibold tracking-wide text-[#146c3c] uppercase">{t('fw_latest')}</span>}
+              {i === 0 && <span class="rounded-[5px] bg-[#e3f5ec] px-1.5 py-0.5 font-mono text-xs font-semibold tracking-wide text-[#146c3c] uppercase">{t('fw_latest')}</span>}
               <span class="font-mono">{b.version}</span>
               {b.app === 'public'
                 ? <span class="rounded bg-[#e3f5ec] px-1.5 text-xs font-semibold text-[#146c3c]">{t('mfw_own', { maker })}</span>
@@ -47,7 +47,7 @@ export default function ModelFirmware({ builds, maker, locale, t }: {
                 {[formatDay(b.published_at, locale, true), b.size ? formatBytes(b.size, locale) : null, b.sha256 ? `sha256 ${b.sha256.slice(0, 8)}…` : null].filter(Boolean).join(' · ')}
                 {b.collection && <> · {t(`mfw_collection_${b.collection}`, { maker })}</>}
               </span>
-              <a class={`${BTN} ml-auto`} href={b.url}>{t('fw_download')}</a>
+              <a class={`${BTN} ml-auto`} href={b.url} aria-label={t('fw_download_of', { name: `${g.deviceType} ${b.version}` })}>{t('fw_download')}</a>
               <span class="basis-full font-mono text-xs break-all text-body-secondary">{b.build}</span>
             </div>
           ))}

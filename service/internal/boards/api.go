@@ -222,6 +222,11 @@ func summarise(m *modelJSON) {
 			seen[c.Source] = true
 		}
 	}
+	// A board with no units and no say from any source (a PCB known only as
+	// a link) still answers a list: null broke the site's gallery.
+	if m.Sources == nil {
+		m.Sources = []string{}
+	}
 }
 
 type linkJSON struct {

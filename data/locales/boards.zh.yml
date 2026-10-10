@@ -116,7 +116,7 @@ zh:
       one: 块仍缺引脚图
       other: 块仍缺引脚图
     search_label: 搜索主板及其资料
-    search_placeholder: '型号、名称、U-Boot 控制台或备注：JZC-N81820S、mtdparts、xm25qh64a…'
+    search_placeholder: '型号、芯片或日志中的一行：IVG-G5SH、mtdparts…'
     scope_label: 搜索范围
     scope_uboot_env: U-Boot 控制台
     scope_boot_log: 启动日志
@@ -178,6 +178,10 @@ zh:
     cov_flash_dump: 闪存转储
     cov_uboot_env: U-Boot 控制台
     cov_boot_log: 启动日志
+    cov_has: 有
+    cov_missing: 缺
+    card_wanted: '待补充：{what}'
+    card_wanted_own_photo: '待补充：本板照片'
     kind_flash_dump: 闪存转储
     kind_uboot_env: U-Boot 控制台
     kind_boot_log: 启动日志
@@ -215,6 +219,14 @@ zh:
     hits_truncated: '只显示了前面的匹配结果。请把搜索词写得更具体，以查看其余结果。'
     hits_none: '这里没有包含“{q}”的行。'
     hits_none_boot_log: 还没有人提供启动日志。
+    hits_none_in_uboot_env: '没有 U-Boot 控制台提到“{q}”。'
+    hits_none_in_boot_log: '没有启动日志提到“{q}”。'
+    hits_none_in_note: '没有备注提到“{q}”。'
+    hits_none_in_all: 'U-Boot 控制台、启动日志和备注中都没有“{q}”。'
+    filters: 筛选
+    filters_count:
+      one: '筛选（{count}）'
+      other: '筛选（{count}）'
     line: '第 {n} 行'
     known_title: '使用 {soc} 的已知主板'
     known_link: 在主板目录中查看 →
@@ -278,6 +290,7 @@ zh:
     kind_firmware: 原厂固件
     close: 关闭
     panel_loading: 正在加载各来源的资料…
+    panel_loading_files: 正在加载照片和文件…
     panel_error: '无法加载详情（{error}）。'
     panel_missing: 目录中没有这块主板。
     original: 原文
@@ -299,6 +312,7 @@ zh:
     fw_built: "构建于 {date}"
     fw_archived: "存档于 {date}"
     fw_download: 下载
+    fw_download_of: '下载 {name}'
     fw_caution_flash: "请通过摄像机自带的升级功能刷写：其网页界面，或"
     fw_caution_before: "刷写前："
     fw_caution_stock: "先把原厂固件升级到最新（见下方）；"

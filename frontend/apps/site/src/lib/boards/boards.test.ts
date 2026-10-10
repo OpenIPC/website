@@ -11,7 +11,7 @@ import zh from '../../i18n/boards.zh.json';
 import {
   KNOWN_LINES, lineLabel,
   addsIPeye, buildGroups, bySeller, cardFiles, formatDay, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
-  highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, ownPhoto, paragraphs, sensorKey, sensorOptions, sentBy, slug,
+  highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, ownPhoto, paragraphs, sensorKey, sensorOptions, sentBy, slug, snippet,
   socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
 import { EMPTY, readQueryString, writeQueryString } from './url';
@@ -55,6 +55,13 @@ const ALL = entries(FILE);
 describe('filters', () => {
   test('entries keep their maker', () => {
     expect(ALL.map((m) => `${m.maker.id}/${m.id}`)).toEqual(['xiongmai/a', 'xiongmai/b', 'unknown/c', 'unknown/d']);
+  });
+
+  test('a board the service sent with null lists still has lists, so no card throws', () => {
+    const bare = { ...model('pcb'), sources: null, units: null, tags: null } as unknown as Model;
+    const [e] = entries({ ...FILE, manufacturers: [{ id: 'z', name: 'Z', aliases: [], website: null, models: [bare] }] });
+    expect([e.sources, e.units, e.tags]).toEqual([[], [], []]);
+    expect(filterBoards([e], { ...EMPTY, source: 's' })).toEqual([]);
   });
 
   test('a sensor is one sensor however its maker is spelled', () => {
@@ -527,6 +534,26 @@ describe('highlight', () => {
 
   test('regex characters are literal', () => {
     expect(highlight('a.b axb', 'a.b')).toEqual([{ text: 'a.b', mark: true }, { text: ' axb', mark: false }]);
+  });
+});
+
+describe('snippet', () => {
+  const line = 'bootargs=mem=${osmem} console=ttyAMA0,115200 root=/dev/mtdblock1 rootfstype=cramfs mtdparts=hi_sfc:256K(boot)';
+
+  test('a match near the start leaves the line whole', () => {
+    expect(snippet(line, 'bootargs')).toBe(line);
+    expect(snippet(line, 'console', 32)).toBe(line);
+  });
+
+  test('a match far in is brought into view, with what leads up to it', () => {
+    const got = snippet(line, 'MTDPARTS', 10);
+    expect(got).toBe('…pe=cramfs mtdparts=hi_sfc:256K(boot)');
+    expect(got.toLowerCase()).toContain('mtdparts');
+  });
+
+  test('no match, or no query, leaves the line whole', () => {
+    expect(snippet(line, 'xm25qh64a', 4)).toBe(line);
+    expect(snippet(line, '', 4)).toBe(line);
   });
 });
 

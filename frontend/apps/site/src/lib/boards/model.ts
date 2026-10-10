@@ -12,7 +12,12 @@ import type { BoardsState, Missing } from './url';
 export type Entry = Model & { maker: Manufacturer };
 
 export function entries(file: BoardsFile): Entry[] {
-  return file.manufacturers.flatMap((maker) => maker.models.map((m) => ({ ...m, maker })));
+  // A list the service sent as null (a board with no units had sources: null)
+  // must not take the whole gallery down with it: one card's .length threw,
+  // and every section after it, and the open panel, stopped rendering.
+  return file.manufacturers.flatMap((maker) => maker.models.map((m) => ({
+    ...m, sources: m.sources ?? [], units: m.units ?? [], tags: m.tags ?? [], maker,
+  })));
 }
 
 /** The kinds of evidence a card reports, in the order it reports them. */
@@ -588,6 +593,17 @@ export function highlight(text: string, q: string): { text: string; mark: boolea
   }
   if (at < text.length) out.push({ text: text.slice(at), mark: false });
   return out;
+}
+
+/**
+ * A long line cut so its first match is in view: a bootargs line runs past
+ * the edge of its box, and the match with it. The cut keeps `before`
+ * characters ahead of the match and marks itself with an ellipsis.
+ */
+export function snippet(text: string, q: string, before = 32): string {
+  const i = q ? text.toLowerCase().indexOf(q.toLowerCase()) : -1;
+  if (i <= before) return text;
+  return `…${text.slice(i - before).trimStart()}`;
 }
 
 export function formatBytes(bytes: number, locale: string): string {

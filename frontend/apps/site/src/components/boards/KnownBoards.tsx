@@ -72,7 +72,7 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
                     {makerName(m.maker.id, m.maker.name, t)} · {sensors}
                   </span>
                   <span class="flex flex-wrap gap-1.5">
-                    {SHOWN.map((k) => <Chip key={k} ok={has(m, k)}>{t(`cov_${k}`)}</Chip>)}
+                    {SHOWN.map((k) => <Chip key={k} ok={has(m, k)} state={t(has(m, k) ? 'cov_has' : 'cov_missing')}>{t(`cov_${k}`)}</Chip>)}
                   </span>
                 </span>
               </a>
