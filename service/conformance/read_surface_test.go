@@ -30,7 +30,12 @@ var gone = []string{"/binaries", "/binaries.json", "/telemetry", "/telemetry/any
 	"/ru/merchandise", "/zh/merchandise",
 	"/tools/firmware-partitions-calculation", "/ru/tools/firmware-partitions-calculation", "/snapshots/12345"}
 
-var github = []string{"coupler", "firmware", "ipctool", "microbe-web", "smolrtsp", "yaml-cli", "wiki"}
+// The old site's short addresses for repositories, and where each one goes now.
+// microbe-web is the web interface's first name; it lives on as majestic-webui.
+var github = map[string]string{
+	"coupler": "coupler", "firmware": "firmware", "ipctool": "ipctool",
+	"microbe-web": "majestic-webui", "smolrtsp": "smolrtsp", "yaml-cli": "yaml-cli", "wiki": "wiki",
+}
 
 func locationPath(r *response) string {
 	u, err := url.Parse(r.Header.Get("Location"))
@@ -89,12 +94,12 @@ func TestThroughNginxACameraFrameByURLIsGone(t *testing.T) {
 
 func TestEveryGitHubShortcutPointsAtItsOpenIPCRepository(t *testing.T) {
 	s := start(t, "read")
-	for _, repo := range github {
+	for path, repo := range github {
 		want := regexp.MustCompile(`^https://github\.com/OpenIPC/` + regexp.QuoteMeta(repo) + `/?$`)
 		for _, suffix := range []string{"", "/some/deep/path"} {
-			r := s.get("/" + repo + suffix)
+			r := s.get("/" + path + suffix)
 			if r.StatusCode/100 != 3 || !want.MatchString(r.Header.Get("Location")) {
-				t.Errorf("/%s%s: %d %q", repo, suffix, r.StatusCode, r.Header.Get("Location"))
+				t.Errorf("/%s%s: %d %q", path, suffix, r.StatusCode, r.Header.Get("Location"))
 			}
 		}
 	}

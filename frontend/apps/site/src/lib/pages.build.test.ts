@@ -513,6 +513,10 @@ describe('the pages say what they are for', () => {
 
   test('every ecosystem project links a repository under OpenIPC', () => {
     // qemu-hisilicon was pointing at the personal account it was developed in.
+    // kaeru, under AI harnesses, is the one card that is not OpenIPC's: the
+    // team works with it, and it lives in its own organisation. Named here so
+    // that any other card that strays still fails.
+    const OUTSIDE_THE_ORG = ['https://github.com/LamantinAI/kaeru'];
     // The selector is the card's own link, not every GitHub URL on the page:
     // the prose links the wiki too, and that is not a project.
     for (const locale of LOCALES) {
@@ -522,7 +526,7 @@ describe('the pages say what they are for', () => {
       const html = page.split('<main')[1]?.split('</main>')[0] ?? '';
       const repos = attrs(html, /href="(https:\/\/github\.com\/[^"]*)"[^>]*>\s*<span[^>]*>\s*<svg/g);
       expect(repos.length, `${locale} /ecosystem renders no project links`).toBeGreaterThan(15);
-      for (const repo of repos) {
+      for (const repo of repos.filter((r) => !OUTSIDE_THE_ORG.includes(r))) {
         expect(repo, 'an ecosystem card links outside the OpenIPC organisation')
           .toMatch(/^https:\/\/github\.com\/OpenIPC\//);
       }
