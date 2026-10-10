@@ -231,6 +231,12 @@ en:
     hits_none_in_boot_log: 'No boot log mentions “{q}”.'
     hits_none_in_note: 'No note mentions “{q}”.'
     hits_none_in_all: 'No U-Boot console, boot log or note mentions “{q}”.'
+    hits_elsewhere:
+      one: "It is in {count} line elsewhere: search All."
+      other: "It is in {count} lines elsewhere: search All."
+    hits_named:
+      one: "{count} board is called that: search All."
+      other: "{count} boards are called that: search All."
     hits_hidden:
       one: '{count} more matching line is on a board the filters leave out.'
       other: '{count} more matching lines are on boards the filters leave out.'
@@ -244,8 +250,9 @@ en:
     sources_label: Where the boards come from
     filter_line: Product line
     filter_source: Source
-    filter_ready: OpenIPC-ready only
-    tag_ready: OpenIPC-ready
+    filter_ready: One-step install only
+    filter_ready_hint: a coupler image moves it from stock firmware to OpenIPC
+    tag_ready: One-step install
     tag_discontinued: Discontinued
     matching:
       one: '{count} board matches'
@@ -308,8 +315,8 @@ en:
     features: Features
     specs: Specifications
     links: Links
-    ready_because_label: "Supported by OpenIPC:"
-    ready_because: "a transition image exists for device {ids}"
+    ready_because_label: "One-step install:"
+    ready_because: "a coupler image moves device {ids} from stock firmware to OpenIPC; it is under Firmware below."
     fw_title: Firmware
     fw_device: "Device ID {id}"
     fw_device_hint: "the 4th field of the System version: V5.00.R02.{id}.10010…"

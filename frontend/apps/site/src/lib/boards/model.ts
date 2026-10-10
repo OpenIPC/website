@@ -6,7 +6,7 @@
  * tested without a browser.
  */
 import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model, ModelBuild, Unit, VendorFirmware } from './types';
-import type { BoardsState, Missing } from './url';
+import type { BoardsState, Scope } from './url';
 
 /** A board model with the manufacturer it is filed under. */
 export type Entry = Model & { maker: Manufacturer };
@@ -176,6 +176,17 @@ export function filterHits(hits: Hit[], kept: Entry[]): Hit[] {
 }
 
 /** What an entry is: a board unless a source says it is a finished device. */
+/**
+ * How many matching lines each place to search in holds, from one search of
+ * all of them: what the scope switch shows beside each choice, so a reader
+ * sees where a word occurs before choosing.
+ */
+export function countByScope(hits: Pick<Hit, 'kind'>[]): Record<Scope, number> {
+  const n: Record<Scope, number> = { all: hits.length, uboot_env: 0, boot_log: 0, note: 0 };
+  for (const h of hits) if (h.kind in n) n[h.kind]++;
+  return n;
+}
+
 export function kindOf(m: Pick<Model, 'kind'>): string {
   return m.kind || 'board';
 }

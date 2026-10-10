@@ -335,7 +335,8 @@
     "filter_line": "Product line",
     "filter_maker": "Maker",
     "filter_missing": "Missing",
-    "filter_ready": "OpenIPC-ready only",
+    "filter_ready": "One-step install only",
+    "filter_ready_hint": "a coupler image moves it from stock firmware to OpenIPC",
     "filter_sensor": "Sensor",
     "filter_soc": "SoC",
     "filter_source": "Source",
@@ -388,6 +389,10 @@
       "one": "in {count} board",
       "other": "in {count} boards"
     },
+    "hits_elsewhere": {
+      "one": "It is in {count} line elsewhere: search All.",
+      "other": "It is in {count} lines elsewhere: search All."
+    },
     "hits_hidden": {
       "one": "{count} more matching line is on a board the filters leave out.",
       "other": "{count} more matching lines are on boards the filters leave out."
@@ -395,6 +400,10 @@
     "hits_lines": {
       "one": "{count} matching line",
       "other": "{count} matching lines"
+    },
+    "hits_named": {
+      "one": "{count} board is called that: search All.",
+      "other": "{count} boards are called that: search All."
     },
     "hits_none": "No line matches “{q}” here.",
     "hits_none_boot_log": "No boot logs have been contributed yet.",
@@ -541,8 +550,8 @@
       "xvi-ahd-hybrid-camera-module": "XVI/AHD hybrid camera modules"
     },
     "query_short": "Type at least three characters to search.",
-    "ready_because": "a transition image exists for device {ids}",
-    "ready_because_label": "Supported by OpenIPC:",
+    "ready_because": "a coupler image moves device {ids} from stock firmware to OpenIPC; it is under Firmware below.",
+    "ready_because_label": "One-step install:",
     "report": {
       "backup_private": "Backup: private",
       "backup_public": "Backup: shared",
@@ -665,7 +674,7 @@
     "tag_photo_front": "front",
     "tag_photo_other": "photo",
     "tag_pinout": "pinout",
-    "tag_ready": "OpenIPC-ready",
+    "tag_ready": "One-step install",
     "tag_shared": "shared",
     "text_error": "This file could not be loaded ({error}).",
     "text_loading": "Loading…",

@@ -12,7 +12,7 @@ import {
   KNOWN_LINES, lineLabel,
   addsIPeye, buildGroups, bySeller, cardFiles, formatDay, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, ownPhoto, paragraphs, sensorKey, sensorOptions, sentBy, slug, snippet,
-  socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
+  countByScope, socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
 import { EMPTY, readQueryString, writeQueryString } from './url';
 
@@ -534,6 +534,14 @@ describe('highlight', () => {
 
   test('regex characters are literal', () => {
     expect(highlight('a.b axb', 'a.b')).toEqual([{ text: 'a.b', mark: true }, { text: ' axb', mark: false }]);
+  });
+});
+
+describe('counts per scope', () => {
+  test('one search of everything says how many lines each kind of file holds', () => {
+    const hits = [{ kind: 'uboot_env' }, { kind: 'uboot_env' }, { kind: 'boot_log' }] as const;
+    expect(countByScope([...hits])).toEqual({ all: 3, uboot_env: 2, boot_log: 1, note: 0 });
+    expect(countByScope([])).toEqual({ all: 0, uboot_env: 0, boot_log: 0, note: 0 });
   });
 });
 

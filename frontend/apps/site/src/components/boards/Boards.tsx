@@ -18,7 +18,7 @@ import { fetchBoards, fetchDevice, searchBoards } from '../../lib/boards/api';
 import Firmware from './Firmware';
 import { EMPTY, KINDS, MISSING, SCOPES, readQueryString, writeQueryString, type BoardsState, type Scope } from '../../lib/boards/url';
 import {
-  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, deviceIdOf, entries, firstMissing, insideOf, kindOf, tally, filterBoards, filterHits, heading, matchBoards, flashOf, has, highlight, layout, lead,
+  COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, countByScope, deviceIdOf, entries, firstMissing, insideOf, kindOf, tally, filterBoards, filterHits, heading, matchBoards, flashOf, has, highlight, layout, lead,
   lineLabel, lineOptions, sensorOptions, snippet, socName, socOptions, stats, subtitle, type Entry, type Group, type Heading,
 } from '../../lib/boards/model';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
@@ -51,10 +51,17 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
   const [open, setOpen] = useState<string | null>(initial.model);
   const [data, setData] = useState<Load<BoardsFile>>({ state: 'loading' });
   const [found, setFound] = useState<Load<SearchResult> | null>(null);
+  // The same search over every kind of file, for the counts beside each scope (the list when the scope is All).
+  const [everywhere, setEverywhere] = useState<SearchResult | null>(null);
   const [device, setDevice] = useState<Load<DeviceAnswer> | null>(null);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   // On a phone the filters fold behind a button, so the first result is near the search.
   const [showFilters, setShowFilters] = useState(false);
+  // The page is prerendered with no address to read, so the controls arrive drawn for the bare
+  // catalogue. Hydration keeps the markup it finds and does not correct attributes, so a link
+  // with ?scope=boot_log kept All highlighted: the controls are drawn again once mounted.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const set = (patch: Partial<BoardsState>) => setView((v) => ({ ...v, ...patch }));
 
   useEffect(() => {
@@ -127,10 +134,15 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
   const sections = useMemo(() => (data.state === 'ok' ? layout(data.value.manufacturers, kept, undefined, all) : []), [data, kept, all]);
   const q = view.q.trim();
   const searching = q.length >= MIN_QUERY;
+  // "Search in" means it: a narrower scope lists that kind of file's lines and nothing else.
+  // Boards matched by model or name, and the firmware for a device ID, are what All finds.
+  const byName = view.scope === 'all';
   // The server filters by catalogue SoC only; the rest is done on its answer.
-  const matched = useMemo(() => (searching ? matchBoards(kept, q) : []), [kept, q, searching]);
+  // Matched in every scope, shown in All's; a narrower scope only points at them.
+  const named = useMemo(() => (searching ? matchBoards(kept, q) : []), [kept, q, searching]);
+  const matched = byName ? named : [];
   // A device ID typed off a camera: what it can be flashed with, board or not.
-  const deviceId = deviceIdOf(q);
+  const deviceId = byName ? deviceIdOf(q) : null;
   useEffect(() => {
     if (!deviceId) { setDevice(null); return; }
     let live = true;
@@ -143,16 +155,22 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
   const serverSoc = view.soc && all.some((m) => m.soc === view.soc) ? view.soc : null;
 
   useEffect(() => {
-    if (!searching) { setFound(null); return; }
+    if (!searching) { setFound(null); setEverywhere(null); return; }
     const abort = new AbortController();
     setFound({ state: 'loading' });
     const timer = window.setTimeout(() => {
-      searchBoards(q, view.scope, serverSoc, abort.signal)
+      // All answers both questions; a narrower scope asks its own as well, so its list is not cut at All's limit.
+      const allOf = searchBoards(q, 'all', serverSoc, abort.signal);
+      const scoped = view.scope === 'all' ? allOf : searchBoards(q, view.scope, serverSoc, abort.signal);
+      allOf.then((v) => setEverywhere(v)).catch(() => { if (!abort.signal.aborted) setEverywhere(null); });
+      scoped
         .then((v) => setFound({ state: 'ok', value: v }))
         .catch((e: Error) => { if (!abort.signal.aborted) setFound({ state: 'error', error: e.message }); });
     }, 250);
     return () => { window.clearTimeout(timer); abort.abort(); };
   }, [q, view.scope, serverSoc, searching]);
+  // Counted over the boards the filters leave, as the list is.
+  const counts = useMemo(() => (everywhere ? countByScope(filterHits(everywhere.hits, kept)) : null), [everywhere, kept]);
 
   const s = stats(all);
   const filters = [view.maker, view.soc, view.sensor, view.missing, view.line, view.source, view.ready || null, view.kind].filter(Boolean).length;
@@ -168,22 +186,34 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
 
   return (
     <div class="site-container pb-12">
-      <div class="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-hairline bg-white p-3.5">
+      <div key={mounted ? 'live' : 'prerendered'} class="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-hairline bg-white p-3.5">
         <div class="flex flex-wrap gap-2">
           <input type="search" value={view.q} maxLength={100} aria-label={t('search_label')} placeholder={t('search_placeholder')}
             class="min-h-11 min-w-0 flex-[1_1_260px] rounded-md border border-hairline bg-surface-alt px-3 py-2 font-mono text-[15px]"
             onInput={(e) => set({ q: (e.target as HTMLInputElement).value })} />
-          {/* Where to look is a question only once there is something to look for. */}
-          {q.length > 0 && (
-            <div class="inline-flex max-w-full overflow-x-auto rounded-md border border-hairline" role="group" aria-label={t('scope_label')}>
-              <span aria-hidden="true" class="flex items-center bg-surface-alt px-2.5 text-xs text-body-secondary whitespace-nowrap">{t('scope_label')}</span>
-              {SCOPES.map((k) => (
+          {/* Always there, so a reader sees that consoles and logs can be searched before typing.
+              On a phone two by two at full width, every choice in view; from sm up, one row beside the box.
+              The separators are the 1px gap over the hairline behind. */}
+          <div class="grid w-full grid-cols-2 gap-px overflow-hidden rounded-md border border-hairline bg-hairline sm:flex sm:w-auto" role="group" aria-label={t('scope_label')}>
+            <span aria-hidden="true" class="hidden items-center bg-surface-alt px-2.5 text-xs whitespace-nowrap text-body-secondary sm:flex">{t('scope_label')}</span>
+            {SCOPES.map((k) => {
+              // All is boards by name as well as lines, so a line count beside it would undersell it.
+              const n = counts && searching && k !== 'all' ? counts[k] : null;
+              const more = everywhere?.truncated ? '+' : '';
+              return (
                 <button key={k} type="button" aria-pressed={k === view.scope}
-                  class={`min-h-11 cursor-pointer px-3 py-1.5 text-sm whitespace-nowrap sm:min-h-0 ${k === view.scope ? 'bg-brand-blue text-white' : 'bg-white text-body-secondary hover:text-body'}`}
-                  onClick={() => set({ scope: k })}>{t(`scope_${k}`)}</button>
-              ))}
-            </div>
-          )}
+                  class={`flex min-h-11 cursor-pointer items-center justify-center gap-1.5 px-2 py-1.5 text-sm whitespace-nowrap sm:min-h-0 sm:px-3 ${k === view.scope ? 'bg-brand-blue text-white' : 'bg-white text-body-secondary hover:text-body'}`}
+                  onClick={() => set({ scope: k })}>
+                  {t(`scope_${k}`)}
+                  {n !== null && (
+                    <span class={`rounded-full px-1.5 text-[11px] leading-4 font-semibold tabular-nums ${k === view.scope ? 'bg-white/25 text-white' : n > 0 ? 'bg-surface-alt text-body' : 'bg-surface-alt text-body-secondary'}`}>
+                      {n}{more}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <button type="button" aria-expanded={showFilters} aria-controls="boards-filters"
           class="flex min-h-11 cursor-pointer items-center justify-between rounded-md border border-hairline px-3 text-[15px] font-medium sm:hidden"
@@ -209,10 +239,14 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
           <Select label={t('filter_missing')} id="boards-missing" value={view.missing} any={t('missing_any')}
             options={MISSING.map((k) => [k, t(`missing_${k}`)])}
             onChange={(v) => set({ missing: (MISSING as readonly string[]).includes(v ?? '') ? (v as BoardsState['missing']) : null })} />
-          <label class="flex min-h-11 cursor-pointer items-center gap-2 py-1.5 text-[15px] sm:min-h-0">
-            <input type="checkbox" checked={view.ready} class="size-4 accent-brand-blue"
+          {/* What the filter means is said under it: a title is not read on a phone. */}
+          <label class="flex min-h-11 cursor-pointer items-start gap-2 py-1.5 text-[15px] sm:min-h-0">
+            <input type="checkbox" checked={view.ready} class="mt-1 size-4 shrink-0 accent-brand-blue"
               onChange={(e) => set({ ready: (e.target as HTMLInputElement).checked })} />
-            {t('filter_ready')}
+            <span class="grid leading-snug">
+              {t('filter_ready')}
+              <span class="text-xs text-body-secondary">{t('filter_ready_hint')}</span>
+            </span>
           </label>
           {filters > 0 && (
             <button type="button" class="min-h-11 cursor-pointer py-1.5 text-sm text-brand-blue hover:text-link-hover sm:min-h-0"
@@ -297,7 +331,8 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
                   onAll={() => setExpanded((x) => new Set(x).add('matched'))} card={card} />
               </section>
             )}
-            <Hits found={found} kept={kept} q={q} scope={view.scope} matched={matched.length} none={s.boards > 0 && all.every((m) => !has(m, 'boot_log'))}
+            <Hits found={found} kept={kept} q={q} scope={view.scope} matched={matched.length} named={named.length} counts={counts} onScope={(k) => set({ scope: k })}
+              none={s.boards > 0 && all.every((m) => !has(m, 'boot_log'))}
             t={t} names={names} href={href} onOpen={openModel} addNew={addNew} />
           </>
           : <>
@@ -459,10 +494,15 @@ function Card({ m, level, line, socs, names, sources, t, href, onOpen, catalogue
 
 const HIT_CLASS: Record<Heading['kind'], string> = { code: 'font-mono font-bold', name: 'font-semibold', none: 'font-medium' };
 
-function Hits({ found, kept, q, scope, matched, none, t, names, href, onOpen, addNew }: {
+function Hits({ found, kept, q, scope, matched, named, counts, onScope, none, t, names, href, onOpen, addNew }: {
   found: Load<SearchResult> | null; kept: Entry[]; q: string; scope: Scope;
   /** Boards matched by model or name above: a search that found one has not come up empty. */
   matched: number;
+  /** Boards called what was typed, whatever the scope: All lists them, a narrower scope points there. */
+  named: number;
+  /** Lines in each scope, from the search of all of them: where else to look when this one has none. */
+  counts: Record<Scope, number> | null;
+  onScope: (k: Scope) => void;
   none: boolean; t: BoardsT; names: Record<string, string>;
   href: (model: string | null) => string; onOpen: (id: string) => void; addNew: ComponentChildren;
 }) {
@@ -487,9 +527,27 @@ function Hits({ found, kept, q, scope, matched, none, t, names, href, onOpen, ad
           {t('hits_lines', { count: hits.length })} {t('hits_boards', { count: boards })} · {t('hits_scope', { scope: t(`scope_${scope}`) })}
         </p>
       )}
-      {hits.length === 0 && hidden === 0 && (matched > 0
-        ? <p class="m-0 text-sm text-body-secondary">{t(`hits_none_in_${scope}`, { q })}</p>
-        : <Notice>{t(`hits_none_in_${scope}`, { q })}{scope === 'boot_log' && none ? ` ${t('hits_none_boot_log')}` : ''} {addNew}</Notice>)}
+      {hits.length === 0 && hidden === 0 && (scope !== 'all'
+        // A narrower scope with nothing: say so, and where the word does occur. Asking for a camera
+        // belongs to a search for one by name, which is All's.
+        ? (
+          <Notice>
+            {t(`hits_none_in_${scope}`, { q })}{scope === 'boot_log' && none ? ` ${t('hits_none_boot_log')}` : ''}
+            {counts && counts.all > 0 && (
+              <> <button type="button" class="cursor-pointer p-0 text-left text-brand-blue underline" onClick={() => onScope('all')}>
+                {t('hits_elsewhere', { count: counts.all })}
+              </button></>
+            )}
+            {named > 0 && (
+              <> <button type="button" class="cursor-pointer p-0 text-left text-brand-blue underline" onClick={() => onScope('all')}>
+                {t('hits_named', { count: named })}
+              </button></>
+            )}
+          </Notice>
+        )
+        : matched > 0
+          ? <p class="m-0 text-sm text-body-secondary">{t(`hits_none_in_${scope}`, { q })}</p>
+          : <Notice>{t(`hits_none_in_${scope}`, { q })} {addNew}</Notice>)}
       {hidden > 0 && <p class="m-0 text-sm text-body-secondary">{t('hits_hidden', { count: hidden })}</p>}
       {hits.map((h) => (
         <div key={`${h.url}:${h.line}`} class="grid gap-1.5 rounded-lg border border-hairline bg-white px-3.5 py-3">
