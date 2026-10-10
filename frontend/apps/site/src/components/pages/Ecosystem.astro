@@ -2,11 +2,14 @@
 /**
  * The ecosystem page (#160).
  *
- * The project list is data, in the order the original view declared it. The
- * low-latency section is in chain order -- camera, air, ground -- because that
- * is how the three read together; devourer is DONE rather than R&D, because it
- * is what PixelPilot receives through on Android today, across five Realtek
- * hardware backends.
+ * The project list is data. The low-latency section is in chain order --
+ * camera, air, ground -- because that is how its projects read together;
+ * devourer is DONE rather than R&D, because it is what PixelPilot receives
+ * through on Android today, across five Realtek hardware backends.
+ *
+ * Pro tools are what an engineer runs by hand. AI harnesses are run by CI and
+ * by agents: headless, a verdict as JSON or JUnit, an exit code. kaeru is the
+ * one card outside the OpenIPC organisation, and the build test names it.
  */
 import PageHeader from '../PageHeader.astro';
 import ProjectCard from '../ProjectCard.astro';
@@ -18,8 +21,8 @@ const t = useTranslations(locale);
 const k = (s: string) => t(`pages.ecosystem.${s}`);
 
 const gh = 'https://github.com/OpenIPC';
-const p = (name: string, descKey: string, stage: string) => ({
-  name, desc: k(descKey), repo: `${gh}/${name}`, stage,
+const p = (name: string, descKey: string, stage: string, repo = `${gh}/${name}`) => ({
+  name, desc: k(descKey), repo, stage,
 });
 
 const SECTIONS = [
@@ -28,14 +31,16 @@ const SECTIONS = [
     text: k('section_core_text'),
     projects: [
       p('firmware', 'proj_firmware', 'done'),
+      p('builder', 'proj_builder', 'done'),
       p('majestic', 'proj_majestic', 'done'),
+      p('majestic-webui', 'proj_webui', 'done'),
       p('divinus', 'proj_divinus', 'wip'),
       p('ipctool', 'proj_ipctool', 'done'),
       p('coupler', 'proj_coupler', 'done'),
+      p('defib', 'proj_defib', 'done'),
       p('smolrtsp', 'proj_smolrtsp', 'done'),
-      p('microbe-web', 'proj_microbe', 'done'),
       p('yaml-cli', 'proj_yamlcli', 'done'),
-      p('burn', 'proj_burn', 'done'),
+      p('majestic-af', 'proj_majestic_af', 'wip'),
     ],
   },
   {
@@ -44,6 +49,7 @@ const SECTIONS = [
     projects: [
       p('openhisilicon', 'proj_openhisilicon', 'wip'),
       p('openxiongmai', 'proj_openxiongmai', 'rnd'),
+      p('openingenic', 'proj_openingenic', 'wip'),
       p('qemu-hisilicon', 'proj_qemu', 'wip'),
     ],
   },
@@ -51,18 +57,66 @@ const SECTIONS = [
     title: k('section_lowlat_title'),
     textHtml: k('section_lowlat_text_html'),
     projects: [
-      p('waybeam_venc', 'proj_waybeam', 'done'),
+      p('waybeam', 'proj_waybeam', 'done'),
       p('devourer', 'proj_devourer', 'done'),
+      p('libsalvage', 'proj_libsalvage', 'mvp'),
       p('PixelPilot_rk', 'proj_pixelpilot', 'done'),
+      p('PixelPilot', 'proj_pixelpilot_android', 'done'),
       p('aviateur', 'proj_aviateur', 'done'),
+      p('msposd', 'proj_msposd', 'done'),
+    ],
+  },
+  {
+    title: k('section_view_title'),
+    text: k('section_view_text'),
+    projects: [
+      p('viewer', 'proj_viewer', 'mvp'),
+      p('nrv', 'proj_nrv', 'wip'),
+      p('wbcam', 'proj_wbcam', 'mvp'),
     ],
   },
   {
     title: k('section_tools_title'),
     text: k('section_tools_text'),
     projects: [
-      p('onvif-tt', 'proj_onvif_tt', 'done'),
       p('rnd-player', 'proj_rnd_player', 'done'),
+      p('raw-editor', 'proj_raw_editor', 'mvp'),
+      p('latency-probe', 'proj_latency_probe', 'mvp'),
+      p('hevc-wasm', 'proj_hevc_wasm', 'mvp'),
+      p('vectis', 'proj_vectis', 'mvp'),
+      p('camex', 'proj_camex', 'done'),
+      p('uget', 'proj_uget', 'done'),
+    ],
+  },
+  {
+    title: k('section_ai_harness_title'),
+    text: k('section_ai_harness_text'),
+    projects: [
+      p('onvif-tt', 'proj_onvif_tt', 'done'),
+      p('sip-tt', 'proj_sip_tt', 'mvp'),
+      p('ipeye-tt', 'proj_ipeye_tt', 'mvp'),
+      p('android-emulator-qa', 'proj_android_qa', 'mvp'),
+      p('chrome-hevc-qa', 'proj_chrome_qa', 'mvp'),
+      p('safari-hevc-qa', 'proj_safari_qa', 'mvp'),
+      p('kaeru', 'proj_kaeru', 'mvp', 'https://github.com/LamantinAI/kaeru'),
+    ],
+  },
+  {
+    title: k('section_ai_models_title'),
+    text: k('section_ai_models_text'),
+    projects: [
+      p('xmnpu-models', 'proj_xmnpu_models', 'done'),
+      p('lpr-wasm', 'proj_lpr_wasm', 'mvp'),
+    ],
+  },
+  {
+    title: k('section_stock_title'),
+    text: k('section_stock_text'),
+    projects: [
+      p('python-dvr', 'proj_python_dvr', 'done'),
+      p('python-dhip', 'proj_python_dhip', 'mvp'),
+      p('python-anjoy', 'proj_python_anjoy', 'mvp'),
+      p('motors', 'proj_motors', 'wip'),
     ],
   },
 ];

@@ -289,24 +289,55 @@ en:
       contribute_cta_html: Pick a project and make it better. <a href="/community">Start here</a>.
       hero_lede: 'OpenIPC is an ecosystem of more than a hundred open repositories: the firmware itself, the video pipeline, the tools around it, and the research that keeps old silicon alive.'
       hero_title: More than firmware.
+      proj_android_qa: "Reproduces client-side bug reports: drives the real Android app on an emulator and captures the ONVIF and RTSP it sends."
       proj_aviateur: 'Cross-platform receiver: watch the link on Windows, Linux, or macOS.'
-      proj_burn: Unbricks HiSilicon devices over serial.
+      proj_builder: "Firmware for named retail cameras, layered on the firmware tree: each device's defconfig, GPIO map, first-boot customizer and excludes. The images sysupgrade fetches for those cameras come from here."
+      proj_camex: "A small UDP/TCP tunnel for embedded Linux, with optional ChaCha20-Poly1305: libc only, about 3,500 lines."
+      proj_chrome_qa: "Chrome with hardware HEVC decoding on a headless Linux GPU server, with a pass/fail driver: does this stream play?"
       proj_coupler: The smooth migration path from vendor firmware to OpenIPC and back. No soldering, no special skills.
+      proj_defib: Brings bricked cameras back over UART — HiSilicon, Goke and more. Runs in the browser over WebSerial, nothing to install; a CLI for the rest.
       proj_devourer: 'The link itself: a userspace driver for Realtek Wi-Fi adapters, setting rate, power, and channel packet by packet.'
       proj_divinus: An open-source streamer for a growing set of platforms.
       proj_firmware: Universal, Buildroot-based firmware for IP cameras — replaces abandoned vendor systems on dozens of SoC families.
+      proj_hevc_wasm: H.265 decoding in WebAssembly, for browsers that will not play a camera's HEVC stream natively.
       proj_ipctool: Identifies the SoC, sensor, and flash chip of nearly any camera — and backs up the stock firmware before you change anything.
+      proj_ipeye_tt: Stands in for the RTSP cloud a camera dials out to, records what crosses the wire, and prints a verdict.
+      proj_kaeru: "Memory for coding agents: what was learnt, decided and refuted, carried between sessions and shared across a team. The OpenIPC team works with it."
+      proj_latency_probe: "Splits glass-to-glass latency into the camera half and the browser half, and measures each one on a single clock: no LED, no photodiode."
+      proj_libsalvage: "A receiver for RTP video that is expected to lose packets: FlexFEC recovery first, then it shows the slices that arrived instead of dropping the frame."
+      proj_lpr_wasm: "Number plates found and read in the browser by two ONNX models: no server, no upload. The weights are CC BY-NC."
       proj_majestic: 'The streamer at the heart of the firmware: RTSP, ONVIF, WebRTC, HLS, audio, night modes. Distributed as a binary under the Prosperity license; commercial terms available.'
-      proj_microbe: The web interface of the firmware.
-      proj_onvif_tt: 'An ONVIF conformance test tool: verify what a camera actually implements. Free.'
+      proj_majestic_af: "Autofocus and PTZ as a plugin majestic loads at run time: the focus search and the lens motor protocols, outside majestic's core."
+      proj_motors: Pan, tilt, zoom, focus and iris for cameras whose motor protocols we recovered from stock firmware.
+      proj_msposd: Draws the Betaflight, INAV or ArduPilot OSD over the OpenIPC video stream.
+      proj_nrv: "A video surveillance server: recording, object and sound detection on neural networks, face and plate recognition, access control."
+      proj_onvif_tt: "ONVIF conformance tests against a real camera: what it actually implements, as JUnit for CI and JSON for agents."
       proj_openhisilicon: Keeps the HiSilicon vendor SDK alive on mainline kernels — CVE fixes and modern features after the vendor walks away.
+      proj_openingenic: "The open SDK for Ingenic SoCs that the firmware builds on: MIT libraries, GPL kernel modules."
       proj_openxiongmai: 'The same idea for Xiongmai SoCs: an open SDK replacement.'
       proj_pixelpilot: 'The RX side: turns a Rockchip board into a dedicated ground station with display output.'
+      proj_pixelpilot_android: "The Android ground station: decodes the wfb-ng video feed on a phone or tablet."
+      proj_python_anjoy: A library and CLI for what stock Anjoy cameras do outside ONVIF and RTSP.
+      proj_python_dhip: A pure-stdlib Python client for Dahua DHIP, the binary RPC of Dahua and Dahua-derived cameras.
+      proj_python_dvr: Configures the many cameras that speak the XMeye/NETsurveillance protocol, from Python.
       proj_qemu: A full HiSilicon IP camera emulator on QEMU — develop and test firmware without hardware on your desk.
+      proj_raw_editor: "Develops the raw DNG a camera serves, in the browser: for sensor diagnostics and tuning."
       proj_rnd_player: 'A player built for media engineers: inspect streams the way a developer needs to.'
+      proj_safari_qa: "The Safari counterpart: VideoToolbox HEVC decoding on a GitHub-hosted macOS runner, with no Mac on anyone's desk."
+      proj_sip_tt: "The same for SIP: whether a camera, doorbell or softphone behaves as RFC 3261 and RFC 3264 require."
       proj_smolrtsp: An embeddable RTSP 1.0 server library for cameras and other constrained devices. TCP and UDP, any payload format.
+      proj_uget: A wget replacement in under 5 KB, for cameras whose stock firmware has neither curl nor wget.
+      proj_vectis: "A serial console for the OpenIPC UART 38x38 board: local or over the network, with reset and break on a key."
+      proj_viewer: "A viewer for Windows, Linux, macOS and Android: live RTSP with hardware decoding, a multi-camera grid, recording, two-way audio and ONVIF discovery."
       proj_waybeam: 'The TX side of the link: a flexible video encoder for FPV drones and URLLC devices.'
+      proj_wbcam: "Puts cameras into a WebRTC conference room, one participant each: a whole fleet in a browser tab, no NVR, no port forwarding."
+      proj_webui: "The web interface on port 80 of every camera: claim it, set it up, watch it."
+      proj_xmnpu_models: YOLOv8 detectors compiled for the NPU of the GK7205V500/V510/V530, released by CI for majestic's NPU detection.
       proj_yamlcli: A small console tool for editing YAML configs from scripts.
+      section_ai_harness_text: "Test benches that CI and AI agents run without a person in the loop: headless, a verdict as JSON or JUnit, an exit code."
+      section_ai_harness_title: AI harnesses
+      section_ai_models_text: Neural networks fitted to camera chips and to the browser, built and released in the open.
+      section_ai_models_title: AI models
       section_community_text_html: User-made hardware, mounts, and accessories — like the 3D-printable models tagged <a href="https://www.printables.com/search/models?q=tag%3Aopenipc">openipc on Printables</a>.
       section_community_title: Community projects
       section_core_text: The operating system, the streamer, and the tools that get you from stock firmware to OpenIPC.
@@ -315,8 +346,12 @@ en:
       section_longevity_title: Longevity & security
       section_lowlat_text_html: The open video link for drones, robots, and teleoperation. <a href="/low-latency">Read the overview</a>.
       section_lowlat_title: Low latency & URLLC
-      section_tools_text: Free tools for camera and media engineers — useful even if you never flash our firmware.
+      section_stock_text: Protocols and hardware of vendor cameras, documented by taking them apart — for cameras still on stock firmware, and for moving them off it.
+      section_stock_title: Stock cameras, reverse-engineered
+      section_tools_text: Free tools that camera and media engineers run by hand — useful even if you never flash our firmware.
       section_tools_title: Pro tools
+      section_view_text: Clients and servers for watching and keeping what the cameras see.
+      section_view_title: Viewing & recording
       stage_legend_html: Every project carries an honest status badge — the same vocabulary we use for firmware platforms. <a href="/supported-hardware/full-list#stages">How stages work</a>.
       title: Ecosystem
     edge_ai:
