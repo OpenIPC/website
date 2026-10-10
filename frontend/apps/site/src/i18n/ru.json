@@ -103,6 +103,7 @@
     "review_queue": "Очередь проверки",
     "send_report": "Отправить отчёт",
     "sign_out": "Выйти",
+    "sign_out_failed": "Не удалось выйти. Вы всё ещё в аккаунте — попробуйте снова.",
     "snapshot": "Снимок № {number}",
     "snapshots": "Последние снимки",
     "supported_hardware": "Оборудование",

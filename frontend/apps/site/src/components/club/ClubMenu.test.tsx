@@ -11,6 +11,7 @@ const ivan = { id: 'm-1', name: 'Ivan', maintainer: false, quiet: false, identit
 const labels = {
   my_club: 'My Club page', leaderboard: 'Leaderboard', send_report: 'Send a report',
   review_queue: 'Review queue', crash_triage: 'Crash triage', sign_out: 'Sign out', member_menu: 'Your Club account',
+  sign_out_failed: 'Sign-out failed.',
 };
 
 function answer(member: unknown) {
@@ -50,13 +51,28 @@ test('a maintainer also sees the review queue with its count, and crash triage',
   expect(container.querySelector('a[href="/club/crashes"]')).toBeTruthy();
 });
 
-test('Sign out logs out and the chip goes', async () => {
+async function signOutWith(response: Response) {
   answer(ivan);
-  const { container } = render(<ClubMenu locale="en" labels={labels} />);
+  const leave = vi.fn();
+  const { container } = render(<ClubMenu locale="en" labels={labels} leave={leave} />);
   await act(async () => { await fetchMe(); });
-  vi.stubGlobal('fetch', vi.fn(async () => new Response('{}')));
+  vi.stubGlobal('fetch', vi.fn(async () => response));
   const out = [...container.querySelectorAll('.site-dropdown a')].find((a) => a.textContent === 'Sign out')!;
   await act(async () => { (out as HTMLAnchorElement).click(); await new Promise((r) => setTimeout(r, 0)); });
+  return { container, leave };
+}
+
+test('Sign out logs out and starts the page over, so nothing loaded for the member stays on it', async () => {
+  const { leave } = await signOutWith(new Response('{}'));
   expect(vi.mocked(fetch).mock.calls[0][0]).toBe('/api/v1/club/logout');
-  expect(container.textContent).toBe('');
+  expect(leave).toHaveBeenCalledOnce();
+});
+
+test('a sign-out that failed keeps the member, stays on the page and says so', async () => {
+  const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const { container, leave } = await signOutWith(new Response('{"error":"down"}', { status: 502 }));
+  expect(leave).not.toHaveBeenCalled();
+  expect(container.querySelector('.site-caret')!.textContent).toContain('13');
+  expect(container.querySelector('[role="alert"]')!.textContent).toBe('Sign-out failed.');
+  quiet.mockRestore();
 });

@@ -45,7 +45,7 @@ const leaves = (item: Item): Item[] => item.type === 'link' ? [item] : (item.chi
 const current = (item: Item) => leaves(item).some((leaf) => isCurrent(leaf.url, locale, path));
 
 const clubLabels = Object.fromEntries(
-  [...CLUB_MENU.map((e) => e.key), 'sign_out', 'member_menu'].map((key) => [key, t(`nav.${key}`)]),
+  [...CLUB_MENU.map((e) => e.key), 'sign_out', 'sign_out_failed', 'member_menu'].map((key) => [key, t(`nav.${key}`)]),
 );
 ---
 

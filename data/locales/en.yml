@@ -264,6 +264,7 @@ en:
     send_report: Send a report
     review_queue: Review queue
     crash_triage: Crash triage
+    sign_out_failed: 'Sign-out failed. You are still signed in; try again.'
     sign_out: Sign out
     crashes: Kernel crashes
     menu: Menu

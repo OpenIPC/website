@@ -299,6 +299,9 @@ describe('the shell behaves the way the site\'s shell always has', () => {
       if (path.startsWith('/news/')) expect(own, `${loc}${path}`).toEqual([pathFor(loc, '/news')]);
       if (path.startsWith('/cameras/vendors/')) expect(own, `${loc}${path}`).toEqual([pathFor(loc, '/supported-hardware')]);
       if (path === '/privacy') expect([...own, ...groups], `${loc}${path}`).toEqual([]);
+      // The Club's other pages are not the Club page.
+      if (path.startsWith('/club/')) expect(own, `${loc}${path}`).toEqual([]);
+      if (path === '/club') expect(own, `${loc}${path}`).toEqual([pathFor(loc, '/club')]);
     }
   });
 

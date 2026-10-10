@@ -264,6 +264,7 @@ zh:
     send_report: 发送报告
     review_queue: 审核队列
     crash_triage: 崩溃分诊
+    sign_out_failed: '退出失败。你仍处于登录状态，请重试。'
     sign_out: 退出登录
     crashes: 内核崩溃
     menu: 菜单

@@ -103,6 +103,7 @@
     "review_queue": "审核队列",
     "send_report": "发送报告",
     "sign_out": "退出登录",
+    "sign_out_failed": "退出失败。你仍处于登录状态，请重试。",
     "snapshot": "快照 #{number}",
     "snapshots": "最新快照",
     "supported_hardware": "支持的硬件",

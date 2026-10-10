@@ -266,6 +266,7 @@ ru:
     send_report: Отправить отчёт
     review_queue: Очередь проверки
     crash_triage: Разбор падений
+    sign_out_failed: 'Не удалось выйти. Вы всё ещё в аккаунте — попробуйте снова.'
     sign_out: Выйти
     crashes: Падения ядра
     menu: Меню

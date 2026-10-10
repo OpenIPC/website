@@ -103,6 +103,7 @@
     "review_queue": "Review queue",
     "send_report": "Send a report",
     "sign_out": "Sign out",
+    "sign_out_failed": "Sign-out failed. You are still signed in; try again.",
     "snapshot": "Snapshot #{number}",
     "snapshots": "Latest Snapshots",
     "supported_hardware": "Supported Hardware",

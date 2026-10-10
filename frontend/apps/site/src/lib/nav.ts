@@ -126,21 +126,24 @@ export const CLUB_MENU: ClubMenuEntry[] = [
   { key: 'crash_triage', path: '/club/crashes', maintainer: true },
 ];
 
-/** Sections a menu entry owns beyond its own address: the SoC catalogue's vendor and wizard pages. */
-const OWNS: Record<string, string[]> = {
-  '/supported-hardware': ['/cameras/vendors'],
+/**
+ * Entries that stand for a section rather than one page, and the addresses
+ * under them: a news post, the explorer's upstream view, a vendor or a chip of
+ * the SoC catalogue. Everything else is current only at its own address -- the
+ * Club's leaderboard, review queue and triage are pages of their own, not the
+ * Club page.
+ */
+const SECTIONS: Record<string, string[]> = {
+  '/news': ['/news'],
+  '/firmware-explorer': ['/firmware-explorer'],
+  '/supported-hardware': ['/supported-hardware', '/cameras/vendors'],
 };
 
-/**
- * Whether a menu entry is the page being built or the section it is in --
- * /news owns every post, /firmware-explorer its upstream view. Both sides are
- * locale-free paths; external links are never current.
- */
+/** Whether a menu entry is the page being built, or the section it is in. Both are locale-free paths. */
 export function isCurrent(url: string | undefined, locale: Locale, path: string): boolean {
   if (!url || url.startsWith('http')) return false;
-  const under = (base: string) => path === base || path.startsWith(`${base}/`);
   const own = url.slice(pathFor(locale, '/').replace(/\/$/, '').length) || '/';
-  return under(own) || (OWNS[own] ?? []).some(under);
+  return path === own || (SECTIONS[own] ?? []).some((base) => path.startsWith(`${base}/`));
 }
 
 export interface FooterLink {

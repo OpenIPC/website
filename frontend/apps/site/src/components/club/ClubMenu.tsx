@@ -21,8 +21,12 @@ import { Stars } from './parts';
 /** nav.* strings, resolved at build time so the island carries no catalogue. */
 export type ClubMenuLabels = Record<string, string>;
 
-export default function ClubMenu({ locale, labels }: { locale: Locale; labels: ClubMenuLabels }) {
+/** After signing out: start the page over, so no island keeps what it loaded for the member. */
+const reload = () => window.location.reload();
+
+export default function ClubMenu({ locale, labels, leave = reload }: { locale: Locale; labels: ClubMenuLabels; leave?: () => void }) {
   const [member, setMember] = useState<Member | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     // The page may sign in or out while open (/club, the Telegram sheet):
     // whatever learns who is signed in announces it, and the chip follows.
@@ -34,8 +38,21 @@ export default function ClubMenu({ locale, labels }: { locale: Locale; labels: C
   if (!member) return null;
 
   const entries = CLUB_MENU.filter((e) => !e.maintainer || member.maintainer);
+  // The page under the menu may be /club, the review queue or crash triage,
+  // with the member's reports, dumps or maintainer controls already on it, or a
+  // report form that decided at load which receipt to give. Hiding the chip
+  // would leave all of that; a reload is the one way every island starts again
+  // as a guest. A logout that failed leaves the member signed in, and says so.
   const out = async () => {
-    try { await signOut(); } catch { /* the chip stays; /club says why */ }
+    setFailed(false);
+    try {
+      await signOut();
+    } catch (err) {
+      console.error('club: sign-out failed', err);
+      setFailed(true);
+      return;
+    }
+    leave();
   };
 
   return (
@@ -65,9 +82,10 @@ export default function ClubMenu({ locale, labels }: { locale: Locale; labels: C
         ))}
         <li><hr class="site-divider" /></li>
         <li>
-          <a class="site-dropdown-item" href={pathFor(locale, '/club')} onClick={(ev) => { ev.preventDefault(); void out(); }}>
+          <a class="site-dropdown-item" href={pathFor(locale, '/club')} onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); void out(); }}>
             {labels.sign_out}
           </a>
+          {failed && <p class="m-0 max-w-[16rem] px-4 py-1 text-sm text-[#ff8f8f]" role="alert">{labels.sign_out_failed}</p>}
         </li>
       </ul>
     </>
