@@ -565,12 +565,19 @@ describe('the query string', () => {
 
   test('round-trips every field', () => {
     const s = {
-      q: 'xm25qh64a', scope: 'all' as const, maker: 'hsell', soc: 'hi3516cv300', sensor: 'IMX323', missing: 'pinout' as const,
+      q: 'xm25qh64a', scope: 'uboot_env' as const, maker: 'hsell', soc: 'hi3516cv300', sensor: 'IMX323', missing: 'pinout' as const,
       line: 'XVI&AHD Hybrid Camera Module', source: 'cctvsp', ready: true, kind: 'recorder' as const, model: 'xiongmai-ipg-50h20pls-s',
     };
-    expect(writeQueryString(s)).toBe('?q=xm25qh64a&scope=all&maker=hsell&soc=hi3516cv300&sensor=IMX323&missing=pinout'
+    expect(writeQueryString(s)).toBe('?q=xm25qh64a&scope=uboot_env&maker=hsell&soc=hi3516cv300&sensor=IMX323&missing=pinout'
       + '&line=XVI%26AHD+Hybrid+Camera+Module&source=cctvsp&ready=1&kind=recorder&model=xiongmai-ipg-50h20pls-s');
     expect(readQueryString(writeQueryString(s))).toEqual(s);
+  });
+
+  test('the search looks everywhere unless a link narrows it', () => {
+    expect(EMPTY.scope).toBe('all');
+    expect(writeQueryString({ ...EMPTY, q: '51813L' })).toBe('?q=51813L');
+    // A link from before All was the default still names the scope it meant.
+    expect(readQueryString('?q=mtdparts&scope=uboot_env').scope).toBe('uboot_env');
   });
 
   test('a board alone is a deep link to its details', () => {

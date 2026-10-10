@@ -4,7 +4,12 @@
  * so the bare address is the whole catalogue.
  */
 
-export const SCOPES = ['uboot_env', 'boot_log', 'note', 'all'] as const;
+/**
+ * Where the full-text search looks. All is the default: a board is matched by
+ * its model and name whatever the scope, so a narrower default only showed a
+ * switch set to U-Boot console over results that came from everywhere.
+ */
+export const SCOPES = ['all', 'uboot_env', 'boot_log', 'note'] as const;
 export type Scope = (typeof SCOPES)[number];
 
 export const MISSING = ['pinout', 'photo', 'flash_dump', 'uboot_env', 'boot_log'] as const;
@@ -34,7 +39,7 @@ export type BoardsState = {
 };
 
 export const EMPTY: BoardsState = {
-  q: '', scope: 'uboot_env', maker: null, soc: null, sensor: null, missing: null,
+  q: '', scope: 'all', maker: null, soc: null, sensor: null, missing: null,
   line: null, source: null, ready: false, kind: null, model: null,
 };
 
@@ -45,7 +50,7 @@ export function readQueryString(search: string): BoardsState {
   const p = new URLSearchParams(search);
   return {
     q: (p.get('q') ?? '').slice(0, 100),
-    scope: oneOf(SCOPES, p.get('scope')) ?? 'uboot_env',
+    scope: oneOf(SCOPES, p.get('scope')) ?? 'all',
     maker: p.get('maker') || null,
     soc: p.get('soc')?.toLowerCase() || null,
     sensor: p.get('sensor')?.toUpperCase() || null,
@@ -61,7 +66,7 @@ export function readQueryString(search: string): BoardsState {
 export function writeQueryString(s: BoardsState): string {
   const p = new URLSearchParams();
   if (s.q.trim()) p.set('q', s.q.trim());
-  if (s.scope !== 'uboot_env') p.set('scope', s.scope);
+  if (s.scope !== 'all') p.set('scope', s.scope);
   if (s.maker) p.set('maker', s.maker);
   if (s.soc) p.set('soc', s.soc);
   if (s.sensor) p.set('sensor', s.sensor);
