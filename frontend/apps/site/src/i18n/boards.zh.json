@@ -251,6 +251,7 @@
     "error": "无法加载主板目录（{error}）。请刷新页面重试。",
     "family": "{family} 系列",
     "features": "特点",
+    "file_download": "下载 {name}",
     "files_title": "照片与文件",
     "filter_any": "全部",
     "filter_kind": "类型",

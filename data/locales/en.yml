@@ -279,6 +279,14 @@ en:
     nosd: Camera does not have an SD card slot
     sd: Camera has an SD card slot
   site:
+    gallery:
+      close: Close
+      zoom: Zoom in or out
+      prev: Previous picture
+      next: Next picture
+      original: Open the original in a new tab
+      error: The picture could not be loaded.
+      of: ' / '
     partners:
       friends: Friendly projects
       global: Global partners

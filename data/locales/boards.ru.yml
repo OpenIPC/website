@@ -354,6 +354,7 @@ ru:
     fw_archived: "сохранён {date}"
     fw_download: Скачать
     fw_download_of: 'Скачать {name}'
+    file_download: 'Скачать {name}'
     fw_caution_flash: "Прошивайте через штатное обновление камеры: её веб-интерфейс или"
     fw_caution_before: "Перед этим:"
     fw_caution_stock: "сначала обновите заводскую прошивку до последней (ниже);"

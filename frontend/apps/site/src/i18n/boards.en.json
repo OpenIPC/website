@@ -328,6 +328,7 @@
     "error": "The board catalogue could not be loaded ({error}). Reload the page to try again.",
     "family": "{family} family",
     "features": "Features",
+    "file_download": "Download {name}",
     "files_title": "Photos and files",
     "filter_any": "all",
     "filter_kind": "Type",

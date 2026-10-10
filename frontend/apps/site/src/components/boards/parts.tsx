@@ -7,26 +7,35 @@ import { useState } from 'preact/hooks';
 import type { BoardFile, Source } from '../../lib/boards/types';
 import type { BoardsT } from '../../lib/boards-i18n';
 import { fetchText } from '../../lib/boards/api';
+import { openGallery, type GalleryItem } from '../../lib/gallery';
 import { DISCONTINUED, READY, lineLabel, socKey, socName, type Entry } from '../../lib/boards/model';
 
 export type SocLinks = Record<string, { model: string; href: string }>;
 
+/** A board's pictures as the viewer shows them, each captioned as its thumbnail's alt says. */
+export function galleryOf(files: BoardFile[], alt: (f: BoardFile) => string): GalleryItem[] {
+  return files.filter((f) => f.thumb_url).map((f) => ({
+    src: f.url, width: f.width ?? 1600, height: f.height ?? 1200, thumb: f.thumb_url, alt: alt(f), caption: alt(f),
+  }));
+}
+
 /**
- * A thumbnail that ../ZoomDialog.astro opens full size. The dialog listens for
- * clicks on img[data-zoom]; the button around it is what a keyboard reaches,
- * and pressing it clicks the image.
+ * A thumbnail that opens the viewer (../../lib/gallery.ts) on the board's
+ * whole set of pictures, at this one: the next photo is a swipe away, not a
+ * close and another click.
  */
-export function Thumb({ file, alt, tag, highlight = false, shared = false, contain = false, class: cls = '' }: {
+export function Thumb({ file, alt, tag, highlight = false, shared = false, contain = false, gallery, class: cls = '' }: {
   file: BoardFile; alt: string; tag?: string; highlight?: boolean; shared?: boolean;
   /** Show the whole picture rather than fill the box: a card's only photo. */
-  contain?: boolean; class?: string;
+  contain?: boolean;
+  /** Every picture of the set this one belongs to; this one among them by its URL. */
+  gallery: GalleryItem[];
+  class?: string;
 }) {
   return (
-    <button type="button" class={`relative block cursor-zoom-in overflow-hidden bg-surface-alt p-0 ${cls}`}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) (e.currentTarget.querySelector('img') as HTMLImageElement | null)?.click();
-      }}>
-      <img src={file.thumb_url} data-zoom={file.url} alt={alt} loading="lazy" decoding="async"
+    <button type="button" aria-label={alt} class={`relative block cursor-zoom-in overflow-hidden bg-surface-alt p-0 ${cls}`}
+      onClick={() => { void openGallery(gallery, Math.max(0, gallery.findIndex((g) => g.src === file.url))); }}>
+      <img src={file.thumb_url} alt="" loading="lazy" decoding="async"
         class={`block size-full ${contain ? 'object-contain' : 'object-cover'}`} />
       {tag && (
         <span class={`pointer-events-none absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] truncate rounded-sm px-1.5 py-0.5 font-mono text-[11px] leading-none font-medium tracking-wide whitespace-nowrap uppercase ${shared ? 'bg-[#fff4e2] text-[#8a5200]' : highlight ? 'bg-accent text-ink' : 'bg-ink/80 text-white'}`}>

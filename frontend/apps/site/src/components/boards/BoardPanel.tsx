@@ -10,7 +10,7 @@
  */
 import { Fragment } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { BoardLink, LinkKind, ModelDetail, Source } from '../../lib/boards/types';
+import type { BoardFile, BoardLink, LinkKind, ModelDetail, Source } from '../../lib/boards/types';
 import { fetchModel } from '../../lib/boards/api';
 import Firmware from './Firmware';
 import ModelFirmware from './ModelFirmware';
@@ -22,7 +22,7 @@ import {
 } from '../../lib/boards/model';
 import type { BoardsT } from '../../lib/boards-i18n';
 import type { Locale } from '../../lib/i18n';
-import { SocChip, SourceChips, Tags, TextFile, Thumb, type SocLinks } from './parts';
+import { SocChip, SourceChips, Tags, TextFile, Thumb, galleryOf, type SocLinks } from './parts';
 
 type Load = { state: 'loading' } | { state: 'ok'; value: ModelDetail } | { state: 'error'; error: string };
 
@@ -98,6 +98,9 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
   const inside = entry ? insideOf(entry, all) : [];
   const holders = entry ? foundIn(entry, all) : [];
   const notFound = detail.state === 'error' && detail.error === 'HTTP 404';
+  const photoAlt = (f: BoardFile) => t('photo_alt', { what: t(`tag_${f.kind}`, { fallback: t('tag_photo_other') }), board: title });
+  // Every unit's pictures as one set: the viewer goes from one source's photos to the next without closing.
+  const gallery = galleryOf((entry?.units ?? []).flatMap((u) => unitPhotos(u.files)), photoAlt);
 
   return (
     <dialog ref={dialog} aria-labelledby="board-panel-title"
@@ -261,8 +264,8 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
                         const kind = t(`tag_${f.kind}`, { fallback: '' });
                         const tag = (f.shared ?? 0) > 1 ? [kind, t('tag_shared')].filter(Boolean).join(' · ') : kind;
                         return (
-                          <Thumb key={f.url} file={f} class="h-[90px] w-[120px] rounded-md" tag={tag || undefined}
-                            highlight={f.kind === 'pinout'} shared={(f.shared ?? 0) > 1} alt={t('photo_alt', { what: t(`tag_${f.kind}`, { fallback: t('tag_photo_other') }), board: title })} />
+                          <Thumb key={f.url} file={f} class="h-[90px] w-[120px] rounded-md" tag={tag || undefined} gallery={gallery}
+                            highlight={f.kind === 'pinout'} shared={(f.shared ?? 0) > 1} alt={photoAlt(f)} />
                         );
                       })}
                     </div>
@@ -275,14 +278,7 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
                     <div class="grid gap-1.5">
                       {files.map((f) => (f.kind === 'uboot_env' || f.kind === 'boot_log' || f.kind === 'note'
                         ? <TextFile key={f.url} file={f} label={t(`kind_${f.kind}`)} t={t} />
-                        : (
-                          <div key={f.url} class="flex items-center justify-between gap-2">
-                            <a href={f.url} class="min-w-0 break-all" download={f.name}>
-                              {t(`kind_${f.kind}`, { fallback: f.kind })} · {f.name}
-                            </a>
-                            <span class="shrink-0 text-xs text-body-secondary tabular-nums">{formatBytes(f.bytes, locale)}</span>
-                          </div>
-                        )))}
+                        : <FileRow key={f.url} file={f} locale={locale} t={t} />))}
                     </div>
                   )}
                 </div>
@@ -310,6 +306,50 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
         )}
       </div>
     </dialog>
+  );
+}
+
+/** What a browser shows in a tab of its own rather than saving: a PDF. */
+const VIEWABLE = new Set(['application/pdf']);
+/** The format a file that can only be saved is in, said before it is: "DOCX", "DXF". */
+const formatOf = (f: BoardFile) => f.name.includes('.') ? f.name.split('.').pop()!.toUpperCase() : null;
+
+/**
+ * A file of a unit. A PDF opens in a new tab, where every desktop browser and
+ * a phone's show it; saving it is the icon beside it. Anything a browser
+ * cannot show (a flash dump, a Word document, a drawing) is saved, its format
+ * said first so the download is no surprise.
+ */
+function FileRow({ file: f, locale, t }: { file: BoardFile; locale: Locale; t: BoardsT }) {
+  const label = `${t(`kind_${f.kind}`, { fallback: f.kind })} · ${f.name}`;
+  const size = <span class="shrink-0 text-xs text-body-secondary tabular-nums">{formatBytes(f.bytes, locale)}</span>;
+  if (VIEWABLE.has(f.mime)) {
+    return (
+      <div class="flex items-center justify-between gap-2">
+        <a href={f.url} target="_blank" rel="noopener" title={t('new_tab')} class="min-w-0 break-all">
+          {label} <span aria-hidden="true">↗</span>
+        </a>
+        <span class="flex shrink-0 items-center gap-1">
+          {size}
+          <a href={f.url} download={f.name} aria-label={t('file_download', { name: f.name })} title={t('file_download', { name: f.name })}
+            class="grid size-11 place-items-center rounded-md text-body-secondary hover:bg-surface-alt hover:text-body sm:size-8">
+            <svg aria-hidden="true" viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10" />
+            </svg>
+          </a>
+        </span>
+      </div>
+    );
+  }
+  const format = formatOf(f);
+  return (
+    <div class="flex items-center justify-between gap-2">
+      <a href={f.url} class="min-w-0 break-all" download={f.name}>
+        {format && <span class="me-1.5 rounded-sm bg-surface-alt px-1 py-px font-mono text-[11px] font-semibold text-body-secondary">{format}</span>}
+        {label}
+      </a>
+      {size}
+    </div>
   );
 }
 

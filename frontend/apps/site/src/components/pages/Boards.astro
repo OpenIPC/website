@@ -31,4 +31,4 @@ const socs = Object.fromEntries(VENDORS.flatMap((vendor) => vendor.socs.map((soc
   <p class="mt-2.5 mb-0 max-w-[65ch] text-lg">{t('pages.boards.lede')}</p>
 </div>
 <Boards client:load locale={locale} socs={socs} />
-<ZoomDialog />
+<ZoomDialog locale={locale} />

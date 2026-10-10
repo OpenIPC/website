@@ -24,7 +24,7 @@ import {
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import BoardPanel from './BoardPanel';
-import { Chip, SocChip, SourceChips, Tags, Thumb, makerName, type SocLinks } from './parts';
+import { Chip, SocChip, SourceChips, Tags, Thumb, galleryOf, makerName, type SocLinks } from './parts';
 
 type Load<T> = { state: 'loading' } | { state: 'ok'; value: T } | { state: 'error'; error: string };
 
@@ -391,6 +391,8 @@ function Card({ m, level, line, socs, names, sources, t, href, onOpen, catalogue
   const name = subtitle(m);
   const text = lead(m);
   const photos = cardPhotos(m);
+  // The card shows four; the viewer opens on all of them, in the same order, so the four come first.
+  const gallery = galleryOf(cardPhotos(m, Infinity), (f) => t('photo_alt', { what: t(`tag_${f.kind}`), board: title }));
   const sensors = [...new Set(m.units.map((u) => u.sensor).filter(Boolean))].join('; ');
   const flash = flashOf(m);
   const Title = level === 3 ? 'h3' : 'h4';
@@ -404,7 +406,7 @@ function Card({ m, level, line, socs, names, sources, t, href, onOpen, catalogue
         ? (
           <div class={`relative z-[1] grid h-36 gap-0.5 bg-hairline ${PHOTO_COLS[photos.length]}`}>
             {photos.map((f) => (
-              <Thumb key={f.url} file={f} class="size-full" contain={photos.length === 1}
+              <Thumb key={f.url} file={f} class="size-full" contain={photos.length === 1} gallery={gallery}
                 tag={(f.shared ?? 0) > 1 ? t('tag_shared') : t(`tag_${f.kind}`)}
                 highlight={f.kind === 'pinout'} shared={(f.shared ?? 0) > 1} alt={t('photo_alt', { what: t(`tag_${f.kind}`), board: title })} />
             ))}

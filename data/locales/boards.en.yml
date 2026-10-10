@@ -320,6 +320,7 @@ en:
     fw_archived: "archived {date}"
     fw_download: Download
     fw_download_of: 'Download {name}'
+    file_download: 'Download {name}'
     fw_caution_flash: "Flash it through the camera's own update function: its web interface, or"
     fw_caution_before: "Before you do:"
     fw_caution_stock: "update to the latest stock firmware first (below);"
