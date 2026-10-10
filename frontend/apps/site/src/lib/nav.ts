@@ -232,9 +232,9 @@ export function footerFor(locale: Locale): FooterColumn[] {
 /**
  * The social row under the community column.
  *
- * Seven, not @openipc/ui's four: the footer carries Telegram, Instagram and
- * Bluesky as well, and Telegram is where the project actually answers
- * questions.
+ * Eight, not @openipc/ui's four: the footer carries Telegram, Instagram,
+ * Bluesky and LinkedIn as well, and Telegram is where the project actually
+ * answers questions.
  */
 export const SOCIAL_LINKS: { title: string; url: string; icon: string }[] = [
   { title: 'OpenIPC on GitHub', url: 'https://github.com/OpenIPC', icon: 'github' },
@@ -243,5 +243,6 @@ export const SOCIAL_LINKS: { title: string; url: string; icon: string }[] = [
   { title: 'OpenIPC on YouTube', url: 'https://www.youtube.com/@openipc', icon: 'youtube' },
   { title: 'OpenIPC on Twitter', url: 'https://twitter.com/openipc', icon: 'twitter' },
   { title: 'OpenIPC on Bluesky', url: 'https://bsky.app/profile/openipc.org', icon: 'bluesky' },
+  { title: 'OpenIPC on LinkedIn', url: 'https://www.linkedin.com/company/openipc/', icon: 'linkedin' },
   { title: 'OpenIPC on Instagram', url: 'https://www.instagram.com/openipc/', icon: 'instagram' },
 ];
