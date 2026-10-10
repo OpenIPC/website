@@ -84,6 +84,11 @@ describe('rendering', () => {
     expect(html).toContain('<h2 id="one-thing-2">');
   });
 
+  test('names a heading that is a picture by its alt text', () => {
+    const { headings } = renderArticle(post('## ![The new board](https://openipc.org/board.png)\n\nText.\n\n## After'), 'en');
+    expect(headings).toEqual([{ id: 'the-new-board', text: 'The new board' }, { id: 'after', text: 'After' }]);
+  });
+
   test('anchors a heading in any script', () => {
     expect(anchorFor('Резкость на повороте')).toBe('резкость-на-повороте');
     expect(anchorFor('转动时依然清晰')).toBe('转动时依然清晰');

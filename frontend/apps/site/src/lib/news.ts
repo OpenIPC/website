@@ -115,6 +115,8 @@ export interface Heading {
 
 function textOf(node: Tree): string {
   if (node.type === 'text') return node.value ?? '';
+  // A heading that is a picture is named by what the picture says.
+  if (node.tagName === 'img') return String(node.properties?.alt ?? '');
   return (node.children ?? []).map(textOf).join('');
 }
 
