@@ -209,6 +209,35 @@ describe('the shell behaves the way the site\'s shell always has', () => {
       .toMatch(/\.site-nav \.site-dropdown\{[^}]*inset-inline:auto 0/);
   });
 
+  test('the collapsed menu fits a phone: it scrolls itself, holds the page, and takes a thumb', () => {
+    // The bar is sticky. An open menu taller than the screen -- 690px with
+    // Community open, against a 667px iPhone SE, and 435px with nothing open
+    // on a phone held sideways -- could not be scrolled to its end, because
+    // scrolling moved the page under it. Asserted on the built CSS for the
+    // same reason as the breakpoint above: it is invisible on a desktop.
+    // `[^{}]*` rather than `.*`: one block may not reach into the next.
+    const belowXl = [...stylesheet.matchAll(/@media\s*\((?:max-width:1199\.98px|width<=1199\.98px)\)\{((?:[^{}]|\{[^{}]*\})*)\}/g)]
+      .map((m) => m[1])
+      .join('\n');
+
+    const open = belowXl.match(/\.site-nav-collapse\[data-open\]\{([^}]*)\}/);
+    expect(open, 'the open menu has no rule below xl').toBeTruthy();
+    expect(open![1]).toMatch(/max-height:calc\(100dvh - var\(--site-nav-height\)\)/);
+    expect(open![1]).toContain('overflow-y:auto');
+    expect(belowXl, 'the page scrolls under the open menu').toMatch(/html:has\(#site-menu\[data-open\]\)\{overflow:hidden\}/);
+    expect(belowXl, 'menu rows are under 44px').toMatch(/\.site-nav \.site-nav-link,\s*\.site-nav \.site-dropdown-item\{padding-block:\.625rem\}/);
+    expect(belowXl, 'the menu button is under 44px').toMatch(/\.site-nav-toggler\{[^}]*min-height:44px/);
+
+    // One tap to change language in the collapsed menu: every language, as
+    // links, with the current one marked.
+    for (const [loc, path, html] of PAGES) {
+      const row = html.match(/<li class="site-nav-item site-lang-row[^"]*">([\s\S]*?)<\/ul>\s*<\/li>/);
+      expect(row, `${loc}${path} has no language row`).toBeTruthy();
+      expect(attrs(row![1], /hreflang="([^"]+)"/g), `${loc}${path}`).toEqual([...LOCALES]);
+      expect(row![1], `${loc}${path}`).toMatch(new RegExp(`hreflang="${loc}"[^>]*aria-current="true"`));
+    }
+  });
+
   test('the dropdowns answer the keyboard the way Bootstrap\'s do', () => {
     // The click-only version left a keyboard reader with a menu that opened
     // and then dropped them back on the page: no arrow keys into it, and
