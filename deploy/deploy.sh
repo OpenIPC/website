@@ -155,6 +155,25 @@ install_legacy_images() {
   done
 }
 
+# The monthly memo and the nightly jobs that feed it run from copies in
+# /usr/local/sbin and /srv/www/shared, put there by install-metrics.sh, which
+# nothing re-ran when they changed: October's memo met gk7205v500 as an unknown
+# SoC from a segment table older than the catalogue. So each production deploy
+# that comes up healthy installs them again from this checkout. Best effort:
+# the site is already serving, and a metrics install that fails must say so,
+# not fail the deploy. Production only -- dev's checkout is another branch.
+install_metrics() {
+  local installer out
+  installer="$(dirname "$SELF")/install-metrics.sh"
+  [ -x "$installer" ] || return 0
+  if out=$("$installer" 2>&1); then
+    ok "metrics tools installed from this checkout"
+  else
+    warn "install-metrics.sh failed; the memo and nightly reports run the previous copies:"
+    printf '%s\n' "$out" | tail -5 >&2
+  fi
+}
+
 wait_healthy() {
   local port=$1 deadline=$((SECONDS + HEALTH_TIMEOUT))
   info "waiting for http://127.0.0.1:${port}/up"
@@ -244,6 +263,7 @@ do_deploy() {
     # no state and nothing depends on it, so it is started, not gated.
     if [ "$env_name" = prod ]; then
       compose up -d --no-deps go-nfs || warn "the NFS export (go-nfs) did not start"
+      install_metrics
     fi
     check_analytics
   else

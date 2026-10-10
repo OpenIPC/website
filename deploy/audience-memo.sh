@@ -26,7 +26,11 @@
 # keeps its logs for 14 days, so only the series can cover a closed month. A day
 # the series lacks is filled from whatever raw log is left, through the same
 # aggregator (audience-report.sh --daily), and the memo says which days it
-# covers. Firmware is status 200 on the download path, not the downloads table.
+# covers. Firmware downloads are the service's `downloads` table, one row per
+# download since the Go service counts a download's first request and not each
+# range chunk (#188); kept for good, so the month is whole. For a month before
+# that, or when the table cannot be read, they fall back to status 200 on the
+# download path in the series, and the memo says which it used.
 # What needs addresses stays on the raw log and says so: the snapshot harvest's
 # distinct sources, and bots and 429s from openipc-log-report. Open Collective
 # comes from the public GraphQL v2 via oc-monthly.py.
@@ -36,6 +40,9 @@
 #   AUDIENCE_REPORT      path to openipc-audience-report, for --daily over raw logs
 #   AUDIENCE_MEMO_LOGS   log files to read (default: the reports host's nginx logs)
 #   FIRMWARE_SEGMENTS    soc->vendor/family/segment table
+#   GO_ENV_FILE          the service's settings, for DATABASE_URL (the downloads table)
+#   DOWNLOADS_TSV        the month's downloads as date, soc, edition, count
+#                        rows, in place of querying the table
 #   OC_LEDGER_JSON       a pre-fetched ledger, to skip the live GraphQL fetch
 #   OC_SPENT_CENTS       spent figure, when not fetched
 #   OC_MONTHLY_PY        path to oc-monthly.py
@@ -49,6 +56,14 @@ set -euo pipefail
 
 REPORTS_DIR=${REPORTS_DIR:-/srv/www/shared/reports}
 FIRMWARE_SEGMENTS=${FIRMWARE_SEGMENTS:-/srv/www/shared/firmware-segments.tsv}
+GO_ENV_FILE=${GO_ENV_FILE:-/srv/www/.env.go-prod}
+# The first month the downloads table counts downloads rather than requests:
+# the Go service, live from 2026-09-26, records a download's first chunk only
+# (downloads.FirstChunk, #188). September still holds the Rails rows.
+DOWNLOADS_FROM=2026-10
+# The editions that make a download FPV whatever its chip: the service's
+# firmware.FPVEditions, which service/deploytest keeps this in step with.
+FPV_EDITIONS="wfbng fpv waybeam rubyfpv apfpv"
 OC_MONTHLY_PY=${OC_MONTHLY_PY:-/usr/local/lib/openipc-memo/oc-monthly.py}
 LOG_REPORT=${LOG_REPORT-/usr/local/sbin/openipc-log-report}
 SEARCH_QUERIES=${SEARCH_QUERIES:-/usr/local/sbin/openipc-search-queries}
@@ -160,6 +175,7 @@ awk -F'\t' '
     for (k in exthost) print "EXT", exthost[k], k
     for (k in refhost) print "REFHOST", refhost[k], k
     for (k in fw)      print "FW", fw[k], k
+    for (k in fw)      print "FWCOV", fw[k], k
     for (k in evbiz)   print "EVBIZ", evbiz[k], k
     for (k in fwrel)   { split(k, a, SUBSEP); print "FWREL", fwrel[k], a[1], a[2] }
   }
@@ -220,6 +236,49 @@ awk -F'"' -v month="$month" '
   }
 ' "$work/month.log" >> "$work/agg" || true
 
+# Firmware downloads from the table, in place of the log's status-200 lines,
+# when the month is one the table counts honestly and it can be read. A month
+# with no downloads is an empty answer, not a failure, so the two are kept
+# apart: only a failed read falls back.
+fw_source=log
+fw_why="before $DOWNLOADS_FROM the downloads table counted range requests, not downloads (#188)"
+if [[ ! "$month" < "$DOWNLOADS_FROM" ]]; then
+  fw_why="the downloads table could not be read"
+  if [ -n "${DOWNLOADS_TSV:-}" ]; then
+    cp "$DOWNLOADS_TSV" "$work/dltable" 2>/dev/null && fw_source=table
+  elif db_url=$(sed -n 's/^DATABASE_URL=//p' "$GO_ENV_FILE" 2>/dev/null) && [ -n "$db_url" ] &&
+    PGOPTIONS='-c default_transaction_read_only=on' psql -X -q -At -F $'\t' -v ON_ERROR_STOP=1 "$db_url" -c "
+      SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD'), soc_model, release, count(*)
+      FROM downloads
+      WHERE created_at >= '$month-01 00:00+00'::timestamptz
+        AND created_at <  '$month-01 00:00+00'::timestamptz + interval '1 month'
+      GROUP BY 1, 2, 3" > "$work/dltable" 2>"$work/dltable.err"; then
+    fw_source=table
+  fi
+fi
+if [ "$fw_source" = table ]; then
+  # The same FW/FWREL/FWTOTAL lines the series makes, so nothing below changes:
+  # the whole month, for the firmware section. FWCOV is the same downloads on
+  # the days the beacon covers only, for H3, which sets them against the
+  # beacon's business clicks and must not compare two different spans.
+  grep -v -E '^(FW|FWREL|FWTOTAL|FWCOV) ' "$work/agg" > "$work/agg.nofw" || true
+  awk -F'\t' '$2 == "covered" { print $1 }' "$work/rows" > "$work/covdays"
+  awk -F'\t' '
+    FILENAME ~ /covdays$/ { cov[$1] = 1; next }
+    NF == 4 && $4 ~ /^[0-9]+$/ {
+      fw[$2] += $4; fwrel[$2 "\t" $3] += $4; total += $4
+      if ($1 in cov) fwcov[$2] += $4
+    }
+    END {
+      print "FWTOTAL", total + 0
+      for (k in fw) print "FW", fw[k], k
+      for (k in fwcov) print "FWCOV", fwcov[k], k
+      for (k in fwrel) { split(k, a, "\t"); print "FWREL", fwrel[k], a[1], a[2] }
+    }
+  ' "$work/covdays" "$work/dltable" >> "$work/agg.nofw"
+  mv "$work/agg.nofw" "$work/agg"
+fi
+
 val() { awk -v k="$1" '$1 == k { print $2; exit }' "$work/agg"; }
 
 pv=$(val PV); pv=${pv:-0}
@@ -230,8 +289,8 @@ pv=$(val PV); pv=${pv:-0}
 : > "$work/fwseg"
 if [ -f "$FIRMWARE_SEGMENTS" ]; then
   awk '$1 == "FWREL" { print $3, $4, $2 }' "$work/agg" | while read -r soc rel n; do
-    case "$rel" in
-      fpv|rubyfpv|apfpv) k=FPV ;;
+    case " $FPV_EDITIONS " in
+      *" $rel "*) k=FPV ;;
       *)
         seg=$(awk -F'\t' -v s="$soc" '$1 == s { print $4 }' "$FIRMWARE_SEGMENTS")
         case "$seg" in fpv) k=FPV ;; cctv) k=CCTV ;; consumer) k=consumer ;; *) k=unclassified ;; esac ;;
@@ -242,11 +301,12 @@ fi
 # H3 compares business clicks with downloads, and a download-step click takes
 # its segment from the chip alone, so the downloads it is set against are
 # classified by the same rule: the chip's catalogue segment, whatever edition.
+# And over the same days: FWCOV, the downloads on the days the beacon covers.
 : > "$work/fwchip"
 if [ -f "$FIRMWARE_SEGMENTS" ]; then
   awk -F'\t' '
     FILENAME == ARGV[1] { seg[$1] = $4; next }
-    $1 ~ /^FW / { split($0, f, " "); k = (f[3] in seg && seg[f[3]] != "") ? seg[f[3]] : "unknown"; c[k] += f[2] }
+    /^FWCOV / { split($0, f, " "); k = (f[3] in seg && seg[f[3]] != "") ? seg[f[3]] : "unknown"; c[k] += f[2] }
     END { for (k in c) printf "%s\t%d\n", k, c[k] }
   ' "$FIRMWARE_SEGMENTS" "$work/agg" | sort > "$work/fwchip"
 fi
@@ -260,7 +320,9 @@ month_days=$(date -u -d "$month-01 +1 month -1 day" +%d 2>/dev/null || echo 31)
 month_days=$((10#$month_days))
 cover_note=""
 if [ "$ndays" -lt "$month_days" ]; then
-  cover_note="**Beacon figures cover $ndays of $month_days days of $month** ($series_days from the daily series, $raw_days from raw logs still on the host). The page-view, section, funnel, firmware and attribution totals below are for those days; shares and per-day rates stay comparable month to month, absolute totals do not."
+  fw_note=", firmware"
+  [ "$fw_source" = table ] && fw_note=""
+  cover_note="**Beacon figures cover $ndays of $month_days days of $month** ($series_days from the daily series, $raw_days from raw logs still on the host). The page-view, section, funnel$fw_note and attribution totals below are for those days; shares and per-day rates stay comparable month to month, absolute totals do not."
 fi
 
 # --- engaged spine, from the daily series -----------------------------------
@@ -571,7 +633,15 @@ mkdir -p "$(dirname "$OUT")"
   printf -- "- /donate page views → \`oc-checkout\` clicks: **%s → %s** → Open Collective received (see below).\n" "$(val PV_DONATE)" "$(val EV_OCCHECKOUT)"
   echo
 
-  echo "## Firmware downloads (nginx status-200 on the download path; not the downloads table — #188)"
+  if [ "$fw_source" = table ]; then
+    echo "## Firmware downloads (the service's downloads table: one row per download, its first request — #188)"
+    echo
+    echo "_The whole month, whatever the beacon's coverage above._"
+  else
+    echo "## Firmware downloads (nginx status-200 on the download path)"
+    echo
+    echo "_Not the downloads table: $fw_why. For the days the beacon figures cover._"
+  fi
   echo
   if [ "$(val FWTOTAL)" -gt 0 ] 2>/dev/null && [ -f "$FIRMWARE_SEGMENTS" ]; then
     echo "By SoC family:"
@@ -585,7 +655,7 @@ mkdir -p "$(dirname "$OUT")"
       printf -- "| %s | %d |\n" "$f" "$n"
     done
     echo
-    echo "FPV vs CCTV — a download counts as FPV if its firmware edition is fpv/rubyfpv/apfpv, otherwise by the SoC's market segment from the catalogue:"
+    echo "FPV vs CCTV — a download counts as FPV if its firmware edition is ${FPV_EDITIONS// //}, otherwise by the SoC's market segment from the catalogue:"
     echo
     awk -F'\t' '{ printf "- %s: %d\n", $1, $2 }' "$work/fwseg"
   else
