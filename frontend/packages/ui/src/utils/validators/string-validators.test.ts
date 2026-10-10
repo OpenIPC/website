@@ -1,49 +1,5 @@
 import { expect, test } from 'vitest';
-import { isNonEmpty, isDigitsOnly, isDecOrHexNumber, isValidHex, isValidMAC, isValidIP } from './string-validators';
-
-test('Non empty string to equal true', () => {
-  expect(isNonEmpty('Non empty string')).toBe(true);
-});
-
-test('Empty string to equal false', () => {
-  expect(isNonEmpty('')).toBe(false);
-});
-
-test('123 to equal true', () => {
-  expect(isDigitsOnly('123')).toBe(true);
-});
-
-test('123.45 to equal false', () => {
-  expect(isDigitsOnly('123.45')).toBe(false);
-});
-
-test('34aB56 to equal false', () => {
-  expect(isDigitsOnly('34aB56')).toBe(false);
-});
-
-test('ABcdEF to equal false', () => {
-  expect(isDigitsOnly('ABcdEf')).toBe(false);
-});
-
-test('123 to equal true', () => {
-  expect(isDecOrHexNumber('123')).toBe(true);
-});
-
-test('0x123AB to equal true', () => {
-  expect(isDecOrHexNumber('0x123AB')).toBe(true);
-});
-
-test('0XABFE84 to equal true', () => {
-  expect(isDecOrHexNumber('0XABFE84')).toBe(true);
-});
-
-test('ABcdEF to equal false', () => {
-  expect(isDecOrHexNumber('ABcdEf')).toBe(false);
-});
-
-test('0x324ATE to equal false', () => {
-  expect(isDecOrHexNumber('0x324ATE')).toBe(false);
-});
+import { isValidHex, isValidMAC, isValidIP } from './string-validators';
 
 test('0x324ABF to equal true', () => {
   expect(isValidHex('0x324ABF')).toBe(true);

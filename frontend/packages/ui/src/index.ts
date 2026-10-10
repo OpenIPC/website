@@ -71,5 +71,4 @@ export type { MenuItem, MenuItems } from './components/widgets/header-menu/Heade
 // --- helpers the widgets are built on --------------------------------------
 export { debounce } from './utils';
 export { useMediaQuery } from './utils/hooks/useMediaQuery';
-export * from './utils/converters';
 export * from './utils/validators';

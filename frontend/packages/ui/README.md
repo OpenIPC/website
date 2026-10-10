@@ -1,7 +1,7 @@
 # @openipc/ui
 
 The Preact components openipc.org is drawn with: ~30 widgets, nine
-primitives, Storybook stories, 45 design tokens and four self-hosted
+primitives, Storybook stories, design tokens and four self-hosted
 typefaces. Extracted from
 [`OpenIPC/fancyweb-ng`](https://github.com/OpenIPC/fancyweb-ng) under
 [#158](https://github.com/OpenIPC/website/issues/158) — see
