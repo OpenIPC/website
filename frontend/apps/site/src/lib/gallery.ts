@@ -62,17 +62,28 @@ const ORIGINAL_ICON = '<svg aria-hidden="true" class="pswp__icn" viewBox="0 0 32
 
 let open: PhotoSwipe | null = null;
 
+// Forward onto a viewer's history entry after Back closed it finds nothing to
+// show: step back over it, so it is never a dead stop on the way off the page.
+if (typeof window !== 'undefined') {
+  window.addEventListener('popstate', () => {
+    if (!open && (window.history.state as { gallery?: boolean } | null)?.gallery) window.history.back();
+  });
+}
+
 /**
  * Open the set at `index`. Resolves once the viewer is showing; a second call
  * while one is open replaces nothing and is ignored.
  */
 export async function openGallery(items: GalleryItem[], index = 0, labels: GalleryLabels = pageLabels()): Promise<void> {
   if (open || items.length === 0) return;
+  // The dialog the picture was clicked in, chosen before the first open's
+  // download: if it closes meanwhile, so does the reason to show its photos.
+  const dialog = [...document.querySelectorAll<HTMLDialogElement>('dialog[open]')].pop() ?? null;
   // Its stylesheet (2 KB) is in app.css: a separate chunk would load on first open, a frame late.
   const { default: PhotoSwipeCore } = await import('photoswipe');
-  if (open) return;
+  if (open || (dialog && !(dialog.isConnected && dialog.open))) return;
 
-  const host = [...document.querySelectorAll<HTMLDialogElement>('dialog[open]')].pop() ?? document.body;
+  const host = dialog ?? document.body;
   const pswp = new PhotoSwipeCore({
     dataSource: items.map((it) => ({ src: it.src, width: it.width, height: it.height, msrc: it.thumb, alt: it.alt, caption: it.caption })),
     index: Math.max(0, Math.min(index, items.length - 1)),
@@ -138,8 +149,10 @@ export async function openGallery(items: GalleryItem[], index = 0, labels: Galle
     });
   });
 
-  // Escape belongs to the viewer while it is open, not to the dialog under it.
-  const keepDialog = (e: Event) => e.preventDefault();
+  // A request to close the dialog under the viewer -- Escape, or a phone's
+  // Back, which Chrome on Android sends a modal dialog as `cancel` rather than
+  // as a step back in history -- closes the viewer and leaves the dialog open.
+  const keepDialog = (e: Event) => { e.preventDefault(); pswp.close(); };
   // And the dialog's own scrollbar is not drawn over the picture.
   const overflow = host.style.overflow;
   if (host instanceof HTMLDialogElement) {

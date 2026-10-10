@@ -17,7 +17,11 @@ class FakeSwipe {
   constructor(options: Record<string, unknown>) { this.options = options; made.push(this); }
   on(name: string, fn: Handler) { this.handlers.set(name, [...(this.handlers.get(name) ?? []), fn]); }
   init() { /* the real one builds the UI */ }
-  close() { this.closed = true; for (const fn of this.handlers.get('destroy') ?? []) fn(); }
+  close() {
+    if (this.closed) return; // PhotoSwipe's own close is idempotent
+    this.closed = true;
+    for (const fn of this.handlers.get('destroy') ?? []) fn();
+  }
 }
 vi.mock('photoswipe', () => ({ default: FakeSwipe }));
 
@@ -82,17 +86,36 @@ describe('opening and closing', () => {
     back.mockRestore();
   });
 
-  test('Escape is the viewer\'s while it is open, not the dialog\'s under it', async () => {
+  test('a request to close the dialog under it (Escape, an Android Back) closes the viewer and keeps the dialog', async () => {
+    const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
     document.body.innerHTML = '<dialog id="panel" open></dialog>';
     const panel = document.getElementById('panel') as HTMLDialogElement;
     await openGallery([item('/1')]);
     const cancel = new Event('cancel', { cancelable: true });
     panel.dispatchEvent(cancel);
     expect(cancel.defaultPrevented).toBe(true);
-    made[0].close();
+    expect(made[0].closed).toBe(true);
+    expect(back).toHaveBeenCalledOnce(); // its history entry taken off
     const after = new Event('cancel', { cancelable: true });
     panel.dispatchEvent(after);
     expect(after.defaultPrevented).toBe(false);
+    back.mockRestore();
+  });
+
+  test('a photo clicked in a panel that closed before the viewer loaded does not open', async () => {
+    document.body.innerHTML = '<dialog id="panel" open></dialog>';
+    const opening = openGallery([item('/1')]);
+    (document.getElementById('panel') as HTMLDialogElement).open = false;
+    await opening;
+    expect(made).toHaveLength(0);
+  });
+
+  test('Forward onto a closed viewer\'s entry steps back over it', async () => {
+    const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+    window.history.replaceState({ boards: 2, gallery: true }, '');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(back).toHaveBeenCalledOnce();
+    back.mockRestore();
   });
 
   test('a second open while one is showing is ignored', async () => {
