@@ -279,6 +279,14 @@ zh:
     nosd: 摄像机没有 SD 卡槽
     sd: 摄像机有一个 SD 卡槽
   site:
+    gallery:
+      close: 关闭
+      zoom: 放大或缩小
+      prev: 上一张
+      next: 下一张
+      original: 在新标签页中打开原图
+      error: 无法加载图片。
+      of: ' / '
     partners:
       friends: 友好项目
       global: 全球合作伙伴

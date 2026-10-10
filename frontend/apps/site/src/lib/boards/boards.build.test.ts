@@ -27,7 +27,9 @@ describe('/cameras/boards', () => {
       // The sources are credited by the island, from the API's own list; the lede says what is here.
       expect(html, locale).toContain(translate(locale, 'pages.boards.lede'));
       expect(html, `${locale} is indexable`).not.toContain('noindex');
-      expect(html, `${locale} has the zoom viewer`).toContain('id="zoom"');
+      // The photo viewer's labels, in the page's language: the island opens it with them.
+      expect(html, `${locale} has the photo viewer`).toContain('id="gallery-labels"');
+      expect(html, locale).toContain(JSON.stringify(translate(locale, 'site.gallery.next')).slice(1, -1));
     }
   });
 
@@ -93,7 +95,7 @@ describe('the SoC pages', () => {
       const known = html.search(/component-url="[^"]*KnownBoards[^"]*"/);
       expect(wizard, locale).toBeGreaterThan(-1);
       expect(known, locale).toBeGreaterThan(wizard);
-      expect(html, locale).toContain('id="zoom"');
+      expect(html, locale).toContain('id="gallery-labels"');
     }
   });
 });

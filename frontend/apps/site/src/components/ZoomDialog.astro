@@ -1,53 +1,38 @@
 ---
 /**
- * The full-size viewer for any image carrying data-zoom.
+ * The full-size viewer for any image carrying data-zoom: a full-screen
+ * gallery (../lib/gallery.ts) over every such picture in the image's nearest
+ * [data-zoom-group], or on the page when it has none, opened on the one
+ * clicked. Arrows, the arrow keys and a swipe move through them; a pinch, a
+ * double tap or the zoom button goes to full resolution.
  *
- * One dialog per page, opened by delegation, so adding a tile costs nothing.
- * A native <dialog>: Escape and the backdrop close it without a line of code,
- * and with JavaScript off the tiles are simply images, which is what they
- * were before this existed.
+ * Opened by delegation, so adding a tile costs nothing, and with JavaScript
+ * off the tiles are simply images. data-zoom-width and data-zoom-height give
+ * the full picture's size (how far it zooms); data-zoom-caption the line
+ * under it, else its alt.
+ *
+ * It also writes the viewer's labels in the page's language, which the board
+ * catalogue's island reads when it opens a board's photos itself.
  */
+import { useTranslations, type Locale } from '../lib/i18n';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const labels = Object.fromEntries(
+  (['close', 'zoom', 'prev', 'next', 'original', 'error', 'of'] as const).map((k) => [k, t(`site.gallery.${k}`)]),
+);
 ---
-<dialog
-  id="zoom"
-  class="m-auto max-h-[92vh] max-w-[92vw] rounded-lg border border-hairline bg-white p-0 backdrop:bg-ink/70"
-  aria-label="Image zoom"
->
-  <form method="dialog" class="flex justify-end border-b border-hairline bg-surface-alt px-3 py-2">
-    <button class="cursor-pointer rounded px-2 text-body-secondary hover:text-body" aria-label="Close">✕</button>
-  </form>
-  {/*
-    Hidden until it has something to show. An <img> sitting in the document
-    with no `src` is a broken image as far as anything inspecting the page is
-    concerned -- and on some browsers as far as the reader is concerned too.
-  */}
-  <img id="zoom-image" class="block max-h-[80vh] w-auto max-w-full" alt="" hidden />
-</dialog>
+<script type="application/json" id="gallery-labels" set:html={JSON.stringify(labels)} />
 
 <script>
-  const dialog = document.getElementById('zoom') as HTMLDialogElement | null;
-  const image = document.getElementById('zoom-image') as HTMLImageElement | null;
+  import { domGroup, openGallery } from '../lib/gallery';
 
-  if (dialog && image) {
-    document.addEventListener('click', (event) => {
-      const target = (event.target as HTMLElement | null)?.closest<HTMLImageElement>('img[data-zoom]');
-      if (!target) return;
-      image.src = target.dataset.zoom ?? '';
-      image.alt = target.alt;
-      image.hidden = false;
-      dialog.showModal();
-    });
-
-    // Clicking the backdrop -- the dialog element itself, outside its children.
-    dialog.addEventListener('click', (event) => {
-      if (event.target === dialog) dialog.close();
-    });
-
-    // Release the 2560px file when the viewer is shut, so a page with twelve
-    // tiles does not end up holding every original a visitor has opened.
-    dialog.addEventListener('close', () => {
-      image.hidden = true;
-      image.removeAttribute('src');
-    });
-  }
+  document.addEventListener('click', (event) => {
+    const img = (event.target as HTMLElement | null)?.closest<HTMLImageElement>('img[data-zoom]');
+    if (!img) return;
+    event.preventDefault();
+    const { items, index } = domGroup(img);
+    void openGallery(items, index);
+  });
 </script>

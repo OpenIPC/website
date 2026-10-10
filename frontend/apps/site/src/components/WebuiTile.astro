@@ -40,6 +40,9 @@ const { screen, frame = false } = Astro.props;
     loading="lazy"
     decoding="async"
     data-zoom={screen.full.src}
+    data-zoom-width={screen.full.width}
+    data-zoom-height={screen.full.height}
+    data-zoom-caption={screen.caption}
   />
   {!frame && <figcaption class="mt-1 text-sm text-body-secondary">{screen.caption}</figcaption>}
 </figure>

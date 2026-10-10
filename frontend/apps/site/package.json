@@ -18,6 +18,7 @@
   "dependencies": {
     "@openipc/ui": "*",
     "d3-hierarchy": "^3.1.2",
+    "photoswipe": "^5.4.4",
     "preact": "10.27.2",
     "shaka-player": "^4.16.51"
   },

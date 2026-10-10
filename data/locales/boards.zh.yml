@@ -316,6 +316,7 @@ zh:
     fw_archived: "存档于 {date}"
     fw_download: 下载
     fw_download_of: '下载 {name}'
+    file_download: '下载 {name}'
     fw_caution_flash: "请通过摄像机自带的升级功能刷写：其网页界面，或"
     fw_caution_before: "刷写前："
     fw_caution_stock: "先把原厂固件升级到最新（见下方）；"

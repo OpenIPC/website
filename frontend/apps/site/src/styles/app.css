@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "@openipc/ui/tokens.css";
+/* The photo viewer (lib/gallery.ts); its script loads on the first picture opened. */
+@import "photoswipe/style.css";
 
 /* Tailwind has to see the class names the package's components use, or the
  * utilities they are drawn with are never generated and the components render
@@ -1629,3 +1631,26 @@ h1, h2, h3, h4, h5, h6 {
     .text-h3 { font-size: var(--text-h3); }
   }
 }
+
+/*
+ * The photo viewer's caption: what the picture shows ("Pinout · tehno32.ru"),
+ * under it, legible over any picture. PhotoSwipe has no caption of its own;
+ * lib/gallery.ts adds this element.
+ */
+.pswp__caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, rgb(15 20 34 / 0.85), rgb(15 20 34 / 0));
+  color: #fff;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  text-align: center;
+  pointer-events: none;
+}
+/* The board captions are alt texts ("front of IVG-G3J"): a caption starts with a capital. */
+.pswp__caption::first-letter { text-transform: uppercase; }
+/* PhotoSwipe's buttons are 50x60 already; the link to the original matches them. */
+.pswp__button--original { display: flex; align-items: center; justify-content: center; color: #fff; }

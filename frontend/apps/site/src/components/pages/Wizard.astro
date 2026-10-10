@@ -96,4 +96,4 @@ const here = p(socPath(vendor, soc));
   are none or the catalogue cannot be fetched, so the wizard never waits on it.
 */}
 <KnownBoards client:idle locale={locale} soc={soc.urlname} model={soc.model} catalogueHref={p('/cameras/boards')} />
-<ZoomDialog />
+<ZoomDialog locale={locale} />
