@@ -102,7 +102,10 @@ export function localize(href: string, locale: Locale): string {
   const cut = href.search(/[?#]/);
   const path = cut === -1 ? href : href.slice(0, cut);
   const rest = cut === -1 ? '' : href.slice(cut);
-  // A file -- the feed, the sitemap -- exists once, at its own address.
+  // The feed is a file, but one per language (/news.atom, /ru/news.atom,
+  // /zh/news.atom): a post's link to it goes to the reader's.
+  if (path === '/news.atom') return (locale === 'en' ? path : `/${locale}${path}`) + rest;
+  // Any other file -- the sitemap -- exists once, at its own address.
   if (/\.[a-z0-9]+$/i.test(path)) return href;
   return pathFor(locale, path) + rest;
 }
