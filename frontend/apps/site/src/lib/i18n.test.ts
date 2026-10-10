@@ -94,20 +94,20 @@ describe('fallbacks', () => {
 });
 
 describe('interpolation', () => {
-  // Several keys in the catalogue carry {name} placeholders; partition_name
-  // is one in all three languages.
-  const KEY = 'pages.firmware_partitions_calculation.partition_name';
+  // Several keys in the catalogue carry {name} placeholders; a SoC page's
+  // title is one in all three languages.
+  const KEY = 'cameras.socs.soc.page_title';
 
   test('{name} is replaced with what is supplied', () => {
-    expect(translate('en', KEY, { number: 3 })).toBe('Partition 3 name');
-    expect(translate('ru', KEY, { number: 3 })).toContain('3');
-    expect(translate('ru', KEY, { number: 3 })).not.toContain('{');
+    expect(translate('en', KEY, { chip: 'hi3516ev300' })).toBe('hi3516ev300 installation guide');
+    expect(translate('ru', KEY, { chip: 'hi3516ev300' })).toContain('hi3516ev300');
+    expect(translate('ru', KEY, { chip: 'hi3516ev300' })).not.toContain('{');
   });
 
   test('a placeholder with nothing supplied is left visible', () => {
     // Not blanked. A page showing "{number}" is a visible bug report; a page
-    // showing "Partition  name" hides one.
-    expect(translate('en', KEY)).toBe('Partition {number} name');
+    // showing " installation guide" hides one.
+    expect(translate('en', KEY)).toBe('{chip} installation guide');
   });
 
   test('two placeholders in one string are both replaced', () => {

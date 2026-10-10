@@ -589,6 +589,7 @@ answered GET  "/%72u/donate?locale=zh"  200 -                                sta
 answered GET  "/donate?locale=ru&locale=zh" 200 -                            static
 answered GET  /telemetry/anything       410 -                                nginx
 answered GET  /zh/merchandise           410 -                                nginx
+answered GET  /tools/firmware-partitions-calculation 410 -                 nginx
 answered GET  /admin/snapshots          410 -                                nginx
 answered GET  /no-such-page-at-all      302 "$O/"                            nginx
 answered GET  /ru/no-such-page          302 "$O/ru"                          nginx

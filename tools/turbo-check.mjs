@@ -128,7 +128,6 @@ check('no duplicate listeners after back/forward',
 // and the whole block dies with it -- so one visit proves nothing and these
 // checks all go round twice.
 const inlineScriptPages = [
-  '/tools/firmware-partitions-calculation',
   '/tools/high-resolution-timer',
   '/tools/qr-code-generator',
 ]
@@ -144,16 +143,6 @@ for (const path of inlineScriptPages) {
   check(`${path} survives being opened twice`,
         jsErrors.length === before, jsErrors.slice(before, before + 1).join(''))
 }
-
-// Reaching a page by link must leave it as usable as typing its URL does.
-// The calculator fills #mtdparts from its own init, so an empty box means the
-// init never ran.
-await turboClick('a[href="/tools/firmware-partitions-calculation"]')
-await page.waitForURL('**/tools/firmware-partitions-calculation', { timeout: 15000 }).catch(() => {})
-await page.waitForTimeout(700)
-check('the partition calculator initialises when reached by a link',
-      await page.evaluate(() => (document.querySelector('#mtdparts')?.textContent || '').trim().length > 0),
-      await page.evaluate(() => JSON.stringify((document.querySelector('#mtdparts')?.textContent || '').trim().slice(0, 40))))
 
 // --- Nothing a page started may outlive it ---------------------------------
 await goHome()

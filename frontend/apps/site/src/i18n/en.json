@@ -85,7 +85,6 @@
     "news": "News",
     "next": "Next",
     "openwall": "Open Wall",
-    "partition_calc": "Firmware Partition Calculator",
     "pause_transitions": "Place mouse cursor over a snapshot to pause automatic transitions.",
     "previous": "Previous",
     "privacy": "Privacy",
@@ -380,21 +379,6 @@
     "firmware_explorer": {
       "lede": "What goes into every OpenIPC build: where the flash goes, which packages and kernel modules take it, how that changed over 90 nightlies, and what you could leave out.",
       "title": "Firmware explorer"
-    },
-    "firmware_partitions_calculation": {
-      "end_address": "End address",
-      "flash_size_mb": "Flash size, MB",
-      "free_space": "Free space",
-      "mtd_name": "MTD device name",
-      "offset": "Initial offset, dec or hex",
-      "partition_name": "Partition {number} name",
-      "partition_size": "Partition {number} size, KB",
-      "recalculate": "Recalculate",
-      "size_hex": "Hex size, bytes",
-      "start_address": "Start address",
-      "title": "Firmware Partitions Calculation",
-      "unit_bytes": "bytes",
-      "unit_kb": "KB"
     },
     "firmware_upstream": {
       "lede": "Every device OpenIPC/builder makes firmware for, against the OpenIPC/firmware it is built on: which firmware files a device replaces with its own copy, which of those firmware has changed since, and which defconfig symbols firmware no longer uses. Checked once a day.",

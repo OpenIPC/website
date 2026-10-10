@@ -31,7 +31,6 @@ import EdgeAi from '../components/pages/EdgeAi.astro';
 import Ecosystem from '../components/pages/Ecosystem.astro';
 import FirmwareExplorer from '../components/pages/FirmwareExplorer.astro';
 import FirmwareUpstream from '../components/pages/FirmwareUpstream.astro';
-import FirmwarePartitionsCalculation from '../components/pages/FirmwarePartitionsCalculation.astro';
 import GetStarted from '../components/pages/GetStarted.astro';
 import GreenLife from '../components/pages/GreenLife.astro';
 import HighResolutionTimer from '../components/pages/HighResolutionTimer.astro';
@@ -128,7 +127,6 @@ const COMPONENTS: Record<string, Renderer> = {
   '/utilities': { component: Utilities },
   '/web-interface': { component: WebInterface },
 
-  '/tools/firmware-partitions-calculation': { component: FirmwarePartitionsCalculation },
   '/tools/high-resolution-timer': { component: HighResolutionTimer },
   '/tools/qr-code-generator': { component: QrCodeGenerator },
 

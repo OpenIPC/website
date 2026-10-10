@@ -3,7 +3,7 @@
  * component itself is tested. Each name is the failure, not the fix.
  */
 import { expect, test, describe } from 'vitest';
-import { render, fireEvent, screen } from '@testing-library/preact';
+import { render, fireEvent } from '@testing-library/preact';
 import { h } from 'preact';
 import { renderToString } from 'preact-render-to-string';
 import { readdirSync } from 'node:fs';
@@ -14,7 +14,7 @@ import { MENU_ITEMS } from '../components/widgets/header-menu/constants';
 import {
   Paragraph, IconButton, Radio, Input, Select, CustomSelect, SoCListItem, SoCList,
   QrCodeWidget, HeaderBurgerButton, AbcSelector, VendorsList, TeamMember, ModalImage,
-  MainButton, FirmwarePartitionCalculator, ToggleButton,
+  MainButton, ToggleButton,
 } from '../index';
 import { SOCS } from '../__fixtures__/socs';
 
@@ -291,20 +291,6 @@ describe('third round of the review', () => {
     }));
     expect(decorative.container.querySelector('button')).toBeNull();
   });
-
-  test('reserved flash is drawn on the partition map, not left looking free', () => {
-    render(h(FirmwarePartitionCalculator, null));
-    const lite = screen.getAllByText('Lite')[0];
-    fireEvent.click(lite);
-    const part3 = document.querySelector('input[name="part3-size"]') as HTMLInputElement;
-    fireEvent.input(part3, { target: { value: '4864' } });     // free 256 KB
-    const offset = document.querySelector('input[name="initial-offset"]') as HTMLInputElement;
-    fireEvent.input(offset, { target: { value: '0x40000' } }); // reserve it
-
-    // Free space is zero, so nothing in the bar may read as available.
-    expect(document.querySelector('span')?.textContent).toBe('Free space: 0 KB');
-    expect(document.body.innerHTML).toContain('bg-dark-grey');
-  });
 });
 
 describe('fourth round of the review', () => {
@@ -353,21 +339,5 @@ describe('fourth round of the review', () => {
       name: 'widgetii', bio: 'Majestic Streamer', imgSrc: 'x.png', socials: [],
     }));
     expect(container.querySelector('img')?.getAttribute('alt')).toBe('widgetii');
-  });
-
-  test('the partition map of a full chip sums to 100%, not 101%', () => {
-    // 256 + 64 + 2048 + 5120 + 704 KB rounded one at a time came to 101% of
-    // the 8 MB they exactly fill, and the bar clips at overflow-hidden -- so
-    // a layout that fitted perfectly lost the end of its last partition.
-    render(h(FirmwarePartitionCalculator, null));
-    fireEvent.click(screen.getAllByText('Lite')[0]);
-
-    const widths = [...document.querySelectorAll('[style*="width:"]')]
-      .map(el => /width:\s*([\d.]+)%/.exec(el.getAttribute('style') ?? '')?.[1])
-      .filter(Boolean)
-      .map(Number);
-
-    expect(widths.length).toBe(5);
-    expect(widths.reduce((a, b) => a + b, 0)).toBe(100);
   });
 });

@@ -419,20 +419,6 @@ ru:
     firmware_upstream:
       lede: 'Каждое устройство, для которого OpenIPC/builder собирает прошивку, против OpenIPC/firmware, на которой оно основано: какие файлы прошивки устройство подменяет своей копией, какие из них Firmware с тех пор изменила и какие символы defconfig прошивка больше не использует. Проверяется раз в сутки.'
       title: Устройства Builder против прошивки
-    firmware_partitions_calculation:
-      end_address: Конечный адрес
-      flash_size_mb: Размер флешки, МБ
-      free_space: Свободно
-      mtd_name: Имя устройства МПД
-      offset: Начальное смещение, десятичное или шестнадцатеричное
-      partition_name: Имя раздела {number}
-      partition_size: Размер раздела {number}, КБ
-      recalculate: Пересчитать
-      size_hex: Шестнадцатеричный размер, байт
-      start_address: Начальный адрес
-      title: Расчет разделов прошивки
-      unit_bytes: байт
-      unit_kb: КБ
     get_started:
       cta_ways: "Четыре способа"
       editions_text: Lite помещается в 8 МБ флеш-памяти и покрывает базовые задачи. Ultimate добавляет облачные трансляции, туннели и дополнительные кодеки — ей нужно 16 МБ.
