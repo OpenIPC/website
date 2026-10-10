@@ -119,11 +119,17 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
           )}
         </div>
         <button type="button" aria-label={t('close')} onClick={() => dialog.current?.close()}
-          class="shrink-0 cursor-pointer rounded px-2 text-xl leading-none text-body-secondary hover:text-body">✕</button>
+          class="-mt-1 -mr-2 grid size-11 shrink-0 cursor-pointer place-items-center rounded-md text-body-secondary hover:bg-surface-alt hover:text-body focus-visible:outline-2 focus-visible:outline-brand-blue">
+          <svg aria-hidden="true" viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M3 3l10 10M13 3L3 13" />
+          </svg>
+        </button>
       </header>
 
       <div class="grid gap-6 px-4 pt-4 pb-6 sm:px-5">
         {detail.state === 'loading' && <p class="m-0 text-body-secondary">{t('panel_loading')}</p>}
+        {/* A shared link can open before the catalogue has arrived: the photos and files come from it. */}
+        {detail.state !== 'loading' && !entry && !loaded && <p class="m-0 text-body-secondary">{t('panel_loading_files')}</p>}
         {detail.state === 'error' && (
           <div class="site-alert site-alert-warning" role="alert">
             <p class="mb-0">{notFound ? t('panel_missing') : t('panel_error', { error: detail.error })}</p>
@@ -150,14 +156,15 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
                 </div>
               )}
               {a.specs.length > 0 && (
-                <div class="overflow-x-auto">
-                  <table class="w-full min-w-[420px] border-collapse text-[13px]">
+                <div>
+                  {/* Two columns from sm up; on a phone each name sits over its value, so nothing is cut off. */}
+                  <table class="w-full border-collapse text-[13px]">
                     <caption class="sr-only">{t('specs')}</caption>
                     <tbody>
                       {a.specs.map(([k, v], j) => (
-                        <tr key={j} class="border-t border-hairline align-top">
-                          <th scope="row" class="w-[32%] px-2 py-1.5 text-left font-normal text-body-secondary">{k}</th>
-                          <td class="px-2 py-1.5">{prose(v)}</td>
+                        <tr key={j} class="block border-t border-hairline py-1.5 align-top sm:table-row sm:py-0">
+                          <th scope="row" class="block px-2 text-left font-normal text-body-secondary sm:table-cell sm:w-[32%] sm:py-1.5">{k}</th>
+                          <td class="block px-2 break-words sm:table-cell sm:py-1.5">{prose(v)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -211,7 +218,7 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
                 if (mine.length === 0) return null;
                 return (
                   <Fragment key={kind}>
-                    <dt class="font-mono text-[11px] font-medium tracking-wide text-body-secondary uppercase sm:pt-0.5">{t(`link_${kind}`)}</dt>
+                    <dt class="font-mono text-xs font-medium tracking-wide text-body-secondary uppercase sm:pt-0.5">{t(`link_${kind}`)}</dt>
                     <dd class="m-0 mb-1.5 flex flex-wrap gap-x-3 gap-y-1 sm:mb-0">
                       {mine.map((l, j) => <LinkItem key={j} link={l} href={href} follow={follow} t={t} sourceName={sourceName} />)}
                     </dd>
@@ -284,7 +291,7 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
           </section>
         )}
 
-        <OwnerReports model={id} locale={locale} t={t} />
+        {(entry || loaded) && <OwnerReports model={id} locale={locale} t={t} />}
 
         {entry && (
           <div class="grid gap-3 border-t border-hairline pt-4">

@@ -10,6 +10,8 @@
     },
     "card_inside_confirmed": "Внутри:",
     "card_inside_likely": "Скорее всего внутри:",
+    "card_wanted": "Нужно: {what}",
+    "card_wanted_own_photo": "Нужно: своё фото",
     "clear": "Сбросить фильтры",
     "close": "Закрыть",
     "club": {
@@ -238,6 +240,8 @@
     "cov_boot_log": "Лог загрузки",
     "cov_document": "Документы",
     "cov_flash_dump": "Дамп флеш",
+    "cov_has": "Есть",
+    "cov_missing": "Нет",
     "cov_photos": "Фото",
     "cov_pinout": "Распиновка",
     "cov_uboot_env": "Консоль U-Boot",
@@ -342,6 +346,13 @@
     "filter_sensor": "Сенсор",
     "filter_soc": "SoC",
     "filter_source": "Источник",
+    "filters": "Фильтры",
+    "filters_count": {
+      "few": "Фильтры ({count})",
+      "many": "Фильтры ({count})",
+      "one": "Фильтры ({count})",
+      "other": "Фильтры ({count})"
+    },
     "flash": "Флеш",
     "found_in_title": "Встречается в",
     "from_source": "Источник: {source}",
@@ -363,6 +374,7 @@
     "fw_device": "ID устройства {id}",
     "fw_device_hint": "четвёртое поле System version: V5.00.R02.{id}.10010…",
     "fw_download": "Скачать",
+    "fw_download_of": "Скачать {name}",
     "fw_earlier": "Ранее",
     "fw_error": "Не удалось проверить прошивки для устройства {id} ({error}). Попробуйте чуть позже.",
     "fw_latest": "Последняя",
@@ -389,6 +401,12 @@
       "one": "на {count} плате",
       "other": "на {count} платы"
     },
+    "hits_hidden": {
+      "few": "Ещё {count} подходящие строки — на платах, которые скрывают фильтры.",
+      "many": "Ещё {count} подходящих строк — на платах, которые скрывают фильтры.",
+      "one": "Ещё {count} подходящая строка — на плате, которую скрывают фильтры.",
+      "other": "Ещё {count} подходящей строки — на платах, которые скрывают фильтры."
+    },
     "hits_lines": {
       "few": "{count} совпадающие строки",
       "many": "{count} совпадающих строк",
@@ -397,6 +415,10 @@
     },
     "hits_none": "Здесь нет строк с «{q}».",
     "hits_none_boot_log": "Логов загрузки пока никто не прислал.",
+    "hits_none_in_all": "Ни в консолях U-Boot, ни в логах загрузки, ни в заметках нет «{q}».",
+    "hits_none_in_boot_log": "Ни в одном логе загрузки нет «{q}».",
+    "hits_none_in_note": "Ни в одной заметке нет «{q}».",
+    "hits_none_in_uboot_env": "Ни в одной консоли U-Boot нет «{q}».",
     "hits_scope": "где искали: {scope}",
     "hits_truncated": "Показаны только первые совпадения. Уточните запрос, чтобы увидеть остальные.",
     "inside_ask": "Купили такое? Вскройте и",
@@ -508,6 +530,7 @@
     "original": "Оригинал",
     "panel_error": "Не удалось загрузить подробности ({error}).",
     "panel_loading": "Загружаем, что пишут источники…",
+    "panel_loading_files": "Загружаем фото и файлы…",
     "panel_missing": "Такой платы нет в каталоге.",
     "photo_alt": "{what}: {board}",
     "product_line": {
@@ -604,7 +627,7 @@
     "scope_uboot_env": "Консоль U-Boot",
     "search_error": "Поиск не удался ({error}).",
     "search_label": "Поиск плат и их материалов",
-    "search_placeholder": "Модель, название, консоль U-Boot или заметки: JZC-N81820S, mtdparts, xm25qh64a…",
+    "search_placeholder": "Модель, чип или строка из лога: IVG-G5SH, mtdparts…",
     "searching": "Ищем…",
     "send_boot_log": "Пришлите нам лог загрузки",
     "send_flash_dump": "Пришлите нам дамп флеш-памяти",

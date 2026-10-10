@@ -124,7 +124,7 @@ en:
       one: still needs a pinout
       other: still need a pinout
     search_label: Search boards and their evidence
-    search_placeholder: 'Model, name, U-Boot console or notes: JZC-N81820S, mtdparts, xm25qh64a…'
+    search_placeholder: 'Model, chip or a line from a log: IVG-G5SH, mtdparts…'
     scope_label: Search in
     scope_uboot_env: U-Boot console
     scope_boot_log: Boot logs
@@ -186,6 +186,10 @@ en:
     cov_flash_dump: Flash dump
     cov_uboot_env: U-Boot console
     cov_boot_log: Boot log
+    cov_has: Has
+    cov_missing: Missing
+    card_wanted: 'Wanted: {what}'
+    card_wanted_own_photo: 'Wanted: a photo of its own'
     kind_flash_dump: Flash dump
     kind_uboot_env: U-Boot console
     kind_boot_log: Boot log
@@ -223,6 +227,17 @@ en:
     hits_truncated: 'Only the first matches are shown. Make the search more specific to see the rest.'
     hits_none: 'No line matches “{q}” here.'
     hits_none_boot_log: No boot logs have been contributed yet.
+    hits_none_in_uboot_env: 'No U-Boot console mentions “{q}”.'
+    hits_none_in_boot_log: 'No boot log mentions “{q}”.'
+    hits_none_in_note: 'No note mentions “{q}”.'
+    hits_none_in_all: 'No U-Boot console, boot log or note mentions “{q}”.'
+    hits_hidden:
+      one: '{count} more matching line is on a board the filters leave out.'
+      other: '{count} more matching lines are on boards the filters leave out.'
+    filters: Filters
+    filters_count:
+      one: 'Filters ({count})'
+      other: 'Filters ({count})'
     line: 'line {n}'
     known_title: 'Known boards with {soc}'
     known_link: See them in the board catalogue →
@@ -282,6 +297,7 @@ en:
     kind_firmware: Stock firmware
     close: Close
     panel_loading: Loading what the sources say…
+    panel_loading_files: Loading the photos and files…
     panel_error: 'The details could not be loaded ({error}).'
     panel_missing: This board is not in the catalogue.
     original: Original
@@ -303,6 +319,7 @@ en:
     fw_built: "built {date}"
     fw_archived: "archived {date}"
     fw_download: Download
+    fw_download_of: 'Download {name}'
     fw_caution_flash: "Flash it through the camera's own update function: its web interface, or"
     fw_caution_before: "Before you do:"
     fw_caution_stock: "update to the latest stock firmware first (below);"

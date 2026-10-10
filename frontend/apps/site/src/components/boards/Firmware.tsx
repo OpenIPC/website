@@ -43,7 +43,7 @@ export default function Firmware({ device, heading, note, locale, t }: {
                 <span class="font-mono break-all text-body">{coupler.key}</span> · {facts(coupler, locale, t, 'built')} · OpenIPC/coupler
               </span>
             </div>
-            <a class={`${BTN} bg-brand-blue text-white hover:text-white`} href={coupler.url}>{t('fw_download')}</a>
+            <a class={`${BTN} bg-brand-blue text-white hover:text-white`} href={coupler.url} aria-label={t('fw_download_of', { name: coupler.key })}>{t('fw_download')}</a>
           </div>
           <div class="rounded-md bg-[#fff5e6] px-3 py-2 text-[13px] text-[#8a5200]">
             {t('fw_caution_flash')} <a href={PYTHON_DVR} class="text-inherit underline">python-dvr</a>. {t('fw_caution_before')}
@@ -74,7 +74,7 @@ export default function Firmware({ device, heading, note, locale, t }: {
                   <span class="font-mono text-[12.5px] break-all">{f.build} · {f.version}</span>
                   <span class="text-[12.5px] text-body-secondary">{facts(f, locale, t, 'archived')}</span>
                 </span>
-                <a class={`${BTN} text-brand-blue hover:border-link-hover`} href={f.url}>{t('fw_download')}</a>
+                <a class={`${BTN} text-brand-blue hover:border-link-hover`} href={f.url} aria-label={t('fw_download_of', { name: `${f.build} ${f.version}` })}>{t('fw_download')}</a>
               </li>
             ))}
           </ul>
@@ -100,7 +100,7 @@ export default function Firmware({ device, heading, note, locale, t }: {
                     {f.origin_url && <> · <a href={f.origin_url} class="text-inherit underline">{t('fw_seller_page', { origin })} ↗</a></>}
                   </span>
                 </span>
-                <a class={`${BTN} text-brand-blue hover:border-link-hover`} href={f.url}>{t('fw_download')}</a>
+                <a class={`${BTN} text-brand-blue hover:border-link-hover`} href={f.url} aria-label={t('fw_download_of', { name: `${f.build} ${f.version}` })}>{t('fw_download')}</a>
               </li>
             ))}
           </ul>

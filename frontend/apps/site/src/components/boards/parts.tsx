@@ -16,8 +16,10 @@ export type SocLinks = Record<string, { model: string; href: string }>;
  * clicks on img[data-zoom]; the button around it is what a keyboard reaches,
  * and pressing it clicks the image.
  */
-export function Thumb({ file, alt, tag, highlight = false, shared = false, class: cls = '' }: {
-  file: BoardFile; alt: string; tag?: string; highlight?: boolean; shared?: boolean; class?: string;
+export function Thumb({ file, alt, tag, highlight = false, shared = false, contain = false, class: cls = '' }: {
+  file: BoardFile; alt: string; tag?: string; highlight?: boolean; shared?: boolean;
+  /** Show the whole picture rather than fill the box: a card's only photo. */
+  contain?: boolean; class?: string;
 }) {
   return (
     <button type="button" class={`relative block cursor-zoom-in overflow-hidden bg-surface-alt p-0 ${cls}`}
@@ -25,9 +27,9 @@ export function Thumb({ file, alt, tag, highlight = false, shared = false, class
         if (e.target === e.currentTarget) (e.currentTarget.querySelector('img') as HTMLImageElement | null)?.click();
       }}>
       <img src={file.thumb_url} data-zoom={file.url} alt={alt} loading="lazy" decoding="async"
-        class="block size-full object-cover" />
+        class={`block size-full ${contain ? 'object-contain' : 'object-cover'}`} />
       {tag && (
-        <span class={`pointer-events-none absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] truncate rounded-sm px-1.5 py-0.5 font-mono text-[10px] leading-none font-medium tracking-wide whitespace-nowrap uppercase ${shared ? 'bg-[#fff4e2] text-[#8a5200]' : highlight ? 'bg-accent text-ink' : 'bg-ink/80 text-white'}`}>
+        <span class={`pointer-events-none absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] truncate rounded-sm px-1.5 py-0.5 font-mono text-[11px] leading-none font-medium tracking-wide whitespace-nowrap uppercase ${shared ? 'bg-[#fff4e2] text-[#8a5200]' : highlight ? 'bg-accent text-ink' : 'bg-ink/80 text-white'}`}>
           {tag}
         </span>
       )}
@@ -35,10 +37,15 @@ export function Thumb({ file, alt, tag, highlight = false, shared = false, class
   );
 }
 
-export function Chip({ ok, children }: { ok: boolean; children: string }) {
+/**
+ * One kind of evidence a board has or lacks. The tick and the colour are
+ * what a sighted reader goes by; `state` says the same to a screen reader.
+ */
+export function Chip({ ok, state, children }: { ok: boolean; state?: string; children: string }) {
   return (
-    <span class={`inline-flex items-center gap-1 rounded-[5px] px-2 py-0.5 text-xs ${ok ? 'bg-[#e6f4ec] text-green' : 'bg-[#fff4e2] text-[#9a5b00]'}`}>
+    <span class={`inline-flex items-center gap-1 rounded-[5px] px-2 py-0.5 text-xs ${ok ? 'bg-[#e6f4ec] text-[#146c3c]' : 'bg-[#fff4e2] text-[#9a5b00]'}`}>
       <span aria-hidden="true">{ok ? '✓' : '—'}</span>
+      {state && <span class="sr-only">{state} </span>}
       {children}
     </span>
   );
@@ -124,9 +131,9 @@ export function SocChip({ m, socs, names, t }: { m: Entry; socs: SocLinks; names
   const key = socKey(m);
   if (link) {
     return (
-      <a href={link.href} title={t('soc_install', { soc: link.model })}
-        class="shrink-0 rounded-full border border-hairline bg-surface-alt px-2.5 py-0.5 font-mono text-xs font-medium whitespace-nowrap text-body no-underline hover:border-brand-blue hover:text-brand-blue">
-        {link.model} →
+      <a href={link.href} title={t('soc_install', { soc: link.model })} aria-label={t('soc_install', { soc: link.model })}
+        class="relative z-[1] shrink-0 rounded-full border border-hairline bg-surface-alt px-2.5 py-0.5 font-mono text-xs font-medium whitespace-nowrap text-body no-underline hover:border-brand-blue hover:text-brand-blue">
+        {link.model} <span aria-hidden="true">→</span>
       </a>
     );
   }

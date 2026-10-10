@@ -8,6 +8,8 @@
     },
     "card_inside_confirmed": "Inside:",
     "card_inside_likely": "Most likely inside:",
+    "card_wanted": "Wanted: {what}",
+    "card_wanted_own_photo": "Wanted: a photo of its own",
     "clear": "Clear filters",
     "close": "Close",
     "club": {
@@ -236,6 +238,8 @@
     "cov_boot_log": "Boot log",
     "cov_document": "Docs",
     "cov_flash_dump": "Flash dump",
+    "cov_has": "Has",
+    "cov_missing": "Missing",
     "cov_photos": "Photos",
     "cov_pinout": "Pinout",
     "cov_uboot_env": "U-Boot console",
@@ -334,6 +338,11 @@
     "filter_sensor": "Sensor",
     "filter_soc": "SoC",
     "filter_source": "Source",
+    "filters": "Filters",
+    "filters_count": {
+      "one": "Filters ({count})",
+      "other": "Filters ({count})"
+    },
     "flash": "Flash",
     "found_in_title": "Found in",
     "from_source": "From {source}",
@@ -353,6 +362,7 @@
     "fw_device": "Device ID {id}",
     "fw_device_hint": "the 4th field of the System version: V5.00.R02.{id}.10010…",
     "fw_download": "Download",
+    "fw_download_of": "Download {name}",
     "fw_earlier": "Earlier",
     "fw_error": "Could not check the firmware for device {id} ({error}). Try again in a moment.",
     "fw_latest": "Latest",
@@ -377,12 +387,20 @@
       "one": "in {count} board",
       "other": "in {count} boards"
     },
+    "hits_hidden": {
+      "one": "{count} more matching line is on a board the filters leave out.",
+      "other": "{count} more matching lines are on boards the filters leave out."
+    },
     "hits_lines": {
       "one": "{count} matching line",
       "other": "{count} matching lines"
     },
     "hits_none": "No line matches “{q}” here.",
     "hits_none_boot_log": "No boot logs have been contributed yet.",
+    "hits_none_in_all": "No U-Boot console, boot log or note mentions “{q}”.",
+    "hits_none_in_boot_log": "No boot log mentions “{q}”.",
+    "hits_none_in_note": "No note mentions “{q}”.",
+    "hits_none_in_uboot_env": "No U-Boot console mentions “{q}”.",
     "hits_scope": "searching: {scope}",
     "hits_truncated": "Only the first matches are shown. Make the search more specific to see the rest.",
     "inside_ask": "Bought one? Open it and",
@@ -482,6 +500,7 @@
     "original": "Original",
     "panel_error": "The details could not be loaded ({error}).",
     "panel_loading": "Loading what the sources say…",
+    "panel_loading_files": "Loading the photos and files…",
     "panel_missing": "This board is not in the catalogue.",
     "photo_alt": "{what} of {board}",
     "product_line": {
@@ -578,7 +597,7 @@
     "scope_uboot_env": "U-Boot console",
     "search_error": "The search could not run ({error}).",
     "search_label": "Search boards and their evidence",
-    "search_placeholder": "Model, name, U-Boot console or notes: JZC-N81820S, mtdparts, xm25qh64a…",
+    "search_placeholder": "Model, chip or a line from a log: IVG-G5SH, mtdparts…",
     "searching": "Searching…",
     "send_boot_log": "Send us the boot log",
     "send_flash_dump": "Send us the flash dump",

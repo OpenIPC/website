@@ -130,7 +130,7 @@ ru:
       one: ещё ждёт распиновку
       other: ещё ждут распиновку
     search_label: Поиск плат и их материалов
-    search_placeholder: 'Модель, название, консоль U-Boot или заметки: JZC-N81820S, mtdparts, xm25qh64a…'
+    search_placeholder: 'Модель, чип или строка из лога: IVG-G5SH, mtdparts…'
     scope_label: Где искать
     scope_uboot_env: Консоль U-Boot
     scope_boot_log: Логи загрузки
@@ -198,6 +198,10 @@ ru:
     cov_flash_dump: Дамп флеш
     cov_uboot_env: Консоль U-Boot
     cov_boot_log: Лог загрузки
+    cov_has: Есть
+    cov_missing: Нет
+    card_wanted: 'Нужно: {what}'
+    card_wanted_own_photo: 'Нужно: своё фото'
     kind_flash_dump: Дамп флеш
     kind_uboot_env: Консоль U-Boot
     kind_boot_log: Лог загрузки
@@ -245,6 +249,21 @@ ru:
     hits_truncated: 'Показаны только первые совпадения. Уточните запрос, чтобы увидеть остальные.'
     hits_none: 'Здесь нет строк с «{q}».'
     hits_none_boot_log: Логов загрузки пока никто не прислал.
+    hits_none_in_uboot_env: 'Ни в одной консоли U-Boot нет «{q}».'
+    hits_none_in_boot_log: 'Ни в одном логе загрузки нет «{q}».'
+    hits_none_in_note: 'Ни в одной заметке нет «{q}».'
+    hits_none_in_all: 'Ни в консолях U-Boot, ни в логах загрузки, ни в заметках нет «{q}».'
+    hits_hidden:
+      one: 'Ещё {count} подходящая строка — на плате, которую скрывают фильтры.'
+      few: 'Ещё {count} подходящие строки — на платах, которые скрывают фильтры.'
+      many: 'Ещё {count} подходящих строк — на платах, которые скрывают фильтры.'
+      other: 'Ещё {count} подходящей строки — на платах, которые скрывают фильтры.'
+    filters: Фильтры
+    filters_count:
+      one: 'Фильтры ({count})'
+      few: 'Фильтры ({count})'
+      many: 'Фильтры ({count})'
+      other: 'Фильтры ({count})'
     line: 'строка {n}'
     known_title: 'Известные платы на {soc}'
     known_link: Смотреть в каталоге плат →
@@ -312,6 +331,7 @@ ru:
     kind_firmware: Заводская прошивка
     close: Закрыть
     panel_loading: Загружаем, что пишут источники…
+    panel_loading_files: Загружаем фото и файлы…
     panel_error: 'Не удалось загрузить подробности ({error}).'
     panel_missing: Такой платы нет в каталоге.
     original: Оригинал
@@ -333,6 +353,7 @@ ru:
     fw_built: "собран {date}"
     fw_archived: "сохранён {date}"
     fw_download: Скачать
+    fw_download_of: 'Скачать {name}'
     fw_caution_flash: "Прошивайте через штатное обновление камеры: её веб-интерфейс или"
     fw_caution_before: "Перед этим:"
     fw_caution_stock: "сначала обновите заводскую прошивку до последней (ниже);"

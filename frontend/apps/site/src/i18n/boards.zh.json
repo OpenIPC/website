@@ -8,6 +8,8 @@
     },
     "card_inside_confirmed": "内置：",
     "card_inside_likely": "很可能内置：",
+    "card_wanted": "待补充：{what}",
+    "card_wanted_own_photo": "待补充：本板照片",
     "clear": "清除筛选",
     "close": "关闭",
     "club": {
@@ -234,6 +236,8 @@
     "cov_boot_log": "启动日志",
     "cov_document": "文档",
     "cov_flash_dump": "闪存转储",
+    "cov_has": "有",
+    "cov_missing": "缺",
     "cov_photos": "照片",
     "cov_pinout": "引脚图",
     "cov_uboot_env": "U-Boot 控制台",
@@ -257,6 +261,11 @@
     "filter_sensor": "传感器",
     "filter_soc": "SoC",
     "filter_source": "来源",
+    "filters": "筛选",
+    "filters_count": {
+      "one": "筛选（{count}）",
+      "other": "筛选（{count}）"
+    },
     "flash": "闪存",
     "found_in_title": "用于以下设备",
     "from_source": "来源：{source}",
@@ -276,6 +285,7 @@
     "fw_device": "设备 ID {id}",
     "fw_device_hint": "System version 的第 4 段：V5.00.R02.{id}.10010…",
     "fw_download": "下载",
+    "fw_download_of": "下载 {name}",
     "fw_earlier": "较早",
     "fw_error": "暂时无法查询设备 {id} 的固件（{error}），请稍后再试。",
     "fw_latest": "最新",
@@ -300,12 +310,20 @@
       "one": "来自 {count} 块主板",
       "other": "来自 {count} 块主板"
     },
+    "hits_hidden": {
+      "one": "另有 {count} 行匹配，位于被筛选条件排除的主板上。",
+      "other": "另有 {count} 行匹配，位于被筛选条件排除的主板上。"
+    },
     "hits_lines": {
       "one": "{count} 行匹配",
       "other": "{count} 行匹配"
     },
     "hits_none": "这里没有包含“{q}”的行。",
     "hits_none_boot_log": "还没有人提供启动日志。",
+    "hits_none_in_all": "U-Boot 控制台、启动日志和备注中都没有“{q}”。",
+    "hits_none_in_boot_log": "没有启动日志提到“{q}”。",
+    "hits_none_in_note": "没有备注提到“{q}”。",
+    "hits_none_in_uboot_env": "没有 U-Boot 控制台提到“{q}”。",
     "hits_scope": "搜索范围：{scope}",
     "hits_truncated": "只显示了前面的匹配结果。请把搜索词写得更具体，以查看其余结果。",
     "inside_ask": "买了这款设备？拆开后",
@@ -405,6 +423,7 @@
     "original": "原文",
     "panel_error": "无法加载详情（{error}）。",
     "panel_loading": "正在加载各来源的资料…",
+    "panel_loading_files": "正在加载照片和文件…",
     "panel_missing": "目录中没有这块主板。",
     "photo_alt": "{board}：{what}",
     "product_line": {
@@ -501,7 +520,7 @@
     "scope_uboot_env": "U-Boot 控制台",
     "search_error": "搜索失败（{error}）。",
     "search_label": "搜索主板及其资料",
-    "search_placeholder": "型号、名称、U-Boot 控制台或备注：JZC-N81820S、mtdparts、xm25qh64a…",
+    "search_placeholder": "型号、芯片或日志中的一行：IVG-G5SH、mtdparts…",
     "searching": "正在搜索…",
     "send_boot_log": "把启动日志发给我们",
     "send_flash_dump": "把闪存转储发给我们",
