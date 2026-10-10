@@ -458,6 +458,91 @@ h1, h2, h3, h4, h5, h6 {
   .site-nav .site-dropdown {
     position: static;
   }
+
+  /*
+   * The open menu, on a phone. The bar is sticky, so a menu taller than the
+   * screen was cut off with no way to reach its end: scrolling moved the page
+   * under it, not the menu. With Community open it is 690px, and the
+   * language row sat below a 667px iPhone SE; on a phone held sideways (390px)
+   * it was out of reach with nothing open at all. The menu scrolls itself,
+   * within what the screen has under the bar, and the page under it holds
+   * still while it is open.
+   */
+  .site-nav-collapse[data-open] {
+    max-height: calc(100dvh - var(--site-nav-height));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: 0.75rem;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+  }
+
+  html:has(#site-menu[data-open]) {
+    overflow: hidden;
+  }
+
+  /* Set apart from the page it covers, which is often the same ink. */
+  .site-nav:has(#site-menu[data-open]) {
+    box-shadow: 0 1rem 2rem rgb(0 0 0 / 0.55);
+  }
+
+  /*
+   * 44px rows for a thumb: .625rem of padding around a 25.6px line. The bar
+   * keeps Bootstrap's .5rem from 1200px up, where a pointer is the norm.
+   */
+  .site-nav .site-nav-link,
+  .site-nav .site-dropdown-item {
+    padding-block: 0.625rem;
+  }
+
+  /*
+   * 44px tall, and the bar still 60: the negative margin takes the extra
+   * height back out of the row, so --site-nav-height holds below 1200px too.
+   */
+  .site-nav-toggler {
+    min-height: 44px;
+    min-width: 48px;
+    margin-block: -2px;
+  }
+
+  .site-nav-toggler-close,
+  .site-nav-toggler[aria-expanded="true"] .site-nav-toggler-open {
+    display: none;
+  }
+
+  .site-nav-toggler[aria-expanded="true"] .site-nav-toggler-close {
+    display: inline;
+  }
+
+  .site-lang-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.375rem 0.5rem 0;
+    margin-top: 0.25rem;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+  }
+
+  .site-lang-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 0.875rem;
+    color: #94a0e8;
+    text-decoration: none;
+    border-radius: 0.375rem;
+  }
+
+  .site-lang-chip:hover,
+  .site-lang-chip:focus-visible {
+    color: #fff;
+    background-color: rgb(255 255 255 / 0.06);
+  }
+
+  .site-lang-chip[aria-current="true"] {
+    color: #fff;
+    font-weight: 600;
+    background-color: rgb(255 255 255 / 0.1);
+  }
 }
 
 /*

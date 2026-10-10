@@ -74,8 +74,11 @@ const clubLabels = Object.fromEntries(
       aria-controls="site-menu"
       aria-label={t('nav.menu')}
     >
-      <svg width="24" height="24" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+      <svg class="site-nav-toggler-open" width="24" height="24" viewBox="0 0 30 30" fill="none" aria-hidden="true">
         <path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h22M4 15h22M4 23h22" />
+      </svg>
+      <svg class="site-nav-toggler-close" width="24" height="24" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+        <path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M7 7l16 16M23 7L7 23" />
       </svg>
     </button>
 
@@ -126,10 +129,9 @@ const clubLabels = Object.fromEntries(
         height on every page, which pushed the whole document down by that much
         against the origin.
       */}
-      <li class="site-nav-item relative">
+      <li class="site-nav-item relative hidden xl:block">
         <a class="site-nav-link site-caret" href="#" role="button" aria-expanded="false" aria-haspopup="true" aria-label={`${t('nav.language')}: ${LOCALE_NAMES[locale]}`}>
           <span class="inline-block size-4 align-[-.15rem]" set:html={translate} />
-          <span class="ms-2 xl:sr-only">{LOCALE_NAMES[locale]}</span>
         </a>
         <ul class="site-dropdown site-dropdown-end site-dropdown-lang">
           {Object.entries(alt).map(([code, target]) => (
@@ -138,6 +140,28 @@ const clubLabels = Object.fromEntries(
                 class="site-dropdown-item"
                 href={target}
                 hreflang={code}
+                aria-current={code === locale ? 'true' : undefined}
+              >{LOCALE_NAMES[code as Locale]}</a>
+            </li>
+          ))}
+        </ul>
+      </li>
+
+      {/*
+        In the collapsed menu the languages are a row of their own rather
+        than a dropdown: one tap to switch instead of two, and three short
+        names fit a phone's width.
+      */}
+      <li class="site-nav-item site-lang-row xl:hidden">
+        <span class="inline-block size-4 shrink-0 text-white/55" set:html={translate} aria-hidden="true" />
+        <ul class="flex list-none flex-wrap gap-1 p-0" aria-label={t('nav.language')}>
+          {Object.entries(alt).map(([code, target]) => (
+            <li>
+              <a
+                class="site-lang-chip"
+                href={target}
+                hreflang={code}
+                lang={code}
                 aria-current={code === locale ? 'true' : undefined}
               >{LOCALE_NAMES[code as Locale]}</a>
             </li>
@@ -162,6 +186,31 @@ const clubLabels = Object.fromEntries(
   // chip (club/ClubMenu.tsx) is an island that renders after this has run, and
   // it must open, close and take the arrow keys like every other panel.
   const nav = document.querySelector<HTMLElement>('.site-nav');
+
+  // The toggler, below 1200px. `data-open` rather than a class, so the CSS
+  // that shows the block and the CSS that hides it live next to each other.
+  const toggler = document.querySelector<HTMLButtonElement>('.site-nav-toggler');
+  const collapse = document.getElementById('site-menu');
+
+  const menuOpen = () => collapse?.hasAttribute('data-open') ?? false;
+
+  // Every way of closing the menu closes its panels too, or the next opening
+  // shows whichever one was left open.
+  function closeMenu() {
+    closeAll();
+    collapse?.removeAttribute('data-open');
+    toggler?.setAttribute('aria-expanded', 'false');
+  }
+
+  toggler?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (menuOpen()) {
+      closeMenu();
+      return;
+    }
+    collapse?.setAttribute('data-open', '');
+    toggler.setAttribute('aria-expanded', 'true');
+  });
 
   function toggles(): HTMLAnchorElement[] {
     return nav ? [...nav.querySelectorAll<HTMLAnchorElement>('.site-caret')] : [];
@@ -189,7 +238,12 @@ const clubLabels = Object.fromEntries(
     toggle.focus();
   });
 
-  document.addEventListener('click', () => closeAll());
+  // A click away closes any panel; one outside the bar altogether -- on the
+  // page the collapsed menu is covering -- closes the menu too.
+  document.addEventListener('click', (event) => {
+    closeAll();
+    if (menuOpen() && !(event.target instanceof Node && nav?.contains(event.target))) closeMenu();
+  });
 
   function itemsOf(toggle: HTMLAnchorElement): HTMLAnchorElement[] {
     const panel = toggle.nextElementSibling;
@@ -229,25 +283,21 @@ const clubLabels = Object.fromEntries(
     items[next].focus();
   });
 
+  // Escape closes the innermost thing open: a panel first, then the collapsed
+  // menu itself. Focus goes back to the control that opened it, or it lands
+  // on the page behind a menu the reader has just dismissed.
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
-    // Focus goes back to the button that opened the panel, or it lands on the
-    // page behind a menu the reader has just dismissed.
     const owner = toggles().find((t) => t.getAttribute('aria-expanded') === 'true');
-    closeAll();
-    owner?.focus();
+    if (owner) {
+      closeAll();
+      owner.focus();
+      return;
+    }
+    if (menuOpen()) {
+      closeMenu();
+      toggler?.focus();
+    }
   });
 
-  // The toggler, below 992px. `data-open` rather than a class, so the CSS that
-  // shows the block and the CSS that hides it live next to each other.
-  const toggler = document.querySelector<HTMLButtonElement>('.site-nav-toggler');
-  const collapse = document.getElementById('site-menu');
-
-  toggler?.addEventListener('click', (event) => {
-    event.stopPropagation();
-    const open = collapse?.hasAttribute('data-open');
-    if (open) collapse?.removeAttribute('data-open');
-    else collapse?.setAttribute('data-open', '');
-    toggler.setAttribute('aria-expanded', open ? 'false' : 'true');
-  });
 </script>

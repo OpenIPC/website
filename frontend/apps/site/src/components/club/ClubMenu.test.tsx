@@ -26,8 +26,9 @@ test('a first sign-in on this page shows the chip without a reload, and a sign-o
   await act(async () => { await fetchMe(); });
   const chip = container.querySelector('.site-caret')!;
   expect(chip.textContent).toContain('13');
-  // The name is not in the bar: it was what wrapped it. It is the menu's header.
-  expect(chip.textContent).not.toContain('Ivan');
+  // In the bar the name is the menu's header, not the chip: it was what
+  // wrapped the row. Only the collapsed menu, below xl, shows it in the chip.
+  expect(chip.querySelector('.xl\\:hidden')!.textContent).toBe('Ivan');
   expect(chip.getAttribute('title')).toBe('Ivan');
   expect(container.querySelector('.site-dropdown-header')!.textContent).toBe('Ivan');
   act(() => { window.dispatchEvent(new CustomEvent(CHANGED, { detail: null })); });

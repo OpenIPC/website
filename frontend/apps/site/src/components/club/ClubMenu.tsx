@@ -2,8 +2,9 @@
  * The navbar's ★ for a signed-in member, and the menu it opens: their page,
  * the leaderboard, a report, a maintainer's queues, and signing out.
  *
- * The chip carries the stars only, the name is the menu's header: the name
- * was the widest thing in the bar and wrapped it to two rows in Russian. A
+ * In the bar the chip carries the stars only, and the name is the menu's
+ * header: the name was the widest thing in the bar and wrapped it to two rows
+ * in Russian. The collapsed menu below 1200px has the width, and shows both. A
  * browser that never signed in asks nothing and shows nothing; one that did
  * (the flag lib/club.ts keeps) asks /api/v1/club/me once per page, and a
  * sign-in or sign-out on the page itself updates it at once.
@@ -67,6 +68,8 @@ export default function ClubMenu({ locale, labels, leave = reload }: { locale: L
         title={member.name}
       >
         <Stars n={member.stars} onDark />
+        {/* The name was dropped for the bar's width; the collapsed menu has room for it. */}
+        <span class="ms-2 inline-block max-w-[20ch] truncate align-bottom xl:hidden">{member.name}</span>
       </a>
       <ul class="site-dropdown site-dropdown-end">
         <li><h6 class="site-dropdown-header max-w-[16rem] truncate">{member.name}</h6></li>
