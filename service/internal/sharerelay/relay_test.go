@@ -1079,3 +1079,58 @@ func TestThePageKnowsEverySentenceTheRelaySends(t *testing.T) {
 		}
 	}
 }
+
+// A page that could not connect files its verdict under its session: the
+// refusals that travel inside the encrypted link never pass the relay, and
+// this is how its record learns why. Only from a share page, only for a share
+// the relay holds, and only so many per share.
+func TestAPagesVerdictIsLoggedUnderItsSession(t *testing.T) {
+	h, srv := rig(t)
+	h.OriginPatterns = nil // its own host only, as a share host is
+	book := logged(h)
+	register(t, srv, time.Now().Add(time.Hour))
+	report := func(share, sid, body, origin string) int {
+		t.Helper()
+		req, _ := http.NewRequest("POST", srv.URL+"/__share/report?share="+share+"&session="+sid, strings.NewReader(body))
+		if origin != "" {
+			req.Header.Set("Origin", origin)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	sid := "d93b721c5b4996c6"
+	body := `{"where":"the camera refused, after the encrypted link was up","why":"this link is not valid\n\u0007","path":"ICE connected"}`
+	if code := report(id, sid, body, srv.URL); code != http.StatusNoContent {
+		t.Fatalf("report: %d", code)
+	}
+	said := book.lines("share: page said")
+	if len(said) != 1 || said[0]["session"] != sid || said[0]["share"] != id ||
+		said[0]["where"] != "the camera refused, after the encrypted link was up" || said[0]["why"] != "this link is not valid" {
+		t.Fatalf("logged as %v", said)
+	}
+	for _, c := range []struct {
+		name, share, sid, body, origin string
+	}{
+		{"not from a share page", id, sid, body, "https://evil.example"},
+		{"a share the relay does not hold", strings.Repeat("1", 16), sid, body, srv.URL},
+		{"not a session id", id, "x", body, srv.URL},
+		{"not a report", id, sid, "nonsense", srv.URL},
+	} {
+		if code := report(c.share, c.sid, c.body, c.origin); code < 400 {
+			t.Errorf("%s: answered %d", c.name, code)
+		}
+	}
+	for i := 1; i < MaxReportsPerShare; i++ {
+		report(id, sid, body, srv.URL)
+	}
+	if code := report(id, sid, body, srv.URL); code != http.StatusTooManyRequests {
+		t.Errorf("report %d on one share answered %d", MaxReportsPerShare+1, code)
+	}
+	if n := len(book.lines("share: page said")); n != MaxReportsPerShare {
+		t.Errorf("%d reports logged, want %d", n, MaxReportsPerShare)
+	}
+}

@@ -196,6 +196,9 @@ type share struct {
 	// Pages the camera has admitted, kept only to be told when the share
 	// ends (see Connected); they hold none of the session slots.
 	listeners map[string]*page
+	// Failure reports pages have sent for this share (see Report): bounded,
+	// because the share id is in every guest's address bar.
+	reports int
 }
 
 type device struct {
@@ -1150,13 +1153,7 @@ func cameraFacts(in map[string]any) []any {
 		default:
 			continue
 		}
-		v = strings.Map(func(r rune) rune {
-			if r < 0x20 || r == 0x7f {
-				return -1
-			}
-			return r
-		}, v)
-		if v = clip(v, cameraKeys[k]); v != "" {
+		if v = clip(printable(v), cameraKeys[k]); v != "" {
 			out = append(out, "cam_"+k, v)
 		}
 	}
@@ -1181,4 +1178,64 @@ func clip(s string, n int) string {
 		return s
 	}
 	return s[:n]
+}
+
+// printable drops control characters: a log line holds what it is given as
+// one line, whoever gave it.
+func printable(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7f {
+			return -1
+		}
+		return r
+	}, s)
+}
+
+// MaxReportsPerShare bounds what pages may add to the log for one share.
+const MaxReportsPerShare = 32
+
+// Report is POST /__share/report?share=<id>&session=<sid>: a page that could
+// not connect says what it concluded -- its verdict (static/diag.js), the
+// sentence it was shown, the path ICE had -- and the relay logs it under the
+// same session as its own record. Some refusals never pass the relay: the
+// camera's REFUSED frame and a key proof that does not verify travel inside
+// the encrypted link, and the relay's own record of such an attempt is only
+// "page-left". With this the record says why without the guest's screenshot.
+func (h *Hub) Report() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !h.originAllowed(r) {
+			http.Error(w, "not from a share page", http.StatusForbidden)
+			return
+		}
+		body, small := readSmall(r)
+		var m struct {
+			Where string `json:"where"`
+			Why   string `json:"why"`
+			Path  string `json:"path"`
+		}
+		id, sid := ShareFromRequest(r), r.URL.Query().Get("session")
+		if !small || json.Unmarshal(body, &m) != nil || !shareID.MatchString(id) || !shareID.MatchString(sid) {
+			http.Error(w, "not a report", http.StatusBadRequest)
+			return
+		}
+		h.mu.Lock()
+		h.init()
+		sh := h.shares[id]
+		full := sh != nil && sh.reports >= MaxReportsPerShare
+		if sh != nil && !full {
+			sh.reports++
+		}
+		h.mu.Unlock()
+		switch {
+		case sh == nil:
+			http.Error(w, "no such share", http.StatusNotFound)
+			return
+		case full:
+			http.Error(w, "enough reports for this share", http.StatusTooManyRequests)
+			return
+		}
+		h.Log.Info("share: page said", "share", id, "session", sid, "guest", clientIP(r),
+			"where", clip(printable(m.Where), 200), "why", clip(printable(m.Why), 300), "path", clip(printable(m.Path), 200))
+		w.WriteHeader(http.StatusNoContent)
+	})
 }
