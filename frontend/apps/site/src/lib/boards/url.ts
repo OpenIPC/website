@@ -36,11 +36,17 @@ export type BoardsState = {
   kind: Kind | null;
   /** The board whose details panel is open. */
   model: string | null;
+  /**
+   * In that panel, the text file to open (its path under /board-files/) and
+   * the line in it to show: what a search hit's "line 74" links to.
+   */
+  file: string | null;
+  ln: number | null;
 };
 
 export const EMPTY: BoardsState = {
   q: '', scope: 'all', maker: null, soc: null, sensor: null, missing: null,
-  line: null, source: null, ready: false, kind: null, model: null,
+  line: null, source: null, ready: false, kind: null, model: null, file: null, ln: null,
 };
 
 const oneOf = <T extends string>(list: readonly T[], v: string | null): T | null =>
@@ -60,6 +66,8 @@ export function readQueryString(search: string): BoardsState {
     ready: p.get('ready') === '1',
     kind: oneOf(KINDS, p.get('kind')),
     model: p.get('model') || null,
+    file: p.get('file') || null,
+    ln: /^\d{1,6}$/.test(p.get('ln') ?? '') && Number(p.get('ln')) > 0 ? Number(p.get('ln')) : null,
   };
 }
 
@@ -76,6 +84,8 @@ export function writeQueryString(s: BoardsState): string {
   if (s.ready) p.set('ready', '1');
   if (s.kind) p.set('kind', s.kind);
   if (s.model) p.set('model', s.model);
+  if (s.model && s.file) p.set('file', s.file);
+  if (s.model && s.file && s.ln) p.set('ln', String(s.ln));
   const out = p.toString();
   return out ? `?${out}` : '';
 }

@@ -22,7 +22,8 @@ import {
 } from '../../lib/boards/model';
 import type { BoardsT } from '../../lib/boards-i18n';
 import type { Locale } from '../../lib/i18n';
-import { SocChip, SourceChips, Tags, TextFile, Thumb, galleryOf, type SocLinks } from './parts';
+import { SocChip, SourceChips, Tags, Thumb, galleryOf, type SocLinks } from './parts';
+import ConsoleView, { fileKey } from './ConsoleView';
 
 type Load = { state: 'loading' } | { state: 'ok'; value: ModelDetail } | { state: 'error'; error: string };
 
@@ -33,7 +34,7 @@ const HEADING = 'mb-2 text-base font-semibold';
 const LINK_ORDER: LinkKind[] = ['stock_firmware', 'pcb', 'on_pcb', 'successor', 'predecessor', 'related', 'vendor_page', 'source_page'];
 const EXTERNAL: LinkKind[] = ['vendor_page', 'source_page'];
 
-export default function BoardPanel({ id, entry, all, loaded, locale, t, sources, index, socs, names, href, onOpen, onClose }: {
+export default function BoardPanel({ id, entry, all, loaded, locale, t, sources, index, socs, names, href, onOpen, onClose, focus, onLine, query }: {
   id: string;
   /** The board as the tree has it; undefined for an id the catalogue does not know, or before it has loaded. */
   entry: Entry | undefined;
@@ -49,6 +50,12 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
   href: (model: string | null) => string;
   onOpen: (id: string) => void;
   onClose: () => void;
+  /** The text file to open and the line in it to show (a search hit, a shared link). */
+  focus?: { file: string; ln: number | null } | null;
+  /** A line number clicked in a console. */
+  onLine?: (file: string, ln: number) => void;
+  /** The search the reader came from, marked in the consoles. */
+  query?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [detail, setDetail] = useState<Load>({ state: 'loading' });
@@ -277,7 +284,11 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
                   {files.length > 0 && (
                     <div class="grid gap-1.5">
                       {files.map((f) => (f.kind === 'uboot_env' || f.kind === 'boot_log' || f.kind === 'note'
-                        ? <TextFile key={f.url} file={f} label={t(`kind_${f.kind}`)} t={t} />
+                        ? (
+                          <ConsoleView key={f.url} url={f.url} name={f.name} label={t(`kind_${f.kind}`)} lines={f.lines} t={t} query={query}
+                            focusLine={focus?.file === fileKey(f.url) ? focus.ln ?? 1 : null}
+                            onLine={(n) => onLine?.(fileKey(f.url), n)} />
+                        )
                         : <FileRow key={f.url} file={f} locale={locale} t={t} />))}
                     </div>
                   )}

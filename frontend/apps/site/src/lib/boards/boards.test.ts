@@ -575,9 +575,11 @@ describe('the query string', () => {
     const s = {
       q: 'xm25qh64a', scope: 'uboot_env' as const, maker: 'hsell', soc: 'hi3516cv300', sensor: 'IMX323', missing: 'pinout' as const,
       line: 'XVI&AHD Hybrid Camera Module', source: 'cctvsp', ready: true, kind: 'recorder' as const, model: 'xiongmai-ipg-50h20pls-s',
+      file: 'xiongmai-53h20-s-u1/hi3516cv100-1.uboot', ln: 74,
     };
     expect(writeQueryString(s)).toBe('?q=xm25qh64a&scope=uboot_env&maker=hsell&soc=hi3516cv300&sensor=IMX323&missing=pinout'
-      + '&line=XVI%26AHD+Hybrid+Camera+Module&source=cctvsp&ready=1&kind=recorder&model=xiongmai-ipg-50h20pls-s');
+      + '&line=XVI%26AHD+Hybrid+Camera+Module&source=cctvsp&ready=1&kind=recorder&model=xiongmai-ipg-50h20pls-s'
+      + '&file=xiongmai-53h20-s-u1%2Fhi3516cv100-1.uboot&ln=74');
     expect(readQueryString(writeQueryString(s))).toEqual(s);
   });
 
@@ -591,6 +593,12 @@ describe('the query string', () => {
   test('a board alone is a deep link to its details', () => {
     expect(writeQueryString({ ...EMPTY, model: 'xiongmai-ipg-50h20pls-s' })).toBe('?model=xiongmai-ipg-50h20pls-s');
     expect(readQueryString('?model=xiongmai-ipg-50h20pls-s')).toEqual({ ...EMPTY, model: 'xiongmai-ipg-50h20pls-s' });
+  });
+
+  test('a file and a line only mean something inside an open board', () => {
+    expect(writeQueryString({ ...EMPTY, file: 'u/a.uboot', ln: 3 })).toBe('');
+    expect(readQueryString('?model=m&file=u%2Fa.uboot&ln=0').ln).toBeNull();
+    expect(readQueryString('?model=m&file=u%2Fa.uboot&ln=12x').ln).toBeNull();
   });
 
   test('drops what it does not recognise', () => {

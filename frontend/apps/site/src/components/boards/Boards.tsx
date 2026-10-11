@@ -24,7 +24,12 @@ import {
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import BoardPanel from './BoardPanel';
+import { fileKey } from './ConsoleView';
+import { poppedOverlay } from '../../lib/overlay-history';
 import { Chip, SocChip, SourceChips, Tags, Thumb, galleryOf, makerName, type SocLinks } from './parts';
+
+/** A text file of the open board, by its path under /board-files/, and the line in it to show. */
+type Focus = { file: string; ln: number | null };
 
 type Load<T> = { state: 'loading' } | { state: 'ok'; value: T } | { state: 'error'; error: string };
 
@@ -47,8 +52,10 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
   const t = useBoardsTranslations(locale);
   const addNew = <AddNew href={`${pathFor(locale, '/cameras/report')}#new`} t={t} />;
   const initial = useMemo(() => readQueryString(typeof window === 'undefined' ? '' : window.location.search), []);
-  const [view, setView] = useState<BoardsState>({ ...initial, model: null });
+  const [view, setView] = useState<BoardsState>({ ...initial, model: null, file: null, ln: null });
   const [open, setOpen] = useState<string | null>(initial.model);
+  // In the open board, the text file shown and the line in it: from a search hit, a shared link, or a line clicked.
+  const [focus, setFocus] = useState<Focus | null>(initial.model && initial.file ? { file: initial.file, ln: initial.ln } : null);
   const [data, setData] = useState<Load<BoardsFile>>({ state: 'loading' });
   const [found, setFound] = useState<Load<SearchResult> | null>(null);
   // The same search over every kind of file, for the counts beside each scope (the list when the scope is All),
@@ -73,43 +80,66 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
     return () => { live = false; };
   }, [locale]);
 
-  const href = useCallback((model: string | null) =>
-    window.location.pathname + writeQueryString({ ...view, model }) + window.location.hash, [view]);
+  const href = useCallback((model: string | null, at: Focus | null = null) =>
+    window.location.pathname + writeQueryString({ ...view, model, file: at?.file ?? null, ln: at?.ln ?? null }) + window.location.hash, [view]);
 
-  // The filters replace the address as they change; the open board is part of it.
+  // The filters replace the address as they change; the open board, and the line shown in it, are part of it.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.history.replaceState(window.history.state, '', href(open));
+    window.history.replaceState(window.history.state, '', href(open, focus));
   }, [view]);
 
   // Set while Close walks back through the boards this visit opened.
   const closing = useRef(false);
+  // What the popstate handler (registered once) needs of the current render.
+  const latest = useRef({ open, focus, href });
+  latest.current = { open, focus, href };
 
   // Back and Forward move between the boards opened, and past the first one, close the panel.
   useEffect(() => {
     const onPop = () => {
+      if (poppedOverlay()) {
+        // An overlay (the photo viewer, a console full screen) closed: the board and the line shown
+        // stay, and the entry landed on is told of a line picked while it was open.
+        const { open: o, focus: f, href: h } = latest.current;
+        window.history.replaceState(window.history.state, '', h(o, f));
+        return;
+      }
       if (closing.current) {
         closing.current = false;
         // The entry Close lands on may itself carry ?model= (the address the visit arrived with).
         const p = new URLSearchParams(window.location.search);
         if (p.has('model')) {
           p.delete('model');
+          p.delete('file');
+          p.delete('ln');
           const rest = p.toString();
           window.history.replaceState(window.history.state, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash);
         }
         setOpen(null);
+        setFocus(null);
         return;
       }
-      setOpen(readQueryString(window.location.search).model);
+      const s = readQueryString(window.location.search);
+      setOpen(s.model);
+      setFocus(s.model && s.file ? { file: s.file, ln: s.ln } : null);
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  const openModel = useCallback((id: string) => {
-    window.history.pushState({ ...(window.history.state ?? {}), boards: depthOf(window.history.state) + 1 }, '', href(id));
+  const openModel = useCallback((id: string, at: Focus | null = null) => {
+    window.history.pushState({ ...(window.history.state ?? {}), boards: depthOf(window.history.state) + 1 }, '', href(id, at));
     setOpen(id);
+    setFocus(at);
   }, [href]);
+
+  // A line number clicked in a console: the address says so, without a history step of its own.
+  const showLine = useCallback((file: string, ln: number) => {
+    const at = { file, ln };
+    setFocus(at);
+    window.history.replaceState(window.history.state, '', href(open, at));
+  }, [href, open]);
 
   const closeModel = useCallback(() => {
     // Back has already taken the board out of the address.
@@ -123,6 +153,7 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
       // Arrived with ?model= in the address: nothing of ours to go back to.
       window.history.replaceState(window.history.state, '', href(null));
     }
+    setFocus(null);
     setOpen(null);
   }, [href]);
 
@@ -367,7 +398,8 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
 
       {open && (
         <BoardPanel id={open} entry={all.find((m) => m.id === open)} all={all} loaded={data.state !== 'loading'} locale={locale}
-          t={t} sources={sources} index={index} socs={socs} names={names} href={href} onOpen={openModel} onClose={closeModel} />
+          t={t} sources={sources} index={index} socs={socs} names={names} href={href} onOpen={openModel} onClose={closeModel}
+          focus={focus} onLine={showLine} query={searching ? q : undefined} />
       )}
     </div>
   );
@@ -509,7 +541,7 @@ function Hits({ found, kept, q, scope, matched, named, counts, capped, onScope, 
   capped: boolean;
   onScope: (k: Scope) => void;
   none: boolean; t: BoardsT; names: Record<string, string>;
-  href: (model: string | null) => string; onOpen: (id: string) => void; addNew: ComponentChildren;
+  href: (model: string | null, at?: Focus | null) => string; onOpen: (id: string, at?: Focus | null) => void; addNew: ComponentChildren;
 }) {
   if (!found || found.state === 'loading') return <p class="mt-8 text-body-secondary">{t('searching')}</p>;
   if (found.state === 'error') {
@@ -563,7 +595,10 @@ function Hits({ found, kept, q, scope, matched, named, counts, capped, onScope, 
               {headOf(h).text ?? t('unidentified')}
             </a>
             <span class="text-body-secondary">
-              {makerName(h.manufacturer_id, h.manufacturer_name, t)} · {h.soc ? socName(h.soc, names) : h.family ? t('family', { family: socName(h.family, names) }) : ''} · <a href={h.url} class="text-inherit">{t('line', { n: h.line })}</a>
+              {makerName(h.manufacturer_id, h.manufacturer_name, t)} · {h.soc ? socName(h.soc, names) : h.family ? t('family', { family: socName(h.family, names) }) : ''} · <a href={href(h.model_id, { file: fileKey(h.url), ln: h.line })} class="text-inherit"
+                onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; e.preventDefault(); onOpen(h.model_id, { file: fileKey(h.url), ln: h.line }); }}>
+                {t('line', { n: h.line })}
+              </a>
             </span>
           </header>
           <code class="block overflow-x-auto rounded-[5px] bg-surface-alt px-2.5 py-1.5 font-mono text-[12.5px] leading-normal whitespace-pre">

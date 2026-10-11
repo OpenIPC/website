@@ -192,6 +192,28 @@ zh:
       other: '{count} 行'
     text_loading: 正在加载…
     text_error: '无法加载此文件（{error}）。'
+    console_wrap: 自动换行
+    console_copy: 复制
+    console_copied: 已复制
+    console_copy_failed: '复制失败：请手动选中文本'
+    console_earlier: '显示前面 {count} 行'
+    console_later: '显示后面 {count} 行'
+    console_shown_full: 已全屏显示。
+    flash_map_unused: 未使用
+    console_download: 下载
+    console_fullscreen: 全屏
+    console_line: '第 {n} 行'
+    fact_uboot: U-Boot
+    fact_dram: 内存
+    fact_flash: 闪存
+    fact_kernel: 内核
+    fact_machine: 机型
+    fact_bootargs: 启动参数
+    flash_map_title: '闪存分区（{device}），按启动参数声明'
+    flash_map_name: 分区
+    flash_map_offset: 偏移
+    flash_map_size: 大小
+    flash_map_rest: 芯片剩余部分
     units:
       one: '已收录 {count} 件实物'
       other: '已收录 {count} 件实物'

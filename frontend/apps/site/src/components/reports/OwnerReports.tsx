@@ -9,6 +9,10 @@ import { useEffect, useState } from 'preact/hooks';
 import type { BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { fetchBoardReports, size, summary, type Report } from '../../lib/reports';
+import ConsoleView from '../boards/ConsoleView';
+
+/** What a report sent as text: opened in place in the console viewer, not saved. */
+const TEXT = new Set(['boot_log', 'uboot_env', 'note']);
 
 export default function OwnerReports({ model, locale, t }: { model: string; locale: Locale; t: BoardsT }) {
   const [reports, setReports] = useState<Report[] | null>(null);
@@ -50,9 +54,9 @@ export default function OwnerReports({ model, locale, t }: { model: string; loca
               {r.facts?.board_model && <span>{t('report.reports_board')} <b class="font-medium text-body">{r.facts.board_vendor} {r.facts.board_model}</b></span>}
               {r.same_board > 0 && <span>{t('report.reports_same_board')}</span>}
             </div>
-            {r.files.length > 0 && (
+            {r.files.some((f) => !(f.url && TEXT.has(f.kind))) && (
               <div class="flex flex-wrap gap-1.5">
-                {r.files.map((f) => {
+                {r.files.filter((f) => !(f.url && TEXT.has(f.kind))).map((f) => {
                   const label = `${t(`report.kind_${f.kind}`)} · ${size(f.bytes)}`;
                   return f.url
                     ? <a key={f.name} href={f.url} class="rounded-md border border-hairline px-2 py-px text-[12.5px] text-body no-underline">{label}</a>
@@ -60,6 +64,9 @@ export default function OwnerReports({ model, locale, t }: { model: string; loca
                 })}
               </div>
             )}
+            {r.files.filter((f) => f.url && TEXT.has(f.kind)).map((f) => (
+              <ConsoleView key={f.name} url={f.url!} name={f.name} label={t(`report.kind_${f.kind}`)} t={t} />
+            ))}
             {r.yaml && (
               <details class="text-sm">
                 <summary class="w-fit cursor-pointer text-brand-blue">{t('report.reports_yaml')}</summary>
