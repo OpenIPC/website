@@ -86,3 +86,53 @@ test('without the sender an answer still thanks', () => {
   act(() => { box.querySelector<HTMLButtonElement>('.rounded-full')!.click(); });
   expect(box.textContent).toContain('Thank you.');
 });
+
+test('the day\'s showing is noted when the strip comes into view, not before', () => {
+  let fire: (seen: boolean) => void = () => {};
+  vi.stubGlobal('IntersectionObserver', class {
+    constructor(cb: (e: { isIntersecting: boolean }[]) => void) { fire = (seen) => cb([{ isIntersecting: seen }]); }
+    observe() {}
+    disconnect() {}
+  });
+  try {
+    const box = strip();
+    expect(box.textContent).toContain('What brought you here today?');
+    expect(localStorage.getItem(KEY)).toBeNull();
+    act(() => { fire(false); });
+    expect(localStorage.getItem(KEY)).toBeNull();
+    act(() => { fire(true); });
+    expect(localStorage.getItem(KEY)).toBe(`shown:${dayOf(new Date())}`);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+test('an answer that cannot be remembered is not counted', () => {
+  const box = strip();
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+  act(() => { box.querySelector<HTMLButtonElement>('.rounded-full')!.click(); });
+  expect(count).not.toHaveBeenCalled();
+  expect(box.textContent).toBe('');
+});
+
+test('answered in another tab: this one stops asking, and a late tap counts nothing', () => {
+  const box = strip();
+  const fpv = box.querySelector<HTMLButtonElement>('.rounded-full')!;
+  // The other tab's write, before this tab hears of it.
+  localStorage.setItem(KEY, 'answered');
+  act(() => { fpv.click(); });
+  expect(count).not.toHaveBeenCalled();
+
+  cleanup();
+  localStorage.clear();
+  const other = strip();
+  act(() => { window.dispatchEvent(new StorageEvent('storage', { key: KEY, newValue: 'answered' })); });
+  expect(other.textContent).toBe('');
+});
+
+test('the thanks keeps no label pointing at the question it replaced', () => {
+  const box = strip();
+  expect(box.querySelector('section')!.getAttribute('aria-labelledby')).toBe('why-question');
+  act(() => { box.querySelector<HTMLButtonElement>('.rounded-full')!.click(); });
+  expect(box.querySelector('section')!.hasAttribute('aria-labelledby')).toBe(false);
+});

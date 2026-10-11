@@ -687,7 +687,7 @@
       "log_lede": "The ordinary record every web server keeps.",
       "log_text_html": "Each request is written to a log with the address it came from, the page, and the result. We use it to find faults, to stop abuse, and to size the machine. It is deleted after 14 days.",
       "log_title": "The server log",
-      "never_cookies_html": "No cookie unless you sign in to the OpenIPC Club, and no identifier of any kind. The counter keeps nothing in your browser.",
+      "never_cookies_html": "No cookie unless you use the OpenIPC Club: starting to sign in sets one that lasts ten minutes, and signing in sets a session cookie. No identifier of any kind. The counter keeps nothing in your browser.",
       "never_individuals_html": "No individual visits. Only daily totals reach the disk, so there is no row anywhere that is you.",
       "never_region_html": "No region or city. That needs a finer location database than we keep.",
       "never_title": "What it never touches",

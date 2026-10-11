@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { ANSWERS, KEY, dayOf, eventName, shouldAsk, type Answer } from '../lib/why';
 
 /**
@@ -10,9 +10,11 @@ import { ANSWERS, KEY, dayOf, eventName, shouldAsk, type Answer } from '../lib/w
  * #182, and would be dismissed as one.
  *
  * Renders nothing on the server and until it has read the browser's note, so
- * a browser that has answered never sees it flash. Where storage is refused
- * (a private window) it does not ask at all: it could not keep the promise
- * of asking once. lib/why.ts has the rules and the end date.
+ * a browser that has answered never sees it flash. The day's showing is noted
+ * once the strip is on screen, and an answer counts only once the note that
+ * stops the next question is kept. Where storage is refused (a private
+ * window) it does not ask at all: it could not keep the promise of asking
+ * once. lib/why.ts has the rules and the end date.
  */
 interface Labels {
   question: string;
@@ -31,6 +33,11 @@ function remember(note: string): boolean {
   try { localStorage.setItem(KEY, note); return true; } catch { return false; }
 }
 
+/** The note now, or `undefined` where storage cannot be read. */
+function note(): string | null | undefined {
+  try { return localStorage.getItem(KEY); } catch { return undefined; }
+}
+
 export default function WhyStrip({ locale, labels, privacyHref, class: className = '' }: {
   locale: string;
   labels: Labels;
@@ -38,22 +45,50 @@ export default function WhyStrip({ locale, labels, privacyHref, class: className
   class?: string;
 }) {
   const [state, setState] = useState<'hidden' | 'asking' | 'thanked'>('hidden');
+  const box = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const today = dayOf(new Date());
-    let stored: string | null;
-    try { stored = localStorage.getItem(KEY); } catch { return; }
-    // Written before it shows: a note that cannot be kept means no strip.
-    if (shouldAsk(stored, today) && remember(`shown:${today}`)) setState('asking');
+    const stored = note();
+    if (stored !== undefined && shouldAsk(stored, dayOf(new Date()))) setState('asking');
+  }, []);
+
+  // A showing counts when the strip is SEEN, not when it hydrates: on the
+  // home page it follows a tall hero, and a visitor who goes straight to
+  // /get-started from the top of it has not been asked yet. Noting it fails
+  // where storage is full or refused, and then it does not ask.
+  useEffect(() => {
+    const el = box.current;
+    if (state !== 'asking' || !el) return;
+    const seen = () => { if (!remember(`shown:${dayOf(new Date())}`)) setState('hidden'); };
+    if (typeof IntersectionObserver === 'undefined') { seen(); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { io.disconnect(); seen(); }
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [state]);
+
+  // Answered or closed in another tab: this one stops asking too.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === KEY && (e.newValue === 'answered' || e.newValue?.startsWith('dismissed:'))) {
+        setState((s) => (s === 'asking' ? 'hidden' : s));
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   if (state === 'hidden') return null;
 
   const answer = (a: Answer) => {
+    // Once per browser: not if another tab has answered since this one asked,
+    // and not unless the note that stops the next question is kept -- an
+    // answer that cannot be remembered is not counted.
+    if (note() === 'answered' || !remember('answered')) { setState('hidden'); return; }
     // The sender is inlined into every page's head (lib/beacon.inline.js);
     // the guard is for a page someone saved to disk.
     window.openipcCount?.(eventName(a, locale));
-    remember('answered');
     setState('thanked');
   };
 
@@ -63,7 +98,11 @@ export default function WhyStrip({ locale, labels, privacyHref, class: className
   };
 
   return (
-    <section class={`border-b border-hairline bg-white ${className}`} aria-labelledby="why-question">
+    <section
+      ref={box}
+      class={`border-b border-hairline bg-white ${className}`}
+      aria-labelledby={state === 'asking' ? 'why-question' : undefined}
+    >
       <div class="site-container">
         {state === 'thanked' ? (
           <p class="mb-0 py-3.5 text-body-secondary" role="status">

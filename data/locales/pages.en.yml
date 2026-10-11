@@ -214,7 +214,7 @@ en:
       records_clicks_html: "Clicks that leave the site: writing to us, joining the chat, opening a donation page, or following a link elsewhere."
       records_tag_html: "A tag in the address, such as <code>?ref=tg-ru</code>, when we posted the link ourselves. It is counted once and then removed from the address."
       records_why_html: "Your answer to the one question on the home and get-started pages, if you give one, counted like a click. Your browser keeps a note that you answered or closed it, so you are not asked again; the note never leaves your browser."
-      never_cookies_html: "No cookie unless you sign in to the OpenIPC Club, and no identifier of any kind. The counter keeps nothing in your browser."
+      never_cookies_html: "No cookie unless you use the OpenIPC Club: starting to sign in sets one that lasts ten minutes, and signing in sets a session cookie. No identifier of any kind. The counter keeps nothing in your browser."
       never_individuals_html: "No individual visits. Only daily totals reach the disk, so there is no row anywhere that is you."
       never_region_html: "No region or city. That needs a finer location database than we keep."
       sessions_html: "To count one person reading three pages as one visit rather than three, the counter derives a short-lived key from your address and browser. It exists in memory for at most eight hours and is never written down. Your address is not stored by the counter at all."
