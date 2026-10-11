@@ -62,6 +62,8 @@ function countdown(expires) {
 }
 
 let tunnel;
+// Closes the narrow bar's menu; set once the bar is wired.
+let closeMenu = () => {};
 
 // The service worker hands every camera request to this page, which is the
 // one holding the tunnel.
@@ -206,15 +208,25 @@ async function main() {
   const acts = $('acts'), more = $('more');
   const menu = (open) => { acts.classList.toggle('open', open); more.setAttribute('aria-expanded', String(open)); };
   more.onclick = (e) => { e.stopPropagation(); menu(!acts.classList.contains('open')); };
+  closeMenu = () => menu(false);
   acts.addEventListener('click', () => menu(false));
   document.addEventListener('click', (e) => { if (!acts.contains(e.target)) menu(false); });
+  // A tap on the camera's interface lands in its frame, never in this
+  // document: focus leaving for the frame closes the menu too (and the frame's
+  // own pointerdown, below, for the taps that do not move focus).
+  window.addEventListener('blur', () => menu(false));
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && acts.classList.contains('open')) { menu(false); more.focus(); } });
   $('diag-open').onclick = () => {
     const open = document.querySelector('.popover');
-    if (open) { open.remove(); return; }
+    // Focus follows: the button that was pressed may be in the menu, which
+    // closes behind it, so it goes to the report, and back to whichever of
+    // the two openers is on screen when the report is put away.
+    if (open) { open.remove(); (more.offsetParent ? more : $('diag-open')).focus(); return; }
     const pop = Object.assign(document.createElement('div'), { className: 'popover' });
-    detailsControl(pop, diagExtra).querySelector('button').click();
+    const toggle = detailsControl(pop, diagExtra).querySelector('button');
+    toggle.click();
     $('main').append(pop);
+    toggle.focus();
   };
   const id = shareId();
   const { secret, opts } = secretFor(id);
@@ -313,6 +325,7 @@ async function main() {
         try {
           const l = f.contentWindow.location;
           history.replaceState(null, '', l.pathname + l.search);
+          f.contentWindow.addEventListener('pointerdown', () => closeMenu());
         } catch (e) { /* not ours to read */ }
       });
       $('main').replaceChildren(f);
