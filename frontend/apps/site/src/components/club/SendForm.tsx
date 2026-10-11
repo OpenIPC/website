@@ -76,7 +76,8 @@ export default function SendForm({ model, kind, locale, t, note }: {
     );
   }
 
-  const reward = (k: SendKind) => t('club.reward', { n: k === 'backup' ? STARS.dump : STARS.item });
+  // A dump earns 10 from ipctool, 3 from a programmer (#458): which this is shows only once it is read.
+  const reward = (k: SendKind) => t('club.reward', { n: k === 'backup' ? `${STARS.rawDump}–${STARS.dump}` : STARS.item });
   return (
     <form class="grid gap-2.5 rounded-lg border-[1.5px] border-dashed border-[#e8c58f] bg-white p-3.5 text-sm" onSubmit={submit}>
       <div class="flex flex-wrap gap-1.5" role="group" aria-label={t('club.send_kinds_label')}>

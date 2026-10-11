@@ -422,7 +422,7 @@ function Rules({ t }: { t: BoardsT }) {
       <table class="w-full border-collapse">
         <tbody>
           {([
-            ['rules_item', `+${STARS.item} ★`], ['rules_dump', `+${STARS.dump} ★`],
+            ['rules_item', `+${STARS.item} ★`], ['rules_dump', `+${STARS.dump} ★`], ['rules_raw_dump', `+${STARS.rawDump} ★`],
             ['rules_join', `+${STARS.join} ★`], ['rules_month', `+${STARS.month} ★`], ['rules_rare', `+${STARS.rare} ★`],
             ['rules_none', '0'],
           ] as const).map(([k, v]) => (

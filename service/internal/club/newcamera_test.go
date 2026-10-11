@@ -216,8 +216,9 @@ func TestRejectingLinksNothing(t *testing.T) {
 }
 
 // A camera ipctool could not run on: its photos and the whole chip read
-// with a programmer. The dump earns what a dump earns, stays private to its
-// sender and the maintainers, and only the photo goes onto the new board.
+// with a programmer. The dump earns what a programmer's dump earns (3 stars,
+// #458), stays private to its sender and the maintainers, and only the photo
+// goes onto the new board.
 func TestANewCameraComesWithAProgrammersDump(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
@@ -233,7 +234,7 @@ func TestANewCameraComesWithAProgrammersDump(t *testing.T) {
 	maint := e.maintainer(t)
 	_, q := maint.json(t, "GET", "/api/v1/club/review", nil)
 	queued := q["reports"].([]any)[0].(map[string]any)
-	if queued["potential"].(float64) != 11 {
+	if queued["potential"].(float64) != 4 {
 		t.Fatalf("potential: %v", queued["potential"])
 	}
 	var dumpURL string
@@ -249,7 +250,7 @@ func TestANewCameraComesWithAProgrammersDump(t *testing.T) {
 		t.Fatalf("no dump in %v", queued["file_list"])
 	}
 	code, d := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish", "new_board": queued["new_board"]})
-	if code != 200 || d["points"].(float64) != 11 || d["board"] != "jooan-q9-v2" {
+	if code != 200 || d["points"].(float64) != 4 || d["board"] != "jooan-q9-v2" {
 		t.Fatalf("publish: %d %v", code, d)
 	}
 	if rec := ivan.do(t, "GET", dumpURL, nil, ""); rec.Code != 200 {

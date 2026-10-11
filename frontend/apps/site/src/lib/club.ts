@@ -222,7 +222,8 @@ export async function sendReport(form: FormData): Promise<Sent> {
  * What one accepted thing earns, as the service counts it: reports.Points
  * for reports, wallstars.JoinStars/MonthStars/RareStars for cameras.
  */
-export const STARS = { item: 1, dump: 10, join: 5, month: 1, rare: 2 } as const;
+// dump: ipctool's backup; rawDump: a chip read with a programmer or over TFTP (#458).
+export const STARS = { item: 1, dump: 10, rawDump: 3, join: 5, month: 1, rare: 2 } as const;
 
 /** A camera of the member's on the Open Wall (service/internal/wallstars). */
 export interface Camera {

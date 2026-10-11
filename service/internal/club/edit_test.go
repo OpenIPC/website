@@ -230,7 +230,7 @@ func TestAnEditAddsAFlashDumpToAReportWithoutOne(t *testing.T) {
 	}
 
 	// The chip, public: the report goes back for review, and is paid for
-	// the dump when it is published again.
+	// the dump when it is published again -- a programmer's, 3 stars.
 	code, d := ivan.edit(t, id, map[string]string{"consent": "public"}, map[string][]byte{"backup": chip})
 	if code != 200 || d["status"] != "pending" || d["rereview"] != true {
 		t.Fatalf("adding the chip: %d %v", code, d)
@@ -240,7 +240,7 @@ func TestAnEditAddsAFlashDumpToAReportWithoutOne(t *testing.T) {
 	if consent != "public" || name != "flash.bin" {
 		t.Errorf("the dump: consent %q, name %q", consent, name)
 	}
-	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish"}); code != 200 || d["points"].(float64) != 10 {
+	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish"}); code != 200 || d["points"].(float64) != 3 {
 		t.Errorf("publishing it again: %d %v", code, d)
 	}
 	// A second one is refused: the first stays as it was sent.
@@ -265,5 +265,10 @@ func TestAnEditAddsAFlashDumpToAReportWithoutOne(t *testing.T) {
 	_ = e.pool.QueryRow(ctx, `SELECT r.backup_consent, f.name FROM reports r JOIN report_files f ON f.report_id = r.id AND f.kind = 'backup' WHERE r.id = $1`, withYAML).Scan(&consent, &name)
 	if consent != "private" || name != "backup.bin" {
 		t.Errorf("the ipctool backup: consent %q, name %q", consent, name)
+	}
+	// ipctool's backup earns a dump's 10 stars, ipctool's output its one
+	// (a programmer's above earned 3, #458).
+	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+withYAML, map[string]any{"decision": "publish", "models": []string{"anjoy-ms-j10"}}); code != 200 || d["points"].(float64) != 11 {
+		t.Errorf("publishing ipctool's report with its backup: %d %v", code, d)
 	}
 }
