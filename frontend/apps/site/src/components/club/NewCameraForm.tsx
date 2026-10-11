@@ -82,7 +82,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
 
   return (
     <form class="grid gap-3 rounded-lg border-[1.5px] border-dashed border-[#e8c58f] bg-white p-4 text-sm" onSubmit={submit}>
-      <p class="m-0 text-body-secondary">{t('club.new_lede', { n: STARS.item, dump: STARS.dump })}</p>
+      <p class="m-0 text-body-secondary">{t('club.new_lede', { n: STARS.item, dump: STARS.dump, raw: STARS.rawDump })}</p>
       <div class="grid gap-3 sm:grid-cols-[1fr_1fr_10rem]">
         <label class="grid gap-1 text-[12.5px] text-body-secondary">{t('club.new_maker')}
           <input required value={maker} maxLength={80} placeholder={t('club.new_maker_hint')}
@@ -105,7 +105,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
         <label class="grid gap-1 text-[12.5px] text-body-secondary">{t('club.send_dump')}
           <input type="file" onChange={(e) => setDump((e.target as HTMLInputElement).files?.[0] ?? null)} class="text-sm text-body" />
         </label>
-        <p class="m-0 text-[12px] text-body-secondary">{t('club.new_dump_hint', { n: STARS.dump })}</p>
+        <p class="m-0 text-[12px] text-body-secondary">{t('club.new_dump_hint', { n: STARS.rawDump })}</p>
         {dump && (
           <label class="flex items-start gap-2 text-[12.5px] text-body-secondary">
             <input type="checkbox" checked={publicDump} onChange={(e) => setPublicDump((e.target as HTMLInputElement).checked)} class="mt-0.5" />

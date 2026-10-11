@@ -24,18 +24,32 @@ import (
 // before this one -- earns nothing. The first sender of a dump keeps it: a
 // later copy published meanwhile does not take it from them if their own
 // report is rejected and published again.
+//
+// A dump read with a programmer, or over U-Boot's console and TFTP, earns
+// less than ipctool's backup (#458): it is the bytes alone, while ipctool
+// reads the chip on the running camera and says with it what the camera
+// is. ipctool's report joining it later does not raise it.
 const (
-	StarsPerItem = 1
-	StarsPerDump = 10
+	StarsPerItem    = 1
+	StarsPerDump    = 10
+	StarsPerRawDump = 3
 )
 
+// RawDumpName is the name a whole chip read with a programmer is stored
+// under, and ipctool's backup never is (that is backup.bin): the sender
+// does not name a backup, the server does, so the name tells the two apart.
+const RawDumpName = "flash.bin"
+
 // Points is what one accepted thing earns: a file of kind, or ipctool's
-// output (kind "yaml").
+// output (kind "yaml"). A programmer's dump is kind "raw_backup" here.
 func Points(kind string, known bool) int {
 	switch kind {
-	case "backup":
+	case "backup", "raw_backup":
 		if known {
 			return 0
+		}
+		if kind == "raw_backup" {
+			return StarsPerRawDump
 		}
 		return StarsPerDump
 	case "yaml", "photo", "boot_log", "uboot_env", "note", "document":
@@ -224,14 +238,14 @@ func (s *Store) potential(ctx context.Context, q rowsQuerier, id string, hasYAML
 		out[0] = Points("yaml", false)
 	}
 	rows, err := q.Query(ctx, `
-		SELECT f.position, f.kind,
+		SELECT f.position, CASE WHEN f.kind = 'backup' AND f.name = $2 THEN 'raw_backup' ELSE f.kind END,
 		  f.kind = 'backup' AND (
 		    EXISTS (SELECT 1 FROM report_files o JOIN reports ro ON ro.id = o.report_id
 		            WHERE o.sha256 = f.sha256 AND o.report_id <> f.report_id
 		              AND ro.received_at < (SELECT received_at FROM reports WHERE id = f.report_id)
 		              AND (SELECT decision FROM report_reviews rv WHERE rv.report_id = o.report_id ORDER BY rv.id DESC LIMIT 1) = 'publish')
 		    OR EXISTS (SELECT 1 FROM board_artifacts a WHERE a.sha256 = f.sha256))
-		FROM report_files f WHERE f.report_id = $1`, id)
+		FROM report_files f WHERE f.report_id = $1`, id, RawDumpName)
 	if err != nil {
 		return nil, err
 	}

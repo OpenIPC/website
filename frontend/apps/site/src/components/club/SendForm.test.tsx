@@ -53,6 +53,12 @@ describe('the send form', () => {
     expect(queryByText(/from power-on to the login prompt/)).toBeNull();
   });
 
+  test('a dump is offered for 3 to 10 stars: a programmer read earns 3, ipctool 10', () => {
+    const { getByRole } = render(<SendForm model="anjoy-ms-j10" kind="photo" locale="en" t={t} />);
+    expect(getByRole('button', { name: /Full flash dump/ }).textContent).toContain('+3–10 ★');
+    expect(getByRole('button', { name: /Photos/ }).textContent).toContain('+1 ★');
+  });
+
   test('a dump is private unless its owner ticks the box', async () => {
     const sent = capture();
     const { container, getByText } = render(<SendForm model="anjoy-ms-j10" kind="backup" locale="en" t={t} />);

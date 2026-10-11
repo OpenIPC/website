@@ -259,7 +259,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	if in.backup != nil {
 		name := "backup.bin"
 		if raw {
-			name = "flash.bin"
+			name = RawDumpName
 		}
 		all = append([]part{{kind: "backup", name: name, mime: "application/octet-stream", in: in.backup}}, all...)
 	}

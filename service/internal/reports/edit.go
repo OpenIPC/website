@@ -400,7 +400,7 @@ func (a *API) Edit(w http.ResponseWriter, r *http.Request, member, by, id string
 			return false
 		case err == nil:
 		case flashImage(in.backup.Bytes):
-			name = "flash.bin"
+			name = RawDumpName
 		default:
 			a.refuse(w, http.StatusBadRequest, "backup: "+err.Error())
 			return false

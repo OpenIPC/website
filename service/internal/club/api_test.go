@@ -585,7 +585,7 @@ func TestWhatAMemberSendsIsTheirsAndEarnsStarsWhenAccepted(t *testing.T) {
 	_, mine := ivan.json(t, "GET", "/api/v1/club/reports", nil)
 	list := mine["reports"].([]any)
 	r := list[0].(map[string]any)
-	if len(list) != 1 || r["id"] != id || r["status"] != "pending" || r["pending"].(float64) != 11 ||
+	if len(list) != 1 || r["id"] != id || r["status"] != "pending" || r["pending"].(float64) != 4 ||
 		r["board"].(map[string]any)["id"] != "anjoy-ms-j10" {
 		t.Fatalf("mine: %v", r)
 	}
@@ -615,20 +615,20 @@ func TestWhatAMemberSendsIsTheirsAndEarnsStarsWhenAccepted(t *testing.T) {
 	maint.do(t, "GET", "/api/v1/club/github/callback?code=maint&state="+loc.Query().Get("state"), nil, "")
 	_, q := maint.json(t, "GET", "/api/v1/club/review", nil)
 	queued := q["reports"].([]any)
-	if len(queued) != 1 || queued[0].(map[string]any)["member"] != "Ivan" || queued[0].(map[string]any)["potential"].(float64) != 11 {
+	if len(queued) != 1 || queued[0].(map[string]any)["member"] != "Ivan" || queued[0].(map[string]any)["potential"].(float64) != 4 {
 		t.Fatalf("queue: %v", queued)
 	}
 	if rec := maint.do(t, "GET", backup["url"].(string), nil, ""); rec.Code != 200 {
 		t.Errorf("maintainer download: %d", rec.Code)
 	}
 	code, d := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish"})
-	if code != 200 || d["points"].(float64) != 11 || d["total"].(float64) != 11 {
+	if code != 200 || d["points"].(float64) != 4 || d["total"].(float64) != 4 {
 		t.Fatalf("publish: %d %v", code, d)
 	}
-	if text, _ := e.tg.last(t); !strings.Contains(text, "+11 ★") {
+	if text, _ := e.tg.last(t); !strings.Contains(text, "+4 ★") {
 		t.Errorf("Ivan was told %q", text)
 	}
-	if m := ivan.me(t); m["stars"].(float64) != 11 || m["pending"].(float64) != 0 {
+	if m := ivan.me(t); m["stars"].(float64) != 4 || m["pending"].(float64) != 0 {
 		t.Errorf("Ivan's stars: %v", m)
 	}
 	// Published on the board its sender named, without the review naming it.
@@ -656,13 +656,13 @@ func TestWhatAMemberSendsIsTheirsAndEarnsStarsWhenAccepted(t *testing.T) {
 
 	// Rejected afterwards: Ivan's stars are taken back, and the ledger says so.
 	_, d = maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "reject", "note": "wrong board"})
-	if d["points"].(float64) != -11 || ivan.me(t)["stars"].(float64) != 0 {
+	if d["points"].(float64) != -4 || ivan.me(t)["stars"].(float64) != 0 {
 		t.Errorf("reject: %v, stars %v", d, ivan.me(t)["stars"])
 	}
 	// Published again, Ivan's report is whole again: he sent the dump first,
 	// and Petr's later copy does not take it from him.
 	_, d = maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish"})
-	if d["points"].(float64) != 11 || ivan.me(t)["stars"].(float64) != 11 {
+	if d["points"].(float64) != 4 || ivan.me(t)["stars"].(float64) != 4 {
 		t.Errorf("published again: %v, stars %v", d, ivan.me(t)["stars"])
 	}
 	if _, err := e.pool.Exec(ctx, `UPDATE report_stars SET points = 100`); err == nil {
