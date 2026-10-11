@@ -37,4 +37,11 @@ describe('social icons', () => {
     const openipc = TEAM.flatMap((s) => s.members).find((m) => m.name === 'OpenIPC');
     expect(openipc?.socials.some((s) => s.url === url && s.icon === 'bluesky')).toBe(true);
   });
+
+  test('the official account is on LinkedIn in the footer and on /our-team', () => {
+    const url = 'https://www.linkedin.com/company/openipc/';
+    expect(SOCIAL_LINKS.some((s) => s.url === url && s.icon === 'linkedin')).toBe(true);
+    const openipc = TEAM.flatMap((s) => s.members).find((m) => m.name === 'OpenIPC');
+    expect(openipc?.socials.some((s) => s.url === url && s.icon === 'linkedin')).toBe(true);
+  });
 });
