@@ -420,7 +420,9 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 		}
 		if decision == "publish" {
 			if newBoard != nil {
-				board, err := boards.CreateModel(ctx, tx, *newBoard, s.SoC)
+				nb := *newBoard
+				nb.Report = id
+				board, err := boards.CreateModel(ctx, tx, nb, s.SoC)
 				if err != nil {
 					return err
 				}
@@ -435,6 +437,23 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 					}
 					return fmt.Errorf("link %s: %w", m, err)
 				}
+			}
+		}
+		if decision == "reject" {
+			// A board this report's publish added is not kept for it (#452):
+			// the link goes here, and the board once the units are refreshed
+			// and nothing else is on it (boards.RemoveAbandoned). The guard
+			// stands down for this one statement, as Unlink's does.
+			if _, err := tx.Exec(ctx, `SET LOCAL openipc.reports_guard = 'off'`); err != nil {
+				return err
+			}
+			if _, err := tx.Exec(ctx, `
+				DELETE FROM report_models WHERE report_id = $1
+				  AND model_id IN (SELECT id FROM board_models WHERE created_by_report = $1)`, id); err != nil {
+				return err
+			}
+			if _, err := tx.Exec(ctx, `SET LOCAL openipc.reports_guard = ''`); err != nil {
+				return err
 			}
 		}
 		if _, err := tx.Exec(ctx, `INSERT INTO report_reviews (report_id, decision, by, note) VALUES ($1,$2,$3,$4)`,

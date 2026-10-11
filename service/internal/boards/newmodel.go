@@ -28,6 +28,9 @@ type NewModel struct {
 	// SoC as the sender or the reviewer wrote it; kept as soc_label, and as
 	// the catalogue's slug when it names a SoC the catalogue has.
 	SoC string `json:"soc,omitempty"`
+	// Report is the owner report whose publishing adds it, set by the
+	// review: rejecting that report takes the board back (RemoveAbandoned).
+	Report string `json:"-"`
 }
 
 // Suggestion is what the review page offers for a proposal: the board to
@@ -121,9 +124,9 @@ func CreateModel(ctx context.Context, tx pgx.Tx, m NewModel, resolve func(string
 		return "", err
 	}
 	if _, err := tx.Exec(ctx, `
-		INSERT INTO board_models (id, manufacturer_id, model, soc, soc_label, kind, position)
-		VALUES ($1, $2, $3, $4, $5, 'board', (SELECT coalesce(max(position), 0) + 1 FROM board_models WHERE manufacturer_id = $2))`,
-		m.ModelID, m.MakerID, m.Model, null(socSlug(m.SoC, resolve)), null(m.SoC)); err != nil {
+		INSERT INTO board_models (id, manufacturer_id, model, soc, soc_label, kind, position, created_by_report)
+		VALUES ($1, $2, $3, $4, $5, 'board', (SELECT coalesce(max(position), 0) + 1 FROM board_models WHERE manufacturer_id = $2), $6)`,
+		m.ModelID, m.MakerID, m.Model, null(socSlug(m.SoC, resolve)), null(m.SoC), null(m.Report)); err != nil {
 		return "", err
 	}
 	if _, err := tx.Exec(ctx, `INSERT INTO board_model_aliases (maker_id, code_norm, model_id, source, code_as_printed)

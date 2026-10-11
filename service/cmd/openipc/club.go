@@ -95,6 +95,16 @@ func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logge
 	for _, m := range missing {
 		log.Warn("boards: a published report names a board the catalogue does not have", "model", m)
 	}
+	// A board a review added goes once its report is rejected and nothing
+	// else is on it (#452) -- after the units, so the report's unit and its
+	// files have gone first.
+	gone, err := boards.RemoveAbandoned(ctx, pool)
+	if err != nil {
+		log.Error("boards: abandoned boards not removed", "err", err)
+	}
+	for _, m := range gone {
+		log.Info("boards: a board its report's rejection left empty removed", "model", m)
+	}
 }
 
 const clubUsage = `usage: openipc club

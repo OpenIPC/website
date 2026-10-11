@@ -3,10 +3,15 @@ package club
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5"
+
+	"github.com/OpenIPC/website/service/internal/boards"
 )
 
 var photo = append([]byte{0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 'J', 'F', 'I', 'F', 0}, bytes.Repeat([]byte{7}, 2000)...)
@@ -102,6 +107,93 @@ func TestANewCameraBecomesABoardWhenItsReportIsPublished(t *testing.T) {
 	}
 	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+out["id"].(string), map[string]any{"decision": "publish", "models": []string{"jooan-q9-v2"}}); code != 200 || d["points"].(float64) != 1 {
 		t.Errorf("linked to the board that exists: %d %v", code, d)
+	}
+}
+
+// A board a review added goes back when its report is rejected (#452): the
+// report's link goes with the decision, and the board and its new maker once
+// the units are refreshed and nothing else is on them. A board another
+// report was published onto stays, and so does one by hand while anything
+// is on it.
+func TestRejectingTheReportThatAddedABoardTakesTheBoardBack(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	maint := e.maintainer(t)
+	propose := func(board string) (string, map[string]any) {
+		t.Helper()
+		_, out := ivan.send(t, map[string]string{"channel": "web", "maker": "Jooan", "board": board}, map[string][]byte{"photo": photo})
+		_, q := maint.json(t, "GET", "/api/v1/club/review", nil)
+		for _, r := range q["reports"].([]any) {
+			if r := r.(map[string]any); r["id"] == out["id"] {
+				return out["id"].(string), r["new_board"].(map[string]any)
+			}
+		}
+		t.Fatalf("%v is not in the queue", out["id"])
+		return "", nil
+	}
+	decide := func(id string, body map[string]any) {
+		t.Helper()
+		if code, d := maint.json(t, "POST", "/api/v1/club/review/"+id, body); code != 200 {
+			t.Fatalf("%s %v: %d %v", id, body["decision"], code, d)
+		}
+	}
+	has := func(table, col, id string) bool {
+		var n int
+		_ = e.pool.QueryRow(ctx, `SELECT count(*) FROM `+table+` WHERE `+col+` = $1`, id).Scan(&n)
+		return n > 0
+	}
+
+	// A mistyped marking, published as a new board, then rejected.
+	wrong, nb := propose("Q9 v1")
+	decide(wrong, map[string]any{"decision": "publish", "new_board": nb})
+	var by string
+	_ = e.pool.QueryRow(ctx, `SELECT coalesce(created_by_report, '') FROM board_models WHERE id = 'jooan-q9-v1'`).Scan(&by)
+	if by != wrong {
+		t.Fatalf("the board was added by %q, want %s", by, wrong)
+	}
+	decide(wrong, map[string]any{"decision": "reject"})
+	if pub, _ := e.api.Reports.Store().Public(ctx, wrong); len(pub.Models) != 0 {
+		t.Errorf("the rejected report is still on %v", pub.Models)
+	}
+	gone, err := boards.RemoveAbandoned(ctx, e.pool)
+	if err != nil || len(gone) != 1 || gone[0] != "jooan-q9-v1" {
+		t.Fatalf("removed %v (%v)", gone, err)
+	}
+	if has("board_models", "id", "jooan-q9-v1") || has("board_model_aliases", "model_id", "jooan-q9-v1") || has("board_manufacturers", "id", "jooan") {
+		t.Error("the board, its alias or its maker is still in the catalogue")
+	}
+	// The report itself is kept, rejected, and can be published again.
+	decide(wrong, map[string]any{"decision": "publish", "new_board": nb})
+	if !has("board_models", "id", "jooan-q9-v1") {
+		t.Error("publishing the report again did not add its board again")
+	}
+
+	// The right marking; a second owner's report published onto it; the
+	// first rejected. The board is the second report's now, and stays.
+	right, nb := propose("Q9 v2")
+	decide(right, map[string]any{"decision": "publish", "new_board": nb})
+	_, out := ivan.send(t, map[string]string{"channel": "web", "model": "jooan-q9-v2"}, map[string][]byte{"photo": photo})
+	decide(out["id"].(string), map[string]any{"decision": "publish"})
+	decide(right, map[string]any{"decision": "reject"})
+	if gone, err := boards.RemoveAbandoned(ctx, e.pool); err != nil || len(gone) != 0 {
+		t.Errorf("removed %v (%v), want none: another report is on it", gone, err)
+	}
+
+	// By hand: refused while a report is on it, the transaction aborted
+	// and nothing changed.
+	err = pgx.BeginFunc(ctx, e.pool, func(tx pgx.Tx) error {
+		_, err := boards.RemoveModel(ctx, tx, "jooan-q9-v2")
+		return err
+	})
+	if !errors.Is(err, boards.ErrNotEmpty) || !has("board_models", "id", "jooan-q9-v2") {
+		t.Errorf("removing a board with a report on it: %v", err)
+	}
+	if err := pgx.BeginFunc(ctx, e.pool, func(tx pgx.Tx) error {
+		_, err := boards.RemoveModel(ctx, tx, "jooan-q9-v9")
+		return err
+	}); !errors.Is(err, boards.ErrNoBoard) {
+		t.Errorf("removing a board the catalogue lacks: %v", err)
 	}
 }
 
