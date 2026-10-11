@@ -19,6 +19,8 @@ export interface Partner {
   url: string;
   /** Basename under src/assets/partners, without the extension. */
   img: string;
+  /** Locales this logo is not shown in -- a partner that does not operate there. */
+  hiddenIn?: Locale[];
 }
 
 export type PartnerGroupKey =
@@ -41,23 +43,26 @@ export const PARTNER_GROUPS: Record<PartnerGroupKey, Partner[]> = {
   // Ships hardware with OpenIPC on it.
   manufacturers: [
     { name: 'RunCam', url: 'https://runcam.com/', img: 'runcam_mini' },
+    { name: 'AnjVision', url: 'https://www2.anjvision.com/', img: 'anjvision_mini' },
     { name: 'CCDCAM', url: 'https://ccdcam.com/', img: 'ccdcam_mini' },
+    { name: 'IR LAB', url: 'https://irlab.net/', img: 'irlab_mini' },
     // Commented out on the original wall, so commented out here:
     // { name: 'EMAX', url: 'https://emaxmodel.com/', img: 'emax_mini' },
   ],
   // Builds systems on it for other people. RU_INTEGRATORS is appended to this
   // group for Russian-speaking visitors only -- see logosIn.
   integrators: [
-    { name: 'GoodCam', url: 'https://www.goodcam.io/', img: 'goodcam_mini' },
-    { name: 'AnyCam', url: 'https://anycam.io/', img: 'anycam_mini' },
     { name: 'Faceter', url: 'https://faceter.cam/', img: 'faceter_mini' },
-    { name: 'Really', url: 'https://opencollective.com/really-541ee976', img: 'really_mini' },
+    // GoodCam and AnyCam do not operate in Russia.
+    { name: 'GoodCam', url: 'https://www.goodcam.io/', img: 'goodcam_mini', hiddenIn: ['ru'] },
+    { name: 'AnyCam', url: 'https://anycam.io/', img: 'anycam_mini', hiddenIn: ['ru'] },
   ],
   // The FPV projects we grew up alongside.
   fpv: [
     { name: 'wfb-ng', url: 'https://github.com/svpcom/wfb-ng/', img: 'wfb-ng_mini' },
     { name: 'RubyFPV', url: 'https://rubyfpv.com/', img: 'rubyfpv_mini' },
     { name: 'Mario FPV', url: 'https://www.youtube.com/@mariofpv', img: 'mariofpv_mini' },
+    { name: 'Really', url: 'https://opencollective.com/really-541ee976', img: 'really_mini' },
   ],
   // Student and university teams flying or teaching on OpenIPC.
   education: [
@@ -84,13 +89,14 @@ export const PARTNER_GROUPS: Record<PartnerGroupKey, Partner[]> = {
  * never worked, because no logo ever carried the `ru` class the rule selects on.
  */
 export const RU_INTEGRATORS: Partner[] = [
-  { name: 'SkyCam', url: 'https://skycam.cam/', img: 'skycam_mini' },
   { name: 'Vixand', url: 'https://vixand.ru/', img: 'vixand_mini' },
+  { name: 'SkyCam', url: 'https://openipc.su/', img: 'skycam_mini' },
   { name: 'Improve IT', url: 'https://3it.ru/', img: 'improve_mini' },
   { name: 'UfaNet', url: 'https://www.ufanet.ru/', img: 'ufanet_mini' },
   { name: 'Dvor24', url: 'https://dvor24.ru/', img: 'dvor24_mini' },
   { name: 'Sputnik', url: 'https://sputnik.systems/', img: 'sputnik_mini' },
-  { name: 'Techno-Shield', url: 'https://msvoko.ru/', img: 'techno-shield_mini' },
+  // Temporarily off the wall; uncomment to bring it back.
+  // { name: 'Techno-Shield', url: 'https://msvoko.ru/', img: 'techno-shield_mini' },
   { name: 'KeyTelecom', url: 'https://keytele.com/', img: 'keytelecom_mini' },
   { name: 'WebGlazok', url: 'https://webglazok.com/', img: 'webglazok_mini' },
   { name: 'Yucca', url: 'https://yucca.app/en', img: 'yucca_mini' },
@@ -130,11 +136,12 @@ export const HOME_PARTNER_ROWS: Record<string, PartnerGroupKey[]> = {
 };
 
 /**
- * The Russian integrator list is appended here and nowhere else, so every
- * caller gets the same territory rule whether it asks for a group or a row.
+ * The territory rules live here and nowhere else -- the Russian integrator list
+ * appended, and logos marked hiddenIn this locale dropped -- so every caller
+ * gets the same answer whether it asks for a group or a row.
  */
 export function logosIn(locale: Locale, key: PartnerGroupKey): Partner[] {
-  const logos = PARTNER_GROUPS[key];
+  const logos = PARTNER_GROUPS[key].filter((p) => !p.hiddenIn?.includes(locale));
   return key === 'integrators' && locale === 'ru' ? [...logos, ...RU_INTEGRATORS] : logos;
 }
 
