@@ -17,6 +17,7 @@ const texts: Record<string, string> = {
     'bootargs=mem=64M console=ttyAMA0,115200 mtdparts=hi_sfc:256K(boot),3520K(romfs),-(rest)',
     '\x1b[1;31mERROR\x1b[0m: something',
   ].join('\n'),
+  '/board-files/u2/boot.log': 'Kernel command line: console=ttyS0 mtdparts=sfc:256K(boot),1M@0x80000(kernel),-(rootfs)\n',
 };
 vi.mock('../../lib/boards/api', () => ({ fetchText: (url: string) => Promise.resolve(texts[url] ?? '') }));
 const { default: ConsoleView } = await import('./ConsoleView');
@@ -53,10 +54,23 @@ test('a link to a line opens the file there, marked; a line number clicked is re
   HTMLElement.prototype.scrollIntoView = scrolled;
   const view = render(<ConsoleView url="/board-files/u1/a.uboot" name="a.uboot" label="U-Boot console" t={t} focusLine={4} onLine={onLine} query="printenv" />);
   const log = await view.findByRole('region');
-  await waitFor(() => expect(log.querySelector('[data-ln="4"]')?.className).toMatch(/bg-\[#2a3456\]/));
+  // The marked line is a style rule for its row, so marking another re-renders no row.
+  await waitFor(() => expect(log.querySelector('style')?.textContent).toContain('[data-ln="4"]'));
   await waitFor(() => expect(scrolled).toHaveBeenCalled()); // effects run after paint
   expect(log.querySelector('mark')?.textContent).toBe('printenv');
   fireEvent.click(view.getByRole('link', { name: 'Line 2' }));
   expect(onLine).toHaveBeenCalledWith(2);
-  expect(log.querySelector('[data-ln="2"]')?.className).toMatch(/bg-\[#2a3456\]/);
+  await waitFor(() => expect(log.querySelector('style')?.textContent).toContain('[data-ln="2"]'));
+});
+
+test('space an offset skips is shown as unused; a rest with no chip size says so, with no number', async () => {
+  const view = render(<ConsoleView url="/board-files/u2/boot.log" name="boot.log" label="Boot log" t={t} open />);
+  await view.findByRole('region');
+  const rows = [...view.container.querySelectorAll('figure tbody tr')].map((r) => r.textContent?.replace(/\s+/g, ' ').trim());
+  expect(rows).toEqual([
+    'boot0x000000256 KB',
+    'unused0x040000256 KB',
+    'kernel0x0800001 MB',
+    'rootfs0x180000the rest of the chip',
+  ]);
 });

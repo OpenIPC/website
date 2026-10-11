@@ -25,6 +25,7 @@ import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import BoardPanel from './BoardPanel';
 import { fileKey } from './ConsoleView';
+import { poppedOverlay } from '../../lib/overlay-history';
 import { Chip, SocChip, SourceChips, Tags, Thumb, galleryOf, makerName, type SocLinks } from './parts';
 
 /** A text file of the open board, by its path under /board-files/, and the line in it to show. */
@@ -90,10 +91,20 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
 
   // Set while Close walks back through the boards this visit opened.
   const closing = useRef(false);
+  // What the popstate handler (registered once) needs of the current render.
+  const latest = useRef({ open, focus, href });
+  latest.current = { open, focus, href };
 
   // Back and Forward move between the boards opened, and past the first one, close the panel.
   useEffect(() => {
     const onPop = () => {
+      if (poppedOverlay()) {
+        // An overlay (the photo viewer, a console full screen) closed: the board and the line shown
+        // stay, and the entry landed on is told of a line picked while it was open.
+        const { open: o, focus: f, href: h } = latest.current;
+        window.history.replaceState(window.history.state, '', h(o, f));
+        return;
+      }
       if (closing.current) {
         closing.current = false;
         // The entry Close lands on may itself carry ?model= (the address the visit arrived with).

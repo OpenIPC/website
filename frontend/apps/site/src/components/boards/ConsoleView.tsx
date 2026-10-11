@@ -16,7 +16,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { BoardsT } from '../../lib/boards-i18n';
 import { fetchText } from '../../lib/boards/api';
-import { consoleFacts, highlight, humanBytes, lineText, terminal, type ConsoleFacts, type MtdDevice, type Seg, type Token } from '../../lib/boards/console';
+import { consoleFacts, highlight, humanBytes, lineText, markRuns, terminal, type ConsoleFacts, type MtdDevice, type Seg, type Token } from '../../lib/boards/console';
 import { holdBack } from '../../lib/overlay-history';
 
 type Text = { state: 'closed' } | { state: 'loading' } | { state: 'ok'; text: string } | { state: 'error'; error: string };
@@ -79,7 +79,10 @@ export default function ConsoleView({ url, name, label, lines: lineCount, t, foc
         {lineCount !== undefined && <span class="shrink-0 text-xs text-body-secondary tabular-nums">{t('lines', { count: lineCount })}</span>}
       </div>
       {open && (
-        text.state === 'ok'
+        text.state === 'ok' && full
+          // Drawn once, where it is read: the panel says where it went.
+          ? <p class="m-0 text-sm text-body-secondary">{t('console_shown_full')}</p>
+          : text.state === 'ok'
           ? <Viewer text={text.text} url={url} name={name} label={label} t={t} focusLine={focusLine ?? null} query={query} onLine={onLine} onFull={() => setFull(true)} />
           : text.state === 'error'
             ? <p class="m-0 text-sm text-red">{t('text_error', { error: text.error })}</p>
@@ -94,32 +97,84 @@ export default function ConsoleView({ url, name, label, lines: lineCount, t, foc
   );
 }
 
+/** Rows drawn at once; a longer file shows a window of them, with buttons for more. */
+const WINDOW = 2000;
+
 function Viewer({ text, url, name, label, t, focusLine, query, onLine, onFull, tall = false }: {
   text: string; url: string; name: string; label: string; t: BoardsT; focusLine: number | null; query?: string;
   onLine?: (line: number) => void; onFull?: () => void; tall?: boolean;
 }) {
   const screen = useMemo(() => terminal(text), [text]);
   const facts = useMemo(() => consoleFacts(text), [text]);
+  // Each line's runs, worked out once per file: the camera's colours, or the highlight where it had none.
+  const runs = useMemo(() => screen.lines.map((segs) => (screen.styled && segs.some((x) => x.style) ? segs : highlight(lineText(segs)))), [screen]);
   // Long lines wrap on a phone, where a sideways scroll of a 168-character line is the worst way to read it.
   const [wrap, setWrap] = useState(() => typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches);
-  const [copied, setCopied] = useState(false);
+  const [copy, setCopy] = useState<'idle' | 'done' | 'failed'>('idle');
   const [mark, setMark] = useState<number | null>(focusLine);
+  const total = screen.lines.length;
+  const around = (n: number | null): [number, number] => {
+    if (total <= WINDOW) return [0, total];
+    const from = Math.max(0, Math.min(total - WINDOW, (n ?? 1) - 1 - WINDOW / 2));
+    return [from, Math.min(total, from + WINDOW)];
+  };
+  const [[from, to], setRange] = useState<[number, number]>(() => around(focusLine));
   const scroller = useRef<HTMLDivElement>(null);
+  const scope = useRef(`console-${Math.random().toString(36).slice(2, 9)}`).current;
+  const onLineRef = useRef(onLine);
+  onLineRef.current = onLine;
 
-  useEffect(() => setMark(focusLine), [focusLine]);
+  useEffect(() => {
+    setMark(focusLine);
+    if (focusLine && (focusLine - 1 < from || focusLine - 1 >= to)) setRange(around(focusLine));
+  }, [focusLine]);
   useEffect(() => {
     if (!mark) return;
-    const row = scroller.current?.querySelector<HTMLElement>(`[data-ln="${mark}"]`);
-    row?.scrollIntoView({ block: 'center' });
-  }, [mark, screen]);
+    scroller.current?.querySelector<HTMLElement>(`[data-ln="${mark}"]`)?.scrollIntoView({ block: 'center' });
+  }, [mark, screen, from]);
 
-  const copy = () => {
-    void navigator.clipboard?.writeText(screen.lines.map(lineText).join('\n')).then(() => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    });
+  const doCopy = async () => {
+    const all = screen.lines.map(lineText).join('\n');
+    try {
+      if (!navigator.clipboard) throw new Error('no clipboard');
+      await navigator.clipboard.writeText(all);
+      setCopy('done');
+    } catch {
+      // Without the clipboard API (an insecure context, a refused permission), the old way still copies.
+      const area = document.createElement('textarea');
+      area.value = all;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      (scroller.current?.parentElement ?? document.body).appendChild(area);
+      area.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch { ok = false; }
+      area.remove();
+      setCopy(ok ? 'done' : 'failed');
+    }
+    window.setTimeout(() => setCopy('idle'), 2000);
   };
-  const width = String(screen.lines.length).length;
+  const width = String(total).length;
+
+  // The rows, built again only when what they show changes; a line clicked changes only the style below.
+  const rows = useMemo(() => runs.slice(from, to).map((line, i) => {
+    const n = from + i + 1;
+    return (
+      <div key={n} data-ln={n} class="grid grid-cols-[auto_1fr] hover:bg-white/[0.03]">
+        <a href={`#L${n}`} tabIndex={-1} aria-label={t('console_line', { n })}
+          // Solid, not inherited: text scrolled sideways passes under the numbers, not through them.
+          class="sticky left-0 cursor-pointer bg-ink pe-3 ps-3 text-right text-[#5d6880] no-underline select-none hover:text-[#d7deee]"
+          style={{ width: `calc(${width}ch + 1.5rem)` }}
+          onClick={(e) => { e.preventDefault(); setMark(n); onLineRef.current?.(n); }}>
+          {n}
+        </a>
+        <span class={`pe-3 ${wrap ? 'break-all whitespace-pre-wrap' : 'whitespace-pre'}`}>
+          {line.length === 0 ? '​' : drawRuns(markRuns(line, query))}
+        </span>
+      </div>
+    );
+  }), [runs, from, to, wrap, query, width, t]);
 
   return (
     <div class={`grid gap-2 ${tall ? 'h-full grid-rows-[auto_1fr]' : ''}`}>
@@ -127,71 +182,52 @@ function Viewer({ text, url, name, label, t, focusLine, query, onLine, onFull, t
       {!tall && <Facts facts={facts} t={t} />}
       <div class="flex flex-wrap items-center gap-1.5 text-xs">
         <ToolButton pressed={wrap} onClick={() => setWrap(!wrap)}>{t('console_wrap')}</ToolButton>
-        <ToolButton onClick={copy}>{copied ? t('console_copied') : t('console_copy')}</ToolButton>
+        <ToolButton onClick={() => { void doCopy(); }}>
+          {copy === 'done' ? t('console_copied') : copy === 'failed' ? t('console_copy_failed') : t('console_copy')}
+        </ToolButton>
         <a href={url} download={name} class={TOOL}>{t('console_download')}</a>
         {onFull && <ToolButton onClick={onFull}>{t('console_fullscreen')}</ToolButton>}
-        <span class="ms-auto text-body-secondary tabular-nums">{t('lines', { count: screen.lines.length })}</span>
+        <span class="ms-auto text-body-secondary tabular-nums" aria-live="polite">{t('lines', { count: total })}</span>
       </div>
-      <div ref={scroller} role="region" tabIndex={0} aria-label={`${label}: ${name}`}
+      <div ref={scroller} id={scope} role="region" tabIndex={0} aria-label={`${label}: ${name}`}
         class={`overflow-auto rounded-md bg-ink py-2 font-mono text-[12.5px] leading-[1.55] text-[#d7deee] [tab-size:8] focus-visible:outline-2 focus-visible:outline-brand-blue ${tall ? 'min-h-0' : 'max-h-[420px]'}`}>
-        <div class={wrap ? '' : 'w-max min-w-full'}>
-          {screen.lines.map((segs, i) => {
-            const n = i + 1;
-            return (
-              <div key={n} data-ln={n} class={`grid grid-cols-[auto_1fr] ${n === mark ? 'bg-[#2a3456]' : 'hover:bg-white/[0.03]'}`}>
-                <a href={`#L${n}`} tabIndex={-1} aria-label={t('console_line', { n })}
-                  // Solid, not inherited: text scrolled sideways passes under the numbers, not through them.
-                  class={`sticky left-0 cursor-pointer pe-3 ps-3 text-right text-[#5d6880] no-underline select-none hover:text-[#d7deee] ${n === mark ? 'bg-[#2a3456]' : 'bg-ink'}`}
-                  style={{ width: `calc(${width}ch + 1.5rem)` }}
-                  onClick={(e) => { e.preventDefault(); setMark(n); onLine?.(n); }}>
-                  {n}
-                </a>
-                <span class={`pe-3 ${wrap ? 'break-all whitespace-pre-wrap' : 'whitespace-pre'}`}>
-                  <Line segs={segs} styled={screen.styled} query={query} />
-                  {segs.length === 0 && '​'}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        {mark && <style>{`#${scope} [data-ln="${mark}"], #${scope} [data-ln="${mark}"] > a { background: #2a3456; }`}</style>}
+        {from > 0 && (
+          <More onClick={() => setRange([Math.max(0, from - WINDOW), to])}>{t('console_earlier', { count: Math.min(WINDOW, from) })}</More>
+        )}
+        <div class={wrap ? '' : 'w-max min-w-full'}>{rows}</div>
+        {to < total && (
+          <More onClick={() => setRange([from, Math.min(total, to + WINDOW)])}>{t('console_later', { count: Math.min(WINDOW, total - to) })}</More>
+        )}
       </div>
     </div>
   );
 }
 
-/** One line: the terminal's own colours, or the highlight where it had none; a search's matches marked over either. */
-function Line({ segs, styled, query }: { segs: Seg[]; styled: boolean; query?: string }) {
-  const coloured = segs.some((s) => s.style);
-  const runs = styled && coloured ? segs : highlight(lineText(segs));
+function More({ onClick, children }: { onClick: () => void; children: ComponentChildren }) {
   return (
-    <>
-      {runs.map((s, i) => {
-        const css = s.style
-          ? {
-            color: s.style.fg, backgroundColor: s.style.bg, fontWeight: s.style.bold ? 600 : undefined,
-            opacity: s.style.dim ? 0.7 : undefined, fontStyle: s.style.italic ? 'italic' : undefined,
-            textDecoration: s.style.underline ? 'underline' : undefined,
-          }
-          : undefined;
-        return <span key={i} class={s.token ? TOKEN[s.token] : undefined} style={css}>{marked(s.text, query)}</span>;
-      })}
-    </>
+    <button type="button" onClick={onClick}
+      class="sticky left-0 mx-3 my-1 cursor-pointer rounded border border-white/15 px-2.5 py-1 font-sans text-xs text-[#d7deee] hover:border-white/40">
+      {children}
+    </button>
   );
 }
 
-function marked(text: string, query?: string): ComponentChildren {
-  const q = query?.trim().toLowerCase();
-  if (!q || q.length < 3) return text;
-  const out: ComponentChildren[] = [];
-  const low = text.toLowerCase();
-  let at = 0;
-  for (let i = low.indexOf(q); i !== -1; i = low.indexOf(q, at)) {
-    if (i > at) out.push(text.slice(at, i));
-    out.push(<mark key={i} class="rounded-sm bg-accent text-ink">{text.slice(i, i + q.length)}</mark>);
-    at = i + q.length;
-  }
-  if (at < text.length) out.push(text.slice(at));
-  return out;
+/** A line's runs as spans: the camera's colours (inverse resolved here), a token's class, a search's mark. */
+function drawRuns(runs: Seg[]): ComponentChildren {
+  return runs.map((r, i) => {
+    const st = r.style;
+    const fg = st?.inverse ? (st.bg ?? '#0f1422') : st?.fg;
+    const bg = st?.inverse ? (st.fg ?? '#d7deee') : st?.bg;
+    const css = st
+      ? {
+        color: fg, backgroundColor: bg, fontWeight: st.bold ? 600 : undefined, opacity: st.dim ? 0.7 : undefined,
+        fontStyle: st.italic ? 'italic' : undefined, textDecoration: st.underline ? 'underline' : undefined,
+      }
+      : undefined;
+    const span = <span key={i} class={r.token ? TOKEN[r.token] : undefined} style={css}>{r.text}</span>;
+    return r.mark ? <mark key={i} class="rounded-sm bg-accent text-ink [&>span]:text-ink!">{span}</mark> : span;
+  });
 }
 
 const TOOL = 'inline-flex min-h-11 cursor-pointer items-center rounded-md border border-hairline bg-white px-2.5 font-medium text-body no-underline hover:border-brand-blue hover:text-brand-blue sm:min-h-7';
@@ -240,36 +276,61 @@ function Facts({ facts: f, t }: { facts: ConsoleFacts; t: BoardsT }) {
 
 /**
  * The partitions mtdparts declares, as a bar to the chip's scale (or to their
- * sum when the log does not say the chip's size), and as a list with offsets.
+ * extent when the log does not say the chip's size), and as a list with
+ * offsets. Space an explicit offset skips is drawn, and listed, as unused. A
+ * last partition sized "-" with no chip size known is "the rest of the chip"
+ * with no number: a share of the bar, not a size the log never gave.
  */
 function FlashMap({ device, chip, t }: { device: MtdDevice; chip?: number; t: BoardsT }) {
-  const known = device.parts.reduce((n, p) => Math.max(n, p.offset + (p.size ?? 0)), 0);
-  const total = chip && chip >= known ? chip : known;
-  const sized = device.parts.map((p) => ({ ...p, bytes: p.size ?? Math.max(0, total - p.offset) }));
-  if (total <= 0) return null;
+  type Block = { name: string; offset: number; bytes: number | null; readonly?: boolean; gap?: boolean; color: string };
+  const blocks: Block[] = [];
+  let cursor = 0;
+  let colour = 0;
+  for (const p of [...device.parts].sort((a, b) => a.offset - b.offset)) {
+    if (p.offset > cursor) blocks.push({ name: t('flash_map_unused'), offset: cursor, bytes: p.offset - cursor, gap: true, color: 'transparent' });
+    const bytes = p.size ?? (chip && chip > p.offset ? chip - p.offset : null);
+    blocks.push({ name: p.name, offset: p.offset, bytes, readonly: p.readonly, color: PART[colour++ % PART.length] });
+    cursor = Math.max(cursor, p.offset + (bytes ?? 0));
+  }
+  if (chip && chip > cursor) blocks.push({ name: t('flash_map_unused'), offset: cursor, bytes: chip - cursor, gap: true, color: 'transparent' });
+  const extent = blocks.reduce((n, b) => n + (b.bytes ?? 0), 0);
+  if (extent <= 0 && !blocks.some((b) => b.bytes === null)) return null;
+  // An unsized rest gets a nominal share of the bar, so it is seen without claiming a size.
+  const nominal = Math.max(extent * 0.15, 1);
+  const scale = extent + blocks.filter((b) => b.bytes === null).length * nominal;
+  const hatch = 'repeating-linear-gradient(135deg, #eef0f5 0 4px, #dfe3ec 4px 8px)';
   return (
     <figure class="m-0 grid gap-1.5">
       <figcaption class="text-body-secondary">{t('flash_map_title', { device: device.device })}</figcaption>
       <div class="flex h-7 w-full overflow-hidden rounded border border-hairline bg-white" aria-hidden="true">
-        {sized.map((p, i) => (
-          <div key={`${p.name}-${i}`} title={`${p.name} · ${humanBytes(p.bytes)}`}
-            class="flex min-w-0 items-center justify-center overflow-hidden border-r border-white/70 px-1 font-mono text-[11px] whitespace-nowrap text-ink last:border-r-0"
-            style={{ width: `${(p.bytes / total) * 100}%`, backgroundColor: PART[i % PART.length] }}>
-            {p.bytes / total > 0.07 ? p.name : ''}
-          </div>
-        ))}
+        {blocks.map((b, i) => {
+          const share = (b.bytes ?? nominal) / scale;
+          return (
+            <div key={`${b.name}-${i}`} title={`${b.name} · ${b.bytes === null ? t('flash_map_rest') : humanBytes(b.bytes)}`}
+              class={`flex min-w-0 items-center justify-center overflow-hidden border-r border-white/70 px-1 font-mono text-[11px] whitespace-nowrap last:border-r-0 ${b.gap ? 'text-body-secondary' : 'text-ink'}`}
+              style={{ width: `${share * 100}%`, background: b.gap ? hatch : b.color }}>
+              {share > 0.07 && !b.gap ? b.name : ''}
+            </div>
+          );
+        })}
       </div>
       <table class="w-full border-collapse font-mono text-[12px]">
         <thead class="sr-only"><tr><th>{t('flash_map_name')}</th><th>{t('flash_map_offset')}</th><th>{t('flash_map_size')}</th></tr></thead>
         <tbody>
-          {sized.map((p, i) => (
-            <tr key={`${p.name}-${i}`} class="border-t border-hairline/70 first:border-t-0">
+          {blocks.map((b, i) => (
+            <tr key={`${b.name}-${i}`} class={`border-t border-hairline/70 first:border-t-0 ${b.gap ? 'text-body-secondary italic' : ''}`}>
               <td class="py-0.5 pe-3">
-                <span class="me-1.5 inline-block size-2.5 rounded-sm align-middle" style={{ backgroundColor: PART[i % PART.length] }} />
-                {p.name}{p.readonly && <span class="ms-1 text-body-secondary">ro</span>}
+                <span class="me-1.5 inline-block size-2.5 rounded-sm align-middle" style={{ background: b.gap ? hatch : b.color }} />
+                {b.name}{b.readonly && <span class="ms-1 text-body-secondary">ro</span>}
               </td>
-              <td class="py-0.5 pe-3 text-body-secondary">0x{p.offset.toString(16).padStart(6, '0')}</td>
-              <td class="py-0.5 text-right">{p.size === null ? `${humanBytes(p.bytes)} (${t('flash_map_rest')})` : humanBytes(p.bytes)}</td>
+              <td class="py-0.5 pe-3 text-body-secondary">0x{b.offset.toString(16).padStart(6, '0')}</td>
+              <td class="py-0.5 text-right">
+                {b.bytes === null
+                  ? t('flash_map_rest')
+                  : device.parts.find((p) => p.offset === b.offset && p.name === b.name)?.size === null
+                    ? `${humanBytes(b.bytes)} (${t('flash_map_rest')})`
+                    : humanBytes(b.bytes)}
+              </td>
             </tr>
           ))}
         </tbody>

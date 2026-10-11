@@ -22,6 +22,8 @@ export interface Style {
   dim?: boolean;
   italic?: boolean;
   underline?: boolean;
+  /** Foreground and background swapped, resolved when drawn so SGR 27 can undo it. */
+  inverse?: boolean;
 }
 
 /** A run of text drawn one way: in the terminal's own colours, or as one kind of token. */
@@ -29,6 +31,8 @@ export interface Seg {
   text: string;
   style?: Style;
   token?: Token;
+  /** Inside a match for the search the reader came from. */
+  mark?: boolean;
 }
 
 export type Token = 'time' | 'prompt' | 'cmd' | 'key' | 'hex' | 'size' | 'error' | 'warn' | 'mark' | 'string';
@@ -67,7 +71,8 @@ function sgr(params: number[], s: Style): Style {
     else if (p === 2) out.dim = true;
     else if (p === 3) out.italic = true;
     else if (p === 4) out.underline = true;
-    else if (p === 7) { const fg = out.fg; out.fg = out.bg ?? '#0f1422'; out.bg = fg ?? '#d7deee'; }
+    else if (p === 7) out.inverse = true;
+    else if (p === 27) delete out.inverse;
     else if (p === 22) { delete out.bold; delete out.dim; }
     else if (p === 23) delete out.italic;
     else if (p === 24) delete out.underline;
@@ -102,9 +107,58 @@ export function terminal(text: string): Screen {
   const lines: Seg[][] = [];
   let styled = false;
   let style: Style = {};
-  let cells: { ch: string; st: Style }[] = [];
-  let col = 0;
-  const flush = () => {
+  const raw = text.split('\n');
+  // A file's last newline ends its last line rather than starting an empty one.
+  if (raw.length > 1 && raw[raw.length - 1] === '') raw.pop();
+  for (const line of raw) {
+    // Most lines are plain text: one run, no cells, nothing to replay.
+    if (plain(style) && !/[\x00-\x08\x0b-\x1f\x7f]/.test(line)) {
+      lines.push(line === '' ? [] : [{ text: line }]);
+      continue;
+    }
+    let cells: { ch: string; st: Style }[] = [];
+    let col = 0;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '\r') { if (i + 1 < line.length) col = 0; continue; }
+      if (ch === '\b') { col = Math.max(0, col - 1); continue; }
+      if (ch === '\x1b') {
+        const next = line[i + 1];
+        if (next === '[') {
+          // CSI: parameter bytes, intermediate bytes, one final byte -- dropped whole unless understood.
+          let j = i + 2;
+          while (j < line.length && line.charCodeAt(j) >= 0x30 && line.charCodeAt(j) <= 0x3f) j++;
+          const params = line.slice(i + 2, j);
+          const mid = j;
+          while (j < line.length && line.charCodeAt(j) >= 0x20 && line.charCodeAt(j) <= 0x2f) j++;
+          const final = line[j];
+          if (mid === j && final === 'm') {
+            style = sgr(params === '' ? [] : params.split(/[;:]/).map((v) => (v === '' ? 0 : Number(v))), style);
+            if (!plain(style)) styled = true;
+          } else if (mid === j && final === 'K') {
+            const mode = Number(params || 0);
+            if (mode === 0) cells.length = Math.min(cells.length, col);
+            else if (mode === 2) cells = cells.map(() => ({ ch: ' ', st: {} }));
+          }
+          i = j;
+          continue;
+        }
+        if (next === ']') {
+          // OSC: up to BEL or ESC \.
+          let j = i + 2;
+          while (j < line.length && line[j] !== '\x07' && !(line[j] === '\x1b' && line[j + 1] === '\\')) j++;
+          i = line[j] === '\x07' ? j : j + 1;
+          continue;
+        }
+        i += 1; // a two-byte escape: dropped
+        continue;
+      }
+      if (ch < ' ' && ch !== '\t') continue; // other control characters are not text
+      if (ch === '\x7f') continue;
+      while (cells.length < col) cells.push({ ch: ' ', st: {} });
+      cells[col] = { ch, st: style };
+      col++;
+    }
     const segs: Seg[] = [];
     for (const { ch, st } of cells) {
       const last = segs[segs.length - 1];
@@ -112,54 +166,7 @@ export function terminal(text: string): Screen {
       else segs.push(plain(st) ? { text: ch } : { text: ch, style: st });
     }
     lines.push(segs);
-    cells = [];
-    col = 0;
-  };
-  const put = (ch: string) => {
-    cells[col] = { ch, st: style };
-    col++;
-  };
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (ch === '\n') { flush(); continue; }
-    if (ch === '\r') { if (text[i + 1] !== '\n') col = 0; continue; }
-    if (ch === '\b') { col = Math.max(0, col - 1); continue; }
-    if (ch === '\x1b') {
-      const next = text[i + 1];
-      if (next === '[') {
-        // CSI: parameters, then one final byte.
-        let j = i + 2;
-        while (j < text.length && /[0-9;?:<=>]/.test(text[j])) j++;
-        const final = text[j];
-        const raw = text.slice(i + 2, j);
-        if (final === 'm') {
-          const params = raw === '' ? [] : raw.split(/[;:]/).map((v) => (v === '' ? 0 : Number(v)));
-          style = sgr(params, style);
-          if (!plain(style)) styled = true;
-        } else if (final === 'K') {
-          const mode = Number(raw || 0);
-          if (mode === 0) cells.length = col;
-          else if (mode === 2) cells = cells.map(() => ({ ch: ' ', st: {} }));
-        }
-        i = j;
-        continue;
-      }
-      if (next === ']') {
-        // OSC: up to BEL or ESC \.
-        let j = i + 2;
-        while (j < text.length && text[j] !== '\x07' && !(text[j] === '\x1b' && text[j + 1] === '\\')) j++;
-        i = text[j] === '\x07' ? j : j + 1;
-        continue;
-      }
-      i += 1; // a two-byte escape: dropped
-      continue;
-    }
-    if (ch < ' ' && ch !== '\t') continue; // other control characters are not text
-    // A gap left by moving forward over cells never written stays a space.
-    while (cells.length < col) cells.push({ ch: ' ', st: {} });
-    put(ch);
   }
-  if (cells.length > 0 || !text.endsWith('\n')) flush();
   return { lines, styled };
 }
 
@@ -204,6 +211,38 @@ export function highlight(line: string): Seg[] {
 
 /** One line's text, whatever its runs. */
 export const lineText = (segs: Seg[]) => segs.map((s) => s.text).join('');
+
+/**
+ * A line's runs with a search's matches marked. The matches are found in the
+ * whole line, so one can span a colour change or a highlighted token
+ * ("hisilicon # printenv", "mtdparts=hi_sfc"); runs are split at their edges
+ * and keep their colour or token.
+ */
+export function markRuns(runs: Seg[], query: string | undefined): Seg[] {
+  const q = query?.trim().toLowerCase();
+  if (!q || q.length < 3) return runs;
+  const low = lineText(runs).toLowerCase();
+  const ranges: [number, number][] = [];
+  for (let i = low.indexOf(q); i !== -1; i = low.indexOf(q, i + q.length)) ranges.push([i, i + q.length]);
+  if (ranges.length === 0) return runs;
+  const out: Seg[] = [];
+  let at = 0;
+  for (const run of runs) {
+    const end = at + run.text.length;
+    let cut = at;
+    for (const [a, b] of ranges) {
+      if (b <= cut || a >= end) continue;
+      const from = Math.max(a, cut);
+      if (from > cut) out.push({ ...run, text: run.text.slice(cut - at, from - at) });
+      const to = Math.min(b, end);
+      out.push({ ...run, text: run.text.slice(from - at, to - at), mark: true });
+      cut = to;
+    }
+    if (cut < end) out.push({ ...run, text: run.text.slice(cut - at) });
+    at = end;
+  }
+  return out;
+}
 
 export interface Partition {
   name: string;
@@ -268,7 +307,8 @@ export interface ConsoleFacts {
 /** The facts a porter opens a console for, read off its text; what it does not say is left out. */
 export function consoleFacts(text: string): ConsoleFacts {
   const f: ConsoleFacts = {};
-  const clean = text.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '').replace(/\r(?!\n)/g, '\n');
+  // What the terminal finally showed: a line rewritten by \r says only its last version.
+  const clean = terminal(text).lines.map(lineText).join('\n');
   const first = (re: RegExp) => clean.match(re)?.slice(1).find((x) => x !== undefined)?.trim();
   const uboot = clean.match(/U-Boot (\d{4}\.\d{2}[^\s(]*)\s*(?:\(([^)]+)\))?/);
   if (uboot) f.uboot = uboot[2] ? `${uboot[1]} (${uboot[2].trim()})` : uboot[1];

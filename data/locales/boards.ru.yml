@@ -217,6 +217,11 @@ ru:
     console_wrap: Переносить строки
     console_copy: Копировать
     console_copied: Скопировано
+    console_copy_failed: 'Не удалось скопировать: выделите текст'
+    console_earlier: 'Показать {count} строк выше'
+    console_later: 'Показать {count} строк ниже'
+    console_shown_full: Открыт во весь экран.
+    flash_map_unused: не занято
     console_download: Скачать
     console_fullscreen: Во весь экран
     console_line: 'Строка {n}'

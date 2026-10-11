@@ -195,6 +195,11 @@ zh:
     console_wrap: 自动换行
     console_copy: 复制
     console_copied: 已复制
+    console_copy_failed: '复制失败：请手动选中文本'
+    console_earlier: '显示前面 {count} 行'
+    console_later: '显示后面 {count} 行'
+    console_shown_full: 已全屏显示。
+    flash_map_unused: 未使用
     console_download: 下载
     console_fullscreen: 全屏
     console_line: '第 {n} 行'

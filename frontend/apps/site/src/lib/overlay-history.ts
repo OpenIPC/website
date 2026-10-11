@@ -10,12 +10,19 @@
  */
 
 let holds = 0;
+/** Steps back this module took itself, closing an overlay, whose popstate has not arrived yet. */
+let expecting = 0;
+/** Whether the popstate being handled now is an overlay closing. */
+let fromOverlay = false;
 
 const marked = () => !!(window.history.state as { overlay?: boolean } | null)?.overlay;
 
 if (typeof window !== 'undefined') {
+  // Registered on import, so it runs before any page's own popstate listener.
   window.addEventListener('popstate', () => {
-    if (holds === 0 && marked()) window.history.back();
+    fromOverlay = holds > 0 || expecting > 0;
+    if (expecting > 0) expecting--;
+    if (holds === 0 && marked() && !fromOverlay) window.history.back();
   });
 }
 
@@ -36,6 +43,17 @@ export function holdBack(onBack: () => void): () => void {
     released = true;
     holds--;
     window.removeEventListener('popstate', onPop);
-    if (!viaBack && marked()) window.history.back();
+    if (!viaBack && marked()) {
+      expecting++;
+      window.history.back();
+    }
   };
 }
+
+/**
+ * Whether the popstate being handled is an overlay closing (Back over it, or
+ * its own step back). A page that reads its state from the address on
+ * popstate keeps what it shows instead: the entry it lands on is older than
+ * anything chosen while the overlay was open, such as a console line.
+ */
+export const poppedOverlay = () => fromOverlay;

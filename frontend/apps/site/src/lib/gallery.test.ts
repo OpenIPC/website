@@ -26,11 +26,24 @@ class FakeSwipe {
 vi.mock('photoswipe', () => ({ default: FakeSwipe }));
 
 const { domGroup, openGallery } = await import('./gallery');
+const { holdBack, poppedOverlay } = await import('./overlay-history');
 
 const item = (src: string) => ({ src, width: 100, height: 80, alt: src });
+// What a browser does on history.back(): a popstate follows.
+const browserBack = () => { window.dispatchEvent(new PopStateEvent('popstate')); };
 
-beforeEach(() => { made.length = 0; document.body.innerHTML = ''; window.history.replaceState({ boards: 2 }, ''); });
-afterEach(() => { for (const p of made) if (!p.closed) p.close(); });
+// Every test steps back as a browser does, at once: jsdom's own history.back() fires its popstate
+// later, in whichever test is running by then.
+beforeEach(() => {
+  made.length = 0;
+  document.body.innerHTML = '';
+  window.history.replaceState({ boards: 2 }, '');
+  vi.spyOn(window.history, 'back').mockImplementation(browserBack);
+});
+afterEach(() => {
+  for (const p of made) if (!p.closed) p.close();
+  vi.restoreAllMocks();
+});
 
 describe('a set of pictures', () => {
   test('a picture in a group opens with its group; one outside any group, with the page\'s others', () => {
@@ -79,7 +92,7 @@ describe('opening and closing', () => {
   });
 
   test('closing it any other way takes its history entry back off', async () => {
-    const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+    const back = vi.spyOn(window.history, 'back').mockImplementation(browserBack);
     await openGallery([item('/1')]);
     made[0].close();
     expect(back).toHaveBeenCalledOnce();
@@ -87,7 +100,7 @@ describe('opening and closing', () => {
   });
 
   test('a request to close the dialog under it (Escape, an Android Back) closes the viewer and keeps the dialog', async () => {
-    const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+    const back = vi.spyOn(window.history, 'back').mockImplementation(browserBack);
     document.body.innerHTML = '<dialog id="panel" open></dialog>';
     const panel = document.getElementById('panel') as HTMLDialogElement;
     await openGallery([item('/1')]);
@@ -111,6 +124,7 @@ describe('opening and closing', () => {
   });
 
   test('Forward onto a closed viewer\'s entry steps back over it', async () => {
+    // Only that it asks to step back: a stub that fired popstate here would land on the same entry again.
     const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
     window.history.replaceState({ boards: 2, overlay: true }, '');
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -122,5 +136,21 @@ describe('opening and closing', () => {
     await openGallery([item('/1')]);
     await openGallery([item('/2')]);
     expect(made).toHaveLength(1);
+  });
+});
+
+describe('an overlay closing, as a page sees it', () => {
+  test('the popstate of an overlay closing is flagged; the next one, Back on the page itself, is not', () => {
+    const back = vi.spyOn(window.history, 'back').mockImplementation(browserBack);
+    const seen: boolean[] = [];
+    const page = () => seen.push(poppedOverlay());
+    window.addEventListener('popstate', page);
+    const release = holdBack(() => {});
+    release(); // closed by its own button: it steps back, and that popstate is the overlay's
+    window.history.replaceState({ boards: 2 }, '');
+    window.dispatchEvent(new PopStateEvent('popstate')); // the reader's own Back afterwards
+    expect(seen).toEqual([true, false]);
+    window.removeEventListener('popstate', page);
+    back.mockRestore();
   });
 });

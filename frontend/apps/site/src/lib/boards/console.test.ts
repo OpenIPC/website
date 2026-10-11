@@ -4,7 +4,7 @@
  * flash partitions read off a U-Boot console.
  */
 import { describe, expect, test } from 'vitest';
-import { consoleFacts, highlight, humanBytes, lineText, parseMtdparts, terminal } from './console';
+import { consoleFacts, highlight, humanBytes, lineText, markRuns, parseMtdparts, terminal } from './console';
 
 describe('the terminal', () => {
   test('plain text is lines, unstyled', () => {
@@ -40,6 +40,26 @@ describe('the terminal', () => {
     expect(terminal('abcdef\rXY\n').lines.map(lineText)).toEqual(['XYcdef']);
     // ...unless the program erases it.
     expect(terminal('abcdef\rXY\x1b[K\n').lines.map(lineText)).toEqual(['XY']);
+  });
+
+  test('a control sequence with intermediate bytes is dropped whole', () => {
+    expect(terminal('a\x1b[!pb\x1b[0 qc\n').lines.map(lineText)).toEqual(['abc']);
+  });
+
+  test('inverse is an attribute: SGR 27 turns it off, a second SGR 7 does not turn it back', () => {
+    const [on, off] = terminal('\x1b[31;7mA\x1b[27mB').lines[0];
+    expect(on.style).toEqual({ fg: '#e06c75', inverse: true });
+    expect(off.style).toEqual({ fg: '#e06c75' });
+    const [twice] = terminal('\x1b[7m\x1b[7mC').lines[0];
+    expect(twice.style).toEqual({ inverse: true });
+  });
+
+  test('a large plain file is read quickly, without a cell per character', () => {
+    const big = Array.from({ length: 100_000 }, (_, i) => `[ ${i}.000000] line ${i}`).join('\n');
+    const t0 = performance.now();
+    const s = terminal(big);
+    expect(s.lines).toHaveLength(100_000);
+    expect(performance.now() - t0).toBeLessThan(1000);
   });
 
   test('a backspace steps back; other escapes and control bytes are not text', () => {
@@ -123,6 +143,10 @@ describe('the facts of a console', () => {
     expect(f.mtd?.[0].parts.map((p) => p.name)).toEqual(['boot', 'romfs', 'rest']);
   });
 
+  test('a fact rewritten on its line by a carriage return is read as it was left', () => {
+    expect(consoleFacts('DRAM:  128 MiB\rDRAM:  256 MiB\n').dram).toBe('256 MiB');
+  });
+
   test('a log that says none of it has no facts', () => {
     expect(consoleFacts('hello\nworld\n')).toEqual({});
   });
@@ -130,5 +154,20 @@ describe('the facts of a console', () => {
   test('sizes in the units mtdparts writes them in', () => {
     expect([humanBytes(256 * 1024), humanBytes(3520 * 1024), humanBytes(8 * 1024 ** 2), humanBytes(1536 * 1024), humanBytes(1500)])
       .toEqual(['256 KB', '3520 KB', '8 MB', '1536 KB', '1.5 KB']);
+  });
+});
+
+describe('marking a search in a line', () => {
+  test('a match across a token boundary is marked, and each piece keeps its token', () => {
+    const runs = highlight('hisilicon # printenv');
+    const got = markRuns(runs, '# print').filter((r) => r.mark);
+    expect(got.map((r) => [r.text, r.token])).toEqual([['# ', 'prompt'], ['print', 'cmd']]);
+  });
+
+  test('a match inside one run splits it; no query or a short one marks nothing', () => {
+    const got = markRuns([{ text: 'bootcmd=sf probe' }], 'cmd=sf');
+    expect(got).toEqual([{ text: 'boot' }, { text: 'cmd=sf', mark: true }, { text: ' probe' }]);
+    expect(markRuns([{ text: 'abc' }], '')).toEqual([{ text: 'abc' }]);
+    expect(markRuns([{ text: 'abc' }], 'ab')).toEqual([{ text: 'abc' }]);
   });
 });
