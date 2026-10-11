@@ -687,7 +687,7 @@
       "log_lede": "The ordinary record every web server keeps.",
       "log_text_html": "Each request is written to a log with the address it came from, the page, and the result. We use it to find faults, to stop abuse, and to size the machine. It is deleted after 14 days.",
       "log_title": "The server log",
-      "never_cookies_html": "No cookie, no local storage, no identifier of any kind. Nothing is kept in your browser.",
+      "never_cookies_html": "No cookie unless you use the OpenIPC Club: starting to sign in sets one that lasts ten minutes, and signing in sets a session cookie. No identifier of any kind. The counter keeps nothing in your browser.",
       "never_individuals_html": "No individual visits. Only daily totals reach the disk, so there is no row anywhere that is you.",
       "never_region_html": "No region or city. That needs a finer location database than we keep.",
       "never_title": "What it never touches",
@@ -697,10 +697,14 @@
       "records_place_html": "Your country, and the language your browser asks for.",
       "records_tag_html": "A tag in the address, such as <code>?ref=tg-ru</code>, when we posted the link ourselves. It is counted once and then removed from the address.",
       "records_title": "What the counter records",
+      "records_why_html": "Your answer to the one question on the home and get-started pages, if you give one, counted like a click. Your browser keeps a note that you answered or closed it, so you are not asked again; the note never leaves your browser.",
       "retention_how_long": "How long",
       "retention_title": "How long things are kept",
       "retention_what": "What",
       "retention_where": "Where",
+      "row_browser_long": "until you clear it",
+      "row_browser_what": "Notes in your browser: the question answered or closed, and whether you are signed in to the Club",
+      "row_browser_where": "Your browser only",
       "row_days_long": "kept",
       "row_days_what": "Open Wall camera history (days, no pictures)",
       "row_days_where": "Our server",
@@ -1043,6 +1047,18 @@
       "intro": "Every OpenIPC camera serves this interface itself, over its own address — there is no cloud account and no app in between. These are the pages of a camera running a current build.",
       "scene_credit_html": "The beach in the Camera Preview and Majestic Settings shots is the view from a camera belonging to <a href=\"https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706\">@usa-</a>, an OpenIPC user, published with permission.",
       "title": "Web Interface"
+    },
+    "why": {
+      "close": "Close",
+      "flash": "Flashing my camera",
+      "fpv": "FPV / low latency",
+      "hardware": "Finding supported hardware",
+      "how": "What we count",
+      "looking": "Just looking",
+      "note": "One tap, counted with no name attached. We ask once.",
+      "product": "Evaluating it for a product",
+      "question": "What brought you here today?",
+      "thanks": "Thank you. That tells us what this page should lead with."
     }
   },
   "site": {

@@ -610,6 +610,21 @@ describe('the pages say what they are for', () => {
     }
   });
 
+  test('the home and get-started pages ask what brought the visitor, in their language (#185)', () => {
+    // Prerendered empty: the island decides in the browser whether to ask, so
+    // the question itself must not be in the bytes, only its props.
+    for (const locale of LOCALES) {
+      for (const path of ['/', '/get-started']) {
+        const html = readFileSync(join(dist, pathFor(locale, path), 'index.html'), 'utf8');
+        const island = html.match(/<astro-island\b[^>]*component-url="[^"]*WhyStrip[^"]*"[^>]*>/)?.[0];
+        expect(island, `${locale}${path} has no WhyStrip`).toBeDefined();
+        expect(island).toContain('client="idle"');
+        expect(island).toContain(`&quot;locale&quot;:[0,&quot;${locale}&quot;]`);
+        expect(island).toContain(`&quot;privacyHref&quot;:[0,&quot;${pathFor(locale, '/privacy')}&quot;]`);
+      }
+    }
+  });
+
   test('every latency figure says what unit it is in, and fits its scale', () => {
     for (const locale of LOCALES) {
       const html = readFileSync(join(dist, pathFor(locale, '/low-latency'), 'index.html'), 'utf8');

@@ -213,7 +213,8 @@ zh:
       records_device_html: "浏览器和操作系统，以及屏幕尺寸。"
       records_clicks_html: "离开本站的点击：写信给我们、加入聊天、打开捐助页面，或访问外部链接。"
       records_tag_html: "地址中的标记，例如 <code>?ref=tg-ru</code>，当链接是我们自己发布的时候。它只统计一次，随后从地址中移除。"
-      never_cookies_html: "没有 Cookie，没有本地存储，没有任何标识符。您的浏览器里不留下任何东西。"
+      records_why_html: "如果您回答了首页和“快速上手”页上的那一个问题，您的答案会像一次点击那样被统计。浏览器会记下您已回答或已关闭它，以免再次询问；这条记录不会离开您的浏览器。"
+      never_cookies_html: "除非您使用 OpenIPC Club，否则没有 Cookie：开始登录时会设置一个十分钟有效的 Cookie，登录后会设置会话 Cookie。没有任何标识符。统计程序不在您的浏览器里保存任何东西。"
       never_individuals_html: "不记录单次访问。只有每日汇总写入磁盘，任何地方都没有一行属于您。"
       never_region_html: "不记录地区或城市。那需要比我们所保有的更精细的位置数据库。"
       sessions_html: "为了把一个人读三页算作一次访问而不是三次，统计程序会从您的地址和浏览器推导出一个短暂的键。它只存在于内存中，最多八小时，从不写入磁盘。您的地址统计程序完全不保存。"
@@ -249,6 +250,9 @@ zh:
       row_days_what: "Open Wall 摄像头历史（按天，不含画面）"
       row_days_where: "我们的服务器"
       row_days_long: "保留"
+      row_browser_what: "浏览器里的记录：是否已回答或关闭问题，以及是否已登录 Club"
+      row_browser_where: "仅在您的浏览器中"
+      row_browser_long: "直到您清除"
     news:
       about: '关于本文'
       also_in: '其他语言'
@@ -845,3 +849,14 @@ zh:
       intro: '每台运行 OpenIPC 的摄像机都由自身提供这个界面，通过它自己的地址访问：无需云端账户，也不需要任何中间应用。以下是一台运行当前版本固件的摄像机的页面。'
       scene_credit_html: '“Camera Preview”和“Majestic Settings”截图中的海滩，来自 OpenIPC 用户 <a href="https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706">@usa-</a> 的摄像机画面，已获授权发布。'
       title: 页面展示
+    why:
+      close: "关闭"
+      fpv: "FPV / 低延迟"
+      flash: "给摄像机刷机"
+      hardware: "查找支持的硬件"
+      how: "我们统计什么"
+      looking: "随便看看"
+      note: "点一下即可，不记录身份。只问一次。"
+      product: "为产品做评估"
+      question: "你今天来这里想做什么？"
+      thanks: "谢谢！这能帮我们决定这个页面先讲什么。"

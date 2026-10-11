@@ -18,6 +18,8 @@ import PageHeader from '../PageHeader.astro';
 import CtaBand from '../CtaBand.astro';
 import WebuiTile from '../WebuiTile.astro';
 import ZoomDialog from '../ZoomDialog.astro';
+import WhyStrip from '../WhyStrip.tsx';
+import { whyLabels } from '../../lib/why';
 import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
 import { SCREENS } from '../../lib/webui';
 
@@ -27,6 +29,8 @@ const k = (s: string) => t(`pages.get_started.${s}`);
 
 ---
 <PageHeader title={k('hero_title')} lede={k('hero_lede')} />
+{/* Flush under the header's band, as on the home page (#185). */}
+<WhyStrip client:idle class="-mt-6 mb-6" locale={locale} labels={whyLabels(t)} privacyHref={pathFor(locale, '/privacy')} />
 
 <div class="site-container">
   <article>
