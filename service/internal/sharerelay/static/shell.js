@@ -354,6 +354,9 @@ async function main() {
     window.__share = {
       openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h), welcome,
       ice: await iceServers.catch(() => []), trace: (what, detail) => trace('camera page: ' + what, detail),
+      // The camera's Live page filling the screen where the browser has no
+      // fullscreen for it (an iPhone): this page's bar steps aside too.
+      fill: (on) => { document.body.classList.toggle('share-fill', !!on); },
     };
     let player = null;
     tunnel.onclose = (why) => {

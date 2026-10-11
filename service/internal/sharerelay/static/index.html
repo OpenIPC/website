@@ -13,6 +13,8 @@
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
   body { display: flex; flex-direction: column; }
   header[hidden] { display: none; }
+  /* The camera's page asked for the whole screen (window.__share.fill). */
+  body.share-fill > header { display: none; }
   /* One row, always: every pixel this bar takes is a pixel off the picture,
      and on a phone the wrapped version was three rows -- a fifth of the
      screen -- above the camera's own navbar. Narrow, the name gives way
