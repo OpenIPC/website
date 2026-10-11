@@ -70,3 +70,24 @@ test('a text kind says what it is, as the send forms do: the console stopped at 
   expect(queryByText(/printenv/)).toBeNull();
   expect(queryByText(/from power-on to the login prompt/)).not.toBeNull();
 });
+
+test('a report without a dump can be given one, private unless its owner ticks the box', async () => {
+  const sent = capture();
+  const saved = vi.fn();
+  const { container, getByText, getByLabelText } = render(<EditReport report={report({})} t={t} onSaved={saved} onCancel={() => {}} />);
+  fireEvent.change(container.querySelector('select')!, { target: { value: 'backup' } });
+  expect(getByText(/as a programmer read it/)).toBeTruthy();
+  fireEvent.change(getByLabelText('Add', { selector: 'input' }), { target: { files: [new File([new Uint8Array(1 << 20)], 'flash.bin')] } });
+  fireEvent.click(getByText('Save'));
+  await waitFor(() => expect(saved).toHaveBeenCalled());
+  expect((sent[0].form.get('backup') as File).name).toBe('flash.bin');
+  expect(sent[0].form.get('consent')).toBe('private');
+});
+
+test('a report that has a dump is not offered another', () => {
+  capture();
+  const withDump = report({ files: [{ position: 1, kind: 'backup', name: 'backup.bin', bytes: 1 << 20, url: '', points: 10 }] });
+  const { container } = render(<EditReport report={withDump} t={t} onSaved={() => {}} onCancel={() => {}} />);
+  const values = [...container.querySelectorAll('option')].map((o) => o.value);
+  expect(values).toEqual(['photo', 'boot_log', 'uboot_env']);
+});

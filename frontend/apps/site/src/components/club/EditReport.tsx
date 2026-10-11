@@ -1,16 +1,16 @@
 /**
  * A member changing a report of theirs from /club
  * (POST /api/v1/club/reports/{id}/edit): the note, the camera they proposed,
- * files taken out, photos and text added. ipctool's output and a backup stay
- * as sent. A report a maintainer has decided goes back to them: the form says
+ * files taken out, photos and text added, and a flash dump added to a report
+ * that has none (#456). ipctool's output and a backup stay as sent. A report a maintainer has decided goes back to them: the form says
  * so before it is saved.
  */
 import { useState } from 'preact/hooks';
 import type { BoardsT } from '../../lib/boards-i18n';
 import { editReport, type MemberReport } from '../../lib/club';
 
-type AddKind = 'photo' | 'boot_log' | 'uboot_env';
-const ADD_KINDS: AddKind[] = ['photo', 'boot_log', 'uboot_env'];
+type AddKind = 'photo' | 'boot_log' | 'uboot_env' | 'backup';
+const ADD_KINDS: AddKind[] = ['photo', 'boot_log', 'uboot_env', 'backup'];
 const field = 'rounded-md border border-hairline px-2.5 py-1.5 text-sm text-body';
 
 export default function EditReport({ report, t, onSaved, onCancel }: {
@@ -23,9 +23,12 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
   const [remove, setRemove] = useState<Set<number>>(new Set());
   const [kind, setKind] = useState<AddKind>('photo');
   const [add, setAdd] = useState<File[]>([]);
+  const [publicDump, setPublicDump] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const decided = report.status === 'published' || report.status === 'rejected';
+  // One dump a report: the one it has stays as sent, so none is offered.
+  const kinds = report.files.some((f) => f.kind === 'backup') ? ADD_KINDS.filter((k) => k !== 'backup') : ADD_KINDS;
 
   const toggle = (pos: number) => {
     const next = new Set(remove);
@@ -43,6 +46,7 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
     }
     for (const pos of remove) form.append('remove', String(pos));
     for (const f of add) form.append(kind, f, f.name);
+    if (kind === 'backup' && add.length > 0) form.set('consent', publicDump ? 'public' : 'private');
     setBusy(true);
     setError(null);
     editReport(report.id, form)
@@ -86,13 +90,23 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
         <span class="text-body-secondary">{t('club.edit_add')}</span>
         <div class="flex flex-wrap items-center gap-2">
           <select value={kind} onChange={(e) => { setKind((e.target as HTMLSelectElement).value as AddKind); setAdd([]); }} class={field}>
-            {ADD_KINDS.map((k) => <option key={k} value={k}>{t(`club.kind_${k}`)}</option>)}
+            {kinds.map((k) => <option key={k} value={k}>{t(`club.kind_${k}`)}</option>)}
           </select>
           {/* keyed on the kind: switching it clears what was picked, input and all */}
-          <input key={kind} type="file" multiple aria-label={t('club.edit_add')} accept={kind === 'photo' ? 'image/jpeg,image/png,image/webp' : '.txt,.log,text/plain'}
+          <input key={kind} type="file" multiple={kind !== 'backup'} aria-label={t('club.edit_add')}
+            accept={kind === 'photo' ? 'image/jpeg,image/png,image/webp' : kind === 'backup' ? '' : '.txt,.log,text/plain'}
             onChange={(e) => setAdd([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
         </div>
-        {kind !== 'photo' && <p class="m-0 text-[12px] text-body-secondary">{t(`club.send_hint_${kind}`)}</p>}
+        {(kind === 'boot_log' || kind === 'uboot_env') && <p class="m-0 text-[12px] text-body-secondary">{t(`club.send_hint_${kind}`)}</p>}
+        {kind === 'backup' && (
+          <>
+            <p class="m-0 text-[12px] text-body-secondary">{t('club.send_dump')}</p>
+            <label class="flex items-start gap-2 text-[12.5px] text-body-secondary">
+              <input type="checkbox" checked={publicDump} onChange={(e) => setPublicDump((e.target as HTMLInputElement).checked)} class="mt-0.5" />
+              {t('club.send_public')}
+            </label>
+          </>
+        )}
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <button type="submit" class="site-btn site-btn-primary site-btn-sm" disabled={busy}>{t(decided ? 'club.edit_save_rereview' : 'club.edit_save')}</button>

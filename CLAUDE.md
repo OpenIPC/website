@@ -182,7 +182,9 @@ restores the image but never the schema, so keep migrations additive.
   units refresh removes the board once nothing else is on it
   (`boards.RemoveAbandoned`, #452); `openipc boards remove` does it by hand. A member may edit
   their own report from `/club` (`reports.Store.Edit`, migration 031): the
-  note, the camera proposed, files out and in; ipctool's output and a backup
+  note, the camera proposed, files out and in, and a flash dump into a report
+  without one (#456: a programmer's image, or the ipctool backup taken with
+  the report's own output, with its consent); ipctool's output and a backup
   stay as sent. Like takedown it stands the guard down for its transaction,
   and every change is logged in append-only `report_edits`. An edit to a
   report already decided adds a review row `edit`: pending again, off the
