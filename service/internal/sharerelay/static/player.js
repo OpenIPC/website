@@ -131,7 +131,17 @@ export function mount(main, { openWebSocket, iceServers, camera, trace, link, ca
     dropSource();
   }
 
-  function stopAll() { attempt++; stopRtc(); stopMse(); }
+  // The still on screen when there is no worker (see mjpeg()): a blob URL,
+  // which holds its JPEG until revoked.
+  let still = null;
+  function dropStill() {
+    if (!still) return;
+    if (img.src === still) img.removeAttribute('src');
+    URL.revokeObjectURL(still);
+    still = null;
+  }
+
+  function stopAll() { attempt++; stopRtc(); stopMse(); dropStill(); }
 
   // ---- 3. MJPEG -----------------------------------------------------------
 
@@ -149,22 +159,21 @@ export function mount(main, { openWebSocket, iceServers, camera, trace, link, ca
       // picture, a still at a time over the tunnel itself, until another rung
       // takes over (stopAll moves `attempt` on).
       const my = attempt;
-      let shown = null;
-      const still = async () => {
+      const next = async () => {
         if (my !== attempt) return;
         try {
           const r = await cameraFetch('/image.jpg');
           if (my !== attempt) return;
           if (r.status === 200) {
             const url = URL.createObjectURL(new Blob([r.body], { type: 'image/jpeg' }));
-            img.src = url;
-            if (shown) URL.revokeObjectURL(shown);
-            shown = url;
+            const old = still;
+            img.src = still = url;
+            if (old) URL.revokeObjectURL(old);
           }
         } catch (e) { /* the next one, or the tunnel says it is gone */ }
-        if (my === attempt) setTimeout(still, 1000);
+        if (my === attempt) setTimeout(next, 1000);
       };
-      still();
+      next();
     }
     say(why);
   }
