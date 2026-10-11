@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/OpenIPC/website/service/internal/boards"
@@ -23,8 +24,11 @@ func boardsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, ar
 	if len(args) > 0 && args[0] == "import-snapshot" {
 		return importSnapshot(ctx, cfg, log, args[1:])
 	}
+	if len(args) > 0 && args[0] == "remove" {
+		return removeBoard(ctx, cfg, log, args[1:])
+	}
 	if len(args) == 0 || args[0] != "import-openhisiipcam" {
-		return fmt.Errorf("usage: openipc boards import-openhisiipcam [--from <docs/hardware directory>] | import-snapshot --source <id> <snapshot.tar>")
+		return fmt.Errorf("usage: openipc boards import-openhisiipcam [--from <docs/hardware directory>] | import-snapshot --source <id> <snapshot.tar> | remove <board model id>")
 	}
 	fs := flag.NewFlagSet("import-openhisiipcam", flag.ExitOnError)
 	from := fs.String("from", "", "a checkout's docs/hardware, instead of downloading the pinned commit")
@@ -148,5 +152,29 @@ func applyConfirmations(ctx context.Context, pool *pgxpool.Pool, log *slog.Logge
 		log.Warn("boards: contents.yml names a device the catalogue does not have", "device", m)
 	}
 	log.Info("boards: confirmed contents applied", "lines", len(list)-len(missing))
+	return nil
+}
+
+// removeBoard is `openipc boards remove <model id>`: a board taken out of
+// the catalogue by hand, refused while anything is on it -- a unit, an owner
+// report, a link, a device id (#452). Its maker goes with it when it was the
+// maker's last board.
+func removeBoard(ctx context.Context, cfg *config.Config, log *slog.Logger, args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("usage: openipc boards remove <board model id>")
+	}
+	pool, err := open(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+	var makerGone bool
+	if err := pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
+		makerGone, err = boards.RemoveModel(ctx, tx, args[0])
+		return err
+	}); err != nil {
+		return err
+	}
+	log.Info("boards: removed", "model", args[0], "maker_removed", makerGone)
 	return nil
 }

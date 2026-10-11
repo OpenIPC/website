@@ -176,8 +176,11 @@ restores the image but never the schema, so keep migrations additive.
   does for what arrived as issues (#365, #366). A camera the catalogue
   lacks is sent from `/cameras/report#new` as its maker, its marking and
   photos (`report_proposals`, migration 028), and publishing it from the
-  review queue adds the board (`boards.CreateModel`, alias source `club`)
-  -- the only way a model is made besides the importers. A member may edit
+  review queue adds the board (`boards.CreateModel`, alias source `club`,
+  `created_by_report`, migration 033) -- the only way a model is made
+  besides the importers. Rejecting that report later unlinks it, and the
+  units refresh removes the board once nothing else is on it
+  (`boards.RemoveAbandoned`, #452); `openipc boards remove` does it by hand. A member may edit
   their own report from `/club` (`reports.Store.Edit`, migration 031): the
   note, the camera proposed, files out and in; ipctool's output and a backup
   stay as sent. Like takedown it stands the guard down for its transaction,

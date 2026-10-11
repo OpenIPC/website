@@ -333,7 +333,9 @@ func (s *Store) Unlink(ctx context.Context, id, model string) error {
 }
 
 // Unguarded runs fn with the reports' triggers stood down, for this
-// transaction only (SET LOCAL). Takedown and Unlink are its only callers.
+// transaction only (SET LOCAL). Takedown and Unlink are its only callers;
+// Decide stands it down for one statement when a reject unlinks the board
+// its publish added.
 func Unguarded(ctx context.Context, db *pgxpool.Pool, fn func(pgx.Tx) error) error {
 	return pgx.BeginFunc(ctx, db, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `SET LOCAL openipc.reports_guard = 'off'`); err != nil {
