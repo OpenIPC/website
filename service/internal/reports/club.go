@@ -85,10 +85,17 @@ type MemberFile struct {
 func (s *Store) Owner(ctx context.Context, id string) (string, error) {
 	var m *string
 	err := s.DB.QueryRow(ctx, `SELECT member_id FROM report_submissions WHERE report_id = $1`, id).Scan(&m)
-	if errors.Is(err, pgx.ErrNoRows) || m == nil {
+	// No submission, or one sent signed out, has no owner. A query that
+	// failed is an error, never that: m is nil then too.
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return "", nil
+	case err != nil:
+		return "", err
+	case m == nil:
 		return "", nil
 	}
-	return *m, err
+	return *m, nil
 }
 
 // Mine is every report a member sent, newest first.
