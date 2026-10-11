@@ -63,6 +63,7 @@ const Content = page.component;
   path={page.path}
   title={title}
   description={ownDescription ?? (page.descriptionKey ? t(page.descriptionKey, page.vars) : undefined)}
+  image={inPageLocale(page.image, locale)}
   noindex={page.noindex}
   addressless={page.addressless}
 >

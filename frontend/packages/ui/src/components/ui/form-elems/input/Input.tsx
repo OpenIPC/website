@@ -43,6 +43,13 @@ export default function Input(props: InputProps) {
     if (iconClickHandler && inputRef.current) iconClickHandler(inputRef.current, e);
   }
 
+  // The text under the field is its description, and in the error state its
+  // error: tied to the input, so a screen reader says it when the field is
+  // focused rather than leaving it to be found by browsing.
+  const hint = getUnderInputText(errorText, description);
+  const hintId = `${elemName}-hint`;
+  const invalid = state === 'error';
+
   return (
     <div className="w-full">
       <label for={elemName} className="text-sm">{label}{required && <span className="
@@ -55,6 +62,7 @@ export default function Input(props: InputProps) {
         `} disabled={state === 'disabled'}
           type={type} id={elemName} name={elemName} {...(placeholder && { placeholder })}
           {...(value !== undefined && { value })} required={required} onInput={onInput} ref={inputRef}
+          aria-invalid={invalid || undefined} {...(hint && { 'aria-describedby': hintId })}
         />
         {Icon && (iconClickHandler
           // An actionable icon is a button. It was a div with an onClick, so
@@ -71,10 +79,10 @@ export default function Input(props: InputProps) {
         )}
       </div>
       <div className="min-h-5 leading-4">
-        <span className={`
+        <span id={hintId} className={`
           text-sm
-          ${state==='error' && errorText && 'text-red'}
-        `}>{getUnderInputText(errorText, description)}</span>
+          ${invalid && errorText && 'text-red'}
+        `}>{hint}</span>
       </div>
     </div>
   );

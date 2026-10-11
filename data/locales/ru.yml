@@ -248,7 +248,7 @@ ru:
     openwall: Стена
     pause_transitions: Наведите курсор мыши на снимок, чтобы приостановить автоматические переходы.
     previous: Предыдущий
-    qr_code_generator: Генератор QR-кода
+    qr_code_generator: Генератор QR-кода для Wi-Fi
     snapshot: Снимок № {number}
     snapshots: Последние снимки
     supported_hardware: Оборудование

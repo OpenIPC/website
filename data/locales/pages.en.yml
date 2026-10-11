@@ -571,13 +571,25 @@ en:
       paragraph1_html: 'OpenIPC is a community-driven open source project, and many people contribute to its codebase. Kudos to them! There is also a core team of skilled developers who work hard to expand the list of <a href="/supported-hardware">supported hardware platforms</a>, extend the functionality and stability of the firmware, review submitted code, and coordinate community efforts. Get to know the team and their areas of expertise:'
       title: Our Team
     qr_code_generator:
-      alert_text: The QR Code is generated in your web browser. Your data is not sent or stored anywhere.
-      alert_title: Note
-      generate_qr_code: Generate QR Code
-      paragraph1_html: Generate a QR code with credentials for accessing your wireless network.
-      password: Password
-      reset_form: Reset form
-      title: Wireless Network QR Code Generator
+      alert_text: 'The QR Code is generated in your web browser. Your data is not sent or stored anywhere.'
+      alert_title: 'Note'
+      empty_hint: 'Enter your network name to generate a QR code'
+      format_hint: 'Choose the second option only if the camera does not react to the standard code.'
+      format_legend: 'Code format'
+      format_openipc: 'Older OpenIPC firmware'
+      format_standard: 'Standard Wi-Fi QR code'
+      hide_password: 'Hide password'
+      meta_description: 'Create a Wi-Fi QR code and show it to an OpenIPC camera — it scans the code and joins the network. Works with phones too. Generated in your browser, nothing is sent.'
+      paragraph1_html: 'Generate a QR code with the credentials of your wireless network and show it to an OpenIPC camera: it scans the code and joins the network. A phone or laptop that scans the same code offers to join it too, so you can check the code with your phone first.'
+      password: 'Password'
+      password_length: 'A Wi-Fi password is 8 to 63 characters. Leave it empty for an open network.'
+      qr_label: 'QR code for network "{ssid}"'
+      reset_form: 'Reset form'
+      show_password: 'Show password'
+      ssid_required: 'Enter the network name (SSID).'
+      ssid_too_long: 'A network name is at most 32 bytes.'
+      title: 'Wi-Fi QR Code Generator'
+      too_long: 'Too much text for a QR code. Shorten it and try again.'
     reverse_engineering:
       bring1_text: 'Kernel drivers and firmware you can build, patch and carry to the next kernel. We replace the binary function by function and prove parity by comparing traces.'
       bring1_title: 'Blobs become source'

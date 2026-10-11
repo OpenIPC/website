@@ -105,6 +105,11 @@ export interface PagePath {
   title?: string | Partial<Record<Locale, string>>;
   /** The same for the meta description. */
   description?: string | Partial<Record<Locale, string>>;
+  /**
+   * The social card, a path under public/ when the page has its own rather
+   * than /og-default.png. A map gives it per language.
+   */
+  image?: string | Partial<Record<Locale, string>>;
   /** Values for the `{name}`s in the title and the description. */
   vars?: Record<string, string>;
   /** Keep it out of search results. The smoke page only. */
@@ -186,5 +191,11 @@ export const PAGE_PATHS: PagePath[] = [
   // allows a directory that is not empty, and nginx's try_files misses it and
   // falls through to @fallback, which answers it with the 404 page.
   { path: '/tools/high-resolution-timer', titleKey: 'pages.high_resolution_timer.title' },
-  { path: '/tools/qr-code-generator', titleKey: 'pages.qr_code_generator.title' },
+  {
+    path: '/tools/qr-code-generator',
+    titleKey: 'pages.qr_code_generator.title',
+    descriptionKey: 'pages.qr_code_generator.meta_description',
+    // Per language, because the card carries the tool's name (#442).
+    image: { en: '/og/qr-code-generator.en.png', ru: '/og/qr-code-generator.ru.png', zh: '/og/qr-code-generator.zh.png' },
+  },
 ];

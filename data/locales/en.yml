@@ -246,7 +246,7 @@ en:
     openwall: Open Wall
     pause_transitions: Place mouse cursor over a snapshot to pause automatic transitions.
     previous: Previous
-    qr_code_generator: QR Code Generator
+    qr_code_generator: Wi-Fi QR Code Generator
     snapshot: 'Snapshot #{number}'
     snapshots: Latest Snapshots
     supported_hardware: Supported Hardware
