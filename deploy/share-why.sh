@@ -14,6 +14,9 @@
 #               closed | no-answer | page-left | relay-closed, the camera's
 #               reason, how long it took, the guest's address and browser, and
 #               how many other guests the camera held at that moment
+#   page said   the guest's page, for an attempt that failed: its verdict
+#               (where it stopped, the sentence shown, the path) -- the
+#               reason for refusals that travel inside the encrypted link
 #   ended       the link came down: revoked, expired
 #
 # The camera's own view of a refusal -- its viewer budget, its memory -- is in
@@ -60,7 +63,8 @@ import json, os, sys
 want = os.environ.get("SESSION")
 pad = " " * 21
 rows = 0
-matched = False  # a session line for the session asked about
+matched = False  # a line for the session asked about: the relay's or the page's
+outcome = False  # the relay's own record of it
 for line in sys.stdin:
     try:
         r = json.loads(line)
@@ -73,10 +77,11 @@ for line in sys.stdin:
     # One attempt asked about: its session line, and the share's registration
     # and end around it -- not the share's other attempts, the refused ones
     # (which carry no session) included.
-    if want and kind == "session":
+    if want and kind in ("session", "page said"):
         if r.get("session") != want:
             continue
         matched = True
+        outcome = outcome or kind == "session"
     rows += 1
     at = r.get("time", "")[:19].replace("T", " ")
     cam = " ".join("%s=%s" % (k[4:], v) for k, v in sorted(r.items()) if k.startswith("cam_"))
@@ -97,6 +102,14 @@ for line in sys.stdin:
                 pad, r.get("camera") or "offline", r.get("others_connected"), r.get("others_pending"), cam))
         if r.get("detail"):
             print("%sdetail: %s" % (pad, r["detail"]))
+    elif kind == "page said":
+        print("%s  page said   %s  stopped at: %s" % (at, r.get("session"), r.get("where")))
+        if r.get("why"):
+            print("%swhy: %s" % (pad, r["why"]))
+        if r.get("path"):
+            print("%spath: %s" % (pad, r["path"]))
+if want and matched and not outcome:
+    print("%s(the relay's own record of this attempt is not in the log yet: it is written when the attempt ends)" % pad)
 if want and not matched:
     print("no attempt %s on that share in the relay log (try SINCE=\"-30 days\", or the share alone)" % want, file=sys.stderr)
     sys.exit(1)

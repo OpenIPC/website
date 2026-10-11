@@ -180,6 +180,12 @@ openipc.kz host), and that record is what answers a guest's report:
   - How many other guests the camera was holding at that moment.
   - The camera's `detail`: what it was holding when it refused, from a
     majestic that sends it.
+- `share: page said`: a guest's page that could not connect sends its
+  verdict (where it stopped, the sentence shown, the path) under its session.
+  Some refusals travel inside the encrypted link and never pass the relay:
+  the camera's REFUSED frame, a key proof that does not verify. For those,
+  the relay's own record says only `page-left`, and this says why. It is
+  capped at 32 per share, and accepted only from the share's own page.
 - `share: ended`: the link came down, revoked or expired.
 
 ## When a guest cannot connect

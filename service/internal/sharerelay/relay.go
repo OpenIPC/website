@@ -97,6 +97,7 @@ import (
 	"net/url"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -196,6 +197,14 @@ type share struct {
 	// Pages the camera has admitted, kept only to be told when the share
 	// ends (see Connected); they hold none of the session slots.
 	listeners map[string]*page
+	// Failure reports pages have sent for this share (see Report): bounded,
+	// because the share id is in every guest's address bar. A report names a
+	// session the relay issued for this share -- the last MaxIssued are
+	// remembered, since a page reports after its session is gone -- and is
+	// taken once per session.
+	reports  int
+	issued   []string
+	reported map[string]bool
 }
 
 type device struct {
@@ -693,6 +702,9 @@ func (h *Hub) attach(id string, c *websocket.Conn) (*page, string) {
 	}
 	p := &page{sid: newID(), sh: sh, conn: c, out: make(chan []byte, 64), started: time.Now()}
 	sh.pages[p.sid] = p
+	if sh.issued = append(sh.issued, p.sid); len(sh.issued) > MaxIssued {
+		sh.issued = sh.issued[len(sh.issued)-MaxIssued:]
+	}
 	return p, ""
 }
 
@@ -1150,13 +1162,7 @@ func cameraFacts(in map[string]any) []any {
 		default:
 			continue
 		}
-		v = strings.Map(func(r rune) rune {
-			if r < 0x20 || r == 0x7f {
-				return -1
-			}
-			return r
-		}, v)
-		if v = clip(v, cameraKeys[k]); v != "" {
+		if v = clip(printable(v), cameraKeys[k]); v != "" {
 			out = append(out, "cam_"+k, v)
 		}
 	}
@@ -1181,4 +1187,93 @@ func clip(s string, n int) string {
 		return s
 	}
 	return s[:n]
+}
+
+// printable drops control characters: a log line holds what it is given as
+// one line, whoever gave it.
+func printable(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7f {
+			return -1
+		}
+		return r
+	}, s)
+}
+
+// MaxReportsPerShare bounds what pages may add to the log for one share, and
+// MaxIssued how many of its sessions are remembered for a report to name.
+const (
+	MaxReportsPerShare = 32
+	MaxIssued          = 64
+)
+
+// Report is POST /__share/report?share=<id>&session=<sid>: a page that could
+// not connect says what it concluded -- its verdict (static/diag.js), the
+// sentence it was shown, the path ICE had -- and the relay logs it under the
+// same session as its own record. Some refusals never pass the relay: the
+// camera's REFUSED frame and a key proof that does not verify travel inside
+// the encrypted link, and the relay's own record of such an attempt is only
+// "page-left". With this the record says why without the guest's screenshot.
+func (h *Hub) Report() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !h.originAllowed(r) {
+			http.Error(w, "not from a share page", http.StatusForbidden)
+			return
+		}
+		body, small := readSmall(r)
+		var m struct {
+			Where string `json:"where"`
+			Why   string `json:"why"`
+			Path  string `json:"path"`
+		}
+		// On a share host the share is the host's, and the page's origin must
+		// be that same host: one share's page cannot file under another's. A
+		// developer's page served elsewhere names it with ?share=, as for the
+		// other endpoints, under OriginPatterns.
+		id := ShareFromRequest(r)
+		if label, _, _ := strings.Cut(r.Host, "."); shareID.MatchString(label) {
+			id = label
+			if o, err := url.Parse(r.Header.Get("Origin")); err != nil || !strings.EqualFold(o.Host, r.Host) {
+				http.Error(w, "not this share's page", http.StatusForbidden)
+				return
+			}
+		}
+		sid := r.URL.Query().Get("session")
+		if !small || json.Unmarshal(body, &m) != nil || !shareID.MatchString(id) || !shareID.MatchString(sid) {
+			http.Error(w, "not a report", http.StatusBadRequest)
+			return
+		}
+		h.mu.Lock()
+		h.init()
+		sh := h.shares[id]
+		status := http.StatusNoContent
+		switch {
+		case sh == nil:
+			status = http.StatusNotFound
+		case !slices.Contains(sh.issued, sid):
+			status = http.StatusNotFound
+		case sh.reported[sid]:
+			status = http.StatusAlreadyReported // taken already: not logged again
+		case sh.reports >= MaxReportsPerShare:
+			status = http.StatusTooManyRequests
+		default:
+			if sh.reported == nil {
+				sh.reported = map[string]bool{}
+			}
+			sh.reported[sid] = true
+			sh.reports++
+		}
+		h.mu.Unlock()
+		if status != http.StatusNoContent {
+			if status == http.StatusAlreadyReported {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			http.Error(w, http.StatusText(status), status)
+			return
+		}
+		h.Log.Info("share: page said", "share", id, "session", sid, "guest", clientIP(r),
+			"where", clip(printable(m.Where), 200), "why", clip(printable(m.Why), 300), "path", clip(printable(m.Path), 200))
+		w.WriteHeader(http.StatusNoContent)
+	})
 }

@@ -135,6 +135,7 @@ func Handlers(h *Hub, ice ICE) map[string]http.Handler {
 		"POST /__share/candidate": h.Candidate(),
 		"POST /__share/connected": h.Connected(),
 		"POST /__share/restart":   h.Restart(),
+		"POST /__share/report":    h.Report(),
 		"GET /__share/ice":        ice,
 		"GET /__share/":           assets,
 		"GET /":                   shell,

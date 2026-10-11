@@ -15,6 +15,9 @@ import (
 const shareWhyJournal = `{"time":"2026-10-11T10:17:00.1Z","level":"INFO","msg":"share: registered","share":"030c071fede86fb8","remote":"203.0.113.9","expires":"2026-10-11T12:17:00Z","cam_majestic":"master+d1d4442","cam_ram_mb":"64","cam_soc":"gk7205v200"}
 {"time":"2026-10-11T10:17:30.2Z","level":"INFO","msg":"share: session","share":"030c071fede86fb8","session":"aaaaaaaaaaaaaaaa","outcome":"connected","ms":812,"guest":"198.51.100.20","ua":"Mozilla/5.0 (X11; Linux x86_64) Chrome/153","camera":"203.0.113.9","others_pending":0,"others_connected":0,"cam_soc":"gk7205v200"}
 {"time":"2026-10-11T10:18:32.8Z","level":"INFO","msg":"share: session","share":"030c071fede86fb8","session":"bbbbbbbbbbbbbbbb","outcome":"closed","ms":1204,"guest":"45.131.49.171","ua":"Mozilla/5.0 (Linux; Android 10; K) Chrome/151 Mobile","camera":"203.0.113.9","others_pending":0,"others_connected":1,"why":"cannot start the data channel","detail":"{\"budget_kib\":6144,\"webrtc\":2}","cam_soc":"gk7205v200"}
+{"time":"2026-10-11T10:18:33.1Z","level":"INFO","msg":"share: page said","share":"030c071fede86fb8","session":"bbbbbbbbbbbbbbbb","guest":"45.131.49.171","where":"the camera refused, after the encrypted link was up","why":"cannot start the data channel","path":"ICE connected · this end: host/srflx"}
+{"time":"2026-10-11T10:17:31.0Z","level":"INFO","msg":"share: page said","share":"030c071fede86fb8","session":"aaaaaaaaaaaaaaaa","guest":"198.51.100.20","where":"not this one","why":"x","path":"y"}
+{"time":"2026-10-11T10:20:00.0Z","level":"INFO","msg":"share: page said","share":"030c071fede86fb8","session":"eeeeeeeeeeeeeeee","guest":"192.0.2.50","where":"the network: no path to the camera (ICE failed)","why":"Could not reach the camera over the network.","path":"ICE failed"}
 {"time":"2026-10-11T10:18:50.0Z","level":"INFO","msg":"share: session","share":"030c071fede86fb8","outcome":"refused","why":"too many people are using this link right now; try again shortly","guest":"203.0.113.77","ua":"curl"}
 {"time":"2026-10-11T10:19:00.0Z","level":"INFO","msg":"request","method":"GET","path":"/","status":200,"ip":"45.131.49.171"}
 {"time":"2026-10-11T11:00:00.0Z","level":"INFO","msg":"share: ended","share":"030c071fede86fb8","remote":"203.0.113.9","why":"the owner revoked this link","pending":0,"connected":0}
@@ -69,8 +72,19 @@ func TestShareWhyTellsOneSessionFromAPastedRef(t *testing.T) {
 	if !strings.Contains(out, "registered") {
 		t.Errorf("the share's registration is missing:\n%s", out)
 	}
+	if !strings.Contains(out, "page said   bbbbbbbbbbbbbbbb  stopped at: the camera refused, after the encrypted link was up") {
+		t.Errorf("the page's verdict for that attempt is missing:\n%s", out)
+	}
+	if strings.Contains(out, "not this one") {
+		t.Errorf("another attempt's verdict came through:\n%s", out)
+	}
 	if strings.Contains(out, "203.0.113.77") {
 		t.Errorf("another guest's refused attempt is in one session's story:\n%s", out)
+	}
+	// Only the page's verdict logged so far: the attempt is found, and the
+	// script says the relay's record of it is still to come.
+	if out, ok := runShareWhy(t, "030c071fede86fb8/eeeeeeeeeeeeeeee"); !ok || !strings.Contains(out, "not in the log yet") {
+		t.Errorf("a page verdict with no outcome yet: ok=%v\n%s", ok, out)
 	}
 	// A share that is there with a session that is not: not found, not the
 	// share's registration passed off as an answer.

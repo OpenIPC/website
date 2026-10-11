@@ -34,6 +34,20 @@ function verdictBlock(v) {
   return dl;
 }
 
+// The verdict to the relay, logged under this session (sharerelay Report):
+// some refusals travel inside the encrypted link and never pass the relay, so
+// its own record of them would say only that the page left. Once, best
+// effort, and only with a session to file it under.
+function reportFailure(v) {
+  const sid = tunnel && tunnel.facts().sid;
+  if (!sid) return;
+  try {
+    fetch(`/__share/report?share=${encodeURIComponent(shareId())}&session=${encodeURIComponent(sid)}`, {
+      method: 'POST', keepalive: true, body: JSON.stringify({ where: v.where, why: v.why, path: v.path }),
+    }).catch(() => {});
+  } catch (e) { /* the screen already says it */ }
+}
+
 function notice(title, text, bad) {
   const n = $('notice') || Object.assign(document.createElement('div'), { id: 'notice' });
   n.className = 'notice' + (bad ? ' bad' : '');
@@ -44,9 +58,12 @@ function notice(title, text, bad) {
   // Every failure carries the page's own account of what happened: first the
   // verdict, in view, then the full trace behind Show details.
   if (bad) {
+    const first = !failure;
     if (!failure) failure = { text: text || title, at: new Date(), noWorker: text === NO_WORKER, worker: workerFailed };
     trace('shown to the guest', `${title}: ${text || ''}`);
-    n.append(verdictBlock(currentVerdict()));
+    const v = currentVerdict();
+    n.append(verdictBlock(v));
+    if (first) reportFailure(v);
     detailsControl(n, diagExtra);
   }
   $('main').replaceChildren(n);

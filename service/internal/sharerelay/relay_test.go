@@ -1079,3 +1079,76 @@ func TestThePageKnowsEverySentenceTheRelaySends(t *testing.T) {
 		}
 	}
 }
+
+// A page that could not connect files its verdict under its session: the
+// refusals that travel inside the encrypted link never pass the relay, and
+// this is how its record learns why. Only for a session the relay issued for
+// that share, once per session, only from that share's own page, and only so
+// many per share.
+func TestAPagesVerdictIsLoggedUnderItsSession(t *testing.T) {
+	h, srv := rig(t)
+	h.OriginPatterns = nil // its own host only, as a share host is
+	book := logged(h)
+	register(t, srv, time.Now().Add(time.Hour))
+	report := func(share, sid, body, origin, host string) int {
+		t.Helper()
+		req, _ := http.NewRequest("POST", srv.URL+"/__share/report?share="+share+"&session="+sid, strings.NewReader(body))
+		if origin != "" {
+			req.Header.Set("Origin", origin)
+		}
+		if host != "" {
+			req.Host = host
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	sid, _ := openStream(t, srv)
+	body := `{"where":"the camera refused, after the encrypted link was up","why":"this link is not valid\n\u0007","path":"ICE connected"}`
+	if code := report(id, sid, body, srv.URL, ""); code != http.StatusNoContent {
+		t.Fatalf("report: %d", code)
+	}
+	said := book.lines("share: page said")
+	if len(said) != 1 || said[0]["session"] != sid || said[0]["share"] != id ||
+		said[0]["where"] != "the camera refused, after the encrypted link was up" || said[0]["why"] != "this link is not valid" {
+		t.Fatalf("logged as %v", said)
+	}
+	if code := report(id, sid, body, srv.URL, ""); code != http.StatusNoContent || len(book.lines("share: page said")) != 1 {
+		t.Errorf("a repeat was answered %d and logged %d times", code, len(book.lines("share: page said")))
+	}
+	for _, c := range []struct{ name, share, sid, body, origin, host string }{
+		{"not from a share page", id, sid, body, "https://evil.example", ""},
+		{"a share the relay does not hold", strings.Repeat("1", 16), sid, body, srv.URL, ""},
+		{"a session the relay never issued", id, strings.Repeat("e", 16), body, srv.URL, ""},
+		{"not a session id", id, "x", body, srv.URL, ""},
+		{"not a report", id, sid, "nonsense", srv.URL, ""},
+		{"another share's page", id, sid, body, "https://" + strings.Repeat("2", 16) + ".share.test", id + ".share.test"},
+	} {
+		if code := report(c.share, c.sid, c.body, c.origin, c.host); code < 400 {
+			t.Errorf("%s: answered %d", c.name, code)
+		}
+	}
+	// On its own share host, with that host's origin, the share is the host's.
+	other, _ := openStream(t, srv)
+	if code := report("", other, body, "https://"+id+".share.test", id+".share.test"); code != http.StatusNoContent {
+		t.Errorf("its own share host: answered %d", code)
+	}
+
+	h.mu.Lock()
+	for i := 0; i < MaxReportsPerShare; i++ {
+		h.shares[id].issued = append(h.shares[id].issued, fmt.Sprintf("%016x", i))
+	}
+	h.mu.Unlock()
+	accepted := 2
+	for i := 0; i < MaxReportsPerShare; i++ {
+		if report(id, fmt.Sprintf("%016x", i), body, srv.URL, "") == http.StatusNoContent {
+			accepted++
+		}
+	}
+	if accepted != MaxReportsPerShare {
+		t.Errorf("%d reports taken on one share, want %d", accepted, MaxReportsPerShare)
+	}
+}
