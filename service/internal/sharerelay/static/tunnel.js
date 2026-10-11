@@ -234,10 +234,11 @@ export function relaySaid(data) {
 // the PTZ pad paid it (measured from an iPhone on 4G). Once connected the
 // browser stops checking the other pairs, so it cannot find out afterwards.
 //
-// So before the peer connection is made, each TURN host is asked for a relay
-// allocation -- the time that takes is this browser's distance to it -- and
-// the list is put in that order, nearest first. The camera's own leg is not
-// measured here; a camera and its guests are usually in one place.
+// So before the peer connection is made, each TURN host is sent a STUN binding
+// request -- one round trip, and nothing allocated: a relay allocation would
+// count against the share's TURN quota, which its guests share -- and the
+// list is put in the order they answered, nearest first. The camera's own leg
+// is not measured here; a camera and its guests are usually in one place.
 
 // The host of a TURN URL: "turn:openipc.ru:3478?transport=udp" -> "openipc.ru".
 export function turnHost(u) {
@@ -260,16 +261,18 @@ export function rankTurn(servers, ms) {
   });
 }
 
-// Measures each TURN host's allocation time over UDP, in parallel, for at most
-// `budgetMs`, and returns the servers ranked by it (and the times, for the
-// trace). Nothing measured -- no TURN, a browser that will not, a budget run
-// out -- leaves the order as it came.
+// Measures each TURN host's STUN round trip over UDP, in parallel, for at most
+// `budgetMs`, and returns the servers ranked by it. Nothing measured -- no
+// TURN, a browser that will not, a host that does not answer STUN, a budget
+// run out -- leaves the order as it came.
 export async function nearestTurnFirst(servers, { budgetMs = 900, trace = () => {} } = {}) {
   const probes = [];
   for (const s of servers || []) {
     for (const u of [].concat(s.urls || [])) {
       if (!turnHost(u) || /transport=tcp/i.test(u) || /^turns:/.test(u)) continue;
-      probes.push({ host: turnHost(u), server: { urls: [u], username: s.username, credential: s.credential } });
+      // The same host and port, asked for a binding rather than a relay.
+      const m = /^turn:([^?]+)/.exec(u);
+      if (m && !probes.some((p) => p.host === turnHost(u))) probes.push({ host: turnHost(u), server: { urls: ['stun:' + m[1]] } });
     }
   }
   if (!probes.length || typeof RTCPeerConnection !== 'function') return servers;
@@ -278,12 +281,12 @@ export async function nearestTurnFirst(servers, { budgetMs = 900, trace = () => 
   const one = (p) => new Promise((resolve) => {
     let pc;
     try {
-      pc = new RTCPeerConnection({ iceServers: [p.server], iceTransportPolicy: 'relay' });
+      pc = new RTCPeerConnection({ iceServers: [p.server] });
     } catch (e) { resolve(); return; }
     pcs.push(pc);
     const t0 = performance.now();
     pc.onicecandidate = (e) => {
-      if (e.candidate && / typ relay /.test(e.candidate.candidate) && ms[p.host] == null) {
+      if (e.candidate && / typ srflx /.test(e.candidate.candidate) && ms[p.host] == null) {
         ms[p.host] = Math.round(performance.now() - t0);
         resolve();
       }
