@@ -1,6 +1,6 @@
 // The share page: reads the link, opens the tunnel to the camera, and shows
 // the camera's own interface through it (or, for a view-only link, a player).
-import { Tunnel, ShareError, concat, relayToken } from './tunnel.js';
+import { Tunnel, ShareError, concat, relayToken, nearestTurnFirst } from './tunnel.js';
 import { openWebSocket } from './websocket.js';
 import { trace, detailsControl, verdict, setVerdict, networkType } from './diag.js';
 
@@ -314,7 +314,10 @@ async function main() {
     // makes its peer connection when these arrive.
     const iceServers = relayToken(secret)
       .then((token) => fetch(`/__share/ice?share=${id}`, { signal: ctl.signal, headers: { 'X-Share-Token': token } }))
-      .then((r) => r.json()).then((ice) => ice.iceServers || []).catch(() => []);
+      .then((r) => r.json()).then((ice) => ice.iceServers || []).catch(() => [])
+      // Nearest TURN first: the browser prefers relays in list order (see
+      // nearestTurnFirst), for the tunnel and the camera's own player alike.
+      .then((list) => nearestTurnFirst(list, { trace }));
     tunnel = new Tunnel({
       signal: `${location.origin}/__share/signal?share=${id}`,
       share: id, secret, iceServers,
