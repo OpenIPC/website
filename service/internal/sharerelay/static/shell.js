@@ -166,13 +166,18 @@ function within(p, ms, what) {
 }
 
 // Whether this browser gives the page a service worker at all. Some do not --
-// a private window, or an app's built-in browser -- and only the camera's own
+// an app's built-in browser (Telegram's on an iPhone, which reports itself as
+// Safari), a private window, Lockdown Mode -- and only the camera's own
 // pages need one: a watch-only link plays through the player, which talks to
 // the tunnel directly. So its absence is answered once the camera has said
 // which kind of link this is, not before.
 const HAS_WORKER = 'serviceWorker' in navigator;
-const NO_WORKER = 'This browser window cannot show the camera’s own pages, which a link that can change settings needs. ' +
-  'Open the link in an ordinary Safari, Chrome or Firefox window: private windows and the browsers built into some apps do not allow it.';
+// Links travel by messenger, and a messenger's own browser (Telegram's on an
+// iPhone, by default) is the usual window without a worker: it says it is
+// Safari and has no service worker. So the way out is named.
+const NO_WORKER = 'This window cannot show the camera’s own pages, which a link that can change settings needs. ' +
+  'If you opened it from Telegram or another app, use that app’s menu to open the link in Safari or Chrome; ' +
+  'private windows do not allow it either.';
 
 async function worker() {
   if (!HAS_WORKER) {
