@@ -43,6 +43,16 @@ describe('the send form', () => {
     expect(container.querySelector('a[href="/cameras/report?id=r-abcd2345"]')).not.toBeNull();
   });
 
+  test('says what each text kind is: a console stopped at the prompt, or the whole boot', () => {
+    const { getByRole, queryByText } = render(<SendForm model="anjoy-ms-j10" kind="uboot_env" locale="en" t={t} />);
+    expect(queryByText(/run help and printenv/)).not.toBeNull();
+    fireEvent.click(getByRole('button', { name: /Boot log/ }));
+    expect(queryByText(/run help and printenv/)).toBeNull();
+    expect(queryByText(/from power-on to the login prompt/)).not.toBeNull();
+    fireEvent.click(getByRole('button', { name: /Photos/ }));
+    expect(queryByText(/from power-on to the login prompt/)).toBeNull();
+  });
+
   test('a dump is private unless its owner ticks the box', async () => {
     const sent = capture();
     const { container, getByText } = render(<SendForm model="anjoy-ms-j10" kind="backup" locale="en" t={t} />);
