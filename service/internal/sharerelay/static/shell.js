@@ -165,8 +165,25 @@ function within(p, ms, what) {
   return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new ShareError(what)), ms))]);
 }
 
+// Whether this browser gives the page a service worker at all. Some do not --
+// an app's built-in browser (Telegram's on an iPhone, which reports itself as
+// Safari), a private window, Lockdown Mode -- and only the camera's own
+// pages need one: a watch-only link plays through the player, which talks to
+// the tunnel directly. So its absence is answered once the camera has said
+// which kind of link this is, not before.
+const HAS_WORKER = 'serviceWorker' in navigator;
+// Links travel by messenger, and a messenger's own browser (Telegram's on an
+// iPhone, by default) is the usual window without a worker: it says it is
+// Safari and has no service worker. So the way out is named.
+const NO_WORKER = 'This window cannot show the camera’s own pages, which a link that can change settings needs. ' +
+  'If you opened it from Telegram or another app, use that app’s menu to open the link in Safari or Chrome; ' +
+  'private windows do not allow it either.';
+
 async function worker() {
-  if (!('serviceWorker' in navigator)) throw new ShareError('This browser cannot open shared cameras.');
+  if (!HAS_WORKER) {
+    trace('service worker', 'unsupported in this browser; enough for a watch-only link');
+    return;
+  }
   navigator.serviceWorker.addEventListener('message', onWorkerMessage);
   await navigator.serviceWorker.register('/__share/sw.js', { scope: '/' });
   const reg = await navigator.serviceWorker.ready;
@@ -269,6 +286,9 @@ async function main() {
     // onclose below is there to hear it: say so rather than show a page
     // with nothing behind it.
     if (tunnel.gone) throw new ShareError(tunnel.gone);
+    // A link that shows the camera's pages cannot work without the worker:
+    // say so plainly (the catch below closes the session nobody can use).
+    if (!HAS_WORKER && welcome.scope !== 'view') throw new ShareError(NO_WORKER);
     if (!settle()) {
       // The start was already declared failed; a connection that arrives
       // afterwards is closed rather than shown over the error.
@@ -284,7 +304,7 @@ async function main() {
       // What the worker kept for this share goes with it: the worker stops
       // keeping anything and deletes the cache once its writes in flight
       // have landed, which a delete from here could not wait for.
-      navigator.serviceWorker.ready.then((r) => r.active && r.active.postMessage({ type: 'ended' })).catch(() => {});
+      if (HAS_WORKER) navigator.serviceWorker.ready.then((r) => r.active && r.active.postMessage({ type: 'ended' })).catch(() => {});
       $('bar').hidden = true;
       notice('The camera is no longer shared with you', why, true);
     };
@@ -309,6 +329,7 @@ async function main() {
       player = mount($('main'), {
         openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h),
         iceServers, camera: welcome.camera, trace,
+        worker: HAS_WORKER, cameraFetch: (path) => tunnel.fetch(path),
         link: { up: () => tunnel.up(), onRestored: (fn) => tunnel.onRestored(fn) },
       });
     } else {

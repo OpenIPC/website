@@ -345,7 +345,10 @@ export class Tunnel {
       ws.onerror = () => { this.trace('signalling error'); done(new ShareError('Could not reach the sharing service.')); };
       ws.onclose = (e) => this.trace('signalling closed', `code ${e.code}${e.reason ? ' ' + e.reason : ''}`);
       const build = (servers) => {
-        if (settled) return;
+        // Closed while the ICE servers were still on their way: the page has
+        // given up on this tunnel, and a peer connection made now would sit
+        // for the whole open() timeout with nobody behind it.
+        if (settled || this.closed) return;
         this.iceServers = servers || [];
         const cfg = { iceServers: this.iceServers };
         if (this.policy) cfg.iceTransportPolicy = this.policy;
@@ -659,6 +662,7 @@ export class Tunnel {
   }
 
   close() {
+    this.closed = true;
     clearTimeout(this.blip);
     clearTimeout(this.gapTimer);
     clearTimeout(this.restartTimer);

@@ -14,6 +14,24 @@ export function trace(what, detail) {
   if (LINES.length > MAX) LINES.splice(0, LINES.length - MAX);
 }
 
+// What this browser offers, as the share page needs to tell browsers apart
+// that say the same thing in their user agent. Safari's Lockdown Mode takes
+// away service workers, WebRTC, WebGL and IndexedDB; an app's built-in Safari
+// view takes away the service worker and leaves the rest; a private window
+// keeps them all.
+function features() {
+  const has = (f) => { try { return !!f(); } catch (e) { return false; } };
+  const webgl = has(() => document.createElement('canvas').getContext('webgl'));
+  return [
+    ['webrtc', has(() => window.RTCPeerConnection)],
+    ['mse', has(() => window.MediaSource || window.ManagedMediaSource)],
+    ['webgl', webgl],
+    ['indexeddb', has(() => window.indexedDB)],
+    ['cacheapi', has(() => window.caches)],
+    ['standalone', has(() => navigator.standalone)],
+  ].map(([k, v]) => `${k}=${v ? 'yes' : 'no'}`).join(' ');
+}
+
 export function report(extra = {}) {
   const head = {
     page: location.host,
@@ -22,6 +40,7 @@ export function report(extra = {}) {
     online: navigator.onLine,
     serviceWorker: 'serviceWorker' in navigator
       ? (navigator.serviceWorker.controller ? 'controlling' : 'not controlling') : 'unsupported',
+    features: features(),
     ...extra,
   };
   return ['OpenIPC share diagnostics', ...Object.entries(head).map(([k, v]) => `${k}: ${v}`), '', ...LINES].join('\n');

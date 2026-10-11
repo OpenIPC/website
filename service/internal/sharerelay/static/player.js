@@ -67,12 +67,15 @@ function concat(parts) {
   return out;
 }
 
-// mount(main, { openWebSocket, iceServers, camera, trace, link }): fills
-// `main` with the player. `iceServers` may be a promise. `link`, the tunnel
-// the signalling rides: up() whether it is, onRestored(fn) to hear when to
-// look for a path again -- the tunnel back, or the camera moved (returning
-// the function that stops that).
-export function mount(main, { openWebSocket, iceServers, camera, trace, link }) {
+// mount(main, { openWebSocket, iceServers, camera, trace, link, cameraFetch,
+// worker }): fills `main` with the player. `iceServers` may be a promise.
+// `link`, the tunnel the signalling rides: up() whether it is, onRestored(fn)
+// to hear when to look for a path again -- the tunnel back, or the camera moved
+// (returning the function that stops that). `worker` false is a browser with
+// no service worker (a private window, an app's built-in browser): the
+// player's plain HTTP -- the snapshot and the slow picture -- then goes over
+// `cameraFetch(path)`, the tunnel's own request, instead.
+export function mount(main, { openWebSocket, iceServers, camera, trace, link, cameraFetch, worker = true }) {
   const video = el('video', { muted: true, autoplay: true, playsInline: true });
   video.setAttribute('playsinline', '');
   if (MANAGED) video.disableRemotePlayback = true;
@@ -128,7 +131,17 @@ export function mount(main, { openWebSocket, iceServers, camera, trace, link }) 
     dropSource();
   }
 
-  function stopAll() { attempt++; stopRtc(); stopMse(); }
+  // The still on screen when there is no worker (see mjpeg()): a blob URL,
+  // which holds its JPEG until revoked.
+  let still = null;
+  function dropStill() {
+    if (!still) return;
+    if (img.src === still) img.removeAttribute('src');
+    URL.revokeObjectURL(still);
+    still = null;
+  }
+
+  function stopAll() { attempt++; stopRtc(); stopMse(); dropStill(); }
 
   // ---- 3. MJPEG -----------------------------------------------------------
 
@@ -139,7 +152,29 @@ export function mount(main, { openWebSocket, iceServers, camera, trace, link }) 
     video.hidden = true;
     sound.hidden = true;
     img.hidden = false;
-    if (!img.src) img.src = '/mjpeg';
+    if (worker) {
+      if (!img.src) img.src = '/mjpeg';
+    } else {
+      // No service worker to carry /mjpeg to the camera: the same slow
+      // picture, a still at a time over the tunnel itself, until another rung
+      // takes over (stopAll moves `attempt` on).
+      const my = attempt;
+      const next = async () => {
+        if (my !== attempt) return;
+        try {
+          const r = await cameraFetch('/image.jpg');
+          if (my !== attempt) return;
+          if (r.status === 200) {
+            const url = URL.createObjectURL(new Blob([r.body], { type: 'image/jpeg' }));
+            const old = still;
+            img.src = still = url;
+            if (old) URL.revokeObjectURL(old);
+          }
+        } catch (e) { /* the next one, or the tunnel says it is gone */ }
+        if (my === attempt) setTimeout(next, 1000);
+      };
+      next();
+    }
     say(why);
   }
 
@@ -507,9 +542,17 @@ export function mount(main, { openWebSocket, iceServers, camera, trace, link }) 
   shot.addEventListener('click', async () => {
     shot.disabled = true;
     try {
-      const r = await fetch('/image.jpg');
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const blob = await r.blob();
+      let blob;
+      if (worker) {
+        const r = await fetch('/image.jpg');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        blob = await r.blob();
+      } else {
+        // Straight over the tunnel where there is no worker to route it.
+        const r = await cameraFetch('/image.jpg');
+        if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
+        blob = new Blob([r.body], { type: 'image/jpeg' });
+      }
       const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
       const name = `${(camera || 'camera').replace(/[^\w.-]+/g, '_')}-${stamp}.jpg`;
       const a = el('a', { href: URL.createObjectURL(blob), download: name });
