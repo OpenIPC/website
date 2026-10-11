@@ -18,10 +18,16 @@
 //     with no live share never connects.
 //
 //     camera -> {"type":"register","share":"<16 hex>","expires":<unix>,
-//     "token":"<64 hex>"}
+//     "token":"<64 hex>","camera":{"soc":..,"sensor":..,"ram_mb":..,
+//     "majestic":..,"firmware":..,"model":..}}  ("camera" optional)
 //     camera -> {"type":"unregister","share":"<id>"}
 //     camera -> {"type":"signal","session":"<sid>","reply":"answer"|"candidate"|
-//     "error"|"busy"|"closed"|"restart","data":"...","mid":"..."}
+//     "error"|"busy"|"closed"|"restart","data":"...","mid":"...",
+//     "detail":{...}}  ("detail" optional, on error/busy/closed)
+//
+//     "camera" and "detail" are for the operator: the relay logs them with
+//     the share and the guest session (see outcome) and sends neither to a
+//     page. What a guest sees of a refusal is "data" alone.
 //     camera -> {"type":"pong"}
 //     relay  -> {"type":"registered","share":"<id>"}
 //     relay  -> {"type":"refused","share":"<id>","error":"..."}
@@ -91,6 +97,8 @@ import (
 	"net/url"
 	"path"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -195,6 +203,9 @@ type device struct {
 	conn   *websocket.Conn
 	out    chan []byte
 	remote string
+	// What the camera says it is, when it says (register's "camera"): logged
+	// with its shares and with every guest session, never sent to a guest.
+	camera []any
 	shares map[string]*share
 	pong   time.Time
 	// When the socket last held no share (connecting counts), or zero while
@@ -222,6 +233,11 @@ type page struct {
 	// Candidates taken since that restart: a connected page has a reason to
 	// send them only for a restart, and only so many.
 	restartCandidates int
+	// For the one line logged when the session's setup ends (see outcome):
+	// when it began, the guest's browser, and whether the line is written.
+	started time.Time
+	ua      string
+	logged  bool
 }
 
 func or(d, def time.Duration) time.Duration {
@@ -372,6 +388,11 @@ type deviceMsg struct {
 	Mid     string `json:"mid"`
 	// The page's tag for a restart offer, echoed with its answer.
 	Rid string `json:"rid"`
+	// What the camera adds for the operator: on register, what it is; on a
+	// session's error, busy or closed, what it was holding at the time. Both
+	// go to the log only -- a guest is sent reply, data and mid, nothing else.
+	Camera map[string]any  `json:"camera"`
+	Detail json.RawMessage `json:"detail"`
 }
 
 func (h *Hub) onDevice(d *device, raw []byte) {
@@ -426,6 +447,10 @@ func (h *Hub) onDevice(d *device, raw []byte) {
 				if m.Reply == "answer" {
 					p.answered = true
 				}
+				switch m.Reply {
+				case "error", "busy", "closed":
+					h.outcome(p, m.Reply, m.Data, m.Detail)
+				}
 				out := map[string]string{"reply": m.Reply, "data": m.Data}
 				if m.Mid != "" {
 					out["mid"] = m.Mid
@@ -462,8 +487,13 @@ func (h *Hub) register(d *device, m deviceMsg) {
 		return
 	}
 	h.reap(time.Now())
+	if facts := cameraFacts(m.Camera); facts != nil {
+		d.camera = facts
+	}
 	if sh, ok := h.shares[m.Share]; ok {
 		if sh.dev != d {
+			h.Log.Info("share: registered", append([]any{"share", m.Share, "remote", d.remote,
+				"expires", exp.UTC().Format(time.RFC3339), "moved", true}, d.camera...)...)
 			// The same camera's new socket racing its old one: the newer
 			// socket is the live one.
 			if sh.dev != nil {
@@ -485,6 +515,8 @@ func (h *Hub) register(d *device, m deviceMsg) {
 		sh := &share{id: m.Share, expires: exp, dev: d, pages: map[string]*page{}, listeners: map[string]*page{}}
 		h.shares[sh.id] = sh
 		d.shares[sh.id] = sh
+		h.Log.Info("share: registered", append([]any{"share", m.Share, "remote", d.remote,
+			"expires", exp.UTC().Format(time.RFC3339)}, d.camera...)...)
 	}
 	trySend(d.out, marshal(map[string]string{"type": "registered", "share": m.Share}))
 }
@@ -544,6 +576,7 @@ func (h *Hub) closePage(p *page, why string, ended bool) {
 	if ended {
 		msg["ended"] = "true"
 	}
+	h.outcome(p, "relay-closed", why, nil)
 	trySend(p.out, marshal(msg))
 	close(p.out)
 	delete(p.sh.pages, p.sid)
@@ -551,6 +584,12 @@ func (h *Hub) closePage(p *page, why string, ended bool) {
 
 // dropShare is called with h.mu held.
 func (h *Hub) dropShare(sh *share, why string) {
+	remote := ""
+	if sh.dev != nil {
+		remote = sh.dev.remote
+	}
+	h.Log.Info("share: ended", "share", sh.id, "remote", remote, "why", why,
+		"pending", len(sh.pages), "connected", len(sh.listeners))
 	for _, p := range sh.pages {
 		h.closePage(p, why, true)
 	}
@@ -594,12 +633,17 @@ func (h *Hub) Signal() http.Handler {
 
 		p, why := h.attach(id, c)
 		if p == nil {
+			h.refusedPage(r, why)
 			wctx, wc := context.WithTimeout(ctx, 5*time.Second)
 			_ = c.Write(wctx, websocket.MessageText, marshal(map[string]string{"reply": "error", "data": why}))
 			wc()
 			c.Close(websocket.StatusPolicyViolation, why)
 			return
 		}
+		h.mu.Lock()
+		p.remote = clientIP(r)
+		p.ua = clip(r.UserAgent(), 200)
+		h.mu.Unlock()
 		go writer(ctx, c, p.out)
 		defer h.detach(p)
 		// The page's own socket carries the session only while it is being
@@ -647,7 +691,7 @@ func (h *Hub) attach(id string, c *websocket.Conn) (*page, string) {
 	if len(sh.pages) >= MaxSessionsPerShare {
 		return nil, "too many people are using this link right now; try again shortly"
 	}
-	p := &page{sid: newID(), sh: sh, conn: c, out: make(chan []byte, 64)}
+	p := &page{sid: newID(), sh: sh, conn: c, out: make(chan []byte, 64), started: time.Now()}
 	sh.pages[p.sid] = p
 	return p, ""
 }
@@ -665,6 +709,7 @@ func (h *Hub) forward(p *page, kind, data string) {
 	if !trySend(p.sh.dev.out, marshal(msg)) {
 		// The camera is not keeping up: say so, rather than let the page
 		// wait out its own timeout for an offer that was never delivered.
+		h.outcome(p, "no-answer", "the camera's queue is full", nil)
 		trySend(p.out, marshal(map[string]string{"reply": "busy", "data": "the camera is not answering; try again shortly"}))
 		h.dropPage(p)
 	}
@@ -695,6 +740,9 @@ func (h *Hub) dropPage(p *page) {
 	if p.sh.pages[p.sid] != p {
 		return
 	}
+	// Still setting up when it went: the page closed, stopped reading, or
+	// ran out its setup time without the camera admitting it.
+	h.outcome(p, "page-left", "", nil)
 	delete(p.sh.pages, p.sid)
 	close(p.out)
 	if p.sh.dev != nil {
@@ -813,11 +861,13 @@ func (h *Hub) SignalStream() http.Handler {
 		}
 		p, why := h.attach(ShareFromRequest(r), nil)
 		if p == nil {
+			h.refusedPage(r, why)
 			line(marshal(map[string]string{"reply": "error", "data": why}))
 			return
 		}
 		h.mu.Lock()
 		p.remote = clientIP(r)
+		p.ua = clip(r.UserAgent(), 200)
 		h.mu.Unlock()
 		defer h.detach(p)
 		if !line(marshal(map[string]string{"reply": "session", "data": p.sid})) {
@@ -945,6 +995,7 @@ func (h *Hub) Connected() http.Handler {
 			http.Error(w, "too many listeners on this share", http.StatusTooManyRequests)
 			return
 		}
+		h.outcome(p, "connected", "", nil)
 		delete(sh.pages, sid)
 		sh.listeners[sid] = p
 		p.lifetime.Stop()
@@ -1025,4 +1076,109 @@ func (h *Hub) Restart() http.Handler {
 		}
 		w.WriteHeader(http.StatusAccepted)
 	})
+}
+
+// ---- the operator's record ---------------------------------------------
+
+// outcome writes the one line a guest session's setup leaves behind, keyed by
+// share and session -- the two halves of the reference the share page shows a
+// guest who could not connect -- with what the camera said, how long it took,
+// who else the camera was holding at that moment, and what the camera is. A
+// guest's screenshot then leads here instead of to the camera's own log, which
+// nobody but its owner can read. Called with h.mu held; only the first call
+// for a session writes.
+func (h *Hub) outcome(p *page, outcome, why string, detail json.RawMessage) {
+	if p.logged {
+		return
+	}
+	p.logged = true
+	pending, connected := 0, 0
+	remote := ""
+	var camera []any
+	if d := p.sh.dev; d != nil {
+		remote, camera = d.remote, d.camera
+		for _, sh := range d.shares {
+			pending += len(sh.pages)
+			connected += len(sh.listeners)
+		}
+		if p.sh.pages[p.sid] == p {
+			pending-- // not itself
+		}
+	}
+	attrs := []any{"share", p.sh.id, "session", p.sid, "outcome", outcome,
+		"ms", time.Since(p.started).Milliseconds(), "guest", p.remote, "ua", p.ua,
+		"camera", remote, "others_pending", pending, "others_connected", connected}
+	if why != "" {
+		attrs = append(attrs, "why", clip(why, 300))
+	}
+	if d := detailOf(detail); d != "" {
+		attrs = append(attrs, "detail", d)
+	}
+	h.Log.Info("share: session", append(attrs, camera...)...)
+}
+
+// refusedPage logs a page turned away before it had a session: a link that is
+// not valid, a camera offline, a share at its session limit.
+func (h *Hub) refusedPage(r *http.Request, why string) {
+	h.Log.Info("share: session", "share", clip(ShareFromRequest(r), 32), "outcome", "refused",
+		"why", why, "guest", clientIP(r), "ua", clip(r.UserAgent(), 200))
+}
+
+// The facts a camera may state about itself, and how long each may be. Only
+// these, only scalars, only that long: a log line is not a place for whatever
+// a camera chooses to send.
+var cameraKeys = map[string]int{"soc": 32, "sensor": 32, "ram_mb": 8, "majestic": 64, "firmware": 64, "model": 64}
+
+// cameraFacts turns register's "camera" into log attributes, sorted by key so
+// lines compare; nil when there is nothing usable.
+func cameraFacts(in map[string]any) []any {
+	keys := make([]string, 0, len(in))
+	for k := range in {
+		if _, ok := cameraKeys[k]; ok {
+			keys = append(keys, k)
+		}
+	}
+	sort.Strings(keys)
+	var out []any
+	for _, k := range keys {
+		var v string
+		switch x := in[k].(type) {
+		case string:
+			v = x
+		case float64:
+			v = strconv.FormatFloat(x, 'f', -1, 64)
+		default:
+			continue
+		}
+		v = strings.Map(func(r rune) rune {
+			if r < 0x20 || r == 0x7f {
+				return -1
+			}
+			return r
+		}, v)
+		if v = clip(v, cameraKeys[k]); v != "" {
+			out = append(out, "cam_"+k, v)
+		}
+	}
+	return out
+}
+
+// detailOf is a camera's detail as one compact JSON object of bounded size,
+// or "" when it is not one.
+func detailOf(raw json.RawMessage) string {
+	if len(raw) == 0 || len(raw) > 2048 {
+		return ""
+	}
+	var obj map[string]any
+	if json.Unmarshal(raw, &obj) != nil || obj == nil {
+		return ""
+	}
+	return string(marshal(obj))
+}
+
+func clip(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n]
 }

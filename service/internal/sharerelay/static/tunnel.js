@@ -208,6 +208,22 @@ class StreamSignal {
   }
 }
 
+// The relay's own sentences (sharerelay/relay.go): everything else a page is
+// told on its signalling stream comes from the camera. Which one spoke is the
+// first thing a refusal's screenshot has to say.
+const RELAY_SAYS = [
+  'this link is not valid, or the camera is offline',
+  'this link has expired',
+  'the owner revoked this link',
+  'too many people are using this link right now',
+  'the camera is not answering',
+  'the camera went offline',
+];
+export function relaySaid(data) {
+  const d = String(data || '').toLowerCase();
+  return RELAY_SAYS.some((s) => d.startsWith(s));
+}
+
 // "the owner revoked this link" -> "The owner revoked this link."
 function sentence(s) {
   if (!s) return '';
@@ -254,6 +270,32 @@ export class Tunnel {
     this.queued = []; // and those waiting for one to finish
     this.onclose = null;
     this.restored = new Set(); // called when a lost path is found again
+    // How far the start got, for the verdict a guest's screenshot carries
+    // (diag.js): kept as it happens, read when the start fails.
+    this.seen = { started: Date.now(), local: new Set(), remote: new Set(), said: null, relayDown: false };
+  }
+
+  // What the start had reached: the relay's session, the camera's answer, ICE,
+  // the data channel, the camera's proof -- and the last refusal, with whether
+  // the relay or the camera said it. No addresses.
+  facts() {
+    const pc = this.pc, dc = this.dc, seen = this.seen;
+    const servers = [].concat(...(this.iceServers && this.iceServers.map ? this.iceServers.map((x) => [].concat(x.urls)) : []));
+    return {
+      sid: (this.ws && this.ws.sid) || null,
+      relayDown: seen.relayDown,
+      answered: !!(pc && pc.remoteDescription),
+      ice: pc ? (pc.iceConnectionState !== 'closed' ? pc.iceConnectionState : seen.ice || 'new') : 'none',
+      connection: pc ? pc.connectionState : 'none',
+      local: [...seen.local], remote: [...seen.remote],
+      turn: servers.some((u) => /^turns?:/.test(u)),
+      relayOnly: this.policy === 'relay',
+      channel: dc ? dc.readyState : 'none',
+      verified: !!this.verified, welcome: !!this.welcome,
+      said: seen.said, // { by: 'relay' | 'camera', reply, data }
+      path: seen.path || null,
+      ms: Date.now() - seen.started,
+    };
   }
 
   // Whether the path to the camera is up now.
@@ -308,6 +350,10 @@ export class Tunnel {
         let m;
         try { m = JSON.parse(ev.data); } catch (e) { this.trace('signalling: unreadable message'); return; }
         this.trace('signalling ← ' + m.reply, m.reply === 'candidate' ? candType(m.data) : m.reply === 'answer' ? `${(m.data || '').length} bytes` : m.data);
+        if (m.reply === 'candidate' && m.data) this.seen.remote.add(candType(m.data).split(' ')[0]);
+        if (m.reply === 'error' || m.reply === 'busy' || m.reply === 'closed') {
+          this.seen.said = { by: relaySaid(m.data) ? 'relay' : 'camera', reply: m.reply, data: m.data || '' };
+        }
         if (m.reply === 'answer') {
           // One that answers no offer of ours -- a restart's, overtaken by
           // the next -- would only be refused. A camera that echoes the
@@ -342,7 +388,7 @@ export class Tunnel {
           done(new ShareError(m.data || 'The camera refused the connection.'));
         }
       };
-      ws.onerror = () => { this.trace('signalling error'); done(new ShareError('Could not reach the sharing service.')); };
+      ws.onerror = () => { this.trace('signalling error'); this.seen.relayDown = true; done(new ShareError('Could not reach the sharing service.')); };
       ws.onclose = (e) => this.trace('signalling closed', `code ${e.code}${e.reason ? ' ' + e.reason : ''}`);
       const build = (servers) => {
         // Closed while the ICE servers were still on their way: the page has
@@ -356,6 +402,9 @@ export class Tunnel {
         this.trace('peer connection', { iceServers: this.iceServers.map((x) => [].concat(x.urls).join(' ')), policy: this.policy || 'all' });
         pc.oniceconnectionstatechange = () => {
           this.trace('ice state', pc.iceConnectionState);
+          // The state reached, kept past close(): a failed start is closed
+          // before its verdict is drawn, and "closed" says nothing.
+          if (pc.iceConnectionState !== 'closed') this.seen.ice = pc.iceConnectionState;
           this.iceChanged();
         };
         pc.onicegatheringstatechange = () => this.trace('ice gathering', pc.iceGatheringState);
@@ -364,13 +413,21 @@ export class Tunnel {
         dc.bufferedAmountLowThreshold = HIGH_WATER / 2;
         dc.onbufferedamountlow = () => this.drain();
         pc.onicecandidate = (e) => {
-          if (e.candidate && e.candidate.candidate) this.trace('local candidate', candType(e.candidate.candidate));
+          if (e.candidate && e.candidate.candidate) {
+            this.trace('local candidate', candType(e.candidate.candidate));
+            this.seen.local.add(candType(e.candidate.candidate).split(' ')[0]);
+          }
           if (e.candidate && e.candidate.candidate && ws.readyState === 1)
             ws.send(JSON.stringify({ req: 'candidate', data: e.candidate.candidate }));
         };
         pc.onconnectionstatechange = () => {
           this.trace('connection state', pc.connectionState);
-          if (pc.connectionState === 'connected') this.pairInfo().then((p) => this.trace('selected pair', p));
+          if (pc.connectionState === 'connected') {
+            this.pairInfo().then((p) => {
+              this.trace('selected pair', p);
+              if (p && p.local) this.seen.path = `${p.local} → ${p.remote}`;
+            });
+          }
           if (pc.connectionState === 'failed') {
             if (!settled) done(new ShareError('Could not reach the camera over the network.'));
             // A session that was working: try to get the path back before
@@ -431,6 +488,7 @@ export class Tunnel {
               return;
             }
             case T.REFUSED:
+              this.seen.said = { by: 'camera', reply: 'refused', data: dec.decode(payload) };
               done(new ShareError(dec.decode(payload) || 'This link is not valid.'));
               return;
             case T.BYE:
