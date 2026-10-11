@@ -224,6 +224,82 @@ export function relaySaid(data) {
   return RELAY_SAYS.some((s) => d.startsWith(s));
 }
 
+// ---- the nearest TURN server ------------------------------------------------
+//
+// A browser ranks relay candidates by where their TURN server stands in the
+// list (libwebrtc gives each URL a priority by its position), and nominates
+// the best-ranked pair that answers -- however far it is. The list came in a
+// fixed order, openipc.kz first, so a guest and a camera both in Moscow, 4 ms
+// from openipc.ru, met in Kazakhstan: a 199 ms round trip, and every press of
+// the PTZ pad paid it (measured from an iPhone on 4G). Once connected the
+// browser stops checking the other pairs, so it cannot find out afterwards.
+//
+// So before the peer connection is made, each TURN host is sent a STUN binding
+// request -- one round trip, and nothing allocated: a relay allocation would
+// count against the share's TURN quota, which its guests share -- and the
+// list is put in the order they answered, nearest first. The camera's own leg
+// is not measured here; a camera and its guests are usually in one place.
+
+// The host of a TURN URL: "turn:openipc.ru:3478?transport=udp" -> "openipc.ru".
+export function turnHost(u) {
+  const m = /^turns?:([^:?]+)/.exec(String(u || ''));
+  return m ? m[1] : '';
+}
+
+// The ICE servers with every TURN URL reordered by its host's measured time
+// (ms; a host not measured stands after those that were, in its old place),
+// UDP before TCP as before. STUN entries are untouched.
+export function rankTurn(servers, ms) {
+  const cost = (u) => (ms[turnHost(u)] != null ? ms[turnHost(u)] : Infinity);
+  return (servers || []).map((s) => {
+    const urls = [].concat(s.urls || []);
+    if (!urls.some((u) => turnHost(u))) return s;
+    const tcp = (u) => /transport=tcp/i.test(u) || /^turns:/.test(u) ? 1 : 0;
+    const order = urls.map((u, i) => ({ u, i })).sort((a, b) =>
+      tcp(a.u) - tcp(b.u) || cost(a.u) - cost(b.u) || a.i - b.i);
+    return { ...s, urls: order.map((x) => x.u) };
+  });
+}
+
+// Measures each TURN host's STUN round trip over UDP, in parallel, for at most
+// `budgetMs`, and returns the servers ranked by it. Nothing measured -- no
+// TURN, a browser that will not, a host that does not answer STUN, a budget
+// run out -- leaves the order as it came.
+export async function nearestTurnFirst(servers, { budgetMs = 900, trace = () => {} } = {}) {
+  const probes = [];
+  for (const s of servers || []) {
+    for (const u of [].concat(s.urls || [])) {
+      if (!turnHost(u) || /transport=tcp/i.test(u) || /^turns:/.test(u)) continue;
+      // The same host and port, asked for a binding rather than a relay.
+      const m = /^turn:([^?]+)/.exec(u);
+      if (m && !probes.some((p) => p.host === turnHost(u))) probes.push({ host: turnHost(u), server: { urls: ['stun:' + m[1]] } });
+    }
+  }
+  if (!probes.length || typeof RTCPeerConnection !== 'function') return servers;
+  const ms = {};
+  const pcs = [];
+  const one = (p) => new Promise((resolve) => {
+    let pc;
+    try {
+      pc = new RTCPeerConnection({ iceServers: [p.server] });
+    } catch (e) { resolve(); return; }
+    pcs.push(pc);
+    const t0 = performance.now();
+    pc.onicecandidate = (e) => {
+      if (e.candidate && / typ srflx /.test(e.candidate.candidate) && ms[p.host] == null) {
+        ms[p.host] = Math.round(performance.now() - t0);
+        resolve();
+      }
+    };
+    pc.createDataChannel('probe');
+    pc.createOffer().then((o) => pc.setLocalDescription(o)).catch(() => resolve());
+  });
+  await Promise.race([Promise.all(probes.map(one)), new Promise((r) => setTimeout(r, budgetMs))]);
+  for (const pc of pcs) { try { pc.close(); } catch (e) { /* done with it */ } }
+  trace('turn probe', Object.keys(ms).length ? ms : 'nothing answered in time');
+  return rankTurn(servers, ms);
+}
+
 // "the owner revoked this link" -> "The owner revoked this link."
 function sentence(s) {
   if (!s) return '';
@@ -425,7 +501,7 @@ export class Tunnel {
           if (pc.connectionState === 'connected') {
             this.pairInfo().then((p) => {
               this.trace('selected pair', p);
-              if (p && p.local) this.seen.path = `${p.local} → ${p.remote}`;
+              if (p && p.local) this.seen.path = `${p.local} → ${p.remote}` + (p.rtt_ms != null ? ` · ${p.rtt_ms} ms` : '');
             });
           }
           if (pc.connectionState === 'failed') {
@@ -519,7 +595,10 @@ export class Tunnel {
       if (!pair) stats.forEach((r) => { if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') pair = r; });
       if (!pair) return 'none';
       const l = stats.get(pair.localCandidateId) || {}, r = stats.get(pair.remoteCandidateId) || {};
-      return { local: `${l.candidateType} ${l.protocol}`, remote: `${r.candidateType} ${r.protocol}`,
+      // Our own TURN server's name, when the path goes through one: which
+      // relay a slow session used is the first question about it.
+      const via = l.candidateType === 'relay' && turnHost(l.url) ? ` via ${turnHost(l.url)}` : '';
+      return { local: `${l.candidateType} ${l.protocol}${via}`, remote: `${r.candidateType} ${r.protocol}`,
         rtt_ms: pair.currentRoundTripTime != null ? Math.round(pair.currentRoundTripTime * 1000) : undefined,
         sent: pair.bytesSent, received: pair.bytesReceived };
     } catch (e) {
