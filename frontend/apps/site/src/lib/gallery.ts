@@ -15,6 +15,7 @@
  * unchanged, and closing by any other way takes it back off.
  */
 import type PhotoSwipe from 'photoswipe';
+import { holdBack } from './overlay-history';
 
 export interface GalleryItem {
   /** The full-size picture. */
@@ -61,14 +62,6 @@ const ORIGINAL_ICON = '<svg aria-hidden="true" class="pswp__icn" viewBox="0 0 32
   + '<path d="M18 7h7v7M25 7l-9 9M14 9H9a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 let open: PhotoSwipe | null = null;
-
-// Forward onto a viewer's history entry after Back closed it finds nothing to
-// show: step back over it, so it is never a dead stop on the way off the page.
-if (typeof window !== 'undefined') {
-  window.addEventListener('popstate', () => {
-    if (!open && (window.history.state as { gallery?: boolean } | null)?.gallery) window.history.back();
-  });
-}
 
 /**
  * Open the set at `index`. Resolves once the viewer is showing; a second call
@@ -160,20 +153,15 @@ export async function openGallery(items: GalleryItem[], index = 0, labels: Galle
     host.style.overflow = 'hidden';
   }
 
-  // Back closes the viewer. The entry carries the page's own state, so a page
-  // that reads history.state (the board catalogue's panel depth) sees no change.
-  let viaBack = false;
-  const onPop = () => { viaBack = true; pswp.close(); };
-  window.history.pushState({ ...(window.history.state ?? {}), gallery: true }, '');
-  window.addEventListener('popstate', onPop);
+  // Back closes the viewer (./overlay-history.ts).
+  const release = holdBack(() => pswp.close());
 
   pswp.on('destroy', () => {
-    window.removeEventListener('popstate', onPop);
+    release();
     if (host instanceof HTMLDialogElement) {
       host.removeEventListener('cancel', keepDialog);
       host.style.overflow = overflow;
     }
-    if (!viaBack && (window.history.state as { gallery?: boolean } | null)?.gallery) window.history.back();
     open = null;
   });
 

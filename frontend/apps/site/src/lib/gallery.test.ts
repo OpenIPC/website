@@ -73,7 +73,7 @@ describe('opening and closing', () => {
 
   test('Back closes the viewer, and the page\'s own history state is kept', async () => {
     await openGallery([item('/1')]);
-    expect(window.history.state).toEqual({ boards: 2, gallery: true });
+    expect(window.history.state).toEqual({ boards: 2, overlay: true });
     window.dispatchEvent(new PopStateEvent('popstate'));
     expect(made[0].closed).toBe(true);
   });
@@ -112,7 +112,7 @@ describe('opening and closing', () => {
 
   test('Forward onto a closed viewer\'s entry steps back over it', async () => {
     const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
-    window.history.replaceState({ boards: 2, gallery: true }, '');
+    window.history.replaceState({ boards: 2, overlay: true }, '');
     window.dispatchEvent(new PopStateEvent('popstate'));
     expect(back).toHaveBeenCalledOnce();
     back.mockRestore();

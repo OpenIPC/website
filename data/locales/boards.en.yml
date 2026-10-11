@@ -200,6 +200,23 @@ en:
       other: '{count} lines'
     text_loading: Loading…
     text_error: 'This file could not be loaded ({error}).'
+    console_wrap: Wrap lines
+    console_copy: Copy
+    console_copied: Copied
+    console_download: Download
+    console_fullscreen: Full screen
+    console_line: 'Line {n}'
+    fact_uboot: U-Boot
+    fact_dram: DRAM
+    fact_flash: Flash
+    fact_kernel: Kernel
+    fact_machine: Machine
+    fact_bootargs: Boot arguments
+    flash_map_title: 'Flash partitions ({device}), as the boot arguments declare them'
+    flash_map_name: Partition
+    flash_map_offset: Offset
+    flash_map_size: Size
+    flash_map_rest: the rest of the chip
     units:
       one: '{count} unit on record'
       other: '{count} units on record'

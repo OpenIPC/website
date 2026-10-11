@@ -214,6 +214,23 @@ ru:
       other: '{count} строки'
     text_loading: Загружаем…
     text_error: 'Не удалось загрузить файл ({error}).'
+    console_wrap: Переносить строки
+    console_copy: Копировать
+    console_copied: Скопировано
+    console_download: Скачать
+    console_fullscreen: Во весь экран
+    console_line: 'Строка {n}'
+    fact_uboot: U-Boot
+    fact_dram: ОЗУ
+    fact_flash: Флеш
+    fact_kernel: Ядро
+    fact_machine: Машина
+    fact_bootargs: Параметры загрузки
+    flash_map_title: 'Разделы флеш-памяти ({device}) по параметрам загрузки'
+    flash_map_name: Раздел
+    flash_map_offset: Смещение
+    flash_map_size: Размер
+    flash_map_rest: остаток чипа
     units:
       one: '{count} экземпляр в каталоге'
       few: '{count} экземпляра в каталоге'
