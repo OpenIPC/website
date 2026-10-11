@@ -21,6 +21,8 @@ interface Props {
   path: string;
   title: string;
   description?: string;
+  /** The social card's path, when the page has its own. */
+  image?: string;
   /** Keep the page out of search results. Per page, because the marketing
    *  set must NOT carry it -- search discovery is most of why #142 exists. */
   noindex?: boolean;
@@ -35,7 +37,7 @@ interface Props {
   addressless?: boolean;
 }
 
-const { locale, path, title, description, noindex = false, addressless = false } = Astro.props;
+const { locale, path, title, description, image = '/og-default.png', noindex = false, addressless = false } = Astro.props;
 const t = useTranslations(locale);
 
 const site = 'https://openipc.org';
@@ -86,7 +88,7 @@ const landing = uncommented(landingSource);
   <meta property="og:title" content={title} />
   <meta property="og:description" content={metaDescription} />
   {!addressless && <meta property="og:url" content={`${site}${here}`} />}
-  <meta property="og:image" content={`${site}/og-default.png`} />
+  <meta property="og:image" content={`${site}${image}`} />
   <meta name="twitter:card" content="summary_large_image" />
 
   {/*

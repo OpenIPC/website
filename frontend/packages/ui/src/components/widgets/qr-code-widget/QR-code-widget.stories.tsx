@@ -10,6 +10,7 @@ export default meta;
 
 export const QRCodeWidgetStory: StoryObj = {
   args: {
-    textToCode: 'WIFI:S:OpenIPC_NFS;T:WPA2;P:project2021;;',
+    label: 'QR code for network "OpenIPC_NFS"',
+    textToCode: 'WIFI:S:OpenIPC_NFS;T:WPA;P:project2021;;',
   },
 };

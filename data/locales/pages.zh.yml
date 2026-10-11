@@ -571,13 +571,25 @@ zh:
       paragraph1_html: OpenIPC 是一个社区驱动的开源项目，许多人为其代码库做出贡献。赞美他们！还有一个由熟练的开发人员组成的核心团队，他们努力扩展<a href="/supported-hardware">支持的硬件平台</a>列表、扩展固件的功能和稳定性、审查提交的代码并协调社区工作。了解团队及其专业领域：
       title: 我们的团队
     qr_code_generator:
-      alert_text: 二维码在您的浏览器中生成。您的数据不会被发送或存储到任何地方。
-      alert_title: 注意
-      generate_qr_code: 生成二维码
-      paragraph1_html: 生成包含用于访问无线网络的凭据的二维码。
-      password: 密码
-      reset_form: 重置表格
-      title: 无线网络二维码生成器
+      alert_text: '二维码在您的浏览器中生成。您的数据不会被发送或存储到任何地方。'
+      alert_title: '注意'
+      empty_hint: '输入网络名称以生成二维码'
+      format_hint: '仅当摄像头对标准二维码没有反应时，才选择第二个选项。'
+      format_legend: '二维码格式'
+      format_openipc: '旧版 OpenIPC 固件'
+      format_standard: '标准 Wi-Fi 二维码'
+      hide_password: '隐藏密码'
+      meta_description: '生成 Wi-Fi 二维码并展示给 OpenIPC 摄像头：摄像头扫描后即可连接网络。手机同样适用。二维码在浏览器中生成，数据不会被发送。'
+      paragraph1_html: '生成包含无线网络凭据的二维码并展示给 OpenIPC 摄像头：摄像头扫描后即可连接网络。手机或笔记本电脑扫描同一个二维码也会提示连接，因此可以先用手机检查二维码。'
+      password: '密码'
+      password_length: 'Wi-Fi 密码为 8 到 63 个字符。开放网络请留空。'
+      qr_label: '网络“{ssid}”的二维码'
+      reset_form: '重置表格'
+      show_password: '显示密码'
+      ssid_required: '请输入网络名称（SSID）。'
+      ssid_too_long: '网络名称最多 32 字节。'
+      title: 'Wi-Fi 二维码生成器'
+      too_long: '文本太长，无法生成二维码。请缩短后重试。'
     reverse_engineering:
       bring1_text: '可以构建、打补丁并带到下一个内核的内核驱动与固件。我们逐个函数替换二进制，并用跟踪比对证明等价。'
       bring1_title: '二进制块变成源码'

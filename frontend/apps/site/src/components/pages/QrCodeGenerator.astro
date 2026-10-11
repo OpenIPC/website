@@ -1,13 +1,28 @@
 ---
-/** The qr code generator page (#160). */
+/** The Wi-Fi QR code generator (#160, #440-#442). */
 import Container from '../Container.astro';
 import PageTitle from '../PageTitle.astro';
 import WifiQrCode from '../WifiQrCode.tsx';
-import { useTranslations, type Locale } from '../../lib/i18n';
+import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
 
 const { locale } = Astro.props as { locale: Locale };
 const t = useTranslations(locale);
 const k = (s: string) => t(`pages.qr_code_generator.${s}`);
+
+// What search engines are told the page is: a free tool that runs in the
+// browser (#442). `<` is escaped so no string can close the script element.
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: k('title'),
+  description: k('meta_description'),
+  url: `https://openipc.org${pathFor(locale, '/tools/qr-code-generator')}`,
+  inLanguage: locale,
+  applicationCategory: 'UtilitiesApplication',
+  operatingSystem: 'Any',
+  browserRequirements: 'Requires JavaScript',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+}).replace(/</g, '\\u003c');
 ---
 <Container>
   <article>
@@ -21,8 +36,19 @@ const k = (s: string) => t(`pages.qr_code_generator.${s}`);
           labels={{
             ssid: 'SSID',
             password: k('password'),
-            generate: k('generate_qr_code'),
             reset: k('reset_form'),
+            showPassword: k('show_password'),
+            hidePassword: k('hide_password'),
+            formatLegend: k('format_legend'),
+            formatStandard: k('format_standard'),
+            formatOpenipc: k('format_openipc'),
+            formatHint: k('format_hint'),
+            emptyHint: k('empty_hint'),
+            tooLong: k('too_long'),
+            qrLabel: t('pages.qr_code_generator.qr_label', { ssid: '{ssid}' }),
+            ssid_required: k('ssid_required'),
+            ssid_too_long: k('ssid_too_long'),
+            password_length: k('password_length'),
           }}
         />
       </div>
@@ -32,4 +58,5 @@ const k = (s: string) => t(`pages.qr_code_generator.${s}`);
       </aside>
     </div>
   </article>
+  <script type="application/ld+json" is:inline set:html={jsonLd} />
 </Container>
