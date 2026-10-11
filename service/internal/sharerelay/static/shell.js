@@ -16,7 +16,8 @@ const diagExtra = () => ({ stage, share: shareId(), scope: tunnel && tunnel.welc
 // look at the report does not move it.
 let failure = null;
 const currentVerdict = () => verdict(tunnel ? tunnel.facts() : null, {
-  worker: HAS_WORKER, noWorkerLink: !!(failure && failure.noWorker), stage,
+  worker: HAS_WORKER, noWorkerLink: !!(failure && failure.noWorker),
+  workerFailed: !!(failure && failure.worker), stage,
   error: failure ? failure.text : '', share: shareId(), at: failure ? failure.at : new Date(),
   ua: navigator.userAgent, net: networkType(),
 });
@@ -43,7 +44,7 @@ function notice(title, text, bad) {
   // Every failure carries the page's own account of what happened: first the
   // verdict, in view, then the full trace behind Show details.
   if (bad) {
-    if (!failure) failure = { text: text || title, at: new Date(), noWorker: text === NO_WORKER };
+    if (!failure) failure = { text: text || title, at: new Date(), noWorker: text === NO_WORKER, worker: workerFailed };
     trace('shown to the guest', `${title}: ${text || ''}`);
     n.append(verdictBlock(currentVerdict()));
     detailsControl(n, diagExtra);
@@ -88,6 +89,9 @@ function countdown(expires) {
 }
 
 let tunnel;
+// Set when the service worker's start is what failed: the verdict then says
+// the browser, whatever the tunnel had reached by then.
+let workerFailed = false;
 // Closes the narrow bar's menu; set once the bar is wired.
 let closeMenu = () => {};
 
@@ -283,7 +287,7 @@ async function main() {
     // load, after WELCOME; the tunnel does not need it. Registered alongside
     // the connection rather than before it, its download and activation are
     // hidden inside the handshake's round trips instead of added to them.
-    const ready = within(worker(), 15000, 'The page did not finish starting. Close the tab and open the link again.');
+    const ready = within(worker(), 15000, 'The page did not finish starting. Close the tab and open the link again.').catch((e) => { workerFailed = true; throw e; });
     ready.catch(() => {}); // answered below, with the tunnel's outcome
     stage = 'ice';
     trace('stage', stage);

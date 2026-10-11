@@ -124,15 +124,21 @@ export function browserName(ua) {
 
 const STAGE_WORDS = { starting: 'starting', ice: 'reaching the relay', camera: 'reaching the camera', connected: 'connected' };
 
-export function verdict(f, { worker = true, noWorkerLink = false, stage = '', error = '', share = '', at = new Date(), ua = '', net = '' } = {}) {
+export function verdict(f, { worker = true, noWorkerLink = false, workerFailed = false, stage = '', error = '', share = '', at = new Date(), ua = '', net = '' } = {}) {
   let where;
   const said = f && f.said;
   if (noWorkerLink) {
     where = 'this browser: it has no service worker, which a link that can change settings needs';
+  } else if (workerFailed) {
+    // The page's own start, not the camera's: the worker that carries the
+    // camera's pages did not take charge in time.
+    where = 'this browser: the page\u2019s service worker did not start';
   } else if (!f) {
     where = `this page, ${STAGE_WORDS[stage] || stage}`;
-  } else if (f.relayDown && !f.sid) {
-    where = 'the relay: this browser could not reach it';
+  } else if (f.relayDown && !said) {
+    // The signalling stream to the relay failed -- before the relay named a
+    // session or after -- and nobody had refused anything: the relay's leg.
+    where = f.sid ? 'the relay: the connection to it dropped during the start' : 'the relay: this browser could not reach it';
   } else if (said && said.by === 'relay') {
     const d = said.data.toLowerCase();
     where = d.startsWith('this link is not valid') ? 'the relay: no camera holds this link (a wrong or ended link, or the camera is offline)'
@@ -154,12 +160,15 @@ export function verdict(f, { worker = true, noWorkerLink = false, stage = '', er
   } else {
     where = `${STAGE_WORDS[stage] || stage || 'the start'}`;
   }
-  const path = !f ? '-' : f.path || [
+  // The ICE summary always; the pair it settled on added when there was one,
+  // so a failure after the path was up still says how far ICE got.
+  const path = !f ? '-' : [
     `ICE ${f.ice}`,
     `this end: ${f.local.join('/') || 'none'}`,
     `camera: ${f.remote.join('/') || 'none'}`,
     f.turn ? (f.relayOnly ? 'TURN only' : 'TURN offered') : 'no TURN',
-  ].join(' · ');
+    f.path ? `pair ${f.path}` : '',
+  ].filter(Boolean).join(' · ');
   const hhmmss = at.toISOString().slice(11, 19) + 'Z';
   return {
     where,

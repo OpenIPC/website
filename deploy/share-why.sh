@@ -60,6 +60,7 @@ import json, os, sys
 want = os.environ.get("SESSION")
 pad = " " * 21
 rows = 0
+matched = False  # a session line for the session asked about
 for line in sys.stdin:
     try:
         r = json.loads(line)
@@ -68,10 +69,15 @@ for line in sys.stdin:
     msg = r.get("msg", "")
     if not msg.startswith("share: "):
         continue
-    if want and r.get("session") not in (want, None):
-        continue
-    rows += 1
     kind = msg[len("share: "):]
+    # One attempt asked about: its session line, and the share's registration
+    # and end around it -- not the share's other attempts, the refused ones
+    # (which carry no session) included.
+    if want and kind == "session":
+        if r.get("session") != want:
+            continue
+        matched = True
+    rows += 1
     at = r.get("time", "")[:19].replace("T", " ")
     cam = " ".join("%s=%s" % (k[4:], v) for k, v in sorted(r.items()) if k.startswith("cam_"))
     cam = "  [%s]" % cam if cam else ""
@@ -91,6 +97,9 @@ for line in sys.stdin:
                 pad, r.get("camera") or "offline", r.get("others_connected"), r.get("others_pending"), cam))
         if r.get("detail"):
             print("%sdetail: %s" % (pad, r["detail"]))
+if want and not matched:
+    print("no attempt %s on that share in the relay log (try SINCE=\"-30 days\", or the share alone)" % want, file=sys.stderr)
+    sys.exit(1)
 if not rows:
     print('nothing in the relay log for that reference (try SINCE="-30 days")', file=sys.stderr)
     sys.exit(1)
