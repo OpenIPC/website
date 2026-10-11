@@ -21,6 +21,8 @@ export interface Partner {
   img: string;
   /** Locales this logo is not shown in -- a partner that does not operate there. */
   hiddenIn?: Locale[];
+  /** Locales this logo is shown in, and only those -- a partner that operates nowhere else. */
+  onlyIn?: Locale[];
 }
 
 export type PartnerGroupKey =
@@ -46,6 +48,8 @@ export const PARTNER_GROUPS: Record<PartnerGroupKey, Partner[]> = {
     { name: 'AnjVision', url: 'https://www2.anjvision.com/', img: 'anjvision_mini' },
     { name: 'CCDCAM', url: 'https://ccdcam.com/', img: 'ccdcam_mini' },
     { name: 'IR LAB', url: 'https://irlab.net/', img: 'irlab_mini' },
+    // SkyCam serves Russia only.
+    { name: 'SkyCam', url: 'https://openipc.su/', img: 'skycam_mini', onlyIn: ['ru'] },
     // Commented out on the original wall, so commented out here:
     // { name: 'EMAX', url: 'https://emaxmodel.com/', img: 'emax_mini' },
   ],
@@ -90,7 +94,6 @@ export const PARTNER_GROUPS: Record<PartnerGroupKey, Partner[]> = {
  */
 export const RU_INTEGRATORS: Partner[] = [
   { name: 'Vixand', url: 'https://vixand.ru/', img: 'vixand_mini' },
-  { name: 'SkyCam', url: 'https://openipc.su/', img: 'skycam_mini' },
   { name: 'Improve IT', url: 'https://3it.ru/', img: 'improve_mini' },
   { name: 'UfaNet', url: 'https://www.ufanet.ru/', img: 'ufanet_mini' },
   { name: 'Dvor24', url: 'https://dvor24.ru/', img: 'dvor24_mini' },
@@ -137,11 +140,14 @@ export const HOME_PARTNER_ROWS: Record<string, PartnerGroupKey[]> = {
 
 /**
  * The territory rules live here and nowhere else -- the Russian integrator list
- * appended, and logos marked hiddenIn this locale dropped -- so every caller
+ * appended, logos marked hiddenIn this locale dropped, and logos marked onlyIn
+ * other locales dropped -- so every caller
  * gets the same answer whether it asks for a group or a row.
  */
 export function logosIn(locale: Locale, key: PartnerGroupKey): Partner[] {
-  const logos = PARTNER_GROUPS[key].filter((p) => !p.hiddenIn?.includes(locale));
+  const logos = PARTNER_GROUPS[key].filter(
+    (p) => !p.hiddenIn?.includes(locale) && (!p.onlyIn || p.onlyIn.includes(locale)),
+  );
   return key === 'integrators' && locale === 'ru' ? [...logos, ...RU_INTEGRATORS] : logos;
 }
 
