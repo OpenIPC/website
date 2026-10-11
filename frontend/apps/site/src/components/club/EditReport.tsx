@@ -92,6 +92,7 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
           <input key={kind} type="file" multiple aria-label={t('club.edit_add')} accept={kind === 'photo' ? 'image/jpeg,image/png,image/webp' : '.txt,.log,text/plain'}
             onChange={(e) => setAdd([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
         </div>
+        {kind !== 'photo' && <p class="m-0 text-[12px] text-body-secondary">{t(`club.send_hint_${kind}`)}</p>}
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <button type="submit" class="site-btn site-btn-primary site-btn-sm" disabled={busy}>{t(decided ? 'club.edit_save_rereview' : 'club.edit_save')}</button>
