@@ -165,3 +165,42 @@ registered which share id, until the share expires or the socket closes. The
 share's secret never reaches it -- the page and the camera prove it to each
 other over their own DTLS connection. A restart costs every camera one
 reconnect (1 s, backing off to 2 min).
+
+It does keep a record, in its journal (`journalctl -u openipc-share` on the
+openipc.kz host), and that record is what answers a guest's report:
+
+- `share: registered`: a camera put a link up. The camera's address, the
+  link's end, and what the camera says it is, when its majestic says:
+  `cam_soc`, `cam_sensor`, `cam_ram_mb`, `cam_majestic`, `cam_firmware`.
+- `share: session`: one guest's attempt, written once when its setup ends.
+  - The outcome: `refused` by the relay, `connected`, `error` / `busy` /
+    `closed` from the camera, `no-answer`, `page-left`, or `relay-closed`.
+  - The reason as the camera gave it, and how long it took.
+  - The guest's address and browser.
+  - How many other guests the camera was holding at that moment.
+  - The camera's `detail`: what it was holding when it refused, from a
+    majestic that sends it.
+- `share: ended`: the link came down, revoked or expired.
+
+## When a guest cannot connect
+
+The failure screen shows the page's verdict before anything that scrolls, so
+a screenshot of it is enough:
+
+- Stopped at: the browser, the relay, the network, or the camera, before or
+  after the encrypted link was up.
+- Path: how far ICE got, and with which candidates.
+- Browser.
+- Ref: `<share>/<session> · hh:mm:ssZ`.
+
+The ref finds the rest:
+
+    deploy/share-why.sh 030c071fede86fb8/3f2a9c0e1b7d4a55
+
+That prints the share's registration, with what the camera is, then that
+attempt: what the camera said, the guest's browser, who else was on the
+camera, and the camera's `detail`. Pass the share alone for every attempt on
+the link. `SINCE="-30 days"` looks further back.
+
+The camera's own facts and counts stay in this record, and are never shown to
+the guest, who holds only the link.

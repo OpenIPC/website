@@ -2,13 +2,36 @@
 // the camera's own interface through it (or, for a view-only link, a player).
 import { Tunnel, ShareError, concat, relayToken } from './tunnel.js';
 import { openWebSocket } from './websocket.js';
-import { trace, detailsControl } from './diag.js';
+import { trace, detailsControl, verdict, setVerdict, networkType } from './diag.js';
 
 const $ = (id) => document.getElementById(id);
 const SCOPES = { view: 'can watch', admin: 'can watch and change settings', full: 'full access' };
 
 // What the diagnostics add to their header: where the page is, and the path.
 const diagExtra = () => ({ stage, share: shareId(), scope: tunnel && tunnel.welcome ? tunnel.welcome.scope : '-' });
+
+// The page's verdict on a failure, from how far the tunnel got: what a
+// screenshot has to carry (diag.js verdict). The error is the sentence the
+// guest was shown; `failedAt` is when, frozen at the first failure so a later
+// look at the report does not move it.
+let failure = null;
+const currentVerdict = () => verdict(tunnel ? tunnel.facts() : null, {
+  worker: HAS_WORKER, noWorkerLink: !!(failure && failure.noWorker), stage,
+  error: failure ? failure.text : '', share: shareId(), at: failure ? failure.at : new Date(),
+  ua: navigator.userAgent, net: networkType(),
+});
+setVerdict(currentVerdict);
+
+// The verdict as the lines under the failure's sentence, above anything that
+// scrolls: Stopped at, Path, Browser, Ref. Text only.
+function verdictBlock(v) {
+  const dl = Object.assign(document.createElement('dl'), { className: 'verdict' });
+  for (const [k, val, cls] of [['Stopped at', v.where], ['Path', v.path], ['Browser', v.browser], ['Ref', v.ref, 'ref']]) {
+    dl.append(Object.assign(document.createElement('dt'), { textContent: k }),
+      Object.assign(document.createElement('dd'), { textContent: val, className: cls || '' }));
+  }
+  return dl;
+}
 
 function notice(title, text, bad) {
   const n = $('notice') || Object.assign(document.createElement('div'), { id: 'notice' });
@@ -17,9 +40,12 @@ function notice(title, text, bad) {
   if (!bad) n.append(Object.assign(document.createElement('div'), { className: 'spin' }));
   n.append(Object.assign(document.createElement('h1'), { textContent: title }));
   if (text) n.append(Object.assign(document.createElement('p'), { textContent: text }));
-  // Every failure carries the page's own account of what happened.
+  // Every failure carries the page's own account of what happened: first the
+  // verdict, in view, then the full trace behind Show details.
   if (bad) {
+    if (!failure) failure = { text: text || title, at: new Date(), noWorker: text === NO_WORKER };
     trace('shown to the guest', `${title}: ${text || ''}`);
+    n.append(verdictBlock(currentVerdict()));
     detailsControl(n, diagExtra);
   }
   $('main').replaceChildren(n);
@@ -297,7 +323,14 @@ async function main() {
     }
     stage = 'connected';
     trace('stage', stage);
-    window.__share = { openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h), welcome };
+    // For the camera's own pages in the frame: the tunnel, the share's ICE
+    // servers -- its TURN, with this share's credentials, which the camera's
+    // own list lacks (majestic#994) -- and the share's trace, so their player's
+    // connection shows in the guest's diagnostics too.
+    window.__share = {
+      openWebSocket: (path, protocols, h) => openWebSocket(tunnel, path, protocols, h), welcome,
+      ice: await iceServers.catch(() => []), trace: (what, detail) => trace('camera page: ' + what, detail),
+    };
     let player = null;
     tunnel.onclose = (why) => {
       if (player) { player.close(); player = null; }

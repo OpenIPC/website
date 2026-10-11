@@ -14,8 +14,10 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -839,5 +841,241 @@ func TestARestartWhileTheCameraIsOfflineSaysSo(t *testing.T) {
 	}
 	if c := postBody(t, srv, "/__share/restart?share="+id+"&session="+sid, `{"req":"offer","data":"v=0"}`); c != http.StatusServiceUnavailable {
 		t.Fatalf("restart with the camera offline: %d", c)
+	}
+}
+
+// logbook captures the hub's log as JSON lines; the relay writes it from
+// several goroutines.
+type logbook struct {
+	mu  sync.Mutex
+	buf strings.Builder
+}
+
+func (l *logbook) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.buf.Write(p)
+}
+
+// lines are the entries whose msg is msg, decoded.
+func (l *logbook) lines(msg string) []map[string]any {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	var out []map[string]any
+	for _, s := range strings.Split(l.buf.String(), "\n") {
+		var m map[string]any
+		if json.Unmarshal([]byte(s), &m) == nil && m["msg"] == msg {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// session is the one "share: session" line for sid, waiting briefly for it:
+// the relay writes it from the handler that saw the outcome.
+func (l *logbook) session(t *testing.T, sid string) map[string]any {
+	t.Helper()
+	for i := 0; i < 100; i++ {
+		var found []map[string]any
+		for _, m := range l.lines("share: session") {
+			if m["session"] == sid {
+				found = append(found, m)
+			}
+		}
+		if len(found) > 1 {
+			t.Fatalf("session %s logged %d times: %v", sid, len(found), found)
+		}
+		if len(found) == 1 {
+			return found[0]
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("no line for session %s in:\n%s", sid, l.buf.String())
+	return nil
+}
+
+func logged(h *Hub) *logbook {
+	l := &logbook{}
+	h.Log = slog.New(slog.NewJSONHandler(l, nil))
+	return l
+}
+
+// A guest's failure leaves one line, under the share and session the page
+// shows as its reference, with the camera's reason and what it held -- and
+// what the camera said about itself. None of that reaches the page but the
+// reason.
+func TestASessionsOutcomeIsLoggedUnderItsReference(t *testing.T) {
+	h, srv := rig(t)
+	book := logged(h)
+	cam := dial(t, srv, "/__share/device")
+	send(t, cam, map[string]any{"type": "register", "share": id, "expires": time.Now().Add(time.Hour).Unix(), "token": token,
+		"camera": map[string]any{"soc": "gk7205v200", "ram_mb": 64, "majestic": strings.Repeat("v", 200), "secret": "x"}})
+	if m := recv(t, cam); m["type"] != "registered" {
+		t.Fatalf("register answered %v", m)
+	}
+	reg := book.lines("share: registered")
+	if len(reg) != 1 || reg[0]["cam_soc"] != "gk7205v200" || reg[0]["cam_ram_mb"] != "64" {
+		t.Fatalf("registration logged as %v", reg)
+	}
+	if _, ok := reg[0]["cam_secret"]; ok {
+		t.Fatalf("an unknown camera key was logged: %v", reg[0])
+	}
+	if v, _ := reg[0]["cam_majestic"].(string); len(v) != 64 {
+		t.Fatalf("an over-long camera value was not clipped: %d", len(v))
+	}
+
+	sid, next := openStream(t, srv, "198.51.100.7")
+	recv(t, cam) // the offer
+	send(t, cam, map[string]any{"type": "signal", "session": sid, "reply": "closed",
+		"data": "cannot start the data channel", "detail": map[string]any{"webrtc": 2, "budget_kib": 6144}})
+	got := next()
+	if got["reply"] != "closed" || got["data"] != "cannot start the data channel" {
+		t.Fatalf("page got %v", got)
+	}
+	if _, ok := got["detail"]; ok {
+		t.Fatalf("the camera's detail reached the page: %v", got)
+	}
+
+	line := book.session(t, sid)
+	for k, want := range map[string]any{"share": id, "outcome": "closed", "why": "cannot start the data channel",
+		"guest": "198.51.100.7", "cam_soc": "gk7205v200"} {
+		if line[k] != want {
+			t.Errorf("%s = %v, want %v (line %v)", k, line[k], want, line)
+		}
+	}
+	if d, _ := line["detail"].(string); !strings.Contains(d, `"budget_kib":6144`) {
+		t.Errorf("detail logged as %q", d)
+	}
+}
+
+// A session the camera admits is logged once, as connected, with who else
+// the camera was holding; the guest leaving later adds nothing.
+func TestAnAdmittedSessionIsLoggedOnceWithTheOthersOnTheCamera(t *testing.T) {
+	h, srv := rig(t)
+	book := logged(h)
+	cam := register(t, srv, time.Now().Add(time.Hour))
+
+	first, _ := openStream(t, srv)
+	recv(t, cam)
+	admit(t, cam, first)
+	waitAnswered(t, h, first)
+	if code := post(t, srv, "/__share/connected?share="+id+"&session="+first); code != http.StatusNoContent {
+		t.Fatalf("connected: %d", code)
+	}
+	if line := book.session(t, first); line["outcome"] != "connected" || line["others_connected"] != float64(0) {
+		t.Fatalf("first logged as %v", line)
+	}
+
+	second, _ := openStream(t, srv)
+	recv(t, cam)
+	send(t, cam, map[string]string{"type": "signal", "session": second, "reply": "busy", "data": "the camera is serving as many people as it can"})
+	line := book.session(t, second)
+	if line["outcome"] != "busy" || line["others_connected"] != float64(1) {
+		t.Fatalf("second logged as %v", line)
+	}
+}
+
+// A page that goes before the camera answers, and one refused outright, are
+// logged too: the screenshot of either still leads somewhere.
+func TestAbandonedAndRefusedSessionsAreLogged(t *testing.T) {
+	h, srv := rig(t)
+	book := logged(h)
+	cam := register(t, srv, time.Now().Add(time.Hour))
+	page := dial(t, srv, "/__share/signal?share="+id)
+	send(t, page, map[string]string{"req": "offer", "data": "v=0"})
+	sid, _ := recv(t, cam)["session"].(string)
+	page.Close(websocket.StatusNormalClosure, "")
+	if line := book.session(t, sid); line["outcome"] != "page-left" {
+		t.Fatalf("logged as %v", line)
+	}
+
+	other := strings.Repeat("0", 16)
+	req, _ := http.NewRequest("POST", srv.URL+"/__share/signal?share="+other, strings.NewReader(`{"req":"offer","data":"v=0"}`))
+	req.Header.Set("Origin", srv.URL)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	var refused []map[string]any
+	for _, m := range book.lines("share: session") {
+		if m["share"] == other {
+			refused = append(refused, m)
+		}
+	}
+	if len(refused) != 1 || refused[0]["outcome"] != "refused" {
+		t.Fatalf("refused logged as %v", refused)
+	}
+}
+
+// waitAnswered waits for the camera's answer to have been seen by the relay,
+// which reads the camera's socket on its own goroutine.
+func waitAnswered(t *testing.T, h *Hub, sid string) {
+	t.Helper()
+	for i := 0; i < 100; i++ {
+		h.mu.Lock()
+		p := h.shares[id].pages[sid]
+		ok := p != nil && p.answered
+		h.mu.Unlock()
+		if ok {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("session %s was never answered", sid)
+}
+
+// The share page tells the relay's refusals from the camera's by the relay's
+// sentences (tunnel.js RELAY_SAYS): a guest's screenshot says "the relay" or
+// "the camera" on the strength of it. Every sentence the relay sends a page
+// must be one the page knows, or a relay refusal reads as the camera's.
+func TestThePageKnowsEverySentenceTheRelaySends(t *testing.T) {
+	src, err := os.ReadFile("relay.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	page, err := static.ReadFile("static/tunnel.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := regexp.MustCompile(`(?s)const RELAY_SAYS = \[(.*?)\];`).FindSubmatch(page)
+	if m == nil {
+		t.Fatal("tunnel.js has no RELAY_SAYS")
+	}
+	known := regexp.MustCompile(`'([^']+)'`).FindAllSubmatch(m[1], -1)
+	sends := []string{
+		"this link is not valid, or the camera is offline",
+		"this link has expired",
+		"the owner revoked this link",
+		"too many people are using this link right now; try again shortly",
+		"the camera is not answering; try again shortly",
+		"the camera went offline",
+	}
+	for _, s := range sends {
+		if !strings.Contains(string(src), `"`+s+`"`) {
+			t.Errorf("relay.go no longer says %q: update this list and RELAY_SAYS", s)
+		}
+		ok := false
+		for _, k := range known {
+			if strings.HasPrefix(s, string(k[1])) {
+				ok = true
+			}
+		}
+		if !ok {
+			t.Errorf("the page does not know the relay's %q", s)
+		}
+	}
+	// And the other way: every literal the relay puts in a page's "data" is on
+	// the list above.
+	for _, lit := range regexp.MustCompile(`"data": "([^"]+)"`).FindAllStringSubmatch(string(src), -1) {
+		found := false
+		for _, s := range sends {
+			if s == lit[1] {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("relay.go sends a page %q, which is not on the list", lit[1])
+		}
 	}
 }

@@ -52,6 +52,12 @@
   .notice h1 { font-size: 20px; margin: 0; font-weight: 600; }
   .notice p { margin: 0; color: var(--muted); max-width: 420px; }
   .notice.bad h1 { color: var(--bad); }
+  /* A failure's verdict: what a screenshot of this screen has to carry, so it
+     sits above everything that scrolls (diag.js verdict). */
+  .verdict { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0 0; width: min(560px, 100%); text-align: left; font-size: 13px; line-height: 1.35; }
+  .verdict dt { color: var(--muted); white-space: nowrap; }
+  .verdict dd { margin: 0; overflow-wrap: anywhere; }
+  .verdict .ref { font: 13px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; }
   .spin { width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: s 0.9s linear infinite; }
   @keyframes s { to { transform: rotate(360deg); } }
   .diag { margin-top: 12px; text-align: left; max-width: min(860px, 100%); width: 100%; }
