@@ -97,6 +97,7 @@ import (
 	"net/url"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -197,8 +198,13 @@ type share struct {
 	// ends (see Connected); they hold none of the session slots.
 	listeners map[string]*page
 	// Failure reports pages have sent for this share (see Report): bounded,
-	// because the share id is in every guest's address bar.
-	reports int
+	// because the share id is in every guest's address bar. A report names a
+	// session the relay issued for this share -- the last MaxIssued are
+	// remembered, since a page reports after its session is gone -- and is
+	// taken once per session.
+	reports  int
+	issued   []string
+	reported map[string]bool
 }
 
 type device struct {
@@ -696,6 +702,9 @@ func (h *Hub) attach(id string, c *websocket.Conn) (*page, string) {
 	}
 	p := &page{sid: newID(), sh: sh, conn: c, out: make(chan []byte, 64), started: time.Now()}
 	sh.pages[p.sid] = p
+	if sh.issued = append(sh.issued, p.sid); len(sh.issued) > MaxIssued {
+		sh.issued = sh.issued[len(sh.issued)-MaxIssued:]
+	}
 	return p, ""
 }
 
@@ -1191,8 +1200,12 @@ func printable(s string) string {
 	}, s)
 }
 
-// MaxReportsPerShare bounds what pages may add to the log for one share.
-const MaxReportsPerShare = 32
+// MaxReportsPerShare bounds what pages may add to the log for one share, and
+// MaxIssued how many of its sessions are remembered for a report to name.
+const (
+	MaxReportsPerShare = 32
+	MaxIssued          = 64
+)
 
 // Report is POST /__share/report?share=<id>&session=<sid>: a page that could
 // not connect says what it concluded -- its verdict (static/diag.js), the
@@ -1213,7 +1226,19 @@ func (h *Hub) Report() http.Handler {
 			Why   string `json:"why"`
 			Path  string `json:"path"`
 		}
-		id, sid := ShareFromRequest(r), r.URL.Query().Get("session")
+		// On a share host the share is the host's, and the page's origin must
+		// be that same host: one share's page cannot file under another's. A
+		// developer's page served elsewhere names it with ?share=, as for the
+		// other endpoints, under OriginPatterns.
+		id := ShareFromRequest(r)
+		if label, _, _ := strings.Cut(r.Host, "."); shareID.MatchString(label) {
+			id = label
+			if o, err := url.Parse(r.Header.Get("Origin")); err != nil || !strings.EqualFold(o.Host, r.Host) {
+				http.Error(w, "not this share's page", http.StatusForbidden)
+				return
+			}
+		}
+		sid := r.URL.Query().Get("session")
 		if !small || json.Unmarshal(body, &m) != nil || !shareID.MatchString(id) || !shareID.MatchString(sid) {
 			http.Error(w, "not a report", http.StatusBadRequest)
 			return
@@ -1221,17 +1246,30 @@ func (h *Hub) Report() http.Handler {
 		h.mu.Lock()
 		h.init()
 		sh := h.shares[id]
-		full := sh != nil && sh.reports >= MaxReportsPerShare
-		if sh != nil && !full {
+		status := http.StatusNoContent
+		switch {
+		case sh == nil:
+			status = http.StatusNotFound
+		case !slices.Contains(sh.issued, sid):
+			status = http.StatusNotFound
+		case sh.reported[sid]:
+			status = http.StatusAlreadyReported // taken already: not logged again
+		case sh.reports >= MaxReportsPerShare:
+			status = http.StatusTooManyRequests
+		default:
+			if sh.reported == nil {
+				sh.reported = map[string]bool{}
+			}
+			sh.reported[sid] = true
 			sh.reports++
 		}
 		h.mu.Unlock()
-		switch {
-		case sh == nil:
-			http.Error(w, "no such share", http.StatusNotFound)
-			return
-		case full:
-			http.Error(w, "enough reports for this share", http.StatusTooManyRequests)
+		if status != http.StatusNoContent {
+			if status == http.StatusAlreadyReported {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			http.Error(w, http.StatusText(status), status)
 			return
 		}
 		h.Log.Info("share: page said", "share", id, "session", sid, "guest", clientIP(r),

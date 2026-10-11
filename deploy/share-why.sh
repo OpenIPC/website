@@ -63,7 +63,8 @@ import json, os, sys
 want = os.environ.get("SESSION")
 pad = " " * 21
 rows = 0
-matched = False  # a session line for the session asked about
+matched = False  # a line for the session asked about: the relay's or the page's
+outcome = False  # the relay's own record of it
 for line in sys.stdin:
     try:
         r = json.loads(line)
@@ -79,7 +80,8 @@ for line in sys.stdin:
     if want and kind in ("session", "page said"):
         if r.get("session") != want:
             continue
-        matched = matched or kind == "session" 
+        matched = True
+        outcome = outcome or kind == "session"
     rows += 1
     at = r.get("time", "")[:19].replace("T", " ")
     cam = " ".join("%s=%s" % (k[4:], v) for k, v in sorted(r.items()) if k.startswith("cam_"))
@@ -106,6 +108,8 @@ for line in sys.stdin:
             print("%swhy: %s" % (pad, r["why"]))
         if r.get("path"):
             print("%spath: %s" % (pad, r["path"]))
+if want and matched and not outcome:
+    print("%s(the relay's own record of this attempt is not in the log yet: it is written when the attempt ends)" % pad)
 if want and not matched:
     print("no attempt %s on that share in the relay log (try SINCE=\"-30 days\", or the share alone)" % want, file=sys.stderr)
     sys.exit(1)
