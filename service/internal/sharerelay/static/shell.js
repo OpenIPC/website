@@ -50,7 +50,12 @@ function countdown(expires) {
   const tick = () => {
     const s = Math.max(0, expires - Date.now() / 1000);
     const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
-    $('left').textContent = 'Link expires in ' + (d ? `${d} d ${h} h` : h ? `${h} h ${m} min` : `${m} min`);
+    const left = d ? `${d} d ${h} h` : h ? `${h} h ${m} min` : `${m} min`;
+    // Long and short forms both in the page; the bar's width picks one.
+    $('left').replaceChildren(
+      Object.assign(document.createElement('span'), { className: 'wide', textContent: 'Link expires in ' }),
+      left,
+      Object.assign(document.createElement('span'), { className: 'narrow', textContent: ' left' }));
   };
   tick();
   setInterval(tick, 30000);
@@ -197,6 +202,13 @@ async function main() {
       detailsControl(n, diagExtra);
     }
   }, 10000);
+  // The narrow bar's menu: Diagnostics and Disconnect behind one button.
+  const acts = $('acts'), more = $('more');
+  const menu = (open) => { acts.classList.toggle('open', open); more.setAttribute('aria-expanded', String(open)); };
+  more.onclick = (e) => { e.stopPropagation(); menu(!acts.classList.contains('open')); };
+  acts.addEventListener('click', () => menu(false));
+  document.addEventListener('click', (e) => { if (!acts.contains(e.target)) menu(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && acts.classList.contains('open')) { menu(false); more.focus(); } });
   $('diag-open').onclick = () => {
     const open = document.querySelector('.popover');
     if (open) { open.remove(); return; }
@@ -271,6 +283,8 @@ async function main() {
       document.title = `${welcome.camera} · Shared camera · OpenIPC`;
     }
     $('scope').textContent = SCOPES[welcome.scope] || welcome.scope;
+    // Narrow, the scope is not shown in the bar; the name's tooltip keeps it.
+    $('camera').title = `${$('camera').textContent} · ${$('scope').textContent}`;
     countdown(welcome.expires);
     $('bar').hidden = false;
     $('leave').onclick = () => tunnel.lost('You disconnected.');
@@ -288,6 +302,12 @@ async function main() {
     } else {
       const f = document.createElement('iframe');
       f.title = 'Camera';
+      // The camera's Live page offers its fullscreen button only where
+      // document.fullscreenEnabled says the frame may use it, and a frame not
+      // granted it explicitly can be refused: the guest on a phone, who most
+      // needs the picture to fill the screen, then never sees the button.
+      f.allow = 'fullscreen';
+      f.allowFullscreen = true;
       f.src = location.pathname === '/' ? '/' : location.pathname + location.search;
       f.addEventListener('load', () => {
         try {
