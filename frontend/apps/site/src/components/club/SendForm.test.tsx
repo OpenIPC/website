@@ -45,9 +45,9 @@ describe('the send form', () => {
 
   test('says what each text kind is: a console stopped at the prompt, or the whole boot', () => {
     const { getByRole, queryByText } = render(<SendForm model="anjoy-ms-j10" kind="uboot_env" locale="en" t={t} />);
-    expect(queryByText(/run help and printenv/)).not.toBeNull();
+    expect(queryByText(/run help, printenv and version/)).not.toBeNull();
     fireEvent.click(getByRole('button', { name: /Boot log/ }));
-    expect(queryByText(/run help and printenv/)).toBeNull();
+    expect(queryByText(/run help, printenv and version/)).toBeNull();
     expect(queryByText(/from power-on to the login prompt/)).not.toBeNull();
     fireEvent.click(getByRole('button', { name: /Photos/ }));
     expect(queryByText(/from power-on to the login prompt/)).toBeNull();

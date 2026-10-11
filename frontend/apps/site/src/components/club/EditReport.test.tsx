@@ -58,3 +58,15 @@ test('a decided report says it goes back for review before it is saved', () => {
   expect(getByRole('note').textContent).toContain('goes back to them');
   expect(getByText('Save and send for review again')).toBeTruthy();
 });
+
+test('a text kind says what it is, as the send forms do: the console stopped at the prompt, or the whole boot', () => {
+  capture();
+  const { container, queryByText } = render(<EditReport report={report({})} t={t} onSaved={() => {}} onCancel={() => {}} />);
+  const select = container.querySelector('select')!;
+  expect(queryByText(/printenv/)).toBeNull();
+  fireEvent.change(select, { target: { value: 'uboot_env' } });
+  expect(queryByText(/run help, printenv and version/)).not.toBeNull();
+  fireEvent.change(select, { target: { value: 'boot_log' } });
+  expect(queryByText(/printenv/)).toBeNull();
+  expect(queryByText(/from power-on to the login prompt/)).not.toBeNull();
+});
