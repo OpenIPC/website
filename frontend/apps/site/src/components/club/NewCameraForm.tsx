@@ -122,6 +122,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
           <label class="grid gap-1">{t('club.new_boot_log')}
             <textarea value={bootLog} onInput={(e) => setBootLog((e.target as HTMLTextAreaElement).value)} class={area} />
           </label>
+          <p class="m-0 -mt-2 text-[12px]">{t('club.new_boot_log_hint')}</p>
         </div>
       </details>
       <input aria-label={t('club.send_note')} placeholder={t('club.send_note')} value={note}

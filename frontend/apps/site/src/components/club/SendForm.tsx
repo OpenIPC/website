@@ -87,6 +87,7 @@ export default function SendForm({ model, kind, locale, t, note }: {
           </button>
         ))}
       </div>
+      {textual && <p class="m-0 text-[12px] text-body-secondary">{t(`club.send_hint_${chosen}`)}</p>}
       {textual && (
         <textarea aria-label={t('club.send_paste')} placeholder={t('club.send_paste')} value={text}
           onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
