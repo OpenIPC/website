@@ -42,7 +42,7 @@ export interface WifiProblems {
 /**
  * What is wrong with the network as typed, as catalogue keys.
  *
- * An SSID is at most 32 bytes. A WPA passphrase is 8 to 63 characters, or a
+ * An SSID is at most 32 bytes. A WPA passphrase is 8 to 63 bytes, or a
  * raw key of exactly 64 hex digits; an empty one is an open network. The
  * camera's qrscan.sh takes anything under 8 for a wrong key, so saying so here
  * saves a trip to the camera and back.
@@ -52,7 +52,10 @@ export function wifiProblems(ssid: string, password: string): WifiProblems {
   if (!ssid) problems.ssid = 'ssid_required';
   else if (new TextEncoder().encode(ssid).length > 32) problems.ssid = 'ssid_too_long';
 
-  const length = [...password].length;
+  // In bytes, like the SSID: wpa_supplicant counts a passphrase's bytes, so
+  // five Chinese characters are 15 and pass, and forty Cyrillic are 80 and
+  // do not.
+  const length = new TextEncoder().encode(password).length;
   const rawKey = /^[0-9a-fA-F]{64}$/.test(password);
   if (password && !rawKey && (length < 8 || length > 63)) problems.password = 'password_length';
   return problems;

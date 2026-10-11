@@ -53,4 +53,13 @@ describe('wifiProblems', () => {
     expect(wifiProblems('n', 'x'.repeat(64))).toEqual({ password: 'password_length' });
     expect(wifiProblems('n', 'aF09'.repeat(16))).toEqual({});
   });
+
+  test('a passphrase is measured in bytes, as wpa_supplicant measures it', () => {
+    // Three bytes each: 2 characters are 6 bytes, 3 are 9.
+    expect(wifiProblems('n', '密码')).toEqual({ password: 'password_length' });
+    expect(wifiProblems('n', '密码好')).toEqual({});
+    // Two bytes each: 31 characters are 62 bytes, 32 are 64.
+    expect(wifiProblems('n', 'ж'.repeat(31) + 'x')).toEqual({});
+    expect(wifiProblems('n', 'ж'.repeat(32))).toEqual({ password: 'password_length' });
+  });
 });

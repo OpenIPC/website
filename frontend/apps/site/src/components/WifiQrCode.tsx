@@ -147,7 +147,7 @@ export default function WifiQrCode({ labels }: { labels: WifiQrLabels }) {
       <div class="max-w-sm">
         <QrCodeWidget
           textToCode={encoded}
-          label={labels.qrLabel.replace('{ssid}', ssid)}
+          label={labels.qrLabel.replace('{ssid}', () => ssid)}
           emptyText={ssidError ?? passwordError ?? labels.emptyHint}
           tooLongText={labels.tooLong}
         />
