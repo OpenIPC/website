@@ -677,7 +677,7 @@
       "log_lede": "任何网页服务器都会保留的普通记录。",
       "log_text_html": "每个请求都会连同来源地址、页面和结果写入日志。我们用它排查故障、阻止滥用、评估负载。14 天后删除。",
       "log_title": "服务器日志",
-      "never_cookies_html": "没有 Cookie，没有本地存储，没有任何标识符。您的浏览器里不留下任何东西。",
+      "never_cookies_html": "除非您登录 OpenIPC Club，否则没有 Cookie，也没有任何标识符。统计程序不在您的浏览器里保存任何东西。",
       "never_individuals_html": "不记录单次访问。只有每日汇总写入磁盘，任何地方都没有一行属于您。",
       "never_region_html": "不记录地区或城市。那需要比我们所保有的更精细的位置数据库。",
       "never_title": "它从不碰什么",
@@ -687,10 +687,14 @@
       "records_place_html": "您所在的国家，以及浏览器请求的语言。",
       "records_tag_html": "地址中的标记，例如 <code>?ref=tg-ru</code>，当链接是我们自己发布的时候。它只统计一次，随后从地址中移除。",
       "records_title": "计数器记录什么",
+      "records_why_html": "如果您回答了首页和“快速上手”页上的那一个问题，您的答案会像一次点击那样被统计。浏览器会记下您已回答或已关闭它，以免再次询问；这条记录不会离开您的浏览器。",
       "retention_how_long": "保留",
       "retention_title": "各项保留多久",
       "retention_what": "内容",
       "retention_where": "位置",
+      "row_browser_long": "直到您清除",
+      "row_browser_what": "浏览器里的记录：是否已回答或关闭问题，以及是否已登录 Club",
+      "row_browser_where": "仅在您的浏览器中",
       "row_days_long": "保留",
       "row_days_what": "Open Wall 摄像头历史（按天，不含画面）",
       "row_days_where": "我们的服务器",
@@ -1033,6 +1037,18 @@
       "intro": "每台运行 OpenIPC 的摄像机都由自身提供这个界面，通过它自己的地址访问：无需云端账户，也不需要任何中间应用。以下是一台运行当前版本固件的摄像机的页面。",
       "scene_credit_html": "“Camera Preview”和“Majestic Settings”截图中的海滩，来自 OpenIPC 用户 <a href=\"https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706\">@usa-</a> 的摄像机画面，已获授权发布。",
       "title": "页面展示"
+    },
+    "why": {
+      "close": "关闭",
+      "flash": "给摄像机刷机",
+      "fpv": "FPV / 低延迟",
+      "hardware": "查找支持的硬件",
+      "how": "我们统计什么",
+      "looking": "随便看看",
+      "note": "点一下即可，不记录身份。只问一次。",
+      "product": "为产品做评估",
+      "question": "你今天来这里想做什么？",
+      "thanks": "谢谢！这能帮我们决定这个页面先讲什么。"
     }
   },
   "site": {

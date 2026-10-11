@@ -50,6 +50,11 @@ func memoLog(t testing.TB) string {
 	b.WriteString(line("17/Oct/2026:09:11:00", "p=download-step%3Abusiness%3Afpv&e=true&t=x&s=1280&b=0&rnd=s1", "200", "https://openipc.org/cameras/vendors/sigmastar/socs/ssc338q"))
 	b.WriteString(line("17/Oct/2026:09:12:00", "p=download-step%3Abusiness%3Acctv&e=true&t=x&s=1280&b=0&rnd=s2", "200", "https://openipc.org/cameras/vendors/hisilicon/socs/hi3516ev300"))
 	b.WriteString(line("17/Oct/2026:09:13:00", "p=lowlat%3Aoffer&e=true&t=x&s=1280&b=0&rnd=s3", "200", "https://openipc.org/low-latency"))
+	// What visitors came for (#185): two FPV answers in English, one flash in
+	// Chinese.
+	b.WriteString(line("17/Oct/2026:10:00:00", "p=why%3Afpv%3Aen&e=true&t=x&s=1280&b=0&rnd=w1", "200", "https://openipc.org/"))
+	b.WriteString(line("17/Oct/2026:10:05:00", "p=why%3Afpv%3Aen&e=true&t=x&s=1280&b=0&rnd=w2", "200", "https://openipc.org/get-started"))
+	b.WriteString(line("17/Oct/2026:10:10:00", "p=why%3Aflash%3Azh&e=true&t=x&s=1280&b=0&rnd=w3", "200", "https://openipc.org/zh/"))
 	// A completed CCTV download, so FPV's share of downloads is a share.
 	b.WriteString(fmt.Sprintf(`198.51.100.5 - - [17/Oct/2026:09:20:00 +0000] "GET /cameras/vendors/hisilicon/socs/hi3516ev300/download_full_image?flash_type=nor&flash_size=8&fw_release=lite&layout=nor8m HTTP/2.0" 200 8300000 "-" %s xff="-" cache=- rt=0.5 urt="0.4" al="-" peer=198.51.100.5`+"\n", ua))
 	// A completed firmware download (status 200), SigmaStar SSC338Q, FPV edition.
@@ -195,6 +200,14 @@ func TestAudienceMemo(t *testing.T) {
 	t.Run("outbound ext: clicks are attributed by host", func(t *testing.T) {
 		mustContain(t, memo, "Outbound link clicks by destination host", "ext: events are surfaced as external attribution")
 		mustMatch(t, `(?m)^- github.com:`, memo, "the ext:github.com click is attributed, not dropped into other")
+	})
+	t.Run("what visitors came for is counted by answer and locale (#185)", func(t *testing.T) {
+		mustContain(t, memo, "## What visitors came for (H6, #185)", "the why: section is missing")
+		mustContain(t, memo, "- FPV / low latency (`why:fpv`): **2** (67%) — en 2", "the FPV answers are not counted with their locale")
+		mustContain(t, memo, "- flash my camera (`why:flash`): **1** (33%) — zh 1", "the zh flash answer is not counted")
+		mustContain(t, memo, "- just looking (`why:looking`): **0** (0%)", "an answer nobody gave must read zero, not vanish")
+		mustContain(t, memo, "Answers: **3**", "the sample size is not stated")
+		mustContain(t, memo, "| H6 |", "H6 is not in the register")
 	})
 	t.Run("the wall/snapshot harvest is tracked for periodic review", func(t *testing.T) {
 		mustContain(t, memo, "Wall/snapshot harvest", "the spoofed-UA harvest is a tracked line, since the crawler line cannot see it")

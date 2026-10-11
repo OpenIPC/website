@@ -23,6 +23,8 @@ import { partnerRows } from '../lib/partners';
 import { SOC_COUNT, SOC_VENDOR_NAMES } from '../data/catalogue';
 import SupportCount from './SupportCount.tsx';
 import WallMosaic from './WallMosaic.tsx';
+import WhyStrip from './WhyStrip.tsx';
+import { whyLabels } from '../lib/why';
 import { SUPPORT_GOAL } from '../data/support-goal';
 import noSignal from '../assets/no-signal.webp';
 
@@ -92,6 +94,9 @@ const PILLARS = [
     </div>
   </div>
 </section>
+
+{/* One question for one quarter (#185); lib/why.ts has when it asks. */}
+<WhyStrip client:idle locale={locale} labels={whyLabels(t)} privacyHref={p('/privacy')} />
 
 {/*
   ---- Four ways in ----

@@ -18,9 +18,9 @@ const { locale } = Astro.props as { locale: Locale };
 const t = useTranslations(locale);
 const k = (s: string) => t(`pages.privacy.${s}`);
 
-const RECORDS = ['page', 'place', 'device', 'clicks', 'tag'];
+const RECORDS = ['page', 'place', 'device', 'clicks', 'tag', 'why'];
 const NEVER = ['cookies', 'individuals', 'region'];
-const ROWS = ['totals', 'session', 'log', 'images', 'details', 'days'];
+const ROWS = ['totals', 'session', 'log', 'images', 'details', 'days', 'browser'];
 ---
 <PageHeader title={k('hero_title')} lede={k('hero_lede')} />
 

@@ -213,7 +213,8 @@ en:
       records_device_html: "Your browser and operating system, and the size of your screen."
       records_clicks_html: "Clicks that leave the site: writing to us, joining the chat, opening a donation page, or following a link elsewhere."
       records_tag_html: "A tag in the address, such as <code>?ref=tg-ru</code>, when we posted the link ourselves. It is counted once and then removed from the address."
-      never_cookies_html: "No cookie, no local storage, no identifier of any kind. Nothing is kept in your browser."
+      records_why_html: "Your answer to the one question on the home and get-started pages, if you give one, counted like a click. Your browser keeps a note that you answered or closed it, so you are not asked again; the note never leaves your browser."
+      never_cookies_html: "No cookie unless you sign in to the OpenIPC Club, and no identifier of any kind. The counter keeps nothing in your browser."
       never_individuals_html: "No individual visits. Only daily totals reach the disk, so there is no row anywhere that is you."
       never_region_html: "No region or city. That needs a finer location database than we keep."
       sessions_html: "To count one person reading three pages as one visit rather than three, the counter derives a short-lived key from your address and browser. It exists in memory for at most eight hours and is never written down. Your address is not stored by the counter at all."
@@ -249,6 +250,9 @@ en:
       row_days_what: "Open Wall camera history (days, no pictures)"
       row_days_where: "Our server"
       row_days_long: "kept"
+      row_browser_what: "Notes in your browser: the question answered or closed, and whether you are signed in to the Club"
+      row_browser_where: "Your browser only"
+      row_browser_long: "until you clear it"
     news:
       about: 'About this post'
       also_in: 'Also in'
@@ -845,3 +849,15 @@ en:
       intro: 'Every OpenIPC camera serves this interface itself, over its own address — there is no cloud account and no app in between. These are the pages of a camera running a current build.'
       scene_credit_html: 'The beach in the Camera Preview and Majestic Settings shots is the view from a camera belonging to <a href="https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706">@usa-</a>, an OpenIPC user, published with permission.'
       title: Web Interface
+    # The one-question strip on / and /get-started (#185). REMOVE AFTER 2027-01.
+    why:
+      close: "Close"
+      fpv: "FPV / low latency"
+      flash: "Flashing my camera"
+      hardware: "Finding supported hardware"
+      how: "What we count"
+      looking: "Just looking"
+      note: "One tap, counted with no name attached. We ask once."
+      product: "Evaluating it for a product"
+      question: "What brought you here today?"
+      thanks: "Thank you. That tells us what this page should lead with."

@@ -152,6 +152,12 @@ awk -F'\t' '
     else if ($3 == "lowlat:offer:business")  ev_lowlat_business += $4
     else if ($3 == "oc-checkout")    ev_occheckout += $4
     else if ($3 == "tg-join")        ev_tgjoin += $4
+    # What visitors came for (#185, H6): why:<answer>:<locale>.
+    # REMOVE AFTER 2027-01 with the strip, once the decision is on #185.
+    else if ($3 ~ /^why:/) {
+      n = split(substr($3, 5), w, ":")
+      why[w[1]] += $4; whyloc[w[1] SUBSEP (n > 1 ? w[2] : "-")] += $4
+    }
   }
   $2 == "fw" {
     split($3, f, "/")
@@ -177,6 +183,8 @@ awk -F'\t' '
     for (k in fw)      print "FW", fw[k], k
     for (k in fw)      print "FWCOV", fw[k], k
     for (k in evbiz)   print "EVBIZ", evbiz[k], k
+    for (k in why)     print "WHY", why[k], k
+    for (k in whyloc)  { split(k, a, SUBSEP); print "WHYLOC", whyloc[k], a[1], a[2] }
     for (k in fwrel)   { split(k, a, SUBSEP); print "FWREL", fwrel[k], a[1], a[2] }
   }
 ' "$work/rows" > "$work/agg"
@@ -699,6 +707,32 @@ mkdir -p "$(dirname "$OUT")"
   ' "$work/fwchip" "$work/agg"
   echo
 
+  # The one-question strip on / and /get-started (#185), asked 2026-10 to
+  # 2027-01-15. One answer per browser, so n is people who answered, not
+  # visits. REMOVE AFTER 2027-01 with the strip.
+  echo "## What visitors came for (H6, #185)"
+  echo
+  if awk '$1 == "WHY"' "$work/agg" | grep -q .; then
+    awk '
+      $1 == "WHY"    { n[$3] += $2; total += $2 }
+      $1 == "WHYLOC" { loc[$3] = loc[$3] (loc[$3] == "" ? "" : " · ") $4 " " $2 }
+      END {
+        split("flash fpv hardware product looking", order, " ")
+        label["flash"] = "flash my camera"; label["fpv"] = "FPV / low latency"
+        label["hardware"] = "find supported hardware"; label["product"] = "evaluate for a product"
+        label["looking"] = "just looking"
+        for (i = 1; i <= 5; i++) { k = order[i]; known[k] = 1
+          printf "- %s (`why:%s`): **%d** (%.0f%%)%s\n", label[k], k, n[k], 100 * n[k] / total, loc[k] == "" ? "" : " — " loc[k] }
+        for (k in n) if (!(k in known)) printf "- `why:%s` (not an answer the strip offers): %d\n", k, n[k]
+        printf "\nAnswers: **%d** (beacon `why:` events; one per browser, a tap on the strip under the hero of / and /get-started).", total
+        printf " FPV + product: **%.0f%%**; H6 reads it at n >= 300.\n", 100 * (n["fpv"] + n["product"]) / total
+      }
+    ' "$work/agg"
+  else
+    echo "- none recorded."
+  fi
+  echo
+
   echo "## Attribution"
   echo
   echo "\`ref:\` tags (beacon events — what the project posted, made attributable):"
@@ -797,6 +831,7 @@ mkdir -p "$(dirname "$OUT")"
   echo "| H3 | FPV is the paying hobby | #193 offer: the Open Collective Technical support tier on /low-latency#support, where the FPV download-step line now leads; segment from #190, honest downloads from #188 | FPV share of download-step business clicks and leads vs its download share, both by chip segment (section above); /low-latency offer clicks; Technical support payments | invest above 28% (2x the 14% baseline) or at >=3 paid engagements over the quarter; drop below its share; one more quarter in between, copy changed once. Review 2027-03-31 | downloads per /low-latency and per FPV SoC-page visitor must not fall > 5% |"
   echo "| H4 | The Chinese channel has no door | #194 door, language share from #181, indexable zh pages from #154/#179 | zh share of people; zh visitors reaching /business and clicking a contact, vs the en rate | build out at >=15% of people and en-rate contact clicks, two indexed months after #154; deprioritise for a year under 5% | none |"
   echo "| H5 | Tag what the project posts | #183 \`?ref=\` and ref: events | share of previously no-referrer traffic now attributed; backers and leads per 1,000 visits per channel | judged one month after tags go live: >=50% attributed, else the finding is about deployment, not channels; the best channel per 1,000 visits gets the next promotional effort | none |"
+  echo "| H6 | Visitors come for more than flashing a camera | #185 strip on / and /get-started, \`why:\` events (section above) | answers by reason and locale; FPV + product share | at n >= 300: FPV + product >= 30% means / leads with more than cameras (FPV and product work beside the camera path); under 30% it stays camera-first. The strip stops 2027-01-15; the decision is written on #185 | the home page's clicks into /get-started must not fall > 5% while it runs |"
   echo
   echo "_Open Collective corrections (2026-09-20): H1's OC metric is the individuals' Backer and one-time receipts only (the \"pure donations, individual monthly\" line above), never the total; H3's paid-support signal is the Technical support tier line._"
   echo
