@@ -119,7 +119,7 @@
       "new_board_hint": "What is printed on the board, or the model on the box",
       "new_boot_log": "Boot log or U-Boot console",
       "new_boot_log_hint": "Either one: the whole boot from power-on to the login prompt, or U-Boot's console — autoboot stopped with Ctrl+C, then help, printenv and version.",
-      "new_dump_hint": "Optional. Read the chip with a programmer when ipctool cannot run on the camera, for example behind a U-Boot password; a dump nobody sent before earns {n} ★.",
+      "new_dump_hint": "Optional. Read the chip with a programmer when ipctool cannot run on the camera, for example behind a U-Boot password; a dump nobody sent before earns {n} ★. ipctool's report sent for it later earns its own star and leaves the dump's as they are.",
       "new_ipctool": "ipctool's output",
       "new_lede": "Name the maker and the board, and add photos of it: the board's front and back, and the label. A maintainer adds it to the catalogue when they publish your report; each photo and file earns {n} ★, and a whole-flash dump nobody sent before {dump} ★ from ipctool, or {raw} ★ read with a programmer.",
       "new_link": "Add a camera that is not in the catalogue",
