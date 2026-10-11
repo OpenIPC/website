@@ -479,9 +479,9 @@ func (a *API) read(r *http.Request, edit bool) (*received, int, error) {
 				}
 				in.removes = append(in.removes, pos)
 				continue
-			case p.FileName() == "" && name != "note" && name != "maker" && name != "board" && name != "soc",
-				name == "yaml", name == "backup":
-				return in, http.StatusBadRequest, fmt.Errorf("%q cannot be edited: an edit changes the note, the camera proposed, and adds or removes photos and text files", name)
+			case p.FileName() == "" && name != "note" && name != "maker" && name != "board" && name != "soc" && name != "consent",
+				name == "yaml":
+				return in, http.StatusBadRequest, fmt.Errorf("%q cannot be edited: an edit changes the note, the camera proposed, adds or removes photos and text files, and adds a flash dump to a report without one", name)
 			}
 		}
 		// "note" is both a field (a line of text) and a file kind (a note

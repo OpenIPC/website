@@ -15,8 +15,9 @@ import (
 )
 
 // A member changes what they sent (migration 031): the note, the camera
-// they proposed, a file taken out, photos and text added. ipctool's output
-// and a backup are what the camera said and stay as sent. An edit to a
+// they proposed, a file taken out, photos and text added, and a flash dump
+// added to a report that has none (#456). ipctool's output and a backup are
+// what the camera said and stay as sent. An edit to a
 // report a maintainer has decided puts it back in the queue -- a review row
 // 'edit', after which it is pending: off the board and the public pages
 // until it is accepted again, its stars settled by that decision.
@@ -37,6 +38,8 @@ type Change struct {
 	Proposal *Proposal
 	Remove   []int
 	Add      []File
+	// Consent is the added backup's, private or public; "" when Add has none.
+	Consent string
 }
 
 // Edited is what an edit did.
@@ -143,8 +146,34 @@ func (s *Store) Edit(ctx context.Context, id, member, by string, c Change, noteP
 			}
 			removed[pos] = true
 		}
-		if len(files)-len(removed)+len(c.Add) > maxFiles {
+		// A backup is not one of the files the limit counts, as on sending.
+		kept := 0
+		for pos, h := range files {
+			if h.kind == "backup" && c.Consent != "" {
+				return refusal{errors.New("backup: this report has one already, and it stays as it was sent")}
+			}
+			if h.kind != "backup" && !removed[pos] {
+				kept++
+			}
+		}
+		for _, f := range c.Add {
+			if f.Kind != "backup" {
+				kept++
+			}
+		}
+		if kept > maxFiles {
 			return refusal{fmt.Errorf("at most %d files per report", maxFiles)}
+		}
+		if c.Consent != "" {
+			// The consent was "none": a report without a backup had nothing
+			// to consent to. A dump added now is asked for it, as on sending.
+			tag, err := tx.Exec(ctx, `UPDATE reports SET backup_consent = $2 WHERE id = $1 AND backup_consent = 'none'`, id, c.Consent)
+			if err != nil {
+				return err
+			}
+			if tag.RowsAffected() != 1 {
+				return refusal{errors.New("backup: this report has one already, and it stays as it was sent")}
+			}
 		}
 		if hasProposal {
 			photos := 0
@@ -319,6 +348,17 @@ func (a *API) Edit(w http.ResponseWriter, r *http.Request, member, by, id string
 	}
 	c.Remove = in.removes
 
+	// Someone else's report answers as no report at all, before anything of
+	// it -- whether it holds ipctool's output, below -- can show in a
+	// refusal. Edit checks again under the report's lock.
+	if owner, err := st.Owner(ctx, id); err != nil || owner != member {
+		if err != nil {
+			a.fail(w, "the report", err)
+		} else {
+			a.refuse(w, http.StatusNotFound, "no report of yours has this id")
+		}
+		return false
+	}
 	// The report's own facts redact what the edit adds, as they did what it
 	// was sent with; any MAC is caught regardless (Redact).
 	rep, err := st.Private(ctx, id)
@@ -335,6 +375,43 @@ func (a *API) Edit(w http.ResponseWriter, r *http.Request, member, by, id string
 		_, facts, _ = Parse(rep.YAML)
 	}
 	var places []func() error
+	if in.backup != nil {
+		// A dump added later is what one sent with the report would be: an
+		// ipctool backup taken with this report's own output, or a whole
+		// chip read with a programmer. The report already says which camera
+		// it is, so the image needs no board named beside it.
+		consent := orDefault(in.fields["consent"], "private")
+		if consent != "private" && consent != "public" {
+			a.refuse(w, http.StatusBadRequest, "consent is private (OpenIPC's maintainers only) or public (published with the report)")
+			return false
+		}
+		name := "backup.bin"
+		f, err := in.backup.Open()
+		var b Backup
+		if err == nil {
+			b, err = ReadBackup(f)
+		}
+		switch {
+		case err == nil && rep.YAML == "":
+			a.refuse(w, http.StatusBadRequest, "backup: it carries ipctool's output, which an edit cannot add; send it as a new report, or from the camera with a club code that joins this one")
+			return false
+		case err == nil && Clean(rep.YAML) != Clean(b.YAML):
+			a.refuse(w, http.StatusBadRequest, "backup: it was taken with other ipctool output than this report's")
+			return false
+		case err == nil:
+		case flashImage(in.backup.Bytes):
+			name = "flash.bin"
+		default:
+			a.refuse(w, http.StatusBadRequest, "backup: "+err.Error())
+			return false
+		}
+		bf, err := a.prepare(part{kind: "backup", name: name, mime: "application/octet-stream", in: in.backup}, consent, facts, key, &places)
+		if err != nil {
+			a.fail(w, "the backup", err)
+			return false
+		}
+		c.Add, c.Consent = append(c.Add, bf), consent
+	}
 	for _, p := range in.parts {
 		f, err := a.prepare(p, "", facts, key, &places)
 		if err != nil {

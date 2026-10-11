@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"mime/multipart"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -189,5 +190,80 @@ func TestAnEditNeverSlipsPastAReviewer(t *testing.T) {
 		map[string][]byte{"backup": bytes.Repeat([]byte{0x5a}, 1<<20), "photo": photo})
 	if code, d := ivan.edit(t, out["id"].(string), nil, nil, 1); code != 400 || !strings.Contains(d["error"].(string), "backup stays") {
 		t.Errorf("taking out a backup: %d %v", code, d)
+	}
+}
+
+// A flash dump can be added to a report sent without one (#456): a whole
+// chip read with a programmer, or an ipctool backup taken with the report's
+// own output, asked for its consent as on sending. A decided report goes
+// back for review and the dump is paid then. One a report already has
+// stays as sent, and nothing else's dump can come in this way.
+func TestAnEditAddsAFlashDumpToAReportWithoutOne(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	maint := e.maintainer(t)
+	_, out := ivan.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10"}, map[string][]byte{"photo": photo})
+	id := out["id"].(string)
+	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish"}); code != 200 || d["points"].(float64) != 1 {
+		t.Fatalf("publish: %d %v", code, d)
+	}
+	chip := bytes.Repeat([]byte{0x3c}, 1<<20)
+
+	// What is refused, leaving the report as it was.
+	if code, d := ivan.edit(t, id, map[string]string{"consent": "everyone"}, map[string][]byte{"backup": chip}); code != 400 || !strings.Contains(d["error"].(string), "consent") {
+		t.Errorf("an unknown consent: %d %v", code, d)
+	}
+	if code, d := ivan.edit(t, id, nil, map[string][]byte{"backup": bytes.Repeat([]byte{1}, 1000)}); code != 400 || !strings.Contains(d["error"].(string), "backup:") {
+		t.Errorf("neither a backup nor a chip: %d %v", code, d)
+	}
+	backup := append(append([]byte("chip:\n  vendor: HiSilicon\n"), 0), 4, 0, 0, 0, 'b', 'o', 'o', 't')
+	if code, d := ivan.edit(t, id, nil, map[string][]byte{"backup": backup}); code != 400 || !strings.Contains(d["error"].(string), "joins this one") {
+		t.Errorf("an ipctool backup on a report without ipctool's output: %d %v", code, d)
+	}
+	petr := e.signedIn(t, 888, "petr", "198.51.100.2")
+	if code, _ := petr.edit(t, id, nil, map[string][]byte{"backup": backup}); code != 404 {
+		t.Errorf("a dump on another member's report: %d", code)
+	}
+	if r := e.status(t, ivan, id); r["status"] != "published" || len(r["files"].([]any)) != 1 {
+		t.Fatalf("a refused edit changed the report: %v", r)
+	}
+
+	// The chip, public: the report goes back for review, and is paid for
+	// the dump when it is published again.
+	code, d := ivan.edit(t, id, map[string]string{"consent": "public"}, map[string][]byte{"backup": chip})
+	if code != 200 || d["status"] != "pending" || d["rereview"] != true {
+		t.Fatalf("adding the chip: %d %v", code, d)
+	}
+	var consent, name string
+	_ = e.pool.QueryRow(ctx, `SELECT r.backup_consent, f.name FROM reports r JOIN report_files f ON f.report_id = r.id AND f.kind = 'backup' WHERE r.id = $1`, id).Scan(&consent, &name)
+	if consent != "public" || name != "flash.bin" {
+		t.Errorf("the dump: consent %q, name %q", consent, name)
+	}
+	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish"}); code != 200 || d["points"].(float64) != 10 {
+		t.Errorf("publishing it again: %d %v", code, d)
+	}
+	// A second one is refused: the first stays as it was sent.
+	if code, d := ivan.edit(t, id, nil, map[string][]byte{"backup": bytes.Repeat([]byte{0x3d}, 1<<20)}); code != 400 || !strings.Contains(d["error"].(string), "has one already") {
+		t.Errorf("a second dump: %d %v", code, d)
+	}
+
+	// ipctool's report gets the backup ipctool took with it, and no other.
+	yaml, err := os.ReadFile("../reports/testdata/hi3516cv300-imx291.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, out = ivan.send(t, map[string]string{"channel": "web", "yaml": string(yaml)}, nil)
+	withYAML := out["id"].(string)
+	if code, d := ivan.edit(t, withYAML, nil, map[string][]byte{"backup": backup}); code != 400 || !strings.Contains(d["error"].(string), "other ipctool output") {
+		t.Errorf("a backup taken with other output: %d %v", code, d)
+	}
+	own := append(append(append([]byte{}, yaml...), 0), 4, 0, 0, 0, 'b', 'o', 'o', 't')
+	if code, d := ivan.edit(t, withYAML, nil, map[string][]byte{"backup": own}); code != 200 || d["status"] != "pending" {
+		t.Errorf("the backup taken with its output: %d %v", code, d)
+	}
+	_ = e.pool.QueryRow(ctx, `SELECT r.backup_consent, f.name FROM reports r JOIN report_files f ON f.report_id = r.id AND f.kind = 'backup' WHERE r.id = $1`, withYAML).Scan(&consent, &name)
+	if consent != "private" || name != "backup.bin" {
+		t.Errorf("the ipctool backup: consent %q, name %q", consent, name)
 	}
 }
