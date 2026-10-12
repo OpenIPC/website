@@ -1034,8 +1034,14 @@
       "title": "视频编码"
     },
     "web_interface": {
-      "intro": "每台运行 OpenIPC 的摄像机都由自身提供这个界面，通过它自己的地址访问：无需云端账户，也不需要任何中间应用。以下是一台运行当前版本固件的摄像机的页面。",
-      "scene_credit_html": "“Camera Preview”和“Majestic Settings”截图中的海滩，来自 OpenIPC 用户 <a href=\"https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706\">@usa-</a> 的摄像机画面，已获授权发布。",
+      "detection_title": "人形检测与跟踪",
+      "detection_tracking_html": "检测结果每秒到达几次，而不是每一帧都有，视频展示了为什么这已经足够：跟踪器在两次检测之间为每个人保留其编号。这里它运行在以同样频率从录像中得到的检测结果上；它还是一个原型，尚未进入固件。",
+      "detection_video_caption": "白色闪烁：一次检测到达，约每秒 2.5 次。彩色框和编号：两次检测之间保持不变的同一个人。人脸已打码。",
+      "detection_video_label": "在一段街道录像上，于两次检测之间跟踪行人",
+      "detection_what_html": "目标检测（设置中的 <code>objectDetect</code>）报告画面中的人。每个框都会送到运动检测结果已经送达的地方：浏览器中叠加在画面上、ONVIF 元数据轨道和录像内的轨道、云台跟随，以及 <code>/api/v1/analytics</code>。",
+      "detection_where_html": "在 GK7205V500、V510 和 V530 上，它是神经网络加速器上的 YOLOv8，模型已内置在固件中，并能区分人、车辆和动物（<a href=\"/news/npu-detection-and-sharper-ptz\">详情</a>）。",
+      "intro": "每台运行 OpenIPC 的摄像机都由自身提供这个界面，通过它自己的地址访问：无需云端账户，也不需要任何中间应用。以下是一台运行当前版本固件的摄像机的页面：实时画面、从存储卡回放的录像、叠加在画面上的检测框，以及它们背后的设置。",
+      "scene_credit_html": "Dashboard、Live、Recordings 和 Camera - Settings 截图中的海滩，来自 OpenIPC 用户 <a href=\"https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706\">@usa-</a> 的摄像机画面，已获授权发布。Motion detection 截图是摆拍的：街道是下方视频中录像的一帧，人脸已打码，三个框交由界面自身的叠加层绘制，因为实验室摄像机的固件版本不带人形检测器。",
       "title": "页面展示"
     },
     "why": {

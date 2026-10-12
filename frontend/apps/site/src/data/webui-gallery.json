@@ -10,6 +10,16 @@
     "alt": "Live page of the OpenIPC web interface"
   },
   {
+    "slug": "recordings",
+    "caption": "Recordings",
+    "alt": "Recordings page of the OpenIPC web interface"
+  },
+  {
+    "slug": "motion-detection",
+    "caption": "Camera - Settings - Motion detection",
+    "alt": "Camera - Settings - Motion detection page of the OpenIPC web interface"
+  },
+  {
     "slug": "camera-settings",
     "caption": "Camera - Settings",
     "alt": "Camera - Settings page of the OpenIPC web interface"
@@ -23,6 +33,11 @@
     "slug": "config-file",
     "caption": "Camera - Config file",
     "alt": "Camera - Config file page of the OpenIPC web interface"
+  },
+  {
+    "slug": "sd-card",
+    "caption": "System - SD Card",
+    "alt": "System - SD Card page of the OpenIPC web interface"
   },
   {
     "slug": "logs",
@@ -58,5 +73,10 @@
     "slug": "telegram",
     "caption": "Services - Telegram",
     "alt": "Services - Telegram page of the OpenIPC web interface"
+  },
+  {
+    "slug": "openwall",
+    "caption": "Services - OpenWall",
+    "alt": "Services - OpenWall page of the OpenIPC web interface"
   }
 ]

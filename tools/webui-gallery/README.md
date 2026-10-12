@@ -69,8 +69,12 @@ findable by anyone who reads the screenshot.
 
 `redact.js` rewrites the DOM immediately before the shutter: the hostname you
 connected to becomes `camera.local`, the address it resolved to becomes
-`192.168.1.10`, any MAC becomes `00:11:22:33:44:55`, and every remaining private
-address becomes `192.168.1.50`. Add `--map OLD=NEW` for anything specific to
+`192.168.1.10`, any MAC becomes `00:11:22:33:44:55`, every remaining private
+address becomes `192.168.1.50`, and every public one `203.0.113.10`. The public
+ones are not hypothetical: when the tool's browser opens a page with a player,
+majestic logs the WebRTC session, and that log prints the lab's own reflexive
+address and the remote candidate of whoever is watching. A dotted quad followed
+by a build variant — `2.6.10.11-lite` — is the firmware version and stays. Add `--map OLD=NEW` for anything specific to
 your network that deserves a tidier stand-in — a gateway, say.
 
 The same question is then asked twice. Once inside `shoot.js`, against the very
@@ -105,17 +109,28 @@ None of this inspects the pixels. Look at the captures before you commit them.
 
 ## The scene
 
-Two pages show a live player, and whatever the camera is pointed at is what goes
-on the public site. `--scene FILE` lays a still picture over the `<video>` in
-the DOM — the same trick as the redaction, applied to the image instead of the
-text — fitted to the element's content box so the player's own border and corner
-radius still frame it, and cropped with `object-fit: cover` the way real video
-fills the element.
+Several pages show the camera's picture — the players, the dashboard's
+snapshot tile, the recordings player — and whatever the camera is pointed at
+is what goes on the public site. `--scene FILE` lays a still picture over each
+of them in the DOM — the same trick as the redaction, applied to the image
+instead of the text — fitted to the element's content box so the player's own
+border and corner radius still frame it, and cropped with `object-fit: cover`
+the way real video fills the element. It goes in as the player's next sibling,
+so whatever the page draws over its player — detection boxes, the region
+editor, the control bar — still draws over the scene.
 
-Pages that show live video are marked `scene: true` in the manifest. That mark
-is what turns a change in the WebUI into a failure rather than a leak: if the
-overlay finds no player to cover on a page that claims to have one, the run
-stops instead of photographing the camera's own view.
+Two checks stand behind it. Pages that show live video are marked `scene: true`
+in the manifest, and if the overlay finds no player to cover on one of those,
+the run stops. And immediately before every shutter, the tool asks whether any
+`<img>`, `<video>` or player canvas is still showing that the scene did not
+cover, and fails the page if one is. The second check exists because the first
+trusts the manifest: the dashboard grew a snapshot tile, nobody marked it, and
+a run photographed the lab's room. It was caught by looking, before anything
+was installed.
+
+A camera also raises notices about itself on every page — after a crash, for
+one — and those describe the lab device, not the interface. `CAMERA_NOTICES` in
+`shoot.js` hides them for the shutter.
 
 The default scene is `scene/beach-usa.jpg`; see `scene/CREDIT.md` before
 changing it, because the page credits it by name.
@@ -126,6 +141,24 @@ the project owns and wants to show — and because forcing a substitution on
 somebody who has a better picture is not safety, it is a nuisance. The tool
 names the pages this affects and tells you to look at those captures before
 committing them. Do look.
+
+## Staged screens
+
+The lab camera's firmware has no object detector, and its view is replaced in
+any case, so a screen that shows detection cannot be photographed honestly as
+it is. The motion detection screen is staged, in two parts the manifest names:
+
+- `scene: street.jpg` — a picture with people in it for this screen alone,
+  instead of the run's scene;
+- `analytics: street.json` — the boxes of those people, in the picture's own
+  pixels. The tool answers the page's `/ws/analytics` socket with them, scaled
+  to the main-stream frame the camera reports at `/api/v1/osd`, as source
+  `object`, class 1 (human), and the WebUI's own overlay draws them.
+
+The page that publishes the screenshot says it is staged. Keep it that way.
+
+`click: SELECTOR` clicks something once a page has settled and lets it settle
+again, for a screen whose interesting state is one click away.
 
 ## Traps
 
@@ -179,7 +212,7 @@ see them. `redactInPage` rewrites both.
 --camera HOST     address, hostname, or URL. Required.
 --user NAME       WebUI user. Default root.
 --password PW     prompted for if omitted, which keeps it out of your history.
---scene FILE      picture for the live player, or "none".
+--scene FILE      picture for the camera's players, or "none".
 --map OLD=NEW     extra literal substitution, repeatable.
 --only SLUGS      comma-separated slugs; re-shoot part of the gallery.
 --no-install      leave the output in tmp/webui-gallery/out.

@@ -1044,8 +1044,14 @@
       "title": "Video encoding"
     },
     "web_interface": {
-      "intro": "Every OpenIPC camera serves this interface itself, over its own address — there is no cloud account and no app in between. These are the pages of a camera running a current build.",
-      "scene_credit_html": "The beach in the Camera Preview and Majestic Settings shots is the view from a camera belonging to <a href=\"https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706\">@usa-</a>, an OpenIPC user, published with permission.",
+      "detection_title": "Person detection and tracking",
+      "detection_tracking_html": "Detections arrive a few times a second, not with every frame, and the video shows what makes that enough: a tracker that keeps each person's number through the gaps. Here it runs on detections made from the recording at that rate; it is a prototype, not yet in the firmware.",
+      "detection_video_caption": "White flash: a detection arriving, about 2.5 a second. Coloured box and number: the same person, carried between detections. Faces pixelated.",
+      "detection_video_label": "Tracking people between detections, on a recorded street scene",
+      "detection_what_html": "Object detection (<code>objectDetect</code> in the settings) reports people in the picture. Every box goes where motion already goes: drawn over the picture in the browser, into the ONVIF metadata track and the track inside a recording, to pan/tilt following, and out of <code>/api/v1/analytics</code>.",
+      "detection_where_html": "On the GK7205V500, V510 and V530 it is YOLOv8 on the neural accelerator, with the models in the firmware, and it tells people from vehicles and animals (<a href=\"/news/npu-detection-and-sharper-ptz\">more</a>).",
+      "intro": "Every OpenIPC camera serves this interface itself, over its own address — there is no cloud account and no app in between. These are the pages of a camera running a current build: the live picture, recordings played back from the memory card, detection drawn over the picture, and the settings behind them.",
+      "scene_credit_html": "The beach on the Dashboard, Live, Recordings and Camera - Settings shots is the view from a camera belonging to <a href=\"https://github.com/OpenIPC/majestic/issues/300#issuecomment-5405996706\">@usa-</a>, an OpenIPC user, published with permission. The Motion detection shot is staged: the street is a frame of the recording in the video below, with faces pixelated, and its three boxes were handed to the interface's own overlay, because the lab camera's build carries no person detector.",
       "title": "Web Interface"
     },
     "why": {

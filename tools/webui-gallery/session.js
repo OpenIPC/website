@@ -51,7 +51,9 @@ async function connect({ base, user, pass }) {
     await page.fill('#username', user);
     await page.fill('#password', pass);
     await page.click('#submit');
-    await page.waitForURL(/status\.cgi/, { timeout: 20000 });
+    // Wherever the WebUI chooses to land -- it has been status.cgi and is now
+    // live.cgi -- so long as it is no longer the sign-in form.
+    await page.waitForURL((u) => !u.pathname.endsWith('/login.html'), { timeout: 20000 });
     return page;
   };
 
@@ -66,10 +68,14 @@ async function connect({ base, user, pass }) {
   // reports twelve successes, the redaction check passes because a login form
   // has nothing to hide, and a gallery of sign-in forms gets installed. So:
   // never accept a page that is not the page that was asked for.
-  const open = async (cgi, settle) => {
+  //
+  // `prepare`, if given, runs on the new page before it is navigated: routes
+  // have to be in place before the page opens the connections they answer.
+  const open = async (cgi, settle, prepare) => {
     const want = new URL(`/cgi-bin/${cgi}`, base).pathname;
     const page = await ctx.newPage();
     try {
+      if (prepare) await prepare(page);
       let response = await goto(page, at(`/cgi-bin/${cgi}`));
       if (new URL(page.url()).pathname !== want) {
         const fresh = await signIn();

@@ -731,4 +731,19 @@ describe('the WebUI gallery credits its scene', () => {
       expect(html, `${locale}${path} lost the scene credit`).toContain('@usa-');
     }
   });
+
+  // The two things maintainers asked to see on the site (playback from the
+  // card, people in boxes) and the tracking video, in every language.
+  test('every locale shows playback, detection and the tracking video', () => {
+    let seen = 0;
+    for (const [locale, path, html] of PAGES) {
+      if (path !== '/web-interface') continue;
+      seen++;
+      expect(html, `${locale}${path}`).toContain('src="/video/person-tracking.mp4"');
+      expect(html, `${locale}${path}`).toContain('poster="/video/person-tracking.webp"');
+      expect(html, `${locale}${path}`).toContain('alt="Recordings page of the OpenIPC web interface"');
+      expect(html, `${locale}${path}`).toContain('alt="Camera - Settings - Motion detection page of the OpenIPC web interface"');
+    }
+    expect(seen).toBe(3);
+  });
 });

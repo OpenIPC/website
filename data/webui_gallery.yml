@@ -3,14 +3,14 @@
 # One entry per screenshot, in the order the page lays them out. Two things read
 # this file and they must not drift apart:
 #
-#   * app/views/pages/web_interface.html.erb, through WebuiGallery, to build the
-#     tiles;
+#   * the site, through `npm run export -w @openipc/site`, to build the tiles
+#     of frontend/apps/site/src/components/pages/WebInterface.astro;
 #   * tools/webui-gallery, to know which pages of a camera to photograph.
 #
 # Adding a screenshot is therefore one edit here plus a run of the tool. See
 # tools/webui-gallery/README.md.
 #
-#   slug     basename of the pair in app/assets/images/webui/ --
+#   slug     basename of the pair in frontend/apps/site/src/assets/webui/ --
 #            <slug>.webp is the full 2560px capture, <slug>-thumb.webp the tile.
 #   caption  the page's name as the camera prints it -- the word in the nav
 #            bar, prefixed by its menu where it has one, exactly as the page's
@@ -26,7 +26,14 @@
 #            at goes on the public site, so the tool lays a still picture over
 #            the player -- and fails the run if it cannot find one to cover,
 #            rather than quietly photographing the camera's own view when the
-#            WebUI changes shape.
+#            WebUI changes shape. A file name instead of true takes that
+#            picture from tools/webui-gallery/scene/ for this page alone.
+#   analytics  a fixture in tools/webui-gallery/scene/: the boxes of the people
+#            in this page's scene, answered on /ws/analytics in place of the
+#            camera, so the WebUI's own overlay draws them. A staged screen --
+#            the page that shows it says so.
+#   click    a selector clicked once the page has settled, then settle again:
+#            for a page whose interesting state is one click away.
 screens:
   - slug: dashboard
     caption: Dashboard
@@ -38,6 +45,22 @@ screens:
     cgi: live.cgi
     settle: 14000
     scene: true
+
+  - slug: recordings
+    caption: Recordings
+    cgi: recordings.cgi
+    settle: 9000
+    scene: true
+    # The day before: a gallery shot just after midnight would otherwise show
+    # an empty motion lane for a day that has barely begun.
+    click: "#rec-daynav button:first-child"
+
+  - slug: motion-detection
+    caption: Camera - Settings - Motion detection
+    cgi: camera.cgi?tab=motionDetect
+    settle: 9000
+    scene: street.jpg
+    analytics: street.json
 
   - slug: camera-settings
     caption: Camera - Settings
@@ -54,6 +77,11 @@ screens:
     caption: Camera - Config file
     cgi: config.cgi
     settle: 3000
+
+  - slug: sd-card
+    caption: System - SD Card
+    cgi: sdcard.cgi
+    settle: 4000
 
   - slug: logs
     caption: System - Logs
@@ -88,4 +116,9 @@ screens:
   - slug: telegram
     caption: Services - Telegram
     cgi: telegram.cgi
+    settle: 3000
+
+  - slug: openwall
+    caption: Services - OpenWall
+    cgi: openwall.cgi
     settle: 3000
