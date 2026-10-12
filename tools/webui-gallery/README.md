@@ -159,9 +159,6 @@ it is. The motion detection screen is staged, in two parts the manifest names:
 
 The page that publishes the screenshot says it is staged. Keep it that way.
 
-`click: SELECTOR` clicks something once a page has settled and lets it settle
-again, for a screen whose interesting state is one click away.
-
 ## Traps
 
 Five things have cost time here. They are all still true.

@@ -230,7 +230,7 @@ async function unlisted(page, listed) {
 
   fs.mkdirSync(OUT, { recursive: true });
   let failed = 0;
-  for (const { slug, cgi, settle, scene, analytics, click } of screens) {
+  for (const { slug, cgi, settle, scene, analytics } of screens) {
     let page;
     try {
       // `scene: true` takes the run's scene; a file name takes that picture
@@ -240,10 +240,6 @@ async function unlisted(page, listed) {
       const uri = typeof scene === 'string' ? dataUri(path.join(__dirname, 'scene', scene)) : sceneUri;
       const prepare = analytics ? analyticsFixture(path.join(__dirname, 'scene', analytics)) : null;
       page = await open(cgi, settle, prepare);
-      if (click) {
-        await page.click(click, { timeout: 10000 });
-        await page.waitForTimeout(settle);
-      }
       await page.addStyleTag({ content: CAMERA_NOTICES });
       const hits = await page.evaluate(redactInPage, cfg);
       const covered = uri ? await substituteScene(page, uri) : 0;

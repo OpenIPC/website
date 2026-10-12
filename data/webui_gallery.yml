@@ -32,8 +32,6 @@
 #            in this page's scene, answered on /ws/analytics in place of the
 #            camera, so the WebUI's own overlay draws them. A staged screen --
 #            the page that shows it says so.
-#   click    a selector clicked once the page has settled, then settle again:
-#            for a page whose interesting state is one click away.
 screens:
   - slug: dashboard
     caption: Dashboard
@@ -56,9 +54,6 @@ screens:
     cgi: recordings.cgi
     settle: 9000
     scene: true
-    # The day before: a gallery shot just after midnight would otherwise show
-    # an empty motion lane for a day that has barely begun.
-    click: "#rec-daynav button:first-child"
 
   - slug: motion-detection
     caption: Camera - Settings - Motion detection
