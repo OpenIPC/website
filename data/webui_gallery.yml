@@ -38,11 +38,16 @@ screens:
   - slug: dashboard
     caption: Dashboard
     cgi: dashboard.cgi
-    settle: 2500
+    # The graphs are drawn from samples the page takes while it is open, over
+    # a two-minute window: shot sooner, they are empty axes.
+    settle: 100000
 
   - slug: live
     caption: Live
     cgi: live.cgi
+    # The pan/tilt pad shows only on a camera with a head to turn, so this one
+    # is shot from such a camera, on its own:
+    #   tools/webui-gallery/run.sh --camera <ptz camera> --only live
     settle: 14000
     scene: true
 
