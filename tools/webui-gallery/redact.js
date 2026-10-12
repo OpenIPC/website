@@ -24,10 +24,6 @@ const HOSTNAME = 'camera.local';
 // Addresses the rewriting is allowed to leave alone, because it put them there.
 const KEEP = [CAMERA_IP, OTHER_IP, PUBLIC_IP, '192.168.1.1'];
 
-// A dotted quad followed by a build variant -- "2.6.10.11-lite" -- is the
-// firmware's version, which every page prints, not an address.
-const VERSION_TAIL = /^-[a-z]/i;
-
 // IPv6 is handled by prefix rather than by a general literal match. A regex
 // loose enough to catch every valid form also catches clock times and the MAC
 // stand-in; these two prefixes are the ones a camera actually renders -- its
@@ -98,10 +94,9 @@ function redactInPage(cfg) {
     // Public addresses as well as private ones. WebRTC logs its reflexive
     // address -- the lab's own public IP -- and every remote candidate, which
     // is the public address of whoever was watching.
-    out = out.replace(ipRe, (m, at, all) => {
+    out = out.replace(ipRe, (m) => {
       if (cfg.keep.includes(m)) return m;
       if (isPrivate(m)) return cfg.otherIp;
-      if (new RegExp(cfg.versionTail[0], cfg.versionTail[1]).test(all.slice(at + m.length))) return m;
       return isPublic(m) ? cfg.publicIp : m;
     });
     return out;
@@ -168,8 +163,7 @@ function survivors(text, cfg) {
   for (const [source, flags] of cfg.v6) {
     for (const v6 of text.match(new RegExp(source, flags)) || []) found.add(`IPv6 ${v6}`);
   }
-  for (const hit of text.matchAll(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g)) {
-    const ip = hit[0];
+  for (const ip of text.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g) || []) {
     if (cfg.keep.includes(ip) || ip.startsWith('127.')) continue;
     const o = ip.split('.').map(Number);
     if (o.some((n) => n > 255)) continue;
@@ -179,7 +173,6 @@ function survivors(text, cfg) {
       || (o[0] === 100 && o[1] >= 64 && o[1] <= 127)
       || (o[0] === 169 && o[1] === 254);
     if (priv) { found.add(`private address ${ip}`); continue; }
-    if (VERSION_TAIL.test(text.slice(hit.index + ip.length))) continue;
     const reserved = o[0] === 0 || o[0] >= 224
       || (o[0] === 192 && o[1] === 0 && o[2] === 2)
       || (o[0] === 198 && o[1] === 51 && o[2] === 100)
@@ -193,7 +186,11 @@ function survivors(text, cfg) {
 // every address it resolved to. A camera reached by bare address has no
 // hostname to strip -- treating the digits as a name would replace the address
 // with camera.local and lose the substitution that belongs to it.
-function config({ host, ips = [], maps = [] }) {
+//
+// `firmware` is the version the camera prints, "2.6.10.11-lite": its number is
+// a dotted quad, and exactly that one is left alone. Nothing else shaped like
+// an address is, whatever follows it.
+function config({ host, ips = [], maps = [], firmware = null }) {
   const looksNumeric = host ? /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(':') : false;
   const name = looksNumeric ? null : host;
   const dot = name ? name.indexOf('.') : -1;
@@ -219,12 +216,16 @@ function config({ host, ips = [], maps = [] }) {
     cameraIp6: CAMERA_IP6,
     otherIp: OTHER_IP,
     publicIp: PUBLIC_IP,
-    versionTail: [VERSION_TAIL.source, VERSION_TAIL.flags],
     otherIp6: OTHER_IP6,
     mac: MAC,
-    keep: KEEP,
+    keep: [...KEEP, ...versionQuad(firmware)],
     v6: V6_PREFIXES.map((re) => [re.source, re.flags]),
   };
+}
+
+function versionQuad(firmware) {
+  const m = /^(\d{1,3}(?:\.\d{1,3}){3})(?:-|$)/.exec(firmware || '');
+  return m ? [m[1]] : [];
 }
 
 module.exports = { redactInPage, readInPage, survivors, config };

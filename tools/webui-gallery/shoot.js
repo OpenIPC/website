@@ -207,9 +207,6 @@ async function unlisted(page, listed) {
   // Every family, not the first answer: a camera on both stacks renders its
   // IPv6 address on the network page even when this tool reached it over v4.
   const resolved = await dns.lookup(host, { all: true }).catch(() => []);
-  const cfg = config({ host, ips: resolved.map((r) => r.address), maps: MAPS });
-  console.log(`camera ${host}${cfg.ips.length ? ` (${cfg.ips.join(', ')})` : ''}`
-    + ` -> ${cfg.hostname} / ${cfg.cameraIp}, ${MAPS.length} extra substitution(s)`);
 
   const dataUri = (file) => `data:image/jpeg;base64,${fs.readFileSync(file).toString('base64')}`;
   const sceneUri = SCENE ? dataUri(SCENE) : null;
@@ -221,8 +218,13 @@ async function unlisted(page, listed) {
       + '\n!! look at those captures before committing them.\n');
   }
 
-  const { home, open, close } = await connect({ base: BASE, user: USER, pass: PASS });
+  const { home, open, firmware, close } = await connect({ base: BASE, user: USER, pass: PASS });
   console.log(`signed in as ${USER}, landed on "${await home.title()}"`);
+  const fw = await firmware();
+  const cfg = config({ host, ips: resolved.map((r) => r.address), maps: MAPS, firmware: fw });
+  console.log(`camera ${host}${cfg.ips.length ? ` (${cfg.ips.join(', ')})` : ''}`
+    + ` -> ${cfg.hostname} / ${cfg.cameraIp}, ${MAPS.length} extra substitution(s),`
+    + ` firmware ${fw || 'unread'}`);
   const extra = await unlisted(home, all.map((s) => s.cgi));
   await home.close();
 

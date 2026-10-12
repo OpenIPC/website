@@ -99,7 +99,23 @@ async function connect({ base, user, pass }) {
   };
 
   const home = await signIn();
-  return { ctx, home, open, close: () => browser.close() };
+
+  // The firmware version as the camera prints it -- "2.6.10.11-lite" -- read
+  // off the dashboard's own markup. Its number is a dotted quad, so redact.js
+  // has to be told which one it is: a rule for "anything that looks like a
+  // version" would also wave through an address that happened to be followed
+  // by a word. Null when it cannot be read, which costs only a version shown
+  // as the documentation address.
+  const firmware = async () => {
+    try {
+      const html = await (await home.request.get(at('/cgi-bin/dashboard.cgi'))).text();
+      const m = html.match(/<dt>Firmware<\/dt>\s*<dd>([^<]+)<\/dd>/);
+      return m ? m[1].trim() : null;
+    } catch {
+      return null;
+    }
+  };
+  return { ctx, home, open, firmware, close: () => browser.close() };
 }
 
 async function settled(page, settle) {

@@ -73,8 +73,10 @@ connected to becomes `camera.local`, the address it resolved to becomes
 address becomes `192.168.1.50`, and every public one `203.0.113.10`. The public
 ones are not hypothetical: when the tool's browser opens a page with a player,
 majestic logs the WebRTC session, and that log prints the lab's own reflexive
-address and the remote candidate of whoever is watching. A dotted quad followed
-by a build variant — `2.6.10.11-lite` — is the firmware version and stays. Add `--map OLD=NEW` for anything specific to
+address and the remote candidate of whoever is watching. The firmware version
+is a dotted quad too — `2.6.10.11-lite` — so the tool reads the camera's own
+from the dashboard and leaves exactly that one alone; anything else shaped like
+an address goes, whatever follows it. Add `--map OLD=NEW` for anything specific to
 your network that deserves a tidier stand-in — a gateway, say.
 
 The same question is then asked twice. Once inside `shoot.js`, against the very

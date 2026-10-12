@@ -38,9 +38,8 @@ const MAPS = (process.env.MAPS || '').split(',').filter(Boolean).map((m) => {
   // without them, so strip them or the substitution never matches.
   const host = new URL(BASE).hostname.replace(/^\[|\]$/g, '');
   const resolved = await dns.lookup(host, { all: true }).catch(() => []);
-  const cfg = config({ host, ips: resolved.map((r) => r.address), maps: MAPS });
-
-  const { home, open, close } = await connect({ base: BASE, user: USER, pass: PASS });
+  const { home, open, firmware, close } = await connect({ base: BASE, user: USER, pass: PASS });
+  const cfg = config({ host, ips: resolved.map((r) => r.address), maps: MAPS, firmware: await firmware() });
   await home.close();
 
   let leaking = 0;
