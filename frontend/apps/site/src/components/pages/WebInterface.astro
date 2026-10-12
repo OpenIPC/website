@@ -59,10 +59,10 @@ const k = (s: string) => t(`pages.web_interface.${s}`);
           />
           <figcaption class="mt-2 text-sm text-body-secondary">{k('detection_video_caption')}</figcaption>
         </figure>
-        <div class="lg:pt-1">
+        <div class="space-y-3 lg:pt-1">
           <p set:html={k('detection_what_html')} />
           <p set:html={k('detection_where_html')} />
-          <p class="mb-0" set:html={k('detection_tracking_html')} />
+          <p set:html={k('detection_tracking_html')} />
         </div>
       </div>
     </section>
