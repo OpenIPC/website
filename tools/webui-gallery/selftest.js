@@ -57,6 +57,16 @@ check('a hyphenated MAC', survivors('2c-6f-51-aa-bb-cc', lab), ['MAC 2c-6f-51-aa
 check('a link-local IPv6', survivors('fe80::1c2d:3e4f', lab), ['IPv6 fe80::1c2d:3e4f']);
 check('a unique-local IPv6', survivors('fd12:3456::9', lab), ['IPv6 fd12:3456::9']);
 
+// Public addresses: WebRTC logs the lab's own reflexive address and every
+// viewer's remote candidate. The firmware version is not one of them.
+check('a public address', survivors('reflexive address is 77.37.200.136:38227', lab), ['public address 77.37.200.136']);
+check('the stand-in public address', survivors('remote 203.0.113.10:4000', lab), []);
+const fw = config({ host: 'cam1.lab.example.com', ips: ['10.1.2.3'], firmware: '2.6.10.11-lite' });
+check('the firmware version', survivors('hi3516av300-imx415, 2.6.10.11-lite', fw), []);
+check('only that version', survivors('relay 8.8.8.8-relay', fw), ['public address 8.8.8.8']);
+check('no version read, none kept', survivors('2.6.10.11-lite', lab), ['public address 2.6.10.11']);
+check('multicast is nobody', survivors('mdns 224.0.0.251', lab), []);
+
 // A name that merely ends with the domain is a different site.
 check('a lookalike domain', survivors('notlab.example.com.evil.test', lab), []);
 

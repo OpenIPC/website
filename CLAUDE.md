@@ -54,9 +54,10 @@ No Go on the host; Node 24 for the frontend.
   `/web-interface` from a real camera. Needs Docker and network access to the
   camera; everything else is in the image it builds. Run it when the WebUI
   changes shape (every few months). It redacts the camera's identity,
-  substitutes a scene over the live player, refuses to open the CGIs that reset
-  or reboot on render, and fails the run rather than installing if anything
-  identifying survives. `tools/webui-gallery/README.md` has the traps.
+  substitutes a scene over every picture from the camera, refuses to open the
+  CGIs that reset or reboot on render, and fails the run rather than installing
+  if anything identifying survives. Look at every capture anyway: the checks
+  read text and DOM, never pixels. `tools/webui-gallery/README.md` has the traps.
 
 ## Deploying
 

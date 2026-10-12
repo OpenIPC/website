@@ -8,10 +8,15 @@
  * page cannot disagree about what the gallery
  * contains.
  *
- * The two pages with a live player show a beach rather than the bench of
- * cables the lab camera actually faces; see the credit under the grid. The
- * scene is laid over the <video> in the DOM at capture time, the same way the
- * lab's address and MAC are rewritten out of the text.
+ * The pages with a picture from the camera show a beach rather than the
+ * bench of cables the lab camera actually faces; see the credit under the
+ * grid. The scene is laid over the player in the DOM at capture time, the same
+ * way the lab's address and MAC are rewritten out of the text. The motion
+ * detection screen is staged -- a street scene, and person boxes fed to the
+ * WebUI's own overlay -- and the credit says so.
+ *
+ * The tracking video under it is not from the lab camera: rendered from a street
+ * recording with every face pixelated, and served from public/video.
  */
 import Container from '../Container.astro';
 import PageTitle from '../PageTitle.astro';
@@ -34,6 +39,33 @@ const k = (s: string) => t(`pages.web_interface.${s}`);
     </div>
 
     <p class="mt-4 text-sm text-body-secondary lg:w-2/3" set:html={k('scene_credit_html')} />
+
+    <section id="detection" class="mt-12">
+      <h2 class="mb-4 text-2xl">{k('detection_title')}</h2>
+      <div class="grid items-start gap-6 lg:grid-cols-2">
+        <figure class="m-0">
+          <video
+            class="block h-auto w-full rounded-lg border border-hairline bg-black"
+            src="/video/person-tracking.mp4"
+            poster="/video/person-tracking.webp"
+            width="900"
+            height="824"
+            controls
+            muted
+            loop
+            playsinline
+            preload="none"
+            aria-label={k('detection_video_label')}
+          />
+          <figcaption class="mt-2 text-sm text-body-secondary">{k('detection_video_caption')}</figcaption>
+        </figure>
+        <div class="space-y-3 lg:pt-1">
+          <p set:html={k('detection_what_html')} />
+          <p set:html={k('detection_where_html')} />
+          <p set:html={k('detection_tracking_html')} />
+        </div>
+      </div>
+    </section>
   </article>
 </Container>
 

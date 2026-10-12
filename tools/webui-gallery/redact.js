@@ -13,13 +13,16 @@
 // Documentation values, chosen to look like an ordinary home network.
 const CAMERA_IP = '192.168.1.10';
 const OTHER_IP = '192.168.1.50';
+// TEST-NET-3, the range RFC 5737 sets aside for documentation: a public
+// address that belongs to nobody.
+const PUBLIC_IP = '203.0.113.10';
 const CAMERA_IP6 = '2001:db8::10';
 const OTHER_IP6 = '2001:db8::50';
 const MAC = '00:11:22:33:44:55';
 const HOSTNAME = 'camera.local';
 
 // Addresses the rewriting is allowed to leave alone, because it put them there.
-const KEEP = [CAMERA_IP, OTHER_IP, '192.168.1.1'];
+const KEEP = [CAMERA_IP, OTHER_IP, PUBLIC_IP, '192.168.1.1'];
 
 // IPv6 is handled by prefix rather than by a general literal match. A regex
 // loose enough to catch every valid form also catches clock times and the MAC
@@ -53,6 +56,19 @@ function redactInPage(cfg) {
     return false;
   };
 
+  // Anything routable on the internet that is not reserved for a purpose that
+  // identifies nobody: loopback, "this network", multicast and the
+  // documentation ranges.
+  const isPublic = (ip) => {
+    const o = ip.split('.').map(Number);
+    if (o.some((n) => Number.isNaN(n) || n > 255)) return false;
+    if (isPrivate(ip) || o[0] === 0 || o[0] === 127 || o[0] >= 224) return false;
+    if (o[0] === 192 && o[1] === 0 && o[2] === 2) return false;
+    if (o[0] === 198 && o[1] === 51 && o[2] === 100) return false;
+    if (o[0] === 203 && o[1] === 0 && o[2] === 113) return false;
+    return true;
+  };
+
   const apply = (s) => {
     let out = s;
     // Operator-supplied literal substitutions run first: they are the specific
@@ -75,9 +91,13 @@ function redactInPage(cfg) {
     // sweep could take a bite out of a real one.
     out = out.replace(macRe, cfg.mac);
     for (const source of cfg.v6) out = out.replace(new RegExp(source[0], source[1]), cfg.otherIp6);
+    // Public addresses as well as private ones. WebRTC logs its reflexive
+    // address -- the lab's own public IP -- and every remote candidate, which
+    // is the public address of whoever was watching.
     out = out.replace(ipRe, (m) => {
       if (cfg.keep.includes(m)) return m;
-      return isPrivate(m) ? cfg.otherIp : m;
+      if (isPrivate(m)) return cfg.otherIp;
+      return isPublic(m) ? cfg.publicIp : m;
     });
     return out;
   };
@@ -146,12 +166,18 @@ function survivors(text, cfg) {
   for (const ip of text.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g) || []) {
     if (cfg.keep.includes(ip) || ip.startsWith('127.')) continue;
     const o = ip.split('.').map(Number);
+    if (o.some((n) => n > 255)) continue;
     const priv = o[0] === 10
       || (o[0] === 172 && o[1] >= 16 && o[1] <= 31)
       || (o[0] === 192 && o[1] === 168)
       || (o[0] === 100 && o[1] >= 64 && o[1] <= 127)
       || (o[0] === 169 && o[1] === 254);
-    if (priv) found.add(`private address ${ip}`);
+    if (priv) { found.add(`private address ${ip}`); continue; }
+    const reserved = o[0] === 0 || o[0] >= 224
+      || (o[0] === 192 && o[1] === 0 && o[2] === 2)
+      || (o[0] === 198 && o[1] === 51 && o[2] === 100)
+      || (o[0] === 203 && o[1] === 0 && o[2] === 113);
+    if (!reserved) found.add(`public address ${ip}`);
   }
   return [...found];
 }
@@ -160,7 +186,11 @@ function survivors(text, cfg) {
 // every address it resolved to. A camera reached by bare address has no
 // hostname to strip -- treating the digits as a name would replace the address
 // with camera.local and lose the substitution that belongs to it.
-function config({ host, ips = [], maps = [] }) {
+//
+// `firmware` is the version the camera prints, "2.6.10.11-lite": its number is
+// a dotted quad, and exactly that one is left alone. Nothing else shaped like
+// an address is, whatever follows it.
+function config({ host, ips = [], maps = [], firmware = null }) {
   const looksNumeric = host ? /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(':') : false;
   const name = looksNumeric ? null : host;
   const dot = name ? name.indexOf('.') : -1;
@@ -185,11 +215,17 @@ function config({ host, ips = [], maps = [] }) {
     cameraIp: CAMERA_IP,
     cameraIp6: CAMERA_IP6,
     otherIp: OTHER_IP,
+    publicIp: PUBLIC_IP,
     otherIp6: OTHER_IP6,
     mac: MAC,
-    keep: KEEP,
+    keep: [...KEEP, ...versionQuad(firmware)],
     v6: V6_PREFIXES.map((re) => [re.source, re.flags]),
   };
+}
+
+function versionQuad(firmware) {
+  const m = /^(\d{1,3}(?:\.\d{1,3}){3})(?:-|$)/.exec(firmware || '');
+  return m ? [m[1]] : [];
 }
 
 module.exports = { redactInPage, readInPage, survivors, config };
