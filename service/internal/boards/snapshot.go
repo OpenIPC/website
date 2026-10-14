@@ -43,11 +43,16 @@ var Snapshots = map[string]string{
 	// tehno32.ru's archive, on 541 modules and 71 PCBs, with 650 pinout pages,
 	// and the device IDs its firmware pages name.
 	"tehno32": "f7137bd8a94dc3f7776f868e67cf5fa063dbbb4ce7d638ca00cbc382ec15a651",
-	// boards-donors/jftech/snapshot-da28891368ba.tar: JFTech's catalogue (Xiongmai's
+	// boards-donors/jftech/snapshot-cbccc36f7d64.tar: JFTech's catalogue (Xiongmai's
 	// current brand), 198 products: 132 boards and 66 finished devices, 40 of
-	// them with the board their firmware page names or is built for; 5 boards
-	// linking no firmware take their chip from builds under their module name.
-	"jftech": "da28891368ba2d365f3af0abfb39f2b90bafe00c91871edd4d7265fb45d41f6f",
+	// them with the board their firmware page names or is built for; 7 boards
+	// take their chip from builds under their module name, 5 linking no
+	// firmware and 2 linking another module's.
+	"jftech": "cbccc36f7d64468d1a822480d8b6ce2a86754a0257bd208f22bfa30c5ba0f5c7",
+	// boards-donors/xmupdates/snapshot-000d5323a721.tar: 26 Xiongmai modules known
+	// only from their firmware, first published since 2025 (chip, device ID,
+	// product line); imported after jftech.
+	"xmupdates": "000d5323a721f57c7c6ad8c6af992f39f507b8b674e20c18a910e04d8e86cb64",
 	// boards-donors/anjoy/snapshot-13aea65ba130.tar: Anjoy Vision's document archive,
 	// 191 models (182 modules, 9 NVRs), 167 with wiring pinouts, 175 with
 	// photos (the archive's own, or those inside its documents); Chinese
@@ -513,12 +518,22 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 				return err
 			}
 		} else if _, err := tx.Exec(ctx, `
-			UPDATE board_models SET category = coalesce(category, $2), soc = coalesce(soc, $3), soc_label = coalesce(soc_label, $4),
+			UPDATE board_models SET
+			       -- the first chip and product line any source gives stand, but a
+			       -- source that is the board's only one corrects its own: a
+			       -- snapshot that read IVG-N12 as AX620U and now reads NT98560 is
+			       -- believed
+			       category = CASE WHEN $2::text IS NOT NULL AND sole THEN $2 ELSE coalesce(category, $2) END,
+			       soc = CASE WHEN $4::text IS NOT NULL AND sole THEN $3 ELSE coalesce(soc, $3) END,
+			       soc_label = CASE WHEN $4::text IS NOT NULL AND sole THEN $4 ELSE coalesce(soc_label, $4) END,
 			       listed_year = least(listed_year, $5),
 			       -- a source that says the entry is a finished device is believed
 			       -- over the default; one board-only source never demotes it
 			       kind = CASE WHEN $6::text IS NOT NULL AND $6::text <> 'board' THEN $6::text ELSE kind END
-			WHERE id = $1`, id, null(m.Category), null(im.socFor(m.SoCLabel)), null(m.SoCLabel), nullInt(m.ListedYear), null(m.Kind)); err != nil {
+			FROM (SELECT NOT EXISTS (SELECT 1 FROM board_model_aliases WHERE model_id = $1 AND source <> $7)
+			         AND NOT EXISTS (SELECT 1 FROM board_model_texts WHERE model_id = $1 AND source <> $7)
+			         AND NOT EXISTS (SELECT 1 FROM board_units WHERE model_id = $1 AND source::text <> $7) AS sole) o
+			WHERE id = $1`, id, null(m.Category), null(im.socFor(m.SoCLabel)), null(m.SoCLabel), nullInt(m.ListedYear), null(m.Kind), src); err != nil {
 			return err
 		}
 		for _, c := range codes {

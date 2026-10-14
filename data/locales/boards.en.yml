@@ -437,6 +437,7 @@ en:
     card_inside_likely: "Most likely inside:"
     card_inside_confirmed: "Inside:"
     source_note_jftech: "JFTech's product catalogue: Xiongmai's product line under its current brand, with the same module codes and firmware from the same download servers (captured 2026)."
+    source_note_xmupdates: "Boards known only from their stock firmware: the chip and device ID each Xiongmai build names, from the lists OpenIPC/xmupdates mirrors."
     source_note_anjoy: "Anjoy Vision's document archive (anjvision.com:8021/pdf): the maker's spec sheets, wiring diagrams and board photos for its camera modules, in Chinese, captured 2026."
     link_stock_firmware: Stock firmware
     link_successor: Replaced by

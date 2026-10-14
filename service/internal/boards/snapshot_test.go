@@ -520,6 +520,48 @@ func TestTheEarliestListedYearAnySourceGivesIsKept(t *testing.T) {
 	}
 }
 
+func TestABoardsOnlySourceCorrectsItsChipAndLineAndASharedBoardKeepsTheFirst(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	chip := func(id string) string {
+		var s *string
+		if err := pool.QueryRow(ctx, `SELECT soc_label FROM board_models WHERE id = $1`, id).Scan(&s); err != nil {
+			t.Fatal(err)
+		}
+		if s == nil {
+			return ""
+		}
+		return *s
+	}
+	put := func(src, code string, extra map[string]any) {
+		t.Helper()
+		if _, err := im.FromSnapshot(ctx, donor(t, src, model("xiongmai", code, extra))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// IVG-N12: JFTech alone, which first read another module's firmware.
+	put("jftech", "IVG-N12", map[string]any{"soc_label": "AX620U", "category": "4G Camera Module"})
+	put("jftech", "IVG-N12", map[string]any{"soc_label": "NT98560", "category": "IP Camera Module"})
+	if c := chip("xiongmai-ivg-n12"); c != "NT98560" {
+		t.Errorf("sole source's corrected chip: %q, want NT98560", c)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE id = 'xiongmai-ivg-n12' AND category = 'IP Camera Module'`); n != 1 {
+		t.Error("sole source's corrected product line was not taken")
+	}
+	put("jftech", "IVG-N12", map[string]any{"soc_label": nil})
+	if c := chip("xiongmai-ivg-n12"); c != "NT98560" {
+		t.Errorf("an entry naming no chip cleared it: %q", c)
+	}
+	// Two sources describe IVG-G5S: neither overrules the chip the first gave.
+	put("cctvsp", "IVG-G5S", map[string]any{"soc_label": "GK7205V300"})
+	put("xiongmai", "IVG-G5S", map[string]any{"soc_label": "GK7205V200"})
+	put("cctvsp", "IVG-G5S", map[string]any{"soc_label": "GK7205V210"})
+	if c := chip("xiongmai-ivg-g5s"); c != "GK7205V300" {
+		t.Errorf("shared board's chip: %q, want the first given, GK7205V300", c)
+	}
+}
+
 func TestAReimportCorrectsTheUnitsSensor(t *testing.T) {
 	pool, root := imported(t)
 	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
