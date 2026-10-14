@@ -25,7 +25,9 @@ module that:
 - whose builds agree on one chip (A6 is AX620E's and AX620Q's: left out).
 
 The product line is what the builds or the code say it is for (_4G or
-X4-4GE2Q, _WIFI or X6S-WEQ-H), otherwise IP Camera Module; listed_year is the year the portal first dated a build.
+X4-4GE2Q, _WIFI or X6S-WEQ-H), otherwise IP Camera Module; a low-power
+LPG- module's is its family's where every board of it the pinned snapshots
+list shares one (LPG-R: AOV Camera Module), otherwise Battery Camera Module; listed_year is the year the portal first dated a build.
 Nothing else is known: no photos, no specs, and a text that says so.
 """
 
@@ -54,9 +56,13 @@ TEXT = {
 }
 
 
-def line_of(code, builds):
-    """The product line a module's builds or its code say it is for:
-    IPC_..._4G or X4-4GE2Q -> 4G Camera Module, _WIFI or X6S-WEQ-H -> Wi-Fi."""
+def line_of(code, builds, families=None):
+    """The product line a module's builds or its code say it is for: a
+    low-power LPG- module its family's (LPG-R4S-4GQ is AOV, as JFTech files
+    every LPG-R), else a battery one; IPC_..._4G or X4-4GE2Q -> 4G Camera
+    Module, _WIFI or X6S-WEQ-H -> Wi-Fi."""
+    if code.startswith("LPG-"):
+        return (families or {}).get(code[:5]) or "Battery Camera Module"
     parts = code.split("-")[1:]
     if any(re.search(r"_4G(?![A-Z0-9])", b) for b in builds) or any(p.startswith("4G") for p in parts):
         return "4G Camera Module"
@@ -78,7 +84,7 @@ def builds(repo):
     return out
 
 
-def candidates(rows, known, since):
+def candidates(rows, known, since, families=None):
     """module -> entry, for the modules the rules above take."""
     dated = {}
     for _, _, url, date, _ in rows:
@@ -122,19 +128,22 @@ def candidates(rows, known, since):
             continue
         build = sorted(e["builds"], key=len)[0]
         out[code] = {"chip": e["chips"].pop(), "devices": sorted(e["devices"].items()), "first": first,
-                     "build": build, "line": line_of(code, e["builds"])}
+                     "build": build, "line": line_of(code, e["builds"], families)}
     return out
 
 
 def known_codes(tars):
-    """Every code (and alias) the pinned snapshots list a board under."""
-    out = set()
+    """Every code (and alias) the pinned snapshots list a board under, and
+    the product line of each LPG-<letter> family whose boards all share one."""
+    out, lines = set(), {}
     for path in tars:
         with tarfile.open(path) as t:
             for m in json.load(t.extractfile("manifest.json"))["models"]:
                 if not m.get("link_only"):
                     out.update(norm(c) for c in [m["code"]] + (m.get("aliases") or []))
-    return out
+                    if m["code"].startswith("LPG-") and m.get("category"):
+                        lines.setdefault(m["code"][:5], set()).add(m["category"])
+    return out, {f: ls.pop() for f, ls in lines.items() if len(ls) == 1}
 
 
 def entry(code, c):
@@ -163,9 +172,9 @@ def check():
             ("00030665.1", "IPC_XM530_50X20-SWB_S38", "https://x/d/h", "2025-02-01", None),
             ("000807XX", "IPC_XM530V200_X9-OLD_WIFI", "https://x/d/i", None, 2250),
             ("000807A8", "IPC_XM530V200_X4C-WQ_WIFI", "https://x/d/g", None, 2561)]
-    got = candidates(rows, {"IVG-G3J"}, "2025-01-01")
+    got = candidates(rows, {"IVG-G3J"}, "2025-01-01", {"LPG-R": "AOV Camera Module"})
     want = {"G3C": ("GK7201V200", "IP Camera Module", [("000929ZR", "https://x/d/b")]),
-            "LPG-R4S-4GQ": ("RV1103", "4G Camera Module", [("000A79YD", "https://x/d/d")]),
+            "LPG-R4S-4GQ": ("RV1103", "AOV Camera Module", [("000A79YD", "https://x/d/d")]),
             "X6S-WEQ-H": ("XM232", "Wi-Fi Camera Module", [("000A19WS", "https://x/d/a")])}
     have = {k: (v["chip"], v["line"], v["devices"]) for k, v in got.items()}
     if have != want:
@@ -180,7 +189,8 @@ def main():
     ap.add_argument("--since", default="2025-01-01")
     args = ap.parse_args()
     check()
-    found = candidates(builds(args.xmu), known_codes(args.known), args.since)
+    known, families = known_codes(args.known)
+    found = candidates(builds(args.xmu), known, args.since, families)
     models = [entry(code, c) for code, c in sorted(found.items())]
     manifest = {"source": dict(SOURCE), "models": models}
     raw = json.dumps(manifest, ensure_ascii=False, indent=1, sort_keys=True).encode()

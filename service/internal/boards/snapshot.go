@@ -49,10 +49,10 @@ var Snapshots = map[string]string{
 	// take their chip from builds under their module name, 5 linking no
 	// firmware and 2 linking another module's.
 	"jftech": "cbccc36f7d64468d1a822480d8b6ce2a86754a0257bd208f22bfa30c5ba0f5c7",
-	// boards-donors/xmupdates/snapshot-44be40b7381b.tar: 26 Xiongmai modules known
+	// boards-donors/xmupdates/snapshot-000d5323a721.tar: 26 Xiongmai modules known
 	// only from their firmware, first published since 2025 (chip, device ID,
 	// product line); imported after jftech.
-	"xmupdates": "44be40b7381b4fdefe506a9658a9a0bf628d1f84621e729a14ff67ab11da9fbb",
+	"xmupdates": "000d5323a721f57c7c6ad8c6af992f39f507b8b674e20c18a910e04d8e86cb64",
 	// boards-donors/anjoy/snapshot-13aea65ba130.tar: Anjoy Vision's document archive,
 	// 191 models (182 modules, 9 NVRs), 167 with wiring pinouts, 175 with
 	// photos (the archive's own, or those inside its documents); Chinese
@@ -518,10 +518,12 @@ func (im *Importer) saveModel(ctx context.Context, tx pgx.Tx, fsys fs.FS, src st
 				return err
 			}
 		} else if _, err := tx.Exec(ctx, `
-			UPDATE board_models SET category = coalesce(category, $2),
-			       -- the first chip any source gives stands, but a source that is
-			       -- the board's only one corrects its own: a snapshot that read
-			       -- IVG-N12 as AX620U and now reads NT98560 is believed
+			UPDATE board_models SET
+			       -- the first chip and product line any source gives stand, but a
+			       -- source that is the board's only one corrects its own: a
+			       -- snapshot that read IVG-N12 as AX620U and now reads NT98560 is
+			       -- believed
+			       category = CASE WHEN $2::text IS NOT NULL AND sole THEN $2 ELSE coalesce(category, $2) END,
 			       soc = CASE WHEN $4::text IS NOT NULL AND sole THEN $3 ELSE coalesce(soc, $3) END,
 			       soc_label = CASE WHEN $4::text IS NOT NULL AND sole THEN $4 ELSE coalesce(soc_label, $4) END,
 			       listed_year = least(listed_year, $5),

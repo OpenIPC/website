@@ -520,7 +520,7 @@ func TestTheEarliestListedYearAnySourceGivesIsKept(t *testing.T) {
 	}
 }
 
-func TestABoardsOnlySourceCorrectsItsChipAndASharedBoardKeepsTheFirst(t *testing.T) {
+func TestABoardsOnlySourceCorrectsItsChipAndLineAndASharedBoardKeepsTheFirst(t *testing.T) {
 	pool, root := imported(t)
 	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
 	ctx := context.Background()
@@ -541,10 +541,13 @@ func TestABoardsOnlySourceCorrectsItsChipAndASharedBoardKeepsTheFirst(t *testing
 		}
 	}
 	// IVG-N12: JFTech alone, which first read another module's firmware.
-	put("jftech", "IVG-N12", map[string]any{"soc_label": "AX620U"})
-	put("jftech", "IVG-N12", map[string]any{"soc_label": "NT98560"})
+	put("jftech", "IVG-N12", map[string]any{"soc_label": "AX620U", "category": "4G Camera Module"})
+	put("jftech", "IVG-N12", map[string]any{"soc_label": "NT98560", "category": "IP Camera Module"})
 	if c := chip("xiongmai-ivg-n12"); c != "NT98560" {
 		t.Errorf("sole source's corrected chip: %q, want NT98560", c)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE id = 'xiongmai-ivg-n12' AND category = 'IP Camera Module'`); n != 1 {
+		t.Error("sole source's corrected product line was not taken")
 	}
 	put("jftech", "IVG-N12", map[string]any{"soc_label": nil})
 	if c := chip("xiongmai-ivg-n12"); c != "NT98560" {
