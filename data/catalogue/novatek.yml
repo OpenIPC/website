@@ -1,4 +1,4 @@
-# Novatek — 2 SoC(s).
+# Novatek — 5 SoC(s).
 #
 # Exported from the catalogue table (#161). This file is the source of
 # truth for the hardware pages: edit it in a pull request, not in the
@@ -9,6 +9,48 @@ full_name: null
 website_url: null
 notes: null
 socs:
+- family: NT9853X
+  model: NT98533
+  version: ''
+  status: neq
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: ''
+  notes: ''
+  urlname: nt98533
+  build_status_url: https://img.shields.io/static/v1?label=NT98533&message=%20&logo=github
+  featured: false
+  segment: null
+- family: NT9856X
+  model: NT98560
+  version: ''
+  status: neq
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: ''
+  notes: ''
+  urlname: nt98560
+  build_status_url: https://img.shields.io/static/v1?label=NT98560&message=%20&logo=github
+  featured: false
+  segment: null
+- family: NT9856X
+  model: NT98561
+  version: ''
+  status: neq
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: ''
+  notes: ''
+  urlname: nt98561
+  build_status_url: https://img.shields.io/static/v1?label=NT98561&message=%20&logo=github
+  featured: false
+  segment: null
 - family: NT9856X
   model: NT98562
   version: ''

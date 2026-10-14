@@ -826,6 +826,33 @@
     "nand_lite": "openipc.msc316dm-nand-lite.tgz"
   },
   {
+    "urlname": "nt98533",
+    "vendor": "Novatek",
+    "model": "NT98533",
+    "board": "nt98533",
+    "uboot": "",
+    "nor_lite": "openipc.nt98533-nor-lite.tgz",
+    "nand_lite": "openipc.nt98533-nand-lite.tgz"
+  },
+  {
+    "urlname": "nt98560",
+    "vendor": "Novatek",
+    "model": "NT98560",
+    "board": "nt98560",
+    "uboot": "",
+    "nor_lite": "openipc.nt98560-nor-lite.tgz",
+    "nand_lite": "openipc.nt98560-nand-lite.tgz"
+  },
+  {
+    "urlname": "nt98561",
+    "vendor": "Novatek",
+    "model": "NT98561",
+    "board": "nt98561",
+    "uboot": "",
+    "nor_lite": "openipc.nt98561-nor-lite.tgz",
+    "nand_lite": "openipc.nt98561-nand-lite.tgz"
+  },
+  {
     "urlname": "nt98562",
     "vendor": "Novatek",
     "model": "NT98562",
