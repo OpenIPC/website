@@ -209,8 +209,10 @@ type Build struct {
 
 // ModelBuilds lists every build of the sources keyed by board model, newest
 // first, the variant in the locale asked for (else English, else Chinese).
-// The same file listed twice for one device type and variant is listed once
-// (the file known by its sha256, else by its asset).
+// The same file listed twice for one device type, variant and module is
+// listed once (the file known by its sha256, else by its asset); one filed
+// under two modules is each one's (Herospeed's KL5_1ND_BVHB is both KL5RC's
+// and KL5AD's).
 func ModelBuilds(ctx context.Context, db querier, locale string) ([]Build, error) {
 	sources := make([]string, 0, len(ByModel))
 	for s := range ByModel {
@@ -226,7 +228,7 @@ func ModelBuilds(ctx context.Context, db querier, locale string) ([]Build, error
 	}
 	defer rows.Close()
 	var out []Build
-	seen := map[[3]string]bool{}
+	seen := map[[4]string]bool{}
 	for rows.Next() {
 		var b Build
 		var source string
@@ -242,7 +244,11 @@ func ModelBuilds(ctx context.Context, db querier, locale string) ([]Build, error
 		if b.Variant != nil {
 			variant = *b.Variant
 		}
-		k := [3]string{b.DeviceType, variant, file}
+		module := ""
+		if b.Module != nil {
+			module = *b.Module
+		}
+		k := [4]string{b.DeviceType, variant, module, file}
 		if seen[k] {
 			continue
 		}

@@ -29,6 +29,44 @@ func TestABuildIsMatchedToTheCodeItStartsWith(t *testing.T) {
 	}
 }
 
+// Herospeed's builds name no board (KL5_1ND_BVHB); the list files each under
+// one, which the mirror pushes as its module. KL5R's build reaches it through
+// its alias KL5RC, and the KL5AD board, which shares the file, gets its own copy.
+func TestHerospeedBuildsLandOnTheBoardTheirModuleNames(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "herospeed",
+		model("longse", "KL5R", map[string]any{"aliases": []string{"KL5RC"}}), model("longse", "KL5AD", nil),
+		model("longse", "KL5", nil))); err != nil {
+		t.Fatal(err)
+	}
+	day := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	build := func(key, module string) vendorfw.Item {
+		return vendorfw.Item{Key: key, Version: "V2.0.13.260306_R2", Build: "KL5_1ND_BVHB_V2.0.13.260306_R2", DeviceType: "KL5_1ND_BVHB",
+			Module: module, App: "public", Category: "camera", PublishedAt: &day,
+			AssetURL: vendorfw.Sources["herospeedupdates"] + "2026-06-01/KL5_1ND_BVHB_V2.0.13.260306_R2.zip"}
+	}
+	p := &vendorfw.Payload{Schema: 1, Source: "herospeedupdates", Items: []vendorfw.Item{build("kl5rc", "KL5RC"), build("kl5ad", "KL5AD")}}
+	if _, err := vendorfw.Save(ctx, pool, p, "test"); err != nil {
+		t.Fatal(err)
+	}
+	for id, want := range map[string]string{"longse-kl5r": "kl5rc", "longse-kl5ad": "kl5ad", "longse-kl5": ""} {
+		d, err := ModelDetail(ctx, pool, id, "en")
+		if err != nil {
+			t.Fatal(err)
+		}
+		fw, _ := d["firmware"].([]vendorfw.Build)
+		var keys []string
+		for _, b := range fw {
+			keys = append(keys, b.Key)
+		}
+		if want == "" && len(keys) != 0 || want != "" && (len(keys) != 1 || keys[0] != want) {
+			t.Errorf("%s: %v, want %q", id, keys, want)
+		}
+	}
+}
+
 func TestAnjoyBuildsLandOnTheirBoards(t *testing.T) {
 	pool, root := imported(t)
 	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}

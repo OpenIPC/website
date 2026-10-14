@@ -20,11 +20,18 @@ var Sources = map[string]string{
 	// Anjoy Vision's builds: keyed by device type (the board model), not by
 	// an XM device ID.
 	"anjoyupdates": "https://github.com/OpenIPC/anjoyupdates/releases/download/",
+	// Herospeed's builds for Longse's boards, keyed by board model too.
+	"herospeedupdates": "https://github.com/OpenIPC/herospeedupdates/releases/download/",
 }
 
 // ByModel are the sources whose items name a device type instead of an XM
 // device ID; they are matched to catalogue boards when read.
-var ByModel = map[string]string{"anjoyupdates": "anjoy"}
+var ByModel = map[string]string{"anjoyupdates": "anjoy", "herospeedupdates": "longse"}
+
+// moduleNamed are the model-keyed sources whose device types name no board
+// (Herospeed's KL5_1ND_BVHB is board KL5RC's only because its list files it
+// there): each item must carry its module, or it would match nothing.
+var moduleNamed = map[string]bool{"herospeedupdates": true}
 
 var categories = map[string]bool{"camera": true, "wifi": true, "4g": true, "nvr": true, "dvr": true, "other": true}
 
@@ -82,8 +89,9 @@ var (
 )
 
 // checkModelItem checks an item of a source keyed by board model: a device
-// type, and no XM device ID; its optional fields in their shapes.
-func checkModelItem(it *Item) error {
+// type, and no XM device ID; its module where the source must name one; its
+// optional fields in their shapes.
+func checkModelItem(source string, it *Item) error {
 	it.DeviceType, it.App, it.Module = strings.TrimSpace(it.DeviceType), strings.TrimSpace(it.App), strings.TrimSpace(it.Module)
 	if it.DeviceID != "" {
 		return fmt.Errorf("device_id is for XM devices; this source names a device_type")
@@ -99,6 +107,9 @@ func checkModelItem(it *Item) error {
 	}
 	if it.Module != "" && !deviceType.MatchString(it.Module) {
 		return fmt.Errorf("module %q is not a code", it.Module)
+	}
+	if it.Module == "" && moduleNamed[source] {
+		return fmt.Errorf("module is required: this source's device types name no board")
 	}
 	if it.Collection != "" && !Collections[it.Collection] {
 		return fmt.Errorf("collection %q is not one the site names", it.Collection)
@@ -158,7 +169,7 @@ func Decode(doc []byte) (*Payload, error) {
 			return nil, fmt.Errorf("%s: key, version and build are required", at)
 		}
 		if _, byModel := ByModel[p.Source]; byModel {
-			if err := checkModelItem(it); err != nil {
+			if err := checkModelItem(p.Source, it); err != nil {
 				return nil, fmt.Errorf("%s: %v", at, err)
 			}
 		} else if it.DeviceID = DeviceID(it.DeviceID); it.DeviceID == "" {

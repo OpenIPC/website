@@ -9,7 +9,7 @@ import en from '../../i18n/boards.en.json';
 import ru from '../../i18n/boards.ru.json';
 import zh from '../../i18n/boards.zh.json';
 import {
-  KNOWN_LINES, lineLabel,
+  KNOWN_LINES, MODEL_FIRMWARE_MAKERS, lineLabel,
   addsIPeye, buildGroups, bySeller, cardFiles, formatDay, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, ownPhoto, paragraphs, sensorKey, sensorOptions, sentBy, slug, snippet,
   countByScope, socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
@@ -654,6 +654,15 @@ describe('product lines', () => {
 });
 
 describe("a maker's builds for a board model", () => {
+  test("are introduced and credited in the maker's own words, in English, Russian and Chinese", () => {
+    for (const [locale, file] of [['en', en], ['ru', ru], ['zh', zh]] as const) {
+      const b = file.boards as unknown as Record<string, string>;
+      const missing = MODEL_FIRMWARE_MAKERS.flatMap((m) => [`mfw_lead_${m}`, `mfw_source_${m}`]).filter((k) => !b[k]);
+      expect(missing, locale).toEqual([]);
+      expect(b.inside_why_model_code, locale).toBeTruthy();
+    }
+  });
+
   test('are grouped by the device type each is for, the newest group first', () => {
     const b = (key: string, device_type: string) => ({ key, device_type });
     const got = buildGroups([b('r3', 'MCF46-4GD_V5'), b('r2', 'MCF46_V1'), b('r1', 'MCF46-4GD_V5'),

@@ -49,6 +49,7 @@ var pushers = map[string][]string{
 	"coupler":   {"OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main"},
 	// Anjoy Vision's firmware builds, keyed by board model (vendorfw/PUSH.md).
 	"anjoyupdates": {"OpenIPC/anjoyupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
+	"herospeedupdates": {"OpenIPC/herospeedupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
 	// ipctool's static builds, served to cameras over plain HTTP (tools/PUSH.md).
 	"ipctool": {"OpenIPC/ipctool/.github/workflows/release.yml@refs/heads/master"},
 	// Builder's daily firmware-drift report, not a build (drift/PUSH.md); its

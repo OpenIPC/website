@@ -73,7 +73,7 @@ func boardsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, ar
 // source's texts, photos and links rather than a second card.
 func importSnapshot(ctx context.Context, cfg *config.Config, log *slog.Logger, args []string) error {
 	fs := flag.NewFlagSet("import-snapshot", flag.ExitOnError)
-	source := fs.String("source", "", "the donor the snapshot is from (cctvsp, xiongmai)")
+	source := fs.String("source", "", "the donor the snapshot is from: a key of boards.Snapshots (cctvsp, jftech, herospeed, ...)")
 	unpinned := fs.Bool("allow-unpinned", false, "import a snapshot that is not pinned: local previews only, never an environment")
 	_ = fs.Parse(args)
 	if *source == "" || fs.NArg() != 1 {
