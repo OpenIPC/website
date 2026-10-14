@@ -26,6 +26,8 @@ rather than a second card.
   (IPC_AX620U_A4 -> AX620U; the version's first eight characters, the device
   ID). A board that links no firmware (IVG-K8) takes them from the builds
   under its own module name (IPC_GK7206V11_K8), where those agree on a chip;
+  so does one whose page links another module's firmware (IVG-N12 links
+  IPC_AX620U_A4; its own is IPC_NT98560_N12);
 - listed_year: the parameter sheet's own creation date, where it has one;
 - contents, for a finished device: the board it most likely holds, from its
   firmware landing page (captured by jftech.py). A recorder's page names the
@@ -251,7 +253,7 @@ def main():
                 return norm(c)
         return norm(module)
 
-    models, codes, joined, inside, moduled = [], {}, 0, 0, 0
+    models, codes, joined, inside, moduled, relinked = [], {}, 0, 0, 0, []
     for pid, d in sorted(api["products"].items(), key=lambda kv: int(kv[0])):
         code = norm(d.get("modelKey"))
         if not code or GARBLE.search(code):
@@ -325,15 +327,22 @@ def main():
                 elif module:
                     m["contents"] = [{"code": board_code(module), "basis": "firmware_build", "evidence": page, "label": fname}]
                 inside += "contents" in m
-        if kind == "board" and "soc_label" not in m:
+        own = by_module(code, modules) if kind == "board" else None
+        linked = module_of(fw[1] if fw else (said[3] if said else None))
+        if own and linked and linked not in (code, re.sub(r"^(IVG|IPG)-", "", code)):
+            # The page links another module's firmware (IVG-N12 links
+            # IPC_AX620U_A4, yet IPC_NT98560_N12 is its own): the builds
+            # under the board's own name say what it is.
+            relinked.append(f"{code}: links {linked}, takes {own[0]} from its own builds")
+            m.pop("soc_label", None)
+            m.pop("device_ids", None)
+        if own and "soc_label" not in m:
             # No firmware linked, or none naming a chip: the builds made
             # under the board's own module name say it.
-            said = by_module(code, modules)
-            if said:
-                moduled += 1
-                m["soc_label"] = said[0]
-                if "device_ids" not in m and said[1]:
-                    m["device_ids"] = [{"id": d, "evidence": u} for d, u in said[1]]
+            moduled += 1
+            m["soc_label"] = own[0]
+            if "device_ids" not in m and own[1]:
+                m["device_ids"] = [{"id": d, "evidence": u} for d, u in own[1]]
         if year:
             m["listed_year"] = year
         if code in codes:
@@ -385,6 +394,8 @@ def main():
     with open(out, "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
+    for line in relinked:
+        print(f"jftech: {line}", file=sys.stderr)
     kinds = {}
     for m in models:
         kinds[m["kind"]] = kinds.get(m["kind"], 0) + 1

@@ -433,6 +433,7 @@ zh:
     card_inside_likely: "很可能内置："
     card_inside_confirmed: "内置："
     source_note_jftech: "JFTech 的产品目录：雄迈产品线的当前品牌，模组型号相同，固件来自相同的下载服务器（2026 年存档）。"
+    source_note_xmupdates: "仅从原厂固件得知的主板：每个雄迈固件标明的芯片和设备 ID，来自 OpenIPC/xmupdates 镜像的列表。"
     source_note_anjoy: "安佳威视的文档存档（anjvision.com:8021/pdf）：厂商为其摄像机模组提供的规格书、接线图和主板照片，2026 年存档。"
     link_stock_firmware: 原厂固件
     link_successor: 后继型号
