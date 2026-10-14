@@ -331,6 +331,18 @@ func (d *Dump) Main() (Module, bool) {
 	return d.Modules[0], true
 }
 
+// Libraries are the modules but majestic's.
+func (d *Dump) Libraries() []Module {
+	main, _ := d.Main()
+	var out []Module
+	for _, m := range d.Modules {
+		if m.Path != main.Path {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
 // auxv is the value of one entry of the auxiliary vector.
 func (d *Dump) auxv(key uint64) (uint64, bool) {
 	w := 4

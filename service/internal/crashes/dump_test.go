@@ -113,6 +113,10 @@ func TestMainIsTheExecutableWhereverTheTableListsIt(t *testing.T) {
 	if main, ok := d.Main(); !ok || !strings.HasSuffix(main.Path, "/toy") || len(main.BuildID) != 40 {
 		t.Fatalf("main module %+v of %+v", main, d.Modules)
 	}
+	libs := d.Libraries()
+	if len(libs) != len(lines) || strings.HasSuffix(libs[0].Path, "/toy") || strings.HasSuffix(libs[len(libs)-1].Path, "/toy") {
+		t.Fatalf("libraries %+v", libs)
+	}
 }
 
 func TestADumpSentByAnotherProcessIsSelfInflicted(t *testing.T) {

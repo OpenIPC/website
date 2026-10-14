@@ -81,7 +81,7 @@ func (s *Symbolizer) Symbolize(ctx context.Context, raw []byte, fw Firmware, las
 		default:
 			sources["firmware"] = fw.Build + "/" + fw.Platform
 			var found []string
-			for _, m := range d.Modules[1:] {
+			for _, m := range d.Libraries() {
 				if p := Library(root, m.Path); p != "" && sameBuild(p, m.BuildID) {
 					libs[m.Path] = p
 					found = append(found, crashes.ModuleName(m.Path))
@@ -96,7 +96,7 @@ func (s *Symbolizer) Symbolize(ctx context.Context, raw []byte, fw Firmware, las
 	if err != nil {
 		return nil, fmt.Errorf("majestic's executable: %w", err)
 	}
-	for _, m := range d.Modules[1:] {
+	for _, m := range d.Libraries() {
 		if p := libs[m.Path]; p != "" {
 			if segs, err := CodeOf(p, m.Bias); err == nil {
 				code = append(code, segs...)
