@@ -24,7 +24,8 @@ rather than a second card.
 - device ID and chip: JFTech's site names no SoC, but each product links its
   firmware landing page, and xmupdates lists the build behind it
   (IPC_AX620U_A4 -> AX620U; the version's first eight characters, the device
-  ID);
+  ID). A board that links no firmware (IVG-K8) takes them from the builds
+  under its own module name (IPC_GK7206V11_K8), where those agree on a chip;
 - listed_year: the parameter sheet's own creation date, where it has one;
 - contents, for a finished device: the board it most likely holds, from its
   firmware landing page (captured by jftech.py). A recorder's page names the
@@ -95,6 +96,50 @@ def xm_builds(repo):
     return out
 
 
+def xm_modules(repo):
+    """module -> {(device ID, chip, landing URL)}, every build xmupdates lists,
+    for a board whose product page links no firmware (IVG-K8's firmwareAddr
+    is "0", yet IPC_GK7206V11_K8 is its build)."""
+    def show(path):
+        with open(os.path.join(repo, path)) as f:
+            return json.load(f)
+    rows = [((r.get("version") or ""), (r.get("name") or ""), r.get("downloadUrl"))
+            for f in ("items.ipc", "items.dvr") for r in show(f)["rows"]]
+    rows += [((r.get("name") or ""), (r.get("description") or ""), r.get("toAddress"))
+             for r in show("items.portal")["rows"]]
+    return modules_of(rows)
+
+
+def modules_of(rows):
+    """module_of each (version, build, url): IPC_GK7206V11_K8 -> K8, with the
+    version's device ID and the build's chip; a build naming no chip is left out."""
+    out = {}
+    for version, build, url in rows:
+        build = build.strip().upper()
+        module, chip = module_of(build), CHIP.search(build)
+        device = version.strip()[:8].upper()
+        if module and chip:
+            out.setdefault(module, set()).add((device if DEVICE_ID.match(device) else None, chip.group(1), url))
+    return out
+
+
+def by_module(code, modules):
+    """(chip, [(device ID, URL)]) for a board xmupdates has builds for under
+    its own module name (IVG-K8 -> K8, never N8H for N8H-LQ), or None when it
+    has none or they disagree on the chip."""
+    found = set()
+    for c in {code, re.sub(r"^(IVG|IPG)-", "", code)}:
+        found |= modules.get(c, set())
+    chips = {chip for _, chip, _ in found}
+    if len(chips) != 1:
+        return None
+    devices = {}
+    for d, _, u in sorted(found, key=lambda f: (f[0] or "", f[2] or "")):
+        if d:
+            devices.setdefault(d, u)
+    return chips.pop(), sorted(devices.items())
+
+
 FILE_NAME = re.compile(r"FileName\s*(.+?)\.zip", re.S)
 NAMED = re.compile(r"^([0-9A-Za-z]{8})\s*[（(]\s*([^）)]+?)\s*[）)]$")
 BUILT = re.compile(r"^([0-9A-Za-z]{8})\.\d+(.+)$")
@@ -146,6 +191,13 @@ def check_parsing():
         have = (got[1], got[2], module_of(got[3])) if got else None
         if have != want:
             sys.exit(f"firmware name {name!r} reads as {have}, want {want}")
+    modules = modules_of([("000B9A0D  ", "  IPC_GK7206V11_K8", "k8"), ("000749Y2", "IPC_NT98566_N8H-LQ", "lq"),
+                          ("000749Y1.1", "IPC_NT98566_N8H.Nat.dss.OnvifS.HIK_V1.00.T01", "n8h"),
+                          ("J91659N7", "IPC_GK7205V200_G4F_S38", "a"), ("J9165XXX", "IPC_GK7205V300_G4F", "b")])
+    for code, want in {"IVG-K8": ("GK7206V11", [("000B9A0D", "k8")]), "IVG-N8H": ("NT98566", [("000749Y1", "n8h")]),
+                       "IVG-N8H-LQ": ("NT98566", [("000749Y2", "lq")]), "IVG-G4F": None, "IVG-X8F": None}.items():
+        if by_module(code, modules) != want:
+            sys.exit(f"{code} by module reads as {by_module(code, modules)}, want {want}")
 
 
 def pdf_year(path):
@@ -184,7 +236,7 @@ def main():
         e = json.loads(line)
         if e.get("status") == 200 and e.get("file") and "api-portal" not in e["url"]:
             by_url[e["url"]] = os.path.join(cap, e["file"])
-    builds = xm_builds(xmu)
+    builds, modules = xm_builds(xmu), xm_modules(xmu)
     files = Files(cap)
 
     def tr(text, lang):
@@ -199,7 +251,7 @@ def main():
                 return norm(c)
         return norm(module)
 
-    models, codes, joined, inside = [], {}, 0, 0
+    models, codes, joined, inside, moduled = [], {}, 0, 0, 0
     for pid, d in sorted(api["products"].items(), key=lambda kv: int(kv[0])):
         code = norm(d.get("modelKey"))
         if not code or GARBLE.search(code):
@@ -273,6 +325,15 @@ def main():
                 elif module:
                     m["contents"] = [{"code": board_code(module), "basis": "firmware_build", "evidence": page, "label": fname}]
                 inside += "contents" in m
+        if kind == "board" and "soc_label" not in m:
+            # No firmware linked, or none naming a chip: the builds made
+            # under the board's own module name say it.
+            said = by_module(code, modules)
+            if said:
+                moduled += 1
+                m["soc_label"] = said[0]
+                if "device_ids" not in m and said[1]:
+                    m["device_ids"] = [{"id": d, "evidence": u} for d, u in said[1]]
         if year:
             m["listed_year"] = year
         if code in codes:
@@ -327,7 +388,7 @@ def main():
     kinds = {}
     for m in models:
         kinds[m["kind"]] = kinds.get(m["kind"], 0) + 1
-    print(f"jftech: {len(models)} products {kinds}, {joined} joined to xmupdates, {inside} with a board inside, "
+    print(f"jftech: {len(models)} products {kinds}, {joined} joined to xmupdates, {moduled} by module name, {inside} with a board inside, "
           f"{sum(1 for m in models if m.get('listed_year'))} dated, {len(files.out)} files; sha256 {h.hexdigest()}", file=sys.stderr)
 
 

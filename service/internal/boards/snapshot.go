@@ -43,10 +43,11 @@ var Snapshots = map[string]string{
 	// tehno32.ru's archive, on 541 modules and 71 PCBs, with 650 pinout pages,
 	// and the device IDs its firmware pages name.
 	"tehno32": "f7137bd8a94dc3f7776f868e67cf5fa063dbbb4ce7d638ca00cbc382ec15a651",
-	// boards-donors/jftech/snapshot-96378d036c16.tar: JFTech's catalogue (Xiongmai's
-	// current brand), 198 products: 132 boards and 66 finished devices, 39 of
-	// them with the board their firmware page names or is built for.
-	"jftech": "96378d036c160261e0cc90bd441254722beb34b22925a71967438310c39b05aa",
+	// boards-donors/jftech/snapshot-da28891368ba.tar: JFTech's catalogue (Xiongmai's
+	// current brand), 198 products: 132 boards and 66 finished devices, 40 of
+	// them with the board their firmware page names or is built for; 5 boards
+	// linking no firmware take their chip from builds under their module name.
+	"jftech": "da28891368ba2d365f3af0abfb39f2b90bafe00c91871edd4d7265fb45d41f6f",
 	// boards-donors/anjoy/snapshot-13aea65ba130.tar: Anjoy Vision's document archive,
 	// 191 models (182 modules, 9 NVRs), 167 with wiring pinouts, 175 with
 	// photos (the archive's own, or those inside its documents); Chinese
