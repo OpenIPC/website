@@ -308,12 +308,51 @@ func (d *Dump) ModuleAt(addr uint64) (Module, uint64, bool) {
 	return Module{}, 0, false
 }
 
-// Main is the majestic executable's module: the first in the table.
+// Main is the majestic executable's module: the one holding its entry point,
+// or else the first in the table.
 func (d *Dump) Main() (Module, bool) {
 	if len(d.Modules) == 0 {
 		return Module{}, false
 	}
+	// The table is in the C library's order: glibc and musl put the
+	// executable first, uClibc (Ingenic's) last. Its entry point says which.
+	if entry, ok := d.auxv(9 /* AT_ENTRY */); ok {
+		for _, m := range d.Maps {
+			if entry < m.Start || entry >= m.End || !m.Exec() {
+				continue
+			}
+			for _, mod := range d.Modules {
+				if mod.Path == m.Path {
+					return mod, true
+				}
+			}
+		}
+	}
 	return d.Modules[0], true
+}
+
+// auxv is the value of one entry of the auxiliary vector.
+func (d *Dump) auxv(key uint64) (uint64, bool) {
+	w := 4
+	if d.Is64() {
+		w = 8
+	}
+	word := func(b []byte) uint64 {
+		if w == 4 {
+			return uint64(d.Order().Uint32(b))
+		}
+		return d.Order().Uint64(b)
+	}
+	for i := 0; i+2*w <= len(d.Auxv); i += 2 * w {
+		k := word(d.Auxv[i:])
+		if k == 0 {
+			break
+		}
+		if k == key {
+			return word(d.Auxv[i+w:]), true
+		}
+	}
+	return 0, false
 }
 
 // Signals' names, for the titles. The numbers are Linux's, the same on every
