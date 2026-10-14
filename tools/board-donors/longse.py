@@ -16,7 +16,10 @@ a full picture at the same path without the prefix, and links its datasheet
 (PDF). The menus around it show every other product's thumbnails: those are
 not its photos.
 Both are fetched; Longse's own text is read from the page by the snapshot
-builder.
+builder. Category and product pages are read afresh every run, since Longse
+edits them in place. A photo or datasheet is fetched once per address, as
+every donor's files are: one Longse replaces under the same address keeps
+its first capture until a fresh capture directory is used.
 
 What it keeps, in the layout capture.py uses: every page and file, logged
 with its sha256, and listing.json -- per product its URL, category, page
@@ -82,7 +85,8 @@ def main():
     out = []
     for url in sorted(products):
         p = products[url]
-        e, body = cap.get(url)
+        # Read afresh like a category: Longse edits a camera's page in place.
+        e, body = cap.get(url, refetch=True)
         if body is None:
             failed.append(f"{url}: {e.get('status')}")
             continue

@@ -123,11 +123,14 @@ type SnapModel struct {
 type SnapContent struct {
 	// Code is the board as the evidence names it.
 	Code string `json:"code"`
-	// Basis is firmware_page (the page names the board) or firmware_build
-	// (the firmware is built for the board's module).
+	// Basis is firmware_page (the page names the board), firmware_build
+	// (the firmware is built for the board's module) or model_code (the
+	// device's model name is its housing and the board's code: Longse's
+	// DMSAKL5RC is housing DMSA on board KL5RC).
 	Basis    string `json:"basis"`
 	Evidence string `json:"evidence"`
-	// Label is what the evidence shows, quoted: the firmware file's name.
+	// Label is what the evidence shows, quoted: the firmware file's name, or
+	// the model name that carries the board's code.
 	Label string `json:"label"`
 }
 
