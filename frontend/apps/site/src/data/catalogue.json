@@ -989,6 +989,36 @@
       "website_url": null,
       "socs": [
         {
+          "model": "NT98533",
+          "family": "NT9853X",
+          "version": "",
+          "urlname": "nt98533",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "NT98560",
+          "family": "NT9856X",
+          "version": "",
+          "urlname": "nt98560",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "NT98561",
+          "family": "NT9856X",
+          "version": "",
+          "urlname": "nt98561",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
           "model": "NT98562",
           "family": "NT9856X",
           "version": "",

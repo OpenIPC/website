@@ -2795,6 +2795,69 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/mstar/socs/msc316dm"/>
   </url>
   <url>
+    <loc>https://openipc.org/cameras/vendors/novatek/socs/nt98533</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98533"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98533"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/novatek/socs/nt98533"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98533"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/novatek/socs/nt98533</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98533"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98533"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/novatek/socs/nt98533"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98533"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/novatek/socs/nt98533</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98533"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98533"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/novatek/socs/nt98533"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98533"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/cameras/vendors/novatek/socs/nt98560</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98560"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98560"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/novatek/socs/nt98560"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98560"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/novatek/socs/nt98560</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98560"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98560"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/novatek/socs/nt98560"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98560"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/novatek/socs/nt98560</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98560"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98560"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/novatek/socs/nt98560"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98560"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/cameras/vendors/novatek/socs/nt98561</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98561"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98561"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/novatek/socs/nt98561"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98561"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/novatek/socs/nt98561</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98561"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98561"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/novatek/socs/nt98561"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98561"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/novatek/socs/nt98561</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98561"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98561"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/novatek/socs/nt98561"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98561"/>
+  </url>
+  <url>
     <loc>https://openipc.org/cameras/vendors/novatek/socs/nt98562</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98562"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98562"/>
