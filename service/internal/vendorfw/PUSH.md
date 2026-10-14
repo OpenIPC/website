@@ -36,6 +36,7 @@ pull-request events. It must also come from one of these workflows:
 | `xmupdates` | OpenIPC/xmupdates | `OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/main` |
 | `coupler` | OpenIPC/coupler | `OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main` |
 | `anjoyupdates` | OpenIPC/anjoyupdates | `OpenIPC/anjoyupdates/.github/workflows/weekly-update.yml@refs/heads/main` |
+| `herospeedupdates` | OpenIPC/herospeedupdates | `OpenIPC/herospeedupdates/.github/workflows/weekly-update.yml@refs/heads/main` |
 
 The workflow needs `permissions: id-token: write`.
 
@@ -141,5 +142,25 @@ MC-E12 takes MCE12A). An item of this source carries, instead of
 
 A board's detail (`/api/v1/boards/models/{id}`) gives it these builds as
 `firmware`, newest first, the variant in the reader's language; the same
-file filed under one device type and variant is listed once. The board tree
-does not carry them.
+file filed under one device type, variant and module is listed once. The
+board tree does not carry them.
+
+## Herospeed's builds for Longse's boards (`herospeedupdates`)
+
+Herospeed, Longse's firmware house, lists its builds per solution, the board
+a Longse camera's model name ends in (`KL5R/KL5RC`; DMSAKL5RC is housing DMSA
+on KL5RC), on two pages: current products (catid 281) and discontinued ones
+(catid 344). The build's own name says nothing of the board
+(`KL5_1ND_BVHB_V2.0.13.260306_R2`), so each item names the list's solution as
+its `module`, which is **required** for this source, and is matched as
+above, to the boards of the maker `longse`:
+
+- `device_type`: the build's name up to its version (`KL5_1ND_BVHB`; the old
+  builds' whole stem, `RV1109_IMX335NAND_BASE_W`);
+- `module`: the first code of the list's Solution cell (`KL5R/KL5RC` ->
+  `KL5R`), as the herospeed snapshot names the board;
+- `app`: `public`; `category`: `wifi` for the Wi-Fi IPC series, else `camera`;
+- `key`: the module and the build, since one file is filed under several
+  boards (KL5R and KL5AD share `KL5_1ND_BVHB`): one item each.
+
+Rows whose solution is `/` or a resolution name no board and are not pushed.

@@ -1,9 +1,11 @@
 /**
- * The firmware a maker whose builds are keyed by board model (Anjoy Vision)
- * made for one board, mirrored by OpenIPC/anjoyupdates: grouped by the
- * device type each build is for, newest first, the maker's own builds told
- * apart from those made for a customer's app, with the maker's own notes on
- * flashing them.
+ * The firmware a maker whose builds are keyed by board model (Anjoy Vision,
+ * Longse) made for one board, mirrored by OpenIPC/anjoyupdates and
+ * OpenIPC/herospeedupdates: grouped by the device type each build is for,
+ * newest first, the maker's own builds told apart from those made for a
+ * customer's app, with the maker's own notes on flashing them where it has
+ * any. The lead, the notes and the mirror's name are the maker's own
+ * (mfw_lead_<maker id>, ...).
  */
 import { useState } from 'preact/hooks';
 import type { BoardsT } from '../../lib/boards-i18n';
@@ -12,9 +14,11 @@ import type { ModelBuild } from '../../lib/boards/types';
 
 const BTN = 'shrink-0 self-start rounded-md border border-brand-blue px-3 py-1 text-sm font-medium whitespace-nowrap no-underline text-brand-blue hover:border-link-hover';
 const SHOWN = 4;
+// Makers whose own notes on flashing the panel quotes (mfw_notes_<id>).
+const NOTES = new Set(['anjoy']);
 
-export default function ModelFirmware({ builds, maker, locale, t }: {
-  builds: ModelBuild[]; maker: string; locale: string; t: BoardsT;
+export default function ModelFirmware({ builds, maker, makerId, locale, t }: {
+  builds: ModelBuild[]; maker: string; makerId: string; locale: string; t: BoardsT;
 }) {
   const [all, setAll] = useState(false);
   const groups = buildGroups(builds);
@@ -27,8 +31,10 @@ export default function ModelFirmware({ builds, maker, locale, t }: {
         {t('mfw_title', { maker })}{' '}
         <span class="text-sm font-normal text-body-secondary">· {t('mfw_builds', { count: builds.length })} · {t('mfw_types', { count: types(groups) })}</span>
       </h3>
-      <p class="m-0 text-[13px] text-body-secondary">{t('mfw_lead')}</p>
-      <div class="rounded-md bg-[#fff5e6] px-3 py-2 text-[13px] text-[#8a5200]"><b>{t('mfw_notes_label', { maker })}</b> {t('mfw_notes')}</div>
+      <p class="m-0 text-[13px] text-body-secondary">{t(`mfw_lead_${makerId}`)}</p>
+      {NOTES.has(makerId) && (
+        <div class="rounded-md bg-[#fff5e6] px-3 py-2 text-[13px] text-[#8a5200]"><b>{t('mfw_notes_label', { maker })}</b> {t(`mfw_notes_${makerId}`)}</div>
+      )}
       {shown.map((g) => (
         <div key={`${g.deviceType} ${g.variant ?? ''}`} class="overflow-hidden rounded-md border border-hairline">
           <div class="flex flex-wrap items-baseline gap-x-2 bg-surface-alt px-2.5 py-1.5">
@@ -58,7 +64,7 @@ export default function ModelFirmware({ builds, maker, locale, t }: {
           {t('mfw_more', { count: hidden })}
         </button>
       )}
-      <span class="text-xs text-body-secondary">{t('mfw_source', { maker })}</span>
+      <span class="text-xs text-body-secondary">{t(`mfw_source_${makerId}`, { maker })}</span>
     </section>
   );
 }

@@ -316,6 +316,7 @@ zh:
       wi-fi-base-station: "Wi-Fi 基站"
       smart-video-doorbell: "可视门铃"
       ptz-camera-module: "云台摄像机模组"
+      ptz-camera: "云台摄像机"
     show_all:
       one: '显示全部 {count} 块'
       other: '显示全部 {count} 块'
@@ -369,16 +370,18 @@ zh:
     mfw_types:
       one: '{count} 种设备类型'
       other: '{count} 种设备类型'
-    mfw_lead: "每个版本对应一种设备类型：模组、其硬件版本（V0、V5）及功能版本（4G、TF 卡、AF 变焦、镜头模组）。只刷写为您的主板制作的版本。按时间从新到旧排列。"
+    mfw_lead_anjoy: "每个版本对应一种设备类型：模组、其硬件版本（V0、V5）及功能版本（4G、TF 卡、AF 变焦、镜头模组）。只刷写为您的主板制作的版本。按时间从新到旧排列。"
+    mfw_lead_longse: "每个版本对应一块主板：Longse 摄像机型号末尾的方案（DMSAKL5RC 中的 KL5RC）。只刷写为您的主板制作的版本。按时间从新到旧排列。"
     mfw_notes_label: "{maker} 的说明："
-    mfw_notes: "摄像机模组只提供模组本身的固件；整机厂出货的固件可能是定制扩展功能的固件（AF 聚焦、云台控制、GB28181），升级模组固件后此类功能可能无法使用。用久了的老模组升级有一定挂掉的风险。"
+    mfw_notes_anjoy: "摄像机模组只提供模组本身的固件；整机厂出货的固件可能是定制扩展功能的固件（AF 聚焦、云台控制、GB28181），升级模组固件后此类功能可能无法使用。用久了的老模组升级有一定挂掉的风险。"
     mfw_own: "{maker} 原厂版本"
     mfw_customer: "为客户应用定制（{app}）"
     mfw_collection_pre-2022: "来自 {maker} 2022 年前型号固件合集（百度网盘）"
     mfw_more:
       one: '显示其余 {count} 种设备类型'
       other: '显示其余 {count} 种设备类型'
-    mfw_source: "{maker} 固件，由 OpenIPC/anjoyupdates 镜像。"
+    mfw_source_anjoy: "{maker} 固件，由 OpenIPC/anjoyupdates 镜像。"
+    mfw_source_longse: "{maker} 固件，来自其固件研发方 Herospeed 的下载中心，由 OpenIPC/herospeedupdates 镜像。"
     mfw_cat_camera: 摄像机模组
     mfw_cat_wifi: Wi-Fi
     mfw_cat_4g: 4G
@@ -420,6 +423,7 @@ zh:
     inside_confirmed: "✓ 已由用户确认"
     inside_why_firmware_page: "厂商为此设备提供的固件页面写明了主板："
     inside_why_firmware_build: "厂商为此设备提供的固件是为此主板的模组编译的："
+    inside_why_model_code: "设备型号由外壳和此主板的型号组成："
     inside_why_device_id: "它与此主板运行相同的固件：设备 ID {id}。"
     inside_why_owner: "有用户拆开设备并发来了主板照片："
     inside_unconfirmed: 尚未由用户确认。
@@ -435,6 +439,8 @@ zh:
     source_note_jftech: "JFTech 的产品目录：雄迈产品线的当前品牌，模组型号相同，固件来自相同的下载服务器（2026 年存档）。"
     source_note_xmupdates: "仅从原厂固件得知的主板：每个雄迈固件标明的芯片和设备 ID，来自 OpenIPC/xmupdates 镜像的列表。"
     source_note_anjoy: "安佳威视的文档存档（anjvision.com:8021/pdf）：厂商为其摄像机模组提供的规格书、接线图和主板照片，2026 年存档。"
+    source_note_herospeed: "Longse 的固件研发方 Herospeed 的固件列表：Longse 网络摄像机所用的主板、各自的固件版本，以及固件标明的芯片（2026 年存档）。"
+    source_note_longse: "Longse 的网络摄像机目录：照片、规格书和参数，以及每款摄像机所用的主板，即型号末尾的方案（2026 年存档）。"
     link_stock_firmware: 原厂固件
     link_successor: 后继型号
     link_predecessor: 取代型号

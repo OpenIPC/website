@@ -58,6 +58,15 @@ var Snapshots = map[string]string{
 	// photos (the archive's own, or those inside its documents); Chinese
 	// original with English and Russian; the capture beside it.
 	"anjoy": "13aea65ba130c19ff4513c1b2c93636409bc585df0093e523fad07024ae19b10",
+	// boards-donors/herospeed/snapshot-4916e4bbde88.tar: the boards Longse's IP
+	// cameras are built on, from the firmware lists of Herospeed (its firmware
+	// house), 42 current and discontinued, 18 with the chip their builds name.
+	"herospeed": "4916e4bbde880d9019d6cfeca0a4fe5e1afdf14bbce5ab24e4bc6ae95120b0c0",
+	// boards-donors/longse/snapshot-c1cc87519735.tar: Longse's network cameras,
+	// 261 with photos, datasheets and specifications, English with Russian and
+	// Chinese translated; 199 hold the Herospeed board their model name ends
+	// in (imported after herospeed).
+	"longse": "c1cc87519735ce9afd5208751330de0011c8b12dace892646afb092eb825b6fb",
 }
 
 type Snapshot struct {

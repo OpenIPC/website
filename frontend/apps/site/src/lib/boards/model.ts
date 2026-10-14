@@ -334,7 +334,16 @@ export const KNOWN_LINES = new Set([
   'wi-fi-base-station', 'smart-video-doorbell',
   // Anjoy Vision's pan-tilt modules (摇头机); its other lines are the ones above.
   'ptz-camera-module',
+  // Longse's PTZ cameras; its other cameras are network and Wi-Fi cameras above.
+  'ptz-camera',
 ]);
+
+/**
+ * The makers whose firmware is keyed by board model (vendorfw.ByModel in the
+ * service): each has its own lead and mirror line in the board panel's
+ * firmware block (mfw_lead_<id>, mfw_source_<id>).
+ */
+export const MODEL_FIRMWARE_MAKERS = ['anjoy', 'longse'] as const;
 
 /** A product line in the reader's language, or as the source names it. */
 export function lineLabel(line: string, t: (key: string) => string): string {

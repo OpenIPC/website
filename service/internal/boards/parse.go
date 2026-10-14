@@ -68,6 +68,9 @@ var makers = map[string]Manufacturer{
 	// Anjoy Vision (深圳市安佳威视): camera modules from its own document
 	// archive, a donor snapshot only.
 	"ANJOY": {ID: "anjoy", Name: "Anjoy Vision", Aliases: []string{"安佳威视"}, Position: 6},
+	// Longse, whose firmware house is Herospeed: boards from Herospeed's
+	// firmware lists and cameras from Longse's catalogue, donor snapshots only.
+	"LONGSE": {ID: "longse", Name: "Longse", Aliases: []string{"Herospeed"}, Position: 7},
 	"?":     {ID: "unknown", Name: "Unidentified maker", Position: 99},
 }
 

@@ -216,7 +216,7 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
         )}
 
         {entry && detail.state === 'ok' && (detail.value.firmware?.length ?? 0) > 0 && (
-          <ModelFirmware builds={detail.value.firmware ?? []} maker={entry.maker.name} locale={locale} t={t} />
+          <ModelFirmware builds={detail.value.firmware ?? []} maker={entry.maker.name} makerId={entry.maker.id} locale={locale} t={t} />
         )}
 
         {detail.state === 'ok' && detail.value.links.length > 0 && (

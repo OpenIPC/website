@@ -930,6 +930,43 @@ func TestAnAnjoyModuleImportsUnderItsMakerWithChineseAsTheOriginal(t *testing.T)
 	}
 }
 
+// Longse's boards come from Herospeed's firmware lists, its cameras from its
+// own catalogue: a camera's model name is its housing and its board's code
+// (DMSAKL5RC), and that code may be the board's alias (KL5RC of KL5R).
+func TestALongseCameraHoldsTheHerospeedBoardItsModelNameEndsIn(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	board := func(code string, aliases ...string) map[string]any {
+		return model("longse", code, map[string]any{"aliases": aliases, "category": "IP Camera Module", "soc_label": "NT98566",
+			"sensor": "", "files": []map[string]string{}, "original": []string{"en"}, "translated_from": "en"})
+	}
+	if _, err := im.FromSnapshot(ctx, donor(t, "herospeed", board("KL5R", "KL5RC"), board("KL5AD"))); err != nil {
+		t.Fatal(err)
+	}
+	page := "https://www.longse.com/Products/NetworkProducts/NetworkCameras/Value/5MP/2025/0806/9880.html"
+	if _, err := im.FromSnapshot(ctx, donor(t, "longse", model("longse", "DMSAKL5RC", map[string]any{
+		"kind": "camera", "category": "Network Camera", "soc_label": "", "sensor": "",
+		"contents": []map[string]string{{"code": "KL5RC", "basis": "model_code", "evidence": page, "label": "DMSAKL5RC"}}}))); err != nil {
+		t.Fatal(err)
+	}
+	var name string
+	var aliases []string
+	if err := pool.QueryRow(ctx, `SELECT f.name, f.aliases FROM board_models m JOIN board_manufacturers f ON f.id = m.manufacturer_id WHERE m.id = 'longse-kl5r'`).Scan(&name, &aliases); err != nil {
+		t.Fatal(err)
+	}
+	if name != "Longse" || len(aliases) != 1 || aliases[0] != "Herospeed" {
+		t.Errorf("KL5R's maker: %q, also %v", name, aliases)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_contents c JOIN board_model_aliases a ON a.maker_id = 'longse' AND a.code_norm = c.board_code
+		WHERE c.model_id = 'longse-dmsakl5rc' AND a.model_id = 'longse-kl5r' AND c.basis = 'model_code' AND c.status = 'likely'`); n != 1 {
+		t.Error("DMSAKL5RC does not hold KL5R through its alias KL5RC")
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE id = 'longse-dmsakl5rc' AND kind = 'camera'`); n != 1 {
+		t.Error("DMSAKL5RC is not a camera")
+	}
+}
+
 // Migration 014 drops the family links relate() wrote once per source, and
 // only those: a related link a source brings itself stays, and outranks a
 // generated copy of it.

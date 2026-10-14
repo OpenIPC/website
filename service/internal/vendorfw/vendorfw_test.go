@@ -309,6 +309,21 @@ func TestAModelKeyedPushNamesADeviceType(t *testing.T) {
 			t.Errorf("%s: accepted", name)
 		}
 	}
+	// Herospeed's device types name no board: its items name their module.
+	hs := Item{Key: "kl5rc__KL5_1ND_BVHB_V2.0.13.260306_R2", Version: "V2.0.13.260306_R2", Build: "KL5_1ND_BVHB_V2.0.13.260306_R2",
+		DeviceType: "KL5_1ND_BVHB", Module: "KL5RC", App: "public", Category: "camera",
+		AssetURL: Sources["herospeedupdates"] + "2026-06-01/KL5_1ND_BVHB_V2.0.13.260306_R2.zip"}
+	if _, err := Decode(body(t, "herospeedupdates", hs)); err != nil {
+		t.Fatalf("a good herospeedupdates push: %v", err)
+	}
+	for name, it := range map[string]Item{
+		"no module":    func() Item { i := hs; i.Module = ""; return i }(),
+		"anjoy's repo": func() Item { i := hs; i.AssetURL = Sources["anjoyupdates"] + "x/a.zip"; return i }(),
+	} {
+		if _, err := Decode(body(t, "herospeedupdates", it)); err == nil {
+			t.Errorf("herospeedupdates, %s: accepted", name)
+		}
+	}
 	// An XM source still needs its device ID.
 	if _, err := Decode(body(t, "xmupdates", Item{Key: "a", Version: "1", Build: "b", DeviceType: "X_V0",
 		AssetURL: Sources["xmupdates"] + "x/a.bin"})); err == nil {

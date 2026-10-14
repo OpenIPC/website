@@ -145,7 +145,7 @@ export interface ModelDetail {
   about: About[];
   links: BoardLink[];
   devices?: VendorDevice[];
-  /** The builds a maker whose firmware is keyed by board model (Anjoy Vision) made for this board, newest first. */
+  /** The builds a maker whose firmware is keyed by board model (Anjoy Vision, Longse) made for this board, newest first. */
   firmware?: ModelBuild[];
   /** For each of the board's shared photos, by source then sha256: the other boards that source shows it for. */
   shared_photos?: Record<string, Record<string, { id: string; model: string | null }[]>>;
@@ -205,8 +205,11 @@ export interface Content {
   /** The catalogue's board of that code; null until it lists one. */
   board_id: string | null;
   status: 'likely' | 'confirmed';
-  /** firmware_page: the vendor's page names the board; firmware_build: the firmware is built for its module; owner: a photo. */
-  basis: 'firmware_page' | 'firmware_build' | 'owner';
+  /**
+   * firmware_page: the vendor's page names the board; firmware_build: the firmware is built for its module;
+   * model_code: the model name is a housing and the board's code (Longse's DMSAKL5RC); owner: a photo.
+   */
+  basis: 'firmware_page' | 'firmware_build' | 'model_code' | 'owner';
   evidence: string;
   /** What the evidence shows: the firmware file's name. */
   label: string | null;

@@ -20,7 +20,9 @@ import (
 // Owners is the source of confirmed contents.
 const Owners = "owners"
 
-var contentBases = map[string]bool{"firmware_page": true, "firmware_build": true}
+// model_code: the device's model name is its housing and its board (Longse's
+// DMSAKL5RC is housing DMSA on board KL5RC).
+var contentBases = map[string]bool{"firmware_page": true, "firmware_build": true, "model_code": true}
 
 // saveContents records what a snapshot says one device holds.
 func saveContents(ctx context.Context, tx pgx.Tx, src, modelID string, list []SnapContent) error {
