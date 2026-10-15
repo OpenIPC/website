@@ -1,8 +1,10 @@
 /**
- * "Known boards with <SoC>", under the installation wizard on each SoC page.
+ * "Known boards with <SoC>", under the installation wizard on each SoC page,
+ * and "Known boards with <sensor>" on each sensor's page.
  *
- * It reads /api/v1/boards?soc=<urlname>, the boards built on this chip, in the
- * page's language. Each card opens that board's details in the catalogue. A
+ * For a SoC it reads /api/v1/boards?soc=<urlname>, the boards built on this
+ * chip, in the page's language; for a sensor, the whole catalogue, keeping
+ * the boards whose units name the part by any of its names. Each card opens that board's details in the catalogue. A
  * SoC with no boards on record, a catalogue that cannot be fetched, or a page
  * still loading all render nothing: the wizard is what the visitor came for,
  * and this section must never make that page look broken.
@@ -15,11 +17,18 @@ import type { Source } from '../../lib/boards/types';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import type { Locale } from '../../lib/i18n';
 import { Chip, makerName } from './parts';
+import { nameKey, sensorSlug } from '../../lib/sensor-names';
 
 const SHOWN = ['pinout', 'flash_dump', 'uboot_env'] as const;
 
-export default function KnownBoards({ locale, soc, model, catalogueHref }: {
-  locale: Locale; soc: string; model: string; catalogueHref: string;
+export default function KnownBoards({ locale, soc, sensor, model, catalogueHref }: {
+  locale: Locale;
+  /** The SoC's urlname, or */
+  soc?: string;
+  /** the sensor's (data/sensors). */
+  sensor?: string;
+  model: string;
+  catalogueHref: string;
 }) {
   const t = useBoardsTranslations(locale);
   const [boards, setBoards] = useState<Entry[]>([]);
@@ -31,14 +40,16 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
       .then((file) => {
         if (!live) return;
         // The server answers for this SoC; the check keeps a server that ignored ?soc= from filling the page.
-        const mine = newestFirst(entries(file).filter((m) => m.soc === soc));
+        const mine = newestFirst(entries(file).filter((m) => (soc
+          ? m.soc === soc
+          : m.units.some((u) => sensorSlug(u.sensor) === sensor))));
         const used = new Set(mine.flatMap((m) => m.sources));
         setBoards(mine);
         setSources(file.sources.filter((s) => used.has(s.id)));
       })
       .catch(() => { /* Nothing to add to the page; the wizard stands alone. */ });
     return () => { live = false; };
-  }, [soc, locale]);
+  }, [soc, sensor, locale]);
 
   if (boards.length === 0) return null;
 
@@ -48,7 +59,7 @@ export default function KnownBoards({ locale, soc, model, catalogueHref }: {
         <h2 id="known-boards" class="mb-0 text-h3 font-semibold">
           {t('known_title', { soc: model })} <small class="text-sm font-normal text-body-secondary">({tally(boards, t)})</small>
         </h2>
-        <a href={`${catalogueHref}?soc=${encodeURIComponent(soc)}`}>{t('known_link')}</a>
+        <a href={`${catalogueHref}?${soc ? `soc=${encodeURIComponent(soc)}` : `sensor=${encodeURIComponent(nameKey(model))}`}`}>{t('known_link')}</a>
       </header>
       <ul class="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3.5 p-0">
         {boards.map((m) => {

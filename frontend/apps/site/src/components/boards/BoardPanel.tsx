@@ -21,7 +21,8 @@ import {
   type CodeIndex, type Entry, type Heading, type Inside,
 } from '../../lib/boards/model';
 import type { BoardsT } from '../../lib/boards-i18n';
-import type { Locale } from '../../lib/i18n';
+import { pathFor, type Locale } from '../../lib/i18n';
+import { sensorHref, sensorSlug } from '../../lib/sensor-names';
 import { SocChip, SourceChips, Tags, Thumb, galleryOf, type SocLinks } from './parts';
 import ConsoleView, { fileKey } from './ConsoleView';
 
@@ -257,7 +258,14 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
                         </span>
                       )
                       : <b>{t('from_source', { source: sourceName(u.source) })}</b>}
-                    {u.sensor && <span class="text-body-secondary">{t('sensor')}: <span class="font-mono text-body">{u.sensor}</span></span>}
+                    {u.sensor && (
+                      <span class="text-body-secondary">{t('sensor')}:{' '}
+                        {/* A sensor the sensor catalogue knows opens its specifications. */}
+                        {sensorSlug(u.sensor)
+                          ? <a class="font-mono" href={pathFor(locale, sensorHref(sensorSlug(u.sensor)!))}>{u.sensor}</a>
+                          : <span class="font-mono text-body">{u.sensor}</span>}
+                      </span>
+                    )}
                     {(u.flash_chip || u.flash_size_mb) && (
                       <span class="text-body-secondary">{t('flash')}: <span class="font-mono text-body">
                         {[u.flash_chip, u.flash_size_mb ? `${u.flash_size_mb} MB` : null].filter(Boolean).join(', ')}

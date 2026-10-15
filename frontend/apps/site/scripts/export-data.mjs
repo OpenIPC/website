@@ -6,11 +6,12 @@
  *   node scripts/export-data.mjs           write every generated file
  *   node scripts/export-data.mjs --check   exit 1 if any committed file is stale
  *
- * Four exports:
+ * Five exports:
  *
  *   i18n       data/locales/*.yml     -> src/i18n/{en,ru,zh}.json and the
- *                                         wizard.*, wall.*, explorer.* and boards.* island catalogues
+ *                                         wizard.*, wall.*, explorer.*, boards.* and sensors.* island catalogues
  *   catalogue  data/catalogue/*.yml   -> src/data/catalogue.json
+ *   sensors    data/sensors/*.yml     -> src/data/sensors.json and sensor-names.json
  *   webui      data/webui_gallery.yml -> src/data/webui-gallery.json
  *   news       data/news/*.md         -> src/data/news.json
  *
@@ -89,7 +90,12 @@ const EXPLORER = [
 const BOARDS = [
   ['boards'],
 ];
-const ISLANDS = { wizard: WIZARD, wall: WALL, explorer: EXPLORER, boards: BOARDS };
+// The sensor catalogue's island: the lineup chart, its filters and the table
+// on /cameras/sensors, and the boards on each sensor's page.
+const SENSORS = [
+  ['sensors'],
+];
+const ISLANDS = { wizard: WIZARD, wall: WALL, explorer: EXPLORER, boards: BOARDS, sensors: SENSORS };
 
 function deepMerge(into, from) {
   for (const [k, v] of Object.entries(from)) {
@@ -170,6 +176,163 @@ export function catalogue(root = REPO) {
     .sort((a, b) => byteOrder(String(a.name), String(b.name)))
     .map((data) => ({ ...pick(data, VENDOR_FIELDS), socs: data.socs.map((s) => pick(s, SOC_FIELDS)) }));
   return { vendors };
+}
+
+// --- sensors -------------------------------------------------------------------
+//
+// data/sensors/<maker>.yml, one file per sensor maker (data/sensors/README.md).
+// The site reads nothing else about sensors, so what a reader would otherwise
+// meet as a wrong page is refused here: a key nobody reads, a word outside a
+// vocabulary, two parts answering to one name, and a source that is not a
+// public address. The catalogue publishes facts, never documents.
+
+const SENSOR_MAKER_FIELDS = ['name', 'urlname', 'full_name', 'website_url', 'sensors'];
+const SENSOR_FIELDS = [
+  'model', 'urlname', 'aliases', 'family', 'status', 'released', 'released_basis',
+  'width', 'height', 'megapixels', 'pixel_um', 'optical_format', 'shutter', 'cfa', 'interfaces',
+  'max_fps', 'adc_bits', 'hdr', 'nir', 'category', 'sensitivity', 'saturation', 'snr_max_db',
+  'dr_db', 'dr_hdr_db', 'dark_current', 'twin', 'successor', 'notes', 'sources',
+];
+export const SENSOR_VOCAB = {
+  status: ['mp', 'eol', 'sampling', 'unknown'],
+  released_basis: ['press', 'flyer', 'datasheet', 'estimate'],
+  shutter: ['rolling', 'global'],
+  cfa: ['bayer', 'rgbir', 'mono', 'rccb'],
+  interfaces: ['mipi', 'lvds', 'sublvds', 'slvs-ec', 'hispi', 'dvp'],
+  hdr: ['dol', 'stagger', 'dcg', 'clear-hdr', 'lofic', 'row-interleave', 'knee'],
+  category: ['standard', 'lowlight', 'nir', 'hdr', 'global', 'square', 'large'],
+  source: ['page', 'flyer', 'press'],
+};
+const SENSOR_UNITS = {
+  sensitivity: ['mV/lux·s', 'e-/lux·s', 'LSB/lux·s'],
+  saturation: ['mV', 'e-'],
+  dark_current: ['mV/s', 'e-/s'],
+};
+const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+// What a public address is not: the private datasheet collection, a local file, a document.
+const PRIVATE_SOURCE = /josephnef|sensor-datasheets|\.pdf(?:$|[?#])/i;
+
+/** The key a sensor name is matched by, as src/lib/boards/model.ts sensorKey() makes it. */
+export const sensorNameKey = (name) => String(name).trim()
+  .replace(/^(sony|omni ?vision|onmi ?vision|silicon optronics)\s+/i, '').toUpperCase();
+
+function sensorEntry(file, s) {
+  const where = `data/sensors/${file}: ${s?.model ?? '(no model)'}`;
+  const fail = (why) => {
+    throw new Error(`${where}: ${why}`);
+  };
+  if (!isHash(s)) fail('a sensor must be a mapping');
+  const unknown = Object.keys(s).filter((k) => !SENSOR_FIELDS.includes(k));
+  if (unknown.length > 0) fail(`unknown ${unknown.join(', ')} (see data/sensors/README.md)`);
+  if (typeof s.model !== 'string' || !s.model.trim()) fail('no model');
+  if (typeof s.urlname !== 'string' || !SLUG.test(s.urlname)) fail(`urlname ${JSON.stringify(s.urlname)} must be lower-case letters, digits and single hyphens`);
+  if (!SENSOR_VOCAB.status.includes(s.status)) fail(`status must be one of ${SENSOR_VOCAB.status.join(', ')}`);
+  for (const key of ['released_basis', 'shutter', 'cfa', 'category']) {
+    if (key in s && !SENSOR_VOCAB[key].includes(s[key])) fail(`${key} ${JSON.stringify(s[key])} is not one of ${SENSOR_VOCAB[key].join(', ')}`);
+  }
+  for (const key of ['interfaces', 'hdr']) {
+    if (!(key in s)) continue;
+    if (!Array.isArray(s[key])) fail(`${key} must be a list`);
+    const bad = s[key].filter((v) => !SENSOR_VOCAB[key].includes(v));
+    if (bad.length > 0) fail(`${key} ${bad.join(', ')} not in ${SENSOR_VOCAB[key].join(', ')}`);
+  }
+  if ('released' in s) {
+    if (typeof s.released !== 'string' || !/^(19|20)\d\d(-(0[1-9]|1[0-2]))?$/.test(s.released)) fail(`released ${JSON.stringify(s.released)} must be a quoted 'YYYY' or 'YYYY-MM'`);
+    if (!('released_basis' in s)) fail('released needs a released_basis');
+  }
+  for (const key of ['width', 'height', 'megapixels', 'pixel_um', 'max_fps', 'adc_bits', 'snr_max_db', 'dr_db', 'dr_hdr_db']) {
+    if (key in s && !(typeof s[key] === 'number' && s[key] > 0)) fail(`${key} must be a positive number`);
+  }
+  if (('width' in s) !== ('height' in s)) fail('width and height go together');
+  if ('optical_format' in s && typeof s.optical_format !== 'string') fail("optical_format must be quoted, '1/2.8'");
+  if ('nir' in s && typeof s.nir !== 'boolean') fail('nir must be true or false');
+  for (const [key, units] of Object.entries(SENSOR_UNITS)) {
+    if (!(key in s)) continue;
+    const v = s[key];
+    if (!isHash(v) || typeof v.value !== 'number' || !units.includes(v.unit)) fail(`${key} must be {value: <number>, unit: ${units.join(' | ')}}`);
+    const extra = Object.keys(v).filter((k) => !['value', 'unit', 'note'].includes(k));
+    if (extra.length > 0) fail(`${key} has unknown ${extra.join(', ')}`);
+  }
+  if ('aliases' in s && !(Array.isArray(s.aliases) && s.aliases.every((a) => typeof a === 'string' && a.trim()))) fail('aliases must be a list of names');
+  for (const key of ['family', 'notes', 'twin', 'successor']) {
+    if (key in s && typeof s[key] !== 'string') fail(`${key} must be text`);
+  }
+  if ('sources' in s) {
+    if (!Array.isArray(s.sources)) fail('sources must be a list');
+    for (const src of s.sources) {
+      if (!isHash(src) || !SENSOR_VOCAB.source.includes(src.kind) || typeof src.url !== 'string') fail(`a source must be {kind: ${SENSOR_VOCAB.source.join(' | ')}, url: https://...}`);
+      if (!/^https?:\/\/[^/\s]+\.[^/\s]+/.test(src.url)) fail(`source ${src.url} is not a public web address`);
+      if (PRIVATE_SOURCE.test(src.url)) fail(`source ${src.url} points at a document; cite the page that publishes it`);
+    }
+  }
+  return s;
+}
+
+export function sensors(root = REPO) {
+  const dir = join(root, 'data', 'sensors');
+  const makers = readdirSync(dir)
+    .filter((f) => f.endsWith('.yml'))
+    .sort(byteOrder)
+    .map((file) => {
+      const data = yamlFile(join(dir, file));
+      const unknown = Object.keys(data ?? {}).filter((k) => !SENSOR_MAKER_FIELDS.includes(k));
+      if (unknown.length > 0) throw new Error(`data/sensors/${file}: unknown ${unknown.join(', ')}`);
+      if (`${data.urlname}.yml` !== file) throw new Error(`data/sensors/${file}: urlname ${data.urlname} must be the file's name`);
+      if (!Array.isArray(data.sensors)) throw new Error(`data/sensors/${file}: no sensors list`);
+      return { file, data };
+    });
+
+  // One name, one part: a model, its urlname and its aliases, across every maker.
+  const urlnames = new Map();
+  const names = new Map();
+  const claim = (name, owner, file) => {
+    const key = sensorNameKey(name);
+    const had = names.get(key);
+    if (had && had !== owner) throw new Error(`data/sensors/${file}: ${name} names both ${had} and ${owner}`);
+    names.set(key, owner);
+  };
+  for (const { file, data } of makers) {
+    for (const s of data.sensors) {
+      sensorEntry(file, s);
+      if (urlnames.has(s.urlname)) throw new Error(`data/sensors/${file}: urlname ${s.urlname} is also ${urlnames.get(s.urlname)}'s`);
+      urlnames.set(s.urlname, `${data.urlname}/${s.model}`);
+      claim(s.model, s.urlname, file);
+      for (const a of s.aliases ?? []) claim(a, s.urlname, file);
+    }
+  }
+  for (const { file, data } of makers) {
+    for (const s of data.sensors) {
+      for (const key of ['twin', 'successor']) {
+        if (key in s && !urlnames.has(s[key])) throw new Error(`data/sensors/${file}: ${s.model}'s ${key} ${s[key]} is no sensor's urlname`);
+      }
+    }
+  }
+
+  return {
+    makers: makers
+      .map(({ data }) => ({
+        ...pick(data, ['name', 'urlname', 'full_name', 'website_url']),
+        sensors: data.sensors
+          .map((s) => sorted(s))
+          .sort((a, b) => byteOrder(a.model, b.model)),
+      }))
+      .sort((a, b) => byteOrder(a.name, b.name)),
+  };
+}
+
+/**
+ * Every name a part answers to, keyed as boards and cameras report it, to its
+ * urlname: what the board pages link a sensor by without carrying the whole
+ * catalogue.
+ */
+export function sensorNames(root = REPO) {
+  const out = {};
+  for (const maker of sensors(root).makers) {
+    for (const s of maker.sensors) {
+      for (const name of [s.model, ...(s.aliases ?? [])]) out[sensorNameKey(name)] = s.urlname;
+    }
+  }
+  return sorted(out);
 }
 
 // --- WebUI gallery -------------------------------------------------------------
@@ -309,6 +472,8 @@ export function generated(root = REPO) {
     }
   }
   out.push(['src/data/catalogue.json', toJSON(catalogue(root))]);
+  out.push(['src/data/sensors.json', toJSON(sensors(root))]);
+  out.push(['src/data/sensor-names.json', toJSON(sensorNames(root))]);
   out.push(['src/data/webui-gallery.json', toJSON(webuiGallery(root))]);
   out.push(['src/data/news.json', toJSON(news(root))]);
   return out;

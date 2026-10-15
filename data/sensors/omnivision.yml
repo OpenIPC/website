@@ -1,0 +1,840 @@
+name: OmniVision
+urlname: omnivision
+full_name: OMNIVISION
+website_url: https://www.ovt.com/
+sensors:
+- model: OG02B10
+  urlname: og02b10
+  aliases: [OG02B1B, OG02B]
+  family: OmniPixel3-GS
+  status: mp
+  released: '2018-09'
+  released_basis: press
+  width: 1600
+  height: 1300
+  pixel_um: 3.0
+  optical_format: '1/2.9'
+  shutter: global
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  nir: false
+  notes: 2 MP global-shutter sensor with good 850/940 nm response, sold in colour (OG02B10) and mono (OG02B1B) versions for machine vision, robotics and AR/VR tracking.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/og02b10/}
+- model: OG02C10
+  urlname: og02c10
+  aliases: [OG02C1B, OG02C]
+  family: PureCel Plus-S GS
+  status: mp
+  released: '2024-10'
+  released_basis: press
+  width: 1632
+  height: 1264
+  pixel_um: 3.45
+  optical_format: '1/2.53'
+  shutter: global
+  interfaces: [lvds, mipi]
+  max_fps: 300
+  hdr: [dcg]
+  nir: true
+  notes: Fast 2 MP global-shutter sensor (300 fps) with Nyxel NIR and on-chip DCG HDR, in colour and mono versions, for factory automation and barcode scanning.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/og02c10/}
+- model: OG03A10
+  urlname: og03a10
+  aliases: [OG03A1B, OG03A]
+  family: PureCel Plus-S GS
+  status: mp
+  released: '2024-10'
+  released_basis: press
+  width: 2064
+  height: 1544
+  pixel_um: 3.45
+  optical_format: '1/1.8'
+  shutter: global
+  interfaces: [sublvds, mipi]
+  max_fps: 150
+  hdr: [dcg]
+  nir: true
+  notes: 3 MP BSI global-shutter sensor at 150 fps with Nyxel NIR and DCG HDR, aimed at machine vision and traffic cameras.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/og03a10/}
+- model: OG05B10
+  urlname: og05b10
+  aliases: [OG05B1B, OG05B20, OG05B2B, OG05B]
+  family: PureCel Plus-S GS
+  status: mp
+  released: '2024-04'
+  released_basis: press
+  width: 2592
+  height: 1944
+  pixel_um: 2.2
+  optical_format: '1/2.53'
+  shutter: global
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  nir: true
+  notes: 5 MP global-shutter sensor with a small 2.2 µm BSI pixel; common in USB and Raspberry Pi global-shutter camera modules.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/og05b/}
+- model: OG05C10
+  urlname: og05c10
+  aliases: [OG05C1B, OG05C]
+  family: PureCel Plus-S GS
+  status: mp
+  released: '2024-10'
+  released_basis: press
+  width: 2464
+  height: 2064
+  pixel_um: 3.45
+  optical_format: '1/1.44'
+  shutter: global
+  interfaces: [lvds, mipi]
+  max_fps: 120
+  hdr: [dcg]
+  nir: true
+  notes: 5 MP BSI global-shutter sensor at 120 fps with Nyxel NIR and DCG HDR, for industrial and traffic cameras.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/og05c10/}
+- model: OG09A10
+  urlname: og09a10
+  aliases: [OG09A1B, OG09A]
+  family: PureCel Plus-S GS
+  status: mp
+  released: '2024-04'
+  released_basis: press
+  width: 4096
+  height: 2160
+  pixel_um: 3.45
+  optical_format: '1'
+  shutter: global
+  interfaces: [lvds]
+  max_fps: 60
+  hdr: [dcg]
+  nir: true
+  notes: 1-inch 9 MP global-shutter sensor with a 16-lane LVDS output, for machine vision and intelligent traffic systems.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/og09a10/}
+- model: OH02A10
+  urlname: oh02a10
+  family: PureCel
+  status: mp
+  released: '2018-07'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 1.4
+  optical_format: '1/6'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [row-interleave, stagger]
+  sensitivity: {value: 553, unit: mV/lux·s, note: 'also given as 6750 e-/lux·s'}
+  snr_max_db: 38.3
+  dr_db: 73.3
+  notes: Tiny 1080p sensor for medical endoscopes; it reports the same chip ID as the OV2740.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/oh02a10/}
+- model: OS02B10
+  urlname: os02b10
+  family: OmniPixel3-HS
+  status: unknown
+  released: '2017-11'
+  released_basis: datasheet
+  width: 1920
+  height: 1080
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  sensitivity: {value: 2080, unit: mV/lux·s}
+  snr_max_db: 39
+  dr_db: 76
+  dark_current: {value: 10, unit: mV/s, note: '60 °C junction'}
+  notes: 1080p security sensor with large 3 µm pixels; it uses the paged register layout of SuperPix parts rather than OmniVision's usual one.
+- model: OS02C10
+  urlname: os02c10
+  family: PureCel Plus-S
+  status: mp
+  released: '2018-10'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  interfaces: [mipi, lvds]
+  max_fps: 40
+  hdr: [stagger, dcg]
+  nir: true
+  sensitivity: {value: 32000, unit: e-/lux·s, note: 'green pixel, 530 nm'}
+  dr_hdr_db: 120
+  notes: Premium 1080p security sensor combining Nyxel NIR with DCG and 3-exposure HDR for strong night and backlit performance.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os02c10/}
+- model: OS02G10
+  urlname: os02g10
+  family: OmniPixel3-HS
+  status: eol
+  released: '2020-08'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  notes: Low-cost mainstream 1080p security sensor with a 2.8 µm front-illuminated pixel.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os02g10/}
+  - {kind: press, url: https://www.businesswire.com/news/home/20200825005391/en/OmniVision-Announces-Full-HD-Image-Sensor-for-Mainstream-Security-Cameras-Requiring-Excellent-Low-Light-Pixel-Performance}
+- model: OS02H10
+  urlname: os02h10
+  family: PureCel Plus
+  status: mp
+  released: '2021-01'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  notes: 1080p security sensor with Nyxel NIR and a large 2.9 µm pixel, with an ultra-low-power mode for battery cameras.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os02h10/}
+- model: OS02N10
+  urlname: os02n10
+  family: OmniPixel3-HS
+  status: eol
+  released: '2023-09'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 2.5
+  optical_format: '1/3.27'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  notes: Budget front-illuminated 1080p sensor for entry-level security cameras.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os02n10/}
+- model: OS04A10
+  urlname: os04a10
+  family: PureCel Plus-S
+  status: mp
+  released: '2019-06'
+  released_basis: press
+  width: 2688
+  height: 1520
+  pixel_um: 2.9
+  optical_format: '1/1.79'
+  shutter: rolling
+  interfaces: [mipi, lvds]
+  max_fps: 30
+  hdr: [dcg, stagger]
+  nir: true
+  sensitivity: {value: 32000, unit: e-/lux·s, note: 'green pixel, 530 nm'}
+  dr_hdr_db: 120
+  notes: Large-format 4 MP security sensor with 2.9 µm pixels, Nyxel NIR and DCG HDR; one of OmniVision's best low-light 4 MP parts.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os04a10/}
+- model: OS04B10
+  urlname: os04b10
+  family: OmniBSI
+  status: eol
+  released: '2018-10'
+  released_basis: press
+  width: 2560
+  height: 1440
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  notes: Entry-level 2K BSI sensor for IoT and home security cameras.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os04b10/}
+  - {kind: press, url: https://www.prnewswire.com/news-releases/new-omnivision-image-sensors-combine-backside-illumination-with-1080p-and-2k-resolution-for-industrial-and-iot-security-cameras-300735906.html}
+- model: OS04C10
+  urlname: os04c10
+  family: PureCel Plus
+  status: mp
+  released: '2021-01'
+  released_basis: press
+  width: 2688
+  height: 1520
+  pixel_um: 2.0
+  optical_format: '1/2.9'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  notes: 4 MP security and IoT sensor with Nyxel NIR; OmniVision rates its low-light SNR well above the older OV4689.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os04c10/}
+- model: OS04D10
+  urlname: os04d10
+  family: PureCel Plus
+  status: mp
+  released: '2023-03'
+  released_basis: press
+  width: 2560
+  height: 1440
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  notes: Low-power 2K sensor (about 76 mW) with selectable conversion gain and fast boot, aimed at battery doorbells and home cameras.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os04d10/}
+- model: OS04E10
+  urlname: os04e10
+  family: PureCel Plus
+  status: mp
+  released: '2022-10'
+  released_basis: press
+  width: 2048
+  height: 2048
+  pixel_um: 2.0
+  optical_format: '1/3.1'
+  shutter: rolling
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  category: square
+  notes: Square 2K x 2K sensor with Nyxel NIR, made for fisheye and wide-field security cameras.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os04e10/}
+  - {kind: press, url: https://www.businesswire.com/news/home/20221011005648/en/CORRECTING-and-REPLACING-OMNIVISION-Announces-2K2K-Square-Resolution-CMOS-Image-Sensor-for-Security-Wide-Field-of-View-and-ARVRMR-Pass-Through-Cameras}
+- model: OS04J10
+  urlname: os04j10
+  family: PureCel Plus
+  status: mp
+  released: '2024-06'
+  released_basis: press
+  width: 2560
+  height: 1440
+  pixel_um: 2.9
+  optical_format: '1/1.88'
+  shutter: rolling
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  hdr: [dcg, stagger]
+  nir: true
+  twin: sp4329
+  notes: 2K security sensor with large 2.9 µm pixels, Nyxel NIR and DCG HDR; the same silicon is sold in China as the SuperPix SP4329.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os04j10/}
+  - {kind: press, url: https://www.ovt.com/press-releases/omnivision-announces-new-high-resolution-image-sensors-for-industrial-and-consumer-security-surveillance-cameras/}
+- model: OS05A10
+  urlname: os05a10
+  family: PureCel
+  status: mp
+  released: '2017-01'
+  released_basis: press
+  width: 2688
+  height: 1944
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [stagger]
+  nir: false
+  notes: 5 MP BSI security sensor with 2-exposure staggered HDR; the Nyxel OS05A20 is its NIR-enhanced sibling.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os05a10/}
+- model: OS05A20
+  urlname: os05a20
+  family: PureCel
+  status: mp
+  released: '2017-10'
+  released_basis: press
+  width: 2688
+  height: 1944
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  notes: OmniVision's first Nyxel sensor, an NIR-enhanced OS05A10 for 5 MP cameras that rely on IR illumination at night.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os05a20/}
+  - {kind: press, url: https://www.ovt.com/press-releases/omnivisions-first-image-sensor-with-nyxel-technology-brings-high-performance-near-infrared-imaging-to-surveillance-cameras}
+- model: OS08A10
+  urlname: os08a10
+  family: PureCel
+  status: mp
+  released: '2017-01'
+  released_basis: press
+  width: 3840
+  height: 2160
+  pixel_um: 2.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [stagger]
+  nir: false
+  sensitivity: {value: 13000, unit: e-/lux·s}
+  snr_max_db: 39
+  dr_db: 74
+  notes: Widely used 4K security sensor with 2 µm BSI pixels and 2-exposure staggered HDR.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os08a10/}
+- model: OS08A20
+  urlname: os08a20
+  family: PureCel
+  status: mp
+  released: '2018-04'
+  released_basis: press
+  width: 3840
+  height: 2160
+  pixel_um: 2.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 13000, unit: e-/lux·s}
+  snr_max_db: 39
+  dr_db: 74
+  notes: The Nyxel NIR-enhanced version of the OS08A10, for 4K cameras with IR illumination.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os08a20/}
+- model: OS08B10
+  urlname: os08b10
+  family: PureCel Plus-S
+  status: mp
+  released: '2024'
+  released_basis: flyer
+  width: 3840
+  height: 2160
+  pixel_um: 2.9
+  optical_format: '1/1.25'
+  shutter: rolling
+  interfaces: [mipi, lvds]
+  max_fps: 30
+  hdr: [dcg, stagger]
+  nir: true
+  category: large
+  dr_hdr_db: 120
+  notes: Premium large-format 4K security sensor with 2.9 µm pixels, Nyxel NIR and DCG; 90 dB from a single exposure, over 120 dB with 3 exposures.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os08b10/}
+- model: OS08C10
+  urlname: os08c10
+  family: PureCel Plus-S
+  status: mp
+  released: '2023-10'
+  released_basis: press
+  width: 3840
+  height: 2160
+  pixel_um: 1.45
+  optical_format: '1/2.82'
+  shutter: rolling
+  interfaces: [mipi, sublvds]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [stagger]
+  notes: Compact, lower-cost 4K security sensor with small 1.45 µm pixels and selective conversion gain.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os08c10/}
+- model: OS12A10
+  urlname: os12a10
+  family: PureCel Plus
+  status: mp
+  released: '2026'
+  released_basis: flyer
+  width: 4096
+  height: 3024
+  pixel_um: 2.0
+  optical_format: '1/1.57'
+  shutter: rolling
+  interfaces: [mipi, lvds]
+  max_fps: 40
+  hdr: [dcg]
+  nir: true
+  notes: 12 MP sensor with Nyxel NIR and DCG HDR built for 4K doorbells, with an always-on low-power mode; found in Ring's Video Doorbell Pro (3rd gen).
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os12a10/}
+- model: OS12D40
+  urlname: os12d40
+  family: PureCel Plus-S
+  status: mp
+  released: '2020-01'
+  released_basis: press
+  width: 4512
+  height: 2512
+  pixel_um: 1.4
+  optical_format: '1/2.49'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [stagger]
+  notes: 11.3 MP quad-pixel security sensor that gives 4K with spare pixels for stabilisation, or binned 1080p with 3-exposure HDR.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/os12d40/}
+  - {kind: press, url: https://www.ovt.com/press-releases/new-omnivision-security-image-sensor-provides-industry-high-11-3mp-resolution-for-4k2k-with-electronic-image-stabilization-and-best-in-class-hdr-for-1080p-video/}
+- model: OV2710
+  urlname: ov2710
+  family: OmniPixel3-HS
+  status: eol
+  released: '2009-08'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  sensitivity: {value: 3300, unit: mV/lux·s, note: 'launch press release; the product page now gives 3700'}
+  snr_max_db: 40
+  dr_db: 69
+  dark_current: {value: 6, unit: mV/s}
+  notes: OmniVision's first native 1080p sensor, with big 3 µm pixels; common in early HD IP cameras and USB webcams.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov2710/}
+  - {kind: press, url: https://www.ovt.com/press-releases/omnivision-launches-true-1080p-high-definition-video-image-sensor/}
+- model: OV2718
+  urlname: ov2718
+  family: OmniBSI-2
+  status: mp
+  released: '2015-10'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 30
+  hdr: [dcg]
+  notes: 1080p security sensor with in-pixel dual-conversion-gain HDR and good low-light performance; the security sibling of the automotive OV2775.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov2718/}
+- model: OV2732
+  urlname: ov2732
+  family: PureCel
+  status: mp
+  released: '2016-10'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 2.0
+  optical_format: '1/4'
+  shutter: rolling
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  hdr: [stagger]
+  notes: Small, low-cost 1080p sensor with 2-frame staggered HDR for home cameras.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov2732/}
+- model: OV2735
+  urlname: ov2735
+  family: OmniPixel3-HS
+  status: eol
+  released: '2016-10'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  sensitivity: {value: 23000, unit: e-/lux·s}
+  snr_max_db: 38.6
+  dr_db: 72
+  twin: sp2305
+  notes: Mainstream 1080p security sensor with 3 µm pixels; the same die ships as the SuperPix SP2305, and both report chip ID 0x2735.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov2735/}
+- model: OV2736
+  urlname: ov2736
+  family: PureCel
+  status: mp
+  released: '2017-04'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 2.0
+  optical_format: '1/4'
+  shutter: rolling
+  cfa: rgbir
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  hdr: [stagger]
+  notes: RGB-IR version of the OV2732, capturing colour and infrared on one sensor so a day/night camera needs no IR-cut filter.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov2736/}
+- model: OV2740
+  urlname: ov2740
+  family: PureCel
+  status: mp
+  released: '2014-06'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 1.4
+  optical_format: '1/6'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [row-interleave, stagger]
+  notes: Very small 1080p sensor, mostly found in laptop webcams.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov2740/}
+- model: OV4686
+  urlname: ov4686
+  family: OmniBSI-2
+  status: mp
+  released: '2016-04'
+  released_basis: press
+  width: 2688
+  height: 1520
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: rgbir
+  interfaces: [mipi]
+  max_fps: 90
+  hdr: [stagger]
+  notes: RGB-IR version of the OV4689 for 4 MP day/night cameras without a mechanical IR-cut filter.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov4686/}
+- model: OV4689
+  urlname: ov4689
+  family: OmniBSI-2
+  status: eol
+  released: '2013-11'
+  released_basis: press
+  width: 2688
+  height: 1520
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 90
+  hdr: [stagger, row-interleave]
+  sensitivity: {value: 1900, unit: mV/lux·s}
+  snr_max_db: 38.3
+  dr_db: 64.6
+  dark_current: {value: 4, unit: mV/s, note: '60 °C junction'}
+  notes: Early and very common 4 MP sensor, fast enough for 90 fps at full resolution; found in many IP and action cameras.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov4689/}
+- model: OV5640
+  urlname: ov5640
+  family: OmniBSI
+  status: unknown
+  released: '2010-06'
+  released_basis: press
+  width: 2592
+  height: 1944
+  pixel_um: 1.4
+  optical_format: '1/4'
+  shutter: rolling
+  interfaces: [dvp, mipi]
+  max_fps: 15
+  sensitivity: {value: 600, unit: mV/lux·s}
+  snr_max_db: 36
+  dr_db: 68
+  dark_current: {value: 8, unit: mV/s, note: '60 °C junction'}
+  notes: 5 MP sensor with a built-in ISP and autofocus control, originally for phones and now common on embedded boards.
+  sources:
+  - {kind: press, url: https://www.prnewswire.com/news-releases/omnivision-launches-optimized-quarter-inch-5-megapixel-soc-sensor-for-mainstream-mobile-applications-95760404.html}
+- model: OV5647
+  urlname: ov5647
+  family: OmniBSI
+  status: unknown
+  released: '2010-02'
+  released_basis: press
+  width: 2592
+  height: 1944
+  pixel_um: 1.4
+  optical_format: '1/4'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 15
+  notes: 5 MP RAW sensor best known as the original Raspberry Pi camera module.
+  sources:
+  - {kind: press, url: https://www.ovt.com/press-releases/omnivision-introduces-1-4-inch-5-megapixel-raw-sensor-for-high-performance-mobile-applications/}
+- model: OV5658
+  urlname: ov5658
+  family: OmniBSI+
+  status: unknown
+  released: '2014-04'
+  released_basis: press
+  width: 2592
+  height: 1944
+  pixel_um: 1.75
+  optical_format: '1/3.2'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  notes: 5 MP security sensor used in early 5 MP and panoramic IP cameras.
+  sources:
+  - {kind: press, url: https://www.prnewswire.com/news-releases/omnivisions-new-camerachip-sensors-enable-next-generation-of-high-resolution-surveillance-systems-253544461.html}
+- model: OV7251
+  urlname: ov7251
+  family: OmniPixel3-GS
+  status: eol
+  released: '2014-02'
+  released_basis: press
+  width: 640
+  height: 480
+  pixel_um: 3.0
+  optical_format: '1/7.5'
+  shutter: global
+  cfa: mono
+  interfaces: [mipi, lvds]
+  max_fps: 120
+  notes: Tiny monochrome VGA global-shutter sensor for tracking and depth sensing, used in Google's Project Tango.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov7251/}
+  - {kind: press, url: https://www.ovt.com/press-releases/omnivisions-image-sensors-bring-computer-vision-to-googles-project-tango/}
+- model: OV9281
+  urlname: ov9281
+  family: OmniPixel3-GS
+  status: mp
+  released: '2017-01'
+  released_basis: press
+  width: 1280
+  height: 800
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: global
+  cfa: mono
+  interfaces: [mipi, dvp]
+  max_fps: 120
+  notes: Monochrome 1 MP global-shutter sensor with good NIR response, widely used in machine-vision and Raspberry Pi global-shutter modules.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov9281/}
+  - {kind: press, url: https://ovt.com/press-releases/omnivisions-new-1-megapixel-high-speed-global}
+- model: OV9710
+  urlname: ov9710
+  family: OmniPixel3-HS
+  status: unknown
+  released: '2008-01'
+  released_basis: press
+  width: 1280
+  height: 800
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: rolling
+  interfaces: [dvp]
+  max_fps: 30
+  sensitivity: {value: 3300, unit: mV/lux·s}
+  snr_max_db: 39
+  dr_db: 69
+  dark_current: {value: 20, unit: mV/s, note: '60 °C'}
+  saturation: {value: 13000, unit: e-}
+  notes: OmniVision's first 720p HD sensor, with large 3 µm pixels; the near-identical OV9712 is the version found in most cameras.
+  sources:
+  - {kind: press, url: https://www.ovt.com/press-releases/omnivision-announces-first-true-high-definition-video-sensor-for-mobile-handsets-and-laptop-computers/}
+- model: OV9712
+  urlname: ov9712
+  family: OmniPixel3-HS
+  status: eol
+  released: '2009-02'
+  released_basis: datasheet
+  width: 1280
+  height: 800
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: rolling
+  interfaces: [dvp]
+  max_fps: 30
+  sensitivity: {value: 3300, unit: mV/lux·s, note: 'datasheet; the product page gives 3700'}
+  snr_max_db: 39
+  dr_db: 69
+  dark_current: {value: 20, unit: mV/s, note: '60 °C'}
+  saturation: {value: 13000, unit: e-}
+  notes: Classic 720p sensor with a parallel (DVP) output, found in countless early HD IP cameras and webcams.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov9712/}
+  - {kind: press, url: https://www.ovt.com/press-releases/omnivision-brings-true-720p-hd-video-to-microsofts-new-flagship-webcam/}
+- model: OV9732
+  urlname: ov9732
+  family: OmniPixel3-HS
+  status: eol
+  released: '2015-10'
+  released_basis: press
+  width: 1280
+  height: 720
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: rolling
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  notes: Low-cost 720p sensor with 3 µm pixels for home monitoring and webcams.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov9732/}
+- model: OV9750
+  urlname: ov9750
+  family: OmniPixel3-HS
+  status: eol
+  released: '2014-10'
+  released_basis: press
+  width: 1280
+  height: 960
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  notes: 960p security sensor with very large 3.75 µm pixels, dual conversion gain and good NIR sensitivity for day/night cameras.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov9750/}
+- model: OV9752
+  urlname: ov9752
+  family: OmniPixel3-HS
+  status: eol
+  released: '2015-05'
+  released_basis: press
+  width: 1280
+  height: 960
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: rgbir
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  notes: RGB-IR version of the OV9750, replacing the mechanical IR-cut filter in day/night cameras.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov9752/}
+  - {kind: press, url: https://www.ovt.com/press-releases/omnivision-launches-1-3-inch-camerachiptrade-sensor-with-rgb-ir-color-filter-for-advanced-security-applications/}
+- model: OV9782
+  urlname: ov9782
+  family: OmniPixel3-GS
+  status: mp
+  released: '2017'
+  released_basis: estimate
+  width: 1280
+  height: 800
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: global
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 120
+  notes: Colour version of the OV9281 1 MP global-shutter sensor, for robotics and AR/VR.
+  sources:
+  - {kind: page, url: https://www.ovt.com/products/ov9782/}

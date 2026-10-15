@@ -1,0 +1,127 @@
+zh:
+  cameras:
+    socs:
+      index:
+        sensors: 传感器
+  pages:
+    sensors:
+      title: 图像传感器对比
+      heading: 图像传感器并排对比
+      lede: '我们所知的安防摄像头图像传感器，来自索尼、思特威、豪威、格科微等厂商：分辨率、像素尺寸、光学尺寸、灵敏度、信噪比、动态范围和发布时间，以及我们目录中使用它们的主板。'
+      sensor_title: '{sensor} 图像传感器：规格参数'
+      sensor_description: '{sensor}：分辨率、像素尺寸、光学尺寸、灵敏度、动态范围、HDR 模式和发布时间，以及 OpenIPC 目录中使用它的摄像头主板。'
+  sensors:
+    search: 查找传感器
+    search_placeholder: IMX335、SC4336、OS04…
+    makers: 厂商
+    all_makers: 全部厂商
+    filters: 筛选
+    reset: 重置
+    shown:
+      one: '{total} 款传感器中的 {count} 款'
+      other: '{total} 款传感器中的 {count} 款'
+    type: 类型
+    any: 不限
+    resolution: 分辨率
+    released: 发布
+    from: 从
+    to: 到
+    shutter: 快门
+    shutter_rolling: 卷帘
+    shutter_global: 全局
+    interface: 接口
+    hdr: HDR
+    hdr_any: 任意 HDR
+    hdr_multi: 多重曝光（DOL、交错）
+    hdr_single: 单帧（DCG、Clear HDR、LOFIC）
+    nir: 仅近红外增强
+    on_boards: 出现在我们目录中的主板上
+    on_boards_loading: 出现在我们目录中的主板上（加载中…）
+    show_eol: 包括已停产
+    view_chart: 产品阵列
+    view_table: 表格
+    chart_caption: '分辨率与传感器用途的对照。每个方块是一款型号，颜色代表厂商；年份为发布时间，≈ 表示我们的估计。'
+    chart_hint: 指向传感器查看参数；打开查看完整规格。
+    nothing: 没有符合这些筛选条件的传感器。
+    on_boards_badge: 有主板
+    compare: 对比
+    compare_add: 加入对比
+    compare_remove: 移出对比
+    compare_title: 并排对比
+    compare_clear: 清空
+    compare_max: '最多 {count} 款传感器'
+    category:
+      standard: 标准
+      lowlight: 低照度
+      nir: 近红外增强
+      hdr: 单帧 HDR
+      global: 全局快门
+      square: 方形 / 鱼眼
+      large: 大靶面
+    category_hint:
+      standard: 常见型号，小像素
+      lowlight: 大像素与 STARVIS 级产品线
+      nir: 针对红外补光优化
+      hdr: 单帧实现宽动态
+      global: 整帧同时曝光
+      square: 1:1，用于鱼眼和全景镜头
+      large: 1 英寸及以上
+    row:
+      '1': ≤1.5 MP
+      '2': 2 MP
+      '3': 3 MP
+      '4': 4 MP
+      '5': 5 MP
+      '8': 8 MP（4K）
+      '12': 12 MP 及以上
+    col:
+      sensor: 传感器
+      maker: 厂商
+      mp: MP
+      resolution: 分辨率
+      pixel: 像素
+      format: 光学尺寸
+      year: 发布
+      sensitivity: 灵敏度
+      sensitivity_area: 单位面积灵敏度（每 µm²）
+      snr: 最大信噪比
+      dr: 动态范围
+      dr_hdr: HDR 动态范围
+      fps: 最高帧率
+      hdr: HDR
+      interfaces: 接口
+      shutter: 快门
+      cfa: 滤色阵列
+      adc: ADC
+      saturation: 饱和输出
+      dark_current: 暗电流
+      family: 产品线
+      status: 状态
+      kind: 类型
+      aliases: 其他名称
+    status:
+      mp: 量产中
+      eol: 已停产
+      sampling: 送样中
+      unknown: 未知
+    basis:
+      press: 厂商发布
+      flyer: 来自厂商宣传页
+      datasheet: 来自我们见过的最早规格书
+      estimate: 根据产品线估计
+    cfa:
+      bayer: Bayer RGB
+      rgbir: RGB-IR
+      mono: 黑白
+      rccb: RCCB
+    sensitivity_note: '灵敏度按厂商标称值列出，各厂商的测量条件不同（曝光时间、光圈、光源、位深）：只比较相同单位的数值。“每 µm²”是除以像素面积后的值，原始数值的大部分差异来自像素面积。'
+    sources_note: 数据来自厂商规格；我们不提供规格书。链接指向厂商公开发布的内容。
+    sources: 厂商公开资料
+    boards_link: 在主板目录中查看全部
+    boards_count:
+      one: '{count} 块主板'
+      other: '{count} 块主板'
+    twin: '与 {sensor} 为同一芯片'
+    successor: '后继型号：{sensor}'
+    back: 全部传感器
+    report_html: '有使用该传感器的摄像头？<a href="{href}">把主板信息发给我们</a>。'

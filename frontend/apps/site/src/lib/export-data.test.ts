@@ -17,13 +17,14 @@ const site = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 describe('generated data', () => {
   const files = generated();
 
-  test('covers the catalogue, the gallery, the news and all fifteen translation files', () => {
+  test('covers the catalogue, the sensors, the gallery, the news and all eighteen translation files', () => {
     expect(files.map(([rel]) => rel).sort()).toEqual([
-      'src/data/catalogue.json', 'src/data/news.json', 'src/data/webui-gallery.json',
+      'src/data/catalogue.json', 'src/data/news.json', 'src/data/sensor-names.json', 'src/data/sensors.json', 'src/data/webui-gallery.json',
       'src/i18n/boards.en.json', 'src/i18n/boards.ru.json', 'src/i18n/boards.zh.json',
       'src/i18n/en.json',
       'src/i18n/explorer.en.json', 'src/i18n/explorer.ru.json', 'src/i18n/explorer.zh.json',
       'src/i18n/ru.json',
+      'src/i18n/sensors.en.json', 'src/i18n/sensors.ru.json', 'src/i18n/sensors.zh.json',
       'src/i18n/wall.en.json', 'src/i18n/wall.ru.json', 'src/i18n/wall.zh.json',
       'src/i18n/wizard.en.json', 'src/i18n/wizard.ru.json', 'src/i18n/wizard.zh.json',
       'src/i18n/zh.json',

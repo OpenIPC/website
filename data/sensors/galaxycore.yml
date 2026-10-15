@@ -1,0 +1,613 @@
+name: GalaxyCore
+urlname: galaxycore
+full_name: GalaxyCore Shanghai Limited Corporation
+website_url: https://www.gcoreinc.com/
+sensors:
+- model: GC0308
+  urlname: gc0308
+  family: Non-mobile CIS
+  status: mp
+  released: '2010'
+  released_basis: estimate
+  width: 640
+  height: 480
+  pixel_um: 3.4
+  optical_format: '1/6.5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 30
+  notes: A VGA sensor with its own ISP that outputs YUV, still sold for toys, door locks and simple monitoring cameras.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260606201732/https://www.gcoreinc.com/products/index?cid=14&subcid=20'}
+- model: GC0328
+  urlname: gc0328
+  family: Non-mobile CIS
+  status: mp
+  released: '2012'
+  released_basis: estimate
+  width: 640
+  height: 480
+  pixel_um: 3.4
+  optical_format: '1/6.5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 30
+  notes: A VGA sensor with its own ISP, listed by GalaxyCore alongside the GC0308 for toys, scanners and simple monitoring.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260606201732/https://www.gcoreinc.com/products/index?cid=14&subcid=20'}
+- model: GC0403
+  urlname: gc0403
+  family: Non-mobile CIS
+  status: unknown
+  released: '2016'
+  released_basis: estimate
+  pixel_um: 6.25
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  notes: A D1-resolution sensor with very large 6.25 µm pixels, for analogue and low-resolution cameras.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20230601131416/https://www.gcoreinc.com/products/index?cid=14&subcid=17'}
+- model: GC1024
+  urlname: gc1024
+  status: unknown
+  released: '2014'
+  released_basis: estimate
+  width: 1280
+  height: 720
+  shutter: rolling
+  cfa: bayer
+  notes: An older 720p sensor found in budget IP cameras and USB camera modules.
+- model: GC1029
+  urlname: gc1029
+  family: Non-mobile CIS
+  status: mp
+  released: '2021'
+  released_basis: estimate
+  width: 1280
+  height: 720
+  pixel_um: 1.4
+  optical_format: '1/9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  notes: A tiny 720p BSI sensor for notebook cameras and endoscopes rather than surveillance.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260606201732/https://www.gcoreinc.com/products/index?cid=14&subcid=20'}
+- model: GC1029B
+  urlname: gc1029b
+  family: Non-mobile CIS
+  status: mp
+  released: '2021'
+  released_basis: estimate
+  width: 1280
+  height: 720
+  pixel_um: 1.4
+  optical_format: '1/9'
+  shutter: rolling
+  cfa: mono
+  interfaces: [mipi]
+  max_fps: 60
+  notes: The monochrome version of the GC1029, sold as the infrared camera for Windows Hello face sign-in.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260606201732/https://www.gcoreinc.com/products/index?cid=14&subcid=20'}
+- model: GC1034
+  urlname: gc1034
+  status: unknown
+  released: '2016-08'
+  released_basis: datasheet
+  width: 1280
+  height: 720
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 30
+  adc_bits: 10
+  sensitivity: {value: 18000, unit: e-/lux·s}
+  snr_max_db: 41.4
+  dr_db: 70.7
+  dark_current: {value: 200, unit: e-/s, note: 60 °C}
+  notes: A low-cost 720p sensor of HiSilicon-era budget IP cameras and car recorders.
+- model: GC1054
+  urlname: gc1054
+  family: Non-mobile CIS
+  status: unknown
+  released: '2017-12'
+  released_basis: datasheet
+  width: 1280
+  height: 720
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 30
+  adc_bits: 10
+  sensitivity: {value: 18000, unit: e-/lux·s}
+  snr_max_db: 41.4
+  dr_db: 70.7
+  dark_current: {value: 200, unit: e-/s, note: 60 °C}
+  notes: A 720p sensor for car recorders and monitoring cameras, with the same published figures as the GC1034.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20220520113548/http://www.gcoreinc.com/products/index?cid=14&subcid=17'}
+- model: GC1064
+  urlname: gc1064
+  family: Non-mobile CIS
+  status: unknown
+  released: '2016-01'
+  released_basis: datasheet
+  width: 1296
+  height: 742
+  pixel_um: 3.4
+  optical_format: '1/3.75'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  adc_bits: 10
+  sensitivity: {value: 3000, unit: mV/lux·s}
+  snr_max_db: 41
+  dark_current: {value: 15, unit: mV/s, note: 60 °C}
+  notes: A 720p sensor with large 3.4 µm pixels, common in early Ingenic and HiSilicon cameras.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20220520113548/http://www.gcoreinc.com/products/index?cid=14&subcid=17'}
+- model: GC1084
+  urlname: gc1084
+  family: Non-mobile CIS
+  status: mp
+  released: '2021'
+  released_basis: estimate
+  width: 1280
+  height: 720
+  pixel_um: 2.72
+  optical_format: '1/4.5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  notes: GalaxyCore's current low-cost 720p sensor, supported on most camera SoC platforms.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260606201732/https://www.gcoreinc.com/products/index?cid=14&subcid=20'}
+- model: GC2023
+  urlname: gc2023
+  status: unknown
+  released: '2016-04'
+  released_basis: datasheet
+  width: 1928
+  height: 1088
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  adc_bits: 10
+  notes: An early 1080p sensor with 3 µm pixels for budget IP cameras and car recorders; 60 fps needs two-lane MIPI.
+- model: GC2033
+  urlname: gc2033
+  status: unknown
+  released: '2016'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  shutter: rolling
+  cfa: bayer
+  notes: A 1080p sensor found in car recorders and some Hi3518EV200 camera boards.
+- model: GC2053
+  urlname: gc2053
+  family: Non-mobile CIS
+  status: mp
+  released: '2018-11'
+  released_basis: datasheet
+  width: 1920
+  height: 1080
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  adc_bits: 10
+  sensitivity: {value: 3870, unit: mV/lux·s}
+  snr_max_db: 38
+  dr_db: 81
+  notes: GalaxyCore's best-selling 1080p sensor, found in a great many low-cost IP cameras; good low-light sensitivity for its price.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260606200622/https://www.gcoreinc.com/products/index?cid=14&subcid=19'}
+- model: GC2063
+  urlname: gc2063
+  family: Non-mobile CIS
+  status: unknown
+  released: '2018-07'
+  released_basis: datasheet
+  width: 1920
+  height: 1080
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  adc_bits: 10
+  notes: A MIPI-only 1080p sensor that GalaxyCore listed together with the GC2053.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20230601125138/https://www.gcoreinc.com/products/index?cid=14&subcid=16'}
+- model: GC2083
+  urlname: gc2083
+  family: Non-mobile CIS
+  status: mp
+  released: '2020-10'
+  released_basis: datasheet
+  width: 1920
+  height: 1080
+  pixel_um: 2.7
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  adc_bits: 10
+  sensitivity: {value: 3240, unit: mV/lux·s}
+  snr_max_db: 37
+  dr_db: 74
+  notes: A cheaper 1080p sensor than the GC2053, marketed for keeping its low-light performance at high temperature.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260606200622/https://www.gcoreinc.com/products/index?cid=14&subcid=19'}
+- model: GC2093
+  urlname: gc2093
+  aliases: [GC2093-C47YA]
+  family: Non-mobile CIS
+  status: unknown
+  released: '2020-08'
+  released_basis: datasheet
+  width: 1920
+  height: 1080
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  adc_bits: 10
+  hdr: [stagger]
+  sensitivity: {value: 3900, unit: mV/lux·s}
+  snr_max_db: 38
+  dr_db: 81
+  dr_hdr_db: 105
+  notes: A 1080p sensor with two-exposure staggered HDR and 60 fps, aimed at IP cameras, doorbells and battery cameras.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20230601125138/https://www.gcoreinc.com/products/index?cid=14&subcid=16'}
+- model: GC20A3T
+  urlname: gc20a3t
+  family: Non-mobile CIS
+  status: unknown
+  released: '2022'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  notes: A 1080p sensor with the same format and pixel as the GC2053.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20230601125138/https://www.gcoreinc.com/products/index?cid=14&subcid=16'}
+- model: GC20B3
+  urlname: gc20b3
+  family: Non-mobile CIS
+  status: unknown
+  released: '2024'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  pixel_um: 2.7
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  notes: A 1080p sensor with the GC2083's format and pixel.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20250909071254/https://www.gcoreinc.com/products/index?cid=14&subcid=16'}
+- model: GC20C3
+  urlname: gc20c3
+  family: Non-mobile CIS
+  status: mp
+  released: '2025-06'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 2.35
+  optical_format: '1/3.3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 45
+  notes: A low-power 1080p sensor with always-on (AOV) and quick-start modes, for 4G battery cameras and multi-camera products.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260606200622/https://www.gcoreinc.com/products/index?cid=14&subcid=19'}
+  - {kind: press, url: 'https://www.gcoreinc.com/news/detail-131'}
+- model: GC2145
+  urlname: gc2145
+  family: Non-mobile CIS
+  status: unknown
+  released: '2013-12'
+  released_basis: datasheet
+  width: 1616
+  height: 1232
+  pixel_um: 1.75
+  optical_format: '1/5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  adc_bits: 10
+  sensitivity: {value: 1200, unit: mV/lux·s}
+  dark_current: {value: 4.2, unit: mV/s}
+  notes: A 2-megapixel sensor with its own ISP that outputs YUV, used in USB and notebook cameras more than in IP cameras.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20230601125138/https://www.gcoreinc.com/products/index?cid=14&subcid=16'}
+- model: GC2607
+  urlname: gc2607
+  family: Non-mobile CIS
+  status: mp
+  released: '2022'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  pixel_um: 1.12
+  optical_format: '1/7.3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  notes: A tiny 1080p BSI sensor for notebooks, wearables and endoscopes, not for surveillance.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260606200622/https://www.gcoreinc.com/products/index?cid=14&subcid=19'}
+- model: GC3003
+  urlname: gc3003
+  aliases: [GC3003-C41YA]
+  family: Non-mobile CIS
+  status: mp
+  released: '2022-04'
+  released_basis: datasheet
+  width: 2304
+  height: 1296
+  pixel_um: 2.45
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  adc_bits: 10
+  sensitivity: {value: 2516, unit: mV/lux·s}
+  snr_max_db: 38
+  dr_db: 78
+  notes: A low-cost 3-megapixel sensor for IoT cameras and 2K car recorders.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260606200622/https://www.gcoreinc.com/products/index?cid=14&subcid=19'}
+- model: GC4023
+  urlname: gc4023
+  aliases: [GC4023-C43YA]
+  family: Non-mobile CIS
+  status: mp
+  released: '2022-04'
+  released_basis: datasheet
+  width: 2560
+  height: 1440
+  pixel_um: 2.3
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  adc_bits: 10
+  sensitivity: {value: 2650, unit: mV/lux·s}
+  snr_max_db: 38
+  dr_db: 79
+  dark_current: {value: 390, unit: e-/s, note: 80 °C}
+  notes: A 4-megapixel FSI sensor with larger pixels than the GC4653, sold for low-cost 2K cameras.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260125091454/https://www.gcoreinc.com/products/index?cid=14&subcid=15'}
+- model: GC4033
+  urlname: gc4033
+  family: Non-mobile CIS
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  width: 2560
+  height: 1440
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  notes: A 2K (4-megapixel) FSI sensor in a 1/3-inch format.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260125091454/https://www.gcoreinc.com/products/index?cid=14&subcid=15'}
+- model: GC4053
+  urlname: gc4053
+  family: Non-mobile CIS
+  status: mp
+  released: '2025-10'
+  released_basis: press
+  megapixels: 4
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 45
+  notes: A 4-megapixel ultra-low-power sensor with hardware always-on (AOV) control, launched at CPSE 2025 for battery and multi-camera IoT devices.
+  sources:
+  - {kind: press, url: 'https://www.gcoreinc.com/news/detail-139'}
+- model: GC4602
+  urlname: gc4602
+  family: Non-mobile CIS
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  megapixels: 4
+  pixel_um: 2.9
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  category: lowlight
+  notes: A large-format 4-megapixel sensor with big 2.9 µm pixels, GalaxyCore's starlight colour night-vision part at this resolution.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260125091454/https://www.gcoreinc.com/products/index?cid=14&subcid=15'}
+- model: GC4653
+  urlname: gc4653
+  aliases: [GC4653-C41Y0]
+  family: Non-mobile CIS
+  status: mp
+  released: '2019-07'
+  released_basis: datasheet
+  width: 2560
+  height: 1440
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  adc_bits: 12
+  sensitivity: {value: 2400, unit: mV/lux·s}
+  snr_max_db: 38
+  dr_db: 81
+  notes: GalaxyCore's popular 4-megapixel BSI sensor, found in many low-cost 2K IP cameras.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260125091454/https://www.gcoreinc.com/products/index?cid=14&subcid=15'}
+- model: GC4663
+  urlname: gc4663
+  family: Non-mobile CIS
+  status: unknown
+  released: '2020-04'
+  released_basis: datasheet
+  width: 2560
+  height: 1440
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [stagger]
+  sensitivity: {value: 2400, unit: mV/lux·s}
+  snr_max_db: 38
+  dr_db: 81
+  notes: The GC4653 with 60 fps and two-exposure staggered HDR.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20220520111245/http://www.gcoreinc.com/products/index?cid=14&subcid=16'}
+- model: GC4683
+  urlname: gc4683
+  family: Non-mobile CIS
+  status: mp
+  released: '2025-10'
+  released_basis: press
+  megapixels: 4
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  category: lowlight
+  notes: A 4-megapixel colour night-vision sensor with dual-analog-gain single-frame HDR, launched at CPSE 2025 as a smaller-format alternative to the GC4602.
+  sources:
+  - {kind: press, url: 'https://www.gcoreinc.com/news/detail-139'}
+- model: GC4C33
+  urlname: gc4c33
+  family: Non-mobile CIS
+  status: unknown
+  released: '2018-08'
+  released_basis: datasheet
+  width: 2560
+  height: 1440
+  pixel_um: 2.24
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [stagger]
+  sensitivity: {value: 3990, unit: mV/lux·s, note: 530 nm}
+  snr_max_db: 40
+  dr_db: 66
+  notes: A 4-megapixel BSI sensor in a COB package with four-lane MIPI and staggered HDR; its wide chief ray angle suits short phone-style lenses.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20220520111245/http://www.gcoreinc.com/products/index?cid=14&subcid=16'}
+- model: GC5603
+  urlname: gc5603
+  family: Non-mobile CIS
+  status: mp
+  released: '2022'
+  released_basis: estimate
+  megapixels: 5
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  notes: A 5-megapixel BSI sensor for IP cameras.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260125091454/https://www.gcoreinc.com/products/index?cid=14&subcid=15'}
+- model: GC6603
+  urlname: gc6603
+  family: Non-mobile CIS
+  status: mp
+  released: '2025-10'
+  released_basis: press
+  shutter: rolling
+  cfa: bayer
+  nir: true
+  notes: Marketed as a 6-megapixel sensor with near-infrared enhancement, for video doorbells, action cameras and gimbal cameras.
+  sources:
+  - {kind: press, url: 'https://www.gcoreinc.com/news/detail-139'}
+- model: GC8602
+  urlname: gc8602
+  family: Non-mobile CIS
+  status: mp
+  released: '2025-10'
+  released_basis: press
+  width: 3840
+  height: 2160
+  pixel_um: 2.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  nir: true
+  category: lowlight
+  notes: GalaxyCore's large-format 4K colour night-vision sensor, with near-infrared enhancement and dual-analog-gain single-frame HDR.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260520011114/https://www.gcoreinc.com/products/index?cid=14&subcid=16'}
+  - {kind: press, url: 'https://www.gcoreinc.com/news/detail-139'}
+- model: GC8613
+  urlname: gc8613
+  family: Non-mobile CIS
+  status: mp
+  released: '2023-06'
+  released_basis: press
+  width: 3840
+  height: 2160
+  pixel_um: 1.5
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  notes: A 4K starlight sensor on a 55 nm BSI process with dual-analog-gain single-frame HDR and read noise below 0.5 e-.
+  sources:
+  - {kind: page, url: 'https://web.archive.org/web/20260520011114/https://www.gcoreinc.com/products/index?cid=14&subcid=16'}
+  - {kind: press, url: 'https://www.gcoreinc.com/news/detail-84'}

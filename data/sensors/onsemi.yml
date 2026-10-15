@@ -1,0 +1,243 @@
+name: onsemi
+urlname: onsemi
+full_name: onsemi (formerly Aptina)
+website_url: https://www.onsemi.com/
+sensors:
+- model: AR0130
+  urlname: ar0130
+  aliases: [AR0130CS, AR0130CSSC00SPCA0]
+  family: Aptina
+  status: eol
+  released: '2011'
+  released_basis: datasheet
+  width: 1280
+  height: 960
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [hispi, dvp]
+  max_fps: 45
+  adc_bits: 12
+  nir: true
+  sensitivity: {value: 5500, unit: mV/lux·s, note: '550 nm'}
+  snr_max_db: 44
+  dr_db: 83.5
+  notes: 1.2 MP sensor with large 3.75 µm pixels tuned for near-infrared, the standard 960p sensor of early HD IP cameras; also made in monochrome.
+  sources:
+  - {kind: page, url: https://www.onsemi.com/products/sensors/image-sensors/ar0130cs}
+- model: AR0141
+  urlname: ar0141
+  aliases: [AR0141CS]
+  status: eol
+  released: '2014'
+  released_basis: estimate
+  width: 1280
+  height: 800
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [hispi, dvp]
+  sensitivity: {value: 4000, unit: mV/lux·s}
+  snr_max_db: 41
+  notes: 1/4-inch 1 MP (720p60) security sensor; also made in monochrome.
+  sources:
+  - {kind: page, url: https://www.onsemi.com/products/sensors/image-sensors/ar0141cs}
+- model: AR0144
+  urlname: ar0144
+  aliases: [AR0144CS]
+  status: mp
+  released: '2017-11'
+  released_basis: press
+  width: 1280
+  height: 800
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: global
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  adc_bits: 12
+  sensitivity: {value: 22300, unit: e-/lux·s, note: 'colour; 56 ke-/lux·s monochrome'}
+  snr_max_db: 38
+  dr_db: 71.4
+  notes: 1 MP global-shutter sensor in colour and monochrome for scanning, tracking and AR/VR.
+  sources:
+  - {kind: page, url: https://www.onsemi.com/products/sensors/image-sensors/ar0144cs}
+  - {kind: press, url: https://www.edge-ai-vision.com/2017/11/latest-1-4-inch-1-0-mp-cmos-global-shutter-image-sensor-delivers-high-performance-imaging-for-all-light-conditions-in-a-new-smaller-package/}
+- model: AR0230
+  urlname: ar0230
+  aliases: [AR0230CS, AR0230CSSC00SUEA0]
+  family: Aptina
+  status: eol
+  released: '2014-12'
+  released_basis: press
+  width: 1928
+  height: 1088
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [hispi, dvp]
+  max_fps: 60
+  adc_bits: 12
+  sensitivity: {value: 4000, unit: mV/lux·s}
+  snr_max_db: 41
+  dr_hdr_db: 96
+  notes: 1080p60 security sensor with DR-Pix dual-conversion-gain pixels and on-chip multi-exposure HDR with local tone mapping.
+- model: AR0234
+  urlname: ar0234
+  aliases: [AR0234CS]
+  status: mp
+  released: '2020-10'
+  released_basis: press
+  width: 1920
+  height: 1200
+  pixel_um: 3.0
+  optical_format: '1/2.6'
+  shutter: global
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 120
+  adc_bits: 10
+  sensitivity: {value: 55000, unit: e-/lux·s, note: 'monochrome'}
+  snr_max_db: 37
+  dr_db: 70
+  notes: 2.3 MP global-shutter sensor at 120 fps in colour and monochrome, widely used for robotics and machine vision.
+  sources:
+  - {kind: page, url: https://www.onsemi.com/products/sensors/image-sensors/ar0234cs}
+- model: AR0237
+  urlname: ar0237
+  aliases: [AR0237CS, AR0237CSSC12SPRA0, AR0237CSSC12SHRA0]
+  status: eol
+  released: '2016-04'
+  released_basis: press
+  width: 1928
+  height: 1088
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [hispi, dvp]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [stagger]
+  sensitivity: {value: 4000, unit: mV/lux·s}
+  snr_max_db: 41
+  dr_hdr_db: 96
+  notes: Lower-cost 1080p60 sensor with DR-Pix dual conversion gain and line-interleaved 2-exposure HDR, very common in 2 MP IP cameras; also made in an RGB-IR version.
+- model: AR0238
+  urlname: ar0238
+  aliases: [AR0238CS]
+  status: unknown
+  released: '2016'
+  released_basis: datasheet
+  width: 1928
+  height: 1088
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [hispi, dvp]
+  max_fps: 60
+  hdr: [stagger]
+  sensitivity: {value: 4000, unit: mV/lux·s}
+  snr_max_db: 41
+  dr_hdr_db: 96
+  notes: 1080p60 sensor with DR-Pix dual conversion gain and line-interleaved 2-exposure HDR, a close relative of the AR0237; also made in RGB-IR.
+- model: AR0239
+  urlname: ar0239
+  status: eol
+  released: '2017'
+  released_basis: press
+  width: 1936
+  height: 1188
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [hispi, mipi, dvp]
+  max_fps: 90
+  hdr: [stagger]
+  notes: BSI 2.3 MP sensor at 90 fps with improved NIR response and 2- or 3-exposure line-interleaved HDR at 1080p30.
+  sources:
+  - {kind: page, url: https://www.onsemi.com/products/sensors/image-sensors/ar0239}
+- model: AR0330
+  urlname: ar0330
+  aliases: [AR0330CS, AR0330CM, AR0330SR]
+  family: Aptina
+  status: unknown
+  released: '2011-01'
+  released_basis: press
+  width: 2304
+  height: 1536
+  pixel_um: 2.2
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [hispi, mipi, dvp]
+  sensitivity: {value: 2000, unit: mV/lux·s}
+  snr_max_db: 39
+  dr_db: 69.5
+  notes: 3 MP sensor first made for 1080p60 camcorders with image stabilisation, later widely used in security and USB cameras.
+- model: AR0331
+  urlname: ar0331
+  family: Aptina
+  status: eol
+  released: '2011-04'
+  released_basis: press
+  width: 2048
+  height: 1536
+  pixel_um: 2.2
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [hispi, dvp]
+  max_fps: 30
+  sensitivity: {value: 1900, unit: mV/lux·s}
+  snr_max_db: 39
+  dr_hdr_db: 100
+  notes: 3 MP surveillance sensor with on-chip multi-exposure HDR and adaptive local tone mapping, 1080p60 with binning.
+- model: AR0521
+  urlname: ar0521
+  aliases: [AR0521SR]
+  status: mp
+  released: '2017-04'
+  released_basis: press
+  width: 2592
+  height: 1944
+  pixel_um: 2.2
+  optical_format: '1/2.5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [hispi, mipi]
+  max_fps: 60
+  hdr: [stagger]
+  sensitivity: {value: 18800, unit: e-/lux·s, note: 'colour; 36 ke-/lux·s monochrome'}
+  snr_max_db: 40
+  dr_db: 74.3
+  dr_hdr_db: 96
+  notes: BSI 5 MP sensor at 60 fps with line-interleaved HDR, the replacement for the MT9P006 in security cameras; colour and monochrome.
+  sources:
+  - {kind: page, url: https://www.onsemi.com/products/sensors/image-sensors/ar0521}
+- model: AR0522
+  urlname: ar0522
+  aliases: [AR0522SR]
+  status: mp
+  released: '2018-04'
+  released_basis: press
+  width: 2592
+  height: 1944
+  pixel_um: 2.2
+  optical_format: '1/2.5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [hispi, mipi]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  notes: NIR-enhanced (NIR+) version of the AR0521 for night vision; colour and monochrome.
+  sources:
+  - {kind: page, url: https://www.onsemi.com/products/sensors/image-sensors/ar0522}
+  - {kind: press, url: https://www.edge-ai-vision.com/2018/04/on-semiconductor-introduces-first-high-resolution-image-sensors-with-nir-for-improved-night-vision/}

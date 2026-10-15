@@ -21,6 +21,7 @@
         "list_full": "Every chip we know of",
         "list_vendor": "{vendor} chips",
         "nothing_installable_html": "None of the {total} {vendor} chips can be installed yet — there is no OpenIPC build for any of them. Each row below says why, and several are waiting on a donated board or a developer rather than on us.",
+        "sensors": "Sensors",
         "stages_details": "What do the development stages mean?",
         "th_baseaddr": "Load address",
         "th_docs": "Can I install it?",
@@ -841,6 +842,13 @@
       "step3_text": "Source, specification, harness and oracles are yours. After every change, the proof runs again.",
       "step3_title": "Keep",
       "title": "Reverse engineering"
+    },
+    "sensors": {
+      "heading": "Image sensors, side by side",
+      "lede": "Every security-camera image sensor we know of, from Sony, SmartSens, OmniVision, GalaxyCore and others: resolution, pixel size, optical format, sensitivity, signal-to-noise, dynamic range and when it came out, with the boards in our catalogue that carry it.",
+      "sensor_description": "{sensor}: resolution, pixel size, optical format, sensitivity, dynamic range, HDR modes and release date, and the camera boards in the OpenIPC catalogue that use it.",
+      "sensor_title": "{sensor} image sensor: specifications",
+      "title": "Image sensors compared"
     },
     "stages_of_firmware_development": {
       "done_alt": "Image: stage DONE",

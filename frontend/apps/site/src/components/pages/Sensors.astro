@@ -1,0 +1,20 @@
+---
+/**
+ * The sensor catalogue: every image sensor in data/sensors, as a lineup chart
+ * and a table, filtered in the browser. The island is rendered at build time
+ * too, so a crawler and a reader without JavaScript get every part as a link.
+ */
+import HardwareTabs from '../HardwareTabs.astro';
+import SensorCatalogue from '../sensors/SensorCatalogue.tsx';
+import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+<div class="site-container mt-4">
+  <HardwareTabs locale={locale} view="sensors" />
+  <h1 class="mt-7 mb-0 text-h1 font-semibold text-balance">{t('pages.sensors.heading')}</h1>
+  <p class="mt-2.5 mb-4 max-w-[70ch] text-lg">{t('pages.sensors.lede')}</p>
+</div>
+<SensorCatalogue client:load locale={locale} base={pathFor(locale, '/cameras/sensors')} boardsHref={pathFor(locale, '/cameras/boards')} />

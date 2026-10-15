@@ -23,6 +23,7 @@
  *     are cheap, tested, and reached by falling through the seam.
  */
 import { VENDORS, fullName } from './hardware';
+import { PARTS, fullName as sensorName, sensorPath } from './sensors';
 import newsJson from '../data/news.json';
 import type { Locale } from './i18n';
 /**
@@ -148,6 +149,14 @@ export const PAGE_PATHS: PagePath[] = [
 
   // Camera boards from real cameras, read at runtime from /api/v1/boards.
   { path: '/cameras/boards', titleKey: 'pages.boards.title', descriptionKey: 'pages.boards.lede' },
+  // Image sensors side by side, and one page per sensor, from data/sensors.
+  { path: '/cameras/sensors', titleKey: 'pages.sensors.title', descriptionKey: 'pages.sensors.lede' },
+  ...PARTS.map((part) => ({
+    path: sensorPath(part),
+    titleKey: 'pages.sensors.sensor_title',
+    descriptionKey: 'pages.sensors.sensor_description',
+    vars: { sensor: sensorName(part) },
+  })),
   // How a new board reaches the catalogue: ipctool or an agent, and a report's receipt (?id=).
   { path: '/cameras/report', titleKey: 'pages.report.title', descriptionKey: 'pages.report.lede' },
   // The OpenIPC Club: signing in, a member's own reports and stars (service/internal/club).

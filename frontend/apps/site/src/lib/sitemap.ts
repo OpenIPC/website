@@ -15,6 +15,7 @@
 import { allRows, VENDORS } from './hardware';
 import { LOCALES } from './i18n';
 import newsJson from '../data/news.json';
+import { PARTS, sensorPath } from './sensors';
 
 export const SITE = 'https://openipc.org';
 
@@ -37,6 +38,11 @@ export function cataloguePaths(): string[] {
   return [...new Set(vendors), ...socs];
 }
 
+/** The sensor catalogue and each sensor (data/sensors), in catalogue order. */
+export function sensorPaths(): string[] {
+  return ['/cameras/sensors', ...PARTS.map(sensorPath)];
+}
+
 /** The news index and every post (#212), newest first. Last, so a post adds lines at the end. */
 export function newsPaths(): string[] {
   return ['/news', ...newsJson.map((post) => `/news/${post.slug}`)];
@@ -56,7 +62,7 @@ export function sitemapXml(): string {
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
     '        xmlns:xhtml="http://www.w3.org/1999/xhtml">',
   ];
-  for (const path of [...SITEMAP_PAGES, ...cataloguePaths(), ...newsPaths()]) {
+  for (const path of [...SITEMAP_PAGES, ...cataloguePaths(), ...newsPaths(), ...sensorPaths()]) {
     const alts = alternates(path);
     for (const [, loc] of alts) {
       out.push('  <url>', `    <loc>${SITE}${loc}</loc>`);

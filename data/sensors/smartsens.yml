@@ -1,0 +1,3137 @@
+name: SmartSens
+urlname: smartsens
+full_name: SmartSens Technology
+website_url: https://www.smartsenstech.com/
+sensors:
+- model: SC020HGS
+  urlname: sc020hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2024-04'
+  released_basis: press
+  width: 416
+  height: 416
+  pixel_um: 2.2
+  optical_format: '1/14'
+  shutter: global
+  interfaces: [mipi]
+  max_fps: 240
+  nir: true
+  sensitivity: {value: 4467, unit: 'mV/lux·s'}
+  snr_max_db: 37.16
+  dr_db: 58.72
+  notes: Tiny 0.16 MP global-shutter sensor for obstacle avoidance and eye tracking.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=247'}
+
+- model: SC020MPC
+  urlname: sc020mpc
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2024-07'
+  released_basis: press
+  width: 416
+  height: 416
+  pixel_um: 2.2
+  optical_format: '1/14'
+  shutter: global
+  interfaces: [mipi]
+  max_fps: 240
+  nir: true
+  sensitivity: {value: 4467, unit: 'mV/lux·s'}
+  snr_max_db: 37.16
+  dr_db: 58.72
+  notes: 0.16 MP global-shutter perception sensor for presence detection in laptops.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=314'}
+
+- model: SC031AP
+  urlname: sc031ap
+  family: DSI-2
+  status: mp
+  released: '2021-12'
+  released_basis: press
+  width: 644
+  height: 484
+  pixel_um: 3.4
+  optical_format: '1/6.5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 60
+  sensitivity: {value: 9480, unit: 'mV/lux·s'}
+  snr_max_db: 41
+  dr_db: 81
+  notes: 'VGA sensor with built-in ISP and analog PAL/NTSC output, made for automotive and simple analog cameras.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=173'}
+
+- model: SC031GS
+  urlname: sc031gs
+  family: SmartGS
+  status: eol
+  released: '2018'
+  released_basis: press
+  width: 640
+  height: 480
+  pixel_um: 3.744
+  optical_format: '1/6'
+  shutter: global
+  cfa: mono
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 240
+  hdr: [knee]
+  sensitivity: {value: 6500, unit: 'mV/lux·s'}
+  saturation: {value: 7000, unit: e-}
+  snr_max_db: 38
+  dr_db: 56
+  dr_hdr_db: 100
+  notes: 'First BSI global-shutter VGA sensor, common in barcode readers, drones and gesture modules.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=118'}
+
+- model: SC035HGS
+  urlname: sc035hgs
+  aliases: [SC035GS]
+  family: SmartGS
+  status: mp
+  released: '2020'
+  released_basis: press
+  width: 640
+  height: 480
+  pixel_um: 3.744
+  optical_format: '1/6'
+  shutter: global
+  interfaces: [mipi, lvds, dvp]
+  max_fps: 180
+  notes: VGA global-shutter sensor that followed the SC031GS.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=136'}
+
+- model: SC038HGS
+  urlname: sc038hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2024-01'
+  released_basis: press
+  width: 648
+  height: 488
+  pixel_um: 3.0
+  optical_format: '1/7.5'
+  shutter: global
+  interfaces: [mipi, lvds, dvp]
+  max_fps: 240
+  sensitivity: {value: 9141, unit: 'mV/lux·s'}
+  saturation: {value: 12400, unit: e-}
+  snr_max_db: 40.9
+  dr_db: 60.3
+  dark_current: {value: 247, unit: e-/s, note: '80 °C'}
+  notes: 'Low-power VGA global-shutter sensor for robot vacuums, drones and AR/VR tracking.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=319'}
+
+- model: SC038MPC
+  urlname: sc038mpc
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2024-07'
+  released_basis: press
+  width: 648
+  height: 488
+  pixel_um: 3.0
+  optical_format: '1/7.5'
+  shutter: global
+  interfaces: [mipi, lvds]
+  max_fps: 240
+  nir: true
+  sensitivity: {value: 9141, unit: 'mV/lux·s'}
+  snr_max_db: 40.9
+  dr_db: 60.3
+  notes: VGA global-shutter perception sensor for face unlock and presence detection in laptops.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=314'}
+
+- model: SC101AP
+  urlname: sc101ap
+  family: DSI-2
+  status: mp
+  released: '2021-12'
+  released_basis: press
+  width: 1288
+  height: 728
+  pixel_um: 2.9
+  optical_format: '1/4.2'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 30
+  notes: '720p sensor with built-in ISP and video transmitter, made for automotive and simple analog cameras.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=173'}
+
+- model: SC1023
+  urlname: sc1023
+  family: Legacy
+  status: eol
+  released: '2016'
+  released_basis: datasheet
+  width: 1280
+  height: 720
+  pixel_um: 6.0
+  optical_format: '1/2'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 60
+  adc_bits: 12
+  dr_db: 85
+  notes: 'Large 6 µm front-illuminated 720p pixel in a PLCC48 package, running from a single 3.3 V supply.'
+
+- model: SC1035
+  urlname: sc1035
+  family: Legacy
+  status: eol
+  released: '2014'
+  released_basis: estimate
+  width: 1280
+  height: 960
+  pixel_um: 4.0
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 45
+  successor: sc1135
+  notes: 'SmartSens'' first big seller in security cameras, a 960p sensor often fitted in place of the Aptina AR0130 in budget analog and IP cameras.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=229'}
+
+- model: SC1045
+  urlname: sc1045
+  family: Legacy
+  status: eol
+  released: '2015'
+  released_basis: estimate
+  width: 1280
+  height: 720
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 60
+  notes: 'Early 720p sensor in a 28-pin CSP for small, cheap cameras.'
+
+- model: SC1135
+  urlname: sc1135
+  family: Legacy
+  status: eol
+  released: '2015'
+  released_basis: estimate
+  width: 1280
+  height: 960
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  notes: 'Successor to the SC1035; a 960p sensor common in Hi3518EV200 cameras and fisheye panoramic cameras.'
+
+- model: SC1145
+  urlname: sc1145
+  family: Legacy
+  status: eol
+  released: '2016'
+  released_basis: estimate
+  width: 1304
+  height: 744
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 60
+  notes: 'Budget 720p sensor on a single 3.3 V supply, found in Hi3518EV200 cameras.'
+
+- model: SC1200
+  urlname: sc1200
+  family: iLLUMi
+  status: eol
+  released: '2018'
+  released_basis: press
+  megapixels: 1.0
+  shutter: rolling
+  cfa: bayer
+  notes: '1 MP member of SmartSens'' iLLUMi star-light line, sold for colour video in near darkness.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=123'}
+
+- model: SC1200IOT
+  urlname: sc1200iot
+  family: IoT (SmartClarity-3)
+  status: mp
+  released: '2025-05'
+  released_basis: press
+  width: 4016
+  height: 3016
+  pixel_um: 1.008
+  optical_format: '1/3.57'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  sensitivity: {value: 1013, unit: 'mV/lux·s'}
+  snr_max_db: 37.2
+  dr_db: 76
+  notes: '12 MP sensor in a 5.1 x 3.7 mm package for AI glasses, read noise under 1 e-.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=322'}
+
+- model: SC1220HIOT
+  urlname: sc1220hiot
+  family: IoT (SmartClarity-XL)
+  status: mp
+  released: '2025-11'
+  released_basis: press
+  width: 4128
+  height: 3104
+  pixel_um: 1.6
+  optical_format: '1/2'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  sensitivity: {value: 2643, unit: 'mV/lux·s'}
+  snr_max_db: 39.03
+  dr_db: 78.5
+  notes: '4:3 12.5 MP sensor for 360-degree fisheye cameras.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=366'}
+
+- model: SC1220IOT
+  urlname: sc1220iot
+  family: IoT (SmartClarity-XL)
+  status: mp
+  released: '2026-03'
+  released_basis: press
+  width: 4000
+  height: 3000
+  pixel_um: 1.0
+  optical_format: '1/3.57'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [dcg]
+  dr_hdr_db: 75
+  notes: 'Stacked 12 MP sensor for AI glasses, read noise 0.8 e- and a 1 mW always-on mode.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=351'}
+
+- model: SC1235
+  urlname: sc1235
+  family: SmartPixel
+  status: eol
+  released: '2017'
+  released_basis: datasheet
+  width: 1288
+  height: 968
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 60
+  sensitivity: {value: 4500, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 74
+  notes: 960p SmartPixel sensor that replaced the SC1135.
+
+- model: SC1235HGS
+  urlname: sc1235hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2025-11'
+  released_basis: press
+  width: 4112
+  height: 3104
+  pixel_um: 3.45
+  optical_format: '1.1'
+  shutter: global
+  interfaces: [mipi, lvds]
+  max_fps: 90
+  hdr: [dcg]
+  nir: true
+  sensitivity: {value: 9332, unit: 'mV/lux·s', note: colour}
+  snr_max_db: 42
+  dr_db: 62.3
+  dr_hdr_db: 100
+  notes: 12 MP global-shutter sensor for traffic cameras.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=383'}
+
+- model: SC1245
+  urlname: sc1245
+  family: SmartPixel
+  status: eol
+  released: '2017'
+  released_basis: estimate
+  width: 1288
+  height: 728
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 60
+  sensitivity: {value: 4000, unit: 'mV/lux·s'}
+  snr_max_db: 38
+  dr_db: 72
+  notes: 720p SmartPixel sensor in a 29-pin CSP.
+
+- model: SC130GS
+  urlname: sc130gs
+  family: SmartGS
+  status: mp
+  released: '2019'
+  released_basis: flyer
+  width: 1288
+  height: 1032
+  pixel_um: 4.0
+  optical_format: '1/2.7'
+  shutter: global
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 240
+  sensitivity: {value: 8000, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 60
+  notes: '1.3 MP BSI global-shutter sensor with large 4 µm pixels at 240 frame/s.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC132GS
+  urlname: sc132gs
+  family: SmartGS
+  status: mp
+  released: '2018-07'
+  released_basis: datasheet
+  width: 1080
+  height: 1280
+  pixel_um: 2.7
+  optical_format: '1/4'
+  shutter: global
+  interfaces: [mipi, lvds]
+  max_fps: 120
+  nir: true
+  sensitivity: {value: 8250, unit: 'mV/lux·s', note: 'mono; 7120 colour'}
+  saturation: {value: 9000, unit: e-}
+  snr_max_db: 40
+  dr_db: 66
+  dr_hdr_db: 100
+  notes: 'Portrait 1080x1280 stacked-BSI global-shutter sensor, QE above 40% at 940 nm; common in face-recognition and depth modules.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC1330T
+  urlname: sc1330t
+  family: SmartPixel
+  status: mp
+  released: '2020'
+  released_basis: flyer
+  width: 1288
+  height: 968
+  pixel_um: 4.0
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp, lvds]
+  max_fps: 60
+  hdr: [dcg, stagger]
+  sensitivity: {value: 15000, unit: 'mV/lux·s', note: 'high conversion gain; 2600 at low gain'}
+  snr_max_db: 46
+  dr_hdr_db: 100
+  notes: 'Large 4 µm 960p pixel with PixGain dual-gain HDR; common in XM530 cameras.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC1335T
+  urlname: sc1335t
+  family: SmartPixel
+  status: eol
+  released: '2020'
+  released_basis: flyer
+  width: 1292
+  height: 732
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp, lvds]
+  max_fps: 60
+  sensitivity: {value: 4840, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 84
+  notes: 720p sensor found in XM530 cameras.
+
+- model: SC1336
+  urlname: sc1336
+  family: DSI-2
+  status: mp
+  released: '2021-08'
+  released_basis: press
+  width: 1284
+  height: 724
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  sensitivity: {value: 12448, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 83
+  notes: '720p DSI-2 sensor with PixGain, launched for car cameras and also sold for small security cameras.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=159'}
+
+- model: SC133HGS
+  urlname: sc133hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2023-04'
+  released_basis: press
+  width: 1288
+  height: 968
+  pixel_um: 3.0
+  optical_format: '1/3.7'
+  shutter: global
+  interfaces: [mipi, dvp, lvds]
+  max_fps: 120
+  hdr: [knee]
+  sensitivity: {value: 9430, unit: 'mV/lux·s', note: 'mono; 8148 colour'}
+  snr_max_db: 38.6
+  dr_db: 63
+  dr_hdr_db: 93
+  notes: 1.3 MP global-shutter sensor with built-in ISP and knee-point HDR.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=212'}
+
+- model: SC1345
+  urlname: sc1345
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: Name ipctool reports for chip ID 0xDA23 in XM530 cameras. No SmartSens specification is public under this name.
+
+- model: SC1346
+  urlname: sc1346
+  family: DSI-2
+  status: mp
+  released: '2022-01'
+  released_basis: press
+  width: 1288
+  height: 728
+  pixel_um: 2.65
+  optical_format: '1/4.6'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  sensitivity: {value: 6143, unit: 'mV/lux·s'}
+  snr_max_db: 38
+  dr_db: 75
+  notes: Small 720p sensor in a 29-pin CSP for cheap smart cameras.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=176'}
+
+- model: SC135HGS
+  urlname: sc135hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2023-05'
+  released_basis: press
+  width: 1280
+  height: 1024
+  pixel_um: 3.45
+  optical_format: '1/3.2'
+  shutter: global
+  interfaces: [mipi, dvp, lvds]
+  max_fps: 160
+  sensitivity: {value: 13490, unit: 'mV/lux·s'}
+  snr_max_db: 37.5
+  dr_db: 61.5
+  dr_hdr_db: 90
+  notes: '1.3 MP 3.45 µm global-shutter sensor for industrial inspection.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=214'}
+
+- model: SC136HGS
+  urlname: sc136hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2025-03'
+  released_basis: press
+  width: 1296
+  height: 1040
+  pixel_um: 4.0
+  optical_format: '1/2.7'
+  shutter: global
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 240
+  hdr: [dcg, knee]
+  nir: true
+  sensitivity: {value: 15893, unit: 'mV/lux·s', note: mono}
+  snr_max_db: 43.94
+  dr_db: 62.64
+  dr_hdr_db: 92.64
+  notes: Large-pixel 1.3 MP global-shutter sensor for AGVs and machine vision.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=321'}
+
+- model: SC1435HGS
+  urlname: sc1435hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2025-11'
+  released_basis: press
+  width: 4496
+  height: 3104
+  pixel_um: 3.45
+  optical_format: '1.17'
+  shutter: global
+  interfaces: [mipi, lvds]
+  max_fps: 62
+  hdr: [dcg]
+  nir: true
+  sensitivity: {value: 9332, unit: 'mV/lux·s', note: colour}
+  snr_max_db: 42
+  dr_db: 62.3
+  dr_hdr_db: 100
+  notes: 14 MP wide global-shutter sensor whose field covers five traffic lanes.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=383'}
+
+- model: SC185SL
+  urlname: sc185sl
+  family: Star Light (SmartClarity-3)
+  status: sampling
+  released: '2026-08'
+  released_basis: press
+  width: 1280
+  height: 960
+  pixel_um: 4.0
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  nir: true
+  notes: '4:3 large-pixel sensor for doorbells and locks, with Micro-Pillar NIR enhancement.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=400'}
+
+- model: SC200AI
+  urlname: sc200ai
+  family: AI Series (SmartClarity)
+  status: eol
+  released: '2020-06'
+  released_basis: press
+  width: 1928
+  height: 1088
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  hdr: [stagger, dcg]
+  sensitivity: {value: 8200, unit: 'mV/lux·s', note: 'high conversion gain; 2450 at low gain'}
+  snr_max_db: 42
+  dr_db: 83
+  dr_hdr_db: 100
+  notes: 'First AI-series sensor: SFCPixel and dual conversion gain in a 1/2.8-inch 1080p part, pin-compatible with older SmartSens sensors.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=58'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=99'}
+
+- model: SC2035
+  urlname: sc2035
+  family: Legacy
+  status: eol
+  released: '2015'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  successor: sc2135
+  notes: 'SmartSens'' first 1080p security sensor; ipctool reads its chip ID as 0x2032.'
+
+- model: SC2045
+  urlname: sc2045
+  family: Legacy
+  status: eol
+  released: '2016'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  pixel_um: 2.2
+  optical_format: '1/3.6'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 30
+  successor: sc2145
+  notes: Small-pixel 1080p sensor for budget AHD and IP cameras.
+
+- model: SC210IoT
+  urlname: sc210iot
+  family: IoT (SmartPixel)
+  status: eol
+  released: '2020-05'
+  released_basis: press
+  width: 1928
+  height: 1088
+  pixel_um: 2.7
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  sensitivity: {value: 4510, unit: 'mV/lux·s'}
+  snr_max_db: 38.5
+  dr_db: 74
+  notes: '1080p sensor for battery cameras with on-chip AEC, waking to a usable picture in 60-70 ms at 60 mW.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=100'}
+
+- model: SC2110
+  urlname: sc2110
+  family: SmartClarity
+  status: mp
+  released: '2023'
+  released_basis: flyer
+  width: 1936
+  height: 1216
+  pixel_um: 12.0
+  optical_format: '1.69'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 120
+  hdr: [dcg, stagger]
+  sensitivity: {value: 120000, unit: 'mV/lux·s', note: 'high conversion gain; 10900 at low gain'}
+  snr_max_db: 50
+  dr_db: 72
+  dr_hdr_db: 100
+  notes: 'Huge 12 µm pixels on a 1.69-inch die, a 2.3 MP sensor for extreme low light.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC2135
+  urlname: sc2135
+  family: Legacy
+  status: eol
+  released: '2016'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 30
+  successor: sc2235
+  notes: 'Successor to the SC2035, a 1080p sensor in a PLCC48 package for entry and mid-range cameras.'
+
+- model: SC2145
+  urlname: sc2145
+  family: Legacy
+  status: eol
+  released: '2017'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  optical_format: '1/3.6'
+  shutter: rolling
+  cfa: bayer
+  notes: Successor to the SC2045 for budget AHD and IP cameras.
+
+- model: SC2145H
+  urlname: sc2145h
+  family: XM / OEM name
+  status: unknown
+  released: '2018'
+  released_basis: estimate
+  notes: 'Name ipctool reports for chip ID 0x1245, in A and B variants. No SmartSens specification is public under this name.'
+
+- model: SC2210
+  urlname: sc2210
+  family: SmartClarity
+  status: mp
+  released: '2021-09'
+  released_basis: datasheet
+  width: 1920
+  height: 1080
+  pixel_um: 4.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 10800, unit: 'mV/lux·s'}
+  snr_max_db: 43
+  dr_db: 84
+  dr_hdr_db: 100
+  notes: 'Large 4 µm 1080p star-light sensor with 3-exposure HDR; the current listing of the SC2210H design.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC2210H
+  urlname: sc2210h
+  family: SmartClarity H
+  status: eol
+  released: '2020-01'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 4.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 10800, unit: 'mV/lux·s'}
+  snr_max_db: 43
+  dr_db: 84
+  dr_hdr_db: 100
+  notes: 'Large 4 µm 1080p star-light sensor with 3-exposure HDR.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=62'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=101'}
+
+- model: SC2232
+  urlname: sc2232
+  aliases: [SC2332]
+  family: SmartPixel
+  status: eol
+  released: '2017-12'
+  released_basis: datasheet
+  width: 1936
+  height: 1096
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  sensitivity: {value: 3800, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 72
+  notes: '1080p SmartPixel sensor; ipctool names the same chip ID SC2332 on Ingenic boards.'
+
+- model: SC2232H
+  urlname: sc2232h
+  aliases: [SC307C]
+  family: SmartPixel
+  status: eol
+  released: '2019-03'
+  released_basis: datasheet
+  width: 1920
+  height: 1080
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  sensitivity: {value: 4100, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 72
+  notes: 'Higher-sensitivity revision of the SC2232; XM modules sell it as SC307C.'
+
+- model: SC2235
+  urlname: sc2235
+  family: SmartPixel
+  status: eol
+  released: '2017'
+  released_basis: estimate
+  width: 1932
+  height: 1092
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 50
+  sensitivity: {value: 3800, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 72
+  notes: 'Successor to the SC2135, a 1080p sensor found in many 2017-2019 budget IP cameras.'
+
+- model: SC2235E
+  urlname: sc2235e
+  family: XM / OEM name
+  status: unknown
+  released: '2019'
+  released_basis: estimate
+  notes: Variant of chip ID 0x2232 that ipctool tells from the SC2235P by one register. No SmartSens specification is public under this name.
+
+- model: SC2235H
+  urlname: sc2235h
+  family: SmartPixel
+  status: eol
+  released: '2018-03'
+  released_basis: datasheet
+  width: 1936
+  height: 1096
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 50
+  nir: true
+  sensitivity: {value: 3900, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 72
+  notes: NIR-enhanced version of the SC2235 with a 12-bit parallel output.
+
+- model: SC2235P
+  urlname: sc2235p
+  family: XM / OEM name
+  status: unknown
+  released: '2019'
+  released_basis: estimate
+  notes: Variant of chip ID 0x2232 found in many 1080p Ingenic and XM cameras. No SmartSens specification is public under this name.
+
+- model: SC2236
+  urlname: sc2236
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: Sensor name on XM camera modules. No SmartSens specification is public under this name.
+
+- model: SC2236H
+  urlname: sc2236h
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: Sensor name on XM camera modules. No SmartSens specification is public under this name.
+
+- model: SC2238
+  urlname: sc2238
+  family: SmartPixel
+  status: eol
+  released: '2019'
+  released_basis: flyer
+  width: 1936
+  height: 1096
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 50
+  sensitivity: {value: 3900, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 72
+  notes: '1080p parallel-output SmartPixel sensor, listed beside the SC2235.'
+
+- model: SC2239
+  urlname: sc2239
+  aliases: [SC4339]
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: '1080p sensor (chip ID 0xCB10) in a great many XM and other budget cameras, also sold as SC4339. No SmartSens specification is public under this name.'
+
+- model: SC223AP
+  urlname: sc223ap
+  aliases: [SC223A, SC2239P]
+  family: DSI-2 Pro
+  status: mp
+  released: '2021-04'
+  released_basis: press
+  width: 1928
+  height: 1088
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  sensitivity: {value: 7330, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 80
+  twin: sc233ap
+  notes: 'First DSI-2 sensor, a 1080p part; ipctool finds the same die sold as SC223A, SC233A and SC2239P.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=144'}
+
+- model: SC2300
+  urlname: sc2300
+  family: iLLUMi
+  status: eol
+  released: '2018'
+  released_basis: press
+  megapixels: 2.0
+  shutter: rolling
+  cfa: bayer
+  notes: '2 MP member of SmartSens'' iLLUMi star-light line.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=123'}
+
+- model: SC230AI
+  urlname: sc230ai
+  family: AI Series (SmartClarity-2)
+  status: mp
+  released: '2021-06'
+  released_basis: press
+  width: 1928
+  height: 1088
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  hdr: [stagger, dcg]
+  nir: true
+  sensitivity: {value: 7341, unit: 'mV/lux·s'}
+  snr_max_db: 42
+  dr_db: 86
+  dr_hdr_db: 100
+  notes: '1080p BSI sensor with NIR+ (QE 36% at 850 nm at launch) and PixGain dual-gain HDR.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=151'}
+
+- model: SC2310
+  urlname: sc2310
+  aliases: [SC2310T]
+  family: SmartClarity
+  status: eol
+  released: '2018-04'
+  released_basis: press
+  width: 1932
+  height: 1092
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 4800, unit: 'mV/lux·s'}
+  snr_max_db: 43
+  dr_db: 82
+  dr_hdr_db: 100
+  successor: sc2310h
+  notes: 'Star-light 1080p BSI sensor with roughly doubled 850-940 nm response; the SC2310T is its -40 °C industrial grade.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=81'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=119'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=108'}
+
+- model: SC2310H
+  urlname: sc2310h
+  family: SmartClarity H
+  status: eol
+  released: '2020-01'
+  released_basis: press
+  width: 1932
+  height: 1092
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 4800, unit: 'mV/lux·s'}
+  snr_max_db: 43
+  dr_db: 82
+  dr_hdr_db: 100
+  notes: Pin-compatible SC2310 with up to half the dark current and fewer white pixels when hot.
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=62'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=101'}
+
+- model: SC2315
+  urlname: sc2315
+  family: XM / OEM name
+  status: unknown
+  released: '2019'
+  released_basis: estimate
+  notes: Name ipctool reports for chip ID 0x2311 in XM cameras. No SmartSens specification is public under this name.
+
+- model: SC2315E
+  urlname: sc2315e
+  aliases: [SC4239, SC4239P, SC307E]
+  family: XM / OEM name
+  status: unknown
+  released: '2019'
+  released_basis: estimate
+  notes: '1080p chip (ID 0x2238) that XM modules sell as SC4239, SC4239P or SC307E and market as 3 MP. No SmartSens specification is public under this name.'
+
+- model: SC231HAI
+  urlname: sc231hai
+  aliases: [SC231AI]
+  family: AI Series (SmartClarity-3)
+  status: mp
+  released: '2023-08'
+  released_basis: press
+  width: 1928
+  height: 1088
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 7387, unit: 'mV/lux·s'}
+  snr_max_db: 41
+  dr_db: 86
+  dr_hdr_db: 100
+  notes: 1080p SmartClarity-3 sensor with less dark current and noise at high temperature than the SC230AI.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=220'}
+
+- model: SC2320
+  urlname: sc2320
+  family: SmartPixel-2 (DSI)
+  status: eol
+  released: '2019-10'
+  released_basis: press
+  width: 1932
+  height: 1098
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 90
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 7000, unit: 'mV/lux·s'}
+  snr_max_db: 38
+  dr_db: 78
+  dr_hdr_db: 100
+  notes: '1080p sensor from SmartSens'' first DSI generation, which doubled sensitivity over its front-illuminated parts.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=65'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=104'}
+
+- model: SC2331
+  urlname: sc2331
+  family: DSI-2
+  status: mp
+  released: '2022-09'
+  released_basis: press
+  width: 1928
+  height: 1088
+  pixel_um: 2.45
+  optical_format: '1/3.2'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  sensitivity: {value: 5038, unit: 'mV/lux·s'}
+  snr_max_db: 36.2
+  dr_db: 76
+  notes: Low-power 1080p sensor for battery and home cameras.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=193'}
+
+- model: SC2335
+  urlname: sc2335
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: 1080p DSI-generation chip (ID 0xCB14) in budget cameras. No SmartSens specification is public under this name.
+
+- model: SC2336
+  urlname: sc2336
+  family: DSI-2
+  status: mp
+  released: '2021-09'
+  released_basis: press
+  width: 1928
+  height: 1088
+  pixel_um: 2.7
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  nir: true
+  sensitivity: {value: 6594, unit: 'mV/lux·s'}
+  snr_max_db: 36
+  dr_db: 74
+  successor: sc2336p
+  notes: 'Low-cost 1/3-inch 1080p sensor, very common in XM, Ingenic and SigmaStar cameras.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=163'}
+
+- model: SC2336P
+  urlname: sc2336p
+  family: DSI-2 Pro
+  status: mp
+  released: '2022-09'
+  released_basis: press
+  width: 1928
+  height: 1088
+  pixel_um: 2.7
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  sensitivity: {value: 6594, unit: 'mV/lux·s'}
+  snr_max_db: 36
+  dr_db: 74
+  notes: 12-inch-wafer revision of the SC2336 with better colour and high-temperature behaviour.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=189'}
+
+- model: SC2338V
+  urlname: sc2338v
+  family: DSI-3
+  status: mp
+  released: '2026-04'
+  released_basis: press
+  width: 1920
+  height: 1080
+  pixel_um: 2.7
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 50
+  notes: 1/3-inch 1080p front-illuminated sensor with SmartAOV 2.1 always-on video for battery and solar cameras.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=398'}
+
+- model: SC233AP
+  urlname: sc233ap
+  aliases: [SC233A]
+  family: DSI-2 Pro
+  status: mp
+  released: '2021-04'
+  released_basis: press
+  width: 1928
+  height: 1088
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  hdr: [stagger]
+  sensitivity: {value: 7330, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 80
+  dr_hdr_db: 100
+  twin: sc223ap
+  notes: SC223A with 60 frame/s and HDR.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=144'}
+
+- model: SC233HGS
+  urlname: sc233hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2023-04'
+  released_basis: press
+  width: 1928
+  height: 1208
+  pixel_um: 3.0
+  optical_format: '1/2.6'
+  shutter: global
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 120
+  hdr: [knee]
+  sensitivity: {value: 9200, unit: 'mV/lux·s', note: 'mono; 8004 colour'}
+  snr_max_db: 37.71
+  dr_db: 62.65
+  dr_hdr_db: 92.65
+  notes: '2.3 MP global-shutter sensor with built-in ISP for barcode readers, AGVs and drones.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=212'}
+
+- model: SC2355
+  urlname: sc2355
+  family: XM / OEM name
+  status: unknown
+  released: '2021'
+  released_basis: estimate
+  notes: Name ipctool reports for chip ID 0xEB2C. No SmartSens specification is public under this name.
+
+- model: SC235HAI
+  urlname: sc235hai
+  aliases: [SC235AI]
+  family: AI Series (SmartClarity-3)
+  status: mp
+  released: '2023-10'
+  released_basis: press
+  width: 1928
+  height: 1088
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 8530, unit: 'mV/lux·s'}
+  snr_max_db: 41.5
+  dr_db: 86
+  dr_hdr_db: 100
+  notes: 1080p sensor with Lightbox IR deep-trench NIR enhancement.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=232'}
+
+- model: SC235HGS
+  urlname: sc235hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2023-05'
+  released_basis: press
+  width: 1600
+  height: 1200
+  pixel_um: 3.45
+  optical_format: '1/2.6'
+  shutter: global
+  interfaces: [mipi, dvp, lvds]
+  max_fps: 130
+  sensitivity: {value: 13490, unit: 'mV/lux·s'}
+  snr_max_db: 37.5
+  dr_db: 61.5
+  dr_hdr_db: 90
+  notes: '2 MP 3.45 µm global-shutter sensor for industrial inspection.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=214'}
+
+- model: SC256HIOT
+  urlname: sc256hiot
+  family: IoT (SmartClarity-3)
+  status: mp
+  released: '2025-09'
+  released_basis: press
+  width: 1648
+  height: 1648
+  pixel_um: 2.9
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  sensitivity: {value: 8347, unit: 'mV/lux·s'}
+  snr_max_db: 41.76
+  dr_db: 87.4
+  dr_hdr_db: 100
+  notes: Square 2.6 MP sensor for doorbells and fisheye cameras.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=358'}
+
+- model: SC285SL
+  urlname: sc285sl
+  family: Star Light (SmartClarity-3)
+  status: mp
+  released: '2025-10'
+  released_basis: press
+  width: 1936
+  height: 1096
+  pixel_um: 4.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 90
+  nir: true
+  sensitivity: {value: 12236, unit: 'mV/lux·s'}
+  snr_max_db: 44.47
+  notes: 'Ultra-low-light 1080p sensor, SNR1s 0.1 lux, with always-on video.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=359'}
+
+- model: SC301HIOT
+  urlname: sc301hiot
+  family: IoT (DSI-2 Plus)
+  status: mp
+  released: '2025-01'
+  released_basis: press
+  width: 2052
+  height: 1540
+  pixel_um: 2.5
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  nir: true
+  sensitivity: {value: 5371, unit: 'mV/lux·s'}
+  snr_max_db: 39.24
+  dr_db: 82.09
+  notes: '4:3 3 MP IoT sensor with NIR enhancement and HDR.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=320'}
+
+- model: SC301IoT
+  urlname: sc301iot
+  family: IoT (DSI-2)
+  status: mp
+  released: '2021-08'
+  released_basis: press
+  width: 2052
+  height: 1540
+  pixel_um: 2.5
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [stagger]
+  sensitivity: {value: 5371, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 80
+  dr_hdr_db: 100
+  notes: '4:3 3 MP sensor for always-on cameras: 60 ms from power-off to picture, 160 mW running.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=158'}
+
+- model: SC3035
+  urlname: sc3035
+  family: Legacy
+  status: eol
+  released: '2016'
+  released_basis: estimate
+  width: 2304
+  height: 1536
+  pixel_um: 2.2
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  notes: '4:3 3 MP sensor used mostly in fisheye panoramic and light-bulb cameras.'
+
+- model: SC307H
+  urlname: sc307h
+  family: XM / OEM name
+  status: unknown
+  released: '2019'
+  released_basis: estimate
+  notes: Name ipctool reports for chip ID 0x2330 in XM cameras. No SmartSens specification is public under this name.
+
+- model: SC307P
+  urlname: sc307p
+  family: XM / OEM name
+  status: unknown
+  released: '2019'
+  released_basis: estimate
+  notes: Name ipctool reports for chip ID 0x2300 in XM530 cameras. No SmartSens specification is public under this name.
+
+- model: SC3235
+  urlname: sc3235
+  family: SmartPixel
+  status: eol
+  released: '2019-11'
+  released_basis: press
+  width: 2316
+  height: 1308
+  pixel_um: 2.5
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  sensitivity: {value: 3800, unit: 'mV/lux·s'}
+  snr_max_db: 37
+  dr_db: 72
+  notes: '16:9 3 MP ("Full HD Pro") sensor for webcams and home cameras.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=64'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=103'}
+
+- model: SC3236H
+  urlname: sc3236h
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: Sensor name on XM camera modules. No SmartSens specification is public under this name.
+
+- model: SC3320
+  urlname: sc3320
+  family: SmartPixel-2 (DSI)
+  status: eol
+  released: '2019-11'
+  released_basis: press
+  width: 2316
+  height: 1308
+  pixel_um: 2.75
+  optical_format: '1/2.5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 6000, unit: 'mV/lux·s'}
+  snr_max_db: 38
+  dr_db: 78
+  dr_hdr_db: 100
+  notes: Larger-format 3 MP DSI sensor with 2-exposure HDR at 60 frame/s.
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=64'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=103'}
+
+- model: SC3332
+  urlname: sc3332
+  family: DSI-2
+  status: mp
+  released: '2022-09'
+  released_basis: press
+  width: 2312
+  height: 1304
+  pixel_um: 2.2
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  sensitivity: {value: 3933, unit: 'mV/lux·s'}
+  snr_max_db: 36
+  dr_db: 75
+  notes: Low-power 1/3-inch 3 MP sensor.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=193'}
+
+- model: SC3332P
+  urlname: sc3332p
+  family: DSI-2 Pro
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  width: 2312
+  height: 1304
+  pixel_um: 2.2
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  notes: Pro revision of the SC3332.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC3335
+  urlname: sc3335
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: 3 MP chip (ID 0xCC1A) found in home cameras. No SmartSens specification is public under this name.
+
+- model: SC3336
+  urlname: sc3336
+  aliases: [SC3338]
+  family: DSI-2
+  status: mp
+  released: '2021-09'
+  released_basis: press
+  width: 2312
+  height: 1304
+  pixel_um: 2.45
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  sensitivity: {value: 4947, unit: 'mV/lux·s'}
+  snr_max_db: 38
+  dr_db: 78
+  successor: sc3336p
+  notes: 'Very common 3 MP sensor of Ingenic T31 and XM cameras; the same chip (ID 0xCC41) is also sold as SC3338.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=163'}
+
+- model: SC3336P
+  urlname: sc3336p
+  family: DSI-2 Pro
+  status: mp
+  released: '2022-09'
+  released_basis: press
+  width: 2312
+  height: 1304
+  pixel_um: 2.45
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  notes: 12-inch-wafer revision of the SC3336.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=189'}
+
+- model: SC3338P
+  urlname: sc3338p
+  family: DSI-2 Pro
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  width: 2312
+  height: 1304
+  pixel_um: 2.45
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 45
+  notes: 45 frame/s 3 MP sensor in a 41-pin CSP.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC350HGS
+  urlname: sc350hgs
+  family: SmartGS-2
+  status: mp
+  released: '2021-09'
+  released_basis: press
+  width: 1768
+  height: 1768
+  pixel_um: 4.2
+  optical_format: '2/3'
+  shutter: global
+  cfa: mono
+  interfaces: [mipi, lvds]
+  max_fps: 75
+  sensitivity: {value: 14500, unit: 'mV/lux·s', note: mono}
+  snr_max_db: 41
+  dr_db: 62
+  notes: 'Square 3 MP monochrome global-shutter sensor, QE 90% at 520 nm.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=165'}
+
+- model: SC400AI
+  urlname: sc400ai
+  family: AI Series (SmartClarity-2)
+  status: eol
+  released: '2021-10'
+  released_basis: press
+  width: 2568
+  height: 1448
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [stagger]
+  sensitivity: {value: 3750, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 78
+  dr_hdr_db: 100
+  notes: '1/3-inch 4 MP sensor with SFCPixel and PixGain, pin-compatible with the SC2336 and SC3336.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=167'}
+
+- model: SC401AI
+  urlname: sc401ai
+  family: AI Series (SmartClarity)
+  status: eol
+  released: '2021-10'
+  released_basis: press
+  width: 2568
+  height: 1448
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  sensitivity: {value: 3750, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 78
+  notes: '30 frame/s, no-HDR version of the SC400AI, found in XM 4 MP cameras.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=167'}
+
+- model: SC410GS
+  urlname: sc410gs
+  family: SmartGS-2
+  status: mp
+  released: '2020'
+  released_basis: press
+  width: 1768
+  height: 2352
+  pixel_um: 4.2
+  optical_format: '1/1.3'
+  shutter: global
+  interfaces: [mipi, lvds]
+  max_fps: 50
+  nir: true
+  sensitivity: {value: 14300, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 60
+  dr_hdr_db: 100
+  notes: Portrait 4 MP global-shutter sensor with region HDR for traffic cameras.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=139'}
+
+- model: SC410IoT
+  urlname: sc410iot
+  family: IoT (SmartClarity)
+  status: eol
+  released: '2021'
+  released_basis: estimate
+  width: 2568
+  height: 1448
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  notes: '1/3-inch 4 MP IoT sensor, since dropped from the SmartSens list.'
+
+- model: SC4210
+  urlname: sc4210
+  aliases: [SC4210T]
+  family: SmartClarity
+  status: eol
+  released: '2018-12'
+  released_basis: press
+  width: 2576
+  height: 1452
+  pixel_um: 3.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 4800, unit: 'mV/lux·s'}
+  snr_max_db: 43
+  dr_db: 82
+  dr_hdr_db: 100
+  successor: sc4210h
+  notes: 'Large-format 4 MP BSI star-light sensor, SNR1s 0.21 lux; the SC4210T is its -40 °C industrial grade.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=77'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=115'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=108'}
+
+- model: SC4210H
+  urlname: sc4210h
+  family: SmartClarity H
+  status: eol
+  released: '2020-01'
+  released_basis: press
+  width: 2576
+  height: 1452
+  pixel_um: 3.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 4800, unit: 'mV/lux·s'}
+  snr_max_db: 43
+  dr_db: 82
+  dr_hdr_db: 100
+  notes: 'Lower-dark-current revision of the SC4210, pin-compatible.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=62'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=101'}
+
+- model: SC4236
+  urlname: sc4236
+  family: SmartPixel
+  status: eol
+  released: '2018-01'
+  released_basis: press
+  width: 2304
+  height: 1536
+  pixel_um: 2.5
+  optical_format: '1/2.6'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  sensitivity: {value: 3000, unit: 'mV/lux·s'}
+  snr_max_db: 37
+  dr_db: 72
+  notes: '4:3 3 MP low-light sensor, supported early on HiSilicon, Ingenic T30, Novatek and Fullhan platforms.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=83'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=121'}
+
+- model: SC4237
+  urlname: sc4237
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: Sensor name on XM camera modules. No SmartSens specification is public under this name.
+
+- model: SC4238
+  urlname: sc4238
+  family: SmartClarity
+  status: eol
+  released: '2019-01'
+  released_basis: press
+  width: 2688
+  height: 1520
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 2800, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 74
+  dr_hdr_db: 100
+  successor: sc4238h
+  notes: Budget 1/3-inch 4 MP BSI sensor with 2-exposure HDR at 60 frame/s.
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=76'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=114'}
+
+- model: SC4238H
+  urlname: sc4238h
+  family: SmartClarity H
+  status: eol
+  released: '2020-01'
+  released_basis: press
+  width: 2688
+  height: 1520
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 2800, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 74
+  dr_hdr_db: 100
+  notes: Lower-dark-current revision of the SC4238.
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=62'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=101'}
+
+- model: SC4239H
+  urlname: sc4239h
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: Sensor name on XM camera modules sold as 3 MP. No SmartSens specification is public under this name.
+
+- model: SC430AI
+  urlname: sc430ai
+  family: AI Series (SmartClarity-2)
+  status: eol
+  released: '2021-06'
+  released_basis: press
+  width: 2696
+  height: 1528
+  pixel_um: 2.0
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [stagger, dcg]
+  nir: true
+  sensitivity: {value: 2614, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 83
+  dr_hdr_db: 100
+  notes: 4 MP BSI sensor with NIR+ and PixGain.
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=151'}
+
+- model: SC431HAI
+  urlname: sc431hai
+  aliases: [SC431AI]
+  family: AI Series (SmartClarity-3)
+  status: mp
+  released: '2023-08'
+  released_basis: press
+  width: 2568
+  height: 1448
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 4416, unit: 'mV/lux·s'}
+  snr_max_db: 38
+  dr_db: 81
+  dr_hdr_db: 100
+  notes: '1/3-inch 4 MP SmartClarity-3 sensor, QE 88% at 520 nm.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=220'}
+
+- model: SC4335
+  urlname: sc4335
+  family: SmartPixel-2 (DSI)
+  status: eol
+  released: '2019-10'
+  released_basis: press
+  width: 2572
+  height: 1452
+  pixel_um: 2.25
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  nir: true
+  sensitivity: {value: 4200, unit: 'mV/lux·s'}
+  snr_max_db: 37
+  dr_db: 75
+  notes: '4 MP DSI sensor; Ingenic''s T31 reference board pairs it with that SoC.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=65'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=104'}
+
+- model: SC4335P
+  urlname: sc4335p
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: Name ipctool reports for chip ID 0xCD01 in XM cameras. No SmartSens specification is public under this name.
+
+- model: SC4336
+  urlname: sc4336
+  family: DSI-2
+  status: mp
+  released: '2021-10'
+  released_basis: press
+  width: 2568
+  height: 1448
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  sensitivity: {value: 2800, unit: 'mV/lux·s'}
+  snr_max_db: 38
+  dr_db: 77
+  successor: sc4336p
+  notes: 'Budget 1/3-inch 4 MP sensor, pin-compatible with the SC2336 and SC3336.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=167'}
+
+- model: SC4336H
+  urlname: sc4336h
+  family: DSI-3
+  status: mp
+  released: '2025-05'
+  released_basis: press
+  width: 2568
+  height: 1448
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  nir: true
+  sensitivity: {value: 2413, unit: 'mV/lux·s'}
+  snr_max_db: 37.4
+  dr_db: 76.7
+  notes: DSI-3 front-illuminated 4 MP sensor with better NIR response than the SC4336P.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=323'}
+
+- model: SC4336P
+  urlname: sc4336p
+  family: DSI-2 Pro
+  status: mp
+  released: '2022-09'
+  released_basis: press
+  width: 2568
+  height: 1448
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  sensitivity: {value: 2813, unit: 'mV/lux·s'}
+  snr_max_db: 37.3
+  dr_db: 76
+  notes: 12-inch-wafer revision of the SC4336 with better low-light and high-temperature behaviour.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=189'}
+
+- model: SC4338V
+  urlname: sc4338v
+  family: DSI-3
+  status: mp
+  released: '2026-04'
+  released_basis: press
+  width: 2560
+  height: 1440
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  notes: 1/3-inch 4 MP front-illuminated sensor with SmartAOV 2.1 always-on video.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=398'}
+
+- model: SC435HAI
+  urlname: sc435hai
+  aliases: [SC435AI]
+  family: AI Series (SmartClarity-3)
+  status: mp
+  released: '2023-10'
+  released_basis: press
+  width: 2568
+  height: 1448
+  pixel_um: 2.0
+  optical_format: '1/3.06'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  notes: 1/3-inch 4 MP sensor with Lightbox IR NIR enhancement.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=232'}
+
+- model: SC438HAI
+  urlname: sc438hai
+  family: AI Series (SmartClarity-3)
+  status: mp
+  released: '2024'
+  released_basis: flyer
+  width: 2696
+  height: 1528
+  pixel_um: 2.0
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 4150, unit: 'mV/lux·s'}
+  snr_max_db: 39.03
+  dr_db: 82
+  dr_hdr_db: 100
+  notes: 2688x1520 4 MP sensor in the SC430AI footprint.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC450AI
+  urlname: sc450ai
+  family: AI Series (SmartClarity)
+  status: eol
+  released: '2021-03'
+  released_basis: press
+  width: 2704
+  height: 1536
+  pixel_um: 2.9
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi, lvds]
+  max_fps: 60
+  hdr: [stagger, dcg]
+  nir: true
+  sensitivity: {value: 7072, unit: 'mV/lux·s'}
+  snr_max_db: 42
+  dr_db: 87
+  dr_hdr_db: 100
+  notes: Large 1/1.8-inch 4 MP low-light sensor with staggered and dual-gain HDR.
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=142'}
+
+- model: SC465SL
+  urlname: sc465sl
+  family: Star Light (SmartClarity-3)
+  status: unknown
+  released: '2025-01'
+  released_basis: datasheet
+  width: 2576
+  height: 1456
+  pixel_um: 2.9
+  optical_format: '1/1.88'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [stagger, dcg]
+  nir: true
+  sensitivity: {value: 8107, unit: 'mV/lux·s'}
+  snr_max_db: 42
+  dr_db: 87.6
+  dr_hdr_db: 100
+  notes: '4 MP star-light sensor with SmartAOV 2.0 fast start; not listed on the SmartSens site.'
+
+- model: SC485SL
+  urlname: sc485sl
+  family: Star Light (SmartClarity-3)
+  status: mp
+  released: '2024-10'
+  released_basis: press
+  width: 2704
+  height: 1536
+  pixel_um: 2.9
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 90
+  nir: true
+  sensitivity: {value: 8182, unit: 'mV/lux·s'}
+  snr_max_db: 42
+  dr_hdr_db: 120
+  notes: '1/1.8-inch 4 MP low-light sensor, the first with SmartAOV 2.0 always-on video.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=267'}
+
+- model: SC489SL
+  urlname: sc489sl
+  family: Star Light (SmartClarity-3)
+  status: mp
+  released: '2025-08'
+  released_basis: press
+  width: 2704
+  height: 1536
+  pixel_um: 2.9
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 90
+  nir: true
+  sensitivity: {value: 8182, unit: 'mV/lux·s'}
+  snr_max_db: 42
+  dr_db: 87.6
+  dr_hdr_db: 120
+  notes: 'SC485SL with Lightbox IR-2: QE up 45% at 850 nm, for long-range infrared night views.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=338'}
+
+- model: SC4A3D
+  urlname: sc4a3d
+  family: DSI-2
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  width: 2568
+  height: 1448
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  notes: 1/3-inch 4 MP DSI-2 sensor listed beside the SC4336.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC500AI
+  urlname: sc500ai
+  family: AI Series (SmartClarity)
+  status: eol
+  released: '2020-07'
+  released_basis: press
+  width: 2888
+  height: 1628
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [stagger, dcg]
+  sensitivity: {value: 3628, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 79
+  dr_hdr_db: 100
+  twin: sc501ai
+  notes: '16:9 5 MP (2880x1620, "3K") sensor that fills a widescreen frame instead of cropping 4:3.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=94'}
+
+- model: SC501AI
+  urlname: sc501ai
+  family: AI Series (SmartClarity)
+  status: eol
+  released: '2021-04'
+  released_basis: press
+  width: 2888
+  height: 1628
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  nir: true
+  sensitivity: {value: 3628, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 79
+  twin: sc500ai
+  notes: '30 frame/s 3K sensor on the same die (chip ID 0xCE1F) as the SC500AI; common in XM 5 MP cameras.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=145'}
+
+- model: SC5035
+  urlname: sc5035
+  family: SmartClarity
+  status: eol
+  released: '2017-01'
+  released_basis: datasheet
+  width: 2576
+  height: 1936
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 2000, unit: 'mV/lux·s'}
+  snr_max_db: 35
+  dr_db: 64
+  notes: 5 MP BSI sensor and the first SmartSens part with its NIR-enhanced pixel.
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=124'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=122'}
+
+- model: SC5235
+  urlname: sc5235
+  family: SmartClarity
+  status: eol
+  released: '2018-02'
+  released_basis: press
+  width: 2592
+  height: 1944
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 20
+  hdr: [stagger]
+  sensitivity: {value: 2800, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 74
+  dr_hdr_db: 100
+  notes: '5 MP 2 µm BSI sensor over a two-lane MIPI link; 1440p runs at 30 frame/s.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=82'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=120'}
+
+- model: SC5238
+  urlname: sc5238
+  family: SmartClarity
+  status: eol
+  released: '2018-02'
+  released_basis: press
+  width: 2608
+  height: 1960
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 2800, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 74
+  dr_hdr_db: 100
+  successor: sc5238h
+  notes: 'NIR-enhanced SC5235, the mainstream 5 MP sensor of 2018-2020 IP cameras.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=82'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=120'}
+
+- model: SC5238H
+  urlname: sc5238h
+  family: SmartClarity H
+  status: eol
+  released: '2020-01'
+  released_basis: press
+  width: 2608
+  height: 1960
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 2800, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 74
+  dr_hdr_db: 100
+  notes: Lower-dark-current revision of the SC5238.
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=62'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=101'}
+
+- model: SC5239
+  urlname: sc5239
+  family: XM / OEM name
+  status: unknown
+  released: '2019'
+  released_basis: estimate
+  notes: Sensor name on XM camera modules sold as 4 MP or 5 MP. No SmartSens specification is public under this name.
+
+- model: SC5239S
+  urlname: sc5239s
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: Sensor name on XM camera modules sold as 4 MP. No SmartSens specification is public under this name.
+
+- model: SC5300
+  urlname: sc5300
+  aliases: [SC335E]
+  family: iLLUMi
+  status: eol
+  released: '2018'
+  released_basis: press
+  megapixels: 5.0
+  shutter: rolling
+  cfa: bayer
+  notes: '5 MP member of the iLLUMi star-light line; XM camera modules sold as SC335E carry this chip (ID 0x5300).'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=123'}
+
+- model: SC530AI
+  urlname: sc530ai
+  family: AI Series (SmartClarity-2)
+  status: eol
+  released: '2021-06'
+  released_basis: press
+  width: 2884
+  height: 1624
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [stagger, dcg]
+  nir: true
+  sensitivity: {value: 2614, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 83
+  dr_hdr_db: 100
+  notes: 3K 5 MP BSI sensor with NIR+ and PixGain.
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=151'}
+
+- model: SC531AI
+  urlname: sc531ai
+  family: AI Series (SmartClarity-2)
+  status: eol
+  released: '2022'
+  released_basis: estimate
+  width: 2884
+  height: 1624
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  notes: 30 frame/s 3K sibling of the SC530AI.
+
+- model: SC532HAI
+  urlname: sc532hai
+  family: AI Series (SmartClarity-3)
+  status: mp
+  released: '2024-09'
+  released_basis: press
+  width: 2968
+  height: 1674
+  pixel_um: 2.0
+  optical_format: '1/2.65'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  hdr: [stagger, dcg]
+  nir: true
+  sensitivity: {value: 4133, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 83
+  dr_hdr_db: 100
+  notes: '3K 5 MP sensor with Lightbox IR, ColGain HDR and always-on video support.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=268'}
+
+- model: SC5332
+  urlname: sc5332
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: Name ipctool reports for chip ID 0xCE1A in XM cameras. No SmartSens specification is public under this name.
+
+- model: SC5335
+  urlname: sc5335
+  family: SmartPixel-2 (DSI)
+  status: eol
+  released: '2019-10'
+  released_basis: press
+  width: 2604
+  height: 1956
+  pixel_um: 2.05
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  nir: true
+  sensitivity: {value: 2200, unit: 'mV/lux·s'}
+  snr_max_db: 35
+  dr_db: 74
+  notes: '4:3 5 MP DSI sensor for budget cameras.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=65'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=104'}
+
+- model: SC5335P
+  urlname: sc5335p
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: Sensor name on XM camera modules. No SmartSens specification is public under this name.
+
+- model: SC5336
+  urlname: sc5336
+  family: XM / OEM name
+  status: unknown
+  released: '2022'
+  released_basis: estimate
+  notes: 'Name ipctool reports for chip ID 0xCE50; SmartSens lists only the SC5336P. No SmartSens specification is public under this name.'
+
+- model: SC5336P
+  urlname: sc5336p
+  family: DSI-2 Pro
+  status: mp
+  released: '2023-02'
+  released_basis: press
+  width: 2888
+  height: 1628
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  hdr: [stagger]
+  sensitivity: {value: 2806, unit: 'mV/lux·s'}
+  snr_max_db: 36.7
+  dr_db: 75.4
+  dr_hdr_db: 85.69
+  notes: 'First DSI-2 3K 5 MP sensor, aimed at analog HD cameras.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=207'}
+
+- model: SC5338P
+  urlname: sc5338p
+  family: DSI-2 Pro
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  width: 2888
+  height: 1628
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  notes: 3K 5 MP DSI-2 sensor in a 41-pin CSP.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC533HAI
+  urlname: sc533hai
+  family: AI Series (SmartClarity-3)
+  status: unknown
+  released: '2025'
+  released_basis: datasheet
+  width: 2968
+  height: 1674
+  pixel_um: 2.0
+  optical_format: '1/2.65'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  hdr: [stagger, dcg]
+  sensitivity: {value: 4133, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 83
+  dr_hdr_db: 100
+  notes: 'Sibling of the SC532HAI with the same array; not listed on the SmartSens site.'
+
+- model: SC535HGS
+  urlname: sc535hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2023-10'
+  released_basis: press
+  width: 2448
+  height: 2048
+  pixel_um: 3.45
+  optical_format: '2/3'
+  shutter: global
+  interfaces: [mipi, lvds]
+  max_fps: 80
+  saturation: {value: 16600, unit: e-}
+  notes: 5 MP 2/3-inch global-shutter sensor with read noise down to 2.44 e-.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=231'}
+
+- model: SC535HIOT
+  urlname: sc535hiot
+  family: IoT (SmartClarity-3)
+  status: mp
+  released: '2025'
+  released_basis: flyer
+  width: 2696
+  height: 1952
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  nir: true
+  sensitivity: {value: 4150, unit: 'mV/lux·s'}
+  snr_max_db: 39.03
+  dr_db: 82
+  dr_hdr_db: 100
+  notes: '4:3 5 MP IoT sensor with always-on video and NIR enhancement.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC535IoT
+  urlname: sc535iot
+  family: IoT (SmartClarity-3)
+  status: mp
+  released: '2024-02'
+  released_basis: press
+  width: 2592
+  height: 1944
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  nir: true
+  notes: '4:3 5 MP sensor with SmartAEC fast start for always-on battery cameras, under 50 mW at 1 frame/s.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=239'}
+
+- model: SC538HGS
+  urlname: sc538hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2024-07'
+  released_basis: press
+  width: 2464
+  height: 2064
+  pixel_um: 3.45
+  optical_format: '2/3'
+  shutter: global
+  interfaces: [mipi, lvds]
+  max_fps: 80
+  nir: true
+  sensitivity: {value: 12195, unit: 'mV/lux·s', note: 'mono; 9923 colour'}
+  snr_max_db: 42.2
+  dr_db: 62.64
+  notes: 'NIR-enhanced version of the SC535HGS, QE 92.3% at 520 nm.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=254'}
+
+- model: SC630AI
+  urlname: sc630ai
+  family: AI Series (SmartClarity-2)
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  width: 2564
+  height: 2564
+  pixel_um: 2.0
+  optical_format: '1/2.5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [dcg]
+  sensitivity: {value: 2310, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 80
+  notes: Square 6 MP sensor for fisheye and doorbell cameras.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC630HIOT
+  urlname: sc630hiot
+  family: IoT (SmartClarity-2)
+  status: mp
+  released: '2025-09'
+  released_basis: press
+  width: 2564
+  height: 2564
+  pixel_um: 2.0
+  optical_format: '1/2.5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [dcg]
+  sensitivity: {value: 2310, unit: 'mV/lux·s'}
+  snr_max_db: 40
+  dr_db: 80
+  notes: Square 6 MP sensor for doorbells and fisheye cameras.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=358'}
+
+- model: SC635HAI
+  urlname: sc635hai
+  family: AI Series (SmartClarity-3)
+  status: mp
+  released: '2024-09'
+  released_basis: press
+  width: 3208
+  height: 1808
+  pixel_um: 2.0
+  optical_format: '1/2.45'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  hdr: [stagger, dcg]
+  nir: true
+  sensitivity: {value: 4133, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 83
+  dr_hdr_db: 100
+  notes: '16:9 6 MP (3200x1800) sensor with Lightbox IR and always-on video support.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=268'}
+
+- model: SC635HGS
+  urlname: sc635hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2024-12'
+  released_basis: press
+  width: 2896
+  height: 2192
+  pixel_um: 4.0
+  optical_format: '1/1.1'
+  shutter: global
+  interfaces: [mipi, lvds]
+  max_fps: 65
+  hdr: [dcg]
+  nir: true
+  sensitivity: {value: 12613, unit: 'mV/lux·s'}
+  dr_db: 63.2
+  dr_hdr_db: 70
+  notes: 6 MP global-shutter sensor for traffic cameras.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=316'}
+
+- model: SC650HGS
+  urlname: sc650hgs
+  family: SmartGS-2
+  status: mp
+  released: '2021-09'
+  released_basis: press
+  width: 2896
+  height: 2176
+  pixel_um: 4.0
+  optical_format: '1'
+  shutter: global
+  cfa: mono
+  interfaces: [mipi, lvds]
+  max_fps: 65
+  sensitivity: {value: 14800, unit: 'mV/lux·s', note: mono}
+  snr_max_db: 42
+  dr_db: 62
+  notes: 1-inch 6 MP monochrome global-shutter sensor for industrial cameras.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=165'}
+
+- model: SC8220
+  urlname: sc8220
+  family: SmartPixel-2 (DSI)
+  status: eol
+  released: '2019-10'
+  released_basis: press
+  width: 3860
+  height: 2180
+  pixel_um: 2.05
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 2900, unit: 'mV/lux·s'}
+  snr_max_db: 38
+  dr_db: 76
+  dr_hdr_db: 120
+  notes: Large-format 4K DSI sensor for smart-city cameras.
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=65'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=104'}
+
+- model: SC8235
+  urlname: sc8235
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: Sensor name on XM camera modules. No SmartSens specification is public under this name.
+
+- model: SC8238
+  urlname: sc8238
+  family: SmartClarity
+  status: eol
+  released: '2019-06'
+  released_basis: press
+  width: 3872
+  height: 2180
+  pixel_um: 1.5
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 30
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 1160, unit: 'mV/lux·s'}
+  snr_max_db: 36
+  dr_db: 70
+  dr_hdr_db: 100
+  successor: sc8238h
+  notes: 'First 1/2.7-inch 4K security sensor, small 1.5 µm pixels for low-cost 8 MP cameras.'
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=110'}
+
+- model: SC8238H
+  urlname: sc8238h
+  family: SmartClarity H
+  status: eol
+  released: '2020-01'
+  released_basis: press
+  width: 3872
+  height: 2180
+  pixel_um: 1.5
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 30
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 1160, unit: 'mV/lux·s'}
+  snr_max_db: 36
+  dr_db: 70
+  dr_hdr_db: 100
+  notes: Lower-dark-current revision of the SC8238.
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=62'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=101'}
+
+- model: SC8239
+  urlname: sc8239
+  family: XM / OEM name
+  status: unknown
+  released: '2020'
+  released_basis: estimate
+  notes: Sensor name on XM 4K camera modules. No SmartSens specification is public under this name.
+
+- model: SC830AI
+  urlname: sc830ai
+  family: AI Series (SmartClarity-2)
+  status: eol
+  released: '2021-11'
+  released_basis: press
+  width: 3844
+  height: 2164
+  pixel_um: 1.5
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 40
+  hdr: [stagger, dcg]
+  nir: true
+  sensitivity: {value: 1250, unit: 'mV/lux·s'}
+  snr_max_db: 38
+  dr_db: 78
+  dr_hdr_db: 100
+  notes: 1/2.7-inch 4K SmartClarity-2 sensor with staggered HDR.
+  sources:
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=171'}
+
+- model: SC831HAI
+  urlname: sc831hai
+  aliases: [SC831AI]
+  family: AI Series (SmartClarity-3)
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  width: 3848
+  height: 2168
+  pixel_um: 1.5
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 40
+  notes: 1/2.7-inch 4K SmartClarity-3 sensor.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+
+- model: SC832HAI
+  urlname: sc832hai
+  family: AI Series (SmartClarity-3)
+  status: sampling
+  released: '2026-06'
+  released_basis: press
+  width: 3840
+  height: 2160
+  pixel_um: 1.35
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 40
+  nir: true
+  notes: '4K in a 1/3-inch format and a 30-pin package for small home cameras, QE 82% at 520 nm.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=409'}
+
+- model: SC835HAI
+  urlname: sc835hai
+  aliases: [SC835AI]
+  family: AI Series (SmartClarity-3)
+  status: mp
+  released: '2023-10'
+  released_basis: press
+  width: 3848
+  height: 2168
+  pixel_um: 1.5
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 40
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 1462, unit: 'mV/lux·s'}
+  snr_max_db: 38.63
+  dr_db: 79
+  dr_hdr_db: 100
+  notes: '4K sensor with Lightbox IR (QE up 75% at 850 nm over its predecessor) and about 204 mW at 30 frame/s.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=232'}
+
+- model: SC850SL
+  urlname: sc850sl
+  family: Star Light (SmartClarity-2)
+  status: mp
+  released: '2021-07'
+  released_basis: press
+  width: 3856
+  height: 2176
+  pixel_um: 2.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  hdr: [stagger, dcg]
+  nir: true
+  sensitivity: {value: 5034, unit: 'mV/lux·s'}
+  snr_max_db: 39
+  dr_db: 75
+  dr_hdr_db: 100
+  notes: 'SmartSens'' first stacked BSI sensor, a 1/1.8-inch 4K star-light part.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=155'}
+
+- model: SC855SL
+  urlname: sc855sl
+  family: Star Light (SmartClarity-3)
+  status: mp
+  released: '2026-03'
+  released_basis: press
+  width: 3840
+  height: 2160
+  pixel_um: 2.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  hdr: [dcg]
+  nir: true
+  notes: '1/1.8-inch 4K star-light sensor, SNR1s 0.39 lux, with always-on video.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=385'}
+
+- model: SC859SL
+  urlname: sc859sl
+  family: Star Light (SmartClarity-3)
+  status: sampling
+  released: '2026-09'
+  released_basis: press
+  width: 3840
+  height: 2160
+  pixel_um: 2.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [dcg]
+  nir: true
+  dr_hdr_db: 83
+  notes: '4K star-light sensor with Micro-Pillar NIR enhancement (QE 62% at 850 nm) and read noise under 0.7 e-.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=404'}
+
+- model: SC880SL
+  urlname: sc880sl
+  family: Star Light (SmartClarity-2)
+  status: mp
+  released: '2023-03'
+  released_basis: press
+  width: 3856
+  height: 2176
+  pixel_um: 2.988
+  optical_format: '1/1.2'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  sensitivity: {value: 7940, unit: 'mV/lux·s'}
+  snr_max_db: 42
+  dr_db: 87
+  dr_hdr_db: 100
+  notes: '1/1.2-inch 4K sensor with 3 µm pixels, SNR1s 0.18 lux.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=209'}
+
+- model: SC910GS
+  urlname: sc910gs
+  family: SmartGS-2
+  status: mp
+  released: '2021-01'
+  released_basis: press
+  width: 3856
+  height: 2368
+  pixel_um: 4.0
+  optical_format: '1.1'
+  shutter: global
+  interfaces: [mipi, lvds]
+  max_fps: 50
+  sensitivity: {value: 13169, unit: 'mV/lux·s'}
+  snr_max_db: 42
+  dr_db: 68
+  notes: 9 MP global-shutter sensor with region HDR for four-lane traffic cameras.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/mpage?id=139'}
+
+- model: SC935HGS
+  urlname: sc935hgs
+  family: SmartGS-2 Plus
+  status: mp
+  released: '2024-12'
+  released_basis: press
+  width: 3856
+  height: 2368
+  pixel_um: 4.0
+  optical_format: '1.1'
+  shutter: global
+  interfaces: [mipi, lvds]
+  max_fps: 65
+  adc_bits: 12
+  hdr: [dcg]
+  nir: true
+  sensitivity: {value: 12613, unit: 'mV/lux·s'}
+  snr_max_db: 43.8
+  dr_db: 63.2
+  dr_hdr_db: 100
+  notes: '9 MP global-shutter sensor for traffic cameras, successor to the SC910GS.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=316'}
+
+- model: SC950HGS
+  urlname: sc950hgs
+  family: SmartGS-2
+  status: mp
+  released: '2021-09'
+  released_basis: press
+  width: 3856
+  height: 2368
+  pixel_um: 4.0
+  optical_format: '1.1'
+  shutter: global
+  cfa: mono
+  interfaces: [mipi, lvds]
+  max_fps: 65
+  sensitivity: {value: 14800, unit: 'mV/lux·s', note: mono}
+  snr_max_db: 42
+  dr_db: 62
+  notes: 9 MP monochrome global-shutter sensor for industrial cameras.
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=165'}
+
+- model: SCC85HAI
+  urlname: scc85hai
+  family: AI Series (SmartClarity-3)
+  status: mp
+  released: '2026-01'
+  released_basis: press
+  width: 5152
+  height: 3104
+  pixel_um: 1.5
+  optical_format: '1/1.78'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 40
+  nir: true
+  sensitivity: {value: 1556, unit: 'mV/lux·s'}
+  snr_max_db: 38.51
+  dr_db: 81.03
+  notes: '15 MP 5K security sensor with 16:9 and 4:3 crops.'
+  sources:
+  - {kind: page, url: 'https://www.smartsenstech.com/en/products_list'}
+  - {kind: press, url: 'https://www.smartsenstech.com/en/mpage?id=367'}

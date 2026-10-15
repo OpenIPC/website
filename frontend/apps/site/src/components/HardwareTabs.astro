@@ -1,7 +1,7 @@
 ---
 /**
- * The tab strip over the hardware pages: recommended, the board catalogue, one
- * tab per vendor, and the full list. The board catalogue is second, and in
+ * The tab strip over the hardware pages: recommended, the board catalogue, the
+ * sensor catalogue, one tab per vendor, and the full list. The board catalogue is second, and in
  * the same weight as the recommended list, because it is the way in for a
  * reader who knows their camera and not its chip. What the vendor badges
  * count is said under the strip: a `title` is not read on a phone.
@@ -24,7 +24,7 @@ import { pathFor, useTranslations, type Locale } from '../lib/i18n';
 interface Props {
   locale: Locale;
   /** Which tab is current. */
-  view: 'featured' | 'full-list' | 'vendor' | 'boards';
+  view: 'featured' | 'full-list' | 'vendor' | 'boards' | 'sensors';
   /** For a vendor page, its urlname. */
   vendor?: string;
 }
@@ -51,6 +51,13 @@ const installable = (v: Vendor) => v.socs.filter((s) => (states[s.urlname] ?? 'n
       href={p('/cameras/boards')}
       aria-current={view === 'boards' ? 'page' : undefined}
     >{k('boards')}</a>
+  </li>
+  <li>
+    <a
+      class="site-tab font-bold"
+      href={p('/cameras/sensors')}
+      aria-current={view === 'sensors' ? 'page' : undefined}
+    >{k('sensors')}</a>
   </li>
   {VENDORS.map((v) => (
     <li hidden={installable(v) === 0 && !(view === 'vendor' && v.urlname === vendorSlug)}>
