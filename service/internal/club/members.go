@@ -47,7 +47,8 @@ type Member struct {
 	Maintainer bool       `json:"maintainer"`
 	// MaintainerLapsed: a GitHub sign-in once showed them in the
 	// maintainers' organisation, but longer ago than maintainerDays. Signing
-	// in with GitHub again renews it; another way in does not.
+	// in with GitHub again renews it; another way in does not. Never set
+	// while GitHub sign-in is off.
 	MaintainerLapsed bool `json:"maintainer_lapsed,omitempty"`
 	Quiet      bool       `json:"quiet"`
 	Identities []Identity `json:"identities"`
@@ -190,7 +191,8 @@ func (a *API) member(ctx context.Context, id string) (*Member, error) {
 	for _, x := range a.Cfg.Maintainers {
 		m.Maintainer = m.Maintainer || x == id
 	}
-	m.MaintainerLapsed = m.MaintainerLapsed && !m.Maintainer
+	// Lapsed only where signing in with GitHub can renew it.
+	m.MaintainerLapsed = m.MaintainerLapsed && !m.Maintainer && a.GitHub != nil
 	if m.ReportStars, err = a.Reports.Store().StarsOf(ctx, id); err != nil {
 		return nil, err
 	}
