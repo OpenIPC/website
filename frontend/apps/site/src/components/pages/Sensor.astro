@@ -1,0 +1,149 @@
+---
+/**
+ * One image sensor: its specifications as the maker states them, when it came
+ * out, what replaced it, and the boards in the board catalogue that carry it.
+ * Static from data/sensors; the boards are the one island, read at runtime
+ * from /api/v1/boards as the SoC pages read theirs.
+ */
+import HardwareTabs from '../HardwareTabs.astro';
+import Icon from '../Icon.astro';
+import KnownBoards from '../boards/KnownBoards.tsx';
+import { PARTS, categoryOf, partBySlug, resolutionRow, sensorPath, yearOf, type Part } from '../../lib/sensors';
+import {
+  fmtDb, fmtFormat, fmtFps, fmtHdr, fmtInterfaces, fmtMeasure, fmtMp, fmtPerArea, fmtPixel, fmtResolution, makerColour,
+} from '../../lib/sensors-format';
+import { useSensorsTranslations } from '../../lib/sensors-i18n';
+import { pathFor, type Locale } from '../../lib/i18n';
+
+interface Props { locale: Locale; sensor: string }
+const { locale, sensor } = Astro.props;
+const part = partBySlug(sensor);
+if (!part) throw new Error(`No sensor ${sensor} in data/sensors.`);
+const t = useSensorsTranslations(locale);
+const p = (path: string) => pathFor(locale, path);
+
+const released = part.released
+  ? `${part.released_basis === 'press' ? '' : '≈'}${part.released}${part.released_basis ? ` (${t(`basis.${part.released_basis}`)})` : ''}`
+  : null;
+
+/** Rows with nothing in them are left out: a sheet of dashes says nothing. */
+const groups: [string, [string, string | null | undefined][]][] = [
+  ['image', [
+    ['resolution', fmtResolution(part)],
+    ['mp', fmtMp(part)],
+    ['pixel', fmtPixel(part)],
+    ['format', fmtFormat(part)],
+    ['shutter', part.shutter ? t(`shutter_${part.shutter}`) : null],
+    ['cfa', part.cfa ? t(`cfa.${part.cfa}`) : null],
+  ]],
+  ['performance', [
+    ['sensitivity', [fmtMeasure(part.sensitivity), part.sensitivity?.note].filter(Boolean).join(' — ') || null],
+    ['sensitivity_area', fmtPerArea(part)],
+    ['saturation', fmtMeasure(part.saturation)],
+    ['snr', fmtDb(part.snr_max_db)],
+    ['dr', fmtDb(part.dr_db)],
+    ['dr_hdr', fmtDb(part.dr_hdr_db)],
+    ['dark_current', [fmtMeasure(part.dark_current), part.dark_current?.note].filter(Boolean).join(' — ') || null],
+  ]],
+  ['output', [
+    ['hdr', fmtHdr(part)],
+    ['fps', fmtFps(part)],
+    ['adc', part.adc_bits ? `${part.adc_bits}-bit` : null],
+    ['interfaces', fmtInterfaces(part)],
+  ]],
+  ['about', [
+    ['family', part.family],
+    ['kind', t(`category.${categoryOf(part)}`)],
+    ['year', released],
+    ['status', t(`status.${part.status}`)],
+    ['aliases', part.aliases?.join(', ')],
+  ]],
+];
+
+const link = (urlname: string | undefined): Part | undefined => (urlname ? partBySlug(urlname) : undefined);
+const twin = link(part.twin) ?? PARTS.find((x) => x.twin === part.urlname);
+const successor = link(part.successor);
+const predecessors = PARTS.filter((x) => x.successor === part.urlname);
+
+/** Its neighbours on the chart: the same kind and resolution, newest first. */
+const row = resolutionRow(part);
+const neighbours = row === null ? [] : PARTS
+  .filter((x) => x.urlname !== part.urlname && categoryOf(x) === categoryOf(part) && resolutionRow(x) === resolutionRow(part))
+  .sort((a, b) => (yearOf(b) ?? 0) - (yearOf(a) ?? 0) || a.model.localeCompare(b.model))
+  .slice(0, 12);
+const compareHref = (others: Part[]) => `${p('/cameras/sensors')}?compare=${[part, ...others].map((x) => x.urlname).join(',')}`;
+---
+<div class="site-container mt-4 mb-12">
+  <HardwareTabs locale={locale} view="sensors" />
+  <p class="mt-6 mb-2 text-sm">
+    <a class="inline-flex items-center gap-1.5 font-medium no-underline" href={p('/cameras/sensors')}>
+      <Icon name="arrow-left" />{t('back')}
+    </a>
+  </p>
+  <header class="mb-6">
+    <h1 class="mb-1 text-h1 font-semibold">
+      <span class="text-body-secondary">{part.maker.name}</span> <span class="font-mono">{part.model}</span>
+    </h1>
+    <p class="mb-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-body-secondary">
+      <span class="inline-flex items-center gap-1.5">
+        <span aria-hidden="true" class="inline-block size-2.5 rounded-full" style={`background:${makerColour(part.maker.urlname)}`}></span>
+        {[part.family, t(`category.${categoryOf(part)}`), fmtMp(part), fmtFormat(part)].filter(Boolean).join(' · ')}
+      </span>
+      {part.status !== 'mp' && <span class="rounded-full bg-surface-alt px-2 text-sm">{t(`status.${part.status}`)}</span>}
+    </p>
+    {part.notes && <p class="mt-3 mb-0 max-w-[70ch] text-lg">{part.notes}</p>}
+    {(twin || successor || predecessors.length > 0) && (
+      <ul class="mt-3 mb-0 flex list-none flex-wrap gap-x-5 gap-y-1 p-0 text-sm">
+        {twin && <li><span set:html={t('twin', { sensor: `<a class="font-mono" href="${p(sensorPath(twin))}">${twin.maker.name} ${twin.model}</a>` })} /></li>}
+        {successor && <li><span set:html={t('successor', { sensor: `<a class="font-mono" href="${p(sensorPath(successor))}">${successor.maker.name} ${successor.model}</a>` })} /></li>}
+        {predecessors.map((x) => <li><a class="font-mono" href={p(sensorPath(x))}>{x.maker.name} {x.model}</a> → {part.model}</li>)}
+      </ul>
+    )}
+  </header>
+
+  <div class="grid gap-4 md:grid-cols-2">
+    {groups.map(([, rows]) => {
+      const shown = rows.filter(([, v]) => v);
+      return shown.length === 0 ? null : (
+        <dl class="m-0 grid grid-cols-[minmax(8rem,auto)_1fr] content-start overflow-hidden rounded-lg border border-hairline bg-white text-[15px] [&>*:nth-child(-n+2)]:border-t-0">
+          {shown.map(([key, value]) => (
+            <>
+              <dt class="border-t border-hairline bg-surface-alt px-3 py-2 text-sm text-body-secondary">{t(`col.${key}`)}</dt>
+              <dd class="m-0 border-t border-hairline px-3 py-2 tabular-nums">{value}</dd>
+            </>
+          ))}
+        </dl>
+      );
+    })}
+  </div>
+
+  <p class="mt-3 max-w-[75ch] text-xs text-body-secondary">{t('sensitivity_note')} {t('sources_note')}</p>
+  {part.sources && part.sources.length > 0 && (
+    <p class="mt-1 text-sm">
+      {t('sources')}:{' '}
+      {part.sources.map((s, i) => (<>{i > 0 && ', '}<a href={s.url} rel="noopener" target="_blank">{new URL(s.url).host.replace(/^www\./, '')}</a></>))}
+    </p>
+  )}
+
+  {neighbours.length > 0 && (
+    <section class="mt-8" aria-labelledby="neighbours">
+      <h2 id="neighbours" class="mb-2 text-h3 font-semibold">{t(`category.${categoryOf(part)}`)} · {t(`row.${row}`)}</h2>
+      <ul class="m-0 flex list-none flex-wrap gap-1.5 p-0">
+        {neighbours.map((x) => (
+          <li>
+            <a href={p(sensorPath(x))} class="inline-flex items-center gap-1 rounded border border-hairline bg-white py-1 pr-2 pl-1.5 text-sm text-body no-underline hover:border-brand-blue"
+              style={`border-left:4px solid ${makerColour(x.maker.urlname)}`}>
+              <span class="font-mono">{x.model}</span>
+              <span class="text-xs text-body-secondary">{x.maker.name}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p class="mt-2 text-sm"><a href={compareHref(neighbours.slice(0, 3))}>{t('compare')} →</a></p>
+    </section>
+  )}
+</div>
+<KnownBoards client:idle locale={locale} sensor={part.urlname} model={part.model} catalogueHref={p('/cameras/boards')} />
+<div class="site-container mb-12">
+  <p class="text-sm text-body-secondary" set:html={t('report_html', { href: p('/cameras/report') })} />
+</div>

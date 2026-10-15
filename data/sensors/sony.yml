@@ -1,0 +1,1315 @@
+name: Sony
+urlname: sony
+full_name: Sony Semiconductor Solutions
+website_url: https://www.sony-semicon.com/
+sensors:
+- model: IMX104
+  urlname: imx104
+  family: Exmor
+  status: eol
+  released: '2012'
+  released_basis: flyer
+  megapixels: 1.3
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  notes: Early 720p Exmor security sensor found in the first Hi3518 and Hi3516C cameras.
+
+- model: IMX117
+  urlname: imx117
+  family: Exmor R
+  status: eol
+  released: '2011'
+  released_basis: datasheet
+  width: 4072
+  height: 3046
+  pixel_um: 1.55
+  optical_format: '1/2.3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [sublvds]
+  adc_bits: 12
+  notes: A 12 MP still-and-4K sensor made for consumer camcorders and action cameras; it reads 4K at about 60 frame/s from a cropped area.
+
+- model: IMX122
+  urlname: imx122
+  aliases: [IMX122LQJ, IMX122/222/322]
+  family: Exmor
+  status: eol
+  released: '2011'
+  released_basis: flyer
+  width: 1984
+  height: 1225
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, lvds]
+  adc_bits: 12
+  notes: Sony's first 1080p sensor for low-cost IP cameras, front-illuminated; the IMX222 and IMX322 that followed keep its pixel and registers.
+
+- model: IMX123
+  urlname: imx123
+  family: Exmor
+  status: eol
+  released: '2014'
+  released_basis: estimate
+  megapixels: 3.2
+  pixel_um: 2.5
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  notes: A 3 MP wide-dynamic-range security sensor of the Hi3516A generation.
+
+- model: IMX136
+  urlname: imx136
+  aliases: [IMX136LQJ]
+  family: Exmor
+  status: eol
+  released: '2012'
+  released_basis: flyer
+  width: 1944
+  height: 1224
+  pixel_um: 2.8
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, lvds]
+  max_fps: 108
+  adc_bits: 12
+  notes: Full HD security sensor of the early 2010s, readable at 120 frame/s in 1080p.
+
+- model: IMX138
+  urlname: imx138
+  family: Exmor
+  status: eol
+  released: '2012'
+  released_basis: estimate
+  megapixels: 1.3
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  notes: The 4:3 1.3 MP companion of the IMX104, used in early Hi3518 cameras.
+
+- model: IMX172
+  urlname: imx172
+  family: Exmor R
+  status: unknown
+  released: '2014'
+  released_basis: datasheet
+  width: 4072
+  height: 3046
+  pixel_um: 1.55
+  optical_format: '1/2.3'
+  shutter: rolling
+  cfa: bayer
+  adc_bits: 12
+  notes: The industrial version of the IMX117's 12 MP back-illuminated array, with 4K at 60 frame/s.
+
+- model: IMX174
+  urlname: imx174
+  aliases: [IMX174LQJ, IMX174LLJ]
+  family: Pregius
+  status: mp
+  released: '2013-12'
+  released_basis: press
+  width: 1936
+  height: 1216
+  pixel_um: 5.86
+  optical_format: '1/1.2'
+  shutter: global
+  cfa: bayer
+  interfaces: [sublvds]
+  max_fps: 164
+  adc_bits: 12
+  saturation: {value: 850, unit: mV, note: 'min., Tj 60 °C'}
+  category: global
+  notes: The first Pregius global-shutter sensor, large 5.86 µm pixels at up to 164 frame/s; also sold in monochrome.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/industry/global-shutter.html}
+
+- model: IMX178
+  urlname: imx178
+  aliases: [IMX178LQJ]
+  family: STARVIS
+  status: mp
+  released: '2013-08'
+  released_basis: press
+  width: 3096
+  height: 2080
+  pixel_um: 2.4
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [sublvds]
+  max_fps: 60
+  adc_bits: 14
+  saturation: {value: 945, unit: mV, note: 'min., Tj 60 °C'}
+  notes: A 6.4 MP back-illuminated sensor that crops 5 MP in 4:3, 5:4 or 16:9 for 1/2-type lenses; a monochrome version (IMX178LLJ) exists.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX185
+  urlname: imx185
+  aliases: [IMX185LQJ]
+  family: Exmor
+  status: unknown
+  hdr: [multi-exposure]
+  released: '2013-08'
+  released_basis: press
+  width: 1945
+  height: 1225
+  pixel_um: 3.75
+  optical_format: '1/1.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [lvds, mipi]
+  max_fps: 120
+  adc_bits: 12
+  notes: Large-pixel 1080p sensor known for low-light performance and a built-in WDR mode reaching about 100 dB.
+
+- model: IMX219
+  urlname: imx219
+  aliases: [IMX219PQH5]
+  family: Exmor R
+  status: unknown
+  released: '2014-04'
+  released_basis: press
+  width: 3296
+  height: 2480
+  pixel_um: 1.12
+  optical_format: '1/4'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  adc_bits: 10
+  notes: An 8 MP mobile-class sensor best known from the Raspberry Pi Camera Module v2.
+
+- model: IMX222
+  urlname: imx222
+  aliases: [IMX222LQJ]
+  family: Exmor R
+  status: eol
+  released: '2013'
+  released_basis: datasheet
+  width: 1984
+  height: 1225
+  pixel_um: 2.8
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, lvds]
+  adc_bits: 12
+  notes: The back-illuminated successor of the IMX122 in the same footprint, common in cheap 1080p cameras.
+
+- model: IMX224
+  urlname: imx224
+  aliases: [IMX224LQR]
+  family: Exmor R
+  status: unknown
+  released: '2014-10'
+  released_basis: press
+  width: 1305
+  height: 977
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, lvds, mipi]
+  max_fps: 120
+  adc_bits: 12
+  hdr: [dol]
+  notes: A 1.3 MP back-illuminated sensor with large pixels, a low-light favourite of 960p cameras.
+
+- model: IMX225
+  urlname: imx225
+  aliases: [IMX225LQR]
+  family: Exmor R
+  status: unknown
+  released: '2014-10'
+  released_basis: press
+  width: 1305
+  height: 977
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, lvds, mipi]
+  max_fps: 60
+  adc_bits: 12
+  notes: The 60 frame/s version of the IMX224, without its digital-overlap HDR.
+
+- model: IMX226
+  urlname: imx226
+  aliases: [IMX226CQJ]
+  family: STARVIS
+  status: mp
+  released: '2014-02'
+  released_basis: press
+  width: 4072
+  height: 3046
+  pixel_um: 1.85
+  optical_format: '1/1.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [sublvds]
+  max_fps: 40
+  adc_bits: 12
+  saturation: {value: 810, unit: mV, note: 'min., Tj 60 °C'}
+  notes: A 12 MP back-illuminated sensor reading 4K at 60 frame/s; a monochrome version (IMX226CLJ) exists.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX236
+  urlname: imx236
+  family: Exmor
+  status: eol
+  released: '2013-08'
+  released_basis: press
+  megapixels: 2.1
+  pixel_um: 2.8
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  notes: A 1080p security sensor with 2.8 µm pixels from the early 2010s, still found on older boards.
+
+- model: IMX238
+  urlname: imx238
+  aliases: [IMX238LQJ]
+  family: Exmor
+  status: unknown
+  released: '2013-08'
+  released_basis: press
+  width: 1305
+  height: 1049
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, lvds]
+  max_fps: 60
+  adc_bits: 12
+  notes: A 1.3 MP sensor with 3.75 µm pixels for 960p and 720p cameras.
+
+- model: IMX249
+  urlname: imx249
+  aliases: [IMX249LQJ, IMX249LLJ]
+  family: Pregius
+  status: mp
+  released: '2014'
+  released_basis: estimate
+  width: 1936
+  height: 1216
+  pixel_um: 5.86
+  optical_format: '1/1.2'
+  shutter: global
+  cfa: bayer
+  interfaces: [sublvds]
+  max_fps: 30
+  adc_bits: 12
+  saturation: {value: 850, unit: mV, note: 'min., Tj 60 °C'}
+  category: global
+  notes: The 30 frame/s, lower-cost sibling of the IMX174 with the same pixel.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/industry/global-shutter.html}
+
+- model: IMX253
+  urlname: imx253
+  aliases: [IMX253LQR, IMX253LLR]
+  family: Pregius
+  status: mp
+  released: '2016-02'
+  released_basis: press
+  width: 4112
+  height: 3008
+  pixel_um: 3.45
+  optical_format: '1.1'
+  shutter: global
+  cfa: bayer
+  interfaces: [sublvds]
+  max_fps: 68
+  adc_bits: 12
+  saturation: {value: 1001, unit: mV, note: 'min., Tj 60 °C'}
+  category: global
+  notes: A 12.4 MP 1.1-type global-shutter sensor, a staple of machine-vision cameras.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/industry/global-shutter.html}
+
+- model: IMX255
+  urlname: imx255
+  aliases: [IMX255LQR, IMX255LLR]
+  family: Pregius
+  status: mp
+  released: '2016-02'
+  released_basis: press
+  width: 4112
+  height: 2176
+  pixel_um: 3.45
+  optical_format: '1'
+  shutter: global
+  cfa: bayer
+  interfaces: [sublvds]
+  max_fps: 93
+  adc_bits: 12
+  saturation: {value: 1001, unit: mV, note: 'min., Tj 60 °C'}
+  category: global
+  notes: The 4K (17:9) version of the IMX253 in the same package.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/industry/global-shutter.html}
+
+- model: IMX264
+  urlname: imx264
+  aliases: [IMX264LQR, IMX264LLR]
+  family: Pregius
+  status: mp
+  released: '2015'
+  released_basis: estimate
+  width: 2464
+  height: 2056
+  pixel_um: 3.45
+  optical_format: '2/3'
+  shutter: global
+  cfa: bayer
+  interfaces: [sublvds]
+  max_fps: 35
+  adc_bits: 12
+  saturation: {value: 1001, unit: mV, note: 'min., Tj 60 °C'}
+  category: global
+  notes: A 5 MP 2/3-type global-shutter sensor with the 3.45 µm Pregius pixel.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/industry/global-shutter.html}
+
+- model: IMX265
+  urlname: imx265
+  aliases: [IMX265LQR, IMX265LLR]
+  family: Pregius
+  status: mp
+  released: '2015'
+  released_basis: datasheet
+  width: 2064
+  height: 1544
+  pixel_um: 3.45
+  optical_format: '1/1.8'
+  shutter: global
+  cfa: bayer
+  interfaces: [sublvds]
+  max_fps: 55
+  adc_bits: 12
+  saturation: {value: 1001, unit: mV, note: 'min., Tj 60 °C'}
+  category: global
+  notes: A 3.2 MP global-shutter sensor for factory and traffic cameras; colour and monochrome versions exist.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/industry/global-shutter.html}
+
+- model: IMX274
+  urlname: imx274
+  aliases: [IMX274LQC]
+  family: STARVIS
+  status: unknown
+  released: '2016-10'
+  released_basis: press
+  width: 3864
+  height: 2202
+  pixel_um: 1.62
+  optical_format: '1/2.5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, sublvds]
+  adc_bits: 12
+  hdr: [dol]
+  notes: An 8.5 MP back-illuminated 4K sensor with digital-overlap HDR, used in early 4K security and embedded cameras.
+
+- model: IMX287
+  urlname: imx287
+  aliases: [IMX287LQR, IMX287LLR]
+  family: Pregius
+  status: mp
+  released: '2017-02'
+  released_basis: press
+  width: 728
+  height: 544
+  pixel_um: 6.9
+  optical_format: '1/2.9'
+  shutter: global
+  cfa: bayer
+  interfaces: [sublvds]
+  max_fps: 523
+  adc_bits: 12
+  saturation: {value: 2002, unit: mV, note: 'min., Tj 60 °C'}
+  category: global
+  notes: A 0.4 MP global-shutter sensor with very large 6.9 µm pixels for high-speed inspection.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/industry/global-shutter.html}
+
+- model: IMX290
+  urlname: imx290
+  aliases: [IMX290LQR, IMX290LLR, IMX290/291]
+  family: STARVIS
+  status: unknown
+  released: '2015-02'
+  released_basis: press
+  width: 1945
+  height: 1097
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, lvds, mipi]
+  max_fps: 120
+  adc_bits: 12
+  hdr: [dol]
+  notes: The first STARVIS 1080p sensor and the reference for starlight cameras; a monochrome version (IMX290LLR) exists.
+
+- model: IMX291
+  urlname: imx291
+  aliases: [IMX291LQR]
+  family: STARVIS
+  status: unknown
+  hdr: [multi-exposure]
+  released: '2015-02'
+  released_basis: press
+  width: 1945
+  height: 1097
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, lvds, mipi]
+  max_fps: 120
+  adc_bits: 12
+  notes: The IMX290 without digital-overlap HDR; only multiple-exposure WDR is offered.
+
+- model: IMX294
+  urlname: imx294
+  aliases: [IMX294CJK]
+  family: STARVIS
+  status: mp
+  hdr: [single-frame]
+  released: '2017-05'
+  released_basis: press
+  width: 3792
+  height: 2824
+  pixel_um: 4.63
+  optical_format: '4/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, slvs-ec]
+  max_fps: 60
+  adc_bits: 14
+  saturation: {value: 970, unit: mV, note: 'min., low conversion gain, Tj 60 °C'}
+  category: large
+  notes: A 4/3-type 4K security sensor with Quad Bayer pixels for single-frame HDR, popular in astronomy cameras.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX304
+  urlname: imx304
+  aliases: [IMX304LQR, IMX304LLR]
+  family: Pregius
+  status: mp
+  released: '2016'
+  released_basis: datasheet
+  width: 4112
+  height: 3008
+  pixel_um: 3.45
+  optical_format: '1.1'
+  shutter: global
+  cfa: bayer
+  interfaces: [sublvds]
+  max_fps: 23
+  adc_bits: 12
+  saturation: {value: 1001, unit: mV, note: 'min., Tj 60 °C'}
+  category: global
+  notes: The 23 frame/s, lower-bandwidth version of the IMX253's 12.4 MP global-shutter array.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/industry/global-shutter.html}
+
+- model: IMX307
+  urlname: imx307
+  aliases: [IMX307LQR, IMX307LQD]
+  family: STARVIS
+  status: unknown
+  released: '2017-08'
+  released_basis: flyer
+  width: 1945
+  height: 1097
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [lvds, mipi]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [dol]
+  notes: The 60 frame/s cost-down of the IMX290 and one of the most common 2 MP starlight sensors in IP cameras.
+
+- model: IMX322
+  urlname: imx322
+  aliases: [IMX322LQJ]
+  family: Exmor R
+  status: eol
+  released: '2014'
+  released_basis: datasheet
+  width: 1984
+  height: 1105
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  adc_bits: 12
+  notes: A 1080p sensor for dash cams and consumer IP cameras with a parallel-only output.
+
+- model: IMX323
+  urlname: imx323
+  aliases: [IMX323LQN]
+  family: Exmor R
+  status: eol
+  released: '2015-11'
+  released_basis: press
+  width: 1985
+  height: 1105
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  adc_bits: 12
+  notes: The IMX322 in a smaller package, found in many budget 1080p cameras.
+
+- model: IMX326
+  urlname: imx326
+  aliases: [IMX326LQC]
+  family: Exmor R
+  status: eol
+  released: '2016-10'
+  released_basis: press
+  width: 3096
+  height: 2202
+  pixel_um: 1.62
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, sublvds]
+  adc_bits: 12
+  hdr: [dol]
+  notes: A 6.8 MP back-illuminated sensor that crops to 5 MP or 4 MP, used with the Hi3519V101.
+
+- model: IMX327
+  urlname: imx327
+  aliases: [IMX327LQR]
+  family: STARVIS
+  status: unknown
+  released: '2017-08'
+  released_basis: flyer
+  width: 1945
+  height: 1097
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [lvds, mipi]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [dol]
+  notes: A 60 frame/s STARVIS 1080p sensor with the same pixel, outputs and HDR modes as the IMX307.
+
+- model: IMX334
+  urlname: imx334
+  aliases: [IMX334LQR]
+  family: STARVIS
+  status: unknown
+  released: '2017-10'
+  released_basis: flyer
+  width: 3864
+  height: 2180
+  pixel_um: 2.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [dol]
+  notes: An 8 MP 1/1.8-type 4K security sensor, the predecessor Sony compares the IMX678 against.
+
+- model: IMX335
+  urlname: imx335
+  aliases: [IMX335LQN, IMX335LLN]
+  family: STARVIS
+  status: mp
+  released: '2017'
+  released_basis: datasheet
+  width: 2616
+  height: 1964
+  pixel_um: 2.0
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [dol]
+  notes: The most common 5 MP sensor in IP cameras; a monochrome version (IMX335LLN) exists.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX347
+  urlname: imx347
+  aliases: [IMX347LQR]
+  family: STARVIS
+  status: mp
+  released: '2018'
+  released_basis: datasheet
+  width: 2712
+  height: 1538
+  pixel_um: 2.9
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol]
+  notes: A 4 MP sensor with large 2.9 µm pixels for low-light cameras; the IMX464 is its NIR-enhanced sibling.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX377
+  urlname: imx377
+  aliases: [IMX377CQT]
+  family: Exmor R
+  status: eol
+  released: '2015'
+  released_basis: estimate
+  megapixels: 12.4
+  pixel_um: 1.55
+  optical_format: '1/2.3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  notes: A 12 MP sensor for consumer cameras that reads 4K at 60 frame/s, used in some Hi3516CV500 and Hi3519 designs.
+  sources:
+  - {kind: page, url: https://www.macnica.com/eu/atd-europe/en/products-support/suppliers/sony/sony-imx377cqt-c/}
+
+- model: IMX385
+  urlname: imx385
+  aliases: [IMX385LQR]
+  family: STARVIS
+  status: unknown
+  released: '2017-04'
+  released_basis: press
+  width: 1945
+  height: 1097
+  pixel_um: 3.75
+  optical_format: '1/2'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [lvds, mipi]
+  max_fps: 120
+  adc_bits: 12
+  hdr: [dol]
+  notes: A 1/2-type 1080p sensor with 3.75 µm pixels for ultra-low-light cameras.
+
+- model: IMX412
+  urlname: imx412
+  aliases: [IMX412-AACK]
+  family: STARVIS
+  status: mp
+  released: '2018-06'
+  released_basis: flyer
+  width: 4072
+  height: 3064
+  pixel_um: 1.55
+  optical_format: '1/2.3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [dol]
+  notes: A 12.3 MP stacked sensor for security cameras, closely related to the IMX477 and IMX577.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX415
+  urlname: imx415
+  aliases: [IMX415-AAQR]
+  family: STARVIS
+  status: mp
+  released: '2019-06'
+  released_basis: press
+  width: 3864
+  height: 2192
+  pixel_um: 1.45
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol]
+  notes: The common 4K (8 MP) sensor of 1/2.8-type IP cameras, with small 1.45 µm pixels.
+  sources:
+  - {kind: press, url: https://www.sony.net/SonyInfo/News/Press/201906/19-058E/index.html}
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX455
+  urlname: imx455
+  aliases: [IMX455AQK-K]
+  family: STARVIS
+  status: mp
+  released: '2020-01'
+  released_basis: flyer
+  width: 9576
+  height: 6388
+  pixel_um: 3.76
+  optical_format: 35mm
+  shutter: rolling
+  cfa: bayer
+  interfaces: [slvs-ec]
+  max_fps: 21
+  adc_bits: 16
+  hdr: [dol]
+  category: large
+  notes: A 61 MP full-frame sensor with 16-bit output, used mostly in astronomy and scientific cameras.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX462
+  urlname: imx462
+  aliases: [IMX462LQR]
+  family: STARVIS
+  status: unknown
+  released: '2019-10'
+  released_basis: flyer
+  width: 1945
+  height: 1097
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, lvds, mipi]
+  max_fps: 120
+  adc_bits: 12
+  hdr: [dol]
+  nir: true
+  notes: A pin-compatible IMX290 with markedly better near-infrared sensitivity, popular for night-vision cameras.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX464
+  urlname: imx464
+  aliases: [IMX464LQR, IMX464LQR1]
+  family: STARVIS
+  status: mp
+  released: '2020-01'
+  released_basis: flyer
+  width: 2712
+  height: 1538
+  pixel_um: 2.9
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol]
+  nir: true
+  notes: The NIR-enhanced version of the IMX347, a 4 MP low-light sensor.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX477
+  urlname: imx477
+  aliases: [IMX477-AACK]
+  family: STARVIS
+  status: unknown
+  released: '2018'
+  released_basis: datasheet
+  megapixels: 12.3
+  pixel_um: 1.55
+  optical_format: '1/2.3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  hdr: [dol]
+  notes: A 12.3 MP stacked sensor best known from the Raspberry Pi High Quality Camera.
+
+- model: IMX482
+  urlname: imx482
+  aliases: [IMX482LQJ]
+  family: STARVIS
+  status: unknown
+  released: '2020-01'
+  released_basis: flyer
+  width: 1932
+  height: 1090
+  pixel_um: 5.8
+  optical_format: '1/1.2'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 10
+  hdr: [dol]
+  notes: A 2 MP sensor whose 5.8 µm pixels are 2x2 binned from a 1/1.2-type array, built for extreme low light.
+
+- model: IMX485
+  urlname: imx485
+  aliases: [IMX485LQJ]
+  family: STARVIS
+  status: unknown
+  released: '2019-06'
+  released_basis: press
+  width: 3864
+  height: 2180
+  pixel_um: 2.9
+  optical_format: '1/1.2'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol]
+  notes: A 1/1.2-type 4K sensor with 2.9 µm pixels; Sony names it as the model the IMX585 improves on.
+  sources:
+  - {kind: press, url: https://www.sony.net/SonyInfo/News/Press/201906/19-058E/index.html}
+
+- model: IMX515
+  urlname: imx515
+  aliases: [IMX515-AAQN]
+  family: STARVIS
+  status: mp
+  released: '2021-03'
+  released_basis: flyer
+  width: 3864
+  height: 2192
+  pixel_um: 1.45
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 61.6
+  adc_bits: 12
+  hdr: [dol]
+  nir: true
+  sensitivity: {value: 5640, unit: LSB/lux·s, note: '12-bit, F5.6, Tj 60 °C'}
+  notes: A compact BGA-packaged 4K sensor related to the IMX415, with better near-infrared response.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX533
+  urlname: imx533
+  aliases: [IMX533CQK-D]
+  family: STARVIS
+  status: mp
+  released: '2019-03'
+  released_basis: flyer
+  width: 3011
+  height: 3011
+  pixel_um: 3.76
+  optical_format: '1'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [slvs-ec]
+  max_fps: 63.6
+  adc_bits: 14
+  hdr: [dol]
+  category: square
+  notes: A square 9 MP 1-type sensor, mostly found in astronomy cameras.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX571
+  urlname: imx571
+  aliases: [IMX571BQR]
+  family: STARVIS
+  status: mp
+  released: '2018-11'
+  released_basis: flyer
+  width: 6252
+  height: 4176
+  pixel_um: 3.76
+  optical_format: APS-C
+  shutter: rolling
+  cfa: bayer
+  interfaces: [slvs-ec]
+  max_fps: 48
+  adc_bits: 16
+  hdr: [dol]
+  category: large
+  notes: A 26 MP APS-C sensor with 16-bit output, used in astronomy and scientific cameras.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX577
+  urlname: imx577
+  aliases: [IMX577-AACK]
+  family: Exmor RS
+  status: unknown
+  released: '2018'
+  released_basis: estimate
+  width: 4056
+  height: 3040
+  pixel_um: 1.55
+  optical_format: '1/2.3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  notes: A 12.3 MP stacked sensor of the IMX477 family used in drones, action cameras and Hi3519-class designs.
+  sources:
+  - {kind: page, url: https://framos.com/products/sensors/area-sensors/imx577aack-c-22201/}
+
+- model: IMX585
+  urlname: imx585
+  aliases: [IMX585-AAQJ1]
+  family: STARVIS 2
+  status: mp
+  released: '2021-06'
+  released_basis: press
+  width: 3856
+  height: 2180
+  pixel_um: 2.9
+  optical_format: '1/1.2'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol, clear-hdr]
+  nir: true
+  sensitivity: {value: 19556, unit: LSB/lux·s, note: '12-bit, Tj 60 °C'}
+  dr_hdr_db: 106
+  notes: The first STARVIS 2 sensor, a 1/1.2-type 4K part that Sony rates at 88 dB in a single exposure (Clear HDR) and 106 dB with multiple exposures; a monochrome version (IMX585-AAMJ1) exists.
+  sources:
+  - {kind: press, url: https://www.sony-semicon.com/en/news/2021/2021062901.html}
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX661
+  urlname: imx661
+  aliases: [IMX661-AAQR, IMX661-AAMR]
+  family: Pregius
+  status: mp
+  released: '2021-03'
+  released_basis: press
+  width: 13472
+  height: 9568
+  pixel_um: 3.45
+  optical_format: '3.6'
+  shutter: global
+  cfa: bayer
+  interfaces: [slvs-ec]
+  max_fps: 21
+  adc_bits: 14
+  category: global
+  notes: A 128 MP 3.6-type global-shutter sensor for large-area inspection.
+  sources:
+  - {kind: press, url: https://www.sony.net/SonyInfo/News/Press/202103/21-021E/}
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/industry/global-shutter.html}
+
+- model: IMX662
+  urlname: imx662
+  aliases: [IMX662-AAQR]
+  family: STARVIS 2
+  status: unknown
+  released: '2021-06'
+  released_basis: press
+  width: 1965
+  height: 1113
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol, clear-hdr]
+  nir: true
+  dr_hdr_db: 88
+  notes: A STARVIS 2 1080p sensor with 2.9 µm pixels that Sony rates at 88 dB in a single exposure using Clear HDR.
+  sources:
+  - {kind: press, url: https://www.sony-semicon.com/en/news/2021/2021062901.html}
+
+- model: IMX664
+  urlname: imx664
+  aliases: [IMX664-AAQR1, IMX664-AAMR1]
+  family: STARVIS 2
+  status: mp
+  released: '2022-12'
+  released_basis: flyer
+  width: 2704
+  height: 1540
+  pixel_um: 2.9
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 120
+  adc_bits: 12
+  hdr: [dol, clear-hdr]
+  nir: true
+  sensitivity: {value: 19556, unit: LSB/lux·s, note: '12-bit, Tj 60 °C'}
+  notes: A 4 MP STARVIS 2 sensor with 2.9 µm pixels for low-light cameras; a monochrome version exists.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX675
+  urlname: imx675
+  aliases: [IMX675-AAQR, IMX675-AAQR1, IMX675-AATN]
+  family: STARVIS 2
+  status: mp
+  released: '2022-07'
+  released_basis: press
+  width: 2608
+  height: 1964
+  pixel_um: 2.0
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 80
+  adc_bits: 12
+  hdr: [dol, clear-hdr]
+  nir: true
+  sensitivity: {value: 14843, unit: LSB/lux·s, note: '12-bit, IMX675-AAQR (15879 with the AR-coated AAQR1), Tj 60 °C'}
+  notes: A 5 MP STARVIS 2 sensor that can stream a region of interest at high speed alongside the full frame; Sony quotes 78 dB dynamic range and about 30% less power than the IMX335.
+  sources:
+  - {kind: press, url: https://www.sony-semicon.com/en/news/2022/2022072001.html}
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX676
+  urlname: imx676
+  aliases: [IMX676-AACR1, IMX676-AAMR1]
+  family: STARVIS 2
+  status: mp
+  released: '2023-02'
+  released_basis: flyer
+  width: 3552
+  height: 3556
+  pixel_um: 2.0
+  optical_format: '1/1.6'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 60
+  adc_bits: 12
+  hdr: [dol, clear-hdr]
+  nir: true
+  sensitivity: {value: 16309, unit: LSB/lux·s, note: '12-bit, Tj 60 °C'}
+  category: square
+  notes: A square 12.6 MP STARVIS 2 sensor made for fisheye and panoramic cameras.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX678
+  urlname: imx678
+  aliases: [IMX678-AAQR, IMX678-AAQR1, IMX678-AAMR1]
+  family: STARVIS 2
+  status: mp
+  released: '2021-10'
+  released_basis: flyer
+  width: 3856
+  height: 2180
+  pixel_um: 2.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 72
+  adc_bits: 12
+  hdr: [dol, clear-hdr]
+  nir: true
+  sensitivity: {value: 14815, unit: LSB/lux·s, note: '12-bit, IMX678-AAQR (16309 with the AR-coated AAQR1), Tj 60 °C'}
+  notes: The STARVIS 2 4K sensor at 1/1.8-type that replaces the IMX334 in newer 8 MP cameras.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX715
+  urlname: imx715
+  aliases: [IMX715-AAQR1]
+  family: STARVIS
+  status: mp
+  released: '2021-06'
+  released_basis: flyer
+  width: 3864
+  height: 2192
+  pixel_um: 1.45
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol]
+  nir: true
+  sensitivity: {value: 5912, unit: LSB/lux·s, note: '12-bit, F5.6, Tj 60 °C'}
+  notes: A 4K 1/2.8-type sensor like the IMX415 with improved near-infrared sensitivity and an AR-coated cover glass.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX778
+  urlname: imx778
+  aliases: [IMX778-AQR1]
+  family: STARVIS
+  status: mp
+  released: '2024-05'
+  released_basis: flyer
+  width: 3856
+  height: 2192
+  pixel_um: 1.45
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol]
+  nir: true
+  sensitivity: {value: 5797, unit: LSB/lux·s, note: '12-bit, Tj 60 °C'}
+  notes: A newer 4K 1/2.8-type sensor in the IMX715 class with an I2C/I3C control interface.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX779
+  urlname: imx779
+  aliases: [IMX779-AQR, IMX779-AQN]
+  family: STARVIS
+  status: mp
+  released: '2024-11'
+  released_basis: flyer
+  width: 3856
+  height: 2192
+  pixel_um: 1.45
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol]
+  sensitivity: {value: 4997, unit: LSB/lux·s, note: '12-bit, IMX779-AQR (5240 for the AQN chip-scale package), Tj 60 °C'}
+  notes: A 4K 1/2.8-type sensor like the IMX415 with an I2C/I3C control interface, also offered as a chip-scale package.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX785
+  urlname: imx785
+  aliases: [IMX785-AQR1, IMX785-AMR1]
+  family: STARVIS 2
+  status: mp
+  released: '2026-02'
+  released_basis: flyer
+  width: 2608
+  height: 1964
+  pixel_um: 2.9
+  optical_format: '1/1.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol, clear-hdr]
+  nir: true
+  sensitivity: {value: 19556, unit: LSB/lux·s, note: '12-bit, Tj 60 °C'}
+  notes: A 5 MP STARVIS 2 sensor with large 2.9 µm pixels and a Hybrid HDR mode combining Clear HDR with digital overlap; a monochrome version exists.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX832
+  urlname: imx832
+  aliases: [IMX832-AQR, IMX832-AQR1]
+  family: STARVIS 2
+  status: mp
+  released: '2022'
+  released_basis: flyer
+  width: 1936
+  height: 1100
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol, clear-hdr]
+  nir: true
+  sensitivity: {value: 18383, unit: LSB/lux·s, note: '12-bit, IMX832-AQR (19556 with the AR-coated AQR1), Tj 60 °C'}
+  notes: The 1080p STARVIS 2 sensor on Sony's current lineup, with 2.9 µm pixels for low light.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX835
+  urlname: imx835
+  aliases: [IMX835-AQJ1]
+  family: STARVIS 2
+  status: mp
+  released: '2024-12'
+  released_basis: flyer
+  width: 3856
+  height: 2180
+  pixel_um: 2.9
+  optical_format: '1/1.2'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol, clear-hdr]
+  nir: true
+  sensitivity: {value: 19556, unit: LSB/lux·s, note: '12-bit, Tj 60 °C'}
+  notes: A 1/1.2-type 4K STARVIS 2 sensor in the IMX585 class with an AR-coated cover glass.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX838
+  urlname: imx838
+  aliases: [IMX838-AQR1]
+  family: STARVIS 2
+  status: mp
+  released: '2024-11'
+  released_basis: flyer
+  width: 3856
+  height: 2180
+  pixel_um: 2.0
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 72
+  adc_bits: 12
+  hdr: [dol, clear-hdr]
+  nir: true
+  sensitivity: {value: 16309, unit: LSB/lux·s, note: '12-bit, Tj 60 °C'}
+  notes: A 1/1.8-type 4K STARVIS 2 sensor in the IMX678 class with an AR-coated cover glass.
+  sources:
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security.html}
+
+- model: IMX908
+  urlname: imx908
+  aliases: [IMX908-AQR1, IMX908-AQH5]
+  family: STARVIS 3
+  status: sampling
+  released: '2026-03'
+  released_basis: press
+  width: 3856
+  height: 2180
+  pixel_um: 1.45
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 90
+  adc_bits: 12
+  hdr: [dol, clear-hdr, lofic]
+  nir: true
+  sensitivity: {value: 16900, unit: LSB/lux·s, note: '12-bit, Tj 60 °C'}
+  dr_hdr_db: 96
+  notes: The first STARVIS 3 sensor, whose LOFIC pixels give 96 dB in a single 4K exposure (Clear HDR3) from small 1.45 µm pixels.
+  sources:
+  - {kind: press, url: https://www.sony-semicon.com/en/news/2026/2026031701.html}
+  - {kind: page, url: https://www.sony-semicon.com/en/products/is/security/security/IMX908.html}

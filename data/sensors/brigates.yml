@@ -1,0 +1,91 @@
+name: Brigates
+urlname: brigates
+full_name: Brigates Microelectronics (Kunshan)
+website_url: https://www.brigates.com/
+sensors:
+- model: BG0806
+  urlname: bg0806
+  status: unknown
+  released: '2016'
+  released_basis: estimate
+  width: 1928
+  height: 1088
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  sensitivity: {value: 3800, unit: mV/lux·s, note: 550 nm}
+  snr_max_db: 36
+  dr_db: 65
+  dark_current: {value: 10, unit: mV/s, note: 60 °C}
+  successor: bg0836
+  notes: A 1080p sensor with 3 µm pixels used in budget analogue-HD and Ingenic IP cameras; MIPI is a single lane.
+- model: BG0836
+  urlname: bg0836
+  status: mp
+  released: '2020'
+  released_basis: estimate
+  width: 1928
+  height: 1088
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  sensitivity: {value: 3800, unit: mV/lux·s, note: 550 nm}
+  snr_max_db: 36
+  dr_db: 65
+  dark_current: {value: 10, unit: mV/s, note: 60 °C}
+  notes: Brigates' improved BG0806, with better pixel performance, for surveillance and automotive cameras.
+  sources:
+  - {kind: page, url: 'https://www.brigates.com/products/tongyongxiaomianzhenchuanganqi/1.html'}
+- model: BG1336
+  urlname: bg1336
+  status: mp
+  hdr: [unspecified]
+  released: '2019'
+  released_basis: estimate
+  width: 1288
+  height: 1032
+  pixel_um: 5.4
+  optical_format: '1/1.8'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, lvds]
+  max_fps: 120
+  sensitivity: {value: 78260, unit: e-/lux·s, note: green channel; 173913 for the monochrome version}
+  saturation: {value: 130000, unit: e-}
+  snr_max_db: 51.2
+  dr_hdr_db: 126
+  dark_current: {value: 104, unit: e-/s, note: 60 °C}
+  nir: true
+  category: lowlight
+  notes: A 1.3-megapixel low-light sensor with huge 5.4 µm pixels, about 1 e- read noise and on-chip HDR, for high-end surveillance and machine vision; also sold in monochrome.
+  sources:
+  - {kind: page, url: 'https://www.brigates.com/products/tongyongxiaomianzhenchuanganqi/53.html'}
+- model: BG5088
+  urlname: bg5088
+  status: mp
+  hdr: [single-frame]
+  released: '2021'
+  released_basis: estimate
+  width: 2568
+  height: 2056
+  pixel_um: 5.5
+  optical_format: '1.1'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [lvds]
+  max_fps: 60
+  sensitivity: {value: 122000, unit: e-/lux·s}
+  snr_max_db: 47
+  dr_db: 69
+  dr_hdr_db: 97
+  dark_current: {value: 80, unit: e-/s, note: 60 °C}
+  category: large
+  notes: A 1.1-inch, 5-megapixel BSI low-light sensor with 0.7 e- read noise and single-exposure HDR, for high-end surveillance.
+  sources:
+  - {kind: page, url: 'https://www.brigates.com/products/gaolingminduyeshichuanganqi/74.html'}

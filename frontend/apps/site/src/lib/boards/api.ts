@@ -25,10 +25,14 @@ function once<T>(url: string): Promise<T> {
   return p;
 }
 
-/** The catalogue in `locale`, or only the boards on one catalogued SoC. */
-export function fetchBoards(locale: string, soc?: string): Promise<BoardsFile> {
+/**
+ * The catalogue in `locale`, or only the boards on one catalogued SoC, or
+ * only those reporting one image sensor by any of its names.
+ */
+export function fetchBoards(locale: string, soc?: string, sensorNames?: string[]): Promise<BoardsFile> {
   const p = new URLSearchParams({ locale });
   if (soc) p.set('soc', soc);
+  if (sensorNames?.length) p.set('sensor', sensorNames.join(','));
   return once<BoardsFile>(`/api/v1/boards?${p.toString()}`);
 }
 

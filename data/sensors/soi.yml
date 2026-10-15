@@ -1,0 +1,926 @@
+name: Silicon Optronics
+urlname: soi
+full_name: Silicon Optronics, Inc. (晶相光電)
+website_url: https://www.soinc.com.tw/
+sensors:
+- model: JX-317P
+  urlname: jx-317p
+  family: BSI NIR+
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  megapixels: 5.0
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  nir: true
+  notes: 16:9 5 MP BSI sensor at 60 fps with NIR+ enhancement and a low-power AOV mode.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-4220
+  urlname: jx-4220
+  family: BSI NIR+
+  status: mp
+  released: '2025'
+  released_basis: estimate
+  megapixels: 4.0
+  pixel_um: 2.9
+  optical_format: '1/1.8'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 60
+  nir: true
+  notes: Large-pixel (2.9 µm, 1/1.8-inch) 4 MP BSI sensor for colour night vision, with a low-power AOV mode.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-4221
+  urlname: jx-4221
+  family: BSI NIR+
+  status: mp
+  released: '2025'
+  released_basis: estimate
+  megapixels: 4.0
+  pixel_um: 2.9
+  optical_format: '1/1.8'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  nir: true
+  notes: 30 fps version of the JX-4220 large-pixel 4 MP sensor.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-F02
+  urlname: jx-f02
+  aliases: [F02]
+  family: F series
+  status: eol
+  hdr: [unspecified]
+  released: '2015-10'
+  released_basis: flyer
+  width: 1936
+  height: 1092
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  adc_bits: 10
+  sensitivity: {value: 3900, unit: mV/lux·s}
+  snr_max_db: 37.5
+  dr_db: 70
+  notes: Early SOI 1080p sensor with HDR; 60 fps over MIPI, 30 fps over DVP.
+- model: JX-F22
+  urlname: jx-f22
+  aliases: [F22, JXF22]
+  family: F series
+  status: unknown
+  hdr: [unspecified]
+  released: '2016-08'
+  released_basis: flyer
+  width: 1936
+  height: 1092
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  adc_bits: 10
+  sensitivity: {value: 3900, unit: mV/lux·s}
+  snr_max_db: 38
+  dr_db: 73
+  notes: Popular low-cost 1080p sensor with HDR in budget IP cameras; 60 fps over MIPI, 30 fps over DVP.
+- model: JX-F23
+  urlname: jx-f23
+  aliases: [F23, JXF23]
+  family: F series
+  status: eol
+  released: '2017-08'
+  released_basis: datasheet
+  width: 1932
+  height: 1088
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  adc_bits: 10
+  notes: Small 1080p30 sensor without HDR, found in cheap cameras around 2018.
+- model: JX-F28P
+  urlname: jx-f28p
+  aliases: [JXF28P]
+  family: F series
+  status: unknown
+  released: '2021'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 2.1
+  optical_format: '1/4'
+  shutter: rolling
+  max_fps: 30
+  notes: Very small 1080p sensor (1/4-inch) for compact cameras.
+- model: JX-F32
+  urlname: jx-f32
+  family: F series
+  status: mp
+  released: '2019'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  notes: 1080p60 sensor with 3 µm pixels; also sold in automotive temperature grades.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+- model: JX-F35
+  urlname: jx-f35
+  aliases: [JXF35]
+  family: F series
+  status: mp
+  released: '2019'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  notes: 1080p60 sensor with 3 µm pixels.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+- model: JX-F352
+  urlname: jx-f352
+  family: F series (BSI)
+  status: mp
+  released: '2022'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  notes: BSI 1080p60 sensor, the plain version of the F355P.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+- model: JX-F355P
+  urlname: jx-f355p
+  aliases: [JXF355P]
+  family: F series (BSI NIR+)
+  status: mp
+  released: '2022'
+  released_basis: estimate
+  width: 1928
+  height: 1088
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  hdr: [stagger]
+  nir: true
+  notes: BSI 1080p60 sensor with NIR+ enhancement and 2-exposure HDR at 30 fps, for night-vision security and battery cameras.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+- model: JX-F355PSA
+  urlname: jx-f355psa
+  family: F series (BSI NIR+)
+  status: mp
+  released: '2023'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: rgbir
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  nir: true
+  notes: RGB-IR version of the F355P, for day/night cameras without an IR-cut filter.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+- model: JX-F37
+  urlname: jx-f37
+  aliases: [F37, JXF37]
+  family: F series
+  status: eol
+  released: '2018'
+  released_basis: estimate
+  width: 1928
+  height: 1088
+  pixel_um: 2.7
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  adc_bits: 10
+  notes: Low-cost 1080p30 sensor common in budget IP cameras; the maker now lists the F37P instead.
+- model: JX-F37P
+  urlname: jx-f37p
+  aliases: [JXF37P, JX-F37P-C1-M3, JX-F37P-C1-D3]
+  family: F series
+  status: mp
+  released: '2020-10'
+  released_basis: datasheet
+  width: 1928
+  height: 1088
+  pixel_um: 2.7
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  adc_bits: 10
+  hdr: [stagger]
+  sensitivity: {value: 3300, unit: mV/lux·s}
+  snr_max_db: 40.1
+  dr_db: 79
+  dark_current: {value: 3.8, unit: mV/s, note: '45 °C'}
+  notes: Cheap 1080p30 sensor with 2-frame staggered HDR at 15 fps, used in many budget IP cameras.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+  - {kind: page, url: https://www.lcsc.com/product-detail/Image-Sensors_SOI-JX-F37P-C1-M3_C7422741.html}
+- model: JX-F38P
+  urlname: jx-f38p
+  aliases: [JXF38P]
+  family: F series
+  status: unknown
+  released: '2021'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 2.5
+  optical_format: '1/3.2'
+  shutter: rolling
+  max_fps: 30
+  notes: Small 1080p30 sensor with 2.5 µm pixels.
+- model: JX-F39
+  urlname: jx-f39
+  family: F series
+  status: unknown
+  released: '2019'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 3.75
+  optical_format: '1/2'
+  shutter: rolling
+  max_fps: 60
+  notes: Large-pixel (3.75 µm, 1/2-inch) 1080p60 sensor for low light.
+- model: JX-F51
+  urlname: jx-f51
+  family: F series
+  status: mp
+  released: '2021'
+  released_basis: estimate
+  pixel_um: 2.7
+  optical_format: '1/3'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 40
+  category: square
+  notes: Square-format (1:1) sensor with 2.7 µm pixels.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+- model: JX-F53
+  urlname: jx-f53
+  aliases: [JXF53]
+  family: F series
+  status: mp
+  released: '2021'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 2.9
+  optical_format: '1/2.9'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  notes: 1080p30 sensor with 2.9 µm pixels.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+- model: JX-F53SA
+  urlname: jx-f53sa
+  family: F series
+  status: mp
+  released: '2021'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  cfa: rgbir
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  notes: RGB-IR version of the F53.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+- model: JX-F55
+  urlname: jx-f55
+  family: F series
+  status: mp
+  released: '2023'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 2.9
+  optical_format: '1/2.8'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  notes: 1080p60 sensor with 2.9 µm pixels.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+- model: JX-F57
+  urlname: jx-f57
+  family: F series
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 2.65
+  optical_format: '1/3'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  notes: 1080p30 sensor with a low-power always-on-video (AOV) mode for battery cameras.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+- model: JX-F58
+  urlname: jx-f58
+  family: F series
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 2.4
+  optical_format: '1/3.3'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  notes: Small 1080p30 sensor.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+- model: JX-F59
+  urlname: jx-f59
+  family: F series
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  megapixels: 2.1
+  pixel_um: 2.2
+  optical_format: '1/4'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  notes: Very small 1080p30 sensor (1/4-inch).
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/16}
+- model: JX-H22
+  urlname: jx-h22
+  aliases: [H22, JXH22]
+  family: H series
+  status: eol
+  released: '2012-10'
+  released_basis: datasheet
+  width: 1296
+  height: 816
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  adc_bits: 10
+  sensitivity: {value: 3300, unit: mV/lux·s}
+  snr_max_db: 37
+  dr_db: 64
+  notes: Early low-cost 720p sensor (in mass production from April 2013), lens-compatible with the OV9712.
+- model: JX-H42
+  urlname: jx-h42
+  aliases: [H42, JXH42, JX-H42-C1]
+  family: H series
+  status: eol
+  released: '2014-08'
+  released_basis: datasheet
+  width: 1292
+  height: 732
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  adc_bits: 10
+  sensitivity: {value: 3300, unit: mV/lux·s}
+  snr_max_db: 37
+  dr_db: 64
+  notes: Cheap 720p60 sensor, common in early budget IP cameras.
+- model: JX-H61
+  urlname: jx-h61
+  aliases: [JXH61, JX-H61-C1]
+  family: H series
+  status: eol
+  released: '2014-11'
+  released_basis: datasheet
+  width: 1296
+  height: 732
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  adc_bits: 10
+  sensitivity: {value: 5800, unit: mV/lux·s}
+  snr_max_db: 37.5
+  dr_db: 64.5
+  notes: Large-pixel 720p sensor, the most sensitive of the early SOI parts.
+- model: JX-H61P
+  urlname: jx-h61p
+  family: H series
+  status: mp
+  released: '2019'
+  released_basis: estimate
+  megapixels: 0.9
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  notes: 720p sensor with 3.75 µm pixels, the current version of the H61.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/18}
+- model: JX-H62
+  urlname: jx-h62
+  aliases: [H62, JXH62, JX-H62-C1]
+  family: H series
+  status: mp
+  released: '2016-03'
+  released_basis: datasheet
+  width: 1296
+  height: 732
+  pixel_um: 3.0
+  optical_format: '1/4'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  adc_bits: 10
+  sensitivity: {value: 4300, unit: mV/lux·s}
+  snr_max_db: 37
+  dr_db: 72
+  notes: Low-cost 720p sensor used in many cheap IP cameras and USB modules; the datasheet gives 30 fps, the maker now lists 60.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/18}
+- model: JX-H63
+  urlname: jx-h63
+  aliases: [JXH63]
+  family: H series
+  status: unknown
+  released: '2018'
+  released_basis: estimate
+  megapixels: 0.9
+  pixel_um: 2.8
+  optical_format: '1/4'
+  shutter: rolling
+  max_fps: 60
+  notes: 720p60 sensor with 2.8 µm pixels.
+- model: JX-H63P
+  urlname: jx-h63p
+  family: H series
+  status: mp
+  released: '2019'
+  released_basis: estimate
+  megapixels: 0.9
+  pixel_um: 2.8
+  optical_format: '1/4'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  notes: 720p60 sensor with 2.8 µm pixels.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/18}
+- model: JX-H65
+  urlname: jx-h65
+  aliases: [H65, JXH65, JX-H65-C1]
+  family: H series
+  status: unknown
+  released: '2016-08'
+  released_basis: datasheet
+  width: 1292
+  height: 968
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  adc_bits: 10
+  hdr: [stagger]
+  notes: 1.3 MP (960p) sensor with 3.75 µm pixels and 2-frame staggered HDR at 30 fps.
+- model: JX-H66
+  urlname: jx-h66
+  aliases: [JXH66]
+  family: H series
+  status: unknown
+  released: '2018'
+  released_basis: estimate
+  megapixels: 1.2
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  max_fps: 60
+  notes: 960p sensor with 3.75 µm pixels.
+- model: JX-H68
+  urlname: jx-h68
+  family: H series
+  status: mp
+  released: '2019'
+  released_basis: estimate
+  megapixels: 1.2
+  pixel_um: 3.75
+  optical_format: '1/3'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  notes: 960p sensor with 3.75 µm pixels; also sold in automotive temperature grades.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/18}
+- model: JX-H81
+  urlname: jx-h81
+  aliases: [H81, JXH81]
+  family: H series
+  status: eol
+  released: '2016'
+  released_basis: estimate
+  width: 1280
+  height: 960
+  optical_format: '1/3'
+  shutter: rolling
+  notes: 1.3 MP (960p) low-light sensor seen in Hi3518EV200 cameras.
+- model: JX-K02
+  urlname: jx-k02
+  aliases: [JXK02]
+  family: K series
+  status: eol
+  hdr: [unspecified]
+  released: '2017'
+  released_basis: estimate
+  megapixels: 4.0
+  pixel_um: 2.2
+  shutter: rolling
+  max_fps: 60
+  notes: SOI's first 4 MP sensor, with HDR.
+- model: JX-K04
+  urlname: jx-k04
+  aliases: [JXK04]
+  family: K series
+  status: mp
+  released: '2019'
+  released_basis: estimate
+  megapixels: 4.1
+  pixel_um: 2.2
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 60
+  notes: 4 MP sensor at 60 fps with 2.2 µm pixels.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-K05
+  urlname: jx-k05
+  aliases: [JXK05]
+  family: K series
+  status: mp
+  released: '2019'
+  released_basis: estimate
+  megapixels: 5.0
+  pixel_um: 2.2
+  optical_format: '1/2.5'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  notes: 5 MP (4:3) sensor used in budget 5 MP IP cameras.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-K06A
+  urlname: jx-k06a
+  aliases: [JX-K06, JXK06]
+  family: K series
+  status: mp
+  released: '2020'
+  released_basis: estimate
+  width: 2568
+  height: 1448
+  pixel_um: 2.1
+  optical_format: '1/2.9'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  snr_max_db: 39
+  dr_db: 75.3
+  notes: Low-cost 2K (3.7 MP) sensor for budget 4 MP-class cameras.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+  - {kind: page, url: https://www.lcsc.com/product-detail/Image-Sensors_SOI-JX-K06A-C1-M2_C7431462.html}
+- model: JX-K08
+  urlname: jx-k08
+  family: K series (BSI)
+  status: unknown
+  released: '2022'
+  released_basis: estimate
+  megapixels: 8.0
+  pixel_um: 1.62
+  optical_format: '1/2.5'
+  shutter: rolling
+  max_fps: 30
+  notes: BSI 4K (8 MP) sensor, the plain version of the K308P.
+- model: JX-K10
+  urlname: jx-k10
+  family: K series (BSI NIR+)
+  status: unknown
+  released: '2022'
+  released_basis: estimate
+  megapixels: 10.0
+  pixel_um: 4.75
+  optical_format: '4/3'
+  shutter: rolling
+  max_fps: 60
+  nir: true
+  category: large
+  notes: Large-format (4/3-inch) 10 MP sensor with 4.75 µm pixels and NIR+ enhancement.
+- model: JX-K17
+  urlname: jx-k17
+  aliases: [K17, JXK17]
+  family: K series
+  status: mp
+  released: '2020'
+  released_basis: estimate
+  megapixels: 5.0
+  pixel_um: 2.1
+  optical_format: '1/2.5'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  notes: 16:9 5 MP sensor with 2.1 µm pixels.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-K251
+  urlname: jx-k251
+  family: K series
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  megapixels: 4.0
+  pixel_um: 2.1
+  optical_format: '1/3.2'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  category: square
+  notes: Square (1:1) 4 MP sensor with a low-power AOV mode.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-K302
+  urlname: jx-k302
+  family: K series (BSI)
+  status: unknown
+  released: '2022'
+  released_basis: estimate
+  megapixels: 4.1
+  pixel_um: 2.0
+  optical_format: '1/2.9'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 60
+  notes: BSI 4 MP sensor at 60 fps, the plain version of the K302P.
+- model: JX-K302P
+  urlname: jx-k302p
+  family: K series (BSI NIR+)
+  status: mp
+  released: '2022'
+  released_basis: estimate
+  megapixels: 4.1
+  pixel_um: 2.0
+  optical_format: '1/2.9'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 60
+  nir: true
+  notes: BSI 4 MP sensor at 60 fps with NIR+ enhancement.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-K302PSA
+  urlname: jx-k302psa
+  family: K series (BSI NIR+)
+  status: mp
+  hdr: [unspecified]
+  released: '2023'
+  released_basis: estimate
+  megapixels: 4.1
+  pixel_um: 2.0
+  shutter: rolling
+  cfa: rgbir
+  interfaces: [mipi]
+  max_fps: 60
+  nir: true
+  notes: RGB-IR version of the K302P with HDR.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-K303
+  urlname: jx-k303
+  family: K series (BSI)
+  status: unknown
+  released: '2022'
+  released_basis: estimate
+  megapixels: 3.7
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  max_fps: 30
+  notes: BSI 2K (2560x1440 class) sensor.
+- model: JX-K305P
+  urlname: jx-k305p
+  family: K series (BSI NIR+)
+  status: mp
+  released: '2022'
+  released_basis: estimate
+  megapixels: 5.0
+  pixel_um: 2.2
+  optical_format: '1/2.5'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  nir: true
+  notes: BSI 5 MP (4:3) sensor with NIR+ enhancement.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-K306P
+  urlname: jx-k306p
+  family: K series (BSI NIR+)
+  status: mp
+  released: '2023'
+  released_basis: estimate
+  megapixels: 3.7
+  pixel_um: 2.0
+  optical_format: '1/3'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  nir: true
+  notes: BSI 2K (3.7 MP) sensor with NIR+ enhancement.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-K308P
+  urlname: jx-k308p
+  family: K series (BSI NIR+)
+  status: mp
+  released: '2022'
+  released_basis: estimate
+  megapixels: 8.0
+  pixel_um: 1.62
+  optical_format: '1/2.5'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  nir: true
+  notes: BSI 4K (8 MP) sensor with NIR+ enhancement.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/27}
+- model: JX-K347P
+  urlname: jx-k347p
+  family: K series (BSI NIR+)
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  megapixels: 5.0
+  pixel_um: 2.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  nir: true
+  notes: 16:9 5 MP BSI sensor with NIR+ enhancement and a low-power AOV mode.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-K351P
+  urlname: jx-k351p
+  aliases: [JXK351P]
+  family: K series (BSI NIR+)
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  megapixels: 4.0
+  pixel_um: 2.0
+  optical_format: '1/3.2'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 60
+  nir: true
+  category: square
+  notes: Square (1:1) 4 MP BSI sensor with NIR+ enhancement and a low-power AOV mode.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-K352PSA
+  urlname: jx-k352psa
+  family: K series (BSI NIR+)
+  status: mp
+  hdr: [unspecified]
+  released: '2024'
+  released_basis: estimate
+  megapixels: 4.0
+  pixel_um: 2.0
+  optical_format: '1/3.2'
+  shutter: rolling
+  cfa: rgbir
+  interfaces: [mipi]
+  max_fps: 60
+  nir: true
+  category: square
+  notes: Square (1:1) 4 MP RGB-IR sensor with NIR+ enhancement and HDR.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-K382P
+  urlname: jx-k382p
+  family: K series (BSI NIR+)
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  megapixels: 8.0
+  pixel_um: 1.5
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  nir: true
+  notes: Small-pixel BSI 4K (8 MP) sensor with NIR+ enhancement.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/27}
+- model: JX-Q03P
+  urlname: jx-q03p
+  aliases: [JXQ03P]
+  family: Q series
+  status: mp
+  released: '2020'
+  released_basis: estimate
+  megapixels: 3.0
+  pixel_um: 2.5
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  notes: 3 MP sensor with 2.5 µm pixels.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/26}
+- model: JX-S01
+  urlname: jx-s01
+  family: S series
+  status: mp
+  released: '2023'
+  released_basis: estimate
+  megapixels: 0.3
+  pixel_um: 3.75
+  optical_format: '1/6'
+  shutter: global
+  interfaces: [lvds, mipi, dvp]
+  max_fps: 180
+  notes: VGA global-shutter sensor at 180 fps for machine vision.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/19}
+- model: JX-S02
+  urlname: jx-s02
+  family: S series
+  status: mp
+  released: '2021'
+  released_basis: estimate
+  megapixels: 1.3
+  pixel_um: 4.8
+  optical_format: '1/2'
+  shutter: global
+  interfaces: [lvds, mipi, dvp]
+  max_fps: 200
+  notes: 1.3 MP global-shutter sensor at 200 fps for machine vision.
+  sources:
+  - {kind: page, url: https://www.soinc.com.tw/en/product/introduction/19}
+- model: JX-V01
+  urlname: jx-v01
+  aliases: [JXV01]
+  family: V series
+  status: eol
+  released: '2014-07'
+  released_basis: flyer
+  width: 656
+  height: 492
+  pixel_um: 5.6
+  optical_format: '1/4'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  adc_bits: 10
+  sensitivity: {value: 13000, unit: mV/lux·s}
+  snr_max_db: 36
+  dr_db: 77
+  notes: VGA sensor with large 5.6 µm pixels for baby monitors and door phones.

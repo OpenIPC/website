@@ -32,6 +32,7 @@ const MaxHits = 200
 // API is the catalogue's read side.
 //
 //	GET /api/v1/boards          the whole tree, manufacturers down to files
+//	                            (?soc=… one SoC's boards, ?sensor=A,B one sensor's by its names)
 //	GET /api/v1/boards/search   ?q=…&kind=uboot_env,boot_log&soc=…  matching lines
 type API struct {
 	DB  *pgxpool.Pool
@@ -256,11 +257,29 @@ type sourceJSON struct {
 // Locales the catalogue has texts in; a request for another reads English.
 var Locales = []string{"en", "ru", "zh"}
 
+// treeModels narrows Tree to the boards on one SoC ($1, '' for any) and to the
+// boards with a unit naming one of the sensors in $2 (empty for any). A
+// sensor is compared as the site's sensor catalogue keys it: without its
+// maker, upper-cased (frontend/apps/site/src/lib/sensor-names.ts nameKey).
+const treeModels = `($1 = '' OR m.soc = $1) AND (cardinality($2::text[]) = 0 OR EXISTS (
+	SELECT 1 FROM board_units su WHERE su.model_id = m.id
+	  AND upper(regexp_replace(btrim(coalesce(su.sensor, '')), '^(sony|omni ?vision|onmi ?vision|silicon optronics)\s+', '', 'i')) = ANY($2::text[])))`
+
+// MaxSensorNames caps the names one ?sensor= asks for: a part and its aliases.
+const MaxSensorNames = 32
+
 // Tree is the document GET /api/v1/boards answers. Its four queries read one
 // snapshot: an import commits a unit at a time while the service runs, and a
 // model committed between two of them would otherwise arrive without its
 // maker.
-func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string]any, error) {
+//
+// sensors, when given, are the names of one image sensor (a sensor page asks
+// with the part's model and its aliases): only the boards reporting it are
+// read, with every unit they have.
+func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string, sensors ...string) (map[string]any, error) {
+	if sensors == nil {
+		sensors = []string{} // NULL would match nothing
+	}
 	tx, err := db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return nil, err
@@ -294,8 +313,8 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 		             ORDER BY a.code_as_printed),
 		       c.units, c.photos, c.pinouts, c.flash_dumps, c.uboot_envs, c.boot_logs, c.documents
 		FROM board_models m JOIN board_model_coverage c ON c.model_id = m.id
-		WHERE $1 = '' OR m.soc = $1
-		ORDER BY m.position, m.id`, soc)
+		WHERE `+treeModels+`
+		ORDER BY m.position, m.id`, soc, sensors)
 	if err != nil {
 		return nil, err
 	}
@@ -325,8 +344,8 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 	rows, err = tx.Query(ctx, `
 		SELECT id, model_id, sensor, flash_chip, flash_size_mb, source::text, source_ref, contributed_by, notes
 		FROM board_units
-		WHERE $1 = '' OR model_id IN (SELECT id FROM board_models WHERE soc = $1)
-		ORDER BY position, id`, soc)
+		WHERE model_id IN (SELECT m.id FROM board_models m WHERE `+treeModels+`)
+		ORDER BY position, id`, soc, sensors)
 	if err != nil {
 		return nil, err
 	}
@@ -363,8 +382,8 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string) (map[string
 		       CASE WHEN a.kind::text IN `+photoKinds+` THEN coalesce(s.n, 0) ELSE 0 END
 		FROM board_artifacts a JOIN board_units au ON au.id = a.unit_id
 		LEFT JOIN shared s ON s.source = au.source AND s.sha256 = a.sha256
-		WHERE $1 = '' OR a.unit_id IN (SELECT u.id FROM board_units u JOIN board_models m ON m.id = u.model_id WHERE m.soc = $1)
-		ORDER BY a.unit_id, a.position, a.id`, soc)
+		WHERE a.unit_id IN (SELECT u.id FROM board_units u JOIN board_models m ON m.id = u.model_id WHERE `+treeModels+`)
+		ORDER BY a.unit_id, a.position, a.id`, soc, sensors)
 	if err != nil {
 		return nil, err
 	}
@@ -725,8 +744,22 @@ func (a *API) model(w http.ResponseWriter, r *http.Request) {
 func (a *API) tree(w http.ResponseWriter, r *http.Request) {
 	locale := localeOf(r)
 	soc := r.URL.Query().Get("soc")
+	var sensors []string
+	if v := r.URL.Query().Get("sensor"); v != "" {
+		for _, name := range strings.Split(v, ",") {
+			name = strings.ToUpper(strings.TrimSpace(name))
+			if name == "" || utf8.RuneCountInString(name) > 64 {
+				continue
+			}
+			sensors = append(sensors, name)
+		}
+		if len(sensors) == 0 || len(sensors) > MaxSensorNames {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("sensor is 1 to %d comma-separated names", MaxSensorNames)})
+			return
+		}
+	}
 	a.serve(w, r, 300, func(ctx context.Context) (any, int, error) {
-		t, err := Tree(ctx, a.DB, locale, soc)
+		t, err := Tree(ctx, a.DB, locale, soc, sensors...)
 		return t, http.StatusOK, err
 	})
 }

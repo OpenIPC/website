@@ -1,0 +1,41 @@
+name: SuperPix
+urlname: superpix
+full_name: SuperPix Micro Technology
+sensors:
+- model: SP2305
+  urlname: sp2305
+  status: unknown
+  released: '2016'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  interfaces: [mipi]
+  max_fps: 30
+  sensitivity: {value: 23000, unit: e-/lux·s, note: 'from the OV2735 datasheet, the same die'}
+  snr_max_db: 38.6
+  dr_db: 72
+  twin: ov2735
+  notes: Common 1080p sensor in Xiongmai and other budget IP cameras; it is the same die as the OmniVision OV2735, and both report chip ID 0x2735.
+- model: SP4329
+  urlname: sp4329
+  family: PureCel Plus-S
+  status: unknown
+  released: '2022-12'
+  released_basis: datasheet
+  width: 2560
+  height: 1440
+  pixel_um: 2.9
+  optical_format: '1/1.88'
+  shutter: rolling
+  interfaces: [mipi, lvds]
+  max_fps: 30
+  hdr: [dcg, stagger]
+  nir: true
+  sensitivity: {value: 32000, unit: e-/lux·s, note: 'green pixel, 530 nm'}
+  snr_max_db: 40.6
+  dr_hdr_db: 120
+  twin: os04j10
+  notes: 2K security sensor with large 2.9 µm pixels, Nyxel NIR and DCG HDR (90 dB from one exposure); the same silicon OmniVision later sold as the OS04J10.

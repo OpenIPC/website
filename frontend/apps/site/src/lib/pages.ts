@@ -18,6 +18,8 @@ import Service from '../components/Service.astro';
 import Smoke from '../components/Smoke.astro';
 import Wall from '../components/pages/Wall.astro';
 import Boards from '../components/pages/Boards.astro';
+import Sensors from '../components/pages/Sensors.astro';
+import Sensor from '../components/pages/Sensor.astro';
 import Report from '../components/pages/Report.astro';
 import Club from '../components/pages/Club.astro';
 import ClubReview from '../components/pages/ClubReview.astro';
@@ -45,6 +47,7 @@ import Teleoperation from '../components/pages/Teleoperation.astro';
 import Utilities from '../components/pages/Utilities.astro';
 import WebInterface from '../components/pages/WebInterface.astro';
 import { VENDORS } from './hardware';
+import { PARTS, sensorPath } from './sensors';
 import { newsPath, POSTS } from './news';
 import { PAGE_PATHS, type PagePath } from './page-paths';
 
@@ -99,6 +102,8 @@ const COMPONENTS: Record<string, Renderer> = {
 
   // The board catalogue, beside the SoC catalogue it links into.
   '/cameras/boards': { component: Boards },
+  '/cameras/sensors': { component: Sensors },
+  ...Object.fromEntries(PARTS.map((part) => [sensorPath(part), { component: Sensor, props: { sensor: part.urlname } }])),
   '/cameras/report': { component: Report },
   '/club': { component: Club },
   '/club/review': { component: ClubReview },

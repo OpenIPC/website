@@ -21,6 +21,7 @@
         "list_full": "我们已知的全部芯片",
         "list_vendor": "{vendor} 芯片",
         "nothing_installable_html": "{vendor} 的 {total} 款芯片目前都无法安装——它们都还没有 OpenIPC 构建。下面每一行都写明了原因，其中不少是在等一块板子或一位开发者，而不是等我们。",
+        "sensors": "传感器",
         "stages_details": "开发阶段是什么意思？",
         "th_baseaddr": "加载地址",
         "th_docs": "能安装吗？",
@@ -831,6 +832,13 @@
       "step3_text": "源码、规范、测试台与判据归你所有。每次改动之后，证明再跑一遍。",
       "step3_title": "维护",
       "title": "逆向工程"
+    },
+    "sensors": {
+      "heading": "图像传感器并排对比",
+      "lede": "我们所知的安防摄像头图像传感器，来自索尼、思特威、豪威、格科微等厂商：分辨率、像素尺寸、光学尺寸、灵敏度、信噪比、动态范围和发布时间，以及我们目录中使用它们的主板。",
+      "sensor_description": "{sensor}：分辨率、像素尺寸、光学尺寸、灵敏度、动态范围、HDR 模式和发布时间，以及 OpenIPC 目录中使用它的摄像头主板。",
+      "sensor_title": "{sensor} 图像传感器：规格参数",
+      "title": "图像传感器对比"
     },
     "stages_of_firmware_development": {
       "done_alt": "图片：阶段 DONE",

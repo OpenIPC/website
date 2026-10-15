@@ -1,0 +1,217 @@
+name: PrimeSensor
+urlname: primesensor
+full_name: PrimeSensor Technology Inc. (PixArt Imaging group)
+website_url: https://www.pixart.com/
+sensors:
+- model: PS5150
+  urlname: ps5150
+  aliases: [PS5150LT]
+  family: PrimeSensor
+  status: unknown
+  released: '2014'
+  released_basis: estimate
+  width: 1280
+  height: 720
+  pixel_um: 4.2
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp]
+  max_fps: 60
+  notes: A 720p sensor with large 4.2 µm pixels and a parallel output, for analogue-HD cameras and dashcams.
+  sources:
+  - {kind: page, url: 'https://www.pixart.com/products-detail/56/PS5150LT'}
+- model: PS5250
+  urlname: ps5250
+  aliases: [PS5250LT, PS5250LT-AA]
+  family: PrimeSensor
+  status: mp
+  released: '2016'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  notes: PrimeSensor's mainstream 1080p sensor without HDR, sold for IP cameras, dashcams and battery cameras.
+  sources:
+  - {kind: page, url: 'https://www.pixart.com/products-detail/55/PS5250LT-AA'}
+- model: PS5258
+  urlname: ps5258
+  aliases: [PS5258LT]
+  family: PrimeSensor
+  status: mp
+  released: '2021'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  pixel_um: 2.8
+  optical_format: '1/2.9'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  notes: A low-power 1080p sensor with fast auto-exposure, for battery-powered and IoT cameras.
+  sources:
+  - {kind: page, url: 'https://www.pixart.com/products-detail/114/PS5258LT'}
+- model: PS5260
+  urlname: ps5260
+  aliases: [PS5260LT, PS5260LT-AA]
+  family: PrimeSensor
+  status: mp
+  hdr: [single-frame]
+  released: '2018'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  sensitivity: {value: 4500, unit: mV/lux·s}
+  notes: A 1080p sensor with on-chip single-shot dual-sensitivity HDR, for IP cameras, doorbells and dashcams.
+  sources:
+  - {kind: page, url: 'https://www.pixart.com/products-detail/54/PS5260LT-AA'}
+- model: PS5262
+  urlname: ps5262
+  aliases: [PS5262LT]
+  family: PrimeSensor
+  status: mp
+  released: '2021'
+  released_basis: estimate
+  width: 1928
+  height: 1088
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  hdr: [dol]
+  notes: A 1080p sensor offering both single-shot HDR and DOL HDR, with fast auto-exposure and on-chip motion detection for battery cameras.
+  sources:
+  - {kind: page, url: 'https://www.pixart.com/products-detail/124/PS5262LT'}
+- model: PS5268
+  urlname: ps5268
+  aliases: [PS5268LT]
+  family: PrimeSensor
+  status: mp
+  hdr: [single-frame]
+  released: '2019-08'
+  released_basis: datasheet
+  width: 1928
+  height: 1088
+  pixel_um: 3.0
+  optical_format: '1/2.7'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  adc_bits: 10
+  sensitivity: {value: 5800, unit: mV/lux·s}
+  snr_max_db: 41
+  notes: A sensitive 1080p sensor with on-chip single-shot dual-sensitivity HDR and local tone mapping, for IP cameras, doorbells and dashcams.
+  sources:
+  - {kind: page, url: 'https://www.pixart.com/products-detail/102/PS5268LT'}
+- model: PS5270
+  urlname: ps5270
+  aliases: [PS5270LT]
+  family: PrimeSensor
+  status: mp
+  hdr: [single-frame]
+  released: '2017'
+  released_basis: estimate
+  width: 1536
+  height: 1536
+  pixel_um: 3.4
+  optical_format: '1/2.4'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 30
+  category: square
+  notes: A square 1536×1536 sensor with single-shot HDR, made for fisheye panoramic cameras and doorbells.
+  sources:
+  - {kind: page, url: 'https://www.pixart.com/products-detail/53/PS5270LT'}
+- model: PS5280
+  urlname: ps5280
+  aliases: [PS5280LT]
+  family: PrimeSensor
+  status: mp
+  hdr: [single-frame]
+  released: '2017'
+  released_basis: estimate
+  width: 1920
+  height: 1080
+  pixel_um: 4.0
+  optical_format: '1/2'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [dvp, mipi]
+  max_fps: 60
+  category: lowlight
+  notes: A 1080p sensor with large 4 µm pixels and single-shot HDR, PrimeSensor's high-sensitivity part for surveillance and dashcams.
+  sources:
+  - {kind: page, url: 'https://www.pixart.com/products-detail/52/PS5280LT'}
+- model: PS5416
+  urlname: ps5416
+  aliases: [PS5416LT]
+  family: PrimeSensor
+  status: mp
+  released: '2024'
+  released_basis: estimate
+  width: 2688
+  height: 1520
+  pixel_um: 1.98
+  optical_format: '1/3'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi, dvp]
+  max_fps: 30
+  hdr: [dol]
+  notes: A 4-megapixel ultra-low-power sensor with a pre-roll mode, motion detection and PIR input, made for battery cameras and doorbells.
+  sources:
+  - {kind: page, url: 'https://www.pixart.com/products-detail/150/PS5416LT'}
+- model: PS5510
+  urlname: ps5510
+  aliases: [PS5510LT]
+  family: PrimeSensor
+  status: mp
+  hdr: [multi-exposure]
+  released: '2016'
+  released_basis: estimate
+  width: 2592
+  height: 1944
+  pixel_um: 2.25
+  optical_format: '1/2.5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  notes: A 4:3 5-megapixel sensor with dual-exposure HDR and four-lane MIPI, found in early 5MP Hi3516D IP camera boards.
+  sources:
+  - {kind: page, url: 'https://www.pixart.com/products-detail/50/PS5510LT'}
+- model: PS5520
+  urlname: ps5520
+  aliases: [PS5520LT, PS5520LT-AA]
+  family: PrimeSensor
+  status: mp
+  hdr: [single-frame]
+  released: '2018'
+  released_basis: estimate
+  width: 2592
+  height: 1944
+  pixel_um: 2.2
+  optical_format: '1/2.5'
+  shutter: rolling
+  cfa: bayer
+  interfaces: [mipi]
+  max_fps: 30
+  notes: A 5-megapixel sensor with on-chip single-shot HDR and local tone mapping that keeps 30 fps in HDR.
+  sources:
+  - {kind: page, url: 'https://www.pixart.com/products-detail/51/PS5520LT-AA'}
