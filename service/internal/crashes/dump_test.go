@@ -86,6 +86,39 @@ func TestReadDump(t *testing.T) {
 	}
 }
 
+// uClibc (Ingenic's T31) lists the executable last, after libraries that
+// carry no build-id: majestic is still found, by its entry point.
+func TestMainIsTheExecutableWhereverTheTableListsIt(t *testing.T) {
+	raw := dumpFixture(t, "arm-own.dump")
+	d, err := ReadDump(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var lines []string
+	exe := ""
+	for _, l := range strings.Split(strings.TrimSpace(string(d.Sections["MODS"])), "\n") {
+		if strings.HasSuffix(l, "/toy") {
+			exe = l
+			continue
+		}
+		lines = append(lines, "-"+l[strings.Index(l, " "):])
+	}
+	if exe == "" || len(lines) == 0 {
+		t.Fatalf("the fixture's modules:\n%s", d.Sections["MODS"])
+	}
+	d, err = ReadDump(rebuild(t, raw, "MODS", []byte(strings.Join(append(lines, exe), "\n")+"\n")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if main, ok := d.Main(); !ok || !strings.HasSuffix(main.Path, "/toy") || len(main.BuildID) != 40 {
+		t.Fatalf("main module %+v of %+v", main, d.Modules)
+	}
+	libs := d.Libraries()
+	if len(libs) != len(lines) || strings.HasSuffix(libs[0].Path, "/toy") || strings.HasSuffix(libs[len(libs)-1].Path, "/toy") {
+		t.Fatalf("libraries %+v", libs)
+	}
+}
+
 func TestADumpSentByAnotherProcessIsSelfInflicted(t *testing.T) {
 	raw := dumpFixture(t, "arm-sent.dump")
 	d, _ := ReadDump(raw)
