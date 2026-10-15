@@ -318,6 +318,60 @@
     "nand_lite": "openipc.gk7205v500-nand-lite.tgz"
   },
   {
+    "urlname": "gk7206v10",
+    "vendor": "Goke",
+    "model": "GK7206V10",
+    "board": "gk7206v12a",
+    "uboot": "",
+    "nor_lite": "openipc.gk7206v12a-nor-lite.tgz",
+    "nand_lite": "openipc.gk7206v12a-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7206v10b",
+    "vendor": "Goke",
+    "model": "GK7206V10B",
+    "board": "gk7206v12a",
+    "uboot": "",
+    "nor_lite": "openipc.gk7206v12a-nor-lite.tgz",
+    "nand_lite": "openipc.gk7206v12a-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7206v11",
+    "vendor": "Goke",
+    "model": "GK7206V11",
+    "board": "gk7206v12a",
+    "uboot": "",
+    "nor_lite": "openipc.gk7206v12a-nor-lite.tgz",
+    "nand_lite": "openipc.gk7206v12a-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7206v11a",
+    "vendor": "Goke",
+    "model": "GK7206V11A",
+    "board": "gk7206v12a",
+    "uboot": "",
+    "nor_lite": "openipc.gk7206v12a-nor-lite.tgz",
+    "nand_lite": "openipc.gk7206v12a-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7206v11at",
+    "vendor": "Goke",
+    "model": "GK7206V11AT",
+    "board": "gk7206v12a",
+    "uboot": "",
+    "nor_lite": "openipc.gk7206v12a-nor-lite.tgz",
+    "nand_lite": "openipc.gk7206v12a-nand-lite.tgz"
+  },
+  {
+    "urlname": "gk7206v12a",
+    "vendor": "Goke",
+    "model": "GK7206V12A",
+    "board": "gk7206v12a",
+    "uboot": "",
+    "nor_lite": "openipc.gk7206v12a-nor-lite.tgz",
+    "nand_lite": "openipc.gk7206v12a-nand-lite.tgz"
+  },
+  {
     "urlname": "gk7605v100",
     "vendor": "Goke",
     "model": "GK7605V100",
