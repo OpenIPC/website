@@ -38,7 +38,7 @@
       "rccb": "RCCB",
       "rgbir": "RGB-IR"
     },
-    "chart_caption": "Resolution against what a sensor is for. Each tile is a part, coloured by its maker; the year is when it came out, ≈ where we estimate it.",
+    "chart_caption": "Resolution against what a sensor is for. Each tile is a part, coloured by its maker; the year is when it came out, and a dot marks a sensor on boards in our catalogue.",
     "chart_hint": "Point at a sensor for its numbers; open it for the full sheet.",
     "col": {
       "adc": "ADC",

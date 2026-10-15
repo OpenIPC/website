@@ -196,7 +196,7 @@ function Lineup({ parts, only, card }: { parts: Part[]; only: Category | null; c
     <>
       {/* From md up, the grid; on a phone the same tiles, one kind at a time, so nothing scrolls sideways. */}
       <div class="hidden overflow-hidden rounded-lg border border-hairline md:grid"
-        style={{ gridTemplateColumns: `5.5rem repeat(${cols.length}, minmax(0, 1fr))` }}>
+        style={{ gridTemplateColumns: `4.5rem repeat(${cols.length}, minmax(0, 1fr))` }}>
         <div class="bg-surface-alt" />
         {cols.map((c) => (
           <div key={c} class="border-l border-hairline bg-surface-alt px-2 py-2 text-center">
@@ -208,7 +208,7 @@ function Lineup({ parts, only, card }: { parts: Part[]; only: Category | null; c
           <Fragment key={r.id}>
             <div class="flex items-center border-t border-hairline bg-surface-alt px-2 text-sm font-semibold tabular-nums">{t(`row.${r.id}`)}</div>
             {cols.map((c) => (
-              <div key={c} class="flex flex-wrap content-start gap-1 border-t border-l border-hairline bg-white p-1.5">
+              <div key={c} class="flex flex-wrap content-start gap-0.5 border-t border-l border-hairline bg-white p-1">
                 {cell(c, r.id).map((p) => <Tile key={p.urlname} part={p} card={card} />)}
               </div>
             ))}
@@ -247,12 +247,13 @@ function Tile({ part: p, card }: { part: Part; card: CardProps }) {
   const onBoards = (card.counts?.get(p.urlname) ?? 0) > 0;
   return (
     <a href={card.href(p)}
-      class={`inline-flex min-h-8 items-center gap-1 rounded border border-hairline bg-white py-0.5 pr-1.5 pl-1 text-body no-underline hover:border-brand-blue focus-visible:border-brand-blue ${p.status === 'eol' ? 'opacity-60' : ''}`}
-      style={{ borderLeft: `4px solid ${makerColour(p.maker.urlname)}` }}
+      class={`inline-flex min-h-7 items-center gap-0.5 rounded-sm border border-hairline bg-white py-px pr-1 pl-1 text-body no-underline hover:border-brand-blue focus-visible:border-brand-blue md:min-h-6 ${p.status === 'eol' ? 'opacity-60' : ''}`}
+      style={{ borderLeft: `3px solid ${makerColour(p.maker.urlname)}` }}
       aria-label={`${p.maker.name} ${p.model}${year ? `, ${year}` : ''}`}
       onMouseEnter={() => card.onPreview(p)} onFocus={() => card.onPreview(p)}>
-      <span class="font-mono text-[12.5px] leading-none font-medium">{p.model}</span>
-      {year && <span class="text-[10.5px] leading-none text-body-secondary tabular-nums">{year.replace(/^(≈?)\d\d/, '$1’')}</span>}
+      <span class="font-mono text-[12px] leading-none font-medium tracking-tight">{p.model}</span>
+      {/* Two digits, no ≈: the tile has room for the year only; the card above and the table say how sure it is. */}
+      {year && <span class="text-[10px] leading-none text-body-secondary tabular-nums">’{year.slice(-2)}</span>}
       {onBoards && <span aria-hidden="true" class="size-1.5 rounded-full bg-ink" title={card.t('on_boards_badge')} />}
     </a>
   );
