@@ -481,7 +481,8 @@ func TestTakedownLeavesAFileANewReportNames(t *testing.T) {
 
 // A camera the catalogue does not have: the send form proposes it by its
 // maker and marking, with a photo of it, and needs no ipctool output. The
-// proposal is kept as sent, and only the send form's channel may make one.
+// proposal is kept as sent; the send form and an agent may make one,
+// ipctool's own channel not.
 func TestANewCameraIsProposedWithAPhotoAndNoIpctool(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
@@ -550,5 +551,38 @@ func TestANewCameraIsProposedWithAPhotoAndNoIpctool(t *testing.T) {
 	rec, out = e.post(t, upload{fields: with(map[string]string{"yaml": fixture(t, "hi3516cv300-imx291.txt")}), files: photo}, "203.0.113.22")
 	if rec.Code != 201 || out["facts"].(map[string]any)["chip_model"] == nil {
 		t.Errorf("with yaml: %d %v", rec.Code, out)
+	}
+}
+
+// An agent helping an owner whose camera has no shell (agents.md) names the
+// board as the send form does, and sends the chip as read: a report with no
+// ipctool output. Without a board the refusal says how to send it, and
+// ipctool's own channel still cannot name one.
+func TestAnAgentNamesTheBoardOfAFlashImage(t *testing.T) {
+	e := newEnv(t)
+	image := bytes.Repeat([]byte{7}, 1<<20)
+	agent := map[string]string{"channel": "agent", "tool": "claude-code 2.x", "model": "xiongmai-50h20l"}
+
+	rec, out := e.post(t, upload{fields: agent, files: map[string][]byte{"backup": image, "boot_log": []byte("U-Boot 2010.06\n")}}, "203.0.113.40")
+	if rec.Code != 201 || out["backup_consent"] != "private" {
+		t.Fatalf("an agent's flash image: %d %v", rec.Code, out)
+	}
+	if f := out["files"].([]any)[0].(map[string]any); f["kind"] != "backup" || f["name"] != "flash.bin" || f["private"] != true {
+		t.Errorf("the image: %v", out["files"])
+	}
+
+	proposed := map[string]string{"channel": "agent", "maker": "Jooan", "board": "Q9 v2"}
+	if rec, out := e.post(t, upload{fields: proposed, files: map[string][]byte{"backup": image, "photo": jpeg}}, "203.0.113.41"); rec.Code != 201 {
+		t.Errorf("an agent proposing a camera: %d %v", rec.Code, out)
+	}
+
+	rec, out = e.post(t, upload{fields: map[string]string{"channel": "agent"}, files: map[string][]byte{"backup": image}}, "203.0.113.42")
+	if msg, _ := out["error"].(string); rec.Code != 400 || !strings.Contains(msg, "model=") {
+		t.Errorf("an image with no board: %d %v", rec.Code, out)
+	}
+
+	ipctool := map[string]string{"channel": "ipctool", "model": "xiongmai-50h20l"}
+	if rec, _ := e.post(t, upload{fields: ipctool, files: map[string][]byte{"backup": image}}, "203.0.113.43"); rec.Code != 400 {
+		t.Errorf("ipctool naming a board: %d %s", rec.Code, rec.Body)
 	}
 }

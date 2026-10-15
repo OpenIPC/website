@@ -47,6 +47,16 @@ ways, from a shell on the camera (telnet or UART):
 
 Keep the output exactly as printed.
 
+### No shell on the camera
+
+ipctool needs Linux running on the camera. When there is no way in (the
+console is muted, the login is unknown, the firmware no longer boots), the
+whole flash chip can be the report instead, read another way: from the U-Boot
+prompt, through the SoC's boot ROM, or with a programmer. Such an image says
+nothing about itself, so the report names its board (`model` in step 4), or
+proposes the camera if the catalogue does not have it. Find the board in step
+2 by searching rather than identifying.
+
 ## 2. Ask whether the board is already known
 
     POST https://openipc.org/api/v1/boards/identify
@@ -72,29 +82,46 @@ sensor, another flash chip), but it is not needed.
 
 Nothing is stored by this call.
 
+Without ipctool's output, look the board up by its marking (the code on the
+silkscreen or the label, or what it is sold as) in the whole catalogue:
+
+    GET https://openipc.org/api/v1/boards
+
+Under `manufacturers[].models[]` are each board's `id`, `model`, `aliases`
+and `soc`. <https://openipc.org/cameras/boards> is the same, to browse; a
+board's page address ends in `?model=<id>`. That `id` is what step 4's
+`model` takes. When the board carries no readable marking,
+`/api/v1/boards/search?q=<text>&kind=all` matches lines of the boot logs and
+U-Boot consoles others have sent.
+
 ## 3. Collect what you can
 
 Useful, in order of value:
 
-1. ipctool's output (required).
+1. ipctool's output (required, unless the report names its board; see
+   step 4).
 2. The boot log: the UART console from power-on to the login prompt.
 3. The U-Boot environment: `printenv` at the U-Boot prompt, or
    `ipctool printenv` from Linux.
 4. Photos of both sides of the board, sharp enough to read the chip markings.
 5. With the owner's agreement, the whole flash: `ipctool backup /tmp/b.bin`
-   (it is ipctool's backup format; see step 4).
+   (it is ipctool's backup format; see step 4), or without ipctool the chip
+   as read.
 
 ## 4. Send the report
 
     POST https://openipc.org/api/v1/reports
     Content-Type: multipart/form-data
 
-Parts, all optional except the first:
+A report carries ipctool's output (`yaml`, or inside `backup`), or names its
+board (`model`, or `maker` and `board` with a photo). Parts:
 
 | part | what | limit |
 |---|---|---|
 | `yaml` | ipctool's output | 256 KB |
-| `backup` (file) | `ipctool backup` output: the YAML, a NUL, then each partition as a little-endian uint32 length and its bytes. If sent, `yaml` may be left out. | 256 MB |
+| `backup` (file) | `ipctool backup` output: the YAML, a NUL, then each partition as a little-endian uint32 length and its bytes. If sent, `yaml` may be left out. With `model` or a proposed camera, it may instead be a whole flash image as read: the chip's bytes, nothing added, a power of two from 1 MB. | 256 MB |
+| `model` | the catalogue's id for the board, when the report has no ipctool output | |
+| `maker`, `board`, `soc` | a camera the catalogue does not have: its maker, its board's marking or model name, and its SoC if known. Needs at least one `photo`. | 80, 80, 40 chars |
 | `consent` | `private` (default: maintainers only) or `public` (published with the report) | |
 | `photo` (file, repeatable) | JPEG, PNG or WebP | 20 MB each |
 | `boot_log`, `uboot_env`, `note` (file, repeatable) | text | 4 MB each |
@@ -107,6 +134,12 @@ For example:
 
     curl -F channel=agent -F tool="<you>" -F yaml=@ipctool.yml \
          -F boot_log=@boot.txt -F photo=@front.jpg -F photo=@back.jpg \
+         https://openipc.org/api/v1/reports
+
+Without ipctool, the chip as read, under its board:
+
+    curl -F channel=agent -F tool="<you>" -F model=<board id> \
+         -F backup=@flash.bin -F boot_log=@boot.txt -F uboot_env=@printenv.txt \
          https://openipc.org/api/v1/reports
 
 `201` answers with the receipt:
@@ -122,8 +155,9 @@ Give the owner the `receipt_url`. It shows the report's state until a
 maintainer files it under its board, and then links there.
 
 Refusals are JSON `{"error": "..."}` saying what to change: `400` (not
-ipctool's output, a malformed backup), `415` (a file of the wrong type),
-`413` (too large), `429` (ten reports a day from one address; retry tomorrow).
+ipctool's output, a malformed backup, a flash image that names no board),
+`415` (a file of the wrong type), `413` (too large), `429` (ten reports a day
+from one address; retry tomorrow).
 
 ## 5. Check on it
 

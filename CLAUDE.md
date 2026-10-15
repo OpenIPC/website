@@ -178,7 +178,9 @@ restores the image but never the schema, so keep migrations additive.
   photos (`report_proposals`, migration 028), and publishing it from the
   review queue adds the board (`boards.CreateModel`, alias source `club`,
   `created_by_report`, migration 033) -- the only way a model is made
-  besides the importers. Rejecting that report later unlinks it, and the
+  besides the importers. An agent (`channel=agent`) may name a board
+  (`model`) or propose one as the form does, so a whole chip read without
+  ipctool -- no shell on the camera -- is a report from `agents.md` too. Rejecting that report later unlinks it, and the
   units refresh removes the board once nothing else is on it
   (`boards.RemoveAbandoned`, #452); `openipc boards remove` does it by hand. A member may edit
   their own report from `/club` (`reports.Store.Edit`, migration 031): the

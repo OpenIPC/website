@@ -97,10 +97,10 @@ func (a *API) upload(w http.ResponseWriter, r *http.Request) {
 	a.Submit(w, r, "")
 }
 
-// Submit is an upload, from ipctool or from the site's send form
+// Submit is an upload, from ipctool, an AI agent or the site's send form
 // (POST /api/v1/club/reports, member set when the sender is signed in).
-// A send that names a catalogue board (the field model) needs no ipctool
-// output: a boot log or a photo of a known board is a report too, and so is
+// A send from the form or an agent that names a catalogue board (the field
+// model) needs no ipctool output: a boot log or a photo of a known board is a report too, and so is
 // a flash dump read with a programmer rather than ipctool. So is a camera
 // the catalogue does not have, proposed by its maker and marking (the
 // fields maker, board and soc) with at least one photo of it.
@@ -172,8 +172,10 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		return
 	}
 	if model != "" {
-		if channel != "web" {
-			a.refuse(w, http.StatusBadRequest, "model is the send form's field: channel web")
+		// The send form names a board, and so may an agent acting for the
+		// owner (agents.md); ipctool reports what it reads, not a choice.
+		if channel == "ipctool" {
+			a.refuse(w, http.StatusBadRequest, "model is the send form's and an agent's field: channel web or agent")
 			return
 		}
 		known, err := st.ModelExists(ctx, model)
@@ -202,6 +204,16 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		}
 		if err != nil && (model != "" || prop != nil) && flashImage(in.backup.Bytes) {
 			raw, err = true, nil
+		}
+		if err != nil && channel != "ipctool" && model == "" && prop == nil && flashImage(in.backup.Bytes) {
+			// Most likely a whole chip read without ipctool, sent without the
+			// board it came from: say how to send it rather than how it fails
+			// to parse as ipctool's format.
+			a.refuse(w, http.StatusBadRequest, "backup: not ipctool's backup format; "+
+				"a whole flash image read another way is a report when it names its board: "+
+				"model=<board id> from https://openipc.org/cameras/boards, "+
+				"or maker, board and a photo for a camera the catalogue does not have")
+			return
 		}
 		if err != nil {
 			a.refuse(w, http.StatusBadRequest, "backup: "+err.Error())
@@ -346,8 +358,8 @@ func proposalOf(in *received, channel, model string) (*Proposal, error) {
 		return nil, nil
 	}
 	switch {
-	case channel != "web":
-		return nil, errors.New("maker, board and soc are the send form's fields: channel web")
+	case channel == "ipctool":
+		return nil, errors.New("maker, board and soc are the send form's and an agent's fields: channel web or agent")
 	case model != "":
 		return nil, errors.New("a report names a catalogue board (model) or proposes a new one (maker, board), not both")
 	case p.Maker == "" || p.Board == "":
