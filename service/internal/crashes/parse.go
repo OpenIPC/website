@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -252,7 +253,7 @@ func Unpack(data []byte) (map[string]string, error) {
 			}
 			name := h.Name[strings.LastIndex(h.Name, "/")+1:]
 			if !strings.HasPrefix(name, "dmesg-") && name != "failsafe" && name != "pending" && name != "meta.json" &&
-				name != "majestic.dump" {
+				name != "majestic.dump" && name != "syslog" {
 				continue
 			}
 			// The limit is on records; failsafe, pending and meta.json are one
@@ -349,9 +350,23 @@ func Parse(files map[string]string) (*Crash, error) {
 			c.Leadup, c.Uptime = leadup(lines)
 		}
 	}
+	// The system log of the boot that crashed or never settled, as the
+	// firmware kept it in the pstore pmsg ring: majestic's and the services'
+	// lines, and the kernel's at every level, which the records do not carry.
+	// Read for the same signs of trouble, and kept with the rest -- redacted
+	// like it -- for the maintainers.
+	var syslog []string
+	if s := files["syslog"]; strings.TrimSpace(s) != "" {
+		texts = append(texts, "==> syslog <==\n"+s)
+		syslog = strings.Split(strings.ReplaceAll(s, "\r", ""), "\n")
+		c.context(syslog)
+	}
 	c.Text = strings.Join(texts, "\n")
 	if c.Failsafe {
 		sum.Write([]byte("failsafe\x00" + files["failsafe"]))
+	}
+	if syslog != nil {
+		sum.Write([]byte("syslog\x00" + files["syslog"]))
 	}
 	c.ContentSum = hex.EncodeToString(sum.Sum(nil))
 
@@ -379,6 +394,10 @@ func Parse(files map[string]string) (*Crash, error) {
 	case c.Failsafe:
 		c.Fatal = &Trace{Kind: KindBootloop, Reason: "Boot loop: the watchdog's boot limit ran out"}
 		c.Kind = KindBootloop
+		// No record to say how the boot ended; its log's last lines do.
+		if c.Leadup == nil {
+			c.Leadup = lastLines(syslog, 8)
+		}
 	case len(c.Before) > 0:
 		// Only warnings: the record was written for something else (a
 		// reboot that dumped the log); the last warning is what there is.
@@ -638,9 +657,23 @@ func leadup(lines []string) ([]string, float64) {
 	return nil, 0
 }
 
+// lastLines are a log's last n lines with something in them, each without the
+// date and host syslog puts in front: what a boot was doing when it ended.
+func lastLines(lines []string, n int) []string {
+	var out []string
+	for i := len(lines) - 1; i >= 0 && len(out) < n; i-- {
+		if l := strings.TrimSpace(syslogPrefix.ReplaceAllString(lines[i], "")); l != "" {
+			out = append(out, l)
+		}
+	}
+	slices.Reverse(out)
+	return out
+}
+
 var (
-	registers = regexp.MustCompile(`^(r\d+|[0-9a-f]{4}):`)
-	stamp     = regexp.MustCompile(`^(?:<\d>)?\[\s*(\d+\.\d+)\]`)
+	syslogPrefix = regexp.MustCompile(`^\w{3} [ \d]\d \d\d:\d\d:\d\d \S+ `)
+	registers    = regexp.MustCompile(`^(r\d+|[0-9a-f]{4}):`)
+	stamp        = regexp.MustCompile(`^(?:<\d>)?\[\s*(\d+\.\d+)\]`)
 )
 
 // uptime is a printk timestamp's seconds.

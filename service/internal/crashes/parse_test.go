@@ -164,6 +164,38 @@ func TestFailsafeOnly(t *testing.T) {
 	}
 }
 
+// A boot loop with the failed boot's log (the firmware's pmsg ring, sent as
+// syslog): its last lines are how the boot ended, and its trouble is counted.
+func TestFailsafeWithItsLog(t *testing.T) {
+	log := "Oct 15 09:00:01 cam kern.err kernel: goke-i2c 12060000.i2c: wait idle abort!, RIS: 0x611\n" +
+		"Oct 15 09:00:02 cam user.err majestic[812]: [sdk] imp_system_init: IMP_ISP_AddSensor failed\n" +
+		"Oct 15 09:00:02 cam user.err majestic[812]: [main] init_sdk: Cannot start SDK\n\n"
+	note := "reason=bootlimit\nutc=0\n"
+	c := parseBundle(t, tgz(t, map[string]string{"failsafe": note, "syslog": log}))
+	if c.Kind != KindBootloop {
+		t.Fatalf("kind %s", c.Kind)
+	}
+	if len(c.Leadup) != 3 || c.Leadup[2] != "user.err majestic[812]: [main] init_sdk: Cannot start SDK" {
+		t.Fatalf("leadup %q", c.Leadup)
+	}
+	if c.Anomalies["i2c_error"] != 1 {
+		t.Fatalf("anomalies %v", c.Anomalies)
+	}
+	if !strings.Contains(c.Text, "==> syslog <==") || !strings.Contains(c.Text, "Cannot start SDK") {
+		t.Fatalf("text %q", c.Text)
+	}
+	// Another fall with another log is another event; the note alone is the
+	// same bundle it always was.
+	bare := parseBundle(t, tgz(t, map[string]string{"failsafe": note}))
+	if bare.ContentSum == c.ContentSum || len(bare.Leadup) != 0 {
+		t.Fatalf("sum %s / %s, leadup %q", bare.ContentSum, c.ContentSum, bare.Leadup)
+	}
+	// A log is not a crash on its own.
+	if _, err := Parse(map[string]string{"syslog": log}); err != ErrNotACrash {
+		t.Fatalf("a log alone: %v", err)
+	}
+}
+
 func TestNotACrash(t *testing.T) {
 	if _, err := Unpack(append([]byte{0x1f, 0x8b}, make([]byte, 50)...)); err == nil {
 		t.Fatal("a broken gzip unpacked")

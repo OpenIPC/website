@@ -12,6 +12,14 @@ reboot. On the next boot `S98crashlog` packs `/sys/fs/pstore/dmesg-*` into
 that never reached a record leaves `/etc/crash/failsafe` (`reason=bootlimit`)
 instead; include it in the tar as `failsafe` and it is filed as a boot loop.
 
+On Goke gk7205v200/gk7205v300 the system log is also kept across a reset, in
+the pstore pmsg ring (`S03pmsglog`): `S98crashlog` puts the crashed boot's copy
+in `crash.tar.gz` and `failsafe-rescue` saves the failed boot's as
+`/etc/crash/failsafe.log`. Include it in the tar as `syslog`. It is read for the
+same anomalies as the records, a boot loop's last eight lines of it are its
+lead-up, and it is kept with the log maintainers read -- MACs and IPs replaced
+like the rest. A `syslog` alone is not a crash.
+
 ## The request
 
 `multipart/form-data`, or the bundle alone as the body.
