@@ -84,7 +84,7 @@ func (a *API) githubCallback(w http.ResponseWriter, r *http.Request) {
 	var member string
 	err = pgx.BeginFunc(ctx, a.DB, func(tx pgx.Tx) error {
 		var err error
-		member, err = identify(ctx, tx, who, deref(forMember))
+		member, err = identify(ctx, tx, who, deref(forMember), a.now())
 		if err != nil {
 			return err
 		}

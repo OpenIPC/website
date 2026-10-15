@@ -307,6 +307,11 @@ function MemberPage({ member, ways, locale, t, onChange }: {
           : <button type="button" class="w-fit cursor-pointer p-0 text-[13px] text-brand-blue underline" onClick={() => setNaming(true)}>{t('club.rename')}</button>}
         {member.maintainer && <a class="site-btn site-btn-dark site-btn-sm w-fit" href={pathFor(locale, '/club/review')}>{t('club.review_link')}</a>}
         {member.maintainer && <a class="site-btn site-btn-outline-secondary site-btn-sm w-fit" href={pathFor(locale, '/club/crashes')}>{t('crashes.triage_link')}</a>}
+        {member.maintainer_lapsed && (
+          <p class="m-0 text-[13px] text-[#9a5b00]">
+            {t('club.maintainer_lapsed')} <a href="/api/v1/club/github">{t('club.maintainer_renew')}</a>
+          </p>
+        )}
         {telegram && (
           <div class="grid gap-1.5 text-[13px] text-body-secondary">
             <span>{member.quiet ? t('club.bot_muted') : t('club.bot_on')}</span>

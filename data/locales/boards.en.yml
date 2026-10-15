@@ -573,6 +573,8 @@ en:
       receipt: 'Receipt'
       my_link: 'My submissions'
       sign_in_link: 'Sign in'
+      maintainer_lapsed: 'Your maintainer access lapsed: it lasts a week from your last GitHub sign-in, whichever way you sign in meanwhile.'
+      maintainer_renew: 'Sign in with GitHub again'
       send_signed_in: 'Signed in as {name}. Stars count once a maintainer accepts it.'
       send_guest: 'You can send without signing in. Sign in to collect stars and follow what happens to it.'
       send_failed: 'Not sent: {error}'

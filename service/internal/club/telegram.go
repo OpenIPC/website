@@ -304,7 +304,7 @@ func (a *API) tgStart(ctx context.Context, chat int64, who signIn, code string) 
 		if valid {
 			link = deref(forMember)
 		}
-		member, err = identify(ctx, tx, who, link)
+		member, err = identify(ctx, tx, who, link, a.now())
 		if err != nil {
 			return err
 		}

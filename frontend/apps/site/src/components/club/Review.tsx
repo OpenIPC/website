@@ -12,9 +12,9 @@
 import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
-import { ClubError, decide, fetchMe, fetchQueue, type NewBoard, type Queued } from '../../lib/club';
+import { ClubError, decide, fetchMe, fetchQueue, type Member, type NewBoard, type Queued } from '../../lib/club';
 import { size } from '../../lib/reports';
-import { STATUS_TONE } from './parts';
+import { Forbidden, STATUS_TONE } from './parts';
 
 type Load = { state: 'loading' } | { state: 'ok'; list: Queued[] } | { state: 'forbidden' } | { state: 'signed_out' } | { state: 'error' };
 const TABS = ['pending', 'published', 'rejected'] as const;
@@ -23,6 +23,7 @@ export default function Review({ locale }: { locale: Locale }) {
   const t = useBoardsTranslations(locale);
   const [tab, setTab] = useState<(typeof TABS)[number]>('pending');
   const [load, setLoad] = useState<Load>({ state: 'loading' });
+  const [me, setMe] = useState<Member | null>(null);
 
   const reload = () => {
     setLoad({ state: 'loading' });
@@ -34,16 +35,10 @@ export default function Review({ locale }: { locale: Locale }) {
         else setLoad({ state: 'error' });
       });
   };
-  useEffect(() => { void fetchMe().catch(() => {}); }, []);
+  useEffect(() => { void fetchMe().then((r) => setMe(r.member)).catch(() => {}); }, []);
   useEffect(reload, [tab]);
 
-  if (load.state === 'signed_out' || load.state === 'forbidden') {
-    return (
-      <p class="mt-8 rounded-md bg-[#fff4e2] px-3 py-2 text-[#9a5b00]" role="alert">
-        {t('club.review_forbidden')} <a href={pathFor(locale, '/club')}>{t('club.sign_in_link')}</a>
-      </p>
-    );
-  }
+  if (load.state === 'signed_out' || load.state === 'forbidden') return <Forbidden why={t('club.review_forbidden')} member={me} locale={locale} t={t} />;
   return (
     <div class="mt-8 grid gap-4">
       <div class="flex flex-wrap gap-2" role="tablist">

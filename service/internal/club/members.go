@@ -45,6 +45,10 @@ type Member struct {
 	ID         string     `json:"id"`
 	Name       string     `json:"name"`
 	Maintainer bool       `json:"maintainer"`
+	// MaintainerLapsed: a GitHub sign-in once showed them in the
+	// maintainers' organisation, but longer ago than maintainerDays. Signing
+	// in with GitHub again renews it; another way in does not.
+	MaintainerLapsed bool `json:"maintainer_lapsed,omitempty"`
 	Quiet      bool       `json:"quiet"`
 	Identities []Identity `json:"identities"`
 	Stars      int        `json:"stars"`
@@ -114,13 +118,15 @@ func cleanName(s string) string {
 // identify finds or makes the member an identity belongs to. An identity
 // already known is its member's, whoever asks; a new one joins forMember
 // when the asking browser was signed in, and is a new member otherwise.
-func identify(ctx context.Context, tx pgx.Tx, in signIn, forMember string) (string, error) {
+// now is when it was seen: a GitHub identity's maintainer flag counts for
+// maintainerDays from it.
+func identify(ctx context.Context, tx pgx.Tx, in signIn, forMember string, now time.Time) (string, error) {
 	var member string
 	err := tx.QueryRow(ctx, `
 		UPDATE club_identities SET handle = $3, maintainer = $4,
-		  chat_id = coalesce($5, chat_id), locale = coalesce(nullif($6, ''), locale), seen_at = now()
+		  chat_id = coalesce($5, chat_id), locale = coalesce(nullif($6, ''), locale), seen_at = $7
 		WHERE provider = $1 AND subject = $2 RETURNING member_id`,
-		in.Provider, in.Subject, in.Handle, in.Maintainer, in.ChatID, in.Locale).Scan(&member)
+		in.Provider, in.Subject, in.Handle, in.Maintainer, in.ChatID, in.Locale, now).Scan(&member)
 	if err == nil {
 		return member, nil
 	}
@@ -139,9 +145,9 @@ func identify(ctx context.Context, tx pgx.Tx, in signIn, forMember string) (stri
 		locale = "en"
 	}
 	_, err = tx.Exec(ctx, `
-		INSERT INTO club_identities (provider, subject, member_id, handle, maintainer, chat_id, locale)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		in.Provider, in.Subject, member, in.Handle, in.Maintainer, in.ChatID, locale)
+		INSERT INTO club_identities (provider, subject, member_id, handle, maintainer, chat_id, locale, seen_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		in.Provider, in.Subject, member, in.Handle, in.Maintainer, in.ChatID, locale, now)
 	return member, err
 }
 
@@ -161,19 +167,20 @@ func (a *API) member(ctx context.Context, id string) (*Member, error) {
 		return nil, err
 	}
 	rows, err := a.DB.Query(ctx, `
-		SELECT provider, handle, maintainer AND provider = 'github' AND seen_at > $2, chat_id IS NOT NULL FROM club_identities
+		SELECT provider, handle, maintainer AND provider = 'github', seen_at > $2, chat_id IS NOT NULL FROM club_identities
 		WHERE member_id = $1 ORDER BY provider`, id, a.now().Add(-maintainerDays*24*time.Hour))
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
 		var i Identity
-		var maint bool
-		if err := rows.Scan(&i.Provider, &i.Handle, &maint, &i.Chat); err != nil {
+		var maint, fresh bool
+		if err := rows.Scan(&i.Provider, &i.Handle, &maint, &fresh, &i.Chat); err != nil {
 			rows.Close()
 			return nil, err
 		}
-		m.Maintainer = m.Maintainer || maint
+		m.Maintainer = m.Maintainer || maint && fresh
+		m.MaintainerLapsed = m.MaintainerLapsed || maint && !fresh
 		m.Identities = append(m.Identities, i)
 	}
 	rows.Close()
@@ -183,6 +190,7 @@ func (a *API) member(ctx context.Context, id string) (*Member, error) {
 	for _, x := range a.Cfg.Maintainers {
 		m.Maintainer = m.Maintainer || x == id
 	}
+	m.MaintainerLapsed = m.MaintainerLapsed && !m.Maintainer
 	if m.ReportStars, err = a.Reports.Store().StarsOf(ctx, id); err != nil {
 		return nil, err
 	}

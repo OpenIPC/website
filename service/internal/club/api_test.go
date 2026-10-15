@@ -484,11 +484,21 @@ func TestGitHubMakesAMaintainerOfTheOrganisationsMembers(t *testing.T) {
 	// A GitHub sign-in proves membership for a week; after that, review
 	// waits for the next one, which asks GitHub again.
 	e.clock = e.clock.Add(8 * 24 * time.Hour)
-	if m := b.me(t); m["maintainer"] != false {
+	if m := b.me(t); m["maintainer"] != false || m["maintainer_lapsed"] != true {
 		t.Errorf("a maintainer a week on: %v", m)
 	}
 	if code, _ := b.json(t, "GET", "/api/v1/club/review", nil); code != http.StatusForbidden {
 		t.Errorf("the queue a week on: %d", code)
+	}
+	// The page says so, and signing in with GitHub again renews it.
+	rec = b.do(t, "GET", "/api/v1/club/github", nil, "")
+	loc, _ = url.Parse(rec.Header().Get("Location"))
+	b.do(t, "GET", "/api/v1/club/github/callback?code=maint&state="+loc.Query().Get("state"), nil, "")
+	if m := b.me(t); m["maintainer"] != true || m["maintainer_lapsed"] != nil {
+		t.Errorf("renewed: %v", m)
+	}
+	if code, _ := b.json(t, "GET", "/api/v1/club/review", nil); code != http.StatusOK {
+		t.Errorf("the queue renewed: %d", code)
 	}
 }
 

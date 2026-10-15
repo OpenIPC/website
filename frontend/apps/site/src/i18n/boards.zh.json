@@ -110,6 +110,8 @@
       "listed": "在排行榜上显示我",
       "load_failed": "无法连接俱乐部服务，请稍后再试。",
       "loading": "加载中…",
+      "maintainer_lapsed": "你的维护者权限已过期：它从你最后一次用 GitHub 登录起有效一周，期间用其他方式登录不会延长。",
+      "maintainer_renew": "再次使用 GitHub 登录",
       "mine_empty": "还没有提交。在目录中打开你的电路板，提交它的输出。",
       "mine_title": "我的提交",
       "mute": "静音机器人",
