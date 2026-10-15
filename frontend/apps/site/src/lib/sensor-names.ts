@@ -23,4 +23,9 @@ export function sensorSlug(name: string | null | undefined): string | null {
   return NAMES[nameKey(name)] ?? null;
 }
 
+/** Every name a part answers to, as keys: what a sensor page asks the board catalogue for. */
+export function namesOf(slug: string): string[] {
+  return Object.keys(NAMES).filter((k) => NAMES[k] === slug);
+}
+
 export const sensorHref = (slug: string): string => `/cameras/sensors/${slug}`;

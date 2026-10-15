@@ -5,7 +5,7 @@
  */
 import { CATEGORIES, categoryOf, megapixels, opticalType, resolutionRow, sensitivityPerArea, yearOf, type Category, type Hdr, type Interface, type Part, type ResolutionRow, RESOLUTION_ROWS } from './sensors';
 
-export const SORTS = ['model', 'maker', 'mp', 'pixel', 'format', 'year', 'sensitivity', 'snr', 'dr', 'fps'] as const;
+export const SORTS = ['model', 'maker', 'mp', 'pixel', 'format', 'year', 'sensitivity', 'snr', 'dr', 'drhdr', 'fps'] as const;
 export type Sort = (typeof SORTS)[number];
 
 /** HDR as a reader asks for it: any, several exposures, or one frame (DCG, Clear HDR, LOFIC). */
@@ -96,8 +96,8 @@ export function writeQueryString(s: SensorsState): string {
   return out ? `?${out}` : '';
 }
 
-const MULTI: Hdr[] = ['dol', 'stagger', 'row-interleave'];
-const SINGLE: Hdr[] = ['dcg', 'clear-hdr', 'lofic'];
+const MULTI: Hdr[] = ['dol', 'stagger', 'row-interleave', 'multi-exposure'];
+const SINGLE: Hdr[] = ['dcg', 'clear-hdr', 'lofic', 'single-frame'];
 
 /** How many of the filters (not the sort or the comparison) narrow the list. */
 export function activeFilters(s: SensorsState): number {
@@ -121,7 +121,8 @@ export function filterParts(all: Part[], s: SensorsState, used: Set<string> | nu
     const y = yearOf(p);
     if (s.from && (y === null || y < s.from)) return false;
     if (s.to && (y === null || y > s.to)) return false;
-    if (s.shutter && (p.shutter ?? 'rolling') !== s.shutter) return false;
+    // A part whose shutter the maker never stated is in neither.
+    if (s.shutter && p.shutter !== s.shutter) return false;
     if (s.iface && !p.interfaces?.includes(s.iface)) return false;
     if (s.hdr) {
       const h = p.hdr ?? [];
@@ -146,7 +147,9 @@ function sortValue(p: Part, sort: Sort): number | string | null {
     case 'year': return p.released ?? null;
     case 'sensitivity': return sensitivityPerArea(p);
     case 'snr': return p.snr_max_db ?? null;
-    case 'dr': return p.dr_hdr_db ?? p.dr_db ?? null;
+    // Linear and HDR dynamic range are measured differently, so they are two columns.
+    case 'dr': return p.dr_db ?? null;
+    case 'drhdr': return p.dr_hdr_db ?? null;
     case 'fps': return p.max_fps ?? null;
   }
 }

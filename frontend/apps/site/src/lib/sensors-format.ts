@@ -48,6 +48,7 @@ export const fmtFps = (s: Sensor): string | null => (s.max_fps ? `${s.max_fps} f
 
 const HDR_NAMES: Record<Hdr, string> = {
   dol: 'DOL', stagger: 'Staggered', dcg: 'DCG', 'clear-hdr': 'Clear HDR', lofic: 'LOFIC', 'row-interleave': 'Row-interleaved', knee: 'Knee',
+  'multi-exposure': 'Multi-exposure', 'single-frame': 'Single-frame', unspecified: 'Mode not stated',
 };
 const INTERFACE_NAMES: Record<Interface, string> = {
   mipi: 'MIPI CSI-2', lvds: 'LVDS', sublvds: 'SubLVDS', 'slvs-ec': 'SLVS-EC', hispi: 'HiSPi', dvp: 'DVP',

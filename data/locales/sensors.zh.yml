@@ -37,6 +37,7 @@ zh:
     nir: 仅近红外增强
     on_boards: 出现在我们目录中的主板上
     on_boards_loading: 出现在我们目录中的主板上（加载中…）
+    on_boards_failed: 出现在我们目录中的主板上（暂时无法获取）
     show_eol: 包括已停产
     view_chart: 产品阵列
     view_table: 表格

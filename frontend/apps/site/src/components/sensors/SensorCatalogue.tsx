@@ -54,6 +54,7 @@ export default function SensorCatalogue({ locale, base, boardsHref }: {
   const t = useSensorsTranslations(locale);
   const [view, setView] = useState<SensorsState>(EMPTY);
   const [counts, setCounts] = useState<Map<string, number> | null>(null);
+  const [boardsFailed, setBoardsFailed] = useState(false);
   const [preview, setPreview] = useState<Part | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -69,7 +70,8 @@ export default function SensorCatalogue({ locale, base, boardsHref }: {
     let live = true;
     fetchBoards(locale)
       .then((file) => { if (live) setCounts(boardCounts(file)); })
-      .catch(() => { /* The catalogue stands without the boards. */ });
+      // The catalogue stands without the boards; the filter says why it cannot narrow.
+      .catch(() => { if (live) setBoardsFailed(true); });
     return () => { live = false; };
   }, [locale]);
 
@@ -135,8 +137,9 @@ export default function SensorCatalogue({ locale, base, boardsHref }: {
             options={HDR_KINDS.map((h) => [h, t(`hdr_${h}`)])}
             onChange={(v) => set({ hdr: (HDR_KINDS as readonly string[]).includes(v ?? '') ? (v as SensorsState['hdr']) : null })} />
           <Check label={t('nir')} checked={view.nir} onChange={(nir) => set({ nir })} />
-          <Check label={counts ? t('on_boards') : t('on_boards_loading')} checked={view.boards} disabled={!counts}
-            onChange={(boards) => set({ boards })} />
+          {/* A shared ?boards=1 can always be unticked, even when the boards never came. */}
+          <Check label={counts ? t('on_boards') : boardsFailed ? t('on_boards_failed') : t('on_boards_loading')} checked={view.boards}
+            disabled={!counts && !view.boards} onChange={(boards) => set({ boards })} />
           <Check label={t('show_eol')} checked={view.eol} onChange={(eol) => set({ eol })} />
           {filters > 0 && (
             <button type="button" class="min-h-11 cursor-pointer py-1.5 text-sm text-brand-blue hover:text-link-hover sm:min-h-0"
@@ -165,7 +168,7 @@ export default function SensorCatalogue({ locale, base, boardsHref }: {
         <h2 id="sensors-table" class="mb-3 text-h3 font-semibold">{t('view_table')}</h2>
         {kept.length > 0 && (
           <Table parts={rows} sort={view.sort} desc={view.desc} card={card}
-            onSort={(sort) => set({ sort, desc: sort === view.sort ? !view.desc : sort === 'year' || sort === 'mp' })} />
+            onSort={(sort) => set({ sort, desc: sort === view.sort ? !view.desc : !['model', 'maker'].includes(sort) })} />
         )}
         <p class="mt-3 max-w-[75ch] text-xs text-body-secondary">{t('sensitivity_note')} {t('sources_note')}</p>
         {counts && <p class="mt-1 text-xs"><a href={boardsHref}>{t('boards_link')}</a></p>}
@@ -286,7 +289,8 @@ function Preview({ part: p, t, counts }: { part: Part | null; t: SensorsT; count
     fmtMp(p), fmtResolution(p), fmtPixel(p), fmtFormat(p), releasedLabel(p),
     p.sensitivity && `${t('col.sensitivity')} ${fmtMeasure(p.sensitivity)}`,
     p.snr_max_db && `${t('col.snr')} ${fmtDb(p.snr_max_db)}`,
-    (p.dr_hdr_db ?? p.dr_db) && `${t('col.dr')} ${fmtDb(p.dr_hdr_db ?? p.dr_db)}`,
+    p.dr_db && `${t('col.dr')} ${fmtDb(p.dr_db)}`,
+    p.dr_hdr_db && `${t('col.dr_hdr')} ${fmtDb(p.dr_hdr_db)}`,
     fmtHdr(p) && `HDR ${fmtHdr(p)}`,
   ].filter(Boolean);
   const n = counts?.get(p.urlname) ?? 0;
@@ -310,7 +314,8 @@ const COLUMNS: { sort: Sort; key: string; cell: (p: Part) => string | null; num?
   { sort: 'year', key: 'year', cell: releasedLabel, num: true },
   { sort: 'sensitivity', key: 'sensitivity_area', cell: fmtPerArea, num: true },
   { sort: 'snr', key: 'snr', cell: (p) => fmtDb(p.snr_max_db), num: true },
-  { sort: 'dr', key: 'dr', cell: (p) => fmtDb(p.dr_hdr_db ?? p.dr_db), num: true },
+  { sort: 'dr', key: 'dr', cell: (p) => fmtDb(p.dr_db), num: true },
+  { sort: 'drhdr', key: 'dr_hdr', cell: (p) => fmtDb(p.dr_hdr_db), num: true },
   { sort: 'fps', key: 'fps', cell: fmtFps, num: true },
 ];
 

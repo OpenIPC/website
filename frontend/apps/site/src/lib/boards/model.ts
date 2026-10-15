@@ -6,6 +6,7 @@
  * tested without a browser.
  */
 import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model, ModelBuild, Unit, VendorFirmware } from './types';
+import { sensorSlug } from '../sensor-names';
 import type { BoardsState, Scope } from './url';
 
 /** A board model with the manufacturer it is filed under. */
@@ -107,6 +108,17 @@ export function sensorsOf(m: Model): string[] {
   return [...new Set(m.units.map((u) => sensorKey(u.sensor)).filter((s): s is string => !!s))];
 }
 
+/**
+ * Whether a board reports a sensor: by the name as written, or, for a part
+ * the sensor catalogue knows, by any of its names -- so IMX290's page and
+ * ?sensor=IMX290 both find the board that wrote "SONY IMX290/291".
+ */
+export function hasSensor(m: Model, sensor: string): boolean {
+  if (sensorsOf(m).includes(sensor)) return true;
+  const slug = sensorSlug(sensor);
+  return slug !== null && m.units.some((u) => sensorSlug(u.sensor) === slug);
+}
+
 export const READY = 'openipc-ready';
 export const DISCONTINUED = 'discontinued';
 
@@ -116,7 +128,7 @@ export function filterBoards(all: Entry[], s: Filters): Entry[] {
   return all.filter((m) =>
     (!s.maker || m.maker.id === s.maker)
     && (!s.soc || socKey(m) === s.soc)
-    && (!s.sensor || sensorsOf(m).includes(s.sensor))
+    && (!s.sensor || hasSensor(m, s.sensor))
     && (!s.missing || (s.missing === 'photo' ? !ownPhoto(m) : !has(m, s.missing)))
     && (!s.line || (!!m.category && slug(m.category) === slug(s.line)))
     && (!s.source || m.sources.includes(s.source))

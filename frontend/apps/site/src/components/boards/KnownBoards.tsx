@@ -17,7 +17,7 @@ import type { Source } from '../../lib/boards/types';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import type { Locale } from '../../lib/i18n';
 import { Chip, makerName } from './parts';
-import { nameKey, sensorSlug } from '../../lib/sensor-names';
+import { nameKey, namesOf, sensorSlug } from '../../lib/sensor-names';
 
 const SHOWN = ['pinout', 'flash_dump', 'uboot_env'] as const;
 
@@ -36,10 +36,10 @@ export default function KnownBoards({ locale, soc, sensor, model, catalogueHref 
 
   useEffect(() => {
     let live = true;
-    fetchBoards(locale, soc)
+    fetchBoards(locale, soc, sensor ? namesOf(sensor) : undefined)
       .then((file) => {
         if (!live) return;
-        // The server answers for this SoC; the check keeps a server that ignored ?soc= from filling the page.
+        // The server answers for this SoC or sensor; the check keeps a server that ignored the filter from filling the page.
         const mine = newestFirst(entries(file).filter((m) => (soc
           ? m.soc === soc
           : m.units.some((u) => sensorSlug(u.sensor) === sensor))));

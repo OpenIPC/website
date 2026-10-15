@@ -84,6 +84,9 @@
             "value": 104
           },
           "dr_hdr_db": 126,
+          "hdr": [
+            "unspecified"
+          ],
           "height": 1032,
           "interfaces": [
             "mipi",
@@ -128,6 +131,9 @@
           },
           "dr_db": 69,
           "dr_hdr_db": 97,
+          "hdr": [
+            "single-frame"
+          ],
           "height": 2056,
           "interfaces": [
             "lvds"
@@ -959,6 +965,9 @@
           "category": "lowlight",
           "cfa": "bayer",
           "family": "Non-mobile CIS",
+          "hdr": [
+            "single-frame"
+          ],
           "interfaces": [
             "mipi"
           ],
@@ -1059,6 +1068,9 @@
           "category": "lowlight",
           "cfa": "bayer",
           "family": "Non-mobile CIS",
+          "hdr": [
+            "single-frame"
+          ],
           "height": 2160,
           "interfaces": [
             "mipi"
@@ -1089,6 +1101,9 @@
         {
           "cfa": "bayer",
           "family": "Non-mobile CIS",
+          "hdr": [
+            "single-frame"
+          ],
           "height": 2160,
           "interfaces": [
             "mipi"
@@ -1215,6 +1230,9 @@
           "dr_db": 72,
           "dr_hdr_db": 120,
           "family": "MIS",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 1096,
           "interfaces": [
             "mipi"
@@ -3065,6 +3083,9 @@
           ],
           "cfa": "bayer",
           "family": "PrimeSensor",
+          "hdr": [
+            "single-frame"
+          ],
           "height": 1080,
           "interfaces": [
             "dvp",
@@ -3131,6 +3152,9 @@
           ],
           "cfa": "bayer",
           "family": "PrimeSensor",
+          "hdr": [
+            "single-frame"
+          ],
           "height": 1088,
           "interfaces": [
             "dvp",
@@ -3166,6 +3190,9 @@
           "category": "square",
           "cfa": "bayer",
           "family": "PrimeSensor",
+          "hdr": [
+            "single-frame"
+          ],
           "height": 1536,
           "interfaces": [
             "dvp",
@@ -3196,6 +3223,9 @@
           "category": "lowlight",
           "cfa": "bayer",
           "family": "PrimeSensor",
+          "hdr": [
+            "single-frame"
+          ],
           "height": 1080,
           "interfaces": [
             "dvp",
@@ -3257,6 +3287,9 @@
           ],
           "cfa": "bayer",
           "family": "PrimeSensor",
+          "hdr": [
+            "multi-exposure"
+          ],
           "height": 1944,
           "interfaces": [
             "mipi"
@@ -3286,6 +3319,9 @@
           ],
           "cfa": "bayer",
           "family": "PrimeSensor",
+          "hdr": [
+            "single-frame"
+          ],
           "height": 1944,
           "interfaces": [
             "mipi"
@@ -3397,6 +3433,9 @@
           "cfa": "bayer",
           "dr_db": 70,
           "family": "F series",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 1092,
           "interfaces": [
             "mipi",
@@ -3428,6 +3467,9 @@
           "cfa": "bayer",
           "dr_db": 73,
           "family": "F series",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 1092,
           "interfaces": [
             "mipi",
@@ -4191,6 +4233,9 @@
             "JXK02"
           ],
           "family": "K series",
+          "hdr": [
+            "unspecified"
+          ],
           "max_fps": 60,
           "megapixels": 4,
           "model": "JX-K02",
@@ -4414,6 +4459,9 @@
         {
           "cfa": "rgbir",
           "family": "K series (BSI NIR+)",
+          "hdr": [
+            "unspecified"
+          ],
           "interfaces": [
             "mipi"
           ],
@@ -4579,6 +4627,9 @@
           "category": "square",
           "cfa": "rgbir",
           "family": "K series (BSI NIR+)",
+          "hdr": [
+            "unspecified"
+          ],
           "interfaces": [
             "mipi"
           ],
@@ -5379,6 +5430,9 @@
           "dr_db": 66,
           "dr_hdr_db": 100,
           "family": "SmartGS",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 1280,
           "interfaces": [
             "mipi",
@@ -5603,6 +5657,9 @@
           "dr_db": 61.5,
           "dr_hdr_db": 90,
           "family": "SmartGS-2 Plus",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 1024,
           "interfaces": [
             "mipi",
@@ -6797,6 +6854,9 @@
           "dr_db": 61.5,
           "dr_hdr_db": 90,
           "family": "SmartGS-2 Plus",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 1200,
           "interfaces": [
             "mipi",
@@ -6835,6 +6895,9 @@
           "dr_db": 87.4,
           "dr_hdr_db": 100,
           "family": "IoT (SmartClarity-3)",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 1648,
           "interfaces": [
             "mipi",
@@ -6908,6 +6971,9 @@
           "cfa": "bayer",
           "dr_db": 82.09,
           "family": "IoT (DSI-2 Plus)",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 1540,
           "interfaces": [
             "mipi"
@@ -7373,6 +7439,9 @@
           "dr_db": 60,
           "dr_hdr_db": 100,
           "family": "SmartGS-2",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 2352,
           "interfaces": [
             "mipi",
@@ -8064,6 +8133,9 @@
           "cfa": "bayer",
           "dr_hdr_db": 120,
           "family": "Star Light (SmartClarity-3)",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 1536,
           "interfaces": [
             "mipi",
@@ -8102,6 +8174,9 @@
           "dr_db": 87.6,
           "dr_hdr_db": 120,
           "family": "Star Light (SmartClarity-3)",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 1536,
           "interfaces": [
             "mipi",
@@ -8723,6 +8798,9 @@
           "dr_db": 82,
           "dr_hdr_db": 100,
           "family": "IoT (SmartClarity-3)",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 1952,
           "interfaces": [
             "mipi"
@@ -9440,6 +9518,9 @@
         {
           "dr_db": 68,
           "family": "SmartGS-2",
+          "hdr": [
+            "unspecified"
+          ],
           "height": 2368,
           "interfaces": [
             "mipi",
@@ -9797,6 +9878,9 @@
           ],
           "cfa": "bayer",
           "family": "Exmor",
+          "hdr": [
+            "multi-exposure"
+          ],
           "height": 1225,
           "interfaces": [
             "lvds",
@@ -10264,6 +10348,9 @@
           ],
           "cfa": "bayer",
           "family": "STARVIS",
+          "hdr": [
+            "multi-exposure"
+          ],
           "height": 1097,
           "interfaces": [
             "dvp",
@@ -10290,6 +10377,9 @@
           "category": "large",
           "cfa": "bayer",
           "family": "STARVIS",
+          "hdr": [
+            "single-frame"
+          ],
           "height": 2824,
           "interfaces": [
             "mipi",
@@ -11797,6 +11887,9 @@
           "cfa": "bayer",
           "dr_hdr_db": 96,
           "family": "Aptina",
+          "hdr": [
+            "multi-exposure"
+          ],
           "height": 1088,
           "interfaces": [
             "hispi",
@@ -11984,6 +12077,9 @@
           "cfa": "bayer",
           "dr_hdr_db": 100,
           "family": "Aptina",
+          "hdr": [
+            "multi-exposure"
+          ],
           "height": 1536,
           "interfaces": [
             "hispi",

@@ -156,6 +156,7 @@ sensors:
   aliases: [IMX185LQJ]
   family: Exmor
   status: unknown
+  hdr: [multi-exposure]
   released: '2013-08'
   released_basis: press
   width: 1945
@@ -467,6 +468,7 @@ sensors:
   aliases: [IMX291LQR]
   family: STARVIS
   status: unknown
+  hdr: [multi-exposure]
   released: '2015-02'
   released_basis: press
   width: 1945
@@ -485,6 +487,7 @@ sensors:
   aliases: [IMX294CJK]
   family: STARVIS
   status: mp
+  hdr: [single-frame]
   released: '2017-05'
   released_basis: press
   width: 3792

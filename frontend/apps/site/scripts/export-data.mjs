@@ -199,7 +199,7 @@ export const SENSOR_VOCAB = {
   shutter: ['rolling', 'global'],
   cfa: ['bayer', 'rgbir', 'mono', 'rccb'],
   interfaces: ['mipi', 'lvds', 'sublvds', 'slvs-ec', 'hispi', 'dvp'],
-  hdr: ['dol', 'stagger', 'dcg', 'clear-hdr', 'lofic', 'row-interleave', 'knee'],
+  hdr: ['dol', 'stagger', 'dcg', 'clear-hdr', 'lofic', 'row-interleave', 'knee', 'multi-exposure', 'single-frame', 'unspecified'],
   category: ['standard', 'lowlight', 'nir', 'hdr', 'global', 'square', 'large'],
   source: ['page', 'flyer', 'press'],
 };
@@ -241,7 +241,7 @@ function sensorEntry(file, s) {
     if (!('released_basis' in s)) fail('released needs a released_basis');
   }
   for (const key of ['width', 'height', 'megapixels', 'pixel_um', 'max_fps', 'adc_bits', 'snr_max_db', 'dr_db', 'dr_hdr_db']) {
-    if (key in s && !(typeof s[key] === 'number' && s[key] > 0)) fail(`${key} must be a positive number`);
+    if (key in s && !(Number.isFinite(s[key]) && s[key] > 0)) fail(`${key} must be a positive number`);
   }
   if (('width' in s) !== ('height' in s)) fail('width and height go together');
   if ('optical_format' in s && typeof s.optical_format !== 'string') fail("optical_format must be quoted, '1/2.8'");
@@ -249,7 +249,7 @@ function sensorEntry(file, s) {
   for (const [key, units] of Object.entries(SENSOR_UNITS)) {
     if (!(key in s)) continue;
     const v = s[key];
-    if (!isHash(v) || typeof v.value !== 'number' || !units.includes(v.unit)) fail(`${key} must be {value: <number>, unit: ${units.join(' | ')}}`);
+    if (!isHash(v) || !Number.isFinite(v.value) || !units.includes(v.unit)) fail(`${key} must be {value: <number>, unit: ${units.join(' | ')}}`);
     const extra = Object.keys(v).filter((k) => !['value', 'unit', 'note'].includes(k));
     if (extra.length > 0) fail(`${key} has unknown ${extra.join(', ')}`);
   }

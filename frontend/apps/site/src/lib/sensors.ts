@@ -13,7 +13,12 @@ export type Status = 'mp' | 'eol' | 'sampling' | 'unknown';
 export type Basis = 'press' | 'flyer' | 'datasheet' | 'estimate';
 export type Category = 'standard' | 'lowlight' | 'nir' | 'hdr' | 'global' | 'square' | 'large';
 export type Interface = 'mipi' | 'lvds' | 'sublvds' | 'slvs-ec' | 'hispi' | 'dvp';
-export type Hdr = 'dol' | 'stagger' | 'dcg' | 'clear-hdr' | 'lofic' | 'row-interleave' | 'knee';
+/**
+ * multi-exposure and single-frame are HDR the maker describes without naming
+ * the method; unspecified is HDR the maker claims and does not describe.
+ */
+export type Hdr = 'dol' | 'stagger' | 'dcg' | 'clear-hdr' | 'lofic' | 'row-interleave' | 'knee'
+  | 'multi-exposure' | 'single-frame' | 'unspecified';
 
 export interface Measure { value: number; unit: string; note?: string }
 
@@ -130,7 +135,7 @@ export function categoryOf(s: Sensor): Category {
   if (type !== null && type >= 1) return 'large';
   if (s.width && s.height && Math.abs(s.width / s.height - 1) < 0.1) return 'square';
   if (s.nir) return 'nir';
-  if (s.hdr?.some((h) => h === 'dcg' || h === 'clear-hdr' || h === 'lofic')) return 'hdr';
+  if (s.hdr?.some((h) => h === 'dcg' || h === 'clear-hdr' || h === 'lofic' || h === 'single-frame')) return 'hdr';
   if ((s.pixel_um ?? 0) >= 2.9 || LOW_LIGHT_FAMILIES.test(s.family ?? '')) return 'lowlight';
   return 'standard';
 }

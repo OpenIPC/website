@@ -424,6 +424,7 @@ sensors:
   urlname: sc132gs
   family: SmartGS
   status: mp
+  hdr: [unspecified]
   released: '2018-07'
   released_basis: datasheet
   width: 1080
@@ -563,6 +564,7 @@ sensors:
   urlname: sc135hgs
   family: SmartGS-2 Plus
   status: mp
+  hdr: [unspecified]
   released: '2023-05'
   released_basis: press
   width: 1280
@@ -1342,6 +1344,7 @@ sensors:
   urlname: sc235hgs
   family: SmartGS-2 Plus
   status: mp
+  hdr: [unspecified]
   released: '2023-05'
   released_basis: press
   width: 1600
@@ -1364,6 +1367,7 @@ sensors:
   urlname: sc256hiot
   family: IoT (SmartClarity-3)
   status: mp
+  hdr: [unspecified]
   released: '2025-09'
   released_basis: press
   width: 1648
@@ -1409,6 +1413,7 @@ sensors:
   urlname: sc301hiot
   family: IoT (DSI-2 Plus)
   status: mp
+  hdr: [unspecified]
   released: '2025-01'
   released_basis: press
   width: 2052
@@ -1718,6 +1723,7 @@ sensors:
   urlname: sc410gs
   family: SmartGS-2
   status: mp
+  hdr: [unspecified]
   released: '2020'
   released_basis: press
   width: 1768
@@ -2160,6 +2166,7 @@ sensors:
   urlname: sc485sl
   family: Star Light (SmartClarity-3)
   status: mp
+  hdr: [unspecified]
   released: '2024-10'
   released_basis: press
   width: 2704
@@ -2183,6 +2190,7 @@ sensors:
   urlname: sc489sl
   family: Star Light (SmartClarity-3)
   status: mp
+  hdr: [unspecified]
   released: '2025-08'
   released_basis: press
   width: 2704
@@ -2595,6 +2603,7 @@ sensors:
   urlname: sc535hiot
   family: IoT (SmartClarity-3)
   status: mp
+  hdr: [unspecified]
   released: '2025'
   released_basis: flyer
   width: 2696
@@ -3049,6 +3058,7 @@ sensors:
   urlname: sc910gs
   family: SmartGS-2
   status: mp
+  hdr: [unspecified]
   released: '2021-01'
   released_basis: press
   width: 3856

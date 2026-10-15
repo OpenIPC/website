@@ -84,6 +84,7 @@
     "nothing": "没有符合这些筛选条件的传感器。",
     "on_boards": "出现在我们目录中的主板上",
     "on_boards_badge": "有主板",
+    "on_boards_failed": "出现在我们目录中的主板上（暂时无法获取）",
     "on_boards_loading": "出现在我们目录中的主板上（加载中…）",
     "released": "发布",
     "report_html": "有使用该传感器的摄像头？<a href=\"{href}\">把主板信息发给我们</a>。",

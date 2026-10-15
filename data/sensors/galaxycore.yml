@@ -513,6 +513,7 @@ sensors:
   urlname: gc4683
   family: Non-mobile CIS
   status: mp
+  hdr: [single-frame]
   released: '2025-10'
   released_basis: press
   megapixels: 4
@@ -577,6 +578,7 @@ sensors:
   urlname: gc8602
   family: Non-mobile CIS
   status: mp
+  hdr: [single-frame]
   released: '2025-10'
   released_basis: press
   width: 3840
@@ -597,6 +599,7 @@ sensors:
   urlname: gc8613
   family: Non-mobile CIS
   status: mp
+  hdr: [single-frame]
   released: '2023-06'
   released_basis: press
   width: 3840

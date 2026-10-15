@@ -45,6 +45,7 @@ sensors:
 - model: BG1336
   urlname: bg1336
   status: mp
+  hdr: [unspecified]
   released: '2019'
   released_basis: estimate
   width: 1288
@@ -68,6 +69,7 @@ sensors:
 - model: BG5088
   urlname: bg5088
   status: mp
+  hdr: [single-frame]
   released: '2021'
   released_basis: estimate
   width: 2568

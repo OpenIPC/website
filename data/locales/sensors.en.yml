@@ -37,6 +37,7 @@ en:
     nir: NIR-enhanced only
     on_boards: On boards in our catalogue
     on_boards_loading: On boards in our catalogue (loading…)
+    on_boards_failed: On boards in our catalogue (unavailable right now)
     show_eol: Include discontinued
     view_chart: Lineup
     view_table: Table

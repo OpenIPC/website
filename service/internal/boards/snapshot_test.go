@@ -274,6 +274,41 @@ func TestASoCPageAsksOnlyForItsBoards(t *testing.T) {
 	}
 }
 
+func TestASensorPageAsksOnlyForTheBoardsReportingIt(t *testing.T) {
+	pool, im, _ := withDonors(t)
+	ctx := context.Background()
+	// Named with its maker and in lower case, as sources write it: the page asks for IMX307.
+	if _, err := im.FromSnapshot(ctx, donor(t, "xiongmai", model("xiongmai", "IVG-S307", map[string]any{"sensor": "Sony imx307"}))); err != nil {
+		t.Fatal(err)
+	}
+	ids := func(sensors ...string) []string {
+		tree, err := Tree(ctx, pool, "en", "", sensors...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []string
+		for _, m := range tree["manufacturers"].([]*makerJSON) {
+			for _, mo := range m.Models {
+				out = append(out, mo.ID)
+				if len(mo.Units) == 0 {
+					t.Errorf("%s arrived without its units", mo.ID)
+				}
+			}
+		}
+		return out
+	}
+	if got := ids("IMX307", "IMX307LQR"); len(got) != 1 || got[0] != "xiongmai-ivg-s307" {
+		t.Errorf("IMX307 asks for %v", got)
+	}
+	others := ids("IMX291")
+	if len(others) == 0 || slices.Contains(others, "xiongmai-ivg-s307") {
+		t.Errorf("IMX291 asks for %v", others)
+	}
+	if all := ids(); len(all) <= len(others) {
+		t.Errorf("no filter: %d boards, IMX291 alone %d", len(all), len(others))
+	}
+}
+
 func TestCodesASourceDeclaresOneBoardAreOneModelOtherListingsJoin(t *testing.T) {
 	pool, root := imported(t)
 	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}

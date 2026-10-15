@@ -84,6 +84,7 @@
     "nothing": "No sensor matches these filters.",
     "on_boards": "On boards in our catalogue",
     "on_boards_badge": "on boards",
+    "on_boards_failed": "On boards in our catalogue (unavailable right now)",
     "on_boards_loading": "On boards in our catalogue (loading…)",
     "released": "Released",
     "report_html": "Have a camera with this sensor? <a href=\"{href}\">Send us its board</a>.",

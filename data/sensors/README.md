@@ -36,7 +36,9 @@ sensors:
   interfaces: [mipi, lvds, dvp]              # mipi | lvds | sublvds | slvs-ec | hispi | dvp
   max_fps: 60                                # at full resolution, linear mode
   adc_bits: 12
-  hdr: [dol]                                 # dol | stagger | dcg | clear-hdr | lofic | row-interleave | knee
+  hdr: [dol]                                 # dol | stagger | dcg | clear-hdr | lofic | row-interleave | knee,
+                                             # or, when the maker does not name the method:
+                                             # multi-exposure | single-frame | unspecified
   nir: false                                 # marketed NIR-enhanced (Nyxel, NIR-enhanced STARVIS, ...)
   category: lowlight                         # optional; overrides the chart column derived on the site
   sensitivity: {value: 2700, unit: mV/lux·s, note: '1/30 s, F5.6, 3200 K'}

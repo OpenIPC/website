@@ -71,6 +71,7 @@ sensors:
   aliases: [AR0230CS, AR0230CSSC00SUEA0]
   family: Aptina
   status: eol
+  hdr: [multi-exposure]
   released: '2014-12'
   released_basis: press
   width: 1928
@@ -185,6 +186,7 @@ sensors:
   urlname: ar0331
   family: Aptina
   status: eol
+  hdr: [multi-exposure]
   released: '2011-04'
   released_basis: press
   width: 2048

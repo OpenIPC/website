@@ -9,6 +9,8 @@ import { join } from 'node:path';
 import { sensors } from '../../scripts/export-data.mjs';
 import { PARTS, categoryOf, opticalType, releasedLabel, resolutionRow, resolveSensor, sensitivityPerArea, type Sensor } from './sensors';
 import { EMPTY, filterParts, readQueryString, sortParts, writeQueryString } from './sensors-filter';
+import { hasSensor } from './boards/model';
+import type { Model } from './boards/types';
 
 function exportOf(files: Record<string, string>) {
   const root = mkdtempSync(join(tmpdir(), 'sensors-'));
@@ -33,6 +35,8 @@ describe('the export', () => {
     ['a unit nobody compares', '- {model: X1, urlname: x1, status: mp, sensitivity: {value: 1, unit: lux}}', /sensitivity/],
     ['a datasheet as a source', '- {model: X1, urlname: x1, status: mp, sources: [{kind: flyer, url: "https://acme.com/x1.pdf"}]}', /document/],
     ['the private collection as a source', '- {model: X1, urlname: x1, status: mp, sources: [{kind: page, url: "https://github.com/josephnef/sensors"}]}', /document/],
+    ['a number that is not one', '- {model: X1, urlname: x1, status: mp, width: .inf, height: 1080}', /width/],
+    ['a measure that is not a number', '- {model: X1, urlname: x1, status: mp, snr_max_db: 40, sensitivity: {value: .nan, unit: mV/lux·s}}', /sensitivity/],
     ['a twin that is not a part', '- {model: X1, urlname: x1, status: mp, twin: x9}', /twin x9/],
   ])('refuses %s', (_why, body, error) => {
     expect(exportOf({ 'acme.yml': maker('acme', `${body}\n`) })).toThrow(error);
@@ -105,6 +109,19 @@ describe('the filters', () => {
     expect(filterParts(PARTS, { ...EMPTY, compare: [eol.urlname] }, null)).toContain(eol);
   });
 
+  test('a shutter the maker never stated is in neither shutter filter', () => {
+    const unknown = PARTS.find((p) => !p.shutter && p.status !== 'eol');
+    if (!unknown) return;
+    expect(filterParts(PARTS, { ...EMPTY, shutter: 'rolling' }, null)).not.toContain(unknown);
+    expect(filterParts(PARTS, { ...EMPTY, shutter: 'global' }, null)).not.toContain(unknown);
+  });
+
+  test('HDR the maker describes without naming the method still counts', () => {
+    const ar0230 = PARTS.find((p) => p.urlname === 'ar0230')!;
+    expect(filterParts(PARTS, { ...EMPTY, eol: true, hdr: 'any' }, null)).toContain(ar0230);
+    expect(filterParts(PARTS, { ...EMPTY, eol: true, hdr: 'multi' }, null)).toContain(ar0230);
+  });
+
   test('the boards filter lets nothing through until the boards are known', () => {
     expect(filterParts(PARTS, { ...EMPTY, boards: true }, null)).toEqual([]);
   });
@@ -137,6 +154,13 @@ describe('the catalogue', () => {
     'SC200AI', 'IMX347', 'SC2332',
   ])('a board\'s "%s" resolves', (name) => {
     expect(resolveSensor(name)).not.toBeNull();
+  });
+
+  test('the board catalogue finds a board by any name of its sensor', () => {
+    const board = { units: [{ sensor: 'SONY IMX290/291' }] } as unknown as Model;
+    expect(hasSensor(board, 'IMX290')).toBe(true);
+    expect(hasSensor(board, 'IMX290/291')).toBe(true);
+    expect(hasSensor(board, 'IMX291')).toBe(false);
   });
 
   test('an HDMI receiver is not a sensor', () => {
