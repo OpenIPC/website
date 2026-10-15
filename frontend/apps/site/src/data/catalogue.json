@@ -389,6 +389,66 @@
           "segment": "cctv"
         },
         {
+          "model": "GK7206V10",
+          "family": "GK7206V1",
+          "version": null,
+          "urlname": "gk7206v10",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7206V10B",
+          "family": "GK7206V1",
+          "version": null,
+          "urlname": "gk7206v10b",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7206V11",
+          "family": "GK7206V1",
+          "version": null,
+          "urlname": "gk7206v11",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7206V11A",
+          "family": "GK7206V1",
+          "version": null,
+          "urlname": "gk7206v11a",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7206V11AT",
+          "family": "GK7206V1",
+          "version": null,
+          "urlname": "gk7206v11at",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "GK7206V12A",
+          "family": "GK7206V1",
+          "version": null,
+          "urlname": "gk7206v12a",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
           "model": "GK7605V100",
           "family": "GK7205V200",
           "version": "",
