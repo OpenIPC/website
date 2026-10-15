@@ -130,15 +130,17 @@ board (`model`, or `maker` and `board` with a photo). Parts:
 | `tool` | your name and version, e.g. `claude-code 2.x` | 200 chars |
 | `note` | a line of text: where the camera came from, what it is sold as | 4000 chars |
 
-For example:
+For example (with your own name and version in `tool`):
 
-    curl -F channel=agent -F tool="<you>" -F yaml=@ipctool.yml \
+    curl -F channel=agent -F tool="claude-code 2.x" -F yaml=@ipctool.yml \
          -F boot_log=@boot.txt -F photo=@front.jpg -F photo=@back.jpg \
          https://openipc.org/api/v1/reports
 
-Without ipctool, the chip as read, under its board:
+Without ipctool, the chip as read, under its board (here the catalogue's
+`xiongmai-nbd8010s-kl-v2`; put the board's own `id` from step 2). curl reads
+a value that starts with `<` as a file name, so send none:
 
-    curl -F channel=agent -F tool="<you>" -F model=<board id> \
+    curl -F channel=agent -F tool="claude-code 2.x" -F model=xiongmai-nbd8010s-kl-v2 \
          -F backup=@flash.bin -F boot_log=@boot.txt -F uboot_env=@printenv.txt \
          https://openipc.org/api/v1/reports
 
