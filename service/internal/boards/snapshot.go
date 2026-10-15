@@ -168,9 +168,14 @@ func NormCode(code string) string {
 }
 
 // socShorthand is how shops write SoCs the catalogue names in full.
+// Hi3536E is not a shorthand but a Hi3536DV100 variant (its SCSYSID is
+// 0x3536D100; a flag at sysctl+0xEE0 asks for other DDR timing, which
+// u-boot-hi3536dv100#1 gives it), so it runs the hi3536dv100 builds
+// (firmware#1796).
 var socShorthand = map[string]string{
 	"hi3516c": "hi3516cv100", "hi3518c": "hi3518cv100", "hi3518e": "hi3518ev100",
 	"hi3516d": "hi3516dv100", "hi3516a": "hi3516av100",
+	"hi3536c": "hi3536cv100", "hi3536d": "hi3536dv100", "hi3536e": "hi3536dv100",
 	"xm510a": "xm510", "xm530ai": "xm530", "xm550ai": "xm550",
 }
 

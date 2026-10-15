@@ -141,3 +141,22 @@ func TestASuggestedIdFitsTheCatalogue(t *testing.T) {
 		t.Errorf("%+v", sug)
 	}
 }
+
+// A shop's short SoC name, and Hi3536E, resolve to the catalogue's slug.
+func TestSoCShorthandResolves(t *testing.T) {
+	known := map[string]bool{"hi3516dv100": true, "hi3536cv100": true, "hi3536dv100": true}
+	resolve := func(s string) string {
+		if known[s] {
+			return s
+		}
+		return ""
+	}
+	for label, want := range map[string]string{
+		"Hi3516D": "hi3516dv100", "Hi3536C": "hi3536cv100", "Hi3536D": "hi3536dv100",
+		"HI3536E": "hi3536dv100", "Hi3536DV100": "hi3536dv100", "Hi3536": "",
+	} {
+		if got := socSlug(label, resolve); got != want {
+			t.Errorf("socSlug(%q) = %q, want %q", label, got, want)
+		}
+	}
+}
