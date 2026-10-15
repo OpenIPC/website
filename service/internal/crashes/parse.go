@@ -394,9 +394,9 @@ func Parse(files map[string]string) (*Crash, error) {
 	case c.Failsafe:
 		c.Fatal = &Trace{Kind: KindBootloop, Reason: "Boot loop: the watchdog's boot limit ran out"}
 		c.Kind = KindBootloop
-		// No record to say how the boot ended; its log's last lines do.
+		// No record to say how the boot ended; its log does.
 		if c.Leadup == nil {
-			c.Leadup = lastLines(syslog, 8)
+			c.Leadup = bootEnd(syslog, 8)
 		}
 	case len(c.Before) > 0:
 		// Only warnings: the record was written for something else (a
@@ -657,14 +657,30 @@ func leadup(lines []string) ([]string, float64) {
 	return nil, 0
 }
 
-// lastLines are a log's last n lines with something in them, each without the
-// date and host syslog puts in front: what a boot was doing when it ended.
-func lastLines(lines []string, n int) []string {
-	var out []string
-	for i := len(lines) - 1; i >= 0 && len(out) < n; i-- {
-		if l := strings.TrimSpace(syslogPrefix.ReplaceAllString(lines[i], "")); l != "" {
-			out = append(out, l)
+// bootEnd is what a boot was doing when it ended, from its system log. A boot
+// loop on these cameras is majestic not staying up -- that is what S99bootok
+// waits for before it clears the boot counter -- so its own last n lines come
+// first; failing those, the log's last n lines. Logins and their sessions are
+// left out either way, being the person looking rather than the fault. Not by
+// severity: the vendor's modules log their successes at err ("load ive.ko
+// OK!"), which would crowd out everything else. Each line without the date and
+// host syslog puts in front.
+func bootEnd(lines []string, n int) []string {
+	var own, rest []string
+	for i := len(lines) - 1; i >= 0 && len(own) < n; i-- {
+		l := strings.TrimSpace(syslogPrefix.ReplaceAllString(lines[i], ""))
+		if l == "" || strings.HasPrefix(l, "authpriv.") || strings.HasPrefix(l, "auth.") {
+			continue
 		}
+		if majesticLine.MatchString(l) {
+			own = append(own, l)
+		} else if len(rest) < n {
+			rest = append(rest, l)
+		}
+	}
+	out := own
+	if len(out) == 0 {
+		out = rest
 	}
 	slices.Reverse(out)
 	return out
@@ -672,6 +688,7 @@ func lastLines(lines []string, n int) []string {
 
 var (
 	syslogPrefix = regexp.MustCompile(`^\w{3} [ \d]\d \d\d:\d\d:\d\d \S+ `)
+	majesticLine = regexp.MustCompile(`^\w+\.\w+ majestic(\[\d+\])?: `)
 	registers    = regexp.MustCompile(`^(r\d+|[0-9a-f]{4}):`)
 	stamp        = regexp.MustCompile(`^(?:<\d>)?\[\s*(\d+\.\d+)\]`)
 )
