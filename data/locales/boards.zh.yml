@@ -568,6 +568,8 @@ zh:
       receipt: '回执'
       my_link: '我的提交'
       sign_in_link: '登录'
+      maintainer_lapsed: '你的维护者权限已过期：它从你最后一次用 GitHub 登录起有效一周，期间用其他方式登录不会延长。'
+      maintainer_renew: '再次使用 GitHub 登录'
       send_signed_in: '已以 {name} 登录。维护者通过后计星。'
       send_guest: '无需登录也可提交。登录后可获得星星并跟踪审核进度。'
       send_failed: '未提交：{error}'

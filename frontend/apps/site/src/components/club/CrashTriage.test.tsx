@@ -140,3 +140,21 @@ test('a crash lookup that comes back after another link was followed is ignored'
   expect(first.getAttribute('aria-expanded')).toBe('true');
   expect((await findByText('SIGSEGV in second')).closest('button')!.getAttribute('aria-expanded')).toBe('false');
 });
+
+test('a maintainer whose GitHub sign-in is over a week old is told so, and how to renew it', async () => {
+  const member = { id: 'm-1', name: 'Ivan', maintainer: false, maintainer_lapsed: true, quiet: false, identities: [], stars: 0, pending: 0 };
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    if (url === '/api/v1/club/me') return new Response(JSON.stringify({ member, sign_in: {} }));
+    return new Response(JSON.stringify({ error: 'only OpenIPC\'s maintainers triage crashes' }), { status: 403 });
+  }));
+  const { findByText } = render(<CrashTriage locale="en" />);
+  expect((await findByText('Sign in with GitHub again')).getAttribute('href')).toBe('/api/v1/club/github');
+  expect(await findByText(/lasts a week from your last GitHub sign-in/)).toBeTruthy();
+});
+
+test('anyone else refused is sent to sign in', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 401 })));
+  const { findByText } = render(<CrashTriage locale="en" />);
+  expect((await findByText('Sign in')).getAttribute('href')).toBe('/club');
+  expect(await findByText(/Only OpenIPC's maintainers triage crashes/)).toBeTruthy();
+});

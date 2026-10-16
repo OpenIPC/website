@@ -468,7 +468,7 @@ func (a *API) complete(w http.ResponseWriter, r *http.Request, code string, l *p
 			var err error
 			// The name is never the address: it is shown on the boards a
 			// member's reports are listed on. They choose one on /club.
-			id, err = identify(ctx, tx, signIn{Provider: "email", Subject: addr, Handle: addr, Name: ""}, deref(l.forMember))
+			id, err = identify(ctx, tx, signIn{Provider: "email", Subject: addr, Handle: addr, Name: ""}, deref(l.forMember), a.now())
 			if err != nil {
 				return err
 			}

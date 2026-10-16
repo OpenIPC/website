@@ -16,6 +16,8 @@ export interface Member {
   id: string;
   name: string;
   maintainer: boolean;
+  /** Was a maintainer, by a GitHub sign-in more than a week old: another one renews it. */
+  maintainer_lapsed?: boolean;
   quiet: boolean;
   identities: Identity[];
   stars: number;

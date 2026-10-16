@@ -17,11 +17,12 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
-import { ClubError, fetchMe } from '../../lib/club';
+import { ClubError, fetchMe, type Member } from '../../lib/club';
 import {
   decideCrash, fetchCrashDetail, fetchTriage, frame, frameAt, KIND_TONE, logFirst, STATUS_TONE, type Combo, type Detail, type Frame, type Signature,
   type Status,
 } from '../../lib/crashes';
+import { Forbidden } from './parts';
 
 type Load = { state: 'loading' } | { state: 'ok'; list: Signature[] } | { state: 'forbidden' } | { state: 'error' };
 const STATUSES: Status[] = ['open', 'confirmed', 'fixed', 'wontfix', 'bogus'];
@@ -29,6 +30,7 @@ const STATUSES: Status[] = ['open', 'confirmed', 'fixed', 'wontfix', 'bogus'];
 export default function CrashTriage({ locale }: { locale: Locale }) {
   const t = useBoardsTranslations(locale);
   const [load, setLoad] = useState<Load>({ state: 'loading' });
+  const [me, setMe] = useState<Member | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   // The crash the address names, shown open in its signature.
   const [focus, setFocus] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export default function CrashTriage({ locale }: { locale: Locale }) {
   const reload = () => fetchTriage()
     .then((r) => setLoad({ state: 'ok', list: r.signatures }))
     .catch((e) => setLoad(e instanceof ClubError && (e.status === 401 || e.status === 403) ? { state: 'forbidden' } : { state: 'error' }));
-  useEffect(() => { void fetchMe().catch(() => {}); void reload(); }, []);
+  useEffect(() => { void fetchMe().then((r) => setMe(r.member)).catch(() => {}); void reload(); }, []);
 
   // The signature the address names: on arrival, and when the hash changes
   // under an open page (a second link followed in the same tab).
@@ -81,13 +83,7 @@ export default function CrashTriage({ locale }: { locale: Locale }) {
     history.replaceState(null, '', next ? `#${next}` : location.pathname);
   };
 
-  if (load.state === 'forbidden') {
-    return (
-      <p class="mt-8 rounded-md bg-[#fff4e2] px-3 py-2 text-[#9a5b00]" role="alert">
-        {t('crashes.triage_forbidden')} <a href={pathFor(locale, '/club')}>{t('club.sign_in_link')}</a>
-      </p>
-    );
-  }
+  if (load.state === 'forbidden') return <Forbidden why={t('crashes.triage_forbidden')} member={me} locale={locale} t={t} />;
   return (
     // min-w-0 down the tree: a grid item is otherwise as wide as its widest
     // content, and one long log line then widens the whole page.

@@ -111,6 +111,8 @@
       "listed": "Show me on the leaderboard",
       "load_failed": "The club could not be reached. Try again in a minute.",
       "loading": "Loading…",
+      "maintainer_lapsed": "Your maintainer access lapsed: it lasts a week from your last GitHub sign-in, whichever way you sign in meanwhile.",
+      "maintainer_renew": "Sign in with GitHub again",
       "mine_empty": "Nothing sent yet. Open your board in the catalogue and send what it prints.",
       "mine_title": "My submissions",
       "mute": "Mute the bot",
