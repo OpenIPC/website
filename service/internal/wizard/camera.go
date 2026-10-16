@@ -252,7 +252,20 @@ func (c *camera) postFlashCommands() []string {
 	return out
 }
 
+// scansLayout is a NOR install whose bootloader is a per-flash-type
+// (-nor.bin) OpenIPC U-Boot. Those find the kernel and rootfs on the flash at
+// boot and pass the partitions that layout has to Linux, and they define none
+// of the uknor8m/urnor8m/setnor16m macros the older bootloaders carried: the
+// install writes each image at its offset itself and sets nothing.
+// SigmaStar and Ingenic keep their fixed mtdparts (fixedMtdparts).
+func (c *camera) scansLayout() bool {
+	return !c.nand() && !c.fixedMtdparts() && strings.HasSuffix(c.bootloader(), "-nor.bin")
+}
+
 func (c *camera) layoutCommands() []string {
+	if c.scansLayout() {
+		return nil
+	}
 	if c.ubi() {
 		// The NAND bootloader boots with the UBI-only mtdparts already; there
 		// is nothing to remap, and it defines no setnand to run.
@@ -272,7 +285,7 @@ func (c *camera) layoutCommands() []string {
 }
 
 func (c *camera) bootloaderVariables() []string {
-	if c.ubi() {
+	if c.ubi() || c.scansLayout() {
 		// None of the install is a bootloader macro here, so the page has no
 		// uknand, urnand or setnand to point at `printenv` for.
 		return []string{}
@@ -327,6 +340,20 @@ func (c *camera) rootfsOffset() string {
 }
 
 func (c *camera) overlayOffset() string { return hexUpper(c.nor().overlayOffset) }
+
+// scanRootfsMin is the smallest rootfs partition a scansLayout bootloader
+// gives (firmware_scan in OpenIPC/u-boot): rootfs_data starts no earlier
+// than this past the rootfs.
+const scanRootfsMin = 0x500000
+
+func (c *camera) scanOverlayOffset() string {
+	return hexUpper(c.nor().rootfsOffset + scanRootfsMin)
+}
+
+func (c *camera) scanOverlaySize() string {
+	size, _ := strconv.ParseInt(strings.TrimPrefix(c.flashSizeHex(), "0x"), 16, 64)
+	return fmt.Sprintf("0x%x", size-c.nor().rootfsOffset-scanRootfsMin)
+}
 
 // overlayMaxSize is lower-case: the bootloader commands have always shown it so.
 func (c *camera) overlayMaxSize() string {

@@ -44,11 +44,14 @@ var pushers = map[string][]string{
 	"uboot": {
 		"OpenIPC/firmware/.github/workflows/uboot.yml@refs/heads/master",
 		"OpenIPC/u-boot-xmedia/.github/workflows/build.yml@refs/heads/master",
+		// OpenIPC/u-boot's openipc-hisilicon images, published only from a
+		// dispatch of this workflow on the openipc (default) branch.
+		"OpenIPC/u-boot/.github/workflows/build-hisilicon.yml@refs/heads/openipc",
 	},
 	"xmupdates": {"OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
 	"coupler":   {"OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main"},
 	// Anjoy Vision's firmware builds, keyed by board model (vendorfw/PUSH.md).
-	"anjoyupdates": {"OpenIPC/anjoyupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
+	"anjoyupdates":     {"OpenIPC/anjoyupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
 	"herospeedupdates": {"OpenIPC/herospeedupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
 	// ipctool's static builds, served to cameras over plain HTTP (tools/PUSH.md).
 	"ipctool": {"OpenIPC/ipctool/.github/workflows/release.yml@refs/heads/master"},

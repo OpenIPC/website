@@ -511,3 +511,57 @@ func TestBuilderEditionWithoutAReportIsNotEightMegabytes(t *testing.T) {
 		t.Error("firmware's rule changed: no report is not evidence of either")
 	}
 }
+
+// A NOR install under a per-flash-type (-nor.bin) bootloader writes each
+// image at its offset itself: those bootloaders find the layout at boot and
+// carry none of the uknor8m/urnor8m/setnor16m macros. The overlay is
+// cleared from the earliest place rootfs_data can start, before the writes.
+// SoCs still on a -universal bootloader keep the macros.
+func TestScanningBootloaderNORInstall(t *testing.T) {
+	cat, _ := inputs(t)
+	cam := func(soc, ft, layout string) *camera {
+		return &camera{soc: cat.SoC(soc), board: soc, flashType: ft, layout: layout, edition: "ultimate",
+			iface: "eth", sd: "nosd", ip: ipaddr, server: serverip}
+	}
+	for _, tc := range []struct {
+		c                            *camera
+		kernel, rootfs, overlayErase string
+	}{
+		{cam("hi3516ev300", "nor8m", "nor8m"),
+			"uImage.hi3516ev300 && sf erase 0x50000 0x200000 && sf write 0x42000000 0x50000 ${filesize}",
+			"rootfs.squashfs.hi3516ev300 && sf erase 0x250000 0x500000 && sf write 0x42000000 0x250000 ${filesize}",
+			"sf erase 0x750000 0xb0000"},
+		{cam("hi3516ev300", "nor16m", "nor16m"),
+			"uImage.hi3516ev300 && sf erase 0x50000 0x300000 && sf write 0x42000000 0x50000 ${filesize}",
+			"rootfs.squashfs.hi3516ev300 && sf erase 0x350000 0xA00000 && sf write 0x42000000 0x350000 ${filesize}",
+			"sf erase 0x850000 0x7b0000"},
+	} {
+		c := tc.c
+		if !c.scansLayout() {
+			t.Fatalf("%s %s: not a scanning bootloader (%s)", c.soc.Model, c.flashType, c.bootloader())
+		}
+		linux := strings.Join(c.flashingLinux(), "\n")
+		for _, want := range []string{"tftpboot 0x42000000 " + tc.kernel, "tftpboot 0x42000000 " + tc.rootfs, tc.overlayErase} {
+			if !strings.Contains(strings.ToLower(linux), strings.ToLower(want)) {
+				t.Errorf("%s %s lacks %q:\n%s", c.soc.Model, c.flashType, want, linux)
+			}
+		}
+		if strings.Index(linux, tc.overlayErase) > strings.Index(linux, "uImage.") {
+			t.Errorf("%s %s clears the overlay after writing:\n%s", c.soc.Model, c.flashType, linux)
+		}
+		all := linux + strings.Join(c.postFlashCommands(), "\n") + strings.Join(c.layoutCommands(), "\n")
+		for _, gone := range []string{"uknor", "urnor", "setnor", "run uk", "run ur", "sf lock"} {
+			if strings.Contains(all, gone) {
+				t.Errorf("%s %s still runs %q:\n%s", c.soc.Model, c.flashType, gone, all)
+			}
+		}
+		if v := c.bootloaderVariables(); len(v) != 0 {
+			t.Errorf("%s %s advertises bootloader macros %v", c.soc.Model, c.flashType, v)
+		}
+	}
+
+	old := cam("hi3516cv300", "nor8m", "nor8m")
+	if old.scansLayout() || !strings.Contains(strings.Join(old.flashingLinux(), "\n"), "run uknor8m; run urnor8m") {
+		t.Errorf("a -universal bootloader lost its macros: %s\n%s", old.bootloader(), strings.Join(old.flashingLinux(), "\n"))
+	}
+}

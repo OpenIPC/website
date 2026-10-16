@@ -24,7 +24,7 @@ signature against GitHub's published keys and then checks these claims:
 | `iss` | `https://token.actions.githubusercontent.com` |
 | `aud` | `https://openipc.org` |
 | `repository_owner_id` | OpenIPC's numeric organisation id |
-| `repository` | `OpenIPC/firmware`, `OpenIPC/builder` or `OpenIPC/u-boot-xmedia` |
+| `repository` | `OpenIPC/firmware`, `OpenIPC/builder`, `OpenIPC/u-boot-xmedia` or `OpenIPC/u-boot` |
 | `job_workflow_ref` | `<repository>/.github/workflows/<build.yml, master.yml or uboot.yml>@refs/heads/master` |
 | `event_name` | anything except `pull_request` or `pull_request_target` |
 
@@ -39,6 +39,7 @@ The `source` field in the body must match the repository that pushed it:
 | OpenIPC/builder | `builder` |
 | OpenIPC/firmware, `uboot.yml` | `uboot` |
 | OpenIPC/u-boot-xmedia, `build.yml` | `uboot` |
+| OpenIPC/u-boot, `build-hisilicon.yml` on `openipc` | `uboot` |
 
 ## Body
 

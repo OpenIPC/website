@@ -317,22 +317,50 @@ func (c *camera) flashingLinux() []string {
 		}
 		return append(text, "reset")
 	}
-	if c.sdWifi() {
-		text = append(text, "mw.b "+la+" 0xff 0x200000")
-		text = c.unlock(text)
-		text = append(text, c.guardedFlash("fatload mmc 0:1 "+la+" uImage."+c.board,
-			c.kernelOffset(), c.kernelMaxSize(), "${filesize}"), "")
-		text = append(text, "mw.b "+la+" 0xff 0x500000")
-		text = c.unlock(text)
-		text = append(text, c.guardedFlash("fatload mmc 0:1 "+la+" rootfs.squashfs."+c.board,
-			c.rootfsOffset(), c.rootfsMaxSize(), "${filesize}"), "")
-	} else {
+	switch {
+	case c.sdWifi():
+		text = c.writeLinux(text, "fatload mmc 0:1 "+la+" ")
+	case c.scansLayout():
+		// The bootloader sizes the rootfs partition from the image: 5 MiB,
+		// or 10 MiB for one bigger than that on a chip over 8 MiB. So
+		// rootfs_data starts at one of two places, and the earlier one is
+		// cleared before anything is written; the rootfs write then erases
+		// its own region again.
+		text = c.probe(text)
+		text = append(text, "sf erase "+c.scanOverlayOffset()+" "+c.scanOverlaySize(), "")
+		text = c.writeLinux(text, "tftpboot "+la+" ")
+		return append(text, "reset")
+	default:
 		text = append(text, "run uk"+s+"; run ur"+s)
 	}
 	if c.flashType != "nand" {
 		text = append(text, "sf erase "+c.overlayOffset()+" "+c.overlayMaxSize())
 	}
 	return append(text, "reset")
+}
+
+// probe readies the NOR for writing once the OpenIPC bootloader runs. The
+// scansLayout ones have no `sf lock` (it prints the usage text); the older
+// ones unlock with it.
+func (c *camera) probe(text []string) []string {
+	if c.scansLayout() {
+		return append(text, "sf probe 0")
+	}
+	return c.unlock(text)
+}
+
+// writeLinux writes the kernel and the rootfs at the layout's offsets, each
+// loaded by load followed by the file name.
+func (c *camera) writeLinux(text []string, load string) []string {
+	la := c.soc.LoadAddress
+	text = append(text, "mw.b "+la+" 0xff 0x200000")
+	text = c.probe(text)
+	text = append(text, c.guardedFlash(load+"uImage."+c.board,
+		c.kernelOffset(), c.kernelMaxSize(), "${filesize}"), "")
+	text = append(text, "mw.b "+la+" 0xff 0x500000")
+	text = c.probe(text)
+	return append(text, c.guardedFlash(load+"rootfs.squashfs."+c.board,
+		c.rootfsOffset(), c.rootfsMaxSize(), "${filesize}"), "")
 }
 
 func (c *camera) restoreFromBackup() []string {

@@ -328,6 +328,9 @@ func TestVerifier(t *testing.T) {
 		{"OpenIPC/u-boot-xmedia", "OpenIPC/u-boot-xmedia/.github/workflows/build.yml@refs/heads/master", "uboot", true},
 		{"OpenIPC/u-boot-xmedia", "OpenIPC/u-boot-xmedia/.github/workflows/build.yml@refs/heads/master", "firmware", false},
 		{"OpenIPC/u-boot-xmedia", "OpenIPC/u-boot-xmedia/.github/workflows/build.yml@refs/heads/feature", "uboot", false},
+		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-hisilicon.yml@refs/heads/openipc", "uboot", true},
+		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-hisilicon.yml@refs/heads/openipc-hisilicon", "uboot", false},
+		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-hisilicon.yml@refs/heads/openipc", "firmware", false},
 	} {
 		c, err := v.Verify(ctx, s.token(t, func(_ *jwt.Claims, m map[string]any) {
 			m["repository"], m["job_workflow_ref"] = tc.repo, tc.ref
