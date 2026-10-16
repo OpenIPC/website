@@ -224,3 +224,15 @@ func TestAMACIsRedactedWithoutIpctoolsOutput(t *testing.T) {
 		t.Errorf("redacted:\n%s", got)
 	}
 }
+
+// A long name keeps its start and its end: what it is (a pinout, #474) and
+// what it holds.
+func TestALongFileNameKeepsBothEnds(t *testing.T) {
+	n := fileName("pinout-"+strings.Repeat("x", 200)+".png", "photo", 1)
+	if len(n) != 120 || !strings.HasPrefix(n, "pinout-") || !strings.HasSuffix(n, "x.png") {
+		t.Errorf("%d %q", len(n), n)
+	}
+	if n := fileName("pinout.PNG", "photo", 1); n != "pinout.PNG" {
+		t.Errorf("%q", n)
+	}
+}
