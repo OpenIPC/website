@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
@@ -64,6 +65,18 @@ const ReceiptMark = "/cameras/report/?id="
 var contributedKinds = map[string]bool{
 	"uboot_env": true, "boot_log": true, "note": true,
 	"photo_front": true, "photo_back": true, "photo_other": true, "pinout": true,
+}
+
+// ReportPhotoKind is what an owner report's photo is on its board: the
+// pinout when its name says so (the send form has no pinout of its own, and
+// the board's ask for one is answered with a photo, #474), as the importers
+// read tehno32's file names (imageKind). Only the pinout: a front or back
+// guessed from an owner's name ("backup.png") would be wrong as often.
+func ReportPhotoKind(name string) string {
+	if strings.HasPrefix(strings.ToLower(name), "pinout") {
+		return "pinout"
+	}
+	return "photo_other"
 }
 
 var (

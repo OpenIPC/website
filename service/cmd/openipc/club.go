@@ -68,7 +68,7 @@ func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logge
 		log.Error("boards: published reports unreadable", "err", err)
 		return
 	}
-	kinds := map[string]string{"photo": "photo_other", "boot_log": "boot_log", "uboot_env": "uboot_env", "note": "note"}
+	kinds := map[string]string{"boot_log": "boot_log", "uboot_env": "uboot_env", "note": "note"}
 	var list []boards.Contribution
 	for _, t := range texts {
 		by := t.By
@@ -82,7 +82,11 @@ func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logge
 		c := boards.Contribution{Unit: t.Model + "-" + t.Report, Model: t.Model, By: by, Note: t.Note,
 			Evidence: []string{cfg.ClubSiteURL + boards.ReceiptMark + t.Report + "&board=" + t.Model}}
 		for _, f := range t.Files {
-			c.Files = append(c.Files, boards.ContributedFile{Kind: kinds[f.Kind], File: fmt.Sprintf("%d-%s", f.Position, f.Name), Source: f.Path})
+			kind := kinds[f.Kind]
+			if f.Kind == "photo" {
+				kind = boards.ReportPhotoKind(f.Name)
+			}
+			c.Files = append(c.Files, boards.ContributedFile{Kind: kind, File: fmt.Sprintf("%d-%s", f.Position, f.Name), Source: f.Path})
 		}
 		list = append(list, c)
 	}
