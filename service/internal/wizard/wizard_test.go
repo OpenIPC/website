@@ -529,11 +529,11 @@ func TestScanningBootloaderNORInstall(t *testing.T) {
 	}{
 		{cam("hi3516ev300", "nor8m", "nor8m"),
 			"uImage.hi3516ev300 && sf erase 0x50000 0x200000 && sf write 0x42000000 0x50000 ${filesize}",
-			"rootfs.squashfs.hi3516ev300 && sf erase 0x250000 0x500000 && sf write 0x42000000 0x250000 ${filesize}",
+			"rootfs.squashfs.hi3516ev300 && sf erase 0x750000 0xb0000 && sf erase 0x250000 0x500000 && sf write 0x42000000 0x250000 ${filesize}",
 			"sf erase 0x750000 0xb0000"},
 		{cam("hi3516ev300", "nor16m", "nor16m"),
 			"uImage.hi3516ev300 && sf erase 0x50000 0x300000 && sf write 0x42000000 0x50000 ${filesize}",
-			"rootfs.squashfs.hi3516ev300 && sf erase 0x350000 0xA00000 && sf write 0x42000000 0x350000 ${filesize}",
+			"rootfs.squashfs.hi3516ev300 && sf erase 0x850000 0x7b0000 && sf erase 0x350000 0xA00000 && sf write 0x42000000 0x350000 ${filesize}",
 			"sf erase 0x850000 0x7b0000"},
 	} {
 		c := tc.c
@@ -546,8 +546,19 @@ func TestScanningBootloaderNORInstall(t *testing.T) {
 				t.Errorf("%s %s lacks %q:\n%s", c.soc.Model, c.flashType, want, linux)
 			}
 		}
-		if strings.Index(linux, tc.overlayErase) > strings.Index(linux, "uImage.") {
-			t.Errorf("%s %s clears the overlay after writing:\n%s", c.soc.Model, c.flashType, linux)
+		// The overlay is cleared only once the rootfs download worked: on
+		// its line, after the transfer, before the rootfs is written.
+		for _, l := range strings.Split(linux, "\n") {
+			if strings.Contains(l, tc.overlayErase) && !strings.HasPrefix(l, "tftpboot 0x42000000 rootfs.squashfs.") {
+				t.Errorf("%s %s clears the overlay outside the guarded rootfs line: %s", c.soc.Model, c.flashType, l)
+			}
+		}
+		// The SD card path writes the same way.
+		c.iface, c.sd = "wifi", "sd"
+		sd := strings.Join(c.flashingLinux(), "\n")
+		c.iface, c.sd = "eth", "nosd"
+		if !strings.Contains(sd, "fatload mmc 0:1 0x42000000 rootfs.squashfs.hi3516ev300 && "+tc.overlayErase+" && ") {
+			t.Errorf("%s %s SD path does not clear the overlay in the rootfs line:\n%s", c.soc.Model, c.flashType, sd)
 		}
 		all := linux + strings.Join(c.postFlashCommands(), "\n") + strings.Join(c.layoutCommands(), "\n")
 		for _, gone := range []string{"uknor", "urnor", "setnor", "run uk", "run ur", "sf lock"} {

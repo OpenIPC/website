@@ -321,19 +321,11 @@ func (c *camera) flashingLinux() []string {
 	case c.sdWifi():
 		text = c.writeLinux(text, "fatload mmc 0:1 "+la+" ")
 	case c.scansLayout():
-		// The bootloader sizes the rootfs partition from the image: 5 MiB,
-		// or 10 MiB for one bigger than that on a chip over 8 MiB. So
-		// rootfs_data starts at one of two places, and the earlier one is
-		// cleared before anything is written; the rootfs write then erases
-		// its own region again.
-		text = c.probe(text)
-		text = append(text, "sf erase "+c.scanOverlayOffset()+" "+c.scanOverlaySize(), "")
 		text = c.writeLinux(text, "tftpboot "+la+" ")
-		return append(text, "reset")
 	default:
 		text = append(text, "run uk"+s+"; run ur"+s)
 	}
-	if c.flashType != "nand" {
+	if c.flashType != "nand" && !c.scansLayout() {
 		text = append(text, "sf erase "+c.overlayOffset()+" "+c.overlayMaxSize())
 	}
 	return append(text, "reset")
@@ -359,7 +351,17 @@ func (c *camera) writeLinux(text []string, load string) []string {
 		c.kernelOffset(), c.kernelMaxSize(), "${filesize}"), "")
 	text = append(text, "mw.b "+la+" 0xff 0x500000")
 	text = c.probe(text)
-	return append(text, c.guardedFlash(load+"rootfs.squashfs."+c.board,
+	transfer := load + "rootfs.squashfs." + c.board
+	if c.scansLayout() {
+		// The bootloader sizes the rootfs partition from the image: 5 MiB,
+		// or 10 MiB for one bigger than that on a chip over 8 MiB. So
+		// rootfs_data starts at one of two places; the earlier one is
+		// cleared to the end of the chip. In the rootfs line, after the
+		// transfer worked, so a failed download leaves the old rootfs
+		// whole; the rootfs erase that follows covers its own region again.
+		transfer += " && sf erase " + c.scanOverlayOffset() + " " + c.scanOverlaySize()
+	}
+	return append(text, c.guardedFlash(transfer,
 		c.rootfsOffset(), c.rootfsMaxSize(), "${filesize}"), "")
 }
 
