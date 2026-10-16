@@ -432,8 +432,10 @@ var safeName = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
 func fileName(given, kind string, i int) string {
 	n := safeName.ReplaceAllString(path.Base(strings.ReplaceAll(given, `\`, "/")), "_")
 	n = strings.Trim(n, "._-")
+	// Both ends of a long name: its start says what it is (a pinout is
+	// one by its name, boards.ReportPhotoKind), its end what it holds.
 	if len(n) > 120 {
-		n = n[len(n)-120:]
+		n = n[:60] + n[len(n)-60:]
 	}
 	if n == "" || n == "." {
 		n = kind + "-" + strconv.Itoa(i)

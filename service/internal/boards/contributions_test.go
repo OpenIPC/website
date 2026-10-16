@@ -341,6 +341,48 @@ func TestAWebPPhotoIsThumbnailedAndABrokenOneCostsOnlyItsReport(t *testing.T) {
 	}
 }
 
+func TestAReportPhotoNamedPinoutIsThePinout(t *testing.T) {
+	for name, want := range map[string]string{
+		"pinout.PNG": "pinout", "Pinout-uart.jpg": "pinout", "PINOUT.webp": "pinout",
+		"IMG_1.jpg": "photo_other", "my-pinout.png": "photo_other", "backup.png": "photo_other",
+	} {
+		if got := ReportPhotoKind(name); got != want {
+			t.Errorf("%s: %s, want %s", name, got, want)
+		}
+	}
+}
+
+// #474: a report's photo published as photo_other is the board's pinout once
+// the refresh says so, without the report being touched.
+func TestAReportPhotoTakesItsNewKind(t *testing.T) {
+	pool, root := imported(t)
+	ctx := context.Background()
+	im := &Importer{Pool: pool, Log: quiet(), Root: root}
+	store := fstest.MapFS{"aa/webp": {Data: webp1x1}}
+	pinouts := func() (n int) {
+		_ = pool.QueryRow(ctx, `SELECT count(*) FROM board_artifacts a JOIN board_units u ON u.id = a.unit_id
+			WHERE u.model_id = 'xiongmai-53h20-s' AND u.source = 'contributor' AND a.kind = 'pinout'`).Scan(&n)
+		return
+	}
+	list := []Contribution{reportUnit("xiongmai-53h20-s-r-aaaaaaaa", "xiongmai-53h20-s", "r-aaaaaaaa", "aa/webp", "photo_other", "1-pinout.webp")}
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	if n := pinouts(); n != 0 {
+		t.Fatalf("%d pinouts before", n)
+	}
+	list[0].Files[0].Kind = ReportPhotoKind("pinout.webp")
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	if n := pinouts(); n != 1 {
+		t.Errorf("%d pinouts after", n)
+	}
+	if _, err := os.Stat(filepath.Join(root, "xiongmai-53h20-s-r-aaaaaaaa", "thumb-1-pinout.jpg")); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestAReportOnTwoBoardsIsAUnitOnEachAndTwoRefreshesAtOnceAgree(t *testing.T) {
 	pool, root := imported(t)
 	ctx := context.Background()
