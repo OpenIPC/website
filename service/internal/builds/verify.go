@@ -47,6 +47,8 @@ var pushers = map[string][]string{
 		// OpenIPC/u-boot's openipc-hisilicon images, published only from a
 		// dispatch of this workflow on the openipc (default) branch.
 		"OpenIPC/u-boot/.github/workflows/build-hisilicon.yml@refs/heads/openipc",
+		// Its openipc-xm (Xiongmai XM510/XM530/XM550) images, likewise.
+		"OpenIPC/u-boot/.github/workflows/build-xm.yml@refs/heads/openipc",
 	},
 	"xmupdates": {"OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
 	"coupler":   {"OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main"},
