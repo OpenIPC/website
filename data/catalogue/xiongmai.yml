@@ -16,7 +16,7 @@ socs:
   load_address: '0x80007FC0'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
+  uboot_filename: u-boot-xm510-nor.bin
   linux_filename: openipc.xm510-nor-lite.tgz
   notes: ''
   urlname: xm510
@@ -30,7 +30,7 @@ socs:
   load_address: '0x81000000'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
+  uboot_filename: u-boot-xm530-nor.bin
   linux_filename: openipc.xm530-nor-lite.tgz
   notes: ''
   urlname: xm530
@@ -44,7 +44,7 @@ socs:
   load_address: '0x81000000'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
+  uboot_filename: u-boot-xm550-nor.bin
   linux_filename: openipc.xm550-nor-lite.tgz
   notes: ''
   urlname: xm550
