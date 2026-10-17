@@ -129,6 +129,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-gk7202v300-nor.bin
+  uboot_nand_filename: u-boot-gk7202v300-nand.bin
   nor_split: true
   linux_filename: openipc.gk7202v300-nor-lite.tgz
   notes: ''
@@ -144,6 +145,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-gk7205v200-nor.bin
+  uboot_nand_filename: u-boot-gk7205v200-nand.bin
   nor_split: true
   linux_filename: openipc.gk7205v200-nor-lite.tgz
   notes: ''
@@ -159,6 +161,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-gk7205v200-nor.bin
+  uboot_nand_filename: u-boot-gk7205v200-nand.bin
   nor_split: true
   linux_filename: openipc.gk7205v210-nor-lite.tgz
   notes: ''
@@ -174,6 +177,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-gk7205v300-nor.bin
+  uboot_nand_filename: u-boot-gk7205v300-nand.bin
   nor_split: true
   linux_filename: openipc.gk7205v300-nor-lite.tgz
   notes: ''
@@ -319,6 +323,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-gk7605v100-nor.bin
+  uboot_nand_filename: u-boot-gk7605v100-nand.bin
   nor_split: true
   linux_filename: openipc.gk7605v100-nor-lite.tgz
   notes: ''

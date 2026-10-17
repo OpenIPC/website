@@ -257,6 +257,7 @@
     "model": "GK7202V300",
     "board": "gk7202v300",
     "uboot": "u-boot-gk7202v300-nor.bin",
+    "uboot_nand": "u-boot-gk7202v300-nand.bin",
     "nor_lite": "openipc.gk7202v300-nor-lite.tgz",
     "nand_lite": "openipc.gk7202v300-nand-lite.tgz"
   },
@@ -266,6 +267,7 @@
     "model": "GK7205V200",
     "board": "gk7205v200",
     "uboot": "u-boot-gk7205v200-nor.bin",
+    "uboot_nand": "u-boot-gk7205v200-nand.bin",
     "nor_lite": "openipc.gk7205v200-nor-lite.tgz",
     "nand_lite": "openipc.gk7205v200-nand-lite.tgz"
   },
@@ -275,6 +277,7 @@
     "model": "GK7205V210",
     "board": "gk7205v200",
     "uboot": "u-boot-gk7205v200-nor.bin",
+    "uboot_nand": "u-boot-gk7205v200-nand.bin",
     "nor_lite": "openipc.gk7205v200-nor-lite.tgz",
     "nand_lite": "openipc.gk7205v200-nand-lite.tgz"
   },
@@ -284,6 +287,7 @@
     "model": "GK7205V300",
     "board": "gk7205v300",
     "uboot": "u-boot-gk7205v300-nor.bin",
+    "uboot_nand": "u-boot-gk7205v300-nand.bin",
     "nor_lite": "openipc.gk7205v300-nor-lite.tgz",
     "nand_lite": "openipc.gk7205v300-nand-lite.tgz"
   },
@@ -377,6 +381,7 @@
     "model": "GK7605V100",
     "board": "gk7605v100",
     "uboot": "u-boot-gk7605v100-nor.bin",
+    "uboot_nand": "u-boot-gk7605v100-nand.bin",
     "nor_lite": "openipc.gk7605v100-nor-lite.tgz",
     "nand_lite": "openipc.gk7605v100-nand-lite.tgz"
   },
