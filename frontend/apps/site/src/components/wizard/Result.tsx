@@ -14,7 +14,7 @@ import { fillHoles, type WizardSettings } from '../../lib/wizard-input';
 import { fromBuilder } from '../../lib/editions';
 import { toPermalink } from '../../lib/wizard-input';
 import {
-  downloadStepQuery, flashArguments, flashFamily, licenceBusinessHref, stockBootloaderOnly,
+  downloadStepQuery, flashArguments, flashFamily, fullImageOffered, licenceBusinessHref, stockBootloaderOnly,
   type FlashMessage,
 } from '../../lib/wizard-result';
 import SupportCount from '../SupportCount.tsx';
@@ -275,7 +275,7 @@ export default function Result({
             />
           </section>
 
-          {doc.instructable && (
+          {fullImageOffered(doc, settings.flashType) && (
             <section class="border-t border-hairline py-6">
               <h2 class="site-h4 mb-4">
                 <span class="me-2 text-brand-blue">2</span>{install('flashing_full.title')}

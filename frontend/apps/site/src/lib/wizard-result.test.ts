@@ -5,7 +5,7 @@
  * the click opens.
  */
 import { describe, expect, test } from 'vitest';
-import { downloadStepQuery, licenceBusinessHref, reopenAfterMissing } from './wizard-result';
+import { downloadStepQuery, fullImageOffered, licenceBusinessHref, reopenAfterMissing } from './wizard-result';
 
 const links = { business: '/ru/business', lowLatency: '/ru/low-latency' };
 const query = downloadStepQuery('fpv', 'ssc338q');
@@ -58,5 +58,35 @@ describe('where a request with no commands is sent back to (#370)', () => {
       .toBe('other');
     expect(reopenAfterMissing({ ...base, flashType: 'nand', partitionLayout: undefined }, 16, 'nor16m').reason)
       .toBe('other');
+  });
+});
+
+describe('the full-image step', () => {
+  const named = {
+    instructable: true, uboot_filename: 'u-boot-xm510-nor.bin', bl_url: '/u-boot-xm510-nor.bin',
+    bootloader_published: true,
+  };
+
+  test('is offered when the bootloader the chip installs is published', () => {
+    expect(fullImageOffered(named, 'nor8m')).toBe(true);
+  });
+
+  test('is not offered when the catalogue names a bootloader the index does not have', () => {
+    // A link the server could not assemble, beside the stock-bootloader steps.
+    expect(fullImageOffered({ ...named, bootloader_published: false }, 'nor8m')).toBe(false);
+  });
+
+  test('is not offered when the catalogue names no bootloader', () => {
+    expect(fullImageOffered({ ...named, instructable: false, uboot_filename: '' }, 'nor8m')).toBe(false);
+  });
+
+  test('on NAND it follows the NAND build where the SoC has one', () => {
+    const ubi = {
+      ...named, uboot_nand_filename: 'u-boot-x-nand.bin', bl_nand_url: '/u-boot-x-nand.bin',
+      bootloader_nand_published: false,
+    };
+    expect(fullImageOffered(ubi, 'nand')).toBe(false);
+    expect(fullImageOffered(ubi, 'nor8m')).toBe(true);
+    expect(fullImageOffered({ ...ubi, bootloader_nand_published: true }, 'nand')).toBe(true);
   });
 });
