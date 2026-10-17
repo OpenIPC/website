@@ -31,7 +31,13 @@ type SoC struct {
 	// NANDBoard is the build name upstream publishes this SoC's NAND
 	// firmware under, when that is not the NOR one: GK7205V510 has a NOR
 	// build of its own, but its NAND firmware is the GK7205V500 build.
-	NANDBoard     string  `yaml:"nand_board"`
+	NANDBoard string `yaml:"nand_board"`
+	// NORSplit is a SoC whose firmware also ships the split NOR layout,
+	// openipc.<board>-nor-<edition>-split.tgz: one firmware.bin (a hashed
+	// FIT, then the squashfs at the next 64 KiB) written at 0x50000, which
+	// the kernel divides into kernel, rootfs and rootfs_data at boot. Its
+	// -nor.bin bootloader boots that and the fixed slots alike.
+	NORSplit      bool    `yaml:"nor_split"`
 	LinuxFilename string  `yaml:"linux_filename"`
 	LoadAddress   string  `yaml:"load_address"`
 	Vendor        *Vendor `yaml:"-"`

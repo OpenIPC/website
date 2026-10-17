@@ -80,6 +80,10 @@ type camera struct {
 	server    string
 	mac       string
 	layout    string // what was asked for; partitionLayout() decides what it is
+	// split installs the split NOR layout's one firmware.bin (see
+	// catalogue.SoC.NORSplit); the exporter sets it where that package is
+	// published for this board and edition.
+	split bool
 }
 
 func (c *camera) nand() bool { return c.flashType == "nand" }
@@ -383,5 +387,25 @@ func (c *camera) fullImageFilename() string {
 }
 
 func (c *camera) firmwareFilename() string {
+	if c.split {
+		return splitFilename(c.board, c.edition)
+	}
 	return fmt.Sprintf("openipc.%s-%s-%s.tgz", c.board, c.flashTypeType(), c.edition)
+}
+
+// splitFilename is the split NOR package for a board and edition.
+func splitFilename(board, edition string) string {
+	return fmt.Sprintf("openipc.%s-nor-%s-split.tgz", board, edition)
+}
+
+// splitOffset is where firmware.bin goes: right after the environment, where
+// the kernel slot starts on the fixed layout.
+const splitOffset = 0x50000
+
+// splitEraseSize runs from splitOffset to the end of the chip: the rest of the
+// flash is the one firmware partition, and nothing of an old layout may be
+// left for the bootloader's scan or the overlay to find.
+func (c *camera) splitEraseSize() string {
+	size, _ := strconv.ParseInt(strings.TrimPrefix(c.flashSizeHex(), "0x"), 16, 64)
+	return fmt.Sprintf("0x%x", size-splitOffset)
 }
