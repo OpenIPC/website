@@ -1226,7 +1226,7 @@
     "vendor": "Xiongmai",
     "model": "XM510",
     "board": "xm510",
-    "uboot": "",
+    "uboot": "u-boot-xm510-nor.bin",
     "nor_lite": "openipc.xm510-nor-lite.tgz",
     "nand_lite": "openipc.xm510-nand-lite.tgz"
   },
@@ -1235,7 +1235,7 @@
     "vendor": "Xiongmai",
     "model": "XM530",
     "board": "xm530",
-    "uboot": "",
+    "uboot": "u-boot-xm530-nor.bin",
     "nor_lite": "openipc.xm530-nor-lite.tgz",
     "nand_lite": "openipc.xm530-nand-lite.tgz"
   },
@@ -1244,7 +1244,7 @@
     "vendor": "Xiongmai",
     "model": "XM550",
     "board": "xm530",
-    "uboot": "",
+    "uboot": "u-boot-xm550-nor.bin",
     "nor_lite": "openipc.xm530-nor-lite.tgz",
     "nand_lite": "openipc.xm530-nand-lite.tgz"
   }
