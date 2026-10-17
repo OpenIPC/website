@@ -369,6 +369,7 @@ func (e *exporter) camera(ft string, layout *string, edition, iface, sd, mac str
 	if layout != nil {
 		c.layout = *layout
 	}
+	c.split = e.soc.NORSplit && c.scansLayout() && e.published(splitFilename(c.board, edition))
 	return c
 }
 

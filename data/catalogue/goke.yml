@@ -128,7 +128,9 @@ socs:
   load_address: '0x42000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-gk7202v300-universal.bin
+  uboot_filename: u-boot-gk7202v300-nor.bin
+  uboot_nand_filename: u-boot-gk7202v300-nand.bin
+  nor_split: true
   linux_filename: openipc.gk7202v300-nor-lite.tgz
   notes: ''
   urlname: gk7202v300
@@ -142,7 +144,9 @@ socs:
   load_address: '0x42000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-gk7205v200-universal.bin
+  uboot_filename: u-boot-gk7205v200-nor.bin
+  uboot_nand_filename: u-boot-gk7205v200-nand.bin
+  nor_split: true
   linux_filename: openipc.gk7205v200-nor-lite.tgz
   notes: ''
   urlname: gk7205v200
@@ -156,7 +160,9 @@ socs:
   load_address: '0x42000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-gk7205v200-universal.bin
+  uboot_filename: u-boot-gk7205v200-nor.bin
+  uboot_nand_filename: u-boot-gk7205v200-nand.bin
+  nor_split: true
   linux_filename: openipc.gk7205v210-nor-lite.tgz
   notes: ''
   urlname: gk7205v210
@@ -170,7 +176,9 @@ socs:
   load_address: '0x42000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-gk7205v300-universal.bin
+  uboot_filename: u-boot-gk7205v300-nor.bin
+  uboot_nand_filename: u-boot-gk7205v300-nand.bin
+  nor_split: true
   linux_filename: openipc.gk7205v300-nor-lite.tgz
   notes: ''
   urlname: gk7205v300
@@ -314,7 +322,9 @@ socs:
   load_address: '0x42000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-gk7605v100-universal.bin
+  uboot_filename: u-boot-gk7605v100-nor.bin
+  uboot_nand_filename: u-boot-gk7605v100-nand.bin
+  nor_split: true
   linux_filename: openipc.gk7605v100-nor-lite.tgz
   notes: ''
   urlname: gk7605v100

@@ -576,3 +576,90 @@ func TestScanningBootloaderNORInstall(t *testing.T) {
 		t.Errorf("a -universal bootloader lost its macros: %s\n%s", old.bootloader(), strings.Join(old.flashingLinux(), "\n"))
 	}
 }
+
+// withAssets is the fixture index plus the named assets, published in one
+// nightly.
+func withAssets(t *testing.T, names ...string) *firmware.Index {
+	t.Helper()
+	_, idx := inputs(t)
+	var assets []firmware.Asset
+	for _, a := range idx.Assets() {
+		assets = append(assets, a)
+	}
+	for _, n := range names {
+		assets = append(assets, firmware.Asset{Name: n, Size: 1, Release: "nightly-20261017-e8d577a"})
+	}
+	aliases := map[string]string{}
+	for _, chip := range []string{"gk7205v210", "xm550"} {
+		if b := idx.CanonicalBoard(chip); b != chip {
+			aliases[chip] = b
+		}
+	}
+	return firmware.NewIndex(idx.Build, assets, aliases, nil)
+}
+
+// The split NOR layout (catalogue nor_split): where the -split package is
+// published for the board and edition, the Linux step writes its one
+// firmware.bin at 0x50000 and erases to the end of the chip in the same
+// guarded line, and the page links that package. Without it the install stays
+// the two-image one of a scanning bootloader.
+func TestSplitNORInstall(t *testing.T) {
+	cat, plainIdx := inputs(t)
+	idx := withAssets(t,
+		"u-boot-gk7205v300-nor.bin",
+		"openipc.gk7205v300-nor-lite-split.tgz",
+		"openipc.gk7205v300-nor-ultimate-split.tgz",
+		"openipc.gk7205v200-nor-lite-split.tgz",
+	)
+	mk := func(idx *firmware.Index, soc, ft, edition string) *camera {
+		s := cat.SoC(soc)
+		e := &exporter{soc: s, idx: idx, board: firmware.Board(s, idx),
+			poolIDs: map[string]string{}, varIDs: map[string]string{}}
+		layout := ft
+		return e.camera(ft, &layout, edition, "eth", "nosd", ethaddr)
+	}
+	for _, tc := range []struct {
+		soc, ft, edition, board, erase string
+	}{
+		{"gk7205v300", "nor16m", "lite", "gk7205v300", "0xfb0000"},
+		{"gk7205v300", "nor8m", "ultimate", "gk7205v300", "0x7b0000"},
+		// gk7205v210 is published as gk7205v200.
+		{"gk7205v210", "nor8m", "lite", "gk7205v200", "0x7b0000"},
+	} {
+		c := mk(idx, tc.soc, tc.ft, tc.edition)
+		if !c.split {
+			t.Fatalf("%s %s %s: not a split install", tc.soc, tc.ft, tc.edition)
+		}
+		if got, want := c.firmwareFilename(), "openipc."+tc.board+"-nor-"+tc.edition+"-split.tgz"; got != want {
+			t.Errorf("%s: firmware %s, want %s", tc.soc, got, want)
+		}
+		linux := strings.Join(c.flashingLinux(), "\n")
+		want := "tftpboot 0x42000000 firmware.bin." + tc.board + " && sf erase 0x50000 " + tc.erase +
+			" && sf write 0x42000000 0x50000 ${filesize}"
+		if !strings.Contains(strings.ToLower(linux), strings.ToLower(want)) {
+			t.Errorf("%s %s lacks %q:\n%s", tc.soc, tc.ft, want, linux)
+		}
+		for _, gone := range []string{"uImage.", "rootfs.squashfs.", "sf lock", "run uk", "run ur"} {
+			if strings.Contains(linux, gone) {
+				t.Errorf("%s %s still writes %q:\n%s", tc.soc, tc.ft, gone, linux)
+			}
+		}
+		c.iface, c.sd = "wifi", "sd"
+		if sd := strings.Join(c.flashingLinux(), "\n"); !strings.Contains(sd, "fatload mmc 0:1 0x42000000 firmware.bin."+tc.board+" && sf erase 0x50000 "+tc.erase) {
+			t.Errorf("%s %s SD path does not write firmware.bin:\n%s", tc.soc, tc.ft, sd)
+		}
+	}
+
+	// Not published (this edition, or this nightly): the two images.
+	for _, c := range []*camera{
+		mk(idx, "gk7205v210", "nor8m", "ultimate"),
+		mk(plainIdx, "gk7205v300", "nor16m", "lite"),
+	} {
+		if c.split {
+			t.Errorf("%s %s: split without a published package", c.soc.Model, c.edition)
+		}
+		if !strings.Contains(strings.Join(c.flashingLinux(), "\n"), "rootfs.squashfs.") {
+			t.Errorf("%s %s: no two-image install to fall back to", c.soc.Model, c.edition)
+		}
+	}
+}

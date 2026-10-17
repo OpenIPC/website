@@ -82,22 +82,6 @@
   {
     "urlname": "gk7202v300",
     "vendor": "Goke",
-    "flash_type": "nand",
-    "release": "lite",
-    "size": null,
-    "layout": null,
-    "filename": "openipc-gk7202v300-nand-lite.bin",
-    "bytes": 7194624,
-    "sha256": "bde2516085374dd4ba4d32cb72820527302f9cfd30ce608b525530dfd72ff589",
-    "offsets": {
-      "u-boot": 0,
-      "kernel": 1048576,
-      "rootfs": 4194304
-    }
-  },
-  {
-    "urlname": "gk7202v300",
-    "vendor": "Goke",
     "flash_type": "nor",
     "release": "big",
     "size": 8,
