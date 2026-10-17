@@ -20,6 +20,7 @@ import {
   DEFAULTS, normalisedMac, wellFormed, type Patterns, type WizardSettings,
 } from './wizard-input';
 import { FLASH_CHIPS, PARTITION_LAYOUTS, type Availability } from './wizard-menu';
+import { bootloaderFor, type WizardDocument } from './wizard-export';
 
 /** One flash message, as a key and its arguments rather than a sentence. */
 export interface FlashMessage {
@@ -68,6 +69,23 @@ export function stockBootloaderOnly(doc: {
   return !doc.bootloader_published
     && doc.availability === 'firmware_only'
     && doc.load_address !== '';
+}
+
+/**
+ * Whether the result offers the ready-made full image. It starts with the
+ * OpenIPC bootloader the chosen chip installs, so that file has to be in the
+ * release index, not only named in the catalogue: `instructable` says the
+ * catalogue names both files, `bootloaderFor().published` that the index has
+ * the bootloader. With the first alone, a chip whose bootloader is named but
+ * not (or no longer) published got a full-image link the server cannot
+ * assemble, next to the stock-bootloader steps that page shows instead.
+ */
+export function fullImageOffered(
+  doc: Pick<WizardDocument, 'instructable' | 'uboot_filename' | 'bl_url' | 'bootloader_published'
+    | 'uboot_nand_filename' | 'bl_nand_url' | 'bootloader_nand_published'>,
+  flashType: string,
+): boolean {
+  return doc.instructable && bootloaderFor(doc, flashType).published;
 }
 
 /** The download step's attribution, carried by every business link it shows (#190). */
