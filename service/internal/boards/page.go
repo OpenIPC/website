@@ -64,6 +64,10 @@ const Site = "https://openipc.org"
 
 var boardID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,127}$`)
 
+// descriptionMax is as long as a meta description gets: about what a result
+// shows.
+const descriptionMax = 200
+
 func (p *Pages) Handlers() map[string]http.HandlerFunc {
 	return map[string]http.HandlerFunc{
 		"GET /cameras/boards/{id}":          p.page,
@@ -334,9 +338,14 @@ func (p *Pages) view(b *boardPage, locale string) pageView {
 
 	who := strings.TrimSpace(maker + " " + v.Heading)
 	v.Title = l.title(who, socName, kind)
+	// What the page has leads, because it names the board; a source's own
+	// line in the page's language follows when it fits. A shop's "3MP
+	// resolution, clear and fine images" alone named nothing.
 	v.Description = l.description(who, socName, have(m.Coverage, l))
-	if m.Summary != nil && m.Summary.Lead != nil && m.Summary.Locale == locale && *m.Summary.Lead != "" {
-		v.Description = clip(*m.Summary.Lead, 200)
+	if m.Summary != nil && m.Summary.Lead != nil && m.Summary.Locale == locale {
+		if lead := strings.TrimSpace(*m.Summary.Lead); lead != "" && utf8.RuneCountInString(v.Description)+1+utf8.RuneCountInString(lead) <= descriptionMax {
+			v.Description += " " + lead
+		}
 	}
 
 	var sub []string
@@ -467,18 +476,6 @@ func size(n int64) string {
 	default:
 		return fmt.Sprintf("%.1f MB", float64(n)/(1<<20))
 	}
-}
-
-func clip(s string, n int) string {
-	s = strings.TrimSpace(s)
-	if utf8.RuneCountInString(s) <= n {
-		return s
-	}
-	r := []rune(s)[:n]
-	if i := strings.LastIndexAny(string(r), " ,;"); i > n/2 {
-		return strings.TrimRight(string(r)[:i], " ,;") + "…"
-	}
-	return string(r) + "…"
 }
 
 func distinct(xs []string) []string {
