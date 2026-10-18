@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	"github.com/OpenIPC/website/service/internal/httpx"
@@ -409,7 +408,9 @@ func (p *Pages) view(b *boardPage, locale string) pageView {
 			}
 			seen[f.URL] = true
 			if strings.HasPrefix(f.Kind, "photo_") && f.ThumbURL != "" {
-				v.Photos = append(v.Photos, photoView{URL: f.URL, Thumb: f.ThumbURL,
+				// The photo's own size: a thumbnail keeps its shape, so the
+				// browser holds the place before it arrives.
+				v.Photos = append(v.Photos, photoView{URL: f.URL, Thumb: f.ThumbURL, Width: f.Width, Height: f.Height,
 					Alt: l.photoAlt(firstOf(l.FileKinds[f.Kind], l.FileKinds["photo_other"]), v.Heading)})
 				continue
 			}
@@ -506,29 +507,27 @@ func firstOf(xs ...string) string {
 // sitemap lists every board's page in every language, in the form of the
 // bundle's own sitemap.xml: each address with the whole hreflang set.
 func (p *Pages) sitemap(w http.ResponseWriter, r *http.Request) {
+	// No <lastmod>: nothing records when a board's page last changed (a
+	// re-import rewrites texts and files without adding a unit), and a date
+	// that does not move with the page is worse than none.
 	rows, err := p.DB.Query(r.Context(), `
-		SELECT m.id, (SELECT max(u.ingested_at) FROM board_units u WHERE u.model_id = m.id)
-		FROM board_models m JOIN board_model_coverage c ON c.model_id = m.id
+		SELECT m.id FROM board_models m JOIN board_model_coverage c ON c.model_id = m.id
 		ORDER BY m.id`)
 	if err != nil {
 		p.Log.Error("boards: sitemap", "err", err)
 		http.Error(w, "try again", http.StatusInternalServerError)
 		return
 	}
-	type board struct {
-		id   string
-		last *time.Time
-	}
-	var all []board
+	var all []string
 	for rows.Next() {
-		var b board
-		if err := rows.Scan(&b.id, &b.last); err != nil {
+		var id string
+		if err := rows.Scan(&id); err != nil {
 			rows.Close()
 			p.Log.Error("boards: sitemap", "err", err)
 			http.Error(w, "try again", http.StatusInternalServerError)
 			return
 		}
-		all = append(all, b)
+		all = append(all, id)
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
@@ -539,13 +538,10 @@ func (p *Pages) sitemap(w http.ResponseWriter, r *http.Request) {
 	var b strings.Builder
 	b.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
 	b.WriteString("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"\n        xmlns:xhtml=\"http://www.w3.org/1999/xhtml\">\n")
-	for _, m := range all {
-		path := "/cameras/boards/" + m.id
+	for _, id := range all {
+		path := "/cameras/boards/" + id
 		for _, l := range Locales {
 			fmt.Fprintf(&b, "  <url>\n    <loc>%s%s%s</loc>\n", Site, localePrefix(l), path)
-			if m.last != nil {
-				fmt.Fprintf(&b, "    <lastmod>%s</lastmod>\n", m.last.UTC().Format("2006-01-02"))
-			}
 			for _, a := range Locales {
 				fmt.Fprintf(&b, "    <xhtml:link rel=\"alternate\" hreflang=\"%s\" href=\"%s%s%s\"/>\n", a, Site, localePrefix(a), path)
 			}

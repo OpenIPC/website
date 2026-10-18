@@ -88,8 +88,17 @@ export default function Boards({ locale, socs, board = false }: { locale: Locale
 
   useEffect(() => {
     let live = true;
-    fetchBoards(locale)
-      .then((v) => live && setData({ state: 'ok', value: v }))
+    // A board's page shows its board from the tree narrowed to it, which is
+    // small, and only then reads the whole catalogue (megabytes) for what
+    // reaches across it: the devices the board is found in, and the codes in
+    // its texts that name other boards. Should that fail, the board stays.
+    const one = board && initial.model ? initial.model : undefined;
+    fetchBoards(locale, undefined, undefined, one)
+      .then((v) => {
+        if (!live) return;
+        setData({ state: 'ok', value: v });
+        if (one) fetchBoards(locale).then((all) => live && setData({ state: 'ok', value: all })).catch(() => {});
+      })
       .catch((e: Error) => live && setData({ state: 'error', error: e.message }));
     return () => { live = false; };
   }, [locale]);
@@ -234,20 +243,21 @@ export default function Boards({ locale, socs, board = false }: { locale: Locale
         : t('searching'))
       : filtered ? t('matching', { count: kept.length }) : '';
 
-  // A board's page: what the web role wrote out stays until the catalogue has
-  // arrived (and for good if it cannot), then the panel takes its place.
-  const shown = board && data.state === 'ok' && !!open;
+  // A board's page: what the web role wrote out stays until the panel has
+  // the board and every source's say about it (and for good if either cannot
+  // be had), then the panel takes its place.
+  const [ready, setReady] = useState(false);
   useEffect(() => {
-    if (shown) document.getElementById(BOARD_SSR_ID)?.remove();
-  }, [shown]);
+    if (ready) document.getElementById(BOARD_SSR_ID)?.remove();
+  }, [ready]);
   if (board) {
-    if (!shown) return null;
+    if (data.state !== 'ok' || !open) return null;
     return (
-      <div class="site-container mt-7 pb-12">
-        <BoardPanel inline id={open!} entry={all.find((m) => m.id === open)} all={all} loaded locale={locale}
+      <div class="site-container mt-7 pb-12" hidden={!ready}>
+        <BoardPanel inline id={open} entry={all.find((m) => m.id === open)} all={all} loaded locale={locale}
           t={t} sources={sources} index={index} socs={socs} names={names} href={href}
           onOpen={(id) => window.location.assign(href(id))} onClose={() => {}}
-          focus={focus} onLine={showLine} />
+          focus={focus} onLine={showLine} onReady={() => setReady(true)} />
       </div>
     );
   }

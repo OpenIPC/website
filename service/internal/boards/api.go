@@ -32,7 +32,8 @@ const MaxHits = 200
 // API is the catalogue's read side.
 //
 //	GET /api/v1/boards          the whole tree, manufacturers down to files
-//	                            (?soc=… one SoC's boards, ?sensor=A,B one sensor's by its names)
+//	                            (?soc=… one SoC's boards, ?sensor=A,B one sensor's by its names,
+//	                            ?model=… one board: what its own page shows first)
 //	GET /api/v1/boards/search   ?q=…&kind=uboot_env,boot_log&soc=…  matching lines
 type API struct {
 	DB  *pgxpool.Pool
@@ -282,13 +283,17 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string, sensors ...
 	if err != nil {
 		return nil, err
 	}
+	return treeDoc(locale, makers, sources), nil
+}
+
+func treeDoc(locale string, makers []*makerJSON, sources []sourceJSON) map[string]any {
 	return map[string]any{
 		"schema":        1,
 		"locale":        locale,
 		"files_prefix":  FilesPrefix,
 		"manufacturers": makers,
 		"sources":       sources,
-	}, nil
+	}
 }
 
 // tree reads the makers that have a board the filters keep, each with those
@@ -392,6 +397,10 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 			SELECT u.source, a.sha256, count(DISTINCT u.model_id) AS n
 			FROM board_artifacts a JOIN board_units u ON u.id = a.unit_id
 			WHERE a.kind::text IN `+photoKinds+`
+			  -- One board's read counts its own photos' bytes only, not the
+			  -- whole catalogue's: a crawler walks every board's page.
+			  AND ($3 = '' OR a.sha256 IN (SELECT oa.sha256 FROM board_artifacts oa
+			       JOIN board_units ou ON ou.id = oa.unit_id WHERE ou.model_id = $3))
 			GROUP BY u.source, a.sha256 HAVING count(DISTINCT u.model_id) > 1
 		)
 		SELECT a.unit_id, a.kind::text, a.name, a.path, coalesce(a.thumb_path, ''), a.mime, a.bytes, a.sha256,
@@ -772,9 +781,24 @@ func (a *API) tree(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	model := r.URL.Query().Get("model")
+	if model != "" && !boardID.MatchString(model) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "model is a board's id"})
+		return
+	}
 	a.serve(w, r, 300, func(ctx context.Context) (any, int, error) {
-		t, err := Tree(ctx, a.DB, locale, soc, sensors...)
-		return t, http.StatusOK, err
+		makers, sources, err := tree(ctx, a.DB, locale, soc, model, sensors)
+		if err != nil {
+			return nil, 0, err
+		}
+		// The texts and links are the detail's, as they are for every board
+		// in the whole tree; the page asks for them there.
+		for _, mk := range makers {
+			for _, m := range mk.Models {
+				m.About, m.Links = nil, nil
+			}
+		}
+		return treeDoc(locale, makers, sources), http.StatusOK, nil
 	})
 }
 

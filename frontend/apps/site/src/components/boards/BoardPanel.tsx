@@ -37,10 +37,12 @@ const HEADING = 'mb-2 text-base font-semibold';
 const LINK_ORDER: LinkKind[] = ['stock_firmware', 'pcb', 'on_pcb', 'successor', 'predecessor', 'related', 'vendor_page', 'source_page'];
 const EXTERNAL: LinkKind[] = ['vendor_page', 'source_page'];
 
-export default function BoardPanel({ id, entry, all, loaded, locale, t, sources, index, socs, names, href, onOpen, onClose, focus, onLine, query, inline = false }: {
+export default function BoardPanel({ id, entry, all, loaded, locale, t, sources, index, socs, names, href, onOpen, onClose, focus, onLine, query, inline = false, onReady }: {
   id: string;
   /** In the page, as a board's own page shows it, rather than a dialog over the catalogue. */
   inline?: boolean;
+  /** Told once the board's details have arrived, so its page can let the panel stand in for the written-out board. */
+  onReady?: () => void;
   /** The board as the tree has it; undefined for an id the catalogue does not know, or before it has loaded. */
   entry: Entry | undefined;
   loaded: boolean;
@@ -82,6 +84,10 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
       .catch((e: Error) => live && setDetail({ state: 'error', error: e.message }));
     return () => { live = false; };
   }, [id, locale]);
+
+  useEffect(() => {
+    if (detail.state === 'ok') onReady?.();
+  }, [detail.state]);
 
   // A deep link can open before (or without) the tree: the detail's own
   // names head the board then.

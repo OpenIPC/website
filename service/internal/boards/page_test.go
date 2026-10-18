@@ -123,7 +123,7 @@ func TestABoardIsAPageOfItsOwn(t *testing.T) {
 	mustHave(t, body, `<h1 id="board-title" class="mb-0 text-h2 font-semibold">53h20-s</h1>`, "the heading")
 	mustHave(t, body, `<a href="/cameras/vendors/hisilicon/socs/hi3516cv100">Hi3516CV100</a>`, "the SoC's page")
 	mustHave(t, body, `SONY IMX122/222/322, SONY IMX222`, "both units' sensors")
-	mustHave(t, body, `<img src="/board-files/xiongmai-53h20-s-u1/thumb-front.jpg" alt="front of 53h20-s"`, "a photo")
+	mustHave(t, body, `<img src="/board-files/xiongmai-53h20-s-u1/thumb-front.jpg" alt="front of 53h20-s" loading="lazy" width="800" height="600"`, "a photo, with its size")
 	mustHave(t, body, `<a href="/board-files/xiongmai-53h20-s-u1/hi3516cv100-1.bin">`, "the flash dump")
 	mustHave(t, body, `(U-Boot console`, "the console, by its kind")
 	mustHave(t, body, `<a href="/cameras/boards">All camera boards</a>`, "the way back to the catalogue")
@@ -238,9 +238,42 @@ func TestTheBoardsSitemapListsEveryBoardInEveryLanguage(t *testing.T) {
 		mustHave(t, body, "<loc>"+loc+"</loc>", "sitemap")
 	}
 	mustHave(t, body, `<xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/boards/xiongmai-53h20-s"/>`, "x-default")
-	mustHave(t, body, "<lastmod>", "lastmod")
+	if strings.Contains(body, "<lastmod>") {
+		t.Error("a <lastmod> nothing keeps up to date")
+	}
 	again, _ := get(t, s.URL+"/sitemap-boards.xml", "If-None-Match", resp.Header.Get("ETag"))
 	if again.StatusCode != http.StatusNotModified {
 		t.Errorf("revisit: %d", again.StatusCode)
+	}
+}
+
+// A board's page shows its board from the tree narrowed to it, not from the
+// whole catalogue.
+func TestTheTreeNarrowsToOneBoard(t *testing.T) {
+	pool, _ := imported(t)
+	s := serve(t, pool)
+	var tree struct {
+		Manufacturers []struct {
+			ID     string
+			Models []struct {
+				ID    string
+				About []any
+				Units []struct{ Files []struct{ Kind string } }
+			}
+		}
+	}
+	resp := getJSON(t, s.URL+"/api/v1/boards?model=xiongmai-53h20-s", &tree)
+	if resp.StatusCode != 200 || len(tree.Manufacturers) != 1 || len(tree.Manufacturers[0].Models) != 1 {
+		t.Fatalf("%d %+v", resp.StatusCode, tree)
+	}
+	m := tree.Manufacturers[0].Models[0]
+	if m.ID != "xiongmai-53h20-s" || len(m.Units) != 2 || len(m.Units[0].Files) == 0 {
+		t.Errorf("%+v", m)
+	}
+	if m.About != nil {
+		t.Error("the tree carries a board's texts, which are the detail's")
+	}
+	if bad := getJSON(t, s.URL+"/api/v1/boards?model=Not_An_Id", nil); bad.StatusCode != 400 {
+		t.Errorf("a model that is not an id: %d", bad.StatusCode)
 	}
 }
