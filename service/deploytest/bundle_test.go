@@ -351,7 +351,9 @@ func TestStaticBundle(t *testing.T) {
 			}
 		}
 		for _, rule := range reservedRules(t) {
-			needle := strings.TrimSuffix(strings.TrimPrefix(rule, "*"), "/")
+			// A glob is known by its literal stem, from either end:
+			// */download_full_image, /cameras/boards/*.
+			needle := strings.TrimSuffix(strings.TrimSuffix(strings.TrimPrefix(rule, "*"), "*"), "/")
 			if needle == "" || slices.ContainsFunc(known, func(k string) bool { return strings.Contains(k, needle) }) {
 				continue
 			}

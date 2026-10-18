@@ -136,7 +136,12 @@ restores the image but never the schema, so keep migrations additive.
   console captures, boot logs), in PostgreSQL (migration 003), files under
   `BOARDS_ROOT` served by nginx at `/board-files/`. The web role answers
   `/api/v1/boards` (the tree) and `/api/v1/boards/search` (lines of text
-  evidence, scoped by kind). Seeded once per environment by
+  evidence, scoped by kind). Each board is a page of its own,
+  `/cameras/boards/{id}`, so a search for its code can land on it: the web
+  role fills the bundle's `/_shell/board` (read at `STATIC_ROOT`) with the
+  board's title, canonical and a written-out copy the island replaces
+  (`boards/page.go`), lists them at `/sitemap-boards.xml`, and nginx 301s the
+  older `?model=` links there (`conf.d/openipc-board-model.conf`). Seeded once per environment by
   `openipc boards import-openhisiipcam`; the dumps are published byte-identical
   (lab hardware, nothing redacted).
 - `internal/vendorfw` — firmware for Xiongmai devices keyed by the XM device

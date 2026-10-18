@@ -37,3 +37,8 @@ Disallow: /_smoke/
 # names its own sitemap in Yandex Webmaster: a Sitemap line on another host is
 # ignored there, not followed.
 Sitemap: https://openipc.org/sitemap.xml
+
+# Each board in the catalogue has a page of its own, /cameras/boards/<id>. The
+# boards are in the database and change between releases, so their list is
+# the web role's to write, not the bundle's.
+Sitemap: https://openipc.org/sitemap-boards.xml

@@ -58,6 +58,10 @@ services:
       - /srv/www/shared/boards:/srv/boards
       - /srv/www/shared/owner-reports:/srv/owner-reports
       - /srv/www/shared/tools:/srv/tools
+      # The static bundle, for a board page's shell (STATIC_ROOT,
+      # /srv/static/current). The directory, not `current`: an install flips
+      # that link, and a mount of it would keep the release it was made with.
+      - /srv/www/static/prod:/srv/static:ro
 
   go-firmware-prod:
     <<: *go-common
@@ -120,6 +124,7 @@ services:
       - /srv/www/shared/dev-boards:/srv/boards
       - /srv/www/shared/dev-owner-reports:/srv/owner-reports
       - /srv/www/shared/dev-tools:/srv/tools
+      - /srv/www/static/dev:/srv/static:ro
 
   go-firmware-dev:
     <<: *go-common

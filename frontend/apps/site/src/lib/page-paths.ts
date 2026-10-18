@@ -25,6 +25,7 @@
 import { VENDORS, fullName } from './hardware';
 import { PARTS, fullName as sensorName, sensorPath } from './sensors';
 import newsJson from '../data/news.json';
+import { BOARD_DESCRIPTION_TOKEN, BOARD_ID_TOKEN, BOARD_TITLE_TOKEN, boardPath } from './boards/shell';
 import type { Locale } from './i18n';
 /**
  * The catalogue's own addresses (#162), derived from the same data the pages
@@ -117,6 +118,12 @@ export interface PagePath {
   noindex?: boolean;
   /** Served at addresses it cannot know, so it claims none. See Base.astro. */
   addressless?: boolean;
+  /**
+   * The address this file is served at when that is not where it was built:
+   * a token the server replaces stands for what varies. The board page's
+   * shell (./boards/shell.ts) only.
+   */
+  servedAt?: string;
 }
 
 export const PAGE_PATHS: PagePath[] = [
@@ -149,6 +156,16 @@ export const PAGE_PATHS: PagePath[] = [
 
   // Camera boards from real cameras, read at runtime from /api/v1/boards.
   { path: '/cameras/boards', titleKey: 'pages.boards.title', descriptionKey: 'pages.boards.lede' },
+  // One board, the shell the web role serves at every /cameras/boards/<id>
+  // with the board filled in (./boards/shell.ts). It claims the address it is
+  // served at, so a board's canonical, hreflang set and og:url are its own.
+  {
+    path: '/_shell/board',
+    titleKey: 'pages.boards.title',
+    title: BOARD_TITLE_TOKEN,
+    description: BOARD_DESCRIPTION_TOKEN,
+    servedAt: boardPath(BOARD_ID_TOKEN),
+  },
   // Image sensors side by side, and one page per sensor, from data/sensors.
   { path: '/cameras/sensors', titleKey: 'pages.sensors.title', descriptionKey: 'pages.sensors.lede' },
   ...PARTS.map((part) => ({

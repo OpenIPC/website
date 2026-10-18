@@ -7,9 +7,14 @@
  * whole catalogue and is filtered here; a search of three characters or more
  * goes to GET /api/v1/boards/search, which reads the text evidence on the
  * server; the panel reads GET /api/v1/boards/models/{id}. Everything
- * shareable -- q, scope, the filters and the open board -- is in the query
- * string, so a link opens the same view. Opening a board pushes a history
- * entry, so Back closes it.
+ * shareable -- q, scope, the filters -- is in the query string, so a link
+ * opens the same view. Opening a board pushes a history entry for its own
+ * address, /cameras/boards/<id>, so Back closes it and a reload or a shared
+ * link is that board's page.
+ *
+ * On that page (`board`, ../../lib/boards/shell.ts) the island is the board
+ * alone: the panel in the page rather than over the catalogue, in place of the
+ * board the web role wrote out, and a board it links to is a page of its own.
  */
 import type { ComponentChildren } from 'preact';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
@@ -23,6 +28,7 @@ import {
 } from '../../lib/boards/model';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
+import { BOARD_SSR_ID, boardOfPath, boardPath } from '../../lib/boards/shell';
 import BoardPanel from './BoardPanel';
 import { fileKey } from './ConsoleView';
 import { poppedOverlay } from '../../lib/overlay-history';
@@ -48,10 +54,18 @@ const depthOf = (state: unknown): number =>
     ? (state as { boards: number }).boards
     : 0;
 
-export default function Boards({ locale, socs }: { locale: Locale; socs: SocLinks }) {
+/** The open board: its own address, or ?model= on the catalogue's (the older links, which nginx redirects). */
+const boardOf = (l: { pathname: string; search: string }): string | null =>
+  boardOfPath(l.pathname) ?? readQueryString(l.search).model;
+
+export default function Boards({ locale, socs, board = false }: { locale: Locale; socs: SocLinks; board?: boolean }) {
   const t = useBoardsTranslations(locale);
   const addNew = <AddNew href={`${pathFor(locale, '/cameras/report')}#new`} t={t} />;
-  const initial = useMemo(() => readQueryString(typeof window === 'undefined' ? '' : window.location.search), []);
+  const catalogue = pathFor(locale, '/cameras/boards');
+  const initial = useMemo(() => {
+    if (typeof window === 'undefined') return readQueryString('');
+    return { ...readQueryString(window.location.search), model: boardOf(window.location) };
+  }, []);
   const [view, setView] = useState<BoardsState>({ ...initial, model: null, file: null, ln: null });
   const [open, setOpen] = useState<string | null>(initial.model);
   // In the open board, the text file shown and the line in it: from a search hit, a shared link, or a line clicked.
@@ -74,14 +88,25 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
 
   useEffect(() => {
     let live = true;
-    fetchBoards(locale)
-      .then((v) => live && setData({ state: 'ok', value: v }))
+    // A board's page shows its board from the tree narrowed to it, which is
+    // small, and only then reads the whole catalogue (megabytes) for what
+    // reaches across it: the devices the board is found in, and the codes in
+    // its texts that name other boards. Should that fail, the board stays.
+    const one = board && initial.model ? initial.model : undefined;
+    fetchBoards(locale, undefined, undefined, one)
+      .then((v) => {
+        if (!live) return;
+        setData({ state: 'ok', value: v });
+        if (one) fetchBoards(locale).then((all) => live && setData({ state: 'ok', value: all })).catch(() => {});
+      })
       .catch((e: Error) => live && setData({ state: 'error', error: e.message }));
     return () => { live = false; };
   }, [locale]);
 
   const href = useCallback((model: string | null, at: Focus | null = null) =>
-    window.location.pathname + writeQueryString({ ...view, model, file: at?.file ?? null, ln: at?.ln ?? null }) + window.location.hash, [view]);
+    (model ? pathFor(locale, boardPath(model)) : catalogue)
+      + writeQueryString({ ...view, model, file: at?.file ?? null, ln: at?.ln ?? null })
+      + (typeof window === 'undefined' ? '' : window.location.hash), [view, locale, catalogue]);
 
   // The filters replace the address as they change; the open board, and the line shown in it, are part of it.
   useEffect(() => {
@@ -107,20 +132,20 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
       }
       if (closing.current) {
         closing.current = false;
-        // The entry Close lands on may itself carry ?model= (the address the visit arrived with).
-        const p = new URLSearchParams(window.location.search);
-        if (p.has('model')) {
+        // The entry Close lands on may itself be a board (the address the visit arrived with).
+        if (boardOf(window.location)) {
+          const p = new URLSearchParams(window.location.search);
           p.delete('model');
           p.delete('file');
           p.delete('ln');
           const rest = p.toString();
-          window.history.replaceState(window.history.state, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash);
+          window.history.replaceState(window.history.state, '', catalogue + (rest ? `?${rest}` : '') + window.location.hash);
         }
         setOpen(null);
         setFocus(null);
         return;
       }
-      const s = readQueryString(window.location.search);
+      const s = { ...readQueryString(window.location.search), model: boardOf(window.location) };
       setOpen(s.model);
       setFocus(s.model && s.file ? { file: s.file, ln: s.ln } : null);
     };
@@ -143,14 +168,14 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
 
   const closeModel = useCallback(() => {
     // Back has already taken the board out of the address.
-    if (!readQueryString(window.location.search).model) { setOpen(null); return; }
+    if (!boardOf(window.location)) { setOpen(null); return; }
     const depth = depthOf(window.history.state);
     if (depth > 0) {
       // Undo every panel this visit opened, so Back from here leaves the page rather than reopening one.
       closing.current = true;
       window.history.go(-depth);
     } else {
-      // Arrived with ?model= in the address: nothing of ours to go back to.
+      // Arrived on a board's address: nothing of ours to go back to.
       window.history.replaceState(window.history.state, '', href(null));
     }
     setFocus(null);
@@ -217,6 +242,25 @@ export default function Boards({ locale, socs }: { locale: Locale; socs: SocLink
         ? [matched.length > 0 ? t('matched_boards', { count: matched.length, q }) : '', t('hits_lines', { count: filterHits(found.value.hits, kept).length })].filter(Boolean).join('. ')
         : t('searching'))
       : filtered ? t('matching', { count: kept.length }) : '';
+
+  // A board's page: what the web role wrote out stays until the panel has
+  // the board and every source's say about it (and for good if either cannot
+  // be had), then the panel takes its place.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (ready) document.getElementById(BOARD_SSR_ID)?.remove();
+  }, [ready]);
+  if (board) {
+    if (data.state !== 'ok' || !open) return null;
+    return (
+      <div class="site-container mt-7 pb-12" hidden={!ready}>
+        <BoardPanel inline id={open} entry={all.find((m) => m.id === open)} all={all} loaded locale={locale}
+          t={t} sources={sources} index={index} socs={socs} names={names} href={href}
+          onOpen={(id) => window.location.assign(href(id))} onClose={() => {}}
+          focus={focus} onLine={showLine} onReady={() => setReady(true)} />
+      </div>
+    );
+  }
 
   return (
     <div class="site-container pb-12">

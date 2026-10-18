@@ -587,6 +587,25 @@ answered POST "/donate?locale=ru"       405 -                                sta
 # Percent-encoded paths and repeated locales are left as they were (Qodo on #409).
 answered GET  "/%72u/donate?locale=zh"  200 -                                static
 answered GET  "/donate?locale=ru&locale=zh" 200 -                            static
+# A board's older ?model= address goes to the board's own page, with the rest
+# of its query (conf.d/openipc-board-model.conf); that page is the web role's
+# (service/internal/boards/page.go), and its shell has no address of its own.
+answered GET  "/cameras/boards?model=xiongmai-53h20-s" 301 "$O/cameras/boards/xiongmai-53h20-s" static
+answered GET  "/ru/cameras/boards/?model=xm-1&file=u%2Fa.uboot&ln=7" 301 "$O/ru/cameras/boards/xm-1?file=u%2Fa.uboot&ln=7" static
+answered GET  "/cameras/boards?q=imx&model=a1&scope=all" 301 "$O/cameras/boards/a1?q=imx&scope=all" static
+answered HEAD "/zh/cameras/boards?model=a1" 301 "$O/zh/cameras/boards/a1"  static
+# Not a board's address, so not redirected to one: the stub bundle has no
+# catalogue page, and the route map answers as it answers anything unclaimed.
+answered GET  "/cameras/boards?model=Bad_Id" 302 "$O/"                     nginx
+answered GET  "/cameras/boards?model=a&model=b" 302 "$O/"                  nginx
+answered GET  "/cameras/boards?xmodel=a"  302 "$O/"                          nginx
+answered POST "/cameras/boards?model=a1"  302 "$O/"                          nginx
+answered GET  /cameras/boards/xiongmai-53h20-s 200 -                         go
+answered GET  /ru/cameras/boards/xiongmai-53h20-s 200 -                      go
+answered GET  /cameras/boards/Bad_Id      302 "$O/"                          nginx
+answered GET  /sitemap-boards.xml         200 -                              go
+answered GET  /_shell/board/              302 "$O/"                          nginx
+answered GET  /zh/_shell/board            302 "$O/zh"                        nginx
 answered GET  /telemetry/anything       410 -                                nginx
 answered GET  /zh/merchandise           410 -                                nginx
 answered GET  /tools/firmware-partitions-calculation 410 -                 nginx

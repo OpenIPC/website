@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { QrCodeWidget } from '@openipc/ui';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
+import { boardPath } from '../../lib/boards/shell';
 import {
   clock, fetchCameras, fetchMe, fetchMine, finishConfirm, finishWho, pollLogin, rename, secondsLeft, setListed, setQuiet, signOut,
   startEmail, startTelegram, STARS, type Cameras as CameraData, type Me, type Member, type MemberReport,
@@ -373,7 +374,7 @@ function Ledger({ reports, locale, t, onChange }: { reports: MemberReport[]; loc
               <tr key={r.id} class="border-t border-hairline align-top">
                 <td class="grid gap-1 px-4 py-3">
                   <span>
-                    {r.board ? <a href={`${pathFor(locale, '/cameras/boards')}?model=${encodeURIComponent(r.board.id)}`}>{board}</a> : board}
+                    {r.board ? <a href={pathFor(locale, boardPath(r.board.id))}>{board}</a> : board}
                     <span class="ms-2 font-mono text-[12px] text-body-secondary">{r.id}</span>
                     {r.joins && <span class="ms-2 text-[12px] text-body-secondary">{t('club.goes_with', { id: r.joins })}</span>}
                   </span>

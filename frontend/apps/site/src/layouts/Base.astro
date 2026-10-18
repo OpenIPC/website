@@ -35,9 +35,17 @@ interface Props {
    * `/_shell/wall` on every one of them.
    */
   addressless?: boolean;
+  /**
+   * Where this file is served, when that is not where it was built: the board
+   * page's shell, which the web role serves at every /cameras/boards/<id>
+   * with the id's token replaced (../lib/boards/shell.ts). Its canonical, its
+   * hreflang set, og:url and the language switcher name that address.
+   */
+  servedAt?: string;
 }
 
-const { locale, path, title, description, image = '/og-default.png', noindex = false, addressless = false } = Astro.props;
+const { locale, path: builtAt, title, description, image = '/og-default.png', noindex = false, addressless = false, servedAt } = Astro.props;
+const path = servedAt ?? builtAt;
 const t = useTranslations(locale);
 
 const site = 'https://openipc.org';

@@ -42,6 +42,29 @@ func TestBoardCatalogueServing(t *testing.T) {
 		// mirror: add_header without `always` leaves error answers alone.
 		mustContain(t, files, `add_header Cache-Control "public, max-age=2592000";`, name+": the month of cache is not on successful answers only")
 	}
+	// Each board's own page and their sitemap (internal/boards/page.go) reach
+	// the web role of their environment; a board's older ?model= address is
+	// sent to its page from the seam; the shell has no address of its own; and
+	// the web container reads the shell out of its environment's bundle.
+	for name, e := range envs {
+		c := vhost(t, name)
+		for _, re := range []string{`location ~ "\^/\(\?:\(\?:ru\|zh\)/\)\?cameras/boards/\[a-z0-9\]\[a-z0-9-\]\{0,127\}\$" \{`, `location = /sitemap-boards.xml \{`} {
+			b := blockRe(c, regexp.MustCompile(re))
+			mustContain(t, b, "proxy_pass http://127.0.0.1:"+e.port+";", name+": "+re+" does not reach its web role")
+			mustContain(t, b, "gzip_proxied any;", name+": "+re+" is proxied and so never compressed")
+			mustContain(t, b, "Strict-Transport-Security", name+": "+re+" drops the inherited HSTS")
+		}
+		seam := blockRe(c, regexp.MustCompile(`location / \{\n\s+(?:#|limit_conn)`))
+		mustContain(t, seam, "if ($openipc_board_model_target) { return 301 $openipc_board_model_target; }", name+": an older ?model= address is not sent to the board's page")
+		shell := blockRe(c, regexp.MustCompile(`location ~ "\^/\(\?:\(\?:ru\|zh\)/\)\?_shell/board\(\?:/\|\$\)" \{`))
+		mustContain(t, shell, "try_files /.no-such-file @fallback;", name+": the board shell is served at its own address, tokens and all")
+	}
+	for _, m := range []string{"- /srv/www/static/prod:/srv/static:ro", "- /srv/www/static/dev:/srv/static:ro"} {
+		mustContain(t, read(t, "deploy/docker-compose.yml"), m, "the web container does not mount "+m)
+	}
+	robots := read(t, "frontend/apps/site/public/robots.txt")
+	mustContain(t, robots, "Sitemap: https://openipc.org/sitemap-boards.xml", "robots.txt does not name the boards' sitemap")
+
 	rate := read(t, "deploy/nginx/conf.d/openipc-boards-rate.conf")
 	mustContain(t, rate, "zone=boards_search", "the boards_search zone is not declared")
 	mustContain(t, rate, "zone=board_files", "the board_files zone is not declared")

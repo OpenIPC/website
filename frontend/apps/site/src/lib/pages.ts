@@ -102,6 +102,7 @@ const COMPONENTS: Record<string, Renderer> = {
 
   // The board catalogue, beside the SoC catalogue it links into.
   '/cameras/boards': { component: Boards },
+  '/_shell/board': { component: Boards, props: { board: true } },
   '/cameras/sensors': { component: Sensors },
   ...Object.fromEntries(PARTS.map((part) => [sensorPath(part), { component: Sensor, props: { sensor: part.urlname } }])),
   '/cameras/report': { component: Report },

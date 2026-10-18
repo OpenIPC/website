@@ -1,7 +1,11 @@
 /**
  * Everything a shared link to /cameras/boards carries: the search, its scope,
- * the filters and the board whose details are open. Defaults are left out,
+ * the filters and, in the open board, the line shown. Defaults are left out,
  * so the bare address is the whole catalogue.
+ *
+ * The open board itself is the path, /cameras/boards/<id> (./shell.ts). It was
+ * ?model=, which is still read: nginx redirects those addresses to the board's
+ * own, and a page served without nginx still opens the board they name.
  */
 
 /**
@@ -34,7 +38,7 @@ export type BoardsState = {
   ready: boolean;
   /** A board or one kind of finished device. */
   kind: Kind | null;
-  /** The board whose details panel is open. */
+  /** The board whose details are open: the path's, or an older link's ?model=. Never written here. */
   model: string | null;
   /**
    * In that panel, the text file to open (its path under /board-files/) and
@@ -83,7 +87,6 @@ export function writeQueryString(s: BoardsState): string {
   if (s.source) p.set('source', s.source);
   if (s.ready) p.set('ready', '1');
   if (s.kind) p.set('kind', s.kind);
-  if (s.model) p.set('model', s.model);
   if (s.model && s.file) p.set('file', s.file);
   if (s.model && s.file && s.ln) p.set('ln', String(s.ln));
   const out = p.toString();

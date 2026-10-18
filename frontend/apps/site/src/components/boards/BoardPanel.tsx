@@ -4,11 +4,13 @@
  * the boards that replace it or it replaces, the archived vendor page -- and
  * every unit's photos and files.
  *
- * A native modal <dialog>: Escape and the backdrop close it, focus stays
+ * On a board's own page (`inline`) it is the page's article, headed by the
+ * page's one h1, with nothing to close. Over the catalogue it is
+ * a native modal <dialog>: Escape and the backdrop close it, focus stays
  * inside, and ../ZoomDialog.astro still opens its pictures on top. The
  * gallery owns the address; this only asks it to open or close a board.
  */
-import { Fragment } from 'preact';
+import { Fragment, type ComponentChildren, type Ref } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { BoardFile, BoardLink, LinkKind, ModelDetail, Source } from '../../lib/boards/types';
 import { fetchModel } from '../../lib/boards/api';
@@ -35,8 +37,12 @@ const HEADING = 'mb-2 text-base font-semibold';
 const LINK_ORDER: LinkKind[] = ['stock_firmware', 'pcb', 'on_pcb', 'successor', 'predecessor', 'related', 'vendor_page', 'source_page'];
 const EXTERNAL: LinkKind[] = ['vendor_page', 'source_page'];
 
-export default function BoardPanel({ id, entry, all, loaded, locale, t, sources, index, socs, names, href, onOpen, onClose, focus, onLine, query }: {
+export default function BoardPanel({ id, entry, all, loaded, locale, t, sources, index, socs, names, href, onOpen, onClose, focus, onLine, query, inline = false, onReady }: {
   id: string;
+  /** In the page, as a board's own page shows it, rather than a dialog over the catalogue. */
+  inline?: boolean;
+  /** Told once the board's details have arrived, so its page can let the panel stand in for the written-out board. */
+  onReady?: () => void;
   /** The board as the tree has it; undefined for an id the catalogue does not know, or before it has loaded. */
   entry: Entry | undefined;
   loaded: boolean;
@@ -79,6 +85,10 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
     return () => { live = false; };
   }, [id, locale]);
 
+  useEffect(() => {
+    if (detail.state === 'ok') onReady?.();
+  }, [detail.state]);
+
   // A deep link can open before (or without) the tree: the detail's own
   // names head the board then.
   const detailName = detail.state === 'ok' ? detail.value.about.find((a) => a.name)?.name ?? null : null;
@@ -111,14 +121,13 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
   const gallery = galleryOf((entry?.units ?? []).flatMap((u) => unitPhotos(u.files)), photoAlt);
 
   return (
-    <dialog ref={dialog} aria-labelledby="board-panel-title"
-      class="m-auto max-h-[92vh] w-[min(980px,calc(100vw-1rem))] max-w-none overflow-y-auto overscroll-contain rounded-lg border border-hairline bg-white p-0 text-body backdrop:bg-ink/70"
-      onClose={onClose}
-      onClick={(e) => { if (e.target === e.currentTarget) dialog.current?.close(); }}>
-      <header class="sticky top-0 z-[1] flex items-start justify-between gap-3 border-b border-hairline bg-white px-4 py-3 sm:px-5">
+    <Frame inline={inline} dialog={dialog} onClose={onClose}>
+      <header class={`${inline ? '' : 'sticky top-0 z-[1] '}flex items-start justify-between gap-3 border-b border-hairline bg-white px-4 py-3 sm:px-5`}>
         <div class="grid min-w-0 gap-1.5">
           <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h2 id="board-panel-title" class={`mb-0 text-h3 ${HEADING_CLASS[head.kind]}`}>{title}</h2>
+            {inline
+              ? <h1 id="board-panel-title" class={`mb-0 text-h2 ${HEADING_CLASS[head.kind]}`}>{title}</h1>
+              : <h2 id="board-panel-title" class={`mb-0 text-h3 ${HEADING_CLASS[head.kind]}`}>{title}</h2>}
             {entry && <SocChip m={entry} socs={socs} names={names} t={t} />}
           </div>
           {name && <p class="m-0 text-sm text-body-secondary">{name}</p>}
@@ -129,12 +138,12 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
             </p>
           )}
         </div>
-        <button type="button" aria-label={t('close')} onClick={() => dialog.current?.close()}
+        {!inline && <button type="button" aria-label={t('close')} onClick={() => dialog.current?.close()}
           class="-mt-1 -mr-2 grid size-11 shrink-0 cursor-pointer place-items-center rounded-md text-body-secondary hover:bg-surface-alt hover:text-body focus-visible:outline-2 focus-visible:outline-brand-blue">
           <svg aria-hidden="true" viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M3 3l10 10M13 3L3 13" />
           </svg>
-        </button>
+        </button>}
       </header>
 
       <div class="grid gap-6 px-4 pt-4 pb-6 sm:px-5">
@@ -324,6 +333,23 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
           </div>
         )}
       </div>
+    </Frame>
+  );
+}
+
+/** What holds the panel: the page's article, or the modal dialog over the catalogue. */
+function Frame({ inline, dialog, onClose, children }: {
+  inline: boolean; dialog: Ref<HTMLDialogElement>; onClose: () => void; children: ComponentChildren;
+}) {
+  if (inline) {
+    return <article aria-labelledby="board-panel-title" class="overflow-hidden rounded-lg border border-hairline bg-white text-body">{children}</article>;
+  }
+  return (
+    <dialog ref={dialog} aria-labelledby="board-panel-title"
+      class="m-auto max-h-[92vh] w-[min(980px,calc(100vw-1rem))] max-w-none overflow-y-auto overscroll-contain rounded-lg border border-hairline bg-white p-0 text-body backdrop:bg-ink/70"
+      onClose={onClose}
+      onClick={(e) => { if (e.target === e.currentTarget) (e.currentTarget as HTMLDialogElement).close(); }}>
+      {children}
     </dialog>
   );
 }

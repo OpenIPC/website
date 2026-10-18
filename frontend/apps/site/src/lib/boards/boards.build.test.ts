@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { LOCALES, pathFor, translate } from '../i18n';
 import { menuFor, footerFor } from '../nav';
 import { sitemapXml } from '../sitemap';
+import { BOARD_DESCRIPTION_TOKEN, BOARD_ID_TOKEN, BOARD_MARKER, BOARD_SSR_ID, BOARD_TITLE_TOKEN, boardPath } from './shell';
 
 const dist = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'dist');
 const read = (path: string) => readFileSync(join(dist, path, 'index.html'), 'utf8');
@@ -97,5 +98,45 @@ describe('the SoC pages', () => {
       expect(known, locale).toBeGreaterThan(wizard);
       expect(html, locale).toContain('id="gallery-labels"');
     }
+  });
+});
+
+describe("a board's page", () => {
+  // The shell the web role serves at every /cameras/boards/<id> (./shell.ts).
+  // service/internal/boards/page.go replaces these strings; this holds the
+  // bundle's side of that contract, page_test.go the service's.
+  const shell = (locale: (typeof LOCALES)[number]) => read(pathFor(locale, '/_shell/board'));
+
+  test('names the address it is served at, for the web role to fill in', () => {
+    for (const locale of LOCALES) {
+      const html = shell(locale);
+      const here = `https://openipc.org${pathFor(locale, boardPath(BOARD_ID_TOKEN))}`;
+      expect(html, locale).toContain(`<link rel="canonical" href="${here}">`);
+      expect(html, locale).toContain(`<meta property="og:url" content="${here}">`);
+      for (const other of LOCALES) {
+        expect(html, `${locale} -> ${other}`).toContain(
+          `hreflang="${other}" href="https://openipc.org${pathFor(other, boardPath(BOARD_ID_TOKEN))}"`,
+        );
+      }
+      expect(html, locale).toContain(`<title>${BOARD_TITLE_TOKEN} - OpenIPC</title>`);
+      expect(html, locale).toContain(`<meta name="description" content="${BOARD_DESCRIPTION_TOKEN}">`);
+      // Indexable: what is served is the board's page. nginx refuses the shell's own address.
+      expect(html, locale).not.toContain('noindex');
+    }
+  });
+
+  test('has one place for the board, inside the element the island replaces', () => {
+    for (const locale of LOCALES) {
+      const html = shell(locale);
+      expect(html.split(BOARD_MARKER).length - 1, locale).toBe(1);
+      expect(html, locale).toContain(`<div id="${BOARD_SSR_ID}" class="mt-7">${BOARD_MARKER}</div>`);
+      expect(html, locale).toMatch(/component-url="[^"]*Boards[^"]*"/);
+      // The page's h1 is the board's, which the web role writes; the catalogue's heading is not on it.
+      expect(html, locale).not.toContain(translate(locale, 'pages.boards.heading'));
+    }
+  });
+
+  test('is not listed in the sitemap, which lists boards from the web role', () => {
+    expect(sitemapXml()).not.toContain('_shell');
   });
 });

@@ -39,6 +39,8 @@ export const ORIGIN_PATHS: string[] = [
 export const ORIGIN_PATTERNS: RegExp[] = [
   /^\/cameras\/vendors\/[a-z0-9_-]+\/socs\/[a-z0-9_.-]+\/download_full_image$/,
   /^\/snapshots\/[a-z0-9]+$/,
+  // One board's page (../lib/boards/shell.ts), which the web role answers.
+  /^\/cameras\/boards\/[a-z0-9][a-z0-9-]{0,127}$/,
 ];
 
 /** Trees served from disk, matched as prefixes. */

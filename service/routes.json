@@ -111,6 +111,21 @@
   },
   {
     "role": "web",
+    "method": "GET",
+    "path": "/cameras/boards/{id}"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/{locale}/cameras/boards/{id}"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/sitemap-boards.xml"
+  },
+  {
+    "role": "web",
     "method": "POST",
     "path": "/api/v1/vendor-firmware"
   },
