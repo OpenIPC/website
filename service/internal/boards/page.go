@@ -228,6 +228,8 @@ func loadPage(ctx context.Context, db *pgxpool.Pool, id, locale string) (*boardP
 // The page in HTML: a heading, the facts, what each source says, the photos
 // and files of every unit, the links. Plain on purpose: the island replaces
 // it, and what reads it without the island needs the words, not the layout.
+// A class Tailwind never saw in the site's sources is not in its stylesheet,
+// so the one size that matters, the thumbnails', is written inline.
 var articleTemplate = template.Must(template.New("article").Parse(`<article aria-labelledby="board-title" class="grid gap-6">
 <header class="grid gap-1.5">
 <h1 id="board-title" class="mb-0 text-h2 font-semibold">{{.Heading}}</h1>
@@ -248,7 +250,7 @@ var articleTemplate = template.Must(template.New("article").Parse(`<article aria
 {{end}}</section>
 {{end}}{{if .Photos}}<section class="grid gap-2">
 <h2 class="mb-0 text-base font-semibold">{{.L.Photos}}</h2>
-<ul class="m-0 flex list-none flex-wrap gap-2 p-0">{{range .Photos}}<li><a href="{{.URL}}"><img src="{{.Thumb}}" alt="{{.Alt}}" loading="lazy"{{if .Width}} width="{{.Width}}" height="{{.Height}}"{{end}} class="h-32 w-auto rounded-md"></a></li>{{end}}</ul>
+<ul class="m-0 flex list-none flex-wrap gap-2 p-0">{{range .Photos}}<li><a href="{{.URL}}"><img src="{{.Thumb}}" alt="{{.Alt}}" loading="lazy"{{if .Width}} width="{{.Width}}" height="{{.Height}}"{{end}} style="height:8rem;width:auto" class="rounded-md"></a></li>{{end}}</ul>
 </section>
 {{end}}{{if .Files}}<section class="grid gap-2">
 <h2 class="mb-0 text-base font-semibold">{{.L.Files}}</h2>
