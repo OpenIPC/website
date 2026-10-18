@@ -257,11 +257,12 @@ type sourceJSON struct {
 // Locales the catalogue has texts in; a request for another reads English.
 var Locales = []string{"en", "ru", "zh"}
 
-// treeModels narrows Tree to the boards on one SoC ($1, '' for any) and to the
-// boards with a unit naming one of the sensors in $2 (empty for any). A
+// treeModels narrows Tree to the boards on one SoC ($1, '' for any), to the
+// boards with a unit naming one of the sensors in $2 (empty for any) and to
+// one board by its id ($3, '' for any: a board's own page). A
 // sensor is compared as the site's sensor catalogue keys it: without its
 // maker, upper-cased (frontend/apps/site/src/lib/sensor-names.ts nameKey).
-const treeModels = `($1 = '' OR m.soc = $1) AND (cardinality($2::text[]) = 0 OR EXISTS (
+const treeModels = `($1 = '' OR m.soc = $1) AND ($3 = '' OR m.id = $3) AND (cardinality($2::text[]) = 0 OR EXISTS (
 	SELECT 1 FROM board_units su WHERE su.model_id = m.id
 	  AND upper(regexp_replace(btrim(coalesce(su.sensor, '')), '^(sony|omni ?vision|onmi ?vision|silicon optronics)\s+', '', 'i')) = ANY($2::text[])))`
 
@@ -277,32 +278,49 @@ const MaxSensorNames = 32
 // with the part's model and its aliases): only the boards reporting it are
 // read, with every unit they have.
 func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string, sensors ...string) (map[string]any, error) {
+	makers, sources, err := tree(ctx, db, locale, soc, "", sensors)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		"schema":        1,
+		"locale":        locale,
+		"files_prefix":  FilesPrefix,
+		"manufacturers": makers,
+		"sources":       sources,
+	}, nil
+}
+
+// tree reads the makers that have a board the filters keep, each with those
+// boards, and every source. With model, the one board keeps every source's
+// texts and its links too, which the tree leaves to the detail.
+func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sensors []string) ([]*makerJSON, []sourceJSON, error) {
 	if sensors == nil {
 		sensors = []string{} // NULL would match nothing
 	}
 	tx, err := db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer tx.Rollback(ctx)
 	makers := []*makerJSON{}
 	byMaker := map[string]*makerJSON{}
 	rows, err := tx.Query(ctx, `SELECT id, name, aliases, website FROM board_manufacturers ORDER BY position, name`)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for rows.Next() {
 		m := &makerJSON{Models: []*modelJSON{}}
 		if err := rows.Scan(&m.ID, &m.Name, &m.Aliases, &m.Website); err != nil {
 			rows.Close()
-			return nil, err
+			return nil, nil, err
 		}
 		makers = append(makers, m)
 		byMaker[m.ID] = m
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	byModel := map[string]*modelJSON{}
@@ -314,9 +332,9 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string, sensors ...
 		       c.units, c.photos, c.pinouts, c.flash_dumps, c.uboot_envs, c.boot_logs, c.documents
 		FROM board_models m JOIN board_model_coverage c ON c.model_id = m.id
 		WHERE `+treeModels+`
-		ORDER BY m.position, m.id`, soc, sensors)
+		ORDER BY m.position, m.id`, soc, sensors, model)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for rows.Next() {
 		m := &modelJSON{Units: []*unitJSON{}}
@@ -325,19 +343,19 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string, sensors ...
 		if err := rows.Scan(&m.ID, &maker, &m.Model, &m.SoC, &m.SoCLabel, &m.Family, &m.Notes, &m.Category, &m.Kind, &m.ListedYear, &m.Aliases,
 			&c.Units, &c.Photos, &c.Pinouts, &c.FlashDumps, &c.UBootEnvs, &c.BootLogs, &c.Documents); err != nil {
 			rows.Close()
-			return nil, err
+			return nil, nil, err
 		}
 		parent := byMaker[maker]
 		if parent == nil {
 			rows.Close()
-			return nil, fmt.Errorf("model %s: no manufacturer %s", m.ID, maker)
+			return nil, nil, fmt.Errorf("model %s: no manufacturer %s", m.ID, maker)
 		}
 		parent.Models = append(parent.Models, m)
 		byModel[m.ID] = m
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	byUnit := map[string]*unitJSON{}
@@ -345,28 +363,28 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string, sensors ...
 		SELECT id, model_id, sensor, flash_chip, flash_size_mb, source::text, source_ref, contributed_by, notes
 		FROM board_units
 		WHERE model_id IN (SELECT m.id FROM board_models m WHERE `+treeModels+`)
-		ORDER BY position, id`, soc, sensors)
+		ORDER BY position, id`, soc, sensors, model)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for rows.Next() {
 		u := &unitJSON{Files: []fileJSON{}}
 		var model string
 		if err := rows.Scan(&u.ID, &model, &u.Sensor, &u.FlashChip, &u.FlashSizeMB, &u.Source, &u.SourceRef, &u.ContributedBy, &u.Notes); err != nil {
 			rows.Close()
-			return nil, err
+			return nil, nil, err
 		}
 		parent := byModel[model]
 		if parent == nil {
 			rows.Close()
-			return nil, fmt.Errorf("unit %s: no model %s", u.ID, model)
+			return nil, nil, fmt.Errorf("unit %s: no model %s", u.ID, model)
 		}
 		parent.Units = append(parent.Units, u)
 		byUnit[u.ID] = u
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	rows, err = tx.Query(ctx, `
@@ -383,9 +401,9 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string, sensors ...
 		FROM board_artifacts a JOIN board_units au ON au.id = a.unit_id
 		LEFT JOIN shared s ON s.source = au.source AND s.sha256 = a.sha256
 		WHERE a.unit_id IN (SELECT u.id FROM board_units u JOIN board_models m ON m.id = u.model_id WHERE `+treeModels+`)
-		ORDER BY a.unit_id, a.position, a.id`, soc, sensors)
+		ORDER BY a.unit_id, a.position, a.id`, soc, sensors, model)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// A source can file one file under several names (tehno32's outline.dxf
 	// and outline-2.dxf ... -5.dxf): a unit lists it once per kind, by its
@@ -397,7 +415,7 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string, sensors ...
 		var f fileJSON
 		if err := rows.Scan(&unit, &f.Kind, &f.Name, &p, &thumb, &f.Mime, &f.Bytes, &f.SHA256, &f.Width, &f.Height, &f.Lines, &f.Shared); err != nil {
 			rows.Close()
-			return nil, err
+			return nil, nil, err
 		}
 		f.URL = FilesPrefix + p
 		if thumb != "" {
@@ -406,7 +424,7 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string, sensors ...
 		parent := byUnit[unit]
 		if parent == nil {
 			rows.Close()
-			return nil, fmt.Errorf("file %s: no unit %s", p, unit)
+			return nil, nil, fmt.Errorf("file %s: no unit %s", p, unit)
 		}
 		k := [3]string{unit, f.Kind, f.SHA256}
 		if seenFile[k] {
@@ -417,38 +435,40 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string, sensors ...
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := about(ctx, tx, byModel, locale); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := devices(ctx, tx, byModel); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := contents(ctx, tx, byModel); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for _, m := range byModel {
 		summarise(m)
-		m.About, m.Links = nil, nil
+		if model == "" {
+			m.About, m.Links = nil, nil
+		}
 	}
 	sources := []sourceJSON{}
 	rows, err = tx.Query(ctx, `SELECT id, name, url, note, ref FROM board_sources ORDER BY position, id`)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for rows.Next() {
 		var s sourceJSON
 		if err := rows.Scan(&s.ID, &s.Name, &s.URL, &s.Note, &s.Ref); err != nil {
 			rows.Close()
-			return nil, err
+			return nil, nil, err
 		}
 		sources = append(sources, s)
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	kept := []*makerJSON{}
@@ -457,13 +477,7 @@ func Tree(ctx context.Context, db *pgxpool.Pool, locale, soc string, sensors ...
 			kept = append(kept, m)
 		}
 	}
-	return map[string]any{
-		"schema":        1,
-		"locale":        locale,
-		"files_prefix":  FilesPrefix,
-		"manufacturers": kept,
-		"sources":       sources,
-	}, nil
+	return kept, sources, nil
 }
 
 // about fills each model's tags, links and per-source texts and specs, from

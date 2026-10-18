@@ -9,15 +9,20 @@
  * (service/internal/boards), so there is nothing about the boards to
  * prerender. It is handed the catalogue's SoCs so a board built on one links
  * to that SoC's installation wizard.
+ *
+ * With `board`, the same page is one board's shell (../../lib/boards/shell.ts):
+ * the web role writes the board out where the marker is, and the island
+ * shows it in full in that place once it has loaded.
  */
 import HardwareTabs from '../HardwareTabs.astro';
 import ZoomDialog from '../ZoomDialog.astro';
 import Boards from '../boards/Boards.tsx';
 import { VENDORS, socPath } from '../../lib/hardware';
 import { pathFor, useTranslations, type Locale } from '../../lib/i18n';
+import { BOARD_MARKER, BOARD_SSR_ID } from '../../lib/boards/shell';
 
-interface Props { locale: Locale }
-const { locale } = Astro.props;
+interface Props { locale: Locale; board?: boolean }
+const { locale, board = false } = Astro.props;
 const t = useTranslations(locale);
 
 const socs = Object.fromEntries(VENDORS.flatMap((vendor) => vendor.socs.map((soc) => [
@@ -27,8 +32,12 @@ const socs = Object.fromEntries(VENDORS.flatMap((vendor) => vendor.socs.map((soc
 ---
 <div class="site-container mt-4">
   <HardwareTabs locale={locale} view="boards" />
-  <h1 class="mt-7 mb-0 text-h1 font-semibold text-balance">{t('pages.boards.heading')}</h1>
-  <p class="mt-2.5 mb-0 max-w-[65ch] text-lg">{t('pages.boards.lede')}</p>
+  {board ? (
+    <div id={BOARD_SSR_ID} class="mt-7"><Fragment set:html={BOARD_MARKER} /></div>
+  ) : (<>
+    <h1 class="mt-7 mb-0 text-h1 font-semibold text-balance">{t('pages.boards.heading')}</h1>
+    <p class="mt-2.5 mb-0 max-w-[65ch] text-lg">{t('pages.boards.lede')}</p>
+  </>)}
 </div>
-<Boards client:load locale={locale} socs={socs} />
+<Boards client:load locale={locale} socs={socs} board={board} />
 <ZoomDialog locale={locale} />

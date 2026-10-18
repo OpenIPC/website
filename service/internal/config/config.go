@@ -31,6 +31,9 @@ type Config struct {
 	GrantsDisabled bool   // WALL_GRANTS_DISABLED=1: the frame socket serves without grants (the emergency switch)
 	SnapshotMaxAge time.Duration
 	BoardsRoot     string // the board catalogue's files, served by nginx at /board-files/
+	// StaticRoot is the static bundle nginx serves, read only: a board's page
+	// is its shell there, filled in (internal/boards/page.go).
+	StaticRoot string
 	// Owner reports' files, content-addressed and written once; never inside
 	// BoardsRoot, and not the analytics' /srv/www/shared/reports either
 	// (internal/reports). Served only through the web role, which
@@ -95,6 +98,7 @@ func Load() (*Config, error) {
 		GrantsDisabled:      os.Getenv("WALL_GRANTS_DISABLED") == "1",
 		SnapshotMaxAge:      48 * time.Hour,
 		BoardsRoot:          str("BOARDS_ROOT", "/srv/boards"),
+		StaticRoot:          str("STATIC_ROOT", "/srv/static/current"),
 		ReportsRoot:         str("REPORTS_ROOT", "/srv/owner-reports"),
 		ReportsAccelPrefix:  str("REPORTS_ACCEL_PREFIX", "/report-files/"),
 		ToolsRoot:           str("TOOLS_ROOT", "/srv/tools"),

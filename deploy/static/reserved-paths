@@ -57,6 +57,14 @@
 # Recorded flights for the A/B player on /low-latency (tools/flight-ab), host-only.
 /media/
 
+# --- pages the web role writes ------------------------------------------------
+# One board's page (service/internal/boards/page.go), from the shell at
+# /_shell/board. A glob, not the prefix /cameras/boards/: the catalogue
+# itself is a page in the bundle, cameras/boards/index.html.
+/cameras/boards/*
+# Every board's page, listed by the web role; robots.txt names it.
+/sitemap-boards.xml
+
 # --- the expensive leaf ------------------------------------------------------
 # /cameras/ is deliberately NOT reserved: the catalogue is exactly what #162
 # extracts. This one action is, because it costs about a second of CPU and

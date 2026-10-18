@@ -15,6 +15,7 @@ import {
   countByScope, socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
 import { EMPTY, readQueryString, writeQueryString } from './url';
+import { boardOfPath, boardPath } from './shell';
 
 const file = (kind: BoardFile['kind'], name: string, extra: Partial<BoardFile> = {}): BoardFile => ({
   kind, name, url: `/board-files/u/${name}`, mime: 'x', bytes: 1, sha256: '0', ...extra,
@@ -578,9 +579,11 @@ describe('the query string', () => {
       file: 'xiongmai-53h20-s-u1/hi3516cv100-1.uboot', ln: 74,
     };
     expect(writeQueryString(s)).toBe('?q=xm25qh64a&scope=uboot_env&maker=hsell&soc=hi3516cv300&sensor=IMX323&missing=pinout'
-      + '&line=XVI%26AHD+Hybrid+Camera+Module&source=cctvsp&ready=1&kind=recorder&model=xiongmai-ipg-50h20pls-s'
+      + '&line=XVI%26AHD+Hybrid+Camera+Module&source=cctvsp&ready=1&kind=recorder'
       + '&file=xiongmai-53h20-s-u1%2Fhi3516cv100-1.uboot&ln=74');
-    expect(readQueryString(writeQueryString(s))).toEqual(s);
+    // The board is the path's (./shell.ts), so the query alone reads back without it, and the line with it.
+    expect(readQueryString(writeQueryString(s))).toEqual({ ...s, model: null });
+    expect(readQueryString(`${writeQueryString(s)}&model=${s.model}`)).toEqual(s);
   });
 
   test('the search looks everywhere unless a link narrows it', () => {
@@ -590,9 +593,19 @@ describe('the query string', () => {
     expect(readQueryString('?q=mtdparts&scope=uboot_env').scope).toBe('uboot_env');
   });
 
-  test('a board alone is a deep link to its details', () => {
-    expect(writeQueryString({ ...EMPTY, model: 'xiongmai-ipg-50h20pls-s' })).toBe('?model=xiongmai-ipg-50h20pls-s');
+  test('a board is its own address, and an older ?model= link still names it', () => {
+    expect(writeQueryString({ ...EMPTY, model: 'xiongmai-ipg-50h20pls-s' })).toBe('');
+    expect(boardPath('xiongmai-ipg-50h20pls-s')).toBe('/cameras/boards/xiongmai-ipg-50h20pls-s');
     expect(readQueryString('?model=xiongmai-ipg-50h20pls-s')).toEqual({ ...EMPTY, model: 'xiongmai-ipg-50h20pls-s' });
+  });
+
+  test('a board is read from its address in any language, and nothing else is a board', () => {
+    expect(boardOfPath('/cameras/boards/xiongmai-53h20-s')).toBe('xiongmai-53h20-s');
+    expect(boardOfPath('/ru/cameras/boards/xiongmai-53h20-s')).toBe('xiongmai-53h20-s');
+    expect(boardOfPath('/zh/cameras/boards/xiongmai-53h20-s/')).toBe('xiongmai-53h20-s');
+    for (const p of ['/cameras/boards', '/cameras/boards/', '/de/cameras/boards/a', '/cameras/boards/A', '/cameras/boards/-a', '/cameras/boards/a/b', '/cameras/boards/a_b']) {
+      expect(boardOfPath(p), p).toBeNull();
+    }
   });
 
   test('a file and a line only mean something inside an open board', () => {

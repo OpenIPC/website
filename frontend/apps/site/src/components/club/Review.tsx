@@ -12,6 +12,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
+import { boardPath } from '../../lib/boards/shell';
 import { ClubError, decide, fetchMe, fetchQueue, type Member, type NewBoard, type Queued } from '../../lib/club';
 import { size } from '../../lib/reports';
 import { Forbidden, STATUS_TONE } from './parts';
@@ -101,7 +102,7 @@ function Item({ q, locale, t, onDone }: { q: Queued; locale: Locale; t: BoardsT;
         <dt class="text-body-secondary">{t('club.col_submission')}</dt>
         <dd class="m-0">{q.member ? t('club.review_from', { who: q.member }) : t('club.review_anon')}</dd>
         {q.board && <><dt class="text-body-secondary">{t('club.review_board')}</dt>
-          <dd class="m-0"><a href={`${pathFor(locale, '/cameras/boards')}?model=${encodeURIComponent(q.board.id)}`} class="font-mono">{q.board.id}</a></dd></>}
+          <dd class="m-0"><a href={pathFor(locale, boardPath(q.board.id))} class="font-mono">{q.board.id}</a></dd></>}
         {q.edited_at && <><dt class="text-body-secondary">{t('club.review_edited_label')}</dt>
           <dd class="m-0">{new Date(q.edited_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}</dd></>}
         {q.joins && <><dt class="text-body-secondary">{t('club.review_joins_label')}</dt>

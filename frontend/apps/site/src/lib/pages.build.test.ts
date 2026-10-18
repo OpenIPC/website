@@ -100,8 +100,10 @@ describe('every page is a page', () => {
         continue;
       }
 
+      // The board page's shell claims the address it is served at, the id
+      // a token the web role fills in (./boards/shell.ts).
       expect(html, `${locale}${path}`).toContain(
-        `<link rel="canonical" href="https://openipc.org${pathFor(locale, path)}"`,
+        `<link rel="canonical" href="https://openipc.org${pathFor(locale, spec?.servedAt ?? path)}"`,
       );
     }
   });
@@ -110,10 +112,13 @@ describe('every page is a page', () => {
     // Two of them, and both start with an underscore: the smoke diagnostic,
     // and the Open Wall's shell, which is served at every `/snapshots/<id>`
     // address and must not have 3,210 pages that die within 48 hours indexed
-    // behind it (#165). The gallery itself is a page and is indexed.
+    // behind it (#165). The gallery itself is a page and is indexed. So is
+    // every board: the board page's shell is served only at a board's address,
+    // as that board's page, and nginx refuses its own (./boards/shell.ts).
     for (const [locale, path, html] of PAGES) {
       const noindexed = html.includes('name="robots"');
-      expect(noindexed, `${locale}${path}`).toBe(path.startsWith('/_'));
+      const servedElsewhere = !!PAGE_PATHS.find((page) => page.path === path)?.servedAt;
+      expect(noindexed, `${locale}${path}`).toBe(path.startsWith('/_') && !servedElsewhere);
     }
   });
 

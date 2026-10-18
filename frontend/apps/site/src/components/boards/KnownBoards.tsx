@@ -71,7 +71,7 @@ export default function KnownBoards({ locale, soc, sensor, model, catalogueHref 
           return (
             <li key={m.id}>
               {/* Named by its contents, title first, so the coverage chips' has/missing is heard too. */}
-              <a href={`${catalogueHref}?model=${encodeURIComponent(m.id)}`}
+              <a href={`${catalogueHref}/${m.id}`}
                 class="grid h-full grid-cols-[110px_1fr] overflow-hidden rounded-lg border border-hairline bg-white text-body no-underline transition-colors hover:border-brand-blue">
                 {photo
                   ? <img src={photo.thumb_url} alt="" loading="lazy" decoding="async" class="block h-full min-h-[96px] w-[110px] bg-surface-alt object-cover" />

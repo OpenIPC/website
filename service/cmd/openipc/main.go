@@ -178,6 +178,9 @@ var routes = []Route{
 	{"web", "GET", "/api/v1/boards"},
 	{"web", "GET", "/api/v1/boards/search"},
 	{"web", "GET", "/api/v1/boards/models/{id}"},
+	{"web", "GET", "/cameras/boards/{id}"},
+	{"web", "GET", "/{locale}/cameras/boards/{id}"},
+	{"web", "GET", "/sitemap-boards.xml"},
 	{"web", "POST", "/api/v1/vendor-firmware"},
 	{"web", "GET", "/api/v1/vendor-firmware/{deviceId}"},
 	{"web", "POST", "/api/v1/reports"},
@@ -493,6 +496,20 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		handlers[k] = h
 	}
 	for k, h := range (&boards.API{DB: pool, Log: log}).Handlers() {
+		handlers[k] = h
+	}
+	// Each board's own page, the bundle's shell filled in (boards/page.go).
+	boardPages := &boards.Pages{DB: pool, Log: log, StaticRoot: cfg.StaticRoot}
+	if cat, err := catalogue.Load(cfg.CatalogueDir); err == nil {
+		boardPages.SoC = func(slug string) (string, string, bool) {
+			s := cat.SoC(slug)
+			if s == nil || s.Vendor == nil {
+				return "", "", false
+			}
+			return s.Model, "/cameras/vendors/" + s.Vendor.URLName + "/socs/" + s.URLName, true
+		}
+	}
+	for k, h := range boardPages.Handlers() {
 		handlers[k] = h
 	}
 	for k, h := range (&vendorfw.API{DB: pool, Log: log}).Handlers() {

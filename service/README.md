@@ -7,11 +7,20 @@ roles below.
 
 | role | port (prod / dev) | answers |
 |---|---|---|
-| `web` | 3002 / 3012 | `POST /snapshots` (the cameras' frozen contract), the wall's variants, `/api/v1/wall/*` JSON, the frame socket `/api/v1/wall/socket`, `/up` |
+| `web` | 3002 / 3012 | `POST /snapshots` (the cameras' frozen contract), the wall's variants, `/api/v1/wall/*` JSON, the frame socket `/api/v1/wall/socket`, each board's page `/cameras/boards/{id}` and `/sitemap-boards.xml`, `/up` |
 | `firmware` | 3003 / 3013 | `…/download_full_image`: full flash images, built on demand, and the download stats; `/api/v1/hardware/availability.json` |
 
 `openipc routes --json` prints exactly what each role serves, and the deploy
 tests read it.
+
+The one exception to "every page is a file": a board's page,
+`/cameras/boards/{id}` (`internal/boards/page.go`). The boards live in
+PostgreSQL and change between releases, so the bundle builds one shell per
+language (`/_shell/board`, `frontend/apps/site/src/lib/boards/shell.ts`) and
+the web role fills it in, reading it from the served bundle at `STATIC_ROOT`
+(`/srv/static/current`, the environment's `/srv/www/static/<env>` mounted read
+only). A bundle without the shell still gets every board answered, as a plainer
+page of its own.
 
 The frame socket (`/api/v1/wall/socket`, #297) speaks a small JSON protocol,
 documented at the top of `internal/wallsocket/socket.go`; the pages' client is
