@@ -43,8 +43,8 @@ describe('which editions are offered', () => {
   });
 
   test('but it never empties the menu', () => {
-    // hi3516cv6xx and hi3519dv500 are built only as Ultimate. Offering what
-    // exists, with the size warning to explain it, beats every entry greyed out.
+    // hi3519dv500 is built only as Ultimate. Offering what exists, with the
+    // size warning to explain it, beats every entry greyed out.
     expect(allowedEditions('nor8m', 'nor8m', ULTIMATE_ONLY)).toEqual(['ultimate']);
   });
 

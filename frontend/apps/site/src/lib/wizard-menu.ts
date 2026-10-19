@@ -114,12 +114,11 @@ export function allowedEditions(chip: string, layout: string, availability: Avai
   const limit = LAYOUT_LIMITS[layout];
   if (!limit) return published;
 
-  // The layout rule narrows what exists; it must not empty the menu. Every
-  // board with a NOR build has a Lite one today, but hi3516cv6xx and
-  // hi3519dv500 are built only as Ultimate, and the first of those to be listed
-  // would otherwise offer nothing at all on the 8MB layout. Offering what
-  // exists, and letting the size warning explain itself, beats a menu with
-  // every entry greyed out.
+  // The layout rule narrows what exists; it must not empty the menu.
+  // hi3519dv500 is built only as Ultimate (hi3516cv6xx has Lite and
+  // Ultimate), and would otherwise offer nothing at all on the 8MB layout.
+  // Offering what exists, and letting the size warning explain itself, beats
+  // a menu with every entry greyed out.
   const fits = published.filter((release) => limit.includes(release));
   return fits.length > 0 ? fits : published;
 }
