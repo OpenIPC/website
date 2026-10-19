@@ -108,7 +108,7 @@ func TestOwnerReportsSurviveEveryCatalogueWriter(t *testing.T) {
 			"xmupdates": {Key: "x.bin", DeviceID: "000559A7", Version: "1", Build: "b",
 				AssetURL: vendorfw.Sources["xmupdates"] + "latest/x.bin"},
 			"coupler": {Key: "c.bin", DeviceID: "000559A7", Version: "1", Build: "b",
-				AssetURL: vendorfw.Sources["coupler"] + "latest/c.bin"},
+				AssetURL: vendorfw.Sources["coupler"] + "xiongmai/c.bin"},
 			"anjoyupdates": {Key: "a1", Version: "3.6", Build: "MC-A3_V0", DeviceType: "MC-A3_V0", App: "public", Category: "camera",
 				AssetURL: vendorfw.Sources["anjoyupdates"] + "firmware-archive/a1.bin", SHA256: strings.Repeat("e", 64), Size: 100, PublishedAt: &at},
 		} {

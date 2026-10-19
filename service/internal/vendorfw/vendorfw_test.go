@@ -57,7 +57,7 @@ func TestDecodeRefusesWhatCannotBeStored(t *testing.T) {
 	for name, doc := range map[string][]byte{
 		"another source":     body(t, "hikvision", good),
 		"no items, not said": body(t, "xmupdates"),
-		"empty with items":   []byte(`{"schema":1,"source":"coupler","empty":true,"items":[{"key":"a","device_id":"000559A7","version":"1","build":"b","asset_url":"https://github.com/OpenIPC/coupler/releases/download/latest/a.bin"}]}`),
+		"empty with items":   []byte(`{"schema":1,"source":"coupler","empty":true,"items":[{"key":"a","device_id":"000559A7","version":"1","build":"b","asset_url":"https://github.com/OpenIPC/coupler/releases/download/xiongmai/a.bin"}]}`),
 		"a short device id":  body(t, "xmupdates", item("a", "559A7", "1", "xmupdates")),
 		"another repo's asset": body(t, "xmupdates", Item{Key: "a", DeviceID: "000559A7", Version: "1", Build: "b",
 			AssetURL: "https://github.com/evil/x/releases/download/latest/a.bin"}),
@@ -123,8 +123,8 @@ func TestCouplerReleaseBecomesAPush(t *testing.T) {
 	at := time.Date(2026, 9, 26, 14, 0, 0, 0, time.UTC)
 	items := FromCoupler([]CouplerAsset{
 		{Name: "000559A7_OpenIPC_HI3516EV200_50H20AI_S38.bin", Size: 8 << 20, Digest: "sha256:" + strings.Repeat("b", 64), UpdatedAt: at,
-			URL: "https://github.com/OpenIPC/coupler/releases/download/latest/000559A7_OpenIPC_HI3516EV200_50H20AI_S38.bin"},
-		{Name: "README.txt", URL: "https://github.com/OpenIPC/coupler/releases/download/latest/README.txt"},
+			URL: "https://github.com/OpenIPC/coupler/releases/download/xiongmai/000559A7_OpenIPC_HI3516EV200_50H20AI_S38.bin"},
+		{Name: "README.txt", URL: "https://github.com/OpenIPC/coupler/releases/download/xiongmai/README.txt"},
 	})
 	if len(items) != 1 || items[0].DeviceID != "000559A7" || items[0].Build != "HI3516EV200_50H20AI_S38" || items[0].Version != "2026-09-26" {
 		t.Fatalf("%+v", items)
