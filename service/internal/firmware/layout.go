@@ -51,6 +51,10 @@ const (
 // UBI device, kernel volume included -- at 0x100000, bounded by the end of
 // the 128 MiB chip the installation page assumes. The image still ends at the
 // UBI image rounded up to a page; the wizard writes it with write.trimffs.
+// splitOverlayMin is the least a split image leaves for rootfs_data: one erase
+// block, as the firmware build and its image assembly require.
+const splitOverlayMin = 0x10000
+
 const (
 	ubiBootLimit = 0xc0000
 	ubiOffset    = 0x100000
@@ -81,6 +85,13 @@ type Spec struct {
 	Release   string // lite, ultimate, fpv, ...
 	SizeMB    int    // NOR only
 	LayoutMB  int    // NOR only
+	// Split is a NOR image of the split layout (catalogue.SoC.NORSplit): the
+	// bootloader, then the -split package's one firmware.bin at the SoC's
+	// firmware offset. Resolve sets it where the board publishes only that
+	// package for the edition (hi3516cv6xx, hi3519dv500); where the plain
+	// package is published (the gk7205v200 family) the image keeps the fixed
+	// slots its bootloader boots as well.
+	Split bool
 }
 
 // ErrInvalid is a request for something this builder does not make.
@@ -172,9 +183,24 @@ func BoardFor(soc *catalogue.SoC, idx *Index, flashType string) string {
 	return Board(soc, idx)
 }
 
-// LinuxAsset is the tarball carrying the kernel and rootfs.
+// LinuxAsset is the tarball carrying the kernel and rootfs: the split package
+// for a split image.
 func (s Spec) LinuxAsset(idx *Index) string {
+	if s.Split {
+		return SplitName(BoardFor(s.SoC, idx, s.FlashType), s.Release)
+	}
 	return fmt.Sprintf("openipc.%s-%s-%s.tgz", BoardFor(s.SoC, idx, s.FlashType), s.FlashType, s.Release)
+}
+
+// splitOnly says whether a NOR edition comes only as the split package.
+func splitOnly(s Spec, idx *Index) bool {
+	if s.nand() || !s.SoC.NORSplit {
+		return false
+	}
+	board := BoardFor(s.SoC, idx, s.FlashType)
+	_, plain := idx.Asset(fmt.Sprintf("openipc.%s-nor-%s.tgz", board, s.Release))
+	_, split := idx.Asset(SplitName(board, s.Release))
+	return !plain && split
 }
 
 func (s Spec) ubi() bool { return s.nand() && s.SoC.UBINand() }
@@ -187,6 +213,9 @@ func (s Spec) Bootloader() string { return s.SoC.Bootloader(s.FlashType) }
 // member and kernel is "".
 func (s Spec) Members(idx *Index) (kernel, rootfs string) {
 	board := BoardFor(s.SoC, idx, s.FlashType)
+	if s.Split {
+		return "", "firmware.bin." + board
+	}
 	if s.ubi() {
 		return "", "rootfs.ubi." + board
 	}
@@ -209,6 +238,17 @@ type part struct {
 // the next. For the split NAND layout the rootfs is bounded only by the
 // image, which it defines; on the UBI-only layout by the end of the chip.
 func (s Spec) parts(kernel, rootfs string) []part {
+	if s.Split {
+		// firmware.bin -- the uImage, then the squashfs -- from where the
+		// environment ends to a block short of the chip's end: the kernel
+		// makes rootfs_data of what follows the image, and with less than
+		// a block there would be no overlay to keep settings in.
+		off := s.SoC.FirmwareOffset()
+		return []part{
+			{"u-boot", "", 0, off, "the firmware offset"},
+			{"firmware", rootfs, off, int64(s.SizeMB)*mb - splitOverlayMin, "the last block, kept for settings,"},
+		}
+	}
 	if s.ubi() {
 		return []part{
 			{"u-boot", "", 0, ubiBootLimit, "the boot partition"},

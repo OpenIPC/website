@@ -75,6 +75,11 @@ func BuilderEdition(name string) (board, storage, edition string, ok bool) {
 	return board, storage, edition, true
 }
 
+// SplitName is the split NOR package of a board's edition.
+func SplitName(board, edition string) string {
+	return fmt.Sprintf("openipc.%s-nor-%s-split.tgz", board, edition)
+}
+
 // IndexName is the name the index holds an edition's tarball under.
 func IndexName(board, storage, edition string) string {
 	return fmt.Sprintf("openipc.%s-%s-%s.tgz", board, storage, edition)
@@ -101,6 +106,10 @@ var (
 	unsafeName = regexp.MustCompile(`[^A-Za-z0-9._-]`)
 	// openipc.<board>-<storage>-<edition>.tgz
 	assetName = regexp.MustCompile(`^openipc\.(.+)-(nor|nand|emmc|sd)-([a-z0-9]+)\.tgz$`)
+	// openipc.<board>-nor-<edition>-split.tgz, the split NOR layout's one
+	// firmware.bin. Beside the plain package on the gk7205v200 family; the
+	// only NOR package of hi3516cv6xx and hi3519dv500.
+	splitAssetName = regexp.MustCompile(`^openipc\.(.+)-nor-([a-z0-9]+)-split\.tgz$`)
 )
 
 // Fit is what a platform's build needs from the flash: the flash size it is
@@ -141,6 +150,10 @@ func NewIndex(build string, assets []Asset, aliases map[string]string, fits map[
 		if m := assetName.FindStringSubmatch(a.Name); m != nil {
 			k := [2]string{m[1], m[2]}
 			idx.builds[k] = append(idx.builds[k], m[3])
+		} else if m := splitAssetName.FindStringSubmatch(a.Name); m != nil {
+			// A NOR edition is published when either package is.
+			k := [2]string{m[1], "nor"}
+			idx.builds[k] = append(idx.builds[k], m[2])
 		}
 	}
 	for k, eds := range idx.builds {
@@ -150,7 +163,7 @@ func NewIndex(build string, assets []Asset, aliases map[string]string, fits map[
 			eds = slices.DeleteFunc(eds, func(e string) bool { return e == "fpv" })
 		}
 		slices.Sort(eds)
-		idx.builds[k] = eds
+		idx.builds[k] = slices.Compact(eds)
 	}
 	names := make([]string, 0, len(idx.assets))
 	for n := range idx.assets {

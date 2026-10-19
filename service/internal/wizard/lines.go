@@ -318,11 +318,12 @@ func (c *camera) flashingLinux() []string {
 		return append(text, "reset")
 	}
 	if c.split {
-		// One image, firmware.bin, at 0x50000, the rest of the chip erased
-		// in the same guarded line: the kernel finds the FIT and the squashfs
-		// in it and makes rootfs_data of what is left.
+		// One image, firmware.bin, where the environment ends (0x50000, or
+		// the SoC's own), the rest of the chip erased in the same guarded
+		// line: the kernel finds the uImage and the squashfs in it and makes
+		// rootfs_data of what is left.
 		fw := "firmware.bin." + c.board
-		off, erase := hexUpper(splitOffset), c.splitEraseSize()
+		off, erase := hexUpper(c.splitOffset()), c.splitEraseSize()
 		text = c.probe(text)
 		if c.sdWifi() {
 			text = append(text, c.guardedFlash("fatload mmc 0:1 "+la+" "+fw, off, erase, "${filesize}"))

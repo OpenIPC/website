@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -32,12 +33,24 @@ type SoC struct {
 	// firmware under, when that is not the NOR one: GK7205V510 has a NOR
 	// build of its own, but its NAND firmware is the GK7205V500 build.
 	NANDBoard string `yaml:"nand_board"`
-	// NORSplit is a SoC whose firmware also ships the split NOR layout,
-	// openipc.<board>-nor-<edition>-split.tgz: one firmware.bin (a hashed
-	// FIT, then the squashfs at the next 64 KiB) written at 0x50000, which
-	// the kernel divides into kernel, rootfs and rootfs_data at boot. Its
-	// -nor.bin bootloader boots that and the fixed slots alike.
-	NORSplit      bool    `yaml:"nor_split"`
+	// NORSplit is a SoC whose firmware ships the split NOR layout,
+	// openipc.<board>-nor-<edition>-split.tgz: one firmware.bin (a uImage,
+	// then the squashfs at the next 64 KiB) written at FirmwareOffset, which
+	// the kernel divides into kernel, rootfs and rootfs_data at boot. Beside
+	// the fixed-slot package (the gk7205v200 family, whose -nor.bin
+	// bootloader boots both) or instead of it (hi3516cv6xx, hi3519dv500).
+	NORSplit bool `yaml:"nor_split"`
+	// NORFirmwareOffset is where a NOR install's firmware starts: the boot
+	// partition and the U-Boot environment come before it. 0x50000 (256K +
+	// 64K) when empty; hi3519dv500's signed boot image needs 512K + 256K, so
+	// 0xc0000. The U-Boot step blanks, erases and writes up to it, and the
+	// split layout's firmware.bin goes there.
+	NORFirmwareOffset string `yaml:"nor_firmware_offset"`
+	// NORKernelRead is how much of the firmware partition the bootloaders in
+	// the field read to boot (0x200000 when empty: the fixed layout's kernel
+	// slot; 0x600000 on hi3519dv500). A split firmware.bin whose uImage is
+	// larger is read short by them, so a full image is refused.
+	NORKernelRead string  `yaml:"nor_kernel_read"`
 	LinuxFilename string  `yaml:"linux_filename"`
 	LoadAddress   string  `yaml:"load_address"`
 	Vendor        *Vendor `yaml:"-"`
@@ -87,6 +100,13 @@ func Load(dir string) (*Catalogue, error) {
 			if !slugShape.MatchString(s.URLName) {
 				return nil, fmt.Errorf("%s: SoC urlname %q is not [a-z0-9][a-z0-9._-]*", filepath.Base(file), s.URLName)
 			}
+			for _, h := range []struct{ field, value string }{
+				{"nor_firmware_offset", s.NORFirmwareOffset}, {"nor_kernel_read", s.NORKernelRead},
+			} {
+				if h.value != "" && parseHex(h.value) <= 0 {
+					return nil, fmt.Errorf("%s: SoC %q: %s %q is not a hex size", filepath.Base(file), s.URLName, h.field, h.value)
+				}
+			}
 			if _, dup := c.bySlug[s.URLName]; dup {
 				return nil, fmt.Errorf("%s: SoC %q appears twice", filepath.Base(file), s.URLName)
 			}
@@ -127,6 +147,38 @@ func (s *SoC) Bootloader(flashType string) string {
 		return s.UBootNANDFilename
 	}
 	return s.UBootFilename
+}
+
+// Defaults of the NOR layout fields, as every SoC before hi3519dv500 has them.
+const (
+	defaultNORFirmwareOffset = 0x50000
+	defaultNORKernelRead     = 0x200000
+)
+
+// FirmwareOffset is where a NOR install's firmware starts (NORFirmwareOffset).
+func (s *SoC) FirmwareOffset() int64 {
+	if v := parseHex(s.NORFirmwareOffset); v > 0 {
+		return v
+	}
+	return defaultNORFirmwareOffset
+}
+
+// KernelRead is how much of the firmware partition a bootloader reads to boot
+// (NORKernelRead).
+func (s *SoC) KernelRead() int64 {
+	if v := parseHex(s.NORKernelRead); v > 0 {
+		return v
+	}
+	return defaultNORKernelRead
+}
+
+// parseHex reads "0x..." (or plain hex); 0 for anything else.
+func parseHex(v string) int64 {
+	n, err := strconv.ParseInt(strings.TrimPrefix(strings.ToLower(strings.TrimSpace(v)), "0x"), 16, 64)
+	if err != nil || n < 0 {
+		return 0
+	}
+	return n
 }
 
 // ModelDowncase is what file names use.

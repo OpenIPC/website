@@ -74,7 +74,7 @@ func Document(soc *catalogue.SoC, idx *firmware.Index) []byte {
 	published := []any{}
 	for _, ft := range flashTypes {
 		for _, rel := range e.releases(ft) {
-			name := e.linuxFilename(rel, ft)
+			name := e.packageName(rel, ft)
 			published = append(published, obj{{"flash_type", ft}, {"release", rel},
 				{"url", e.url(name)}, {"filename", e.upstream(name)}})
 		}
@@ -256,6 +256,19 @@ func (e *exporter) linuxFilename(release, ft string) string {
 	return fmt.Sprintf("openipc.%s-%s-%s.tgz", e.boardFor(ft), ft, release)
 }
 
+// packageName is the package an edition is published as: the plain one, or
+// for a board that publishes only the split NOR package (hi3516cv6xx,
+// hi3519dv500), that one.
+func (e *exporter) packageName(release, ft string) string {
+	plain := e.linuxFilename(release, ft)
+	if ft == "nor" && e.soc.NORSplit && !e.published(plain) {
+		if split := splitFilename(e.boardFor(ft), release); e.published(split) {
+			return split
+		}
+	}
+	return plain
+}
+
 // boardFor is the build a flash type's firmware comes from (nand_board).
 func (e *exporter) boardFor(ft string) string { return firmware.BoardFor(e.soc, e.idx, ft) }
 
@@ -369,7 +382,12 @@ func (e *exporter) camera(ft string, layout *string, edition, iface, sd, mac str
 	if layout != nil {
 		c.layout = *layout
 	}
-	c.split = e.soc.NORSplit && c.scansLayout() && e.published(splitFilename(c.board, edition))
+	// The split install where its package is published -- and where the
+	// plain one is not either, so a split-only SoC with nothing published
+	// yet is shown the install it will get, at its own firmware offset,
+	// rather than fixed slots it has none of.
+	c.split = e.soc.NORSplit && c.scansLayout() &&
+		(e.published(splitFilename(c.board, edition)) || !e.published(c.firmwareFilename()))
 	return c
 }
 

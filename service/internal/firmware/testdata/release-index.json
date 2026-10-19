@@ -16,51 +16,51 @@
       "release": "nightly-20260923-830fa4c"
     },
     "boot-hi3516cv608-nor.bin": {
-      "size": 241664,
-      "digest": "sha256:ea7a7c948dd810034a00ae8d06b8f222aac9a5c63278d276ef6419e1c9d5faff",
-      "updated_at": "2026-07-31T05:37:01Z",
+      "size": 198656,
+      "digest": "sha256:3e3b86b85ace056a3f4ddfbb94ed71c3f3749dcdaa4dee40bebaa84fa354e134",
+      "updated_at": "2026-10-19T17:42:57Z",
       "release": "latest"
     },
     "boot-hi3516cv610-00g-nor.bin": {
-      "size": 241664,
-      "digest": "sha256:0bd38112a23353e10a8e06c740a4171879bd8c98c69b88c270286ad655d15a4e",
-      "updated_at": "2026-07-31T05:37:02Z",
+      "size": 198656,
+      "digest": "sha256:e347164b4736f20ba788028d367bf4493faf486856b71ca7cb32935a66a4113f",
+      "updated_at": "2026-10-19T17:42:59Z",
       "release": "latest"
     },
     "boot-hi3516cv610-00s-nor.bin": {
-      "size": 241664,
-      "digest": "sha256:0accab466d2aebed923e192a951eb151a62a57f095a273dfce13aa2f75e03c97",
-      "updated_at": "2026-07-31T05:37:03Z",
+      "size": 198656,
+      "digest": "sha256:e347164b4736f20ba788028d367bf4493faf486856b71ca7cb32935a66a4113f",
+      "updated_at": "2026-10-19T17:43:01Z",
       "release": "latest"
     },
     "boot-hi3516cv610-10b-nor.bin": {
-      "size": 241664,
-      "digest": "sha256:d5a0c2b10cd2822c7a40880d0b7ab5a6a635702826309a96c1bb4aa11c8eadb6",
-      "updated_at": "2026-07-31T05:37:04Z",
+      "size": 198656,
+      "digest": "sha256:4768c9738a3eee7af7788883d93a765c1d431cd4a09fdbc2e0a61e763fea2bc2",
+      "updated_at": "2026-10-19T17:43:03Z",
       "release": "latest"
     },
     "boot-hi3516cv610-20g-nor.bin": {
-      "size": 241664,
-      "digest": "sha256:59ecac167bd8016c5b3696d2deea192d73cf42a6cf57c5fe94c331a91cd6f2cd",
-      "updated_at": "2026-07-31T05:37:06Z",
+      "size": 198656,
+      "digest": "sha256:317b1ff31cc3362b9e3dd157f8678c1ea3bf6cb102d6ed2e1738f9944430d73f",
+      "updated_at": "2026-10-19T17:43:05Z",
       "release": "latest"
     },
     "boot-hi3516cv610-20s-nor.bin": {
-      "size": 241664,
-      "digest": "sha256:aa72b5f76fc1e542f3e9fb031b007ebc945cde1d28a2b413a24ac2baae139d89",
-      "updated_at": "2026-07-31T05:37:07Z",
+      "size": 198656,
+      "digest": "sha256:317b1ff31cc3362b9e3dd157f8678c1ea3bf6cb102d6ed2e1738f9944430d73f",
+      "updated_at": "2026-10-19T17:43:07Z",
       "release": "latest"
     },
     "boot-hi3519dv500-dmeb-nor.bin": {
-      "size": 392192,
-      "digest": "sha256:e80c44c81bb73826f7e1e873a0d1fbf018794e87333b9c873e8f1f0cb04d355b",
-      "updated_at": "2026-06-27T18:49:42Z",
+      "size": 240640,
+      "digest": "sha256:b82339073bfcf68b083f35353f7d4fee6ef3f8671b95f13a2a25a2168e74b4ed",
+      "updated_at": "2026-10-19T17:43:38Z",
       "release": "latest"
     },
     "boot-hi3519dv500-dmebpro-nor.bin": {
-      "size": 392192,
-      "digest": "sha256:9cbd866d99927321a97086736baa5c6b1e9511c088bc72b1a1e1dbafe2b144ab",
-      "updated_at": "2026-06-27T18:49:44Z",
+      "size": 240640,
+      "digest": "sha256:50b1e65df14de639ee4a8d4eb40d51b233800208beae828765e4cac41c2a557e",
+      "updated_at": "2026-10-19T17:43:39Z",
       "release": "latest"
     },
     "openipc.fh8852v100-nor-lite.tgz": {
@@ -291,13 +291,13 @@
       "updated_at": "2026-09-23T18:32:35Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.hi3516cv6xx-nor-lite.tgz": {
+    "openipc.hi3516cv6xx-nor-lite-split.tgz": {
       "size": 7272854,
       "digest": "sha256:0362da3a1364db0f6ce2de1d4fa567c8941fec923ab44d10b67772d9f997251a",
       "updated_at": "2026-09-23T18:32:37Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.hi3516cv6xx-nor-ultimate.tgz": {
+    "openipc.hi3516cv6xx-nor-ultimate-split.tgz": {
       "size": 9336515,
       "digest": "sha256:9eba95055cff05d067e718da87abcd6a9df67e73a86b91e65ecdfc0bfb30839c",
       "updated_at": "2026-09-23T18:32:40Z",
@@ -435,7 +435,7 @@
       "updated_at": "2026-09-23T18:33:32Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.hi3519dv500-nor-ultimate.tgz": {
+    "openipc.hi3519dv500-nor-ultimate-split.tgz": {
       "size": 14722049,
       "digest": "sha256:0f21f7cb56d829967838061bd56b39f251ea2e9a23fdee5764e701149c8b6c58",
       "updated_at": "2026-09-23T18:33:35Z",

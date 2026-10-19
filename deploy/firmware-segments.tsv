@@ -52,6 +52,10 @@ hi3516cv100	hisilicon	HI3516CV100	cctv
 hi3516cv200	hisilicon	HI3516CV200	cctv
 hi3516cv300	hisilicon	HI3516CV300	cctv
 hi3516cv500	hisilicon	HI3516CV500	cctv
+hi3516cv608	hisilicon	HI3516CV610	cctv
+hi3516cv610-ddr2-64m	hisilicon	HI3516CV610	cctv
+hi3516cv610-ddr3-128m	hisilicon	HI3516CV610	cctv
+hi3516cv610-ddr3-512m	hisilicon	HI3516CV610	cctv
 hi3516dv100	hisilicon	HI3516AV100	cctv
 hi3516dv200	hisilicon	HI3516EV200	cctv
 hi3516dv300	hisilicon	HI3516CV500	cctv
@@ -63,6 +67,8 @@ hi3518ev100	hisilicon	HI3516CV100	cctv
 hi3518ev200	hisilicon	HI3516CV200	cctv
 hi3518ev201	hisilicon	HI3516CV200	cctv
 hi3518ev300	hisilicon	HI3516EV200	cctv
+hi3519dv500-dmeb	hisilicon	HI3519DV500	cctv
+hi3519dv500-dmebpro	hisilicon	HI3519DV500	cctv
 hi3519v101	hisilicon	HI3519V101	cctv
 hi3520dv100	hisilicon		cctv
 hi3520dv200	hisilicon		cctv

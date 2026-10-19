@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -74,7 +75,9 @@ const BuildDeadline = 150 * time.Second
 //
 // 2: NAND images for the UBI-only SoCs became the NAND bootloader and
 // rootfs.ubi at 0x100000, with no uImage.
-const layoutVersion = "2"
+// 3: split NOR images (Spec.Split): the bootloader, then firmware.bin at the
+// SoC's firmware offset.
+const layoutVersion = "3"
 
 // Key names the image these inputs produce.
 func (in Inputs) Key() string {
@@ -83,11 +86,15 @@ func (in Inputs) Key() string {
 	fmt.Fprintf(h, "v%s\n%s\n%s\n%d\n%d\n%s\n%s\n%s\n%s\n%v\n",
 		layoutVersion, s.FlashType, s.Release, s.SizeMB, s.LayoutMB,
 		in.UBoot.Key(), in.Linux.Key(), in.Kernel, in.Rootfs, s.nor())
+	if s.Split {
+		fmt.Fprintf(h, "split\n%x\n%x\n", s.SoC.FirmwareOffset(), s.SoC.KernelRead())
+	}
 	return hex.EncodeToString(h.Sum(nil))[:16]
 }
 
 // Resolve turns a spec into inputs against the current index.
 func Resolve(s Spec, idx *Index) (Inputs, error) {
+	s.Split = splitOnly(s, idx)
 	in := Inputs{Spec: s}
 	name := s.Bootloader()
 	if !plainName(name) {
@@ -103,7 +110,7 @@ func Resolve(s Spec, idx *Index) (Inputs, error) {
 		return in, ErrUnknownAsset{linuxName}
 	}
 	in.UBoot, in.Linux = uboot, linux
-	in.Kernel, in.Rootfs = s.Members(idx)
+	in.Kernel, in.Rootfs = in.Spec.Members(idx)
 	return in, nil
 }
 
@@ -290,6 +297,11 @@ func (im *Images) assemble(in Inputs, ubootPath, linuxPath, dest string) error {
 		written = append(written, extent{p.offset, p.offset + sizes[p.member]})
 	}
 
+	if s.Split {
+		if err := kernelFitsRead(f, members[0], s.SoC.KernelRead(), filename); err != nil {
+			return err
+		}
+	}
 	last := members[len(members)-1]
 	size := s.imageSize(last, sizes[last.member])
 	if err := fillErased(f, written, size); err != nil {
@@ -305,6 +317,25 @@ func (im *Images) assemble(in Inputs, ubootPath, linuxPath, dest string) error {
 		return err
 	}
 	return os.Rename(tmp, dest)
+}
+
+// kernelFitsRead refuses a split firmware.bin whose uImage -- the 64-byte
+// header and the size it carries at byte 12 -- is longer than what the
+// bootloaders in the field read from the firmware offset to boot it: they
+// would read it short and fail its CRC.
+func kernelFitsRead(f *os.File, p part, read int64, filename string) error {
+	var hdr [64]byte
+	if _, err := f.ReadAt(hdr[:], p.offset); err != nil {
+		return err
+	}
+	if binary.BigEndian.Uint32(hdr[0:4]) != 0x27051956 {
+		return ErrMissingMember{fmt.Sprintf("%s does not start with a uImage", p.member)}
+	}
+	if n := 64 + int64(binary.BigEndian.Uint32(hdr[12:16])); n > read {
+		return ErrTooLarge{fmt.Sprintf("the uImage in %s is %d bytes, more than the 0x%x a bootloader reads to boot %s",
+			p.member, n, read, filename)}
+	}
+	return nil
 }
 
 // streamMembers reads the tarball once, front to back, copying each wanted

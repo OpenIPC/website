@@ -1955,6 +1955,90 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv500"/>
   </url>
   <url>
+    <loc>https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv608</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv608"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv608"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv608"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv608"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv608</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv608"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv608"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv608"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv608"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv608</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv608"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv608"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv608"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv608"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-128m"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m"/>
+  </url>
+  <url>
     <loc>https://openipc.org/cameras/vendors/hisilicon/socs/hi3516dv100</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3516dv100"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3516dv100"/>
@@ -2184,6 +2268,48 @@
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3518ev300"/>
     <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3518ev300"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3518ev300"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmeb"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro"/>
   </url>
   <url>
     <loc>https://openipc.org/cameras/vendors/hisilicon/socs/hi3519v101</loc>

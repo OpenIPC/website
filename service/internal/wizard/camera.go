@@ -94,13 +94,15 @@ func (c *camera) ubi() bool { return c.nand() && c.soc.UBINand() }
 // bootloader is the U-Boot file this install writes.
 func (c *camera) bootloader() string { return c.soc.Bootloader(c.flashTypeType()) }
 
-// bootSize is the boot partition: what the U-Boot step blanks, erases and
-// writes.
+// bootSize is the boot partition and the environment behind it: what the
+// U-Boot step blanks, erases and writes. On NOR it is the SoC's own
+// (catalogue.SoC.FirmwareOffset): 0x50000, or 0xC0000 where the signed boot
+// image needs 512K of boot and 256K of environment.
 func (c *camera) bootSize() string {
 	if c.ubi() {
 		return ubiBootSize
 	}
-	return "0x50000"
+	return hexUpper(c.soc.FirmwareOffset())
 }
 
 // writeCmd is how an image holding UBI goes onto NAND. A plain `nand write`
@@ -399,13 +401,13 @@ func splitFilename(board, edition string) string {
 }
 
 // splitOffset is where firmware.bin goes: right after the environment, where
-// the kernel slot starts on the fixed layout.
-const splitOffset = 0x50000
+// the kernel slot starts on the fixed layout (catalogue.SoC.FirmwareOffset).
+func (c *camera) splitOffset() int64 { return c.soc.FirmwareOffset() }
 
 // splitEraseSize runs from splitOffset to the end of the chip: the rest of the
 // flash is the one firmware partition, and nothing of an old layout may be
 // left for the bootloader's scan or the overlay to find.
 func (c *camera) splitEraseSize() string {
 	size, _ := strconv.ParseInt(strings.TrimPrefix(c.flashSizeHex(), "0x"), 16, 64)
-	return fmt.Sprintf("0x%x", size-splitOffset)
+	return fmt.Sprintf("0x%x", size-c.splitOffset())
 }
