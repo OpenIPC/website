@@ -315,7 +315,7 @@ func TestAnIdenticalFirmwarePushKeepsTheETag(t *testing.T) {
 		return resp.Header.Get("ETag")
 	}
 	p := &vendorfw.Payload{Schema: 1, Source: "coupler", Items: []vendorfw.Item{{Key: "a.bin", DeviceID: "000559A7", Version: "1", Build: "b",
-		AssetURL: vendorfw.Sources["coupler"] + "latest/a.bin"}}}
+		AssetURL: vendorfw.Sources["coupler"] + "xiongmai/a.bin"}}}
 	if _, err := vendorfw.Save(ctx, pool, p, "run 1"); err != nil {
 		t.Fatal(err)
 	}

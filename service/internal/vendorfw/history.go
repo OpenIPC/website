@@ -132,7 +132,7 @@ func ImportHistory(ctx context.Context, db *pgxpool.Pool, client *http.Client, t
 	if done["xmupdates"], err = save(ctx, db, "xmupdates", items); err != nil {
 		return done, err
 	}
-	rel, err := get("https://api.github.com/repos/OpenIPC/coupler/releases/tags/latest")
+	rel, err := get("https://api.github.com/repos/OpenIPC/coupler/releases/tags/xiongmai")
 	if err != nil {
 		return done, err
 	}
