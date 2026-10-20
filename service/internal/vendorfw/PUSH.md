@@ -31,11 +31,16 @@ gh workflow run weekly-update.yml -R OpenIPC/herospeedupdates
 ```
 
 They push to openipc.org only. dev.openipc.org takes production's rows
-instead, in one transaction so a reader never sees the table empty:
+instead: into a fresh file, imported only when the export succeeded, in one
+transaction that a failed import rolls back, so dev never ends up empty or
+with an older export:
 
 ```
-psql "$PROD_URL" -c "\copy vendor_firmware TO 'vf.csv' CSV HEADER"
-psql "$DEV_URL" -1 -c "DELETE FROM vendor_firmware" -c "\copy vendor_firmware FROM 'vf.csv' CSV HEADER"
+f=$(mktemp) &&
+  psql "$PROD_URL" -v ON_ERROR_STOP=1 -c "\copy vendor_firmware TO '$f' CSV HEADER" &&
+  psql "$DEV_URL" -1 -v ON_ERROR_STOP=1 -c "DELETE FROM vendor_firmware" \
+    -c "\copy vendor_firmware FROM '$f' CSV HEADER"
+rm -f "$f"
 ```
 
 A restore needs neither: the PostgreSQL archive holds the table
