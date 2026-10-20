@@ -192,11 +192,44 @@ func (s Spec) LinuxAsset(idx *Index) string {
 	return fmt.Sprintf("openipc.%s-%s-%s.tgz", BoardFor(s.SoC, idx, s.FlashType), s.FlashType, s.Release)
 }
 
-// splitOnly says whether a NOR edition comes only as the split package: the
-// catalogue says so (nor_split_only), whatever plain package the index still
-// lists for the board from before.
+// splitOnly says whether a NOR edition comes only as the split package.
 func splitOnly(s Spec, idx *Index) bool {
-	return !s.nand() && s.SoC.NORSplit && s.SoC.NORSplitOnly
+	return !s.nand() && SplitOnlyEdition(s.SoC, idx, s.Release)
+}
+
+// SplitOnlyEdition says whether a NOR edition installs only from the split
+// package: on a SoC with no fixed-slot build (nor_split_only), whatever plain
+// package the index still lists for the board from before, and on any split
+// SoC for an edition only the split package carries.
+func SplitOnlyEdition(soc *catalogue.SoC, idx *Index, edition string) bool {
+	if !soc.NORSplit {
+		return false
+	}
+	if soc.NORSplitOnly {
+		return true
+	}
+	board := BoardFor(soc, idx, "nor")
+	_, plain := idx.Asset(fmt.Sprintf("openipc.%s-nor-%s.tgz", board, edition))
+	_, split := idx.Asset(SplitName(board, edition))
+	return !plain && split
+}
+
+// NORReleases are the NOR editions a SoC installs from. A split-only SoC
+// (nor_split_only) counts only those whose split package is published: the
+// plain one its board may still list is not what it installs.
+func NORReleases(soc *catalogue.SoC, idx *Index) []string {
+	board := BoardFor(soc, idx, "nor")
+	rels := idx.Releases(board, "nor")
+	if !soc.NORSplit || !soc.NORSplitOnly {
+		return rels
+	}
+	var out []string
+	for _, r := range rels {
+		if _, ok := idx.Asset(SplitName(board, r)); ok {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 func (s Spec) ubi() bool { return s.nand() && s.SoC.UBINand() }

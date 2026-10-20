@@ -9,6 +9,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -190,5 +191,96 @@ func TestSplitOnlyIgnoresAStalePlainPackage(t *testing.T) {
 	}
 	if !in.Spec.Split || in.Linux.Name != "openipc.hi3516cv6xx-nor-lite-split.tgz" {
 		t.Errorf("hi3516cv610 lite with a stale plain package: %+v", in)
+	}
+}
+
+// A split-only SoC counts only the editions whose split package is
+// published: a stale plain package alone offers nothing to install.
+func TestSplitOnlyReleasesNeedTheSplitPackage(t *testing.T) {
+	cat := loadCatalogue(t)
+	soc := cat.SoC("hi3516cv610-ddr3-128m")
+	stale := NewIndex("b", []Asset{
+		{Name: "boot-hi3516cv610-20s-nor.bin"},
+		{Name: "openipc.hi3516cv6xx-nor-lite.tgz"},
+	}, nil, nil)
+	if got := NORReleases(soc, stale); len(got) != 0 {
+		t.Errorf("stale plain package only: NOR releases %v, want none", got)
+	}
+	if got := Availability(soc, stale); got != "none" {
+		t.Errorf("stale plain package only: availability %q, want none", got)
+	}
+	published := NewIndex("b", []Asset{
+		{Name: "boot-hi3516cv610-20s-nor.bin"},
+		{Name: "openipc.hi3516cv6xx-nor-lite.tgz"},
+		{Name: "openipc.hi3516cv6xx-nor-lite-split.tgz"},
+	}, nil, nil)
+	if got := NORReleases(soc, published); !slices.Equal(got, []string{"lite"}) {
+		t.Errorf("split published: NOR releases %v, want [lite]", got)
+	}
+	if got := Availability(soc, published); got != "wizard" {
+		t.Errorf("split published: availability %q, want wizard", got)
+	}
+}
+
+// On a split SoC that also builds fixed slots, an edition only the split
+// package carries is assembled from it, not from a plain package that does
+// not exist.
+func TestSplitEditionOfAFixedSlotSoC(t *testing.T) {
+	cat := loadCatalogue(t)
+	idx := NewIndex("b", []Asset{
+		{Name: "u-boot-gk7205v300-nor.bin"},
+		{Name: "openipc.gk7205v300-nor-lite.tgz"},
+		{Name: "openipc.gk7205v300-nor-lite-split.tgz"},
+		{Name: "openipc.gk7205v300-nor-ultimate-split.tgz"},
+	}, nil, nil)
+	soc := cat.SoC("gk7205v300")
+	for _, tc := range []struct {
+		edition, linux string
+		split          bool
+	}{
+		{"lite", "openipc.gk7205v300-nor-lite.tgz", false},
+		{"ultimate", "openipc.gk7205v300-nor-ultimate-split.tgz", true},
+	} {
+		spec, err := NewSpec(soc, "nor", tc.edition, 16, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		in, err := Resolve(spec, idx)
+		if err != nil {
+			t.Fatalf("%s: %v", tc.edition, err)
+		}
+		if in.Spec.Split != tc.split || in.Linux.Name != tc.linux {
+			t.Errorf("%s: split %v from %s, want %v from %s", tc.edition, in.Spec.Split, in.Linux.Name, tc.split, tc.linux)
+		}
+	}
+}
+
+// A split image is the same whatever partition layout was asked for, so it
+// has one name and one cache key.
+func TestSplitImageHasOneLayout(t *testing.T) {
+	cat := loadCatalogue(t)
+	idx := NewIndex("b", []Asset{
+		{Name: "boot-hi3516cv610-20s-nor.bin"},
+		{Name: "openipc.hi3516cv6xx-nor-ultimate-split.tgz"},
+	}, nil, nil)
+	soc := cat.SoC("hi3516cv610-ddr3-128m")
+	natural, err := NewSpec(soc, "nor", "ultimate", 16, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parts8, err := NewSpec(soc, "nor", "ultimate", 16, 8)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := Resolve(natural, idx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := Resolve(parts8, idx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.Spec.Filename() != b.Spec.Filename() || a.Key() != b.Key() {
+		t.Errorf("parts8m split image: %s/%s, natural %s/%s", b.Spec.Filename(), b.Key(), a.Spec.Filename(), a.Key())
 	}
 }

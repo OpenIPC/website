@@ -95,6 +95,12 @@ func (in Inputs) Key() string {
 // Resolve turns a spec into inputs against the current index.
 func Resolve(s Spec, idx *Index) (Inputs, error) {
 	s.Split = splitOnly(s, idx)
+	if s.Split {
+		// firmware.bin goes at the firmware offset whatever the partition
+		// layout asked for; one layout, so one file name and cache key, per
+		// split image.
+		s.LayoutMB = NaturalLayout(s.SizeMB)
+	}
 	in := Inputs{Spec: s}
 	name := s.Bootloader()
 	if !plainName(name) {

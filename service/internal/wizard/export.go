@@ -136,7 +136,12 @@ func (e *exporter) releases(ft string) []string {
 	if e.soc.UBINand() && !firmware.BootloaderPublished(e.soc, e.idx, ft) {
 		return []string{}
 	}
-	rels := slices.Clone(e.idx.Releases(e.boardFor(ft), ft))
+	var rels []string
+	if ft == "nor" {
+		rels = slices.Clone(firmware.NORReleases(e.soc, e.idx))
+	} else {
+		rels = slices.Clone(e.idx.Releases(e.boardFor(ft), ft))
+	}
 	rank := func(r string) int {
 		if i := slices.Index(releaseOrder, r); i >= 0 {
 			return i
@@ -260,7 +265,7 @@ func (e *exporter) linuxFilename(release, ft string) string {
 // for a board that publishes only the split NOR package (hi3516cv6xx,
 // hi3519dv500), that one.
 func (e *exporter) packageName(release, ft string) string {
-	if ft == "nor" && e.soc.NORSplit && e.soc.NORSplitOnly {
+	if ft == "nor" && firmware.SplitOnlyEdition(e.soc, e.idx, release) {
 		return splitFilename(e.boardFor(ft), release)
 	}
 	return e.linuxFilename(release, ft)
