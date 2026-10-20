@@ -149,8 +149,8 @@ restores the image but never the schema, so keep migrations additive.
   OpenIPC/xmupdates mirrors, and OpenIPC/coupler's stock-to-OpenIPC images.
   **Pushed** by those projects' CI to `POST /api/v1/vendor-firmware` over the
   builds' OIDC check (`internal/vendorfw/PUSH.md`), each push replacing its
-  source's list; `openipc vendor-firmware import-history` seeds an
-  environment once. Boards link to device IDs through `board_device_ids`
+  source's list. Nothing reads GitHub for them, not even to seed: a new
+  environment runs the producers' workflows (PUSH.md). Boards link to device IDs through `board_device_ids`
   (tehno32's firmware pages, cctvsp) or a firmware named after the board; a
   board with a coupler image is OpenIPC-ready, derived on read, never stored.
 - `internal/reports` — **owner reports**: ipctool's output, flash backups,
