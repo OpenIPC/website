@@ -44,7 +44,7 @@ var byExtension = map[string]string{
 	".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".jpe": "image/jpeg",
 	".png": "image/png", ".gif": "image/gif", ".webp": "image/webp",
 	".bmp": "image/bmp", ".tif": "image/tiff", ".tiff": "image/tiff",
-	".heic": "image/heic", ".heif": "image/heif", ".avif": "image/avif",
+	".heic": "image/heic", ".heif": "image/heif", ".avif": "image/avif", ".avci": "image/avci",
 	".svg": "image/svg+xml",
 	".txt": "text/plain", ".html": "text/html", ".pdf": "application/pdf", ".zip": "application/zip",
 	".mp4": "video/mp4",
@@ -59,6 +59,9 @@ var ftypBrands = map[string]string{
 	"msf1": "image/heif-sequence",
 	"avif": "image/avif",
 	"avis": "image/avif",
+	// An H.264 keyframe as a HEIF image (ISO/IEC 23008-12, AVC image brand),
+	// which cameras send as snapshot.avci (#487).
+	"avci": "image/avci",
 	// Recognised, and not as images. heix is pinned by the corpus.
 	"heix": "video/mp4",
 	"isom": "video/mp4",

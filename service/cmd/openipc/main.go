@@ -747,6 +747,14 @@ func probe(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 	defer pool.Close()
+	return probeDB(ctx, pool)
+}
+
+// isHEIF is a snapshot sent as HEIF: HEIC and HEIF, and AVCI, which is HEIF
+// holding an H.264 picture (#487).
+const isHEIF = `(content_type LIKE 'image/hei%' OR content_type = 'image/avci')`
+
+func probeDB(ctx context.Context, pool *pgxpool.Pool) error {
 	var out struct {
 		Uploads24h    int `json:"uploads_24h"`
 		Cameras24h    int `json:"cameras_24h"`
@@ -756,11 +764,11 @@ func probe(ctx context.Context, cfg *config.Config) error {
 		StuckVariants int `json:"variants_pending_over_1h"`
 		Downloads24h  int `json:"downloads_24h"`
 	}
-	err = pool.QueryRow(ctx, `SELECT
+	err := pool.QueryRow(ctx, `SELECT
 		count(*) FILTER (WHERE created_at > now() - interval '1 day'),
 		count(DISTINCT mac_key) FILTER (WHERE created_at > now() - interval '1 day'),
-		count(*) FILTER (WHERE created_at > now() - interval '1 day' AND content_type LIKE 'image/hei%'),
-		count(*) FILTER (WHERE content_type LIKE 'image/hei%'),
+		count(*) FILTER (WHERE created_at > now() - interval '1 day' AND `+isHEIF+`),
+		count(*) FILTER (WHERE `+isHEIF+`),
 		count(*) FILTER (WHERE public_id ~ '^[0-9]+$'),
 		count(*) FILTER (WHERE variants_generated_at IS NULL AND created_at < now() - interval '1 hour')
 		FROM snapshots`).Scan(&out.Uploads24h, &out.Cameras24h, &out.HEIF24h, &out.HEIFRetained, &out.DigitIDs, &out.StuckVariants)
