@@ -121,6 +121,7 @@ socs:
   kernel: ''
   uboot_filename: boot-hi3516cv608-nor.bin
   nor_split: true
+  nor_split_only: true
   linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
   notes: ''
   urlname: hi3516cv608
@@ -136,6 +137,7 @@ socs:
   kernel: ''
   uboot_filename: boot-hi3516cv610-10b-nor.bin
   nor_split: true
+  nor_split_only: true
   linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
   notes: ''
   urlname: hi3516cv610-ddr2-64m
@@ -151,6 +153,7 @@ socs:
   kernel: ''
   uboot_filename: boot-hi3516cv610-20s-nor.bin
   nor_split: true
+  nor_split_only: true
   linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
   notes: ''
   urlname: hi3516cv610-ddr3-128m
@@ -166,6 +169,7 @@ socs:
   kernel: ''
   uboot_filename: boot-hi3516cv610-00s-nor.bin
   nor_split: true
+  nor_split_only: true
   linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
   notes: ''
   urlname: hi3516cv610-ddr3-512m
@@ -339,6 +343,7 @@ socs:
   kernel: ''
   uboot_filename: boot-hi3519dv500-dmeb-nor.bin
   nor_split: true
+  nor_split_only: true
   nor_firmware_offset: '0xc0000'
   nor_kernel_read: '0x600000'
   linux_filename: openipc.hi3519dv500-nor-ultimate.tgz
@@ -356,6 +361,7 @@ socs:
   kernel: ''
   uboot_filename: boot-hi3519dv500-dmebpro-nor.bin
   nor_split: true
+  nor_split_only: true
   nor_firmware_offset: '0xc0000'
   nor_kernel_read: '0x600000'
   linux_filename: openipc.hi3519dv500-nor-ultimate.tgz

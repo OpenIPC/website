@@ -192,15 +192,11 @@ func (s Spec) LinuxAsset(idx *Index) string {
 	return fmt.Sprintf("openipc.%s-%s-%s.tgz", BoardFor(s.SoC, idx, s.FlashType), s.FlashType, s.Release)
 }
 
-// splitOnly says whether a NOR edition comes only as the split package.
+// splitOnly says whether a NOR edition comes only as the split package: the
+// catalogue says so (nor_split_only), whatever plain package the index still
+// lists for the board from before.
 func splitOnly(s Spec, idx *Index) bool {
-	if s.nand() || !s.SoC.NORSplit {
-		return false
-	}
-	board := BoardFor(s.SoC, idx, s.FlashType)
-	_, plain := idx.Asset(fmt.Sprintf("openipc.%s-nor-%s.tgz", board, s.Release))
-	_, split := idx.Asset(SplitName(board, s.Release))
-	return !plain && split
+	return !s.nand() && s.SoC.NORSplit && s.SoC.NORSplitOnly
 }
 
 func (s Spec) ubi() bool { return s.nand() && s.SoC.UBINand() }

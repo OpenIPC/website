@@ -260,13 +260,10 @@ func (e *exporter) linuxFilename(release, ft string) string {
 // for a board that publishes only the split NOR package (hi3516cv6xx,
 // hi3519dv500), that one.
 func (e *exporter) packageName(release, ft string) string {
-	plain := e.linuxFilename(release, ft)
-	if ft == "nor" && e.soc.NORSplit && !e.published(plain) {
-		if split := splitFilename(e.boardFor(ft), release); e.published(split) {
-			return split
-		}
+	if ft == "nor" && e.soc.NORSplit && e.soc.NORSplitOnly {
+		return splitFilename(e.boardFor(ft), release)
 	}
-	return plain
+	return e.linuxFilename(release, ft)
 }
 
 // boardFor is the build a flash type's firmware comes from (nand_board).
@@ -382,12 +379,12 @@ func (e *exporter) camera(ft string, layout *string, edition, iface, sd, mac str
 	if layout != nil {
 		c.layout = *layout
 	}
-	// The split install where its package is published -- and where the
-	// plain one is not either, so a split-only SoC with nothing published
-	// yet is shown the install it will get, at its own firmware offset,
-	// rather than fixed slots it has none of.
+	// The split install where its package is published, and always on a SoC
+	// that has no fixed-slot build (nor_split_only): it is shown the install
+	// it will get, at its own firmware offset, rather than fixed slots it has
+	// none of, whatever plain package is still listed for it.
 	c.split = e.soc.NORSplit && c.scansLayout() &&
-		(e.published(splitFilename(c.board, edition)) || !e.published(c.firmwareFilename()))
+		(e.soc.NORSplitOnly || e.published(splitFilename(c.board, edition)))
 	return c
 }
 

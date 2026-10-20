@@ -170,3 +170,25 @@ func TestSplitImageOnlyWhenSplitOnly(t *testing.T) {
 		t.Errorf("gk7205v300 lite: %+v", in)
 	}
 }
+
+// A split-only SoC keeps the split image when the index still lists the
+// board's FIT-era plain package: nor_split_only decides, not what is published.
+func TestSplitOnlyIgnoresAStalePlainPackage(t *testing.T) {
+	cat := loadCatalogue(t)
+	idx := NewIndex("b", []Asset{
+		{Name: "boot-hi3516cv610-20s-nor.bin"},
+		{Name: "openipc.hi3516cv6xx-nor-lite.tgz"},
+		{Name: "openipc.hi3516cv6xx-nor-lite-split.tgz"},
+	}, nil, nil)
+	spec, err := NewSpec(cat.SoC("hi3516cv610-ddr3-128m"), "nor", "lite", 8, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	in, err := Resolve(spec, idx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !in.Spec.Split || in.Linux.Name != "openipc.hi3516cv6xx-nor-lite-split.tgz" {
+		t.Errorf("hi3516cv610 lite with a stale plain package: %+v", in)
+	}
+}

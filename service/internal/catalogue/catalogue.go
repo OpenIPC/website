@@ -40,6 +40,13 @@ type SoC struct {
 	// the fixed-slot package (the gk7205v200 family, whose -nor.bin
 	// bootloader boots both) or instead of it (hi3516cv6xx, hi3519dv500).
 	NORSplit bool `yaml:"nor_split"`
+	// NORSplitOnly is a split SoC with no fixed-slot NOR build at all
+	// (hi3516cv6xx, hi3519dv500): its NOR install and full image are the
+	// split ones whatever else the index holds. Their FIT-era plain packages
+	// stay on the release under the same plain names, and were they taken
+	// for a fixed-slot build the image would be assembled from members those
+	// packages do not have.
+	NORSplitOnly bool `yaml:"nor_split_only"`
 	// NORFirmwareOffset is where a NOR install's firmware starts: the boot
 	// partition and the U-Boot environment come before it. 0x50000 (256K +
 	// 64K) when empty; hi3519dv500's signed boot image needs 512K + 256K, so
