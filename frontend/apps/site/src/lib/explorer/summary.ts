@@ -4,7 +4,11 @@
  */
 import type { Sizes } from "./types";
 
-/** U-Boot and its environment: 0x0–0x50000 on every NOR layout the site offers. */
+/**
+ * U-Boot and its environment: 0x0–0x50000 on every fixed-slot NOR layout. A
+ * split-layout build (hi3516cv6xx, hi3519dv500 -- whose boot area is 0xC0000)
+ * reports no kernel cap, so `flashSegments` draws no map for it.
+ */
 export const BOOT_KB = 320;
 
 export type SegmentKind = "boot" | "kernel" | "rootfs" | "overlay";

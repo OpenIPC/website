@@ -565,6 +565,46 @@
           "segment": "cctv"
         },
         {
+          "model": "HI3516CV608",
+          "family": "HI3516CV610",
+          "version": "",
+          "urlname": "hi3516cv608",
+          "status": "mvp",
+          "load_address": "0x42000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516CV610-DDR2-64M",
+          "family": "HI3516CV610",
+          "version": "",
+          "urlname": "hi3516cv610-ddr2-64m",
+          "status": "mvp",
+          "load_address": "0x42000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516CV610-DDR3-128M",
+          "family": "HI3516CV610",
+          "version": "",
+          "urlname": "hi3516cv610-ddr3-128m",
+          "status": "mvp",
+          "load_address": "0x42000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516CV610-DDR3-512M",
+          "family": "HI3516CV610",
+          "version": "",
+          "urlname": "hi3516cv610-ddr3-512m",
+          "status": "mvp",
+          "load_address": "0x42000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
           "model": "HI3516DV100",
           "family": "HI3516AV100",
           "version": "",
@@ -670,6 +710,26 @@
           "version": "",
           "urlname": "hi3518ev300",
           "status": "done",
+          "load_address": "0x42000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3519DV500-DMEB",
+          "family": "HI3519DV500",
+          "version": "",
+          "urlname": "hi3519dv500-dmeb",
+          "status": "wip",
+          "load_address": "0x42000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3519DV500-DMEBPRO",
+          "family": "HI3519DV500",
+          "version": "",
+          "urlname": "hi3519dv500-dmebpro",
+          "status": "wip",
           "load_address": "0x42000000",
           "featured": false,
           "segment": "cctv"

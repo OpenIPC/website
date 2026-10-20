@@ -74,7 +74,7 @@ func Document(soc *catalogue.SoC, idx *firmware.Index) []byte {
 	published := []any{}
 	for _, ft := range flashTypes {
 		for _, rel := range e.releases(ft) {
-			name := e.linuxFilename(rel, ft)
+			name := e.packageName(rel, ft)
 			published = append(published, obj{{"flash_type", ft}, {"release", rel},
 				{"url", e.url(name)}, {"filename", e.upstream(name)}})
 		}
@@ -136,7 +136,12 @@ func (e *exporter) releases(ft string) []string {
 	if e.soc.UBINand() && !firmware.BootloaderPublished(e.soc, e.idx, ft) {
 		return []string{}
 	}
-	rels := slices.Clone(e.idx.Releases(e.boardFor(ft), ft))
+	var rels []string
+	if ft == "nor" {
+		rels = slices.Clone(firmware.NORReleases(e.soc, e.idx))
+	} else {
+		rels = slices.Clone(e.idx.Releases(e.boardFor(ft), ft))
+	}
 	rank := func(r string) int {
 		if i := slices.Index(releaseOrder, r); i >= 0 {
 			return i
@@ -256,6 +261,16 @@ func (e *exporter) linuxFilename(release, ft string) string {
 	return fmt.Sprintf("openipc.%s-%s-%s.tgz", e.boardFor(ft), ft, release)
 }
 
+// packageName is the package an edition is published as: the plain one, or
+// for a board that publishes only the split NOR package (hi3516cv6xx,
+// hi3519dv500), that one.
+func (e *exporter) packageName(release, ft string) string {
+	if ft == "nor" && firmware.SplitOnlyEdition(e.soc, e.idx, release) {
+		return splitFilename(e.boardFor(ft), release)
+	}
+	return e.linuxFilename(release, ft)
+}
+
 // boardFor is the build a flash type's firmware comes from (nand_board).
 func (e *exporter) boardFor(ft string) string { return firmware.BoardFor(e.soc, e.idx, ft) }
 
@@ -369,7 +384,12 @@ func (e *exporter) camera(ft string, layout *string, edition, iface, sd, mac str
 	if layout != nil {
 		c.layout = *layout
 	}
-	c.split = e.soc.NORSplit && c.scansLayout() && e.published(splitFilename(c.board, edition))
+	// The split install where its package is published, and always on a SoC
+	// that has no fixed-slot build (nor_split_only): it is shown the install
+	// it will get, at its own firmware offset, rather than fixed slots it has
+	// none of, whatever plain package is still listed for it.
+	c.split = e.soc.NORSplit && c.scansLayout() &&
+		(e.soc.NORSplitOnly || e.published(splitFilename(c.board, edition)))
 	return c
 }
 

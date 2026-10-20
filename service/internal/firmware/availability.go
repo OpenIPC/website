@@ -27,15 +27,19 @@ func Availability(soc *catalogue.SoC, idx *Index) string {
 		}
 		return "none"
 	}
-	nor, nand := BoardFor(soc, idx, "nor"), BoardFor(soc, idx, "nand")
-	if len(idx.Releases(nor, "nor")) == 0 && len(idx.Releases(nand, "nand")) == 0 {
+	nand := BoardFor(soc, idx, "nand")
+	if len(NORReleases(soc, idx)) == 0 && len(idx.Releases(nand, "nand")) == 0 {
 		return "none"
 	}
 	// A flash type counts when it has firmware and the bootloader that flash
 	// type installs. That is one file for most SoCs, and two -- the NOR and
 	// the NAND build -- for the UBI-only ones, which upstream publishes apart.
 	for _, ft := range []string{"nor", "nand"} {
-		if len(idx.Releases(BoardFor(soc, idx, ft), ft)) > 0 && BootloaderPublished(soc, idx, ft) {
+		rels := idx.Releases(BoardFor(soc, idx, ft), ft)
+		if ft == "nor" {
+			rels = NORReleases(soc, idx)
+		}
+		if len(rels) > 0 && BootloaderPublished(soc, idx, ft) {
 			return "wizard"
 		}
 	}

@@ -467,6 +467,46 @@
     "nand_lite": "openipc.hi3516cv500-nand-lite.tgz"
   },
   {
+    "urlname": "hi3516cv608",
+    "vendor": "HiSilicon",
+    "model": "HI3516CV608",
+    "board": "hi3516cv6xx",
+    "uboot": "boot-hi3516cv608-nor.bin",
+    "uboot_nand": "",
+    "nor_lite": "openipc.hi3516cv6xx-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516cv6xx-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516cv610-ddr2-64m",
+    "vendor": "HiSilicon",
+    "model": "HI3516CV610-DDR2-64M",
+    "board": "hi3516cv6xx",
+    "uboot": "boot-hi3516cv610-10b-nor.bin",
+    "uboot_nand": "",
+    "nor_lite": "openipc.hi3516cv6xx-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516cv6xx-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516cv610-ddr3-128m",
+    "vendor": "HiSilicon",
+    "model": "HI3516CV610-DDR3-128M",
+    "board": "hi3516cv6xx",
+    "uboot": "boot-hi3516cv610-20s-nor.bin",
+    "uboot_nand": "",
+    "nor_lite": "openipc.hi3516cv6xx-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516cv6xx-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3516cv610-ddr3-512m",
+    "vendor": "HiSilicon",
+    "model": "HI3516CV610-DDR3-512M",
+    "board": "hi3516cv6xx",
+    "uboot": "boot-hi3516cv610-00s-nor.bin",
+    "uboot_nand": "",
+    "nor_lite": "openipc.hi3516cv6xx-nor-lite.tgz",
+    "nand_lite": "openipc.hi3516cv6xx-nand-lite.tgz"
+  },
+  {
     "urlname": "hi3516dv100",
     "vendor": "HiSilicon",
     "model": "HI3516DV100",
@@ -568,6 +608,26 @@
     "uboot_nand": "u-boot-hi3518ev300-nand.bin",
     "nor_lite": "openipc.hi3518ev300-nor-lite.tgz",
     "nand_lite": "openipc.hi3518ev300-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3519dv500-dmeb",
+    "vendor": "HiSilicon",
+    "model": "HI3519DV500-DMEB",
+    "board": "hi3519dv500",
+    "uboot": "boot-hi3519dv500-dmeb-nor.bin",
+    "uboot_nand": "",
+    "nor_lite": "openipc.hi3519dv500-nor-lite.tgz",
+    "nand_lite": "openipc.hi3519dv500-nand-lite.tgz"
+  },
+  {
+    "urlname": "hi3519dv500-dmebpro",
+    "vendor": "HiSilicon",
+    "model": "HI3519DV500-DMEBPRO",
+    "board": "hi3519dv500",
+    "uboot": "boot-hi3519dv500-dmebpro-nor.bin",
+    "uboot_nand": "",
+    "nor_lite": "openipc.hi3519dv500-nor-lite.tgz",
+    "nand_lite": "openipc.hi3519dv500-nand-lite.tgz"
   },
   {
     "urlname": "hi3519v101",

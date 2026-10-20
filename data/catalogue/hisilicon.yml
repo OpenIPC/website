@@ -1,4 +1,4 @@
-# HiSilicon — 23 SoC(s).
+# HiSilicon — 29 SoC(s).
 #
 # Exported from the catalogue table (#161). This file is the source of
 # truth for the hardware pages: edit it in a pull request, not in the
@@ -110,6 +110,70 @@ socs:
     os08a10 ov12870 ov2775 ov9284 ps5260 sc4210 '
   urlname: hi3516cv500
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516cv500_images.yml/badge.svg
+  featured: false
+  segment: cctv
+- family: HI3516CV610
+  model: HI3516CV608
+  version: ''
+  status: mvp
+  load_address: '0x42000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: boot-hi3516cv608-nor.bin
+  nor_split: true
+  nor_split_only: true
+  linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
+  notes: ''
+  urlname: hi3516cv608
+  build_status_url: ''
+  featured: false
+  segment: cctv
+- family: HI3516CV610
+  model: HI3516CV610-DDR2-64M
+  version: ''
+  status: mvp
+  load_address: '0x42000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: boot-hi3516cv610-10b-nor.bin
+  nor_split: true
+  nor_split_only: true
+  linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
+  notes: ''
+  urlname: hi3516cv610-ddr2-64m
+  build_status_url: ''
+  featured: false
+  segment: cctv
+- family: HI3516CV610
+  model: HI3516CV610-DDR3-128M
+  version: ''
+  status: mvp
+  load_address: '0x42000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: boot-hi3516cv610-20s-nor.bin
+  nor_split: true
+  nor_split_only: true
+  linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
+  notes: ''
+  urlname: hi3516cv610-ddr3-128m
+  build_status_url: ''
+  featured: false
+  segment: cctv
+- family: HI3516CV610
+  model: HI3516CV610-DDR3-512M
+  version: ''
+  status: mvp
+  load_address: '0x42000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: boot-hi3516cv610-00s-nor.bin
+  nor_split: true
+  nor_split_only: true
+  linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
+  notes: ''
+  urlname: hi3516cv610-ddr3-512m
+  build_status_url: ''
   featured: false
   segment: cctv
 - family: HI3516AV100
@@ -268,6 +332,42 @@ socs:
   notes: ''
   urlname: hi3518ev300
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3518ev300_images.yml/badge.svg
+  featured: false
+  segment: cctv
+- family: HI3519DV500
+  model: HI3519DV500-DMEB
+  version: ''
+  status: wip
+  load_address: '0x42000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: boot-hi3519dv500-dmeb-nor.bin
+  nor_split: true
+  nor_split_only: true
+  nor_firmware_offset: '0xc0000'
+  nor_kernel_read: '0x600000'
+  linux_filename: openipc.hi3519dv500-nor-ultimate.tgz
+  notes: ''
+  urlname: hi3519dv500-dmeb
+  build_status_url: ''
+  featured: false
+  segment: cctv
+- family: HI3519DV500
+  model: HI3519DV500-DMEBPRO
+  version: ''
+  status: wip
+  load_address: '0x42000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: boot-hi3519dv500-dmebpro-nor.bin
+  nor_split: true
+  nor_split_only: true
+  nor_firmware_offset: '0xc0000'
+  nor_kernel_read: '0x600000'
+  linux_filename: openipc.hi3519dv500-nor-ultimate.tgz
+  notes: ''
+  urlname: hi3519dv500-dmebpro
+  build_status_url: ''
   featured: false
   segment: cctv
 - family: HI3519V101

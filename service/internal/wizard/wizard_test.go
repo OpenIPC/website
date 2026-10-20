@@ -1,6 +1,7 @@
 package wizard
 
 import (
+	"slices"
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
@@ -660,6 +661,71 @@ func TestSplitNORInstall(t *testing.T) {
 		}
 		if !strings.Contains(strings.Join(c.flashingLinux(), "\n"), "rootfs.squashfs.") {
 			t.Errorf("%s %s: no two-image install to fall back to", c.soc.Model, c.edition)
+		}
+	}
+}
+
+// Boards that publish only the split NOR package (hi3516cv6xx, hi3519dv500):
+// their editions count as published, the page links the -split package, and
+// every NOR offset is the SoC's own -- 0x50000 on hi3516cv6xx, 0xC0000 behind
+// hi3519dv500's 512K boot and 256K environment -- for the bootloader step and
+// the firmware.bin step alike. Each board's entry installs its own signed
+// boot image (one per DDR binning).
+func TestSplitOnlySoCs(t *testing.T) {
+	cat, idx := inputs(t)
+	for _, tc := range []struct {
+		soc, ft, edition, board, uboot, off, erase string
+		editions                                   []string
+	}{
+		{"hi3516cv610-ddr3-128m", "nor8m", "lite", "hi3516cv6xx", "boot-hi3516cv610-20s-nor.bin",
+			"0x50000", "0x7b0000", []string{"lite", "ultimate"}},
+		{"hi3516cv608", "nor16m", "ultimate", "hi3516cv6xx", "boot-hi3516cv608-nor.bin",
+			"0x50000", "0xfb0000", []string{"lite", "ultimate"}},
+		{"hi3519dv500-dmeb", "nor16m", "ultimate", "hi3519dv500", "boot-hi3519dv500-dmeb-nor.bin",
+			"0xC0000", "0xf40000", []string{"ultimate"}},
+		{"hi3519dv500-dmebpro", "nor32m", "ultimate", "hi3519dv500", "boot-hi3519dv500-dmebpro-nor.bin",
+			"0xC0000", "0x1f40000", []string{"ultimate"}},
+	} {
+		s := cat.SoC(tc.soc)
+		if s == nil {
+			t.Fatalf("%s: not in the catalogue", tc.soc)
+		}
+		e := &exporter{soc: s, idx: idx, board: firmware.Board(s, idx),
+			poolIDs: map[string]string{}, varIDs: map[string]string{}}
+		if got := e.releases("nor"); !slices.Equal(got, tc.editions) {
+			t.Errorf("%s: NOR editions %v, want %v", tc.soc, got, tc.editions)
+		}
+		if got := firmware.Availability(s, idx); got != "wizard" {
+			t.Errorf("%s: availability %q", tc.soc, got)
+		}
+		if got, want := e.packageName(tc.edition, "nor"), "openipc."+tc.board+"-nor-"+tc.edition+"-split.tgz"; got != want {
+			t.Errorf("%s: published as %s, want %s", tc.soc, got, want)
+		}
+		layout := tc.ft
+		c := e.camera(tc.ft, &layout, tc.edition, "eth", "nosd", ethaddr)
+		if !c.split {
+			t.Fatalf("%s %s: not a split install", tc.soc, tc.ft)
+		}
+		if got, want := c.firmwareFilename(), "openipc."+tc.board+"-nor-"+tc.edition+"-split.tgz"; got != want {
+			t.Errorf("%s: firmware %s, want %s", tc.soc, got, want)
+		}
+		uboot := strings.Join(c.flashingUboot(), "\n")
+		for _, want := range []string{"mw.b 0x42000000 0xff " + tc.off,
+			"tftpboot 0x42000000 " + tc.uboot + " && sf erase 0x0 " + tc.off} {
+			if !strings.Contains(uboot, want) {
+				t.Errorf("%s: U-Boot step lacks %q:\n%s", tc.soc, want, uboot)
+			}
+		}
+		linux := strings.Join(c.flashingLinux(), "\n")
+		want := "tftpboot 0x42000000 firmware.bin." + tc.board + " && sf erase " + tc.off + " " + tc.erase +
+			" && sf write 0x42000000 " + tc.off + " ${filesize}"
+		if !strings.Contains(linux, want) {
+			t.Errorf("%s %s lacks %q:\n%s", tc.soc, tc.ft, want, linux)
+		}
+		for _, gone := range []string{"uImage.", "rootfs.squashfs.", "run uk", "run ur"} {
+			if strings.Contains(linux, gone) {
+				t.Errorf("%s %s still writes %q:\n%s", tc.soc, tc.ft, gone, linux)
+			}
 		}
 	}
 }
