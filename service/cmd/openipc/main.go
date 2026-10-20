@@ -10,7 +10,6 @@
 //	openipc probe                  nightly health numbers, non-zero on trouble
 //	openipc builds import-history  once: the builds GitHub still holds, into PostgreSQL
 //	openipc builds import-uboot  the u-boot binaries on firmware's latest, re-read
-//	openipc vendor-firmware import-history  once: xmupdates and coupler as published so far
 //	openipc boards import-openhisiipcam  once: the OpenHisiIpCam board archive, into the board catalogue
 //	openipc reports list|show|publish|reject|link|unlink|takedown|verify   the owner reports' review queue
 //	openipc routes --json          what this binary answers, for the nginx seam test
@@ -88,8 +87,6 @@ func main() {
 		err = probe(ctx, cfg)
 	case "builds":
 		err = buildsCommand(ctx, cfg, log, args)
-	case "vendor-firmware":
-		err = vendorFirmwareCommand(ctx, cfg, log, args)
 	case "boards":
 		err = boardsCommand(ctx, cfg, log, args)
 	case "reports":
@@ -111,7 +108,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history|import-uboot | boards import-openhisiipcam | boards import-snapshot | reports list|show|publish|reject|link|unlink|takedown|verify | club settle-wall|wall-revoke|wall-unlink | crashes list|show|status|settle|takedown | vendor-firmware import-history | routes --json | version")
+	fmt.Fprintln(os.Stderr, "usage: openipc serve --role web|firmware | migrate | purge [--snapshots] [--firmware] [--builds] | probe | builds import-history|import-uboot | boards import-openhisiipcam | boards import-snapshot | reports list|show|publish|reject|link|unlink|takedown|verify | club settle-wall|wall-revoke|wall-unlink | crashes list|show|status|settle|takedown | routes --json | version")
 	os.Exit(2)
 }
 

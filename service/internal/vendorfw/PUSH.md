@@ -15,8 +15,31 @@ board search answers a device ID typed from a camera's web interface, and a
 board with a coupler image counts as OpenIPC-ready.
 
 Each project pushes **its whole list** after it publishes. openipc.org never
-polls GitHub for it. The one exception is `openipc vendor-firmware
-import-history`, which seeds a new environment once.
+polls GitHub for it, not even to seed an environment (#485).
+
+## Seeding a new environment
+
+An empty `vendor_firmware` fills from the next push of each source. To have
+it at once, run the producers' workflows by hand; every run on main pushes
+the source's whole list:
+
+```
+gh workflow run weekly-update.yml -R OpenIPC/xmupdates
+gh workflow run xm.yml -R OpenIPC/coupler
+gh workflow run weekly-update.yml -R OpenIPC/anjoyupdates
+gh workflow run weekly-update.yml -R OpenIPC/herospeedupdates
+```
+
+They push to openipc.org only. dev.openipc.org takes production's rows
+instead, in one transaction so a reader never sees the table empty:
+
+```
+psql "$PROD_URL" -c "\copy vendor_firmware TO 'vf.csv' CSV HEADER"
+psql "$DEV_URL" -1 -c "DELETE FROM vendor_firmware" -c "\copy vendor_firmware FROM 'vf.csv' CSV HEADER"
+```
+
+A restore needs neither: the PostgreSQL archive holds the table
+(`deploy/RESTORE.md`).
 
 ## Request
 

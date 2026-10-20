@@ -80,57 +80,6 @@ func TestAnEmptyListIsPublishedOnlyWhenSaid(t *testing.T) {
 	}
 }
 
-func TestXMUpdatesIndexBecomesAPush(t *testing.T) {
-	at := "2026-05-04T12:00:00Z"
-	index := `{
-	 "2281": {"name": "IPC_XM530V200_R80XV50B", "revisions": [
-	   {"version": "000809Q4.1", "asset_url": "https://github.com/OpenIPC/xmupdates/releases/download/firmware-archive/id2281.zip", "sha256": "` + strings.Repeat("A", 64) + `", "size": 6798757, "archived_at": "` + at + `"},
-	   {"version": "000809Q4.1", "asset_url": "https://github.com/OpenIPC/xmupdates/releases/download/firmware-archive/id2281b.zip"},
-	   {"version": "000809Q4.2", "asset_url": ""}]},
-	 "1299": {"name": "BLK5008A-S", "revisions": [], "unavailable": [{"version": "00000001"}]},
-	 "p1475": {"name": "IPC_X2C", "revisions": [{"version": "short", "asset_url": "https://github.com/OpenIPC/xmupdates/releases/download/firmware-archive/p1475.zip"}]},
-	 "c214": {"name": "IPEYE_1532_IPC_HI3516C_53H20L", "source": "cctvsp", "origin": "cctvsp.ru", "page": "https://www.cctvsp.ru/support/proshivka-dlya-ip-kamery-00001532-53h20l",
-	   "revisions": [{"version": "00001532.20170705", "asset_url": "https://github.com/OpenIPC/xmupdates/releases/download/firmware-archive/c214.bin", "archived_at": "` + at + `", "published_at": "2019-03-21T00:00:00Z"}]}
-	}`
-	items, err := FromXMUpdates([]byte(index))
-	if err != nil {
-		t.Fatal(err)
-	}
-	// The same version archived twice is two files, each keyed by its asset;
-	// a seller's build keeps its archive and its own date.
-	if len(items) != 3 {
-		t.Fatalf("%+v", items)
-	}
-	byKey := map[string]Item{}
-	for _, it := range items {
-		byKey[it.Key] = it
-	}
-	if c := byKey["c214.bin"]; c.Origin != "cctvsp.ru" || c.OriginURL == "" || c.DeviceID != "00001532" || c.PublishedAt == nil || c.PublishedAt.Year() != 2019 {
-		t.Errorf("the seller's build: %+v", c)
-	}
-	if byKey["id2281.zip"].Origin != "" {
-		t.Error("a vendor build has an origin")
-	}
-	if a := byKey["id2281.zip"]; a.DeviceID != "000809Q4" || a.SHA256 != strings.Repeat("a", 64) || a.PublishedAt == nil || byKey["id2281b.zip"].Version != "000809Q4.1" {
-		t.Fatalf("%+v", items)
-	}
-	if _, err := Decode(body(t, "xmupdates", items...)); err != nil {
-		t.Errorf("the push it builds is refused: %v", err)
-	}
-}
-
-func TestCouplerReleaseBecomesAPush(t *testing.T) {
-	at := time.Date(2026, 9, 26, 14, 0, 0, 0, time.UTC)
-	items := FromCoupler([]CouplerAsset{
-		{Name: "000559A7_OpenIPC_HI3516EV200_50H20AI_S38.bin", Size: 8 << 20, Digest: "sha256:" + strings.Repeat("b", 64), UpdatedAt: at,
-			URL: "https://github.com/OpenIPC/coupler/releases/download/xiongmai/000559A7_OpenIPC_HI3516EV200_50H20AI_S38.bin"},
-		{Name: "README.txt", URL: "https://github.com/OpenIPC/coupler/releases/download/xiongmai/README.txt"},
-	})
-	if len(items) != 1 || items[0].DeviceID != "000559A7" || items[0].Build != "HI3516EV200_50H20AI_S38" || items[0].Version != "2026-09-26" {
-		t.Fatalf("%+v", items)
-	}
-}
-
 func TestAPushReplacesItsSourceAndOnlyItsSource(t *testing.T) {
 	pool := dbtest.New(t)
 	h := &Handler{DB: pool, Log: slog.New(slog.NewTextHandler(io.Discard, nil))}
