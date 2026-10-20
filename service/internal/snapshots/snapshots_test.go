@@ -94,6 +94,30 @@ func TestEveryMACIsJudgedAsRecorded(t *testing.T) {
 	}
 }
 
+// An H.264 keyframe sent as AVCI -- HEIF under the major brand avci, named
+// snapshot.avci and declared application/octet-stream by curl -- is an image
+// whatever it is declared or named, as a HEIC is in the corpus (#487).
+func TestAVCIIsAnImage(t *testing.T) {
+	avci := pad([]byte("\x00\x00\x00\x18ftypavci\x00\x00\x00\x00mif1avci"), 12_288)
+	for _, declared := range []string{"", "application/octet-stream", "text/plain", "image/jpeg", "image/heic"} {
+		for _, name := range []string{"snapshot.avci", "snapshot.heic", "snapshot"} {
+			if got := snapshots.ContentType(avci, declared, name); got != "image/avci" {
+				t.Errorf("as %q named %s: %s", declared, name, got)
+			}
+		}
+	}
+	// Bytes nothing recognises fall to the name, as they do for .heic.
+	if got := snapshots.ContentType(make([]byte, 64), "application/octet-stream", "snapshot.avci"); got != "image/avci" {
+		t.Errorf("unrecognised bytes named snapshot.avci: %s", got)
+	}
+	mac := "02:c0:f0:00:00:09"
+	u := &snapshots.Upload{MAC: &mac, File: avci, HasFile: true,
+		Filename: "snapshot.avci", Declared: "application/octet-stream"}
+	if errs := snapshots.Errors(u, "en"); len(errs) != 0 {
+		t.Errorf("refused: %q", errs)
+	}
+}
+
 // --- over HTTP, against a real database ------------------------------------
 
 type rig struct {

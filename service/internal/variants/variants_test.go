@@ -118,6 +118,26 @@ func TestHEIFIsPublishedAsSent(t *testing.T) {
 	}
 }
 
+// The same H.264 keyframe under the major brand avci, as cameras that name it
+// snapshot.avci send it, is published as sent too (#487).
+func TestAVCIIsPublishedAsSent(t *testing.T) {
+	p, st := rig(t)
+	main := fixture(t, "testsrc-320x240-avc.heif")
+	if string(main[4:12]) != "ftypmif1" {
+		t.Fatalf("fixture's ftyp is %q", main[4:12])
+	}
+	copy(main[8:12], "avci")
+	upload(t, p, st, "c", main, nil)
+
+	got, _ := os.ReadFile(filepath.Join(p.Wall.Dir("c"), MainHEIF))
+	if !bytes.Equal(got, main) {
+		t.Error("main.heif is not the upload byte for byte")
+	}
+	if st.marked["c"] != [2]int{320, 240} || len(st.refused) != 0 {
+		t.Errorf("marked %v, refused %v", st.marked["c"], st.refused)
+	}
+}
+
 // A substream keyframe that is not one costs the frame nothing.
 func TestBadThumbIsDropped(t *testing.T) {
 	p, st := rig(t)
