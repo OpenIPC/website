@@ -93,6 +93,7 @@ socs:
   uboot_filename: u-boot-hi3516cv300-universal.bin
   linux_filename: openipc.hi3516cv300-nor-lite.tgz
   notes: ar0237 imx291 imx307 imx323 imx385 jxf22 ov2718 ov2735 sc2235p sc2310
+  nor_split: true
   urlname: hi3516cv300
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516cv300_images.yml/badge.svg
   featured: false
@@ -201,6 +202,7 @@ socs:
   uboot_nand_filename: u-boot-hi3516dv200-nand.bin
   linux_filename: openipc.hi3516dv200-nor-lite.tgz
   notes: ''
+  nor_split: true
   urlname: hi3516dv200
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516dv200_images.yml/badge.svg
   featured: false
@@ -229,6 +231,7 @@ socs:
   uboot_filename: u-boot-hi3516ev100-universal.bin
   linux_filename: openipc.hi3516ev100-nor-lite.tgz
   notes: ''
+  nor_split: true
   urlname: hi3516ev100
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516ev100_images.yml/badge.svg
   featured: false
@@ -244,6 +247,7 @@ socs:
   uboot_nand_filename: u-boot-hi3516ev200-nand.bin
   linux_filename: openipc.hi3516ev200-nor-lite.tgz
   notes: f23 f37 gc2053 imx307 imx335 sc2231 sc2232h sc2239 sc2315e sc3235 sc4236 sp2305
+  nor_split: true
   urlname: hi3516ev200
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516ev200_images.yml/badge.svg
   featured: true
@@ -331,6 +335,7 @@ socs:
   uboot_nand_filename: u-boot-hi3518ev300-nand.bin
   linux_filename: openipc.hi3518ev300-nor-lite.tgz
   notes: ''
+  nor_split: true
   urlname: hi3518ev300
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3518ev300_images.yml/badge.svg
   featured: false
