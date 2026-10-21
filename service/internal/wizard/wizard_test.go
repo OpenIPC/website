@@ -306,8 +306,8 @@ func TestUBINandLines(t *testing.T) {
 // combinations, no install lines pointing at a file that is not there.
 func TestUBINandWithoutItsBootloaderIsNotOffered(t *testing.T) {
 	cat, idx := inputs(t)
-	soc := *cat.SoC("hi3516ev300")
-	soc.UBootNANDFilename = "u-boot-hi3516ev300-unpublished-nand.bin"
+	soc := *cat.SoC("hi3516ev200")
+	soc.UBootNANDFilename = "u-boot-hi3516ev200-unpublished-nand.bin"
 	d := decode(t, Document(&soc, idx))
 	if nand := d["editions"].(map[string]any)["nand"].([]any); len(nand) != 0 {
 		t.Errorf("NAND editions %v offered without a published NAND bootloader", nand)

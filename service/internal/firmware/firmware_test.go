@@ -240,8 +240,8 @@ func deref(p *int) int {
 // asset and one build.
 func TestConcurrentRequestsShareOneBuild(t *testing.T) {
 	cat := loadCatalogue(t)
-	soc := cat.SoC("hi3516ev300")
-	board := "hi3516ev300"
+	soc := cat.SoC("hi3516ev200")
+	board := "hi3516ev200"
 	uboot := synthetic("u", 100_000)
 	linux := tgz(t, [][2]any{{"uImage." + board, synthetic("k", 500_000)}, {"rootfs.squashfs." + board, synthetic("r", 900_000)}})
 	var hits atomic.Int32
@@ -292,8 +292,8 @@ func TestConcurrentRequestsShareOneBuild(t *testing.T) {
 // When upstream publishes a new version, the old image and tarball go.
 func TestOneVersionPerFirmware(t *testing.T) {
 	cat := loadCatalogue(t)
-	soc := cat.SoC("hi3516ev300")
-	board := "hi3516ev300"
+	soc := cat.SoC("hi3516ev200")
+	board := "hi3516ev200"
 	dir := t.TempDir()
 	releases := &Releases{Root: filepath.Join(dir, "rel")}
 	images := &Images{Root: filepath.Join(dir, "img"), Releases: releases}
