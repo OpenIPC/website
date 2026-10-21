@@ -10,7 +10,7 @@ en:
       hero_lede: Commercial support, custom development, and OEM licensing from the core team.
       hero_title: Build your product on OpenIPC — with the people who build OpenIPC.
       how1: You write to us with the product and the problem.
-      how2: A scoping call with an engineer.
+      how2: Scoping with an engineer by email, as paid technical support through Open Collective.
       how3: A pilot with clear deliverables.
       how4: Ongoing support or development, sized to your needs.
       how_title: How an engagement works
@@ -556,10 +556,10 @@ en:
       robotics_text2: On supported SoCs, frames carry wall-clock timestamps tied to the sensor frame start — millisecond-class synchronization for multi-camera rigs without extra hardware.
       robotics_title: 'Beyond drones: robots and teleoperation'
       support_business: "Building a product on it? Commercial terms →"
-      support_cta: "Book support hours"
+      support_cta: "Buy support hours"
       support_rate_html: "<b>$55</b> an hour suggested · <b>$50</b> minimum · paid through Open Collective"
-      support_text: "OpenIPC's core developers take paid support sessions through the project's Open Collective: an hour on your air unit, your link or your integration."
-      support_title: "Stuck on a build? Book an hour with a core developer"
+      support_text: "OpenIPC's core developers answer paid support requests by email, through the project's Open Collective: an hour of work on your air unit, your link or your integration."
+      support_title: "Stuck on a build? Ask a core developer by email"
       title: Low-Latency Video
     majestic_endpoints:
       moved_html: 'The list of endpoints your camera serves now lives in the camera''s own web interface, under <b>Majestic &rarr; Endpoints</b>. Open <code>http://&lt;camera-address&gt;/</code> in a browser and pick it from the menu.'

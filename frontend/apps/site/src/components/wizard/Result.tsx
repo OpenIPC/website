@@ -477,8 +477,6 @@ function LicenceNotice({ t, facts, businessHref }: {
           <a
             href={businessHref}
             data-event={`download-step:business:${facts.segment}`}
-            data-volume-text={install('licence_volume_ask')}
-            data-volume-link={install('licence_volume_link')}
           >{install(facts.segment === 'fpv' ? 'licence_offer_link' : 'licence_business_link')}</a>.
         </p>
       )}
