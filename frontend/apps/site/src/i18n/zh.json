@@ -134,7 +134,7 @@
       "hero_lede": "由核心团队提供商业支持、定制开发与 OEM 授权。",
       "hero_title": "在 OpenIPC 上打造你的产品——与开发 OpenIPC 的人一起。",
       "how1": "你把产品和遇到的问题写信告诉我们。",
-      "how2": "与工程师进行一次需求梳理沟通。",
+      "how2": "通过邮件与工程师梳理需求，作为经由 Open Collective 支付的技术支持。",
       "how3": "一个交付物明确的试点项目。",
       "how4": "按你的需要提供持续的支持或开发。",
       "how_title": "合作是怎样进行的",
@@ -623,8 +623,8 @@
       "support_business": "要基于它做产品？商业授权 →",
       "support_cta": "购买支持时长",
       "support_rate_html": "建议每小时 <b>$55</b> · 最低 <b>$50</b> · 通过 Open Collective 支付",
-      "support_text": "OpenIPC 核心开发者通过项目的 Open Collective 提供付费技术咨询：针对你的机载端、图传链路或集成方案，按小时计。",
-      "support_title": "搭建卡住了？约核心开发者一小时",
+      "support_text": "OpenIPC 核心开发者通过邮件提供付费技术支持，经由项目的 Open Collective 支付：针对你的机载端、图传链路或集成方案，按小时计。",
+      "support_title": "搭建卡住了？通过邮件咨询核心开发者",
       "title": "低延迟视频"
     },
     "majestic_endpoints": {
