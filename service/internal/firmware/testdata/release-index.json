@@ -915,6 +915,18 @@
       "updated_at": "2026-08-27T10:55:39Z",
       "release": "latest"
     },
+    "u-boot-hi3516cv300-nand.bin": {
+      "size": 228688,
+      "digest": null,
+      "updated_at": "2026-10-21T05:37:36Z",
+      "release": "latest"
+    },
+    "u-boot-hi3516cv300-nor.bin": {
+      "size": 141888,
+      "digest": null,
+      "updated_at": "2026-10-21T15:06:15Z",
+      "release": "latest"
+    },
     "u-boot-hi3516cv300-universal.bin": {
       "size": 131852,
       "digest": "sha256:5b482f91e6095ede8b6ab082844c714180e63cb5c55dab3ebcf4a404f2e86a80",
@@ -955,6 +967,12 @@
       "size": 248759,
       "digest": "sha256:f71b1e34033e71b4a58c243f669678fd5e868cbeb0e2dfbb86ef9ddfec4457eb",
       "updated_at": "2026-05-16T17:32:39Z",
+      "release": "latest"
+    },
+    "u-boot-hi3516ev100-nor.bin": {
+      "size": 141772,
+      "digest": null,
+      "updated_at": "2026-10-21T05:38:13Z",
       "release": "latest"
     },
     "u-boot-hi3516ev100-universal.bin": {

@@ -572,7 +572,7 @@ func TestScanningBootloaderNORInstall(t *testing.T) {
 		}
 	}
 
-	old := cam("hi3516cv300", "nor8m", "nor8m")
+	old := cam("hi3516cv200", "nor8m", "nor8m")
 	if old.scansLayout() || !strings.Contains(strings.Join(old.flashingLinux(), "\n"), "run uknor8m; run urnor8m") {
 		t.Errorf("a -universal bootloader lost its macros: %s\n%s", old.bootloader(), strings.Join(old.flashingLinux(), "\n"))
 	}

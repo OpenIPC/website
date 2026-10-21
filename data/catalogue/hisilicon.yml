@@ -90,7 +90,8 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516cv300-universal.bin
+  uboot_filename: u-boot-hi3516cv300-nor.bin
+  uboot_nand_filename: u-boot-hi3516cv300-nand.bin
   linux_filename: openipc.hi3516cv300-nor-lite.tgz
   notes: ar0237 imx291 imx307 imx323 imx385 jxf22 ov2718 ov2735 sc2235p sc2310
   nor_split: true
@@ -228,7 +229,7 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516ev100-universal.bin
+  uboot_filename: u-boot-hi3516ev100-nor.bin
   linux_filename: openipc.hi3516ev100-nor-lite.tgz
   notes: ''
   nor_split: true
