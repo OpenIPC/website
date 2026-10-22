@@ -157,8 +157,17 @@ export function couplerDevices(m: Pick<Model, 'devices'>): string[] {
 const squeeze = (s: string): string => s.toLowerCase().replace(/[-_ /.()（）]/g, '');
 
 /**
- * The boards whose code, other codes, name, lead, SoC, product line or
- * sensor carry every word of the query -- what a visitor typing a model code
+ * The names of the firmware its device IDs run: Xiongmai's hardware platform
+ * ("50H10L_S38") is written in them and nowhere else, and it is what a reader
+ * has off the old firmware's file or the camera's version page.
+ */
+const firmwareNames = (m: Pick<Model, 'devices'>): string[] =>
+  (m.devices ?? []).flatMap((d) => [...d.stock, ...(d.sellers ?? []), ...(d.coupler ? [d.coupler] : [])])
+    .flatMap((f) => [f.build, f.key]);
+
+/**
+ * The boards whose code, other codes, name, lead, SoC, product line, sensor
+ * or firmware names carry every word of the query -- what a visitor typing a model code
  * or a product name means. Exact codes first, then codes that contain it.
  */
 export function matchBoards(all: Entry[], q: string): Entry[] {
@@ -169,7 +178,7 @@ export function matchBoards(all: Entry[], q: string): Entry[] {
   for (const m of all) {
     const codes = [m.model, ...(m.aliases ?? []), ...(m.devices ?? []).map((d) => d.id)].filter((c): c is string => !!c);
     const fields = [...codes, m.summary?.name, m.summary?.lead, m.soc, m.soc_label, m.category, m.family,
-      ...m.units.map((u) => u.sensor), ...sensorsOf(m)]
+      ...m.units.map((u) => u.sensor), ...sensorsOf(m), ...firmwareNames(m)]
       .filter((f): f is string => !!f);
     const low = fields.map((f) => f.toLowerCase());
     const flat = fields.map(squeeze);
