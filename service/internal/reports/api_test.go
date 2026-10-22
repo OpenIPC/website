@@ -300,6 +300,26 @@ func TestIdentifyMatchesABoardWithoutAModelCode(t *testing.T) {
 	if rec.Code != 200 || !ids["xiongmai-other"] || !ids["xiongmai-unidentified-1"] {
 		t.Errorf("%d %s", rec.Code, rec.Body)
 	}
+
+	// Published on it, as the suggestion offers, the report still reads.
+	up, sent := e.post(t, upload{fields: map[string]string{"yaml": fixture(t, "hi3516cv300-imx291.txt")}}, "203.0.113.7")
+	if up.Code != http.StatusCreated {
+		t.Fatal(up.Body)
+	}
+	id := sent["id"].(string)
+	st := &Store{DB: e.pool}
+	if err := st.Link(ctx, id, "xiongmai-unidentified-1", "test"); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Review(ctx, id, "publish", "test", ""); err != nil {
+		t.Fatal(err)
+	}
+	if rec, v := e.get(t, "/api/v1/reports/"+id); rec.Code != 200 || v["status"] != "published" {
+		t.Errorf("the published report: %d %s", rec.Code, rec.Body)
+	}
+	if rec, _ := e.get(t, "/api/v1/reports?model=xiongmai-unidentified-1"); rec.Code != 200 || !strings.Contains(rec.Body.String(), id) {
+		t.Errorf("the board's reports: %d %s", rec.Code, rec.Body)
+	}
 }
 
 // The database itself refuses to lose a report: no UPDATE, DELETE or

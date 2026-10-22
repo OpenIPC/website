@@ -109,7 +109,7 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 		return v, nil
 	}
 	mrows, err := s.DB.Query(ctx, `
-		SELECT m.id, m.model, mf.name FROM report_models rm
+		SELECT m.id, coalesce(m.model, ''), mf.name FROM report_models rm
 		JOIN board_models m ON m.id = rm.model_id JOIN board_manufacturers mf ON mf.id = m.manufacturer_id
 		WHERE rm.report_id = $1 ORDER BY m.id`, id)
 	if err != nil {
