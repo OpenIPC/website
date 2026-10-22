@@ -203,6 +203,19 @@ describe('XM device IDs', () => {
     ] }] });
     expect(matchBoards(list, '000559a7').map((m) => m.id)).toEqual(['ivg']);
   });
+
+  test("searching Xiongmai's hardware platform finds the boards whose firmware is named for it", () => {
+    const build = (key: string) => ({ ...fw, key, build: key.replace(/\.bin$/, '') });
+    const list = entries({ ...FILE, manufacturers: [{ id: 'xiongmai', name: 'Xiongmai', aliases: [], website: null, models: [
+      model('pt', { model: 'IPG-50HV10PT-S', devices: [{ id: '00018510', stock: [],
+        sellers: [build('IPEYE_18510_IPC_HI3518EV200_50H10L_S38_V4.02.R12.Nat.OnvifS.HIK.20180127_ALL_ZL.bin')],
+        coupler: build('00018510_OpenIPC_50H10L_S38.bin') }] }),
+      model('other', { model: 'IPG-50H20PLS-S', devices: [{ id: '00002520', stock: [build('General_IPC_HI3516CV300_50H20L_S38.bin')], coupler: null }] }),
+    ] }] });
+    expect(matchBoards(list, '50H10L_S38').map((m) => m.id)).toEqual(['pt']);
+    expect(matchBoards(list, '50h10l s38').map((m) => m.id)).toEqual(['pt']);
+    expect(matchBoards(list, 'S38').map((m) => m.id)).toEqual(['pt', 'other']);
+  });
 });
 
 describe('finished devices', () => {
