@@ -306,8 +306,8 @@ func TestUBINandLines(t *testing.T) {
 // combinations, no install lines pointing at a file that is not there.
 func TestUBINandWithoutItsBootloaderIsNotOffered(t *testing.T) {
 	cat, idx := inputs(t)
-	soc := *cat.SoC("hi3516ev300")
-	soc.UBootNANDFilename = "u-boot-hi3516ev300-unpublished-nand.bin"
+	soc := *cat.SoC("hi3516ev200")
+	soc.UBootNANDFilename = "u-boot-hi3516ev200-unpublished-nand.bin"
 	d := decode(t, Document(&soc, idx))
 	if nand := d["editions"].(map[string]any)["nand"].([]any); len(nand) != 0 {
 		t.Errorf("NAND editions %v offered without a published NAND bootloader", nand)
@@ -572,7 +572,7 @@ func TestScanningBootloaderNORInstall(t *testing.T) {
 		}
 	}
 
-	old := cam("hi3516cv300", "nor8m", "nor8m")
+	old := cam("hi3516cv200", "nor8m", "nor8m")
 	if old.scansLayout() || !strings.Contains(strings.Join(old.flashingLinux(), "\n"), "run uknor8m; run urnor8m") {
 		t.Errorf("a -universal bootloader lost its macros: %s\n%s", old.bootloader(), strings.Join(old.flashingLinux(), "\n"))
 	}

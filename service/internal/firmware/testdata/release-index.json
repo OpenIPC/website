@@ -363,9 +363,9 @@
       "updated_at": "2026-09-23T18:33:05Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.hi3516ev300-nor-lite.tgz": {
-      "size": 7264229,
-      "digest": "sha256:b76ee5e42f22ffdb01e9b6bd586d3a9e1da0feb4c243dd213b264c6fd19bfd3c",
+    "openipc.hi3516ev300-nor-lite-split.tgz": {
+      "size": 7270000,
+      "digest": "sha256:93ac9dc7bf46bf91869794031d07415de5f9d9fa2011bea3f575b9c2bd8f2bc9",
       "updated_at": "2026-09-23T18:33:07Z",
       "release": "nightly-20260923-830fa4c"
     },
@@ -375,10 +375,10 @@
       "updated_at": "2026-09-23T18:33:09Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.hi3516ev300-nor-ultimate.tgz": {
-      "size": 10345375,
-      "digest": "sha256:eedf268376d1efad29759d5393ce6db4895cb6fe304eb37c5e45a830b4199c4b",
-      "updated_at": "2026-09-23T18:33:12Z",
+    "openipc.hi3516ev300-nor-ultimate-split.tgz": {
+      "size": 9100000,
+      "digest": "sha256:d7117e75acc65625f2ce9fdfd7a8443060fd11a5976e9db75f7d6e5682ae053a",
+      "updated_at": "2026-09-23T18:33:07Z",
       "release": "nightly-20260923-830fa4c"
     },
     "openipc.hi3518cv100-nor-lite.tgz": {
@@ -915,6 +915,18 @@
       "updated_at": "2026-08-27T10:55:39Z",
       "release": "latest"
     },
+    "u-boot-hi3516cv300-nand.bin": {
+      "size": 228688,
+      "digest": null,
+      "updated_at": "2026-10-21T05:37:36Z",
+      "release": "latest"
+    },
+    "u-boot-hi3516cv300-nor.bin": {
+      "size": 141888,
+      "digest": null,
+      "updated_at": "2026-10-21T15:06:15Z",
+      "release": "latest"
+    },
     "u-boot-hi3516cv300-universal.bin": {
       "size": 131852,
       "digest": "sha256:5b482f91e6095ede8b6ab082844c714180e63cb5c55dab3ebcf4a404f2e86a80",
@@ -955,6 +967,12 @@
       "size": 248759,
       "digest": "sha256:f71b1e34033e71b4a58c243f669678fd5e868cbeb0e2dfbb86ef9ddfec4457eb",
       "updated_at": "2026-05-16T17:32:39Z",
+      "release": "latest"
+    },
+    "u-boot-hi3516ev100-nor.bin": {
+      "size": 141772,
+      "digest": null,
+      "updated_at": "2026-10-21T05:38:13Z",
       "release": "latest"
     },
     "u-boot-hi3516ev100-universal.bin": {
