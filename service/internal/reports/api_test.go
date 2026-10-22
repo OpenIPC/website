@@ -270,6 +270,38 @@ func TestIdentifyStoresNothing(t *testing.T) {
 	}
 }
 
+// A board the catalogue knows only by its SoC and parts has no model code
+// (the importers' "unidentified" boards). It is still a match, not an error
+// that leaves every report on its SoC without one.
+func TestIdentifyMatchesABoardWithoutAModelCode(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	for _, sql := range []string{
+		`INSERT INTO board_models (id, manufacturer_id, model, soc, soc_label) VALUES
+		   ('xiongmai-unidentified-1', 'xiongmai', NULL, 'hi3516cv300', 'Hi3516CV300')`,
+		`INSERT INTO board_units (id, model_id, sensor, flash_chip, source, source_ref) VALUES
+		   ('u2', 'xiongmai-unidentified-1', 'IMX291', '', 'contributor', 'test:2')`,
+	} {
+		if _, err := e.pool.Exec(ctx, sql); err != nil {
+			t.Fatal(err)
+		}
+	}
+	req := httptest.NewRequest("POST", "/api/v1/boards/identify", strings.NewReader(fixture(t, "hi3516cv300-imx291.txt")))
+	rec := httptest.NewRecorder()
+	e.mux.ServeHTTP(rec, req)
+	var out struct {
+		Identify Identification `json:"identify"`
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &out)
+	ids := map[string]bool{}
+	for _, m := range out.Identify.Matches {
+		ids[m.ModelID] = true
+	}
+	if rec.Code != 200 || !ids["xiongmai-other"] || !ids["xiongmai-unidentified-1"] {
+		t.Errorf("%d %s", rec.Code, rec.Body)
+	}
+}
+
 // The database itself refuses to lose a report: no UPDATE, DELETE or
 // TRUNCATE outside Unguarded, and a board model with a report cannot be
 // deleted -- not directly, not by a cascade.

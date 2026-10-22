@@ -91,7 +91,7 @@ func Identify(ctx context.Context, db *pgxpool.Pool, f Facts) (Identification, e
 		}
 		return rows.Err()
 	}
-	const cols = `SELECT m.id, m.model, mf.name, coalesce(m.soc, '') FROM board_models m
+	const cols = `SELECT m.id, coalesce(m.model, ''), mf.name, coalesce(m.soc, '') FROM board_models m
 		JOIN board_manufacturers mf ON mf.id = m.manufacturer_id `
 
 	// The board code a vendor prints (Xiongmai's 50H20L, a module's name) is
