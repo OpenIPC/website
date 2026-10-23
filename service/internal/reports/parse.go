@@ -293,15 +293,27 @@ func Keyed(key, name, value string) string {
 	return hex.EncodeToString(m.Sum(nil))[:16]
 }
 
-// IDHashes is id_hashes: each identifier, keyed.
+// IDHashes is id_hashes: each identifier, keyed. An Anyka's chip.id is
+// left out: ipctool prints the chip's ID register there (0x2016...), the
+// same in every chip of the family, so keying it would make every Anyka
+// camera one board. It is still redacted, like any value under that key.
 func (f Facts) IDHashes(key string) map[string]string {
 	out := map[string]string{}
 	for _, id := range f.Identifiers() {
+		if id.Name == "die_id" && f.anyka() {
+			continue
+		}
 		if _, ok := out[id.Name]; !ok {
 			out[id.Name] = Keyed(key, id.Name, id.Value)
 		}
 	}
 	return out
+}
+
+// anyka: the chip is an Anyka, by its vendor or, when ipctool printed none,
+// its model (AK3918EV300, AK39EV330).
+func (f Facts) anyka() bool {
+	return strings.EqualFold(f.ChipVendor, "Anyka") || strings.HasPrefix(strings.ToUpper(f.ChipModel), "AK")
 }
 
 // Redact replaces every spelling of the board's identifiers in text --
