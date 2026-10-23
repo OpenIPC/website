@@ -638,3 +638,39 @@ func TestAnAgentNamesTheBoardOfAFlashImage(t *testing.T) {
 		t.Errorf("ipctool naming a board: %d %s", rec.Code, rec.Body)
 	}
 }
+
+// A flash dump shared publicly is served for nothing to keep (no-store),
+// versioned address or not: a reviewer may still make it private when it
+// identifies the camera (r-kebw28ys), and then every address answers 404.
+func TestASharedDumpIsNeverCachedAndCanBeMadePrivate(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	rec, out := e.post(t, upload{fields: map[string]string{"consent": "public"},
+		files: map[string][]byte{"backup": backupOf(fixture(t, "hi3516cv300-imx291.txt"), []byte("flash"))}}, "203.0.113.8")
+	if rec.Code != 201 {
+		t.Fatal(rec.Body)
+	}
+	id := out["id"].(string)
+	if err := (&Store{DB: e.pool}).Review(ctx, id, "publish", "test", ""); err != nil {
+		t.Fatal(err)
+	}
+	_, v := e.get(t, "/api/v1/reports/"+id)
+	versioned := v["files"].([]any)[0].(map[string]any)["url"].(string)
+	plain := strings.SplitN(versioned, "?", 2)[0]
+	if !strings.Contains(versioned, "?v=") {
+		t.Fatalf("the dump's address carries no version: %s", versioned)
+	}
+	for _, u := range []string{versioned, plain} {
+		if rec, _ := e.get(t, u); rec.Code != 200 || rec.Header().Get("Cache-Control") != "no-store" {
+			t.Errorf("%s: %d, Cache-Control %q", u, rec.Code, rec.Header().Get("Cache-Control"))
+		}
+	}
+	if err := e.api.DecidePhoto(ctx, id, 1, PhotoPrivate, nil, "test"); err != nil {
+		t.Fatal(err)
+	}
+	for _, u := range []string{versioned, plain} {
+		if rec, _ := e.get(t, u); rec.Code != 404 {
+			t.Errorf("%s answered %d after the dump was made private", u, rec.Code)
+		}
+	}
+}
