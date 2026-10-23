@@ -262,9 +262,9 @@ type sourceJSON struct {
 // Locales the catalogue has texts in; a request for another reads English.
 var Locales = []string{"en", "ru", "zh"}
 
-// treeModels narrows Tree to the boards on one SoC ($1, ” for any), to the
+// treeModels narrows Tree to the boards on one SoC ($1, '' for any), to the
 // boards with a unit naming one of the sensors in $2 (empty for any) and to
-// one board by its id ($3, ” for any: a board's own page). A
+// one board by its id ($3, '' for any: a board's own page). A
 // sensor is compared as the site's sensor catalogue keys it: without its
 // maker, upper-cased (frontend/apps/site/src/lib/sensor-names.ts nameKey).
 const treeModels = `($1 = '' OR m.soc = $1) AND ($3 = '' OR m.id = $3) AND (cardinality($2::text[]) = 0 OR EXISTS (

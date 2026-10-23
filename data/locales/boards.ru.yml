@@ -651,6 +651,7 @@ ru:
       review_certainty_guess: 'Предположение, пока кто-нибудь не подтвердит'
       review_evidence: 'Почему (видно рядом с неподтверждённой привязкой)'
       review_evidence_hint: 'та же платформа, что у r-3yi3z6jw'
+      review_evidence_needed: 'У вероятной привязки или предположения должно быть обоснование: заполните поле «Почему».'
       review_certainty_kept: 'Уже привязанная плата сохраняет свою надёжность; её меняет openipc reports certainty.'
       publish: 'Опубликовать'
       reject: 'Отклонить'

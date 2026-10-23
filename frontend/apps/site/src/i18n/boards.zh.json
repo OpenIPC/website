@@ -166,6 +166,7 @@
       "review_empty": "没有待审核的内容。",
       "review_evidence": "依据（显示在未确认的归属旁）",
       "review_evidence_hint": "与 r-3yi3z6jw 平台相同",
+      "review_evidence_needed": "“很可能”或“推测”的归属需要说明依据：请填写依据。",
       "review_existing": "目录中已有 {board}：除非修改下方的电路板 ID，报告将发布在那里。",
       "review_forbidden": "只有 OpenIPC 维护者可以审核。请以 OpenIPC 组织成员身份使用 GitHub 登录。",
       "review_from": "来自 {who}",

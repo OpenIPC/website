@@ -28,12 +28,13 @@ const reportsUsage = `usage: openipc reports
   certainty <id> <board model id> <confirmed|probable|guess> [--evidence why]
                                                 say how sure an existing link is now
   unlink <id> <board model id>                  undo a link made in error
+  takedown <id> --by who --note why              withdraw for good: YAML blanked, files deleted
+  verify                                        re-hash every stored file; non-zero on any missing or changed
 
 A link is confirmed (the default: a sticker, the device ID in its firmware),
 probable (the platform ipctool names, a sibling report) or a guess; one not
 confirmed needs --evidence, shown beside it: "same platform as r-3yi3z6jw".
-  takedown <id> --by who --note why              withdraw for good: YAML blanked, files deleted
-  verify                                        re-hash every stored file; non-zero on any missing or changed`
+Linking again never re-grades a link: certainty does.`
 
 // kinLimit: how many of the listed reports are given their kin -- as many
 // as the review page shows.
@@ -156,7 +157,12 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		if err := need(2); err != nil {
 			return err
 		}
-		if err := st.LinkAs(ctx, pos[0], pos[1], *by, reports.Basis{Certainty: *certainty, Evidence: *evidence}); err != nil {
+		err := st.LinkAs(ctx, pos[0], pos[1], *by, reports.Basis{Certainty: *certainty, Evidence: *evidence})
+		if errors.Is(err, reports.ErrLinked) {
+			return fmt.Errorf("%s %s: %w; to change it: openipc reports certainty %[1]s %[2]s <confirmed|probable|guess> [--evidence why]",
+				pos[0], pos[1], err)
+		}
+		if err != nil {
 			return err
 		}
 		refreshReportUnits(ctx, cfg, log, pool)

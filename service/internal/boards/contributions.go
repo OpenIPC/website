@@ -214,12 +214,23 @@ func (im *Importer) apply(ctx context.Context, fsys fs.FS, list []Contribution, 
 
 // applyOne makes one unit what its entry says.
 func (im *Importer) applyOne(ctx context.Context, fsys fs.FS, c Contribution, u *Unit) error {
-	same, err := im.unchanged(ctx, fsys, c, u)
+	same, link, err := im.unchanged(ctx, fsys, c, u)
 	if err != nil {
 		return fmt.Errorf("%s: %w", c.Unit, err)
 	}
 	if same {
-		return nil
+		if link {
+			return nil
+		}
+		// Only how sure the report's link is changed: the row says so, and
+		// the unit's directory -- the board's copy of what the owner sent --
+		// is left alone.
+		_, err := im.Pool.Exec(ctx, `UPDATE board_units SET link_certainty = $2, link_evidence = $3 WHERE id = $1 AND source = $4`,
+			c.Unit, null(c.LinkCertainty), c.LinkEvidence, Contributors)
+		if err == nil {
+			im.Log.Info("boards: contribution's link certainty updated", "unit", c.Unit, "certainty", c.LinkCertainty)
+		}
+		return err
 	}
 	// Every file must read, and every picture decode, before anything of
 	// the unit's is touched: a unit that cannot be written stays as it was.
@@ -321,54 +332,68 @@ func (im *Importer) prune(ctx context.Context, keep []string, fromReports bool) 
 
 // unchanged says whether the unit is stored exactly as the entry describes
 // it: the same fields, and the same files in the same order, byte for byte.
-func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u *Unit) (bool, error) {
+//
+// link says whether its link's certainty and evidence are the entry's too.
+// They are apart because a change there alone is an UPDATE of the row,
+// never a rewrite of the unit; and a unit stored before migration 036 has
+// none (NULL), which is a confirmed link, so the first refresh after it
+// rebuilds nothing.
+func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u *Unit) (same, link bool, err error) {
 	var model, ref, by, evidence string
 	var sensor, chip, note, certainty *string
 	var flash *int
 	var position int
-	err := im.Pool.QueryRow(ctx, `
+	err = im.Pool.QueryRow(ctx, `
 		SELECT model_id, source_ref, coalesce(contributed_by, ''), sensor, flash_chip, flash_size_mb, notes, position,
 		  link_certainty, link_evidence
 		FROM board_units WHERE id = $1 AND source = $2`, c.Unit, Contributors).
 		Scan(&model, &ref, &by, &sensor, &chip, &flash, &note, &position, &certainty, &evidence)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return false, nil
+		return false, false, nil
 	}
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 	if model != c.Model || ref != u.SourceRef || by != c.By || deref(sensor) != c.Sensor ||
-		deref(chip) != c.FlashChip || deref(note) != c.Note || derefInt(flash) != c.FlashMB || position != u.Position ||
-		deref(certainty) != c.LinkCertainty || evidence != c.LinkEvidence {
-		return false, nil
+		deref(chip) != c.FlashChip || deref(note) != c.Note || derefInt(flash) != c.FlashMB || position != u.Position {
+		return false, false, nil
 	}
+	link = sureAs(deref(certainty)) == sureAs(c.LinkCertainty) && evidence == c.LinkEvidence
 	rows, err := im.Pool.Query(ctx, `SELECT kind::text || ' ' || name || ' ' || sha256 FROM board_artifacts WHERE unit_id = $1 ORDER BY position`, c.Unit)
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 	stored, err := pgx.CollectRows(rows, pgx.RowTo[string])
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 	var want []string
 	for _, f := range u.Files {
 		b, err := fs.ReadFile(fsys, f.Source)
 		if err != nil {
-			return false, err
+			return false, false, err
 		}
 		want = append(want, f.Kind+" "+f.Name+" "+sha256Hex(b))
 	}
 	if !slices.Equal(stored, want) {
-		return false, nil
+		return false, false, nil
 	}
 	// The rows are right; the files must be there too (a restored database
 	// on an empty BOARDS_ROOT).
 	for _, f := range u.Files {
 		if _, err := os.Stat(filepath.Join(im.Root, c.Unit, f.Name)); err != nil {
-			return false, nil
+			return false, false, nil
 		}
 	}
-	return true, nil
+	return true, link, nil
+}
+
+// sureAs is a link certainty as compared: none is confirmed.
+func sureAs(certainty string) string {
+	if certainty == "" {
+		return "confirmed"
+	}
+	return certainty
 }
 
 func deref(s *string) string {

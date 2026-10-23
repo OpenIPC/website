@@ -600,6 +600,7 @@ en:
       review_certainty_guess: 'A guess, until someone confirms it'
       review_evidence: 'Why (shown beside a link that is not confirmed)'
       review_evidence_hint: 'same platform as r-3yi3z6jw'
+      review_evidence_needed: 'A probable link or a guess says why: fill in the evidence.'
       review_certainty_kept: 'A board already linked keeps its certainty; openipc reports certainty changes it.'
       publish: 'Publish'
       reject: 'Reject'

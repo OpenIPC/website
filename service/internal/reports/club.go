@@ -423,6 +423,9 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 		}
 		return d, err
 	}
+	if basis, err = basis.public(ctx, s.DB, id); err != nil {
+		return d, err
+	}
 	// The board a review adds, the report's links, the review and the
 	// sender's stars are one transaction: a board that cannot be added, a
 	// link to one the catalogue does not have, or a ledger that cannot be

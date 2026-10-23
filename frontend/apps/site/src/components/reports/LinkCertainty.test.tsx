@@ -79,6 +79,10 @@ test('the reviewer publishes a link as probable, saying why', async () => {
   await findByText(/r-nw2j9a8k/);
   fireEvent.input(getByRole('textbox', { name: /^Board ids/ }), { target: { value: 'xiongmai-ipg-50hv10pt-s' } });
   fireEvent.change(container.querySelector('select')!, { target: { value: 'probable' } });
+  // Without its reason it is stopped here, with a word on why.
+  fireEvent.click(getByRole('button', { name: /^Publish/ }));
+  expect(getByRole('alert').textContent).toBe('A probable link or a guess says why: fill in the evidence.');
+  expect(calls).toHaveLength(0);
   fireEvent.input(getByRole('textbox', { name: /^Why/ }), { target: { value: ' same platform as r-3yi3z6jw ' } });
   fireEvent.click(getByRole('button', { name: /^Publish/ }));
   await waitFor(() => expect(calls).toHaveLength(1));

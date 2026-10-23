@@ -476,13 +476,48 @@ func TestAReportUnitCarriesItsLinksCertainty(t *testing.T) {
 		t.Fatal("the fixture's own units are not in the tree")
 	}
 
+	// A rewrite of the unit starts from an empty directory: a file of the
+	// test's own there says whether it was rewritten.
+	marker := filepath.Join(root, "xiongmai-53h20-s-r-cccccccc", "marker")
+	rewritten := func() bool {
+		_, err := os.Stat(marker)
+		return err != nil
+	}
+	if err := os.WriteFile(marker, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
 	list[0].LinkCertainty, list[0].LinkEvidence = "confirmed", ""
 	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
 		t.Fatal(err)
 	}
-	var certainty, evidence string
+	var certainty *string
+	var evidence string
 	if err := pool.QueryRow(ctx, `SELECT link_certainty, link_evidence FROM board_units WHERE id = 'xiongmai-53h20-s-r-cccccccc'`).
-		Scan(&certainty, &evidence); err != nil || certainty != "confirmed" || evidence != "" {
-		t.Errorf("after the link was confirmed: %q %q %v", certainty, evidence, err)
+		Scan(&certainty, &evidence); err != nil || deref(certainty) != "confirmed" || evidence != "" {
+		t.Errorf("after the link was confirmed: %v %q %v", certainty, evidence, err)
+	}
+	if rewritten() {
+		t.Error("a change of certainty alone rewrote the unit")
+	}
+
+	// A unit stored before migration 036 has no certainty: it is a
+	// confirmed link, and the first refresh after it rewrites nothing.
+	if _, err := pool.Exec(ctx, `UPDATE board_units SET link_certainty = NULL WHERE id = 'xiongmai-53h20-s-r-cccccccc'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	if rewritten() {
+		t.Error("a unit with no certainty was rewritten as confirmed")
+	}
+
+	// A file changed is still a rewrite.
+	store["cc/text"] = &fstest.MapFile{Data: []byte("U-Boot 2016\n")}
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	if !rewritten() {
+		t.Error("a changed file did not rewrite the unit")
 	}
 }

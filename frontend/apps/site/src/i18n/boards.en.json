@@ -167,6 +167,7 @@
       "review_empty": "Nothing is waiting.",
       "review_evidence": "Why (shown beside a link that is not confirmed)",
       "review_evidence_hint": "same platform as r-3yi3z6jw",
+      "review_evidence_needed": "A probable link or a guess says why: fill in the evidence.",
       "review_existing": "The catalogue already has {board}: the report is published there unless you change the board ids below.",
       "review_forbidden": "Only OpenIPC's maintainers review. Sign in with GitHub as a member of the OpenIPC organisation.",
       "review_from": "From {who}",

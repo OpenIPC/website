@@ -124,6 +124,11 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
   const received = new Date(q.received_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
 
   const act = (decision: 'publish' | 'reject', why = note) => {
+    // A link that is not confirmed says why; the service refuses it otherwise.
+    if (decision === 'publish' && certainty !== 'confirmed' && !evidence.trim()) {
+      setError(t('club.review_evidence_needed'));
+      return;
+    }
     setBusy(true);
     setError(null);
     const ids = models.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
@@ -226,7 +231,7 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
                 </label>
                 <label class="grid gap-1 text-[13px] text-body-secondary">{t('club.review_evidence')}
                   <input value={evidence} onInput={(e) => setEvidence((e.target as HTMLInputElement).value)} maxLength={200}
-                    required={certainty !== 'confirmed'} placeholder={t('club.review_evidence_hint')}
+                    aria-required={certainty !== 'confirmed'} placeholder={t('club.review_evidence_hint')}
                     class="rounded-md border border-hairline px-2.5 py-1.5 text-sm text-body" />
                 </label>
                 {q.models.length > 0 && <p class="m-0 text-[12.5px] text-body-secondary sm:col-span-2">{t('club.review_certainty_kept')}</p>}

@@ -3,6 +3,7 @@ package reports
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -69,9 +70,13 @@ func TestALinkSaysHowSureItIsAndWhy(t *testing.T) {
 	if c, ev := linkOf(t, e, id, "xiongmai-50h20l"); c != Probable || ev != "same platform as r-3yi3z6jw" {
 		t.Errorf("%q %q", c, ev)
 	}
-	// Linking again does not re-grade it: that is SetCertainty's.
-	if err := st.Link(ctx, id, "xiongmai-50h20l", "test"); err != nil {
-		t.Fatal(err)
+	// Linking again as sure is nothing; as sure as something else is
+	// refused, never a silent no-op: re-grading is SetCertainty's.
+	if err := st.LinkAs(ctx, id, "xiongmai-50h20l", "test", Basis{Certainty: Probable, Evidence: "same platform as r-3yi3z6jw"}); err != nil {
+		t.Errorf("the same link again: %v", err)
+	}
+	if err := st.Link(ctx, id, "xiongmai-50h20l", "test"); !errors.Is(err, ErrLinked) {
+		t.Errorf("relinked as confirmed: %v", err)
 	}
 	if c, _ := linkOf(t, e, id, "xiongmai-50h20l"); c != Probable {
 		t.Errorf("relinked: %q", c)
@@ -163,5 +168,69 @@ func TestADecisionLinksWithItsCertainty(t *testing.T) {
 	}
 	if c, _ := linkOf(t, e, id, "xiongmai-other"); c != Confirmed {
 		t.Errorf("the new link: %q", c)
+	}
+}
+
+// Evidence is published as the note is: a MAC, or the board's own cloud ID,
+// written into it by a reviewer reaches neither the receipt nor the board's
+// unit, whichever way the link was made.
+func TestEvidenceIsPublishedRedacted(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	st := &Store{DB: e.pool}
+	const said = "ethaddr 00:12:34:56:78:9a, cloud 3beae2b40d84f889"
+	secret := []string{"00:12:34:56:78:9a", "3beae2b40d84f889"}
+	var ids []string
+	for range 3 {
+		// A note, so the report is text for its board (PublishedTexts).
+		rec, out := e.post(t, upload{fields: map[string]string{"yaml": fixture(t, "xiongmai-50h20l-readme.yml"), "note": "bought in 2019"}}, "203.0.113.31")
+		if rec.Code != 201 {
+			t.Fatal(rec.Body)
+		}
+		ids = append(ids, out["id"].(string))
+	}
+	a, b, c := ids[0], ids[1], ids[2]
+	if err := st.LinkAs(ctx, a, "xiongmai-50h20l", "test", Basis{Certainty: Probable, Evidence: said}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.Decide(ctx, b, "publish", "test", "", []string{"xiongmai-50h20l"}, Basis{Certainty: Guess, Evidence: said}, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Link(ctx, c, "xiongmai-50h20l", "test"); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.SetCertainty(ctx, c, "xiongmai-50h20l", Basis{Certainty: Probable, Evidence: said}); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{a, c} {
+		if err := st.Review(ctx, id, "publish", "test", ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	texts, err := st.PublishedTexts(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range ids {
+		rec, _ := e.get(t, "/api/v1/reports/"+id)
+		_, stored := linkOf(t, e, id, "xiongmai-50h20l")
+		for _, s := range secret {
+			if strings.Contains(rec.Body.String(), s) || strings.Contains(stored, s) {
+				t.Errorf("%s: %s is in its evidence: %s", id, s, stored)
+			}
+		}
+		if !strings.Contains(stored, "<mac:") || !strings.Contains(rec.Body.String(), "mac:") {
+			t.Errorf("%s: the receipt does not show the MAC's placeholder: %s", id, rec.Body)
+		}
+	}
+	if len(texts) != 3 {
+		t.Fatalf("%d published texts of 3", len(texts))
+	}
+	for _, x := range texts {
+		for _, s := range secret {
+			if strings.Contains(x.Evidence, s) {
+				t.Errorf("%s's unit: %s", x.Report, x.Evidence)
+			}
+		}
 	}
 }

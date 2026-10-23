@@ -329,13 +329,34 @@ func (s *Store) LinkAs(ctx context.Context, id, model, by string, b Basis) error
 	if err != nil {
 		return err
 	}
+	if b, err = b.public(ctx, s.DB, id); err != nil {
+		return err
+	}
 	if err := s.exists(ctx, id); err != nil {
 		return err
 	}
-	_, err = s.DB.Exec(ctx, `INSERT INTO report_models (report_id, model_id, by, certainty, evidence) VALUES ($1,$2,$3,$4,$5)
+	// A link already made is left as it is, and said so: relinking with
+	// another certainty is SetCertainty's, not a silent no-op.
+	tag, err := s.DB.Exec(ctx, `INSERT INTO report_models (report_id, model_id, by, certainty, evidence) VALUES ($1,$2,$3,$4,$5)
 		ON CONFLICT DO NOTHING`, id, model, by, b.Certainty, b.Evidence)
-	return err
+	if err != nil || tag.RowsAffected() > 0 {
+		return err
+	}
+	var was Basis
+	if err := s.DB.QueryRow(ctx, `SELECT certainty, evidence FROM report_models WHERE report_id = $1 AND model_id = $2`,
+		id, model).Scan(&was.Certainty, &was.Evidence); err != nil {
+		return err
+	}
+	if was != b {
+		return fmt.Errorf("%w: it is %s (%q)", ErrLinked, was.Certainty, was.Evidence)
+	}
+	return nil
 }
+
+// ErrLinked is LinkAs's answer for a link already made as sure as another
+// basis says: a link is re-graded with SetCertainty (`openipc reports
+// certainty`), never by linking again.
+var ErrLinked = errors.New("the report is already linked to that board with another certainty")
 
 // Unlink removes a link made in error.
 func (s *Store) Unlink(ctx context.Context, id, model string) error {
@@ -351,6 +372,9 @@ func (s *Store) Unlink(ctx context.Context, id, model string) error {
 func (s *Store) SetCertainty(ctx context.Context, id, model string, b Basis) error {
 	b, err := b.Checked()
 	if err != nil {
+		return err
+	}
+	if b, err = b.public(ctx, s.DB, id); err != nil {
 		return err
 	}
 	return Unguarded(ctx, s.DB, func(tx pgx.Tx) error {
@@ -399,6 +423,30 @@ func (b Basis) Checked() (Basis, error) {
 	if b.Certainty != Confirmed && b.Evidence == "" {
 		return b, fmt.Errorf("a %s link says why: give its evidence", b.Certainty)
 	}
+	return b, nil
+}
+
+// public is b with its evidence as anyone may read it: the report's own
+// identifiers and any MAC replaced by their keyed hashes, as its published
+// note is (Redact). Only this form is stored: the evidence is shown beside
+// the link, and nothing needs it in clear.
+func (b Basis) public(ctx context.Context, q querier, id string) (Basis, error) {
+	if b.Evidence == "" {
+		return b, nil
+	}
+	var yaml, key string
+	err := q.QueryRow(ctx, `SELECT r.yaml, k.key FROM reports r CROSS JOIN report_key k WHERE r.id = $1`, id).Scan(&yaml, &key)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return b, ErrNotFound
+	}
+	if err != nil {
+		return b, err
+	}
+	var facts Facts
+	if yaml != "" {
+		_, facts, _ = Parse(yaml)
+	}
+	b.Evidence = Redact(b.Evidence, facts, key)
 	return b, nil
 }
 
