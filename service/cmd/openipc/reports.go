@@ -17,7 +17,8 @@ import (
 )
 
 const reportsUsage = `usage: openipc reports
-  list [--status pending|published|rejected|withdrawn]   the review queue, newest first (JSON)
+  list [--status pending|published|rejected|withdrawn]   the review queue, newest first (JSON), each with
+                                                same_camera, same_sender and duplicate_of (the newest 100)
   show <id>                                     the report whole, as sent: YAML, identifiers' hashes, files
   publish <id> [--model <board model id>]... [--new-board] [--by who] [--note text]
                                                 --new-board: add the camera the report proposed, as the review page suggests
@@ -26,6 +27,10 @@ const reportsUsage = `usage: openipc reports
   unlink <id> <board model id>                  undo a link made in error
   takedown <id> --by who --note why              withdraw for good: YAML blanked, files deleted
   verify                                        re-hash every stored file; non-zero on any missing or changed`
+
+// kinLimit: how many of the listed reports are given their kin -- as many
+// as the review page shows.
+const kinLimit = 100
 
 // reportsCommand is `openipc reports ...`: the review queue for owner
 // reports. There is no admin page (#288); a maintainer runs these in the web
@@ -69,7 +74,29 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		if err != nil {
 			return err
 		}
-		return out.Encode(l)
+		// The newest hundred with their kin, as the review page shows
+		// them: the same camera's other reports, others sent from its
+		// network, and the report it is a duplicate of.
+		var ids []string
+		for _, r := range l[:min(len(l), kinLimit)] {
+			ids = append(ids, r.ID)
+		}
+		kin, err := st.Kin(ctx, ids)
+		if err != nil {
+			return err
+		}
+		type listed struct {
+			reports.Listed
+			reports.Kin
+		}
+		all := make([]listed, len(l))
+		for i, r := range l {
+			all[i].Listed = r
+			if k := kin[r.ID]; k != nil {
+				all[i].Kin = *k
+			}
+		}
+		return out.Encode(all)
 	case "show":
 		if err := need(1); err != nil {
 			return err

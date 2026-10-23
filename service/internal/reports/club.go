@@ -304,6 +304,9 @@ type Queued struct {
 	// Revision counts its sender's edits; a decision sent with it is refused
 	// when the report has changed since (ErrChanged).
 	Revision int `json:"revision"`
+	// Kin: the same camera's other reports, others from its network, and
+	// the report this one adds nothing to.
+	Kin
 }
 
 // Queue is the review queue: the reports in one state (pending by default),
@@ -319,9 +322,17 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 	if len(list) > 100 {
 		list = list[:100]
 	}
+	ids := make([]string, len(list))
+	for i, l := range list {
+		ids[i] = l.ID
+	}
+	kin, err := s.Kin(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
 	out := []Queued{}
 	for _, l := range list {
-		q := Queued{Listed: l}
+		q := Queued{Listed: l, Kin: *kin[l.ID]}
 		r, err := s.Private(ctx, l.ID)
 		if err != nil {
 			return nil, err

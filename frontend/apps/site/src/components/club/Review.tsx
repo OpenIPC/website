@@ -7,13 +7,19 @@
  * report about a camera the catalogue does not have shows the board
  * publishing would add, for the reviewer to correct; publishing adds it.
  *
+ * Reports of one camera (an identifier's keyed hash in common) stand
+ * together, each naming the others and the boards they are published on,
+ * which the board ids then start from. One that adds nothing to another --
+ * the same files, the same ipctool output, no note of its own -- says so,
+ * and is rejected as its duplicate with one click.
+ *
  * The same decisions remain available as `openipc reports publish|reject`.
  */
 import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { boardPath } from '../../lib/boards/shell';
-import { ClubError, decide, fetchMe, fetchQueue, type Member, type NewBoard, type Queued } from '../../lib/club';
+import { ClubError, decide, fetchMe, fetchQueue, type Member, type NewBoard, type Queued, type Sibling } from '../../lib/club';
 import { size } from '../../lib/reports';
 import { Forbidden, STATUS_TONE } from './parts';
 
@@ -40,6 +46,7 @@ export default function Review({ locale }: { locale: Locale }) {
   useEffect(reload, [tab]);
 
   if (load.state === 'signed_out' || load.state === 'forbidden') return <Forbidden why={t('club.review_forbidden')} member={me} locale={locale} t={t} />;
+  const listed = new Set(load.state === 'ok' ? load.list.map((q) => q.id) : []);
   return (
     <div class="mt-8 grid gap-4">
       <div class="flex flex-wrap gap-2" role="tablist">
@@ -53,17 +60,57 @@ export default function Review({ locale }: { locale: Locale }) {
       {load.state === 'loading' && <div class="h-40 animate-pulse rounded-xl bg-surface-alt" aria-busy="true" />}
       {load.state === 'error' && <p class="m-0 text-[#9a5b00]" role="alert">{t('club.load_failed')}</p>}
       {load.state === 'ok' && load.list.length === 0 && <p class="m-0 text-body-secondary">{t('club.review_empty')}</p>}
-      {load.state === 'ok' && load.list.map((q) => <Item key={q.id} q={q} locale={locale} t={t} onDone={reload} />)}
+      {load.state === 'ok' && byCamera(load.list).map((g) => {
+        const items = g.map((q) => <Item key={q.id} q={q} listed={listed} locale={locale} t={t} onDone={reload} />);
+        return g.length === 1 ? items : (
+          <section key={g[0].id} class="grid gap-3 rounded-xl border-s-4 border-brand-blue ps-3" aria-label={t('club.kin_group', { n: g.length })}>
+            <p class="m-0 text-[13px] font-semibold text-[#3d4dad]">{t('club.kin_group', { n: g.length })}</p>
+            {items}
+          </section>
+        );
+      })}
     </div>
   );
 }
 
+/**
+ * The queue in groups of one camera, each where its newest report stood:
+ * reports linked by same_camera, directly or through another in the list.
+ */
+function byCamera(list: Queued[]): Queued[][] {
+  const root = new Map(list.map((q) => [q.id, q.id]));
+  const find = (id: string): string => {
+    const up = root.get(id)!;
+    return up === id ? id : find(up);
+  };
+  for (const q of list) {
+    for (const s of q.same_camera ?? []) {
+      if (root.has(s.id)) root.set(find(s.id), find(q.id));
+    }
+  }
+  const groups = new Map<string, Queued[]>();
+  for (const q of list) {
+    const k = find(q.id);
+    groups.set(k, [...(groups.get(k) ?? []), q]);
+  }
+  return [...groups.values()];
+}
+
+/** The boards the camera's published reports are on: where this one belongs too. */
+function siblingBoards(q: Queued): string[] {
+  const ids = [q.duplicate_of, ...(q.same_camera ?? [])]
+    .filter((s): s is Sibling => !!s && s.status === 'published')
+    .flatMap((s) => (s.boards ?? []).map((b) => b.id));
+  return [...new Set(ids)];
+}
+
 const NEW_FIELDS: (keyof NewBoard)[] = ['maker_name', 'maker_id', 'model', 'model_id', 'soc'];
 
-function Item({ q, locale, t, onDone }: { q: Queued; locale: Locale; t: BoardsT; onDone: () => void }) {
+function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>; locale: Locale; t: BoardsT; onDone: () => void }) {
   const sug = q.new_board;
-  const [models, setModels] = useState(q.models.length ? q.models.join(', ') : sug?.existing ?? '');
-  const [create, setCreate] = useState(!!sug && !sug.existing && q.status !== 'published');
+  const known = siblingBoards(q);
+  const [models, setModels] = useState(q.models.length ? q.models.join(', ') : known.length ? known.join(', ') : sug?.existing ?? '');
+  const [create, setCreate] = useState(!!sug && !sug.existing && !known.length && q.status !== 'published');
   const [board, setBoard] = useState<NewBoard | null>(sug
     ? { maker_id: sug.maker_id, maker_name: sug.maker_name, model_id: sug.model_id, model: sug.model, soc: sug.soc ?? '' }
     : null);
@@ -73,11 +120,11 @@ function Item({ q, locale, t, onDone }: { q: Queued; locale: Locale; t: BoardsT;
   const [error, setError] = useState<string | null>(null);
   const received = new Date(q.received_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
 
-  const act = (decision: 'publish' | 'reject') => {
+  const act = (decision: 'publish' | 'reject', why = note) => {
     setBusy(true);
     setError(null);
     const ids = models.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
-    decide(q.id, decision, ids, note, decision === 'publish' && create && board ? board : undefined, q.revision)
+    decide(q.id, decision, ids, why, decision === 'publish' && create && board ? board : undefined, q.revision)
       .then((r) => {
         setResult(r.board ? t('club.review_done_board', { board: r.board, points: r.points }) : t(`club.review_done_${decision}`, { points: r.points }));
         setTimeout(onDone, 1200);
@@ -113,6 +160,13 @@ function Item({ q, locale, t, onDone }: { q: Queued; locale: Locale; t: BoardsT;
         {(q.chip || q.sensor) && <><dt class="text-body-secondary">SoC</dt><dd class="m-0">{[q.chip, q.sensor].filter(Boolean).join(' · ')}</dd></>}
         {q.note && <><dt class="text-body-secondary">{t('club.kind_note')}</dt><dd class="m-0 whitespace-pre-wrap">{q.note}</dd></>}
       </dl>
+      {(q.duplicate_of || q.same_camera?.length || q.same_sender?.length) ? (
+        <ul class="m-0 grid list-none gap-1 p-0 text-[13px]" aria-label={t('club.kin_label')}>
+          {q.duplicate_of && <Kin label={t('club.kin_duplicate')} s={q.duplicate_of} strong listed={listed} locale={locale} t={t} />}
+          {q.same_camera?.map((s) => <Kin key={s.id} label={t('club.kin_camera')} s={s} listed={listed} locale={locale} t={t} />)}
+          {q.same_sender?.map((s) => <Kin key={s.id} label={t('club.kin_sender')} s={s} weak listed={listed} locale={locale} t={t} />)}
+        </ul>
+      ) : null}
       <ul class="m-0 grid list-none gap-1 p-0 text-sm">
         {q.file_list.map((f) => (
           <li key={f.position} class="flex flex-wrap items-center gap-x-2">
@@ -169,10 +223,36 @@ function Item({ q, locale, t, onDone }: { q: Queued; locale: Locale; t: BoardsT;
                 </button>
               )}
               {q.status !== 'rejected' && <button type="button" disabled={busy} class="site-btn site-btn-outline-secondary" onClick={() => act('reject')}>{t('club.reject')}</button>}
+              {q.duplicate_of && q.status !== 'rejected' && (
+                <button type="button" disabled={busy} class="site-btn site-btn-outline-secondary" onClick={() => {
+                  const why = t('club.duplicate_note', { id: q.duplicate_of!.id });
+                  setNote(why);
+                  act('reject', why);
+                }}>{t('club.reject_duplicate', { id: q.duplicate_of.id })}</button>
+              )}
               {result && <span class="text-sm text-[#146c3c]" role="status">{result}</span>}
               {error && <span class="text-sm text-[#a3262e]" role="alert">{error}</span>}
             </div>
       </div>
     </article>
+  );
+}
+
+/** One related report: what it is to this one, its id (on this page, or its receipt), its state and boards. */
+function Kin({ label, s, strong, weak, listed, locale, t }: {
+  label: string; s: Sibling; strong?: boolean; weak?: boolean; listed: Set<string>; locale: Locale; t: BoardsT;
+}) {
+  const href = listed.has(s.id) ? `#q-${s.id}` : `${pathFor(locale, '/cameras/report')}?id=${s.id}`;
+  return (
+    <li class={`flex flex-wrap items-center gap-x-1.5 ${strong ? 'font-semibold text-[#9a5b00]' : weak ? 'text-body-secondary' : ''}`}>
+      {label} <a href={href} class="font-mono">{s.id}</a>
+      <span class={`rounded-full px-2 text-[11.5px] font-semibold ${STATUS_TONE[s.status]}`}>{t(`club.status_${s.status}`)}</span>
+      {s.status === 'published' && !!s.boards?.length && (
+        <span class="font-normal">
+          {t('club.kin_on')}{' '}
+          {s.boards.map((b, i) => <span key={b.id}>{i > 0 && ', '}<a href={pathFor(locale, boardPath(b.id))} class="font-mono">{b.id}</a></span>)}
+        </span>
+      )}
+    </li>
   );
 }
