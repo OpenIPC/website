@@ -160,3 +160,84 @@ func TestSoCShorthandResolves(t *testing.T) {
 		}
 	}
 }
+
+// A finished camera a review adds is a camera, named by what it is sold as,
+// and answers to the PCB code inside it too; a further marking another board
+// of its maker already answers to is refused with the whole board, since the
+// two cannot both be it.
+func TestACameraAReviewAddsAnswersToItsPCBMarkings(t *testing.T) {
+	pool, _ := imported(t)
+	ctx := context.Background()
+	cam := NewModel{MakerID: "xiongmai", MakerName: "Xiongmai", ModelID: "xiongmai-svi-s123a", Model: "SVI-S123A", Kind: "camera",
+		Aliases: []string{"RS-CM-371B", " ", "svi s123a", "CV182X-SC4336-749"}}
+	if _, err := create(t, pool, cam); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE id = 'xiongmai-svi-s123a' AND kind = 'camera'`); n != 1 {
+		t.Error("not a camera")
+	}
+	var printed []string
+	_ = pool.QueryRow(ctx, `SELECT array_agg(code_as_printed ORDER BY code_norm) FROM board_model_aliases
+		WHERE model_id = 'xiongmai-svi-s123a' AND source = 'club'`).Scan(&printed)
+	if strings.Join(printed, "|") != "CV182X-SC4336-749|RS-CM-371B|SVI-S123A" {
+		t.Errorf("answers to %q", printed)
+	}
+	if sug, _ := Suggest(ctx, pool, "Xiongmai", "RS CM 371B", ""); sug.Existing != "xiongmai-svi-s123a" {
+		t.Errorf("a proposal by its PCB code: %+v", sug)
+	}
+
+	twin := NewModel{MakerID: "xiongmai", MakerName: "Xiongmai", ModelID: "xiongmai-gp5", Model: "GP5", Kind: "camera", Aliases: []string{"53H20 S"}}
+	if _, err := create(t, pool, twin); err == nil || !strings.Contains(err.Error(), "already has it on xiongmai-53h20-s") {
+		t.Errorf("a marking another board has: %v", err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE id = 'xiongmai-gp5'`); n != 0 {
+		t.Error("a refused camera was added")
+	}
+	if _, err := create(t, pool, NewModel{MakerID: "xiongmai", MakerName: "Xiongmai", ModelID: "xiongmai-k745", Model: "K745", Kind: "router"}); err == nil {
+		t.Error("a kind board_models does not have was accepted")
+	}
+	// Without a kind it is a board, as before.
+	if _, err := create(t, pool, NewModel{MakerID: "xiongmai", MakerName: "Xiongmai", ModelID: "xiongmai-k745", Model: "K745"}); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE id = 'xiongmai-k745' AND kind = 'board'`); n != 1 {
+		t.Error("an unnamed kind is not a board")
+	}
+}
+
+// A board the catalogue has takes the markings a review read on it; one it
+// answers to already is nothing to do, one another board has is refused.
+func TestMarkingsAreAddedToABoardTheCatalogueHas(t *testing.T) {
+	pool, _ := imported(t)
+	ctx := context.Background()
+	add := func(model string, markings ...string) error {
+		return pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error { return AddMarkings(ctx, tx, model, "", markings) })
+	}
+	if err := add("xiongmai-53h20-s", "BLK16E-0235-38X38-S V2.04", "53H20-S"); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_model_aliases WHERE model_id = 'xiongmai-53h20-s'
+		AND code_norm = 'BLK16E-0235-38X38-S-V2-04' AND source = 'club' AND code_as_printed = 'BLK16E-0235-38X38-S V2.04'`); n != 1 {
+		t.Error("the marking was not added")
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_model_aliases WHERE model_id = 'xiongmai-53h20-s' AND code_norm = '53H20-S' AND source = 'openhisiipcam'`); n != 1 {
+		t.Error("the board's own code changed hands")
+	}
+	if _, err := create(t, pool, NewModel{MakerID: "xiongmai", MakerName: "Xiongmai", ModelID: "xiongmai-ipg", Model: "IPG-80HE20PS-S"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := add("xiongmai-ipg", "NEW-ONE", "blk16e 0235 38x38 s v2.04"); err == nil || !strings.Contains(err.Error(), "already has it on xiongmai-53h20-s") {
+		t.Errorf("another board's marking: %v", err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_model_aliases WHERE code_norm = 'NEW-ONE'`); n != 0 {
+		t.Error("a refused set of markings left one behind")
+	}
+	for _, bad := range [][]string{{"--"}, {strings.Repeat("A", 81)}} {
+		if err := add("xiongmai-ipg", bad...); err == nil {
+			t.Errorf("accepted %q", bad)
+		}
+	}
+	if err := add("no-such-board", "X1"); err == nil {
+		t.Error("a board the catalogue does not have")
+	}
+}

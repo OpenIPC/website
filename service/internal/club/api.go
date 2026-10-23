@@ -689,11 +689,14 @@ func (a *API) queue(w http.ResponseWriter, r *http.Request) {
 
 // decide is POST /api/v1/club/review/{id} {"decision": "publish"|"reject",
 // "models": [...], "certainty": "confirmed"|"probable"|"guess",
-// "evidence": "...", "new_board": {...}, "note": "..."}: a maintainer's
-// decision, its stars, and a message to the sender when the bot can reach
-// them. new_board (boards.NewModel) adds the camera a report proposed to
-// the catalogue, and links the report to it. {"decision": "ask", "note":
-// "..."} decides nothing: the note is a question to the sender (Ask).
+// "evidence": "...", "new_board": {...}, "markings": [...], "note": "..."}:
+// a maintainer's decision, its stars, and a message to the sender when the
+// bot can reach them. new_board (boards.NewModel) adds the camera a report
+// proposed to the catalogue -- a board or a camera, with any further
+// markings as its aliases -- and links the report to it; markings are what
+// the existing board it is linked to was seen to carry, added to its
+// aliases. {"decision": "ask", "note": "..."} decides nothing: the note is
+// a question to the sender (Ask).
 func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 	m, ok := a.signedIn(w, r)
 	if !ok {
@@ -707,6 +710,7 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 		Decision string           `json:"decision"`
 		Models   []string         `json:"models"`
 		NewBoard *boards.NewModel `json:"new_board"`
+		Markings []string         `json:"markings"`
 		// How sure the links this decision makes are, and why.
 		reports.Basis
 		// Revision is the queue's, so a report changed since is not decided.
@@ -720,7 +724,7 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	by := m.Name + " (" + m.ID + ")"
 	if in.Decision == "ask" {
-		if len(in.Models) > 0 || in.NewBoard != nil {
+		if len(in.Models) > 0 || in.NewBoard != nil || len(in.Markings) > 0 {
 			a.refuse(w, http.StatusBadRequest, "asking the sender links no board; publish to do that")
 			return
 		}
@@ -739,7 +743,7 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	d, err := a.Reports.Store().Decide(r.Context(), id, in.Decision, by, in.Note, in.Models, in.Basis, in.NewBoard, in.Revision)
+	d, err := a.Reports.Store().Decide(r.Context(), id, in.Decision, by, in.Note, in.Models, in.Basis, in.NewBoard, in.Markings, in.Revision)
 	if errors.Is(err, reports.ErrChanged) {
 		a.refuse(w, http.StatusConflict, err.Error())
 		return

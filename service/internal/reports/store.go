@@ -12,6 +12,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/OpenIPC/website/service/internal/boards"
 )
 
 // Store is the reports' rows. It is the only code that writes them; the
@@ -560,6 +562,9 @@ func (s *Store) Takedown(ctx context.Context, id, by, note string) ([]string, er
 			return err
 		}
 		if _, err := tx.Exec(ctx, `DELETE FROM report_models WHERE report_id = $1`, id); err != nil {
+			return err
+		}
+		if err := boards.DropMarkings(ctx, tx, id); err != nil {
 			return err
 		}
 		if _, err := tx.Exec(ctx, `INSERT INTO report_reviews (report_id, decision, by, note) VALUES ($1,'withdraw',$2,$3)`,

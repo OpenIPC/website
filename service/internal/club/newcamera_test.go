@@ -319,3 +319,114 @@ func TestANoteWithoutAPublicFileStillReachesTheBoard(t *testing.T) {
 		}
 	}
 }
+
+// A reviewer says what a proposal is -- a finished camera, its PCB code
+// inside -- and the markings read on a board a report is linked to stay on
+// that board, where a search finds them, rather than in a review note. A
+// marking another board of the maker has refuses the whole decision.
+func TestAReviewKeepsTheKindAndTheMarkings(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	maint := e.maintainer(t)
+	_, out := ivan.send(t, map[string]string{"channel": "web", "maker": "SatVision", "board": "SVI-S123A"}, map[string][]byte{"photo": photo})
+	cam := out["id"].(string)
+	_, q := maint.json(t, "GET", "/api/v1/club/review", nil)
+	nb := q["reports"].([]any)[0].(map[string]any)["new_board"].(map[string]any)
+	nb["kind"], nb["aliases"] = "camera", []string{"RS-CM-371B", "MS-J10"}
+
+	// MS-J10 is a board of Anjoy's, but the camera is SatVision's, and a
+	// marking is keyed by its maker: SatVision's MS-J10 is free.
+	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+cam, map[string]any{"decision": "publish", "new_board": nb}); code != 200 {
+		t.Fatalf("publish the camera: %d %v", code, d)
+	}
+	var kind string
+	_ = e.pool.QueryRow(ctx, `SELECT kind FROM board_models WHERE id = $1`, nb["model_id"]).Scan(&kind)
+	var printed []string
+	_ = e.pool.QueryRow(ctx, `SELECT array_agg(code_as_printed ORDER BY code_norm) FROM board_model_aliases WHERE model_id = $1`, nb["model_id"]).Scan(&printed)
+	if kind != "camera" || strings.Join(printed, " ") != "MS-J10 RS-CM-371B SVI-S123A" {
+		t.Errorf("the camera: %q, answers to %v", kind, printed)
+	}
+
+	// A report on a board the catalogue has adds the markings seen on it.
+	_, out = ivan.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10"}, map[string][]byte{"photo": photo})
+	linked := out["id"].(string)
+	if code, _ := maint.json(t, "POST", "/api/v1/club/review/"+linked, map[string]any{"decision": "reject", "markings": []string{"X"}}); code != 400 {
+		t.Errorf("markings on a reject: %d", code)
+	}
+	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+linked, map[string]any{"decision": "publish",
+		"models": []string{"anjoy-ms-j10", nb["model_id"].(string)}, "markings": []string{"BLK16E-0235-38X38-S V2.04"}}); code != 400 ||
+		!strings.Contains(d["error"].(string), "would be on 2") {
+		t.Errorf("markings with two boards: %d %v", code, d)
+	}
+	for _, sql := range []string{
+		`INSERT INTO board_models (id, manufacturer_id, model) VALUES ('anjoy-ms-j20', 'anjoy', 'MS-J20')`,
+		`INSERT INTO board_model_aliases (maker_id, code_norm, model_id, source, code_as_printed) VALUES ('anjoy', 'MS-J20', 'anjoy-ms-j20', 'openhisiipcam', 'MS-J20')`,
+	} {
+		if _, err := e.pool.Exec(ctx, sql); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+linked, map[string]any{"decision": "publish",
+		"markings": []string{"BLK16E-0235-38X38-S V2.04", "ms j20"}}); code != 400 || !strings.Contains(d["error"].(string), "already has it on anjoy-ms-j20") {
+		t.Errorf("another board's marking: %d %v", code, d)
+	}
+	var n int
+	_ = e.pool.QueryRow(ctx, `SELECT count(*) FROM report_reviews WHERE report_id = $1`, linked).Scan(&n)
+	if n != 0 {
+		t.Errorf("a refused decision left %d reviews", n)
+	}
+	// The board the sender named, and a marking it has already, are enough.
+	if _, err := e.pool.Exec(ctx, `INSERT INTO board_model_aliases (maker_id, code_norm, model_id, source, code_as_printed)
+		VALUES ('anjoy', 'J10-OLD', 'anjoy-ms-j10', 'openhisiipcam', 'J10 OLD')`); err != nil {
+		t.Fatal(err)
+	}
+	publish := func() {
+		t.Helper()
+		if code, d := maint.json(t, "POST", "/api/v1/club/review/"+linked, map[string]any{"decision": "publish",
+			"markings": []string{"BLK16E-0235-38X38-S V2.04", "BLK16E 0235 38X38 S V2.04", "J10 OLD"}}); code != 200 {
+			t.Fatalf("publish with markings: %d %v", code, d)
+		}
+	}
+	aliases := func() (blk, old string) {
+		t.Helper()
+		_ = e.pool.QueryRow(ctx, `SELECT coalesce(max(added_by_report) FILTER (WHERE code_norm = 'BLK16E-0235-38X38-S-V2-04'), '-'),
+			  coalesce(max(source) FILTER (WHERE code_norm = 'J10-OLD' AND added_by_report IS NULL), '-')
+			FROM board_model_aliases WHERE model_id = 'anjoy-ms-j10' AND maker_id = 'anjoy'`).Scan(&blk, &old)
+		return
+	}
+	publish()
+	if blk, old := aliases(); blk != linked || old != "openhisiipcam" {
+		t.Errorf("after publishing: the new marking %s's, the old one %s's", blk, old)
+	}
+
+	// Rejecting it takes back what its publish added, not what was there;
+	// publishing it again adds it again.
+	if code, _ := maint.json(t, "POST", "/api/v1/club/review/"+linked, map[string]any{"decision": "reject"}); code != 200 {
+		t.Fatal("reject")
+	}
+	if blk, old := aliases(); blk != "-" || old != "openhisiipcam" {
+		t.Errorf("after the reject: the new marking %s's, the old one %s's", blk, old)
+	}
+	publish()
+	if blk, _ := aliases(); blk != linked {
+		t.Errorf("after publishing again: the marking is %s's", blk)
+	}
+
+	// A report already on two boards takes no markings, though only one is
+	// named now.
+	if err := e.api.Reports.Store().Link(ctx, linked, nb["model_id"].(string), "test"); err != nil {
+		t.Fatal(err)
+	}
+	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+linked, map[string]any{"decision": "publish",
+		"models": []string{"anjoy-ms-j10"}, "markings": []string{"ANOTHER-1"}}); code != 400 || !strings.Contains(d["error"].(string), "would be on 2") {
+		t.Errorf("markings on a report on two boards: %d %v", code, d)
+	}
+	// A takedown takes them back as a reject does.
+	if _, err := e.api.Reports.Store().Takedown(ctx, linked, "test", "asked"); err != nil {
+		t.Fatal(err)
+	}
+	if blk, old := aliases(); blk != "-" || old != "openhisiipcam" {
+		t.Errorf("after the takedown: the new marking %s's, the old one %s's", blk, old)
+	}
+}

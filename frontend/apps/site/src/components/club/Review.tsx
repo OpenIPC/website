@@ -9,6 +9,9 @@
  * Each photo says whether its sender confirmed it is of their own camera,
  * and can have regions blurred in the copy that is published (the service
  * blurs it from the original) or be kept private as not the sender's unit.
+ * A new board is a bare board or a finished camera, with any further
+ * markings it carries (the PCB code inside a camera); a report linked to a
+ * board the catalogue has can add the markings seen on it to that board.
  *
  * Reports of one camera (an identifier's keyed hash in common) stand
  * together, each naming the others and the boards they are published on,
@@ -29,8 +32,9 @@ import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { boardPath } from '../../lib/boards/shell';
-import { ClubError, ask, decide, fetchMe, fetchQueue, reviewPhoto, type LinkBasis, type Member, type MemberFile, type NewBoard, type Queued, type Sibling } from '../../lib/club';
+import { ClubError, ask, decide, fetchMe, fetchQueue, markingList, reviewPhoto, type LinkBasis, type Member, type MemberFile, type NewBoard, type Queued, type Sibling } from '../../lib/club';
 import { size, waiting } from '../../lib/reports';
+import { KINDS } from '../../lib/boards/url';
 import { Forbidden, STATUS_TONE } from './parts';
 import RegionPicker from './RegionPicker';
 import type { Box } from '../../lib/photo-check';
@@ -116,7 +120,7 @@ function siblingBoards(q: Queued): string[] {
   return [...new Set(ids)];
 }
 
-const NEW_FIELDS: (keyof NewBoard)[] = ['maker_name', 'maker_id', 'model', 'model_id', 'soc'];
+const NEW_FIELDS = ['maker_name', 'maker_id', 'model', 'model_id', 'soc'] as const;
 const CERTAINTIES: LinkBasis['certainty'][] = ['confirmed', 'probable', 'guess'];
 
 function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>; locale: Locale; t: BoardsT; onDone: () => void }) {
@@ -125,8 +129,11 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
   const [models, setModels] = useState(q.models.length ? q.models.join(', ') : known.length ? known.join(', ') : sug?.existing ?? '');
   const [create, setCreate] = useState(!!sug && !sug.existing && !known.length && q.status !== 'published');
   const [board, setBoard] = useState<NewBoard | null>(sug
-    ? { maker_id: sug.maker_id, maker_name: sug.maker_name, model_id: sug.model_id, model: sug.model, soc: sug.soc ?? '' }
+    ? { maker_id: sug.maker_id, maker_name: sug.maker_name, model_id: sug.model_id, model: sug.model, soc: sug.soc ?? '', kind: 'board' }
     : null);
+  // Markings as typed: the new board's others, and what the existing board was seen to carry.
+  const [aliases, setAliases] = useState('');
+  const [markings, setMarkings] = useState('');
   const [note, setNote] = useState('');
   const [certainty, setCertainty] = useState<LinkBasis['certainty']>('confirmed');
   const [evidence, setEvidence] = useState('');
@@ -146,8 +153,11 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
     setBusy(true);
     setError(null);
     const ids = models.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
-    decide(q.id, decision, ids, why, decision === 'publish' && create && board ? board : undefined, q.revision,
-      decision === 'publish' ? { certainty, evidence: evidence.trim() } : undefined)
+    const publishing = decision === 'publish';
+    const others = markingList(aliases);
+    const adding = publishing && create && board ? { ...board, ...(others.length ? { aliases: others } : {}) } : undefined;
+    decide(q.id, decision, ids, why, adding, q.revision, publishing ? { certainty, evidence: evidence.trim() } : undefined,
+      publishing && !create ? markingList(markings) : [])
       .then((r) => {
         setResult(r.board ? t('club.review_done_board', { board: r.board, points: r.points }) : t(`club.review_done_${decision}`, { points: r.points }));
         setTimeout(onDone, 1200);
@@ -241,6 +251,16 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
                           class={`rounded-md border border-hairline px-2.5 py-1.5 text-sm text-body ${k.endsWith('_id') ? 'font-mono' : ''}`} />
                       </label>
                     ))}
+                    <label class="grid gap-1 text-[13px] text-body-secondary">{t('club.review_new_kind')}
+                      <select value={board.kind} onChange={(e) => setBoard({ ...board, kind: (e.target as HTMLSelectElement).value })}
+                        class="rounded-md border border-hairline bg-white px-2.5 py-1.5 text-sm text-body">
+                        {KINDS.map((k) => <option key={k} value={k}>{t(`kind_${k}`)}</option>)}
+                      </select>
+                    </label>
+                    <label class="grid gap-1 text-[13px] text-body-secondary sm:col-span-2">{t('club.review_new_aliases')}
+                      <textarea rows={2} value={aliases} onInput={(e) => setAliases((e.target as HTMLTextAreaElement).value)}
+                        class="rounded-md border border-hairline px-2.5 py-1.5 font-mono text-sm text-body" />
+                    </label>
                   </div>
                 )}
               </fieldset>
@@ -249,6 +269,12 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
               <input value={models} onInput={(e) => setModels((e.target as HTMLInputElement).value)} placeholder={q.board?.id ?? ''}
                 class="rounded-md border border-hairline px-2.5 py-1.5 font-mono text-sm text-body" />
             </label>
+            {!create && q.status !== 'published' && (
+              <label class="grid gap-1 text-[13px] text-body-secondary">{t('club.review_markings')}
+                <textarea rows={2} value={markings} onInput={(e) => setMarkings((e.target as HTMLTextAreaElement).value)}
+                  class="rounded-md border border-hairline px-2.5 py-1.5 font-mono text-sm text-body" />
+              </label>
+            )}
             {q.status !== 'published' && (
               <div class="grid gap-2 sm:grid-cols-[max-content_1fr]">
                 <label class="grid gap-1 text-[13px] text-body-secondary">{t('club.review_certainty')}

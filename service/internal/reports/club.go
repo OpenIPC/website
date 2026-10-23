@@ -444,10 +444,12 @@ type Decided struct {
 // Decide records a maintainer's decision and its stars: publishing links
 // the report to its boards (the sender's board when none is named), adds
 // the board newBoard describes first when the catalogue did not have it,
-// and awards each accepted part; rejecting takes back anything it had
-// earned. The links it makes are as sure as basis says; one already made
-// keeps its own certainty (SetCertainty changes it).
-func (s *Store) Decide(ctx context.Context, id, decision, by, note string, models []string, basis Basis, newBoard *boards.NewModel, revision *int) (Decided, error) {
+// has the existing board it links answer to markings as well (what the
+// reviewer read on the report's photos), and awards each accepted part;
+// rejecting takes back anything it had earned. The links it makes are as
+// sure as basis says; one already made keeps its own certainty
+// (SetCertainty changes it).
+func (s *Store) Decide(ctx context.Context, id, decision, by, note string, models []string, basis Basis, newBoard *boards.NewModel, markings []string, revision *int) (Decided, error) {
 	var d Decided
 	if decision != "publish" && decision != "reject" {
 		return d, fmt.Errorf("a review publishes or rejects")
@@ -458,6 +460,9 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 	}
 	if newBoard != nil && decision != "publish" {
 		return d, errors.New("a new board is added by publishing the report")
+	}
+	if len(markings) > 0 && decision != "publish" {
+		return d, errors.New("markings are added by publishing the report")
 	}
 	owner, err := s.Owner(ctx, id)
 	if err != nil {
@@ -514,6 +519,29 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 			return err
 		}
 		if decision == "publish" {
+			// The markings are what one board was seen to carry: with the
+			// report on two once this is published -- links it had, links
+			// named now, a board added now -- which one is not for this to
+			// guess.
+			if len(markings) > 0 {
+				var on []string
+				if err := tx.QueryRow(ctx, `
+					SELECT coalesce(array_agg(DISTINCT m), '{}') FROM (
+					  SELECT model_id AS m FROM report_models WHERE report_id = $1
+					  UNION SELECT unnest($2::text[])) l`, id, models).Scan(&on); err != nil {
+					return err
+				}
+				n := len(on)
+				if newBoard != nil {
+					n++
+				}
+				if n != 1 {
+					return fmt.Errorf("markings go on the one board the report is on, and it would be on %d", n)
+				}
+				if err := boards.AddMarkings(ctx, tx, on[0], id, markings); err != nil {
+					return err
+				}
+			}
 			if newBoard != nil {
 				nb := *newBoard
 				nb.Report = id
@@ -548,6 +576,11 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 				return err
 			}
 			if _, err := tx.Exec(ctx, `SET LOCAL openipc.reports_guard = ''`); err != nil {
+				return err
+			}
+			// What its publish had a board answer to goes too; publishing
+			// it again with the markings adds them again.
+			if err := boards.DropMarkings(ctx, tx, id); err != nil {
 				return err
 			}
 		}

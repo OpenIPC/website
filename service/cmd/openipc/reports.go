@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"os/user"
+	"strings"
 
 	"github.com/OpenIPC/website/service/internal/boards"
 	"github.com/OpenIPC/website/service/internal/catalogue"
@@ -20,8 +21,12 @@ const reportsUsage = `usage: openipc reports
   list [--status pending|asked|published|rejected|withdrawn]   the review queue, newest first (JSON), each with
                                                 same_camera, same_sender and duplicate_of (the newest 100)
   show <id>                                     the report whole, as sent: YAML, identifiers' hashes, files
-  publish <id> [--model <board model id>]... [--new-board] [--certainty c --evidence why] [--by who] [--note text]
-                                                --new-board: add the camera the report proposed, as the review page suggests
+  publish <id> [--model <board model id>]... [--new-board] [--alias <marking>]... [--certainty c --evidence why] [--by who] [--note text]
+                                                --new-board: add the camera the report proposed, as the review page suggests,
+                                                  corrected by --maker <name>, --marking <as printed>, --model-id <id>,
+                                                  --soc <SoC> and --kind board|camera|recorder|doorbell|base_station
+                                                --alias: a further marking as printed (repeatable): the new board's,
+                                                  or else the one --model board's
   reject <id> [--by who] [--note text]
   ask <id> --note question [--by who]           ask the sender instead of deciding: a member is told (bot or mail),
                                                 a report sent signed out shows it on its receipt; their edit answers
@@ -66,6 +71,14 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 	newBoard := fs.Bool("new-board", false, "add the camera the report proposed to the catalogue, and link the report to it")
 	certainty := fs.String("certainty", reports.Confirmed, "how sure the link is: confirmed, probable or guess")
 	evidence := fs.String("evidence", "", "why the link is as sure as it is, shown beside one not confirmed")
+	var fix boardFix
+	fs.StringVar(&fix.maker, "maker", "", "with --new-board: the maker's name, for the proposal's")
+	fs.StringVar(&fix.marking, "marking", "", "with --new-board: the marking as printed, for the proposal's")
+	fs.StringVar(&fix.modelID, "model-id", "", "with --new-board: the new board's id, for the one suggested")
+	fs.StringVar(&fix.soc, "soc", "", "with --new-board: the SoC, for the proposal's")
+	fs.StringVar(&fix.kind, "kind", "", "with --new-board: "+strings.Join(boards.Kinds, ", ")+" (default board)")
+	var aliases multi
+	fs.Var(&aliases, "alias", "a further marking as printed the board answers to (repeatable)")
 	cmd := args[0]
 	pos, err := parseInterleaved(fs, args[1:])
 	if err != nil {
@@ -145,13 +158,17 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		// The same decision the club's review page makes: links, the
 		// review, the sender's stars, and the boards' copy of the text.
 		var nb *boards.NewModel
+		markings := []string(aliases)
 		if *newBoard {
-			if nb, err = suggestedBoard(ctx, cfg, st, pos[0]); err != nil {
+			if nb, err = suggestedBoard(ctx, cfg, st, pos[0], fix); err != nil {
 				return err
 			}
+			nb.Aliases, markings = markings, nil
+		} else if fix != (boardFix{}) {
+			return errors.New("--maker, --marking, --model-id, --soc and --kind describe a --new-board")
 		}
 		basis := reports.Basis{Certainty: *certainty, Evidence: *evidence}
-		d, err := st.Decide(ctx, pos[0], cmd, *by, *note, models, basis, nb, nil)
+		d, err := st.Decide(ctx, pos[0], cmd, *by, *note, models, basis, nb, markings, nil)
 		if err != nil {
 			return err
 		}
@@ -248,15 +265,25 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 	return errors.New(reportsUsage)
 }
 
+// boardFix is what a reviewer corrects in a proposal from the command
+// line, as the review page's fields do: a typo in the marking, the maker's
+// proper name, a camera rather than a board.
+type boardFix struct{ maker, marking, modelID, soc, kind string }
+
 // suggestedBoard is the board the review page would add for a report's
-// proposal, with the catalogue to resolve its SoC.
-func suggestedBoard(ctx context.Context, cfg *config.Config, st *reports.Store, id string) (*boards.NewModel, error) {
+// proposal, corrected by fix, with the catalogue to resolve its SoC. A
+// report that proposed nothing gets one from fix alone.
+func suggestedBoard(ctx context.Context, cfg *config.Config, st *reports.Store, id string, fix boardFix) (*boards.NewModel, error) {
 	p, err := st.ProposalOf(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	if p == nil {
-		return nil, fmt.Errorf("%s proposes no new camera; link it with --model", id)
+		p = &reports.Proposal{}
+	}
+	p.Maker, p.Board, p.SoC = or(fix.maker, p.Maker), or(fix.marking, p.Board), or(fix.soc, p.SoC)
+	if p.Maker == "" || p.Board == "" {
+		return nil, fmt.Errorf("%s proposes no new camera; link it with --model, or name one with --maker and --marking", id)
 	}
 	devices, err := st.DeviceIDs(ctx, id)
 	if err != nil {
@@ -269,10 +296,18 @@ func suggestedBoard(ctx context.Context, cfg *config.Config, st *reports.Store, 
 	if sug.Existing != "" {
 		return nil, fmt.Errorf("the catalogue already has %s; publish with --model %s", sug.Existing, sug.Existing)
 	}
+	sug.ModelID, sug.Kind = or(fix.modelID, sug.ModelID), fix.kind
 	if cat, err := catalogue.Load(cfg.CatalogueDir); err == nil {
 		st.SoC = socResolver(cat)
 	}
 	return &sug.NewModel, nil
+}
+
+func or(a, b string) string {
+	if a != "" {
+		return a
+	}
+	return b
 }
 
 // socResolver maps a SoC to the catalogue's slug, as the importers do.
