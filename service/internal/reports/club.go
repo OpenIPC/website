@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -21,11 +22,13 @@ import (
 // The club holds accounts and nothing else; every row about a report is
 // read and written here.
 
-// Stars for what a maintainer accepts. A flash dump the catalogue already
-// holds -- the same bytes in a board's files, or in a published report sent
-// before this one -- earns nothing. The first sender of a dump keeps it: a
-// later copy published meanwhile does not take it from them if their own
-// report is rejected and published again.
+// Stars for what a maintainer accepts. A file the catalogue already holds
+// -- the same bytes in a board's files, or in a published report sent
+// before this one -- earns nothing, a flash dump and a photo alike. The
+// first sender of a file keeps it: a later copy published meanwhile does
+// not take it from them if their own report is rejected and published
+// again. And a member is paid per camera, not per report: ipctool's output
+// once, the flash dumps up to the best of them once (camera.go).
 //
 // A dump read with a programmer, or over U-Boot's console and TFTP, earns
 // less than ipctool's backup (#458): it is the bytes alone, while ipctool
@@ -42,8 +45,10 @@ const (
 // does not name a backup, the server does, so the name tells the two apart.
 const RawDumpName = "flash.bin"
 
-// Points is what one accepted thing earns: a file of kind, or ipctool's
-// output (kind "yaml"). A programmer's dump is kind "raw_backup" here.
+// Points is what one accepted thing earns alone: a file of kind, or
+// ipctool's output (kind "yaml"); nothing when its bytes are known. A
+// programmer's dump is kind "raw_backup" here. What the member's other
+// reports about the same camera earned is taken off after (cameraBook).
 func Points(kind string, known bool) int {
 	switch kind {
 	case "backup", "raw_backup":
@@ -55,6 +60,9 @@ func Points(kind string, known bool) int {
 		}
 		return StarsPerDump
 	case "yaml", "photo", "boot_log", "uboot_env", "note", "document":
+		if known {
+			return 0
+		}
 		return StarsPerItem
 	}
 	return 0
@@ -85,8 +93,14 @@ type MemberReport struct {
 	// would earn if accepted, while it waits.
 	Stars   int `json:"stars"`
 	Pending int `json:"pending"`
+	// YAMLPoints and YAMLReason are ipctool's output's, as a file's Points
+	// and Reason are the file's.
+	YAMLPoints int    `json:"yaml_points"`
+	YAMLReason string `json:"yaml_reason,omitempty"`
 	// Duplicate: a dump the catalogue already had.
 	Duplicate bool `json:"duplicate,omitempty"`
+	// potential: what publishing it now would pay, whatever its state.
+	potential int
 }
 
 type MemberFile struct {
@@ -97,7 +111,13 @@ type MemberFile struct {
 	// Private: served to its sender and the maintainers only.
 	Private bool   `json:"private,omitempty"`
 	URL     string `json:"url"`
-	Points  int    `json:"points"`
+	// Points: what it would earn if published now, while the report waits;
+	// what it holds, once decided.
+	Points int `json:"points"`
+	// Reason: why it earns nothing or less than alone -- ReasonKnown, the
+	// same bytes already published; ReasonCamera, already paid for the
+	// camera in another report of the member's.
+	Reason string `json:"reason,omitempty"`
 	// A photo's: Own, its sender said it is of their own camera, taken by
 	// them; Public, what will be published -- as_sent, blurred (PublicURL,
 	// with the Regions drawn) or private, not the sender's unit.
@@ -136,9 +156,13 @@ func (s *Store) Mine(ctx context.Context, member string) ([]MemberReport, error)
 	if err != nil {
 		return nil, err
 	}
+	books, err := s.cameras(ctx, s.DB, ids)
+	if err != nil {
+		return nil, err
+	}
 	out := []MemberReport{}
 	for _, id := range ids {
-		m, err := s.memberReport(ctx, id)
+		m, err := s.memberReport(ctx, id, books[id])
 		if err != nil {
 			return nil, err
 		}
@@ -147,7 +171,9 @@ func (s *Store) Mine(ctx context.Context, member string) ([]MemberReport, error)
 	return out, nil
 }
 
-func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, error) {
+// memberReport is report id as its sender sees it; book is its camera
+// (Store.cameras), read once for the whole page.
+func (s *Store) memberReport(ctx context.Context, id string, book *cameraBook) (*MemberReport, error) {
 	m := &MemberReport{ID: id, Files: []MemberFile{}}
 	var yaml string
 	err := s.DB.QueryRow(ctx, `
@@ -192,13 +218,33 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 	if err := s.DB.QueryRow(ctx, `SELECT max(at) FROM report_edits WHERE report_id = $1`, id).Scan(&m.EditedAt); err != nil {
 		return nil, err
 	}
-	potential, err := s.potential(ctx, s.DB, id, yaml != "")
-	if err != nil {
-		return nil, err
+	if book == nil {
+		return nil, ErrNotFound
 	}
 	blurs, err := s.blurs(ctx, id)
 	if err != nil {
 		return nil, err
+	}
+	// While it waits, each part says what publishing it would pay now, and
+	// why it pays less than alone; once published, what it holds, and why
+	// when that is nothing; rejected or withdrawn, what it holds and no more.
+	parts := book.want(id)
+	for _, p := range parts {
+		m.potential += p.Points
+	}
+	shown := func(pos int) (int, string) {
+		p := parts[pos]
+		net := book.net[id][pos]
+		switch {
+		case Waiting(m.Status):
+			return p.Points, p.Reason
+		case m.Status != "published" || net > 0:
+			return net, ""
+		}
+		return 0, p.Reason
+	}
+	if yaml != "" {
+		m.YAMLPoints, m.YAMLReason = shown(0)
 	}
 	rows, err := s.DB.Query(ctx, `
 		SELECT position, kind, name, bytes, public_sha256 IS NULL, coalesce(own_photo, false),
@@ -221,8 +267,11 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 				f.PublicURL, f.Regions = f.URL+"/public", blurs[f.Position]
 			}
 		}
-		f.Points = potential[f.Position]
-		if f.Kind == "backup" && f.Points == 0 {
+		f.Points, f.Reason = shown(f.Position)
+		// A dump the catalogue had. Once decided, only if it earned nothing:
+		// the first copy stays the one that counted when a later copy is
+		// published.
+		if f.Kind == "backup" && f.Points == 0 && f.Reason == ReasonKnown && m.Status != "rejected" {
 			m.Duplicate = true
 		}
 		m.Files = append(m.Files, f)
@@ -231,61 +280,61 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	if err := s.DB.QueryRow(ctx, `SELECT coalesce(sum(points), 0) FROM report_stars WHERE report_id = $1`, id).Scan(&m.Stars); err != nil {
-		return nil, err
-	}
-	// Once decided, a dump is a duplicate only if it earned nothing: the
-	// first copy stays the one that counted when a later copy is published.
-	if !Waiting(m.Status) {
-		m.Duplicate = false
-		for _, f := range m.Files {
-			if f.Kind != "backup" {
-				continue
-			}
-			var earned bool
-			if err := s.DB.QueryRow(ctx, `SELECT coalesce(sum(points), 0) > 0 FROM report_stars WHERE report_id = $1 AND position = $2`,
-				id, f.Position).Scan(&earned); err != nil {
-				return nil, err
-			}
-			m.Duplicate = m.Duplicate || (!earned && m.Status == "published")
-		}
+	for _, net := range book.net[id] {
+		m.Stars += net
 	}
 	if Waiting(m.Status) {
-		for _, p := range potential {
-			m.Pending += p
-		}
+		m.Pending = m.potential
 	}
 	return m, nil
 }
 
-// potential is what each part of a report would earn now: position 0 for
-// ipctool's output, the file's position for each file.
-func (s *Store) potential(ctx context.Context, q rowsQuerier, id string, hasYAML bool) (map[int]int, error) {
-	out := map[int]int{}
-	if hasYAML {
-		out[0] = Points("yaml", false)
+// potential is what each part of a report earns alone: position 0 for
+// ipctool's output, the file's position for each file. A file whose bytes
+// are already known earns nothing, whatever its kind: the same file in a
+// published report sent before this one, earlier in this report, or among
+// a board's files -- other than the units published reports made, which
+// are those reports themselves and count by when they were sent. What the
+// member's other reports about the camera hold is the cameraBook's. One
+// query for every report in ids.
+func (s *Store) potentials(ctx context.Context, q rowsQuerier, ids []string, hasYAML map[string]bool) (map[string]map[int]earning, error) {
+	out := map[string]map[int]earning{}
+	for _, id := range ids {
+		out[id] = map[int]earning{}
+		if hasYAML[id] {
+			out[id][0] = earning{Points: Points("yaml", false), Class: classYAML}
+		}
 	}
 	rows, err := q.Query(ctx, `
-		SELECT f.position, CASE WHEN f.kind = 'backup' AND f.name = $2 THEN 'raw_backup' ELSE f.kind END,
-		  f.kind = 'backup' AND (
-		    EXISTS (SELECT 1 FROM report_files o JOIN reports ro ON ro.id = o.report_id
-		            WHERE o.sha256 = f.sha256 AND o.report_id <> f.report_id
-		              AND ro.received_at < (SELECT received_at FROM reports WHERE id = f.report_id)
-		              AND (SELECT decision FROM report_reviews rv WHERE rv.report_id = o.report_id ORDER BY rv.id DESC LIMIT 1) = 'publish')
-		    OR EXISTS (SELECT 1 FROM board_artifacts a WHERE a.sha256 = f.sha256))
-		FROM report_files f WHERE f.report_id = $1`, id, RawDumpName)
+		SELECT f.report_id, f.position, CASE WHEN f.kind = 'backup' AND f.name = $2 THEN 'raw_backup' ELSE f.kind END,
+		  EXISTS (SELECT 1 FROM report_files o JOIN reports ro ON ro.id = o.report_id
+		          WHERE o.sha256 = f.sha256 AND o.report_id <> f.report_id
+		            AND ro.received_at < (SELECT received_at FROM reports WHERE id = f.report_id)
+		            AND (SELECT decision FROM report_reviews rv WHERE rv.report_id = o.report_id ORDER BY rv.id DESC LIMIT 1) = 'publish')
+		  OR EXISTS (SELECT 1 FROM report_files o WHERE o.report_id = f.report_id AND o.sha256 = f.sha256 AND o.position < f.position)
+		  OR EXISTS (SELECT 1 FROM board_artifacts a JOIN board_units u ON u.id = a.unit_id
+		             WHERE a.sha256 = f.sha256 AND strpos(u.source_ref, $3) = 0)
+		FROM report_files f WHERE f.report_id = ANY($1)`, ids, RawDumpName, boards.ReceiptMark)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
+		var id string
 		var pos int
 		var kind string
 		var known bool
-		if err := rows.Scan(&pos, &kind, &known); err != nil {
+		if err := rows.Scan(&id, &pos, &kind, &known); err != nil {
 			return nil, err
 		}
-		out[pos] = Points(kind, known)
+		p := earning{Points: Points(kind, known)}
+		if known && Points(kind, false) > 0 {
+			p.Reason = ReasonKnown
+		}
+		if kind == "backup" || kind == "raw_backup" {
+			p.Class = classDump
+		}
+		out[id][pos] = p
 	}
 	return out, rows.Err()
 }
@@ -321,6 +370,9 @@ type Queued struct {
 	Guess     *Match       `json:"guess,omitempty"`
 	FileList  []MemberFile `json:"file_list"`
 	Potential int          `json:"potential"`
+	// YAMLPoints and YAMLReason: ipctool's output's part of it.
+	YAMLPoints int    `json:"yaml_points"`
+	YAMLReason string `json:"yaml_reason,omitempty"`
 	// Proposal and NewBoard: a camera the catalogue does not have, as the
 	// sender named it, and the board publishing it would add.
 	Proposal *Proposal          `json:"proposal,omitempty"`
@@ -366,6 +418,11 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Every queued report's camera at once, its sender's reports with it.
+	books, err := s.cameras(ctx, s.DB, ids)
+	if err != nil {
+		return nil, err
+	}
 	out := []Queued{}
 	for _, l := range list {
 		q := Queued{Listed: l, Kin: *kin[l.ID]}
@@ -381,7 +438,7 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 		if err := s.DB.QueryRow(ctx, `SELECT note_public FROM reports WHERE id = $1`, l.ID).Scan(&q.Note); err != nil {
 			return nil, err
 		}
-		m, err := s.memberReport(ctx, l.ID)
+		m, err := s.memberReport(ctx, l.ID, books[l.ID])
 		if err != nil {
 			return nil, err
 		}
@@ -412,12 +469,9 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 			}
 			q.NewBoard = &sug
 		}
-		for _, f := range m.Files {
-			q.Potential += f.Points
-		}
+		q.Potential, q.YAMLPoints, q.YAMLReason = m.potential, m.YAMLPoints, m.YAMLReason
 		var facts Facts
 		if r.YAML != "" {
-			q.Potential += Points("yaml", false)
 			_, facts, _ = Parse(r.YAML)
 		}
 		// Without ipctool's output too: a version string in the note or a
@@ -439,6 +493,9 @@ type Decided struct {
 	Points int
 	Total  int
 	Board  string
+	// Reasons: why a published report's parts earned less than alone,
+	// each once, ReasonKnown before ReasonCamera -- what the sender is told.
+	Reasons []string
 }
 
 // Decide records a maintainer's decision and its stars: publishing links
@@ -493,12 +550,41 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 	//
 	// The ledger is a net per part of the report: publishing brings each
 	// part up to what it earns now, rejecting brings it back to zero. A
-	// report published, rejected and published again is whole again; one
+	// report published, rejected and published again is whole again, but
+	// for the camera's share another report of it took meanwhile; one
 	// published twice earns once. Under the report's lock, so two reviews
 	// at once cannot both write the difference.
+	//
+	// A member's reports about one camera share their stars (camera.go), so
+	// the decision settles the camera: what this report gives up of the
+	// camera's share goes to its siblings. Under the member's lock first,
+	// which every decision on their reports takes, then each report's own,
+	// which an edit takes.
 	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
+		if owner != "" {
+			if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars-member:' || $1, 0))`, owner); err != nil {
+				return err
+			}
+		}
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, id); err != nil {
 			return err
+		}
+		var book *cameraBook
+		if owner != "" {
+			first, err := s.camera(ctx, tx, id)
+			if err != nil {
+				return err
+			}
+			same := append([]string{}, first.order...)
+			sort.Strings(same)
+			for _, r := range same {
+				if r == id {
+					continue
+				}
+				if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, r); err != nil {
+					return err
+				}
+			}
 		}
 		// What the reviewer saw is what is decided: a report its sender
 		// changed since the queue was read is refused, to be read again.
@@ -511,12 +597,13 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 				return ErrChanged
 			}
 		}
-		// The potential is read under the lock an edit holds, so it is the
-		// files as they are; and before this decision's row, so the report's
-		// own backup is not found "already published" by itself.
-		potential, err := s.potential(ctx, tx, id, yaml != "")
-		if err != nil {
-			return err
+		// The camera is read under the locks an edit holds, so it is the
+		// files as they are, and before this decision's row.
+		if owner != "" {
+			var err error
+			if book, err = s.camera(ctx, tx, id); err != nil {
+				return err
+			}
 		}
 		if decision == "publish" {
 			// The markings are what one board was seen to carry: with the
@@ -591,54 +678,77 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 		if owner == "" {
 			return nil
 		}
-		rows, err := tx.Query(ctx, `SELECT position, sum(points)::int FROM report_stars WHERE report_id = $1 GROUP BY position`, id)
-		if err != nil {
-			return err
-		}
-		net := map[int]int{}
-		for rows.Next() {
-			var pos, pts int
-			if err := rows.Scan(&pos, &pts); err != nil {
-				rows.Close()
+		// Each report whose stars change keeps what makes it the camera's,
+		// for after a takedown (cameraBook.keep).
+		kept := map[string]bool{}
+		write := func(report string, pos, diff int, reason string) error {
+			kind := "award"
+			if diff < 0 {
+				kind = "revoke"
+			}
+			if _, err := tx.Exec(ctx, `
+				INSERT INTO report_stars (member_id, report_id, position, points, kind, reason)
+				VALUES ($1, $2, $3, $4, $5, $6)`, owner, report, pos, diff, kind, reason); err != nil {
 				return err
 			}
-			net[pos] = pts
-		}
-		rows.Close()
-		if err := rows.Err(); err != nil {
-			return err
+			d.Points += diff
+			if !kept[report] {
+				kept[report] = true
+				return book.keep(ctx, tx, report)
+			}
+			return nil
 		}
 		want := map[int]int{}
 		if decision == "publish" {
-			want = potential
+			why := map[string]bool{}
+			for pos, p := range book.want(id) {
+				want[pos] = p.Points
+				why[p.Reason] = true
+			}
+			for _, r := range []string{ReasonKnown, ReasonCamera} {
+				if why[r] {
+					d.Reasons = append(d.Reasons, r)
+				}
+			}
 		}
-		positions := map[int]bool{}
+		net := book.net[id]
+		all := map[int]bool{}
 		for p := range want {
-			positions[p] = true
+			all[p] = true
 		}
 		for p := range net {
-			positions[p] = true
+			all[p] = true
 		}
-		for pos := range positions {
+		for _, pos := range positions(all) {
 			diff := want[pos] - net[pos]
 			if diff == 0 {
 				continue
 			}
-			kind, reason := "award", "published by "+by
+			reason := "published by " + by
 			if diff < 0 {
-				kind, reason = "revoke", decision+"ed by "+by
+				reason = decision + "ed by " + by
 			}
-			if _, err := tx.Exec(ctx, `
-				INSERT INTO report_stars (member_id, report_id, position, points, kind, reason)
-				VALUES ($1, $2, $3, $4, $5, $6)`, owner, id, pos, diff, kind, reason); err != nil {
+			if err := write(id, pos, diff, reason); err != nil {
 				return err
 			}
-			d.Points += diff
+		}
+		// What this report no longer holds of the camera's share goes to
+		// its siblings still published.
+		book.net[id] = want
+		book.state[id] = states[decision]
+		raises := book.raises(id)
+		for _, r := range book.order {
+			up := raises[r]
+			for _, pos := range positions(up) {
+				if err := write(r, pos, up[pos], "camera's share, after "+id+" was "+decision+"ed by "+by); err != nil {
+					return err
+				}
+			}
 		}
 		return nil
 	})
 	if err != nil {
-		d.Board, d.Points = "", 0
+		d.Board, d.Points, d.Reasons = "", 0, nil
 		return d, err
 	}
 	if owner == "" {

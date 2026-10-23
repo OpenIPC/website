@@ -523,6 +523,9 @@ func Unguarded(ctx context.Context, db *pgxpool.Pool, fn func(pgx.Tx) error) err
 // The row stays, so its receipt says it was withdrawn; the YAML and the
 // board's identifiers are blanked, its files' rows go, and the returned
 // sums are the files no other report holds, for the caller to delete.
+// The stars it was paid stand, and with them the keyed hashes and classes
+// written when they were paid (report_star_cameras, report_star_parts): the
+// camera stays paid for, so a later report of it is not paid again.
 func (s *Store) Takedown(ctx context.Context, id, by, note string) ([]string, error) {
 	if err := s.exists(ctx, id); err != nil {
 		return nil, err

@@ -66,14 +66,14 @@ func (s *Store) Kin(ctx context.Context, ids []string) (map[string]*Kin, error) 
 		-- An identifier names one board only while every report carrying it
 		-- names one chip: an Anyka's chip.id is its family's ID register
 		-- (reports sent before IDHashes left it out still carry it), and a
-		-- factory-default MAC is on every unit a maker shipped.
+		-- factory-default MAC is on every unit a maker shipped. The rule is
+		-- migration 040's functions, which the stars per camera apply too
+		-- (Store.cameras).
 		camera AS (
 			SELECT DISTINCT q.id AS of, o.id FROM q CROSS JOIN LATERAL jsonb_each_text(q.id_hashes) h
 			  JOIN reports o ON o.id_hashes @> jsonb_build_object(h.key, h.value) AND o.id <> q.id
-			WHERE NOT (h.key = 'die_id' AND (lower(q.chip_vendor) = 'anyka' OR q.chip_model ILIKE 'AK%'
-			                                 OR lower(o.chip_vendor) = 'anyka' OR o.chip_model ILIKE 'AK%'))
-			  AND (SELECT count(DISTINCT lower(x.chip_vendor) || '/' || lower(x.chip_model)) FROM reports x
-			       WHERE x.id_hashes @> jsonb_build_object(h.key, h.value)) <= 1),
+			WHERE NOT (h.key = 'die_id' AND (report_anyka(q.chip_vendor, q.chip_model) OR report_anyka(o.chip_vendor, o.chip_model)))
+			  AND report_identifier_one_chip(h.key, h.value)),
 		sender AS (
 			SELECT q.id AS of, o.id FROM q JOIN reports o ON o.client_hash = q.client_hash AND o.id <> q.id
 			  AND o.received_at BETWEEN q.received_at - interval '24 hours' AND q.received_at + interval '24 hours'),

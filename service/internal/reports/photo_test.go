@@ -265,7 +265,11 @@ func TestAReviewerBlursOnePhotoAndKeepsAnotherPrivate(t *testing.T) {
 	if rec.Code != 200 || !bytes.Equal(e.onDisk(t, rec), served) {
 		t.Errorf("the public copy, for the reviewer: %d", rec.Code)
 	}
-	m, err := st.memberReport(ctx, id)
+	book, err := st.camera(ctx, e.pool, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := st.memberReport(ctx, id, book)
 	if err != nil {
 		t.Fatal(err)
 	}

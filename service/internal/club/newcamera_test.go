@@ -16,6 +16,13 @@ import (
 
 var photo = append([]byte{0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 'J', 'F', 'I', 'F', 0}, bytes.Repeat([]byte{7}, 2000)...)
 
+// photoN is another photo: the same bytes twice earn once.
+func photoN(n byte) []byte {
+	p := append([]byte{}, photo...)
+	p[len(p)-1] = n
+	return p
+}
+
 func (e *env) maintainer(t *testing.T) *browser {
 	t.Helper()
 	m := e.browser("198.51.100.3")
@@ -34,7 +41,7 @@ func TestANewCameraBecomesABoardWhenItsReportIsPublished(t *testing.T) {
 	ctx := context.Background()
 	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
 	code, out := ivan.send(t, map[string]string{"channel": "web", "maker": "Jooan", "board": "Q9 v2", "soc": "SSC335"},
-		map[string][]byte{"photo": photo, "photo#2": photo})
+		map[string][]byte{"photo": photo, "photo#2": photoN(2)})
 	if code != http.StatusCreated {
 		t.Fatalf("send: %d %v", code, out)
 	}
@@ -96,7 +103,7 @@ func TestANewCameraBecomesABoardWhenItsReportIsPublished(t *testing.T) {
 	// Petr has the same camera, and spells it his way: the review offers the
 	// board that exists, and adding a twin is refused.
 	petr := e.signedIn(t, 888, "petr", "198.51.100.2")
-	_, out = petr.send(t, map[string]string{"channel": "web", "maker": "JOOAN", "board": "Q9-V2"}, map[string][]byte{"photo": photo})
+	_, out = petr.send(t, map[string]string{"channel": "web", "maker": "JOOAN", "board": "Q9-V2"}, map[string][]byte{"photo": photoN(3)})
 	_, q = maint.json(t, "GET", "/api/v1/club/review", nil)
 	nb2 := q["reports"].([]any)[0].(map[string]any)["new_board"].(map[string]any)
 	if nb2["existing"] != "jooan-q9-v2" || nb2["maker_known"] != true {

@@ -21,7 +21,7 @@ import Cameras from './Cameras';
 import Crashes from './Crashes';
 import IpctoolCode from './IpctoolCode';
 import EditReport from './EditReport';
-import { STATUS_TONE, Stars } from './parts';
+import { PartStars, STATUS_TONE, Stars } from './parts';
 
 type Load = { state: 'loading' } | { state: 'ok'; me: Me } | { state: 'error' };
 
@@ -371,6 +371,8 @@ function Ledger({ reports, locale, t, onChange }: { reports: MemberReport[]; loc
         <tbody>
           {reports.map((r) => {
             const shown = waiting(r.status) ? r.pending : r.stars;
+            // What each part pays, while it waits or once accepted; a rejected report's pay nothing.
+            const counted = waiting(r.status) || r.status === 'published';
             const board = r.board ? `${r.board.manufacturer} ${r.board.model}`
               : r.proposal ? t('club.proposed', { board: `${r.proposal.maker} ${r.proposal.board}` })
               : (r.chip || t('club.no_board'));
@@ -383,18 +385,24 @@ function Ledger({ reports, locale, t, onChange }: { reports: MemberReport[]; loc
                     {r.joins && <span class="ms-2 text-[12px] text-body-secondary">{t('club.goes_with', { id: r.joins })}</span>}
                   </span>
                   <ul class="m-0 grid list-none gap-0.5 p-0 text-[12.5px] text-body-secondary">
+                    {counted && ((r.yaml_points ?? 0) > 0 || r.yaml_reason) && (
+                      <li class="flex flex-wrap items-center gap-x-2">
+                        {t('club.kind_yaml')}
+                        <PartStars points={r.yaml_points ?? 0} reason={r.yaml_reason} t={t} />
+                      </li>
+                    )}
                     {r.files.map((f) => (
                       <li key={f.position} class="flex flex-wrap items-center gap-x-2">
                         <a href={f.url} download={f.name}>{t(`club.kind_${f.kind}`)} · {f.name}</a>
                         <span class="tabular-nums">{size(f.bytes)}</span>
                         {f.private && <span class="rounded-full bg-[#eef0fc] px-2 text-[11.5px] font-semibold text-[#3d4dad]">{t('club.private')}</span>}
+                        {counted && <PartStars points={f.points} reason={f.reason} t={t} />}
                       </li>
                     ))}
                   </ul>
                   {r.note && (
                     <span class="text-[12.5px] whitespace-pre-wrap text-body"><b class="font-semibold">{t('club.your_note')}:</b> {r.note}</span>
                   )}
-                  {r.duplicate && <span class="text-[12.5px] text-body-secondary">{t('club.duplicate')}</span>}
                   {r.edited_at && (
                     <span class="text-[12px] text-body-secondary">
                       {t('club.edited_at', { time: new Date(r.edited_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) })}

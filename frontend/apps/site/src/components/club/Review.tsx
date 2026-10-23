@@ -35,7 +35,7 @@ import { boardPath } from '../../lib/boards/shell';
 import { ClubError, ask, decide, fetchMe, fetchQueue, markingList, reviewPhoto, type LinkBasis, type Member, type MemberFile, type NewBoard, type Queued, type Sibling } from '../../lib/club';
 import { size, waiting } from '../../lib/reports';
 import { KINDS } from '../../lib/boards/url';
-import { Forbidden, STATUS_TONE } from './parts';
+import { Forbidden, PartStars, STATUS_TONE } from './parts';
 import RegionPicker from './RegionPicker';
 import type { Box } from '../../lib/photo-check';
 
@@ -211,12 +211,18 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
         </ul>
       ) : null}
       <ul class="m-0 grid list-none gap-1 p-0 text-sm">
+        {q.yaml && (
+          <li class="flex flex-wrap items-center gap-x-2">
+            {t('club.kind_yaml')}
+            <PartStars points={q.yaml_points ?? 0} reason={q.yaml_reason} t={t} />
+          </li>
+        )}
         {q.file_list.map((f) => (
           <li key={f.position} class="flex flex-wrap items-center gap-x-2">
             <a href={f.url} download={f.name}>{t(`club.kind_${f.kind}`)} · {f.name}</a>
             <span class="text-[12.5px] text-body-secondary tabular-nums">{size(f.bytes)}</span>
             {f.private && f.kind !== 'photo' && <span class="rounded-full bg-[#eef0fc] px-2 text-[11.5px] font-semibold text-[#3d4dad]">{t('club.private')}</span>}
-            <span class="text-[12.5px] font-semibold text-[#9a5b00]">{f.points > 0 ? `+${f.points} ★` : f.kind === 'backup' ? t('club.duplicate') : ''}</span>
+            <PartStars points={f.points} reason={f.reason} t={t} />
             {f.kind === 'photo' && <PhotoTools id={q.id} f={f} t={t} onDone={onDone} />}
           </li>
         ))}
