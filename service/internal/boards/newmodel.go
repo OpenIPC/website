@@ -204,7 +204,9 @@ func CreateModel(ctx context.Context, tx pgx.Tx, m NewModel, resolve func(string
 		VALUES ($1, $2, $3, 'club', $4)`, m.MakerID, code, m.ModelID, m.Model); err != nil {
 		return "", err
 	}
-	if err := AddMarkings(ctx, tx, m.ModelID, m.Aliases); err != nil {
+	// The board's own markings go with the board (RemoveAbandoned), so a
+	// report linked to it again after a reject finds them still there.
+	if err := AddMarkings(ctx, tx, m.ModelID, "", m.Aliases); err != nil {
 		return "", err
 	}
 	return m.ModelID, nil
@@ -215,8 +217,10 @@ func CreateModel(ctx context.Context, tx pgx.Tx, m NewModel, resolve func(string
 // report's photos -- the PCB inside a camera, the code on a board a report
 // was linked to. A marking the board already answers to is nothing to do;
 // one another board of its maker answers to is refused, since the two
-// cannot both be it.
-func AddMarkings(ctx context.Context, tx pgx.Tx, model string, markings []string) error {
+// cannot both be it. report, when given, is the owner report whose
+// publishing adds them: each marking added (not one the board had) is
+// recorded as its (added_by_report, migration 039), for DropMarkings.
+func AddMarkings(ctx context.Context, tx pgx.Tx, model, report string, markings []string) error {
 	if len(markings) == 0 {
 		return nil
 	}
@@ -241,10 +245,10 @@ func AddMarkings(ctx context.Context, tx pgx.Tx, model string, markings []string
 		}
 		var owner string
 		if err := tx.QueryRow(ctx, `
-			INSERT INTO board_model_aliases (maker_id, code_norm, model_id, source, code_as_printed)
-			VALUES ($1, $2, $3, 'club', $4)
+			INSERT INTO board_model_aliases (maker_id, code_norm, model_id, source, code_as_printed, added_by_report)
+			VALUES ($1, $2, $3, 'club', $4, $5)
 			ON CONFLICT (maker_id, code_norm) DO UPDATE SET maker_id = EXCLUDED.maker_id
-			RETURNING model_id`, maker, code, model, printed).Scan(&owner); err != nil {
+			RETURNING model_id`, maker, code, model, printed, null(report)).Scan(&owner); err != nil {
 			return err
 		}
 		if owner != model {
@@ -252,6 +256,15 @@ func AddMarkings(ctx context.Context, tx pgx.Tx, model string, markings []string
 		}
 	}
 	return nil
+}
+
+// DropMarkings takes back the markings a report's publishing added
+// (AddMarkings), inside the caller's transaction: the report was rejected
+// or taken down, and what was read on its photos goes with it. A marking
+// the board answered to before the report is not the report's, and stays.
+func DropMarkings(ctx context.Context, tx pgx.Tx, report string) error {
+	_, err := tx.Exec(ctx, `DELETE FROM board_model_aliases WHERE added_by_report = $1`, report)
+	return err
 }
 
 // knownMaker is the importers' maker (parse.go's makers) a name means: by

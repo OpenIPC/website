@@ -211,7 +211,7 @@ func TestMarkingsAreAddedToABoardTheCatalogueHas(t *testing.T) {
 	pool, _ := imported(t)
 	ctx := context.Background()
 	add := func(model string, markings ...string) error {
-		return pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error { return AddMarkings(ctx, tx, model, markings) })
+		return pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error { return AddMarkings(ctx, tx, model, "", markings) })
 	}
 	if err := add("xiongmai-53h20-s", "BLK16E-0235-38X38-S V2.04", "53H20-S"); err != nil {
 		t.Fatal(err)

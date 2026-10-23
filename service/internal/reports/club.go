@@ -519,13 +519,26 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 			return err
 		}
 		if decision == "publish" {
-			// The markings are what one board was seen to carry: with two
-			// linked, which one is not for this to guess.
+			// The markings are what one board was seen to carry: with the
+			// report on two once this is published -- links it had, links
+			// named now, a board added now -- which one is not for this to
+			// guess.
 			if len(markings) > 0 {
-				if len(models) != 1 {
-					return fmt.Errorf("markings go on the one existing board the report is linked to; it is linked to %d", len(models))
+				var on []string
+				if err := tx.QueryRow(ctx, `
+					SELECT coalesce(array_agg(DISTINCT m), '{}') FROM (
+					  SELECT model_id AS m FROM report_models WHERE report_id = $1
+					  UNION SELECT unnest($2::text[])) l`, id, models).Scan(&on); err != nil {
+					return err
 				}
-				if err := boards.AddMarkings(ctx, tx, models[0], markings); err != nil {
+				n := len(on)
+				if newBoard != nil {
+					n++
+				}
+				if n != 1 {
+					return fmt.Errorf("markings go on the one board the report is on, and it would be on %d", n)
+				}
+				if err := boards.AddMarkings(ctx, tx, on[0], id, markings); err != nil {
 					return err
 				}
 			}
@@ -563,6 +576,11 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 				return err
 			}
 			if _, err := tx.Exec(ctx, `SET LOCAL openipc.reports_guard = ''`); err != nil {
+				return err
+			}
+			// What its publish had a board answer to goes too; publishing
+			// it again with the markings adds them again.
+			if err := boards.DropMarkings(ctx, tx, id); err != nil {
 				return err
 			}
 		}

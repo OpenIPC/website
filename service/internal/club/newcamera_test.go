@@ -356,7 +356,7 @@ func TestAReviewKeepsTheKindAndTheMarkings(t *testing.T) {
 	}
 	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+linked, map[string]any{"decision": "publish",
 		"models": []string{"anjoy-ms-j10", nb["model_id"].(string)}, "markings": []string{"BLK16E-0235-38X38-S V2.04"}}); code != 400 ||
-		!strings.Contains(d["error"].(string), "linked to 2") {
+		!strings.Contains(d["error"].(string), "would be on 2") {
 		t.Errorf("markings with two boards: %d %v", code, d)
 	}
 	for _, sql := range []string{
@@ -377,13 +377,56 @@ func TestAReviewKeepsTheKindAndTheMarkings(t *testing.T) {
 		t.Errorf("a refused decision left %d reviews", n)
 	}
 	// The board the sender named, and a marking it has already, are enough.
-	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+linked, map[string]any{"decision": "publish",
-		"markings": []string{"BLK16E-0235-38X38-S V2.04", "BLK16E 0235 38X38 S V2.04"}}); code != 200 {
-		t.Fatalf("publish with markings: %d %v", code, d)
+	if _, err := e.pool.Exec(ctx, `INSERT INTO board_model_aliases (maker_id, code_norm, model_id, source, code_as_printed)
+		VALUES ('anjoy', 'J10-OLD', 'anjoy-ms-j10', 'openhisiipcam', 'J10 OLD')`); err != nil {
+		t.Fatal(err)
 	}
-	_ = e.pool.QueryRow(ctx, `SELECT count(*) FROM board_model_aliases WHERE model_id = 'anjoy-ms-j10' AND maker_id = 'anjoy'
-		AND code_norm = 'BLK16E-0235-38X38-S-V2-04' AND source = 'club'`).Scan(&n)
-	if n != 1 {
-		t.Errorf("%d aliases for the marking", n)
+	publish := func() {
+		t.Helper()
+		if code, d := maint.json(t, "POST", "/api/v1/club/review/"+linked, map[string]any{"decision": "publish",
+			"markings": []string{"BLK16E-0235-38X38-S V2.04", "BLK16E 0235 38X38 S V2.04", "J10 OLD"}}); code != 200 {
+			t.Fatalf("publish with markings: %d %v", code, d)
+		}
+	}
+	aliases := func() (blk, old string) {
+		t.Helper()
+		_ = e.pool.QueryRow(ctx, `SELECT coalesce(max(added_by_report) FILTER (WHERE code_norm = 'BLK16E-0235-38X38-S-V2-04'), '-'),
+			  coalesce(max(source) FILTER (WHERE code_norm = 'J10-OLD' AND added_by_report IS NULL), '-')
+			FROM board_model_aliases WHERE model_id = 'anjoy-ms-j10' AND maker_id = 'anjoy'`).Scan(&blk, &old)
+		return
+	}
+	publish()
+	if blk, old := aliases(); blk != linked || old != "openhisiipcam" {
+		t.Errorf("after publishing: the new marking %s's, the old one %s's", blk, old)
+	}
+
+	// Rejecting it takes back what its publish added, not what was there;
+	// publishing it again adds it again.
+	if code, _ := maint.json(t, "POST", "/api/v1/club/review/"+linked, map[string]any{"decision": "reject"}); code != 200 {
+		t.Fatal("reject")
+	}
+	if blk, old := aliases(); blk != "-" || old != "openhisiipcam" {
+		t.Errorf("after the reject: the new marking %s's, the old one %s's", blk, old)
+	}
+	publish()
+	if blk, _ := aliases(); blk != linked {
+		t.Errorf("after publishing again: the marking is %s's", blk)
+	}
+
+	// A report already on two boards takes no markings, though only one is
+	// named now.
+	if err := e.api.Reports.Store().Link(ctx, linked, nb["model_id"].(string), "test"); err != nil {
+		t.Fatal(err)
+	}
+	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+linked, map[string]any{"decision": "publish",
+		"models": []string{"anjoy-ms-j10"}, "markings": []string{"ANOTHER-1"}}); code != 400 || !strings.Contains(d["error"].(string), "would be on 2") {
+		t.Errorf("markings on a report on two boards: %d %v", code, d)
+	}
+	// A takedown takes them back as a reject does.
+	if _, err := e.api.Reports.Store().Takedown(ctx, linked, "test", "asked"); err != nil {
+		t.Fatal(err)
+	}
+	if blk, old := aliases(); blk != "-" || old != "openhisiipcam" {
+		t.Errorf("after the takedown: the new marking %s's, the old one %s's", blk, old)
 	}
 }
