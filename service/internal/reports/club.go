@@ -236,7 +236,7 @@ func (s *Store) memberReport(ctx context.Context, id string, book *cameraBook) (
 		p := parts[pos]
 		net := book.net[id][pos]
 		switch {
-		case m.Status == "pending":
+		case Waiting(m.Status):
 			return p.Points, p.Reason
 		case m.Status != "published" || net > 0:
 			return net, ""

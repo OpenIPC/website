@@ -2,7 +2,6 @@ package reports
 
 import (
 	"context"
-	"encoding/json"
 	"sort"
 	"time"
 
@@ -17,7 +16,12 @@ import (
 //
 // A camera is the member's reports that share a keyed identifier (a MAC,
 // die ID or cloud ID in id_hashes), or that one joins by a Club code,
-// taken transitively. A report with neither is a camera of its own.
+// taken transitively. A report with neither is a camera of its own. An
+// identifier counts only as the review queue's kin counts it (#502,
+// migration 040's report_anyka and report_identifier_one_chip): never an
+// Anyka's die_id, which is its chip family's, and only while every report
+// carrying it names one chip, so a factory-default MAC on two chips does
+// not make one camera of them.
 //
 // The camera's share of a kind is the best that kind earns among its
 // reports published now. A report being published takes what its siblings'
@@ -80,9 +84,6 @@ type cameraBook struct {
 	// paid: the class each ledger position was paid as, kept past a
 	// takedown (report_star_parts).
 	paid map[string]map[int]string
-	// keys: each report's camera keys, its id_hashes' and those kept with
-	// its stars, to be kept with the stars written now.
-	keys map[string][]string
 }
 
 // cameraKeys are the identifiers that make reports one camera: chip_id
@@ -111,10 +112,17 @@ func (s *Store) cameras(ctx context.Context, q dbQuerier, ids []string) (map[str
 		  SELECT rs.report_id, rs.member_id FROM report_submissions rs
 		  WHERE rs.member_id IN (SELECT member_id FROM asked WHERE member_id IS NOT NULL)
 		)
-		SELECT m.id, coalesce(m.member_id, ''), r.received_at, r.yaml <> '', r.id_hashes, coalesce(rc.joins, ''),
-		  coalesce((SELECT array_agg(key) FROM report_star_cameras k WHERE k.report_id = m.id), '{}')
+		SELECT m.id, coalesce(m.member_id, ''), r.received_at, r.yaml <> '', coalesce(rc.joins, ''),
+		  coalesce((SELECT array_agg(DISTINCT x.key || ':' || x.value ORDER BY x.key || ':' || x.value) FROM (
+		      SELECT h.key, h.value, report_anyka(r.chip_vendor, r.chip_model) AS anyka FROM jsonb_each_text(r.id_hashes) h
+		      UNION ALL
+		      SELECT split_part(k.key, ':', 1), split_part(k.key, ':', 2),
+		        report_anyka(split_part(k.chip, '/', 1), split_part(k.chip, '/', 2))
+		      FROM report_star_cameras k WHERE k.report_id = m.id) x
+		    WHERE x.key = ANY($2) AND NOT (x.key = 'die_id' AND x.anyka)
+		      AND report_identifier_one_chip(x.key, x.value)), '{}')
 		FROM mine m JOIN reports r ON r.id = m.id
-		LEFT JOIN report_codes rc ON rc.used_by = m.id`, ids)
+		LEFT JOIN report_codes rc ON rc.used_by = m.id`, ids, cameraKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -127,27 +135,10 @@ func (s *Store) cameras(ctx context.Context, q dbQuerier, ids []string) (map[str
 	var all []rep
 	for rows.Next() {
 		var r rep
-		var raw []byte
-		var kept []string
-		if err := rows.Scan(&r.id, &r.member, &r.at, &r.yaml, &raw, &r.joins, &kept); err != nil {
+		if err := rows.Scan(&r.id, &r.member, &r.at, &r.yaml, &r.joins, &r.keys); err != nil {
 			rows.Close()
 			return nil, err
 		}
-		var h map[string]string
-		_ = json.Unmarshal(raw, &h)
-		seen := map[string]bool{}
-		for _, k := range cameraKeys {
-			if h[k] != "" {
-				seen[k+":"+h[k]] = true
-			}
-		}
-		for _, k := range kept {
-			seen[k] = true
-		}
-		for k := range seen {
-			r.keys = append(r.keys, k)
-		}
-		sort.Strings(r.keys)
 		all = append(all, r)
 	}
 	rows.Close()
@@ -199,12 +190,11 @@ func (s *Store) cameras(ctx context.Context, q dbQuerier, ids []string) (map[str
 		b := books[root]
 		if b == nil {
 			b = &cameraBook{state: map[string]string{}, alone: map[string]map[int]earning{},
-				net: map[string]map[int]int{}, paid: map[string]map[int]string{}, keys: map[string][]string{}}
+				net: map[string]map[int]int{}, paid: map[string]map[int]string{}}
 			books[root] = b
 		}
 		b.order = append(b.order, r.id)
 		b.state[r.id] = "pending"
-		b.keys[r.id] = r.keys
 		byReport[r.id] = b
 		every = append(every, r.id)
 		hasYAML[r.id] = r.yaml
@@ -428,11 +418,16 @@ func (b *cameraBook) raises(id string) map[string]map[int]int {
 // keep writes, with the stars of report id, what makes it the camera's and
 // which of its positions were the camera's share, so a takedown leaves the
 // camera paid (migration 040). Inserted once, never changed.
+// Every identifier is kept as the report holds it, with its chip: whether
+// it is one camera is decided when it is read, as for any report's.
 func (b *cameraBook) keep(ctx context.Context, q pgx.Tx, id string) error {
-	for _, k := range b.keys[id] {
-		if _, err := q.Exec(ctx, `INSERT INTO report_star_cameras (report_id, key) VALUES ($1, $2) ON CONFLICT DO NOTHING`, id, k); err != nil {
-			return err
-		}
+	if _, err := q.Exec(ctx, `
+		INSERT INTO report_star_cameras (report_id, key, chip)
+		SELECT r.id, h.key || ':' || h.value, lower(r.chip_vendor) || '/' || lower(r.chip_model)
+		FROM reports r CROSS JOIN LATERAL jsonb_each_text(r.id_hashes) h
+		WHERE r.id = $1 AND h.key = ANY($2) AND h.value ~ '^[0-9a-f]+$'
+		ON CONFLICT DO NOTHING`, id, cameraKeys); err != nil {
+		return err
 	}
 	for pos, p := range b.alone[id] {
 		if p.Class == "" {

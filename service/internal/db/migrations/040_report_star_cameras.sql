@@ -6,11 +6,15 @@
 -- is written here when its stars are, and outlives the takedown: a later
 -- report of the same camera is paid only what the withdrawn one was not.
 --
--- Keyed hashes only, as reports.id_hashes holds them ("mac:<hash>"); never an
--- identifier in clear. Inserted, never changed, guarded as the reports are.
+-- Keyed hashes only, as reports.id_hashes holds them ("mac:<hash>"), never
+-- an identifier in clear, with the chip the report named (vendor/model,
+-- lower case): an identifier counts as a camera only while every report
+-- carrying it names one chip (report_identifier_one_chip). Inserted, never
+-- changed, guarded as the reports are.
 CREATE TABLE report_star_cameras (
     report_id text NOT NULL REFERENCES reports ON DELETE RESTRICT,
     key       text NOT NULL CHECK (key ~ '^(mac|die_id|cloud_id):[0-9a-f]+$'),
+    chip      text NOT NULL,
     PRIMARY KEY (report_id, key)
 );
 CREATE INDEX report_star_cameras_by_key ON report_star_cameras (key);
@@ -33,9 +37,34 @@ CREATE TRIGGER report_star_parts_guard BEFORE UPDATE OR DELETE ON report_star_pa
 CREATE TRIGGER report_star_parts_no_truncate BEFORE TRUNCATE ON report_star_parts
     FOR EACH STATEMENT EXECUTE FUNCTION reports_guard();
 
+-- When an identifier is one camera (#502), for the review queue's kin and
+-- the stars alike:
+--
+--   * An Anyka's die_id is none: ipctool prints the chip family's ID
+--     register under chip.id (0x2016...), the same in every Anyka of the
+--     family. Reports sent before IDHashes left it out still carry it.
+--   * Any identifier is one camera only while every report carrying it --
+--     its keyed hash in id_hashes, or kept with a withdrawn report's stars
+--     -- names one chip: a factory-default MAC is on every unit a maker
+--     shipped.
+CREATE FUNCTION report_anyka(vendor text, model text) RETURNS boolean
+    LANGUAGE sql IMMUTABLE AS $$
+    SELECT lower(coalesce(vendor, '')) = 'anyka' OR coalesce(model, '') ILIKE 'AK%'
+$$;
+
+CREATE FUNCTION report_identifier_one_chip(k text, v text) RETURNS boolean
+    LANGUAGE sql STABLE AS $$
+    SELECT count(DISTINCT chip) <= 1 FROM (
+        SELECT lower(chip_vendor) || '/' || lower(chip_model) AS chip FROM reports
+        WHERE id_hashes @> jsonb_build_object(k, v)
+        UNION ALL
+        SELECT chip FROM report_star_cameras WHERE key = k || ':' || v
+    ) carriers
+$$;
+
 -- What was paid before this migration, while the reports still say it.
-INSERT INTO report_star_cameras (report_id, key)
-SELECT DISTINCT r.id, h.key || ':' || h.value
+INSERT INTO report_star_cameras (report_id, key, chip)
+SELECT DISTINCT r.id, h.key || ':' || h.value, lower(r.chip_vendor) || '/' || lower(r.chip_model)
 FROM reports r JOIN report_stars s ON s.report_id = r.id
 CROSS JOIN LATERAL jsonb_each_text(r.id_hashes) h
 WHERE h.key IN ('mac', 'die_id', 'cloud_id') AND h.value ~ '^[0-9a-f]+$'
