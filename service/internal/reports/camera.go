@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"sort"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // Stars per camera, not per report. One member's reports about one camera
@@ -28,6 +30,13 @@ import (
 // report published again after a sibling took its share is not paid that
 // share twice; the camera's total is whole, and which report holds it is
 // the order of decisions.
+//
+// A takedown keeps the stars a report was paid -- it is its owner's
+// privacy, not a penalty -- and blanks what made the report the camera's.
+// So when stars are written, the report's camera keys and which positions
+// were the camera's share are written too (report_star_cameras and
+// report_star_parts, migration 040), and a withdrawn report still holds
+// its share: a later report of the camera is paid only what it was not.
 
 // Part kinds paid once per camera.
 const (
@@ -63,101 +72,91 @@ type dbQuerier interface {
 // cameraBook is a member's reports about one camera, with what each part
 // of them earns alone and what the ledger holds for it.
 type cameraBook struct {
-	// order: the camera's reports as they were sent, the one asked about
-	// among them.
-	order  []string
-	state  map[string]string
-	alone  map[string]map[int]earning
-	net    map[string]map[int]int
-	member string
+	// order: the camera's reports as they were sent.
+	order []string
+	state map[string]string
+	alone map[string]map[int]earning
+	net   map[string]map[int]int
+	// paid: the class each ledger position was paid as, kept past a
+	// takedown (report_star_parts).
+	paid map[string]map[int]string
+	// keys: each report's camera keys, its id_hashes' and those kept with
+	// its stars, to be kept with the stars written now.
+	keys map[string][]string
 }
 
-// loadCamera reads the camera report id is about, as member's: no member
-// (a report sent signed out) is a camera of the one report.
-func (s *Store) loadCamera(ctx context.Context, q dbQuerier, member, id string) (*cameraBook, error) {
-	b := &cameraBook{member: member, state: map[string]string{}, alone: map[string]map[int]earning{}, net: map[string]map[int]int{}}
-	b.order = []string{id}
-	if member != "" {
-		ids, err := s.sameCamera(ctx, q, member, id)
-		if err != nil {
-			return nil, err
-		}
-		b.order = ids
-	}
-	for _, r := range b.order {
-		st, err := s.status(ctx, q, r)
-		if err != nil {
-			return nil, err
-		}
-		b.state[r] = st.State
-		var hasYAML bool
-		if err := q.QueryRow(ctx, `SELECT yaml <> '' FROM reports WHERE id = $1`, r).Scan(&hasYAML); err != nil {
-			return nil, err
-		}
-		if b.alone[r], err = s.potential(ctx, q, r, hasYAML); err != nil {
-			return nil, err
-		}
-	}
-	rows, err := q.Query(ctx, `SELECT report_id, position, sum(points)::int FROM report_stars WHERE report_id = ANY($1) GROUP BY 1, 2`, b.order)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var r string
-		var pos, pts int
-		if err := rows.Scan(&r, &pos, &pts); err != nil {
-			return nil, err
-		}
-		if b.net[r] == nil {
-			b.net[r] = map[int]int{}
-		}
-		b.net[r][pos] = pts
-	}
-	return b, rows.Err()
-}
+// cameraKeys are the identifiers that make reports one camera: chip_id
+// names a SigmaStar part, not always the one die.
+var cameraKeys = []string{"mac", "die_id", "cloud_id"}
 
-// sameCamera is member's reports about the camera id is about, id among
-// them, in the order they were sent.
-func (s *Store) sameCamera(ctx context.Context, q dbQuerier, member, id string) ([]string, error) {
+// cameraQueries is how many queries cameras makes, however many reports it
+// is asked about (TestCamerasReadInBoundedQueries).
+const cameraQueries = 5
+
+// cameras reads the camera of each report in ids at once, for a page of
+// them: their senders' reports, grouped by camera, with each one's state,
+// what each part earns alone and what the ledger holds. A report sent
+// signed out is a camera of its own. Reports of one camera share a book.
+// cameraQueries queries in all.
+func (s *Store) cameras(ctx context.Context, q dbQuerier, ids []string) (map[string]*cameraBook, error) {
+	// 1. The reports asked about, and every report their senders sent, with
+	// what makes a camera of them.
 	rows, err := q.Query(ctx, `
-		SELECT r.id, r.received_at, r.id_hashes, coalesce(rc.joins, '')
-		FROM reports r JOIN report_submissions rs ON rs.report_id = r.id
-		LEFT JOIN report_codes rc ON rc.used_by = r.id
-		WHERE rs.member_id = $1 OR r.id = $2`, member, id)
+		WITH asked AS (
+		  SELECT r.id, rs.member_id FROM reports r LEFT JOIN report_submissions rs ON rs.report_id = r.id
+		  WHERE r.id = ANY($1)
+		), mine AS (
+		  SELECT id, member_id FROM asked WHERE member_id IS NULL
+		  UNION
+		  SELECT rs.report_id, rs.member_id FROM report_submissions rs
+		  WHERE rs.member_id IN (SELECT member_id FROM asked WHERE member_id IS NOT NULL)
+		)
+		SELECT m.id, coalesce(m.member_id, ''), r.received_at, r.yaml <> '', r.id_hashes, coalesce(rc.joins, ''),
+		  coalesce((SELECT array_agg(key) FROM report_star_cameras k WHERE k.report_id = m.id), '{}')
+		FROM mine m JOIN reports r ON r.id = m.id
+		LEFT JOIN report_codes rc ON rc.used_by = m.id`, ids)
 	if err != nil {
 		return nil, err
 	}
 	type rep struct {
-		id    string
-		at    time.Time
-		joins string
-		keys  []string
+		id, member, joins string
+		at                time.Time
+		yaml              bool
+		keys              []string
 	}
 	var all []rep
 	for rows.Next() {
 		var r rep
 		var raw []byte
-		if err := rows.Scan(&r.id, &r.at, &raw, &r.joins); err != nil {
+		var kept []string
+		if err := rows.Scan(&r.id, &r.member, &r.at, &r.yaml, &raw, &r.joins, &kept); err != nil {
 			rows.Close()
 			return nil, err
 		}
 		var h map[string]string
 		_ = json.Unmarshal(raw, &h)
-		// The identifiers one camera has and another does not: chip_id names
-		// a SigmaStar part, not always the one die.
-		for _, k := range []string{"mac", "die_id", "cloud_id"} {
+		seen := map[string]bool{}
+		for _, k := range cameraKeys {
 			if h[k] != "" {
-				r.keys = append(r.keys, k+":"+h[k])
+				seen[k+":"+h[k]] = true
 			}
 		}
+		for _, k := range kept {
+			seen[k] = true
+		}
+		for k := range seen {
+			r.keys = append(r.keys, k)
+		}
+		sort.Strings(r.keys)
 		all = append(all, r)
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	// Union-find over reports and the identifiers they hold.
+
+	// Union-find over each member's reports and the keys they hold; a
+	// report sent signed out stays alone.
 	parent := map[string]string{}
 	var find func(string) string
 	find = func(x string) string {
@@ -169,33 +168,153 @@ func (s *Store) sameCamera(ctx context.Context, q dbQuerier, member, id string) 
 		return x
 	}
 	union := func(a, b string) { parent[find(a)] = find(b) }
+	member := map[string]string{}
+	for _, r := range all {
+		member[r.id] = r.member
+	}
 	for _, r := range all {
 		find("r:" + r.id)
-		for _, k := range r.keys {
-			union("r:"+r.id, "k:"+k)
+		if r.member == "" {
+			continue
 		}
-		if r.joins != "" {
+		for _, k := range r.keys {
+			union("r:"+r.id, "k:"+r.member+":"+k)
+		}
+		if r.joins != "" && member[r.joins] == r.member {
 			union("r:"+r.id, "r:"+r.joins)
 		}
 	}
-	root := find("r:" + id)
-	var same []rep
+	sort.Slice(all, func(i, j int) bool {
+		if !all[i].at.Equal(all[j].at) {
+			return all[i].at.Before(all[j].at)
+		}
+		return all[i].id < all[j].id
+	})
+	books := map[string]*cameraBook{}
+	byReport := map[string]*cameraBook{}
+	every := make([]string, 0, len(all))
+	hasYAML := map[string]bool{}
 	for _, r := range all {
-		if find("r:"+r.id) == root {
-			same = append(same, r)
+		root := find("r:" + r.id)
+		b := books[root]
+		if b == nil {
+			b = &cameraBook{state: map[string]string{}, alone: map[string]map[int]earning{},
+				net: map[string]map[int]int{}, paid: map[string]map[int]string{}, keys: map[string][]string{}}
+			books[root] = b
+		}
+		b.order = append(b.order, r.id)
+		b.state[r.id] = "pending"
+		b.keys[r.id] = r.keys
+		byReport[r.id] = b
+		every = append(every, r.id)
+		hasYAML[r.id] = r.yaml
+	}
+
+	// 2. Each report's state, its newest review.
+	rows, err = q.Query(ctx, `
+		SELECT DISTINCT ON (report_id) report_id, decision FROM report_reviews
+		WHERE report_id = ANY($1) ORDER BY report_id, id DESC`, every)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var id, decision string
+		if err := rows.Scan(&id, &decision); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		byReport[id].state[id] = states[decision]
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// 3. What each part earns alone.
+	alone, err := s.potentials(ctx, q, every, hasYAML)
+	if err != nil {
+		return nil, err
+	}
+	for id, parts := range alone {
+		byReport[id].alone[id] = parts
+	}
+	for _, id := range every {
+		if byReport[id].alone[id] == nil {
+			byReport[id].alone[id] = map[int]earning{}
 		}
 	}
-	sort.Slice(same, func(i, j int) bool {
-		if !same[i].at.Equal(same[j].at) {
-			return same[i].at.Before(same[j].at)
+
+	// 4. What the ledger holds, and 5. what each position was paid as.
+	rows, err = q.Query(ctx, `SELECT report_id, position, sum(points)::int FROM report_stars WHERE report_id = ANY($1) GROUP BY 1, 2`, every)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var id string
+		var pos, pts int
+		if err := rows.Scan(&id, &pos, &pts); err != nil {
+			rows.Close()
+			return nil, err
 		}
-		return same[i].id < same[j].id
-	})
-	out := make([]string, 0, len(same))
-	for _, r := range same {
-		out = append(out, r.id)
+		b := byReport[id]
+		if b.net[id] == nil {
+			b.net[id] = map[int]int{}
+		}
+		b.net[id][pos] = pts
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows, err = q.Query(ctx, `SELECT report_id, position, class FROM report_star_parts WHERE report_id = ANY($1)`, every)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id, class string
+		var pos int
+		if err := rows.Scan(&id, &pos, &class); err != nil {
+			return nil, err
+		}
+		b := byReport[id]
+		if b.paid[id] == nil {
+			b.paid[id] = map[int]string{}
+		}
+		b.paid[id][pos] = class
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	out := map[string]*cameraBook{}
+	for _, id := range ids {
+		if b := byReport[id]; b != nil {
+			out[id] = b
+		}
 	}
 	return out, nil
+}
+
+// camera is the camera of one report.
+func (s *Store) camera(ctx context.Context, q dbQuerier, id string) (*cameraBook, error) {
+	books, err := s.cameras(ctx, q, []string{id})
+	if err != nil {
+		return nil, err
+	}
+	b := books[id]
+	if b == nil {
+		return nil, ErrNotFound
+	}
+	return b, nil
+}
+
+// class is what a position of a report counts as: what it earns now, or,
+// once its content is gone (a takedown), what it was paid as.
+func (b *cameraBook) class(id string, pos int) string {
+	if c := b.alone[id][pos].Class; c != "" {
+		return c
+	}
+	return b.paid[id][pos]
 }
 
 // share is the camera's share of a class: the best one report published
@@ -210,19 +329,17 @@ func (b *cameraBook) share(class, id string, publishing bool) int {
 		if !counted {
 			continue
 		}
-		v := 0
 		for _, p := range b.alone[r] {
 			if p.Class == class {
-				v = max(v, p.Points)
+				best = max(best, p.Points)
 			}
 		}
-		best = max(best, v)
 	}
 	return best
 }
 
 // held is what the ledger holds of a class on every report of the camera
-// but except.
+// but except, a withdrawn report's included.
 func (b *cameraBook) held(class, except string) int {
 	n := 0
 	for _, r := range b.order {
@@ -230,7 +347,7 @@ func (b *cameraBook) held(class, except string) int {
 			continue
 		}
 		for pos, pts := range b.net[r] {
-			if b.alone[r][pos].Class == class {
+			if b.class(r, pos) == class {
 				n += pts
 			}
 		}
@@ -249,7 +366,9 @@ func positions[V any](parts map[int]V) []int {
 }
 
 // want is what each part of id earns if it is published now: what it
-// earns alone, a class's parts no more than the camera's share leaves.
+// earns alone, a class's parts no more than the camera's share leaves. A
+// withdrawn report's stars are among what is held: a later report is paid
+// above them, never beside them.
 func (b *cameraBook) want(id string) map[int]earning {
 	out := map[int]earning{}
 	left := map[string]int{}
@@ -304,4 +423,25 @@ func (b *cameraBook) raises(id string) map[string]map[int]int {
 		}
 	}
 	return out
+}
+
+// keep writes, with the stars of report id, what makes it the camera's and
+// which of its positions were the camera's share, so a takedown leaves the
+// camera paid (migration 040). Inserted once, never changed.
+func (b *cameraBook) keep(ctx context.Context, q pgx.Tx, id string) error {
+	for _, k := range b.keys[id] {
+		if _, err := q.Exec(ctx, `INSERT INTO report_star_cameras (report_id, key) VALUES ($1, $2) ON CONFLICT DO NOTHING`, id, k); err != nil {
+			return err
+		}
+	}
+	for pos, p := range b.alone[id] {
+		if p.Class == "" {
+			continue
+		}
+		if _, err := q.Exec(ctx, `INSERT INTO report_star_parts (report_id, position, class) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+			id, pos, p.Class); err != nil {
+			return err
+		}
+	}
+	return nil
 }
