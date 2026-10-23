@@ -17,7 +17,8 @@ import (
 )
 
 const reportsUsage = `usage: openipc reports
-  list [--status pending|published|rejected|withdrawn]   the review queue, newest first (JSON)
+  list [--status pending|published|rejected|withdrawn]   the review queue, newest first (JSON), each with
+                                                same_camera, same_sender and duplicate_of
   show <id>                                     the report whole, as sent: YAML, identifiers' hashes, files
   publish <id> [--model <board model id>]... [--new-board] [--by who] [--note text]
                                                 --new-board: add the camera the report proposed, as the review page suggests
@@ -69,7 +70,26 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		if err != nil {
 			return err
 		}
-		return out.Encode(l)
+		// Each with its kin, as the review page shows them: the same
+		// camera's other reports, others sent from its network, and the
+		// report it is a duplicate of.
+		ids := make([]string, len(l))
+		for i, r := range l {
+			ids[i] = r.ID
+		}
+		kin, err := st.Kin(ctx, ids)
+		if err != nil {
+			return err
+		}
+		type listed struct {
+			reports.Listed
+			reports.Kin
+		}
+		all := make([]listed, len(l))
+		for i, r := range l {
+			all[i] = listed{r, *kin[r.ID]}
+		}
+		return out.Encode(all)
 	case "show":
 		if err := need(1); err != nil {
 			return err

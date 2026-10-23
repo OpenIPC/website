@@ -101,7 +101,16 @@ export interface Queued {
   edited_at?: string;
   /** Its sender's edits; sent back with a decision, which is refused if it moved. */
   revision: number;
+  /** Other reports sharing an identifier's keyed hash: the same camera. */
+  same_camera?: Sibling[];
+  /** Other reports from the same network within a day, not already the same camera. */
+  same_sender?: Sibling[];
+  /** A report that already holds everything this one does. */
+  duplicate_of?: Sibling;
 }
+
+/** Another report in the queue's view of this one: its id, state and the boards it is on. */
+export interface Sibling { id: string; status: ReportState; boards?: BoardRef[] }
 
 const BASE = '/api/v1/club';
 const FLAG = 'openipc.club';
