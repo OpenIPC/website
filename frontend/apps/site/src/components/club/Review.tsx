@@ -171,6 +171,10 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
           <dd class="m-0">{new Date(q.edited_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}</dd></>}
         {q.joins && <><dt class="text-body-secondary">{t('club.review_joins_label')}</dt>
           <dd class="m-0">{t('club.goes_with', { id: q.joins })}</dd></>}
+        {q.answers && <><dt class="text-body-secondary">{t('club.review_answers_label')}</dt>
+          <dd class="m-0"><a href={`${pathFor(locale, '/cameras/report')}?id=${q.answers}`} class="font-mono">{q.answers}</a></dd></>}
+        {!!q.answered_by?.length && <><dt class="text-body-secondary">{t('club.review_answered_by_label')}</dt>
+          <dd class="m-0">{q.answered_by.map((id, i) => <span key={id}>{i > 0 && ', '}<a href={`#q-${id}`} class="font-mono">{id}</a></span>)}</dd></>}
         {q.proposal && <><dt class="text-body-secondary">{t('club.review_proposal')}</dt>
           <dd class="m-0">{[q.proposal.maker, q.proposal.board, q.proposal.soc].filter(Boolean).join(' · ')}</dd></>}
         {q.guess && <><dt class="text-body-secondary">ipctool</dt><dd class="m-0">{t('club.review_guess', { board: `${q.guess.manufacturer} ${q.guess.model}` })} <span class="font-mono text-[12px]">{q.guess.model_id}</span></dd></>}
@@ -274,9 +278,10 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
               {result && <span class="text-sm text-[#146c3c]" role="status">{result}</span>}
               {error && <span class="text-sm text-[#a3262e]" role="alert">{error}</span>}
             </div>
-            {asking && <Ask q={q} t={t} onAsked={(told) => {
+            {asking && <Ask q={q} t={t} onAsked={(r) => {
               setAsking(false);
-              setResult(t(`club.review_done_ask_${told || (q.member ? 'member' : 'guest')}`));
+              // Only what was sent is claimed: a member not reached reads it on /club.
+              setResult(t(`club.review_done_ask_${r.told || (!q.member ? 'guest' : r.quiet ? 'member' : 'undelivered')}`));
               setTimeout(onDone, 1200);
             }} onCancel={() => setAsking(false)} />}
       </div>
@@ -308,7 +313,9 @@ function Kin({ label, s, strong, weak, listed, locale, t }: {
  * away: the board's marking, a marking that disagrees with what was typed,
  * a serial-number label in a photo.
  */
-function Ask({ q, t, onAsked, onCancel }: { q: Queued; t: BoardsT; onAsked: (told: string) => void; onCancel: () => void }) {
+function Ask({ q, t, onAsked, onCancel }: {
+  q: Queued; t: BoardsT; onAsked: (r: { told: string; quiet: boolean }) => void; onCancel: () => void;
+}) {
   const [question, setQuestion] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -327,7 +334,7 @@ function Ask({ q, t, onAsked, onCancel }: { q: Queued; t: BoardsT; onAsked: (tol
     setBusy(true);
     setError(null);
     ask(q.id, question.trim(), q.revision)
-      .then((r) => onAsked(r.told))
+      .then(onAsked)
       .catch((err: Error) => setError(err.message))
       .finally(() => setBusy(false));
   };

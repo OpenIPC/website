@@ -5,9 +5,10 @@
  * With no ?id= it is the lookup form.
  *
  * It is also the one way to reach whoever sent a report signed out: a
- * reviewer's question shows here, with how such a sender can answer, and so
- * does the plea for a photo of the board's marking when nothing in the
- * report names its board.
+ * reviewer's question shows here, and so does the plea for a photo of the
+ * board's marking when nothing in the report names its board. Either comes
+ * with the send form in its answer mode: photos, a log or a note, filed as
+ * this report's answer, with no board to name.
  */
 import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
@@ -15,6 +16,7 @@ import { pathFor, type Locale } from '../../lib/i18n';
 import { boardPath } from '../../lib/boards/shell';
 import LinkCertainty from './LinkCertainty';
 import { NotFound, RECEIPT_ID, fetchReport, size, summary, waiting, type Report } from '../../lib/reports';
+import SendForm from '../club/SendForm';
 
 type Load = { state: 'none' } | { state: 'loading' } | { state: 'ok'; value: Report } | { state: 'missing' } | { state: 'error' };
 
@@ -83,7 +85,6 @@ export default function Receipt({ locale }: { locale: Locale }) {
           <h3 id="receipt-asked" class="m-0 text-base font-semibold text-[#8a4b00]">{t('report.asked_title')}</h3>
           <p class="m-0 whitespace-pre-wrap text-ink">{r.question}</p>
           <p class="m-0 text-[13.5px] text-body-secondary">{t('report.asked_how', { id: r.id })}</p>
-          <a href="#new" class="site-btn site-btn-primary site-btn-sm w-fit">{t('report.asked_answer')}</a>
         </div>
       )}
       {r.marking_wanted && r.status !== 'asked' && (
@@ -91,6 +92,12 @@ export default function Receipt({ locale }: { locale: Locale }) {
           <b class="font-semibold">{t('report.marking_title')}</b>
           <span class="text-[13.5px] text-body-secondary">{t('report.marking_text', { id: r.id })}</span>
         </div>
+      )}
+      {((r.status === 'asked' && r.question) || r.marking_wanted) && (
+        <section class="mt-3 grid gap-2" aria-labelledby="receipt-answer">
+          <h3 id="receipt-answer" class="m-0 text-base font-semibold">{t('report.asked_answer')}</h3>
+          <SendForm answers={r.id} kind="photo" locale={locale} t={t} />
+        </section>
       )}
 
       <ol class="m-0 mt-5 grid list-none gap-3 p-0 text-[.9375rem]" aria-label={t('report.th_what')}>

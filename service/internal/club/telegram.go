@@ -455,10 +455,12 @@ type Asked struct {
 	// Member: who sent it, "" for a report sent signed out (its receipt
 	// shows the question).
 	Member string
-	// Told: how the question reached them -- "telegram", "email" -- or ""
-	// when it could not (no way to write to them, or they muted notices):
+	// Told: how the question was sent to them -- "telegram" or "email",
+	// each only once it was handed over -- or "" when nothing was sent:
 	// their page on /club shows it either way.
 	Told string
+	// Quiet: they muted notices, which is why nothing was sent.
+	Quiet bool
 }
 
 // Ask puts a reviewer's question to a report's sender (reports.Store.Ask)
@@ -471,50 +473,57 @@ func (a *API) Ask(ctx context.Context, id, by, question string, revision *int) (
 	}
 	res := Asked{Member: member}
 	if member != "" {
-		res.Told = a.notifyAsk(ctx, member, id, strings.TrimSpace(question))
+		res.Told, res.Quiet = a.notifyAsk(ctx, member, id, strings.TrimSpace(question))
 	}
-	a.Log.Info("club: sender asked", "report", id, "by", by, "member", member, "told", res.Told)
+	a.Log.Info("club: sender asked", "report", id, "by", by, "member", member, "told", res.Told, "quiet", res.Quiet)
 	return res, nil
 }
 
-// notifyAsk writes the question through the bot when the member has it,
-// and otherwise by mail to the address they sign in with: a question left
-// unseen keeps the report waiting for good. A member who muted the bot
-// hears nothing either way, as with decisions.
-func (a *API) notifyAsk(ctx context.Context, member, report, question string) string {
-	var quiet, chat bool
-	err := a.DB.QueryRow(ctx, `
-		SELECT m.quiet, EXISTS (SELECT 1 FROM club_identities i WHERE i.member_id = m.id AND i.provider = 'telegram' AND i.chat_id IS NOT NULL)
-		FROM club_members m WHERE m.id = $1`, member).Scan(&quiet, &chat)
-	if err != nil {
+// notifyAsk writes the question through the bot when the member has a
+// chat with it, and otherwise -- or when the bot fails -- by mail to the
+// address they sign in with: a question left unseen keeps the report
+// waiting for good. It answers the channel that took the message, "" when
+// none did, and whether the member muted notices: then nothing is sent,
+// as with decisions.
+func (a *API) notifyAsk(ctx context.Context, member, report, question string) (told string, quiet bool) {
+	if err := a.DB.QueryRow(ctx, `SELECT quiet FROM club_members WHERE id = $1`, member).Scan(&quiet); err != nil {
 		a.Log.Warn("club: the asked member unreadable", "member", member, "err", err)
-		return ""
+		return "", false
 	}
 	if quiet {
-		return ""
+		return "", true
 	}
-	if chat && a.Telegram != nil {
-		err := a.notify(ctx, member, func(l string) string {
-			return fmt.Sprintf(t(l, "asked"), report, html.EscapeString(question))
-		}, func(l string) []Button {
-			return []Button{{Text: t(l, "open_report"), URL: a.reportLink(l, report)}}
-		})
-		if err == nil {
-			return "telegram"
+	if a.Telegram != nil {
+		var chat int64
+		var l string
+		err := a.DB.QueryRow(ctx, `
+			SELECT chat_id, locale FROM club_identities
+			WHERE member_id = $1 AND provider = 'telegram' AND chat_id IS NOT NULL
+			ORDER BY seen_at DESC LIMIT 1`, member).Scan(&chat, &l)
+		switch {
+		case err == nil:
+			err = a.Telegram.Send(ctx, chat, fmt.Sprintf(t(l, "asked"), report, html.EscapeString(question)),
+				Button{Text: t(l, "open_report"), URL: a.reportLink(l, report)})
+			if err == nil {
+				return "telegram", false
+			}
+			a.Log.Warn("club: telegram question failed", "member", member, "err", err)
+		case !errors.Is(err, pgx.ErrNoRows):
+			a.Log.Warn("club: the asked member's chat unreadable", "member", member, "err", err)
 		}
 	}
 	if a.Mail == nil {
-		return ""
+		return "", false
 	}
 	var to, l string
-	err = a.DB.QueryRow(ctx, `
+	err := a.DB.QueryRow(ctx, `
 		SELECT subject, locale FROM club_identities WHERE member_id = $1 AND provider = 'email'
 		ORDER BY seen_at DESC LIMIT 1`, member).Scan(&to, &l)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			a.Log.Warn("club: the asked member's address unreadable", "member", member, "err", err)
 		}
-		return ""
+		return "", false
 	}
 	mail, ok := askMails[l]
 	if !ok {
@@ -522,9 +531,9 @@ func (a *API) notifyAsk(ctx context.Context, member, report, question string) st
 	}
 	if err := a.Mail.Send(to, fmt.Sprintf(mail[0], report), fmt.Sprintf(mail[1], report, question, a.reportLink(l, report))); err != nil {
 		a.Log.Warn("club: question mail failed", "member", member, "err", err)
-		return ""
+		return "", false
 	}
-	return "email"
+	return "email", false
 }
 
 // reportLink is a member's report on their page, in their language.

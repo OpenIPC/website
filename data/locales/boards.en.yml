@@ -104,10 +104,10 @@ en:
       owner_note: 'The owner''s note:'
       status_asked: 'Question for the sender'
       asked_title: 'The reviewer asks'
-      asked_how: 'If you sent it signed in to the OpenIPC Club, edit it from your page there: that is the answer, and it goes back to the reviewer. A report sent without signing in cannot be changed, and nobody can write to you: send what is asked as a new report (with the form below, from ipctool or by your agent) and put {id} in its note, so the reviewer reads the two together.'
+      asked_how: 'If you sent it signed in to the OpenIPC Club, edit it from your page there: that is the answer, and it goes back to the reviewer. Otherwise send what is asked with the form below: it goes to the reviewer as this report''s answer, and needs no board name.'
       asked_answer: 'Send the answer'
       marking_title: 'Which board is it?'
-      marking_text: 'Nothing in this report names its board, and its chip is on many. A photo of the board''s marking (the code printed on the PCB, or its sticker) is what lets a maintainer place it. Send one with the form below and put {id} in its note.'
+      marking_text: 'Nothing in this report names its board, and its chip is on many. A photo of the board''s marking (the code printed on the PCB, or its sticker) is what lets a maintainer place it. Send it with the form below: it is filed as this report''s answer.'
       not_found: "No report has this receipt. Check the address ipctool printed."
       load_failed: "The report could not be loaded. Try again in a minute."
       reports_title: "Reports from owners"
@@ -667,6 +667,9 @@ en:
       review_done_ask_email: 'Asked. The sender was emailed.'
       review_done_ask_member: 'Asked. The sender has notices off; it is on their page.'
       review_done_ask_guest: 'Asked. It was sent without signing in, so the question is on its receipt.'
+      review_done_ask_undelivered: 'Asked, but nothing could be sent to the sender. The question is on their /club page.'
+      review_answers_label: 'Answer to'
+      review_answered_by_label: 'Answered by'
       review_asked: 'Asked'
       review_answered: 'Asked, then edited'
       asked_title: 'A maintainer asks'

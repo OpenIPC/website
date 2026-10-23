@@ -170,8 +170,15 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		if err != nil {
 			return err
 		}
-		if res.Member != "" && res.Told == "" {
-			log.Warn("reports: the sender could not be told; their page on /club shows the question", "report", pos[0], "member", res.Member)
+		switch {
+		case res.Member == "":
+			log.Info("reports: asked; sent signed out, so the question is on its receipt", "report", pos[0])
+		case res.Quiet:
+			log.Info("reports: asked; the sender muted notices, and their page on /club shows the question", "report", pos[0], "member", res.Member)
+		case res.Told == "":
+			log.Warn("reports: asked, but nothing could be sent to the sender; their page on /club shows the question", "report", pos[0], "member", res.Member)
+		default:
+			log.Info("reports: asked", "report", pos[0], "member", res.Member, "told", res.Told)
 		}
 		return nil
 	case "link":

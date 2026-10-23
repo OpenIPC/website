@@ -43,12 +43,13 @@ type View struct {
 }
 
 // MarkingWanted is a report that does not say which board it is: ipctool
-// read no board code, the sender named no board and proposed none, it
-// joins no report that did, and no photo came with it. The chip and the
+// read no board code, the sender named no board and proposed none, it goes
+// with no other report (with: the report it joins or answers), and no photo
+// came with it. The chip and the
 // sensor are shared by dozens of boards; a maintainer cannot place it
 // without asking for the board's marking.
-func MarkingWanted(f Facts, model string, proposal *Proposal, joins string, photos int) bool {
-	return strings.TrimSpace(f.BoardModel) == "" && model == "" && proposal == nil && joins == "" && photos == 0
+func MarkingWanted(f Facts, model string, proposal *Proposal, with string, photos int) bool {
+	return strings.TrimSpace(f.BoardModel) == "" && model == "" && proposal == nil && with == "" && photos == 0
 }
 
 type ViewFile struct {
@@ -168,7 +169,8 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 	return v, nil
 }
 
-// markingWanted is MarkingWanted for a stored report.
+// markingWanted is MarkingWanted for a stored report; one that was
+// answered from its receipt has had what it wanted sent.
 func (s *Store) markingWanted(ctx context.Context, id string, f Facts, files []ViewFile) (bool, error) {
 	photos := 0
 	for _, file := range files {
@@ -189,7 +191,15 @@ func (s *Store) markingWanted(ctx context.Context, id string, f Facts, files []V
 	if err != nil {
 		return false, err
 	}
-	return MarkingWanted(f, model, p, joins, photos), nil
+	answers, err := s.AnswersOf(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	by, err := s.AnsweredBy(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	return len(by) == 0 && MarkingWanted(f, model, p, joins+answers, photos), nil
 }
 
 // ForModel is every published report linked to one board, newest first:

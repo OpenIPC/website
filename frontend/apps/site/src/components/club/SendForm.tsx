@@ -7,6 +7,11 @@
  * Signing in is not required. A signed-in sender's report is theirs: it is
  * listed on /club with its state, its dump is private to them and the
  * maintainers, and it earns stars once accepted.
+ *
+ * On a receipt, with answers instead of model, it is the answer to that
+ * report: photos, a log or a note, filed with the report a reviewer asked
+ * about (or one that names no board) and needing no board of its own --
+ * the sender asked for the marking is the one who cannot name the board.
  */
 import { useEffect, useState } from 'preact/hooks';
 import type { BoardsT } from '../../lib/boards-i18n';
@@ -16,14 +21,16 @@ import IpctoolCode from './IpctoolCode';
 
 export type SendKind = 'boot_log' | 'uboot_env' | 'photo' | 'backup';
 const KINDS: SendKind[] = ['uboot_env', 'boot_log', 'photo', 'backup'];
+// An answer names no board, which a programmer's dump needs (one from ipctool would be a report of its own).
+const ANSWER_KINDS: SendKind[] = ['photo', 'boot_log', 'uboot_env'];
 
-export default function SendForm({ model, kind, locale, t, note }: {
-  model: string; kind: SendKind; locale: Locale; t: BoardsT; note?: string;
+export default function SendForm({ model, answers, kind, locale, t, note }: {
+  model?: string; answers?: string; kind: SendKind; locale: Locale; t: BoardsT; note?: string;
 }) {
   const [chosen, setChosen] = useState<SendKind>(kind);
   const [text, setText] = useState('');
   const [files, setFiles] = useState<File[]>([]);
-  const [extra, setExtra] = useState(note ?? '');
+  const [extra, setExtra] = useState(note ?? (answers ? t('club.new_follow_up', { id: answers }) : ''));
   const [publicDump, setPublicDump] = useState(false);
   // undefined while a browser that has signed in before asks who it is:
   // the line under the button says nothing until it knows.
@@ -43,7 +50,8 @@ export default function SendForm({ model, kind, locale, t, note }: {
     }
     const form = new FormData();
     form.set('channel', 'web');
-    form.set('model', model);
+    if (answers) form.set('answers', answers);
+    else if (model) form.set('model', model);
     if (extra.trim()) form.set('note', extra.trim());
     if (textual && text.trim()) form.append(chosen, new Blob([text], { type: 'text/plain' }), `${chosen}.txt`);
     for (const f of files) form.append(chosen, f, f.name);
@@ -82,7 +90,7 @@ export default function SendForm({ model, kind, locale, t, note }: {
   return (
     <form class="grid gap-2.5 rounded-lg border-[1.5px] border-dashed border-[#e8c58f] bg-white p-3.5 text-sm" onSubmit={submit}>
       <div class="flex flex-wrap gap-1.5" role="group" aria-label={t('club.send_kinds_label')}>
-        {KINDS.map((k) => (
+        {(answers ? ANSWER_KINDS : KINDS).map((k) => (
           <button key={k} type="button" aria-pressed={chosen === k} onClick={() => { setChosen(k); setFiles([]); }}
             class={`cursor-pointer rounded-md border px-2.5 py-1 text-[13px] ${chosen === k ? 'border-brand-blue bg-[#eef0fc] font-semibold text-[#3d4dad]' : 'border-hairline bg-white text-body'}`}>
             {t(`club.send_kind_${k}`)} <span class="font-semibold text-[#9a5b00]">{reward(k)}</span>

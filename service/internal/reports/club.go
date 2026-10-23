@@ -75,6 +75,8 @@ type MemberReport struct {
 	EditedAt *time.Time `json:"edited_at,omitempty"`
 	// Joins: the report this one was sent to go with (a Club code's).
 	Joins string `json:"joins,omitempty"`
+	// Answers: the report this one was sent to answer, from its receipt.
+	Answers string `json:"answers,omitempty"`
 	// Proposal: the camera the sender named, when the catalogue had none.
 	Proposal *Proposal    `json:"proposal,omitempty"`
 	Chip     string       `json:"chip,omitempty"`
@@ -175,6 +177,9 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 		return nil, err
 	}
 	if m.Joins, err = s.JoinsOf(ctx, id); err != nil {
+		return nil, err
+	}
+	if m.Answers, err = s.AnswersOf(ctx, id); err != nil {
 		return nil, err
 	}
 	if err := s.DB.QueryRow(ctx, `SELECT max(at) FROM report_edits WHERE report_id = $1`, id).Scan(&m.EditedAt); err != nil {
@@ -310,6 +315,10 @@ type Queued struct {
 	// Kin: the same camera's other reports, others from its network, and
 	// the report this one adds nothing to.
 	Kin
+	// Answers: the report this one answers; AnsweredBy: the reports sent to
+	// answer this one, from its receipt.
+	Answers    string   `json:"answers,omitempty"`
+	AnsweredBy []string `json:"answered_by,omitempty"`
 	// Question: the last thing a reviewer asked its sender (Ask), and when;
 	// still open while the report is asked, answered once it is pending again.
 	Question string     `json:"question,omitempty"`
@@ -356,7 +365,10 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 		if err != nil {
 			return nil, err
 		}
-		q.Board, q.FileList, q.Proposal, q.Joins, q.EditedAt = m.Board, m.Files, m.Proposal, m.Joins, m.EditedAt
+		q.Board, q.FileList, q.Proposal, q.Joins, q.EditedAt, q.Answers = m.Board, m.Files, m.Proposal, m.Joins, m.EditedAt, m.Answers
+		if q.AnsweredBy, err = s.AnsweredBy(ctx, l.ID); err != nil {
+			return nil, err
+		}
 		if q.Revision, err = revisionOf(ctx, s.DB, l.ID); err != nil {
 			return nil, err
 		}
@@ -586,8 +598,13 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 // MaxQuestion is the longest question a reviewer may ask, in characters.
 const MaxQuestion = 2000
 
-// ErrNotWaiting is a question about a report no longer waiting for review.
-var ErrNotWaiting = errors.New("only a report waiting for review is asked about; this one has been decided or withdrawn")
+var (
+	// ErrNotWaiting is a question about a report no longer waiting for review.
+	ErrNotWaiting = errors.New("only a report waiting for review is asked about; this one has been decided or withdrawn")
+	// ErrQuestion is a question that cannot be asked as written: empty, or
+	// longer than MaxQuestion.
+	ErrQuestion = errors.New("the question")
+)
 
 // Ask puts a reviewer's question to a report's sender instead of deciding:
 // a review row 'ask' whose note is the question. The report is asked -- out
@@ -598,10 +615,10 @@ var ErrNotWaiting = errors.New("only a report waiting for review is asked about;
 func (s *Store) Ask(ctx context.Context, id, by, question string, revision *int) (string, error) {
 	question = strings.TrimSpace(question)
 	if question == "" {
-		return "", errors.New("the note is the question to the sender: it cannot be empty")
+		return "", fmt.Errorf("%w: the note is the question to the sender, and it cannot be empty", ErrQuestion)
 	}
 	if utf8.RuneCountInString(question) > MaxQuestion {
-		return "", fmt.Errorf("a question: at most %d characters", MaxQuestion)
+		return "", fmt.Errorf("%w: at most %d characters", ErrQuestion, MaxQuestion)
 	}
 	owner, err := s.Owner(ctx, id)
 	if err != nil {

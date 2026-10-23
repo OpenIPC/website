@@ -35,7 +35,7 @@ test('a maintainer asks with a template, and the report leaves for the asked tab
       return new Response(JSON.stringify({ reports: list }));
     }
     posts.push({ url, body: JSON.parse(init?.body as string) as Record<string, unknown> });
-    return new Response(JSON.stringify({ id: queued.id, decision: 'ask', told: 'telegram' }));
+    return new Response(JSON.stringify({ id: queued.id, decision: 'ask', told: 'telegram', quiet: false }));
   }));
   const { findByText, getByText, getByLabelText, getByRole, queryByRole } = render(<Review locale="en" />);
   fireEvent.click(await findByText('Ask the sender'));
@@ -67,6 +67,38 @@ test('a maintainer asks with a template, and the report leaves for the asked tab
   expect(queues).toContain('asked');
 });
 
+// What the page says it did is what the service says it sent.
+test.each([
+  [{ told: 'email', quiet: false }, 'Ivan', 'Asked. The sender was emailed.'],
+  [{ told: '', quiet: true }, 'Ivan', 'Asked. The sender has notices off; it is on their page.'],
+  [{ told: '', quiet: false }, 'Ivan', 'Asked, but nothing could be sent to the sender. The question is on their /club page.'],
+  [{ told: '', quiet: false }, undefined, 'Asked. It was sent without signing in, so the question is on its receipt.'],
+])('asking says how it reached the sender: %o from %s', async (answer, member, said) => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    if (url === '/api/v1/club/me') return new Response(JSON.stringify({ member: maintainer }));
+    if (url.startsWith('/api/v1/club/review?')) return new Response(JSON.stringify({ reports: [{ ...queued, member }] }));
+    return new Response(JSON.stringify({ id: queued.id, decision: 'ask', ...answer }));
+  }));
+  const { findByText, getByText } = render(<Review locale="en" />);
+  fireEvent.click(await findByText('Ask the sender'));
+  fireEvent.click(getByText('Please send a photo of the board\'s markings (PCB code / sticker).'));
+  fireEvent.click(getByText('Send the question'));
+  expect((await findByText(said)).getAttribute('role')).toBe('status');
+});
+
+test('the queue shows an answer sent from a receipt beside the report it answers', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    if (url === '/api/v1/club/me') return new Response(JSON.stringify({ member: maintainer }));
+    return new Response(JSON.stringify({ reports: [
+      { ...queued, id: 'r-ans23456', member: undefined, proposal: undefined, answers: 'r-xg25iffz' },
+      { ...queued, id: 'r-xg25iffz', member: undefined, proposal: undefined, answered_by: ['r-ans23456'] },
+    ] }));
+  }));
+  const { findByText, getByText } = render(<Review locale="en" />);
+  expect((await findByText('Answer to')).nextElementSibling?.textContent).toBe('r-xg25iffz');
+  expect(getByText('Answered by').nextElementSibling?.querySelector('a')?.getAttribute('href')).toBe('#q-r-ans23456');
+});
+
 test('a member reads the question on /club and answers by editing', async () => {
   localStorage.setItem('openipc.club', '1');
   const member = { id: 'm-1', name: 'Ivan', maintainer: false, quiet: false, identities: [], stars: 0, report_stars: 0, wall_stars: 0, pending: 1 };
@@ -90,22 +122,45 @@ test('a member reads the question on /club and answers by editing', async () => 
   expect(getByText('Saving answers the maintainer\'s question: the report goes back to them.')).toBeTruthy();
 });
 
-test('the receipt shows the question and how a sender who was not signed in answers', async () => {
+test('the receipt shows the question and takes the answer: files and a note, no board', async () => {
   history.replaceState(null, '', '/cameras/report/?id=r-xg25iffz');
-  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
-    schema: 1, id: 'r-xg25iffz', received_at: '2026-10-23T08:00:00Z', channel: 'ipctool', status: 'asked',
-    backup_consent: 'none', files: [], models: [], same_board: 0, marking_wanted: true,
-    question: 'Near-identical to LaView L2: please send a photo of the board\'s markings.',
-  }))));
-  const { findByText, getByText, queryByText } = render(<Receipt locale="en" />);
+  const sent: FormData[] = [];
+  vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+    if (url === '/api/v1/club/reports') {
+      sent.push(init?.body as FormData);
+      return new Response(JSON.stringify({ id: 'r-ans23456', receipt_url: '', files: [], answers: 'r-xg25iffz' }), { status: 201 });
+    }
+    return new Response(JSON.stringify({
+      schema: 1, id: 'r-xg25iffz', received_at: '2026-10-23T08:00:00Z', channel: 'ipctool', status: 'asked',
+      backup_consent: 'none', files: [], models: [], same_board: 0, marking_wanted: true,
+      question: 'Near-identical to LaView L2: please send a photo of the board\'s markings.',
+    }));
+  }));
+  const { findByText, getByText, queryByText, getByRole, getByLabelText, container } = render(<Receipt locale="en" />);
   const q = await findByText('Near-identical to LaView L2: please send a photo of the board\'s markings.');
   const box = q.closest('[role="note"]')!;
   expect(box.textContent).toContain('The reviewer asks');
-  expect(box.textContent).toContain('put r-xg25iffz in its note');
-  expect(getByText('Send the answer').getAttribute('href')).toBe('#new');
+  expect(box.textContent).toContain('needs no board name');
   expect(getByText('Question for the sender')).toBeTruthy();
   // The question already asks for it: the marking's plea is not shown twice.
   expect(queryByText('Which board is it?')).toBeNull();
+
+  // The answer form: photos first, no dump (it would need a board), the note naming the report.
+  const answer = getByRole('region', { name: 'Send the answer' });
+  const kinds = answer.querySelector('[role="group"]')!;
+  expect(kinds.textContent).toContain('Photos');
+  expect(kinds.textContent).not.toContain('Full flash dump');
+  const note = getByLabelText(/Anything else/) as HTMLInputElement;
+  expect(note.value).toBe('About r-xg25iffz: ');
+  fireEvent.input(note, { target: { value: 'About r-xg25iffz: the sticker says L2-V3' } });
+  fireEvent.submit(answer.querySelector('form')!);
+  await waitFor(() => expect(sent).toHaveLength(1));
+  expect(sent[0].get('answers')).toBe('r-xg25iffz');
+  expect(sent[0].get('model')).toBeNull();
+  expect(sent[0].get('maker')).toBeNull();
+  expect(sent[0].get('note')).toBe('About r-xg25iffz: the sticker says L2-V3');
+  expect(await findByText(/Received as r-ans23456/)).toBeTruthy();
+  expect(container.querySelector('a[href="#new"]')).toBeNull();
 });
 
 test('a waiting receipt with no board in it asks for a photo of the marking', async () => {
@@ -115,14 +170,12 @@ test('a waiting receipt with no board in it asks for a photo of the marking', as
     backup_consent: 'none', files: [], models: [], same_board: 0, marking_wanted: true,
   }))));
   const { findByText } = render(<Receipt locale="en" />);
-  expect((await findByText('Which board is it?')).nextElementSibling?.textContent).toContain('put r-9v4ey2v2 in its note');
+  expect((await findByText('Which board is it?')).nextElementSibling?.textContent).toContain('filed as this report\'s answer');
 });
 
-test('the camera form asks for the marking, and starts its note with the receipt\'s id', () => {
-  history.replaceState(null, '', '/cameras/report/?id=r-xg25iffz');
-  const { getByText, getByLabelText } = render(<NewCameraForm locale="en" />);
+test('the camera form asks for the marking among its photos', () => {
+  const { getByText } = render(<NewCameraForm locale="en" />);
   expect(getByText(/Include the board's marking/)).toBeTruthy();
-  expect((getByLabelText(/Anything else/) as HTMLInputElement).value).toBe('About r-xg25iffz: ');
 });
 
 test('a report sent with nothing naming its board is told a photo of the marking would place it', async () => {

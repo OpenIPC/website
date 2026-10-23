@@ -112,6 +112,9 @@ export interface Queued {
   /** The last question a reviewer asked its sender: open while asked, answered once pending again. */
   question?: string;
   asked_at?: string;
+  /** The report this one was sent to answer, from its receipt; and those sent to answer this one. */
+  answers?: string;
+  answered_by?: string[];
 }
 
 /** Another report in the queue's view of this one: its id, state and the boards it is on. */
@@ -203,12 +206,12 @@ export const fetchMine = () => call<{ member: Member; reports: MemberReport[] }>
 export const fetchQueue = (status = 'pending') => call<{ reports: Queued[] }>(`/review?${new URLSearchParams({ status })}`);
 
 /**
- * A question to a report's sender instead of a decision: told is how it
- * reached a member ('telegram', 'email', '' when it could not); a report
- * sent signed out shows it on its receipt.
+ * A question to a report's sender instead of a decision: told is how it was
+ * sent to a member ('telegram', 'email', '' when nothing was), quiet that
+ * they muted notices; a report sent signed out shows it on its receipt.
  */
 export const ask = (id: string, question: string, revision?: number) =>
-  post<{ told: string }>(`/review/${encodeURIComponent(id)}`, {
+  post<{ told: '' | 'telegram' | 'email'; quiet: boolean }>(`/review/${encodeURIComponent(id)}`, {
     decision: 'ask', note: question, ...(revision !== undefined ? { revision } : {}),
   });
 
@@ -236,6 +239,8 @@ export interface Sent {
   files: { kind: string; name: string; private?: boolean }[];
   /** Nothing in it names its board: a photo of the board's marking would place it. */
   marking_wanted?: boolean;
+  /** The report it was sent to answer. */
+  answers?: string;
 }
 
 /** A member's change to a report of theirs; pending again if it had been decided. */

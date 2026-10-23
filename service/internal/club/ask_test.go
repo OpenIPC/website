@@ -52,7 +52,7 @@ func TestAskingAMemberAndTheirEditAnswering(t *testing.T) {
 	sentBefore := e.tg.count()
 	question := "Please send a photo of the board's markings (PCB code <or> sticker)"
 	code, d := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "ask", "note": question, "revision": revision})
-	if code != 200 || d["decision"] != "ask" || d["told"] != "telegram" {
+	if code != 200 || d["decision"] != "ask" || d["told"] != "telegram" || d["quiet"] != false {
 		t.Fatalf("ask: %d %v", code, d)
 	}
 	if e.tg.count() != sentBefore+1 {
@@ -137,11 +137,21 @@ func TestAskingByMailAndNotAMutedMember(t *testing.T) {
 	}
 
 	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.2")
+
+	// The bot failing is not a delivery: nothing is claimed.
+	_, out = ivan.send(t, map[string]string{"channel": "web", "yaml": bareReport(t)}, nil)
+	e.tg.setFail(true)
+	code, d = maint.json(t, "POST", "/api/v1/club/review/"+out["id"].(string), map[string]any{"decision": "ask", "note": "Sold as?"})
+	e.tg.setFail(false)
+	if code != 200 || d["told"] != "" || d["quiet"] != false {
+		t.Errorf("a bot that failed: %d %v", code, d)
+	}
+
 	e.webhook(t, 777, "ivan_k", "en", "/quiet")
 	_, out = ivan.send(t, map[string]string{"channel": "web", "yaml": bareReport(t)}, nil)
 	sent := e.tg.count()
 	res, err := e.api.Ask(ctx, out["id"].(string), "cli", "Which camera is it sold as?", nil)
-	if err != nil || res.Member == "" || res.Told != "" || e.tg.count() != sent {
+	if err != nil || res.Member == "" || res.Told != "" || !res.Quiet || e.tg.count() != sent {
 		t.Errorf("a muted member: %+v %v, %d sent", res, err, e.tg.count()-sent)
 	}
 	if r := e.status(t, ivan, out["id"].(string)); r["status"] != "asked" || r["review_note"] != "Which camera is it sold as?" {
@@ -158,7 +168,7 @@ func TestAnAnonymousSendersReceiptShowsTheQuestion(t *testing.T) {
 	guest := e.browser("198.51.100.9")
 	_, out := guest.send(t, map[string]string{"channel": "web", "yaml": bareReport(t)}, nil)
 	id := out["id"].(string)
-	if !strings.Contains(out["next"].(string), "#new with "+id) {
+	if !strings.Contains(out["next"].(string), "/cameras/report/?id="+id+", which files it as this report's answer") {
 		t.Errorf("next: %v", out["next"])
 	}
 	st := e.api.Reports.Store()
@@ -176,6 +186,44 @@ func TestAnAnonymousSendersReceiptShowsTheQuestion(t *testing.T) {
 	}
 	if l, err := st.List(ctx, "asked"); err != nil || len(l) != 1 || l[0].ID != id {
 		t.Errorf("list asked: %v %v", l, err)
+	}
+
+	// The sender answers from the receipt: a photo of the marking, no board,
+	// filed as the asked report's answer -- shown so in the queue, on both.
+	for _, bad := range []map[string]string{
+		{"channel": "web", "answers": "r-zzzzzzzz"},
+		{"channel": "web", "answers": "not an id"},
+		{"channel": "ipctool", "answers": id},
+	} {
+		if code, out := guest.send(t, bad, map[string][]byte{"photo": photo}); code != 400 {
+			t.Errorf("answers %v: %d %v", bad, code, out)
+		}
+	}
+	code, ans := guest.send(t, map[string]string{"channel": "web", "answers": strings.ToUpper(id), "note": "About " + id + ": the PCB"},
+		map[string][]byte{"photo": photo})
+	if code != 201 || ans["answers"] != id || ans["marking_wanted"] != nil {
+		t.Fatalf("the answer: %d %v", code, ans)
+	}
+	answer := ans["id"].(string)
+	maint := e.maintainer(t)
+	_, q := maint.json(t, "GET", "/api/v1/club/review", nil)
+	pending := q["reports"].([]any)
+	if len(pending) != 1 || pending[0].(map[string]any)["id"] != answer || pending[0].(map[string]any)["answers"] != id {
+		t.Fatalf("the answer in the queue: %v", pending)
+	}
+	_, q = maint.json(t, "GET", "/api/v1/club/review?status=asked", nil)
+	if by := q["reports"].([]any)[0].(map[string]any)["answered_by"].([]any); len(by) != 1 || by[0] != answer {
+		t.Errorf("the asked report's answers: %v", by)
+	}
+	if v, _ := st.Public(ctx, id); v.MarkingWanted {
+		t.Error("an answered report still asks for the marking")
+	}
+	// Only a report still waiting is answered.
+	if _, err := e.api.Reports.Store().Decide(ctx, id, "reject", "test", "", nil, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	if code, _ := guest.send(t, map[string]string{"channel": "web", "answers": id}, map[string][]byte{"photo": photo}); code != 400 {
+		t.Errorf("an answer to a rejected report: %d", code)
 	}
 
 	// A board named, or a photo with it, and nothing more is wanted.
