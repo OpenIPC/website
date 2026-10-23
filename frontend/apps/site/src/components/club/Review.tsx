@@ -6,6 +6,9 @@
  * and tells the sender; rejecting takes back anything it had earned. A
  * report about a camera the catalogue does not have shows the board
  * publishing would add, for the reviewer to correct; publishing adds it.
+ * Each photo says whether its sender confirmed it is of their own camera,
+ * and can have regions blurred in the copy that is published (the service
+ * blurs it from the original) or be kept private as not the sender's unit.
  *
  * Reports of one camera (an identifier's keyed hash in common) stand
  * together, each naming the others and the boards they are published on,
@@ -26,9 +29,11 @@ import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { boardPath } from '../../lib/boards/shell';
-import { ClubError, ask, decide, fetchMe, fetchQueue, type LinkBasis, type Member, type NewBoard, type Queued, type Sibling } from '../../lib/club';
+import { ClubError, ask, decide, fetchMe, fetchQueue, reviewPhoto, type LinkBasis, type Member, type MemberFile, type NewBoard, type Queued, type Sibling } from '../../lib/club';
 import { size, waiting } from '../../lib/reports';
 import { Forbidden, STATUS_TONE } from './parts';
+import RegionPicker from './RegionPicker';
+import type { Box } from '../../lib/photo-check';
 
 type Load = { state: 'loading' } | { state: 'ok'; list: Queued[] } | { state: 'forbidden' } | { state: 'signed_out' } | { state: 'error' };
 const TABS = ['pending', 'asked', 'published', 'rejected'] as const;
@@ -130,6 +135,7 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
   const [error, setError] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
   const received = new Date(q.received_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
+  const photos = q.file_list.filter((f) => f.kind === 'photo');
 
   const act = (decision: 'publish' | 'reject', why = note) => {
     // A link that is not confirmed says why; the service refuses it otherwise.
@@ -182,6 +188,10 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
         {q.note && <><dt class="text-body-secondary">{t('club.kind_note')}</dt><dd class="m-0 whitespace-pre-wrap">{q.note}</dd></>}
         {q.question && waiting(q.status) && <><dt class="text-body-secondary">{t(q.status === 'asked' ? 'club.review_asked' : 'club.review_answered')}</dt>
           <dd class="m-0 whitespace-pre-wrap">{q.question}</dd></>}
+        {photos.length > 0 && <><dt class="text-body-secondary">{t('club.review_own_label')}</dt>
+          <dd class={`m-0 ${photos.every((f) => f.own) ? '' : 'font-semibold text-[#9a5b00]'}`}>
+            {t(photos.every((f) => f.own) ? 'club.review_own_yes' : photos.some((f) => f.own) ? 'club.review_own_some' : 'club.review_own_no')}
+          </dd></>}
       </dl>
       {(q.duplicate_of || q.same_camera?.length || q.same_sender?.length) ? (
         <ul class="m-0 grid list-none gap-1 p-0 text-[13px]" aria-label={t('club.kin_label')}>
@@ -195,8 +205,9 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
           <li key={f.position} class="flex flex-wrap items-center gap-x-2">
             <a href={f.url} download={f.name}>{t(`club.kind_${f.kind}`)} · {f.name}</a>
             <span class="text-[12.5px] text-body-secondary tabular-nums">{size(f.bytes)}</span>
-            {f.private && <span class="rounded-full bg-[#eef0fc] px-2 text-[11.5px] font-semibold text-[#3d4dad]">{t('club.private')}</span>}
+            {f.private && f.kind !== 'photo' && <span class="rounded-full bg-[#eef0fc] px-2 text-[11.5px] font-semibold text-[#3d4dad]">{t('club.private')}</span>}
             <span class="text-[12.5px] font-semibold text-[#9a5b00]">{f.points > 0 ? `+${f.points} ★` : f.kind === 'backup' ? t('club.duplicate') : ''}</span>
+            {f.kind === 'photo' && <PhotoTools id={q.id} f={f} t={t} onDone={onDone} />}
           </li>
         ))}
       </ul>
@@ -359,5 +370,55 @@ function Ask({ q, t, onAsked, onCancel }: {
         {error && <span class="text-sm text-[#a3262e]" role="alert">{error}</span>}
       </div>
     </form>
+  );
+}
+
+const PUBLIC_TONE = { blurred: 'bg-[#e3f5ec] text-[#146c3c]', private: 'bg-[#fbe9ea] text-[#a3262e]' } as const;
+
+/**
+ * One photo's tools on the review card: whether its sender confirmed it is
+ * theirs, what will be published, and the reviewer's three answers -- blur
+ * regions of the published copy, keep it private (not the sender's unit),
+ * or publish it as sent. The blur is the service's, from the original.
+ */
+function PhotoTools({ id, f, t, onDone }: { id: string; f: MemberFile; t: BoardsT; onDone: () => void }) {
+  const [picking, setPicking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const act = (action: 'blur' | 'private' | 'as_sent', regions?: Box[]) => {
+    setBusy(true);
+    setError(null);
+    reviewPhoto(id, f.position, action, regions)
+      .then(() => { setPicking(false); onDone(); })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setBusy(false));
+  };
+  const link = 'cursor-pointer p-0 text-[12.5px] text-brand-blue underline disabled:opacity-50';
+  return (
+    <>
+      <span class={`text-[12px] ${f.own ? 'text-[#146c3c]' : 'font-semibold text-[#9a5b00]'}`}>
+        {t(f.own ? 'club.photo_own_yes' : 'club.photo_own_no')}
+      </span>
+      {f.public && f.public !== 'as_sent' && (
+        <span class={`rounded-full px-2 text-[11.5px] font-semibold ${PUBLIC_TONE[f.public]}`}>{t(`club.photo_public_${f.public}`)}</span>
+      )}
+      {f.public_url && <a href={f.public_url} class="text-[12.5px]" target="_blank" rel="noopener">{t('club.photo_public_copy')}</a>}
+      <span class="flex flex-wrap gap-x-3">
+        <button type="button" class={link} disabled={busy} onClick={() => setPicking(!picking)}>{t('club.photo_blur_region')}</button>
+        {f.public !== 'private' && (
+          <button type="button" class={link} disabled={busy} onClick={() => act('private')}>{t('club.photo_not_unit')}</button>
+        )}
+        {f.public && f.public !== 'as_sent' && (
+          <button type="button" class={link} disabled={busy} onClick={() => act('as_sent')}>{t('club.photo_as_sent')}</button>
+        )}
+      </span>
+      {error && <span class="text-[12.5px] text-[#a3262e]" role="alert">{error}</span>}
+      {picking && (
+        <div class="basis-full">
+          <RegionPicker src={f.url} alt={f.name} initial={f.regions} busy={busy} t={t}
+            onSave={(boxes) => act('blur', boxes)} onCancel={() => setPicking(false)} />
+        </div>
+      )}
+    </>
   );
 }

@@ -98,6 +98,13 @@ type MemberFile struct {
 	Private bool   `json:"private,omitempty"`
 	URL     string `json:"url"`
 	Points  int    `json:"points"`
+	// A photo's: Own, its sender said it is of their own camera, taken by
+	// them; Public, what will be published -- as_sent, blurred (PublicURL,
+	// with the Regions drawn) or private, not the sender's unit.
+	Own       bool     `json:"own,omitempty"`
+	Public    string   `json:"public,omitempty"`
+	PublicURL string   `json:"public_url,omitempty"`
+	Regions   []Region `json:"regions,omitempty"`
 }
 
 // Owner is the member who sent a report, or "".
@@ -189,18 +196,31 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 	if err != nil {
 		return nil, err
 	}
+	blurs, err := s.blurs(ctx, id)
+	if err != nil {
+		return nil, err
+	}
 	rows, err := s.DB.Query(ctx, `
-		SELECT position, kind, name, bytes, public_sha256 IS NULL FROM report_files WHERE report_id = $1 ORDER BY position`, id)
+		SELECT position, kind, name, bytes, public_sha256 IS NULL, coalesce(own_photo, false),
+		  CASE WHEN public_sha256 IS NULL THEN 'private' WHEN public_sha256 = sha256 THEN 'as_sent' ELSE 'blurred' END
+		FROM report_files WHERE report_id = $1 ORDER BY position`, id)
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
 		var f MemberFile
-		if err := rows.Scan(&f.Position, &f.Kind, &f.Name, &f.Bytes, &f.Private); err != nil {
+		var public string
+		if err := rows.Scan(&f.Position, &f.Kind, &f.Name, &f.Bytes, &f.Private, &f.Own, &public); err != nil {
 			rows.Close()
 			return nil, err
 		}
 		f.URL = "/api/v1/club/reports/" + id + "/files/" + strconv.Itoa(f.Position)
+		if f.Kind == "photo" {
+			f.Public = public
+			if public == "blurred" {
+				f.PublicURL, f.Regions = f.URL+"/public", blurs[f.Position]
+			}
+		}
 		f.Points = potential[f.Position]
 		if f.Kind == "backup" && f.Points == 0 {
 			m.Duplicate = true
@@ -690,7 +710,7 @@ type BoardTextFile struct {
 // listed too, for its note. A private backup is never among them.
 func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 	rows, err := s.DB.Query(ctx, `
-		SELECT r.id, rm.model_id, coalesce(cm.name, ''), r.note_public, rm.certainty, rm.evidence, f.position, f.kind, f.name, f.public_sha256
+		SELECT r.id, rm.model_id, coalesce(cm.name, ''), r.note_public, rm.certainty, rm.evidence, f.position, f.kind, f.name, f.public_sha256, coalesce(f.public_mime, '')
 		FROM reports r
 		JOIN report_models rm ON rm.report_id = r.id
 		LEFT JOIN report_files f ON f.report_id = r.id
@@ -709,7 +729,8 @@ func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 		var id, model, by, note, certainty, evidence string
 		var pos *int
 		var kind, name, sum *string
-		if err := rows.Scan(&id, &model, &by, &note, &certainty, &evidence, &pos, &kind, &name, &sum); err != nil {
+		var pubMime string
+		if err := rows.Scan(&id, &model, &by, &note, &certainty, &evidence, &pos, &kind, &name, &sum, &pubMime); err != nil {
 			return nil, err
 		}
 		if n := len(out); n == 0 || out[n-1].Report != id || out[n-1].Model != model {
@@ -718,7 +739,7 @@ func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 		}
 		if pos != nil {
 			t := &out[len(out)-1]
-			t.Files = append(t.Files, BoardTextFile{Position: *pos, Kind: *kind, Name: *name, Path: Rel(*sum)})
+			t.Files = append(t.Files, BoardTextFile{Position: *pos, Kind: *kind, Name: publicName(*name, pubMime), Path: Rel(*sum)})
 		}
 	}
 	return out, rows.Err()

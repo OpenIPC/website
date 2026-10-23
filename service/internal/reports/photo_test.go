@@ -1,0 +1,338 @@
+package reports
+
+import (
+	"bytes"
+	"context"
+	"encoding/binary"
+	"encoding/json"
+	"image"
+	"image/color"
+	jpg "image/jpeg"
+	"image/png"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"testing"
+)
+
+// label is a picture with a fine black-and-white pattern -- a QR code, as
+// far as a mosaic is concerned -- in its top-left quarter.
+func label(w, h int) *image.RGBA {
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			c := color.RGBA{90, 140, 60, 255}
+			if x < w/2 && y < h/2 && (x/3+y/3)%2 == 0 {
+				c = color.RGBA{0, 0, 0, 255}
+			} else if x < w/2 && y < h/2 {
+				c = color.RGBA{255, 255, 255, 255}
+			}
+			img.SetRGBA(x, y, c)
+		}
+	}
+	return img
+}
+
+func encodePNG(t *testing.T, img image.Image) []byte {
+	t.Helper()
+	var b bytes.Buffer
+	if err := png.Encode(&b, img); err != nil {
+		t.Fatal(err)
+	}
+	return b.Bytes()
+}
+
+func encodeJPEG(t *testing.T, img image.Image) []byte {
+	t.Helper()
+	var b bytes.Buffer
+	if err := jpg.Encode(&b, img, &jpg.Options{Quality: 95}); err != nil {
+		t.Fatal(err)
+	}
+	return b.Bytes()
+}
+
+// withOrientation puts an EXIF APP1 segment saying orientation o after the
+// JPEG's SOI, as a phone writes it.
+func withOrientation(src []byte, o uint16) []byte {
+	tiff := []byte{'M', 'M', 0, 42, 0, 0, 0, 8, 0, 1}
+	entry := make([]byte, 12)
+	binary.BigEndian.PutUint16(entry[0:], 0x0112)
+	binary.BigEndian.PutUint16(entry[2:], 3)
+	binary.BigEndian.PutUint32(entry[4:], 1)
+	binary.BigEndian.PutUint16(entry[8:], o)
+	tiff = append(append(tiff, entry...), 0, 0, 0, 0)
+	payload := append([]byte("Exif\x00\x00"), tiff...)
+	seg := []byte{0xFF, 0xE1, 0, 0}
+	binary.BigEndian.PutUint16(seg[2:], uint16(len(payload)+2))
+	out := append([]byte{}, src[:2]...)
+	out = append(append(out, seg...), payload...)
+	return append(out, src[2:]...)
+}
+
+// distinct counts the colours in r.
+func distinct(img image.Image, r image.Rectangle) int {
+	seen := map[color.RGBA]bool{}
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			seen[color.RGBAModel.Convert(img.At(x, y)).(color.RGBA)] = true
+		}
+	}
+	return len(seen)
+}
+
+func TestABlurLeavesNoPatternInItsRegionAndTouchesNothingElse(t *testing.T) {
+	src := encodePNG(t, label(200, 120))
+	out, mt, err := BlurPhoto(src, []Region{{X: 0, Y: 0, W: 0.5, H: 0.5}})
+	if err != nil || mt != "image/png" {
+		t.Fatalf("%v %s", err, mt)
+	}
+	img, err := png.Decode(bytes.NewReader(out))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 100x60 blurred in blocks of 12: 9 by 5 cells, a colour each at most,
+	// and the 3-pixel pattern is gone from every one.
+	if n := distinct(img, image.Rect(0, 0, 100, 60)); n > 45 {
+		t.Errorf("the blurred region still has %d colours", n)
+	}
+	for y := 0; y < 60; y += 12 {
+		for x := 0; x < 96; x += 12 {
+			if n := distinct(img, image.Rect(x, y, x+12, y+12)); n != 1 {
+				t.Fatalf("cell %d,%d has %d colours", x, y, n)
+			}
+		}
+	}
+	if c := color.RGBAModel.Convert(img.At(150, 100)).(color.RGBA); c != (color.RGBA{90, 140, 60, 255}) {
+		t.Errorf("outside the region: %v", c)
+	}
+	for _, bad := range [][]Region{nil, {{X: 0.5, Y: 0.5, W: 0, H: 0.1}}, {{X: -0.1, Y: 0, W: 0.2, H: 0.2}}, {{X: 0, Y: 0, W: 1.5, H: 1}}} {
+		if _, _, err := BlurPhoto(src, bad); err == nil {
+			t.Errorf("regions %v were accepted", bad)
+		}
+	}
+	if _, _, err := BlurPhoto([]byte("<html>"), []Region{{0, 0, 1, 1}}); err == nil {
+		t.Error("not a picture, blurred")
+	}
+}
+
+// A phone's photo is stored sideways with an EXIF orientation; the reviewer
+// drew on it upright, as the browser showed it, so the copy is upright too,
+// and has no EXIF left.
+func TestABlurredJPEGIsUprightAsTheReviewerSawIt(t *testing.T) {
+	src := withOrientation(encodeJPEG(t, label(200, 120)), 6)
+	if o := exifOrientation(src); o != 6 {
+		t.Fatalf("orientation read as %d", o)
+	}
+	out, mt, err := BlurPhoto(src, []Region{{X: 0, Y: 0, W: 0.1, H: 0.1}})
+	if err != nil || mt != "image/jpeg" {
+		t.Fatalf("%v %s", err, mt)
+	}
+	cfg, err := jpg.DecodeConfig(bytes.NewReader(out))
+	if err != nil || cfg.Width != 120 || cfg.Height != 200 {
+		t.Errorf("the copy is %dx%d, not upright 120x200 (%v)", cfg.Width, cfg.Height, err)
+	}
+	if exifOrientation(out) != 1 || bytes.Contains(out, []byte("Exif")) {
+		t.Error("the copy keeps EXIF")
+	}
+	// Turned clockwise, the pattern that was top-left is top-right.
+	img, _ := jpg.Decode(bytes.NewReader(out))
+	if distinct(img, image.Rect(70, 10, 110, 50)) < 20 {
+		t.Error("the pattern is not where an upright picture has it")
+	}
+	if publicName("board.webp", "image/jpeg") != "board.jpg" || publicName("a.JPEG", "image/jpeg") != "a.JPEG" ||
+		publicName("x.png", "image/png") != "x.png" || publicName("noext", "image/png") != "noext.png" {
+		t.Error("publicName")
+	}
+}
+
+func (e *env) reviewPhoto(t *testing.T, id string, pos int, body any) (int, map[string]any) {
+	t.Helper()
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest("POST", "/api/v1/club/review/"+id+"/files/x", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+	e.api.ReviewPhoto(rec, req, id, pos, "Maint (m-1)")
+	var out map[string]any
+	_ = json.Unmarshal(rec.Body.Bytes(), &out)
+	return rec.Code, out
+}
+
+func (e *env) onDisk(t *testing.T, rec *httptest.ResponseRecorder) []byte {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(e.api.Files.Root, strings.TrimPrefix(rec.Header().Get("X-Accel-Redirect"), "/report-files/")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+// The serial label case (r-tcckc6hn) and the photo of a screen (r-rxh32hs4):
+// a reviewer blurs the label in the published copy and keeps the screen
+// photo private. The site serves the blurred copy, its sender and the
+// maintainers still have the original, the screen photo is never served,
+// and nothing of it can be changed but through the reports package.
+func TestAReviewerBlursOnePhotoAndKeepsAnotherPrivate(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	orig := encodePNG(t, label(200, 120))
+	screen := encodeJPEG(t, label(64, 64))
+	rec, out := e.post(t, upload{fields: map[string]string{"channel": "web", "model": "xiongmai-50h20l", "own_photos": "yes"},
+		files: map[string][]byte{"photo": orig, "photo#2": screen}}, "203.0.113.20")
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("upload: %d %s", rec.Code, rec.Body)
+	}
+	id := out["id"].(string)
+	st := &Store{DB: e.pool}
+	r, err := st.Private(ctx, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pos := map[string]int{}
+	for _, f := range r.Files {
+		if !f.Own {
+			t.Errorf("photo %d: the sender's confirmation was not kept", f.Position)
+		}
+		pos[f.Mime] = f.Position
+	}
+	tag, shot := pos["image/png"], pos["image/jpeg"]
+
+	if code, d := e.reviewPhoto(t, id, tag, map[string]any{"action": "blur", "regions": []Region{{X: 0, Y: 0, W: 0.5, H: 0.5}}}); code != 200 || d["public"] != "blurred" {
+		t.Fatalf("blur: %d %v", code, d)
+	}
+	if code, d := e.reviewPhoto(t, id, shot, map[string]any{"action": "private"}); code != 200 || d["public"] != "private" {
+		t.Fatalf("private: %d %v", code, d)
+	}
+	if code, _ := e.reviewPhoto(t, id, tag, map[string]any{"action": "blur"}); code != 400 {
+		t.Errorf("a blur of nothing: %d", code)
+	}
+	if code, _ := e.reviewPhoto(t, id, 9, map[string]any{"action": "private"}); code != 404 {
+		t.Errorf("a file the report has not: %d", code)
+	}
+	if code, _ := e.reviewPhoto(t, id, tag, map[string]any{"action": "delete"}); code != 400 {
+		t.Errorf("an unknown action: %d", code)
+	}
+	if err := st.Link(ctx, id, "xiongmai-50h20l", "test"); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Review(ctx, id, "publish", "test", ""); err != nil {
+		t.Fatal(err)
+	}
+
+	// The site serves the blurred copy, a PNG of the same size, not the original.
+	rec, _ = e.get(t, "/api/v1/reports/"+id+"/files/"+itoa(tag))
+	if rec.Code != 200 || rec.Header().Get("Content-Type") != "image/png" {
+		t.Fatalf("the blurred photo: %d %v", rec.Code, rec.Header())
+	}
+	served := e.onDisk(t, rec)
+	if bytes.Equal(served, orig) {
+		t.Fatal("the original is published")
+	}
+	if img, err := png.Decode(bytes.NewReader(served)); err != nil || img.Bounds().Dx() != 200 || distinct(img, image.Rect(0, 0, 12, 12)) != 1 {
+		t.Errorf("the served copy is not the blurred one: %v", err)
+	}
+	// The screen photo is not served, and the view says it is private.
+	if rec, _ := e.get(t, "/api/v1/reports/"+id+"/files/"+itoa(shot)); rec.Code != 404 {
+		t.Errorf("the private photo was served: %d", rec.Code)
+	}
+	_, v := e.get(t, "/api/v1/reports/"+id)
+	for _, f := range v["files"].([]any) {
+		f := f.(map[string]any)
+		if (f["private"] == true) != (f["name"] == "photo_2.bin") || f["private"] == true && f["url"] != nil {
+			t.Errorf("public view: %v", f)
+		}
+	}
+	// The maintainers and the sender still have both originals.
+	rec = httptest.NewRecorder()
+	e.api.ServeStored(rec, httptest.NewRequest("GET", "/", nil), id, tag)
+	if !bytes.Equal(e.onDisk(t, rec), orig) {
+		t.Error("the original is no longer stored")
+	}
+	rec = httptest.NewRecorder()
+	e.api.ServeStored(rec, httptest.NewRequest("GET", "/", nil), id, shot)
+	if rec.Code != 200 || !bytes.Equal(e.onDisk(t, rec), screen) {
+		t.Errorf("the private photo's original: %d", rec.Code)
+	}
+	rec = httptest.NewRecorder()
+	e.api.ServePublicCopy(rec, httptest.NewRequest("GET", "/", nil), id, tag)
+	if rec.Code != 200 || !bytes.Equal(e.onDisk(t, rec), served) {
+		t.Errorf("the public copy, for the reviewer: %d", rec.Code)
+	}
+	m, err := st.memberReport(ctx, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range m.Files {
+		want := map[int]string{tag: "blurred", shot: "private"}[f.Position]
+		if f.Public != want || !f.Own || (f.Public == "blurred") != (len(f.Regions) == 1 && f.PublicURL != "") {
+			t.Errorf("member file %d: %+v", f.Position, f)
+		}
+	}
+
+	// The boards list the copy the site serves, never the private photo.
+	texts, err := st.PublishedTexts(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(texts) != 1 || len(texts[0].Files) != 1 || texts[0].Files[0].Position != tag ||
+		texts[0].Files[0].Path != strings.TrimPrefix(rec.Header().Get("X-Accel-Redirect"), "/report-files/") {
+		t.Errorf("published texts: %+v", texts)
+	}
+
+	// As sent again: the original is served, and the blurred copy nothing
+	// names any more is gone from the store.
+	blurred := strings.TrimPrefix(rec.Header().Get("X-Accel-Redirect"), "/report-files/")
+	if code, _ := e.reviewPhoto(t, id, tag, map[string]any{"action": "as_sent"}); code != 200 {
+		t.Fatalf("as sent: %d", code)
+	}
+	rec, _ = e.get(t, "/api/v1/reports/"+id+"/files/"+itoa(tag))
+	if !bytes.Equal(e.onDisk(t, rec), orig) {
+		t.Error("as sent: not the original")
+	}
+	if _, err := os.Stat(filepath.Join(e.api.Files.Root, blurred)); !os.IsNotExist(err) {
+		t.Errorf("the replaced copy stays: %v", err)
+	}
+
+	// The guard: nothing else changes a file's public copy or the log.
+	for _, sql := range []string{
+		`UPDATE report_files SET public_sha256 = sha256 WHERE report_id = '` + id + `'`,
+		`UPDATE report_photo_reviews SET action = 'as_sent'`,
+		`DELETE FROM report_photo_reviews`,
+		`TRUNCATE report_photo_reviews`,
+	} {
+		if _, err := e.pool.Exec(ctx, sql); err == nil || !strings.Contains(err.Error(), "never changed") {
+			t.Errorf("%s: %v", sql, err)
+		}
+	}
+	var n int
+	if err := e.pool.QueryRow(ctx, `SELECT count(*) FROM report_photo_reviews WHERE report_id = $1`, id).Scan(&n); err != nil || n != 3 {
+		t.Errorf("the log has %d decisions: %v", n, err)
+	}
+}
+
+// A photo sent without the confirmation -- by ipctool, an agent, or an old
+// page -- is stored as not confirmed, and a blur is a photo's only.
+func TestAPhotoWithoutTheConfirmationSaysSo(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	rec, out := e.post(t, upload{fields: map[string]string{"channel": "agent", "model": "xiongmai-50h20l"},
+		files: map[string][]byte{"photo": jpeg, "boot_log": []byte("U-Boot 2010.06\n")}}, "203.0.113.21")
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	id := out["id"].(string)
+	r, _ := (&Store{DB: e.pool}).Private(ctx, id)
+	for _, f := range r.Files {
+		if f.Own {
+			t.Errorf("%s: confirmed without being asked", f.Kind)
+		}
+		if f.Kind == "boot_log" {
+			if code, _ := e.reviewPhoto(t, id, f.Position, map[string]any{"action": "private"}); code != 400 {
+				t.Errorf("a boot log kept private as a photo: %d", code)
+			}
+		}
+	}
+}
+
+func itoa(n int) string { return strconv.Itoa(n) }

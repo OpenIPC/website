@@ -312,6 +312,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 			a.fail(w, "a file", err)
 			return
 		}
+		f.Own = f.Kind == "photo" && in.fields["own_photos"] == "yes"
 		rep.Files = append(rep.Files, f)
 	}
 	err = st.Insert(ctx, rep, DailyPerClient, func() error {
@@ -395,7 +396,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 }
 
 var formFields = map[string]bool{"consent": true, "channel": true, "tool": true, "note": true, "model": true,
-	"maker": true, "board": true, "soc": true, "club": true, "answers": true}
+	"maker": true, "board": true, "soc": true, "club": true, "answers": true, "own_photos": true}
 
 // proposalOf is the camera a send proposes, nil when it proposes none: the
 // send form's, for a board the catalogue does not have, with a photo of it.
@@ -551,7 +552,7 @@ func (a *API) read(r *http.Request, edit bool) (*received, int, error) {
 				}
 				in.removes = append(in.removes, pos)
 				continue
-			case p.FileName() == "" && name != "note" && name != "maker" && name != "board" && name != "soc" && name != "consent",
+			case p.FileName() == "" && name != "note" && name != "maker" && name != "board" && name != "soc" && name != "consent" && name != "own_photos",
 				name == "yaml":
 				return in, http.StatusBadRequest, fmt.Errorf("%q cannot be edited: an edit changes the note, the camera proposed, adds or removes photos and text files, and adds a flash dump to a report without one", name)
 			}

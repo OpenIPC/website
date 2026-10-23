@@ -252,12 +252,22 @@
   {
     "role": "web",
     "method": "GET",
+    "path": "/api/v1/club/reports/{id}/files/{position}/public"
+  },
+  {
+    "role": "web",
+    "method": "GET",
     "path": "/api/v1/club/review"
   },
   {
     "role": "web",
     "method": "POST",
     "path": "/api/v1/club/review/{id}"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/review/{id}/files/{position}"
   },
   {
     "role": "web",

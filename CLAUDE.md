@@ -163,7 +163,12 @@ restores the image but never the schema, so keep migrations additive.
   content-addressed and written once under `REPORTS_ROOT`
   (`/srv/www/shared/owner-reports` -- not `shared/reports`, which is the
   analytics'), and `internal/boards/survival_test.go` runs every importer
-  over stored reports.
+  over stored reports. A photo is published as sent unless a reviewer
+  blurs regions of its public copy (made server-side from the original, a
+  new content-addressed file) or keeps it private as not the sender's unit
+  (`report_photo_reviews`, migration 038); the send forms flag a QR code or
+  barcode in a photo with the browser's BarcodeDetector, blur in a canvas,
+  and ask the sender to confirm the photos are their own (`own_photo`).
 - `internal/club` -- **the OpenIPC Club**: signing in with Telegram (the bot
   takes Start with a code the asking browser shows, then tells the member
   what happened to what they sent), GitHub (a member of `CLUB_MAINTAINER_ORG`

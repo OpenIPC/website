@@ -9,6 +9,7 @@
 import { useState } from 'preact/hooks';
 import type { BoardsT } from '../../lib/boards-i18n';
 import { editReport, type MemberReport } from '../../lib/club';
+import PhotoChecks from './PhotoChecks';
 
 type AddKind = 'photo' | 'boot_log' | 'uboot_env' | 'backup';
 const ADD_KINDS: AddKind[] = ['photo', 'boot_log', 'uboot_env', 'backup'];
@@ -25,6 +26,7 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
   const [kind, setKind] = useState<AddKind>('photo');
   const [add, setAdd] = useState<File[]>([]);
   const [publicDump, setPublicDump] = useState(false);
+  const [own, setOwn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const decided = report.status === 'published' || report.status === 'rejected';
@@ -38,6 +40,11 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
   };
   const save = (e: Event) => {
     e.preventDefault();
+    const photos = kind === 'photo' && add.length > 0;
+    if (photos && !own) {
+      setError(t('club.photo_own_required'));
+      return;
+    }
     const form = new FormData();
     if (note.trim() !== (report.note ?? '')) form.set('note', note.trim());
     if (report.proposal && (maker.trim() !== report.proposal.maker || board.trim() !== report.proposal.board || soc.trim() !== (report.proposal.soc ?? ''))) {
@@ -48,6 +55,7 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
     for (const pos of remove) form.append('remove', String(pos));
     for (const f of add) form.append(kind, f, f.name);
     if (kind === 'backup' && add.length > 0) form.set('consent', publicDump ? 'public' : 'private');
+    if (photos) form.set('own_photos', 'yes');
     setBusy(true);
     setError(null);
     editReport(report.id, form)
@@ -99,6 +107,7 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
             accept={kind === 'photo' ? 'image/jpeg,image/png,image/webp' : kind === 'backup' ? '' : '.txt,.log,text/plain'}
             onChange={(e) => setAdd([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
         </div>
+        {kind === 'photo' && <PhotoChecks files={add} onFiles={setAdd} own={own} onOwn={setOwn} t={t} />}
         {(kind === 'boot_log' || kind === 'uboot_env') && <p class="m-0 text-[12px] text-body-secondary">{t(`club.send_hint_${kind}`)}</p>}
         {kind === 'backup' && (
           <>

@@ -76,26 +76,28 @@ func (a *API) now() time.Time {
 
 func (a *API) Handlers() map[string]http.Handler {
 	h := map[string]http.Handler{
-		"GET /api/v1/club/me":                            http.HandlerFunc(a.me),
-		"POST /api/v1/club/logout":                       a.post(a.logout),
-		"POST /api/v1/club/quiet":                        a.post(a.quiet),
-		"GET /api/v1/club/login":                         http.HandlerFunc(a.poll),
-		"GET /api/v1/club/finish":                        http.HandlerFunc(a.finish),
-		"GET /api/v1/club/finish/who":                    http.HandlerFunc(a.finishWho),
-		"POST /api/v1/club/finish":                       a.post(a.finishConfirmed),
-		"POST /api/v1/club/name":                         a.post(a.rename),
-		"POST /api/v1/club/telegram":                     a.post(a.telegramStart),
-		"POST /api/v1/club/telegram/webhook":             http.HandlerFunc(a.telegramWebhook),
-		"POST /api/v1/club/email":                        a.post(a.emailStart),
-		"GET /api/v1/club/github":                        http.HandlerFunc(a.githubStart),
-		"GET /api/v1/club/github/callback":               http.HandlerFunc(a.githubCallback),
-		"POST /api/v1/club/reports":                      a.post(a.send),
-		"GET /api/v1/club/reports":                       http.HandlerFunc(a.mine),
-		"POST /api/v1/club/reports/code":                 a.post(a.reportCode),
-		"POST /api/v1/club/reports/{id}/edit":            a.post(a.editReport),
-		"GET /api/v1/club/reports/{id}/files/{position}": http.HandlerFunc(a.file),
-		"GET /api/v1/club/review":                        http.HandlerFunc(a.queue),
-		"POST /api/v1/club/review/{id}":                  a.post(a.decide),
+		"GET /api/v1/club/me":                                   http.HandlerFunc(a.me),
+		"POST /api/v1/club/logout":                              a.post(a.logout),
+		"POST /api/v1/club/quiet":                               a.post(a.quiet),
+		"GET /api/v1/club/login":                                http.HandlerFunc(a.poll),
+		"GET /api/v1/club/finish":                               http.HandlerFunc(a.finish),
+		"GET /api/v1/club/finish/who":                           http.HandlerFunc(a.finishWho),
+		"POST /api/v1/club/finish":                              a.post(a.finishConfirmed),
+		"POST /api/v1/club/name":                                a.post(a.rename),
+		"POST /api/v1/club/telegram":                            a.post(a.telegramStart),
+		"POST /api/v1/club/telegram/webhook":                    http.HandlerFunc(a.telegramWebhook),
+		"POST /api/v1/club/email":                               a.post(a.emailStart),
+		"GET /api/v1/club/github":                               http.HandlerFunc(a.githubStart),
+		"GET /api/v1/club/github/callback":                      http.HandlerFunc(a.githubCallback),
+		"POST /api/v1/club/reports":                             a.post(a.send),
+		"GET /api/v1/club/reports":                              http.HandlerFunc(a.mine),
+		"POST /api/v1/club/reports/code":                        a.post(a.reportCode),
+		"POST /api/v1/club/reports/{id}/edit":                   a.post(a.editReport),
+		"GET /api/v1/club/reports/{id}/files/{position}":        http.HandlerFunc(a.file),
+		"GET /api/v1/club/reports/{id}/files/{position}/public": http.HandlerFunc(a.publicCopy),
+		"GET /api/v1/club/review":                               http.HandlerFunc(a.queue),
+		"POST /api/v1/club/review/{id}":                         a.post(a.decide),
+		"POST /api/v1/club/review/{id}/files/{position}":        a.post(a.reviewPhoto),
 	}
 	if a.Wall != nil {
 		for k, v := range a.wallHandlers() {
@@ -599,29 +601,72 @@ func (a *API) mine(w http.ResponseWriter, r *http.Request) {
 // report -- its private backup too -- for the member who sent it and for
 // the maintainers. Anyone else gets the 404 a missing file gets.
 func (a *API) file(w http.ResponseWriter, r *http.Request) {
-	m, ok := a.signedIn(w, r)
+	m, id, pos, ok := a.reportFile(w, r)
 	if !ok {
 		return
+	}
+	a.Log.Info("club: file sent", "report", id, "position", pos, "member", m.ID, "maintainer", m.Maintainer)
+	a.Reports.ServeStored(w, r, id, pos)
+}
+
+// publicCopy is GET /api/v1/club/reports/{id}/files/{position}/public: the
+// copy of a photo a reviewer blurred, which is what is published, for the
+// same people as file.
+func (a *API) publicCopy(w http.ResponseWriter, r *http.Request) {
+	if _, id, pos, ok := a.reportFile(w, r); ok {
+		a.Reports.ServePublicCopy(w, r, id, pos)
+	}
+}
+
+// reportFile reads a report file's address for its sender or a maintainer,
+// and answers anyone else with the 404 a missing file gets.
+func (a *API) reportFile(w http.ResponseWriter, r *http.Request) (*Member, string, int, bool) {
+	m, ok := a.signedIn(w, r)
+	if !ok {
+		return nil, "", 0, false
 	}
 	id := r.PathValue("id")
 	pos, err := strconv.Atoi(r.PathValue("position"))
 	if err != nil || pos < 1 {
 		http.NotFound(w, r)
-		return
+		return nil, "", 0, false
 	}
 	if !m.Maintainer {
 		owner, err := a.Reports.Store().Owner(r.Context(), id)
 		if err != nil {
 			a.fail(w, "the report", err)
-			return
+			return nil, "", 0, false
 		}
 		if owner != m.ID {
 			http.NotFound(w, r)
-			return
+			return nil, "", 0, false
 		}
 	}
-	a.Log.Info("club: file sent", "report", id, "position", pos, "member", m.ID, "maintainer", m.Maintainer)
-	a.Reports.ServeStored(w, r, id, pos)
+	return m, id, pos, true
+}
+
+// reviewPhoto is POST /api/v1/club/review/{id}/files/{position}: a
+// maintainer blurring regions of a photo's public copy, keeping a photo that
+// is not the sender's unit private, or publishing it as sent again
+// (reports.API.ReviewPhoto). A published report's boards take the change.
+func (a *API) reviewPhoto(w http.ResponseWriter, r *http.Request) {
+	m, ok := a.signedIn(w, r)
+	if !ok {
+		return
+	}
+	if !m.Maintainer {
+		a.refuse(w, http.StatusForbidden, "only OpenIPC's maintainers review")
+		return
+	}
+	pos, err := strconv.Atoi(r.PathValue("position"))
+	if err != nil || pos < 1 {
+		a.refuse(w, http.StatusNotFound, "the report has no such file")
+		return
+	}
+	by := m.Name + " (" + m.ID + ")"
+	if a.Reports.ReviewPhoto(w, r, r.PathValue("id"), pos, by) && a.OnReviewed != nil {
+		a.OnReviewed(context.WithoutCancel(r.Context()))
+	}
 }
 
 // queue is GET /api/v1/club/review: the maintainers' review queue.

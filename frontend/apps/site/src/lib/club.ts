@@ -8,6 +8,7 @@
  * /api/v1/club/me. To spare every visitor that request, a browser that has
  * signed in remembers so in localStorage, and only then does the header ask.
  */
+import type { Box } from './photo-check';
 import type { ReportFile, ReportState } from './reports';
 
 export interface Identity { provider: 'telegram' | 'github' | 'email'; handle: string; chat?: boolean }
@@ -41,7 +42,17 @@ export interface MemberFile {
   private?: boolean;
   url: string;
   points: number;
+  /** A photo's: its sender said it is of their own camera, taken by them. */
+  own?: boolean;
+  /** A photo's: what is published -- as sent, a blurred copy, or nothing. */
+  public?: PhotoPublic;
+  /** The blurred copy, for its sender and the maintainers. */
+  public_url?: string;
+  /** The regions the blurred copy has, as the reviewer drew them. */
+  regions?: Box[];
 }
+
+export type PhotoPublic = 'as_sent' | 'blurred' | 'private';
 
 export interface BoardRef { id: string; model: string; manufacturer: string }
 
@@ -224,6 +235,14 @@ export const decide = (id: string, decision: 'publish' | 'reject', models: strin
     // A confirmed link with nothing to add is the service's default, left unsaid.
     ...(basis && (basis.certainty !== 'confirmed' || basis.evidence) ? { certainty: basis.certainty, ...(basis.evidence ? { evidence: basis.evidence } : {}) } : {}),
   });
+
+/**
+ * A maintainer's word on one photo (service reports.ReviewPhoto): blur the
+ * regions in its public copy, keep it private (not the sender's unit), or
+ * publish it as sent again.
+ */
+export const reviewPhoto = (id: string, position: number, action: 'blur' | 'private' | 'as_sent', regions?: Box[]) =>
+  post<{ public: PhotoPublic }>(`/review/${encodeURIComponent(id)}/files/${position}`, { action, ...(regions ? { regions } : {}) });
 
 /** A code that makes `ipctool upload --note <code>` the member's report. */
 export interface ReportCode { code: string; expires_at: string; joins?: string }

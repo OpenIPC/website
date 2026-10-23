@@ -99,7 +99,7 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 		v.Facts = &f
 	}
 	rows, err := s.DB.Query(ctx, `
-		SELECT position, kind, name, bytes, public_sha256, public_bytes
+		SELECT position, kind, name, bytes, public_sha256, public_bytes, coalesce(public_mime, '')
 		FROM report_files WHERE report_id = $1 ORDER BY position`, id)
 	if err != nil {
 		return nil, err
@@ -109,11 +109,13 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 		var file ViewFile
 		var pub *string
 		var pubBytes *int64
-		if err := rows.Scan(&pos, &file.Kind, &file.Name, &file.Bytes, &pub, &pubBytes); err != nil {
+		var pubMime string
+		if err := rows.Scan(&pos, &file.Kind, &file.Name, &file.Bytes, &pub, &pubBytes, &pubMime); err != nil {
 			return nil, err
 		}
 		file.Private = pub == nil
 		if published && pub != nil {
+			file.Name = publicName(file.Name, pubMime)
 			file.SHA256, file.Bytes = *pub, *pubBytes
 			file.URL = "/api/v1/reports/" + id + "/files/" + strconv.Itoa(pos)
 		}
@@ -240,14 +242,20 @@ func (s *Store) Served(ctx context.Context, id string, position int) (sum, name,
 		return
 	}
 	var pub *string
-	err = s.DB.QueryRow(ctx, `SELECT public_sha256, name, mime, kind FROM report_files WHERE report_id = $1 AND position = $2`,
-		id, position).Scan(&pub, &name, &mime, &kind)
+	var pubMime string
+	err = s.DB.QueryRow(ctx, `SELECT public_sha256, name, mime, coalesce(public_mime, ''), kind FROM report_files WHERE report_id = $1 AND position = $2`,
+		id, position).Scan(&pub, &name, &mime, &pubMime, &kind)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && pub == nil) {
 		err = ErrNotFound
 		return
 	}
 	if err == nil {
 		sum = *pub
+	}
+	// A photo's blurred copy may be another type than the original: it is
+	// served as what it is.
+	if pubMime != "" {
+		mime, name = pubMime, publicName(name, pubMime)
 	}
 	return
 }
@@ -310,7 +318,8 @@ func (s *Store) Private(ctx context.Context, id string) (*Report, error) {
 	}
 	_ = json.Unmarshal(hashes, &r.IDHashes)
 	rows, err := s.DB.Query(ctx, `
-		SELECT position, kind, name, mime, sha256, bytes, coalesce(public_sha256, ''), coalesce(public_bytes, 0)
+		SELECT position, kind, name, mime, sha256, bytes, coalesce(public_sha256, ''), coalesce(public_bytes, 0),
+		  coalesce(own_photo, false), coalesce(public_mime, '')
 		FROM report_files WHERE report_id = $1 ORDER BY position`, id)
 	if err != nil {
 		return nil, err

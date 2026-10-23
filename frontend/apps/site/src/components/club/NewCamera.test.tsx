@@ -39,6 +39,7 @@ test('the form sends the maker, the marking and the photos, and no board id', as
   fireEvent.input(input(container, 'Boot log'), { target: { value: 'U-Boot 2015.01\n' } });
   const photos = [new File(['a'], 'front.jpg', { type: 'image/jpeg' }), new File(['b'], 'back.jpg', { type: 'image/jpeg' })];
   fireEvent.change(container.querySelector('input[type=file]')!, { target: { files: photos } });
+  fireEvent.click(getByText(/These photos are of my own camera/));
   fireEvent.submit(container.querySelector('form')!);
   await waitFor(() => expect(getByText(/Received as r-abcd2345/)).toBeTruthy());
   const f = sent[0];
@@ -51,6 +52,7 @@ test('the form sends the maker, the marking and the photos, and no board id', as
   expect(f.get('backup')).toBeNull();
   expect(f.get('consent')).toBeNull();
   expect(f.getAll('photo').map((p) => (p as File).name)).toEqual(['front.jpg', 'back.jpg']);
+  expect(f.get('own_photos')).toBe('yes');
   expect(await (f.get('boot_log') as File).text()).toBe('U-Boot 2015.01\n');
 });
 
@@ -74,6 +76,7 @@ test('a dump read with a programmer goes with the photos, private unless ticked'
     fireEvent.change(photosIn, { target: { files: [new File(['a'], 'front.jpg', { type: 'image/jpeg' })] } });
     fireEvent.change(dumpIn, { target: { files: [new File([new Uint8Array(16)], 'w25q64.bin')] } });
     if (tick) fireEvent.click(getByText(/Publish the dump with the report/));
+    fireEvent.click(getByText(/These photos are of my own camera/));
     fireEvent.submit(container.querySelector('form')!);
     await waitFor(() => expect(getByText(/Received as/)).toBeTruthy());
     expect((sent[0].get('backup') as File).name).toBe('w25q64.bin');

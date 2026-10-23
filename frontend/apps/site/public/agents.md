@@ -125,7 +125,8 @@ board (`model`, or `maker` and `board` with a photo), or answers another
 | `answers` | the id of a report waiting for review that this one answers (step 5): photos, a log or a note need no board then | |
 | `maker`, `board`, `soc` | a camera the catalogue does not have: its maker, its board's marking or model name, and its SoC if known. Needs at least one `photo`. | 80, 80, 40 chars |
 | `consent` | `private` (default: maintainers only) or `public` (published with the report) | |
-| `photo` (file, repeatable) | JPEG, PNG or WebP | 20 MB each |
+| `photo` (file, repeatable) | JPEG, PNG or WebP. Published as sent: blur a label with a serial number or a QR code first. | 20 MB each |
+| `own_photos` | `yes` only when the owner tells you the photos are of their own camera and that they took them (not a picture found elsewhere, nor a screen showing one); the reviewer sees whether it was said | |
 | `boot_log`, `uboot_env`, `note` (file, repeatable) | text | 4 MB each |
 | `document` (file) | PDF | 20 MB |
 | `channel` | `agent` | |

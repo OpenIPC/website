@@ -14,6 +14,7 @@ import { useBoardsTranslations } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { STARS, fetchMe, remembered, sendReport, type Member, type Sent } from '../../lib/club';
 import IpctoolCode from './IpctoolCode';
+import PhotoChecks from './PhotoChecks';
 
 const field = 'rounded-md border border-hairline px-2.5 py-1.5 text-sm text-body';
 const area = 'min-h-[72px] w-full resize-y rounded-md border border-hairline bg-surface-alt p-2 font-mono text-[12.5px] leading-snug text-body';
@@ -26,6 +27,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
   const [photos, setPhotos] = useState<File[]>([]);
   const [dump, setDump] = useState<File | null>(null);
   const [publicDump, setPublicDump] = useState(false);
+  const [own, setOwn] = useState(false);
   const [ipctool, setIpctool] = useState('');
   const [bootLog, setBootLog] = useState('');
   const [note, setNote] = useState('');
@@ -42,6 +44,10 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
       setState({ s: 'error', error: t('club.new_need') });
       return;
     }
+    if (!own) {
+      setState({ s: 'error', error: t('club.photo_own_required') });
+      return;
+    }
     const form = new FormData();
     form.set('channel', 'web');
     form.set('maker', maker.trim());
@@ -51,6 +57,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
     if (ipctool.trim()) form.set('yaml', ipctool);
     if (bootLog.trim()) form.append('boot_log', new Blob([bootLog], { type: 'text/plain' }), 'boot_log.txt');
     for (const f of photos) form.append('photo', f, f.name);
+    form.set('own_photos', 'yes');
     if (dump) {
       form.append('backup', dump, dump.name);
       form.set('consent', publicDump ? 'public' : 'private');
@@ -103,6 +110,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
           onChange={(e) => setPhotos([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
         <span class="text-[12px]">{t('club.new_photos_marking')}</span>
       </label>
+      <PhotoChecks files={photos} onFiles={setPhotos} own={own} onOwn={setOwn} t={t} />
       <div class="grid gap-1">
         <label class="grid gap-1 text-[12.5px] text-body-secondary">{t('club.send_dump')}
           <input type="file" onChange={(e) => setDump((e.target as HTMLInputElement).files?.[0] ?? null)} class="text-sm text-body" />
