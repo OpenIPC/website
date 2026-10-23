@@ -362,7 +362,7 @@ ru:
       proj_python_anjoy: Библиотека и CLI для того, что стоковые камеры Anjoy делают помимо ONVIF и RTSP.
       proj_python_dhip: Клиент Dahua DHIP — бинарного RPC камер Dahua и их OEM-клонов — на чистой стандартной библиотеке Python.
       proj_python_dvr: Настройка множества камер с протоколом XMeye/NETsurveillance из Python.
-      proj_qemu: Полный эмулятор IP-камер HiSilicon на QEMU — разрабатывайте и тестируйте прошивку без железа на столе.
+      proj_qemu: Эмулятор процессоров HiSilicon, Goke, Xiongmai, Anyka, SigmaStar и Novatek для камер, регистраторов и ТВ-приставок на QEMU — разрабатывайте и тестируйте прошивку без железа на столе.
       proj_raw_editor: "Проявляет в браузере сырой DNG, который отдаёт камера: для диагностики и настройки сенсора."
       proj_rnd_player: 'Плеер для медиа-инженеров: разбирайте потоки так, как нужно разработчику.'
       proj_safari_qa: "Пара для Safari: декодирование HEVC через VideoToolbox на macOS-раннере GitHub, без Mac на столе."

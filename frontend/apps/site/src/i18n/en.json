@@ -335,7 +335,7 @@
       "proj_python_anjoy": "A library and CLI for what stock Anjoy cameras do outside ONVIF and RTSP.",
       "proj_python_dhip": "A pure-stdlib Python client for Dahua DHIP, the binary RPC of Dahua and Dahua-derived cameras.",
       "proj_python_dvr": "Configures the many cameras that speak the XMeye/NETsurveillance protocol, from Python.",
-      "proj_qemu": "A full HiSilicon IP camera emulator on QEMU — develop and test firmware without hardware on your desk.",
+      "proj_qemu": "A QEMU emulator of HiSilicon, Goke, Xiongmai, Anyka, SigmaStar and Novatek camera, DVR and set-top box SoCs — develop and test firmware without hardware on your desk.",
       "proj_raw_editor": "Develops the raw DNG a camera serves, in the browser: for sensor diagnostics and tuning.",
       "proj_rnd_player": "A player built for media engineers: inspect streams the way a developer needs to.",
       "proj_safari_qa": "The Safari counterpart: VideoToolbox HEVC decoding on a GitHub-hosted macOS runner, with no Mac on anyone's desk.",
