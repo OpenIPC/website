@@ -74,6 +74,11 @@ type File struct {
 	Bytes        int64  `json:"bytes"`
 	PublicSHA256 string `json:"sha256,omitempty"`
 	PublicBytes  int64  `json:"-"`
+	// Own: a photo its sender said is of their own camera, taken by them
+	// (migration 038).
+	Own bool `json:"own,omitempty"`
+	// PublicMime: the public copy's type when it is not the original's.
+	PublicMime string `json:"-"`
 }
 
 // Key is the database's report key (migration 016).
@@ -187,9 +192,9 @@ func (s *Store) Insert(ctx context.Context, r *Report, limit int, place func() e
 				pub, pubBytes = &r.Files[i].PublicSHA256, &r.Files[i].PublicBytes
 			}
 			if _, err := tx.Exec(ctx, `
-				INSERT INTO report_files (report_id, position, kind, name, mime, sha256, bytes, public_sha256, public_bytes)
-				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-				r.ID, i+1, file.Kind, file.Name, file.Mime, file.SHA256, file.Bytes, pub, pubBytes); err != nil {
+				INSERT INTO report_files (report_id, position, kind, name, mime, sha256, bytes, public_sha256, public_bytes, own_photo)
+				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+				r.ID, i+1, file.Kind, file.Name, file.Mime, file.SHA256, file.Bytes, pub, pubBytes, ownPhoto(file)); err != nil {
 				return err
 			}
 			r.Files[i].Position = i + 1

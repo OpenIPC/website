@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -89,7 +88,9 @@ func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logge
 			if f.Kind == "photo" {
 				kind = boards.ReportPhotoKind(f.Name)
 			}
-			c.Files = append(c.Files, boards.ContributedFile{Kind: kind, File: fmt.Sprintf("%d-%s", f.Position, f.Name), Source: f.Path})
+			// A photo a reviewer blurred is named after its copy: the board's
+			// files are cached for a month (BoardName).
+			c.Files = append(c.Files, boards.ContributedFile{Kind: kind, File: f.BoardName(), Source: f.Path})
 		}
 		list = append(list, c)
 	}

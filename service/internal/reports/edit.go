@@ -244,9 +244,9 @@ func (s *Store) Edit(ctx context.Context, id, member, by string, c Change, noteP
 					pub, pubBytes = &c.Add[i].PublicSHA256, &c.Add[i].PublicBytes
 				}
 				if _, err := tx.Exec(ctx, `
-					INSERT INTO report_files (report_id, position, kind, name, mime, sha256, bytes, public_sha256, public_bytes)
-					VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-					id, next+i, f.Kind, f.Name, f.Mime, f.SHA256, f.Bytes, pub, pubBytes); err != nil {
+					INSERT INTO report_files (report_id, position, kind, name, mime, sha256, bytes, public_sha256, public_bytes, own_photo)
+					VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+					id, next+i, f.Kind, f.Name, f.Mime, f.SHA256, f.Bytes, pub, pubBytes, ownPhoto(f)); err != nil {
 					return err
 				}
 				kinds[f.Kind]++
@@ -421,6 +421,7 @@ func (a *API) Edit(w http.ResponseWriter, r *http.Request, member, by, id string
 			a.fail(w, "a file", err)
 			return false
 		}
+		f.Own = f.Kind == "photo" && in.fields["own_photos"] == "yes"
 		c.Add = append(c.Add, f)
 	}
 	res, err := st.Edit(ctx, id, member, by, c, func(note string) string { return Redact(note, facts, key) }, func() error {

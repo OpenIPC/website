@@ -312,6 +312,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 			a.fail(w, "a file", err)
 			return
 		}
+		f.Own = f.Kind == "photo" && in.fields["own_photos"] == "yes"
 		rep.Files = append(rep.Files, f)
 	}
 	err = st.Insert(ctx, rep, DailyPerClient, func() error {
@@ -395,7 +396,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 }
 
 var formFields = map[string]bool{"consent": true, "channel": true, "tool": true, "note": true, "model": true,
-	"maker": true, "board": true, "soc": true, "club": true, "answers": true}
+	"maker": true, "board": true, "soc": true, "club": true, "answers": true, "own_photos": true}
 
 // proposalOf is the camera a send proposes, nil when it proposes none: the
 // send form's, for a board the catalogue does not have, with a photo of it.
@@ -551,7 +552,7 @@ func (a *API) read(r *http.Request, edit bool) (*received, int, error) {
 				}
 				in.removes = append(in.removes, pos)
 				continue
-			case p.FileName() == "" && name != "note" && name != "maker" && name != "board" && name != "soc" && name != "consent",
+			case p.FileName() == "" && name != "note" && name != "maker" && name != "board" && name != "soc" && name != "consent" && name != "own_photos",
 				name == "yaml":
 				return in, http.StatusBadRequest, fmt.Errorf("%q cannot be edited: an edit changes the note, the camera proposed, adds or removes photos and text files, and adds a flash dump to a report without one", name)
 			}
@@ -693,6 +694,13 @@ func (a *API) forModel(w http.ResponseWriter, r *http.Request) {
 // file is GET /api/v1/reports/{id}/files/{position}: a published report's
 // file, handed to nginx to send. A private backup, or any file of an
 // unpublished report, is a 404 -- the same as one that does not exist.
+//
+// The view links each file with ?v= and the start of its public copy's
+// sha256 (VersionOf), so the address changes with the copy: a photo a
+// reviewer blurs or hides after publishing is never answered from a cache
+// holding the original. Such an address is the bytes it names for good and
+// is cached for a year; one whose copy has since changed is a 404, and one
+// without ?v= is cached for minutes.
 func (a *API) file(w http.ResponseWriter, r *http.Request) {
 	pos, err := strconv.Atoi(r.PathValue("position"))
 	if err != nil || pos < 1 {
@@ -708,7 +716,24 @@ func (a *API) file(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "the file", err)
 		return
 	}
-	a.send(w, r.PathValue("id"), sum, name, mt, kind, "public, max-age=86400")
+	cache := "public, max-age=300"
+	if v := r.URL.Query().Get("v"); v != "" {
+		if v != VersionOf(sum) {
+			w.Header().Set("Cache-Control", "no-store")
+			http.NotFound(w, r)
+			return
+		}
+		cache = "public, max-age=31536000, immutable"
+	}
+	a.send(w, r.PathValue("id"), sum, name, mt, kind, cache)
+}
+
+// VersionOf is the part of a public copy's sha256 its address carries.
+func VersionOf(sum string) string {
+	if len(sum) < 12 {
+		return sum
+	}
+	return sum[:12]
 }
 
 // ServeStored is any file of a report -- a private backup too, as it was
