@@ -197,9 +197,14 @@ export const fetchMine = () => call<{ member: Member; reports: MemberReport[] }>
 
 export const fetchQueue = (status = 'pending') => call<{ reports: Queued[] }>(`/review?${new URLSearchParams({ status })}`);
 
-export const decide = (id: string, decision: 'publish' | 'reject', models: string[], note: string, newBoard?: NewBoard, revision?: number) =>
+/** How sure a link a decision makes is, and why (the service's reports.Basis). */
+export interface LinkBasis { certainty: 'confirmed' | 'probable' | 'guess'; evidence?: string }
+
+export const decide = (id: string, decision: 'publish' | 'reject', models: string[], note: string, newBoard?: NewBoard, revision?: number, basis?: LinkBasis) =>
   post<{ points: number; total: number; board?: string }>(`/review/${encodeURIComponent(id)}`, {
     decision, models, note, ...(newBoard ? { new_board: newBoard } : {}), ...(revision !== undefined ? { revision } : {}),
+    // A confirmed link with nothing to add is the service's default, left unsaid.
+    ...(basis && (basis.certainty !== 'confirmed' || basis.evidence) ? { certainty: basis.certainty, ...(basis.evidence ? { evidence: basis.evidence } : {}) } : {}),
   });
 
 /** A code that makes `ipctool upload --note <code>` the member's report. */

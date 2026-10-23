@@ -46,6 +46,11 @@ type Contribution struct {
 	FlashMB   int               `yaml:"flash_mb"`
 	Note      string            `yaml:"note"`
 	Files     []ContributedFile `yaml:"files"`
+	// How sure an owner report's link to Model is, and why (migration
+	// 036): a report's unit only. Empty for contributions.yml's, whose
+	// board is the reviewer's in the repository.
+	LinkCertainty string `yaml:"-"`
+	LinkEvidence  string `yaml:"-"`
 }
 
 type ContributedFile struct {
@@ -257,9 +262,11 @@ func (im *Importer) applyOne(ctx context.Context, fsys fs.FS, c Contribution, u 
 			flash = &c.FlashMB
 		}
 		if _, err := tx.Exec(ctx, `
-			INSERT INTO board_units (id, model_id, sensor, flash_chip, flash_size_mb, source, source_ref, contributed_by, notes, position)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-			u.ID, c.Model, null(c.Sensor), null(c.FlashChip), flash, Contributors, u.SourceRef, c.By, null(c.Note), u.Position); err != nil {
+			INSERT INTO board_units (id, model_id, sensor, flash_chip, flash_size_mb, source, source_ref, contributed_by, notes, position,
+			  link_certainty, link_evidence)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+			u.ID, c.Model, null(c.Sensor), null(c.FlashChip), flash, Contributors, u.SourceRef, c.By, null(c.Note), u.Position,
+			null(c.LinkCertainty), c.LinkEvidence); err != nil {
 			return err
 		}
 		return insertArtifacts(ctx, tx, u.ID, arts)
@@ -315,14 +322,15 @@ func (im *Importer) prune(ctx context.Context, keep []string, fromReports bool) 
 // unchanged says whether the unit is stored exactly as the entry describes
 // it: the same fields, and the same files in the same order, byte for byte.
 func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u *Unit) (bool, error) {
-	var model, ref, by string
-	var sensor, chip, note *string
+	var model, ref, by, evidence string
+	var sensor, chip, note, certainty *string
 	var flash *int
 	var position int
 	err := im.Pool.QueryRow(ctx, `
-		SELECT model_id, source_ref, coalesce(contributed_by, ''), sensor, flash_chip, flash_size_mb, notes, position
+		SELECT model_id, source_ref, coalesce(contributed_by, ''), sensor, flash_chip, flash_size_mb, notes, position,
+		  link_certainty, link_evidence
 		FROM board_units WHERE id = $1 AND source = $2`, c.Unit, Contributors).
-		Scan(&model, &ref, &by, &sensor, &chip, &flash, &note, &position)
+		Scan(&model, &ref, &by, &sensor, &chip, &flash, &note, &position, &certainty, &evidence)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
@@ -330,7 +338,8 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 		return false, err
 	}
 	if model != c.Model || ref != u.SourceRef || by != c.By || deref(sensor) != c.Sensor ||
-		deref(chip) != c.FlashChip || deref(note) != c.Note || derefInt(flash) != c.FlashMB || position != u.Position {
+		deref(chip) != c.FlashChip || deref(note) != c.Note || derefInt(flash) != c.FlashMB || position != u.Position ||
+		deref(certainty) != c.LinkCertainty || evidence != c.LinkEvidence {
 		return false, nil
 	}
 	rows, err := im.Pool.Query(ctx, `SELECT kind::text || ' ' || name || ' ' || sha256 FROM board_artifacts WHERE unit_id = $1 ORDER BY position`, c.Unit)

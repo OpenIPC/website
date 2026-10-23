@@ -79,14 +79,18 @@ type fileJSON struct {
 const photoKinds = `('photo_front', 'photo_back', 'photo_other')`
 
 type unitJSON struct {
-	ID            string     `json:"id"`
-	Sensor        *string    `json:"sensor"`
-	FlashChip     *string    `json:"flash_chip"`
-	FlashSizeMB   *int       `json:"flash_size_mb"`
-	Source        string     `json:"source"`
-	SourceRef     string     `json:"source_ref"`
-	ContributedBy *string    `json:"contributed_by"`
-	Notes         *string    `json:"notes"`
+	ID            string  `json:"id"`
+	Sensor        *string `json:"sensor"`
+	FlashChip     *string `json:"flash_chip"`
+	FlashSizeMB   *int    `json:"flash_size_mb"`
+	Source        string  `json:"source"`
+	SourceRef     string  `json:"source_ref"`
+	ContributedBy *string `json:"contributed_by"`
+	Notes         *string `json:"notes"`
+	// An owner report's unit: how sure its link to this board is, and why
+	// (migration 036). Absent for every other unit.
+	LinkCertainty *string    `json:"link_certainty,omitempty"`
+	LinkEvidence  string     `json:"link_evidence,omitempty"`
 	Files         []fileJSON `json:"files"`
 }
 
@@ -258,9 +262,9 @@ type sourceJSON struct {
 // Locales the catalogue has texts in; a request for another reads English.
 var Locales = []string{"en", "ru", "zh"}
 
-// treeModels narrows Tree to the boards on one SoC ($1, '' for any), to the
+// treeModels narrows Tree to the boards on one SoC ($1, ” for any), to the
 // boards with a unit naming one of the sensors in $2 (empty for any) and to
-// one board by its id ($3, '' for any: a board's own page). A
+// one board by its id ($3, ” for any: a board's own page). A
 // sensor is compared as the site's sensor catalogue keys it: without its
 // maker, upper-cased (frontend/apps/site/src/lib/sensor-names.ts nameKey).
 const treeModels = `($1 = '' OR m.soc = $1) AND ($3 = '' OR m.id = $3) AND (cardinality($2::text[]) = 0 OR EXISTS (
@@ -365,7 +369,8 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 
 	byUnit := map[string]*unitJSON{}
 	rows, err = tx.Query(ctx, `
-		SELECT id, model_id, sensor, flash_chip, flash_size_mb, source::text, source_ref, contributed_by, notes
+		SELECT id, model_id, sensor, flash_chip, flash_size_mb, source::text, source_ref, contributed_by, notes,
+		  link_certainty, link_evidence
 		FROM board_units
 		WHERE model_id IN (SELECT m.id FROM board_models m WHERE `+treeModels+`)
 		ORDER BY position, id`, soc, sensors, model)
@@ -375,7 +380,8 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 	for rows.Next() {
 		u := &unitJSON{Files: []fileJSON{}}
 		var model string
-		if err := rows.Scan(&u.ID, &model, &u.Sensor, &u.FlashChip, &u.FlashSizeMB, &u.Source, &u.SourceRef, &u.ContributedBy, &u.Notes); err != nil {
+		if err := rows.Scan(&u.ID, &model, &u.Sensor, &u.FlashChip, &u.FlashSizeMB, &u.Source, &u.SourceRef, &u.ContributedBy, &u.Notes,
+			&u.LinkCertainty, &u.LinkEvidence); err != nil {
 			rows.Close()
 			return nil, nil, err
 		}

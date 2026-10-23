@@ -390,11 +390,16 @@ type Decided struct {
 // the report to its boards (the sender's board when none is named), adds
 // the board newBoard describes first when the catalogue did not have it,
 // and awards each accepted part; rejecting takes back anything it had
-// earned.
-func (s *Store) Decide(ctx context.Context, id, decision, by, note string, models []string, newBoard *boards.NewModel, revision *int) (Decided, error) {
+// earned. The links it makes are as sure as basis says; one already made
+// keeps its own certainty (SetCertainty changes it).
+func (s *Store) Decide(ctx context.Context, id, decision, by, note string, models []string, basis Basis, newBoard *boards.NewModel, revision *int) (Decided, error) {
 	var d Decided
 	if decision != "publish" && decision != "reject" {
 		return d, fmt.Errorf("a review publishes or rejects")
+	}
+	basis, err := basis.Checked()
+	if err != nil {
+		return d, err
 	}
 	if newBoard != nil && decision != "publish" {
 		return d, errors.New("a new board is added by publishing the report")
@@ -461,8 +466,8 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 				d.Board, models = board, append(models, board)
 			}
 			for _, m := range models {
-				if _, err := tx.Exec(ctx, `INSERT INTO report_models (report_id, model_id, by) VALUES ($1,$2,$3)
-					ON CONFLICT DO NOTHING`, id, m, by); err != nil {
+				if _, err := tx.Exec(ctx, `INSERT INTO report_models (report_id, model_id, by, certainty, evidence) VALUES ($1,$2,$3,$4,$5)
+					ON CONFLICT DO NOTHING`, id, m, by, basis.Certainty, basis.Evidence); err != nil {
 					var pe *pgconn.PgError
 					if errors.As(err, &pe) && pe.Code == "23503" {
 						return fmt.Errorf("link %s: the catalogue has no such board", m)
@@ -560,7 +565,10 @@ type BoardText struct {
 	Model  string
 	By     string
 	// Note is the sender's note as published: redacted (note_public).
-	Note  string
+	Note string
+	// How sure the report's link to Model is (migration 036): the unit
+	// says so beside the board's files.
+	Basis
 	Files []BoardTextFile
 }
 
@@ -578,7 +586,7 @@ type BoardTextFile struct {
 // listed too, for its note. A private backup is never among them.
 func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 	rows, err := s.DB.Query(ctx, `
-		SELECT r.id, rm.model_id, coalesce(cm.name, ''), r.note_public, f.position, f.kind, f.name, f.public_sha256
+		SELECT r.id, rm.model_id, coalesce(cm.name, ''), r.note_public, rm.certainty, rm.evidence, f.position, f.kind, f.name, f.public_sha256
 		FROM reports r
 		JOIN report_models rm ON rm.report_id = r.id
 		LEFT JOIN report_files f ON f.report_id = r.id
@@ -594,14 +602,15 @@ func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 	defer rows.Close()
 	var out []BoardText
 	for rows.Next() {
-		var id, model, by, note string
+		var id, model, by, note, certainty, evidence string
 		var pos *int
 		var kind, name, sum *string
-		if err := rows.Scan(&id, &model, &by, &note, &pos, &kind, &name, &sum); err != nil {
+		if err := rows.Scan(&id, &model, &by, &note, &certainty, &evidence, &pos, &kind, &name, &sum); err != nil {
 			return nil, err
 		}
 		if n := len(out); n == 0 || out[n-1].Report != id || out[n-1].Model != model {
-			out = append(out, BoardText{Report: id, Model: model, By: by, Note: note})
+			out = append(out, BoardText{Report: id, Model: model, By: by, Note: note,
+				Basis: Basis{Certainty: certainty, Evidence: evidence}})
 		}
 		if pos != nil {
 			t := &out[len(out)-1]

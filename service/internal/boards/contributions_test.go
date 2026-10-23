@@ -429,3 +429,60 @@ func TestAReportOnTwoBoardsIsAUnitOnEachAndTwoRefreshesAtOnceAgree(t *testing.T)
 		}
 	}
 }
+
+// A report's unit says how sure its link to the board is, and a change of
+// that certainty alone rewrites the unit; a confirmed link says nothing.
+func TestAReportUnitCarriesItsLinksCertainty(t *testing.T) {
+	pool, root := imported(t)
+	ctx := context.Background()
+	im := &Importer{Pool: pool, Log: quiet(), Root: root}
+	store := fstest.MapFS{"cc/text": {Data: []byte("U-Boot\n")}}
+	list := []Contribution{reportUnit("xiongmai-53h20-s-r-cccccccc", "xiongmai-53h20-s", "r-cccccccc", "cc/text", "boot_log", "1-boot.txt")}
+	list[0].LinkCertainty, list[0].LinkEvidence = "probable", "same platform as r-3yi3z6jw"
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	type unit struct {
+		ID            string
+		LinkCertainty *string `json:"link_certainty"`
+		LinkEvidence  string  `json:"link_evidence"`
+	}
+	read := func() (got []unit) {
+		var tree struct {
+			Manufacturers []struct{ Models []struct{ Units []unit } }
+		}
+		getJSON(t, serve(t, pool).URL+"/api/v1/boards", &tree)
+		for _, m := range tree.Manufacturers {
+			for _, md := range m.Models {
+				got = append(got, md.Units...)
+			}
+		}
+		return got
+	}
+	var others int
+	for _, u := range read() {
+		switch {
+		case u.ID == "xiongmai-53h20-s-r-cccccccc":
+			if u.LinkCertainty == nil || *u.LinkCertainty != "probable" || u.LinkEvidence != "same platform as r-3yi3z6jw" {
+				t.Errorf("the report's unit: %+v", u)
+			}
+		case u.LinkCertainty != nil || u.LinkEvidence != "":
+			t.Errorf("%s is no report's and has a certainty: %+v", u.ID, u)
+		default:
+			others++
+		}
+	}
+	if others == 0 {
+		t.Fatal("the fixture's own units are not in the tree")
+	}
+
+	list[0].LinkCertainty, list[0].LinkEvidence = "confirmed", ""
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	var certainty, evidence string
+	if err := pool.QueryRow(ctx, `SELECT link_certainty, link_evidence FROM board_units WHERE id = 'xiongmai-53h20-s-r-cccccccc'`).
+		Scan(&certainty, &evidence); err != nil || certainty != "confirmed" || evidence != "" {
+		t.Errorf("after the link was confirmed: %q %q %v", certainty, evidence, err)
+	}
+}

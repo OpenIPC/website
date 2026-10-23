@@ -19,7 +19,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { boardPath } from '../../lib/boards/shell';
-import { ClubError, decide, fetchMe, fetchQueue, type Member, type NewBoard, type Queued, type Sibling } from '../../lib/club';
+import { ClubError, decide, fetchMe, fetchQueue, type LinkBasis, type Member, type NewBoard, type Queued, type Sibling } from '../../lib/club';
 import { size } from '../../lib/reports';
 import { Forbidden, STATUS_TONE } from './parts';
 
@@ -105,6 +105,7 @@ function siblingBoards(q: Queued): string[] {
 }
 
 const NEW_FIELDS: (keyof NewBoard)[] = ['maker_name', 'maker_id', 'model', 'model_id', 'soc'];
+const CERTAINTIES: LinkBasis['certainty'][] = ['confirmed', 'probable', 'guess'];
 
 function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>; locale: Locale; t: BoardsT; onDone: () => void }) {
   const sug = q.new_board;
@@ -115,6 +116,8 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
     ? { maker_id: sug.maker_id, maker_name: sug.maker_name, model_id: sug.model_id, model: sug.model, soc: sug.soc ?? '' }
     : null);
   const [note, setNote] = useState('');
+  const [certainty, setCertainty] = useState<LinkBasis['certainty']>('confirmed');
+  const [evidence, setEvidence] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -124,7 +127,8 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
     setBusy(true);
     setError(null);
     const ids = models.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
-    decide(q.id, decision, ids, why, decision === 'publish' && create && board ? board : undefined, q.revision)
+    decide(q.id, decision, ids, why, decision === 'publish' && create && board ? board : undefined, q.revision,
+      decision === 'publish' ? { certainty, evidence: evidence.trim() } : undefined)
       .then((r) => {
         setResult(r.board ? t('club.review_done_board', { board: r.board, points: r.points }) : t(`club.review_done_${decision}`, { points: r.points }));
         setTimeout(onDone, 1200);
@@ -212,6 +216,22 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
               <input value={models} onInput={(e) => setModels((e.target as HTMLInputElement).value)} placeholder={q.board?.id ?? ''}
                 class="rounded-md border border-hairline px-2.5 py-1.5 font-mono text-sm text-body" />
             </label>
+            {q.status !== 'published' && (
+              <div class="grid gap-2 sm:grid-cols-[max-content_1fr]">
+                <label class="grid gap-1 text-[13px] text-body-secondary">{t('club.review_certainty')}
+                  <select value={certainty} onChange={(e) => setCertainty((e.target as HTMLSelectElement).value as LinkBasis['certainty'])}
+                    class="rounded-md border border-hairline px-2.5 py-1.5 text-sm text-body">
+                    {CERTAINTIES.map((c) => <option key={c} value={c}>{t(`club.review_certainty_${c}`)}</option>)}
+                  </select>
+                </label>
+                <label class="grid gap-1 text-[13px] text-body-secondary">{t('club.review_evidence')}
+                  <input value={evidence} onInput={(e) => setEvidence((e.target as HTMLInputElement).value)} maxLength={200}
+                    required={certainty !== 'confirmed'} placeholder={t('club.review_evidence_hint')}
+                    class="rounded-md border border-hairline px-2.5 py-1.5 text-sm text-body" />
+                </label>
+                {q.models.length > 0 && <p class="m-0 text-[12.5px] text-body-secondary sm:col-span-2">{t('club.review_certainty_kept')}</p>}
+              </div>
+            )}
             <label class="grid gap-1 text-[13px] text-body-secondary">{t('club.review_note')}
               <input value={note} onInput={(e) => setNote((e.target as HTMLInputElement).value)}
                 class="rounded-md border border-hairline px-2.5 py-1.5 text-sm text-body" />

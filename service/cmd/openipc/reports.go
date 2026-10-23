@@ -20,11 +20,18 @@ const reportsUsage = `usage: openipc reports
   list [--status pending|published|rejected|withdrawn]   the review queue, newest first (JSON), each with
                                                 same_camera, same_sender and duplicate_of (the newest 100)
   show <id>                                     the report whole, as sent: YAML, identifiers' hashes, files
-  publish <id> [--model <board model id>]... [--new-board] [--by who] [--note text]
+  publish <id> [--model <board model id>]... [--new-board] [--certainty c --evidence why] [--by who] [--note text]
                                                 --new-board: add the camera the report proposed, as the review page suggests
   reject <id> [--by who] [--note text]
-  link <id> <board model id> [--by who]         say which board a report is from
+  link <id> <board model id> [--certainty c --evidence why] [--by who]
+                                                say which board a report is from
+  certainty <id> <board model id> <confirmed|probable|guess> [--evidence why]
+                                                say how sure an existing link is now
   unlink <id> <board model id>                  undo a link made in error
+
+A link is confirmed (the default: a sticker, the device ID in its firmware),
+probable (the platform ipctool names, a sibling report) or a guess; one not
+confirmed needs --evidence, shown beside it: "same platform as r-3yi3z6jw".
   takedown <id> --by who --note why              withdraw for good: YAML blanked, files deleted
   verify                                        re-hash every stored file; non-zero on any missing or changed`
 
@@ -54,6 +61,8 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 	var models multi
 	fs.Var(&models, "model", "the board model id the report is from (repeatable)")
 	newBoard := fs.Bool("new-board", false, "add the camera the report proposed to the catalogue, and link the report to it")
+	certainty := fs.String("certainty", reports.Confirmed, "how sure the link is: confirmed, probable or guess")
+	evidence := fs.String("evidence", "", "why the link is as sure as it is, shown beside one not confirmed")
 	cmd := args[0]
 	pos, err := parseInterleaved(fs, args[1:])
 	if err != nil {
@@ -134,19 +143,35 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 				return err
 			}
 		}
-		d, err := st.Decide(ctx, pos[0], cmd, *by, *note, models, nb, nil)
+		basis := reports.Basis{Certainty: *certainty, Evidence: *evidence}
+		d, err := st.Decide(ctx, pos[0], cmd, *by, *note, models, basis, nb, nil)
 		if err != nil {
 			return err
 		}
 		refreshReportUnits(ctx, cfg, log, pool)
 		log.Info("reports: reviewed", "report", pos[0], "decision", cmd, "by", *by, "models", []string(models),
-			"new_board", d.Board, "member", d.Member, "stars", d.Points)
+			"certainty", *certainty, "new_board", d.Board, "member", d.Member, "stars", d.Points)
 		return nil
 	case "link":
 		if err := need(2); err != nil {
 			return err
 		}
-		return st.Link(ctx, pos[0], pos[1], *by)
+		if err := st.LinkAs(ctx, pos[0], pos[1], *by, reports.Basis{Certainty: *certainty, Evidence: *evidence}); err != nil {
+			return err
+		}
+		refreshReportUnits(ctx, cfg, log, pool)
+		return nil
+	case "certainty":
+		if err := need(3); err != nil {
+			return err
+		}
+		if err := st.SetCertainty(ctx, pos[0], pos[1], reports.Basis{Certainty: pos[2], Evidence: *evidence}); err != nil {
+			return err
+		}
+		// The report's unit on the board says it too.
+		refreshReportUnits(ctx, cfg, log, pool)
+		log.Info("reports: link certainty", "report", pos[0], "model", pos[1], "certainty", pos[2], "evidence", *evidence, "by", *by)
+		return nil
 	case "unlink":
 		if err := need(2); err != nil {
 			return err

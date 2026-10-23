@@ -49,6 +49,10 @@ type ViewModel struct {
 	ID           string `json:"id"`
 	Model        string `json:"model"`
 	Manufacturer string `json:"manufacturer"`
+	// How sure a published report's link to the board is, and why
+	// (migration 036); only a View's models say.
+	Certainty string `json:"certainty,omitempty"`
+	Evidence  string `json:"evidence,omitempty"`
 }
 
 // Public reads the view of one report.
@@ -109,7 +113,7 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 		return v, nil
 	}
 	mrows, err := s.DB.Query(ctx, `
-		SELECT m.id, coalesce(m.model, ''), mf.name FROM report_models rm
+		SELECT m.id, coalesce(m.model, ''), mf.name, rm.certainty, rm.evidence FROM report_models rm
 		JOIN board_models m ON m.id = rm.model_id JOIN board_manufacturers mf ON mf.id = m.manufacturer_id
 		WHERE rm.report_id = $1 ORDER BY m.id`, id)
 	if err != nil {
