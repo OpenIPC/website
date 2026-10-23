@@ -156,6 +156,12 @@ a value that starts with `<` as a file name, so send none:
 Give the owner the `receipt_url`. It shows the report's state until a
 maintainer files it under its board, and then links there.
 
+`"marking_wanted": true` means nothing in the report says which board it is:
+ipctool read no board code, and no `model`, proposal or photo came with it.
+The chip alone is on many boards. Ask the owner for a photo of the board's
+marking (the code printed on the PCB, or its sticker) and send it as a
+report of its own whose `note` names the first one's id.
+
 Refusals are JSON `{"error": "..."}` saying what to change: `400` (not
 ipctool's output, a malformed backup, a flash image that names no board),
 `415` (a file of the wrong type), `413` (too large), `429` (ten reports a day
@@ -165,8 +171,12 @@ from one address; retry tomorrow).
 
     GET https://openipc.org/api/v1/reports/<id>
 
-`status` is `pending`, `published`, `rejected` or `withdrawn`. Once published,
-`models` names the board it was filed under.
+`status` is `pending`, `asked`, `published`, `rejected` or `withdrawn`. Once
+published, `models` names the board it was filed under. `asked` means a
+maintainer could not place it as sent and put a question to the sender
+instead, in `question`: answer it with a new report whose `note` names this
+one's id (a report sent signed in to the OpenIPC Club is edited from
+`/club` instead).
 
 ## Machine-readable
 

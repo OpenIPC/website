@@ -109,6 +109,9 @@ export interface Queued {
   same_sender?: Sibling[];
   /** A report that already holds everything this one does. */
   duplicate_of?: Sibling;
+  /** The last question a reviewer asked its sender: open while asked, answered once pending again. */
+  question?: string;
+  asked_at?: string;
 }
 
 /** Another report in the queue's view of this one: its id, state and the boards it is on. */
@@ -199,6 +202,16 @@ export const fetchMine = () => call<{ member: Member; reports: MemberReport[] }>
 
 export const fetchQueue = (status = 'pending') => call<{ reports: Queued[] }>(`/review?${new URLSearchParams({ status })}`);
 
+/**
+ * A question to a report's sender instead of a decision: told is how it
+ * reached a member ('telegram', 'email', '' when it could not); a report
+ * sent signed out shows it on its receipt.
+ */
+export const ask = (id: string, question: string, revision?: number) =>
+  post<{ told: string }>(`/review/${encodeURIComponent(id)}`, {
+    decision: 'ask', note: question, ...(revision !== undefined ? { revision } : {}),
+  });
+
 /** How sure a link a decision makes is, and why (the service's reports.Basis). */
 export interface LinkBasis { certainty: 'confirmed' | 'probable' | 'guess'; evidence?: string }
 
@@ -217,7 +230,13 @@ export const newReportCode = (joins?: string) =>
   post<{ code: ReportCode }>('/reports/code', joins ? { joins } : {}).then((r) => r.code);
 
 /** The send form's answer: the report's receipt. */
-export interface Sent { id: string; receipt_url: string; files: { kind: string; name: string; private?: boolean }[] }
+export interface Sent {
+  id: string;
+  receipt_url: string;
+  files: { kind: string; name: string; private?: boolean }[];
+  /** Nothing in it names its board: a photo of the board's marking would place it. */
+  marking_wanted?: boolean;
+}
 
 /** A member's change to a report of theirs; pending again if it had been decided. */
 export async function editReport(id: string, form: FormData): Promise<{ status: ReportState; rereview: boolean }> {

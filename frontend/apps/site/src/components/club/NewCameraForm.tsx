@@ -8,11 +8,16 @@
  * adds the board to the catalogue, and the photos become its first unit.
  *
  * Signing in is not required, as with SendForm; stars are a member's.
+ *
+ * On a receipt (?id=), where a reviewer may have asked its sender for a
+ * photo of the marking, the note starts with the report's id, so what is
+ * sent here is read with it.
  */
 import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { STARS, fetchMe, remembered, sendReport, type Member, type Sent } from '../../lib/club';
+import { RECEIPT_ID } from '../../lib/reports';
 import IpctoolCode from './IpctoolCode';
 
 const field = 'rounded-md border border-hairline px-2.5 py-1.5 text-sm text-body';
@@ -34,6 +39,8 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
 
   useEffect(() => {
     if (remembered()) fetchMe().then((me) => setMember(me.member)).catch(() => setMember(null));
+    const id = new URLSearchParams(location.search).get('id')?.trim().toLowerCase() ?? '';
+    if (RECEIPT_ID.test(id)) setNote((n) => n || t('club.new_follow_up', { id }));
   }, []);
 
   const submit = (e: Event) => {
@@ -71,6 +78,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
             ? <a href={pathFor(locale, '/club')}>{t('club.my_link')}</a>
             : <a href={`${pathFor(locale, '/cameras/report')}?id=${id}`}>{t('club.receipt')}</a>}
         </p>
+        {state.sent.marking_wanted && <p class="m-0 text-[#8a4b00]">{t('club.sent_marking')}</p>}
         {member && (
           <div class="text-body">
             <IpctoolCode joins={id} locale={locale} t={t} label={t('club.code_add_ipctool')} />
@@ -100,6 +108,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
       <label class="grid gap-1 text-[12.5px] text-body-secondary">{t('club.new_photos')}
         <input type="file" multiple required accept="image/jpeg,image/png,image/webp"
           onChange={(e) => setPhotos([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
+        <span class="text-[12px]">{t('club.new_photos_marking')}</span>
       </label>
       <div class="grid gap-1">
         <label class="grid gap-1 text-[12.5px] text-body-secondary">{t('club.send_dump')}

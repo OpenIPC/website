@@ -261,16 +261,22 @@ func (s *Store) RemoveUnreferenced(ctx context.Context, files *Files, sum string
 	return removed, err
 }
 
-// Status is a report's newest review: pending, published, rejected or
-// withdrawn.
+// Status is a report's newest review: pending, asked, published, rejected
+// or withdrawn.
 type Status struct {
 	State string     `json:"status"`
 	At    *time.Time `json:"reviewed_at,omitempty"`
 }
 
-// An 'edit' row is the member changing a decided report (Store.Edit): it is
-// pending again until a maintainer decides once more.
-var states = map[string]string{"publish": "published", "reject": "rejected", "withdraw": "withdrawn", "edit": "pending"}
+// An 'edit' row is the member changing a decided or asked report
+// (Store.Edit): it is pending again until a maintainer decides once more.
+// An 'ask' row is a question to the sender (Store.Ask). A decision this
+// image does not know -- one a newer image wrote -- is pending: waiting,
+// never published.
+var states = map[string]string{"publish": "published", "reject": "rejected", "withdraw": "withdrawn", "edit": "pending", "ask": "asked"}
+
+// Waiting: a report no maintainer has decided, whether or not one asked.
+func Waiting(state string) bool { return state == "pending" || state == "asked" }
 
 func (s *Store) status(ctx context.Context, q querier, id string) (Status, error) {
 	var decision string
@@ -283,7 +289,11 @@ func (s *Store) status(ctx context.Context, q querier, id string) (Status, error
 	if err != nil {
 		return Status{}, err
 	}
-	return Status{State: states[decision], At: &at}, nil
+	state, ok := states[decision]
+	if !ok {
+		state = "pending"
+	}
+	return Status{State: state, At: &at}, nil
 }
 
 type querier interface {
@@ -296,7 +306,7 @@ var ErrNotFound = errors.New("no such report")
 // Review records a decision. Publishing and rejecting are rows added, never
 // a row changed: the history is the state.
 func (s *Store) Review(ctx context.Context, id, decision, by, note string) error {
-	if _, ok := states[decision]; !ok || decision == "withdraw" || decision == "edit" {
+	if _, ok := states[decision]; !ok || decision == "withdraw" || decision == "edit" || decision == "ask" {
 		return fmt.Errorf("a review publishes or rejects; withdrawing is takedown")
 	}
 	if err := s.exists(ctx, id); err != nil {

@@ -67,6 +67,7 @@ export default function SendForm({ model, kind, locale, t, note }: {
             {t('club.send_another')}
           </button>
         </p>
+        {state.sent.marking_wanted && <p class="m-0 text-[#8a4b00]">{t('club.sent_marking')}</p>}
         {member && (
           <div class="text-body">
             <IpctoolCode joins={id} locale={locale} t={t} label={t('club.code_add_ipctool')} />

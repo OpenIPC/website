@@ -17,12 +17,14 @@ import (
 )
 
 const reportsUsage = `usage: openipc reports
-  list [--status pending|published|rejected|withdrawn]   the review queue, newest first (JSON), each with
+  list [--status pending|asked|published|rejected|withdrawn]   the review queue, newest first (JSON), each with
                                                 same_camera, same_sender and duplicate_of (the newest 100)
   show <id>                                     the report whole, as sent: YAML, identifiers' hashes, files
   publish <id> [--model <board model id>]... [--new-board] [--certainty c --evidence why] [--by who] [--note text]
                                                 --new-board: add the camera the report proposed, as the review page suggests
   reject <id> [--by who] [--note text]
+  ask <id> --note question [--by who]           ask the sender instead of deciding: a member is told (bot or mail),
+                                                a report sent signed out shows it on its receipt; their edit answers
   link <id> <board model id> [--certainty c --evidence why] [--by who]
                                                 say which board a report is from
   certainty <id> <board model id> <confirmed|probable|guess> [--evidence why]
@@ -156,6 +158,21 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		refreshReportUnits(ctx, cfg, log, pool)
 		log.Info("reports: reviewed", "report", pos[0], "decision", cmd, "by", *by, "models", []string(models),
 			"certainty", *certainty, "new_board", d.Board, "member", d.Member, "stars", d.Points)
+		return nil
+	case "ask":
+		if err := need(1); err != nil {
+			return err
+		}
+		if *note == "" {
+			return errors.New("ask needs --note: the question to the sender")
+		}
+		res, err := askClub(cfg, log, pool).Ask(ctx, pos[0], *by, *note, nil)
+		if err != nil {
+			return err
+		}
+		if res.Member != "" && res.Told == "" {
+			log.Warn("reports: the sender could not be told; their page on /club shows the question", "report", pos[0], "member", res.Member)
+		}
 		return nil
 	case "link":
 		if err := need(2); err != nil {

@@ -338,6 +338,19 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		"next": "OpenIPC's maintainers review each report before it is published. Nothing identifying the camera " +
 			"(MAC, die ID, cloud ID) is ever shown; the receipt shows the report's state.",
 	}
+	photos := 0
+	for _, f := range rep.Files {
+		if f.Kind == "photo" {
+			photos++
+		}
+	}
+	if MarkingWanted(facts, rep.Model, rep.Proposal, rep.Joins, photos) {
+		// ipctool prints next; the site's forms read marking_wanted.
+		out["marking_wanted"] = true
+		out["next"] = out["next"].(string) + " ipctool found no board code, and the chip alone is shared by many boards: " +
+			"a photo of the board's marking (the code printed on the PCB, or its sticker) is what lets a maintainer place it. " +
+			"Send one from " + strings.TrimSuffix(receiptURL(r, rep.ID), "?id="+rep.ID) + "#new with " + rep.ID + " in its note."
+	}
 	if raw {
 		out["backup"] = map[string]any{"partitions": 0, "flash_bytes": in.backup.Bytes}
 	} else if in.backup != nil {

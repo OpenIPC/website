@@ -3,7 +3,11 @@
  * a receipt at /api/v1/reports/{id}, and a board's published reports at
  * /api/v1/reports?model=. Identifiers in them are keyed hashes already.
  */
-export type ReportState = 'pending' | 'published' | 'rejected' | 'withdrawn';
+/** asked: a maintainer put a question to the sender instead of deciding; still waiting. */
+export type ReportState = 'pending' | 'asked' | 'published' | 'rejected' | 'withdrawn';
+
+/** Not decided yet, whether or not its sender was asked something. */
+export const waiting = (s: ReportState) => s === 'pending' || s === 'asked';
 
 export interface ReportFile {
   kind: 'backup' | 'photo' | 'boot_log' | 'uboot_env' | 'note' | 'document';
@@ -41,6 +45,10 @@ export interface Report {
   models: { id: string; model: string; manufacturer: string; certainty?: 'confirmed' | 'probable' | 'guess'; evidence?: string }[];
   same_board: number;
   guess?: { model_id: string; model: string; manufacturer: string; url: string; why: string[] };
+  /** While asked: the reviewer's question to the sender. */
+  question?: string;
+  /** While waiting: nothing in it names its board, and a photo of the marking would. */
+  marking_wanted?: boolean;
 }
 
 export const RECEIPT_ID = /^r-[a-z0-9]{8}$/;

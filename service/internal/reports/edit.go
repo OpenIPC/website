@@ -20,7 +20,9 @@ import (
 // what the camera said and stay as sent. An edit to a
 // report a maintainer has decided puts it back in the queue -- a review row
 // 'edit', after which it is pending: off the board and the public pages
-// until it is accepted again, its stars settled by that decision.
+// until it is accepted again, its stars settled by that decision. An edit to
+// a report a reviewer asked about (Store.Ask) is the sender's answer: the
+// same row puts it back in the pending queue.
 
 var (
 	// ErrNotEditable is a report its member cannot change: withdrawn.
@@ -45,7 +47,8 @@ type Change struct {
 // Edited is what an edit did.
 type Edited struct {
 	Status string
-	// Rereview: the report had been decided, and is pending again.
+	// Rereview: the report had been decided or asked about, and is pending
+	// again.
 	Rereview bool
 	// Orphans: stored files no report names any more, for the caller to
 	// delete once the edit is committed (RemoveUnreferenced).
@@ -263,7 +266,7 @@ func (s *Store) Edit(ctx context.Context, id, member, by string, c Change, noteP
 			return err
 		}
 		out.Status = st.State
-		if st.State == "published" || st.State == "rejected" {
+		if st.State == "published" || st.State == "rejected" || st.State == "asked" {
 			if _, err := tx.Exec(ctx, `INSERT INTO report_reviews (report_id, decision, by, note) VALUES ($1, 'edit', $2, $3)`,
 				id, by, strings.Join(what, ", ")); err != nil {
 				return err

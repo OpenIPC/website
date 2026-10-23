@@ -3,19 +3,25 @@
  * prints. It shows what arrived and who may see it; the report's content
  * appears only once a maintainer has published it, and then on the board.
  * With no ?id= it is the lookup form.
+ *
+ * It is also the one way to reach whoever sent a report signed out: a
+ * reviewer's question shows here, with how such a sender can answer, and so
+ * does the plea for a photo of the board's marking when nothing in the
+ * report names its board.
  */
 import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { boardPath } from '../../lib/boards/shell';
 import LinkCertainty from './LinkCertainty';
-import { NotFound, RECEIPT_ID, fetchReport, size, summary, type Report } from '../../lib/reports';
+import { NotFound, RECEIPT_ID, fetchReport, size, summary, waiting, type Report } from '../../lib/reports';
 
 type Load = { state: 'none' } | { state: 'loading' } | { state: 'ok'; value: Report } | { state: 'missing' } | { state: 'error' };
 
 const PILL = 'inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-[13px] font-semibold';
 const TONE: Record<string, string> = {
   pending: 'bg-[#fff4e0] text-[#8a5a00]',
+  asked: 'bg-[#fff4e0] text-[#8a5a00]',
   published: 'bg-[#e7f5ee] text-[#1f7a4d]',
   rejected: 'bg-surface-alt text-body-secondary',
   withdrawn: 'bg-surface-alt text-body-secondary',
@@ -72,9 +78,24 @@ export default function Receipt({ locale }: { locale: Locale }) {
         )}
       </div>
 
+      {r.status === 'asked' && r.question && (
+        <div class="mt-5 grid gap-2 rounded-lg border-[1.5px] border-[#e8c58f] bg-[#fff4e2] px-4 py-3 text-[.9375rem]" role="note" aria-labelledby="receipt-asked">
+          <h3 id="receipt-asked" class="m-0 text-base font-semibold text-[#8a4b00]">{t('report.asked_title')}</h3>
+          <p class="m-0 whitespace-pre-wrap text-ink">{r.question}</p>
+          <p class="m-0 text-[13.5px] text-body-secondary">{t('report.asked_how', { id: r.id })}</p>
+          <a href="#new" class="site-btn site-btn-primary site-btn-sm w-fit">{t('report.asked_answer')}</a>
+        </div>
+      )}
+      {r.marking_wanted && r.status !== 'asked' && (
+        <div class="mt-5 grid gap-1 rounded-lg border border-hairline bg-surface-alt px-4 py-3 text-[.9375rem]" role="note">
+          <b class="font-semibold">{t('report.marking_title')}</b>
+          <span class="text-[13.5px] text-body-secondary">{t('report.marking_text', { id: r.id })}</span>
+        </div>
+      )}
+
       <ol class="m-0 mt-5 grid list-none gap-3 p-0 text-[.9375rem]" aria-label={t('report.th_what')}>
         <Step done label={t('report.received', { channel: r.channel })} hint={`${when}${published ? ` · ${summary(r.facts)}` : ''}`} />
-        <Step done={r.status !== 'pending'} now={r.status === 'pending'} label={t('report.step_review')} hint={t('report.step_review_hint')} />
+        <Step done={!waiting(r.status)} now={waiting(r.status)} label={t('report.step_review')} hint={t('report.step_review_hint')} />
         <Step done={published} label={t('report.step_published')} hint={t('report.step_published_hint')} />
       </ol>
 
