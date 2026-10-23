@@ -386,3 +386,85 @@ func (e *env) viewURL(t *testing.T, id string, pos int) string {
 	t.Fatalf("the view links no file %d: %v", pos, v["files"])
 	return ""
 }
+
+// One blur's work is bounded: at most 16 regions, a region inside another
+// costs nothing, and regions covering the picture more than twice over are
+// refused before it is decoded.
+func TestABlursWorkIsBounded(t *testing.T) {
+	src := encodePNG(t, label(200, 120))
+	many := make([]Region, 17)
+	for i := range many {
+		many[i] = Region{X: float64(i) / 20, Y: 0, W: 0.04, H: 0.1}
+	}
+	if _, _, err := BlurPhoto(src, many); err == nil {
+		t.Error("17 regions were blurred")
+	}
+	same := make([]Region, 16)
+	for i := range same {
+		same[i] = Region{X: 0, Y: 0, W: 1, H: 1}
+	}
+	if _, _, err := BlurPhoto(src, same); err != nil {
+		t.Errorf("one region drawn 16 times: %v", err)
+	}
+	if got := distinctRegions(append(same, Region{X: 0.1, Y: 0.1, W: 0.2, H: 0.2})); len(got) != 1 {
+		t.Errorf("regions inside another are kept: %v", got)
+	}
+	overlapping := []Region{{X: 0, Y: 0, W: 1, H: 0.9}, {X: 0, Y: 0.1, W: 1, H: 0.9}, {X: 0.05, Y: 0, W: 0.95, H: 1}}
+	if _, _, err := BlurPhoto(src, overlapping); err == nil || !strings.Contains(err.Error(), "more than 2 times") {
+		t.Errorf("regions covering the picture almost three times over: %v", err)
+	}
+}
+
+// A transparent PNG stays transparent where it is blurred: the fill is the
+// average colour and the average alpha.
+func TestABlurredPNGKeepsItsTransparency(t *testing.T) {
+	img := image.NewNRGBA(image.Rect(0, 0, 40, 20))
+	for y := 0; y < 20; y++ {
+		for x := 0; x < 40; x++ {
+			a := uint8(0)
+			if x%2 == 0 {
+				a = 255
+			}
+			img.SetNRGBA(x, y, color.NRGBA{200, 0, 0, a})
+		}
+	}
+	out, mt, err := BlurPhoto(encodePNG(t, img), []Region{{X: 0, Y: 0, W: 0.5, H: 1}})
+	if err != nil || mt != "image/png" {
+		t.Fatalf("%v %s", err, mt)
+	}
+	got, _ := png.Decode(bytes.NewReader(out))
+	c := color.NRGBAModel.Convert(got.At(5, 5)).(color.NRGBA)
+	if c.A < 120 || c.A > 135 || c.R < 190 || c.G != 0 {
+		t.Errorf("the blurred half: %v, not half-transparent red", c)
+	}
+	if c := color.NRGBAModel.Convert(got.At(31, 5)).(color.NRGBA); c.A != 0 {
+		t.Errorf("outside the region: %v", c)
+	}
+}
+
+// A photo whose original has gone from the store is a 404 for the
+// reviewer, not a server error, and nothing is recorded.
+func TestBlurringAVanishedOriginalIsNotFound(t *testing.T) {
+	e := newEnv(t)
+	orig := encodePNG(t, label(40, 20))
+	rec, out := e.post(t, upload{fields: map[string]string{"channel": "web", "model": "xiongmai-50h20l"},
+		files: map[string][]byte{"photo": orig}}, "203.0.113.22")
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	id := out["id"].(string)
+	if err := os.Remove(filepath.Join(e.api.Files.Root, Rel(sha(orig)))); err != nil {
+		t.Fatal(err)
+	}
+	if code, d := e.reviewPhoto(t, id, 1, map[string]any{"action": "blur", "regions": []Region{{X: 0, Y: 0, W: 0.5, H: 0.5}}}); code != 404 {
+		t.Errorf("a vanished original: %d %v", code, d)
+	}
+	var n int
+	_ = e.pool.QueryRow(context.Background(), `SELECT count(*) FROM report_photo_reviews WHERE report_id = $1`, id).Scan(&n)
+	if n != 0 {
+		t.Errorf("%d decisions recorded", n)
+	}
+	if code, _ := e.reviewPhoto(t, id, 1, map[string]any{"action": "blur", "regions": make([]Region, 17)}); code != 400 {
+		t.Errorf("17 regions: %d", code)
+	}
+}

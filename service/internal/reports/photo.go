@@ -33,8 +33,13 @@ type Region struct {
 	H float64 `json:"h"`
 }
 
+// What one blur may cost: each region is read once and painted once, so
+// the work is bounded by the regions' area, and a request is refused
+// before the photo is decoded when it would cover the picture more than
+// maxCover times over (rectangles inside another are dropped first).
 const (
-	maxRegions = 32
+	maxRegions = 16
+	maxCover   = 2
 	// maxPixels: a photo larger than this is not decoded (a 20 MB PNG can
 	// claim any size).
 	maxPixels = 60_000_000
@@ -82,6 +87,15 @@ func BlurPhoto(src []byte, regions []Region) (out []byte, mime string, err error
 	if cfg.Width*cfg.Height > maxPixels {
 		return nil, "", errors.New("the photo is too large to blur here")
 	}
+	// The same fractions cover the same share of the picture either way up.
+	regions = distinctRegions(regions)
+	var cover float64
+	for _, r := range regions {
+		cover += min(r.W, 1-r.X) * min(r.H, 1-r.Y)
+	}
+	if cover > maxCover {
+		return nil, "", fmt.Errorf("blur: the regions cover the picture more than %d times over; draw fewer, smaller ones", maxCover)
+	}
 	img, _, err := image.Decode(bytes.NewReader(src))
 	if err != nil {
 		return nil, "", fmt.Errorf("the photo does not decode: %w", err)
@@ -111,20 +125,45 @@ func BlurPhoto(src []byte, regions []Region) (out []byte, mime string, err error
 	return buf.Bytes(), mime, nil
 }
 
-// fill paints r one solid colour, the average of what it covers: one value
-// for the whole region, so nothing of what was under it is left to recover.
+// distinctRegions drops each region that lies inside another (the same one
+// drawn twice included): painting it again would change nothing.
+func distinctRegions(rs []Region) []Region {
+	inside := func(a, b Region) bool {
+		return a.X >= b.X && a.Y >= b.Y && a.X+a.W <= b.X+b.W && a.Y+a.H <= b.Y+b.H
+	}
+	var out []Region
+	for i, a := range rs {
+		covered := false
+		for j, b := range rs {
+			// Of two equal regions the first is kept.
+			if i != j && inside(a, b) && (a != b || j < i) {
+				covered = true
+				break
+			}
+		}
+		if !covered {
+			out = append(out, a)
+		}
+	}
+	return out
+}
+
+// fill paints r one solid colour, the average of what it covers, its alpha
+// included (the RGBA is premultiplied, so averaging every channel is
+// right): one value for the whole region, so nothing of what was under it
+// is left to recover, and a transparent PNG stays transparent there.
 func fill(img *image.RGBA, r image.Rectangle) {
 	if r.Empty() {
 		return
 	}
-	var sr, sg, sb, n uint64
+	var sr, sg, sb, sa, n uint64
 	for y := r.Min.Y; y < r.Max.Y; y++ {
 		for x := r.Min.X; x < r.Max.X; x++ {
 			c := img.RGBAAt(x, y)
-			sr, sg, sb, n = sr+uint64(c.R), sg+uint64(c.G), sb+uint64(c.B), n+1
+			sr, sg, sb, sa, n = sr+uint64(c.R), sg+uint64(c.G), sb+uint64(c.B), sa+uint64(c.A), n+1
 		}
 	}
-	avg := color.RGBA{uint8(sr / n), uint8(sg / n), uint8(sb / n), 255}
+	avg := color.RGBA{uint8(sr / n), uint8(sg / n), uint8(sb / n), uint8(sa / n)}
 	draw.Draw(img, r, image.NewUniform(avg), image.Point{}, draw.Src)
 }
 

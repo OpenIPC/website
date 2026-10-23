@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"net/http"
 	"os"
 
@@ -46,24 +47,35 @@ type PublicCopy struct {
 	Mime string
 }
 
+// Blurrer makes a photo's blurred copy from its original (sum, as stored,
+// of type mime) and says how to put it in the store. SetPhotoPublic calls
+// it under the report's lock and the original's file lock, so the original
+// cannot be taken out while it is read.
+type Blurrer func(sum, mime string) (pc *PublicCopy, place func() error, err error)
+
+// errBlur is a blur the request asked wrongly for (its regions), or that the
+// original cannot give (it does not decode): answered 400.
+type errBlur struct{ error }
+
 // SetPhotoPublic records a reviewer's decision on photo position of report
-// id: pc is the blurred copy for PhotoBlur, nil otherwise, and place puts it
-// in the store under the file's lock, as Insert does. It returns the public
-// copy the photo had before when nothing names it any more, for the caller
-// to delete once this is committed (RemoveUnreferenced).
-func (s *Store) SetPhotoPublic(ctx context.Context, id string, position int, action string, regions []Region, by string, pc *PublicCopy, place func() error) (orphan string, err error) {
+// id. For PhotoBlur, blur makes the copy and its place puts it in the store
+// under the copy's file lock, as Insert does; made is the copy, for the
+// caller to remove if the decision then fails. It returns the public copy
+// the photo had before when nothing names it any more, for the caller to
+// delete once this is committed (RemoveUnreferenced).
+func (s *Store) SetPhotoPublic(ctx context.Context, id string, position int, action string, regions []Region, by string, blur Blurrer) (made *PublicCopy, orphan string, err error) {
 	if action != PhotoBlur && action != PhotoPrivate && action != PhotoAsSent {
-		return "", errors.New("a photo is blurred, kept private, or published as sent")
+		return nil, "", errors.New("a photo is blurred, kept private, or published as sent")
 	}
-	if (action == PhotoBlur) != (pc != nil) {
-		return "", errors.New("a blur comes with its copy, and only a blur")
+	if (action == PhotoBlur) != (blur != nil) {
+		return nil, "", errors.New("a blur comes with its blurrer, and only a blur")
 	}
 	if action != PhotoBlur {
 		regions = []Region{}
 	}
 	rj, err := json.Marshal(regions)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 	err = Unguarded(ctx, s.DB, func(tx pgx.Tx) error {
 		// The report's lock, as an edit and a review hold it: a photo its
@@ -71,11 +83,11 @@ func (s *Store) SetPhotoPublic(ctx context.Context, id string, position int, act
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, id); err != nil {
 			return err
 		}
-		var kind, sum string
+		var kind, sum, mime string
 		var bytes int64
 		var old *string
-		err := tx.QueryRow(ctx, `SELECT kind, sha256, bytes, public_sha256 FROM report_files WHERE report_id = $1 AND position = $2`,
-			id, position).Scan(&kind, &sum, &bytes, &old)
+		err := tx.QueryRow(ctx, `SELECT kind, sha256, mime, bytes, public_sha256 FROM report_files WHERE report_id = $1 AND position = $2`,
+			id, position).Scan(&kind, &sum, &mime, &bytes, &old)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrNotFound
 		}
@@ -91,6 +103,16 @@ func (s *Store) SetPhotoPublic(ctx context.Context, id string, position int, act
 		case PhotoAsSent:
 			pub, pubBytes = &sum, &bytes
 		case PhotoBlur:
+			// The original's lock: RemoveUnreferenced, after an edit took
+			// another report's copy of these bytes out, waits for this read.
+			if _, err := tx.Exec(ctx, lockFileSh, sum); err != nil {
+				return err
+			}
+			pc, place, err := blur(sum, mime)
+			if err != nil {
+				return err
+			}
+			made = pc
 			if _, err := tx.Exec(ctx, lockFileSh, pc.SHA256); err != nil {
 				return err
 			}
@@ -121,7 +143,7 @@ func (s *Store) SetPhotoPublic(ctx context.Context, id string, position int, act
 		}
 		return nil
 	})
-	return orphan, err
+	return made, orphan, err
 }
 
 // blurs is the regions of each photo whose last decision was a blur, as the
@@ -199,44 +221,47 @@ func (a *API) ReviewPhoto(w http.ResponseWriter, r *http.Request, id string, pos
 		a.refuse(w, http.StatusBadRequest, "action is blur, private (not the sender's unit: never published) or as_sent")
 		return false
 	}
-	st := a.store()
-	var pc *PublicCopy
-	var place func() error
 	if in.Action == PhotoBlur {
-		sum, _, orig, kind, err := st.StoredFile(ctx, id, position)
-		if errors.Is(err, ErrNotFound) {
-			a.refuse(w, http.StatusNotFound, "the report has no such file")
-			return false
-		}
-		if err != nil {
-			a.fail(w, "the photo", err)
-			return false
-		}
-		if kind != "photo" {
-			a.refuse(w, http.StatusBadRequest, ErrNotPhoto.Error())
-			return false
-		}
-		src, err := a.Files.Read(sum)
-		if err != nil {
-			a.fail(w, "the photo", err)
-			return false
-		}
-		out, mt, err := BlurPhoto(src, in.Regions)
-		if err != nil {
+		// What can be refused without the photo is refused before its lock.
+		if err := validRegions(in.Regions); err != nil {
 			a.refuse(w, http.StatusBadRequest, err.Error())
 			return false
 		}
-		h := sha256.Sum256(out)
-		pc = &PublicCopy{SHA256: hex.EncodeToString(h[:]), Bytes: int64(len(out))}
-		if orig != mt {
-			pc.Mime = mt
-		}
-		place = func() error { _, err := a.Files.Put(out); return err }
 	}
-	orphan, err := st.SetPhotoPublic(ctx, id, position, in.Action, in.Regions, by, pc, place)
+	st := a.store()
+	var blur Blurrer
+	if in.Action == PhotoBlur {
+		blur = func(sum, orig string) (*PublicCopy, func() error, error) {
+			src, err := a.Files.Read(sum)
+			if errors.Is(err, fs.ErrNotExist) {
+				// Gone from the store although a row names it: the
+				// nightly verify reports it; this photo cannot be blurred.
+				return nil, nil, ErrNotFound
+			}
+			if err != nil {
+				return nil, nil, err
+			}
+			out, mt, err := BlurPhoto(src, in.Regions)
+			if err != nil {
+				return nil, nil, errBlur{err}
+			}
+			h := sha256.Sum256(out)
+			pc := &PublicCopy{SHA256: hex.EncodeToString(h[:]), Bytes: int64(len(out))}
+			if orig != mt {
+				pc.Mime = mt
+			}
+			return pc, func() error { _, err := a.Files.Put(out); return err }, nil
+		}
+	}
+	pc, orphan, err := st.SetPhotoPublic(ctx, id, position, in.Action, in.Regions, by, blur)
 	if err != nil && pc != nil {
 		// A copy placed before the decision failed belongs to no row.
 		_, _ = st.RemoveUnreferenced(ctx, a.Files, pc.SHA256)
+	}
+	var bad errBlur
+	if errors.As(err, &bad) {
+		a.refuse(w, http.StatusBadRequest, bad.Error())
+		return false
 	}
 	switch {
 	case errors.Is(err, ErrNotFound):

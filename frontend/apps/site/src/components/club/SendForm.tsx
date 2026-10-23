@@ -34,6 +34,7 @@ export default function SendForm({ model, answers, kind, locale, t, note }: {
   const [extra, setExtra] = useState(note ?? (answers ? t('club.new_follow_up', { id: answers }) : ''));
   const [publicDump, setPublicDump] = useState(false);
   const [own, setOwn] = useState(false);
+  const [processing, setProcessing] = useState(false);
   // undefined while a browser that has signed in before asks who it is:
   // the line under the button says nothing until it knows.
   const [member, setMember] = useState<Member | null | undefined>(() => (remembered() ? undefined : null));
@@ -51,6 +52,11 @@ export default function SendForm({ model, answers, kind, locale, t, note }: {
       return;
     }
     const photos = chosen === 'photo' && files.length > 0;
+    // A photo still being looked at or blurred is never sent as it was.
+    if (photos && processing) {
+      setState({ s: 'error', error: t('club.photo_processing') });
+      return;
+    }
     if (photos && !own) {
       setState({ s: 'error', error: t('club.photo_own_required') });
       return;
@@ -116,7 +122,7 @@ export default function SendForm({ model, answers, kind, locale, t, note }: {
         <input type="file" multiple={chosen === 'photo'} accept={chosen === 'photo' ? 'image/jpeg,image/png,image/webp' : chosen === 'backup' ? '' : '.txt,.log,text/plain'}
           onChange={(e) => setFiles([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
       </label>
-      {chosen === 'photo' && <PhotoChecks files={files} onFiles={setFiles} own={own} onOwn={setOwn} t={t} />}
+      {chosen === 'photo' && <PhotoChecks files={files} onFiles={setFiles} own={own} onOwn={setOwn} onBusy={setProcessing} t={t} />}
       {chosen === 'backup' && (
         <label class="flex items-start gap-2 text-[12.5px] text-body-secondary">
           <input type="checkbox" checked={publicDump} onChange={(e) => setPublicDump((e.target as HTMLInputElement).checked)} class="mt-0.5" />
@@ -126,7 +132,7 @@ export default function SendForm({ model, answers, kind, locale, t, note }: {
       <input aria-label={t('club.send_note')} placeholder={t('club.send_note')} value={extra}
         onInput={(e) => setExtra((e.target as HTMLInputElement).value)} class="rounded-md border border-hairline px-2.5 py-1.5" />
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <button type="submit" class="site-btn site-btn-primary site-btn-sm" disabled={state.s === 'sending'}>
+        <button type="submit" class="site-btn site-btn-primary site-btn-sm" disabled={state.s === 'sending' || (chosen === 'photo' && processing)}>
           {state.s === 'sending' ? t('club.sending') : t('club.send_button')}
         </button>
         {member !== undefined && (

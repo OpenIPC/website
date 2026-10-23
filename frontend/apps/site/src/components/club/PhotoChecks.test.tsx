@@ -23,11 +23,24 @@ vi.mock('../../lib/photo-check', async (actual) => ({
 
 const t = useBoardsTranslations('en');
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   vi.unstubAllGlobals();
   localStorage.clear();
+  const { blurFile } = await import('../../lib/photo-check');
+  vi.mocked(blurFile).mockClear();
 });
+
+/** A promise settled from outside: a blur or a detection still running. */
+function deferred<T>() {
+  let resolve!: (v: T) => void;
+  const promise = new Promise<T>((r) => { resolve = r; });
+  return { promise, resolve };
+}
+
+const sendButton = (c: Element) => c.querySelector('button[type=submit]') as HTMLButtonElement;
+/** Every photo looked at and every blur done: the form may send. */
+const settled = (c: Element) => waitFor(() => expect(sendButton(c).disabled).toBe(false));
 
 function capture() {
   const sent: FormData[] = [];
@@ -38,12 +51,13 @@ function capture() {
   return sent;
 }
 
-/** A browser that reads codes: one QR code in label.jpg, nothing elsewhere. */
-function detector() {
+/** A browser that reads codes: one QR code in each label*.jpg, nothing elsewhere. */
+function detector(wait?: Promise<void>) {
   vi.stubGlobal('createImageBitmap', vi.fn(async (f: File) => ({ width: 400, height: 200, name: f.name, close() {} })));
   vi.stubGlobal('BarcodeDetector', class {
     async detect(bmp: { name: string }) {
-      return bmp.name === 'label.jpg' ? [{ boundingBox: { x: 100, y: 50, width: 40, height: 40 }, rawValue: 'SN123' }] : [];
+      if (wait) await wait;
+      return bmp.name.startsWith('label') ? [{ boundingBox: { x: 100, y: 50, width: 40, height: 40 }, rawValue: 'SN123' }] : [];
     }
   });
 }
@@ -81,10 +95,11 @@ describe('the send form', () => {
     expect(sent[0].get('own_photos')).toBe('yes');
   });
 
-  test('photos are not sent until the sender says they are their own', () => {
+  test('photos are not sent until the sender says they are their own', async () => {
     const sent = capture();
     const { container, getByRole } = render(<SendForm model="anjoy-ms-j10" kind="photo" locale="en" t={t} />);
     choose(container, [board()]);
+    await settled(container);
     fireEvent.submit(container.querySelector('form')!);
     expect(getByRole('alert').textContent).toBe(t('club.photo_own_required'));
     expect(sent).toHaveLength(0);
@@ -94,11 +109,108 @@ describe('the send form', () => {
     const sent = capture();
     const { container, getByText, queryByRole } = render(<SendForm model="anjoy-ms-j10" kind="photo" locale="en" t={t} />);
     choose(container, [label()]);
+    await settled(container);
     expect(queryByRole('alert')).toBeNull();
     fireEvent.click(getByText(/These photos are of my own camera/));
     fireEvent.submit(container.querySelector('form')!);
     await waitFor(() => expect(getByText(/Received/)).toBeTruthy());
     expect((sent[0].get('photo') as File).name).toBe('label.jpg');
+  });
+
+  test('nothing is sent while a photo is still being looked at', async () => {
+    const looked = deferred<void>();
+    detector(looked.promise);
+    const sent = capture();
+    const { container, getByText, findByText } = render(<SendForm model="anjoy-ms-j10" kind="photo" locale="en" t={t} />);
+    choose(container, [label()]);
+    fireEvent.click(getByText(/These photos are of my own camera/));
+    expect(sendButton(container).disabled).toBe(true);
+    expect(getByText(/Checking and blurring the photos/)).toBeTruthy();
+    fireEvent.submit(container.querySelector('form')!);
+    expect(sent).toHaveLength(0);
+    // The warning arrives before the photo can go.
+    looked.resolve();
+    expect(await findByText(/Serial numbers are published as they are/)).toBeTruthy();
+    await settled(container);
+  });
+
+  test('nothing is sent while a blur is running, and then only the blurred photo', async () => {
+    detector();
+    const { blurFile } = await import('../../lib/photo-check');
+    const blur = deferred<File>();
+    vi.mocked(blurFile).mockImplementationOnce(() => blur.promise);
+    const sent = capture();
+    const { container, getByText, getByRole } = render(<SendForm model="anjoy-ms-j10" kind="photo" locale="en" t={t} />);
+    choose(container, [label()]);
+    await settled(container);
+    fireEvent.click(getByText(/These photos are of my own camera/));
+    fireEvent.click(getByRole('button', { name: 'Blur the codes and the label' }));
+    await waitFor(() => expect(sendButton(container).disabled).toBe(true));
+    fireEvent.submit(container.querySelector('form')!);
+    expect(sent).toHaveLength(0);
+    blur.resolve(new File(['blurred'], 'label.jpg', { type: 'image/jpeg' }));
+    await settled(container);
+    fireEvent.submit(container.querySelector('form')!);
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(await (sent[0].get('photo') as File).text()).toBe('blurred');
+  });
+
+  test('a failed blur keeps the original from being sent', async () => {
+    detector();
+    const { blurFile } = await import('../../lib/photo-check');
+    vi.mocked(blurFile).mockImplementationOnce(async () => { throw new Error('no canvas'); });
+    const sent = capture();
+    const { container, getByText, getByRole, findByText } = render(<SendForm model="anjoy-ms-j10" kind="photo" locale="en" t={t} />);
+    choose(container, [label()]);
+    await settled(container);
+    fireEvent.click(getByText(/These photos are of my own camera/));
+    fireEvent.click(getByRole('button', { name: 'Blur the codes and the label' }));
+    expect(await findByText(/could not blur the photo: no canvas/)).toBeTruthy();
+    expect(sendButton(container).disabled).toBe(true);
+    fireEvent.submit(container.querySelector('form')!);
+    expect(sent).toHaveLength(0);
+  });
+
+  test('two blurs at once each land on their own photo', async () => {
+    detector();
+    const { blurFile } = await import('../../lib/photo-check');
+    const [one, two] = [deferred<File>(), deferred<File>()];
+    vi.mocked(blurFile).mockImplementationOnce(() => one.promise).mockImplementationOnce(() => two.promise);
+    const sent = capture();
+    const { container, getByText, getAllByRole } = render(<SendForm model="anjoy-ms-j10" kind="photo" locale="en" t={t} />);
+    choose(container, [new File(['1'], 'label-1.jpg', { type: 'image/jpeg' }), new File(['2'], 'label-2.jpg', { type: 'image/jpeg' })]);
+    await settled(container);
+    const [b1, b2] = getAllByRole('button', { name: 'Blur the codes and the label' });
+    fireEvent.click(b1);
+    fireEvent.click(b2);
+    // The second finishes first; the first must not put the second's original back.
+    two.resolve(new File(['blurred 2'], 'label-2.jpg', { type: 'image/jpeg' }));
+    await waitFor(() => expect(getAllByRole('button', { name: 'Blur the codes and the label' })).toHaveLength(1));
+    one.resolve(new File(['blurred 1'], 'label-1.jpg', { type: 'image/jpeg' }));
+    await settled(container);
+    fireEvent.click(getByText(/These photos are of my own camera/));
+    fireEvent.submit(container.querySelector('form')!);
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(await Promise.all((sent[0].getAll('photo') as File[]).map((f) => f.text()))).toEqual(['blurred 1', 'blurred 2']);
+  });
+
+  test('another photo\'s region picker starts with no regions', async () => {
+    vi.stubGlobal('PointerEvent', class extends MouseEvent { pointerId = 1; });
+    URL.createObjectURL = vi.fn((f: Blob) => `blob:${(f as File).name}`);
+    URL.revokeObjectURL = vi.fn();
+    capture();
+    const { container, getAllByRole, getByTestId, queryByRole } = render(<SendForm model="anjoy-ms-j10" kind="photo" locale="en" t={t} />);
+    choose(container, [board(), new File(['x'], 'back.jpg', { type: 'image/jpeg' })]);
+    await settled(container);
+    fireEvent.click(getAllByRole('button', { name: 'Blur a region' })[0]);
+    const frame = getByTestId('region-frame');
+    frame.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100, right: 100, bottom: 100, x: 0, y: 0, toJSON() {} });
+    fireEvent.pointerDown(frame, { clientX: 10, clientY: 10 });
+    fireEvent.pointerUp(frame, { clientX: 60, clientY: 60 });
+    expect(queryByRole('button', { name: /Region 1/ })).not.toBeNull();
+    fireEvent.click(getAllByRole('button', { name: 'Blur a region' })[1]);
+    expect(getByTestId('region-frame').querySelector('img')!.getAttribute('src')).toBe('blob:back.jpg');
+    expect(queryByRole('button', { name: /Region 1/ })).toBeNull();
   });
 
   test('a console capture is not asked about photos', async () => {
@@ -126,6 +238,14 @@ test('a blurred box is one solid colour: a pattern under it cannot be recovered'
   for (let i = 0; i < w * h; i++) (i % w < 10 ? inside : outside).add(px.slice(i * 4, i * 4 + 4).join());
   expect([...inside]).toEqual(['128,128,128,255']);
   expect(outside.size).toBe(2);
+});
+
+test('a transparent PNG stays transparent where it is blurred', () => {
+  // 4x1: two opaque red pixels, two transparent ones.
+  const px = new Uint8ClampedArray([255, 0, 0, 255, 255, 0, 0, 255, 0, 0, 0, 0, 0, 0, 0, 0]);
+  fillBoxes(px, 4, 1, [{ x: 0, y: 0, w: 1, h: 1 }]);
+  // Red at half alpha: the transparent pixels' colour does not darken it.
+  expect([...px.slice(0, 4)]).toEqual([255, 0, 0, 128]);
 });
 
 test('a dragged rectangle is the same whichever corner it starts from, and stays in the picture', () => {

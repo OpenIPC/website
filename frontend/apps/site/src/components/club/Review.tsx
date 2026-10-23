@@ -415,7 +415,7 @@ function PhotoTools({ id, f, t, onDone }: { id: string; f: MemberFile; t: Boards
       {error && <span class="text-[12.5px] text-[#a3262e]" role="alert">{error}</span>}
       {picking && (
         <div class="basis-full">
-          <RegionPicker src={f.url} alt={f.name} initial={f.regions} busy={busy} t={t}
+          <RegionPicker key={f.url} src={f.url} alt={f.name} initial={f.regions} busy={busy} t={t}
             onSave={(boxes) => act('blur', boxes)} onCancel={() => setPicking(false)} />
         </div>
       )}

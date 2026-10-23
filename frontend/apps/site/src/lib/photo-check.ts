@@ -67,19 +67,23 @@ export function fillBoxes(px: Uint8ClampedArray, width: number, height: number, 
     const x1 = Math.min(width, Math.ceil((b.x + b.w) * width));
     const y1 = Math.min(height, Math.ceil((b.y + b.h) * height));
     if (x1 <= x0 || y1 <= y0) continue;
-    let r = 0, g = 0, bl = 0;
+    // ImageData is not premultiplied: the colour is weighted by alpha, and
+    // the alpha averaged, so a transparent PNG stays as transparent there.
+    let r = 0, g = 0, bl = 0, a = 0;
     for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
         const i = (y * width + x) * 4;
-        r += px[i]; g += px[i + 1]; bl += px[i + 2];
+        const w = px[i + 3];
+        r += px[i] * w; g += px[i + 1] * w; bl += px[i + 2] * w; a += w;
       }
     }
     const n = (x1 - x0) * (y1 - y0);
-    const [ar, ag, ab] = [Math.round(r / n), Math.round(g / n), Math.round(bl / n)];
+    const [ar, ag, ab] = a ? [Math.round(r / a), Math.round(g / a), Math.round(bl / a)] : [0, 0, 0];
+    const aa = Math.round(a / n);
     for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
         const i = (y * width + x) * 4;
-        px[i] = ar; px[i + 1] = ag; px[i + 2] = ab; px[i + 3] = 255;
+        px[i] = ar; px[i + 1] = ag; px[i + 2] = ab; px[i + 3] = aa;
       }
     }
   }

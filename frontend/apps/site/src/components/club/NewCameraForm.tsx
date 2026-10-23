@@ -28,6 +28,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
   const [dump, setDump] = useState<File | null>(null);
   const [publicDump, setPublicDump] = useState(false);
   const [own, setOwn] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [ipctool, setIpctool] = useState('');
   const [bootLog, setBootLog] = useState('');
   const [note, setNote] = useState('');
@@ -42,6 +43,11 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
     e.preventDefault();
     if (!maker.trim() || !board.trim() || photos.length === 0) {
       setState({ s: 'error', error: t('club.new_need') });
+      return;
+    }
+    // A photo still being looked at or blurred is never sent as it was.
+    if (processing) {
+      setState({ s: 'error', error: t('club.photo_processing') });
       return;
     }
     if (!own) {
@@ -110,7 +116,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
           onChange={(e) => setPhotos([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
         <span class="text-[12px]">{t('club.new_photos_marking')}</span>
       </label>
-      <PhotoChecks files={photos} onFiles={setPhotos} own={own} onOwn={setOwn} t={t} />
+      <PhotoChecks files={photos} onFiles={setPhotos} own={own} onOwn={setOwn} onBusy={setProcessing} t={t} />
       <div class="grid gap-1">
         <label class="grid gap-1 text-[12.5px] text-body-secondary">{t('club.send_dump')}
           <input type="file" onChange={(e) => setDump((e.target as HTMLInputElement).files?.[0] ?? null)} class="text-sm text-body" />
@@ -138,7 +144,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
       <input aria-label={t('club.send_note')} placeholder={t('club.send_note')} value={note}
         onInput={(e) => setNote((e.target as HTMLInputElement).value)} class={field} />
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <button type="submit" class="site-btn site-btn-primary site-btn-sm" disabled={state.s === 'sending'}>
+        <button type="submit" class="site-btn site-btn-primary site-btn-sm" disabled={state.s === 'sending' || processing}>
           {state.s === 'sending' ? t('club.sending') : t('club.send_button')}
         </button>
         {member !== undefined && (

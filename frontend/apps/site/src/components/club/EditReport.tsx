@@ -27,6 +27,7 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
   const [add, setAdd] = useState<File[]>([]);
   const [publicDump, setPublicDump] = useState(false);
   const [own, setOwn] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const decided = report.status === 'published' || report.status === 'rejected';
@@ -41,6 +42,11 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
   const save = (e: Event) => {
     e.preventDefault();
     const photos = kind === 'photo' && add.length > 0;
+    // A photo still being looked at or blurred is never sent as it was.
+    if (photos && processing) {
+      setError(t('club.photo_processing'));
+      return;
+    }
     if (photos && !own) {
       setError(t('club.photo_own_required'));
       return;
@@ -107,7 +113,7 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
             accept={kind === 'photo' ? 'image/jpeg,image/png,image/webp' : kind === 'backup' ? '' : '.txt,.log,text/plain'}
             onChange={(e) => setAdd([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
         </div>
-        {kind === 'photo' && <PhotoChecks files={add} onFiles={setAdd} own={own} onOwn={setOwn} t={t} />}
+        {kind === 'photo' && <PhotoChecks files={add} onFiles={setAdd} own={own} onOwn={setOwn} onBusy={setProcessing} t={t} />}
         {(kind === 'boot_log' || kind === 'uboot_env') && <p class="m-0 text-[12px] text-body-secondary">{t(`club.send_hint_${kind}`)}</p>}
         {kind === 'backup' && (
           <>
@@ -120,7 +126,7 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
         )}
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        <button type="submit" class="site-btn site-btn-primary site-btn-sm" disabled={busy}>{t(decided ? 'club.edit_save_rereview' : 'club.edit_save')}</button>
+        <button type="submit" class="site-btn site-btn-primary site-btn-sm" disabled={busy || (kind === 'photo' && processing)}>{t(decided ? 'club.edit_save_rereview' : 'club.edit_save')}</button>
         <button type="button" class="site-btn site-btn-outline-secondary site-btn-sm" onClick={onCancel}>{t('club.edit_cancel')}</button>
         {error && <span class="text-[#a3262e]" role="alert">{error}</span>}
       </div>
