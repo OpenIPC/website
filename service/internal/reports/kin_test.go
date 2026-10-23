@@ -21,6 +21,8 @@ type seed struct {
 	client string
 	files  []string // contents; the sha256 is what is compared
 	member bool
+	vendor string // chip, as ipctool named it
+	chip   string
 }
 
 func sum(s string) string {
@@ -40,9 +42,9 @@ func (e *env) seed(t *testing.T, rs ...seed) {
 			ids = []byte("{}")
 		}
 		if _, err := e.pool.Exec(ctx, `
-			INSERT INTO reports (id, received_at, channel, note, note_public, yaml, yaml_public, yaml_sha256, id_hashes, backup_consent, client_hash)
-			VALUES ($1, now() - make_interval(secs => $2), 'agent', $3, $3, $4, $4, $5, $6, 'private', $7)`,
-			r.id, r.ago.Seconds(), r.note, r.yaml, sum(r.yaml), ids, r.client); err != nil {
+			INSERT INTO reports (id, received_at, channel, note, note_public, yaml, yaml_public, yaml_sha256, id_hashes, backup_consent, client_hash, chip_vendor, chip_model)
+			VALUES ($1, now() - make_interval(secs => $2), 'agent', $3, $3, $4, $4, $5, $6, 'private', $7, $8, $9)`,
+			r.id, r.ago.Seconds(), r.note, r.yaml, sum(r.yaml), ids, r.client, r.vendor, r.chip); err != nil {
 			t.Fatal(err)
 		}
 		for i, f := range r.files {
@@ -240,5 +242,52 @@ func TestANoteSentTwiceIsADuplicate(t *testing.T) {
 	}
 	if d := q["r-noteelse"].DuplicateOf; d != nil {
 		t.Errorf("another note: %+v", d)
+	}
+}
+
+// An identifier names one board only while it names one chip. An Anyka's
+// chip.id is its family's ID register: a Lexman camera (AK39EV330) and a
+// GNCC one (AK3918AV130) carried the same keyed "die ID" (r-vajqk6hn,
+// r-zu7h44bt), as does every AK3918EV300. A factory-default MAC on two
+// different chips is no board either; a MAC on one chip still is.
+func TestAnIdentifierOnTwoChipsIsNoCamera(t *testing.T) {
+	e := newEnv(t)
+	st := &Store{DB: e.pool}
+	reg := map[string]string{"die_id": "a2016a2016a2016a"}
+	mac := map[string]string{"mac": "defa0defa0defa00"}
+	e.seed(t,
+		seed{id: "r-lexman01", ago: 9 * time.Hour, yaml: "chip: ev330\n", ids: reg, client: "aaaa", vendor: "Anyka", chip: "AK39EV330"},
+		seed{id: "r-gncc0001", ago: 8 * time.Hour, yaml: "chip: av130\n", ids: reg, client: "bbbb", vendor: "Anyka", chip: "AK3918AV130"},
+		seed{id: "r-ev300001", ago: 7 * time.Hour, yaml: "chip: ev300 a\n", ids: map[string]string{"die_id": "e3e3e3e3e3e3e3e3"}, client: "cccc", vendor: "Anyka", chip: "AK3918EV300"},
+		seed{id: "r-ev300002", ago: 6 * time.Hour, yaml: "chip: ev300 b\n", ids: map[string]string{"die_id": "e3e3e3e3e3e3e3e3"}, client: "dddd", vendor: "Anyka", chip: "AK3918EV300"},
+		seed{id: "r-default1", ago: 5 * time.Hour, yaml: "chip: x\n", ids: mac, client: "eeee", vendor: "HiSilicon", chip: "3518EV200"},
+		seed{id: "r-default2", ago: 4 * time.Hour, yaml: "chip: y\n", ids: mac, client: "ffff", vendor: "Goke", chip: "7205V500"},
+		seed{id: "r-onechip1", ago: 3 * time.Hour, yaml: "chip: z\n", ids: map[string]string{"mac": "0e0e0e0e0e0e0e0e"}, client: "gggg", vendor: "HiSilicon", chip: "3516EV300"},
+		seed{id: "r-onechip2", ago: 2 * time.Hour, yaml: "chip: w\n", ids: map[string]string{"mac": "0e0e0e0e0e0e0e0e"}, client: "hhhh", vendor: "HiSilicon", chip: "3516EV300"},
+	)
+	q := queued(t, st)
+	for _, id := range []string{"r-lexman01", "r-gncc0001", "r-ev300001", "r-ev300002", "r-default1", "r-default2"} {
+		if len(q[id].SameCamera) != 0 {
+			t.Errorf("%s is the same camera as %q", id, ids(q[id].SameCamera))
+		}
+	}
+	if ids(q["r-onechip1"].SameCamera) != "r-onechip2" {
+		t.Errorf("one MAC on one chip is one camera: %q", ids(q["r-onechip1"].SameCamera))
+	}
+}
+
+// ipctool's chip.id on an Anyka is a register, not a die ID: redacted like
+// any identifier, never keyed as one.
+func TestAnAnykasChipIDIsNotKeyed(t *testing.T) {
+	f := Facts{ChipVendor: "Anyka", ChipModel: "AK3918EV300", DieID: "0x20160101", MAC: "00:12:34:56:78:9a"}
+	h := f.IDHashes("k")
+	if _, ok := h["die_id"]; ok || h["mac"] == "" {
+		t.Errorf("an Anyka's hashes: %v", h)
+	}
+	if out := Redact("chip:\n  id: 0x20160101\n", f, "k"); strings.Contains(out, "0x20160101") {
+		t.Errorf("an Anyka's chip id is no longer redacted: %s", out)
+	}
+	if _, ok := (Facts{ChipVendor: "HiSilicon", DieID: "0a1b2c3d4e5f6a7b8c9d"}).IDHashes("k")["die_id"]; !ok {
+		t.Error("a HiSilicon die ID is no longer keyed")
 	}
 }
