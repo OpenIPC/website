@@ -3929,6 +3929,27 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news"/>
   </url>
   <url>
+    <loc>https://openipc.org/news/firmware-with-no-camera-and-recorders</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/firmware-with-no-camera-and-recorders"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/firmware-with-no-camera-and-recorders"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/firmware-with-no-camera-and-recorders"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/firmware-with-no-camera-and-recorders"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/news/firmware-with-no-camera-and-recorders</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/firmware-with-no-camera-and-recorders"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/firmware-with-no-camera-and-recorders"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/firmware-with-no-camera-and-recorders"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/firmware-with-no-camera-and-recorders"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/news/firmware-with-no-camera-and-recorders</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/firmware-with-no-camera-and-recorders"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/firmware-with-no-camera-and-recorders"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/firmware-with-no-camera-and-recorders"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/firmware-with-no-camera-and-recorders"/>
+  </url>
+  <url>
     <loc>https://openipc.org/news/one-bootloader-and-footage-you-can-grade</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/one-bootloader-and-footage-you-can-grade"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/one-bootloader-and-footage-you-can-grade"/>
