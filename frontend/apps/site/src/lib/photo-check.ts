@@ -55,9 +55,39 @@ export async function findCodes(file: Blob): Promise<Box[] | null> {
 }
 
 /**
- * A copy of the photo with every box made a mosaic of blocks, each its
- * average colour -- what the service's blur does -- and nothing else of the
- * original kept: no EXIF, and a JPEG unless the photo was a PNG.
+ * Paints each box of an RGBA picture one solid colour, the average of what
+ * it covered -- what the service's blur does (reports.BlurPhoto). A blur or
+ * a mosaic of small blocks can be partly undone; one value for the whole
+ * box carries nothing of the label that was under it.
+ */
+export function fillBoxes(px: Uint8ClampedArray, width: number, height: number, boxes: Box[]): void {
+  for (const b of boxes) {
+    const x0 = Math.max(0, Math.floor(b.x * width));
+    const y0 = Math.max(0, Math.floor(b.y * height));
+    const x1 = Math.min(width, Math.ceil((b.x + b.w) * width));
+    const y1 = Math.min(height, Math.ceil((b.y + b.h) * height));
+    if (x1 <= x0 || y1 <= y0) continue;
+    let r = 0, g = 0, bl = 0;
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        const i = (y * width + x) * 4;
+        r += px[i]; g += px[i + 1]; bl += px[i + 2];
+      }
+    }
+    const n = (x1 - x0) * (y1 - y0);
+    const [ar, ag, ab] = [Math.round(r / n), Math.round(g / n), Math.round(bl / n)];
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        const i = (y * width + x) * 4;
+        px[i] = ar; px[i + 1] = ag; px[i + 2] = ab; px[i + 3] = 255;
+      }
+    }
+  }
+}
+
+/**
+ * A copy of the photo with every box filled solid (fillBoxes), and nothing
+ * else of the original kept: no EXIF, and a JPEG unless the photo was a PNG.
  */
 export async function blurFile(file: File, boxes: Box[]): Promise<File> {
   const bmp = await createImageBitmap(file);
@@ -68,26 +98,9 @@ export async function blurFile(file: File, boxes: Box[]): Promise<File> {
   if (!ctx) throw new Error('no canvas');
   ctx.drawImage(bmp, 0, 0);
   bmp.close?.();
-  for (const b of boxes) {
-    const x0 = Math.floor(b.x * canvas.width);
-    const y0 = Math.floor(b.y * canvas.height);
-    const x1 = Math.min(canvas.width, Math.ceil((b.x + b.w) * canvas.width));
-    const y1 = Math.min(canvas.height, Math.ceil((b.y + b.h) * canvas.height));
-    if (x1 <= x0 || y1 <= y0) continue;
-    const block = Math.max(8, Math.floor(Math.max(x1 - x0, y1 - y0) / 8));
-    for (let by = y0; by < y1; by += block) {
-      for (let bx = x0; bx < x1; bx += block) {
-        const w = Math.min(block, x1 - bx);
-        const h = Math.min(block, y1 - by);
-        const px = ctx.getImageData(bx, by, w, h).data;
-        let r = 0, g = 0, bl = 0;
-        for (let i = 0; i < px.length; i += 4) { r += px[i]; g += px[i + 1]; bl += px[i + 2]; }
-        const n = px.length / 4;
-        ctx.fillStyle = `rgb(${Math.round(r / n)},${Math.round(g / n)},${Math.round(bl / n)})`;
-        ctx.fillRect(bx, by, w, h);
-      }
-    }
-  }
+  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  fillBoxes(img.data, canvas.width, canvas.height, boxes);
+  ctx.putImageData(img, 0, 0);
   const png = file.type === 'image/png';
   const type = png ? 'image/png' : 'image/jpeg';
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, 0.92));

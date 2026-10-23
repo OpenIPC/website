@@ -117,7 +117,7 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 		if published && pub != nil {
 			file.Name = publicName(file.Name, pubMime)
 			file.SHA256, file.Bytes = *pub, *pubBytes
-			file.URL = "/api/v1/reports/" + id + "/files/" + strconv.Itoa(pos)
+			file.URL = "/api/v1/reports/" + id + "/files/" + strconv.Itoa(pos) + "?v=" + VersionOf(*pub)
 		}
 		v.Files = append(v.Files, file)
 	}

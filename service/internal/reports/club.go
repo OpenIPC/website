@@ -702,6 +702,21 @@ type BoardTextFile struct {
 	Name     string
 	// The public copy's place under the reports' root (Rel).
 	Path string
+	// Version: for a photo published as a reviewer's copy rather than as
+	// sent, the start of the copy's sha256 (VersionOf), for the board's file
+	// name: /board-files/ is cached for a month, so a copy blurred later
+	// must be at an address of its own. "" for a photo as sent, which keeps
+	// the name it always had.
+	Version string
+}
+
+// BoardName is the file's name in its board unit: position and name, and a
+// reviewer's copy's version between them.
+func (f BoardTextFile) BoardName() string {
+	if f.Version != "" {
+		return fmt.Sprintf("%d-%s-%s", f.Position, f.Version, f.Name)
+	}
+	return fmt.Sprintf("%d-%s", f.Position, f.Name)
 }
 
 // PublishedTexts lists, for every published report linked to a board, its
@@ -710,7 +725,8 @@ type BoardTextFile struct {
 // listed too, for its note. A private backup is never among them.
 func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 	rows, err := s.DB.Query(ctx, `
-		SELECT r.id, rm.model_id, coalesce(cm.name, ''), r.note_public, rm.certainty, rm.evidence, f.position, f.kind, f.name, f.public_sha256, coalesce(f.public_mime, '')
+		SELECT r.id, rm.model_id, coalesce(cm.name, ''), r.note_public, rm.certainty, rm.evidence, f.position, f.kind, f.name, f.public_sha256, coalesce(f.public_mime, ''),
+		  f.kind = 'photo' AND f.public_sha256 <> f.sha256
 		FROM reports r
 		JOIN report_models rm ON rm.report_id = r.id
 		LEFT JOIN report_files f ON f.report_id = r.id
@@ -730,7 +746,8 @@ func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 		var pos *int
 		var kind, name, sum *string
 		var pubMime string
-		if err := rows.Scan(&id, &model, &by, &note, &certainty, &evidence, &pos, &kind, &name, &sum, &pubMime); err != nil {
+		var redacted *bool
+		if err := rows.Scan(&id, &model, &by, &note, &certainty, &evidence, &pos, &kind, &name, &sum, &pubMime, &redacted); err != nil {
 			return nil, err
 		}
 		if n := len(out); n == 0 || out[n-1].Report != id || out[n-1].Model != model {
@@ -739,7 +756,11 @@ func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 		}
 		if pos != nil {
 			t := &out[len(out)-1]
-			t.Files = append(t.Files, BoardTextFile{Position: *pos, Kind: *kind, Name: publicName(*name, pubMime), Path: Rel(*sum)})
+			f := BoardTextFile{Position: *pos, Kind: *kind, Name: publicName(*name, pubMime), Path: Rel(*sum)}
+			if redacted != nil && *redacted {
+				f.Version = VersionOf(*sum)
+			}
+			t.Files = append(t.Files, f)
 		}
 	}
 	return out, rows.Err()

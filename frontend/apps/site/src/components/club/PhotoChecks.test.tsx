@@ -11,7 +11,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/preact';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import type { Queued } from '../../lib/club';
-import { boxFrom, grow } from '../../lib/photo-check';
+import { boxFrom, fillBoxes, grow } from '../../lib/photo-check';
 import SendForm from './SendForm.tsx';
 import Review from './Review.tsx';
 
@@ -110,6 +110,22 @@ describe('the send form', () => {
     await waitFor(() => expect(getByText(/Received/)).toBeTruthy());
     expect(sent[0].get('own_photos')).toBeNull();
   });
+});
+
+test('a blurred box is one solid colour: a pattern under it cannot be recovered', () => {
+  // 20x10, a black-and-white checkerboard everywhere.
+  const [w, h] = [20, 10];
+  const px = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) {
+    const v = ((i % w) + Math.floor(i / w)) % 2 ? 255 : 0;
+    px.set([v, v, v, 255], i * 4);
+  }
+  fillBoxes(px, w, h, [{ x: 0, y: 0, w: 0.5, h: 1 }]);
+  const inside = new Set<string>();
+  const outside = new Set<string>();
+  for (let i = 0; i < w * h; i++) (i % w < 10 ? inside : outside).add(px.slice(i * 4, i * 4 + 4).join());
+  expect([...inside]).toEqual(['128,128,128,255']);
+  expect(outside.size).toBe(2);
 });
 
 test('a dragged rectangle is the same whichever corner it starts from, and stays in the picture', () => {

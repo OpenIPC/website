@@ -67,9 +67,10 @@ func validRegions(rs []Region) error {
 // (a JPEG's EXIF orientation applied, as the browser showed it) and with no
 // metadata: a PNG stays a PNG, anything else becomes a JPEG.
 //
-// "Blurred" is a mosaic: every region is cut into blocks at least an
-// eighth of its longer side, each filled with its average colour. A
-// Gaussian blur of a label can be partly undone; an average cannot.
+// "Blurred" is a solid fill: each region becomes one colour, the average of
+// what it covered. A blur, or a mosaic of small blocks, of a label can be
+// partly undone -- the point is that a serial number cannot be read again --
+// and one value for the whole region carries nothing of what was there.
 func BlurPhoto(src []byte, regions []Region) (out []byte, mime string, err error) {
 	if err := validRegions(regions); err != nil {
 		return nil, "", err
@@ -96,7 +97,7 @@ func BlurPhoto(src []byte, regions []Region) (out []byte, mime string, err error
 		y0 := int(math.Floor(r.Y * float64(b.Dy())))
 		x1 := int(math.Ceil((r.X + r.W) * float64(b.Dx())))
 		y1 := int(math.Ceil((r.Y + r.H) * float64(b.Dy())))
-		mosaic(rgba, image.Rect(x0, y0, x1, y1).Add(b.Min).Intersect(b))
+		fill(rgba, image.Rect(x0, y0, x1, y1).Add(b.Min).Intersect(b))
 	}
 	var buf bytes.Buffer
 	if format == "png" {
@@ -110,28 +111,21 @@ func BlurPhoto(src []byte, regions []Region) (out []byte, mime string, err error
 	return buf.Bytes(), mime, nil
 }
 
-// mosaic fills r with blocks of their average colour.
-func mosaic(img *image.RGBA, r image.Rectangle) {
+// fill paints r one solid colour, the average of what it covers: one value
+// for the whole region, so nothing of what was under it is left to recover.
+func fill(img *image.RGBA, r image.Rectangle) {
 	if r.Empty() {
 		return
 	}
-	// A thin strip -- one line of a label -- is covered by blocks its whole
-	// height, never by a row of small squares through the letters.
-	block := max(8, max(r.Dx(), r.Dy())/8)
-	for by := r.Min.Y; by < r.Max.Y; by += block {
-		for bx := r.Min.X; bx < r.Max.X; bx += block {
-			cell := image.Rect(bx, by, bx+block, by+block).Intersect(r)
-			var sr, sg, sb, sa, n uint64
-			for y := cell.Min.Y; y < cell.Max.Y; y++ {
-				for x := cell.Min.X; x < cell.Max.X; x++ {
-					c := img.RGBAAt(x, y)
-					sr, sg, sb, sa, n = sr+uint64(c.R), sg+uint64(c.G), sb+uint64(c.B), sa+uint64(c.A), n+1
-				}
-			}
-			avg := color.RGBA{uint8(sr / n), uint8(sg / n), uint8(sb / n), uint8(sa / n)}
-			draw.Draw(img, cell, image.NewUniform(avg), image.Point{}, draw.Src)
+	var sr, sg, sb, n uint64
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			c := img.RGBAAt(x, y)
+			sr, sg, sb, n = sr+uint64(c.R), sg+uint64(c.G), sb+uint64(c.B), n+1
 		}
 	}
+	avg := color.RGBA{uint8(sr / n), uint8(sg / n), uint8(sb / n), 255}
+	draw.Draw(img, r, image.NewUniform(avg), image.Point{}, draw.Src)
 }
 
 // upright copies img to RGBA turned as EXIF orientation o says it is shown.

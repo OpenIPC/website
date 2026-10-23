@@ -3,7 +3,9 @@ package reports
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"image"
 	"image/color"
@@ -19,7 +21,7 @@ import (
 )
 
 // label is a picture with a fine black-and-white pattern -- a QR code, as
-// far as a mosaic is concerned -- in its top-left quarter.
+// far as a blur is concerned -- in its top-left quarter.
 func label(w, h int) *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
 	for y := 0; y < h; y++ {
@@ -93,17 +95,10 @@ func TestABlurLeavesNoPatternInItsRegionAndTouchesNothingElse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 100x60 blurred in blocks of 12: 9 by 5 cells, a colour each at most,
-	// and the 3-pixel pattern is gone from every one.
-	if n := distinct(img, image.Rect(0, 0, 100, 60)); n > 45 {
+	// The 3-pixel black-and-white pattern under the region collapses to one
+	// value: nothing of it is left to recover.
+	if n := distinct(img, image.Rect(0, 0, 100, 60)); n != 1 {
 		t.Errorf("the blurred region still has %d colours", n)
-	}
-	for y := 0; y < 60; y += 12 {
-		for x := 0; x < 96; x += 12 {
-			if n := distinct(img, image.Rect(x, y, x+12, y+12)); n != 1 {
-				t.Fatalf("cell %d,%d has %d colours", x, y, n)
-			}
-		}
 	}
 	if c := color.RGBAModel.Convert(img.At(150, 100)).(color.RGBA); c != (color.RGBA{90, 140, 60, 255}) {
 		t.Errorf("outside the region: %v", c)
@@ -229,7 +224,7 @@ func TestAReviewerBlursOnePhotoAndKeepsAnotherPrivate(t *testing.T) {
 	if bytes.Equal(served, orig) {
 		t.Fatal("the original is published")
 	}
-	if img, err := png.Decode(bytes.NewReader(served)); err != nil || img.Bounds().Dx() != 200 || distinct(img, image.Rect(0, 0, 12, 12)) != 1 {
+	if img, err := png.Decode(bytes.NewReader(served)); err != nil || img.Bounds().Dx() != 200 || distinct(img, image.Rect(0, 0, 100, 60)) != 1 {
 		t.Errorf("the served copy is not the blurred one: %v", err)
 	}
 	// The screen photo is not served, and the view says it is private.
@@ -275,23 +270,63 @@ func TestAReviewerBlursOnePhotoAndKeepsAnotherPrivate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(texts) != 1 || len(texts[0].Files) != 1 || texts[0].Files[0].Position != tag ||
-		texts[0].Files[0].Path != strings.TrimPrefix(rec.Header().Get("X-Accel-Redirect"), "/report-files/") {
+	blurred := strings.TrimPrefix(rec.Header().Get("X-Accel-Redirect"), "/report-files/")
+	blurredSum := filepath.Base(blurred)
+	if len(texts) != 1 || len(texts[0].Files) != 1 || texts[0].Files[0].Position != tag || texts[0].Files[0].Path != blurred ||
+		texts[0].Files[0].BoardName() != itoa(tag)+"-"+VersionOf(blurredSum)+"-photo.bin" {
 		t.Errorf("published texts: %+v", texts)
 	}
+	// The view links the blurred copy at an address of its own, cached for
+	// good; without a version the file is cached for minutes only.
+	blurredURL := e.viewURL(t, id, tag)
+	if !strings.HasSuffix(blurredURL, "?v="+VersionOf(blurredSum)) {
+		t.Errorf("the blurred copy's address: %s", blurredURL)
+	}
+	if rec, _ := e.get(t, blurredURL); rec.Code != 200 || !strings.Contains(rec.Header().Get("Cache-Control"), "immutable") {
+		t.Errorf("the versioned address: %d %v", rec.Code, rec.Header())
+	}
+	if rec, _ := e.get(t, "/api/v1/reports/"+id+"/files/"+itoa(tag)); rec.Header().Get("Cache-Control") != "public, max-age=300" {
+		t.Errorf("an unversioned address: %v", rec.Header())
+	}
 
-	// As sent again: the original is served, and the blurred copy nothing
-	// names any more is gone from the store.
-	blurred := strings.TrimPrefix(rec.Header().Get("X-Accel-Redirect"), "/report-files/")
+	// As sent again: the original is served at the original's address, the
+	// blurred copy's address is gone, and so is the copy nothing names any
+	// more. The board names the photo as it always did.
 	if code, _ := e.reviewPhoto(t, id, tag, map[string]any{"action": "as_sent"}); code != 200 {
 		t.Fatalf("as sent: %d", code)
 	}
-	rec, _ = e.get(t, "/api/v1/reports/"+id+"/files/"+itoa(tag))
-	if !bytes.Equal(e.onDisk(t, rec), orig) {
+	sentURL := e.viewURL(t, id, tag)
+	if sentURL == blurredURL || !strings.HasSuffix(sentURL, "?v="+VersionOf(sha(orig))) {
+		t.Errorf("as sent, the address: %s", sentURL)
+	}
+	if rec, _ := e.get(t, sentURL); rec.Code != 200 || !bytes.Equal(e.onDisk(t, rec), orig) {
 		t.Error("as sent: not the original")
+	}
+	if rec, _ := e.get(t, blurredURL); rec.Code != 404 || rec.Header().Get("Cache-Control") != "no-store" {
+		t.Errorf("the replaced copy's address: %d %v", rec.Code, rec.Header())
 	}
 	if _, err := os.Stat(filepath.Join(e.api.Files.Root, blurred)); !os.IsNotExist(err) {
 		t.Errorf("the replaced copy stays: %v", err)
+	}
+	if texts, _ := st.PublishedTexts(ctx); texts[0].Files[0].BoardName() != itoa(tag)+"-photo.bin" {
+		t.Errorf("as sent, the board's name: %+v", texts[0].Files[0])
+	}
+
+	// Blurred after it was published (r-tcckc6hn's case): the page links a
+	// new address, and the one browsers cached the original under is dead.
+	if code, _ := e.reviewPhoto(t, id, tag, map[string]any{"action": "blur", "regions": []Region{{X: 0, Y: 0, W: 0.5, H: 0.5}}}); code != 200 {
+		t.Fatalf("blur after publishing: %d", code)
+	}
+	if now := e.viewURL(t, id, tag); now == sentURL {
+		t.Error("the address did not change with the copy")
+	} else if rec, _ := e.get(t, now); rec.Code != 200 || bytes.Equal(e.onDisk(t, rec), orig) {
+		t.Errorf("the new address: %d", rec.Code)
+	}
+	if rec, _ := e.get(t, sentURL); rec.Code != 404 {
+		t.Errorf("the original's address after the blur: %d", rec.Code)
+	}
+	if texts, _ := st.PublishedTexts(ctx); texts[0].Files[0].Version == "" {
+		t.Error("the board keeps the original's name for the blurred copy")
 	}
 
 	// The guard: nothing else changes a file's public copy or the log.
@@ -306,7 +341,7 @@ func TestAReviewerBlursOnePhotoAndKeepsAnotherPrivate(t *testing.T) {
 		}
 	}
 	var n int
-	if err := e.pool.QueryRow(ctx, `SELECT count(*) FROM report_photo_reviews WHERE report_id = $1`, id).Scan(&n); err != nil || n != 3 {
+	if err := e.pool.QueryRow(ctx, `SELECT count(*) FROM report_photo_reviews WHERE report_id = $1`, id).Scan(&n); err != nil || n != 4 {
 		t.Errorf("the log has %d decisions: %v", n, err)
 	}
 }
@@ -336,3 +371,18 @@ func TestAPhotoWithoutTheConfirmationSaysSo(t *testing.T) {
 }
 
 func itoa(n int) string { return strconv.Itoa(n) }
+
+func sha(b []byte) string { s := sha256.Sum256(b); return hex.EncodeToString(s[:]) }
+
+// viewURL is the address the public view links a file at.
+func (e *env) viewURL(t *testing.T, id string, pos int) string {
+	t.Helper()
+	_, v := e.get(t, "/api/v1/reports/"+id)
+	for _, f := range v["files"].([]any) {
+		if u, _ := f.(map[string]any)["url"].(string); strings.Contains(u, "/files/"+itoa(pos)+"?") {
+			return u
+		}
+	}
+	t.Fatalf("the view links no file %d: %v", pos, v["files"])
+	return ""
+}
