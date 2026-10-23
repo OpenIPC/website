@@ -2,7 +2,8 @@
 #
 # Rebuild openipc_dev from the previous night's S3 backup, scrubbed.
 #
-#   refresh-dev.sh              restore yesterday's daily backup
+#   refresh-dev.sh              restore today's daily backup (the 02:00 one),
+#                               or yesterday's, with an alert, when it is missing
 #   refresh-dev.sh 2026-08-20   restore a specific day
 #   refresh-dev.sh --local      restore straight from production (bootstrap
 #                               only; skips S3 and proves nothing)
@@ -22,26 +23,35 @@ SRC_DB=openipc_production
 DST_DB=openipc_dev
 WORK=$(mktemp -d /tmp/openipc-refresh.XXXXXX)
 FROM_LOCAL=0
-WHEN=$(date -u -d yesterday +%Y-%m-%d)
+# backup-db.sh runs at 02:00 and names the object after that day, an hour
+# before this does at 03:00: that is the previous night's backup. Reading
+# yesterday's instead left dev a day further behind than it had to be (25 to
+# 49 hours, not 1 to 25).
+WHEN=$(date -u +%Y-%m-%d)
+FALLBACK=$(date -u -d yesterday +%Y-%m-%d)
 
 case "${1:-}" in
   --local) FROM_LOCAL=1 ;;
-  ?*)      WHEN=$1 ;;
+  ?*)      WHEN=$1; FALLBACK= ;;
 esac
 
 trap 'rm -rf "$WORK"' EXIT
 log() { printf '%s  %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
+# alert SUBJECT TEXT
+alert() {
+  if [ -n "${ALERT_EMAIL:-}" ]; then
+    printf 'To: %s\nFrom: openipc-backup@openipc.org\nSubject: [openipc.org] %s\n\n%s\n\nHost: %s\nTime: %s\n' \
+      "$ALERT_EMAIL" "$1" "$2" "$(hostname)" "$(date -u)" | sendmail -t \
+      && log "alert sent to ${ALERT_EMAIL}" \
+      || log "WARNING: could not send alert to ${ALERT_EMAIL}"
+  fi
+}
 fail() {
   log "FAILED: $*"
   # A failed dev refresh means the nightly restore-from-S3 check stopped
   # running, which is the early warning that the backup itself is broken.
   # Worth an email for the same reason backup-db.sh sends one.
-  if [ -n "${ALERT_EMAIL:-}" ]; then
-    printf 'To: %s\nFrom: openipc-backup@openipc.org\nSubject: [openipc.org] dev refresh FAILED\n\n%s\n\nHost: %s\nTime: %s\n' \
-      "$ALERT_EMAIL" "$*" "$(hostname)" "$(date -u)" | sendmail -t \
-      && log "alert sent to ${ALERT_EMAIL}" \
-      || log "WARNING: could not send alert to ${ALERT_EMAIL}"
-  fi
+  alert "dev refresh FAILED" "$*"
   exit 1
 }
 
@@ -58,10 +68,29 @@ else
   : "${S3_BUCKET:?S3_BUCKET not set}"
   AWS=(aws); [ -n "${S3_ENDPOINT_URL:-}" ] && AWS+=(--endpoint-url "$S3_ENDPOINT_URL")
 
-  log "downloading daily/${WHEN} from s3://${S3_BUCKET}"
-  "${AWS[@]}" s3 cp --only-show-errors \
-    "s3://${S3_BUCKET}/daily/${WHEN}/${ARCHIVE}" "${WORK}/${ARCHIVE}" \
-    || fail "no backup for ${WHEN} — has backup-db.sh run?"
+  fetch() {
+    log "downloading daily/$1 from s3://${S3_BUCKET}"
+    "${AWS[@]}" s3 cp --only-show-errors \
+      "s3://${S3_BUCKET}/daily/$1/${ARCHIVE}" "${WORK}/${ARCHIVE}"
+  }
+  # Whether daily/$1 holds no archive at all. `s3 ls` answers 1 with nothing
+  # listed for a key that is not there and 254 or 255 for an error, so a download
+  # that failed for any other reason is never taken for a missing backup.
+  missing() {
+    local out rc=0
+    out=$("${AWS[@]}" s3 ls "s3://${S3_BUCKET}/daily/$1/${ARCHIVE}") || rc=$?
+    [ "$rc" = 1 ] && [ -z "$out" ]
+  }
+  if ! fetch "$WHEN"; then
+    [ -n "$FALLBACK" ] || fail "no backup for ${WHEN} — has backup-db.sh run?"
+    missing "$WHEN" || fail "daily/${WHEN} could not be downloaded, and S3 does not say it is missing"
+    # Dev a day staler still beats dev down, but tonight's backup is missing
+    # or late, and this run is the only thing that would notice.
+    log "WARNING: no backup for ${WHEN}; restoring ${FALLBACK} instead"
+    alert "no backup for ${WHEN}" "The dev refresh found no daily/${WHEN} object in s3://${S3_BUCKET} and is restoring daily/${FALLBACK} instead; its log says whether that worked. Has backup-db.sh run?"
+    WHEN=$FALLBACK
+    fetch "$WHEN" || fail "no backup for ${WHEN} either — has backup-db.sh run?"
+  fi
 fi
 pg_restore --list "${WORK}/${ARCHIVE}" >/dev/null 2>&1 || fail "the archive cannot be read"
 log "archive acquired, $(stat -c %s "${WORK}/${ARCHIVE}") bytes"
