@@ -115,7 +115,7 @@ Both are in [openhisilicon](https://github.com/OpenIPC/openhisilicon).
   second stream off, and a restart neither loses video nor is reported as a
   crash. On the XM530 the main stream sizes itself to a sensor smaller than
   1080p. And you can take a firmware apart without a camera on the desk: the
-  [emulator](https://github.com/OpenIPC/qemu-hisilicon) has an `xm510` machine
+  [emulator](https://github.com/OpenIPC/qemu-bench) has an `xm510` machine
   that boots both our `xm510_lite` release and a whole flash dump through the
   camera's own bootloader. The XM530 and XM550 machines are written and
   waiting on review.

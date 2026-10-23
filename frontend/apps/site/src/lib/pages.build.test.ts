@@ -583,7 +583,7 @@ describe('the pages say what they are for', () => {
   });
 
   test('every ecosystem project links a repository under OpenIPC', () => {
-    // qemu-hisilicon was pointing at the personal account it was developed in.
+    // qemu-bench (then qemu-hisilicon) was pointing at the personal account it was developed in.
     // kaeru, under AI harnesses, is the one card that is not OpenIPC's: the
     // team works with it, and it lives in its own organisation. Named here so
     // that any other card that strays still fails.

@@ -325,7 +325,7 @@
       "proj_python_anjoy": "针对原厂安佳威视（Anjoy）摄像头在 ONVIF 和 RTSP 之外功能的库与命令行工具。",
       "proj_python_dhip": "纯标准库实现的 Dahua DHIP（大华及其 OEM 摄像头的二进制 RPC）Python 客户端。",
       "proj_python_dvr": "用 Python 配置大量使用 XMeye/NETsurveillance 协议的摄像头。",
-      "proj_qemu": "基于 QEMU 的完整海思 IP 摄像机模拟器——桌面上没有硬件也能开发和测试固件。",
+      "proj_qemu": "基于 QEMU 的海思、国科、雄迈、安凯、星宸和联咏摄像机、录像机及机顶盒 SoC 模拟器——桌面上没有硬件也能开发和测试固件。",
       "proj_raw_editor": "在浏览器中显影摄像头提供的 RAW DNG：用于传感器诊断与调校。",
       "proj_rnd_player": "为媒体工程师打造的播放器：以开发者需要的方式检视码流。",
       "proj_safari_qa": "Safari 版本：在 GitHub 托管的 macOS runner 上用 VideoToolbox 解码 HEVC，无需桌上有 Mac。",
