@@ -178,6 +178,7 @@ func TestDevRefreshRestoresTheBackupOfAnHourAgo(t *testing.T) {
 	mustContain(t, s, `FALLBACK=$(date -u -d yesterday +%Y-%m-%d)`, "the refresh has no fallback to yesterday's backup")
 	mustContain(t, s, `?*)      WHEN=$1; FALLBACK= ;;`, "a date asked for by hand would fall back to another day")
 	mustContain(t, s, `alert "no backup for ${WHEN}"`, "falling back to yesterday's backup alerts nobody")
+	mustContain(t, s, `missing "$WHEN" || fail`, "a download that failed for another reason would be taken for a missing backup")
 	if !strings.Contains(read(t, "deploy/backup-db.sh"), `STAMP=$(date -u +%Y-%m-%d)`) {
 		t.Error("backup-db.sh no longer names its object after the day it runs; the refresh's choice of day assumes it does")
 	}

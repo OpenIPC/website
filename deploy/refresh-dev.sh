@@ -73,12 +73,21 @@ else
     "${AWS[@]}" s3 cp --only-show-errors \
       "s3://${S3_BUCKET}/daily/$1/${ARCHIVE}" "${WORK}/${ARCHIVE}"
   }
+  # Whether daily/$1 holds no archive at all. `s3 ls` answers 1 with nothing
+  # listed for a key that is not there and 254 or 255 for an error, so a download
+  # that failed for any other reason is never taken for a missing backup.
+  missing() {
+    local out rc=0
+    out=$("${AWS[@]}" s3 ls "s3://${S3_BUCKET}/daily/$1/${ARCHIVE}") || rc=$?
+    [ "$rc" = 1 ] && [ -z "$out" ]
+  }
   if ! fetch "$WHEN"; then
     [ -n "$FALLBACK" ] || fail "no backup for ${WHEN} — has backup-db.sh run?"
+    missing "$WHEN" || fail "daily/${WHEN} could not be downloaded, and S3 does not say it is missing"
     # Dev a day staler still beats dev down, but tonight's backup is missing
     # or late, and this run is the only thing that would notice.
     log "WARNING: no backup for ${WHEN}; restoring ${FALLBACK} instead"
-    alert "no backup for ${WHEN}" "The dev refresh found no daily/${WHEN} object in s3://${S3_BUCKET} and restored daily/${FALLBACK} instead. Has backup-db.sh run?"
+    alert "no backup for ${WHEN}" "The dev refresh found no daily/${WHEN} object in s3://${S3_BUCKET} and is restoring daily/${FALLBACK} instead; its log says whether that worked. Has backup-db.sh run?"
     WHEN=$FALLBACK
     fetch "$WHEN" || fail "no backup for ${WHEN} either — has backup-db.sh run?"
   fi
