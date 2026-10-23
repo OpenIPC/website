@@ -9,6 +9,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+
+	"github.com/OpenIPC/website/service/internal/vendorfw"
 )
 
 // A board the catalogue did not have, added by a maintainer publishing an
@@ -36,7 +38,10 @@ type NewModel struct {
 // Suggestion is what the review page offers for a proposal: the board to
 // add, whether its maker is one the catalogue has, and the model that
 // already answers to its marking, if one does -- then the report is linked
-// to that one rather than a new board made.
+// to that one rather than a new board made. Existing is also the one board
+// the proposal's device ID or platform code leads to (evidence.go), when it
+// leads to only one: the sender named the board by what their camera calls
+// it, and the catalogue files it under another code.
 type Suggestion struct {
 	NewModel
 	MakerKnown bool   `json:"maker_known"`
@@ -50,13 +55,15 @@ var (
 
 type queryer interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 }
 
 // Suggest turns a sender's maker, marking and SoC into the board a reviewer
 // would add: the catalogue's own maker when the name or one of its aliases
 // matches -- in the database, or among the makers the importers know -- and
-// ids made the way the importers make them, cut to the ids' lengths.
-func Suggest(ctx context.Context, q queryer, maker, model, soc string) (Suggestion, error) {
+// ids made the way the importers make them, cut to the ids' lengths. texts
+// are what else the sender wrote (the report's note), read for a device ID.
+func Suggest(ctx context.Context, q queryer, maker, model, soc string, texts ...string) (Suggestion, error) {
 	s := Suggestion{NewModel: NewModel{MakerID: fit(slug(maker), 64), MakerName: strings.TrimSpace(maker),
 		Model: strings.TrimSpace(model), SoC: strings.TrimSpace(soc)}}
 	err := q.QueryRow(ctx, `
@@ -81,7 +88,42 @@ func Suggest(ctx context.Context, q queryer, maker, model, soc string) (Suggesti
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return s, err
 	}
+	if s.Existing == "" {
+		ids, err := evidenced(ctx, q, s.MakerID, model, soc, texts)
+		if err != nil {
+			return s, err
+		}
+		if len(ids) == 1 {
+			s.Existing = ids[0]
+		}
+	}
 	return s, nil
+}
+
+// evidenced lists the boards a proposal's device IDs run on, or failing
+// those the boards its marking's platform code names under its maker: a
+// device ID is the firmware's own word, a platform code only a likeness.
+func evidenced(ctx context.Context, q queryer, maker, model, soc string, texts []string) ([]string, error) {
+	if devs := DeviceIDs(append([]string{model}, texts...)...); len(devs) > 0 {
+		ids, err := collect(ctx, q, `SELECT DISTINCT d.model_id FROM (`+vendorfw.BoardDevicesSQL+`) d
+			WHERE d.device_id = ANY($1) ORDER BY 1`, devs)
+		if err != nil || len(ids) > 0 {
+			return ids, err
+		}
+	}
+	codes := PlatformCodes(model, soc)
+	if len(codes) == 0 || maker == "" {
+		return nil, nil
+	}
+	return collect(ctx, q, `SELECT DISTINCT model_id FROM (`+PlatformSQL+`) p ORDER BY 1`, codes, maker)
+}
+
+func collect(ctx context.Context, q queryer, sql string, args ...any) ([]string, error) {
+	rows, err := q.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowTo[string])
 }
 
 // CreateModel adds the board, and its maker when the catalogue has none by

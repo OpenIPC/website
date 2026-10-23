@@ -42,6 +42,9 @@ type Facts struct {
 	// The values a repeated key held before its last one: never read as the
 	// board's, but still in the document, so still redacted.
 	shadowed []Identifier
+	// The document as read, for what Identify finds in its text rather than
+	// its keys (an XM version string in firmware:).
+	doc string
 }
 
 // Parse reads ipctool's output: the YAML as printed, or with whatever a
@@ -110,7 +113,7 @@ func Parse(raw string) (string, Facts, error) {
 	f.CloudID = str(y.Board["cloudId"])
 	f.ChipID = str(y.Board["chip-id"])
 	f.MainApp = str(y.Firmware["main-app"])
-	f.shadowed = shadowed
+	f.shadowed, f.doc = shadowed, doc
 	if len(y.Sensors) > 0 {
 		f.Sensor = strings.TrimSpace(y.Sensors[0].Vendor + " " + y.Sensors[0].Model)
 	}

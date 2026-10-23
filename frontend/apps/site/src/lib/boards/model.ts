@@ -140,10 +140,13 @@ export function filterBoards(all: Entry[], s: Filters): Entry[] {
  * An XM device ID as a visitor types it off their camera's System version
  * (V5.00.R02.000559A7.10010...): eight letters and digits, mostly digits
  * (000559A7, 000929ZR, C2106510). A word (mtdparts) or a hex literal
- * (0x820000) is something else to search for.
+ * (0x820000) is something else to search for. The whole version string, or
+ * a firmware file named with it, is read for the ID in its fourth field.
  */
 export function deviceIdOf(q: string): string | null {
   const s = q.trim().toUpperCase();
+  const version = /(?:^|[^0-9A-Z])V\d\.\d{2}\.R\d{2}\.([0-9A-Z]{8})(?:[^0-9A-Z]|$)/.exec(s);
+  if (version) return version[1];
   if (!/^[0-9A-Z]{8}$/.test(s) || s.startsWith('0X')) return null;
   return (s.match(/[0-9]/g) ?? []).length >= 4 ? s : null;
 }
@@ -169,8 +172,16 @@ const firmwareNames = (m: Pick<Model, 'devices'>): string[] =>
  * The boards whose code, other codes, name, lead, SoC, product line, sensor
  * or firmware names carry every word of the query -- what a visitor typing a model code
  * or a product name means. Exact codes first, then codes that contain it.
+ * A version string or a firmware file name no board carries whole finds the
+ * boards that run its device ID.
  */
 export function matchBoards(all: Entry[], q: string): Entry[] {
+  const found = matchWords(all, q);
+  const id = deviceIdOf(q);
+  return found.length === 0 && id && id !== q.trim().toUpperCase() ? matchWords(all, id) : found;
+}
+
+function matchWords(all: Entry[], q: string): Entry[] {
   const words = q.toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
   const whole = squeeze(q);

@@ -56,7 +56,7 @@ func (a *API) Handlers() map[string]http.Handler {
 	}
 }
 
-func (a *API) store() *Store { return &Store{DB: a.DB, SoC: a.SoC} }
+func (a *API) store() *Store { return &Store{DB: a.DB, SoC: a.SoC, Files: a.Files} }
 
 // Store is the reports' rows, for the club's pages.
 func (a *API) Store() *Store { return a.store() }
@@ -275,6 +275,8 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		}
 		all = append([]part{{kind: "backup", name: name, mime: "application/octet-stream", in: in.backup}}, all...)
 	}
+	// What the report says in words, for Identify's device ID.
+	texts := []string{in.fields["note"]}
 	for _, p := range all {
 		f, err := prepare(p)
 		if err != nil {
@@ -282,6 +284,13 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 			return
 		}
 		rep.Files = append(rep.Files, f)
+		if textKinds[p.kind] {
+			if rd, err := p.in.Open(); err == nil {
+				if b, err := io.ReadAll(rd); err == nil {
+					texts = append(texts, string(b))
+				}
+			}
+		}
 	}
 	err = st.Insert(ctx, rep, DailyPerClient, func() error {
 		for _, place := range places {
@@ -308,7 +317,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		a.fail(w, "the report", err)
 		return
 	}
-	ident, err := Identify(ctx, a.DB, facts)
+	ident, err := Identify(ctx, a.DB, facts, texts...)
 	if err != nil {
 		a.Log.Warn("reports: identify failed", "report", rep.ID, "err", err)
 	}

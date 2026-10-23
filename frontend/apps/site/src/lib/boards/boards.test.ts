@@ -191,6 +191,16 @@ describe('XM device IDs', () => {
     expect(deviceIdOf('000559A7.1')).toBeNull();
   });
 
+  test('a whole version string or a firmware file named with one is read for its device ID', () => {
+    expect(deviceIdOf('V5.04.R02.000807DD.10010.346732.0000010')).toBe('000807DD');
+    expect(deviceIdOf(' v5.00.r02.000559a7.10010 ')).toBe('000559A7');
+    expect(deviceIdOf('General_IPC_GK7205V500_G5SF_V5.04.R02.000807DD.10010.346732.0000010.bin')).toBe('000807DD');
+    expect(deviceIdOf('Software version: V5.00.R02.C2106510.10010.040400.0000000')).toBe('C2106510');
+    expect(deviceIdOf('V5.00.R02.000559A7X.10010')).toBeNull();
+    expect(deviceIdOf('DEV5.00.R02.000559A7.10010')).toBeNull();
+    expect(deviceIdOf('General_IPC_HI3516CV300_50H20L_S38.bin')).toBeNull();
+  });
+
   test('a board is OpenIPC-ready by the device IDs coupler has an image for', () => {
     expect(couplerDevices({ devices: [{ id: '000559A7', stock: [], coupler: fw }, { id: '00002520', stock: [fw], coupler: null }] })).toEqual(['000559A7']);
     expect(couplerDevices({})).toEqual([]);
@@ -202,6 +212,9 @@ describe('XM device IDs', () => {
       model('other', { model: 'IPG-50H20PLS-S', devices: [{ id: '00002520', stock: [], coupler: null }] }),
     ] }] });
     expect(matchBoards(list, '000559a7').map((m) => m.id)).toEqual(['ivg']);
+    expect(matchBoards(list, 'V5.00.R02.000559A7.10010.346535.0000000').map((m) => m.id)).toEqual(['ivg']);
+    expect(matchBoards(list, 'General_IPC_HI3516EV300_85HF20_V5.00.R02.00002520.10010.bin').map((m) => m.id)).toEqual(['other']);
+    expect(matchBoards(list, 'V5.00.R02.00009999.10010').map((m) => m.id)).toEqual([]);
   });
 
   test("searching Xiongmai's hardware platform finds the boards whose firmware is named for it", () => {
