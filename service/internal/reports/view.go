@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -32,6 +33,23 @@ type View struct {
 	// Guess is, while a report waits for review, the catalogue board it most
 	// likely is -- a name from the catalogue, nothing from the report.
 	Guess *Match `json:"guess,omitempty"`
+	// Question: while the report is asked, what the reviewer asked its
+	// sender (Store.Ask). Anyone with the id reads it, as they read the
+	// receipt: for a report sent signed out it is the only way to the sender.
+	Question string `json:"question,omitempty"`
+	// MarkingWanted: while it waits, nothing in it says which board it is
+	// (MarkingWanted), and a photo of the board's marking would.
+	MarkingWanted bool `json:"marking_wanted,omitempty"`
+}
+
+// MarkingWanted is a report that does not say which board it is: ipctool
+// read no board code, the sender named no board and proposed none, it goes
+// with no other report (with: the report it joins or answers), and no photo
+// came with it. The chip and the
+// sensor are shared by dozens of boards; a maintainer cannot place it
+// without asking for the board's marking.
+func MarkingWanted(f Facts, model string, proposal *Proposal, with string, photos int) bool {
+	return strings.TrimSpace(f.BoardModel) == "" && model == "" && proposal == nil && with == "" && photos == 0
 }
 
 type ViewFile struct {
@@ -105,11 +123,20 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 		return nil, err
 	}
 	if !published {
-		if v.State == "pending" {
+		if Waiting(v.State) {
 			devices, _ := s.DeviceIDs(ctx, id)
 			if id, err := IdentifyDevices(ctx, s.DB, f, devices); err == nil && len(id.Matches) > 0 {
 				id = id.Public()
 				v.Guess = &id.Matches[0]
+			}
+			if v.MarkingWanted, err = s.markingWanted(ctx, id, f, v.Files); err != nil {
+				return nil, err
+			}
+		}
+		if v.State == "asked" {
+			if err := s.DB.QueryRow(ctx, `SELECT note FROM report_reviews WHERE report_id = $1 ORDER BY id DESC LIMIT 1`, id).
+				Scan(&v.Question); err != nil {
+				return nil, err
 			}
 		}
 		return v, nil
@@ -140,6 +167,39 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 		}
 	}
 	return v, nil
+}
+
+// markingWanted is MarkingWanted for a stored report; one that was
+// answered from its receipt has had what it wanted sent.
+func (s *Store) markingWanted(ctx context.Context, id string, f Facts, files []ViewFile) (bool, error) {
+	photos := 0
+	for _, file := range files {
+		if file.Kind == "photo" {
+			photos++
+		}
+	}
+	var model string
+	err := s.DB.QueryRow(ctx, `SELECT coalesce(model_id, '') FROM report_submissions WHERE report_id = $1`, id).Scan(&model)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return false, err
+	}
+	p, err := s.ProposalOf(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	joins, err := s.JoinsOf(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	answers, err := s.AnswersOf(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	by, err := s.AnsweredBy(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	return len(by) == 0 && MarkingWanted(f, model, p, joins+answers, photos), nil
 }
 
 // ForModel is every published report linked to one board, newest first:
@@ -211,7 +271,7 @@ type Listed struct {
 func (s *Store) List(ctx context.Context, state string) ([]Listed, error) {
 	rows, err := s.DB.Query(ctx, `
 		SELECT r.id, r.received_at, r.channel,
-		  coalesce((SELECT CASE decision WHEN 'publish' THEN 'published' WHEN 'reject' THEN 'rejected' WHEN 'withdraw' THEN 'withdrawn' ELSE 'pending' END
+		  coalesce((SELECT CASE decision WHEN 'publish' THEN 'published' WHEN 'reject' THEN 'rejected' WHEN 'withdraw' THEN 'withdrawn' WHEN 'ask' THEN 'asked' ELSE 'pending' END
 		            FROM report_reviews rv WHERE rv.report_id = r.id ORDER BY rv.id DESC LIMIT 1), 'pending'),
 		  trim(r.chip_vendor || ' ' || r.chip_model), r.sensor, trim(r.board_vendor || ' ' || r.board_model),
 		  (SELECT count(*) FROM report_files f WHERE f.report_id = r.id)::int, r.backup_consent,

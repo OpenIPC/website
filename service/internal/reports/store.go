@@ -51,6 +51,9 @@ type Report struct {
 	// report its member's, and Joins the report it was given to go with.
 	Code  string
 	Joins string
+	// Answers: the report waiting for review this one answers -- sent from
+	// its receipt, when its sender was asked for something.
+	Answers string
 }
 
 // Proposal is a camera the catalogue does not have yet, as its sender names
@@ -202,6 +205,11 @@ func (s *Store) Insert(ctx context.Context, r *Report, limit int, place func() e
 				return err
 			}
 		}
+		if r.Answers != "" {
+			if _, err := tx.Exec(ctx, `INSERT INTO report_answers (report_id, answers) VALUES ($1, $2)`, r.ID, r.Answers); err != nil {
+				return err
+			}
+		}
 		if p := r.Proposal; p != nil {
 			if _, err := tx.Exec(ctx, `INSERT INTO report_proposals (report_id, maker, board, soc) VALUES ($1, $2, $3, $4)`,
 				r.ID, p.Maker, p.Board, p.SoC); err != nil {
@@ -261,16 +269,22 @@ func (s *Store) RemoveUnreferenced(ctx context.Context, files *Files, sum string
 	return removed, err
 }
 
-// Status is a report's newest review: pending, published, rejected or
-// withdrawn.
+// Status is a report's newest review: pending, asked, published, rejected
+// or withdrawn.
 type Status struct {
 	State string     `json:"status"`
 	At    *time.Time `json:"reviewed_at,omitempty"`
 }
 
-// An 'edit' row is the member changing a decided report (Store.Edit): it is
-// pending again until a maintainer decides once more.
-var states = map[string]string{"publish": "published", "reject": "rejected", "withdraw": "withdrawn", "edit": "pending"}
+// An 'edit' row is the member changing a decided or asked report
+// (Store.Edit): it is pending again until a maintainer decides once more.
+// An 'ask' row is a question to the sender (Store.Ask). A decision this
+// image does not know -- one a newer image wrote -- is pending: waiting,
+// never published.
+var states = map[string]string{"publish": "published", "reject": "rejected", "withdraw": "withdrawn", "edit": "pending", "ask": "asked"}
+
+// Waiting: a report no maintainer has decided, whether or not one asked.
+func Waiting(state string) bool { return state == "pending" || state == "asked" }
 
 func (s *Store) status(ctx context.Context, q querier, id string) (Status, error) {
 	var decision string
@@ -283,7 +297,40 @@ func (s *Store) status(ctx context.Context, q querier, id string) (Status, error
 	if err != nil {
 		return Status{}, err
 	}
-	return Status{State: states[decision], At: &at}, nil
+	state, ok := states[decision]
+	if !ok {
+		state = "pending"
+	}
+	return Status{State: state, At: &at}, nil
+}
+
+// Status is a report's state, or ErrNotFound.
+func (s *Store) Status(ctx context.Context, id string) (Status, error) {
+	if err := s.exists(ctx, id); err != nil {
+		return Status{}, err
+	}
+	return s.status(ctx, s.DB, id)
+}
+
+// AnswersOf is the report a report was sent to answer, or "".
+func (s *Store) AnswersOf(ctx context.Context, id string) (string, error) {
+	var answers string
+	err := s.DB.QueryRow(ctx, `SELECT answers FROM report_answers WHERE report_id = $1`, id).Scan(&answers)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	return answers, err
+}
+
+// AnsweredBy is every report sent to answer this one, oldest first.
+func (s *Store) AnsweredBy(ctx context.Context, id string) ([]string, error) {
+	rows, err := s.DB.Query(ctx, `
+		SELECT a.report_id FROM report_answers a JOIN reports r ON r.id = a.report_id
+		WHERE a.answers = $1 ORDER BY r.received_at, r.id`, id)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowTo[string])
 }
 
 type querier interface {
@@ -296,7 +343,7 @@ var ErrNotFound = errors.New("no such report")
 // Review records a decision. Publishing and rejecting are rows added, never
 // a row changed: the history is the state.
 func (s *Store) Review(ctx context.Context, id, decision, by, note string) error {
-	if _, ok := states[decision]; !ok || decision == "withdraw" || decision == "edit" {
+	if _, ok := states[decision]; !ok || decision == "withdraw" || decision == "edit" || decision == "ask" {
 		return fmt.Errorf("a review publishes or rejects; withdrawing is takedown")
 	}
 	if err := s.exists(ctx, id); err != nil {

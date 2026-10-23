@@ -164,6 +164,21 @@ func clubCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, args
 	return errors.New(clubUsage)
 }
 
+// askClub is the club as `openipc reports ask` needs it: the bot and the
+// mail relay to tell the sender, when they are configured. The bot is not
+// started (no webhook is set); it only sends.
+func askClub(cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool) *club.API {
+	api := &club.API{DB: pool, Log: log, Reports: &reports.API{DB: pool}, Cfg: club.Config{SiteURL: cfg.ClubSiteURL}}
+	if cfg.TelegramBotToken != "" {
+		api.Telegram = &club.Telegram{Token: cfg.TelegramBotToken, API: "https://api.telegram.org",
+			HTTP: &http.Client{Timeout: 20 * time.Second}, Log: log}
+	}
+	if cfg.SMTPAddr != "" {
+		api.Mail = &club.SMTP{Addr: cfg.SMTPAddr, User: cfg.SMTPUser, Password: cfg.SMTPPassword, From: cfg.MailFrom}
+	}
+	return api
+}
+
 // settleWall is the nightly settlement of the Open Wall's stars. The bot
 // writes to the owners when it is configured; it is not started here (no
 // webhook is set), it only sends.

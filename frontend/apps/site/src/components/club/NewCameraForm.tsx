@@ -71,6 +71,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
             ? <a href={pathFor(locale, '/club')}>{t('club.my_link')}</a>
             : <a href={`${pathFor(locale, '/cameras/report')}?id=${id}`}>{t('club.receipt')}</a>}
         </p>
+        {state.sent.marking_wanted && <p class="m-0 text-[#8a4b00]">{t('club.sent_marking')}</p>}
         {member && (
           <div class="text-body">
             <IpctoolCode joins={id} locale={locale} t={t} label={t('club.code_add_ipctool')} />
@@ -100,6 +101,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
       <label class="grid gap-1 text-[12.5px] text-body-secondary">{t('club.new_photos')}
         <input type="file" multiple required accept="image/jpeg,image/png,image/webp"
           onChange={(e) => setPhotos([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
+        <span class="text-[12px]">{t('club.new_photos_marking')}</span>
       </label>
       <div class="grid gap-1">
         <label class="grid gap-1 text-[12.5px] text-body-secondary">{t('club.send_dump')}

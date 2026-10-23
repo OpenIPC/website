@@ -450,6 +450,107 @@ func (a *API) notifyDecision(ctx context.Context, member, report, decision strin
 	})
 }
 
+// Asked is what asking a report's sender did.
+type Asked struct {
+	// Member: who sent it, "" for a report sent signed out (its receipt
+	// shows the question).
+	Member string
+	// Told: how the question was sent to them -- "telegram" or "email",
+	// each only once it was handed over -- or "" when nothing was sent:
+	// their page on /club shows it either way.
+	Told string
+	// Quiet: they muted notices, which is why nothing was sent.
+	Quiet bool
+}
+
+// Ask puts a reviewer's question to a report's sender (reports.Store.Ask)
+// and tells a member sender, linking to the report on /club, where editing
+// it is the answer. The review page and `openipc reports ask` both come here.
+func (a *API) Ask(ctx context.Context, id, by, question string, revision *int) (Asked, error) {
+	member, err := a.Reports.Store().Ask(ctx, id, by, question, revision)
+	if err != nil {
+		return Asked{}, err
+	}
+	res := Asked{Member: member}
+	if member != "" {
+		res.Told, res.Quiet = a.notifyAsk(ctx, member, id, strings.TrimSpace(question))
+	}
+	a.Log.Info("club: sender asked", "report", id, "by", by, "member", member, "told", res.Told, "quiet", res.Quiet)
+	return res, nil
+}
+
+// notifyAsk writes the question through the bot when the member has a
+// chat with it, and otherwise -- or when the bot fails -- by mail to the
+// address they sign in with: a question left unseen keeps the report
+// waiting for good. It answers the channel that took the message, "" when
+// none did, and whether the member muted notices: then nothing is sent,
+// as with decisions.
+func (a *API) notifyAsk(ctx context.Context, member, report, question string) (told string, quiet bool) {
+	if err := a.DB.QueryRow(ctx, `SELECT quiet FROM club_members WHERE id = $1`, member).Scan(&quiet); err != nil {
+		a.Log.Warn("club: the asked member unreadable", "member", member, "err", err)
+		return "", false
+	}
+	if quiet {
+		return "", true
+	}
+	if a.Telegram != nil {
+		var chat int64
+		var l string
+		err := a.DB.QueryRow(ctx, `
+			SELECT chat_id, locale FROM club_identities
+			WHERE member_id = $1 AND provider = 'telegram' AND chat_id IS NOT NULL
+			ORDER BY seen_at DESC LIMIT 1`, member).Scan(&chat, &l)
+		switch {
+		case err == nil:
+			err = a.Telegram.Send(ctx, chat, fmt.Sprintf(t(l, "asked"), report, html.EscapeString(question)),
+				Button{Text: t(l, "open_report"), URL: a.reportLink(l, report)})
+			if err == nil {
+				return "telegram", false
+			}
+			a.Log.Warn("club: telegram question failed", "member", member, "err", err)
+		case !errors.Is(err, pgx.ErrNoRows):
+			a.Log.Warn("club: the asked member's chat unreadable", "member", member, "err", err)
+		}
+	}
+	if a.Mail == nil {
+		return "", false
+	}
+	var to, l string
+	err := a.DB.QueryRow(ctx, `
+		SELECT subject, locale FROM club_identities WHERE member_id = $1 AND provider = 'email'
+		ORDER BY seen_at DESC LIMIT 1`, member).Scan(&to, &l)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			a.Log.Warn("club: the asked member's address unreadable", "member", member, "err", err)
+		}
+		return "", false
+	}
+	mail, ok := askMails[l]
+	if !ok {
+		mail = askMails["en"]
+	}
+	if err := a.Mail.Send(to, fmt.Sprintf(mail[0], report), fmt.Sprintf(mail[1], report, question, a.reportLink(l, report))); err != nil {
+		a.Log.Warn("club: question mail failed", "member", member, "err", err)
+		return "", false
+	}
+	return "email", false
+}
+
+// reportLink is a member's report on their page, in their language.
+func (a *API) reportLink(locale, report string) string {
+	prefix := ""
+	if locale == "ru" || locale == "zh" {
+		prefix = "/" + locale
+	}
+	return a.Cfg.SiteURL + prefix + "/club/#" + report
+}
+
+var askMails = map[string][2]string{
+	"en": {"A question about your report %s", "A maintainer reviewing your report %s on openipc.org asks:\n\n%s\n\nTo answer, edit the report on your page -- add the photo, correct the marking, or answer in its note:\n\n%s\n\nYour edit puts it back in front of the reviewer.\n\n-- OpenIPC\n"},
+	"ru": {"Вопрос по вашему отчёту %s", "Сопровождающий, проверяющий ваш отчёт %s на openipc.org, спрашивает:\n\n%s\n\nЧтобы ответить, измените отчёт на своей странице -- добавьте фото, исправьте маркировку или ответьте в примечании:\n\n%s\n\nПосле правки отчёт снова попадёт к проверяющему.\n\n-- OpenIPC\n"},
+	"zh": {"关于你的报告 %s 的问题", "审核你在 openipc.org 提交的报告 %s 的维护者问：\n\n%s\n\n回答方式：在你的个人页面编辑该报告——补充照片、更正标记，或在备注中回答：\n\n%s\n\n编辑后报告会重新回到审核者面前。\n\n-- OpenIPC\n"},
+}
+
 var messages = map[string]map[string]string{
 	"en": {
 		"signed_in":          "✅ Signed in to openipc.org as <b>%s</b>. You can go back to the browser.",
@@ -465,6 +566,8 @@ var messages = map[string]map[string]string{
 		"accepted":           "✅ Your report <b>%s</b> was accepted. <b>+%d ★</b>, %d in total.",
 		"accepted_known":     "✅ Your report <b>%s</b> was accepted. The catalogue already had what it brings, so it earns no stars this time. Thank you anyway.",
 		"rejected":           "⚪ Your report <b>%s</b> was not accepted. Your page on openipc.org says why when the reviewer left a note.",
+		"asked":              "❓ A question about your report <b>%s</b>:\n\n%s\n\nEdit the report on openipc.org to answer: add a photo, correct it, or reply in its note. It goes back to the reviewer then.",
+		"open_report":        "Open the report",
 		"confirm":            "Sign in to openipc.org as <b>%s</b>?\nAsked for from %s at %s UTC. Tap Yes only if you asked for it yourself, just now.",
 		"confirm_yes":        "✅ Yes, sign me in",
 		"confirm_no":         "✖ No, it was not me",
@@ -493,6 +596,8 @@ var messages = map[string]map[string]string{
 		"accepted":           "✅ Ваш отчёт <b>%s</b> принят. <b>+%d ★</b>, всего %d.",
 		"accepted_known":     "✅ Ваш отчёт <b>%s</b> принят. В каталоге это уже было, поэтому звёзд в этот раз нет. Всё равно спасибо.",
 		"rejected":           "⚪ Ваш отчёт <b>%s</b> не принят. Если проверяющий оставил пояснение, оно на вашей странице на openipc.org.",
+		"asked":              "❓ Вопрос по вашему отчёту <b>%s</b>:\n\n%s\n\nЧтобы ответить, измените отчёт на openipc.org: добавьте фото, исправьте его или ответьте в примечании. После этого он вернётся к проверяющему.",
+		"open_report":        "Открыть отчёт",
 		"confirm":            "Войти на openipc.org как <b>%s</b>?\nЗапрос с адреса %s в %s UTC. Нажмите «Да», только если вы сами запросили вход только что.",
 		"confirm_yes":        "✅ Да, войти",
 		"confirm_no":         "✖ Нет, это не я",
@@ -521,6 +626,8 @@ var messages = map[string]map[string]string{
 		"accepted":           "✅ 你的报告 <b>%s</b> 已通过。<b>+%d ★</b>，共 %d。",
 		"accepted_known":     "✅ 你的报告 <b>%s</b> 已通过。目录中已有相同内容，因此本次没有星星。仍然感谢！",
 		"rejected":           "⚪ 你的报告 <b>%s</b> 未通过。审核者如留有说明，可在 openipc.org 的个人页面查看。",
+		"asked":              "❓ 关于你的报告 <b>%s</b> 的问题：\n\n%s\n\n请在 openipc.org 编辑该报告来回答：补充照片、更正内容，或在备注中回复。之后报告会回到审核者那里。",
+		"open_report":        "打开报告",
 		"confirm":            "以 <b>%s</b> 身份登录 openipc.org？\n请求来自 %s，时间 %s UTC。仅当这是你刚刚亲自发起的登录时才点“是”。",
 		"confirm_yes":        "✅ 是，登录",
 		"confirm_no":         "✖ 不是我",

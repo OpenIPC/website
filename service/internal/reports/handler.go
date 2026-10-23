@@ -105,7 +105,10 @@ func (a *API) upload(w http.ResponseWriter, r *http.Request) {
 // model) needs no ipctool output: a boot log or a photo of a known board is a report too, and so is
 // a flash dump read with a programmer rather than ipctool. So is a camera
 // the catalogue does not have, proposed by its maker and marking (the
-// fields maker, board and soc) with at least one photo of it.
+// fields maker, board and soc) with at least one photo of it. So is an
+// answer to a report waiting for review (the field answers, its id): what
+// its receipt's form sends when the reviewer asked for a photo of the
+// marking, which a sender who cannot name the board can still take.
 func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	ctx := r.Context()
 	st := a.store()
@@ -163,6 +166,29 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		}
 		if !live {
 			a.refuse(w, http.StatusBadRequest, code+": "+ErrBadCode.Error()+"; take a new one at "+clubURL(r)+" or send without it")
+			return
+		}
+	}
+
+	answers := strings.ToLower(in.fields["answers"])
+	if answers != "" {
+		// What ipctool sends is what it reads; an answer is the receipt's
+		// form's, or an agent's acting for the sender.
+		if channel == "ipctool" {
+			a.refuse(w, http.StatusBadRequest, "answers is the receipt's form's and an agent's field: channel web or agent")
+			return
+		}
+		if !reportID.MatchString(answers) {
+			a.refuse(w, http.StatusBadRequest, "answers: the id of the report this one answers, r-xxxxxxxx")
+			return
+		}
+		answered, err := st.Status(ctx, answers)
+		if err != nil && !errors.Is(err, ErrNotFound) {
+			a.fail(w, "the report answered", err)
+			return
+		}
+		if err != nil || !Waiting(answered.State) {
+			a.refuse(w, http.StatusBadRequest, "answers: no report waiting for review has the id "+answers)
 			return
 		}
 	}
@@ -233,7 +259,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	}
 	var doc string
 	var facts Facts
-	if in.yaml != "" || model == "" && prop == nil {
+	if in.yaml != "" || model == "" && prop == nil && answers == "" {
 		doc, facts, err = Parse(in.yaml)
 		if err != nil {
 			a.refuse(w, http.StatusBadRequest, err.Error())
@@ -258,7 +284,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		NotePublic: Redact(in.fields["note"], facts, key),
 		YAML:       doc, YAMLPublic: Redact(doc, facts, key), Facts: facts,
 		IDHashes: facts.IDHashes(key), Consent: consent, ClientHash: client,
-		Member: member, Model: model, Proposal: prop, Code: code,
+		Member: member, Model: model, Proposal: prop, Code: code, Answers: answers,
 	}
 	sum := sha256.Sum256([]byte(doc))
 	rep.YAMLSHA256 = hex.EncodeToString(sum[:])
@@ -338,6 +364,19 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		"next": "OpenIPC's maintainers review each report before it is published. Nothing identifying the camera " +
 			"(MAC, die ID, cloud ID) is ever shown; the receipt shows the report's state.",
 	}
+	photos := 0
+	for _, f := range rep.Files {
+		if f.Kind == "photo" {
+			photos++
+		}
+	}
+	if MarkingWanted(facts, rep.Model, rep.Proposal, rep.Joins+rep.Answers, photos) {
+		// ipctool prints next; the site's forms read marking_wanted.
+		out["marking_wanted"] = true
+		out["next"] = out["next"].(string) + " ipctool found no board code, and the chip alone is shared by many boards: " +
+			"a photo of the board's marking (the code printed on the PCB, or its sticker) is what lets a maintainer place it. " +
+			"Send one from " + receiptURL(r, rep.ID) + ", which files it as this report's answer."
+	}
 	if raw {
 		out["backup"] = map[string]any{"partitions": 0, "flash_bytes": in.backup.Bytes}
 	} else if in.backup != nil {
@@ -349,11 +388,14 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	if rep.Joins != "" {
 		out["joins"] = rep.Joins
 	}
+	if rep.Answers != "" {
+		out["answers"] = rep.Answers
+	}
 	writeJSON(w, http.StatusCreated, out)
 }
 
 var formFields = map[string]bool{"consent": true, "channel": true, "tool": true, "note": true, "model": true,
-	"maker": true, "board": true, "soc": true, "club": true}
+	"maker": true, "board": true, "soc": true, "club": true, "answers": true}
 
 // proposalOf is the camera a send proposes, nil when it proposes none: the
 // send form's, for a board the catalogue does not have, with a photo of it.
@@ -441,6 +483,9 @@ func receiptURL(r *http.Request, id string) string {
 }
 
 var safeName = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
+
+// reportID is a report's id as NewID makes it.
+var reportID = regexp.MustCompile(`^r-[a-z0-9]{8}$`)
 
 func fileName(given, kind string, i int) string {
 	n := safeName.ReplaceAllString(path.Base(strings.ReplaceAll(given, `\`, "/")), "_")
@@ -552,10 +597,11 @@ func (a *API) read(r *http.Request, edit bool) (*received, int, error) {
 			}
 			in.parts[len(in.parts)-1].mime = mt
 		default:
-			return in, http.StatusBadRequest, fmt.Errorf("%q is not a part a report has: yaml, backup, photo, boot_log, uboot_env, note, document, consent, channel, tool, model, maker, board, soc, club", name)
+			return in, http.StatusBadRequest, fmt.Errorf("%q is not a part a report has: yaml, backup, photo, boot_log, uboot_env, note, document, consent, channel, tool, model, maker, board, soc, club, answers", name)
 		}
 	}
-	if !edit && in.yaml == "" && in.backup == nil && in.fields["model"] == "" && in.fields["maker"] == "" && in.fields["board"] == "" {
+	if !edit && in.yaml == "" && in.backup == nil && in.fields["model"] == "" && in.fields["maker"] == "" && in.fields["board"] == "" &&
+		in.fields["answers"] == "" {
 		return in, http.StatusBadRequest, errors.New("a report needs ipctool's output: a yaml part, or a backup")
 	}
 	return in, 0, nil

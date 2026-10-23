@@ -117,7 +117,7 @@ func (s *Store) Kin(ctx context.Context, ids []string) (map[string]*Kin, error) 
 			UNION ALL SELECT 'sender', of, id FROM sender
 			UNION ALL SELECT 'duplicate', of, id FROM dup)
 		SELECT k.how, k.of, k.id,
-		  CASE o.decision WHEN 'publish' THEN 'published' WHEN 'reject' THEN 'rejected' WHEN 'withdraw' THEN 'withdrawn' ELSE 'pending' END
+		  CASE o.decision WHEN 'publish' THEN 'published' WHEN 'reject' THEN 'rejected' WHEN 'withdraw' THEN 'withdrawn' WHEN 'ask' THEN 'asked' ELSE 'pending' END
 		FROM kin k JOIN st o ON o.id = k.id
 		WHERE o.decision <> 'withdraw'
 		ORDER BY k.of, o.received_at, k.id`, ids)

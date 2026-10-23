@@ -16,7 +16,7 @@ import {
   clock, fetchCameras, fetchMe, fetchMine, finishConfirm, finishWho, pollLogin, rename, secondsLeft, setListed, setQuiet, signOut,
   startEmail, startTelegram, STARS, type Cameras as CameraData, type Me, type Member, type MemberReport,
 } from '../../lib/club';
-import { size } from '../../lib/reports';
+import { size, waiting } from '../../lib/reports';
 import Cameras from './Cameras';
 import Crashes from './Crashes';
 import IpctoolCode from './IpctoolCode';
@@ -244,7 +244,7 @@ function MemberPage({ member, ways, locale, t, onChange }: {
   const [nameError, setNameError] = useState<string | null>(null);
   // What waits for review comes with the reports, not with /me: the navbar
   // asks /me on every page and needs only the total.
-  const pending = (reports ?? []).reduce((n, r) => n + (r.status === 'pending' ? r.pending : 0), 0);
+  const pending = (reports ?? []).reduce((n, r) => n + (waiting(r.status) ? r.pending : 0), 0);
 
   const loadReports = () => fetchMine().then((r) => setReports(r.reports)).catch(() => setError(true));
   useEffect(() => { void loadReports(); }, [member.id]);
@@ -254,6 +254,10 @@ function MemberPage({ member, ways, locale, t, onChange }: {
   useEffect(() => {
     if (cams && location.hash === '#cameras') document.getElementById('cameras')?.scrollIntoView();
   }, [cams !== null]);
+  // So does a link to one report (#r-xxxxxxxx: the question the bot or a mail brought).
+  useEffect(() => {
+    if (reports && /^#r-[a-z0-9]{8}$/.test(location.hash)) document.getElementById(location.hash.slice(1))?.scrollIntoView();
+  }, [reports !== null]);
 
   const telegram = member.identities.some((i) => i.provider === 'telegram' && i.chat);
   const missing = (['telegram', 'github', 'email'] as const).filter((p) => !member.identities.some((i) => i.provider === p));
@@ -366,12 +370,12 @@ function Ledger({ reports, locale, t, onChange }: { reports: MemberReport[]; loc
         </thead>
         <tbody>
           {reports.map((r) => {
-            const shown = r.status === 'pending' ? r.pending : r.stars;
+            const shown = waiting(r.status) ? r.pending : r.stars;
             const board = r.board ? `${r.board.manufacturer} ${r.board.model}`
               : r.proposal ? t('club.proposed', { board: `${r.proposal.maker} ${r.proposal.board}` })
               : (r.chip || t('club.no_board'));
             return (
-              <tr key={r.id} class="border-t border-hairline align-top">
+              <tr key={r.id} id={r.id} class="border-t border-hairline align-top">
                 <td class="grid gap-1 px-4 py-3">
                   <span>
                     {r.board ? <a href={pathFor(locale, boardPath(r.board.id))}>{board}</a> : board}
@@ -396,20 +400,30 @@ function Ledger({ reports, locale, t, onChange }: { reports: MemberReport[]; loc
                       {t('club.edited_at', { time: new Date(r.edited_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) })}
                     </span>
                   )}
+                  {r.status === 'asked' && r.review_note && (
+                    <div class="grid gap-1 rounded-md border border-[#e8c58f] bg-[#fff4e2] px-3 py-2 text-[13px] text-[#8a4b00]" role="note">
+                      <b class="font-semibold">{t('club.asked_title')}</b>
+                      <span class="whitespace-pre-wrap text-body">{r.review_note}</span>
+                      <span>{t('club.asked_how')}</span>
+                      {editing !== r.id && (
+                        <button type="button" class="site-btn site-btn-primary site-btn-sm w-fit" onClick={() => setEditing(r.id)}>{t('club.asked_answer')}</button>
+                      )}
+                    </div>
+                  )}
                   {editing === r.id
                     ? <EditReport report={r} t={t} onCancel={() => setEditing(null)} onSaved={() => { setEditing(null); onChange(); }} />
-                    : r.status !== 'withdrawn' && (
+                    : r.status !== 'withdrawn' && r.status !== 'asked' && (
                       <button type="button" class="w-fit cursor-pointer p-0 text-left text-[13px] text-brand-blue underline" onClick={() => setEditing(r.id)}>
                         {t('club.edit')}
                       </button>
                     )}
                   {r.status !== 'rejected' && !r.joins && <IpctoolCode joins={r.id} locale={locale} t={t} label={t('club.code_add_ipctool')} />}
-                  {r.review_note && (
+                  {r.review_note && r.status !== 'asked' && (
                     <span class="text-[12.5px] text-body"><b class="font-semibold">{t('club.review_note_label')}:</b> {r.review_note}</span>
                   )}
                 </td>
                 <td class="px-4 py-3"><span class={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12.5px] font-semibold ${STATUS_TONE[r.status]}`}>{t(`club.status_${r.status}`)}</span></td>
-                <td class={`px-4 py-3 text-right font-semibold whitespace-nowrap tabular-nums ${r.status === 'pending' ? 'font-normal text-body-secondary' : shown > 0 ? 'text-[#9a5b00]' : 'text-body-secondary'}`}>
+                <td class={`px-4 py-3 text-right font-semibold whitespace-nowrap tabular-nums ${waiting(r.status) ? 'font-normal text-body-secondary' : shown > 0 ? 'text-[#9a5b00]' : 'text-body-secondary'}`}>
                   {shown > 0 ? `+${shown} ★` : '0'}
                 </td>
               </tr>

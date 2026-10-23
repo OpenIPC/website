@@ -647,7 +647,8 @@ func (a *API) queue(w http.ResponseWriter, r *http.Request) {
 // "evidence": "...", "new_board": {...}, "note": "..."}: a maintainer's
 // decision, its stars, and a message to the sender when the bot can reach
 // them. new_board (boards.NewModel) adds the camera a report proposed to
-// the catalogue, and links the report to it.
+// the catalogue, and links the report to it. {"decision": "ask", "note":
+// "..."} decides nothing: the note is a question to the sender (Ask).
 func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 	m, ok := a.signedIn(w, r)
 	if !ok {
@@ -668,11 +669,31 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 		Note     string `json:"note"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&in); err != nil {
-		a.refuse(w, http.StatusBadRequest, `send {"decision": "publish" or "reject", "models": [...], "note": "..."}`)
+		a.refuse(w, http.StatusBadRequest, `send {"decision": "publish", "reject" or "ask", "models": [...], "note": "..."}`)
 		return
 	}
 	id := r.PathValue("id")
 	by := m.Name + " (" + m.ID + ")"
+	if in.Decision == "ask" {
+		if len(in.Models) > 0 || in.NewBoard != nil {
+			a.refuse(w, http.StatusBadRequest, "asking the sender links no board; publish to do that")
+			return
+		}
+		res, err := a.Ask(context.WithoutCancel(r.Context()), id, by, in.Note, in.Revision)
+		switch {
+		case errors.Is(err, reports.ErrNotFound):
+			a.refuse(w, http.StatusNotFound, "no report has this id")
+		case errors.Is(err, reports.ErrChanged), errors.Is(err, reports.ErrNotWaiting):
+			a.refuse(w, http.StatusConflict, err.Error())
+		case errors.Is(err, reports.ErrQuestion):
+			a.refuse(w, http.StatusBadRequest, err.Error())
+		case err != nil:
+			a.fail(w, "the question", err)
+		default:
+			writeJSON(w, http.StatusOK, map[string]any{"id": id, "decision": "ask", "told": res.Told, "quiet": res.Quiet})
+		}
+		return
+	}
 	d, err := a.Reports.Store().Decide(r.Context(), id, in.Decision, by, in.Note, in.Models, in.Basis, in.NewBoard, in.Revision)
 	if errors.Is(err, reports.ErrChanged) {
 		a.refuse(w, http.StatusConflict, err.Error())

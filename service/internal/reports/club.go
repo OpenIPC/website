@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -65,13 +67,16 @@ type MemberReport struct {
 	Status     string     `json:"status"`
 	ReviewedAt *time.Time `json:"reviewed_at,omitempty"`
 	Note       string     `json:"note,omitempty"`
-	// ReviewNote is what the reviewer wrote for the sender with the decision.
+	// ReviewNote is what the reviewer wrote for the sender with the decision,
+	// or, while the report is asked, the question.
 	ReviewNote string     `json:"review_note,omitempty"`
 	Board      *ViewModel `json:"board,omitempty"`
 	// EditedAt: when its sender last changed it (Store.Edit).
 	EditedAt *time.Time `json:"edited_at,omitempty"`
 	// Joins: the report this one was sent to go with (a Club code's).
 	Joins string `json:"joins,omitempty"`
+	// Answers: the report this one was sent to answer, from its receipt.
+	Answers string `json:"answers,omitempty"`
 	// Proposal: the camera the sender named, when the catalogue had none.
 	Proposal *Proposal    `json:"proposal,omitempty"`
 	Chip     string       `json:"chip,omitempty"`
@@ -152,7 +157,7 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 		return nil, err
 	}
 	m.Status, m.ReviewedAt = st.State, st.At
-	if m.Status == "published" || m.Status == "rejected" {
+	if m.Status == "published" || m.Status == "rejected" || m.Status == "asked" {
 		if err := s.DB.QueryRow(ctx, `SELECT note FROM report_reviews WHERE report_id = $1 ORDER BY id DESC LIMIT 1`, id).
 			Scan(&m.ReviewNote); err != nil {
 			return nil, err
@@ -172,6 +177,9 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 		return nil, err
 	}
 	if m.Joins, err = s.JoinsOf(ctx, id); err != nil {
+		return nil, err
+	}
+	if m.Answers, err = s.AnswersOf(ctx, id); err != nil {
 		return nil, err
 	}
 	if err := s.DB.QueryRow(ctx, `SELECT max(at) FROM report_edits WHERE report_id = $1`, id).Scan(&m.EditedAt); err != nil {
@@ -208,7 +216,7 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 	}
 	// Once decided, a dump is a duplicate only if it earned nothing: the
 	// first copy stays the one that counted when a later copy is published.
-	if m.Status != "pending" {
+	if !Waiting(m.Status) {
 		m.Duplicate = false
 		for _, f := range m.Files {
 			if f.Kind != "backup" {
@@ -222,7 +230,7 @@ func (s *Store) memberReport(ctx context.Context, id string) (*MemberReport, err
 			m.Duplicate = m.Duplicate || (!earned && m.Status == "published")
 		}
 	}
-	if m.Status == "pending" {
+	if Waiting(m.Status) {
 		for _, p := range potential {
 			m.Pending += p
 		}
@@ -307,6 +315,14 @@ type Queued struct {
 	// Kin: the same camera's other reports, others from its network, and
 	// the report this one adds nothing to.
 	Kin
+	// Answers: the report this one answers; AnsweredBy: the reports sent to
+	// answer this one, from its receipt.
+	Answers    string   `json:"answers,omitempty"`
+	AnsweredBy []string `json:"answered_by,omitempty"`
+	// Question: the last thing a reviewer asked its sender (Ask), and when;
+	// still open while the report is asked, answered once it is pending again.
+	Question string     `json:"question,omitempty"`
+	AskedAt  *time.Time `json:"asked_at,omitempty"`
 }
 
 // Queue is the review queue: the reports in one state (pending by default),
@@ -349,8 +365,20 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 		if err != nil {
 			return nil, err
 		}
-		q.Board, q.FileList, q.Proposal, q.Joins, q.EditedAt = m.Board, m.Files, m.Proposal, m.Joins, m.EditedAt
+		q.Board, q.FileList, q.Proposal, q.Joins, q.EditedAt, q.Answers = m.Board, m.Files, m.Proposal, m.Joins, m.EditedAt, m.Answers
+		if q.AnsweredBy, err = s.AnsweredBy(ctx, l.ID); err != nil {
+			return nil, err
+		}
 		if q.Revision, err = revisionOf(ctx, s.DB, l.ID); err != nil {
+			return nil, err
+		}
+		var asked time.Time
+		err = s.DB.QueryRow(ctx, `SELECT note, at FROM report_reviews WHERE report_id = $1 AND decision = 'ask' ORDER BY id DESC LIMIT 1`,
+			l.ID).Scan(&q.Question, &asked)
+		switch {
+		case err == nil:
+			q.AskedAt = &asked
+		case !errors.Is(err, pgx.ErrNoRows):
 			return nil, err
 		}
 		devices, err := s.DeviceIDs(ctx, l.ID)
@@ -565,6 +593,72 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 	}
 	err = s.DB.QueryRow(ctx, `SELECT coalesce(sum(points), 0) FROM report_stars WHERE member_id = $1`, owner).Scan(&d.Total)
 	return d, err
+}
+
+// MaxQuestion is the longest question a reviewer may ask, in characters.
+const MaxQuestion = 2000
+
+var (
+	// ErrNotWaiting is a question about a report no longer waiting for review.
+	ErrNotWaiting = errors.New("only a report waiting for review is asked about; this one has been decided or withdrawn")
+	// ErrQuestion is a question that cannot be asked as written: empty, or
+	// longer than MaxQuestion.
+	ErrQuestion = errors.New("the question")
+)
+
+// Ask puts a reviewer's question to a report's sender instead of deciding:
+// a review row 'ask' whose note is the question. The report is asked -- out
+// of the pending queue, its stars untouched -- until its sender edits it
+// (Store.Edit: a row 'edit', pending again) or a maintainer decides anyway.
+// It answers the member to tell, "" for a report sent signed out: its
+// receipt shows the question instead (Public).
+func (s *Store) Ask(ctx context.Context, id, by, question string, revision *int) (string, error) {
+	question = strings.TrimSpace(question)
+	if question == "" {
+		return "", fmt.Errorf("%w: the note is the question to the sender, and it cannot be empty", ErrQuestion)
+	}
+	if utf8.RuneCountInString(question) > MaxQuestion {
+		return "", fmt.Errorf("%w: at most %d characters", ErrQuestion, MaxQuestion)
+	}
+	owner, err := s.Owner(ctx, id)
+	if err != nil {
+		return "", err
+	}
+	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
+		// Decide's and Edit's lock: a question, a decision and an edit do
+		// not interleave.
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, id); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, `SELECT id FROM reports WHERE id = $1`, id).Scan(new(string)); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrNotFound
+			}
+			return err
+		}
+		if revision != nil {
+			now, err := revisionOf(ctx, tx, id)
+			if err != nil {
+				return err
+			}
+			if now != *revision {
+				return ErrChanged
+			}
+		}
+		st, err := s.status(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if !Waiting(st.State) {
+			return ErrNotWaiting
+		}
+		_, err = tx.Exec(ctx, `INSERT INTO report_reviews (report_id, decision, by, note) VALUES ($1, 'ask', $2, $3)`, id, by, question)
+		return err
+	})
+	if err != nil {
+		return "", err
+	}
+	return owner, nil
 }
 
 // BoardText is a published report's text and photos, to be listed on the

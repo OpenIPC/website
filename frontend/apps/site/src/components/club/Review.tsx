@@ -13,18 +13,25 @@
  * the same files, the same ipctool output, no note of its own -- says so,
  * and is rejected as its duplicate with one click.
  *
- * The same decisions remain available as `openipc reports publish|reject`.
+ * A report that cannot be placed as it is -- no board marking, a marking
+ * that disagrees with the photo, a label that should not be published --
+ * is asked about instead: the question goes to a member sender by the bot
+ * or by mail, and onto the receipt of one who sent it signed out. It waits
+ * under "Asked" until the sender's edit puts it back under "Waiting", the
+ * question beside it.
+ *
+ * The same decisions remain available as `openipc reports publish|reject|ask`.
  */
 import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations, type BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { boardPath } from '../../lib/boards/shell';
-import { ClubError, decide, fetchMe, fetchQueue, type LinkBasis, type Member, type NewBoard, type Queued, type Sibling } from '../../lib/club';
-import { size } from '../../lib/reports';
+import { ClubError, ask, decide, fetchMe, fetchQueue, type LinkBasis, type Member, type NewBoard, type Queued, type Sibling } from '../../lib/club';
+import { size, waiting } from '../../lib/reports';
 import { Forbidden, STATUS_TONE } from './parts';
 
 type Load = { state: 'loading' } | { state: 'ok'; list: Queued[] } | { state: 'forbidden' } | { state: 'signed_out' } | { state: 'error' };
-const TABS = ['pending', 'published', 'rejected'] as const;
+const TABS = ['pending', 'asked', 'published', 'rejected'] as const;
 
 export default function Review({ locale }: { locale: Locale }) {
   const t = useBoardsTranslations(locale);
@@ -121,6 +128,7 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [asking, setAsking] = useState(false);
   const received = new Date(q.received_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
 
   const act = (decision: 'publish' | 'reject', why = note) => {
@@ -163,11 +171,17 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
           <dd class="m-0">{new Date(q.edited_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}</dd></>}
         {q.joins && <><dt class="text-body-secondary">{t('club.review_joins_label')}</dt>
           <dd class="m-0">{t('club.goes_with', { id: q.joins })}</dd></>}
+        {q.answers && <><dt class="text-body-secondary">{t('club.review_answers_label')}</dt>
+          <dd class="m-0"><a href={`${pathFor(locale, '/cameras/report')}?id=${q.answers}`} class="font-mono">{q.answers}</a></dd></>}
+        {!!q.answered_by?.length && <><dt class="text-body-secondary">{t('club.review_answered_by_label')}</dt>
+          <dd class="m-0">{q.answered_by.map((id, i) => <span key={id}>{i > 0 && ', '}<a href={`#q-${id}`} class="font-mono">{id}</a></span>)}</dd></>}
         {q.proposal && <><dt class="text-body-secondary">{t('club.review_proposal')}</dt>
           <dd class="m-0">{[q.proposal.maker, q.proposal.board, q.proposal.soc].filter(Boolean).join(' · ')}</dd></>}
         {q.guess && <><dt class="text-body-secondary">ipctool</dt><dd class="m-0">{t('club.review_guess', { board: `${q.guess.manufacturer} ${q.guess.model}` })} <span class="font-mono text-[12px]">{q.guess.model_id}</span></dd></>}
         {(q.chip || q.sensor) && <><dt class="text-body-secondary">SoC</dt><dd class="m-0">{[q.chip, q.sensor].filter(Boolean).join(' · ')}</dd></>}
         {q.note && <><dt class="text-body-secondary">{t('club.kind_note')}</dt><dd class="m-0 whitespace-pre-wrap">{q.note}</dd></>}
+        {q.question && waiting(q.status) && <><dt class="text-body-secondary">{t(q.status === 'asked' ? 'club.review_asked' : 'club.review_answered')}</dt>
+          <dd class="m-0 whitespace-pre-wrap">{q.question}</dd></>}
       </dl>
       {(q.duplicate_of || q.same_camera?.length || q.same_sender?.length) ? (
         <ul class="m-0 grid list-none gap-1 p-0 text-[13px]" aria-label={t('club.kin_label')}>
@@ -258,9 +272,18 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
                   act('reject', why);
                 }}>{t('club.reject_duplicate', { id: q.duplicate_of.id })}</button>
               )}
+              {waiting(q.status) && !asking && (
+                <button type="button" disabled={busy} class="site-btn site-btn-outline-secondary" onClick={() => setAsking(true)}>{t('club.ask')}</button>
+              )}
               {result && <span class="text-sm text-[#146c3c]" role="status">{result}</span>}
               {error && <span class="text-sm text-[#a3262e]" role="alert">{error}</span>}
             </div>
+            {asking && <Ask q={q} t={t} onAsked={(r) => {
+              setAsking(false);
+              // Only what was sent is claimed: a member not reached reads it on /club.
+              setResult(t(`club.review_done_ask_${r.told || (!q.member ? 'guest' : r.quiet ? 'member' : 'undelivered')}`));
+              setTimeout(onDone, 1200);
+            }} onCancel={() => setAsking(false)} />}
       </div>
     </article>
   );
@@ -282,5 +305,59 @@ function Kin({ label, s, strong, weak, listed, locale, t }: {
         </span>
       )}
     </li>
+  );
+}
+
+/**
+ * The question to the sender, with the ones the queue keeps needing a click
+ * away: the board's marking, a marking that disagrees with what was typed,
+ * a serial-number label in a photo.
+ */
+function Ask({ q, t, onAsked, onCancel }: {
+  q: Queued; t: BoardsT; onAsked: (r: { told: string; quiet: boolean }) => void; onCancel: () => void;
+}) {
+  const [question, setQuestion] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const typed = q.proposal?.board ?? q.board?.model ?? 'Y';
+  const templates = [
+    t('club.ask_tpl_marking'),
+    t('club.ask_tpl_mismatch', { board: typed }),
+    t('club.ask_tpl_serial'),
+  ];
+  const send = (e: Event) => {
+    e.preventDefault();
+    if (!question.trim()) {
+      setError(t('club.ask_empty'));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    ask(q.id, question.trim(), q.revision)
+      .then(onAsked)
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setBusy(false));
+  };
+  return (
+    <form class="grid gap-2 rounded-md border border-[#e8c58f] bg-[#fffaf0] p-3" onSubmit={send}>
+      <div class="flex flex-wrap items-center gap-1.5 text-[13px]" role="group" aria-label={t('club.ask_templates')}>
+        <span class="text-body-secondary">{t('club.ask_templates')}:</span>
+        {templates.map((text) => (
+          <button key={text} type="button" class="cursor-pointer rounded-md border border-hairline bg-white px-2 py-0.5 text-left text-[12.5px]"
+            onClick={() => setQuestion(question.trim() ? `${question.trim()}\n${text}` : text)}>
+            {text}
+          </button>
+        ))}
+      </div>
+      <label class="grid gap-1 text-[13px] text-body-secondary">{t('club.ask_label')}
+        <textarea value={question} maxLength={2000} onInput={(e) => setQuestion((e.target as HTMLTextAreaElement).value)}
+          class="min-h-[72px] w-full resize-y rounded-md border border-hairline px-2.5 py-1.5 text-sm text-body" />
+      </label>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="submit" disabled={busy} class="site-btn site-btn-primary site-btn-sm">{t('club.ask_send')}</button>
+        <button type="button" disabled={busy} class="site-btn site-btn-outline-secondary site-btn-sm" onClick={onCancel}>{t('club.ask_cancel')}</button>
+        {error && <span class="text-sm text-[#a3262e]" role="alert">{error}</span>}
+      </div>
+    </form>
   );
 }

@@ -3,7 +3,8 @@
  * (POST /api/v1/club/reports/{id}/edit): the note, the camera they proposed,
  * files taken out, photos and text added, and a flash dump added to a report
  * that has none (#456). ipctool's output and a backup stay as sent. A report a maintainer has decided goes back to them: the form says
- * so before it is saved.
+ * so before it is saved. On a report a maintainer asked about, saving is the
+ * answer, and the form says that.
  */
 import { useState } from 'preact/hooks';
 import type { BoardsT } from '../../lib/boards-i18n';
@@ -58,6 +59,7 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
   return (
     <form class="grid gap-2.5 rounded-md border border-hairline bg-surface-alt p-3 text-[13px]" onSubmit={save}>
       {decided && <p class="m-0 rounded-md bg-[#fff4e2] px-3 py-2 text-[#8a4b00]" role="note">{t('club.edit_rereview')}</p>}
+      {report.status === 'asked' && <p class="m-0 rounded-md bg-[#fff4e2] px-3 py-2 text-[#8a4b00]" role="note">{t('club.edit_answer')}</p>}
       {report.proposal && (
         <div class="grid gap-2 sm:grid-cols-[1fr_1fr_8rem]">
           <label class="grid gap-1 text-body-secondary">{t('club.new_maker')}

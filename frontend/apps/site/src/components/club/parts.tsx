@@ -6,6 +6,7 @@ import type { ReportState } from '../../lib/reports';
 
 export const STATUS_TONE: Record<ReportState, string> = {
   pending: 'border border-dashed border-hairline bg-surface-alt text-body-secondary',
+  asked: 'bg-[#fff4e2] text-[#8a4b00]',
   published: 'bg-[#e3f5ec] text-[#146c3c]',
   rejected: 'bg-[#fbe9ea] text-[#a3262e]',
   withdrawn: 'bg-surface-alt text-body-secondary',
