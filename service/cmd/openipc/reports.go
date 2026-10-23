@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"os/user"
+	"strconv"
 	"strings"
 
 	"github.com/OpenIPC/website/service/internal/boards"
@@ -34,6 +35,10 @@ const reportsUsage = `usage: openipc reports
                                                 say which board a report is from
   certainty <id> <board model id> <confirmed|probable|guess> [--evidence why]
                                                 say how sure an existing link is now
+  photo <id> <position> blur|private|as_sent [--region x,y,w,h]...
+                                                what a photo publishes: a copy with the regions blurred
+                                                (fractions of the photo, upright), nothing (not the
+                                                sender's unit), or the photo as sent
   unlink <id> <board model id>                  undo a link made in error
   takedown <id> --by who --note why              withdraw for good: YAML blanked, files deleted
   verify                                        re-hash every stored file; non-zero on any missing or changed
@@ -68,6 +73,8 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 	status := fs.String("status", "", "list only reports in this state")
 	var models multi
 	fs.Var(&models, "model", "the board model id the report is from (repeatable)")
+	var regions multi
+	fs.Var(&regions, "region", "with photo blur: x,y,w,h of a region to blur, as fractions of the photo (repeatable)")
 	newBoard := fs.Bool("new-board", false, "add the camera the report proposed to the catalogue, and link the report to it")
 	certainty := fs.String("certainty", reports.Confirmed, "how sure the link is: confirmed, probable or guess")
 	evidence := fs.String("evidence", "", "why the link is as sure as it is, shown beside one not confirmed")
@@ -222,6 +229,29 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		// The report's unit on the board says it too.
 		refreshReportUnits(ctx, cfg, log, pool)
 		log.Info("reports: link certainty", "report", pos[0], "model", pos[1], "certainty", pos[2], "evidence", *evidence, "by", *by)
+		return nil
+	case "photo":
+		if err := need(3); err != nil {
+			return err
+		}
+		position, err := strconv.Atoi(pos[1])
+		if err != nil {
+			return fmt.Errorf("photo: the file's position is a number, not %q", pos[1])
+		}
+		var rs []reports.Region
+		for _, r := range regions {
+			var x reports.Region
+			if _, err := fmt.Sscanf(r, "%g,%g,%g,%g", &x.X, &x.Y, &x.W, &x.H); err != nil {
+				return fmt.Errorf("--region %q: x,y,w,h as fractions of the photo, e.g. 0.42,0.61,0.2,0.08", r)
+			}
+			rs = append(rs, x)
+		}
+		api := &reports.API{DB: pool, Files: files, Log: log}
+		if err := api.DecidePhoto(ctx, pos[0], position, pos[2], rs, *by); err != nil {
+			return err
+		}
+		// A published report's boards show the photo as decided.
+		refreshReportUnits(ctx, cfg, log, pool)
 		return nil
 	case "unlink":
 		if err := need(2); err != nil {

@@ -208,7 +208,6 @@ func (s *Files) Read(sum string) ([]byte, error) {
 // the regions, never taken from the browser. It answers itself and says
 // whether the decision was made.
 func (a *API) ReviewPhoto(w http.ResponseWriter, r *http.Request, id string, position int, by string) bool {
-	ctx := r.Context()
 	var in struct {
 		Action  string   `json:"action"`
 		Regions []Region `json:"regions"`
@@ -217,20 +216,44 @@ func (a *API) ReviewPhoto(w http.ResponseWriter, r *http.Request, id string, pos
 		a.refuse(w, http.StatusBadRequest, `send {"action": "blur", "regions": [{"x": 0.1, "y": 0.2, "w": 0.3, "h": 0.1}]}, {"action": "private"} or {"action": "as_sent"}`)
 		return false
 	}
-	if in.Action != PhotoBlur && in.Action != PhotoPrivate && in.Action != PhotoAsSent {
-		a.refuse(w, http.StatusBadRequest, "action is blur, private (not the sender's unit: never published) or as_sent")
+	err := a.DecidePhoto(r.Context(), id, position, in.Action, in.Regions, by)
+	var bad errBlur
+	switch {
+	case errors.As(err, &bad):
+		a.refuse(w, http.StatusBadRequest, bad.Error())
+		return false
+	case errors.Is(err, ErrNotFound):
+		a.refuse(w, http.StatusNotFound, "the report has no such file")
+		return false
+	case errors.Is(err, ErrNotPhoto):
+		a.refuse(w, http.StatusBadRequest, err.Error())
+		return false
+	case err != nil:
+		a.fail(w, "the photo's public copy", err)
 		return false
 	}
-	if in.Action == PhotoBlur {
+	writeJSON(w, http.StatusOK, map[string]any{"id": id, "position": position, "public": publicState(in.Action)})
+	return true
+}
+
+// DecidePhoto is a reviewer's decision on photo position of report id --
+// PhotoBlur with its regions, PhotoPrivate or PhotoAsSent -- the page's
+// (ReviewPhoto) and `openipc reports photo`'s. A request the photo cannot
+// answer is an errBlur (400 on the page), a file the report does not have
+// ErrNotFound, one that is no photo ErrNotPhoto.
+func (a *API) DecidePhoto(ctx context.Context, id string, position int, action string, regions []Region, by string) error {
+	if action != PhotoBlur && action != PhotoPrivate && action != PhotoAsSent {
+		return errBlur{errors.New("action is blur, private (not the sender's unit: never published) or as_sent")}
+	}
+	if action == PhotoBlur {
 		// What can be refused without the photo is refused before its lock.
-		if err := validRegions(in.Regions); err != nil {
-			a.refuse(w, http.StatusBadRequest, err.Error())
-			return false
+		if err := validRegions(regions); err != nil {
+			return errBlur{err}
 		}
 	}
 	st := a.store()
 	var blur Blurrer
-	if in.Action == PhotoBlur {
+	if action == PhotoBlur {
 		blur = func(sum, orig string) (*PublicCopy, func() error, error) {
 			src, err := a.Files.Read(sum)
 			if errors.Is(err, fs.ErrNotExist) {
@@ -241,7 +264,7 @@ func (a *API) ReviewPhoto(w http.ResponseWriter, r *http.Request, id string, pos
 			if err != nil {
 				return nil, nil, err
 			}
-			out, mt, err := BlurPhoto(src, in.Regions)
+			out, mt, err := BlurPhoto(src, regions)
 			if err != nil {
 				return nil, nil, errBlur{err}
 			}
@@ -253,35 +276,21 @@ func (a *API) ReviewPhoto(w http.ResponseWriter, r *http.Request, id string, pos
 			return pc, func() error { _, err := a.Files.Put(out); return err }, nil
 		}
 	}
-	pc, orphan, err := st.SetPhotoPublic(ctx, id, position, in.Action, in.Regions, by, blur)
-	if err != nil && pc != nil {
-		// A copy placed before the decision failed belongs to no row.
-		_, _ = st.RemoveUnreferenced(ctx, a.Files, pc.SHA256)
-	}
-	var bad errBlur
-	if errors.As(err, &bad) {
-		a.refuse(w, http.StatusBadRequest, bad.Error())
-		return false
-	}
-	switch {
-	case errors.Is(err, ErrNotFound):
-		a.refuse(w, http.StatusNotFound, "the report has no such file")
-		return false
-	case errors.Is(err, ErrNotPhoto):
-		a.refuse(w, http.StatusBadRequest, err.Error())
-		return false
-	case err != nil:
-		a.fail(w, "the photo's public copy", err)
-		return false
+	pc, orphan, err := st.SetPhotoPublic(ctx, id, position, action, regions, by, blur)
+	if err != nil {
+		if pc != nil {
+			// A copy placed before the decision failed belongs to no row.
+			_, _ = st.RemoveUnreferenced(ctx, a.Files, pc.SHA256)
+		}
+		return err
 	}
 	if orphan != "" {
 		if _, err := st.RemoveUnreferenced(ctx, a.Files, orphan); err != nil {
 			a.Log.Warn("reports: a replaced public copy stays", "report", id, "sha256", orphan, "err", err)
 		}
 	}
-	a.Log.Info("reports: photo reviewed", "report", id, "position", position, "action", in.Action, "regions", len(in.Regions), "by", by)
-	writeJSON(w, http.StatusOK, map[string]any{"id": id, "position": position, "public": publicState(in.Action)})
-	return true
+	a.Log.Info("reports: photo reviewed", "report", id, "position", position, "action", action, "regions", len(regions), "by", by)
+	return nil
 }
 
 // publicState is what MemberFile.Public says of a photo after action.
