@@ -300,7 +300,7 @@ func Keyed(key, name, value string) string {
 func (f Facts) IDHashes(key string) map[string]string {
 	out := map[string]string{}
 	for _, id := range f.Identifiers() {
-		if id.Name == "die_id" && strings.EqualFold(f.ChipVendor, "Anyka") {
+		if id.Name == "die_id" && f.anyka() {
 			continue
 		}
 		if _, ok := out[id.Name]; !ok {
@@ -308,6 +308,12 @@ func (f Facts) IDHashes(key string) map[string]string {
 		}
 	}
 	return out
+}
+
+// anyka: the chip is an Anyka, by its vendor or, when ipctool printed none,
+// its model (AK3918EV300, AK39EV330).
+func (f Facts) anyka() bool {
+	return strings.EqualFold(f.ChipVendor, "Anyka") || strings.HasPrefix(strings.ToUpper(f.ChipModel), "AK")
 }
 
 // Redact replaces every spelling of the board's identifiers in text --

@@ -262,11 +262,18 @@ func TestAnIdentifierOnTwoChipsIsNoCamera(t *testing.T) {
 		seed{id: "r-ev300002", ago: 6 * time.Hour, yaml: "chip: ev300 b\n", ids: map[string]string{"die_id": "e3e3e3e3e3e3e3e3"}, client: "dddd", vendor: "Anyka", chip: "AK3918EV300"},
 		seed{id: "r-default1", ago: 5 * time.Hour, yaml: "chip: x\n", ids: mac, client: "eeee", vendor: "HiSilicon", chip: "3518EV200"},
 		seed{id: "r-default2", ago: 4 * time.Hour, yaml: "chip: y\n", ids: mac, client: "ffff", vendor: "Goke", chip: "7205V500"},
+		// a report naming only its vendor is a chip of its own, and an Anyka
+		// known only by its model is still an Anyka
+		seed{id: "r-vendonly", ago: 5 * time.Hour, yaml: "chip: v\n", ids: map[string]string{"mac": "5a5a5a5a5a5a5a5a"}, client: "iiii", vendor: "Goke"},
+		seed{id: "r-modelful", ago: 5 * time.Hour, yaml: "chip: m\n", ids: map[string]string{"mac": "5a5a5a5a5a5a5a5a"}, client: "jjjj", vendor: "HiSilicon", chip: "3516EV300"},
+		seed{id: "r-akmodel1", ago: 5 * time.Hour, yaml: "chip: ak1\n", ids: map[string]string{"die_id": "f0f0f0f0f0f0f0f0"}, client: "kkkk", chip: "AK3918EV300"},
+		seed{id: "r-akmodel2", ago: 5 * time.Hour, yaml: "chip: ak2\n", ids: map[string]string{"die_id": "f0f0f0f0f0f0f0f0"}, client: "llll", vendor: "Anyka", chip: "AK3918EV300"},
 		seed{id: "r-onechip1", ago: 3 * time.Hour, yaml: "chip: z\n", ids: map[string]string{"mac": "0e0e0e0e0e0e0e0e"}, client: "gggg", vendor: "HiSilicon", chip: "3516EV300"},
 		seed{id: "r-onechip2", ago: 2 * time.Hour, yaml: "chip: w\n", ids: map[string]string{"mac": "0e0e0e0e0e0e0e0e"}, client: "hhhh", vendor: "HiSilicon", chip: "3516EV300"},
 	)
 	q := queued(t, st)
-	for _, id := range []string{"r-lexman01", "r-gncc0001", "r-ev300001", "r-ev300002", "r-default1", "r-default2"} {
+	for _, id := range []string{"r-lexman01", "r-gncc0001", "r-ev300001", "r-ev300002", "r-default1", "r-default2",
+		"r-vendonly", "r-modelful", "r-akmodel1", "r-akmodel2"} {
 		if len(q[id].SameCamera) != 0 {
 			t.Errorf("%s is the same camera as %q", id, ids(q[id].SameCamera))
 		}
@@ -286,6 +293,9 @@ func TestAnAnykasChipIDIsNotKeyed(t *testing.T) {
 	}
 	if out := Redact("chip:\n  id: 0x20160101\n", f, "k"); strings.Contains(out, "0x20160101") {
 		t.Errorf("an Anyka's chip id is no longer redacted: %s", out)
+	}
+	if _, ok := (Facts{ChipModel: "AK3918EV300", DieID: "0x20160101"}).IDHashes("k")["die_id"]; ok {
+		t.Error("an Anyka known only by its model keyed its chip id")
 	}
 	if _, ok := (Facts{ChipVendor: "HiSilicon", DieID: "0a1b2c3d4e5f6a7b8c9d"}).IDHashes("k")["die_id"]; !ok {
 		t.Error("a HiSilicon die ID is no longer keyed")
