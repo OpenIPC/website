@@ -79,8 +79,11 @@ func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logge
 		// unit's reference is its own (board_units.source_ref is unique).
 		// The sender's note -- where it was bought, what it is sold as -- is
 		// the unit's, as published (redacted).
+		// The link's certainty goes with it, so the board's files say how
+		// sure it is that the report is this board's.
 		c := boards.Contribution{Unit: t.Model + "-" + t.Report, Model: t.Model, By: by, Note: t.Note,
-			Evidence: []string{cfg.ClubSiteURL + boards.ReceiptMark + t.Report + "&board=" + t.Model}}
+			Evidence:      []string{cfg.ClubSiteURL + boards.ReceiptMark + t.Report + "&board=" + t.Model},
+			LinkCertainty: t.Certainty, LinkEvidence: t.Evidence}
 		for _, f := range t.Files {
 			kind := kinds[f.Kind]
 			if f.Kind == "photo" {

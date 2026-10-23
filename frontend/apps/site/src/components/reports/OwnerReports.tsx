@@ -10,6 +10,7 @@ import type { BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { fetchBoardReports, size, summary, type Report } from '../../lib/reports';
 import ConsoleView from '../boards/ConsoleView';
+import LinkCertainty from './LinkCertainty';
 
 /** What a report sent as text: opened in place in the console viewer, not saved. */
 const TEXT = new Set(['boot_log', 'uboot_env', 'note']);
@@ -41,40 +42,45 @@ export default function OwnerReports({ model, locale, t }: { model: string; loca
         <span class="rounded-full border border-hairline bg-surface-alt px-2 text-[13px] font-semibold text-body-secondary">{reports.length}</span>
       </h3>
       <div class="border-t border-hairline">
-        {reports.map((r) => (
-          <article key={r.id} class="grid gap-2 border-b border-hairline py-3.5">
-            <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <span class="font-semibold text-ink">{summary(r.facts)}</span>
-              <a class="font-mono text-[13.5px] text-body-secondary" href={`${pathFor(locale, '/cameras/report')}?id=${r.id}`}>
-                {r.id} · {new Date(r.received_at).toLocaleDateString(locale, { dateStyle: 'medium' })} · {r.channel}
-              </a>
-            </div>
-            <div class="flex flex-wrap gap-x-4.5 gap-y-1 text-sm text-body-secondary">
-              {r.facts?.main_app && <span>{t('report.reports_app')} <b class="font-medium text-body">{r.facts.main_app}</b></span>}
-              {r.facts?.board_model && <span>{t('report.reports_board')} <b class="font-medium text-body">{r.facts.board_vendor} {r.facts.board_model}</b></span>}
-              {r.same_board > 0 && <span>{t('report.reports_same_board')}</span>}
-            </div>
-            {r.files.some((f) => !(f.url && TEXT.has(f.kind))) && (
-              <div class="flex flex-wrap gap-1.5">
-                {r.files.filter((f) => !(f.url && TEXT.has(f.kind))).map((f) => {
-                  const label = `${t(`report.kind_${f.kind}`)} · ${size(f.bytes)}`;
-                  return f.url
-                    ? <a key={f.name} href={f.url} class="rounded-md border border-hairline px-2 py-px text-[12.5px] text-body no-underline">{label}</a>
-                    : <span key={f.name} class="rounded-md border border-[#dccbef] bg-[#f2ecfa] px-2 py-px text-[12.5px] text-[#6b3fa0]">{t(`report.kind_${f.kind}`)} · {t('report.who_private')}</span>;
-                })}
+        {reports.map((r) => {
+          // How sure it is that the report is this board, not another it is filed under too.
+          const link = r.models.find((m) => m.id === model);
+          return (
+            <article key={r.id} class="grid gap-2 border-b border-hairline py-3.5">
+              <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                <span class="font-semibold text-ink">{summary(r.facts)}</span>
+                <a class="font-mono text-[13.5px] text-body-secondary" href={`${pathFor(locale, '/cameras/report')}?id=${r.id}`}>
+                  {r.id} · {new Date(r.received_at).toLocaleDateString(locale, { dateStyle: 'medium' })} · {r.channel}
+                </a>
               </div>
-            )}
-            {r.files.filter((f) => f.url && TEXT.has(f.kind)).map((f) => (
-              <ConsoleView key={f.name} url={f.url!} name={f.name} label={t(`report.kind_${f.kind}`)} t={t} />
-            ))}
-            {r.yaml && (
-              <details class="text-sm">
-                <summary class="w-fit cursor-pointer text-brand-blue">{t('report.reports_yaml')}</summary>
-                <pre class="mt-2 mb-0 max-h-96 overflow-auto rounded-lg border border-hairline bg-surface-alt px-3.5 py-3 text-[13px] leading-[1.55]" dir="ltr">{r.yaml}</pre>
-              </details>
-            )}
-          </article>
-        ))}
+              <div class="flex flex-wrap gap-x-4.5 gap-y-1 text-sm text-body-secondary">
+                {r.facts?.main_app && <span>{t('report.reports_app')} <b class="font-medium text-body">{r.facts.main_app}</b></span>}
+                {r.facts?.board_model && <span>{t('report.reports_board')} <b class="font-medium text-body">{r.facts.board_vendor} {r.facts.board_model}</b></span>}
+                {r.same_board > 0 && <span>{t('report.reports_same_board')}</span>}
+                {link && <LinkCertainty certainty={link.certainty} evidence={link.evidence} t={t} />}
+              </div>
+              {r.files.some((f) => !(f.url && TEXT.has(f.kind))) && (
+                <div class="flex flex-wrap gap-1.5">
+                  {r.files.filter((f) => !(f.url && TEXT.has(f.kind))).map((f) => {
+                    const label = `${t(`report.kind_${f.kind}`)} · ${size(f.bytes)}`;
+                    return f.url
+                      ? <a key={f.name} href={f.url} class="rounded-md border border-hairline px-2 py-px text-[12.5px] text-body no-underline">{label}</a>
+                      : <span key={f.name} class="rounded-md border border-[#dccbef] bg-[#f2ecfa] px-2 py-px text-[12.5px] text-[#6b3fa0]">{t(`report.kind_${f.kind}`)} · {t('report.who_private')}</span>;
+                  })}
+                </div>
+              )}
+              {r.files.filter((f) => f.url && TEXT.has(f.kind)).map((f) => (
+                <ConsoleView key={f.name} url={f.url!} name={f.name} label={t(`report.kind_${f.kind}`)} t={t} />
+              ))}
+              {r.yaml && (
+                <details class="text-sm">
+                  <summary class="w-fit cursor-pointer text-brand-blue">{t('report.reports_yaml')}</summary>
+                  <pre class="mt-2 mb-0 max-h-96 overflow-auto rounded-lg border border-hairline bg-surface-alt px-3.5 py-3 text-[13px] leading-[1.55]" dir="ltr">{r.yaml}</pre>
+                </details>
+              )}
+            </article>
+          );
+        })}
       </div>
       {ask}
     </section>

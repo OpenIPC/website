@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -314,17 +316,49 @@ func (s *Store) exists(ctx context.Context, id string) error {
 	return err
 }
 
-// Link says which catalogue board a report is from. A report may be linked
-// to several (a module sold on more than one board) and relinked; relinking
-// is the one change to report_models the guard lets through.
+// Link says which catalogue board a report is from, as fact: LinkAs a
+// confirmed link.
 func (s *Store) Link(ctx context.Context, id, model, by string) error {
+	return s.LinkAs(ctx, id, model, by, Basis{})
+}
+
+// LinkAs says which catalogue board a report is from, and how sure that is.
+// A report may be linked to several (a module sold on more than one board)
+// and relinked. A link already made is left as it is, its certainty too:
+// that changes through SetCertainty.
+func (s *Store) LinkAs(ctx context.Context, id, model, by string, b Basis) error {
+	b, err := b.Checked()
+	if err != nil {
+		return err
+	}
+	if b, err = b.public(ctx, s.DB, id); err != nil {
+		return err
+	}
 	if err := s.exists(ctx, id); err != nil {
 		return err
 	}
-	_, err := s.DB.Exec(ctx, `INSERT INTO report_models (report_id, model_id, by) VALUES ($1,$2,$3)
-		ON CONFLICT DO NOTHING`, id, model, by)
-	return err
+	// A link already made is left as it is, and said so: relinking with
+	// another certainty is SetCertainty's, not a silent no-op.
+	tag, err := s.DB.Exec(ctx, `INSERT INTO report_models (report_id, model_id, by, certainty, evidence) VALUES ($1,$2,$3,$4,$5)
+		ON CONFLICT DO NOTHING`, id, model, by, b.Certainty, b.Evidence)
+	if err != nil || tag.RowsAffected() > 0 {
+		return err
+	}
+	var was Basis
+	if err := s.DB.QueryRow(ctx, `SELECT certainty, evidence FROM report_models WHERE report_id = $1 AND model_id = $2`,
+		id, model).Scan(&was.Certainty, &was.Evidence); err != nil {
+		return err
+	}
+	if was != b {
+		return fmt.Errorf("%w: it is %s (%q)", ErrLinked, was.Certainty, was.Evidence)
+	}
+	return nil
 }
+
+// ErrLinked is LinkAs's answer for a link already made as sure as another
+// basis says: a link is re-graded with SetCertainty (`openipc reports
+// certainty`), never by linking again.
+var ErrLinked = errors.New("the report is already linked to that board with another certainty")
 
 // Unlink removes a link made in error.
 func (s *Store) Unlink(ctx context.Context, id, model string) error {
@@ -334,10 +368,94 @@ func (s *Store) Unlink(ctx context.Context, id, model string) error {
 	})
 }
 
+// SetCertainty is a maintainer saying how sure a link is now: a photo of
+// the PCB confirmed it, or it turned out a guess. It is the one UPDATE of
+// report_models the guard lets through, of these two columns only.
+func (s *Store) SetCertainty(ctx context.Context, id, model string, b Basis) error {
+	b, err := b.Checked()
+	if err != nil {
+		return err
+	}
+	if b, err = b.public(ctx, s.DB, id); err != nil {
+		return err
+	}
+	return Unguarded(ctx, s.DB, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, `UPDATE report_models SET certainty = $3, evidence = $4 WHERE report_id = $1 AND model_id = $2`,
+			id, model, b.Certainty, b.Evidence)
+		if err == nil && tag.RowsAffected() == 0 {
+			return ErrNoLink
+		}
+		return err
+	})
+}
+
+// ErrNoLink is SetCertainty's answer for a report not linked to the board.
+var ErrNoLink = errors.New("the report is not linked to that board")
+
+// How sure a link is (migration 036): the board itself says so, a good
+// inference, or the best there is until someone looks.
+const (
+	Confirmed = "confirmed"
+	Probable  = "probable"
+	Guess     = "guess"
+)
+
+// Basis is how sure a link is and why: probable, "same platform as
+// r-3yi3z6jw". The zero Basis is a confirmed link with nothing to add.
+type Basis struct {
+	Certainty string `json:"certainty"`
+	Evidence  string `json:"evidence,omitempty"`
+}
+
+// Checked is b with its certainty defaulted to confirmed, or an error for a
+// certainty that is none of the three, evidence too long to show beside a
+// link, or a link not confirmed that does not say why.
+func (b Basis) Checked() (Basis, error) {
+	b.Evidence = strings.Join(strings.Fields(b.Evidence), " ")
+	switch b.Certainty {
+	case "":
+		b.Certainty = Confirmed
+	case Confirmed, Probable, Guess:
+	default:
+		return b, fmt.Errorf("certainty %q: confirmed, probable or guess", b.Certainty)
+	}
+	if utf8.RuneCountInString(b.Evidence) > 200 {
+		return b, errors.New("evidence: at most 200 characters")
+	}
+	if b.Certainty != Confirmed && b.Evidence == "" {
+		return b, fmt.Errorf("a %s link says why: give its evidence", b.Certainty)
+	}
+	return b, nil
+}
+
+// public is b with its evidence as anyone may read it: the report's own
+// identifiers and any MAC replaced by their keyed hashes, as its published
+// note is (Redact). Only this form is stored: the evidence is shown beside
+// the link, and nothing needs it in clear.
+func (b Basis) public(ctx context.Context, q querier, id string) (Basis, error) {
+	if b.Evidence == "" {
+		return b, nil
+	}
+	var yaml, key string
+	err := q.QueryRow(ctx, `SELECT r.yaml, k.key FROM reports r CROSS JOIN report_key k WHERE r.id = $1`, id).Scan(&yaml, &key)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return b, ErrNotFound
+	}
+	if err != nil {
+		return b, err
+	}
+	var facts Facts
+	if yaml != "" {
+		_, facts, _ = Parse(yaml)
+	}
+	b.Evidence = Redact(b.Evidence, facts, key)
+	return b, nil
+}
+
 // Unguarded runs fn with the reports' triggers stood down, for this
-// transaction only (SET LOCAL). Takedown and Unlink are its only callers;
-// Decide stands it down for one statement when a reject unlinks the board
-// its publish added.
+// transaction only (SET LOCAL). Takedown, Unlink and SetCertainty are its
+// only callers; Decide stands it down for one statement when a reject
+// unlinks the board its publish added.
 func Unguarded(ctx context.Context, db *pgxpool.Pool, fn func(pgx.Tx) error) error {
 	return pgx.BeginFunc(ctx, db, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `SET LOCAL openipc.reports_guard = 'off'`); err != nil {

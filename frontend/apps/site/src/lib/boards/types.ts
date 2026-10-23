@@ -34,6 +34,9 @@ export interface Unit {
   source_ref: string;
   contributed_by: string;
   notes: string | null;
+  /** An owner report's unit: how sure its link to the board is, and why. */
+  link_certainty?: 'confirmed' | 'probable' | 'guess';
+  link_evidence?: string;
   files: BoardFile[];
 }
 

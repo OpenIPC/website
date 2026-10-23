@@ -643,7 +643,8 @@ func (a *API) queue(w http.ResponseWriter, r *http.Request) {
 }
 
 // decide is POST /api/v1/club/review/{id} {"decision": "publish"|"reject",
-// "models": [...], "new_board": {...}, "note": "..."}: a maintainer's
+// "models": [...], "certainty": "confirmed"|"probable"|"guess",
+// "evidence": "...", "new_board": {...}, "note": "..."}: a maintainer's
 // decision, its stars, and a message to the sender when the bot can reach
 // them. new_board (boards.NewModel) adds the camera a report proposed to
 // the catalogue, and links the report to it.
@@ -660,6 +661,8 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 		Decision string           `json:"decision"`
 		Models   []string         `json:"models"`
 		NewBoard *boards.NewModel `json:"new_board"`
+		// How sure the links this decision makes are, and why.
+		reports.Basis
 		// Revision is the queue's, so a report changed since is not decided.
 		Revision *int   `json:"revision"`
 		Note     string `json:"note"`
@@ -670,7 +673,7 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.PathValue("id")
 	by := m.Name + " (" + m.ID + ")"
-	d, err := a.Reports.Store().Decide(r.Context(), id, in.Decision, by, in.Note, in.Models, in.NewBoard, in.Revision)
+	d, err := a.Reports.Store().Decide(r.Context(), id, in.Decision, by, in.Note, in.Models, in.Basis, in.NewBoard, in.Revision)
 	if errors.Is(err, reports.ErrChanged) {
 		a.refuse(w, http.StatusConflict, err.Error())
 		return

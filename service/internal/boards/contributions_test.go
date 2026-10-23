@@ -429,3 +429,95 @@ func TestAReportOnTwoBoardsIsAUnitOnEachAndTwoRefreshesAtOnceAgree(t *testing.T)
 		}
 	}
 }
+
+// A report's unit says how sure its link to the board is, and a change of
+// that certainty alone rewrites the unit; a confirmed link says nothing.
+func TestAReportUnitCarriesItsLinksCertainty(t *testing.T) {
+	pool, root := imported(t)
+	ctx := context.Background()
+	im := &Importer{Pool: pool, Log: quiet(), Root: root}
+	store := fstest.MapFS{"cc/text": {Data: []byte("U-Boot\n")}}
+	list := []Contribution{reportUnit("xiongmai-53h20-s-r-cccccccc", "xiongmai-53h20-s", "r-cccccccc", "cc/text", "boot_log", "1-boot.txt")}
+	list[0].LinkCertainty, list[0].LinkEvidence = "probable", "same platform as r-3yi3z6jw"
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	type unit struct {
+		ID            string
+		LinkCertainty *string `json:"link_certainty"`
+		LinkEvidence  string  `json:"link_evidence"`
+	}
+	read := func() (got []unit) {
+		var tree struct {
+			Manufacturers []struct{ Models []struct{ Units []unit } }
+		}
+		getJSON(t, serve(t, pool).URL+"/api/v1/boards", &tree)
+		for _, m := range tree.Manufacturers {
+			for _, md := range m.Models {
+				got = append(got, md.Units...)
+			}
+		}
+		return got
+	}
+	var others int
+	for _, u := range read() {
+		switch {
+		case u.ID == "xiongmai-53h20-s-r-cccccccc":
+			if u.LinkCertainty == nil || *u.LinkCertainty != "probable" || u.LinkEvidence != "same platform as r-3yi3z6jw" {
+				t.Errorf("the report's unit: %+v", u)
+			}
+		case u.LinkCertainty != nil || u.LinkEvidence != "":
+			t.Errorf("%s is no report's and has a certainty: %+v", u.ID, u)
+		default:
+			others++
+		}
+	}
+	if others == 0 {
+		t.Fatal("the fixture's own units are not in the tree")
+	}
+
+	// A rewrite of the unit starts from an empty directory: a file of the
+	// test's own there says whether it was rewritten.
+	marker := filepath.Join(root, "xiongmai-53h20-s-r-cccccccc", "marker")
+	rewritten := func() bool {
+		_, err := os.Stat(marker)
+		return err != nil
+	}
+	if err := os.WriteFile(marker, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	list[0].LinkCertainty, list[0].LinkEvidence = "confirmed", ""
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	var certainty *string
+	var evidence string
+	if err := pool.QueryRow(ctx, `SELECT link_certainty, link_evidence FROM board_units WHERE id = 'xiongmai-53h20-s-r-cccccccc'`).
+		Scan(&certainty, &evidence); err != nil || deref(certainty) != "confirmed" || evidence != "" {
+		t.Errorf("after the link was confirmed: %v %q %v", certainty, evidence, err)
+	}
+	if rewritten() {
+		t.Error("a change of certainty alone rewrote the unit")
+	}
+
+	// A unit stored before migration 036 has no certainty: it is a
+	// confirmed link, and the first refresh after it rewrites nothing.
+	if _, err := pool.Exec(ctx, `UPDATE board_units SET link_certainty = NULL WHERE id = 'xiongmai-53h20-s-r-cccccccc'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	if rewritten() {
+		t.Error("a unit with no certainty was rewritten as confirmed")
+	}
+
+	// A file changed is still a rewrite.
+	store["cc/text"] = &fstest.MapFile{Data: []byte("U-Boot 2016\n")}
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	if !rewritten() {
+		t.Error("a changed file did not rewrite the unit")
+	}
+}

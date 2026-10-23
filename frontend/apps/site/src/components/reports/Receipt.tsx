@@ -8,6 +8,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { boardPath } from '../../lib/boards/shell';
+import LinkCertainty from './LinkCertainty';
 import { NotFound, RECEIPT_ID, fetchReport, size, summary, type Report } from '../../lib/reports';
 
 type Load = { state: 'none' } | { state: 'loading' } | { state: 'ok'; value: Report } | { state: 'missing' } | { state: 'error' };
@@ -117,7 +118,8 @@ export default function Receipt({ locale }: { locale: Locale }) {
         <p class="m-0 mt-5 rounded-lg border border-hairline bg-surface-alt px-4 py-3 text-[.9375rem]">
           {t('report.filed_under')}{' '}
           {r.models.map((m, i) => (
-            <span key={m.id}>{i > 0 && ', '}<a href={pathFor(locale, boardPath(m.id))}><b>{m.manufacturer} {m.model}</b></a></span>
+            <span key={m.id}>{i > 0 && ', '}<a href={pathFor(locale, boardPath(m.id))}><b>{m.manufacturer} {m.model}</b></a>
+              {m.certainty && m.certainty !== 'confirmed' && <> <LinkCertainty certainty={m.certainty} evidence={m.evidence} t={t} /></>}</span>
           ))}
         </p>
       )}

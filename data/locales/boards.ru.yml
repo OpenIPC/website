@@ -97,6 +97,10 @@ ru:
       looks_like: "Похоже на {board} из каталога"
       looks_like_why: "точно станет ясно после проверки"
       filed_under: "Привязан к"
+      link_confirmed: "подтверждено: это видно по самой плате"
+      link_probable: "вероятно"
+      link_guess: "предположение"
+      link_unconfirmed: "Пока не подтверждено: это решит фото платы или её наклейки."
       owner_note: 'Примечание владельца:'
       not_found: "Отчёта с такой квитанцией нет. Проверьте адрес, который напечатал ipctool."
       load_failed: "Не удалось загрузить отчёт. Попробуйте через минуту."
@@ -641,6 +645,14 @@ ru:
       review_guess: 'По данным ipctool похоже на {board}'
       review_models: 'Id плат для публикации через запятую (пусто — плата, указанная отправителем)'
       review_note: 'Пояснение для отправителя'
+      review_certainty: 'Насколько надёжна привязка'
+      review_certainty_confirmed: 'Подтверждено: наклейка или маркировка, Device ID в прошивке'
+      review_certainty_probable: 'Вероятно: платформа, которую называет ipctool, соседний отчёт'
+      review_certainty_guess: 'Предположение, пока кто-нибудь не подтвердит'
+      review_evidence: 'Почему (видно рядом с неподтверждённой привязкой)'
+      review_evidence_hint: 'та же платформа, что у r-3yi3z6jw'
+      review_evidence_needed: 'У вероятной привязки или предположения должно быть обоснование: заполните поле «Почему».'
+      review_certainty_kept: 'Уже привязанная плата сохраняет свою надёжность; её меняет openipc reports certainty.'
       publish: 'Опубликовать'
       reject: 'Отклонить'
       review_points: '{points} ★'

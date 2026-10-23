@@ -17,6 +17,7 @@ import { fetchModel } from '../../lib/boards/api';
 import Firmware from './Firmware';
 import ModelFirmware from './ModelFirmware';
 import OwnerReports from '../reports/OwnerReports';
+import LinkCertainty from '../reports/LinkCertainty';
 import SendForm, { type SendKind } from '../club/SendForm';
 import {
   HEADING_CLASS, couplerDevices, foundIn, frontPhoto, insideOf, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, sentBy, subtitle, unitFiles, unitPhotos,
@@ -267,6 +268,7 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
                         </span>
                       )
                       : <b>{t('from_source', { source: sourceName(u.source) })}</b>}
+                    <LinkCertainty certainty={u.link_certainty} evidence={u.link_evidence} t={t} />
                     {u.sensor && (
                       <span class="text-body-secondary">{t('sensor')}:{' '}
                         {/* A sensor the sensor catalogue knows opens its specifications. */}

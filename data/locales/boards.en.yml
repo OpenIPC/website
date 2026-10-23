@@ -97,6 +97,10 @@ en:
       looks_like: "Looks like {board} in the catalogue"
       looks_like_why: "not certain until reviewed"
       filed_under: "Filed under"
+      link_confirmed: "confirmed: the board itself says so"
+      link_probable: "probable"
+      link_guess: "a guess"
+      link_unconfirmed: "Not confirmed yet: a photo of the board, or its sticker, settles it."
       owner_note: 'The owner''s note:'
       not_found: "No report has this receipt. Check the address ipctool printed."
       load_failed: "The report could not be loaded. Try again in a minute."
@@ -590,6 +594,14 @@ en:
       review_guess: 'ipctool says it looks like {board}'
       review_models: 'Board ids to publish it on, comma-separated (empty: the board the sender named)'
       review_note: 'Note for the sender'
+      review_certainty: 'How sure the link is'
+      review_certainty_confirmed: 'Confirmed: a sticker or marking, the device ID in its firmware'
+      review_certainty_probable: 'Probable: the platform ipctool names, a sibling report'
+      review_certainty_guess: 'A guess, until someone confirms it'
+      review_evidence: 'Why (shown beside a link that is not confirmed)'
+      review_evidence_hint: 'same platform as r-3yi3z6jw'
+      review_evidence_needed: 'A probable link or a guess says why: fill in the evidence.'
+      review_certainty_kept: 'A board already linked keeps its certainty; openipc reports certainty changes it.'
       publish: 'Publish'
       reject: 'Reject'
       review_points: '{points} ★'

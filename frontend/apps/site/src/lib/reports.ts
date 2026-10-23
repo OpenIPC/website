@@ -37,7 +37,8 @@ export interface Report {
   tool?: string;
   note?: string;
   files: ReportFile[];
-  models: { id: string; model: string; manufacturer: string }[];
+  /** The boards it is filed under, each with how sure that is (a link not confirmed says why). */
+  models: { id: string; model: string; manufacturer: string; certainty?: 'confirmed' | 'probable' | 'guess'; evidence?: string }[];
   same_board: number;
   guess?: { model_id: string; model: string; manufacturer: string; url: string; why: string[] };
 }
