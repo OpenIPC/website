@@ -239,8 +239,10 @@ compare byte-identical and would otherwise be reported as the same.
 | Pages | `/srv/www/static/dev/current` — its own bundle |
 
 **The dev database is destroyed and rebuilt every night at 03:00 UTC** from the
-previous night's S3 backup, with snapshot MAC and IP addresses scrubbed. Any
-data you create on dev is temporary by design. To refresh on
+S3 backup taken an hour earlier, at 02:00, with snapshot MAC and IP addresses
+scrubbed: dev holds production as it was between 1 and 25 hours ago. When that
+night's backup is missing the refresh restores the one before and sends an
+alert. Any data you create on dev is temporary by design. To refresh on
 demand:
 
 ```bash

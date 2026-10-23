@@ -167,6 +167,22 @@ func TestDevRefreshLinksTheWall(t *testing.T) {
 	}
 }
 
+// backup-db.sh runs at 02:00 and names its object after that day; the
+// refresh at 03:00 restores that one, not the day before's, which left dev a
+// day further behind production than it had to be (2026-10-22). When it is
+// missing the refresh falls back a day, and says so by mail: this run is the
+// only thing that notices a backup that never happened.
+func TestDevRefreshRestoresTheBackupOfAnHourAgo(t *testing.T) {
+	s := directives(read(t, "deploy/refresh-dev.sh"))
+	mustContain(t, s, `WHEN=$(date -u +%Y-%m-%d)`, "the refresh does not start from today's backup")
+	mustContain(t, s, `FALLBACK=$(date -u -d yesterday +%Y-%m-%d)`, "the refresh has no fallback to yesterday's backup")
+	mustContain(t, s, `?*)      WHEN=$1; FALLBACK= ;;`, "a date asked for by hand would fall back to another day")
+	mustContain(t, s, `alert "no backup for ${WHEN}"`, "falling back to yesterday's backup alerts nobody")
+	if !strings.Contains(read(t, "deploy/backup-db.sh"), `STAMP=$(date -u +%Y-%m-%d)`) {
+		t.Error("backup-db.sh no longer names its object after the day it runs; the refresh's choice of day assumes it does")
+	}
+}
+
 // The restored schema is production's; dev runs a branch that is often ahead
 // of it, and `serve` refuses a database behind its binary. The refresh brings
 // the schema up with dev's own image before restarting, or dev stays down
