@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/OpenIPC/website/service/internal/reports"
 )
 
 // bareReport is ipctool's output with no board code in it: the chip and
@@ -219,7 +221,7 @@ func TestAnAnonymousSendersReceiptShowsTheQuestion(t *testing.T) {
 		t.Error("an answered report still asks for the marking")
 	}
 	// Only a report still waiting is answered.
-	if _, err := e.api.Reports.Store().Decide(ctx, id, "reject", "test", "", nil, nil, nil); err != nil {
+	if _, err := e.api.Reports.Store().Decide(ctx, id, "reject", "test", "", nil, reports.Basis{}, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	if code, _ := guest.send(t, map[string]string{"channel": "web", "answers": id}, map[string][]byte{"photo": photo}); code != 400 {
