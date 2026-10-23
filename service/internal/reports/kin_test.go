@@ -202,3 +202,43 @@ func TestAReportHoldingLessIsADuplicateOfOneHoldingMoreUnlessRejected(t *testing
 		t.Errorf("a rejected report is nobody's original: %+v", d)
 	}
 }
+
+// A note is the same note or none: a short one is not "in" a longer one
+// that happens to contain its letters.
+func TestAShortNoteInsideALongerOneIsNotADuplicate(t *testing.T) {
+	e := newEnv(t)
+	st := &Store{DB: e.pool}
+	e.seed(t,
+		seed{id: "r-longnote", ago: 2 * time.Hour, client: "aaaa", files: []string{"boot"}, note: "flashed fw v2.6, then took the board out"},
+		seed{id: "r-shortnot", ago: 1 * time.Hour, client: "bbbb", files: []string{"boot"}, note: "v2"},
+		seed{id: "r-samenote", ago: 30 * time.Minute, client: "cccc", files: []string{"boot"}, note: "  flashed fw v2.6,\nthen took the board   out "},
+	)
+	q := queued(t, st)
+	if d := q["r-shortnot"].DuplicateOf; d != nil {
+		t.Errorf("a note the other lacks is lost by rejecting: %+v", d)
+	}
+	if d := q["r-samenote"].DuplicateOf; d == nil || d.ID != "r-longnote" {
+		t.Errorf("the same note, spaced otherwise, is the same note: %+v", d)
+	}
+}
+
+// A report of a note alone, naming its board, sent twice.
+func TestANoteSentTwiceIsADuplicate(t *testing.T) {
+	e := newEnv(t)
+	st := &Store{DB: e.pool}
+	e.seed(t,
+		seed{id: "r-noteonly", ago: 2 * time.Hour, client: "aaaa", note: "same board as the 50H20L, other lens"},
+		seed{id: "r-noteagan", ago: 1 * time.Hour, client: "bbbb", note: "same board as the 50H20L, other lens"},
+		seed{id: "r-noteelse", ago: 1 * time.Hour, client: "cccc", note: "a different camera"},
+	)
+	q := queued(t, st)
+	if d := q["r-noteagan"].DuplicateOf; d == nil || d.ID != "r-noteonly" {
+		t.Errorf("the note sent again: %+v", d)
+	}
+	if d := q["r-noteonly"].DuplicateOf; d != nil {
+		t.Errorf("the first is kept: %+v", d)
+	}
+	if d := q["r-noteelse"].DuplicateOf; d != nil {
+		t.Errorf("another note: %+v", d)
+	}
+}

@@ -18,7 +18,7 @@ import (
 //     not already say so.
 //   - Duplicate of: a report that already holds everything this one does:
 //     its ipctool output (or this one has none), every file byte for byte,
-//     and its note. Rejecting this one loses nothing.
+//     and the same note, if it has one. Rejecting this one loses nothing.
 //
 // Nothing here leaves the server but report ids, states and boards: the
 // hashes and the client's are compared in the query and never read out.
@@ -53,49 +53,61 @@ func (s *Store) Kin(ctx context.Context, ids []string) (map[string]*Kin, error) 
 	if len(ids) == 0 {
 		return out, nil
 	}
+	// Only the queued reports and those related to them are read whole:
+	// the identifiers are expanded for the queued ones alone and looked up
+	// by containment, the network through reports_by_client, the files
+	// through report_files_by_sha256. A note is compared with its runs of
+	// whitespace made one space.
 	rows, err := s.DB.Query(ctx, `
-		WITH st AS (
-			SELECT r.id, r.received_at, r.client_hash, r.yaml <> '' AS has_yaml, r.yaml_sha256, btrim(r.note) AS note,
-			  coalesce((SELECT rv.decision FROM report_reviews rv WHERE rv.report_id = r.id ORDER BY rv.id DESC LIMIT 1), '') AS decision,
-			  EXISTS (SELECT 1 FROM report_submissions rs WHERE rs.report_id = r.id AND rs.member_id IS NOT NULL) AS member,
-			  EXISTS (SELECT 1 FROM report_files f WHERE f.report_id = r.id) AS has_files
-			FROM reports r),
-		q AS (SELECT * FROM st WHERE id = ANY($1)),
-		idh AS (
-			SELECT r.id, h.key, h.value FROM reports r CROSS JOIN LATERAL jsonb_each_text(r.id_hashes) h),
+		WITH q AS (
+			SELECT r.id, r.received_at, r.client_hash, r.id_hashes, r.yaml <> '' AS has_yaml, r.yaml_sha256,
+			  regexp_replace(btrim(r.note), '\s+', ' ', 'g') AS note
+			FROM reports r WHERE r.id = ANY($1)),
 		camera AS (
-			SELECT DISTINCT a.id AS of, b.id FROM idh a JOIN idh b USING (key, value)
-			WHERE a.id = ANY($1) AND b.id <> a.id),
+			SELECT DISTINCT q.id AS of, o.id FROM q CROSS JOIN LATERAL jsonb_each_text(q.id_hashes) h
+			  JOIN reports o ON o.id_hashes @> jsonb_build_object(h.key, h.value) AND o.id <> q.id),
 		sender AS (
-			SELECT q.id AS of, o.id FROM q JOIN st o ON o.client_hash = q.client_hash AND o.id <> q.id
+			SELECT q.id AS of, o.id FROM q JOIN reports o ON o.client_hash = q.client_hash AND o.id <> q.id
 			  AND o.received_at BETWEEN q.received_at - interval '24 hours' AND q.received_at + interval '24 hours'),
-		-- a duplicate shares a file or the YAML with its original: only
-		-- those pairs are compared whole
+		-- a duplicate shares a file, the YAML or the note with its original:
+		-- only those pairs are compared whole
 		cand AS (
 			SELECT f.report_id AS of, g.report_id AS id FROM report_files f
 			  JOIN report_files g ON g.sha256 = f.sha256 AND g.report_id <> f.report_id
 			WHERE f.report_id = ANY($1)
 			UNION
-			SELECT q.id, o.id FROM q JOIN st o ON o.yaml_sha256 = q.yaml_sha256 AND o.id <> q.id
-			WHERE q.has_yaml AND o.has_yaml),
+			SELECT q.id, o.id FROM q JOIN reports o ON o.yaml_sha256 = q.yaml_sha256 AND o.id <> q.id AND o.yaml <> ''
+			WHERE q.has_yaml
+			UNION
+			SELECT q.id, o.id FROM q JOIN reports o ON o.id <> q.id AND btrim(o.note) <> ''
+			  AND regexp_replace(btrim(o.note), '\s+', ' ', 'g') = q.note
+			WHERE q.note <> ''),
+		st AS (
+			SELECT r.id, r.received_at, r.yaml <> '' AS has_yaml, r.yaml_sha256,
+			  regexp_replace(btrim(r.note), '\s+', ' ', 'g') AS note,
+			  coalesce((SELECT rv.decision FROM report_reviews rv WHERE rv.report_id = r.id ORDER BY rv.id DESC LIMIT 1), '') AS decision,
+			  EXISTS (SELECT 1 FROM report_submissions rs WHERE rs.report_id = r.id AND rs.member_id IS NOT NULL) AS member,
+			  EXISTS (SELECT 1 FROM report_files f WHERE f.report_id = r.id) AS has_files
+			FROM reports r
+			WHERE r.id = ANY($1) OR r.id IN (SELECT id FROM camera UNION SELECT id FROM sender UNION SELECT id FROM cand)),
 		pair AS (
-			SELECT q.id AS of, o.id, o.decision = 'publish' AS pub, o.member, o.received_at,
-			  -- o is kept before q when both hold the same
-			  (o.decision = 'publish', o.member, q.received_at, q.id) > (q.decision = 'publish', q.member, o.received_at, o.id) AS prior,
-			  -- o holds everything q does
-			  (NOT q.has_yaml OR o.has_yaml AND o.yaml_sha256 = q.yaml_sha256)
-			  AND (q.note = '' OR strpos(o.note, q.note) > 0)
-			  AND NOT EXISTS (SELECT 1 FROM report_files f WHERE f.report_id = q.id
+			SELECT a.id AS of, o.id, o.decision = 'publish' AS pub, o.member, o.received_at,
+			  -- o is kept before a when both hold the same
+			  (o.decision = 'publish', o.member, a.received_at, a.id) > (a.decision = 'publish', a.member, o.received_at, o.id) AS prior,
+			  -- o holds everything a does: a note counts only when it is the same note
+			  (NOT a.has_yaml OR o.has_yaml AND o.yaml_sha256 = a.yaml_sha256)
+			  AND (a.note = '' OR o.note = a.note)
+			  AND NOT EXISTS (SELECT 1 FROM report_files f WHERE f.report_id = a.id
 			    AND NOT EXISTS (SELECT 1 FROM report_files g WHERE g.report_id = o.id AND g.sha256 = f.sha256)) AS covered,
-			  -- and q holds everything o does
-			  (NOT o.has_yaml OR q.has_yaml AND q.yaml_sha256 = o.yaml_sha256)
-			  AND (o.note = '' OR strpos(q.note, o.note) > 0)
+			  -- and a holds everything o does
+			  (NOT o.has_yaml OR a.has_yaml AND a.yaml_sha256 = o.yaml_sha256)
+			  AND (o.note = '' OR a.note = o.note)
 			  AND NOT EXISTS (SELECT 1 FROM report_files g WHERE g.report_id = o.id
-			    AND NOT EXISTS (SELECT 1 FROM report_files f WHERE f.report_id = q.id AND f.sha256 = g.sha256)) AS covers
-			FROM cand c JOIN q ON q.id = c.of JOIN st o ON o.id = c.id
-			WHERE (q.has_yaml OR q.has_files)
+			    AND NOT EXISTS (SELECT 1 FROM report_files f WHERE f.report_id = a.id AND f.sha256 = g.sha256)) AS covers
+			FROM cand c JOIN st a ON a.id = c.of JOIN st o ON o.id = c.id
+			WHERE (a.has_yaml OR a.has_files OR a.note <> '')
 			  AND o.decision NOT IN ('reject', 'withdraw')
-			  AND (q.decision <> 'publish' OR o.decision = 'publish')),
+			  AND (a.decision <> 'publish' OR o.decision = 'publish')),
 		dup AS (
 			SELECT DISTINCT ON (of) of, id FROM pair
 			WHERE covered AND (NOT covers OR prior)
