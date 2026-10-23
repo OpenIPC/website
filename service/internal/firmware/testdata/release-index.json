@@ -153,10 +153,16 @@
       "updated_at": "2026-09-23T18:31:36Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.gk7205v510-nor-lite.tgz": {
-      "size": 6443090,
-      "digest": "sha256:4a40237a61fa5ba607b7c1ce5c8fa7abe6a95b91001137f5be6de4dbfe895eeb",
-      "updated_at": "2026-09-23T18:31:39Z",
+    "openipc.gk7205v500-nor-lite-split.tgz": {
+      "size": 7133113,
+      "digest": "sha256:115e0a569d30e06374170080962d506cde4c0c4f436ee59b672353eb820082b9",
+      "updated_at": "2026-09-23T18:31:35Z",
+      "release": "nightly-20260923-830fa4c"
+    },
+    "openipc.gk7205v500-nor-ultimate-split.tgz": {
+      "size": 8654640,
+      "digest": "sha256:6ad41b0e4fd158f81458c27d4266c99ce1ccfe34cb0286efe0d7505448e0363c",
+      "updated_at": "2026-09-23T18:31:37Z",
       "release": "nightly-20260923-830fa4c"
     },
     "openipc.gk7605v100-nor-lite.tgz": {
@@ -1418,11 +1424,6 @@
       "flash_mb": 16,
       "kernel_kb": 1897,
       "rootfs_kb": 6980
-    },
-    "gk7205v510-lite": {
-      "flash_mb": 8,
-      "kernel_kb": 1897,
-      "rootfs_kb": 4416
     },
     "gk7605v100-lite": {
       "flash_mb": 8,

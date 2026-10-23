@@ -322,32 +322,36 @@ func TestUBINandWithoutItsBootloaderIsNotOffered(t *testing.T) {
 	}
 }
 
-// GK7205V510 has a NOR build of its own; its NAND firmware is the GK7205V500
-// build (nand_board), and each flash type names its own.
-func TestNANDBoardIsUsedForNANDOnly(t *testing.T) {
+// GK7205V510 installs the GK7205V500 build on NOR and on NAND alike, as
+// defib does: one firmware serves the V500 family. Its bootloaders stay its
+// own, and on NOR, where the split package is published, it is the split
+// image.
+func TestV510InstallsTheV500Build(t *testing.T) {
 	cat, idx := inputs(t)
 	d := decode(t, Document(cat.SoC("gk7205v510"), idx))
-	if d["board"] != "gk7205v510" {
-		t.Errorf("board %v, want the NOR build gk7205v510", d["board"])
+	if d["board"] != "gk7205v500" {
+		t.Errorf("board %v, want the gk7205v500 build", d["board"])
 	}
 	pool := d["blocks"].(map[string]any)
-	sawNand := false
+	seen := map[string]bool{}
 	for _, raw := range d["combinations"].([]any) {
 		c := raw.(map[string]any)
-		if c["flash_type"] != "nand" {
-			continue
-		}
-		sawNand = true
+		ft := c["flash_type"].(string)
+		seen[strings.TrimRight(ft, "0123456789m")] = true
 		var lines []string
 		for _, l := range pool[c["blocks"].(map[string]any)["flashing_linux"].(string)].(map[string]any)["lines"].([]any) {
 			lines = append(lines, l.(string))
 		}
-		if all := strings.Join(lines, "\n"); !strings.Contains(all, "rootfs.ubi.gk7205v500") {
-			t.Errorf("NAND install does not use the gk7205v500 build:\n%s", all)
+		all := strings.Join(lines, "\n")
+		if strings.Contains(all, "gk7205v510") || !strings.Contains(all, "gk7205v500") {
+			t.Errorf("%s install does not use the gk7205v500 build:\n%s", ft, all)
+		}
+		if strings.HasPrefix(ft, "nor") && !strings.Contains(all, "firmware.bin.gk7205v500") {
+			t.Errorf("%s install is not the split image:\n%s", ft, all)
 		}
 	}
-	if !sawNand {
-		t.Errorf("no NAND combination for gk7205v510")
+	if !seen["nor"] || !seen["nand"] {
+		t.Errorf("combinations cover %v, want nor and nand", seen)
 	}
 }
 

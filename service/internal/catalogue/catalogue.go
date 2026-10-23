@@ -30,8 +30,9 @@ type SoC struct {
 	// uknand; run urnand` for every SoC that still boots that way.
 	UBootNANDFilename string `yaml:"uboot_nand_filename"`
 	// NANDBoard is the build name upstream publishes this SoC's NAND
-	// firmware under, when that is not the NOR one: GK7205V510 has a NOR
-	// build of its own, but its NAND firmware is the GK7205V500 build.
+	// firmware under, when that is not the NOR one. No SoC needs it today:
+	// GK7205V510, which had a NOR build of its own, now installs the
+	// GK7205V500 build on both.
 	NANDBoard string `yaml:"nand_board"`
 	// NORSplit is a SoC whose firmware ships the split NOR layout,
 	// openipc.<board>-nor-<edition>-split.tgz: one firmware.bin (a uImage,
