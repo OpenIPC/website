@@ -70,6 +70,17 @@ func TestAMemberIsPaidOncePerCamera(t *testing.T) {
 		t.Errorf("the queue: %v", queued)
 	}
 	decide(b, "publish", 7, 14)
+	// The bot says why it earned less, not that the catalogue had it.
+	told := func(who string, want ...string) {
+		t.Helper()
+		text, _ := e.tg.last(t)
+		for _, w := range want {
+			if !strings.Contains(text, w) {
+				t.Errorf("%s was told %q, without %q", who, text, w)
+			}
+		}
+	}
+	told("Ivan", "+7 ★", "you were already paid for this camera")
 
 	// C: the same two photos again, and one more: only the new one earns.
 	_, out = ivan.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10"}, map[string][]byte{"photo": photoN(1), "photo#2": photoN(2), "photo#3": photoN(3)})
@@ -79,12 +90,20 @@ func TestAMemberIsPaidOncePerCamera(t *testing.T) {
 		t.Fatalf("C waiting: %v", r)
 	}
 	decide(c, "publish", 1, 15)
-	// Nor does another member sending the same photo earn with it.
-	petr := e.signedIn(t, 888, "petr", "198.51.100.2")
+	told("Ivan", "+1 ★", "the same file was already published")
+	// Nor does another member sending the same photo earn with it, and the
+	// bot tells him why in his language.
+	petr := e.browser("198.51.100.2")
+	_, login := petr.json(t, "POST", "/api/v1/club/telegram", nil)
+	e.startAndConfirm(t, 888, "petr", "ru", codeOf(t, login["link"].(string)))
+	if _, out := petr.json(t, "GET", "/api/v1/club/login", nil); out["state"] != "signed_in" {
+		t.Fatalf("Petr's sign-in: %v", out)
+	}
 	_, out = petr.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10"}, map[string][]byte{"photo": photoN(1)})
 	if code, d := maint.json(t, "POST", "/api/v1/club/review/"+out["id"].(string), map[string]any{"decision": "publish"}); code != 200 || d["points"].(float64) != 0 {
 		t.Errorf("Petr's copy of Ivan's photo: %d %v", code, d)
 	}
+	told("Petr", "звёзд в этот раз нет", "такой же файл уже опубликован")
 
 	// Another camera of Ivan's, its own MAC: paid in full, 1 + 10.
 	other := []byte(strings.Replace(string(yaml), "00:12:31:5e:e0:d2", "00:12:31:5e:e0:d3", 1))
@@ -105,6 +124,7 @@ func TestAMemberIsPaidOncePerCamera(t *testing.T) {
 		t.Errorf("A published again: %v", r)
 	}
 	decide(a, "publish", 0, 26)
+	told("Ivan", "you were already paid for this camera")
 
 	// B rejected: A is the camera's again, its output and its dump.
 	decide(b, "reject", -11+4, 19)

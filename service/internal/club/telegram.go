@@ -436,10 +436,23 @@ func (a *API) notifyDecision(ctx context.Context, member, report, decision strin
 			total += wall
 		}
 	}
+	// Why a part earned less than alone (reports.Reason*), in the member's
+	// words: a stars-less acceptance says why, not a guess at it.
+	why := func(l string) string {
+		var out []string
+		for _, r := range d.Reasons {
+			out = append(out, t(l, "reason_"+r))
+		}
+		return strings.Join(out, t(l, "reason_sep"))
+	}
 	_ = a.notify(ctx, member, func(l string) string {
 		switch {
+		case decision == "publish" && d.Points > 0 && len(d.Reasons) > 0:
+			return fmt.Sprintf(t(l, "accepted"), report, d.Points, total) + " " + fmt.Sprintf(t(l, "accepted_partly"), why(l))
 		case decision == "publish" && d.Points > 0:
 			return fmt.Sprintf(t(l, "accepted"), report, d.Points, total)
+		case decision == "publish" && len(d.Reasons) > 0:
+			return fmt.Sprintf(t(l, "accepted_none"), report, why(l))
 		case decision == "publish":
 			return fmt.Sprintf(t(l, "accepted_known"), report)
 		default:
@@ -564,7 +577,12 @@ var messages = map[string]map[string]string{
 		"stopped":            "Telegram is unlinked from your openipc.org account. Sign in with Telegram again to link it back.",
 		"not_member":         "You haven't signed in to openipc.org with Telegram yet.",
 		"accepted":           "✅ Your report <b>%s</b> was accepted. <b>+%d ★</b>, %d in total.",
-		"accepted_known":     "✅ Your report <b>%s</b> was accepted. The catalogue already had what it brings, so it earns no stars this time. Thank you anyway.",
+		"accepted_known":     "✅ Your report <b>%s</b> was accepted. It brings no new stars this time. Thank you anyway.",
+		"accepted_none":      "✅ Your report <b>%s</b> was accepted, but earns no stars this time: %s. Thank you anyway.",
+		"accepted_partly":    "Some of it earned nothing: %s.",
+		"reason_known":       "the same file was already published",
+		"reason_camera":      "you were already paid for this camera",
+		"reason_sep":         "; ",
 		"rejected":           "⚪ Your report <b>%s</b> was not accepted. Your page on openipc.org says why when the reviewer left a note.",
 		"asked":              "❓ A question about your report <b>%s</b>:\n\n%s\n\nEdit the report on openipc.org to answer: add a photo, correct it, or reply in its note. It goes back to the reviewer then.",
 		"open_report":        "Open the report",
@@ -594,7 +612,12 @@ var messages = map[string]map[string]string{
 		"stopped":            "Telegram отвязан от вашей учётной записи на openipc.org. Войдите через Telegram снова, чтобы привязать.",
 		"not_member":         "Вы ещё не входили на openipc.org через Telegram.",
 		"accepted":           "✅ Ваш отчёт <b>%s</b> принят. <b>+%d ★</b>, всего %d.",
-		"accepted_known":     "✅ Ваш отчёт <b>%s</b> принят. В каталоге это уже было, поэтому звёзд в этот раз нет. Всё равно спасибо.",
+		"accepted_known":     "✅ Ваш отчёт <b>%s</b> принят. Новых звёзд он в этот раз не приносит. Всё равно спасибо.",
+		"accepted_none":      "✅ Ваш отчёт <b>%s</b> принят, но звёзд в этот раз нет: %s. Всё равно спасибо.",
+		"accepted_partly":    "Часть отчёта звёзд не принесла: %s.",
+		"reason_known":       "такой же файл уже опубликован",
+		"reason_camera":      "за эту камеру звёзды уже начислены",
+		"reason_sep":         "; ",
 		"rejected":           "⚪ Ваш отчёт <b>%s</b> не принят. Если проверяющий оставил пояснение, оно на вашей странице на openipc.org.",
 		"asked":              "❓ Вопрос по вашему отчёту <b>%s</b>:\n\n%s\n\nЧтобы ответить, измените отчёт на openipc.org: добавьте фото, исправьте его или ответьте в примечании. После этого он вернётся к проверяющему.",
 		"open_report":        "Открыть отчёт",
@@ -624,7 +647,12 @@ var messages = map[string]map[string]string{
 		"stopped":            "已从你的 openipc.org 账户解除 Telegram 绑定。再次用 Telegram 登录即可重新绑定。",
 		"not_member":         "你还没有用 Telegram 登录过 openipc.org。",
 		"accepted":           "✅ 你的报告 <b>%s</b> 已通过。<b>+%d ★</b>，共 %d。",
-		"accepted_known":     "✅ 你的报告 <b>%s</b> 已通过。目录中已有相同内容，因此本次没有星星。仍然感谢！",
+		"accepted_known":     "✅ 你的报告 <b>%s</b> 已通过。本次没有新的星星。仍然感谢！",
+		"accepted_none":      "✅ 你的报告 <b>%s</b> 已通过，但本次没有星星：%s。仍然感谢！",
+		"accepted_partly":    "部分内容未获得星星：%s。",
+		"reason_known":       "相同的文件已经发布过",
+		"reason_camera":      "这台摄像头已经为你计过星星",
+		"reason_sep":         "；",
 		"rejected":           "⚪ 你的报告 <b>%s</b> 未通过。审核者如留有说明，可在 openipc.org 的个人页面查看。",
 		"asked":              "❓ 关于你的报告 <b>%s</b> 的问题：\n\n%s\n\n请在 openipc.org 编辑该报告来回答：补充照片、更正内容，或在备注中回复。之后报告会回到审核者那里。",
 		"open_report":        "打开报告",

@@ -481,6 +481,9 @@ type Decided struct {
 	Points int
 	Total  int
 	Board  string
+	// Reasons: why a published report's parts earned less than alone,
+	// each once, ReasonKnown before ReasonCamera -- what the sender is told.
+	Reasons []string
 }
 
 // Decide records a maintainer's decision and its stars: publishing links
@@ -677,8 +680,15 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 		}
 		want := map[int]int{}
 		if decision == "publish" {
+			why := map[string]bool{}
 			for pos, p := range book.want(id) {
 				want[pos] = p.Points
+				why[p.Reason] = true
+			}
+			for _, r := range []string{ReasonKnown, ReasonCamera} {
+				if why[r] {
+					d.Reasons = append(d.Reasons, r)
+				}
 			}
 		}
 		net := book.net[id]
@@ -718,7 +728,7 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 		return nil
 	})
 	if err != nil {
-		d.Board, d.Points = "", 0
+		d.Board, d.Points, d.Reasons = "", 0, nil
 		return d, err
 	}
 	if owner == "" {
