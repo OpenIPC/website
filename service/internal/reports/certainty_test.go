@@ -150,17 +150,17 @@ func TestADecisionLinksWithItsCertainty(t *testing.T) {
 	ctx := context.Background()
 	st := &Store{DB: e.pool}
 	id := e.sent(t)
-	if _, err := st.Decide(ctx, id, "publish", "test", "", []string{"xiongmai-50h20l"}, Basis{Certainty: Guess}, nil, nil); err == nil {
+	if _, err := st.Decide(ctx, id, "publish", "test", "", []string{"xiongmai-50h20l"}, Basis{Certainty: Guess}, nil, nil, nil); err == nil {
 		t.Error("a guess with no evidence was published")
 	}
 	if _, err := st.Decide(ctx, id, "publish", "test", "", []string{"xiongmai-50h20l"},
-		Basis{Certainty: Probable, Evidence: "ipctool names the platform"}, nil, nil); err != nil {
+		Basis{Certainty: Probable, Evidence: "ipctool names the platform"}, nil, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	if c, ev := linkOf(t, e, id, "xiongmai-50h20l"); c != Probable || ev != "ipctool names the platform" {
 		t.Errorf("%q %q", c, ev)
 	}
-	if _, err := st.Decide(ctx, id, "publish", "test", "", []string{"xiongmai-50h20l", "xiongmai-other"}, Basis{}, nil, nil); err != nil {
+	if _, err := st.Decide(ctx, id, "publish", "test", "", []string{"xiongmai-50h20l", "xiongmai-other"}, Basis{}, nil, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	if c, _ := linkOf(t, e, id, "xiongmai-50h20l"); c != Probable {
@@ -193,7 +193,7 @@ func TestEvidenceIsPublishedRedacted(t *testing.T) {
 	if err := st.LinkAs(ctx, a, "xiongmai-50h20l", "test", Basis{Certainty: Probable, Evidence: said}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := st.Decide(ctx, b, "publish", "test", "", []string{"xiongmai-50h20l"}, Basis{Certainty: Guess, Evidence: said}, nil, nil); err != nil {
+	if _, err := st.Decide(ctx, b, "publish", "test", "", []string{"xiongmai-50h20l"}, Basis{Certainty: Guess, Evidence: said}, nil, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	if err := st.Link(ctx, c, "xiongmai-50h20l", "test"); err != nil {

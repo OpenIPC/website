@@ -120,9 +120,34 @@ test('the reviewer publishes a proposal as the board they corrected', async () =
   await waitFor(() => expect(calls).toHaveLength(1));
   expect(calls[0].body).toEqual({
     decision: 'publish', models: [], note: '', revision: 0,
-    new_board: { maker_id: 'jooan', maker_name: 'Jooan', model_id: 'jooan-q9', model: 'Q9 v2', soc: 'SSC335' },
+    new_board: { maker_id: 'jooan', maker_name: 'Jooan', model_id: 'jooan-q9', model: 'Q9 v2', soc: 'SSC335', kind: 'board' },
   });
   expect(await findByText(/jooan-q9 added to the catalogue/)).toBeTruthy();
+});
+
+test('a finished camera is published as a camera with the markings inside it', async () => {
+  const calls = review(queued({}));
+  const { findByText, getByLabelText, getByRole } = render(<Review locale="en" />);
+  expect(await findByText('Jooan Q9 v2')).toBeTruthy();
+  fireEvent.change(getByLabelText('What it is'), { target: { value: 'camera' } });
+  fireEvent.input(getByLabelText(/^Other markings it carries/), { target: { value: 'RS-CM-371B\nCV182X-SC4336-749, ' } });
+  fireEvent.click(getByRole('button', { name: /^Publish ·/ }));
+  await waitFor(() => expect(calls).toHaveLength(1));
+  expect(calls[0].body).toMatchObject({
+    new_board: { model_id: 'jooan-q9-v2', kind: 'camera', aliases: ['RS-CM-371B', 'CV182X-SC4336-749'] },
+  });
+  expect(calls[0].body).not.toHaveProperty('markings');
+});
+
+test('a report on a board the catalogue has adds the markings seen on it', async () => {
+  const calls = review(queued({ proposal: undefined, new_board: undefined,
+    board: { id: 'xiongmai-ipg-80he20ps-s', model: 'IPG-80HE20PS-S', manufacturer: 'Xiongmai' } }));
+  const { findByLabelText, getByRole, queryByLabelText } = render(<Review locale="en" />);
+  fireEvent.input(await findByLabelText(/^Markings seen on the linked board/), { target: { value: 'BLK16E-0235-38X38-S V2.04' } });
+  expect(queryByLabelText('What it is')).toBeNull();
+  fireEvent.click(getByRole('button', { name: /^Publish ·/ }));
+  await waitFor(() => expect(calls).toHaveLength(1));
+  expect(calls[0].body).toEqual({ decision: 'publish', models: [], note: '', revision: 0, markings: ['BLK16E-0235-38X38-S V2.04'] });
 });
 
 test('a proposal the catalogue already has is published on that board, not a twin', async () => {

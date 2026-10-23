@@ -31,6 +31,14 @@ type NewModel struct {
 	// SoC as the sender or the reviewer wrote it; kept as soc_label, and as
 	// the catalogue's slug when it names a SoC the catalogue has.
 	SoC string `json:"soc,omitempty"`
+	// Kind is board_models.kind (Kinds): a bare board, or a finished camera
+	// whose name is the marking and whose PCB codes are Aliases. Empty is a
+	// board.
+	Kind string `json:"kind,omitempty"`
+	// Aliases are further markings as printed -- the PCB under a camera's
+	// name, a second revision's silkscreen -- that the board answers to as
+	// well, so a search or a later archive finds it by them.
+	Aliases []string `json:"aliases,omitempty"`
 	// Report is the owner report whose publishing adds it, set by the
 	// review: rejecting that report takes the board back (RemoveAbandoned).
 	Report string `json:"-"`
@@ -50,6 +58,9 @@ type Suggestion struct {
 	Existing   string   `json:"existing,omitempty"`
 	Likely     []string `json:"likely,omitempty"`
 }
+
+// Kinds are what board_models.kind allows (migration 009).
+var Kinds = []string{"board", "camera", "recorder", "doorbell", "base_station"}
 
 var (
 	makerID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,63}$`)
@@ -139,9 +150,10 @@ func collect(ctx context.Context, q queryer, sql string, args ...any) ([]string,
 
 // CreateModel adds the board, and its maker when the catalogue has none by
 // that id, inside the caller's transaction. It refuses a model id that is
-// taken and a marking its maker already answers to: the report belongs on
-// that board, not on a twin of it. resolve maps a SoC to the catalogue's
-// slug ("" when it has none), as Importer.Resolve does.
+// taken and a marking its maker already answers to, its own or one of its
+// Aliases: the report belongs on that board, not on a twin of it. resolve
+// maps a SoC to the catalogue's slug ("" when it has none), as
+// Importer.Resolve does.
 func CreateModel(ctx context.Context, tx pgx.Tx, m NewModel, resolve func(string) string) (string, error) {
 	m.MakerName, m.Model, m.SoC = strings.TrimSpace(m.MakerName), strings.TrimSpace(m.Model), strings.TrimSpace(m.SoC)
 	switch {
@@ -155,6 +167,12 @@ func CreateModel(ctx context.Context, tx pgx.Tx, m NewModel, resolve func(string
 		return "", errors.New("new board: the marking is 1 to 80 characters")
 	case utf8.RuneCountInString(m.SoC) > 40:
 		return "", errors.New("new board: the SoC is at most 40 characters")
+	}
+	if m.Kind == "" {
+		m.Kind = "board"
+	}
+	if !slices.Contains(Kinds, m.Kind) {
+		return "", fmt.Errorf("new board: the kind is one of %s, not %q", strings.Join(Kinds, ", "), m.Kind)
 	}
 	code := NormCode(m.Model)
 	if !codeShape.MatchString(code) {
@@ -178,15 +196,62 @@ func CreateModel(ctx context.Context, tx pgx.Tx, m NewModel, resolve func(string
 	}
 	if _, err := tx.Exec(ctx, `
 		INSERT INTO board_models (id, manufacturer_id, model, soc, soc_label, kind, position, created_by_report)
-		VALUES ($1, $2, $3, $4, $5, 'board', (SELECT coalesce(max(position), 0) + 1 FROM board_models WHERE manufacturer_id = $2), $6)`,
-		m.ModelID, m.MakerID, m.Model, null(socSlug(m.SoC, resolve)), null(m.SoC), null(m.Report)); err != nil {
+		VALUES ($1, $2, $3, $4, $5, $6, (SELECT coalesce(max(position), 0) + 1 FROM board_models WHERE manufacturer_id = $2), $7)`,
+		m.ModelID, m.MakerID, m.Model, null(socSlug(m.SoC, resolve)), null(m.SoC), m.Kind, null(m.Report)); err != nil {
 		return "", err
 	}
 	if _, err := tx.Exec(ctx, `INSERT INTO board_model_aliases (maker_id, code_norm, model_id, source, code_as_printed)
 		VALUES ($1, $2, $3, 'club', $4)`, m.MakerID, code, m.ModelID, m.Model); err != nil {
 		return "", err
 	}
+	if err := AddMarkings(ctx, tx, m.ModelID, m.Aliases); err != nil {
+		return "", err
+	}
 	return m.ModelID, nil
+}
+
+// AddMarkings has a board answer to further markings as printed (source
+// "club"), inside the caller's transaction: what a reviewer read on a
+// report's photos -- the PCB inside a camera, the code on a board a report
+// was linked to. A marking the board already answers to is nothing to do;
+// one another board of its maker answers to is refused, since the two
+// cannot both be it.
+func AddMarkings(ctx context.Context, tx pgx.Tx, model string, markings []string) error {
+	if len(markings) == 0 {
+		return nil
+	}
+	var maker string
+	if err := tx.QueryRow(ctx, `SELECT manufacturer_id FROM board_models WHERE id = $1`, model).Scan(&maker); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("markings: the catalogue has no board %s", model)
+		}
+		return err
+	}
+	for _, printed := range markings {
+		printed = strings.TrimSpace(printed)
+		if printed == "" {
+			continue
+		}
+		code := NormCode(printed)
+		switch {
+		case utf8.RuneCountInString(printed) > 80:
+			return fmt.Errorf("marking %q: at most 80 characters", printed)
+		case !codeShape.MatchString(code):
+			return fmt.Errorf("marking %q has no letters or digits the catalogue can key it by", printed)
+		}
+		var owner string
+		if err := tx.QueryRow(ctx, `
+			INSERT INTO board_model_aliases (maker_id, code_norm, model_id, source, code_as_printed)
+			VALUES ($1, $2, $3, 'club', $4)
+			ON CONFLICT (maker_id, code_norm) DO UPDATE SET maker_id = EXCLUDED.maker_id
+			RETURNING model_id`, maker, code, model, printed).Scan(&owner); err != nil {
+			return err
+		}
+		if owner != model {
+			return fmt.Errorf("marking %s: the catalogue already has it on %s, not on %s", printed, owner, model)
+		}
+	}
+	return nil
 }
 
 // knownMaker is the importers' maker (parse.go's makers) a name means: by

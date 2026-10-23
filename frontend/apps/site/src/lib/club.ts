@@ -60,7 +60,17 @@ export interface BoardRef { id: string; model: string; manufacturer: string }
 export interface Proposal { maker: string; board: string; soc?: string }
 
 /** The board publishing a proposal adds (service boards.NewModel). */
-export interface NewBoard { maker_id: string; maker_name: string; model_id: string; model: string; soc?: string }
+export interface NewBoard {
+  maker_id: string;
+  maker_name: string;
+  model_id: string;
+  model: string;
+  soc?: string;
+  /** A bare board, or a finished camera (board_models.kind); empty is a board. */
+  kind?: string;
+  /** Further markings as printed it answers to: the PCB under a camera's name. */
+  aliases?: string[];
+}
 
 /** What the review page offers for a proposal (boards.Suggestion). */
 export interface Suggestion extends NewBoard {
@@ -229,11 +239,14 @@ export const ask = (id: string, question: string, revision?: number) =>
 /** How sure a link a decision makes is, and why (the service's reports.Basis). */
 export interface LinkBasis { certainty: 'confirmed' | 'probable' | 'guess'; evidence?: string }
 
-export const decide = (id: string, decision: 'publish' | 'reject', models: string[], note: string, newBoard?: NewBoard, revision?: number, basis?: LinkBasis) =>
+/** A maintainer's decision. markings are what the existing board it is linked to was seen to carry. */
+export const decide = (id: string, decision: 'publish' | 'reject', models: string[], note: string, newBoard?: NewBoard, revision?: number, basis?: LinkBasis,
+  markings: string[] = []) =>
   post<{ points: number; total: number; board?: string }>(`/review/${encodeURIComponent(id)}`, {
     decision, models, note, ...(newBoard ? { new_board: newBoard } : {}), ...(revision !== undefined ? { revision } : {}),
     // A confirmed link with nothing to add is the service's default, left unsaid.
     ...(basis && (basis.certainty !== 'confirmed' || basis.evidence) ? { certainty: basis.certainty, ...(basis.evidence ? { evidence: basis.evidence } : {}) } : {}),
+    ...(markings.length ? { markings } : {}),
   });
 
 /**
@@ -243,6 +256,9 @@ export const decide = (id: string, decision: 'publish' | 'reject', models: strin
  */
 export const reviewPhoto = (id: string, position: number, action: 'blur' | 'private' | 'as_sent', regions?: Box[]) =>
   post<{ public: PhotoPublic }>(`/review/${encodeURIComponent(id)}/files/${position}`, { action, ...(regions ? { regions } : {}) });
+
+/** Markings typed one per line or comma-separated, as printed. */
+export const markingList = (text: string) => text.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean);
 
 /** A code that makes `ipctool upload --note <code>` the member's report. */
 export interface ReportCode { code: string; expires_at: string; joins?: string }

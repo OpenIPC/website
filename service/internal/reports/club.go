@@ -444,10 +444,12 @@ type Decided struct {
 // Decide records a maintainer's decision and its stars: publishing links
 // the report to its boards (the sender's board when none is named), adds
 // the board newBoard describes first when the catalogue did not have it,
-// and awards each accepted part; rejecting takes back anything it had
-// earned. The links it makes are as sure as basis says; one already made
-// keeps its own certainty (SetCertainty changes it).
-func (s *Store) Decide(ctx context.Context, id, decision, by, note string, models []string, basis Basis, newBoard *boards.NewModel, revision *int) (Decided, error) {
+// has the existing board it links answer to markings as well (what the
+// reviewer read on the report's photos), and awards each accepted part;
+// rejecting takes back anything it had earned. The links it makes are as
+// sure as basis says; one already made keeps its own certainty
+// (SetCertainty changes it).
+func (s *Store) Decide(ctx context.Context, id, decision, by, note string, models []string, basis Basis, newBoard *boards.NewModel, markings []string, revision *int) (Decided, error) {
 	var d Decided
 	if decision != "publish" && decision != "reject" {
 		return d, fmt.Errorf("a review publishes or rejects")
@@ -458,6 +460,9 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 	}
 	if newBoard != nil && decision != "publish" {
 		return d, errors.New("a new board is added by publishing the report")
+	}
+	if len(markings) > 0 && decision != "publish" {
+		return d, errors.New("markings are added by publishing the report")
 	}
 	owner, err := s.Owner(ctx, id)
 	if err != nil {
@@ -514,6 +519,16 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 			return err
 		}
 		if decision == "publish" {
+			// The markings are what one board was seen to carry: with two
+			// linked, which one is not for this to guess.
+			if len(markings) > 0 {
+				if len(models) != 1 {
+					return fmt.Errorf("markings go on the one existing board the report is linked to; it is linked to %d", len(models))
+				}
+				if err := boards.AddMarkings(ctx, tx, models[0], markings); err != nil {
+					return err
+				}
+			}
 			if newBoard != nil {
 				nb := *newBoard
 				nb.Report = id
