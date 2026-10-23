@@ -164,6 +164,7 @@
       "review_from": "来自 {who}",
       "review_guess": "ipctool 显示类似 {board}",
       "review_joins_label": "一起发送",
+      "review_likely": "可能是 {boards}：平台代码或共用的设备 ID 相符。添加新电路板前请先核对。",
       "review_link": "审核队列",
       "review_maker_known": "厂商已在目录中",
       "review_maker_new": "新厂商",

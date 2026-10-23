@@ -597,6 +597,7 @@ en:
       review_done_reject: 'Rejected.'
       review_proposal: 'Proposed by the sender'
       review_existing: 'The catalogue already has {board}: the report is published there unless you change the board ids below.'
+      review_likely: 'It may be {boards}: its platform code or a shared device ID matches. Check before adding a new board.'
       review_new_board: 'Add this board to the catalogue when publishing'
       review_maker_known: 'its maker is in the catalogue'
       review_maker_new: 'a new maker'

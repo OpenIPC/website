@@ -102,7 +102,9 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 	}
 	if !published {
 		if v.State == "pending" {
-			if id, err := Identify(ctx, s.DB, f); err == nil && len(id.Matches) > 0 {
+			devices, _ := s.DeviceIDs(ctx, id)
+			if id, err := IdentifyDevices(ctx, s.DB, f, devices); err == nil && len(id.Matches) > 0 {
+				id = id.Public()
 				v.Guess = &id.Matches[0]
 			}
 		}

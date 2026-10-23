@@ -187,6 +187,9 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
             {sug?.existing && q.status !== 'published' && (
               <p class="m-0 rounded-md bg-[#fff4e2] px-3 py-2 text-sm text-[#9a5b00]">{t('club.review_existing', { board: sug.existing })}</p>
             )}
+            {!sug?.existing && !!sug?.likely?.length && q.status !== 'published' && (
+              <p class="m-0 rounded-md bg-surface-alt px-3 py-2 text-sm text-body-secondary">{t('club.review_likely', { boards: sug.likely.join(', ') })}</p>
+            )}
             {board && q.status !== 'published' && (
               <fieldset class="m-0 grid gap-2 rounded-md border border-hairline p-3">
                 <legend class="px-1 text-[13px]">

@@ -167,6 +167,7 @@
       "review_from": "От {who}",
       "review_guess": "По данным ipctool похоже на {board}",
       "review_joins_label": "Отправлен вместе с",
+      "review_likely": "Возможно, это {boards}: совпадает код платформы или общий device ID. Проверьте, прежде чем добавлять новую плату.",
       "review_link": "Очередь проверки",
       "review_maker_known": "производитель есть в каталоге",
       "review_maker_new": "новый производитель",

@@ -19,6 +19,8 @@ type Store struct {
 	// SoC maps a SoC as written to the catalogue's slug, for a board a
 	// review adds (boards.CreateModel); nil keeps only the label.
 	SoC func(string) string
+	// Files, when set, lets Texts read a report's text files for Identify.
+	Files *Files
 }
 
 // Report is one upload, as stored.

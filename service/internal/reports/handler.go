@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"path"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/OpenIPC/website/service/internal/boards"
 	"github.com/OpenIPC/website/service/internal/httpx"
 )
 
@@ -56,7 +58,7 @@ func (a *API) Handlers() map[string]http.Handler {
 	}
 }
 
-func (a *API) store() *Store { return &Store{DB: a.DB, SoC: a.SoC} }
+func (a *API) store() *Store { return &Store{DB: a.DB, SoC: a.SoC, Files: a.Files} }
 
 // Store is the reports' rows, for the club's pages.
 func (a *API) Store() *Store { return a.store() }
@@ -266,7 +268,10 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	// transaction that names them, and a takedown removing the same bytes
 	// waits for it (Store.Insert, Store.RemoveUnreferenced).
 	var places []func() error
-	prepare := func(p part) (File, error) { return a.prepare(p, consent, facts, key, &places) }
+	// The XM device IDs the report's words carry, for Identify: read from
+	// each text file as prepare redacts it, so no text is held twice.
+	devices := boards.DeviceIDs(doc, in.fields["note"])
+	prepare := func(p part) (File, error) { return a.prepare(p, consent, facts, key, &places, &devices) }
 	all := in.parts
 	if in.backup != nil {
 		name := "backup.bin"
@@ -308,7 +313,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 		a.fail(w, "the report", err)
 		return
 	}
-	ident, err := Identify(ctx, a.DB, facts)
+	ident, err := IdentifyDevices(ctx, a.DB, facts, devices)
 	if err != nil {
 		a.Log.Warn("reports: identify failed", "report", rep.ID, "err", err)
 	}
@@ -329,7 +334,7 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	out := map[string]any{
 		"id": rep.ID, "status": "pending", "receipt_url": receiptURL(r, rep.ID),
 		"received_at": rep.ReceivedAt, "backup_consent": consent,
-		"facts": facts, "files": files, "identify": ident,
+		"facts": facts, "files": files, "identify": ident.Public(),
 		"next": "OpenIPC's maintainers review each report before it is published. Nothing identifying the camera " +
 			"(MAC, die ID, cloud ID) is ever shown; the receipt shows the report's state.",
 	}
@@ -379,8 +384,9 @@ func proposalOf(in *received, channel, model string) (*Proposal, error) {
 
 // prepare makes a received file a report's, and adds to places what puts it
 // in the store: the bytes, and for text a copy with the board's identifiers
-// replaced. A backup is served only when its owner said public.
-func (a *API) prepare(p part, consent string, facts Facts, key string, places *[]func() error) (File, error) {
+// replaced. A backup is served only when its owner said public. devices,
+// when not nil, gathers the XM device IDs the text files carry.
+func (a *API) prepare(p part, consent string, facts Facts, key string, places *[]func() error, devices *[]string) (File, error) {
 	f := File{Kind: p.kind, Name: p.name, Mime: p.mime, Bytes: p.in.Bytes, SHA256: p.in.Sum()}
 	inc := p.in
 	*places = append(*places, func() error { _, err := a.Files.Keep(inc); return err })
@@ -395,6 +401,13 @@ func (a *API) prepare(p part, consent string, facts Facts, key string, places *[
 		text, err := io.ReadAll(rd)
 		if err != nil {
 			return f, err
+		}
+		if devices != nil {
+			for _, d := range boards.DeviceIDs(string(text)) {
+				if !slices.Contains(*devices, d) {
+					*devices = append(*devices, d)
+				}
+			}
 		}
 		pub := []byte(Redact(string(text), facts, key))
 		ps := sha256.Sum256(pub)

@@ -353,8 +353,12 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 		if q.Revision, err = revisionOf(ctx, s.DB, l.ID); err != nil {
 			return nil, err
 		}
+		devices, err := s.DeviceIDs(ctx, l.ID)
+		if err != nil {
+			return nil, err
+		}
 		if p := m.Proposal; p != nil {
-			sug, err := boards.Suggest(ctx, s.DB, p.Maker, p.Board, p.SoC)
+			sug, err := boards.Suggest(ctx, s.DB, p.Maker, p.Board, p.SoC, devices...)
 			if err != nil {
 				return nil, err
 			}
@@ -363,12 +367,15 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 		for _, f := range m.Files {
 			q.Potential += f.Points
 		}
+		var facts Facts
 		if r.YAML != "" {
 			q.Potential += Points("yaml", false)
-			_, facts, _ := Parse(r.YAML)
-			if id, err := Identify(ctx, s.DB, facts); err == nil && len(id.Matches) > 0 {
-				q.Guess = &id.Matches[0]
-			}
+			_, facts, _ = Parse(r.YAML)
+		}
+		// Without ipctool's output too: a version string in the note or a
+		// boot log names the board.
+		if id, err := IdentifyDevices(ctx, s.DB, facts, devices); err == nil && len(id.Matches) > 0 {
+			q.Guess = &id.Matches[0]
 		}
 		_ = s.DB.QueryRow(ctx, `SELECT cm.name FROM report_submissions rs JOIN club_members cm ON cm.id = rs.member_id
 			WHERE rs.report_id = $1`, l.ID).Scan(&q.Member)

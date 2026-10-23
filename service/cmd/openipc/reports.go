@@ -44,8 +44,8 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		return err
 	}
 	defer pool.Close()
-	st := &reports.Store{DB: pool}
 	files := &reports.Files{Root: cfg.ReportsRoot}
+	st := &reports.Store{DB: pool, Files: files}
 
 	fs := flag.NewFlagSet("reports "+args[0], flag.ExitOnError)
 	by := fs.String("by", whoami(), "who decided")
@@ -106,7 +106,11 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 			return err
 		}
 		_, facts, _ := reports.Parse(r.YAML)
-		id, err := reports.Identify(ctx, pool, facts)
+		devices, err := st.DeviceIDs(ctx, r.ID)
+		if err != nil {
+			return err
+		}
+		id, err := reports.IdentifyDevices(ctx, pool, facts, devices)
 		if err != nil {
 			return err
 		}
@@ -199,7 +203,11 @@ func suggestedBoard(ctx context.Context, cfg *config.Config, st *reports.Store, 
 	if p == nil {
 		return nil, fmt.Errorf("%s proposes no new camera; link it with --model", id)
 	}
-	sug, err := boards.Suggest(ctx, st.DB, p.Maker, p.Board, p.SoC)
+	devices, err := st.DeviceIDs(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	sug, err := boards.Suggest(ctx, st.DB, p.Maker, p.Board, p.SoC, devices...)
 	if err != nil {
 		return nil, err
 	}
