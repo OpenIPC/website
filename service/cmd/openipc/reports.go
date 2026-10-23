@@ -79,11 +79,11 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 			return err
 		}
 		_, facts, _ := reports.Parse(r.YAML)
-		texts, err := st.Texts(ctx, r.ID)
+		devices, err := st.DeviceIDs(ctx, r.ID)
 		if err != nil {
 			return err
 		}
-		id, err := reports.Identify(ctx, pool, facts, texts...)
+		id, err := reports.IdentifyDevices(ctx, pool, facts, devices)
 		if err != nil {
 			return err
 		}
@@ -176,11 +176,11 @@ func suggestedBoard(ctx context.Context, cfg *config.Config, st *reports.Store, 
 	if p == nil {
 		return nil, fmt.Errorf("%s proposes no new camera; link it with --model", id)
 	}
-	texts, err := st.Texts(ctx, id)
+	devices, err := st.DeviceIDs(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	sug, err := boards.Suggest(ctx, st.DB, p.Maker, p.Board, p.SoC, texts...)
+	sug, err := boards.Suggest(ctx, st.DB, p.Maker, p.Board, p.SoC, devices...)
 	if err != nil {
 		return nil, err
 	}

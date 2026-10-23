@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -38,14 +39,16 @@ type NewModel struct {
 // Suggestion is what the review page offers for a proposal: the board to
 // add, whether its maker is one the catalogue has, and the model that
 // already answers to its marking, if one does -- then the report is linked
-// to that one rather than a new board made. Existing is also the one board
-// the proposal's device ID or platform code leads to (evidence.go), when it
-// leads to only one: the sender named the board by what their camera calls
-// it, and the catalogue files it under another code.
+// to that one rather than a new board made. Existing is also the board the
+// proposal's XM device ID runs on, when it runs on only one (evidence.go):
+// the firmware's own word for the hardware. Likely are boards it may be and
+// no more -- a device ID several boards share, a platform code's likeness --
+// a hint for the reviewer, never a reason to refuse the new board.
 type Suggestion struct {
 	NewModel
-	MakerKnown bool   `json:"maker_known"`
-	Existing   string `json:"existing,omitempty"`
+	MakerKnown bool     `json:"maker_known"`
+	Existing   string   `json:"existing,omitempty"`
+	Likely     []string `json:"likely,omitempty"`
 }
 
 var (
@@ -61,9 +64,10 @@ type queryer interface {
 // Suggest turns a sender's maker, marking and SoC into the board a reviewer
 // would add: the catalogue's own maker when the name or one of its aliases
 // matches -- in the database, or among the makers the importers know -- and
-// ids made the way the importers make them, cut to the ids' lengths. texts
-// are what else the sender wrote (the report's note), read for a device ID.
-func Suggest(ctx context.Context, q queryer, maker, model, soc string, texts ...string) (Suggestion, error) {
+// ids made the way the importers make them, cut to the ids' lengths.
+// devices are the XM device IDs the rest of the report carries (DeviceIDs
+// of its note and files); one in the marking itself is read here.
+func Suggest(ctx context.Context, q queryer, maker, model, soc string, devices ...string) (Suggestion, error) {
 	s := Suggestion{NewModel: NewModel{MakerID: fit(slug(maker), 64), MakerName: strings.TrimSpace(maker),
 		Model: strings.TrimSpace(model), SoC: strings.TrimSpace(soc)}}
 	err := q.QueryRow(ctx, `
@@ -88,34 +92,41 @@ func Suggest(ctx context.Context, q queryer, maker, model, soc string, texts ...
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return s, err
 	}
-	if s.Existing == "" {
-		ids, err := evidenced(ctx, q, s.MakerID, model, soc, texts)
+	if s.Existing != "" {
+		return s, nil
+	}
+	devs := DeviceIDs(model)
+	for _, d := range devices {
+		if !slices.Contains(devs, d) {
+			devs = append(devs, d)
+		}
+	}
+	if len(devs) > 0 {
+		ids, err := collect(ctx, q, `SELECT DISTINCT d.model_id FROM (`+vendorfw.BoardDevicesSQL+`) d
+			WHERE d.device_id = ANY($1) ORDER BY 1`, devs)
 		if err != nil {
 			return s, err
 		}
 		if len(ids) == 1 {
 			s.Existing = ids[0]
+			return s, nil
+		}
+		s.Likely = ids
+	}
+	// The platform code only under a maker the catalogue has: a likeness
+	// across makers is no hint at all.
+	if codes := PlatformCodes(model, soc); len(codes) > 0 && s.MakerKnown {
+		ids, err := collect(ctx, q, `SELECT DISTINCT model_id FROM (`+PlatformSQL+`) p ORDER BY 1 LIMIT 10`, codes, s.MakerID)
+		if err != nil {
+			return s, err
+		}
+		for _, id := range ids {
+			if !slices.Contains(s.Likely, id) {
+				s.Likely = append(s.Likely, id)
+			}
 		}
 	}
 	return s, nil
-}
-
-// evidenced lists the boards a proposal's device IDs run on, or failing
-// those the boards its marking's platform code names under its maker: a
-// device ID is the firmware's own word, a platform code only a likeness.
-func evidenced(ctx context.Context, q queryer, maker, model, soc string, texts []string) ([]string, error) {
-	if devs := DeviceIDs(append([]string{model}, texts...)...); len(devs) > 0 {
-		ids, err := collect(ctx, q, `SELECT DISTINCT d.model_id FROM (`+vendorfw.BoardDevicesSQL+`) d
-			WHERE d.device_id = ANY($1) ORDER BY 1`, devs)
-		if err != nil || len(ids) > 0 {
-			return ids, err
-		}
-	}
-	codes := PlatformCodes(model, soc)
-	if len(codes) == 0 || maker == "" {
-		return nil, nil
-	}
-	return collect(ctx, q, `SELECT DISTINCT model_id FROM (`+PlatformSQL+`) p ORDER BY 1`, codes, maker)
 }
 
 func collect(ctx context.Context, q queryer, sql string, args ...any) ([]string, error) {

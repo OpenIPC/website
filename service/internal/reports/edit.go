@@ -405,7 +405,7 @@ func (a *API) Edit(w http.ResponseWriter, r *http.Request, member, by, id string
 			a.refuse(w, http.StatusBadRequest, "backup: "+err.Error())
 			return false
 		}
-		bf, err := a.prepare(part{kind: "backup", name: name, mime: "application/octet-stream", in: in.backup}, consent, facts, key, &places)
+		bf, err := a.prepare(part{kind: "backup", name: name, mime: "application/octet-stream", in: in.backup}, consent, facts, key, &places, nil)
 		if err != nil {
 			a.fail(w, "the backup", err)
 			return false
@@ -413,7 +413,7 @@ func (a *API) Edit(w http.ResponseWriter, r *http.Request, member, by, id string
 		c.Add, c.Consent = append(c.Add, bf), consent
 	}
 	for _, p := range in.parts {
-		f, err := a.prepare(p, "", facts, key, &places)
+		f, err := a.prepare(p, "", facts, key, &places, nil)
 		if err != nil {
 			a.fail(w, "a file", err)
 			return false

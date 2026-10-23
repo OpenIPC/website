@@ -23,6 +23,7 @@ func boardsByEvidence(t *testing.T, e *env) {
 		   ('xiongmai', 'IVG-G5SF', 'xiongmai-ivg-g5sf', 'test', 'IVG-G5SF')`,
 		`INSERT INTO board_device_ids (model_id, device_id, source) VALUES
 		   ('xiongmai-ipg-x6c-weq2', '000807DD', 'openhisiipcam'),
+		   ('xiongmai-50h20l', '000559A7', 'openhisiipcam'),
 		   ('xiongmai-a', '00018510', 'openhisiipcam'), ('xiongmai-b', '00018510', 'openhisiipcam')`,
 	} {
 		if _, err := e.pool.Exec(context.Background(), sql); err != nil {
@@ -109,6 +110,33 @@ func TestIdentifyMatchesABoardByItsXMDeviceID(t *testing.T) {
 	}
 }
 
+// Certain evidence that disagrees -- a printed code and a device ID, or two
+// device IDs, each naming another board -- makes no board certain: both are
+// listed, the printed code first. Evidence that agrees still does.
+func TestConflictingEvidenceIsNotKnownAndThePrintedCodeLeads(t *testing.T) {
+	e := newEnv(t)
+	boardsByEvidence(t, e)
+	ctx := context.Background()
+	version := func(dev string) string { return "V5.04.R02." + dev + ".10010.346732.0000010" }
+
+	f := Facts{BoardVendor: "Xiongmai", BoardModel: "IPG-OTHER"}
+	id, err := Identify(ctx, e.pool, f, version("000807DD"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if id.Known || !slices.Equal(matchIDs(id), []string{"xiongmai-other", "xiongmai-ipg-x6c-weq2"}) || id.Matches[0].Score != id.Matches[1].Score {
+		t.Errorf("a code and a device ID apart: %+v", id)
+	}
+	if id, _ := Identify(ctx, e.pool, Facts{}, version("000807DD"), version("000559A7")); id.Known || len(id.Matches) != 2 {
+		t.Errorf("two device IDs apart: %+v", id)
+	}
+
+	f.BoardModel = "IPG-X6C-WEQ2"
+	if id, _ := Identify(ctx, e.pool, f, version("000807DD")); !id.Known || !slices.Equal(matchIDs(id), []string{"xiongmai-ipg-x6c-weq2"}) || id.Matches[0].Score != 200 {
+		t.Errorf("a code and a device ID together: %+v", id)
+	}
+}
+
 // A camera proposed with only a photo and its version string in the note:
 // the receipt guesses the board, and the review page offers to link it to
 // the board the catalogue has rather than add a twin.
@@ -125,8 +153,16 @@ func TestAProposalsVersionStringPointsTheReviewAtTheBoard(t *testing.T) {
 	if out["identify"].(map[string]any)["known"] != true {
 		t.Errorf("the upload's answer: %v", out)
 	}
-	if _, v := e.get(t, "/api/v1/reports/"+out["id"].(string)); v["guess"] == nil || v["guess"].(map[string]any)["model_id"] != "xiongmai-ipg-x6c-weq2" {
+	// What the sender wrote is not repeated where anyone may read it.
+	if strings.Contains(rec.Body.String(), "000807DD") || !strings.Contains(rec.Body.String(), "an XM device ID in the report's firmware text") {
+		t.Errorf("the upload's answer names the ID: %s", rec.Body)
+	}
+	rv, v := e.get(t, "/api/v1/reports/"+out["id"].(string))
+	if v["guess"] == nil || v["guess"].(map[string]any)["model_id"] != "xiongmai-ipg-x6c-weq2" {
 		t.Errorf("the receipt: %v", v)
+	}
+	if strings.Contains(rv.Body.String(), "000807DD") {
+		t.Errorf("the receipt names the ID: %s", rv.Body)
 	}
 	q, err := e.api.Store().Queue(ctx, "")
 	if err != nil || len(q) != 1 {

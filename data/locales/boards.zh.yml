@@ -592,6 +592,7 @@ zh:
       review_done_reject: '已拒绝。'
       review_proposal: '发送者提议'
       review_existing: '目录中已有 {board}：除非修改下方的电路板 ID，报告将发布在那里。'
+      review_likely: '可能是 {boards}：平台代码或共用的设备 ID 相符。添加新电路板前请先核对。'
       review_new_board: '发布时将此电路板加入目录'
       review_maker_known: '厂商已在目录中'
       review_maker_new: '新厂商'

@@ -128,3 +128,10 @@ test('a proposal the catalogue already has is published on that board, not a twi
   await waitFor(() => expect(calls).toHaveLength(1));
   expect(calls[0].body).toEqual({ decision: 'publish', models: ['jooan-q9-v2'], note: '', revision: 0 });
 });
+
+test('a board the proposal may be is a hint, and the new board is still offered', async () => {
+  review(queued({ new_board: { maker_id: 'jooan', maker_name: 'Jooan', model_id: 'jooan-q9-v2', model: 'Q9 v2', maker_known: true, likely: ['jooan-q9'] } }));
+  const { findByText, getByText } = render(<Review locale="en" />);
+  expect(await findByText(/It may be jooan-q9/)).toBeTruthy();
+  expect(getByText(/Add this board to the catalogue when publishing/)).toBeTruthy();
+});

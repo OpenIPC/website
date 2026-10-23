@@ -157,6 +157,7 @@
       "review_from": "From {who}",
       "review_guess": "ipctool says it looks like {board}",
       "review_joins_label": "Sent with",
+      "review_likely": "It may be {boards}: its platform code or a shared device ID matches. Check before adding a new board.",
       "review_link": "Review queue",
       "review_maker_known": "its maker is in the catalogue",
       "review_maker_new": "a new maker",

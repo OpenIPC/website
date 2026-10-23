@@ -56,6 +56,8 @@ export interface Suggestion extends NewBoard {
   maker_known: boolean;
   /** A board that already answers to the marking: link to it instead. */
   existing?: string;
+  /** Boards it may be (a platform code, a device ID several share): a hint, not a link. */
+  likely?: string[];
 }
 
 export interface MemberReport {

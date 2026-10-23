@@ -68,9 +68,9 @@ func TestAPlatformCodeIsWhatABoardParamSaysBesidesTheChip(t *testing.T) {
 	}
 }
 
-// A proposal that names a board the catalogue files under another code --
-// its platform, or the device ID its firmware reports -- is that board when
-// only one answers; several leave the choice to the reviewer.
+// A proposal whose firmware's device ID runs on one board is that board; a
+// device ID several boards share, or a platform code's likeness, only names
+// boards it may be, and the new board can still be made.
 func TestAProposalsDeviceIDOrPlatformFindsTheBoardItIs(t *testing.T) {
 	pool, _ := imported(t)
 	ctx := context.Background()
@@ -94,20 +94,21 @@ func TestAProposalsDeviceIDOrPlatformFindsTheBoardItIs(t *testing.T) {
 		name, maker, model string
 		texts              []string
 		want               string
+		likely             []string
 	}{
-		{"its platform", "XM Test", "IPC_GK7205V500_G5SF", nil, "xm-test-ivg-g5sf"},
-		{"its platform, another maker", "Jooan", "G5SF", nil, ""},
-		{"a version string in the note", "XM Test", "white bullet", []string{"iCSee says V5.04.R02.000807DD.10010.346732.0000010"}, "xm-test-ipg-x6c-weq2"},
-		{"a version string as the marking", "Somebody", "V5.04.R02.000807DD.10010", nil, "xm-test-ipg-x6c-weq2"},
-		{"a device ID five boards run", "XM Test", "white bullet", []string{"V5.00.R02.00018510.10010"}, ""},
-		{"nothing", "XM Test", "white bullet", []string{"bought in 2024"}, ""},
+		{"its platform", "XM Test", "IPC_GK7205V500_G5SF", nil, "", []string{"xm-test-ivg-g5sf"}},
+		{"its platform, another maker", "Jooan", "G5SF", nil, "", nil},
+		{"a version string in the note", "XM Test", "white bullet", []string{"iCSee says V5.04.R02.000807DD.10010.346732.0000010"}, "xm-test-ipg-x6c-weq2", nil},
+		{"a version string as the marking", "Somebody", "V5.04.R02.000807DD.10010", nil, "xm-test-ipg-x6c-weq2", nil},
+		{"a device ID two boards run", "XM Test", "white bullet", []string{"V5.00.R02.00018510.10010"}, "", []string{"xm-test-a", "xm-test-b"}},
+		{"nothing", "XM Test", "white bullet", []string{"bought in 2024"}, "", nil},
 	} {
-		sug, err := Suggest(ctx, pool, c.maker, c.model, "", c.texts...)
+		sug, err := Suggest(ctx, pool, c.maker, c.model, "", DeviceIDs(c.texts...)...)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if sug.Existing != c.want {
-			t.Errorf("%s: existing %q, want %q", c.name, sug.Existing, c.want)
+		if sug.Existing != c.want || !slices.Equal(sug.Likely, c.likely) {
+			t.Errorf("%s: existing %q likely %v, want %q %v", c.name, sug.Existing, sug.Likely, c.want, c.likely)
 		}
 	}
 }
