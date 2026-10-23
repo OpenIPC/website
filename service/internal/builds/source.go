@@ -26,7 +26,7 @@ func LoadIndex(ctx context.Context, pool *pgxpool.Pool) (*firmware.Index, error)
 	}
 
 	rows, err := pool.Query(ctx, `
-		SELECT DISTINCT ON (a.name) a.name, a.size, a.sha256, b.release, b.built_at
+		SELECT DISTINCT ON (a.name) a.name, a.size, a.sha256, b.release, b.built_at, b.id
 		FROM build_assets a JOIN builds b ON b.id = a.build_id
 		WHERE b.source IN ('firmware', 'uboot')
 		ORDER BY a.name, b.built_at DESC, b.id DESC`)
@@ -34,12 +34,12 @@ func LoadIndex(ctx context.Context, pool *pgxpool.Pool) (*firmware.Index, error)
 		return nil, err
 	}
 	var assets []firmware.Asset
-	built := map[string]time.Time{}
+	built := map[string]buildOrder{}
 	for rows.Next() {
 		var a firmware.Asset
 		var sha string
-		var at time.Time
-		if err := rows.Scan(&a.Name, &a.Size, &sha, &a.Release, &at); err != nil {
+		var at buildOrder
+		if err := rows.Scan(&a.Name, &a.Size, &sha, &a.Release, &at.at, &at.id); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -285,15 +285,29 @@ func (s *Source) listen(ctx context.Context) error {
 // fixed slots for the whole retention period. A board that publishes both
 // does so in the same build and keeps both; a board whose build failed
 // publishes neither and keeps both as they were.
-func dropSupersededPlain(assets []firmware.Asset, built map[string]time.Time) []firmware.Asset {
+func dropSupersededPlain(assets []firmware.Asset, built map[string]buildOrder) []firmware.Asset {
 	out := assets[:0]
 	for _, a := range assets {
 		if board, storage, edition, ok := ParseAssetName(a.Name); ok && storage == "nor" {
-			if at, split := built[firmware.SplitName(board, edition)]; split && at.After(built[a.Name]) {
+			if at, split := built[firmware.SplitName(board, edition)]; split && at.newer(built[a.Name]) {
 				continue
 			}
 		}
 		out = append(out, a)
 	}
 	return out
+}
+
+// buildOrder is where a build stands in the order the index query ranks
+// them: built_at, then id when two builds share a timestamp.
+type buildOrder struct {
+	at time.Time
+	id string
+}
+
+func (b buildOrder) newer(o buildOrder) bool {
+	if !b.at.Equal(o.at) {
+		return b.at.After(o.at)
+	}
+	return b.id > o.id
 }

@@ -849,3 +849,33 @@ func TestLoadIndexDropsPlainSupersededBySplit(t *testing.T) {
 		}
 	}
 }
+
+// Two builds with one timestamp rank by id, in LoadIndex's query and in the
+// split check alike: the later id's split package replaces the earlier's
+// plain one.
+func TestLoadIndexSplitSupersedesOnTiedTimestamp(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	at := time.Date(2026, 10, 22, 18, 0, 0, 0, time.UTC)
+	for id, name := range map[string]string{
+		"nightly-20261022-aaaaaaa": "openipc.hi3518ev300-nor-lite.tgz",
+		"nightly-20261022-bbbbbbb": "openipc.hi3518ev300-nor-lite-split.tgz",
+	} {
+		p := &Payload{Schema: 1, Source: "firmware",
+			Build:  Build{ID: id, Release: id, SHA: strings.Repeat("a", 40), BuiltAt: at, PublishedAt: at.Add(time.Hour)},
+			Assets: []Asset{{Name: name, Size: 7_000_000, SHA256: sum}}}
+		if _, err := Save(ctx, pool, p, "test"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	idx, err := LoadIndex(ctx, pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a, ok := idx.Asset("openipc.hi3518ev300-nor-lite.tgz"); ok {
+		t.Errorf("plain lite still offered, from %s", a.Release)
+	}
+	if _, ok := idx.Asset("openipc.hi3518ev300-nor-lite-split.tgz"); !ok {
+		t.Errorf("split lite missing")
+	}
+}
