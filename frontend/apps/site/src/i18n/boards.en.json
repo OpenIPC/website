@@ -38,6 +38,8 @@
       "asked_answer": "Answer by editing",
       "asked_how": "Edit this report to answer: add the photo, correct it, or reply in your note. It goes back for review once you save.",
       "asked_title": "A maintainer asks",
+      "backup_as_shared": "Publish as the sender shared it",
+      "backup_keep_private": "Keep private: it identifies the camera",
       "boards_link": "Camera boards",
       "bot_muted": "The bot's messages are muted.",
       "bot_on": "The OpenIPC bot tells you when something you sent is reviewed.",

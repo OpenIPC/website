@@ -39,6 +39,9 @@ const reportsUsage = `usage: openipc reports
                                                 what a photo publishes: a copy with the regions blurred
                                                 (fractions of the photo, upright), nothing (not the
                                                 sender's unit), or the photo as sent
+  file <id> <position> private|as_sent          the same for a flash dump its sender shared publicly:
+                                                keep it private (it holds what identifies the camera),
+                                                or publish it again as they chose
   unlink <id> <board model id>                  undo a link made in error
   takedown <id> --by who --note why              withdraw for good: YAML blanked, files deleted
   verify                                        re-hash every stored file; non-zero on any missing or changed
@@ -230,7 +233,7 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		refreshReportUnits(ctx, cfg, log, pool)
 		log.Info("reports: link certainty", "report", pos[0], "model", pos[1], "certainty", pos[2], "evidence", *evidence, "by", *by)
 		return nil
-	case "photo":
+	case "photo", "file":
 		if err := need(3); err != nil {
 			return err
 		}

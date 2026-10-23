@@ -224,6 +224,7 @@ function Item({ q, listed, locale, t, onDone }: { q: Queued; listed: Set<string>
             {f.private && f.kind !== 'photo' && <span class="rounded-full bg-[#eef0fc] px-2 text-[11.5px] font-semibold text-[#3d4dad]">{t('club.private')}</span>}
             <PartStars points={f.points} reason={f.reason} t={t} />
             {f.kind === 'photo' && <PhotoTools id={q.id} f={f} t={t} onDone={onDone} />}
+            {f.kind === 'backup' && q.backup_consent === 'public' && <BackupTools id={q.id} f={f} t={t} onDone={onDone} />}
           </li>
         ))}
       </ul>
@@ -413,6 +414,34 @@ const PUBLIC_TONE = { blurred: 'bg-[#e3f5ec] text-[#146c3c]', private: 'bg-[#fbe
  * regions of the published copy, keep it private (not the sender's unit),
  * or publish it as sent. The blur is the service's, from the original.
  */
+/**
+ * A flash dump its sender shared publicly can still hold what identifies
+ * the camera (a vendor-cloud ID in a raw read): the reviewer keeps it
+ * private, or gives it back as the sender chose. One never shared is never
+ * offered (the server refuses it too).
+ */
+function BackupTools({ id, f, t, onDone }: { id: string; f: MemberFile; t: BoardsT; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const act = (action: 'private' | 'as_sent') => {
+    setBusy(true);
+    setError(null);
+    reviewPhoto(id, f.position, action)
+      .then(onDone)
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setBusy(false));
+  };
+  return (
+    <>
+      <button type="button" class="cursor-pointer p-0 text-[12.5px] text-brand-blue underline disabled:opacity-50" disabled={busy}
+        onClick={() => act(f.private ? 'as_sent' : 'private')}>
+        {t(f.private ? 'club.backup_as_shared' : 'club.backup_keep_private')}
+      </button>
+      {error && <span class="text-[12.5px] text-[#a3262e]" role="alert">{error}</span>}
+    </>
+  );
+}
+
 function PhotoTools({ id, f, t, onDone }: { id: string; f: MemberFile; t: BoardsT; onDone: () => void }) {
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);

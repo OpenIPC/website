@@ -705,6 +705,8 @@ zh:
       photo_public_copy: '公开的副本'
       photo_not_unit: '不是发送者的设备：不公开'
       photo_as_sent: '按原样公开'
+      backup_keep_private: '不公开：该转储可识别此摄像机'
+      backup_as_shared: '按发送者的选择公开'
       cameras_title: '我在 Open Wall 上的摄像头'
       cameras_count: '{n} / {max} 台计入星星'
       cameras_empty: '还没有绑定摄像头。在下方绑定一台：它每持续一个月向 Open Wall 发送真实画面，就会获得星星。'
