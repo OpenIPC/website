@@ -1,6 +1,6 @@
 /** Small pieces the club's islands share. */
 import type { BoardsT } from '../../lib/boards-i18n';
-import type { Member } from '../../lib/club';
+import type { Member, StarReason } from '../../lib/club';
 import { pathFor, type Locale } from '../../lib/i18n';
 import type { ReportState } from '../../lib/reports';
 
@@ -25,6 +25,20 @@ export function Stars({ n, big, onDark }: { n: number; big?: boolean; onDark?: b
       </div>
     )
     : <span class={`font-semibold tabular-nums ${onDark ? 'text-accent' : 'text-[#9a5b00]'}`}>★ {n}</span>;
+}
+
+/**
+ * What one part of a report earns -- a file, or ipctool's output -- and why
+ * it earns less than it would alone: the same file published already, or
+ * the camera paid for in another of the member's reports.
+ */
+export function PartStars({ points, reason, t }: { points: number; reason?: StarReason; t: BoardsT }) {
+  return (
+    <>
+      {points > 0 && <span class="text-[12.5px] font-semibold text-[#9a5b00]">+{points} ★</span>}
+      {reason && <span class="text-[12.5px] text-body-secondary">{t(`club.reason_${reason}`)}</span>}
+    </>
+  );
 }
 
 /**

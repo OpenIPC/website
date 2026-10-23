@@ -54,11 +54,11 @@ func TestAMemberEditsAReportAndAnEditAfterReviewIsReviewedAgain(t *testing.T) {
 	ctx := context.Background()
 	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
 	_, out := ivan.send(t, map[string]string{"channel": "web", "maker": "Jooan", "board": "Q9", "note": "from a market"},
-		map[string][]byte{"photo": photo, "photo#2": photo})
+		map[string][]byte{"photo": photo, "photo#2": photoN(2)})
 	id := out["id"].(string)
 
 	// Pending: the note, the marking, one more photo; still pending, no review.
-	code, d := ivan.edit(t, id, map[string]string{"note": "bought on Ozon as Q9 Pro", "maker": "Jooan", "board": "Q9 Pro"}, map[string][]byte{"photo": photo})
+	code, d := ivan.edit(t, id, map[string]string{"note": "bought on Ozon as Q9 Pro", "maker": "Jooan", "board": "Q9 Pro"}, map[string][]byte{"photo": photoN(3)})
 	if code != 200 || d["status"] != "pending" || d["rereview"] != false {
 		t.Fatalf("edit while pending: %d %v", code, d)
 	}
@@ -162,7 +162,7 @@ func TestAnEditNeverSlipsPastAReviewer(t *testing.T) {
 	id := out["id"].(string)
 	_, q := maint.json(t, "GET", "/api/v1/club/review", nil)
 	seen := q["reports"].([]any)[0].(map[string]any)
-	if code, _ := ivan.edit(t, id, nil, map[string][]byte{"photo": photo}); code != 200 {
+	if code, _ := ivan.edit(t, id, nil, map[string][]byte{"photo": photoN(2)}); code != 200 {
 		t.Fatal("edit")
 	}
 	code, d := maint.json(t, "POST", "/api/v1/club/review/"+id, map[string]any{"decision": "publish", "new_board": seen["new_board"], "revision": seen["revision"]})

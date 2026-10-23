@@ -41,7 +41,10 @@ export interface MemberFile {
   bytes: number;
   private?: boolean;
   url: string;
+  /** What publishing it would pay now; once accepted, what it holds. */
   points: number;
+  /** Why it pays less than alone: the same bytes published already, or the camera paid in another report. */
+  reason?: StarReason;
   /** A photo's: its sender said it is of their own camera, taken by them. */
   own?: boolean;
   /** A photo's: what is published -- as sent, a blurred copy, or nothing. */
@@ -53,6 +56,9 @@ export interface MemberFile {
 }
 
 export type PhotoPublic = 'as_sent' | 'blurred' | 'private';
+
+/** Why a part of a report earns less than it would alone (service reports.Reason*). */
+export type StarReason = 'known' | 'camera';
 
 export interface BoardRef { id: string; model: string; manufacturer: string }
 
@@ -98,6 +104,9 @@ export interface MemberReport {
   files: MemberFile[];
   stars: number;
   pending: number;
+  /** ipctool's output's part, as a file's points and reason are the file's. */
+  yaml_points?: number;
+  yaml_reason?: StarReason;
   duplicate?: boolean;
 }
 
@@ -118,6 +127,8 @@ export interface Queued {
   guess?: { model_id: string; model: string; manufacturer: string };
   file_list: MemberFile[];
   potential: number;
+  yaml_points?: number;
+  yaml_reason?: StarReason;
   proposal?: Proposal;
   new_board?: Suggestion;
   joins?: string;
