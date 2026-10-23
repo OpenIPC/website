@@ -11,14 +11,23 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/preact';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import type { Queued } from '../../lib/club';
-import { boxFrom, fillBoxes, grow } from '../../lib/photo-check';
+import { boxFrom, fillBoxes, grow, type Box } from '../../lib/photo-check';
 import SendForm from './SendForm.tsx';
 import Review from './Review.tsx';
+
+// What the mocked BarcodeDetector sees in a photo, in pixels of a 400x200
+// picture; 'fail' makes it throw. A file not listed shows one code if its
+// name starts with label. A blurred photo shows none unless a test says so.
+type Px = { x: number; y: number; width: number; height: number };
+const { codesIn, clean } = vi.hoisted(() => {
+  const codesIn = new WeakMap<File, Px[] | 'fail'>();
+  return { codesIn, clean: (f: File) => { codesIn.set(f, []); return f; } };
+});
 
 vi.mock('../../lib/photo-check', async (actual) => ({
   ...(await actual<typeof import('../../lib/photo-check')>()),
   // jsdom has no canvas: the blur is the browser's, tested here by what it is given.
-  blurFile: vi.fn(async (f: File) => new File(['blurred'], f.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' })),
+  blurFile: vi.fn(async (f: File) => clean(new File(['blurred'], f.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }))),
 }));
 
 const t = useBoardsTranslations('en');
@@ -51,13 +60,16 @@ function capture() {
   return sent;
 }
 
-/** A browser that reads codes: one QR code in each label*.jpg, nothing elsewhere. */
+/** A browser that reads codes (codesIn): one QR code in each label*.jpg, nothing elsewhere. */
 function detector(wait?: Promise<void>) {
-  vi.stubGlobal('createImageBitmap', vi.fn(async (f: File) => ({ width: 400, height: 200, name: f.name, close() {} })));
+  vi.stubGlobal('createImageBitmap', vi.fn(async (f: File) => ({ width: 400, height: 200, file: f, close() {} })));
   vi.stubGlobal('BarcodeDetector', class {
-    async detect(bmp: { name: string }) {
+    async detect(bmp: { file: File }) {
       if (wait) await wait;
-      return bmp.name.startsWith('label') ? [{ boundingBox: { x: 100, y: 50, width: 40, height: 40 }, rawValue: 'SN123' }] : [];
+      const listed = codesIn.get(bmp.file);
+      if (listed === 'fail') throw new Error('cannot look');
+      const px = listed ?? (bmp.file.name.startsWith('label') ? [{ x: 100, y: 50, width: 40, height: 40 }] : []);
+      return px.map((boundingBox) => ({ boundingBox, rawValue: 'SN123' }));
     }
   });
 }
@@ -148,7 +160,7 @@ describe('the send form', () => {
     await waitFor(() => expect(sendButton(container).disabled).toBe(true));
     fireEvent.submit(container.querySelector('form')!);
     expect(sent).toHaveLength(0);
-    blur.resolve(new File(['blurred'], 'label.jpg', { type: 'image/jpeg' }));
+    blur.resolve(clean(new File(['blurred'], 'label.jpg', { type: 'image/jpeg' })));
     await settled(container);
     fireEvent.submit(container.querySelector('form')!);
     await waitFor(() => expect(sent).toHaveLength(1));
@@ -184,9 +196,9 @@ describe('the send form', () => {
     fireEvent.click(b1);
     fireEvent.click(b2);
     // The second finishes first; the first must not put the second's original back.
-    two.resolve(new File(['blurred 2'], 'label-2.jpg', { type: 'image/jpeg' }));
+    two.resolve(clean(new File(['blurred 2'], 'label-2.jpg', { type: 'image/jpeg' })));
     await waitFor(() => expect(getAllByRole('button', { name: 'Blur the codes and the label' })).toHaveLength(1));
-    one.resolve(new File(['blurred 1'], 'label-1.jpg', { type: 'image/jpeg' }));
+    one.resolve(clean(new File(['blurred 1'], 'label-1.jpg', { type: 'image/jpeg' })));
     await settled(container);
     fireEvent.click(getByText(/These photos are of my own camera/));
     fireEvent.submit(container.querySelector('form')!);
@@ -211,6 +223,75 @@ describe('the send form', () => {
     fireEvent.click(getAllByRole('button', { name: 'Blur a region' })[1]);
     expect(getByTestId('region-frame').querySelector('img')!.getAttribute('src')).toBe('blob:back.jpg');
     expect(queryByRole('button', { name: /Region 1/ })).toBeNull();
+  });
+
+  // Codes at A (left) and B (right); a region drawn over A only.
+  for (const looks of [true, false]) {
+    test(`a blur that misses a code keeps its warning (${looks ? 'looked at again' : 'the browser cannot look again'})`, async () => {
+      detector();
+      vi.stubGlobal('PointerEvent', class extends MouseEvent { pointerId = 1; });
+      URL.createObjectURL = vi.fn(() => 'blob:label');
+      URL.revokeObjectURL = vi.fn();
+      const A = { x: 20, y: 50, width: 40, height: 40 };
+      const B = { x: 300, y: 50, width: 40, height: 40 };
+      const photo = new File(['l'], 'label.jpg', { type: 'image/jpeg' });
+      codesIn.set(photo, [A, B]);
+      const { blurFile } = await import('../../lib/photo-check');
+      // The blur takes away the codes its regions cover; looked at again,
+      // the copy shows what is left -- or the browser cannot look at all.
+      const blur = async (f: File, boxes: Box[]) => {
+        const before = codesIn.get(f);
+        const left = (Array.isArray(before) ? before : []).filter((c) => !boxes.some((b) =>
+          c.x / 400 >= b.x && c.y / 200 >= b.y && (c.x + c.width) / 400 <= b.x + b.w && (c.y + c.height) / 200 <= b.y + b.h));
+        const out = new File(['blurred'], 'label.jpg', { type: 'image/jpeg' });
+        codesIn.set(out, looks ? left : 'fail');
+        return out;
+      };
+      vi.mocked(blurFile).mockImplementationOnce(blur).mockImplementationOnce(blur);
+      capture();
+      const { container, getByRole, getByTestId, getByText, queryByText, findByText } = render(<SendForm model="anjoy-ms-j10" kind="photo" locale="en" t={t} />);
+      choose(container, [photo]);
+      await settled(container);
+      expect(getByText(/Serial numbers are published as they are/)).toBeTruthy();
+
+      fireEvent.click(getByRole('button', { name: 'Blur a region' }));
+      const frame = getByTestId('region-frame');
+      frame.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100, right: 100, bottom: 100, x: 0, y: 0, toJSON() {} });
+      fireEvent.pointerDown(frame, { clientX: 0, clientY: 10 });
+      fireEvent.pointerUp(frame, { clientX: 30, clientY: 60 });
+      fireEvent.click(getByRole('button', { name: 'Blur the marked regions (1)' }));
+      expect(await findByText('Blurred')).toBeTruthy();
+      await settled(container);
+      // B is still there: the warning stays.
+      expect(getByText(/Serial numbers are published as they are/)).toBeTruthy();
+
+      fireEvent.click(getByRole('button', { name: 'Blur the codes and the label' }));
+      await waitFor(() => expect(queryByText(/Serial numbers are published as they are/)).toBeNull());
+    });
+  }
+
+  test('the confirmation is asked again for other photos, not after a blur', async () => {
+    detector();
+    capture();
+    const { container, getByRole, getByText } = render(<SendForm model="anjoy-ms-j10" kind="photo" locale="en" t={t} />);
+    const own = () => getByRole('checkbox', { name: /These photos are of my own camera/ }) as HTMLInputElement;
+    choose(container, [label(), board()]);
+    await settled(container);
+    fireEvent.click(getByText(/These photos are of my own camera/));
+    expect(own().checked).toBe(true);
+    // A blur is the same photo: the confirmation stands.
+    fireEvent.click(getByRole('button', { name: 'Blur the codes and the label' }));
+    await settled(container);
+    expect(getByText('Blurred')).toBeTruthy();
+    expect(own().checked).toBe(true);
+    // Another set of photos, or one taken out: asked again.
+    choose(container, [board()]);
+    await settled(container);
+    expect(own().checked).toBe(false);
+    fireEvent.click(getByText(/These photos are of my own camera/));
+    choose(container, [board(), label()]);
+    await settled(container);
+    expect(own().checked).toBe(false);
   });
 
   test('a console capture is not asked about photos', async () => {

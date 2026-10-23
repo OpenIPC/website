@@ -85,7 +85,7 @@ export default function SendForm({ model, answers, kind, locale, t, note }: {
           {member
             ? <a href={pathFor(locale, '/club')}>{t('club.my_link')}</a>
             : <a href={`${pathFor(locale, '/cameras/report')}?id=${id}`}>{t('club.receipt')}</a>}
-          <button type="button" class="cursor-pointer p-0 text-brand-blue underline" onClick={() => { setText(''); setFiles([]); setState({ s: 'idle' }); }}>
+          <button type="button" class="cursor-pointer p-0 text-brand-blue underline" onClick={() => { setText(''); setFiles([]); setOwn(false); setState({ s: 'idle' }); }}>
             {t('club.send_another')}
           </button>
         </p>

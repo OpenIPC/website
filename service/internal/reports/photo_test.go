@@ -121,6 +121,17 @@ func TestABlurredJPEGIsUprightAsTheReviewerSawIt(t *testing.T) {
 	if o := exifOrientation(src); o != 6 {
 		t.Fatalf("orientation read as %d", o)
 	}
+	// Fill bytes before a marker are allowed (FF FF E1 ...); the EXIF
+	// segment behind them still says the photo is sideways.
+	padded := append([]byte{0xFF, 0xD8, 0xFF}, src[2:]...)
+	if o := exifOrientation(padded); o != 6 {
+		t.Errorf("behind a fill byte, orientation read as %d", o)
+	}
+	if out, _, err := BlurPhoto(padded, []Region{{X: 0, Y: 0, W: 0.1, H: 0.1}}); err != nil {
+		t.Error(err)
+	} else if c, _ := jpg.DecodeConfig(bytes.NewReader(out)); c.Width != 120 || c.Height != 200 {
+		t.Errorf("behind a fill byte, the copy is %dx%d, not upright 120x200", c.Width, c.Height)
+	}
 	out, mt, err := BlurPhoto(src, []Region{{X: 0, Y: 0, W: 0.1, H: 0.1}})
 	if err != nil || mt != "image/jpeg" {
 		t.Fatalf("%v %s", err, mt)

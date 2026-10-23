@@ -28,6 +28,12 @@ export function grow(b: Box, m = MARGIN): Box {
   return { x, y, w: clamp(b.x + b.w * (1 + m)) - x, h: clamp(b.y + b.h * (1 + m)) - y };
 }
 
+/** Whether box a lies wholly within box b. */
+export function inside(a: Box, b: Box): boolean {
+  const e = 1e-9;
+  return a.x >= b.x - e && a.y >= b.y - e && a.x + a.w <= b.x + b.w + e && a.y + a.h <= b.y + b.h + e;
+}
+
 /** The rectangle dragged from one corner to the other, inside the picture. */
 export function boxFrom(x0: number, y0: number, x1: number, y1: number): Box {
   const [ax, bx] = [clamp(Math.min(x0, x1)), clamp(Math.max(x0, x1))];

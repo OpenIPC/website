@@ -13,10 +13,16 @@
  * to blur is never uploaded, nor a photo whose code warning has not come
  * yet. A blur that failed keeps it so until the photo is blurred again or
  * the photos are chosen anew.
+ *
+ * The confirmation is for the photos actually sent: it is cleared whenever
+ * a photo is added, taken out or chosen anew -- a blur of one, which is
+ * the same photo, keeps it. A blurred photo is looked at again, and its
+ * warning stays while a code is still to be seen in it (or, where the
+ * browser cannot look, while a code found before lies outside the blur).
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { BoardsT } from '../../lib/boards-i18n';
-import { blurFile, findCodes, type Box } from '../../lib/photo-check';
+import { blurFile, findCodes, inside, type Box } from '../../lib/photo-check';
 import RegionPicker from './RegionPicker';
 
 type Check = { codes: Box[] | null; blurred?: boolean; blurring?: boolean; failed?: boolean };
@@ -41,6 +47,9 @@ export default function PhotoChecks({ files, onFiles, own, onOwn, onBusy, t }: {
   const started = useRef(new WeakSet<File>());
   const mounted = useRef(true);
   const inFlight = useRef(new WeakSet<File>());
+  // A blurred photo -> the photo it was made from, and the list last seen.
+  const blurredFrom = useRef(new WeakMap<File, File>());
+  const shown = useRef<File[]>([]);
 
   const set = (f: File, c: Check) => setChecks((m) => new Map(m).set(f, c));
 
@@ -54,6 +63,13 @@ export default function PhotoChecks({ files, onFiles, own, onOwn, onBusy, t }: {
       });
     }
   }, [files]);
+  useEffect(() => {
+    const before = new Set(shown.current);
+    const same = files.length === shown.current.length
+      && files.every((f) => before.has(f) || before.has(blurredFrom.current.get(f) as File));
+    if (!same) onOwn(false);
+    shown.current = files;
+  }, [files]);
   const busy = photosBusy(files, checks);
   useEffect(() => onBusy(busy), [busy]);
   useEffect(() => () => { if (picking) URL.revokeObjectURL(picking.url); }, [picking]);
@@ -66,10 +82,17 @@ export default function PhotoChecks({ files, onFiles, own, onOwn, onBusy, t }: {
     setError(null);
     set(old, { ...was, blurring: true, failed: false });
     blurFile(old, boxes)
-      .then((done) => {
+      .then(async (done) => {
+        // Looked at again: a code the blur missed keeps its warning.
+        const seen = await findCodes(done);
+        const left = seen ?? (was.codes ?? []).filter((c) => !boxes.some((b) => inside(c, b)));
+        return { done, left };
+      })
+      .then(({ done, left }) => {
         if (!mounted.current) return;
         started.current.add(done);
-        setChecks((m) => { const n = new Map(m); n.delete(old); return n.set(done, { codes: [], blurred: true }); });
+        blurredFrom.current.set(done, old);
+        setChecks((m) => { const n = new Map(m); n.delete(old); return n.set(done, { codes: left, blurred: true }); });
         onFiles((now) => now.map((f) => (f === old ? done : f)));
         setPicking((p) => (p?.file === old ? null : p));
       })
@@ -100,7 +123,7 @@ export default function PhotoChecks({ files, onFiles, own, onOwn, onBusy, t }: {
                 <button type="button" class="cursor-pointer p-0 text-brand-blue underline disabled:opacity-50" disabled={!!c?.blurring}
                   onClick={() => pick(f)}>{t('club.photo_blur_region')}</button>
               </span>
-              {codes > 0 && !c?.blurred && (
+              {codes > 0 && (
                 <p class="m-0 flex flex-wrap items-center gap-2 rounded-md bg-[#fff4e2] px-2.5 py-1.5 text-[#8a4b00]" role="alert">
                   {t('club.photo_code_found', { n: codes })}
                   <button type="button" class="site-btn site-btn-outline-secondary site-btn-sm" disabled={!!c?.blurring}

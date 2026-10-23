@@ -214,9 +214,19 @@ func exifOrientation(b []byte) int {
 	}
 	p := 2
 	for p+4 <= len(b) && b[p] == 0xFF {
+		// Any number of 0xFF fill bytes may come before a marker.
+		if b[p+1] == 0xFF {
+			p++
+			continue
+		}
 		m := b[p+1]
 		if m == 0xDA || m == 0xD9 {
 			return 1
+		}
+		// Markers that stand alone carry no length.
+		if m == 0x01 || m >= 0xD0 && m <= 0xD7 {
+			p += 2
+			continue
 		}
 		n := int(binary.BigEndian.Uint16(b[p+2:]))
 		if n < 2 || p+2+n > len(b) {
