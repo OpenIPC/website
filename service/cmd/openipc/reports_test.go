@@ -114,6 +114,8 @@ func TestThePhotoCommandDecidesWhatAPhotoPublishes(t *testing.T) {
 	}
 	for _, bad := range [][]string{
 		{"photo", "r-tcckc6hn", "1", "blur", "--region", "half"},
+		{"photo", "r-tcckc6hn", "1", "blur", "--region", "0.1,0.1,0.2,0.2junk"},
+		{"photo", "r-tcckc6hn", "1", "blur", "--region", "0.1,0.1,0.2,0.2,0.3"},
 		{"photo", "r-tcckc6hn", "1", "blur"},
 		{"photo", "r-tcckc6hn", "2", "private"},
 		{"photo", "r-tcckc6hn", "one", "private"},

@@ -240,11 +240,19 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		}
 		var rs []reports.Region
 		for _, r := range regions {
-			var x reports.Region
-			if _, err := fmt.Sscanf(r, "%g,%g,%g,%g", &x.X, &x.Y, &x.W, &x.H); err != nil {
+			// Exactly four numbers: anything else is refused, never half read.
+			parts := strings.Split(r, ",")
+			var v [4]float64
+			ok := len(parts) == 4
+			for i := 0; ok && i < 4; i++ {
+				var err error
+				v[i], err = strconv.ParseFloat(strings.TrimSpace(parts[i]), 64)
+				ok = err == nil
+			}
+			if !ok {
 				return fmt.Errorf("--region %q: x,y,w,h as fractions of the photo, e.g. 0.42,0.61,0.2,0.08", r)
 			}
-			rs = append(rs, x)
+			rs = append(rs, reports.Region{X: v[0], Y: v[1], W: v[2], H: v[3]})
 		}
 		api := &reports.API{DB: pool, Files: files, Log: log}
 		if err := api.DecidePhoto(ctx, pos[0], position, pos[2], rs, *by); err != nil {
