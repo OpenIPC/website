@@ -38,6 +38,8 @@
       "asked_answer": "通过编辑回答",
       "asked_how": "编辑这份报告即可回答：补充照片、更正内容，或在备注中回复。保存后会重新进入审核。",
       "asked_title": "维护者的问题",
+      "backup_as_shared": "按发送者的选择公开",
+      "backup_keep_private": "不公开：该转储可识别此摄像机",
       "boards_link": "摄像头电路板",
       "bot_muted": "机器人消息已静音。",
       "bot_on": "提交内容被审核后，OpenIPC 机器人会通知你。",

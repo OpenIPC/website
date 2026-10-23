@@ -126,3 +126,62 @@ func TestThePhotoCommandDecidesWhatAPhotoPublishes(t *testing.T) {
 		}
 	}
 }
+
+// `reports file` keeps a flash dump its sender shared publicly private --
+// r-kebw28ys's raw read held the camera's vendor-cloud ID -- and gives it
+// back as they chose; it never blurs a dump, and never publishes one its
+// sender did not share.
+func TestTheFileCommandKeepsASharedDumpPrivate(t *testing.T) {
+	ctx := context.Background()
+	pool := dbtest.New(t)
+	cfg := &config.Config{DatabaseURL: pool.Config().ConnString(), BoardsRoot: t.TempDir(), ReportsRoot: t.TempDir()}
+	sum, err := (&reports.Files{Root: cfg.ReportsRoot}).Put(bytes.Repeat([]byte{0xff}, 4096))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, sql := range []string{
+		`INSERT INTO reports (id, channel, yaml, yaml_public, yaml_sha256, backup_consent, client_hash) VALUES
+		 ('r-kebw28ys', 'web', '', '', repeat('0', 64), 'public', 'x'),
+		 ('r-kept0001', 'web', '', '', repeat('0', 64), 'private', 'y')`,
+		`INSERT INTO report_files (report_id, position, kind, name, mime, sha256, bytes, public_sha256, public_bytes) VALUES
+		 ('r-kebw28ys', 1, 'backup', 'flash.bin', 'application/octet-stream', '` + sum + `', 4096, '` + sum + `', 4096),
+		 ('r-kept0001', 1, 'backup', 'flash.bin', 'application/octet-stream', '` + sum + `', 4096, NULL, NULL)`,
+	} {
+		if _, err := pool.Exec(ctx, sql); err != nil {
+			t.Fatal(err)
+		}
+	}
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	run := func(args ...string) error { return reportsCommand(ctx, cfg, log, args) }
+	public := func(id string) *string {
+		var p *string
+		if err := pool.QueryRow(ctx, `SELECT public_sha256 FROM report_files WHERE report_id = $1 AND position = 1`, id).Scan(&p); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	if err := run("file", "r-kebw28ys", "1", "private"); err != nil {
+		t.Fatal(err)
+	}
+	if p := public("r-kebw28ys"); p != nil {
+		t.Errorf("a dump kept private is still published as %s", *p)
+	}
+	if err := run("file", "r-kebw28ys", "1", "as_sent"); err != nil {
+		t.Fatal(err)
+	}
+	if p := public("r-kebw28ys"); p == nil || *p != sum {
+		t.Errorf("as the sender chose publishes the dump itself, not %v", p)
+	}
+	if err := run("file", "r-kebw28ys", "1", "blur", "--region", "0.1,0.1,0.2,0.2"); err == nil {
+		t.Error("a dump was blurred")
+	}
+	if err := run("file", "r-kept0001", "1", "as_sent"); err == nil || !strings.Contains(err.Error(), "did not share") {
+		t.Errorf("a dump its sender kept private was published: %v", err)
+	}
+	if p := public("r-kept0001"); p != nil {
+		t.Errorf("a dump its sender kept private is published as %s", *p)
+	}
+	if err := run("file", "r-kept0001", "1", "private"); err != nil {
+		t.Errorf("keeping a private dump private: %v", err)
+	}
+}

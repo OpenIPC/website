@@ -10,7 +10,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/preact';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
-import type { Queued } from '../../lib/club';
+import type { MemberFile, Queued } from '../../lib/club';
 import { boxFrom, fillBoxes, grow, type Box } from '../../lib/photo-check';
 import SendForm from './SendForm.tsx';
 import Review from './Review.tsx';
@@ -399,6 +399,29 @@ describe('the review queue', () => {
     fireEvent.click((await findAllByRole('button', { name: /Not the sender's unit/ }))[1]);
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0]).toEqual({ url: '/api/v1/club/review/r-tcckc6hn/files/2', body: { action: 'private' } });
+  });
+
+  test('a flash dump shared publicly can be kept private, and given back as shared', async () => {
+    const dump: MemberFile = { position: 1, kind: 'backup', name: 'flash.bin', bytes: 8388608, url: '/f/1', points: 3 };
+    let calls = queue(queued({ backup_consent: 'public', file_list: [dump] }));
+    const first = render(<Review locale="en" />);
+    fireEvent.click(await first.findByRole('button', { name: 'Keep private: it identifies the camera' }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]).toEqual({ url: '/api/v1/club/review/r-tcckc6hn/files/1', body: { action: 'private' } });
+    first.unmount();
+    calls = queue(queued({ backup_consent: 'public', file_list: [{ ...dump, private: true }] }));
+    const second = render(<Review locale="en" />);
+    fireEvent.click(await second.findByRole('button', { name: 'Publish as the sender shared it' }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0].body).toEqual({ action: 'as_sent' });
+  });
+
+  test('a flash dump its sender kept private offers nothing to publish', async () => {
+    queue(queued({ backup_consent: 'private', file_list: [{ position: 1, kind: 'backup', name: 'flash.bin', bytes: 8388608, url: '/f/1', points: 3, private: true }] }));
+    const { findByText, queryByRole } = render(<Review locale="en" />);
+    await findByText(/flash\.bin/);
+    expect(queryByRole('button', { name: 'Publish as the sender shared it' })).toBeNull();
+    expect(queryByRole('button', { name: 'Keep private: it identifies the camera' })).toBeNull();
   });
 
   test('a blurred photo links its published copy and can be published as sent again', async () => {

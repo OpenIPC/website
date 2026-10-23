@@ -725,6 +725,13 @@ func (a *API) file(w http.ResponseWriter, r *http.Request) {
 		}
 		cache = "public, max-age=31536000, immutable"
 	}
+	if kind == "backup" {
+		// A flash dump is fetched once, not shown on every board page, and
+		// a reviewer can still make one private when it identifies the
+		// camera: nothing keeps a copy, so after that every request asks,
+		// and is answered 404.
+		cache = "no-store"
+	}
 	a.send(w, r.PathValue("id"), sum, name, mt, kind, cache)
 }
 

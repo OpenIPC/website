@@ -27,7 +27,11 @@ const (
 )
 
 // ErrNotPhoto is a photo decision on a file that is not a photo.
-var ErrNotPhoto = errors.New("only a photo is blurred or kept private this way")
+var ErrNotPhoto = errors.New("only a photo is blurred, and only a photo or a flash dump kept private, this way")
+
+// ErrNotConsented: a flash dump its sender did not share publicly is never
+// published by a maintainer; they may only keep a public one private.
+var ErrNotConsented = errors.New("its sender did not share this flash dump publicly")
 
 // ownPhoto is the own_photo column: true, or NULL when the sender was not
 // asked or did not say so.
@@ -94,7 +98,21 @@ func (s *Store) SetPhotoPublic(ctx context.Context, id string, position int, act
 		if err != nil {
 			return err
 		}
-		if kind != "photo" {
+		// A flash dump its sender shared publicly can still hold what
+		// identifies the camera -- a vendor-cloud ID in a raw read
+		// (r-kebw28ys) -- so a maintainer may keep it private, and give it
+		// back as sent; never blur it, never publish one not shared.
+		if kind == "backup" && action != PhotoBlur {
+			if action == PhotoAsSent {
+				var consent string
+				if err := tx.QueryRow(ctx, `SELECT backup_consent FROM reports WHERE id = $1`, id).Scan(&consent); err != nil {
+					return err
+				}
+				if consent != "public" {
+					return ErrNotConsented
+				}
+			}
+		} else if kind != "photo" {
 			return ErrNotPhoto
 		}
 		var pub, pubMime *string
@@ -225,7 +243,7 @@ func (a *API) ReviewPhoto(w http.ResponseWriter, r *http.Request, id string, pos
 	case errors.Is(err, ErrNotFound):
 		a.refuse(w, http.StatusNotFound, "the report has no such file")
 		return false
-	case errors.Is(err, ErrNotPhoto):
+	case errors.Is(err, ErrNotPhoto), errors.Is(err, ErrNotConsented):
 		a.refuse(w, http.StatusBadRequest, err.Error())
 		return false
 	case err != nil:

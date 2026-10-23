@@ -710,6 +710,8 @@ en:
       photo_public_copy: 'Published copy'
       photo_not_unit: 'Not the sender''s unit: keep private'
       photo_as_sent: 'Publish as sent'
+      backup_keep_private: 'Keep private: it identifies the camera'
+      backup_as_shared: 'Publish as the sender shared it'
       cameras_title: 'My cameras on the Open Wall'
       cameras_count: '{n} of {max} count towards stars'
       cameras_empty: 'No camera linked yet. Link one below: it earns stars for every month it keeps sending real pictures to the Open Wall.'
