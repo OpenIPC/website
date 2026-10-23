@@ -798,3 +798,54 @@ func TestLoadIndexBuilderEditions(t *testing.T) {
 		}
 	}
 }
+
+// A board that goes split-only stops publishing its plain NOR package; the
+// index must stop offering the last one it kept. A board publishing both, an
+// edition with no split package and a board whose build failed keep theirs.
+func TestLoadIndexDropsPlainSupersededBySplit(t *testing.T) {
+	pool := dbtest.New(t)
+	ctx := context.Background()
+	d1 := time.Date(2026, 10, 21, 18, 0, 0, 0, time.UTC)
+	build := func(id string, at time.Time, names ...string) *Payload {
+		p := &Payload{Schema: 1, Source: "firmware",
+			Build: Build{ID: id, Release: id, SHA: strings.Repeat("a", 40), BuiltAt: at, PublishedAt: at.Add(time.Hour)}}
+		for _, n := range names {
+			p.Assets = append(p.Assets, Asset{Name: n, Size: 7_000_000, SHA256: sum})
+		}
+		return p
+	}
+	old := build("nightly-20261021-57ae948", d1,
+		"openipc.hi3516ev300-nor-lite.tgz", "openipc.hi3516ev300-nor-ultimate.tgz",
+		"openipc.hi3516ev300-nor-neo.tgz", "openipc.gk7205v200-nor-lite.tgz",
+		"openipc.hi3516cv300-nor-lite.tgz")
+	cur := build("nightly-20261022-020f895", d1.Add(24*time.Hour),
+		"openipc.hi3516ev300-nor-lite-split.tgz", "openipc.hi3516ev300-nor-ultimate-split.tgz",
+		"openipc.hi3516ev300-nor-neo.tgz",
+		"openipc.gk7205v200-nor-lite.tgz", "openipc.gk7205v200-nor-lite-split.tgz")
+	for _, p := range []*Payload{old, cur} {
+		if _, err := Save(ctx, pool, p, "test"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	idx, err := LoadIndex(ctx, pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"openipc.hi3516ev300-nor-lite.tgz", "openipc.hi3516ev300-nor-ultimate.tgz"} {
+		if a, ok := idx.Asset(name); ok {
+			t.Errorf("%s is still offered, from %s", name, a.Release)
+		}
+	}
+	for name, release := range map[string]string{
+		"openipc.hi3516ev300-nor-lite-split.tgz": "nightly-20261022-020f895",
+		"openipc.hi3516ev300-nor-neo.tgz":        "nightly-20261022-020f895",
+		"openipc.gk7205v200-nor-lite.tgz":        "nightly-20261022-020f895",
+		"openipc.gk7205v200-nor-lite-split.tgz":  "nightly-20261022-020f895",
+		// its build failed on the 22nd: the last good package stays
+		"openipc.hi3516cv300-nor-lite.tgz": "nightly-20261021-57ae948",
+	} {
+		if a, ok := idx.Asset(name); !ok || a.Release != release {
+			t.Errorf("%s: %+v %v, want it from %s", name, a, ok, release)
+		}
+	}
+}
