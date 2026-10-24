@@ -1,4 +1,4 @@
-# SigmaStar — 35 SoC(s).
+# SigmaStar — 34 SoC(s).
 #
 # Exported from the catalogue table (#161). This file is the source of
 # truth for the hardware pages: edit it in a pull request, not in the
@@ -9,34 +9,6 @@ full_name: null
 website_url: null
 notes: null
 socs:
-- family: ''
-  model: MSC339G
-  version: ''
-  status: neq
-  load_address: ''
-  sdk: ''
-  kernel: ''
-  uboot_filename: ''
-  linux_filename: ''
-  notes: Named in Anjoy Vision's module table (MC800G, 8MP, external 2×256 MB DDR); no OpenIPC build yet
-  urlname: msc339g
-  build_status_url: https://img.shields.io/static/v1?label=MSC339G&message=%20&logo=github
-  featured: false
-  segment: null
-- family: MERCURY6
-  model: MSC359G
-  version: ''
-  status: neq
-  load_address: ''
-  sdk: ''
-  kernel: ''
-  uboot_filename: ''
-  linux_filename: ''
-  notes: Mercury6, as an Anjoy Vision MC-H12S boot log shows (512 MB DDR, SPI NAND); no OpenIPC build yet
-  urlname: msc359g
-  build_status_url: https://img.shields.io/static/v1?label=MSC359G&message=%20&logo=github
-  featured: false
-  segment: null
 - family: INFINITY6E
   model: SSC30KD
   version: null
@@ -368,9 +340,23 @@ socs:
   kernel: null
   uboot_filename: ''
   linux_filename: ''
-  notes: Infinity6e (SSC33X), SDK name - Pudding
+  notes: Infinity6e (SSC33X), SDK name - Pudding; also marked MSC339G
   urlname: ssc339g
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc338q_images.yml/badge.svg
+  featured: false
+  segment: null
+- family: MERCURY6
+  model: SSC359G
+  version: ''
+  status: neq
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: ''
+  notes: Mercury6, as an Anjoy Vision MC-H12S boot log shows (512 MB DDR, SPI NAND); also marked MSC359G; no OpenIPC build yet
+  urlname: ssc359g
+  build_status_url: https://img.shields.io/static/v1?label=SSC359G&message=%20&logo=github
   featured: false
   segment: null
 - family: INFINITY6C

@@ -1195,26 +1195,6 @@
       "website_url": null,
       "socs": [
         {
-          "model": "MSC339G",
-          "family": "",
-          "version": "",
-          "urlname": "msc339g",
-          "status": "neq",
-          "load_address": "",
-          "featured": false,
-          "segment": null
-        },
-        {
-          "model": "MSC359G",
-          "family": "MERCURY6",
-          "version": "",
-          "urlname": "msc359g",
-          "status": "neq",
-          "load_address": "",
-          "featured": false,
-          "segment": null
-        },
-        {
           "model": "SSC30KD",
           "family": "INFINITY6E",
           "version": null,
@@ -1451,6 +1431,16 @@
           "urlname": "ssc339g",
           "status": "neq",
           "load_address": "0x21000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSC359G",
+          "family": "MERCURY6",
+          "version": "",
+          "urlname": "ssc359g",
+          "status": "neq",
+          "load_address": "",
           "featured": false,
           "segment": null
         },
