@@ -557,17 +557,19 @@ def main():
     args = ap.parse_args()
     dic = json.load(open(args.dictionary)) if args.dictionary and os.path.exists(args.dictionary) else {}
     os.makedirs(args.work, exist_ok=True)
-    # The captures' files: a file at the same place in two of them is read
-    # from the first (:8021, whose address it keeps). The same file in
-    # another folder stays: a folder says which module a file is about, and
-    # the archive files copies under modules :8021 does not have.
+    # The captures' files: a place both have is read from the first (:8021,
+    # whose address it keeps), whatever the other holds there -- the archive
+    # re-exports some documents, and one board must not list both copies.
+    # The same file in another folder stays: a folder says which module a
+    # file is about, and the archive files copies under modules :8021 does
+    # not have.
     listing, have, table = {"files": []}, set(), {}
     for cap in [args.cap] + args.also:
         mine = set()
         for f in json.load(open(os.path.join(cap, "listing.json")))["files"]:
-            if (f["path"], f["sha256"]) in have:
+            if f["path"] in have:
                 continue
-            mine.add((f["path"], f["sha256"]))
+            mine.add(f["path"])
             listing["files"].append({**f, "file": os.path.join(os.path.abspath(cap), f["file"])})
         have |= mine
         t = os.path.join(cap, "table.json")
@@ -590,7 +592,7 @@ def main():
             continue
         src = f["file"]
         e = {**f, "name": name, "folder": folder, "ext": ext, "src": src, "top": parts[0]}
-        if ext != ".png":
+        if ext not in (".png", ".jpg"):
             pdf = as_pdf(src, args.work)
             e["pdf"], e["text"] = pdf, text_of(pdf) if pdf else ""
         entries.append(e)
@@ -623,7 +625,7 @@ def main():
                  and key(name_code(e["name"])) == key(folder_code(e["folder"]))}
     by_key = {}
     for e in entries:
-        own = name_code(e["name"], photo=e["ext"] == ".png")
+        own = name_code(e["name"], photo=e["ext"] in (".png", ".jpg"))
         folder = folder_code(e["folder"])
         model = e["sheet"][4] if e.get("sheet") else ""
         # The vendor's 型号 has copy-paste errors (MC-K18's sheet says
@@ -727,7 +729,7 @@ def main():
         wiring = lambda e: bool(re.search(r"接线", e["name"])) or "针脚定义" in e.get("text", "")
         photos = [e for e in keep if e["ext"] in (".png", ".jpg") and not wiring(e)]
         for i, e in enumerate(sorted(photos, key=lambda e: e["name"])):
-            n, p = files.add(e["file"], f"{code}-photo-{i + 1}.png", used)
+            n, p = files.add(e["file"], f"{code}-photo-{i + 1}{e['ext']}", used)
             fl.append({"kind": "photo_front" if i == 0 else "photo_other", "name": n, "path": p})
             photo_count += 1
         if not photos:
@@ -782,8 +784,11 @@ def main():
         # its own files', not a misfiled file's (MY-F13S's diagram in MC-H12S).
         home = next((e for e in sorted(es, key=lambda e: not e.get("sheet")) if key(folder_code(e["folder"]) or "") == k), es[0])
         mine = [e for e in es if key(folder_code(e["folder"]) or "") == k
-                or key(name_code(e["name"], photo=e["ext"] == ".png") or "") == k]
+                or key(name_code(e["name"], photo=e["ext"] in (".png", ".jpg")) or "") == k]
         haystack = " ".join([title] + [e["name"] for e in mine] + [e["folder"] for e in mine])
+        # Its page on :8021: its home's folder there, else any of its own
+        # files' (a spec sheet only the archive has, beside public photos).
+        page = next((e for e in [home] + mine if e.get("url")), None)
         line = "Network video recorder" if group["nvr"] else next((l for rx, l in LINES if rx.search(haystack)), DEFAULT_LINE)
         # An intro or a note is the description (paragraphs); the feature list
         # is the features (one per line), as the panel shows them.
@@ -805,7 +810,7 @@ def main():
              "specs": specs, "tags": [], "files": fl,
              # A module only the archive Anjoy Vision sent has no public page.
              "links": [{"kind": "source_page", "label": "anjvision.com",
-                        "url": urllib.parse.urljoin(home["url"], ".")}] if home.get("url") else []}
+                        "url": urllib.parse.urljoin(page["url"], ".")}] if page else []}
         if aliases_extra:
             m["aliases"] = sorted(set(aliases) | set(aliases_extra))
         chip_text = next((spec[k] for k in CHIP_LABELS if spec.get(k)), "")

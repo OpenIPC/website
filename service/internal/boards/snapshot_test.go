@@ -1007,6 +1007,39 @@ func TestACodeASourceRelistsAsItsOwnBoardLeavesTheOneItNamed(t *testing.T) {
 	}
 }
 
+// The board a source's name pointed at may carry another source's code: the
+// source finds it by its own names for it.
+func TestARelistedCodeLeavesABoardAnotherSourceCreated(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "cctvsp", model("anjoy", "MY-A20-4GX", nil))); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := im.FromSnapshot(ctx, donor(t, "anjoy",
+		model("anjoy", "MY-A20-4G", map[string]any{"aliases": []string{"MY-A20-4GX", "MY-A20"}}))); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := im.FromSnapshot(ctx, donor(t, "anjoy",
+		model("anjoy", "MY-A20", nil), model("anjoy", "MY-A20-4G", nil))); err != nil || n != 1 {
+		t.Fatalf("created %d (%v)", n, err)
+	}
+	var owner string
+	if err := pool.QueryRow(ctx, `SELECT model_id FROM board_model_aliases WHERE maker_id = 'anjoy' AND code_norm = $1`, NormCode("MY-A20")).Scan(&owner); err != nil {
+		t.Fatal(err)
+	}
+	if owner != "anjoy-my-a20" {
+		t.Errorf("MY-A20 names %s", owner)
+	}
+	// And a board's own code stays its own.
+	if err := pool.QueryRow(ctx, `SELECT model_id FROM board_model_aliases WHERE maker_id = 'anjoy' AND code_norm = $1`, NormCode("MY-A20-4GX")).Scan(&owner); err != nil {
+		t.Fatal(err)
+	}
+	if owner != "anjoy-my-a20-4gx" {
+		t.Errorf("MY-A20-4GX names %s", owner)
+	}
+}
+
 // Longse's boards come from Herospeed's firmware lists, its cameras from its
 // own catalogue: a camera's model name is its housing and its board's code
 // (DMSAKL5RC), and that code may be the board's alias (KL5RC of KL5R).
