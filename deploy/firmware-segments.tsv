@@ -77,6 +77,8 @@ hi3536dv100	hisilicon	HI3536DV100	cctv
 msc313e	mstar	INFINITY3	
 msc316dc	mstar	INFINITY3	
 msc316dm	mstar	INFINITY3	
+msc339g	sigmastar		
+msc359g	sigmastar	MERCURY6	
 nt98533	novatek	NT9853X	
 nt98560	novatek	NT9856X	
 nt98561	novatek	NT9856X	
@@ -116,6 +118,9 @@ ssc377de	sigmastar	INFINITY6C
 ssc377qe	sigmastar	INFINITY6C	fpv
 ssc378de	sigmastar	INFINITY6C	
 ssc378qe	sigmastar	INFINITY6C	fpv
+ssc385	sigmastar	SSC38X	
+ssc385d	sigmastar	SSC38X	
+ssc387	sigmastar	SSC38X	
 t10	ingenic	T21	consumer
 t20	ingenic	T21	consumer
 t21	ingenic	T21	consumer
