@@ -179,6 +179,8 @@ var socShorthand = map[string]string{
 	"hi3516d": "hi3516dv100", "hi3516a": "hi3516av100",
 	"hi3536c": "hi3536cv100", "hi3536d": "hi3536dv100", "hi3536e": "hi3536dv100",
 	"xm510a": "xm510", "xm530ai": "xm530", "xm550ai": "xm550",
+	// SigmaStar's parts as MStar's name marks them, as module makers still write them.
+	"msc339g": "ssc339g", "msc359g": "ssc359g",
 }
 
 //go:embed aliases.yml

@@ -77,8 +77,6 @@ hi3536dv100	hisilicon	HI3536DV100	cctv
 msc313e	mstar	INFINITY3	
 msc316dc	mstar	INFINITY3	
 msc316dm	mstar	INFINITY3	
-msc339g	sigmastar		
-msc359g	sigmastar	MERCURY6	
 nt98533	novatek	NT9853X	
 nt98560	novatek	NT9856X	
 nt98561	novatek	NT9856X	
@@ -112,6 +110,7 @@ ssc338d	sigmastar	INFINITY6E
 ssc338g	sigmastar	INFINITY6E	
 ssc338q	sigmastar	INFINITY6E	fpv
 ssc339g	sigmastar	INFINITY6E	
+ssc359g	sigmastar	MERCURY6	
 ssc377	sigmastar	INFINITY6C	
 ssc377d	sigmastar	INFINITY6C	
 ssc377de	sigmastar	INFINITY6C	
