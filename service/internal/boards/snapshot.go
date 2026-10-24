@@ -53,11 +53,13 @@ var Snapshots = map[string]string{
 	// only from their firmware, first published since 2025 (chip, device ID,
 	// product line); imported after jftech.
 	"xmupdates": "000d5323a721f57c7c6ad8c6af992f39f507b8b674e20c18a910e04d8e86cb64",
-	// boards-donors/anjoy/snapshot-13aea65ba130.tar: Anjoy Vision's document archive,
-	// 191 models (182 modules, 9 NVRs), 167 with wiring pinouts, 175 with
-	// photos (the archive's own, or those inside its documents); Chinese
-	// original with English and Russian; the capture beside it.
-	"anjoy": "13aea65ba130c19ff4513c1b2c93636409bc585df0093e523fad07024ae19b10",
+	// boards-donors/anjoy/snapshot-ade4098675da.tar: Anjoy Vision's document archive
+	// (:8021) and the extended copy the maker sent in October 2026, 250 models
+	// (239 modules, 11 NVRs), 200 with wiring pinouts, 210 with photos (the
+	// archive's own, or those inside its documents); chip, sensor, RAM and
+	// flash from the maker's module table where its documents say less;
+	// Chinese original with English and Russian; both captures beside it.
+	"anjoy": "ade4098675da1be46409593e0f5d3c5a1745ad55f9cba39250970953c0d4f9dc",
 	// boards-donors/herospeed/snapshot-4916e4bbde88.tar: the boards Longse's IP
 	// cameras are built on, from the firmware lists of Herospeed (its firmware
 	// house), 42 current and discontinued, 18 with the chip their builds name.
@@ -322,6 +324,9 @@ func (im *Importer) FromSnapshot(ctx context.Context, fsys fs.FS) (int, error) {
 		if _, err := tx.Exec(ctx, `DELETE FROM board_contents WHERE source = $1`, src); err != nil {
 			return err
 		}
+		if err := dropRelisted(ctx, tx, src, s.Models); err != nil {
+			return err
+		}
 		ids := map[int]string{}
 		for i, m := range s.Models {
 			id, isNew, err := im.saveModel(ctx, tx, fsys, src, i, m, dec)
@@ -434,6 +439,68 @@ func boolInt(b bool) int {
 
 type querier interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+// dropRelisted lets a source take back a name it gave a board: a code it
+// once listed as another name of a board, and now lists as a board of its
+// own, while still listing the first board without it (Anjoy's MY-A20,
+// filed under MY-A20-4G until the maker's own archive showed both). The
+// source's alias row goes, so the code resolves to nobody and its board is
+// created. Rows another source or a reviewed decision wrote stay.
+//
+// Which listing the board was is what the source's unit on it says (its
+// source_ref is the code the board was listed under), else the board's own
+// code -- not another source's spelling of it.
+func dropRelisted(ctx context.Context, tx pgx.Tx, src string, models []SnapModel) error {
+	type key = [2]string
+	primary := map[key]int{}  // a listing's own code -> the listing
+	listedAs := map[key]int{} // any code a listing gives -> the listing
+	for i, m := range models {
+		if m.LinkOnly {
+			continue
+		}
+		primary[key{m.Maker, NormCode(m.Code)}] = i
+		for _, c := range append([]string{m.Code}, m.Aliases...) {
+			listedAs[key{m.Maker, NormCode(c)}] = i
+		}
+	}
+	rows, err := tx.Query(ctx, `
+		SELECT a.maker_id, a.code_norm,
+		       coalesce((SELECT substr(u.source_ref, length($1) + 2) FROM board_units u
+		                  WHERE u.model_id = a.model_id AND left(u.source_ref, length($1) + 1) = $1 || ':'
+		                  ORDER BY u.id LIMIT 1), m.model)
+		FROM board_model_aliases a
+		JOIN board_models m ON m.id = a.model_id
+		WHERE a.source = $1`, src)
+	if err != nil {
+		return err
+	}
+	var gone []key
+	for rows.Next() {
+		var maker, code, listed string
+		if err := rows.Scan(&maker, &code, &listed); err != nil {
+			rows.Close()
+			return err
+		}
+		self, ok := primary[key{maker, code}]
+		if !ok || code == NormCode(listed) {
+			continue
+		}
+		// The board the row points at, as this snapshot lists it.
+		if was, ok := listedAs[key{maker, NormCode(listed)}]; ok && was != self {
+			gone = append(gone, key{maker, code})
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, k := range gone {
+		if _, err := tx.Exec(ctx, `DELETE FROM board_model_aliases WHERE maker_id = $1 AND code_norm = $2 AND source = $3`, k[0], k[1], src); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // resolve finds the model a maker's code names: through a reviewed decision

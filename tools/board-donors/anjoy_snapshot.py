@@ -3,10 +3,21 @@ own document archive.
 
   docker run --rm -v ~/reports/boards-catalogue/donors:/w -v $PWD/tools/board-donors:/t \\
     board-render:1 python3 /t/anjoy_snapshot.py /w/raw/anjoy /w/anjoy-work \\
-    /w/snapshots/anjoy-snapshot.tar [/w/translate/anjoy-dictionary.json]
+    /w/snapshots/anjoy-snapshot.tar [/w/translate/anjoy-dictionary.json] \\
+    --also /w/raw/anjoy-archive
 
 Runs in board-render:1 (poppler for the PDFs, LibreOffice for .doc/.docx).
-Reads anjoy.py's capture.
+Reads anjoy.py's capture and, with --also, anjoy_archive.py's: the archive
+Anjoy Vision sent in October 2026, which has modules, photos and documents
+:8021 does not, and lacks a few it has. A file both carry is read once, from
+:8021 (whose address the module's link names); a module only the archive
+has links to no page.
+
+The archive's module table (table.json) is the maker's word on a module's
+chip, sensor, RAM, flash, board size and whether it is still made: it gives
+the chip and sensor where the documents name none (where both do and
+disagree, the run says so and the documents stand), and its RAM, flash, size
+and status become specification rows.
 
 The archive (http://www.anjvision.com:8021/pdf/) is one folder per module,
 nested as it grew: a module's folder can sit inside another's (MY-Y10/MC-D80/)
@@ -50,13 +61,14 @@ from tehno32_snapshot import as_pdf, run  # noqa: E402
 
 SOURCE = {"id": "anjoy", "name": "Anjoy Vision", "url": "http://www.anjvision.com:8021/pdf/",
           "note": "Anjoy Vision's document archive: the maker's spec sheets, wiring diagrams and board photos "
-                  "for its camera modules, in Chinese (captured 2026)."}
+                  "for its camera modules, in Chinese (captured 2026), with the extended copy and the module "
+                  "table Anjoy Vision sent OpenIPC in October 2026."}
 
 CODE = re.compile(r"^[A-Z0-9][A-Z0-9-]*$")  # the importer's code shape
 # A module code at the start of a name: MC-A50, MY-F31D-4G, MC200J12, MC800S7,
-# MCF46-W12Y, MN3236B, NVR3112B. Anjoy's lines are two letters and a digit or
-# a hyphen.
-NAME_CODE = re.compile(r"^(?:NVR|M[A-Z]|FC)-?[A-Z]*\d[A-Z0-9]*(?:-(?:[A-Z]*\d[A-Z0-9]*|4G|W|WIFI|[A-Z]{1,2}\d*))*")
+# MCF46-W12Y, MN3236B, NVR3112B, and the archive's HC500L2, XC-Z40, ZX-Z60,
+# TC-A55. Anjoy's lines are two letters and a digit or a hyphen.
+NAME_CODE = re.compile(r"^(?:NVR|M[A-Z]|FC|HC|XC|ZX|ZH|TC)-?[A-Z]*\d[A-Z0-9]*(?:-(?:[A-Z]*\d[A-Z0-9]*|4G|W|WIFI|[A-Z]{1,2}\d*))*")
 # Prefixes the archive puts before a code: 【英文】 (English version), gg-/ggx-
 # (photos retouched for the catalogue).
 NAME_PREFIX = re.compile(r"^(?:【[^】]*】|ggx?-)+", re.I)
@@ -65,6 +77,11 @@ PHOTO_SUFFIX = re.compile(r"-A[A-Za-z]{0,3}(?:-\d+)?$")
 YEAR_DIR = re.compile(r"^20\d\d$")
 NVR_DIR = "录像机NVR"
 WORD = (".doc", ".docx")
+
+# The module table's names for modules the catalogue files under another code.
+TABLE_NAMES = {"MC-J12": "MC200J12", "MC-L12B": "MC-L12", "MC-A42P-V3": "MC-A42P", "MC-D80A": "MC-D80"}
+# Its status column, as the specification rows say it.
+TABLE_STATUS = {"stop": "停产", "custom": "定制", "normal": "在产"}
 
 # Product lines, first match wins: what the spec title or the file names say.
 LINES = [
@@ -125,6 +142,33 @@ def key(code):
     """Codes that differ only in hyphens are one module (MC-F46-W, MC-F46W;
     MC-800S5, MC800S5)."""
     return code.replace("-", "")
+
+
+def less_said(doc, table):
+    """Whether a document's chip says less than the table's and not something
+    else: SSC38X of SSC385, SSC338 of SSC338Q, MSC335 of SSC335, SSC359 of
+    MSC359G (SigmaStar's parts are written with either prefix)."""
+    if {doc[:1], table[:1]} <= {"M", "S"}:
+        doc = table[:1] + doc[1:]
+    if re.fullmatch(r"[A-Z]+\d+X", doc):
+        return table.startswith(doc[:-1])
+    return table.startswith(doc)
+
+
+def table_rows(row, rows):
+    """The module table's RAM, flash, board size and status as specification
+    rows, each only where the spec sheet has no row of its own for it."""
+    have = " ".join(label for label, _ in rows)
+    mb = lambda v: f"{v} MB" if re.fullmatch(r"\d+", v) else v.replace("外挂", "外挂 ").replace("*", "×") + (" MB" if re.search(r"\d$", v) else "")
+    out = []
+    for label, value, already in (
+            ("内存", mb(row.get("ram", "")), ("内存", "RAM", "DDR")),
+            ("闪存", mb(row.get("flash", "")), ("闪存", "Flash", "FLASH")),
+            ("板卡尺寸", row.get("size", "").replace("*", "×") + (" mm" if re.fullmatch(r"[\d*+]+", row.get("size", "")) else ""), ("尺寸",)),
+            ("产品状态", TABLE_STATUS.get(row.get("status", "").strip().lower(), ""), ("状态",))):
+        if value.strip() and not any(a in have for a in already):
+            out.append([label, value.strip()])
+    return out
 
 
 def text_of(pdf):
@@ -509,10 +553,29 @@ def main():
     ap.add_argument("work")
     ap.add_argument("out")
     ap.add_argument("dictionary", nargs="?")
+    ap.add_argument("--also", action="append", default=[], help="another capture (anjoy_archive.py's)")
     args = ap.parse_args()
     dic = json.load(open(args.dictionary)) if args.dictionary and os.path.exists(args.dictionary) else {}
     os.makedirs(args.work, exist_ok=True)
-    listing = json.load(open(os.path.join(args.cap, "listing.json")))
+    # The captures' files: a place both have is read from the first (:8021,
+    # whose address it keeps), whatever the other holds there -- the archive
+    # re-exports some documents, and one board must not list both copies.
+    # The same file in another folder stays: a folder says which module a
+    # file is about, and the archive files copies under modules :8021 does
+    # not have.
+    listing, have, table = {"files": []}, set(), {}
+    for cap in [args.cap] + args.also:
+        mine = set()
+        for f in json.load(open(os.path.join(cap, "listing.json")))["files"]:
+            if f["path"] in have:
+                continue
+            mine.add(f["path"])
+            listing["files"].append({**f, "file": os.path.join(os.path.abspath(cap), f["file"])})
+        have |= mine
+        t = os.path.join(cap, "table.json")
+        if os.path.exists(t):
+            for row in json.load(open(t))["rows"]:
+                table[key(norm(TABLE_NAMES.get(row["model"].strip(), row["model"])))] = row
     files = Files(args.cap)
 
     def tr(text, lang):
@@ -525,11 +588,11 @@ def main():
         parts = f["path"].split("/")
         name, folder = parts[-1], (parts[-2] if len(parts) > 1 else "")
         ext = os.path.splitext(name)[1].lower()
-        if ext not in (".pdf", ".png") + WORD:
+        if ext not in (".pdf", ".png", ".jpg") + WORD:
             continue
-        src = os.path.join(args.cap, f["file"])
+        src = f["file"]
         e = {**f, "name": name, "folder": folder, "ext": ext, "src": src, "top": parts[0]}
-        if ext != ".png":
+        if ext not in (".png", ".jpg"):
             pdf = as_pdf(src, args.work)
             e["pdf"], e["text"] = pdf, text_of(pdf) if pdf else ""
         entries.append(e)
@@ -562,7 +625,7 @@ def main():
                  and key(name_code(e["name"])) == key(folder_code(e["folder"]))}
     by_key = {}
     for e in entries:
-        own = name_code(e["name"], photo=e["ext"] == ".png")
+        own = name_code(e["name"], photo=e["ext"] in (".png", ".jpg"))
         folder = folder_code(e["folder"])
         model = e["sheet"][4] if e.get("sheet") else ""
         # The vendor's 型号 has copy-paste errors (MC-K18's sheet says
@@ -584,7 +647,12 @@ def main():
         elif variant and e.get("sheet"):
             targets = [key(own)]  # a model with its own sheet beside the folder's (MY-Y10D)
         elif variant:
-            targets, alias = [key(folder)], own  # a variant-named photo or diagram: the folder's module
+            # A variant-named photo or diagram: the folder's module. The
+            # archive's photos are named by take (MC-J40Aa.png, MC-A81-B.png),
+            # not by a code the module goes by; :8021's name variants
+            # (MY-F30-W-A.png) do.
+            photo = e["ext"] in (".png", ".jpg") and not e.get("url")
+            targets, alias = [key(folder)], (None if photo else own)
         elif own and folder and key(own) != key(folder) and key(own) in known:
             targets = [key(own)]
         elif folder:
@@ -595,12 +663,13 @@ def main():
             print(f"  left out (names no module): {e['path']}", file=sys.stderr)
             continue
         for k in targets:
-            g = by_key.setdefault(k, {"entries": [], "nvr": False, "spellings": set()})
+            g = by_key.setdefault(k, {"entries": [], "nvr": False, "spellings": set(), "archive": set(), "public": set()})
             g["entries"].append(e)
             g["nvr"] |= e["top"] == NVR_DIR
             g["spellings"].update(c for c in (own, folder) if c and key(c) == k)
             if alias and k == key(folder):
                 g["spellings"].add(alias)
+                g["public" if e.get("url") else "archive"].add(alias)
 
     # The photos inside each module's documents, spec sheets first. A picture
     # that turns up on four modules or more is the letterhead or a QR code,
@@ -619,6 +688,7 @@ def main():
         embedded[k] = out
 
     models, pinout_count, photo_count, embedded_count = [], 0, 0, 0
+    conflicts, seen_tables = [], set()
     for k in sorted(by_key):
         group = by_key[k]
         es = group["entries"]
@@ -642,6 +712,14 @@ def main():
         sheets.sort(key=lambda e: ("【中文】" in e["name"], datetime.strptime(e["listed"], "%d-%b-%Y %H:%M")), reverse=True)
         title, lead, features, rows, _ = sheets[0]["sheet"] if sheets else ("", [], [], [], "")
         spec = dict(rows)
+        # The module's row in the maker's table, under its code or a spelling.
+        tk = next((t for t in [k] + [key(a) for a in sorted(group["spellings"])] if t in table), None)
+        row, aliases_extra = table.get(tk), []
+        if row:
+            seen_tables.add(tk)
+            rows = rows + table_rows(row, rows)
+            if norm(row["model"]) not in (code, *group["spellings"]):
+                aliases_extra = [norm(row["model"])]  # the table's name for it (MC-J12 for MC200J12)
         used, fl, pinouts, year = set(), [], [], None
         seen_pages = set()  # cropped pages are named by their content
         for e in keep:
@@ -649,9 +727,9 @@ def main():
                 y = pdf_year(e["pdf"])
                 year = min(year, y) if year and y else (year or y)
         wiring = lambda e: bool(re.search(r"接线", e["name"])) or "针脚定义" in e.get("text", "")
-        photos = [e for e in keep if e["ext"] == ".png" and not wiring(e)]
+        photos = [e for e in keep if e["ext"] in (".png", ".jpg") and not wiring(e)]
         for i, e in enumerate(sorted(photos, key=lambda e: e["name"])):
-            n, p = files.add(e["file"], f"{code}-photo-{i + 1}.png", used)
+            n, p = files.add(e["file"], f"{code}-photo-{i + 1}{e['ext']}", used)
             fl.append({"kind": "photo_front" if i == 0 else "photo_other", "name": n, "path": p})
             photo_count += 1
         if not photos:
@@ -666,9 +744,9 @@ def main():
                 fl.append({"kind": "photo_front" if i == 0 else "photo_other", "name": n, "path": p})
                 embedded_count += 1
         for e in keep:
-            if e["ext"] == ".png":
+            if e["ext"] in (".png", ".jpg"):
                 if wiring(e):  # a wiring diagram drawn as a picture (接线图.png)
-                    n, p = files.add(e["file"], f"{code}-pinout-{len(pinouts) + 1}.png", used)
+                    n, p = files.add(e["file"], f"{code}-pinout-{len(pinouts) + 1}{e['ext']}", used)
                     pinouts.append({"kind": "pinout", "name": n, "path": p})
                 continue
             if wiring(e) and e.get("pdf"):
@@ -706,8 +784,11 @@ def main():
         # its own files', not a misfiled file's (MY-F13S's diagram in MC-H12S).
         home = next((e for e in sorted(es, key=lambda e: not e.get("sheet")) if key(folder_code(e["folder"]) or "") == k), es[0])
         mine = [e for e in es if key(folder_code(e["folder"]) or "") == k
-                or key(name_code(e["name"], photo=e["ext"] == ".png") or "") == k]
+                or key(name_code(e["name"], photo=e["ext"] in (".png", ".jpg")) or "") == k]
         haystack = " ".join([title] + [e["name"] for e in mine] + [e["folder"] for e in mine])
+        # Its page on :8021: its home's folder there, else any of its own
+        # files' (a spec sheet only the archive has, beside public photos).
+        page = next((e for e in [home] + mine if e.get("url")), None)
         line = "Network video recorder" if group["nvr"] else next((l for rx, l in LINES if rx.search(haystack)), DEFAULT_LINE)
         # An intro or a note is the description (paragraphs); the feature list
         # is the features (one per line), as the panel shows them.
@@ -727,8 +808,11 @@ def main():
         m = {"maker": "anjoy", "code": code, "aliases": aliases, "category": line, "kind": "recorder" if group["nvr"] else "board",
              "texts": {k: v for k, v in texts.items() if v}, "original": ["zh"], "translated_from": "zh",
              "specs": specs, "tags": [], "files": fl,
+             # A module only the archive Anjoy Vision sent has no public page.
              "links": [{"kind": "source_page", "label": "anjvision.com",
-                        "url": urllib.parse.urljoin(home["url"], ".")}]}
+                        "url": urllib.parse.urljoin(page["url"], ".")}] if page else []}
+        if aliases_extra:
+            m["aliases"] = sorted(set(aliases) | set(aliases_extra))
         chip_text = next((spec[k] for k in CHIP_LABELS if spec.get(k)), "")
         if not chip_text and sheets:
             # The old sheets say it in prose: 采用最新 MSTAR SSC328Q 方案.
@@ -746,10 +830,45 @@ def main():
             (v for k2, v in rows if "传感器" in k2 or k2 in ("功能特点", "硬件结构")), ""))
         if sensor:
             m["sensor"] = sensor.group(1).upper()
+        if row:
+            # The table speaks where the documents are silent or say less: a
+            # family (SSC38X for SSC385), a part without its suffix (SSC338
+            # for SSC338Q), the other prefix (MSC335 for SSC335). Where both
+            # name a part and differ, the documents stand and the run says so.
+            for field, said in (("soc_label", row.get("processor", "").upper()), ("sensor", row.get("sensor", "").upper())):
+                said = said.replace(" ", "")
+                doc = m.get(field, "")
+                if not said or doc == said:
+                    continue
+                if not doc or less_said(doc, said):
+                    m[field] = said
+                else:
+                    conflicts.append(f"{code}: {field} {doc} in its documents, {said} in the table")
+            if not year and re.fullmatch(r"20\d\d", row.get("year", "")):
+                year = int(row["year"])
         if year:
             m["listed_year"] = year
         models.append(m)
 
+    # A spelling only the archive's file names give, that another module goes
+    # by (MY-F18B's sheet filed in MY-F18's folder, MT-J30-4GY's diagram
+    # in MT-J30-4GYG's), is that module's, not a second name for this one.
+    claims = {}
+    for m in models:
+        for c in [m["code"]] + m["aliases"]:
+            claims.setdefault(key(c), set()).add(m["code"])
+    for m in models:
+        g = by_key[key(m["code"])]
+        mine = g["archive"] - g["public"]
+        dropped = [a for a in m["aliases"] if a in mine and len(claims[key(a)]) > 1]
+        if dropped:
+            m["aliases"] = [a for a in m["aliases"] if a not in dropped]
+            print(f"  {m['code']}: not also {', '.join(dropped)} (another module's)", file=sys.stderr)
+    for c in conflicts:
+        print(f"  table: {c}", file=sys.stderr)
+    for k, row in sorted(table.items()):
+        if k not in seen_tables:
+            print(f"  table: {row['model']} matches no module", file=sys.stderr)
     for m in models:
         if not CODE.match(m["code"]):
             sys.exit(f"{m['code']}: not a code the importer takes")

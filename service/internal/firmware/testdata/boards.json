@@ -1009,6 +1009,24 @@
     "nand_lite": "openipc.rv1126-nand-lite.tgz"
   },
   {
+    "urlname": "msc339g",
+    "vendor": "SigmaStar",
+    "model": "MSC339G",
+    "board": "msc339g",
+    "uboot": "",
+    "nor_lite": "openipc.msc339g-nor-lite.tgz",
+    "nand_lite": "openipc.msc339g-nand-lite.tgz"
+  },
+  {
+    "urlname": "msc359g",
+    "vendor": "SigmaStar",
+    "model": "MSC359G",
+    "board": "msc359g",
+    "uboot": "",
+    "nor_lite": "openipc.msc359g-nor-lite.tgz",
+    "nand_lite": "openipc.msc359g-nand-lite.tgz"
+  },
+  {
     "urlname": "ssc30kd",
     "vendor": "SigmaStar",
     "model": "SSC30KD",
@@ -1277,6 +1295,33 @@
     "uboot": "u-boot-ssc378qe-nor.bin",
     "nor_lite": "openipc.ssc378qe-nor-lite.tgz",
     "nand_lite": "openipc.ssc378qe-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc385",
+    "vendor": "SigmaStar",
+    "model": "SSC385",
+    "board": "ssc385",
+    "uboot": "",
+    "nor_lite": "openipc.ssc385-nor-lite.tgz",
+    "nand_lite": "openipc.ssc385-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc385d",
+    "vendor": "SigmaStar",
+    "model": "SSC385D",
+    "board": "ssc385d",
+    "uboot": "",
+    "nor_lite": "openipc.ssc385d-nor-lite.tgz",
+    "nand_lite": "openipc.ssc385d-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssc387",
+    "vendor": "SigmaStar",
+    "model": "SSC387",
+    "board": "ssc387",
+    "uboot": "",
+    "nor_lite": "openipc.ssc387-nor-lite.tgz",
+    "nand_lite": "openipc.ssc387-nand-lite.tgz"
   },
   {
     "urlname": "dm365",
