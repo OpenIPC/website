@@ -124,3 +124,147 @@
   files:
     - kind: photo_other
       file: product-card.jpg
+
+# Board facts from Tino Darkness's messages in the OpenIPC Telegram groups,
+# checked in #513; one comment there per board, each fact citing his message.
+- unit: anjoy-mc-j30-c513
+  model: anjoy-mc-j30
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/79715
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397344150
+  sensor: SP4329
+  note: "Stock firmware loads sp4329_MIPI.ko: an SP4329, though sold as SC450AI. 64 MB DDR2."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-j40-c513
+  model: anjoy-mc-j40
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/29759
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397344412
+  sensor: SC450AI
+  note: "Stock firmware loads sc450ai_MIPI.ko. 64 MB DDR2."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-d40-c513
+  model: anjoy-mc-d40
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/72319
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397344629
+  sensor: GC2053
+  note: "Stock firmware has gc2053_MIPI master and slave drivers: two GC2053 sensors on one SSC30KQ."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-f26-c513
+  model: anjoy-mc-f26
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/72840
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397344904
+  sensor: SC3338
+  note: "Stock firmware loads drv_ms_cus_sc3338_MIPI_dn.ko."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-f46-c513
+  model: anjoy-mc-f46
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/84162
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397345312
+  sensor: GC4653
+  note: "Stock firmware loads gc4653_MIPI.ko; kernel LX_MEM=0x7fe0000 (128 MB)."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-j86-c513
+  model: anjoy-mc-j86
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/291403
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397345555
+  sensor: SC850SL
+  note: "Stock firmware ships sc850sl_MIPI_30FPS_20230821.ko; SC850AI in listings is a mislabel."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc800s-c513
+  model: anjoy-mc800s
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/113080
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397345805
+  flash_chip: PY2322
+  flash_mb: 16
+  note: "His MC800S-V3: 16 MB NOR (PY2322). Older V2.x boards: 1 Gbit SPI NAND (GD5F1GQ5)."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-k45-c513
+  model: anjoy-mc-k45
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/74585
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397346079
+  note: "256 MB DDR3 in the package (stock LX_MEM=0xffe0000)."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-a87-c513
+  model: anjoy-mc-a87
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/290277
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397346365
+  note: "He gives the chip as SSC385 (not SSC387) with 64 MB DDR2; a boot log would settle it."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-a42-c513
+  model: anjoy-mc-a42
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/52079
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397346624
+  sensor: SC401AI
+  note: "As he states it; he gives the older A42's SoC as SSC337 and as SSC335."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-my-q10-c513
+  model: anjoy-my-q10
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/74853
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397347210
+  sensor: SC2336P
+  note: "As he states it: SSC377, two SC2336P sensors (dual-lens, PWM motors)."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc800g-c513
+  model: anjoy-mc800g
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/78898
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397347448
+  note: "SSC339G with external DDR and SPI NAND, as he states it."
+  files:
+    - kind: note
+      file: note.txt

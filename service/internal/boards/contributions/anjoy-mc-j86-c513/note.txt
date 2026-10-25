@@ -1,0 +1,7 @@
+MC-J86: SSC378DE with an SC850SL sensor (8 MP, 1/1.8"), not an SC850AI.
+
+The stock firmware ships sc850sl_MIPI_30FPS_20230821.ko (Tino Darkness,
+2024-07-03, https://t.me/c/1166652144/118366, and again from a 2026
+firmware dump, https://t.me/c/1809358416/291403). An AliExpress listing
+shows "SC850AI instead of SC850SL" (https://t.me/c/1809358416/291424), the same
+name Anjoy's 2026-04 price list gives; the firmware is the measured evidence.

@@ -1,0 +1,11 @@
+MC-J40: SSC377 (I6C) with an SC450AI sensor.
+
+Tino Darkness: "ssc377 + SC450AI - MC-J40" (2023-10-23,
+https://t.me/c/1809358416/29759). The stock firmware's sensor driver is
+sc450ai_MIPI.ko (https://t.me/c/1166652144/79715). He recommends the
+MC-J40[W] when a real SC450AI is wanted, unlike the MC-J30, whose firmware
+loads an SP4329 driver. One 2024 message says "SC530AI can be found in J40"
+(https://t.me/c/1166652144/117277), which may be another revision.
+
+Memory: SSC377 with 64 MB of DDR2 in the package
+(https://t.me/c/1166652144/73003).

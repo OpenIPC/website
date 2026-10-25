@@ -1,0 +1,7 @@
+MC-F46 (the original, on SSC30KD): GC4653 sensor, 128 MB of RAM.
+
+The stock firmware from icamra.cn loads /opt/ch/gc4653_MIPI.ko (Tino Darkness,
+2023-11-20, https://t.me/c/1166652144/84162). Its kernel command line sets
+LX_MEM=0x7fe0000, i.e. 128 MB
+(https://t.me/c/1166652144/74585). The MC-F46D is the next-generation board
+on SSC377D.

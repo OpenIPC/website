@@ -1,0 +1,5 @@
+MC-K45 (SSC30KQ + IMX347): 256 MB of DDR3 in the package.
+
+Tino Darkness: "MC-K45 with SSC30KQ (I6E, 2xCA7, 256MB DDR3) and IMX347"
+(https://t.me/c/1166652144/73003). The stock kernel command line sets
+LX_MEM=0xffe0000, i.e. 256 MB (https://t.me/c/1166652144/74585).

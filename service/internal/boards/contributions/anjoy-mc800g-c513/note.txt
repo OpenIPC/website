@@ -1,0 +1,7 @@
+MC800G: SSC339G with external DDR and SPI NAND flash.
+
+Tino Darkness: "anjoy mc800G have ssc339G (external DDR). 30fps at 4K."
+(https://t.me/c/1166652144/78898), "MC800G from Anjoy) (SSC339G,NAND)"
+(https://t.me/c/1809358416/29937), and "339 is BGA + ext. DDR!"
+(https://t.me/c/1809358416/71751). Unlike the in-package memory of the
+SSC338Q, the RAM is a separate chip. Its size isn't given.
