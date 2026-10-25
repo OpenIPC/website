@@ -1,0 +1,5 @@
+MS-F12: Anjoy IP camera module identified by stock firmware flag msf12.flag.
+
+Firmware support (OpenIPC / majestic / stock)
+- The stock firmware identifies the model by the flag file msf12.flag.
+  (https://t.me/c/1166652144/19532)

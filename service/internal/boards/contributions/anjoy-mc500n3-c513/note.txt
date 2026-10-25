@@ -1,0 +1,25 @@
+MC500N3: 38x38 SSC338Q camera module with IMX335
+
+Chip and memory
+- SSC338Q (https://t.me/c/1809358416/239659)
+
+Sensor
+- IMX335 (https://t.me/c/1809358416/239659,
+  https://t.me/c/1809358416/216933)
+
+Interfaces and pinout
+- Usual 38x38 form factor (https://t.me/c/1809358416/83140)
+- Relayed from Greg: the MC500N3 IMX335 sensor board and the MC800S IMX415
+  sensor board "are at least interchangeable"
+  (https://t.me/c/1809358416/113073)
+
+Sourcing and price
+- Not yet seen on sale in early 2024-05 (directory at
+  http://www.icamra.cn:8021/pdf/MC500N3/); "already in production AFAIU" a
+  week later (https://t.me/c/1809358416/81931,
+  https://t.me/c/1809358416/83140)
+- Taobao item 793937122753 (2024-07) (https://t.me/c/1809358416/93365)
+- "it's called MC500N3 and costs $20 on taobao" (2025-07)
+  (https://t.me/c/1809358416/239659)
+- Since the FPV firmware came out, Taobao offers for MC800S/S5/500N3 "has
+  become much more" (2025-02) (https://t.me/c/1809358416/178278)

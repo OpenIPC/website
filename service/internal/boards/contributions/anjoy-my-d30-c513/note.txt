@@ -1,0 +1,14 @@
+MY-D30: Anjoy dual-sensor camera module
+
+Interfaces and pinout
+- Dual-sensor system; wiring diagram PDF at
+  http://www.icamra.cn:8021/pdf/MY-D30/ (https://t.me/c/1809358416/51698,
+  https://t.me/c/1809358416/60320)
+
+Sourcing and price
+- Taobao item 671329500513 (https://t.me/c/1809358416/60320,
+  https://t.me/c/1809358416/70743)
+
+Variants, aliases and products built on it
+- Tino also listed the same Taobao item as "MC-D30"
+  (https://t.me/c/1809358416/70743)

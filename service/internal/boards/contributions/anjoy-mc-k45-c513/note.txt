@@ -1,5 +1,63 @@
-MC-K45 (SSC30KQ + IMX347): 256 MB of DDR3 in the package.
+MC-K45: SSC30KQ camera module with the 1/1.8 IMX347 sensor, now hard to find
 
-Tino Darkness: "MC-K45 with SSC30KQ (I6E, 2xCA7, 256MB DDR3) and IMX347"
-(https://t.me/c/1166652144/73003). The stock kernel command line sets
-LX_MEM=0xffe0000, i.e. 256 MB (https://t.me/c/1166652144/74585).
+Chip and memory
+- SSC30KQ (I6E, 2xCA7) with 256MB DDR3 (https://t.me/c/1166652144/73003); a
+  stock SSC30KQ firmware cmdline (board not named in the message) sets
+  LX_MEM=0xffe0000 (https://t.me/c/1166652144/74585)
+- "SSC30KQ max. 3K with 30 fps encoding" (https://t.me/c/1166652144/78910)
+
+Sensor
+- IMX347, 1/1.8 format, 2.9um pixel (https://t.me/c/1809358416/59868,
+  https://t.me/c/1166652144/110555, https://t.me/c/1809358416/50389)
+- "1/1.8 IMX347 can 4M@90fps (native) and 1080p@180 in window cropping
+  mode"; Tino also gives SNR1 0.19 and 90fps all-pixel 10bit
+  (https://t.me/c/1809358416/50389, https://t.me/c/1166652144/78910)
+- It is not IMX415: Tino corrected a user who listed the K45 as SSC30KQ +
+  IMX415 (https://t.me/c/1809358416/84692, https://t.me/c/1809358416/82262)
+- Recommended for low light: "IMX347 Anjia MC-K45 (IMHO better)"
+  (https://t.me/EZWBC/15381, https://t.me/c/1809358416/264655)
+
+Interfaces and pinout
+- On the stock firmware the drv_ms_cus_imx347_MIPI module reports
+  i2c_slave_id 0, i.e. the sensor is on I2C bus 0 (measured)
+  (https://t.me/c/1166652144/84224)
+- MIPI CSI lanes: the stock driver parameter lane_num reads 2 (measured,
+  2023-11), while the device tree has csi_sr0_lane_num = 4 (measured,
+  2024-02); see Disagreements (https://t.me/c/1166652144/84244,
+  https://t.me/c/1809358416/60946)
+- "many Anjoy boards have +12V on board 4-pin USB instead of +5V or 3.3
+  (e.g. K45)" (https://t.me/c/1809358416/113083)
+- Lens mount: "22mm used with MC-K45", unlike the common 20 mm; "a rare
+  thing: 22mm spacing + 1/1.8 sensor" (https://t.me/c/1809358416/51772,
+  https://t.me/c/1809358416/73187, https://t.me/c/1809358416/26960)
+
+Firmware support (OpenIPC / majestic / stock)
+- The stock IPL_CUST can load U-Boot from the SD card (also eMMC), per
+  strings in the stock IPL (measured) (https://t.me/c/1166652144/78074)
+- OpenIPC (2023-10): "should be supported, but i'm not sure about high-fps
+  sensor driver" (https://t.me/c/1809358416/29759)
+
+Sourcing and price
+- "K45 ~160RMB, MC800S ~150" in 2024-05; Tino recalled it earlier at ~205
+  RMB (https://t.me/c/1809358416/81648, https://t.me/c/1809358416/81681)
+- "MC-K45 with imx347 costs about the same as the MC800S" (2024-01)
+  (https://t.me/c/1809358416/51762)
+- Availability: "looks like EOL" in 2024-09; "almost impossible" to find in
+  2024-10; "impossible to find it at the moment" in 2025-10
+  (https://t.me/c/1809358416/117020, https://t.me/c/1166652144/123163,
+  https://t.me/c/1809358416/264655)
+
+Variants, aliases and products built on it
+- Also referred to as Anjia MC-K45 and Anjoy MC-K45
+  (https://t.me/EZWBC/15381, https://t.me/c/1166652144/110555)
+- AliExpress item 1005004747601704 is an MC-K45
+  (https://t.me/c/1166652144/84225)
+- Taobao item 718711152121 is a K45 with autofocus, "but not 30x"
+  (https://t.me/c/1809358416/73185)
+
+Disagreements
+- MIPI lane count: Tino first wrote "looks like only 2l used on K45 while
+  30KQ can 4" (2024-02-27), then after reading the device tree "looks like
+  it could be 4" (2024-02-29); the stock driver parameter lane_num read 2 in
+  2023-11 (https://t.me/c/1809358416/60246, https://t.me/c/1809358416/60946,
+  https://t.me/c/1166652144/84244)

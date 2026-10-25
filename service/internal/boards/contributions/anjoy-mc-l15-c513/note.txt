@@ -1,0 +1,9 @@
+MC-L15: Anjoy IP camera module on the SigmaStar SSC30KD.
+
+Chip and memory
+- Measured: SoC is SSC30KD, IPL tag "MVX4##I6e#gc3fd359IPL_#######XVM".
+  (https://t.me/c/1166652144/19577)
+
+Sourcing and price
+- 145 CNY in the LEDA Vision Taobao shop in 2026-09 ("still the same").
+  (https://t.me/c/1809358416/297936)

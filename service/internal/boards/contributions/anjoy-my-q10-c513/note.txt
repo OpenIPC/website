@@ -1,6 +1,21 @@
-MY-Q10: SSC377 with two SC2336P sensors.
+MY-Q10: SSC377 dual-sensor camera module with PWM motors
 
-Tino Darkness: "SSC377 MY-Q10 has ac18pro (P2P) server too ... that module
-and fw is specialized for dual sensor camera with pwm motors. 16Mb flash.
-SC2336P sensors" (2023-09-14, https://t.me/c/1166652144/74853). He often
-writes Mb for MB, so the flash may be 16 MB.
+Chip and memory
+- SSC377 (https://t.me/c/1166652144/74853)
+
+Sensor
+- Two SC2336P sensors (dual-sensor camera) (https://t.me/c/1166652144/74853)
+
+Flash and storage
+- "16Mb flash" (as written) (https://t.me/c/1166652144/74853)
+
+Interfaces and pinout
+- "that module and fw is specialized for dual sensor camera with pwm
+  motors." (https://t.me/c/1166652144/74853)
+
+Firmware support (OpenIPC / majestic / stock)
+- The stock firmware includes an ac18pro (P2P) server
+  (https://t.me/c/1166652144/74853)
+
+Sourcing and price
+- Taobao item 750427924529 (2024-04) (https://t.me/c/1809358416/70743)

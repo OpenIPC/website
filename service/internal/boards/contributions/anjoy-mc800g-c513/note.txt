@@ -1,6 +1,47 @@
-MC800G: SSC339G with external DDR and SPI NAND flash.
+MC800G: dual-board 38x38 mm SSC339G module with IMX415 and NAND flash, 4K at
+  30fps
 
-Tino Darkness: "anjoy mc800G have ssc339G (external DDR). 30fps at 4K."
-(https://t.me/c/1166652144/78898), "MC800G from Anjoy) (SSC339G,NAND)"
-(https://t.me/c/1809358416/29937), and "339 is BGA + ext. DDR!"
-(https://t.me/c/1809358416/71751). The RAM size isn't given.
+Chip and memory
+- SSC339G: "it's the same I6E but with external memory (RAM)"; "339 is BGA +
+  ext. DDR!" (size not stated) (https://t.me/c/1809358416/29939,
+  https://t.me/c/1809358416/71751, https://t.me/c/1166652144/78898)
+- "30fps at 4K." (https://t.me/c/1166652144/78898,
+  https://t.me/c/1166652144/77773)
+
+Sensor
+- IMX415 (https://t.me/c/1166652144/77773, https://t.me/c/1166652144/68221)
+
+Flash and storage
+- NAND flash: "these boards have NAND instead of NOR."
+  (https://t.me/c/1809358416/30552, https://t.me/c/1809358416/29937,
+  https://t.me/c/1166652144/77951)
+
+Interfaces and pinout
+- Dual-board design, 38x38 mm: "MC800S and G are both 38x38"
+  (https://t.me/c/1166652144/77773, https://t.me/c/1809358416/71756)
+- Uses the same sensor board as the MC800S, 30p 0.5mm FPC
+  (https://t.me/c/1809358416/67492)
+
+Sourcing and price
+- "MC800G (dual board, SSC339G, 30fps, imx415) is ¥240.00 ($33)" in 2023-10;
+  still 240 CNY in 2024-02 (https://t.me/c/1166652144/77773,
+  https://t.me/c/1809358416/55790)
+- Tino suggested Taobao item 616283275803 ("it seems (like) this one",
+  2023-10) (https://t.me/c/1809358416/29943)
+- AliExpress item 1005004041121141 (2024-12); AliExpress 1005004110692356
+  given as "similar" in 2023-10 (https://t.me/c/1809358416/137356,
+  https://t.me/c/1809358416/30552)
+
+Variants, aliases and products built on it
+- Tino once wrote it as "Anjvison MC800G (SSC339/IMX415)"
+  (https://t.me/c/1166652144/68221)
+- AliExpress item 1005005281826048: "MC800G + 36x AF w/IRCut + PTZ (pelco-d
+  i think) + TFCard" (https://t.me/c/1166652144/77775)
+
+Disagreements
+- SoC: the catalogue says MSC339G; Tino writes SSC339G
+  (https://t.me/c/1809358416/29937, https://t.me/c/1809358416/55790,
+  https://t.me/c/1809358416/112010)
+- SoC: in one 2023-10 message Tino wrote "SSC338G is Anjoy MC800G"; his
+  messages before and after say SSC339G (https://t.me/c/1809358416/30552,
+  https://t.me/c/1809358416/29937, https://t.me/c/1809358416/55790)

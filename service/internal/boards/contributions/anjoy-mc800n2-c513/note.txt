@@ -1,0 +1,9 @@
+MC800N2: Anjoy MC800-series module with NOR flash
+
+Flash and storage
+- "Previous ones from the Anjoy MC800{N,N2} series were with NOR."
+  (https://t.me/c/1166652144/19490)
+
+Interfaces and pinout
+- Wiring diagram looks identical to MC800S's
+  (https://t.me/c/1809358416/113073)

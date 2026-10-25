@@ -1,7 +1,17 @@
-MC-A42 (the older, non-P board): SC401AI sensor.
+MC-A42: Anjoy module; the older revision is SSC337 + SC401AI
 
-Tino Darkness: "older MC-A42 - SSC337/sc401ai" (2024-01-15,
-https://t.me/c/1809358416/52079). In 2023 he wrote "MC-A42 is 335, MC-A42P
-is 377" (https://t.me/c/1166652144/72882), so the SoC is SSC335 or SSC337 by
-his own account. The MC-A42P is SSC377 with an SC4336P: "newer MC-A42P -
-SSC377/sc4336P" (https://t.me/c/1809358416/52079).
+Chip and memory
+- "older MC-A42 - SSC337/sc401ai" (https://t.me/c/1809358416/52079)
+
+Sensor
+- SmartSens SC401AI on the older MC-A42 (https://t.me/c/1809358416/52079)
+
+Variants, aliases and products built on it
+- "MC-A42 is 335, MC-A42P is 377" (https://t.me/c/1166652144/72882)
+
+Disagreements
+- SoC: in 2023-09 Tino wrote SSC335 (https://t.me/c/1166652144/72882); in
+  2024-01 he gave SSC337 for the older MC-A42, matching the catalogue
+  (https://t.me/c/1809358416/52079)
+- Sensor: the catalogue has none; Tino names SC401AI
+  (https://t.me/c/1809358416/52079)

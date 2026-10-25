@@ -1,10 +1,47 @@
-MC-D40: two GC2053 sensors on one SSC30KQ.
+MC-D40: Anjoy dual-sensor module on SSC30KQ with two GC2053 sensors on FFC
+  camera modules
 
-The stock firmware's /opt/ch holds gc2053_MIPI.ko, gc2053_MIPI_master.ko
-and gc2053_MIPI_slaver.ko, the master and slave drivers for two synchronised
-sensors (Tino Darkness, 2024-04-10, https://t.me/c/1809358416/72319). He
-gave the same in 2023: "MC-D40 also has 2 sensors, but it's based on the
-SSC30KQ. GC2053 sensors though" (https://t.me/c/1166652144/74863). The
-catalogue had GC2063. Some 2026 messages are less sure ("2 x GC2093 or so",
-https://t.me/c/1809358416/293089), but the firmware listing is the
-measured evidence.
+Chip and memory
+- SoC is SSC30KQ (https://t.me/c/1809358416/291327,
+  https://t.me/c/1809358416/72319, https://t.me/c/1166652144/74863)
+
+Sensor
+- Two GC2053 sensors on one SoC (https://t.me/c/1809358416/291327,
+  https://t.me/c/1809358416/76993, https://t.me/c/1166652144/74863)
+- Measured: stock firmware /opt/ch holds gc2053_MIPI.ko,
+  gc2053_MIPI_master.ko and gc2053_MIPI_slaver.ko; replying to a remark that
+  sensors should be synced in hardware, Tino said "because of this, the D40
+  has two kinds of drivers" (https://t.me/c/1809358416/72319,
+  https://t.me/c/1809358416/74000)
+- Tino: "only 1080p and not sure about 90fpc"
+  (https://t.me/c/1809358416/76993)
+
+Interfaces and pinout
+- "the D40 / D80 have FFC (dual) camera modules"
+  (https://t.me/c/1809358416/72146)
+- Wiring PDF:
+  http://www.icamra.cn:8021/pdf/MC-D40/MC-D40%e6%8e%a5%e7%ba%bf%e5%9b%be.pdf
+  (https://t.me/c/1809358416/60320)
+
+Sourcing and price
+- Taobao item 719006798593 (2024-02) (https://t.me/c/1809358416/60320)
+- $25 on Taobao in 2026-06 for the bare module rather than a ready-made
+  180-degree camera (https://t.me/c/1809358416/291327)
+- ~$30 on Taobao without lens in 2026-10 (https://t.me/c/1809358416/299427)
+
+Variants, aliases and products built on it
+- Also sold as D40W (WiFi) and D40-4G (CN 4G)
+  (https://t.me/c/1809358416/291327)
+
+Disagreements
+- Sensor: the catalogue lists GC2063; Tino names GC2053 and the stock
+  firmware ships gc2053_MIPI.ko (https://t.me/c/1809358416/72319,
+  https://t.me/c/1809358416/76993)
+- A 2026-10 message names the sensor less firmly ('2 x GC2039 or so') and
+  the SoC as 'SSC30KD', against SSC30KQ and GC2053 elsewhere, including
+  2026-06 (https://t.me/c/1809358416/299427,
+  https://t.me/c/1809358416/291327)
+
+Catalogue comparison
+- The catalogue lists GC2063; Tino's evidence above gives GC2053
+  (https://t.me/c/1809358416/291327, https://t.me/c/1809358416/76993)

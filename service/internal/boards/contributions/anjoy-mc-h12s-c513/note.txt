@@ -1,0 +1,54 @@
+MC-H12S: Anjoy 12MP IP camera module on the SigmaStar SSC359G (Mercury6)
+  with a Sony IMX577 sensor.
+
+Chip and memory
+- Measured: the board reports Mercury6, "Chip_ID: 0xF4" in
+  /sys/class/mstar/msys/CHIP_ID (u-boot md.w 0x1f003c00 reads 00f4).
+  (https://t.me/c/1809358416/75106)
+- SoC is "SSC359G, Mercury6 sdk family"; earlier given as "SSC359 (M6, not
+  I6E)". (https://t.me/c/1809358416/291748, https://t.me/c/1166652144/80826,
+  https://t.me/c/1809358416/51874)
+- SSC359G is dual-core, up to 1.2GHz. (https://t.me/c/1809358416/140934)
+
+Sensor
+- 12MP Sony IMX577 (Starvis2). (https://t.me/c/1166652144/80826,
+  https://t.me/c/1809358416/51874, https://t.me/c/1809358416/291747)
+- Module performance: "SSC359G/IMX577 (4K@30 up to 1080@120)", limited by
+  the SigmaStar pipeline. (https://t.me/c/1809358416/293156)
+
+Flash and storage
+- NAND flash: "MCH12S - NAND". (https://t.me/c/1166652144/77951)
+
+Interfaces and pinout
+- Sensor board connects over a 30-pin 0.5mm FFC, similar to the MC800S
+  sensor board; compatibility with the MC800S was not confirmed as of
+  2024-05. (https://t.me/c/1809358416/67492,
+  https://t.me/c/1809358416/81073, https://t.me/c/1809358416/81162)
+
+Firmware support (OpenIPC / majestic / stock)
+- Not supported by OpenIPC (2024-01; restated 2026-06): "sigmastar. just not
+  pudding sdk codename. not supported by OIPC".
+  (https://t.me/c/1809358416/51176, https://t.me/c/1809358416/291737)
+
+Sourcing and price
+- ~¥420+ on Taobao in 2023-10; 55 EUR without lens in 2024-01.
+  (https://t.me/c/1166652144/80825, https://t.me/c/1809358416/51174)
+- ~$80 without lens in 2026-06; ~$60 in 2026-07.
+  (https://t.me/c/1809358416/291744, https://t.me/c/1809358416/293156)
+- AliExpress listing given by Tino (2024-12):
+  https://www.aliexpress.com/item/1005008162878135.html; he also pointed to
+  a unifore.net product page:
+  https://www.unifore.net/product-highlights/12-megapixel-4k-ip-camera-module-based-on-ssc359-starvis-imx577.html
+  (https://t.me/c/1809358416/137356, https://t.me/c/1809358416/45481)
+
+Disagreements
+- Sensor: one 2024-05 message says "MC-H12S IMX477 camera board", while the
+  catalogue and Tino's other messages say IMX577; in 2026-06 he corrected a
+  similar imx477 to "577, typo". (https://t.me/c/1809358416/81162,
+  https://t.me/c/1809358416/81073, https://t.me/c/1809358416/291747)
+- SoC naming: the catalogue writes MSC359G; Tino writes SSC359G (and once
+  guessed "SSC358?" before correcting himself).
+  (https://t.me/c/1809358416/291748, https://t.me/c/1809358416/291734,
+  https://t.me/c/1809358416/140934)
+- Price: ~$80 in 2026-06 vs ~$60 in 2026-07.
+  (https://t.me/c/1809358416/291744, https://t.me/c/1809358416/293156)

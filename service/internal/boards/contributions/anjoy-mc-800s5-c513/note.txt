@@ -1,0 +1,59 @@
+MC-800S5: Anjoy 38x38 two-board IP camera module with a SigmaStar SSC378QE
+  SoC and a Sony IMX415 sensor.
+
+Chip and memory
+- Tino gives the SoC as SSC378QE, "378QE (not DE)", and repeated this when
+  listing SSC378 modules: "378DE in T3, and 378QE in MC800S5".
+  (https://t.me/c/1809358416/75138, https://t.me/c/1809358416/217580,
+  https://t.me/c/1809358416/289873)
+- Some messages give only the family, SSC378: "MC800S5 from Anjoy is the
+  same imx415 but SSC378". (https://t.me/c/1809358416/275219,
+  https://t.me/c/1809358416/103329)
+
+Sensor
+- Sensor is the Sony IMX415, stated repeatedly in 2025-2026 (e.g. "MC800S5 -
+  ssc378qe/imx415"). (https://t.me/c/1809358416/217588,
+  https://t.me/c/1809358416/275219, https://t.me/c/1809358416/290764)
+
+Flash and storage
+- NOR flash: "MC800S5 - SSC378QE / IMX415 (Anjoy, 2 board, NOR)".
+  (https://t.me/c/1809358416/108787)
+
+Interfaces and pinout
+- Uses the "usual 38x38" form factor, two boards.
+  (https://t.me/c/1809358416/83140, https://t.me/c/1809358416/108787)
+
+Firmware support (OpenIPC / majestic / stock)
+- Measured in 2025-05: in the OpenIPC builder target ssc378qe-fpv, `strings
+  majestic | grep -i lite` on builder/openipc/output/target/usr/bin/majestic
+  returns "Lite". (https://t.me/c/1809358416/221946)
+
+Sourcing and price
+- In 2024-05 Tino had not yet seen it on sale; Anjoy's server has a
+  directory for it at http://www.icamra.cn:8021/pdf/MY-Q10/800S5/ ("note the
+  dates. but i haven't seen them on sale").
+  (https://t.me/c/1809358416/81917, https://t.me/c/1809358416/81931)
+- In 2024-05 he understood it was "already in production"; by 2024-12 it was
+  "already on sale". (https://t.me/c/1809358416/83140,
+  https://t.me/c/1809358416/140921)
+- AliExpress listing (2024-08):
+  https://www.aliexpress.com/item/1005003695635094.html.
+  (https://t.me/c/1809358416/103329)
+- Price: 138 CNY (~$19) without lens in 2025-04; ~$37 in 2026-06 and ~$36
+  later that month. (https://t.me/c/1809358416/211071,
+  https://t.me/c/1809358416/289873, https://t.me/c/1809358416/290764)
+- In 2025-02 Taobao offers for MC800S/S5/500N3 had grown "ever since fpv
+  firmware came out". (https://t.me/c/1809358416/178278)
+
+Variants, aliases and products built on it
+- In 2026-06 Tino noted 378QE (MC800S5, IMX415) versions on Taobao at
+  "$138/$165 for 36x/40x". (https://t.me/c/1809358416/291124)
+
+Disagreements
+- SoC variant: most messages say SSC378QE, but one 2024-09 message says
+  "MC800S5 (SSC378DE)". (https://t.me/c/1809358416/112010,
+  https://t.me/c/1809358416/108787, https://t.me/c/1809358416/217588)
+- In 2024-09 Tino doubted the declared spec: "MC800S5 is declared as
+  SSC378+Imx415. though i have my doubts..". Later messages again state
+  SSC378QE/IMX415. (https://t.me/c/1809358416/116116,
+  https://t.me/c/1809358416/211071)

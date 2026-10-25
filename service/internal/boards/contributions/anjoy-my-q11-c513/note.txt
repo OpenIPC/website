@@ -1,0 +1,5 @@
+MY-Q11: Anjoy 'Y'-series module with integrated motors
+
+Variants, aliases and products built on it
+- One of the "Anjoy 'Y' modules with integrated motors e.g.
+  MY-Q11/E11/Y10/F18/etc" (https://t.me/c/1809358416/49478)

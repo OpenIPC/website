@@ -1,0 +1,10 @@
+MC-J40H: Anjoy module with a 1/1.8" non-Sony sensor and a non-SSC37x SoC
+
+Chip and memory
+- SoC is "not maruko (ssc37x)" (https://t.me/c/1809358416/292525)
+
+Sensor
+- 1/1.8" sensor, "not sony" (https://t.me/c/1809358416/292525)
+
+Sourcing and price
+- ~185 CNY in 2026-07 (https://t.me/c/1809358416/292525)

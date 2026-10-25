@@ -1,0 +1,14 @@
+MC-F46D: Anjoy SSC377D + GC4653 module
+
+Chip and memory
+- SoC is SSC377D: "MC-F46D is next gen board with completely different SoC
+  (SSC377D)" (https://t.me/c/1809358416/290825,
+  https://t.me/c/1809358416/211252, https://t.me/c/1166652144/84142)
+
+Sensor
+- GalaxyCore GC4653, 2-lane, 30fps (https://t.me/c/1809358416/290825)
+
+Sourcing and price
+- 65 CNY on Taobao (id=649092791365) in 2025-04
+  (https://t.me/c/1809358416/211252)
+- ~$15 on Taobao in 2026-06 (https://t.me/c/1809358416/290825)

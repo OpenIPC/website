@@ -1,0 +1,15 @@
+MS-F50: SSC337DE camera module with NOR flash
+
+Chip and memory
+- SSC337DE (https://t.me/c/1166652144/19521)
+
+Flash and storage
+- "these modules have NOR." (https://t.me/c/1166652144/19521)
+
+Firmware support (OpenIPC / majestic / stock)
+- "At least u-boot should be unlocked." (2021-09)
+  (https://t.me/c/1166652144/19521)
+
+Variants, aliases and products built on it
+- Tino wrote the model as "M{C,S}-F50 (SSC337DE)", covering MC-F50 and
+  MS-F50 (https://t.me/c/1166652144/19521)

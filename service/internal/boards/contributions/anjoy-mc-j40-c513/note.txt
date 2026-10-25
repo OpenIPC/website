@@ -1,11 +1,38 @@
-MC-J40: SSC377 (I6C) with an SC450AI sensor.
+MC-J40: SSC377 (I6C) camera module with 64MB DDR2 and the 4MP SC450AI sensor
 
-Tino Darkness: "ssc377 + SC450AI - MC-J40" (2023-10-23,
-https://t.me/c/1809358416/29759). The stock firmware's sensor driver is
-sc450ai_MIPI.ko (https://t.me/c/1166652144/79715). He recommends the
-MC-J40[W] when a real SC450AI is wanted (https://t.me/c/1166652144/117405), unlike the MC-J30, whose firmware
-loads an SP4329 driver. One 2024 message says "SC530AI can be found in J40"
-(https://t.me/c/1166652144/117277), which may be another revision.
+Chip and memory
+- SSC377 (I6C, CA35) with 64MB DDR2 (https://t.me/c/1166652144/73003)
+- Given as SSC377DE in 2024-01: "MC-J40 (4MP SSC377DE/SC450AI)"
+  (https://t.me/c/1809358416/51874)
 
-Memory: SSC377 with 64 MB of DDR2 in the package
-(https://t.me/c/1166652144/73003).
+Sensor
+- SC450AI: the stock firmware loads sc450ai_MIPI.ko (measured)
+  (https://t.me/c/1166652144/79715, https://t.me/c/1809358416/51874,
+  https://t.me/c/1166652144/117250)
+- Tino points to the MC-J40[W] as a source of "a real 450 for comparison"
+  (https://t.me/c/1166652144/117405)
+
+Firmware support (OpenIPC / majestic / stock)
+- "ssc377 + SC450AI - MC-J40 (not supported by oipc AFAIK)" (2023-10)
+  (https://t.me/c/1809358416/29759)
+
+Variants, aliases and products built on it
+- MC-J40[W] is sold on Taobao under the Anjoy, AnjVision and Anjia names
+  (https://t.me/c/1166652144/117405)
+- Tino groups it with the MC-J30 ("MC-J30/40"); "J30 with sc450Ai (which is
+  used in J40 btw)" (https://t.me/c/1166652144/73003,
+  https://t.me/c/1166652144/117250)
+- Replying about SC450AI, Tino noted "there is A42P, MY-Q10 with the same
+  SoC" (https://t.me/c/1166652144/74856)
+
+Disagreements
+- Sensor: one 2024-06 message says "SC530AI can be found in J40"; his other
+  messages and the firmware driver say SC450AI
+  (https://t.me/c/1166652144/117277, https://t.me/c/1166652144/79715,
+  https://t.me/c/1166652144/117250)
+- SoC: Tino wrote SSC377 in 2023-10 and SSC377DE in 2024-01
+  (https://t.me/c/1809358416/29759, https://t.me/c/1809358416/51874)
+
+Catalogue comparison
+- The catalogue lists no sensor; Tino's evidence above gives SC450AI
+  (https://t.me/c/1809358416/51874)

@@ -1,0 +1,19 @@
+MC500N2: older Anjoy dual-board (sensor + SoC) camera module with IMX335
+
+Sensor
+- IMX335 (https://t.me/c/1809358416/108783, https://t.me/c/1809358416/67999)
+
+Interfaces and pinout
+- Two boards, sensor and SoC: "old dual board module from Anjoy"
+  (https://t.me/c/1809358416/108783, https://t.me/c/1809358416/67999)
+- "my 500N2 and 500N3 have the same sensor board."
+  (https://t.me/c/1809358416/113075)
+- Relayed from Zipray: the MC500N2 sensor board can be connected to an
+  MC800S (https://t.me/c/1809358416/81143)
+- Wiring compared with MC800S/MC800N2: "500N2 slightly different"
+  (https://t.me/c/1809358416/113073)
+
+Disagreements
+- SoC: Tino wrote "SSC325+IMX335" in 2024-03 and "just SSC338 / IMX335" in
+  2024-08 (https://t.me/c/1809358416/67999,
+  https://t.me/c/1809358416/108783)

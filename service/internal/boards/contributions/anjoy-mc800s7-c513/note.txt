@@ -1,0 +1,11 @@
+MC800S7: SSC378QE camera module with a 1/2.7 sensor
+
+Chip and memory
+- SSC378QE (https://t.me/c/1809358416/290764)
+
+Sensor
+- "SSC378QE+??1/2.7": the sensor is 1/2.7 format and was not identified by
+  Tino (https://t.me/c/1809358416/290764)
+
+Sourcing and price
+- $25 (2026-06) (https://t.me/c/1809358416/290764)
