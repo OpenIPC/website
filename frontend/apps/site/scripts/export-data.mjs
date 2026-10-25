@@ -159,7 +159,7 @@ export function islandCatalogue(name, locale, root = REPO) {
 // Each vendor file's fields in a fixed order, vendors by name. Only the fields
 // present are written.
 
-const SOC_FIELDS = ['model', 'family', 'version', 'urlname', 'status', 'load_address', 'featured', 'segment'];
+const SOC_FIELDS = ['model', 'family', 'version', 'urlname', 'status', 'load_address', 'featured', 'segment', 'community_notes'];
 const VENDOR_FIELDS = ['name', 'urlname', 'full_name', 'website_url'];
 
 function pick(obj, fields) {
@@ -174,8 +174,67 @@ export function catalogue(root = REPO) {
     .filter((f) => f.endsWith('.yml'))
     .map((f) => yamlFile(join(dir, f)))
     .sort((a, b) => byteOrder(String(a.name), String(b.name)))
-    .map((data) => ({ ...pick(data, VENDOR_FIELDS), socs: data.socs.map((s) => pick(s, SOC_FIELDS)) }));
+    .map((data) => {
+      const families = familyNotes(data);
+      return { ...pick(data, VENDOR_FIELDS), socs: data.socs.map((s) => pick(withFamilyNotes(communityNotes(data.urlname, s), families), SOC_FIELDS)) };
+    });
   return { vendors };
+}
+
+// A family's notes (family_notes, keyed by the SoCs' `family`) are kept once
+// in the vendor's file and shown on every SoC of the family, after its own
+// points and labelled with the family, so a correction is made in one place.
+export function familyNotes(data) {
+  const all = data.family_notes;
+  if (all === undefined) return {};
+  const where = `data/catalogue/${data.urlname}.yml: family_notes`;
+  if (!isHash(all)) throw new Error(`${where}: must be a mapping of family to notes`);
+  const families = new Set(data.socs.map((s) => s.family));
+  for (const [family, n] of Object.entries(all)) {
+    if (!families.has(family)) throw new Error(`${where}: ${family} is no SoC's family`);
+    if (!isHash(n) || typeof n.label !== 'string' || !n.label.trim()) throw new Error(`${where}: ${family} needs a label`);
+    const { label, ...notes } = n;
+    communityNotes(data.urlname, { model: `${family} (family)`, community_notes: notes });
+  }
+  return all;
+}
+
+/** The SoC with its family's points after its own; the SoC itself when the family has none. */
+export function withFamilyNotes(s, families) {
+  const fam = families[s.family];
+  if (!fam) return s;
+  const own = s.community_notes;
+  const points = [...(own?.points ?? []), ...fam.points.map((pt) => ({ ...pt, text: `(${fam.label} family) ${pt.text}` }))];
+  return { ...s, community_notes: { by: own?.by ?? fam.by, points } };
+}
+
+// What a community expert has said about a chip, point by point, each point
+// with the public messages it comes from (the SoC page's community notes). A
+// point without a source, or a source that is not a public web address, would
+// be an unchecked claim on the page, so it is refused here.
+export function communityNotes(vendor, s) {
+  if (!('community_notes' in s)) return s;
+  const where = `data/catalogue/${vendor}.yml: ${s.model}: community_notes`;
+  const fail = (why) => {
+    throw new Error(`${where}: ${why}`);
+  };
+  const n = s.community_notes;
+  if (!isHash(n)) fail('must be a mapping of by and points');
+  const extra = Object.keys(n).filter((k) => !['by', 'points'].includes(k));
+  if (extra.length > 0) fail(`unknown ${extra.join(', ')}`);
+  if (typeof n.by !== 'string' || !n.by.trim()) fail('by must name who said it');
+  if (!Array.isArray(n.points) || n.points.length === 0) fail('points must be a non-empty list');
+  for (const pt of n.points) {
+    if (!isHash(pt) || typeof pt.text !== 'string' || !pt.text.trim()) fail('each point needs text');
+    const more = Object.keys(pt).filter((k) => !['text', 'sources'].includes(k));
+    if (more.length > 0) fail(`a point has unknown ${more.join(', ')}`);
+    if (!Array.isArray(pt.sources) || pt.sources.length === 0) fail(`point ${JSON.stringify(pt.text.slice(0, 40))} has no sources`);
+    for (const url of pt.sources) {
+      if (typeof url !== 'string' || !/^https:\/\/[^/\s]+\.[^/\s]+\/\S+$/.test(url)) fail(`source ${JSON.stringify(url)} is not a public web address`);
+      if (PRIVATE_SOURCE.test(url)) fail(`source ${url} points at a document; cite the message instead`);
+    }
+  }
+  return s;
 }
 
 // --- sensors -------------------------------------------------------------------

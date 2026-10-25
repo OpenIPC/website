@@ -44,6 +44,7 @@ const stage = STAGE_ICONS[`../../assets/stages/stage-${soc.status}.svg`];
 if (!stage) throw new Error(`No stage-${soc.status}.svg in src/assets/stages.`);
 
 const here = p(socPath(vendor, soc));
+const notes = soc.community_notes;
 ---
 
 {/*
@@ -89,6 +90,28 @@ const here = p(socPath(vendor, soc));
     stagesHref: `${p('/supported-hardware/full-list')}#stages`,
   }}
 />
+
+{/*
+  What a community expert has said about this chip, point by point, each point
+  linking the messages it comes from (data/catalogue's community_notes). Plain
+  HTML after the wizard, so a crawler and a reader without JavaScript see it.
+*/}
+{notes && (
+  <section class="site-container mt-12 grid gap-3" aria-labelledby="community-notes">
+    <h2 id="community-notes" class="mb-0 text-h3 font-semibold">{t('cameras.socs.soc.community_title', { chip: soc.model })}</h2>
+    <p class="mb-0 max-w-[75ch] text-sm text-body-secondary">{t('cameras.socs.soc.community_intro', { by: notes.by })}</p>
+    <ul class="m-0 grid max-w-[85ch] gap-2 pl-5">
+      {notes.points.map((pt) => (
+        <li>
+          {pt.text}{' '}
+          <span class="text-sm text-body-secondary">
+            ({pt.sources.map((url, i) => (<>{i > 0 && ', '}<a href={url} rel="noopener" target="_blank">{t('cameras.socs.soc.community_source', { n: i + 1 })}</a></>))})
+          </span>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
 
 {/*
   The boards on record with this SoC (/cameras/boards), after the wizard. It

@@ -27,3 +27,10 @@ export function news(root?: string): (NewsText & {
 export function sensors(root?: string): { makers: { name: string; urlname: string; sensors: Record<string, unknown>[] }[] };
 /** A sensor name as the boards and the catalogue match it: no maker prefix, upper case. */
 export function sensorNameKey(name: string): string;
+
+/** A SoC entry, checked: its community_notes, if any, are points each with public sources. Throws otherwise. */
+export function communityNotes<T extends Record<string, unknown>>(vendor: string, soc: T): T;
+/** A vendor's family_notes, checked; throws naming the family and what is wrong. */
+export function familyNotes(data: Record<string, unknown>): Record<string, { label: string; by: string; points: { text: string; sources: string[] }[] }>;
+/** The SoC with its family's points appended after its own, labelled with the family. */
+export function withFamilyNotes<T extends Record<string, unknown>>(soc: T, families: Record<string, { label: string; by: string; points: { text: string; sources: string[] }[] }>): T;
