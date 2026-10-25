@@ -1,0 +1,16 @@
+MC-J31H product approval sheet (产品立项报告书), Anjoy Vision's internal
+record, as an .xlsx and a signed scan, as Igor posted them to the Boards
+Grabber group on 2026-09-29. The people's names are left out.
+
+  产品名称 (product)          网络摄像机模组 (IP camera module)
+  产品型号 (model)            MC-J31H
+  立项部门 (department)       研发 (R&D), 2025-09-17 to 2025-11-20
+  硬件规格 (hardware)         SSC385 + OS03A10, 8 MB flash, single board 42*42 mm
+  软件 (software)             5 MP @ 25 fps, person/vehicle detection,
+                              dual-light mode, P2P off, one MIC by default
+  产品描述 (description)      PCB使用MC-J30PCB: the PCB is the MC-J30's
+
+The catalogue's MC-J31H sensor (SC450X) comes from Anjoy's 2026-04 price
+list. Anjoy's own product card gives the MC-J31D as SSC377 + SC450X, and
+the catalogue has OS03A10 for that module, so the two modules' sensors may
+be swapped somewhere. This sheet may also be the plan before launch.

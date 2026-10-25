@@ -29,3 +29,98 @@
       file: uboot.txt
     - kind: boot_log
       file: boot.log
+
+# Vendor material Igor collects in the Boards Grabber Telegram group,
+# checked against the catalogue in #511; one comment there per board.
+- unit: xiongmai-ivg-g3s-c511
+  model: xiongmai-ivg-g3s
+  by: Igor (Boards Grabber)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/511#issuecomment-6395767197
+    - https://github.com/OpenIPC/website/issues/511
+  sensor: IMX307
+  note: The sensor is the vendor's caption on these photos ("Sony307"); the back shows the GK7205 (RNCFV2…, the V200 class).
+  files:
+    - kind: photo_front
+      file: front.jpg
+    - kind: photo_back
+      file: back.jpg
+
+- unit: xiongmai-ivg-g6s-c511
+  model: xiongmai-ivg-g6s
+  by: Igor (Boards Grabber)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/511#issuecomment-6395767404
+    - https://github.com/OpenIPC/website/issues/511
+  sensor: IMX335
+  note: The sensor is the vendor's caption on these photos ("sony335"); the back shows the GK7205V300.
+  files:
+    - kind: photo_front
+      file: front.jpg
+    - kind: photo_back
+      file: back.jpg
+
+- unit: xiongmai-ivg-n8s-c511
+  model: xiongmai-ivg-n8s
+  by: Igor (Boards Grabber)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/511#issuecomment-6395767576
+    - https://github.com/OpenIPC/website/issues/511
+  sensor: IMX415
+  note: The sensor is the vendor's caption on these photos ("Sony 415"); the back shows the NT98566MQG.
+  files:
+    - kind: photo_front
+      file: front.jpg
+    - kind: photo_back
+      file: back.jpg
+
+- unit: xiongmai-ivg-n8f-c511
+  model: xiongmai-ivg-n8f
+  by: Igor (Boards Grabber)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/511#issuecomment-6395767757
+    - https://github.com/OpenIPC/website/issues/511
+  sensor: SC8239
+  note: The sensor is the vendor's caption on these photos ("SC8239，N8F"); the back shows the NT98566MQG.
+  files:
+    - kind: photo_front
+      file: front.jpg
+    - kind: photo_back
+      file: back.jpg
+
+- unit: xiongmai-ivg-g5f-c511
+  model: xiongmai-ivg-g5f
+  by: Igor (Boards Grabber)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/511#issuecomment-6395767934
+    - https://github.com/OpenIPC/website/issues/511
+  sensor: SC5339P
+  note: The 2024 revision of the parameter sheet, Xiongmai-branded. The 2023 JIEFENG sheet says SC5239S and JFTech's page says IMX335; the code has shipped with more than one sensor.
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-j31h-c511
+  model: anjoy-mc-j31h
+  by: Igor (Boards Grabber)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/511#issuecomment-6395768111
+    - https://github.com/OpenIPC/website/issues/511
+  sensor: OS03A10
+  flash_mb: 8
+  note: Anjoy's product approval sheet (2025-09), which may be the plan before launch. The 2026-04 price list says SC450X; see the MC-J31D's card.
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-j31d-c511
+  model: anjoy-mc-j31d
+  by: Igor (Boards Grabber)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/511#issuecomment-6395768298
+    - https://github.com/OpenIPC/website/issues/511
+  sensor: SC450X
+  note: Anjoy's product card (SSC377 + SC450X). The catalogue's OS03A10 for this module is what the MC-J31H's approval sheet names for the J31H.
+  files:
+    - kind: photo_other
+      file: product-card.jpg

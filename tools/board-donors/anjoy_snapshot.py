@@ -4,7 +4,7 @@ own document archive.
   docker run --rm -v ~/reports/boards-catalogue/donors:/w -v $PWD/tools/board-donors:/t \\
     board-render:1 python3 /t/anjoy_snapshot.py /w/raw/anjoy /w/anjoy-work \\
     /w/snapshots/anjoy-snapshot.tar [/w/translate/anjoy-dictionary.json] \\
-    --also /w/raw/anjoy-archive
+    --also /w/raw/anjoy-archive --prices /w/raw/anjoy-prices
 
 Runs in board-render:1 (poppler for the PDFs, LibreOffice for .doc/.docx).
 Reads anjoy.py's capture and, with --also, anjoy_archive.py's: the archive
@@ -18,6 +18,13 @@ chip, sensor, RAM, flash, board size and whether it is still made: it gives
 the chip and sensor where the documents name none (where both do and
 disagree, the run says so and the documents stand), and its RAM, flash, size
 and status become specification rows.
+
+With --prices, the maker's price lists (anjoy_prices.py's prices.json) speak
+last, the same way: a module's chipset there (方案, SSC377D+IMX335) gives the
+chip and sensor where the documents and the table name none or say less, and
+where they name another, the run says so and the earlier word stands. The
+lists cover the consumer (MY-*) line and the newest modules, which the table
+mostly does not.
 
 The archive (http://www.anjvision.com:8021/pdf/) is one folder per module,
 nested as it grew: a module's folder can sit inside another's (MY-Y10/MC-D80/)
@@ -80,6 +87,15 @@ WORD = (".doc", ".docx")
 
 # The module table's names for modules the catalogue files under another code.
 TABLE_NAMES = {"MC-J12": "MC200J12", "MC-L12B": "MC-L12", "MC-A42P-V3": "MC-A42P", "MC-D80A": "MC-D80"}
+# The price lists', where they differ again (anjoy_archive.py's NVR_FOLDER).
+PRICE_NAMES = {"MN6108-P": "MN6108B-P"}
+# Slips in the price lists' chipsets: SC4653 is no sensor, and every module
+# that lists it is a GC4653 board in its own documents (MC-F46D, MC-K10).
+# None is a name too short to trust: MY-Q12D's SC235, SC2336P in 2024's list.
+PRICE_TYPOS = {"SC4653": "GC4653", "SC235": None}
+# A chip as the lists write it: SSC377D, MSC339G, SSC38X (the family), the
+# recorders' SSC621Q, SSC30KD. Not SSC37A (MY-V20), which is no part.
+PRICE_CHIP = re.compile(r"[SM]SC(?:\d{3}[A-Z]{0,2}|\d{2}X|30K[DQ])")
 # Its status column, as the specification rows say it.
 TABLE_STATUS = {"stop": "停产", "custom": "定制", "normal": "在产"}
 
@@ -169,6 +185,19 @@ def table_rows(row, rows):
         if value.strip() and not any(a in have for a in already):
             out.append([label, value.strip()])
     return out
+
+
+def scheme_parts(scheme):
+    """The chip and the first sensor of a price list's chipset, each None
+    where it names none: "SC377D+SC450X" is SSC377D and SC450X (the S the
+    list drops from SigmaStar's prefix), "SSC373+1/3.2 Sensor" a chip only,
+    "SSC377+SC2336P+2336P" (two lenses) SC2336P."""
+    parts = [p.strip().upper().replace(" ", "") for p in re.split(r"[+＋]", scheme) if p.strip()]
+    chip = parts[0] if parts else ""
+    if re.fullmatch(r"SC(?:\d{3}[A-Z]{0,2}|\d{2}X)", chip):
+        chip = "S" + chip
+    sensor = next((PRICE_TYPOS.get(p, p) for p in parts[1:] if SENSOR.fullmatch(p) and PRICE_TYPOS.get(p, p)), None)
+    return (chip if PRICE_CHIP.fullmatch(chip) else None), sensor
 
 
 def text_of(pdf):
@@ -554,6 +583,7 @@ def main():
     ap.add_argument("out")
     ap.add_argument("dictionary", nargs="?")
     ap.add_argument("--also", action="append", default=[], help="another capture (anjoy_archive.py's)")
+    ap.add_argument("--prices", help="the price lists' chipsets (anjoy_prices.py's output)")
     args = ap.parse_args()
     dic = json.load(open(args.dictionary)) if args.dictionary and os.path.exists(args.dictionary) else {}
     os.makedirs(args.work, exist_ok=True)
@@ -576,6 +606,11 @@ def main():
         if os.path.exists(t):
             for row in json.load(open(t))["rows"]:
                 table[key(norm(TABLE_NAMES.get(row["model"].strip(), row["model"])))] = row
+    prices = {}
+    if args.prices:
+        for row in json.load(open(os.path.join(args.prices, "prices.json")))["rows"]:
+            name = row["model"].strip()
+            prices[key(norm(PRICE_NAMES.get(name, TABLE_NAMES.get(name, name))))] = row
     files = Files(args.cap)
 
     def tr(text, lang):
@@ -688,7 +723,7 @@ def main():
         embedded[k] = out
 
     models, pinout_count, photo_count, embedded_count = [], 0, 0, 0
-    conflicts, seen_tables = [], set()
+    conflicts, seen_tables, seen_prices = [], set(), set()
     for k in sorted(by_key):
         group = by_key[k]
         es = group["entries"]
@@ -846,6 +881,23 @@ def main():
                     conflicts.append(f"{code}: {field} {doc} in its documents, {said} in the table")
             if not year and re.fullmatch(r"20\d\d", row.get("year", "")):
                 year = int(row["year"])
+        pk = next((t for t in [k] + [key(a) for a in sorted(group["spellings"])] if t in prices), None)
+        if pk:
+            # The price list speaks last, by the table's rule: where nothing
+            # earlier names a part, or names less of it. The same part under
+            # SigmaStar's other prefix (MSC339G for SSC339G), or its family
+            # where the part is known (SSC38X for SSC385), is no news.
+            seen_prices.add(pk)
+            price = prices[pk]
+            chip, sensor = scheme_parts(price["scheme"])
+            for field, said in (("soc_label", chip), ("sensor", sensor)):
+                doc = m.get(field, "")
+                if not said or doc == said or doc[1:] == said[1:] or (doc and less_said(said, doc)):
+                    continue
+                if not doc or less_said(doc, said):
+                    m[field] = said
+                else:
+                    conflicts.append(f"{code}: {field} {doc} before, {said} in the {price['list']} price list")
         if year:
             m["listed_year"] = year
         models.append(m)
@@ -869,6 +921,9 @@ def main():
     for k, row in sorted(table.items()):
         if k not in seen_tables:
             print(f"  table: {row['model']} matches no module", file=sys.stderr)
+    for k, row in sorted(prices.items()):
+        if k not in seen_prices:
+            print(f"  prices: {row['model']} ({row['list']}) matches no module", file=sys.stderr)
     for m in models:
         if not CODE.match(m["code"]):
             sys.exit(f"{m['code']}: not a code the importer takes")
