@@ -1,0 +1,13 @@
+MC-J30: the sensor is an SP4329 (4 MP), not the SC450AI it is sold with.
+
+Tino Darkness read the sensor driver in Anjoy's stock firmware for the
+MC-J30: it loads sp4329_MIPI.ko (2023-10-18, https://t.me/c/1166652144/79715).
+He repeated it with the chip, "M{C,T}-J30 - SSC377 / SP4329 (4MP)"
+(https://t.me/c/1166652144/83831), and again in 2024, "MC-J30 is
+sp4329_MIPI.ko" (https://t.me/c/1166652144/119657). In September 2023 Tino had
+repeated the advertised SC450AI (https://t.me/c/1166652144/73003); the
+firmware corrected that. The MC-J40, sold alongside
+it, does carry an SC450AI (sc450ai_MIPI.ko, same message 79715).
+
+Memory: SSC377 with 64 MB of DDR2 in the package (kernel log in
+https://t.me/c/1166652144/117255).

@@ -1,0 +1,7 @@
+MC-F26: the stock firmware drives an SC3338 sensor.
+
+Tino Darkness found /opt/ch/drv_ms_cus_sc3338_MIPI_dn.ko in the
+MCF26_V0-A_BU_LIGHT firmware from icamra.cn (2023-09-01,
+https://t.me/c/1166652144/72840). The catalogue had SC3336. The firmware
+uses SigmaStar's standard 4.9.84 kernel and the I6B0 SDK
+(https://t.me/c/1166652144/72844), which is consistent with the SSC335.

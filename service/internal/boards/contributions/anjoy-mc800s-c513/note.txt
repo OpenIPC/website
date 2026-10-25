@@ -1,0 +1,12 @@
+MC800S (SSC338Q + IMX415): NOR flash on V3 boards, SPI NAND on older ones.
+
+Tino Darkness's MC800S-V3 has a 16 MB NOR flash: "my MC800S-V3 has NOR too
+(PY2322/ 128Mbit)" (2024-09-10, https://t.me/c/1809358416/113080). Older
+MC800S V2.x boards are mostly SPI NAND: "newer MC800S models are usually
+NOR. older models are NAND" (https://t.me/c/1809358416/60201). The 2021
+board had a GD5F1GQ5xExxG, 1 Gbit SLC SPI NAND in WSON
+(https://t.me/c/1166652144/19487). Its stock MTD table ends at 0x8000000
+(128 MB), with IPL0 at 0x140000 and UBI from 0x34c0000
+(https://t.me/c/1166652144/77958). On the NOR boards, the two boot-select
+resistors that pick NAND are left unsoldered
+(https://t.me/c/1166652144/88189).

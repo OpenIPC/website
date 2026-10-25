@@ -1,0 +1,8 @@
+MC-A87: Tino Darkness gives the chip as SSC385, not SSC387.
+
+"SSC385 64Mb / GC8613 8Mp. 1.5T! (new IPU)" (2026-06-17,
+https://t.me/c/1809358416/290277), "MC-A87 (low-end series) with
+SSC385/GC8613/8MP is ~ 120 CNY" (https://t.me/c/1809358416/297934), and
+"(not 388 and likely DDR2/64MB)" (https://t.me/c/1809358416/298154). Memory: 64 MB of DDR2 in the package
+(https://t.me/c/1809358416/290716). The catalogue's SSC387 comes from Anjoy's
+module table. A boot log would settle which part it is.
