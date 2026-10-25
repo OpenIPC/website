@@ -5,5 +5,6 @@ and gc2053_MIPI_slaver.ko, the master and slave drivers for two synchronised
 sensors (Tino Darkness, 2024-04-10, https://t.me/c/1809358416/72319). He
 gave the same in 2023: "MC-D40 also has 2 sensors, but it's based on the
 SSC30KQ. GC2053 sensors though" (https://t.me/c/1166652144/74863). The
-catalogue had GC2063. Some 2026 messages are less sure ("GC2093 or so"), but
-the firmware listing is the measured evidence.
+catalogue had GC2063. Some 2026 messages are less sure ("2 x GC2093 or so",
+https://t.me/c/1809358416/293089), but the firmware listing is the
+measured evidence.

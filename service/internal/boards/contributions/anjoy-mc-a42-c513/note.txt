@@ -3,4 +3,5 @@ MC-A42 (the older, non-P board): SC401AI sensor.
 Tino Darkness: "older MC-A42 - SSC337/sc401ai" (2024-01-15,
 https://t.me/c/1809358416/52079). In 2023 he wrote "MC-A42 is 335, MC-A42P
 is 377" (https://t.me/c/1166652144/72882), so the SoC is SSC335 or SSC337 by
-his own account. The MC-A42P is SSC377 with an SC4336P.
+his own account. The MC-A42P is SSC377 with an SC4336P: "newer MC-A42P -
+SSC377/sc4336P" (https://t.me/c/1809358416/52079).

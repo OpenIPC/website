@@ -205,9 +205,7 @@
   evidence:
     - https://t.me/c/1809358416/113080
     - https://github.com/OpenIPC/website/issues/513#issuecomment-6397345805
-  flash_chip: PY2322
-  flash_mb: 16
-  note: "His MC800S-V3: 16 MB NOR (PY2322). Older V2.x boards: 1 Gbit SPI NAND (GD5F1GQ5)."
+  note: "Flash depends on the revision: 16 MB NOR (PY2322) on his V3, 1 Gbit SPI NAND (GD5F1GQ5) on older V2.x boards."
   files:
     - kind: note
       file: note.txt
