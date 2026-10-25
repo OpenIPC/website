@@ -64,9 +64,12 @@ def main():
             sha = hashlib.sha256(f.read()).hexdigest()
         lists.append({"file": os.path.basename(path), "date": date, "sha256": sha})
         for sheet, model, scheme in rows_of(path):
-            prev = by_model.get(model)
+            # One module however the lists hyphenate it (MC-F46-W, MC-F46W),
+            # as anjoy_snapshot.py's key() reads it: the newest list's row.
+            k = model.replace("-", "")
+            prev = by_model.get(k)
             if not prev or prev["list"] < date:
-                by_model[model] = {"model": model, "scheme": scheme, "list": date, "sheet": sheet}
+                by_model[k] = {"model": model, "scheme": scheme, "list": date, "sheet": sheet}
     os.makedirs(args.out, exist_ok=True)
     p = os.path.join(args.out, "prices.json")
     with open(p + ".tmp", "w") as out:

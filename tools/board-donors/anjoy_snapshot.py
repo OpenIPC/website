@@ -610,7 +610,10 @@ def main():
     if args.prices:
         for row in json.load(open(os.path.join(args.prices, "prices.json")))["rows"]:
             name = row["model"].strip()
-            prices[key(norm(PRICE_NAMES.get(name, TABLE_NAMES.get(name, name))))] = row
+            pk = key(norm(PRICE_NAMES.get(name, TABLE_NAMES.get(name, name))))
+            # Two spellings of one module: the newest list speaks for it.
+            if pk not in prices or prices[pk]["list"] < row["list"]:
+                prices[pk] = row
     files = Files(args.cap)
 
     def tr(text, lang):
@@ -892,9 +895,19 @@ def main():
             chip, sensor = scheme_parts(price["scheme"])
             for field, said in (("soc_label", chip), ("sensor", sensor)):
                 doc = m.get(field, "")
-                if not said or doc == said or doc[1:] == said[1:] or (doc and less_said(said, doc)):
+                if not said or doc == said:
                     continue
-                if not doc or less_said(doc, said):
+                if field == "soc_label":
+                    # SigmaStar's two prefixes are one chip (less_said).
+                    news = less_said(doc, said) if doc else True
+                    known = doc and (less_said(said, doc) or ({doc[:1], said[:1]} <= {"M", "S"} and doc[1:] == said[1:]))
+                else:
+                    # A sensor's prefix is its maker: SC2336P is not GC2336P.
+                    news = said.startswith(doc)
+                    known = doc and doc.startswith(said)
+                if known:
+                    continue
+                if news:
                     m[field] = said
                 else:
                     conflicts.append(f"{code}: {field} {doc} before, {said} in the {price['list']} price list")
