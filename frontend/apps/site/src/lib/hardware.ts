@@ -30,6 +30,13 @@ export interface Soc {
   load_address: string;
   featured: boolean;
   segment: string | null;
+  /** What a community expert has said about the chip, each point with its sources. */
+  community_notes?: CommunityNotes;
+}
+
+export interface CommunityNotes {
+  by: string;
+  points: { text: string; sources: string[] }[];
 }
 
 export interface Vendor {

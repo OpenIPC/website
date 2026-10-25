@@ -27,3 +27,6 @@ export function news(root?: string): (NewsText & {
 export function sensors(root?: string): { makers: { name: string; urlname: string; sensors: Record<string, unknown>[] }[] };
 /** A sensor name as the boards and the catalogue match it: no maker prefix, upper case. */
 export function sensorNameKey(name: string): string;
+
+/** A SoC entry, checked: its community_notes, if any, are points each with public sources. Throws otherwise. */
+export function communityNotes<T extends Record<string, unknown>>(vendor: string, soc: T): T;
