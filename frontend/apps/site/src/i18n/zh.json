@@ -39,7 +39,7 @@
         "title": "安装指南"
       },
       "soc": {
-        "community_intro": "摘自 {by} 在 OpenIPC 社区群组中的消息。每一条都链接到其出处消息。",
+        "community_intro": "摘自 {by} 在 OpenIPC Telegram 群组中的消息。每一条都链接到其出处消息。",
         "community_source": "消息 {n}",
         "community_title": "社区对 {chip} 的了解",
         "firmware_only": "通过摄像机原厂引导程序手动安装",

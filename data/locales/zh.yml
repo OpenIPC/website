@@ -83,7 +83,7 @@ zh:
         unavailable_wip: "不可用——进行中"
         generate_guide: 生成安装指南
         community_title: "社区对 {chip} 的了解"
-        community_intro: "摘自 {by} 在 OpenIPC 社区群组中的消息。每一条都链接到其出处消息。"
+        community_intro: "摘自 {by} 在 OpenIPC Telegram 群组中的消息。每一条都链接到其出处消息。"
         community_source: "消息 {n}"
         page_title: "{chip} 安装指南"
         meta_description: "在使用 {chip} 芯片的摄像机上安装 OpenIPC 开源 IP 摄像机固件：现在能否安装、适用于您闪存芯片的引导程序和固件，以及将它们写入摄像机的命令。"

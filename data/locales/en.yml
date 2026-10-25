@@ -83,7 +83,7 @@ en:
         unavailable_wip: "Not available — in progress"
         generate_guide: Generate an installation guide
         community_title: "What the community knows about the {chip}"
-        community_intro: "From {by}'s messages in the OpenIPC community groups. Each point links to the messages it comes from."
+        community_intro: "From {by}'s messages in the OpenIPC Telegram groups. Each point links to the messages it comes from."
         community_source: "message {n}"
         page_title: "{chip} installation guide"
         meta_description: "Installing OpenIPC, the open-source IP camera firmware, on a camera with the {chip} chip: whether it can be done today, the bootloader and firmware for your flash chip, and the commands that put them on the camera."

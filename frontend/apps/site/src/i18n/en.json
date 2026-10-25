@@ -39,7 +39,7 @@
         "title": "Installation Guide"
       },
       "soc": {
-        "community_intro": "From {by}'s messages in the OpenIPC community groups. Each point links to the messages it comes from.",
+        "community_intro": "From {by}'s messages in the OpenIPC Telegram groups. Each point links to the messages it comes from.",
         "community_source": "message {n}",
         "community_title": "What the community knows about the {chip}",
         "firmware_only": "Install by hand from the camera’s own bootloader",

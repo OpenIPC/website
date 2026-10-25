@@ -8,6 +8,312 @@ urlname: sigmastar
 full_name: null
 website_url: null
 notes: null
+family_notes:
+  INFINITY6E:
+    label: Infinity6E
+    by: Tino Darkness
+    points:
+    - text: "Infinity6E (I6E) covers SSC30KD, SSC30KQ, SSC338 and SSC339; it is a different family and SDK from the I6 SSC325. Tino lists it as a separate family from I6B0 (SSC335) and I6C (SSC377/378)."
+      sources:
+      - https://t.me/c/1166652144/63756
+      - https://t.me/c/1809358416/51875
+    - text: "The I6E SDK codename is Pudding, and SigmaStar demo code for I6E lives under \"alderaan\" (\"jedi\" is for I6B0)."
+      sources:
+      - https://t.me/c/1809358416/83075
+      - https://t.me/c/1809358416/65178
+      - https://t.me/c/1809358416/291288
+    - text: "The same Majestic build serves SSC338, SSC339 and SSC30Kx, all I6E (Pudding). As far as Tino knew in 2024-04, only I6E and I6B0 SigmaStar SoCs were supported in OpenIPC."
+      sources:
+      - https://t.me/c/1809358416/112297
+      - https://t.me/c/1809358416/76627
+    - text: "SSC336/338/339 have proprietary 0.5-1 TOPS hardware NN accelerators, and as Tino understands it SSR6xx, SSC336 and SSC338 should share the same AI core."
+      sources:
+      - https://t.me/c/1166652144/18947
+      - https://t.me/c/1166652144/19761
+    - text: "Tino said the SigmaStar DLA/IPU model tool (SGS tools page in the Pudding docs) seems to require a separate NDA and is not free (2024-02)."
+      sources:
+      - https://t.me/c/1809358416/55563
+    - text: "Pudding SDK documentation is published at wx.comake.online/doc/doc/SigmaStarDocs-Pudding-0120/, but as of 2026-08 CoMake's new website has no Pudding SDK download (only SSC305/309 for camera SoCs)."
+      sources:
+      - https://t.me/c/1809358416/275959
+      - https://t.me/c/1809358416/294726
+    - text: "Infinity6E uses dynamic voltage and frequency scaling (DVFS)."
+      sources:
+      - https://t.me/c/1809358416/58283
+    - text: "On an Anjoy board the core voltage is selected by PAD_PM_GPIO7/8 through a device-tree table, vid_voltages = <850 900 950 1000>. Tino calls changing the top entry from 1000 to 1050 'a way to fry your SoC', and says to do it only if TEMP_R is not too high. He says this should apply to most Infinity6 chips and gives 1.05 V as the max."
+      sources:
+      - https://t.me/c/1809358416/50865
+      - https://t.me/c/1809358416/50887
+    - text: "Devices with secure boot enabled require signed, or signed and encrypted, binaries (see the SSC9381G/9351 Pudding OTP-Key docs)."
+      sources:
+      - https://t.me/c/1166652144/78078
+    - text: "SigmaStar boot-select straps offer more than two combinations (NOR, NOR+SD, NAND, ...)."
+      sources:
+      - https://t.me/c/1809358416/38790
+    - text: "For a native FPV venc on I6E, start from st_main_venc.c in the SDK, a simple ~2 KLoC source; the venc and other hardware blocks are documented in the Pudding mi_venc docs."
+      sources:
+      - https://t.me/c/1809358416/39739
+      - https://t.me/c/1809358416/39858
+    - text: "I6E and I6B0 use the \"old\" style SigmaStar ABI, e.g. MI_VENC_CreateChn(VeChn, pstAttr) without a device argument."
+      sources:
+      - https://t.me/c/1809358416/83073
+    - text: "It looks like the OpenIPC SDK headers are closer to I6B0 (Ispahan) than I6E (Pudding), so some enums/structs will not match exactly. In some SDK versions (he remembers I6B0 and I6E) functions are declared in headers but missing from the .so."
+      sources:
+      - https://t.me/c/1809358416/82276
+      - https://t.me/c/1809358416/83077
+    - text: "On I6E (SSC30KQ), MI_VENC_CreateChn must be called before MI_SYS_BindChnPort2, otherwise dmesg shows the channel is not created and bind errors."
+      sources:
+      - https://t.me/c/1809358416/81621
+    - text: "H.265 slice split (MI_VENC_SetH265SliceSplit, u32SliceRowCount 16) is in Tino's working code on Pudding/I6E. In 2024-01 he thought slicing could be enabled in Majestic with a couple of lines via the new public plugin API."
+      sources:
+      - https://t.me/c/1809358416/64708
+      - https://t.me/c/1809358416/53473
+    - text: "Some things cannot be done from a Majestic plugin: e.g. slice mode only works if the VENC is initialised in frame mode or similar, and an already built pipeline cannot be touched."
+      sources:
+      - https://t.me/c/1809358416/55805
+    - text: "The SigmaStar encoder's intra-refresh mode emits no SEI NAL units (a NAL dump shows only IDR, PPS, SPS, TRAIL_N/R and VPS), and Tino has found no sign it can do SEI recovery points/GDR; arbitrary SEI can be injected with MI_VENC_InsertUserData."
+      sources:
+      - https://t.me/c/1809358416/105944
+      - https://t.me/c/1809358416/106100
+    - text: "Tino suggests the SigmaStar hardware encoder does not support B-frames."
+      sources:
+      - https://t.me/c/1809358416/106098
+    - text: "I6E/Pudding chips such as SSC338 support lens distortion correction (LDC) in the VPE, which Tino calls somewhat unique (internal VPE LDC/SCL). As he recalls, on SSC338/Pudding LDC works only in Y, while Maruko and later do X/Y."
+      sources:
+      - https://t.me/c/1809358416/30210
+      - https://t.me/c/1809358416/64320
+      - https://t.me/c/1809358416/286965
+    - text: "The Pudding VPE has a good, smooth digital zoom (MI_VPE_LoadPortZoomTable / MI_VPE_StartPortZoom), which Tino checked. MI_VPE_SetPortMode can also up-scale, but with risk of FIFO FULL in realtime mode."
+      sources:
+      - https://t.me/c/1809358416/64327
+      - https://t.me/c/1809358416/55776
+    - text: "Tino doesn't think downscaling the sensor image (e.g. to 1080p) on I6E needs the CPU; he points to the DIVP hardware block and believes Majestic already uses it. He thinks scaler parameters may be changeable without restarting the pipeline as long as the output SPS/PPS does not change, perhaps using SNR->VIF->VPE->VDIVP->VENC, but says this should be checked."
+      sources:
+      - https://t.me/c/1809358416/38101
+      - https://t.me/c/1809358416/60463
+    - text: "Tino thinks Majestic already uses real-time VIF-VPE binding on I6E, and IIRC connecting RGN directly to VPE is possible only on I6E."
+      sources:
+      - https://t.me/c/1809358416/84482
+      - https://t.me/c/1809358416/220576
+    - text: "A raw sensor frame can be dumped through the MI VIF procfs, e.g. echo dump 0 0 /tmp > /proc/mi_modules/mi_vif/mi_vif0. For per-module debug logging, /proc/mi_modules/mi_log_info is a better route than UART console messages."
+      sources:
+      - https://t.me/c/1809358416/52510
+      - https://t.me/c/1809358416/65139
+    - text: "For an OSD on SigmaStar you need to draw TTF text onto an ARGB1555 surface. The VDF module has CCTV-related APIs for MD/OD/VG (motion detection, occlusion detection, virtual gate), and the Pudding IVE has an image shift detector."
+      sources:
+      - https://t.me/c/1809358416/65864
+      - https://t.me/c/1809358416/54827
+      - https://t.me/c/1809358416/45213
+    - text: "UVC (USB camera) support for I6x is documented in the Pudding (SSC9381G/9351) docs; I2M is the NVR family, not the I6x camera family."
+      sources:
+      - https://t.me/c/1809358416/37022
+    - text: "OpenIPC's sigmastar-osdrv-infinity6e package includes kernel modules such as mi_ipu.ko and mi_gyro.ko. It looks like mi_gyro.ko supports only ICG-20660, ICG-20330 and ICM-40607 IMUs out of the box, over I2C (default) or SPI, with CCTV-style EIS."
+      sources:
+      - https://t.me/c/1809358416/288063
+      - https://t.me/c/1809358416/292014
+    - text: "On I6E the mhal is monolithic and almost as big as the Linux kernel."
+      sources:
+      - https://t.me/c/1809358416/284434
+    - text: "SigmaStar IQ files from different SDK versions are usually incompatible, let alone across families such as I6E vs I6C."
+      sources:
+      - https://t.me/c/1809358416/232541
+    - text: "As of 2024-05-07, mini-i6e and mini-i6c were in progress at the same time."
+      sources:
+      - https://t.me/c/1809358416/81611
+    - text: "As of 2026-06, Tino said Anjoy is already mostly switching to the SSC37x series even for the low end (SSC373), and that once Anjoy runs out of its old SSC338Q/30KD/30KQ stock 'we'll find out right away'. His impression is that few modules still use SSC338/30KD/30KQ and no new ones are made; new ones are mainly SSC377/378/373/375/38x."
+      sources:
+      - https://t.me/c/1809358416/289712
+      - https://t.me/c/1809358416/290755
+  INFINITY6C:
+    label: Infinity6C
+    by: Tino Darkness
+    points:
+    - text: "SSC37x (Maruko) chips use Cortex-A35 cores, not Cortex-A7 like the Pudding/SSC338 generation."
+      sources:
+      - https://t.me/c/1809358416/293095
+      - https://t.me/c/1809358416/275219
+      - https://t.me/c/1809358416/142497
+    - text: "Tino recalls that SSC37x (Maruko SDK) has a newer version of the IPU; he clarified the improvement is a new IPU IP block, a separate core, not the CPU."
+      sources:
+      - https://t.me/c/1809358416/275224
+      - https://t.me/c/1809358416/275219
+    - text: "In 2026-02 Tino compared SSC377/378 to the SSC30KQ/D: 1x Cortex-A35 versus 2x Cortex-A7, but with a newer ISP and, it seems, newer DDR. Earlier, in 2024-03, he said 'who knows?', but some of the I6Cs and (maybe) the new I6Fs look as good as, if not better than, the popular SSC338 (I6E)."
+      sources:
+      - https://t.me/c/1809358416/275517
+      - https://t.me/c/1809358416/64827
+    - text: "Maruko, I6C and SSC37x refer to the same platform: SSC377/378 belong to I6C, and infinity6c is the SDK SoC codename/family."
+      sources:
+      - https://t.me/c/1809358416/219876
+      - https://t.me/c/1809358416/51875
+      - https://t.me/c/1809358416/142509
+    - text: "The I6C SDK codename is Maruko, while I6E uses Pudding, so the two need different SDKs. A Maruko SDK build dated 2022/10/27 (ILS00V2) looked to Tino like a release candidate."
+      sources:
+      - https://t.me/c/1809358416/64314
+      - https://t.me/c/1166652144/75057
+      - https://t.me/c/1166652144/84209
+    - text: "Tino recalls (IIRC) the kernel is 5.10.x and thought binary incompatibility was more likely due to the different kernel version; he also noted the new I6C SDK looks to use more recent uClibc/glibc and kernel."
+      sources:
+      - https://t.me/c/1809358416/64313
+      - https://t.me/c/1166652144/84188
+    - text: "I6C, I6F and I7 are 'new'-style SigmaStar SDKs where devId is the first parameter in most API calls, while I6E is 'old' style; for example in Maruko (I6C) and Tiramisu (I6F) MI_VENC_CreateChn takes an extra MI_VENC_DEV argument, and some pipeline workflow changed."
+      sources:
+      - https://t.me/c/1809358416/78297
+      - https://t.me/c/1809358416/75131
+    - text: "As Tino recalls, starting from I6C SigmaStar made very strong API changes (a completely changed ABI and a new 5.x kernel), so porting from I6E is not as simple as the Ispahan-to-Pudding move; older I6x families have far more similarities than differences."
+      sources:
+      - https://t.me/c/1809358416/211220
+      - https://t.me/c/1166652144/110075
+    - text: "Of the Infinity6C configs infinity6c_ssc027a_s01 and infinity6c_ssc027b_s01, ssc027a is for the QFN88 chip and ssc027b for QFN128."
+      sources:
+      - https://t.me/c/1809358416/75233
+    - text: "The I6C dtsi puts uart0 at 0x1F221000, uart1 at 0x1F221200 and fuart at 0x1F220400, each a 0x200-sized register block. Tino thinks PM_UART is probably on pins 57 and 58 of the SSC37x QFN128 package."
+      sources:
+      - https://t.me/c/1809358416/224628
+      - https://t.me/c/1809358416/215500
+    - text: "SSC37x does not work properly with firmware from SSC338, and SigmaStar IQ files are usually incompatible even across SDK versions, let alone across families such as I6E and I6C."
+      sources:
+      - https://t.me/c/1809358416/215753
+      - https://t.me/c/1809358416/232541
+    - text: "OpenIPC support history: as of 2024-04-12 the I6C SDK was still not available on GitHub; on 2024-04-21 Tino said that, AFAIK, only I6E/I6B0 were supported in OpenIPC and I6C was in progress; on 2024-05-07 mini-i6e and mini-i6c looked to be in progress at the same time."
+      sources:
+      - https://t.me/c/1809358416/73475
+      - https://t.me/c/1809358416/76627
+      - https://t.me/c/1809358416/81611
+    - text: "In 2024-06 I6C was still quite new for OpenIPC but there were test builds for the 378; as of 2024-12-10, as far as Tino could see on GitHub, SSC377/378 (I6C) support was already there."
+      sources:
+      - https://t.me/c/1166652144/117282
+      - https://t.me/c/1809358416/140926
+    - text: "There is no majestic-fpv for Infinity6C: majestic.infinity6c.fpv.master.tar.bz2 returns 403 Forbidden (2025-04-27), and AFAIK only majestic.infinity6c.lite exists. Tino fears the lite build simply has no FPV optimisations."
+      sources:
+      - https://t.me/c/1809358416/211155
+      - https://t.me/c/1809358416/215558
+      - https://t.me/c/1809358416/220452
+    - text: "Majestic is freeware, not open source. AFAIU Majestic for SSC37x has existed for a long time, even in a new build style with the SDK linked statically (as of 2025-07)."
+      sources:
+      - https://t.me/c/1809358416/212272
+      - https://t.me/c/1809358416/240100
+    - text: "On Maruko, RGN (OSD regions) can attach to SCLx/WIN/JPEG/DISP, but in majestic-i6c-lite RGN is bound to VENC, not SCL. Tino thinks msposd is already fixed for I6C (2025-05-20)."
+      sources:
+      - https://t.me/c/1809358416/220600
+      - https://t.me/c/1809358416/222265
+      - https://t.me/c/1809358416/222299
+    - text: "Divinus: on 2025-05-13 Tino thought it still did not support I6C, and on 2025-05-18 he said it already has partial/initial I6C support; in 2025-08 he noted Divinus on SSC37x is not that easy."
+      sources:
+      - https://t.me/c/1809358416/218726
+      - https://t.me/c/1809358416/221302
+      - https://t.me/c/1809358416/250640
+    - text: "In 2025-02 Tino asked whether the I6C MI_VENC had already been unlocked from its 60 fps limit for FPV use."
+      sources:
+      - https://t.me/c/1809358416/164623
+    - text: "As Tino recalls, Maruko (SSC37x) and later support X/Y correction, where SSC338/Pudding supports only Y."
+      sources:
+      - https://t.me/c/1809358416/286965
+    - text: "Infinity6C is a new, cheaper SigmaStar chipset; Anjoy is slowly moving to this cost-effective generation (SSC377/378), with modules such as MC-J86 and MC-A81 using SSC378/SSC377DE. As of 2024-05-08, though, SSC377/378 were not that common yet."
+      sources:
+      - https://t.me/c/1809358416/46476
+      - https://t.me/c/1809358416/51867
+      - https://t.me/c/1809358416/82127
+    - text: "In Tino's opinion (2025-02), SSC37x/30x/38x are a new series of SoCs that will gradually replace or extend the familiar I6E Cortex-A7 SoCs."
+      sources:
+      - https://t.me/c/1809358416/164638
+    - text: "The Maruko SDK was never available for download on the vendor website Tino was referring to, not even on the old site (2026-08)."
+      sources:
+      - https://t.me/c/1809358416/294726
+  INFINITY6B0:
+    label: Infinity6B0
+    by: Tino Darkness
+    points:
+    - text: "A sysfs dump from an Infinity6B0 chip (SSC009A-S01A, QFN88) shows soc_id 242, CHIP_ID 0xF2, and 64 MB DDR2 at 1332 MHz on a 16-bit bus (from /sys/devices/system/miu/miu0/dram_info)."
+      sources:
+      - https://t.me/c/1166652144/18426
+    - text: "Per SigmaStar's SSD268 docs, SSC333/335/337(DE) are one family from the u-boot/kernel point of view; differences within the family seem to be memory/ISP/VPE capabilities. As Tino recalls, SSC335/337 should be less powerful than I6E."
+      sources:
+      - https://t.me/c/1166652144/20377
+      - https://t.me/c/1809358416/64318
+    - text: "The I6B0 SDK codename is Ispahan (demo code dir jedi)."
+      sources:
+      - https://t.me/c/1809358416/83075
+      - https://t.me/c/1166652144/75057
+      - https://t.me/c/1809358416/55175
+    - text: "Tino noted a vendor firmware that uses the 'standard SigmaStar' 4.9.84 kernel and the I6B0 SDK."
+      sources:
+      - https://t.me/c/1166652144/72844
+    - text: "The IPL signature MVX4##I6b0g05c44beIPL_ is the same on MS-J10 (SSC335), MC-F40 (SSC337) and MC-F50 (SSC337DE), but differs on new SSC30KD boards; Tino thinks this means different SDKs and/or IPL builds."
+      sources:
+      - https://t.me/c/1166652144/19577
+    - text: "In the Anjoy script mi_venc.ko is loaded with max_width=1920 max_height=1088, or 2304x1296 when a 3MP flag is set, so the command cat /proc/mi_modules/mi_venc/mi_venc0 cannot show the maximum VPE parameters either."
+      sources:
+      - https://t.me/c/1166652144/19651
+    - text: "Contrary to the claim that there is no documentation on adapting new sensors, vendor documentation exists, e.g. the I6B0 Ispahan (SSC9341) Sensor Porting FAQ on wx.comake.online."
+      sources:
+      - https://t.me/c/1809358416/92749
+    - text: "As far as Tino knew on 2024-04-21, I6E and I6B0 were the only SigmaStar families supported in OpenIPC."
+      sources:
+      - https://t.me/c/1809358416/76627
+  INFINITY6:
+    label: Infinity6
+    by: Tino Darkness
+    points:
+    - text: "In u-boot, md.b 0x3fe0 0x20 (or md.b 0x7fe0 0x20) reads the actual tag with the real SoC family from the SoC (isptool reads the same tag from Linux); MVX1##I6gf74c9b5CMN_ROM######XVM indicates an I6, while the MVX4##I6b0...IPL_ tag in the flash dump comes from the SDK."
+      sources:
+      - https://t.me/c/1166652144/125612
+    - text: "I6 (Macaron SDK) and I6B0 (Ispahan SDK) are quite similar, so I6B0 binaries should work on I6 in most cases."
+      sources:
+      - https://t.me/c/1166652144/125612
+    - text: "The Infinity6 SDK codename is Macaron (demo code dir hoth)."
+      sources:
+      - https://t.me/c/1809358416/83075
+      - https://t.me/c/1166652144/75057
+    - text: "SigmaStar chips can boot from SPI NOR/NAND, SLC NAND, UART, eMMC, SDIO 3.0 (SD card) and USB, at least on Mercury5, so Tino infers Infinity6 can too. However, he does not know whether SD boot works on I6 and it may be impractical; he has only seen I6 chips boot from NOR, NAND and eMMC."
+      sources:
+      - https://t.me/c/1166652144/22195
+      - https://t.me/c/1166652144/22193
+  INFINITY5:
+    label: Infinity5
+    by: Tino Darkness
+    points:
+    - text: "The Infinity5 SDK codename is Pretzel; Tino's codename table also lists kamino next to it."
+      sources:
+      - https://t.me/c/1809358416/83075
+      - https://t.me/c/1166652144/75057
+  MERCURY6:
+    label: Mercury6
+    by: Tino Darkness
+    points:
+    - text: "Mercury6 (M6) is not Infinity6x and has a slightly different purpose; things like VPE+SCL exist only in I6."
+      sources:
+      - https://t.me/c/1809358416/83091
+    - text: "The Mercury6 SDK codename is Tiramisu (as opposed to Pudding for Infinity6E); as he recalls the release is Tiramisu ILS00V021, and M6P is Mochi."
+      sources:
+      - https://t.me/c/1809358416/137228
+      - https://t.me/c/1809358416/83075
+      - https://t.me/c/1809358416/58471
+    - text: "M6 uses the new-style ABI shared with I6F and I6C (e.g. MI_VENC_CreateChn takes MI_VENC_DEV first), while I6E and I6B0 use the old style."
+      sources:
+      - https://t.me/c/1809358416/83073
+    - text: "Mercury6 is used in the RunCam Split-H, SIYI cameras and car DVRs."
+      sources:
+      - https://t.me/c/1809358416/137228
+    - text: "The RunCam Split-H uses SSC8836Q-H, whose signature string MVX4##M6##g#######KL marks it as M6."
+      sources:
+      - https://t.me/c/1809358416/186886
+    - text: "By 2025-03 Tino said it looked like Mercury6 was already implemented in Divinus."
+      sources:
+      - https://t.me/c/1809358416/186886
+  SSC38X:
+    label: SSC38X
+    by: Tino Darkness
+    points:
+    - text: "The new SSC38x has a 1.5 TOPS IPU plus some sort of AI-ISP (Tino is not sure what that means yet), even with only 64 MB of DDR2."
+      sources:
+      - https://t.me/c/1809358416/290730
+    - text: "The new SSC385/SSC387 look like the good old Cortex-A7 (perhaps 2x, like SSC338Q) with half of Maruko bolted on plus the new IPU and AI-ISP, whereas Maruko is all Cortex-A35."
+      sources:
+      - https://t.me/c/1809358416/292523
+      - https://t.me/c/1809358416/293095
+    - text: "Tino guesses SSC38X is a new SSC338, with the same Cortex-A7 if he recalls right."
+      sources:
+      - https://t.me/c/1809358416/298140
 socs:
 - family: INFINITY6E
   model: SSC30KD
@@ -51,117 +357,6 @@ socs:
     - text: "In 2021-09 he described the SSC30KD as a new SStar SoC."
       sources:
       - https://t.me/c/1166652144/18838
-    - text: "(Infinity6E family) Infinity6E (I6E) covers SSC30KD, SSC30KQ, SSC338 and SSC339; it is a different family and SDK from the I6 SSC325. Tino lists it as a separate family from I6B0 (SSC335) and I6C (SSC377/378)."
-      sources:
-      - https://t.me/c/1166652144/63756
-      - https://t.me/c/1809358416/51875
-    - text: "(Infinity6E family) The I6E SDK codename is Pudding, and SigmaStar demo code for I6E lives under \"alderaan\" (\"jedi\" is for I6B0)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1809358416/65178
-      - https://t.me/c/1809358416/291288
-    - text: "(Infinity6E family) The same Majestic build serves SSC338, SSC339 and SSC30Kx, all I6E (Pudding). As far as Tino knew in 2024-04, only I6E and I6B0 SigmaStar SoCs were supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/112297
-      - https://t.me/c/1809358416/76627
-    - text: "(Infinity6E family) SSC336/338/339 have proprietary 0.5-1 TOPS hardware NN accelerators, and as Tino understands it SSR6xx, SSC336 and SSC338 should share the same AI core."
-      sources:
-      - https://t.me/c/1166652144/18947
-      - https://t.me/c/1166652144/19761
-    - text: "(Infinity6E family) Tino said the SigmaStar DLA/IPU model tool (SGS tools page in the Pudding docs) seems to require a separate NDA and is not free (2024-02)."
-      sources:
-      - https://t.me/c/1809358416/55563
-    - text: "(Infinity6E family) Pudding SDK documentation is published at wx.comake.online/doc/doc/SigmaStarDocs-Pudding-0120/, but as of 2026-08 CoMake's new website has no Pudding SDK download (only SSC305/309 for camera SoCs)."
-      sources:
-      - https://t.me/c/1809358416/275959
-      - https://t.me/c/1809358416/294726
-    - text: "(Infinity6E family) Infinity6E uses dynamic voltage and frequency scaling (DVFS)."
-      sources:
-      - https://t.me/c/1809358416/58283
-    - text: "(Infinity6E family) On an Anjoy board the core voltage is selected by PAD_PM_GPIO7/8 through a device-tree table, vid_voltages = <850 900 950 1000>. Tino calls changing the top entry from 1000 to 1050 'a way to fry your SoC', and says to do it only if TEMP_R is not too high. He says this should apply to most Infinity6 chips and gives 1.05 V as the max."
-      sources:
-      - https://t.me/c/1809358416/50865
-      - https://t.me/c/1809358416/50887
-    - text: "(Infinity6E family) Devices with secure boot enabled require signed, or signed and encrypted, binaries (see the SSC9381G/9351 Pudding OTP-Key docs)."
-      sources:
-      - https://t.me/c/1166652144/78078
-    - text: "(Infinity6E family) SigmaStar boot-select straps offer more than two combinations (NOR, NOR+SD, NAND, ...)."
-      sources:
-      - https://t.me/c/1809358416/38790
-    - text: "(Infinity6E family) For a native FPV venc on I6E, start from st_main_venc.c in the SDK, a simple ~2 KLoC source; the venc and other hardware blocks are documented in the Pudding mi_venc docs."
-      sources:
-      - https://t.me/c/1809358416/39739
-      - https://t.me/c/1809358416/39858
-    - text: "(Infinity6E family) I6E and I6B0 use the \"old\" style SigmaStar ABI, e.g. MI_VENC_CreateChn(VeChn, pstAttr) without a device argument."
-      sources:
-      - https://t.me/c/1809358416/83073
-    - text: "(Infinity6E family) It looks like the OpenIPC SDK headers are closer to I6B0 (Ispahan) than I6E (Pudding), so some enums/structs will not match exactly. In some SDK versions (he remembers I6B0 and I6E) functions are declared in headers but missing from the .so."
-      sources:
-      - https://t.me/c/1809358416/82276
-      - https://t.me/c/1809358416/83077
-    - text: "(Infinity6E family) On I6E (SSC30KQ), MI_VENC_CreateChn must be called before MI_SYS_BindChnPort2, otherwise dmesg shows the channel is not created and bind errors."
-      sources:
-      - https://t.me/c/1809358416/81621
-    - text: "(Infinity6E family) H.265 slice split (MI_VENC_SetH265SliceSplit, u32SliceRowCount 16) is in Tino's working code on Pudding/I6E. In 2024-01 he thought slicing could be enabled in Majestic with a couple of lines via the new public plugin API."
-      sources:
-      - https://t.me/c/1809358416/64708
-      - https://t.me/c/1809358416/53473
-    - text: "(Infinity6E family) Some things cannot be done from a Majestic plugin: e.g. slice mode only works if the VENC is initialised in frame mode or similar, and an already built pipeline cannot be touched."
-      sources:
-      - https://t.me/c/1809358416/55805
-    - text: "(Infinity6E family) The SigmaStar encoder's intra-refresh mode emits no SEI NAL units (a NAL dump shows only IDR, PPS, SPS, TRAIL_N/R and VPS), and Tino has found no sign it can do SEI recovery points/GDR; arbitrary SEI can be injected with MI_VENC_InsertUserData."
-      sources:
-      - https://t.me/c/1809358416/105944
-      - https://t.me/c/1809358416/106100
-    - text: "(Infinity6E family) Tino suggests the SigmaStar hardware encoder does not support B-frames."
-      sources:
-      - https://t.me/c/1809358416/106098
-    - text: "(Infinity6E family) I6E/Pudding chips such as SSC338 support lens distortion correction (LDC) in the VPE, which Tino calls somewhat unique (internal VPE LDC/SCL). As he recalls, on SSC338/Pudding LDC works only in Y, while Maruko and later do X/Y."
-      sources:
-      - https://t.me/c/1809358416/30210
-      - https://t.me/c/1809358416/64320
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6E family) The Pudding VPE has a good, smooth digital zoom (MI_VPE_LoadPortZoomTable / MI_VPE_StartPortZoom), which Tino checked. MI_VPE_SetPortMode can also up-scale, but with risk of FIFO FULL in realtime mode."
-      sources:
-      - https://t.me/c/1809358416/64327
-      - https://t.me/c/1809358416/55776
-    - text: "(Infinity6E family) Tino doesn't think downscaling the sensor image (e.g. to 1080p) on I6E needs the CPU; he points to the DIVP hardware block and believes Majestic already uses it. He thinks scaler parameters may be changeable without restarting the pipeline as long as the output SPS/PPS does not change, perhaps using SNR->VIF->VPE->VDIVP->VENC, but says this should be checked."
-      sources:
-      - https://t.me/c/1809358416/38101
-      - https://t.me/c/1809358416/60463
-    - text: "(Infinity6E family) Tino thinks Majestic already uses real-time VIF-VPE binding on I6E, and IIRC connecting RGN directly to VPE is possible only on I6E."
-      sources:
-      - https://t.me/c/1809358416/84482
-      - https://t.me/c/1809358416/220576
-    - text: "(Infinity6E family) A raw sensor frame can be dumped through the MI VIF procfs, e.g. echo dump 0 0 /tmp > /proc/mi_modules/mi_vif/mi_vif0. For per-module debug logging, /proc/mi_modules/mi_log_info is a better route than UART console messages."
-      sources:
-      - https://t.me/c/1809358416/52510
-      - https://t.me/c/1809358416/65139
-    - text: "(Infinity6E family) For an OSD on SigmaStar you need to draw TTF text onto an ARGB1555 surface. The VDF module has CCTV-related APIs for MD/OD/VG (motion detection, occlusion detection, virtual gate), and the Pudding IVE has an image shift detector."
-      sources:
-      - https://t.me/c/1809358416/65864
-      - https://t.me/c/1809358416/54827
-      - https://t.me/c/1809358416/45213
-    - text: "(Infinity6E family) UVC (USB camera) support for I6x is documented in the Pudding (SSC9381G/9351) docs; I2M is the NVR family, not the I6x camera family."
-      sources:
-      - https://t.me/c/1809358416/37022
-    - text: "(Infinity6E family) OpenIPC's sigmastar-osdrv-infinity6e package includes kernel modules such as mi_ipu.ko and mi_gyro.ko. It looks like mi_gyro.ko supports only ICG-20660, ICG-20330 and ICM-40607 IMUs out of the box, over I2C (default) or SPI, with CCTV-style EIS."
-      sources:
-      - https://t.me/c/1809358416/288063
-      - https://t.me/c/1809358416/292014
-    - text: "(Infinity6E family) On I6E the mhal is monolithic and almost as big as the Linux kernel."
-      sources:
-      - https://t.me/c/1809358416/284434
-    - text: "(Infinity6E family) SigmaStar IQ files from different SDK versions are usually incompatible, let alone across families such as I6E vs I6C."
-      sources:
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6E family) As of 2024-05-07, mini-i6e and mini-i6c were in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6E family) As of 2026-06, Tino said Anjoy is already mostly switching to the SSC37x series even for the low end (SSC373), and that once Anjoy runs out of its old SSC338Q/30KD/30KQ stock 'we'll find out right away'. His impression is that few modules still use SSC338/30KD/30KQ and no new ones are made; new ones are mainly SSC377/378/373/375/38x."
-      sources:
-      - https://t.me/c/1809358416/289712
-      - https://t.me/c/1809358416/290755
 - family: INFINITY6E
   model: SSC30KQ
   version: null
@@ -241,117 +436,6 @@ socs:
     - text: "As of 2025-09 the bare SSC30KQ chip is about 40 CNY on Taobao, while the datasheet, SDK and the rest are under NDA."
       sources:
       - https://t.me/c/1809358416/254746
-    - text: "(Infinity6E family) Infinity6E (I6E) covers SSC30KD, SSC30KQ, SSC338 and SSC339; it is a different family and SDK from the I6 SSC325. Tino lists it as a separate family from I6B0 (SSC335) and I6C (SSC377/378)."
-      sources:
-      - https://t.me/c/1166652144/63756
-      - https://t.me/c/1809358416/51875
-    - text: "(Infinity6E family) The I6E SDK codename is Pudding, and SigmaStar demo code for I6E lives under \"alderaan\" (\"jedi\" is for I6B0)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1809358416/65178
-      - https://t.me/c/1809358416/291288
-    - text: "(Infinity6E family) The same Majestic build serves SSC338, SSC339 and SSC30Kx, all I6E (Pudding). As far as Tino knew in 2024-04, only I6E and I6B0 SigmaStar SoCs were supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/112297
-      - https://t.me/c/1809358416/76627
-    - text: "(Infinity6E family) SSC336/338/339 have proprietary 0.5-1 TOPS hardware NN accelerators, and as Tino understands it SSR6xx, SSC336 and SSC338 should share the same AI core."
-      sources:
-      - https://t.me/c/1166652144/18947
-      - https://t.me/c/1166652144/19761
-    - text: "(Infinity6E family) Tino said the SigmaStar DLA/IPU model tool (SGS tools page in the Pudding docs) seems to require a separate NDA and is not free (2024-02)."
-      sources:
-      - https://t.me/c/1809358416/55563
-    - text: "(Infinity6E family) Pudding SDK documentation is published at wx.comake.online/doc/doc/SigmaStarDocs-Pudding-0120/, but as of 2026-08 CoMake's new website has no Pudding SDK download (only SSC305/309 for camera SoCs)."
-      sources:
-      - https://t.me/c/1809358416/275959
-      - https://t.me/c/1809358416/294726
-    - text: "(Infinity6E family) Infinity6E uses dynamic voltage and frequency scaling (DVFS)."
-      sources:
-      - https://t.me/c/1809358416/58283
-    - text: "(Infinity6E family) On an Anjoy board the core voltage is selected by PAD_PM_GPIO7/8 through a device-tree table, vid_voltages = <850 900 950 1000>. Tino calls changing the top entry from 1000 to 1050 'a way to fry your SoC', and says to do it only if TEMP_R is not too high. He says this should apply to most Infinity6 chips and gives 1.05 V as the max."
-      sources:
-      - https://t.me/c/1809358416/50865
-      - https://t.me/c/1809358416/50887
-    - text: "(Infinity6E family) Devices with secure boot enabled require signed, or signed and encrypted, binaries (see the SSC9381G/9351 Pudding OTP-Key docs)."
-      sources:
-      - https://t.me/c/1166652144/78078
-    - text: "(Infinity6E family) SigmaStar boot-select straps offer more than two combinations (NOR, NOR+SD, NAND, ...)."
-      sources:
-      - https://t.me/c/1809358416/38790
-    - text: "(Infinity6E family) For a native FPV venc on I6E, start from st_main_venc.c in the SDK, a simple ~2 KLoC source; the venc and other hardware blocks are documented in the Pudding mi_venc docs."
-      sources:
-      - https://t.me/c/1809358416/39739
-      - https://t.me/c/1809358416/39858
-    - text: "(Infinity6E family) I6E and I6B0 use the \"old\" style SigmaStar ABI, e.g. MI_VENC_CreateChn(VeChn, pstAttr) without a device argument."
-      sources:
-      - https://t.me/c/1809358416/83073
-    - text: "(Infinity6E family) It looks like the OpenIPC SDK headers are closer to I6B0 (Ispahan) than I6E (Pudding), so some enums/structs will not match exactly. In some SDK versions (he remembers I6B0 and I6E) functions are declared in headers but missing from the .so."
-      sources:
-      - https://t.me/c/1809358416/82276
-      - https://t.me/c/1809358416/83077
-    - text: "(Infinity6E family) On I6E (SSC30KQ), MI_VENC_CreateChn must be called before MI_SYS_BindChnPort2, otherwise dmesg shows the channel is not created and bind errors."
-      sources:
-      - https://t.me/c/1809358416/81621
-    - text: "(Infinity6E family) H.265 slice split (MI_VENC_SetH265SliceSplit, u32SliceRowCount 16) is in Tino's working code on Pudding/I6E. In 2024-01 he thought slicing could be enabled in Majestic with a couple of lines via the new public plugin API."
-      sources:
-      - https://t.me/c/1809358416/64708
-      - https://t.me/c/1809358416/53473
-    - text: "(Infinity6E family) Some things cannot be done from a Majestic plugin: e.g. slice mode only works if the VENC is initialised in frame mode or similar, and an already built pipeline cannot be touched."
-      sources:
-      - https://t.me/c/1809358416/55805
-    - text: "(Infinity6E family) The SigmaStar encoder's intra-refresh mode emits no SEI NAL units (a NAL dump shows only IDR, PPS, SPS, TRAIL_N/R and VPS), and Tino has found no sign it can do SEI recovery points/GDR; arbitrary SEI can be injected with MI_VENC_InsertUserData."
-      sources:
-      - https://t.me/c/1809358416/105944
-      - https://t.me/c/1809358416/106100
-    - text: "(Infinity6E family) Tino suggests the SigmaStar hardware encoder does not support B-frames."
-      sources:
-      - https://t.me/c/1809358416/106098
-    - text: "(Infinity6E family) I6E/Pudding chips such as SSC338 support lens distortion correction (LDC) in the VPE, which Tino calls somewhat unique (internal VPE LDC/SCL). As he recalls, on SSC338/Pudding LDC works only in Y, while Maruko and later do X/Y."
-      sources:
-      - https://t.me/c/1809358416/30210
-      - https://t.me/c/1809358416/64320
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6E family) The Pudding VPE has a good, smooth digital zoom (MI_VPE_LoadPortZoomTable / MI_VPE_StartPortZoom), which Tino checked. MI_VPE_SetPortMode can also up-scale, but with risk of FIFO FULL in realtime mode."
-      sources:
-      - https://t.me/c/1809358416/64327
-      - https://t.me/c/1809358416/55776
-    - text: "(Infinity6E family) Tino doesn't think downscaling the sensor image (e.g. to 1080p) on I6E needs the CPU; he points to the DIVP hardware block and believes Majestic already uses it. He thinks scaler parameters may be changeable without restarting the pipeline as long as the output SPS/PPS does not change, perhaps using SNR->VIF->VPE->VDIVP->VENC, but says this should be checked."
-      sources:
-      - https://t.me/c/1809358416/38101
-      - https://t.me/c/1809358416/60463
-    - text: "(Infinity6E family) Tino thinks Majestic already uses real-time VIF-VPE binding on I6E, and IIRC connecting RGN directly to VPE is possible only on I6E."
-      sources:
-      - https://t.me/c/1809358416/84482
-      - https://t.me/c/1809358416/220576
-    - text: "(Infinity6E family) A raw sensor frame can be dumped through the MI VIF procfs, e.g. echo dump 0 0 /tmp > /proc/mi_modules/mi_vif/mi_vif0. For per-module debug logging, /proc/mi_modules/mi_log_info is a better route than UART console messages."
-      sources:
-      - https://t.me/c/1809358416/52510
-      - https://t.me/c/1809358416/65139
-    - text: "(Infinity6E family) For an OSD on SigmaStar you need to draw TTF text onto an ARGB1555 surface. The VDF module has CCTV-related APIs for MD/OD/VG (motion detection, occlusion detection, virtual gate), and the Pudding IVE has an image shift detector."
-      sources:
-      - https://t.me/c/1809358416/65864
-      - https://t.me/c/1809358416/54827
-      - https://t.me/c/1809358416/45213
-    - text: "(Infinity6E family) UVC (USB camera) support for I6x is documented in the Pudding (SSC9381G/9351) docs; I2M is the NVR family, not the I6x camera family."
-      sources:
-      - https://t.me/c/1809358416/37022
-    - text: "(Infinity6E family) OpenIPC's sigmastar-osdrv-infinity6e package includes kernel modules such as mi_ipu.ko and mi_gyro.ko. It looks like mi_gyro.ko supports only ICG-20660, ICG-20330 and ICM-40607 IMUs out of the box, over I2C (default) or SPI, with CCTV-style EIS."
-      sources:
-      - https://t.me/c/1809358416/288063
-      - https://t.me/c/1809358416/292014
-    - text: "(Infinity6E family) On I6E the mhal is monolithic and almost as big as the Linux kernel."
-      sources:
-      - https://t.me/c/1809358416/284434
-    - text: "(Infinity6E family) SigmaStar IQ files from different SDK versions are usually incompatible, let alone across families such as I6E vs I6C."
-      sources:
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6E family) As of 2024-05-07, mini-i6e and mini-i6c were in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6E family) As of 2026-06, Tino said Anjoy is already mostly switching to the SSC37x series even for the low end (SSC373), and that once Anjoy runs out of its old SSC338Q/30KD/30KQ stock 'we'll find out right away'. His impression is that few modules still use SSC338/30KD/30KQ and no new ones are made; new ones are mainly SSC377/378/373/375/38x."
-      sources:
-      - https://t.me/c/1809358416/289712
-      - https://t.me/c/1809358416/290755
 - family: INFINITY6
   model: SSC323
   version: null
@@ -375,20 +459,6 @@ socs:
     - text: "SSC323 looks like I6B0, similar to SSC335 but earlier."
       sources:
       - https://t.me/c/1166652144/117347
-    - text: "(Infinity6 family) In u-boot, md.b 0x3fe0 0x20 (or md.b 0x7fe0 0x20) reads the actual tag with the real SoC family from the SoC (isptool reads the same tag from Linux); MVX1##I6gf74c9b5CMN_ROM######XVM indicates an I6, while the MVX4##I6b0...IPL_ tag in the flash dump comes from the SDK."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) I6 (Macaron SDK) and I6B0 (Ispahan SDK) are quite similar, so I6B0 binaries should work on I6 in most cases."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) The Infinity6 SDK codename is Macaron (demo code dir hoth)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-    - text: "(Infinity6 family) SigmaStar chips can boot from SPI NOR/NAND, SLC NAND, UART, eMMC, SDIO 3.0 (SD card) and USB, at least on Mercury5, so Tino infers Infinity6 can too. However, he does not know whether SD boot works on I6 and it may be impractical; he has only seen I6 chips boot from NOR, NAND and eMMC."
-      sources:
-      - https://t.me/c/1166652144/22195
-      - https://t.me/c/1166652144/22193
 - family: INFINITY6
   model: SSC325
   version: ''
@@ -412,20 +482,6 @@ socs:
     - text: "The SSC325 BROM signature, read in u-boot with md.b 0x7fe0 0x20, is MVX1##I6ga0348edCMN_ROM######XVM."
       sources:
       - https://t.me/c/1166652144/19585
-    - text: "(Infinity6 family) In u-boot, md.b 0x3fe0 0x20 (or md.b 0x7fe0 0x20) reads the actual tag with the real SoC family from the SoC (isptool reads the same tag from Linux); MVX1##I6gf74c9b5CMN_ROM######XVM indicates an I6, while the MVX4##I6b0...IPL_ tag in the flash dump comes from the SDK."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) I6 (Macaron SDK) and I6B0 (Ispahan SDK) are quite similar, so I6B0 binaries should work on I6 in most cases."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) The Infinity6 SDK codename is Macaron (demo code dir hoth)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-    - text: "(Infinity6 family) SigmaStar chips can boot from SPI NOR/NAND, SLC NAND, UART, eMMC, SDIO 3.0 (SD card) and USB, at least on Mercury5, so Tino infers Infinity6 can too. However, he does not know whether SD boot works on I6 and it may be impractical; he has only seen I6 chips boot from NOR, NAND and eMMC."
-      sources:
-      - https://t.me/c/1166652144/22195
-      - https://t.me/c/1166652144/22193
 - family: INFINITY6
   model: SSC325D
   version: null
@@ -440,23 +496,6 @@ socs:
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
-  community_notes:
-    by: Tino Darkness
-    points:
-    - text: "(Infinity6 family) In u-boot, md.b 0x3fe0 0x20 (or md.b 0x7fe0 0x20) reads the actual tag with the real SoC family from the SoC (isptool reads the same tag from Linux); MVX1##I6gf74c9b5CMN_ROM######XVM indicates an I6, while the MVX4##I6b0...IPL_ tag in the flash dump comes from the SDK."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) I6 (Macaron SDK) and I6B0 (Ispahan SDK) are quite similar, so I6B0 binaries should work on I6 in most cases."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) The Infinity6 SDK codename is Macaron (demo code dir hoth)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-    - text: "(Infinity6 family) SigmaStar chips can boot from SPI NOR/NAND, SLC NAND, UART, eMMC, SDIO 3.0 (SD card) and USB, at least on Mercury5, so Tino infers Infinity6 can too. However, he does not know whether SD boot works on I6 and it may be impractical; he has only seen I6 chips boot from NOR, NAND and eMMC."
-      sources:
-      - https://t.me/c/1166652144/22195
-      - https://t.me/c/1166652144/22193
 - family: INFINITY5
   model: SSC326D
   version: null
@@ -471,13 +510,6 @@ socs:
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
-  community_notes:
-    by: Tino Darkness
-    points:
-    - text: "(Infinity5 family) The Infinity5 SDK codename is Pretzel; Tino's codename table also lists kamino next to it."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
 - family: INFINITY6
   model: SSC327
   version: null
@@ -492,23 +524,6 @@ socs:
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
-  community_notes:
-    by: Tino Darkness
-    points:
-    - text: "(Infinity6 family) In u-boot, md.b 0x3fe0 0x20 (or md.b 0x7fe0 0x20) reads the actual tag with the real SoC family from the SoC (isptool reads the same tag from Linux); MVX1##I6gf74c9b5CMN_ROM######XVM indicates an I6, while the MVX4##I6b0...IPL_ tag in the flash dump comes from the SDK."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) I6 (Macaron SDK) and I6B0 (Ispahan SDK) are quite similar, so I6B0 binaries should work on I6 in most cases."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) The Infinity6 SDK codename is Macaron (demo code dir hoth)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-    - text: "(Infinity6 family) SigmaStar chips can boot from SPI NOR/NAND, SLC NAND, UART, eMMC, SDIO 3.0 (SD card) and USB, at least on Mercury5, so Tino infers Infinity6 can too. However, he does not know whether SD boot works on I6 and it may be impractical; he has only seen I6 chips boot from NOR, NAND and eMMC."
-      sources:
-      - https://t.me/c/1166652144/22195
-      - https://t.me/c/1166652144/22193
 - family: INFINITY6
   model: SSC327D
   version: null
@@ -523,23 +538,6 @@ socs:
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
-  community_notes:
-    by: Tino Darkness
-    points:
-    - text: "(Infinity6 family) In u-boot, md.b 0x3fe0 0x20 (or md.b 0x7fe0 0x20) reads the actual tag with the real SoC family from the SoC (isptool reads the same tag from Linux); MVX1##I6gf74c9b5CMN_ROM######XVM indicates an I6, while the MVX4##I6b0...IPL_ tag in the flash dump comes from the SDK."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) I6 (Macaron SDK) and I6B0 (Ispahan SDK) are quite similar, so I6B0 binaries should work on I6 in most cases."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) The Infinity6 SDK codename is Macaron (demo code dir hoth)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-    - text: "(Infinity6 family) SigmaStar chips can boot from SPI NOR/NAND, SLC NAND, UART, eMMC, SDIO 3.0 (SD card) and USB, at least on Mercury5, so Tino infers Infinity6 can too. However, he does not know whether SD boot works on I6 and it may be impractical; he has only seen I6 chips boot from NOR, NAND and eMMC."
-      sources:
-      - https://t.me/c/1166652144/22195
-      - https://t.me/c/1166652144/22193
 - family: INFINITY6
   model: SSC327DE
   version: null
@@ -554,23 +552,6 @@ socs:
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
-  community_notes:
-    by: Tino Darkness
-    points:
-    - text: "(Infinity6 family) In u-boot, md.b 0x3fe0 0x20 (or md.b 0x7fe0 0x20) reads the actual tag with the real SoC family from the SoC (isptool reads the same tag from Linux); MVX1##I6gf74c9b5CMN_ROM######XVM indicates an I6, while the MVX4##I6b0...IPL_ tag in the flash dump comes from the SDK."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) I6 (Macaron SDK) and I6B0 (Ispahan SDK) are quite similar, so I6B0 binaries should work on I6 in most cases."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) The Infinity6 SDK codename is Macaron (demo code dir hoth)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-    - text: "(Infinity6 family) SigmaStar chips can boot from SPI NOR/NAND, SLC NAND, UART, eMMC, SDIO 3.0 (SD card) and USB, at least on Mercury5, so Tino infers Infinity6 can too. However, he does not know whether SD boot works on I6 and it may be impractical; he has only seen I6 chips boot from NOR, NAND and eMMC."
-      sources:
-      - https://t.me/c/1166652144/22195
-      - https://t.me/c/1166652144/22193
 - family: INFINITY6
   model: SSC327Q
   version: null
@@ -585,23 +566,6 @@ socs:
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
-  community_notes:
-    by: Tino Darkness
-    points:
-    - text: "(Infinity6 family) In u-boot, md.b 0x3fe0 0x20 (or md.b 0x7fe0 0x20) reads the actual tag with the real SoC family from the SoC (isptool reads the same tag from Linux); MVX1##I6gf74c9b5CMN_ROM######XVM indicates an I6, while the MVX4##I6b0...IPL_ tag in the flash dump comes from the SDK."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) I6 (Macaron SDK) and I6B0 (Ispahan SDK) are quite similar, so I6B0 binaries should work on I6 in most cases."
-      sources:
-      - https://t.me/c/1166652144/125612
-    - text: "(Infinity6 family) The Infinity6 SDK codename is Macaron (demo code dir hoth)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-    - text: "(Infinity6 family) SigmaStar chips can boot from SPI NOR/NAND, SLC NAND, UART, eMMC, SDIO 3.0 (SD card) and USB, at least on Mercury5, so Tino infers Infinity6 can too. However, he does not know whether SD boot works on I6 and it may be impractical; he has only seen I6 chips boot from NOR, NAND and eMMC."
-      sources:
-      - https://t.me/c/1166652144/22195
-      - https://t.me/c/1166652144/22193
 - family: INFINITY5
   model: SSC328Q
   version: null
@@ -616,13 +580,6 @@ socs:
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
-  community_notes:
-    by: Tino Darkness
-    points:
-    - text: "(Infinity5 family) The Infinity5 SDK codename is Pretzel; Tino's codename table also lists kamino next to it."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
 - family: INFINITY5
   model: SSC329Q
   version: null
@@ -637,13 +594,6 @@ socs:
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
-  community_notes:
-    by: Tino Darkness
-    points:
-    - text: "(Infinity5 family) The Infinity5 SDK codename is Pretzel; Tino's codename table also lists kamino next to it."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
 - family: INFINITY6B0
   model: SSC333
   version: null
@@ -668,33 +618,6 @@ socs:
     - text: "Asked about 720p@90 on SSC333, Tino was unsure: it would depend on the streamer team patching the 3 MP SC3335/8 sensor driver (assuming the sensor can do it), the i6b0 SDK mi_venc, etc., and there were a lot of open questions."
       sources:
       - https://t.me/c/1809358416/158649
-    - text: "(Infinity6B0 family) A sysfs dump from an Infinity6B0 chip (SSC009A-S01A, QFN88) shows soc_id 242, CHIP_ID 0xF2, and 64 MB DDR2 at 1332 MHz on a 16-bit bus (from /sys/devices/system/miu/miu0/dram_info)."
-      sources:
-      - https://t.me/c/1166652144/18426
-    - text: "(Infinity6B0 family) Per SigmaStar's SSD268 docs, SSC333/335/337(DE) are one family from the u-boot/kernel point of view; differences within the family seem to be memory/ISP/VPE capabilities. As Tino recalls, SSC335/337 should be less powerful than I6E."
-      sources:
-      - https://t.me/c/1166652144/20377
-      - https://t.me/c/1809358416/64318
-    - text: "(Infinity6B0 family) The I6B0 SDK codename is Ispahan (demo code dir jedi)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-      - https://t.me/c/1809358416/55175
-    - text: "(Infinity6B0 family) Tino noted a vendor firmware that uses the 'standard SigmaStar' 4.9.84 kernel and the I6B0 SDK."
-      sources:
-      - https://t.me/c/1166652144/72844
-    - text: "(Infinity6B0 family) The IPL signature MVX4##I6b0g05c44beIPL_ is the same on MS-J10 (SSC335), MC-F40 (SSC337) and MC-F50 (SSC337DE), but differs on new SSC30KD boards; Tino thinks this means different SDKs and/or IPL builds."
-      sources:
-      - https://t.me/c/1166652144/19577
-    - text: "(Infinity6B0 family) In the Anjoy script mi_venc.ko is loaded with max_width=1920 max_height=1088, or 2304x1296 when a 3MP flag is set, so the command cat /proc/mi_modules/mi_venc/mi_venc0 cannot show the maximum VPE parameters either."
-      sources:
-      - https://t.me/c/1166652144/19651
-    - text: "(Infinity6B0 family) Contrary to the claim that there is no documentation on adapting new sensors, vendor documentation exists, e.g. the I6B0 Ispahan (SSC9341) Sensor Porting FAQ on wx.comake.online."
-      sources:
-      - https://t.me/c/1809358416/92749
-    - text: "(Infinity6B0 family) As far as Tino knew on 2024-04-21, I6E and I6B0 were the only SigmaStar families supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/76627
 - family: INFINITY6B0
   model: SSC333DE
   version: null
@@ -709,36 +632,6 @@ socs:
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc335_images.yml/badge.svg
   featured: false
   segment: null
-  community_notes:
-    by: Tino Darkness
-    points:
-    - text: "(Infinity6B0 family) A sysfs dump from an Infinity6B0 chip (SSC009A-S01A, QFN88) shows soc_id 242, CHIP_ID 0xF2, and 64 MB DDR2 at 1332 MHz on a 16-bit bus (from /sys/devices/system/miu/miu0/dram_info)."
-      sources:
-      - https://t.me/c/1166652144/18426
-    - text: "(Infinity6B0 family) Per SigmaStar's SSD268 docs, SSC333/335/337(DE) are one family from the u-boot/kernel point of view; differences within the family seem to be memory/ISP/VPE capabilities. As Tino recalls, SSC335/337 should be less powerful than I6E."
-      sources:
-      - https://t.me/c/1166652144/20377
-      - https://t.me/c/1809358416/64318
-    - text: "(Infinity6B0 family) The I6B0 SDK codename is Ispahan (demo code dir jedi)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-      - https://t.me/c/1809358416/55175
-    - text: "(Infinity6B0 family) Tino noted a vendor firmware that uses the 'standard SigmaStar' 4.9.84 kernel and the I6B0 SDK."
-      sources:
-      - https://t.me/c/1166652144/72844
-    - text: "(Infinity6B0 family) The IPL signature MVX4##I6b0g05c44beIPL_ is the same on MS-J10 (SSC335), MC-F40 (SSC337) and MC-F50 (SSC337DE), but differs on new SSC30KD boards; Tino thinks this means different SDKs and/or IPL builds."
-      sources:
-      - https://t.me/c/1166652144/19577
-    - text: "(Infinity6B0 family) In the Anjoy script mi_venc.ko is loaded with max_width=1920 max_height=1088, or 2304x1296 when a 3MP flag is set, so the command cat /proc/mi_modules/mi_venc/mi_venc0 cannot show the maximum VPE parameters either."
-      sources:
-      - https://t.me/c/1166652144/19651
-    - text: "(Infinity6B0 family) Contrary to the claim that there is no documentation on adapting new sensors, vendor documentation exists, e.g. the I6B0 Ispahan (SSC9341) Sensor Porting FAQ on wx.comake.online."
-      sources:
-      - https://t.me/c/1809358416/92749
-    - text: "(Infinity6B0 family) As far as Tino knew on 2024-04-21, I6E and I6B0 were the only SigmaStar families supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/76627
 - family: INFINITY6B0
   model: SSC335
   version: ''
@@ -775,33 +668,6 @@ socs:
     - text: "His rough ranking (IMHO), weakest to strongest: ssc335/377, ssc335de, ssc337DE, ssc378DE, ssc30kd, ssc30kq, ssc338q, ssc339g, ssc359."
       sources:
       - https://t.me/c/1166652144/78861
-    - text: "(Infinity6B0 family) A sysfs dump from an Infinity6B0 chip (SSC009A-S01A, QFN88) shows soc_id 242, CHIP_ID 0xF2, and 64 MB DDR2 at 1332 MHz on a 16-bit bus (from /sys/devices/system/miu/miu0/dram_info)."
-      sources:
-      - https://t.me/c/1166652144/18426
-    - text: "(Infinity6B0 family) Per SigmaStar's SSD268 docs, SSC333/335/337(DE) are one family from the u-boot/kernel point of view; differences within the family seem to be memory/ISP/VPE capabilities. As Tino recalls, SSC335/337 should be less powerful than I6E."
-      sources:
-      - https://t.me/c/1166652144/20377
-      - https://t.me/c/1809358416/64318
-    - text: "(Infinity6B0 family) The I6B0 SDK codename is Ispahan (demo code dir jedi)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-      - https://t.me/c/1809358416/55175
-    - text: "(Infinity6B0 family) Tino noted a vendor firmware that uses the 'standard SigmaStar' 4.9.84 kernel and the I6B0 SDK."
-      sources:
-      - https://t.me/c/1166652144/72844
-    - text: "(Infinity6B0 family) The IPL signature MVX4##I6b0g05c44beIPL_ is the same on MS-J10 (SSC335), MC-F40 (SSC337) and MC-F50 (SSC337DE), but differs on new SSC30KD boards; Tino thinks this means different SDKs and/or IPL builds."
-      sources:
-      - https://t.me/c/1166652144/19577
-    - text: "(Infinity6B0 family) In the Anjoy script mi_venc.ko is loaded with max_width=1920 max_height=1088, or 2304x1296 when a 3MP flag is set, so the command cat /proc/mi_modules/mi_venc/mi_venc0 cannot show the maximum VPE parameters either."
-      sources:
-      - https://t.me/c/1166652144/19651
-    - text: "(Infinity6B0 family) Contrary to the claim that there is no documentation on adapting new sensors, vendor documentation exists, e.g. the I6B0 Ispahan (SSC9341) Sensor Porting FAQ on wx.comake.online."
-      sources:
-      - https://t.me/c/1809358416/92749
-    - text: "(Infinity6B0 family) As far as Tino knew on 2024-04-21, I6E and I6B0 were the only SigmaStar families supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/76627
 - family: INFINITY6B0
   model: SSC335DE
   version: ''
@@ -822,33 +688,6 @@ socs:
     - text: "His rough ranking (IMHO), weakest to strongest: ssc335/377, ssc335de, ssc337DE, ssc378DE, ssc30kd, ssc30kq, ssc338q, ssc339g, ssc359."
       sources:
       - https://t.me/c/1166652144/78861
-    - text: "(Infinity6B0 family) A sysfs dump from an Infinity6B0 chip (SSC009A-S01A, QFN88) shows soc_id 242, CHIP_ID 0xF2, and 64 MB DDR2 at 1332 MHz on a 16-bit bus (from /sys/devices/system/miu/miu0/dram_info)."
-      sources:
-      - https://t.me/c/1166652144/18426
-    - text: "(Infinity6B0 family) Per SigmaStar's SSD268 docs, SSC333/335/337(DE) are one family from the u-boot/kernel point of view; differences within the family seem to be memory/ISP/VPE capabilities. As Tino recalls, SSC335/337 should be less powerful than I6E."
-      sources:
-      - https://t.me/c/1166652144/20377
-      - https://t.me/c/1809358416/64318
-    - text: "(Infinity6B0 family) The I6B0 SDK codename is Ispahan (demo code dir jedi)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-      - https://t.me/c/1809358416/55175
-    - text: "(Infinity6B0 family) Tino noted a vendor firmware that uses the 'standard SigmaStar' 4.9.84 kernel and the I6B0 SDK."
-      sources:
-      - https://t.me/c/1166652144/72844
-    - text: "(Infinity6B0 family) The IPL signature MVX4##I6b0g05c44beIPL_ is the same on MS-J10 (SSC335), MC-F40 (SSC337) and MC-F50 (SSC337DE), but differs on new SSC30KD boards; Tino thinks this means different SDKs and/or IPL builds."
-      sources:
-      - https://t.me/c/1166652144/19577
-    - text: "(Infinity6B0 family) In the Anjoy script mi_venc.ko is loaded with max_width=1920 max_height=1088, or 2304x1296 when a 3MP flag is set, so the command cat /proc/mi_modules/mi_venc/mi_venc0 cannot show the maximum VPE parameters either."
-      sources:
-      - https://t.me/c/1166652144/19651
-    - text: "(Infinity6B0 family) Contrary to the claim that there is no documentation on adapting new sensors, vendor documentation exists, e.g. the I6B0 Ispahan (SSC9341) Sensor Porting FAQ on wx.comake.online."
-      sources:
-      - https://t.me/c/1809358416/92749
-    - text: "(Infinity6B0 family) As far as Tino knew on 2024-04-21, I6E and I6B0 were the only SigmaStar families supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/76627
 - family: INFINITY6E
   model: SSC336D
   version: null
@@ -863,120 +702,6 @@ socs:
   build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc338q_images.yml/badge.svg
   featured: false
   segment: null
-  community_notes:
-    by: Tino Darkness
-    points:
-    - text: "(Infinity6E family) Infinity6E (I6E) covers SSC30KD, SSC30KQ, SSC338 and SSC339; it is a different family and SDK from the I6 SSC325. Tino lists it as a separate family from I6B0 (SSC335) and I6C (SSC377/378)."
-      sources:
-      - https://t.me/c/1166652144/63756
-      - https://t.me/c/1809358416/51875
-    - text: "(Infinity6E family) The I6E SDK codename is Pudding, and SigmaStar demo code for I6E lives under \"alderaan\" (\"jedi\" is for I6B0)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1809358416/65178
-      - https://t.me/c/1809358416/291288
-    - text: "(Infinity6E family) The same Majestic build serves SSC338, SSC339 and SSC30Kx, all I6E (Pudding). As far as Tino knew in 2024-04, only I6E and I6B0 SigmaStar SoCs were supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/112297
-      - https://t.me/c/1809358416/76627
-    - text: "(Infinity6E family) SSC336/338/339 have proprietary 0.5-1 TOPS hardware NN accelerators, and as Tino understands it SSR6xx, SSC336 and SSC338 should share the same AI core."
-      sources:
-      - https://t.me/c/1166652144/18947
-      - https://t.me/c/1166652144/19761
-    - text: "(Infinity6E family) Tino said the SigmaStar DLA/IPU model tool (SGS tools page in the Pudding docs) seems to require a separate NDA and is not free (2024-02)."
-      sources:
-      - https://t.me/c/1809358416/55563
-    - text: "(Infinity6E family) Pudding SDK documentation is published at wx.comake.online/doc/doc/SigmaStarDocs-Pudding-0120/, but as of 2026-08 CoMake's new website has no Pudding SDK download (only SSC305/309 for camera SoCs)."
-      sources:
-      - https://t.me/c/1809358416/275959
-      - https://t.me/c/1809358416/294726
-    - text: "(Infinity6E family) Infinity6E uses dynamic voltage and frequency scaling (DVFS)."
-      sources:
-      - https://t.me/c/1809358416/58283
-    - text: "(Infinity6E family) On an Anjoy board the core voltage is selected by PAD_PM_GPIO7/8 through a device-tree table, vid_voltages = <850 900 950 1000>. Tino calls changing the top entry from 1000 to 1050 'a way to fry your SoC', and says to do it only if TEMP_R is not too high. He says this should apply to most Infinity6 chips and gives 1.05 V as the max."
-      sources:
-      - https://t.me/c/1809358416/50865
-      - https://t.me/c/1809358416/50887
-    - text: "(Infinity6E family) Devices with secure boot enabled require signed, or signed and encrypted, binaries (see the SSC9381G/9351 Pudding OTP-Key docs)."
-      sources:
-      - https://t.me/c/1166652144/78078
-    - text: "(Infinity6E family) SigmaStar boot-select straps offer more than two combinations (NOR, NOR+SD, NAND, ...)."
-      sources:
-      - https://t.me/c/1809358416/38790
-    - text: "(Infinity6E family) For a native FPV venc on I6E, start from st_main_venc.c in the SDK, a simple ~2 KLoC source; the venc and other hardware blocks are documented in the Pudding mi_venc docs."
-      sources:
-      - https://t.me/c/1809358416/39739
-      - https://t.me/c/1809358416/39858
-    - text: "(Infinity6E family) I6E and I6B0 use the \"old\" style SigmaStar ABI, e.g. MI_VENC_CreateChn(VeChn, pstAttr) without a device argument."
-      sources:
-      - https://t.me/c/1809358416/83073
-    - text: "(Infinity6E family) It looks like the OpenIPC SDK headers are closer to I6B0 (Ispahan) than I6E (Pudding), so some enums/structs will not match exactly. In some SDK versions (he remembers I6B0 and I6E) functions are declared in headers but missing from the .so."
-      sources:
-      - https://t.me/c/1809358416/82276
-      - https://t.me/c/1809358416/83077
-    - text: "(Infinity6E family) On I6E (SSC30KQ), MI_VENC_CreateChn must be called before MI_SYS_BindChnPort2, otherwise dmesg shows the channel is not created and bind errors."
-      sources:
-      - https://t.me/c/1809358416/81621
-    - text: "(Infinity6E family) H.265 slice split (MI_VENC_SetH265SliceSplit, u32SliceRowCount 16) is in Tino's working code on Pudding/I6E. In 2024-01 he thought slicing could be enabled in Majestic with a couple of lines via the new public plugin API."
-      sources:
-      - https://t.me/c/1809358416/64708
-      - https://t.me/c/1809358416/53473
-    - text: "(Infinity6E family) Some things cannot be done from a Majestic plugin: e.g. slice mode only works if the VENC is initialised in frame mode or similar, and an already built pipeline cannot be touched."
-      sources:
-      - https://t.me/c/1809358416/55805
-    - text: "(Infinity6E family) The SigmaStar encoder's intra-refresh mode emits no SEI NAL units (a NAL dump shows only IDR, PPS, SPS, TRAIL_N/R and VPS), and Tino has found no sign it can do SEI recovery points/GDR; arbitrary SEI can be injected with MI_VENC_InsertUserData."
-      sources:
-      - https://t.me/c/1809358416/105944
-      - https://t.me/c/1809358416/106100
-    - text: "(Infinity6E family) Tino suggests the SigmaStar hardware encoder does not support B-frames."
-      sources:
-      - https://t.me/c/1809358416/106098
-    - text: "(Infinity6E family) I6E/Pudding chips such as SSC338 support lens distortion correction (LDC) in the VPE, which Tino calls somewhat unique (internal VPE LDC/SCL). As he recalls, on SSC338/Pudding LDC works only in Y, while Maruko and later do X/Y."
-      sources:
-      - https://t.me/c/1809358416/30210
-      - https://t.me/c/1809358416/64320
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6E family) The Pudding VPE has a good, smooth digital zoom (MI_VPE_LoadPortZoomTable / MI_VPE_StartPortZoom), which Tino checked. MI_VPE_SetPortMode can also up-scale, but with risk of FIFO FULL in realtime mode."
-      sources:
-      - https://t.me/c/1809358416/64327
-      - https://t.me/c/1809358416/55776
-    - text: "(Infinity6E family) Tino doesn't think downscaling the sensor image (e.g. to 1080p) on I6E needs the CPU; he points to the DIVP hardware block and believes Majestic already uses it. He thinks scaler parameters may be changeable without restarting the pipeline as long as the output SPS/PPS does not change, perhaps using SNR->VIF->VPE->VDIVP->VENC, but says this should be checked."
-      sources:
-      - https://t.me/c/1809358416/38101
-      - https://t.me/c/1809358416/60463
-    - text: "(Infinity6E family) Tino thinks Majestic already uses real-time VIF-VPE binding on I6E, and IIRC connecting RGN directly to VPE is possible only on I6E."
-      sources:
-      - https://t.me/c/1809358416/84482
-      - https://t.me/c/1809358416/220576
-    - text: "(Infinity6E family) A raw sensor frame can be dumped through the MI VIF procfs, e.g. echo dump 0 0 /tmp > /proc/mi_modules/mi_vif/mi_vif0. For per-module debug logging, /proc/mi_modules/mi_log_info is a better route than UART console messages."
-      sources:
-      - https://t.me/c/1809358416/52510
-      - https://t.me/c/1809358416/65139
-    - text: "(Infinity6E family) For an OSD on SigmaStar you need to draw TTF text onto an ARGB1555 surface. The VDF module has CCTV-related APIs for MD/OD/VG (motion detection, occlusion detection, virtual gate), and the Pudding IVE has an image shift detector."
-      sources:
-      - https://t.me/c/1809358416/65864
-      - https://t.me/c/1809358416/54827
-      - https://t.me/c/1809358416/45213
-    - text: "(Infinity6E family) UVC (USB camera) support for I6x is documented in the Pudding (SSC9381G/9351) docs; I2M is the NVR family, not the I6x camera family."
-      sources:
-      - https://t.me/c/1809358416/37022
-    - text: "(Infinity6E family) OpenIPC's sigmastar-osdrv-infinity6e package includes kernel modules such as mi_ipu.ko and mi_gyro.ko. It looks like mi_gyro.ko supports only ICG-20660, ICG-20330 and ICM-40607 IMUs out of the box, over I2C (default) or SPI, with CCTV-style EIS."
-      sources:
-      - https://t.me/c/1809358416/288063
-      - https://t.me/c/1809358416/292014
-    - text: "(Infinity6E family) On I6E the mhal is monolithic and almost as big as the Linux kernel."
-      sources:
-      - https://t.me/c/1809358416/284434
-    - text: "(Infinity6E family) SigmaStar IQ files from different SDK versions are usually incompatible, let alone across families such as I6E vs I6C."
-      sources:
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6E family) As of 2024-05-07, mini-i6e and mini-i6c were in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6E family) As of 2026-06, Tino said Anjoy is already mostly switching to the SSC37x series even for the low end (SSC373), and that once Anjoy runs out of its old SSC338Q/30KD/30KQ stock 'we'll find out right away'. His impression is that few modules still use SSC338/30KD/30KQ and no new ones are made; new ones are mainly SSC377/378/373/375/38x."
-      sources:
-      - https://t.me/c/1809358416/289712
-      - https://t.me/c/1809358416/290755
 - family: INFINITY6E
   model: SSC336Q
   version: null
@@ -997,117 +722,6 @@ socs:
     - text: "SSC336Q is H.264 only, max 3M@30, per the SSC336D/SSC336Q product brief."
       sources:
       - https://t.me/c/1809358416/46484
-    - text: "(Infinity6E family) Infinity6E (I6E) covers SSC30KD, SSC30KQ, SSC338 and SSC339; it is a different family and SDK from the I6 SSC325. Tino lists it as a separate family from I6B0 (SSC335) and I6C (SSC377/378)."
-      sources:
-      - https://t.me/c/1166652144/63756
-      - https://t.me/c/1809358416/51875
-    - text: "(Infinity6E family) The I6E SDK codename is Pudding, and SigmaStar demo code for I6E lives under \"alderaan\" (\"jedi\" is for I6B0)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1809358416/65178
-      - https://t.me/c/1809358416/291288
-    - text: "(Infinity6E family) The same Majestic build serves SSC338, SSC339 and SSC30Kx, all I6E (Pudding). As far as Tino knew in 2024-04, only I6E and I6B0 SigmaStar SoCs were supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/112297
-      - https://t.me/c/1809358416/76627
-    - text: "(Infinity6E family) SSC336/338/339 have proprietary 0.5-1 TOPS hardware NN accelerators, and as Tino understands it SSR6xx, SSC336 and SSC338 should share the same AI core."
-      sources:
-      - https://t.me/c/1166652144/18947
-      - https://t.me/c/1166652144/19761
-    - text: "(Infinity6E family) Tino said the SigmaStar DLA/IPU model tool (SGS tools page in the Pudding docs) seems to require a separate NDA and is not free (2024-02)."
-      sources:
-      - https://t.me/c/1809358416/55563
-    - text: "(Infinity6E family) Pudding SDK documentation is published at wx.comake.online/doc/doc/SigmaStarDocs-Pudding-0120/, but as of 2026-08 CoMake's new website has no Pudding SDK download (only SSC305/309 for camera SoCs)."
-      sources:
-      - https://t.me/c/1809358416/275959
-      - https://t.me/c/1809358416/294726
-    - text: "(Infinity6E family) Infinity6E uses dynamic voltage and frequency scaling (DVFS)."
-      sources:
-      - https://t.me/c/1809358416/58283
-    - text: "(Infinity6E family) On an Anjoy board the core voltage is selected by PAD_PM_GPIO7/8 through a device-tree table, vid_voltages = <850 900 950 1000>. Tino calls changing the top entry from 1000 to 1050 'a way to fry your SoC', and says to do it only if TEMP_R is not too high. He says this should apply to most Infinity6 chips and gives 1.05 V as the max."
-      sources:
-      - https://t.me/c/1809358416/50865
-      - https://t.me/c/1809358416/50887
-    - text: "(Infinity6E family) Devices with secure boot enabled require signed, or signed and encrypted, binaries (see the SSC9381G/9351 Pudding OTP-Key docs)."
-      sources:
-      - https://t.me/c/1166652144/78078
-    - text: "(Infinity6E family) SigmaStar boot-select straps offer more than two combinations (NOR, NOR+SD, NAND, ...)."
-      sources:
-      - https://t.me/c/1809358416/38790
-    - text: "(Infinity6E family) For a native FPV venc on I6E, start from st_main_venc.c in the SDK, a simple ~2 KLoC source; the venc and other hardware blocks are documented in the Pudding mi_venc docs."
-      sources:
-      - https://t.me/c/1809358416/39739
-      - https://t.me/c/1809358416/39858
-    - text: "(Infinity6E family) I6E and I6B0 use the \"old\" style SigmaStar ABI, e.g. MI_VENC_CreateChn(VeChn, pstAttr) without a device argument."
-      sources:
-      - https://t.me/c/1809358416/83073
-    - text: "(Infinity6E family) It looks like the OpenIPC SDK headers are closer to I6B0 (Ispahan) than I6E (Pudding), so some enums/structs will not match exactly. In some SDK versions (he remembers I6B0 and I6E) functions are declared in headers but missing from the .so."
-      sources:
-      - https://t.me/c/1809358416/82276
-      - https://t.me/c/1809358416/83077
-    - text: "(Infinity6E family) On I6E (SSC30KQ), MI_VENC_CreateChn must be called before MI_SYS_BindChnPort2, otherwise dmesg shows the channel is not created and bind errors."
-      sources:
-      - https://t.me/c/1809358416/81621
-    - text: "(Infinity6E family) H.265 slice split (MI_VENC_SetH265SliceSplit, u32SliceRowCount 16) is in Tino's working code on Pudding/I6E. In 2024-01 he thought slicing could be enabled in Majestic with a couple of lines via the new public plugin API."
-      sources:
-      - https://t.me/c/1809358416/64708
-      - https://t.me/c/1809358416/53473
-    - text: "(Infinity6E family) Some things cannot be done from a Majestic plugin: e.g. slice mode only works if the VENC is initialised in frame mode or similar, and an already built pipeline cannot be touched."
-      sources:
-      - https://t.me/c/1809358416/55805
-    - text: "(Infinity6E family) The SigmaStar encoder's intra-refresh mode emits no SEI NAL units (a NAL dump shows only IDR, PPS, SPS, TRAIL_N/R and VPS), and Tino has found no sign it can do SEI recovery points/GDR; arbitrary SEI can be injected with MI_VENC_InsertUserData."
-      sources:
-      - https://t.me/c/1809358416/105944
-      - https://t.me/c/1809358416/106100
-    - text: "(Infinity6E family) Tino suggests the SigmaStar hardware encoder does not support B-frames."
-      sources:
-      - https://t.me/c/1809358416/106098
-    - text: "(Infinity6E family) I6E/Pudding chips such as SSC338 support lens distortion correction (LDC) in the VPE, which Tino calls somewhat unique (internal VPE LDC/SCL). As he recalls, on SSC338/Pudding LDC works only in Y, while Maruko and later do X/Y."
-      sources:
-      - https://t.me/c/1809358416/30210
-      - https://t.me/c/1809358416/64320
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6E family) The Pudding VPE has a good, smooth digital zoom (MI_VPE_LoadPortZoomTable / MI_VPE_StartPortZoom), which Tino checked. MI_VPE_SetPortMode can also up-scale, but with risk of FIFO FULL in realtime mode."
-      sources:
-      - https://t.me/c/1809358416/64327
-      - https://t.me/c/1809358416/55776
-    - text: "(Infinity6E family) Tino doesn't think downscaling the sensor image (e.g. to 1080p) on I6E needs the CPU; he points to the DIVP hardware block and believes Majestic already uses it. He thinks scaler parameters may be changeable without restarting the pipeline as long as the output SPS/PPS does not change, perhaps using SNR->VIF->VPE->VDIVP->VENC, but says this should be checked."
-      sources:
-      - https://t.me/c/1809358416/38101
-      - https://t.me/c/1809358416/60463
-    - text: "(Infinity6E family) Tino thinks Majestic already uses real-time VIF-VPE binding on I6E, and IIRC connecting RGN directly to VPE is possible only on I6E."
-      sources:
-      - https://t.me/c/1809358416/84482
-      - https://t.me/c/1809358416/220576
-    - text: "(Infinity6E family) A raw sensor frame can be dumped through the MI VIF procfs, e.g. echo dump 0 0 /tmp > /proc/mi_modules/mi_vif/mi_vif0. For per-module debug logging, /proc/mi_modules/mi_log_info is a better route than UART console messages."
-      sources:
-      - https://t.me/c/1809358416/52510
-      - https://t.me/c/1809358416/65139
-    - text: "(Infinity6E family) For an OSD on SigmaStar you need to draw TTF text onto an ARGB1555 surface. The VDF module has CCTV-related APIs for MD/OD/VG (motion detection, occlusion detection, virtual gate), and the Pudding IVE has an image shift detector."
-      sources:
-      - https://t.me/c/1809358416/65864
-      - https://t.me/c/1809358416/54827
-      - https://t.me/c/1809358416/45213
-    - text: "(Infinity6E family) UVC (USB camera) support for I6x is documented in the Pudding (SSC9381G/9351) docs; I2M is the NVR family, not the I6x camera family."
-      sources:
-      - https://t.me/c/1809358416/37022
-    - text: "(Infinity6E family) OpenIPC's sigmastar-osdrv-infinity6e package includes kernel modules such as mi_ipu.ko and mi_gyro.ko. It looks like mi_gyro.ko supports only ICG-20660, ICG-20330 and ICM-40607 IMUs out of the box, over I2C (default) or SPI, with CCTV-style EIS."
-      sources:
-      - https://t.me/c/1809358416/288063
-      - https://t.me/c/1809358416/292014
-    - text: "(Infinity6E family) On I6E the mhal is monolithic and almost as big as the Linux kernel."
-      sources:
-      - https://t.me/c/1809358416/284434
-    - text: "(Infinity6E family) SigmaStar IQ files from different SDK versions are usually incompatible, let alone across families such as I6E vs I6C."
-      sources:
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6E family) As of 2024-05-07, mini-i6e and mini-i6c were in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6E family) As of 2026-06, Tino said Anjoy is already mostly switching to the SSC37x series even for the low end (SSC373), and that once Anjoy runs out of its old SSC338Q/30KD/30KQ stock 'we'll find out right away'. His impression is that few modules still use SSC338/30KD/30KQ and no new ones are made; new ones are mainly SSC377/378/373/375/38x."
-      sources:
-      - https://t.me/c/1809358416/289712
-      - https://t.me/c/1809358416/290755
 - family: INFINITY6B0
   model: SSC337
   version: ''
@@ -1134,33 +748,6 @@ socs:
     - text: "The SSC337 BROM signature, read in u-boot with md.b 0x7fe0 0x20, is MVX1##I6gf74c9b5CMN_ROM######XVM, the same as SSC335/337DE."
       sources:
       - https://t.me/c/1166652144/19585
-    - text: "(Infinity6B0 family) A sysfs dump from an Infinity6B0 chip (SSC009A-S01A, QFN88) shows soc_id 242, CHIP_ID 0xF2, and 64 MB DDR2 at 1332 MHz on a 16-bit bus (from /sys/devices/system/miu/miu0/dram_info)."
-      sources:
-      - https://t.me/c/1166652144/18426
-    - text: "(Infinity6B0 family) Per SigmaStar's SSD268 docs, SSC333/335/337(DE) are one family from the u-boot/kernel point of view; differences within the family seem to be memory/ISP/VPE capabilities. As Tino recalls, SSC335/337 should be less powerful than I6E."
-      sources:
-      - https://t.me/c/1166652144/20377
-      - https://t.me/c/1809358416/64318
-    - text: "(Infinity6B0 family) The I6B0 SDK codename is Ispahan (demo code dir jedi)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-      - https://t.me/c/1809358416/55175
-    - text: "(Infinity6B0 family) Tino noted a vendor firmware that uses the 'standard SigmaStar' 4.9.84 kernel and the I6B0 SDK."
-      sources:
-      - https://t.me/c/1166652144/72844
-    - text: "(Infinity6B0 family) The IPL signature MVX4##I6b0g05c44beIPL_ is the same on MS-J10 (SSC335), MC-F40 (SSC337) and MC-F50 (SSC337DE), but differs on new SSC30KD boards; Tino thinks this means different SDKs and/or IPL builds."
-      sources:
-      - https://t.me/c/1166652144/19577
-    - text: "(Infinity6B0 family) In the Anjoy script mi_venc.ko is loaded with max_width=1920 max_height=1088, or 2304x1296 when a 3MP flag is set, so the command cat /proc/mi_modules/mi_venc/mi_venc0 cannot show the maximum VPE parameters either."
-      sources:
-      - https://t.me/c/1166652144/19651
-    - text: "(Infinity6B0 family) Contrary to the claim that there is no documentation on adapting new sensors, vendor documentation exists, e.g. the I6B0 Ispahan (SSC9341) Sensor Porting FAQ on wx.comake.online."
-      sources:
-      - https://t.me/c/1809358416/92749
-    - text: "(Infinity6B0 family) As far as Tino knew on 2024-04-21, I6E and I6B0 were the only SigmaStar families supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/76627
 - family: INFINITY6B0
   model: SSC337DE
   version: ''
@@ -1187,33 +774,6 @@ socs:
     - text: "His rough ranking (IMHO), weakest to strongest: ssc335/377, ssc335de, ssc337DE, ssc378DE, ssc30kd, ssc30kq, ssc338q, ssc339g, ssc359."
       sources:
       - https://t.me/c/1166652144/78861
-    - text: "(Infinity6B0 family) A sysfs dump from an Infinity6B0 chip (SSC009A-S01A, QFN88) shows soc_id 242, CHIP_ID 0xF2, and 64 MB DDR2 at 1332 MHz on a 16-bit bus (from /sys/devices/system/miu/miu0/dram_info)."
-      sources:
-      - https://t.me/c/1166652144/18426
-    - text: "(Infinity6B0 family) Per SigmaStar's SSD268 docs, SSC333/335/337(DE) are one family from the u-boot/kernel point of view; differences within the family seem to be memory/ISP/VPE capabilities. As Tino recalls, SSC335/337 should be less powerful than I6E."
-      sources:
-      - https://t.me/c/1166652144/20377
-      - https://t.me/c/1809358416/64318
-    - text: "(Infinity6B0 family) The I6B0 SDK codename is Ispahan (demo code dir jedi)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1166652144/75057
-      - https://t.me/c/1809358416/55175
-    - text: "(Infinity6B0 family) Tino noted a vendor firmware that uses the 'standard SigmaStar' 4.9.84 kernel and the I6B0 SDK."
-      sources:
-      - https://t.me/c/1166652144/72844
-    - text: "(Infinity6B0 family) The IPL signature MVX4##I6b0g05c44beIPL_ is the same on MS-J10 (SSC335), MC-F40 (SSC337) and MC-F50 (SSC337DE), but differs on new SSC30KD boards; Tino thinks this means different SDKs and/or IPL builds."
-      sources:
-      - https://t.me/c/1166652144/19577
-    - text: "(Infinity6B0 family) In the Anjoy script mi_venc.ko is loaded with max_width=1920 max_height=1088, or 2304x1296 when a 3MP flag is set, so the command cat /proc/mi_modules/mi_venc/mi_venc0 cannot show the maximum VPE parameters either."
-      sources:
-      - https://t.me/c/1166652144/19651
-    - text: "(Infinity6B0 family) Contrary to the claim that there is no documentation on adapting new sensors, vendor documentation exists, e.g. the I6B0 Ispahan (SSC9341) Sensor Porting FAQ on wx.comake.online."
-      sources:
-      - https://t.me/c/1809358416/92749
-    - text: "(Infinity6B0 family) As far as Tino knew on 2024-04-21, I6E and I6B0 were the only SigmaStar families supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/76627
 - family: INFINITY6E
   model: SSC338D
   version: null
@@ -1237,117 +797,6 @@ socs:
     - text: "As Tino recalls, SSC338D and SSC338Q are the same chip but with 1Gb vs 2Gb DDR."
       sources:
       - https://t.me/c/1166652144/78898
-    - text: "(Infinity6E family) Infinity6E (I6E) covers SSC30KD, SSC30KQ, SSC338 and SSC339; it is a different family and SDK from the I6 SSC325. Tino lists it as a separate family from I6B0 (SSC335) and I6C (SSC377/378)."
-      sources:
-      - https://t.me/c/1166652144/63756
-      - https://t.me/c/1809358416/51875
-    - text: "(Infinity6E family) The I6E SDK codename is Pudding, and SigmaStar demo code for I6E lives under \"alderaan\" (\"jedi\" is for I6B0)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1809358416/65178
-      - https://t.me/c/1809358416/291288
-    - text: "(Infinity6E family) The same Majestic build serves SSC338, SSC339 and SSC30Kx, all I6E (Pudding). As far as Tino knew in 2024-04, only I6E and I6B0 SigmaStar SoCs were supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/112297
-      - https://t.me/c/1809358416/76627
-    - text: "(Infinity6E family) SSC336/338/339 have proprietary 0.5-1 TOPS hardware NN accelerators, and as Tino understands it SSR6xx, SSC336 and SSC338 should share the same AI core."
-      sources:
-      - https://t.me/c/1166652144/18947
-      - https://t.me/c/1166652144/19761
-    - text: "(Infinity6E family) Tino said the SigmaStar DLA/IPU model tool (SGS tools page in the Pudding docs) seems to require a separate NDA and is not free (2024-02)."
-      sources:
-      - https://t.me/c/1809358416/55563
-    - text: "(Infinity6E family) Pudding SDK documentation is published at wx.comake.online/doc/doc/SigmaStarDocs-Pudding-0120/, but as of 2026-08 CoMake's new website has no Pudding SDK download (only SSC305/309 for camera SoCs)."
-      sources:
-      - https://t.me/c/1809358416/275959
-      - https://t.me/c/1809358416/294726
-    - text: "(Infinity6E family) Infinity6E uses dynamic voltage and frequency scaling (DVFS)."
-      sources:
-      - https://t.me/c/1809358416/58283
-    - text: "(Infinity6E family) On an Anjoy board the core voltage is selected by PAD_PM_GPIO7/8 through a device-tree table, vid_voltages = <850 900 950 1000>. Tino calls changing the top entry from 1000 to 1050 'a way to fry your SoC', and says to do it only if TEMP_R is not too high. He says this should apply to most Infinity6 chips and gives 1.05 V as the max."
-      sources:
-      - https://t.me/c/1809358416/50865
-      - https://t.me/c/1809358416/50887
-    - text: "(Infinity6E family) Devices with secure boot enabled require signed, or signed and encrypted, binaries (see the SSC9381G/9351 Pudding OTP-Key docs)."
-      sources:
-      - https://t.me/c/1166652144/78078
-    - text: "(Infinity6E family) SigmaStar boot-select straps offer more than two combinations (NOR, NOR+SD, NAND, ...)."
-      sources:
-      - https://t.me/c/1809358416/38790
-    - text: "(Infinity6E family) For a native FPV venc on I6E, start from st_main_venc.c in the SDK, a simple ~2 KLoC source; the venc and other hardware blocks are documented in the Pudding mi_venc docs."
-      sources:
-      - https://t.me/c/1809358416/39739
-      - https://t.me/c/1809358416/39858
-    - text: "(Infinity6E family) I6E and I6B0 use the \"old\" style SigmaStar ABI, e.g. MI_VENC_CreateChn(VeChn, pstAttr) without a device argument."
-      sources:
-      - https://t.me/c/1809358416/83073
-    - text: "(Infinity6E family) It looks like the OpenIPC SDK headers are closer to I6B0 (Ispahan) than I6E (Pudding), so some enums/structs will not match exactly. In some SDK versions (he remembers I6B0 and I6E) functions are declared in headers but missing from the .so."
-      sources:
-      - https://t.me/c/1809358416/82276
-      - https://t.me/c/1809358416/83077
-    - text: "(Infinity6E family) On I6E (SSC30KQ), MI_VENC_CreateChn must be called before MI_SYS_BindChnPort2, otherwise dmesg shows the channel is not created and bind errors."
-      sources:
-      - https://t.me/c/1809358416/81621
-    - text: "(Infinity6E family) H.265 slice split (MI_VENC_SetH265SliceSplit, u32SliceRowCount 16) is in Tino's working code on Pudding/I6E. In 2024-01 he thought slicing could be enabled in Majestic with a couple of lines via the new public plugin API."
-      sources:
-      - https://t.me/c/1809358416/64708
-      - https://t.me/c/1809358416/53473
-    - text: "(Infinity6E family) Some things cannot be done from a Majestic plugin: e.g. slice mode only works if the VENC is initialised in frame mode or similar, and an already built pipeline cannot be touched."
-      sources:
-      - https://t.me/c/1809358416/55805
-    - text: "(Infinity6E family) The SigmaStar encoder's intra-refresh mode emits no SEI NAL units (a NAL dump shows only IDR, PPS, SPS, TRAIL_N/R and VPS), and Tino has found no sign it can do SEI recovery points/GDR; arbitrary SEI can be injected with MI_VENC_InsertUserData."
-      sources:
-      - https://t.me/c/1809358416/105944
-      - https://t.me/c/1809358416/106100
-    - text: "(Infinity6E family) Tino suggests the SigmaStar hardware encoder does not support B-frames."
-      sources:
-      - https://t.me/c/1809358416/106098
-    - text: "(Infinity6E family) I6E/Pudding chips such as SSC338 support lens distortion correction (LDC) in the VPE, which Tino calls somewhat unique (internal VPE LDC/SCL). As he recalls, on SSC338/Pudding LDC works only in Y, while Maruko and later do X/Y."
-      sources:
-      - https://t.me/c/1809358416/30210
-      - https://t.me/c/1809358416/64320
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6E family) The Pudding VPE has a good, smooth digital zoom (MI_VPE_LoadPortZoomTable / MI_VPE_StartPortZoom), which Tino checked. MI_VPE_SetPortMode can also up-scale, but with risk of FIFO FULL in realtime mode."
-      sources:
-      - https://t.me/c/1809358416/64327
-      - https://t.me/c/1809358416/55776
-    - text: "(Infinity6E family) Tino doesn't think downscaling the sensor image (e.g. to 1080p) on I6E needs the CPU; he points to the DIVP hardware block and believes Majestic already uses it. He thinks scaler parameters may be changeable without restarting the pipeline as long as the output SPS/PPS does not change, perhaps using SNR->VIF->VPE->VDIVP->VENC, but says this should be checked."
-      sources:
-      - https://t.me/c/1809358416/38101
-      - https://t.me/c/1809358416/60463
-    - text: "(Infinity6E family) Tino thinks Majestic already uses real-time VIF-VPE binding on I6E, and IIRC connecting RGN directly to VPE is possible only on I6E."
-      sources:
-      - https://t.me/c/1809358416/84482
-      - https://t.me/c/1809358416/220576
-    - text: "(Infinity6E family) A raw sensor frame can be dumped through the MI VIF procfs, e.g. echo dump 0 0 /tmp > /proc/mi_modules/mi_vif/mi_vif0. For per-module debug logging, /proc/mi_modules/mi_log_info is a better route than UART console messages."
-      sources:
-      - https://t.me/c/1809358416/52510
-      - https://t.me/c/1809358416/65139
-    - text: "(Infinity6E family) For an OSD on SigmaStar you need to draw TTF text onto an ARGB1555 surface. The VDF module has CCTV-related APIs for MD/OD/VG (motion detection, occlusion detection, virtual gate), and the Pudding IVE has an image shift detector."
-      sources:
-      - https://t.me/c/1809358416/65864
-      - https://t.me/c/1809358416/54827
-      - https://t.me/c/1809358416/45213
-    - text: "(Infinity6E family) UVC (USB camera) support for I6x is documented in the Pudding (SSC9381G/9351) docs; I2M is the NVR family, not the I6x camera family."
-      sources:
-      - https://t.me/c/1809358416/37022
-    - text: "(Infinity6E family) OpenIPC's sigmastar-osdrv-infinity6e package includes kernel modules such as mi_ipu.ko and mi_gyro.ko. It looks like mi_gyro.ko supports only ICG-20660, ICG-20330 and ICM-40607 IMUs out of the box, over I2C (default) or SPI, with CCTV-style EIS."
-      sources:
-      - https://t.me/c/1809358416/288063
-      - https://t.me/c/1809358416/292014
-    - text: "(Infinity6E family) On I6E the mhal is monolithic and almost as big as the Linux kernel."
-      sources:
-      - https://t.me/c/1809358416/284434
-    - text: "(Infinity6E family) SigmaStar IQ files from different SDK versions are usually incompatible, let alone across families such as I6E vs I6C."
-      sources:
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6E family) As of 2024-05-07, mini-i6e and mini-i6c were in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6E family) As of 2026-06, Tino said Anjoy is already mostly switching to the SSC37x series even for the low end (SSC373), and that once Anjoy runs out of its old SSC338Q/30KD/30KQ stock 'we'll find out right away'. His impression is that few modules still use SSC338/30KD/30KQ and no new ones are made; new ones are mainly SSC377/378/373/375/38x."
-      sources:
-      - https://t.me/c/1809358416/289712
-      - https://t.me/c/1809358416/290755
 - family: INFINITY6E
   model: SSC338G
   version: null
@@ -1387,117 +836,6 @@ socs:
       sources:
       - https://t.me/c/1809358416/181307
       - https://t.me/c/1809358416/117054
-    - text: "(Infinity6E family) Infinity6E (I6E) covers SSC30KD, SSC30KQ, SSC338 and SSC339; it is a different family and SDK from the I6 SSC325. Tino lists it as a separate family from I6B0 (SSC335) and I6C (SSC377/378)."
-      sources:
-      - https://t.me/c/1166652144/63756
-      - https://t.me/c/1809358416/51875
-    - text: "(Infinity6E family) The I6E SDK codename is Pudding, and SigmaStar demo code for I6E lives under \"alderaan\" (\"jedi\" is for I6B0)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1809358416/65178
-      - https://t.me/c/1809358416/291288
-    - text: "(Infinity6E family) The same Majestic build serves SSC338, SSC339 and SSC30Kx, all I6E (Pudding). As far as Tino knew in 2024-04, only I6E and I6B0 SigmaStar SoCs were supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/112297
-      - https://t.me/c/1809358416/76627
-    - text: "(Infinity6E family) SSC336/338/339 have proprietary 0.5-1 TOPS hardware NN accelerators, and as Tino understands it SSR6xx, SSC336 and SSC338 should share the same AI core."
-      sources:
-      - https://t.me/c/1166652144/18947
-      - https://t.me/c/1166652144/19761
-    - text: "(Infinity6E family) Tino said the SigmaStar DLA/IPU model tool (SGS tools page in the Pudding docs) seems to require a separate NDA and is not free (2024-02)."
-      sources:
-      - https://t.me/c/1809358416/55563
-    - text: "(Infinity6E family) Pudding SDK documentation is published at wx.comake.online/doc/doc/SigmaStarDocs-Pudding-0120/, but as of 2026-08 CoMake's new website has no Pudding SDK download (only SSC305/309 for camera SoCs)."
-      sources:
-      - https://t.me/c/1809358416/275959
-      - https://t.me/c/1809358416/294726
-    - text: "(Infinity6E family) Infinity6E uses dynamic voltage and frequency scaling (DVFS)."
-      sources:
-      - https://t.me/c/1809358416/58283
-    - text: "(Infinity6E family) On an Anjoy board the core voltage is selected by PAD_PM_GPIO7/8 through a device-tree table, vid_voltages = <850 900 950 1000>. Tino calls changing the top entry from 1000 to 1050 'a way to fry your SoC', and says to do it only if TEMP_R is not too high. He says this should apply to most Infinity6 chips and gives 1.05 V as the max."
-      sources:
-      - https://t.me/c/1809358416/50865
-      - https://t.me/c/1809358416/50887
-    - text: "(Infinity6E family) Devices with secure boot enabled require signed, or signed and encrypted, binaries (see the SSC9381G/9351 Pudding OTP-Key docs)."
-      sources:
-      - https://t.me/c/1166652144/78078
-    - text: "(Infinity6E family) SigmaStar boot-select straps offer more than two combinations (NOR, NOR+SD, NAND, ...)."
-      sources:
-      - https://t.me/c/1809358416/38790
-    - text: "(Infinity6E family) For a native FPV venc on I6E, start from st_main_venc.c in the SDK, a simple ~2 KLoC source; the venc and other hardware blocks are documented in the Pudding mi_venc docs."
-      sources:
-      - https://t.me/c/1809358416/39739
-      - https://t.me/c/1809358416/39858
-    - text: "(Infinity6E family) I6E and I6B0 use the \"old\" style SigmaStar ABI, e.g. MI_VENC_CreateChn(VeChn, pstAttr) without a device argument."
-      sources:
-      - https://t.me/c/1809358416/83073
-    - text: "(Infinity6E family) It looks like the OpenIPC SDK headers are closer to I6B0 (Ispahan) than I6E (Pudding), so some enums/structs will not match exactly. In some SDK versions (he remembers I6B0 and I6E) functions are declared in headers but missing from the .so."
-      sources:
-      - https://t.me/c/1809358416/82276
-      - https://t.me/c/1809358416/83077
-    - text: "(Infinity6E family) On I6E (SSC30KQ), MI_VENC_CreateChn must be called before MI_SYS_BindChnPort2, otherwise dmesg shows the channel is not created and bind errors."
-      sources:
-      - https://t.me/c/1809358416/81621
-    - text: "(Infinity6E family) H.265 slice split (MI_VENC_SetH265SliceSplit, u32SliceRowCount 16) is in Tino's working code on Pudding/I6E. In 2024-01 he thought slicing could be enabled in Majestic with a couple of lines via the new public plugin API."
-      sources:
-      - https://t.me/c/1809358416/64708
-      - https://t.me/c/1809358416/53473
-    - text: "(Infinity6E family) Some things cannot be done from a Majestic plugin: e.g. slice mode only works if the VENC is initialised in frame mode or similar, and an already built pipeline cannot be touched."
-      sources:
-      - https://t.me/c/1809358416/55805
-    - text: "(Infinity6E family) The SigmaStar encoder's intra-refresh mode emits no SEI NAL units (a NAL dump shows only IDR, PPS, SPS, TRAIL_N/R and VPS), and Tino has found no sign it can do SEI recovery points/GDR; arbitrary SEI can be injected with MI_VENC_InsertUserData."
-      sources:
-      - https://t.me/c/1809358416/105944
-      - https://t.me/c/1809358416/106100
-    - text: "(Infinity6E family) Tino suggests the SigmaStar hardware encoder does not support B-frames."
-      sources:
-      - https://t.me/c/1809358416/106098
-    - text: "(Infinity6E family) I6E/Pudding chips such as SSC338 support lens distortion correction (LDC) in the VPE, which Tino calls somewhat unique (internal VPE LDC/SCL). As he recalls, on SSC338/Pudding LDC works only in Y, while Maruko and later do X/Y."
-      sources:
-      - https://t.me/c/1809358416/30210
-      - https://t.me/c/1809358416/64320
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6E family) The Pudding VPE has a good, smooth digital zoom (MI_VPE_LoadPortZoomTable / MI_VPE_StartPortZoom), which Tino checked. MI_VPE_SetPortMode can also up-scale, but with risk of FIFO FULL in realtime mode."
-      sources:
-      - https://t.me/c/1809358416/64327
-      - https://t.me/c/1809358416/55776
-    - text: "(Infinity6E family) Tino doesn't think downscaling the sensor image (e.g. to 1080p) on I6E needs the CPU; he points to the DIVP hardware block and believes Majestic already uses it. He thinks scaler parameters may be changeable without restarting the pipeline as long as the output SPS/PPS does not change, perhaps using SNR->VIF->VPE->VDIVP->VENC, but says this should be checked."
-      sources:
-      - https://t.me/c/1809358416/38101
-      - https://t.me/c/1809358416/60463
-    - text: "(Infinity6E family) Tino thinks Majestic already uses real-time VIF-VPE binding on I6E, and IIRC connecting RGN directly to VPE is possible only on I6E."
-      sources:
-      - https://t.me/c/1809358416/84482
-      - https://t.me/c/1809358416/220576
-    - text: "(Infinity6E family) A raw sensor frame can be dumped through the MI VIF procfs, e.g. echo dump 0 0 /tmp > /proc/mi_modules/mi_vif/mi_vif0. For per-module debug logging, /proc/mi_modules/mi_log_info is a better route than UART console messages."
-      sources:
-      - https://t.me/c/1809358416/52510
-      - https://t.me/c/1809358416/65139
-    - text: "(Infinity6E family) For an OSD on SigmaStar you need to draw TTF text onto an ARGB1555 surface. The VDF module has CCTV-related APIs for MD/OD/VG (motion detection, occlusion detection, virtual gate), and the Pudding IVE has an image shift detector."
-      sources:
-      - https://t.me/c/1809358416/65864
-      - https://t.me/c/1809358416/54827
-      - https://t.me/c/1809358416/45213
-    - text: "(Infinity6E family) UVC (USB camera) support for I6x is documented in the Pudding (SSC9381G/9351) docs; I2M is the NVR family, not the I6x camera family."
-      sources:
-      - https://t.me/c/1809358416/37022
-    - text: "(Infinity6E family) OpenIPC's sigmastar-osdrv-infinity6e package includes kernel modules such as mi_ipu.ko and mi_gyro.ko. It looks like mi_gyro.ko supports only ICG-20660, ICG-20330 and ICM-40607 IMUs out of the box, over I2C (default) or SPI, with CCTV-style EIS."
-      sources:
-      - https://t.me/c/1809358416/288063
-      - https://t.me/c/1809358416/292014
-    - text: "(Infinity6E family) On I6E the mhal is monolithic and almost as big as the Linux kernel."
-      sources:
-      - https://t.me/c/1809358416/284434
-    - text: "(Infinity6E family) SigmaStar IQ files from different SDK versions are usually incompatible, let alone across families such as I6E vs I6C."
-      sources:
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6E family) As of 2024-05-07, mini-i6e and mini-i6c were in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6E family) As of 2026-06, Tino said Anjoy is already mostly switching to the SSC37x series even for the low end (SSC373), and that once Anjoy runs out of its old SSC338Q/30KD/30KQ stock 'we'll find out right away'. His impression is that few modules still use SSC338/30KD/30KQ and no new ones are made; new ones are mainly SSC377/378/373/375/38x."
-      sources:
-      - https://t.me/c/1809358416/289712
-      - https://t.me/c/1809358416/290755
 - family: INFINITY6E
   model: SSC338Q
   version: null
@@ -1655,117 +993,6 @@ socs:
       sources:
       - https://t.me/c/1809358416/298128
       - https://t.me/c/1809358416/139545
-    - text: "(Infinity6E family) Infinity6E (I6E) covers SSC30KD, SSC30KQ, SSC338 and SSC339; it is a different family and SDK from the I6 SSC325. Tino lists it as a separate family from I6B0 (SSC335) and I6C (SSC377/378)."
-      sources:
-      - https://t.me/c/1166652144/63756
-      - https://t.me/c/1809358416/51875
-    - text: "(Infinity6E family) The I6E SDK codename is Pudding, and SigmaStar demo code for I6E lives under \"alderaan\" (\"jedi\" is for I6B0)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1809358416/65178
-      - https://t.me/c/1809358416/291288
-    - text: "(Infinity6E family) The same Majestic build serves SSC338, SSC339 and SSC30Kx, all I6E (Pudding). As far as Tino knew in 2024-04, only I6E and I6B0 SigmaStar SoCs were supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/112297
-      - https://t.me/c/1809358416/76627
-    - text: "(Infinity6E family) SSC336/338/339 have proprietary 0.5-1 TOPS hardware NN accelerators, and as Tino understands it SSR6xx, SSC336 and SSC338 should share the same AI core."
-      sources:
-      - https://t.me/c/1166652144/18947
-      - https://t.me/c/1166652144/19761
-    - text: "(Infinity6E family) Tino said the SigmaStar DLA/IPU model tool (SGS tools page in the Pudding docs) seems to require a separate NDA and is not free (2024-02)."
-      sources:
-      - https://t.me/c/1809358416/55563
-    - text: "(Infinity6E family) Pudding SDK documentation is published at wx.comake.online/doc/doc/SigmaStarDocs-Pudding-0120/, but as of 2026-08 CoMake's new website has no Pudding SDK download (only SSC305/309 for camera SoCs)."
-      sources:
-      - https://t.me/c/1809358416/275959
-      - https://t.me/c/1809358416/294726
-    - text: "(Infinity6E family) Infinity6E uses dynamic voltage and frequency scaling (DVFS)."
-      sources:
-      - https://t.me/c/1809358416/58283
-    - text: "(Infinity6E family) On an Anjoy board the core voltage is selected by PAD_PM_GPIO7/8 through a device-tree table, vid_voltages = <850 900 950 1000>. Tino calls changing the top entry from 1000 to 1050 'a way to fry your SoC', and says to do it only if TEMP_R is not too high. He says this should apply to most Infinity6 chips and gives 1.05 V as the max."
-      sources:
-      - https://t.me/c/1809358416/50865
-      - https://t.me/c/1809358416/50887
-    - text: "(Infinity6E family) Devices with secure boot enabled require signed, or signed and encrypted, binaries (see the SSC9381G/9351 Pudding OTP-Key docs)."
-      sources:
-      - https://t.me/c/1166652144/78078
-    - text: "(Infinity6E family) SigmaStar boot-select straps offer more than two combinations (NOR, NOR+SD, NAND, ...)."
-      sources:
-      - https://t.me/c/1809358416/38790
-    - text: "(Infinity6E family) For a native FPV venc on I6E, start from st_main_venc.c in the SDK, a simple ~2 KLoC source; the venc and other hardware blocks are documented in the Pudding mi_venc docs."
-      sources:
-      - https://t.me/c/1809358416/39739
-      - https://t.me/c/1809358416/39858
-    - text: "(Infinity6E family) I6E and I6B0 use the \"old\" style SigmaStar ABI, e.g. MI_VENC_CreateChn(VeChn, pstAttr) without a device argument."
-      sources:
-      - https://t.me/c/1809358416/83073
-    - text: "(Infinity6E family) It looks like the OpenIPC SDK headers are closer to I6B0 (Ispahan) than I6E (Pudding), so some enums/structs will not match exactly. In some SDK versions (he remembers I6B0 and I6E) functions are declared in headers but missing from the .so."
-      sources:
-      - https://t.me/c/1809358416/82276
-      - https://t.me/c/1809358416/83077
-    - text: "(Infinity6E family) On I6E (SSC30KQ), MI_VENC_CreateChn must be called before MI_SYS_BindChnPort2, otherwise dmesg shows the channel is not created and bind errors."
-      sources:
-      - https://t.me/c/1809358416/81621
-    - text: "(Infinity6E family) H.265 slice split (MI_VENC_SetH265SliceSplit, u32SliceRowCount 16) is in Tino's working code on Pudding/I6E. In 2024-01 he thought slicing could be enabled in Majestic with a couple of lines via the new public plugin API."
-      sources:
-      - https://t.me/c/1809358416/64708
-      - https://t.me/c/1809358416/53473
-    - text: "(Infinity6E family) Some things cannot be done from a Majestic plugin: e.g. slice mode only works if the VENC is initialised in frame mode or similar, and an already built pipeline cannot be touched."
-      sources:
-      - https://t.me/c/1809358416/55805
-    - text: "(Infinity6E family) The SigmaStar encoder's intra-refresh mode emits no SEI NAL units (a NAL dump shows only IDR, PPS, SPS, TRAIL_N/R and VPS), and Tino has found no sign it can do SEI recovery points/GDR; arbitrary SEI can be injected with MI_VENC_InsertUserData."
-      sources:
-      - https://t.me/c/1809358416/105944
-      - https://t.me/c/1809358416/106100
-    - text: "(Infinity6E family) Tino suggests the SigmaStar hardware encoder does not support B-frames."
-      sources:
-      - https://t.me/c/1809358416/106098
-    - text: "(Infinity6E family) I6E/Pudding chips such as SSC338 support lens distortion correction (LDC) in the VPE, which Tino calls somewhat unique (internal VPE LDC/SCL). As he recalls, on SSC338/Pudding LDC works only in Y, while Maruko and later do X/Y."
-      sources:
-      - https://t.me/c/1809358416/30210
-      - https://t.me/c/1809358416/64320
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6E family) The Pudding VPE has a good, smooth digital zoom (MI_VPE_LoadPortZoomTable / MI_VPE_StartPortZoom), which Tino checked. MI_VPE_SetPortMode can also up-scale, but with risk of FIFO FULL in realtime mode."
-      sources:
-      - https://t.me/c/1809358416/64327
-      - https://t.me/c/1809358416/55776
-    - text: "(Infinity6E family) Tino doesn't think downscaling the sensor image (e.g. to 1080p) on I6E needs the CPU; he points to the DIVP hardware block and believes Majestic already uses it. He thinks scaler parameters may be changeable without restarting the pipeline as long as the output SPS/PPS does not change, perhaps using SNR->VIF->VPE->VDIVP->VENC, but says this should be checked."
-      sources:
-      - https://t.me/c/1809358416/38101
-      - https://t.me/c/1809358416/60463
-    - text: "(Infinity6E family) Tino thinks Majestic already uses real-time VIF-VPE binding on I6E, and IIRC connecting RGN directly to VPE is possible only on I6E."
-      sources:
-      - https://t.me/c/1809358416/84482
-      - https://t.me/c/1809358416/220576
-    - text: "(Infinity6E family) A raw sensor frame can be dumped through the MI VIF procfs, e.g. echo dump 0 0 /tmp > /proc/mi_modules/mi_vif/mi_vif0. For per-module debug logging, /proc/mi_modules/mi_log_info is a better route than UART console messages."
-      sources:
-      - https://t.me/c/1809358416/52510
-      - https://t.me/c/1809358416/65139
-    - text: "(Infinity6E family) For an OSD on SigmaStar you need to draw TTF text onto an ARGB1555 surface. The VDF module has CCTV-related APIs for MD/OD/VG (motion detection, occlusion detection, virtual gate), and the Pudding IVE has an image shift detector."
-      sources:
-      - https://t.me/c/1809358416/65864
-      - https://t.me/c/1809358416/54827
-      - https://t.me/c/1809358416/45213
-    - text: "(Infinity6E family) UVC (USB camera) support for I6x is documented in the Pudding (SSC9381G/9351) docs; I2M is the NVR family, not the I6x camera family."
-      sources:
-      - https://t.me/c/1809358416/37022
-    - text: "(Infinity6E family) OpenIPC's sigmastar-osdrv-infinity6e package includes kernel modules such as mi_ipu.ko and mi_gyro.ko. It looks like mi_gyro.ko supports only ICG-20660, ICG-20330 and ICM-40607 IMUs out of the box, over I2C (default) or SPI, with CCTV-style EIS."
-      sources:
-      - https://t.me/c/1809358416/288063
-      - https://t.me/c/1809358416/292014
-    - text: "(Infinity6E family) On I6E the mhal is monolithic and almost as big as the Linux kernel."
-      sources:
-      - https://t.me/c/1809358416/284434
-    - text: "(Infinity6E family) SigmaStar IQ files from different SDK versions are usually incompatible, let alone across families such as I6E vs I6C."
-      sources:
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6E family) As of 2024-05-07, mini-i6e and mini-i6c were in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6E family) As of 2026-06, Tino said Anjoy is already mostly switching to the SSC37x series even for the low end (SSC373), and that once Anjoy runs out of its old SSC338Q/30KD/30KQ stock 'we'll find out right away'. His impression is that few modules still use SSC338/30KD/30KQ and no new ones are made; new ones are mainly SSC377/378/373/375/38x."
-      sources:
-      - https://t.me/c/1809358416/289712
-      - https://t.me/c/1809358416/290755
 - family: INFINITY6E
   model: SSC339G
   version: null
@@ -1823,117 +1050,6 @@ socs:
     - text: "Per the SSD268 docs, SSC339 is the same as the new SSC9381."
       sources:
       - https://t.me/c/1166652144/20377
-    - text: "(Infinity6E family) Infinity6E (I6E) covers SSC30KD, SSC30KQ, SSC338 and SSC339; it is a different family and SDK from the I6 SSC325. Tino lists it as a separate family from I6B0 (SSC335) and I6C (SSC377/378)."
-      sources:
-      - https://t.me/c/1166652144/63756
-      - https://t.me/c/1809358416/51875
-    - text: "(Infinity6E family) The I6E SDK codename is Pudding, and SigmaStar demo code for I6E lives under \"alderaan\" (\"jedi\" is for I6B0)."
-      sources:
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1809358416/65178
-      - https://t.me/c/1809358416/291288
-    - text: "(Infinity6E family) The same Majestic build serves SSC338, SSC339 and SSC30Kx, all I6E (Pudding). As far as Tino knew in 2024-04, only I6E and I6B0 SigmaStar SoCs were supported in OpenIPC."
-      sources:
-      - https://t.me/c/1809358416/112297
-      - https://t.me/c/1809358416/76627
-    - text: "(Infinity6E family) SSC336/338/339 have proprietary 0.5-1 TOPS hardware NN accelerators, and as Tino understands it SSR6xx, SSC336 and SSC338 should share the same AI core."
-      sources:
-      - https://t.me/c/1166652144/18947
-      - https://t.me/c/1166652144/19761
-    - text: "(Infinity6E family) Tino said the SigmaStar DLA/IPU model tool (SGS tools page in the Pudding docs) seems to require a separate NDA and is not free (2024-02)."
-      sources:
-      - https://t.me/c/1809358416/55563
-    - text: "(Infinity6E family) Pudding SDK documentation is published at wx.comake.online/doc/doc/SigmaStarDocs-Pudding-0120/, but as of 2026-08 CoMake's new website has no Pudding SDK download (only SSC305/309 for camera SoCs)."
-      sources:
-      - https://t.me/c/1809358416/275959
-      - https://t.me/c/1809358416/294726
-    - text: "(Infinity6E family) Infinity6E uses dynamic voltage and frequency scaling (DVFS)."
-      sources:
-      - https://t.me/c/1809358416/58283
-    - text: "(Infinity6E family) On an Anjoy board the core voltage is selected by PAD_PM_GPIO7/8 through a device-tree table, vid_voltages = <850 900 950 1000>. Tino calls changing the top entry from 1000 to 1050 'a way to fry your SoC', and says to do it only if TEMP_R is not too high. He says this should apply to most Infinity6 chips and gives 1.05 V as the max."
-      sources:
-      - https://t.me/c/1809358416/50865
-      - https://t.me/c/1809358416/50887
-    - text: "(Infinity6E family) Devices with secure boot enabled require signed, or signed and encrypted, binaries (see the SSC9381G/9351 Pudding OTP-Key docs)."
-      sources:
-      - https://t.me/c/1166652144/78078
-    - text: "(Infinity6E family) SigmaStar boot-select straps offer more than two combinations (NOR, NOR+SD, NAND, ...)."
-      sources:
-      - https://t.me/c/1809358416/38790
-    - text: "(Infinity6E family) For a native FPV venc on I6E, start from st_main_venc.c in the SDK, a simple ~2 KLoC source; the venc and other hardware blocks are documented in the Pudding mi_venc docs."
-      sources:
-      - https://t.me/c/1809358416/39739
-      - https://t.me/c/1809358416/39858
-    - text: "(Infinity6E family) I6E and I6B0 use the \"old\" style SigmaStar ABI, e.g. MI_VENC_CreateChn(VeChn, pstAttr) without a device argument."
-      sources:
-      - https://t.me/c/1809358416/83073
-    - text: "(Infinity6E family) It looks like the OpenIPC SDK headers are closer to I6B0 (Ispahan) than I6E (Pudding), so some enums/structs will not match exactly. In some SDK versions (he remembers I6B0 and I6E) functions are declared in headers but missing from the .so."
-      sources:
-      - https://t.me/c/1809358416/82276
-      - https://t.me/c/1809358416/83077
-    - text: "(Infinity6E family) On I6E (SSC30KQ), MI_VENC_CreateChn must be called before MI_SYS_BindChnPort2, otherwise dmesg shows the channel is not created and bind errors."
-      sources:
-      - https://t.me/c/1809358416/81621
-    - text: "(Infinity6E family) H.265 slice split (MI_VENC_SetH265SliceSplit, u32SliceRowCount 16) is in Tino's working code on Pudding/I6E. In 2024-01 he thought slicing could be enabled in Majestic with a couple of lines via the new public plugin API."
-      sources:
-      - https://t.me/c/1809358416/64708
-      - https://t.me/c/1809358416/53473
-    - text: "(Infinity6E family) Some things cannot be done from a Majestic plugin: e.g. slice mode only works if the VENC is initialised in frame mode or similar, and an already built pipeline cannot be touched."
-      sources:
-      - https://t.me/c/1809358416/55805
-    - text: "(Infinity6E family) The SigmaStar encoder's intra-refresh mode emits no SEI NAL units (a NAL dump shows only IDR, PPS, SPS, TRAIL_N/R and VPS), and Tino has found no sign it can do SEI recovery points/GDR; arbitrary SEI can be injected with MI_VENC_InsertUserData."
-      sources:
-      - https://t.me/c/1809358416/105944
-      - https://t.me/c/1809358416/106100
-    - text: "(Infinity6E family) Tino suggests the SigmaStar hardware encoder does not support B-frames."
-      sources:
-      - https://t.me/c/1809358416/106098
-    - text: "(Infinity6E family) I6E/Pudding chips such as SSC338 support lens distortion correction (LDC) in the VPE, which Tino calls somewhat unique (internal VPE LDC/SCL). As he recalls, on SSC338/Pudding LDC works only in Y, while Maruko and later do X/Y."
-      sources:
-      - https://t.me/c/1809358416/30210
-      - https://t.me/c/1809358416/64320
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6E family) The Pudding VPE has a good, smooth digital zoom (MI_VPE_LoadPortZoomTable / MI_VPE_StartPortZoom), which Tino checked. MI_VPE_SetPortMode can also up-scale, but with risk of FIFO FULL in realtime mode."
-      sources:
-      - https://t.me/c/1809358416/64327
-      - https://t.me/c/1809358416/55776
-    - text: "(Infinity6E family) Tino doesn't think downscaling the sensor image (e.g. to 1080p) on I6E needs the CPU; he points to the DIVP hardware block and believes Majestic already uses it. He thinks scaler parameters may be changeable without restarting the pipeline as long as the output SPS/PPS does not change, perhaps using SNR->VIF->VPE->VDIVP->VENC, but says this should be checked."
-      sources:
-      - https://t.me/c/1809358416/38101
-      - https://t.me/c/1809358416/60463
-    - text: "(Infinity6E family) Tino thinks Majestic already uses real-time VIF-VPE binding on I6E, and IIRC connecting RGN directly to VPE is possible only on I6E."
-      sources:
-      - https://t.me/c/1809358416/84482
-      - https://t.me/c/1809358416/220576
-    - text: "(Infinity6E family) A raw sensor frame can be dumped through the MI VIF procfs, e.g. echo dump 0 0 /tmp > /proc/mi_modules/mi_vif/mi_vif0. For per-module debug logging, /proc/mi_modules/mi_log_info is a better route than UART console messages."
-      sources:
-      - https://t.me/c/1809358416/52510
-      - https://t.me/c/1809358416/65139
-    - text: "(Infinity6E family) For an OSD on SigmaStar you need to draw TTF text onto an ARGB1555 surface. The VDF module has CCTV-related APIs for MD/OD/VG (motion detection, occlusion detection, virtual gate), and the Pudding IVE has an image shift detector."
-      sources:
-      - https://t.me/c/1809358416/65864
-      - https://t.me/c/1809358416/54827
-      - https://t.me/c/1809358416/45213
-    - text: "(Infinity6E family) UVC (USB camera) support for I6x is documented in the Pudding (SSC9381G/9351) docs; I2M is the NVR family, not the I6x camera family."
-      sources:
-      - https://t.me/c/1809358416/37022
-    - text: "(Infinity6E family) OpenIPC's sigmastar-osdrv-infinity6e package includes kernel modules such as mi_ipu.ko and mi_gyro.ko. It looks like mi_gyro.ko supports only ICG-20660, ICG-20330 and ICM-40607 IMUs out of the box, over I2C (default) or SPI, with CCTV-style EIS."
-      sources:
-      - https://t.me/c/1809358416/288063
-      - https://t.me/c/1809358416/292014
-    - text: "(Infinity6E family) On I6E the mhal is monolithic and almost as big as the Linux kernel."
-      sources:
-      - https://t.me/c/1809358416/284434
-    - text: "(Infinity6E family) SigmaStar IQ files from different SDK versions are usually incompatible, let alone across families such as I6E vs I6C."
-      sources:
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6E family) As of 2024-05-07, mini-i6e and mini-i6c were in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6E family) As of 2026-06, Tino said Anjoy is already mostly switching to the SSC37x series even for the low end (SSC373), and that once Anjoy runs out of its old SSC338Q/30KD/30KQ stock 'we'll find out right away'. His impression is that few modules still use SSC338/30KD/30KQ and no new ones are made; new ones are mainly SSC377/378/373/375/38x."
-      sources:
-      - https://t.me/c/1809358416/289712
-      - https://t.me/c/1809358416/290755
 - family: MERCURY6
   model: SSC359G
   version: ''
@@ -1996,26 +1112,6 @@ socs:
     - text: "His rough ranking (IMHO), weakest to strongest: ssc335/377, ssc335de, ssc337DE, ssc378DE, ssc30kd, ssc30kq, ssc338q, ssc339g, ssc359."
       sources:
       - https://t.me/c/1166652144/78861
-    - text: "(Mercury6 family) Mercury6 (M6) is not Infinity6x and has a slightly different purpose; things like VPE+SCL exist only in I6."
-      sources:
-      - https://t.me/c/1809358416/83091
-    - text: "(Mercury6 family) The Mercury6 SDK codename is Tiramisu (as opposed to Pudding for Infinity6E); as he recalls the release is Tiramisu ILS00V021, and M6P is Mochi."
-      sources:
-      - https://t.me/c/1809358416/137228
-      - https://t.me/c/1809358416/83075
-      - https://t.me/c/1809358416/58471
-    - text: "(Mercury6 family) M6 uses the new-style ABI shared with I6F and I6C (e.g. MI_VENC_CreateChn takes MI_VENC_DEV first), while I6E and I6B0 use the old style."
-      sources:
-      - https://t.me/c/1809358416/83073
-    - text: "(Mercury6 family) Mercury6 is used in the RunCam Split-H, SIYI cameras and car DVRs."
-      sources:
-      - https://t.me/c/1809358416/137228
-    - text: "(Mercury6 family) The RunCam Split-H uses SSC8836Q-H, whose signature string MVX4##M6##g#######KL marks it as M6."
-      sources:
-      - https://t.me/c/1809358416/186886
-    - text: "(Mercury6 family) By 2025-03 Tino said it looked like Mercury6 was already implemented in Divinus."
-      sources:
-      - https://t.me/c/1809358416/186886
 - family: INFINITY6C
   model: SSC377
   version: null
@@ -2061,97 +1157,6 @@ socs:
     - text: "As of 2024-03-26, SSC377 was not yet supported by OpenIPC."
       sources:
       - https://t.me/c/1809358416/67977
-    - text: "(Infinity6C family) SSC37x (Maruko) chips use Cortex-A35 cores, not Cortex-A7 like the Pudding/SSC338 generation."
-      sources:
-      - https://t.me/c/1809358416/293095
-      - https://t.me/c/1809358416/275219
-      - https://t.me/c/1809358416/142497
-    - text: "(Infinity6C family) Tino recalls that SSC37x (Maruko SDK) has a newer version of the IPU; he clarified the improvement is a new IPU IP block, a separate core, not the CPU."
-      sources:
-      - https://t.me/c/1809358416/275224
-      - https://t.me/c/1809358416/275219
-    - text: "(Infinity6C family) In 2026-02 Tino compared SSC377/378 to the SSC30KQ/D: 1x Cortex-A35 versus 2x Cortex-A7, but with a newer ISP and, it seems, newer DDR. Earlier, in 2024-03, he said 'who knows?', but some of the I6Cs and (maybe) the new I6Fs look as good as, if not better than, the popular SSC338 (I6E)."
-      sources:
-      - https://t.me/c/1809358416/275517
-      - https://t.me/c/1809358416/64827
-    - text: "(Infinity6C family) Maruko, I6C and SSC37x refer to the same platform: SSC377/378 belong to I6C, and infinity6c is the SDK SoC codename/family."
-      sources:
-      - https://t.me/c/1809358416/219876
-      - https://t.me/c/1809358416/51875
-      - https://t.me/c/1809358416/142509
-    - text: "(Infinity6C family) The I6C SDK codename is Maruko, while I6E uses Pudding, so the two need different SDKs. A Maruko SDK build dated 2022/10/27 (ILS00V2) looked to Tino like a release candidate."
-      sources:
-      - https://t.me/c/1809358416/64314
-      - https://t.me/c/1166652144/75057
-      - https://t.me/c/1166652144/84209
-    - text: "(Infinity6C family) Tino recalls (IIRC) the kernel is 5.10.x and thought binary incompatibility was more likely due to the different kernel version; he also noted the new I6C SDK looks to use more recent uClibc/glibc and kernel."
-      sources:
-      - https://t.me/c/1809358416/64313
-      - https://t.me/c/1166652144/84188
-    - text: "(Infinity6C family) I6C, I6F and I7 are 'new'-style SigmaStar SDKs where devId is the first parameter in most API calls, while I6E is 'old' style; for example in Maruko (I6C) and Tiramisu (I6F) MI_VENC_CreateChn takes an extra MI_VENC_DEV argument, and some pipeline workflow changed."
-      sources:
-      - https://t.me/c/1809358416/78297
-      - https://t.me/c/1809358416/75131
-    - text: "(Infinity6C family) As Tino recalls, starting from I6C SigmaStar made very strong API changes (a completely changed ABI and a new 5.x kernel), so porting from I6E is not as simple as the Ispahan-to-Pudding move; older I6x families have far more similarities than differences."
-      sources:
-      - https://t.me/c/1809358416/211220
-      - https://t.me/c/1166652144/110075
-    - text: "(Infinity6C family) Of the Infinity6C configs infinity6c_ssc027a_s01 and infinity6c_ssc027b_s01, ssc027a is for the QFN88 chip and ssc027b for QFN128."
-      sources:
-      - https://t.me/c/1809358416/75233
-    - text: "(Infinity6C family) The I6C dtsi puts uart0 at 0x1F221000, uart1 at 0x1F221200 and fuart at 0x1F220400, each a 0x200-sized register block. Tino thinks PM_UART is probably on pins 57 and 58 of the SSC37x QFN128 package."
-      sources:
-      - https://t.me/c/1809358416/224628
-      - https://t.me/c/1809358416/215500
-    - text: "(Infinity6C family) SSC37x does not work properly with firmware from SSC338, and SigmaStar IQ files are usually incompatible even across SDK versions, let alone across families such as I6E and I6C."
-      sources:
-      - https://t.me/c/1809358416/215753
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6C family) OpenIPC support history: as of 2024-04-12 the I6C SDK was still not available on GitHub; on 2024-04-21 Tino said that, AFAIK, only I6E/I6B0 were supported in OpenIPC and I6C was in progress; on 2024-05-07 mini-i6e and mini-i6c looked to be in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/73475
-      - https://t.me/c/1809358416/76627
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6C family) In 2024-06 I6C was still quite new for OpenIPC but there were test builds for the 378; as of 2024-12-10, as far as Tino could see on GitHub, SSC377/378 (I6C) support was already there."
-      sources:
-      - https://t.me/c/1166652144/117282
-      - https://t.me/c/1809358416/140926
-    - text: "(Infinity6C family) There is no majestic-fpv for Infinity6C: majestic.infinity6c.fpv.master.tar.bz2 returns 403 Forbidden (2025-04-27), and AFAIK only majestic.infinity6c.lite exists. Tino fears the lite build simply has no FPV optimisations."
-      sources:
-      - https://t.me/c/1809358416/211155
-      - https://t.me/c/1809358416/215558
-      - https://t.me/c/1809358416/220452
-    - text: "(Infinity6C family) Majestic is freeware, not open source. AFAIU Majestic for SSC37x has existed for a long time, even in a new build style with the SDK linked statically (as of 2025-07)."
-      sources:
-      - https://t.me/c/1809358416/212272
-      - https://t.me/c/1809358416/240100
-    - text: "(Infinity6C family) On Maruko, RGN (OSD regions) can attach to SCLx/WIN/JPEG/DISP, but in majestic-i6c-lite RGN is bound to VENC, not SCL. Tino thinks msposd is already fixed for I6C (2025-05-20)."
-      sources:
-      - https://t.me/c/1809358416/220600
-      - https://t.me/c/1809358416/222265
-      - https://t.me/c/1809358416/222299
-    - text: "(Infinity6C family) Divinus: on 2025-05-13 Tino thought it still did not support I6C, and on 2025-05-18 he said it already has partial/initial I6C support; in 2025-08 he noted Divinus on SSC37x is not that easy."
-      sources:
-      - https://t.me/c/1809358416/218726
-      - https://t.me/c/1809358416/221302
-      - https://t.me/c/1809358416/250640
-    - text: "(Infinity6C family) In 2025-02 Tino asked whether the I6C MI_VENC had already been unlocked from its 60 fps limit for FPV use."
-      sources:
-      - https://t.me/c/1809358416/164623
-    - text: "(Infinity6C family) As Tino recalls, Maruko (SSC37x) and later support X/Y correction, where SSC338/Pudding supports only Y."
-      sources:
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6C family) Infinity6C is a new, cheaper SigmaStar chipset; Anjoy is slowly moving to this cost-effective generation (SSC377/378), with modules such as MC-J86 and MC-A81 using SSC378/SSC377DE. As of 2024-05-08, though, SSC377/378 were not that common yet."
-      sources:
-      - https://t.me/c/1809358416/46476
-      - https://t.me/c/1809358416/51867
-      - https://t.me/c/1809358416/82127
-    - text: "(Infinity6C family) In Tino's opinion (2025-02), SSC37x/30x/38x are a new series of SoCs that will gradually replace or extend the familiar I6E Cortex-A7 SoCs."
-      sources:
-      - https://t.me/c/1809358416/164638
-    - text: "(Infinity6C family) The Maruko SDK was never available for download on the vendor website Tino was referring to, not even on the old site (2026-08)."
-      sources:
-      - https://t.me/c/1809358416/294726
 - family: INFINITY6C
   model: SSC377D
   version: null
@@ -2180,97 +1185,6 @@ socs:
     - text: "SSC377D is a cost-effective SoC; the Anjoy MCF46D module with SSC377D was about 65 CNY in 2025-04."
       sources:
       - https://t.me/c/1809358416/211252
-    - text: "(Infinity6C family) SSC37x (Maruko) chips use Cortex-A35 cores, not Cortex-A7 like the Pudding/SSC338 generation."
-      sources:
-      - https://t.me/c/1809358416/293095
-      - https://t.me/c/1809358416/275219
-      - https://t.me/c/1809358416/142497
-    - text: "(Infinity6C family) Tino recalls that SSC37x (Maruko SDK) has a newer version of the IPU; he clarified the improvement is a new IPU IP block, a separate core, not the CPU."
-      sources:
-      - https://t.me/c/1809358416/275224
-      - https://t.me/c/1809358416/275219
-    - text: "(Infinity6C family) In 2026-02 Tino compared SSC377/378 to the SSC30KQ/D: 1x Cortex-A35 versus 2x Cortex-A7, but with a newer ISP and, it seems, newer DDR. Earlier, in 2024-03, he said 'who knows?', but some of the I6Cs and (maybe) the new I6Fs look as good as, if not better than, the popular SSC338 (I6E)."
-      sources:
-      - https://t.me/c/1809358416/275517
-      - https://t.me/c/1809358416/64827
-    - text: "(Infinity6C family) Maruko, I6C and SSC37x refer to the same platform: SSC377/378 belong to I6C, and infinity6c is the SDK SoC codename/family."
-      sources:
-      - https://t.me/c/1809358416/219876
-      - https://t.me/c/1809358416/51875
-      - https://t.me/c/1809358416/142509
-    - text: "(Infinity6C family) The I6C SDK codename is Maruko, while I6E uses Pudding, so the two need different SDKs. A Maruko SDK build dated 2022/10/27 (ILS00V2) looked to Tino like a release candidate."
-      sources:
-      - https://t.me/c/1809358416/64314
-      - https://t.me/c/1166652144/75057
-      - https://t.me/c/1166652144/84209
-    - text: "(Infinity6C family) Tino recalls (IIRC) the kernel is 5.10.x and thought binary incompatibility was more likely due to the different kernel version; he also noted the new I6C SDK looks to use more recent uClibc/glibc and kernel."
-      sources:
-      - https://t.me/c/1809358416/64313
-      - https://t.me/c/1166652144/84188
-    - text: "(Infinity6C family) I6C, I6F and I7 are 'new'-style SigmaStar SDKs where devId is the first parameter in most API calls, while I6E is 'old' style; for example in Maruko (I6C) and Tiramisu (I6F) MI_VENC_CreateChn takes an extra MI_VENC_DEV argument, and some pipeline workflow changed."
-      sources:
-      - https://t.me/c/1809358416/78297
-      - https://t.me/c/1809358416/75131
-    - text: "(Infinity6C family) As Tino recalls, starting from I6C SigmaStar made very strong API changes (a completely changed ABI and a new 5.x kernel), so porting from I6E is not as simple as the Ispahan-to-Pudding move; older I6x families have far more similarities than differences."
-      sources:
-      - https://t.me/c/1809358416/211220
-      - https://t.me/c/1166652144/110075
-    - text: "(Infinity6C family) Of the Infinity6C configs infinity6c_ssc027a_s01 and infinity6c_ssc027b_s01, ssc027a is for the QFN88 chip and ssc027b for QFN128."
-      sources:
-      - https://t.me/c/1809358416/75233
-    - text: "(Infinity6C family) The I6C dtsi puts uart0 at 0x1F221000, uart1 at 0x1F221200 and fuart at 0x1F220400, each a 0x200-sized register block. Tino thinks PM_UART is probably on pins 57 and 58 of the SSC37x QFN128 package."
-      sources:
-      - https://t.me/c/1809358416/224628
-      - https://t.me/c/1809358416/215500
-    - text: "(Infinity6C family) SSC37x does not work properly with firmware from SSC338, and SigmaStar IQ files are usually incompatible even across SDK versions, let alone across families such as I6E and I6C."
-      sources:
-      - https://t.me/c/1809358416/215753
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6C family) OpenIPC support history: as of 2024-04-12 the I6C SDK was still not available on GitHub; on 2024-04-21 Tino said that, AFAIK, only I6E/I6B0 were supported in OpenIPC and I6C was in progress; on 2024-05-07 mini-i6e and mini-i6c looked to be in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/73475
-      - https://t.me/c/1809358416/76627
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6C family) In 2024-06 I6C was still quite new for OpenIPC but there were test builds for the 378; as of 2024-12-10, as far as Tino could see on GitHub, SSC377/378 (I6C) support was already there."
-      sources:
-      - https://t.me/c/1166652144/117282
-      - https://t.me/c/1809358416/140926
-    - text: "(Infinity6C family) There is no majestic-fpv for Infinity6C: majestic.infinity6c.fpv.master.tar.bz2 returns 403 Forbidden (2025-04-27), and AFAIK only majestic.infinity6c.lite exists. Tino fears the lite build simply has no FPV optimisations."
-      sources:
-      - https://t.me/c/1809358416/211155
-      - https://t.me/c/1809358416/215558
-      - https://t.me/c/1809358416/220452
-    - text: "(Infinity6C family) Majestic is freeware, not open source. AFAIU Majestic for SSC37x has existed for a long time, even in a new build style with the SDK linked statically (as of 2025-07)."
-      sources:
-      - https://t.me/c/1809358416/212272
-      - https://t.me/c/1809358416/240100
-    - text: "(Infinity6C family) On Maruko, RGN (OSD regions) can attach to SCLx/WIN/JPEG/DISP, but in majestic-i6c-lite RGN is bound to VENC, not SCL. Tino thinks msposd is already fixed for I6C (2025-05-20)."
-      sources:
-      - https://t.me/c/1809358416/220600
-      - https://t.me/c/1809358416/222265
-      - https://t.me/c/1809358416/222299
-    - text: "(Infinity6C family) Divinus: on 2025-05-13 Tino thought it still did not support I6C, and on 2025-05-18 he said it already has partial/initial I6C support; in 2025-08 he noted Divinus on SSC37x is not that easy."
-      sources:
-      - https://t.me/c/1809358416/218726
-      - https://t.me/c/1809358416/221302
-      - https://t.me/c/1809358416/250640
-    - text: "(Infinity6C family) In 2025-02 Tino asked whether the I6C MI_VENC had already been unlocked from its 60 fps limit for FPV use."
-      sources:
-      - https://t.me/c/1809358416/164623
-    - text: "(Infinity6C family) As Tino recalls, Maruko (SSC37x) and later support X/Y correction, where SSC338/Pudding supports only Y."
-      sources:
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6C family) Infinity6C is a new, cheaper SigmaStar chipset; Anjoy is slowly moving to this cost-effective generation (SSC377/378), with modules such as MC-J86 and MC-A81 using SSC378/SSC377DE. As of 2024-05-08, though, SSC377/378 were not that common yet."
-      sources:
-      - https://t.me/c/1809358416/46476
-      - https://t.me/c/1809358416/51867
-      - https://t.me/c/1809358416/82127
-    - text: "(Infinity6C family) In Tino's opinion (2025-02), SSC37x/30x/38x are a new series of SoCs that will gradually replace or extend the familiar I6E Cortex-A7 SoCs."
-      sources:
-      - https://t.me/c/1809358416/164638
-    - text: "(Infinity6C family) The Maruko SDK was never available for download on the vendor website Tino was referring to, not even on the old site (2026-08)."
-      sources:
-      - https://t.me/c/1809358416/294726
 - family: INFINITY6C
   model: SSC377DE
   version: null
@@ -2291,97 +1205,6 @@ socs:
     - text: "SSC377DE is a 128 MB SoC (SSC377 is 64 MB, SSC377Q[E] 256 MB)."
       sources:
       - https://t.me/c/1166652144/114004
-    - text: "(Infinity6C family) SSC37x (Maruko) chips use Cortex-A35 cores, not Cortex-A7 like the Pudding/SSC338 generation."
-      sources:
-      - https://t.me/c/1809358416/293095
-      - https://t.me/c/1809358416/275219
-      - https://t.me/c/1809358416/142497
-    - text: "(Infinity6C family) Tino recalls that SSC37x (Maruko SDK) has a newer version of the IPU; he clarified the improvement is a new IPU IP block, a separate core, not the CPU."
-      sources:
-      - https://t.me/c/1809358416/275224
-      - https://t.me/c/1809358416/275219
-    - text: "(Infinity6C family) In 2026-02 Tino compared SSC377/378 to the SSC30KQ/D: 1x Cortex-A35 versus 2x Cortex-A7, but with a newer ISP and, it seems, newer DDR. Earlier, in 2024-03, he said 'who knows?', but some of the I6Cs and (maybe) the new I6Fs look as good as, if not better than, the popular SSC338 (I6E)."
-      sources:
-      - https://t.me/c/1809358416/275517
-      - https://t.me/c/1809358416/64827
-    - text: "(Infinity6C family) Maruko, I6C and SSC37x refer to the same platform: SSC377/378 belong to I6C, and infinity6c is the SDK SoC codename/family."
-      sources:
-      - https://t.me/c/1809358416/219876
-      - https://t.me/c/1809358416/51875
-      - https://t.me/c/1809358416/142509
-    - text: "(Infinity6C family) The I6C SDK codename is Maruko, while I6E uses Pudding, so the two need different SDKs. A Maruko SDK build dated 2022/10/27 (ILS00V2) looked to Tino like a release candidate."
-      sources:
-      - https://t.me/c/1809358416/64314
-      - https://t.me/c/1166652144/75057
-      - https://t.me/c/1166652144/84209
-    - text: "(Infinity6C family) Tino recalls (IIRC) the kernel is 5.10.x and thought binary incompatibility was more likely due to the different kernel version; he also noted the new I6C SDK looks to use more recent uClibc/glibc and kernel."
-      sources:
-      - https://t.me/c/1809358416/64313
-      - https://t.me/c/1166652144/84188
-    - text: "(Infinity6C family) I6C, I6F and I7 are 'new'-style SigmaStar SDKs where devId is the first parameter in most API calls, while I6E is 'old' style; for example in Maruko (I6C) and Tiramisu (I6F) MI_VENC_CreateChn takes an extra MI_VENC_DEV argument, and some pipeline workflow changed."
-      sources:
-      - https://t.me/c/1809358416/78297
-      - https://t.me/c/1809358416/75131
-    - text: "(Infinity6C family) As Tino recalls, starting from I6C SigmaStar made very strong API changes (a completely changed ABI and a new 5.x kernel), so porting from I6E is not as simple as the Ispahan-to-Pudding move; older I6x families have far more similarities than differences."
-      sources:
-      - https://t.me/c/1809358416/211220
-      - https://t.me/c/1166652144/110075
-    - text: "(Infinity6C family) Of the Infinity6C configs infinity6c_ssc027a_s01 and infinity6c_ssc027b_s01, ssc027a is for the QFN88 chip and ssc027b for QFN128."
-      sources:
-      - https://t.me/c/1809358416/75233
-    - text: "(Infinity6C family) The I6C dtsi puts uart0 at 0x1F221000, uart1 at 0x1F221200 and fuart at 0x1F220400, each a 0x200-sized register block. Tino thinks PM_UART is probably on pins 57 and 58 of the SSC37x QFN128 package."
-      sources:
-      - https://t.me/c/1809358416/224628
-      - https://t.me/c/1809358416/215500
-    - text: "(Infinity6C family) SSC37x does not work properly with firmware from SSC338, and SigmaStar IQ files are usually incompatible even across SDK versions, let alone across families such as I6E and I6C."
-      sources:
-      - https://t.me/c/1809358416/215753
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6C family) OpenIPC support history: as of 2024-04-12 the I6C SDK was still not available on GitHub; on 2024-04-21 Tino said that, AFAIK, only I6E/I6B0 were supported in OpenIPC and I6C was in progress; on 2024-05-07 mini-i6e and mini-i6c looked to be in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/73475
-      - https://t.me/c/1809358416/76627
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6C family) In 2024-06 I6C was still quite new for OpenIPC but there were test builds for the 378; as of 2024-12-10, as far as Tino could see on GitHub, SSC377/378 (I6C) support was already there."
-      sources:
-      - https://t.me/c/1166652144/117282
-      - https://t.me/c/1809358416/140926
-    - text: "(Infinity6C family) There is no majestic-fpv for Infinity6C: majestic.infinity6c.fpv.master.tar.bz2 returns 403 Forbidden (2025-04-27), and AFAIK only majestic.infinity6c.lite exists. Tino fears the lite build simply has no FPV optimisations."
-      sources:
-      - https://t.me/c/1809358416/211155
-      - https://t.me/c/1809358416/215558
-      - https://t.me/c/1809358416/220452
-    - text: "(Infinity6C family) Majestic is freeware, not open source. AFAIU Majestic for SSC37x has existed for a long time, even in a new build style with the SDK linked statically (as of 2025-07)."
-      sources:
-      - https://t.me/c/1809358416/212272
-      - https://t.me/c/1809358416/240100
-    - text: "(Infinity6C family) On Maruko, RGN (OSD regions) can attach to SCLx/WIN/JPEG/DISP, but in majestic-i6c-lite RGN is bound to VENC, not SCL. Tino thinks msposd is already fixed for I6C (2025-05-20)."
-      sources:
-      - https://t.me/c/1809358416/220600
-      - https://t.me/c/1809358416/222265
-      - https://t.me/c/1809358416/222299
-    - text: "(Infinity6C family) Divinus: on 2025-05-13 Tino thought it still did not support I6C, and on 2025-05-18 he said it already has partial/initial I6C support; in 2025-08 he noted Divinus on SSC37x is not that easy."
-      sources:
-      - https://t.me/c/1809358416/218726
-      - https://t.me/c/1809358416/221302
-      - https://t.me/c/1809358416/250640
-    - text: "(Infinity6C family) In 2025-02 Tino asked whether the I6C MI_VENC had already been unlocked from its 60 fps limit for FPV use."
-      sources:
-      - https://t.me/c/1809358416/164623
-    - text: "(Infinity6C family) As Tino recalls, Maruko (SSC37x) and later support X/Y correction, where SSC338/Pudding supports only Y."
-      sources:
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6C family) Infinity6C is a new, cheaper SigmaStar chipset; Anjoy is slowly moving to this cost-effective generation (SSC377/378), with modules such as MC-J86 and MC-A81 using SSC378/SSC377DE. As of 2024-05-08, though, SSC377/378 were not that common yet."
-      sources:
-      - https://t.me/c/1809358416/46476
-      - https://t.me/c/1809358416/51867
-      - https://t.me/c/1809358416/82127
-    - text: "(Infinity6C family) In Tino's opinion (2025-02), SSC37x/30x/38x are a new series of SoCs that will gradually replace or extend the familiar I6E Cortex-A7 SoCs."
-      sources:
-      - https://t.me/c/1809358416/164638
-    - text: "(Infinity6C family) The Maruko SDK was never available for download on the vendor website Tino was referring to, not even on the old site (2026-08)."
-      sources:
-      - https://t.me/c/1809358416/294726
 - family: INFINITY6C
   model: SSC377QE
   version: null
@@ -2402,97 +1225,6 @@ socs:
     - text: "SSC377QE is a 256 MB SoC (SSC377 is 64 MB, SSC377D[E] 128 MB)."
       sources:
       - https://t.me/c/1166652144/114004
-    - text: "(Infinity6C family) SSC37x (Maruko) chips use Cortex-A35 cores, not Cortex-A7 like the Pudding/SSC338 generation."
-      sources:
-      - https://t.me/c/1809358416/293095
-      - https://t.me/c/1809358416/275219
-      - https://t.me/c/1809358416/142497
-    - text: "(Infinity6C family) Tino recalls that SSC37x (Maruko SDK) has a newer version of the IPU; he clarified the improvement is a new IPU IP block, a separate core, not the CPU."
-      sources:
-      - https://t.me/c/1809358416/275224
-      - https://t.me/c/1809358416/275219
-    - text: "(Infinity6C family) In 2026-02 Tino compared SSC377/378 to the SSC30KQ/D: 1x Cortex-A35 versus 2x Cortex-A7, but with a newer ISP and, it seems, newer DDR. Earlier, in 2024-03, he said 'who knows?', but some of the I6Cs and (maybe) the new I6Fs look as good as, if not better than, the popular SSC338 (I6E)."
-      sources:
-      - https://t.me/c/1809358416/275517
-      - https://t.me/c/1809358416/64827
-    - text: "(Infinity6C family) Maruko, I6C and SSC37x refer to the same platform: SSC377/378 belong to I6C, and infinity6c is the SDK SoC codename/family."
-      sources:
-      - https://t.me/c/1809358416/219876
-      - https://t.me/c/1809358416/51875
-      - https://t.me/c/1809358416/142509
-    - text: "(Infinity6C family) The I6C SDK codename is Maruko, while I6E uses Pudding, so the two need different SDKs. A Maruko SDK build dated 2022/10/27 (ILS00V2) looked to Tino like a release candidate."
-      sources:
-      - https://t.me/c/1809358416/64314
-      - https://t.me/c/1166652144/75057
-      - https://t.me/c/1166652144/84209
-    - text: "(Infinity6C family) Tino recalls (IIRC) the kernel is 5.10.x and thought binary incompatibility was more likely due to the different kernel version; he also noted the new I6C SDK looks to use more recent uClibc/glibc and kernel."
-      sources:
-      - https://t.me/c/1809358416/64313
-      - https://t.me/c/1166652144/84188
-    - text: "(Infinity6C family) I6C, I6F and I7 are 'new'-style SigmaStar SDKs where devId is the first parameter in most API calls, while I6E is 'old' style; for example in Maruko (I6C) and Tiramisu (I6F) MI_VENC_CreateChn takes an extra MI_VENC_DEV argument, and some pipeline workflow changed."
-      sources:
-      - https://t.me/c/1809358416/78297
-      - https://t.me/c/1809358416/75131
-    - text: "(Infinity6C family) As Tino recalls, starting from I6C SigmaStar made very strong API changes (a completely changed ABI and a new 5.x kernel), so porting from I6E is not as simple as the Ispahan-to-Pudding move; older I6x families have far more similarities than differences."
-      sources:
-      - https://t.me/c/1809358416/211220
-      - https://t.me/c/1166652144/110075
-    - text: "(Infinity6C family) Of the Infinity6C configs infinity6c_ssc027a_s01 and infinity6c_ssc027b_s01, ssc027a is for the QFN88 chip and ssc027b for QFN128."
-      sources:
-      - https://t.me/c/1809358416/75233
-    - text: "(Infinity6C family) The I6C dtsi puts uart0 at 0x1F221000, uart1 at 0x1F221200 and fuart at 0x1F220400, each a 0x200-sized register block. Tino thinks PM_UART is probably on pins 57 and 58 of the SSC37x QFN128 package."
-      sources:
-      - https://t.me/c/1809358416/224628
-      - https://t.me/c/1809358416/215500
-    - text: "(Infinity6C family) SSC37x does not work properly with firmware from SSC338, and SigmaStar IQ files are usually incompatible even across SDK versions, let alone across families such as I6E and I6C."
-      sources:
-      - https://t.me/c/1809358416/215753
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6C family) OpenIPC support history: as of 2024-04-12 the I6C SDK was still not available on GitHub; on 2024-04-21 Tino said that, AFAIK, only I6E/I6B0 were supported in OpenIPC and I6C was in progress; on 2024-05-07 mini-i6e and mini-i6c looked to be in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/73475
-      - https://t.me/c/1809358416/76627
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6C family) In 2024-06 I6C was still quite new for OpenIPC but there were test builds for the 378; as of 2024-12-10, as far as Tino could see on GitHub, SSC377/378 (I6C) support was already there."
-      sources:
-      - https://t.me/c/1166652144/117282
-      - https://t.me/c/1809358416/140926
-    - text: "(Infinity6C family) There is no majestic-fpv for Infinity6C: majestic.infinity6c.fpv.master.tar.bz2 returns 403 Forbidden (2025-04-27), and AFAIK only majestic.infinity6c.lite exists. Tino fears the lite build simply has no FPV optimisations."
-      sources:
-      - https://t.me/c/1809358416/211155
-      - https://t.me/c/1809358416/215558
-      - https://t.me/c/1809358416/220452
-    - text: "(Infinity6C family) Majestic is freeware, not open source. AFAIU Majestic for SSC37x has existed for a long time, even in a new build style with the SDK linked statically (as of 2025-07)."
-      sources:
-      - https://t.me/c/1809358416/212272
-      - https://t.me/c/1809358416/240100
-    - text: "(Infinity6C family) On Maruko, RGN (OSD regions) can attach to SCLx/WIN/JPEG/DISP, but in majestic-i6c-lite RGN is bound to VENC, not SCL. Tino thinks msposd is already fixed for I6C (2025-05-20)."
-      sources:
-      - https://t.me/c/1809358416/220600
-      - https://t.me/c/1809358416/222265
-      - https://t.me/c/1809358416/222299
-    - text: "(Infinity6C family) Divinus: on 2025-05-13 Tino thought it still did not support I6C, and on 2025-05-18 he said it already has partial/initial I6C support; in 2025-08 he noted Divinus on SSC37x is not that easy."
-      sources:
-      - https://t.me/c/1809358416/218726
-      - https://t.me/c/1809358416/221302
-      - https://t.me/c/1809358416/250640
-    - text: "(Infinity6C family) In 2025-02 Tino asked whether the I6C MI_VENC had already been unlocked from its 60 fps limit for FPV use."
-      sources:
-      - https://t.me/c/1809358416/164623
-    - text: "(Infinity6C family) As Tino recalls, Maruko (SSC37x) and later support X/Y correction, where SSC338/Pudding supports only Y."
-      sources:
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6C family) Infinity6C is a new, cheaper SigmaStar chipset; Anjoy is slowly moving to this cost-effective generation (SSC377/378), with modules such as MC-J86 and MC-A81 using SSC378/SSC377DE. As of 2024-05-08, though, SSC377/378 were not that common yet."
-      sources:
-      - https://t.me/c/1809358416/46476
-      - https://t.me/c/1809358416/51867
-      - https://t.me/c/1809358416/82127
-    - text: "(Infinity6C family) In Tino's opinion (2025-02), SSC37x/30x/38x are a new series of SoCs that will gradually replace or extend the familiar I6E Cortex-A7 SoCs."
-      sources:
-      - https://t.me/c/1809358416/164638
-    - text: "(Infinity6C family) The Maruko SDK was never available for download on the vendor website Tino was referring to, not even on the old site (2026-08)."
-      sources:
-      - https://t.me/c/1809358416/294726
 - family: INFINITY6C
   model: SSC378DE
   version: null
@@ -2532,97 +1264,6 @@ socs:
     - text: "Modules with SSC378DE include MC-J86 (SC850SL), MC-A81 (SC830AI) and MC-A85 (GC8?); the MC800S5 uses SSC378QE/IMX415 instead."
       sources:
       - https://t.me/c/1809358416/217588
-    - text: "(Infinity6C family) SSC37x (Maruko) chips use Cortex-A35 cores, not Cortex-A7 like the Pudding/SSC338 generation."
-      sources:
-      - https://t.me/c/1809358416/293095
-      - https://t.me/c/1809358416/275219
-      - https://t.me/c/1809358416/142497
-    - text: "(Infinity6C family) Tino recalls that SSC37x (Maruko SDK) has a newer version of the IPU; he clarified the improvement is a new IPU IP block, a separate core, not the CPU."
-      sources:
-      - https://t.me/c/1809358416/275224
-      - https://t.me/c/1809358416/275219
-    - text: "(Infinity6C family) In 2026-02 Tino compared SSC377/378 to the SSC30KQ/D: 1x Cortex-A35 versus 2x Cortex-A7, but with a newer ISP and, it seems, newer DDR. Earlier, in 2024-03, he said 'who knows?', but some of the I6Cs and (maybe) the new I6Fs look as good as, if not better than, the popular SSC338 (I6E)."
-      sources:
-      - https://t.me/c/1809358416/275517
-      - https://t.me/c/1809358416/64827
-    - text: "(Infinity6C family) Maruko, I6C and SSC37x refer to the same platform: SSC377/378 belong to I6C, and infinity6c is the SDK SoC codename/family."
-      sources:
-      - https://t.me/c/1809358416/219876
-      - https://t.me/c/1809358416/51875
-      - https://t.me/c/1809358416/142509
-    - text: "(Infinity6C family) The I6C SDK codename is Maruko, while I6E uses Pudding, so the two need different SDKs. A Maruko SDK build dated 2022/10/27 (ILS00V2) looked to Tino like a release candidate."
-      sources:
-      - https://t.me/c/1809358416/64314
-      - https://t.me/c/1166652144/75057
-      - https://t.me/c/1166652144/84209
-    - text: "(Infinity6C family) Tino recalls (IIRC) the kernel is 5.10.x and thought binary incompatibility was more likely due to the different kernel version; he also noted the new I6C SDK looks to use more recent uClibc/glibc and kernel."
-      sources:
-      - https://t.me/c/1809358416/64313
-      - https://t.me/c/1166652144/84188
-    - text: "(Infinity6C family) I6C, I6F and I7 are 'new'-style SigmaStar SDKs where devId is the first parameter in most API calls, while I6E is 'old' style; for example in Maruko (I6C) and Tiramisu (I6F) MI_VENC_CreateChn takes an extra MI_VENC_DEV argument, and some pipeline workflow changed."
-      sources:
-      - https://t.me/c/1809358416/78297
-      - https://t.me/c/1809358416/75131
-    - text: "(Infinity6C family) As Tino recalls, starting from I6C SigmaStar made very strong API changes (a completely changed ABI and a new 5.x kernel), so porting from I6E is not as simple as the Ispahan-to-Pudding move; older I6x families have far more similarities than differences."
-      sources:
-      - https://t.me/c/1809358416/211220
-      - https://t.me/c/1166652144/110075
-    - text: "(Infinity6C family) Of the Infinity6C configs infinity6c_ssc027a_s01 and infinity6c_ssc027b_s01, ssc027a is for the QFN88 chip and ssc027b for QFN128."
-      sources:
-      - https://t.me/c/1809358416/75233
-    - text: "(Infinity6C family) The I6C dtsi puts uart0 at 0x1F221000, uart1 at 0x1F221200 and fuart at 0x1F220400, each a 0x200-sized register block. Tino thinks PM_UART is probably on pins 57 and 58 of the SSC37x QFN128 package."
-      sources:
-      - https://t.me/c/1809358416/224628
-      - https://t.me/c/1809358416/215500
-    - text: "(Infinity6C family) SSC37x does not work properly with firmware from SSC338, and SigmaStar IQ files are usually incompatible even across SDK versions, let alone across families such as I6E and I6C."
-      sources:
-      - https://t.me/c/1809358416/215753
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6C family) OpenIPC support history: as of 2024-04-12 the I6C SDK was still not available on GitHub; on 2024-04-21 Tino said that, AFAIK, only I6E/I6B0 were supported in OpenIPC and I6C was in progress; on 2024-05-07 mini-i6e and mini-i6c looked to be in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/73475
-      - https://t.me/c/1809358416/76627
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6C family) In 2024-06 I6C was still quite new for OpenIPC but there were test builds for the 378; as of 2024-12-10, as far as Tino could see on GitHub, SSC377/378 (I6C) support was already there."
-      sources:
-      - https://t.me/c/1166652144/117282
-      - https://t.me/c/1809358416/140926
-    - text: "(Infinity6C family) There is no majestic-fpv for Infinity6C: majestic.infinity6c.fpv.master.tar.bz2 returns 403 Forbidden (2025-04-27), and AFAIK only majestic.infinity6c.lite exists. Tino fears the lite build simply has no FPV optimisations."
-      sources:
-      - https://t.me/c/1809358416/211155
-      - https://t.me/c/1809358416/215558
-      - https://t.me/c/1809358416/220452
-    - text: "(Infinity6C family) Majestic is freeware, not open source. AFAIU Majestic for SSC37x has existed for a long time, even in a new build style with the SDK linked statically (as of 2025-07)."
-      sources:
-      - https://t.me/c/1809358416/212272
-      - https://t.me/c/1809358416/240100
-    - text: "(Infinity6C family) On Maruko, RGN (OSD regions) can attach to SCLx/WIN/JPEG/DISP, but in majestic-i6c-lite RGN is bound to VENC, not SCL. Tino thinks msposd is already fixed for I6C (2025-05-20)."
-      sources:
-      - https://t.me/c/1809358416/220600
-      - https://t.me/c/1809358416/222265
-      - https://t.me/c/1809358416/222299
-    - text: "(Infinity6C family) Divinus: on 2025-05-13 Tino thought it still did not support I6C, and on 2025-05-18 he said it already has partial/initial I6C support; in 2025-08 he noted Divinus on SSC37x is not that easy."
-      sources:
-      - https://t.me/c/1809358416/218726
-      - https://t.me/c/1809358416/221302
-      - https://t.me/c/1809358416/250640
-    - text: "(Infinity6C family) In 2025-02 Tino asked whether the I6C MI_VENC had already been unlocked from its 60 fps limit for FPV use."
-      sources:
-      - https://t.me/c/1809358416/164623
-    - text: "(Infinity6C family) As Tino recalls, Maruko (SSC37x) and later support X/Y correction, where SSC338/Pudding supports only Y."
-      sources:
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6C family) Infinity6C is a new, cheaper SigmaStar chipset; Anjoy is slowly moving to this cost-effective generation (SSC377/378), with modules such as MC-J86 and MC-A81 using SSC378/SSC377DE. As of 2024-05-08, though, SSC377/378 were not that common yet."
-      sources:
-      - https://t.me/c/1809358416/46476
-      - https://t.me/c/1809358416/51867
-      - https://t.me/c/1809358416/82127
-    - text: "(Infinity6C family) In Tino's opinion (2025-02), SSC37x/30x/38x are a new series of SoCs that will gradually replace or extend the familiar I6E Cortex-A7 SoCs."
-      sources:
-      - https://t.me/c/1809358416/164638
-    - text: "(Infinity6C family) The Maruko SDK was never available for download on the vendor website Tino was referring to, not even on the old site (2026-08)."
-      sources:
-      - https://t.me/c/1809358416/294726
 - family: INFINITY6C
   model: SSC378QE
   version: null
@@ -2667,97 +1308,6 @@ socs:
     - text: "As of 2024-12-10 the Anjoy MC800S5 module (SSC378QE + IMX415) was already on sale."
       sources:
       - https://t.me/c/1809358416/140921
-    - text: "(Infinity6C family) SSC37x (Maruko) chips use Cortex-A35 cores, not Cortex-A7 like the Pudding/SSC338 generation."
-      sources:
-      - https://t.me/c/1809358416/293095
-      - https://t.me/c/1809358416/275219
-      - https://t.me/c/1809358416/142497
-    - text: "(Infinity6C family) Tino recalls that SSC37x (Maruko SDK) has a newer version of the IPU; he clarified the improvement is a new IPU IP block, a separate core, not the CPU."
-      sources:
-      - https://t.me/c/1809358416/275224
-      - https://t.me/c/1809358416/275219
-    - text: "(Infinity6C family) In 2026-02 Tino compared SSC377/378 to the SSC30KQ/D: 1x Cortex-A35 versus 2x Cortex-A7, but with a newer ISP and, it seems, newer DDR. Earlier, in 2024-03, he said 'who knows?', but some of the I6Cs and (maybe) the new I6Fs look as good as, if not better than, the popular SSC338 (I6E)."
-      sources:
-      - https://t.me/c/1809358416/275517
-      - https://t.me/c/1809358416/64827
-    - text: "(Infinity6C family) Maruko, I6C and SSC37x refer to the same platform: SSC377/378 belong to I6C, and infinity6c is the SDK SoC codename/family."
-      sources:
-      - https://t.me/c/1809358416/219876
-      - https://t.me/c/1809358416/51875
-      - https://t.me/c/1809358416/142509
-    - text: "(Infinity6C family) The I6C SDK codename is Maruko, while I6E uses Pudding, so the two need different SDKs. A Maruko SDK build dated 2022/10/27 (ILS00V2) looked to Tino like a release candidate."
-      sources:
-      - https://t.me/c/1809358416/64314
-      - https://t.me/c/1166652144/75057
-      - https://t.me/c/1166652144/84209
-    - text: "(Infinity6C family) Tino recalls (IIRC) the kernel is 5.10.x and thought binary incompatibility was more likely due to the different kernel version; he also noted the new I6C SDK looks to use more recent uClibc/glibc and kernel."
-      sources:
-      - https://t.me/c/1809358416/64313
-      - https://t.me/c/1166652144/84188
-    - text: "(Infinity6C family) I6C, I6F and I7 are 'new'-style SigmaStar SDKs where devId is the first parameter in most API calls, while I6E is 'old' style; for example in Maruko (I6C) and Tiramisu (I6F) MI_VENC_CreateChn takes an extra MI_VENC_DEV argument, and some pipeline workflow changed."
-      sources:
-      - https://t.me/c/1809358416/78297
-      - https://t.me/c/1809358416/75131
-    - text: "(Infinity6C family) As Tino recalls, starting from I6C SigmaStar made very strong API changes (a completely changed ABI and a new 5.x kernel), so porting from I6E is not as simple as the Ispahan-to-Pudding move; older I6x families have far more similarities than differences."
-      sources:
-      - https://t.me/c/1809358416/211220
-      - https://t.me/c/1166652144/110075
-    - text: "(Infinity6C family) Of the Infinity6C configs infinity6c_ssc027a_s01 and infinity6c_ssc027b_s01, ssc027a is for the QFN88 chip and ssc027b for QFN128."
-      sources:
-      - https://t.me/c/1809358416/75233
-    - text: "(Infinity6C family) The I6C dtsi puts uart0 at 0x1F221000, uart1 at 0x1F221200 and fuart at 0x1F220400, each a 0x200-sized register block. Tino thinks PM_UART is probably on pins 57 and 58 of the SSC37x QFN128 package."
-      sources:
-      - https://t.me/c/1809358416/224628
-      - https://t.me/c/1809358416/215500
-    - text: "(Infinity6C family) SSC37x does not work properly with firmware from SSC338, and SigmaStar IQ files are usually incompatible even across SDK versions, let alone across families such as I6E and I6C."
-      sources:
-      - https://t.me/c/1809358416/215753
-      - https://t.me/c/1809358416/232541
-    - text: "(Infinity6C family) OpenIPC support history: as of 2024-04-12 the I6C SDK was still not available on GitHub; on 2024-04-21 Tino said that, AFAIK, only I6E/I6B0 were supported in OpenIPC and I6C was in progress; on 2024-05-07 mini-i6e and mini-i6c looked to be in progress at the same time."
-      sources:
-      - https://t.me/c/1809358416/73475
-      - https://t.me/c/1809358416/76627
-      - https://t.me/c/1809358416/81611
-    - text: "(Infinity6C family) In 2024-06 I6C was still quite new for OpenIPC but there were test builds for the 378; as of 2024-12-10, as far as Tino could see on GitHub, SSC377/378 (I6C) support was already there."
-      sources:
-      - https://t.me/c/1166652144/117282
-      - https://t.me/c/1809358416/140926
-    - text: "(Infinity6C family) There is no majestic-fpv for Infinity6C: majestic.infinity6c.fpv.master.tar.bz2 returns 403 Forbidden (2025-04-27), and AFAIK only majestic.infinity6c.lite exists. Tino fears the lite build simply has no FPV optimisations."
-      sources:
-      - https://t.me/c/1809358416/211155
-      - https://t.me/c/1809358416/215558
-      - https://t.me/c/1809358416/220452
-    - text: "(Infinity6C family) Majestic is freeware, not open source. AFAIU Majestic for SSC37x has existed for a long time, even in a new build style with the SDK linked statically (as of 2025-07)."
-      sources:
-      - https://t.me/c/1809358416/212272
-      - https://t.me/c/1809358416/240100
-    - text: "(Infinity6C family) On Maruko, RGN (OSD regions) can attach to SCLx/WIN/JPEG/DISP, but in majestic-i6c-lite RGN is bound to VENC, not SCL. Tino thinks msposd is already fixed for I6C (2025-05-20)."
-      sources:
-      - https://t.me/c/1809358416/220600
-      - https://t.me/c/1809358416/222265
-      - https://t.me/c/1809358416/222299
-    - text: "(Infinity6C family) Divinus: on 2025-05-13 Tino thought it still did not support I6C, and on 2025-05-18 he said it already has partial/initial I6C support; in 2025-08 he noted Divinus on SSC37x is not that easy."
-      sources:
-      - https://t.me/c/1809358416/218726
-      - https://t.me/c/1809358416/221302
-      - https://t.me/c/1809358416/250640
-    - text: "(Infinity6C family) In 2025-02 Tino asked whether the I6C MI_VENC had already been unlocked from its 60 fps limit for FPV use."
-      sources:
-      - https://t.me/c/1809358416/164623
-    - text: "(Infinity6C family) As Tino recalls, Maruko (SSC37x) and later support X/Y correction, where SSC338/Pudding supports only Y."
-      sources:
-      - https://t.me/c/1809358416/286965
-    - text: "(Infinity6C family) Infinity6C is a new, cheaper SigmaStar chipset; Anjoy is slowly moving to this cost-effective generation (SSC377/378), with modules such as MC-J86 and MC-A81 using SSC378/SSC377DE. As of 2024-05-08, though, SSC377/378 were not that common yet."
-      sources:
-      - https://t.me/c/1809358416/46476
-      - https://t.me/c/1809358416/51867
-      - https://t.me/c/1809358416/82127
-    - text: "(Infinity6C family) In Tino's opinion (2025-02), SSC37x/30x/38x are a new series of SoCs that will gradually replace or extend the familiar I6E Cortex-A7 SoCs."
-      sources:
-      - https://t.me/c/1809358416/164638
-    - text: "(Infinity6C family) The Maruko SDK was never available for download on the vendor website Tino was referring to, not even on the old site (2026-08)."
-      sources:
-      - https://t.me/c/1809358416/294726
 - family: SSC38X
   model: SSC385
   version: ''
@@ -2781,16 +1331,6 @@ socs:
     - text: "The SSC385 module MC-A87 (not 388) likely has only 64 MB of DDR2 and costs only 115 CNY on Taobao (2026-09)."
       sources:
       - https://t.me/c/1809358416/298154
-    - text: "(SSC38X family) The new SSC38x has a 1.5 TOPS IPU plus some sort of AI-ISP (Tino is not sure what that means yet), even with only 64 MB of DDR2."
-      sources:
-      - https://t.me/c/1809358416/290730
-    - text: "(SSC38X family) The new SSC385/SSC387 look like the good old Cortex-A7 (perhaps 2x, like SSC338Q) with half of Maruko bolted on plus the new IPU and AI-ISP, whereas Maruko is all Cortex-A35."
-      sources:
-      - https://t.me/c/1809358416/292523
-      - https://t.me/c/1809358416/293095
-    - text: "(SSC38X family) Tino guesses SSC38X is a new SSC338, with the same Cortex-A7 if he recalls right."
-      sources:
-      - https://t.me/c/1809358416/298140
 - family: SSC38X
   model: SSC385D
   version: ''
@@ -2805,19 +1345,6 @@ socs:
   build_status_url: https://img.shields.io/static/v1?label=SSC385D&message=%20&logo=github
   featured: false
   segment: null
-  community_notes:
-    by: Tino Darkness
-    points:
-    - text: "(SSC38X family) The new SSC38x has a 1.5 TOPS IPU plus some sort of AI-ISP (Tino is not sure what that means yet), even with only 64 MB of DDR2."
-      sources:
-      - https://t.me/c/1809358416/290730
-    - text: "(SSC38X family) The new SSC385/SSC387 look like the good old Cortex-A7 (perhaps 2x, like SSC338Q) with half of Maruko bolted on plus the new IPU and AI-ISP, whereas Maruko is all Cortex-A35."
-      sources:
-      - https://t.me/c/1809358416/292523
-      - https://t.me/c/1809358416/293095
-    - text: "(SSC38X family) Tino guesses SSC38X is a new SSC338, with the same Cortex-A7 if he recalls right."
-      sources:
-      - https://t.me/c/1809358416/298140
 - family: SSC38X
   model: SSC387
   version: ''
@@ -2832,16 +1359,3 @@ socs:
   build_status_url: https://img.shields.io/static/v1?label=SSC387&message=%20&logo=github
   featured: false
   segment: null
-  community_notes:
-    by: Tino Darkness
-    points:
-    - text: "(SSC38X family) The new SSC38x has a 1.5 TOPS IPU plus some sort of AI-ISP (Tino is not sure what that means yet), even with only 64 MB of DDR2."
-      sources:
-      - https://t.me/c/1809358416/290730
-    - text: "(SSC38X family) The new SSC385/SSC387 look like the good old Cortex-A7 (perhaps 2x, like SSC338Q) with half of Maruko bolted on plus the new IPU and AI-ISP, whereas Maruko is all Cortex-A35."
-      sources:
-      - https://t.me/c/1809358416/292523
-      - https://t.me/c/1809358416/293095
-    - text: "(SSC38X family) Tino guesses SSC38X is a new SSC338, with the same Cortex-A7 if he recalls right."
-      sources:
-      - https://t.me/c/1809358416/298140

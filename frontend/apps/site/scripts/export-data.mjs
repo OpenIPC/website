@@ -174,8 +174,38 @@ export function catalogue(root = REPO) {
     .filter((f) => f.endsWith('.yml'))
     .map((f) => yamlFile(join(dir, f)))
     .sort((a, b) => byteOrder(String(a.name), String(b.name)))
-    .map((data) => ({ ...pick(data, VENDOR_FIELDS), socs: data.socs.map((s) => pick(communityNotes(data.urlname, s), SOC_FIELDS)) }));
+    .map((data) => {
+      const families = familyNotes(data);
+      return { ...pick(data, VENDOR_FIELDS), socs: data.socs.map((s) => pick(withFamilyNotes(communityNotes(data.urlname, s), families), SOC_FIELDS)) };
+    });
   return { vendors };
+}
+
+// A family's notes (family_notes, keyed by the SoCs' `family`) are kept once
+// in the vendor's file and shown on every SoC of the family, after its own
+// points and labelled with the family, so a correction is made in one place.
+export function familyNotes(data) {
+  const all = data.family_notes;
+  if (all === undefined) return {};
+  const where = `data/catalogue/${data.urlname}.yml: family_notes`;
+  if (!isHash(all)) throw new Error(`${where}: must be a mapping of family to notes`);
+  const families = new Set(data.socs.map((s) => s.family));
+  for (const [family, n] of Object.entries(all)) {
+    if (!families.has(family)) throw new Error(`${where}: ${family} is no SoC's family`);
+    if (!isHash(n) || typeof n.label !== 'string' || !n.label.trim()) throw new Error(`${where}: ${family} needs a label`);
+    const { label, ...notes } = n;
+    communityNotes(data.urlname, { model: `${family} (family)`, community_notes: notes });
+  }
+  return all;
+}
+
+/** The SoC with its family's points after its own; the SoC itself when the family has none. */
+export function withFamilyNotes(s, families) {
+  const fam = families[s.family];
+  if (!fam) return s;
+  const own = s.community_notes;
+  const points = [...(own?.points ?? []), ...fam.points.map((pt) => ({ ...pt, text: `(${fam.label} family) ${pt.text}` }))];
+  return { ...s, community_notes: { by: own?.by ?? fam.by, points } };
 }
 
 // What a community expert has said about a chip, point by point, each point
