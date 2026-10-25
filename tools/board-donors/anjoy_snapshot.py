@@ -726,7 +726,7 @@ def main():
         embedded[k] = out
 
     models, pinout_count, photo_count, embedded_count = [], 0, 0, 0
-    conflicts, seen_tables, seen_prices = [], set(), set()
+    conflicts, price_conflicts, seen_tables, seen_prices = [], [], set(), set()
     for k in sorted(by_key):
         group = by_key[k]
         es = group["entries"]
@@ -900,17 +900,17 @@ def main():
                 if field == "soc_label":
                     # SigmaStar's two prefixes are one chip (less_said).
                     news = less_said(doc, said) if doc else True
-                    known = doc and (less_said(said, doc) or ({doc[:1], said[:1]} <= {"M", "S"} and doc[1:] == said[1:]))
+                    no_news = doc and (less_said(said, doc) or ({doc[:1], said[:1]} <= {"M", "S"} and doc[1:] == said[1:]))
                 else:
                     # A sensor's prefix is its maker: SC2336P is not GC2336P.
                     news = said.startswith(doc)
-                    known = doc and doc.startswith(said)
-                if known:
+                    no_news = doc and doc.startswith(said)
+                if no_news:
                     continue
                 if news:
                     m[field] = said
                 else:
-                    conflicts.append(f"{code}: {field} {doc} before, {said} in the {price['list']} price list")
+                    price_conflicts.append(f"{code}: {field} {doc} before, {said} in the {price['list']} list")
         if year:
             m["listed_year"] = year
         models.append(m)
@@ -934,6 +934,8 @@ def main():
     for k, row in sorted(table.items()):
         if k not in seen_tables:
             print(f"  table: {row['model']} matches no module", file=sys.stderr)
+    for c in price_conflicts:
+        print(f"  prices: {c}", file=sys.stderr)
     for k, row in sorted(prices.items()):
         if k not in seen_prices:
             print(f"  prices: {row['model']} ({row['list']}) matches no module", file=sys.stderr)

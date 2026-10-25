@@ -53,13 +53,15 @@ var Snapshots = map[string]string{
 	// only from their firmware, first published since 2025 (chip, device ID,
 	// product line); imported after jftech.
 	"xmupdates": "000d5323a721f57c7c6ad8c6af992f39f507b8b674e20c18a910e04d8e86cb64",
-	// boards-donors/anjoy/snapshot-ade4098675da.tar: Anjoy Vision's document archive
+	// boards-donors/anjoy/snapshot-fc5c57f74479.tar: Anjoy Vision's document archive
 	// (:8021) and the extended copy the maker sent in October 2026, 250 models
 	// (239 modules, 11 NVRs), 200 with wiring pinouts, 210 with photos (the
 	// archive's own, or those inside its documents); chip, sensor, RAM and
-	// flash from the maker's module table where its documents say less;
-	// Chinese original with English and Russian; both captures beside it.
-	"anjoy": "ade4098675da1be46409593e0f5d3c5a1745ad55f9cba39250970953c0d4f9dc",
+	// flash from the maker's module table where its documents say less, then
+	// chip and sensor from its 2024 and 2026 price lists where both say less
+	// (179 with a chip, 113 with a sensor; #512); Chinese original with
+	// English and Russian; both captures and the lists beside it.
+	"anjoy": "fc5c57f744793bd29844bff586aa892fce5433f89bc34a3b42490e72de20d7fb",
 	// boards-donors/herospeed/snapshot-4916e4bbde88.tar: the boards Longse's IP
 	// cameras are built on, from the firmware lists of Herospeed (its firmware
 	// house), 42 current and discontinued, 18 with the chip their builds name.
