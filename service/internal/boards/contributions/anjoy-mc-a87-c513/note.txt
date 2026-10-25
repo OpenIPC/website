@@ -1,8 +1,23 @@
-MC-A87: Tino Darkness gives the chip as SSC385, not SSC387.
+MC-A87: Anjoy low-end SSC385 + GC8613 8MP module with 64MB DDR2
 
-"SSC385 64Mb / GC8613 8Mp. 1.5T! (new IPU)" (2026-06-17,
-https://t.me/c/1809358416/290277), "MC-A87 (low-end series) with
-SSC385/GC8613/8MP is ~ 120 CNY" (https://t.me/c/1809358416/297934), and
-"(not 388 and likely DDR2/64MB)" (https://t.me/c/1809358416/298154). Memory: 64 MB of DDR2 in the package
-(https://t.me/c/1809358416/290716). The catalogue's SSC387 comes from Anjoy's
-module table. A boot log would settle which part it is.
+Chip and memory
+- SoC is SSC385, "1.5T! (new IPU)" (https://t.me/c/1809358416/297934,
+  https://t.me/c/1809358416/290714, https://t.me/c/1809358416/290277)
+- 64MB of DDR2 (written "64Mb" once) (https://t.me/c/1809358416/290716,
+  https://t.me/c/1809358416/290277)
+
+Sensor
+- GalaxyCore GC8613, 8MP (https://t.me/c/1809358416/297934,
+  https://t.me/c/1809358416/290277)
+
+Sourcing and price
+- $15 on Taobao in 2026-06 (https://t.me/c/1809358416/290714,
+  https://t.me/c/1809358416/290277)
+- 125 CNY in 2026-07; ~120 CNY and 115 CNY on Taobao in 2026-09
+  (https://t.me/c/1809358416/298154, https://t.me/c/1809358416/297934,
+  https://t.me/c/1809358416/292525)
+
+Disagreements
+- SoC: the catalogue lists SSC387; Tino repeatedly says SSC385
+  (https://t.me/c/1809358416/298154, https://t.me/c/1809358416/297934,
+  https://t.me/c/1809358416/290277)

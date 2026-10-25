@@ -1,0 +1,32 @@
+MC-L12: older Anjoy IP camera module with a SigmaStar SSC30KQ SoC and a Sony
+  IMX335 sensor; MC-L12B is the same pairing.
+
+Chip and memory
+- SoC is SSC30KQ for both MC-L12 and MC-L12B.
+  (https://t.me/c/1809358416/51861, https://t.me/c/1809358416/239663,
+  https://t.me/c/1809358416/297936)
+
+Sensor
+- Sensor is IMX335. (https://t.me/c/1809358416/29759,
+  https://t.me/c/1809358416/30758, https://t.me/c/1809358416/297936)
+- Recommended for low light. (https://t.me/EZWBC/15381)
+
+Firmware support (OpenIPC / majestic / stock)
+- In 2023-10: "should be supported, but i'm not sure about high-fps sensor
+  driver". (https://t.me/c/1809358416/29759)
+
+Sourcing and price
+- In 2024-01: "L12 is quite an old module. ~90RMB on taobao", seemingly
+  replaced by the L12D. (https://t.me/c/1809358416/51867)
+- L12/B ~85 RMB on Taobao in 2024-04. (https://t.me/c/1809358416/72738)
+- MC-L12B 245 CNY in 2026-09. (https://t.me/c/1809358416/297936)
+
+Variants, aliases and products built on it
+- "there are 3 L12 in the wild: MC-L12,L12B - SSC30KQ and MC-L12D - SSC337D
+  (I6C)". (https://t.me/c/1809358416/51861)
+- The IMA50-L12 looks like a (re)branded Anjoy MC-L12:
+  https://item.taobao.com/item.htm?id=683581378415.
+  (https://t.me/c/1809358416/64291)
+- Taobao listing identified as MCL12B:
+  https://item.taobao.com/item.htm?id=793747296099.
+  (https://t.me/c/1809358416/239663)

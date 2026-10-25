@@ -1,0 +1,14 @@
+MC-F40: Anjoy SSC337 module with NOR flash
+
+Chip and memory
+- SoC is SSC337; measured IPL tag MVX4##I6b0g05c44beIPL_
+  (https://t.me/c/1166652144/19577, https://t.me/c/1166652144/19521)
+- Measured kernel log: "Memory: 30512K/36416K available" (Linux-visible
+  only; total DDR not shown) (https://t.me/c/1166652144/19608)
+
+Flash and storage
+- NOR flash: "these modules have NOR" (https://t.me/c/1166652144/19521)
+
+Firmware support (OpenIPC / majestic / stock)
+- Tino's expectation (2021-09): "At least u-boot should be unlocked"
+  (https://t.me/c/1166652144/19521)

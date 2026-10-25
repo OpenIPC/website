@@ -1,0 +1,27 @@
+MC-A81: Anjoy 8MP IP camera module with a SigmaStar SSC378DE SoC and a
+  SmartSens SC830AI sensor.
+
+Chip and memory
+- SoC is SSC378DE, which "looks like I6C replacement for SSC337DE".
+  (https://t.me/c/1166652144/73971, https://t.me/c/1809358416/217588)
+- It is a SigmaStar board, not HiSilicon: "A81 uses SigmaStar SoC, not
+  HiSi". (https://t.me/c/1166652144/128486)
+
+Sensor
+- Sensor is the SC830AI (8MP; 1/2.7, BSI, 1.5um).
+  (https://t.me/c/1166652144/73971, https://t.me/c/1809358416/51874,
+  https://t.me/c/1809358416/217588)
+
+Interfaces and pinout
+- The SC830AI is on 4-lane MIPI: "MC-A81 - SSC378DE / SC830AI 4L (8MP)".
+  (https://t.me/c/1166652144/83831)
+
+Variants, aliases and products built on it
+- Tino identified a white-label camera from a photo as an MC-A81; the vendor
+  claimed Hi3516A. (https://t.me/c/1166652144/128486)
+
+Disagreements
+- SoC: one 2024-01 message says "MC-A81 (8 MP SSC377/SC830AI)"; the
+  catalogue and Tino's other messages say SSC378DE (once just "SSC378").
+  (https://t.me/c/1809358416/51874, https://t.me/c/1809358416/75133,
+  https://t.me/c/1809358416/217588)

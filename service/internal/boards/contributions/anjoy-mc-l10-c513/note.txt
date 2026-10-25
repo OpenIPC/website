@@ -1,0 +1,10 @@
+MC-L10: Anjoy SSC30KD + IMX335 module
+
+Chip and memory
+- SoC is SSC30KD (https://t.me/c/1809358416/30758)
+
+Sensor
+- Sony IMX335 (https://t.me/c/1809358416/30758)
+
+Variants, aliases and products built on it
+- Related: "MC-L12 SSC30KQ+IMX335" (https://t.me/c/1809358416/30758)

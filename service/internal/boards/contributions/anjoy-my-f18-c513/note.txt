@@ -1,0 +1,5 @@
+MY-F18: Anjoy "Y" series module with integrated motors
+
+Interfaces and pinout
+- Integrated motors, like other Anjoy "Y" modules
+  (https://t.me/c/1809358416/49478)

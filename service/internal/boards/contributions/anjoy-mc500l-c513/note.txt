@@ -1,0 +1,5 @@
+MC500L: Anjoy camera module identified by its stock firmware flag file
+
+Firmware support (OpenIPC / majestic / stock)
+- The stock firmware identifies the model with the flag file mc500l.flag
+  (https://t.me/c/1166652144/19532)

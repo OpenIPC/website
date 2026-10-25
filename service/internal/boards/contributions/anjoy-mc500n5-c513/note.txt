@@ -1,0 +1,9 @@
+MC500N5: Anjoy 38x38 IP camera module.
+
+Interfaces and pinout
+- Uses the "usual 38x38" form factor. (https://t.me/c/1809358416/83140)
+
+Sourcing and price
+- In 2024-05 it was "already in production AFAIU" but not yet seen on sale;
+  datasheet at http://www.icamra.cn:8021/pdf/MC500N5/.
+  (https://t.me/c/1809358416/83140, https://t.me/c/1809358416/81931)

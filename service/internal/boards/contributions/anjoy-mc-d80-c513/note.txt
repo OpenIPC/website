@@ -1,0 +1,21 @@
+MC-D80: Anjoy dual-sensor IP camera module on the SigmaStar SSC359G.
+
+Chip and memory
+- SoC is SSC359G, the same as the MC-H12S.
+  (https://t.me/c/1809358416/143315, https://t.me/c/1809358416/143325)
+
+Sensor
+- Two sensors; models not named. (https://t.me/c/1809358416/143315,
+  https://t.me/c/1809358416/143325)
+
+Interfaces and pinout
+- "the D40 / D80 have FFC (dual) camera modules."
+  (https://t.me/c/1809358416/72146)
+
+Variants, aliases and products built on it
+- A "real device that is for sale" (2024-12) is based on the MC-D80.
+  (https://t.me/c/1809358416/143315)
+
+Disagreements
+- SoC naming: the catalogue writes MSC359G; Tino writes SSC359G.
+  (https://t.me/c/1809358416/143315)

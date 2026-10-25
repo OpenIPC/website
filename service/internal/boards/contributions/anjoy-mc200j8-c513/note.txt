@@ -1,0 +1,5 @@
+MC200J8: Anjoy module identified in stock firmware by a model flag file
+
+Firmware support (OpenIPC / majestic / stock)
+- Stock firmware marks the model with the flag file mc200j8.flag
+  (https://t.me/c/1166652144/19532)

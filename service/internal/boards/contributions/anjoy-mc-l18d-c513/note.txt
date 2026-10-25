@@ -1,0 +1,13 @@
+MC-L18D: Anjoy IP camera module on a SigmaStar SSC377.
+
+Chip and memory
+- Per Anjoy's PDF the SoC is SSC377: "read L18D is SSC377". A Taobao listing
+  claiming SC30KQ was, in Tino's words, cheating.
+  (https://t.me/c/1809358416/290754)
+
+Sourcing and price
+- ~$16 on Taobao in 2026-06. (https://t.me/c/1809358416/290752)
+
+Disagreements
+- SoC: the catalogue writes SSC377D; Tino writes SSC377 (from the Anjoy
+  PDF). (https://t.me/c/1809358416/290754)

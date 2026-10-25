@@ -1,0 +1,21 @@
+MC-F50: Anjoy SSC337DE module with NOR flash and a USB WiFi footprint
+
+Chip and memory
+- SoC is SSC337DE; measured IPL tag MVX4##I6b0g05c44beIPL_
+  (https://t.me/c/1166652144/19577, https://t.me/c/1166652144/19521)
+- Measured kernel log: "Memory: 74812K/81688K available", more than the
+  SSC337 (MC-F40); total DDR not shown (https://t.me/c/1166652144/19608)
+
+Flash and storage
+- NOR flash: "these modules have NOR" (https://t.me/c/1166652144/19521)
+
+Interfaces and pinout
+- Footprint for an SSW101B USB WiFi module: "But it’s only wifi."
+  (https://t.me/c/1166652144/18863)
+
+Firmware support (OpenIPC / majestic / stock)
+- Tino's expectation (2021-09): "At least u-boot should be unlocked"
+  (https://t.me/c/1166652144/19521)
+
+Variants, aliases and products built on it
+- Written as "M{C,S}-F50 (SSC337DE)" (https://t.me/c/1166652144/19521)

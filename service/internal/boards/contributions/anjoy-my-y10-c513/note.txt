@@ -1,0 +1,14 @@
+MY-Y10: SSC335 5V PTZ camera module with integrated motors
+
+Chip and memory
+- SSC335 (https://t.me/c/1166652144/83209)
+
+Interfaces and pinout
+- 5V supply, as used in "baby-monitor" cams
+  (https://t.me/c/1166652144/83209)
+- Integrated motors, like other Anjoy "Y" modules
+  (https://t.me/c/1809358416/49478)
+
+Disagreements
+- SoC: the catalogue says MSC335; Tino writes SSC335
+  (https://t.me/c/1166652144/83209)

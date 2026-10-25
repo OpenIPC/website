@@ -1,7 +1,25 @@
-MC-F46 (the original, on SSC30KD): GC4653 sensor, 128 MB of RAM.
+MC-F46: SSC30KD (I6e) camera module with 128MB RAM and a GC4653 sensor
+  driver in stock firmware
 
-The stock firmware from icamra.cn loads /opt/ch/gc4653_MIPI.ko (Tino Darkness,
-2023-11-20, https://t.me/c/1166652144/84162). Its kernel command line sets
-LX_MEM=0x7fe0000, i.e. 128 MB
-(https://t.me/c/1166652144/74585). "MC-F46D is next gen board with completely
-different SoC (SSC377D)" (https://t.me/c/1166652144/84142).
+Chip and memory
+- SSC30KD; the IPL tag reads MVX4##I6e#g85ea583IPL_ (measured)
+  (https://t.me/c/1166652144/19577)
+- 128MB: the stock kernel cmdline sets LX_MEM=0x7fe0000 (measured)
+  (https://t.me/c/1166652144/74585)
+
+Sensor
+- GC4653: "there is gc4653_MIPI.ko in /opt/ch" of the stock firmware
+  (measured) (https://t.me/c/1166652144/84162)
+
+Firmware support (OpenIPC / majestic / stock)
+- The stock firmware selects the model with flag files: /opt/ch/af.flag,
+  /opt/ch/mcf46.flag, /opt/ch/starc.flag, /opt/ch/star.flag (measured)
+  (https://t.me/c/1166652144/19526)
+
+Variants, aliases and products built on it
+- The original MC-F46 and possibly the MC-F46WF, "because it's an old 2022
+  board with the same SSC30KD" (https://t.me/c/1166652144/84142)
+
+Disagreements
+- Sensor: the catalogue lists no sensor; the stock firmware carries
+  gc4653_MIPI.ko (https://t.me/c/1166652144/84162)

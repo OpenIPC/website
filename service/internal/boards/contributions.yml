@@ -125,28 +125,85 @@
     - kind: photo_other
       file: product-card.jpg
 
-# Board facts from Tino Darkness's messages in the OpenIPC Telegram groups,
-# checked in #513; one comment there per board, each fact citing his message.
-- unit: anjoy-mc-j30-c513
-  model: anjoy-mc-j30
+# Board facts from Tino Darkness's messages in the OpenIPC Telegram groups:
+# everything he stated or measured about each board, every line citing his
+# message (#513; one comment there per board).
+- unit: anjoy-mc-800s5-c513
+  model: anjoy-mc-800s5
   by: Tino Darkness (OpenIPC community)
   evidence:
-    - https://t.me/c/1166652144/79715
-    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397344150
-  sensor: SP4329
-  note: "Stock firmware loads sp4329_MIPI.ko: an SP4329, though sold as SC450AI. 64 MB DDR2."
+    - https://t.me/c/1809358416/75138
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397774656
+  sensor: IMX415
+  note: "MC-800S5: Anjoy 38x38 two-board IP camera module with a SigmaStar SSC378QE SoC and a Sony IMX415 sensor."
   files:
     - kind: note
       file: note.txt
 
-- unit: anjoy-mc-j40-c513
-  model: anjoy-mc-j40
+- unit: anjoy-mc-a37-c513
+  model: anjoy-mc-a37
   by: Tino Darkness (OpenIPC community)
   evidence:
-    - https://t.me/c/1809358416/29759
-    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397344412
-  sensor: SC450AI
-  note: "Stock firmware loads sc450ai_MIPI.ko. 64 MB DDR2."
+    - https://t.me/c/1809358416/287375
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397775702
+  note: "MC-A37: Anjoy SSC373 camera module"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-a42-c513
+  model: anjoy-mc-a42
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/52079
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397346624
+  note: "MC-A42: Anjoy module; the older revision is SSC337 + SC401AI"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-a42p-c513
+  model: anjoy-mc-a42p
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/72882
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397776034
+  sensor: SC4336P
+  note: "MC-A42P: Anjoy IP camera module with a SigmaStar SSC377 SoC and a SmartSens SC4336P sensor."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-a81-c513
+  model: anjoy-mc-a81
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/73971
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397776458
+  sensor: SC830AI
+  note: "MC-A81: Anjoy 8MP IP camera module with a SigmaStar SSC378DE SoC and a SmartSens SC830AI sensor."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-a85-c513
+  model: anjoy-mc-a85
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/217588
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397776768
+  note: "MC-A85: Anjoy SSC378DE module"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-a87-c513
+  model: anjoy-mc-a87
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/297934
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397346365
+  note: "MC-A87: Anjoy low-end SSC385 + GC8613 8MP module with 64MB DDR2"
   files:
     - kind: note
       file: note.txt
@@ -155,10 +212,21 @@
   model: anjoy-mc-d40
   by: Tino Darkness (OpenIPC community)
   evidence:
-    - https://t.me/c/1809358416/72319
+    - https://t.me/c/1809358416/291327
     - https://github.com/OpenIPC/website/issues/513#issuecomment-6397344629
   sensor: GC2053
-  note: "Stock firmware has gc2053_MIPI master and slave drivers: two GC2053 sensors on one SSC30KQ."
+  note: "MC-D40: Anjoy dual-sensor module on SSC30KQ with two GC2053 sensors on FFC camera modules"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-d80-c513
+  model: anjoy-mc-d80
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/143315
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397777483
+  note: "MC-D80: Anjoy dual-sensor IP camera module on the SigmaStar SSC359G."
   files:
     - kind: note
       file: note.txt
@@ -170,7 +238,18 @@
     - https://t.me/c/1166652144/72840
     - https://github.com/OpenIPC/website/issues/513#issuecomment-6397344904
   sensor: SC3338
-  note: "Stock firmware loads drv_ms_cus_sc3338_MIPI_dn.ko."
+  note: "MC-F26: SSC335-class (I6B0) camera module whose stock firmware ships an SC3338 driver"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-f40-c513
+  model: anjoy-mc-f40
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/19577
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397777966
+  note: "MC-F40: Anjoy SSC337 module with NOR flash"
   files:
     - kind: note
       file: note.txt
@@ -179,10 +258,90 @@
   model: anjoy-mc-f46
   by: Tino Darkness (OpenIPC community)
   evidence:
-    - https://t.me/c/1166652144/84162
+    - https://t.me/c/1166652144/74585
     - https://github.com/OpenIPC/website/issues/513#issuecomment-6397345312
   sensor: GC4653
-  note: "Stock firmware loads gc4653_MIPI.ko; kernel LX_MEM=0x7fe0000 (128 MB)."
+  note: "MC-F46: SSC30KD (I6e) camera module with 128MB RAM and a GC4653 sensor driver in stock firmware"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-f46d-c513
+  model: anjoy-mc-f46d
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/290825
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397778242
+  note: "MC-F46D: Anjoy SSC377D + GC4653 module"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-f50-c513
+  model: anjoy-mc-f50
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/19521
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397778674
+  note: "MC-F50: Anjoy SSC337DE module with NOR flash and a USB WiFi footprint"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-h12f-c513
+  model: anjoy-mc-h12f
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/181307
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397778907
+  sensor: OS12D40
+  note: "MC-H12F: Anjoy 12MP IP camera module on the SigmaStar SSC338G (external DDR) with an OmniVision OS12D40 sensor, also sold inside 36x/40x zoom blocks."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-h12s-c513
+  model: anjoy-mc-h12s
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/75106
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397779203
+  note: "MC-H12S: Anjoy 12MP single-board 38x38 IP camera module on the SigmaStar SSC359G (Mercury6) with an IMX577 sensor."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-j30-c513
+  model: anjoy-mc-j30
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/73003
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397344150
+  sensor: SP4329
+  note: "MC-J30: Anjoy 4MP IP camera module with a SigmaStar SSC377 (64MB DDR2) whose stock firmware drives an SP4329 sensor, although it is sold as SC450AI."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-j40-c513
+  model: anjoy-mc-j40
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/51874
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397344412
+  sensor: SC450AI
+  note: "MC-J40: SSC377 (I6C) camera module with 64MB DDR2 and the 4MP SC450AI sensor"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-j40h-c513
+  model: anjoy-mc-j40h
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/292525
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397779801
+  note: "MC-J40H: Anjoy module with a 1/1.8\" non-Sony sensor and a non-SSC37x SoC"
   files:
     - kind: note
       file: note.txt
@@ -191,21 +350,10 @@
   model: anjoy-mc-j86
   by: Tino Darkness (OpenIPC community)
   evidence:
-    - https://t.me/c/1809358416/291403
+    - https://t.me/c/1809358416/291427
     - https://github.com/OpenIPC/website/issues/513#issuecomment-6397345555
   sensor: SC850SL
-  note: "Stock firmware ships sc850sl_MIPI_30FPS_20230821.ko; SC850AI in listings is a mislabel."
-  files:
-    - kind: note
-      file: note.txt
-
-- unit: anjoy-mc800s-c513
-  model: anjoy-mc800s
-  by: Tino Darkness (OpenIPC community)
-  evidence:
-    - https://t.me/c/1809358416/113080
-    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397345805
-  note: "Flash depends on the revision: 16 MB NOR (PY2322) on his V3, 1 Gbit SPI NAND (GD5F1GQ5) on older V2.x boards."
+  note: "MC-J86: SSC378DE camera module with the 8MP 1/1.8 SC850SL sensor"
   files:
     - kind: note
       file: note.txt
@@ -214,32 +362,253 @@
   model: anjoy-mc-k45
   by: Tino Darkness (OpenIPC community)
   evidence:
-    - https://t.me/c/1166652144/74585
+    - https://t.me/c/1166652144/78910
     - https://github.com/OpenIPC/website/issues/513#issuecomment-6397346079
-  note: "256 MB DDR3 in the package (stock LX_MEM=0xffe0000)."
+  sensor: IMX347
+  note: "MC-K45: SSC30KQ camera module with the 1/1.8 IMX347 sensor, now hard to find"
   files:
     - kind: note
       file: note.txt
 
-- unit: anjoy-mc-a87-c513
-  model: anjoy-mc-a87
+- unit: anjoy-mc-l10-c513
+  model: anjoy-mc-l10
   by: Tino Darkness (OpenIPC community)
   evidence:
-    - https://t.me/c/1809358416/290277
-    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397346365
-  note: "He gives the chip as SSC385 (not SSC387) with 64 MB DDR2; a boot log would settle it."
+    - https://t.me/c/1809358416/30758
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397780599
+  note: "MC-L10: Anjoy SSC30KD + IMX335 module"
   files:
     - kind: note
       file: note.txt
 
-- unit: anjoy-mc-a42-c513
-  model: anjoy-mc-a42
+- unit: anjoy-mc-l12-c513
+  model: anjoy-mc-l12
   by: Tino Darkness (OpenIPC community)
   evidence:
-    - https://t.me/c/1809358416/52079
-    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397346624
-  sensor: SC401AI
-  note: "As he states it; he gives the older A42's SoC as SSC337 and as SSC335."
+    - https://t.me/c/1809358416/51861
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397781139
+  sensor: IMX335
+  note: "MC-L12: older Anjoy IP camera module with a SigmaStar SSC30KQ SoC and a Sony IMX335 sensor; MC-L12B is the same pairing."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-l12d-c513
+  model: anjoy-mc-l12d
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/148771
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397780857
+  sensor: IMX335
+  note: "MC-L12D: Anjoy SSC377D + IMX335 module, one of the MC-xxD 'remake' modules"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-l15-c513
+  model: anjoy-mc-l15
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/297936
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397781394
+  note: "MC-L15: Anjoy IP camera module on the SigmaStar SSC30KD."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc-l18d-c513
+  model: anjoy-mc-l18d
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/290754
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397781643
+  note: "MC-L18D: Anjoy IP camera module on a SigmaStar SSC377."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc200j8-c513
+  model: anjoy-mc200j8
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/19532
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397772043
+  note: "MC200J8: Anjoy module identified in stock firmware by a model flag file"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc500l-c513
+  model: anjoy-mc500l
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397772316
+  note: "MC500L: Anjoy camera module identified by its stock firmware flag file"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc500n2-c513
+  model: anjoy-mc500n2
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/108783
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397772709
+  sensor: IMX335
+  note: "MC500N2: older Anjoy dual-board (sensor + SoC) camera module with IMX335"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc500n3-c513
+  model: anjoy-mc500n3
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/239659
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397772915
+  sensor: IMX335
+  note: "MC500N3: 38x38 SSC338Q camera module with IMX335"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc500n5-c513
+  model: anjoy-mc500n5
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/83140
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397773192
+  note: "MC500N5: Anjoy 38x38 IP camera module."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc800g-c513
+  model: anjoy-mc800g
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/29939
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397347448
+  sensor: IMX415
+  note: "MC800G: dual-board 38x38 mm SSC339G module with IMX415 and NAND flash, 4K at 30fps"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc800n-c513
+  model: anjoy-mc800n
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/19490
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397774353
+  note: "MC800N: Anjoy IP camera module from the MC800 series with NOR flash."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc800n2-c513
+  model: anjoy-mc800n2
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/113073
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397774041
+  note: "MC800N2: Anjoy MC800-series module with NOR flash"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc800s-c513
+  model: anjoy-mc800s
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/290764
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397345805
+  sensor: IMX415
+  note: "MC800S: Anjoy SSC338Q + IMX415 camera module, two boards (sensor board on FPC), with SPI NAND on older and SPI NOR on newer revisions"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-mc800s7-c513
+  model: anjoy-mc800s7
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397774925
+  note: "MC800S7: SSC378QE camera module with a 1/2.7 sensor"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-ms-f12-c513
+  model: anjoy-ms-f12
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397781933
+  note: "MS-F12: Anjoy IP camera module identified by stock firmware flag msf12.flag."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-ms-f50-c513
+  model: anjoy-ms-f50
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397782172
+  note: "MS-F50: SSC337DE camera module with NOR flash"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-ms-j10-c513
+  model: anjoy-ms-j10
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/19551
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397782405
+  flash_mb: 8
+  note: "MS-J10: Anjoy IP camera module on the SigmaStar SSC335 with 8MB NOR flash."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-my-d30-c513
+  model: anjoy-my-d30
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/51698
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397782608
+  note: "MY-D30: Anjoy dual-sensor camera module"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-my-e11-c513
+  model: anjoy-my-e11
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1809358416/49478
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397782896
+  note: "MY-E11: Anjoy \"Y\" series camera module with integrated motors."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-my-f17-c513
+  model: anjoy-my-f17
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397783332
+  note: "MY-F17: low-cost Anjoy camera module on the SigmaStar SSC373 with a TF card slot and motor drivers."
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-my-f18-c513
+  model: anjoy-my-f18
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397783794
+  note: "MY-F18: Anjoy \"Y\" series module with integrated motors"
   files:
     - kind: note
       file: note.txt
@@ -250,19 +619,28 @@
   evidence:
     - https://t.me/c/1166652144/74853
     - https://github.com/OpenIPC/website/issues/513#issuecomment-6397347210
-  sensor: SC2336P
-  note: "As he states it: SSC377, two SC2336P sensors (dual-lens, PWM motors)."
+  note: "MY-Q10: SSC377 dual-sensor camera module with PWM motors"
   files:
     - kind: note
       file: note.txt
 
-- unit: anjoy-mc800g-c513
-  model: anjoy-mc800g
+- unit: anjoy-my-q11-c513
+  model: anjoy-my-q11
   by: Tino Darkness (OpenIPC community)
   evidence:
-    - https://t.me/c/1166652144/78898
-    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397347448
-  note: "SSC339G with external DDR and SPI NAND, as he states it."
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397784206
+  note: "MY-Q11: Anjoy 'Y'-series module with integrated motors"
+  files:
+    - kind: note
+      file: note.txt
+
+- unit: anjoy-my-y10-c513
+  model: anjoy-my-y10
+  by: Tino Darkness (OpenIPC community)
+  evidence:
+    - https://t.me/c/1166652144/83209
+    - https://github.com/OpenIPC/website/issues/513#issuecomment-6397784417
+  note: "MY-Y10: SSC335 5V PTZ camera module with integrated motors"
   files:
     - kind: note
       file: note.txt

@@ -1,0 +1,7 @@
+MC-A85: Anjoy SSC378DE module
+
+Chip and memory
+- SoC is SSC378DE (https://t.me/c/1809358416/217588)
+
+Sensor
+- Tino wrote the sensor only as "GC8?" (https://t.me/c/1809358416/217588)

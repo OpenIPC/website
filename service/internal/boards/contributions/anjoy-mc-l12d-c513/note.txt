@@ -1,0 +1,33 @@
+MC-L12D: Anjoy SSC377D + IMX335 module, one of the MC-xxD 'remake' modules
+
+Chip and memory
+- SoC is SSC377D (https://t.me/c/1809358416/148771,
+  https://t.me/c/1809358416/64309, https://t.me/c/1166652144/84393)
+- "all MC-xxD Anjia 'remake' modules are based on new SSC37{7,8}", with
+  MC-L12D (Taobao 756049448525) as the example
+  (https://t.me/c/1166652144/110078)
+
+Sensor
+- Sony IMX335; measured: the stock firmware from Anjoy's site contains
+  squashfs-root/opt/ch/imx335_MIPI.ko (https://t.me/c/1166652144/110081,
+  https://t.me/c/1809358416/148771, https://t.me/c/1166652144/84393)
+
+Firmware support (OpenIPC / majestic / stock)
+- Stock firmware MCL12D_V0-A-H5 is at
+  http://www.icamra.cn:8021/firmware/online/public/MCL12D_V0-A-H5/ and ships
+  /opt/ch/imx335_MIPI.ko, offered as a source of an I6C IMX335 sensor driver
+  (2025-01) (https://t.me/c/1809358416/148771)
+
+Sourcing and price
+- ~80 CNY on Taobao in 2024-03/04; L12/B ~85 RMB
+  (https://t.me/c/1809358416/72738, https://t.me/c/1809358416/64309)
+
+Variants, aliases and products built on it
+- "there are 3 L12 in the wild": MC-L12 and L12B use SSC30KQ, MC-L12D a
+  different SoC (https://t.me/c/1809358416/51861)
+
+Disagreements
+- In 2024-01 Tino wrote the SoC as "SSC337D (I6C)"
+  (https://t.me/c/1809358416/51861); his other messages and the catalogue
+  say SSC377D (https://t.me/c/1809358416/148771,
+  https://t.me/c/1166652144/84393)

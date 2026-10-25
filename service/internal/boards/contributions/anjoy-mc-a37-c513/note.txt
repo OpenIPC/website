@@ -1,0 +1,10 @@
+MC-A37: Anjoy SSC373 camera module
+
+Chip and memory
+- SoC is SSC373 (https://t.me/c/1809358416/287375,
+  https://t.me/c/1809358416/249920, https://t.me/c/1809358416/143334)
+
+Sourcing and price
+- 28 CNY (~$3.9) in 2024-12; ~28 CNY ($4) in 2025-08
+  (https://t.me/c/1809358416/249920, https://t.me/c/1809358416/143334)
+- ~$6-7 on Taobao without lens in 2026-05 (https://t.me/c/1809358416/287375)

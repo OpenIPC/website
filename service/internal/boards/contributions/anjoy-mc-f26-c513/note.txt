@@ -1,7 +1,19 @@
-MC-F26: the stock firmware drives an SC3338 sensor.
+MC-F26: SSC335-class (I6B0) camera module whose stock firmware ships an
+  SC3338 driver
 
-Tino Darkness found /opt/ch/drv_ms_cus_sc3338_MIPI_dn.ko in the
-MCF26_V0-A_BU_LIGHT firmware from icamra.cn (2023-09-01,
-https://t.me/c/1166652144/72840). The catalogue had SC3336. The firmware
-uses SigmaStar's standard 4.9.84 kernel and the I6B0 SDK
-(https://t.me/c/1166652144/72844), which is consistent with the SSC335.
+Sensor
+- The stock MCF26_V0-A_BU_LIGHT firmware ships
+  /opt/ch/drv_ms_cus_sc3338_MIPI_dn.ko (measured)
+  (https://t.me/c/1166652144/72840)
+
+Interfaces and pinout
+- PM_UART pad location shown in a photo: "here is your PM_UART"
+  (https://t.me/c/1166652144/108754)
+
+Firmware support (OpenIPC / majestic / stock)
+- "that firmware use 'standard sigmastar' 4.9.84 kernel and I6B0 sdk."
+  (https://t.me/c/1166652144/72844)
+
+Disagreements
+- Sensor: the catalogue lists SC3336; the stock firmware driver is for
+  SC3338 (https://t.me/c/1166652144/72840)

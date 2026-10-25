@@ -1,0 +1,14 @@
+MC-A42P: Anjoy IP camera module with a SigmaStar SSC377 SoC and a SmartSens
+  SC4336P sensor.
+
+Chip and memory
+- SoC is SSC377: "MC-A42 is 335, MC-A42P is 377".
+  (https://t.me/c/1166652144/72882, https://t.me/c/1809358416/52079)
+
+Sensor
+- Sensor is the SC4336P. (https://t.me/c/1166652144/73028,
+  https://t.me/c/1809358416/52079)
+
+Variants, aliases and products built on it
+- Tino calls it the "newer MC-A42P", distinct from the MC-A42.
+  (https://t.me/c/1809358416/52079, https://t.me/c/1166652144/72882)

@@ -1,7 +1,50 @@
-MC-J86: SSC378DE with an SC850SL sensor (8 MP, 1/1.8"), not an SC850AI.
+MC-J86: SSC378DE camera module with the 8MP 1/1.8 SC850SL sensor
 
-The stock firmware ships sc850sl_MIPI_30FPS_20230821.ko (Tino Darkness,
-2024-07-03, https://t.me/c/1166652144/118366, and again from a 2026
-firmware dump, https://t.me/c/1809358416/291403). An AliExpress listing
-shows "SC850AI instead of SC850SL" (https://t.me/c/1809358416/291424), the same
-name Anjoy's 2026-04 price list gives; the firmware is the measured evidence.
+Chip and memory
+- SSC378DE; "MC-J86 is SSC378DE, not SSC338Q/G"
+  (https://t.me/c/1809358416/291427, https://t.me/c/1809358416/286291,
+  https://t.me/c/1166652144/83831)
+
+Sensor
+- SC850SL: the stock firmware ships
+  squashfs-root/opt/ch/sc850sl_MIPI_30FPS_20230821.ko (measured, 2024-07 and
+  2026-06) (https://t.me/c/1809358416/291403,
+  https://t.me/c/1166652144/118366)
+- Tino gives the SC850SL as 8MP, 1/1.8, 2um, 60fps, HDR
+  (https://t.me/c/1809358416/71808, https://t.me/c/1166652144/83831)
+- Suggested for low light: "still big res, BSL, etc.. not bad."
+  (https://t.me/c/1809358416/291199, https://t.me/c/1809358416/264655)
+
+Interfaces and pinout
+- The sensor runs on 4-lane MIPI; the stock load script does "insmod
+  /opt/ch/sc850sl_MIPI_30FPS_20230821.ko chmap=1 lane_num=4" (measured)
+  (https://t.me/c/1809358416/294904)
+- "there's no WIFI module on board"; WiFi is an external USB module on the
+  extension board via FFC (https://t.me/c/1809358416/113083)
+
+Quirks and fixes
+- The stock firmware has no SC850SL IQ file: "only imx307 and
+  gc4023_{day,night}.bin" (measured) (https://t.me/c/1809358416/293969)
+- An AliExpress listing shows "SC850AI instead of SC850SL"; the firmware
+  dump shows SC850SL (https://t.me/c/1809358416/291424,
+  https://t.me/c/1809358416/291403)
+
+Sourcing and price
+- "J86 ~$25 on taobao (w/o lens)." (2026-04)
+  (https://t.me/c/1809358416/286298)
+- Taobao item 749553303002 (2024-09) (https://t.me/c/1809358416/113083)
+- "MC-J86 is much harder to find on Taobao than the MC800S*" (2026-06)
+  (https://t.me/c/1809358416/291626)
+
+Variants, aliases and products built on it
+- Positioned as a new replacement for the MC-K45 (2024-04)
+  (https://t.me/c/1809358416/71808)
+- One of several SSC378 boards on Taobao with different sensors, along with
+  MC-A81 and FuHan FH81-PRO (https://t.me/c/1809358416/75133)
+
+Disagreements
+- Sensor: Tino wrote "8MP SSC378/SC810SL" in 2024-01 and "1/1.8 SC850AI" in
+  2026-01; all his other statements and the stock firmware dump give
+  SC850SL, matching the catalogue (https://t.me/c/1809358416/51874,
+  https://t.me/rubydigitalfpvvideolink/57502,
+  https://t.me/c/1809358416/291403)

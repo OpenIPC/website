@@ -1,0 +1,12 @@
+MY-F17: low-cost Anjoy camera module on the SigmaStar SSC373 with a TF card
+  slot and motor drivers.
+
+Chip and memory
+- SoC is SSC373. (https://t.me/c/1809358416/287375)
+
+Interfaces and pinout
+- TF card slot and motor drivers on board.
+  (https://t.me/c/1809358416/287375)
+
+Sourcing and price
+- About $8 in 2026-05. (https://t.me/c/1809358416/287375)
