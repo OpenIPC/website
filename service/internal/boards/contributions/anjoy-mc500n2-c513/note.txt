@@ -14,6 +14,6 @@ Interfaces and pinout
   (https://t.me/c/1809358416/113073)
 
 Disagreements
-- SoC: the catalogue says SSC328Q; Tino wrote "SSC325+IMX335" in 2024-03 and
-  "just SSC338 / IMX335" in 2024-08 (https://t.me/c/1809358416/67999,
+- SoC: Tino wrote "SSC325+IMX335" in 2024-03 and "just SSC338 / IMX335" in
+  2024-08 (https://t.me/c/1809358416/67999,
   https://t.me/c/1809358416/108783)

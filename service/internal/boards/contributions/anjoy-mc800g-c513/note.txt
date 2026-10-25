@@ -26,13 +26,15 @@ Sourcing and price
 - "MC800G (dual board, SSC339G, 30fps, imx415) is ¥240.00 ($33)" in 2023-10;
   still 240 CNY in 2024-02 (https://t.me/c/1166652144/77773,
   https://t.me/c/1809358416/55790)
-- Taobao item 616283275803 (2023-10) (https://t.me/c/1809358416/29943)
+- Tino suggested Taobao item 616283275803 ("it seems (like) this one",
+  2023-10) (https://t.me/c/1809358416/29943)
 - AliExpress item 1005004041121141 (2024-12); AliExpress 1005004110692356
   given as "similar" in 2023-10 (https://t.me/c/1809358416/137356,
   https://t.me/c/1809358416/30552)
 
 Variants, aliases and products built on it
-- Also sold as Anjvison MC800G (https://t.me/c/1166652144/68221)
+- Tino once wrote it as "Anjvison MC800G (SSC339/IMX415)"
+  (https://t.me/c/1166652144/68221)
 - AliExpress item 1005005281826048: "MC800G + 36x AF w/IRCut + PTZ (pelco-d
   i think) + TFCard" (https://t.me/c/1166652144/77775)
 

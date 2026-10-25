@@ -4,8 +4,8 @@ MC-J30: Anjoy 4MP IP camera module with a SigmaStar SSC377 (64MB DDR2) whose
 Chip and memory
 - SoC is the SSC377 (I6C, CA35) with 64MB DDR2.
   (https://t.me/c/1166652144/73003)
-- Measured from a user's J30 kernel log: "377 with 64Mb RAM (not E, QE)".
-  (https://t.me/c/1166652144/117255)
+- A 2024-06 kernel log shows "Memory: 32588K/38720K available"; Tino: "377
+  with 64Mb RAM (not E, QE)". (https://t.me/c/1166652144/117255)
 
 Sensor
 - Measured: the stock firmware loads sp4329_MIPI.ko, i.e. an SP4329 4MP
@@ -25,6 +25,10 @@ Variants, aliases and products built on it
 
 Disagreements
 - Sensor: in 2023-09 Tino listed the MC-J30/40 with an SC450AI sensor; from
-  2023-10 the stock firmware loads sp4329_MIPI.ko (measured). The catalogue
-  lists SC450X. (https://t.me/c/1166652144/73003,
-  https://t.me/c/1166652144/79715, https://t.me/c/1166652144/119657)
+  2023-10 the stock firmware loads sp4329_MIPI.ko (measured).
+  (https://t.me/c/1166652144/73003, https://t.me/c/1166652144/79715,
+  https://t.me/c/1166652144/119657)
+
+Catalogue comparison
+- The catalogue lists SC450X; Tino's evidence above gives SP4329
+  (https://t.me/c/1166652144/79715, https://t.me/c/1166652144/83831)

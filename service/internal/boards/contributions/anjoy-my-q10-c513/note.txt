@@ -19,7 +19,3 @@ Firmware support (OpenIPC / majestic / stock)
 
 Sourcing and price
 - Taobao item 750427924529 (2024-04) (https://t.me/c/1809358416/70743)
-
-Disagreements
-- The catalogue lists no SoC or sensor; Tino gives SSC377 with two SC2336P
-  (https://t.me/c/1166652144/74853)

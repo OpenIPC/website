@@ -8,7 +8,7 @@ Chip and memory
   HiSi". (https://t.me/c/1166652144/128486)
 
 Sensor
-- Sensor is the SC830AI (8MP; 1/2.7, BSI, 1.5um).
+- Sensor is the SC830AI (8MP, 1.5 µm pixel size).
   (https://t.me/c/1166652144/73971, https://t.me/c/1809358416/51874,
   https://t.me/c/1809358416/217588)
 
@@ -17,11 +17,12 @@ Interfaces and pinout
   (https://t.me/c/1166652144/83831)
 
 Variants, aliases and products built on it
-- Tino identified a white-label camera from a photo as an MC-A81; the vendor
-  claimed Hi3516A. (https://t.me/c/1166652144/128486)
+- Asked about an MC-A81 whose manufacturer lists the chip as Hi3516A, Tino
+  replied: "A81 uses SigmaStar SoC, not HiSi".
+  (https://t.me/c/1166652144/128486)
 
 Disagreements
-- SoC: one 2024-01 message says "MC-A81 (8 MP SSC377/SC830AI)"; the
-  catalogue and Tino's other messages say SSC378DE (once just "SSC378").
+- SoC: one 2024-01 message says "MC-A81 (8 MP SSC377/SC830AI)"; Tino's other
+  messages say SSC378DE (once just "SSC378").
   (https://t.me/c/1809358416/51874, https://t.me/c/1809358416/75133,
   https://t.me/c/1809358416/217588)

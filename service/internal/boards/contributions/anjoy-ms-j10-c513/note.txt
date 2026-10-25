@@ -1,16 +1,19 @@
-MS-J10: Anjoy IP camera module on the SigmaStar SSC335 with 8MB NOR flash.
+MS-J10: Anjoy IP camera module on the SigmaStar SSC335 with an 8MB flash
+  layout.
 
 Chip and memory
-- Measured: the IPL signature MVX4##I6b0g05c44beIPL_ puts the MS-J10 in the
-  SSC335 group. (https://t.me/c/1166652144/19577)
+- Tino lists it as "MS-J10 (335)"; its measured IPL signature
+  MVX4##I6b0g05c44beIPL_ is the same as on the MC-F40 (337) and MC-F50
+  (337DE). (https://t.me/c/1166652144/19577)
 
 Flash and storage
-- Measured: the stock u-boot MXP partition table (IPL, IPL_CUST, MXPT, ROM,
-  KEY_CUST, UBOOT, UBOOT_ENV, KERNEL, SYSTEM, DATA) ends at 0x00800000, i.e.
-  8MB NOR. (https://t.me/c/1166652144/19551)
+- Measured: the MS-J10 partition table (IPL, IPL_CUST, MXPT, ROM, KEY_CUST,
+  UBOOT, UBOOT_ENV, KERNEL, SYSTEM, DATA) ends at 0x00800000, i.e. 8 MB of
+  flash. (https://t.me/c/1166652144/19551)
 
 Interfaces and pinout
-- Wiring diagram PDF (covers USB and debug UART pins):
+- Asked about the USB and debug UART pins, Tino posted the wiring diagram
+  PDF:
   http://www.icamra.cn:8021/pdf/MS-J10/MS-J10%e6%8e%a5%e7%ba%bf%e5%9b%be.pdf
   (https://t.me/c/1166652144/85714)
 

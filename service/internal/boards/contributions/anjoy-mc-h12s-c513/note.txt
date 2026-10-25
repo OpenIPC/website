@@ -1,5 +1,5 @@
-MC-H12S: Anjoy 12MP single-board 38x38 IP camera module on the SigmaStar
-  SSC359G (Mercury6) with an IMX577 sensor.
+MC-H12S: Anjoy 12MP IP camera module on the SigmaStar SSC359G (Mercury6)
+  with a Sony IMX577 sensor.
 
 Chip and memory
 - Measured: the board reports Mercury6, "Chip_ID: 0xF4" in
@@ -11,9 +11,8 @@ Chip and memory
 - SSC359G is dual-core, up to 1.2GHz. (https://t.me/c/1809358416/140934)
 
 Sensor
-- 12MP Sony IMX577 (Starvis2), quoted as capable of 1080p@240.
-  (https://t.me/c/1166652144/80826, https://t.me/c/1809358416/51874,
-  https://t.me/c/1809358416/291747)
+- 12MP Sony IMX577 (Starvis2). (https://t.me/c/1166652144/80826,
+  https://t.me/c/1809358416/51874, https://t.me/c/1809358416/291747)
 - Module performance: "SSC359G/IMX577 (4K@30 up to 1080@120)", limited by
   the SigmaStar pipeline. (https://t.me/c/1809358416/293156)
 
@@ -36,10 +35,11 @@ Sourcing and price
   (https://t.me/c/1166652144/80825, https://t.me/c/1809358416/51174)
 - ~$80 without lens in 2026-06; ~$60 in 2026-07.
   (https://t.me/c/1809358416/291744, https://t.me/c/1809358416/293156)
-- AliExpress listing (2024-12):
-  https://www.aliexpress.com/item/1005008162878135.html. Anjoy datasheet PDF
-  is on icamra.cn. (https://t.me/c/1809358416/137356,
-  https://t.me/c/1809358416/45481)
+- AliExpress listing given by Tino (2024-12):
+  https://www.aliexpress.com/item/1005008162878135.html; he also pointed to
+  a unifore.net product page:
+  https://www.unifore.net/product-highlights/12-megapixel-4k-ip-camera-module-based-on-ssc359-starvis-imx577.html
+  (https://t.me/c/1809358416/137356, https://t.me/c/1809358416/45481)
 
 Disagreements
 - Sensor: one 2024-05 message says "MC-H12S IMX477 camera board", while the

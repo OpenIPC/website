@@ -1,9 +1,9 @@
 MC-K45: SSC30KQ camera module with the 1/1.8 IMX347 sensor, now hard to find
 
 Chip and memory
-- SSC30KQ (I6E, 2xCA7) with 256MB DDR3; the stock kernel cmdline sets
-  LX_MEM=0xffe0000 (measured) (https://t.me/c/1166652144/74585,
-  https://t.me/c/1166652144/73003)
+- SSC30KQ (I6E, 2xCA7) with 256MB DDR3 (https://t.me/c/1166652144/73003); a
+  stock SSC30KQ firmware cmdline (board not named in the message) sets
+  LX_MEM=0xffe0000 (https://t.me/c/1166652144/74585)
 - "SSC30KQ max. 3K with 30 fps encoding" (https://t.me/c/1166652144/78910)
 
 Sensor
@@ -43,9 +43,9 @@ Sourcing and price
 - "MC-K45 with imx347 costs about the same as the MC800S" (2024-01)
   (https://t.me/c/1809358416/51762)
 - Availability: "looks like EOL" in 2024-09; "almost impossible" to find in
-  2024-10 (seen second-hand on xianyu); "impossible to find it at the
-  moment" in 2025-10 (https://t.me/c/1809358416/117020,
-  https://t.me/c/1166652144/123163, https://t.me/c/1809358416/264655)
+  2024-10; "impossible to find it at the moment" in 2025-10
+  (https://t.me/c/1809358416/117020, https://t.me/c/1166652144/123163,
+  https://t.me/c/1809358416/264655)
 
 Variants, aliases and products built on it
 - Also referred to as Anjia MC-K45 and Anjoy MC-K45

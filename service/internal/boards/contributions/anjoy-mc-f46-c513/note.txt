@@ -1,10 +1,11 @@
-MC-F46: SSC30KD (I6e) camera module with 128MB RAM and a GC4653 sensor
-  driver in stock firmware
+MC-F46: SSC30KD (I6e) camera module with a GC4653 sensor driver in stock
+  firmware
 
 Chip and memory
 - SSC30KD; the IPL tag reads MVX4##I6e#g85ea583IPL_ (measured)
   (https://t.me/c/1166652144/19577)
-- 128MB: the stock kernel cmdline sets LX_MEM=0x7fe0000 (measured)
+- The stock SSC30KD kernel cmdline sets LX_MEM=0x7fe0000 (just under 128 MB)
+  and mma_heap sz=0x4A80000, versus LX_MEM=0xffe0000 on SSC30KQ (measured)
   (https://t.me/c/1166652144/74585)
 
 Sensor
@@ -20,6 +21,6 @@ Variants, aliases and products built on it
 - The original MC-F46 and possibly the MC-F46WF, "because it's an old 2022
   board with the same SSC30KD" (https://t.me/c/1166652144/84142)
 
-Disagreements
-- Sensor: the catalogue lists no sensor; the stock firmware carries
-  gc4653_MIPI.ko (https://t.me/c/1166652144/84162)
+Catalogue comparison
+- The catalogue lists no sensor; Tino's evidence above gives GC4653
+  (https://t.me/c/1166652144/84162)

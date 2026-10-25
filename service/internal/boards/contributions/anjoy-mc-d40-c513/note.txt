@@ -9,8 +9,9 @@ Sensor
 - Two GC2053 sensors on one SoC (https://t.me/c/1809358416/291327,
   https://t.me/c/1809358416/76993, https://t.me/c/1166652144/74863)
 - Measured: stock firmware /opt/ch holds gc2053_MIPI.ko,
-  gc2053_MIPI_master.ko and gc2053_MIPI_slaver.ko; the master/slave drivers
-  sync the two sensors (https://t.me/c/1809358416/72319,
+  gc2053_MIPI_master.ko and gc2053_MIPI_slaver.ko; replying to a remark that
+  sensors should be synced in hardware, Tino said "because of this, the D40
+  has two kinds of drivers" (https://t.me/c/1809358416/72319,
   https://t.me/c/1809358416/74000)
 - Tino: "only 1080p and not sure about 90fpc"
   (https://t.me/c/1809358416/76993)
@@ -36,6 +37,11 @@ Disagreements
 - Sensor: the catalogue lists GC2063; Tino names GC2053 and the stock
   firmware ships gc2053_MIPI.ko (https://t.me/c/1809358416/72319,
   https://t.me/c/1809358416/76993)
-- Later 2026 messages name the sensor less firmly ('2 x GC2093 or so', '2 x
-  GC2039 or so') and the SoC as 'SSC30KD', against SSC30KQ elsewhere
-  (https://t.me/c/1809358416/291327, https://t.me/c/1809358416/299427)
+- A 2026-10 message names the sensor less firmly ('2 x GC2039 or so') and
+  the SoC as 'SSC30KD', against SSC30KQ and GC2053 elsewhere, including
+  2026-06 (https://t.me/c/1809358416/299427,
+  https://t.me/c/1809358416/291327)
+
+Catalogue comparison
+- The catalogue lists GC2063; Tino's evidence above gives GC2053
+  (https://t.me/c/1809358416/291327, https://t.me/c/1809358416/76993)

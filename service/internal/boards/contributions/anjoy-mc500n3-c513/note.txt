@@ -14,9 +14,10 @@ Interfaces and pinout
   (https://t.me/c/1809358416/113073)
 
 Sourcing and price
-- Not yet on sale in early 2024-05 (datasheet at icamra.cn/pdf/MC500N3/);
-  "already in production AFAIU" a week later
-  (https://t.me/c/1809358416/81931, https://t.me/c/1809358416/83140)
+- Not yet seen on sale in early 2024-05 (directory at
+  http://www.icamra.cn:8021/pdf/MC500N3/); "already in production AFAIU" a
+  week later (https://t.me/c/1809358416/81931,
+  https://t.me/c/1809358416/83140)
 - Taobao item 793937122753 (2024-07) (https://t.me/c/1809358416/93365)
 - "it's called MC500N3 and costs $20 on taobao" (2025-07)
   (https://t.me/c/1809358416/239659)

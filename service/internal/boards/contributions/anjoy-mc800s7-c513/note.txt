@@ -9,7 +9,3 @@ Sensor
 
 Sourcing and price
 - $25 (2026-06) (https://t.me/c/1809358416/290764)
-
-Disagreements
-- Sensor: the catalogue lists SC835; Tino's 2026-06 note leaves it
-  unidentified (https://t.me/c/1809358416/290764)

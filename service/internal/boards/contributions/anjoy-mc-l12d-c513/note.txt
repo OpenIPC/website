@@ -14,8 +14,8 @@ Sensor
 
 Firmware support (OpenIPC / majestic / stock)
 - Stock firmware MCL12D_V0-A-H5 is at
-  http://www.icamra.cn:8021/firmware/online/public/MCL12D_V0-A-H5/ and ships
-  /opt/ch/imx335_MIPI.ko, offered as a source of an I6C IMX335 sensor driver
+  http://www.icamra.cn:8021/firmware/online/public/MCL12D_V0-A-H5/; Tino
+  points to /opt/ch/imx335_MIPI.ko and says "AFAIK L12D is ssc377d/imx335"
   (2025-01) (https://t.me/c/1809358416/148771)
 
 Sourcing and price
@@ -28,6 +28,5 @@ Variants, aliases and products built on it
 
 Disagreements
 - In 2024-01 Tino wrote the SoC as "SSC337D (I6C)"
-  (https://t.me/c/1809358416/51861); his other messages and the catalogue
-  say SSC377D (https://t.me/c/1809358416/148771,
-  https://t.me/c/1166652144/84393)
+  (https://t.me/c/1809358416/51861); his other messages say SSC377D
+  (https://t.me/c/1809358416/148771, https://t.me/c/1166652144/84393)

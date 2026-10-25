@@ -1,4 +1,4 @@
-MY-Y10: SSC335 5V PTZ camera module with integrated motors
+MY-Y10: Anjoy SSC335 5V camera module with integrated motors
 
 Chip and memory
 - SSC335 (https://t.me/c/1166652144/83209)

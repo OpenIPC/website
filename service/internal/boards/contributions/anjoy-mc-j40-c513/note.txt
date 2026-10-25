@@ -22,15 +22,17 @@ Variants, aliases and products built on it
 - Tino groups it with the MC-J30 ("MC-J30/40"); "J30 with sc450Ai (which is
   used in J40 btw)" (https://t.me/c/1166652144/73003,
   https://t.me/c/1166652144/117250)
-- "there is A42P, MY-Q10 with the same SoC"
-  (https://t.me/c/1166652144/74856)
+- Replying about SC450AI, Tino noted "there is A42P, MY-Q10 with the same
+  SoC" (https://t.me/c/1166652144/74856)
 
 Disagreements
-- Sensor: the catalogue lists no sensor; Tino and the stock firmware give
-  SC450AI (https://t.me/c/1166652144/79715, https://t.me/c/1809358416/29759)
 - Sensor: one 2024-06 message says "SC530AI can be found in J40"; his other
   messages and the firmware driver say SC450AI
   (https://t.me/c/1166652144/117277, https://t.me/c/1166652144/79715,
   https://t.me/c/1166652144/117250)
-- SoC: the catalogue says SSC377; Tino wrote SSC377 in 2023 and SSC377DE in
-  2024-01 (https://t.me/c/1809358416/29759, https://t.me/c/1809358416/51874)
+- SoC: Tino wrote SSC377 in 2023-10 and SSC377DE in 2024-01
+  (https://t.me/c/1809358416/29759, https://t.me/c/1809358416/51874)
+
+Catalogue comparison
+- The catalogue lists no sensor; Tino's evidence above gives SC450AI
+  (https://t.me/c/1809358416/51874)

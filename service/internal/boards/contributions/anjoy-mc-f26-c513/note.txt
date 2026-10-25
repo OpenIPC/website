@@ -1,5 +1,5 @@
-MC-F26: SSC335-class (I6B0) camera module whose stock firmware ships an
-  SC3338 driver
+MC-F26: camera module whose stock firmware uses the 'standard sigmastar'
+  4.9.84 kernel and I6B0 SDK and ships an SC3338 driver
 
 Sensor
 - The stock MCF26_V0-A_BU_LIGHT firmware ships
@@ -7,13 +7,13 @@ Sensor
   (https://t.me/c/1166652144/72840)
 
 Interfaces and pinout
-- PM_UART pad location shown in a photo: "here is your PM_UART"
+- Tino pointed out the PM_UART location: "here is your PM_UART"
   (https://t.me/c/1166652144/108754)
 
 Firmware support (OpenIPC / majestic / stock)
 - "that firmware use 'standard sigmastar' 4.9.84 kernel and I6B0 sdk."
   (https://t.me/c/1166652144/72844)
 
-Disagreements
-- Sensor: the catalogue lists SC3336; the stock firmware driver is for
-  SC3338 (https://t.me/c/1166652144/72840)
+Catalogue comparison
+- The catalogue lists SC3336; Tino's evidence above gives SC3338
+  (https://t.me/c/1166652144/72840)

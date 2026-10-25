@@ -1,21 +1,23 @@
 MC800S: Anjoy SSC338Q + IMX415 camera module, two boards (sensor board on
-  FPC), with SPI NAND on older and SPI NOR on newer revisions
+  FPC), with SPI NAND on older and NOR flash on newer revisions
 
 Chip and memory
 - SoC is SigmaStar SSC338Q (https://t.me/c/1809358416/290764,
   https://t.me/c/1809358416/78892, https://t.me/c/1166652144/19487)
-- Measured on the stock u-boot: the FDT machine model reads "INFINITY6E
-  SSC012B-S01A" (https://t.me/c/1166652144/19514)
-- Measured single-core Dhrystone of 1695 DMIPS on stock/SDK firmware
-  (SSC30KQ: 830 for comparison) (https://t.me/c/1809358416/231166,
-  https://t.me/c/1809358416/141148, https://t.me/c/1809358416/133287)
+- Measured: the boot log shows "fdt:Machine model: INFINITY6E SSC012B-S01A"
+  (https://t.me/c/1166652144/19514)
+- Single-core Dhrystone of 1695 DMIPS (SSC30KQ: 830 for comparison); Tino
+  notes the numbers may be affected by over/underclocking
+  (https://t.me/c/1809358416/231166, https://t.me/c/1809358416/141148,
+  https://t.me/c/1809358416/133287)
 
 Sensor
 - Sony IMX415, 1/2.7" (https://t.me/c/1809358416/289873,
   https://t.me/c/1809358416/73182, https://t.me/c/1166652144/19487)
 - Tino lists it as "20fps" with the IMX415 (https://t.me/c/1166652144/77773)
-- Measured: the device tree sets csi_sr0_lane_num = 4 (4-lane MIPI CSI), "at
-  least on MC800S and K45 - same result" (https://t.me/c/1809358416/60946)
+- Device tree read of csi_sr0_lane_num "looks like it could be 4" (4-lane
+  MIPI CSI), "at least on MC800S and K45 - same result"
+  (https://t.me/c/1809358416/60946)
 
 Flash and storage
 - 2021-09 unit: GD5F1GQ5xExxG, "1G-bit SLC SPI NAND in WSON"
@@ -38,8 +40,9 @@ Interfaces and pinout
   signals: I2C, 3.3/1.8/5V, MIPI 4-lane, CDS, IR-cut. The same sensor board
   is used on MC800G (SSC339), a similar one on MC-H12S (IMX577)
   (https://t.me/c/1809358416/67492)
-- Second UART is on connector D2, used for autofocus on stock firmware: D2.3
-  = AF_RX, D2.2 = AF_TX; wiring PDF at
+- Asked about a second UART, Tino pointed to connector D2, "used for AF
+  (autofocus) on stock fw", and suggested wiring TX to D2.3 (AF_RX) and RX
+  to D2.2 (AF_TX); wiring PDF at
   http://www.icamra.cn:8021/pdf/MC800S/MC800S%e6%8e%a5%e7%ba%bf%e5%9b%be.pdf
   (https://t.me/c/1809358416/38847, https://t.me/c/1809358416/38864)
 - Wiring diagram looks identical to MC800N2's; MC500N2's is slightly
@@ -47,8 +50,9 @@ Interfaces and pinout
 - Per Zipray (relayed by Tino), MC800S and MC500N2 camera boards are
   compatible (https://t.me/c/1809358416/81143)
 - Measured: the Taobao SD-card expansion board 739978020319 "was connected
-  to MC800S V1 / NAND and the card works there"; 3-4 such variants fit most
-  Anjoy boards (https://t.me/c/1809358416/64621)
+  to MC800S V1 / NAND and the card works there"; Tino expects other such
+  boards to work too, as they seem compatible with all or most Anjoy boards
+  (https://t.me/c/1809358416/64621)
 
 Firmware support (OpenIPC / majestic / stock)
 - Stock u-boot: "u-boot is not locked, but linux console disabled"
@@ -56,16 +60,15 @@ Firmware support (OpenIPC / majestic / stock)
 - The vendor update firmware_MC800S_V0-H5_V3.0.5.5 (icamra.cn, 2021-07)
   contains only the rootfs partition, no IPL/u-boot/kernel
   (https://t.me/c/1166652144/19497)
-- Since 2025-08 a Taobao seller (item 966691900762) offers MC800S modules
-  pre-flashed with OpenIPC; for orders of 100+ pre-programmed OpenIPC
-  modules cost "+8 CNY" (https://t.me/c/1809358416/250195,
+- In 2025-08 Tino pointed to a Taobao listing (item 966691900762) for MC800S
+  modules already flashed with OpenIPC; for orders of 100+ pre-programmed
+  OpenIPC modules cost "+8 CNY" (https://t.me/c/1809358416/250195,
   https://t.me/c/1166652144/134005)
 
 Quirks and fixes
 - NAND units have "no simple way aka ‘just dump NOR, change passwd_sys,
   repack, reflash and you’re in’" (https://t.me/c/1166652144/19489)
-- Measured on a NAND module: u-boot md.w 0x1f003c00 reads 00f1, the BROM
-  'F1' boot status a bricked module prints on UART at 38400
+- Measured on stock u-boot: md.w 0x1f003c00 reads 00f1
   (https://t.me/c/1166652144/19512)
 - "MC800S/NAND (early version) cannot load UBOOT file from fat32 partition";
   workaround is kernel from SD plus rootfs over NFS
@@ -77,8 +80,7 @@ Quirks and fixes
 
 Sourcing and price
 - ¥170 ($23) on Taobao in 2023-10 (https://t.me/c/1166652144/77773)
-- ~160-170 CNY in 2024-01; 160 CNY in 2024-02
-  (https://t.me/c/1809358416/51997, https://t.me/c/1809358416/55790)
+- 160 CNY in 2024-02 (https://t.me/c/1809358416/55790)
 - ~150 RMB in 2024-05, down from ~200 RMB earlier
   (https://t.me/c/1809358416/81648, https://t.me/c/1809358416/81681)
 - AliExpress listing (2024-12):
@@ -90,8 +92,8 @@ Sourcing and price
   https://t.me/c/1809358416/289873)
 
 Variants, aliases and products built on it
-- Two-board design (sensor + SoC board); with the WiFi (EU) module it is
-  three boards (https://t.me/c/1809358416/186674,
+- Two-board design (sensor + SoC board); with the EU module it is three
+  boards (https://t.me/c/1809358416/186674,
   https://t.me/c/1809358416/102720)
 - Sensor board joins the main board by FPC, allowing "flexible mounting"
   (https://t.me/c/1809358416/51994)
