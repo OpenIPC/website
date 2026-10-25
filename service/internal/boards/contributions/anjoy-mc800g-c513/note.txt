@@ -45,3 +45,7 @@ Disagreements
 - SoC: in one 2023-10 message Tino wrote "SSC338G is Anjoy MC800G"; his
   messages before and after say SSC339G (https://t.me/c/1809358416/30552,
   https://t.me/c/1809358416/29937, https://t.me/c/1809358416/55790)
+
+Photos
+- The MC800G's back, with its NAND flash and the UART pads marked in green
+  (https://t.me/c/1166652144/35796)

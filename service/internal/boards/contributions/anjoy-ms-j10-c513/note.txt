@@ -20,3 +20,7 @@ Interfaces and pinout
 Firmware support (OpenIPC / majestic / stock)
 - The stock firmware identifies the model by the flag file msj10.flag.
   (https://t.me/c/1166652144/19532)
+
+Photos
+- Both sides of the MS-J10 with pin 1, the PM_UART and the USB pads marked
+  (https://t.me/c/1166652144/85721)

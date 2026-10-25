@@ -45,3 +45,7 @@ Disagreements
 Catalogue comparison
 - The catalogue lists GC2063; Tino's evidence above gives GC2053
   (https://t.me/c/1809358416/291327, https://t.me/c/1809358416/76993)
+
+Photos
+- Anjoy's picture of the MC-D40: the main board between its two sensor
+  boards (https://t.me/c/1809358416/299427)

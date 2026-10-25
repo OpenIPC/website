@@ -219,6 +219,8 @@
   files:
     - kind: note
       file: note.txt
+    - kind: photo_front
+      file: mc-d40.jpg
 
 - unit: anjoy-mc-d80-c513
   model: anjoy-mc-d80
@@ -242,6 +244,8 @@
   files:
     - kind: note
       file: note.txt
+    - kind: photo_other
+      file: mc-f26-uart.jpg
 
 - unit: anjoy-mc-f40-c513
   model: anjoy-mc-f40
@@ -310,6 +314,8 @@
   files:
     - kind: note
       file: note.txt
+    - kind: photo_other
+      file: mc-h12s.jpg
 
 - unit: anjoy-mc-j30-c513
   model: anjoy-mc-j30
@@ -369,6 +375,8 @@
   files:
     - kind: note
       file: note.txt
+    - kind: pinout
+      file: mc-k45-pin1.jpg
 
 - unit: anjoy-mc-l10-c513
   model: anjoy-mc-l10
@@ -494,6 +502,8 @@
   files:
     - kind: note
       file: note.txt
+    - kind: photo_back
+      file: mc800g-back.jpg
 
 - unit: anjoy-mc800n-c513
   model: anjoy-mc800n
@@ -528,6 +538,10 @@
   files:
     - kind: note
       file: note.txt
+    - kind: photo_other
+      file: mc800s-uart.jpg
+    - kind: pinout
+      file: mc800s-pin1.jpg
 
 - unit: anjoy-mc800s7-c513
   model: anjoy-mc800s7
@@ -571,6 +585,8 @@
   files:
     - kind: note
       file: note.txt
+    - kind: pinout
+      file: ms-j10-pinout.png
 
 - unit: anjoy-my-d30-c513
   model: anjoy-my-d30

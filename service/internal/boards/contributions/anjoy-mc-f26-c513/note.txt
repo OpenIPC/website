@@ -17,3 +17,7 @@ Firmware support (OpenIPC / majestic / stock)
 Catalogue comparison
 - The catalogue lists SC3336; Tino's evidence above gives SC3338
   (https://t.me/c/1166652144/72840)
+
+Photos
+- A close-up of the MC-F26 (SSC335) with its UART pads marked in green
+  (https://t.me/c/1166652144/108754)
