@@ -61,3 +61,7 @@ Disagreements
   it could be 4" (2024-02-29); the stock driver parameter lane_num read 2 in
   2023-11 (https://t.me/c/1809358416/60246, https://t.me/c/1809358416/60946,
   https://t.me/c/1166652144/84244)
+
+Photos
+- The MC-K45's connectors with pin 1 of each marked
+  (https://t.me/c/1166652144/35798)

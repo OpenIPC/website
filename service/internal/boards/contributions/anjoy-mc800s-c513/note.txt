@@ -109,3 +109,9 @@ Disagreements
 - Board count: in 2023-10 Tino described it as "single board"
   (https://t.me/c/1166652144/77773); later he says "mc800s is 2 board"
   (https://t.me/c/1809358416/186674, https://t.me/c/1809358416/102720)
+
+Photos
+- The MC800S (SSC338Q, V2.0 silkscreen) with its UART pads marked in green
+  (https://t.me/c/1809358416/26823)
+- The MC800S's connectors with pin 1 of each marked
+  (https://t.me/c/1166652144/35797)
