@@ -1,0 +1,80 @@
+---
+/**
+ * The OpenIPC Certified Partner program.
+ *
+ * Majestic's EULA, shipped on every camera, sends commercial readers here
+ * (sections 2 and 6), so this address has to keep answering for as long as
+ * those images are in the field. It says what the program is for and how to
+ * ask; it publishes no terms, because every agreement is negotiated.
+ */
+import Icon from '../Icon.astro';
+import PageHeader from '../PageHeader.astro';
+import CtaBand from '../CtaBand.astro';
+import { useTranslations, type Locale } from '../../lib/i18n';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.partners.${s}`);
+
+const WHO = ['devices', 'flashing', 'deployment'];
+const GETS: [string, string][] = [
+  ['licence', 'file-earmark-text'],
+  ['activation', 'shield-check'],
+  ['status', 'patch-check'],
+];
+const ASK = ['company', 'product', 'volume', 'features'];
+---
+<PageHeader title={k('hero_title')} lede={k('hero_lede')} />
+
+<div class="site-container">
+  <article>
+    <h2 class="mb-4 text-2xl">{k('who_title')}</h2>
+    <ul class="mb-12 list-none space-y-2 p-0">
+      {WHO.map((item) => (
+        <li class="flex gap-2">
+          <span class="mt-2 size-1.5 shrink-0 rounded-full bg-hairline"></span>
+          <span class="text-body-secondary">{k(`who_${item}`)}</span>
+        </li>
+      ))}
+    </ul>
+
+    <h2 class="mb-6 text-2xl">{k('gets_title')}</h2>
+    <div class="mb-12 grid gap-6 md:grid-cols-3">
+      {GETS.map(([key, icon]) => (
+        <div class="h-full rounded-lg border border-hairline bg-white p-6">
+          <span class="mb-4 flex size-10 items-center justify-center rounded-md bg-brand-blue/10 text-brand-blue">
+            <Icon name={icon} class="size-5" />
+          </span>
+          <h3 class="mb-2 text-xl">{k(`gets_${key}_title`)}</h3>
+          <p class="mb-0 text-body-secondary">{k(`gets_${key}_text`)}</p>
+        </div>
+      ))}
+    </div>
+
+    <div class="mb-12 flex gap-4 rounded-lg border border-hairline bg-white p-5">
+      <Icon name="chat-dots" class="size-6 shrink-0 text-body-secondary" />
+      <div>
+        <h2 class="mb-1 text-base font-semibold">{k('terms_title')}</h2>
+        <p class="mb-0 text-body-secondary">{k('terms_text')}</p>
+      </div>
+    </div>
+
+    <h2 class="mb-4 text-2xl">{k('ask_title')}</h2>
+    <ul class="mb-0 list-none space-y-2 p-0">
+      {ASK.map((item) => (
+        <li class="flex gap-2">
+          <span class="mt-2 size-1.5 shrink-0 rounded-full bg-hairline"></span>
+          <span class="text-body-secondary">{k(`ask_${item}`)}</span>
+        </li>
+      ))}
+    </ul>
+  </article>
+</div>
+
+<CtaBand
+  title={k('cta_title')}
+  primaryLabel={k('cta_primary')}
+  primaryHref="mailto:license@openipc.org"
+  primaryEvent="partners-mail"
+  noteHtml={k('cta_note_html')}
+/>

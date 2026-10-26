@@ -590,6 +590,48 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/privacy"/>
   </url>
   <url>
+    <loc>https://openipc.org/partners</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/partners"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/partners"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/partners"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/partners"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/partners</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/partners"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/partners"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/partners"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/partners"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/partners</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/partners"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/partners"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/partners"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/partners"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/brand</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/brand"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/brand"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/brand"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/brand"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/brand</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/brand"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/brand"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/brand"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/brand"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/brand</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/brand"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/brand"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/brand"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/brand"/>
+  </url>
+  <url>
     <loc>https://openipc.org/cameras/vendors/allwinner</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/allwinner"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/allwinner"/>

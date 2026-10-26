@@ -28,7 +28,7 @@ export const SITEMAP_PAGES = [
   '/utilities', '/web-interface', '/supported-hardware/featured',
   '/supported-hardware/full-list', '/cameras/boards',
   '/tools/high-resolution-timer', '/tools/qr-code-generator', '/open-wall',
-  '/privacy',
+  '/privacy', '/partners', '/brand',
 ];
 
 /** Every catalogue address: each vendor once, in catalogue order, then each SoC. */
