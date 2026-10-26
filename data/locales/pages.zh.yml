@@ -3,6 +3,19 @@ zh:
   pages:
     bandwidth_calculator:
       title: 带宽计算器
+    brand:
+      cta_note_html: "<a href=\"/partners\">OpenIPC 认证合作伙伴计划</a>的参与者在其授权中约定名称的使用方式。"
+      cta_primary: "写信至 brand@openipc.org"
+      cta_title: "想使用 OpenIPC 的名称或标志？"
+      endorsement_html: "Majestic 许可协议和代码的 MIT 许可证都不授予 OpenIPC 名称或标志的任何权利。任何内容都不得暗示 OpenIPC 认可、认证某个产品或公司，或与之存在关联。"
+      endorsement_title: "不得暗示认可"
+      hero_lede: "OpenIPC 的名称和标志可以在何处出现在他人的产品上，以及如何申请。"
+      hero_title: "OpenIPC 的名称与标志"
+      partners_html: "只有 <a href=\"/partners\">OpenIPC 认证合作伙伴计划</a>的参与者才能自称为 OpenIPC 官方或认证合作伙伴。"
+      partners_title: "合作伙伴身份"
+      product_html: "将 OpenIPC 的名称或标志用作产品品牌（用在设备、包装、商品页面或固件镜像上）需要我们的书面许可。我们逐案商定，因此没有可公开的统一政策：请写信告诉我们产品情况以及你打算如何使用这个名称。"
+      product_title: "用在你的产品上"
+      title: "品牌"
     business:
       contact_alt_html: 更喜欢即时沟通？在 <a href="https://t.me/openipc">Telegram</a> 上给我们发消息。
       contact_text: 告诉我们你正在做什么产品。回复你的是工程师，不是销售话术。
@@ -14,7 +27,7 @@ zh:
       how3: 一个交付物明确的试点项目。
       how4: 按你的需要提供持续的支持或开发。
       how_title: 合作是怎样进行的
-      licensing_html: 平台核心采用 MIT 许可证，欢迎商业使用。Majestic 推流器以二进制形式在 Prosperity 许可证下分发，可另行商谈商业条款。不允许将 OpenIPC 及其组件用于军事用途。
+      licensing_html: '平台核心采用 MIT 许可证，欢迎商业使用。Majestic 推流器以二进制形式在 Prosperity 许可证下分发，可通过<a href="/partners">认证合作伙伴计划</a>另行商谈商业条款。不允许将 OpenIPC 及其组件用于军事用途。'
       licensing_title: 授权，直说
       offer1_text: 优先修复、有保障的响应时间，以及对你产品所依赖平台的长期维护。
       offer1_title: 商业支持
@@ -190,6 +203,31 @@ zh:
       step3_text: '驱动落入你的代码树，或者你愿意共同维护的话落入 OpenIPC，并附上供下一颗传感器参考的谱系笔记。'
       step3_title: '维护'
       title: 'ISP 与传感器'
+    partners:
+      ask_company: "你的公司及其注册地。"
+      ask_features: "你依赖 Majestic 的哪些部分：RTSP、ONVIF、WebRTC、录像、Web 界面，还是只用编码器。"
+      ask_product: "产品情况：设备及其 SoC 和传感器，以及你是销售、出租还是自行运营这些设备。"
+      ask_title: "需要发送的信息"
+      ask_volume: "目前有多少台设备运行 Majestic，以及未来一年预计的数量。"
+      cta_note_html: "开发、技术支持和整机硬件见<a href=\"/business\">商业页面</a>。OpenIPC 的名称与标志见<a href=\"/brand\">品牌页面</a>。"
+      cta_primary: "写信至 license@openipc.org"
+      cta_title: "在产品中提供 Majestic？告诉我们。"
+      gets_activation_text: "为你生产或部署的每一台设备批量激活，而不是逐台激活。"
+      gets_activation_title: "批量激活"
+      gets_licence_text: "一份书面许可，允许在三十天评估期之后商业销售、刷写、捆绑或运行 Majestic。"
+      gets_licence_title: "Majestic 商业许可"
+      gets_status_text: "有权自称为 OpenIPC 官方认证合作伙伴——计划之外的任何人都不得如此声称。"
+      gets_status_title: "认证合作伙伴身份"
+      gets_title: "合作伙伴获得什么"
+      hero_lede: "面向商业销售、刷写或运行 Majestic 的公司。Majestic 许可协议指向本页；这里说明该计划是什么以及如何加入。"
+      hero_title: "OpenIPC 认证合作伙伴计划"
+      terms_text: "每份协议都与具体公司单独商定：数量、所用功能和业务类型都会影响条款，因此没有价目表。请发送下面列出的信息，我们会回复具体条款。"
+      terms_title: "条款经协商确定，不公开发布"
+      title: "认证合作伙伴计划"
+      who_deployment: "将 Majestic 纳入商业产品、服务或固件发行版的公司，或在三十天评估期之后继续商业使用的公司。"
+      who_devices: "销售预装 Majestic 的设备、模组或固件镜像的制造商和经销商，包括为销售而预先刷好固件的硬件。"
+      who_flashing: "为他人设备有偿安装 Majestic 的服务商。"
+      who_title: "适用对象"
     privacy:
       # Written against the running configuration rather than the plan (#182):
       # the collect settings on the counter, `rotate 14` in the nginx logrotate

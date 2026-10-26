@@ -188,6 +188,8 @@ export const PAGE_PATHS: PagePath[] = [
   // Kernel crashes cameras recovered from, one row per bug (service/internal/crashes).
   { path: '/crashes', titleKey: 'pages.crashes.title', descriptionKey: 'pages.crashes.lede' },
 
+  // Majestic's EULA names /brand and /partners, on every camera that ships it.
+  { path: '/brand', titleKey: 'pages.brand.title', descriptionKey: 'pages.brand.hero_lede' },
   { path: '/business', titleKey: 'pages.business.title' },
   { path: '/community', titleKey: 'pages.community.title' },
   { path: '/digital-twins', titleKey: 'pages.digital_twins.title' },
@@ -204,6 +206,7 @@ export const PAGE_PATHS: PagePath[] = [
   { path: '/low-latency', titleKey: 'pages.low_latency.title' },
   { path: '/majestic-endpoints', titleKey: 'pages.majestic_endpoints.title' },
   { path: '/our-team', titleKey: 'pages.our_team.title' },
+  { path: '/partners', titleKey: 'pages.partners.title', descriptionKey: 'pages.partners.hero_lede' },
   { path: '/privacy', titleKey: 'pages.privacy.title' },
   { path: '/reverse-engineering', titleKey: 'pages.reverse_engineering.title' },
   { path: '/teleoperation', titleKey: 'pages.teleoperation.title' },

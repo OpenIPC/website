@@ -1,0 +1,48 @@
+---
+/**
+ * The OpenIPC name and logo.
+ *
+ * Majestic's EULA (section 6) names this address for the trademark policy.
+ * It restates what the EULA already says and where to ask for anything else;
+ * permission is given case by case, so no terms are published here.
+ */
+import Icon from '../Icon.astro';
+import PageHeader from '../PageHeader.astro';
+import CtaBand from '../CtaBand.astro';
+import { useTranslations, type Locale } from '../../lib/i18n';
+
+const { locale } = Astro.props as { locale: Locale };
+const t = useTranslations(locale);
+const k = (s: string) => t(`pages.brand.${s}`);
+
+const RULES: [string, string][] = [
+  ['endorsement', 'slash-lg'],
+  ['partners', 'patch-check'],
+  ['product', 'box-seam'],
+];
+---
+<PageHeader title={k('hero_title')} lede={k('hero_lede')} />
+
+<div class="site-container">
+  <article>
+    <div class="grid gap-6 md:grid-cols-3">
+      {RULES.map(([key, icon]) => (
+        <div class="h-full rounded-lg border border-hairline bg-white p-6">
+          <span class="mb-4 flex size-10 items-center justify-center rounded-md bg-brand-blue/10 text-brand-blue">
+            <Icon name={icon} class="size-5" />
+          </span>
+          <h2 class="mb-2 text-xl">{k(`${key}_title`)}</h2>
+          <p class="mb-0 text-body-secondary" set:html={k(`${key}_html`)} />
+        </div>
+      ))}
+    </div>
+  </article>
+</div>
+
+<CtaBand
+  title={k('cta_title')}
+  primaryLabel={k('cta_primary')}
+  primaryHref="mailto:brand@openipc.org"
+  primaryEvent="brand-mail"
+  noteHtml={k('cta_note_html')}
+/>

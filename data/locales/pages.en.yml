@@ -3,6 +3,19 @@ en:
   pages:
     bandwidth_calculator:
       title: Bandwidth calculator
+    brand:
+      cta_note_html: "Partners in the <a href=\"/partners\">OpenIPC Certified Partner program</a> agree their use of the name with their licence."
+      cta_primary: "Write to brand@openipc.org"
+      cta_title: "Want to use the OpenIPC name or logo?"
+      endorsement_html: "The Majestic licence and the MIT licence on the code grant no rights to the OpenIPC name or logos. Nothing may suggest that OpenIPC endorses, certifies or is affiliated with a product or a company."
+      endorsement_title: "No implied endorsement"
+      hero_lede: "Where the OpenIPC name and logo may appear on someone else's product, and how to ask."
+      hero_title: "The OpenIPC name and logo"
+      partners_html: "Only participants in the <a href=\"/partners\">OpenIPC Certified Partner program</a> may call themselves official or certified OpenIPC partners."
+      partners_title: "Partner status"
+      product_html: "Using the OpenIPC name or logo as product branding (on a device, its box, a listing or a firmware image) needs our written permission. We agree it case by case, so there is no fixed policy to publish: write to us with the product and how you would use the name."
+      product_title: "On your product"
+      title: "Brand"
     business:
       contact_alt_html: Prefer chat? Message us on <a href="https://t.me/openipc">Telegram</a>.
       contact_text: Tell us what you are building. An engineer answers, not a sales script.
@@ -14,7 +27,7 @@ en:
       how3: A pilot with clear deliverables.
       how4: Ongoing support or development, sized to your needs.
       how_title: How an engagement works
-      licensing_html: The core of the platform is MIT-licensed — commercial use is welcome. The Majestic streamer is distributed in binary form under the Prosperity license; commercial terms are available. The use of OpenIPC and its components for military purposes is not permitted.
+      licensing_html: 'The core of the platform is MIT-licensed — commercial use is welcome. The Majestic streamer is distributed in binary form under the Prosperity license; commercial terms are available through the <a href="/partners">Certified Partner program</a>. The use of OpenIPC and its components for military purposes is not permitted.'
       licensing_title: Licensing, plainly
       offer1_text: Priority fixes, guaranteed response times, and long-term maintenance of the platforms your product depends on.
       offer1_title: Commercial support
@@ -190,6 +203,31 @@ en:
       step3_text: 'Drivers land in your tree, or in OpenIPC if you prefer shared maintenance, with genealogy notes for the next sensor you choose.'
       step3_title: 'Keep'
       title: 'ISP and sensors'
+    partners:
+      ask_company: "Your company and where it is registered."
+      ask_features: "Which parts of Majestic you rely on: RTSP, ONVIF, WebRTC, recording, the web interface, or only the encoder."
+      ask_product: "The product: the devices, their SoC and sensor, and whether you sell, rent or operate them."
+      ask_title: "What to send"
+      ask_volume: "How many devices run Majestic today, and how many you expect in the next year."
+      cta_note_html: "Development, support and turnkey hardware are on the <a href=\"/business\">business page</a>. The OpenIPC name and logo are on the <a href=\"/brand\">brand page</a>."
+      cta_primary: "Write to license@openipc.org"
+      cta_title: "Shipping Majestic in a product? Tell us about it."
+      gets_activation_text: "Activation for every unit you manufacture or deploy, instead of one device at a time."
+      gets_activation_title: "Volume activation"
+      gets_licence_text: "A written licence to sell, flash, bundle or run Majestic commercially, beyond the thirty-day evaluation."
+      gets_licence_title: "A commercial Majestic licence"
+      gets_status_text: "The right to say you are an official, certified OpenIPC partner, which nobody outside the program may claim."
+      gets_status_title: "Certified partner status"
+      gets_title: "What a partner gets"
+      hero_lede: "For companies that ship, flash or run Majestic commercially. The Majestic licence points here; this page says what the program is and how to join it."
+      hero_title: "OpenIPC Certified Partner program"
+      terms_text: "Every agreement is negotiated with the company it is for: volume, the features used and the kind of business all count, so there is no price list. Send us the details below and we will come back with terms."
+      terms_title: "Terms are agreed, not published"
+      title: "Certified Partner program"
+      who_deployment: "Companies that put Majestic in a commercial product, service or firmware distribution, or keep using it commercially after the thirty-day evaluation."
+      who_devices: "Manufacturers and resellers selling devices, modules or firmware images with Majestic installed, including hardware pre-flashed for sale."
+      who_flashing: "Services that install Majestic on other people's devices for payment."
+      who_title: "Who it is for"
     privacy:
       # Written against the running configuration rather than the plan (#182):
       # the collect settings on the counter, `rotate 14` in the nginx logrotate

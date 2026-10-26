@@ -26,6 +26,7 @@ import ClubReview from '../components/pages/ClubReview.astro';
 import ClubLeaderboard from '../components/pages/ClubLeaderboard.astro';
 import ClubCrashes from '../components/pages/ClubCrashes.astro';
 import Crashes from '../components/pages/Crashes.astro';
+import Brand from '../components/pages/Brand.astro';
 import Business from '../components/pages/Business.astro';
 import Community from '../components/pages/Community.astro';
 import Donate from '../components/pages/Donate.astro';
@@ -41,6 +42,7 @@ import MajesticEndpoints from '../components/pages/MajesticEndpoints.astro';
 import NewsIndex from '../components/pages/NewsIndex.astro';
 import NewsPost from '../components/pages/NewsPost.astro';
 import OurTeam from '../components/pages/OurTeam.astro';
+import Partners from '../components/pages/Partners.astro';
 import Privacy from '../components/pages/Privacy.astro';
 import QrCodeGenerator from '../components/pages/QrCodeGenerator.astro';
 import Teleoperation from '../components/pages/Teleoperation.astro';
@@ -116,6 +118,7 @@ const COMPONENTS: Record<string, Renderer> = {
   '/news': { component: NewsIndex },
   ...Object.fromEntries(POSTS.map((post) => [newsPath(post), { component: NewsPost, props: { slug: post.slug } }])),
 
+  '/brand': { component: Brand },
   '/business': { component: Business },
   '/community': { component: Community },
   '/donate': { component: Donate },
@@ -128,6 +131,7 @@ const COMPONENTS: Record<string, Renderer> = {
   '/low-latency': { component: LowLatency },
   '/majestic-endpoints': { component: MajesticEndpoints },
   '/our-team': { component: OurTeam },
+  '/partners': { component: Partners },
   '/privacy': { component: Privacy },
   '/teleoperation': { component: Teleoperation },
   '/utilities': { component: Utilities },
