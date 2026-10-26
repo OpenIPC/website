@@ -55,6 +55,18 @@ func TestMergingTwoAccountsOfOnePersonMakesThemOne(t *testing.T) {
 	if m := ivan.me(t); m["stars"].(float64) != 7 {
 		t.Fatalf("before: %v", m)
 	}
+	// The GitHub account's camera, and a code the Telegram one sent it,
+	// refused because the camera was the other account's.
+	own := snapshots.MACKey("02:00:00:00:0b:02")
+	e.exec(t, `INSERT INTO cameras (mac_key, first_seen, last_day, days) VALUES ($1, now() - interval '10 days', current_date, 10)`, own)
+	e.exec(t, `INSERT INTO camera_links (mac_key, member_id) VALUES ($1, $2)`, own, into)
+	e.exec(t, `INSERT INTO club_camera_codes (code, member_id, expires_at, blocked_at, mac_key) VALUES ('OWN-CODE', $1, now() + interval '1 day', now(), $2)`, from, own)
+	// A notice the settlement read for the Telegram account, not yet said.
+	e.exec(t, `INSERT INTO wall_notices (member_id, kind, camera, token) VALUES ($1, 'silent', 'Roof', 'x')`, from)
+	pending, err := e.api.Wall.Pending(ctx)
+	if err != nil || len(pending) != 1 {
+		t.Fatalf("pending: %+v %v", pending, err)
+	}
 
 	if _, err := e.api.Merge(ctx, from, into, "", true); !errors.Is(err, ErrMergeReason) {
 		t.Errorf("no reason: %v", err)
@@ -71,7 +83,7 @@ func TestMergingTwoAccountsOfOnePersonMakesThemOne(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !dry.DryRun || dry.Total != 7 || dry.Stars["reports"] != 1 || dry.Stars["wall"] != 5 || dry.Stars["crashes"] != 1 ||
-		dry.Moved["club_identities"] != 1 || dry.Moved["report_submissions"] != 1 || dry.Moved["camera_links"] != 1 ||
+		dry.Moved["club_identities"] != 1 || dry.Moved["report_submissions"] != 1 || dry.Moved["camera_links"] != 1 || dry.Moved["club_camera_codes"] != 1 ||
 		dry.Moved["crash_events"] != 1 {
 		t.Fatalf("dry run: %+v", dry)
 	}
@@ -105,6 +117,18 @@ func TestMergingTwoAccountsOfOnePersonMakesThemOne(t *testing.T) {
 	var gone bool
 	if err := e.pool.QueryRow(ctx, `SELECT NOT EXISTS (SELECT 1 FROM club_members WHERE id = $1)`, from).Scan(&gone); err != nil || !gone {
 		t.Errorf("the emptied account stays: %v", err)
+	}
+	var spent bool
+	if err := e.pool.QueryRow(ctx, `SELECT used_at IS NOT NULL AND blocked_at IS NULL FROM club_camera_codes WHERE code = 'OWN-CODE'`).Scan(&spent); err != nil || !spent {
+		t.Errorf("a code refused for the merged member's own camera is still blocked: %v", err)
+	}
+	// Said to the account that is gone, the notice is not said: it waits
+	// for the member it is now.
+	if err := e.api.Wall.Delivered(ctx, pending[0].ID, pending[0].Member); err != nil {
+		t.Fatal(err)
+	}
+	if again, _ := e.api.Wall.Pending(ctx); len(again) != 1 || again[0].Member != into {
+		t.Errorf("the moved notice: %+v", again)
 	}
 	var sender string
 	if err := e.pool.QueryRow(ctx, `SELECT member_id FROM crash_events WHERE id = 'c-abcdefgh'`).Scan(&sender); err != nil || sender != into {

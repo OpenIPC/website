@@ -66,10 +66,35 @@ func (a *API) Merge(ctx context.Context, from, into, reason string, dryRun bool)
 	}
 	m := &Merged{From: from, Into: into, Moved: map[string]int{}, Stars: map[string]int{}, DryRun: dryRun}
 	err := pgx.BeginFunc(ctx, a.DB, func(tx pgx.Tx) error {
+		// Every lock first, in the order the others take theirs: a review
+		// the member's, the settlements theirs and then a camera's, a
+		// sign-in its login, then the identity, then the member row (a
+		// row's foreign key). Then nothing that runs meanwhile waits on the
+		// merge while the merge waits on it.
 		if err := reports.LockMembers(ctx, tx, from, into); err != nil {
 			return err
 		}
-		for id, name := range map[string]*string{from: &m.FromName, into: &m.IntoName} {
+		if err := wallstars.LockMember(ctx, tx, from); err != nil {
+			return err
+		}
+		if err := crashes.LockSettlement(ctx, tx); err != nil {
+			return err
+		}
+		both := []string{from, into}
+		for _, q := range []string{
+			`SELECT 1 FROM club_logins WHERE member_id = ANY($1) OR for_member = ANY($1) OR claimed_by = ANY($1)
+			 ORDER BY code_sha256 FOR UPDATE`,
+			`SELECT 1 FROM club_identities WHERE member_id = ANY($1) ORDER BY provider, subject FOR UPDATE`,
+		} {
+			if _, err := tx.Exec(ctx, q, both); err != nil {
+				return err
+			}
+		}
+		for _, id := range sorted(from, into) {
+			name := &m.FromName
+			if id == into {
+				name = &m.IntoName
+			}
 			err := tx.QueryRow(ctx, `SELECT name FROM club_members WHERE id = $1 FOR UPDATE`, id).Scan(name)
 			if errors.Is(err, pgx.ErrNoRows) {
 				return fmt.Errorf("%w: %s", ErrNoMember, id)
@@ -84,12 +109,12 @@ func (a *API) Merge(ctx context.Context, from, into, reason string, dryRun bool)
 		if err != nil {
 			return err
 		}
-		both, err := pgx.CollectRows(rows, pgx.RowTo[string])
+		shared, err := pgx.CollectRows(rows, pgx.RowTo[string])
 		if err != nil {
 			return err
 		}
-		if len(both) > 0 {
-			return fmt.Errorf("both members sign in with %s, so they may well be two people: not merged", strings.Join(both, " and "))
+		if len(shared) > 0 {
+			return fmt.Errorf("both members sign in with %s, so they may well be two people: not merged", strings.Join(shared, " and "))
 		}
 		fromHeld, err := ledgers(ctx, tx, from)
 		if err != nil {
@@ -223,4 +248,11 @@ func ledgers(ctx context.Context, tx pgx.Tx, member string) (map[string]ledger, 
 		out[k] = l
 	}
 	return out, nil
+}
+
+func sorted(a, b string) []string {
+	if b < a {
+		return []string{b, a}
+	}
+	return []string{a, b}
 }

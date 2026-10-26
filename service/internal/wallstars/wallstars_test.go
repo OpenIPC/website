@@ -496,7 +496,7 @@ func TestNoticesWaitForDelivery(t *testing.T) {
 	if again, _ := r.store.Pending(ctx); len(again) != 1 {
 		t.Errorf("a second run duplicated the notice: %d", len(again))
 	}
-	r.store.Delivered(ctx, pending[0].ID)
+	r.store.Delivered(ctx, pending[0].ID, pending[0].Member)
 	if left, _ := r.store.Pending(ctx); len(left) != 0 {
 		t.Error("a delivered notice is still pending")
 	}
