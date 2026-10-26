@@ -599,6 +599,10 @@ var messages = map[string]map[string]string{
 		"camera_silent":      "⏸ %s has sent no picture to the Open Wall for %d days. Check its power, its network and its OpenWall settings.",
 		"open_cameras":       "My cameras",
 		"a_camera":           "Your camera",
+		"merged":             "🔗 Your openipc.org accounts are one now: what you sent, your cameras and your stars are together, %d ★ in total. Sign in with any of: %s.",
+		"provider_telegram":  "Telegram",
+		"provider_github":    "GitHub",
+		"provider_email":     "email",
 	},
 	"ru": {
 		"signed_in":          "✅ Вы вошли на openipc.org как <b>%s</b>. Можно вернуться в браузер.",
@@ -634,6 +638,10 @@ var messages = map[string]map[string]string{
 		"camera_silent":      "⏸ %s не присылала снимков на Open Wall уже %d дн. Проверьте питание, сеть и настройки OpenWall.",
 		"open_cameras":       "Мои камеры",
 		"a_camera":           "Ваша камера",
+		"merged":             "🔗 Ваши учётные записи на openipc.org объединены: присланное, камеры и звёзды теперь в одной, всего %d ★. Входить можно любым способом: %s.",
+		"provider_telegram":  "Telegram",
+		"provider_github":    "GitHub",
+		"provider_email":     "почта",
 	},
 	"zh": {
 		"signed_in":          "✅ 已以 <b>%s</b> 身份登录 openipc.org。现在可以回到浏览器。",
@@ -669,6 +677,10 @@ var messages = map[string]map[string]string{
 		"camera_silent":      "⏸ %s 已有 %d 天没有向 Open Wall 发送画面。请检查电源、网络和 OpenWall 设置。",
 		"open_cameras":       "我的摄像头",
 		"a_camera":           "你的摄像头",
+		"merged":             "🔗 你在 openipc.org 的账户已合并：提交内容、摄像头和星星都在同一个账户里，共 %d ★。可用以下任一方式登录：%s。",
+		"provider_telegram":  "Telegram",
+		"provider_github":    "GitHub",
+		"provider_email":     "邮箱",
 	},
 }
 
