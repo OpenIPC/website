@@ -147,6 +147,13 @@ func TestAMemberLinksACameraAndEarnsStars(t *testing.T) {
 	if code, _ := anon.json(t, "GET", "/api/v1/club/leaderboard?period=forever", nil); code != http.StatusBadRequest {
 		t.Errorf("unknown period: %d", code)
 	}
+	// Totals that cannot be counted leave the line out, not the table.
+	e.exec(t, `ALTER TABLE wall_revoked RENAME TO wall_revoked_away`)
+	code, out = anon.json(t, "GET", "/api/v1/club/leaderboard", nil)
+	e.exec(t, `ALTER TABLE wall_revoked_away RENAME TO wall_revoked`)
+	if _, has := out["totals"]; code != 200 || has || len(out["members"].([]any)) != 1 {
+		t.Errorf("a failed count took the leaderboard with it: %d %v", code, out)
+	}
 
 	if code, _ := mallory.json(t, "POST", "/api/v1/club/cameras/"+token+"/unlink", nil); code != http.StatusNotFound {
 		t.Errorf("another member unlinked it: %d", code)

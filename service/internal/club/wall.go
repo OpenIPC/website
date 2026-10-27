@@ -158,15 +158,19 @@ func (a *API) leaderboard(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "the leaderboard", err)
 		return
 	}
+	out := map[string]any{"period": period, "members": rows}
+	// The totals are a line over the table: when they fail, the table is
+	// still served, and the page leaves the line out.
 	totals, err := a.Wall.Totals(r.Context(), since)
 	if err == nil {
 		totals.Reporters, err = a.Reports.Store().Reporters(r.Context(), since)
 	}
 	if err != nil {
-		a.fail(w, "the club's totals", err)
-		return
+		a.Log.Error("club: the leaderboard's totals", "err", err)
+	} else {
+		out["totals"] = totals
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"period": period, "members": rows, "totals": totals})
+	writeJSON(w, http.StatusOK, out)
 }
 
 // NotifyLinked tells a member a camera of theirs was just linked.
