@@ -308,6 +308,7 @@
       "signin_elsewhere": "That sign-in belongs to the browser that started it. Start again here.",
       "signin_expired": "That sign-in link has expired or was already used. Start again below.",
       "signin_failed": "The sign-in did not complete. Try again, or use another way in.",
+      "signin_once": "Signed in another way before? Sign in that way first, then use “Add another way in” on your club page. Signing in a new way while signed out makes a second account, and only a maintainer can put two together.",
       "status_asked": "Question for you",
       "status_pending": "Waiting for review",
       "status_published": "Accepted",

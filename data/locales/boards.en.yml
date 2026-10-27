@@ -478,6 +478,7 @@ en:
       why_2: 'Keep your flash dumps private: only you and OpenIPC''s maintainers can download them.'
       why_3: 'Collect stars for what you document and for keeping a camera on the Open Wall, and your name next to the boards you documented.'
       why_note: 'You don''t need an account to browse or download firmware. The site sets no cookie for anyone who doesn''t sign in.'
+      signin_once: 'Signed in another way before? Sign in that way first, then use “Add another way in” on your club page. Signing in a new way while signed out makes a second account, and only a maintainer can put two together.'
       tg_button: 'Continue with Telegram'
       tg_hint: 'No password: tap Start in the OpenIPC bot'
       gh_button: 'Continue with GitHub'

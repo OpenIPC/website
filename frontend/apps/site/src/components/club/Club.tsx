@@ -141,7 +141,11 @@ function SignIn({ ways, locale, t, onSignedIn, compact }: {
               </ul>
               <p class="m-0 text-[12.5px] text-body-secondary">{t('club.why_note')}</p>
             </div>
-            <div class="p-6">{buttons}</div>
+            <div class="grid content-start gap-3 p-6">
+              {buttons}
+              {/* A sign-in while signed out makes a new account (#520). */}
+              <p class="m-0 text-[12.5px] text-body-secondary">{t('club.signin_once')}</p>
+            </div>
           </section>
         )}
       {sheet && ways.telegram && <TelegramSheet bot={ways.telegram} t={t} onClose={() => setSheet(false)} onSignedIn={() => { setSheet(false); onSignedIn(); }} />}
