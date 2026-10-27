@@ -28,7 +28,7 @@ const k = (s: string) => t(`pages.our_team.${s}`);
 <Container>
   <article>
     <PageTitle>{k('title')}</PageTitle>
-    <p set:html={k('paragraph1_html')} />
+    <p class="mb-4" set:html={k('paragraph1_html')} />
     <p class="mb-10" set:html={k('paragraph2_html')} />
 
     {TEAM.map((section) => (
