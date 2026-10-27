@@ -41,6 +41,10 @@ The `source` field in the body must match the repository that pushed it:
 | OpenIPC/u-boot-xmedia, `build.yml` | `uboot` |
 | OpenIPC/u-boot, `build-hisilicon.yml` on `openipc` | `uboot` |
 | OpenIPC/u-boot, `build-xm.yml` on `openipc` | `uboot` |
+| OpenIPC/u-boot, `build-gk710x.yml` on `openipc` | `uboot` |
+| OpenIPC/u-boot, `build-allwinner.yml` on `openipc` | `uboot` |
+| OpenIPC/u-boot, `build-anyka.yml` on `openipc` | `uboot` |
+| OpenIPC/u-boot, `build-novatek.yml` on `openipc` | `uboot` |
 
 ## Body
 

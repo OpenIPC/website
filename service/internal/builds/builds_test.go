@@ -334,6 +334,14 @@ func TestVerifier(t *testing.T) {
 		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-xm.yml@refs/heads/openipc", "uboot", true},
 		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-xm.yml@refs/heads/openipc-xm", "uboot", false},
 		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-xm.yml@refs/heads/openipc", "firmware", false},
+		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-gk710x.yml@refs/heads/openipc", "uboot", true},
+		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-gk710x.yml@refs/heads/openipc-gk710x", "uboot", false},
+		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-gk710x.yml@refs/heads/openipc", "firmware", false},
+		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-allwinner.yml@refs/heads/openipc", "uboot", true},
+		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-anyka.yml@refs/heads/openipc", "uboot", true},
+		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-novatek.yml@refs/heads/openipc", "uboot", true},
+		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-novatek.yml@refs/heads/openipc-novatek", "uboot", false},
+		{"OpenIPC/u-boot", "OpenIPC/u-boot/.github/workflows/build-anyka.yml@refs/heads/openipc", "builder", false},
 	} {
 		c, err := v.Verify(ctx, s.token(t, func(_ *jwt.Claims, m map[string]any) {
 			m["repository"], m["job_workflow_ref"] = tc.repo, tc.ref

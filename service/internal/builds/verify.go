@@ -49,6 +49,14 @@ var pushers = map[string][]string{
 		"OpenIPC/u-boot/.github/workflows/build-hisilicon.yml@refs/heads/openipc",
 		// Its openipc-xm (Xiongmai XM510/XM530/XM550) images, likewise.
 		"OpenIPC/u-boot/.github/workflows/build-xm.yml@refs/heads/openipc",
+		// And its openipc-gk710x (GK7101/GK7102 and their S variants),
+		// openipc-allwinner, openipc-anyka and openipc-novatek images: each
+		// workflow uploads to latest and reports what it uploaded, and one
+		// it may not report leaves the index on the previous bytes.
+		"OpenIPC/u-boot/.github/workflows/build-gk710x.yml@refs/heads/openipc",
+		"OpenIPC/u-boot/.github/workflows/build-allwinner.yml@refs/heads/openipc",
+		"OpenIPC/u-boot/.github/workflows/build-anyka.yml@refs/heads/openipc",
+		"OpenIPC/u-boot/.github/workflows/build-novatek.yml@refs/heads/openipc",
 	},
 	"xmupdates": {"OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
 	"coupler":   {"OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main"},
