@@ -347,6 +347,14 @@ func (s *Store) StarsOf(ctx context.Context, member string) (total int, err erro
 	return
 }
 
+// Reporters is how many members sent a report since a moment (the zero time
+// for all of them): a count for the line over the leaderboard.
+func (s *Store) Reporters(ctx context.Context, since time.Time) (n int, err error) {
+	err = s.DB.QueryRow(ctx, `SELECT count(DISTINCT rs.member_id) FROM report_submissions rs JOIN reports r ON r.id = rs.report_id
+		WHERE rs.member_id IS NOT NULL AND r.received_at >= $1`, since).Scan(&n)
+	return
+}
+
 // Stored is any file of a report, for its sender or a maintainer: the
 // original bytes (a private backup included), never the redacted copy.
 func (s *Store) StoredFile(ctx context.Context, id string, position int) (sum, name, mime, kind string, err error) {

@@ -353,8 +353,11 @@ export const setListed = (listed: boolean) => post<{ listed: boolean }>('/listed
 
 export interface Leader { rank: number; name: string; reports: number; wall: number; crashes: number; stars: number; you?: boolean }
 
+/** How many take part over the period: counts, which list nobody. */
+export interface ClubTotals { members: number; reporters: number; cameras: number }
+
 export const fetchLeaderboard = (period: 'all' | '30d') =>
-  call<{ period: string; members: Leader[] }>(`/leaderboard?${new URLSearchParams({ period })}`);
+  call<{ period: string; members: Leader[]; totals?: ClubTotals }>(`/leaderboard?${new URLSearchParams({ period })}`);
 
 /** Seconds left until an ISO time, never below zero. */
 export function secondsLeft(iso: string, now = Date.now()): number {

@@ -134,7 +134,8 @@ func (a *API) listed(w http.ResponseWriter, r *http.Request) {
 }
 
 // leaderboard is GET /api/v1/club/leaderboard?period=all|30d: public, and
-// every member who has not opted out.
+// every member who has not opted out, with the club's totals over the same
+// period -- counts, which list nobody.
 func (a *API) leaderboard(w http.ResponseWriter, r *http.Request) {
 	var since time.Time
 	period := r.URL.Query().Get("period")
@@ -157,7 +158,15 @@ func (a *API) leaderboard(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "the leaderboard", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"period": period, "members": rows})
+	totals, err := a.Wall.Totals(r.Context(), since)
+	if err == nil {
+		totals.Reporters, err = a.Reports.Store().Reporters(r.Context(), since)
+	}
+	if err != nil {
+		a.fail(w, "the club's totals", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"period": period, "members": rows, "totals": totals})
 }
 
 // NotifyLinked tells a member a camera of theirs was just linked.

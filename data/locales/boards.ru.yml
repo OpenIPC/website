@@ -821,6 +821,36 @@ ru:
       lb_join: 'Вступить в клуб OpenIPC'
       side_from_crashes: 'За отчёты о падениях'
       lb_crashes: 'Падения'
+      lb_totals_members:
+        one: '{count} участник'
+        few: '{count} участника'
+        many: '{count} участников'
+        other: '{count} участника'
+      lb_totals_reporters:
+        one: '{count} прислал отчёт'
+        few: '{count} прислали отчёты'
+        many: '{count} прислали отчёты'
+        other: '{count} прислали отчёты'
+      lb_totals_cameras:
+        one: '{count} камера на Open Wall'
+        few: '{count} камеры на Open Wall'
+        many: '{count} камер на Open Wall'
+        other: '{count} камеры на Open Wall'
+      lb_totals_members_30d:
+        one: '{count} вступил'
+        few: '{count} вступили'
+        many: '{count} вступили'
+        other: '{count} вступили'
+      lb_totals_reporters_30d:
+        one: '{count} прислал отчёт'
+        few: '{count} прислали отчёты'
+        many: '{count} прислали отчёты'
+        other: '{count} прислали отчёты'
+      lb_totals_cameras_30d:
+        one: '{count} камера получила звёзды'
+        few: '{count} камеры получили звёзды'
+        many: '{count} камер получили звёзды'
+        other: '{count} камеры получили звёзды'
     crashes:
       list_label: 'Падения ядра, сначала самые тяжёлые'
       empty: 'Пока никто не прислал ни одного падения.'

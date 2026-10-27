@@ -770,6 +770,24 @@ en:
       lb_join: 'Join the OpenIPC Club'
       side_from_crashes: 'From crash reports'
       lb_crashes: 'Crashes'
+      lb_totals_members:
+        one: '{count} member'
+        other: '{count} members'
+      lb_totals_reporters:
+        one: '{count} sent a report'
+        other: '{count} sent reports'
+      lb_totals_cameras:
+        one: '{count} camera on the Open Wall'
+        other: '{count} cameras on the Open Wall'
+      lb_totals_members_30d:
+        one: '{count} joined'
+        other: '{count} joined'
+      lb_totals_reporters_30d:
+        one: '{count} sent a report'
+        other: '{count} sent reports'
+      lb_totals_cameras_30d:
+        one: '{count} camera earned stars'
+        other: '{count} cameras earned stars'
     crashes:
       list_label: 'Kernel crashes, worst first'
       empty: 'No crash has been sent yet.'

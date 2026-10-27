@@ -107,6 +107,33 @@ test('an empty leaderboard says when stars start, or that the month had none', a
   expect(await findByText('Nobody on the leaderboard earned stars in the last 30 days.')).toBeTruthy();
 });
 
+test('over the leaderboard, how many take part, counted for the period', async () => {
+  const totals = { all: { members: 54, reporters: 16, cameras: 8 }, '30d': { members: 21, reporters: 1, cameras: 3 } };
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    const period = url.endsWith('30d') ? '30d' : 'all';
+    return new Response(JSON.stringify({ period, members: [], totals: totals[period] }));
+  }));
+  const { findByText, getByRole } = render(<Leaderboard locale="en" />);
+  expect(await findByText('54 members · 16 sent reports · 8 cameras on the Open Wall')).toBeTruthy();
+  fireEvent.click(getByRole('tab', { name: 'Last 30 days' }));
+  expect(await findByText('21 joined · 1 sent a report · 3 cameras earned stars')).toBeTruthy();
+  cleanup();
+  const ru = render(<Leaderboard locale="ru" />);
+  expect(await ru.findByText('54 участника · 16 прислали отчёты · 8 камер на Open Wall')).toBeTruthy();
+  fireEvent.click(ru.getByRole('tab', { name: 'За 30 дней' }));
+  expect(await ru.findByText('21 вступил · 1 прислал отчёт · 3 камеры получили звёзды')).toBeTruthy();
+  cleanup();
+  const zh = render(<Leaderboard locale="zh" />);
+  expect(await zh.findByText('54 名成员 · 16 人提交了报告 · Open Wall 上的 8 台摄像头')).toBeTruthy();
+});
+
+test('no totals line when the leaderboard did not load', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 500 })));
+  const { findByRole, queryByText } = render(<Leaderboard locale="en" />);
+  await findByRole('alert');
+  expect(queryByText(/members ·/)).toBeNull();
+});
+
 test('ago speaks the page language', () => {
   const now = Date.parse('2026-10-04T12:00:00Z');
   expect(ago('2026-10-04T11:54:00Z', 'en', now)).toBe('6 minutes ago');

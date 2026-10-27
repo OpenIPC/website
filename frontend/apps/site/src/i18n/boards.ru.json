@@ -128,6 +128,42 @@
       "lb_rank": "№",
       "lb_reports": "Отчёты",
       "lb_stars": "Звёзды",
+      "lb_totals_cameras": {
+        "few": "{count} камеры на Open Wall",
+        "many": "{count} камер на Open Wall",
+        "one": "{count} камера на Open Wall",
+        "other": "{count} камеры на Open Wall"
+      },
+      "lb_totals_cameras_30d": {
+        "few": "{count} камеры получили звёзды",
+        "many": "{count} камер получили звёзды",
+        "one": "{count} камера получила звёзды",
+        "other": "{count} камеры получили звёзды"
+      },
+      "lb_totals_members": {
+        "few": "{count} участника",
+        "many": "{count} участников",
+        "one": "{count} участник",
+        "other": "{count} участника"
+      },
+      "lb_totals_members_30d": {
+        "few": "{count} вступили",
+        "many": "{count} вступили",
+        "one": "{count} вступил",
+        "other": "{count} вступили"
+      },
+      "lb_totals_reporters": {
+        "few": "{count} прислали отчёты",
+        "many": "{count} прислали отчёты",
+        "one": "{count} прислал отчёт",
+        "other": "{count} прислали отчёты"
+      },
+      "lb_totals_reporters_30d": {
+        "few": "{count} прислали отчёты",
+        "many": "{count} прислали отчёты",
+        "one": "{count} прислал отчёт",
+        "other": "{count} прислали отчёты"
+      },
       "lb_wall": "Open Wall",
       "lb_you": "вы",
       "leaderboard_link": "Рейтинг",

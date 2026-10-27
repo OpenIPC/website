@@ -126,6 +126,30 @@
       "lb_rank": "#",
       "lb_reports": "Reports",
       "lb_stars": "Stars",
+      "lb_totals_cameras": {
+        "one": "{count} camera on the Open Wall",
+        "other": "{count} cameras on the Open Wall"
+      },
+      "lb_totals_cameras_30d": {
+        "one": "{count} camera earned stars",
+        "other": "{count} cameras earned stars"
+      },
+      "lb_totals_members": {
+        "one": "{count} member",
+        "other": "{count} members"
+      },
+      "lb_totals_members_30d": {
+        "one": "{count} joined",
+        "other": "{count} joined"
+      },
+      "lb_totals_reporters": {
+        "one": "{count} sent a report",
+        "other": "{count} sent reports"
+      },
+      "lb_totals_reporters_30d": {
+        "one": "{count} sent a report",
+        "other": "{count} sent reports"
+      },
       "lb_wall": "Open Wall",
       "lb_you": "you",
       "leaderboard_link": "Leaderboard",

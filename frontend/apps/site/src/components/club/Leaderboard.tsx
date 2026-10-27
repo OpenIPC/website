@@ -2,11 +2,13 @@
  * /club/leaderboard: members ranked by stars, from every ledger, all time or
  * the last 30 days. Every member is in the answer unless they untick "Show me
  * on the leaderboard" on /club; the signed-in member's own row is marked.
+ * Over it, how many take part: members, who sent reports, cameras on the wall
+ * -- or, for the last 30 days, who joined and which cameras earned stars.
  */
 import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
-import { fetchLeaderboard, type Leader } from '../../lib/club';
+import { fetchLeaderboard, type ClubTotals, type Leader } from '../../lib/club';
 
 type Period = 'all' | '30d';
 
@@ -14,13 +16,19 @@ export default function Leaderboard({ locale }: { locale: Locale }) {
   const t = useBoardsTranslations(locale);
   const [period, setPeriod] = useState<Period>('all');
   const [rows, setRows] = useState<Leader[] | null>(null);
+  const [totals, setTotals] = useState<ClubTotals | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     let live = true;
     setRows(null);
+    setTotals(null);
     setError(false);
-    fetchLeaderboard(period).then((r) => live && setRows(r.members)).catch(() => live && setError(true));
+    fetchLeaderboard(period).then((r) => {
+      if (!live) return;
+      setRows(r.members);
+      setTotals(r.totals ?? null);
+    }).catch(() => live && setError(true));
     return () => { live = false; };
   }, [period]);
 
@@ -37,6 +45,13 @@ export default function Leaderboard({ locale }: { locale: Locale }) {
         {tab('all', t('club.lb_all'))}
         {tab('30d', t('club.lb_30d'))}
       </div>
+      {!error && totals && (
+        <p class="m-0 text-body-secondary">
+          {(['members', 'reporters', 'cameras'] as const)
+            .map((k) => t(`club.lb_totals_${k}${period === '30d' ? '_30d' : ''}`, { count: totals[k] }))
+            .join(' · ')}
+        </p>
+      )}
       {error && <p class="m-0 rounded-md bg-[#fff4e2] px-3 py-2 text-[#9a5b00]" role="alert">{t('club.load_failed')}</p>}
       {!error && rows === null && <div class="h-48 animate-pulse rounded-xl bg-surface-alt" aria-busy="true" />}
       {rows && rows.length === 0 && <p class="m-0 text-body-secondary">{t(period === '30d' ? 'club.lb_empty_30d' : 'club.lb_empty')}</p>}
