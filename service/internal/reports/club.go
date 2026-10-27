@@ -573,6 +573,16 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 			if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars-member:' || $1, 0))`, owner); err != nil {
 				return err
 			}
+			// Read before the lock: a merge of the owner's two accounts
+			// (club.API.Merge, under this lock) may have made the report
+			// another member's since. Read again, as for a changed report.
+			var now *string
+			if err := tx.QueryRow(ctx, `SELECT member_id FROM report_submissions WHERE report_id = $1`, id).Scan(&now); err != nil {
+				return err
+			}
+			if now == nil || *now != owner {
+				return ErrChanged
+			}
 		}
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, id); err != nil {
 			return err

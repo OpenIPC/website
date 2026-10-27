@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"log/slog"
@@ -118,7 +119,11 @@ func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logge
 const clubUsage = `usage: openipc club
   settle-wall                          pay what linked cameras earned on the Open Wall, and tell their owners (also run by purge)
   wall-revoke <camera> --reason text   a camera found faked, by its public name or MAC: it earns nothing more, and its stars are taken back
-  wall-unlink <camera>                 unlink a camera someone else linked first, so its owner can link it; what it earned stays`
+  wall-unlink <camera>                 unlink a camera someone else linked first, so its owner can link it; what it earned stays
+  merge <from> <into> --reason text [--dry-run]
+                                       make two accounts of one person one, once they have shown both are theirs:
+                                       everything of <from> becomes <into>'s, stars included, and <from> is deleted;
+                                       --dry-run says what would move and changes nothing (JSON)`
 
 // clubCommand is `openipc club ...`, run in the web container.
 func clubCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, args []string) error {
@@ -161,6 +166,29 @@ func clubCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, args
 		}
 		log.Info("wallstars: camera unlinked", "camera", args[1], "was_linked", done)
 		return nil
+	case "merge":
+		fs := flag.NewFlagSet("club merge", flag.ExitOnError)
+		reason := fs.String("reason", "", "why, for the record: how the person showed both accounts are theirs")
+		dry := fs.Bool("dry-run", false, "say what would move, change nothing")
+		pos, err := parseInterleaved(fs, args[1:])
+		if err != nil {
+			return err
+		}
+		if len(pos) != 2 || *reason == "" {
+			return errors.New(clubUsage)
+		}
+		api := askClub(cfg, log, pool)
+		api.Cfg.Maintainers = cfg.ClubMaintainers
+		m, err := api.Merge(ctx, pos[0], pos[1], *reason, *dry)
+		if err != nil {
+			return err
+		}
+		if !m.DryRun {
+			log.Info("club: members merged", "from", m.From, "into", m.Into, "stars", m.Total)
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(m)
 	}
 	return errors.New(clubUsage)
 }

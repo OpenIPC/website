@@ -165,9 +165,11 @@ func (s *Store) Pending(ctx context.Context) ([]Notice, error) {
 	return out, rows.Err()
 }
 
-// Delivered marks a notice said.
-func (s *Store) Delivered(ctx context.Context, id int64) error {
-	_, err := s.DB.Exec(ctx, `UPDATE wall_notices SET sent_at = now() WHERE id = $1`, id)
+// Delivered marks a notice said -- to member, whom Pending read it for. A
+// notice whose member changed since (two accounts merged) stays pending,
+// for the next run to say to the member it is now.
+func (s *Store) Delivered(ctx context.Context, id int64, member string) error {
+	_, err := s.DB.Exec(ctx, `UPDATE wall_notices SET sent_at = now() WHERE id = $1 AND member_id = $2`, id, member)
 	return err
 }
 

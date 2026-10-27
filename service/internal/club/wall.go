@@ -196,7 +196,7 @@ func (a *API) SettleWall(ctx context.Context) (*wallstars.Settled, error) {
 		if a.notifyWall(ctx, n) != nil {
 			continue // tried again by the next run
 		}
-		if err := a.Wall.Delivered(ctx, n.ID); err != nil {
+		if err := a.Wall.Delivered(ctx, n.ID, n.Member); err != nil {
 			return res, err
 		}
 	}
