@@ -25,3 +25,23 @@ test('a link from another browser asks whose account it is before signing in', a
   fireEvent.click(getByRole('button', { name: 'Sign in' }));
   await waitFor(() => expect(calls).toContain('POST /api/v1/club/finish'));
 });
+
+test('signed out, the page says to sign in the old way first; adding a way in does not', async () => {
+  window.history.replaceState({}, '', '/club/');
+  const hint = /^Signed in another way before\?/;
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ member: null, sign_in: { telegram: null, github: true, email: true } }))));
+  const out = render(<Club locale="en" />);
+  expect((await out.findByText(hint)).textContent).toContain('Add another way in');
+  cleanup();
+
+  const member = { id: 'm-1', name: 'Ivan', maintainer: false, quiet: false, identities: [{ provider: 'email', handle: 'ivan@example.org' }], stars: 0, report_stars: 0, wall_stars: 0, pending: 0 };
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    if (url === '/api/v1/club/reports') return new Response(JSON.stringify({ member, reports: [] }));
+    if (url === '/api/v1/club/cameras') return new Response(JSON.stringify({ cameras: [], code: null, listed: true, max_cameras: 3 }));
+    return new Response(JSON.stringify({ member, sign_in: { telegram: null, github: true, email: true } }));
+  }));
+  const signedIn = render(<Club locale="en" />);
+  fireEvent.click(await signedIn.findByRole('button', { name: 'Add another way in' }));
+  expect(await signedIn.findByText('Continue with GitHub')).toBeTruthy();
+  expect(signedIn.queryByText(hint)).toBeNull();
+});
