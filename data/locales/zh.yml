@@ -216,6 +216,7 @@ zh:
     column_project: 项目
     firmware_source: 固件源代码
     license_note: 核心采用 MIT 许可；部分组件另行授权。
+    lf_member_html: 'OpenIPC 是 <a href="https://landscape.linuxfoundation.org/?item=lf-members--associate--openipc-member">Linux 基金会准会员</a>。'
     tagline: 没有后门。没有订阅。不折腾。
     column_solutions: 应用与商务
   nav:
