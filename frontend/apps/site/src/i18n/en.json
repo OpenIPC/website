@@ -62,6 +62,7 @@
     "column_project": "Project",
     "column_solutions": "Use cases & business",
     "firmware_source": "Firmware source code",
+    "lf_member_html": "OpenIPC is an <a href=\"https://landscape.linuxfoundation.org/?item=lf-members--associate--openipc-member\">Associate Member of the Linux Foundation</a>.",
     "license_note": "MIT core; some components are licensed separately.",
     "tagline": "No backdoors. No subscriptions. No nonsense."
   },
@@ -692,6 +693,7 @@
     "our_team": {
       "contributors_link": "List of all GitHub contributors",
       "paragraph1_html": "OpenIPC is a community-driven open source project, and many people contribute to its codebase. Kudos to them! There is also a core team of skilled developers who work hard to expand the list of <a href=\"/supported-hardware\">supported hardware platforms</a>, extend the functionality and stability of the firmware, review submitted code, and coordinate community efforts. Get to know the team and their areas of expertise:",
+      "paragraph2_html": "Since August 2025 OpenIPC has been an <a href=\"https://landscape.linuxfoundation.org/?item=lf-members--associate--openipc-member\">Associate Member of the Linux Foundation</a>, the non-profit home of Linux and of hundreds of open source projects. Thanks to everyone whose work brought the project there.",
       "title": "Our Team"
     },
     "partners": {

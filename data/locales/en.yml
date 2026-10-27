@@ -216,6 +216,7 @@ en:
     column_project: Project
     firmware_source: Firmware source code
     license_note: MIT core; some components are licensed separately.
+    lf_member_html: 'OpenIPC is an <a href="https://landscape.linuxfoundation.org/?item=lf-members--associate--openipc-member">Associate Member of the Linux Foundation</a>.'
     tagline: No backdoors. No subscriptions. No nonsense.
     column_solutions: 'Use cases & business'
   nav:

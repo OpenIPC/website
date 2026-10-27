@@ -62,6 +62,7 @@
     "column_project": "项目",
     "column_solutions": "应用与商务",
     "firmware_source": "固件源代码",
+    "lf_member_html": "OpenIPC 是 <a href=\"https://landscape.linuxfoundation.org/?item=lf-members--associate--openipc-member\">Linux 基金会准会员</a>。",
     "license_note": "核心采用 MIT 许可；部分组件另行授权。",
     "tagline": "没有后门。没有订阅。不折腾。"
   },
@@ -682,6 +683,7 @@
     "our_team": {
       "contributors_link": "所有 GitHub 贡献者列表",
       "paragraph1_html": "OpenIPC 是一个社区驱动的开源项目，许多人为其代码库做出贡献。赞美他们！还有一个由熟练的开发人员组成的核心团队，他们努力扩展<a href=\"/supported-hardware\">支持的硬件平台</a>列表、扩展固件的功能和稳定性、审查提交的代码并协调社区工作。了解团队及其专业领域：",
+      "paragraph2_html": "自 2025 年 8 月起，OpenIPC 成为 <a href=\"https://landscape.linuxfoundation.org/?item=lf-members--associate--openipc-member\">Linux 基金会准会员</a>。Linux 基金会是 Linux 和数百个开源项目所在的非营利组织。感谢所有以自己的工作让项目走到这一步的人。",
       "title": "我们的团队"
     },
     "partners": {

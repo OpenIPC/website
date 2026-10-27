@@ -218,6 +218,7 @@ ru:
     column_project: Проект
     firmware_source: Исходный код прошивки
     license_note: Ядро под MIT; отдельные компоненты лицензируются иначе.
+    lf_member_html: 'OpenIPC — <a href="https://landscape.linuxfoundation.org/?item=lf-members--associate--openipc-member">ассоциированный член Linux Foundation</a>.'
     tagline: Без бэкдоров. Без подписок. Без ерунды.
     column_solutions: Применение и бизнес
   nav:
