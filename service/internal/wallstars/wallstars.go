@@ -588,6 +588,34 @@ func (s *Store) Leaderboard(ctx context.Context, since time.Time, you string) ([
 	return out, rows.Err()
 }
 
+// Totals is how many take part in the club, for the line over the
+// leaderboard: aggregates only, and members who opted out of the leaderboard
+// are counted too, since counting one does not list them. Reporters is
+// internal/reports' to count.
+type Totals struct {
+	Members   int `json:"members"`
+	Reporters int `json:"reporters"`
+	Cameras   int `json:"cameras"`
+}
+
+// Totals counts since a moment (the zero time for all of them) the members
+// who joined and the cameras -- all time, those linked to the wall and not
+// found faked; over a period, those that earned stars in it.
+func (s *Store) Totals(ctx context.Context, since time.Time) (Totals, error) {
+	cameras := `SELECT count(*) FROM camera_links cl
+		WHERE NOT EXISTS (SELECT 1 FROM wall_revoked w WHERE w.mac_key = cl.mac_key)`
+	if !since.IsZero() {
+		cameras = `SELECT count(DISTINCT ws.mac_key) FROM wall_stars ws
+			WHERE ws.kind = 'award' AND ws.at >= $1
+			  AND NOT EXISTS (SELECT 1 FROM wall_revoked w WHERE w.mac_key = ws.mac_key)`
+	}
+	var n Totals
+	err := s.DB.QueryRow(ctx, `
+		SELECT (SELECT count(*) FROM club_members WHERE created_at >= $1)::int, (`+cameras+`)::int`,
+		since).Scan(&n.Members, &n.Cameras)
+	return n, err
+}
+
 // Owner is who a camera's wall page credits, when they chose to be.
 type Owner struct {
 	Name  string `json:"name"`

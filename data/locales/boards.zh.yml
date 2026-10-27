@@ -763,3 +763,21 @@ zh:
       lb_empty_30d: '最近 30 天内排行榜上没有人获得星星。'
       lb_note: '所有获得星星的成员都会列在这里，除非在自己的俱乐部页面选择退出。按星星排序，而不是按摄像头数量。'
       lb_join: '加入 OpenIPC 俱乐部'
+      lb_totals_members:
+        one: '{count} 名成员'
+        other: '{count} 名成员'
+      lb_totals_reporters:
+        one: '{count} 人提交了报告'
+        other: '{count} 人提交了报告'
+      lb_totals_cameras:
+        one: 'Open Wall 上的 {count} 台摄像头'
+        other: 'Open Wall 上的 {count} 台摄像头'
+      lb_totals_members_30d:
+        one: '{count} 人新加入'
+        other: '{count} 人新加入'
+      lb_totals_reporters_30d:
+        one: '{count} 人提交了报告'
+        other: '{count} 人提交了报告'
+      lb_totals_cameras_30d:
+        one: '{count} 台摄像头获得了星星'
+        other: '{count} 台摄像头获得了星星'

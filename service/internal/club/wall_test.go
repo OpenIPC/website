@@ -112,7 +112,12 @@ func TestAMemberLinksACameraAndEarnsStars(t *testing.T) {
 		t.Errorf("owner %+v", o)
 	}
 
-	// The leaderboard is public and lists every member until they opt out.
+	// The leaderboard is public and lists every member until they opt out;
+	// its totals count them all the same.
+	var members int
+	if err := e.pool.QueryRow(ctx, `SELECT count(*) FROM club_members`).Scan(&members); err != nil {
+		t.Fatal(err)
+	}
 	anon := e.browser("203.0.113.8")
 	if _, out := anon.json(t, "GET", "/api/v1/club/leaderboard", nil); len(out["members"].([]any)) != 1 {
 		t.Errorf("a new member is not listed: %v", out)
@@ -122,6 +127,8 @@ func TestAMemberLinksACameraAndEarnsStars(t *testing.T) {
 	}
 	if _, out := anon.json(t, "GET", "/api/v1/club/leaderboard", nil); len(out["members"].([]any)) != 0 {
 		t.Errorf("listed after opting out: %v", out)
+	} else if tot := out["totals"].(map[string]any); tot["members"] != float64(members) || tot["cameras"] != 1.0 || tot["reporters"] != 0.0 {
+		t.Errorf("an unlisted member is not counted: %v of %d", tot, members)
 	}
 	if code, _ := b.json(t, "POST", "/api/v1/club/listed", map[string]bool{"listed": true}); code != 200 {
 		t.Fatal("listing")
@@ -131,11 +138,21 @@ func TestAMemberLinksACameraAndEarnsStars(t *testing.T) {
 	if len(rows) != 1 || rows[0].(map[string]any)["name"] != m["name"] || rows[0].(map[string]any)["you"] != nil {
 		t.Errorf("leaderboard %v", out)
 	}
+	if tot := out["totals"].(map[string]any); tot["members"] != float64(members) || tot["cameras"] != 1.0 {
+		t.Errorf("30-day totals %v", tot)
+	}
 	if _, out := b.json(t, "GET", "/api/v1/club/leaderboard", nil); out["members"].([]any)[0].(map[string]any)["you"] != true {
 		t.Errorf("the member's own row is not marked: %v", out)
 	}
 	if code, _ := anon.json(t, "GET", "/api/v1/club/leaderboard?period=forever", nil); code != http.StatusBadRequest {
 		t.Errorf("unknown period: %d", code)
+	}
+	// Totals that cannot be counted leave the line out, not the table.
+	e.exec(t, `ALTER TABLE wall_revoked RENAME TO wall_revoked_away`)
+	code, out = anon.json(t, "GET", "/api/v1/club/leaderboard", nil)
+	e.exec(t, `ALTER TABLE wall_revoked_away RENAME TO wall_revoked`)
+	if _, has := out["totals"]; code != 200 || has || len(out["members"].([]any)) != 1 {
+		t.Errorf("a failed count took the leaderboard with it: %d %v", code, out)
 	}
 
 	if code, _ := mallory.json(t, "POST", "/api/v1/club/cameras/"+token+"/unlink", nil); code != http.StatusNotFound {

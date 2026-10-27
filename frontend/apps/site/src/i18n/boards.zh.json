@@ -125,6 +125,30 @@
       "lb_rank": "#",
       "lb_reports": "报告",
       "lb_stars": "星星",
+      "lb_totals_cameras": {
+        "one": "Open Wall 上的 {count} 台摄像头",
+        "other": "Open Wall 上的 {count} 台摄像头"
+      },
+      "lb_totals_cameras_30d": {
+        "one": "{count} 台摄像头获得了星星",
+        "other": "{count} 台摄像头获得了星星"
+      },
+      "lb_totals_members": {
+        "one": "{count} 名成员",
+        "other": "{count} 名成员"
+      },
+      "lb_totals_members_30d": {
+        "one": "{count} 人新加入",
+        "other": "{count} 人新加入"
+      },
+      "lb_totals_reporters": {
+        "one": "{count} 人提交了报告",
+        "other": "{count} 人提交了报告"
+      },
+      "lb_totals_reporters_30d": {
+        "one": "{count} 人提交了报告",
+        "other": "{count} 人提交了报告"
+      },
       "lb_wall": "Open Wall",
       "lb_you": "你",
       "leaderboard_link": "排行榜",

@@ -399,6 +399,44 @@ func TestLeaderboard(t *testing.T) {
 	}
 }
 
+// The totals over the leaderboard count everyone, listed or not: all time,
+// the cameras linked and not faked; over a period, those that earned stars.
+func TestTotals(t *testing.T) {
+	r := newRig(t)
+	ctx := context.Background()
+	r.member("m-alice00000", "Alice")
+	r.member("m-bob0000000", "Bob")
+	r.member("m-old0000000", "Old")
+	r.exec(`UPDATE club_members SET created_at = now() - interval '60 days' WHERE id = 'm-old0000000'`)
+	r.store.SetListed(ctx, "m-bob0000000", false)
+
+	// Alice's camera earns its join now; Bob's is linked and earns nothing yet;
+	// Old's was found faked.
+	r.camera("02:00:00:00:0e:01", 90, wallstars.JoinDays, "gk7205v300", "sc223a", "")
+	r.link("02:00:00:00:0e:01", "m-alice00000", 10)
+	r.camera("02:00:00:00:0e:02", 1, 1, "gk7205v300", "sc223a", "")
+	r.link("02:00:00:00:0e:02", "m-bob0000000", 10)
+	r.camera("02:00:00:00:0e:03", 1, 1, "gk7205v300", "sc223a", "")
+	r.link("02:00:00:00:0e:03", "m-old0000000", 10)
+	r.exec(`INSERT INTO wall_revoked (mac_key, reason) VALUES ($1, 'faked')`, snapshots.MACKey("02:00:00:00:0e:03"))
+	r.settle()
+
+	all, err := r.store.Totals(ctx, time.Time{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if all != (wallstars.Totals{Members: 3, Cameras: 2}) {
+		t.Errorf("all time %+v", all)
+	}
+	month, err := r.store.Totals(ctx, r.now.Add(-30*24*time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if month != (wallstars.Totals{Members: 2, Cameras: 1}) {
+		t.Errorf("30 days %+v", month)
+	}
+}
+
 // Linking an established camera pays nothing until it has earned it: only
 // days since the link count, and its month runs from the link.
 func TestHistoryBeforeTheLinkDoesNotPay(t *testing.T) {
