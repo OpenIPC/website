@@ -72,22 +72,34 @@ ROWS = [("main processor", "Main processor"), ("image sensor", "Image sensor"), 
 # sensor is taken from it only where the catalogue's image size agrees with
 # the part's: 1080p HX4201SW9-1080M5-MF-B is on a 4336P (4MP) board, 5MP
 # HX9101SW2-5M14G-MF-B on a 4023 one, and those, like 2083, keep the marking
-# alone. Models whose photos show no marking are not listed.
+# alone. A sensor is (part, image sensor row, maximum image size row): the
+# catalogue's rows it was checked against, which must still read so.
+# Models whose photos show no marking are not listed.
 MARKINGS = {
-    "HX3001S-1080H34D1A-38-B": (["7205V2_307DAF_1.0"], "IMX307"),
-    "HX3001S-1080K34-38-B": (["7205V2_307AF_1.0"], "IMX307"),
-    "HX4201S-1080M2-38-B": (["7201V2_2336P_1.0"], "SC2336P"),
-    "HX4201S-1080M7-CAT1EG-MF-B": (["AIO_7201V2_2336P_4G_1.0"], "SC2336P"),
-    "HX4201S-1080M7-CAT1H-MF-B": (["AIO_7201V2_2336P_4G_1.0"], "SC2336P"),
+    "HX3001S-1080H34D1A-38-B": (["7205V2_307DAF_1.0"],
+        ("IMX307", "1/2.9”CMOS sensor", "1080P(1920x1080)")),
+    "HX3001S-1080K34-38-B": (["7205V2_307AF_1.0"],
+        ("IMX307", "1/2.8”CMOS sensor", None)),
+    "HX4201S-1080M2-38-B": (["7201V2_2336P_1.0"],
+        ("SC2336P", "1/3”CMOS sensor", "200W(1920x1080)")),
+    "HX4201S-1080M7-CAT1EG-MF-B": (["AIO_7201V2_2336P_4G_1.0"],
+        ("SC2336P", "1/3”CMOS sensor", "200W(1920x1080)")),
+    "HX4201S-1080M7-CAT1H-MF-B": (["AIO_7201V2_2336P_4G_1.0"],
+        ("SC2336P", "1/3”CMOS sensor", "200W(1920x1080)")),
     "HX4201S-1080Y2CA-CAT1EG-MF-B": (["AIO_7205V5_D2083_1.0", "FHD18_38_2083_1.0"], None),
     "HX4201SW9-1080M5-MF-B": (["AIO_7205V5_4336P_1.0"], None),
     "HX4201SW9-1080Y2CA-MF-B": (["AIO_7205V5_D2083_1.0", "FHD18_38_2083_1.0"], None),
-    "HX5001S-5M1D-38-B": (["7205V3_335AF_2.1"], "IMX335"),
-    "HX6101S-4M11-38-B": (["16CV61_4336P_1.0"], "SC4336P"),
-    "HX6101S-4M9-CAT1EG-MF-B": (["AIO_16CV61_4336P_1.0"], "SC4336P"),
-    "HX6101SW2-4M16-MF-B": (["AIO_16CV61_4336P_1.0"], "SC4336P"),
+    "HX5001S-5M1D-38-B": (["7205V3_335AF_2.1"],
+        ("IMX335", "1/2.8” ultra low lux CMOS sensor", "5MP(2560x1920)")),
+    "HX6101S-4M11-38-B": (["16CV61_4336P_1.0"],
+        ("SC4336P", "1/3”CMOS sensor", "400W(2560x1440)")),
+    "HX6101S-4M9-CAT1EG-MF-B": (["AIO_16CV61_4336P_1.0"],
+        ("SC4336P", "1/3”CMOS sensor", "400W(2560x1440)")),
+    "HX6101SW2-4M16-MF-B": (["AIO_16CV61_4336P_1.0"],
+        ("SC4336P", "1/3”CMOS sensor", "400W(2560x1440)")),
     "HX9101SW2-5M14G-MF-B": (["AIO_T41Q_4023_1.1"], None),
-    "HX9101SW4-4KV-MF-4": (["AIO_T41Q_08C10_1.0"], "OS08C10"),
+    "HX9101SW4-4KV-MF-4": (["AIO_T41Q_08C10_1.0"],
+        ("OS08C10", "1/2.8”08C10 CMOS sensor", "4K(3840x2160)")),
     "HX9102SW2-4K4E-38-AF": (["FHD14_415_1.1"], None),
     "HX9102SW2-4KE-4": (["SSC338Q_38M_1.1", "FHD14_415_1.1"], None),
 }
@@ -348,8 +360,12 @@ def main():
         m = by_code.get(code)
         if not m or not m["photos"]:
             sys.exit(f"{code}: has a PCB marking, but no photo")
+        spec = dict(m["specs"]["en"])
         m["specs"]["en"].append(["PCB marking", ", ".join(marks)])
-        if part and not m["sensor"]:
+        if part:
+            part, size, image = part
+            if (spec.get("Image sensor"), spec.get("Maximum image size")) != (size, image) or m["sensor"]:
+                sys.exit(f"{code}: its sensor and image size rows are not those {part} was checked against")
             m["sensor"] = part
             m["specs"]["en"].append(["Sensor (from the PCB marking)", part])
 
