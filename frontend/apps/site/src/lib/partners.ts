@@ -30,12 +30,13 @@ export type PartnerGroupKey =
   | 'global' | 'manufacturers' | 'integrators' | 'fpv' | 'education' | 'exhibitions' | 'research';
 
 /**
- * Entries commented out here were commented out on the original wall too, with the
- * same URLs, so nothing appears or disappears silently. Uncommenting a line is
+ * EMAX and the six at the end of RU_INTEGRATORS were commented out on the
+ * original wall and are carried across that way, with the same URLs. Entries
+ * taken off since -- Techno-Shield (#438), GoodCam and AnyCam (#528), WebGlazok,
+ * Yucca, MyWiFi and AlarmSystem -- say why next to them. Uncommenting a line is
  * how one comes back.
  *
- * partners/baresip_mini.png exists as an asset but has never been on the wall.
- * Left off rather than introduced by a port.
+ * partners/majestic_mini.png is on no list and is kept on purpose.
  */
 export const PARTNER_GROUPS: Record<PartnerGroupKey, Partner[]> = {
   // Who hosts our money and our code.
