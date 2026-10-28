@@ -163,9 +163,11 @@ type summaryJSON struct {
 }
 
 // summaryOrder is whose words a card shows first: the maker's name for the
-// board, and a shop's description, which says what the board is for.
-var nameOrder = []string{"xiongmai", "cctvsp", "openhisiipcam"}
-var leadOrder = []string{"cctvsp", "xiongmai", "openhisiipcam"}
+// board, and a shop's description, which says what the board is for. A maker
+// added since (haixin) comes after them, so its words fill a card only where
+// theirs are missing.
+var nameOrder = []string{"xiongmai", "cctvsp", "openhisiipcam", "haixin"}
+var leadOrder = []string{"cctvsp", "xiongmai", "openhisiipcam", "haixin"}
 
 const leadMax = 320
 
