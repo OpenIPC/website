@@ -163,11 +163,13 @@ type summaryJSON struct {
 }
 
 // summaryOrder is whose words a card shows first: the maker's name for the
-// board, and a shop's description, which says what the board is for. A maker
-// added since (haixin) comes after them, so its words fill a card only where
-// theirs are missing.
-var nameOrder = []string{"xiongmai", "cctvsp", "openhisiipcam", "haixin"}
-var leadOrder = []string{"cctvsp", "xiongmai", "openhisiipcam", "haixin"}
+// board, and a shop's description, which says what the board is for. Every
+// other source follows, so its words fill a card only where theirs are
+// missing: the makers' own catalogues, then the archives of Xiongmai's
+// documents. Every source is in both (TestEverySourceCanSummariseACard).
+var summaryTail = []string{"jftech", "anjoy", "herospeed", "longse", "haixin", "tehno32", "xmupdates"}
+var nameOrder = append([]string{"xiongmai", "cctvsp", "openhisiipcam"}, summaryTail...)
+var leadOrder = append([]string{"cctvsp", "xiongmai", "openhisiipcam"}, summaryTail...)
 
 const leadMax = 320
 
