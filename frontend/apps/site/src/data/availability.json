@@ -25,7 +25,7 @@
     "gk7102ct": "firmware_only",
     "gk7102cw": "firmware_only",
     "gk7102s": "firmware_only",
-    "gk7201v200": "firmware_only",
+    "gk7201v200": "wizard",
     "gk7201v300": "none",
     "gk7202v300": "wizard",
     "gk7205v200": "wizard",

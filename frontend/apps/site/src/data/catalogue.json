@@ -303,8 +303,8 @@
           "family": "GK7201V200",
           "version": null,
           "urlname": "gk7201v200",
-          "status": "neq",
-          "load_address": "",
+          "status": "done",
+          "load_address": "0x42000000",
           "featured": false,
           "segment": "cctv"
         },
