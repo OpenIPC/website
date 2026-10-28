@@ -3,8 +3,9 @@
  *
  * The partner lists the pages render. The grouping,
  * the order, the commented-out entries and the territory rule are all carried
- * across unchanged -- this is a move, not an edit, and src/lib/partners.test.ts
- * pins the counts so a later edit is a deliberate one.
+ * across unchanged -- this is a move, not an edit. src/lib/pages.build.test.ts
+ * holds the territory rule, which groups /business shows and that exhibitions
+ * shows nowhere, so an edit that changes any of them is a deliberate one.
  *
  * "Partners" was doing too much work as one word. A chip vendor that ships
  * OpenIPC out of the box, a company that installs cameras for a living, a
