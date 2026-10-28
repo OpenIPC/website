@@ -103,18 +103,20 @@ export const RU_INTEGRATORS: Partner[] = [
   // Temporarily off the wall; uncomment to bring it back.
   // { name: 'Techno-Shield', url: 'https://msvoko.ru/', img: 'techno-shield_mini' },
   { name: 'KeyTelecom', url: 'https://keytele.com/', img: 'keytelecom_mini' },
-  { name: 'WebGlazok', url: 'https://webglazok.com/', img: 'webglazok_mini' },
-  { name: 'Yucca', url: 'https://yucca.app/en', img: 'yucca_mini' },
+  // No longer current; off the wall, uncomment to bring it back.
+  // { name: 'WebGlazok', url: 'https://webglazok.com/', img: 'webglazok_mini' },
+  // { name: 'Yucca', url: 'https://yucca.app/en', img: 'yucca_mini' },
   { name: 'IPEYE', url: 'https://ipeye.ru/', img: 'ipeye_mini' },
   { name: 'VTL', url: 'https://vtl.su/#rec35109538', img: 'vtl_mini' },
   { name: 'S-Video', url: 'https://www.cctvsp.ru/cctv/openipc', img: 's-video_mini' },
-  { name: 'MyWiFi', url: 'https://xn--80aaaf0bh2e7a5c.xn--p1ai/', img: 'mywifi-cc_mini' },
-  {
-    name: 'AlarmSystem',
-    url: 'https://alarmsystem-cctv.ru/product-category/cctv-products/cctv-cameras/ip-cameras-cctv/'
-      + '?swoof=1&product_brands=openipc&really_curr_tax=189-product_cat',
-    img: 'alarmsystem_mini',
-  },
+  // No longer current; off the wall, uncomment to bring them back.
+  // { name: 'MyWiFi', url: 'https://xn--80aaaf0bh2e7a5c.xn--p1ai/', img: 'mywifi-cc_mini' },
+  // {
+  //   name: 'AlarmSystem',
+  //   url: 'https://alarmsystem-cctv.ru/product-category/cctv-products/cctv-cameras/ip-cameras-cctv/'
+  //     + '?swoof=1&product_brands=openipc&really_curr_tax=189-product_cat',
+  //   img: 'alarmsystem_mini',
+  // },
   // Commented out on the original wall, so commented out here:
   // { name: 'MegaCam', url: 'https://megacam.kz/', img: 'megacam_mini' },
   // { name: 'Dozor', url: 'https://dozor-smart.ru/', img: 'dozor_mini' },
