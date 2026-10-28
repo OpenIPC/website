@@ -238,7 +238,8 @@
     "vendor": "Goke",
     "model": "GK7201V200",
     "board": "gk7201v200",
-    "uboot": "",
+    "uboot": "u-boot-gk7201v200-nor.bin",
+    "uboot_nand": "u-boot-gk7201v200-nand.bin",
     "nor_lite": "openipc.gk7201v200-nor-lite.tgz",
     "nand_lite": "openipc.gk7201v200-nand-lite.tgz"
   },

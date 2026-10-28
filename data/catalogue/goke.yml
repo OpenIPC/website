@@ -96,15 +96,17 @@ socs:
 - family: GK7201V200
   model: GK7201V200
   version: null
-  status: neq
-  load_address: ''
+  status: done
+  load_address: '0x42000000'
   sdk: null
   kernel: null
-  uboot_filename: ''
-  linux_filename: ''
-  notes: ''
+  uboot_filename: u-boot-gk7201v200-nor.bin
+  uboot_nand_filename: u-boot-gk7201v200-nand.bin
+  nor_split: true
+  linux_filename: openipc.gk7201v200-nor-lite.tgz
+  notes: Runs OpenIPC like the GK7205V200, whose driver set it loads (the vendor stack names it xm72050200)
   urlname: gk7201v200
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/gk7201v200_images.yml/badge.svg
+  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/build.yml/badge.svg
   featured: false
   segment: cctv
 - family: GK7201V200
