@@ -57,9 +57,10 @@ export const PARTNER_GROUPS: Record<PartnerGroupKey, Partner[]> = {
   // group for Russian-speaking visitors only -- see logosIn.
   integrators: [
     { name: 'Faceter', url: 'https://faceter.cam/', img: 'faceter_mini' },
-    // GoodCam and AnyCam do not operate in Russia.
-    { name: 'GoodCam', url: 'https://www.goodcam.io/', img: 'goodcam_mini', hiddenIn: ['ru'] },
-    { name: 'AnyCam', url: 'https://anycam.io/', img: 'anycam_mini', hiddenIn: ['ru'] },
+    // GoodCam and AnyCam do not operate in Russia. Off the wall on every page
+    // for now; uncomment to bring them back.
+    // { name: 'GoodCam', url: 'https://www.goodcam.io/', img: 'goodcam_mini', hiddenIn: ['ru'] },
+    // { name: 'AnyCam', url: 'https://anycam.io/', img: 'anycam_mini', hiddenIn: ['ru'] },
   ],
   // The FPV projects we grew up alongside.
   fpv: [
