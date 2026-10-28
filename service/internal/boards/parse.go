@@ -71,6 +71,9 @@ var makers = map[string]Manufacturer{
 	// Longse, whose firmware house is Herospeed: boards from Herospeed's
 	// firmware lists and cameras from Longse's catalogue, donor snapshots only.
 	"LONGSE": {ID: "longse", Name: "Longse", Aliases: []string{"Herospeed"}, Position: 7},
+	// Haixin Weishi (深圳海芯威视): camera modules from its catalogue, which
+	// circulates as CamHi's, a donor snapshot only.
+	"HAIXIN": {ID: "haixin", Name: "Haixin Weishi", Aliases: []string{"海芯威视", "CamHi"}, Position: 8},
 	"?":     {ID: "unknown", Name: "Unidentified maker", Position: 99},
 }
 

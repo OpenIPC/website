@@ -708,6 +708,7 @@
     "soc_not_catalogued": "不在 OpenIPC 目录中",
     "source_note_anjoy": "安佳威视的文档存档（anjvision.com:8021/pdf）：厂商为其摄像机模组提供的规格书、接线图和主板照片，2026 年存档。",
     "source_note_cctvsp": "来自 cctvsp.ru 商店 OpenIPC 和归档栏目的模组介绍、照片、引脚图和厂商文档，由该商店提供（2026 年）。",
+    "source_note_haixin": "深圳海芯威视的网络摄像机模组（其目录以 CamHi 名义流传）：2026 年英文目录（照片与参数）、中文模组目录（传感器与芯片）以及 SigmaStar 方案模组规格表，发布于 Boards Grabber 群组（2026 年）。",
     "source_note_herospeed": "Longse 的固件研发方 Herospeed 的固件列表：Longse 网络摄像机所用的主板、各自的固件版本，以及固件标明的芯片（2026 年存档）。",
     "source_note_jftech": "JFTech 的产品目录：雄迈产品线的当前品牌，模组型号相同，固件来自相同的下载服务器（2026 年存档）。",
     "source_note_longse": "Longse 的网络摄像机目录：照片、规格书和参数，以及每款摄像机所用的主板，即型号末尾的方案（2026 年存档）。",

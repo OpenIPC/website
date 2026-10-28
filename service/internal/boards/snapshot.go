@@ -71,6 +71,12 @@ var Snapshots = map[string]string{
 	// Chinese translated; 199 hold the Herospeed board their model name ends
 	// in (imported after herospeed).
 	"longse": "c1cc87519735ce9afd5208751330de0011c8b12dace892646afb092eb825b6fb",
+	// boards-donors/haixin/snapshot-26a5c4caa2b5.tar: Shenzhen Haixin Weishi's
+	// IP camera modules (its catalogue circulates as CamHi's), 48 from its 2026
+	// English catalogue, its Chinese module list and its SigmaStar sheet: all
+	// with a chip, 28 with a sensor, the catalogue's 21 with their photos; the
+	// list's Chinese with English from the dictionary.
+	"haixin": "26a5c4caa2b5e1ca1ecb897e573830ef9a52b793b020ca5b61a739be7cac8164",
 }
 
 type Snapshot struct {

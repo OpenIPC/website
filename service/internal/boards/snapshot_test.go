@@ -1077,6 +1077,31 @@ func TestALongseCameraHoldsTheHerospeedBoardItsModelNameEndsIn(t *testing.T) {
 	}
 }
 
+// Haixin Weishi's modules come from its own catalogue: a new maker, filed
+// under its name with the names it also goes by, and a chip the catalogue
+// knows (GK7205V200) linked to its SoC.
+func TestAHaixinModuleIsFiledUnderItsMaker(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "haixin", model("haixin", "HX3001S-1080K34-38-B", map[string]any{
+		"category": "IP Camera Module", "soc_label": "GK7205V200", "sensor": "",
+		"original": []string{"en"}, "translated_from": ""}))); err != nil {
+		t.Fatal(err)
+	}
+	var name string
+	var aliases []string
+	if err := pool.QueryRow(ctx, `SELECT f.name, f.aliases FROM board_models m JOIN board_manufacturers f ON f.id = m.manufacturer_id WHERE m.id = 'haixin-hx3001s-1080k34-38-b'`).Scan(&name, &aliases); err != nil {
+		t.Fatal(err)
+	}
+	if name != "Haixin Weishi" || len(aliases) != 2 || aliases[0] != "海芯威视" || aliases[1] != "CamHi" {
+		t.Errorf("HX3001S-1080K34-38-B's maker: %q, also %v", name, aliases)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_units WHERE model_id = 'haixin-hx3001s-1080k34-38-b' AND source = 'haixin'`); n != 1 {
+		t.Error("no haixin unit on HX3001S-1080K34-38-B")
+	}
+}
+
 // Migration 014 drops the family links relate() wrote once per source, and
 // only those: a related link a source brings itself stays, and outranks a
 // generated copy of it.
