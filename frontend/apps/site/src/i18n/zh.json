@@ -1123,10 +1123,13 @@
       "zoom": "放大或缩小"
     },
     "partners": {
+      "education": "教育",
+      "fpv": "FPV 项目",
       "friends": "友好项目",
       "global": "全球合作伙伴",
       "integrators": "集成商",
       "manufacturers": "硬件厂商",
+      "research": "研究",
       "trade": "厂商与集成商"
     },
     "snapshot": {

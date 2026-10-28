@@ -1133,10 +1133,13 @@
       "zoom": "Zoom in or out"
     },
     "partners": {
+      "education": "Education",
+      "fpv": "FPV projects",
       "friends": "Friendly projects",
       "global": "Global partners",
       "integrators": "Integrators",
       "manufacturers": "Manufacturers",
+      "research": "Research",
       "trade": "Manufacturers and integrators"
     },
     "snapshot": {
