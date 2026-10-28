@@ -85,7 +85,7 @@ const badge = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-
           <div class="grid grid-cols-2 gap-2">
             {g.shown.map((partner) => (
               <a class="flex h-13 items-center justify-center rounded-lg border border-hairline bg-white px-3 py-2" href={partner.url} title={partner.name}>
-                <Image src={logo(partner.img)} alt={partner.name} loading="lazy" class="max-h-7 w-auto" />
+                <Image src={logo(partner.img)} alt={`${partner.name} logo`} loading="lazy" class="max-h-7 w-auto" />
               </a>
             ))}
             {g.more > 0 && (
