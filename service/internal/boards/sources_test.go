@@ -2,6 +2,7 @@ package boards
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -23,6 +24,20 @@ func TestABoardWithNothingStillListsItsSources(t *testing.T) {
 
 // A model only Haixin's catalogue knows still has a card with its name and
 // description; where an earlier source speaks too, that source's words win.
+func TestEverySourceCanSummariseACard(t *testing.T) {
+	srcs := []string{"openhisiipcam"}
+	for src := range Snapshots {
+		srcs = append(srcs, src)
+	}
+	for _, src := range srcs {
+		for what, order := range map[string][]string{"nameOrder": nameOrder, "leadOrder": leadOrder} {
+			if !slices.Contains(order, src) {
+				t.Errorf("%s: not in %s, so its boards' cards have no name or description", src, what)
+			}
+		}
+	}
+}
+
 func TestAHaixinOnlyModelHasACardSummary(t *testing.T) {
 	str := func(s string) *string { return &s }
 	m := &modelJSON{ID: "haixin-hx3001s-1080k34-38-b", About: []*aboutJSON{{
