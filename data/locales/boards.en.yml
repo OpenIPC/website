@@ -455,6 +455,7 @@ en:
     source_note_anjoy: "Anjoy Vision's document archive (anjvision.com:8021/pdf): the maker's spec sheets, wiring diagrams and board photos for its camera modules, in Chinese, captured 2026."
     source_note_herospeed: "The firmware lists of Herospeed, Longse's firmware house: the boards Longse's IP cameras are built on, each with its builds, and the chip the builds name (captured 2026)."
     source_note_longse: "Longse's catalogue of network cameras: photos, datasheets and specifications, and the board each is built on, which its model name ends in (captured 2026)."
+    source_note_haixin: "The IP camera modules of Shenzhen Haixin Weishi, whose catalogue circulates as CamHi's: its 2026 English catalogue (photos and parameters), its Chinese module list (sensor and chip) and the sheet of its SigmaStar modules, as posted to the Boards Grabber group (2026)."
     link_stock_firmware: Stock firmware
     link_successor: Replaced by
     link_predecessor: Replaces
