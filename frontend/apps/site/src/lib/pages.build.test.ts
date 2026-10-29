@@ -572,11 +572,13 @@ describe('the pages say what they are for', () => {
       for (const absent of ['GitHub', 'TUDSaT', 'RubyFPV', 'Linux Chenxing']) {
         expect(html, `${locale} /business shows ${absent}`).not.toContain(`title="${absent}"`);
       }
-      expect(html).toContain('title="RunCam"');
+      expect(html).toContain('title="AnjVision"');
     }
   });
 
   test('the exhibitions group is kept in the data and rendered nowhere', () => {
+    // Its two places, the home page's friends row and a wall on /business, are
+    // commented out until there are two or three shows (partners.ts).
     for (const [locale, path, html] of PAGES) {
       expect(html, `${locale}${path}`).not.toContain('Expo Electronica');
     }

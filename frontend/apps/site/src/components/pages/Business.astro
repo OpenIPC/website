@@ -30,7 +30,9 @@ const SERVICES = [
   'digital_twins', 'teleoperation', 'edge_ai',
 ];
 
-const walls = partnerGroups(locale, 'manufacturers', 'integrators');
+// Exhibitions get a wall of their own after the integrators once there are
+// two or three -- see PARTNER_GROUPS.exhibitions in lib/partners.ts.
+const walls = partnerGroups(locale, 'manufacturers', 'integrators' /* , 'exhibitions' */);
 ---
 <PageHeader title={k('hero_title')} lede={k('hero_lede')} />
 
