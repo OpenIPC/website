@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"mime/multipart"
@@ -15,6 +16,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/OpenIPC/website/service/internal/db/dbtest"
@@ -672,5 +674,102 @@ func TestASharedDumpIsNeverCachedAndCanBeMadePrivate(t *testing.T) {
 		if rec, _ := e.get(t, u); rec.Code != 404 {
 			t.Errorf("%s answered %d after the dump was made private", u, rec.Code)
 		}
+	}
+}
+
+// A boot log published before Redact knew a vendor's cloud ID is redacted
+// again (openipc reports redact); a reviewer can keep a text file off the
+// board, and publish it again, redacted, never as sent.
+func TestATextFileIsRedactedAgainAndCanBeKeptPrivate(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	const serial = "0f1e2d3c4b5a6978qrst"
+	sent := "U-Boot 2019.04\nCCloudAgentManager::Start uuid[" + serial + "]\n"
+	rec, out := e.post(t, upload{fields: map[string]string{"channel": "web", "model": "xiongmai-50h20l"},
+		files: map[string][]byte{"photo": jpeg, "boot_log": []byte(sent)}}, "203.0.113.30")
+	if rec.Code != 201 {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	id := out["id"].(string)
+	st := e.api.Store()
+	if err := st.Review(ctx, id, "publish", "test", ""); err != nil {
+		t.Fatal(err)
+	}
+	var pos int
+	if err := e.pool.QueryRow(ctx, `SELECT position FROM report_files WHERE report_id = $1 AND kind = 'boot_log'`, id).Scan(&pos); err != nil {
+		t.Fatal(err)
+	}
+	served := func() (int, string) {
+		t.Helper()
+		_, v := e.get(t, "/api/v1/reports/"+id)
+		for _, f := range v["files"].([]any) {
+			f := f.(map[string]any)
+			if f["kind"] != "boot_log" {
+				continue
+			}
+			u, _ := f["url"].(string)
+			if u == "" {
+				return 404, ""
+			}
+			rec, _ := e.get(t, u)
+			b, _ := os.ReadFile(filepath.Join(e.api.Files.Root, strings.TrimPrefix(rec.Header().Get("X-Accel-Redirect"), "/report-files/")))
+			return rec.Code, string(b)
+		}
+		return 404, ""
+	}
+	if _, text := served(); strings.Contains(text, "0f1e2d3c") || !strings.Contains(text, "U-Boot 2019.04") {
+		t.Fatalf("published boot log:\n%s", text)
+	}
+
+	// As an older Redact published it: the serial in the public copy.
+	old, err := e.api.Files.Put([]byte(sent))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Unguarded(ctx, e.pool, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `UPDATE report_files SET public_sha256 = $3, public_bytes = $4 WHERE report_id = $1 AND position = $2`,
+			id, pos, old, len(sent))
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if done, _, err := st.Redo(ctx, id, true); err != nil || len(done.Files) != 1 || done.Files[0] != pos {
+		t.Fatalf("dry run: %+v %v", done, err)
+	}
+	if _, text := served(); !strings.Contains(text, "0f1e2d3c") {
+		t.Fatal("a dry run changed the public copy")
+	}
+	done, orphans, err := st.Redo(ctx, id, false)
+	if err != nil || len(done.Files) != 1 {
+		t.Fatalf("redo: %+v %v", done, err)
+	}
+	if _, text := served(); strings.Contains(text, "0f1e2d3c") || !strings.Contains(text, "<cloud_id:") {
+		t.Errorf("redone boot log:\n%s", text)
+	}
+	if len(orphans) != 0 {
+		// The old copy is the original's bytes, which the row still names.
+		t.Errorf("orphans %v", orphans)
+	}
+	if again, _, err := st.Redo(ctx, id, false); err != nil || again.Changed() {
+		t.Errorf("a second redo changed %+v (%v)", again, err)
+	}
+
+	if err := e.api.DecidePhoto(ctx, id, pos, PhotoBlur, []Region{{X: 0, Y: 0, W: 0.5, H: 0.5}}, "test"); !errors.Is(err, ErrNotPhoto) {
+		t.Errorf("a boot log was blurred: %v", err)
+	}
+	if err := e.api.DecidePhoto(ctx, id, pos, PhotoPrivate, nil, "test"); err != nil {
+		t.Fatal(err)
+	}
+	if code, _ := served(); code != 404 {
+		t.Errorf("a private boot log answered %d", code)
+	}
+	if done, _, err := st.Redo(ctx, id, false); err != nil || done.Changed() {
+		t.Errorf("redo touched a private file: %+v %v", done, err)
+	}
+	if err := e.api.DecidePhoto(ctx, id, pos, PhotoAsSent, nil, "test"); err != nil {
+		t.Fatal(err)
+	}
+	if code, text := served(); code != 200 || strings.Contains(text, "0f1e2d3c") || !strings.Contains(text, "U-Boot 2019.04") {
+		t.Errorf("published again: %d\n%s", code, text)
 	}
 }

@@ -157,7 +157,9 @@ restores the image but never the schema, so keep migrations additive.
   photos and console captures that camera owners and AI agents send to
   `POST /api/v1/reports` (and `POST /api/v1/boards/identify`, which stores
   nothing). Public only after `openipc reports publish`; identifiers replaced
-  by keyed hashes in the public copy; a backup served only with
+  by keyed hashes in the public copy -- ipctool's, any MAC, and a vendor-cloud
+  ID a text names itself (a Xiongmai serial, a UBIA gUID; `openipc reports
+  redact` redoes what was published before a rule); a backup served only with
   `consent=public`. **Nothing but this package may write them**: triggers
   refuse changes, board links are `ON DELETE RESTRICT`, files are
   content-addressed and written once under `REPORTS_ROOT`

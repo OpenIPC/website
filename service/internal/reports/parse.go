@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -325,11 +326,30 @@ func (f Facts) anyka() bool {
 // A MAC written as six colon- or hyphen-separated pairs is replaced even when
 // ipctool's output did not name it: a boot log or a U-Boot environment sent
 // without ipctool (to a catalogue board, or with a new camera's photos)
-// carries its ethaddr all the same.
+// carries its ethaddr all the same. So, too, every value the text itself
+// names as the camera's vendor-cloud identity (textIdentifiers): a stock
+// Xiongmai log prints its cloud serial a dozen times, a UBIA one its gUID
+// (r-7tb674nu, r-sfbcnir8).
 func Redact(text string, f Facts, key string) string {
-	for _, id := range f.Identifiers() {
+	ids := f.Identifiers()
+	for _, id := range textIdentifiers(text) {
+		if !slices.ContainsFunc(ids, func(o Identifier) bool { return sameIdentifier(o.Value, id.Value) }) {
+			ids = append(ids, id)
+		}
+	}
+	// Longest first: a value that holds another is replaced whole.
+	slices.SortStableFunc(ids, func(a, b Identifier) int { return len(b.Value) - len(a.Value) })
+	for _, id := range ids {
 		mark := "<" + id.Name + ":" + Keyed(key, id.Name, id.Value) + ">"
 		text = spellings(id).ReplaceAllString(text, mark)
+		// A Xiongmai serial is sixteen hex digits and four letters, and the
+		// firmware glues the letters to what follows ("SN:...xdjhd_common_init"):
+		// the digits alone are the camera's.
+		if id.Name == "cloud_id" {
+			if m := xmSerial.FindStringSubmatch(id.Value); m != nil {
+				text = regexp.MustCompile(`(?i)`+m[1]+`[0-9a-z]*`).ReplaceAllString(text, mark)
+			}
+		}
 	}
 	for _, re := range anyMAC {
 		text = re.ReplaceAllStringFunc(text, func(m string) string {
@@ -362,4 +382,83 @@ func spellings(id Identifier) *regexp.Regexp {
 	}
 	v = strings.TrimPrefix(strings.TrimPrefix(v, "0x"), "0X")
 	return regexp.MustCompile(`(?i)(?:0x)?` + regexp.QuoteMeta(v))
+}
+
+// cloudKeys are the names firmware prints a camera's vendor-cloud identity
+// under -- the ID its app is paired by, which anyone who reads it can pair
+// or impersonate it with: Xiongmai's uuid, authcode and SerialNumber, UBIA's
+// gUID, HiChip's hichipuuid, the P2P DIDs of the HY and ThroughTek stacks.
+// A value is taken only with a digit in it, six to sixty-four characters,
+// so "uuid[%s]", "SN: none" or "uuid : General" are left as they are.
+var cloudKeys = regexp.MustCompile(`(?i)\b(uuid|guid|authcode|serialnumber|newversionsn|oldversionsn|cloud_?id|sn|hichipuuid|p2p\w{0,8}(?:did|uid)|did)\b["']?\s*(?:[:=]\s*\[?|\[)\s*["']?([A-Za-z0-9][A-Za-z0-9_-]{5,63})`)
+
+// secretKeys are values a stock Xiongmai log sends its cloud with the serial
+// (CapsCenter): the per-camera crypto number, and DevInfo's key and data.
+var secretKeys = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)"CloudCryNum"\s*:\s*"([^"]{6,128})"`),
+	regexp.MustCompile(`(?i)"DevInfo"\s*:\s*\{[^}]*?"Data"\s*:\s*"([^"]{6,128})"`),
+	regexp.MustCompile(`(?i)"DevInfo"\s*:\s*\{[^}]*?"Key"\s*:\s*"([^"]{6,128})"`),
+}
+
+// apName is the access point a camera opens for pairing, named after its
+// cloud ID (UBIA's UCon_ and the first characters of the gUID).
+var apName = regexp.MustCompile(`\bAP:\s*([A-Za-z]+_[A-Za-z0-9]{4,32})`)
+
+// xmSerial is a Xiongmai cloud serial: its sixteen hex digits, then letters.
+var xmSerial = regexp.MustCompile(`(?i)^([0-9a-f]{16})[0-9a-z]{4}`)
+
+// textIdentifiers is what the text itself names as the camera's identity.
+// Spellings of one Xiongmai serial -- the firmware's output interleaves, and
+// a line can carry it mangled -- are one identifier: the spelling the text
+// prints most.
+func textIdentifiers(text string) []Identifier {
+	var out []Identifier
+	seen := map[string]int{}
+	add := func(name, v string) {
+		if (name == "cloud_id" && !strings.ContainsAny(v, "0123456789")) || zeroish(v) {
+			return
+		}
+		k := strings.ToLower(v)
+		if m := xmSerial.FindStringSubmatch(v); m != nil && name == "cloud_id" {
+			k = strings.ToLower(m[1])
+		}
+		if i, ok := seen[k]; ok {
+			if !strings.EqualFold(out[i].Value, v) && countFold(text, v) > countFold(text, out[i].Value) {
+				out[i].Value = v
+			}
+			return
+		}
+		seen[k] = len(out)
+		out = append(out, Identifier{name, v})
+	}
+	for _, m := range cloudKeys.FindAllStringSubmatch(text, -1) {
+		v := m[2]
+		// The serial alone, so it hashes as ipctool's cloudId does.
+		if xm := xmSerial.FindString(v); xm != "" {
+			v = xm
+		}
+		add("cloud_id", v)
+	}
+	for _, re := range secretKeys {
+		for _, m := range re.FindAllStringSubmatch(text, -1) {
+			add("cloud_secret", m[1])
+		}
+	}
+	for _, m := range apName.FindAllStringSubmatch(text, -1) {
+		add("cloud_ap", m[1])
+	}
+	return out
+}
+
+func countFold(text, v string) int {
+	return strings.Count(strings.ToLower(text), strings.ToLower(v))
+}
+
+// sameIdentifier: one value, or one Xiongmai serial's two spellings.
+func sameIdentifier(a, b string) bool {
+	if strings.EqualFold(a, b) {
+		return true
+	}
+	ma, mb := xmSerial.FindStringSubmatch(a), xmSerial.FindStringSubmatch(b)
+	return ma != nil && mb != nil && strings.EqualFold(ma[1], mb[1])
 }
