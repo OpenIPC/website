@@ -377,7 +377,9 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		lock.Release()
 		return nil, err
 	}
-	refreshReportUnits(ctx, cfg, log, pool)
+	// The published reports' units are refreshed once the routes are up,
+	// below: in the background, so a refresh that rewrites every unit (a new
+	// field on them) cannot hold /up past the deploy's health gate.
 
 	store := &snapshots.Store{DB: pool, TokenKey: cfg.CameraTokenKey}
 	wallFS := variants.Wall{Root: cfg.WallRoot}
@@ -561,9 +563,19 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 		fmt.Fprintln(w, httpx.ClientIP(r))
 	})
 
+	// What a review changed while this process was not running reaches the
+	// boards now; a failure is logged, and the next review or start catches
+	// up. The board pages serve the units as they were meanwhile.
+	refreshed := make(chan struct{})
+	go func() {
+		defer close(refreshed)
+		refreshReportUnits(bg, cfg, log, pool)
+	}()
+
 	return func() {
 		cancel()
 		proc.Wait()
+		<-refreshed
 		lock.Release()
 	}, nil
 }
