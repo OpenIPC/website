@@ -290,3 +290,13 @@ func TestIpctoolsShortCloudIDAndTheLogsSerialAreOne(t *testing.T) {
 		t.Errorf("redacted:\n%s", got)
 	}
 }
+
+// A value its sender masked by hand is no identifier: the #s it was masked
+// with stay, and so do the log's other runs of them.
+func TestAValueMaskedByHandIsLeftAlone(t *testing.T) {
+	log := `{ "CloudCryNum" : "#######", "DevInfo" : { "Data" : "*********", "Key" : "31415926" } }` + "\n####### boot #######\n"
+	got := Redact(log, Facts{}, "k")
+	if strings.Count(got, "#######") != 3 || !strings.Contains(got, `"*********"`) || strings.Contains(got, "31415926") {
+		t.Errorf("redacted:\n%s", got)
+	}
+}
