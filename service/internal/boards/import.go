@@ -177,7 +177,13 @@ type artifact struct {
 
 // files writes a unit's files under Root/<unit>/ and describes them.
 func (im *Importer) files(fsys fs.FS, u *Unit) ([]artifact, error) {
-	dir := filepath.Join(im.Root, u.ID)
+	return im.filesIn(fsys, u, filepath.Join(im.Root, u.ID))
+}
+
+// filesIn writes a unit's files into dir -- its own directory, or one its
+// rewrite stages them in -- and describes them as they will be served, under
+// Root/<unit>/.
+func (im *Importer) filesIn(fsys fs.FS, u *Unit, dir string) ([]artifact, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, err
 	}
@@ -205,7 +211,7 @@ func (im *Importer) files(fsys fs.FS, u *Unit) ([]artifact, error) {
 			}
 			a.Width, a.Height = w, h
 			a.Thumb = u.ID + "/thumb-" + strings.TrimSuffix(f.Name, path.Ext(f.Name)) + ".jpg"
-			if err := os.WriteFile(filepath.Join(im.Root, filepath.FromSlash(a.Thumb)), thumb, 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(dir, path.Base(a.Thumb)), thumb, 0o644); err != nil {
 				return nil, err
 			}
 		case "uboot_env", "boot_log", "note":

@@ -64,10 +64,37 @@ func newClub(bg context.Context, cfg *config.Config, log *slog.Logger, pool *pgx
 // shared it, counted as private when not. It runs at start and after each review;
 // a failure is logged, and the next run catches up.
 func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool) {
+	im := &boards.Importer{Pool: pool, Log: log, Root: cfg.BoardsRoot}
+	// The list is read under the apply's lock (RefreshReportUnits): a refresh
+	// that started first cannot apply what was published before a later
+	// review's refresh, and bring back a report rejected in between.
+	missing, err := im.RefreshReportUnits(ctx, os.DirFS(cfg.ReportsRoot), func(ctx context.Context) ([]boards.Contribution, error) {
+		return reportUnits(ctx, cfg, pool)
+	})
+	if err != nil {
+		log.Error("boards: published reports not listed", "err", err)
+		return
+	}
+	for _, m := range missing {
+		log.Warn("boards: a published report names a board the catalogue does not have", "model", m)
+	}
+	// A board a review added goes once its report is rejected and nothing
+	// else is on it (#452) -- after the units, so the report's unit and its
+	// files have gone first.
+	gone, err := boards.RemoveAbandoned(ctx, pool)
+	if err != nil {
+		log.Error("boards: abandoned boards not removed", "err", err)
+	}
+	for _, m := range gone {
+		log.Info("boards: a board its report's rejection left empty removed", "model", m)
+	}
+}
+
+// reportUnits is what every published report lists on its boards.
+func reportUnits(ctx context.Context, cfg *config.Config, pool *pgxpool.Pool) ([]boards.Contribution, error) {
 	texts, err := (&reports.Store{DB: pool}).PublishedTexts(ctx)
 	if err != nil {
-		log.Error("boards: published reports unreadable", "err", err)
-		return
+		return nil, err
 	}
 	kinds := map[string]string{"boot_log": "boot_log", "uboot_env": "uboot_env", "note": "note"}
 	var list []boards.Contribution
@@ -103,25 +130,7 @@ func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logge
 		}
 		list = append(list, c)
 	}
-	im := &boards.Importer{Pool: pool, Log: log, Root: cfg.BoardsRoot}
-	missing, err := im.ApplyReportUnits(ctx, os.DirFS(cfg.ReportsRoot), list)
-	if err != nil {
-		log.Error("boards: published reports not listed", "err", err)
-		return
-	}
-	for _, m := range missing {
-		log.Warn("boards: a published report names a board the catalogue does not have", "model", m)
-	}
-	// A board a review added goes once its report is rejected and nothing
-	// else is on it (#452) -- after the units, so the report's unit and its
-	// files have gone first.
-	gone, err := boards.RemoveAbandoned(ctx, pool)
-	if err != nil {
-		log.Error("boards: abandoned boards not removed", "err", err)
-	}
-	for _, m := range gone {
-		log.Info("boards: a board its report's rejection left empty removed", "model", m)
-	}
+	return list, nil
 }
 
 const clubUsage = `usage: openipc club

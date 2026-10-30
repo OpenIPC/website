@@ -575,7 +575,15 @@ func web(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpoo
 	return func() {
 		cancel()
 		proc.Wait()
-		<-refreshed
+		// A refresh stops at its next query once cancelled, but one queued
+		// behind a review's (whose context outlives its request) waits on a
+		// mutex that does not watch it: give it a while, not forever. What it
+		// leaves undone the next start does.
+		select {
+		case <-refreshed:
+		case <-time.After(10 * time.Second):
+			log.Warn("boards: the report units' refresh is still running at shutdown")
+		}
 		lock.Release()
 	}, nil
 }
