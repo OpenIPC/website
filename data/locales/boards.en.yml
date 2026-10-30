@@ -3,7 +3,7 @@ en:
     boards:
       title: Camera boards
       heading: Your board is probably here
-      lede: 'Camera and recorder boards with photos, UART pinouts, specifications and, where we have them, factory flash dumps and U-Boot consoles. Match the PCB in your hand, then install OpenIPC on its SoC.'
+      lede: 'Camera and recorder boards with photos, pinouts, specifications and, where we have them, factory flash dumps and U-Boot consoles. Match the PCB in your hand, then install OpenIPC on its SoC.'
     report:
       title: "Send us a board"
       eyebrow: "Board catalogue"
@@ -125,11 +125,14 @@ en:
       one: known maker
       other: known makers
     stats_pinouts:
-      one: with UART pinout
-      other: with UART pinout
+      one: with a pinout
+      other: with a pinout
     stats_dumps:
       one: factory flash dump
       other: factory flash dumps
+    stats_private_dumps:
+      one: more kept private, for maintainers
+      other: more kept private, for maintainers
     stats_need_pinout:
       one: still needs a pinout
       other: still need a pinout

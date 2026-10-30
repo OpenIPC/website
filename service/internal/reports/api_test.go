@@ -798,3 +798,54 @@ func TestATextFileIsRedactedAgainAndCanBeKeptPrivate(t *testing.T) {
 		t.Errorf("published again: %d\n%s", code, text)
 	}
 }
+
+// A published report's dump goes to its board as a link to the report's
+// own address when its sender shared it, and as a count when not.
+func TestAPublishedReportsDumpIsLinkedOrCounted(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	st := e.api.Store()
+	send := func(consent, ip string) string {
+		t.Helper()
+		rec, out := e.post(t, upload{fields: map[string]string{"consent": consent},
+			files: map[string][]byte{"backup": backupOf(fixture(t, "hi3516cv300-imx291.txt"), []byte("flash "+consent))}}, ip)
+		if rec.Code != 201 {
+			t.Fatal(rec.Body)
+		}
+		id := out["id"].(string)
+		if err := st.Link(ctx, id, "xiongmai-50h20l", "test"); err != nil {
+			t.Fatal(err)
+		}
+		if err := st.Review(ctx, id, "publish", "test", ""); err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	public, private := send("public", "203.0.113.50"), send("private", "203.0.113.51")
+	texts, err := st.PublishedTexts(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	by := map[string]BoardText{}
+	for _, bt := range texts {
+		by[bt.Report] = bt
+	}
+	p := by[public]
+	if len(p.Files) != 1 || p.Files[0].Kind != "backup" || p.PrivateDumps != 0 ||
+		!strings.HasPrefix(p.Files[0].URL, "/api/v1/reports/"+public+"/files/1?v=") || p.Files[0].SHA256 == "" || p.Files[0].Bytes == 0 {
+		t.Errorf("public dump: %+v", p)
+	}
+	if q, ok := by[private]; !ok || len(q.Files) != 0 || q.PrivateDumps != 1 {
+		t.Errorf("private dump: %+v (listed %v)", q, ok)
+	}
+	// Made private by a reviewer: counted, no longer listed.
+	if err := e.api.DecidePhoto(ctx, public, 1, PhotoPrivate, nil, "test"); err != nil {
+		t.Fatal(err)
+	}
+	texts, _ = st.PublishedTexts(ctx)
+	for _, bt := range texts {
+		if bt.Report == public && (len(bt.Files) != 0 || bt.PrivateDumps != 1) {
+			t.Errorf("after it was made private: %+v", bt)
+		}
+	}
+}

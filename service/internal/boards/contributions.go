@@ -46,6 +46,9 @@ type Contribution struct {
 	FlashMB   int               `yaml:"flash_mb"`
 	Note      string            `yaml:"note"`
 	Files     []ContributedFile `yaml:"files"`
+	// PrivateDumps: an owner report's flash dumps that are not public
+	// (board_units.private_dumps, migration 044). Zero for contributions.yml.
+	PrivateDumps int `yaml:"-"`
 	// How sure an owner report's link to Model is, and why (migration
 	// 036): a report's unit only. Empty for contributions.yml's, whose
 	// board is the reviewer's in the repository.
@@ -59,6 +62,11 @@ type ContributedFile struct {
 	// Source is the file's path in the tree it is read from: for
 	// contributions.yml, contributions/<unit>/<file>.
 	Source string `yaml:"-"`
+	// URL, Bytes and SHA256: an owner report's public flash dump, listed
+	// at its report's address and never copied (File.URL).
+	URL    string `yaml:"-"`
+	Bytes  int64  `yaml:"-"`
+	SHA256 string `yaml:"-"`
 }
 
 // ReceiptMark is in the reference of every unit an owner report made: such
@@ -197,7 +205,7 @@ func (im *Importer) apply(ctx context.Context, fsys fs.FS, list []Contribution, 
 			if src == "" {
 				src = "contributions/" + c.Unit + "/" + f.File
 			}
-			u.Files = append(u.Files, File{Kind: f.Kind, Name: f.File, Source: src})
+			u.Files = append(u.Files, File{Kind: f.Kind, Name: f.File, Source: src, URL: f.URL, Bytes: f.Bytes, SHA256: f.SHA256})
 		}
 		if err := im.applyOne(ctx, fsys, c, u); err != nil {
 			if !fromReports {
@@ -235,6 +243,9 @@ func (im *Importer) applyOne(ctx context.Context, fsys fs.FS, c Contribution, u 
 	// Every file must read, and every picture decode, before anything of
 	// the unit's is touched: a unit that cannot be written stays as it was.
 	for _, f := range u.Files {
+		if f.URL != "" {
+			continue
+		}
 		b, err := fs.ReadFile(fsys, f.Source)
 		if err != nil {
 			return fmt.Errorf("%s: %w", c.Unit, err)
@@ -274,10 +285,10 @@ func (im *Importer) applyOne(ctx context.Context, fsys fs.FS, c Contribution, u 
 		}
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO board_units (id, model_id, sensor, flash_chip, flash_size_mb, source, source_ref, contributed_by, notes, position,
-			  link_certainty, link_evidence)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+			  link_certainty, link_evidence, private_dumps)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
 			u.ID, c.Model, null(c.Sensor), null(c.FlashChip), flash, Contributors, u.SourceRef, c.By, null(c.Note), u.Position,
-			null(c.LinkCertainty), c.LinkEvidence); err != nil {
+			null(c.LinkCertainty), c.LinkEvidence, c.PrivateDumps); err != nil {
 			return err
 		}
 		return insertArtifacts(ctx, tx, u.ID, arts)
@@ -342,12 +353,12 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 	var model, ref, by, evidence string
 	var sensor, chip, note, certainty *string
 	var flash *int
-	var position int
+	var position, private int
 	err = im.Pool.QueryRow(ctx, `
 		SELECT model_id, source_ref, coalesce(contributed_by, ''), sensor, flash_chip, flash_size_mb, notes, position,
-		  link_certainty, link_evidence
+		  link_certainty, link_evidence, private_dumps
 		FROM board_units WHERE id = $1 AND source = $2`, c.Unit, Contributors).
-		Scan(&model, &ref, &by, &sensor, &chip, &flash, &note, &position, &certainty, &evidence)
+		Scan(&model, &ref, &by, &sensor, &chip, &flash, &note, &position, &certainty, &evidence, &private)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, false, nil
 	}
@@ -355,7 +366,8 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 		return false, false, err
 	}
 	if model != c.Model || ref != u.SourceRef || by != c.By || deref(sensor) != c.Sensor ||
-		deref(chip) != c.FlashChip || deref(note) != c.Note || derefInt(flash) != c.FlashMB || position != u.Position {
+		deref(chip) != c.FlashChip || deref(note) != c.Note || derefInt(flash) != c.FlashMB || position != u.Position ||
+		private != c.PrivateDumps {
 		return false, false, nil
 	}
 	link = sureAs(deref(certainty)) == sureAs(c.LinkCertainty) && evidence == c.LinkEvidence
@@ -369,6 +381,10 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 	}
 	var want []string
 	for _, f := range u.Files {
+		if f.URL != "" {
+			want = append(want, f.Kind+" "+f.Name+" "+f.SHA256)
+			continue
+		}
 		b, err := fs.ReadFile(fsys, f.Source)
 		if err != nil {
 			return false, false, err
@@ -381,6 +397,9 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 	// The rows are right; the files must be there too (a restored database
 	// on an empty BOARDS_ROOT).
 	for _, f := range u.Files {
+		if f.URL != "" {
+			continue
+		}
 		if _, err := os.Stat(filepath.Join(im.Root, c.Unit, f.Name)); err != nil {
 			return false, false, nil
 		}

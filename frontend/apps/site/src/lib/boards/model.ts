@@ -25,7 +25,7 @@ export function entries(file: BoardsFile): Entry[] {
 export const COVERAGE = ['photos', 'pinout', 'flash_dump', 'uboot_env', 'boot_log', 'document'] as const;
 export type CoverageKey = (typeof COVERAGE)[number];
 
-const COUNTS: Record<CoverageKey, keyof Model['coverage']> = {
+const COUNTS: Record<CoverageKey, Exclude<keyof Model['coverage'], 'private_dumps'>> = {
   photos: 'photos',
   pinout: 'pinouts',
   flash_dump: 'flash_dumps',
@@ -331,16 +331,24 @@ export interface Stats {
   makers: number;
   pinouts: number;
   dumps: number;
+  /** Dumps owner reports sent that are not served (kept private). */
+  privateDumps: number;
   needPinout: number;
 }
 
-export function stats(all: Entry[]): Stats {
+/**
+ * The catalogue's numbers. The dumps come from the API's totals when it
+ * sends them: a report published on two boards is a unit on each, and adding
+ * the boards' coverage would count its dumps twice.
+ */
+export function stats(all: Entry[], totals?: BoardsFile['totals']): Stats {
   return {
     boards: all.filter((m) => kindOf(m) === 'board').length,
     devices: all.filter((m) => kindOf(m) !== 'board').length,
     makers: new Set(all.filter((m) => m.maker.id !== 'unknown').map((m) => m.maker.id)).size,
     pinouts: all.filter((m) => has(m, 'pinout')).length,
-    dumps: all.reduce((n, m) => n + m.coverage.flash_dumps, 0),
+    dumps: totals?.flash_dumps ?? all.reduce((n, m) => n + m.coverage.flash_dumps, 0),
+    privateDumps: totals?.private_dumps ?? all.reduce((n, m) => n + (m.coverage.private_dumps ?? 0), 0),
     needPinout: all.filter((m) => !has(m, 'pinout')).length,
   };
 }

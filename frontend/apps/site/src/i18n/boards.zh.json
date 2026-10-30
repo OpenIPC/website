@@ -739,8 +739,12 @@
       "other": "块仍缺引脚图"
     },
     "stats_pinouts": {
-      "one": "块有 UART 引脚图",
-      "other": "块有 UART 引脚图"
+      "one": "块有引脚图",
+      "other": "块有引脚图"
+    },
+    "stats_private_dumps": {
+      "one": "份未公开，由维护者保管",
+      "other": "份未公开，由维护者保管"
     },
     "successor_xiongmai": "雄迈的产品线以 JFTech（杰峰）品牌延续：相同的模组型号，固件来自相同的下载服务器。雄迈 2023 年以前发布的产品来自 xiongmaitech.com 的归档目录，当前产品线来自",
     "tag_discontinued": "已停产",

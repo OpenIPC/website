@@ -128,7 +128,7 @@
     },
     "boards": {
       "heading": "Your board is probably here",
-      "lede": "Camera and recorder boards with photos, UART pinouts, specifications and, where we have them, factory flash dumps and U-Boot consoles. Match the PCB in your hand, then install OpenIPC on its SoC.",
+      "lede": "Camera and recorder boards with photos, pinouts, specifications and, where we have them, factory flash dumps and U-Boot consoles. Match the PCB in your hand, then install OpenIPC on its SoC.",
       "title": "Camera boards"
     },
     "brand": {

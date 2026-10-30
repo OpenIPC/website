@@ -92,6 +92,9 @@ type unitJSON struct {
 	LinkCertainty *string    `json:"link_certainty,omitempty"`
 	LinkEvidence  string     `json:"link_evidence,omitempty"`
 	Files         []fileJSON `json:"files"`
+	// privateDumps: an owner report's dumps not served (migration 044),
+	// for the catalogue's totals; the board's coverage carries them.
+	privateDumps int
 }
 
 type coverageJSON struct {
@@ -99,9 +102,12 @@ type coverageJSON struct {
 	Photos     int `json:"photos"`
 	Pinouts    int `json:"pinouts"`
 	FlashDumps int `json:"flash_dumps"`
-	UBootEnvs  int `json:"uboot_envs"`
-	BootLogs   int `json:"boot_logs"`
-	Documents  int `json:"documents"`
+	// PrivateDumps: owner reports' dumps of the board that are not served
+	// -- one exists, a maintainer has it (migration 044).
+	PrivateDumps int `json:"private_dumps"`
+	UBootEnvs    int `json:"uboot_envs"`
+	BootLogs     int `json:"boot_logs"`
+	Documents    int `json:"documents"`
 }
 
 type modelJSON struct {
@@ -266,9 +272,9 @@ type sourceJSON struct {
 // Locales the catalogue has texts in; a request for another reads English.
 var Locales = []string{"en", "ru", "zh"}
 
-// treeModels narrows Tree to the boards on one SoC ($1, '' for any), to the
+// treeModels narrows Tree to the boards on one SoC ($1, ” for any), to the
 // boards with a unit naming one of the sensors in $2 (empty for any) and to
-// one board by its id ($3, '' for any: a board's own page). A
+// one board by its id ($3, ” for any: a board's own page). A
 // sensor is compared as the site's sensor catalogue keys it: without its
 // maker, upper-cased (frontend/apps/site/src/lib/sensor-names.ts nameKey).
 const treeModels = `($1 = '' OR m.soc = $1) AND ($3 = '' OR m.id = $3) AND (cardinality($2::text[]) = 0 OR EXISTS (
@@ -301,7 +307,57 @@ func treeDoc(locale string, makers []*makerJSON, sources []sourceJSON) map[strin
 		"files_prefix":  FilesPrefix,
 		"manufacturers": makers,
 		"sources":       sources,
+		"totals":        totalsOf(makers),
 	}
+}
+
+// totalsJSON is what the tree holds, each thing once: a report on two
+// boards is a unit on each, with its dumps, and summing the boards'
+// coverage would count them twice.
+type totalsJSON struct {
+	// FlashDumps: distinct dumps served, by their bytes.
+	FlashDumps int `json:"flash_dumps"`
+	// PrivateDumps: dumps owner reports hold that are not served, each
+	// report counted once.
+	PrivateDumps int `json:"private_dumps"`
+}
+
+func totalsOf(makers []*makerJSON) totalsJSON {
+	dumps := map[string]bool{}
+	private := map[string]int{}
+	for _, mk := range makers {
+		for _, m := range mk.Models {
+			for _, u := range m.Units {
+				for _, f := range u.Files {
+					if f.Kind == "flash_dump" {
+						dumps[f.SHA256] = true
+					}
+				}
+				if u.privateDumps > 0 {
+					private[reportOf(u)] = u.privateDumps
+				}
+			}
+		}
+	}
+	t := totalsJSON{FlashDumps: len(dumps)}
+	for _, n := range private {
+		t.PrivateDumps += n
+	}
+	return t
+}
+
+// reportOf is the owner report a unit was made from: its reference is the
+// report's receipt (ReceiptMark), and the unit's own id when it is not.
+func reportOf(u *unitJSON) string {
+	i := strings.Index(u.SourceRef, ReceiptMark)
+	if i < 0 {
+		return u.ID
+	}
+	id := u.SourceRef[i+len(ReceiptMark):]
+	if j := strings.IndexByte(id, '&'); j >= 0 {
+		id = id[:j]
+	}
+	return id
 }
 
 // tree reads the makers that have a board the filters keep, each with those
@@ -342,7 +398,8 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 		       ARRAY(SELECT DISTINCT a.code_as_printed FROM board_model_aliases a
 		             WHERE a.model_id = m.id AND upper(a.code_as_printed) <> upper(coalesce(m.model, ''))
 		             ORDER BY a.code_as_printed),
-		       c.units, c.photos, c.pinouts, c.flash_dumps, c.uboot_envs, c.boot_logs, c.documents
+		       c.units, c.photos, c.pinouts, c.flash_dumps, c.uboot_envs, c.boot_logs, c.documents,
+		       (SELECT coalesce(sum(pu.private_dumps), 0)::int FROM board_units pu WHERE pu.model_id = m.id)
 		FROM board_models m JOIN board_model_coverage c ON c.model_id = m.id
 		WHERE `+treeModels+`
 		ORDER BY m.position, m.id`, soc, sensors, model)
@@ -354,7 +411,7 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 		var maker string
 		c := &m.Coverage
 		if err := rows.Scan(&m.ID, &maker, &m.Model, &m.SoC, &m.SoCLabel, &m.Family, &m.Notes, &m.Category, &m.Kind, &m.ListedYear, &m.Aliases,
-			&c.Units, &c.Photos, &c.Pinouts, &c.FlashDumps, &c.UBootEnvs, &c.BootLogs, &c.Documents); err != nil {
+			&c.Units, &c.Photos, &c.Pinouts, &c.FlashDumps, &c.UBootEnvs, &c.BootLogs, &c.Documents, &c.PrivateDumps); err != nil {
 			rows.Close()
 			return nil, nil, err
 		}
@@ -374,7 +431,7 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 	byUnit := map[string]*unitJSON{}
 	rows, err = tx.Query(ctx, `
 		SELECT id, model_id, sensor, flash_chip, flash_size_mb, source::text, source_ref, contributed_by, notes,
-		  link_certainty, link_evidence
+		  link_certainty, link_evidence, private_dumps
 		FROM board_units
 		WHERE model_id IN (SELECT m.id FROM board_models m WHERE `+treeModels+`)
 		ORDER BY position, id`, soc, sensors, model)
@@ -385,7 +442,7 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 		u := &unitJSON{Files: []fileJSON{}}
 		var model string
 		if err := rows.Scan(&u.ID, &model, &u.Sensor, &u.FlashChip, &u.FlashSizeMB, &u.Source, &u.SourceRef, &u.ContributedBy, &u.Notes,
-			&u.LinkCertainty, &u.LinkEvidence); err != nil {
+			&u.LinkCertainty, &u.LinkEvidence, &u.privateDumps); err != nil {
 			rows.Close()
 			return nil, nil, err
 		}
@@ -413,14 +470,14 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 			       JOIN board_units ou ON ou.id = oa.unit_id WHERE ou.model_id = $3))
 			GROUP BY u.source, a.sha256 HAVING count(DISTINCT u.model_id) > 1
 		)
-		SELECT a.unit_id, a.kind::text, a.name, a.path, coalesce(a.thumb_path, ''), a.mime, a.bytes, a.sha256,
+		SELECT a.unit_id, a.kind::text, a.name, coalesce(a.href, $4 || a.path), coalesce(a.thumb_path, ''), a.mime, a.bytes, a.sha256,
 		       coalesce(a.width, 0), coalesce(a.height, 0),
 		       coalesce(array_length(regexp_split_to_array(rtrim(a.content, E'\n'), E'\n'), 1), 0),
 		       CASE WHEN a.kind::text IN `+photoKinds+` THEN coalesce(s.n, 0) ELSE 0 END
 		FROM board_artifacts a JOIN board_units au ON au.id = a.unit_id
 		LEFT JOIN shared s ON s.source = au.source AND s.sha256 = a.sha256
 		WHERE a.unit_id IN (SELECT u.id FROM board_units u JOIN board_models m ON m.id = u.model_id WHERE `+treeModels+`)
-		ORDER BY a.unit_id, a.position, a.id`, soc, sensors, model)
+		ORDER BY a.unit_id, a.position, a.id`, soc, sensors, model, FilesPrefix)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -436,7 +493,9 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 			rows.Close()
 			return nil, nil, err
 		}
-		f.URL = FilesPrefix + p
+		// A report's public dump is served by its report (href), uncached;
+		// every other file by nginx under FilesPrefix.
+		f.URL = p
 		if thumb != "" {
 			f.ThumbURL = FilesPrefix + thumb
 		}

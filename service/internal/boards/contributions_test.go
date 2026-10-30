@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -519,5 +520,88 @@ func TestAReportUnitCarriesItsLinksCertainty(t *testing.T) {
 	}
 	if !rewritten() {
 		t.Error("a changed file did not rewrite the unit")
+	}
+}
+
+// A report's public flash dump is listed where its report serves it,
+// uncached, and never copied under BOARDS_ROOT: made private, it is gone
+// at once. Its dumps that are not served are counted, so the board says
+// one exists. A report on two boards lists its dump on each.
+func TestAReportsDumpIsLinkedNotCopiedAndItsPrivateOnesAreCounted(t *testing.T) {
+	pool, root := imported(t)
+	ctx := context.Background()
+	im := &Importer{Pool: pool, Log: quiet(), Root: root}
+	const href = "/api/v1/reports/r-dddddddd/files/1?v=0123456789ab"
+	sum := strings.Repeat("ab", 32)
+	store := fstest.MapFS{"dd/text": {Data: []byte("U-Boot\n")}}
+	unit := func(model string) Contribution {
+		c := reportUnit(model+"-r-dddddddd", model, "r-dddddddd", "dd/text", "boot_log", "2-boot.txt")
+		c.Files = append([]ContributedFile{{Kind: "flash_dump", File: "1-backup.bin", URL: href, Bytes: 16 << 20, SHA256: sum}}, c.Files...)
+		c.PrivateDumps = 2
+		return c
+	}
+	list := []Contribution{unit("xiongmai-53h20-s"), unit("unknown-unidentified-hi3516cv200-3")}
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	tree, err := Tree(ctx, pool, "en", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := 0
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			for _, u := range mo.Units {
+				if !strings.HasSuffix(u.ID, "-r-dddddddd") {
+					continue
+				}
+				seen++
+				if len(u.Files) != 2 || u.Files[0].Kind != "flash_dump" || u.Files[0].URL != href || u.Files[0].Bytes != 16<<20 ||
+					!strings.HasPrefix(u.Files[1].URL, FilesPrefix) {
+					t.Errorf("%s files %+v", u.ID, u.Files)
+				}
+				if mo.Coverage.FlashDumps < 1 || mo.Coverage.PrivateDumps != 2 {
+					t.Errorf("%s coverage %+v", mo.ID, mo.Coverage)
+				}
+				if _, err := os.Stat(filepath.Join(root, u.ID, "1-backup.bin")); err == nil {
+					t.Errorf("%s: the dump was copied", u.ID)
+				}
+			}
+		}
+	}
+	if seen != 2 {
+		t.Fatalf("%d report units in the tree, want 2", seen)
+	}
+	// The catalogue's totals count the report's dumps once, not once per
+	// board; the archive's own dumps are there too.
+	var archive int
+	_ = pool.QueryRow(ctx, `SELECT count(DISTINCT sha256) FROM board_artifacts WHERE kind = 'flash_dump' AND href IS NULL`).Scan(&archive)
+	if got := tree["totals"].(totalsJSON); got.FlashDumps != archive+1 || got.PrivateDumps != 2 {
+		t.Errorf("totals %+v, want %d dumps and 2 private", got, archive+1)
+	}
+	// Nothing changed, nothing is rewritten.
+	var before []int64
+	rows, _ := pool.Query(ctx, `SELECT id FROM board_artifacts WHERE unit_id LIKE '%-r-dddddddd' ORDER BY id`)
+	before, _ = pgx.CollectRows(rows, pgx.RowTo[int64])
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ = pool.Query(ctx, `SELECT id FROM board_artifacts WHERE unit_id LIKE '%-r-dddddddd' ORDER BY id`)
+	after, _ := pgx.CollectRows(rows, pgx.RowTo[int64])
+	if !slices.Equal(before, after) || len(after) != 4 {
+		t.Errorf("a second refresh rewrote the units: %v then %v", before, after)
+	}
+	// The dump made private: unlisted, counted.
+	for i := range list {
+		list[i].Files, list[i].PrivateDumps = list[i].Files[1:], 3
+	}
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	var dumps, private int
+	_ = pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM board_artifacts WHERE href IS NOT NULL),
+		(SELECT sum(private_dumps) FROM board_units WHERE id LIKE '%-r-dddddddd')`).Scan(&dumps, &private)
+	if dumps != 0 || private != 6 {
+		t.Errorf("after the dump was made private: %d listed, %d private", dumps, private)
 	}
 }

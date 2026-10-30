@@ -45,6 +45,8 @@ export interface Coverage {
   photos: number;
   pinouts: number;
   flash_dumps: number;
+  /** Owner reports' dumps of the board that are not served: one exists, a maintainer has it. */
+  private_dumps?: number;
   uboot_envs: number;
   boot_logs: number;
   documents: number;
@@ -112,6 +114,8 @@ export interface BoardsFile {
   files_prefix: string;
   sources: Source[];
   manufacturers: Manufacturer[];
+  /** What the tree holds, each thing once: a report on two boards is a unit on each. */
+  totals?: { flash_dumps: number; private_dumps: number };
 }
 
 /** One source's say about a board: GET /api/v1/boards/models/{id}. */
