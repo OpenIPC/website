@@ -692,8 +692,27 @@ func TestATextFileIsRedactedAgainAndCanBeKeptPrivate(t *testing.T) {
 	}
 	id := out["id"].(string)
 	st := e.api.Store()
+	if err := st.Link(ctx, id, "xiongmai-50h20l", "test"); err != nil {
+		t.Fatal(err)
+	}
 	if err := st.Review(ctx, id, "publish", "test", ""); err != nil {
 		t.Fatal(err)
+	}
+	boardName := func() string {
+		t.Helper()
+		texts, err := st.PublishedTexts(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, bt := range texts {
+			for _, f := range bt.Files {
+				if bt.Report == id && f.Kind == "boot_log" {
+					return f.BoardName()
+				}
+			}
+		}
+		t.Fatal("the boot log is not on the board")
+		return ""
 	}
 	var pos int
 	if err := e.pool.QueryRow(ctx, `SELECT position FROM report_files WHERE report_id = $1 AND kind = 'boot_log'`, id).Scan(&pos); err != nil {
@@ -733,24 +752,30 @@ func TestATextFileIsRedactedAgainAndCanBeKeptPrivate(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if done, _, err := st.Redo(ctx, id, true); err != nil || len(done.Files) != 1 || done.Files[0] != pos {
+	if done, _, err := st.Redo(ctx, id, "test", true); err != nil || len(done.Files) != 1 || done.Files[0] != pos {
 		t.Fatalf("dry run: %+v %v", done, err)
 	}
 	if _, text := served(); !strings.Contains(text, "0f1e2d3c") {
 		t.Fatal("a dry run changed the public copy")
 	}
-	done, orphans, err := st.Redo(ctx, id, false)
+	before := boardName()
+	done, orphans, err := st.Redo(ctx, id, "test", false)
 	if err != nil || len(done.Files) != 1 {
 		t.Fatalf("redo: %+v %v", done, err)
 	}
 	if _, text := served(); strings.Contains(text, "0f1e2d3c") || !strings.Contains(text, "<cloud_id:") {
 		t.Errorf("redone boot log:\n%s", text)
 	}
+	// The board's copy is cached for a month: the redone one has a name of
+	// its own.
+	if after := boardName(); after == before {
+		t.Errorf("the board copy kept its name %s", after)
+	}
 	if len(orphans) != 0 {
 		// The old copy is the original's bytes, which the row still names.
 		t.Errorf("orphans %v", orphans)
 	}
-	if again, _, err := st.Redo(ctx, id, false); err != nil || again.Changed() {
+	if again, _, err := st.Redo(ctx, id, "test", false); err != nil || again.Changed() {
 		t.Errorf("a second redo changed %+v (%v)", again, err)
 	}
 
@@ -763,7 +788,7 @@ func TestATextFileIsRedactedAgainAndCanBeKeptPrivate(t *testing.T) {
 	if code, _ := served(); code != 404 {
 		t.Errorf("a private boot log answered %d", code)
 	}
-	if done, _, err := st.Redo(ctx, id, false); err != nil || done.Changed() {
+	if done, _, err := st.Redo(ctx, id, "test", false); err != nil || done.Changed() {
 		t.Errorf("redo touched a private file: %+v %v", done, err)
 	}
 	if err := e.api.DecidePhoto(ctx, id, pos, PhotoAsSent, nil, "test"); err != nil {

@@ -307,17 +307,19 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		}
 		var changed []reports.Redone
 		deleted := 0
+		var failed error
 		for _, id := range ids {
-			done, orphans, err := st.Redo(ctx, id, *dry)
+			done, orphans, err := st.Redo(ctx, id, *by, *dry)
 			if err != nil {
-				return fmt.Errorf("%s: %w", id, err)
+				failed = fmt.Errorf("%s: %w", id, err)
+				break
 			}
 			if done.Changed() {
 				changed = append(changed, done)
 			}
 			for _, sum := range orphans {
 				if ok, err := st.RemoveUnreferenced(ctx, files, sum); err != nil {
-					return err
+					log.Warn("reports: a replaced public copy stays", "report", id, "sha256", sum, "err", err)
 				} else if ok {
 					deleted++
 				}
@@ -329,11 +331,13 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		out, _ := json.MarshalIndent(changed, "", "  ")
 		fmt.Println(string(out))
 		log.Info("reports: redacted again", "reports", len(ids), "changed", len(changed), "dry_run", *dry, "files_deleted", deleted)
-		if len(changed) > 0 && !*dry {
-			// The boards' copies of what was published follow.
+		if !*dry {
+			// The boards' copies follow what was committed, a batch that
+			// stopped partway included; every run refreshes, so one that
+			// finds nothing new still mends a refresh that failed before.
 			refreshReportUnits(ctx, cfg, log, pool)
 		}
-		return nil
+		return failed
 	case "verify":
 		checked, bad, err := reports.Verify(ctx, st, files)
 		if err != nil {

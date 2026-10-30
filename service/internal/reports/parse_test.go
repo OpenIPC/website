@@ -274,3 +274,15 @@ func TestAVendorCloudIDATextNamesIsRedacted(t *testing.T) {
 		t.Errorf("with ipctool's cloudId the copy differs:\n%s", again)
 	}
 }
+
+// ipctool's cloudId is often the sixteen digits alone; the log's longer
+// spelling of the same serial is the same identifier, one placeholder,
+// nothing of it left beside the mark.
+func TestIpctoolsShortCloudIDAndTheLogsSerialAreOne(t *testing.T) {
+	f := Facts{CloudID: "3beae2b40d84f889"}
+	got := Redact("uuid[3beae2b40d84f889wxyz]\nSerialNumber : 3beae2b40d84f889wxyz\ncloud 3beae2b40d84f889\n", f, "k")
+	mark := "<cloud_id:" + f.IDHashes("k")["cloud_id"] + ">"
+	if strings.Count(got, mark) != 3 || strings.Contains(got, "wxyz") || strings.Contains(got, "3beae2b4") {
+		t.Errorf("redacted:\n%s", got)
+	}
+}

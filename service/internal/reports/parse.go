@@ -341,15 +341,14 @@ func Redact(text string, f Facts, key string) string {
 	slices.SortStableFunc(ids, func(a, b Identifier) int { return len(b.Value) - len(a.Value) })
 	for _, id := range ids {
 		mark := "<" + id.Name + ":" + Keyed(key, id.Name, id.Value) + ">"
-		text = spellings(id).ReplaceAllString(text, mark)
 		// A Xiongmai serial is sixteen hex digits and four letters, and the
 		// firmware glues the letters to what follows ("SN:...xdjhd_common_init"):
-		// the digits alone are the camera's.
-		if id.Name == "cloud_id" {
-			if m := xmSerial.FindStringSubmatch(id.Value); m != nil {
-				text = regexp.MustCompile(`(?i)`+m[1]+`[0-9a-z]*`).ReplaceAllString(text, mark)
-			}
+		// the digits are the camera's, and the letters go with them.
+		if head := xmHead(id.Value); id.Name == "cloud_id" && head != "" {
+			text = regexp.MustCompile(`(?i)`+head+`[0-9a-z]*`).ReplaceAllString(text, mark)
+			continue
 		}
+		text = spellings(id).ReplaceAllString(text, mark)
 	}
 	for _, re := range anyMAC {
 		text = re.ReplaceAllStringFunc(text, func(m string) string {
@@ -419,8 +418,8 @@ func textIdentifiers(text string) []Identifier {
 			return
 		}
 		k := strings.ToLower(v)
-		if m := xmSerial.FindStringSubmatch(v); m != nil && name == "cloud_id" {
-			k = strings.ToLower(m[1])
+		if head := xmHead(v); head != "" && name == "cloud_id" {
+			k = strings.ToLower(head)
 		}
 		if i, ok := seen[k]; ok {
 			if !strings.EqualFold(out[i].Value, v) && countFold(text, v) > countFold(text, out[i].Value) {
@@ -454,11 +453,26 @@ func countFold(text, v string) int {
 	return strings.Count(strings.ToLower(text), strings.ToLower(v))
 }
 
-// sameIdentifier: one value, or one Xiongmai serial's two spellings.
+// sameIdentifier: one value, or one Xiongmai serial's two spellings --
+// ipctool's cloudId is often the sixteen digits alone.
 func sameIdentifier(a, b string) bool {
 	if strings.EqualFold(a, b) {
 		return true
 	}
-	ma, mb := xmSerial.FindStringSubmatch(a), xmSerial.FindStringSubmatch(b)
-	return ma != nil && mb != nil && strings.EqualFold(ma[1], mb[1])
+	ha, hb := xmHead(a), xmHead(b)
+	return ha != "" && strings.EqualFold(ha, hb)
 }
+
+// xmHead is a Xiongmai serial's sixteen hex digits: of the whole serial, or
+// of the digits alone as ipctool's cloudId has them. "" for anything else.
+func xmHead(v string) string {
+	if m := xmSerial.FindStringSubmatch(v); m != nil {
+		return m[1]
+	}
+	if xmDigits.MatchString(v) {
+		return v
+	}
+	return ""
+}
+
+var xmDigits = regexp.MustCompile(`(?i)^[0-9a-f]{16}$`)

@@ -70,9 +70,11 @@ func (r Redone) Changed() bool { return r.YAML || r.Note || len(r.Files) > 0 }
 // its note and each text file that is published (a file kept private stays
 // so). When Redact learns a new identifier (a vendor's cloud ID),
 // what was published before it is made over. dry says what would change
-// and changes nothing. The returned sums are public copies no row names any
+// and changes nothing. Each file made over is logged in report_photo_reviews
+// (as_sent, by), which gives its board copy a new name (PublishedTexts): a
+// board file is cached for a month. The returned sums are public copies no row names any
 // more, for the caller to delete (RemoveUnreferenced).
-func (s *Store) Redo(ctx context.Context, id string, dry bool) (Redone, []string, error) {
+func (s *Store) Redo(ctx context.Context, id, by string, dry bool) (Redone, []string, error) {
 	done := Redone{Report: id}
 	var orphans []string
 	var placed []string
@@ -149,6 +151,10 @@ func (s *Store) Redo(ctx context.Context, id string, dry bool) (Redone, []string
 			placed = append(placed, pc.SHA256)
 			if _, err := tx.Exec(ctx, `UPDATE report_files SET public_sha256 = $3, public_bytes = $4 WHERE report_id = $1 AND position = $2`,
 				id, f.pos, pc.SHA256, pc.Bytes); err != nil {
+				return err
+			}
+			if _, err := tx.Exec(ctx, `INSERT INTO report_photo_reviews (report_id, position, action, public_sha256, by)
+				VALUES ($1, $2, 'as_sent', $3, $4)`, id, f.pos, pc.SHA256, by); err != nil {
 				return err
 			}
 			if f.pub != f.sum {
