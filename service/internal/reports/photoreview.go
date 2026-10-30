@@ -27,7 +27,7 @@ const (
 )
 
 // ErrNotPhoto is a photo decision on a file that is not a photo.
-var ErrNotPhoto = errors.New("only a photo is blurred, and only a photo or a flash dump kept private, this way")
+var ErrNotPhoto = errors.New("only a photo is blurred, and only a photo, a text file or a flash dump kept private, this way")
 
 // ErrNotConsented: a flash dump its sender did not share publicly is never
 // published by a maintainer; they may only keep a public one private.
@@ -112,15 +112,35 @@ func (s *Store) SetPhotoPublic(ctx context.Context, id string, position int, act
 					return ErrNotConsented
 				}
 			}
-		} else if kind != "photo" {
+		} else if kind != "photo" && !(textKinds[kind] && action != PhotoBlur) {
 			return ErrNotPhoto
 		}
 		var pub, pubMime *string
 		var pubBytes *int64
-		switch action {
-		case PhotoAsSent:
+		switch {
+		case action == PhotoAsSent && textKinds[kind]:
+			// A boot log, a U-Boot environment, a note: what was sent, as
+			// it is always published -- redacted, never the original.
+			if _, err := tx.Exec(ctx, lockFileSh, sum); err != nil {
+				return err
+			}
+			pc, place, err := s.textCopy(ctx, tx, id, sum)
+			if err != nil {
+				return err
+			}
+			if pc.SHA256 != sum {
+				made = pc
+			}
+			if _, err := tx.Exec(ctx, lockFileSh, pc.SHA256); err != nil {
+				return err
+			}
+			if err := place(); err != nil {
+				return err
+			}
+			pub, pubBytes = &pc.SHA256, &pc.Bytes
+		case action == PhotoAsSent:
 			pub, pubBytes = &sum, &bytes
-		case PhotoBlur:
+		case action == PhotoBlur:
 			// The original's lock: RemoveUnreferenced, after an edit took
 			// another report's copy of these bytes out, waits for this read.
 			if _, err := tx.Exec(ctx, lockFileSh, sum); err != nil {

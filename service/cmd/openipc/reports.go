@@ -44,6 +44,11 @@ const reportsUsage = `usage: openipc reports
                                                 or publish it again as they chose
   unlink <id> <board model id>                  undo a link made in error
   takedown <id> --by who --note why              withdraw for good: YAML blanked, files deleted
+  photo/file on a boot log, U-Boot environment or note: private keeps it off the board,
+                                                as_sent publishes it again (redacted, as always)
+  redact [<id>...] [--dry-run]                  redact the public YAML, note and text files again with
+                                                today's rules (every report when no id is named), and
+                                                say what changed (JSON)
   verify                                        re-hash every stored file; non-zero on any missing or changed
 
 A link is confirmed (the default: a sticker, the device ID in its firmware),
@@ -89,6 +94,7 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 	fs.StringVar(&fix.kind, "kind", "", "with --new-board: "+strings.Join(boards.Kinds, ", ")+" (default board)")
 	var aliases multi
 	fs.Var(&aliases, "alias", "a further marking as printed the board answers to (repeatable)")
+	dry := fs.Bool("dry-run", false, "with redact: say what would change, change nothing")
 	cmd := args[0]
 	pos, err := parseInterleaved(fs, args[1:])
 	if err != nil {
@@ -292,6 +298,46 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		}
 		log.Info("reports: taken down", "report", pos[0], "by", *by, "files_deleted", deleted)
 		return nil
+	case "redact":
+		ids := []string(pos)
+		if len(ids) == 0 {
+			if ids, err = st.IDs(ctx); err != nil {
+				return err
+			}
+		}
+		var changed []reports.Redone
+		deleted := 0
+		var failed error
+		for _, id := range ids {
+			done, orphans, err := st.Redo(ctx, id, *by, *dry)
+			if err != nil {
+				failed = fmt.Errorf("%s: %w", id, err)
+				break
+			}
+			if done.Changed() {
+				changed = append(changed, done)
+			}
+			for _, sum := range orphans {
+				if ok, err := st.RemoveUnreferenced(ctx, files, sum); err != nil {
+					log.Warn("reports: a replaced public copy stays", "report", id, "sha256", sum, "err", err)
+				} else if ok {
+					deleted++
+				}
+			}
+		}
+		if changed == nil {
+			changed = []reports.Redone{}
+		}
+		out, _ := json.MarshalIndent(changed, "", "  ")
+		fmt.Println(string(out))
+		log.Info("reports: redacted again", "reports", len(ids), "changed", len(changed), "dry_run", *dry, "files_deleted", deleted)
+		if !*dry {
+			// The boards' copies follow what was committed, a batch that
+			// stopped partway included; every run refreshes, so one that
+			// finds nothing new still mends a refresh that failed before.
+			refreshReportUnits(ctx, cfg, log, pool)
+		}
+		return failed
 	case "verify":
 		checked, bad, err := reports.Verify(ctx, st, files)
 		if err != nil {

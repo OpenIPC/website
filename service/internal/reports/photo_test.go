@@ -362,7 +362,8 @@ func TestAReviewerBlursOnePhotoAndKeepsAnotherPrivate(t *testing.T) {
 }
 
 // A photo sent without the confirmation -- by ipctool, an agent, or an old
-// page -- is stored as not confirmed, and a blur is a photo's only.
+// page -- is stored as not confirmed, and a blur is a photo's only: a boot
+// log is kept private, never blurred.
 func TestAPhotoWithoutTheConfirmationSaysSo(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
@@ -378,8 +379,11 @@ func TestAPhotoWithoutTheConfirmationSaysSo(t *testing.T) {
 			t.Errorf("%s: confirmed without being asked", f.Kind)
 		}
 		if f.Kind == "boot_log" {
-			if code, _ := e.reviewPhoto(t, id, f.Position, map[string]any{"action": "private"}); code != 400 {
-				t.Errorf("a boot log kept private as a photo: %d", code)
+			if code, _ := e.reviewPhoto(t, id, f.Position, map[string]any{"action": "blur", "regions": []map[string]float64{{"x": 0, "y": 0, "w": 0.5, "h": 0.5}}}); code != 400 {
+				t.Errorf("a boot log blurred as a photo: %d", code)
+			}
+			if code, _ := e.reviewPhoto(t, id, f.Position, map[string]any{"action": "private"}); code != 200 {
+				t.Errorf("a boot log not kept private: %d", code)
 			}
 		}
 	}
