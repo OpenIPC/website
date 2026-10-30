@@ -391,9 +391,13 @@ func spellings(id Identifier) *regexp.Regexp {
 // so "uuid[%s]", "SN: none" or "uuid : General" are left as they are.
 var cloudKeys = regexp.MustCompile(`(?i)\b(uuid|guid|authcode|serialnumber|newversionsn|oldversionsn|cloud_?id|sn|hichipuuid|p2p\w{0,8}(?:did|uid)|did)\b["']?\s*(?:[:=]\s*\[?|\[)\s*["']?([A-Za-z0-9][A-Za-z0-9_-]{5,63})`)
 
-// secretKeys are values a stock Xiongmai log sends its cloud with the serial
-// (CapsCenter): the per-camera crypto number, and DevInfo's key and data.
+// secretKeys are values a stock firmware prints beside its cloud ID: a
+// Xiongmai log's CapsCenter message (the per-camera crypto number, DevInfo's
+// key and data), and a Tange camera's key ("uuid=<id>, key=<key>",
+// "Get sn:<id>,<key>").
 var secretKeys = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)\buuid=[A-Za-z0-9_-]{6,64},\s*key=([A-Za-z0-9+/=_-]{6,128})`),
+	regexp.MustCompile(`(?i)\bsn:[A-Za-z0-9_-]{6,64},\s*([A-Za-z0-9+/=_-]{6,128})`),
 	regexp.MustCompile(`(?i)"CloudCryNum"\s*:\s*"([^"]{6,128})"`),
 	regexp.MustCompile(`(?i)"DevInfo"\s*:\s*\{[^}]*?"Data"\s*:\s*"([^"]{6,128})"`),
 	regexp.MustCompile(`(?i)"DevInfo"\s*:\s*\{[^}]*?"Key"\s*:\s*"([^"]{6,128})"`),

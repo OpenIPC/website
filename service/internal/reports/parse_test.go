@@ -240,8 +240,9 @@ func TestALongFileNameKeepsBothEnds(t *testing.T) {
 // A stock camera's log names its vendor-cloud identity itself -- Xiongmai's
 // serial a dozen ways, UBIA's gUID and the access point named after it --
 // and the public copy carries none of it without ipctool's output, the
-// serial hashing as ipctool's cloudId would. The values here are made up in
-// the shapes r-7tb674nu and r-sfbcnir8 carried.
+// serial hashing as ipctool's cloudId would; a Tange camera's uuid, key and
+// DID. The values here are made up in the shapes r-7tb674nu, r-sfbcnir8 and
+// r-e34zcasq carried.
 func TestAVendorCloudIDATextNamesIsRedacted(t *testing.T) {
 	const serial = "0f1e2d3c4b5a6978qrst"
 	log := strings.Join([]string{
@@ -253,10 +254,13 @@ func TestAVendorCloudIDATextNamesIsRedacted(t *testing.T) {
 		"Transport: vv_nat_init successful UUID=[" + serial + "]",
 		"[ULOG_INFO]ubia_get_local_mgmt[5243] local gUID:ABCD1EFG2HIJ3KLM4NOP PKG:122 ModelNum:842!",
 		"[ULOG_INFO]ubia_load_user_conf[4626] ###############AP:UCon_ABCD      len:9",
+		"SN file read success, uuid=Q7RT9XKC2M, key=k3yS3cr3tXz",
+		"[NORM][platform_start/548] Get sn:Q7RT9XKC2M,k3yS3cr3tXz",
+		"DID          :[TANGE-000123-ABCDE]",
 		"printf(\"uuid[%s]\"), SN: none, did not start",
 	}, "\n")
 	got := Redact(log, Facts{}, "k")
-	for _, gone := range []string{"0f1e2d3c4b5a6978", "a1bC2dE3", "Zm9vYmFyMTIzNDU2Nzg5MA==", "31415926", "ABCD1EFG2HIJ3KLM4NOP", "UCon_ABCD"} {
+	for _, gone := range []string{"0f1e2d3c4b5a6978", "a1bC2dE3", "Zm9vYmFyMTIzNDU2Nzg5MA==", "31415926", "ABCD1EFG2HIJ3KLM4NOP", "UCon_ABCD", "Q7RT9XKC2M", "k3yS3cr3tXz", "TANGE-000123-ABCDE"} {
 		if strings.Contains(got, gone) {
 			t.Errorf("%s survived:\n%s", gone, got)
 		}
