@@ -45,6 +45,8 @@ export interface Coverage {
   photos: number;
   pinouts: number;
   flash_dumps: number;
+  /** Owner reports' dumps of the board that are not served: one exists, a maintainer has it. */
+  private_dumps?: number;
   uboot_envs: number;
   boot_logs: number;
   documents: number;

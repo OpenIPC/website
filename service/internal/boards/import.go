@@ -166,7 +166,9 @@ func (im *Importer) FromFS(ctx context.Context, fsys fs.FS) (int, error) {
 
 type artifact struct {
 	File
-	Path, Thumb   string
+	Path, Thumb string
+	// Href: where a file served from elsewhere is (File.URL).
+	Href          string
 	Mime, SHA256  string
 	Bytes         int64
 	Width, Height int
@@ -181,6 +183,10 @@ func (im *Importer) files(fsys fs.FS, u *Unit) ([]artifact, error) {
 	}
 	var out []artifact
 	for _, f := range u.Files {
+		if f.URL != "" {
+			out = append(out, artifact{File: f, Path: u.ID + "/" + f.Name, Href: f.URL, Bytes: f.Bytes, SHA256: f.SHA256, Mime: mimeOf(f.Name)})
+			continue
+		}
 		b, err := fs.ReadFile(fsys, f.Source)
 		if err != nil {
 			return nil, err
@@ -299,10 +305,10 @@ func insertArtifacts(ctx context.Context, tx pgx.Tx, unit string, arts []artifac
 	for i, a := range arts {
 		var id int64
 		if err := tx.QueryRow(ctx, `
-			INSERT INTO board_artifacts (unit_id, kind, name, path, thumb_path, mime, bytes, sha256, width, height, content, position)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
+			INSERT INTO board_artifacts (unit_id, kind, name, path, thumb_path, mime, bytes, sha256, width, height, content, position, href)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
 			unit, a.Kind, a.Name, a.Path, null(a.Thumb), a.Mime, a.Bytes, a.SHA256,
-			nullInt(a.Width), nullInt(a.Height), a.Content, i).Scan(&id); err != nil {
+			nullInt(a.Width), nullInt(a.Height), a.Content, i, null(a.Href)).Scan(&id); err != nil {
 			return err
 		}
 		if a.Kind == "uboot_env" && a.Content != nil {

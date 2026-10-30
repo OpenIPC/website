@@ -339,6 +339,7 @@ export default function Boards({ locale, socs, board = false }: { locale: Locale
             [s.boards, 'stats_boards'], ...(s.devices > 0 ? [[s.devices, 'stats_devices'] as const] : []),
             [s.makers, 'stats_makers'], [s.pinouts, 'stats_pinouts'],
             [s.dumps, 'stats_dumps'],
+            ...(s.privateDumps > 0 ? [[s.privateDumps, 'stats_private_dumps'] as const] : []),
           ] as const).map(([n, key]) => (
             <div key={key} class="flex flex-col-reverse text-sm text-body-secondary">
               <dt>{t(key, { count: n })}</dt>

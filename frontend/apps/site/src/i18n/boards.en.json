@@ -813,8 +813,12 @@
       "other": "still need a pinout"
     },
     "stats_pinouts": {
-      "one": "with UART pinout",
-      "other": "with UART pinout"
+      "one": "with a pinout",
+      "other": "with a pinout"
+    },
+    "stats_private_dumps": {
+      "one": "more kept private, for maintainers",
+      "other": "more kept private, for maintainers"
     },
     "successor_xiongmai": "Xiongmai's product line continues under the JFTech brand: the same module codes and firmware from the same download servers. What Xiongmai listed up to 2023 comes from its archived catalogue at xiongmaitech.com; the current line comes from",
     "tag_discontinued": "Discontinued",

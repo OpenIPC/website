@@ -25,7 +25,7 @@ export function entries(file: BoardsFile): Entry[] {
 export const COVERAGE = ['photos', 'pinout', 'flash_dump', 'uboot_env', 'boot_log', 'document'] as const;
 export type CoverageKey = (typeof COVERAGE)[number];
 
-const COUNTS: Record<CoverageKey, keyof Model['coverage']> = {
+const COUNTS: Record<CoverageKey, Exclude<keyof Model['coverage'], 'private_dumps'>> = {
   photos: 'photos',
   pinout: 'pinouts',
   flash_dump: 'flash_dumps',
@@ -331,6 +331,8 @@ export interface Stats {
   makers: number;
   pinouts: number;
   dumps: number;
+  /** Dumps owner reports sent that are not served (kept private). */
+  privateDumps: number;
   needPinout: number;
 }
 
@@ -341,6 +343,7 @@ export function stats(all: Entry[]): Stats {
     makers: new Set(all.filter((m) => m.maker.id !== 'unknown').map((m) => m.maker.id)).size,
     pinouts: all.filter((m) => has(m, 'pinout')).length,
     dumps: all.reduce((n, m) => n + m.coverage.flash_dumps, 0),
+    privateDumps: all.reduce((n, m) => n + (m.coverage.private_dumps ?? 0), 0),
     needPinout: all.filter((m) => !has(m, 'pinout')).length,
   };
 }

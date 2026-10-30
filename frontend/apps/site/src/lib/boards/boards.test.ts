@@ -404,10 +404,16 @@ describe('the layout', () => {
 
 describe('stats', () => {
   test('counts boards, named makers, pinouts and dumps', () => {
-    expect(stats(ALL)).toEqual({ boards: 4, devices: 0, makers: 1, pinouts: 1, dumps: 3, needPinout: 3 });
+    expect(stats(ALL)).toEqual({ boards: 4, devices: 0, makers: 1, pinouts: 1, dumps: 3, privateDumps: 0, needPinout: 3 });
     const withNvr = [...ALL, ...entries({ ...FILE, manufacturers: [{ id: 'xiongmai', name: 'Xiongmai', aliases: [], website: null,
       models: [model('nvr', { kind: 'recorder' })] }] })];
     expect(stats(withNvr)).toMatchObject({ boards: 4, devices: 1 });
+  });
+
+  test('counts the dumps owner reports keep private apart from the served ones', () => {
+    const withPrivate = [...ALL, ...entries({ ...FILE, manufacturers: [{ id: 'xiongmai', name: 'Xiongmai', aliases: [], website: null,
+      models: [model('kept', { coverage: cov({ flash_dumps: 1, private_dumps: 4 }) })] }] })];
+    expect(stats(withPrivate)).toMatchObject({ dumps: 4, privateDumps: 4 });
   });
 });
 

@@ -60,7 +60,8 @@ func newClub(bg context.Context, cfg *config.Config, log *slog.Logger, pool *pgx
 
 // refreshReportUnits lists every published owner report's text and photos
 // on the boards it was linked to, as contributed units: searchable and
-// counted like any board's files. It runs at start and after each review;
+// counted like any board's files -- and a dump, listed when its sender
+// shared it, counted as private when not. It runs at start and after each review;
 // a failure is logged, and the next run catches up.
 func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logger, pool *pgxpool.Pool) {
 	texts, err := (&reports.Store{DB: pool}).PublishedTexts(ctx)
@@ -83,8 +84,15 @@ func refreshReportUnits(ctx context.Context, cfg *config.Config, log *slog.Logge
 		// sure it is that the report is this board's.
 		c := boards.Contribution{Unit: t.Model + "-" + t.Report, Model: t.Model, By: by, Note: t.Note,
 			Evidence:      []string{cfg.ClubSiteURL + boards.ReceiptMark + t.Report + "&board=" + t.Model},
-			LinkCertainty: t.Certainty, LinkEvidence: t.Evidence}
+			LinkCertainty: t.Certainty, LinkEvidence: t.Evidence, PrivateDumps: t.PrivateDumps}
 		for _, f := range t.Files {
+			if f.Kind == "backup" {
+				// A dump shared publicly is listed where its report serves
+				// it, uncached: made private, it is gone at once, which a
+				// copy under /board-files/ (cached for a month) would not be.
+				c.Files = append(c.Files, boards.ContributedFile{Kind: "flash_dump", File: f.BoardName(), URL: f.URL, Bytes: f.Bytes, SHA256: f.SHA256})
+				continue
+			}
 			kind := kinds[f.Kind]
 			if f.Kind == "photo" {
 				kind = boards.ReportPhotoKind(f.Name)

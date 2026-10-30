@@ -55,6 +55,13 @@ type File struct {
 	Kind   string
 	Name   string
 	Source string
+	// URL, for a file served from elsewhere -- an owner report's public
+	// flash dump, which its report serves uncached so that making it
+	// private takes it down at once: listed, never copied, its size and
+	// sha256 given rather than read.
+	URL    string
+	Bytes  int64
+	SHA256 string
 }
 
 // Makers is how the archive's vendor column reads. Anything else is an
@@ -74,7 +81,7 @@ var makers = map[string]Manufacturer{
 	// Haixin Weishi (深圳海芯威视): camera modules from its catalogue, which
 	// circulates as CamHi's, a donor snapshot only.
 	"HAIXIN": {ID: "haixin", Name: "Haixin Weishi", Aliases: []string{"海芯威视", "CamHi"}, Position: 8},
-	"?":     {ID: "unknown", Name: "Unidentified maker", Position: 99},
+	"?":      {ID: "unknown", Name: "Unidentified maker", Position: 99},
 }
 
 // socFixes are the archive's typos, one per line, with the reason.

@@ -3,7 +3,7 @@ zh:
     boards:
       title: 摄像头主板
       heading: 你的主板很可能就在这里
-      lede: '摄像机和录像机主板：照片、UART 引脚图、规格参数，以及（如有）出厂闪存转储和 U-Boot 控制台输出。先找到与你手中 PCB 相同的主板，再在它的 SoC 上安装 OpenIPC。'
+      lede: '摄像机和录像机主板：照片、引脚图、规格参数，以及（如有）出厂闪存转储和 U-Boot 控制台输出。先找到与你手中 PCB 相同的主板，再在它的 SoC 上安装 OpenIPC。'
     report:
       title: "提交电路板"
       eyebrow: "电路板目录"
@@ -117,11 +117,14 @@ zh:
       one: 家已知厂商
       other: 家已知厂商
     stats_pinouts:
-      one: 块有 UART 引脚图
-      other: 块有 UART 引脚图
+      one: 块有引脚图
+      other: 块有引脚图
     stats_dumps:
       one: 份出厂闪存转储
       other: 份出厂闪存转储
+    stats_private_dumps:
+      one: 份未公开，由维护者保管
+      other: 份未公开，由维护者保管
     stats_need_pinout:
       one: 块仍缺引脚图
       other: 块仍缺引脚图
