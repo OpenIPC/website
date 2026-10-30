@@ -418,7 +418,7 @@ func textIdentifiers(text string) []Identifier {
 	var out []Identifier
 	seen := map[string]int{}
 	add := func(name, v string) {
-		if (name == "cloud_id" && !strings.ContainsAny(v, "0123456789")) || zeroish(v) {
+		if (name == "cloud_id" && !strings.ContainsAny(v, "0123456789")) || !alnum.MatchString(v) || zeroish(v) {
 			return
 		}
 		k := strings.ToLower(v)
@@ -452,6 +452,11 @@ func textIdentifiers(text string) []Identifier {
 	}
 	return out
 }
+
+// alnum: a value with a letter or a digit in it. One a sender masked by hand
+// ("CloudCryNum" : "#######") is no identifier, and replacing it would take
+// every run of #s in the log with it (r-7tb674nu).
+var alnum = regexp.MustCompile(`[A-Za-z0-9]`)
 
 func countFold(text, v string) int {
 	return strings.Count(strings.ToLower(text), strings.ToLower(v))
