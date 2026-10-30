@@ -605,3 +605,60 @@ func TestAReportsDumpIsLinkedNotCopiedAndItsPrivateOnesAreCounted(t *testing.T) 
 		t.Errorf("after the dump was made private: %d listed, %d private", dumps, private)
 	}
 }
+
+// A refresh reads its list once it holds the apply's lock, so one started
+// earlier cannot apply a list older than a later review's refresh applied.
+func TestARefreshReadsItsListUnderTheLock(t *testing.T) {
+	pool, root := imported(t)
+	ctx := context.Background()
+	im := &Importer{Pool: pool, Log: quiet(), Root: root}
+	store := fstest.MapFS{"ee/text": {Data: []byte("U-Boot\n")}}
+	held := false
+	_, err := im.RefreshReportUnits(ctx, store, func(ctx context.Context) ([]Contribution, error) {
+		// Another connection cannot take the lock: this one holds it.
+		if err := pool.QueryRow(ctx, `SELECT NOT pg_try_advisory_lock(hashtextextended('board-contributions', 0))`).Scan(&held); err != nil {
+			return nil, err
+		}
+		return []Contribution{reportUnit("xiongmai-53h20-s-r-eeeeeeee", "xiongmai-53h20-s", "r-eeeeeeee", "ee/text", "boot_log", "1-boot.txt")}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !held {
+		t.Error("the list was read without the apply's lock")
+	}
+}
+
+// A unit rewritten while its board is served is staged and swapped in once
+// its rows are committed: the new files are in place, nothing is left in
+// the staging directory, and a rewrite that fails keeps the unit as it was.
+func TestARewriteSwapsTheUnitInWhole(t *testing.T) {
+	pool, root := imported(t)
+	ctx := context.Background()
+	im := &Importer{Pool: pool, Log: quiet(), Root: root}
+	const unit = "xiongmai-53h20-s-r-ffffffff"
+	apply := func(text string) error {
+		store := fstest.MapFS{"ff/text": {Data: []byte(text)}}
+		_, err := im.ApplyReportUnits(ctx, store, []Contribution{reportUnit(unit, "xiongmai-53h20-s", "r-ffffffff", "ff/text", "boot_log", "1-boot.txt")})
+		return err
+	}
+	if err := apply("U-Boot one\n"); err != nil {
+		t.Fatal(err)
+	}
+	if err := apply("U-Boot two\n"); err != nil {
+		t.Fatal(err)
+	}
+	if b, err := os.ReadFile(filepath.Join(root, unit, "1-boot.txt")); err != nil || string(b) != "U-Boot two\n" {
+		t.Errorf("served file %q (%v)", b, err)
+	}
+	if left, _ := os.ReadDir(filepath.Join(root, stagingDir)); len(left) != 0 {
+		t.Errorf("left in staging: %v", left)
+	}
+	// A file that cannot be read fails the rewrite before anything is touched.
+	if _, err := im.ApplyReportUnits(ctx, fstest.MapFS{}, []Contribution{reportUnit(unit, "xiongmai-53h20-s", "r-ffffffff", "ff/gone", "boot_log", "1-boot.txt")}); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(filepath.Join(root, unit, "1-boot.txt")); string(b) != "U-Boot two\n" {
+		t.Errorf("after a failed rewrite: %q", b)
+	}
+}

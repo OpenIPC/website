@@ -159,14 +159,22 @@ func (im *Importer) ApplyContributions(ctx context.Context, list []Contribution)
 // photos (reports.PublishedTexts), read from fsys -- the reports' store --
 // at each file's Source. Its units are those whose reference is a receipt.
 func (im *Importer) ApplyReportUnits(ctx context.Context, fsys fs.FS, list []Contribution) (missing []string, err error) {
-	return im.apply(ctx, fsys, list, true)
+	return im.apply(ctx, fsys, func(context.Context) ([]Contribution, error) { return list, nil }, true)
+}
+
+// RefreshReportUnits is ApplyReportUnits with the list read by load once
+// the apply's lock is held: a refresh started earlier -- the web role's at
+// start -- cannot apply a list older than one a later review's refresh
+// already applied, and put a report rejected meanwhile back on its board.
+func (im *Importer) RefreshReportUnits(ctx context.Context, fsys fs.FS, load func(context.Context) ([]Contribution, error)) (missing []string, err error) {
+	return im.apply(ctx, fsys, load, true)
 }
 
 func (im *Importer) applyContributions(ctx context.Context, fsys fs.FS, list []Contribution) (missing []string, err error) {
-	return im.apply(ctx, fsys, list, false)
+	return im.apply(ctx, fsys, func(context.Context) ([]Contribution, error) { return list, nil }, false)
 }
 
-func (im *Importer) apply(ctx context.Context, fsys fs.FS, list []Contribution, fromReports bool) (missing []string, err error) {
+func (im *Importer) apply(ctx context.Context, fsys fs.FS, load func(context.Context) ([]Contribution, error), fromReports bool) (missing []string, err error) {
 	// One apply at a time, across processes: the web role at start, after
 	// each review, and `openipc reports publish` in the same container all
 	// write these units and their directories. Within a process a mutex
@@ -185,6 +193,10 @@ func (im *Importer) apply(ctx context.Context, fsys fs.FS, list []Contribution, 
 	defer func() {
 		_, _ = conn.Exec(context.WithoutCancel(ctx), `SELECT pg_advisory_unlock(hashtextextended('board-contributions', 0))`)
 	}()
+	list, err := load(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var keep []string
 	for i, c := range list {
 		var exists bool
@@ -267,11 +279,19 @@ func (im *Importer) applyOne(ctx context.Context, fsys fs.FS, c Contribution, u 
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(im.Root, c.Unit)); err != nil {
+	// The new files are staged beside the served ones and swapped in only
+	// once the rows naming them are committed: the board pages, served while
+	// a refresh runs, never link a file not yet there, and a rewrite cut
+	// short leaves the unit as it was. In Root because a rename does not
+	// cross filesystems; what is staged is the published copy, nothing more.
+	dir := filepath.Join(im.Root, c.Unit)
+	stage := filepath.Join(im.Root, stagingDir, c.Unit)
+	if err := os.RemoveAll(stage); err != nil {
 		return err
 	}
-	arts, err := im.files(fsys, u)
+	arts, err := im.filesIn(fsys, u, stage)
 	if err != nil {
+		_ = os.RemoveAll(stage)
 		return fmt.Errorf("%s: %w", c.Unit, err)
 	}
 	if err := pgx.BeginFunc(ctx, im.Pool, func(tx pgx.Tx) error {
@@ -293,10 +313,36 @@ func (im *Importer) applyOne(ctx context.Context, fsys fs.FS, c Contribution, u 
 		}
 		return insertArtifacts(ctx, tx, u.ID, arts)
 	}); err != nil {
+		_ = os.RemoveAll(stage)
+		return fmt.Errorf("%s: %w", c.Unit, err)
+	}
+	if err := swapIn(stage, dir); err != nil {
+		// The rows name the new files and the old ones are served: the next
+		// refresh finds files missing (unchanged) and writes the unit again.
 		return fmt.Errorf("%s: %w", c.Unit, err)
 	}
 	im.Log.Info("boards: contribution applied", "unit", c.Unit, "files", len(arts))
 	return nil
+}
+
+// stagingDir, under Root, is where a unit's rewrite stages its files.
+const stagingDir = ".staging"
+
+// swapIn puts the staged directory where dir is, with no moment between the
+// two renames longer than the renames themselves.
+func swapIn(stage, dir string) error {
+	old := stage + ".old"
+	if err := os.RemoveAll(old); err != nil {
+		return err
+	}
+	if err := os.Rename(dir, old); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	if err := os.Rename(stage, dir); err != nil {
+		_ = os.Rename(old, dir)
+		return err
+	}
+	return os.RemoveAll(old)
 }
 
 // prune removes the units of this list (contributions.yml's, or the
