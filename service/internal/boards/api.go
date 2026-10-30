@@ -92,6 +92,9 @@ type unitJSON struct {
 	LinkCertainty *string    `json:"link_certainty,omitempty"`
 	LinkEvidence  string     `json:"link_evidence,omitempty"`
 	Files         []fileJSON `json:"files"`
+	// privateDumps: an owner report's dumps not served (migration 044),
+	// for the catalogue's totals; the board's coverage carries them.
+	privateDumps int
 }
 
 type coverageJSON struct {
@@ -304,7 +307,57 @@ func treeDoc(locale string, makers []*makerJSON, sources []sourceJSON) map[strin
 		"files_prefix":  FilesPrefix,
 		"manufacturers": makers,
 		"sources":       sources,
+		"totals":        totalsOf(makers),
 	}
+}
+
+// totalsJSON is what the tree holds, each thing once: a report on two
+// boards is a unit on each, with its dumps, and summing the boards'
+// coverage would count them twice.
+type totalsJSON struct {
+	// FlashDumps: distinct dumps served, by their bytes.
+	FlashDumps int `json:"flash_dumps"`
+	// PrivateDumps: dumps owner reports hold that are not served, each
+	// report counted once.
+	PrivateDumps int `json:"private_dumps"`
+}
+
+func totalsOf(makers []*makerJSON) totalsJSON {
+	dumps := map[string]bool{}
+	private := map[string]int{}
+	for _, mk := range makers {
+		for _, m := range mk.Models {
+			for _, u := range m.Units {
+				for _, f := range u.Files {
+					if f.Kind == "flash_dump" {
+						dumps[f.SHA256] = true
+					}
+				}
+				if u.privateDumps > 0 {
+					private[reportOf(u)] = u.privateDumps
+				}
+			}
+		}
+	}
+	t := totalsJSON{FlashDumps: len(dumps)}
+	for _, n := range private {
+		t.PrivateDumps += n
+	}
+	return t
+}
+
+// reportOf is the owner report a unit was made from: its reference is the
+// report's receipt (ReceiptMark), and the unit's own id when it is not.
+func reportOf(u *unitJSON) string {
+	i := strings.Index(u.SourceRef, ReceiptMark)
+	if i < 0 {
+		return u.ID
+	}
+	id := u.SourceRef[i+len(ReceiptMark):]
+	if j := strings.IndexByte(id, '&'); j >= 0 {
+		id = id[:j]
+	}
+	return id
 }
 
 // tree reads the makers that have a board the filters keep, each with those
@@ -378,7 +431,7 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 	byUnit := map[string]*unitJSON{}
 	rows, err = tx.Query(ctx, `
 		SELECT id, model_id, sensor, flash_chip, flash_size_mb, source::text, source_ref, contributed_by, notes,
-		  link_certainty, link_evidence
+		  link_certainty, link_evidence, private_dumps
 		FROM board_units
 		WHERE model_id IN (SELECT m.id FROM board_models m WHERE `+treeModels+`)
 		ORDER BY position, id`, soc, sensors, model)
@@ -389,7 +442,7 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 		u := &unitJSON{Files: []fileJSON{}}
 		var model string
 		if err := rows.Scan(&u.ID, &model, &u.Sensor, &u.FlashChip, &u.FlashSizeMB, &u.Source, &u.SourceRef, &u.ContributedBy, &u.Notes,
-			&u.LinkCertainty, &u.LinkEvidence); err != nil {
+			&u.LinkCertainty, &u.LinkEvidence, &u.privateDumps); err != nil {
 			rows.Close()
 			return nil, nil, err
 		}

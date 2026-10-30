@@ -231,7 +231,7 @@ export default function Boards({ locale, socs, board = false }: { locale: Locale
   const current = everywhere?.key === searchKey ? everywhere.value : null;
   const counts = useMemo(() => (current ? countByScope(filterHits(current.hits, kept)) : null), [current, kept]);
 
-  const s = stats(all);
+  const s = stats(all, data.state === 'ok' ? data.value.totals : undefined);
   const filters = [view.maker, view.soc, view.sensor, view.missing, view.line, view.source, view.ready || null, view.kind].filter(Boolean).length;
   const filtered = filters > 0 || !!view.q;
   const card = { socs, names, sources, t, href, onOpen: openModel, catalogue: all };

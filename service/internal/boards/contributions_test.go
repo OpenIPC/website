@@ -572,6 +572,13 @@ func TestAReportsDumpIsLinkedNotCopiedAndItsPrivateOnesAreCounted(t *testing.T) 
 	if seen != 2 {
 		t.Fatalf("%d report units in the tree, want 2", seen)
 	}
+	// The catalogue's totals count the report's dumps once, not once per
+	// board; the archive's own dumps are there too.
+	var archive int
+	_ = pool.QueryRow(ctx, `SELECT count(DISTINCT sha256) FROM board_artifacts WHERE kind = 'flash_dump' AND href IS NULL`).Scan(&archive)
+	if got := tree["totals"].(totalsJSON); got.FlashDumps != archive+1 || got.PrivateDumps != 2 {
+		t.Errorf("totals %+v, want %d dumps and 2 private", got, archive+1)
+	}
 	// Nothing changed, nothing is rewritten.
 	var before []int64
 	rows, _ := pool.Query(ctx, `SELECT id FROM board_artifacts WHERE unit_id LIKE '%-r-dddddddd' ORDER BY id`)

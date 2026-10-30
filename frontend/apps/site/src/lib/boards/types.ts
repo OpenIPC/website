@@ -114,6 +114,8 @@ export interface BoardsFile {
   files_prefix: string;
   sources: Source[];
   manufacturers: Manufacturer[];
+  /** What the tree holds, each thing once: a report on two boards is a unit on each. */
+  totals?: { flash_dumps: number; private_dumps: number };
 }
 
 /** One source's say about a board: GET /api/v1/boards/models/{id}. */

@@ -414,6 +414,8 @@ describe('stats', () => {
     const withPrivate = [...ALL, ...entries({ ...FILE, manufacturers: [{ id: 'xiongmai', name: 'Xiongmai', aliases: [], website: null,
       models: [model('kept', { coverage: cov({ flash_dumps: 1, private_dumps: 4 }) })] }] })];
     expect(stats(withPrivate)).toMatchObject({ dumps: 4, privateDumps: 4 });
+    // A report on two boards is a unit on each: the API's totals count its dumps once.
+    expect(stats(withPrivate, { flash_dumps: 3, private_dumps: 2 })).toMatchObject({ dumps: 3, privateDumps: 2 });
   });
 });
 
