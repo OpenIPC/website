@@ -11,6 +11,15 @@ import { inLocale, newsPath, POSTS } from './news';
 import { atomXml, feedPath } from './news-feed';
 import { SITE } from './sitemap';
 
+/**
+ * A title as the built page carries it. Astro escapes the five XML characters,
+ * and this escaped only `&` until a title with an apostrophe in it arrived --
+ * which rendered as `&#39;` and failed a test that was otherwise right.
+ */
+const escapeAttr = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 /** pages.news.title per language, as the feed and the autodiscovery link use it. */
 const NEWS_TITLE: Record<string, string> = { en: 'News', ru: 'Новости', zh: '新闻' };
 
@@ -36,7 +45,7 @@ describe('news in the bundle', () => {
     for (const post of POSTS) {
       const html = page(pathFor(locale, newsPath(post)));
       const text = inLocale(post, locale);
-      expect(html).toContain(`<title>${text.title.replace(/&/g, '&amp;')} - OpenIPC</title>`);
+      expect(html).toContain(`<title>${escapeAttr(text.title)} - OpenIPC</title>`);
       // An untranslated post is English under a translated prefix, and says so.
       expect(html).toContain(text.lang === locale ? '<article>' : `<article lang="${text.lang}">`);
     }
