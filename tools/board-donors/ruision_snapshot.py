@@ -237,6 +237,13 @@ CODE = re.compile(r"\b(?:RS|IPG)-[A-Z0-9]+(?:-[A-Z0-9]+)*\b")
 # Sensors a page names that are no part anyone makes (RS-H625D-A0's "OV0521"):
 # the page's words keep them, the sensor field does not.
 NOT_A_PART = {"OV0521"}
+# What a page links that is a document, not a picture.
+DOCUMENT = re.compile(r"\.(?:pdf|docx?|xlsx?)$", re.I)
+
+
+def urllib_path(u):
+    import urllib.parse
+    return urllib.parse.urlsplit(u).path
 
 
 def code_of(s):
@@ -378,7 +385,7 @@ def archived(cap, files, work):
             if f.get("via") == "missing" or f["url"] in furniture or re.search(r"banner|/Banners/", f["url"], re.I):
                 continue
             src = os.path.join(cap["root"], f["file"])
-            if re.search(r"\.pdf$", f["url"], re.I):
+            if DOCUMENT.search(urllib_path(f["url"])):
                 docs.append((src, os.path.basename(f["url"])))
             else:
                 photos.append(src)
@@ -417,13 +424,15 @@ def archived(cap, files, work):
         src = os.path.join(cap["root"], p["file"])
         text = pdf_text(src)
         name = re.sub(r"^\d{17}", "", os.path.basename(urllib_unquote(p["original"]))).lstrip("∮")
-        known = sorted(set(out) | set(skipped), key=len, reverse=True)
-        code = next((c for c in known if c in norm(name) or c in norm(text)), None)
+        # The board codes the sheet names, whole: its file name's first, then
+        # its text's. One the pages know is that board; one without its
+        # revision (RS-H643HJ) is the board that adds it; else a full code.
+        known = set(out) | set(skipped)
+        tokens = list(dict.fromkeys(code_of(c) for c in CODE.findall(name) + CODE.findall(text)))
+        code = next((c for c in tokens if c in known), None)
         if not code:
-            # A sheet that names a board without its revision (RS-H643HJ) is that board's.
-            for c in CODE.findall(name + " " + text):
-                c = code_of(c)
-                code = next((k for k in known if re.fullmatch(re.escape(c) + r"-[A-D]\d", k)), None)
+            for c in tokens:
+                code = next((k for k in sorted(known) if re.fullmatch(re.escape(c) + r"-[A-D]\d", k)), None)
                 if code or re.search(r"-[A-D]\d$", c):
                     code = code or c
                     break

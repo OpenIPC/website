@@ -78,11 +78,11 @@ var Snapshots = map[string]string{
 	// which 16 carry), the catalogue's 21 with their photos; the list's Chinese
 	// with English from the dictionary.
 	"haixin": "81b26adff472ae6bb6b22e6c17ca66f11997b684283811d986091d54e5eb5206",
-	// boards-donors/ruision/snapshot-86462735f1a0.tar: Ruision's IP camera boards,
-	// 61: the live site's 31 modules (photos, spec sheets, specifications;
-	// PCB markings and three chips read from the photos) and 30 from its
-	// 2017-2025 sites in the Wayback Machine, 13 with a chip, 6 with a sensor.
-	"ruision": "86462735f1a058e748ca0fb02a0cf749abfccf92ba3a32eeee6f6ce52d837307",
+	// boards-donors/ruision/snapshot-be6f5bf024c5.tar: Ruision's IP camera boards,
+	// 62: the live site's 31 modules (photos, spec sheets, specifications;
+	// PCB markings and three chips read from the photos) and 31 from its
+	// 2016-2025 sites in the Wayback Machine, 14 with a chip, 7 with a sensor.
+	"ruision": "be6f5bf024c5d416f1b309c708c1cee475a4fe36cb340b19f214af293b59ab2c",
 }
 
 type Snapshot struct {

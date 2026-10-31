@@ -78,7 +78,7 @@ _last_wb = [0.0]
 def curl(cap, url):
     """url through curl, kept and logged as Capture keeps a body."""
     entry = {"url": url, "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "via": "direct"}
-    r = subprocess.run(["curl", "-s", "-L", "--max-time", "120", "-A", "Mozilla/5.0", "-w", "\n%{http_code} %{content_type}",
+    r = subprocess.run(["curl", "-s", "-L", "--proto", "=https,http", "--proto-redir", "=https,http", "--max-time", "120", "-A", "Mozilla/5.0", "-w", "\n%{http_code} %{content_type}",
                         url], capture_output=True)
     body, _, tail = r.stdout.rpartition(b"\n")
     status, _, ctype = tail.decode("latin-1").partition(" ")
@@ -172,13 +172,29 @@ def live(cap, failed):
                 urls += re.findall(r"""<img[^>]+src=["']([^"']+)""", v or "")
         # A sheet pasted from a word processor links the author's own disk
         # (file:///C:/...): nothing there to fetch.
-        for u in dict.fromkeys(u for u in urls if u and u.startswith("http")):
+        for u in dict.fromkeys(u for u in urls if u and public_http(u)):
             e, body = cap.get(u)
-            if body is None:
+            if body is None or not public_http(e.get("final_url") or u):
                 say(f"  {e.get('status')} {u}")
                 failed.append(u)
     say(f"live: {len(products)} products in {len(sub)} IP camera categories")
     return {"categories": cats, "ipc_categories": sorted(sub), "listed": listed, "products": products}
+
+
+def public_http(u):
+    """An address the capture may fetch: http(s) on a public host, never a
+    file:// link (archived pages carry their authors' C:\\ paths), loopback
+    or a private network."""
+    import ipaddress
+    s = urllib.parse.urlsplit(u)
+    host = (s.hostname or "").lower()
+    if s.scheme not in ("http", "https") or not host or host == "localhost" or "." not in host:
+        return False
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return True
+    return ip.is_global
 
 
 def links(page_html, base):
@@ -189,6 +205,8 @@ def links(page_html, base):
         if not u or u.startswith(("data:", "javascript:", "#")):
             continue
         u = urllib.parse.urljoin(base, u)
+        if not public_http(u):
+            continue
         if FILE.search(urllib.parse.urlsplit(u).path) and not CHROME.search(u):
             out.append(u)
     return list(dict.fromkeys(out))
@@ -252,7 +270,7 @@ def fetch_linked(cap, u, ts, failed):
     host = urllib.parse.urlsplit(u).hostname or ""
     if "ruision.com" not in host:
         e, body = cap.get(u, headers=REFERER)
-        if body is not None:
+        if body is not None and public_http(e.get("final_url") or u):
             return {"url": u, "via": "direct", "sha256": e["sha256"], "file": e["file"], "type": e.get("type", "")}
     wb = f"https://web.archive.org/web/{ts}id_/{u}"
     e, body = wb_get(cap, wb)
