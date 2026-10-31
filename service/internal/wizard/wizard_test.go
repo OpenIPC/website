@@ -1,7 +1,6 @@
 package wizard
 
 import (
-	"slices"
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
@@ -10,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -730,6 +730,24 @@ func TestSplitOnlySoCs(t *testing.T) {
 			if strings.Contains(linux, gone) {
 				t.Errorf("%s %s still writes %q:\n%s", tc.soc, tc.ft, gone, linux)
 			}
+		}
+	}
+}
+
+// #537: the note under `sf lock` offers defib only on a chip its flash agent
+// runs on; on the rest it names the external programmer alone.
+func TestLockCaveatOffersDefibOnlyWhereItsAgentRuns(t *testing.T) {
+	cat, idx := inputs(t)
+	for soc, agent := range map[string]bool{
+		"hi3516ev300": true, "gk7205v510": true, "hi3516cv500": true, "hi3516cv610-ddr3-128m": true,
+		"nt98566": false, "hi3516cv200": false, "t31a": false, "ssc338q": false,
+	} {
+		body := string(Document(cat.SoC(soc), idx))
+		defib := strings.Contains(body, `"lock_caveat_html"`)
+		programmer := strings.Contains(body, `"lock_caveat_programmer_html"`)
+		if defib != agent || programmer == agent {
+			t.Errorf("%s: lock_caveat_html %v, lock_caveat_programmer_html %v; defib's agent runs on it: %v",
+				soc, defib, programmer, agent)
 		}
 	}
 }

@@ -445,7 +445,7 @@ func (e *exporter) blocksFor(c *camera) obj {
 	for _, b := range blocks {
 		lines := c.lines(b)
 		p := plain(lines)
-		o.set(b, pooled(&e.pool, e.poolIDs, obj{{"lines", p}, {"notes", caveatsFor(lines)},
+		o.set(b, pooled(&e.pool, e.poolIDs, obj{{"lines", p}, {"notes", c.caveatsFor(lines)},
 			{"no_paste", len(lines) != len(p)}}))
 	}
 	return o
