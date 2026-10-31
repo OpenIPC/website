@@ -81,7 +81,11 @@ var makers = map[string]Manufacturer{
 	// Haixin Weishi (深圳海芯威视): camera modules from its catalogue, which
 	// circulates as CamHi's, a donor snapshot only.
 	"HAIXIN": {ID: "haixin", Name: "Haixin Weishi", Aliases: []string{"海芯威视", "CamHi"}, Position: 8},
-	"?":      {ID: "unknown", Name: "Unidentified maker", Position: 99},
+	// Ruision (深圳市睿视科技有限公司, later 芯睿视, signing its 2025 site
+	// Corevision): IP camera boards from its live and archived catalogues, a
+	// donor snapshot only.
+	"RUISION": {ID: "ruision", Name: "Ruision", Aliases: []string{"睿视科技", "芯睿视", "Corevision"}, Position: 9},
+	"?":       {ID: "unknown", Name: "Unidentified maker", Position: 99},
 }
 
 // socFixes are the archive's typos, one per line, with the reason.
